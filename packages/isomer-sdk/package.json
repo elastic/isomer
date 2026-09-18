@@ -1,0 +1,106 @@
+{
+  "name": "@elastic/isomer-sdk",
+  "version": "0.0.0-development",
+  "description": "Shared primitive-pack toolkit for Isomer: the composition contract, validation, and rendering.",
+  "license": "Elastic-2.0",
+  "author": "Elastic",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elastic/isomer.git",
+    "directory": "packages/isomer-sdk"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/cjs/entries/index.js",
+  "module": "./dist/entries/index.js",
+  "types": "./dist/entries/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/entries/index.d.ts",
+      "import": "./dist/entries/index.js",
+      "require": "./dist/cjs/entries/index.js"
+    },
+    "./html": {
+      "types": "./dist/entries/html.d.ts",
+      "import": "./dist/entries/html.js",
+      "require": "./dist/cjs/entries/html.js"
+    },
+    "./slack": {
+      "types": "./dist/entries/slack.d.ts",
+      "import": "./dist/entries/slack.js",
+      "require": "./dist/cjs/entries/slack.js"
+    },
+    "./text": {
+      "types": "./dist/entries/text.d.ts",
+      "import": "./dist/entries/text.js",
+      "require": "./dist/cjs/entries/text.js"
+    },
+    "./markdown": {
+      "types": "./dist/entries/markdown.d.ts",
+      "import": "./dist/entries/markdown.js",
+      "require": "./dist/cjs/entries/markdown.js"
+    },
+    "./react": {
+      "types": "./dist/entries/react.d.ts",
+      "import": "./dist/entries/react.js",
+      "require": "./dist/cjs/entries/react.js"
+    },
+    "./author": {
+      "types": "./dist/author/index.d.ts",
+      "import": "./dist/author/index.js",
+      "require": "./dist/cjs/author/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "import": "./dist/testing/index.js",
+      "require": "./dist/cjs/testing/index.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "html": [
+        "./dist/entries/html.d.ts"
+      ],
+      "slack": [
+        "./dist/entries/slack.d.ts"
+      ],
+      "text": [
+        "./dist/entries/text.d.ts"
+      ],
+      "markdown": [
+        "./dist/entries/markdown.d.ts"
+      ],
+      "react": [
+        "./dist/entries/react.d.ts"
+      ],
+      "author": [
+        "./dist/author/index.d.ts"
+      ],
+      "testing": [
+        "./dist/testing/index.d.ts"
+      ]
+    }
+  },
+  "files": [
+    "dist",
+    "NOTICE.txt",
+    "THIRD_PARTY_LICENSES.md",
+    "LICENSE.txt"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "react": ">=18 <20",
+    "react-dom": ">=18 <20",
+    "zod": "^4.4.1"
+  },
+  "peerDependenciesMeta": {
+    "react-dom": {
+      "optional": true
+    }
+  }
+}

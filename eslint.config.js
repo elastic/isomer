@@ -42,6 +42,46 @@ const ELASTIC_LICENSE_HEADER = [
   ' */',
 ];
 
+const sdkRuntimeImportPatterns = [
+  {
+    group: ['@elastic/isomer-runtime', '@elastic/isomer-runtime/*'],
+    message:
+      'The sdk must not import the runtime. Packs depend on the sdk alone.',
+  },
+  {
+    group: ['@elastic/isomer-sdk', '@elastic/isomer-sdk/*'],
+    message:
+      'Internal source files should import sibling internals with relative paths instead of self-importing package entries.',
+  },
+];
+
+// Matches `../render`, `../../render/slack/format`, and any deeper nesting.
+// An enumerated `../`/`../../` list silently stops guarding one directory down.
+const sdkStageRegex = (name) => `^(\\.\\./)+${name}(/|$)`;
+
+const sdkStageBoundary = (stage, forbidden, extraPatterns = []) => ({
+  files: [`packages/isomer-sdk/src/${stage}/**/*.{ts,tsx}`],
+  ignores: [
+    'packages/isomer-sdk/src/**/*.test.ts',
+    'packages/isomer-sdk/src/**/*.fixtures.ts',
+  ],
+  rules: {
+    'no-restricted-imports': [
+      'error',
+      {
+        patterns: [
+          ...sdkRuntimeImportPatterns,
+          ...forbidden.map((name) => ({
+            regex: sdkStageRegex(name),
+            message: `${stage}/ must not import ${name}/. Pipeline imports flow composition → define → pack → validate → render.`,
+          })),
+          ...extraPatterns,
+        ],
+      },
+    ],
+  },
+});
+
 export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
@@ -118,6 +158,92 @@ export default tseslint.config(
         'type-export',
         'value-export'
       ),
+    },
+  },
+  {
+    files: ['packages/isomer-sdk/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: sdkRuntimeImportPatterns,
+        },
+      ],
+    },
+  },
+  sdkStageBoundary('composition', [
+    'define',
+    'pack',
+    'validate',
+    'render',
+    'author',
+    'testing',
+  ]),
+  sdkStageBoundary('define', [
+    'pack',
+    'validate',
+    'render',
+    'author',
+    'testing',
+  ]),
+  sdkStageBoundary(
+    'pack',
+    ['validate', 'render', 'author', 'testing'],
+    [
+      {
+        regex: 'define/slack_',
+        message:
+          'Slack payload types are reached through @elastic/isomer-sdk/slack.',
+      },
+    ]
+  ),
+  sdkStageBoundary(
+    'validate',
+    ['render', 'author', 'testing'],
+    [
+      {
+        regex: 'define/slack_',
+        message:
+          'Slack payload types are reached through @elastic/isomer-sdk/slack.',
+      },
+    ]
+  ),
+  sdkStageBoundary(
+    'render',
+    ['author', 'testing'],
+    [
+      {
+        regex: 'define/slack_',
+        message:
+          'Channel types enter render through render/slack, not define/slack_*.',
+      },
+    ]
+  ),
+  {
+    files: ['packages/isomer-sdk/src/render/slack/**/*.{ts,tsx}'],
+    ignores: [
+      'packages/isomer-sdk/src/**/*.test.ts',
+      'packages/isomer-sdk/src/**/*.fixtures.ts',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            ...sdkRuntimeImportPatterns,
+            {
+              regex: sdkStageRegex('author'),
+              message:
+                'render/ must not import author/. Pipeline imports flow composition → define → pack → validate → render.',
+            },
+            {
+              regex: sdkStageRegex('testing'),
+              message:
+                'render/ must not import testing/. Pipeline imports flow composition → define → pack → validate → render.',
+            },
+          ],
+        },
+      ],
     },
   },
   {

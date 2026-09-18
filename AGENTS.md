@@ -22,6 +22,10 @@ That is the complete local gate. If a check fails in a way that looks unrelated 
 - License headers are the Elastic License 2.0 block, enforced by ESLint (`license-header/header`). Use `pnpm lint:fix` rather than inserting them by hand. `.yml`/`.yaml` headers are hand-maintained.
 - Brands use `Symbol.for`, never bare `Symbol()`.
 - `IsomerError` is identified by `name` and `code`, never `instanceof`. `CompositionValidationError` is identified by `name`, `code`, and `errors`.
+- Stage barrels (`packages/isomer-sdk/src/<stage>/index.ts`) are hand-maintained. When you add or remove an export from a module, update the barrel in the same commit. TypeScript enforces correctness; keeping them alphabetically sorted keeps diffs readable.
+- `src/entries/*` are hand-curated on purpose: which names reach which subpath is what keeps `react-dom/server` off the root entry.
+- `zod` is a peer dependency. Do not add it to `dependencies`.
+- The sdk must not import the runtime.
 - No cross-package tsconfig `paths`. Internal resolution is `workspace:*` plus TypeScript project references. The one `paths` entry in the repo redirects an *external* package's subpath types for the CommonJS pass, whose `Node10` resolution cannot read an `exports` map; it is not a route between workspace packages.
 - Do not invent a bundler for the library build. `tsc` plus `tsc-alias` is the toolchain, with a second `tsc` pass for CommonJS.
 - After adding or changing a dependency, run `pnpm licenses:report` and include the updated `THIRD_PARTY_LICENSES.md` and `NOTICE.txt`.
