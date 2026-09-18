@@ -1,6 +1,7 @@
 {
   "files": [],
   "references": [
-    { "path": "packages/isomer-sdk/tsconfig.build.json" }
+    { "path": "packages/isomer-sdk/tsconfig.build.json" },
+    { "path": "packages/isomer-runtime/tsconfig.build.json" }
   ]
 }

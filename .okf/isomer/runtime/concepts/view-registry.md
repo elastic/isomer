@@ -1,0 +1,27 @@
+---
+type: Concept
+title: View registry
+description: Product-owned views, registered by id and requested by answers.
+resource: https://github.com/elastic/isomer/blob/main/packages/isomer-runtime/src/registry/view_registry.ts
+tags: [isomer, runtime, registry]
+status: stable
+stale_after: 2027-03-18
+generated: { by: cursor/grok-4.6, at: 2026-09-18T22:35:00Z }
+sources:
+  - id: registry
+    resource: https://github.com/elastic/isomer/blob/main/packages/isomer-runtime/src/registry/view_registry.ts
+    title: View registry
+  - id: docs
+    resource: https://github.com/elastic/isomer/blob/main/packages/isomer-runtime/docs/view-registry.md
+    title: View registry docs
+---
+
+# Definition
+
+`createViewRegistry` holds product-owned views. `defineView` / `registerView` publish one. A host requests a view by id; `RegisteredViewInputError` is identified like other Isomer errors, by `name` and `code`.[^registry][^docs]
+
+Related: [runtime](/runtime/concepts/runtime.md), [authoring context](/runtime/concepts/authoring-context.md).
+
+[^registry]: View registry
+
+[^docs]: View registry docs

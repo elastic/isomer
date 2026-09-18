@@ -7,14 +7,24 @@ description: Generated map of the Isomer OKF concept graph.
 
 Generated from `.okf/isomer` by `pnpm okf:map`. Do not edit by hand.
 
-- Concepts: 24
-- Links: 51
+- Concepts: 34
+- Links: 77
 - Isolated concepts: 0
 
 ## Graph
 
 ```mermaid
 flowchart LR
+    runtime_concepts_authoring_context["Authoring context"]:::concept
+    runtime_concepts_frame["Frame"]:::concept
+    runtime_concepts_packs["Pack composition"]:::concept
+    runtime_concepts_runtime["Runtime"]:::concept
+    runtime_concepts_style_adapters["Style adapters"]:::concept
+    runtime_concepts_surfaces["Surfaces"]:::concept
+    runtime_concepts_view_registry["View registry"]:::concept
+    runtime_entry_points_root["Root"]:::entrypoint
+    runtime_playbooks_create_a_runtime["Create a runtime"]:::playbook
+    runtime_reference_public_contract["Public contract"]:::reference
     sdk_concepts_authoring["Authoring"]:::concept
     sdk_concepts_composition["Composition"]:::concept
     sdk_concepts_dispatch["Dispatch"]:::concept
@@ -39,6 +49,28 @@ flowchart LR
     workspace_playbooks_maintain_okf["Maintain OKF"]:::playbook
     workspace_playbooks_verify["Verify"]:::playbook
     workspace_reference_conventions["Conventions"]:::reference
+    runtime_concepts_authoring_context --> runtime_concepts_view_registry
+    runtime_concepts_authoring_context --> sdk_concepts_authoring
+    runtime_concepts_frame --> runtime_concepts_runtime
+    runtime_concepts_frame --> runtime_concepts_surfaces
+    runtime_concepts_packs --> runtime_concepts_style_adapters
+    runtime_concepts_packs --> sdk_concepts_packs
+    runtime_concepts_runtime --> runtime_concepts_packs
+    runtime_concepts_runtime --> runtime_concepts_surfaces
+    runtime_concepts_runtime --> runtime_playbooks_create_a_runtime
+    runtime_concepts_style_adapters --> runtime_concepts_packs
+    runtime_concepts_style_adapters --> sdk_concepts_rendering
+    runtime_concepts_surfaces --> runtime_concepts_frame
+    runtime_concepts_surfaces --> runtime_concepts_runtime
+    runtime_concepts_view_registry --> runtime_concepts_authoring_context
+    runtime_concepts_view_registry --> runtime_concepts_runtime
+    runtime_entry_points_root --> runtime_concepts_runtime
+    runtime_entry_points_root --> runtime_reference_public_contract
+    runtime_playbooks_create_a_runtime --> runtime_concepts_runtime
+    runtime_playbooks_create_a_runtime --> sdk_playbooks_define_a_pack
+    runtime_reference_public_contract --> runtime_entry_points_root
+    runtime_reference_public_contract --> sdk_reference_public_contract
+    sdk_concepts_authoring --> runtime_concepts_authoring_context
     sdk_concepts_authoring --> sdk_concepts_primitives
     sdk_concepts_authoring --> sdk_entry_points_author
     sdk_concepts_composition --> sdk_concepts_dispatch
@@ -47,6 +79,7 @@ flowchart LR
     sdk_concepts_dispatch --> sdk_concepts_composition
     sdk_concepts_dispatch --> sdk_concepts_primitives
     sdk_concepts_dispatch --> sdk_concepts_rendering
+    sdk_concepts_packs --> runtime_concepts_packs
     sdk_concepts_packs --> sdk_concepts_primitives
     sdk_concepts_packs --> sdk_playbooks_define_a_pack
     sdk_concepts_pipeline --> sdk_entry_points_root
@@ -54,11 +87,13 @@ flowchart LR
     sdk_concepts_primitives --> sdk_concepts_packs
     sdk_concepts_primitives --> sdk_concepts_rendering
     sdk_concepts_primitives --> sdk_playbooks_define_a_primitive
+    sdk_concepts_rendering --> runtime_concepts_style_adapters
     sdk_concepts_rendering --> sdk_concepts_dispatch
     sdk_concepts_rendering --> sdk_concepts_packs
     sdk_concepts_rendering --> sdk_concepts_url_trust
     sdk_concepts_url_trust --> sdk_concepts_composition
     sdk_concepts_url_trust --> sdk_concepts_rendering
+    sdk_entry_points_author --> runtime_concepts_authoring_context
     sdk_entry_points_author --> sdk_concepts_authoring
     sdk_entry_points_html --> sdk_concepts_rendering
     sdk_entry_points_html --> sdk_entry_points_root
@@ -74,6 +109,7 @@ flowchart LR
     sdk_entry_points_testing --> sdk_concepts_pipeline
     sdk_entry_points_testing --> sdk_entry_points_root
     sdk_entry_points_text --> sdk_concepts_rendering
+    sdk_playbooks_define_a_pack --> runtime_concepts_packs
     sdk_playbooks_define_a_pack --> sdk_concepts_packs
     sdk_playbooks_define_a_primitive --> sdk_concepts_primitives
     sdk_playbooks_define_a_primitive --> sdk_playbooks_define_a_pack
@@ -98,6 +134,16 @@ flowchart LR
 
 ## Concepts
 
+- Authoring context (Concept): `runtime/concepts/authoring-context`
+- Frame (Concept): `runtime/concepts/frame`
+- Pack composition (Concept): `runtime/concepts/packs`
+- Runtime (Concept): `runtime/concepts/runtime`
+- Style adapters (Concept): `runtime/concepts/style-adapters`
+- Surfaces (Concept): `runtime/concepts/surfaces`
+- View registry (Concept): `runtime/concepts/view-registry`
+- Root (Entry Point): `runtime/entry-points/root`
+- Create a runtime (Playbook): `runtime/playbooks/create-a-runtime`
+- Public contract (Reference): `runtime/reference/public-contract`
 - Authoring (Concept): `sdk/concepts/authoring`
 - Composition (Concept): `sdk/concepts/composition`
 - Dispatch (Concept): `sdk/concepts/dispatch`

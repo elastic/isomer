@@ -247,6 +247,24 @@ export default tseslint.config(
     },
   },
   {
+    files: ['packages/isomer-runtime/src/**/*.ts'],
+    ignores: ['packages/isomer-runtime/src/**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@elastic/isomer-runtime', '@elastic/isomer-runtime/*'],
+              message:
+                'Internal source files should import sibling internals with relative paths instead of self-importing package entries.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: [
       'packages/**/*.{ts,tsx}',
       'scripts/**/*.{js,cjs}',

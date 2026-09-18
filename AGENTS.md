@@ -4,6 +4,8 @@ Canonical, tool-agnostic instructions for any coding agent working in this repos
 
 Isomer turns one typed `Composition` into React, HTML, SVG, PNG, Slack Block Kit, Markdown, and plain text. It owns the composition contract, primitive catalog, validation, and rendering; hosts own data, authorization, routing, and side effects.
 
+The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, and `surfaces/`. Stage barrels there are hand-maintained the same way as the SDK's.
+
 ## Where work happens
 
 This repository is the source of truth for Isomer. Earlier prototypes and host-side integrations are references, not destinations: when they disagree with the code and docs here, this repository wins.
