@@ -51,6 +51,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@eslint/js` | 9.39.5 | MIT | `node_modules/.pnpm/@eslint+js@9.39.5/node_modules/@eslint/js` |
 | `@eslint/object-schema` | 2.1.7 | Apache-2.0 | `node_modules/.pnpm/@eslint+object-schema@2.1.7/node_modules/@eslint/object-schema` |
 | `@eslint/plugin-kit` | 0.4.1 | Apache-2.0 | `node_modules/.pnpm/@eslint+plugin-kit@0.4.1/node_modules/@eslint/plugin-kit` |
+| `@fontsource/inter` | 5.3.0 | OFL-1.1 | `node_modules/.pnpm/@fontsource+inter@5.3.0/node_modules/@fontsource/inter` |
 | `@gar/promise-retry` | 1.0.3 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/@gar/promise-retry` |
 | `@humanfs/core` | 0.19.2 | Apache-2.0 | `node_modules/.pnpm/@humanfs+core@0.19.2/node_modules/@humanfs/core` |
 | `@humanfs/node` | 0.16.8 | Apache-2.0 | `node_modules/.pnpm/@humanfs+node@0.16.8/node_modules/@humanfs/node` |
@@ -118,6 +119,9 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@sindresorhus/is` | 4.6.0 | MIT | `node_modules/.pnpm/@sindresorhus+is@4.6.0/node_modules/@sindresorhus/is` |
 | `@sindresorhus/merge-streams` | 4.0.0 | MIT | `node_modules/.pnpm/@sindresorhus+merge-streams@4.0.0/node_modules/@sindresorhus/merge-streams` |
 | `@standard-schema/spec` | 1.1.0 | MIT | `node_modules/.pnpm/@standard-schema+spec@1.1.0/node_modules/@standard-schema/spec` |
+| `@takumi-rs/core` | 2.14.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+core@2.14.0_csstype@3.2.3_react@18.3.1/node_modules/@takumi-rs/core` |
+| `@takumi-rs/core-darwin-arm64` [^unaudited] | 2.14.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+core-darwin-arm64@2.14.0/node_modules/@takumi-rs/core-darwin-arm64` |
+| `@takumi-rs/helpers` | 2.14.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+helpers@2.14.0_react@18.3.1/node_modules/@takumi-rs/helpers` |
 | `@tufjs/canonical-json` | 2.0.0 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/@tufjs/canonical-json` |
 | `@tufjs/models` | 4.1.0 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/@tufjs/models` |
 | `@types/chai` | 5.2.3 | MIT | `node_modules/.pnpm/@types+chai@5.2.3/node_modules/@types/chai` |

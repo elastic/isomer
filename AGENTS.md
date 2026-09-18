@@ -6,6 +6,8 @@ Isomer turns one typed `Composition` into React, HTML, SVG, PNG, Slack Block Kit
 
 The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, and `surfaces/`. Stage barrels there are hand-maintained the same way as the SDK's.
 
+`packages/isomer-image-takumi` rasterizes the `svg` surface's output to PNG or SVG. It depends on no isomer package — it declares the surface's result shape structurally.
+
 ## Where work happens
 
 This repository is the source of truth for Isomer. Earlier prototypes and host-side integrations are references, not destinations: when they disagree with the code and docs here, this repository wins.

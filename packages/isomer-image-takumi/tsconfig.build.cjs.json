@@ -1,0 +1,25 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "rootDir": "src",
+    "outDir": "dist/cjs",
+    "module": "CommonJS",
+    "moduleResolution": "Node10",
+    "declaration": false,
+    "declarationMap": false,
+    "inlineSources": true,
+    // `Node10` resolution cannot read an `exports` map, and `fromHtml` is only
+    // reachable through one. Types only: the emitted `require` keeps the
+    // package specifier, which Node resolves to `dist/html.cjs` itself.
+    "paths": {
+      "@takumi-rs/helpers/html": [
+        "./node_modules/@takumi-rs/helpers/dist/html.d.cts"
+      ]
+    }
+  },
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.fixtures.ts"
+  ]
+}
