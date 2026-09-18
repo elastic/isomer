@@ -1,0 +1,23 @@
+.DS_Store
+node_modules/
+dist/
+coverage/
+.vite/
+*.log
+.env
+.env.*
+!.env.example
+.eslintcache
+.pnpm-store
+.artifacts
+*.tsbuildinfo
+
+# docs-builder copies of package docs (created by pnpm docs:assemble)
+/docs/*/
+!/docs/reference/
+
+# IDE
+.idea
+.vscode
+.cursor
+.claude/settings.local.json

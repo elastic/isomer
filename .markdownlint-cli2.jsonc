@@ -1,0 +1,13 @@
+{
+  "gitignore": true,
+  "globs": [
+    "**/*.md"
+  ],
+  "ignores": [
+    ".cursor/**",
+    ".github/**",
+    ".okf/**",
+    "**/THIRD_PARTY_LICENSES.md",
+    "**/src/examples/**/output/**",
+  ],
+}

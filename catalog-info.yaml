@@ -1,0 +1,22 @@
+# Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+# or more contributor license agreements. Licensed under the Elastic License
+# 2.0; you may not use this file except in compliance with the Elastic License
+# 2.0.
+
+# yaml-language-server: $schema=https://json.schemastore.org/catalog-info.json
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: isomer
+  description: Portable UI runtime that turns one typed Composition into React, HTML, SVG, PNG, Slack Block Kit, Markdown, and plain text
+  links:
+    - url: https://github.com/elastic/isomer
+      title: GitHub repository
+  tags:
+    - isomer
+    - typescript
+    - ui
+spec:
+  type: library
+  owner: group:eui-team
+  lifecycle: experimental

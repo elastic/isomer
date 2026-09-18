@@ -1,0 +1,85 @@
+{
+  "name": "isomer-workspace",
+  "version": "0.0.0-development",
+  "private": true,
+  "description": "Isomer: a portable UI runtime that turns one typed Composition into React, HTML, SVG, PNG, Slack Block Kit, Markdown, and plain text.",
+  "license": "Elastic-2.0",
+  "author": "Elastic",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elastic/isomer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/elastic/isomer/issues"
+  },
+  "type": "module",
+  "packageManager": "pnpm@10.30.2",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "preinstall": "npx only-allow pnpm",
+    "build": "pnpm build:clean && pnpm build:esm && pnpm build:specifiers && pnpm build:cjs && pnpm build:cjs-manifest",
+    "build:clean": "rm -rf packages/*/dist packages/*/tsconfig.build.tsbuildinfo",
+    "build:esm": "tsc --build tsconfig.workspace.json",
+    "build:specifiers": "node scripts/rewrite_specifiers.js",
+    "build:cjs": "node scripts/build_cjs.js",
+    "build:cjs-manifest": "node scripts/write_cjs_manifest.js",
+    "typecheck": "tsc --build tsconfig.workspace.json --pretty && pnpm -r typecheck && tsc -p tsconfig.json --noEmit",
+    "lint": "pnpm lint:es && pnpm lint:md",
+    "lint:es": "eslint .",
+    "lint:fix": "pnpm lint:es --fix",
+    "lint:md": "markdownlint-cli2",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "check:exports": "node scripts/check_exports.js",
+    "check:declarations": "node scripts/check_declarations.js",
+    "check:export-parity": "node scripts/check_export_parity.js",
+    "check:pack-consumer": "node scripts/check_pack_consumer.js",
+    "check:module-graph": "node scripts/check_module_graph.js",
+    "check:pack-contents": "node scripts/check_pack_contents.js",
+    "licenses:report": "node scripts/licenses_report.js",
+    "docs:assemble": "node scripts/assemble_package_docs.js",
+    "docs:build": "pnpm docs:assemble && docs-builder",
+    "docs:dev": "node scripts/docs_dev.js",
+    "okf:check": "okf validate .okf/isomer && node scripts/check_okf_anchors.js && node scripts/write_okf_map.js --check",
+    "okf:index": "okf index .okf/isomer && pnpm okf:map",
+    "okf:map": "node scripts/write_okf_map.js",
+    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm check:export-parity && pnpm check:exports && pnpm check:declarations && pnpm check:pack-contents && pnpm check:module-graph && pnpm check:pack-consumer && pnpm licenses:report --check",
+    "semantic-release": "node scripts/run_semantic_release.js",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@eslint/js": "^9.25.1",
+    "@types/node": "^22.15.3",
+    "@types/react": "^18.2.14",
+    "@types/react-dom": "^18.2.6",
+    "@vitest/coverage-v8": "^4.1.11",
+    "eslint": "^9.25.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-license-header": "^0.9.0",
+    "eslint-plugin-perfectionist": "^5.11.0",
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-simple-import-sort": "^14.0.0",
+    "globals": "^17.12.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
+    "markdownlint-cli2": "^0.23.2",
+    "prettier": "^3.5.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "semantic-release": "^25.0.9",
+    "tsc-alias": "^1.8.16",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.31.0",
+    "vitest": "^4.1.11",
+    "zod": "^4.4.1"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}

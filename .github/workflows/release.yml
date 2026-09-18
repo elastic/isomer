@@ -1,0 +1,47 @@
+# Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+# or more contributor license agreements. Licensed under the Elastic License
+# 2.0; you may not use this file except in compliance with the Elastic License
+# 2.0.
+
+name: Publish a Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Dry run (do not publish)
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v6.0.6
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm verify
+      # pnpm 10 delegates `pnpm publish` to the ambient npm CLI. Trusted publishing needs npm >= 11.5.1; Node 22 ships 10.
+      - run: npm install -g npm@^11.5.1
+      # Nothing is committed back to main: git tags track the version and the notes live on the
+      # GitHub Release. See CHANGELOG.md.
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm semantic-release ${{ inputs.dry_run && '--dry-run' || '' }}
