@@ -1,0 +1,39 @@
+[
+  {
+    "type": "header",
+    "text": {
+      "type": "plain_text",
+      "text": "Code block",
+      "emoji": true
+    },
+    "level": 1
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "*04 · Contract*\n\n*The composition contract.*\n\n*Composition*"
+    }
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": " "
+    }
+  },
+  {
+    "type": "rich_text",
+    "elements": [
+      {
+        "type": "rich_text_preformatted",
+        "elements": [
+          {
+            "type": "text",
+            "text": "const spec: Composition = {\n  type: \"view\",\n  title: \"My view\",\n  body: [node],\n};"
+          }
+        ]
+      }
+    ]
+  }
+]

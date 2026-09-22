@@ -6,7 +6,13 @@ Isomer turns one typed `Composition` into React, HTML, SVG, PNG, Slack Block Kit
 
 The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, and `surfaces/`. Stage barrels there are hand-maintained the same way as the SDK's.
 
+`packages/isomer-primitives-slides` is the in-repo reference pack. Its `src/registry.ts` and `src/body_node.ts` are hand-maintained the same way, and `src/registry.test.ts` fails when they drift. Its docs live in `packages/isomer-primitives-slides/docs/`. Primitive packs for Kibana iterate in that repo.
+
 `packages/isomer-image-takumi` rasterizes the `svg` surface's output to PNG or SVG. It depends on no isomer package — it declares the surface's result shape structurally.
+
+## Release posture
+
+The release units are `@elastic/isomer-sdk` and `@elastic/isomer-runtime`. `@elastic/isomer-primitives-slides` and `@elastic/isomer-image-takumi` are `private: true` because they are not release units: slides is the in-repo reference pack, takumi is a host-side rasterizer. That is settled. Do not raise publication, registry access, or dependency licensing as a constraint when planning work in this repository.
 
 ## Where work happens
 
@@ -37,3 +43,6 @@ That is the complete local gate. If a check fails in a way that looks unrelated 
 - When public API, docs, examples, or behavior change, update `.okf/isomer`, run `pnpm okf:check` and `pnpm okf:index`, and record meaningful changes in `.okf/isomer/log.md`.
 - `.okf/**` is excluded from markdown and Prettier formatting because `okf index` owns generated index formatting.
 - Keep comments short. Do not narrate decisions that git history already records.
+- A pack holds no rendered value of its own: every number, length, ratio, and glyph it draws has one authoring source in its theme ([Before you add a value](packages/isomer-primitives-slides/docs/primitives.md#before-you-add-a-value-one-source-per-rendered-value)).
+- There is no per-primitive `svg` renderer. The image surface dispatches to `react` and is handed the pack's stylesheet; do not reintroduce a second tree authored for image layout.
+- The pack stylesheet does not reach inside an inline `<svg>`. Anything drawn there needs a literal `fill` / `stroke` alongside its class ([Drawing inside an `svg`](packages/isomer-primitives-slides/docs/primitives.md#drawing-inside-an-svg)).

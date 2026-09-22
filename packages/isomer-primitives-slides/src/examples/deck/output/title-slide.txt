@@ -1,0 +1,7 @@
+TITLE SLIDE
+
+01 · Primitives
+
+Reference pack
+One composition, every surface.
+The same spec renders as HTML, markdown, text, Slack, and SVG.

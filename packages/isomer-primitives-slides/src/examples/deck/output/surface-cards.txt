@@ -1,0 +1,30 @@
+SURFACE CARDS
+
+03 · Surfaces
+
+Six render targets.
+React, HTML, SVG, Slack, Markdown, and plain text.
+
+01
+React
+Component tree; hosts mount it.
+
+02
+HTML
+Self-contained envelope with stylesheet.
+
+03
+SVG
+The same tree and stylesheet, handed to a rasterizer.
+
+04
+Slack
+Block Kit blocks with fallback text.
+
+05
+Markdown
+GitHub-flavored, readable in terminals.
+
+06
+Text
+80-column output for logging and alerts.

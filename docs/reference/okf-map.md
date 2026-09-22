@@ -7,8 +7,8 @@ description: Generated map of the Isomer OKF concept graph.
 
 Generated from `.okf/isomer` by `pnpm okf:map`. Do not edit by hand.
 
-- Concepts: 40
-- Links: 90
+- Concepts: 49
+- Links: 112
 - Isolated concepts: 0
 
 ## Graph
@@ -50,12 +50,22 @@ flowchart LR
     sdk_playbooks_define_a_pack["Define a pack"]:::playbook
     sdk_playbooks_define_a_primitive["Define a primitive"]:::playbook
     sdk_reference_public_contract["Public contract"]:::reference
+    slides_concepts_distillate["Distillate"]:::concept
+    slides_concepts_document["Document"]:::concept
+    slides_concepts_no_svg_renderer["No svg renderer"]:::concept
+    slides_concepts_one_source["One source per rendered value"]:::concept
+    slides_concepts_pack["Pack"]:::concept
+    slides_concepts_theme["Theme"]:::concept
+    slides_entry_points_root["Root"]:::entrypoint
+    slides_playbooks_author_a_primitive["Author a primitive"]:::playbook
+    slides_reference_public_contract["Public contract"]:::reference
     workspace_concepts_workspace["Workspace"]:::concept
     workspace_playbooks_docs_builder["Docs-builder"]:::playbook
     workspace_playbooks_maintain_okf["Maintain OKF"]:::playbook
     workspace_playbooks_verify["Verify"]:::playbook
     workspace_reference_conventions["Conventions"]:::reference
     image_takumi_concepts_determinism --> image_takumi_concepts_raster
+    image_takumi_concepts_determinism --> slides_concepts_pack
     image_takumi_concepts_fonts --> image_takumi_concepts_determinism
     image_takumi_concepts_fonts --> image_takumi_concepts_raster
     image_takumi_concepts_raster --> image_takumi_concepts_fonts
@@ -71,6 +81,7 @@ flowchart LR
     runtime_concepts_authoring_context --> sdk_concepts_authoring
     runtime_concepts_frame --> runtime_concepts_runtime
     runtime_concepts_frame --> runtime_concepts_surfaces
+    runtime_concepts_frame --> slides_concepts_document
     runtime_concepts_packs --> runtime_concepts_style_adapters
     runtime_concepts_packs --> sdk_concepts_packs
     runtime_concepts_runtime --> runtime_concepts_packs
@@ -119,6 +130,7 @@ flowchart LR
     sdk_entry_points_markdown --> sdk_concepts_rendering
     sdk_entry_points_markdown --> sdk_entry_points_slack
     sdk_entry_points_react --> sdk_concepts_rendering
+    sdk_entry_points_react --> slides_concepts_no_svg_renderer
     sdk_entry_points_root --> sdk_concepts_pipeline
     sdk_entry_points_root --> sdk_entry_points_author
     sdk_entry_points_root --> sdk_entry_points_html
@@ -134,6 +146,25 @@ flowchart LR
     sdk_playbooks_define_a_primitive --> sdk_playbooks_define_a_pack
     sdk_reference_public_contract --> sdk_concepts_pipeline
     sdk_reference_public_contract --> sdk_entry_points_root
+    slides_concepts_distillate --> runtime_concepts_style_adapters
+    slides_concepts_distillate --> slides_concepts_pack
+    slides_concepts_document --> runtime_concepts_frame
+    slides_concepts_document --> slides_concepts_pack
+    slides_concepts_no_svg_renderer --> image_takumi_concepts_raster
+    slides_concepts_no_svg_renderer --> runtime_concepts_surfaces
+    slides_concepts_one_source --> slides_concepts_theme
+    slides_concepts_one_source --> workspace_reference_conventions
+    slides_concepts_pack --> slides_concepts_document
+    slides_concepts_pack --> slides_concepts_one_source
+    slides_concepts_pack --> slides_concepts_theme
+    slides_concepts_theme --> slides_concepts_distillate
+    slides_concepts_theme --> slides_concepts_one_source
+    slides_entry_points_root --> slides_concepts_pack
+    slides_entry_points_root --> slides_reference_public_contract
+    slides_playbooks_author_a_primitive --> slides_concepts_no_svg_renderer
+    slides_playbooks_author_a_primitive --> slides_concepts_one_source
+    slides_reference_public_contract --> slides_concepts_distillate
+    slides_reference_public_contract --> slides_concepts_pack
     workspace_concepts_workspace --> workspace_playbooks_docs_builder
     workspace_concepts_workspace --> workspace_playbooks_verify
     workspace_concepts_workspace --> workspace_reference_conventions
@@ -188,6 +219,15 @@ flowchart LR
 - Define a pack (Playbook): `sdk/playbooks/define-a-pack`
 - Define a primitive (Playbook): `sdk/playbooks/define-a-primitive`
 - Public contract (Reference): `sdk/reference/public-contract`
+- Distillate (Concept): `slides/concepts/distillate`
+- Document (Concept): `slides/concepts/document`
+- No svg renderer (Concept): `slides/concepts/no-svg-renderer`
+- One source per rendered value (Concept): `slides/concepts/one-source`
+- Pack (Concept): `slides/concepts/pack`
+- Theme (Concept): `slides/concepts/theme`
+- Root (Entry Point): `slides/entry-points/root`
+- Author a primitive (Playbook): `slides/playbooks/author-a-primitive`
+- Public contract (Reference): `slides/reference/public-contract`
 - Workspace (Concept): `workspace/concepts/workspace`
 - Docs-builder (Playbook): `workspace/playbooks/docs-builder`
 - Maintain OKF (Playbook): `workspace/playbooks/maintain-okf`

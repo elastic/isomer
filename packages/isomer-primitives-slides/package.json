@@ -1,0 +1,51 @@
+{
+  "name": "@elastic/isomer-primitives-slides",
+  "version": "0.0.0-development",
+  "description": "Slide-deck primitive pack for Isomer: the in-repo reference pack.",
+  "license": "Elastic-2.0",
+  "author": "Elastic",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elastic/isomer.git",
+    "directory": "packages/isomer-primitives-slides"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/cjs/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "NOTICE.txt",
+    "THIRD_PARTY_LICENSES.md",
+    "LICENSE.txt"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@elastic/distillate": "^0.1.0",
+    "@elastic/isomer-sdk": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18 <20",
+    "react-dom": ">=18 <20",
+    "zod": "^4.4.1"
+  },
+  "devDependencies": {
+    "@elastic/isomer-image-takumi": "workspace:*",
+    "@elastic/isomer-runtime": "workspace:*",
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/roboto-mono": "^5.3.0",
+    "@types/react": "^18.2.14",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

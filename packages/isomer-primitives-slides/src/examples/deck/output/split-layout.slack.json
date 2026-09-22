@@ -1,0 +1,18 @@
+[
+  {
+    "type": "header",
+    "text": {
+      "type": "plain_text",
+      "text": "Split layout",
+      "emoji": true
+    },
+    "level": 1
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "*02 · Grammar*\n\n*Primitive pack*\n\nVocabulary, renderers, and validation in one value.\n\n*What a pack declares*\n\n- Primitives\n- Surfaces\n- Theme bound"
+    }
+  }
+]

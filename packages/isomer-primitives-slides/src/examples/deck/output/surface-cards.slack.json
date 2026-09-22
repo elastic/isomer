@@ -1,0 +1,18 @@
+[
+  {
+    "type": "header",
+    "text": {
+      "type": "plain_text",
+      "text": "Surface cards",
+      "emoji": true
+    },
+    "level": 1
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "*03 · Surfaces*\n\n*Six render targets.*\n\nReact, HTML, SVG, Slack, Markdown, and plain text.\n\n*React*\n\n_01_\n\nComponent tree; hosts mount it.\n\n*HTML*\n\n_02_\n\nSelf-contained envelope with stylesheet.\n\n*SVG*\n\n_03_\n\nThe same tree and stylesheet, handed to a rasterizer.\n\n*Slack*\n\n_04_\n\nBlock Kit blocks with fallback text.\n\n*Markdown*\n\n_05_\n\nGitHub-flavored, readable in terminals.\n\n*Text*\n\n_06_\n\n80-column output for logging and alerts."
+    }
+  }
+]

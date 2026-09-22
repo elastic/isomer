@@ -1,0 +1,11 @@
+FLOW DIAGRAM
+
+05 · Dispatch
+
+How a composition renders.
+
+Render pipeline
+Composition -> Runtime -> Dispatcher -> Primitive -> Surface
+
+Host: Supplies composition, owns data and routing.
+Isomer: Owns dispatch, validation, and rendering.

@@ -1,0 +1,13 @@
+# Split layout
+
+## 02 · Grammar
+
+## Primitive pack
+
+Vocabulary, renderers, and validation in one value.
+
+### What a pack declares
+
+- Primitives
+- Surfaces
+- Theme bound

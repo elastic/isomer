@@ -1,0 +1,18 @@
+[
+  {
+    "type": "header",
+    "text": {
+      "type": "plain_text",
+      "text": "Flow diagram",
+      "emoji": true
+    },
+    "level": 1
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "*05 · Dispatch*\n\n*How a composition renders.*\n\n*Render pipeline*\n\nComposition -&gt; Runtime -&gt; Dispatcher -&gt; Primitive -&gt; Surface\n\n*Host*\n\nSupplies composition, owns data and routing.\n\n*Isomer*\n\nOwns dispatch, validation, and rendering."
+    }
+  }
+]

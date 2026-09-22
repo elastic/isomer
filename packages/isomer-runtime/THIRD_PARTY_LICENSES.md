@@ -42,6 +42,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@commitlint/to-lines` | 19.8.1 | MIT | `node_modules/.pnpm/@commitlint+to-lines@19.8.1/node_modules/@commitlint/to-lines` |
 | `@commitlint/top-level` | 19.8.1 | MIT | `node_modules/.pnpm/@commitlint+top-level@19.8.1/node_modules/@commitlint/top-level` |
 | `@commitlint/types` | 19.8.1 | MIT | `node_modules/.pnpm/@commitlint+types@19.8.1/node_modules/@commitlint/types` |
+| `@elastic/distillate` | 0.1.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+distillate@0.1.0/node_modules/@elastic/distillate` |
 | `@eslint-community/eslint-utils` | 4.10.1 | MIT | `node_modules/.pnpm/@eslint-community+eslint-utils@4.10.1_eslint@9.39.5_jiti@2.6.1_/node_modules/@eslint-community/eslint-utils` |
 | `@eslint-community/regexpp` | 4.12.2 | MIT | `node_modules/.pnpm/@eslint-community+regexpp@4.12.2/node_modules/@eslint-community/regexpp` |
 | `@eslint/config-array` | 0.21.2 | Apache-2.0 | `node_modules/.pnpm/@eslint+config-array@0.21.2/node_modules/@eslint/config-array` |
@@ -52,6 +53,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@eslint/object-schema` | 2.1.7 | Apache-2.0 | `node_modules/.pnpm/@eslint+object-schema@2.1.7/node_modules/@eslint/object-schema` |
 | `@eslint/plugin-kit` | 0.4.1 | Apache-2.0 | `node_modules/.pnpm/@eslint+plugin-kit@0.4.1/node_modules/@eslint/plugin-kit` |
 | `@fontsource/inter` | 5.3.0 | OFL-1.1 | `node_modules/.pnpm/@fontsource+inter@5.3.0/node_modules/@fontsource/inter` |
+| `@fontsource/roboto-mono` | 5.3.0 | OFL-1.1 | `node_modules/.pnpm/@fontsource+roboto-mono@5.3.0/node_modules/@fontsource/roboto-mono` |
 | `@gar/promise-retry` | 1.0.3 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/@gar/promise-retry` |
 | `@humanfs/core` | 0.19.2 | Apache-2.0 | `node_modules/.pnpm/@humanfs+core@0.19.2/node_modules/@humanfs/core` |
 | `@humanfs/node` | 0.16.8 | Apache-2.0 | `node_modules/.pnpm/@humanfs+node@0.16.8/node_modules/@humanfs/node` |
@@ -688,6 +690,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `strip-final-newline` | 4.0.0 | MIT | `node_modules/.pnpm/strip-final-newline@4.0.0/node_modules/strip-final-newline` |
 | `strip-json-comments` | 2.0.1 | MIT | `node_modules/.pnpm/strip-json-comments@2.0.1/node_modules/strip-json-comments` |
 | `strip-json-comments` | 3.1.1 | MIT | `node_modules/.pnpm/strip-json-comments@3.1.1/node_modules/strip-json-comments` |
+| `stylis` | 4.4.0 | MIT | `node_modules/.pnpm/stylis@4.4.0/node_modules/stylis` |
 | `super-regex` | 1.1.0 | MIT | `node_modules/.pnpm/super-regex@1.1.0/node_modules/super-regex` |
 | `supports-color` | 10.2.2 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/supports-color` |
 | `supports-color` | 5.5.0 | MIT | `node_modules/.pnpm/supports-color@5.5.0/node_modules/supports-color` |

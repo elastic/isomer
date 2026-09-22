@@ -53,6 +53,7 @@
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
     "@elastic/isomer-image-takumi": "workspace:*",
+    "@elastic/isomer-primitives-slides": "workspace:*",
     "@elastic/isomer-runtime": "workspace:*",
     "@elastic/isomer-sdk": "workspace:*",
     "@eslint/js": "^9.25.1",

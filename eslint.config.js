@@ -265,6 +265,31 @@ export default tseslint.config(
     },
   },
   {
+    // The slides pack layers theme/ -> render/ -> primitives/ -> src-level
+    // composition. Guarding only `primitives`/`registry` would miss the four
+    // composition roots at src/, each of which reaches them transitively.
+    files: [
+      'packages/isomer-primitives-slides/src/theme/**/*.{ts,tsx}',
+      'packages/isomer-primitives-slides/src/render/**/*.{ts,tsx}',
+    ],
+    ignores: ['packages/isomer-primitives-slides/src/**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex:
+                '^(\\.\\./)+(primitives|registry|body_node|dispatch|standalone|pack)(/|$)',
+              message:
+                'theme/ and render/ are upstream layers. Imports flow theme/ -> render/ -> primitives/ -> src-level composition, never back.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: [
       'packages/**/*.{ts,tsx}',
       'scripts/**/*.{js,cjs}',
