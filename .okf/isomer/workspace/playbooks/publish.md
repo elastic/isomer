@@ -5,7 +5,6 @@ description: OIDC trusted publishing. semantic-release publishes the SDK and the
 tags: [isomer, workspace, release]
 status: stable
 stale_after: 2027-03-21
-generated: { by: cursor/grok-4.7, at: 2026-09-22T00:50:00Z }
 sources:
   - id: workflow
     resource: https://github.com/elastic/isomer/blob/main/.github/workflows/release.yml

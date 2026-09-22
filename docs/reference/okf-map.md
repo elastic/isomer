@@ -7,14 +7,18 @@ description: Generated map of the Isomer OKF concept graph.
 
 Generated from `.okf/isomer` by `pnpm okf:map`. Do not edit by hand.
 
-- Concepts: 49
-- Links: 112
+- Concepts: 54
+- Links: 130
 - Isolated concepts: 0
 
 ## Graph
 
 ```mermaid
 flowchart LR
+    evals_concepts_scoring["Scoring"]:::concept
+    evals_entry_points_root["Root"]:::entrypoint
+    evals_playbooks_score_a_corpus["Score a corpus"]:::playbook
+    evals_reference_public_contract["Public contract"]:::reference
     image_takumi_concepts_determinism["Determinism"]:::concept
     image_takumi_concepts_fonts["Fonts"]:::concept
     image_takumi_concepts_raster["Raster"]:::concept
@@ -62,8 +66,20 @@ flowchart LR
     workspace_concepts_workspace["Workspace"]:::concept
     workspace_playbooks_docs_builder["Docs-builder"]:::playbook
     workspace_playbooks_maintain_okf["Maintain OKF"]:::playbook
+    workspace_playbooks_publish["Publish"]:::playbook
     workspace_playbooks_verify["Verify"]:::playbook
     workspace_reference_conventions["Conventions"]:::reference
+    evals_concepts_scoring --> evals_entry_points_root
+    evals_concepts_scoring --> evals_playbooks_score_a_corpus
+    evals_concepts_scoring --> evals_reference_public_contract
+    evals_concepts_scoring --> runtime_concepts_authoring_context
+    evals_concepts_scoring --> sdk_entry_points_testing
+    evals_entry_points_root --> evals_concepts_scoring
+    evals_entry_points_root --> evals_reference_public_contract
+    evals_playbooks_score_a_corpus --> evals_concepts_scoring
+    evals_playbooks_score_a_corpus --> runtime_concepts_authoring_context
+    evals_reference_public_contract --> evals_concepts_scoring
+    evals_reference_public_contract --> evals_entry_points_root
     image_takumi_concepts_determinism --> image_takumi_concepts_raster
     image_takumi_concepts_determinism --> slides_concepts_pack
     image_takumi_concepts_fonts --> image_takumi_concepts_determinism
@@ -77,8 +93,10 @@ flowchart LR
     image_takumi_playbooks_rasterize_svg --> image_takumi_concepts_raster
     image_takumi_reference_public_contract --> image_takumi_concepts_raster
     image_takumi_reference_public_contract --> image_takumi_entry_points_root
+    runtime_concepts_authoring_context --> evals_concepts_scoring
     runtime_concepts_authoring_context --> runtime_concepts_view_registry
     runtime_concepts_authoring_context --> sdk_concepts_authoring
+    runtime_concepts_authoring_context --> sdk_concepts_composition
     runtime_concepts_frame --> runtime_concepts_runtime
     runtime_concepts_frame --> runtime_concepts_surfaces
     runtime_concepts_frame --> slides_concepts_document
@@ -137,6 +155,7 @@ flowchart LR
     sdk_entry_points_root --> sdk_entry_points_testing
     sdk_entry_points_slack --> sdk_concepts_packs
     sdk_entry_points_slack --> sdk_concepts_rendering
+    sdk_entry_points_testing --> sdk_concepts_packs
     sdk_entry_points_testing --> sdk_concepts_pipeline
     sdk_entry_points_testing --> sdk_entry_points_root
     sdk_entry_points_text --> sdk_concepts_rendering
@@ -165,13 +184,17 @@ flowchart LR
     slides_playbooks_author_a_primitive --> slides_concepts_one_source
     slides_reference_public_contract --> slides_concepts_distillate
     slides_reference_public_contract --> slides_concepts_pack
+    workspace_concepts_workspace --> evals_concepts_scoring
     workspace_concepts_workspace --> workspace_playbooks_docs_builder
+    workspace_concepts_workspace --> workspace_playbooks_publish
     workspace_concepts_workspace --> workspace_playbooks_verify
     workspace_concepts_workspace --> workspace_reference_conventions
     workspace_playbooks_docs_builder --> workspace_concepts_workspace
     workspace_playbooks_docs_builder --> workspace_playbooks_maintain_okf
     workspace_playbooks_maintain_okf --> workspace_concepts_workspace
     workspace_playbooks_maintain_okf --> workspace_reference_conventions
+    workspace_playbooks_publish --> workspace_concepts_workspace
+    workspace_playbooks_publish --> workspace_playbooks_verify
     workspace_playbooks_verify --> workspace_concepts_workspace
     workspace_playbooks_verify --> workspace_playbooks_docs_builder
     workspace_reference_conventions --> workspace_playbooks_maintain_okf
@@ -184,6 +207,10 @@ flowchart LR
 
 ## Concepts
 
+- Scoring (Concept): `evals/concepts/scoring`
+- Root (Entry Point): `evals/entry-points/root`
+- Score a corpus (Playbook): `evals/playbooks/score-a-corpus`
+- Public contract (Reference): `evals/reference/public-contract`
 - Determinism (Concept): `image-takumi/concepts/determinism`
 - Fonts (Concept): `image-takumi/concepts/fonts`
 - Raster (Concept): `image-takumi/concepts/raster`
@@ -231,5 +258,6 @@ flowchart LR
 - Workspace (Concept): `workspace/concepts/workspace`
 - Docs-builder (Playbook): `workspace/playbooks/docs-builder`
 - Maintain OKF (Playbook): `workspace/playbooks/maintain-okf`
+- Publish (Playbook): `workspace/playbooks/publish`
 - Verify (Playbook): `workspace/playbooks/verify`
 - Conventions (Reference): `workspace/reference/conventions`

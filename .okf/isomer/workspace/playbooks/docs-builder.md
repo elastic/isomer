@@ -5,7 +5,6 @@ description: Package docs stay in packages/*/docs. Root docs/ is the assembler; 
 tags: [isomer, workspace, docs]
 status: stable
 stale_after: 2027-03-18
-generated: { by: cursor/grok-4.7, at: 2026-09-22T00:50:00Z }
 sources:
   - id: docset
     resource: https://github.com/elastic/isomer/blob/main/docs/docset.yml

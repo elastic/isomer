@@ -1,0 +1,43 @@
+{
+  "name": "@elastic/isomer-evals",
+  "version": "0.0.0-development",
+  "description": "Eval harness for Isomer primitive packs: scores whether a model produces valid, well-chosen Compositions from a pack's authoring context.",
+  "license": "Elastic-2.0",
+  "author": "Elastic",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elastic/isomer.git",
+    "directory": "packages/isomer-evals"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/cjs/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "NOTICE.txt",
+    "THIRD_PARTY_LICENSES.md",
+    "LICENSE.txt"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@elastic/isomer-sdk": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18 <20",
+    "zod": "^4.4.1"
+  },
+  "devDependencies": {
+    "@elastic/isomer-runtime": "workspace:*"
+  }
+}

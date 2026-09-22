@@ -8,6 +8,7 @@ Bundle root.
 
 ## Subdirectories
 
+- [evals/](evals/index.md)
 - [image-takumi/](image-takumi/index.md)
 - [runtime/](runtime/index.md)
 - [sdk/](sdk/index.md)

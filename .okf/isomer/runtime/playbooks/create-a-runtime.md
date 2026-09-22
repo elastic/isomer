@@ -5,7 +5,6 @@ description: Pass packs and an optional frame map to createIsomerRuntime.
 tags: [isomer, runtime, playbook]
 status: stable
 stale_after: 2027-03-18
-generated: { by: cursor/grok-4.7, at: 2026-09-22T00:50:00Z }
 sources:
   - id: docs
     resource: https://github.com/elastic/isomer/blob/main/packages/isomer-runtime/docs/quick-start.md

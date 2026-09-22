@@ -6,7 +6,6 @@ resource: https://github.com/elastic/isomer/blob/main/packages/isomer-primitives
 tags: [isomer, slides, api]
 status: stable
 stale_after: 2027-03-18
-generated: { by: cursor/grok-4.7, at: 2026-09-22T16:30:00Z }
 sources:
   - id: barrel
     resource: https://github.com/elastic/isomer/blob/main/packages/isomer-primitives-slides/src/index.ts

@@ -6,10 +6,9 @@ resource: https://github.com/elastic/isomer/blob/main/packages/isomer-sdk/src/co
 tags: [isomer, sdk, composition]
 status: stable
 stale_after: 2027-03-18
-generated: { by: cursor/grok-4.7, at: 2026-09-22T00:50:00Z }
 sources:
   - id: spec
-    resource: https://github.com/elastic/isomer/blob/main/packages/isomer-sdk/docs/spec.md
+    resource: https://github.com/elastic/isomer/blob/main/packages/isomer-sdk/docs/composition.md
     title: Spec and validation
   - id: composition
     resource: https://github.com/elastic/isomer/blob/main/packages/isomer-sdk/src/composition
@@ -18,7 +17,7 @@ sources:
 
 # Definition
 
-A `Composition` is `{ type: 'view', version?: 1, title?, subtitle?, theme?, body: [BodyNode, ...], meta? }`. The wire discriminator stays `'view'`. TypeScript identifiers use `Composition`. Absent `version` means v1. The schema is `.strict()`. `body` must hold at least one node.[^spec]
+A `Composition` is `{ type: 'view', version?: 1, title?, subtitle?, theme?, body: [PrimitiveNode, ...], meta? }`. The wire discriminator stays `'view'`. TypeScript identifiers use `Composition`. Absent `version` means v1. The schema is `.strict()`. `body` must hold at least one node.[^spec]
 
 `resolveVocabulary(definitions)` builds the body-node union. Container members close over a `z.lazy` scoped to this composition so a shared instance cannot freeze on another pack's union. `getCompositionSchemaForDefinitions` memoizes on the identity of the definitions array.[^composition]
 

@@ -6,7 +6,6 @@ resource: https://github.com/elastic/isomer/blob/main/packages/isomer-sdk/src/en
 tags: [isomer, sdk, pipeline]
 status: stable
 stale_after: 2027-03-18
-generated: { by: cursor/grok-4.7, at: 2026-09-22T00:50:00Z }
 sources:
   - id: agents
     resource: https://github.com/elastic/isomer/blob/main/AGENTS.md

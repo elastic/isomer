@@ -7,8 +7,9 @@ project: 'Isomer'
 # Package pages live in packages/*/docs. `pnpm docs:assemble` copies them here for the builder.
 toc:
   - file: index.md
-  - toc: sdk
   - toc: runtime
-  - toc: image-takumi
+  - toc: sdk
   - toc: slides
+  - toc: image-takumi
+  - toc: evals
   - toc: reference

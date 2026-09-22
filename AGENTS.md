@@ -10,9 +10,11 @@ The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, a
 
 `packages/isomer-image-takumi` rasterizes the `svg` surface's output to PNG or SVG. It depends on no isomer package — it declares the surface's result shape structurally.
 
+`packages/isomer-evals` scores whether a model produces valid, well-chosen compositions from a pack's authoring context. It depends on the SDK's public API alone and runs with no credentials.
+
 ## Release posture
 
-The release units are `@elastic/isomer-sdk` and `@elastic/isomer-runtime`. `@elastic/isomer-primitives-slides` and `@elastic/isomer-image-takumi` are `private: true` because they are not release units: slides is the in-repo reference pack, takumi is a host-side rasterizer. That is settled. Do not raise publication, registry access, or dependency licensing as a constraint when planning work in this repository.
+Every package under `packages/` publishes, at one version, through the release workflow; none is `private`. `@elastic/isomer-sdk` and `@elastic/isomer-runtime` are what a host installs, slides is the reference pack, takumi is a host-side rasterizer, and evals is a harness a pack author runs against their own runtime. Do not raise publication, registry access, or dependency licensing as a constraint when planning work in this repository.
 
 ## Where work happens
 

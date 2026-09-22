@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "composite": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "tsconfig.build.tsbuildinfo",
+    "inlineSources": true
+  },
+  "exclude": ["**/*.test.ts", "**/*.fixtures.ts"],
+  "references": [
+    { "path": "../isomer-sdk/tsconfig.build.json" },
+    { "path": "../isomer-runtime/tsconfig.build.json" }
+  ],
+  "tsc-alias": {
+    "resolveFullPaths": true,
+    "resolveFullExtension": ".js"
+  }
+}
