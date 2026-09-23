@@ -53,7 +53,7 @@ One composition, every surface.
 The same spec renders as HTML, markdown, text, Slack, and SVG.
 ```
 
-Slack gets a `header` block and one `mrkdwn` section, and HTML gets a `section.isomer` with only the CSS the slide uses. Every output of every example is in the [reference pack's examples](packages/isomer-primitives-slides/docs/example.md).
+Slack gets a `header` block, a `context` block for the chapter, and one `mrkdwn` section, and HTML gets a `section.isomer` with only the CSS the slide uses. Every output of every example is in the [reference pack's examples](packages/isomer-primitives-slides/docs/example.md).
 
 ## Two ways a composition is made
 

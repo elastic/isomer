@@ -111,7 +111,7 @@ _Reference pack_
 The same spec renders as HTML, markdown, text, Slack, and SVG.
 ```
 
-Slack gives a `header` block and one `mrkdwn` section, through the Markdown fallback, because this pack writes no Slack renderer. HTML gives `<section class="isomer framed" role="group" aria-label="Title slide">…</section>` with a `<style>` holding only the rules this slide uses.
+Slack gives a `header` block, a `context` block for the chapter, and one `mrkdwn` section. The frame renders Slack child by child, and `slideTitle` has no Slack renderer, so the title arrives through the Markdown fallback. HTML gives `<section class="isomer framed" role="group" aria-label="Title slide">…</section>` with a `<style>` holding only the rules this slide uses.
 
 Each surface has one validation posture. `html` renders and reports findings on `validationErrors`, because a partial document is still worth showing. `text`, `markdown`, `slack`, and `svg` throw `CompositionValidationError` on an invalid composition by default, because a string, a message, or an image has nowhere to carry findings. `react` never validates. `onValidationError` flips any of them; see [Surfaces](surfaces.md).
 
