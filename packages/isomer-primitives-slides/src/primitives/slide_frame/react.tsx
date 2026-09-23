@@ -19,7 +19,7 @@ import { slideModules } from '../../theme/modules';
 import {
   ELASTIC_LOGO_PATHS,
   ELASTIC_LOGO_STROKE,
-  LOGO_TILES,
+  ISOMER_LOGO_PATHS,
 } from './logo_marks';
 import type { SlideFrameNode } from './types';
 
@@ -35,21 +35,12 @@ const LogoMark = ({
     <svg
       aria-hidden
       className={cls(context, logo.logo, small ? logo.logoSmall : undefined)}
-      viewBox="0 0 20 20"
+      fill="none"
+      viewBox="0 0 32 32"
       xmlns="http://www.w3.org/2000/svg">
-      {LOGO_TILES.map((tile, index) => {
-        const className = cls(context, logo[tile.handle]);
-        const { fill } = tile;
-        if (tile.shape === 'rect') {
-          return <rect key={index} {...{ className, fill }} {...tile.props} />;
-        }
-        if (tile.shape === 'circle') {
-          return (
-            <circle key={index} {...{ className, fill }} {...tile.props} />
-          );
-        }
-        return <polygon key={index} {...{ className, fill }} {...tile.props} />;
-      })}
+      {ISOMER_LOGO_PATHS.map(({ d, fill }, index) => (
+        <path key={index} {...{ d, fill }} />
+      ))}
     </svg>
   );
 };

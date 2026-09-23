@@ -44,4 +44,4 @@ jobs:
       - name: Assemble package docs
         run: node scripts/assemble_package_docs.js
       - name: Build documentation
-        uses: elastic/docs-builder@ff858942fc9015cdc618282aa41118823624e118 # 1.60.0
+        uses: elastic/docs-builder@main

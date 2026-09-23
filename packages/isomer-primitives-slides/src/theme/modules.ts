@@ -147,18 +147,6 @@ export const logoModule = createStyleModule('logo', ({ css }) => ({
     height: ${logo.markSmall};
     width: ${logo.markSmall};
   `,
-  tilePrimary: css`
-    fill: ${color.primary};
-  `,
-  tileSuccess: css`
-    fill: ${color.success};
-  `,
-  tileWarning: css`
-    fill: ${color.warning};
-  `,
-  tileDanger: css`
-    fill: ${color.danger};
-  `,
   elastic: css`
     display: block;
     flex: 0 0 auto;

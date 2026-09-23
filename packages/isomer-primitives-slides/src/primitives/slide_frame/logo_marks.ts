@@ -5,10 +5,6 @@
  * 2.0.
  */
 
-import { slidePaletteForMode } from '../../theme/palette';
-
-const brand = slidePaletteForMode('light');
-
 /** Brand-fixed Elastic mark paths. Fills are not palette-driven. */
 export const ELASTIC_LOGO_PATHS: ReadonlyArray<{ d: string; fill: string }> = [
   {
@@ -42,36 +38,38 @@ export const ELASTIC_LOGO_STROKE = {
   strokeWidth: '1.2',
 } as const;
 
-/** Four-shape logo tiles; each carries a handle and a literal `fill` (see "Drawing inside an `svg`" in `docs/primitives.md`). */
-export const LOGO_TILES = [
+/** Paths and fills from `docs/logo.svg`. Brand-fixed; the image surface cannot load the file. */
+export const ISOMER_LOGO_PATHS: ReadonlyArray<{ d: string; fill: string }> = [
   {
-    handle: 'tilePrimary',
-    fill: brand.primary,
-    props: { x: 0, y: 0, width: 9, height: 9, rx: 2, ry: 2 },
-    shape: 'rect',
+    d: 'M16 31C19.3137 31 22 28.3137 22 25C22 21.6863 19.3137 19 16 19C12.6863 19 10 21.6863 10 25C10 28.3137 12.6863 31 16 31Z',
+    fill: '#00BFB3',
   },
   {
-    handle: 'tileSuccess',
-    fill: brand.success,
-    props: { cx: 15.5, cy: 4.5, r: 4.5 },
-    shape: 'circle',
+    d: 'M16 19C19.3137 19 22 21.6863 22 25C20.3287 26.2553 18.2511 27 16 27C13.7486 27 11.6714 26.2555 10 25C10 21.6863 12.6863 19 16 19Z',
+    fill: '#FF957D',
   },
   {
-    handle: 'tileWarning',
-    fill: brand.warning,
-    props: { points: '0,20 9,20 4.5,11' },
-    shape: 'polygon',
+    d: 'M24 9C24 4.58172 20.4183 1 16 1C11.5817 1 8 4.58172 8 9C8 13.4183 11.5817 17 16 17C20.4183 17 24 13.4183 24 9Z',
+    fill: '#FEC514',
   },
   {
-    handle: 'tileDanger',
-    fill: brand.danger,
-    props: { points: '15.5,11 20,15.5 15.5,20 11,15.5' },
-    shape: 'polygon',
+    d: 'M16 7C19.1578 7 21.972 8.46505 23.8047 10.751C23.006 14.3267 19.8166 17 16 17C12.1834 17 8.99298 14.3268 8.19434 10.751C10.027 8.46477 12.842 7 16 7Z',
+    fill: '#1BA9F5',
   },
-] as const satisfies ReadonlyArray<{
-  handle: 'tilePrimary' | 'tileSuccess' | 'tileWarning' | 'tileDanger';
-  /** Light-scheme literal; the image has no stylesheet to vary it from. */
-  fill: string;
-  props: Record<string, number | string>;
-  shape: 'rect' | 'circle' | 'polygon';
-}>;
+  {
+    d: 'M6 24C8.76142 24 11 21.7614 11 19C11 16.2386 8.76142 14 6 14C3.23858 14 1 16.2386 1 19C1 21.7614 3.23858 24 6 24Z',
+    fill: '#F04E98',
+  },
+  {
+    d: 'M6.4502 14.0205C9.00066 14.2481 11 16.3903 11 19C11 20.9178 9.91966 22.5822 8.33496 23.4209C6.87813 21.6836 6 19.4446 6 17C6 15.9625 6.15693 14.9615 6.4502 14.0205Z',
+    fill: '#FF957D',
+  },
+  {
+    d: 'M26 24C28.7614 24 31 21.7614 31 19C31 16.2386 28.7614 14 26 14C23.2386 14 21 16.2386 21 19C21 21.7614 23.2386 24 26 24Z',
+    fill: '#F04E98',
+  },
+  {
+    d: 'M25.5488 14.0205C25.8422 14.9616 26 15.9624 26 17C26 19.4449 25.1211 21.6836 23.6641 23.4209C22.0798 22.582 21 20.9175 21 19C21 16.3907 22.9988 14.2486 25.5488 14.0205Z',
+    fill: '#FF957D',
+  },
+];

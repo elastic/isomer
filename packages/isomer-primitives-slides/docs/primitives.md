@@ -36,10 +36,10 @@ An image backend does not lay out SVG children as part of the document. It lifts
 So a shape inside an `<svg>` carries its own paint as a presentation attribute, beside the class it uses in the browser:
 
 ```tsx
-<rect className={cls(context, handles.tilePrimary)} fill={brand.primary} {...props} />
+<path d="…" fill="#00BFB3" />
 ```
 
-Both surfaces read the one they can. A presentation attribute carries no specificity, so any class rule beats it and HTML stays scheme-aware through the custom property; the image has only the attribute, so that is what it draws. `LOGO_TILES` in `src/primitives/slide_frame/logo_marks.ts` is the worked example, and its literals come from `slidePaletteForMode('light')` rather than being typed by hand, so the value still has one source.
+Both surfaces read the one they can. A presentation attribute carries no specificity, so any class rule beats it and HTML stays scheme-aware through the custom property; the image has only the attribute, so that is what it draws. The header mark inlines `docs/logo.svg` as `ISOMER_LOGO_PATHS`. Those fills are brand-fixed literals, the same way `ELASTIC_LOGO_PATHS` is, so the paths do not take a scheme class.
 
 Two traps worth naming:
 
