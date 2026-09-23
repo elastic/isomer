@@ -14,7 +14,8 @@
   --muted: light-dark(#5a6270, #8fa0b7);
   --accent: light-dark(#0b64dd, #63a7ff);
   --accent-soft: light-dark(#e3eefc, #102a4c);
-  --stage: light-dark(#dedbd2, #02060d);
+  --stage: light-dark(#ebeae3, #050f21);
+  --dot: light-dark(rgb(15 23 42 / 0.08), rgb(99 167 255 / 0.22));
   --mono: 'Roboto Mono', ui-monospace, monospace;
 }
 
@@ -175,10 +176,14 @@ button:disabled {
 }
 
 .stage {
-  background: var(--stage);
+  background:
+    radial-gradient(circle, var(--dot) 1px, transparent 1.5px) 0 0 / 20px 20px,
+    var(--stage);
+  border: 1px solid var(--line);
   border-radius: 8px;
   display: flex;
   flex: 1;
+  justify-content: center;
   min-height: 0;
   overflow: hidden;
 }
@@ -192,13 +197,26 @@ button:disabled {
   display: flex;
   flex: 1;
   justify-content: center;
+  min-height: 0;
   min-width: 0;
   overflow: hidden;
+  padding: 16px;
+}
+
+.stage:fullscreen .scaled {
+  padding: 32px;
+}
+
+.scaled-box {
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
+  flex: 0 0 auto;
+  overflow: hidden;
+  position: relative;
 }
 
 .scaled-canvas {
-  flex: 0 0 auto;
-  transform-origin: center;
+  transform-origin: top left;
 }
 
 .png {
@@ -208,15 +226,18 @@ button:disabled {
 }
 
 .source {
+  align-self: stretch;
   background: var(--panel);
-  flex: 1;
+  border: 1px solid var(--line);
+  border-radius: 6px;
   font-family: var(--mono);
   font-size: 13px;
   line-height: 1.55;
-  margin: 0;
+  margin: 16px;
   overflow: auto;
   padding: 20px 24px;
   white-space: pre-wrap;
+  width: min(100% - 32px, 960px);
 }
 
 .call {

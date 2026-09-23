@@ -48,7 +48,7 @@ const slackSummary = blocks
 
 export const proofSlide = toComposition(
   <Slide title="Proof">
-    <SlideFrame {...frame} chapter="Proof" chapterNumber="09">
+    <SlideFrame {...frame} chapter="Proof" chapterNumber="10">
       <SlideTitle
         title="Slide 03, three more ways."
         lede="Nothing here is a mock. The runtime rendered these when the deck was built."

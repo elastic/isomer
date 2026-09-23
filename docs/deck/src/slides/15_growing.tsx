@@ -18,7 +18,7 @@ import {
 
 export const growingSlide = toComposition(
   <Slide title="Growing a pack">
-    <SlideFrame {...frame} chapter="Growing a pack" chapterNumber="14">
+    <SlideFrame {...frame} chapter="Growing a pack" chapterNumber="15">
       <SlideTitle
         title="What it took to add four primitives."
         lede="Each one exercises a part of the contract the pack had not shown yet."

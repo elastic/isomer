@@ -8,36 +8,81 @@
 import { type ReactNode, useLayoutEffect, useRef, useState } from 'react';
 import { SLIDE_HEIGHT, SLIDE_WIDTH } from '@elastic/isomer-primitives-slides';
 
-/** Fits a fixed 1920×1080 canvas into whatever box it is given. */
-export const Scaled = ({ children }: { children: ReactNode }) => {
-  const box = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(0);
+const minScale = 0.1;
+
+const contentBox = (element: HTMLElement) => {
+  const { height, width } = element.getBoundingClientRect();
+  const style = window.getComputedStyle(element);
+  return {
+    height: Math.max(
+      0,
+      height - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)
+    ),
+    width: Math.max(
+      0,
+      width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+    ),
+  };
+};
+
+/**
+ * Fits the fixed slide canvas into the space it is given at its aspect ratio.
+ * The box takes the scaled size, so layout never sees the full canvas, and a
+ * slide only grows past its own size in fullscreen.
+ */
+export const Scaled = ({
+  children,
+  fullscreen,
+}: {
+  children: ReactNode;
+  fullscreen: boolean;
+}) => {
+  const stage = useRef<HTMLDivElement>(null);
+  const [available, setAvailable] = useState({ height: 0, width: 0 });
 
   useLayoutEffect(() => {
-    const element = box.current;
+    const element = stage.current;
     if (!element) {
       return undefined;
     }
-    const observer = new ResizeObserver(([entry]) => {
-      if (entry) {
-        const { width, height } = entry.contentRect;
-        setScale(Math.min(width / SLIDE_WIDTH, height / SLIDE_HEIGHT));
-      }
-    });
+    const measure = () => {
+      const next = contentBox(element);
+      setAvailable((prev) =>
+        prev.height === next.height && prev.width === next.width ? prev : next
+      );
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
 
+  const fit = Math.min(
+    available.width / SLIDE_WIDTH,
+    available.height / SLIDE_HEIGHT
+  );
+  const scale =
+    available.width > 0 && available.height > 0
+      ? Math.min(
+          fullscreen ? Number.POSITIVE_INFINITY : 1,
+          Math.max(minScale, fit)
+        )
+      : 0;
+
   return (
-    <div className="scaled" ref={box}>
+    <div className="scaled" ref={stage}>
       <div
-        className="scaled-canvas"
-        style={{
-          height: SLIDE_HEIGHT,
-          transform: `scale(${scale})`,
-          width: SLIDE_WIDTH,
-        }}>
-        {children}
+        className="scaled-box"
+        style={{ height: SLIDE_HEIGHT * scale, width: SLIDE_WIDTH * scale }}>
+        <div
+          className="scaled-canvas"
+          style={{
+            height: SLIDE_HEIGHT,
+            transform: `scale(${scale})`,
+            width: SLIDE_WIDTH,
+          }}>
+          {children}
+        </div>
       </div>
     </div>
   );

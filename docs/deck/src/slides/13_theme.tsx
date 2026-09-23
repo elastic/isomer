@@ -23,7 +23,7 @@ const styles = excerpt(modulesSource, 'export const tableModule', 14);
 
 export const themeSlide = toComposition(
   <Slide title="Theme">
-    <SlideFrame {...frame} chapter="Theme" chapterNumber="12">
+    <SlideFrame {...frame} chapter="Theme" chapterNumber="13">
       <SlideTitle
         title="One source per rendered value."
         lede="Every length, color, and glyph lives in SLIDE_THEME. A style module reads tokens; it never types a value."

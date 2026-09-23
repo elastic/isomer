@@ -16,7 +16,7 @@ import {
 
 export const shipsSlide = toComposition(
   <Slide title="What ships">
-    <SlideFrame {...frame} chapter="What ships" chapterNumber="16">
+    <SlideFrame {...frame} chapter="What ships" chapterNumber="17">
       <SlideTitle
         title="Five packages, one version."
         lede="The SDK and the runtime need react and zod. The runtime also needs react-dom."

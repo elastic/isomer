@@ -39,7 +39,7 @@ const definition = excerpt(tableSource, 'export const slideTablePrimitive', 14);
 
 export const anatomySlide = toComposition(
   <Slide title="Anatomy">
-    <SlideFrame {...frame} chapter="Anatomy" chapterNumber="11">
+    <SlideFrame {...frame} chapter="Anatomy" chapterNumber="12">
       <SlideTitle
         eyebrow="The reference pack"
         title="A primitive is one folder."

@@ -17,7 +17,7 @@ import {
 
 export const startSlide = toComposition(
   <Slide title="Start here">
-    <SlideFrame {...frame} chapter="Start here" chapterNumber="17">
+    <SlideFrame {...frame} chapter="Start here" chapterNumber="18">
       <SlideTitle
         title="Pick a path."
         lede={[

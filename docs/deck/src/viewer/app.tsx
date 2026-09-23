@@ -237,10 +237,10 @@ export const App = () => {
             aria-label={`${slide.composition.title}, ${current.label}`}
             className={`stage stage-${current.id}`}
             ref={stage}>
-            <Stage {...{ slide, surface, theme }} />
+            <Stage {...{ fullscreen, slide, surface, theme }} />
           </section>
           <p className="call">
-            <code>{current.call}</code>
+            <code>{current.id === 'jsx' ? slide.file : current.call}</code>
           </p>
         </main>
       </div>

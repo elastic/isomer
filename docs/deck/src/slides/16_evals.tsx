@@ -17,7 +17,7 @@ import {
 
 export const evalsSlide = toComposition(
   <Slide title="Measuring">
-    <SlideFrame {...frame} chapter="Measuring" chapterNumber="15">
+    <SlideFrame {...frame} chapter="Measuring" chapterNumber="16">
       <SlideTitle
         eyebrow="@elastic/isomer-evals"
         title="Measure a model against your pack."

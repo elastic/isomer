@@ -21,7 +21,7 @@ type Rendered =
   | { kind: 'source'; source: string };
 
 const render = (
-  { composition, slug }: DeckSlide,
+  { composition, slug, source }: DeckSlide,
   surface: SurfaceId,
   theme: Theme
 ): Rendered => {
@@ -64,17 +64,19 @@ const render = (
           2
         ),
       };
-    case 'json':
-      return { kind: 'source', source: JSON.stringify(composition, null, 2) };
+    case 'jsx':
+      return { kind: 'source', source };
   }
 };
 
 /** One slide on one surface. */
 export const Stage = ({
+  fullscreen,
   slide,
   surface,
   theme,
 }: {
+  fullscreen: boolean;
   slide: DeckSlide;
   surface: SurfaceId;
   theme: Theme;
@@ -87,19 +89,19 @@ export const Stage = ({
   switch (rendered.kind) {
     case 'canvas':
       return (
-        <Scaled>
+        <Scaled {...{ fullscreen }}>
           <div style={{ colorScheme: theme }}>{rendered.node}</div>
         </Scaled>
       );
     case 'html':
       return (
-        <Scaled>
+        <Scaled {...{ fullscreen }}>
           <ShadowHtml {...{ theme }} css={rendered.css} html={rendered.html} />
         </Scaled>
       );
     case 'png':
       return (
-        <Scaled>
+        <Scaled {...{ fullscreen }}>
           <img
             alt={rendered.alt}
             className="png"

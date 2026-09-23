@@ -33,7 +33,11 @@ export const surfaces = [
     label: 'Slack',
     call: 'runtime.surfaces.slack.render(slide).blocks',
   },
-  { id: 'json', label: 'Composition', call: 'slide' },
+  {
+    id: 'jsx',
+    label: 'JSX',
+    call: 'toComposition(<Slide>…</Slide>)',
+  },
 ] as const;
 
 /** One of {@link surfaces}. */
