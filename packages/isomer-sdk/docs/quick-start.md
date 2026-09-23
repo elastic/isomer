@@ -170,7 +170,7 @@ for (const row of rows) {
 }
 ```
 
-The [harness contract](api.md#testing) lists the required members, the optional ones, and what each case checks; a case whose optional member is absent is skipped. A pack with a container adds `nestForeignChild` to the harness, and the same run confirms it recurses through `scope` rather than a closed switch over its own types — see [Containers: `schemaFor` and `children`](primitives.md#containers-schemafor-and-children).
+The [harness contract](api.md#the-harness-contract) lists the required members, the optional ones, and what each case checks; a case whose optional member is absent is skipped. A pack with a container adds `nestForeignChild` to the harness, and the same run confirms it recurses through `scope` rather than a closed switch over its own types — see [Containers: `schemaFor` and `children`](primitives.md#containers-schemafor-and-children).
 
 ## Next
 

@@ -1,6 +1,6 @@
 ---
 navigation_title: Slides pack
-description: The reference primitive pack: slide-deck primitives, a theme with one source per rendered value, and a fixed 16:9 frame.
+description: "The reference primitive pack: slide-deck primitives, a theme with one source per rendered value, and a fixed 16:9 frame."
 ---
 
 # Slides pack

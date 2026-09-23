@@ -1,6 +1,6 @@
 ---
 navigation_title: SDK
-description: The contracts every Isomer package is written against: primitives, packs, composition, validation, dispatch, envelopes, URL trust, authoring, and the conformance harness.
+description: "The contracts every Isomer package is written against: primitives, packs, composition, validation, dispatch, envelopes, URL trust, authoring, and the conformance harness."
 ---
 
 # Isomer SDK
