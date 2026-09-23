@@ -1,6 +1,6 @@
 # Worked example
 
-Seven compositions that together exercise every primitive. A host sequences them; Isomer renders one composition at a time.
+Seven compositions that together exercise every primitive. A host sequences them; Isomer renders one composition at a time. The [Isomer deck](https://elastic.github.io/isomer/deck/) is the full-size version: eighteen slides from `docs/deck`, each viewable on every surface.
 
 ## A deck is a `Composition[]`
 

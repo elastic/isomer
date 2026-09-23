@@ -17,7 +17,7 @@ Isomer turns one typed `Composition` into React, HTML, SVG, PNG, Slack Block Kit
 
 A product answers the same question in more than one place: a page, a Slack message, an agent's reply, an image in an email. Each channel usually gets its own renderer, and they drift. Isomer moves the shared part into one document. A host, or an agent handed the pack's JSON Schema and catalog, composes the answer once from a vocabulary of primitives. Isomer validates it and renders it to every channel, degrading through Markdown and plain text so nothing silently disappears.
 
-[What is Isomer?](https://elastic.github.io/isomer/) tells the whole story: the vocabulary, the two paths a composition arrives by, what happens inside a render, and what a consumer can rely on.
+[What is Isomer?](https://elastic.github.io/isomer/) tells the whole story: the vocabulary, the two paths a composition arrives by, what happens inside a render, and what a consumer can rely on. [The Isomer deck](https://elastic.github.io/isomer/deck/) tells it as slides, and every slide is itself a composition.
 
 ## One composition, three ways
 

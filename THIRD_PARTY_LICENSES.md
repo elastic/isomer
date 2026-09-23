@@ -175,7 +175,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@typescript-eslint/visitor-keys` | 8.70.0 | MIT | `node_modules/.pnpm/@typescript-eslint+visitor-keys@8.70.0/node_modules/@typescript-eslint/visitor-keys` |  |
 | `@vitest/coverage-v8` | 4.1.11 | MIT | `node_modules/.pnpm/@vitest+coverage-v8@4.1.11_vitest@4.1.11/node_modules/@vitest/coverage-v8` |  |
 | `@vitest/expect` | 4.1.11 | MIT | `node_modules/.pnpm/@vitest+expect@4.1.11/node_modules/@vitest/expect` |  |
-| `@vitest/mocker` | 4.1.11 | MIT | `node_modules/.pnpm/@vitest+mocker@4.1.11_vite@8.3.0_@types+node@22.20.2_jiti@2.6.1_yaml@2.9.1_/node_modules/@vitest/mocker` |  |
+| `@vitest/mocker` | 4.1.11 | MIT | `node_modules/.pnpm/@vitest+mocker@4.1.11_vite@8.3.0_@types+node@22.20.2_esbuild@0.28.2_jiti@2.6.1_yaml@2.9.1_/node_modules/@vitest/mocker` |  |
 | `@vitest/pretty-format` | 4.1.11 | MIT | `node_modules/.pnpm/@vitest+pretty-format@4.1.11/node_modules/@vitest/pretty-format` |  |
 | `@vitest/runner` | 4.1.11 | MIT | `node_modules/.pnpm/@vitest+runner@4.1.11/node_modules/@vitest/runner` |  |
 | `@vitest/snapshot` | 4.1.11 | MIT | `node_modules/.pnpm/@vitest+snapshot@4.1.11/node_modules/@vitest/snapshot` |  |
@@ -778,8 +778,8 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `util-deprecate` | 1.0.2 | MIT | `node_modules/.pnpm/util-deprecate@1.0.2/node_modules/util-deprecate` |  |
 | `validate-npm-package-license` | 3.0.4 | Apache-2.0 | `node_modules/.pnpm/validate-npm-package-license@3.0.4/node_modules/validate-npm-package-license` |  |
 | `validate-npm-package-name` | 7.0.2 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/validate-npm-package-name` |  |
-| `vite` | 8.3.0 | MIT | `node_modules/.pnpm/vite@8.3.0_@types+node@22.20.2_jiti@2.6.1_yaml@2.9.1/node_modules/vite` | `fsevents` |
-| `vitest` | 4.1.11 | MIT | `node_modules/.pnpm/vitest@4.1.11_@types+node@22.20.2_@vitest+coverage-v8@4.1.11_vite@8.3.0_@types+node@22.20.2_jiti@2.6.1_yaml@2.9.1_/node_modules/vitest` |  |
+| `vite` | 8.3.0 | MIT | `node_modules/.pnpm/vite@8.3.0_@types+node@22.20.2_esbuild@0.28.2_jiti@2.6.1_yaml@2.9.1/node_modules/vite` | `fsevents` |
+| `vitest` | 4.1.11 | MIT | `node_modules/.pnpm/vitest@4.1.11_@types+node@22.20.2_@vitest+coverage-v8@4.1.11_vite@8.3.0_@types+node@22._0192d7aecb72ff0e2c693fa66dd4c4a4/node_modules/vitest` |  |
 | `walk-up-path` | 4.0.0 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/walk-up-path` |  |
 | `web-worker` | 1.5.0 | Apache-2.0 | `node_modules/.pnpm/web-worker@1.5.0/node_modules/web-worker` |  |
 | `which` | 2.0.2 | ISC | `node_modules/.pnpm/which@2.0.2/node_modules/which` |  |

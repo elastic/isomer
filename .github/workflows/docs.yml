@@ -23,12 +23,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v6.0.6
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - name: Assemble package docs
         run: node scripts/assemble_package_docs.js
       - name: Build documentation
         uses: elastic/docs-builder@main
         with:
           prefix: isomer
+      - name: Build deck
+        run: pnpm deck:build
+        env:
+          DECK_BASE: ./
+      - name: Copy deck into docs output
+        run: |
+          mkdir -p .artifacts/docs/html/deck
+          cp -R docs/deck/dist/. .artifacts/docs/html/deck/
       - uses: actions/upload-artifact@v4
         with:
           name: site

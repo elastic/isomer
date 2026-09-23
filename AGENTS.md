@@ -12,6 +12,8 @@ The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, a
 
 `packages/isomer-evals` scores whether a model produces valid, well-chosen compositions from a pack's authoring context. It depends on the SDK's public API alone and runs with no credentials.
 
+`docs/deck` is the Isomer deck: a private Vite app, one `.tsx` composition per slide, rendered by the slides pack. It is a workspace member outside `packages/`, so it never publishes. The docs workflow copies its build to `/deck/` on the Pages site. Vite there is for the app only; the library build stays `tsc`.
+
 ## Release posture
 
 Every package under `packages/` publishes, at one version, through the release workflow; none is `private`. `@elastic/isomer-sdk` and `@elastic/isomer-runtime` are what a host installs, slides is the reference pack, takumi is a host-side rasterizer, and evals is a harness a pack author runs against their own runtime. Do not raise publication, registry access, or dependency licensing as a constraint when planning work in this repository.

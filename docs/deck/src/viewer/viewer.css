@@ -1,0 +1,254 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+:root {
+  color-scheme: light dark;
+  --bg: light-dark(#eceae3, #050b16);
+  --panel: light-dark(#f7f6f1, #0b1526);
+  --line: light-dark(#d9dee8, #1f2e45);
+  --text: light-dark(#1a1c21, #f3f7fc);
+  --muted: light-dark(#5a6270, #8fa0b7);
+  --accent: light-dark(#0b64dd, #63a7ff);
+  --accent-soft: light-dark(#e3eefc, #102a4c);
+  --stage: light-dark(#dedbd2, #02060d);
+  --mono: 'Roboto Mono', ui-monospace, monospace;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 14px;
+}
+
+button {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 6px 10px;
+}
+
+button:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.deck {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.toolbar {
+  align-items: center;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 8px 16px;
+}
+
+.brand {
+  align-items: center;
+  color: inherit;
+  display: inline-flex;
+  font-weight: 700;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.pager {
+  align-items: center;
+  display: inline-flex;
+  font-family: var(--mono);
+  gap: 4px;
+}
+
+.pager button {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.surfaces {
+  display: flex;
+  flex: 1;
+  gap: 2px;
+  justify-content: center;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.surfaces [aria-selected='true'],
+.actions [aria-pressed='true'] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.actions {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.rail {
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  flex: 0 0 240px;
+  overflow-y: auto;
+}
+
+.rail ol {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+}
+
+.rail button {
+  align-items: baseline;
+  display: flex;
+  gap: 10px;
+  text-align: left;
+  width: 100%;
+}
+
+.rail button[aria-current='true'] {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.rail-number {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 16px;
+}
+
+.stage {
+  background: var(--stage);
+  border-radius: 8px;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.stage:fullscreen {
+  border-radius: 0;
+}
+
+.scaled {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.scaled-canvas {
+  flex: 0 0 auto;
+  transform-origin: center;
+}
+
+.png {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+.source {
+  background: var(--panel);
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 0;
+  overflow: auto;
+  padding: 20px 24px;
+  white-space: pre-wrap;
+}
+
+.call {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.call code {
+  font-family: var(--mono);
+}
+
+@media (max-width: 900px) {
+  .rail {
+    display: none;
+  }
+
+  .surfaces {
+    flex-basis: 100%;
+    justify-content: flex-start;
+    order: 3;
+  }
+
+  .main {
+    padding: 8px;
+  }
+
+  .stage-slide,
+  .stage-html,
+  .stage-png {
+    aspect-ratio: 16 / 9;
+    flex: 0 0 auto;
+  }
+}

@@ -99,6 +99,7 @@ Every package publishes together at one version. A host installs the SDK and the
 | Wire up an agent | The runtime's [Authoring context](runtime/authoring-context.md) and the SDK's [Authoring](sdk/authoring.md) |
 | Turn images into PNG | [Takumi image backend](image-takumi/index.md) |
 | Measure a model against your pack | [Evals](evals/index.md), including how to read the numbers |
+| See the whole story as slides | [The Isomer deck](https://elastic.github.io/isomer/deck/), where every slide is a composition you can view on every surface |
 | Contribute or release | [CONTRIBUTING.md](https://github.com/elastic/isomer/blob/main/CONTRIBUTING.md), [RELEASING.md](https://github.com/elastic/isomer/blob/main/RELEASING.md), and [AGENTS.md](https://github.com/elastic/isomer/blob/main/AGENTS.md) for the invariants |
 
 Package pages are authored in each package's own `docs/` directory and assembled here.
