@@ -26,7 +26,7 @@ sources:
 - The sdk must not import the runtime.
 - No cross-package tsconfig `paths`. Internal resolution is `workspace:*` plus TypeScript project references.
 - Do not invent a bundler. `tsc` plus `tsc-alias`, with a second `tsc` pass for CommonJS.
-- After adding or changing a dependency, run `pnpm licenses:report` and include the updated `THIRD_PARTY_LICENSES.md` and `NOTICE.txt`.
+- After adding or changing a dependency, run `pnpm licenses:report` and include the updated `THIRD_PARTY_LICENSES.md` and `NOTICE.txt`. Declared runtime optional dependencies need complete license material even when they are not installed on the current platform.
 - Narrative docs live in each package's `docs/`. Root `docs/` is the docs-builder assembler; do not author package pages there.
 - A pack holds no rendered value of its own: every number, length, ratio, and glyph it draws has one authoring source in its theme.
 - There is no per-primitive `svg` renderer. The image surface dispatches to `react` and is handed the pack's stylesheet.

@@ -33,6 +33,25 @@ const LICENSE_BASENAMES = [
 ];
 
 const NOTICE_BASENAMES = ['NOTICE', 'NOTICE.txt', 'NOTICE.md'];
+const TAKUMI_LICENSE_PATH = join(
+  repoRoot,
+  'third_party_licenses',
+  'takumi-2.14.0-MIT.txt'
+);
+const takumiLicense = readFileSync(TAKUMI_LICENSE_PATH, 'utf-8').trim();
+const TAKUMI_PACKAGE_NAMES = [
+  '@takumi-rs/core',
+  '@takumi-rs/helpers',
+  '@takumi-rs/core-darwin-arm64',
+  '@takumi-rs/core-darwin-x64',
+  '@takumi-rs/core-linux-arm64-gnu',
+  '@takumi-rs/core-linux-arm64-musl',
+  '@takumi-rs/core-linux-x64-gnu',
+  '@takumi-rs/core-linux-x64-musl',
+  '@takumi-rs/core-win32-arm64-msvc',
+  '@takumi-rs/core-win32-x64-msvc',
+];
+const TAKUMI_PACKAGES = new Set(TAKUMI_PACKAGE_NAMES);
 
 const readPackage = (dir) =>
   JSON.parse(readFileSync(join(dir, 'package.json'), 'utf-8'));
@@ -51,6 +70,17 @@ const licenseOf = (pkg) => {
       .join(' OR ');
   }
   return 'UNKNOWN';
+};
+
+const licenseTextOf = (pkg, dir) => {
+  const licenseText = readFirstExisting(dir, LICENSE_BASENAMES);
+  if (licenseText !== undefined) {
+    return licenseText;
+  }
+  if (pkg.version === '2.14.0' && TAKUMI_PACKAGES.has(pkg.name)) {
+    return takumiLicense;
+  }
+  return undefined;
 };
 
 const readFirstExisting = (dir, names) => {
@@ -114,9 +144,23 @@ const resolvePackageDir = (name, fromDir) => {
 const isWorkspaceProtocol = (range) =>
   typeof range === 'string' && range.startsWith('workspace:');
 
-const walk = (name, fromDir, seen) => {
+const walk = (name, fromDir, seen, version) => {
   const resolved = resolvePackageDir(name, fromDir);
   if (resolved === undefined) {
+    if (version === '2.14.0' && TAKUMI_PACKAGES.has(name)) {
+      const key = `${name}@${version}`;
+      if (!seen.has(key)) {
+        seen.set(key, {
+          name,
+          version,
+          license: '(MIT OR Apache-2.0)',
+          path: 'declared optional dependency',
+          licenseText: takumiLicense,
+          noticeText: undefined,
+          optional: [],
+        });
+      }
+    }
     return;
   }
   const dir = realpathSync(resolved);
@@ -131,15 +175,20 @@ const walk = (name, fromDir, seen) => {
     version: pkg.version ?? 'unknown',
     license: licenseOf(pkg),
     path: relative(repoRoot, dir) || '.',
-    licenseText: readFirstExisting(dir, LICENSE_BASENAMES),
+    licenseText: licenseTextOf(pkg, dir),
     noticeText: readFirstExisting(dir, NOTICE_BASENAMES),
     // Listed by name, never walked: which one is installed depends on the
     // running platform, and the report must not.
     optional: Object.keys(pkg.optionalDependencies ?? {}).sort(),
   });
 
-  for (const dep of Object.keys(pkg.dependencies ?? {})) {
-    walk(dep, dir, seen);
+  for (const [dependency, range] of Object.entries(pkg.dependencies ?? {})) {
+    walk(dependency, dir, seen, range);
+  }
+  for (const [dependency, range] of Object.entries(
+    pkg.optionalDependencies ?? {}
+  )) {
+    walk(dependency, dir, seen, range);
   }
 };
 
@@ -223,7 +272,7 @@ const report = [
   '',
   '## Optional dependencies',
   '',
-  "The last column names each package's `optionalDependencies`. They are not walked: for a package such as `@takumi-rs/core` or `lightningcss` they are one native binary per platform, of which only the running platform's is installed, and a report that walked them would change with the machine that generated it. A native binary's declared SPDX license is what its `package.json` states; the statically linked closure inside the compiled binary, and any bundled asset such as a font, is not audited by this script.",
+  "Declared optional dependencies are included in the distribution closure. Packages that are not installed on the current platform must have curated license material before this report can include them. A native binary's statically linked closure and bundled assets still require a separate upstream audit.",
   '',
 ].join('\n');
 
@@ -237,9 +286,8 @@ const noticeBlocks = runtimeRows.map((row) => {
     parts.push('', row.licenseText);
   }
   if (row.noticeText === undefined && row.licenseText === undefined) {
-    parts.push(
-      '',
-      'No LICENSE or NOTICE file was present in the installed package.'
+    throw new Error(
+      `${row.name}@${row.version} has no NOTICE or license text; add curated license material before publishing.`
     );
   }
   return parts.join('\n');

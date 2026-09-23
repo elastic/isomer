@@ -10,6 +10,14 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | --- | --- | --- | --- | --- |
 | `@elastic/distillate` | 0.1.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+distillate@0.1.0/node_modules/@elastic/distillate` |  |
 | `@takumi-rs/core` | 2.14.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+core@2.14.0_csstype@3.2.3_react@18.3.1/node_modules/@takumi-rs/core` | `@takumi-rs/core-darwin-arm64`, `@takumi-rs/core-darwin-x64`, `@takumi-rs/core-linux-arm64-gnu`, `@takumi-rs/core-linux-arm64-musl`, `@takumi-rs/core-linux-x64-gnu`, `@takumi-rs/core-linux-x64-musl`, `@takumi-rs/core-win32-arm64-msvc`, `@takumi-rs/core-win32-x64-msvc` |
+| `@takumi-rs/core-darwin-arm64` | 2.14.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+core-darwin-arm64@2.14.0/node_modules/@takumi-rs/core-darwin-arm64` |  |
+| `@takumi-rs/core-darwin-x64` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
+| `@takumi-rs/core-linux-arm64-gnu` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
+| `@takumi-rs/core-linux-arm64-musl` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
+| `@takumi-rs/core-linux-x64-gnu` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
+| `@takumi-rs/core-linux-x64-musl` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
+| `@takumi-rs/core-win32-arm64-msvc` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
+| `@takumi-rs/core-win32-x64-msvc` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
 | `@takumi-rs/helpers` | 2.14.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+helpers@2.14.0_react@18.3.1/node_modules/@takumi-rs/helpers` |  |
 | `stylis` | 4.4.0 | MIT | `node_modules/.pnpm/stylis@4.4.0/node_modules/stylis` |  |
 
@@ -29,6 +37,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@babel/parser` | 7.29.8 | MIT | `node_modules/.pnpm/@babel+parser@7.29.8/node_modules/@babel/parser` |  |
 | `@babel/types` | 7.29.8 | MIT | `node_modules/.pnpm/@babel+types@7.29.8/node_modules/@babel/types` |  |
 | `@bcoe/v8-coverage` | 1.0.2 | MIT | `node_modules/.pnpm/@bcoe+v8-coverage@1.0.2/node_modules/@bcoe/v8-coverage` |  |
+| `@colors/colors` | 1.5.0 | MIT | `node_modules/.pnpm/@colors+colors@1.5.0/node_modules/@colors/colors` |  |
 | `@commitlint/cli` | 19.8.1 | MIT | `node_modules/.pnpm/@commitlint+cli@19.8.1_@types+node@22.20.2_typescript@5.9.3/node_modules/@commitlint/cli` |  |
 | `@commitlint/config-conventional` | 19.8.1 | MIT | `node_modules/.pnpm/@commitlint+config-conventional@19.8.1/node_modules/@commitlint/config-conventional` |  |
 | `@commitlint/config-validator` | 19.8.1 | MIT | `node_modules/.pnpm/@commitlint+config-validator@19.8.1/node_modules/@commitlint/config-validator` |  |
@@ -106,6 +115,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@pnpm/config.env-replace` | 1.1.0 | MIT | `node_modules/.pnpm/@pnpm+config.env-replace@1.1.0/node_modules/@pnpm/config.env-replace` |  |
 | `@pnpm/network.ca-file` | 1.0.2 | MIT | `node_modules/.pnpm/@pnpm+network.ca-file@1.0.2/node_modules/@pnpm/network.ca-file` |  |
 | `@pnpm/npm-conf` | 3.0.3 | MIT | `node_modules/.pnpm/@pnpm+npm-conf@3.0.3/node_modules/@pnpm/npm-conf` |  |
+| `@rolldown/binding-darwin-arm64` | 1.2.8 | MIT | `node_modules/.pnpm/@rolldown+binding-darwin-arm64@1.2.8/node_modules/@rolldown/binding-darwin-arm64` |  |
 | `@rolldown/pluginutils` | 1.0.1 | MIT | `node_modules/.pnpm/@rolldown+pluginutils@1.0.1/node_modules/@rolldown/pluginutils` |  |
 | `@sec-ant/readable-stream` | 0.4.1 | MIT | `node_modules/.pnpm/@sec-ant+readable-stream@0.4.1/node_modules/@sec-ant/readable-stream` |  |
 | `@semantic-release/commit-analyzer` | 13.0.1 | MIT | `node_modules/.pnpm/@semantic-release+commit-analyzer@13.0.1_semantic-release@25.0.9_typescript@5.9.3_/node_modules/@semantic-release/commit-analyzer` |  |
@@ -317,6 +327,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `flatted` | 3.4.4 | ISC | `node_modules/.pnpm/flatted@3.4.4/node_modules/flatted` |  |
 | `fs-extra` | 11.4.0 | MIT | `node_modules/.pnpm/fs-extra@11.4.0/node_modules/fs-extra` |  |
 | `fs-minipass` | 3.0.3 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/fs-minipass` |  |
+| `fsevents` | 2.3.3 | MIT | `node_modules/.pnpm/fsevents@2.3.3/node_modules/fsevents` |  |
 | `function-timeout` | 1.0.2 | MIT | `node_modules/.pnpm/function-timeout@1.0.2/node_modules/function-timeout` |  |
 | `get-caller-file` | 2.0.5 | ISC | `node_modules/.pnpm/get-caller-file@2.0.5/node_modules/get-caller-file` |  |
 | `get-east-asian-width` | 1.6.0 | MIT | `node_modules/.pnpm/get-east-asian-width@1.6.0/node_modules/get-east-asian-width` |  |
@@ -354,6 +365,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `human-signals` | 5.0.0 | Apache-2.0 | `node_modules/.pnpm/human-signals@5.0.0/node_modules/human-signals` |  |
 | `human-signals` | 8.0.1 | Apache-2.0 | `node_modules/.pnpm/human-signals@8.0.1/node_modules/human-signals` |  |
 | `husky` | 9.1.7 | MIT | `node_modules/.pnpm/husky@9.1.7/node_modules/husky` |  |
+| `iconv-lite` | 0.7.2 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/iconv-lite` |  |
 | `ignore` | 5.3.2 | MIT | `node_modules/.pnpm/ignore@5.3.2/node_modules/ignore` |  |
 | `ignore` | 7.0.9 | MIT | `node_modules/.pnpm/ignore@7.0.9/node_modules/ignore` |  |
 | `ignore-walk` | 8.0.0 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/ignore-walk` |  |
@@ -432,6 +444,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `libnpmteam` | 8.0.2 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/libnpmteam` |  |
 | `libnpmversion` | 8.0.4 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/libnpmversion` |  |
 | `lightningcss` | 1.33.0 | MPL-2.0 | `node_modules/.pnpm/lightningcss@1.33.0/node_modules/lightningcss` | `lightningcss-android-arm64`, `lightningcss-darwin-arm64`, `lightningcss-darwin-x64`, `lightningcss-freebsd-x64`, `lightningcss-linux-arm-gnueabihf`, `lightningcss-linux-arm64-gnu`, `lightningcss-linux-arm64-musl`, `lightningcss-linux-x64-gnu`, `lightningcss-linux-x64-musl`, `lightningcss-win32-arm64-msvc`, `lightningcss-win32-x64-msvc` |
+| `lightningcss-darwin-arm64` | 1.33.0 | MPL-2.0 | `node_modules/.pnpm/lightningcss-darwin-arm64@1.33.0/node_modules/lightningcss-darwin-arm64` |  |
 | `lines-and-columns` | 1.2.4 | MIT | `node_modules/.pnpm/lines-and-columns@1.2.4/node_modules/lines-and-columns` |  |
 | `linkify-it` | 5.0.2 | MIT | `node_modules/.pnpm/linkify-it@5.0.2/node_modules/linkify-it` |  |
 | `lint-staged` | 16.4.0 | MIT | `node_modules/.pnpm/lint-staged@16.4.0/node_modules/lint-staged` |  |
@@ -635,6 +648,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `rolldown` | 1.2.8 | MIT | `node_modules/.pnpm/rolldown@1.2.8/node_modules/rolldown` | `@rolldown/binding-android-arm-eabi`, `@rolldown/binding-android-arm64`, `@rolldown/binding-darwin-arm64`, `@rolldown/binding-darwin-x64`, `@rolldown/binding-freebsd-x64`, `@rolldown/binding-linux-arm-gnueabihf`, `@rolldown/binding-linux-arm64-gnu`, `@rolldown/binding-linux-arm64-musl`, `@rolldown/binding-linux-ppc64-gnu`, `@rolldown/binding-linux-s390x-gnu`, `@rolldown/binding-linux-x64-gnu`, `@rolldown/binding-linux-x64-musl`, `@rolldown/binding-openharmony-arm64`, `@rolldown/binding-win32-arm64-msvc`, `@rolldown/binding-win32-x64-msvc` |
 | `run-parallel` | 1.2.0 | MIT | `node_modules/.pnpm/run-parallel@1.2.0/node_modules/run-parallel` |  |
 | `safe-buffer` | 5.1.2 | MIT | `node_modules/.pnpm/safe-buffer@5.1.2/node_modules/safe-buffer` |  |
+| `safer-buffer` | 2.1.2 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/safer-buffer` |  |
 | `scheduler` | 0.23.2 | MIT | `node_modules/.pnpm/scheduler@0.23.2/node_modules/scheduler` |  |
 | `semantic-release` | 25.0.9 | MIT | `node_modules/.pnpm/semantic-release@25.0.9_typescript@5.9.3/node_modules/semantic-release` |  |
 | `semver` | 7.8.5 | ISC | `node_modules/.pnpm/semver@7.8.5/node_modules/semver` |  |
@@ -653,7 +667,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `slice-ansi` | 7.1.2 | MIT | `node_modules/.pnpm/slice-ansi@7.1.2/node_modules/slice-ansi` |  |
 | `slice-ansi` | 8.0.0 | MIT | `node_modules/.pnpm/slice-ansi@8.0.0/node_modules/slice-ansi` |  |
 | `smart-buffer` | 4.2.0 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/smart-buffer` |  |
-| `smol-toml` | 1.7.0 | BSD-3-Clause | `node_modules/.pnpm/smol-toml@1.7.0/node_modules/smol-toml` |  |
+| `smol-toml` | 1.7.1 | BSD-3-Clause | `node_modules/.pnpm/smol-toml@1.7.1/node_modules/smol-toml` |  |
 | `socks` | 2.8.9 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/socks` |  |
 | `socks-proxy-agent` | 8.0.5 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/socks-proxy-agent` |  |
 | `source-map` | 0.6.1 | BSD-3-Clause | `node_modules/.pnpm/source-map@0.6.1/node_modules/source-map` |  |
@@ -723,6 +737,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `typescript` | 5.9.3 | Apache-2.0 | `node_modules/.pnpm/typescript@5.9.3/node_modules/typescript` |  |
 | `typescript-eslint` | 8.70.0 | MIT | `node_modules/.pnpm/typescript-eslint@8.70.0_eslint@9.39.5_jiti@2.6.1__typescript@5.9.3/node_modules/typescript-eslint` |  |
 | `uc.micro` | 2.1.0 | MIT | `node_modules/.pnpm/uc.micro@2.1.0/node_modules/uc.micro` |  |
+| `uglify-js` | 3.19.3 | BSD-2-Clause | `node_modules/.pnpm/uglify-js@3.19.3/node_modules/uglify-js` |  |
 | `undici` | 6.28.0 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/undici` |  |
 | `undici` | 6.28.1 | MIT | `node_modules/.pnpm/undici@6.28.1/node_modules/undici` |  |
 | `undici` | 7.29.1 | MIT | `node_modules/.pnpm/undici@7.29.1/node_modules/undici` |  |
@@ -770,4 +785,4 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 
 ## Optional dependencies
 
-The last column names each package's `optionalDependencies`. They are not walked: for a package such as `@takumi-rs/core` or `lightningcss` they are one native binary per platform, of which only the running platform's is installed, and a report that walked them would change with the machine that generated it. A native binary's declared SPDX license is what its `package.json` states; the statically linked closure inside the compiled binary, and any bundled asset such as a font, is not audited by this script.
+Declared optional dependencies are included in the distribution closure. Packages that are not installed on the current platform must have curated license material before this report can include them. A native binary's statically linked closure and bundled assets still require a separate upstream audit.
