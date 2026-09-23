@@ -10,7 +10,7 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | --- | --- | --- | --- | --- |
 | `@elastic/distillate` | 0.1.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+distillate@0.1.0/node_modules/@elastic/distillate` |  |
 | `@takumi-rs/core` | 2.14.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+core@2.14.0_csstype@3.2.3_react@18.3.1/node_modules/@takumi-rs/core` | `@takumi-rs/core-darwin-arm64`, `@takumi-rs/core-darwin-x64`, `@takumi-rs/core-linux-arm64-gnu`, `@takumi-rs/core-linux-arm64-musl`, `@takumi-rs/core-linux-x64-gnu`, `@takumi-rs/core-linux-x64-musl`, `@takumi-rs/core-win32-arm64-msvc`, `@takumi-rs/core-win32-x64-msvc` |
-| `@takumi-rs/core-darwin-arm64` | 2.14.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+core-darwin-arm64@2.14.0/node_modules/@takumi-rs/core-darwin-arm64` |  |
+| `@takumi-rs/core-darwin-arm64` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
 | `@takumi-rs/core-darwin-x64` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
 | `@takumi-rs/core-linux-arm64-gnu` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
 | `@takumi-rs/core-linux-arm64-musl` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
@@ -115,7 +115,21 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@pnpm/config.env-replace` | 1.1.0 | MIT | `node_modules/.pnpm/@pnpm+config.env-replace@1.1.0/node_modules/@pnpm/config.env-replace` |  |
 | `@pnpm/network.ca-file` | 1.0.2 | MIT | `node_modules/.pnpm/@pnpm+network.ca-file@1.0.2/node_modules/@pnpm/network.ca-file` |  |
 | `@pnpm/npm-conf` | 3.0.3 | MIT | `node_modules/.pnpm/@pnpm+npm-conf@3.0.3/node_modules/@pnpm/npm-conf` |  |
-| `@rolldown/binding-darwin-arm64` | 1.2.8 | MIT | `node_modules/.pnpm/@rolldown+binding-darwin-arm64@1.2.8/node_modules/@rolldown/binding-darwin-arm64` |  |
+| `@rolldown/binding-android-arm-eabi` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-android-arm64` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-darwin-arm64` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-darwin-x64` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-freebsd-x64` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-linux-arm-gnueabihf` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-linux-arm64-gnu` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-linux-arm64-musl` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-linux-ppc64-gnu` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-linux-s390x-gnu` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-linux-x64-gnu` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-linux-x64-musl` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-openharmony-arm64` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-win32-arm64-msvc` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-win32-x64-msvc` | 1.2.8 | MIT | `declared optional dependency` |  |
 | `@rolldown/pluginutils` | 1.0.1 | MIT | `node_modules/.pnpm/@rolldown+pluginutils@1.0.1/node_modules/@rolldown/pluginutils` |  |
 | `@sec-ant/readable-stream` | 0.4.1 | MIT | `node_modules/.pnpm/@sec-ant+readable-stream@0.4.1/node_modules/@sec-ant/readable-stream` |  |
 | `@semantic-release/commit-analyzer` | 13.0.1 | MIT | `node_modules/.pnpm/@semantic-release+commit-analyzer@13.0.1_semantic-release@25.0.9_typescript@5.9.3_/node_modules/@semantic-release/commit-analyzer` |  |
@@ -327,7 +341,6 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `flatted` | 3.4.4 | ISC | `node_modules/.pnpm/flatted@3.4.4/node_modules/flatted` |  |
 | `fs-extra` | 11.4.0 | MIT | `node_modules/.pnpm/fs-extra@11.4.0/node_modules/fs-extra` |  |
 | `fs-minipass` | 3.0.3 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/fs-minipass` |  |
-| `fsevents` | 2.3.3 | MIT | `node_modules/.pnpm/fsevents@2.3.3/node_modules/fsevents` |  |
 | `function-timeout` | 1.0.2 | MIT | `node_modules/.pnpm/function-timeout@1.0.2/node_modules/function-timeout` |  |
 | `get-caller-file` | 2.0.5 | ISC | `node_modules/.pnpm/get-caller-file@2.0.5/node_modules/get-caller-file` |  |
 | `get-east-asian-width` | 1.6.0 | MIT | `node_modules/.pnpm/get-east-asian-width@1.6.0/node_modules/get-east-asian-width` |  |
@@ -444,7 +457,17 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `libnpmteam` | 8.0.2 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/libnpmteam` |  |
 | `libnpmversion` | 8.0.4 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/libnpmversion` |  |
 | `lightningcss` | 1.33.0 | MPL-2.0 | `node_modules/.pnpm/lightningcss@1.33.0/node_modules/lightningcss` | `lightningcss-android-arm64`, `lightningcss-darwin-arm64`, `lightningcss-darwin-x64`, `lightningcss-freebsd-x64`, `lightningcss-linux-arm-gnueabihf`, `lightningcss-linux-arm64-gnu`, `lightningcss-linux-arm64-musl`, `lightningcss-linux-x64-gnu`, `lightningcss-linux-x64-musl`, `lightningcss-win32-arm64-msvc`, `lightningcss-win32-x64-msvc` |
-| `lightningcss-darwin-arm64` | 1.33.0 | MPL-2.0 | `node_modules/.pnpm/lightningcss-darwin-arm64@1.33.0/node_modules/lightningcss-darwin-arm64` |  |
+| `lightningcss-android-arm64` | 1.33.0 | MPL-2.0 | `declared optional dependency` |  |
+| `lightningcss-darwin-arm64` | 1.33.0 | MPL-2.0 | `declared optional dependency` |  |
+| `lightningcss-darwin-x64` | 1.33.0 | MPL-2.0 | `declared optional dependency` |  |
+| `lightningcss-freebsd-x64` | 1.33.0 | MPL-2.0 | `declared optional dependency` |  |
+| `lightningcss-linux-arm-gnueabihf` | 1.33.0 | MPL-2.0 | `declared optional dependency` |  |
+| `lightningcss-linux-arm64-gnu` | 1.33.0 | MPL-2.0 | `declared optional dependency` |  |
+| `lightningcss-linux-arm64-musl` | 1.33.0 | MPL-2.0 | `declared optional dependency` |  |
+| `lightningcss-linux-x64-gnu` | 1.33.0 | MPL-2.0 | `declared optional dependency` |  |
+| `lightningcss-linux-x64-musl` | 1.33.0 | MPL-2.0 | `declared optional dependency` |  |
+| `lightningcss-win32-arm64-msvc` | 1.33.0 | MPL-2.0 | `declared optional dependency` |  |
+| `lightningcss-win32-x64-msvc` | 1.33.0 | MPL-2.0 | `declared optional dependency` |  |
 | `lines-and-columns` | 1.2.4 | MIT | `node_modules/.pnpm/lines-and-columns@1.2.4/node_modules/lines-and-columns` |  |
 | `linkify-it` | 5.0.2 | MIT | `node_modules/.pnpm/linkify-it@5.0.2/node_modules/linkify-it` |  |
 | `lint-staged` | 16.4.0 | MIT | `node_modules/.pnpm/lint-staged@16.4.0/node_modules/lint-staged` |  |

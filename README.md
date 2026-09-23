@@ -11,8 +11,6 @@
 </p>
 <!-- markdownlint-enable MD033 -->
 
-# Isomer
-
 Isomer turns one typed `Composition` into React, HTML, SVG, PNG, Slack Block Kit, Markdown, and plain text. It owns the composition contract, the primitive catalog, validation, and rendering. Hosts own data, authorization, routing, and side effects.
 
 ## Why

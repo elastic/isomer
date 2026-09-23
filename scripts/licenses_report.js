@@ -72,16 +72,26 @@ const licenseOf = (pkg) => {
   return 'UNKNOWN';
 };
 
-const licenseTextOf = (pkg, dir) => {
-  const licenseText = readFirstExisting(dir, LICENSE_BASENAMES);
-  if (licenseText !== undefined) {
-    return licenseText;
-  }
+const curatedLicenseText = (pkg) => {
   if (pkg.version === '2.14.0' && TAKUMI_PACKAGES.has(pkg.name)) {
     return takumiLicense;
   }
   return undefined;
 };
+
+const licenseTextOf = (pkg, dir) => {
+  const licenseText = readFirstExisting(dir, LICENSE_BASENAMES);
+  if (licenseText !== undefined) {
+    return licenseText;
+  }
+  return curatedLicenseText(pkg);
+};
+
+// Exact versions only: a range would resolve differently per platform.
+const exactVersion = (range) =>
+  typeof range === 'string' && /^\d+\.\d+\.\d+$/.test(range)
+    ? range
+    : undefined;
 
 const readFirstExisting = (dir, names) => {
   for (const name of names) {
@@ -144,23 +154,56 @@ const resolvePackageDir = (name, fromDir) => {
 const isWorkspaceProtocol = (range) =>
   typeof range === 'string' && range.startsWith('workspace:');
 
-const walk = (name, fromDir, seen, version) => {
+// Platform-bound optional packages are recorded from the declaration. Which
+// one is installed depends on the host, and the report must not.
+const recordOptional = (name, range, fromDir, parentPkg, seen) => {
   const resolved = resolvePackageDir(name, fromDir);
-  if (resolved === undefined) {
-    if (version === '2.14.0' && TAKUMI_PACKAGES.has(name)) {
-      const key = `${name}@${version}`;
-      if (!seen.has(key)) {
-        seen.set(key, {
-          name,
-          version,
-          license: '(MIT OR Apache-2.0)',
-          path: 'declared optional dependency',
-          licenseText: takumiLicense,
-          noticeText: undefined,
-          optional: [],
-        });
+  const dir = resolved === undefined ? undefined : realpathSync(resolved);
+  if (dir !== undefined && seen.has(dir)) {
+    return;
+  }
+
+  const installed = dir === undefined ? undefined : readPackage(dir);
+  const platformBound =
+    installed !== undefined &&
+    (installed.os !== undefined || installed.cpu !== undefined);
+  const version = exactVersion(range);
+
+  if (platformBound || dir === undefined) {
+    if (version === undefined) {
+      return;
+    }
+    const key = `optional:${name}@${version}`;
+    if (seen.has(key)) {
+      return;
+    }
+    const parentLicense = licenseOf(parentPkg);
+    if (installed !== undefined) {
+      const installedLicense = licenseOf(installed);
+      if (installed.version !== version || installedLicense !== parentLicense) {
+        throw new Error(
+          `${name}@${version} (${installedLicense}) does not match the declared optional dependency of ${parentPkg.name} (${parentLicense}).`
+        );
       }
     }
+    seen.set(key, {
+      name,
+      version,
+      license: parentLicense,
+      path: 'declared optional dependency',
+      licenseText: curatedLicenseText({ name, version }),
+      noticeText: undefined,
+      optional: [],
+    });
+    return;
+  }
+
+  walk(name, fromDir, seen);
+};
+
+const walk = (name, fromDir, seen) => {
+  const resolved = resolvePackageDir(name, fromDir);
+  if (resolved === undefined) {
     return;
   }
   const dir = realpathSync(resolved);
@@ -177,18 +220,16 @@ const walk = (name, fromDir, seen, version) => {
     path: relative(repoRoot, dir) || '.',
     licenseText: licenseTextOf(pkg, dir),
     noticeText: readFirstExisting(dir, NOTICE_BASENAMES),
-    // Listed by name, never walked: which one is installed depends on the
-    // running platform, and the report must not.
     optional: Object.keys(pkg.optionalDependencies ?? {}).sort(),
   });
 
-  for (const [dependency, range] of Object.entries(pkg.dependencies ?? {})) {
-    walk(dependency, dir, seen, range);
+  for (const dependency of Object.keys(pkg.dependencies ?? {})) {
+    walk(dependency, dir, seen);
   }
   for (const [dependency, range] of Object.entries(
     pkg.optionalDependencies ?? {}
   )) {
-    walk(dependency, dir, seen, range);
+    recordOptional(dependency, range, dir, pkg, seen);
   }
 };
 
