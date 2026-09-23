@@ -291,17 +291,18 @@ export const cardsModule = createStyleModule('cards', ({ css }) => ({
   grid: css`
     display: grid;
     gap: ${cards.styles.standard.gap};
-    grid-template-columns: repeat(${cards.defaultColumns}, minmax(0, 1fr));
     min-height: 0;
   `,
-  columns: variants(slideCardColumns, (key) => {
-    const count = key.slice('cols'.length);
-    return count === cards.defaultColumns.value
-      ? undefined
-      : css`
-          grid-template-columns: repeat(${count}, minmax(0, 1fr));
-        `;
-  }),
+  // Every group carries one of these, so no rule competes with it on order.
+  columns: variants(
+    slideCardColumns,
+    (key) => css`
+      grid-template-columns: repeat(
+        ${key.slice('cols'.length)},
+        minmax(0, 1fr)
+      );
+    `
+  ),
   card: css`
     background: ${color.bgSurface};
     border: 1px solid ${color.border};
@@ -461,6 +462,9 @@ export const codeModule = createStyleModule('code', ({ css }) => ({
       tab-size: 2;
       white-space: pre-wrap;
     }
+    & code {
+      font-family: ${font.family.mono};
+    }
   `,
   // Smaller font when a code block appears inside a split-within-split.
   densePre: rule(
@@ -470,7 +474,6 @@ export const codeModule = createStyleModule('code', ({ css }) => ({
   ),
   line: css`
     display: block;
-    font-family: ${font.family.mono};
   `,
   lineDimmed: css`
     opacity: ${code.dimmedOpacity};

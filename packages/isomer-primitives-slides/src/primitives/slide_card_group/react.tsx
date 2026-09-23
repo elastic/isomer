@@ -9,8 +9,16 @@ import type { ReactNode } from 'react';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
+import { slideDistillery } from '../../theme/distillery';
 import { slideModules } from '../../theme/modules';
-import { slideCardColumnsKey } from '../../theme/variants';
+import {
+  type SlideCardColumnCount,
+  slideCardColumnsKey,
+} from '../../theme/variants';
+
+const defaultColumns = Number(
+  slideDistillery.tokens.cards.defaultColumns.value
+) as SlideCardColumnCount;
 
 import type { SlideCardGroupNode } from './schema';
 
@@ -23,9 +31,7 @@ export const react = (
   const { handles: tones } = slideModules.tones;
   const style = node.style ?? 'standard';
   const columns =
-    node.columns === undefined
-      ? undefined
-      : cards.columns[slideCardColumnsKey(node.columns)];
+    cards.columns[slideCardColumnsKey(node.columns ?? defaultColumns)];
   return (
     <div className={cls(context, cards.grid, cards.style[style], columns)}>
       {node.cards.map((card, index) => (
