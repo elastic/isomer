@@ -42,6 +42,7 @@ export const SLIDE_THEME = {
   cards: { radius: radius.m, meta: { … }, styles: { feature: { … }, … } },
   code: { fontSize: font.size.l, dense: { … } },
   bullets: { … }, flow: { … }, split: { … }, stack: { … }, territory: { … },
+  table: { … }, transcript: { roleLabel: { … }, … }, window: { … }, cycle: { ringColor, … },
   label: { … }, logo: { … },
 } as const;
 ```

@@ -1,7 +1,7 @@
 ---
 type: Concept
 title: Pack
-description: Nine slide-deck primitives, six surfaces, one Distillate HTML adapter.
+description: Thirteen slide-deck primitives, six surfaces, one Distillate HTML adapter.
 resource: https://github.com/elastic/isomer/blob/main/packages/isomer-primitives-slides/src/pack.ts
 tags: [isomer, slides]
 status: stable
@@ -13,14 +13,21 @@ sources:
   - id: docs
     resource: https://github.com/elastic/isomer/blob/main/packages/isomer-primitives-slides/docs/index.md
     title: Pack overview
+  - id: contract
+    resource: https://github.com/elastic/isomer/blob/main/packages/isomer-primitives-slides/docs/contract.md
+    title: Pack contract
 ---
 
 # Definition
 
-The in-repo reference pack. Primitives: `slideFrame`, `slideSplit`, `slideStack`, `slideBulletList`, `slideCardGroup`, `slideCode`, `slideFlow`, `slideTerritoryGroup`, `slideTitle`. Surfaces: React, HTML, text, Markdown, Slack, and SVG, the last only when the runtime is given frames. The pack ships its own Distillate HTML adapter and declares `styleCollector: DISTILLATE_STYLE_COLLECTOR`.[^pack][^docs]
+The in-repo reference pack. Primitives: `slideFrame`, `slideSplit`, `slideStack`, `slideWindow`, `slideBulletList`, `slideCardGroup`, `slideCode`, `slideCycle`, `slideFlow`, `slideTable`, `slideTerritoryGroup`, `slideTitle`, `slideTranscript`. Surfaces: React, HTML, text, Markdown, Slack, and SVG, the last only when the runtime is given frames. The pack ships its own Distillate HTML adapter and declares `styleCollector: DISTILLATE_STYLE_COLLECTOR`.[^pack][^docs]
+
+On Slack, every container dispatches its children through `scope.renderSlack`, so `slideTable`'s native `table` renderer is reached under a frame; the other leaves fall back through markdown. The pack declares no `surfaces` because not every primitive has a `slack` renderer.[^contract]
 
 Related: [theme](/slides/concepts/theme.md), [one source](/slides/concepts/one-source.md), [document](/slides/concepts/document.md).
 
 [^pack]: slidesPack
 
 [^docs]: Pack overview
+
+[^contract]: Pack contract

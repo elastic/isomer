@@ -6,6 +6,11 @@
  */
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
+import {
+  escapeMrkdwn,
+  type SlackAssetCollector,
+  type SlackBlock,
+} from '@elastic/isomer-sdk/slack';
 
 import type { SlideRenderScope } from './context';
 
@@ -21,3 +26,21 @@ export const renderChildren = (
     )
     .filter(Boolean)
     .join('\n\n');
+
+/** A container's Slack blocks: each child through `scope`, so a native renderer below is reached. */
+export const renderSlackChildren = (
+  nodes: readonly PrimitiveNode[],
+  scope: Pick<SlideRenderScope, 'renderSlack'>,
+  collector: SlackAssetCollector | undefined
+): SlackBlock[] => nodes.flatMap((node) => scope.renderSlack(node, collector));
+
+/** A one-line `context` block: the chrome a container draws above its children. */
+export const slackCaption = (text: string, strong = false): SlackBlock => ({
+  type: 'context',
+  elements: [
+    {
+      type: 'mrkdwn',
+      text: strong ? `*${escapeMrkdwn(text)}*` : escapeMrkdwn(text),
+    },
+  ],
+});

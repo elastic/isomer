@@ -17,6 +17,9 @@ import {
   slideStackSpacings,
   slideTitleSizes,
   slideTones,
+  slideTranscriptFormats,
+  slideTranscriptRoles,
+  slideWindowChromes,
 } from './variants';
 
 const { createStyleModule, tokens } = slideDistillery;
@@ -25,6 +28,7 @@ const {
   cards,
   code,
   color,
+  cycle,
   flow,
   font,
   frame,
@@ -32,8 +36,11 @@ const {
   logo,
   split,
   stack,
+  table,
   territory,
   title,
+  transcript,
+  window: windowTokens,
 } = tokens;
 
 // ---- Deck root -----------------------------------------------------------
@@ -461,6 +468,24 @@ export const codeModule = createStyleModule('code', ({ css }) => ({
       `${h(splitModule.handles.root)} ${h(splitModule.handles.root)} ${h.root} pre`,
     decls`font-size: ${code.dense.fontSize}; line-height: ${code.lineHeight}; padding: ${code.dense.padding};`
   ),
+  line: css`
+    display: block;
+    font-family: ${font.family.mono};
+  `,
+  lineDimmed: css`
+    opacity: ${code.dimmedOpacity};
+  `,
+  lineHighlight: css`
+    background: ${color.tonePrimaryBg};
+    box-shadow: inset ${code.highlightBorder} 0 0 ${color.primary};
+    margin: 0 calc(-1 * ${code.highlightInset});
+    padding: 0 ${code.highlightInset};
+  `,
+  denseLineHighlight: rule(
+    (h) =>
+      `${h(splitModule.handles.root)} ${h(splitModule.handles.root)} ${h.root} ${h.lineHighlight}`,
+    decls`margin: 0 calc(-1 * ${code.dense.highlightInset}); padding: 0 ${code.dense.highlightInset};`
+  ),
 }));
 
 // ---- Bullet list ---------------------------------------------------------
@@ -593,6 +618,261 @@ export const territoryModule = createStyleModule('territory', ({ css }) => ({
   `,
 }));
 
+// ---- Table ---------------------------------------------------------------
+
+/** Distillate module for `slideTable`. */
+export const tableModule = createStyleModule('table', ({ css }) => ({
+  table: css`
+    background: ${color.bgSurface};
+    border: 1px solid ${color.border};
+    border-radius: ${table.radius};
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  `,
+  row: css`
+    border-top: 1px solid ${color.border};
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+  `,
+  head: css`
+    background: ${color.bgSubdued};
+    border-top: 0;
+  `,
+  cell: css`
+    color: ${color.textSoft};
+    font-size: ${table.cellFontSize};
+    line-height: ${table.cellLineHeight};
+    min-width: 0;
+    padding: ${table.cellPadding};
+  `,
+  headCell: css`
+    color: ${color.textSubtle};
+    font-size: ${table.headFontSize};
+    font-weight: ${table.headFontWeight};
+    letter-spacing: ${table.headTracking};
+    text-transform: uppercase;
+  `,
+  rowHeader: css`
+    color: ${color.text};
+    font-weight: ${table.rowHeaderFontWeight};
+  `,
+}));
+
+// ---- Transcript ----------------------------------------------------------
+
+/** Distillate module for `slideTranscript`. */
+export const transcriptModule = createStyleModule('transcript', ({ css }) => ({
+  root: css`
+    display: flex;
+    flex-direction: column;
+    gap: ${transcript.gap};
+  `,
+  turn: css`
+    border: 1px solid ${color.border};
+    border-radius: ${transcript.radius};
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: ${transcript.roleGap};
+    max-width: ${transcript.turnMaxWidth};
+    padding: ${transcript.padding};
+  `,
+  role: css`
+    color: ${toneVar};
+    font-size: ${transcript.roleFontSize};
+    font-weight: ${transcript.roleFontWeight};
+    letter-spacing: ${transcript.roleTracking};
+    text-transform: uppercase;
+  `,
+  text: css`
+    color: ${color.text};
+    font-size: ${transcript.textFontSize};
+    line-height: ${transcript.textLineHeight};
+    margin: 0;
+    white-space: pre-wrap;
+  `,
+  speaker: variants(slideTranscriptRoles, (role) => {
+    if (role === 'user') {
+      return css`
+        align-self: flex-end;
+        background: ${color.tonePrimaryBg};
+        ${toneVar.name}: ${color.primary};
+      `;
+    }
+    if (role === 'model') {
+      return css`
+        align-self: flex-start;
+        background: ${color.bgSurface};
+        ${toneVar.name}: ${color.accentTeal};
+      `;
+    }
+    return css`
+      align-self: center;
+      background: ${color.bgSubdued};
+      ${toneVar.name}: ${color.textSubtle};
+    `;
+  }),
+  format: variants(slideTranscriptFormats, (format) =>
+    format === 'code'
+      ? css`
+          font-family: ${font.family.mono};
+          font-size: ${transcript.codeFontSize};
+        `
+      : undefined
+  ),
+}));
+
+// ---- Window --------------------------------------------------------------
+
+/** Distillate module for `slideWindow`. */
+export const windowModule = createStyleModule('window', ({ css }) => ({
+  root: css`
+    background: ${color.bgSurface};
+    border: 1px solid ${color.borderStrong};
+    border-radius: ${windowTokens.radius};
+    box-shadow: ${windowTokens.shadow};
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+  `,
+  bar: css`
+    align-items: center;
+    background: ${color.bgSubdued};
+    border-bottom: 1px solid ${color.border};
+    display: flex;
+    gap: ${windowTokens.barGap};
+    padding: ${windowTokens.barPadding};
+  `,
+  dot: css`
+    border-radius: 50%;
+    display: block;
+    flex: 0 0 auto;
+    height: ${windowTokens.dotSize};
+    width: ${windowTokens.dotSize};
+  `,
+  dotClose: css`
+    background: ${color.danger};
+  `,
+  dotMinimize: css`
+    background: ${color.warning};
+  `,
+  dotZoom: css`
+    background: ${color.success};
+  `,
+  title: css`
+    color: ${color.textSoft};
+    font-size: ${windowTokens.titleFontSize};
+    font-weight: ${windowTokens.titleFontWeight};
+    min-width: 0;
+    overflow: hidden;
+    padding: ${windowTokens.titlePadding};
+    white-space: nowrap;
+  `,
+  body: css`
+    display: flex;
+    flex-direction: column;
+    gap: ${windowTokens.bodyGap};
+    min-height: 0;
+    padding: ${windowTokens.bodyPadding};
+  `,
+  titleChrome: variants(slideWindowChromes, (chrome) => {
+    if (chrome === 'browser') {
+      return css`
+        background: ${color.bgSurface};
+        border: 1px solid ${color.border};
+        border-radius: ${windowTokens.radius};
+        flex: 1;
+      `;
+    }
+    if (chrome === 'terminal') {
+      return css`
+        font-family: ${font.family.mono};
+      `;
+    }
+    if (chrome === 'slack') {
+      return css`
+        color: ${color.text};
+        font-weight: ${font.weight.bold};
+        &::before {
+          content: '${windowTokens.slackPrefix} ';
+        }
+      `;
+    }
+    return css`
+      color: ${color.accentTeal};
+      font-weight: ${font.weight.bold};
+    `;
+  }),
+  terminalBody: css`
+    background: ${color.codeBg};
+    padding: 0;
+  `,
+  // The terminal is the code block's surround, so the block drops its own.
+  terminalPre: rule(
+    (h) => `${h.terminalBody} ${h(codeModule.handles.root)} pre`,
+    decls`background: transparent; border: 0; border-radius: 0;`
+  ),
+}));
+
+// ---- Cycle diagram -------------------------------------------------------
+
+/** Distillate module for `slideCycle`. */
+export const cycleModule = createStyleModule('cycle', ({ css }) => ({
+  block: css`
+    align-items: flex-start;
+    display: flex;
+    flex-direction: column;
+  `,
+  diagram: css`
+    flex: 0 0 auto;
+    height: ${cycle.size};
+    position: relative;
+    width: ${cycle.size};
+  `,
+  svg: css`
+    display: block;
+    height: 100%;
+    left: 0;
+    position: absolute;
+    top: 0;
+    width: 100%;
+  `,
+  // HTML stays scheme-aware; the attribute beside each class is what the image draws.
+  ring: css`
+    stroke: ${color.primary};
+  `,
+  arrow: css`
+    fill: ${color.primary};
+  `,
+  part: css`
+    background: ${color.bgSurface};
+    border: 1px solid ${color.borderStrong};
+    border-radius: ${cycle.partRadius};
+    color: ${color.text};
+    font-size: ${cycle.partFontSize};
+    font-weight: ${cycle.partFontWeight};
+    padding: ${cycle.partPadding};
+    position: absolute;
+    transform: translate(-50%, -50%);
+    white-space: nowrap;
+  `,
+  center: css`
+    color: ${color.text};
+    font-size: ${cycle.centerFontSize};
+    font-weight: ${cycle.centerFontWeight};
+    left: 50%;
+    max-width: ${cycle.centerMaxWidth};
+    position: absolute;
+    text-align: center;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  `,
+}));
+
 // ---- Full stylesheet helper ----------------------------------------------
 
 /** All modules, keyed for external reference. */
@@ -610,6 +890,10 @@ export const slideModules = {
   bullets: bulletsModule,
   flow: flowModule,
   territory: territoryModule,
+  table: tableModule,
+  transcript: transcriptModule,
+  window: windowModule,
+  cycle: cycleModule,
 };
 
 /** Readable CSS for every slide module; hosts include this beside React markup. */

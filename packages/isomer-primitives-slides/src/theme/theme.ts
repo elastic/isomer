@@ -94,6 +94,11 @@ const font = {
   },
 } as const;
 
+/** Resting shadow shared by cards and windows. */
+const elevation = literal(
+  '0 1px 2px rgba(35, 49, 73, 0.06), 0 4px 12px rgba(35, 49, 73, 0.06)'
+);
+
 /**
  * Per-primitive chrome, composed from the groups above.
  *
@@ -185,9 +190,7 @@ const components = {
     defaultColumns: literal('3'),
     radius: radius.m,
     borderTop: size.xxs,
-    shadow: literal(
-      '0 1px 2px rgba(35, 49, 73, 0.06), 0 4px 12px rgba(35, 49, 73, 0.06)'
-    ),
+    shadow: elevation,
     titleFontWeight: font.weight.bold,
     badgeFontWeight: font.weight.extrabold,
     meta: {
@@ -231,9 +234,14 @@ const components = {
     fontSize: font.size.l,
     lineHeight: literal('1.5'),
     padding: paddingXy(size.l, size.xl),
+    // Matches the padding's x-inset so a highlight bleeds to the block's edge.
+    highlightInset: size.xl,
+    highlightBorder: size.xxs,
+    dimmedOpacity: literal('0.55'),
     dense: {
       fontSize: font.size.s,
       padding: paddingXy(size.m, size.l),
+      highlightInset: size.l,
     },
   },
   bullets: {
@@ -298,6 +306,67 @@ const components = {
     titleTracking: font.tracking.widest,
     bodyFontSize: font.size.l,
     bodyLineHeight: literal('1.45'),
+  },
+  table: {
+    radius: radius.m,
+    headFontSize: font.size.s,
+    headFontWeight: font.weight.bold,
+    headTracking: font.tracking.widest,
+    cellFontSize: font.size.l,
+    cellLineHeight: literal('1.4'),
+    cellPadding: paddingXy(size.s, size.m),
+    rowHeaderFontWeight: font.weight.bold,
+  },
+  transcript: {
+    gap: size.m,
+    radius: radius.m,
+    padding: paddingXy(size.s, size.m),
+    // Share of the column a turn may fill, so speakers read as sides.
+    turnMaxWidth: literal('86%'),
+    roleFontSize: font.size.xs,
+    roleFontWeight: font.weight.bold,
+    roleTracking: font.tracking.caps,
+    roleGap: size.xxs,
+    textFontSize: font.size.l,
+    textLineHeight: literal('1.45'),
+    codeFontSize: font.size.s,
+    roleLabel: {
+      host: literal('Host'),
+      model: literal('Model'),
+      user: literal('User'),
+    },
+  },
+  window: {
+    radius: radius.m,
+    shadow: elevation,
+    barGap: size.xs,
+    barPadding: paddingXy(size.s, size.m),
+    dotSize: size.s,
+    titleFontSize: font.size.s,
+    titleFontWeight: font.weight.semibold,
+    titlePadding: paddingXy(size.xxs, size.s),
+    bodyGap: size.m,
+    bodyPadding: size.l,
+    slackPrefix: literal('#'),
+  },
+  cycle: {
+    // Diagram box on the 1920px canvas, not spacing.
+    size: px(440),
+    // Ring geometry in the drawing's 100-unit viewBox.
+    viewBox: literal('100'),
+    ringRadius: literal('36'),
+    ringStroke: literal('0.8'),
+    arrowSize: literal('3.2'),
+    // Brand-fixed: the image surface reads only this attribute (`docs/primitives.md`).
+    ringColor: literal('#1BA9F5'),
+    partFontSize: font.size.s,
+    partFontWeight: font.weight.bold,
+    partPadding: paddingXy(size.xs, size.s),
+    partRadius: radius.s,
+    centerFontSize: font.size.xl,
+    centerFontWeight: font.weight.extrabold,
+    centerMaxWidth: px(200),
+    gap: size.xl,
   },
 } as const;
 

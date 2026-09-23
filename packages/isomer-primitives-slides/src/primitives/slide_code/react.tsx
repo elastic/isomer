@@ -20,13 +20,32 @@ export const react = (
 ): ReactNode => {
   const { handles: code } = slideModules.code;
   const { handles: label } = slideModules.label;
+  const highlighted = node.highlight?.length
+    ? new Set(node.highlight)
+    : undefined;
   return (
     <div className={cls(context, code.root)}>
       {node.label ? (
         <div className={cls(context, label.label)}>{node.label}</div>
       ) : null}
       <pre>
-        <code>{node.code}</code>
+        <code>
+          {highlighted
+            ? node.code.split('\n').map((line, index) => (
+                <span
+                  className={cls(
+                    context,
+                    code.line,
+                    highlighted.has(index + 1)
+                      ? code.lineHighlight
+                      : code.lineDimmed
+                  )}
+                  key={index}>
+                  {line || ' '}
+                </span>
+              ))
+            : node.code}
+        </code>
       </pre>
     </div>
   );

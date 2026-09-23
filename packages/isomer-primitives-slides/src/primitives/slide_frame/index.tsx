@@ -7,7 +7,11 @@
 
 import type { ZodType } from 'zod';
 
-import { renderChildren } from '../../render';
+import {
+  renderChildren,
+  renderSlackChildren,
+  slackCaption,
+} from '../../render';
 import { slideDistillery } from '../../theme/distillery';
 import { scalePx } from '../../theme/scale';
 import { SLIDE_THEME } from '../../theme/theme';
@@ -48,6 +52,10 @@ export const slideFramePrimitive = definePrimitive<SlideFrameNode>({
       ]
         .filter(Boolean)
         .join('\n\n'),
+    slack: (node, { collector, scope }) => [
+      slackCaption(chapterLine(node)),
+      ...renderSlackChildren(node.body, scope, collector),
+    ],
   },
   children: (node) =>
     node.body.map((child, index) => ({

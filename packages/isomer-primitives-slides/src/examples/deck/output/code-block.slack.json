@@ -9,10 +9,33 @@
     "level": 1
   },
   {
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "04 · Contract"
+      }
+    ]
+  },
+  {
     "type": "section",
     "text": {
       "type": "mrkdwn",
-      "text": "*04 · Contract*\n\n*The composition contract.*\n\n*Composition*"
+      "text": "*The composition contract.*"
+    }
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": " "
+    }
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "*Composition*"
     }
   },
   {

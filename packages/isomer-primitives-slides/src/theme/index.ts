@@ -21,6 +21,9 @@ export {
   slideStackSpacings,
   slideTitleSizes,
   slideTones,
+  slideTranscriptFormats,
+  slideTranscriptRoles,
+  slideWindowChromes,
 } from './variants';
 export type {
   SlideBulletMarker,
@@ -32,4 +35,7 @@ export type {
   SlideStackSpacing,
   SlideTitleSize,
   SlideTone,
+  SlideTranscriptFormat,
+  SlideTranscriptRole,
+  SlideWindowChrome,
 } from './variants';

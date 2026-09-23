@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { markdown } from './index';
+import { schema } from './schema';
 
 describe('slideCode markdown fence', () => {
   it('falls back to text for a hostile language token', () => {
@@ -27,5 +28,16 @@ describe('slideCode markdown fence', () => {
     });
     expect(md).toMatch(/^````md\n/);
     expect(md.trim().endsWith('````')).toBe(true);
+  });
+});
+
+describe('slideCode highlight', () => {
+  it('rejects a line past the end of the code', () => {
+    const result = schema.safeParse({
+      type: 'slideCode',
+      code: 'one\ntwo',
+      highlight: [3],
+    });
+    expect(result.success).toBe(false);
   });
 });

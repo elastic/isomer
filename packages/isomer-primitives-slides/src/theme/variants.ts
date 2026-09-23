@@ -63,6 +63,20 @@ export const slideCardColumnsKey = (
   count: SlideCardColumnCount
 ): SlideCardColumns => `cols${count}`;
 
+/** Speakers for {@link SlideTranscriptNode} turns. */
+export const slideTranscriptRoles = ['user', 'model', 'host'] as const;
+
+/** How a {@link SlideTranscriptNode} turn sets its text. */
+export const slideTranscriptFormats = ['prose', 'code'] as const;
+
+/** Surrounds for {@link SlideWindowNode.chrome}. */
+export const slideWindowChromes = [
+  'browser',
+  'terminal',
+  'slack',
+  'chat',
+] as const;
+
 /** One of {@link slideFrameLayouts}. */
 export type SlideFrameLayout = (typeof slideFrameLayouts)[number];
 
@@ -83,3 +97,12 @@ export type SlideCardGroupStyle = (typeof slideCardGroupStyles)[number];
 
 /** One of {@link slideCardColumns}. */
 export type SlideCardColumns = (typeof slideCardColumns)[number];
+
+/** One of {@link slideTranscriptRoles}. */
+export type SlideTranscriptRole = (typeof slideTranscriptRoles)[number];
+
+/** One of {@link slideTranscriptFormats}. */
+export type SlideTranscriptFormat = (typeof slideTranscriptFormats)[number];
+
+/** One of {@link slideWindowChromes}. */
+export type SlideWindowChrome = (typeof slideWindowChromes)[number];

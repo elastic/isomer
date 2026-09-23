@@ -7,7 +7,7 @@
 
 import type { ZodType } from 'zod';
 
-import { renderChildren } from '../../render';
+import { renderChildren, renderSlackChildren } from '../../render';
 import { bodyNodes, definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -31,6 +31,8 @@ export const slideStackPrimitive = definePrimitive<SlideStackNode>({
     text: (node, { scope }) => renderChildren(node.items, scope, 'text'),
     markdown: (node, { scope }) =>
       renderChildren(node.items, scope, 'markdown'),
+    slack: (node, { collector, scope }) =>
+      renderSlackChildren(node.items, scope, collector),
   },
   children: (node) =>
     node.items.map((child, index) => ({

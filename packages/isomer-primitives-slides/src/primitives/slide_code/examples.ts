@@ -21,5 +21,18 @@ export const bareExample: SlideCodeNode = {
   code: 'const runtime = createIsomerRuntime({\n  packs: [slidesPack],\n});',
 };
 
+/** Lines 2 and 3 emphasized; the rest dim. */
+export const highlightExample: SlideCodeNode = {
+  type: 'slideCode',
+  label: 'Runtime',
+  language: 'ts',
+  code: 'const runtime = createIsomerRuntime({\n  packs: [slidesPack],\n  frames: { slide: slideDeckFrame },\n});',
+  highlight: [2, 3],
+};
+
 /** Conformance examples for {@link SlideCodeNode}. */
-export const examples: SlideCodeNode[] = [example, bareExample];
+export const examples: SlideCodeNode[] = [
+  example,
+  bareExample,
+  highlightExample,
+];

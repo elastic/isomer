@@ -9,10 +9,19 @@
     "level": 1
   },
   {
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "01 · Primitives"
+      }
+    ]
+  },
+  {
     "type": "section",
     "text": {
       "type": "mrkdwn",
-      "text": "*01 · Primitives*\n\n_Reference pack_\n\n*One composition, every surface.*\n\nThe same spec renders as HTML, markdown, text, Slack, and SVG."
+      "text": "_Reference pack_\n\n*One composition, every surface.*\n\nThe same spec renders as HTML, markdown, text, Slack, and SVG."
     }
   }
 ]

@@ -20,17 +20,22 @@ const {
   SlideCard,
   SlideCardGroup,
   SlideCode,
+  SlideCycle,
   SlideFlow,
   SlideFrame,
   SlideSplit,
   SlideStack,
+  SlideTable,
   SlideTerritory,
   SlideTerritoryGroup,
   SlideTitle,
+  SlideTranscript,
+  SlideTurn,
+  SlideWindow,
   toComposition,
 } = buildJsxShim(slideDeckPrimitives);
 
-/** Five example compositions covering this pack's primitives. */
+/** Seven example compositions covering this pack's primitives. */
 export const deck: Composition[] = [
   toComposition(
     <Slide title="Title slide">
@@ -147,6 +152,69 @@ export const deck: Composition[] = [
             </SlideTerritory>
           </SlideTerritoryGroup>
         </SlideStack>
+      </SlideFrame>
+    </Slide>
+  ),
+
+  toComposition(
+    <Slide title="Agent loop">
+      <SlideFrame brand="Isomer" chapter="06 · Agents" footer="Elastic">
+        <SlideTitle title="Parse, then retry." size="compact" />
+        <SlideSplit
+          ratio="wideRight"
+          left={
+            <SlideCycle
+              label="Loop"
+              center="Until it parses"
+              nodes={['Context', 'Model', 'parse', 'Errors']}
+            />
+          }
+          right={
+            <SlideWindow chrome="chat" title="Agent">
+              <SlideTranscript>
+                <SlideTurn role="user">How is checkout doing?</SlideTurn>
+                <SlideTurn role="model" format="code">
+                  {'{ "type": "slideTitle" }'}
+                </SlideTurn>
+                <SlideTurn role="host" format="code">
+                  body[0].title: expected string
+                </SlideTurn>
+                <SlideTurn role="model">Retried with a title.</SlideTurn>
+              </SlideTranscript>
+            </SlideWindow>
+          }
+        />
+      </SlideFrame>
+    </Slide>
+  ),
+
+  toComposition(
+    <Slide title="Table and window">
+      <SlideFrame brand="Isomer" chapter="07 · Surfaces" footer="Elastic">
+        <SlideSplit
+          left={
+            <SlideTable
+              label="On invalid input"
+              columns={['Surface', 'Behavior']}
+              rowHeaders
+              rows={[
+                ['react', 'Never validates'],
+                ['html', 'Reports findings'],
+                ['text', 'Throws'],
+                ['slack', 'Throws'],
+              ]}
+            />
+          }
+          right={
+            <SlideWindow chrome="terminal" title="node render.js">
+              <SlideCode language="ts" highlight={[2]}>
+                {`const runtime = createIsomerRuntime({
+  packs: [slidesPack],
+});`}
+              </SlideCode>
+            </SlideWindow>
+          }
+        />
       </SlideFrame>
     </Slide>
   ),

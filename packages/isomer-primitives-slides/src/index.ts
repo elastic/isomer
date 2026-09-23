@@ -21,11 +21,13 @@ export type {
   SlideCardGroupNode,
 } from './primitives/slide_card_group';
 export type { SlideCodeNode } from './primitives/slide_code';
+export type { SlideCycleNode } from './primitives/slide_cycle';
 export type { SlideFlowNode } from './primitives/slide_flow';
 export { SlideFrameView } from './primitives/slide_frame';
 export type { SlideFrameNode } from './primitives/slide_frame';
 export type { SlideSplitNode } from './primitives/slide_split';
 export type { SlideStackNode } from './primitives/slide_stack';
+export type { SlideTableNode } from './primitives/slide_table';
 export type {
   SlideTerritory,
   SlideTerritoryGroupNode,
@@ -35,6 +37,11 @@ export type {
   SlideLedePart,
   SlideTitleNode,
 } from './primitives/slide_title';
+export type {
+  SlideTranscriptNode,
+  SlideTranscriptTurn,
+} from './primitives/slide_transcript';
+export type { SlideWindowNode } from './primitives/slide_window';
 
 export { slideDeckPrimitives, slidePrimitiveTypes } from './registry';
 
@@ -59,5 +66,13 @@ export {
   slideStackSpacings,
   slideTitleSizes,
   slideTones,
+  slideTranscriptFormats,
+  slideTranscriptRoles,
+  slideWindowChromes,
 } from './theme';
-export type { SlideTone } from './theme';
+export type {
+  SlideTone,
+  SlideTranscriptFormat,
+  SlideTranscriptRole,
+  SlideWindowChrome,
+} from './theme';

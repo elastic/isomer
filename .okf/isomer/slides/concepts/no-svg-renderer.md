@@ -19,7 +19,7 @@ sources:
 
 There is no per-primitive `svg` renderer. The image surface dispatches to `react` and is handed the pack's stylesheet. Do not reintroduce a second tree authored for image layout.
 
-The pack stylesheet does not reach inside an inline `<svg>`. Anything drawn there needs a literal `fill` / `stroke` alongside its class.[^agents][^docs]
+The pack stylesheet does not reach inside an inline `<svg>`. Anything drawn there needs a literal `fill` / `stroke` alongside its class. `slideCycle` is the worked example: its ring carries the brand-fixed `cycle.ringColor` attribute beside a scheme-aware class, and a test fails if a shape loses its literal paint.[^agents][^docs]
 
 Related: [surfaces](/runtime/concepts/surfaces.md), [raster](/image-takumi/concepts/raster.md).
 

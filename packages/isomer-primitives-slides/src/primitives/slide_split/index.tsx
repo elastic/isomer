@@ -7,7 +7,7 @@
 
 import type { ZodType } from 'zod';
 
-import { renderChildren } from '../../render';
+import { renderChildren, renderSlackChildren } from '../../render';
 import { bodyNodes, definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -35,6 +35,8 @@ export const slideSplitPrimitive = definePrimitive<SlideSplitNode>({
       renderChildren([...node.left, ...node.right], scope, 'text'),
     markdown: (node, { scope }) =>
       renderChildren([...node.left, ...node.right], scope, 'markdown'),
+    slack: (node, { collector, scope }) =>
+      renderSlackChildren([...node.left, ...node.right], scope, collector),
   },
   children: (node) => [
     ...node.left.map((child, index) => ({

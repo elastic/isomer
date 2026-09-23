@@ -9,10 +9,33 @@
     "level": 1
   },
   {
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "02 · Grammar"
+      }
+    ]
+  },
+  {
     "type": "section",
     "text": {
       "type": "mrkdwn",
-      "text": "*02 · Grammar*\n\n*Primitive pack*\n\nVocabulary, renderers, and validation in one value.\n\n*What a pack declares*\n\n- Primitives\n- Surfaces\n- Theme bound"
+      "text": "*Primitive pack*\n\nVocabulary, renderers, and validation in one value."
+    }
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": " "
+    }
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "*What a pack declares*\n\n- Primitives\n- Surfaces\n- Theme bound"
     }
   }
 ]

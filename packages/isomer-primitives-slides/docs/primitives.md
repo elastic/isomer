@@ -39,7 +39,7 @@ So a shape inside an `<svg>` carries its own paint as a presentation attribute, 
 <path d="…" fill="#00BFB3" />
 ```
 
-Both surfaces read the one they can. A presentation attribute carries no specificity, so any class rule beats it and HTML stays scheme-aware through the custom property; the image has only the attribute, so that is what it draws. The header mark inlines `docs/logo.svg` as `ISOMER_LOGO_PATHS`. Those fills are brand-fixed literals, the same way `ELASTIC_LOGO_PATHS` is, so the paths do not take a scheme class.
+Both surfaces read the one they can. A presentation attribute carries no specificity, so any class rule beats it and HTML stays scheme-aware through the custom property; the image has only the attribute, so that is what it draws. `slideCycle` draws its ring this way: the class paints `color.primary` in HTML, and the attribute paints the brand-fixed `cycle.ringColor` in the image. Its steps are HTML boxes positioned over the ring, so their text keeps the stylesheet and the fonts. `slide_cycle/index.test.ts` fails if a shape loses its literal paint. The header mark inlines `docs/logo.svg` as `ISOMER_LOGO_PATHS`. Those fills are brand-fixed literals, the same way `ELASTIC_LOGO_PATHS` is, so the paths do not take a scheme class.
 
 Two traps worth naming:
 
@@ -104,11 +104,11 @@ code: fromTextChildren(z.string().min(1).describe('Source to display.'), {
 
 Required text that is missing throws `IsomerError` with code `MISSING_AUTHORED_TEXT`. Two primitives that brand the same child type with different item shapes throw `DUPLICATE_AUTHORED_CHILD` when the shim is built.
 
-One branch: a primitive that declares `schemaFor` also hand-writes its node type. The body-node union is injected per composition, so it cannot appear in a static schema — which is why `schemaFor` exists — and `z.infer` cannot name that cycle (`TS2456`, `TS7022`). Brand the child field the same way. When one child element is not the array element, pass `toItem`; its props annotation is the child component's props. `slideFrame`, `slideSplit`, and `slideStack` are that branch. Every other primitive's schema is its only declaration.
+One branch: a primitive that declares `schemaFor` also hand-writes its node type. The body-node union is injected per composition, so it cannot appear in a static schema — which is why `schemaFor` exists — and `z.infer` cannot name that cycle (`TS2456`, `TS7022`). Brand the child field the same way. When one child element is not the array element, pass `toItem`; its props annotation is the child component's props. `slideFrame`, `slideSplit`, `slideStack`, and `slideWindow` are that branch. Every other primitive's schema is its only declaration.
 
 ## Writing a container primitive
 
-Containers (frame, split, stack) need three more fields:
+Containers (frame, split, stack, window) need three more fields:
 
 ```ts
 schemaFor: (bodyNodeSchema) =>
@@ -126,7 +126,14 @@ renderers: {
 - `children` exposes nested nodes to the duplicate-id checker and the empty-surface checker.
 - `renderChildren` (`src/render/children.ts`) dispatches each child through `scope.renderText` / `scope.renderMarkdown`, so a foreign node inside a container renders rather than disappearing, and drops empties before joining.
 
-A container that also draws chrome of its own sets two more. `hasOwnContent: () => true` keeps it on a surface when every child is hidden there, and `metrics.svgHeight` reports its drawn height to a frame that sums node heights. `slideFrame` sets both because it owns the 16:9 canvas; `slideSplit` and `slideStack` set neither, since they draw nothing and take their height from their children.
+Give a container a `slack` renderer too, built on `renderSlackChildren`. Without one, the dispatcher sends the container's markdown to Block Kit, and every child goes with it, including a child that has a native `slack` renderer:
+
+```ts
+slack: (node, { collector, scope }) =>
+  renderSlackChildren(node.items, scope, collector),
+```
+
+A container that also draws chrome of its own sets two more. `hasOwnContent: () => true` keeps it on a surface when every child is hidden there, and `metrics.svgHeight` reports its drawn height to a frame that sums node heights. `slideFrame` sets both because it owns the 16:9 canvas. `slideWindow` sets `hasOwnContent` for its title bar; it needs no `svgHeight` because the slide frame does not sum node heights. `slideSplit` and `slideStack` set neither, since they draw nothing and take their height from their children.
 
 ## Registering the primitive
 

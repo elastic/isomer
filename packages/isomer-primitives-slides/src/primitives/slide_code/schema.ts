@@ -16,10 +16,23 @@ export const schema = z
     code: fromTextChildren(z.string().min(1).describe('Source to display.'), {
       collapseWhitespace: false,
     }),
+    highlight: z
+      .array(z.number().int().positive())
+      .describe('1-based line numbers to emphasize. Other lines dim.')
+      .optional(),
     label: z.string().describe('Optional heading above the block.').optional(),
     language: z.string().describe('Used for the markdown fence.').optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    ({ code, highlight }) =>
+      highlight === undefined ||
+      highlight.every((line) => line <= code.split('\n').length),
+    {
+      error: 'highlight lines must exist in code',
+      path: ['highlight'],
+    }
+  );
 
 /** Labeled code block with an optional language hint. */
 export type SlideCodeNode = z.infer<typeof schema> & PrimitiveNode;
