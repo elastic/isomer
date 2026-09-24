@@ -49,11 +49,6 @@ jobs:
         uses: elastic/docs-builder@main
         with:
           prefix: ${{ steps.prefix.outputs.prefix }}
-      - name: Disable Jekyll processing
-        # gh-pages is served via legacy branch-based Pages, which runs the
-        # output through Jekyll by default. Jekyll ignores/breaks on
-        # underscore-prefixed paths, and docs-builder emits assets to _static/.
-        run: touch .artifacts/docs/html/.nojekyll
       - uses: actions/upload-artifact@v4
         with:
           name: site
@@ -95,6 +90,14 @@ jobs:
         with:
           name: site
           path: site
+      - name: Disable Jekyll processing
+        # gh-pages is served via legacy branch-based Pages, which runs the
+        # output through Jekyll by default. Jekyll ignores/breaks on
+        # underscore-prefixed paths, and docs-builder emits assets to _static/.
+        # upload-artifact drops dotfiles by default, so this has to happen
+        # after download, not baked into the artifact in the build job.
+        if: github.event.action != 'closed'
+        run: touch site/.nojekyll
       - name: Deploy preview
         uses: rossjrw/pr-preview-action@v1
         with:
