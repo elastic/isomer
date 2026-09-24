@@ -30,6 +30,8 @@ jobs:
         with:
           # Private Pages sites serve from a per-repo pages.github.io root; a
           # public project page serves under /isomer/. Match whichever is live.
+          # '' is falsy in GHA expressions, so it must be the final fallback,
+          # not the result of `&&` (github.event.repository.private && '').
           prefix: ${{ !github.event.repository.private && 'isomer' || '' }}
       - uses: actions/upload-artifact@v4
         with:
