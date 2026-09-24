@@ -90,14 +90,18 @@ jobs:
         with:
           name: site
           path: site
-      - name: Disable Jekyll processing
-        # gh-pages is served via legacy branch-based Pages, which runs the
-        # output through Jekyll by default. Jekyll ignores/breaks on
-        # underscore-prefixed paths, and docs-builder emits assets to _static/.
-        # upload-artifact drops dotfiles by default, so this has to happen
-        # after download, not baked into the artifact in the build job.
-        if: github.event.action != 'closed'
-        run: touch site/.nojekyll
+      - name: Ensure root .nojekyll on gh-pages
+        # .nojekyll only disables Jekyll (which drops _static/ and every
+        # other underscore-prefixed path) when it sits at the branch root --
+        # a copy nested under pr-preview/pr-<n>/ has no effect. The main
+        # publish job seeds this too, but that only runs once something
+        # merges to main, which previews can't wait on.
+        run: mkdir -p /tmp/nojekyll-only && touch /tmp/nojekyll-only/.nojekyll
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: /tmp/nojekyll-only
+          keep_files: true
       - name: Deploy preview
         uses: rossjrw/pr-preview-action@v1
         with:
