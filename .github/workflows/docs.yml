@@ -28,7 +28,9 @@ jobs:
       - name: Build documentation
         uses: elastic/docs-builder@main
         with:
-          prefix: isomer
+          # Private Pages sites serve from a per-repo pages.github.io root; a
+          # public project page serves under /isomer/. Match whichever is live.
+          prefix: ${{ github.event.repository.private && '' || 'isomer' }}
       - uses: actions/upload-artifact@v4
         with:
           name: site
