@@ -1,0 +1,95 @@
+# Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+# or more contributor license agreements. Licensed under the Elastic License
+# 2.0; you may not use this file except in compliance with the Elastic License
+# 2.0.
+
+name: docs-preview
+
+on:
+  workflow_run:
+    workflows: [docs]
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  preview:
+    name: Deploy PR preview
+    # A workflow_run job always runs the version of this file committed to
+    # the repository's default branch, never the triggering branch's own
+    # copy -- unlike a job triggered directly by pull_request, which runs
+    # with whatever that PR's own branch currently has in .github/workflows.
+    # That's the whole reason this is a separate workflow: it's the only way
+    # to hand out contents:write/pull-requests:write for a same-repo PR
+    # build without letting that PR's own branch redefine what those
+    # permissions get used for.
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.pull_requests[0] != null
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: read
+    env:
+      PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+      PR_STATE: ${{ github.event.workflow_run.pull_requests[0].state }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Download built site
+        if: env.PR_STATE == 'open'
+        uses: actions/download-artifact@v4
+        with:
+          name: site
+          path: site
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Download Pages metadata
+        if: env.PR_STATE == 'open'
+        uses: actions/download-artifact@v4
+        with:
+          name: pages-meta
+          path: .
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Compute combined pages-base-url
+        id: base
+        if: env.PR_STATE == 'open'
+        run: |
+          source pages-meta.env
+          # pr-preview-action checks that pages-base-path literally prefixes
+          # where it deploys (umbrella-dir/pr-<n>, always relative to the
+          # branch root) and silently ignores it otherwise -- our content is
+          # never nested under a nested path on the branch itself, so a
+          # separate pages-base-path would always fail that check. Fold the
+          # path into pages-base-url instead, which is used as a plain
+          # string prefix with no such validation.
+          echo "url=${host}${path:+/$path}" >> "$GITHUB_OUTPUT"
+      - name: Ensure root .nojekyll on gh-pages
+        # .nojekyll only disables Jekyll (which drops _static/ and every
+        # other underscore-prefixed path) when it sits at the branch root --
+        # a copy nested under pr-preview/pr-<n>/ has no effect. The main
+        # publish job seeds this too, but that only runs once something
+        # merges to main, which previews can't wait on.
+        if: env.PR_STATE == 'open'
+        run: mkdir -p /tmp/nojekyll-only && touch /tmp/nojekyll-only/.nojekyll
+      - uses: peaceiris/actions-gh-pages@v4
+        if: env.PR_STATE == 'open'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: /tmp/nojekyll-only
+          keep_files: true
+      - name: Deploy or remove preview
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: site
+          umbrella-dir: pr-preview
+          pr-number: ${{ env.PR_NUMBER }}
+          action: ${{ env.PR_STATE == 'open' && 'deploy' || 'remove' }}
+          pages-base-url: ${{ steps.base.outputs.url }}

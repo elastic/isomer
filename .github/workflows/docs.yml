@@ -25,10 +25,6 @@ jobs:
     permissions:
       contents: read
       pages: read
-    outputs:
-      prefix: ${{ steps.prefix.outputs.prefix }}
-      pages_host: ${{ steps.pages.outputs.host }}
-      pages_path: ${{ steps.pages.outputs.path }}
     steps:
       - uses: actions/checkout@v5
       - name: Assemble package docs
@@ -53,15 +49,18 @@ jobs:
             else
               path=""
             fi
+          elif [[ "${{ github.event.repository.private }}" == "true" ]]; then
+            # No live site to ask yet (or a transient API failure) on a
+            # private repo -- assume the private root-served shape rather
+            # than guessing a project-page path that would break every
+            # asset link on every page.
+            host="${{ github.repository_owner }}.github.io"
+            path=""
           else
-            # No Pages site exists yet to ask -- fall back to the standard
-            # public project-page shape.
+            # Same, for a public repo: assume the standard project-page shape.
             host="${{ github.repository_owner }}.github.io"
             path="${{ github.event.repository.name }}"
           fi
-          # pr-preview-action's pages-base-url wants a bare host: it builds
-          # the link as https://{pages-base-url}/... and prepends the
-          # scheme itself, so a full origin here would double it up.
           echo "host=$host" >> "$GITHUB_OUTPUT"
           echo "path=$path" >> "$GITHUB_OUTPUT"
       - name: Compute URL prefix
@@ -85,6 +84,20 @@ jobs:
         with:
           name: site
           path: .artifacts/docs/html
+      - name: Save Pages metadata for the preview workflow
+        # docs-preview.yml runs as a separate workflow (deliberately, so a PR
+        # branch can't use its own copy of that file to abuse the elevated
+        # token it needs -- see docs-preview.yml). It can't read this job's
+        # outputs directly, so hand the values across as an artifact instead.
+        run: |
+          {
+            echo "host=${{ steps.pages.outputs.host }}"
+            echo "path=${{ steps.pages.outputs.path }}"
+          } > pages-meta.env
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pages-meta
+          path: pages-meta.env
 
   deploy:
     name: Deploy GitHub Pages
@@ -116,40 +129,3 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: site
-
-  preview:
-    name: Deploy PR preview
-    # Fork PRs don't get a write-scoped token; skip rather than fail red.
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v4
-        if: github.event.action != 'closed'
-        with:
-          name: site
-          path: site
-      - name: Ensure root .nojekyll on gh-pages
-        # .nojekyll only disables Jekyll (which drops _static/ and every
-        # other underscore-prefixed path) when it sits at the branch root --
-        # a copy nested under pr-preview/pr-<n>/ has no effect. The main
-        # publish job seeds this too, but that only runs once something
-        # merges to main, which previews can't wait on.
-        run: mkdir -p /tmp/nojekyll-only && touch /tmp/nojekyll-only/.nojekyll
-      - uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: /tmp/nojekyll-only
-          keep_files: true
-      - name: Deploy preview
-        uses: rossjrw/pr-preview-action@v1
-        with:
-          source-dir: site
-          umbrella-dir: pr-preview
-          action: auto
-          pages-base-url: ${{ needs.build.outputs.pages_host }}
-          pages-base-path: ${{ needs.build.outputs.pages_path }}
