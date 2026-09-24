@@ -22,25 +22,56 @@ jobs:
   build:
     name: Build documentation
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read
     outputs:
       prefix: ${{ steps.prefix.outputs.prefix }}
+      pages_origin: ${{ steps.pages.outputs.origin }}
+      pages_path: ${{ steps.pages.outputs.path }}
     steps:
       - uses: actions/checkout@v5
       - name: Assemble package docs
         run: node scripts/assemble_package_docs.js
+      - name: Determine live Pages URL
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # A private Pages site serves from a random per-repo pages.github.io
+          # host at its root; a public project page serves under
+          # /<repo>/. Ask the Pages API which one is actually live instead of
+          # guessing from repository visibility, since the two aren't always
+          # in lockstep and only the API reflects reality.
+          html_url="$(gh api "repos/${{ github.repository }}/pages" --jq .html_url 2>/dev/null || true)"
+          if [[ -n "$html_url" ]]; then
+            scheme="${html_url%%://*}"
+            rest="${html_url#*://}"
+            host="${rest%%/*}"
+            origin="$scheme://$host"
+            if [[ "$rest" == */* ]]; then
+              path="${rest#*/}"
+              path="${path%/}"
+            else
+              path=""
+            fi
+          else
+            # No Pages site exists yet to ask -- fall back to the standard
+            # public project-page shape.
+            origin="https://${{ github.repository_owner }}.github.io"
+            path="${{ github.event.repository.name }}"
+          fi
+          echo "origin=$origin" >> "$GITHUB_OUTPUT"
+          echo "path=$path" >> "$GITHUB_OUTPUT"
       - name: Compute URL prefix
         id: prefix
         env:
-          IS_PRIVATE: ${{ github.event.repository.private }}
+          BASE_PATH: ${{ steps.pages.outputs.path }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          # Private Pages sites serve from a per-repo pages.github.io root; a
-          # public project page serves under /isomer/. A PR preview nests
-          # under pr-preview/pr-<n>/ beneath whichever of those is live.
-          prefix=""
-          if [[ "$IS_PRIVATE" != "true" ]]; then
-            prefix="isomer"
-          fi
+          # A PR preview nests under pr-preview/pr-<n>/ beneath whichever
+          # base path is actually live.
+          prefix="$BASE_PATH"
           if [[ -n "$PR_NUMBER" ]]; then
             prefix="${prefix:+$prefix/}pr-preview/pr-$PR_NUMBER"
           fi
@@ -62,17 +93,28 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v5
       - uses: actions/download-artifact@v4
         with:
           name: site
           path: site
+      - name: Preserve PR previews across the clean publish
+        # A clean publish (the default, no keep_files) is what actually
+        # removes stale pages when something is renamed or deleted on main.
+        # Carry the existing pr-preview/ tree forward explicitly instead of
+        # keeping everything, since keep_files:true would let deleted pages
+        # on the main site live on forever alongside it.
+        run: |
+          git fetch origin gh-pages --depth=1 2>/dev/null || true
+          if git rev-parse --verify --quiet origin/gh-pages > /dev/null &&
+             git cat-file -e origin/gh-pages:pr-preview 2>/dev/null; then
+            git archive origin/gh-pages -- pr-preview | tar -x -C site
+          fi
       - name: Publish to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: site
-          # PR previews live in pr-preview/ on this same branch; don't wipe them.
-          keep_files: true
 
   preview:
     name: Deploy PR preview
@@ -108,3 +150,5 @@ jobs:
           source-dir: site
           umbrella-dir: pr-preview
           action: auto
+          pages-base-url: ${{ needs.build.outputs.pages_origin }}
+          pages-base-path: ${{ needs.build.outputs.pages_path }}
