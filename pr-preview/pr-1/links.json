@@ -1,0 +1,355 @@
+{
+  "origin": {
+    "branch": "1/merge",
+    "remote": "elastic/isomer",
+    "ref": "409e9d6b69612306deaacd684be97e52c0d28286",
+    "name": "isomer",
+    "github_ref": "refs/pull/1/merge"
+  },
+  "url_path_prefix": "/pr-preview/pr-1",
+  "links": {
+    "evals/index.md": {
+      "anchors": [
+        "stateless-by-construction",
+        "the-four-axes",
+        "why-retry-is-scored-separately",
+        "why-selection-is-a-multiset",
+        "reading-the-numbers",
+        "thresholds",
+        "corpus",
+        "scoring-functions-on-their-own"
+      ]
+    },
+    "image-takumi/index.md": {
+      "anchors": [
+        "what-it-is",
+        "rendering-a-whole-runtime-call-in-one-step",
+        "fonts",
+        "determinism",
+        "status"
+      ]
+    },
+    "index.md": {
+      "anchors": [
+        "the-vocabulary",
+        "how-it-works",
+        "the-product-path",
+        "the-agent-path",
+        "inside-a-render",
+        "what-ships",
+        "what-a-consumer-can-rely-on",
+        "posture-and-known-limits",
+        "where-to-read-next"
+      ]
+    },
+    "reference/index.md": {},
+    "reference/okf-map.md": {
+      "anchors": [
+        "graph",
+        "concepts"
+      ]
+    },
+    "runtime/api.md": {
+      "anchors": [
+        "functions",
+        "isomerruntimeoptions",
+        "isomerruntime",
+        "surfaces",
+        "options-types",
+        "result-types",
+        "view-registry",
+        "types-exported-from-this-package",
+        "import-from-the-sdk",
+        "errors",
+        "where-the-code-is"
+      ]
+    },
+    "runtime/authoring-context.md": {
+      "anchors": [
+        "taking-the-answer-back",
+        "what-hosts-add",
+        "capabilities",
+        "next"
+      ]
+    },
+    "runtime/embedding.md": {
+      "anchors": [
+        "the-problem",
+        "the-recipe",
+        "when-not-to-bother",
+        "why-this-is-a-recipe-and-not-an-api"
+      ]
+    },
+    "runtime/frame.md": {
+      "anchors": [
+        "frame-decides-the-svg-surfaces-existence",
+        "what-a-frame-owns",
+        "rendering-with-one",
+        "a-runtime-is-homogeneous-in-its-theme",
+        "next"
+      ]
+    },
+    "runtime/index.md": {
+      "anchors": [
+        "when-you-need-it",
+        "start-here",
+        "package-facts"
+      ]
+    },
+    "runtime/packs.md": {
+      "anchors": [
+        "what-a-pack-contributes",
+        "composing-packs",
+        "why-packs-are-additive",
+        "css-composes-too",
+        "next"
+      ]
+    },
+    "runtime/quick-start.md": {
+      "anchors": [
+        "1.-add-the-dependencies",
+        "2.-compose-a-runtime",
+        "3.-write-a-composition",
+        "4.-render-it",
+        "5.-register-a-view",
+        "6.-let-an-agent-compose-one",
+        "next"
+      ]
+    },
+    "runtime/renderer-overrides.md": {
+      "anchors": [
+        "what-can-be-overridden",
+        "what-is-checked",
+        "two-details-worth-knowing",
+        "when-to-reach-for-something-else",
+        "next"
+      ]
+    },
+    "runtime/runtime.md": {
+      "anchors": [
+        "options",
+        "typing-the-render-context",
+        "what-it-returns",
+        "what-it-refuses-and-when",
+        "construction-order",
+        "next"
+      ]
+    },
+    "runtime/surfaces.md": {
+      "anchors": [
+        "the-six",
+        "validation-posture",
+        "react-returns-content-not-a-document",
+        "slack-renders-a-node-as-a-message",
+        "svg-stops-at-an-element-and-a-stylesheet",
+        "warnings-are-per-surface",
+        "css-one-adapter-or-a-deliberate-no-op",
+        "combining-two-packs-adapters",
+        "choosing-one",
+        "next"
+      ]
+    },
+    "runtime/view-registry.md": {
+      "anchors": [
+        "registering",
+        "requesting",
+        "input-errors",
+        "what-an-agent-sees",
+        "next"
+      ]
+    },
+    "sdk/api.md": {
+      "anchors": [
+        "entry-points",
+        "root-entry-contracts",
+        "root-entry-dispatch",
+        "root-entry-composition-and-validation",
+        "root-entry-values-urls-helpers",
+        ".html",
+        ".react",
+        ".text-.markdown-.slack",
+        ".author",
+        ".testing",
+        "the-harness-contract",
+        "where-the-code-is"
+      ]
+    },
+    "sdk/authoring.md": {
+      "anchors": [
+        "jsx",
+        "object-builders",
+        "agent-prompts",
+        "next"
+      ]
+    },
+    "sdk/composition.md": {
+      "anchors": [
+        "validate-versus-parse",
+        "the-semantic-passes",
+        "error-messages",
+        "json-schema",
+        "how-the-body-node-union-is-built",
+        "next"
+      ]
+    },
+    "sdk/dispatch.md": {
+      "anchors": [
+        "what-it-exposes",
+        "what-every-render-goes-through",
+        "renderscope",
+        "slack-two-behaviours-the-other-surfaces-do-not-have",
+        "next"
+      ]
+    },
+    "sdk/frame.md": {
+      "anchors": [
+        "why-a-frame-is-not-a-pack-asset",
+        "the-two-halves-of-drawing",
+        "viewport-and-theme",
+        "bindframe-and-the-theme-bound-around-it",
+        "validatebody",
+        "sizesfromnodeheights",
+        "next"
+      ]
+    },
+    "sdk/index.md": {
+      "anchors": [
+        "who-reads-this",
+        "start-here",
+        "entry-points",
+        "package-facts"
+      ]
+    },
+    "sdk/packs.md": {
+      "anchors": [
+        "what-you-declare",
+        "surfaces-reports-an-intent",
+        "slackassettypes",
+        "enhancements",
+        "authoring",
+        "the-theme-a-pack-requires",
+        "what-a-pack-does-not-decide",
+        "keeping-the-registry-honest",
+        "why-it-is-shaped-this-way",
+        "next"
+      ]
+    },
+    "sdk/primitives.md": {
+      "anchors": [
+        "a-complete-primitive",
+        "the-definition",
+        "renderers-and-which-ones-you-owe",
+        "containers-schemafor-and-children",
+        "sanitize",
+        "metrics.svgheight",
+        "pack-types",
+        "why-it-is-shaped-this-way",
+        "next"
+      ]
+    },
+    "sdk/quick-start.md": {
+      "anchors": [
+        "1.-describe-the-node",
+        "2.-define-the-primitive",
+        "3.-declare-the-pack",
+        "4.-hand-it-to-a-runtime",
+        "5.-read-what-validation-says",
+        "6.-see-what-an-agent-would",
+        "7.-prove-every-primitive-holds-up",
+        "next"
+      ]
+    },
+    "sdk/rendering.md": {
+      "anchors": [
+        "envelopes",
+        "html",
+        "style-adapters",
+        "enhancements",
+        "how-slack-output-is-fitted",
+        "formatting-helpers",
+        "next"
+      ]
+    },
+    "sdk/url-trust.md": {
+      "anchors": [
+        "the-policy",
+        "two-layers-for-two-different-failures",
+        "normalization-and-why-it-exists",
+        "using-it-in-a-primitive",
+        "next"
+      ]
+    },
+    "slides/contract.md": {
+      "anchors": [
+        "defineprimitive-the-local-binding",
+        "themeboundslideframetheme",
+        "surface-declaration",
+        "the-registry"
+      ]
+    },
+    "slides/document.md": {
+      "anchors": [
+        "geometry",
+        "validatebody",
+        "wrap",
+        "naming",
+        "footer-chrome",
+        "degrading-to-text-and-markdown",
+        "slidedeckframe-vs-slideframe"
+      ]
+    },
+    "slides/example.md": {
+      "anchors": [
+        "a-deck-is-a-composition",
+        "surface-artifacts",
+        "title-slide",
+        "split-layout",
+        "surface-cards",
+        "code-block",
+        "flow-diagram",
+        "getting-a-png",
+        "what-this-demonstrates"
+      ]
+    },
+    "slides/index.md": {
+      "anchors": [
+        "documentation",
+        "quick-start",
+        "primitives"
+      ]
+    },
+    "slides/primitives.md": {
+      "anchors": [
+        "file-layout",
+        "before-you-add-a-value-one-source-per-rendered-value",
+        "drawing-inside-an-svg",
+        "writing-a-leaf-primitive",
+        "children-come-from-the-schema-field",
+        "writing-a-container-primitive",
+        "registering-the-primitive",
+        "authoring-with-jsx",
+        "react-hosts"
+      ]
+    },
+    "slides/styling.md": {
+      "anchors": [
+        "distillate-collection",
+        "the-react-surface",
+        "standaloneslidenode",
+        "fonts-on-the-image-surface"
+      ]
+    },
+    "slides/theme.md": {
+      "anchors": [
+        "the-one-field-lower-bound",
+        "palette-resolution",
+        "slidethemes",
+        "slide_theme",
+        "slidepalette",
+        "fonts"
+      ]
+    }
+  },
+  "cross_links": [],
+  "redirects": null
+}

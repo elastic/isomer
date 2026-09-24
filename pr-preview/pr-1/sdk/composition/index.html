@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en" class="h-screen" xmlns="http://www.w3.org/1999/html">
+<head hx-head="merge">
+		<meta charset="utf-8">
+	<title>Composition and validation | What is Isomer?</title>
+		<meta name="description" content="A Composition is the resolved JSON document that travels: a title, an optional subtitle and theme, an optional version, and a body of at least one node...">
+		<link rel="preload" href="/pr-preview/pr-1/_static/InterVariable.e6ec8b96.woff2" as="font" type="font/woff2" crossorigin>
+		<link rel="preload" href="/pr-preview/pr-1/_static/MierB-Regular.efa24115.woff2" as="font" type="font/woff2" crossorigin>
+		<link rel="preload" href="/pr-preview/pr-1/_static/MierB-Bold.01af95ca.woff2" as="font" type="font/woff2" crossorigin>
+		<link rel="preload" href="/pr-preview/pr-1/_static/MierB-Demi.845945e0.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="stylesheet preload" as="style" type="text/css" href="/pr-preview/pr-1/_static/styles.css?v=0e0d184ac898470e" crossorigin/>
+			<link rel="stylesheet preload" as="style" type="text/css" href="/pr-preview/pr-1/_static/isolated.css?v=280db5dd439608f2" crossorigin/>
+	<script>window.__DOCS_CONFIG__={"buildType":"isolated","serviceName":"docs-frontend","telemetryEnabled":false,"rootPath":"/pr-preview/pr-1","apiBasePath":"/docs/_api","airGapped":false};</script>
+	<script>try{sessionStorage.removeItem("htmx-history-cache")}catch(e){}</script>
+	<script src="/pr-preview/pr-1/_static/main.js?v=a01a109490d983c3" defer></script>
+		<link rel="canonical" href="https://docs-v3-preview.elastic.dev/pr-preview/pr-1/sdk/composition" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="icon" href="/favicon.ico" sizes="32x32"/> 	<link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+	<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180"/>
+
+	<meta name="robots" content="noindex, nofollow">
+	<meta name="htmx-config" content='{"selfRequestsOnly": true, "defaultSettleDelay": 0, "historyCacheSize": 0, "refreshOnHistoryMiss": true}'>
+	<meta name="docs:current-section" content="2F647619">
+	<meta property="og:type" content="website"/>
+	<meta property="og:title" content="Composition and validation | What is Isomer?"/>
+		<meta property="og:description" content="A Composition is the resolved JSON document that travels: a title, an optional subtitle and theme, an optional version, and a body of at least one node..."/>
+		<script type="application/ld+json">
+		{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "What is Isomer?",
+      "item": "https://docs-v3-preview.elastic.dev/pr-preview/pr-1"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "SDK",
+      "item": "https://docs-v3-preview.elastic.dev/pr-preview/pr-1/sdk"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Composition and validation"
+    }
+  ]
+}
+		</script>
+		<meta property="og:image" content="https://www.elastic.co/static-res/images/social_media_default.png"/>
+		<meta property="og:image:alt" content="Elastic | The Search AI Company"/>
+		<meta property="og:url" content="https://docs-v3-preview.elastic.dev/pr-preview/pr-1/sdk/composition" />
+
+					<meta class="elastic" name="product_version" content="9.0+"/>
+				<meta name="DC.identifier" content="9.0+"/>
+			<link rel="alternate" type="text/markdown" href="/pr-preview/pr-1/sdk/composition.md" title="Markdown export"/>
+			<meta data-pagefind-meta="title[content]" content="Composition and validation"/>
+			<meta data-pagefind-meta="breadcrumbs[content]" content="{&#xA;  &quot;@context&quot;: &quot;https://schema.org&quot;,&#xA;  &quot;@type&quot;: &quot;BreadcrumbList&quot;,&#xA;  &quot;itemListElement&quot;: [&#xA;    {&#xA;      &quot;@type&quot;: &quot;ListItem&quot;,&#xA;      &quot;position&quot;: 1,&#xA;      &quot;name&quot;: &quot;What is Isomer?&quot;,&#xA;      &quot;item&quot;: &quot;https://docs-v3-preview.elastic.dev/pr-preview/pr-1&quot;&#xA;    },&#xA;    {&#xA;      &quot;@type&quot;: &quot;ListItem&quot;,&#xA;      &quot;position&quot;: 2,&#xA;      &quot;name&quot;: &quot;SDK&quot;,&#xA;      &quot;item&quot;: &quot;https://docs-v3-preview.elastic.dev/pr-preview/pr-1/sdk&quot;&#xA;    },&#xA;    {&#xA;      &quot;@type&quot;: &quot;ListItem&quot;,&#xA;      &quot;position&quot;: 3,&#xA;      &quot;name&quot;: &quot;Composition and validation&quot;&#xA;    }&#xA;  ]&#xA;}"/>
+
+</head>
+
+<body
+	hx-history="false"
+	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden min-h-screen build-type-isolated"
+	hx-ext="preload, head-support"
+	hx-boost="true"
+	hx-push-url="true"
+	hx-target="#main-container"
+	hx-select="#main-container"
+	hx-swap="outerHTML show:none"
+	>
+<svg xmlns="http://www.w3.org/2000/svg" class="hidden" aria-hidden="true">
+	<defs>
+		<symbol id="icon-chevron-down" viewBox="0 0 16 16">
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="m8 10.293 5.646-5.647.708.708L8 11.707 1.646 5.354l.708-.708L8 10.293Z"/>
+		</symbol>
+		<symbol id="icon-chevron-limit-right" viewBox="0 0 16 16">
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M8.293 8 2.646 2.354l.708-.708L9.707 8l-6.353 6.354-.708-.707L8.293 8ZM12 13V3h1v10h-1Z"/>
+		</symbol>
+		<symbol id="icon-documentation" viewBox="0 0 16 16">
+			<path fill="currentColor" d="M6 16H5v-3h1v3Zm3-8h1v1H7V8h1V7h-.5V6H9v2Zm-.5-4a.5.5 0 1 1 0 1 .5.5 0 0 1 0-1Z"/>
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M7 14h5v-2H4a1 1 0 1 0 0 2v1a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h10v11h-1v2h1v1H7v-1ZM4 2a1 1 0 0 0-1 1v8.27A1.99 1.99 0 0 1 4 11V2Zm1 9h8V2H5v9Z"/>
+		</symbol>
+		<symbol id="icon-code" viewBox="0 0 16 16">
+			<path fill="currentColor" d="m7.492 13.59 2-11-.984-.18-2 11 .984.18ZM4.854 5.354 2.207 8l2.647 2.646-.707.708L.793 8l3.354-3.354.707.708ZM15.207 8l-3.353-3.354-.707.708L13.793 8l-2.646 2.646.707.708L15.207 8Z"/>
+		</symbol>
+		<symbol id="icon-external" viewBox="0 0 16 16">
+			<path fill="currentColor" d="M11 2h2.293L6.646 8.646l.708.708L14 2.707V5h1V1h-4v1Z"/>
+			<path fill="currentColor" d="M3 2a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7h-1v6H3V3h6V2H3Z"/>
+		</symbol>
+		<symbol id="icon-grid" viewBox="0 0 16 16">
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M6 9a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4Zm-4 5h4v-4H2v4Zm12-5a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4Zm-4 5h4v-4h-4v4ZM6 1a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h4ZM2 6h4V2H2v4Zm12-5a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h4Zm-4 5h4V2h-4v4Z"/>
+		</symbol>
+		<symbol id="icon-list-bullet" viewBox="0 0 16 16" shape-rendering="crispEdges">
+			<path fill="currentColor" d="M4 13H1v-1h3v1Zm11 0H6v-1h9v1ZM4 8.5H1v-1h3v1Zm11 0H6v-1h9v1ZM4 4H1V3h3v1Zm11 0H6V3h9v1Z"/>
+		</symbol>
+		<symbol id="icon-wrench" viewBox="0 0 16 16">
+			<path fill="currentColor" d="M13.121 7.121a3 3 0 0 0 .874-2.287L11.707 7.12 8.878 4.293l2.288-2.288A3 3 0 0 0 8.173 6.01l.106.298-5.986 5.986a1 1 0 0 0 1.414 1.414l5.986-5.986.298.105a3 3 0 0 0 3.13-.705m.707.708a4 4 0 0 1-3.863 1.034l-5.55 5.551a2 2 0 1 1-2.83-2.828l5.552-5.551a3.997 3.997 0 0 1 4.328-5.008l.143.028a.88.88 0 0 1 .62.628.97.97 0 0 1-.258.933l-1.677 1.677 1.414 1.414 1.677-1.677a.97.97 0 0 1 .933-.26c.29.079.54.3.628.622l.027.143.02.22a4 4 0 0 1-1.164 3.074"/>
+		</symbol>
+		<symbol id="icon-refresh-time" viewBox="0 0 16 16">
+			<path fill="currentColor" d="M11 9h1v2h2v1h-3V9Z"/>
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M7.754 13.995a4.5 4.5 0 1 1 7.491-4.99 4.5 4.5 0 0 1-7.49 4.99ZM15 11.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"/>
+			<path fill="currentColor" d="M7.222 14.957a5.501 5.501 0 0 1-.713-1.144A6.003 6.003 0 0 1 3.757 3.757l.007-.007.003-.002.013-.014A4.337 4.337 0 0 1 4 3.525V6h1V2H1v1h2.1l-.03.03-.018.019-.004.004a7.001 7.001 0 0 0 4.175 11.904Zm7.735-7.735A7.001 7.001 0 0 0 8 1v1a6.003 6.003 0 0 1 5.813 4.509c.412.19.796.431 1.144.713Z"/>
+		</symbol>
+	</defs>
+</svg>
+
+
+<div class="sticky top-0 z-30 h-12" id="isolated-header" hx-preserve>
+	<elastic-docs-header title="isomer"
+	                     logo-href="/pr-preview/pr-1/"
+	                     github-repository="elastic/isomer"
+	                     github-link="https://github.com/elastic/isomer/tree/1/merge/docs"
+	                     git-branch="1/merge"
+	                     git-commit="409e9d6"
+	                     github-ref="refs/pull/1/merge"
+	                     branded="false"
+	                     elastic-org="true">
+	</elastic-docs-header>
+</div>
+<div id="main-container">
+		<div class="relative">
+			
+			<div class="min-h-screen
+						w-full
+						max-w-(--max-layout-width)
+						mx-auto
+						md:px-4
+			">
+				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-6">
+					<main id="content-container" class="min-w-0 flex flex-col lg:grid lg:grid-cols-[minmax(0,var(--max-text-width))_minmax(0,var(--max-sidebar-width))] lg:justify-end lg:gap-4 mx-4 md:col-start-2 md:row-start-1">
+						<div class="mb-9 mt-0 min-w-0 order-2 lg:order-1">
+							
+<ol id="breadcrumbs" class="flex flex-wrap gap-1 items-center w-full pt-6">
+		<li class="text-ink-light text-sm leading-[1.2em]">
+			<a
+				itemprop="item"
+				href="/pr-preview/pr-1"
+				hx-disable=true
+				preload="mousedown">
+				<span class="hover:text-black">What is Isomer?</span>
+			</a>
+				<span class="px-1">/</span>
+		</li>
+		<li class="text-ink-light text-sm leading-[1.2em]">
+			<a
+				itemprop="item"
+				href="/pr-preview/pr-1/sdk"
+				
+				preload="mousedown">
+				<span class="hover:text-black">SDK</span>
+			</a>
+		</li>
+</ol>
+
+							<article id="markdown-content" class="markdown-content min-w-0" data-pagefind-body>
+								<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+								<section id="elastic-docs-v3">
+<h1>Composition and validation</h1>
+	<p>A <code>Composition</code> is the resolved JSON document that travels: a title, an optional subtitle and theme, an optional <code>version</code>, and a body of at least one node. The SDK owns its schema, and everything downstream, the validator, the parser, and the JSON Schema an agent reads, is built from the same composition.</p>
+<div class="highlight-ts notranslate">
+	<div class="highlight">
+		<pre>
+<code class="language-ts">{ type: 'view', version?: 1, title?, subtitle?, theme?, body: [PrimitiveNode, ...], meta? }
+</code>		</pre>
+	</div>
+</div>
+<p>The discriminator is <code>'view'</code> and does not change. <code>version</code> is an optional literal <code>1</code>; absent means v1. The schema uses <code>z.literal(1).optional()</code> with no default, so parse does not rewrite stored documents. The object is <code>.strict()</code>, so an unrecognized top-level key is an error rather than silently ignored, and <code>definePrimitive</code> closes every node schema the same way, so the validator agrees with the <code>additionalProperties: false</code> the JSON Schema projection emits. <code>body</code> must hold at least one node.</p>
+<div class="heading-wrapper" id="validate-versus-parse"><h2><a class="headerlink" href="#validate-versus-parse">Validate versus parse</a></h2>
+</div>
+<p>Two functions, deliberately different in scope.</p>
+<div class="highlight-ts notranslate">
+	<div class="highlight">
+		<pre>
+<code class="language-ts">const validate = createCompositionValidator(definitions, { sizesFromNodeHeights });
+const parse = createCompositionParser(definitions);
+</code>		</pre>
+	</div>
+</div>
+<p><code>createCompositionValidator</code> is the <strong>trusted-input</strong> path: schema first, then the semantic passes. It returns <code>{ valid, errors, warnings }</code>, where <code>valid</code> turns on duplicate-id errors and the warnings are advisory (empty when there are none).</p>
+<p><code>createCompositionParser</code> is the <strong>untrusted-input</strong> path: schema only, reported rather than thrown, returning <code>{ valid, errors, composition? }</code>. It answers &quot;is this a <code>Composition</code>&quot;, not &quot;is this a good one&quot;: it does not run the duplicate-id pass and produces no warnings, so a composition with two nodes sharing an <code>id</code> parses as valid. A caller that wants the semantic checks runs <code>validate</code> on the parsed composition.</p>
+<div class="heading-wrapper" id="the-semantic-passes"><h2><a class="headerlink" href="#the-semantic-passes">The semantic passes</a></h2>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>Pass</th>
+<th>Produces</th>
+<th>Fires when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Duplicate node ids</td>
+<td>errors</td>
+<td>two nodes share an <code>id</code></td>
+</tr>
+<tr>
+<td>Empty surfaces</td>
+<td>warnings</td>
+<td>a node renders nothing on a surface it claims</td>
+</tr>
+<tr>
+<td>Missing <code>svgHeight</code></td>
+<td>warnings</td>
+<td>a node renders to <code>svg</code> but declares no <code>metrics.svgHeight</code>, <strong>only</strong> when <code>sizesFromNodeHeights</code> is set</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>That last gate is a runtime fact, not a per-node one: any frame that sums node heights makes the metric load-bearing, and a runtime whose frames are all fixed-size would otherwise collect warnings for a value nothing reads. A warning per node per slide is how a warning channel gets ignored.</p>
+<p>Every warning names the surface it applies to, so a caller narrows before showing:</p>
+<div class="highlight-ts notranslate">
+	<div class="highlight">
+		<pre>
+<code class="language-ts">import { warningsForSurface } from '@elastic/isomer-sdk';
+warningsForSurface(result, 'svg');
+</code>		</pre>
+	</div>
+</div><div class="heading-wrapper" id="error-messages"><h2><a class="headerlink" href="#error-messages">Error messages</a></h2>
+</div>
+<p>Every error is a <code>ValidationError</code>, <code>{ path, message }</code>: <code>path</code> locates the value (<code>body[3].items[0].label</code>, empty for the document as a whole) and <code>message</code> is a predicate, so <code>formatValidationError</code> joins them into one sentence for a log or a model. <code>formatZodIssue</code> does the conversion from a Zod issue, with three cases worded centrally so per-schema messages carry no boilerplate: a missing required field is <code>is required</code>, an enum or discriminator mismatch is <code>must be one of: a, b, c</code>, unknown keys are <code>has unrecognized key(s): …</code>, and Zod's default size wording becomes <code>must not be empty</code> or <code>must be at least 3 characters</code>. A schema's own message is never rewritten, so the <code>requiredString</code> / <code>enumOf</code> helpers and a <code>.min(1, { error })</code> of your own read the same way.</p>
+<p><code>enforceValidationMode(result, mode)</code> is the shared throw-or-collect switch: it raises <code>CompositionValidationError</code> only when the caller passed <code>'throw'</code>.</p>
+<div class="heading-wrapper" id="json-schema"><h2><a class="headerlink" href="#json-schema">JSON Schema</a></h2>
+</div>
+<p><code>buildCompositionJsonSchema(definitions, options)</code> projects the composition to draft-2020-12 for hosts that validate outside TypeScript. Two options carry weight: <code>reused: 'ref'</code> emits one named <code>$def</code> per primitive instead of inlining the union at every container, and <code>unrepresentable: 'any'</code> drops what JSON Schema cannot express, which is why anything stated only in a Zod refinement must also be stated in prose an agent will read.</p>
+<p><code>buildAuthoringJsonSchema</code> is the projection an agent reads. It starts from the validator schema, names the SDK's shared value schemas (<code>tone</code>, <code>displayValue</code>, <code>structuredValue</code>, <code>renderTheme</code>), inlines bare scalar <code>$defs</code> and <code>$ref</code>-only hops, drops <code>Number.MAX_SAFE_INTEGER</code> bounds and per-node <code>id</code>/<code>surfaces</code>, and accepts <code>describe</code> / <code>omitProperties</code> / extra pack <code>$defs</code> (<code>actionItem</code>, <code>badgeItem</code>) from the caller. The validator projection is unchanged: a node that emits <code>id</code> still parses.</p>
+<div class="heading-wrapper" id="how-the-body-node-union-is-built"><h2><a class="headerlink" href="#how-the-body-node-union-is-built">How the body-node union is built</a></h2>
+</div>
+<p>For anyone touching this layer rather than calling it. <code>resolveVocabulary(definitions)</code> returns both the union and the schema instance that actually landed in it per type:</p>
+<div class="highlight-ts notranslate">
+	<div class="highlight">
+		<pre>
+<code class="language-ts">interface ResolvedVocabulary {
+  bodyNodeSchema: ZodType&lt;unknown&gt;;
+  members: ReadonlyMap&lt;string, ZodObject&gt;;
+}
+</code>		</pre>
+	</div>
+</div>
+<p><strong>Containers reference <em>this</em> union.</strong> The recursion is closed by a <code>z.lazy</code> created here and discarded with the composition. <code>z.lazy</code> memoizes its getter after the first resolution, so an instance shared across compositions would freeze on whichever union parsed first; scoping the getter cannot fix that, only scoping the instance can.</p>
+<p><strong>The members are not <code>definition.schema</code>.</strong> A container's member is built by <code>schemaFor</code>, so it is a different object. Anything keyed on identity, in practice the JSON Schema id registry that names <code>$defs</code>, has to be handed these, or a container's projection silently loses its name.</p>
+<p>Building a discriminated union over a large pack is not cheap, and a runtime needs the same schema three times over: validator, parser, authoring context. <code>getCompositionSchemaForDefinitions</code> memoizes on the <strong>identity of the definitions array</strong>, and caches the composition alongside the schema so the two cannot disagree. Hold one array and reuse it; rebuilding it per call silently rebuilds everything.</p>
+<div class="heading-wrapper" id="next"><h2><a class="headerlink" href="#next">Next</a></h2>
+</div>
+<p><a href="/pr-preview/pr-1/sdk/primitives" preload="mousedown">Primitives</a> for <code>schema</code> versus <code>schemaFor</code> · <a href="/pr-preview/pr-1/sdk/dispatch" preload="mousedown">Dispatch</a> · <a href="/pr-preview/pr-1/sdk/url-trust" preload="mousedown">URL trust</a> for the refinements on URL-bearing fields</p>
+
+</section>
+
+							</article>
+							
+
+
+							<footer id="prev-next-nav" class="content-container mt-20">
+	<div class="flex flex-wrap lg:flex-nowrap gap-2 mt-2">
+		<div class="w-full">
+				<a 
+					href="/pr-preview/pr-1/sdk/packs"
+					preload="mousedown"
+					class="flex h-full items-center text-ink-light hover:black border-1 border-grey-20 hover:border-grey-80 rounded-lg p-6 shadow-md"
+				>
+					<svg class="size-6 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
+					</svg>
+					<div>
+						<div class="text-xs lg:text-sm">Previous</div>
+						<div class="text-base lg:text-xl text-black">Packs</div>
+					</div>
+				</a>
+		</div>
+		<div class="w-full">
+				<a 
+					href="/pr-preview/pr-1/sdk/dispatch"
+					preload="mousedown"
+					class="flex h-full items-center justify-end text-ink-light hover:black border-1 border-grey-20 hover:border-grey-80 rounded-lg p-6 shadow-md text-right"
+				>
+					<div>
+						<div class="text-xs lg:text-sm">Next</div>
+						<div class="text-base lg:text-xl text-black">Dispatch</div>
+					</div>
+					<svg class="size-6 ml-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
+					</svg>
+				</a>
+		</div>
+	</div>
+</footer>
+
+						</div>
+						<aside class="sidebar md:block w-full lg:max-w-65 order-1 lg:order-2">
+	<nav id="toc-nav" class="sidebar-nav lg:h-full flex flex-row-reverse justify-between items-center md:flex-row md:justify-start lg:block gap-4 simple-scrollbar">
+			<div></div>
+
+			<label role="button" class="md:hidden cursor-pointer" for="pages-nav-hamburger">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+					stroke="currentColor" class="size-6">
+					<path stroke-linecap="round" stroke-linejoin="round"
+						d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"/>
+				</svg>
+			</label>
+		
+		<ul class="hidden md:flex items-center lg:block gap-4">
+			<li class="view-as-markdown hidden lg:block lg:not-first:mt-1">
+				<a href="/pr-preview/pr-1/sdk/composition.md" class="link text-sm" target="_blank">
+					<svg class="link-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 -1 24 24">
+						<path fill="currentColor" d="M22.131725 19.247H1.9386225C1.0239525 19.247 0.25 18.47305 0.25 17.558375v-11.11675c0 -0.914675 0.7739525 -1.688625 1.6886225 -1.688625H22.061375c0.914675 0 1.688625 0.77395 1.688625 1.688625v11.11675c0 0.914675 -0.7036 1.688625 -1.618275 1.688625ZM1.9386225 5.87875c-0.2814375 0 -0.562875 0.281425 -0.562875 0.562875v11.11675c0 0.3518 0.2814375 0.562875 0.562875 0.562875H22.061375c0.3518 0 0.562875 -0.281425 0.562875 -0.562875v-11.11675c0 -0.3518 -0.281425 -0.562875 -0.562875 -0.562875l-20.1227525 0ZM3.62725 15.86975V8.130225h2.2515l2.2515 2.814375 2.251475 -2.814375h2.2515V15.86975h-2.2515V11.437125L8.13025 14.2515l-2.2515 -2.814375V15.86975h-2.2515Zm14.1422 0L14.392225 12.140725h2.251475v-4.0105h2.2515v3.940125h2.2515L17.76945 15.86975Z" stroke-width="0.25"></path>
+					</svg>
+					View as Markdown
+				</a>
+			</li>
+				<li class="edit-this-page lg:not-first:mt-1 ">
+					<a href="https://github.com/elastic/isomer/edit/1/merge/docs/sdk/composition.md" class="link text-sm" target="_blank">
+						<svg class="link-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"/>
+						</svg>
+						Edit this page
+					</a>
+				</li>
+		</ul>
+		<div class="pt-6 hidden lg:block">
+				<div class="font-sans">
+					<div class="font-bold mb-2">On this page</div>
+					<div class="relative toc-progress-container font-body">
+						<div class="toc-progress-indicator absolute top-0 h-0 w-[1px] bg-blue-elastic transition-[transform,height] duration-200 ease-out "></div>
+						<ul class="block w-full">
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#validate-versus-parse">
+										Validate versus parse
+									</a>
+								</li>
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#the-semantic-passes">
+										The semantic passes
+									</a>
+								</li>
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#error-messages">
+										Error messages
+									</a>
+								</li>
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#json-schema">
+										JSON Schema
+									</a>
+								</li>
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#how-the-body-node-union-is-built">
+										How the body-node union is built
+									</a>
+								</li>
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#next">
+										Next
+									</a>
+								</li>
+						</ul>
+					</div>
+				</div>
+
+		</div>
+
+	</nav>
+</aside>
+
+					</main>
+					<aside class="sidebar font-sans bg-white fixed md:sticky shadow-2xl md:shadow-none left-full group-has-[#pages-nav-hamburger:checked]/body:left-0 bottom-0 md:left-auto top-[calc(var(--offset-top)&#x2B;1px)] w-[80%] md:w-auto shrink-0 border-r border-r-grey-20 z-[10000] md:z-auto transition-[top,max-height] duration-300 md:col-start-1 md:row-start-1">
+	<nav
+		id="pages-nav"
+		
+		class="sidebar-nav h-full simple-scrollbar">
+		
+<div class="pb-9 pl-3 md:pl-0 font-body">
+	<div class="sticky top-0 z-10 bg-white">
+		<div id="nav-dropdown">
+		</div>
+	</div>
+
+	<ul class="block px-4" id="nav-tree-19f0ff2716b491fe" hx-preserve>
+			<li class="flex group/li pr-8 mt-6">
+				<a href="/pr-preview/pr-1" class="sidebar-link nav-link">What is Isomer?</a>
+			</li>
+				<li role="separator" class="mt-4 pr-8"><hr class="border-grey-20"></li>
+				<li class="nav-folder mt-6">
+			<div class="peer grid grid-cols-[1fr_auto] w-full">
+				<a href="/pr-preview/pr-1/runtime" class="sidebar-link nav-folder-link font-semibold">
+					
+					<span>Runtime</span>
+				</a>
+					<label for="475F6EE0" class="group/label flex mr-2 items-start">
+						<div class="nav-toggle-btn">
+							<svg class="nav-chevron" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg>
+						</div>
+						<input
+							id="475F6EE0"
+							type="checkbox"
+							class="hidden"
+							aria-hidden="true">
+					</label>
+			</div>
+			<ul class="nav-subtree">
+						<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/quick-start" class="sidebar-link nav-link">
+				
+				<span>Quick start</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/runtime" class="sidebar-link nav-link">
+				
+				<span>Runtime</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/packs" class="sidebar-link nav-link">
+				
+				<span>Packs</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/frame" class="sidebar-link nav-link">
+				
+				<span>Frame</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/surfaces" class="sidebar-link nav-link">
+				
+				<span>Surfaces</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/embedding" class="sidebar-link nav-link">
+				
+				<span>Embedding a composition in a host page</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/view-registry" class="sidebar-link nav-link">
+				
+				<span>View registry</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/authoring-context" class="sidebar-link nav-link">
+				
+				<span>Authoring context</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/renderer-overrides" class="sidebar-link nav-link">
+				
+				<span>Renderer overrides</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/api" class="sidebar-link nav-link">
+				
+				<span>API reference</span>
+			</a>
+		</li>
+
+			</ul>
+		</li>
+		<li class="nav-folder mt-6">
+			<div class="peer grid grid-cols-[1fr_auto] w-full">
+				<a href="/pr-preview/pr-1/sdk" class="sidebar-link nav-folder-link font-semibold">
+					
+					<span>SDK</span>
+				</a>
+					<label for="0BE6DC0C" class="group/label flex mr-2 items-start">
+						<div class="nav-toggle-btn">
+							<svg class="nav-chevron" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg>
+						</div>
+						<input
+							id="0BE6DC0C"
+							type="checkbox"
+							class="hidden"
+							aria-hidden="true">
+					</label>
+			</div>
+			<ul class="nav-subtree">
+						<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/quick-start" class="sidebar-link nav-link">
+				
+				<span>Quick start</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/primitives" class="sidebar-link nav-link">
+				
+				<span>Primitives</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/packs" class="sidebar-link nav-link">
+				
+				<span>Packs</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/composition" class="sidebar-link nav-link current">
+				
+				<span>Composition and validation</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/dispatch" class="sidebar-link nav-link">
+				
+				<span>Dispatch</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/rendering" class="sidebar-link nav-link">
+				
+				<span>Rendering</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/frame" class="sidebar-link nav-link">
+				
+				<span>Frame</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/url-trust" class="sidebar-link nav-link">
+				
+				<span>URL trust</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/authoring" class="sidebar-link nav-link">
+				
+				<span>Authoring</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/api" class="sidebar-link nav-link">
+				
+				<span>API reference</span>
+			</a>
+		</li>
+
+			</ul>
+		</li>
+		<li class="nav-folder mt-6">
+			<div class="peer grid grid-cols-[1fr_auto] w-full">
+				<a href="/pr-preview/pr-1/slides" class="sidebar-link nav-folder-link font-semibold">
+					
+					<span>Slides pack</span>
+				</a>
+					<label for="E6CA79C6" class="group/label flex mr-2 items-start">
+						<div class="nav-toggle-btn">
+							<svg class="nav-chevron" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg>
+						</div>
+						<input
+							id="E6CA79C6"
+							type="checkbox"
+							class="hidden"
+							aria-hidden="true">
+					</label>
+			</div>
+			<ul class="nav-subtree">
+						<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/slides/primitives" class="sidebar-link nav-link">
+				
+				<span>Authoring a primitive</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/slides/contract" class="sidebar-link nav-link">
+				
+				<span>Pack contract</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/slides/document" class="sidebar-link nav-link">
+				
+				<span>Document</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/slides/theme" class="sidebar-link nav-link">
+				
+				<span>Theme</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/slides/styling" class="sidebar-link nav-link">
+				
+				<span>Styling</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/slides/example" class="sidebar-link nav-link">
+				
+				<span>Worked example</span>
+			</a>
+		</li>
+
+			</ul>
+		</li>
+		<li class="flex group/li pr-8 font-semibold mt-6">
+			<a href="/pr-preview/pr-1/image-takumi" class="sidebar-link nav-link">
+				
+				<span>Takumi image backend</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 font-semibold mt-6">
+			<a href="/pr-preview/pr-1/evals" class="sidebar-link nav-link">
+				
+				<span>Evals</span>
+			</a>
+		</li>
+		<li class="nav-folder mt-6">
+			<div class="peer grid grid-cols-[1fr_auto] w-full">
+				<a href="/pr-preview/pr-1/reference" class="sidebar-link nav-folder-link font-semibold">
+					
+					<span>Reference</span>
+				</a>
+					<label for="F01CFB4E" class="group/label flex mr-2 items-start">
+						<div class="nav-toggle-btn">
+							<svg class="nav-chevron" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg>
+						</div>
+						<input
+							id="F01CFB4E"
+							type="checkbox"
+							class="hidden"
+							aria-hidden="true">
+					</label>
+			</div>
+			<ul class="nav-subtree">
+						<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/reference/okf-map" class="sidebar-link nav-link">
+				
+				<span>OKF map</span>
+			</a>
+		</li>
+
+			</ul>
+		</li>
+
+	</ul>
+</div>
+
+	</nav>
+	<label role="button" for="pages-nav-hamburger" class="absolute md:hidden top-7 -right-12 bg-white p-1 rounded-full border-1 border-grey-20 cursor-pointer z-99">
+		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+			<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+		</svg>
+	</label>
+</aside>
+<label for="pages-nav-hamburger" aria-hidden="true" class="hidden group-has-[#pages-nav-hamburger:checked]/body:block md:hidden! fixed top-0 left-0 right-0 bottom-0 bg-black/50 z-[9999] ">
+
+</label>
+
+				</div>
+			</div>
+		</div>
+</div>
+
+	<footer hx-disable="true" class="py-8 px-6 w-full mx-auto bg-ink-dark">
+		<div class="max-w-(--max-layout-width) w-full mx-auto text-grey-20 text-[12px]">
+			<a href="https://www.elastic.co/">
+				<img class="block" loading="lazy" alt="Elastic logo" src="/pr-preview/pr-1/_static/logo-elastic-horizontal-white.svg?v=19bc4040eda89518" width="120" height="41"/>
+			</a>
+			<p class="mt-4">
+				© 2026 Elasticsearch B.V. All Rights Reserved.
+			</p>
+			<ul class="mt-2 flex gap-3">
+				<li>
+					<a class="underline hover:text-white" href="https://www.elastic.co/legal/terms-of-use">Terms of Use</a>
+				</li>
+				<li>
+					<a class="underline hover:text-white" href="https://www.elastic.co/legal/privacy-statement">Privacy</a>
+				</li>
+			</ul>
+		</div>
+	</footer>
+
+
+</body>
+</html>

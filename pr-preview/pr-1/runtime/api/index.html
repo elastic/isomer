@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en" class="h-screen" xmlns="http://www.w3.org/1999/html">
+<head hx-head="merge">
+		<meta charset="utf-8">
+	<title>API reference | What is Isomer?</title>
+		<meta name="description" content="Everything @elastic/isomer-runtime exports from its single entry point, plus what a host has to import from elsewhere. CreateIsomerRuntime is the factory&#x27;s...">
+		<link rel="preload" href="/pr-preview/pr-1/_static/InterVariable.e6ec8b96.woff2" as="font" type="font/woff2" crossorigin>
+		<link rel="preload" href="/pr-preview/pr-1/_static/MierB-Regular.efa24115.woff2" as="font" type="font/woff2" crossorigin>
+		<link rel="preload" href="/pr-preview/pr-1/_static/MierB-Bold.01af95ca.woff2" as="font" type="font/woff2" crossorigin>
+		<link rel="preload" href="/pr-preview/pr-1/_static/MierB-Demi.845945e0.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="stylesheet preload" as="style" type="text/css" href="/pr-preview/pr-1/_static/styles.css?v=0e0d184ac898470e" crossorigin/>
+			<link rel="stylesheet preload" as="style" type="text/css" href="/pr-preview/pr-1/_static/isolated.css?v=280db5dd439608f2" crossorigin/>
+	<script>window.__DOCS_CONFIG__={"buildType":"isolated","serviceName":"docs-frontend","telemetryEnabled":false,"rootPath":"/pr-preview/pr-1","apiBasePath":"/docs/_api","airGapped":false};</script>
+	<script>try{sessionStorage.removeItem("htmx-history-cache")}catch(e){}</script>
+	<script src="/pr-preview/pr-1/_static/main.js?v=a01a109490d983c3" defer></script>
+		<link rel="canonical" href="https://docs-v3-preview.elastic.dev/pr-preview/pr-1/runtime/api" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="icon" href="/favicon.ico" sizes="32x32"/> 	<link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+	<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180"/>
+
+	<meta name="robots" content="noindex, nofollow">
+	<meta name="htmx-config" content='{"selfRequestsOnly": true, "defaultSettleDelay": 0, "historyCacheSize": 0, "refreshOnHistoryMiss": true}'>
+	<meta name="docs:current-section" content="2F647619">
+	<meta property="og:type" content="website"/>
+	<meta property="og:title" content="API reference | What is Isomer?"/>
+		<meta property="og:description" content="Everything @elastic/isomer-runtime exports from its single entry point, plus what a host has to import from elsewhere. CreateIsomerRuntime is the factory&#x27;s..."/>
+		<script type="application/ld+json">
+		{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "What is Isomer?",
+      "item": "https://docs-v3-preview.elastic.dev/pr-preview/pr-1"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Runtime",
+      "item": "https://docs-v3-preview.elastic.dev/pr-preview/pr-1/runtime"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "API reference"
+    }
+  ]
+}
+		</script>
+		<meta property="og:image" content="https://www.elastic.co/static-res/images/social_media_default.png"/>
+		<meta property="og:image:alt" content="Elastic | The Search AI Company"/>
+		<meta property="og:url" content="https://docs-v3-preview.elastic.dev/pr-preview/pr-1/runtime/api" />
+
+					<meta class="elastic" name="product_version" content="9.0+"/>
+				<meta name="DC.identifier" content="9.0+"/>
+			<link rel="alternate" type="text/markdown" href="/pr-preview/pr-1/runtime/api.md" title="Markdown export"/>
+			<meta data-pagefind-meta="title[content]" content="API reference"/>
+			<meta data-pagefind-meta="breadcrumbs[content]" content="{&#xA;  &quot;@context&quot;: &quot;https://schema.org&quot;,&#xA;  &quot;@type&quot;: &quot;BreadcrumbList&quot;,&#xA;  &quot;itemListElement&quot;: [&#xA;    {&#xA;      &quot;@type&quot;: &quot;ListItem&quot;,&#xA;      &quot;position&quot;: 1,&#xA;      &quot;name&quot;: &quot;What is Isomer?&quot;,&#xA;      &quot;item&quot;: &quot;https://docs-v3-preview.elastic.dev/pr-preview/pr-1&quot;&#xA;    },&#xA;    {&#xA;      &quot;@type&quot;: &quot;ListItem&quot;,&#xA;      &quot;position&quot;: 2,&#xA;      &quot;name&quot;: &quot;Runtime&quot;,&#xA;      &quot;item&quot;: &quot;https://docs-v3-preview.elastic.dev/pr-preview/pr-1/runtime&quot;&#xA;    },&#xA;    {&#xA;      &quot;@type&quot;: &quot;ListItem&quot;,&#xA;      &quot;position&quot;: 3,&#xA;      &quot;name&quot;: &quot;API reference&quot;&#xA;    }&#xA;  ]&#xA;}"/>
+
+</head>
+
+<body
+	hx-history="false"
+	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden min-h-screen build-type-isolated"
+	hx-ext="preload, head-support"
+	hx-boost="true"
+	hx-push-url="true"
+	hx-target="#main-container"
+	hx-select="#main-container"
+	hx-swap="outerHTML show:none"
+	>
+<svg xmlns="http://www.w3.org/2000/svg" class="hidden" aria-hidden="true">
+	<defs>
+		<symbol id="icon-chevron-down" viewBox="0 0 16 16">
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="m8 10.293 5.646-5.647.708.708L8 11.707 1.646 5.354l.708-.708L8 10.293Z"/>
+		</symbol>
+		<symbol id="icon-chevron-limit-right" viewBox="0 0 16 16">
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M8.293 8 2.646 2.354l.708-.708L9.707 8l-6.353 6.354-.708-.707L8.293 8ZM12 13V3h1v10h-1Z"/>
+		</symbol>
+		<symbol id="icon-documentation" viewBox="0 0 16 16">
+			<path fill="currentColor" d="M6 16H5v-3h1v3Zm3-8h1v1H7V8h1V7h-.5V6H9v2Zm-.5-4a.5.5 0 1 1 0 1 .5.5 0 0 1 0-1Z"/>
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M7 14h5v-2H4a1 1 0 1 0 0 2v1a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h10v11h-1v2h1v1H7v-1ZM4 2a1 1 0 0 0-1 1v8.27A1.99 1.99 0 0 1 4 11V2Zm1 9h8V2H5v9Z"/>
+		</symbol>
+		<symbol id="icon-code" viewBox="0 0 16 16">
+			<path fill="currentColor" d="m7.492 13.59 2-11-.984-.18-2 11 .984.18ZM4.854 5.354 2.207 8l2.647 2.646-.707.708L.793 8l3.354-3.354.707.708ZM15.207 8l-3.353-3.354-.707.708L13.793 8l-2.646 2.646.707.708L15.207 8Z"/>
+		</symbol>
+		<symbol id="icon-external" viewBox="0 0 16 16">
+			<path fill="currentColor" d="M11 2h2.293L6.646 8.646l.708.708L14 2.707V5h1V1h-4v1Z"/>
+			<path fill="currentColor" d="M3 2a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7h-1v6H3V3h6V2H3Z"/>
+		</symbol>
+		<symbol id="icon-grid" viewBox="0 0 16 16">
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M6 9a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4Zm-4 5h4v-4H2v4Zm12-5a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4Zm-4 5h4v-4h-4v4ZM6 1a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h4ZM2 6h4V2H2v4Zm12-5a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h4Zm-4 5h4V2h-4v4Z"/>
+		</symbol>
+		<symbol id="icon-list-bullet" viewBox="0 0 16 16" shape-rendering="crispEdges">
+			<path fill="currentColor" d="M4 13H1v-1h3v1Zm11 0H6v-1h9v1ZM4 8.5H1v-1h3v1Zm11 0H6v-1h9v1ZM4 4H1V3h3v1Zm11 0H6V3h9v1Z"/>
+		</symbol>
+		<symbol id="icon-wrench" viewBox="0 0 16 16">
+			<path fill="currentColor" d="M13.121 7.121a3 3 0 0 0 .874-2.287L11.707 7.12 8.878 4.293l2.288-2.288A3 3 0 0 0 8.173 6.01l.106.298-5.986 5.986a1 1 0 0 0 1.414 1.414l5.986-5.986.298.105a3 3 0 0 0 3.13-.705m.707.708a4 4 0 0 1-3.863 1.034l-5.55 5.551a2 2 0 1 1-2.83-2.828l5.552-5.551a3.997 3.997 0 0 1 4.328-5.008l.143.028a.88.88 0 0 1 .62.628.97.97 0 0 1-.258.933l-1.677 1.677 1.414 1.414 1.677-1.677a.97.97 0 0 1 .933-.26c.29.079.54.3.628.622l.027.143.02.22a4 4 0 0 1-1.164 3.074"/>
+		</symbol>
+		<symbol id="icon-refresh-time" viewBox="0 0 16 16">
+			<path fill="currentColor" d="M11 9h1v2h2v1h-3V9Z"/>
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M7.754 13.995a4.5 4.5 0 1 1 7.491-4.99 4.5 4.5 0 0 1-7.49 4.99ZM15 11.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"/>
+			<path fill="currentColor" d="M7.222 14.957a5.501 5.501 0 0 1-.713-1.144A6.003 6.003 0 0 1 3.757 3.757l.007-.007.003-.002.013-.014A4.337 4.337 0 0 1 4 3.525V6h1V2H1v1h2.1l-.03.03-.018.019-.004.004a7.001 7.001 0 0 0 4.175 11.904Zm7.735-7.735A7.001 7.001 0 0 0 8 1v1a6.003 6.003 0 0 1 5.813 4.509c.412.19.796.431 1.144.713Z"/>
+		</symbol>
+	</defs>
+</svg>
+
+
+<div class="sticky top-0 z-30 h-12" id="isolated-header" hx-preserve>
+	<elastic-docs-header title="isomer"
+	                     logo-href="/pr-preview/pr-1/"
+	                     github-repository="elastic/isomer"
+	                     github-link="https://github.com/elastic/isomer/tree/1/merge/docs"
+	                     git-branch="1/merge"
+	                     git-commit="409e9d6"
+	                     github-ref="refs/pull/1/merge"
+	                     branded="false"
+	                     elastic-org="true">
+	</elastic-docs-header>
+</div>
+<div id="main-container">
+		<div class="relative">
+			
+			<div class="min-h-screen
+						w-full
+						max-w-(--max-layout-width)
+						mx-auto
+						md:px-4
+			">
+				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-6">
+					<main id="content-container" class="min-w-0 flex flex-col lg:grid lg:grid-cols-[minmax(0,var(--max-text-width))_minmax(0,var(--max-sidebar-width))] lg:justify-end lg:gap-4 mx-4 md:col-start-2 md:row-start-1">
+						<div class="mb-9 mt-0 min-w-0 order-2 lg:order-1">
+							
+<ol id="breadcrumbs" class="flex flex-wrap gap-1 items-center w-full pt-6">
+		<li class="text-ink-light text-sm leading-[1.2em]">
+			<a
+				itemprop="item"
+				href="/pr-preview/pr-1"
+				hx-disable=true
+				preload="mousedown">
+				<span class="hover:text-black">What is Isomer?</span>
+			</a>
+				<span class="px-1">/</span>
+		</li>
+		<li class="text-ink-light text-sm leading-[1.2em]">
+			<a
+				itemprop="item"
+				href="/pr-preview/pr-1/runtime"
+				
+				preload="mousedown">
+				<span class="hover:text-black">Runtime</span>
+			</a>
+		</li>
+</ol>
+
+							<article id="markdown-content" class="markdown-content min-w-0" data-pagefind-body>
+								<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+								<section id="elastic-docs-v3">
+<h1>API reference</h1>
+	<p>Everything <code>@elastic/isomer-runtime</code> exports from its single entry point, plus what a host has to import from elsewhere.</p>
+<div class="heading-wrapper" id="functions"><h2><a class="headerlink" href="#functions">Functions</a></h2>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>Export</th>
+<th>Signature</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>createIsomerRuntime</code></td>
+<td><code>(options: IsomerRuntimeOptions&lt;THostContext, TRenderContext, TTheme&gt;) =&gt; IsomerRuntime&lt;THostContext, TRenderContext, TTheme&gt;</code> — with <code>frames</code>, the result's <code>surfaces.svg</code> is <code>SvgSurface</code>; without, <code>undefined</code></td>
+</tr>
+<tr>
+<td><code>defineView</code></td>
+<td><code>(options: DefineViewOptions&lt;THostContext, TInput, TNode&gt;) =&gt; RegisteredView&lt;…&gt;</code> — defaults <code>description</code>; a Zod <code>input</code> types <code>build</code></td>
+</tr>
+</tbody>
+</table>
+</div><div class="heading-wrapper" id="isomerruntimeoptions"><h2><a class="headerlink" href="#isomerruntimeoptions"><code>IsomerRuntimeOptions</code></a></h2>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>packs</code></td>
+<td><code>readonly PrimitivePack&lt;TTheme&gt;[]</code></td>
+<td>Required. At least one; additive within one theme bound.</td>
+</tr>
+<tr>
+<td><code>frames</code></td>
+<td><code>FrameMap&lt;TTheme&gt;</code></td>
+<td>Optional. Omit and <code>surfaces.svg</code> is <code>undefined</code>.</td>
+</tr>
+<tr>
+<td><code>defaultFrame</code></td>
+<td><code>string</code></td>
+<td>Required when <code>frames</code> has more than one entry.</td>
+</tr>
+<tr>
+<td><code>views</code></td>
+<td><code>readonly RegisteredView[]</code></td>
+<td>Pre-registered on the runtime's view registry.</td>
+</tr>
+<tr>
+<td><code>rendererOverrides</code></td>
+<td><code>RuntimeRendererOverrides</code></td>
+<td>Keyed by primitive <code>type</code>, then by surface.</td>
+</tr>
+<tr>
+<td><code>styleAdapter</code></td>
+<td><code>HTMLStyleAdapter&lt;…&gt;</code></td>
+<td>Replaces every pack's adapter. Defaults to the packs' own, combined. Required when any pack declares <code>collectStyles</code> and no adapter is otherwise available.</td>
+</tr>
+<tr>
+<td><code>defaultAriaLabel</code></td>
+<td><code>string</code></td>
+<td>Fallback <code>aria-label</code> for <code>html</code> and for <code>react</code> with <code>wrapper</code>. Defaults to <code>'View'</code>.</td>
+</tr>
+<tr>
+<td><code>authoring</code></td>
+<td><code>AuthoringJsonSchemaOptions</code></td>
+<td>Options for the authoring JSON Schema <code>getAuthoringContext</code> returns.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><code>CreateIsomerRuntime</code> is the factory's overloaded signature: <code>frames</code> present types <code>surfaces.svg</code> as <code>SvgSurface</code>, <code>frames</code> absent types it <code>undefined</code>, and options not statically known get the union. <code>TRenderContext</code> is inferred from <code>styleAdapter</code> alone; a host that supplies none and loads a pack that narrows its context names all three type parameters positionally, as <a href="/pr-preview/pr-1/runtime/runtime#typing-the-render-context" preload="mousedown">Runtime</a> shows.</p>
+<div class="heading-wrapper" id="isomerruntime"><h2><a class="headerlink" href="#isomerruntime"><code>IsomerRuntime</code></a></h2>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>Member</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>packs</code></td>
+<td><code>readonly PrimitivePack&lt;TTheme&gt;[]</code> — post-override</td>
+</tr>
+<tr>
+<td><code>primitives</code></td>
+<td><code>readonly AnyPrimitiveDefinition[]</code></td>
+</tr>
+<tr>
+<td><code>surfaces</code></td>
+<td><code>RuntimeSurfaces&lt;TRenderContext, TSvg&gt;</code></td>
+</tr>
+<tr>
+<td><code>viewRegistry</code></td>
+<td><code>ViewRegistry&lt;THostContext, PrimitiveNode&gt;</code></td>
+</tr>
+<tr>
+<td><code>getAuthoringContext()</code></td>
+<td><code>RuntimeAuthoringContext</code></td>
+</tr>
+<tr>
+<td><code>getCapabilities()</code></td>
+<td><code>HostCapabilities</code></td>
+</tr>
+<tr>
+<td><code>validate(composition)</code></td>
+<td><code>ValidationResult</code></td>
+</tr>
+<tr>
+<td><code>parse(value)</code></td>
+<td><code>ParsedComposition</code></td>
+</tr>
+<tr>
+<td><code>getCompositionSchema()</code></td>
+<td><code>ZodObject</code></td>
+</tr>
+</tbody>
+</table>
+</div><div class="heading-wrapper" id="surfaces"><h2><a class="headerlink" href="#surfaces">Surfaces</a></h2>
+</div>
+<p>Each exposes <code>render</code> and <code>renderNode</code>, plus a <code>validating</code> field stating its posture.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th><code>render</code> returns</th>
+<th><code>renderNode</code> returns</th>
+<th><code>validating</code></th>
+<th><code>renderNode</code> takes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>react</code></td>
+<td><code>ReactNode</code></td>
+<td><code>ReactNode</code></td>
+<td><code>false</code></td>
+<td><code>ReactRenderNodeOptions</code>: <code>context</code>, <code>wrapper</code></td>
+</tr>
+<tr>
+<td><code>html</code></td>
+<td><code>HTMLRenderResult</code></td>
+<td><code>HTMLRenderResult</code></td>
+<td><code>true</code></td>
+<td><code>HTMLRenderOptions</code></td>
+</tr>
+<tr>
+<td><code>text</code></td>
+<td><code>string</code></td>
+<td><code>string</code></td>
+<td><code>true</code></td>
+<td>nothing</td>
+</tr>
+<tr>
+<td><code>markdown</code></td>
+<td><code>string</code></td>
+<td><code>string</code></td>
+<td><code>true</code></td>
+<td>nothing</td>
+</tr>
+<tr>
+<td><code>slack</code></td>
+<td><code>SlackRenderResult</code></td>
+<td><code>SlackRenderResult</code></td>
+<td><code>true</code></td>
+<td><code>SlackRenderNodeOptions</code>: <code>text</code>, <code>collectAssets</code>, <code>assetPrefix</code></td>
+</tr>
+<tr>
+<td><code>svg</code></td>
+<td><code>SvgRenderResult</code></td>
+<td><code>SvgRenderResult</code></td>
+<td><code>true</code></td>
+<td><code>SvgRenderNodeOptions</code>: <code>frame</code>, <code>theme</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Each surface's type is exported under its own name: <code>ReactSurface</code>, <code>HtmlSurface</code>, <code>TextSurface</code>, <code>MarkdownSurface</code>, <code>SlackSurface</code>, <code>SvgSurface</code>; <code>RuntimeSurfaces</code> is the record of all six. <code>render</code> takes its surface's options type below. <code>SvgRenderResult</code> is <code>{ element, css, width, height }</code>. The <code>svg</code> surface additionally exposes <code>resolveViewport(composition, options?): { width, height }</code>, which takes <code>frame</code>, <code>width</code>, and <code>height</code>.</p>
+<div class="heading-wrapper" id="options-types"><h3><a class="headerlink" href="#options-types">Options types</a></h3>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Fields</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ReactRenderOptions</code></td>
+<td><code>context</code>, <code>heading</code>, <code>wrapper: boolean \| CompositionWrapperOptions</code>; <code>ReactRenderArgs</code> is the tuple form, optional only when <code>context</code> is</td>
+</tr>
+<tr>
+<td><code>ReactRenderNodeOptions</code></td>
+<td><code>ReactRenderOptions</code> without <code>heading</code></td>
+</tr>
+<tr>
+<td><code>HTMLRenderOptions</code></td>
+<td><code>theme</code>, <code>minify</code>, <code>fluid</code>, <code>framed</code>, <code>heading</code>, <code>css: 'inline' \| 'separate'</code>, <code>enhancements: string[]</code>, <code>onValidationError</code></td>
+</tr>
+<tr>
+<td><code>TextRenderOptions</code></td>
+<td><code>onValidationError</code></td>
+</tr>
+<tr>
+<td><code>MarkdownRenderOptions</code></td>
+<td><code>onValidationError</code></td>
+</tr>
+<tr>
+<td><code>SlackRenderOptions</code></td>
+<td><code>text</code>, <code>collectAssets</code>, <code>assetPrefix</code>, <code>onValidationError</code></td>
+</tr>
+<tr>
+<td><code>SlackRenderNodeOptions</code></td>
+<td><code>SlackRenderOptions</code> without <code>onValidationError</code></td>
+</tr>
+<tr>
+<td><code>SvgRenderOptions</code></td>
+<td><code>frame</code>, <code>width</code>, <code>height</code>, <code>theme</code>, <code>onValidationError</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><code>onValidationError</code> is <code>'collect' | 'throw'</code>. <code>html</code> defaults to <code>'collect'</code> and reports on <code>validationErrors</code>; <code>text</code>, <code>markdown</code>, <code>slack</code>, and <code>svg</code> default to <code>'throw'</code>.</p>
+<div class="heading-wrapper" id="result-types"><h3><a class="headerlink" href="#result-types">Result types</a></h3>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Shape</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>HTMLRenderResult</code></td>
+<td><code>{ html, css, body, measurement, validationErrors }</code></td>
+</tr>
+<tr>
+<td><code>SlackRenderResult</code></td>
+<td><code>{ text, blocks, assets }</code></td>
+</tr>
+<tr>
+<td><code>ValidationResult</code></td>
+<td><code>{ valid, errors, warnings }</code> — each error is <code>{ path, message }</code></td>
+</tr>
+<tr>
+<td><code>ParsedComposition</code></td>
+<td><code>{ valid, errors, composition? }</code></td>
+</tr>
+</tbody>
+</table>
+</div><div class="heading-wrapper" id="view-registry"><h2><a class="headerlink" href="#view-registry">View registry</a></h2>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>Member</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>register(view)</code></td>
+<td><code>void</code> — throws on a duplicate id</td>
+</tr>
+<tr>
+<td><code>list()</code></td>
+<td><code>RegisteredViewSummary[]</code></td>
+</tr>
+<tr>
+<td><code>get(id)</code></td>
+<td><code>RegisteredViewSummary \| undefined</code></td>
+</tr>
+<tr>
+<td><code>request(id, context, input?)</code></td>
+<td><code>Promise&lt;ViewResponse&gt;</code> — <code>{ view, composition, validation }</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><code>RegisteredView</code> is <code>{ id, title, description, answers, input?, build }</code>, where <code>build({ context, input })</code> returns the composition. <code>DefineViewOptions</code> is the same with <code>description</code> optional. <code>RegisteredViewSummary</code> is <code>{ id, title, description, answers, inputSchema? }</code>. <code>ViewBuildArgs</code> is <code>build</code>'s argument, <code>ViewInput</code> is the input shape a view's Zod schema infers, and <code>ViewResponse</code> is what <code>request</code> resolves to.</p>
+<div class="heading-wrapper" id="types-exported-from-this-package"><h2><a class="headerlink" href="#types-exported-from-this-package">Types exported from this package</a></h2>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Names</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Runtime</td>
+<td><code>CreateIsomerRuntime</code>, <code>IsomerRuntime</code>, <code>IsomerRuntimeOptions</code>, <code>RuntimeSurfaces</code>, <code>FrameMap</code>, <code>RuntimeRendererOverrides</code>, <code>RuntimePackTypes</code></td>
+</tr>
+<tr>
+<td>Authoring</td>
+<td><code>RuntimeAuthoringContext</code>, <code>HostCapabilities</code>, <code>JsonSchema</code></td>
+</tr>
+<tr>
+<td>View registry</td>
+<td><code>ViewRegistry</code>, <code>RegisteredView</code>, <code>RegisteredViewSummary</code>, <code>DefineViewOptions</code>, <code>ViewBuildArgs</code>, <code>ViewInput</code>, <code>ViewResponse</code>, <code>RegisteredViewInputError</code></td>
+</tr>
+<tr>
+<td>Surfaces</td>
+<td><code>ReactSurface</code>, <code>HtmlSurface</code>, <code>TextSurface</code>, <code>MarkdownSurface</code>, <code>SlackSurface</code>, <code>SvgSurface</code></td>
+</tr>
+<tr>
+<td>Options</td>
+<td><code>ReactRenderOptions</code>, <code>ReactRenderNodeOptions</code>, <code>ReactRenderArgs</code>, <code>HTMLRenderOptions</code>, <code>HTMLStyleAdapter</code>, <code>TextRenderOptions</code>, <code>MarkdownRenderOptions</code>, <code>SlackRenderOptions</code>, <code>SlackRenderNodeOptions</code>, <code>SvgRenderOptions</code>, <code>SvgRenderNodeOptions</code></td>
+</tr>
+<tr>
+<td>Results</td>
+<td><code>HTMLRenderResult</code>, <code>SlackRenderResult</code>, <code>SvgRenderResult</code></td>
+</tr>
+<tr>
+<td>Errors</td>
+<td><code>IsomerError</code>, <code>IsomerErrorCode</code>, <code>ISOMER_ERROR_CODES</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><code>src/api_reference.test.ts</code> fails when a name exported from <code>src/index.ts</code> is missing from this page.</p>
+<p><code>IsomerError</code> is a deliberate pass-through of the SDK catch contract: a host catching a runtime construction failure should not need a second dependency just to name <code>code</code>.</p>
+<div class="heading-wrapper" id="import-from-the-sdk"><h2><a class="headerlink" href="#import-from-the-sdk">Import from the SDK</a></h2>
+</div>
+<p><code>PrimitiveNode</code>, <code>Composition</code>, <code>ValidationResult</code>, <code>ValidationWarning</code>, <code>warningsForSurface</code>, <code>definePrimitive</code>, <code>describeCapabilities</code>, <code>PrimitivePack</code>, <code>Frame</code>, <code>CompositionValidationError</code>.</p>
+<div class="heading-wrapper" id="errors"><h2><a class="headerlink" href="#errors">Errors</a></h2>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>Thrown</th>
+<th>By</th>
+<th>Carries</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>IsomerError</code></td>
+<td><code>createIsomerRuntime</code>, <code>viewRegistry.register</code>, an unknown view id, <code>getAuthoringContext().schemaFor</code> on an unknown type (<code>UNKNOWN_PRIMITIVE_TYPE</code>), or the <code>svg</code> surface</td>
+<td><code>code</code> and a message naming the offender</td>
+</tr>
+<tr>
+<td><code>RegisteredViewInputError</code></td>
+<td><code>viewRegistry.request</code>, on invalid input</td>
+<td><code>code</code> (<code>VIEW_INPUT_INVALID</code>), <code>viewId</code>, <code>errors</code> (<code>{ path, message }</code> each)</td>
+</tr>
+<tr>
+<td><code>CompositionValidationError</code></td>
+<td><code>text</code>, <code>markdown</code>, <code>slack</code>, and <code>svg</code> by default; <code>html</code> with <code>onValidationError: 'throw'</code></td>
+<td><code>code</code> (<code>COMPOSITION_INVALID</code>), <code>errors</code></td>
+</tr>
+</tbody>
+</table>
+</div><div class="heading-wrapper" id="where-the-code-is"><h2><a class="headerlink" href="#where-the-code-is">Where the code is</a></h2>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>File</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Factory, options, pack admission, frame resolution</td>
+<td><code>src/assemble/runtime.ts</code></td>
+</tr>
+<tr>
+<td>Renderer overrides and their checks</td>
+<td><code>src/assemble/overrides.ts</code></td>
+</tr>
+<tr>
+<td>Authoring context</td>
+<td><code>src/assemble/authoring.ts</code></td>
+</tr>
+<tr>
+<td>Surfaces, one file each behind a barrel</td>
+<td><code>src/surfaces/</code></td>
+</tr>
+<tr>
+<td>View registry, <code>defineView</code>, input error</td>
+<td><code>src/registry/view_registry.ts</code></td>
+</tr>
+<tr>
+<td>Public entry point</td>
+<td><code>src/index.ts</code></td>
+</tr>
+<tr>
+<td>Style-adapter composition</td>
+<td><code>src/assemble/style_adapter.ts</code></td>
+</tr>
+<tr>
+<td>Coverage of this page against the entry point</td>
+<td><code>src/api_reference.test.ts</code></td>
+</tr>
+<tr>
+<td>Composition and render behaviour</td>
+<td><code>src/assemble/runtime.test.ts</code></td>
+</tr>
+<tr>
+<td>Registry behaviour</td>
+<td><code>src/registry/view_registry.test.ts</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+
+							</article>
+							
+
+
+							<footer id="prev-next-nav" class="content-container mt-20">
+	<div class="flex flex-wrap lg:flex-nowrap gap-2 mt-2">
+		<div class="w-full">
+				<a 
+					href="/pr-preview/pr-1/runtime/renderer-overrides"
+					preload="mousedown"
+					class="flex h-full items-center text-ink-light hover:black border-1 border-grey-20 hover:border-grey-80 rounded-lg p-6 shadow-md"
+				>
+					<svg class="size-6 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
+					</svg>
+					<div>
+						<div class="text-xs lg:text-sm">Previous</div>
+						<div class="text-base lg:text-xl text-black">Renderer overrides</div>
+					</div>
+				</a>
+		</div>
+		<div class="w-full">
+				<a 
+					href="/pr-preview/pr-1/sdk"
+					preload="mousedown"
+					class="flex h-full items-center justify-end text-ink-light hover:black border-1 border-grey-20 hover:border-grey-80 rounded-lg p-6 shadow-md text-right"
+				>
+					<div>
+						<div class="text-xs lg:text-sm">Next</div>
+						<div class="text-base lg:text-xl text-black">SDK</div>
+					</div>
+					<svg class="size-6 ml-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
+					</svg>
+				</a>
+		</div>
+	</div>
+</footer>
+
+						</div>
+						<aside class="sidebar md:block w-full lg:max-w-65 order-1 lg:order-2">
+	<nav id="toc-nav" class="sidebar-nav lg:h-full flex flex-row-reverse justify-between items-center md:flex-row md:justify-start lg:block gap-4 simple-scrollbar">
+			<div></div>
+
+			<label role="button" class="md:hidden cursor-pointer" for="pages-nav-hamburger">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+					stroke="currentColor" class="size-6">
+					<path stroke-linecap="round" stroke-linejoin="round"
+						d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"/>
+				</svg>
+			</label>
+		
+		<ul class="hidden md:flex items-center lg:block gap-4">
+			<li class="view-as-markdown hidden lg:block lg:not-first:mt-1">
+				<a href="/pr-preview/pr-1/runtime/api.md" class="link text-sm" target="_blank">
+					<svg class="link-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 -1 24 24">
+						<path fill="currentColor" d="M22.131725 19.247H1.9386225C1.0239525 19.247 0.25 18.47305 0.25 17.558375v-11.11675c0 -0.914675 0.7739525 -1.688625 1.6886225 -1.688625H22.061375c0.914675 0 1.688625 0.77395 1.688625 1.688625v11.11675c0 0.914675 -0.7036 1.688625 -1.618275 1.688625ZM1.9386225 5.87875c-0.2814375 0 -0.562875 0.281425 -0.562875 0.562875v11.11675c0 0.3518 0.2814375 0.562875 0.562875 0.562875H22.061375c0.3518 0 0.562875 -0.281425 0.562875 -0.562875v-11.11675c0 -0.3518 -0.281425 -0.562875 -0.562875 -0.562875l-20.1227525 0ZM3.62725 15.86975V8.130225h2.2515l2.2515 2.814375 2.251475 -2.814375h2.2515V15.86975h-2.2515V11.437125L8.13025 14.2515l-2.2515 -2.814375V15.86975h-2.2515Zm14.1422 0L14.392225 12.140725h2.251475v-4.0105h2.2515v3.940125h2.2515L17.76945 15.86975Z" stroke-width="0.25"></path>
+					</svg>
+					View as Markdown
+				</a>
+			</li>
+				<li class="edit-this-page lg:not-first:mt-1 ">
+					<a href="https://github.com/elastic/isomer/edit/1/merge/docs/runtime/api.md" class="link text-sm" target="_blank">
+						<svg class="link-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"/>
+						</svg>
+						Edit this page
+					</a>
+				</li>
+		</ul>
+		<div class="pt-6 hidden lg:block">
+				<div class="font-sans">
+					<div class="font-bold mb-2">On this page</div>
+					<div class="relative toc-progress-container font-body">
+						<div class="toc-progress-indicator absolute top-0 h-0 w-[1px] bg-blue-elastic transition-[transform,height] duration-200 ease-out "></div>
+						<ul class="block w-full">
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#functions">
+										Functions
+									</a>
+								</li>
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#isomerruntimeoptions">
+										IsomerRuntimeOptions
+									</a>
+								</li>
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#isomerruntime">
+										IsomerRuntime
+									</a>
+								</li>
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#surfaces">
+										Surfaces
+									</a>
+								</li>
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 ml-4"
+										href="#options-types">
+										Options types
+									</a>
+								</li>
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 ml-4"
+										href="#result-types">
+										Result types
+									</a>
+								</li>
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#view-registry">
+										View registry
+									</a>
+								</li>
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#types-exported-from-this-package">
+										Types exported from this package
+									</a>
+								</li>
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#import-from-the-sdk">
+										Import from the SDK
+									</a>
+								</li>
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#errors">
+										Errors
+									</a>
+								</li>
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#where-the-code-is">
+										Where the code is
+									</a>
+								</li>
+						</ul>
+					</div>
+				</div>
+
+		</div>
+
+	</nav>
+</aside>
+
+					</main>
+					<aside class="sidebar font-sans bg-white fixed md:sticky shadow-2xl md:shadow-none left-full group-has-[#pages-nav-hamburger:checked]/body:left-0 bottom-0 md:left-auto top-[calc(var(--offset-top)&#x2B;1px)] w-[80%] md:w-auto shrink-0 border-r border-r-grey-20 z-[10000] md:z-auto transition-[top,max-height] duration-300 md:col-start-1 md:row-start-1">
+	<nav
+		id="pages-nav"
+		
+		class="sidebar-nav h-full simple-scrollbar">
+		
+<div class="pb-9 pl-3 md:pl-0 font-body">
+	<div class="sticky top-0 z-10 bg-white">
+		<div id="nav-dropdown">
+		</div>
+	</div>
+
+	<ul class="block px-4" id="nav-tree-19f0ff2716b491fe" hx-preserve>
+			<li class="flex group/li pr-8 mt-6">
+				<a href="/pr-preview/pr-1" class="sidebar-link nav-link">What is Isomer?</a>
+			</li>
+				<li role="separator" class="mt-4 pr-8"><hr class="border-grey-20"></li>
+				<li class="nav-folder mt-6">
+			<div class="peer grid grid-cols-[1fr_auto] w-full">
+				<a href="/pr-preview/pr-1/runtime" class="sidebar-link nav-folder-link font-semibold">
+					
+					<span>Runtime</span>
+				</a>
+					<label for="475F6EE0" class="group/label flex mr-2 items-start">
+						<div class="nav-toggle-btn">
+							<svg class="nav-chevron" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg>
+						</div>
+						<input
+							id="475F6EE0"
+							type="checkbox"
+							class="hidden"
+							aria-hidden="true">
+					</label>
+			</div>
+			<ul class="nav-subtree">
+						<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/quick-start" class="sidebar-link nav-link">
+				
+				<span>Quick start</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/runtime" class="sidebar-link nav-link">
+				
+				<span>Runtime</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/packs" class="sidebar-link nav-link">
+				
+				<span>Packs</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/frame" class="sidebar-link nav-link">
+				
+				<span>Frame</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/surfaces" class="sidebar-link nav-link">
+				
+				<span>Surfaces</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/embedding" class="sidebar-link nav-link">
+				
+				<span>Embedding a composition in a host page</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/view-registry" class="sidebar-link nav-link">
+				
+				<span>View registry</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/authoring-context" class="sidebar-link nav-link">
+				
+				<span>Authoring context</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/renderer-overrides" class="sidebar-link nav-link">
+				
+				<span>Renderer overrides</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/api" class="sidebar-link nav-link current">
+				
+				<span>API reference</span>
+			</a>
+		</li>
+
+			</ul>
+		</li>
+		<li class="nav-folder mt-6">
+			<div class="peer grid grid-cols-[1fr_auto] w-full">
+				<a href="/pr-preview/pr-1/sdk" class="sidebar-link nav-folder-link font-semibold">
+					
+					<span>SDK</span>
+				</a>
+					<label for="0BE6DC0C" class="group/label flex mr-2 items-start">
+						<div class="nav-toggle-btn">
+							<svg class="nav-chevron" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg>
+						</div>
+						<input
+							id="0BE6DC0C"
+							type="checkbox"
+							class="hidden"
+							aria-hidden="true">
+					</label>
+			</div>
+			<ul class="nav-subtree">
+						<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/quick-start" class="sidebar-link nav-link">
+				
+				<span>Quick start</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/primitives" class="sidebar-link nav-link">
+				
+				<span>Primitives</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/packs" class="sidebar-link nav-link">
+				
+				<span>Packs</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/composition" class="sidebar-link nav-link">
+				
+				<span>Composition and validation</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/dispatch" class="sidebar-link nav-link">
+				
+				<span>Dispatch</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/rendering" class="sidebar-link nav-link">
+				
+				<span>Rendering</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/frame" class="sidebar-link nav-link">
+				
+				<span>Frame</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/url-trust" class="sidebar-link nav-link">
+				
+				<span>URL trust</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/authoring" class="sidebar-link nav-link">
+				
+				<span>Authoring</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/api" class="sidebar-link nav-link">
+				
+				<span>API reference</span>
+			</a>
+		</li>
+
+			</ul>
+		</li>
+		<li class="nav-folder mt-6">
+			<div class="peer grid grid-cols-[1fr_auto] w-full">
+				<a href="/pr-preview/pr-1/slides" class="sidebar-link nav-folder-link font-semibold">
+					
+					<span>Slides pack</span>
+				</a>
+					<label for="E6CA79C6" class="group/label flex mr-2 items-start">
+						<div class="nav-toggle-btn">
+							<svg class="nav-chevron" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg>
+						</div>
+						<input
+							id="E6CA79C6"
+							type="checkbox"
+							class="hidden"
+							aria-hidden="true">
+					</label>
+			</div>
+			<ul class="nav-subtree">
+						<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/slides/primitives" class="sidebar-link nav-link">
+				
+				<span>Authoring a primitive</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/slides/contract" class="sidebar-link nav-link">
+				
+				<span>Pack contract</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/slides/document" class="sidebar-link nav-link">
+				
+				<span>Document</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/slides/theme" class="sidebar-link nav-link">
+				
+				<span>Theme</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/slides/styling" class="sidebar-link nav-link">
+				
+				<span>Styling</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/slides/example" class="sidebar-link nav-link">
+				
+				<span>Worked example</span>
+			</a>
+		</li>
+
+			</ul>
+		</li>
+		<li class="flex group/li pr-8 font-semibold mt-6">
+			<a href="/pr-preview/pr-1/image-takumi" class="sidebar-link nav-link">
+				
+				<span>Takumi image backend</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 font-semibold mt-6">
+			<a href="/pr-preview/pr-1/evals" class="sidebar-link nav-link">
+				
+				<span>Evals</span>
+			</a>
+		</li>
+		<li class="nav-folder mt-6">
+			<div class="peer grid grid-cols-[1fr_auto] w-full">
+				<a href="/pr-preview/pr-1/reference" class="sidebar-link nav-folder-link font-semibold">
+					
+					<span>Reference</span>
+				</a>
+					<label for="F01CFB4E" class="group/label flex mr-2 items-start">
+						<div class="nav-toggle-btn">
+							<svg class="nav-chevron" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg>
+						</div>
+						<input
+							id="F01CFB4E"
+							type="checkbox"
+							class="hidden"
+							aria-hidden="true">
+					</label>
+			</div>
+			<ul class="nav-subtree">
+						<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/reference/okf-map" class="sidebar-link nav-link">
+				
+				<span>OKF map</span>
+			</a>
+		</li>
+
+			</ul>
+		</li>
+
+	</ul>
+</div>
+
+	</nav>
+	<label role="button" for="pages-nav-hamburger" class="absolute md:hidden top-7 -right-12 bg-white p-1 rounded-full border-1 border-grey-20 cursor-pointer z-99">
+		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+			<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+		</svg>
+	</label>
+</aside>
+<label for="pages-nav-hamburger" aria-hidden="true" class="hidden group-has-[#pages-nav-hamburger:checked]/body:block md:hidden! fixed top-0 left-0 right-0 bottom-0 bg-black/50 z-[9999] ">
+
+</label>
+
+				</div>
+			</div>
+		</div>
+</div>
+
+	<footer hx-disable="true" class="py-8 px-6 w-full mx-auto bg-ink-dark">
+		<div class="max-w-(--max-layout-width) w-full mx-auto text-grey-20 text-[12px]">
+			<a href="https://www.elastic.co/">
+				<img class="block" loading="lazy" alt="Elastic logo" src="/pr-preview/pr-1/_static/logo-elastic-horizontal-white.svg?v=19bc4040eda89518" width="120" height="41"/>
+			</a>
+			<p class="mt-4">
+				© 2026 Elasticsearch B.V. All Rights Reserved.
+			</p>
+			<ul class="mt-2 flex gap-3">
+				<li>
+					<a class="underline hover:text-white" href="https://www.elastic.co/legal/terms-of-use">Terms of Use</a>
+				</li>
+				<li>
+					<a class="underline hover:text-white" href="https://www.elastic.co/legal/privacy-statement">Privacy</a>
+				</li>
+			</ul>
+		</div>
+	</footer>
+
+
+</body>
+</html>

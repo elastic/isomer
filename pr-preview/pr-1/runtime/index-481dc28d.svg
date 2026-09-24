@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1148.672 318" width="1148.672" height="318" style="--bg:#FFFFFF;--fg:#000000;--accent:#3b82f6">
+<style>
+  text { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+  .mono { font-family: 'ui-monospace\2C  SFMono-Regular\2C  Menlo\2C  Monaco\2C  Consolas\2C  \27 Liberation Mono\27 \2C  \27 Courier New\27 \2C  monospace', ui-monospace, 'SF Mono', 'Cascadia Code', monospace; }
+  svg {
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 55%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 35%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 20%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 32%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 70%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 10%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 22%, var(--bg)));
+    --_group-fill:    color-mix(in srgb, var(--fg) 3%, var(--bg));
+    --_group-hdr:     color-mix(in srgb, var(--fg) 4%, var(--bg));
+    --_group-stroke:  color-mix(in srgb, var(--fg) 10%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 10%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 8%, var(--bg));
+    --_accent-fill:   color-mix(in srgb, var(--accent, var(--fg)) 8%, var(--bg));
+    --_accent-stroke: color-mix(in srgb, var(--accent, var(--fg)) 20%, var(--bg));
+    --_accent-text:   color-mix(in srgb, var(--accent, var(--fg)) 65%, var(--bg));
+    --fs-xs: 0.75rem;
+    --fs-s:  0.875rem;
+    --fs-m:  1rem;
+    --fs-l:  1.125rem;
+  }
+  .node, .actor, .entity, .class-node, .architecture-service, .kanban-card { filter: drop-shadow(0 1px 3px rgba(0,0,0,.07)); }
+  .subgraph, .kanban-column { filter: drop-shadow(0 1px 2px rgba(0,0,0,.04)); }
+  .cls-note rect, .cls-note polygon, .cls-note circle, .cls-note ellipse { fill: #e8f1ff; stroke: #a3cbff; }
+  .cls-note text { fill: #154399; }
+  .cls-tip rect, .cls-tip polygon, .cls-tip circle, .cls-tip ellipse { fill: #e2f9f7; stroke: #77e5e0; }
+  .cls-tip text { fill: #065b58; }
+  .cls-warning rect, .cls-warning polygon, .cls-warning circle, .cls-warning ellipse { fill: #fdf3d8; stroke: #facb3d; }
+  .cls-warning text { fill: #6a4906; }
+  .cls-important rect, .cls-important polygon, .cls-important circle, .cls-important ellipse { fill: #f3ecfe; stroke: #d1bafc; }
+  .cls-important text { fill: #52357e; }
+  .cls-caution rect, .cls-caution polygon, .cls-caution circle, .cls-caution ellipse { fill: #ffefe9; stroke: #ffc1aa; }
+  .cls-caution text { fill: #8a3825; }
+  .cls-error rect, .cls-error polygon, .cls-error circle, .cls-error ellipse { fill: #ffe8e5; stroke: #ffb5ad; }
+  .cls-error text { fill: #7f1f27; }
+  .cls-success rect, .cls-success polygon, .cls-success circle, .cls-success ellipse { fill: #e2f8f0; stroke: #88e3c3; }
+  .cls-success text { fill: #0c5a3f; }
+  .cls-plain rect, .cls-plain polygon, .cls-plain circle, .cls-plain ellipse { fill: #f6f9fc; stroke: #bdc2ca; }
+  .cls-plain text { fill: #464c56; }
+  .cls-highlight rect, .cls-highlight polygon, .cls-highlight circle, .cls-highlight ellipse { fill: #d9e8ff; stroke: #3788ff; }
+  .cls-highlight text { fill: #123778; }
+  @media (prefers-color-scheme: dark) {
+    .cls-note rect, .cls-note polygon, .cls-note circle, .cls-note ellipse { fill: #000917; stroke: #00285C; }
+    .cls-note text { fill: #6694EA; }
+    .cls-tip rect, .cls-tip polygon, .cls-tip circle, .cls-tip ellipse { fill: #061D1B; stroke: #1A8883; }
+    .cls-tip text { fill: #A4F9F6; }
+    .cls-warning rect, .cls-warning polygon, .cls-warning circle, .cls-warning ellipse { fill: #271D02; stroke: #C29305; }
+    .cls-warning text { fill: #F9D895; }
+    .cls-important rect, .cls-important polygon, .cls-important circle, .cls-important ellipse { fill: #080113; stroke: #1A0345; }
+    .cls-important text { fill: #9E81CA; }
+    .cls-caution rect, .cls-caution polygon, .cls-caution circle, .cls-caution ellipse { fill: #160600; stroke: #551700; }
+    .cls-caution text { fill: #DA8875; }
+    .cls-error rect, .cls-error polygon, .cls-error circle, .cls-error ellipse { fill: #1A0300; stroke: #520800; }
+    .cls-error text { fill: #E08088; }
+    .cls-success rect, .cls-success polygon, .cls-success circle, .cls-success ellipse { fill: #071D15; stroke: #1C7757; }
+    .cls-success text { fill: #A5F3D8; }
+    .cls-plain rect, .cls-plain polygon, .cls-plain circle, .cls-plain ellipse { fill: #030609; stroke: #353A42; }
+    .cls-plain text { fill: #A9AFB9; }
+    .cls-highlight rect, .cls-highlight polygon, .cls-highlight circle, .cls-highlight ellipse { fill: #000F26; stroke: #0051C8; }
+    .cls-highlight text { fill: #87ACED; }
+  }
+</style>
+
+<defs>
+  <marker id="arrowhead" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="12" refY="6" orient="auto">
+    <polygon points="0 0, 12 6, 0 12" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="0" refY="6" orient="auto">
+    <polygon points="12 0, 0 6, 12 12" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+
+<path class="edge" data-from="Packs" data-to="Runtime" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M208.752,131.6 L264.752,131.6" fill="none" stroke="var(--_line)" stroke-width="2.25" marker-end="url(#arrowhead)" />
+<path class="edge" data-from="Frames" data-to="Runtime" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M108.416,204.39999999999998 L108.416,137.6 Q108.416,131.6 114.416,131.6 L186.584,131.6 L186.584,131.6 L264.752,131.6" fill="none" stroke="var(--_line)" stroke-width="2.25" marker-end="url(#arrowhead)" />
+<path class="edge" data-from="Runtime" data-to="Registry" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M322.224,105.19999999999999 L322.224,82.8 Q322.224,76.8 328.224,76.8 L378.96000000000004,76.8 L378.96000000000004,76.8 L435.696,76.8" fill="none" stroke="var(--_line)" stroke-width="2.25" marker-end="url(#arrowhead)" />
+<path class="edge" data-from="Runtime" data-to="Authoring" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M322.224,158 L322.224,180.39999999999998 Q322.224,186.39999999999998 328.224,186.39999999999998 L378.96000000000004,186.39999999999998 L378.96000000000004,186.39999999999998 L435.696,186.39999999999998" fill="none" stroke="var(--_line)" stroke-width="2.25" marker-end="url(#arrowhead)" />
+<path class="edge" data-from="Registry" data-to="Composition" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M512.7760000000001,113.6 L512.7760000000001,125.6 Q512.7760000000001,131.6 518.7760000000001,131.6 L594.82,131.6 L594.82,131.6 L676.864,131.6" fill="none" stroke="var(--_line)" stroke-width="2.25" marker-end="url(#arrowhead)" />
+<path class="edge" data-from="Authoring" data-to="Composition" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M528.28,149.6 L528.28,137.6 Q528.28,131.6 534.28,131.6 L602.572,131.6 L602.572,131.6 L676.864,131.6" fill="none" stroke="var(--_line)" stroke-width="2.25" marker-end="url(#arrowhead)" />
+<path class="edge" data-from="Composition" data-to="Surfaces" data-style="solid" data-arrow-start="false" data-arrow-end="true" d="M822.816,131.6 L878.816,131.6" fill="none" stroke="var(--_line)" stroke-width="2.25" marker-end="url(#arrowhead)" />
+<g class="node" data-id="Packs" data-label="Primitive packs
+vocabulary" data-shape="rectangle">
+  <rect x="40" y="94.79999999999998" width="168.752" height="73.6" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="124.376" y="131.59999999999997" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)"><tspan x="124.376" dy="-4.800000000000001">Primitive packs</tspan><tspan x="124.376" dy="20.8">vocabulary</tspan></text>
+</g>
+<g class="node" data-id="Runtime" data-label="Runtime" data-shape="rectangle">
+  <rect x="264.752" y="105.19999999999999" width="114.94399999999999" height="52.8" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="322.224" y="131.6" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)" dy="5.6">Runtime</text>
+</g>
+<g class="node" data-id="Frames" data-label="Frames
+documents" data-shape="rectangle">
+  <rect x="40" y="204.39999999999998" width="136.832" height="73.6" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="108.416" y="241.2" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)"><tspan x="108.416" dy="-4.800000000000001">Frames</tspan><tspan x="108.416" dy="20.8">documents</tspan></text>
+</g>
+<g class="node" data-id="Registry" data-label="View registry
+trusted path" data-shape="rectangle">
+  <rect x="435.696" y="40" width="154.16000000000003" height="73.6" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="512.7760000000001" y="76.8" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)"><tspan x="512.7760000000001" dy="-4.800000000000001">View registry</tspan><tspan x="512.7760000000001" dy="20.8">trusted path</tspan></text>
+</g>
+<g class="node" data-id="Authoring" data-label="Authoring context
+agent path" data-shape="rectangle">
+  <rect x="435.696" y="149.6" width="185.16799999999998" height="73.6" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="528.28" y="186.39999999999998" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)"><tspan x="528.28" dy="-4.800000000000001">Authoring context</tspan><tspan x="528.28" dy="20.8">agent path</tspan></text>
+</g>
+<g class="node" data-id="Composition" data-label="Composition" data-shape="rectangle">
+  <rect x="676.864" y="105.19999999999999" width="145.952" height="52.8" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="749.84" y="131.6" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)" dy="5.6">Composition</text>
+</g>
+<g class="node" data-id="Surfaces" data-label="react · html · text
+markdown · slack · svg" data-shape="rectangle">
+  <rect x="878.816" y="94.8" width="229.85600000000002" height="73.6" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="2" />
+  <text x="993.744" y="131.6" text-anchor="middle" font-size="var(--fs-m)" font-weight="500" fill="var(--_text)"><tspan x="993.744" dy="-4.800000000000001">react · html · text</tspan><tspan x="993.744" dy="20.8">markdown · slack · svg</tspan></text>
+</g>
+</svg>

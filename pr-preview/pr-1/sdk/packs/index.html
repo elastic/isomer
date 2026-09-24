@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en" class="h-screen" xmlns="http://www.w3.org/1999/html">
+<head hx-head="merge">
+		<meta charset="utf-8">
+	<title>Packs | What is Isomer?</title>
+		<meta name="description" content="A pack is a vocabulary as a value: an id, a set of primitives, the optional surfaces every one of them implements, the palette its svg renderers require,...">
+		<link rel="preload" href="/pr-preview/pr-1/_static/InterVariable.e6ec8b96.woff2" as="font" type="font/woff2" crossorigin>
+		<link rel="preload" href="/pr-preview/pr-1/_static/MierB-Regular.efa24115.woff2" as="font" type="font/woff2" crossorigin>
+		<link rel="preload" href="/pr-preview/pr-1/_static/MierB-Bold.01af95ca.woff2" as="font" type="font/woff2" crossorigin>
+		<link rel="preload" href="/pr-preview/pr-1/_static/MierB-Demi.845945e0.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="stylesheet preload" as="style" type="text/css" href="/pr-preview/pr-1/_static/styles.css?v=0e0d184ac898470e" crossorigin/>
+			<link rel="stylesheet preload" as="style" type="text/css" href="/pr-preview/pr-1/_static/isolated.css?v=280db5dd439608f2" crossorigin/>
+	<script>window.__DOCS_CONFIG__={"buildType":"isolated","serviceName":"docs-frontend","telemetryEnabled":false,"rootPath":"/pr-preview/pr-1","apiBasePath":"/docs/_api","airGapped":false};</script>
+	<script>try{sessionStorage.removeItem("htmx-history-cache")}catch(e){}</script>
+	<script src="/pr-preview/pr-1/_static/main.js?v=a01a109490d983c3" defer></script>
+		<link rel="canonical" href="https://docs-v3-preview.elastic.dev/pr-preview/pr-1/sdk/packs" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="icon" href="/favicon.ico" sizes="32x32"/> 	<link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+	<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180"/>
+
+	<meta name="robots" content="noindex, nofollow">
+	<meta name="htmx-config" content='{"selfRequestsOnly": true, "defaultSettleDelay": 0, "historyCacheSize": 0, "refreshOnHistoryMiss": true}'>
+	<meta name="docs:current-section" content="2F647619">
+	<meta property="og:type" content="website"/>
+	<meta property="og:title" content="Packs | What is Isomer?"/>
+		<meta property="og:description" content="A pack is a vocabulary as a value: an id, a set of primitives, the optional surfaces every one of them implements, the palette its svg renderers require,..."/>
+		<script type="application/ld+json">
+		{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "What is Isomer?",
+      "item": "https://docs-v3-preview.elastic.dev/pr-preview/pr-1"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "SDK",
+      "item": "https://docs-v3-preview.elastic.dev/pr-preview/pr-1/sdk"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Packs"
+    }
+  ]
+}
+		</script>
+		<meta property="og:image" content="https://www.elastic.co/static-res/images/social_media_default.png"/>
+		<meta property="og:image:alt" content="Elastic | The Search AI Company"/>
+		<meta property="og:url" content="https://docs-v3-preview.elastic.dev/pr-preview/pr-1/sdk/packs" />
+
+					<meta class="elastic" name="product_version" content="9.0+"/>
+				<meta name="DC.identifier" content="9.0+"/>
+			<link rel="alternate" type="text/markdown" href="/pr-preview/pr-1/sdk/packs.md" title="Markdown export"/>
+			<meta data-pagefind-meta="title[content]" content="Packs"/>
+			<meta data-pagefind-meta="breadcrumbs[content]" content="{&#xA;  &quot;@context&quot;: &quot;https://schema.org&quot;,&#xA;  &quot;@type&quot;: &quot;BreadcrumbList&quot;,&#xA;  &quot;itemListElement&quot;: [&#xA;    {&#xA;      &quot;@type&quot;: &quot;ListItem&quot;,&#xA;      &quot;position&quot;: 1,&#xA;      &quot;name&quot;: &quot;What is Isomer?&quot;,&#xA;      &quot;item&quot;: &quot;https://docs-v3-preview.elastic.dev/pr-preview/pr-1&quot;&#xA;    },&#xA;    {&#xA;      &quot;@type&quot;: &quot;ListItem&quot;,&#xA;      &quot;position&quot;: 2,&#xA;      &quot;name&quot;: &quot;SDK&quot;,&#xA;      &quot;item&quot;: &quot;https://docs-v3-preview.elastic.dev/pr-preview/pr-1/sdk&quot;&#xA;    },&#xA;    {&#xA;      &quot;@type&quot;: &quot;ListItem&quot;,&#xA;      &quot;position&quot;: 3,&#xA;      &quot;name&quot;: &quot;Packs&quot;&#xA;    }&#xA;  ]&#xA;}"/>
+
+</head>
+
+<body
+	hx-history="false"
+	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden min-h-screen build-type-isolated"
+	hx-ext="preload, head-support"
+	hx-boost="true"
+	hx-push-url="true"
+	hx-target="#main-container"
+	hx-select="#main-container"
+	hx-swap="outerHTML show:none"
+	>
+<svg xmlns="http://www.w3.org/2000/svg" class="hidden" aria-hidden="true">
+	<defs>
+		<symbol id="icon-chevron-down" viewBox="0 0 16 16">
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="m8 10.293 5.646-5.647.708.708L8 11.707 1.646 5.354l.708-.708L8 10.293Z"/>
+		</symbol>
+		<symbol id="icon-chevron-limit-right" viewBox="0 0 16 16">
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M8.293 8 2.646 2.354l.708-.708L9.707 8l-6.353 6.354-.708-.707L8.293 8ZM12 13V3h1v10h-1Z"/>
+		</symbol>
+		<symbol id="icon-documentation" viewBox="0 0 16 16">
+			<path fill="currentColor" d="M6 16H5v-3h1v3Zm3-8h1v1H7V8h1V7h-.5V6H9v2Zm-.5-4a.5.5 0 1 1 0 1 .5.5 0 0 1 0-1Z"/>
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M7 14h5v-2H4a1 1 0 1 0 0 2v1a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h10v11h-1v2h1v1H7v-1ZM4 2a1 1 0 0 0-1 1v8.27A1.99 1.99 0 0 1 4 11V2Zm1 9h8V2H5v9Z"/>
+		</symbol>
+		<symbol id="icon-code" viewBox="0 0 16 16">
+			<path fill="currentColor" d="m7.492 13.59 2-11-.984-.18-2 11 .984.18ZM4.854 5.354 2.207 8l2.647 2.646-.707.708L.793 8l3.354-3.354.707.708ZM15.207 8l-3.353-3.354-.707.708L13.793 8l-2.646 2.646.707.708L15.207 8Z"/>
+		</symbol>
+		<symbol id="icon-external" viewBox="0 0 16 16">
+			<path fill="currentColor" d="M11 2h2.293L6.646 8.646l.708.708L14 2.707V5h1V1h-4v1Z"/>
+			<path fill="currentColor" d="M3 2a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7h-1v6H3V3h6V2H3Z"/>
+		</symbol>
+		<symbol id="icon-grid" viewBox="0 0 16 16">
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M6 9a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4Zm-4 5h4v-4H2v4Zm12-5a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4Zm-4 5h4v-4h-4v4ZM6 1a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h4ZM2 6h4V2H2v4Zm12-5a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h4Zm-4 5h4V2h-4v4Z"/>
+		</symbol>
+		<symbol id="icon-list-bullet" viewBox="0 0 16 16" shape-rendering="crispEdges">
+			<path fill="currentColor" d="M4 13H1v-1h3v1Zm11 0H6v-1h9v1ZM4 8.5H1v-1h3v1Zm11 0H6v-1h9v1ZM4 4H1V3h3v1Zm11 0H6V3h9v1Z"/>
+		</symbol>
+		<symbol id="icon-wrench" viewBox="0 0 16 16">
+			<path fill="currentColor" d="M13.121 7.121a3 3 0 0 0 .874-2.287L11.707 7.12 8.878 4.293l2.288-2.288A3 3 0 0 0 8.173 6.01l.106.298-5.986 5.986a1 1 0 0 0 1.414 1.414l5.986-5.986.298.105a3 3 0 0 0 3.13-.705m.707.708a4 4 0 0 1-3.863 1.034l-5.55 5.551a2 2 0 1 1-2.83-2.828l5.552-5.551a3.997 3.997 0 0 1 4.328-5.008l.143.028a.88.88 0 0 1 .62.628.97.97 0 0 1-.258.933l-1.677 1.677 1.414 1.414 1.677-1.677a.97.97 0 0 1 .933-.26c.29.079.54.3.628.622l.027.143.02.22a4 4 0 0 1-1.164 3.074"/>
+		</symbol>
+		<symbol id="icon-refresh-time" viewBox="0 0 16 16">
+			<path fill="currentColor" d="M11 9h1v2h2v1h-3V9Z"/>
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M7.754 13.995a4.5 4.5 0 1 1 7.491-4.99 4.5 4.5 0 0 1-7.49 4.99ZM15 11.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"/>
+			<path fill="currentColor" d="M7.222 14.957a5.501 5.501 0 0 1-.713-1.144A6.003 6.003 0 0 1 3.757 3.757l.007-.007.003-.002.013-.014A4.337 4.337 0 0 1 4 3.525V6h1V2H1v1h2.1l-.03.03-.018.019-.004.004a7.001 7.001 0 0 0 4.175 11.904Zm7.735-7.735A7.001 7.001 0 0 0 8 1v1a6.003 6.003 0 0 1 5.813 4.509c.412.19.796.431 1.144.713Z"/>
+		</symbol>
+	</defs>
+</svg>
+
+
+<div class="sticky top-0 z-30 h-12" id="isolated-header" hx-preserve>
+	<elastic-docs-header title="isomer"
+	                     logo-href="/pr-preview/pr-1/"
+	                     github-repository="elastic/isomer"
+	                     github-link="https://github.com/elastic/isomer/tree/1/merge/docs"
+	                     git-branch="1/merge"
+	                     git-commit="409e9d6"
+	                     github-ref="refs/pull/1/merge"
+	                     branded="false"
+	                     elastic-org="true">
+	</elastic-docs-header>
+</div>
+<div id="main-container">
+		<div class="relative">
+			
+			<div class="min-h-screen
+						w-full
+						max-w-(--max-layout-width)
+						mx-auto
+						md:px-4
+			">
+				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-6">
+					<main id="content-container" class="min-w-0 flex flex-col lg:grid lg:grid-cols-[minmax(0,var(--max-text-width))_minmax(0,var(--max-sidebar-width))] lg:justify-end lg:gap-4 mx-4 md:col-start-2 md:row-start-1">
+						<div class="mb-9 mt-0 min-w-0 order-2 lg:order-1">
+							
+<ol id="breadcrumbs" class="flex flex-wrap gap-1 items-center w-full pt-6">
+		<li class="text-ink-light text-sm leading-[1.2em]">
+			<a
+				itemprop="item"
+				href="/pr-preview/pr-1"
+				hx-disable=true
+				preload="mousedown">
+				<span class="hover:text-black">What is Isomer?</span>
+			</a>
+				<span class="px-1">/</span>
+		</li>
+		<li class="text-ink-light text-sm leading-[1.2em]">
+			<a
+				itemprop="item"
+				href="/pr-preview/pr-1/sdk"
+				
+				preload="mousedown">
+				<span class="hover:text-black">SDK</span>
+			</a>
+		</li>
+</ol>
+
+							<article id="markdown-content" class="markdown-content min-w-0" data-pagefind-body>
+								<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+								<section id="elastic-docs-v3">
+<h1>Packs</h1>
+	<p>A pack is a vocabulary as a value: an id, a set of primitives, the optional surfaces every one of them implements, the palette its <code>svg</code> renderers require, and two facts about the vocabulary that only its author can state. <code>definePrimitivePack</code> builds one and checks it.</p>
+<div class="highlight-ts notranslate">
+	<div class="highlight">
+		<pre>
+<code class="language-ts">import { definePrimitivePack } from '@elastic/isomer-sdk';
+
+export const metricsPack = definePrimitivePack({
+  id: 'metrics',
+  surfaces: ['slack'],
+  primitives: [kpi, sparkline],
+});
+</code>		</pre>
+	</div>
+</div>
+<p>This page is the pack <strong>contract</strong>. Composing packs into a runtime is the <a href="/pr-preview/pr-1/runtime/packs" preload="mousedown">runtime's packs page</a>.</p>
+<div class="heading-wrapper" id="what-you-declare"><h2><a class="headerlink" href="#what-you-declare">What you declare</a></h2>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>Names the pack in capability reports and error messages.</td>
+</tr>
+<tr>
+<td><code>surfaces</code></td>
+<td>The optional surfaces (only <code>slack</code>) every primitive here implements.</td>
+</tr>
+<tr>
+<td><code>primitives</code></td>
+<td>The definitions. At least one, with unique types, or construction throws.</td>
+</tr>
+<tr>
+<td><code>enhancements</code></td>
+<td>Progressive enhancements this vocabulary supports, by id.</td>
+</tr>
+<tr>
+<td><code>slackAssetTypes</code></td>
+<td>Which node types are pictures rather than text.</td>
+</tr>
+<tr>
+<td><code>styleAdapter</code></td>
+<td>Optional. This pack's HTML CSS, combined with the other packs'.</td>
+</tr>
+<tr>
+<td><code>styleCollector</code></td>
+<td>Optional. Derived from <code>styleAdapter.styleCollector</code> unless overridden.</td>
+</tr>
+<tr>
+<td><code>theme</code></td>
+<td>Optional. <code>themeBound&lt;T&gt;()</code> so the pack infers <code>PrimitivePack&lt;T&gt;</code>.</td>
+</tr>
+<tr>
+<td><code>authoring</code></td>
+<td>Optional. This pack's <code>describe</code> and <code>omitProperties</code> for the agent schema.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>What comes back adds <code>types</code>, a set for duplicate detection across packs, and normalizes the two optional fields. <code>styleCollector</code> is read from <code>styleAdapter.styleCollector</code> when the pack does not set it; set it only for a pack whose hooks collect into a shape its adapter does not create.</p>
+<div class="heading-wrapper" id="surfaces-reports-an-intent"><h2><a class="headerlink" href="#surfaces-reports-an-intent"><code>surfaces</code> reports an intent</a></h2>
+</div>
+<p><code>slack</code> is the only member, and it stays optional per primitive: the dispatcher converts the mandatory markdown to Block Kit, so declaring it says what the pack aims at rather than imposing a requirement. Omit the field entirely for a pack that renders Slack through that fallback.</p>
+<p>There is nothing to declare for <code>svg</code>. Every pack reaches the image surface through its <code>react</code> renderers, and whether a runtime <em>has</em> that surface depends on a frame, which is a host input rather than a pack's to promise.</p>
+<p><code>extendPrimitivePack(pack, primitives)</code> adds primitives and keeps the declared surfaces. A type the pack already owns throws <code>DUPLICATE_PRIMITIVE_TYPE</code>, as a repeated type in <code>definePrimitivePack</code> does; <code>composePacks</code> reports the cross-pack case.</p>
+<div class="heading-wrapper" id="slackassettypes"><h2><a class="headerlink" href="#slackassettypes"><code>slackAssetTypes</code></a></h2>
+</div>
+<p>Which of your node types are self-contained pictures. A channel that cannot draw them inline uploads an image instead: the Slack dispatcher swaps such a node for an <code>image</code> block and an upload request, so a chart arrives as a PNG rather than as a markdown approximation of one.</p>
+<p>It is declared here because it is a fact about the vocabulary. A host composing packs it did not write cannot be expected to know which of your types are charts.</p>
+<div class="heading-wrapper" id="enhancements"><h2><a class="headerlink" href="#enhancements"><code>enhancements</code></a></h2>
+</div>
+<p>Progressive enhancements the HTML surface may apply, each an id, a content gate, and a script:</p>
+<div class="highlight-ts notranslate">
+	<div class="highlight">
+		<pre>
+<code class="language-ts">enhancements: [
+  {
+    id: 'tableSort',
+    appliesTo: (body, walk) =&gt;
+      someBodyNode(body, 'react', (n) =&gt; (n as PrimitiveNode).type === 'table', walk),
+    script: '(() =&gt; { /* scoped to document.currentScript.parentElement */ })()',
+  },
+],
+</code>		</pre>
+	</div>
+</div>
+<p>Ids are open strings rather than a closed union, so a second pack can register one without editing a shared type; a runtime rejects duplicate ids across packs. <code>appliesTo</code> receives the composition's child walker, so a match nested inside another pack's container is still found, and gating on content is what keeps a view with no matching node from shipping the script at all.</p>
+<p>The script must address markup through <code>data-*</code> attributes, never class names: class names are minified per render, so a selector written against one is a contract nothing checks.</p>
+<div class="heading-wrapper" id="authoring"><h2><a class="headerlink" href="#authoring"><code>authoring</code></a></h2>
+</div>
+<p>A pack's own contribution to the runtime's authoring JSON Schema: <code>describe</code> ($def id to description) and <code>omitProperties</code> ($defId.property paths to drop), scoped to this pack's own primitives:</p>
+<div class="highlight-ts notranslate">
+	<div class="highlight">
+		<pre>
+<code class="language-ts">definePrimitivePack({
+  id: 'metrics',
+  primitives: […],
+  authoring: { describe: { kpi: 'A single measured value.' } },
+});
+</code>		</pre>
+	</div>
+</div>
+<p>A runtime composing several packs merges every pack's <code>authoring</code> into one options object before building the schema, so no host hand-merges each pack's <code>describe</code>/<code>omitProperties</code> itself. The runtime's own <code>authoring</code> option is applied last and wins on conflict.</p>
+<div class="heading-wrapper" id="the-theme-a-pack-requires"><h2><a class="headerlink" href="#the-theme-a-pack-requires">The theme a pack requires</a></h2>
+</div>
+<p>A pack's nodes are drawn inside a frame, and <code>PrimitivePack&lt;TTheme&gt;</code> is where the pack states the palette that frame must supply. <code>definePrimitivePack</code> infers <code>TTheme</code> from <code>theme</code>. Omit it and the pack is <code>PrimitivePack&lt;unknown&gt;</code>, which is also what bare <code>PrimitivePack</code> means: requires nothing, fits any runtime. A pack that needs a frame to carry tokens passes the bound at the definition:</p>
+<div class="highlight-ts notranslate">
+	<div class="highlight">
+		<pre>
+<code class="language-ts">export const elasticPack = definePrimitivePack({
+  id: 'elastic',
+  primitives: […],
+  theme: themeBound&lt;SvgRenderTheme&gt;(),
+});
+</code>		</pre>
+	</div>
+</div>
+<p>A runtime resolves <code>TTheme</code> from its packs and requires every frame in its map to supply it, which is why packs wanting different palettes belong in different runtimes. <a href="/pr-preview/pr-1/sdk/frame" preload="mousedown">Frame</a> has the failure mode and the error message it produces. A slot that must hold packs of every palette, such as the runtime's own fields, is <code>AnyPrimitivePack</code>.</p>
+<div class="heading-wrapper" id="what-a-pack-does-not-decide"><h2><a class="headerlink" href="#what-a-pack-does-not-decide">What a pack does not decide</a></h2>
+</div>
+<p>Not the document. <a href="/pr-preview/pr-1/sdk/frame" preload="mousedown">Frame</a> is a separate value a host passes to the runtime, so a pack is purely additive: composing two packs composes their node types and nothing else.</p>
+<p>Not composition, either. Duplicate types across packs, renderer overrides, and which frame surrounds a given render are all the assembly layer's, because only it sees the whole set. <code>composePacks(packs)</code> is the structural owner of the flattened <code>definitions</code> array the schema cache keys on; hold that array rather than <code>packs.flatMap(…)</code> per call. It throws on a node type or enhancement id claimed by two packs, naming every offender in one message.</p>
+<div class="heading-wrapper" id="keeping-the-registry-honest"><h2><a class="headerlink" href="#keeping-the-registry-honest">Keeping the registry honest</a></h2>
+</div>
+<p>A pack keeps two hand-written lists, the registry array and its body-node union, and nothing in the type system relates either to the directory they describe. A primitive missing from <strong>both</strong> leaves them agreeing with each other, so it compiles and every other test passes while the primitive is unreachable.</p>
+<p><code>assertPackRegistrationComplete</code> reads the directory and fails on that case:</p>
+<div class="highlight-ts notranslate">
+	<div class="highlight">
+		<pre>
+<code class="language-ts">import { assertPackRegistrationComplete } from '@elastic/isomer-sdk/testing';
+
+it('registers every primitive directory', async () =&gt; {
+  await assertPackRegistrationComplete({
+    primitivesDir: new URL('./primitives/', import.meta.url),
+    registered: myPackPrimitives,
+  });
+});
+</code>		</pre>
+	</div>
+</div>
+<p>It reports the folder, the export to import, and the reminder to extend the union, so the failure carries its own fix. Pass <code>ignore</code> for subdirectories that hold no primitive.</p>
+<p>Pair it with a type-level assertion that the two lists agree, which belongs in a test file because a test is outside the build graph:</p>
+<div class="highlight-ts notranslate">
+	<div class="highlight">
+		<pre>
+<code class="language-ts">type Registered = (typeof myPackPrimitives)[number]['examples'][number];
+type Assert&lt;T extends true&gt; = T;
+type _A = Assert&lt;[Registered] extends [BodyNode] ? true : false&gt;;
+type _B = Assert&lt;[BodyNode] extends [Registered] ? true : false&gt;;
+</code>		</pre>
+	</div>
+</div>
+<p>Tuple-wrap both sides so neither distributes over the union. Between the two checks, a primitive cannot be half-registered: the directory check catches what is absent from both lists, the type assertion catches what is in one but not the other.</p>
+<div class="heading-wrapper" id="why-it-is-shaped-this-way"><h2><a class="headerlink" href="#why-it-is-shaped-this-way">Why it is shaped this way</a></h2>
+</div>
+<p><strong>The theme requirement is a phantom property, not a method.</strong> <code>PrimitivePack&lt;TTheme&gt;</code> carries <code>readonly __theme?: (theme: TTheme) =&gt; void</code>, never present at runtime and never read. A property rather than a method, so <code>strictFunctionTypes</code> checks it contravariantly. A method signature is bivariant, which would let a pack needing richer tokens sit in a slot supplying fewer and then read a field nothing supplies, the exact failure the marker exists to prevent.</p>
+<p><strong><code>AnyPrimitivePack</code> is <code>PrimitivePack&lt;never&gt;</code>.</strong> <code>never</code> is assignable to every requirement, so it accepts every pack.</p>
+<p><strong>Registration is a check, not a generator.</strong> The registry stays hand-written and readable, there is no config file or build step to learn, and the authoring fronts need no generation either: <code>buildJsxShim</code> and <code>buildObjectBuilders</code> derive the JSX and builder APIs from the registry array at runtime. Deriving the union from the registry in <em>source</em> does not compile, since container primitives import the content-node alias and inferring the registry's type closes that cycle (<code>TS7022</code>).</p>
+<div class="heading-wrapper" id="next"><h2><a class="headerlink" href="#next">Next</a></h2>
+</div>
+<p><a href="/pr-preview/pr-1/sdk/primitives" preload="mousedown">Primitives</a> · <a href="/pr-preview/pr-1/sdk/frame" preload="mousedown">Frame</a></p>
+
+</section>
+
+							</article>
+							
+
+
+							<footer id="prev-next-nav" class="content-container mt-20">
+	<div class="flex flex-wrap lg:flex-nowrap gap-2 mt-2">
+		<div class="w-full">
+				<a 
+					href="/pr-preview/pr-1/sdk/primitives"
+					preload="mousedown"
+					class="flex h-full items-center text-ink-light hover:black border-1 border-grey-20 hover:border-grey-80 rounded-lg p-6 shadow-md"
+				>
+					<svg class="size-6 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
+					</svg>
+					<div>
+						<div class="text-xs lg:text-sm">Previous</div>
+						<div class="text-base lg:text-xl text-black">Primitives</div>
+					</div>
+				</a>
+		</div>
+		<div class="w-full">
+				<a 
+					href="/pr-preview/pr-1/sdk/composition"
+					preload="mousedown"
+					class="flex h-full items-center justify-end text-ink-light hover:black border-1 border-grey-20 hover:border-grey-80 rounded-lg p-6 shadow-md text-right"
+				>
+					<div>
+						<div class="text-xs lg:text-sm">Next</div>
+						<div class="text-base lg:text-xl text-black">Composition and validation</div>
+					</div>
+					<svg class="size-6 ml-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
+					</svg>
+				</a>
+		</div>
+	</div>
+</footer>
+
+						</div>
+						<aside class="sidebar md:block w-full lg:max-w-65 order-1 lg:order-2">
+	<nav id="toc-nav" class="sidebar-nav lg:h-full flex flex-row-reverse justify-between items-center md:flex-row md:justify-start lg:block gap-4 simple-scrollbar">
+			<div></div>
+
+			<label role="button" class="md:hidden cursor-pointer" for="pages-nav-hamburger">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+					stroke="currentColor" class="size-6">
+					<path stroke-linecap="round" stroke-linejoin="round"
+						d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"/>
+				</svg>
+			</label>
+		
+		<ul class="hidden md:flex items-center lg:block gap-4">
+			<li class="view-as-markdown hidden lg:block lg:not-first:mt-1">
+				<a href="/pr-preview/pr-1/sdk/packs.md" class="link text-sm" target="_blank">
+					<svg class="link-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 -1 24 24">
+						<path fill="currentColor" d="M22.131725 19.247H1.9386225C1.0239525 19.247 0.25 18.47305 0.25 17.558375v-11.11675c0 -0.914675 0.7739525 -1.688625 1.6886225 -1.688625H22.061375c0.914675 0 1.688625 0.77395 1.688625 1.688625v11.11675c0 0.914675 -0.7036 1.688625 -1.618275 1.688625ZM1.9386225 5.87875c-0.2814375 0 -0.562875 0.281425 -0.562875 0.562875v11.11675c0 0.3518 0.2814375 0.562875 0.562875 0.562875H22.061375c0.3518 0 0.562875 -0.281425 0.562875 -0.562875v-11.11675c0 -0.3518 -0.281425 -0.562875 -0.562875 -0.562875l-20.1227525 0ZM3.62725 15.86975V8.130225h2.2515l2.2515 2.814375 2.251475 -2.814375h2.2515V15.86975h-2.2515V11.437125L8.13025 14.2515l-2.2515 -2.814375V15.86975h-2.2515Zm14.1422 0L14.392225 12.140725h2.251475v-4.0105h2.2515v3.940125h2.2515L17.76945 15.86975Z" stroke-width="0.25"></path>
+					</svg>
+					View as Markdown
+				</a>
+			</li>
+				<li class="edit-this-page lg:not-first:mt-1 ">
+					<a href="https://github.com/elastic/isomer/edit/1/merge/docs/sdk/packs.md" class="link text-sm" target="_blank">
+						<svg class="link-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"/>
+						</svg>
+						Edit this page
+					</a>
+				</li>
+		</ul>
+		<div class="pt-6 hidden lg:block">
+				<div class="font-sans">
+					<div class="font-bold mb-2">On this page</div>
+					<div class="relative toc-progress-container font-body">
+						<div class="toc-progress-indicator absolute top-0 h-0 w-[1px] bg-blue-elastic transition-[transform,height] duration-200 ease-out "></div>
+						<ul class="block w-full">
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#what-you-declare">
+										What you declare
+									</a>
+								</li>
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#surfaces-reports-an-intent">
+										surfaces reports an intent
+									</a>
+								</li>
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#slackassettypes">
+										slackAssetTypes
+									</a>
+								</li>
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#enhancements">
+										enhancements
+									</a>
+								</li>
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#authoring">
+										authoring
+									</a>
+								</li>
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#the-theme-a-pack-requires">
+										The theme a pack requires
+									</a>
+								</li>
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#what-a-pack-does-not-decide">
+										What a pack does not decide
+									</a>
+								</li>
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#keeping-the-registry-honest">
+										Keeping the registry honest
+									</a>
+								</li>
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#why-it-is-shaped-this-way">
+										Why it is shaped this way
+									</a>
+								</li>
+								<li class="has-[:hover]:border-l-grey-80 items-center px-4 border-l-1 border-l-grey-20 has-[.toc-current]:border-l-blue-elastic!">
+									<a
+										class="sidebar-link inline-block my-1.5 "
+										href="#next">
+										Next
+									</a>
+								</li>
+						</ul>
+					</div>
+				</div>
+
+		</div>
+
+	</nav>
+</aside>
+
+					</main>
+					<aside class="sidebar font-sans bg-white fixed md:sticky shadow-2xl md:shadow-none left-full group-has-[#pages-nav-hamburger:checked]/body:left-0 bottom-0 md:left-auto top-[calc(var(--offset-top)&#x2B;1px)] w-[80%] md:w-auto shrink-0 border-r border-r-grey-20 z-[10000] md:z-auto transition-[top,max-height] duration-300 md:col-start-1 md:row-start-1">
+	<nav
+		id="pages-nav"
+		
+		class="sidebar-nav h-full simple-scrollbar">
+		
+<div class="pb-9 pl-3 md:pl-0 font-body">
+	<div class="sticky top-0 z-10 bg-white">
+		<div id="nav-dropdown">
+		</div>
+	</div>
+
+	<ul class="block px-4" id="nav-tree-19f0ff2716b491fe" hx-preserve>
+			<li class="flex group/li pr-8 mt-6">
+				<a href="/pr-preview/pr-1" class="sidebar-link nav-link">What is Isomer?</a>
+			</li>
+				<li role="separator" class="mt-4 pr-8"><hr class="border-grey-20"></li>
+				<li class="nav-folder mt-6">
+			<div class="peer grid grid-cols-[1fr_auto] w-full">
+				<a href="/pr-preview/pr-1/runtime" class="sidebar-link nav-folder-link font-semibold">
+					
+					<span>Runtime</span>
+				</a>
+					<label for="475F6EE0" class="group/label flex mr-2 items-start">
+						<div class="nav-toggle-btn">
+							<svg class="nav-chevron" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg>
+						</div>
+						<input
+							id="475F6EE0"
+							type="checkbox"
+							class="hidden"
+							aria-hidden="true">
+					</label>
+			</div>
+			<ul class="nav-subtree">
+						<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/quick-start" class="sidebar-link nav-link">
+				
+				<span>Quick start</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/runtime" class="sidebar-link nav-link">
+				
+				<span>Runtime</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/packs" class="sidebar-link nav-link">
+				
+				<span>Packs</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/frame" class="sidebar-link nav-link">
+				
+				<span>Frame</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/surfaces" class="sidebar-link nav-link">
+				
+				<span>Surfaces</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/embedding" class="sidebar-link nav-link">
+				
+				<span>Embedding a composition in a host page</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/view-registry" class="sidebar-link nav-link">
+				
+				<span>View registry</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/authoring-context" class="sidebar-link nav-link">
+				
+				<span>Authoring context</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/renderer-overrides" class="sidebar-link nav-link">
+				
+				<span>Renderer overrides</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/runtime/api" class="sidebar-link nav-link">
+				
+				<span>API reference</span>
+			</a>
+		</li>
+
+			</ul>
+		</li>
+		<li class="nav-folder mt-6">
+			<div class="peer grid grid-cols-[1fr_auto] w-full">
+				<a href="/pr-preview/pr-1/sdk" class="sidebar-link nav-folder-link font-semibold">
+					
+					<span>SDK</span>
+				</a>
+					<label for="0BE6DC0C" class="group/label flex mr-2 items-start">
+						<div class="nav-toggle-btn">
+							<svg class="nav-chevron" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg>
+						</div>
+						<input
+							id="0BE6DC0C"
+							type="checkbox"
+							class="hidden"
+							aria-hidden="true">
+					</label>
+			</div>
+			<ul class="nav-subtree">
+						<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/quick-start" class="sidebar-link nav-link">
+				
+				<span>Quick start</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/primitives" class="sidebar-link nav-link">
+				
+				<span>Primitives</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/packs" class="sidebar-link nav-link current">
+				
+				<span>Packs</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/composition" class="sidebar-link nav-link">
+				
+				<span>Composition and validation</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/dispatch" class="sidebar-link nav-link">
+				
+				<span>Dispatch</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/rendering" class="sidebar-link nav-link">
+				
+				<span>Rendering</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/frame" class="sidebar-link nav-link">
+				
+				<span>Frame</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/url-trust" class="sidebar-link nav-link">
+				
+				<span>URL trust</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/authoring" class="sidebar-link nav-link">
+				
+				<span>Authoring</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/sdk/api" class="sidebar-link nav-link">
+				
+				<span>API reference</span>
+			</a>
+		</li>
+
+			</ul>
+		</li>
+		<li class="nav-folder mt-6">
+			<div class="peer grid grid-cols-[1fr_auto] w-full">
+				<a href="/pr-preview/pr-1/slides" class="sidebar-link nav-folder-link font-semibold">
+					
+					<span>Slides pack</span>
+				</a>
+					<label for="E6CA79C6" class="group/label flex mr-2 items-start">
+						<div class="nav-toggle-btn">
+							<svg class="nav-chevron" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg>
+						</div>
+						<input
+							id="E6CA79C6"
+							type="checkbox"
+							class="hidden"
+							aria-hidden="true">
+					</label>
+			</div>
+			<ul class="nav-subtree">
+						<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/slides/primitives" class="sidebar-link nav-link">
+				
+				<span>Authoring a primitive</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/slides/contract" class="sidebar-link nav-link">
+				
+				<span>Pack contract</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/slides/document" class="sidebar-link nav-link">
+				
+				<span>Document</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/slides/theme" class="sidebar-link nav-link">
+				
+				<span>Theme</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/slides/styling" class="sidebar-link nav-link">
+				
+				<span>Styling</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/slides/example" class="sidebar-link nav-link">
+				
+				<span>Worked example</span>
+			</a>
+		</li>
+
+			</ul>
+		</li>
+		<li class="flex group/li pr-8 font-semibold mt-6">
+			<a href="/pr-preview/pr-1/image-takumi" class="sidebar-link nav-link">
+				
+				<span>Takumi image backend</span>
+			</a>
+		</li>
+		<li class="flex group/li pr-8 font-semibold mt-6">
+			<a href="/pr-preview/pr-1/evals" class="sidebar-link nav-link">
+				
+				<span>Evals</span>
+			</a>
+		</li>
+		<li class="nav-folder mt-6">
+			<div class="peer grid grid-cols-[1fr_auto] w-full">
+				<a href="/pr-preview/pr-1/reference" class="sidebar-link nav-folder-link font-semibold">
+					
+					<span>Reference</span>
+				</a>
+					<label for="F01CFB4E" class="group/label flex mr-2 items-start">
+						<div class="nav-toggle-btn">
+							<svg class="nav-chevron" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg>
+						</div>
+						<input
+							id="F01CFB4E"
+							type="checkbox"
+							class="hidden"
+							aria-hidden="true">
+					</label>
+			</div>
+			<ul class="nav-subtree">
+						<li class="flex group/li pr-8 mt-4">
+			<a href="/pr-preview/pr-1/reference/okf-map" class="sidebar-link nav-link">
+				
+				<span>OKF map</span>
+			</a>
+		</li>
+
+			</ul>
+		</li>
+
+	</ul>
+</div>
+
+	</nav>
+	<label role="button" for="pages-nav-hamburger" class="absolute md:hidden top-7 -right-12 bg-white p-1 rounded-full border-1 border-grey-20 cursor-pointer z-99">
+		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+			<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+		</svg>
+	</label>
+</aside>
+<label for="pages-nav-hamburger" aria-hidden="true" class="hidden group-has-[#pages-nav-hamburger:checked]/body:block md:hidden! fixed top-0 left-0 right-0 bottom-0 bg-black/50 z-[9999] ">
+
+</label>
+
+				</div>
+			</div>
+		</div>
+</div>
+
+	<footer hx-disable="true" class="py-8 px-6 w-full mx-auto bg-ink-dark">
+		<div class="max-w-(--max-layout-width) w-full mx-auto text-grey-20 text-[12px]">
+			<a href="https://www.elastic.co/">
+				<img class="block" loading="lazy" alt="Elastic logo" src="/pr-preview/pr-1/_static/logo-elastic-horizontal-white.svg?v=19bc4040eda89518" width="120" height="41"/>
+			</a>
+			<p class="mt-4">
+				© 2026 Elasticsearch B.V. All Rights Reserved.
+			</p>
+			<ul class="mt-2 flex gap-3">
+				<li>
+					<a class="underline hover:text-white" href="https://www.elastic.co/legal/terms-of-use">Terms of Use</a>
+				</li>
+				<li>
+					<a class="underline hover:text-white" href="https://www.elastic.co/legal/privacy-statement">Privacy</a>
+				</li>
+			</ul>
+		</div>
+	</footer>
+
+
+</body>
+</html>
