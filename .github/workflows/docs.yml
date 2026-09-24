@@ -9,6 +9,7 @@ on:
   push:
     branches: [main]
   pull_request:
+    types: [opened, reopened, synchronize, closed]
 
 permissions:
   contents: read
@@ -21,18 +22,33 @@ jobs:
   build:
     name: Build documentation
     runs-on: ubuntu-latest
+    outputs:
+      prefix: ${{ steps.prefix.outputs.prefix }}
     steps:
       - uses: actions/checkout@v5
       - name: Assemble package docs
         run: node scripts/assemble_package_docs.js
+      - name: Compute URL prefix
+        id: prefix
+        env:
+          IS_PRIVATE: ${{ github.event.repository.private }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          # Private Pages sites serve from a per-repo pages.github.io root; a
+          # public project page serves under /isomer/. A PR preview nests
+          # under pr-preview/pr-<n>/ beneath whichever of those is live.
+          prefix=""
+          if [[ "$IS_PRIVATE" != "true" ]]; then
+            prefix="isomer"
+          fi
+          if [[ -n "$PR_NUMBER" ]]; then
+            prefix="${prefix:+$prefix/}pr-preview/pr-$PR_NUMBER"
+          fi
+          echo "prefix=$prefix" >> "$GITHUB_OUTPUT"
       - name: Build documentation
         uses: elastic/docs-builder@main
         with:
-          # Private Pages sites serve from a per-repo pages.github.io root; a
-          # public project page serves under /isomer/. Match whichever is live.
-          # '' is falsy in GHA expressions, so it must be the final fallback,
-          # not the result of `&&` (github.event.repository.private && '').
-          prefix: ${{ !github.event.repository.private && 'isomer' || '' }}
+          prefix: ${{ steps.prefix.outputs.prefix }}
       - uses: actions/upload-artifact@v4
         with:
           name: site
@@ -43,21 +59,40 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     needs: build
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     permissions:
-      contents: read
-      pages: write
-      id-token: write
+      contents: write
     steps:
       - uses: actions/download-artifact@v4
         with:
           name: site
           path: site
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - name: Publish to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: site
+          # PR previews live in pr-preview/ on this same branch; don't wipe them.
+          keep_files: true
+
+  preview:
+    name: Deploy PR preview
+    # Fork PRs don't get a write-scoped token; skip rather than fail red.
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        if: github.event.action != 'closed'
+        with:
+          name: site
           path: site
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Deploy preview
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: site
+          umbrella-dir: pr-preview
+          action: auto
