@@ -81,7 +81,7 @@ const wrapInFrame = (node: PrimitiveNode): PrimitiveNode =>
     : ({
         type: 'slideFrame',
         chapter: 'Conformance',
-        footer: 'Conformance',
+        url: 'https://example.com',
         body: [node],
       } as unknown as PrimitiveNode);
 
@@ -109,10 +109,20 @@ const harness: PrimitiveConformanceHarness = {
   estimateSvgHeight: () => 0,
   nestForeignChild: (container) => {
     if (container.type === 'slideSplit') {
+      const { left, right } = container as unknown as Record<
+        'left' | 'right',
+        Record<string, unknown>
+      >;
       return {
         ...container,
-        left: [conformanceForeignNode],
-        right: [conformanceForeignNode],
+        left: { ...left, items: [conformanceForeignNode] },
+        right: { ...right, items: [conformanceForeignNode] },
+      } as unknown as PrimitiveNode;
+    }
+    if (container.type === 'slideTitle') {
+      return {
+        ...container,
+        aside: conformanceForeignNode,
       } as unknown as PrimitiveNode;
     }
     if (container.type === 'slideStack') {

@@ -46,6 +46,16 @@ const fontsourceFamily = (
 
 /** Registered in order, which is also takumi's fallback order. */
 export const deckFonts: readonly FontLoader[] = [
+  // `slideTitle`'s definition line is the one italic run in the pack.
+  {
+    name: 'Inter',
+    weight: 400,
+    style: 'italic',
+    data: () =>
+      readFile(
+        require.resolve('@fontsource/inter/files/inter-latin-400-italic.woff2')
+      ),
+  },
   ...fontsourceFamily(
     '@fontsource/inter',
     'Inter',

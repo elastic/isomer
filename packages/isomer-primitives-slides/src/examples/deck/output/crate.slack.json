@@ -1,0 +1,51 @@
+[
+  {
+    "type": "header",
+    "text": {
+      "type": "plain_text",
+      "text": "Crate",
+      "emoji": true
+    }
+  },
+  {
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "*A grocery delivery platform*"
+      }
+    ]
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "One order. Every store."
+    }
+  },
+  {
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "_crate n._ Everything a customer means to buy, carried from whichever store can fill it."
+      }
+    ]
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "*OrderPlaced* →\n• *picking*: Sends the list to the nearest store\n• *payments*: Holds the amount on the card\n• *email*: Confirms the order to the customer\n• *courier*: Books a delivery window"
+    }
+  },
+  {
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "Crate · example.com/crate"
+      }
+    ]
+  }
+]

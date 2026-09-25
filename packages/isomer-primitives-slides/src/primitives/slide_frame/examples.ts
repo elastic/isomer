@@ -5,32 +5,30 @@
  * 2.0.
  */
 
-import { example as cardGroupExample } from '../slide_card_group/examples';
-import {
-  example as titleExample,
-  jumboExample as jumboTitleExample,
-} from '../slide_title/examples';
+import { example as headingExample } from '../slide_heading/examples';
+import { example as sectionExample } from '../slide_section/examples';
 
 import type { SlideFrameNode } from './types';
 
-/** Canonical {@link SlideFrameNode} example. */
+/** Canonical {@link SlideFrameNode} example: a content slide. */
 export const example: SlideFrameNode = {
   type: 'slideFrame',
-  brand: 'Isomer',
-  chapter: '01 · Reference pack',
-  footer: 'Elastic',
-  body: [titleExample, cardGroupExample],
+  brand: 'Ledger',
+  chapter: 'Settlement',
+  chapterNumber: '02',
+  url: 'https://example.com/ledger',
+  body: [headingExample],
 };
 
-/** `title` layout with a separate chapter number and no brand. */
-export const titleLayoutExample: SlideFrameNode = {
+/** An inverse section slide with no address. */
+export const inverseExample: SlideFrameNode = {
   type: 'slideFrame',
-  chapter: 'Reference pack',
-  chapterNumber: '01',
-  footer: 'Elastic',
-  layout: 'title',
-  body: [jumboTitleExample],
+  tone: 'inverse',
+  brand: 'Ledger',
+  chapter: 'Settlement',
+  chapterNumber: '02',
+  body: [sectionExample],
 };
 
 /** Conformance examples for {@link SlideFrameNode}. */
-export const examples: SlideFrameNode[] = [example, titleLayoutExample];
+export const examples: SlideFrameNode[] = [example, inverseExample];

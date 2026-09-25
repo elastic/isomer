@@ -1,0 +1,40 @@
+[
+  {
+    "type": "header",
+    "text": {
+      "type": "plain_text",
+      "text": "Every refund runs the same four steps",
+      "emoji": true
+    }
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "Refund request → Verify → Score → Approve → Settle → Ledger entry\n\n1. *Verify* — Match the order, the amount, and the card on file. A mismatch goes to a person.\n2. *Score* — The fraud model scores the request against the customer’s last ninety days.\n3. *Approve* — Scores under the threshold approve on their own; the rest wait for review.\n4. *Settle* — The processor returns the funds and posts one line to the ledger."
+    }
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": " "
+    }
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "*2.1 days* — Median time from refund request to money back in the customer account, down from five."
+    }
+  },
+  {
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "Crate · 02 Settlement · example.com/crate"
+      }
+    ]
+  }
+]

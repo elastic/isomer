@@ -10,29 +10,30 @@ import type { ReactNode } from 'react';
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { slideDistillery } from '../../theme/distillery';
-import { slideModules } from '../../theme/modules';
+import { labelModule, layoutModule } from '../../theme/modules';
 
 import type { SlideTranscriptNode } from './schema';
+import { transcriptModule } from './styles';
+
+const { roleLabel } = slideDistillery.tokens.transcript;
 
 /** React renderer for {@link SlideTranscriptNode}. */
 export const react = (
-  node: SlideTranscriptNode,
+  { label, turns }: SlideTranscriptNode,
   { context }: SlideReactEnv
 ): ReactNode => {
-  const { handles: transcript } = slideModules.transcript;
-  const { handles: label } = slideModules.label;
-  const { roleLabel } = slideDistillery.tokens.transcript;
+  const { handles: transcript } = transcriptModule;
   return (
-    <div>
-      {node.label ? (
-        <div className={cls(context, label.label)}>{node.label}</div>
+    <div className={cls(context, layoutModule.handles.fill, transcript.root)}>
+      {label ? (
+        <div className={cls(context, labelModule.handles.label)}>{label}</div>
       ) : null}
-      <div className={cls(context, transcript.root)}>
-        {node.turns.map(({ format = 'prose', role, text }, index) => (
-          <div
+      <ol className={cls(context, transcript.turns)}>
+        {turns.map(({ format = 'prose', role, text }, index) => (
+          <li
             className={cls(context, transcript.turn, transcript.speaker[role])}
             key={index}>
-            <span className={cls(context, transcript.role)}>
+            <span className={cls(context, transcript.role[role])}>
               {roleLabel[role].value}
             </span>
             <p
@@ -43,9 +44,9 @@ export const react = (
               )}>
               {text}
             </p>
-          </div>
+          </li>
         ))}
-      </div>
+      </ol>
     </div>
   );
 };

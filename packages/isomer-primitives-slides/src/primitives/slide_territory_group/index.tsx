@@ -14,11 +14,13 @@ import { schema, type SlideTerritoryGroupNode } from './schema';
 
 export type { SlideTerritory, SlideTerritoryGroupNode } from './schema';
 
-const text = (node: SlideTerritoryGroupNode) =>
-  node.items.map((item) => `${item.title}: ${item.body}`).join('\n');
+/** Text renderer for {@link SlideTerritoryGroupNode}: `Title: body` per owner. */
+export const text = ({ items }: SlideTerritoryGroupNode): string =>
+  items.map(({ title, body }) => `${title}: ${body}`).join('\n');
 
-const markdown = (node: SlideTerritoryGroupNode) =>
-  node.items.map((item) => `### ${item.title}\n\n${item.body}`).join('\n\n');
+/** Markdown renderer for {@link SlideTerritoryGroupNode}: a heading per owner. */
+export const markdown = ({ items }: SlideTerritoryGroupNode): string =>
+  items.map(({ title, body }) => `## ${title}\n\n${body}`).join('\n\n');
 
 /** Catalog, schema, and renderers for {@link SlideTerritoryGroupNode}. */
 export const slideTerritoryGroupPrimitive = definePrimitive({

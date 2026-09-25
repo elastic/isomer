@@ -1,0 +1,26 @@
+[
+  {
+    "type": "header",
+    "text": {
+      "type": "plain_text",
+      "text": "Web and phone orders meet at one step",
+      "emoji": true
+    }
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "- *Web:* Basket → Address → Slot → Review → Place order\n- *Phone:* Call → Agent form → Read back → Confirm → Place order\n\n*Self-serve:* The customer picks the slot. Validation runs on every field as they type.\n\n*Assisted:* An agent keys the order while the customer waits, then reads it back before placing it."
+    }
+  },
+  {
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "Crate · 03 Platform · example.com/crate"
+      }
+    ]
+  }
+]

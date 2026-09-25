@@ -5,53 +5,54 @@
  * 2.0.
  */
 
-import type { PrimitiveNode } from '@elastic/isomer-sdk';
-import { navigationHref, z } from '@elastic/isomer-sdk';
+import { unresolvedBodyNodeSchema, z } from '@elastic/isomer-sdk';
 
-import { slideTitleSizes } from '../../theme/variants';
-import { slideToneSchema } from '../tone_schema';
+import { sizeField } from '../size';
 
-const ledeLinkSchema = z
+const definitionSchema = z
   .object({
-    type: z.literal('link'),
-    text: z.string().min(1).describe('Visible link text.'),
-    href: navigationHref().describe(
-      'Navigation target; must pass `navigationHref()`.'
-    ),
-    openInNewTab: z
-      .boolean()
-      .describe('When true, open in a new tab.')
-      .optional(),
+    term: z
+      .string()
+      .min(1)
+      .describe(
+        'The word being defined, with its part of speech, e.g. `ledger n.`. Set in italics.'
+      ),
+    text: z.string().min(1).describe('The definition, in one sentence.'),
   })
   .strict();
-
-/** Inline link inside a {@link SlideTitleNode} lede. */
-export type SlideLedeLink = z.infer<typeof ledeLinkSchema>;
-
-/** One run of a {@link SlideTitleNode.lede}: plain text or a {@link SlideLedeLink}. */
-export type SlideLedePart = string | SlideLedeLink;
-
-const ledeSchema = z.union([
-  z.string(),
-  z.array(z.union([z.string(), ledeLinkSchema])).readonly(),
-]);
 
 /** Zod schema for {@link SlideTitleNode}. */
 export const schema = z
   .object({
     type: z.literal('slideTitle'),
-    eyebrow: z.string().describe('Small kicker above the headline.').optional(),
-    lede: ledeSchema
-      .describe('Supporting sentence, either a string or mixed text and links.')
+    eyebrow: z
+      .string()
+      .min(1)
+      .describe(
+        'What the subject is, in a few words above the title, e.g. `A delivery platform`. Rendered uppercase.'
+      )
       .optional(),
-    size: z
-      .enum(slideTitleSizes)
-      .describe('Headline scale. Defaults to `standard`.')
+    title: z
+      .string()
+      .min(1)
+      .describe(
+        'The deck’s subject, usually a single name. Set very large; one or two words.'
+      ),
+    tagline: z
+      .string()
+      .min(1)
+      .describe('The deck’s promise in one short sentence.')
       .optional(),
-    title: z.string().min(1).describe('Primary headline.'),
-    tone: slideToneSchema.describe('Accent applied to the eyebrow.').optional(),
+    definition: definitionSchema
+      .describe(
+        'A dictionary-style line under the tagline that explains the name.'
+      )
+      .optional(),
+    aside: unresolvedBodyNodeSchema
+      .describe(
+        'One node drawn beside the title, e.g. a `slideFanout` of what the subject feeds. Omit to leave the title alone.'
+      )
+      .optional(),
+    size: sizeField(),
   })
   .strict();
-
-/** Presentation eyebrow, headline, and optional lede. */
-export type SlideTitleNode = z.infer<typeof schema> & PrimitiveNode;

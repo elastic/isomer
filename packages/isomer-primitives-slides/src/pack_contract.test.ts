@@ -85,7 +85,7 @@ describe('slide frame', () => {
   it('reports a body it would have to silently truncate', () => {
     expect(
       slideDeckFrame.validateBody?.([slideFrameExample, slideFrameExample])
-    ).toEqual([expect.stringMatching(/exactly one "slideFrame" node, got 2/)]);
+    ).toEqual([expect.stringMatching(/exactly one "slideFrame", got 2 nodes/)]);
   });
 
   it('reports a bare content node as the root', () => {
@@ -93,7 +93,7 @@ describe('slide frame', () => {
       (definition) => definition.type === 'slideTitle'
     )!.examples[0]! as PrimitiveNode;
     expect(slideDeckFrame.validateBody?.([content])).toEqual([
-      expect.stringMatching(/needs a "slideFrame" root, got "slideTitle"/),
+      expect.stringMatching(/body is one "slideFrame", got "slideTitle"/),
     ]);
   });
 
@@ -101,6 +101,6 @@ describe('slide frame', () => {
     const branded = { ...slideDeckFrame, wrap: () => '<brand/>' };
     expect(
       branded.validateBody?.([slideFrameExample, slideFrameExample])
-    ).toEqual([expect.stringMatching(/exactly one "slideFrame" node, got 2/)]);
+    ).toEqual([expect.stringMatching(/exactly one "slideFrame", got 2 nodes/)]);
   });
 });

@@ -1,0 +1,191 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+import { variants } from '@elastic/distillate';
+
+import { slideDistillery, toneVar } from '../../theme/distillery';
+import { typeRole } from '../../theme/type_role';
+import { slideSizes } from '../../theme/variants';
+
+import { pipelineMaxSteps } from './schema';
+
+const { createStyleModule, tokens } = slideDistillery;
+const { color, pipeline } = tokens;
+const { bracket, caption, chip, terminal } = pipeline;
+
+/** Variant key for a count or grid line; keys must start with a letter. */
+export const pipelineKey = (n: number): string => `n${n}`;
+
+const valueOf = (key: string): number => Number(key.slice(1));
+
+const range = (from: number, to: number): string[] =>
+  Array.from({ length: to - from + 1 }, (_, index) =>
+    pipelineKey(from + index)
+  );
+
+/** Chip counts spans mode lays out, as variant keys. */
+export const pipelineChipCounts = range(2, pipelineMaxSteps);
+
+/** Spans-mode grid lines: a chip and a connector per step, less the last connector. */
+export const pipelineTracks = range(1, 2 * pipelineMaxSteps - 1);
+
+/** Distillate module for `slidePipeline`. */
+export const pipelineModule = createStyleModule('pipeline', ({ css }) => ({
+  steps: css`
+    align-items: flex-start;
+    display: flex;
+    gap: ${pipeline.gap};
+    position: relative;
+  `,
+  rail: css`
+    background: ${color.line};
+    height: ${pipeline.rail};
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: ${pipeline.railTop};
+  `,
+  // Positioned so it paints above the rail.
+  terminal: css`
+    background: ${color.bgPage};
+    border: ${terminal.border} solid ${color.text};
+    border-radius: ${terminal.radius};
+    color: ${color.text};
+    display: flex;
+    flex: none;
+    ${typeRole(terminal.type)}
+    padding: ${terminal.padding};
+    position: relative;
+    white-space: nowrap;
+  `,
+  list: css`
+    display: flex;
+    flex: 1;
+    gap: ${pipeline.gap};
+    list-style: none;
+    margin: 0;
+    min-width: 0;
+    padding: 0;
+  `,
+  step: css`
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    min-width: 0;
+    position: relative;
+  `,
+  numeral: css`
+    align-items: center;
+    background: ${color.primary};
+    border-radius: 50%;
+    color: ${color.onPrimary};
+    display: flex;
+    ${typeRole(pipeline.numeral)}
+    height: ${pipeline.circleSize};
+    justify-content: center;
+    width: ${pipeline.circleSize};
+  `,
+  titleSize: variants(
+    slideSizes,
+    (size) => css`
+      font-size: ${pipeline.titleSizes[size]};
+    `
+  ),
+  title: css`
+    color: ${color.text};
+    ${typeRole(pipeline.title)}
+    margin: ${pipeline.titleGap} 0 0;
+  `,
+  bodySize: variants(
+    slideSizes,
+    (size) => css`
+      font-size: ${pipeline.bodySizes[size]};
+    `
+  ),
+  body: css`
+    color: ${color.textSoft};
+    ${typeRole(pipeline.body)}
+    margin: ${pipeline.bodyGap} 0 0;
+    text-wrap: pretty;
+  `,
+  grid: css`
+    display: grid;
+  `,
+  columns: variants(
+    pipelineChipCounts,
+    (count) => css`
+      grid-template-columns:
+        repeat(
+          ${valueOf(count) - 1},
+          auto minmax(${pipeline.connectorMin}, 1fr)
+        )
+        auto;
+    `
+  ),
+  columnStart: variants(
+    pipelineTracks,
+    (line) => css`
+      grid-column-start: ${valueOf(line)};
+    `
+  ),
+  columnSpan: variants(
+    pipelineTracks,
+    (span) => css`
+      grid-column-end: span ${valueOf(span)};
+    `
+  ),
+  chip: css`
+    background: ${color.bgSurface};
+    border: ${chip.border} solid ${color.text};
+    border-radius: ${chip.radius};
+    color: ${color.text};
+    display: flex;
+    ${typeRole(chip.type)}
+    grid-row: 1;
+    padding: ${chip.padding};
+    white-space: nowrap;
+  `,
+  connector: css`
+    align-self: center;
+    background: ${color.line};
+    grid-row: 1;
+    height: ${pipeline.rail};
+  `,
+  bracket: css`
+    border: ${bracket.border} solid ${toneVar};
+    border-radius: 0 0 ${bracket.radius} ${bracket.radius};
+    border-top: none;
+    grid-row: 2;
+    height: ${bracket.height};
+    margin-top: ${bracket.gap};
+  `,
+  caption: css`
+    display: flex;
+    flex-direction: column;
+    gap: ${caption.itemGap};
+    grid-row: 3;
+    margin-top: ${caption.gap};
+    min-width: 0;
+    padding-right: ${caption.trailing};
+  `,
+  captionLabel: css`
+    color: ${toneVar};
+    ${typeRole(caption.label)}
+    text-transform: uppercase;
+  `,
+  captionTitle: css`
+    color: ${color.text};
+    ${typeRole(caption.title)}
+    margin: 0;
+  `,
+  captionBody: css`
+    color: ${color.textSoft};
+    ${typeRole(caption.body)}
+    margin: 0;
+    text-wrap: pretty;
+  `,
+}));

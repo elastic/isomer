@@ -8,16 +8,32 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 
 import type { SlideContentNode } from '../../body_node';
-import type { SlideSplitRatio } from '../../theme/variants';
+import type {
+  SlideSplitDivider,
+  SlideSplitRatio,
+  SlideTone,
+} from '../../theme/variants';
 
-/** Two-column layout with an optional width ratio. */
+/** One column of a {@link SlideSplitNode}. */
+export interface SlideSplitSide {
+  /** Short uppercase label over the column. */
+  label?: string;
+  /** Colors the label. */
+  tone?: SlideTone;
+  /** One to six items: a string is a bold statement, a node renders as itself. */
+  items: readonly (string | SlideContentNode)[];
+}
+
+/** Two columns of statements or slide nodes. */
 export interface SlideSplitNode extends PrimitiveNode {
   /** Discriminator. Always `slideSplit`. */
   type: 'slideSplit';
-  /** Nodes in the left column. At least one. */
-  left: readonly SlideContentNode[];
-  /** Nodes in the right column. At least one. */
-  right: readonly SlideContentNode[];
+  left: SlideSplitSide;
+  right: SlideSplitSide;
   /** Column widths. Defaults to `even`. */
   ratio?: SlideSplitRatio;
+  /** What sits between the columns. Defaults to `gap`. */
+  divider?: SlideSplitDivider;
+  /** One sentence under both columns. */
+  footnote?: string;
 }

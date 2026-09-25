@@ -8,35 +8,64 @@
 import type { ReactNode } from 'react';
 
 import { cls } from '../../render/cls';
-import type { SlideReactEnv } from '../../render/context';
-import { slideModules } from '../../theme/modules';
+import type { SlideReactEnv, SlideRenderContext } from '../../render/context';
+import { slideDistillery } from '../../theme/distillery';
+import { labelModule, layoutModule } from '../../theme/modules';
+import type { SlideBulletMarker } from '../../theme/variants';
 
 import type { SlideBulletListNode } from './schema';
+import { bulletsModule } from './styles';
+
+const { crossGlyph } = slideDistillery.tokens.bullets;
+
+const Marker = ({
+  marker,
+  context,
+}: {
+  marker: SlideBulletMarker;
+  context: SlideRenderContext | undefined;
+}): ReactNode => {
+  const { handles: bullets } = bulletsModule;
+  return (
+    <span aria-hidden className={cls(context, bullets.marker)}>
+      {marker === 'x' ? (
+        <span className={cls(context, bullets.cross)}>{crossGlyph.value}</span>
+      ) : (
+        <span
+          className={cls(
+            context,
+            marker === 'check' ? bullets.check : bullets.dot
+          )}
+        />
+      )}
+    </span>
+  );
+};
 
 /** React renderer for {@link SlideBulletListNode}. */
 export const react = (
-  node: SlideBulletListNode,
+  { items, label, marker = 'dot' }: SlideBulletListNode,
   { context }: SlideReactEnv
 ): ReactNode => {
-  const { handles: bullets } = slideModules.bullets;
-  const { handles: label } = slideModules.label;
+  const { handles: bullets } = bulletsModule;
   return (
-    <div
-      className={cls(
-        context,
-        bullets.root,
-        bullets.marker[node.marker ?? 'dot']
-      )}>
-      {node.label ? (
-        <div className={cls(context, label.label)}>{node.label}</div>
-      ) : null}
-      <ul>
-        {node.items.map((item, index) => (
-          <li key={`${item}-${index}`}>
-            <span>{item}</span>
-          </li>
-        ))}
-      </ul>
+    <div className={cls(context, layoutModule.handles.fill)}>
+      <div className={cls(context, bullets.root)}>
+        {label ? (
+          <div
+            className={cls(context, labelModule.handles.label, bullets.label)}>
+            {label}
+          </div>
+        ) : null}
+        <ul className={cls(context, bullets.list)}>
+          {items.map((item, index) => (
+            <li className={cls(context, bullets.item)} key={index}>
+              <Marker {...{ marker, context }} />
+              <span className={cls(context, bullets.text)}>{item}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 };

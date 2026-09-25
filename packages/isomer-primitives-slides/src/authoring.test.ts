@@ -13,60 +13,15 @@ import { slideDeckPrimitives } from './registry';
 
 const {
   Composition,
-  SlideCard,
-  SlideCardGroup,
   SlideCode,
   SlideTerritory,
   SlideTerritoryGroup,
+  SlideTranscript,
+  SlideTurn,
   toComposition,
 } = buildJsxShim(slideDeckPrimitives);
 
 describe('slide authoring', () => {
-  it('maps SlideCard children onto cards', () => {
-    const spec = toComposition(
-      createElement(
-        Composition,
-        null,
-        createElement(
-          SlideCardGroup,
-          { columns: 3 },
-          createElement(
-            SlideCard,
-            { badge: '01', title: 'React' },
-            'Component tree'
-          )
-        )
-      )
-    );
-
-    expect(spec.body).toEqual([
-      {
-        type: 'slideCardGroup',
-        columns: 3,
-        cards: [{ badge: '01', title: 'React', body: 'Component tree' }],
-      },
-    ]);
-  });
-
-  it('keeps an explicit cards array', () => {
-    const spec = toComposition(
-      createElement(
-        Composition,
-        null,
-        createElement(SlideCardGroup, {
-          cards: [{ title: 'HTML', body: 'Envelope.' }],
-        })
-      )
-    );
-
-    expect(spec.body).toEqual([
-      {
-        type: 'slideCardGroup',
-        cards: [{ title: 'HTML', body: 'Envelope.' }],
-      },
-    ]);
-  });
-
   it('maps SlideTerritory children onto items', () => {
     const spec = toComposition(
       createElement(
@@ -92,72 +47,37 @@ describe('slide authoring', () => {
     ]);
   });
 
-  it('maps SlideCode children onto code', () => {
+  it('maps SlideTurn children onto turns', () => {
     const spec = toComposition(
       createElement(
         Composition,
         null,
         createElement(
-          SlideCode,
-          { label: 'Composition', language: 'ts' },
-          'const spec: Composition = {\n  type: "view",\n  body: [node],\n};'
+          SlideTranscript,
+          null,
+          createElement(SlideTurn, { role: 'user' }, 'Show me refunds.'),
+          createElement(SlideTurn, { role: 'model', format: 'code' }, '{}')
         )
       )
     );
 
     expect(spec.body).toEqual([
       {
-        type: 'slideCode',
-        label: 'Composition',
-        language: 'ts',
-        code: 'const spec: Composition = {\n  type: "view",\n  body: [node],\n};',
+        type: 'slideTranscript',
+        turns: [
+          { role: 'user', text: 'Show me refunds.' },
+          { role: 'model', format: 'code', text: '{}' },
+        ],
       },
     ]);
   });
 
-  it('keeps an explicit code prop', () => {
+  it('passes object props through untouched', () => {
+    const panels = [{ file: 'a.ts', lines: ['const a = 1;'], highlight: [1] }];
     const spec = toComposition(
-      createElement(
-        Composition,
-        null,
-        createElement(
-          SlideCode,
-          { code: 'const a = 1;', language: 'ts' },
-          'const b = 2;'
-        )
-      )
+      createElement(Composition, null, createElement(SlideCode, { panels }))
     );
 
-    expect(spec.body).toEqual([
-      {
-        type: 'slideCode',
-        language: 'ts',
-        code: 'const a = 1;',
-      },
-    ]);
-  });
-
-  it('trims surrounding JSX whitespace on SlideCode children', () => {
-    const spec = toComposition(
-      createElement(
-        Composition,
-        null,
-        createElement(
-          SlideCode,
-          { language: 'ts' },
-          '\n  ',
-          'const x = {\n  a: 1,\n};',
-          '\n'
-        )
-      )
-    );
-
-    expect(spec.body).toEqual([
-      {
-        type: 'slideCode',
-        language: 'ts',
-        code: 'const x = {\n  a: 1,\n};',
-      },
-    ]);
+    expect(spec.body).toEqual([{ type: 'slideCode', panels }]);
   });
 });

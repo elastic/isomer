@@ -28,6 +28,9 @@ const runtime = createIsomerRuntime({
 
 const takumi = createTakumiImageBackend({ fonts: deckFonts });
 
+// A slide opens with its own heading; the composition title only names it.
+const heading = false;
+
 describe('deck examples', () => {
   for (const [index, composition] of deck.entries()) {
     const slug = composition.title
@@ -35,24 +38,26 @@ describe('deck examples', () => {
       : `slide-${index}`;
 
     it(`${slug}: html`, async () => {
-      const result = runtime.surfaces.html.render(composition);
+      const result = runtime.surfaces.html.render(composition, { heading });
       await expect(result.html).toMatchFileSnapshot(
         join(outputDir, `${slug}.html`)
       );
     });
 
     it(`${slug}: markdown`, async () => {
-      const md = runtime.surfaces.markdown.render(composition);
+      const md = runtime.surfaces.markdown.render(composition, { heading });
+      expect(md.match(/^# /gm)).toHaveLength(1);
+      expect(md.startsWith('# ')).toBe(true);
       await expect(md).toMatchFileSnapshot(join(outputDir, `${slug}.md`));
     });
 
     it(`${slug}: text`, async () => {
-      const text = runtime.surfaces.text.render(composition);
+      const text = runtime.surfaces.text.render(composition, { heading });
       await expect(text).toMatchFileSnapshot(join(outputDir, `${slug}.txt`));
     });
 
     it(`${slug}: slack`, async () => {
-      const result = runtime.surfaces.slack.render(composition);
+      const result = runtime.surfaces.slack.render(composition, { heading });
       await expect(JSON.stringify(result.blocks, null, 2)).toMatchFileSnapshot(
         join(outputDir, `${slug}.slack.json`)
       );

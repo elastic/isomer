@@ -1,0 +1,17 @@
+PAYMENTS OWNS THE MONEY. MERCHANTS OWN THE GOODS.
+
+Payments team
+- Card capture
+- Fraud scoring
+- Settlement
+- Refunds
+
+Merchant
+- Prices
+- Stock
+- Shipping
+- Customer support
+
+Because the line is fixed, a merchant can change prices without a payments release.
+
+Crate · 02 Settlement · example.com/crate

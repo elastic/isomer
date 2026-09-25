@@ -12,12 +12,13 @@ import {
   renderSlackChildren,
   slackCaption,
 } from '../../render';
-import { bodyNodes, definePrimitive } from '../define';
+import { contentNode, definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
 import { react } from './react';
-import { schema } from './schema';
+import { buildSchema, schema } from './schema';
+import { windowTitle } from './title';
 import type { SlideWindowNode } from './types';
 
 export type { SlideWindowNode } from './types';
@@ -29,19 +30,19 @@ export const slideWindowPrimitive = definePrimitive<SlideWindowNode>({
   examples,
   schema,
   schemaFor: (bodyNodeSchema: ZodType<unknown>) =>
-    schema.extend({ body: bodyNodes(bodyNodeSchema, schema.shape.body) }),
+    buildSchema(contentNode(bodyNodeSchema)),
   renderers: {
     react,
     text: (node, { scope }) =>
-      [`[${node.title}]`, renderChildren(node.body, scope, 'text')]
+      [`[${windowTitle(node)}]`, renderChildren(node.body, scope, 'text')]
         .filter(Boolean)
         .join('\n'),
     markdown: (node, { scope }) =>
-      [`**${node.title}**`, renderChildren(node.body, scope, 'markdown')]
+      [`**${windowTitle(node)}**`, renderChildren(node.body, scope, 'markdown')]
         .filter(Boolean)
         .join('\n\n'),
     slack: (node, { collector, scope }) => [
-      slackCaption(node.title, true),
+      slackCaption(windowTitle(node), true),
       ...renderSlackChildren(node.body, scope, collector),
     ],
   },

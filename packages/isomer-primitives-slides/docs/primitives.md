@@ -10,20 +10,21 @@ Each primitive lives in its own directory under `src/primitives/<type>/`. Folder
 | `types.ts` | Only when the primitive declares `schemaFor`. Those nodes hold the body-node union, so the type stays a hand-written interface. |
 | `catalog.ts` | Agent-facing copy: `purpose`, `useWhen`, `avoidWhen`, one `example`. |
 | `examples.ts` | `example` plus `examples`, used by the conformance harness and the authoring prompt. |
+| `styles.ts` | The primitive's Distillate module, reading only `slideDistillery.tokens`. `src/stylesheet.ts` collects every module. |
 | `react.tsx` | The React renderer, exported as `react`. It serves the `svg` surface too. |
 | `index.tsx` | `definePrimitive`, renderer wiring, and inline text/markdown unless those surfaces are large enough for their own files. |
 
-A primitive holds no values of its own. Everything it renders lives in its group under `SLIDE_THEME` (`src/theme/theme.ts`), which the CSS modules read.
+A primitive holds no values of its own. Everything it renders lives in its group under `SLIDE_THEME` (`src/theme/components/<group>.ts`, assembled by `src/theme/theme.ts`), which its `styles.ts` reads.
 
 Each primitive's `catalog.ts` and `examples.ts` ship in `dist` beside its renderers, because the authoring prompt and the conformance harness read them from the built package. What `tsconfig.build.json` excludes is `src/examples/**`: the worked deck and its snapshot output, which are type-checked but never published.
 
 ## Before you add a value: one source per rendered value
 
-Every length on the spacing, type, or radius scale and every scheme-varying color has exactly one authoring source, and that source is always `SLIDE_THEME` in `src/theme/theme.ts`. A spacing value comes from `size` (a 4px grid, `m` being the 16px base), type from `font.size` / `font.heading` / `font.weight`, tracking from `font.tracking`, a corner from `radius`, and a scheme-varying color from `color`. Each primitive then has its own group — `frame`, `cards`, `bullets` — that composes those into the values its CSS module reads. A raw `px(...)` belongs there only when the value genuinely has no place on the scale, and it says why. Do not type a literal into `theme/modules.ts` that the theme could name — `bullets.markerGlyph` is there because a marker is a value, not a decoration.
+Every length on the spacing, type, or radius scale and every scheme-varying color has exactly one authoring source, and that source is always `SLIDE_THEME`. The scales live in `src/theme/base.ts`: spacing from `space` (keyed by pixel value on the fixed canvas, `space.px48`), type from the `type` roles or `font.size` / `font.weight` / `font.tracking` / `font.lineHeight`, corners from `radius`, strokes from `stroke`, and scheme-varying color from `color` and `inverse`. Each primitive then has its own group in `src/theme/components/` that composes those into the values its module reads. A raw `px(...)` belongs there only when the value genuinely has no place on a scale, and it says why. Do not type a literal into a `styles.ts` that the theme could name — `bullets.markerGlyph` is a theme value because a marker is a value, not a decoration.
 
-This does not reach every literal in `theme/modules.ts`: a hairline border (`1px solid`), `tab-size: 2`, a `color-mix()` percentage, and a fixed `grid-template-columns: repeat(2, …)` are CSS mechanics rather than design tokens, and stay inline.
+This does not reach every literal in a module: `1fr`, `minmax(0, …)`, `flex: none`, `50%`, and a fixed `repeat(2, …)` are CSS mechanics rather than design tokens, and stay inline.
 
-[Distillate](https://elastic.github.io/distillate/) theme leaves are not color-only: a plain `string` becomes a CSS custom property with identical light/dark values; `lightDark(light, dark)` is the scheme-varying color helper; a `ScaleToken` (`cq` / `scaleToken`, wrapped here as `px` and `literal`) inlines as a literal and cannot vary across schemes or overlays. This pack uses `ScaleToken` for everything outside `color` because the 16:9 canvas is fixed — a host that wants different geometry replaces the frame (`docs/document.md`, `docs/theme.md`), not a token. Reach for a string leaf only when a value is meant to be host-themeable.
+[Distillate](https://elastic.github.io/distillate/) theme leaves are not color-only: a plain `string` becomes a CSS custom property with identical light/dark values; `lightDark(light, dark)` is the scheme-varying color helper; a `ScaleToken` (`cq` / `scaleToken`, wrapped here as `px` and `literal`) inlines as a literal and cannot vary across schemes or overlays. This pack uses `ScaleToken` for everything outside `color` and `inverse` because the 16:9 canvas is fixed — a host that wants different geometry replaces the frame (`docs/document.md`, `docs/theme.md`), not a token. Reach for a string leaf only when a value is meant to be host-themeable.
 
 A CSS module that branches on an enum field uses `variants(domain, factory)` with the domain array already in `src/theme/variants.ts`. Do not add a private `switch`.
 
@@ -39,12 +40,12 @@ So a shape inside an `<svg>` carries its own paint as a presentation attribute, 
 <path d="…" fill="#00BFB3" />
 ```
 
-Both surfaces read the one they can. A presentation attribute carries no specificity, so any class rule beats it and HTML stays scheme-aware through the custom property; the image has only the attribute, so that is what it draws. `slideCycle` draws its ring this way: the class paints `color.primary` in HTML, and the attribute paints the brand-fixed `cycle.ringColor` in the image. Its steps are HTML boxes positioned over the ring, so their text keeps the stylesheet and the fonts. `slide_cycle/index.test.ts` fails if a shape loses its literal paint. The header mark inlines `docs/logo.svg` as `ISOMER_LOGO_PATHS`. Those fills are brand-fixed literals, the same way `ELASTIC_LOGO_PATHS` is, so the paths do not take a scheme class.
+Both surfaces read the one they can. A presentation attribute carries no specificity, so any class rule beats it and HTML stays scheme-aware through the custom property; the image has only the attribute, so that is what it draws. The one `<svg>` the pack draws is the Isomer mark (`src/render/logo.tsx`), which inlines `docs/logo.svg` as `ISOMER_LOGO_PATHS` with brand-fixed fills; `render/logo_marks.test.ts` keeps the paths in step with the file. Everything else — rails, arrows, brackets, spines — is a bordered block, so it follows the theme on both surfaces.
 
 Two traps worth naming:
 
 - **`var(--x, #fallback)` is worse than `#fallback`.** SVG parsers generally do not implement custom properties, and rather than taking the fallback they discard the whole declaration — so the shape ends up black, which is the failure the fallback looked like it was preventing. Write the literal.
-- **The attribute cannot vary by scheme.** There is no stylesheet behind it, so it is one value for both. Treat a mark drawn this way as brand-fixed, the way `ELASTIC_LOGO_PATHS` already is, and keep scheme-varying color for everything outside the `<svg>`.
+- **The attribute cannot vary by scheme.** There is no stylesheet behind it, so it is one value for both. Treat a mark drawn this way as brand-fixed, the way the logo is, and keep scheme-varying color for everything outside the `<svg>`.
 
 ## Writing a leaf primitive
 
@@ -54,15 +55,15 @@ import { examples } from './examples';
 import { schema } from './schema';
 import { react } from './react';
 
-export const slideTitlePrimitive = definePrimitive({
-  type: 'slideTitle',
+export const slideHeadingPrimitive = definePrimitive({
+  type: 'slideHeading',
   catalog,
   examples,
   schema,
   renderers: {
     react,
-    text: (node) => [node.eyebrow, node.title].filter(Boolean).join('\n'),
-    markdown: (node) => `## ${node.title}`,
+    text: ({ title, lede }) => [title.toUpperCase(), lede].filter(Boolean).join('\n'),
+    markdown: ({ title, lede }) => [`## ${title}`, lede].filter(Boolean).join('\n\n'),
   },
 });
 ```
@@ -78,37 +79,31 @@ Keep text and markdown inline when they are a few lines; add `text.ts` / `markdo
 A field filled from JSX children is branded on the schema. `fromChildren` and `fromTextChildren` are identity wrappers: `z.infer` is unchanged, and `buildJsxShim` reads the brand for the child component and for parsing. Describe the inner schema first — `.describe()` clones the schema and drops the brand.
 
 ```ts
-cards: fromChildren(
-  'slideCard',
-  z.array(cardSchema).min(1).describe('Cards to lay out.'),
-  { text: 'body' }
+turns: fromChildren(
+  'slideTurn',
+  z.array(turnSchema).min(1).max(8).describe('Turns in order. One to eight.'),
+  { text: 'text' }
 ),
 ```
 
-`buildJsxShim(slideDeckPrimitives)` then includes `SlideCard`, typed from the array element. `text: 'body'` copies leftover text children onto that field. An explicit `cards` prop wins over children. Placing `<SlideCard>` directly under `<Composition>` throws, because it is not a body node.
-
-A string field uses `fromTextChildren`. `slideCode` keeps newlines:
-
-```ts
-code: fromTextChildren(z.string().min(1).describe('Source to display.'), {
-  collapseWhitespace: false,
-}),
-```
+`buildJsxShim(slideDeckPrimitives)` then includes `SlideTurn`, typed from the array element. `text: 'text'` copies leftover text children onto that field. An explicit `turns` prop wins over children. Placing `<SlideTurn>` directly under `<Composition>` throws, because it is not a body node.
 
 ```tsx
-<SlideCode label="Composition" language="ts">{`const spec: Composition = {
-  type: "view",
-  body: [node],
-};`}</SlideCode>
+<SlideTranscript>
+  <SlideTurn role="user">Show me refunds.</SlideTurn>
+  <SlideTurn role="model" format="code">{'{"type":"slideHeading"}'}</SlideTurn>
+</SlideTranscript>
 ```
+
+A string field uses `fromTextChildren` the same way, with `collapseWhitespace: false` when newlines matter. A prop holding a plain object may nest author elements anywhere inside it — `left={{ items: [<SlideCode … />] }}` — and the shim converts each one to its node.
 
 Required text that is missing throws `IsomerError` with code `MISSING_AUTHORED_TEXT`. Two primitives that brand the same child type with different item shapes throw `DUPLICATE_AUTHORED_CHILD` when the shim is built.
 
-One branch: a primitive that declares `schemaFor` also hand-writes its node type. The body-node union is injected per composition, so it cannot appear in a static schema — which is why `schemaFor` exists — and `z.infer` cannot name that cycle (`TS2456`, `TS7022`). Brand the child field the same way. When one child element is not the array element, pass `toItem`; its props annotation is the child component's props. `slideFrame`, `slideSplit`, `slideStack`, and `slideWindow` are that branch. Every other primitive's schema is its only declaration.
+One branch: a primitive that declares `schemaFor` also hand-writes its node type. The body-node union is injected per composition, so it cannot appear in a static schema — which is why `schemaFor` exists — and `z.infer` cannot name that cycle (`TS2456`, `TS7022`). Brand the child field the same way. When one child element is not the array element, pass `toItem`; its props annotation is the child component's props. `slideFrame`, `slideSplit`, `slideStack`, `slideWindow`, and `slideTitle` are that branch. Every other primitive's schema is its only declaration.
 
 ## Writing a container primitive
 
-Containers (frame, split, stack, window) need three more fields:
+Containers (frame, split, stack, window, title) need three more fields:
 
 ```ts
 schemaFor: (bodyNodeSchema) =>
@@ -135,6 +130,26 @@ slack: (node, { collector, scope }) =>
 
 A container that also draws chrome of its own sets two more. `hasOwnContent: () => true` keeps it on a surface when every child is hidden there, and `metrics.svgHeight` reports its drawn height to a frame that sums node heights. `slideFrame` sets both because it owns the 16:9 canvas. `slideWindow` sets `hasOwnContent` for its title bar; it needs no `svgHeight` because the slide frame does not sum node heights. `slideSplit` and `slideStack` set neither, since they draw nothing and take their height from their children.
 
+## Writing catalog copy
+
+`catalog.ts` is what a model reads when it chooses a primitive, rendered into the authoring prompt beside the pack's guide and rules (`src/agent_guide.ts`). Write it for that reader:
+
+- `purpose` states the reader's need the primitive meets ("Show how two parallel paths converge on one result"), not what it draws ("Render lanes").
+- `useWhen` holds two or three author intents, each a situation rather than a shape.
+- Every `avoidWhen` entry names the primitive to use instead, by `type` ("The steps have no order; use slideColumns."). A near neighbor that points back makes the choice between them explicit.
+- `example` uses neutral subject matter. A model copies the example's register, so an example about Isomer produces slides about Isomer.
+- Cross-field constraints a `.refine` enforces are invisible in the JSON Schema; restate them in `src/pack_authoring.ts`.
+
+## Previewing a primitive
+
+`src/examples/preview.test.ts` renders a primitive's examples to PNG, light and dark, beside a `.txt` of its text, Markdown, and Slack output. It is skipped unless asked for:
+
+```sh
+SLIDE_PREVIEW=slidePipeline SLIDE_PREVIEW_OUT=/tmp/preview pnpm vitest run packages/isomer-primitives-slides/src/examples/preview.test.ts
+```
+
+Each example is framed the way a deck would frame it, after a `slideHeading` on a page frame, or alone on an inverse frame for title, section, and closing primitives. `SLIDE_PREVIEW_FILE=compositions.json` renders a JSON array of whole compositions instead, for comparing a slide against a design.
+
 ## Registering the primitive
 
 `src/registry.ts` is hand-maintained. Add the import and include it in `slideDeckPrimitives`:
@@ -157,13 +172,13 @@ Also add the node type to the `BodyNode` union in `src/body_node.ts`. The two li
 ```tsx
 import { buildJsxShim } from '@elastic/isomer-sdk/author';
 
-const { Composition, SlideFrame, SlideTitle, toComposition } =
+const { Composition, SlideFrame, SlideHeading, toComposition } =
   buildJsxShim(slideDeckPrimitives);
 
 const composition = toComposition(
-  <Composition title="Title slide">
-    <SlideFrame chapter="01 · Primitives" footer="Elastic" layout="title">
-      <SlideTitle title="One composition, every surface." size="hero" />
+  <Composition title="Refunds settle in two days">
+    <SlideFrame brand="Ledger" chapterNumber="02" chapter="Settlement">
+      <SlideHeading title="Refunds settle in two days, not five" />
     </SlideFrame>
   </Composition>
 );
@@ -178,7 +193,7 @@ A host that wants to preview one primitive outside a full deck uses `StandaloneS
 ```tsx
 import { StandaloneSlideNode } from '@elastic/isomer-primitives-slides';
 
-<StandaloneSlideNode node={{ type: 'slideTitle', title: 'Preview' }} />;
+<StandaloneSlideNode node={{ type: 'slideHeading', title: 'Preview' }} />;
 ```
 
 `slideStylesheet()` returns the same CSS as a standalone string, for a host that mounts the pack's React tree itself and wants to inject the `<style>` tag separately rather than through `StandaloneSlideNode`.

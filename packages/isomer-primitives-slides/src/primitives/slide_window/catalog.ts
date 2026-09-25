@@ -13,13 +13,15 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideWindow',
   purpose:
-    'Frame nested slide content in application chrome: a browser, terminal, Slack channel, or chat.',
+    'Show the reader where something appears, such as a terminal, a browser tab, a chat, or a Slack channel, by framing slide content in that app’s title bar.',
   useWhen: [
-    'A slide shows where an output appears, such as a terminal printing text or a chat replaying a conversation.',
+    'The place matters: output printed in a terminal, a message posted to a channel, a page at a URL.',
+    'Two windows side by side in a slideSplit compare how the same thing looks in two apps.',
   ],
   avoidWhen: [
-    'The content is not tied to a place it appears.',
-    'The window would hold another window.',
+    'The content is not tied to an app; show it directly with slideCode, slideTable, or slideTranscript.',
+    'The window would hold another window; put the two side by side with slideSplit.',
+    'You want a real render of a slide on a surface; use slideRender.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

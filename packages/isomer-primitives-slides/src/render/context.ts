@@ -15,7 +15,14 @@ import type {
 import type { SlideFrameTheme } from '../theme/palette';
 
 /** Render context the pack's Distillate HTML adapter fills; `resolveClassName` is absent when no adapter runs. */
-export type SlideRenderContext = StyledRenderContext;
+export interface SlideRenderContext extends StyledRenderContext {
+  /**
+   * How much less room the frame's heading leaves than a two-line title and a
+   * two-line lede do: above 1 is tighter. Load-sized primitives scale their
+   * load by it; absent means 1.
+   */
+  crowding?: number;
+}
 
 /** The types every contract in this pack is written against. */
 export interface SlidePackTypes extends DefaultPackTypes {

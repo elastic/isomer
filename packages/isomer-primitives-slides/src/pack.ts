@@ -19,6 +19,7 @@ import {
 } from '@elastic/isomer-sdk';
 import { createDistillateHtmlStyleAdapter } from '@elastic/isomer-sdk/html';
 
+import { slidesPackAuthoring } from './pack_authoring';
 import { slideDeckPrimitives } from './registry';
 import { slideDistillery } from './theme/distillery';
 import { type SlideFrameTheme, slidePaletteForMode } from './theme/palette';
@@ -49,12 +50,12 @@ export const slideDeckFrame: Frame<SlideFrameTheme> = {
     const [slide, ...rest] = body;
     if (!slide || rest.length > 0) {
       return [
-        `an svg render needs exactly one "${SLIDE_FRAME_TYPE}" node, got ${body.length} nodes; render one slide per spec`,
+        `a slide's body is exactly one "${SLIDE_FRAME_TYPE}", got ${body.length} nodes; put everything on the slide inside one frame`,
       ];
     }
     if (slide.type !== SLIDE_FRAME_TYPE) {
       return [
-        `an svg render needs a "${SLIDE_FRAME_TYPE}" root, got "${slide.type}"; wrap slide content in a frame`,
+        `a slide's body is one "${SLIDE_FRAME_TYPE}", got "${slide.type}"; wrap the slide's content in a frame`,
       ];
     }
     return [];
@@ -71,6 +72,7 @@ const packInput = {
   primitives: slideDeckPrimitives,
   styleAdapter,
   theme: themeBound<SlideFrameTheme>(),
+  authoring: slidesPackAuthoring,
 } satisfies PrimitivePackInput<SlideFrameTheme>;
 
 /** This pack, ready to pass to `createIsomerRuntime`. */

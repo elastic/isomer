@@ -12,9 +12,9 @@ Width 1920 × height 1080 (fixed; `sizesFromNodeHeights: false`). The eight non-
 validateBody: (body) => {
   const [slide, ...rest] = body;
   if (!slide || rest.length > 0)
-    return [`an svg render needs exactly one "slideFrame" node, got ${body.length} nodes; …`];
+    return [`a slide's body is exactly one "slideFrame", got ${body.length} nodes; …`];
   if (slide.type !== 'slideFrame')
-    return [`an svg render needs a "slideFrame" root, got "${slide.type}"; …`];
+    return [`a slide's body is one "slideFrame", got "${slide.type}"; …`];
   return [];
 },
 ```
@@ -35,11 +35,17 @@ The frame is called `slideDeckFrame` (qualified) to avoid colliding with the `sl
 
 ## Footer chrome
 
-The footer's left side always renders the mark and the theme's `frame.brandLabel`; `footer` (right side) is the only configurable footer text. There is no node field to replace or hide the mark.
+The frame draws one footer line and nothing else: the Isomer mark, `brand`, and the section (`chapterNumber` and `chapter`) on the left, `url` on the right. A slide with no chapter, such as the title slide, shows `brand` alone. `url` is a link on the web surfaces and must be an absolute `http` or `https` address, such as `https://example.com`: a footer has no page to be relative to. One that is not is dropped before render.
+
+## Tone
+
+`tone: 'inverse'` gives the slide the dark background for title, section, and closing slides by redeclaring the page palette for the frame's subtree; see [Theme](theme.md#inverse-tone).
 
 ## Degrading to text and markdown
 
-`chapter` (and `chapterNumber`, if present) becomes an `h2` heading ahead of the body, the same level as a slide title. `brand` and `footer` are image-only chrome and do not reach either surface.
+The body renders first, then the footer as one line (`Isomer · 01 The problem · elastic.github.io/isomer`), italic in Markdown with `url` as a link. Slack sends the same line as a closing `context` block.
+
+A slide opens with its own heading: `slideTitle`, `slideSection`, `slideHeading`, or `slideClosing`, each a `#` in Markdown, with sub-headings inside the slide at `##`. Render a slide with `heading: false` on the `text`, `markdown`, and `slack` surfaces, as on `react` and `html`, so the composition's `title` names the slide without repeating it. `slideRender` and `slideRenderGrid` set the slide they embed apart (a blockquote in Markdown, an indent in text, its `header` as a bold `section` in Slack), so that slide's heading stays out of the outline.
 
 ## `slideDeckFrame` vs `slideFrame`
 

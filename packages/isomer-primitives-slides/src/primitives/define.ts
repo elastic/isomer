@@ -32,14 +32,25 @@ export type PrimitiveDefinition<
  */
 export const definePrimitive = definePrimitiveFor<SlidePackTypes>();
 
+const isFrame = (node: unknown): boolean =>
+  typeof node === 'object' &&
+  node !== null &&
+  (node as { type?: unknown }).type === 'slideFrame';
+
+/** One node inside a slide: the runtime's body-node union, minus `slideFrame`, which never nests. */
+export const contentNode = (bodyNodeSchema: ZodType<unknown>) =>
+  bodyNodeSchema.refine((node) => !isFrame(node), {
+    error: 'a slideFrame cannot sit inside another node; frames never nest',
+  });
+
 /**
- * A container's child slot for `schemaFor`: the runtime's body-node union in
- * place of `unresolvedBodyNodeSchema`, described the way `field` already is.
+ * A container's child slot for `schemaFor`: {@link contentNode}s in place of
+ * `unresolvedBodyNodeSchema`, described the way `field` already is.
  */
 export const bodyNodes = (
   bodyNodeSchema: ZodType<unknown>,
   { description }: { description?: string }
 ) => {
-  const slot = z.array(bodyNodeSchema).min(1);
+  const slot = z.array(contentNode(bodyNodeSchema)).min(1);
   return description === undefined ? slot : slot.describe(description);
 };

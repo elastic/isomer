@@ -9,8 +9,10 @@ import { Fragment, type ReactNode } from 'react';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
-import { slideModules } from '../../theme/modules';
+import { layoutModule } from '../../theme/modules';
 
+import { windowModule } from './styles';
+import { windowTitle } from './title';
 import type { SlideWindowNode } from './types';
 
 /** React renderer for {@link SlideWindowNode}. */
@@ -18,36 +20,29 @@ export const react = (
   node: SlideWindowNode,
   { context, scope }: SlideReactEnv
 ): ReactNode => {
-  const { handles: window } = slideModules.window;
-  const hasDots = node.chrome === 'browser' || node.chrome === 'terminal';
+  const { handles: window } = windowModule;
+  const slack = node.chrome === 'slack';
   return (
-    <div className={cls(context, window.root)}>
-      <div className={cls(context, window.bar)}>
-        {hasDots ? (
-          <>
-            <i className={cls(context, window.dot, window.dotClose)} />
-            <i className={cls(context, window.dot, window.dotMinimize)} />
-            <i className={cls(context, window.dot, window.dotZoom)} />
-          </>
-        ) : null}
-        <span
+    <div className={cls(context, layoutModule.handles.fill)}>
+      <div className={cls(context, window.panel)}>
+        <div
           className={cls(
             context,
-            window.title,
-            window.titleChrome[node.chrome]
+            window.bar,
+            slack ? window.slackBar : window.appBar
           )}>
-          {node.title}
-        </span>
-      </div>
-      <div
-        className={cls(
-          context,
-          window.body,
-          node.chrome === 'terminal' ? window.terminalBody : undefined
-        )}>
-        {node.body.map((child, index) => (
-          <Fragment key={index}>{scope.renderReact(child, context)}</Fragment>
-        ))}
+          {windowTitle(node)}
+        </div>
+        <div
+          className={cls(
+            context,
+            window.body,
+            slack ? window.slackBody : window.appBody
+          )}>
+          {node.body.map((child, index) => (
+            <Fragment key={index}>{scope.renderReact(child, context)}</Fragment>
+          ))}
+        </div>
       </div>
     </div>
   );

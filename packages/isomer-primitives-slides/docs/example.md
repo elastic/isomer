@@ -1,257 +1,85 @@
 # Worked example
 
-Seven compositions that together exercise every primitive. A host sequences them; Isomer renders one composition at a time. The [Isomer deck](https://elastic.github.io/isomer/deck/) is the full-size version: every slide in `docs/deck` is a composition, viewable on every surface.
+Eleven compositions built from each primitive's canonical `example`, in `src/examples/deck/index.ts`. A host sequences them; Isomer renders one composition at a time. The [Isomer deck](https://elastic.github.io/isomer/deck/) is the full-size version: every slide in `docs/deck` is a composition, viewable on every surface.
 
 ## A deck is a `Composition[]`
 
 ```ts
-// A deck is a sequence of Compositions — Isomer deliberately does not model
-// sequencing, because sequencing is routing and routing belongs to the host.
+const slide = (name, body, chapter, tone = 'page') => ({
+  type: 'view',
+  title: name,
+  body: [{ type: 'slideFrame', brand: 'Crate', url: 'https://example.com/crate', ...chapter, tone, body }],
+});
+
 export const deck: Composition[] = [
-  { type: 'view', title: 'Title slide', body: [titleSlide] },
-  { type: 'view', title: 'Split layout', body: [splitSlide] },
+  slide('Title', [title], undefined, 'inverse'),
+  slide('Section', [section], settlement, 'inverse'),
+  slide('Pipeline', [heading('Every refund runs the same four steps'), pipeline, stat], settlement),
   // …
 ];
 ```
 
-The runtime sees one composition at a time. A host renders them in order and assembles the deck.
+Isomer deliberately does not model the sequence, because sequencing is routing and routing belongs to the host. The runtime sees one composition at a time.
 
 ## Surface artifacts
 
-Each composition renders on HTML, Markdown, text, Slack Block Kit, and SVG. The markdown and text surfaces are the headline claim: a composition authored once degrades to a few lines of terminal output without any work from the author.
+Each composition renders on HTML, Markdown, text, Slack Block Kit, and SVG; `src/examples/deck/output/` holds every artifact. The test renders them the way a slide host should: with `heading: false`, because each slide opens with its own heading and the composition's `title` only names it. Every slide's Markdown then opens with exactly one `#` heading, which the test asserts. The markdown and text surfaces are the headline claim: every word on the slide reaches them, so a composition authored once still reads as a few lines of terminal output.
 
-### Title slide
+### Pipeline
 
 ```markdown
-# Title slide
+# Every refund runs the same four steps
 
-## 01 · Primitives
+Refund request → Verify → Score → Approve → Settle → Ledger entry
 
-_Reference pack_
+1. **Verify** — Match the order, the amount, and the card on file. A mismatch goes to a person.
+2. **Score** — The fraud model scores the request against the customer’s last ninety days.
+3. **Approve** — Scores under the threshold approve on their own; the rest wait for review.
+4. **Settle** — The processor returns the funds and posts one line to the ledger.
 
-## One composition, every surface.
+**2.1 days** — Median time from refund request to money back in the customer account, down from five.
 
-The same spec renders as HTML, markdown, text, Slack, and SVG.
+_Crate · 02 Settlement · [example.com/crate](https://example.com/crate)_
 ```
 
 ```text
-TITLE SLIDE
+EVERY REFUND RUNS THE SAME FOUR STEPS
 
-01 · Primitives
+Refund request → Verify → Score → Approve → Settle → Ledger entry
+1. Verify — Match the order, the amount, and the card on file. A mismatch goes to a person.
+2. Score — The fraud model scores the request against the customer’s last ninety days.
+3. Approve — Scores under the threshold approve on their own; the rest wait for review.
+4. Settle — The processor returns the funds and posts one line to the ledger.
 
-Reference pack
-One composition, every surface.
-The same spec renders as HTML, markdown, text, Slack, and SVG.
+2.1 days — Median time from refund request to money back in the customer account, down from five.
+
+Crate · 02 Settlement · example.com/crate
 ```
 
-### Split layout
-
-```markdown
-# Split layout
-
-## 02 · Grammar
-
-## Primitive pack
-
-Vocabulary, renderers, and validation in one value.
-
-### What a pack declares
-
-- Primitives
-- Surfaces
-- Theme bound
-```
-
-```text
-SPLIT LAYOUT
-
-02 · Grammar
-
-Primitive pack
-Vocabulary, renderers, and validation in one value.
-
-What a pack declares
-- Primitives
-- Surfaces
-- Theme bound
-```
-
-### Surface cards
-
-```markdown
-# Surface cards
-
-## 03 · Surfaces
-
-## Six render targets.
-
-React, HTML, SVG, Slack, Markdown, and plain text.
-
-### React
-
-Component tree; hosts mount it.
-
-### HTML
-
-Self-contained envelope with stylesheet.
-
-### SVG
-
-The same tree and stylesheet, handed to a rasterizer.
-
-### Slack
-
-Block Kit blocks with fallback text.
-
-### Markdown
-
-GitHub-flavored, readable in terminals.
-
-### Text
-
-80-column output for logging and alerts.
-```
-
-```text
-SURFACE CARDS
-
-03 · Surfaces
-
-Six render targets.
-React, HTML, SVG, Slack, Markdown, and plain text.
-
-React
-Component tree; hosts mount it.
-
-HTML
-Self-contained envelope with stylesheet.
-
-SVG
-The same tree and stylesheet, handed to a rasterizer.
-
-Slack
-Block Kit blocks with fallback text.
-
-Markdown
-GitHub-flavored, readable in terminals.
-
-Text
-80-column output for logging and alerts.
-```
-
-### Code block
+### Table and code
 
 ````markdown
-# Code block
+# Refund states, and where they are set
 
-## 04 · Contract
+## Checkout, last 24 hours
 
-## The composition contract.
+| Region | Orders | p99 latency | Errors |
+| --- | --- | --- | --- |
+| Europe | 48,210 | 410 ms | 0.2% |
+| North America | 61,905 | 380 ms | 0.1% |
+| Asia Pacific | 22,764 | 1.9 s | 2.4% |
 
-### Composition
+**refund.ts**
 
 ```ts
-const spec: Composition = {
-  type: "view",
-  title: "My view",
-  body: [node],
-};
-```
-````
-
-```text
-CODE BLOCK
-
-04 · Contract
-
-The composition contract.
-
-Composition
-const spec: Composition = {
-  type: "view",
-  title: "My view",
-  body: [node],
+export const refund = async (order: Order) => {
+  await ledger.write(order.id, -order.total);
+  await fraud.check(order);
+  return notify(order.customer);
 };
 ```
 
-### Flow diagram
-
-```markdown
-# Flow diagram
-
-## 05 · Dispatch
-
-## How a composition renders.
-
-### Render pipeline
-
-Composition -> Runtime -> Dispatcher -> Primitive -> Surface
-
-### Host
-
-Supplies composition, owns data and routing.
-
-### Isomer
-
-Owns dispatch, validation, and rendering.
-```
-
-```text
-FLOW DIAGRAM
-
-05 · Dispatch
-
-How a composition renders.
-
-Render pipeline
-Composition -> Runtime -> Dispatcher -> Primitive -> Surface
-
-Host: Supplies composition, owns data and routing.
-Isomer: Owns dispatch, validation, and rendering.
-```
-
-### Agent loop
-
-```text
-AGENT LOOP
-
-06 · Agents
-
-Parse, then retry.
-
-Loop
-Until it parses: Context -> Model -> parse -> Errors -> Context
-
-[Agent]
-User: How is checkout doing?
-Model: { "type": "slideTitle" }
-Host: body[0].title: expected string
-Model: Retried with a title.
-```
-
-### Table and window
-
-````markdown
-# Table and window
-
-## 07 · Surfaces
-
-### On invalid input
-
-| Surface | Behavior |
-| --- | --- |
-| react | Never validates |
-| html | Reports findings |
-| text | Throws |
-| slack | Throws |
-
-**node render.js**
-
-```ts
-const runtime = createIsomerRuntime({
-  packs: [slidesPack],
-});
-```
+_Crate · 03 Platform · [example.com/crate](https://example.com/crate)_
 ````
 
 On Slack the table arrives as a native `table` block with bold row headers, because every container above it dispatches its children through `scope.renderSlack`.
@@ -271,15 +99,15 @@ const png = await takumi.png(runtime.surfaces.svg.render(composition));
 
 `fonts` is the host's, and it is not optional in practice — an unregistered family falls back to the backend's built-in face, so an unfonted render is visibly not this pack. [Fonts on the image surface](styling.md#fonts-on-the-image-surface) covers which families and weights to register; `src/examples/deck/fonts.ts` is the worked version, deriving the weight set from the theme.
 
-The seven `.png` files are written by the same test that writes the other four surfaces' artifacts, with one difference: `toMatchFileSnapshot` is text-only, so the PNG case hand-rolls its own comparison, and that comparison is CI-only. A local run always rewrites the artifact — a takumi or font bump would otherwise fail every PNG case on the bump alone, not on a real regression — so `git diff` on the seven files is the review step. Under `CI`, a missing artifact fails instead of being written, and byte equality is asserted against the committed artifact. CI runs Ubuntu only, so this verifies same-input determinism on linux-x64; cross-platform stability (darwin-arm64 producing the same bytes) is an operating assumption at a pinned `@takumi-rs/core` and a fixed font set, not independently verified here — see `@elastic/isomer-image-takumi`'s [Determinism](../../isomer-image-takumi/docs/index.md#determinism) section.
+The `.png` files are written by the same test that writes the other four surfaces' artifacts, with one difference: `toMatchFileSnapshot` is text-only, so the PNG case hand-rolls its own comparison, and that comparison is CI-only. A local run always rewrites the artifact — a takumi or font bump would otherwise fail every PNG case on the bump alone, not on a real regression — so `git diff` on them is the review step. Under `CI`, a missing artifact fails instead of being written, and byte equality is asserted against the committed artifact. CI runs Ubuntu only, so this verifies same-input determinism on linux-x64; cross-platform stability (darwin-arm64 producing the same bytes) is an operating assumption at a pinned `@takumi-rs/core` and a fixed font set, not independently verified here — see `@elastic/isomer-image-takumi`'s [Determinism](../../isomer-image-takumi/docs/index.md#determinism) section.
 
 ## What this demonstrates
 
-The seven compositions together exercise every primitive at least once:
+- `slideTitle` with a `slideFanout` aside, and `slideClosing`, on inverse frames
+- `slideSection`, a section divider
+- `slideHeading` opening every content slide
+- `slideTimeline`, `slidePipeline` with a `slideStat` band, `slideLanes`, and `slideGraph`
+- `slideSplit` with string items and a rule, and with node items holding `slideTable` and `slideCode`
+- `slideStats` and `slideColumns`
 
-- `slideTitle`, `slideCardGroup` — the frame example and the cards slide
-- `slideSplit`, `slideStack`, `slideBulletList` — the split layout slide
-- `slideCode` — the code block slide
-- `slideFlow`, `slideTerritoryGroup` — the flow diagram slide
-- `slideCycle`, `slideWindow`, `slideTranscript` — the agent loop slide
-- `slideTable`, and `slideCode` with `highlight` inside a terminal `slideWindow` — the table and window slide
+The Isomer deck covers the rest: `slideDefinitions`, `slideList`, `slideTree`, `slideWindow`, `slideTranscript`, `slideRender`, and `slideRenderGrid`.

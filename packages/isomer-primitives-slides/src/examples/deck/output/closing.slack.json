@@ -1,0 +1,40 @@
+[
+  {
+    "type": "header",
+    "text": {
+      "type": "plain_text",
+      "text": "Start here",
+      "emoji": true
+    }
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "*Docs*  <https://example.com/ledger/docs|example.com/ledger/docs>\n*Runbook*  <https://example.com/ledger/runbook|example.com/ledger/runbook>"
+    }
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": " "
+    }
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "• *Issue a refund*: The refunds guide, then the ledger API\n• *Reconcile a day*: The settlement report and its columns\n• *Handle a dispute*: The chargeback flow and its deadlines\n• *Go on call*: The runbook and the escalation list"
+    }
+  },
+  {
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "Crate · 03 Platform · example.com/crate"
+      }
+    ]
+  }
+]

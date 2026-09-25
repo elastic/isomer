@@ -9,31 +9,39 @@ import type { ReactNode } from 'react';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
-import { slideModules } from '../../theme/modules';
+import { labelModule, layoutModule, tonesModule } from '../../theme/modules';
 
 import type { SlideTerritoryGroupNode } from './schema';
+import { territoryModule } from './styles';
 
 /** React renderer for {@link SlideTerritoryGroupNode}. */
 export const react = (
-  node: SlideTerritoryGroupNode,
+  { items }: SlideTerritoryGroupNode,
   { context }: SlideReactEnv
 ): ReactNode => {
-  const { handles: territory } = slideModules.territory;
-  const { handles: tones } = slideModules.tones;
+  const { handles: territory } = territoryModule;
+  const { handles: label } = labelModule;
+  const { handles: tones } = tonesModule;
   return (
-    <div className={cls(context, territory.grid)}>
-      {node.items.map((item, index) => (
-        <div
-          className={cls(
-            context,
-            territory.item,
-            tones.tone[item.tone ?? 'primary']
-          )}
-          key={`${item.title}-${index}`}>
-          <h3>{item.title}</h3>
-          <p>{item.body}</p>
-        </div>
-      ))}
+    <div className={cls(context, layoutModule.handles.fill)}>
+      <ul className={cls(context, territory.list)}>
+        {items.map(({ title, body, tone = 'primary' }, index) => (
+          <li
+            className={cls(context, territory.item, tones.tone[tone])}
+            key={index}>
+            <h3
+              className={cls(
+                context,
+                label.label,
+                label.toned,
+                territory.title
+              )}>
+              {title}
+            </h3>
+            <p className={cls(context, territory.body)}>{body}</p>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 };

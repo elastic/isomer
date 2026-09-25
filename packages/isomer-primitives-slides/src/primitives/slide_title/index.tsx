@@ -5,73 +5,104 @@
  * 2.0.
  */
 
-import { sanitizeNavigationHref } from '@elastic/isomer-sdk';
-import { markdownLink } from '@elastic/isomer-sdk/markdown';
+import {
+  escapeMrkdwn,
+  formatHeaderText,
+  italic,
+  type SlackBlock,
+} from '@elastic/isomer-sdk/slack';
+import type { ZodType } from 'zod';
 
-import { definePrimitive } from '../define';
+import { renderSlackChildren, slackCaption } from '../../render';
+import { contentNode, definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
 import { react } from './react';
-import { schema, type SlideLedeLink, type SlideTitleNode } from './schema';
+import { schema } from './schema';
+import type { SlideTitleNode } from './types';
 
-export type { SlideLedeLink, SlideLedePart, SlideTitleNode } from './schema';
+export type { SlideTitleDefinition, SlideTitleNode } from './types';
 
-const flattenLede = (
-  lede: SlideTitleNode['lede'],
-  link: (part: SlideLedeLink) => string
-): string => {
-  if (!lede) {
-    return '';
-  }
-  if (typeof lede === 'string') {
-    return lede;
-  }
-  return lede
-    .map((part) => (typeof part === 'string' ? part : link(part)))
-    .join('');
-};
-
-/** Text renderer for {@link SlideTitleNode}. */
-export const text = (node: SlideTitleNode) =>
-  [node.eyebrow, node.title, flattenLede(node.lede, ({ text: label }) => label)]
+const ownText = ({ eyebrow, title, tagline, definition }: SlideTitleNode) =>
+  [
+    eyebrow?.toUpperCase(),
+    title,
+    tagline,
+    definition ? `${definition.term} ${definition.text}` : undefined,
+  ]
     .filter(Boolean)
     .join('\n');
 
-/** Markdown renderer for {@link SlideTitleNode}. */
-export const markdown = (node: SlideTitleNode) =>
+const ownMarkdown = ({ eyebrow, title, tagline, definition }: SlideTitleNode) =>
   [
-    node.eyebrow ? `_${node.eyebrow}_` : '',
-    `## ${node.title}`,
-    flattenLede(node.lede, ({ text: label, href }) =>
-      markdownLink(label, href)
-    ),
+    `# ${title}`,
+    eyebrow ? `_${eyebrow}_` : undefined,
+    tagline,
+    definition ? `_${definition.term}_ ${definition.text}` : undefined,
   ]
     .filter(Boolean)
     .join('\n\n');
 
 /** Catalog, schema, and renderers for {@link SlideTitleNode}. */
-export const slideTitlePrimitive = definePrimitive({
+export const slideTitlePrimitive = definePrimitive<SlideTitleNode>({
   type: 'slideTitle',
   catalog,
   examples,
   schema,
+  schemaFor: (bodyNodeSchema: ZodType<unknown>) =>
+    schema.extend({
+      aside: contentNode(bodyNodeSchema)
+        .describe(schema.shape.aside.description ?? '')
+        .optional(),
+    }),
   renderers: {
     react,
-    text,
-    markdown,
+    text: (node, { scope }) =>
+      [ownText(node), node.aside ? scope.renderText(node.aside) : '']
+        .filter(Boolean)
+        .join('\n\n'),
+    markdown: (node, { scope }) =>
+      [ownMarkdown(node), node.aside ? scope.renderMarkdown(node.aside) : '']
+        .filter(Boolean)
+        .join('\n\n'),
+    slack: (node, { collector, scope }) => {
+      const { eyebrow, title, tagline, definition, aside } = node;
+      return [
+        {
+          type: 'header',
+          text: {
+            type: 'plain_text',
+            text: formatHeaderText(title),
+            emoji: true,
+          },
+        },
+        ...(eyebrow ? [slackCaption(eyebrow, true)] : []),
+        ...(tagline
+          ? [
+              {
+                type: 'section',
+                text: { type: 'mrkdwn', text: escapeMrkdwn(tagline) },
+              } satisfies SlackBlock,
+            ]
+          : []),
+        ...(definition
+          ? [
+              {
+                type: 'context',
+                elements: [
+                  {
+                    type: 'mrkdwn',
+                    text: `${italic(definition.term)} ${escapeMrkdwn(definition.text)}`,
+                  },
+                ],
+              } satisfies SlackBlock,
+            ]
+          : []),
+        ...(aside ? renderSlackChildren([aside], scope, collector) : []),
+      ];
+    },
   },
-  sanitize: (node) => {
-    if (!node.lede || typeof node.lede === 'string') {
-      return node;
-    }
-    const lede = node.lede.map((part) => {
-      if (typeof part === 'string') {
-        return part;
-      }
-      const href = sanitizeNavigationHref(part.href);
-      return href ? { ...part, href } : part.text;
-    });
-    return { ...node, lede };
-  },
+  children: ({ aside }) => (aside ? [{ node: aside, path: 'aside' }] : []),
+  hasOwnContent: () => true,
 });

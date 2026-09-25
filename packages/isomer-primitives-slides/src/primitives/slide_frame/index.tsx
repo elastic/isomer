@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { markdownLink } from '@elastic/isomer-sdk/markdown';
 import type { ZodType } from 'zod';
 
 import {
@@ -22,14 +23,27 @@ import { examples } from './examples';
 import { react } from './react';
 import { schema } from './schema';
 import type { SlideFrameNode } from './types';
+import { sanitizeFrameUrl } from './url';
 
 export { SlideFrameView } from './react';
 export type { SlideFrameNode } from './types';
 
-const chapterLine = (node: SlideFrameNode): string =>
-  [node.chapterNumber, node.chapter]
+const { separator } = slideDistillery.tokens.frame;
+
+const displayUrl = (url: string): string => url.replace(/^https?:\/\//, '');
+
+/** The footer as one line: brand, section, and address. */
+const footerLine = (
+  { brand, chapter, chapterNumber, url }: SlideFrameNode,
+  formatUrl: (url: string) => string
+): string =>
+  [
+    brand,
+    [chapterNumber, chapter].filter(Boolean).join(' '),
+    url ? formatUrl(url) : '',
+  ]
     .filter(Boolean)
-    .join(slideDistillery.tokens.frame.chapterSeparator.value);
+    .join(` ${separator.value} `);
 
 /** Catalog, schema, and renderers for {@link SlideFrameNode}. */
 export const slideFramePrimitive = definePrimitive<SlideFrameNode>({
@@ -42,20 +56,27 @@ export const slideFramePrimitive = definePrimitive<SlideFrameNode>({
   renderers: {
     react,
     text: (node, { scope }) =>
-      [chapterLine(node), renderChildren(node.body, scope, 'text')]
+      [renderChildren(node.body, scope, 'text'), footerLine(node, displayUrl)]
         .filter(Boolean)
         .join('\n\n'),
-    markdown: (node, { scope }) =>
-      [
-        chapterLine(node) ? `## ${chapterLine(node)}` : '',
+    markdown: (node, { scope }) => {
+      const footer = footerLine(node, (url) =>
+        markdownLink(displayUrl(url), url)
+      );
+      return [
         renderChildren(node.body, scope, 'markdown'),
+        footer && `_${footer}_`,
       ]
         .filter(Boolean)
-        .join('\n\n'),
-    slack: (node, { collector, scope }) => [
-      slackCaption(chapterLine(node)),
-      ...renderSlackChildren(node.body, scope, collector),
-    ],
+        .join('\n\n');
+    },
+    slack: (node, { collector, scope }) => {
+      const footer = footerLine(node, displayUrl);
+      return [
+        ...renderSlackChildren(node.body, scope, collector),
+        ...(footer ? [slackCaption(footer)] : []),
+      ];
+    },
   },
   children: (node) =>
     node.body.map((child, index) => ({
@@ -63,6 +84,17 @@ export const slideFramePrimitive = definePrimitive<SlideFrameNode>({
       path: `body[${index}]`,
     })),
   hasOwnContent: () => true,
+  sanitize: (node) => {
+    if (node.url === undefined) {
+      return node;
+    }
+    const url = sanitizeFrameUrl(node.url);
+    if (url) {
+      return { ...node, url };
+    }
+    const { url: _dropped, ...rest } = node;
+    return rest;
+  },
   metrics: {
     svgHeight: () => scalePx(SLIDE_THEME.frame.height),
   },

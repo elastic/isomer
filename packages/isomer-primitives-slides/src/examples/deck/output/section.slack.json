@@ -1,0 +1,26 @@
+[
+  {
+    "type": "header",
+    "text": {
+      "type": "plain_text",
+      "text": "02 · Settlement",
+      "emoji": true
+    }
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "1. Refunds settle in two days, not five\n2. The ledger writes before the fraud check\n3. Three batch windows are gone"
+    }
+  },
+  {
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "Crate · 02 Settlement · example.com/crate"
+      }
+    ]
+  }
+]

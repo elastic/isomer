@@ -13,13 +13,15 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideTranscript',
   purpose:
-    'Render a short conversation between a user, a model, and the host application.',
+    'Let the reader follow a short exchange between a person, a model, and the program hosting it, turn by turn.',
   useWhen: [
-    'A slide replays an agent exchange, a prompt and its answer, or a retry.',
+    'You are replaying what an assistant was asked, what it answered, and how the host responded.',
+    'The slide shows a retry: a bad answer, the error it got back, and the fixed answer.',
   ],
   avoidWhen: [
-    'The exchange needs more than eight turns.',
-    'Only one side speaks; use a code block or a bullet list.',
+    'Only one side speaks, as a snippet or an output; use slideCode.',
+    'The point is where the conversation happens, such as a chat app or a channel; wrap it in a slideWindow.',
+    'The exchange needs more than eight turns; split it across two slides, each with its own slideTranscript.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

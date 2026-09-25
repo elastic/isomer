@@ -12,8 +12,16 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideTitleNode}. */
 export const catalog = {
   type: 'slideTitle',
-  purpose: 'Render a presentation eyebrow, headline, and optional lede.',
-  useWhen: ['A slide needs its primary narrative statement.'],
-  avoidWhen: ['The content is body copy inside another component.'],
+  purpose:
+    'Introduce the deck’s subject by name, with its promise and, optionally, a diagram of what it does.',
+  useWhen: [
+    'Opening a deck; it is the only node in an inverse frame.',
+    'The subject has a short name worth setting very large.',
+  ],
+  avoidWhen: [
+    'The slide makes a claim mid-deck; use slideHeading in a page frame.',
+    'A chapter is starting; use slideSection.',
+    'The deck is ending; use slideClosing.',
+  ],
   example,
 } satisfies PrimitiveCatalogEntry;

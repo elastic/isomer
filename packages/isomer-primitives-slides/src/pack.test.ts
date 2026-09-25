@@ -89,10 +89,10 @@ describe('children declarations', () => {
     const frame: SlideFrameNode = {
       type: 'slideFrame',
       chapter: 'test',
-      footer: 'test',
+      url: 'https://example.com',
       body: [
-        { type: 'slideTitle', title: 'T1' },
-        { type: 'slideTitle', title: 'T2' },
+        { type: 'slideHeading', title: 'T1' },
+        { type: 'slideHeading', title: 'T2' },
       ],
     };
     const children = slideFramePrimitive.children?.(frame);
@@ -105,8 +105,8 @@ describe('children declarations', () => {
     const frame: SlideFrameNode = {
       type: 'slideFrame',
       chapter: 'c',
-      footer: 'f',
-      body: [{ type: 'slideTitle', title: 'T' }],
+      url: 'https://example.com',
+      body: [{ type: 'slideHeading', title: 'T' }],
     };
     expect(slideFramePrimitive.hasOwnContent?.(frame)).toBe(true);
   });
@@ -114,20 +114,20 @@ describe('children declarations', () => {
   it('slideSplit.children walks left and right', () => {
     const split: SlideSplitNode = {
       type: 'slideSplit',
-      left: [{ type: 'slideTitle', title: 'L' }],
-      right: [{ type: 'slideTitle', title: 'R' }],
+      left: { items: [{ type: 'slideHeading', title: 'L' }] },
+      right: { items: [{ type: 'slideHeading', title: 'R' }] },
     };
     const children = slideSplitPrimitive.children?.(split);
     expect(children).toHaveLength(2);
-    expect(children?.[0]?.path).toBe('left[0]');
-    expect(children?.[1]?.path).toBe('right[0]');
+    expect(children?.[0]?.path).toBe('left.items[0]');
+    expect(children?.[1]?.path).toBe('right.items[0]');
   });
 
   it('slideStack.children walks items', () => {
     const stack: SlideStackNode = {
       type: 'slideStack',
       items: [
-        { type: 'slideTitle', title: 'A' },
+        { type: 'slideHeading', title: 'A' },
         { type: 'slideBulletList', items: ['x'] },
       ],
     };
@@ -144,12 +144,16 @@ describe('children declarations', () => {
         {
           type: 'slideFrame',
           chapter: 'c',
-          footer: 'f',
+          url: 'https://example.com',
           body: [
             {
               type: 'slideSplit',
-              left: [{ type: 'slideTitle', id: 'dup', title: 'L' }],
-              right: [{ type: 'slideTitle', id: 'dup', title: 'R' }],
+              left: {
+                items: [{ type: 'slideHeading', id: 'dup', title: 'L' }],
+              },
+              right: {
+                items: [{ type: 'slideHeading', id: 'dup', title: 'R' }],
+              },
             },
           ],
         },
@@ -174,12 +178,12 @@ describe('RenderScope recursion', () => {
         {
           type: 'slideFrame',
           chapter: 'c',
-          footer: 'f',
+          url: 'https://example.com',
           body: [
             {
               type: 'slideSplit',
-              left: [{ type: 'slideTitle', title: 'Left' }],
-              right: [{ type: 'note', text: 'foreign node' }],
+              left: { items: [{ type: 'slideHeading', title: 'Left' }] },
+              right: { items: [{ type: 'note', text: 'foreign node' }] },
             },
           ],
         },
@@ -197,12 +201,12 @@ describe('RenderScope recursion', () => {
         {
           type: 'slideFrame',
           chapter: 'c',
-          footer: 'f',
+          url: 'https://example.com',
           body: [
             {
               type: 'slideSplit',
-              left: [{ type: 'slideTitle', title: 'Left' }],
-              right: [{ type: 'note', text: 'foreign-text-node' }],
+              left: { items: [{ type: 'slideHeading', title: 'Left' }] },
+              right: { items: [{ type: 'note', text: 'foreign-text-node' }] },
             },
           ],
         },
@@ -219,12 +223,12 @@ describe('RenderScope recursion', () => {
         {
           type: 'slideFrame',
           chapter: 'c',
-          footer: 'f',
+          url: 'https://example.com',
           body: [
             {
               type: 'slideSplit',
-              left: [{ type: 'slideTitle', title: 'Left' }],
-              right: [{ type: 'note', text: 'foreign-md-node' }],
+              left: { items: [{ type: 'slideHeading', title: 'Left' }] },
+              right: { items: [{ type: 'note', text: 'foreign-md-node' }] },
             },
           ],
         },
@@ -241,12 +245,12 @@ describe('RenderScope recursion', () => {
         {
           type: 'slideFrame',
           chapter: 'c',
-          footer: 'f',
+          url: 'https://example.com',
           body: [
             {
               type: 'slideStack',
               items: [
-                { type: 'slideTitle', title: 'Top' },
+                { type: 'slideHeading', title: 'Top' },
                 { type: 'note', text: 'foreign-svg' },
               ],
             },
@@ -264,13 +268,13 @@ describe('RenderScope recursion', () => {
 // ---------------------------------------------------------------------------
 
 describe('authoring schema descriptions', () => {
-  it('describes every field of the three container primitives', () => {
+  it('describes every field of every primitive', () => {
     const schema = buildAuthoringJsonSchema(slideDeckPrimitives) as {
       $defs?: Record<string, { properties?: Record<string, unknown> }>;
     };
     const defs = schema.$defs ?? {};
 
-    for (const type of ['slideFrame', 'slideSplit', 'slideStack']) {
+    for (const { type } of slideDeckPrimitives) {
       const properties = defs[type]?.properties ?? {};
       for (const [name, property] of Object.entries(properties)) {
         if (name === 'type') {
@@ -286,37 +290,114 @@ describe('authoring schema descriptions', () => {
 });
 
 // ---------------------------------------------------------------------------
-// slideTitle sanitize hook via scope (layer 3)
+// sanitize hooks via scope
 // ---------------------------------------------------------------------------
 
-describe('slideTitle sanitize via scope', () => {
-  it('sanitize hook fires on a slideTitle nested in slideFrame', () => {
+describe('sanitize via scope', () => {
+  it('drops an unsafe frame url', () => {
     const composition = {
       type: 'view' as const,
       body: [
         {
           type: 'slideFrame',
           chapter: 'c',
-          footer: 'f',
-          body: [
-            {
-              type: 'slideTitle',
-              title: 'Test',
-              lede: [
-                {
-                  type: 'link' as const,
-                  text: 'click',
-                  href: 'javascript:alert(1)',
-                },
-              ],
-            },
-          ],
+          url: 'javascript:alert(1)',
+          body: [{ type: 'slideHeading', title: 'Test' }],
         },
       ],
     };
     const node = runtime.surfaces.react.render(composition);
     const markup = renderToStaticMarkup(createElement(() => node));
-    // Blocked href replaces the javascript: URI
     expect(markup).not.toContain('javascript:');
+  });
+
+  it('drops a relative frame url', () => {
+    const composition = {
+      type: 'view' as const,
+      body: [
+        {
+          type: 'slideFrame',
+          url: 'developer.mozilla.org',
+          body: [{ type: 'slideHeading', title: 'Test' }],
+        },
+      ],
+    };
+    const node = runtime.surfaces.react.render(composition);
+    const markup = renderToStaticMarkup(createElement(() => node));
+    expect(markup).not.toContain('developer.mozilla.org');
+  });
+});
+
+describe('frame url', () => {
+  const withUrl = (url: string) => ({
+    type: 'view',
+    body: [
+      {
+        type: 'slideFrame',
+        url,
+        body: [{ type: 'slideHeading', title: 'Test' }],
+      },
+    ],
+  });
+
+  it.each(['https://example.com', 'http://example.com/deck'])(
+    'accepts %s',
+    (url) => {
+      expect(runtime.parse(withUrl(url)).valid).toBe(true);
+    }
+  );
+
+  it.each(['developer.mozilla.org', '/deck', 'mailto:a@example.com'])(
+    'rejects %s with a path-prefixed message',
+    (url) => {
+      const { valid, errors } = runtime.parse(withUrl(url));
+      expect(valid).toBe(false);
+      expect(errors).toContainEqual(
+        expect.objectContaining({
+          path: 'body[0].url',
+          message: expect.stringContaining(
+            'absolute http or https URL'
+          ) as unknown,
+        })
+      );
+    }
+  );
+});
+
+// ---------------------------------------------------------------------------
+// frames never nest
+// ---------------------------------------------------------------------------
+
+describe('frames never nest', () => {
+  const inner = {
+    type: 'slideFrame',
+    body: [{ type: 'slideHeading', title: 'Inner' }],
+  };
+  const slots = {
+    'body[0].body[0]': inner,
+    'body[0].body[0].left.items[0]': {
+      type: 'slideSplit',
+      left: { items: [inner] },
+      right: { items: ['Right'] },
+    },
+    'body[0].body[0].items[0]': { type: 'slideStack', items: [inner] },
+    'body[0].body[0].body[0]': {
+      type: 'slideWindow',
+      chrome: 'terminal',
+      title: 'Terminal',
+      body: [inner],
+    },
+    'body[0].body[0].aside': { type: 'slideTitle', title: 'T', aside: inner },
+  };
+
+  it.each(Object.entries(slots))('rejects a frame at %s', (path, node) => {
+    const { valid, errors } = runtime.parse({
+      type: 'view',
+      body: [{ type: 'slideFrame', body: [node] }],
+    });
+    expect(valid).toBe(false);
+    expect(
+      errors.filter(({ message }) => message.includes('frames never nest'))
+    ).toEqual([{ path, message: expect.any(String) as string }]);
   });
 });

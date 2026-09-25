@@ -41,16 +41,33 @@ runtime.surfaces.text.render(composition);
 
 | Type | Description |
 | --- | --- |
-| `slideFrame` | The 16:9 root node — topbar, body, footer. Required by the document. |
-| `slideSplit` | Two-column layout with optional width ratio. |
-| `slideStack` | Vertical stack with controlled spacing. |
-| `slideWindow` | Browser, terminal, Slack, or chat chrome around nested content. |
-| `slideBulletList` | Labeled bullet list with dot, check, or × markers. |
-| `slideCardGroup` | Grid of labeled cards with optional badges and tones. |
-| `slideCode` | Labeled code block with optional highlighted lines. |
-| `slideTable` | Headed grid of short text cells, with a native Slack `table` block. |
+| `slideFrame` | One 16:9 slide: body plus a footer line. `tone: 'inverse'` for title, section, and closing slides. Required by the document. |
+| `slideHeading` | The claim and lede every content slide opens with. |
+| `slideTitle` | The inverse title slide: eyebrow, display title, tagline, definition, and an `aside` node. |
+| `slideSection` | A section divider listing the section's slides, each a link on web surfaces. |
+| `slideClosing` | The inverse closing slide: live links and where to go next. |
+| `slideSplit` | Two full-height columns of strings or slide nodes, divided by a gap, a rule, or an arrow. |
+| `slideStack` | Nodes stacked vertically inside a split column or window. |
+| `slideWindow` | One title bar around nested content: a terminal, browser, Slack channel, or chat. |
+| `slideFanout` | One source branching to several targets. |
+| `slideTimeline` | Three to five points on a rail, one of them current. |
+| `slidePipeline` | Numbered steps on one rail, with optional spans bracketing who owns which steps. |
+| `slideLanes` | Two parallel paths converging on one node. |
+| `slideGraph` | A small fixed-layout diagram of terms and how they relate. |
+| `slideStat` | One large number with the sentence that explains it. |
+| `slideStats` | Two to four comparable numbers. |
+| `slideColumns` | Two to four parallel options with tags. |
+| `slideDefinitions` | Terms a reader must learn, each with its definition. |
+| `slideList` | Short facts, with optional mono terms. |
+| `slideBulletList` | A short unordered list with dot, check, or × markers. |
+| `slideTree` | A folder as a file tree, each entry described. |
+| `slideTable` | A headed grid of short cells, optionally grouped, with a native Slack `table` block. |
+| `slideCode` | One or two code panels; two show a trace with an arrow. |
 | `slideTranscript` | A short exchange between a user, a model, and the host. |
-| `slideFlow` | Horizontal sequence of labeled boxes connected by lines. |
-| `slideCycle` | A closed loop of steps around a ring, drawn in inline SVG. |
-| `slideTerritoryGroup` | Ownership annotations paired with accent colors. |
-| `slideTitle` | Eyebrow, headline, and optional lede with inline links. |
+| `slideTerritoryGroup` | Who owns what, color-keyed. |
+| `slideRender` | A real render of another slide or composition on one surface. |
+| `slideRenderGrid` | One composition rendered on several surfaces. |
+
+## Authoring with an agent
+
+`buildSlidesAuthoringPrompt()` returns the prompt a model needs to write slides with this pack: the guide (`slidesAuthoringGuide`), the rules (`slidesAuthoringRules`), every primitive's catalog entry, and the authoring JSON Schema. A host that composes other packs passes its runtime's `getAuthoringContext()` `schema` and `primitives` instead.

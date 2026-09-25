@@ -5,14 +5,16 @@
  * 2.0.
  */
 
-import { contextualVar, createDistillery } from '@elastic/distillate';
+import {
+  contextualVar,
+  createDistillery,
+  cssVarName,
+} from '@elastic/distillate';
 
 import { SLIDE_THEME } from './theme';
 
 /** Shared contextual CSS var for the active tone foreground color. */
 export const toneVar = contextualVar('vars/tone', '--slide-vars-tone');
-/** Shared contextual CSS var for the active tone background color. */
-export const toneBgVar = contextualVar('vars/toneBg', '--slide-vars-toneBg');
 
 /** Class name every deck root carries, and the theme's scope selector. */
 export const isomerDeckRoot = 'isomerDeckRoot';
@@ -21,11 +23,16 @@ export const isomerDeckRoot = 'isomerDeckRoot';
 const dev =
   typeof process !== 'undefined' && process.env.NODE_ENV !== 'production';
 
+const prefix = 'slide';
+
 /** Single distillate instance for all slide CSS modules. */
 export const slideDistillery = createDistillery({
   dev,
-  prefix: 'slide',
+  prefix,
   themeScope: `.${isomerDeckRoot}`,
-  sharedVars: ['vars/tone', 'vars/toneBg'],
+  sharedVars: ['vars/tone'],
   theme: SLIDE_THEME,
 });
+
+/** Custom-property name of a theme path, for a scope that redeclares it (e.g. an inverse frame). */
+export const themeVarName = (path: string): string => cssVarName(prefix, path);

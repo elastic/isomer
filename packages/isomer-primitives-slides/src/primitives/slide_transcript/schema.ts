@@ -18,12 +18,21 @@ const turnSchema = z
   .object({
     format: z
       .enum(slideTranscriptFormats)
-      .describe('`code` sets the text in monospace. Defaults to `prose`.')
+      .describe(
+        '`code` sets the text in monospace, for JSON, commands, and errors; `prose` sets it as sentences. Defaults to `prose`.'
+      )
       .optional(),
     role: z
       .enum(slideTranscriptRoles)
-      .describe('Who speaks: `user`, `model`, or the `host` application.'),
-    text: z.string().min(1).describe('What was said. Newlines are kept.'),
+      .describe(
+        'Who speaks: `user` (right-aligned), `model`, or the `host` application that runs the model.'
+      ),
+    text: z
+      .string()
+      .min(1)
+      .describe(
+        'What was said. Keep it to a sentence or a short line of code. Newlines are kept.'
+      ),
   })
   .strict();
 
@@ -36,7 +45,10 @@ export const schema = z
     type: z.literal('slideTranscript'),
     label: z
       .string()
-      .describe('Optional heading above the conversation.')
+      .min(1)
+      .describe(
+        'Short uppercase label above the conversation, e.g. what the exchange shows.'
+      )
       .optional(),
     turns: fromChildren(
       'slideTurn',
@@ -44,7 +56,7 @@ export const schema = z
         .array(turnSchema)
         .min(1)
         .max(8)
-        .describe('Turns in order. One to eight.'),
+        .describe('Turns in the order they happened. One to eight.'),
       { text: 'text' }
     ),
   })

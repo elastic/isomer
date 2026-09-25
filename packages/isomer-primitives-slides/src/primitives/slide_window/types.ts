@@ -10,14 +10,14 @@ import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import type { SlideContentNode } from '../../body_node';
 import type { SlideWindowChrome } from '../../theme/variants';
 
-/** Application chrome around nested slide content. */
+/** Nested slide content in one app's title bar. */
 export interface SlideWindowNode extends PrimitiveNode {
   /** Discriminator. Always `slideWindow`. */
   type: 'slideWindow';
-  /** The surround: `browser`, `terminal`, `slack`, or `chat`. */
+  /** The app the content appears in; only the title bar changes. */
   chrome: SlideWindowChrome;
-  /** Title bar text: a URL, a command, a channel, or a thread. */
+  /** Title bar text; for `slack`, the channel name without `#`. */
   title: string;
-  /** Nodes shown inside the window. At least one. */
+  /** Nodes shown inside the window. At least one; never another window. */
   body: readonly SlideContentNode[];
 }

@@ -12,8 +12,16 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideCodeNode}. */
 export const catalog = {
   type: 'slideCode',
-  purpose: 'Render a labeled code block.',
-  useWhen: ['A slide needs to show a code sample, schema, or command.'],
-  avoidWhen: ['The code would require more than 10 lines at readable size.'],
+  purpose:
+    'Show the reader real source, with the lines that matter marked, or trace one value from the file that sets it to the file that reads it.',
+  useWhen: [
+    'The point of the slide is a specific snippet: a config, a schema, a call, a command.',
+    'You want to show where a value is defined and where it is used, as two panels joined by an arrow.',
+  ],
+  avoidWhen: [
+    'The code is a back-and-forth between a person, a model, and a program; use slideTranscript.',
+    'The output belongs to a place, like a terminal or a Slack channel; put it in a slideWindow.',
+    'The snippet needs more than sixteen lines; cut it down, or name the files with slideTree.',
+  ],
   example,
 } satisfies PrimitiveCatalogEntry;

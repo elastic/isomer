@@ -13,70 +13,50 @@ import type {
   SlideRenderContext,
   SlideRenderScope,
 } from '../../render/context';
+import { LogoMark } from '../../render/logo';
 import { isomerDeckRoot, slideDistillery } from '../../theme/distillery';
-import { slideModules } from '../../theme/modules';
+import { deckRootModule } from '../../theme/modules';
+import { headingCrowding } from '../slide_heading/fit';
 
-import {
-  ELASTIC_LOGO_PATHS,
-  ELASTIC_LOGO_STROKE,
-  ISOMER_LOGO_PATHS,
-} from './logo_marks';
+import { frameModule } from './styles';
 import type { SlideFrameNode } from './types';
 
-const LogoMark = ({
-  small = false,
-  context,
-}: {
-  small?: boolean;
-  context: SlideRenderContext | undefined;
-}): ReactNode => {
-  const { handles: logo } = slideModules.logo;
-  return (
-    <svg
-      aria-hidden
-      className={cls(context, logo.logo, small ? logo.logoSmall : undefined)}
-      fill="none"
-      viewBox="0 0 32 32"
-      xmlns="http://www.w3.org/2000/svg">
-      {ISOMER_LOGO_PATHS.map(({ d, fill }, index) => (
-        <path key={index} {...{ d, fill }} />
-      ))}
-    </svg>
-  );
-};
+const { separator } = slideDistillery.tokens.frame;
 
-const ElasticLogoMark = ({
-  small = false,
+const Footer = ({
+  node,
   context,
 }: {
-  small?: boolean;
+  node: SlideFrameNode;
   context: SlideRenderContext | undefined;
 }): ReactNode => {
-  const { handles: logo } = slideModules.logo;
+  const { handles: frame } = frameModule;
+  const { brand, chapter, chapterNumber, url } = node;
+  const section = [chapterNumber, chapter].filter(Boolean).join(' ');
   return (
-    <svg
-      aria-hidden
-      className={cls(
-        context,
-        logo.elastic,
-        small ? logo.elasticSmall : undefined
+    <footer className={cls(context, frame.footer)}>
+      {section ? (
+        <div className={cls(context, frame.footerStart)}>
+          <LogoMark className={cls(context, frame.logo)} />
+          {brand ? (
+            <span className={cls(context, frame.brand)}>{brand}</span>
+          ) : null}
+          {brand ? <span>{separator.value}</span> : null}
+          <span>{section}</span>
+        </div>
+      ) : (
+        <span>{brand}</span>
       )}
-      fill="none"
-      viewBox="0 0 32 32"
-      xmlns="http://www.w3.org/2000/svg">
-      {ELASTIC_LOGO_PATHS.map((path, index) => (
-        <path
-          key={index}
-          d={path.d}
-          fill={path.fill}
-          {...ELASTIC_LOGO_STROKE}
-        />
-      ))}
-    </svg>
+      {url ? (
+        <a className={cls(context, frame.url)} href={url}>
+          {url.replace(/^https?:\/\//, '')}
+        </a>
+      ) : null}
+    </footer>
   );
 };
 
-/** React view for a {@link SlideFrameNode}, including chrome, body, and footer. */
+/** React view for a {@link SlideFrameNode}: body and footer on the fixed canvas. */
 export const SlideFrameView = ({
   node,
   context,
@@ -89,45 +69,28 @@ export const SlideFrameView = ({
   /** Dispatches nested body nodes on the React surface. */
   scope: SlideRenderScope;
 }): ReactNode => {
-  const layout = node.layout ?? 'content';
-  const { handles: frame } = slideModules.frame;
-  const { handles: deckRoot } = slideModules.deckRoot;
+  const { handles: frame } = frameModule;
+  const { handles: deckRoot } = deckRootModule;
+  const [first] = node.body;
+  const below: SlideRenderContext | undefined =
+    first?.type === 'slideHeading'
+      ? {
+          ...context,
+          crowding: headingCrowding(first),
+        }
+      : context;
   return (
     <div className={`${isomerDeckRoot} ${cls(context, deckRoot.root)}`}>
-      <section className={cls(context, frame.slide, frame.layout[layout])}>
-        <div className={cls(context, frame.frame, frame.layout[layout])}>
-          <header className={cls(context, frame.topbar)}>
-            <div className={cls(context, frame.brand)}>
-              <LogoMark context={context} />
-              {node.brand ? <span>{node.brand}</span> : null}
-            </div>
-            <div className={cls(context, frame.chapter)}>
-              {node.chapterNumber ? (
-                <span className={cls(context, frame.chapterNumber)}>
-                  {node.chapterNumber}
-                </span>
-              ) : null}
-              {node.chapterNumber
-                ? slideDistillery.tokens.frame.chapterSeparator.value
-                : null}
-              {node.chapter}
-            </div>
-          </header>
-          <main className={cls(context, frame.body)}>
-            {node.body.map((child, index) => (
-              <Fragment key={index}>
-                {scope.renderReact(child, context)}
-              </Fragment>
-            ))}
-          </main>
-          <footer className={cls(context, frame.footer)}>
-            <span className={cls(context, frame.footerBrand)}>
-              <ElasticLogoMark small context={context} />
-              {slideDistillery.tokens.frame.brandLabel.value}
-            </span>
-            <span>{node.footer}</span>
-          </footer>
-        </div>
+      <section
+        className={cls(context, frame.slide, frame.tone[node.tone ?? 'page'])}>
+        <main className={cls(context, frame.body)}>
+          {node.body.map((child, index) => (
+            <Fragment key={index}>
+              {scope.renderReact(child, index === 0 ? context : below)}
+            </Fragment>
+          ))}
+        </main>
+        <Footer {...{ node, context }} />
       </section>
     </div>
   );

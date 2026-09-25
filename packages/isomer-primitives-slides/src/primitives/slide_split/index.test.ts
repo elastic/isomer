@@ -1,0 +1,221 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+import { createIsomerRuntime } from '@elastic/isomer-runtime';
+import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
+import { describe, expect, it } from 'vitest';
+
+import { slideDeckFrame, slidesPack } from '../../pack';
+import { example as codeExample } from '../slide_code/examples';
+
+import { example, examples, mixedExample } from './examples';
+import { slideSplitPrimitive } from './index';
+import { schema } from './schema';
+import type { SlideSplitNode } from './types';
+
+const runtime = createIsomerRuntime({
+  packs: [slidesPack],
+  frames: { slide: slideDeckFrame },
+});
+
+const compose = (node: PrimitiveNode): Composition => ({
+  type: 'view',
+  body: [{ type: 'slideFrame', body: [node] } as PrimitiveNode],
+});
+
+/** Every string in Slack blocks, entity-decoded, so authored copy can be found in it. */
+const slackText = (value: unknown): string =>
+  JSON.stringify(value)
+    .match(/"(?:[^"\\]|\\.)*"/g)
+    ?.map((literal) => JSON.parse(literal) as string)
+    .join('\n')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&') ?? '';
+
+/** Keys whose values are enum choices, not authored copy. */
+const enumKeys = new Set([
+  'type',
+  'tone',
+  'ratio',
+  'divider',
+  'language',
+  'role',
+  'format',
+]);
+
+const authored = (value: unknown, key = ''): string[] => {
+  if (typeof value === 'string') {
+    return enumKeys.has(key) || value === '' ? [] : [value];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap((entry) => authored(entry));
+  }
+  if (value && typeof value === 'object') {
+    return Object.entries(value).flatMap(([k, v]) => authored(v, k));
+  }
+  return [];
+};
+
+describe('slideSplit schema', () => {
+  it('holds one to six items a side', () => {
+    expect(schema.safeParse({ ...example, left: { items: [] } }).success).toBe(
+      false
+    );
+    expect(
+      schema.safeParse({ ...example, left: { items: Array(7).fill('x') } })
+        .success
+    ).toBe(false);
+    expect(examples.every((node) => schema.safeParse(node).success)).toBe(true);
+  });
+
+  it('reports an invalid node item at its index', () => {
+    const { errors } = runtime.validate(
+      compose({
+        ...mixedExample,
+        right: {
+          items: ['One nightly run', { type: 'slideCode', panels: [] }],
+        },
+      } as PrimitiveNode)
+    );
+    expect(errors.map(({ path }) => path)).toContainEqual(
+      expect.stringMatching(/^body\[0\]\.body\[0\]\.right\.items\[1\]/)
+    );
+  });
+});
+
+describe('slideSplit children', () => {
+  it('yields node items at their index in items, skipping strings', () => {
+    expect(
+      slideSplitPrimitive.children?.(mixedExample).map(({ path }) => path)
+    ).toEqual(['right.items[1]']);
+  });
+
+  it('has its own content when it carries a string, label, or footnote', () => {
+    const nodesOnly: SlideSplitNode = {
+      type: 'slideSplit',
+      left: { items: [codeExample] },
+      right: { items: [codeExample] },
+    };
+    expect(slideSplitPrimitive.hasOwnContent?.(nodesOnly)).toBe(false);
+    expect(slideSplitPrimitive.hasOwnContent?.(example)).toBe(true);
+  });
+});
+
+describe('slideSplit output', () => {
+  it('lists each side under its label in text', () => {
+    expect(runtime.surfaces.text.renderNode(example)).toMatchInlineSnapshot(`
+      "Payments team
+      - Card capture
+      - Fraud scoring
+      - Settlement
+      - Refunds
+
+      Merchant
+      - Prices
+      - Stock
+      - Shipping
+      - Customer support
+
+      Because the line is fixed, a merchant can change prices without a payments release."
+    `);
+  });
+
+  it('renders markdown headings and bullets, and nodes as themselves', () => {
+    expect(runtime.surfaces.markdown.renderNode(mixedExample))
+      .toMatchInlineSnapshot(`
+        "## Before
+
+        - Five batch windows
+        - Manual retries
+
+        ## After
+
+        - One nightly run
+
+        **refund.ts**
+
+        \`\`\`ts
+        export const refund = async (order: Order) => {
+          await ledger.write(order.id, -order.total);
+          await fraud.check(order);
+          return notify(order.customer);
+        };
+        \`\`\`"
+      `);
+  });
+
+  it('renders Slack sections, and nodes through their own renderer', () => {
+    expect(runtime.surfaces.slack.render(compose(mixedExample)).blocks)
+      .toMatchInlineSnapshot(`
+      [
+        {
+          "text": {
+            "text": "*Before*
+      • Five batch windows
+      • Manual retries",
+            "type": "mrkdwn",
+          },
+          "type": "section",
+        },
+        {
+          "text": {
+            "text": " ",
+            "type": "mrkdwn",
+          },
+          "type": "section",
+        },
+        {
+          "text": {
+            "text": "*After*
+      • One nightly run",
+            "type": "mrkdwn",
+          },
+          "type": "section",
+        },
+        {
+          "text": {
+            "text": " ",
+            "type": "mrkdwn",
+          },
+          "type": "section",
+        },
+        {
+          "text": {
+            "text": "refund.ts
+      \`\`\`
+      export const refund = async (order: Order) => {
+        await ledger.write(order.id, -order.total);
+        await fraud.check(order);
+        return notify(order.customer);
+      };
+      \`\`\`",
+            "type": "mrkdwn",
+          },
+          "type": "section",
+        },
+      ]
+    `);
+  });
+
+  it.each(examples.map((node, index) => [index, node] as const))(
+    'keeps every authored string on every surface (example %i)',
+    (_index, node) => {
+      const composition = compose(node);
+      const outputs = [
+        runtime.surfaces.text.render(composition),
+        runtime.surfaces.markdown.render(composition),
+        slackText(runtime.surfaces.slack.render(composition).blocks),
+      ];
+      for (const value of authored(node)) {
+        for (const output of outputs) {
+          expect(output.toLowerCase()).toContain(value.toLowerCase());
+        }
+      }
+    }
+  );
+});

@@ -5,6 +5,14 @@
  * 2.0.
  */
 
+import {
+  bold,
+  codeBlock,
+  escapeMrkdwn,
+  type SlackBlock,
+} from '@elastic/isomer-sdk/slack';
+
+import { slackCaption } from '../../render';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -18,10 +26,10 @@ export type { SlideTranscriptNode, SlideTranscriptTurn } from './schema';
 const { roleLabel } = slideDistillery.tokens.transcript;
 
 /** Text renderer for {@link SlideTranscriptNode}. */
-export const text = (node: SlideTranscriptNode): string =>
+export const text = ({ label, turns }: SlideTranscriptNode): string =>
   [
-    node.label ?? '',
-    ...node.turns.map(({ role, text: said }) =>
+    label ?? '',
+    ...turns.map(({ role, text: said }) =>
       said.includes('\n')
         ? `${roleLabel[role].value}:\n${said}`
         : `${roleLabel[role].value}: ${said}`
@@ -36,10 +44,10 @@ const fenceFor = (code: string): string =>
   );
 
 /** Markdown renderer for {@link SlideTranscriptNode}. */
-export const markdown = (node: SlideTranscriptNode): string =>
+export const markdown = ({ label, turns }: SlideTranscriptNode): string =>
   [
-    node.label ? `### ${node.label}` : '',
-    ...node.turns.map(({ format, role, text: said }) => {
+    label ? `## ${label}` : '',
+    ...turns.map(({ format, role, text: said }) => {
       const speaker = `**${roleLabel[role].value}**`;
       if (format === 'code') {
         const fence = fenceFor(said);
@@ -51,6 +59,20 @@ export const markdown = (node: SlideTranscriptNode): string =>
     .filter(Boolean)
     .join('\n\n');
 
+/** Slack renderer for {@link SlideTranscriptNode}: one section per turn, speaker first. */
+export const slack = ({ label, turns }: SlideTranscriptNode): SlackBlock[] => [
+  ...(label ? [slackCaption(label, true)] : []),
+  ...turns.map(({ format, role, text: said }): SlackBlock => ({
+    type: 'section',
+    text: {
+      type: 'mrkdwn',
+      text: `${bold(roleLabel[role].value)}\n${
+        format === 'code' ? codeBlock(said) : escapeMrkdwn(said)
+      }`,
+    },
+  })),
+];
+
 /** Catalog, schema, and renderers for {@link SlideTranscriptNode}. */
 export const slideTranscriptPrimitive = definePrimitive({
   type: 'slideTranscript',
@@ -61,5 +83,6 @@ export const slideTranscriptPrimitive = definePrimitive({
     react,
     text,
     markdown,
+    slack,
   },
 });

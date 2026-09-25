@@ -13,13 +13,23 @@ import { slideToneSchema } from '../tone_schema';
 
 const territorySchema = z
   .object({
-    body: z.string().min(1).describe('Supporting copy under the title.'),
-    title: z.string().min(1).describe('Territory heading.'),
-    tone: slideToneSchema.describe('Accent applied to the title.').optional(),
+    body: z
+      .string()
+      .min(1)
+      .describe('What this owner is responsible for, in one or two sentences.'),
+    title: z
+      .string()
+      .min(1)
+      .describe('The owner, in one to three words, e.g. a team or a system.'),
+    tone: slideToneSchema
+      .describe(
+        'Color of the rule and title: `primary` for your side, `pink` for the other side (a host, a partner, a customer). Defaults to `primary`.'
+      )
+      .optional(),
   })
   .strict();
 
-/** One ownership note in a {@link SlideTerritoryGroupNode}. */
+/** One owner and its responsibilities in a {@link SlideTerritoryGroupNode}. */
 export type SlideTerritory = z.infer<typeof territorySchema>;
 
 /** Zod schema for {@link SlideTerritoryGroupNode}. */
@@ -31,11 +41,12 @@ export const schema = z
       z
         .array(territorySchema)
         .min(1)
-        .describe('Territories to list. At least one.'),
+        .max(4)
+        .describe('Owners, left to right, in equal columns. 1 to 4.'),
       { text: 'body' }
     ),
   })
   .strict();
 
-/** Ownership annotations paired with accent colors. */
+/** Who owns what, one color-keyed column per owner. */
 export type SlideTerritoryGroupNode = z.infer<typeof schema> & PrimitiveNode;

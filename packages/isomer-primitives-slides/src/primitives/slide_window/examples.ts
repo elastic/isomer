@@ -5,7 +5,8 @@
  * 2.0.
  */
 
-import { example as codeExample } from '../slide_code/examples';
+import { bareExample as codeExample } from '../slide_code/examples';
+import { example as tableExample } from '../slide_table/examples';
 import { plainExample as transcriptExample } from '../slide_transcript/examples';
 
 import type { SlideWindowNode } from './types';
@@ -13,8 +14,16 @@ import type { SlideWindowNode } from './types';
 /** Canonical {@link SlideWindowNode} example. */
 export const example: SlideWindowNode = {
   type: 'slideWindow',
+  chrome: 'slack',
+  title: 'checkout-oncall',
+  body: [tableExample],
+};
+
+/** A terminal. */
+export const terminalExample: SlideWindowNode = {
+  type: 'slideWindow',
   chrome: 'terminal',
-  title: 'isomer render --surface text',
+  title: '~/shop — release',
   body: [codeExample],
 };
 
@@ -22,7 +31,7 @@ export const example: SlideWindowNode = {
 export const chatExample: SlideWindowNode = {
   type: 'slideWindow',
   chrome: 'chat',
-  title: 'Agent',
+  title: 'Build assistant',
   body: [transcriptExample],
 };
 
@@ -30,22 +39,14 @@ export const chatExample: SlideWindowNode = {
 export const browserExample: SlideWindowNode = {
   type: 'slideWindow',
   chrome: 'browser',
-  title: 'elastic.github.io/isomer',
-  body: [codeExample],
-};
-
-/** A Slack channel. */
-export const slackExample: SlideWindowNode = {
-  type: 'slideWindow',
-  chrome: 'slack',
-  title: 'alerts',
-  body: [transcriptExample],
+  title: 'status.example.com/checkout',
+  body: [tableExample],
 };
 
 /** Conformance examples for {@link SlideWindowNode}. */
 export const examples: SlideWindowNode[] = [
   example,
+  terminalExample,
   chatExample,
   browserExample,
-  slackExample,
 ];

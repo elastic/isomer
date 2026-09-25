@@ -1,0 +1,36 @@
+[
+  {
+    "type": "header",
+    "text": {
+      "type": "plain_text",
+      "text": "Checkout held through the spring sale",
+      "emoji": true
+    }
+  },
+  {
+    "type": "section",
+    "fields": [
+      {
+        "type": "mrkdwn",
+        "text": "*3*\n*Regions*\nCheckout now runs active-active in each of them."
+      },
+      {
+        "type": "mrkdwn",
+        "text": "*40 ms*\n*p99 latency*\nMeasured at the edge during the spring sale peak."
+      },
+      {
+        "type": "mrkdwn",
+        "text": "*0*\n*Failed payments*\nAcross two regional failovers in the same week."
+      }
+    ]
+  },
+  {
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "Crate · 03 Platform · example.com/crate"
+      }
+    ]
+  }
+]

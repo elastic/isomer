@@ -12,13 +12,16 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideTableNode}. */
 export const catalog = {
   type: 'slideTable',
-  purpose: 'Render a headed grid of short text cells.',
+  purpose:
+    'Let the reader compare several items across the same attributes, reading across a row or down a column.',
   useWhen: [
-    'A slide compares several items across the same two to six attributes.',
+    'Every item has a value for the same two to six attributes, such as regions by orders, latency, and errors.',
+    'The items fall into a few named groups, such as required and optional services.',
   ],
   avoidWhen: [
-    'Cells need more than a short phrase; use a card group.',
-    'There are more than twelve rows.',
+    'Each item needs a title and a sentence rather than short cells; use slideColumns.',
+    'Each item is a name and one line about it; use slideList.',
+    'There are more than twelve rows; split them across two slides, each with its own slideTable.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

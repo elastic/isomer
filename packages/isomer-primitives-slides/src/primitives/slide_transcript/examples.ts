@@ -10,29 +10,37 @@ import type { SlideTranscriptNode } from './schema';
 /** Canonical {@link SlideTranscriptNode} example. */
 export const example: SlideTranscriptNode = {
   type: 'slideTranscript',
-  label: 'Retry loop',
+  label: 'Booking a delivery slot',
   turns: [
-    { role: 'user', text: 'How is checkout doing?' },
+    { role: 'user', text: 'Deliver my groceries tomorrow morning.' },
     {
       role: 'model',
       format: 'code',
-      text: '{ "type": "view", "body": [{ "type": "slideTitle" }] }',
+      text: '{"action":"book","window":"tomorrow"}',
     },
     {
       role: 'host',
       format: 'code',
-      text: 'body[0].title: expected string, received undefined',
+      text: 'window: expected a start and end time',
     },
-    { role: 'model', text: 'Retried with a title. It validates.' },
+    {
+      role: 'model',
+      format: 'code',
+      text: '{"action":"book","window":{"start":"08:00","end":"10:00"}}',
+    },
+    { role: 'host', text: 'Booked for 8 to 10 tomorrow.' },
   ],
 };
 
-/** No label, prose only. */
+/** No label, prose only, with a line break kept. */
 export const plainExample: SlideTranscriptNode = {
   type: 'slideTranscript',
   turns: [
-    { role: 'user', text: 'Show me the deck.' },
-    { role: 'model', text: 'Here is slide one.' },
+    { role: 'user', text: 'Why did the nightly build fail?' },
+    {
+      role: 'model',
+      text: 'The lockfile changed without a version bump.\nRun the install step again.',
+    },
   ],
 };
 
