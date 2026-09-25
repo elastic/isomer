@@ -142,7 +142,7 @@ Each primitive then names only `TNode`, and `createPrimitiveDispatcher<TNode, Sl
 
 `collectStyles` is the same shape: `(node, { styles, context })`. The dispatcher's `collectStyles(node, styles, context)` stays positional.
 
-`PrimitiveRenderContext` is `enhancements` and `onEvent`. CSS-in-JS lives on `StyledRenderContext` (`resolveClassName`, `cssVarRef`), which the HTML style adapter produces. A pack that styles differently declares its own `TContext`.
+`PrimitiveRenderContext` is `enhancements`, `anchors`, and `onEvent`. A renderer spreads `nodeAnchor(context, node)` on its root element so runtime code can find it; see [Node anchors](rendering.md#node-anchors). CSS-in-JS lives on `StyledRenderContext` (`resolveClassName`, `cssVarRef`), which the HTML style adapter produces. A pack that styles differently declares its own `TContext`.
 
 ## Why it is shaped this way
 

@@ -65,6 +65,8 @@ The script is a function body with `root`, the render's `.isomer` section, in sc
 
 The script must address markup through `data-*` attributes, never class names: class names are minified per render, so a selector written against one is a contract nothing checks. An event meant for the host sets `composed: true` as well as `bubbles: true`; `bubbles` alone stops at a shadow boundary.
 
+An enhancement the host drives, rather than one that runs in the page, omits `script`. One that finds nodes with `findNodeElements` declares `anchors: true`, so a render that resolves it carries [node anchors](rendering.md#node-anchors).
+
 ## `authoring`
 
 A pack's own contribution to the runtime's authoring JSON Schema: `describe` ($def id to description) and `omitProperties` ($defId.property paths to drop), scoped to this pack's own primitives:

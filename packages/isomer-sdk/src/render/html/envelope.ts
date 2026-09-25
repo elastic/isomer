@@ -40,7 +40,12 @@ import {
   wrapCompositionContent,
 } from '../react/content';
 
-import { embedScript, type EnhancementDefinition } from './enhancements';
+import {
+  embedScript,
+  type EnhancementDefinition,
+  rendersAnchors,
+  resolveEnhancements,
+} from './enhancements';
 
 /** Knobs for the HTML surface. Every field defaults, so `{}` is valid. */
 export interface HTMLRenderOptions {
@@ -74,6 +79,8 @@ export interface HTMLRenderOptions {
   onValidationError?: ValidationErrorMode;
   /** Opt-in by {@link EnhancementDefinition.id}. One whose content gate does not match the body is dropped. */
   enhancements?: readonly string[];
+  /** Renders node anchors whether or not an enhancement asks for them, e.g. for tests. */
+  anchors?: boolean;
   /** Opaque to the sdk; forwarded to {@link HTMLStyleAdapter} with the rest of the options. */
   adapterOptions?: Record<string, unknown>;
 }
@@ -281,6 +288,18 @@ export const renderHTMLWithDispatcher = <
     walk: createChildNodeWalker(dispatcher.definitions),
     definitions: enhancementDefinitions,
   };
+  const anchors = rendersAnchors(
+    resolveEnhancements(
+      composition.body,
+      options.enhancements,
+      enhancementScope.walk,
+      enhancementDefinitions
+    ),
+    enhancementDefinitions,
+    options.anchors
+  );
+  const anchored = (context: TContext): TContext =>
+    anchors ? { ...context, anchors } : context;
 
   if (styleState) {
     styleAdapter?.collectWrapperStyles?.(styleState, options);
@@ -292,10 +311,9 @@ export const renderHTMLWithDispatcher = <
       options,
       enhancementScope
     );
-    const collectionContext = styleAdapter?.createRenderContext(
-      styleState,
-      options
-    ) as TContext;
+    const collectionContext = anchored(
+      styleAdapter?.createRenderContext(styleState, options) as TContext
+    );
     renderToStaticMarkup(
       createElement(() =>
         renderCompositionContent(composition, dispatcher, collectionContext, {
@@ -306,11 +324,12 @@ export const renderHTMLWithDispatcher = <
     styleAdapter?.collectAfterRender?.(composition, styleState, options);
   }
 
-  const renderContext: TContext =
+  const renderContext: TContext = anchored(
     styleState && styleAdapter
       ? styleAdapter.createRenderContext(styleState, options)
       : // No adapter means no class names and no css vars to resolve.
-        ({} as TContext);
+        ({} as TContext)
+  );
   const cssText =
     styleState && styleAdapter
       ? styleAdapter.renderStyles(styleState, options)

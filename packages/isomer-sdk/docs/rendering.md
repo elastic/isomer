@@ -89,6 +89,20 @@ The mismatches that can be detected are reported. An embedded script that runs w
 
 `runEnhancementScript` compiles with `new Function`, so a strict Content-Security-Policy must allow `'unsafe-eval'`. A host that cannot should render with `'embedded'` into light DOM.
 
+An enhancement the host drives itself, rather than one that ships behavior in the page, has no `script`.
+
+## Node anchors
+
+Runtime code that acts on a rendered node, such as a host stepping through a slide's parts, finds its element through a node anchor. A `react` renderer spreads `nodeAnchor(context, node)` on its root element, which sets `data-isomer-node="<type>"`:
+
+```tsx
+react: (node, { context }) => <ol {...nodeAnchor(context, node)}>…</ol>,
+```
+
+Anchors render only when `context.anchors` is set, so a render nobody acts on carries none. The HTML surface sets it when a resolved enhancement declares `anchors: true`, or when a test asks with `anchors: true`. A React host sets it on the context it passes.
+
+`findNodeElements(root, composition.body, walk)` pairs each `react`-visible node with its element: the k-th node of a type, walked pre-order, is the k-th element anchored with that type in document order. A type whose counts disagree is left out, so the caller falls back to its baseline. For the pairing to hold, anything a renderer draws that is not one of its `children` must render with `anchors: false`.
+
 ## How Slack output is fitted
 
 `renderSlackEnvelope` always returns a postable payload, fitting the rendered blocks to Slack's limits (`SLACK_LIMITS`) in a fixed order:

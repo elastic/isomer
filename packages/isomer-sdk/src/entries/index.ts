@@ -105,11 +105,14 @@ export {
   type PayloadMeasurement,
   type PrimitiveDispatcher,
   type PrimitiveDispatcherOptions,
+  NODE_ANCHOR_ATTRIBUTE,
   byteLength,
   createPrimitiveDispatcher,
+  findNodeElements,
   formatCompactNumber,
   formatDisplayValue,
   isStructuredValue,
+  nodeAnchor,
   rawDisplayValue,
 } from '../render';
 export {

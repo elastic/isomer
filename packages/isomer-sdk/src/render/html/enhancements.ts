@@ -41,7 +41,7 @@ export const enhancementScript = (
 ): string =>
   definitions
     .filter((definition) => enhancements.has(definition.id))
-    .map((definition) => scopeScript(definition.script))
+    .flatMap(({ script }) => (script ? [scopeScript(script)] : []))
     .join('\n');
 
 /**
@@ -58,3 +58,12 @@ export const embedScript = (body: string): string =>
     body,
     '})(document.currentScript && document.currentScript.parentElement);',
   ].join('\n');
+
+/** Whether a render emits node anchors: asked for directly, or declared by a resolved enhancement. */
+export const rendersAnchors = (
+  enhancements: ReadonlySet<string>,
+  definitions: readonly EnhancementDefinition[],
+  requested = false
+): boolean =>
+  requested ||
+  definitions.some(({ id, anchors }) => anchors && enhancements.has(id));

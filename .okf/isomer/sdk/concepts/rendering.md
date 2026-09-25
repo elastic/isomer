@@ -16,6 +16,9 @@ sources:
   - id: envelope
     resource: https://github.com/elastic/isomer/blob/main/packages/isomer-sdk/src/render/html/envelope.ts
     title: HTML envelope
+  - id: anchors
+    resource: https://github.com/elastic/isomer/blob/main/packages/isomer-sdk/src/render/anchors.ts
+    title: Node anchors
 ---
 
 # Definition
@@ -23,6 +26,8 @@ sources:
 Renderers return envelopes, not bare strings or elements. HTML may run a style adapter and pack `collectStyles` hooks. `createDistillateHtmlStyleAdapter` publishes `DISTILLATE_STYLE_COLLECTOR`; combining adapters is the runtime's job.[^docs][^distillate-adapter]
 
 HTML returns `{ html, css, js, body, measurement, validationErrors }`. Every script it carries is a function body with `root`, the `.isomer` section, in scope, and each part runs in its own function. `scripts: 'embedded'` (the default) puts one `<script>` in `html` that binds `root` to its parent section. It never runs in a shadow root or when the host inserts `html` itself, so those hosts use `scripts: 'host'`: no `<script>`, and the host calls `runEnhancementScript(js, section)`. An embedded script with no root warns; `runEnhancementScript` throws `ENHANCEMENT_ROOT_MISSING` without a section and warns when the section also carries an embedded script. It uses `new Function`, so a strict CSP needs `'unsafe-eval'`.[^docs][^envelope]
+
+Node anchors let runtime code find a node's element. A `react` renderer spreads `nodeAnchor(context, node)` on its root; it sets `data-isomer-node="<type>"` only when `context.anchors` is set, which the HTML surface does when a resolved enhancement declares `anchors: true` or a test passes `anchors: true`. `findNodeElements` pairs nodes and elements by type and order. An enhancement the host drives has no `script`.[^docs][^anchors]
 
 URL-bearing fields go through one trust policy. See [URL trust](/sdk/concepts/url-trust.md).
 
@@ -33,3 +38,5 @@ Related: [dispatch](/sdk/concepts/dispatch.md), [packs](/sdk/concepts/packs.md),
 [^distillate-adapter]: Distillate HTML style adapter
 
 [^envelope]: HTML envelope
+
+[^anchors]: Node anchors
