@@ -137,6 +137,23 @@ describe('nodeAnchor', () => {
 });
 
 describe('html anchors', () => {
+  it('renders none unless asked, even when the adapter context says otherwise', () => {
+    const renderWith = (options: HTMLRenderOptions) =>
+      renderHTMLWithDispatcher(composition, {
+        dispatcher,
+        validate: valid,
+        options,
+        styleAdapter: {
+          createCollector: () => ({}),
+          createRenderContext: () => ({ anchors: true }),
+          renderStyles: () => '',
+        },
+      }).body;
+    expect(renderWith({})).not.toContain(NODE_ANCHOR_ATTRIBUTE);
+    expect(renderWith({ anchors: false })).not.toContain(NODE_ANCHOR_ATTRIBUTE);
+    expect(renderWith({ anchors: true })).toContain(NODE_ANCHOR_ATTRIBUTE);
+  });
+
   it('renders none by default', () => {
     expect(render().body).not.toContain(NODE_ANCHOR_ATTRIBUTE);
   });

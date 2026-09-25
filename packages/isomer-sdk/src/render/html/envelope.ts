@@ -298,8 +298,8 @@ export const renderHTMLWithDispatcher = <
     enhancementDefinitions,
     options.anchors
   );
-  const anchored = (context: TContext): TContext =>
-    anchors ? { ...context, anchors } : context;
+  // Overrides whatever the adapter's context says, so anchors stay opt-in.
+  const anchored = (context: TContext): TContext => ({ ...context, anchors });
 
   if (styleState) {
     styleAdapter?.collectWrapperStyles?.(styleState, options);
