@@ -54,14 +54,16 @@ enhancements: [
     id: 'tableSort',
     appliesTo: (body, walk) =>
       someBodyNode(body, 'react', (n) => (n as PrimitiveNode).type === 'table', walk),
-    script: '(() => { /* scoped to document.currentScript.parentElement */ })()',
+    script: `root.querySelectorAll('[data-sortable]').forEach(/* … */);`,
   },
 ],
 ```
 
 Ids are open strings rather than a closed union, so a second pack can register one without editing a shared type; a runtime rejects duplicate ids across packs. `appliesTo` receives the composition's child walker, so a match nested inside another pack's container is still found, and gating on content is what keeps a view with no matching node from shipping the script at all.
 
-The script must address markup through `data-*` attributes, never class names: class names are minified per render, so a selector written against one is a contract nothing checks.
+The script is a function body with `root`, the render's `.isomer` section, in scope. Each one runs in its own function, so two enhancements can declare the same `const` and a top-level `return` ends only its own script. It must not look for its root through `document.currentScript`, which is `null` inside a shadow root.
+
+The script must address markup through `data-*` attributes, never class names: class names are minified per render, so a selector written against one is a contract nothing checks. An event meant for the host sets `composed: true` as well as `bubbles: true`; `bubbles` alone stops at a shadow boundary.
 
 ## `authoring`
 

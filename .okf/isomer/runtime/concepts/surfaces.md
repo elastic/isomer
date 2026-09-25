@@ -20,7 +20,7 @@ sources:
 
 # Definition
 
-The runtime exposes `react`, `html`, `text`, `markdown`, `slack`, and `svg`. `html` returns `{ html, css, body, measurement, validationErrors }`. Putting that pair on a host page is a shadow-root recipe in the embedding doc: attach the stylesheet to the shadow root and set `:host { all: initial; display: block }`. The runtime ships no mount helper. `html` collects findings on `validationErrors`; `text`, `markdown`, `slack`, and `svg` throw `CompositionValidationError` by default, and `onValidationError: 'collect'` renders anyway.[^docs][^embedding]
+The runtime exposes `react`, `html`, `text`, `markdown`, `slack`, and `svg`. `html` returns `{ html, css, js, body, measurement, validationErrors }`. Putting that on a host page is a shadow-root recipe in the embedding doc: render with `css: 'separate'` and `scripts: 'host'`, attach the stylesheet to the shadow root, set `:host { all: initial; display: block }`, and run `js` with `runEnhancementScript` against the inserted `.isomer` section. The runtime ships no mount helper. `html` collects findings on `validationErrors`; `text`, `markdown`, `slack`, and `svg` throw `CompositionValidationError` by default, and `onValidationError: 'collect'` renders anyway.[^docs][^embedding]
 
 `slack.renderNode` returns the same `{ text, blocks, assets }` as `render`, with `collectAssets` and `assetPrefix` honoured. `react.renderNode` takes `ReactRenderNodeOptions`, which drops `heading`.[^docs]
 

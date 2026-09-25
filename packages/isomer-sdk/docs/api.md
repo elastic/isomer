@@ -70,13 +70,15 @@ Types: `ValidationError`, `ValidationResult`, `ValidationWarning`, `ValidationEr
 
 `displayValueSchema`, `structuredValueSchema`, `namedColorSchema`, `renderThemeSchema`, `formatDisplayValue` (with `FormatDisplayValueOptions`), `isStructuredValue`, `rawDisplayValue`, `STRUCTURED_VALUE_FORMATS`, `ALL_NAMED_COLORS`, `ISOMER_ERROR_CODES`, plus `formatCompactNumber` and `byteLength` (which measures into a `PayloadMeasurement`).
 
+`runEnhancementScript` takes a `scripts: 'host'` render's `js` and the `.isomer` section the host inserted, and runs the one against the other. It lives here rather than on `./html` because it needs only the DOM. See [Enhancements](rendering.md#enhancements).
+
 Value types: `DisplayValue`, `StructuredValue`, `StructuredValueFormat`, `NamedColor`, `NamedColorPalette`, `RenderTheme` (`'light' | 'dark' | 'auto'`).
 
 Zod helpers so a pack states constraints the same way everywhere: `z`, `enumOf`, `requiredString`, `optionalString`, `finiteNumber`, `nonNegativeFiniteNumber`, `positiveFiniteNumber`.
 
 ## `./html`
 
-`renderHTMLWithDispatcher`, `renderCompositionContent`, `useReactPrimitiveDispatcher`, `createDistillateHtmlStyleAdapter`, and the types a style adapter is written against: `HTMLStyleAdapter`, `DistillateHtmlEngine`, `DistillateThemeVar`, `HTMLRenderOptions`, `HTMLRenderResult`, `HTMLRenderDispatcher`, `HTMLDispatcherRenderOptions`, `HTMLEnhancementScope`, `EnhancementDefinition`, `ReactContentDispatcher`, `ReactContentOptions`. `HTMLRenderOptions.enhancements` is a list of enhancement ids; `resolveEnhancements` intersects it with what the body contains and `enhancementScript` concatenates the survivors' scripts. `DISTILLATE_STYLE_COLLECTOR` is the `styleCollector` tag the Distillate adapter publishes, and `flattenSchemeOption` reduces a Distillate light/dark scheme option to one value.
+`renderHTMLWithDispatcher`, `renderCompositionContent`, `useReactPrimitiveDispatcher`, `createDistillateHtmlStyleAdapter`, and the types a style adapter is written against: `HTMLStyleAdapter`, `DistillateHtmlEngine`, `DistillateThemeVar`, `HTMLRenderOptions`, `HTMLRenderResult`, `HTMLRenderDispatcher`, `HTMLDispatcherRenderOptions`, `HTMLEnhancementScope`, `EnhancementDefinition`, `ReactContentDispatcher`, `ReactContentOptions`. `HTMLRenderOptions.enhancements` is a list of enhancement ids; `resolveEnhancements` intersects it with what the body contains and `enhancementScript` concatenates the survivors' scripts, each in its own function scope. `DISTILLATE_STYLE_COLLECTOR` is the `styleCollector` tag the Distillate adapter publishes, and `flattenSchemeOption` reduces a Distillate light/dark scheme option to one value.
 
 ## `./react`
 

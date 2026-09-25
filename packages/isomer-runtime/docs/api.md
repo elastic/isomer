@@ -72,7 +72,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 
 | Type | Shape |
 | --- | --- |
-| `HTMLRenderResult` | `{ html, css, body, measurement, validationErrors }` |
+| `HTMLRenderResult` | `{ html, css, js, body, measurement, validationErrors }` |
 | `SlackRenderResult` | `{ text, blocks, assets }` |
 | `ValidationResult` | `{ valid, errors, warnings }` — each error is `{ path, message }` |
 | `ParsedComposition` | `{ valid, errors, composition? }` |

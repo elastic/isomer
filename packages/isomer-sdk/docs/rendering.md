@@ -24,13 +24,14 @@ The Slack envelope does the most. It emits a `header` block for the title and a 
 interface HTMLRenderResult {
   html: string;
   css: string;
+  js: string;
   body: string;
   measurement: PayloadMeasurement;
   validationErrors: ValidationError[];
 }
 ```
 
-`html` is the wrapper element plus content; `body` is the content alone; `css` is what the adapter emitted; `measurement` is the byte length of the markup, the stylesheet, the enhancement script, and their total, for a host that budgets payload size. Validation runs inside, per the caller's `onValidationError` mode, and the findings come back on the result as `validationErrors` (`{ path, message }` each) rather than being thrown by default.
+`html` is the wrapper element plus content; `body` is the content alone; `css` is what the adapter emitted; `js` is the enhancement script as a function body over `root` (see [Enhancements](#enhancements)); `measurement` is the byte length of the markup, the stylesheet, the enhancement script as delivered, and their total, for a host that budgets payload size. Validation runs inside, per the caller's `onValidationError` mode, and the findings come back on the result as `validationErrors` (`{ path, message }` each) rather than being thrown by default.
 
 `validate` defaults to `createCompositionValidator(dispatcher.definitions)`; pass one when validation needs options or a wider inventory.
 
@@ -51,7 +52,7 @@ CSS is not the SDK's. A pack supplies an `HTMLStyleAdapter`, and the SDK calls i
 | `createRenderContext`   | Builds the context every `react` renderer is handed                         |
 | `collectAfterRender?`   | After the tree is rendered                                                  |
 | `renderStyles`          | Emits the stylesheet                                                        |
-| `getScriptText?`        | Emits the progressive-enhancement script                                    |
+| `getScriptText?`        | Emits the progressive-enhancement script, a function body over `root`       |
 
 `createRenderContext` must return a complete context: the SDK does not fill fields in, because `TContext` is the pack's own type. The HTML adapter's default `TContext` is `StyledRenderContext` (`resolveClassName`, `cssVarRef`). `PrimitiveRenderContext` itself is only `enhancements` and `onEvent`.
 
@@ -72,6 +73,21 @@ context.enhancements?.has('tableSort');
 ```
 
 The baseline — empty or absent — has to answer the question on its own. An enhancement improves an answer that already works without it.
+
+### Who runs the script
+
+Every script, whether an enhancement's, the adapter's `getScriptText`, or the caller's `scriptText`, is a function body with `root`, the render's `.isomer` section, in scope. The `scripts` option decides who binds `root` and runs it:
+
+| `scripts`              | `html` carries                                                               | The host                                                                |
+| ---------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `'embedded'` (default) | A `<script>` that binds `root` to its parent section when the page parses it | Does nothing                                                            |
+| `'host'`               | No `<script>`                                                                | Calls `runEnhancementScript(result.js, section)` after inserting `html` |
+
+`'embedded'` only works where the browser parses the HTML with the page. It never runs inside a shadow root or anywhere the host inserts `html` itself: `innerHTML` and React never execute a `<script>`, and one that a loader did execute would find `document.currentScript` `null` in a shadow tree. Those hosts use `'host'`. `result.js` is the same body in both modes and runs only through `runEnhancementScript`, never as a `<script>` of its own.
+
+The mismatches that can be detected are reported. An embedded script that runs without a root warns. `runEnhancementScript` throws `ENHANCEMENT_ROOT_MISSING` when it is given no section, and warns when the section also carries an embedded script, which in light DOM would run every enhancement twice. An embedded script inserted with `innerHTML` never runs at all, so nothing can report it.
+
+`runEnhancementScript` compiles with `new Function`, so a strict Content-Security-Policy must allow `'unsafe-eval'`. A host that cannot should render with `'embedded'` into light DOM.
 
 ## How Slack output is fitted
 

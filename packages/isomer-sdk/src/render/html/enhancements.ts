@@ -29,7 +29,8 @@ export const resolveEnhancements = (
 
 /**
  * The script for a resolved enhancement set, deduplicated by id and emitted in
- * definition order so two enhancements cannot fight over ordering.
+ * definition order so two enhancements cannot fight over ordering. Each
+ * {@link EnhancementDefinition.script} gets its own function scope.
  */
 export const enhancementScript = (
   enhancements: ReadonlySet<string>,
@@ -37,5 +38,23 @@ export const enhancementScript = (
 ): string =>
   definitions
     .filter((definition) => enhancements.has(definition.id))
-    .map((definition) => definition.script)
+    .map((definition) => scopeScript(definition.script))
     .join('\n');
+
+/** Keeps a body's `const`s and a top-level `return` its own. */
+export const scopeScript = (body: string): string => `(() => {\n${body}\n})();`;
+
+/**
+ * Binds `root` to the section that contains the emitted `<script>`. Inside a
+ * shadow root `document.currentScript` is `null`, so there it warns instead.
+ */
+export const embedScript = (body: string): string =>
+  [
+    '(function (root) {',
+    'if (!root) {',
+    `console.warn("isomer: enhancement script has no root; render with scripts: 'host' and call runEnhancementScript");`,
+    'return;',
+    '}',
+    body,
+    '})(document.currentScript && document.currentScript.parentElement);',
+  ].join('\n');

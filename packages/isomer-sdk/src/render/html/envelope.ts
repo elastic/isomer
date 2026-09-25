@@ -23,6 +23,7 @@ import type {
   StyledRenderContext,
   StyleHandle,
 } from '../../define/primitive_module';
+import { EMBEDDED_SCRIPT_ATTRIBUTE } from '../../pack/enhancements';
 import {
   createCompositionValidator,
   enforceValidationMode,
@@ -36,7 +37,11 @@ import {
   wrapCompositionContent,
 } from '../react/content';
 
-import type { EnhancementDefinition } from './enhancements';
+import {
+  embedScript,
+  type EnhancementDefinition,
+  scopeScript,
+} from './enhancements';
 
 /** Knobs for the HTML surface. Every field defaults, so `{}` is valid. */
 export interface HTMLRenderOptions {
@@ -56,6 +61,16 @@ export interface HTMLRenderOptions {
   heading?: boolean;
   /** Whether the collected CSS is inlined as a `<style>` element. Defaults to `'inline'`. */
   css?: 'inline' | 'separate';
+  /**
+   * Who runs the enhancement script. Defaults to `'embedded'`: `html` carries
+   * a `<script>` that finds its own `.isomer` section when the page parses it.
+   *
+   * `'embedded'` never runs inside a shadow root, or anywhere the host inserts
+   * `html` itself (`innerHTML`, a React tree). Use `'host'` there: `html`
+   * carries no `<script>`, and the host calls `runEnhancementScript(js,
+   * section)` after inserting it.
+   */
+  scripts?: 'embedded' | 'host';
   /** Defaults to collecting into {@link HTMLRenderResult.validationErrors}; `'throw'` raises instead. */
   onValidationError?: ValidationErrorMode;
   /** Opt-in by {@link EnhancementDefinition.id}. One whose content gate does not match the body is dropped. */
@@ -67,14 +82,20 @@ export interface HTMLRenderOptions {
 /**
  * One rendered HTML payload.
  *
- * `body` is the primitive markup alone; `html` adds the wrapper element and, on
- * the default `css: 'inline'`, a `<style>`. `css` is populated either way.
+ * `body` is the primitive markup alone; `html` adds the wrapper element, on
+ * the default `css: 'inline'` a `<style>`, and on the default
+ * `scripts: 'embedded'` a `<script>`. `css` and `js` are populated either way.
  * `validationErrors` are the messages that survived
  * {@link HTMLRenderOptions.onValidationError}.
  */
 export interface HTMLRenderResult {
   html: string;
   css: string;
+  /**
+   * The enhancement script as a function body over `root`, or `''`. Runs only
+   * through `runEnhancementScript`, never as a `<script>` of its own.
+   */
+  js: string;
   body: string;
   measurement: PayloadMeasurement;
   validationErrors: ValidationError[];
@@ -182,7 +203,11 @@ export interface HTMLStyleAdapter<
    * cannot be combined with another.
    */
   ownsHandle?(handle: StyleHandle): boolean;
-  /** Appended after {@link HTMLDispatcherRenderOptions.scriptText} into the single emitted `<script>`. */
+  /**
+   * Appended after {@link HTMLDispatcherRenderOptions.scriptText} into the
+   * render's one script. A function body with `root` in scope, under the same
+   * rules as {@link EnhancementDefinition.script}.
+   */
   getScriptText?(
     composition: Composition<TNode>,
     options: HTMLRenderOptions,
@@ -203,7 +228,11 @@ export interface HTMLDispatcherRenderOptions<
   /** Used only when the composition has neither `meta.ariaLabel` nor a `title`. Defaults to `'View'`. */
   defaultAriaLabel?: string;
   styleAdapter?: HTMLStyleAdapter<TNode, TCollector, TContext>;
-  /** Emitted unescaped in the rendered `<script>`, ahead of {@link HTMLStyleAdapter.getScriptText}. */
+  /**
+   * Emitted unescaped ahead of {@link HTMLStyleAdapter.getScriptText}. A
+   * function body with `root` in scope, under the same rules as
+   * {@link EnhancementDefinition.script}.
+   */
   scriptText?: string;
   /**
    * Progressive enhancements declared by the packs this render was composed
@@ -247,6 +276,7 @@ export const renderHTMLWithDispatcher = <
   const heading = options.heading ?? true;
   const theme = options.theme ?? composition.theme ?? 'auto';
   const cssMode = options.css ?? 'inline';
+  const scriptsMode = options.scripts ?? 'embedded';
   const styleState = styleAdapter?.createCollector(options);
   const enhancementScope: HTMLEnhancementScope = {
     walk: createChildNodeWalker(dispatcher.definitions),
@@ -288,9 +318,12 @@ export const renderHTMLWithDispatcher = <
       : '';
   const adapterScriptText =
     styleAdapter?.getScriptText?.(composition, options, enhancementScope) ?? '';
-  const resolvedScriptText = [scriptText, adapterScriptText]
+  const js = [scriptText, adapterScriptText]
     .filter(Boolean)
+    .map(scopeScript)
     .join('\n');
+  const embeddedScript =
+    js && scriptsMode === 'embedded' ? embedScript(js) : '';
   const body = renderToStaticMarkup(
     createElement(() =>
       renderCompositionContent(composition, dispatcher, renderContext, {
@@ -305,26 +338,31 @@ export const renderHTMLWithDispatcher = <
       fluid: Boolean(options.fluid),
       framed,
       styleText: cssMode === 'inline' ? cssText : undefined,
-      scriptText: resolvedScriptText || undefined,
+      scriptText: embeddedScript || undefined,
       defaultAriaLabel,
       body,
     })
   );
   const html = options.minify === false ? raw : minifyHtml(raw);
 
+  const jsBytes = byteLength(embeddedScript || js);
+
   return {
     html,
     css: cssText,
+    js,
     body,
     measurement: {
       html:
         byteLength(html) -
         (cssMode === 'inline' ? byteLength(cssText) : 0) -
-        byteLength(resolvedScriptText),
+        (embeddedScript ? jsBytes : 0),
       css: byteLength(cssText),
-      js: byteLength(resolvedScriptText),
+      js: jsBytes,
       total:
-        byteLength(html) + (cssMode === 'inline' ? 0 : byteLength(cssText)),
+        byteLength(html) +
+        (cssMode === 'inline' ? 0 : byteLength(cssText)) +
+        (embeddedScript ? 0 : jsBytes),
     },
     validationErrors: validation.errors,
   };
@@ -368,6 +406,7 @@ const RenderedHtmlView = <TNode extends PrimitiveNode>({
       scriptText
         ? createElement('script', {
             key: 'script',
+            [EMBEDDED_SCRIPT_ATTRIBUTE]: '',
             dangerouslySetInnerHTML: { __html: scriptText },
           })
         : null

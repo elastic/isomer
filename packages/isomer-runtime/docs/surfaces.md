@@ -18,7 +18,7 @@ runtime.surfaces.slack.render(composition, { collectAssets: true });
 | `slack` | `{ text, blocks, assets }` | yes | `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
 | `svg` | `SvgRenderResult` | yes | `frame`, `width`, `height`, `theme`, `onValidationError` |
 
-`HTMLRenderResult` is `{ html, css, body, measurement, validationErrors }`. [Embedding](embedding.md) covers getting that pair onto a page a host already controls. The `svg` entry is `undefined` unless the runtime was given [frames](frame.md), and the factory's return type tracks which.
+`HTMLRenderResult` is `{ html, css, js, body, measurement, validationErrors }`. [Embedding](embedding.md) covers getting that pair onto a page a host already controls. The `svg` entry is `undefined` unless the runtime was given [frames](frame.md), and the factory's return type tracks which.
 
 All six are synchronous.
 
