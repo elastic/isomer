@@ -34,6 +34,7 @@ export type {
   HTMLRenderOptions,
   HTMLRenderResult,
   HTMLStyleAdapter,
+  HTMLStyleCollection,
   HtmlSurface,
 } from './surfaces/html';
 export type {

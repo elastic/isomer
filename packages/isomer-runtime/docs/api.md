@@ -51,7 +51,7 @@ Each exposes `render` and `renderNode`, plus a `validating` field stating its po
 | `slack` | `SlackRenderResult` | `SlackRenderResult` | `true` | `SlackRenderNodeOptions`: `text`, `collectAssets`, `assetPrefix` |
 | `svg` | `SvgRenderResult` | `SvgRenderResult` | `true` | `SvgRenderNodeOptions`: `frame`, `theme` |
 
-Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SvgSurface`; `RuntimeSurfaces` is the record of all six. `render` takes its surface's options type below. `SvgRenderResult` is `{ element, css, width, height }`. The `svg` surface additionally exposes `resolveViewport(composition, options?): { width, height }`, which takes `frame`, `width`, and `height`.
+Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SvgSurface`; `RuntimeSurfaces` is the record of all six. `render` takes its surface's options type below. `SvgRenderResult` is `{ element, css, width, height }`. The `svg` surface additionally exposes `resolveViewport(composition, options?): { width, height }`, which takes `frame`, `width`, and `height`. The `html` surface additionally exposes `createStyleCollection(composition, options?): HTMLStyleCollection`, `{ context, css() }`, for a host rendering React itself; see [Embedding](embedding.md#rendering-react-into-the-shadow-root).
 
 ### Options types
 
@@ -97,7 +97,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | View registry | `ViewRegistry`, `RegisteredView`, `RegisteredViewSummary`, `DefineViewOptions`, `ViewBuildArgs`, `ViewInput`, `ViewResponse`, `RegisteredViewInputError` |
 | Surfaces | `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SvgSurface` |
 | Options | `ReactRenderOptions`, `ReactRenderNodeOptions`, `ReactRenderArgs`, `HTMLRenderOptions`, `HTMLStyleAdapter`, `TextRenderOptions`, `MarkdownRenderOptions`, `SlackRenderOptions`, `SlackRenderNodeOptions`, `SvgRenderOptions`, `SvgRenderNodeOptions` |
-| Results | `HTMLRenderResult`, `SlackRenderResult`, `SvgRenderResult` |
+| Results | `HTMLRenderResult`, `HTMLStyleCollection`, `SlackRenderResult`, `SvgRenderResult` |
 | Errors | `IsomerError`, `IsomerErrorCode`, `ISOMER_ERROR_CODES` |
 
 `src/api_reference.test.ts` fails when a name exported from `src/index.ts` is missing from this page.

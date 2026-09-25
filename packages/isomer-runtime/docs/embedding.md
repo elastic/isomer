@@ -36,6 +36,23 @@ Both halves matter and they are not the same mechanism. The shadow boundary stop
 
 `display: block` is restated because `all: initial` resets `display` to `inline`, which is almost never what a rendered composition wants.
 
+## Rendering React into the shadow root
+
+A host that renders with React, to keep links and handlers live, can put the `react` surface's tree in the shadow root instead of the `html` string. It still needs the CSS the `html` surface would emit, and `createStyleCollection` collects it from that one React render rather than rendering the composition again for its styles:
+
+```tsx
+const styles = runtime.surfaces.html.createStyleCollection(composition, { theme });
+const node = runtime.surfaces.react.render(composition, {
+  context: styles.context,
+  wrapper: { theme },
+});
+
+// In a layout effect, once the portal into the shadow root has rendered:
+styleElement.textContent = `:host { all: initial; display: block; }\n${styles.css()}`;
+```
+
+`context` records every style the renderers use, so `css()` read after that render equals `html.render(composition, { css: 'separate' }).css`. Read it in a layout effect and the styles land before the first paint. A host with its own render context spreads both: `{ ...hostContext, ...styles.context }`. A subtree that suspends records its styles after `css()` was read, so this holds for trees that render without suspending.
+
 ## When not to bother
 
 Isolation costs something. Inside a shadow root the composition no longer inherits the host's font stack or color scheme, so one that is *meant* to look like part of the surrounding page needs those passed in deliberately — through the render `theme` option, or as custom properties set on the host element, which do cross the boundary.

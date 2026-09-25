@@ -9,6 +9,7 @@ export {
   type HTMLRenderOptions,
   type HTMLRenderResult,
   type HTMLStyleAdapter,
+  type HTMLStyleCollection,
   type HtmlSurface,
   createHtmlSurface,
 } from './html';
