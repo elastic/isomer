@@ -54,7 +54,7 @@ CSS is not the SDK's. A pack supplies an `HTMLStyleAdapter`, and the SDK calls i
 | `renderStyles`          | Emits the stylesheet                                                        |
 | `getScriptText?`        | Emits the progressive-enhancement script, a function body over `root`       |
 
-`createRenderContext` must return a complete context: the SDK does not fill fields in, because `TContext` is the pack's own type. The HTML adapter's default `TContext` is `StyledRenderContext` (`resolveClassName`, `cssVarRef`). `PrimitiveRenderContext` itself is only `enhancements` and `onEvent`.
+`createRenderContext` must return a complete context, because `TContext` is the pack's own type. The HTML surface never writes to it, so a frozen or class-instance context keeps its identity and private state. Whether renderers emit [node anchors](#node-anchors) during an HTML render is the surface's decision, whatever the context's `anchors` says. The HTML adapter's default `TContext` is `StyledRenderContext` (`resolveClassName`, `cssVarRef`). `PrimitiveRenderContext` itself is `enhancements`, `anchors`, and `onEvent`.
 
 A pack that authors its CSS with [Distillate](https://elastic.github.io/distillate/), Elastic's typed CSS engine with render-driven style collection, does not write those hooks by hand. `createDistillateHtmlStyleAdapter(distillery)` is the adapter: record handles during render, emit their stylesheet. Put it on `definePrimitivePack({ styleAdapter })` so a host gets it without asking. The SDK does not depend on Distillate; the helper is duck-typed against `artifactCollector`, `renderStyles`, and `registry`.
 
@@ -66,7 +66,7 @@ The wrapper hook is named for the wrapper rather than the SVG frame. The documen
 
 ## Enhancements
 
-A progressive enhancement is an id, a content gate, and a script. `resolveEnhancements(body, requested, walk, definitions)` intersects what the host asked for with what the composition actually contains, so a composition with no table never ships the sort script. The host opts in by id: `enhancements: ['tableSort']`. The resolved set reaches renderers as `context.enhancements`, a set rather than a field per feature, so adding one costs no plumbing:
+A progressive enhancement is an id, a content gate, and usually a script. `resolveEnhancements(body, requested, walk, definitions)` intersects what the host asked for with what the composition actually contains, so a composition with no table never ships the sort script. The host opts in by id: `enhancements: ['tableSort']`. The resolved set reaches renderers as `context.enhancements`, a set rather than a field per feature, so adding one costs no plumbing:
 
 ```ts
 context.enhancements?.has('tableSort');
@@ -88,6 +88,20 @@ Every script, whether an enhancement's, the adapter's `getScriptText`, or the ca
 The mismatches that can be detected are reported. An embedded script that runs without a root warns. `runEnhancementScript` throws `ENHANCEMENT_ROOT_MISSING` when it is given no section, and warns when the section also carries an embedded script, which in light DOM would run every enhancement twice. An embedded script inserted with `innerHTML` never runs at all, so nothing can report it.
 
 `runEnhancementScript` compiles with `new Function`, so a strict Content-Security-Policy must allow `'unsafe-eval'`. A host that cannot should render with `'embedded'` into light DOM.
+
+An enhancement the host drives itself, rather than one that ships behavior in the page, has no `script`.
+
+## Node anchors
+
+Runtime code that acts on a rendered node, such as a host stepping through a slide's parts, finds its element through a node anchor. A `react` renderer spreads `nodeAnchor(context, node)` on its root element, which sets `data-isomer-node` to the node's type, escaped so HTML parsing leaves it unchanged (`anchorValue(type)`; a plain identifier is unchanged):
+
+```tsx
+react: (node, { context }) => <ol {...nodeAnchor(context, node)}>…</ol>,
+```
+
+Anchors render only when something needs them, so a render nobody acts on carries none. During an HTML render the surface decides, for the whole synchronous render and without touching the render context: anchors are on when a resolved enhancement declares `anchors: true`, or when a test passes the `anchors: true` render option, and off otherwise, whatever the context's `anchors` says. `anchors: false` cannot turn off anchors an enhancement needs. Outside an HTML render, on the React and `svg` surfaces, the context's own `anchors` decides: a React host turns them on with `anchors: true` on the context it passes.
+
+`findNodeElements(root, composition.body, walk)` pairs each `react`-visible node with its element: the k-th node of a type, walked pre-order, is the k-th element anchored with that type in document order. `root` holds one render. A type whose counts disagree, for instance because one of its nodes rendered nothing, is left out, so the caller falls back to its baseline. For the pairing to hold, a container draws its `children` in the order its definition returns them, and anything a renderer draws that is not one of its `children` renders with `withoutAnchors(context)`. It returns a view of the context, not a copy, so methods, getters, private state, and `instanceof` keep working; anchors are off for that subtree, and the mark survives contexts derived from it by spreading.
 
 ## How Slack output is fitted
 

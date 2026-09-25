@@ -41,7 +41,7 @@ export const enhancementScript = (
 ): string =>
   definitions
     .filter((definition) => enhancements.has(definition.id))
-    .map((definition) => scopeScript(definition.script))
+    .flatMap(({ script }) => (script ? [scopeScript(script)] : []))
     .join('\n');
 
 /**
@@ -58,3 +58,25 @@ export const embedScript = (body: string): string =>
     body,
     '})(document.currentScript && document.currentScript.parentElement);',
   ].join('\n');
+
+/**
+ * Whether a render emits node anchors: asked for with `anchors: true`, or
+ * declared by a requested enhancement that applies to `body`. `anchors: false`
+ * cannot turn off anchors an enhancement needs.
+ */
+export const rendersAnchors = (
+  body: readonly PrimitiveNode[],
+  {
+    anchors,
+    enhancements,
+  }: { anchors?: boolean; enhancements?: readonly string[] },
+  walk: ChildNodeWalker,
+  definitions: readonly EnhancementDefinition[]
+): boolean =>
+  anchors === true ||
+  resolveEnhancements(
+    body,
+    enhancements,
+    walk,
+    definitions.filter((definition) => definition.anchors)
+  ).size > 0;

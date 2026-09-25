@@ -33,6 +33,7 @@ import {
   type ValidationErrorMode,
   type ValidationResult,
 } from '../../validate/validation';
+import { withAnchors } from '../anchors';
 import { byteLength, type PayloadMeasurement } from '../payload';
 import {
   type ReactContentDispatcher,
@@ -40,7 +41,11 @@ import {
   wrapCompositionContent,
 } from '../react/content';
 
-import { embedScript, type EnhancementDefinition } from './enhancements';
+import {
+  embedScript,
+  type EnhancementDefinition,
+  rendersAnchors,
+} from './enhancements';
 
 /** Knobs for the HTML surface. Every field defaults, so `{}` is valid. */
 export interface HTMLRenderOptions {
@@ -74,6 +79,8 @@ export interface HTMLRenderOptions {
   onValidationError?: ValidationErrorMode;
   /** Opt-in by {@link EnhancementDefinition.id}. One whose content gate does not match the body is dropped. */
   enhancements?: readonly string[];
+  /** `true` renders node anchors whether or not an enhancement asks for them, e.g. for tests. `false` cannot turn off anchors an enhancement needs. */
+  anchors?: boolean;
   /** Opaque to the sdk; forwarded to {@link HTMLStyleAdapter} with the rest of the options. */
   adapterOptions?: Record<string, unknown>;
 }
@@ -184,8 +191,9 @@ export interface HTMLStyleAdapter<
   /**
    * Builds the render context handed to every `react` renderer. Called once
    * per pass, so an adapter that behaves differently while collecting returns
-   * a different context then. Must be complete: the sdk does not fill fields
-   * in, because `TContext` is the pack's own type.
+   * a different context then. Must be complete, because `TContext` is the
+   * pack's own type. The sdk never writes to it: whether renderers anchor
+   * is the surface's decision, whatever the context's `anchors` says.
    */
   createRenderContext(
     collector: TCollector,
@@ -281,6 +289,12 @@ export const renderHTMLWithDispatcher = <
     walk: createChildNodeWalker(dispatcher.definitions),
     definitions: enhancementDefinitions,
   };
+  const anchors = rendersAnchors(
+    composition.body,
+    options,
+    enhancementScope.walk,
+    enhancementDefinitions
+  );
 
   if (styleState) {
     styleAdapter?.collectWrapperStyles?.(styleState, options);
@@ -296,11 +310,13 @@ export const renderHTMLWithDispatcher = <
       styleState,
       options
     ) as TContext;
-    renderToStaticMarkup(
-      createElement(() =>
-        renderCompositionContent(composition, dispatcher, collectionContext, {
-          heading,
-        })
+    withAnchors(anchors, () =>
+      renderToStaticMarkup(
+        createElement(() =>
+          renderCompositionContent(composition, dispatcher, collectionContext, {
+            heading,
+          })
+        )
       )
     );
     styleAdapter?.collectAfterRender?.(composition, styleState, options);
@@ -323,11 +339,13 @@ export const renderHTMLWithDispatcher = <
     .join('\n');
   const embeddedScript =
     js && scriptsMode === 'embedded' ? embedScript(js) : '';
-  const body = renderToStaticMarkup(
-    createElement(() =>
-      renderCompositionContent(composition, dispatcher, renderContext, {
-        heading,
-      })
+  const body = withAnchors(anchors, () =>
+    renderToStaticMarkup(
+      createElement(() =>
+        renderCompositionContent(composition, dispatcher, renderContext, {
+          heading,
+        })
+      )
     )
   );
   const raw = renderToStaticMarkup(

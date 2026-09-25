@@ -15,6 +15,7 @@ export {
 export {
   type EnhancementDefinition,
   enhancementScript,
+  rendersAnchors,
   resolveEnhancements,
 } from './enhancements';
 export {

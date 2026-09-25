@@ -105,12 +105,17 @@ export {
   type PayloadMeasurement,
   type PrimitiveDispatcher,
   type PrimitiveDispatcherOptions,
+  NODE_ANCHOR_ATTRIBUTE,
+  anchorValue,
   byteLength,
   createPrimitiveDispatcher,
+  findNodeElements,
   formatCompactNumber,
   formatDisplayValue,
   isStructuredValue,
+  nodeAnchor,
   rawDisplayValue,
+  withoutAnchors,
 } from '../render';
 export {
   type AuthoringJsonSchemaOptions,

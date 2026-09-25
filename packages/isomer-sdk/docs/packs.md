@@ -46,7 +46,7 @@ It is declared here because it is a fact about the vocabulary. A host composing 
 
 ## `enhancements`
 
-Progressive enhancements the HTML surface may apply, each an id, a content gate, and a script:
+Progressive enhancements the HTML surface may apply, each an id, a content gate, and usually a script:
 
 ```ts
 enhancements: [
@@ -64,6 +64,8 @@ Ids are open strings rather than a closed union, so a second pack can register o
 The script is a function body with `root`, the render's `.isomer` section, in scope. Each one runs in its own function, so two enhancements can declare the same `const` and a top-level `return` ends only its own script. It must not look for its root through `document.currentScript`, which is `null` inside a shadow root.
 
 The script must address markup through `data-*` attributes, never class names: class names are minified per render, so a selector written against one is a contract nothing checks. An event meant for the host sets `composed: true` as well as `bubbles: true`; `bubbles` alone stops at a shadow boundary.
+
+An enhancement the host drives, rather than one that runs in the page, omits `script`. One that finds nodes with `findNodeElements` declares `anchors: true`, so a render that resolves it carries [node anchors](rendering.md#node-anchors).
 
 ## `authoring`
 

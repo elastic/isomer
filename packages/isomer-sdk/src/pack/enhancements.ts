@@ -31,7 +31,8 @@ export interface EnhancementDefinition {
   /**
    * A function body with `root: Element`, the render's `.isomer` section, in
    * scope. It runs in its own function, so a top-level `const` or `return`
-   * cannot reach another enhancement.
+   * cannot reach another enhancement. Absent when the host drives the
+   * enhancement itself.
    *
    * It must not look for its root through `document.currentScript`, which is
    * `null` inside a shadow root. It must address markup through `data-*`
@@ -40,7 +41,9 @@ export interface EnhancementDefinition {
    * meant for the host sets `composed: true` as well as `bubbles: true`, or it
    * stops at a shadow boundary.
    */
-  script: string;
+  script?: string;
+  /** Renders node anchors when resolved, for an enhancement that finds nodes with `findNodeElements`. */
+  anchors?: true;
 }
 
 /**

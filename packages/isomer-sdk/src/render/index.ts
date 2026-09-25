@@ -6,6 +6,13 @@
  */
 
 export {
+  NODE_ANCHOR_ATTRIBUTE,
+  anchorValue,
+  findNodeElements,
+  nodeAnchor,
+  withoutAnchors,
+} from './anchors';
+export {
   type FormatDisplayValueOptions,
   formatDisplayValue,
   isStructuredValue,

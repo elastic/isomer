@@ -73,6 +73,8 @@ export interface PrimitiveRenderContext {
    * still answer the question on its own. See `docs/rendering.md`.
    */
   enhancements?: ReadonlySet<string>;
+  /** Turns on `nodeAnchor` outside an HTML surface render, on the React and `svg` surfaces; inside one, the surface decides. */
+  anchors?: boolean;
   /** Raises an interaction for the host to route. Absent means render non-interactively. */
   onEvent?: (event: ActionEventRef) => void;
 }
@@ -408,7 +410,10 @@ export interface PrimitiveDefinition<
    * renderer invoked directly still cannot emit an unsafe URL.
    */
   sanitize?: (node: TNode) => TNode | null;
-  /** Nested nodes, for containers. Absent means a leaf. */
+  /**
+   * Nested nodes, for containers, in the order the `react` renderer draws
+   * them; `findNodeElements` relies on it. Absent means a leaf.
+   */
   children?: (node: TNode) => readonly PrimitiveChildRef[];
   /**
    * True when this node produces surface output of its own, not only via
