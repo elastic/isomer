@@ -39,11 +39,21 @@ jobs:
       actions: read
     env:
       PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
-      PR_STATE: ${{ github.event.workflow_run.pull_requests[0].state }}
     steps:
       - uses: actions/checkout@v5
+      - name: Determine current PR state
+        # workflow_run.pull_requests carries only the minimal PR record
+        # (url/id/number/head/base) -- no state -- so ask the API for it in
+        # this trusted job rather than trusting anything from the triggering
+        # (PR-branch-controlled) run.
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          state="$(gh api "repos/${{ github.repository }}/pulls/${{ env.PR_NUMBER }}" --jq .state)"
+          echo "state=$state" >> "$GITHUB_OUTPUT"
       - name: Download built site
-        if: env.PR_STATE == 'open'
+        if: steps.pr.outputs.state == 'open'
         uses: actions/download-artifact@v4
         with:
           name: site
@@ -51,7 +61,7 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Download Pages metadata
-        if: env.PR_STATE == 'open'
+        if: steps.pr.outputs.state == 'open'
         uses: actions/download-artifact@v4
         with:
           name: pages-meta
@@ -60,13 +70,34 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Compute combined pages-base-url
         id: base
-        if: env.PR_STATE == 'open'
+        if: steps.pr.outputs.state == 'open'
         run: |
-          source pages-meta.env
+          # pages-meta.env came from an artifact the PR branch's own
+          # (unprivileged) build job produced -- parse it as plain data,
+          # never `source`/`eval` it, since this job is the trusted,
+          # privileged one and that content must not run as code here.
+          host=""
+          path=""
+          while IFS='=' read -r key value; do
+            case "$key" in
+              host) host="$value" ;;
+              path) path="$value" ;;
+            esac
+          done < pages-meta.env
+
+          if [[ -n "$host" && ! "$host" =~ ^[A-Za-z0-9.-]+$ ]]; then
+            echo "::error::unexpected characters in Pages host: $host"
+            exit 1
+          fi
+          if [[ -n "$path" && ! "$path" =~ ^[A-Za-z0-9._/-]+$ ]]; then
+            echo "::error::unexpected characters in Pages path: $path"
+            exit 1
+          fi
+
           # pr-preview-action checks that pages-base-path literally prefixes
           # where it deploys (umbrella-dir/pr-<n>, always relative to the
           # branch root) and silently ignores it otherwise -- our content is
-          # never nested under a nested path on the branch itself, so a
+          # never nested under a matching path on the branch itself, so a
           # separate pages-base-path would always fail that check. Fold the
           # path into pages-base-url instead, which is used as a plain
           # string prefix with no such validation.
@@ -77,10 +108,10 @@ jobs:
         # a copy nested under pr-preview/pr-<n>/ has no effect. The main
         # publish job seeds this too, but that only runs once something
         # merges to main, which previews can't wait on.
-        if: env.PR_STATE == 'open'
+        if: steps.pr.outputs.state == 'open'
         run: mkdir -p /tmp/nojekyll-only && touch /tmp/nojekyll-only/.nojekyll
       - uses: peaceiris/actions-gh-pages@v4
-        if: env.PR_STATE == 'open'
+        if: steps.pr.outputs.state == 'open'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: /tmp/nojekyll-only
@@ -91,5 +122,5 @@ jobs:
           source-dir: site
           umbrella-dir: pr-preview
           pr-number: ${{ env.PR_NUMBER }}
-          action: ${{ env.PR_STATE == 'open' && 'deploy' || 'remove' }}
+          action: ${{ steps.pr.outputs.state == 'open' && 'deploy' || 'remove' }}
           pages-base-url: ${{ steps.base.outputs.url }}
