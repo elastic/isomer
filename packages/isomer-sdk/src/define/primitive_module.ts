@@ -410,7 +410,10 @@ export interface PrimitiveDefinition<
    * renderer invoked directly still cannot emit an unsafe URL.
    */
   sanitize?: (node: TNode) => TNode | null;
-  /** Nested nodes, for containers. Absent means a leaf. */
+  /**
+   * Nested nodes, for containers, in the order the `react` renderer draws
+   * them; `findNodeElements` relies on it. Absent means a leaf.
+   */
   children?: (node: TNode) => readonly PrimitiveChildRef[];
   /**
    * True when this node produces surface output of its own, not only via

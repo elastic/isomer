@@ -232,26 +232,13 @@ const renderedClassNames = (html: string): string[] => {
   return [...classNames].sort();
 };
 
-const htmlEntities: Readonly<Record<string, string>> = {
-  amp: '&',
-  quot: '"',
-  lt: '<',
-  gt: '>',
-  '#x27': "'",
-  '#39': "'",
-};
-
-/** How many times each node anchor value appears in serialized `html`, entities decoded. */
+/** How many times each node anchor value appears in serialized `html`. */
 const renderedAnchors = (html: string): Map<string, number> => {
   const counts = new Map<string, number>();
-  for (const [, raw] of html.matchAll(
+  for (const [, value] of html.matchAll(
     new RegExp(`${NODE_ANCHOR_ATTRIBUTE}="([^"]*)"`, 'g')
   )) {
-    const type = raw!.replace(
-      /&(amp|quot|lt|gt|#x27|#39);/g,
-      (_, entity: string) => htmlEntities[entity]!
-    );
-    counts.set(type, (counts.get(type) ?? 0) + 1);
+    counts.set(value!, (counts.get(value!) ?? 0) + 1);
   }
   return counts;
 };

@@ -231,7 +231,7 @@ describe('findNodeElements', () => {
 });
 
 /** A valid type that is neither selector-safe nor HTML-safe. */
-const oddType = `a"b&<c>'d\r\n\0e`;
+const oddType = `a"b&<c>'d\r\n\0e\uD800f`;
 
 interface OddNode extends PrimitiveNode {
   text: string;
@@ -256,8 +256,9 @@ describe('a type with selector and HTML syntax in it', () => {
       { anchors: true },
       { type: oddType }
     );
-    expect(value).toMatch(/^[\w.!~*'()%-]+$/);
-    expect(decodeURIComponent(value!)).toBe(oddType);
+    expect(value).toMatch(/^[\w%;-]+$/);
+    expect(anchorValue('slideList')).toBe('slideList');
+    expect(anchorValue('a;')).not.toBe(anchorValue('a%3b;'));
   });
 
   it('is found without being read as a selector', () => {

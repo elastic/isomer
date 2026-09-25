@@ -93,7 +93,7 @@ An enhancement the host drives itself, rather than one that ships behavior in th
 
 ## Node anchors
 
-Runtime code that acts on a rendered node, such as a host stepping through a slide's parts, finds its element through a node anchor. A `react` renderer spreads `nodeAnchor(context, node)` on its root element, which sets `data-isomer-node` to the node's type, percent-encoded so it survives HTML parsing unchanged (`anchorValue(type)`; a plain identifier is unchanged):
+Runtime code that acts on a rendered node, such as a host stepping through a slide's parts, finds its element through a node anchor. A `react` renderer spreads `nodeAnchor(context, node)` on its root element, which sets `data-isomer-node` to the node's type, escaped so HTML parsing leaves it unchanged (`anchorValue(type)`; a plain identifier is unchanged):
 
 ```tsx
 react: (node, { context }) => <ol {...nodeAnchor(context, node)}>…</ol>,
@@ -101,7 +101,7 @@ react: (node, { context }) => <ol {...nodeAnchor(context, node)}>…</ol>,
 
 Anchors render only when `context.anchors` is set, so a render nobody acts on carries none. The HTML surface sets it when a resolved enhancement declares `anchors: true`, or when a test asks with `anchors: true`. A React host sets it on the context it passes.
 
-`findNodeElements(root, composition.body, walk)` pairs each `react`-visible node with its element: the k-th node of a type, walked pre-order, is the k-th element anchored with that type in document order. A type whose counts disagree is left out, so the caller falls back to its baseline. For the pairing to hold, anything a renderer draws that is not one of its `children` must render with `anchors: false`.
+`findNodeElements(root, composition.body, walk)` pairs each `react`-visible node with its element: the k-th node of a type, walked pre-order, is the k-th element anchored with that type in document order. A type whose counts disagree is left out, so the caller falls back to its baseline. For the pairing to hold, a container draws its `children` in the order its definition returns them, and anything a renderer draws that is not one of its `children` renders with `anchors: false`.
 
 ## How Slack output is fitted
 

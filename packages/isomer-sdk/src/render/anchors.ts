@@ -15,10 +15,12 @@ import type { PrimitiveRenderContext } from '../define/primitive_module';
 export const NODE_ANCHOR_ATTRIBUTE = 'data-isomer-node';
 
 /**
- * A node type as its anchor carries it: percent-encoded, so it survives HTML
- * serialization and parsing unchanged. A plain identifier stays as it is.
+ * A node type as its anchor carries it. Every character outside `[A-Za-z0-9_-]`
+ * becomes `%<hex code point>;`, so the value survives HTML serialization and
+ * parsing unchanged and never throws. A plain identifier stays as it is.
  */
-export const anchorValue = (type: string): string => encodeURIComponent(type);
+export const anchorValue = (type: string): string =>
+  type.replace(/[^\w-]/gu, (char) => `%${char.codePointAt(0)!.toString(16)};`);
 
 /**
  * Props a `react` renderer spreads on its root element so runtime code can find
@@ -62,7 +64,9 @@ export const anchoredNodesByType = (
  * and order: the k-th `react`-visible node of a type, walked pre-order, is the
  * k-th element anchored with that type in document order.
  *
- * A type whose node and element counts disagree is left out.
+ * Pairing holds because every renderer draws its `children` in the order its
+ * definition's `children` returns them. A type whose node and element counts
+ * disagree is left out.
  */
 export const findNodeElements = (
   root: ParentNode,
