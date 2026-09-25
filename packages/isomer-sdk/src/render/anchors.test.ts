@@ -210,15 +210,38 @@ describe('withoutAnchors', () => {
     expect(withoutAnchors(undefined)).toBeUndefined();
   });
 
-  it('keeps the context prototype', () => {
-    class MethodContext {
+  it('keeps methods, getters, private state, and instanceof working', () => {
+    class PrivateContext {
+      readonly #label = 'private';
+
+      get label() {
+        return this.#label;
+      }
+
       describe() {
-        return 'method';
+        return this.#label;
       }
     }
-    const off = withoutAnchors(new MethodContext());
-    expect(off).toBeInstanceOf(MethodContext);
-    expect(off.describe()).toBe('method');
+    for (const context of [
+      new PrivateContext(),
+      Object.freeze(new PrivateContext()),
+    ]) {
+      const off = withoutAnchors(context);
+      expect(off).toBeInstanceOf(PrivateContext);
+      expect(off.describe()).toBe('private');
+      expect(off.label).toBe('private');
+      expect(nodeAnchor({ ...off }, { type: 'leaf' })).toEqual({});
+    }
+  });
+
+  it('marks a context once when applied twice or to a spread-derived context', () => {
+    const twice = withoutAnchors(withoutAnchors({ anchors: true }));
+    const again = withoutAnchors({ ...withoutAnchors({}) });
+    withAnchors(true, () => {
+      expect(nodeAnchor(twice, { type: 'leaf' })).toEqual({});
+      expect(nodeAnchor(again, { type: 'leaf' })).toEqual({});
+    });
+    expect(Object.getOwnPropertySymbols({ ...again })).toHaveLength(1);
   });
 
   it('reads the mark without trusting a proxy that claims every key', () => {

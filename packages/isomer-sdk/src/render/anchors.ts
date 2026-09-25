@@ -59,22 +59,51 @@ export const withAnchors = <TResult>(
 };
 
 /**
- * A copy of `context` for content a renderer draws that is not one of its
- * `children`, such as an embedded composition: nothing under it renders an
- * anchor. The copy keeps the prototype but not private state, and the mark
- * survives a context derived from it by spreading. A context that is not an
- * object is returned as it is.
+ * `context` for content a renderer draws that is not one of its `children`,
+ * such as an embedded composition: nothing under it renders an anchor.
+ *
+ * The result is a view of `context`, not a copy: reads go to `context` itself,
+ * with methods bound to it, so getters, methods, private state, and
+ * `instanceof` behave as before. The mark survives a context derived from it
+ * by spreading. A context that is not an object is returned as it is.
  */
-export const withoutAnchors = <TContext>(context: TContext): TContext =>
-  typeof context === 'object' && context !== null
-    ? Object.assign(
-        Object.create(
-          Object.getPrototypeOf(context) as object | null
-        ) as object,
-        context,
-        { [NO_ANCHORS]: true }
-      )
-    : context;
+export const withoutAnchors = <TContext>(context: TContext): TContext => {
+  if (typeof context !== 'object' || context === null) {
+    return context;
+  }
+  const original: object = context;
+  // An extensible stand-in, so a frozen context cannot trip the proxy invariants.
+  const standIn = Object.create(
+    Object.getPrototypeOf(original) as object | null
+  ) as object;
+  return new Proxy(standIn, {
+    get: (_, key) => {
+      if (key === NO_ANCHORS) {
+        return true;
+      }
+      const value: unknown = Reflect.get(original, key, original);
+      return typeof value === 'function'
+        ? (value as (...args: unknown[]) => unknown).bind(original)
+        : value;
+    },
+    set: (_, key, value) => Reflect.set(original, key, value, original),
+    has: (_, key) => key === NO_ANCHORS || Reflect.has(original, key),
+    ownKeys: () => [...new Set([...Reflect.ownKeys(original), NO_ANCHORS])],
+    getOwnPropertyDescriptor: (_, key) => {
+      if (key === NO_ANCHORS) {
+        return {
+          value: true,
+          enumerable: true,
+          configurable: true,
+          writable: true,
+        };
+      }
+      const descriptor = Reflect.getOwnPropertyDescriptor(original, key);
+      return descriptor && { ...descriptor, configurable: true };
+    },
+    getPrototypeOf: () => Object.getPrototypeOf(original) as object | null,
+  }) as TContext;
+};
 
 const anchorsOn = (context: unknown): boolean => {
   const isObject = typeof context === 'object' && context !== null;
