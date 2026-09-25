@@ -26,6 +26,7 @@ import {
   findNodeElements,
   NODE_ANCHOR_ATTRIBUTE,
   nodeAnchor,
+  setAnchors,
 } from './anchors';
 import {
   type HTMLRenderOptions,
@@ -136,7 +137,78 @@ describe('nodeAnchor', () => {
   });
 });
 
+class InstanceContext {
+  anchors?: boolean;
+
+  readonly label = 'instance';
+
+  describe() {
+    return this.label;
+  }
+}
+
+const describing = definePrimitive<LeafNode>({
+  type: 'leaf',
+  catalog: catalog('leaf', { type: 'leaf', text: 'a' }),
+  examples: [{ type: 'leaf', text: 'a' }],
+  schema: z.object({ type: z.literal('leaf'), text: z.string() }),
+  renderers: {
+    react: (node, { context }) =>
+      createElement(
+        'p',
+        nodeAnchor(context, node),
+        (context as InstanceContext).describe()
+      ),
+    text: (node) => node.text,
+    markdown: (node) => node.text,
+  },
+});
+
+describe('setAnchors', () => {
+  it('returns the same context when it already says so', () => {
+    const context = new InstanceContext();
+    expect(setAnchors(context, false)).toBe(context);
+    context.anchors = true;
+    expect(setAnchors(context, true)).toBe(context);
+  });
+
+  it('copies onto the same prototype when it must change', () => {
+    const context = Object.assign(new InstanceContext(), { anchors: true });
+    const changed = setAnchors(context, false);
+    expect(changed).not.toBe(context);
+    expect(changed).toBeInstanceOf(InstanceContext);
+    expect(changed.anchors).toBe(false);
+    expect(context.anchors).toBe(true);
+  });
+
+  it('leaves a context that is not an object alone', () => {
+    expect(setAnchors('plain', true)).toBe('plain');
+    expect(setAnchors(undefined, true)).toBeUndefined();
+  });
+});
+
 describe('html anchors', () => {
+  it('keeps a class-instance adapter context working, anchors on or off', () => {
+    const renderWith = (options: HTMLRenderOptions) =>
+      renderHTMLWithDispatcher(
+        { type: 'view', body: [{ type: 'leaf', text: 'a' }] },
+        {
+          dispatcher: createPrimitiveDispatcher<LeafNode>([describing]),
+          validate: valid,
+          options,
+          styleAdapter: {
+            createCollector: () => ({}),
+            createRenderContext: () => new InstanceContext(),
+            renderStyles: () => '',
+          },
+        }
+      ).body;
+    expect(renderWith({})).toContain('instance');
+    expect(renderWith({ anchors: true })).toContain(
+      `${NODE_ANCHOR_ATTRIBUTE}="leaf"`
+    );
+  });
+
   it('renders none unless asked, even when the adapter context says otherwise', () => {
     const renderWith = (options: HTMLRenderOptions) =>
       renderHTMLWithDispatcher(composition, {

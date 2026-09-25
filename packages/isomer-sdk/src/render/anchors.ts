@@ -35,6 +35,28 @@ export const nodeAnchor = (
 ): Readonly<Record<string, string>> =>
   context?.anchors ? { [NODE_ANCHOR_ATTRIBUTE]: anchorValue(type) } : {};
 
+/**
+ * `context` with `anchors` set to `on`. The same context when it already says
+ * so, which keeps a baseline render's context as the adapter built it; a copy
+ * on the same prototype otherwise. Anchors reach renderers only through an
+ * object context, so any other context is returned as it is.
+ */
+export const setAnchors = <TContext>(
+  context: TContext,
+  on: boolean
+): TContext => {
+  if (typeof context !== 'object' || context === null) {
+    return context;
+  }
+  if (Boolean((context as PrimitiveRenderContext).anchors) === on) {
+    return context;
+  }
+  const copy = Object.create(
+    Object.getPrototypeOf(context) as object | null
+  ) as object;
+  return Object.assign(copy, context, { anchors: on });
+};
+
 /** The `react`-visible nodes of `body` by type, each list in pre-order. */
 export const anchoredNodesByType = (
   body: readonly unknown[],

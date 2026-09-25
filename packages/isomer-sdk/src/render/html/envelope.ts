@@ -33,6 +33,7 @@ import {
   type ValidationErrorMode,
   type ValidationResult,
 } from '../../validate/validation';
+import { setAnchors } from '../anchors';
 import { byteLength, type PayloadMeasurement } from '../payload';
 import {
   type ReactContentDispatcher,
@@ -298,8 +299,8 @@ export const renderHTMLWithDispatcher = <
     enhancementDefinitions,
     options.anchors
   );
-  // Overrides whatever the adapter's context says, so anchors stay opt-in.
-  const anchored = (context: TContext): TContext => ({ ...context, anchors });
+  const anchored = (context: TContext): TContext =>
+    setAnchors(context, anchors);
 
   if (styleState) {
     styleAdapter?.collectWrapperStyles?.(styleState, options);
