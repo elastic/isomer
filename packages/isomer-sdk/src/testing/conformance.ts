@@ -234,10 +234,14 @@ const renderedClassNames = (html: string): string[] => {
 };
 
 /** The node anchor values in serialized `html`, in document order. */
-const renderedAnchors = (html: string): string[] =>
-  [
-    ...html.matchAll(new RegExp(`\\s${NODE_ANCHOR_ATTRIBUTE}="([^"]*)"`, 'g')),
-  ].map(([, value]) => value!);
+const renderedAnchors = (html: string): string[] => {
+  const attribute = new RegExp(`\\s${NODE_ANCHOR_ATTRIBUTE}="([^"]*)"`);
+  // Only opening tags: the serializer escapes `<`, `>`, and `"` in text and attribute values.
+  return [...html.matchAll(/<[a-zA-Z][^>]*>/g)].flatMap(([tag]) => {
+    const [, value] = attribute.exec(tag) ?? [];
+    return value === undefined ? [] : [value];
+  });
+};
 
 const cssEscapeClass = (className: string): string =>
   className.replace(/([!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~])/g, '\\$1');

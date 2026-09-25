@@ -217,15 +217,15 @@ describe('withAnchors', () => {
     expect(Object.hasOwn(context, 'anchors')).toBe(false);
   });
 
-  it('copies a context that refuses the write, keeping its prototype', () => {
+  it('renders a context that refuses the write as it is, private state intact', () => {
     const context = Object.freeze(
       Object.assign(new InstanceContext(), { anchors: true })
     );
-    const seen = withAnchors(context, false, (copy) => copy);
-    expect(seen).not.toBe(context);
-    expect(seen).toBeInstanceOf(InstanceContext);
-    expect(seen.anchors).toBe(false);
-    expect(context.anchors).toBe(true);
+    const seen = withAnchors(context, false, (inside) => ({
+      same: inside === context,
+      described: inside.describe(),
+    }));
+    expect(seen).toEqual({ same: true, described: 'instance' });
   });
 
   it('passes a context that is not an object as it is', () => {
@@ -462,6 +462,20 @@ describe('anchor conformance case', () => {
 
   it('passes when every node renders its anchor', () => {
     expect(() => anchorCase.run(example, harness(true))).not.toThrow();
+  });
+
+  it('does not count attribute-shaped text that starts with whitespace', () => {
+    const quietCase = primitiveConformanceCases.find(
+      ({ name }) => name === 'renders no node anchors unless asked'
+    )!;
+    // The case reads only these members.
+    const textOnly = {
+      wrapComposition: (node: PrimitiveNode) => node,
+      renderHTML: () => ({
+        body: `<p> ${NODE_ANCHOR_ATTRIBUTE}="leaf" and a <code>${NODE_ANCHOR_ATTRIBUTE}="box"</code></p>`,
+      }),
+    } as unknown as PrimitiveConformanceHarness;
+    expect(() => quietCase.run(example, textOnly)).not.toThrow();
   });
 
   it('does not count a mention of the attribute in rendered text', () => {

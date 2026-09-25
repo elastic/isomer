@@ -193,7 +193,8 @@ export interface HTMLStyleAdapter<
    * per pass, so an adapter that behaves differently while collecting returns
    * a different context then. Must be complete, because `TContext` is the
    * pack's own type. The sdk sets one field itself, `anchors`, on the returned
-   * object for the length of a render, then puts the old value back.
+   * object for the length of a render, then puts the old value back. A context
+   * that refuses the write renders as it is.
    */
   createRenderContext(
     collector: TCollector,

@@ -42,8 +42,9 @@ export const nodeAnchor = (
 /**
  * Runs `render` with `context.anchors` set to `on`, then puts the context's own
  * value back. The write is in place, so identity, prototype, and private state
- * stay as they are. A context that already agrees, or is not an object, is
- * passed as it is; one that refuses the write is copied.
+ * stay as they are. A context that already agrees, is not an object, or
+ * refuses the write is passed as it is: it is never copied, so the worst case
+ * is a render whose anchors do not match, which lookups treat as none.
  */
 export const withAnchors = <TContext, TResult>(
   context: TContext,
@@ -60,17 +61,7 @@ export const withAnchors = <TContext, TResult>(
   const hadOwn = Object.hasOwn(context, 'anchors');
   const previous: unknown = Reflect.get(context, 'anchors');
   if (!Reflect.set(context, 'anchors', on)) {
-    const copy = Object.assign(
-      Object.create(Object.getPrototypeOf(context) as object | null) as object,
-      context
-    );
-    Object.defineProperty(copy, 'anchors', {
-      value: on,
-      writable: true,
-      enumerable: true,
-      configurable: true,
-    });
-    return render(copy);
+    return render(context);
   }
   try {
     return render(context);
