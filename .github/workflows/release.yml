@@ -24,6 +24,8 @@ jobs:
     permissions:
       contents: write
       id-token: write
+      issues: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v5
         with:
@@ -39,9 +41,48 @@ jobs:
       - run: pnpm verify
       # pnpm 10 delegates `pnpm publish` to the ambient npm CLI. Trusted publishing needs npm >= 11.5.1; Node 22 ships 10.
       - run: npm install -g npm@^11.5.1
+      - name: Capture previous release tag
+        id: previous_tag
+        run: echo "tag=$(git describe --tags --abbrev=0 --match 'v[0-9]*' HEAD 2>/dev/null || true)" >> "$GITHUB_OUTPUT"
       # Nothing is committed back to main: git tags track the version and the notes live on the
       # GitHub Release. See CHANGELOG.md.
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm semantic-release ${{ inputs.dry_run && '--dry-run' || '' }}
+      - name: Label PRs included in the release
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PREVIOUS_TAG: ${{ steps.previous_tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          # semantic-release creates the tag through the GitHub API, so fetch it into this checkout.
+          gh auth setup-git
+          git fetch origin --tags --force
+          new_tag="$(git describe --tags --abbrev=0 --match 'v[0-9]*' HEAD 2>/dev/null || true)"
+
+          if [ -z "$new_tag" ] || [ "$new_tag" = "$PREVIOUS_TAG" ]; then
+            echo "No new release published; skipping PR labeling."
+            exit 0
+          fi
+
+          gh label create released --color 6f42c1 \
+            --description "Included in a published release" --force
+
+          if [ -n "$PREVIOUS_TAG" ]; then
+            range="$PREVIOUS_TAG..$new_tag"
+          else
+            range="$new_tag"
+          fi
+          pr_numbers="$(git log "$range" --pretty=%s | grep -oE '\(#[0-9]+\)$' | grep -oE '[0-9]+' | sort -u || true)"
+          if [ -z "$pr_numbers" ]; then
+            echo "No merged PR numbers found in $range."
+            exit 0
+          fi
+
+          while IFS= read -r pr; do
+            echo "Labeling PR #$pr as released ($new_tag)"
+            gh pr edit "$pr" --add-label released
+          done <<< "$pr_numbers"
