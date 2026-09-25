@@ -84,20 +84,6 @@ jobs:
         with:
           name: site
           path: .artifacts/docs/html
-      - name: Save Pages metadata for the preview workflow
-        # docs-preview.yml runs as a separate workflow (deliberately, so a PR
-        # branch can't use its own copy of that file to abuse the elevated
-        # token it needs -- see docs-preview.yml). It can't read this job's
-        # outputs directly, so hand the values across as an artifact instead.
-        run: |
-          {
-            echo "host=${{ steps.pages.outputs.host }}"
-            echo "path=${{ steps.pages.outputs.path }}"
-          } > pages-meta.env
-      - uses: actions/upload-artifact@v4
-        with:
-          name: pages-meta
-          path: pages-meta.env
 
   deploy:
     name: Deploy GitHub Pages
