@@ -21,7 +21,12 @@ import {
   type PrimitiveConformanceHarness,
 } from '../testing/conformance';
 
-import { findNodeElements, NODE_ANCHOR_ATTRIBUTE, nodeAnchor } from './anchors';
+import {
+  anchorValue,
+  findNodeElements,
+  NODE_ANCHOR_ATTRIBUTE,
+  nodeAnchor,
+} from './anchors';
 import {
   type HTMLRenderOptions,
   renderHTMLWithDispatcher,
@@ -160,8 +165,11 @@ describe('html anchors', () => {
 });
 
 /** Enough of `ParentNode` for {@link findNodeElements}: elements in document order. */
+/** Elements whose anchors carry `types`, as a parsed DOM returns them. */
 const stubRoot = (types: readonly string[]) => {
-  const elements = types.map((type) => ({ getAttribute: () => type }));
+  const elements = types.map((type) => ({
+    getAttribute: () => anchorValue(type),
+  }));
   return {
     elements,
     root: {
@@ -206,7 +214,7 @@ describe('findNodeElements', () => {
 });
 
 /** A valid type that is neither selector-safe nor HTML-safe. */
-const oddType = `a"b&<c>'d`;
+const oddType = `a"b&<c>'d\r\n\0e`;
 
 interface OddNode extends PrimitiveNode {
   text: string;
@@ -226,6 +234,15 @@ const odd = definePrimitive<OddNode>({
 });
 
 describe('a type with selector and HTML syntax in it', () => {
+  it('anchors with a value HTML parsing leaves unchanged', () => {
+    const { [NODE_ANCHOR_ATTRIBUTE]: value } = nodeAnchor(
+      { anchors: true },
+      { type: oddType }
+    );
+    expect(value).toMatch(/^[\w.!~*'()%-]+$/);
+    expect(decodeURIComponent(value!)).toBe(oddType);
+  });
+
   it('is found without being read as a selector', () => {
     const node = { type: oddType, text: 'odd' };
     const { root, elements } = stubRoot([oddType]);
@@ -295,6 +312,17 @@ describe('anchor conformance case', () => {
 
   it('passes when every node renders its anchor', () => {
     expect(() => anchorCase.run(example, harness(true))).not.toThrow();
+  });
+
+  it('does not count a mention of the attribute in rendered text', () => {
+    const quietCase = primitiveConformanceCases.find(
+      ({ name }) => name === 'renders no node anchors unless asked'
+    )!;
+    const mention = {
+      ...example,
+      node: { type: 'leaf', text: `${NODE_ANCHOR_ATTRIBUTE}="leaf"` },
+    };
+    expect(() => quietCase.run(mention, harness(false))).not.toThrow();
   });
 
   it('fails when a node renders no anchor', () => {

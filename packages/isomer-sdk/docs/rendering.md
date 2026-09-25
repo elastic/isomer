@@ -54,7 +54,7 @@ CSS is not the SDK's. A pack supplies an `HTMLStyleAdapter`, and the SDK calls i
 | `renderStyles`          | Emits the stylesheet                                                        |
 | `getScriptText?`        | Emits the progressive-enhancement script, a function body over `root`       |
 
-`createRenderContext` must return a complete context: the SDK does not fill fields in, because `TContext` is the pack's own type. The HTML adapter's default `TContext` is `StyledRenderContext` (`resolveClassName`, `cssVarRef`). `PrimitiveRenderContext` itself is only `enhancements` and `onEvent`.
+`createRenderContext` must return a complete context, because `TContext` is the pack's own type. The SDK fills in one field itself: `anchors`, when the render needs [node anchors](#node-anchors). The HTML adapter's default `TContext` is `StyledRenderContext` (`resolveClassName`, `cssVarRef`). `PrimitiveRenderContext` itself is `enhancements`, `anchors`, and `onEvent`.
 
 A pack that authors its CSS with [Distillate](https://elastic.github.io/distillate/), Elastic's typed CSS engine with render-driven style collection, does not write those hooks by hand. `createDistillateHtmlStyleAdapter(distillery)` is the adapter: record handles during render, emit their stylesheet. Put it on `definePrimitivePack({ styleAdapter })` so a host gets it without asking. The SDK does not depend on Distillate; the helper is duck-typed against `artifactCollector`, `renderStyles`, and `registry`.
 
@@ -66,7 +66,7 @@ The wrapper hook is named for the wrapper rather than the SVG frame. The documen
 
 ## Enhancements
 
-A progressive enhancement is an id, a content gate, and a script. `resolveEnhancements(body, requested, walk, definitions)` intersects what the host asked for with what the composition actually contains, so a composition with no table never ships the sort script. The host opts in by id: `enhancements: ['tableSort']`. The resolved set reaches renderers as `context.enhancements`, a set rather than a field per feature, so adding one costs no plumbing:
+A progressive enhancement is an id, a content gate, and usually a script. `resolveEnhancements(body, requested, walk, definitions)` intersects what the host asked for with what the composition actually contains, so a composition with no table never ships the sort script. The host opts in by id: `enhancements: ['tableSort']`. The resolved set reaches renderers as `context.enhancements`, a set rather than a field per feature, so adding one costs no plumbing:
 
 ```ts
 context.enhancements?.has('tableSort');
@@ -93,7 +93,7 @@ An enhancement the host drives itself, rather than one that ships behavior in th
 
 ## Node anchors
 
-Runtime code that acts on a rendered node, such as a host stepping through a slide's parts, finds its element through a node anchor. A `react` renderer spreads `nodeAnchor(context, node)` on its root element, which sets `data-isomer-node="<type>"`:
+Runtime code that acts on a rendered node, such as a host stepping through a slide's parts, finds its element through a node anchor. A `react` renderer spreads `nodeAnchor(context, node)` on its root element, which sets `data-isomer-node` to the node's type, percent-encoded so it survives HTML parsing unchanged (`anchorValue(type)`; a plain identifier is unchanged):
 
 ```tsx
 react: (node, { context }) => <ol {...nodeAnchor(context, node)}>…</ol>,

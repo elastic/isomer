@@ -21,7 +21,11 @@ import type {
   AnyPrimitiveDefinition,
   PrimitiveNode,
 } from '../define/primitive_module';
-import { anchoredNodesByType, NODE_ANCHOR_ATTRIBUTE } from '../render/anchors';
+import {
+  anchoredNodesByType,
+  anchorValue,
+  NODE_ANCHOR_ATTRIBUTE,
+} from '../render/anchors';
 import type { HTMLRenderResult } from '../render/html/envelope';
 import type { SlackBlock } from '../render/slack/blocks';
 import type { ValidationResult } from '../validate/validation';
@@ -375,7 +379,7 @@ export const primitiveConformanceCases: readonly PrimitiveConformanceCase[] = [
         return;
       }
       const { body } = harness.renderHTML(harness.wrapComposition(node));
-      assert.ok(!body.includes(NODE_ANCHOR_ATTRIBUTE));
+      assert.equal(renderedAnchors(body).size, 0);
     },
   },
   {
@@ -392,7 +396,7 @@ export const primitiveConformanceCases: readonly PrimitiveConformanceCase[] = [
         composition.body,
         harness.anchorWalk
       )) {
-        const rendered = counts.get(anchored) ?? 0;
+        const rendered = counts.get(anchorValue(anchored)) ?? 0;
         assert.equal(
           rendered,
           nodes.length,

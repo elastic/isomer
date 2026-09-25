@@ -46,7 +46,7 @@ It is declared here because it is a fact about the vocabulary. A host composing 
 
 ## `enhancements`
 
-Progressive enhancements the HTML surface may apply, each an id, a content gate, and a script:
+Progressive enhancements the HTML surface may apply, each an id, a content gate, and usually a script:
 
 ```ts
 enhancements: [

@@ -11,8 +11,14 @@ import {
 } from '../composition/body_node_base';
 import type { PrimitiveRenderContext } from '../define/primitive_module';
 
-/** The attribute {@link nodeAnchor} sets to a node's `type`. */
+/** The attribute {@link nodeAnchor} sets to a node's {@link anchorValue}. */
 export const NODE_ANCHOR_ATTRIBUTE = 'data-isomer-node';
+
+/**
+ * A node type as its anchor carries it: percent-encoded, so it survives HTML
+ * serialization and parsing unchanged. A plain identifier stays as it is.
+ */
+export const anchorValue = (type: string): string => encodeURIComponent(type);
 
 /**
  * Props a `react` renderer spreads on its root element so runtime code can find
@@ -25,7 +31,7 @@ export const nodeAnchor = (
   context: PrimitiveRenderContext | undefined,
   { type }: { type: string }
 ): Readonly<Record<string, string>> =>
-  context?.anchors ? { [NODE_ANCHOR_ATTRIBUTE]: type } : {};
+  context?.anchors ? { [NODE_ANCHOR_ATTRIBUTE]: anchorValue(type) } : {};
 
 /** The `react`-visible nodes of `body` by type, each list in pre-order. */
 export const anchoredNodesByType = (
@@ -64,16 +70,16 @@ export const findNodeElements = (
   walk: ChildNodeWalker
 ): Map<unknown, Element> => {
   // Grouped by attribute value, so a type is never read as selector syntax.
-  const elementsByType = new Map<string, Element[]>();
+  const elementsByValue = new Map<string, Element[]>();
   for (const element of root.querySelectorAll(`[${NODE_ANCHOR_ATTRIBUTE}]`)) {
-    const type = element.getAttribute(NODE_ANCHOR_ATTRIBUTE) ?? '';
-    const elements = elementsByType.get(type) ?? [];
+    const value = element.getAttribute(NODE_ANCHOR_ATTRIBUTE) ?? '';
+    const elements = elementsByValue.get(value) ?? [];
     elements.push(element);
-    elementsByType.set(type, elements);
+    elementsByValue.set(value, elements);
   }
   const found = new Map<unknown, Element>();
   for (const [type, nodes] of anchoredNodesByType(body, walk)) {
-    const elements = elementsByType.get(type) ?? [];
+    const elements = elementsByValue.get(anchorValue(type)) ?? [];
     if (elements.length !== nodes.length) {
       continue;
     }

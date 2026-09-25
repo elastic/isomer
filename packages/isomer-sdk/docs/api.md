@@ -45,6 +45,7 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | `isVisibleOnSurface`, `rendersOnSurface` | Surface-visibility checks |
 | `nodeAnchor`, `NODE_ANCHOR_ATTRIBUTE` | Props a `react` renderer spreads on its root so its element can be found; empty unless `context.anchors` is set |
 | `findNodeElements` | Pairs a body's nodes with their anchored elements under a DOM root |
+| `anchorValue` | A node type as its anchor carries it, percent-encoded so HTML parsing leaves it unchanged |
 | `BODY_NODE_SURFACES` | `['react','svg','text','markdown','slack']` |
 
 ## Root entry — composition and validation

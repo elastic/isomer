@@ -106,6 +106,7 @@ export {
   type PrimitiveDispatcher,
   type PrimitiveDispatcherOptions,
   NODE_ANCHOR_ATTRIBUTE,
+  anchorValue,
   byteLength,
   createPrimitiveDispatcher,
   findNodeElements,

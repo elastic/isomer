@@ -16,6 +16,7 @@ import { runEnhancementScript } from '../../pack/enhancements';
 import {
   type EnhancementDefinition,
   enhancementScript,
+  rendersAnchors,
   resolveEnhancements,
 } from './enhancements';
 
@@ -111,6 +112,20 @@ describe('enhancementScript', () => {
     );
   });
 
+  it('skips a resolved enhancement that has no script', () => {
+    const hostDriven: EnhancementDefinition = {
+      id: 'builds',
+      appliesTo: () => true,
+      anchors: true,
+    };
+    expect(
+      enhancementScript(new Set(['builds', 'tableSort']), [
+        hostDriven,
+        tableSort,
+      ])
+    ).toBe('(() => {\n/* tableSort */\n})();');
+  });
+
   it('runs both of two scripts that declare the same const, even after a return', () => {
     const flag = (id: string): EnhancementDefinition => ({
       id,
@@ -128,5 +143,23 @@ describe('enhancementScript', () => {
     );
 
     expect(root.seen).toEqual(['first', 'second']);
+  });
+});
+
+describe('rendersAnchors', () => {
+  const anchored: EnhancementDefinition = {
+    id: 'builds',
+    appliesTo: () => true,
+    anchors: true,
+  };
+
+  it('is on when asked, or when a resolved enhancement declares anchors', () => {
+    expect(rendersAnchors(new Set(), [anchored], true)).toBe(true);
+    expect(rendersAnchors(new Set(['builds']), [anchored])).toBe(true);
+  });
+
+  it('is off otherwise', () => {
+    expect(rendersAnchors(new Set(), [anchored])).toBe(false);
+    expect(rendersAnchors(new Set(['tableSort']), [tableSort])).toBe(false);
   });
 });
