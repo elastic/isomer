@@ -37,28 +37,26 @@ The pack ships its own style adapter, so the runtime has CSS without being told.
 
 ## 3. Write a composition
 
-A `Composition` says what the answer is, not how it looks. The wire discriminator stays `type: 'view'`. This one is the reference deck's title slide.
+A `Composition` says what the answer is, not how it looks. The wire discriminator stays `type: 'view'`. This one is a content slide from the reference deck.
 
 ```ts
 import { type Composition } from '@elastic/isomer-sdk';
 
 const composition: Composition = {
   type: 'view',
-  title: 'Title slide',
+  title: 'One typed document',
   body: [
     {
       type: 'slideFrame',
       brand: 'Isomer',
-      chapter: '01 · Primitives',
-      footer: 'Elastic',
-      layout: 'title',
+      chapterNumber: '01',
+      chapter: 'The problem',
+      url: 'https://elastic.github.io/isomer',
       body: [
         {
-          type: 'slideTitle',
-          eyebrow: 'Reference pack',
-          title: 'One composition, every surface.',
-          lede: 'The same spec renders as HTML, markdown, text, Slack, and SVG.',
-          size: 'hero',
+          type: 'slideHeading',
+          title: 'One typed document holds the shared part',
+          lede: 'A Composition says what the answer is, never how it looks.',
         },
       ],
     },
@@ -70,48 +68,43 @@ runtime.validate(composition); // { valid: true, errors: [], warnings: [] }
 
 ## 4. Render it
 
-Each surface takes the same composition.
+Each surface takes the same composition. A slide opens with its own heading, so this host passes `heading: false` and the composition's `title` only names the slide; a host whose body has no heading of its own leaves it on, and the title opens every surface.
 
 ```ts
-runtime.surfaces.text.render(composition);
-runtime.surfaces.markdown.render(composition);
+runtime.surfaces.text.render(composition, { heading: false });
+runtime.surfaces.markdown.render(composition, { heading: false });
 
 const { html, css, validationErrors } = runtime.surfaces.html.render(composition, {
+  heading: false,
   theme: 'auto',
 });
 
 const { text, blocks, assets } = runtime.surfaces.slack.render(composition, {
   collectAssets: true,
+  heading: false,
 });
 ```
 
 The `text` surface gives:
 
 ```text
-TITLE SLIDE
+ONE TYPED DOCUMENT HOLDS THE SHARED PART
+A Composition says what the answer is, never how it looks.
 
-01 · Primitives
-
-Reference pack
-One composition, every surface.
-The same spec renders as HTML, markdown, text, Slack, and SVG.
+Isomer · 01 The problem · elastic.github.io/isomer
 ```
 
 The `markdown` surface gives:
 
 ```markdown
-# Title slide
+# One typed document holds the shared part
 
-## 01 · Primitives
+A Composition says what the answer is, never how it looks.
 
-_Reference pack_
-
-## One composition, every surface.
-
-The same spec renders as HTML, markdown, text, Slack, and SVG.
+_Isomer · 01 The problem · [elastic.github.io/isomer](https://elastic.github.io/isomer)_
 ```
 
-Slack gives a `header` block, a `context` block for the chapter, and one `mrkdwn` section. The frame renders Slack child by child, and `slideTitle` has no Slack renderer, so the title arrives through the Markdown fallback. HTML gives `<section class="isomer framed" role="group" aria-label="Title slide">…</section>` with a `<style>` holding only the rules this slide uses.
+Slack gives the frame's children child by child: `slideHeading`'s `header` and `section`, then the footer as a closing `context` block. HTML gives `<section class="isomer framed" role="group" aria-label="One typed document">…</section>` with a `<style>` holding only the rules this slide uses.
 
 Each surface has one validation posture. `html` renders and reports findings on `validationErrors`, because a partial document is still worth showing. `text`, `markdown`, `slack`, and `svg` throw `CompositionValidationError` on an invalid composition by default, because a string, a message, or an image has nowhere to carry findings. `react` never validates. `onValidationError` flips any of them; see [Surfaces](surfaces.md).
 
@@ -137,7 +130,7 @@ const takumi = createTakumiImageBackend({ fonts });
 const png = await takumi.png(runtime.surfaces.svg.render(composition));
 ```
 
-`fonts` is the host's to register, and the pack's [font notes](../../isomer-primitives-slides/docs/styling.md#fonts-on-the-image-surface) say which families and weights. The result is the PNG at the top of the repository README. See [Frame](frame.md) for how a render picks a frame and its geometry.
+`fonts` is the host's to register, and the pack's [font notes](../../isomer-primitives-slides/docs/styling.md#fonts-on-the-image-surface) say which families and weights. The slides pack's [worked example](../../isomer-primitives-slides/docs/example.md) writes one PNG per slide this way. See [Frame](frame.md) for how a render picks a frame and its geometry.
 
 ## 5. Register a view
 

@@ -14,7 +14,7 @@ sources:
 
 # Definition
 
-`slidesPack` and `slideDeckFrame` plus the thirteen node types. Child item types such as `SlideCard`, `SlideTerritory`, and `SlideTranscriptTurn` come from the schemas; JSX components come from `buildJsxShim(slideDeckPrimitives)`.[^barrel]
+`slidesPack` and `slideDeckFrame` plus every node type and its item types (`SlideTimelineItem`, `SlidePipelineSpan`, `SlideSplitSide`, `SlideTranscriptTurn`, …), the authoring guide exports, and `resolveSlideRenders`; JSX components come from `buildJsxShim(slideDeckPrimitives)`.[^barrel]
 
 Related: [pack](/slides/concepts/pack.md), [public contract](/slides/reference/public-contract.md).
 

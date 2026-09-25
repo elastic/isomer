@@ -17,7 +17,7 @@ sources:
 
 # Definition
 
-`buildJsxShim` takes a registry tuple and derives container components, child components, and `toComposition` from each primitive's schema. `fromChildren` and `fromTextChildren` brand the field JSX children fill; `z.infer` is unchanged. A `schemaFor` primitive hand-writes its node type and passes `toItem` when the child record holds the body-node union. Every other primitive's schema is its only declaration.[^docs][^author]
+`buildJsxShim` takes a registry tuple and derives container components, child components, and `toComposition` from each primitive's schema. `fromChildren` and `fromTextChildren` brand the field JSX children fill; `z.infer` is unchanged. A `schemaFor` primitive hand-writes its node type and passes `toItem` when the child record holds the body-node union. Every other primitive's schema is its only declaration. `toJsx` prints a composition back to JSX that `toComposition` parses to the same value.[^docs][^author]
 
 Packs bind a guide, rules, and defaults with `createAuthoringPromptBuilder` and `createAgentAuthoringContextFactory`. The structural half — authoring schema, catalog, views — comes from the runtime's [authoring context](/runtime/concepts/authoring-context.md). The prose half belongs to the pack. The prompt minifies JSON, inlines each catalog `example`, and lists registered views. `general` and `compose-from-primitives` inline the schema; `registered-view-router` does not. Host `examples` are capped at one and have `meta` stripped. Showcase `definition.examples` stay off the prompt; the conformance harness still reads them.
 

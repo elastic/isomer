@@ -1,7 +1,7 @@
 ---
 type: Concept
 title: Pack
-description: Thirteen slide-deck primitives, six surfaces, one Distillate HTML adapter.
+description: Twenty-six slide-deck primitives, six surfaces, one Distillate HTML adapter, and an authoring guide for agents.
 resource: https://github.com/elastic/isomer/blob/main/packages/isomer-primitives-slides/src/pack.ts
 tags: [isomer, slides]
 status: stable
@@ -20,9 +20,11 @@ sources:
 
 # Definition
 
-The in-repo reference pack. Primitives: `slideFrame`, `slideSplit`, `slideStack`, `slideWindow`, `slideBulletList`, `slideCardGroup`, `slideCode`, `slideCycle`, `slideFlow`, `slideTable`, `slideTerritoryGroup`, `slideTitle`, `slideTranscript`. Surfaces: React, HTML, text, Markdown, Slack, and SVG, the last only when the runtime is given frames. The pack ships its own Distillate HTML adapter and declares `styleCollector: DISTILLATE_STYLE_COLLECTOR`.[^pack][^docs]
+The in-repo reference pack. Frame and openers: `slideFrame` (with `tone: 'inverse'` for title, section, and closing slides), `slideHeading`, `slideTitle`, `slideSection`, `slideClosing`. Layout: `slideSplit`, `slideStack`, `slideWindow`. Diagrams: `slideFanout`, `slideTimeline`, `slidePipeline`, `slideLanes`, `slideGraph`. Lists and numbers: `slideStat`, `slideStats`, `slideColumns`, `slideDefinitions`, `slideList`, `slideBulletList`, `slideTree`, `slideTable`, `slideTerritoryGroup`. Code and conversation: `slideCode`, `slideTranscript`. Embedded renders: `slideRender`, `slideRenderGrid`. Surfaces: React, HTML, text, Markdown, Slack, and SVG, the last only when the runtime is given frames. The pack ships its own Distillate HTML adapter and declares `styleCollector: DISTILLATE_STYLE_COLLECTOR`.[^pack][^docs]
 
 On Slack, every container dispatches its children through `scope.renderSlack`, so `slideTable`'s native `table` renderer is reached under a frame; the other leaves fall back through markdown. The pack declares no `surfaces` because not every primitive has a `slack` renderer.[^contract]
+
+`buildSlidesAuthoringPrompt` assembles the guide (`slidesAuthoringGuide`), rules (`slidesAuthoringRules`), catalog, and authoring JSON Schema an agent writes slides from; `slidesPackAuthoring` restates each cross-field `.refine` as its `$def` description. `resolveSlideRenders` fills a `slideRender` that names another slide by slug.[^docs]
 
 Related: [theme](/slides/concepts/theme.md), [one source](/slides/concepts/one-source.md), [document](/slides/concepts/document.md).
 
