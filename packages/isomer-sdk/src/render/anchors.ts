@@ -21,58 +21,83 @@ export const NODE_ANCHOR_ATTRIBUTE = 'data-isomer-node';
 export const anchorValue = (type: string): string =>
   type.replace(/[^\w-]/gu, (char) => `%${char.codePointAt(0)!.toString(16)};`);
 
-const anchorsOn = (context: unknown): boolean =>
-  typeof context === 'object' &&
-  context !== null &&
-  (context as { anchors?: unknown }).anchors === true;
+/** Marks a context whose subtree renders no anchors; see {@link withoutAnchors}. */
+const NO_ANCHORS = Symbol.for('isomer.anchors.off');
+
+/**
+ * Where an HTML render keeps its anchor decision while it runs. On `globalThis`
+ * under a `Symbol.for` key, so an ESM and a CommonJS copy of the SDK share it.
+ */
+const ACTIVE = Symbol.for('isomer.anchors.active');
+
+type AnchorScope = { [ACTIVE]?: boolean };
+
+const activeAnchors = (): boolean | undefined =>
+  (globalThis as AnchorScope)[ACTIVE];
+
+/**
+ * Runs `render` with anchors on or off for every {@link nodeAnchor} it reaches,
+ * whatever each render context says. The render must be synchronous; the
+ * previous state comes back afterwards, even if it throws.
+ */
+export const withAnchors = <TResult>(
+  on: boolean,
+  render: () => TResult
+): TResult => {
+  const scope = globalThis as AnchorScope;
+  const outer = scope[ACTIVE];
+  scope[ACTIVE] = on;
+  try {
+    return render();
+  } finally {
+    if (outer === undefined) {
+      delete scope[ACTIVE];
+    } else {
+      scope[ACTIVE] = outer;
+    }
+  }
+};
+
+/**
+ * A copy of `context` for content a renderer draws that is not one of its
+ * `children`, such as an embedded composition: nothing under it renders an
+ * anchor. The copy keeps the prototype but not private state, and the mark
+ * survives a context derived from it by spreading. A context that is not an
+ * object is returned as it is.
+ */
+export const withoutAnchors = <TContext>(context: TContext): TContext =>
+  typeof context === 'object' && context !== null
+    ? Object.assign(
+        Object.create(
+          Object.getPrototypeOf(context) as object | null
+        ) as object,
+        context,
+        { [NO_ANCHORS]: true }
+      )
+    : context;
+
+const anchorsOn = (context: unknown): boolean => {
+  const isObject = typeof context === 'object' && context !== null;
+  if (isObject && Reflect.get(context, NO_ANCHORS) === true) {
+    return false;
+  }
+  return (
+    activeAnchors() ??
+    (isObject && (context as { anchors?: unknown }).anchors === true)
+  );
+};
 
 /**
  * Props a `react` renderer spreads on its root element so runtime code can find
- * the node with {@link findNodeElements}. Empty unless `context.anchors` is set.
- *
- * Anything a renderer draws that is not one of its `children` must render with
- * anchors off, or pairing by order drifts.
+ * the node with {@link findNodeElements}. Inside an HTML surface render the
+ * surface decides; elsewhere, on the React and `svg` surfaces, `context.anchors`
+ * does. Always empty under {@link withoutAnchors}.
  */
 export const nodeAnchor = (
   context: unknown,
   { type }: { type: string }
 ): Readonly<Record<string, string>> =>
   anchorsOn(context) ? { [NODE_ANCHOR_ATTRIBUTE]: anchorValue(type) } : {};
-
-/**
- * Runs `render` with `context.anchors` set to `on`, then puts the context's own
- * value back. The write is in place, so identity, prototype, and private state
- * stay as they are. A context that already agrees, is not an object, or
- * refuses the write is passed as it is: it is never copied, so the worst case
- * is a render whose anchors do not match, which lookups treat as none.
- */
-export const withAnchors = <TContext, TResult>(
-  context: TContext,
-  on: boolean,
-  render: (context: TContext) => TResult
-): TResult => {
-  if (
-    typeof context !== 'object' ||
-    context === null ||
-    anchorsOn(context) === on
-  ) {
-    return render(context);
-  }
-  const hadOwn = Object.hasOwn(context, 'anchors');
-  const previous: unknown = Reflect.get(context, 'anchors');
-  if (!Reflect.set(context, 'anchors', on)) {
-    return render(context);
-  }
-  try {
-    return render(context);
-  } finally {
-    if (!hadOwn && Object.hasOwn(context, 'anchors')) {
-      Reflect.deleteProperty(context, 'anchors');
-    } else {
-      Reflect.set(context, 'anchors', previous);
-    }
-  }
-};
 
 /** The `react`-visible nodes of `body`, pre-order: the order their anchors render in. */
 export const anchoredNodes = (

@@ -27,6 +27,7 @@ import {
   NODE_ANCHOR_ATTRIBUTE,
   nodeAnchor,
   withAnchors,
+  withoutAnchors,
 } from './anchors';
 import {
   type HTMLRenderOptions,
@@ -165,76 +166,196 @@ const describing = definePrimitive<LeafNode>({
 });
 
 describe('withAnchors', () => {
-  it('passes the same context when it already agrees', () => {
-    const context = new InstanceContext();
-    expect(withAnchors(context, false, (seen) => seen)).toBe(context);
+  it('decides for every nodeAnchor inside, whatever the context says', () => {
+    const on = Object.freeze({ anchors: true });
+    const off = Object.freeze({ anchors: false });
+    expect(withAnchors(false, () => nodeAnchor(on, { type: 'leaf' }))).toEqual(
+      {}
+    );
+    expect(withAnchors(true, () => nodeAnchor(off, { type: 'leaf' }))).toEqual({
+      [NODE_ANCHOR_ATTRIBUTE]: 'leaf',
+    });
+    expect(nodeAnchor(on, { type: 'leaf' })).toEqual({
+      [NODE_ANCHOR_ATTRIBUTE]: 'leaf',
+    });
   });
 
-  it('sets it in place while rendering, then puts the old value back', () => {
-    const context = new InstanceContext();
-    const seen = withAnchors(context, true, (inside) => ({
-      same: inside === context,
-      anchors: inside.anchors,
-      described: inside.describe(),
-    }));
-    expect(seen).toEqual({ same: true, anchors: true, described: 'instance' });
-    expect(context.anchors).toBeUndefined();
+  it('restores the outer decision after a nested render, and after a throw', () => {
+    withAnchors(true, () => {
+      withAnchors(false, () => undefined);
+      expect(nodeAnchor({}, { type: 'leaf' })).not.toEqual({});
+      expect(() =>
+        withAnchors(false, () => {
+          throw new Error('render failed');
+        })
+      ).toThrow('render failed');
+      expect(nodeAnchor({}, { type: 'leaf' })).not.toEqual({});
+    });
+    expect(nodeAnchor({}, { type: 'leaf' })).toEqual({});
+  });
+});
 
-    const bare: { anchors?: boolean } = {};
-    withAnchors(bare, true, (inside) => expect(inside.anchors).toBe(true));
-    expect(Object.hasOwn(bare, 'anchors')).toBe(false);
-
-    const cached = { anchors: true };
-    withAnchors(cached, false, (inside) => expect(inside.anchors).toBe(false));
-    expect(cached.anchors).toBe(true);
+describe('withoutAnchors', () => {
+  it('turns anchors off for a context and any context spread from it', () => {
+    const off = withoutAnchors({ anchors: true });
+    const derived = { ...off, crowding: 2 };
+    withAnchors(true, () => {
+      expect(nodeAnchor(off, { type: 'leaf' })).toEqual({});
+      expect(nodeAnchor(derived, { type: 'leaf' })).toEqual({});
+    });
+    expect(nodeAnchor(derived, { type: 'leaf' })).toEqual({});
   });
 
-  it('puts the old value back when the render throws', () => {
-    const context = { anchors: false };
-    expect(() =>
-      withAnchors(context, true, () => {
-        throw new Error('render failed');
-      })
-    ).toThrow('render failed');
-    expect(context.anchors).toBe(false);
+  it('returns a context that is not an object as it is', () => {
+    expect(withoutAnchors(undefined)).toBeUndefined();
   });
 
-  it('restores a context whose `anchors` is an accessor', () => {
-    class AccessorContext {
-      #anchors = false;
-
-      get anchors() {
-        return this.#anchors;
-      }
-
-      set anchors(on: boolean) {
-        this.#anchors = on;
+  it('keeps the context prototype', () => {
+    class MethodContext {
+      describe() {
+        return 'method';
       }
     }
-    const context = new AccessorContext();
-    withAnchors(context, true, (inside) => expect(inside.anchors).toBe(true));
-    expect(context.anchors).toBe(false);
-    expect(Object.hasOwn(context, 'anchors')).toBe(false);
+    const off = withoutAnchors(new MethodContext());
+    expect(off).toBeInstanceOf(MethodContext);
+    expect(off.describe()).toBe('method');
   });
 
-  it('renders a context that refuses the write as it is, private state intact', () => {
-    const context = Object.freeze(
-      Object.assign(new InstanceContext(), { anchors: true })
+  it('reads the mark without trusting a proxy that claims every key', () => {
+    const claimsAll = new Proxy({}, { has: () => true });
+    withAnchors(true, () =>
+      expect(nodeAnchor(claimsAll, { type: 'leaf' })).not.toEqual({})
     );
-    const seen = withAnchors(context, false, (inside) => ({
-      same: inside === context,
-      described: inside.describe(),
-    }));
-    expect(seen).toEqual({ same: true, described: 'instance' });
   });
 
-  it('passes a context that is not an object as it is', () => {
-    expect(withAnchors('plain', true, (seen) => seen)).toBe('plain');
-    expect(withAnchors(undefined, true, (seen) => seen)).toBeUndefined();
+  it('beats an HTML render that asks for anchors, for a non-child a container draws', () => {
+    interface HostNode extends PrimitiveNode {
+      type: 'host';
+      items: LeafNode[];
+      extra: LeafNode;
+    }
+    const host = definePrimitive<HostNode>({
+      type: 'host',
+      catalog: catalog('host', {
+        type: 'host',
+        items: [],
+        extra: { type: 'leaf', text: 'x' },
+      }),
+      examples: [
+        { type: 'host', items: [], extra: { type: 'leaf', text: 'x' } },
+      ],
+      schema: z.object({
+        type: z.literal('host'),
+        items: z.array(z.unknown()),
+        extra: z.unknown(),
+      }),
+      children: (node) =>
+        node.items.map((item, index) => ({
+          node: item,
+          path: `items[${index}]`,
+        })),
+      renderers: {
+        react: (node, { context, scope }) =>
+          createElement(
+            'div',
+            nodeAnchor(context, node),
+            ...node.items.map((item) => scope.renderReact(item, context)),
+            scope.renderReact(node.extra, withoutAnchors(context))
+          ),
+        text: () => 'host',
+        markdown: () => 'host',
+      },
+    });
+    const { body } = renderHTMLWithDispatcher(
+      {
+        type: 'view',
+        body: [
+          {
+            type: 'host',
+            items: [{ type: 'leaf', text: 'child' }],
+            extra: { type: 'leaf', text: 'extra' },
+          },
+        ],
+      },
+      {
+        dispatcher: createPrimitiveDispatcher<LeafNode | HostNode>([
+          leaf,
+          host,
+        ]),
+        validate: valid,
+        options: { anchors: true },
+      }
+    );
+    expect(body.split(`${NODE_ANCHOR_ATTRIBUTE}="host"`)).toHaveLength(2);
+    expect(body.split(`${NODE_ANCHOR_ATTRIBUTE}="leaf"`)).toHaveLength(2);
+    expect(body).toContain('<p>extra</p>');
   });
 });
 
 describe('html anchors', () => {
+  const renderFrozen = (
+    context: { anchors: boolean },
+    options: HTMLRenderOptions,
+    enhancementDefinitions: readonly EnhancementDefinition[] = []
+  ) =>
+    renderHTMLWithDispatcher(composition, {
+      dispatcher,
+      validate: valid,
+      options,
+      enhancementDefinitions,
+      styleAdapter: {
+        createCollector: () => ({}),
+        createRenderContext: () => Object.freeze({ ...context }),
+        renderStyles: () => '',
+      },
+    }).body;
+
+  it('renders none by default even when a frozen adapter context says anchors: true', () => {
+    expect(renderFrozen({ anchors: true }, {})).not.toContain(
+      NODE_ANCHOR_ATTRIBUTE
+    );
+  });
+
+  it('renders them when an enhancement needs them even when a frozen adapter context says anchors: false', () => {
+    const body = renderFrozen(
+      { anchors: false },
+      { enhancements: ['leaves'] },
+      [anchoredEnhancement]
+    );
+    expect(body.split(`${NODE_ANCHOR_ATTRIBUTE}="leaf"`)).toHaveLength(4);
+  });
+
+  it('hands renderers the adapter context itself', () => {
+    const built = new InstanceContext();
+    const seen: unknown[] = [];
+    const recording = definePrimitive<LeafNode>({
+      ...leaf,
+      renderers: {
+        ...leaf.renderers,
+        react: (node, { context }) => {
+          seen.push(context);
+          return createElement('p', nodeAnchor(context, node), node.text);
+        },
+      },
+    });
+    renderHTMLWithDispatcher(
+      { type: 'view', body: [{ type: 'leaf', text: 'a' }] },
+      {
+        dispatcher: createPrimitiveDispatcher<LeafNode>([recording]),
+        validate: valid,
+        options: { anchors: true },
+        styleAdapter: {
+          createCollector: () => ({}),
+          createRenderContext: () => built,
+          renderStyles: () => '',
+        },
+      }
+    );
+    expect(seen.length).toBeGreaterThan(0);
+    expect(seen.every((context) => context === built)).toBe(true);
+    expect(built.anchors).toBeUndefined();
+  });
+
   it('keeps a class-instance adapter context working, anchors on or off', () => {
     const renderWith = (options: HTMLRenderOptions) =>
       renderHTMLWithDispatcher(

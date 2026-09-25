@@ -115,6 +115,7 @@ export {
   isStructuredValue,
   nodeAnchor,
   rawDisplayValue,
+  withoutAnchors,
 } from '../render';
 export {
   type AuthoringJsonSchemaOptions,

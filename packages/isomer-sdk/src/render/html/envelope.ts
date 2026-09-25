@@ -192,9 +192,8 @@ export interface HTMLStyleAdapter<
    * Builds the render context handed to every `react` renderer. Called once
    * per pass, so an adapter that behaves differently while collecting returns
    * a different context then. Must be complete, because `TContext` is the
-   * pack's own type. The sdk sets one field itself, `anchors`, on the returned
-   * object for the length of a render, then puts the old value back. A context
-   * that refuses the write renders as it is.
+   * pack's own type. The sdk never writes to it: whether renderers anchor
+   * is the surface's decision, whatever the context's `anchors` says.
    */
   createRenderContext(
     collector: TCollector,
@@ -307,20 +306,18 @@ export const renderHTMLWithDispatcher = <
       options,
       enhancementScope
     );
-    withAnchors(
-      styleAdapter?.createRenderContext(styleState, options) as TContext,
-      anchors,
-      (collectionContext) =>
-        renderToStaticMarkup(
-          createElement(() =>
-            renderCompositionContent(
-              composition,
-              dispatcher,
-              collectionContext,
-              { heading }
-            )
-          )
+    const collectionContext = styleAdapter?.createRenderContext(
+      styleState,
+      options
+    ) as TContext;
+    withAnchors(anchors, () =>
+      renderToStaticMarkup(
+        createElement(() =>
+          renderCompositionContent(composition, dispatcher, collectionContext, {
+            heading,
+          })
         )
+      )
     );
     styleAdapter?.collectAfterRender?.(composition, styleState, options);
   }
@@ -342,10 +339,12 @@ export const renderHTMLWithDispatcher = <
     .join('\n');
   const embeddedScript =
     js && scriptsMode === 'embedded' ? embedScript(js) : '';
-  const body = withAnchors(renderContext, anchors, (context) =>
+  const body = withAnchors(anchors, () =>
     renderToStaticMarkup(
       createElement(() =>
-        renderCompositionContent(composition, dispatcher, context, { heading })
+        renderCompositionContent(composition, dispatcher, renderContext, {
+          heading,
+        })
       )
     )
   );

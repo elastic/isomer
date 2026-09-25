@@ -73,7 +73,7 @@ export interface PrimitiveRenderContext {
    * still answer the question on its own. See `docs/rendering.md`.
    */
   enhancements?: ReadonlySet<string>;
-  /** Renderers mark their root with `nodeAnchor` so runtime code can find a node's element. */
+  /** Turns on `nodeAnchor` outside an HTML surface render, on the React and `svg` surfaces; inside one, the surface decides. */
   anchors?: boolean;
   /** Raises an interaction for the host to route. Absent means render non-interactively. */
   onEvent?: (event: ActionEventRef) => void;

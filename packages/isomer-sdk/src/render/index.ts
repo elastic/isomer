@@ -10,6 +10,7 @@ export {
   anchorValue,
   findNodeElements,
   nodeAnchor,
+  withoutAnchors,
 } from './anchors';
 export {
   type FormatDisplayValueOptions,
