@@ -86,6 +86,25 @@ describe('Slack envelope transforms', () => {
     ]);
   });
 
+  it('opens with the body, with no title or divider, when heading is false', () => {
+    const heading: SlackBlock = {
+      type: 'header',
+      text: { type: 'plain_text', text: 'Checkout is healthy', emoji: true },
+    };
+    const { text, blocks } = renderSlackEnvelope(
+      {
+        type: 'view',
+        title: 'Checkout',
+        subtitle: 'last 15m',
+        body: [{ type: 'a' }],
+      },
+      dispatcherFor([[heading, section('A')]]),
+      { heading: false }
+    );
+    expect(blocks).toEqual([heading, section('A')]);
+    expect(text).toBe('a');
+  });
+
   it('inserts spacers between consecutive content sections', () => {
     const { blocks } = renderSlackEnvelope(
       { type: 'view', body: [{ type: 'a' }, { type: 'b' }] },

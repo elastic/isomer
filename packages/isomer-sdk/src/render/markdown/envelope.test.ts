@@ -42,4 +42,14 @@ describe('renderMarkdownEnvelope', () => {
     expect(rendered).toBe('# Checkout\n\n_See javascript:alert(2)_');
     expect(rendered).not.toMatch(/\]\(\s*javascript:|<javascript:/i);
   });
+
+  it('leaves out the title and subtitle when heading is false', () => {
+    expect(
+      renderMarkdownEnvelope(
+        { type: 'view', title: 'Checkout', subtitle: 'last 15m', body: [] },
+        dispatcher,
+        { heading: false }
+      )
+    ).toBe('');
+  });
 });

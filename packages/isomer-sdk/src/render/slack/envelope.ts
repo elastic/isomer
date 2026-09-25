@@ -56,6 +56,8 @@ export interface SlackEnvelopeDispatcher<
 
 /** Options for {@link renderSlackEnvelope}. */
 export interface SlackEnvelopeOptions {
+  /** Renders the composition's title and subtitle, in the blocks and the fallback `text`. Defaults to `true`. Set `false` when the host already shows the title, or the body opens with its own. */
+  heading?: boolean;
   /** Fallback `text` summary shown in notifications and previews; defaults to the text render. */
   text?: string;
   /** Whether to collect image upload requests alongside the blocks. */
@@ -99,10 +101,11 @@ export const renderSlackEnvelope = <TNode extends PrimitiveNode>(
       )
     : undefined;
 
-  if (composition.title) {
+  const { heading = true } = options;
+  if (heading && composition.title) {
     blocks.push(headerBlock(composition.title, 1));
   }
-  if (composition.subtitle) {
+  if (heading && composition.subtitle) {
     blocks.push(contextBlock([escapeMrkdwn(composition.subtitle)]));
   }
   for (const node of composition.body) {
@@ -122,7 +125,7 @@ export const renderSlackEnvelope = <TNode extends PrimitiveNode>(
 
   return {
     text: clampSlackText(
-      options.text ?? renderTextEnvelope(composition, dispatcher),
+      options.text ?? renderTextEnvelope(composition, dispatcher, { heading }),
       SLACK_LIMITS.fallbackTextChars
     ),
     blocks: budgeted,
