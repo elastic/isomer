@@ -9,6 +9,8 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | Package | Version | SPDX | Path | Optional dependencies |
 | --- | --- | --- | --- | --- |
 | `@elastic/distillate` | 0.1.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+distillate@0.1.0/node_modules/@elastic/distillate` |  |
+| `@hono/node-server` | 2.1.1 | MIT | `node_modules/.pnpm/@hono+node-server@2.1.1_hono@4.13.8/node_modules/@hono/node-server` |  |
+| `@modelcontextprotocol/sdk` | 1.30.1 | MIT | `node_modules/.pnpm/@modelcontextprotocol+sdk@1.30.1_zod@4.6.5/node_modules/@modelcontextprotocol/sdk` |  |
 | `@takumi-rs/core` | 2.14.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+core@2.14.0_csstype@3.2.3_react@18.3.1/node_modules/@takumi-rs/core` | `@takumi-rs/core-darwin-arm64`, `@takumi-rs/core-darwin-x64`, `@takumi-rs/core-linux-arm64-gnu`, `@takumi-rs/core-linux-arm64-musl`, `@takumi-rs/core-linux-x64-gnu`, `@takumi-rs/core-linux-x64-musl`, `@takumi-rs/core-win32-arm64-msvc`, `@takumi-rs/core-win32-x64-msvc` |
 | `@takumi-rs/core-darwin-arm64` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
 | `@takumi-rs/core-darwin-x64` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
@@ -19,7 +21,97 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `@takumi-rs/core-win32-arm64-msvc` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
 | `@takumi-rs/core-win32-x64-msvc` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
 | `@takumi-rs/helpers` | 2.14.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+helpers@2.14.0_react@18.3.1/node_modules/@takumi-rs/helpers` |  |
+| `accepts` | 2.0.0 | MIT | `node_modules/.pnpm/accepts@2.0.0/node_modules/accepts` |  |
+| `ajv` | 8.20.0 | MIT | `node_modules/.pnpm/ajv@8.20.0/node_modules/ajv` |  |
+| `ajv-formats` | 3.0.1 | MIT | `node_modules/.pnpm/ajv-formats@3.0.1_ajv@8.20.0/node_modules/ajv-formats` |  |
+| `body-parser` | 2.3.0 | MIT | `node_modules/.pnpm/body-parser@2.3.0/node_modules/body-parser` |  |
+| `bytes` | 3.1.2 | MIT | `node_modules/.pnpm/bytes@3.1.2/node_modules/bytes` |  |
+| `call-bind-apply-helpers` | 1.0.2 | MIT | `node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers` |  |
+| `call-bound` | 1.0.4 | MIT | `node_modules/.pnpm/call-bound@1.0.4/node_modules/call-bound` |  |
+| `content-disposition` | 1.1.0 | MIT | `node_modules/.pnpm/content-disposition@1.1.0/node_modules/content-disposition` |  |
+| `content-type` | 1.0.5 | MIT | `node_modules/.pnpm/content-type@1.0.5/node_modules/content-type` |  |
+| `content-type` | 2.1.0 | MIT | `node_modules/.pnpm/content-type@2.1.0/node_modules/content-type` |  |
+| `cookie` | 0.7.2 | MIT | `node_modules/.pnpm/cookie@0.7.2/node_modules/cookie` |  |
+| `cookie-signature` | 1.2.2 | MIT | `node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature` |  |
+| `cors` | 2.8.6 | MIT | `node_modules/.pnpm/cors@2.8.6/node_modules/cors` |  |
+| `cross-spawn` | 7.0.6 | MIT | `node_modules/.pnpm/cross-spawn@7.0.6/node_modules/cross-spawn` |  |
+| `debug` | 4.4.3 | MIT | `node_modules/.pnpm/debug@4.4.3/node_modules/debug` |  |
+| `depd` | 2.0.0 | MIT | `node_modules/.pnpm/depd@2.0.0/node_modules/depd` |  |
+| `dunder-proto` | 1.0.1 | MIT | `node_modules/.pnpm/dunder-proto@1.0.1/node_modules/dunder-proto` |  |
+| `ee-first` | 1.1.1 | MIT | `node_modules/.pnpm/ee-first@1.1.1/node_modules/ee-first` |  |
+| `encodeurl` | 2.0.0 | MIT | `node_modules/.pnpm/encodeurl@2.0.0/node_modules/encodeurl` |  |
+| `es-define-property` | 1.0.1 | MIT | `node_modules/.pnpm/es-define-property@1.0.1/node_modules/es-define-property` |  |
+| `es-errors` | 1.3.0 | MIT | `node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors` |  |
+| `es-object-atoms` | 1.1.2 | MIT | `node_modules/.pnpm/es-object-atoms@1.1.2/node_modules/es-object-atoms` |  |
+| `escape-html` | 1.0.3 | MIT | `node_modules/.pnpm/escape-html@1.0.3/node_modules/escape-html` |  |
+| `etag` | 1.8.1 | MIT | `node_modules/.pnpm/etag@1.8.1/node_modules/etag` |  |
+| `eventsource` | 3.0.7 | MIT | `node_modules/.pnpm/eventsource@3.0.7/node_modules/eventsource` |  |
+| `eventsource-parser` | 3.1.1 | MIT | `node_modules/.pnpm/eventsource-parser@3.1.1/node_modules/eventsource-parser` |  |
+| `express` | 5.2.1 | MIT | `node_modules/.pnpm/express@5.2.1/node_modules/express` |  |
+| `express-rate-limit` | 8.7.0 | MIT | `node_modules/.pnpm/express-rate-limit@8.7.0_express@5.2.1/node_modules/express-rate-limit` |  |
+| `fast-deep-equal` | 3.1.3 | MIT | `node_modules/.pnpm/fast-deep-equal@3.1.3/node_modules/fast-deep-equal` |  |
+| `fast-uri` | 3.1.7 | BSD-3-Clause | `node_modules/.pnpm/fast-uri@3.1.7/node_modules/fast-uri` |  |
+| `finalhandler` | 2.1.1 | MIT | `node_modules/.pnpm/finalhandler@2.1.1/node_modules/finalhandler` |  |
+| `forwarded` | 0.2.0 | MIT | `node_modules/.pnpm/forwarded@0.2.0/node_modules/forwarded` |  |
+| `fresh` | 2.0.0 | MIT | `node_modules/.pnpm/fresh@2.0.0/node_modules/fresh` |  |
+| `function-bind` | 1.1.2 | MIT | `node_modules/.pnpm/function-bind@1.1.2/node_modules/function-bind` |  |
+| `get-intrinsic` | 1.3.0 | MIT | `node_modules/.pnpm/get-intrinsic@1.3.0/node_modules/get-intrinsic` |  |
+| `get-proto` | 1.0.1 | MIT | `node_modules/.pnpm/get-proto@1.0.1/node_modules/get-proto` |  |
+| `gopd` | 1.2.0 | MIT | `node_modules/.pnpm/gopd@1.2.0/node_modules/gopd` |  |
+| `has-symbols` | 1.1.0 | MIT | `node_modules/.pnpm/has-symbols@1.1.0/node_modules/has-symbols` |  |
+| `hasown` | 2.0.4 | MIT | `node_modules/.pnpm/hasown@2.0.4/node_modules/hasown` |  |
+| `hono` | 4.13.8 | MIT | `node_modules/.pnpm/hono@4.13.8/node_modules/hono` |  |
+| `http-errors` | 2.0.1 | MIT | `node_modules/.pnpm/http-errors@2.0.1/node_modules/http-errors` |  |
+| `iconv-lite` | 0.7.3 | MIT | `node_modules/.pnpm/iconv-lite@0.7.3/node_modules/iconv-lite` |  |
+| `inherits` | 2.0.4 | ISC | `node_modules/.pnpm/inherits@2.0.4/node_modules/inherits` |  |
+| `ip-address` | 10.7.2 | MIT | `node_modules/.pnpm/ip-address@10.7.2/node_modules/ip-address` |  |
+| `ipaddr.js` | 1.9.1 | MIT | `node_modules/.pnpm/ipaddr.js@1.9.1/node_modules/ipaddr.js` |  |
+| `is-promise` | 4.0.0 | MIT | `node_modules/.pnpm/is-promise@4.0.0/node_modules/is-promise` |  |
+| `isexe` | 2.0.0 | ISC | `node_modules/.pnpm/isexe@2.0.0/node_modules/isexe` |  |
+| `jose` | 6.2.12 | MIT | `node_modules/.pnpm/jose@6.2.12/node_modules/jose` |  |
+| `json-schema-traverse` | 1.0.0 | MIT | `node_modules/.pnpm/json-schema-traverse@1.0.0/node_modules/json-schema-traverse` |  |
+| `json-schema-typed` | 8.0.2 | BSD-2-Clause | `node_modules/.pnpm/json-schema-typed@8.0.2/node_modules/json-schema-typed` |  |
+| `math-intrinsics` | 1.1.0 | MIT | `node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics` |  |
+| `media-typer` | 1.1.1 | MIT | `node_modules/.pnpm/media-typer@1.1.1/node_modules/media-typer` |  |
+| `merge-descriptors` | 2.0.0 | MIT | `node_modules/.pnpm/merge-descriptors@2.0.0/node_modules/merge-descriptors` |  |
+| `mime-db` | 1.54.0 | MIT | `node_modules/.pnpm/mime-db@1.54.0/node_modules/mime-db` |  |
+| `mime-types` | 3.0.2 | MIT | `node_modules/.pnpm/mime-types@3.0.2/node_modules/mime-types` |  |
+| `ms` | 2.1.3 | MIT | `node_modules/.pnpm/ms@2.1.3/node_modules/ms` |  |
+| `negotiator` | 1.1.0 | MIT | `node_modules/.pnpm/negotiator@1.1.0/node_modules/negotiator` |  |
+| `object-assign` | 4.1.1 | MIT | `node_modules/.pnpm/object-assign@4.1.1/node_modules/object-assign` |  |
+| `object-inspect` | 1.13.4 | MIT | `node_modules/.pnpm/object-inspect@1.13.4/node_modules/object-inspect` |  |
+| `on-finished` | 2.4.1 | MIT | `node_modules/.pnpm/on-finished@2.4.1/node_modules/on-finished` |  |
+| `once` | 1.4.0 | ISC | `node_modules/.pnpm/once@1.4.0/node_modules/once` |  |
+| `parseurl` | 1.3.3 | MIT | `node_modules/.pnpm/parseurl@1.3.3/node_modules/parseurl` |  |
+| `path-key` | 3.1.1 | MIT | `node_modules/.pnpm/path-key@3.1.1/node_modules/path-key` |  |
+| `path-to-regexp` | 8.4.2 | MIT | `node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp` |  |
+| `pkce-challenge` | 5.0.1 | MIT | `node_modules/.pnpm/pkce-challenge@5.0.1/node_modules/pkce-challenge` |  |
+| `proxy-addr` | 2.0.8 | MIT | `node_modules/.pnpm/proxy-addr@2.0.8/node_modules/proxy-addr` |  |
+| `qs` | 6.16.0 | BSD-3-Clause | `node_modules/.pnpm/qs@6.16.0/node_modules/qs` |  |
+| `range-parser` | 1.3.0 | MIT | `node_modules/.pnpm/range-parser@1.3.0/node_modules/range-parser` |  |
+| `raw-body` | 3.0.2 | MIT | `node_modules/.pnpm/raw-body@3.0.2/node_modules/raw-body` |  |
+| `require-from-string` | 2.0.2 | MIT | `node_modules/.pnpm/require-from-string@2.0.2/node_modules/require-from-string` |  |
+| `router` | 2.2.0 | MIT | `node_modules/.pnpm/router@2.2.0/node_modules/router` |  |
+| `safer-buffer` | 2.1.2 | MIT | `node_modules/.pnpm/safer-buffer@2.1.2/node_modules/safer-buffer` |  |
+| `send` | 1.2.1 | MIT | `node_modules/.pnpm/send@1.2.1/node_modules/send` |  |
+| `serve-static` | 2.2.1 | MIT | `node_modules/.pnpm/serve-static@2.2.1/node_modules/serve-static` |  |
+| `setprototypeof` | 1.2.0 | ISC | `node_modules/.pnpm/setprototypeof@1.2.0/node_modules/setprototypeof` |  |
+| `shebang-command` | 2.0.0 | MIT | `node_modules/.pnpm/shebang-command@2.0.0/node_modules/shebang-command` |  |
+| `shebang-regex` | 3.0.0 | MIT | `node_modules/.pnpm/shebang-regex@3.0.0/node_modules/shebang-regex` |  |
+| `side-channel` | 1.1.1 | MIT | `node_modules/.pnpm/side-channel@1.1.1/node_modules/side-channel` |  |
+| `side-channel-list` | 1.0.1 | MIT | `node_modules/.pnpm/side-channel-list@1.0.1/node_modules/side-channel-list` |  |
+| `side-channel-map` | 1.0.1 | MIT | `node_modules/.pnpm/side-channel-map@1.0.1/node_modules/side-channel-map` |  |
+| `side-channel-weakmap` | 1.0.2 | MIT | `node_modules/.pnpm/side-channel-weakmap@1.0.2/node_modules/side-channel-weakmap` |  |
+| `statuses` | 2.0.2 | MIT | `node_modules/.pnpm/statuses@2.0.2/node_modules/statuses` |  |
 | `stylis` | 4.4.0 | MIT | `node_modules/.pnpm/stylis@4.4.0/node_modules/stylis` |  |
+| `toidentifier` | 1.0.1 | MIT | `node_modules/.pnpm/toidentifier@1.0.1/node_modules/toidentifier` |  |
+| `type-is` | 2.1.0 | MIT | `node_modules/.pnpm/type-is@2.1.0/node_modules/type-is` |  |
+| `unpipe` | 1.0.0 | MIT | `node_modules/.pnpm/unpipe@1.0.0/node_modules/unpipe` |  |
+| `vary` | 1.1.2 | MIT | `node_modules/.pnpm/vary@1.1.2/node_modules/vary` |  |
+| `which` | 2.0.2 | ISC | `node_modules/.pnpm/which@2.0.2/node_modules/which` |  |
+| `wrappy` | 1.0.2 | ISC | `node_modules/.pnpm/wrappy@1.0.2/node_modules/wrappy` |  |
+| `zod` | 4.6.5 | MIT | `node_modules/.pnpm/zod@4.6.5/node_modules/zod` |  |
+| `zod-to-json-schema` | 3.25.2 | ISC | `node_modules/.pnpm/zod-to-json-schema@3.25.2_zod@4.6.5/node_modules/zod-to-json-schema` |  |
 
 ## Source and build
 

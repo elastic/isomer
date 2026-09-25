@@ -56,6 +56,7 @@
     "@commitlint/config-conventional": "^19.8.1",
     "@elastic/isomer-evals": "workspace:*",
     "@elastic/isomer-image-takumi": "workspace:*",
+    "@elastic/isomer-mcp": "workspace:*",
     "@elastic/isomer-primitives-slides": "workspace:*",
     "@elastic/isomer-runtime": "workspace:*",
     "@elastic/isomer-sdk": "workspace:*",

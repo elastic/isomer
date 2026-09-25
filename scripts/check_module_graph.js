@@ -35,6 +35,12 @@ const RULES = {
     './slack': ['react-dom', 'react-dom/server'],
     './author': ['react-dom', 'react-dom/server'],
   },
+  '@elastic/isomer-mcp': {
+    './tools': [
+      '@modelcontextprotocol/sdk/server/mcp.js',
+      '@modelcontextprotocol/sdk/types.js',
+    ],
+  },
 };
 
 const specifiersIn = (file) => specifiersInSource(readFileSync(file, 'utf-8'));

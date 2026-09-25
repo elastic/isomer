@@ -12,6 +12,7 @@ toc:
   - toc: slides
   - toc: image-takumi
   - toc: evals
+  - toc: mcp
   - toc: reference
 # The deck is a Vite app built separately and copied into the site at `/deck/`.
 exclude:
