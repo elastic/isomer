@@ -28,7 +28,6 @@ jobs:
       id-token: write
     steps:
       - name: Delete deployment records
-        id: delete-deployment
         uses: actions/github-script@v9
         with:
           script: |
@@ -39,7 +38,6 @@ jobs:
               environment: 'docs-preview',
               task: `docs-preview-${context.issue.number}`,
             })
-            core.setOutput('is-empty', deployments.data.length === 0)
             for (const deployment of deployments.data) {
               await github.rest.repos.createDeploymentStatus({
                 owner,
@@ -54,10 +52,15 @@ jobs:
                 deployment_id: deployment.id,
               })
             }
+      # The S3 prefix is an independent resource, so don't gate its removal on
+      # the deployment records: those are deleted first, and gating on them
+      # meant a failed `aws s3 rm` could never be retried -- the re-run would
+      # find no records and skip the delete, orphaning the preview for good.
+      # `aws s3 rm` on a missing prefix is a no-op, so this is safe to repeat.
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
-        if: steps.delete-deployment.outputs.is-empty == 'false'
+        if: always()
       - name: Delete S3 objects
-        if: steps.delete-deployment.outputs.is-empty == 'false'
+        if: always()
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |

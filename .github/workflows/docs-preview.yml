@@ -43,8 +43,6 @@ jobs:
       contents: read
       deployments: write
       id-token: write
-    outputs:
-      path_prefix: ${{ steps.prefix.outputs.value }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -119,38 +117,3 @@ jobs:
               environment_url: `https://docs-v3-preview.elastic.dev/${process.env.PATH_PREFIX}/`,
               log_url: `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`,
             })
-
-  comment:
-    name: Comment preview link
-    needs: deploy
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-    steps:
-      - uses: actions/github-script@v9
-        env:
-          PATH_PREFIX: ${{ needs.deploy.outputs.path_prefix }}
-        with:
-          script: |
-            const title = '## Docs preview'
-            const body = `${title}\n\nhttps://docs-v3-preview.elastic.dev/${process.env.PATH_PREFIX}/`
-            const { owner, repo } = context.repo
-            const issue_number = context.payload.pull_request.number
-            const { data: comments } = await github.rest.issues.listComments({
-              owner,
-              repo,
-              issue_number,
-            })
-            const existing = comments.find(
-              (c) => c.user.type === 'Bot' && c.body.startsWith(title)
-            )
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner,
-                repo,
-                comment_id: existing.id,
-                body,
-              })
-            } else {
-              await github.rest.issues.createComment({ owner, repo, issue_number, body })
-            }
