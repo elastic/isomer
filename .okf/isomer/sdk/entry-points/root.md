@@ -17,7 +17,7 @@ sources:
 
 # Definition
 
-The default export map. Composition types and errors, `definePrimitive`, `definePrimitivePack`, `themeBound`, frames, validation, `buildCompositionJsonSchema`, `buildAuthoringJsonSchema`, dispatch, and `runEnhancementScript` live here. Root consumers load `react` because the dispatcher owns the React renderer. `react-dom` and `react-dom/server` stay off this entry; [`./html`](/sdk/entry-points/html.md) is what loads the server renderer.[^barrel][^package]
+The default export map. Composition types and errors, `definePrimitive`, `definePrimitivePack`, `themeBound`, frames, validation, `buildCompositionJsonSchema`, `buildAuthoringJsonSchema`, dispatch, `runEnhancementScript`, and `scopeScript` live here. Root consumers load `react` because the dispatcher owns the React renderer. `react-dom` and `react-dom/server` stay off this entry; [`./html`](/sdk/entry-points/html.md) is what loads the server renderer.[^barrel][^package]
 
 Related: [pipeline](/sdk/concepts/pipeline.md), [html](/sdk/entry-points/html.md), [author](/sdk/entry-points/author.md), [testing](/sdk/entry-points/testing.md).
 

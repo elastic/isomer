@@ -7,7 +7,10 @@
 
 import type { ChildNodeWalker } from '../../composition/body_node_base';
 import type { PrimitiveNode } from '../../composition/node';
-import type { EnhancementDefinition } from '../../pack/enhancements';
+import {
+  type EnhancementDefinition,
+  scopeScript,
+} from '../../pack/enhancements';
 
 export type { EnhancementDefinition };
 
@@ -40,9 +43,6 @@ export const enhancementScript = (
     .filter((definition) => enhancements.has(definition.id))
     .map((definition) => scopeScript(definition.script))
     .join('\n');
-
-/** Keeps a body's `const`s and a top-level `return` its own. */
-export const scopeScript = (body: string): string => `(() => {\n${body}\n})();`;
 
 /**
  * Binds `root` to the section that contains the emitted `<script>`. Inside a

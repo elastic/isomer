@@ -43,6 +43,12 @@ export interface EnhancementDefinition {
   script: string;
 }
 
+/**
+ * Wraps one script body in its own function, so its `const`s and a top-level
+ * `return` stay its own. Anything that joins script bodies scopes each first.
+ */
+export const scopeScript = (body: string): string => `(() => {\n${body}\n})();`;
+
 /** Marks the `<script>` a `scripts: 'embedded'` render emits. */
 export const EMBEDDED_SCRIPT_ATTRIBUTE = 'data-isomer-script';
 

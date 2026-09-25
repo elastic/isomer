@@ -70,7 +70,7 @@ Types: `ValidationError`, `ValidationResult`, `ValidationWarning`, `ValidationEr
 
 `displayValueSchema`, `structuredValueSchema`, `namedColorSchema`, `renderThemeSchema`, `formatDisplayValue` (with `FormatDisplayValueOptions`), `isStructuredValue`, `rawDisplayValue`, `STRUCTURED_VALUE_FORMATS`, `ALL_NAMED_COLORS`, `ISOMER_ERROR_CODES`, plus `formatCompactNumber` and `byteLength` (which measures into a `PayloadMeasurement`).
 
-`runEnhancementScript` takes a `scripts: 'host'` render's `js` and the `.isomer` section the host inserted, and runs the one against the other. It lives here rather than on `./html` because it needs only the DOM. See [Enhancements](rendering.md#enhancements).
+`runEnhancementScript` takes a `scripts: 'host'` render's `js` and the `.isomer` section the host inserted, and runs the one against the other. `scopeScript` wraps one script body in its own function, for anything that joins bodies, such as a runtime combining several packs' `getScriptText`. Both live here rather than on `./html` because neither needs the server renderer. See [Enhancements](rendering.md#enhancements).
 
 Value types: `DisplayValue`, `StructuredValue`, `StructuredValueFormat`, `NamedColor`, `NamedColorPalette`, `RenderTheme` (`'light' | 'dark' | 'auto'`).
 

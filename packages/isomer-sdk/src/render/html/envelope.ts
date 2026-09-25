@@ -23,7 +23,10 @@ import type {
   StyledRenderContext,
   StyleHandle,
 } from '../../define/primitive_module';
-import { EMBEDDED_SCRIPT_ATTRIBUTE } from '../../pack/enhancements';
+import {
+  EMBEDDED_SCRIPT_ATTRIBUTE,
+  scopeScript,
+} from '../../pack/enhancements';
 import {
   createCompositionValidator,
   enforceValidationMode,
@@ -37,11 +40,7 @@ import {
   wrapCompositionContent,
 } from '../react/content';
 
-import {
-  embedScript,
-  type EnhancementDefinition,
-  scopeScript,
-} from './enhancements';
+import { embedScript, type EnhancementDefinition } from './enhancements';
 
 /** Knobs for the HTML surface. Every field defaults, so `{}` is valid. */
 export interface HTMLRenderOptions {
