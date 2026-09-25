@@ -12,7 +12,7 @@ runtime.surfaces.slack.render(composition, { collectAssets: true });
 | Surface | `render` returns | Validates | Options |
 | --- | --- | --- | --- |
 | `react` | `ReactNode` | no | `context` (required only if the pack narrows it), `heading`, `wrapper` |
-| `html` | `HTMLRenderResult` | yes | `theme`, `fluid`, `framed`, `heading`, `css`, `scripts`, `minify`, `enhancements` (ids), `onValidationError` |
+| `html` | `HTMLRenderResult` | yes | `theme`, `fluid`, `framed`, `heading`, `css`, `scripts`, `minify`, `enhancements` (ids), `anchors`, `onValidationError` |
 | `text` | `string` | yes | `onValidationError` |
 | `markdown` | `string` | yes | `onValidationError` |
 | `slack` | `{ text, blocks, assets }` | yes | `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
