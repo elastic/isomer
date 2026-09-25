@@ -63,11 +63,17 @@ export const findNodeElements = (
   body: readonly unknown[],
   walk: ChildNodeWalker
 ): Map<unknown, Element> => {
+  // Grouped by attribute value, so a type is never read as selector syntax.
+  const elementsByType = new Map<string, Element[]>();
+  for (const element of root.querySelectorAll(`[${NODE_ANCHOR_ATTRIBUTE}]`)) {
+    const type = element.getAttribute(NODE_ANCHOR_ATTRIBUTE) ?? '';
+    const elements = elementsByType.get(type) ?? [];
+    elements.push(element);
+    elementsByType.set(type, elements);
+  }
   const found = new Map<unknown, Element>();
   for (const [type, nodes] of anchoredNodesByType(body, walk)) {
-    const elements = root.querySelectorAll(
-      `[${NODE_ANCHOR_ATTRIBUTE}="${type}"]`
-    );
+    const elements = elementsByType.get(type) ?? [];
     if (elements.length !== nodes.length) {
       continue;
     }

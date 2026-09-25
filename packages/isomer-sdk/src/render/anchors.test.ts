@@ -161,13 +161,15 @@ describe('html anchors', () => {
 
 /** Enough of `ParentNode` for {@link findNodeElements}: elements in document order. */
 const stubRoot = (types: readonly string[]) => {
-  const elements = types.map((type, index) => ({ type, index }));
+  const elements = types.map((type) => ({ getAttribute: () => type }));
   return {
     elements,
     root: {
       querySelectorAll: (selector: string) => {
-        const [, type] = /="([^"]+)"/.exec(selector) ?? [];
-        return elements.filter((element) => element.type === type);
+        if (selector !== `[${NODE_ANCHOR_ATTRIBUTE}]`) {
+          throw new SyntaxError(`unsupported selector ${selector}`);
+        }
+        return elements;
       },
     } as unknown as ParentNode,
   };
@@ -200,6 +202,68 @@ describe('findNodeElements', () => {
     expect(
       [...found.keys()].every((node) => (node as BoxNode).type === 'box')
     ).toBe(true);
+  });
+});
+
+/** A valid type that is neither selector-safe nor HTML-safe. */
+const oddType = `a"b&<c>'d`;
+
+interface OddNode extends PrimitiveNode {
+  text: string;
+}
+
+const odd = definePrimitive<OddNode>({
+  type: oddType,
+  catalog: catalog(oddType, { type: oddType, text: 'odd' }),
+  examples: [{ type: oddType, text: 'odd' }],
+  schema: z.object({ type: z.literal(oddType), text: z.string() }),
+  renderers: {
+    react: (node, { context }) =>
+      createElement('p', nodeAnchor(context, node), node.text),
+    text: (node) => node.text,
+    markdown: (node) => node.text,
+  },
+});
+
+describe('a type with selector and HTML syntax in it', () => {
+  it('is found without being read as a selector', () => {
+    const node = { type: oddType, text: 'odd' };
+    const { root, elements } = stubRoot([oddType]);
+    expect(
+      findNodeElements(root, [node], createChildNodeWalker([odd])).get(node)
+    ).toBe(elements[0]);
+  });
+
+  it('is counted after HTML escaping by the conformance case', () => {
+    const anchorCase = primitiveConformanceCases.find(
+      ({ name }) => name === 'renders a node anchor on every node when asked'
+    )!;
+    const oddDispatcher = createPrimitiveDispatcher<OddNode>([odd]);
+    // The case reads only these members.
+    const harness = {
+      anchorWalk: createChildNodeWalker([odd]),
+      wrapComposition: (node: PrimitiveNode) => ({
+        type: 'view',
+        body: [node],
+      }),
+      renderHTML: (wrapped: Composition) =>
+        renderHTMLWithDispatcher(wrapped as Composition<OddNode>, {
+          dispatcher: oddDispatcher,
+          validate: valid,
+          options: { anchors: true },
+        }),
+    } as unknown as PrimitiveConformanceHarness;
+    expect(() =>
+      anchorCase.run(
+        {
+          definition: odd,
+          type: oddType,
+          exampleIndex: 0,
+          node: odd.examples[0]!,
+        },
+        harness
+      )
+    ).not.toThrow();
   });
 });
 
