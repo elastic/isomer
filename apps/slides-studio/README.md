@@ -1,0 +1,50 @@
+# Isomer slides studio
+
+A local studio where an agent writes an Isomer slide deck over MCP while you watch it render. Private and dev-only: it never publishes or builds.
+
+```sh
+pnpm studio:dev
+```
+
+Open `http://localhost:5178` for the instructions, then point an MCP client at it. For Claude Code:
+
+```sh
+claude mcp add --transport http isomer-slides http://localhost:5178/mcp
+```
+
+Ask for a deck ("Make a six-slide deck about our checkout reliability work"). The agent is told to share the deck's page, and the landing page lists every deck.
+
+## Pages
+
+| Path                  | Shows                                                                                                                                                                                                                                                         |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`                   | How to connect an agent and ask for a deck, and every deck, newest first, with its title slide and a Delete button. A deck created while this page is open opens on its own                                                                                   |
+| `/decks/<id>`         | Every slide in the deck as a thumbnail, updating live. A new or rewritten slide is marked and scrolled to while "Follow new slides" is on; a slide that no longer validates is marked "Needs fixing", and one whose content leaves its frame body "Overflows" |
+| `/decks/<id>/present` | The deck viewer, on every surface, with any validation errors above the stage. **Source** (or `s`) opens the slide as stored beside the stage, as JSX or JSON                                                                                                 |
+
+`/?deck=<id>` links from before these pages redirect to the viewer.
+
+## What the agent gets
+
+- The `@elastic/isomer-mcp` tools over the slides runtime: `isomer_authoring_guide` (the slides pack's guide, rules, catalog, and JSON Schema), `isomer_validate`, and `isomer_render`, which includes `png`.
+- Deck tools: `deck_create`, `deck_list`, `deck_get`, `deck_set_slide`, `deck_insert_slide`, `deck_remove_slide`, `deck_move_slide`, and `deck_render_slide`. A slide is validated before it is stored, and an invalid one comes back with its errors. `deck_render_slide` returns a PNG so the agent can check its own work.
+
+In a `slideRender`, `slide` names another slide in the same deck by index, as a string (`"0"`); the studio fills in its composition.
+
+## Where things live
+
+| Path                                     | Holds                                                                                   |
+| ---------------------------------------- | --------------------------------------------------------------------------------------- |
+| `server/app.ts`                          | Routes: `/mcp`, `/api/decks`, server-sent events, and `/png/<deck>/<index>.<theme>.png` |
+| `server/mcp.ts`                          | One MCP server and Streamable HTTP transport per session                                |
+| `server/deck_tools.ts`                   | The deck tools                                                                          |
+| `server/store.ts`                        | Decks in memory, mirrored to `.decks/<id>.json`                                         |
+| `src/app.tsx`, `src/router.tsx`          | The three pages and a small history router                                              |
+| `src/deck_page.tsx`, `src/thumbnail.tsx` | The live slide grid                                                                     |
+| `src/present.tsx`                        | The deck viewer from `@elastic/isomer-deck/viewer`, fed live over server-sent events    |
+
+State lives on one `globalThis` singleton so decks and connected agents survive hot reloads. The MCP endpoint only answers `localhost` on the port it is served from.
+
+Every slide the studio draws, in the viewer, the slide grid, and the deck list, goes through the viewer's `ShadowSlide`: the React surface in a shadow root holding only the CSS the html surface collects for that slide. `DELETE /api/decks/<id>` removes a deck and its file, and refuses a request from another origin.
+
+An MCP session remembers the server code it was opened against. When that code changes under `pnpm studio:dev`, the session answers 404 and the client starts a new one, so an agent never validates against a stale schema.

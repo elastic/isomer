@@ -18,6 +18,7 @@ export default defineConfig({
     include: [
       'packages/*/src/**/*.test.ts',
       'docs/deck/src/**/*.test.ts',
+      'apps/*/server/**/*.test.ts',
       'scripts/**/*.test.js',
     ],
     coverage: {

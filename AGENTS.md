@@ -16,6 +16,8 @@ The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, a
 
 `docs/deck` is the Isomer deck: a private Vite app, one `.tsx` composition per slide, rendered by the slides pack. It is a workspace member outside `packages/`, so it never publishes. The docs workflow copies its build to `/deck/` on the Pages site. Vite there is for the app only; the library build stays `tsc`.
 
+`apps/slides-studio` is a private, dev-server-only Vite app where an agent writes a slide deck over MCP (`pnpm studio:dev`, then `claude mcp add --transport http isomer-slides http://localhost:5178/mcp`). Its landing page holds the connection instructions and lists decks, `/decks/<id>` shows a deck's slides as they arrive, and `/decks/<id>/present` is the deck's viewer, reused through `@elastic/isomer-deck/viewer`. It serves `@elastic/isomer-mcp`'s tools plus deck tools from `server/`, and persists decks to its gitignored `.decks/`.
+
 ## Release posture
 
 Every package under `packages/` publishes, at one version, through the release workflow; none is `private`. `@elastic/isomer-sdk` and `@elastic/isomer-runtime` are what a host installs, slides is the reference pack, takumi is a host-side rasterizer, mcp is agent tools a host serves, and evals is a harness a pack author runs against their own runtime. Do not raise publication, registry access, or dependency licensing as a constraint when planning work in this repository.
