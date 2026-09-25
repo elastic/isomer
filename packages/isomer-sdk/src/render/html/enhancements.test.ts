@@ -11,6 +11,7 @@ import {
   createChildNodeWalker,
   someBodyNode,
 } from '../../composition/body_node_base';
+import { runEnhancementScript } from '../../pack/enhancements';
 
 import {
   type EnhancementDefinition,
@@ -94,7 +95,7 @@ describe('resolveEnhancements', () => {
 });
 
 describe('enhancementScript', () => {
-  it('emits requested scripts in definition order', () => {
+  it('emits requested scripts in definition order, each in its own scope', () => {
     const second: EnhancementDefinition = {
       id: 'clipboard',
       appliesTo: () => true,
@@ -105,6 +106,27 @@ describe('enhancementScript', () => {
         tableSort,
         second,
       ])
-    ).toBe('/* tableSort */\n/* clipboard */');
+    ).toBe(
+      '(() => {\n/* tableSort */\n})();\n(() => {\n/* clipboard */\n})();'
+    );
+  });
+
+  it('runs both of two scripts that declare the same const, even after a return', () => {
+    const flag = (id: string): EnhancementDefinition => ({
+      id,
+      appliesTo: () => true,
+      script: `const seen = root.seen; seen.push('${id}'); return;`,
+    });
+    const root = { seen: [] as string[], querySelector: () => null };
+
+    runEnhancementScript(
+      enhancementScript(new Set(['first', 'second']), [
+        flag('first'),
+        flag('second'),
+      ]),
+      root as unknown as Element
+    );
+
+    expect(root.seen).toEqual(['first', 'second']);
   });
 });

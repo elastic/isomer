@@ -13,11 +13,14 @@ Class-name collisions are the usual worry, and the style adapters minify class n
 
 ## The recipe
 
-A shadow root solves both directions at once, and the `html` surface already returns the two pieces it needs. Ask for the CSS separately rather than inlined, and attach it to the shadow root instead of the document:
+A shadow root solves both directions at once, and the `html` surface already returns the pieces it needs. Ask for the CSS separately rather than inlined, and attach it to the shadow root instead of the document. Ask for the enhancement script to be run by the host, too: an embedded `<script>` never runs inside a shadow root.
 
 ```ts
-const { html, css } = runtime.surfaces.html.render(composition, {
+import { runEnhancementScript } from '@elastic/isomer-sdk';
+
+const { html, css, js } = runtime.surfaces.html.render(composition, {
   css: 'separate',
+  scripts: 'host',
 });
 
 const shadow = host.attachShadow({ mode: 'open' });
@@ -30,7 +33,14 @@ shadow.append(style);
 const view = document.createElement('div');
 view.innerHTML = html;
 shadow.append(view);
+
+const section = view.querySelector('.isomer');
+if (section) {
+  runEnhancementScript(js, section);
+}
 ```
+
+`runEnhancementScript` binds the script to the section it is given, which is what an embedded script cannot find inside a shadow tree. It compiles with `new Function`, so a strict Content-Security-Policy must allow `'unsafe-eval'`; a host that cannot should render into light DOM with the default `scripts: 'embedded'`.
 
 Both halves matter and they are not the same mechanism. The shadow boundary stops the composition's rules from escaping. `:host { all: initial }` stops the page's inherited and element-selector rules from reaching in. Use one without the other and you have solved one direction.
 
@@ -40,10 +50,10 @@ Both halves matter and they are not the same mechanism. The shadow boundary stop
 
 Isolation costs something. Inside a shadow root the composition no longer inherits the host's font stack or color scheme, so one that is *meant* to look like part of the surrounding page needs those passed in deliberately — through the render `theme` option, or as custom properties set on the host element, which do cross the boundary.
 
-If the host page is yours and its CSS is disciplined, render into an ordinary element with `css: 'inline'` and skip all of this.
+If the host page is yours and its CSS is disciplined, render into an ordinary element with `css: 'inline'` and skip all of this. The default `scripts: 'embedded'` works there only if the page parses the HTML; a host that inserts it with `innerHTML` still uses `scripts: 'host'`.
 
 ## Why this is a recipe and not an API
 
-It is about twenty lines, it is entirely host DOM code, and the shape of it depends on decisions Isomer does not make — where the element lives, when it is torn down, how the framework around it wants to own that node. Isomer stops at `{ html, css }` for the same reason the `svg` surface stops at `{ element, css }` rather than returning PNG bytes: the boundary is what keeps the package isomorphic.
+It is about twenty lines, it is entirely host DOM code, and the shape of it depends on decisions Isomer does not make — where the element lives, when it is torn down, how the framework around it wants to own that node. Isomer stops at `{ html, css, js }` for the same reason the `svg` surface stops at `{ element, css }` rather than returning PNG bytes: the boundary is what keeps the package isomorphic.
 
 If a host hits a case this recipe does not cover, that is worth reporting — it would be evidence for a real mount helper rather than a doc.

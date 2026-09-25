@@ -96,6 +96,8 @@ export {
   definePrimitivePack,
   describeCapabilities,
   extendPrimitivePack,
+  runEnhancementScript,
+  scopeScript,
   themeBound,
 } from '../pack';
 export {

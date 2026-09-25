@@ -20,6 +20,7 @@ import {
   type Frame,
   type PrimitiveNode,
   type PrimitivePack,
+  runEnhancementScript,
   type StyleHandle,
   themeBound,
   unresolvedBodyNodeSchema,
@@ -1004,6 +1005,25 @@ describe('createIsomerRuntime', () => {
       const result = runtime.surfaces.html.render(view('ok'));
       expect(result.body).toContain('class="one.root two.root"');
       expect(result.css).toBe('.one.root{}.two.root{}');
+    });
+
+    it('scopes each pack adapter script, so two can declare the same const', () => {
+      const scripted = (prefix: string) => ({
+        ...scopedAdapter(`${prefix}.`),
+        getScriptText: () =>
+          `const seen = root.seen; seen.push('${prefix}'); return;`,
+      });
+      const runtime = createIsomerRuntime({
+        packs: styledPacks(scripted('one'), scripted('two')),
+      });
+      const root = { seen: [] as string[], querySelector: () => null };
+
+      runEnhancementScript(
+        runtime.surfaces.html.render(view('ok'), { scripts: 'host' }).js,
+        root as unknown as Element
+      );
+
+      expect(root.seen).toEqual(['one', 'two']);
     });
 
     it('throws when a pack adapter cannot say which handles it owns', () => {

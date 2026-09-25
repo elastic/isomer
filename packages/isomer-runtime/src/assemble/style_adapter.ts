@@ -11,6 +11,7 @@ import {
   type PrimitiveNode,
   type PrimitivePack,
   type PrimitiveStyleCollector,
+  scopeScript,
   type StyleHandle,
 } from '@elastic/isomer-sdk';
 import type { HTMLRenderDispatcher } from '@elastic/isomer-sdk/html';
@@ -251,6 +252,8 @@ const composeStyleAdapters = (
             adapter.getScriptText?.(composition, options, scope) ?? ''
         )
         .filter(Boolean)
+        // One pack's script cannot redeclare or return past another's.
+        .map(scopeScript)
         .join('\n'),
   };
 };

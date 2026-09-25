@@ -16,11 +16,16 @@ sources:
   - id: registration
     resource: https://github.com/elastic/isomer/blob/main/packages/isomer-sdk/src/testing/registration.ts
     title: Pack registration check
+  - id: enhancements
+    resource: https://github.com/elastic/isomer/blob/main/packages/isomer-sdk/src/pack/enhancements.ts
+    title: EnhancementDefinition
 ---
 
 # Definition
 
 A pack is a vocabulary as a value: `id`, `primitives`, optional `surfaces`, `enhancements`, `slackAssetTypes`, `styleAdapter`, `styleCollector`, and `theme`. `definePrimitivePack` builds one and checks it. Node types must be unique within a pack; `definePrimitivePack` and `extendPrimitivePack` throw `DUPLICATE_PRIMITIVE_TYPE` on a repeat, and `composePacks` reports the cross-pack case.[^docs][^pack]
+
+An enhancement's `script` is a function body with `root`, the render's `.isomer` section, in scope. It addresses markup through `data-*` attributes, never uses `document.currentScript`, and dispatches host events with `bubbles: true` and `composed: true`. See [rendering](/sdk/concepts/rendering.md) for who runs it.[^docs][^enhancements]
 
 `styleCollector` names the collector shape `collectStyles` hooks mutate. `definePrimitivePack` derives it from `styleAdapter.styleCollector` unless the pack sets it. Distillate-backed packs use the string `DISTILLATE_STYLE_COLLECTOR` (`'distillate'`). The SDK does not depend on `@elastic/distillate`.
 
@@ -37,3 +42,5 @@ Related: [primitives](/sdk/concepts/primitives.md), [define a pack](/sdk/playboo
 [^pack]: definePrimitivePack
 
 [^registration]: Pack registration check
+
+[^enhancements]: EnhancementDefinition
