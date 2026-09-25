@@ -18,7 +18,9 @@ permissions:
 jobs:
   destroy:
     name: Remove docs preview
-    if: github.event.repository.fork == false
+    # Same gate as docs-preview.yml -- nothing to tear down while previews
+    # aren't being published.
+    if: vars.DOCS_PREVIEW_ENABLED == 'true' && github.event.repository.fork == false
     runs-on: ubuntu-latest
     permissions:
       contents: none

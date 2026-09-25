@@ -28,8 +28,16 @@ concurrency:
 jobs:
   deploy:
     name: Deploy docs preview
-    # A fork PR gets no OIDC credential, so skip it rather than fail red.
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    # Gated until this repo is onboarded to the docs-v3 preview infra: the
+    # role aws-auth derives, elastic-docs-v3-preview-<sha256(repo)[:40]>,
+    # has to exist in account 197730964718 and trust this repo, or every PR
+    # just burns two minutes retrying AssumeRoleWithWebIdentity. Set the
+    # DOCS_PREVIEW_ENABLED repository variable to "true" once it does.
+    #
+    # A fork PR gets no OIDC credential either, so skip it rather than fail red.
+    if: >
+      vars.DOCS_PREVIEW_ENABLED == 'true' &&
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
       contents: read
