@@ -26,6 +26,7 @@ import {
   readAuthoredSpec,
 } from './authored_fields';
 import { type AuthorComponent, authorType, defineAuthorComponent } from './jsx';
+import { type JsxPrintOptions, printJsx } from './jsx_print';
 
 /** A {@link Composition} whose `body` is the pack's own authoring node type. */
 export type AuthorComposition<TNode extends PrimitiveNode = PrimitiveNode> =
@@ -157,6 +158,11 @@ export type JsxShim<
   toComposition: (
     element: ReactElement<CompositionAuthorProps<TNode>>
   ) => AuthorComposition<TNode>;
+  /** `composition` as JSX source that {@link JsxShim.toComposition} turns back into the same value. */
+  toJsx: (
+    composition: AuthorComposition<TNode>,
+    options?: JsxPrintOptions
+  ) => string;
 } & PrimitiveComponentMap<TPrimitives> &
   ChildComponentMap<TPrimitives>;
 
@@ -199,6 +205,20 @@ export const buildJsxShim = <
       type: string
     ) => defineAuthorComponent<TProps, string>(type),
     toComposition: (element) => toAuthorComposition<TNode>(element, env),
+    toJsx: (composition, options) =>
+      printJsx(
+        composition,
+        {
+          childField: (type) => {
+            const authored = authoredByType.get(type);
+            const slots = childSlotsByType.get(type) ?? [];
+            return authored || slots.length !== 1 ? undefined : slots[0];
+          },
+          isPrimitive: (type) => extensionTypes.has(type),
+          nameOf: capitalize,
+        },
+        options
+      ),
     ...Object.fromEntries(
       primitives.map((primitive) => [
         capitalize(primitive.type),
@@ -476,11 +496,37 @@ const convertPropValue = <TNode extends PrimitiveNode>(
   if (fromJsx) {
     return asArray ? fromJsx : fromJsx[0];
   }
+  return convertNested(value, parseChild);
+};
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' &&
+  value !== null &&
+  Object.getPrototypeOf(value) === Object.prototype;
+
+/** Converts author elements anywhere inside a prop value, e.g. `left={{ items: [<Node />] }}`. */
+const convertNested = <TNode extends PrimitiveNode>(
+  value: unknown,
+  parseChild: (child: ReactNode) => TNode
+): unknown => {
   if (Array.isArray(value)) {
     return value.flatMap((item: unknown) => {
       const nodes = nodesFromJsx(item, parseChild);
-      return nodes ?? [item];
+      return nodes ?? [convertNested(item, parseChild)];
     });
+  }
+  if (isPlainObject(value)) {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => {
+        const nodes = nodesFromJsx(entry, parseChild);
+        return [
+          key,
+          nodes && nodes.length === 1
+            ? nodes[0]
+            : (nodes ?? convertNested(entry, parseChild)),
+        ];
+      })
+    );
   }
   return value;
 };

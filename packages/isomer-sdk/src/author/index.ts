@@ -20,6 +20,7 @@ export {
   defineNodeBuilder,
 } from './builders';
 export { type AuthorComponent, authorType, defineAuthorComponent } from './jsx';
+export { type JsxPrintOptions } from './jsx_print';
 export {
   type AuthorComposition,
   type CompositionAuthorProps,

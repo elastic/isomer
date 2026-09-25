@@ -162,6 +162,38 @@ describe('buildJsxShim', () => {
     ]);
   });
 
+  it('converts JSX elements nested inside object props', () => {
+    const spec = toComposition(
+      createElement(
+        Composition,
+        null,
+        createElement(Note, {
+          body: 'host',
+          columns: {
+            label: 'Mixed',
+            items: ['plain', createElement(Note, { body: 'nested' })],
+          },
+          embedded: {
+            type: 'view',
+            body: [createElement(Note, { body: 'deep' })],
+          },
+        })
+      )
+    );
+
+    expect(spec.body).toEqual([
+      {
+        type: 'note',
+        body: 'host',
+        columns: {
+          label: 'Mixed',
+          items: ['plain', { type: 'note', body: 'nested' }],
+        },
+        embedded: { type: 'view', body: [{ type: 'note', body: 'deep' }] },
+      },
+    ]);
+  });
+
   it('rejects an unregistered type as a body node', () => {
     const Extra = component('extra');
 
