@@ -26,7 +26,7 @@ import {
   findNodeElements,
   NODE_ANCHOR_ATTRIBUTE,
   nodeAnchor,
-  setAnchors,
+  withAnchors,
 } from './anchors';
 import {
   type HTMLRenderOptions,
@@ -140,10 +140,10 @@ describe('nodeAnchor', () => {
 class InstanceContext {
   anchors?: boolean;
 
-  readonly label = 'instance';
+  readonly #label = 'instance';
 
   describe() {
-    return this.label;
+    return this.#label;
   }
 }
 
@@ -164,26 +164,73 @@ const describing = definePrimitive<LeafNode>({
   },
 });
 
-describe('setAnchors', () => {
-  it('returns the same context when it already says so', () => {
+describe('withAnchors', () => {
+  it('passes the same context when it already agrees', () => {
     const context = new InstanceContext();
-    expect(setAnchors(context, false)).toBe(context);
-    context.anchors = true;
-    expect(setAnchors(context, true)).toBe(context);
+    expect(withAnchors(context, false, (seen) => seen)).toBe(context);
   });
 
-  it('copies onto the same prototype when it must change', () => {
-    const context = Object.assign(new InstanceContext(), { anchors: true });
-    const changed = setAnchors(context, false);
-    expect(changed).not.toBe(context);
-    expect(changed).toBeInstanceOf(InstanceContext);
-    expect(changed.anchors).toBe(false);
+  it('sets it in place while rendering, then puts the old value back', () => {
+    const context = new InstanceContext();
+    const seen = withAnchors(context, true, (inside) => ({
+      same: inside === context,
+      anchors: inside.anchors,
+      described: inside.describe(),
+    }));
+    expect(seen).toEqual({ same: true, anchors: true, described: 'instance' });
+    expect(context.anchors).toBeUndefined();
+
+    const bare: { anchors?: boolean } = {};
+    withAnchors(bare, true, (inside) => expect(inside.anchors).toBe(true));
+    expect(Object.hasOwn(bare, 'anchors')).toBe(false);
+
+    const cached = { anchors: true };
+    withAnchors(cached, false, (inside) => expect(inside.anchors).toBe(false));
+    expect(cached.anchors).toBe(true);
+  });
+
+  it('puts the old value back when the render throws', () => {
+    const context = { anchors: false };
+    expect(() =>
+      withAnchors(context, true, () => {
+        throw new Error('render failed');
+      })
+    ).toThrow('render failed');
+    expect(context.anchors).toBe(false);
+  });
+
+  it('restores a context whose `anchors` is an accessor', () => {
+    class AccessorContext {
+      #anchors = false;
+
+      get anchors() {
+        return this.#anchors;
+      }
+
+      set anchors(on: boolean) {
+        this.#anchors = on;
+      }
+    }
+    const context = new AccessorContext();
+    withAnchors(context, true, (inside) => expect(inside.anchors).toBe(true));
+    expect(context.anchors).toBe(false);
+    expect(Object.hasOwn(context, 'anchors')).toBe(false);
+  });
+
+  it('copies a context that refuses the write, keeping its prototype', () => {
+    const context = Object.freeze(
+      Object.assign(new InstanceContext(), { anchors: true })
+    );
+    const seen = withAnchors(context, false, (copy) => copy);
+    expect(seen).not.toBe(context);
+    expect(seen).toBeInstanceOf(InstanceContext);
+    expect(seen.anchors).toBe(false);
     expect(context.anchors).toBe(true);
   });
 
-  it('leaves a context that is not an object alone', () => {
-    expect(setAnchors('plain', true)).toBe('plain');
-    expect(setAnchors(undefined, true)).toBeUndefined();
+  it('passes a context that is not an object as it is', () => {
+    expect(withAnchors('plain', true, (seen) => seen)).toBe('plain');
+    expect(withAnchors(undefined, true, (seen) => seen)).toBeUndefined();
   });
 });
 
@@ -253,7 +300,6 @@ describe('html anchors', () => {
   });
 });
 
-/** Enough of `ParentNode` for {@link findNodeElements}: elements in document order. */
 /** Elements whose anchors carry `types`, as a parsed DOM returns them. */
 const stubRoot = (types: readonly string[]) => {
   const elements = types.map((type) => ({
@@ -273,6 +319,19 @@ const stubRoot = (types: readonly string[]) => {
 };
 
 describe('findNodeElements', () => {
+  it('skips a node hidden from react, with its children', () => {
+    const hidden = {
+      type: 'box',
+      surfaces: ['text'],
+      items: [{ type: 'leaf', text: 'x' }],
+    };
+    const shown = { type: 'leaf', text: 'y' };
+    const { root, elements } = stubRoot(['leaf']);
+    const found = findNodeElements(root, [hidden, shown], walk);
+    expect(found.get(shown)).toBe(elements[0]);
+    expect(found.size).toBe(1);
+  });
+
   it('pairs nested same-type nodes by pre-order and document order', () => {
     const { root, elements } = stubRoot([
       'box',
@@ -385,7 +444,7 @@ describe('anchor conformance case', () => {
     node: composition.body[1]!,
   };
   // The case reads only these members.
-  const harness = (anchored: boolean) =>
+  const harness = (anchored: boolean, always = false) =>
     ({
       anchorWalk: walk,
       wrapComposition: (node: PrimitiveNode) => ({
@@ -396,7 +455,8 @@ describe('anchor conformance case', () => {
         renderHTMLWithDispatcher(wrapped as Composition<LeafNode | BoxNode>, {
           dispatcher,
           validate: valid,
-          options: anchored && options?.anchors ? { anchors: true } : {},
+          options:
+            always || (anchored && options?.anchors) ? { anchors: true } : {},
         }),
     }) as unknown as PrimitiveConformanceHarness;
 
@@ -413,6 +473,79 @@ describe('anchor conformance case', () => {
       node: { type: 'leaf', text: `${NODE_ANCHOR_ATTRIBUTE}="leaf"` },
     };
     expect(() => quietCase.run(mention, harness(false))).not.toThrow();
+  });
+
+  it('does not count an attribute whose name only ends in the anchor name', () => {
+    // The case reads only these members.
+    const lookalike = {
+      anchorWalk: walk,
+      wrapComposition: (node: PrimitiveNode) => ({
+        ...composition,
+        body: [node],
+      }),
+      renderHTML: () => ({
+        body: `<p x-${NODE_ANCHOR_ATTRIBUTE}="leaf"></p>`,
+      }),
+    } as unknown as PrimitiveConformanceHarness;
+    const leafExample = {
+      definition: leaf,
+      type: 'leaf',
+      exampleIndex: 0,
+      node: { type: 'leaf', text: 'a' },
+    };
+    expect(() => anchorCase.run(leafExample, lookalike)).toThrow(/anchor/);
+  });
+
+  it('fails for a container that draws its children out of walker order', () => {
+    const reversed = definePrimitive<BoxNode>({
+      ...box,
+      renderers: {
+        ...box.renderers,
+        react: (node, { context, scope }) =>
+          createElement(
+            'div',
+            nodeAnchor(context, node),
+            [...node.items]
+              .reverse()
+              .map((item) => scope.renderReact(item, context))
+          ),
+      },
+    });
+    const reversedDispatcher = createPrimitiveDispatcher<LeafNode | BoxNode>([
+      leaf,
+      reversed,
+    ]);
+    const mixed = {
+      type: 'box',
+      items: [
+        { type: 'leaf', text: 'first' },
+        { type: 'box', items: [{ type: 'leaf', text: 'second' }] },
+      ],
+    } as BoxNode;
+    // The case reads only these members.
+    const outOfOrder = {
+      anchorWalk: walk,
+      wrapComposition: (node: PrimitiveNode) => ({
+        ...composition,
+        body: [node],
+      }),
+      renderHTML: (wrapped: Composition) =>
+        renderHTMLWithDispatcher(wrapped as Composition<LeafNode | BoxNode>, {
+          dispatcher: reversedDispatcher,
+          validate: valid,
+          options: { anchors: true },
+        }),
+    } as unknown as PrimitiveConformanceHarness;
+    expect(() =>
+      anchorCase.run({ ...example, node: mixed }, outOfOrder)
+    ).toThrow(/walker order/);
+  });
+
+  it('fails the quiet case for a renderer that always anchors', () => {
+    const quietCase = primitiveConformanceCases.find(
+      ({ name }) => name === 'renders no node anchors unless asked'
+    )!;
+    expect(() => quietCase.run(example, harness(true, true))).toThrow();
   });
 
   it('fails when a node renders no anchor', () => {

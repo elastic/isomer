@@ -22,9 +22,10 @@ import type {
   PrimitiveNode,
 } from '../define/primitive_module';
 import {
-  anchoredNodesByType,
+  anchoredNodes,
   anchorValue,
   NODE_ANCHOR_ATTRIBUTE,
+  nodeType,
 } from '../render/anchors';
 import type { HTMLRenderResult } from '../render/html/envelope';
 import type { SlackBlock } from '../render/slack/blocks';
@@ -232,16 +233,11 @@ const renderedClassNames = (html: string): string[] => {
   return [...classNames].sort();
 };
 
-/** How many times each node anchor value appears in serialized `html`. */
-const renderedAnchors = (html: string): Map<string, number> => {
-  const counts = new Map<string, number>();
-  for (const [, value] of html.matchAll(
-    new RegExp(`${NODE_ANCHOR_ATTRIBUTE}="([^"]*)"`, 'g')
-  )) {
-    counts.set(value!, (counts.get(value!) ?? 0) + 1);
-  }
-  return counts;
-};
+/** The node anchor values in serialized `html`, in document order. */
+const renderedAnchors = (html: string): string[] =>
+  [
+    ...html.matchAll(new RegExp(`\\s${NODE_ANCHOR_ATTRIBUTE}="([^"]*)"`, 'g')),
+  ].map(([, value]) => value!);
 
 const cssEscapeClass = (className: string): string =>
   className.replace(/([!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~])/g, '\\$1');
@@ -366,7 +362,7 @@ export const primitiveConformanceCases: readonly PrimitiveConformanceCase[] = [
         return;
       }
       const { body } = harness.renderHTML(harness.wrapComposition(node));
-      assert.equal(renderedAnchors(body).size, 0);
+      assert.deepEqual(renderedAnchors(body), []);
     },
   },
   {
@@ -377,19 +373,18 @@ export const primitiveConformanceCases: readonly PrimitiveConformanceCase[] = [
       }
       const composition = harness.wrapComposition(node);
       const { body } = harness.renderHTML(composition, { anchors: true });
-      const hint = previewHint(type, exampleIndex);
-      const counts = renderedAnchors(body);
-      for (const [anchored, nodes] of anchoredNodesByType(
+      const expected = anchoredNodes(
         composition.body,
         harness.anchorWalk
-      )) {
-        const rendered = counts.get(anchorValue(anchored)) ?? 0;
-        assert.equal(
-          rendered,
-          nodes.length,
-          `Expected ${nodes.length} \`${anchored}\` anchor(s), found ${rendered}. ${hint}`
-        );
-      }
+      ).flatMap((anchored) => {
+        const anchoredType = nodeType(anchored);
+        return anchoredType === undefined ? [] : [anchorValue(anchoredType)];
+      });
+      assert.deepEqual(
+        renderedAnchors(body),
+        expected,
+        `Expected one anchor per node, in walker order. ${previewHint(type, exampleIndex)}`
+      );
     },
   },
   {

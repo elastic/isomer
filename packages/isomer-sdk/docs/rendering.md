@@ -54,7 +54,7 @@ CSS is not the SDK's. A pack supplies an `HTMLStyleAdapter`, and the SDK calls i
 | `renderStyles`          | Emits the stylesheet                                                        |
 | `getScriptText?`        | Emits the progressive-enhancement script, a function body over `root`       |
 
-`createRenderContext` must return a complete context, because `TContext` is the pack's own type. The SDK fills in one field itself: `anchors`, when the render needs [node anchors](#node-anchors). The HTML adapter's default `TContext` is `StyledRenderContext` (`resolveClassName`, `cssVarRef`). `PrimitiveRenderContext` itself is `enhancements`, `anchors`, and `onEvent`.
+`createRenderContext` must return a complete context, because `TContext` is the pack's own type. The SDK sets one field itself, `anchors`, on the context `createRenderContext` returns, for [node anchors](#node-anchors). It writes the field in place for the length of a render and puts the old value back, so the context keeps its identity and prototype. The HTML adapter's default `TContext` is `StyledRenderContext` (`resolveClassName`, `cssVarRef`). `PrimitiveRenderContext` itself is `enhancements`, `anchors`, and `onEvent`.
 
 A pack that authors its CSS with [Distillate](https://elastic.github.io/distillate/), Elastic's typed CSS engine with render-driven style collection, does not write those hooks by hand. `createDistillateHtmlStyleAdapter(distillery)` is the adapter: record handles during render, emit their stylesheet. Put it on `definePrimitivePack({ styleAdapter })` so a host gets it without asking. The SDK does not depend on Distillate; the helper is duck-typed against `artifactCollector`, `renderStyles`, and `registry`.
 
@@ -99,9 +99,9 @@ Runtime code that acts on a rendered node, such as a host stepping through a sli
 react: (node, { context }) => <ol {...nodeAnchor(context, node)}>…</ol>,
 ```
 
-Anchors render only when `context.anchors` is set, so a render nobody acts on carries none. The HTML surface sets it when a resolved enhancement declares `anchors: true`, or when a test asks with `anchors: true`. A React host sets it on the context it passes.
+Anchors render only when `context.anchors` is set, so a render nobody acts on carries none. The HTML surface sets it when a resolved enhancement declares `anchors: true`, or when a test asks with `anchors: true`. A React host sets it on the context it passes. `anchors: false` cannot turn off anchors an enhancement needs.
 
-`findNodeElements(root, composition.body, walk)` pairs each `react`-visible node with its element: the k-th node of a type, walked pre-order, is the k-th element anchored with that type in document order. A type whose counts disagree is left out, so the caller falls back to its baseline. For the pairing to hold, a container draws its `children` in the order its definition returns them, and anything a renderer draws that is not one of its `children` renders with `anchors: false`.
+`findNodeElements(root, composition.body, walk)` pairs each `react`-visible node with its element: the k-th node of a type, walked pre-order, is the k-th element anchored with that type in document order. `root` holds one render. A type whose counts disagree, for instance because one of its nodes rendered nothing, is left out, so the caller falls back to its baseline. For the pairing to hold, a container draws its `children` in the order its definition returns them, and anything a renderer draws that is not one of its `children` renders with `anchors: false`.
 
 ## How Slack output is fitted
 

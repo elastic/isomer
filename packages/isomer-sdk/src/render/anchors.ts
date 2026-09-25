@@ -9,7 +9,6 @@ import {
   type ChildNodeWalker,
   isVisibleOnSurface,
 } from '../composition/body_node_base';
-import type { PrimitiveRenderContext } from '../define/primitive_module';
 
 /** The attribute {@link nodeAnchor} sets to a node's {@link anchorValue}. */
 export const NODE_ANCHOR_ATTRIBUTE = 'data-isomer-node';
@@ -22,73 +21,101 @@ export const NODE_ANCHOR_ATTRIBUTE = 'data-isomer-node';
 export const anchorValue = (type: string): string =>
   type.replace(/[^\w-]/gu, (char) => `%${char.codePointAt(0)!.toString(16)};`);
 
+const anchorsOn = (context: unknown): boolean =>
+  typeof context === 'object' &&
+  context !== null &&
+  (context as { anchors?: unknown }).anchors === true;
+
 /**
  * Props a `react` renderer spreads on its root element so runtime code can find
  * the node with {@link findNodeElements}. Empty unless `context.anchors` is set.
  *
  * Anything a renderer draws that is not one of its `children` must render with
- * `anchors: false`, or pairing by order drifts.
+ * anchors off, or pairing by order drifts.
  */
 export const nodeAnchor = (
-  context: PrimitiveRenderContext | undefined,
+  context: unknown,
   { type }: { type: string }
 ): Readonly<Record<string, string>> =>
-  context?.anchors ? { [NODE_ANCHOR_ATTRIBUTE]: anchorValue(type) } : {};
+  anchorsOn(context) ? { [NODE_ANCHOR_ATTRIBUTE]: anchorValue(type) } : {};
 
 /**
- * `context` with `anchors` set to `on`. The same context when it already says
- * so, which keeps a baseline render's context as the adapter built it; a copy
- * on the same prototype otherwise. Anchors reach renderers only through an
- * object context, so any other context is returned as it is.
+ * Runs `render` with `context.anchors` set to `on`, then puts the context's own
+ * value back. The write is in place, so identity, prototype, and private state
+ * stay as they are. A context that already agrees, or is not an object, is
+ * passed as it is; one that refuses the write is copied.
  */
-export const setAnchors = <TContext>(
+export const withAnchors = <TContext, TResult>(
   context: TContext,
-  on: boolean
-): TContext => {
-  if (typeof context !== 'object' || context === null) {
-    return context;
+  on: boolean,
+  render: (context: TContext) => TResult
+): TResult => {
+  if (
+    typeof context !== 'object' ||
+    context === null ||
+    anchorsOn(context) === on
+  ) {
+    return render(context);
   }
-  if (Boolean((context as PrimitiveRenderContext).anchors) === on) {
-    return context;
+  const hadOwn = Object.hasOwn(context, 'anchors');
+  const previous: unknown = Reflect.get(context, 'anchors');
+  if (!Reflect.set(context, 'anchors', on)) {
+    const copy = Object.assign(
+      Object.create(Object.getPrototypeOf(context) as object | null) as object,
+      context
+    );
+    Object.defineProperty(copy, 'anchors', {
+      value: on,
+      writable: true,
+      enumerable: true,
+      configurable: true,
+    });
+    return render(copy);
   }
-  const copy = Object.create(
-    Object.getPrototypeOf(context) as object | null
-  ) as object;
-  return Object.assign(copy, context, { anchors: on });
+  try {
+    return render(context);
+  } finally {
+    if (!hadOwn && Object.hasOwn(context, 'anchors')) {
+      Reflect.deleteProperty(context, 'anchors');
+    } else {
+      Reflect.set(context, 'anchors', previous);
+    }
+  }
 };
 
-/** The `react`-visible nodes of `body` by type, each list in pre-order. */
-export const anchoredNodesByType = (
+/** The `react`-visible nodes of `body`, pre-order: the order their anchors render in. */
+export const anchoredNodes = (
   body: readonly unknown[],
   walk: ChildNodeWalker
-): Map<string, unknown[]> => {
-  const byType = new Map<string, unknown[]>();
-  const visit = (nodes: readonly unknown[]) => {
-    for (const node of nodes) {
-      if (!isVisibleOnSurface(node, 'react')) {
-        continue;
-      }
-      const { type } = node as { type?: unknown };
-      if (typeof type === 'string') {
-        const nodes = byType.get(type) ?? [];
-        nodes.push(node);
-        byType.set(type, nodes);
-      }
-      visit(walk(node).map((child) => child.node));
-    }
-  };
-  visit(body);
-  return byType;
+): unknown[] =>
+  body.flatMap((node) =>
+    isVisibleOnSurface(node, 'react')
+      ? [
+          node,
+          ...anchoredNodes(
+            walk(node).map((child) => child.node),
+            walk
+          ),
+        ]
+      : []
+  );
+
+/** A node's `type`, when it has one. */
+export const nodeType = (node: unknown): string | undefined => {
+  const { type } = node as { type?: unknown };
+  return typeof type === 'string' ? type : undefined;
 };
 
 /**
  * Each node of `body` whose rendered root carries its anchor, paired by type
  * and order: the k-th `react`-visible node of a type, walked pre-order, is the
- * k-th element anchored with that type in document order.
+ * k-th element anchored with that type in document order. `root` holds one
+ * render.
  *
  * Pairing holds because every renderer draws its `children` in the order its
  * definition's `children` returns them. A type whose node and element counts
- * disagree is left out.
+ * disagree, for instance because one of its nodes rendered nothing, is left
+ * out.
  */
 export const findNodeElements = (
   root: ParentNode,
@@ -103,8 +130,17 @@ export const findNodeElements = (
     elements.push(element);
     elementsByValue.set(value, elements);
   }
+  const nodesByType = new Map<string, unknown[]>();
+  for (const node of anchoredNodes(body, walk)) {
+    const type = nodeType(node);
+    if (type !== undefined) {
+      const nodes = nodesByType.get(type) ?? [];
+      nodes.push(node);
+      nodesByType.set(type, nodes);
+    }
+  }
   const found = new Map<unknown, Element>();
-  for (const [type, nodes] of anchoredNodesByType(body, walk)) {
+  for (const [type, nodes] of nodesByType) {
     const elements = elementsByValue.get(anchorValue(type)) ?? [];
     if (elements.length !== nodes.length) {
       continue;

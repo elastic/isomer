@@ -33,7 +33,7 @@ import {
   type ValidationErrorMode,
   type ValidationResult,
 } from '../../validate/validation';
-import { setAnchors } from '../anchors';
+import { withAnchors } from '../anchors';
 import { byteLength, type PayloadMeasurement } from '../payload';
 import {
   type ReactContentDispatcher,
@@ -45,7 +45,6 @@ import {
   embedScript,
   type EnhancementDefinition,
   rendersAnchors,
-  resolveEnhancements,
 } from './enhancements';
 
 /** Knobs for the HTML surface. Every field defaults, so `{}` is valid. */
@@ -80,7 +79,7 @@ export interface HTMLRenderOptions {
   onValidationError?: ValidationErrorMode;
   /** Opt-in by {@link EnhancementDefinition.id}. One whose content gate does not match the body is dropped. */
   enhancements?: readonly string[];
-  /** Renders node anchors whether or not an enhancement asks for them, e.g. for tests. */
+  /** `true` renders node anchors whether or not an enhancement asks for them, e.g. for tests. `false` cannot turn off anchors an enhancement needs. */
   anchors?: boolean;
   /** Opaque to the sdk; forwarded to {@link HTMLStyleAdapter} with the rest of the options. */
   adapterOptions?: Record<string, unknown>;
@@ -192,8 +191,9 @@ export interface HTMLStyleAdapter<
   /**
    * Builds the render context handed to every `react` renderer. Called once
    * per pass, so an adapter that behaves differently while collecting returns
-   * a different context then. Must be complete: the sdk does not fill fields
-   * in, because `TContext` is the pack's own type.
+   * a different context then. Must be complete, because `TContext` is the
+   * pack's own type. The sdk sets one field itself, `anchors`, on the returned
+   * object for the length of a render, then puts the old value back.
    */
   createRenderContext(
     collector: TCollector,
@@ -290,17 +290,11 @@ export const renderHTMLWithDispatcher = <
     definitions: enhancementDefinitions,
   };
   const anchors = rendersAnchors(
-    resolveEnhancements(
-      composition.body,
-      options.enhancements,
-      enhancementScope.walk,
-      enhancementDefinitions
-    ),
-    enhancementDefinitions,
-    options.anchors
+    composition.body,
+    options,
+    enhancementScope.walk,
+    enhancementDefinitions
   );
-  const anchored = (context: TContext): TContext =>
-    setAnchors(context, anchors);
 
   if (styleState) {
     styleAdapter?.collectWrapperStyles?.(styleState, options);
@@ -312,25 +306,29 @@ export const renderHTMLWithDispatcher = <
       options,
       enhancementScope
     );
-    const collectionContext = anchored(
-      styleAdapter?.createRenderContext(styleState, options) as TContext
-    );
-    renderToStaticMarkup(
-      createElement(() =>
-        renderCompositionContent(composition, dispatcher, collectionContext, {
-          heading,
-        })
-      )
+    withAnchors(
+      styleAdapter?.createRenderContext(styleState, options) as TContext,
+      anchors,
+      (collectionContext) =>
+        renderToStaticMarkup(
+          createElement(() =>
+            renderCompositionContent(
+              composition,
+              dispatcher,
+              collectionContext,
+              { heading }
+            )
+          )
+        )
     );
     styleAdapter?.collectAfterRender?.(composition, styleState, options);
   }
 
-  const renderContext: TContext = anchored(
+  const renderContext: TContext =
     styleState && styleAdapter
       ? styleAdapter.createRenderContext(styleState, options)
       : // No adapter means no class names and no css vars to resolve.
-        ({} as TContext)
-  );
+        ({} as TContext);
   const cssText =
     styleState && styleAdapter
       ? styleAdapter.renderStyles(styleState, options)
@@ -343,11 +341,11 @@ export const renderHTMLWithDispatcher = <
     .join('\n');
   const embeddedScript =
     js && scriptsMode === 'embedded' ? embedScript(js) : '';
-  const body = renderToStaticMarkup(
-    createElement(() =>
-      renderCompositionContent(composition, dispatcher, renderContext, {
-        heading,
-      })
+  const body = withAnchors(renderContext, anchors, (context) =>
+    renderToStaticMarkup(
+      createElement(() =>
+        renderCompositionContent(composition, dispatcher, context, { heading })
+      )
     )
   );
   const raw = renderToStaticMarkup(

@@ -152,14 +152,39 @@ describe('rendersAnchors', () => {
     appliesTo: () => true,
     anchors: true,
   };
+  const inapplicable: EnhancementDefinition = {
+    ...anchored,
+    id: 'never',
+    appliesTo: () => false,
+  };
+  const body = [sortableTable];
 
-  it('is on when asked, or when a resolved enhancement declares anchors', () => {
-    expect(rendersAnchors(new Set(), [anchored], true)).toBe(true);
-    expect(rendersAnchors(new Set(['builds']), [anchored])).toBe(true);
+  it('is on when asked, or when a requested enhancement that applies declares anchors', () => {
+    expect(rendersAnchors(body, { anchors: true }, nestWalker, [])).toBe(true);
+    expect(
+      rendersAnchors(body, { enhancements: ['builds'] }, nestWalker, [anchored])
+    ).toBe(true);
   });
 
-  it('is off otherwise', () => {
-    expect(rendersAnchors(new Set(), [anchored])).toBe(false);
-    expect(rendersAnchors(new Set(['tableSort']), [tableSort])).toBe(false);
+  it('is off otherwise, and `anchors: false` cannot turn off what an enhancement needs', () => {
+    expect(rendersAnchors(body, {}, nestWalker, [anchored])).toBe(false);
+    expect(
+      rendersAnchors(body, { enhancements: ['never'] }, nestWalker, [
+        inapplicable,
+      ])
+    ).toBe(false);
+    expect(
+      rendersAnchors(body, { enhancements: ['tableSort'] }, nestWalker, [
+        tableSort,
+      ])
+    ).toBe(false);
+    expect(
+      rendersAnchors(
+        body,
+        { anchors: false, enhancements: ['builds'] },
+        nestWalker,
+        [anchored]
+      )
+    ).toBe(true);
   });
 });

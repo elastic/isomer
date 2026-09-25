@@ -125,12 +125,13 @@ A pack supplies a `PrimitiveConformanceHarness` closing over its own dispatcher,
 | `renderTextComposition`, `renderMarkdownComposition` | yes | Whole-composition envelopes, title included |
 | `renderSlackComposition` | yes | A `PrimitiveConformanceSlackResult` led by a `plain_text` header block |
 | `renderSvg`, `estimateSvgHeight` | no | Skipped when absent; `sizesFromNodeHeights: false` also skips the height case |
-| `renderHTML` | no | Honors `PrimitiveConformanceHtmlOptions` (`css`, `names`); skipped when absent |
+| `renderHTML` | no | Honors `PrimitiveConformanceHtmlOptions` (`css`, `names`, `anchors`); skipped when absent |
+| `anchorWalk` | no | The child walker over every definition rendered with; set it once every `react` renderer spreads `nodeAnchor`, to turn on the anchor case |
 | `assertVarRefsHaveDeclarations` | no | Throws for a `var(--x)` with no declaration; skipped when it or `renderHTML` is absent |
 | `renderSVGComposition` | no | Resolves to a `PrimitiveConformanceSvgResult` with complete `<svg>` markup; skipped when absent |
 | `nestForeignChild` | no | Returns the container with a child from a pack it does not own; skipped when absent |
 
-The cases, one per example: the node validates alone and inside a composition; `react`, `text`, `markdown`, and `slack` render non-empty output; style collection does not throw; a container recurses through `scope` for a foreign child (its text and markdown must contain `CONFORMANCE_FOREIGN_MARKER`); `svg` dispatch does not throw and the height estimate is positive and finite; `renderHTML` wraps the body in a `<section>` with no validation errors and no script bytes; every `var(--x)` the CSS references is declared; every readable class in the markup has a selector in the CSS; the text and markdown envelopes carry the fixture title; the Slack envelope leads with a header block; and the SVG composition renders complete markup.
+The cases, one per example: the node validates alone and inside a composition; `react`, `text`, `markdown`, and `slack` render non-empty output; style collection does not throw; a container recurses through `scope` for a foreign child (its text and markdown must contain `CONFORMANCE_FOREIGN_MARKER`); `svg` dispatch does not throw and the height estimate is positive and finite; `renderHTML` wraps the body in a `<section>` with no validation errors and no script bytes; it renders no node anchors unless asked, and, with `anchorWalk` set, one anchor per node when asked; every `var(--x)` the CSS references is declared; every readable class in the markup has a selector in the CSS; the text and markdown envelopes carry the fixture title; the Slack envelope leads with a header block; and the SVG composition renders complete markup.
 
 ## Where the code is
 
