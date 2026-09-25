@@ -5,10 +5,11 @@
 
 name: docs
 
+# PR builds are validated by ci.yml's docs-builder job and previewed by
+# docs-preview.yml; this only publishes main.
 on:
   push:
     branches: [main]
-  pull_request:
 
 permissions:
   contents: read
@@ -18,26 +19,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    name: Build documentation
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - name: Assemble package docs
-        run: node scripts/assemble_package_docs.js
-      - name: Build documentation
-        uses: elastic/docs-builder@main
-        with:
-          prefix: isomer
-      - uses: actions/upload-artifact@v4
-        with:
-          name: site
-          path: .artifacts/docs/html
-
   deploy:
     name: Deploy GitHub Pages
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -47,13 +30,28 @@ jobs:
       pages: write
       id-token: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v5
         with:
-          name: site
-          path: site
-      - uses: actions/configure-pages@v5
+          persist-credentials: false
+      - name: Assemble package docs
+        run: node scripts/assemble_package_docs.js
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
+      - name: Resolve docs prefix
+        id: prefix
+        env:
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}
+        run: |
+          # base_path is "/isomer" for a public project page and "" for a
+          # site served at its host root. docs-builder wants it unslashed.
+          echo "value=${BASE_PATH#/}" >> "$GITHUB_OUTPUT"
+      - name: Build documentation
+        uses: elastic/docs-builder@main
+        with:
+          prefix: ${{ steps.prefix.outputs.value }}
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: .artifacts/docs/html
       - id: deployment
         uses: actions/deploy-pages@v4
