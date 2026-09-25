@@ -5,13 +5,41 @@
  * 2.0.
  */
 
+import { runInThisContext } from 'node:vm';
+
+import { createElement, type ReactElement } from 'react';
+import type {
+  SlideFrameNode,
+  SlideSectionNode,
+} from '@elastic/isomer-primitives-slides';
+import { slideDeckPrimitives } from '@elastic/isomer-primitives-slides';
+import { mapCompositionNodes, type PrimitiveNode } from '@elastic/isomer-sdk';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
 import { deck } from './deck';
 import { runtime } from './runtime';
+import * as shim from './shim';
 import { slideCount } from './slide_count';
-import { firstAttempt, secondAttempt } from './slides/06_agent';
+import { firstAttempt, secondAttempt } from './slides/09_agent';
 import { themes } from './surfaces';
+
+const frameOf = ({ composition }: (typeof deck)[number]) =>
+  composition.body[0] as SlideFrameNode;
+
+const sectionOf = (slide: (typeof deck)[number]) => {
+  const [first] = frameOf(slide).body;
+  return first?.type === 'slideSection' ? first : undefined;
+};
+
+const nodesOf = (slide: (typeof deck)[number]): PrimitiveNode[] => {
+  const nodes: PrimitiveNode[] = [];
+  mapCompositionNodes(slide.composition, slideDeckPrimitives, (node) => {
+    nodes.push(node);
+    return node;
+  });
+  return nodes;
+};
 
 describe('deck', () => {
   it('includes every slide file', () => {
@@ -23,30 +51,117 @@ describe('deck', () => {
     expect(new Set(slugs).size).toBe(slugs.length);
   });
 
-  it.each(deck.map((slide, index) => ({ ...slide, index })))(
-    '$slug renders on every surface',
-    ({ composition, index }) => {
-      expect(runtime.validate(composition).errors).toEqual([]);
-
-      const [frame] = composition.body;
-      expect(frame).toMatchObject({
-        type: 'slideFrame',
-        chapterNumber: String(index).padStart(2, '0'),
-      });
-
+  it.each(deck)('$slug renders on every surface', ({ composition }) => {
+    expect(runtime.validate(composition).errors).toEqual([]);
+    expect(runtime.surfaces.html.render(composition).validationErrors).toEqual(
+      []
+    );
+    expect(runtime.surfaces.markdown.render(composition)).not.toBe('');
+    expect(runtime.surfaces.text.render(composition)).not.toBe('');
+    expect(runtime.surfaces.slack.render(composition).blocks).not.toEqual([]);
+    for (const theme of themes) {
       expect(
-        runtime.surfaces.html.render(composition).validationErrors
-      ).toEqual([]);
-      expect(runtime.surfaces.markdown.render(composition)).not.toBe('');
-      expect(runtime.surfaces.text.render(composition)).not.toBe('');
-      expect(runtime.surfaces.slack.render(composition).blocks).not.toEqual([]);
-      for (const theme of themes) {
-        expect(
-          runtime.surfaces.svg.render(composition, { theme }).width
-        ).toBeGreaterThan(0);
+        runtime.surfaces.svg.render(composition, { theme }).width
+      ).toBeGreaterThan(0);
+    }
+  });
+
+  it('footers name the section each slide belongs to', () => {
+    let section: SlideSectionNode | undefined;
+    for (const slide of deck) {
+      section = sectionOf(slide) ?? section;
+      const { chapter, chapterNumber } = frameOf(slide);
+      expect({ slug: slide.slug, chapter, chapterNumber }).toEqual({
+        slug: slide.slug,
+        chapter: section?.title,
+        chapterNumber: section?.number,
+      });
+    }
+  });
+
+  it('sections list and link the slides that follow them', () => {
+    deck.forEach((slide, index) => {
+      const section = sectionOf(slide);
+      if (!section) {
+        return;
+      }
+      const next = deck.findIndex(
+        (later, position) => position > index && sectionOf(later)
+      );
+      const owned = deck.slice(index + 1, next === -1 ? undefined : next);
+      expect(section.contents).toEqual(
+        owned.map(({ composition }) => composition.title)
+      );
+      expect(section.hrefs).toEqual(owned.map(({ slug }) => `?slide=${slug}`));
+    });
+  });
+
+  it('opens every slide with one h1 in Markdown, as the viewer renders it', () => {
+    for (const { composition } of deck) {
+      const md = runtime.surfaces.markdown.render(composition, {
+        heading: false,
+      });
+      expect(md.match(/^# /gm), composition.title).toHaveLength(1);
+      expect(md.startsWith('# '), composition.title).toBe(true);
+    }
+  });
+
+  it('opens every slide with one Slack header', () => {
+    for (const { composition } of deck) {
+      const { blocks } = runtime.surfaces.slack.render(composition, {
+        heading: false,
+      });
+      expect(
+        blocks.filter(({ type }) => type === 'header'),
+        composition.title
+      ).toHaveLength(1);
+      expect(blocks[0]?.type, composition.title).toBe('header');
+    }
+  });
+
+  it('draws every node at full size, as the mock was designed', () => {
+    for (const { composition } of deck) {
+      const { html } = runtime.surfaces.html.render(composition, {
+        heading: false,
+      });
+      expect(html.match(/\w+Size-[ms]\b/g), composition.title).toBeNull();
+    }
+  });
+
+  it('prints every slide as JSX that parses back to the same composition', () => {
+    const components = Object.entries(shim).filter(([name]) =>
+      /^Slide/.test(name)
+    );
+    for (const { composition } of deck) {
+      const { outputText } = ts.transpileModule(
+        `(${shim.toJsx(composition)})`,
+        {
+          compilerOptions: { jsx: ts.JsxEmit.React, jsxFactory: 'h' },
+        }
+      );
+      const run = runInThisContext(
+        `(h, ${components.map(([name]) => name).join(', ')}) => ${outputText.trim().replace(/;$/, '')}`
+      ) as (...args: unknown[]) => ReactElement;
+      const element = run(
+        createElement,
+        ...components.map(([, component]) => component)
+      );
+      expect(
+        shim.toComposition(element as Parameters<typeof shim.toComposition>[0]),
+        composition.title
+      ).toEqual(composition);
+    }
+  });
+
+  it('resolves every embedded render', () => {
+    for (const slide of deck) {
+      for (const node of nodesOf(slide)) {
+        if (node.type === 'slideRender') {
+          expect(node, slide.slug).toHaveProperty('composition');
+        }
       }
     }
-  );
+  });
 
   it('replays a real parse failure and a real recovery on the agent slide', () => {
     expect(runtime.parse(firstAttempt).valid).toBe(false);

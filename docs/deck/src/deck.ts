@@ -5,27 +5,37 @@
  * 2.0.
  */
 
+import {
+  resolveSlideRenders,
+  type SlideFrameNode,
+} from '@elastic/isomer-primitives-slides';
 import type { Composition } from '@elastic/isomer-sdk';
 
 import { titleSlide } from './slides/00_title';
-import { problemSlide } from './slides/01_problem';
-import { moveSlide } from './slides/02_move';
-import { lineSlide } from './slides/03_line';
-import { vocabularySlide } from './slides/04_vocabulary';
-import { pathsSlide } from './slides/05_paths';
-import { agentSlide } from './slides/06_agent';
-import { renderSlide } from './slides/07_render';
-import { surfacesSlide } from './slides/08_surfaces';
-import { degradesSlide } from './slides/09_degrades';
-import { proofSlide } from './slides/10_proof';
-import { imagesSlide } from './slides/11_images';
-import { anatomySlide } from './slides/12_anatomy';
-import { themeSlide } from './slides/13_theme';
-import { dogfoodSlide } from './slides/14_dogfood';
-import { growingSlide } from './slides/15_growing';
-import { evalsSlide } from './slides/16_evals';
-import { shipsSlide } from './slides/17_ships';
-import { startSlide } from './slides/18_start';
+import { sectionProblemSlide } from './slides/01_section_problem';
+import { problemSlide } from './slides/02_problem';
+import { documentSlide } from './slides/03_document';
+import { dogfoodSlide } from './slides/04_dogfood';
+import { sectionModelSlide } from './slides/05_section_model';
+import { lineSlide } from './slides/06_line';
+import { vocabularySlide } from './slides/07_vocabulary';
+import { pathsSlide } from './slides/08_paths';
+import { agentSlide } from './slides/09_agent';
+import { sectionHowSlide } from './slides/10_section_how';
+import { renderSlide } from './slides/11_render';
+import { surfacesSlide } from './slides/12_surfaces';
+import { slackSlide } from './slides/13_slack';
+import { posturesSlide } from './slides/14_postures';
+import { proofSlide } from './slides/15_proof';
+import { imagesSlide } from './slides/16_images';
+import { sectionPackSlide } from './slides/17_section_pack';
+import { anatomySlide } from './slides/18_anatomy';
+import { themeSlide } from './slides/19_theme';
+import { evalsSlide } from './slides/20_evals';
+import { sectionStartSlide } from './slides/21_section_start';
+import { packagesSlide } from './slides/22_packages';
+import { startSlide } from './slides/23_start';
+import type { DeckSlide } from './viewer/types';
 
 const sources = import.meta.glob<string>('./slides/[0-9][0-9]_*.tsx', {
   eager: true,
@@ -33,15 +43,11 @@ const sources = import.meta.glob<string>('./slides/[0-9][0-9]_*.tsx', {
   query: '?raw',
 });
 
-/** One slide: its file, a URL-safe name, the composition, and the TSX it was authored as. */
-export interface DeckSlide {
-  file: string;
-  slug: string;
-  composition: Composition;
-  source: string;
-}
+export type { DeckSlide };
 
 const licenseHeader = /^\/\*[\s\S]*?\*\/\s*/;
+
+const slugOf = (file: string) => file.replace(/^\d+_/, '').replace(/_/g, '-');
 
 const slide = (file: string, composition: Composition): DeckSlide => {
   const source = sources[`./slides/${file}.tsx`];
@@ -49,32 +55,83 @@ const slide = (file: string, composition: Composition): DeckSlide => {
     throw new Error(`deck: no slide file "${file}.tsx"`);
   }
   return {
-    file: `docs/deck/src/slides/${file}.tsx`,
-    slug: file.replace(/^\d+_/, ''),
+    slug: slugOf(file),
     composition,
-    source: source.replace(licenseHeader, ''),
+    sources: [
+      {
+        id: 'jsx',
+        label: 'JSX',
+        text: source.replace(licenseHeader, ''),
+        file: `docs/deck/src/slides/${file}.tsx`,
+      },
+      {
+        id: 'json',
+        label: 'JSON',
+        text: JSON.stringify(composition, null, 2),
+      },
+    ],
   };
 };
 
-/** A deck is a `Composition[]`; sequencing it is the host's job, and this is the host. */
-export const deck: readonly DeckSlide[] = [
+const authored: readonly DeckSlide[] = [
   slide('00_title', titleSlide),
-  slide('01_problem', problemSlide),
-  slide('02_move', moveSlide),
-  slide('03_line', lineSlide),
-  slide('04_vocabulary', vocabularySlide),
-  slide('05_paths', pathsSlide),
-  slide('06_agent', agentSlide),
-  slide('07_render', renderSlide),
-  slide('08_surfaces', surfacesSlide),
-  slide('09_degrades', degradesSlide),
-  slide('10_proof', proofSlide),
-  slide('11_images', imagesSlide),
-  slide('12_anatomy', anatomySlide),
-  slide('13_theme', themeSlide),
-  slide('14_dogfood', dogfoodSlide),
-  slide('15_growing', growingSlide),
-  slide('16_evals', evalsSlide),
-  slide('17_ships', shipsSlide),
-  slide('18_start', startSlide),
+  slide('01_section_problem', sectionProblemSlide),
+  slide('02_problem', problemSlide),
+  slide('03_document', documentSlide),
+  slide('04_dogfood', dogfoodSlide),
+  slide('05_section_model', sectionModelSlide),
+  slide('06_line', lineSlide),
+  slide('07_vocabulary', vocabularySlide),
+  slide('08_paths', pathsSlide),
+  slide('09_agent', agentSlide),
+  slide('10_section_how', sectionHowSlide),
+  slide('11_render', renderSlide),
+  slide('12_surfaces', surfacesSlide),
+  slide('13_slack', slackSlide),
+  slide('14_postures', posturesSlide),
+  slide('15_proof', proofSlide),
+  slide('16_images', imagesSlide),
+  slide('17_section_pack', sectionPackSlide),
+  slide('18_anatomy', anatomySlide),
+  slide('19_theme', themeSlide),
+  slide('20_evals', evalsSlide),
+  slide('21_section_start', sectionStartSlide),
+  slide('22_packages', packagesSlide),
+  slide('23_start', startSlide),
 ];
+
+/**
+ * Fills in what only the whole deck knows: a section's links to its slides,
+ * and every `slideRender` that names another slide by slug.
+ */
+const resolve = (slides: readonly DeckSlide[]): DeckSlide[] => {
+  const compositions = resolveSlideRenders(slides);
+  return slides.map((entry, index) => {
+    const composition = compositions[index]!;
+    const [frame] = composition.body as SlideFrameNode[];
+    const [first] = frame?.body ?? [];
+    if (first?.type !== 'slideSection') {
+      return { ...entry, composition };
+    }
+    const next = slides.findIndex(
+      ({ composition: later }, position) =>
+        position > index &&
+        (later.body[0] as SlideFrameNode).body[0]?.type === 'slideSection'
+    );
+    const owned = slides.slice(index + 1, next === -1 ? undefined : next);
+    const section = {
+      ...first,
+      hrefs: owned.map(({ slug }) => `?slide=${slug}`),
+    };
+    return {
+      ...entry,
+      composition: {
+        ...composition,
+        body: [{ ...frame!, body: [section, ...frame!.body.slice(1)] }],
+      },
+    };
+  });
+};
+
+/** A deck is a `Composition[]`; sequencing it is the host's job, and this is the host. */
+export const deck: readonly DeckSlide[] = resolve(authored);

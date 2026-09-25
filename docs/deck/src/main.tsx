@@ -6,6 +6,7 @@
  */
 
 import '@fontsource/inter/400.css';
+import '@fontsource/inter/400-italic.css';
 import '@fontsource/inter/500.css';
 import '@fontsource/inter/600.css';
 import '@fontsource/inter/700.css';
@@ -19,13 +20,22 @@ import './viewer/viewer.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
-import { App } from './viewer/app';
+import { deck } from './deck';
+import { pngPath } from './surfaces';
+import { Viewer } from './viewer/app';
 
 const root = document.getElementById('root');
 if (root) {
   createRoot(root).render(
     <StrictMode>
-      <App />
+      <Viewer
+        homeHref="https://elastic.github.io/isomer/"
+        logoSrc={`${import.meta.env.BASE_URL}logo.svg`}
+        pngUrl={({ slug }, theme) =>
+          `${import.meta.env.BASE_URL}${pngPath(slug, theme)}`
+        }
+        slides={deck}
+      />
     </StrictMode>
   );
 }

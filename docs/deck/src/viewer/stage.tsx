@@ -5,32 +5,35 @@
  * 2.0.
  */
 
-import { type ReactNode, useMemo } from 'react';
+import { useMemo } from 'react';
 
-import type { DeckSlide } from '../deck';
 import { runtime } from '../runtime';
-import { pngPath, type SurfaceId, type Theme } from '../surfaces';
+import type { SurfaceId, Theme } from '../surfaces';
 
 import { Scaled } from './scaled';
 import { ShadowHtml } from './shadow_html';
+import { ShadowSlide } from './shadow_slide';
+import type { DeckSlide, PngUrl } from './types';
 
 type Rendered =
-  | { kind: 'canvas'; node: ReactNode }
+  | { kind: 'slide' }
   | { kind: 'html'; html: string; css: string }
   | { kind: 'png'; src: string; alt: string }
   | { kind: 'source'; source: string };
 
+// The viewer reports findings beside the stage, so a slide saved before a schema change still renders.
+const lenient = { heading: false, onValidationError: 'collect' } as const;
+
 const render = (
-  { composition, slug, source }: DeckSlide,
+  slide: DeckSlide,
   surface: SurfaceId,
-  theme: Theme
+  theme: Theme,
+  pngUrl: PngUrl
 ): Rendered => {
+  const { composition } = slide;
   switch (surface) {
     case 'slide':
-      return {
-        kind: 'canvas',
-        node: runtime.surfaces.react.render(composition, { heading: false }),
-      };
+      return { kind: 'slide' };
     case 'html': {
       const { html, css } = runtime.surfaces.html.render(composition, {
         css: 'separate',
@@ -42,61 +45,71 @@ const render = (
     case 'png':
       return {
         kind: 'png',
-        src: `${import.meta.env.BASE_URL}${pngPath(slug, theme)}`,
-        alt: runtime.surfaces.text.render(composition),
+        src: pngUrl(slide, theme),
+        alt: runtime.surfaces.text.render(composition, lenient),
       };
     case 'markdown':
       return {
         kind: 'source',
-        source: runtime.surfaces.markdown.render(composition),
+        source: runtime.surfaces.markdown.render(composition, lenient),
       };
     case 'text':
       return {
         kind: 'source',
-        source: runtime.surfaces.text.render(composition),
+        source: runtime.surfaces.text.render(composition, lenient),
       };
     case 'slack':
       return {
         kind: 'source',
         source: JSON.stringify(
-          runtime.surfaces.slack.render(composition).blocks,
+          runtime.surfaces.slack.render(composition, lenient).blocks,
           null,
           2
         ),
       };
-    case 'jsx':
-      return { kind: 'source', source };
   }
 };
 
 /** One slide on one surface. */
 export const Stage = ({
   fullscreen,
+  pngUrl,
   slide,
   surface,
   theme,
+  onOverflow,
 }: {
   fullscreen: boolean;
+  pngUrl: PngUrl;
   slide: DeckSlide;
   surface: SurfaceId;
   theme: Theme;
+  /** Called with whether the slide overflows, on the surfaces the viewer lays out itself. */
+  onOverflow?: ((overflowing: boolean) => void) | undefined;
 }) => {
   const rendered = useMemo(
-    () => render(slide, surface, theme),
-    [slide, surface, theme]
+    () => render(slide, surface, theme, pngUrl),
+    [slide, surface, theme, pngUrl]
   );
 
   switch (rendered.kind) {
-    case 'canvas':
+    case 'slide':
       return (
         <Scaled {...{ fullscreen }}>
-          <div style={{ colorScheme: theme }}>{rendered.node}</div>
+          <ShadowSlide
+            composition={slide.composition}
+            {...{ theme, onOverflow }}
+          />
         </Scaled>
       );
     case 'html':
       return (
         <Scaled {...{ fullscreen }}>
-          <ShadowHtml {...{ theme }} css={rendered.css} html={rendered.html} />
+          <ShadowHtml
+            {...{ theme, onOverflow }}
+            css={rendered.css}
+            html={rendered.html}
+          />
         </Scaled>
       );
     case 'png':

@@ -1,0 +1,64 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+import { slideStylesheet } from '@elastic/isomer-primitives-slides';
+
+import { runtime } from '../runtime';
+import {
+  frame,
+  Slide,
+  SlideFrame,
+  SlideHeading,
+  SlidePipeline,
+  SlideStat,
+  toComposition,
+} from '../shim';
+
+import { problemSlide } from './02_problem';
+
+const kb = (css: string) =>
+  (new TextEncoder().encode(css).length / 1024).toFixed(1);
+
+const slideCss = kb(
+  runtime.surfaces.html.render(problemSlide, { css: 'separate' }).css
+);
+const packCss = kb(slideStylesheet());
+
+export const renderSlide = toComposition(
+  <Slide title="Every render runs the same four steps">
+    <SlideFrame {...frame} chapterNumber="03" chapter="How it works">
+      <SlideHeading title="Every render runs the same four steps" />
+      <SlidePipeline
+        start="Composition"
+        end="Surface"
+        steps={[
+          {
+            title: 'Validate',
+            body: 'One discriminated union over every primitive, then semantic passes. Errors are a path and a message.',
+          },
+          {
+            title: 'Dispatch',
+            body: 'One dispatcher keyed by node type runs sanitize, then the renderer. A hidden node degrades instead of disappearing.',
+          },
+          {
+            title: 'Envelope',
+            body: 'Each surface wraps the body: a section, an h1, an uppercase title, a header block, or a frame.',
+          },
+          {
+            title: 'Styles',
+            body: 'Render once to collect the classes in use, then emit only that CSS.',
+          },
+        ]}
+      />
+      <SlideStat
+        value={slideCss}
+        unit="KB"
+        body={`The timeline slide ships ${slideCss} KB of the pack's ${packCss} KB stylesheet, because the styles step emits only what the slide uses.`}
+      />
+    </SlideFrame>
+  </Slide>
+);

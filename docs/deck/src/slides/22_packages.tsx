@@ -1,0 +1,65 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+import {
+  frame,
+  Slide,
+  SlideFrame,
+  SlideHeading,
+  SlideTable,
+  toComposition,
+} from '../shim';
+
+export const packagesSlide = toComposition(
+  <Slide title="Six packages ship at one version">
+    <SlideFrame {...frame} chapterNumber="05" chapter="Getting started">
+      <SlideHeading title="Six packages ship at one version" />
+      <SlideTable
+        columns={['Package', 'Role', 'Use']}
+        rowHeaders={true}
+        groups={[
+          {
+            label: 'A host installs',
+            rows: [
+              [
+                '@elastic/isomer-sdk',
+                'Contracts',
+                'Write primitives and packs',
+              ],
+              ['@elastic/isomer-runtime', 'Assembly', 'Validate and render'],
+            ],
+          },
+          {
+            label: 'Added as needed',
+            rows: [
+              [
+                '@elastic/isomer-primitives-slides',
+                'Reference pack',
+                'Copy it, or render decks',
+              ],
+              [
+                '@elastic/isomer-image-takumi',
+                'Rasterizer',
+                'Turn the svg surface into PNG',
+              ],
+              [
+                '@elastic/isomer-mcp',
+                'Agent tools',
+                'Serve a runtime over MCP',
+              ],
+              [
+                '@elastic/isomer-evals',
+                'Harness',
+                'Measure a model against a pack',
+              ],
+            ],
+          },
+        ]}
+      />
+    </SlideFrame>
+  </Slide>
+);

@@ -11,26 +11,43 @@ import { buildJsxShim } from '@elastic/isomer-sdk/author';
 export const {
   Composition: Slide,
   SlideBulletList,
-  SlideCard,
-  SlideCardGroup,
+  SlideClosing,
   SlideCode,
-  SlideCycle,
-  SlideFlow,
+  SlideColumns,
+  SlideDefinitions,
+  SlideFanout,
   SlideFrame,
+  SlideGraph,
+  SlideHeading,
+  SlideLanes,
+  SlideList,
+  SlidePipeline,
+  SlideRender,
+  SlideRenderGrid,
+  SlideSection,
   SlideSplit,
   SlideStack,
+  SlideStat,
+  SlideStats,
   SlideTable,
   SlideTerritory,
   SlideTerritoryGroup,
+  SlideTimeline,
   SlideTitle,
   SlideTranscript,
+  SlideTree,
   SlideTurn,
   SlideWindow,
   toComposition,
+  toJsx: printJsx,
 } = buildJsxShim(slideDeckPrimitives);
 
-/** Props every slide's frame shares. */
+/** A composition as JSX in this deck's own terms, rooted at `Slide`. */
+export const toJsx = (composition: Parameters<typeof printJsx>[0]): string =>
+  printJsx(composition, { root: 'Slide' });
+
+/** Footer props every slide shares. */
 export const frame = {
   brand: 'Isomer',
-  footer: 'elastic.github.io/isomer',
+  url: 'https://elastic.github.io/isomer',
 } as const;

@@ -5,6 +5,14 @@
   "description": "The Isomer deck: every slide is a composition rendered by the slides pack.",
   "license": "Elastic-2.0",
   "type": "module",
+  "exports": {
+    "./viewer": "./src/viewer/index.ts",
+    "./viewer.css": "./src/viewer/viewer.css",
+    "./runtime": "./src/runtime.ts",
+    "./fonts": "./src/fonts.ts",
+    "./surfaces": "./src/surfaces.ts",
+    "./shim": "./src/shim.ts"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",

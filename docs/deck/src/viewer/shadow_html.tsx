@@ -5,21 +5,27 @@
  * 2.0.
  */
 
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 
 import type { Theme } from '../surfaces';
+
+import { useOverflow } from './overflow';
 
 /** The html surface's output in a shadow root, per `runtime/docs/embedding.md`. */
 export const ShadowHtml = ({
   css,
   html,
   theme,
+  onOverflow,
 }: {
   css: string;
   html: string;
   theme: Theme;
+  /** Called with whether the slide's content runs past its frame body. */
+  onOverflow?: ((overflowing: boolean) => void) | undefined;
 }) => {
   const host = useRef<HTMLDivElement>(null);
+  const [root, setRoot] = useState<ShadowRoot>();
 
   useLayoutEffect(() => {
     const element = host.current;
@@ -33,7 +39,10 @@ export const ShadowHtml = ({
     const body = document.createElement('div');
     body.innerHTML = html;
     root.append(style, body);
+    setRoot(root);
   }, [css, html, theme]);
+
+  useOverflow(root, html, onOverflow);
 
   return <div ref={host} />;
 };

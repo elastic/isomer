@@ -16,18 +16,20 @@ const family = (
   pkg: string,
   name: string,
   slug: string,
-  weights: readonly number[]
+  weights: readonly number[],
+  style: 'normal' | 'italic' = 'normal'
 ): FontLoader[] =>
   weights.map((weight) => {
     const file = require.resolve(
-      `${pkg}/files/${slug}-latin-${weight}-normal.woff2`
+      `${pkg}/files/${slug}-latin-${weight}-${style}.woff2`
     );
-    return { name, weight, data: () => readFile(file) };
+    return { name, weight, style, data: () => readFile(file) };
   });
 
 /** The faces the browser loads in `main.tsx`, for the image surface. */
 export const deckFonts: readonly FontLoader[] = [
   ...family('@fontsource/inter', 'Inter', 'inter', [400, 500, 600, 700, 800]),
+  ...family('@fontsource/inter', 'Inter', 'inter', [400], 'italic'),
   ...family(
     '@fontsource/roboto-mono',
     'Roboto Mono',

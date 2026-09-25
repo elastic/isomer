@@ -10,12 +10,12 @@ export const surfaces = [
   {
     id: 'slide',
     label: 'Slide',
-    call: 'runtime.surfaces.react.render(slide, { heading: false })',
+    call: 'runtime.surfaces.react.render(slide, { heading: false, wrapper: { theme } })',
   },
   {
     id: 'html',
     label: 'HTML',
-    call: "runtime.surfaces.html.render(slide, { css: 'separate', theme })",
+    call: "runtime.surfaces.html.render(slide, { css: 'separate', heading: false, theme })",
   },
   {
     id: 'png',
@@ -25,18 +25,17 @@ export const surfaces = [
   {
     id: 'markdown',
     label: 'Markdown',
-    call: 'runtime.surfaces.markdown.render(slide)',
+    call: 'runtime.surfaces.markdown.render(slide, { heading: false })',
   },
-  { id: 'text', label: 'Text', call: 'runtime.surfaces.text.render(slide)' },
+  {
+    id: 'text',
+    label: 'Text',
+    call: 'runtime.surfaces.text.render(slide, { heading: false })',
+  },
   {
     id: 'slack',
     label: 'Slack',
-    call: 'runtime.surfaces.slack.render(slide).blocks',
-  },
-  {
-    id: 'jsx',
-    label: 'JSX',
-    call: 'toComposition(<Slide>…</Slide>)',
+    call: 'runtime.surfaces.slack.render(slide, { heading: false }).blocks',
   },
 ] as const;
 
