@@ -5,119 +5,144 @@
 
 name: docs-preview
 
+# Models elastic/docs-builder's own docs-preview-local.yml: build the docset
+# under a per-PR path prefix and sync it to the shared preview bucket, served
+# at https://docs-v3-preview.elastic.dev. Pairs with
+# docs-preview-cleanup.yml, which tears the preview down when the PR closes.
+#
+# The AWS credential is short-lived OIDC, and the role it assumes is derived
+# from this repository's name, so it can only write this repository's own
+# preview prefix. That scoping is what lets this run on a plain pull_request
+# trigger without handing out contents:write.
 on:
-  workflow_run:
-    workflows: [docs]
-    types: [completed]
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
 
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: docs-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
-  preview:
-    name: Deploy PR preview
-    # A workflow_run job always runs the version of this file committed to
-    # the repository's default branch, never the triggering branch's own
-    # copy -- unlike a job triggered directly by pull_request, which runs
-    # with whatever that PR's own branch currently has in .github/workflows.
-    # That's the whole reason this is a separate workflow: it's the only way
-    # to hand out contents:write/pull-requests:write for a same-repo PR
-    # build without letting that PR's own branch redefine what those
-    # permissions get used for.
-    if: >
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'pull_request' &&
-      github.event.workflow_run.pull_requests[0] != null
+  deploy:
+    name: Deploy docs preview
+    # A fork PR gets no OIDC credential, so skip it rather than fail red.
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      pull-requests: write
-      actions: read
-      pages: read
-    env:
-      PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+      contents: read
+      deployments: write
+      id-token: write
+    outputs:
+      path_prefix: ${{ steps.prefix.outputs.value }}
     steps:
       - uses: actions/checkout@v5
-      - name: Determine current PR state
-        # workflow_run.pull_requests carries only the minimal PR record
-        # (url/id/number/head/base) -- no state -- so ask the API for it in
-        # this trusted job rather than trusting anything from the triggering
-        # (PR-branch-controlled) run.
-        id: pr
+        with:
+          persist-credentials: false
+      - name: Resolve preview path prefix
+        id: prefix
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          state="$(gh api "repos/${{ github.repository }}/pulls/${{ env.PR_NUMBER }}" --jq .state)"
-          echo "state=$state" >> "$GITHUB_OUTPUT"
-      - name: Download built site
-        if: steps.pr.outputs.state == 'open'
-        uses: actions/download-artifact@v4
-        with:
-          name: site
-          path: site
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Determine live Pages URL
-        # Re-derive this from the API in this trusted job rather than
-        # trusting anything computed by docs.yml's build job: that job runs
-        # unprivileged, but still executes the PR branch's own code, so a
-        # value it handed across (e.g. via an artifact) could be an
-        # attacker-chosen host that only looks syntactically valid. Only a
-        # value this job fetches itself is safe to hand to pr-preview-action,
-        # which publishes it as the bot's own sticky-comment link.
-        id: pages
-        if: steps.pr.outputs.state == 'open'
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: echo "value=${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+      - name: Create deployment
+        id: deployment
+        uses: actions/github-script@v9
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        with:
+          result-encoding: string
+          script: |
+            const { owner, repo } = context.repo
+            const deployment = await github.rest.repos.createDeployment({
+              owner,
+              repo,
+              environment: 'docs-preview',
+              task: `docs-preview-${process.env.PR_NUMBER}`,
+              ref: context.payload.pull_request.head.sha,
+              auto_merge: false,
+              transient_environment: true,
+              required_contexts: [],
+            })
+            await github.rest.repos.createDeploymentStatus({
+              owner,
+              repo,
+              deployment_id: deployment.data.id,
+              state: 'in_progress',
+              log_url: `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`,
+            })
+            return deployment.data.id
+      - name: Assemble package docs
+        run: node scripts/assemble_package_docs.js
+      - name: Build documentation
+        uses: elastic/docs-builder@main
+        with:
+          prefix: ${{ steps.prefix.outputs.value }}
+      - uses: elastic/docs-builder/.github/actions/aws-auth@main
+      - name: Upload to S3
+        id: upload
+        env:
+          AWS_RETRY_MODE: standard
+          AWS_MAX_ATTEMPTS: 6
+          PATH_PREFIX: ${{ steps.prefix.outputs.value }}
         run: |
-          html_url="$(gh api "repos/${{ github.repository }}/pages" --jq .html_url 2>/dev/null || true)"
-          if [[ -n "$html_url" ]]; then
-            rest="${html_url#*://}"
-            host="${rest%%/*}"
-            if [[ "$rest" == */* ]]; then
-              path="${rest#*/}"
-              path="${path%/}"
-            else
-              path=""
-            fi
-          elif [[ "${{ github.event.repository.private }}" == "true" ]]; then
-            host="${{ github.repository_owner }}.github.io"
-            path=""
-          else
-            host="${{ github.repository_owner }}.github.io"
-            path="${{ github.event.repository.name }}"
-          fi
-          # pr-preview-action checks that pages-base-path literally prefixes
-          # where it deploys (umbrella-dir/pr-<n>, always relative to the
-          # branch root) and silently ignores it otherwise -- our content is
-          # never nested under a matching path on the branch itself, so a
-          # separate pages-base-path would always fail that check. Fold the
-          # path into the base URL instead, which is a plain string prefix
-          # with no such validation.
-          echo "url=${host}${path:+/$path}" >> "$GITHUB_OUTPUT"
-      - name: Ensure root .nojekyll on gh-pages
-        # .nojekyll only disables Jekyll (which drops _static/ and every
-        # other underscore-prefixed path) when it sits at the branch root --
-        # a copy nested under pr-preview/pr-<n>/ has no effect. The main
-        # publish job seeds this too, but that only runs once something
-        # merges to main, which previews can't wait on.
-        if: steps.pr.outputs.state == 'open'
-        run: mkdir -p /tmp/nojekyll-only && touch /tmp/nojekyll-only/.nojekyll
-      - uses: peaceiris/actions-gh-pages@v4
-        if: steps.pr.outputs.state == 'open'
+          aws s3 sync .artifacts/docs/html \
+            "s3://elastic-docs-v3-website-preview/${PATH_PREFIX}" \
+            --delete --no-follow-symlinks
+          aws cloudfront create-invalidation \
+            --distribution-id EKT7LT5PM8RKS \
+            --paths "/${PATH_PREFIX}" "/${PATH_PREFIX}/*"
+      - name: Update deployment status
+        if: always() && steps.deployment.outputs.result
+        uses: actions/github-script@v9
+        env:
+          DEPLOYMENT_ID: ${{ steps.deployment.outputs.result }}
+          PATH_PREFIX: ${{ steps.prefix.outputs.value }}
+          UPLOAD_OUTCOME: ${{ steps.upload.outcome }}
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: /tmp/nojekyll-only
-          keep_files: true
-      - name: Deploy or remove preview
-        uses: rossjrw/pr-preview-action@v1
+          script: |
+            const { owner, repo } = context.repo
+            await github.rest.repos.createDeploymentStatus({
+              owner,
+              repo,
+              deployment_id: Number(process.env.DEPLOYMENT_ID),
+              state: process.env.UPLOAD_OUTCOME === 'success' ? 'success' : 'failure',
+              environment_url: `https://docs-v3-preview.elastic.dev/${process.env.PATH_PREFIX}/`,
+              log_url: `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`,
+            })
+
+  comment:
+    name: Comment preview link
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/github-script@v9
+        env:
+          PATH_PREFIX: ${{ needs.deploy.outputs.path_prefix }}
         with:
-          source-dir: site
-          umbrella-dir: pr-preview
-          pr-number: ${{ env.PR_NUMBER }}
-          action: ${{ steps.pr.outputs.state == 'open' && 'deploy' || 'remove' }}
-          pages-base-url: ${{ steps.pages.outputs.url }}
+          script: |
+            const title = '## Docs preview'
+            const body = `${title}\n\nhttps://docs-v3-preview.elastic.dev/${process.env.PATH_PREFIX}/`
+            const { owner, repo } = context.repo
+            const issue_number = context.payload.pull_request.number
+            const { data: comments } = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number,
+            })
+            const existing = comments.find(
+              (c) => c.user.type === 'Bot' && c.body.startsWith(title)
+            )
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              })
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body })
+            }

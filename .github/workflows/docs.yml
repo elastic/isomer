@@ -5,11 +5,11 @@
 
 name: docs
 
+# PR builds are validated by ci.yml's docs-builder job and previewed by
+# docs-preview.yml; this only publishes main.
 on:
   push:
     branches: [main]
-  pull_request:
-    types: [opened, reopened, synchronize, closed]
 
 permissions:
   contents: read
@@ -19,99 +19,39 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    name: Build documentation
+  deploy:
+    name: Deploy GitHub Pages
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     permissions:
       contents: read
-      pages: read
+      pages: write
+      id-token: write
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - name: Assemble package docs
         run: node scripts/assemble_package_docs.js
-      - name: Determine live Pages URL
+      - name: Configure Pages
         id: pages
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          # A private Pages site serves from a random per-repo pages.github.io
-          # host at its root; a public project page serves under
-          # /<repo>/. Ask the Pages API which one is actually live instead of
-          # guessing from repository visibility, since the two aren't always
-          # in lockstep and only the API reflects reality.
-          html_url="$(gh api "repos/${{ github.repository }}/pages" --jq .html_url 2>/dev/null || true)"
-          if [[ -n "$html_url" ]]; then
-            rest="${html_url#*://}"
-            host="${rest%%/*}"
-            if [[ "$rest" == */* ]]; then
-              path="${rest#*/}"
-              path="${path%/}"
-            else
-              path=""
-            fi
-          elif [[ "${{ github.event.repository.private }}" == "true" ]]; then
-            # No live site to ask yet (or a transient API failure) on a
-            # private repo -- assume the private root-served shape rather
-            # than guessing a project-page path that would break every
-            # asset link on every page.
-            host="${{ github.repository_owner }}.github.io"
-            path=""
-          else
-            # Same, for a public repo: assume the standard project-page shape.
-            host="${{ github.repository_owner }}.github.io"
-            path="${{ github.event.repository.name }}"
-          fi
-          echo "host=$host" >> "$GITHUB_OUTPUT"
-          echo "path=$path" >> "$GITHUB_OUTPUT"
-      - name: Compute URL prefix
+        uses: actions/configure-pages@v5
+      - name: Resolve docs prefix
         id: prefix
         env:
-          BASE_PATH: ${{ steps.pages.outputs.path }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}
         run: |
-          # A PR preview nests under pr-preview/pr-<n>/ beneath whichever
-          # base path is actually live.
-          prefix="$BASE_PATH"
-          if [[ -n "$PR_NUMBER" ]]; then
-            prefix="${prefix:+$prefix/}pr-preview/pr-$PR_NUMBER"
-          fi
-          echo "prefix=$prefix" >> "$GITHUB_OUTPUT"
+          # base_path is "/isomer" for a public project page and "" for a
+          # site served at its host root. docs-builder wants it unslashed.
+          echo "value=${BASE_PATH#/}" >> "$GITHUB_OUTPUT"
       - name: Build documentation
         uses: elastic/docs-builder@main
         with:
-          prefix: ${{ steps.prefix.outputs.prefix }}
-      - uses: actions/upload-artifact@v4
+          prefix: ${{ steps.prefix.outputs.value }}
+      - uses: actions/upload-pages-artifact@v3
         with:
-          name: site
           path: .artifacts/docs/html
-
-  deploy:
-    name: Deploy GitHub Pages
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v4
-        with:
-          name: site
-          path: site
-      - name: Preserve PR previews across the clean publish
-        # A clean publish (the default, no keep_files) is what actually
-        # removes stale pages when something is renamed or deleted on main.
-        # Carry the existing pr-preview/ tree forward explicitly instead of
-        # keeping everything, since keep_files:true would let deleted pages
-        # on the main site live on forever alongside it.
-        run: |
-          git fetch origin gh-pages --depth=1 2>/dev/null || true
-          if git rev-parse --verify --quiet origin/gh-pages > /dev/null &&
-             git cat-file -e origin/gh-pages:pr-preview 2>/dev/null; then
-            git archive origin/gh-pages -- pr-preview | tar -x -C site
-          fi
-      - name: Publish to gh-pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: site
+      - id: deployment
+        uses: actions/deploy-pages@v4

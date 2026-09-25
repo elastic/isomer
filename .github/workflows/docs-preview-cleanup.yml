@@ -1,0 +1,64 @@
+# Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+# or more contributor license agreements. Licensed under the Elastic License
+# 2.0; you may not use this file except in compliance with the Elastic License
+# 2.0.
+
+name: docs-preview-cleanup
+
+# Pairs with docs-preview.yml. pull_request_target so this still runs with
+# credentials once the PR's head branch is gone; it never checks out or runs
+# any code from the PR.
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  contents: none
+
+jobs:
+  destroy:
+    name: Remove docs preview
+    if: github.event.repository.fork == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: none
+      deployments: write
+      id-token: write
+    steps:
+      - name: Delete deployment records
+        id: delete-deployment
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { owner, repo } = context.repo
+            const deployments = await github.rest.repos.listDeployments({
+              owner,
+              repo,
+              environment: 'docs-preview',
+              task: `docs-preview-${context.issue.number}`,
+            })
+            core.setOutput('is-empty', deployments.data.length === 0)
+            for (const deployment of deployments.data) {
+              await github.rest.repos.createDeploymentStatus({
+                owner,
+                repo,
+                deployment_id: deployment.id,
+                state: 'inactive',
+                description: 'Marking deployment as inactive',
+              })
+              await github.rest.repos.deleteDeployment({
+                owner,
+                repo,
+                deployment_id: deployment.id,
+              })
+            }
+      - uses: elastic/docs-builder/.github/actions/aws-auth@main
+        if: steps.delete-deployment.outputs.is-empty == 'false'
+      - name: Delete S3 objects
+        if: steps.delete-deployment.outputs.is-empty == 'false'
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          aws s3 rm \
+            "s3://elastic-docs-v3-website-preview/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" \
+            --recursive
