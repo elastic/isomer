@@ -7,7 +7,12 @@
 
 import type { ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { type FontLoader, Renderer, type RenderOptions } from '@takumi-rs/core';
+import {
+  type FontLoader,
+  type MeasuredNode,
+  Renderer,
+  type RenderOptions,
+} from '@takumi-rs/core';
 import { fromHtml } from '@takumi-rs/helpers/html';
 
 /**
@@ -52,6 +57,19 @@ export interface TakumiRenderOptions {
   devicePixelRatio?: number;
 }
 
+/** A laid-out box on the canvas, in pixels, with the boxes nested in it. */
+export interface LayoutBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  /** How much the box is scaled on the canvas, e.g. a picture drawn with `transform: scale()`. */
+  scale: number;
+  /** Text laid out in this box, each run positioned on the canvas. */
+  runs: { text: string; x: number; y: number; width: number; height: number }[];
+  children: LayoutBox[];
+}
+
 /**
  * Rasterizes the `svg` surface's output.
  *
@@ -64,7 +82,54 @@ export interface TakumiImageBackend {
   png(input: ImageInput, options?: TakumiRenderOptions): Promise<Buffer>;
   /** Renders to an SVG document. Vector output, so raster options do not apply. */
   svg(input: ImageInput): Promise<string>;
+  /** Lays the input out as {@link TakumiImageBackend.png} would, and returns every box, e.g. to find content past its area. */
+  measure(input: ImageInput): Promise<LayoutBox>;
 }
+
+type Matrix = MeasuredNode['transform'];
+
+/** The canvas rectangle `transform` maps a local `width` × `height` box at `x`, `y` to. */
+const mapRect = (
+  [a, b, c, d, e, f]: Matrix,
+  x: number,
+  y: number,
+  width: number,
+  height: number
+): { x: number; y: number; width: number; height: number } => {
+  const corners = [
+    [x, y],
+    [x + width, y],
+    [x, y + height],
+    [x + width, y + height],
+  ].map(([px = 0, py = 0]) => [a * px + c * py + e, b * px + d * py + f]);
+  const xs = corners.map(([cx = 0]) => cx);
+  const ys = corners.map(([, cy = 0]) => cy);
+  const left = Math.min(...xs);
+  const top = Math.min(...ys);
+  return {
+    x: left,
+    y: top,
+    width: Math.max(...xs) - left,
+    height: Math.max(...ys) - top,
+  };
+};
+
+// Takumi reports each node's size in its own units and its full canvas transform, scale included.
+const toLayoutBox = ({
+  width,
+  height,
+  transform,
+  runs,
+  children,
+}: MeasuredNode): LayoutBox => ({
+  ...mapRect(transform, 0, 0, width, height),
+  scale: Math.hypot(transform[0], transform[1]),
+  runs: runs.map((run) => ({
+    text: run.text,
+    ...mapRect(transform, run.x, run.y, run.width, run.height),
+  })),
+  children: children.map(toLayoutBox),
+});
 
 const escapeStyleEndTags = (css: string) =>
   css.replace(/<\/style/gi, (tag) => tag.replace('/', '\\/'));
@@ -129,6 +194,17 @@ export const createTakumiImageBackend = ({
         height: input.height,
         css,
       });
+    },
+    measure: async (input) => {
+      await ready();
+      const { node, css } = toTakumiSource(input);
+      return toLayoutBox(
+        await renderer.measure(node, {
+          width: input.width,
+          height: input.height,
+          css,
+        })
+      );
     },
   };
 };

@@ -7,6 +7,7 @@
 
 export {
   type ImageInput,
+  type LayoutBox,
   type TakumiImageBackend,
   type TakumiImageBackendOptions,
   type TakumiRenderOptions,

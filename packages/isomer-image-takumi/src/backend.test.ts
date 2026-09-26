@@ -101,6 +101,29 @@ describe('createTakumiImageBackend', () => {
     expect(svg).toContain('width="64"');
   });
 
+  it('measures boxes at their canvas position', async () => {
+    const box = await createTakumiImageBackend().measure({
+      element: createElement(
+        'div',
+        { className: 'outer' },
+        createElement('div', { className: 'inner' }, 'Ag')
+      ),
+      css: '.outer { width: 64px; height: 32px; padding: 4px 6px; box-sizing: border-box; display: flex } .inner { width: 20px; height: 10px }',
+      width: 64,
+      height: 32,
+    });
+    expect(box).toMatchObject({ x: 0, y: 0, width: 64, height: 32 });
+    expect(box.children[0]).toMatchObject({
+      x: 6,
+      y: 4,
+      width: 20,
+      height: 10,
+    });
+    const [run] = box.children[0]?.runs ?? [];
+    expect(run).toMatchObject({ text: 'Ag', x: 6 });
+    expect(run?.y).toBeCloseTo(4, 0);
+  });
+
   it('registers a woff2 face without conversion', async () => {
     const file =
       require.resolve('@fontsource/inter/files/inter-latin-700-normal.woff2');
