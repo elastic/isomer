@@ -13,7 +13,11 @@ import type {
   StyledRenderContext,
 } from '../../define/primitive_module';
 
-import type { EnhancementDefinition } from './enhancements';
+import {
+  type EnhancementDefinition,
+  rendersAnchors,
+  resolveEnhancements,
+} from './enhancements';
 import type {
   HTMLEnhancementScope,
   HTMLRenderDispatcher,
@@ -43,6 +47,21 @@ export interface HTMLStyleCollectionOptions<
   options?: HTMLRenderOptions;
   enhancementDefinitions?: readonly EnhancementDefinition[];
 }
+
+/** `context` with node anchors on when `options` ask for them or a resolved enhancement declares them. */
+export const withAnchors = <TContext>(
+  context: TContext,
+  { body }: Composition,
+  options: HTMLRenderOptions,
+  { walk, definitions }: HTMLEnhancementScope
+): TContext =>
+  rendersAnchors(
+    resolveEnhancements(body, options.enhancements, walk, definitions),
+    definitions,
+    options.anchors
+  )
+    ? { ...context, anchors: true }
+    : context;
 
 /** The collection half of an html render, for {@link renderHTMLWithDispatcher} and for a host rendering the tree itself. `options` are already resolved. */
 export const startStyleCollection = <
@@ -77,7 +96,12 @@ export const startStyleCollection = <
   );
   return {
     collector,
-    context: styleAdapter.createRenderContext(collector, options),
+    context: withAnchors(
+      styleAdapter.createRenderContext(collector, options),
+      composition,
+      options,
+      scope
+    ),
     css: () => {
       styleAdapter.collectAfterRender?.(composition, collector, options);
       return styleAdapter.renderStyles(collector, options);
@@ -98,7 +122,12 @@ export const createHTMLStyleCollection = <
   composition: Composition<TNode>,
   settings: HTMLStyleCollectionOptions<TNode, TCollector, TContext>
 ): HTMLStyleCollection<TContext> => {
-  const { styleAdapter, options = {} } = settings;
+  const {
+    dispatcher,
+    styleAdapter,
+    options = {},
+    enhancementDefinitions = [],
+  } = settings;
   const resolved =
     styleAdapter?.resolveOptions?.(composition, options) ?? options;
   const started = startStyleCollection(composition, {
@@ -108,5 +137,11 @@ export const createHTMLStyleCollection = <
   // No adapter means no class names and no css vars to resolve.
   return started
     ? { context: started.context, css: started.css }
-    : { context: {} as TContext, css: () => '' };
+    : {
+        context: withAnchors({} as TContext, composition, resolved, {
+          walk: createChildNodeWalker(dispatcher.definitions),
+          definitions: enhancementDefinitions,
+        }),
+        css: () => '',
+      };
 };

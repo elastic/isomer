@@ -14,12 +14,14 @@
 
 import assert from 'node:assert/strict';
 
+import type { ChildNodeWalker } from '../composition/body_node_base';
 import type { Composition } from '../composition/composition';
 import type { ValidationError } from '../composition/validation_error';
 import type {
   AnyPrimitiveDefinition,
   PrimitiveNode,
 } from '../define/primitive_module';
+import { anchoredNodesByType, NODE_ANCHOR_ATTRIBUTE } from '../render/anchors';
 import type { HTMLRenderResult } from '../render/html/envelope';
 import type { SlackBlock } from '../render/slack/blocks';
 import type { ValidationResult } from '../validate/validation';
@@ -47,6 +49,8 @@ export interface PrimitiveConformanceHtmlOptions {
   readonly css?: 'inline' | 'separate';
   /** `'readable'` must emit human-legible class names, which the CSS coverage case matches back against the emitted selectors. */
   readonly names?: string;
+  /** Must render node anchors, as the `anchors` HTML render option does. */
+  readonly anchors?: boolean;
 }
 
 /** The subset of a host's SVG render result the cases assert on. */
@@ -121,6 +125,12 @@ export interface PrimitiveConformanceHarness {
     composition: Composition,
     options?: PrimitiveConformanceHtmlOptions
   ): HTMLRenderResult;
+  /**
+   * The child walker over every definition the harness renders with. Set it
+   * once every `react` renderer spreads `nodeAnchor` on its root; the anchor
+   * case then asserts each node renders one.
+   */
+  anchorWalk?: ChildNodeWalker;
   /** Must throw when `css` references a `var(--name)` it never declares. Omit to skip the CSS variable case. */
   assertVarRefsHaveDeclarations?(css: string): void;
   /** Whole-composition text render, title envelope included. */
@@ -332,6 +342,39 @@ export const primitiveConformanceCases: readonly PrimitiveConformanceCase[] = [
       assert.ok(result.html.includes('<section'));
       assert.equal(result.measurement.js, 0);
       assert.ok(result.measurement.total > 0);
+    },
+  },
+  {
+    name: 'renders no node anchors unless asked',
+    run: ({ node }, harness) => {
+      if (!harness.renderHTML) {
+        return;
+      }
+      const { body } = harness.renderHTML(harness.wrapComposition(node));
+      assert.ok(!body.includes(NODE_ANCHOR_ATTRIBUTE));
+    },
+  },
+  {
+    name: 'renders a node anchor on every node when asked',
+    run: ({ type, exampleIndex, node }, harness) => {
+      if (!harness.renderHTML || !harness.anchorWalk) {
+        return;
+      }
+      const composition = harness.wrapComposition(node);
+      const { body } = harness.renderHTML(composition, { anchors: true });
+      const hint = previewHint(type, exampleIndex);
+      for (const [anchored, nodes] of anchoredNodesByType(
+        composition.body,
+        harness.anchorWalk
+      )) {
+        const rendered =
+          body.split(`${NODE_ANCHOR_ATTRIBUTE}="${anchored}"`).length - 1;
+        assert.equal(
+          rendered,
+          nodes.length,
+          `Expected ${nodes.length} \`${anchored}\` anchor(s), found ${rendered}. ${hint}`
+        );
+      }
     },
   },
   {

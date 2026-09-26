@@ -35,19 +35,21 @@ describe('slideRenderGrid', () => {
   it('takes two to six tiles, each surface once', () => {
     expect(validate({ ...example, tiles: example.tiles.slice(0, 1) }))
       .toMatchInlineSnapshot(`
-      [
-        {
-          "message": "must have at least 2 items",
-          "path": "body[0].tiles",
-        },
-      ]
-    `);
+        [
+          {
+            "message": "must have at least 2 items",
+            "nodeType": "slideRenderGrid",
+            "path": "body[0].tiles",
+          },
+        ]
+      `);
     expect(
       validate({ ...example, tiles: [example.tiles[0], example.tiles[0]] })
     ).toMatchInlineSnapshot(`
       [
         {
           "message": "each surface may appear once",
+          "nodeType": "slideRenderGrid",
           "path": "body[0].tiles",
         },
       ]
@@ -66,6 +68,7 @@ describe('slideRenderGrid', () => {
       [
         {
           "message": "an embedded composition cannot embed another render",
+          "nodeType": "slideRender",
           "path": "body[0].composition.body[0]",
         },
       ]

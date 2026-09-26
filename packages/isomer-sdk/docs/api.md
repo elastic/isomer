@@ -29,9 +29,9 @@ What each entry point exports, and which ones cost you a dependency.
 | `describeCapabilities` | Reports primitives, formats, and enhancements for a set of packs |
 | `unresolvedBodyNodeSchema` | The child slot in a container's standalone schema |
 
-Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `PrimitiveSchema` (a `ZodObject`), `PrimitiveCatalogEntry`, `PrimitiveMetrics`, `PrimitiveChildRef`, `PrimitiveRenderContext`, `StyledRenderContext`, `PrimitiveStyleCollector`, `PrimitiveStyleCollectionContext`, `PackTypes`, `DefaultPackTypes`, `Renderer` (`(node, env)` — `env` is `SurfaceMap<T>[S]['env']`), `Renderers`, `RenderScope`, `ReactContextArg` (the context parameter a `react` renderer receives), `SurfaceMap`, `SurfaceName`, `OptionalSurface`, `PrimitivePack`, `AnyPrimitivePack`, `PrimitivePackInput`, `PackStyleAdapter`, `PackAuthoringOptions`, `ComposedPacks`, `Frame`, `FrameBody`, `BoundFrame`, `FrameDispatcher`, `FrameHeader`, `FrameComposition`, `FrameViewport`, `ThemePair`, `EnhancementDefinition`, `HostCapabilities`, `StyleHandle`, `ThemeTokenPath`, `SvgRenderThemeBase`, `Composition`, `BodyNode` (the same type as `PrimitiveNode`, kept for hosts that name body nodes), `BodyNodeBase`, `BodyNodeSurface`, `ActionEventRef`, `IsomerError`, `IsomerErrorCode`.
+Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `PrimitiveSchema` (a `ZodObject`), `PrimitiveCatalogEntry`, `PrimitiveMetrics`, `PrimitiveChildRef`, `PrimitiveRenderContext`, `StyledRenderContext`, `PrimitiveStyleCollector`, `PrimitiveStyleCollectionContext`, `PackTypes`, `DefaultPackTypes`, `Renderer` (`(node, env)` — `env` is `SurfaceMap<T>[S]['env']`), `Renderers`, `RenderScope`, `ReactContextArg` (the context parameter a `react` renderer receives), `SurfaceMap`, `SurfaceName`, `OptionalSurface`, `PrimitivePack`, `AnyPrimitivePack`, `PrimitivePackInput`, `PackStyleAdapter`, `PackAuthoringOptions`, `PrimitiveGroup`, `ComposedPacks`, `Frame`, `FrameBody`, `BoundFrame`, `FrameDispatcher`, `FrameHeader`, `FrameComposition`, `FrameViewport`, `ThemePair`, `EnhancementDefinition`, `HostCapabilities`, `StyleHandle`, `ThemeTokenPath`, `SvgRenderThemeBase`, `Composition`, `BodyNode` (the same type as `PrimitiveNode`, kept for hosts that name body nodes), `BodyNodeBase`, `BodyNodeSurface`, `ActionEventRef`, `IsomerError`, `IsomerErrorCode`.
 
-`react` and `svg` renderers receive `env.theme`: the frame's resolved palette (`T['theme']`) when reached through the `svg` surface, `undefined` outside one. A pack whose `svg` renderers read tokens still declares `theme: themeBound<TTheme>()` on its pack input. `PrimitivePackInput.authoring` (a `PackAuthoringOptions`) is this pack's own contribution — `describe` and `omitProperties` — to the runtime's merged authoring schema.
+`react` and `svg` renderers receive `env.theme`: the frame's resolved palette (`T['theme']`) when reached through the `svg` surface, `undefined` outside one. A pack whose `svg` renderers read tokens still declares `theme: themeBound<TTheme>()` on its pack input. `PrimitivePackInput.authoring` (a `PackAuthoringOptions`) is this pack's own contribution — `describe` and `omitProperties` — to the runtime's merged authoring schema, plus the `groups` its primitives are indexed under.
 
 ## Root entry — dispatch
 
@@ -43,6 +43,8 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | `childNodePath` | Joins a parent path with a child's own fragment |
 | `someBodyNode` | Predicate over a body, following children |
 | `isVisibleOnSurface`, `rendersOnSurface` | Surface-visibility checks |
+| `nodeAnchor`, `NODE_ANCHOR_ATTRIBUTE` | Props a `react` renderer spreads on its root so its element can be found; empty unless `context.anchors` is set |
+| `findNodeElements` | Pairs a body's nodes with their anchored elements under a DOM root |
 | `BODY_NODE_SURFACES` | `['react','svg','text','markdown','slack']` |
 
 ## Root entry — composition and validation
@@ -54,12 +56,13 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | `enforceValidationMode` | Throws `CompositionValidationError` only on `'throw'` |
 | `IsomerError` | Construction and authoring failures, identified by `name` and `code`. Codes name the condition, not the throwing module. |
 | `CompositionValidationError` | Invalid composition, identified by `name`, `code` (`COMPOSITION_INVALID`), and `errors` |
-| `formatValidationError` | `{ path, message }` as one `<path> message` string |
+| `formatValidationError` | `{ path, message, nodeType? }` as one `<path> (in <nodeType>) message` string |
 | `warningsForSurface` | Narrows warnings to one surface |
 | `resolveVocabulary` | Builds a union whose containers reference it |
 | `getCompositionSchemaForDefinitions` | Memoized schema, keyed on array identity |
 | `buildCompositionJsonSchema` | Draft-2020-12 projection for hosts that validate outside TypeScript |
 | `buildAuthoringJsonSchema` | Agent-facing projection: named shared defs, inlined scalars, no `id`/`surfaces` |
+| `authoringSchemaSubset` | The `$defs` a set of types reaches in an authoring schema, ids unchanged and the body-node union stubbed |
 | `formatZodIssue`, `formatZodIssues`, `formatPath` | Zod issues as `ValidationError`s |
 
 Types: `ValidationError`, `ValidationResult`, `ValidationWarning`, `ValidationErrorMode`, `CompositionValidatorOptions`, `ParsedComposition` (`{ valid, errors, composition? }`), `ResolvedVocabulary`, `CompositionSchemaOptions`, `CompositionJsonSchemaOptions`, `AuthoringJsonSchemaOptions`, `IsomerErrorCode`.
@@ -76,7 +79,7 @@ Zod helpers so a pack states constraints the same way everywhere: `z`, `enumOf`,
 
 ## `./html`
 
-`renderHTMLWithDispatcher`, `renderCompositionContent`, `useReactPrimitiveDispatcher`, `createDistillateHtmlStyleAdapter`, and the types a style adapter is written against: `HTMLStyleAdapter`, `DistillateHtmlEngine`, `DistillateThemeVar`, `HTMLRenderOptions`, `HTMLRenderResult`, `HTMLRenderDispatcher`, `HTMLDispatcherRenderOptions`, `HTMLEnhancementScope`, `EnhancementDefinition`, `ReactContentDispatcher`, `ReactContentOptions`. `createHTMLStyleCollection` (with `HTMLStyleCollectionOptions`) returns an `HTMLStyleCollection`, `{ context, css() }`: the same CSS `renderHTMLWithDispatcher` emits, collected from a React render the caller does with `context`, so a host that renders React itself never renders twice for its CSS. `HTMLRenderOptions.enhancements` is a list of enhancement ids; `resolveEnhancements` intersects it with what the body contains and `enhancementScript` concatenates the survivors' scripts. `DISTILLATE_STYLE_COLLECTOR` is the `styleCollector` tag the Distillate adapter publishes, and `flattenSchemeOption` reduces a Distillate light/dark scheme option to one value.
+`renderHTMLWithDispatcher`, `renderCompositionContent`, `useReactPrimitiveDispatcher`, `createDistillateHtmlStyleAdapter`, and the types a style adapter is written against: `HTMLStyleAdapter`, `DistillateHtmlEngine`, `DistillateThemeVar`, `HTMLRenderOptions`, `HTMLRenderResult`, `HTMLRenderDispatcher`, `HTMLDispatcherRenderOptions`, `HTMLEnhancementScope`, `EnhancementDefinition`, `ReactContentDispatcher`, `ReactContentOptions`. `createHTMLStyleCollection` (with `HTMLStyleCollectionOptions`) returns an `HTMLStyleCollection`, `{ context, css() }`: the same CSS `renderHTMLWithDispatcher` emits, collected from a React render the caller does with `context`, so a host that renders React itself never renders twice for its CSS. `HTMLRenderOptions.enhancements` is a list of enhancement ids; `resolveEnhancements` intersects it with what the body contains and `enhancementScript` concatenates the survivors' scripts, and `rendersAnchors` says whether a render carries node anchors. `HTMLRenderOptions.anchors` turns anchors on directly, for tests. `DISTILLATE_STYLE_COLLECTOR` is the `styleCollector` tag the Distillate adapter publishes, and `flattenSchemeOption` reduces a Distillate light/dark scheme option to one value.
 
 ## `./react`
 
@@ -100,7 +103,7 @@ JSX: `fromChildren`, `fromTextChildren`, `AuthoredChildBrand`, `AuthoredTextBran
 
 Object builders: `defineNodeBuilder` (a `NodeBuilder` taking a `BuilderInput`, the node without `type`), `buildObjectBuilders` (a `BuilderMap`, one builder per primitive typed from its schema).
 
-Agent prompts: `buildAuthoringPrompt` (`AuthoringPromptContext`), `createAuthoringPromptBuilder`, `createAgentAuthoringContextFactory` (`AgentAuthoringContextOptions`, `AgentAuthoringContextDefaults`), `AUTHORING_PROFILE_IDS` (`AuthoringProfileId`), `AuthoringViewSummary`. `WithNodeFields` is on the root entry, next to `definePrimitive`.
+Agent prompts: `buildAuthoringPrompt` (`AuthoringPromptContext`; `catalog: 'index'` lists type and purpose under `groups`, and leaving out `schema` drops it), `formatPrimitiveEntry` (one full catalog bullet), `createAuthoringPromptBuilder`, `createAgentAuthoringContextFactory` (`AgentAuthoringContextOptions`, `AgentAuthoringContextDefaults`), `AUTHORING_PROFILE_IDS` (`AuthoringProfileId`), `AuthoringViewSummary`. `WithNodeFields` is on the root entry, next to `definePrimitive`.
 
 ## `./testing`
 

@@ -51,7 +51,7 @@ export const formatZodIssue = (
   }
 
   if (issue.code === 'invalid_value' && Array.isArray(issue.values)) {
-    return { path, message: `must be one of: ${issue.values.join(', ')}` };
+    return { path, message: oneOf(issue.values, issue.input) };
   }
 
   if (issue.code === 'unrecognized_keys') {
@@ -64,7 +64,17 @@ export const formatZodIssue = (
   if (issue.code === 'invalid_union') {
     const { options } = issue as { options?: unknown };
     if (Array.isArray(options)) {
-      return { path, message: `must be one of: ${options.join(', ')}` };
+      const { discriminator, input } = issue as {
+        discriminator?: string;
+        input?: unknown;
+      };
+      const value =
+        discriminator !== undefined &&
+        typeof input === 'object' &&
+        input !== null
+          ? (input as Record<string, unknown>)[discriminator]
+          : input;
+      return { path, message: oneOf(options, value) };
     }
   }
 
@@ -84,6 +94,39 @@ export const formatZodIssue = (
   }
 
   return { path, message: issue.message };
+};
+
+/** Edits between `a` and `b`: insertions, deletions, and substitutions. */
+const editDistance = (a: string, b: string): number => {
+  let previous = Array.from({ length: b.length + 1 }, (_, index) => index);
+  for (let i = 1; i <= a.length; i += 1) {
+    const current = [i];
+    for (let j = 1; j <= b.length; j += 1) {
+      current[j] = Math.min(
+        (previous[j] ?? 0) + 1,
+        (current[j - 1] ?? 0) + 1,
+        (previous[j - 1] ?? 0) + (a[i - 1] === b[j - 1] ? 0 : 1)
+      );
+    }
+    previous = current;
+  }
+  return previous[b.length] ?? 0;
+};
+
+/** `must be one of: …`, led by the closest option when `input` looks like a misspelling of one. */
+const oneOf = (options: readonly unknown[], input: unknown): string => {
+  const list = `must be one of: ${options.join(', ')}`;
+  if (typeof input !== 'string') {
+    return list;
+  }
+  const [closest] = options
+    .filter((option): option is string => typeof option === 'string')
+    .map((option) => ({ option, distance: editDistance(input, option) }))
+    .filter(({ distance }) => distance <= Math.max(2, input.length / 4))
+    .sort((a, b) => a.distance - b.distance);
+  return closest === undefined
+    ? list
+    : `is "${input}"; did you mean "${closest.option}"? It ${list}`;
 };
 
 const sizeMessage = (

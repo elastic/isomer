@@ -37,5 +37,14 @@ export const enhancementScript = (
 ): string =>
   definitions
     .filter((definition) => enhancements.has(definition.id))
-    .map((definition) => definition.script)
+    .flatMap(({ script }) => (script ? [script] : []))
     .join('\n');
+
+/** Whether a render emits node anchors: asked for directly, or declared by a resolved enhancement. */
+export const rendersAnchors = (
+  enhancements: ReadonlySet<string>,
+  definitions: readonly EnhancementDefinition[],
+  requested = false
+): boolean =>
+  requested ||
+  definitions.some(({ id, anchors }) => anchors && enhancements.has(id));

@@ -572,6 +572,56 @@ describe('createIsomerRuntime', () => {
     );
   });
 
+  it('describes a subset of primitives from the full schema, body-node union stubbed', () => {
+    const runtime = createIsomerRuntime({
+      packs: [packOf(notePrimitive, boldPrimitive, holderPrimitive)],
+    });
+    const context = runtime.getAuthoringContext();
+    const { primitives, schema } = context.describePrimitives(['holder']);
+    expect(primitives.map(({ type }) => type)).toEqual(['holder']);
+    const defs = (schema as { $defs: Record<string, unknown> }).$defs;
+    expect(defs.holder).toEqual(
+      (context.schema as { $defs: Record<string, unknown> }).$defs.holder
+    );
+    expect(defs.note).toBeUndefined();
+    expect(defs.bodyNode).not.toHaveProperty('oneOf');
+    const refs = JSON.stringify(defs).match(/#\/\$defs\/[\w]+/g) ?? [];
+    for (const ref of refs) {
+      expect(defs).toHaveProperty(ref.replace('#/$defs/', ''));
+    }
+  });
+
+  it('throws for an unknown type passed to describePrimitives', () => {
+    const runtime = createIsomerRuntime({ packs: [packOf(notePrimitive)] });
+    expect(() =>
+      runtime.getAuthoringContext().describePrimitives(['missing'])
+    ).toThrow(/describePrimitives: unknown primitive type.*"missing"/);
+  });
+
+  it('merges each pack’s primitive groups in pack order', () => {
+    const grouped = (
+      id: string,
+      primitive: AnyPrimitiveDefinition,
+      title: string
+    ) =>
+      definePrimitivePack({
+        id,
+        surfaces: [],
+        primitives: [primitive],
+        authoring: { groups: [{ title, types: [primitive.type] }] },
+      });
+    const runtime = createIsomerRuntime({
+      packs: [
+        grouped('first', notePrimitive, 'Text'),
+        grouped('second', boldPrimitive, 'Marks'),
+      ],
+    });
+    expect(runtime.getAuthoringContext().groups).toEqual([
+      { title: 'Text', types: ['note'] },
+      { title: 'Marks', types: ['bold'] },
+    ]);
+  });
+
   it('aggregates registered views into the authoring context', () => {
     const runtime = createIsomerRuntime({ packs: [packOf(notePrimitive)] });
 
@@ -1961,7 +2011,9 @@ describe('createIsomerRuntime', () => {
       body: [{ type: 'note' }],
     }).errors;
 
-    expect(errors).toEqual([{ path: 'body[0].text', message: 'is required' }]);
+    expect(errors).toEqual([
+      { path: 'body[0].text', message: 'is required', nodeType: 'note' },
+    ]);
   });
 
   it('composes a drawing pack with a pack that renders no svg', () => {

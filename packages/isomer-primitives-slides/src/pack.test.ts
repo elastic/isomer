@@ -269,10 +269,17 @@ describe('RenderScope recursion', () => {
 
 describe('authoring schema descriptions', () => {
   it('describes every field of every primitive', () => {
+    type Described = { description?: string; $ref?: string };
     const schema = buildAuthoringJsonSchema(slideDeckPrimitives) as {
-      $defs?: Record<string, { properties?: Record<string, unknown> }>;
+      $defs?: Record<
+        string,
+        Described & { properties?: Record<string, Described> }
+      >;
     };
     const defs = schema.$defs ?? {};
+    // A property that is a bare `$ref` is described by the def it names.
+    const described = ({ description, $ref }: Described) =>
+      description ?? defs[$ref?.replace('#/$defs/', '') ?? '']?.description;
 
     for (const { type } of slideDeckPrimitives) {
       const properties = defs[type]?.properties ?? {};
@@ -281,7 +288,7 @@ describe('authoring schema descriptions', () => {
           continue;
         }
         expect(
-          (property as { description?: string }).description,
+          described(property),
           `${type}.${name} should carry a description`
         ).toBeTypeOf('string');
       }
@@ -398,6 +405,8 @@ describe('frames never nest', () => {
     expect(valid).toBe(false);
     expect(
       errors.filter(({ message }) => message.includes('frames never nest'))
-    ).toEqual([{ path, message: expect.any(String) as string }]);
+    ).toEqual([
+      { path, message: expect.any(String) as string, nodeType: 'slideFrame' },
+    ]);
   });
 });

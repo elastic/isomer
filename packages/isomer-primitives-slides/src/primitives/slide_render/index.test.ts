@@ -69,13 +69,14 @@ describe('slideRender', () => {
   it('needs a slide reference or a composition', () => {
     expect(validate({ type: 'slideRender', surface: 'svg' }))
       .toMatchInlineSnapshot(`
-      [
-        {
-          "message": "needs a \`slide\` reference or a \`composition\`",
-          "path": "body[0].composition",
-        },
-      ]
-    `);
+        [
+          {
+            "message": "needs a \`slide\` reference or a \`composition\`",
+            "nodeType": "slideRender",
+            "path": "body[0].composition",
+          },
+        ]
+      `);
   });
 
   it('rejects a render inside the embedded composition', () => {
@@ -95,6 +96,7 @@ describe('slideRender', () => {
       [
         {
           "message": "an embedded composition cannot embed another render",
+          "nodeType": "slideRender",
           "path": "body[0].composition.body[0].body[0]",
         },
       ]

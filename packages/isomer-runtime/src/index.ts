@@ -11,6 +11,7 @@ export {
   type HostCapabilities,
   type IsomerRuntime,
   type IsomerRuntimeOptions,
+  type PrimitiveDescriptions,
   type RuntimeAuthoringContext,
   type RuntimeRendererOverrides,
   type RuntimeSurfaces,

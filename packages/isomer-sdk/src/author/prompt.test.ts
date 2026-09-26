@@ -118,4 +118,27 @@ describe('buildAuthoringPrompt', () => {
     expect(prompt).not.toContain('fixture');
     expect(prompt).not.toContain('"text":"two"');
   });
+
+  it('indexes primitives by type and purpose under their groups', () => {
+    const entry = (type: string) => ({
+      type,
+      purpose: `The ${type}.`,
+      useWhen: ['Always.'],
+      avoidWhen: ['Never.'],
+      example: { type },
+    });
+    const prompt = buildAuthoringPrompt('compose-from-primitives', {
+      guide: 'Guide',
+      primitives: [entry('a'), entry('b'), entry('c')],
+      examples: [],
+      catalog: 'index',
+      groups: [{ title: 'Firsts', types: ['b', 'a'] }],
+    });
+    expect(prompt).toContain(
+      '## Primitive catalog\n\n### Firsts\n\n- `b` — The b.\n- `a` — The a.\n\n### Other\n\n- `c` — The c.'
+    );
+    expect(prompt).not.toContain('Use when');
+    expect(prompt).not.toContain('## JSON Schema');
+    expect(prompt).not.toContain('against the JSON Schema');
+  });
 });

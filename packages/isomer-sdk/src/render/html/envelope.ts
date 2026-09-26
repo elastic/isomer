@@ -37,7 +37,7 @@ import {
 } from '../react/content';
 
 import type { EnhancementDefinition } from './enhancements';
-import { startStyleCollection } from './style_collection';
+import { startStyleCollection, withAnchors } from './style_collection';
 
 /** Knobs for the HTML surface. Every field defaults, so `{}` is valid. */
 export interface HTMLRenderOptions {
@@ -61,6 +61,8 @@ export interface HTMLRenderOptions {
   onValidationError?: ValidationErrorMode;
   /** Opt-in by {@link EnhancementDefinition.id}. One whose content gate does not match the body is dropped. */
   enhancements?: readonly string[];
+  /** Renders node anchors whether or not an enhancement asks for them, e.g. for tests. */
+  anchors?: boolean;
   /** Opaque to the sdk; forwarded to {@link HTMLStyleAdapter} with the rest of the options. */
   adapterOptions?: Record<string, unknown>;
 }
@@ -270,11 +272,15 @@ export const renderHTMLWithDispatcher = <
   }
 
   const cssText = collection ? collection.css() : '';
-  const renderContext: TContext =
+  const renderContext: TContext = withAnchors(
     collection && styleAdapter
       ? styleAdapter.createRenderContext(collection.collector, options)
       : // No adapter means no class names and no css vars to resolve.
-        ({} as TContext);
+        ({} as TContext),
+    composition,
+    options,
+    enhancementScope
+  );
   const adapterScriptText =
     styleAdapter?.getScriptText?.(composition, options, enhancementScope) ?? '';
   const resolvedScriptText = [scriptText, adapterScriptText]

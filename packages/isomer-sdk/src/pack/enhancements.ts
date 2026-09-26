@@ -29,11 +29,14 @@ export interface EnhancementDefinition {
   appliesTo: (body: readonly PrimitiveNode[], walk: ChildNodeWalker) => boolean;
   /**
    * An IIFE scoped to `document.currentScript.parentElement`, so it only ever
-   * touches the render that emitted it.
+   * touches the render that emitted it. Absent when the host drives the
+   * enhancement itself.
    *
    * It must address markup through `data-*` attributes rather than class names:
    * class names are minified per render, and a selector written against one is
    * a contract nothing checks.
    */
-  script: string;
+  script?: string;
+  /** Renders node anchors when resolved, for an enhancement that finds nodes with `findNodeElements`. */
+  anchors?: true;
 }

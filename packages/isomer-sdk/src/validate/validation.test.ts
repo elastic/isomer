@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
+import { formatValidationError } from '../composition/validation_error';
 import { definePrimitive } from '../define/primitive_module';
 
 import {
@@ -60,7 +61,7 @@ const parse = createCompositionParser(definitions);
 describe('validation messages', () => {
   it('names a missing required field', () => {
     expect(validate({ type: 'view', body: [{ type: 'kpi' }] }).errors).toEqual([
-      { path: 'body[0].label', message: 'is required' },
+      { path: 'body[0].label', message: 'is required', nodeType: 'kpi' },
     ]);
   });
 
@@ -89,7 +90,13 @@ describe('validation messages', () => {
     const check = createCompositionParser([strict]);
     expect(
       check({ type: 'view', body: [{ type: 'strict', label: '' }] }).errors
-    ).toEqual([{ path: 'body[0].label', message: 'must not be empty' }]);
+    ).toEqual([
+      {
+        path: 'body[0].label',
+        message: 'must not be empty',
+        nodeType: 'strict',
+      },
+    ]);
     expect(check({ type: 'view', body: [{ type: 'nope' }] }).errors).toEqual([
       { path: 'body[0].type', message: 'must be one of: strict' },
     ]);
@@ -101,6 +108,27 @@ describe('validation messages', () => {
   });
 });
 
+describe('error node types', () => {
+  it('names the primitive an error lands in, and prints it', () => {
+    const [error] = validate({ type: 'view', body: [{ type: 'kpi' }] }).errors;
+    expect(error && formatValidationError(error)).toBe(
+      'body[0].label (in kpi) is required'
+    );
+  });
+
+  it('suggests the type a misspelling is closest to', () => {
+    const [error] = validate({ type: 'view', body: [{ type: 'kpl' }] }).errors;
+    expect(error?.message).toMatch(
+      /^is "kpl"; did you mean "kpi"\? It must be one of:/
+    );
+  });
+
+  it('leaves an unknown type unnamed', () => {
+    const [error] = validate({ type: 'view', body: [{ type: 'nope' }] }).errors;
+    expect(error?.nodeType).toBeUndefined();
+  });
+});
+
 describe('unknown node keys', () => {
   it('rejects an unknown key on a node, matching the root and the JSON Schema', () => {
     const { valid, errors } = parse({
@@ -109,7 +137,12 @@ describe('unknown node keys', () => {
     });
     expect(valid).toBe(false);
     expect(errors).toEqual([
-      { path: 'body[0]', message: 'has unrecognized key(s): hallucinated' },
+      {
+        path: 'body[0]',
+        message:
+          'has unrecognized key(s): hallucinated; its fields are label, delta',
+        nodeType: 'kpi',
+      },
     ]);
   });
 

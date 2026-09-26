@@ -31,6 +31,14 @@ export interface PackAuthoringOptions {
   describe?: Readonly<Record<string, string>>;
   /** `$defId.property` paths to drop, from this pack's own primitives. */
   omitProperties?: readonly string[];
+  /** Headings the authoring index sorts this pack's primitives under, in order. */
+  groups?: readonly PrimitiveGroup[];
+}
+
+/** A titled set of primitive types, shown together in the authoring index. */
+export interface PrimitiveGroup {
+  title: string;
+  types: readonly string[];
 }
 
 /**

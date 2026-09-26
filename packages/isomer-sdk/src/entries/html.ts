@@ -23,6 +23,7 @@ export {
   enhancementScript,
   flattenSchemeOption,
   renderHTMLWithDispatcher,
+  rendersAnchors,
   resolveEnhancements,
 } from '../render/html';
 export {

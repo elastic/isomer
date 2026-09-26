@@ -5,6 +5,8 @@
  * 2.0.
  */
 
+import type { core } from 'zod';
+
 import {
   BODY_NODE_SURFACES,
   type BodyNodeSurface,
@@ -95,6 +97,80 @@ export interface CompositionValidatorOptions {
   sizesFromNodeHeights?: boolean;
 }
 
+/** The `type` of the innermost node of a known primitive type along `segments`. */
+const nodeTypeAt = (
+  value: unknown,
+  segments: readonly PropertyKey[],
+  types: ReadonlyMap<string, unknown>
+): string | undefined => {
+  let current = value;
+  let found: string | undefined;
+  for (const segment of segments) {
+    if (typeof current !== 'object' || current === null) {
+      break;
+    }
+    current = (current as Record<PropertyKey, unknown>)[segment];
+    const type =
+      typeof current === 'object' && current !== null
+        ? (current as { type?: unknown }).type
+        : undefined;
+    if (typeof type === 'string' && types.has(type)) {
+      found = type;
+    }
+  }
+  return found;
+};
+
+/** {@link formatZodIssues}, each error naming the primitive its path lands in. */
+const valueAt = (value: unknown, segments: readonly PropertyKey[]): unknown =>
+  segments.reduce<unknown>(
+    (current, segment) =>
+      typeof current === 'object' && current !== null
+        ? (current as Record<PropertyKey, unknown>)[segment]
+        : undefined,
+    value
+  );
+
+/**
+ * {@link formatZodIssues}, each error naming the primitive its path lands in,
+ * and an unknown key on a node listing the fields that node takes.
+ */
+const formatIssuesIn = (
+  value: unknown,
+  issues: ReadonlyArray<core.$ZodIssue>,
+  fields: ReadonlyMap<string, readonly string[]>
+): ValidationError[] =>
+  formatZodIssues(issues).map((error, index) => {
+    const issue = issues[index];
+    const path = issue?.path ?? [];
+    const nodeType = nodeTypeAt(value, path, fields);
+    if (nodeType === undefined) {
+      return error;
+    }
+    const onNode =
+      issue?.code === 'unrecognized_keys' &&
+      (valueAt(value, path) as { type?: unknown } | undefined)?.type ===
+        nodeType;
+    const message = onNode
+      ? `${error.message}; its fields are ${(fields.get(nodeType) ?? []).join(', ')}`
+      : error.message;
+    return { ...error, message, nodeType };
+  });
+
+/** Fields every node has, which the authoring schema leaves out. */
+const COMMON_FIELDS = new Set(['type', 'id', 'surfaces']);
+
+/** Each primitive's type, and the fields its node takes besides the common ones. */
+const fieldsOf = (
+  definitions: readonly AnyPrimitiveDefinition[]
+): Map<string, string[]> =>
+  new Map(
+    definitions.map(({ type, schema }) => [
+      type,
+      Object.keys(schema.shape).filter((key) => !COMMON_FIELDS.has(key)),
+    ])
+  );
+
 /**
  * Builds the trusted-input validator: schema, then the semantic passes.
  *
@@ -110,6 +186,7 @@ export const createCompositionValidator = (
 ): ((composition: Composition) => ValidationResult) => {
   const schema = getCompositionSchemaForDefinitions(definitions);
   const walk = createChildNodeWalker(definitions);
+  const fields = fieldsOf(definitions);
   return (composition) => {
     const result = schema.safeParse(composition, { reportInput: true });
     if (result.success) {
@@ -124,7 +201,7 @@ export const createCompositionValidator = (
     }
     return {
       valid: false,
-      errors: formatZodIssues(result.error.issues),
+      errors: formatIssuesIn(composition, result.error.issues, fields),
       warnings: [],
     };
   };
@@ -155,6 +232,7 @@ export const createCompositionParser = (
   definitions: readonly AnyPrimitiveDefinition[]
 ): ((value: unknown) => ParsedComposition) => {
   const schema = getCompositionSchemaForDefinitions(definitions);
+  const fields = fieldsOf(definitions);
   return (value) => {
     const result = schema.safeParse(value, { reportInput: true });
     if (result.success) {
@@ -164,7 +242,10 @@ export const createCompositionParser = (
         composition: result.data as unknown as Composition,
       };
     }
-    return { valid: false, errors: formatZodIssues(result.error.issues) };
+    return {
+      valid: false,
+      errors: formatIssuesIn(value, result.error.issues, fields),
+    };
   };
 };
 

@@ -12,6 +12,7 @@ export {
   type AnyPrimitivePack,
   type PackAuthoringOptions,
   type PackStyleAdapter,
+  type PrimitiveGroup,
   type PrimitivePack,
   type PrimitivePackInput,
   definePrimitivePack,

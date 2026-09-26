@@ -93,8 +93,8 @@ const mapJson = (
 const rewriteDefRefs = (
   schema: JsonSchema,
   rewrite: (id: string) => string | JsonSchema | undefined
-): JsonSchema =>
-  mapJson(schema, (node) => {
+): JsonSchema => {
+  const visit = (node: Record<string, unknown>): Record<string, unknown> => {
     const id = parseDefRef(node.$ref);
     if (id === undefined) {
       return node;
@@ -108,10 +108,11 @@ const rewriteDefRefs = (
     }
     const rest = { ...node };
     delete rest.$ref;
-    return Object.keys(rest).length === 0
-      ? cloneJson(replacement)
-      : { ...cloneJson(replacement), ...rest };
-  }) as JsonSchema;
+    // An inlined def can itself be a `$ref` with a description, which needs resolving in turn.
+    return visit({ ...cloneJson(replacement), ...rest });
+  };
+  return mapJson(schema, visit) as JsonSchema;
+};
 
 const isRefOnlyDef = (def: unknown): def is { $ref: string } =>
   isJsonObject(def) &&
@@ -310,6 +311,181 @@ const mergeExtraDefs = (
   return [...byId.values()];
 };
 
+const ANONYMOUS_DEF = /^__schema\d+$/;
+
+/** Each def's `$ref` sites, as the path to the node holding the ref: `slideDelta.before`, `slideSplit.left.items.item`. */
+const collectDefRefs = (schema: JsonSchema): Map<string, string[][]> => {
+  const refs = new Map<string, string[][]>();
+  // Property names extend the path; keywords do not, except `items`, which reads as `item`.
+  const visitProperties = (node: unknown, path: string[]): void => {
+    if (isJsonObject(node)) {
+      for (const [name, value] of Object.entries(node)) {
+        visit(value, [...path, name]);
+      }
+    }
+  };
+  const visit = (node: unknown, path: string[]): void => {
+    if (Array.isArray(node)) {
+      for (const item of node) {
+        visit(item, path);
+      }
+      return;
+    }
+    if (!isJsonObject(node)) {
+      return;
+    }
+    const id = parseDefRef(node.$ref);
+    if (id !== undefined) {
+      refs.set(id, [...(refs.get(id) ?? []), path]);
+    }
+    for (const [key, value] of Object.entries(node)) {
+      if (key === 'properties') {
+        visitProperties(value, path);
+      } else if (key !== '$defs') {
+        visit(value, key === 'items' ? [...path, 'item'] : path);
+      }
+    }
+  };
+  const root: JsonSchema = { ...schema };
+  delete root.$defs;
+  visit(root, ['composition']);
+  for (const [id, def] of Object.entries(defsOf(schema))) {
+    visit(def, [id]);
+  }
+  return refs;
+};
+
+/** Whether `id` can reach itself through `$ref`s, which inlining would unroll forever. */
+// Only through anonymous defs: a named def stays a `$ref`, so a loop through one ends there.
+const isCyclic = (defs: Record<string, unknown>, id: string): boolean => {
+  const seen = new Set<string>();
+  const reaches = (from: string): boolean => {
+    let found = false;
+    walkJson(defs[from], (value) => {
+      const ref = parseDefRef(value.$ref);
+      if (found || ref === undefined || !ANONYMOUS_DEF.test(ref)) {
+        return;
+      }
+      if (ref === id) {
+        found = true;
+      } else if (!seen.has(ref)) {
+        seen.add(ref);
+        found = reaches(ref);
+      }
+    });
+    return found;
+  };
+  return reaches(id);
+};
+
+/** A shape short enough to repeat at each use rather than name, such as an enum. */
+const SMALL_DEF_CHARS = 120;
+
+/** Inlines each anonymous def used once or small, so a reader meets the shape where it is used. */
+const inlineSingleUseDefs = (schema: JsonSchema): JsonSchema => {
+  const defs = defsOf(schema);
+  const refs = collectDefRefs(schema);
+  const inline = new Set(
+    Object.keys(defs).filter(
+      (id) =>
+        ANONYMOUS_DEF.test(id) &&
+        (refs.get(id)?.length === 1 ||
+          JSON.stringify(defs[id]).length <= SMALL_DEF_CHARS) &&
+        !isCyclic(defs, id)
+    )
+  );
+  if (inline.size === 0) {
+    return schema;
+  }
+  const rewritten = rewriteDefRefs(schema, (id) =>
+    inline.has(id) ? (defs[id] as JsonSchema) : undefined
+  );
+  const kept = { ...defsOf(rewritten) };
+  for (const id of inline) {
+    delete kept[id];
+  }
+  return withDefs(rewritten, kept);
+};
+
+/** Most properties a def's name lists before it names only the first. */
+const MAX_SITE_NAMES = 3;
+
+/**
+ * One primitive's name for a def it uses at `sites`: the path, with the step
+ * where the sites part listed as `a+b` (`slideDelta.before+after`).
+ */
+const siteName = ([first = [], ...rest]: string[][]): string => {
+  const differ = first.flatMap((step, index) =>
+    rest.some((path) => path[index] !== step) ? [index] : []
+  );
+  const [at] = differ;
+  const steps = [...new Set([first, ...rest].map((path) => path[at ?? 0]))];
+  return at === undefined ||
+    differ.length > 1 ||
+    rest.some(({ length }) => length !== first.length) ||
+    steps.length > MAX_SITE_NAMES
+    ? first.join('.')
+    : [...first.slice(0, at), steps.join('+'), ...first.slice(at + 1)].join(
+        '.'
+      );
+};
+
+/**
+ * Renames the anonymous defs left after inlining: for their owner and path when
+ * one primitive uses them (`slideDelta.before+after`), for their property when several do.
+ */
+const nameSharedDefs = (schema: JsonSchema): JsonSchema => {
+  const defs = defsOf(schema);
+  const refs = collectDefRefs(schema);
+  const taken = new Set(Object.keys(defs));
+  const names = new Map<string, string>();
+  // Outer defs first, so a def first used inside another is named after that one's name.
+  for (let named = true; named;) {
+    named = false;
+    for (const id of Object.keys(defs)) {
+      const [first] = refs.get(id) ?? [];
+      if (!ANONYMOUS_DEF.test(id) || names.has(id) || first === undefined) {
+        continue;
+      }
+      const ownerOf = ([head = '']: string[]) =>
+        ANONYMOUS_DEF.test(head) ? names.get(head) : head;
+      const owner = ownerOf(first);
+      if (owner === undefined) {
+        continue;
+      }
+      const sites = (refs.get(id) ?? []).map((path) => [
+        ownerOf(path),
+        ...path.slice(1),
+      ]);
+      const owners = new Set(sites.map(([head]) => head));
+      const base =
+        owners.size > 1
+          ? (first.at(-1) ?? owner)
+          : siteName(sites as string[][]);
+      let name = base;
+      for (let suffix = 2; taken.has(name); suffix += 1) {
+        name = `${base}${suffix}`;
+      }
+      taken.add(name);
+      names.set(id, name);
+      named = true;
+    }
+  }
+  if (names.size === 0) {
+    return schema;
+  }
+  const rewritten = rewriteDefRefs(schema, (id) => names.get(id));
+  return withDefs(
+    rewritten,
+    Object.fromEntries(
+      Object.entries(defsOf(rewritten)).map(([id, def]) => [
+        names.get(id) ?? id,
+        def,
+      ])
+    )
+  );
+};
+
 const slimAuthoringSchema = (
   schema: JsonSchema,
   options: AuthoringJsonSchemaOptions
@@ -321,8 +497,9 @@ const slimAuthoringSchema = (
   const flattened = flattenRefOnlyDefs(next);
   const inlined = inlineScalarDefs(flattened);
   const pruned = pruneUnreferencedDefs(inlined);
-  applyDescriptions(pruned, options.describe ?? {});
-  return pruned;
+  const named = nameSharedDefs(inlineSingleUseDefs(pruned));
+  applyDescriptions(named, options.describe ?? {});
+  return named;
 };
 
 /**
@@ -344,4 +521,43 @@ export const buildAuthoringJsonSchema = (
     ...(describe === undefined ? {} : { describe }),
     ...(omitProperties === undefined ? {} : { omitProperties }),
   });
+};
+
+/** Stands in for the body-node union in {@link authoringSchemaSubset}. */
+const BODY_NODE_STUB = {
+  description:
+    'Any primitive in the catalog, as its own object with its `type`. A container’s description names any it cannot hold.',
+};
+
+/**
+ * The `$defs` of `types` and every def they reach, cut from a schema
+ * {@link buildAuthoringJsonSchema} built. Def ids stay those of `schema`, and
+ * the body-node union is a stub rather than every primitive.
+ */
+export const authoringSchemaSubset = (
+  schema: JsonSchema,
+  types: readonly string[]
+): { $defs: Record<string, unknown> } => {
+  const defs = defsOf(schema);
+  const kept: Record<string, unknown> = {};
+  const visit = (id: string): void => {
+    if (id in kept) {
+      return;
+    }
+    if (id === BODY_NODE_ID) {
+      kept[id] = BODY_NODE_STUB;
+      return;
+    }
+    kept[id] = defs[id];
+    walkJson(defs[id], (value) => {
+      const ref = parseDefRef(value.$ref);
+      if (ref !== undefined) {
+        visit(ref);
+      }
+    });
+  };
+  for (const type of types) {
+    visit(type);
+  }
+  return { $defs: kept };
 };
