@@ -7,7 +7,7 @@
 
 import { useLayoutEffect, useRef, useState } from 'react';
 import { showSlideBuild } from '@elastic/isomer-primitives-slides';
-import type { Composition } from '@elastic/isomer-sdk';
+import { type Composition, runEnhancementScript } from '@elastic/isomer-sdk';
 
 import { runtime } from '../runtime';
 
@@ -20,6 +20,7 @@ export const ShadowHtml = ({
   composition,
   css,
   html,
+  js,
   theme,
   onOverflow,
 }: {
@@ -29,6 +30,8 @@ export const ShadowHtml = ({
   composition: Composition;
   css: string;
   html: string;
+  /** The render's enhancement script, run against its section once inserted. */
+  js: string;
   theme: Theme;
   /** Called with whether the slide's content runs past its frame body. */
   onOverflow?: ((overflowing: boolean) => void) | undefined;
@@ -48,8 +51,12 @@ export const ShadowHtml = ({
     const body = document.createElement('div');
     body.innerHTML = html;
     root.append(style, body);
+    const section = body.querySelector('.isomer');
+    if (section) {
+      runEnhancementScript(js, section);
+    }
     setRoot(root);
-  }, [css, html, theme]);
+  }, [css, html, js, theme]);
 
   useLayoutEffect(() => {
     if (root) {

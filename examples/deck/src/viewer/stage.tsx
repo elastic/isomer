@@ -6,7 +6,7 @@
  */
 
 import { useMemo } from 'react';
-import { SLIDE_BUILDS } from '@elastic/isomer-primitives-slides';
+import { SLIDE_BUILDS, SLIDE_COPY } from '@elastic/isomer-primitives-slides';
 
 import { runtime } from '../runtime';
 
@@ -18,7 +18,7 @@ import type { DeckSlide, PngUrl } from './types';
 
 type Rendered =
   | { kind: 'slide' }
-  | { kind: 'html'; html: string; css: string }
+  | { kind: 'html'; html: string; css: string; js: string }
   | { kind: 'png'; src: string; alt: string }
   | { kind: 'source'; source: string };
 
@@ -37,13 +37,14 @@ const render = (
     case 'slide':
       return { kind: 'slide' };
     case 'html': {
-      const { html, css } = runtime.surfaces.html.render(composition, {
+      const { html, css, js } = runtime.surfaces.html.render(composition, {
         css: 'separate',
+        scripts: 'host',
         heading: false,
         theme,
-        enhancements: building ? [SLIDE_BUILDS] : [],
+        enhancements: building ? [SLIDE_COPY, SLIDE_BUILDS] : [SLIDE_COPY],
       });
-      return { kind: 'html', html, css };
+      return { kind: 'html', html, css, js };
     }
     case 'png':
       return {
@@ -117,6 +118,7 @@ export const Stage = ({
             composition={slide.composition}
             css={rendered.css}
             html={rendered.html}
+            js={rendered.js}
           />
         </Scaled>
       );

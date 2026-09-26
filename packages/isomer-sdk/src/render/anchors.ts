@@ -59,15 +59,17 @@ export const withAnchors = <TResult>(
 };
 
 /**
- * `context` for content a renderer draws that is not one of its `children`,
- * such as an embedded composition: nothing under it renders an anchor.
- *
- * The result is a view of `context`, not a copy: reads go to `context` itself,
- * with methods bound to it, so getters, methods, private state, and
- * `instanceof` behave as before. The mark survives a context derived from it
- * by spreading. A context that is not an object is returned as it is.
+ * A view of `context` that reads `key` as `value`: every other read goes to
+ * `context` itself, with methods bound to it, so getters, methods, private
+ * state, and `instanceof` behave as before. `key` survives a context derived
+ * from the view by spreading. A context that is not an object is returned as
+ * it is.
  */
-export const withoutAnchors = <TContext>(context: TContext): TContext => {
+const markedView = <TContext>(
+  context: TContext,
+  key: string | symbol,
+  value: unknown
+): TContext => {
   if (typeof context !== 'object' || context === null) {
     return context;
   }
@@ -77,33 +79,44 @@ export const withoutAnchors = <TContext>(context: TContext): TContext => {
     Object.getPrototypeOf(original) as object | null
   ) as object;
   return new Proxy(standIn, {
-    get: (_, key) => {
-      if (key === NO_ANCHORS) {
-        return true;
+    get: (_, read) => {
+      if (read === key) {
+        return value;
       }
-      const value: unknown = Reflect.get(original, key, original);
-      return typeof value === 'function'
-        ? (value as (...args: unknown[]) => unknown).bind(original)
-        : value;
+      const found: unknown = Reflect.get(original, read, original);
+      return typeof found === 'function'
+        ? (found as (...args: unknown[]) => unknown).bind(original)
+        : found;
     },
-    set: (_, key, value) => Reflect.set(original, key, value, original),
-    has: (_, key) => key === NO_ANCHORS || Reflect.has(original, key),
-    ownKeys: () => [...new Set([...Reflect.ownKeys(original), NO_ANCHORS])],
-    getOwnPropertyDescriptor: (_, key) => {
-      if (key === NO_ANCHORS) {
-        return {
-          value: true,
-          enumerable: true,
-          configurable: true,
-          writable: true,
-        };
+    set: (_, write, next) => Reflect.set(original, write, next, original),
+    has: (_, read) => read === key || Reflect.has(original, read),
+    ownKeys: () => [...new Set([...Reflect.ownKeys(original), key])],
+    getOwnPropertyDescriptor: (_, read) => {
+      if (read === key) {
+        return { value, enumerable: true, configurable: true, writable: true };
       }
-      const descriptor = Reflect.getOwnPropertyDescriptor(original, key);
+      const descriptor = Reflect.getOwnPropertyDescriptor(original, read);
       return descriptor && { ...descriptor, configurable: true };
     },
     getPrototypeOf: () => Object.getPrototypeOf(original) as object | null,
   }) as TContext;
 };
+
+/**
+ * `context` for content a renderer draws that is not one of its `children`,
+ * such as an embedded composition: nothing under it renders an anchor.
+ *
+ * The result is a view of `context`, not a copy, so getters, methods, private
+ * state, and `instanceof` behave as before. The mark survives a context
+ * derived from it by spreading. A context that is not an object is returned
+ * as it is.
+ */
+export const withoutAnchors = <TContext>(context: TContext): TContext =>
+  markedView(context, NO_ANCHORS, true);
+
+/** A view of `context` with `anchors: true`, for a React render outside the html surface; see {@link withoutAnchors}. */
+export const withContextAnchors = <TContext>(context: TContext): TContext =>
+  markedView(context, 'anchors', true);
 
 const anchorsOn = (context: unknown): boolean => {
   const isObject = typeof context === 'object' && context !== null;

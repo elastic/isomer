@@ -15,7 +15,7 @@ export const surfaces = [
   {
     id: 'html',
     label: 'HTML',
-    call: "runtime.surfaces.html.render(slide, { css: 'separate', heading: false, theme })",
+    call: "runtime.surfaces.html.render(slide, { css: 'separate', scripts: 'host', heading: false, theme, enhancements: [SLIDE_COPY] })",
   },
   {
     id: 'png',

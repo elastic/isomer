@@ -12,6 +12,7 @@ import type {
   PrimitiveStyleCollector,
   StyledRenderContext,
 } from '../../define/primitive_module';
+import { withContextAnchors } from '../anchors';
 
 import { type EnhancementDefinition, rendersAnchors } from './enhancements';
 import type {
@@ -52,7 +53,7 @@ const anchoredContext = <TContext>(
   { walk, definitions }: HTMLEnhancementScope
 ): TContext =>
   rendersAnchors(body, options, walk, definitions)
-    ? { ...context, anchors: true }
+    ? withContextAnchors(context)
     : context;
 
 /** The collection half of an html render, for {@link renderHTMLWithDispatcher} and for a host rendering the tree itself. `options` are already resolved. */

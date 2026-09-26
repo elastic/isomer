@@ -27,12 +27,14 @@ import {
   NODE_ANCHOR_ATTRIBUTE,
   nodeAnchor,
   withAnchors,
+  withContextAnchors,
   withoutAnchors,
 } from './anchors';
 import {
   type HTMLRenderOptions,
   renderHTMLWithDispatcher,
 } from './html/envelope';
+import { createHTMLStyleCollection } from './html/style_collection';
 import { createPrimitiveDispatcher } from './primitive_dispatch';
 
 interface LeafNode extends PrimitiveNode {
@@ -312,6 +314,39 @@ describe('withoutAnchors', () => {
     expect(body.split(`${NODE_ANCHOR_ATTRIBUTE}="host"`)).toHaveLength(2);
     expect(body.split(`${NODE_ANCHOR_ATTRIBUTE}="leaf"`)).toHaveLength(2);
     expect(body).toContain('<p>extra</p>');
+  });
+});
+
+describe('withContextAnchors', () => {
+  it('turns anchors on for a class-instance context without copying it', () => {
+    const context = withContextAnchors(new InstanceContext());
+    expect(context).toBeInstanceOf(InstanceContext);
+    expect(context.describe()).toBe('instance');
+    expect(nodeAnchor(context, { type: 'leaf' })).toEqual({
+      [NODE_ANCHOR_ATTRIBUTE]: 'leaf',
+    });
+    expect(nodeAnchor({ ...context }, { type: 'leaf' })).toEqual({
+      [NODE_ANCHOR_ATTRIBUTE]: 'leaf',
+    });
+  });
+
+  it('keeps a style collection’s class-instance context working when anchors are asked for', () => {
+    const { context } = createHTMLStyleCollection(
+      { type: 'view', body: [{ type: 'leaf', text: 'a' }] },
+      {
+        dispatcher: createPrimitiveDispatcher<LeafNode>([describing]),
+        options: { anchors: true },
+        styleAdapter: {
+          createCollector: () => ({}),
+          createRenderContext: () => new InstanceContext(),
+          renderStyles: () => '',
+        },
+      }
+    );
+    expect((context as InstanceContext).describe()).toBe('instance');
+    expect(nodeAnchor(context, { type: 'leaf' })).toEqual({
+      [NODE_ANCHOR_ATTRIBUTE]: 'leaf',
+    });
   });
 });
 
