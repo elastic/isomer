@@ -1,5 +1,11 @@
 # Directory Update Log
 
+## 2026-09-26
+
+- **Release posture**: `@elastic/isomer-primitives-slides` and the agent tools are `private`; sdk, runtime, image-takumi, and evals publish at 0.1.0. `scripts/check_pack_consumer.js` fails when a published package depends on a private one.
+- **Agent tools**: `@elastic/isomer-mcp` is now `@elastic/isomer-agent-tools`, with one entry and no MCP SDK dependency. `createIsomerResources` and `createIsomerPrompts` return the guide and schema resources and the `compose` prompt as plain data beside the tools; the result helpers and `DEFAULT_ISOMER_INSTRUCTIONS` are exported. Hosts bring the transport.
+- **Examples**: The deck and the slides studio moved to `examples/deck` and `examples/slides-studio`, and the workspace globs `examples/*`. The studio registers the agent tools on MCP through `server/mcp_adapter.ts`, and `server/host/` builds what an agent gets with no transport, so it can become a package once a second host needs it.
+
 ## 2026-09-25
 
 - **Limits that fit**: `slideTree` holds 1–8 entries and `slideTranscript` 1–4 turns, the most that fit under a heading and lede; every slides example now fits, so the fit test has no exceptions.
@@ -43,4 +49,4 @@
 - **Slides primitives**: Added `slideTable` (the pack's first native `slack` renderer), `slideTranscript`, `slideWindow`, `slideCycle` (inline SVG with literal paint), and `slideCode.highlight`. Containers now dispatch Slack per child through `scope.renderSlack`.
 - **Isomer deck**: `examples/deck` is a private Vite app of slide compositions, one `.tsx` file each. The docs workflow builds it and deploys it at `/deck/` beside the docs-builder site.
 - **License artifacts**: The generated runtime inventory now includes declared Takumi platform dependencies and fails when their notice or license text is unavailable.
-- **MCP and agent tools**: Added `@elastic/isomer-mcp`. `./tools` turns any runtime into five transport-neutral tools (authoring guide, validate, render, list views, request view) and never reaches the MCP SDK; the root entry registers them on an MCP server with the guide as a resource and a `compose` prompt.
+- **MCP and agent tools**: Added `@elastic/isomer-mcp`. `./tools` turns any runtime into six transport-neutral tools (authoring guide, validate, render, list views, request view) and never reaches the MCP SDK; the root entry registers them on an MCP server with the guide as a resource and a `compose` prompt.

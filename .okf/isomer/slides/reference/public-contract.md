@@ -1,7 +1,7 @@
 ---
 type: Reference
 title: Public contract
-description: private true as the in-repo reference pack, distillate from the registry, workspace sdk, runtime and takumi as devDependencies.
+description: private true as the in-repo reference pack to copy, distillate from the registry, workspace sdk, runtime and takumi as devDependencies.
 tags: [isomer, slides, contract]
 status: stable
 stale_after: 2027-03-18
@@ -13,7 +13,7 @@ sources:
 
 # Definition
 
-- Published with the workspace at one version, as the reference pack. Depends on `@elastic/distillate` `^0.1.0` and `@elastic/isomer-sdk` `workspace:*`.
+- `private: true`: the reference pack to copy, never published, so no published package may depend on it. Depends on `@elastic/distillate` `^0.1.0` and `@elastic/isomer-sdk` `workspace:*`.
 - Peers: `react` `>=18 <20`, `zod` `^4.4.1`.
 - Dev dependencies: `@elastic/isomer-runtime` and `@elastic/isomer-image-takumi` for examples and raster fixtures.[^package]
 
