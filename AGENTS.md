@@ -12,15 +12,15 @@ The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, a
 
 `packages/isomer-evals` scores whether a model produces valid, well-chosen compositions from a pack's authoring context. It depends on the SDK's public API alone and runs with no credentials.
 
-`packages/isomer-mcp` turns any runtime into agent tools and serves them over MCP. It declares the runtime structurally and depends on the SDK and `@modelcontextprotocol/sdk`; its `./tools` entry must never reach the MCP SDK, which `scripts/check_module_graph.js` enforces.
+`packages/isomer-agent-tools` turns any runtime into transport-neutral agent tools, resources, and a `compose` prompt. It declares the runtime structurally and depends on the SDK alone; hosts bring the transport, and it must never reach `@modelcontextprotocol/sdk`, which `scripts/check_module_graph.js` enforces.
 
 `docs/deck` is the Isomer deck: a private Vite app, one `.tsx` composition per slide, rendered by the slides pack. It is a workspace member outside `packages/`, so it never publishes. The docs workflow copies its build to `/deck/` on the Pages site. Vite there is for the app only; the library build stays `tsc`.
 
-`apps/slides-studio` is a private, dev-server-only Vite app where an agent writes a slide deck over MCP (`pnpm studio:dev`, then `claude mcp add --transport http isomer-slides http://localhost:5178/mcp`). Its landing page holds the connection instructions and lists decks, `/decks/<id>` shows a deck's slides as they arrive, and `/decks/<id>/present` is the deck's viewer, reused through `@elastic/isomer-deck/viewer`. It serves `@elastic/isomer-mcp`'s tools plus deck tools from `server/`, and persists decks to its gitignored `.decks/`.
+`apps/slides-studio` is a private, dev-server-only Vite app where an agent writes a slide deck over MCP (`pnpm studio:dev`, then `claude mcp add --transport http isomer-slides http://localhost:5178/mcp`). Its landing page holds the connection instructions and lists decks, `/decks/<id>` shows a deck's slides as they arrive, and `/decks/<id>/present` is the deck's viewer, reused through `@elastic/isomer-deck/viewer`. It registers `@elastic/isomer-agent-tools`' tools, resources, and prompt plus deck tools on an MCP server from `server/`, and persists decks to its gitignored `.decks/`.
 
 ## Release posture
 
-Every package under `packages/` without `"private": true` publishes, at one version, through the release workflow: `@elastic/isomer-sdk` and `@elastic/isomer-runtime` are what a host installs, takumi is a host-side rasterizer, and evals is a harness a pack author runs against their own runtime. The slides pack is an exemplar to copy and stays private; mcp is private until its API settles, and publishing it is removing the flag. A published package never lists a private one in `dependencies` or `peerDependencies`, which `scripts/check_pack_consumer.js` enforces. Do not raise publication, registry access, or dependency licensing as a constraint when planning work in this repository.
+Every package under `packages/` without `"private": true` publishes, at one version, through the release workflow: `@elastic/isomer-sdk` and `@elastic/isomer-runtime` are what a host installs, takumi is a host-side rasterizer, and evals is a harness a pack author runs against their own runtime. The slides pack is an exemplar to copy and stays private; agent-tools is private until its API settles, and publishing it is removing the flag. A published package never lists a private one in `dependencies` or `peerDependencies`, which `scripts/check_pack_consumer.js` enforces. Do not raise publication, registry access, or dependency licensing as a constraint when planning work in this repository.
 
 ## Where work happens
 

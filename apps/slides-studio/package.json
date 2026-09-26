@@ -10,9 +10,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@elastic/isomer-agent-tools": "workspace:*",
     "@elastic/isomer-deck": "workspace:*",
     "@elastic/isomer-image-takumi": "workspace:*",
-    "@elastic/isomer-mcp": "workspace:*",
     "@elastic/isomer-primitives-slides": "workspace:*",
     "@elastic/isomer-runtime": "workspace:*",
     "@elastic/isomer-sdk": "workspace:*",

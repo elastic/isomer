@@ -47,9 +47,9 @@ export const packagesSlide = toComposition(
                 'Turn the svg surface into PNG',
               ],
               [
-                '@elastic/isomer-mcp',
+                '@elastic/isomer-agent-tools',
                 'Agent tools',
-                'Serve a runtime over MCP',
+                'Hand a runtime to any agent',
               ],
               [
                 '@elastic/isomer-evals',

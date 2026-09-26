@@ -9,7 +9,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import type { IsomerTool } from '@elastic/isomer-mcp/tools';
+import type { IsomerTool } from '@elastic/isomer-agent-tools';
 import type {
   SlideOverflow,
   SlideOverlap,

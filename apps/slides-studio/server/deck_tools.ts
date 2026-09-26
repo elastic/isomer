@@ -5,9 +5,9 @@
  * 2.0.
  */
 
+import type { IsomerTool, IsomerToolResult } from '@elastic/isomer-agent-tools';
+import { checkComposition } from '@elastic/isomer-agent-tools';
 import { runtime } from '@elastic/isomer-deck/runtime';
-import type { IsomerTool, IsomerToolResult } from '@elastic/isomer-mcp/tools';
-import { checkComposition } from '@elastic/isomer-mcp/tools';
 import {
   slideAuthoringNotes,
   slideDeckFrame,

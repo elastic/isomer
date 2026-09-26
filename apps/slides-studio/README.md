@@ -26,7 +26,7 @@ Ask for a deck ("Make a six-slide deck about our checkout reliability work"). Th
 
 ## What the agent gets
 
-- The `@elastic/isomer-mcp` tools over the slides runtime: `isomer_authoring_guide` (the slides pack's guide, rules, and an index of its primitives by group), `isomer_describe_primitives` (each picked primitive's entry and JSON Schema), `isomer_validate`, and `isomer_render`, which includes `png`.
+- The `@elastic/isomer-agent-tools` tools over the slides runtime, registered on the MCP server by `server/mcp_adapter.ts`: `isomer_authoring_guide` (the slides pack's guide, rules, and an index of its primitives by group), `isomer_describe_primitives` (each picked primitive's entry and JSON Schema), `isomer_validate`, and `isomer_render`, which includes `png`.
 - Deck tools: `deck_create`, `deck_list`, `deck_get`, `deck_set_slide`, `deck_insert_slide`, `deck_remove_slide`, `deck_move_slide`, and `deck_render_slide`. A slide is validated before it is stored, and an invalid one comes back with its errors. `deck_render_slide` returns a PNG so the agent can check its own work, with a note when content runs past the slide's body or body nodes are drawn over each other, from takumi's layout.
 
 In a `slideRender`, `slide` names another slide in the same deck by index, as a string (`"0"`); the studio fills in its composition.
@@ -37,6 +37,7 @@ In a `slideRender`, `slide` names another slide in the same deck by index, as a 
 | ---------------------------------------- | --------------------------------------------------------------------------------------- |
 | `server/app.ts`                          | Routes: `/mcp`, `/api/decks`, server-sent events, and `/png/<deck>/<index>.<theme>.png` |
 | `server/mcp.ts`                          | One MCP server and Streamable HTTP transport per session                                |
+| `server/mcp_adapter.ts`                  | Registers agent tools, resources, and prompts on an MCP server                          |
 | `server/deck_tools.ts`                   | The deck tools                                                                          |
 | `server/store.ts`                        | Decks in memory, mirrored to `.decks/<id>.json`                                         |
 | `src/app.tsx`, `src/router.tsx`          | The three pages and a small history router                                              |

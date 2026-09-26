@@ -131,9 +131,9 @@ Slack gets its blocks through the Markdown fallback, because the pack wrote no S
 | Copy a working pack | [`@elastic/isomer-primitives-slides`](packages/isomer-primitives-slides/README.md), the in-repo reference pack |
 | Turn the `svg` surface into PNG | [`@elastic/isomer-image-takumi`](packages/isomer-image-takumi/README.md) |
 | Score what a model composes from your pack | [`@elastic/isomer-evals`](packages/isomer-evals/README.md) |
-| Hand a runtime to an agent as tools, or serve it over MCP | [`@elastic/isomer-mcp`](packages/isomer-mcp/README.md) |
+| Hand a runtime to an agent as tools, over MCP or any agent framework | [`@elastic/isomer-agent-tools`](packages/isomer-agent-tools/README.md) |
 
-Every package publishes together at one version: the two a host installs, the reference pack to copy from, a host-side rasterizer, agent tools with an MCP adapter, and a harness a pack author runs against their own runtime.
+Four packages publish together at one version: the two a host installs, a host-side rasterizer, and a harness a pack author runs against their own runtime. The reference pack to copy from and the transport-neutral agent tools live in this repository and are not on npm.
 
 ## Development
 

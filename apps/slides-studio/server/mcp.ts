@@ -8,11 +8,13 @@
 import { randomUUID } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
-import { runtime } from '@elastic/isomer-deck/runtime';
 import {
-  createIsomerMcpServer,
-  registerIsomerTools,
-} from '@elastic/isomer-mcp';
+  createIsomerPrompts,
+  createIsomerResources,
+  createIsomerTools,
+  type IsomerToolsBaseOptions,
+} from '@elastic/isomer-agent-tools';
+import { runtime } from '@elastic/isomer-deck/runtime';
 import {
   slideDeckFrame,
   slideOverflow,
@@ -21,11 +23,13 @@ import {
   slidesAuthoringRules,
 } from '@elastic/isomer-primitives-slides';
 import type { Composition } from '@elastic/isomer-sdk';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 
 import type { StudioState } from './app';
 import { createDeckTools } from './deck_tools';
+import { registerIsomer } from './mcp_adapter';
 
 /** Open MCP sessions, by session id, with the module evaluation that built each one's tools. */
 export type McpSessions = Map<
@@ -66,10 +70,7 @@ const layoutOf =
 
 const createServer = (state: StudioState, origin: string) => {
   const png = pngOf(state);
-  const server = createIsomerMcpServer({
-    name: 'isomer-slides-studio',
-    version: '0.0.0',
-    instructions,
+  const options: IsomerToolsBaseOptions = {
     runtime,
     guide: `${slidesAuthoringGuide}\n\n${studioGuide}`,
     rules: slidesAuthoringRules,
@@ -77,16 +78,24 @@ const createServer = (state: StudioState, origin: string) => {
     heading: false,
     image: (composition, { theme }) =>
       png(composition, theme === 'dark' ? 'dark' : 'light'),
-  });
-  registerIsomerTools(
-    server,
-    createDeckTools(
-      state.store,
-      png,
-      layoutOf(state),
-      (id) => `${origin}/decks/${id}`
-    )
+  };
+  const server = new McpServer(
+    { name: 'isomer-slides-studio', version: '0.0.0' },
+    { instructions }
   );
+  registerIsomer(server, {
+    tools: [
+      ...createIsomerTools(options),
+      ...createDeckTools(
+        state.store,
+        png,
+        layoutOf(state),
+        (id) => `${origin}/decks/${id}`
+      ),
+    ],
+    resources: createIsomerResources(options),
+    prompts: createIsomerPrompts(options),
+  });
   return server;
 };
 

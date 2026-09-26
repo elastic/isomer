@@ -8,9 +8,9 @@ Bundle root.
 
 ## Subdirectories
 
+- [agent-tools/](agent-tools/index.md)
 - [evals/](evals/index.md)
 - [image-takumi/](image-takumi/index.md)
-- [mcp/](mcp/index.md)
 - [runtime/](runtime/index.md)
 - [sdk/](sdk/index.md)
 - [slides/](slides/index.md)
