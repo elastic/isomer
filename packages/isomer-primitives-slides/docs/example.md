@@ -1,6 +1,6 @@
 # Worked example
 
-Eleven compositions built from each primitive's canonical `example`, in `src/examples/deck/index.ts`. A host sequences them; Isomer renders one composition at a time. The [Isomer deck](https://elastic.github.io/isomer/deck/) is the full-size version: every slide in `docs/deck` is a composition, viewable on every surface.
+Eleven compositions built from each primitive's canonical `example`, in `src/examples/deck/index.ts`. A host sequences them; Isomer renders one composition at a time. The [Isomer deck](https://elastic.github.io/isomer/deck/) is the full-size version: every slide in `examples/deck` is a composition, viewable on every surface.
 
 ## A deck is a `Composition[]`
 

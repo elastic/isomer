@@ -42,7 +42,7 @@ jobs:
       - name: Copy deck into docs output
         run: |
           mkdir -p .artifacts/docs/html/deck
-          cp -R docs/deck/dist/. .artifacts/docs/html/deck/
+          cp -R examples/deck/dist/. .artifacts/docs/html/deck/
       - uses: actions/upload-artifact@v4
         with:
           name: site

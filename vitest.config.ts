@@ -17,8 +17,8 @@ export default defineConfig({
     passWithNoTests: true,
     include: [
       'packages/*/src/**/*.test.ts',
-      'docs/deck/src/**/*.test.ts',
-      'apps/*/server/**/*.test.ts',
+      'examples/*/src/**/*.test.ts',
+      'examples/*/server/**/*.test.ts',
       'scripts/**/*.test.js',
     ],
     coverage: {

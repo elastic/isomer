@@ -35,7 +35,7 @@ showSlideBuild(shadowRoot, composition, step, runtime.primitives);
 
 The enhancement changes the output only by adding [node anchors](../../isomer-sdk/docs/rendering.md#node-anchors), which is how `showSlideBuild` finds each node. It ships no script. A render without the enhancement, or with no ordered primitive, carries no anchors.
 
-The Isomer deck viewer (`docs/deck/src/viewer`) is the reference host: → reveals the next part before moving on, ← hides the last one, and the URL records a partly built slide as `?build=<n>`.
+The Isomer deck viewer (`examples/deck/src/viewer`) is the reference host: → reveals the next part before moving on, ← hides the last one, and the URL records a partly built slide as `?build=<n>`.
 
 ## Making a primitive build
 

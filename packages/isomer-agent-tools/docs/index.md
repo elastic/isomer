@@ -82,7 +82,7 @@ for (const prompt of prompts) {
 }
 ```
 
-The MCP SDK rejects a call that omits `arguments` against any `inputSchema`, so register a tool whose schema has no keys without one. The [slides studio](https://github.com/elastic/isomer/tree/main/apps/slides-studio)'s `server/mcp_adapter.ts` is a complete adapter, served over Streamable HTTP with a server per session. The same function works on the server Vercel's `mcp-handler` hands a route.
+The MCP SDK rejects a call that omits `arguments` against any `inputSchema`, so register a tool whose schema has no keys without one. The [slides studio](https://github.com/elastic/isomer/tree/main/examples/slides-studio)'s `server/mcp_adapter.ts` is a complete adapter, served over Streamable HTTP with a server per session. The same function works on the server Vercel's `mcp-handler` hands a route.
 
 With the AI SDK, each tool becomes a `tool()`:
 

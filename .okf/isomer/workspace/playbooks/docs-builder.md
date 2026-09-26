@@ -25,7 +25,7 @@ sources:
     resource: https://github.com/elastic/isomer/blob/main/.github/workflows/docs.yml
     title: Docs deploy workflow
   - id: deck
-    resource: https://github.com/elastic/isomer/blob/main/docs/deck/vite.config.ts
+    resource: https://github.com/elastic/isomer/blob/main/examples/deck/vite.config.ts
     title: Deck Vite config
 ---
 
@@ -33,11 +33,11 @@ sources:
 
 1. Author pages under the package's `packages/<name>/docs/`.
 2. Keep a `toc.yml` next to those pages.
-3. List the package from `docs/docset.yml` (`toc: sdk`, and so on). The current set is runtime, sdk, slides, image-takumi, evals, and reference.[^docset]
+3. List the package from `docs/docset.yml` (`toc: sdk`, and so on). The current set is runtime, sdk, slides, image-takumi, evals, agent-tools, and reference.[^docset]
 4. Link across packages with a GitHub URL. A relative link to another package is absent from the tarball and fails `pnpm check:pack-contents`.[^pack-contents]
 5. Preview with `pnpm docs:dev` (copies package docs, then `docs-builder serve` at http://localhost:3000). The builder refuses symlinks, so the copies are real directories. Do not commit them.[^assemble][^dev]
 6. CI builds the set with `elastic/docs-builder@main`.[^ci]
-7. `docs/deck` is a Vite app, not pages: `docset.yml` excludes it. The docs workflow builds it with `DECK_BASE=./` after docs-builder and copies `docs/deck/dist` into the site at `/deck/`. Link to it with the absolute URL `https://elastic.github.io/isomer/deck/`. Preview with `pnpm deck:dev`.[^docs-workflow][^deck]
+7. `examples/deck` is a Vite app, not pages, outside `docs/`. The docs workflow builds it with `DECK_BASE=./` after docs-builder and copies `examples/deck/dist` into the site at `/deck/`. Link to it with the absolute URL `https://elastic.github.io/isomer/deck/`. Preview with `pnpm deck:dev`.[^docs-workflow][^deck]
 
 The assembler product id is not registered yet; this repo's docs-builder job is an isolated build.
 

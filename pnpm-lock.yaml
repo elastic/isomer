@@ -111,14 +111,60 @@ importers:
         specifier: ^4.4.1
         version: 4.6.5
 
-  apps/slides-studio:
+  examples/deck:
+    dependencies:
+      '@elastic/isomer-primitives-slides':
+        specifier: workspace:*
+        version: link:../../packages/isomer-primitives-slides
+      '@elastic/isomer-runtime':
+        specifier: workspace:*
+        version: link:../../packages/isomer-runtime
+      '@elastic/isomer-sdk':
+        specifier: workspace:*
+        version: link:../../packages/isomer-sdk
+      '@fontsource/inter':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/roboto-mono':
+        specifier: ^5.3.0
+        version: 5.3.0
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
+      zod:
+        specifier: ^4.4.1
+        version: 4.6.5
+    devDependencies:
+      '@elastic/isomer-image-takumi':
+        specifier: workspace:*
+        version: link:../../packages/isomer-image-takumi
+      '@types/node':
+        specifier: ^22.15.3
+        version: 22.20.2
+      '@types/react':
+        specifier: ^18.2.14
+        version: 18.3.31
+      '@types/react-dom':
+        specifier: ^18.2.6
+        version: 18.3.7(@types/react@18.3.31)
+      '@vitejs/plugin-react':
+        specifier: ^6.1.1
+        version: 6.1.1(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(jiti@2.6.1)(yaml@2.9.1))
+      vite:
+        specifier: ^8.3.0
+        version: 8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(jiti@2.6.1)(yaml@2.9.1)
+
+  examples/slides-studio:
     dependencies:
       '@elastic/isomer-agent-tools':
         specifier: workspace:*
         version: link:../../packages/isomer-agent-tools
       '@elastic/isomer-deck':
         specifier: workspace:*
-        version: link:../../docs/deck
+        version: link:../deck
       '@elastic/isomer-image-takumi':
         specifier: workspace:*
         version: link:../../packages/isomer-image-takumi
@@ -150,52 +196,6 @@ importers:
         specifier: ^4.4.1
         version: 4.6.5
     devDependencies:
-      '@types/node':
-        specifier: ^22.15.3
-        version: 22.20.2
-      '@types/react':
-        specifier: ^18.2.14
-        version: 18.3.31
-      '@types/react-dom':
-        specifier: ^18.2.6
-        version: 18.3.7(@types/react@18.3.31)
-      '@vitejs/plugin-react':
-        specifier: ^6.1.1
-        version: 6.1.1(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(jiti@2.6.1)(yaml@2.9.1))
-      vite:
-        specifier: ^8.3.0
-        version: 8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(jiti@2.6.1)(yaml@2.9.1)
-
-  docs/deck:
-    dependencies:
-      '@elastic/isomer-primitives-slides':
-        specifier: workspace:*
-        version: link:../../packages/isomer-primitives-slides
-      '@elastic/isomer-runtime':
-        specifier: workspace:*
-        version: link:../../packages/isomer-runtime
-      '@elastic/isomer-sdk':
-        specifier: workspace:*
-        version: link:../../packages/isomer-sdk
-      '@fontsource/inter':
-        specifier: ^5.3.0
-        version: 5.3.0
-      '@fontsource/roboto-mono':
-        specifier: ^5.3.0
-        version: 5.3.0
-      react:
-        specifier: ^18.3.1
-        version: 18.3.1
-      react-dom:
-        specifier: ^18.3.1
-        version: 18.3.1(react@18.3.1)
-      zod:
-        specifier: ^4.4.1
-        version: 4.6.5
-    devDependencies:
-      '@elastic/isomer-image-takumi':
-        specifier: workspace:*
-        version: link:../../packages/isomer-image-takumi
       '@types/node':
         specifier: ^22.15.3
         version: 22.20.2

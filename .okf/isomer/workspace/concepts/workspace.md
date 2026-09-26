@@ -24,7 +24,7 @@ Isomer is a pnpm workspace. Packages live under `packages/` and resolve each oth
 
 A package under `packages/` publishes at one version unless it is `private`. `@elastic/isomer-sdk` and `@elastic/isomer-runtime` are what a host installs, `@elastic/isomer-image-takumi` rasterizes the `svg` surface, and `@elastic/isomer-evals` scores agent output against a pack's authoring context. `@elastic/isomer-primitives-slides`, the reference pack to copy, and `@elastic/isomer-agent-tools`, transport-neutral agent tools, resources, and a prompt, are private workspace libraries: their checks still run, and `scripts/check_pack_consumer.js` fails when a published package depends on either. Nothing has been published or pushed.[^readme][^agents]
 
-`docs/deck` and `apps/slides-studio` are also workspace members: the Isomer deck, a private Vite app whose slides are compositions, and the studio where an agent writes a deck over MCP. They sit outside `packages/`, so the publish, export, and license checks never see them.[^package]
+`examples/*` are also workspace members: private, runnable apps built on the packages. `examples/deck` is the Isomer deck, a Vite app whose slides are compositions, and `examples/slides-studio` is the studio where an agent writes a deck over MCP. They sit outside `packages/`, so the publish, export, and license checks never see them.[^package]
 
 Hosts own data, authorization, routing, and side effects. Isomer owns the view contract, primitive catalog, validation, and rendering.
 

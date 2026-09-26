@@ -74,7 +74,7 @@ const slide = (file: string, composition: Composition): DeckSlide => {
         id: 'jsx',
         label: 'JSX',
         text: source.replace(licenseHeader, ''),
-        file: `docs/deck/src/slides/${file}.tsx`,
+        file: `examples/deck/src/slides/${file}.tsx`,
       },
       {
         id: 'json',

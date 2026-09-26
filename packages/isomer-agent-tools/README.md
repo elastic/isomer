@@ -20,7 +20,7 @@ Every composition is treated as untrusted model output: it is parsed and validat
 
 ## Docs
 
-The [Agent tools](https://elastic.github.io/isomer/agent-tools/) page covers the tools, the options, adapters for MCP and the AI SDK, and the security posture. The [slides studio](../../apps/slides-studio/README.md) is a full MCP host built on it.
+The [Agent tools](https://elastic.github.io/isomer/agent-tools/) page covers the tools, the options, adapters for MCP and the AI SDK, and the security posture. The [slides studio](../../examples/slides-studio/README.md) is a full MCP host built on it.
 
 ## License
 

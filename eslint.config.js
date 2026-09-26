@@ -291,8 +291,8 @@ export default tseslint.config(
   },
   {
     // The studio's host is transport- and app-neutral so it can move into its own package.
-    files: ['apps/slides-studio/server/host/**/*.ts'],
-    ignores: ['apps/slides-studio/server/host/**/*.test.ts'],
+    files: ['examples/slides-studio/server/host/**/*.ts'],
+    ignores: ['examples/slides-studio/server/host/**/*.test.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -318,6 +318,7 @@ export default tseslint.config(
   {
     files: [
       'packages/**/*.{ts,tsx}',
+      'examples/**/*.{ts,tsx}',
       'scripts/**/*.{js,cjs}',
       'eslint.config.js',
       'vitest.config.ts',

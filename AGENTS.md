@@ -14,9 +14,11 @@ The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, a
 
 `packages/isomer-agent-tools` turns any runtime into transport-neutral agent tools, resources, and a `compose` prompt. It declares the runtime structurally and depends on the SDK alone; hosts bring the transport, and it must never reach `@modelcontextprotocol/sdk`, which `scripts/check_module_graph.js` enforces.
 
-`docs/deck` is the Isomer deck: a private Vite app, one `.tsx` composition per slide, rendered by the slides pack. It is a workspace member outside `packages/`, so it never publishes. The docs workflow copies its build to `/deck/` on the Pages site. Vite there is for the app only; the library build stays `tsc`.
+`examples/` holds private, runnable apps built on the packages. Each is a workspace member outside `packages/`, so publishing, export, and license checks never see it. Vite there is for the apps only; the library build stays `tsc`.
 
-`apps/slides-studio` is a private, dev-server-only Vite app where an agent writes a slide deck over MCP (`pnpm studio:dev`, then `claude mcp add --transport http isomer-slides http://localhost:5178/mcp`). Its landing page holds the connection instructions and lists decks, `/decks/<id>` shows a deck's slides as they arrive, and `/decks/<id>/present` is the deck's viewer, reused through `@elastic/isomer-deck/viewer`. It registers `@elastic/isomer-agent-tools`' tools, resources, and prompt plus deck tools on an MCP server from `server/`, and persists decks to its gitignored `.decks/`.
+`examples/deck` is the Isomer deck: one `.tsx` composition per slide, rendered by the slides pack. The docs workflow copies its build to `/deck/` on the Pages site.
+
+`examples/slides-studio` is a dev-server-only app where an agent writes a slide deck over MCP (`pnpm studio:dev`, then `claude mcp add --transport http isomer-slides http://localhost:5178/mcp`). Its landing page holds the connection instructions and lists decks, `/decks/<id>` shows a deck's slides as they arrive, and `/decks/<id>/present` is the deck's viewer, reused through `@elastic/isomer-deck/viewer`. It registers `@elastic/isomer-agent-tools`' tools, resources, and prompt plus deck tools on an MCP server from `server/`; `server/host/` builds them with no transport, so it can become a package once a second host needs it. It persists decks to its gitignored `.decks/`.
 
 ## Release posture
 

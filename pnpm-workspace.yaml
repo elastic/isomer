@@ -5,5 +5,4 @@
 
 packages:
   - packages/*
-  - docs/deck
-  - apps/slides-studio
+  - examples/*
