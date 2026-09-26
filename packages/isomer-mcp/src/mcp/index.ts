@@ -10,5 +10,6 @@ export {
   type IsomerMcpServerOptions,
   ISOMER_AUTHORING_GUIDE_URI,
   ISOMER_COMPOSE_PROMPT,
+  ISOMER_COMPOSITION_SCHEMA_URI,
   createIsomerMcpServer,
 } from './server';

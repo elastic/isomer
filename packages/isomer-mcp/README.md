@@ -1,6 +1,6 @@
 # `@elastic/isomer-mcp`
 
-Turns any Isomer runtime into agent tools, with an MCP adapter. The tools read the authoring guide, validate a composition, render it to text, Markdown, HTML, Slack, or PNG, and request registered views.
+Turns any Isomer runtime into agent tools, with an MCP adapter. The tools read the authoring guide, look up the primitives it indexes, validate a composition, render it to text, Markdown, HTML, Slack, or PNG, and request registered views.
 
 ```sh
 npm install @elastic/isomer-mcp

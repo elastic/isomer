@@ -20,6 +20,7 @@ export {
   DEFAULT_ISOMER_GUIDE,
   ISOMER_TOOL_NAMES,
   buildIsomerAuthoringGuide,
+  buildPrimitiveDescriptions,
   checkComposition,
   createIsomerTools,
 } from '../tools';

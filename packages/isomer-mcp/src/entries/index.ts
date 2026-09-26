@@ -9,6 +9,7 @@ export {
   type IsomerMcpServerOptions,
   ISOMER_AUTHORING_GUIDE_URI,
   ISOMER_COMPOSE_PROMPT,
+  ISOMER_COMPOSITION_SCHEMA_URI,
   createIsomerMcpServer,
   registerIsomerTools,
   toCallToolResult,
@@ -28,6 +29,7 @@ export {
   DEFAULT_ISOMER_GUIDE,
   ISOMER_TOOL_NAMES,
   buildIsomerAuthoringGuide,
+  buildPrimitiveDescriptions,
   checkComposition,
   createIsomerTools,
 } from '../tools';

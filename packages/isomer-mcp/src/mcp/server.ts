@@ -20,6 +20,9 @@ import { registerIsomerTools } from './register';
 /** Where {@link createIsomerMcpServer} exposes the authoring guide as a resource. */
 export const ISOMER_AUTHORING_GUIDE_URI = 'isomer://authoring-guide';
 
+/** Where {@link createIsomerMcpServer} exposes the whole composition JSON Schema. */
+export const ISOMER_COMPOSITION_SCHEMA_URI = 'isomer://composition-schema';
+
 /** The prompt {@link createIsomerMcpServer} registers: the guide, plus an optional request. */
 export const ISOMER_COMPOSE_PROMPT = 'compose';
 
@@ -33,7 +36,7 @@ export type IsomerMcpServerOptions<THostContext = unknown> =
     instructions?: string;
   };
 
-const DEFAULT_INSTRUCTIONS = `Answers are compositions: typed JSON the host validates and renders. Read \`${ISOMER_TOOL_NAMES.authoringGuide}\` before writing one, check it with \`${ISOMER_TOOL_NAMES.validate}\`, and render it with \`${ISOMER_TOOL_NAMES.render}\`.`;
+const DEFAULT_INSTRUCTIONS = `Answers are compositions: typed JSON the host validates and renders. Read \`${ISOMER_TOOL_NAMES.authoringGuide}\`, look up the primitives you pick with \`${ISOMER_TOOL_NAMES.describePrimitives}\`, check the composition with \`${ISOMER_TOOL_NAMES.validate}\`, and render it with \`${ISOMER_TOOL_NAMES.render}\`.`;
 
 /** An MCP server with the Isomer tools, the authoring guide as a resource, and a `compose` prompt. Register host tools on the returned server. */
 export const createIsomerMcpServer = <THostContext = unknown>(
@@ -51,11 +54,35 @@ export const createIsomerMcpServer = <THostContext = unknown>(
     {
       title: 'Isomer authoring guide',
       description:
-        'The primitive catalog, composition JSON Schema, rules, and registered views.',
+        'The guide, rules, registered views, and an index of the primitives.',
       mimeType: 'text/markdown',
     },
     (uri) => ({
       contents: [{ uri: uri.href, mimeType: 'text/markdown', text: guide() }],
+    })
+  );
+
+  server.registerResource(
+    'isomer-composition-schema',
+    ISOMER_COMPOSITION_SCHEMA_URI,
+    {
+      title: 'Composition JSON Schema',
+      description:
+        'The whole authoring JSON Schema for a composition, every primitive included.',
+      mimeType: 'application/json',
+    },
+    (uri) => ({
+      contents: [
+        {
+          uri: uri.href,
+          mimeType: 'application/json',
+          text: JSON.stringify(
+            options.runtime.getAuthoringContext().schema,
+            null,
+            2
+          ),
+        },
+      ],
     })
   );
 

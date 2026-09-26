@@ -8,6 +8,7 @@
 import type {
   Composition,
   PrimitiveCatalogEntry,
+  PrimitiveGroup,
   PrimitiveNode,
   RenderTheme,
   ValidationError,
@@ -54,7 +55,12 @@ export interface IsomerToolsRuntime<THostContext = unknown> {
   getAuthoringContext(): {
     schema: Record<string, unknown>;
     primitives: readonly PrimitiveCatalogEntry[];
+    groups?: readonly PrimitiveGroup[] | undefined;
     views?: readonly AuthoringViewSummary[] | undefined;
+    describePrimitives(types: readonly string[]): {
+      primitives: readonly PrimitiveCatalogEntry[];
+      schema: Record<string, unknown>;
+    };
   };
   parse(value: unknown): {
     valid: boolean;

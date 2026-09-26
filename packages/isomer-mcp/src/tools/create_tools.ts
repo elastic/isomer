@@ -13,7 +13,8 @@ import {
 import { z, type ZodObject } from 'zod';
 
 import { checkComposition } from './check';
-import { buildIsomerAuthoringGuide } from './guide';
+import { buildIsomerAuthoringGuide, buildPrimitiveDescriptions } from './guide';
+import { ISOMER_TOOL_NAMES } from './names';
 import { errorMessage, imageResult, jsonResult, textResult } from './result';
 import type {
   IsomerTool,
@@ -22,14 +23,7 @@ import type {
   IsomerToolSurface,
 } from './types';
 
-/** Tool names, stable across releases because hosts and prompts refer to them. */
-export const ISOMER_TOOL_NAMES = {
-  authoringGuide: 'isomer_authoring_guide',
-  validate: 'isomer_validate',
-  render: 'isomer_render',
-  listViews: 'isomer_list_views',
-  requestView: 'isomer_request_view',
-} as const;
+export { ISOMER_TOOL_NAMES };
 
 const TEXT_SURFACES: readonly IsomerToolSurface[] = [
   'text',
@@ -42,7 +36,7 @@ const TEXT_SURFACES: readonly IsomerToolSurface[] = [
 const compositionInput = z
   .looseObject({})
   .describe(
-    'A composition: `{ "type": "view", "body": [...] }`. Read `isomer_authoring_guide` for the node types and the JSON Schema before writing one.'
+    `A composition: \`{ "type": "view", "body": [...] }\`. Read \`${ISOMER_TOOL_NAMES.authoringGuide}\` for the primitives, and \`${ISOMER_TOOL_NAMES.describePrimitives}\` for the schema of each one you use, before writing one.`
   );
 
 const themeInput = z
@@ -125,11 +119,38 @@ export const createIsomerTools = <THostContext = unknown>(
   const authoringGuide = tool({
     name: ISOMER_TOOL_NAMES.authoringGuide,
     title: 'Isomer authoring guide',
-    description:
-      'Returns how to write a composition for this host: the primitive catalog with an example of each, the composition JSON Schema, the rules, and any registered views. Read it before writing a composition.',
+    description: `Returns how to write a composition for this host: the guide, the rules, any registered views, and an index of the primitives by type and purpose. Read it first, then call \`${ISOMER_TOOL_NAMES.describePrimitives}\` for the primitives you pick.`,
     inputSchema: z.object({}),
     handler: () =>
       Promise.resolve(textResult(buildIsomerAuthoringGuide(options))),
+  });
+
+  const describePrimitives = tool({
+    name: ISOMER_TOOL_NAMES.describePrimitives,
+    title: 'Describe primitives',
+    description:
+      'Returns the full catalog entry and JSON Schema of each primitive type given: when to use it, when not to, an example, and every field. Include the containers you will nest in. Each type comes to about 3,000 characters; up to 12 per call, so call again for more.',
+    inputSchema: z.object({
+      types: z
+        .array(z.string())
+        .min(1)
+        .max(12)
+        .describe('Primitive types from the guide’s index.'),
+    }),
+    handler: ({ types }) => {
+      const known = new Set(
+        runtime.getAuthoringContext().primitives.map(({ type }) => type)
+      );
+      const unknown = types.filter((type) => !known.has(type));
+      return Promise.resolve(
+        unknown.length > 0
+          ? textResult(
+              `Unknown primitive type(s): ${unknown.join(', ')}. Known types: ${[...known].join(', ')}.`,
+              true
+            )
+          : textResult(buildPrimitiveDescriptions({ runtime, types }))
+      );
+    },
   });
 
   const validate = tool({
@@ -203,5 +224,12 @@ export const createIsomerTools = <THostContext = unknown>(
     },
   });
 
-  return [authoringGuide, validate, renderTool, listViews, requestView];
+  return [
+    authoringGuide,
+    describePrimitives,
+    validate,
+    renderTool,
+    listViews,
+    requestView,
+  ];
 };

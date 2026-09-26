@@ -70,7 +70,7 @@ const jsonOf = (result: IsomerToolResult): Record<string, unknown> =>
 describe('createIsomerTools', () => {
   const tools = createIsomerTools({ runtime, frame: slideDeckFrame });
 
-  it('offers the five tools', () => {
+  it('offers every tool, in order', () => {
     expect(tools.map(({ name }) => name)).toEqual(
       Object.values(ISOMER_TOOL_NAMES)
     );
@@ -82,7 +82,18 @@ describe('createIsomerTools', () => {
       expect(guide).toContain(DEFAULT_ISOMER_GUIDE);
       expect(guide).toContain('`slideFrame`');
       expect(guide).toContain('`one-slide`');
-      expect(guide).toContain('## JSON Schema');
+      expect(guide).toContain(ISOMER_TOOL_NAMES.describePrimitives);
+    });
+
+    it('indexes every primitive once, without examples or the schema', async () => {
+      const guide = textOf(await call(tools, ISOMER_TOOL_NAMES.authoringGuide));
+      for (const { type } of slideDeckPrimitives) {
+        expect(guide.split(`- \`${type}\` — `)).toHaveLength(2);
+      }
+      expect(guide).not.toContain('## JSON Schema');
+      expect(guide).not.toContain('Use when:');
+      // Keeps the overview small enough to read whole as packs grow.
+      expect(guide.length).toBeLessThan(15_000);
     });
 
     it('renders host rules as bullets', async () => {
@@ -93,6 +104,38 @@ describe('createIsomerTools', () => {
         )
       );
       expect(guide).toContain('## Rules\n\n- One idea per slide.');
+    });
+  });
+
+  describe('isomer_describe_primitives', () => {
+    it('returns each entry and a schema whose refs resolve', async () => {
+      const text = textOf(
+        await call(tools, ISOMER_TOOL_NAMES.describePrimitives, {
+          types: ['slideFrame', 'slideTimeline'],
+        })
+      );
+      expect(text).toContain('- `slideFrame` — ');
+      expect(text).toContain('- `slideTimeline` — ');
+      expect(text).toContain('Use when:');
+      const json = /```json\n([\s\S]*)\n```/.exec(text)?.[1] ?? '{}';
+      const { $defs } = JSON.parse(json) as {
+        $defs: Record<string, unknown>;
+      };
+      expect(Object.keys($defs)).toEqual(
+        expect.arrayContaining(['slideFrame', 'slideTimeline', 'bodyNode'])
+      );
+      for (const [, id] of json.matchAll(/"#\/\$defs\/([^"]+)"/g)) {
+        expect($defs).toHaveProperty([id!]);
+      }
+    });
+
+    it('names unknown types and lists the known ones', async () => {
+      const result = await call(tools, ISOMER_TOOL_NAMES.describePrimitives, {
+        types: ['slideNope'],
+      });
+      expect(result.isError).toBe(true);
+      expect(textOf(result)).toContain('slideNope');
+      expect(textOf(result)).toContain('slideFrame');
     });
   });
 

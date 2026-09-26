@@ -5,7 +5,7 @@ description: Turns any Isomer runtime into agent tools, with an MCP adapter.
 
 # MCP and agent tools
 
-`@elastic/isomer-mcp` turns any Isomer runtime into five agent tools: read the authoring guide, validate a composition, render it, list registered views, and request one. The tools are transport-neutral; the root entry registers them on an [MCP](https://modelcontextprotocol.io) server.
+`@elastic/isomer-mcp` turns any Isomer runtime into six agent tools: read the authoring guide, look up the primitives it indexes, validate a composition, render it, list registered views, and request one. The tools are transport-neutral; the root entry registers them on an [MCP](https://modelcontextprotocol.io) server.
 
 ```ts
 import { createIsomerMcpServer } from '@elastic/isomer-mcp';
@@ -17,7 +17,7 @@ const server = createIsomerMcpServer({ name: 'slides', version: '1.0.0', runtime
 
 | Entry | Exports | Depends on |
 | --- | --- | --- |
-| `@elastic/isomer-mcp/tools` | `createIsomerTools`, `buildIsomerAuthoringGuide`, `checkComposition`, `ISOMER_TOOL_NAMES`, and the tool types | The SDK. Never reaches `@modelcontextprotocol/sdk`. |
+| `@elastic/isomer-mcp/tools` | `createIsomerTools`, `buildIsomerAuthoringGuide`, `buildPrimitiveDescriptions`, `checkComposition`, `ISOMER_TOOL_NAMES`, and the tool types | The SDK. Never reaches `@modelcontextprotocol/sdk`. |
 | `@elastic/isomer-mcp` | `createIsomerMcpServer`, `registerIsomerTools`, `toCallToolResult`, plus everything in `./tools` | `@modelcontextprotocol/sdk` |
 
 A host with its own agent framework imports `./tools` and maps each `IsomerTool` (`name`, `title`, `description`, a Zod `inputSchema`, and `handler`) onto that framework's tool shape. `handler` receives what `inputSchema` parsed and resolves to `{ content, isError? }`, where each content block is text or a base64 PNG — the same shape as an MCP `CallToolResult`.
@@ -28,15 +28,18 @@ A host with its own agent framework imports `./tools` and maps each `IsomerTool`
 
 | Tool | Input | Returns |
 | --- | --- | --- |
-| `isomer_authoring_guide` | none | The authoring prompt: guide, rules, registered views, the primitive catalog with an example each, and the composition JSON Schema |
+| `isomer_authoring_guide` | none | The authoring overview: guide, rules, registered views, and an index of the primitives, one line each under the packs' groups |
+| `isomer_describe_primitives` | `types` (1–12) | Each type's full catalog entry, with its example, then the JSON Schema `$defs` those types reach. `bodyNode` is a stub meaning any primitive. An unknown type is an error that lists the known ones |
 | `isomer_validate` | `composition` | `{ valid, errors, warnings }` as JSON. An invalid composition is a normal answer, not a failed call |
 | `isomer_render` | `composition`, `surface`, `theme?` | Text, Markdown, HTML with its CSS inline, Slack Block Kit as JSON, or a PNG image. An invalid composition returns its errors with `isError: true` |
 | `isomer_list_views` | none | The registered views, with the questions each answers and its input schema |
 | `isomer_request_view` | `id`, `input?` | The built composition and its validation, as JSON |
 
-The `composition` input is a loose object. The node union is recursive and too large for a tool schema, so the schema tells the model to read the guide first, and `isomer_validate` is where shape is enforced.
+The `composition` input is a loose object. The node union is recursive and too large for a tool schema, so the schema tells the model to read the guide and look up its primitives first, and `isomer_validate` is where shape is enforced.
 
-`errors` come from `formatValidationError`, one `<path> <message>` string per finding, worded for the model to repair from.
+`errors` come from `formatValidationError`, one `<path> (in <type>) <message>` string per finding, worded for the model to repair from. The type names the primitive the path lands in, which is what the model looks up to fix it.
+
+The guide stays small because it only indexes the catalog: the whole slides guide was about 100K characters with the catalog and schema inline, most of it a schema a model could not read. A host that wants the whole schema reads the `isomer://composition-schema` resource.
 
 ## Options
 
@@ -53,7 +56,7 @@ The `composition` input is a loose object. The node union is recursive and too l
 
 ## An MCP server
 
-`createIsomerMcpServer({ name, version, instructions?, ...options })` returns an `McpServer` with the five tools, the guide as the `isomer://authoring-guide` resource (`text/markdown`), and a `compose` prompt: the guide, followed by an optional `request`. Register the host's own tools on the returned server.
+`createIsomerMcpServer({ name, version, instructions?, ...options })` returns an `McpServer` with the six tools, the guide as the `isomer://authoring-guide` resource (`text/markdown`), the whole composition JSON Schema as `isomer://composition-schema` (`application/json`), and a `compose` prompt: the guide, followed by an optional `request`. Register the host's own tools on the returned server.
 
 ```ts
 import { createServer } from 'node:http';

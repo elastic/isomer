@@ -22,6 +22,7 @@ import {
   createIsomerMcpServer,
   ISOMER_AUTHORING_GUIDE_URI,
   ISOMER_COMPOSE_PROMPT,
+  ISOMER_COMPOSITION_SCHEMA_URI,
 } from './server';
 
 const slide = slideDeckPrimitives.find(({ type }) => type === 'slideFrame')!
@@ -130,8 +131,23 @@ describe('createIsomerMcpServer', () => {
       uri: ISOMER_AUTHORING_GUIDE_URI,
       mimeType: 'text/markdown',
     });
-    expect(content && 'text' in content ? content.text : '').toContain(
-      '## Primitive catalog'
+    const text = content && 'text' in content ? content.text : '';
+    expect(text).toContain('## Primitive catalog');
+    expect(text).not.toContain('## JSON Schema');
+  });
+
+  it('serves the whole composition schema as a resource', async () => {
+    const { client } = await connected();
+    const { contents } = await client.readResource({
+      uri: ISOMER_COMPOSITION_SCHEMA_URI,
+    });
+    const [content] = contents;
+    expect(content).toMatchObject({ mimeType: 'application/json' });
+    const schema = JSON.parse(
+      content && 'text' in content ? content.text : '{}'
+    ) as { $defs?: Record<string, unknown> };
+    expect(Object.keys(schema.$defs ?? {})).toEqual(
+      expect.arrayContaining(['bodyNode', 'slideFrame', 'slideTimeline'])
     );
   });
 

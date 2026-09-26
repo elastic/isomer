@@ -7,7 +7,11 @@
 
 export { type CompositionCheck, checkComposition } from './check';
 export { ISOMER_TOOL_NAMES, createIsomerTools } from './create_tools';
-export { DEFAULT_ISOMER_GUIDE, buildIsomerAuthoringGuide } from './guide';
+export {
+  DEFAULT_ISOMER_GUIDE,
+  buildIsomerAuthoringGuide,
+  buildPrimitiveDescriptions,
+} from './guide';
 export type {
   IsomerTool,
   IsomerToolContent,
