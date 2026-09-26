@@ -39,7 +39,7 @@ export const packagesSlide = toComposition(
               [
                 '@elastic/isomer-primitives-slides',
                 'Reference pack',
-                'Copy it, or render decks',
+                'In the repo: copy it',
               ],
               [
                 '@elastic/isomer-image-takumi',
@@ -49,7 +49,7 @@ export const packagesSlide = toComposition(
               [
                 '@elastic/isomer-agent-tools',
                 'Agent tools',
-                'Hand a runtime to any agent',
+                'In the repo: tools for any agent',
               ],
               [
                 '@elastic/isomer-evals',
