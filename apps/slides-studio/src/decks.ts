@@ -8,7 +8,7 @@
 import { useEffect, useState } from 'react';
 
 import type { DeckListing } from '../server/app';
-import type { DeckView } from '../server/resolve';
+import type { DeckView } from '../server/host/resolve';
 
 export type { DeckListing };
 

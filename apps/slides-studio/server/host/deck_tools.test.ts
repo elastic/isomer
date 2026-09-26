@@ -10,15 +10,17 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import type { IsomerTool } from '@elastic/isomer-agent-tools';
+import { runtime } from '@elastic/isomer-deck/runtime';
 import type {
   SlideOverflow,
   SlideOverlap,
 } from '@elastic/isomer-primitives-slides';
 import { describe, expect, it } from 'vitest';
 
+import { createDeckStore } from '../store';
+
 import { createDeckTools } from './deck_tools';
 import { resolveDeck } from './resolve';
-import { createDeckStore } from './store';
 
 const slide = (title: string) => ({
   type: 'view',
@@ -35,15 +37,16 @@ const slide = (title: string) => ({
 const setup = (overflow?: SlideOverflow, overlaps: SlideOverlap[] = []) => {
   const store = createDeckStore(mkdtempSync(join(tmpdir(), 'studio-')));
   const rendered: string[] = [];
-  const tools = createDeckTools(
+  const tools = createDeckTools({
+    runtime,
     store,
-    (composition, theme) => {
+    png: (composition, theme) => {
       rendered.push(`${composition.title}:${theme}`);
       return Promise.resolve(new Uint8Array([1, 2, 3]));
     },
-    () => Promise.resolve({ overflow, overlaps }),
-    (id) => `http://localhost:5178/decks/${id}`
-  );
+    layoutOf: () => Promise.resolve({ overflow, overlaps }),
+    viewerUrl: (id) => `http://localhost:5178/decks/${id}`,
+  });
   const call = async (name: string, input: Record<string, unknown>) => {
     const tool = tools.find((entry) => entry.name === name) as IsomerTool;
     return tool.handler(tool.inputSchema.parse(input));

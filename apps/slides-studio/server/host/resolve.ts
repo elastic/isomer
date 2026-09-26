@@ -8,7 +8,7 @@
 import { resolveSlideRenders } from '@elastic/isomer-primitives-slides';
 import type { Composition } from '@elastic/isomer-sdk';
 
-import type { Deck } from './store';
+import type { Deck } from './deck';
 
 const named = (slides: readonly Composition[]) =>
   slides.map((composition, index) => ({ slug: String(index), composition }));

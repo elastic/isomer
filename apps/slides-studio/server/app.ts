@@ -16,9 +16,10 @@ import {
 } from '@elastic/isomer-image-takumi';
 import type { Composition } from '@elastic/isomer-sdk';
 
+import type { DeckStore, DeckSummary } from './host/deck';
+import { resolveDeck, viewDeck } from './host/resolve';
 import { handleMcp, type McpSessions } from './mcp';
-import { resolveDeck, viewDeck } from './resolve';
-import { createDeckStore, type DeckStore, type DeckSummary } from './store';
+import { createDeckStore } from './store';
 
 /** Everything that must outlive a module reload under `vite dev`. */
 export interface StudioState {

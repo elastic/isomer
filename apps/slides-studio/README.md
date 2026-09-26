@@ -33,16 +33,19 @@ In a `slideRender`, `slide` names another slide in the same deck by index, as a 
 
 ## Where things live
 
-| Path                                     | Holds                                                                                   |
-| ---------------------------------------- | --------------------------------------------------------------------------------------- |
-| `server/app.ts`                          | Routes: `/mcp`, `/api/decks`, server-sent events, and `/png/<deck>/<index>.<theme>.png` |
-| `server/mcp.ts`                          | One MCP server and Streamable HTTP transport per session                                |
-| `server/mcp_adapter.ts`                  | Registers agent tools, resources, and prompts on an MCP server                          |
-| `server/deck_tools.ts`                   | The deck tools                                                                          |
-| `server/store.ts`                        | Decks in memory, mirrored to `.decks/<id>.json`                                         |
-| `src/app.tsx`, `src/router.tsx`          | The three pages and a small history router                                              |
-| `src/deck_page.tsx`, `src/thumbnail.tsx` | The live slide grid                                                                     |
-| `src/present.tsx`                        | The deck viewer from `@elastic/isomer-deck/viewer`, fed live over server-sent events    |
+| Path                                     | Holds                                                                                    |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `server/app.ts`                          | Routes: `/mcp`, `/api/decks`, server-sent events, and `/png/<deck>/<index>.<theme>.png`  |
+| `server/mcp.ts`                          | One MCP server and Streamable HTTP transport per session                                 |
+| `server/mcp_adapter.ts`                  | Registers agent tools, resources, and prompts on an MCP server                           |
+| `server/host/slides_host.ts`             | What an agent gets, for any transport: the slides pack's agent tools plus the deck tools |
+| `server/host/deck_tools.ts`              | The deck tools                                                                           |
+| `server/store.ts`                        | Decks in memory, mirrored to `.decks/<id>.json`                                          |
+| `src/app.tsx`, `src/router.tsx`          | The three pages and a small history router                                               |
+| `src/deck_page.tsx`, `src/thumbnail.tsx` | The live slide grid                                                                      |
+| `src/present.tsx`                        | The deck viewer from `@elastic/isomer-deck/viewer`, fed live over server-sent events     |
+
+`server/host/` takes its runtime, store, and renderers as options and imports no transport, app module, or Node built-in, which ESLint enforces, so it can become its own package once a second host needs it.
 
 State lives on one `globalThis` singleton so decks and connected agents survive hot reloads. The MCP endpoint only answers `localhost` on the port it is served from.
 

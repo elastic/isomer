@@ -5,9 +5,16 @@
  * 2.0.
  */
 
-import type { IsomerTool, IsomerToolResult } from '@elastic/isomer-agent-tools';
-import { checkComposition } from '@elastic/isomer-agent-tools';
-import { runtime } from '@elastic/isomer-deck/runtime';
+import type {
+  IsomerTool,
+  IsomerToolResult,
+  IsomerToolsRuntime,
+} from '@elastic/isomer-agent-tools';
+import {
+  checkComposition,
+  jsonResult as json,
+  textResult as text,
+} from '@elastic/isomer-agent-tools';
 import {
   slideAuthoringNotes,
   slideDeckFrame,
@@ -17,8 +24,8 @@ import {
 import type { Composition } from '@elastic/isomer-sdk';
 import { z, type ZodObject } from 'zod';
 
+import type { Deck, DeckStore } from './deck';
 import { resolveDeck, unresolvedReference } from './resolve';
-import type { Deck, DeckStore } from './store';
 
 /** Renders one slide, its references resolved, to PNG bytes. */
 export type SlidePng = (
@@ -39,15 +46,15 @@ const bodyTypes = (composition: Composition): string[] => {
 
 type SchemaDefs = Record<string, { properties?: Record<string, unknown> }>;
 
-const { $defs: defs = {} } = runtime.getAuthoringContext().schema as {
-  $defs?: SchemaDefs;
-};
-
 const named = (index: number, types: readonly string[]): string =>
   `${index} (${types[index] ?? '?'})`;
 
 /** What to change on a crowded slide: `size` where a body node takes one, else the copy. */
-const crowdedFix = (types: readonly string[], last: string): string => {
+const crowdedFix = (
+  defs: SchemaDefs,
+  types: readonly string[],
+  last: string
+): string => {
   const sized = types.flatMap((type, index) =>
     defs[type]?.properties?.size === undefined ? [] : [named(index, types)]
   );
@@ -57,12 +64,14 @@ const crowdedFix = (types: readonly string[], last: string): string => {
 };
 
 const overlapText = (
+  defs: SchemaDefs,
   { nodes: [first, second], by }: SlideOverlap,
   types: readonly string[]
 ): string =>
-  `Body nodes ${named(first, types)} and ${named(second, types)} are drawn over each other by ${by}px: the slide is too full, so a node was squeezed. ${crowdedFix(types, 'move one to its own slide')}`;
+  `Body nodes ${named(first, types)} and ${named(second, types)} are drawn over each other by ${by}px: the slide is too full, so a node was squeezed. ${crowdedFix(defs, types, 'move one to its own slide')}`;
 
 const overflowText = (
+  defs: SchemaDefs,
   overflow: SlideOverflow,
   types: readonly string[]
 ): string => {
@@ -71,7 +80,7 @@ const overflowText = (
     .map((side) => `${overflow[side]}px past the ${side}`)
     .join(', ');
   const nodes = overflow.nodes.map((index) => named(index, types)).join(', ');
-  return `Content runs past the slide's body: ${sides}, from body node ${nodes}. ${crowdedFix(types, 'split the slide')} Text cut off inside an embedded render's panel counts too.`;
+  return `Content runs past the slide's body: ${sides}, from body node ${nodes}. ${crowdedFix(defs, types, 'split the slide')} Text cut off inside an embedded render's panel counts too.`;
 };
 
 const slideLink = /^\?slide=(\d+)$/;
@@ -128,14 +137,6 @@ const sectionLinkNotes = (
   });
 };
 
-const text = (value: string, isError = false): IsomerToolResult =>
-  isError
-    ? { content: [{ type: 'text', text: value }], isError }
-    : { content: [{ type: 'text', text: value }] };
-
-const json = (value: unknown, isError = false): IsomerToolResult =>
-  text(JSON.stringify(value, null, 2), isError);
-
 const tool = <TInput extends ZodObject>(
   definition: IsomerTool<TInput>
 ): IsomerTool => definition;
@@ -160,13 +161,26 @@ const outline = ({ id, title, slides }: Deck) => ({
   })),
 });
 
+/** Options for {@link createDeckTools}. */
+export interface DeckToolsOptions {
+  runtime: IsomerToolsRuntime;
+  store: DeckStore;
+  png: SlidePng;
+  layoutOf: SlideLayoutCheck;
+  viewerUrl: (deckId: string) => string;
+}
+
 /** The studio's deck tools, over `store`. Slides are validated before they are stored. */
-export const createDeckTools = (
-  store: DeckStore,
-  png: SlidePng,
-  layoutOf: SlideLayoutCheck,
-  viewerUrl: (deckId: string) => string
-): IsomerTool[] => {
+export const createDeckTools = ({
+  runtime,
+  store,
+  png,
+  layoutOf,
+  viewerUrl,
+}: DeckToolsOptions): IsomerTool[] => {
+  const { $defs: defs = {} } = runtime.getAuthoringContext().schema as {
+    $defs?: SchemaDefs;
+  };
   const check = (value: unknown) =>
     checkComposition(runtime, slideDeckFrame, value);
 
@@ -371,12 +385,12 @@ export const createDeckTools = (
               : [
                   {
                     type: 'text' as const,
-                    text: overflowText(overflow, types),
+                    text: overflowText(defs, overflow, types),
                   },
                 ]),
             ...overlaps.map((overlap) => ({
               type: 'text' as const,
-              text: overlapText(overlap, types),
+              text: overlapText(defs, overlap, types),
             })),
             ...links.map((note) => ({ type: 'text' as const, text: note })),
             ...(errors.length > 0

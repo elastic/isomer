@@ -290,6 +290,32 @@ export default tseslint.config(
     },
   },
   {
+    // The studio's host is transport- and app-neutral so it can move into its own package.
+    files: ['apps/slides-studio/server/host/**/*.ts'],
+    ignores: ['apps/slides-studio/server/host/**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '../*',
+                'node:*',
+                'vite',
+                '@modelcontextprotocol/*',
+                '@elastic/isomer-deck',
+                '@elastic/isomer-deck/*',
+              ],
+              message:
+                'server/host/ takes its runtime, store, and renderers as options and knows no transport, so it stays extractable.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: [
       'packages/**/*.{ts,tsx}',
       'scripts/**/*.{js,cjs}',
