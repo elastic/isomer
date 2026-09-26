@@ -6,6 +6,7 @@
  */
 
 import type { ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
@@ -26,9 +27,11 @@ export const react = (
 ): ReactNode => {
   const { handles: render } = renderModule;
   const { handles: placeholder } = placeholderModule;
-  const { composition, surface, caption } = node;
+  const { type, composition, surface, caption } = node;
   return (
-    <figure className={cls(context, render.root)}>
+    <figure
+      {...nodeAnchor(context, { type })}
+      className={cls(context, render.root)}>
       {caption ? (
         <figcaption className={cls(context, render.caption)}>
           {caption}

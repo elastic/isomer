@@ -27,7 +27,7 @@ export const soloExample: SlideTitleNode = {
   type: 'slideTitle',
   eyebrow: 'Quarterly review',
   title: 'Payments',
-  tagline: 'Faster refunds, fewer disputes.',
+  tagline: 'Faster refunds, **fewer disputes**.',
 };
 
 /** Only the required title. */

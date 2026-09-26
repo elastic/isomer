@@ -10,9 +10,13 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { stripMarks } from '../../render/marks';
+import { splitFit } from '../../theme/components/split';
+import { sizeForLoad } from '../size';
 import { example as codeExample } from '../slide_code/examples';
 
 import { example, examples, mixedExample } from './examples';
+import { splitLoad } from './fit';
 import { slideSplitPrimitive } from './index';
 import { schema } from './schema';
 import type { SlideSplitNode } from './types';
@@ -213,9 +217,34 @@ describe('slideSplit output', () => {
       ];
       for (const value of authored(node)) {
         for (const output of outputs) {
-          expect(output.toLowerCase()).toContain(value.toLowerCase());
+          expect(output.replace(/[`*]/g, '').toLowerCase()).toContain(
+            stripMarks(value).toLowerCase()
+          );
         }
       }
     }
   );
+});
+
+describe('slideSplit size', () => {
+  const step = (node: SlideSplitNode) =>
+    sizeForLoad(node.size, splitLoad(node), splitFit);
+
+  it('keeps short statements at the largest step', () => {
+    expect(step(example)).toBe('l');
+  });
+
+  it('steps down for long statements, and more for a narrow column', () => {
+    const long = 'East-coast parcels spend fewer days in transit';
+    const busy: SlideSplitNode = {
+      ...example,
+      left: { items: [long, long, long] },
+      right: { items: [long, long, long] },
+    };
+    expect(step(busy)).toBe('m');
+    expect(
+      step({ ...busy, ratio: 'aside', right: { items: [long, long, long] } })
+    ).toBe('s');
+    expect(step({ ...busy, size: 'l' })).toBe('l');
+  });
 });

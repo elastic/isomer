@@ -12,29 +12,41 @@ import {
 import type { Composition } from '@elastic/isomer-sdk';
 
 import { titleSlide } from './slides/00_title';
-import { sectionProblemSlide } from './slides/01_section_problem';
-import { problemSlide } from './slides/02_problem';
-import { documentSlide } from './slides/03_document';
-import { dogfoodSlide } from './slides/04_dogfood';
-import { sectionModelSlide } from './slides/05_section_model';
-import { lineSlide } from './slides/06_line';
-import { vocabularySlide } from './slides/07_vocabulary';
-import { pathsSlide } from './slides/08_paths';
-import { agentSlide } from './slides/09_agent';
-import { sectionHowSlide } from './slides/10_section_how';
-import { renderSlide } from './slides/11_render';
-import { surfacesSlide } from './slides/12_surfaces';
-import { slackSlide } from './slides/13_slack';
-import { posturesSlide } from './slides/14_postures';
-import { proofSlide } from './slides/15_proof';
-import { imagesSlide } from './slides/16_images';
-import { sectionPackSlide } from './slides/17_section_pack';
-import { anatomySlide } from './slides/18_anatomy';
-import { themeSlide } from './slides/19_theme';
-import { evalsSlide } from './slides/20_evals';
-import { sectionStartSlide } from './slides/21_section_start';
-import { packagesSlide } from './slides/22_packages';
-import { startSlide } from './slides/23_start';
+import { agendaSlide } from './slides/01_agenda';
+import { sectionProblemSlide } from './slides/02_section_problem';
+import { problemSlide } from './slides/03_problem';
+import { documentSlide } from './slides/04_document';
+import { dogfoodSlide } from './slides/05_dogfood';
+import { quoteSlide } from './slides/06_quote';
+import { sectionModelSlide } from './slides/07_section_model';
+import { statementSlide } from './slides/08_statement';
+import { lineSlide } from './slides/09_line';
+import { layersSlide } from './slides/10_layers';
+import { vocabularySlide } from './slides/11_vocabulary';
+import { pathsSlide } from './slides/12_paths';
+import { sequenceSlide } from './slides/13_sequence';
+import { agentSlide } from './slides/14_agent';
+import { sectionHowSlide } from './slides/15_section_how';
+import { renderSlide } from './slides/16_render';
+import { surfacesSlide } from './slides/17_surfaces';
+import { slackSlide } from './slides/18_slack';
+import { matrixSlide } from './slides/19_matrix';
+import { posturesSlide } from './slides/20_postures';
+import { quadrantSlide } from './slides/21_quadrant';
+import { proofSlide } from './slides/22_proof';
+import { imagesSlide } from './slides/23_images';
+import { sectionPackSlide } from './slides/24_section_pack';
+import { anatomySlide } from './slides/25_anatomy';
+import { barsSlide } from './slides/26_bars';
+import { growthSlide } from './slides/27_growth';
+import { timelineAnatomySlide } from './slides/28_timeline_anatomy';
+import { themeSlide } from './slides/29_theme';
+import { evalsSlide } from './slides/30_evals';
+import { sectionStartSlide } from './slides/31_section_start';
+import { packagesSlide } from './slides/32_packages';
+import { commandsSlide } from './slides/33_commands';
+import { roadmapSlide } from './slides/34_roadmap';
+import { startSlide } from './slides/35_start';
 import type { DeckSlide } from './viewer/types';
 
 const sources = import.meta.glob<string>('./slides/[0-9][0-9]_*.tsx', {
@@ -75,29 +87,41 @@ const slide = (file: string, composition: Composition): DeckSlide => {
 
 const authored: readonly DeckSlide[] = [
   slide('00_title', titleSlide),
-  slide('01_section_problem', sectionProblemSlide),
-  slide('02_problem', problemSlide),
-  slide('03_document', documentSlide),
-  slide('04_dogfood', dogfoodSlide),
-  slide('05_section_model', sectionModelSlide),
-  slide('06_line', lineSlide),
-  slide('07_vocabulary', vocabularySlide),
-  slide('08_paths', pathsSlide),
-  slide('09_agent', agentSlide),
-  slide('10_section_how', sectionHowSlide),
-  slide('11_render', renderSlide),
-  slide('12_surfaces', surfacesSlide),
-  slide('13_slack', slackSlide),
-  slide('14_postures', posturesSlide),
-  slide('15_proof', proofSlide),
-  slide('16_images', imagesSlide),
-  slide('17_section_pack', sectionPackSlide),
-  slide('18_anatomy', anatomySlide),
-  slide('19_theme', themeSlide),
-  slide('20_evals', evalsSlide),
-  slide('21_section_start', sectionStartSlide),
-  slide('22_packages', packagesSlide),
-  slide('23_start', startSlide),
+  slide('01_agenda', agendaSlide),
+  slide('02_section_problem', sectionProblemSlide),
+  slide('03_problem', problemSlide),
+  slide('04_document', documentSlide),
+  slide('05_dogfood', dogfoodSlide),
+  slide('06_quote', quoteSlide),
+  slide('07_section_model', sectionModelSlide),
+  slide('08_statement', statementSlide),
+  slide('09_line', lineSlide),
+  slide('10_layers', layersSlide),
+  slide('11_vocabulary', vocabularySlide),
+  slide('12_paths', pathsSlide),
+  slide('13_sequence', sequenceSlide),
+  slide('14_agent', agentSlide),
+  slide('15_section_how', sectionHowSlide),
+  slide('16_render', renderSlide),
+  slide('17_surfaces', surfacesSlide),
+  slide('18_slack', slackSlide),
+  slide('19_matrix', matrixSlide),
+  slide('20_postures', posturesSlide),
+  slide('21_quadrant', quadrantSlide),
+  slide('22_proof', proofSlide),
+  slide('23_images', imagesSlide),
+  slide('24_section_pack', sectionPackSlide),
+  slide('25_anatomy', anatomySlide),
+  slide('26_bars', barsSlide),
+  slide('27_growth', growthSlide),
+  slide('28_timeline_anatomy', timelineAnatomySlide),
+  slide('29_theme', themeSlide),
+  slide('30_evals', evalsSlide),
+  slide('31_section_start', sectionStartSlide),
+  slide('32_packages', packagesSlide),
+  slide('33_commands', commandsSlide),
+  slide('34_roadmap', roadmapSlide),
+  slide('35_start', startSlide),
 ];
 
 /**

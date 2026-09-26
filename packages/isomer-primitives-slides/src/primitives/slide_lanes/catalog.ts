@@ -23,6 +23,7 @@ export const catalog = {
     'One source feeds many targets instead of two feeding one; use slideFanout.',
     'The two sides are opposing claims rather than routes; use slideSplit.',
     'You are relating named concepts rather than steps; use slideGraph.',
+    'Participants send messages back and forth rather than following a path; use slideSequence.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

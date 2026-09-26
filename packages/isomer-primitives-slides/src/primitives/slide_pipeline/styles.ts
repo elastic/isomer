@@ -7,7 +7,9 @@
 
 import { variants } from '@elastic/distillate';
 
+import { pipeline as pipelineTheme } from '../../theme/components/pipeline';
 import { slideDistillery, toneVar } from '../../theme/distillery';
+import { scalePx } from '../../theme/scale';
 import { typeRole } from '../../theme/type_role';
 import { slideSizes } from '../../theme/variants';
 
@@ -30,6 +32,20 @@ const range = (from: number, to: number): string[] =>
 /** Chip counts spans mode lays out, as variant keys. */
 export const pipelineChipCounts = range(2, pipelineMaxSteps);
 
+/** Step counts steps mode lays out, as variant keys. */
+export const pipelineStepCounts = pipelineChipCounts;
+
+/** Half of one of `count` equal step columns: the inset to that column's center. */
+// Expanded to two terms, since takumi does not evaluate a nested `calc`.
+const halfColumn = (count: string): string => {
+  const n = valueOf(count);
+  const share = Number((50 / n).toFixed(4));
+  const gaps = Number(
+    ((scalePx(pipelineTheme.gap) * (n - 1)) / (2 * n)).toFixed(4)
+  );
+  return `calc(${share}% - ${gaps}px)`;
+};
+
 /** Spans-mode grid lines: a chip and a connector per step, less the last connector. */
 export const pipelineTracks = range(1, 2 * pipelineMaxSteps - 1);
 
@@ -38,9 +54,21 @@ export const pipelineModule = createStyleModule('pipeline', ({ css }) => ({
   steps: css`
     align-items: flex-start;
     display: flex;
-    gap: ${pipeline.gap};
+  `,
+  // Joins a terminal chip to the steps, across the gap between them.
+  stub: css`
+    background: ${color.line};
+    flex: 0 0 auto;
+    height: ${pipeline.rail};
+    margin-top: ${pipeline.railTop};
+    width: ${pipeline.gap};
+  `,
+  track: css`
+    flex: 1;
+    min-width: 0;
     position: relative;
   `,
+  // Runs to the track's edge on a side with a terminal chip, else stops at the end circle.
   rail: css`
     background: ${color.line};
     height: ${pipeline.rail};
@@ -49,6 +77,18 @@ export const pipelineModule = createStyleModule('pipeline', ({ css }) => ({
     right: 0;
     top: ${pipeline.railTop};
   `,
+  railFromFirst: variants(
+    pipelineStepCounts,
+    (count) => css`
+      left: ${halfColumn(count)};
+    `
+  ),
+  railToLast: variants(
+    pipelineStepCounts,
+    (count) => css`
+      right: ${halfColumn(count)};
+    `
+  ),
   // Positioned so it paints above the rail.
   terminal: css`
     background: ${color.bgPage};
@@ -56,7 +96,7 @@ export const pipelineModule = createStyleModule('pipeline', ({ css }) => ({
     border-radius: ${terminal.radius};
     color: ${color.text};
     display: flex;
-    flex: none;
+    flex: 0 0 auto;
     ${typeRole(terminal.type)}
     padding: ${terminal.padding};
     position: relative;
@@ -64,19 +104,19 @@ export const pipelineModule = createStyleModule('pipeline', ({ css }) => ({
   `,
   list: css`
     display: flex;
-    flex: 1;
     gap: ${pipeline.gap};
     list-style: none;
     margin: 0;
-    min-width: 0;
     padding: 0;
+    position: relative;
   `,
   step: css`
+    align-items: center;
     display: flex;
     flex: 1 1 0;
     flex-direction: column;
     min-width: 0;
-    position: relative;
+    text-align: center;
   `,
   numeral: css`
     align-items: center;
@@ -110,7 +150,7 @@ export const pipelineModule = createStyleModule('pipeline', ({ css }) => ({
     color: ${color.textSoft};
     ${typeRole(pipeline.body)}
     margin: ${pipeline.bodyGap} 0 0;
-    text-wrap: pretty;
+    text-wrap: balance;
   `,
   grid: css`
     display: grid;

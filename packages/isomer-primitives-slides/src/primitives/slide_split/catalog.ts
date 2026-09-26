@@ -17,7 +17,7 @@ export const catalog = {
   useWhen: [
     'You are dividing responsibilities between two parties; list short statements under each label with a `rule` divider.',
     'One thing turns into another, like a config into behavior; use the `arrow` divider.',
-    'Two slide nodes belong next to each other, such as a table beside a transcript.',
+    'Two slide nodes belong next to each other, such as a table beside a transcript, or a main idea with a narrow column of notes beside it; for notes, use the `aside` ratio with the `hairline` divider and a label over the notes.',
   ],
   avoidWhen: [
     'The nodes belong one above the other inside a column or window; use slideStack.',

@@ -6,6 +6,7 @@
  */
 
 import { useMemo } from 'react';
+import { SLIDE_BUILDS } from '@elastic/isomer-primitives-slides';
 
 import { runtime } from '../runtime';
 import type { SurfaceId, Theme } from '../surfaces';
@@ -28,7 +29,8 @@ const render = (
   slide: DeckSlide,
   surface: SurfaceId,
   theme: Theme,
-  pngUrl: PngUrl
+  pngUrl: PngUrl,
+  building: boolean
 ): Rendered => {
   const { composition } = slide;
   switch (surface) {
@@ -39,6 +41,7 @@ const render = (
         css: 'separate',
         heading: false,
         theme,
+        enhancements: building ? [SLIDE_BUILDS] : [],
       });
       return { kind: 'html', html, css };
     }
@@ -72,6 +75,7 @@ const render = (
 
 /** One slide on one surface. */
 export const Stage = ({
+  build,
   fullscreen,
   pngUrl,
   slide,
@@ -79,6 +83,8 @@ export const Stage = ({
   theme,
   onOverflow,
 }: {
+  /** How many of the slide's parts show, on the surfaces that build; `undefined` turns builds off. */
+  build?: number | undefined;
   fullscreen: boolean;
   pngUrl: PngUrl;
   slide: DeckSlide;
@@ -87,9 +93,10 @@ export const Stage = ({
   /** Called with whether the slide overflows, on the surfaces the viewer lays out itself. */
   onOverflow?: ((overflowing: boolean) => void) | undefined;
 }) => {
+  const building = build !== undefined;
   const rendered = useMemo(
-    () => render(slide, surface, theme, pngUrl),
-    [slide, surface, theme, pngUrl]
+    () => render(slide, surface, theme, pngUrl, building),
+    [slide, surface, theme, pngUrl, building]
   );
 
   switch (rendered.kind) {
@@ -98,7 +105,7 @@ export const Stage = ({
         <Scaled {...{ fullscreen }}>
           <ShadowSlide
             composition={slide.composition}
-            {...{ theme, onOverflow }}
+            {...{ build, theme, onOverflow }}
           />
         </Scaled>
       );
@@ -106,7 +113,8 @@ export const Stage = ({
       return (
         <Scaled {...{ fullscreen }}>
           <ShadowHtml
-            {...{ theme, onOverflow }}
+            {...{ build, theme, onOverflow }}
+            composition={slide.composition}
             css={rendered.css}
             html={rendered.html}
           />

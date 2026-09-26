@@ -11,7 +11,7 @@ import type { SlideBulletListNode } from './schema';
 export const example: SlideBulletListNode = {
   type: 'slideBulletList',
   items: [
-    'Refunds post to the original card within two days.',
+    'Refunds post to the original card within **two days**.',
     'Store credit is instant and never expires.',
     'Returns by mail need no receipt.',
   ],

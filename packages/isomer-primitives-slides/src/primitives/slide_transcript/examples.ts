@@ -28,7 +28,6 @@ export const example: SlideTranscriptNode = {
       format: 'code',
       text: '{"action":"book","window":{"start":"08:00","end":"10:00"}}',
     },
-    { role: 'host', text: 'Booked for 8 to 10 tomorrow.' },
   ],
 };
 

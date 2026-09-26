@@ -36,11 +36,11 @@ const slackText = (value: unknown): string =>
     .replace(/&amp;/g, '&') ?? '';
 
 describe('slideTranscript', () => {
-  it('holds one to eight turns', () => {
+  it('holds one to four turns', () => {
     const [first] = example.turns;
     expect(schema.safeParse({ ...example, turns: [] }).success).toBe(false);
     expect(
-      schema.safeParse({ ...example, turns: Array(9).fill(first) }).success
+      schema.safeParse({ ...example, turns: Array(5).fill(first) }).success
     ).toBe(false);
     expect(examples.every((node) => schema.safeParse(node).success)).toBe(true);
   });
@@ -51,8 +51,7 @@ describe('slideTranscript', () => {
       User: Deliver my groceries tomorrow morning.
       Model: {"action":"book","window":"tomorrow"}
       Host: window: expected a start and end time
-      Model: {"action":"book","window":{"start":"08:00","end":"10:00"}}
-      Host: Booked for 8 to 10 tomorrow."
+      Model: {"action":"book","window":{"start":"08:00","end":"10:00"}}"
     `);
   });
 
@@ -117,14 +116,6 @@ describe('slideTranscript', () => {
       \`\`\`
       {"action":"book","window":{"start":"08:00","end":"10:00"}}
       \`\`\`",
-            "type": "mrkdwn",
-          },
-          "type": "section",
-        },
-        {
-          "text": {
-            "text": "*Host*
-      Booked for 8 to 10 tomorrow.",
             "type": "mrkdwn",
           },
           "type": "section",

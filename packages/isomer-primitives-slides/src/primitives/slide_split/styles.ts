@@ -9,7 +9,11 @@ import { variants } from '@elastic/distillate';
 
 import { slideDistillery, toneVar } from '../../theme/distillery';
 import { typeRole } from '../../theme/type_role';
-import { slideSplitDividers, slideSplitRatios } from '../../theme/variants';
+import {
+  slideSizes,
+  slideSplitDividers,
+  slideSplitRatios,
+} from '../../theme/variants';
 
 const { createStyleModule, tokens } = slideDistillery;
 const { color, split } = tokens;
@@ -17,11 +21,10 @@ const { color, split } = tokens;
 /** Distillate module for `slideSplit`. */
 export const splitModule = createStyleModule('split', ({ css }) => ({
   // The middle track is `auto`, sized by the divider element (zero wide for `gap`).
+  // Columns align at the top, so their labels line up; the fill role centers the grid.
   grid: css`
-    align-items: center;
+    align-items: start;
     display: grid;
-    flex: 1;
-    min-height: 0;
   `,
   ratio: variants(slideSplitRatios, (ratio) => {
     const { left, right } = split.ratio[ratio];
@@ -41,7 +44,13 @@ export const splitModule = createStyleModule('split', ({ css }) => ({
     border-radius: ${split.ruleRadius};
     width: ${split.ruleWidth};
   `,
+  hairline: css`
+    align-self: stretch;
+    background: ${color.border};
+    width: ${split.hairlineWidth};
+  `,
   arrow: css`
+    align-self: center;
     width: ${split.arrowWidth};
   `,
   column: css`
@@ -73,16 +82,23 @@ export const splitModule = createStyleModule('split', ({ css }) => ({
     margin: 0;
     padding: 0;
   `,
+  statementSize: variants(
+    slideSizes,
+    (size) => css`
+      font-size: ${split.statementSizes[size]};
+    `
+  ),
   statement: css`
     color: ${color.text};
     ${typeRole(split.statement)}
+    text-wrap: balance;
   `,
   footnote: css`
     color: ${color.textSoft};
-    flex: none;
+    flex: 0 0 auto;
     ${typeRole(split.footnote)}
     margin: ${split.footnoteGap} 0 0;
     max-width: ${split.footnoteMaxWidth};
-    text-wrap: pretty;
+    text-wrap: balance;
   `,
 }));

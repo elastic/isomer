@@ -55,7 +55,7 @@ export const statsModule = createStyleModule('stats', ({ css }) => ({
     ${typeRole(stats.unit)}
   `,
   placeholder: css`
-    flex: none;
+    flex: 0 0 auto;
     height: ${stats.placeholderHeight};
   `,
   label: css`

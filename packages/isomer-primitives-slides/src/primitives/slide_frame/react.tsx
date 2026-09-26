@@ -6,6 +6,7 @@
  */
 
 import { Fragment, type ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type {
@@ -31,13 +32,13 @@ const Footer = ({
   context: SlideRenderContext | undefined;
 }): ReactNode => {
   const { handles: frame } = frameModule;
-  const { brand, chapter, chapterNumber, url } = node;
+  const { brand, chapter, chapterNumber, url, logo = true } = node;
   const section = [chapterNumber, chapter].filter(Boolean).join(' ');
   return (
     <footer className={cls(context, frame.footer)}>
       {section ? (
         <div className={cls(context, frame.footerStart)}>
-          <LogoMark className={cls(context, frame.logo)} />
+          {logo ? <LogoMark className={cls(context, frame.logo)} /> : null}
           {brand ? (
             <span className={cls(context, frame.brand)}>{brand}</span>
           ) : null}
@@ -71,22 +72,27 @@ export const SlideFrameView = ({
 }): ReactNode => {
   const { handles: frame } = frameModule;
   const { handles: deckRoot } = deckRootModule;
-  const [first] = node.body;
+  const { type, body, tone, logo } = node;
+  const [first] = body;
+  const inside: SlideRenderContext | undefined =
+    logo === false ? { ...context, logo } : context;
   const below: SlideRenderContext | undefined =
     first?.type === 'slideHeading'
       ? {
-          ...context,
+          ...inside,
           crowding: headingCrowding(first),
         }
-      : context;
+      : inside;
   return (
-    <div className={`${isomerDeckRoot} ${cls(context, deckRoot.root)}`}>
+    <div
+      {...nodeAnchor(context, { type })}
+      className={`${isomerDeckRoot} ${cls(context, deckRoot.root)}`}>
       <section
-        className={cls(context, frame.slide, frame.tone[node.tone ?? 'page'])}>
+        className={cls(context, frame.slide, frame.tone[tone ?? 'page'])}>
         <main className={cls(context, frame.body)}>
-          {node.body.map((child, index) => (
+          {body.map((child, index) => (
             <Fragment key={index}>
-              {scope.renderReact(child, index === 0 ? context : below)}
+              {scope.renderReact(child, index === 0 ? inside : below)}
             </Fragment>
           ))}
         </main>

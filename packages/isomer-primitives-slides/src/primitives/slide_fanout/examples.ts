@@ -13,7 +13,11 @@ export const example: SlideFanoutNode = {
   source: 'OrderPlaced',
   targets: [
     { name: 'picking', body: 'Sends the list to the nearest store' },
-    { name: 'payments', body: 'Holds the amount on the card' },
+    {
+      name: 'payments',
+      body: 'Holds the amount on the card',
+      tone: 'accent',
+    },
     { name: 'email', body: 'Confirms the order to the customer' },
     { name: 'courier', body: 'Books a delivery window' },
   ],

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { slideDistillery } from '../../theme/distillery';
+import { slideDistillery, toneVar } from '../../theme/distillery';
 import { typeRole } from '../../theme/type_role';
 
 const { createStyleModule, tokens } = slideDistillery;
@@ -29,6 +29,9 @@ export const lanesModule = createStyleModule('lanes', ({ css }) => ({
     ${typeRole(lanes.label)}
     text-transform: uppercase;
   `,
+  tonedLabel: css`
+    color: ${toneVar};
+  `,
   steps: css`
     align-items: center;
     display: flex;
@@ -51,10 +54,17 @@ export const lanesModule = createStyleModule('lanes', ({ css }) => ({
     border-radius: ${chip.radius};
     color: ${color.text};
     display: flex;
-    flex: none;
+    flex: 0 0 auto;
     ${typeRole(chip.type)}
     padding: ${chip.padding};
     white-space: nowrap;
+  `,
+  tonedChip: css`
+    border-color: ${toneVar};
+    color: ${toneVar};
+  `,
+  tonedLine: css`
+    background: ${toneVar};
   `,
   line: css`
     background: ${color.line};
@@ -78,7 +88,7 @@ export const lanesModule = createStyleModule('lanes', ({ css }) => ({
   `,
   stub: css`
     background: ${color.line};
-    flex: none;
+    flex: 0 0 auto;
     height: ${bracket.border};
     width: ${bracket.stub};
   `,

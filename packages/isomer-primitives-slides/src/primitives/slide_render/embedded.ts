@@ -10,6 +10,7 @@ import type { ZodType } from 'zod';
 
 /** Primitive types that hold an embedded composition. */
 export const EMBEDDING_TYPES: ReadonlySet<string> = new Set([
+  'slideAnnotatedRender',
   'slideRender',
   'slideRenderGrid',
 ]);
@@ -18,7 +19,7 @@ export const EMBEDDING_TYPES: ReadonlySet<string> = new Set([
 export const NESTED_RENDER_ERROR =
   'an embedded composition cannot embed another render';
 
-/** Path to the first `slideRender` or `slideRenderGrid` anywhere inside `value`, or `undefined`. */
+/** Path to the first node of an {@link EMBEDDING_TYPES} type anywhere inside `value`, or `undefined`. */
 export const findNestedRender = (
   value: unknown,
   path: readonly (string | number)[] = []
@@ -80,7 +81,7 @@ export const embeddedCompositionSchema = (bodyNodeSchema: ZodType<unknown>) =>
         .array(bodyNodeSchema)
         .min(1)
         .describe(
-          'The nodes to render, usually one `slideFrame` holding a whole slide. It may not contain a `slideRender` or `slideRenderGrid`.'
+          'The nodes to render, usually one `slideFrame` holding a whole slide. It may not contain a `slideRender`, `slideRenderGrid`, or `slideAnnotatedRender`.'
         ),
       meta: z
         .record(z.string(), z.unknown())

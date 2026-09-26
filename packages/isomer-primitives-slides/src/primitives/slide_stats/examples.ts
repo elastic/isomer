@@ -14,7 +14,7 @@ export const example: SlideStatsNode = {
     {
       value: '3',
       label: 'Regions',
-      body: 'Checkout now runs active-active in each of them.',
+      body: 'Checkout now runs **active-active** in each of them.',
     },
     {
       value: '40',

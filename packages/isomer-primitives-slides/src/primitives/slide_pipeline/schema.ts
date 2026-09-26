@@ -8,6 +8,7 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
+import { crossRefine } from '../cross_field';
 import { sizeField } from '../size';
 import { slideToneSchema } from '../tone_schema';
 
@@ -26,7 +27,7 @@ const stepSchema = z
       .string()
       .min(1)
       .describe(
-        'One sentence under the title on what the step does. Steps mode only; leave it out when `spans` is set, because chips carry no body.'
+        'One sentence under the title on what the step does. Steps mode only; leave it out when `spans` is set, because chips carry no body. `code` and `**strong**` marks are allowed.'
       )
       .optional(),
   })
@@ -47,7 +48,7 @@ const spanSchema = z
         'Index into `steps` of the last step the bracket covers, at or after `from`.'
       ),
     tone: slideToneSchema.describe(
-      'Color of the bracket and label: `primary` for your own system, `pink` for the host or a third party.'
+      'The tone of the bracket and label: `primary` for your own system, `accent` for the host or a third party.'
     ),
     label: z
       .string()
@@ -59,7 +60,9 @@ const spanSchema = z
     body: z
       .string()
       .min(1)
-      .describe('One or two sentences supporting the title.'),
+      .describe(
+        'One or two sentences supporting the title. `code` and `**strong**` marks are allowed.'
+      ),
   })
   .strict();
 
@@ -98,40 +101,48 @@ export const schema = z
     size: sizeField(),
   })
   .strict()
-  .refine(
-    ({ steps, spans = [] }) =>
-      spans.every(({ from, to }) => from <= to && to < steps.length),
-    {
-      error: 'each span needs `from` ≤ `to` < the number of steps',
-      path: ['spans'],
-    }
+  .check(
+    crossRefine(
+      ({ steps, spans = [] }) =>
+        spans.every(({ from, to }) => from <= to && to < steps.length),
+      {
+        error: 'each span needs `from` ≤ `to` < the number of steps',
+        path: ['spans'],
+      }
+    )
   )
-  .refine(
-    ({ spans = [] }) =>
-      [...spans]
-        .sort((a, b) => a.from - b.from)
-        .every(
-          ({ from }, index, sorted) => from > (sorted[index - 1]?.to ?? -1)
-        ),
-    { error: 'spans must not overlap', path: ['spans'] }
+  .check(
+    crossRefine(
+      ({ spans = [] }) =>
+        [...spans]
+          .sort((a, b) => a.from - b.from)
+          .every(
+            ({ from }, index, sorted) => from > (sorted[index - 1]?.to ?? -1)
+          ),
+      { error: 'spans must not overlap', path: ['spans'] }
+    )
   )
-  .refine(
-    ({ spans, start, end }) =>
-      !spans?.length || (start === undefined && end === undefined),
-    {
-      error:
-        '`start` and `end` are steps mode only; with `spans`, make them the first and last steps',
-      path: ['spans'],
-    }
+  .check(
+    crossRefine(
+      ({ spans, start, end }) =>
+        !spans?.length || (start === undefined && end === undefined),
+      {
+        error:
+          '`start` and `end` are steps mode only; with `spans`, make them the first and last steps',
+        path: ['spans'],
+      }
+    )
   )
-  .refine(
-    ({ spans, steps }) =>
-      !spans?.length || steps.every(({ body }) => body === undefined),
-    {
-      error:
-        'step bodies are steps mode only; with `spans`, put the detail in the span’s body',
-      path: ['steps'],
-    }
+  .check(
+    crossRefine(
+      ({ spans, steps }) =>
+        !spans?.length || steps.every(({ body }) => body === undefined),
+      {
+        error:
+          'step bodies are steps mode only; with `spans`, put the detail in the span’s body',
+        path: ['steps'],
+      }
+    )
   );
 
 /** One step of a {@link SlidePipelineNode}. */

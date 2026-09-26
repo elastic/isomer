@@ -8,6 +8,8 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
+import { crossSuperRefine } from '../cross_field';
+
 const maxRows = 12;
 
 const rowsSchema = z.array(z.array(z.string()));
@@ -62,45 +64,47 @@ export const schema = z
       .optional(),
   })
   .strict()
-  .superRefine(({ columns, groups, rows }, context) => {
-    if ((rows === undefined) === (groups === undefined)) {
-      context.addIssue({
-        code: 'custom',
-        message: 'give exactly one of rows or groups',
-        path: [rows === undefined ? 'rows' : 'groups'],
-      });
-      return;
-    }
-    const checkRows = (
-      body: readonly (readonly string[])[],
-      path: (string | number)[]
-    ) =>
-      body.forEach((row, index) => {
-        if (row.length !== columns.length) {
-          context.addIssue({
-            code: 'custom',
-            message: `every row needs one cell per column (${columns.length})`,
-            path: [...path, index],
-          });
-        }
-      });
-    if (rows) {
-      checkRows(rows, ['rows']);
-    }
-    if (groups) {
-      groups.forEach((group, index) =>
-        checkRows(group.rows, ['groups', index, 'rows'])
-      );
-      const total = groups.reduce((sum, group) => sum + group.rows.length, 0);
-      if (total > maxRows) {
+  .check(
+    crossSuperRefine(({ columns, groups, rows }, context) => {
+      if ((rows === undefined) === (groups === undefined)) {
         context.addIssue({
           code: 'custom',
-          message: `at most ${maxRows} rows across all groups`,
-          path: ['groups'],
+          message: 'give exactly one of rows or groups',
+          path: [rows === undefined ? 'rows' : 'groups'],
         });
+        return;
       }
-    }
-  });
+      const checkRows = (
+        body: readonly (readonly string[])[],
+        path: (string | number)[]
+      ) =>
+        body.forEach((row, index) => {
+          if (row.length !== columns.length) {
+            context.addIssue({
+              code: 'custom',
+              message: `every row needs one cell per column (${columns.length})`,
+              path: [...path, index],
+            });
+          }
+        });
+      if (rows) {
+        checkRows(rows, ['rows']);
+      }
+      if (groups) {
+        groups.forEach((group, index) =>
+          checkRows(group.rows, ['groups', index, 'rows'])
+        );
+        const total = groups.reduce((sum, group) => sum + group.rows.length, 0);
+        if (total > maxRows) {
+          context.addIssue({
+            code: 'custom',
+            message: `at most ${maxRows} rows across all groups`,
+            path: ['groups'],
+          });
+        }
+      }
+    })
+  );
 
 /** Headed grid of short text cells, optionally in labeled groups. */
 export type SlideTableNode = z.infer<typeof schema> & PrimitiveNode;

@@ -49,10 +49,10 @@ const slackText = (value: unknown): string =>
     .join('\n');
 
 describe('slideTree', () => {
-  it('holds one to ten entries', () => {
+  it('holds one to eight entries', () => {
     expect(schema.safeParse({ ...example, entries: [] }).success).toBe(false);
     const { errors } = runtime.validate(
-      compose({ ...example, entries: Array(11).fill(example.entries[0]) })
+      compose({ ...example, entries: Array(9).fill(example.entries[0]) })
     );
     expect(errors.map(({ path }) => path)).toContain('body[0].body[0].entries');
   });

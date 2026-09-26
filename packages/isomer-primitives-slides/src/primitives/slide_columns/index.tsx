@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { stripMarks } from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -17,12 +18,15 @@ export type { SlideColumn, SlideColumnsNode } from './schema';
 /** Text renderer for {@link SlideColumnsNode}: each column as a block, then the footnote. */
 export const text = ({ items, footnote }: SlideColumnsNode): string =>
   [
-    ...items.map(({ title, tags, body }) =>
-      [tags.length > 0 ? `${title} (${tags.join(', ')})` : title, body].join(
-        '\n'
-      )
+    ...items.map(({ title, tags = [], body }) =>
+      [
+        tags.length > 0
+          ? `${stripMarks(title)} (${tags.join(', ')})`
+          : stripMarks(title),
+        stripMarks(body),
+      ].join('\n')
     ),
-    footnote ? `${footnote.code} ${footnote.text}` : '',
+    footnote ? `${footnote.code} ${stripMarks(footnote.text)}` : '',
   ]
     .filter(Boolean)
     .join('\n\n');
@@ -30,7 +34,7 @@ export const text = ({ items, footnote }: SlideColumnsNode): string =>
 /** Markdown renderer for {@link SlideColumnsNode}: a heading per column, tags as code. */
 export const markdown = ({ items, footnote }: SlideColumnsNode): string =>
   [
-    ...items.map(({ title, tags, body }) =>
+    ...items.map(({ title, tags = [], body }) =>
       [`## ${title}`, tags.map((tag) => `\`${tag}\``).join(' '), body]
         .filter(Boolean)
         .join('\n\n')

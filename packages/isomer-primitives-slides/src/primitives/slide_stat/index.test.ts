@@ -10,6 +10,7 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { stripMarks } from '../../render/marks';
 
 import { example, examples, pendingExample } from './examples';
 import { markdown, slack, text } from './index';
@@ -69,13 +70,13 @@ describe('slideStat', () => {
       `"2.1 days — Median time from refund request to money back in the customer account, down from five."`
     );
     expect(markdown(example)).toMatchInlineSnapshot(
-      `"**2.1 days** — Median time from refund request to money back in the customer account, down from five."`
+      `"**2.1 days** — Median time from refund request to money back in the customer account, down from **five**."`
     );
     expect(slack(example)).toMatchInlineSnapshot(`
       [
         {
           "text": {
-            "text": "*2.1 days* — Median time from refund request to money back in the customer account, down from five.",
+            "text": "*2.1 days* — Median time from refund request to money back in the customer account, down from *five*.",
             "type": "mrkdwn",
           },
           "type": "section",
@@ -97,10 +98,10 @@ describe('slideStat', () => {
         runtime.surfaces.text.render(composition),
         runtime.surfaces.markdown.render(composition),
         slackText(runtime.surfaces.slack.render(composition).blocks),
-      ].map((output) => output.toLowerCase());
+      ].map((output) => output.replace(/[`*]/g, '').toLowerCase());
       for (const value of authored(node)) {
         for (const output of outputs) {
-          expect(output).toContain(value.toLowerCase());
+          expect(output).toContain(stripMarks(value).toLowerCase());
         }
       }
     }

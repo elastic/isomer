@@ -10,6 +10,7 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { stripMarks } from '../../render/marks';
 
 import { example, examples, outwardEdgesExample } from './examples';
 import { markdown, text } from './index';
@@ -149,7 +150,7 @@ describe('slideGraph', () => {
       Stock → Order"
     `);
     expect(markdown(example)).toMatchInlineSnapshot(`
-      "A basket becomes an order once pricing and stock agree.
+      "A basket becomes an order once **pricing and stock** agree.
 
       - **Catalog:** Every product a store can sell.
       - **Basket:** What a customer means to buy.
@@ -169,10 +170,10 @@ describe('slideGraph', () => {
         runtime.surfaces.text.render(composition),
         runtime.surfaces.markdown.render(composition),
         JSON.stringify(runtime.surfaces.slack.render(composition).blocks),
-      ].map((output) => output.toLowerCase());
+      ].map((output) => output.replace(/[`*]/g, '').toLowerCase());
       for (const value of authored(node)) {
         for (const output of outputs) {
-          expect(output).toContain(value.toLowerCase());
+          expect(output).toContain(stripMarks(value).toLowerCase());
         }
       }
     }

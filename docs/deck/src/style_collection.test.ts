@@ -7,6 +7,7 @@
 
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { SLIDE_BUILDS } from '@elastic/isomer-primitives-slides';
 import { describe, expect, it } from 'vitest';
 
 import { deck } from './deck';
@@ -29,6 +30,29 @@ describe('html.createStyleCollection', () => {
         runtime.surfaces.html.render(composition, {
           css: 'separate',
           heading: false,
+        }).css
+      );
+    }
+  );
+
+  it.each(deck.map(({ slug, composition }) => [slug, composition] as const))(
+    '%s: the same holds with builds requested',
+    (_slug, composition) => {
+      const options = { heading: false, enhancements: [SLIDE_BUILDS] };
+      const styles = runtime.surfaces.html.createStyleCollection(
+        composition,
+        options
+      );
+      const node = runtime.surfaces.react.render(composition, {
+        context: styles.context,
+        heading: false,
+        wrapper: true,
+      });
+      renderToStaticMarkup(createElement(() => node));
+      expect(styles.css()).toBe(
+        runtime.surfaces.html.render(composition, {
+          ...options,
+          css: 'separate',
         }).css
       );
     }

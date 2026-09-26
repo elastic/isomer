@@ -8,6 +8,8 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
+import { slideToneSchema } from '../tone_schema';
+
 const laneSchema = z
   .object({
     label: z
@@ -26,6 +28,11 @@ const laneSchema = z
       .describe(
         '1–5 steps along this path, left to right, each a short code-style chip of one to three words.'
       ),
+    tone: slideToneSchema
+      .describe(
+        'The tone of this path: `primary` for your own product, `accent` for the host or another party. Leave it out for a neutral path.'
+      )
+      .optional(),
   })
   .strict();
 
@@ -35,7 +42,9 @@ const noteSchema = z
     body: z
       .string()
       .min(1)
-      .describe('One or two sentences on how this path differs.'),
+      .describe(
+        'One or two sentences on how this path differs. `code` and `**strong**` marks are allowed.'
+      ),
   })
   .strict();
 

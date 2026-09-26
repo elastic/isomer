@@ -33,18 +33,17 @@ export const example: SlideColumnsNode = {
   },
 };
 
-/** Two columns with no tags and no footnote. */
+/** Two columns with no tags and no footnote, the second recommended. */
 export const plainExample: SlideColumnsNode = {
   type: 'slideColumns',
+  highlight: 1,
   items: [
     {
       title: 'Build it',
-      tags: [],
       body: 'Six weeks for two engineers, and the pricing rules stay ours.',
     },
     {
       title: 'Buy it',
-      tags: [],
       body: 'Live next sprint, at the cost of a fee on every order.',
     },
   ],

@@ -6,56 +6,79 @@
  */
 
 import type { ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
+import { marksReact, stripMarks } from '../../render/marks';
 import { columnsFit } from '../../theme/components/columns';
 import { layoutModule } from '../../theme/modules';
 import { rowLoad, sizeForLoad } from '../size';
 
+import { columnsHeadHeight } from './fit';
 import type { SlideColumnsNode } from './schema';
 import { columnsModule } from './styles';
 
 /** React renderer for {@link SlideColumnsNode}. */
 export const react = (
-  { items, footnote, size }: SlideColumnsNode,
+  { type, items, footnote, highlight, size }: SlideColumnsNode,
   { context }: SlideReactEnv
 ): ReactNode => {
   const { handles: columns } = columnsModule;
   const step = sizeForLoad(
     size,
-    rowLoad(items.map(({ title, tags, body }) => [title, ...tags, body])) +
-      (footnote ? footnote.code.length + footnote.text.length : 0),
+    rowLoad(
+      items.map(({ title, tags = [], body }) => [
+        stripMarks(title),
+        ...tags,
+        stripMarks(body),
+      ])
+    ) +
+      (footnote ? footnote.code.length + stripMarks(footnote.text).length : 0),
     columnsFit,
     context?.crowding
   );
+  const headHeight = columnsHeadHeight(items, step);
   return (
-    <div className={cls(context, layoutModule.handles.fill)}>
+    <div
+      {...nodeAnchor(context, { type })}
+      className={cls(context, layoutModule.handles.fill)}>
       <ul className={cls(context, columns.list)}>
-        {items.map(({ title, tags, body }, index) => (
+        {items.map(({ title, tags = [], body }, index) => (
           <li
             className={cls(
               context,
               columns.item,
+              highlight === undefined ? undefined : columns.barred,
+              index === highlight ? columns.highlighted : undefined,
               index > 0 ? columns.ruled : undefined,
               index < items.length - 1 ? columns.gutter : undefined
             )}
             key={index}>
-            <h3
-              className={cls(context, columns.title, columns.titleSize[step])}>
-              {title}
-            </h3>
-            {tags.length > 0 ? (
-              <div className={cls(context, columns.tags)}>
-                {tags.map((tag, tagIndex) => (
-                  <code className={cls(context, columns.tag)} key={tagIndex}>
-                    {tag}
-                  </code>
-                ))}
-              </div>
-            ) : null}
+            <div
+              className={cls(context, columns.head)}
+              style={{ minHeight: `${headHeight}px` }}>
+              <h3
+                className={cls(
+                  context,
+                  columns.title,
+                  columns.titleSize[step],
+                  index === highlight ? columns.titleHighlighted : undefined
+                )}>
+                {marksReact(title, context, 'primary')}
+              </h3>
+              {tags.length > 0 ? (
+                <div className={cls(context, columns.tags)}>
+                  {tags.map((tag, tagIndex) => (
+                    <code className={cls(context, columns.tag)} key={tagIndex}>
+                      {tag}
+                    </code>
+                  ))}
+                </div>
+              ) : null}
+            </div>
             <p className={cls(context, columns.body, columns.bodySize[step])}>
-              {body}
+              {marksReact(body, context)}
             </p>
           </li>
         ))}
@@ -65,7 +88,7 @@ export const react = (
           <code className={cls(context, columns.footnoteCode)}>
             {footnote.code}
           </code>
-          <span>{footnote.text}</span>
+          <span>{marksReact(footnote.text, context)}</span>
         </p>
       ) : null}
     </div>

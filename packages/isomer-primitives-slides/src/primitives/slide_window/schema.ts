@@ -9,6 +9,7 @@ import { unresolvedBodyNodeSchema, z } from '@elastic/isomer-sdk';
 import type { ZodType } from 'zod';
 
 import { slideWindowChromes } from '../../theme/variants';
+import { crossRefine } from '../cross_field';
 
 // Walks nested slide nodes, skipping a render's embedded composition: that
 // window sits in another slide.
@@ -54,10 +55,12 @@ export const buildSchema = (nodeSchema: ZodType<unknown>) =>
         ),
     })
     .strict()
-    .refine(({ body }) => !holdsWindow(body), {
-      error: 'a window cannot hold another window',
-      path: ['body'],
-    });
+    .check(
+      crossRefine(({ body }) => !holdsWindow(body), {
+        error: 'a window cannot hold another window',
+        path: ['body'],
+      })
+    );
 
 /** Zod schema for {@link SlideWindowNode}. */
 export const schema = buildSchema(unresolvedBodyNodeSchema);

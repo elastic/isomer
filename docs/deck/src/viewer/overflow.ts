@@ -13,7 +13,8 @@ const tolerance = 1;
 /**
  * Whether any element on the slide under `root` has a box outside its frame
  * body: into the footer's band or off the canvas. Boxes, not `scrollHeight`,
- * so a glyph overhanging a tight line height does not count.
+ * so a glyph overhanging a tight line height does not count. Inline elements
+ * are skipped for the same reason: their box is their glyphs, not their line.
  */
 export const overflows = (root: ParentNode): boolean => {
   const body = root.querySelector('main');
@@ -22,7 +23,11 @@ export const overflows = (root: ParentNode): boolean => {
   }
   const box = body.getBoundingClientRect();
   const slack = tolerance * (box.width / body.clientWidth || 1);
+  const view = body.ownerDocument.defaultView;
   return [...body.querySelectorAll('*')].some((element) => {
+    if (view?.getComputedStyle(element).display === 'inline') {
+      return false;
+    }
     const { top, right, bottom, left, width, height } =
       element.getBoundingClientRect();
     return (

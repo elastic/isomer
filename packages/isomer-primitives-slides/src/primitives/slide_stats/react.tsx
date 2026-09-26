@@ -6,9 +6,11 @@
  */
 
 import type { ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
+import { marksReact } from '../../render/marks';
 import { frameContentWidth } from '../../theme/components/frame';
 import { stats as theme } from '../../theme/components/stats';
 import { slideDistillery } from '../../theme/distillery';
@@ -50,12 +52,14 @@ export const react = (
   node: SlideStatsNode,
   { context }: SlideReactEnv
 ): ReactNode => {
-  const { items } = node;
+  const { type, items } = node;
   const { handles: stats } = statsModule;
   const valueSize = stats.valueSize[statsValueSize(node)];
   const { handles: placeholder } = placeholderModule;
   return (
-    <div className={cls(context, layoutModule.handles.fill)}>
+    <div
+      {...nodeAnchor(context, { type })}
+      className={cls(context, layoutModule.handles.fill)}>
       <ul className={cls(context, stats.list)}>
         {items.map(({ value, unit, label, body }, index) => (
           <li
@@ -82,7 +86,9 @@ export const react = (
               </div>
             )}
             <h3 className={cls(context, stats.label)}>{label}</h3>
-            <p className={cls(context, stats.body)}>{body}</p>
+            <p className={cls(context, stats.body)}>
+              {marksReact(body, context)}
+            </p>
           </li>
         ))}
       </ul>

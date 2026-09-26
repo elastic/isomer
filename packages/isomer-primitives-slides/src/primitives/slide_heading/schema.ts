@@ -18,12 +18,14 @@ export const schema = z
       .string()
       .min(1)
       .describe(
-        'The slide’s claim, as a sentence. Aim for one line; two at most.'
+        'The slide’s claim, as a sentence. Aim for one line; two at most. `code` and `**strong**` marks are allowed; strong takes the `primary` tone.'
       ),
     lede: z
       .string()
       .min(1)
-      .describe('One or two sentences that support the title.')
+      .describe(
+        'One or two sentences that support the title. `code` and `**strong**` marks are allowed.'
+      )
       .optional(),
     size: sizeField(),
   })

@@ -8,6 +8,7 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
+import { crossRefine } from '../cross_field';
 import { sizeField } from '../size';
 
 const itemSchema = z
@@ -28,12 +29,14 @@ const itemSchema = z
       .string()
       .min(1)
       .describe(
-        'What was asked for or said at that point, as a short sentence. Author it without quotes; the slide adds them.'
+        'What was asked for or said at that point, as a short sentence. Author it without quotes; the slide adds them. `code` and `**strong**` marks are allowed.'
       ),
     body: z
       .string()
       .min(1)
-      .describe('One sentence on what happened as a result.'),
+      .describe(
+        'One sentence on what happened as a result. `code` and `**strong**` marks are allowed.'
+      ),
     current: z
       .boolean()
       .describe(
@@ -57,10 +60,15 @@ export const schema = z
     size: sizeField(),
   })
   .strict()
-  .refine(({ items }) => items.filter(({ current }) => current).length <= 1, {
-    error: 'at most one item can be current',
-    path: ['items'],
-  });
+  .check(
+    crossRefine(
+      ({ items }) => items.filter(({ current }) => current).length <= 1,
+      {
+        error: 'at most one item can be current',
+        path: ['items'],
+      }
+    )
+  );
 
 /** One point on a {@link SlideTimelineNode}. */
 export type SlideTimelineItem = z.infer<typeof itemSchema>;

@@ -9,9 +9,13 @@ import { type SurfaceId, surfaces, type Theme } from '../surfaces';
 
 import { type DeckSlide, type SourceId, sourceIds } from './types';
 
-/** What the URL holds: which slide, which surface, which scheme, and which source is open beside it. */
+/** What the URL holds: which slide, how far it has built, which surface, which scheme, and which source is open beside it. */
 export interface Route {
   index: number;
+  /** How many parts of the slide are showing; `undefined` is all of them. */
+  build: number | undefined;
+  /** Whether slides build part by part. */
+  builds: boolean;
   surface: SurfaceId;
   theme: Theme;
   source: SourceId | undefined;
@@ -40,7 +44,12 @@ const slideIndex = (
     : 0;
 };
 
-/** Reads `?slide=<slug|number>&surface=<id>&theme=<light|dark>&source=<jsx|json>`, falling back per field. */
+const buildStep = (value: string | null): number | undefined => {
+  const step = value === null ? Number.NaN : Number(value);
+  return Number.isInteger(step) && step >= 0 ? step : undefined;
+};
+
+/** Reads `?slide=<slug|number>&build=<n>&builds=off&surface=<id>&theme=<light|dark>&source=<jsx|json>`, falling back per field. */
 export const readRoute = (
   slides: readonly DeckSlide[],
   search: string,
@@ -54,6 +63,8 @@ export const readRoute = (
   const legacySource = surface === 'jsx' ? 'jsx' : undefined;
   return {
     index: slideIndex(slides, params.get('slide')),
+    build: buildStep(params.get('build')),
+    builds: params.get('builds') !== 'off',
     surface: isSurface(surface) ? surface : 'slide',
     theme: theme === 'light' || theme === 'dark' ? theme : fallbackTheme,
     source: isSource(source) ? source : legacySource,
@@ -63,11 +74,21 @@ export const readRoute = (
 /** The query string for a route, keeping any other parameters in `search`. */
 export const writeRoute = (
   slides: readonly DeckSlide[],
-  { index, surface, theme, source }: Route,
+  { index, build, builds, surface, theme, source }: Route,
   search = ''
 ): string => {
   const params = new URLSearchParams(search);
   params.set('slide', slides[index]?.slug ?? '');
+  if (build === undefined) {
+    params.delete('build');
+  } else {
+    params.set('build', String(build));
+  }
+  if (builds) {
+    params.delete('builds');
+  } else {
+    params.set('builds', 'off');
+  }
   params.set('surface', surface);
   params.set('theme', theme);
   if (source) {

@@ -32,7 +32,7 @@ describe('slide authoring', () => {
           null,
           createElement(
             SlideTerritory,
-            { title: 'Host', tone: 'pink' },
+            { title: 'Host', tone: 'accent' },
             'Owns routing.'
           )
         )
@@ -42,7 +42,7 @@ describe('slide authoring', () => {
     expect(spec.body).toEqual([
       {
         type: 'slideTerritoryGroup',
-        items: [{ title: 'Host', tone: 'pink', body: 'Owns routing.' }],
+        items: [{ title: 'Host', tone: 'accent', body: 'Owns routing.' }],
       },
     ]);
   });

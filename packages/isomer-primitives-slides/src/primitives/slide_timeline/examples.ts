@@ -27,7 +27,7 @@ export const example: SlideTimelineNode = {
       label: '2023',
       channel: 'App',
       heading: 'Tell me when my driver is close.',
-      body: 'Live tracking shipped; the substitution flow stayed on the web.',
+      body: 'Live tracking shipped; the substitution flow stayed **on the web**.',
     },
     {
       label: '2025',

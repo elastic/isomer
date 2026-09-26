@@ -10,6 +10,7 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { stripMarks } from '../../render/marks';
 
 import { checkExample, example, examples, xExample } from './examples';
 import { markdown, text } from './index';
@@ -70,7 +71,7 @@ describe('slideBulletList', () => {
       - ✓ Apple Pay at checkout."
     `);
     expect(markdown(example)).toMatchInlineSnapshot(`
-      "- Refunds post to the original card within two days.
+      "- Refunds post to the original card within **two days**.
       - Store credit is instant and never expires.
       - Returns by mail need no receipt."
     `);
@@ -102,10 +103,10 @@ describe('slideBulletList', () => {
         runtime.surfaces.text.render(composition),
         runtime.surfaces.markdown.render(composition),
         slackText(runtime.surfaces.slack.render(composition).blocks),
-      ].map((output) => output.toLowerCase());
+      ].map((output) => output.replace(/[`*]/g, '').toLowerCase());
       for (const value of authored(node)) {
         for (const output of outputs) {
-          expect(output).toContain(value.toLowerCase());
+          expect(output).toContain(stripMarks(value).toLowerCase());
         }
       }
     }

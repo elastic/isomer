@@ -8,6 +8,7 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { navigationHref, z } from '@elastic/isomer-sdk';
 
+import { crossRefine } from '../cross_field';
 import { sizeField } from '../size';
 
 /** Zod schema for {@link SlideSectionNode}. */
@@ -29,21 +30,26 @@ export const schema = z
       .min(1)
       .max(8)
       .describe(
-        'What the section covers, one line per slide in it, usually each slide’s heading. 1–8 lines.'
+        'What the section covers: the composition `title` of each slide in it, in order. 1–8 lines, each under about 40 characters so it holds one line. `code` and `**strong**` marks are allowed.'
       ),
     hrefs: z
       .array(navigationHref())
       .describe(
-        'Link for each `contents` line, in the same order and of the same length, e.g. `#slide-4`. On web surfaces each line links to its slide.'
+        'Link for each `contents` line, in the same order and of the same length. On web surfaces each line links to its slide. Slide addresses belong to the host: use the form its guide gives, and leave this out when it gives none.'
       )
       .optional(),
     size: sizeField(),
   })
   .strict()
-  .refine(({ contents, hrefs }) => !hrefs || hrefs.length === contents.length, {
-    error: '`hrefs` needs one entry per `contents` line',
-    path: ['hrefs'],
-  });
+  .check(
+    crossRefine(
+      ({ contents, hrefs }) => !hrefs || hrefs.length === contents.length,
+      {
+        error: '`hrefs` needs one entry per `contents` line',
+        path: ['hrefs'],
+      }
+    )
+  );
 
 /** An inverse section opener: number, title, and the slides it holds. */
 export type SlideSectionNode = z.infer<typeof schema> & PrimitiveNode;

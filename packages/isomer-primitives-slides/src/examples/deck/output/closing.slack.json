@@ -25,7 +25,7 @@
     "type": "section",
     "text": {
       "type": "mrkdwn",
-      "text": "• *Issue a refund*: The refunds guide, then the ledger API\n• *Reconcile a day*: The settlement report and its columns\n• *Handle a dispute*: The chargeback flow and its deadlines\n• *Go on call*: The runbook and the escalation list"
+      "text": "• *Issue a refund*: The refunds guide, then `POST /refunds`\n• *Reconcile a day*: The settlement report and its columns\n• *Handle a dispute*: The chargeback flow and its deadlines\n• *Go on call*: The runbook and the escalation list"
     }
   },
   {

@@ -26,7 +26,7 @@ export const windowModule = createStyleModule('window', ({ css }) => ({
     background: ${color.bgMuted};
     border-bottom: ${window.border} solid ${color.border};
     display: flex;
-    flex: none;
+    flex: 0 0 auto;
     white-space: nowrap;
   `,
   appBar: css`

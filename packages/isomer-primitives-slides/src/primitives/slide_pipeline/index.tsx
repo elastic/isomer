@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { stripMarks } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -43,6 +44,9 @@ const covered = (
 const detail = (title: string, body: string | undefined): string =>
   body ? `${title} — ${body}` : title;
 
+const plainDetail = (title: string, body: string | undefined): string =>
+  detail(title, body && stripMarks(body));
+
 /** Text renderer for {@link SlidePipelineNode}: the chain, then a line per step (steps mode) or per span. */
 export const text = ({ start, end, steps, spans }: SlidePipelineNode): string =>
   [
@@ -50,10 +54,11 @@ export const text = ({ start, end, steps, spans }: SlidePipelineNode): string =>
     ...(spans?.length
       ? spans.map(
           (span) =>
-            `${span.label} (${covered(steps, span)}): ${detail(span.title, span.body)}`
+            `${span.label} (${covered(steps, span)}): ${plainDetail(span.title, span.body)}`
         )
       : steps.map(
-          ({ title, body }, index) => `${index + 1}. ${detail(title, body)}`
+          ({ title, body }, index) =>
+            `${index + 1}. ${plainDetail(title, body)}`
         )),
   ].join('\n');
 

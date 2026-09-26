@@ -7,6 +7,7 @@
 
 import type { ScaleToken } from '@elastic/distillate';
 
+import { stripMarks } from '../../render/marks';
 import { regularAdvance } from '../../theme/base';
 import { frame } from '../../theme/components/frame';
 import { heading, headingFit } from '../../theme/components/heading';
@@ -42,11 +43,11 @@ const roomBelow = (height: number): number =>
   bodyHeight - height - px(frame.bodyGap);
 
 /** Room below a two-line title and a two-line lede at `l`, which the load budgets are set against. */
-const referenceRoom = roomBelow(headingHeight(2, 2, 'l'));
+export const referenceRoom = roomBelow(headingHeight(2, 2, 'l'));
 
 /** The title step {@link SlideHeadingNode} draws. */
 export const headingStep = ({ title, size }: SlideHeadingNode): SlideSize =>
-  sizeForLoad(size, title.length, headingFit);
+  sizeForLoad(size, stripMarks(title).length, headingFit);
 
 /** How much tighter than the reference the room below `node` is, for {@link SlideRenderContext.crowding}. */
 export const headingCrowding = (node: SlideHeadingNode): number => {
@@ -54,12 +55,13 @@ export const headingCrowding = (node: SlideHeadingNode): number => {
   const lines = (width: number, max: ScaleToken) =>
     Math.max(1, Math.ceil(width / px(max)));
   const titleLines = lines(
-    emWidth(node.title, heading.title.tracking) * px(heading.titleSizes[step]),
+    emWidth(stripMarks(node.title), heading.title.tracking) *
+      px(heading.titleSizes[step]),
     heading.titleMaxWidth
   );
   const ledeLines = node.lede
     ? lines(
-        node.lede.length * regularAdvance * px(heading.lede.size),
+        stripMarks(node.lede).length * regularAdvance * px(heading.lede.size),
         heading.ledeMaxWidth
       )
     : 0;

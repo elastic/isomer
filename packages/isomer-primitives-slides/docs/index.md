@@ -71,3 +71,7 @@ runtime.surfaces.text.render(composition);
 ## Authoring with an agent
 
 `buildSlidesAuthoringPrompt()` returns the prompt a model needs to write slides with this pack: the guide (`slidesAuthoringGuide`), the rules (`slidesAuthoringRules`), every primitive's catalog entry, and the authoring JSON Schema. A host that composes other packs passes its runtime's `getAuthoringContext()` `schema` and `primitives` instead.
+
+The pack indexes its primitives under `slidePrimitiveGroups` (structure, layout, text, diagrams, numbers, code and renders), which a runtime's `getAuthoringContext().groups` carries to a host that serves an index and lookups instead of the whole prompt, as `@elastic/isomer-mcp` does.
+
+`slideOverflow(box)` reads a slide as an image backend lays it out — the takumi backend's `measure` — and returns how far its content runs past the frame body on each side, or `undefined` when it fits. The contents of a scaled embedded render are not searched, since the render's panel clips them; an unscaled text surface cut off by its panel still counts. `slideOverlaps(box)` reads the same layout for body nodes drawn over each other, as when the slide is too full and a node is squeezed until its text runs into the next one; it compares what each node paints, its text and its bare shapes, rather than its boxes.

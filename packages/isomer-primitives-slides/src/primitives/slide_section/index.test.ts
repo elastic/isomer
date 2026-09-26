@@ -12,6 +12,7 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { stripMarks } from '../../render/marks';
 
 import { example, examples, linkedExample } from './examples';
 import { markdown, slack, text } from './index';
@@ -80,7 +81,7 @@ describe('slideSection', () => {
       "# 04 · The incident
 
       1. [Checkout failed for 41 minutes](#slide-12)
-      2. [A certificate expired on one gateway](#slide-13)
+      2. [A certificate expired on **one** gateway](#slide-13)
       3. [Alerts fired, but to the wrong rotation](#slide-14)
       4. [Recovery took one config change](#slide-15)
       5. [What we changed afterwards](#slide-16)"
@@ -116,10 +117,10 @@ describe('slideSection', () => {
         runtime.surfaces.text.render(composition),
         runtime.surfaces.markdown.render(composition),
         JSON.stringify(runtime.surfaces.slack.render(composition).blocks),
-      ].map((output) => output.toLowerCase());
+      ].map((output) => output.replace(/[`*]/g, '').toLowerCase());
       for (const value of authored(node)) {
         for (const output of outputs) {
-          expect(output).toContain(value.toLowerCase());
+          expect(output).toContain(stripMarks(value).toLowerCase());
         }
       }
     }

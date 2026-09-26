@@ -5,9 +5,11 @@
  * 2.0.
  */
 
+import { buildAuthoringJsonSchema } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { buildSlidesAuthoringPrompt } from './agent_guide';
+import { slidesPackAuthoring } from './pack_authoring';
 import { slideDeckPrimitives, slidePrimitiveTypes } from './registry';
 
 describe('slides authoring prompt', () => {
@@ -44,5 +46,19 @@ describe('slides authoring prompt', () => {
     expect(prompt).toContain('## Guide');
     expect(prompt).toContain('## Rules');
     expect(prompt).toContain('## JSON Schema');
+  });
+});
+
+describe('slides authoring schema', () => {
+  it('resolves every `$ref` to a def it holds', () => {
+    const schema = buildAuthoringJsonSchema(
+      slideDeckPrimitives,
+      slidesPackAuthoring
+    );
+    const { $defs } = schema as { $defs: Record<string, unknown> };
+    const refs = [...JSON.stringify(schema).matchAll(/"#\/\$defs\/([^"]+)"/g)];
+    expect(refs.map(([, id]) => id).filter((id) => !(id! in $defs))).toEqual(
+      []
+    );
   });
 });

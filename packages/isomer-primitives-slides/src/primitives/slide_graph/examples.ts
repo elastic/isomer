@@ -10,7 +10,7 @@ import type { SlideGraphNode } from './schema';
 /** Canonical {@link SlideGraphNode} example: a four-node chain with one node above and one below. */
 export const example: SlideGraphNode = {
   type: 'slideGraph',
-  caption: 'A basket becomes an order once pricing and stock agree.',
+  caption: 'A basket becomes an order once **pricing and stock** agree.',
   nodes: [
     {
       id: 'catalog',

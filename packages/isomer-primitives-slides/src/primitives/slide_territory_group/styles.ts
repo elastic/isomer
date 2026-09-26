@@ -29,6 +29,10 @@ export const territoryModule = createStyleModule('territory', ({ css }) => ({
     min-width: 0;
     padding-left: ${territory.paddingLeft};
   `,
+  // An owner with no tone draws its rule and title in grey.
+  plain: css`
+    ${toneVar.name}: ${color.textSubtle};
+  `,
   title: css`
     margin: 0;
   `,

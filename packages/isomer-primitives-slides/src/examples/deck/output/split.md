@@ -14,6 +14,6 @@
 - Shipping
 - Customer support
 
-Because the line is fixed, a merchant can change prices without a payments release.
+Because the line is fixed, a merchant can change prices **without a payments release**.
 
 _Crate · 02 Settlement · [example.com/crate](https://example.com/crate)_

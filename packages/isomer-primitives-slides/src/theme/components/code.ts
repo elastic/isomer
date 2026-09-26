@@ -27,3 +27,6 @@ export const code = {
   /** Joins two panels in text, markdown, and Slack. */
   traceArrow: literal('→'),
 } as const;
+
+/** Lines a panel holds before it takes `denseText`. */
+export const codeDenseAfter = 10;

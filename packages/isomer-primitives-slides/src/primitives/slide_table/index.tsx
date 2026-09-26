@@ -12,6 +12,7 @@ import {
   type SlackTableCell,
 } from '@elastic/isomer-sdk/slack';
 
+import { markdownRow } from '../../render/table';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -20,9 +21,6 @@ import { react } from './react';
 import { schema, type SlideTableNode, tableGroups } from './schema';
 
 export type { SlideTableGroup, SlideTableNode } from './schema';
-
-const escapeCell = (cell: string): string =>
-  cell.replace(/\|/g, '\\|').replace(/\s*\n\s*/g, ' ');
 
 /** Text renderer for {@link SlideTableNode}: space-padded columns, a label line above each group. */
 export const text = (node: SlideTableNode): string => {
@@ -53,15 +51,15 @@ export const text = (node: SlideTableNode): string => {
 /** Markdown renderer for {@link SlideTableNode}: a GFM pipe table, one per group under its label. */
 export const markdown = (node: SlideTableNode): string => {
   const { columns, label } = node;
-  const line = (cells: readonly string[]) =>
-    `| ${cells.map(escapeCell).join(' | ')} |`;
-  const head = [line(columns), line(columns.map(() => '---'))];
+  const head = [markdownRow(columns), markdownRow(columns.map(() => '---'))];
   return [
     label ? `## ${label}` : '',
     ...tableGroups(node).map(({ label: group, rows }) =>
-      [...(group ? [`**${group}**`, ''] : []), ...head, ...rows.map(line)].join(
-        '\n'
-      )
+      [
+        ...(group ? [`**${group}**`, ''] : []),
+        ...head,
+        ...rows.map(markdownRow),
+      ].join('\n')
     ),
   ]
     .filter(Boolean)

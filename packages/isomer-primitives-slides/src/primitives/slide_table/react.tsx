@@ -6,6 +6,7 @@
  */
 
 import { Fragment, type ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
@@ -20,13 +21,15 @@ export const react = (
   { context }: SlideReactEnv
 ): ReactNode => {
   const { handles: table } = tableModule;
-  const { columns, label, rowHeaders } = node;
+  const { columns, label, rowHeaders, type } = node;
   const groups = tableGroups(node);
   const count =
     tableColumnCounts[Math.min(columns.length, tableColumnCounts.length) - 1] ??
     'one';
   return (
-    <div className={cls(context, layoutModule.handles.fill, table.root)}>
+    <div
+      {...nodeAnchor(context, { type })}
+      className={cls(context, layoutModule.handles.fill, table.root)}>
       {label ? (
         <div className={cls(context, labelModule.handles.label)}>{label}</div>
       ) : null}

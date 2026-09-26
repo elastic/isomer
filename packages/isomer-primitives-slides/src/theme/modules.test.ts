@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 
 import { slideModules, slideStylesheet } from '../stylesheet';
 
+import { color } from './base';
 import { themeVarName } from './distillery';
 import { slideTones } from './variants';
 
@@ -36,17 +37,19 @@ describe('slide theme', () => {
     expect(sizes.filter((px) => px < 24)).toEqual([]);
   });
 
+  // takumi ignores `flex: none` and does not evaluate a nested `calc`.
+  it('writes flex and calc in forms the image surface lays out', () => {
+    const css = slideStylesheet();
+    expect(css.match(/flex:\s*none/g)).toBeNull();
+    expect(css.match(/calc\([^()]*\(/g)).toBeNull();
+  });
+
   it('an inverse frame redeclares the page palette', () => {
     const inverse = slideModules.frame.handles.tone.inverse;
     expect(inverse).toBeDefined();
     const rule = ruleFor(slideStylesheet(), inverse!.readableName);
-    for (const path of [
-      'color/bgPage',
-      'color/text',
-      'color/primary',
-      'color/line',
-    ]) {
-      expect(rule, path).toContain(`${themeVarName(path)}:`);
+    for (const key of Object.keys(color)) {
+      expect(rule, key).toContain(`${themeVarName(`color/${key}`)}:`);
     }
   });
 

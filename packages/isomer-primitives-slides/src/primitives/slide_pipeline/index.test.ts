@@ -10,6 +10,7 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { stripMarks } from '../../render/marks';
 
 import { example, examples, spansExample } from './examples';
 import { markdown, text } from './index';
@@ -112,7 +113,7 @@ describe('slidePipeline', () => {
     expect(markdown(example)).toMatchInlineSnapshot(`
       "Refund request → Verify → Score → Approve → Settle → Ledger entry
 
-      1. **Verify** — Match the order, the amount, and the card on file. A mismatch goes to a person.
+      1. **Verify** — Match the order, the amount, and the card on file. A mismatch goes to **a person**.
       2. **Score** — The fraud model scores the request against the customer’s last ninety days.
       3. **Approve** — Scores under the threshold approve on their own; the rest wait for review.
       4. **Settle** — The processor returns the funds and posts one line to the ledger."
@@ -140,10 +141,10 @@ describe('slidePipeline', () => {
         runtime.surfaces.text.render(composition),
         runtime.surfaces.markdown.render(composition),
         JSON.stringify(runtime.surfaces.slack.render(composition).blocks),
-      ].map((output) => output.toLowerCase());
+      ].map((output) => output.replace(/[`*]/g, '').toLowerCase());
       for (const value of authored(node)) {
         for (const output of outputs) {
-          expect(output).toContain(value.toLowerCase());
+          expect(output).toContain(stripMarks(value).toLowerCase());
         }
       }
     }

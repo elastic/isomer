@@ -12,7 +12,7 @@ export const example: SlideStatNode = {
   type: 'slideStat',
   value: '2.1',
   unit: 'days',
-  body: 'Median time from refund request to money back in the customer account, down from five.',
+  body: 'Median time from refund request to money back in the customer account, down from **five**.',
 };
 
 /** A value that carries its own unit. */

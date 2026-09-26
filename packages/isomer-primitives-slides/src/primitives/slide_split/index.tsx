@@ -5,10 +5,11 @@
  * 2.0.
  */
 
-import { bold, escapeMrkdwn, type SlackBlock } from '@elastic/isomer-sdk/slack';
+import { bold, type SlackBlock } from '@elastic/isomer-sdk/slack';
 import type { ZodType } from 'zod';
 
 import type { SlideRenderScope } from '../../render/context';
+import { marksSlack, stripMarks } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { contentNode, definePrimitive } from '../define';
 
@@ -34,7 +35,11 @@ const sideText = (
   const blocks = splitBlocks(side)
     .map((block) => {
       if (block.kind === 'statements') {
-        return block.statements.map(({ text }) => `- ${text}`).join('\n');
+        return block.statements
+          .map(
+            ({ text }) => `- ${surface === 'text' ? stripMarks(text) : text}`
+          )
+          .join('\n');
       }
       return surface === 'markdown'
         ? scope.renderMarkdown(block.node)
@@ -58,7 +63,11 @@ const splitText = (
   [
     sideText(left, scope, surface),
     sideText(right, scope, surface),
-    footnote ?? '',
+    footnote === undefined
+      ? ''
+      : surface === 'text'
+        ? stripMarks(footnote)
+        : footnote,
   ]
     .filter(Boolean)
     .join('\n\n');
@@ -90,7 +99,7 @@ export const slideSplitPrimitive = definePrimitive<SlideSplitNode>({
                 [
                   heading,
                   ...block.statements.map(
-                    ({ text }) => `${slackBullet.value} ${escapeMrkdwn(text)}`
+                    ({ text }) => `${slackBullet.value} ${marksSlack(text)}`
                   ),
                 ]
                   .filter(Boolean)
@@ -104,7 +113,7 @@ export const slideSplitPrimitive = definePrimitive<SlideSplitNode>({
           ];
         })
       ),
-      ...(footnote ? [section(escapeMrkdwn(footnote))] : []),
+      ...(footnote ? [section(marksSlack(footnote))] : []),
     ],
   },
   children: ({ left, right }) => [

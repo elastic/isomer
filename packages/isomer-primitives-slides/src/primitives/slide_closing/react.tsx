@@ -6,29 +6,32 @@
  */
 
 import type { ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
+import { marksReact } from '../../render/marks';
 import {
   closing as theme,
   closingShares,
 } from '../../theme/components/closing';
 import { columnWidth } from '../../theme/components/frame';
 import { labelModule } from '../../theme/modules';
-import { emWidth, longestWord, sizeForWidth } from '../size';
+import { sizeForLines } from '../size';
 
 import type { SlideClosingNode } from './schema';
 import { closingModule } from './styles';
 
 /** React renderer for {@link SlideClosingNode}. */
 export const react = (
-  { title, links, paths, size }: SlideClosingNode,
+  { type, title, links, paths = [], size }: SlideClosingNode,
   { context }: SlideReactEnv
 ): ReactNode => {
   const { handles: closing } = closingModule;
   const { handles: label } = labelModule;
   return (
     <div
+      {...nodeAnchor(context, { type })}
       className={cls(
         context,
         closing.root,
@@ -40,9 +43,10 @@ export const react = (
             context,
             closing.title,
             closing.titleSize[
-              sizeForWidth(
+              sizeForLines(
                 size,
-                emWidth(longestWord(title), theme.title.tracking),
+                title,
+                theme.title.tracking,
                 columnWidth(closingShares, theme.columnGap),
                 theme.titleSizes
               )
@@ -70,7 +74,9 @@ export const react = (
           {paths.map(({ title: pathTitle, body }, index) => (
             <li key={index} className={cls(context, closing.path)}>
               <h3 className={cls(context, closing.pathTitle)}>{pathTitle}</h3>
-              <p className={cls(context, closing.pathBody)}>{body}</p>
+              <p className={cls(context, closing.pathBody)}>
+                {marksReact(body, context)}
+              </p>
             </li>
           ))}
         </ul>

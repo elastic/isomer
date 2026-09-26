@@ -8,6 +8,8 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
+import { crossRefine } from '../cross_field';
+
 /** Zod schema for {@link SlideStatNode}. */
 export const schema = z
   .object({
@@ -28,14 +30,19 @@ export const schema = z
       .string()
       .min(1)
       .describe(
-        'One or two sentences saying what the number shows and why it matters.'
+        'One or two sentences saying what the number shows and why it matters. `code` and `**strong**` marks are allowed.'
       ),
   })
   .strict()
-  .refine(({ value, unit }) => unit === undefined || value !== undefined, {
-    error: 'unit needs a value',
-    path: ['unit'],
-  });
+  .check(
+    crossRefine(
+      ({ value, unit }) => unit === undefined || value !== undefined,
+      {
+        error: 'unit needs a value',
+        path: ['unit'],
+      }
+    )
+  );
 
 /** One headline number beside the sentence that explains it, as a band under the slide body. */
 export type SlideStatNode = z.infer<typeof schema> & PrimitiveNode;

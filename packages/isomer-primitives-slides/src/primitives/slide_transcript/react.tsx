@@ -6,6 +6,7 @@
  */
 
 import type { ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
@@ -19,12 +20,14 @@ const { roleLabel } = slideDistillery.tokens.transcript;
 
 /** React renderer for {@link SlideTranscriptNode}. */
 export const react = (
-  { label, turns }: SlideTranscriptNode,
+  { type, label, turns }: SlideTranscriptNode,
   { context }: SlideReactEnv
 ): ReactNode => {
   const { handles: transcript } = transcriptModule;
   return (
-    <div className={cls(context, layoutModule.handles.fill, transcript.root)}>
+    <div
+      {...nodeAnchor(context, { type })}
+      className={cls(context, layoutModule.handles.fill, transcript.root)}>
       {label ? (
         <div className={cls(context, labelModule.handles.label)}>{label}</div>
       ) : null}

@@ -14,7 +14,7 @@ const slideWidth = scalePx(frame.width);
 const slideHeight = scalePx(frame.height);
 
 /** Scale that draws a whole slide at `width` pixels wide, with that width as a token. */
-const slideFit = (scale: number) =>
+export const slideFit = (scale: number) =>
   ({ scale: literal(String(scale)), width: px(slideWidth * scale) }) as const;
 
 /** `slideRender`: another slide or composition, drawn inside a panel. */

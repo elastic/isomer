@@ -62,23 +62,26 @@ Sizes are `ScaleToken` on purpose: inlining matches the frame contract, where a 
 
 ## Nothing below 24px
 
-Slides are read embedded at roughly half scale, so no rule sets a `font-size` under 24px. `src/theme/modules.test.ts` scans the whole stylesheet for it. A picture of another render (`slideRender`, `slideRenderGrid`) scales its content down instead of declaring a smaller size.
+Slides are read embedded at roughly half scale, so no rule sets a `font-size` under 24px. `src/theme/modules.test.ts` scans the whole stylesheet for it. A picture of another render (`slideRender`, `slideRenderGrid`) scales its content down instead of declaring a smaller size. An inline `` `code` `` mark keeps its run's size rather than an `em` fraction, which would drop 26px body copy under the floor.
 
 ## Size steps
 
 Length-sensitive primitives take an optional `size`: `l`, `m`, or `s`, each a set of theme tokens (`titleSizes`, `bodySizes`, `valueSizes`, and so on), none below 24px. Left out, the renderer picks the step from the node's own text, so every surface draws the same size; the image surface cannot measure, and does not support container units, `min()`, or `clamp()`. An explicit `size` always wins.
 
-- **Load:** `slideHeading`, `slideTimeline`, `slidePipeline` (numbered steps), `slideColumns`, `slideDefinitions`, and `slideGraph` compare a character load with a budget beside their theme group (`timelineFit`, `pipelineFit`, …). A row's load is its longest item's characters times the item count.
-- **Width:** `slideStats` and the display titles of `slideTitle`, `slideSection`, and `slideClosing` take the largest step at which their widest value or longest word fits its column, estimated from `extraboldAdvance` glyph widths and the role's tracking.
+- **Load:** `slideHeading`, `slideStatement`, `slideQuote`, `slideTimeline`, `slidePipeline` (numbered steps), `slideColumns`, `slideDefinitions`, `slideGraph`, `slideRoadmap`, and `slideSplit` statements compare a character load with a budget beside their theme group (`timelineFit`, `pipelineFit`, …). A row's load is its longest item's characters times the item count; a split's is its busier column's statement characters, scaled to an even column's width. `slideSequence`, `slideLayers`, `slideAgenda`, `slideMatrix`, `slideBars`, and `slideQuadrant` count rows, messages, or chips instead, since their text does not wrap.
+- **Width:** `slideStats`, `slideDelta`, and the display titles of `slideTitle`, `slideSection`, and `slideClosing` take the largest step at which their widest value or longest word fits its column, estimated from `extraboldAdvance` glyph widths and the role's tracking. `slideCommand` does the same for its one line of code from `monoAdvance`, with no `size` field: its length limit guarantees `s` fits.
+- **Height:** `slideAnnotatedRender` picks its render scale and legend step from the legend's estimated height, with no `size` field.
 - **Crowding:** `slideFrame` estimates how much room its opening `slideHeading` leaves and passes `crowding` to the rest of the slide on the render context: 1 under a two-line title and a two-line lede, which the budgets are set against, below 1 under a shorter heading. Load pickers scale their load by it, so the same timeline keeps `l` under a one-line heading and shrinks under a long one.
 
-## Color means something
+## Tones mean something
 
-`primary` marks the product, the runtime, or the current item; `accentPink` marks the host. Those are the only hues, and `slideTones` is `['primary', 'pink']`. Everything else is ink (`text`, and `line` for rails and arrows) or grey (`textSoft`, `textSubtle`, `border`).
+`slideTones` is `['primary', 'accent']`, named for theme roles rather than hues. `primary` marks the product, the runtime, or whatever is in focus, such as the current item or a highlighted option; `accent` marks the host or another party. Everything else is neutral: `text`, and `line` for rails and arrows, or the quieter `textSoft`, `textSubtle`, and `border`. Authoring copy names tones and never colors, so a theme can change what each role looks like.
+
+A module's rules reach the stylesheet sorted by name, and a variant that overrides a base rule wins only by coming later at the same specificity. Name the override so it sorts after its base: `titleHighlighted` after `title`, not `highlightedTitle`.
 
 ## Inverse tone
 
-`slideFrame`'s `tone: 'inverse'` gives title, section, and closing slides the dark background. The frame redeclares the page palette for its subtree — `bgPage`, `text`, `textSoft`, `textSubtle`, `primary`, `onPrimary`, `border`, and `line` take their values from the `inverse` group — so a primitive reads the same tokens on either tone and never branches on it. In dark mode the inverse background is lifted above the page (`#12213A` over `#07101F`) so those slides still stand apart.
+`slideFrame`'s `tone: 'inverse'` gives title, section, and closing slides the dark background. The frame redeclares every `color` token for its subtree from the `inverse` group, so a primitive reads the same tokens on either tone and never branches on it; a stylesheet test fails when a `color` token has no inverse. Light-mode inverse is the dark page palette. In dark mode the inverse background is lifted above the page (`#12213A` over `#07101F`) so those slides still stand apart.
 
 ## Placeholders
 
@@ -86,12 +89,19 @@ A render or number that does not exist yet is a placeholder, never fake content:
 
 ## What the image surface draws
 
-The `svg` surface's CSS goes to takumi, which lays out a subset of CSS. The pack relies on custom properties (including redeclaring them in a subtree), grid with `minmax(0, …)` tracks, `repeating-linear-gradient`, border-drawn triangles, `transform: scale()`, `text-wrap: balance`, and baseline alignment, all of which it renders. Two limits shape the modules:
+The `svg` surface's CSS goes to takumi, which lays out a subset of CSS. The pack relies on custom properties (including redeclaring them in a subtree), grid with `minmax(0, …)` tracks, `repeating-linear-gradient`, border-drawn triangles, `transform: scale()`, `text-wrap: balance`, and baseline alignment, all of which it renders. These limits shape the modules:
 
 - A block element with padding and a border around text renders taller than its content. Chips, nodes, and pills are `display: flex`.
-- Roboto Mono ships no box-drawing glyphs. `slideTree` draws its connectors with borders and keeps `├`/`└` for text and Markdown.
-- `@container` queries, `min()`, and `clamp()` do not apply, and `cqi` resolves against the canvas, not the container. Type that must fit is sized by [size steps](#size-steps) instead.
+- Roboto Mono ships no box-drawing glyphs and no `→`. `slideTree` draws its connectors with borders and keeps `├`/`└` for text and Markdown; `−` (U+2212) is there.
+- `@container` queries, `min()`, `clamp()`, and `:has()` do not apply, and `cqi` resolves against the canvas, not the container. Type that must fit is sized by [size steps](#size-steps) instead.
+- `display: inline-flex` inside running text breaks the line. Inline marks stay plain inline elements.
+- An inline element's border is not drawn, only its background, so an inline code chip stands out by `codeFill` alone.
+- `text-wrap: pretty` is not applied, so a paragraph can end on one word. Short copy that wraps, such as a footnote, a fanout body, a section's contents, a pipeline step, or a split statement, uses `balance` instead.
+- `flex: none` is ignored, so an item meant to keep its size shrinks with its row. Write `flex: 0 0 auto`; a stylesheet test rejects `flex: none`.
+- A `calc()` nested inside another is not evaluated. Expand it to one level, as the pipeline's rail inset does; the same test rejects a nested one.
 - A `flex: 1` child of a column with no set height collapses to nothing. The layout `fill` role uses `flex: 1 1 auto`, and centers with auto margins, so content taller than its space runs down rather than up over the heading.
+
+It does render `text-indent` (the quote's hanging mark), inset `box-shadow`, `linear-gradient`, `transform: translate()`, `calc()` with percentages, `visibility`, `& + &` and `:last-child` selectors, and inline `style` widths and offsets.
 
 ## `SlidePalette`
 

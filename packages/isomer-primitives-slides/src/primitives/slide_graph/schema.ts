@@ -8,6 +8,7 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
+import { crossSuperRefine } from '../cross_field';
 import { sizeField } from '../size';
 
 /** Where an off-row node sits relative to the main row. */
@@ -30,7 +31,7 @@ const nodeSchema = z
       .string()
       .min(1)
       .describe(
-        'A short sentence defining the term, about six words, so the node stays two lines tall.'
+        'A short sentence defining the term, about six words, so the node stays two lines tall. `code` and `**strong**` marks are allowed.'
       ),
     emphasis: z
       .boolean()
@@ -74,80 +75,86 @@ export const schema = z
       .string()
       .min(1)
       .describe(
-        'One or two sentences on how the concepts fit together, set in the empty space beside the upper node.'
+        'One or two sentences on how the concepts fit together, set in the empty space beside the upper node. `code` and `**strong**` marks are allowed.'
       )
       .optional(),
     size: sizeField(),
   })
   .strict()
-  .superRefine(({ nodes, edges }, ctx) => {
-    const fail = (message: string, path: PropertyKey[]) =>
-      ctx.addIssue({ code: 'custom', message: `${message}. ${SHAPE}.`, path });
+  .check(
+    crossSuperRefine(({ nodes, edges }, ctx) => {
+      const fail = (message: string, path: PropertyKey[]) =>
+        ctx.addIssue({
+          code: 'custom',
+          message: `${message}. ${SHAPE}.`,
+          path,
+        });
 
-    const ids = new Set<string>();
-    nodes.forEach(({ id }, index) => {
-      if (ids.has(id)) {
-        fail(`duplicate node id "${id}"`, ['nodes', index, 'id']);
-      }
-      ids.add(id);
-    });
+      const ids = new Set<string>();
+      nodes.forEach(({ id }, index) => {
+        if (ids.has(id)) {
+          fail(`duplicate node id "${id}"`, ['nodes', index, 'id']);
+        }
+        ids.add(id);
+      });
 
-    const main = nodes.filter(({ placement }) => placement === undefined);
-    if (main.length < 2 || main.length > graphMaxMain) {
-      fail(`the main row has ${main.length} nodes`, ['nodes']);
-    }
-    for (const side of slideGraphPlacements) {
-      if (nodes.filter(({ placement }) => placement === side).length > 1) {
-        fail(`more than one node is placed ${side}`, ['nodes']);
+      const main = nodes.filter(({ placement }) => placement === undefined);
+      if (main.length < 2 || main.length > graphMaxMain) {
+        fail(`the main row has ${main.length} nodes`, ['nodes']);
       }
-    }
+      for (const side of slideGraphPlacements) {
+        if (nodes.filter(({ placement }) => placement === side).length > 1) {
+          fail(`more than one node is placed ${side}`, ['nodes']);
+        }
+      }
 
-    const mainIds = main.map(({ id }) => id);
-    const chain = new Set(
-      mainIds.slice(1).map((to, index) => `${mainIds[index]}→${to}`)
-    );
-    const seen = new Set<string>();
-    const attached = new Map<string, number>();
-    edges.forEach(([from, to], index) => {
-      const path = ['edges', index];
-      const unknown = [from, to].find((id) => !ids.has(id));
-      if (unknown !== undefined) {
-        fail(`edge [${from}, ${to}] names unknown node "${unknown}"`, path);
-        return;
-      }
-      const key = `${from}→${to}`;
-      if (seen.has(key)) {
-        fail(`edge [${from}, ${to}] is repeated`, path);
-        return;
-      }
-      seen.add(key);
-      if (chain.has(key)) {
-        return;
-      }
-      const placed = [from, to].filter((id) => !mainIds.includes(id));
-      const [offRow] = placed;
-      if (placed.length !== 1 || offRow === undefined) {
-        fail(`edge [${from}, ${to}] does not fit the layout`, path);
-        return;
-      }
-      attached.set(offRow, (attached.get(offRow) ?? 0) + 1);
-    });
+      const mainIds = main.map(({ id }) => id);
+      const chain = new Set(
+        mainIds.slice(1).map((to, index) => `${mainIds[index]}→${to}`)
+      );
+      const seen = new Set<string>();
+      const attached = new Map<string, number>();
+      edges.forEach(([from, to], index) => {
+        const path = ['edges', index];
+        const unknown = [from, to].find((id) => !ids.has(id));
+        if (unknown !== undefined) {
+          fail(`edge [${from}, ${to}] names unknown node "${unknown}"`, path);
+          return;
+        }
+        const key = `${from}→${to}`;
+        if (seen.has(key)) {
+          fail(`edge [${from}, ${to}] is repeated`, path);
+          return;
+        }
+        seen.add(key);
+        if (chain.has(key)) {
+          return;
+        }
+        const placed = [from, to].filter((id) => !mainIds.includes(id));
+        const [offRow] = placed;
+        if (placed.length !== 1 || offRow === undefined) {
+          fail(`edge [${from}, ${to}] does not fit the layout`, path);
+          return;
+        }
+        attached.set(offRow, (attached.get(offRow) ?? 0) + 1);
+      });
 
-    mainIds.slice(1).forEach((to, index) => {
-      const from = mainIds[index];
-      if (!seen.has(`${from}→${to}`)) {
-        fail(`missing main-row edge [${from}, ${to}]`, ['edges']);
-      }
-    });
-    nodes.forEach(({ id, placement }, index) => {
-      if (placement !== undefined && attached.get(id) !== 1) {
-        fail(
-          `the ${placement} node "${id}" needs exactly one edge to a main-row node`,
-          ['nodes', index]
-        );
-      }
-    });
-  });
+      mainIds.slice(1).forEach((to, index) => {
+        const from = mainIds[index];
+        if (!seen.has(`${from}→${to}`)) {
+          fail(`missing main-row edge [${from}, ${to}]`, ['edges']);
+        }
+      });
+      nodes.forEach(({ id, placement }, index) => {
+        if (placement !== undefined && attached.get(id) !== 1) {
+          fail(
+            `the ${placement} node "${id}" needs exactly one edge to a main-row node`,
+            ['nodes', index]
+          );
+        }
+      });
+    })
+  );
 
 /** One concept in a {@link SlideGraphNode}. */
 export type SlideGraphTerm = z.infer<typeof nodeSchema>;

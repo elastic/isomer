@@ -6,27 +6,31 @@
  */
 
 import type { ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
+import { marksReact } from '../../render/marks';
 import { columnWidth } from '../../theme/components/frame';
 import {
   section as theme,
   sectionShares,
 } from '../../theme/components/section';
-import { emWidth, longestWord, sizeForWidth } from '../size';
+import { sizeForLines } from '../size';
 
 import type { SlideSectionNode } from './schema';
 import { sectionModule } from './styles';
 
 /** React renderer for {@link SlideSectionNode}. */
 export const react = (
-  { number, title, contents, hrefs, size }: SlideSectionNode,
+  { type, number, title, contents, hrefs, size }: SlideSectionNode,
   { context }: SlideReactEnv
 ): ReactNode => {
   const { handles: section } = sectionModule;
   return (
-    <div className={cls(context, section.root)}>
+    <div
+      {...nodeAnchor(context, { type })}
+      className={cls(context, section.root)}>
       <h2 className={cls(context, section.heading)}>
         <span className={cls(context, section.number)}>{number}</span>
         <span
@@ -34,9 +38,10 @@ export const react = (
             context,
             section.title,
             section.titleSize[
-              sizeForWidth(
+              sizeForLines(
                 size,
-                emWidth(longestWord(title), theme.title.tracking),
+                title,
+                theme.title.tracking,
                 columnWidth(sectionShares, theme.columnGap),
                 theme.titleSizes
               )
@@ -52,10 +57,10 @@ export const react = (
             <li key={index} className={cls(context, section.row)}>
               {href ? (
                 <a className={cls(context, section.link)} href={href}>
-                  {line}
+                  {marksReact(line, context)}
                 </a>
               ) : (
-                line
+                marksReact(line, context)
               )}
             </li>
           );

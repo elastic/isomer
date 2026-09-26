@@ -29,6 +29,14 @@ export const columnsModule = createStyleModule('columns', ({ css }) => ({
     gap: ${columns.gap};
     min-width: 0;
   `,
+  // With a highlight, every column keeps room for the bar, so titles stay level.
+  barred: css`
+    border-top: ${columns.highlightBar} solid transparent;
+    padding-top: ${columns.highlightGap};
+  `,
+  highlighted: css`
+    border-top-color: ${color.primary};
+  `,
   /** Every column after the first: a rule on its left. */
   ruled: css`
     border-left: ${columns.rule} solid ${color.border};
@@ -48,6 +56,14 @@ export const columnsModule = createStyleModule('columns', ({ css }) => ({
     color: ${color.text};
     ${typeRole(columns.title)}
     margin: 0;
+  `,
+  titleHighlighted: css`
+    color: ${color.primary};
+  `,
+  head: css`
+    display: flex;
+    flex-direction: column;
+    gap: ${columns.gap};
   `,
   tags: css`
     display: flex;
@@ -87,7 +103,7 @@ export const columnsModule = createStyleModule('columns', ({ css }) => ({
   `,
   footnoteCode: css`
     color: ${color.text};
-    flex: none;
+    flex: 0 0 auto;
     font-family: ${columns.footnoteCode.family};
     font-weight: ${columns.footnoteCode.weight};
   `,

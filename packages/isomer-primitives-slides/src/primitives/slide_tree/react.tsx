@@ -6,6 +6,7 @@
  */
 
 import type { ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
@@ -16,12 +17,14 @@ import { treeModule } from './styles';
 
 /** React renderer for {@link SlideTreeNode}. */
 export const react = (
-  { root, entries }: SlideTreeNode,
+  { type, root, entries }: SlideTreeNode,
   { context }: SlideReactEnv
 ): ReactNode => {
   const { handles: tree } = treeModule;
   return (
-    <div className={cls(context, layoutModule.handles.fill)}>
+    <div
+      {...nodeAnchor(context, { type })}
+      className={cls(context, layoutModule.handles.fill)}>
       <div className={cls(context, tree.root)}>
         <div className={cls(context, tree.folder)}>{root}</div>
         <ul className={cls(context, tree.entries)}>

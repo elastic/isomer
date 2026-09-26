@@ -44,6 +44,12 @@ const notWords = new Set([
   'spacing',
   'marker',
   'edges',
+  'marks',
+  'op',
+  'from',
+  'to',
+  'current',
+  'highlight',
 ]);
 
 const authoredStrings = (value: unknown, key = ''): string[] => {
@@ -74,9 +80,11 @@ const stringLeaves = (value: unknown): string[] => {
   return [];
 };
 
+// Marks render differently per surface, so their markers are compared away.
 const normalize = (text: string) =>
   text
     .replace(/\\([\\`*_{}[\]()#+\-.!|>~])/g, '$1')
+    .replace(/[`*]/g, '')
     .replace(/\s+/g, ' ')
     .toLowerCase();
 

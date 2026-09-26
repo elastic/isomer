@@ -13,6 +13,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { slideBuilds } from '@elastic/isomer-primitives-slides';
 import { formatValidationError } from '@elastic/isomer-sdk';
 
 import { runtime } from '../runtime';
@@ -66,7 +67,7 @@ export const Viewer = ({
   const shownIndex = useRef(route.index);
   const fromHistory = useRef(false);
 
-  const { surface, theme, source } = route;
+  const { builds, surface, theme, source } = route;
   const last = Math.max(slides.length - 1, 0);
   const index = Math.min(route.index, last);
   const slide = slides[index];
@@ -80,6 +81,20 @@ export const Viewer = ({
     [slide]
   );
 
+  // Only the surfaces the viewer draws itself can hide a slide's parts.
+  const buildable = builds && (surface === 'slide' || surface === 'html');
+  const countAt = useCallback(
+    (position: number) => {
+      const at = slides[position];
+      return buildable && at
+        ? slideBuilds(at.composition, runtime.primitives)
+        : 0;
+    },
+    [slides, buildable]
+  );
+  const count = useMemo(() => countAt(index), [countAt, index]);
+  const shown = Math.min(route.build ?? count, count);
+
   const go = useCallback(
     (next: Partial<Route>) => setRoute((prev) => ({ ...prev, ...next })),
     []
@@ -89,9 +104,30 @@ export const Viewer = ({
       setRoute((prev) => ({
         ...prev,
         index: Math.min(Math.max(prev.index + by, 0), last),
+        build: undefined,
       })),
     [last]
   );
+  const startAt = useCallback(
+    (position: number) =>
+      go({ index: position, build: countAt(position) > 0 ? 0 : undefined }),
+    [go, countAt]
+  );
+  // A click reveals the slide's next part, and moves on once it has none left.
+  const advance = useCallback(() => {
+    if (shown < count) {
+      go({ build: shown + 1 < count ? shown + 1 : undefined });
+    } else if (index < last) {
+      startAt(index + 1);
+    }
+  }, [go, startAt, shown, count, index, last]);
+  const retreat = useCallback(() => {
+    if (shown > 0) {
+      go({ build: shown - 1 });
+    } else if (index > 0) {
+      go({ index: index - 1, build: undefined });
+    }
+  }, [go, shown, index]);
   const firstSource = slide?.sources[0]?.id;
   const toggleSource = useCallback(
     () =>
@@ -111,7 +147,11 @@ export const Viewer = ({
 
   // A slide change is a history entry; a surface or theme change is not.
   useEffect(() => {
-    const url = writeRoute(slides, { ...route, index }, window.location.search);
+    const url = writeRoute(
+      slides,
+      { ...route, index, build: shown < count ? shown : undefined },
+      window.location.search
+    );
     if (fromHistory.current) {
       fromHistory.current = false;
     } else if (url !== window.location.search) {
@@ -120,7 +160,7 @@ export const Viewer = ({
       window.history[method](null, '', url);
     }
     shownIndex.current = route.index;
-  }, [slides, route, index]);
+  }, [slides, route, index, shown, count]);
 
   useEffect(() => {
     const onPop = () => {
@@ -167,18 +207,18 @@ export const Viewer = ({
         case 'ArrowDown':
         case 'PageDown':
         case ' ':
-          step(1);
+          advance();
           break;
         case 'ArrowLeft':
         case 'ArrowUp':
         case 'PageUp':
-          step(-1);
+          retreat();
           break;
         case 'Home':
-          go({ index: 0 });
+          startAt(0);
           break;
         case 'End':
-          go({ index: last });
+          go({ index: last, build: undefined });
           break;
         case 'f':
           toggleFullscreen();
@@ -199,7 +239,7 @@ export const Viewer = ({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [go, step, toggleFullscreen, toggleSource, last]);
+  }, [go, advance, retreat, startAt, toggleFullscreen, toggleSource, last]);
 
   return (
     <div className="deck">
@@ -218,6 +258,12 @@ export const Viewer = ({
           </button>
           <span aria-live="polite">
             {number(index)} / {number(last)}
+            {shown < count ? (
+              <span className="pager-build">
+                {' '}
+                · {shown}/{count}
+              </span>
+            ) : null}
           </span>
           <button
             aria-label="Next slide"
@@ -258,6 +304,13 @@ export const Viewer = ({
         </div>
         <div className="actions">
           <button
+            aria-pressed={builds}
+            onClick={() => go({ builds: !builds, build: undefined })}
+            title="Reveal a slide's parts one click at a time"
+            type="button">
+            Builds
+          </button>
+          <button
             aria-pressed={theme === 'dark'}
             onClick={() => go({ theme: theme === 'dark' ? 'light' : 'dark' })}
             title="Theme (t)"
@@ -280,7 +333,7 @@ export const Viewer = ({
               <li key={slug}>
                 <button
                   aria-current={position === index}
-                  onClick={() => go({ index: position })}
+                  onClick={() => go({ index: position, build: undefined })}
                   type="button">
                   <span className="rail-number">{number(position)}</span>
                   {composition.title}
@@ -317,6 +370,7 @@ export const Viewer = ({
                 ref={stage}>
                 <Stage
                   {...{ fullscreen, pngUrl, slide, surface, theme }}
+                  build={builds ? shown : undefined}
                   onOverflow={(overflows) =>
                     setOverflowing(overflows ? slide : undefined)
                   }

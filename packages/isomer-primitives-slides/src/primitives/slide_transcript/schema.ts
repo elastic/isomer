@@ -55,8 +55,8 @@ export const schema = z
       z
         .array(turnSchema)
         .min(1)
-        .max(8)
-        .describe('Turns in the order they happened. One to eight.'),
+        .max(4)
+        .describe('Turns in the order they happened. One to four.'),
       { text: 'text' }
     ),
   })

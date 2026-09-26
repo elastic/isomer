@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+export { slideAuthoringNotes } from './authoring_notes';
 export {
   quoteMarkdown,
   quoteSlackBlocks,
@@ -20,3 +21,18 @@ export type {
   SlideRenderContext,
   SlideRenderScope,
 } from './context';
+export {
+  type MarkRun,
+  marksReact,
+  marksSlack,
+  parseMarks,
+  stripMarks,
+} from './marks';
+export {
+  type SlideLayoutBox,
+  type SlideOverflow,
+  type SlideOverlap,
+  slideOverflow,
+  slideOverlaps,
+} from './overflow';
+export { markdownRow, markdownTable, textTable } from './table';

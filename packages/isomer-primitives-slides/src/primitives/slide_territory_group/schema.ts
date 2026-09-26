@@ -16,14 +16,16 @@ const territorySchema = z
     body: z
       .string()
       .min(1)
-      .describe('What this owner is responsible for, in one or two sentences.'),
+      .describe(
+        'What this owner is responsible for, in one or two sentences. `code` and `**strong**` marks are allowed.'
+      ),
     title: z
       .string()
       .min(1)
       .describe('The owner, in one to three words, e.g. a team or a system.'),
     tone: slideToneSchema
       .describe(
-        'Color of the rule and title: `primary` for your side, `pink` for the other side (a host, a partner, a customer). Defaults to `primary`.'
+        'The tone of the rule and title: `primary` for your side, `accent` for the other side (a host, a partner, a customer). Leave it out for a neutral owner.'
       )
       .optional(),
   })

@@ -6,9 +6,11 @@
  */
 
 import type { ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
+import { marksReact, stripMarks } from '../../render/marks';
 import { definitionsFit } from '../../theme/components/definitions';
 import { layoutModule } from '../../theme/modules';
 import { sizeForLoad } from '../size';
@@ -32,7 +34,7 @@ const toColumns = (
 
 /** React renderer for {@link SlideDefinitionsNode}. */
 export const react = (
-  { items, size }: SlideDefinitionsNode,
+  { type, items, size }: SlideDefinitionsNode,
   { context }: SlideReactEnv
 ): ReactNode => {
   const { handles: definitions } = definitionsModule;
@@ -43,7 +45,8 @@ export const react = (
       Math.max(
         ...columns.map((column) =>
           column.reduce(
-            (total, { term, body }) => total + term.length + body.length,
+            (total, { term, body }) =>
+              total + term.length + stripMarks(body).length,
             0
           )
         )
@@ -52,7 +55,9 @@ export const react = (
     context?.crowding
   );
   return (
-    <div className={cls(context, layoutModule.handles.fill)}>
+    <div
+      {...nodeAnchor(context, { type })}
+      className={cls(context, layoutModule.handles.fill)}>
       <div className={cls(context, definitions.columns)}>
         {columns.map((column, columnIndex) => (
           <dl className={cls(context, definitions.list)} key={columnIndex}>
@@ -78,7 +83,7 @@ export const react = (
                     definitions.body,
                     definitions.bodySize[step]
                   )}>
-                  {body}
+                  {marksReact(body, context)}
                 </dd>
               </div>
             ))}

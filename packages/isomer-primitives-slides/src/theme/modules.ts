@@ -15,7 +15,8 @@ import { typeRole } from './type_role';
 import { slideTones } from './variants';
 
 const { createStyleModule, tokens } = slideDistillery;
-const { color, connector, font, frame, label, placeholder, type } = tokens;
+const { color, connector, font, frame, label, marks, placeholder, type } =
+  tokens;
 
 /** The deck root wrapper every slide renders inside. */
 export const deckRootModule = createStyleModule('deckRoot', ({ css }) => ({
@@ -55,7 +56,7 @@ export const layoutModule = createStyleModule('layout', ({ css }) => ({
 /** Sets {@link toneVar} for a {@link SlideTone}. */
 export const tonesModule = createStyleModule('tones', ({ css }) => ({
   tone: variants(slideTones, (tone) => {
-    const fg = { primary: color.primary, pink: color.accentPink }[tone];
+    const fg = { primary: color.primary, accent: color.accent }[tone];
     return css`
       ${toneVar.name}: ${fg};
     `;
@@ -135,7 +136,7 @@ export const connectorModule = createStyleModule('connector', ({ css }) => ({
     border-bottom: ${connector.headHalf} solid transparent;
     border-left: ${connector.headLength} solid ${color.line};
     border-top: ${connector.headHalf} solid transparent;
-    flex: none;
+    flex: 0 0 auto;
     height: 0;
     width: 0;
   `,
@@ -143,7 +144,15 @@ export const connectorModule = createStyleModule('connector', ({ css }) => ({
     border-left: ${connector.headHalf} solid transparent;
     border-right: ${connector.headHalf} solid transparent;
     border-top: ${connector.headLength} solid ${color.line};
-    flex: none;
+    flex: 0 0 auto;
+    height: 0;
+    width: 0;
+  `,
+  headLeft: css`
+    border-bottom: ${connector.headHalf} solid transparent;
+    border-right: ${connector.headLength} solid ${color.line};
+    border-top: ${connector.headHalf} solid transparent;
+    flex: 0 0 auto;
     height: 0;
     width: 0;
   `,
@@ -151,12 +160,40 @@ export const connectorModule = createStyleModule('connector', ({ css }) => ({
     border-bottom: ${connector.headLength} solid ${color.line};
     border-left: ${connector.headHalf} solid transparent;
     border-right: ${connector.headHalf} solid transparent;
-    flex: none;
+    flex: 0 0 auto;
     height: 0;
     width: 0;
   `,
   /** Draws the connector in `primary` instead of ink. */
   primary: css`
     ${themeVarName('color/line')}: ${color.primary};
+  `,
+  /** Draws the connector in the enclosing {@link toneVar}. */
+  toned: css`
+    ${themeVarName('color/line')}: ${toneVar};
+  `,
+}));
+
+/** Inline `code` and `**strong**` runs inside authored text. */
+export const marksModule = createStyleModule('marks', ({ css }) => ({
+  code: css`
+    background: ${color.codeFill};
+    border: ${marks.codeBorder} solid ${color.borderDashed};
+    border-radius: ${marks.codeRadius};
+    color: ${color.text};
+    font-family: ${marks.code.family};
+    padding: ${marks.codePadding};
+  `,
+  displayCode: css`
+    font-family: ${marks.displayCode.family};
+    font-weight: ${marks.displayCode.weight};
+  `,
+  strong: css`
+    color: ${color.text};
+    font-weight: ${marks.strong.weight};
+  `,
+  strongPrimary: css`
+    color: ${color.primary};
+    font-weight: inherit;
   `,
 }));

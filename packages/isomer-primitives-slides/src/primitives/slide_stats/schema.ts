@@ -8,6 +8,7 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
+import { crossRefine } from '../cross_field';
 import { sizeField } from '../size';
 
 const statSchema = z
@@ -34,14 +35,19 @@ const statSchema = z
       .string()
       .min(1)
       .describe(
-        'One sentence of context: how it was measured or why it matters.'
+        'One sentence of context: how it was measured or why it matters. `code` and `**strong**` marks are allowed.'
       ),
   })
   .strict()
-  .refine(({ value, unit }) => unit === undefined || value !== undefined, {
-    error: 'unit needs a value',
-    path: ['unit'],
-  });
+  .check(
+    crossRefine(
+      ({ value, unit }) => unit === undefined || value !== undefined,
+      {
+        error: 'unit needs a value',
+        path: ['unit'],
+      }
+    )
+  );
 
 /** One number in a {@link SlideStatsNode}. */
 export type SlideStatsItem = z.infer<typeof statSchema>;

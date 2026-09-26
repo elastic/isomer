@@ -8,6 +8,8 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
+import { crossRefine } from '../cross_field';
+
 const panelSchema = z
   .object({
     file: z
@@ -40,18 +42,22 @@ const panelSchema = z
       .optional(),
   })
   .strict()
-  .refine(({ lines }) => lines.every((line) => !line.includes('\n')), {
-    error: 'one line per entry: split multi-line source into separate lines',
-    path: ['lines'],
-  })
-  .refine(
-    ({ highlight, lines }) =>
-      highlight === undefined ||
-      highlight.every((line) => line <= lines.length),
-    {
-      error: 'highlight lines must exist in lines',
-      path: ['highlight'],
-    }
+  .check(
+    crossRefine(({ lines }) => lines.every((line) => !line.includes('\n')), {
+      error: 'one line per entry: split multi-line source into separate lines',
+      path: ['lines'],
+    })
+  )
+  .check(
+    crossRefine(
+      ({ highlight, lines }) =>
+        highlight === undefined ||
+        highlight.every((line) => line <= lines.length),
+      {
+        error: 'highlight lines must exist in lines',
+        path: ['highlight'],
+      }
+    )
   );
 
 /** One panel of a {@link SlideCodeNode}. */

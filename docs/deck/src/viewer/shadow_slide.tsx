@@ -7,6 +7,10 @@
 
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import {
+  showSlideBuild,
+  SLIDE_BUILDS,
+} from '@elastic/isomer-primitives-slides';
 import type { Composition } from '@elastic/isomer-sdk';
 
 import { runtime } from '../runtime';
@@ -19,10 +23,13 @@ import { useOverflow } from './overflow';
  * render used, so no page stylesheet reaches in or out.
  */
 export const ShadowSlide = ({
+  build,
   composition,
   theme,
   onOverflow,
 }: {
+  /** How many of the slide's parts show; `undefined` draws it whole, with no builds. */
+  build?: number | undefined;
   composition: Composition;
   theme: Theme;
   /** Called with whether the slide's content runs past its frame body. */
@@ -40,10 +47,11 @@ export const ShadowSlide = ({
   }, []);
 
   // The node closes over the collection it fills, so the two are built together.
+  const building = build !== undefined;
   const { styles, node } = useMemo(() => {
     const collection = runtime.surfaces.html.createStyleCollection(
       composition,
-      { heading: false, theme }
+      { heading: false, theme, enhancements: building ? [SLIDE_BUILDS] : [] }
     );
     return {
       styles: collection,
@@ -53,7 +61,7 @@ export const ShadowSlide = ({
         wrapper: { theme },
       }),
     };
-  }, [composition, theme]);
+  }, [composition, theme, building]);
 
   // Runs after the portal's first render, once `root` exists, and before paint.
   useLayoutEffect(() => {
@@ -61,6 +69,17 @@ export const ShadowSlide = ({
       style.current.textContent = `:host { all: initial; display: block; color-scheme: ${theme}; }\n${styles.css()}`;
     }
   }, [root, styles, theme]);
+
+  useLayoutEffect(() => {
+    if (root) {
+      showSlideBuild(
+        root,
+        composition,
+        build ?? Number.POSITIVE_INFINITY,
+        runtime.primitives
+      );
+    }
+  }, [root, node, composition, build]);
 
   useOverflow(root, styles, onOverflow);
 

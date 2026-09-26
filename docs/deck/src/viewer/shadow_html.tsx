@@ -6,18 +6,27 @@
  */
 
 import { useLayoutEffect, useRef, useState } from 'react';
+import { showSlideBuild } from '@elastic/isomer-primitives-slides';
+import type { Composition } from '@elastic/isomer-sdk';
 
+import { runtime } from '../runtime';
 import type { Theme } from '../surfaces';
 
 import { useOverflow } from './overflow';
 
 /** The html surface's output in a shadow root, per `runtime/docs/embedding.md`. */
 export const ShadowHtml = ({
+  build,
+  composition,
   css,
   html,
   theme,
   onOverflow,
 }: {
+  /** How many of the slide's parts show; `undefined` draws it whole. */
+  build?: number | undefined;
+  /** What `html` was rendered from. */
+  composition: Composition;
   css: string;
   html: string;
   theme: Theme;
@@ -41,6 +50,17 @@ export const ShadowHtml = ({
     root.append(style, body);
     setRoot(root);
   }, [css, html, theme]);
+
+  useLayoutEffect(() => {
+    if (root) {
+      showSlideBuild(
+        root,
+        composition,
+        build ?? Number.POSITIVE_INFINITY,
+        runtime.primitives
+      );
+    }
+  }, [root, html, composition, build]);
 
   useOverflow(root, html, onOverflow);
 

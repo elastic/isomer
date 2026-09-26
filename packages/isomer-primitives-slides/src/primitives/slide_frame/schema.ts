@@ -42,6 +42,12 @@ export const schema = z
         'Number of the section this slide belongs to, shown before `chapter`.'
       )
       .optional(),
+    logo: z
+      .boolean()
+      .describe(
+        'Whether the Isomer mark is drawn beside the footer and on a title slide. Defaults to `true`; set `false` on every slide unless the deck is about Isomer.'
+      )
+      .optional(),
     tone: z
       .enum(slideFrameTones)
       .describe(

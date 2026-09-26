@@ -12,6 +12,7 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { stripMarks } from '../../render/marks';
 
 import { example, examples } from './examples';
 import { markdown, slack, text } from './index';
@@ -41,7 +42,7 @@ describe('slideClosing', () => {
 
   it('holds one to four links and up to five paths', () => {
     const [link] = example.links;
-    const [path] = example.paths;
+    const [path] = example.paths ?? [];
     expect(schema.safeParse({ ...example, links: [] }).success).toBe(false);
     expect(
       schema.safeParse({ ...example, links: Array(5).fill(link) }).success
@@ -59,7 +60,7 @@ describe('slideClosing', () => {
       Docs: example.com/ledger/docs
       Runbook: example.com/ledger/runbook
 
-      - Issue a refund: The refunds guide, then the ledger API
+      - Issue a refund: The refunds guide, then POST /refunds
       - Reconcile a day: The settlement report and its columns
       - Handle a dispute: The chargeback flow and its deadlines
       - Go on call: The runbook and the escalation list"
@@ -71,7 +72,7 @@ describe('slideClosing', () => {
 
       **Runbook** · [example.com/ledger/runbook](https://example.com/ledger/runbook)
 
-      - **Issue a refund**: The refunds guide, then the ledger API
+      - **Issue a refund**: The refunds guide, then \`POST /refunds\`
       - **Reconcile a day**: The settlement report and its columns
       - **Handle a dispute**: The chargeback flow and its deadlines
       - **Go on call**: The runbook and the escalation list"
@@ -96,7 +97,7 @@ describe('slideClosing', () => {
         },
         {
           "text": {
-            "text": "• *Issue a refund*: The refunds guide, then the ledger API
+            "text": "• *Issue a refund*: The refunds guide, then \`POST /refunds\`
       • *Reconcile a day*: The settlement report and its columns
       • *Handle a dispute*: The chargeback flow and its deadlines
       • *Go on call*: The runbook and the escalation list",
@@ -116,15 +117,15 @@ describe('slideClosing', () => {
         runtime.surfaces.text.render(composition),
         runtime.surfaces.markdown.render(composition),
         JSON.stringify(runtime.surfaces.slack.render(composition).blocks),
-      ].map((output) => output.toLowerCase());
+      ].map((output) => output.replace(/[`*]/g, '').toLowerCase());
       const authored = [
         node.title,
         ...node.links.flatMap(({ label, text: shown }) => [label, shown]),
-        ...node.paths.flatMap(({ title, body }) => [title, body]),
+        ...(node.paths ?? []).flatMap(({ title, body }) => [title, body]),
       ];
       for (const value of authored) {
         for (const output of outputs) {
-          expect(output).toContain(value.toLowerCase());
+          expect(output).toContain(stripMarks(value).toLowerCase());
         }
       }
     }

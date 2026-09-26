@@ -44,7 +44,7 @@ export const bulletsModule = createStyleModule('bullets', ({ css }) => ({
   marker: css`
     align-items: center;
     display: flex;
-    flex: none;
+    flex: 0 0 auto;
     height: ${bullets.markerHeight};
     justify-content: center;
     width: ${bullets.markerWidth};

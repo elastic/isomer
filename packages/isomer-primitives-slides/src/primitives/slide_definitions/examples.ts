@@ -13,7 +13,7 @@ export const example: SlideDefinitionsNode = {
   items: [
     {
       term: 'authorization',
-      body: 'The bank holds the funds. Nothing has moved yet.',
+      body: 'The bank holds the funds. **Nothing has moved yet.**',
     },
     {
       term: 'capture',

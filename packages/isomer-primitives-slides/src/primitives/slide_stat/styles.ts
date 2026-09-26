@@ -17,19 +17,19 @@ export const statModule = createStyleModule('stat', ({ css }) => ({
     align-items: baseline;
     border-top: ${stat.rule} solid ${color.border};
     display: flex;
-    flex: none;
+    flex: 0 0 auto;
     gap: ${stat.gap};
     padding-top: ${stat.paddingTop};
   `,
   value: css`
     color: ${color.primary};
-    flex: none;
+    flex: 0 0 auto;
     ${typeRole(stat.value)}
     white-space: nowrap;
   `,
   placeholder: css`
     align-self: center;
-    flex: none;
+    flex: 0 0 auto;
     height: ${stat.placeholderHeight};
     width: ${stat.placeholderWidth};
   `,

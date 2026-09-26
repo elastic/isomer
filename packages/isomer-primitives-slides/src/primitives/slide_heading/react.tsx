@@ -6,9 +6,11 @@
  */
 
 import type { ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
+import { marksReact } from '../../render/marks';
 
 import { headingStep } from './fit';
 import type { SlideHeadingNode } from './schema';
@@ -19,19 +21,25 @@ export const react = (
   node: SlideHeadingNode,
   { context }: SlideReactEnv
 ): ReactNode => {
-  const { title, lede } = node;
+  const { type, title, lede } = node;
   const { handles: heading } = headingModule;
   return (
-    <header className={cls(context, heading.root)}>
+    <header
+      {...nodeAnchor(context, { type })}
+      className={cls(context, heading.root)}>
       <h2
         className={cls(
           context,
           heading.title,
           heading.titleSize[headingStep(node)]
         )}>
-        {title}
+        {marksReact(title, context, 'primary')}
       </h2>
-      {lede ? <p className={cls(context, heading.lede)}>{lede}</p> : null}
+      {lede ? (
+        <p className={cls(context, heading.lede)}>
+          {marksReact(lede, context)}
+        </p>
+      ) : null}
     </header>
   );
 };

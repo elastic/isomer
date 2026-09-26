@@ -6,9 +6,11 @@
  */
 
 import type { ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
+import { marksReact } from '../../render/marks';
 import { labelModule, layoutModule } from '../../theme/modules';
 
 import type { SlideListNode } from './schema';
@@ -16,13 +18,15 @@ import { listModule } from './styles';
 
 /** React renderer for {@link SlideListNode}. */
 export const react = (
-  { label, items, footnote }: SlideListNode,
+  { type, label, items, footnote }: SlideListNode,
   { context }: SlideReactEnv
 ): ReactNode => {
   const { handles: list } = listModule;
   const plain = items.every(({ term }) => term === undefined);
   return (
-    <div className={cls(context, layoutModule.handles.fill)}>
+    <div
+      {...nodeAnchor(context, { type })}
+      className={cls(context, layoutModule.handles.fill)}>
       <div className={cls(context, list.root)}>
         {label ? (
           <div className={cls(context, labelModule.handles.label, list.label)}>
@@ -33,7 +37,7 @@ export const react = (
           <ul className={cls(context, list.plainRows)}>
             {items.map(({ body }, index) => (
               <li className={cls(context, list.plainRow)} key={index}>
-                {body}
+                {marksReact(body, context)}
               </li>
             ))}
           </ul>
@@ -50,14 +54,16 @@ export const react = (
                     list.body,
                     term ? undefined : list.wide
                   )}>
-                  {body}
+                  {marksReact(body, context)}
                 </span>
               </li>
             ))}
           </ul>
         )}
         {footnote ? (
-          <p className={cls(context, list.footnote)}>{footnote}</p>
+          <p className={cls(context, list.footnote)}>
+            {marksReact(footnote, context)}
+          </p>
         ) : null}
       </div>
     </div>

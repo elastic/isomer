@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import {
+  createChildNodeWalker,
   definePrimitive,
   definePrimitivePack,
   type PrimitiveNode,
@@ -125,6 +126,12 @@ const harness: PrimitiveConformanceHarness = {
         aside: conformanceForeignNode,
       } as unknown as PrimitiveNode;
     }
+    if (container.type === 'slideAnnotatedRender') {
+      return {
+        ...container,
+        render: conformanceForeignNode,
+      } as unknown as PrimitiveNode;
+    }
     if (container.type === 'slideStack') {
       return {
         ...container,
@@ -136,7 +143,12 @@ const harness: PrimitiveConformanceHarness = {
       body: [conformanceForeignNode],
     } as unknown as PrimitiveNode;
   },
-  renderHTML: (composition) => runtime.surfaces.html.render(composition),
+  renderHTML: (composition, options) =>
+    runtime.surfaces.html.render(
+      composition,
+      options?.anchors ? { anchors: true } : {}
+    ),
+  anchorWalk: createChildNodeWalker(runtime.primitives),
   assertVarRefsHaveDeclarations: (css) => {
     const missing = varRefs(css).filter(
       (name) => !new RegExp(`${name}\\s*:`).test(css)

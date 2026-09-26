@@ -7,6 +7,7 @@
 
 import { boldSectionLabel } from '@elastic/isomer-sdk/markdown';
 
+import { stripMarks } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import type { SlideBulletMarker } from '../../theme/variants';
 import { definePrimitive } from '../define';
@@ -34,7 +35,9 @@ export const text = ({
 }: SlideBulletListNode): string =>
   [
     label?.toUpperCase(),
-    items.map((item) => `${textMarkers[marker]} ${item}`).join('\n'),
+    items
+      .map((item) => `${textMarkers[marker]} ${stripMarks(item)}`)
+      .join('\n'),
   ]
     .filter(Boolean)
     .join('\n');

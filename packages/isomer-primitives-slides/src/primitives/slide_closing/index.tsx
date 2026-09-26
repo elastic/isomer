@@ -15,6 +15,7 @@ import {
   type SlackBlock,
 } from '@elastic/isomer-sdk/slack';
 
+import { marksSlack, stripMarks } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -41,17 +42,23 @@ const textLink = ({ href, text: shown }: SlideClosingLink): string =>
     : shown;
 
 /** Text renderer for {@link SlideClosingNode}. */
-export const text = ({ title, links, paths }: SlideClosingNode): string =>
+export const text = ({ title, links, paths = [] }: SlideClosingNode): string =>
   [
     title.toUpperCase(),
     links.map((entry) => `${entry.label}: ${textLink(entry)}`).join('\n'),
-    paths.map(({ title: goal, body }) => `- ${goal}: ${body}`).join('\n'),
+    paths
+      .map(({ title: goal, body }) => `- ${goal}: ${stripMarks(body)}`)
+      .join('\n'),
   ]
     .filter(Boolean)
     .join('\n\n');
 
 /** Markdown renderer for {@link SlideClosingNode}. */
-export const markdown = ({ title, links, paths }: SlideClosingNode): string =>
+export const markdown = ({
+  title,
+  links,
+  paths = [],
+}: SlideClosingNode): string =>
   [
     `# ${title}`,
     ...links.map(
@@ -67,7 +74,7 @@ export const markdown = ({ title, links, paths }: SlideClosingNode): string =>
 export const slack = ({
   title,
   links,
-  paths,
+  paths = [],
 }: SlideClosingNode): SlackBlock[] => [
   {
     type: 'header',
@@ -94,7 +101,7 @@ export const slack = ({
             text: paths
               .map(
                 ({ title: goal, body }) =>
-                  `• ${bold(goal)}: ${escapeMrkdwn(body)}`
+                  `• ${bold(goal)}: ${marksSlack(body)}`
               )
               .join('\n'),
           },

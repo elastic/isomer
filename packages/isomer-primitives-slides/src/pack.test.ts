@@ -410,3 +410,12 @@ describe('frames never nest', () => {
     ]);
   });
 });
+
+describe('authoring schema', () => {
+  it('describes every field it describes at all', () => {
+    const { schema } = createIsomerRuntime({
+      packs: [slidesPack],
+    }).getAuthoringContext();
+    expect(JSON.stringify(schema)).not.toContain('"description":""');
+  });
+});

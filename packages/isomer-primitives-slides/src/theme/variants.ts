@@ -5,8 +5,8 @@
  * 2.0.
  */
 
-/** The two hues a slide may use: `primary` is Isomer or the runtime, `pink` is the host. */
-export const slideTones = ['primary', 'pink'] as const;
+/** The theme tones a slide may use: `primary` is yours or in focus, `accent` is the host or another party. */
+export const slideTones = ['primary', 'accent'] as const;
 
 /** One of {@link slideTones}. */
 export type SlideTone = (typeof slideTones)[number];
@@ -24,13 +24,18 @@ export const slideFrameTones = ['page', 'inverse'] as const;
 export type SlideFrameTone = (typeof slideFrameTones)[number];
 
 /** Column widths for {@link SlideSplitNode.ratio}. */
-export const slideSplitRatios = ['even', 'wideLeft', 'narrowLeft'] as const;
+export const slideSplitRatios = [
+  'even',
+  'wideLeft',
+  'narrowLeft',
+  'aside',
+] as const;
 
 /** One of {@link slideSplitRatios}. */
 export type SlideSplitRatio = (typeof slideSplitRatios)[number];
 
 /** What sits between the columns of a {@link SlideSplitNode}. */
-export const slideSplitDividers = ['gap', 'rule', 'arrow'] as const;
+export const slideSplitDividers = ['gap', 'rule', 'hairline', 'arrow'] as const;
 
 /** One of {@link slideSplitDividers}. */
 export type SlideSplitDivider = (typeof slideSplitDividers)[number];
@@ -82,3 +87,27 @@ export const slideRenderSurfaces = [
 
 /** One of {@link slideRenderSurfaces}. */
 export type SlideRenderSurface = (typeof slideRenderSurfaces)[number];
+
+/** Cells of a {@link SlideMatrixNode} row. */
+export const slideMatrixMarks = ['full', 'partial', 'none'] as const;
+
+/** One of {@link slideMatrixMarks}. */
+export type SlideMatrixMark = (typeof slideMatrixMarks)[number];
+
+/** Column counts a {@link SlideMatrixNode} allows, by name; index `n - 2` is `n` columns. */
+export const slideMatrixColumnCounts = [
+  'two',
+  'three',
+  'four',
+  'five',
+  'six',
+] as const;
+
+/** One of {@link slideMatrixColumnCounts}. */
+export type SlideMatrixColumnCount = (typeof slideMatrixColumnCounts)[number];
+
+/** Changes a {@link SlideDiffNode} line can mark. */
+export const slideDiffOps = ['add', 'remove'] as const;
+
+/** One of {@link slideDiffOps}. */
+export type SlideDiffOp = (typeof slideDiffOps)[number];

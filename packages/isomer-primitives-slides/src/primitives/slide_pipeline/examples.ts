@@ -15,7 +15,7 @@ export const example: SlidePipelineNode = {
   steps: [
     {
       title: 'Verify',
-      body: 'Match the order, the amount, and the card on file. A mismatch goes to a person.',
+      body: 'Match the order, the amount, and the card on file. A mismatch goes to **a person**.',
     },
     {
       title: 'Score',
@@ -38,7 +38,7 @@ export const bareStepsExample: SlidePipelineNode = {
   steps: [
     {
       title: 'Branch',
-      body: 'Cut the release branch on Monday morning.',
+      body: 'Cut the `release` branch on Monday morning.',
     },
     {
       title: 'Soak',
@@ -73,7 +73,7 @@ export const spansExample: SlidePipelineNode = {
     {
       from: 3,
       to: 4,
-      tone: 'pink',
+      tone: 'accent',
       label: 'Partners',
       title: 'Settlement is theirs',
       body: 'The network and the bank decide timing; we only see the result.',
@@ -102,7 +102,7 @@ export const threeSpansExample: SlidePipelineNode = {
     {
       from: 2,
       to: 2,
-      tone: 'pink',
+      tone: 'accent',
       label: 'Courier',
       title: 'Batched by postcode',
       body: 'Vans leave every forty minutes.',

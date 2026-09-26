@@ -86,6 +86,7 @@ export const RenderPanel = ({
   const { handles: render } = renderModule;
   const [first] = body;
   const bare = body.length !== 1 || first?.type !== 'slideFrame';
+  const embedded = context?.anchors ? { ...context, anchors: false } : context;
   return (
     <div className={cls(context, render.panel, size)}>
       {isVisual(surface) ? (
@@ -97,7 +98,7 @@ export const RenderPanel = ({
             slideScale
           )}>
           {body.map((node, index) => (
-            <Fragment key={index}>{scope.renderReact(node, context)}</Fragment>
+            <Fragment key={index}>{scope.renderReact(node, embedded)}</Fragment>
           ))}
         </div>
       ) : (

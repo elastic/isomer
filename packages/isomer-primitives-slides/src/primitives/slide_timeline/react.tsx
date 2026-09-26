@@ -6,14 +6,17 @@
  */
 
 import type { ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
+import { marksReact, stripMarks } from '../../render/marks';
 import { timelineFit } from '../../theme/components/timeline';
 import { slideDistillery } from '../../theme/distillery';
 import { labelModule, layoutModule, tonesModule } from '../../theme/modules';
 import { rowLoad, sizeForLoad } from '../size';
 
+import { timelineHeadingHeight } from './fit';
 import type { SlideTimelineNode } from './schema';
 import { timelineModule } from './styles';
 
@@ -21,19 +24,27 @@ const { quoteOpen, quoteClose } = slideDistillery.tokens.timeline;
 
 /** React renderer for {@link SlideTimelineNode}. */
 export const react = (
-  { items, size }: SlideTimelineNode,
+  { type, items, size }: SlideTimelineNode,
   { context }: SlideReactEnv
 ): ReactNode => {
   const { handles: timeline } = timelineModule;
   const step = sizeForLoad(
     size,
-    rowLoad(items.map(({ heading, body }) => [heading, body])),
+    rowLoad(
+      items.map(({ heading, body }) => [stripMarks(heading), stripMarks(body)])
+    ),
     timelineFit,
     context?.crowding
   );
   const { handles: label } = labelModule;
+  const headingHeight = timelineHeadingHeight(
+    items.map(({ heading }) => heading),
+    step
+  );
   return (
-    <div className={cls(context, layoutModule.handles.fill)}>
+    <div
+      {...nodeAnchor(context, { type })}
+      className={cls(context, layoutModule.handles.fill)}>
       <div className={cls(context, timeline.row)}>
         <div aria-hidden className={cls(context, timeline.rail)} />
         <ol className={cls(context, timeline.list)}>
@@ -74,9 +85,10 @@ export const react = (
                       context,
                       timeline.heading,
                       timeline.headingSize[step]
-                    )}>
+                    )}
+                    style={{ minHeight: `${headingHeight}px` }}>
                     {quoteOpen.value}
-                    {heading}
+                    {marksReact(heading, context, 'primary')}
                     {quoteClose.value}
                   </h3>
                   <p
@@ -85,7 +97,7 @@ export const react = (
                       timeline.body,
                       timeline.bodySize[step]
                     )}>
-                    {body}
+                    {marksReact(body, context)}
                   </p>
                 </li>
               );

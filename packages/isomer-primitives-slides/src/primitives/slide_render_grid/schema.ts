@@ -9,6 +9,7 @@ import { unresolvedBodyNodeSchema, z } from '@elastic/isomer-sdk';
 import type { ZodType } from 'zod';
 
 import { slideRenderSurfaces } from '../../theme/variants';
+import { crossRefine, crossSuperRefine } from '../cross_field';
 import {
   embeddedCompositionSchema,
   refineNestedRender,
@@ -47,13 +48,17 @@ export const schemaWith = (bodyNodeSchema: ZodType<unknown>) =>
         ),
     })
     .strict()
-    .refine(
-      ({ tiles }) =>
-        new Set(tiles.map(({ surface }) => surface)).size === tiles.length,
-      { error: 'each surface may appear once', path: ['tiles'] }
+    .check(
+      crossRefine(
+        ({ tiles }) =>
+          new Set(tiles.map(({ surface }) => surface)).size === tiles.length,
+        { error: 'each surface may appear once', path: ['tiles'] }
+      )
     )
-    .superRefine(({ composition }, ctx) =>
-      refineNestedRender(composition, ctx, ['composition'])
+    .check(
+      crossSuperRefine(({ composition }, ctx) =>
+        refineNestedRender(composition, ctx, ['composition'])
+      )
     );
 
 /** Zod schema for {@link SlideRenderGridNode}. */

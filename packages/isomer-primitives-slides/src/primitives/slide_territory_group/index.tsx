@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { stripMarks } from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -16,7 +17,7 @@ export type { SlideTerritory, SlideTerritoryGroupNode } from './schema';
 
 /** Text renderer for {@link SlideTerritoryGroupNode}: `Title: body` per owner. */
 export const text = ({ items }: SlideTerritoryGroupNode): string =>
-  items.map(({ title, body }) => `${title}: ${body}`).join('\n');
+  items.map(({ title, body }) => `${title}: ${stripMarks(body)}`).join('\n');
 
 /** Markdown renderer for {@link SlideTerritoryGroupNode}: a heading per owner. */
 export const markdown = ({ items }: SlideTerritoryGroupNode): string =>

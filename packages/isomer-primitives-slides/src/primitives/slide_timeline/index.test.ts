@@ -10,6 +10,7 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { stripMarks } from '../../render/marks';
 
 import { example, examples } from './examples';
 import { markdown, text } from './index';
@@ -76,7 +77,7 @@ describe('slideTimeline', () => {
     expect(markdown(example)).toMatchInlineSnapshot(`
       "- **2019 · Phone.** “Can I order by calling the store?” Staff took orders by hand and keyed them in after close.
       - **2021 · Web.** “Let me build a basket online.” The site worked, but substitutions still needed a phone call.
-      - **2023 · App.** “Tell me when my driver is close.” Live tracking shipped; the substitution flow stayed on the web.
+      - **2023 · App.** “Tell me when my driver is close.” Live tracking shipped; the substitution flow stayed **on the web**.
       - **2025 · Chat (now).** “Just swap the oat milk if it is out.” Customers now approve substitutions in a message, not a form."
     `);
   });
@@ -88,10 +89,10 @@ describe('slideTimeline', () => {
         runtime.surfaces.text.render(composition),
         runtime.surfaces.markdown.render(composition),
         JSON.stringify(runtime.surfaces.slack.render(composition).blocks),
-      ].map((output) => output.toLowerCase());
+      ].map((output) => output.replace(/[`*]/g, '').toLowerCase());
       for (const value of authored(node)) {
         for (const output of outputs) {
-          expect(output).toContain(value.toLowerCase());
+          expect(output).toContain(stripMarks(value).toLowerCase());
         }
       }
     }

@@ -9,6 +9,7 @@ import type { PrimitiveNode } from '@elastic/isomer-sdk';
 
 import type { SlideContentNode } from '../../body_node';
 import type {
+  SlideSize,
   SlideSplitDivider,
   SlideSplitRatio,
   SlideTone,
@@ -36,4 +37,6 @@ export interface SlideSplitNode extends PrimitiveNode {
   divider?: SlideSplitDivider;
   /** One sentence under both columns. */
   footnote?: string;
+  /** Statement type size. Left out, the split picks the largest that fits. */
+  size?: SlideSize;
 }

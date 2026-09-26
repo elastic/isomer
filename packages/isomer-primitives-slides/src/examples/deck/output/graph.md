@@ -1,6 +1,6 @@
 # Four terms describe checkout
 
-A basket becomes an order once pricing and stock agree.
+A basket becomes an order once **pricing and stock** agree.
 
 - **Catalog:** Every product a store can sell.
 - **Basket:** What a customer means to buy.

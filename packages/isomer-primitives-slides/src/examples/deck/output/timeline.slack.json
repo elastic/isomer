@@ -25,7 +25,7 @@
     "type": "section",
     "text": {
       "type": "mrkdwn",
-      "text": "- *2019 · Phone.* “Can I order by calling the store?” Staff took orders by hand and keyed them in after close.\n- *2021 · Web.* “Let me build a basket online.” The site worked, but substitutions still needed a phone call.\n- *2023 · App.* “Tell me when my driver is close.” Live tracking shipped; the substitution flow stayed on the web.\n- *2025 · Chat (now).* “Just swap the oat milk if it is out.” Customers now approve substitutions in a message, not a form."
+      "text": "- *2019 · Phone.* “Can I order by calling the store?” Staff took orders by hand and keyed them in after close.\n- *2021 · Web.* “Let me build a basket online.” The site worked, but substitutions still needed a phone call.\n- *2023 · App.* “Tell me when my driver is close.” Live tracking shipped; the substitution flow stayed *on the web*.\n- *2025 · Chat (now).* “Just swap the oat milk if it is out.” Customers now approve substitutions in a message, not a form."
     }
   },
   {

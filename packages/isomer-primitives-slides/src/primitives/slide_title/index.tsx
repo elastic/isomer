@@ -6,7 +6,6 @@
  */
 
 import {
-  escapeMrkdwn,
   formatHeaderText,
   italic,
   type SlackBlock,
@@ -14,6 +13,7 @@ import {
 import type { ZodType } from 'zod';
 
 import { renderSlackChildren, slackCaption } from '../../render';
+import { marksSlack, stripMarks } from '../../render/marks';
 import { contentNode, definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -28,8 +28,10 @@ const ownText = ({ eyebrow, title, tagline, definition }: SlideTitleNode) =>
   [
     eyebrow?.toUpperCase(),
     title,
-    tagline,
-    definition ? `${definition.term} ${definition.text}` : undefined,
+    tagline && stripMarks(tagline),
+    definition
+      ? `${definition.term} ${stripMarks(definition.text)}`
+      : undefined,
   ]
     .filter(Boolean)
     .join('\n');
@@ -53,7 +55,7 @@ export const slideTitlePrimitive = definePrimitive<SlideTitleNode>({
   schemaFor: (bodyNodeSchema: ZodType<unknown>) =>
     schema.extend({
       aside: contentNode(bodyNodeSchema)
-        .describe(schema.shape.aside.description ?? '')
+        .describe(schema.shape.aside.unwrap().description ?? '')
         .optional(),
     }),
   renderers: {
@@ -82,7 +84,7 @@ export const slideTitlePrimitive = definePrimitive<SlideTitleNode>({
           ? [
               {
                 type: 'section',
-                text: { type: 'mrkdwn', text: escapeMrkdwn(tagline) },
+                text: { type: 'mrkdwn', text: marksSlack(tagline) },
               } satisfies SlackBlock,
             ]
           : []),
@@ -93,7 +95,7 @@ export const slideTitlePrimitive = definePrimitive<SlideTitleNode>({
                 elements: [
                   {
                     type: 'mrkdwn',
-                    text: `${italic(definition.term)} ${escapeMrkdwn(definition.text)}`,
+                    text: `${italic(definition.term)} ${marksSlack(definition.text)}`,
                   },
                 ],
               } satisfies SlackBlock,

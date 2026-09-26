@@ -12,7 +12,7 @@
 import type { ScaleToken } from '@elastic/distillate';
 import { z } from '@elastic/isomer-sdk';
 
-import { extraboldAdvance } from '../theme/base';
+import { extraboldAdvance, monoAdvance } from '../theme/base';
 import { scalePx } from '../theme/scale';
 import { type SlideSize, slideSizes } from '../theme/variants';
 
@@ -22,14 +22,16 @@ export interface LoadBudget {
   readonly m: number;
 }
 
+// One instance, so the authoring schema names it once rather than repeating it on every primitive.
+const sizeSchema = z
+  .enum(slideSizes)
+  .describe(
+    'Type size: `l`, `m`, or `s`. Leave it out and the slide picks the largest that fits its text; if a render still runs past its body, set the step below the one it drew.'
+  )
+  .optional();
+
 /** The optional `size` field of a length-sensitive primitive. */
-export const sizeField = () =>
-  z
-    .enum(slideSizes)
-    .describe(
-      'Type size: `l`, `m`, or `s`. Leave it out and the slide picks the largest that fits its text; set `s` only when a render still looks crowded.'
-    )
-    .optional();
+export const sizeField = () => sizeSchema;
 
 /** The node's own `size`, else the largest step whose budget holds `load`, scaled by the frame's `crowding`. */
 export const sizeForLoad = (
@@ -69,6 +71,10 @@ export const emWidth = (text: string, tracking: ScaleToken): number =>
     0
   );
 
+/** Width of `text` in ems of Roboto Mono. */
+export const monoWidth = (text: string): number =>
+  [...text].length * monoAdvance;
+
 /** The node's own `size`, else the largest step at which `text`, `ems` wide per pixel of type, fits in `width` pixels. */
 export const sizeForWidth = (
   size: SlideSize | undefined,
@@ -86,3 +92,47 @@ export const longestWord = (text: string): string =>
       (longest, word) => (word.length > longest.length ? word : longest),
       ''
     );
+
+/** Lines a greedy word wrap gives `text` at `fontPx` in a column `width` pixels wide. */
+export const wrappedLines = (
+  text: string,
+  fontPx: number,
+  width: number,
+  tracking: ScaleToken
+): number => {
+  const gap = emWidth(' ', tracking) * fontPx;
+  let lines = 1;
+  let used = 0;
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    const advance = emWidth(word, tracking) * fontPx;
+    if (used > 0 && used + gap + advance > width) {
+      lines += 1;
+      used = advance;
+    } else {
+      used += (used > 0 ? gap : 0) + advance;
+    }
+  }
+  return lines;
+};
+
+/** Glyph estimates run a few percent short over a line of words, so lines are packed into this share of the column. */
+export const lineFill = 0.92;
+
+/** The node's own `size`, else the largest step at which `text` fills at most `maxLines` lines of `width`, no word broken. */
+export const sizeForLines = (
+  size: SlideSize | undefined,
+  text: string,
+  tracking: ScaleToken,
+  width: number,
+  steps: Readonly<Record<SlideSize, ScaleToken>>,
+  maxLines = 2
+): SlideSize =>
+  size ??
+  slideSizes.find((step) => {
+    const fontPx = scalePx(steps[step]);
+    return (
+      emWidth(longestWord(text), tracking) * fontPx <= width &&
+      wrappedLines(text, fontPx, width * lineFill, tracking) <= maxLines
+    );
+  }) ??
+  's';

@@ -23,6 +23,7 @@ export const catalog = {
     'Two routes converge on one step; use slideLanes.',
     'One source feeds many targets; use slideFanout.',
     'The terms have no arrows between them; use slideDefinitions.',
+    'The arrows are messages passed back and forth in time order; use slideSequence.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

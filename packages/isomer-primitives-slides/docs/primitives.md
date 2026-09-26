@@ -47,6 +47,14 @@ Two traps worth naming:
 - **`var(--x, #fallback)` is worse than `#fallback`.** SVG parsers generally do not implement custom properties, and rather than taking the fallback they discard the whole declaration — so the shape ends up black, which is the failure the fallback looked like it was preventing. Write the literal.
 - **The attribute cannot vary by scheme.** There is no stylesheet behind it, so it is one value for both. Treat a mark drawn this way as brand-fixed, the way the logo is, and keep scheme-varying color for everything outside the `<svg>`.
 
+## Data-driven geometry
+
+A length that comes from the node's data rather than the design — a bar's share of its track, a pin's position on a render — is set with an inline `style`. The cap or size it is computed against still lives in the theme (`bars.barMaxShare`, `annotatedRender.pin.size`), so the only literal in the renderer is the data.
+
+## Inline marks
+
+Text fields that accept `` `code` `` and `**strong**` render through `src/render/marks.tsx`: `marksReact` on the React surface, `stripMarks` for text and for fit estimates, `marksSlack` for Slack mrkdwn, and the authored string unchanged for Markdown. Strong is bold ink in regular-weight copy and primary in text that is already bold or display-sized (titles, taglines, statements, quotes, item titles, labels), where extra weight would not show. Say so in the field's `.describe()`, so a model knows the field takes them.
+
 ## Writing a leaf primitive
 
 ```tsx
@@ -73,6 +81,8 @@ Leave both type arguments inferred. Passing `TNode` alone widens the schema and 
 There is no `svg` renderer, and adding one is the mistake this pack exists to rule out. The image surface lays out the `react` tree against the pack's stylesheet, so a second hand-authored tree is a second thing to keep in sync and a second thing to get wrong. [Drawing inside an `svg`](#drawing-inside-an-svg) covers the one place that equivalence stops.
 
 Keep text and markdown inline when they are a few lines; add `text.ts` / `markdown.ts` only when they grow.
+
+Spread `nodeAnchor(context, { type })` from `@elastic/isomer-sdk` on the renderer's root element. It renders nothing unless an enhancement needs to find the node, and the conformance suite checks every primitive has one. Content that is not one of the node's `children`, such as an embedded slide, renders with `anchors: false`. An ordered primitive can also [build](builds.md).
 
 ## Children come from the schema field
 
@@ -138,7 +148,7 @@ A container that also draws chrome of its own sets two more. `hasOwnContent: () 
 - `useWhen` holds two or three author intents, each a situation rather than a shape.
 - Every `avoidWhen` entry names the primitive to use instead, by `type` ("The steps have no order; use slideColumns."). A near neighbor that points back makes the choice between them explicit.
 - `example` uses neutral subject matter. A model copies the example's register, so an example about Isomer produces slides about Isomer.
-- Cross-field constraints a `.refine` enforces are invisible in the JSON Schema; restate them in `src/pack_authoring.ts`.
+- Write a cross-field constraint as `.check(crossRefine(…))` or `.check(crossSuperRefine(…))` from `src/primitives/cross_field.ts`, not a bare `.refine`: Zod skips a bare one once any field fails, so an author would fix one error only to meet the next. It is invisible in the JSON Schema; restate it in `src/pack_authoring.ts`.
 
 ## Previewing a primitive
 

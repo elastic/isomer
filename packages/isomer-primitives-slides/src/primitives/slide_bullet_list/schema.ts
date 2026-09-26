@@ -18,7 +18,9 @@ export const schema = z
       .array(z.string().min(1))
       .min(1)
       .max(6)
-      .describe('Points, top to bottom, one short sentence each. 1 to 6.'),
+      .describe(
+        'Points, top to bottom, one short sentence each. 1 to 6. `code` and `**strong**` marks are allowed.'
+      ),
     label: z
       .string()
       .min(1)

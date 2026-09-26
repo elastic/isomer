@@ -35,7 +35,7 @@ The frame is called `slideDeckFrame` (qualified) to avoid colliding with the `sl
 
 ## Footer chrome
 
-The frame draws one footer line and nothing else: the Isomer mark, `brand`, and the section (`chapterNumber` and `chapter`) on the left, `url` on the right. A slide with no chapter, such as the title slide, shows `brand` alone. `url` is a link on the web surfaces and must be an absolute `http` or `https` address, such as `https://example.com`: a footer has no page to be relative to. One that is not is dropped before render.
+The frame draws one footer line and nothing else: the Isomer mark, `brand`, and the section (`chapterNumber` and `chapter`) on the left, `url` on the right. A slide with no chapter, such as the title slide, shows `brand` alone. `logo: false` leaves the mark out of the footer and out of a `slideTitle` inside the frame, for a deck about something other than Isomer. `url` is a link on the web surfaces and must be an absolute `http` or `https` address, such as `https://example.com`: a footer has no page to be relative to. One that is not is dropped before render.
 
 ## Tone
 

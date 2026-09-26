@@ -28,7 +28,7 @@ export const tightExample: SlideStackNode = {
 export const looseExample: SlideStackNode = {
   type: 'slideStack',
   spacing: 'loose',
-  items: [codeExample, tableExample],
+  items: [transcriptExample, tableExample],
 };
 
 /** Conformance examples for {@link SlideStackNode}. */

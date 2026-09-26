@@ -17,7 +17,12 @@ const definitionSchema = z
       .describe(
         'The word being defined, with its part of speech, e.g. `ledger n.`. Set in italics.'
       ),
-    text: z.string().min(1).describe('The definition, in one sentence.'),
+    text: z
+      .string()
+      .min(1)
+      .describe(
+        'The definition, in one sentence. `code` and `**strong**` marks are allowed.'
+      ),
   })
   .strict();
 
@@ -41,7 +46,9 @@ export const schema = z
     tagline: z
       .string()
       .min(1)
-      .describe('The deck’s promise in one short sentence.')
+      .describe(
+        'The deck’s promise in one short sentence. `code` and `**strong**` marks are allowed.'
+      )
       .optional(),
     definition: definitionSchema
       .describe(
@@ -50,7 +57,7 @@ export const schema = z
       .optional(),
     aside: unresolvedBodyNodeSchema
       .describe(
-        'One node drawn beside the title, e.g. a `slideFanout` of what the subject feeds. Omit to leave the title alone.'
+        'One compact node drawn beside the title in a column under half the slide: a `slideFanout` of what the subject feeds, a `slideStats` of two figures, a short `slideList`, or a `slideRender`. Omit to leave the title alone.'
       )
       .optional(),
     size: sizeField(),

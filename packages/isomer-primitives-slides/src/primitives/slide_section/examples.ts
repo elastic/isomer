@@ -26,7 +26,7 @@ export const linkedExample: SlideSectionNode = {
   title: 'The incident',
   contents: [
     'Checkout failed for 41 minutes',
-    'A certificate expired on one gateway',
+    'A certificate expired on **one** gateway',
     'Alerts fired, but to the wrong rotation',
     'Recovery took one config change',
     'What we changed afterwards',

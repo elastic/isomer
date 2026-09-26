@@ -37,9 +37,9 @@ export const schema = z
     entries: z
       .array(entrySchema)
       .min(1)
-      .max(10)
+      .max(8)
       .describe(
-        'Contents of `root`, in display order. 1 to 10. The branch connectors are drawn for you; do not type them.'
+        'Contents of `root`, in display order. 1 to 8. The branch connectors are drawn for you; do not type them.'
       ),
   })
   .strict();

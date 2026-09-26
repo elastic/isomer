@@ -5,12 +5,9 @@
  * 2.0.
  */
 
-import {
-  escapeMrkdwn,
-  formatHeaderText,
-  type SlackBlock,
-} from '@elastic/isomer-sdk/slack';
+import { formatHeaderText, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
+import { marksSlack, stripMarks } from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -22,7 +19,9 @@ export type { SlideHeadingNode } from './schema';
 
 /** Text renderer for {@link SlideHeadingNode}. */
 export const text = ({ title, lede }: SlideHeadingNode): string =>
-  [title.toUpperCase(), lede].filter(Boolean).join('\n');
+  [stripMarks(title).toUpperCase(), lede ? stripMarks(lede) : undefined]
+    .filter(Boolean)
+    .join('\n');
 
 /** Markdown renderer for {@link SlideHeadingNode}. */
 export const markdown = ({ title, lede }: SlideHeadingNode): string =>
@@ -32,13 +31,17 @@ export const markdown = ({ title, lede }: SlideHeadingNode): string =>
 export const slack = ({ title, lede }: SlideHeadingNode): SlackBlock[] => [
   {
     type: 'header',
-    text: { type: 'plain_text', text: formatHeaderText(title), emoji: true },
+    text: {
+      type: 'plain_text',
+      text: formatHeaderText(stripMarks(title)),
+      emoji: true,
+    },
   },
   ...(lede
     ? [
         {
           type: 'section',
-          text: { type: 'mrkdwn', text: escapeMrkdwn(lede) },
+          text: { type: 'mrkdwn', text: marksSlack(lede) },
         } satisfies SlackBlock,
       ]
     : []),

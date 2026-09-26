@@ -11,6 +11,7 @@ import {
   type SlackBlock,
 } from '@elastic/isomer-sdk/slack';
 
+import { fencedBlock } from '../../render/fence';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -29,34 +30,14 @@ export const text = ({ panels }: SlideCodeNode): string =>
     .map(({ file, lines }) => [...(file ? [file] : []), ...lines].join('\n'))
     .join(`\n\n${traceArrow}\n\n`);
 
-// A fence-info string only allows word-ish tokens; anything else would
-// terminate the fence early or inject markdown.
-const fenceInfoLanguage = (language: string | undefined): string =>
-  language && /^[\w+#.-]+$/.test(language) ? language : 'text';
-
-// The fence must be longer than any backtick run in the body, or the body
-// closes it early.
-const fenceFor = (code: string): string => {
-  const longestRun = Math.max(
-    2,
-    ...(code.match(/`+/g) ?? []).map((run) => run.length)
-  );
-  return '`'.repeat(longestRun + 1);
-};
-
 /** Markdown renderer for {@link SlideCodeNode}: one fenced block per panel. */
 export const markdown = ({ panels }: SlideCodeNode): string =>
   panels
-    .map(({ file, language, lines }) => {
-      const source = lines.join('\n');
-      const fence = fenceFor(source);
-      return [
-        file ? `**${file}**` : '',
-        `${fence}${fenceInfoLanguage(language)}\n${source}\n${fence}`,
-      ]
+    .map(({ file, language, lines }) =>
+      [file ? `**${file}**` : '', fencedBlock(lines.join('\n'), language)]
         .filter(Boolean)
-        .join('\n\n');
-    })
+        .join('\n\n')
+    )
     .join(`\n\n${traceArrow}\n\n`);
 
 /** Slack renderer for {@link SlideCodeNode}: each panel's caption, then its code block. */

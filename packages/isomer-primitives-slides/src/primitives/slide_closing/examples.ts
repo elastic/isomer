@@ -24,7 +24,10 @@ export const example: SlideClosingNode = {
     },
   ],
   paths: [
-    { title: 'Issue a refund', body: 'The refunds guide, then the ledger API' },
+    {
+      title: 'Issue a refund',
+      body: 'The refunds guide, then `POST /refunds`',
+    },
     { title: 'Reconcile a day', body: 'The settlement report and its columns' },
     {
       title: 'Handle a dispute',
@@ -45,7 +48,6 @@ export const linkOnlyExample: SlideClosingNode = {
       text: 'payments@example.com',
     },
   ],
-  paths: [],
 };
 
 /** The most links and paths. */

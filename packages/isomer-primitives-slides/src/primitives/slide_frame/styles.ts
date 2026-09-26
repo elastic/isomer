@@ -37,13 +37,23 @@ export const frameModule = createStyleModule('frame', ({ css }) => ({
     tone === 'inverse'
       ? css`
           ${themeVarName('color/bgPage')}: ${inverse.bg};
+          ${themeVarName('color/bgSurface')}: ${inverse.surface};
+          ${themeVarName('color/bgMuted')}: ${inverse.muted};
+          ${themeVarName('color/bgTableHead')}: ${inverse.tableHead};
+          ${themeVarName('color/codeFill')}: ${inverse.codeFill};
           ${themeVarName('color/text')}: ${inverse.text};
           ${themeVarName('color/textSoft')}: ${inverse.textSoft};
           ${themeVarName('color/textSubtle')}: ${inverse.textSubtle};
           ${themeVarName('color/primary')}: ${inverse.primary};
           ${themeVarName('color/onPrimary')}: ${inverse.onPrimary};
+          ${themeVarName('color/primaryTint')}: ${inverse.primaryTint};
+          ${themeVarName('color/primaryBg')}: ${inverse.primaryBg};
+          ${themeVarName('color/primaryBorder')}: ${inverse.primaryBorder};
+          ${themeVarName('color/accent')}: ${inverse.accent};
           ${themeVarName('color/border')}: ${inverse.rule};
+          ${themeVarName('color/borderDashed')}: ${inverse.ruleDashed};
           ${themeVarName('color/line')}: ${inverse.connector};
+          ${themeVarName('color/placeholderStripe')}: ${inverse.placeholderStripe};
         `
       : undefined
   ),
@@ -84,7 +94,7 @@ export const frameModule = createStyleModule('frame', ({ css }) => ({
   `,
   logo: css`
     display: block;
-    flex: none;
+    flex: 0 0 auto;
     height: ${frame.logoSize};
     width: ${frame.logoSize};
   `,

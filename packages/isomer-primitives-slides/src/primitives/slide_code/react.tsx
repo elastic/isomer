@@ -6,15 +6,15 @@
  */
 
 import type { ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
+import { codeDenseAfter } from '../../theme/components/code';
 import { connectorModule, layoutModule } from '../../theme/modules';
 
 import type { SlideCodeNode, SlideCodePanel } from './schema';
 import { codeModule } from './styles';
-
-const denseAfterLines = 10;
 
 const Panel = ({
   panel: { file, highlight = [], lines },
@@ -52,16 +52,18 @@ const Panel = ({
 
 /** React renderer for {@link SlideCodeNode}. */
 export const react = (
-  { panels }: SlideCodeNode,
+  { type, panels }: SlideCodeNode,
   { context }: SlideReactEnv
 ): ReactNode => {
   const { handles: code } = codeModule;
   const { handles: connector } = connectorModule;
   const [first, second] = panels;
   // One size for both panels, so a trace reads at one scale.
-  const dense = panels.some(({ lines }) => lines.length > denseAfterLines);
+  const dense = panels.some(({ lines }) => lines.length > codeDenseAfter);
   return (
-    <div className={cls(context, layoutModule.handles.fill)}>
+    <div
+      {...nodeAnchor(context, { type })}
+      className={cls(context, layoutModule.handles.fill)}>
       <div
         className={cls(context, code.grid, second ? code.pair : code.single)}>
         {first ? <Panel panel={first} {...{ context, dense }} /> : null}

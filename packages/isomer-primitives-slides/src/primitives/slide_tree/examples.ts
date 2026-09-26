@@ -32,7 +32,7 @@ export const singleExample: SlideTreeNode = {
   ],
 };
 
-/** Ten entries, the most a slide holds. */
+/** Eight entries, the most a slide holds. */
 export const fullExample: SlideTreeNode = {
   type: 'slideTree',
   root: 'release/',
@@ -44,8 +44,6 @@ export const fullExample: SlideTreeNode = {
     { name: 'flags.json', body: 'Features that ship dark' },
     { name: 'smoke/', body: 'Checks that run after each stage' },
     { name: 'dashboards/', body: 'Error rate and latency per region' },
-    { name: 'approvals.md', body: 'Who signs off on what' },
-    { name: 'freeze.md', body: 'Dates when nothing ships' },
     { name: 'README.md', body: 'How to cut a release by hand' },
   ],
 };

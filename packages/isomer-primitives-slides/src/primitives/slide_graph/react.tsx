@@ -6,9 +6,11 @@
  */
 
 import { Fragment, type ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv, SlideRenderContext } from '../../render/context';
+import { marksReact, stripMarks } from '../../render/marks';
 import { graphFit } from '../../theme/components/graph';
 import { connectorModule, layoutModule } from '../../theme/modules';
 import type { SlideSize } from '../../theme/variants';
@@ -62,7 +64,9 @@ const Term = ({
       )}>
       {term}
     </h3>
-    <p className={cls(context, graph.body, graph.bodySize[step])}>{body}</p>
+    <p className={cls(context, graph.body, graph.bodySize[step])}>
+      {marksReact(body, context)}
+    </p>
   </div>
 );
 
@@ -154,7 +158,7 @@ const Caption = ({
         graph.row.above,
         ...placement
       )}>
-      {caption}
+      {marksReact(caption, context)}
     </p>
   );
 };
@@ -164,20 +168,22 @@ export const react = (
   node: SlideGraphNode,
   { context }: SlideReactEnv
 ): ReactNode => {
-  const { caption, size } = node;
+  const { type, caption, size } = node;
   const { main, above, below } = graphLayout(node);
   const rows = [main, above, below].filter((row) => row !== undefined).length;
   const longest = Math.max(
-    ...node.nodes.map(({ term, body }) => term.length + body.length)
+    ...node.nodes.map(({ term, body }) => term.length + stripMarks(body).length)
   );
   const step = sizeForLoad(
     size,
-    rows * longest + (caption?.length ?? 0),
+    rows * longest + (caption ? stripMarks(caption).length : 0),
     graphFit,
     context?.crowding
   );
   return (
-    <div className={cls(context, layoutModule.handles.fill)}>
+    <div
+      {...nodeAnchor(context, { type })}
+      className={cls(context, layoutModule.handles.fill)}>
       <div
         className={cls(
           context,

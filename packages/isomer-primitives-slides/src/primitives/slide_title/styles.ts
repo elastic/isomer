@@ -35,7 +35,7 @@ export const titleModule = createStyleModule('title', ({ css }) => ({
   `,
   logo: css`
     display: block;
-    flex: none;
+    flex: 0 0 auto;
     height: ${title.logoSize};
     margin-bottom: ${title.logoGap};
     width: ${title.logoSize};

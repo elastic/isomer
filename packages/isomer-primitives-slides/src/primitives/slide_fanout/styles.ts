@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { slideDistillery } from '../../theme/distillery';
+import { slideDistillery, toneVar } from '../../theme/distillery';
 import { typeRole } from '../../theme/type_role';
 
 const { createStyleModule, tokens } = slideDistillery;
@@ -24,37 +24,59 @@ export const fanoutModule = createStyleModule('fanout', ({ css }) => ({
     border-radius: ${fanout.sourceRadius};
     color: ${color.text};
     display: flex;
-    flex: none;
+    flex: 0 0 auto;
     ${typeRole(fanout.source)}
     padding: ${fanout.sourcePadding};
     white-space: nowrap;
   `,
   stem: css`
     background: ${color.line};
-    flex: none;
+    flex: 0 0 auto;
     height: ${fanout.line};
     width: ${fanout.stem};
   `,
   targets: css`
-    border-left: ${fanout.line} solid ${color.line};
     display: flex;
     flex-direction: column;
     gap: ${fanout.rowGap};
     list-style: none;
     margin: 0;
     min-width: 0;
-    padding: ${fanout.spinePaddingY} 0;
+    padding: 0;
   `,
   target: css`
-    align-items: center;
+    align-items: flex-start;
     display: flex;
     gap: ${fanout.tickGap};
+    position: relative;
+  `,
+  spine: css`
+    background: ${color.line};
+    left: 0;
+    position: absolute;
+    width: ${fanout.line};
+  `,
+  spineFirst: css`
+    bottom: ${fanout.spineReach};
+    top: ${fanout.tickTop};
+  `,
+  spineMiddle: css`
+    bottom: ${fanout.spineReach};
+    top: 0;
+  `,
+  spineLast: css`
+    height: ${fanout.spineEnd};
+    top: 0;
   `,
   tick: css`
     background: ${color.line};
-    flex: none;
+    flex: 0 0 auto;
     height: ${fanout.line};
+    margin-top: ${fanout.tickTop};
     width: ${fanout.tick};
+  `,
+  tonedTick: css`
+    background: ${toneVar};
   `,
   label: css`
     display: flex;
@@ -66,8 +88,12 @@ export const fanoutModule = createStyleModule('fanout', ({ css }) => ({
     color: ${color.text};
     ${typeRole(fanout.name)}
   `,
+  tonedName: css`
+    color: ${toneVar};
+  `,
   body: css`
     color: ${color.textSubtle};
     ${typeRole(fanout.body)}
+    text-wrap: balance;
   `,
 }));

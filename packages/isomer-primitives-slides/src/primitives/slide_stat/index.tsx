@@ -7,6 +7,7 @@
 
 import { escapeMrkdwn, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
+import { marksSlack, stripMarks } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -24,7 +25,7 @@ const valueText = ({ value, unit }: SlideStatNode): string | undefined =>
 
 /** Text renderer for {@link SlideStatNode}: `value unit — body`, or a pending marker. */
 export const text = (node: SlideStatNode): string =>
-  `${valueText(node) ?? `[${placeholderCaption.value}]`} — ${node.body}`;
+  `${valueText(node) ?? `[${placeholderCaption.value}]`} — ${stripMarks(node.body)}`;
 
 /** Markdown renderer for {@link SlideStatNode}. */
 export const markdown = (node: SlideStatNode): string => {
@@ -40,7 +41,7 @@ export const slack = (node: SlideStatNode): SlackBlock[] => {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `${value ? `*${escapeMrkdwn(value)}*` : `_${placeholderCaption.value}_`} — ${escapeMrkdwn(node.body)}`,
+        text: `${value ? `*${escapeMrkdwn(value)}*` : `_${placeholderCaption.value}_`} — ${marksSlack(node.body)}`,
       },
     },
   ];

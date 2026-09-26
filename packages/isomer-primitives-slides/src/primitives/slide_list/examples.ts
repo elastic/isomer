@@ -31,6 +31,15 @@ export const plainExample: SlideListNode = {
   ],
 };
 
+/** Inline marks in the facts. */
+export const marksExample: SlideListNode = {
+  type: 'slideList',
+  items: [
+    { body: 'Run `migrate` before the first deploy' },
+    { body: 'Prices are **read-only** after checkout starts' },
+  ],
+};
+
 /** Terms on some rows only: a row with no term spans the full width. */
 export const mixedExample: SlideListNode = {
   type: 'slideList',
@@ -44,4 +53,9 @@ export const mixedExample: SlideListNode = {
 };
 
 /** Conformance examples for {@link SlideListNode}. */
-export const examples: SlideListNode[] = [example, plainExample, mixedExample];
+export const examples: SlideListNode[] = [
+  example,
+  plainExample,
+  mixedExample,
+  marksExample,
+];

@@ -22,6 +22,7 @@ export const catalog = {
     'The same composition should appear on several surfaces side by side; use slideRenderGrid.',
     'You are showing where output lands (a chat, a terminal) and will author its content as nodes; use slideWindow.',
     'You are showing the source or JSON, not its output; use slideCode.',
+    'You want to point at parts of the render and explain each one; use slideAnnotatedRender.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

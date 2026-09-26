@@ -11,7 +11,11 @@ import type { SlideLanesNode } from './schema';
 export const example: SlideLanesNode = {
   type: 'slideLanes',
   lanes: [
-    { label: 'Web', steps: ['Basket', 'Address', 'Slot', 'Review'] },
+    {
+      label: 'Web',
+      steps: ['Basket', 'Address', 'Slot', 'Review'],
+      tone: 'primary',
+    },
     { label: 'Phone', steps: ['Call', 'Agent form', 'Read back', 'Confirm'] },
   ],
   join: 'Place order',
@@ -48,7 +52,7 @@ export const fourNotesExample: SlideLanesNode = {
   notes: [
     {
       title: 'Card is instant',
-      body: 'Authorization returns in one round trip.',
+      body: 'Authorization returns in **one round trip**.',
     },
     { title: 'Wallet waits', body: 'The customer leaves the page to approve.' },
     { title: 'Same capture', body: 'Both settle through one capture call.' },

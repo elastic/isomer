@@ -8,6 +8,8 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
+import { slideToneSchema } from '../tone_schema';
+
 const targetSchema = z
   .object({
     name: z
@@ -19,7 +21,14 @@ const targetSchema = z
     body: z
       .string()
       .min(1)
-      .describe('What the target does with the source, in one short line.'),
+      .describe(
+        'What the target does with the source, in one short line: under about 30 characters beside a title, where the column is narrow.'
+      ),
+    tone: slideToneSchema
+      .describe(
+        'The tone of this target: `primary` for your own product, `accent` for the host or another party. Leave it out for a neutral target.'
+      )
+      .optional(),
   })
   .strict();
 

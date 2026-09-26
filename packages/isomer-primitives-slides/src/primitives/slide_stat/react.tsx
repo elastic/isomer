@@ -6,9 +6,11 @@
  */
 
 import type { ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
+import { marksReact } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { placeholderModule } from '../../theme/modules';
 
@@ -19,13 +21,13 @@ const { placeholderCaption } = slideDistillery.tokens.stat;
 
 /** React renderer for {@link SlideStatNode}. */
 export const react = (
-  { value, unit, body }: SlideStatNode,
+  { type, value, unit, body }: SlideStatNode,
   { context }: SlideReactEnv
 ): ReactNode => {
   const { handles: stat } = statModule;
   const { handles: placeholder } = placeholderModule;
   return (
-    <div className={cls(context, stat.root)}>
+    <div {...nodeAnchor(context, { type })} className={cls(context, stat.root)}>
       {value ? (
         <span className={cls(context, stat.value)}>
           {[value, unit].filter(Boolean).join(' ')}
@@ -37,7 +39,7 @@ export const react = (
           </span>
         </div>
       )}
-      <p className={cls(context, stat.body)}>{body}</p>
+      <p className={cls(context, stat.body)}>{marksReact(body, context)}</p>
     </div>
   );
 };

@@ -17,7 +17,12 @@ const itemSchema = z
         'Short name the fact is about, set in monospace in a left column. Omit it for a plain fact; a list with no terms drops its rules and reads as a compact stack.'
       )
       .optional(),
-    body: z.string().min(1).describe('The fact, in one short sentence.'),
+    body: z
+      .string()
+      .min(1)
+      .describe(
+        'The fact, in one short sentence. `code` and `**strong**` marks are allowed.'
+      ),
   })
   .strict();
 
@@ -41,7 +46,9 @@ export const schema = z
     footnote: z
       .string()
       .min(1)
-      .describe('One or two sentences under the list that qualify every row.')
+      .describe(
+        'One or two sentences under the list that qualify every row. `code` and `**strong**` marks are allowed.'
+      )
       .optional(),
   })
   .strict();

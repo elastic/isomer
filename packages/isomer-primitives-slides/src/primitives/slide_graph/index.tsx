@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { stripMarks } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -32,8 +33,10 @@ const relations = ({ nodes, edges }: SlideGraphNode): string[] => {
 /** Text renderer for {@link SlideGraphNode}: the caption, a glossary, then one line per edge. */
 export const text = (node: SlideGraphNode): string =>
   [
-    node.caption,
-    node.nodes.map(({ term, body }) => `${term}: ${body}`).join('\n'),
+    node.caption && stripMarks(node.caption),
+    node.nodes
+      .map(({ term, body }) => `${term}: ${stripMarks(body)}`)
+      .join('\n'),
     relations(node).join('\n'),
   ]
     .filter(Boolean)

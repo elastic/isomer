@@ -6,9 +6,11 @@
  */
 
 import type { ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
+import { marksReact } from '../../render/marks';
 import { labelModule, layoutModule, tonesModule } from '../../theme/modules';
 
 import type { SlideTerritoryGroupNode } from './schema';
@@ -16,18 +18,24 @@ import { territoryModule } from './styles';
 
 /** React renderer for {@link SlideTerritoryGroupNode}. */
 export const react = (
-  { items }: SlideTerritoryGroupNode,
+  { type, items }: SlideTerritoryGroupNode,
   { context }: SlideReactEnv
 ): ReactNode => {
   const { handles: territory } = territoryModule;
   const { handles: label } = labelModule;
   const { handles: tones } = tonesModule;
   return (
-    <div className={cls(context, layoutModule.handles.fill)}>
+    <div
+      {...nodeAnchor(context, { type })}
+      className={cls(context, layoutModule.handles.fill)}>
       <ul className={cls(context, territory.list)}>
-        {items.map(({ title, body, tone = 'primary' }, index) => (
+        {items.map(({ title, body, tone }, index) => (
           <li
-            className={cls(context, territory.item, tones.tone[tone])}
+            className={cls(
+              context,
+              territory.item,
+              tone ? tones.tone[tone] : territory.plain
+            )}
             key={index}>
             <h3
               className={cls(
@@ -38,7 +46,9 @@ export const react = (
               )}>
               {title}
             </h3>
-            <p className={cls(context, territory.body)}>{body}</p>
+            <p className={cls(context, territory.body)}>
+              {marksReact(body, context)}
+            </p>
           </li>
         ))}
       </ul>

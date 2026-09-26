@@ -58,6 +58,7 @@ export const sectionModule = createStyleModule('section', ({ css }) => ({
     display: flex;
     ${typeRole(section.row)}
     padding: ${section.rowPaddingY} 0;
+    text-wrap: balance;
   `,
   link: css`
     color: inherit;

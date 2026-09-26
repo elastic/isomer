@@ -9,24 +9,38 @@
 // When a primitive is added or removed, update this file and `body_node.ts`;
 // `registry.test.ts` fails if the two drift.
 
+import { slideAgendaPrimitive } from './primitives/slide_agenda';
+import { slideAnnotatedRenderPrimitive } from './primitives/slide_annotated_render';
+import { slideBarsPrimitive } from './primitives/slide_bars';
 import { slideBulletListPrimitive } from './primitives/slide_bullet_list';
 import { slideClosingPrimitive } from './primitives/slide_closing';
 import { slideCodePrimitive } from './primitives/slide_code';
 import { slideColumnsPrimitive } from './primitives/slide_columns';
+import { slideCommandPrimitive } from './primitives/slide_command';
 import { slideDefinitionsPrimitive } from './primitives/slide_definitions';
+import { slideDeltaPrimitive } from './primitives/slide_delta';
+import { slideDiffPrimitive } from './primitives/slide_diff';
 import { slideFanoutPrimitive } from './primitives/slide_fanout';
 import { slideFramePrimitive } from './primitives/slide_frame';
 import { slideGraphPrimitive } from './primitives/slide_graph';
 import { slideHeadingPrimitive } from './primitives/slide_heading';
 import { slideLanesPrimitive } from './primitives/slide_lanes';
+import { slideLayersPrimitive } from './primitives/slide_layers';
 import { slideListPrimitive } from './primitives/slide_list';
+import { slideMatrixPrimitive } from './primitives/slide_matrix';
 import { slidePipelinePrimitive } from './primitives/slide_pipeline';
+import { slideQuadrantPrimitive } from './primitives/slide_quadrant';
+import { slideQuotePrimitive } from './primitives/slide_quote';
 import { slideRenderPrimitive } from './primitives/slide_render';
 import { slideRenderGridPrimitive } from './primitives/slide_render_grid';
+import { slideRoadmapPrimitive } from './primitives/slide_roadmap';
 import { slideSectionPrimitive } from './primitives/slide_section';
+import { slideSequencePrimitive } from './primitives/slide_sequence';
+import { slideSourcePrimitive } from './primitives/slide_source';
 import { slideSplitPrimitive } from './primitives/slide_split';
 import { slideStackPrimitive } from './primitives/slide_stack';
 import { slideStatPrimitive } from './primitives/slide_stat';
+import { slideStatementPrimitive } from './primitives/slide_statement';
 import { slideStatsPrimitive } from './primitives/slide_stats';
 import { slideTablePrimitive } from './primitives/slide_table';
 import { slideTerritoryGroupPrimitive } from './primitives/slide_territory_group';
@@ -38,24 +52,38 @@ import { slideWindowPrimitive } from './primitives/slide_window';
 
 /** Every primitive definition this pack registers, in alphabetical order. */
 export const slideDeckPrimitives = [
+  slideAgendaPrimitive,
+  slideAnnotatedRenderPrimitive,
+  slideBarsPrimitive,
   slideBulletListPrimitive,
   slideClosingPrimitive,
   slideCodePrimitive,
   slideColumnsPrimitive,
+  slideCommandPrimitive,
   slideDefinitionsPrimitive,
+  slideDeltaPrimitive,
+  slideDiffPrimitive,
   slideFanoutPrimitive,
   slideFramePrimitive,
   slideGraphPrimitive,
   slideHeadingPrimitive,
   slideLanesPrimitive,
+  slideLayersPrimitive,
   slideListPrimitive,
+  slideMatrixPrimitive,
   slidePipelinePrimitive,
+  slideQuadrantPrimitive,
+  slideQuotePrimitive,
   slideRenderPrimitive,
   slideRenderGridPrimitive,
+  slideRoadmapPrimitive,
   slideSectionPrimitive,
+  slideSequencePrimitive,
+  slideSourcePrimitive,
   slideSplitPrimitive,
   slideStackPrimitive,
   slideStatPrimitive,
+  slideStatementPrimitive,
   slideStatsPrimitive,
   slideTablePrimitive,
   slideTerritoryGroupPrimitive,

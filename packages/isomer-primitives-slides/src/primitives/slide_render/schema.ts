@@ -9,6 +9,7 @@ import { unresolvedBodyNodeSchema, z } from '@elastic/isomer-sdk';
 import type { ZodType } from 'zod';
 
 import { slideRenderSurfaces } from '../../theme/variants';
+import { crossRefine, crossSuperRefine } from '../cross_field';
 
 import { embeddedCompositionSchema, refineNestedRender } from './embedded';
 
@@ -41,16 +42,20 @@ export const schemaWith = (bodyNodeSchema: ZodType<unknown>) =>
         .optional(),
     })
     .strict()
-    .refine(
-      ({ slide, composition }) =>
-        slide !== undefined || composition !== undefined,
-      {
-        error: 'needs a `slide` reference or a `composition`',
-        path: ['composition'],
-      }
+    .check(
+      crossRefine(
+        ({ slide, composition }) =>
+          slide !== undefined || composition !== undefined,
+        {
+          error: 'needs a `slide` reference or a `composition`',
+          path: ['composition'],
+        }
+      )
     )
-    .superRefine(({ composition }, ctx) =>
-      refineNestedRender(composition, ctx, ['composition'])
+    .check(
+      crossSuperRefine(({ composition }, ctx) =>
+        refineNestedRender(composition, ctx, ['composition'])
+      )
     );
 
 /** Zod schema for {@link SlideRenderNode}. */

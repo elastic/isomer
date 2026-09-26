@@ -21,11 +21,16 @@ import { deck } from './deck';
 import { runtime } from './runtime';
 import * as shim from './shim';
 import { slideCount } from './slide_count';
-import { firstAttempt, secondAttempt } from './slides/09_agent';
+import { firstAttempt, secondAttempt } from './slides/14_agent';
+import { addedSinceRedesign } from './slides/27_growth';
 import { themes } from './surfaces';
 
 const frameOf = ({ composition }: (typeof deck)[number]) =>
   composition.body[0] as SlideFrameNode;
+
+/** A quote slide opens with the quotation, which has no heading of its own. */
+const opensWithQuote = (slide: (typeof deck)[number]) =>
+  frameOf(slide).body[0]?.type === 'slideQuote';
 
 const sectionOf = (slide: (typeof deck)[number]) => {
   const [first] = frameOf(slide).body;
@@ -97,7 +102,8 @@ describe('deck', () => {
   });
 
   it('opens every slide with one h1 in Markdown, as the viewer renders it', () => {
-    for (const { composition } of deck) {
+    for (const slide of deck.filter((entry) => !opensWithQuote(entry))) {
+      const { composition } = slide;
       const md = runtime.surfaces.markdown.render(composition, {
         heading: false,
       });
@@ -107,7 +113,8 @@ describe('deck', () => {
   });
 
   it('opens every slide with one Slack header', () => {
-    for (const { composition } of deck) {
+    for (const slide of deck.filter((entry) => !opensWithQuote(entry))) {
+      const { composition } = slide;
       const { blocks } = runtime.surfaces.slack.render(composition, {
         heading: false,
       });
@@ -166,5 +173,11 @@ describe('deck', () => {
   it('replays a real parse failure and a real recovery on the agent slide', () => {
     expect(runtime.parse(firstAttempt).valid).toBe(false);
     expect(runtime.parse(secondAttempt).valid).toBe(true);
+  });
+
+  it('counts only registered primitives as added on the growth slide', () => {
+    const registered = slideDeckPrimitives.map(({ type }) => type);
+    expect(new Set(addedSinceRedesign).size).toBe(addedSinceRedesign.length);
+    expect(registered).toEqual(expect.arrayContaining([...addedSinceRedesign]));
   });
 });

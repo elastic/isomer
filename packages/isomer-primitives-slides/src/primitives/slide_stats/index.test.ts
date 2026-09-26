@@ -10,6 +10,7 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { stripMarks } from '../../render/marks';
 
 import { example, examples, pendingExample } from './examples';
 import { markdown, slack, text } from './index';
@@ -84,7 +85,7 @@ describe('slideStats', () => {
       0 Failed payments: Across two regional failovers in the same week."
     `);
     expect(markdown(example)).toMatchInlineSnapshot(`
-      "- **3** Regions: Checkout now runs active-active in each of them.
+      "- **3** Regions: Checkout now runs **active-active** in each of them.
       - **40 ms** p99 latency: Measured at the edge during the spring sale peak.
       - **0** Failed payments: Across two regional failovers in the same week."
     `);
@@ -95,7 +96,7 @@ describe('slideStats', () => {
             {
               "text": "*3*
       *Regions*
-      Checkout now runs active-active in each of them.",
+      Checkout now runs *active-active* in each of them.",
               "type": "mrkdwn",
             },
             {
@@ -132,10 +133,10 @@ describe('slideStats', () => {
         runtime.surfaces.text.render(composition),
         runtime.surfaces.markdown.render(composition),
         slackText(runtime.surfaces.slack.render(composition).blocks),
-      ].map((output) => output.toLowerCase());
+      ].map((output) => output.replace(/[`*]/g, '').toLowerCase());
       for (const value of authored(node)) {
         for (const output of outputs) {
-          expect(output).toContain(value.toLowerCase());
+          expect(output).toContain(stripMarks(value).toLowerCase());
         }
       }
     }

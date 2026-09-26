@@ -11,7 +11,7 @@
     "type": "section",
     "text": {
       "type": "mrkdwn",
-      "text": "A basket becomes an order once pricing and stock agree.\n\n- *Catalog:* Every product a store can sell.\n- *Basket:* What a customer means to buy.\n- *Order:* A priced basket with a slot.\n- *Delivery:* One van run, many orders.\n- *Pricing:* Offers, fixed at checkout.\n- *Stock:* What the store holds now.\n\nCatalog → Basket, Basket → Order, Order → Delivery, Pricing → Order, Stock → Order"
+      "text": "A basket becomes an order once *pricing and stock* agree.\n\n- *Catalog:* Every product a store can sell.\n- *Basket:* What a customer means to buy.\n- *Order:* A priced basket with a slot.\n- *Delivery:* One van run, many orders.\n- *Pricing:* Offers, fixed at checkout.\n- *Stock:* What the store holds now.\n\nCatalog → Basket, Basket → Order, Order → Delivery, Pricing → Order, Stock → Order"
     }
   },
   {

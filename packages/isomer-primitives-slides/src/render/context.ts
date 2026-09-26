@@ -22,6 +22,8 @@ export interface SlideRenderContext extends StyledRenderContext {
    * load by it; absent means 1.
    */
   crowding?: number;
+  /** `false` when the frame leaves the Isomer mark out, so nothing inside draws it. */
+  logo?: boolean;
 }
 
 /** The types every contract in this pack is written against. */

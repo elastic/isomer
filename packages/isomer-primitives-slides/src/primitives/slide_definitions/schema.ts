@@ -18,7 +18,12 @@ const definitionSchema = z
       .describe(
         'The word or identifier being defined, set in monospace. Keep it to a few words.'
       ),
-    body: z.string().min(1).describe('What the term means, in one sentence.'),
+    body: z
+      .string()
+      .min(1)
+      .describe(
+        'What the term means, in one sentence. `code` and `**strong**` marks are allowed.'
+      ),
   })
   .strict();
 

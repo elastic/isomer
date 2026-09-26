@@ -17,18 +17,18 @@ import { join } from 'node:path';
 
 import { createTakumiImageBackend } from '@elastic/isomer-image-takumi';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
-import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
+import type { Composition } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../pack';
 import { slideDeckPrimitives } from '../registry';
 
 import { deckFonts } from './deck/fonts';
+import { previewSlide } from './preview_slide';
 
 const requested = process.env.SLIDE_PREVIEW?.split(',').filter(Boolean) ?? [];
 const file = process.env.SLIDE_PREVIEW_FILE;
 const out = process.env.SLIDE_PREVIEW_OUT ?? join(tmpdir(), 'slide-preview');
-const inverseTypes = new Set(['slideSection', 'slideTitle', 'slideClosing']);
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -36,32 +36,7 @@ const runtime = createIsomerRuntime({
 });
 const takumi = createTakumiImageBackend({ fonts: deckFonts });
 
-const compose = (node: PrimitiveNode): Composition => ({
-  type: 'view',
-  title: node.type,
-  body: [
-    node.type === 'slideFrame'
-      ? node
-      : ({
-          type: 'slideFrame',
-          brand: 'Isomer',
-          chapter: 'Preview',
-          chapterNumber: '01',
-          url: 'https://elastic.github.io/isomer',
-          tone: inverseTypes.has(node.type) ? 'inverse' : 'page',
-          body: inverseTypes.has(node.type)
-            ? [node]
-            : [
-                {
-                  type: 'slideHeading',
-                  title: `Preview of ${node.type}`,
-                  lede: 'A heading gives the primitive its real place in the frame.',
-                },
-                node,
-              ],
-        } as PrimitiveNode),
-  ],
-});
+const compose = previewSlide;
 
 const write = async (name: string, composition: Composition) => {
   const validation = runtime.validate(composition);

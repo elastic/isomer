@@ -13,18 +13,18 @@ export const example: SlideTerritoryGroupNode = {
   items: [
     {
       title: 'Payments team',
-      body: 'Card capture, fraud checks, and the ledger write.',
+      body: 'Card capture, fraud checks, and **the ledger write**.',
       tone: 'primary',
     },
     {
       title: 'Card network',
       body: 'Authorization, chargebacks, and settlement timing.',
-      tone: 'pink',
+      tone: 'accent',
     },
   ],
 };
 
-/** Four owners, the most a row holds, including one that takes the default tone. */
+/** Four owners, the most a row holds, including a neutral one with no tone. */
 export const fullExample: SlideTerritoryGroupNode = {
   type: 'slideTerritoryGroup',
   items: [
@@ -37,9 +37,13 @@ export const fullExample: SlideTerritoryGroupNode = {
     {
       title: 'Couriers',
       body: 'The drive and proof of delivery.',
-      tone: 'pink',
+      tone: 'accent',
     },
-    { title: 'Stores', body: 'Stock counts and substitutions.', tone: 'pink' },
+    {
+      title: 'Stores',
+      body: 'Stock counts and substitutions.',
+      tone: 'accent',
+    },
   ],
 };
 

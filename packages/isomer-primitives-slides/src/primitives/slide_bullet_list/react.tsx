@@ -6,9 +6,11 @@
  */
 
 import type { ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv, SlideRenderContext } from '../../render/context';
+import { marksReact } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { labelModule, layoutModule } from '../../theme/modules';
 import type { SlideBulletMarker } from '../../theme/variants';
@@ -44,12 +46,14 @@ const Marker = ({
 
 /** React renderer for {@link SlideBulletListNode}. */
 export const react = (
-  { items, label, marker = 'dot' }: SlideBulletListNode,
+  { type, items, label, marker = 'dot' }: SlideBulletListNode,
   { context }: SlideReactEnv
 ): ReactNode => {
   const { handles: bullets } = bulletsModule;
   return (
-    <div className={cls(context, layoutModule.handles.fill)}>
+    <div
+      {...nodeAnchor(context, { type })}
+      className={cls(context, layoutModule.handles.fill)}>
       <div className={cls(context, bullets.root)}>
         {label ? (
           <div
@@ -61,7 +65,9 @@ export const react = (
           {items.map((item, index) => (
             <li className={cls(context, bullets.item)} key={index}>
               <Marker {...{ marker, context }} />
-              <span className={cls(context, bullets.text)}>{item}</span>
+              <span className={cls(context, bullets.text)}>
+                {marksReact(item, context)}
+              </span>
             </li>
           ))}
         </ul>

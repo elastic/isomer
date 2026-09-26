@@ -23,7 +23,7 @@ const linkSchema = z
       .string()
       .min(1)
       .describe(
-        'The link as the audience reads it, usually the address without its scheme.'
+        'The link as the audience reads it: `href` without its scheme, e.g. `example.com/docs` for `https://example.com/docs`, so someone can type what they see. Keep it under about 28 characters: it is set large, and a longer one wraps.'
       ),
   })
   .strict();
@@ -42,7 +42,9 @@ const pathSchema = z
     body: z
       .string()
       .min(1)
-      .describe('What to read or do first for that goal, in one line.'),
+      .describe(
+        'What to read or do first for that goal, in one line. `code` and `**strong**` marks are allowed.'
+      ),
   })
   .strict();
 
@@ -66,10 +68,12 @@ export const schema = z
       ),
     paths: z
       .array(pathSchema)
+      .min(1)
       .max(5)
       .describe(
-        'Next steps by goal, listed beside the links. 0–5 paths; empty leaves the title and links alone.'
-      ),
+        'Next steps by goal, listed beside the links. 1–5 paths; leave it out to set the title and links alone.'
+      )
+      .optional(),
     size: sizeField(),
   })
   .strict();

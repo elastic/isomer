@@ -18,6 +18,8 @@ export const color = {
   bgSurface: lightDark('#FFFFFF', '#0E1A2E'),
   bgMuted: lightDark('#F2F1EC', '#14233A'),
   bgTableHead: lightDark('#F4F5F8', '#15253D'),
+  /** Behind inline code, which images draw without its border. */
+  codeFill: lightDark('#ECEAE3', '#1A2B47'),
   text: lightDark('#1A1C21', '#F3F7FC'),
   textSoft: lightDark('#475467', '#B7C4D7'),
   textSubtle: lightDark('#6A717D', '#8697AD'),
@@ -30,21 +32,34 @@ export const color = {
   primaryTint: lightDark('#DCEBFF', '#163A6B'),
   primaryBg: lightDark('#EEF6FF', '#102A4C'),
   primaryBorder: lightDark('#C9DDF8', '#1F4A80'),
-  accentPink: lightDark('#BC1E70', '#FF6BB0'),
+  accent: lightDark('#BC1E70', '#FF6BB0'),
   placeholderStripe: lightDark('#EEECE5', '#0C1728'),
 } as const;
 
-/** What an inverse frame (title, section, closing) swaps into {@link color}. */
+/**
+ * What an inverse frame (title, section, closing) swaps into {@link color}, one per key.
+ * Light is the dark page palette; dark lifts each value as far as `bg` lifts the dark page.
+ */
 export const inverse = {
   bg: lightDark('#07101F', '#12213A'),
+  surface: lightDark('#0E1A2E', '#1A2B47'),
+  muted: lightDark('#14233A', '#203352'),
+  tableHead: lightDark('#15253D', '#213555'),
+  codeFill: lightDark('#1A2B47', '#26395A'),
   text: lightDark('#F3F7FC', '#F3F7FC'),
   textSoft: lightDark('#B7C4D7', '#C3CFE0'),
   textSubtle: lightDark('#8697AD', '#93A3B8'),
   primary: lightDark('#63A7FF', '#7DB6FF'),
   /** Text on an inverse `primary` fill; white on the lighter blue fails contrast. */
   onPrimary: lightDark('#07101F', '#07101F'),
+  primaryTint: lightDark('#163A6B', '#1F4A80'),
+  primaryBg: lightDark('#102A4C', '#18355D'),
+  primaryBorder: lightDark('#1F4A80', '#2A5A96'),
+  accent: lightDark('#FF6BB0', '#FF7DBA'),
   rule: lightDark('#25364F', '#2E4263'),
+  ruleDashed: lightDark('#3A4D6A', '#475D80'),
   connector: lightDark('#3A4D6A', '#475D80'),
+  placeholderStripe: lightDark('#0C1728', '#172842'),
 } as const;
 
 /** Spacing, keyed by pixel value on the fixed 1920×1080 canvas. */
@@ -104,6 +119,9 @@ export const extraboldAdvance = {
 /** Average Inter Regular glyph width in ems, for estimating how many lines running text takes. */
 export const regularAdvance = 0.5;
 
+/** Roboto Mono glyph width in ems, for sizing a line of code that must not wrap. */
+export const monoAdvance = 0.6;
+
 export const font = {
   family: {
     sans: literal('Inter, system-ui, sans-serif'),
@@ -118,6 +136,7 @@ export const font = {
     px32: px(32),
     px34: px(34),
     px36: px(36),
+    px38: px(38),
     px40: px(40),
     px44: px(44),
     px48: px(48),

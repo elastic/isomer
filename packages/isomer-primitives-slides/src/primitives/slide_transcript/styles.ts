@@ -61,7 +61,7 @@ export const transcriptModule = createStyleModule('transcript', ({ css }) => ({
     const fg = {
       user: color.primary,
       model: color.textSubtle,
-      host: color.accentPink,
+      host: color.accent,
     }[role];
     return css`
       color: ${fg};

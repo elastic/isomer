@@ -39,7 +39,7 @@
     "type": "section",
     "text": {
       "type": "mrkdwn",
-      "text": "Because the line is fixed, a merchant can change prices without a payments release."
+      "text": "Because the line is fixed, a merchant can change prices *without a payments release*."
     }
   },
   {

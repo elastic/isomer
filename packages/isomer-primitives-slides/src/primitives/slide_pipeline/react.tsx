@@ -6,9 +6,11 @@
  */
 
 import { Fragment, type ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv, SlideRenderContext } from '../../render/context';
+import { marksReact, stripMarks } from '../../render/marks';
 import { pipelineFit } from '../../theme/components/pipeline';
 import { layoutModule, tonesModule } from '../../theme/modules';
 import type { SlideSize } from '../../theme/variants';
@@ -34,30 +36,55 @@ const StepsMode = ({
   context: SlideRenderContext | undefined;
 }) => (
   <div className={cls(context, pipeline.steps)}>
-    <div aria-hidden className={cls(context, pipeline.rail)} />
     {start ? (
-      <span className={cls(context, pipeline.terminal)}>{start}</span>
+      <>
+        <span className={cls(context, pipeline.terminal)}>{start}</span>
+        <span aria-hidden className={cls(context, pipeline.stub)} />
+      </>
     ) : null}
-    <ol className={cls(context, pipeline.list)}>
-      {steps.map(({ title, body }, index) => (
-        <li key={index} className={cls(context, pipeline.step)}>
-          <span aria-hidden className={cls(context, pipeline.numeral)}>
-            {index + 1}
-          </span>
-          <h3
-            className={cls(context, pipeline.title, pipeline.titleSize[step])}>
-            {title}
-          </h3>
-          {body ? (
-            <p className={cls(context, pipeline.body, pipeline.bodySize[step])}>
-              {body}
-            </p>
-          ) : null}
-        </li>
-      ))}
-    </ol>
+    <div className={cls(context, pipeline.track)}>
+      <div
+        aria-hidden
+        className={cls(
+          context,
+          pipeline.rail,
+          start ? undefined : pipeline.railFromFirst[pipelineKey(steps.length)],
+          end ? undefined : pipeline.railToLast[pipelineKey(steps.length)]
+        )}
+      />
+      <ol className={cls(context, pipeline.list)}>
+        {steps.map(({ title, body }, index) => (
+          <li key={index} className={cls(context, pipeline.step)}>
+            <span aria-hidden className={cls(context, pipeline.numeral)}>
+              {index + 1}
+            </span>
+            <h3
+              className={cls(
+                context,
+                pipeline.title,
+                pipeline.titleSize[step]
+              )}>
+              {title}
+            </h3>
+            {body ? (
+              <p
+                className={cls(
+                  context,
+                  pipeline.body,
+                  pipeline.bodySize[step]
+                )}>
+                {marksReact(body, context)}
+              </p>
+            ) : null}
+          </li>
+        ))}
+      </ol>
+    </div>
     {end ? (
-      <span className={cls(context, pipeline.terminal)}>{end}</span>
+      <>
+        <span aria-hidden className={cls(context, pipeline.stub)} />
+        <span className={cls(context, pipeline.terminal)}>{end}</span>
+      </>
     ) : null}
   </div>
 );
@@ -121,7 +148,9 @@ const SpansMode = ({
                 {label}
               </span>
               <h3 className={cls(context, pipeline.captionTitle)}>{title}</h3>
-              <p className={cls(context, pipeline.captionBody)}>{body}</p>
+              <p className={cls(context, pipeline.captionBody)}>
+                {marksReact(body, context)}
+              </p>
             </div>
           </Fragment>
         );
@@ -132,17 +161,21 @@ const SpansMode = ({
 
 /** React renderer for {@link SlidePipelineNode}. */
 export const react = (
-  { start, end, steps, spans, size }: SlidePipelineNode,
+  { type, start, end, steps, spans, size }: SlidePipelineNode,
   { context }: SlideReactEnv
 ): ReactNode => (
-  <div className={cls(context, layoutModule.handles.fill)}>
+  <div
+    {...nodeAnchor(context, { type })}
+    className={cls(context, layoutModule.handles.fill)}>
     {spans?.length ? (
       <SpansMode {...{ steps, spans, context }} />
     ) : (
       <StepsMode
         step={sizeForLoad(
           size,
-          rowLoad(steps.map(({ title, body }) => [title, body])),
+          rowLoad(
+            steps.map(({ title, body }) => [title, body && stripMarks(body)])
+          ),
           pipelineFit,
           context?.crowding
         )}

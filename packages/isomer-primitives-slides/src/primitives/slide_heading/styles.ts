@@ -18,7 +18,7 @@ const { color, heading } = tokens;
 export const headingModule = createStyleModule('heading', ({ css }) => ({
   root: css`
     display: flex;
-    flex: none;
+    flex: 0 0 auto;
     flex-direction: column;
     gap: ${heading.ledeGap};
   `,

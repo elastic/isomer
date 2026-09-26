@@ -22,6 +22,7 @@ export const catalog = {
     'The slide makes a claim of its own; use slideHeading in a page frame.',
     'The slide opens the whole deck; use slideTitle.',
     'The slide ends the deck; use slideClosing.',
+    'The audience should see where this part sits among every section of the talk; use slideAgenda.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

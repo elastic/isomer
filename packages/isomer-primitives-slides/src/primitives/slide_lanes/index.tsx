@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { stripMarks } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -27,7 +28,11 @@ export const text = ({ lanes, join, notes = [] }: SlideLanesNode): string =>
       .map(({ label, steps }) => `${label}: ${path(steps, join)}`)
       .join('\n'),
     ...(notes.length > 0
-      ? [notes.map(({ title, body }) => `${title}: ${body}`).join('\n')]
+      ? [
+          notes
+            .map(({ title, body }) => `${title}: ${stripMarks(body)}`)
+            .join('\n'),
+        ]
       : []),
   ].join('\n\n');
 

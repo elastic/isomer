@@ -23,6 +23,7 @@ export const catalog = {
     'Two processes run side by side and meet; use slideLanes.',
     'The items have no order and no dates; use slideColumns.',
     'The items are dated rows with several attributes to compare; use slideTable.',
+    'The points are plans ahead, grouped by horizon rather than dated events; use slideRoadmap.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

@@ -5,13 +5,9 @@
  * 2.0.
  */
 
-import {
-  bold,
-  escapeMrkdwn,
-  italic,
-  type SlackBlock,
-} from '@elastic/isomer-sdk/slack';
+import { bold, italic, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
+import { marksSlack, stripMarks } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -32,7 +28,7 @@ export const text = ({ items }: SlideStatsNode): string =>
   items
     .map(
       (item) =>
-        `${valueText(item) ?? `[${placeholderCaption.value}]`} ${item.label}: ${item.body}`
+        `${valueText(item) ?? `[${placeholderCaption.value}]`} ${item.label}: ${stripMarks(item.body)}`
     )
     .join('\n');
 
@@ -56,7 +52,7 @@ export const slack = ({ items }: SlideStatsNode): SlackBlock[] => [
         text: [
           value ? bold(value) : italic(placeholderCaption.value),
           bold(item.label),
-          escapeMrkdwn(item.body),
+          marksSlack(item.body),
         ].join('\n'),
       };
     }),

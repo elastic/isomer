@@ -16,7 +16,7 @@ export const renderModule = createStyleModule('render', ({ css }) => ({
   root: css`
     align-self: center;
     display: flex;
-    flex: none;
+    flex: 0 0 auto;
     flex-direction: column;
     gap: ${render.captionGap};
     margin: 0;
@@ -33,7 +33,7 @@ export const renderModule = createStyleModule('render', ({ css }) => ({
   fit: css`
     aspect-ratio: ${render.panel.aspect};
     box-sizing: border-box;
-    flex: none;
+    flex: 0 0 auto;
     width: 100%;
   `,
   panel: css`

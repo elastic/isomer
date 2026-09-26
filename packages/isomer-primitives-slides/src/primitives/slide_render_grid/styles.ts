@@ -46,7 +46,7 @@ export const renderGridModule = createStyleModule('renderGrid', ({ css }) => ({
   `,
   name: css`
     color: ${color.text};
-    flex: none;
+    flex: 0 0 auto;
     ${typeRole(renderGrid.name)}
   `,
   caption: css`

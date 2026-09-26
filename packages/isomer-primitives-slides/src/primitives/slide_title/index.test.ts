@@ -10,6 +10,7 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { stripMarks } from '../../render/marks';
 
 import { example, examples } from './examples';
 import type { SlideTitleNode } from './types';
@@ -35,7 +36,7 @@ const authored = (value: unknown): string[] => {
   }
   if (value && typeof value === 'object') {
     return Object.entries(value).flatMap(([key, entry]) =>
-      key === 'type' ? [] : authored(entry)
+      key === 'type' || key === 'tone' ? [] : authored(entry)
     );
   }
   return [];
@@ -152,12 +153,39 @@ describe('slideTitle', () => {
         runtime.surfaces.text.render(composition),
         runtime.surfaces.markdown.render(composition),
         JSON.stringify(runtime.surfaces.slack.render(composition).blocks),
-      ].map((output) => output.toLowerCase());
+      ].map((output) => output.replace(/[`*]/g, '').toLowerCase());
       for (const value of authored(node)) {
         for (const output of outputs) {
-          expect(output).toContain(value.toLowerCase());
+          expect(output).toContain(stripMarks(value).toLowerCase());
         }
       }
     }
   );
+});
+
+describe('slideTitle logo', () => {
+  const marks = (logo?: boolean): number =>
+    runtime.surfaces.html
+      .render({
+        type: 'view',
+        body: [
+          {
+            type: 'slideFrame',
+            tone: 'inverse',
+            chapter: 'Opening',
+            chapterNumber: '01',
+            ...(logo === undefined ? {} : { logo }),
+            body: [example],
+          } as PrimitiveNode,
+        ],
+      })
+      .html.split('viewBox="0 0 32 32"').length - 1;
+
+  it('draws the mark on the title and beside the footer by default', () => {
+    expect(marks()).toBe(2);
+  });
+
+  it('leaves both out when its frame sets `logo: false`', () => {
+    expect(marks(false)).toBe(0);
+  });
 });

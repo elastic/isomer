@@ -22,6 +22,7 @@ export const catalog = {
     'The content is not tied to an app; show it directly with slideCode, slideTable, or slideTranscript.',
     'The window would hold another window; put the two side by side with slideSplit.',
     'You want a real render of a slide on a surface; use slideRender.',
+    'A terminal would only hold one command for the audience to run, not its output; use slideCommand.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

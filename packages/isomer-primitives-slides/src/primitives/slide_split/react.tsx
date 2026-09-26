@@ -6,25 +6,33 @@
  */
 
 import { Fragment, type ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
+import { marksReact } from '../../render/marks';
+import { splitFit } from '../../theme/components/split';
 import {
   connectorModule,
   layoutModule,
   tonesModule,
 } from '../../theme/modules';
+import type { SlideSize } from '../../theme/variants';
+import { sizeForLoad } from '../size';
 
+import { splitLoad } from './fit';
 import { splitBlocks } from './items';
 import { splitModule } from './styles';
 import type { SlideSplitNode, SlideSplitSide } from './types';
 
 const Side = ({
   side,
+  step,
   context,
   scope,
 }: {
   side: SlideSplitSide;
+  step: SlideSize;
   context: SlideReactEnv['context'];
   scope: SlideReactEnv['scope'];
 }): ReactNode => {
@@ -54,8 +62,14 @@ const Side = ({
               className={cls(context, split.statements)}
               key={block.statements[0]?.index}>
               {block.statements.map(({ text, index }) => (
-                <li className={cls(context, split.statement)} key={index}>
-                  {text}
+                <li
+                  className={cls(
+                    context,
+                    split.statement,
+                    split.statementSize[step]
+                  )}
+                  key={index}>
+                  {marksReact(text, context, 'primary')}
                 </li>
               ))}
             </ul>
@@ -68,13 +82,29 @@ const Side = ({
 
 /** React renderer for {@link SlideSplitNode}. */
 export const react = (
-  { divider = 'gap', footnote, left, ratio = 'even', right }: SlideSplitNode,
+  {
+    divider = 'gap',
+    footnote,
+    left,
+    ratio = 'even',
+    right,
+    size,
+    type,
+  }: SlideSplitNode,
   { context, scope }: SlideReactEnv
 ): ReactNode => {
   const { handles: split } = splitModule;
+  const step = sizeForLoad(
+    size,
+    splitLoad({ left, right, ratio }),
+    splitFit,
+    context?.crowding
+  );
   const { handles: connector } = connectorModule;
   return (
-    <div className={cls(context, layoutModule.handles.fill)}>
+    <div
+      {...nodeAnchor(context, { type })}
+      className={cls(context, layoutModule.handles.fill)}>
       <div
         className={cls(
           context,
@@ -82,9 +112,11 @@ export const react = (
           split.ratio[ratio],
           split.divider[divider]
         )}>
-        <Side side={left} {...{ context, scope }} />
+        <Side side={left} {...{ step, context, scope }} />
         {divider === 'rule' ? (
           <div aria-hidden className={cls(context, split.rule)} />
+        ) : divider === 'hairline' ? (
+          <div aria-hidden className={cls(context, split.hairline)} />
         ) : divider === 'arrow' ? (
           <div
             aria-hidden
@@ -100,10 +132,12 @@ export const react = (
         ) : (
           <div aria-hidden />
         )}
-        <Side side={right} {...{ context, scope }} />
+        <Side side={right} {...{ step, context, scope }} />
       </div>
       {footnote ? (
-        <p className={cls(context, split.footnote)}>{footnote}</p>
+        <p className={cls(context, split.footnote)}>
+          {marksReact(footnote, context)}
+        </p>
       ) : null}
     </div>
   );

@@ -18,6 +18,7 @@ export const catalog = {
     'You compare approaches, tiers, or strategies, each with a name, a few tags, and a sentence.',
     'Each option owns a set of short identifiers worth showing as chips.',
     'One qualifying remark applies to every option; put it in `footnote`.',
+    'One option is the recommendation: set `highlight` to its column.',
   ],
   avoidWhen: [
     'The columns are numbers to compare; use slideStats.',
@@ -25,6 +26,7 @@ export const catalog = {
     'The items are short facts in a single list; use slideList.',
     'Every option shares the same attributes to compare cell by cell; use slideTable.',
     'There are exactly two sides, one per owner; use slideSplit.',
+    'The columns are stages of planned work, such as now, next, and later; use slideRoadmap.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

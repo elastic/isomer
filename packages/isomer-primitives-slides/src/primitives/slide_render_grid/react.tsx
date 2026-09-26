@@ -6,6 +6,7 @@
  */
 
 import type { ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
@@ -26,13 +27,15 @@ const shapeFor = (count: number): RenderGridShape =>
 
 /** React renderer for {@link SlideRenderGridNode}. */
 export const react = (
-  { composition, tiles }: SlideRenderGridNode,
+  { type, composition, tiles }: SlideRenderGridNode,
   { context, scope }: SlideReactEnv
 ): ReactNode => {
   const { handles: grid } = renderGridModule;
   const shape = shapeFor(tiles.length);
   return (
-    <div className={cls(context, grid.root, grid.shape[shape])}>
+    <div
+      {...nodeAnchor(context, { type })}
+      className={cls(context, grid.root, grid.shape[shape])}>
       {tiles.map(({ surface, caption }) => (
         <figure className={cls(context, grid.cell)} key={surface}>
           <figcaption className={cls(context, grid.head)}>

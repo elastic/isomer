@@ -6,6 +6,7 @@
  */
 
 import { Fragment, type ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
@@ -20,10 +21,13 @@ export const react = (
   node: SlideWindowNode,
   { context, scope }: SlideReactEnv
 ): ReactNode => {
+  const { body, chrome, type } = node;
   const { handles: window } = windowModule;
-  const slack = node.chrome === 'slack';
+  const slack = chrome === 'slack';
   return (
-    <div className={cls(context, layoutModule.handles.fill)}>
+    <div
+      {...nodeAnchor(context, { type })}
+      className={cls(context, layoutModule.handles.fill)}>
       <div className={cls(context, window.panel)}>
         <div
           className={cls(
@@ -39,7 +43,7 @@ export const react = (
             window.body,
             slack ? window.slackBody : window.appBody
           )}>
-          {node.body.map((child, index) => (
+          {body.map((child, index) => (
             <Fragment key={index}>{scope.renderReact(child, context)}</Fragment>
           ))}
         </div>
