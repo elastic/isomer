@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
@@ -15,11 +15,42 @@ import { slideDistillery } from '../../theme/distillery';
 import { labelModule } from '../../theme/modules';
 import { monoWidth, sizeForWidth } from '../size';
 
-import { SLIDE_COPY } from './copy';
+import { COPY_BUTTON_ATTRIBUTE, SLIDE_COPY } from './copy';
 import type { SlideCommandNode } from './schema';
 import { commandModule } from './styles';
 
 const { copy, prompt, textSizes } = slideDistillery.tokens.command;
+
+/**
+ * Hidden until something can copy: its own click handler in a live React
+ * render, or the {@link SLIDE_COPY} script in static HTML.
+ */
+const CopyButton = ({
+  className,
+  command,
+  label,
+}: {
+  className: string;
+  command: string;
+  label: string;
+}) => {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    setReady(navigator.clipboard !== undefined);
+  }, []);
+  return (
+    <button
+      {...{ [COPY_BUTTON_ATTRIBUTE]: '' }}
+      className={className}
+      hidden={!ready}
+      onClick={() => {
+        void navigator.clipboard.writeText(command);
+      }}
+      type="button">
+      {label}
+    </button>
+  );
+};
 
 /** React renderer for {@link SlideCommandNode}. */
 export const react = (
@@ -54,14 +85,11 @@ export const react = (
           {command.slice(highlightPrefix.length)}
         </code>
         {copyable ? (
-          <button
+          <CopyButton
             className={cls(context, styles.copy)}
-            onClick={() => {
-              void navigator.clipboard?.writeText(command);
-            }}
-            type="button">
-            {copy.label.value}
-          </button>
+            command={command}
+            label={copy.label.value}
+          />
         ) : null}
       </div>
     </div>

@@ -80,5 +80,9 @@ export const commandModule = createStyleModule('command', ({ css }) => ({
     line-height: inherit;
     margin: 0;
     padding: ${copy.paddingY} ${copy.paddingX};
+
+    &[hidden] {
+      display: none;
+    }
   `,
 }));
