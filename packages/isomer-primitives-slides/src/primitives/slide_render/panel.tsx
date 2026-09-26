@@ -7,7 +7,7 @@
 
 import { Fragment, type ReactNode } from 'react';
 import type { StyleHandle } from '@elastic/distillate';
-import type { PrimitiveNode } from '@elastic/isomer-sdk';
+import { type PrimitiveNode, withoutAnchors } from '@elastic/isomer-sdk';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
 import { renderChildren, renderSlackChildren } from '../../render/children';
@@ -86,7 +86,7 @@ export const RenderPanel = ({
   const { handles: render } = renderModule;
   const [first] = body;
   const bare = body.length !== 1 || first?.type !== 'slideFrame';
-  const embedded = context?.anchors ? { ...context, anchors: false } : context;
+  const embedded = withoutAnchors(context);
   return (
     <div className={cls(context, render.panel, size)}>
       {isVisual(surface) ? (

@@ -97,6 +97,8 @@ export {
   definePrimitivePack,
   describeCapabilities,
   extendPrimitivePack,
+  runEnhancementScript,
+  scopeScript,
   themeBound,
 } from '../pack';
 export {
@@ -105,6 +107,7 @@ export {
   type PrimitiveDispatcher,
   type PrimitiveDispatcherOptions,
   NODE_ANCHOR_ATTRIBUTE,
+  anchorValue,
   byteLength,
   createPrimitiveDispatcher,
   findNodeElements,
@@ -113,6 +116,7 @@ export {
   isStructuredValue,
   nodeAnchor,
   rawDisplayValue,
+  withoutAnchors,
 } from '../render';
 export {
   type AuthoringJsonSchemaOptions,

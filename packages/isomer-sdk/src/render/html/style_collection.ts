@@ -13,11 +13,7 @@ import type {
   StyledRenderContext,
 } from '../../define/primitive_module';
 
-import {
-  type EnhancementDefinition,
-  rendersAnchors,
-  resolveEnhancements,
-} from './enhancements';
+import { type EnhancementDefinition, rendersAnchors } from './enhancements';
 import type {
   HTMLEnhancementScope,
   HTMLRenderDispatcher,
@@ -48,18 +44,14 @@ export interface HTMLStyleCollectionOptions<
   enhancementDefinitions?: readonly EnhancementDefinition[];
 }
 
-/** `context` with node anchors on when `options` ask for them or a resolved enhancement declares them. */
-export const withAnchors = <TContext>(
+/** `context` with node anchors on when `options` ask for them or a resolved enhancement declares them, for a render outside the html surface. */
+const anchoredContext = <TContext>(
   context: TContext,
   { body }: Composition,
   options: HTMLRenderOptions,
   { walk, definitions }: HTMLEnhancementScope
 ): TContext =>
-  rendersAnchors(
-    resolveEnhancements(body, options.enhancements, walk, definitions),
-    definitions,
-    options.anchors
-  )
+  rendersAnchors(body, options, walk, definitions)
     ? { ...context, anchors: true }
     : context;
 
@@ -96,12 +88,7 @@ export const startStyleCollection = <
   );
   return {
     collector,
-    context: withAnchors(
-      styleAdapter.createRenderContext(collector, options),
-      composition,
-      options,
-      scope
-    ),
+    context: styleAdapter.createRenderContext(collector, options),
     css: () => {
       styleAdapter.collectAfterRender?.(composition, collector, options);
       return styleAdapter.renderStyles(collector, options);
@@ -134,14 +121,15 @@ export const createHTMLStyleCollection = <
     ...settings,
     options: resolved,
   });
-  // No adapter means no class names and no css vars to resolve.
-  return started
-    ? { context: started.context, css: started.css }
-    : {
-        context: withAnchors({} as TContext, composition, resolved, {
-          walk: createChildNodeWalker(dispatcher.definitions),
-          definitions: enhancementDefinitions,
-        }),
-        css: () => '',
-      };
+  const context = anchoredContext(
+    // No adapter means no class names and no css vars to resolve.
+    started ? started.context : ({} as TContext),
+    composition,
+    resolved,
+    {
+      walk: createChildNodeWalker(dispatcher.definitions),
+      definitions: enhancementDefinitions,
+    }
+  );
+  return { context, css: started ? started.css : () => '' };
 };

@@ -36,9 +36,5 @@ export const slideCopyEnhancement: EnhancementDefinition = {
   id: SLIDE_COPY,
   appliesTo: (body, walk) => someBodyNode(body, 'react', isCommand, walk),
   anchors: true,
-  script: `(() => {
-const root = document.currentScript && document.currentScript.parentElement;
-if (!root) return;
-${copyScriptBody}
-})();`,
+  script: copyScriptBody,
 };

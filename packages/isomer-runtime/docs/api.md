@@ -59,7 +59,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | --- | --- |
 | `ReactRenderOptions` | `context`, `heading`, `wrapper: boolean \| CompositionWrapperOptions`; `ReactRenderArgs` is the tuple form, optional only when `context` is |
 | `ReactRenderNodeOptions` | `ReactRenderOptions` without `heading` |
-| `HTMLRenderOptions` | `theme`, `minify`, `fluid`, `framed`, `heading`, `css: 'inline' \| 'separate'`, `enhancements: string[]`, `onValidationError` |
+| `HTMLRenderOptions` | `theme`, `minify`, `fluid`, `framed`, `heading`, `css: 'inline' \| 'separate'`, `scripts: 'embedded' \| 'host'`, `enhancements: string[]`, `anchors: boolean` (node anchors; `true` for tests), `onValidationError` |
 | `TextRenderOptions` | `onValidationError` |
 | `MarkdownRenderOptions` | `onValidationError` |
 | `SlackRenderOptions` | `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
@@ -72,7 +72,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 
 | Type | Shape |
 | --- | --- |
-| `HTMLRenderResult` | `{ html, css, body, measurement, validationErrors }` |
+| `HTMLRenderResult` | `{ html, css, js, body, measurement, validationErrors }` |
 | `SlackRenderResult` | `{ text, blocks, assets }` |
 | `ValidationResult` | `{ valid, errors, warnings }` — each error is `{ path, message }` |
 | `ParsedComposition` | `{ valid, errors, composition? }` |

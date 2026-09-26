@@ -5,7 +5,13 @@
  * 2.0.
  */
 
-export { NODE_ANCHOR_ATTRIBUTE, findNodeElements, nodeAnchor } from './anchors';
+export {
+  NODE_ANCHOR_ATTRIBUTE,
+  anchorValue,
+  findNodeElements,
+  nodeAnchor,
+  withoutAnchors,
+} from './anchors';
 export {
   type FormatDisplayValueOptions,
   formatDisplayValue,

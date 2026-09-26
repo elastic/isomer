@@ -127,7 +127,7 @@ describe('slideCopy', () => {
     );
     expect(html).toContain('<button');
     expect(html).toContain(anchor);
-    expect(html).toContain('<script>');
+    expect(html).toContain('<script data-isomer-script');
     expect(measurement.js).toBeGreaterThan(0);
   });
 

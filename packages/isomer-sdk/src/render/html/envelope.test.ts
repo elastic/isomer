@@ -6,7 +6,7 @@
  */
 
 import { createElement } from 'react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
 import type { Composition } from '../../composition/composition';
@@ -78,6 +78,9 @@ const adapter: HTMLStyleAdapter<RawNode, Collector, PrimitiveRenderContext> = {
   getScriptText: () => 'adapter()',
 };
 
+const embeddedScriptOf = (html: string): string =>
+  /<script[^>]*>([\s\S]*)<\/script>/.exec(html)?.[1] ?? '';
+
 const render = (
   composition: Composition<RawNode>,
   options: HTMLRenderOptions = {},
@@ -123,7 +126,7 @@ describe('renderHTMLWithDispatcher', () => {
   it('accounts for html, css, and js bytes in the measurement', () => {
     const inline = render(view('<p>x</p>'), {}, { styleAdapter: adapter });
     const css = byteLength(inline.css);
-    const js = byteLength('adapter()');
+    const js = byteLength(embeddedScriptOf(inline.html));
     expect(inline.measurement).toEqual({
       html: byteLength(inline.html) - css - js,
       css,
@@ -133,24 +136,71 @@ describe('renderHTMLWithDispatcher', () => {
 
     const separate = render(
       view('<p>x</p>'),
-      { css: 'separate' },
+      { css: 'separate', scripts: 'host' },
       { styleAdapter: adapter }
     );
-    expect(separate.measurement.html).toBe(byteLength(separate.html) - js);
-    expect(separate.measurement.total).toBe(
-      byteLength(separate.html) + byteLength(separate.css)
-    );
+    expect(separate.measurement).toEqual({
+      html: byteLength(separate.html),
+      css,
+      js: byteLength(separate.js),
+      total:
+        byteLength(separate.html) +
+        byteLength(separate.css) +
+        byteLength(separate.js),
+    });
   });
 
-  it('joins the caller script ahead of the adapter script in one script element', () => {
-    const { html } = render(
+  it('embeds one script that binds root to the section, scoping each part', () => {
+    const { html, js } = render(
       view('<p>x</p>'),
       {},
       { styleAdapter: adapter, scriptText: 'host()' }
     );
-    expect(html.match(/<script>/g)).toHaveLength(1);
-    expect(html).toContain('<script>host()\nadapter()</script>');
-    expect(render(view('<p>x</p>')).html).not.toContain('<script>');
+    expect(html.match(/<script/g)).toHaveLength(1);
+    expect(html).toMatch(/<\/div><script data-isomer-script="">/);
+    expect(js).toBe('(() => {\nhost()\n})();\n(() => {\nadapter()\n})();');
+
+    const script = embeddedScriptOf(html);
+    expect(script.match(/document\.currentScript/g)).toHaveLength(2);
+    expect(script.match(/function \(root\)/g)).toHaveLength(1);
+    expect(script).toContain(js);
+    expect(render(view('<p>x</p>')).html).not.toContain('<script');
+  });
+
+  it('runs the embedded script against its parent and warns when it has none', () => {
+    const { html } = render(
+      view('<p>x</p>'),
+      {},
+      { scriptText: 'root.ran = true;' }
+    );
+    // eslint-disable-next-line @typescript-eslint/no-implied-eval -- runs the emitted script as a browser would.
+    const run = new Function('document', embeddedScriptOf(html)) as (
+      document: unknown
+    ) => void;
+    const section: { ran?: boolean } = {};
+    run({ currentScript: { parentElement: section } });
+    expect(section.ran).toBe(true);
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      run({ currentScript: null });
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining("scripts: 'host'")
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('returns the script as js and emits no script element for a host-run render', () => {
+    const { html, js } = render(
+      view('<p>x</p>'),
+      { scripts: 'host' },
+      { styleAdapter: adapter }
+    );
+    expect(html).not.toContain('<script');
+    expect(js).toBe('(() => {\nadapter()\n})();');
+    expect(render(view('<p>x</p>'), { scripts: 'host' }).js).toBe('');
   });
 
   it('collects validation errors by default and throws on demand', () => {

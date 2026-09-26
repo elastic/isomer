@@ -43,8 +43,10 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | `childNodePath` | Joins a parent path with a child's own fragment |
 | `someBodyNode` | Predicate over a body, following children |
 | `isVisibleOnSurface`, `rendersOnSurface` | Surface-visibility checks |
-| `nodeAnchor`, `NODE_ANCHOR_ATTRIBUTE` | Props a `react` renderer spreads on its root so its element can be found; empty unless `context.anchors` is set |
-| `findNodeElements` | Pairs a body's nodes with their anchored elements under a DOM root. Anchors serve enhancements and host code that must find a node's element; a host that only renders sets nothing and the render is unchanged |
+| `nodeAnchor`, `NODE_ANCHOR_ATTRIBUTE` | Props a `react` renderer spreads on its root so its element can be found; empty unless the HTML surface, or outside it `context.anchors`, turns anchors on |
+| `withoutAnchors` | A context under which nothing renders an anchor, for content that is not one of a node's `children` |
+| `findNodeElements` | Pairs a body's nodes with their anchored elements under a DOM root |
+| `anchorValue` | A node type as its anchor carries it, escaped so HTML parsing leaves it unchanged |
 | `BODY_NODE_SURFACES` | `['react','svg','text','markdown','slack']` |
 
 ## Root entry — composition and validation
@@ -73,13 +75,15 @@ Types: `ValidationError`, `ValidationResult`, `ValidationWarning`, `ValidationEr
 
 `displayValueSchema`, `structuredValueSchema`, `namedColorSchema`, `renderThemeSchema`, `formatDisplayValue` (with `FormatDisplayValueOptions`), `isStructuredValue`, `rawDisplayValue`, `STRUCTURED_VALUE_FORMATS`, `ALL_NAMED_COLORS`, `ISOMER_ERROR_CODES`, plus `formatCompactNumber` and `byteLength` (which measures into a `PayloadMeasurement`).
 
+`runEnhancementScript` takes a `scripts: 'host'` render's `js` and the `.isomer` section the host inserted, and runs the one against the other. `scopeScript` wraps one script body in its own function, for anything that joins bodies, such as a runtime combining several packs' `getScriptText`. Both live here rather than on `./html` because neither needs the server renderer. See [Enhancements](rendering.md#enhancements).
+
 Value types: `DisplayValue`, `StructuredValue`, `StructuredValueFormat`, `NamedColor`, `NamedColorPalette`, `RenderTheme` (`'light' | 'dark' | 'auto'`).
 
 Zod helpers so a pack states constraints the same way everywhere: `z`, `enumOf`, `requiredString`, `optionalString`, `finiteNumber`, `nonNegativeFiniteNumber`, `positiveFiniteNumber`.
 
 ## `./html`
 
-`renderHTMLWithDispatcher`, `renderCompositionContent`, `useReactPrimitiveDispatcher`, `createDistillateHtmlStyleAdapter`, and the types a style adapter is written against: `HTMLStyleAdapter`, `DistillateHtmlEngine`, `DistillateThemeVar`, `HTMLRenderOptions`, `HTMLRenderResult`, `HTMLRenderDispatcher`, `HTMLDispatcherRenderOptions`, `HTMLEnhancementScope`, `EnhancementDefinition`, `ReactContentDispatcher`, `ReactContentOptions`. `createHTMLStyleCollection` (with `HTMLStyleCollectionOptions`) returns an `HTMLStyleCollection`, `{ context, css() }`: the same CSS `renderHTMLWithDispatcher` emits, collected from a React render the caller does with `context`, so a host that renders React itself never renders twice for its CSS. `HTMLRenderOptions.enhancements` is a list of enhancement ids; `resolveEnhancements` intersects it with what the body contains and `enhancementScript` concatenates the survivors' scripts, and `rendersAnchors` says whether a render carries node anchors. `HTMLRenderOptions.anchors` turns anchors on without an enhancement asking, for hosts and tests that find nodes in the output. `DISTILLATE_STYLE_COLLECTOR` is the `styleCollector` tag the Distillate adapter publishes, and `flattenSchemeOption` reduces a Distillate light/dark scheme option to one value.
+`renderHTMLWithDispatcher`, `renderCompositionContent`, `useReactPrimitiveDispatcher`, `createDistillateHtmlStyleAdapter`, and the types a style adapter is written against: `HTMLStyleAdapter`, `DistillateHtmlEngine`, `DistillateThemeVar`, `HTMLRenderOptions`, `HTMLRenderResult`, `HTMLRenderDispatcher`, `HTMLDispatcherRenderOptions`, `HTMLEnhancementScope`, `EnhancementDefinition`, `ReactContentDispatcher`, `ReactContentOptions`. `createHTMLStyleCollection` (with `HTMLStyleCollectionOptions`) returns an `HTMLStyleCollection`, `{ context, css() }`: the same CSS `renderHTMLWithDispatcher` emits, collected from a React render the caller does with `context`, so a host that renders React itself never renders twice for its CSS. `HTMLRenderOptions.enhancements` is a list of enhancement ids; `resolveEnhancements` intersects it with what the body contains and `enhancementScript` concatenates the survivors' scripts, each in its own function scope, and `rendersAnchors` says whether a render carries node anchors. `HTMLRenderOptions.anchors` turns anchors on directly, for tests. `DISTILLATE_STYLE_COLLECTOR` is the `styleCollector` tag the Distillate adapter publishes, and `flattenSchemeOption` reduces a Distillate light/dark scheme option to one value.
 
 ## `./react`
 
@@ -123,12 +127,13 @@ A pack supplies a `PrimitiveConformanceHarness` closing over its own dispatcher,
 | `renderTextComposition`, `renderMarkdownComposition` | yes | Whole-composition envelopes, title included |
 | `renderSlackComposition` | yes | A `PrimitiveConformanceSlackResult` led by a `plain_text` header block |
 | `renderSvg`, `estimateSvgHeight` | no | Skipped when absent; `sizesFromNodeHeights: false` also skips the height case |
-| `renderHTML` | no | Honors `PrimitiveConformanceHtmlOptions` (`css`, `names`); skipped when absent |
+| `renderHTML` | no | Honors `PrimitiveConformanceHtmlOptions` (`css`, `names`, `anchors`); skipped when absent |
+| `anchorWalk` | no | The child walker over every definition rendered with; set it once every `react` renderer spreads `nodeAnchor`, to turn on the anchor case |
 | `assertVarRefsHaveDeclarations` | no | Throws for a `var(--x)` with no declaration; skipped when it or `renderHTML` is absent |
 | `renderSVGComposition` | no | Resolves to a `PrimitiveConformanceSvgResult` with complete `<svg>` markup; skipped when absent |
 | `nestForeignChild` | no | Returns the container with a child from a pack it does not own; skipped when absent |
 
-The cases, one per example: the node validates alone and inside a composition; `react`, `text`, `markdown`, and `slack` render non-empty output; style collection does not throw; a container recurses through `scope` for a foreign child (its text and markdown must contain `CONFORMANCE_FOREIGN_MARKER`); `svg` dispatch does not throw and the height estimate is positive and finite; `renderHTML` wraps the body in a `<section>` with no validation errors and no script bytes; every `var(--x)` the CSS references is declared; every readable class in the markup has a selector in the CSS; the text and markdown envelopes carry the fixture title; the Slack envelope leads with a header block; and the SVG composition renders complete markup.
+The cases, one per example: the node validates alone and inside a composition; `react`, `text`, `markdown`, and `slack` render non-empty output; style collection does not throw; a container recurses through `scope` for a foreign child (its text and markdown must contain `CONFORMANCE_FOREIGN_MARKER`); `svg` dispatch does not throw and the height estimate is positive and finite; `renderHTML` wraps the body in a `<section>` with no validation errors and no script bytes; it renders no node anchors unless asked, and, with `anchorWalk` set, one anchor per node when asked; every `var(--x)` the CSS references is declared; every readable class in the markup has a selector in the CSS; the text and markdown envelopes carry the fixture title; the Slack envelope leads with a header block; and the SVG composition renders complete markup.
 
 ## Where the code is
 

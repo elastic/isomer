@@ -24,11 +24,16 @@ import type {
   StyleHandle,
 } from '../../define/primitive_module';
 import {
+  EMBEDDED_SCRIPT_ATTRIBUTE,
+  scopeScript,
+} from '../../pack/enhancements';
+import {
   createCompositionValidator,
   enforceValidationMode,
   type ValidationErrorMode,
   type ValidationResult,
 } from '../../validate/validation';
+import { withAnchors } from '../anchors';
 import { byteLength, type PayloadMeasurement } from '../payload';
 import {
   type ReactContentDispatcher,
@@ -36,8 +41,12 @@ import {
   wrapCompositionContent,
 } from '../react/content';
 
-import type { EnhancementDefinition } from './enhancements';
-import { startStyleCollection, withAnchors } from './style_collection';
+import {
+  embedScript,
+  type EnhancementDefinition,
+  rendersAnchors,
+} from './enhancements';
+import { startStyleCollection } from './style_collection';
 
 /** Knobs for the HTML surface. Every field defaults, so `{}` is valid. */
 export interface HTMLRenderOptions {
@@ -57,11 +66,21 @@ export interface HTMLRenderOptions {
   heading?: boolean;
   /** Whether the collected CSS is inlined as a `<style>` element. Defaults to `'inline'`. */
   css?: 'inline' | 'separate';
+  /**
+   * Who runs the enhancement script. Defaults to `'embedded'`: `html` carries
+   * a `<script>` that finds its own `.isomer` section when the page parses it.
+   *
+   * `'embedded'` never runs inside a shadow root, or anywhere the host inserts
+   * `html` itself (`innerHTML`, a React tree). Use `'host'` there: `html`
+   * carries no `<script>`, and the host calls `runEnhancementScript(js,
+   * section)` after inserting it.
+   */
+  scripts?: 'embedded' | 'host';
   /** Defaults to collecting into {@link HTMLRenderResult.validationErrors}; `'throw'` raises instead. */
   onValidationError?: ValidationErrorMode;
   /** Opt-in by {@link EnhancementDefinition.id}. One whose content gate does not match the body is dropped. */
   enhancements?: readonly string[];
-  /** Renders node anchors without an enhancement asking, for hosts and tests that find nodes in the output with `findNodeElements`. */
+  /** `true` renders node anchors whether or not an enhancement asks for them, e.g. for tests. `false` cannot turn off anchors an enhancement needs. */
   anchors?: boolean;
   /** Opaque to the sdk; forwarded to {@link HTMLStyleAdapter} with the rest of the options. */
   adapterOptions?: Record<string, unknown>;
@@ -70,14 +89,20 @@ export interface HTMLRenderOptions {
 /**
  * One rendered HTML payload.
  *
- * `body` is the primitive markup alone; `html` adds the wrapper element and, on
- * the default `css: 'inline'`, a `<style>`. `css` is populated either way.
+ * `body` is the primitive markup alone; `html` adds the wrapper element, on
+ * the default `css: 'inline'` a `<style>`, and on the default
+ * `scripts: 'embedded'` a `<script>`. `css` and `js` are populated either way.
  * `validationErrors` are the messages that survived
  * {@link HTMLRenderOptions.onValidationError}.
  */
 export interface HTMLRenderResult {
   html: string;
   css: string;
+  /**
+   * The enhancement script as a function body over `root`, or `''`. Runs only
+   * through `runEnhancementScript`, never as a `<script>` of its own.
+   */
+  js: string;
   body: string;
   measurement: PayloadMeasurement;
   validationErrors: ValidationError[];
@@ -167,8 +192,9 @@ export interface HTMLStyleAdapter<
   /**
    * Builds the render context handed to every `react` renderer. Called once
    * per pass, so an adapter that behaves differently while collecting returns
-   * a different context then. Must be complete: the sdk does not fill fields
-   * in, because `TContext` is the pack's own type.
+   * a different context then. Must be complete, because `TContext` is the
+   * pack's own type. The sdk never writes to it: whether renderers anchor
+   * is the surface's decision, whatever the context's `anchors` says.
    */
   createRenderContext(
     collector: TCollector,
@@ -185,7 +211,11 @@ export interface HTMLStyleAdapter<
    * cannot be combined with another.
    */
   ownsHandle?(handle: StyleHandle): boolean;
-  /** Appended after {@link HTMLDispatcherRenderOptions.scriptText} into the single emitted `<script>`. */
+  /**
+   * Appended after {@link HTMLDispatcherRenderOptions.scriptText} into the
+   * render's one script. A function body with `root` in scope, under the same
+   * rules as {@link EnhancementDefinition.script}.
+   */
   getScriptText?(
     composition: Composition<TNode>,
     options: HTMLRenderOptions,
@@ -206,7 +236,11 @@ export interface HTMLDispatcherRenderOptions<
   /** Used only when the composition has neither `meta.ariaLabel` nor a `title`. Defaults to `'View'`. */
   defaultAriaLabel?: string;
   styleAdapter?: HTMLStyleAdapter<TNode, TCollector, TContext>;
-  /** Emitted unescaped in the rendered `<script>`, ahead of {@link HTMLStyleAdapter.getScriptText}. */
+  /**
+   * Emitted unescaped ahead of {@link HTMLStyleAdapter.getScriptText}. A
+   * function body with `root` in scope, under the same rules as
+   * {@link EnhancementDefinition.script}.
+   */
   scriptText?: string;
   /**
    * Progressive enhancements declared by the packs this render was composed
@@ -250,6 +284,7 @@ export const renderHTMLWithDispatcher = <
   const heading = options.heading ?? true;
   const theme = options.theme ?? composition.theme ?? 'auto';
   const cssMode = options.css ?? 'inline';
+  const scriptsMode = options.scripts ?? 'embedded';
   const collection = startStyleCollection(composition, {
     dispatcher,
     styleAdapter,
@@ -260,37 +295,51 @@ export const renderHTMLWithDispatcher = <
     walk: createChildNodeWalker(dispatcher.definitions),
     definitions: enhancementDefinitions,
   };
+  const anchors = rendersAnchors(
+    composition.body,
+    options,
+    enhancementScope.walk,
+    enhancementDefinitions
+  );
 
   if (collection) {
-    renderToStaticMarkup(
-      createElement(() =>
-        renderCompositionContent(composition, dispatcher, collection.context, {
-          heading,
-        })
+    withAnchors(anchors, () =>
+      renderToStaticMarkup(
+        createElement(() =>
+          renderCompositionContent(
+            composition,
+            dispatcher,
+            collection.context,
+            {
+              heading,
+            }
+          )
+        )
       )
     );
   }
 
   const cssText = collection ? collection.css() : '';
-  const renderContext: TContext = withAnchors(
+  const renderContext: TContext =
     collection && styleAdapter
       ? styleAdapter.createRenderContext(collection.collector, options)
       : // No adapter means no class names and no css vars to resolve.
-        ({} as TContext),
-    composition,
-    options,
-    enhancementScope
-  );
+        ({} as TContext);
   const adapterScriptText =
     styleAdapter?.getScriptText?.(composition, options, enhancementScope) ?? '';
-  const resolvedScriptText = [scriptText, adapterScriptText]
+  const js = [scriptText, adapterScriptText]
     .filter(Boolean)
+    .map(scopeScript)
     .join('\n');
-  const body = renderToStaticMarkup(
-    createElement(() =>
-      renderCompositionContent(composition, dispatcher, renderContext, {
-        heading,
-      })
+  const embeddedScript =
+    js && scriptsMode === 'embedded' ? embedScript(js) : '';
+  const body = withAnchors(anchors, () =>
+    renderToStaticMarkup(
+      createElement(() =>
+        renderCompositionContent(composition, dispatcher, renderContext, {
+          heading,
+        })
+      )
     )
   );
   const raw = renderToStaticMarkup(
@@ -300,26 +349,31 @@ export const renderHTMLWithDispatcher = <
       fluid: Boolean(options.fluid),
       framed,
       styleText: cssMode === 'inline' ? cssText : undefined,
-      scriptText: resolvedScriptText || undefined,
+      scriptText: embeddedScript || undefined,
       defaultAriaLabel,
       body,
     })
   );
   const html = options.minify === false ? raw : minifyHtml(raw);
 
+  const jsBytes = byteLength(embeddedScript || js);
+
   return {
     html,
     css: cssText,
+    js,
     body,
     measurement: {
       html:
         byteLength(html) -
         (cssMode === 'inline' ? byteLength(cssText) : 0) -
-        byteLength(resolvedScriptText),
+        (embeddedScript ? jsBytes : 0),
       css: byteLength(cssText),
-      js: byteLength(resolvedScriptText),
+      js: jsBytes,
       total:
-        byteLength(html) + (cssMode === 'inline' ? 0 : byteLength(cssText)),
+        byteLength(html) +
+        (cssMode === 'inline' ? 0 : byteLength(cssText)) +
+        (embeddedScript ? 0 : jsBytes),
     },
     validationErrors: validation.errors,
   };
@@ -363,6 +417,7 @@ const RenderedHtmlView = <TNode extends PrimitiveNode>({
       scriptText
         ? createElement('script', {
             key: 'script',
+            [EMBEDDED_SCRIPT_ATTRIBUTE]: '',
             dangerouslySetInnerHTML: { __html: scriptText },
           })
         : null

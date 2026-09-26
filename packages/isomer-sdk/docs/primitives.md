@@ -102,6 +102,8 @@ children: (node) =>
 
 Returning bare nodes would leave every caller guessing the field name, and error paths would name a field that does not resolve. `hasOwnContent` exists for the hybrid case: a container that also owns string fields keeps rendering when every nested node is hidden from a surface, which a walker looking only at `children` would report as rendering nothing.
 
+Return them in the order the `react` renderer draws them. Node anchors pair nodes with elements by that order, so a container that draws its children in a different order pairs them with the wrong elements.
+
 Every renderer recurses through `scope`, never a switch over the pack's own types. That is what lets a node from a second pack nest inside this one's container:
 
 ```tsx
