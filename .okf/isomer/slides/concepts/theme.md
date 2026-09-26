@@ -17,7 +17,7 @@ sources:
 
 # Definition
 
-The pack binds one theme: scales in `src/theme/base.ts`, one component group per primitive in `src/theme/components/`, assembled into `SLIDE_THEME`. Palette values agree with Distillate tokens. Selection is light-dark, not a second authored tree; an inverse frame redeclares the page palette for its subtree. Nothing is set below 24px, and the only hues are `primary` and `pink`.[^theme][^docs]
+The pack binds one theme: scales in `src/theme/base.ts`, one component group per primitive in `src/theme/components/`, assembled into `SLIDE_THEME`. Palette values agree with Distillate tokens. Selection is light-dark, not a second authored tree; an inverse frame redeclares the page palette for its subtree. Nothing is set below 24px, and the only tones are `primary` and `accent`, named for theme roles rather than hues.[^theme][^docs]
 
 Related: [one source](/slides/concepts/one-source.md), [distillate](/slides/concepts/distillate.md).
 

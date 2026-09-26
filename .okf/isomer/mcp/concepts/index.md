@@ -6,5 +6,5 @@ Directory: `mcp/concepts/`
 
 | Title | Type | Description |
 |-------|------|-------------|
-| [Agent tools](agent-tools.md) | Concept | createIsomerTools turns a runtime into five transport-neutral tools; validati... |
+| [Agent tools](agent-tools.md) | Concept | createIsomerTools turns a runtime into six transport-neutral tools; a small g... |
 

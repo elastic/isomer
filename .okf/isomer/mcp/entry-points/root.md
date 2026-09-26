@@ -17,9 +17,9 @@ sources:
 
 # Definition
 
-`createIsomerMcpServer`, `registerIsomerTools`, `toCallToolResult`, `ISOMER_AUTHORING_GUIDE_URI`, `ISOMER_COMPOSE_PROMPT`, and every `./tools` export.[^entry]
+`createIsomerMcpServer`, `registerIsomerTools`, `toCallToolResult`, `ISOMER_AUTHORING_GUIDE_URI`, `ISOMER_COMPOSITION_SCHEMA_URI`, `ISOMER_COMPOSE_PROMPT`, and every `./tools` export.[^entry]
 
-`createIsomerMcpServer({ name, version, instructions?, ...toolOptions })` returns an `McpServer` with the tools, the guide as the `isomer://authoring-guide` resource, and a `compose` prompt. Hosts register their own tools on it. `registerIsomerTools` registers a tool with an empty input shape without an `inputSchema`, because the MCP SDK rejects a call that omits `arguments` against any schema.[^server]
+`createIsomerMcpServer({ name, version, instructions?, ...toolOptions })` returns an `McpServer` with the tools, the guide as the `isomer://authoring-guide` resource, the whole composition schema as `isomer://composition-schema`, and a `compose` prompt. Hosts register their own tools on it. `registerIsomerTools` registers a tool with an empty input shape without an `inputSchema`, because the MCP SDK rejects a call that omits `arguments` against any schema.[^server]
 
 Related: [agent tools](/mcp/concepts/agent-tools.md), [tools](/mcp/entry-points/tools.md), [serve over MCP](/mcp/playbooks/serve-over-mcp.md).
 

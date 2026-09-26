@@ -13,11 +13,16 @@ sources:
   - id: distillate-adapter
     resource: https://github.com/elastic/isomer/blob/main/packages/isomer-sdk/src/render/html/distillate_style_adapter.ts
     title: Distillate HTML style adapter
+  - id: anchors
+    resource: https://github.com/elastic/isomer/blob/main/packages/isomer-sdk/src/render/anchors.ts
+    title: Node anchors
 ---
 
 # Definition
 
 Renderers return envelopes, not bare strings or elements. HTML may run a style adapter and pack `collectStyles` hooks. `createDistillateHtmlStyleAdapter` publishes `DISTILLATE_STYLE_COLLECTOR`; combining adapters is the runtime's job.[^docs][^distillate-adapter]
+
+Node anchors let runtime code find a node's element. A `react` renderer spreads `nodeAnchor(context, node)` on its root; it sets `data-isomer-node="<type>"` only when `context.anchors` is set, which the HTML surface does when a resolved enhancement declares `anchors: true` or a test passes `anchors: true`. `findNodeElements` pairs nodes and elements by type and order. An enhancement the host drives has no `script`.[^docs][^anchors]
 
 URL-bearing fields go through one trust policy. See [URL trust](/sdk/concepts/url-trust.md).
 
@@ -26,3 +31,5 @@ Related: [dispatch](/sdk/concepts/dispatch.md), [packs](/sdk/concepts/packs.md),
 [^docs]: Rendering
 
 [^distillate-adapter]: Distillate HTML style adapter
+
+[^anchors]: Node anchors

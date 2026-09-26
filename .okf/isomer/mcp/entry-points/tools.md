@@ -17,7 +17,7 @@ sources:
 
 # Definition
 
-`createIsomerTools`, `buildIsomerAuthoringGuide`, `checkComposition`, `DEFAULT_ISOMER_GUIDE`, `ISOMER_TOOL_NAMES`, and the `IsomerTool*` types.[^entry] `scripts/check_module_graph.js` fails when this entry reaches `@modelcontextprotocol/sdk`, so a host with its own agent framework never loads it.[^graph]
+`createIsomerTools`, `buildIsomerAuthoringGuide`, `buildPrimitiveDescriptions`, `checkComposition`, `DEFAULT_ISOMER_GUIDE`, `ISOMER_TOOL_NAMES`, and the `IsomerTool*` types.[^entry] `scripts/check_module_graph.js` fails when this entry reaches `@modelcontextprotocol/sdk`, so a host with its own agent framework never loads it.[^graph]
 
 Related: [agent tools](/mcp/concepts/agent-tools.md), [root](/mcp/entry-points/root.md).
 
