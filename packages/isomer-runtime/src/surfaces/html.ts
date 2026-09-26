@@ -50,7 +50,7 @@ export interface HtmlSurface<TRenderContext = PrimitiveRenderContext> {
    * The CSS {@link HtmlSurface.render} would emit for `composition`, collected
    * from a React render you do yourself: pass `context` to
    * `surfaces.react.render`, then read `css()` once that tree has rendered.
-   * Neither validates.
+   * Neither this call nor that React render validates the composition.
    */
   createStyleCollection(
     composition: Composition,
@@ -95,13 +95,16 @@ export const createHtmlSurface = <TRenderContext = PrimitiveRenderContext>(
     render: (composition, options = {}) => renderHtml(composition, options),
     renderNode: (node, options = {}) =>
       renderHtml({ type: 'view', body: [node] }, options),
-    // The dispatcher's context type admits `undefined` only because the React argument may be omitted; an adapter always builds a whole one.
     createStyleCollection: (composition, options = {}) =>
-      createHTMLStyleCollection(composition, {
+      createHTMLStyleCollection<
+        PrimitiveNode,
+        PrimitiveStyleCollector,
+        TRenderContext
+      >(composition, {
         dispatcher,
         styleAdapter,
         options,
         enhancementDefinitions,
-      }) as HTMLStyleCollection<TRenderContext>,
+      }),
   };
 };

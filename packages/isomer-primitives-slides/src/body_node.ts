@@ -77,8 +77,8 @@ export type BodyNode =
   | SlidePipelineNode
   | SlideQuadrantNode
   | SlideQuoteNode
-  | SlideRenderGridNode
   | SlideRenderNode
+  | SlideRenderGridNode
   | SlideRoadmapNode
   | SlideSectionNode
   | SlideSequenceNode

@@ -16,7 +16,7 @@ import {
 
 export const quadrantSlide = toComposition(
   <Slide title="Six surfaces on two axes">
-    <SlideFrame {...frame} chapterNumber="03" chapter="How it works">
+    <SlideFrame {...frame} sectionNumber="03" section="How it works">
       <SlideHeading title="Six surfaces on two axes" />
       <SlideQuadrant
         x={{ low: 'React renderer', high: 'Own renderers' }}

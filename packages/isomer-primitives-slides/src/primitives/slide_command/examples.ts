@@ -18,7 +18,7 @@ export const example: SlideCommandNode = {
 export const highlightExample: SlideCommandNode = {
   type: 'slideCommand',
   command: 'REGION=eu-west-1 npm run refunds:replay -- --since 2026-03-01',
-  highlight: 'REGION=eu-west-1',
+  highlightPrefix: 'REGION=eu-west-1',
 };
 
 /** A long command that takes a smaller step. */

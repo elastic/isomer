@@ -18,7 +18,7 @@ import { lineSlide } from './09_line';
 
 export const proofSlide = toComposition(
   <Slide title="The line, rendered three more ways">
-    <SlideFrame {...frame} chapterNumber="03" chapter="How it works">
+    <SlideFrame {...frame} sectionNumber="03" section="How it works">
       <SlideHeading
         title="The line, rendered three more ways"
         lede="Nothing here is a mock. The runtime rendered these when the deck was built."

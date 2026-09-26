@@ -9,6 +9,13 @@ export { type ViewerProps, Viewer } from './app';
 export { Scaled } from './scaled';
 export { ShadowSlide } from './shadow_slide';
 export {
+  type SurfaceId,
+  type Theme,
+  pngPath,
+  surfaces,
+  themes,
+} from './surfaces';
+export {
   type DeckSlide,
   type PngUrl,
   type SlideSource,

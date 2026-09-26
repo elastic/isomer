@@ -14,7 +14,7 @@ sources:
 
 # Definition
 
-`slidesPack` and `slideDeckFrame` plus every node type and its item types (`SlideTimelineItem`, `SlidePipelineSpan`, `SlideSplitSide`, `SlideTranscriptTurn`, …), the authoring guide exports, and `resolveSlideRenders`; JSX components come from `buildJsxShim(slideDeckPrimitives)`.[^barrel]
+`slidesPack` and `slideDeckFrame` plus every node type and its item types (`SlideTimelineItem`, `SlidePipelineSpan`, `SlideSplitSide`, `SlideTranscriptTurn`, …), the authoring guide exports, and `resolveSlideRenders`. Host conveniences beside them: `slideJsx`, the prebuilt `buildJsxShim(slideDeckPrimitives)`; `slideFontFaces`, the faces the image surface needs, derived from the theme and mapped to files by the host; `slideStylesheet`, `StandaloneSlideNode`, `slideOverflow`, `slideOverlaps`, and `slideAuthoringNotes`.[^barrel]
 
 Related: [pack](/slides/concepts/pack.md), [public contract](/slides/reference/public-contract.md).
 

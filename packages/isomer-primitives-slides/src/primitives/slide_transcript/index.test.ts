@@ -10,6 +10,7 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { slackText } from '../test_helpers.fixtures';
 
 import { example, examples, plainExample } from './examples';
 import { markdown, slack, text } from './index';
@@ -24,16 +25,6 @@ const compose = (node: PrimitiveNode): Composition => ({
   type: 'view',
   body: [{ type: 'slideFrame', body: [node] } as PrimitiveNode],
 });
-
-/** Every string in Slack blocks, entity-decoded, so authored copy can be found in it. */
-const slackText = (value: unknown): string =>
-  JSON.stringify(value)
-    .match(/"(?:[^"\\]|\\.)*"/g)
-    ?.map((literal) => JSON.parse(literal) as string)
-    .join('\n')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&') ?? '';
 
 describe('slideTranscript', () => {
   it('holds one to four turns', () => {

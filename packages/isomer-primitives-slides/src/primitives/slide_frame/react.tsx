@@ -32,18 +32,18 @@ const Footer = ({
   context: SlideRenderContext | undefined;
 }): ReactNode => {
   const { handles: frame } = frameModule;
-  const { brand, chapter, chapterNumber, url, logo = true } = node;
-  const section = [chapterNumber, chapter].filter(Boolean).join(' ');
+  const { brand, section, sectionNumber, url, logo = true } = node;
+  const sectionLine = [sectionNumber, section].filter(Boolean).join(' ');
   return (
     <footer className={cls(context, frame.footer)}>
-      {section ? (
+      {sectionLine ? (
         <div className={cls(context, frame.footerStart)}>
           {logo ? <LogoMark className={cls(context, frame.logo)} /> : null}
           {brand ? (
             <span className={cls(context, frame.brand)}>{brand}</span>
           ) : null}
           {brand ? <span>{separator.value}</span> : null}
-          <span>{section}</span>
+          <span>{sectionLine}</span>
         </div>
       ) : (
         <span>{brand}</span>

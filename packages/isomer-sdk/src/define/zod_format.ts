@@ -155,7 +155,7 @@ const isMissingRequired = (issue: core.$ZodIssue): boolean => {
   return input === undefined;
 };
 
-/** {@link formatZodIssue} over an issue list, in order. */
+/** {@link formatZodIssue} over an issue list. */
 export const formatZodIssues = (
   issues: ReadonlyArray<core.$ZodIssue>,
   basePath = ''

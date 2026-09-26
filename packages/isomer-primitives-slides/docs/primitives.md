@@ -12,7 +12,10 @@ Each primitive lives in its own directory under `src/primitives/<type>/`. Folder
 | `examples.ts` | `example` plus `examples`, used by the conformance harness and the authoring prompt. |
 | `styles.ts` | The primitive's Distillate module, reading only `slideDistillery.tokens`. `src/stylesheet.ts` collects every module. |
 | `react.tsx` | The React renderer, exported as `react`. It serves the `svg` surface too. |
-| `index.tsx` | `definePrimitive`, renderer wiring, and inline text/markdown unless those surfaces are large enough for their own files. |
+| `index.tsx` | `definePrimitive`, renderer wiring, and the `text`, `markdown`, and `slack` renderers. |
+| `index.test.ts` | Schema rejections and every surface's output for the primitive. |
+| `build.ts` | Only for an ordered primitive: the parts a [build](builds.md) reveals one per click. |
+| `fit.ts` | Only for a length-sensitive primitive: the load or width estimate that picks its size step ([Size steps](theme.md#size-steps)). |
 
 A primitive holds no values of its own. Everything it renders lives in its group under `SLIDE_THEME` (`src/theme/components/<group>.ts`, assembled by `src/theme/theme.ts`), which its `styles.ts` reads.
 
@@ -20,7 +23,7 @@ Each primitive's `catalog.ts` and `examples.ts` ship in `dist` beside its render
 
 ## Before you add a value: one source per rendered value
 
-Every length on the spacing, type, or radius scale and every scheme-varying color has exactly one authoring source, and that source is always `SLIDE_THEME`. The scales live in `src/theme/base.ts`: spacing from `space` (keyed by pixel value on the fixed canvas, `space.px48`), type from the `type` roles or `font.size` / `font.weight` / `font.tracking` / `font.lineHeight`, corners from `radius`, strokes from `stroke`, and scheme-varying color from `color` and `inverse`. Each primitive then has its own group in `src/theme/components/` that composes those into the values its module reads. A raw `px(...)` belongs there only when the value genuinely has no place on a scale, and it says why. Do not type a literal into a `styles.ts` that the theme could name — `bullets.markerGlyph` is a theme value because a marker is a value, not a decoration.
+Every length on the spacing, type, or radius scale and every scheme-varying color has exactly one authoring source, and that source is always `SLIDE_THEME`. The scales live in `src/theme/base.ts`: spacing from `space` (keyed by pixel value on the fixed canvas, `space.px48`), type from the `type` roles or `font.size` / `font.weight` / `font.tracking` / `font.lineHeight`, corners from `radius`, strokes from `stroke`, and scheme-varying color from `color` and `inverse`. Each primitive then has its own group in `src/theme/components/` that composes those into the values its module reads. A raw `px(...)` belongs there only when the value genuinely has no place on a scale, and it says why. Do not type a literal into a `styles.ts` that the theme could name — `bulletList.crossGlyph` is a theme value because a marker is a value, not a decoration.
 
 This does not reach every literal in a module: `1fr`, `minmax(0, …)`, `flex: none`, `50%`, and a fixed `repeat(2, …)` are CSS mechanics rather than design tokens, and stay inline.
 
@@ -80,7 +83,7 @@ Leave both type arguments inferred. Passing `TNode` alone widens the schema and 
 
 There is no `svg` renderer, and adding one is the mistake this pack exists to rule out. The image surface lays out the `react` tree against the pack's stylesheet, so a second hand-authored tree is a second thing to keep in sync and a second thing to get wrong. [Drawing inside an `svg`](#drawing-inside-an-svg) covers the one place that equivalence stops.
 
-Keep text and markdown inline when they are a few lines; add `text.ts` / `markdown.ts` only when they grow.
+The `text`, `markdown`, and `slack` renderers live in `index.tsx`; no primitive has grown one into its own file.
 
 Spread `nodeAnchor(context, { type })` from `@elastic/isomer-sdk` on the renderer's root element. It renders nothing unless an enhancement needs to find the node, and the conformance suite checks every primitive has one. Content that is not one of the node's `children`, such as an embedded slide, renders with `anchors: false`. An ordered primitive can also [build](builds.md).
 
@@ -96,7 +99,7 @@ turns: fromChildren(
 ),
 ```
 
-`buildJsxShim(slideDeckPrimitives)` then includes `SlideTurn`, typed from the array element. `text: 'text'` copies leftover text children onto that field. An explicit `turns` prop wins over children. Placing `<SlideTurn>` directly under `<Composition>` throws, because it is not a body node.
+`slideJsx` then includes `SlideTurn`, typed from the array element. `text: 'text'` copies leftover text children onto that field. An explicit `turns` prop wins over children. Placing `<SlideTurn>` directly under `<Composition>` throws, because it is not a body node.
 
 ```tsx
 <SlideTranscript>
@@ -160,9 +163,20 @@ SLIDE_PREVIEW=slidePipeline SLIDE_PREVIEW_OUT=/tmp/preview pnpm vitest run packa
 
 Each example is framed the way a deck would frame it, after a `slideHeading` on a page frame, or alone on an inverse frame for title, section, and closing primitives. `SLIDE_PREVIEW_FILE=compositions.json` renders a JSON array of whole compositions instead, for comparing a slide against a design.
 
+## Tests
+
+Each primitive's `index.test.ts` covers its schema rejections and every surface's output; `src/primitives/test_helpers.fixtures.ts` holds the `authoredStrings` and `slackText` helpers those tests share. The tests that rasterize (`src/examples/fit.test.ts`, `src/examples/preview.test.ts`, `src/examples/worked_example/index.test.ts`, `src/render/overflow.test.ts`) need `@elastic/isomer-image-takumi` and `@fontsource/*` as devDependencies. `src/builds/builds.test.ts` and `src/primitives/slide_command/copy.test.ts` run under `happy-dom` through a `// @vitest-environment happy-dom` pragma, so a pack lifted out of this monorepo installs `happy-dom` too.
+
 ## Registering the primitive
 
-`src/registry.ts` is hand-maintained. Add the import and include it in `slideDeckPrimitives`:
+A new primitive has six stops, all hand-maintained:
+
+1. Its folder, `src/primitives/<type>/`.
+2. `src/registry.ts`: the import and its place in `slideDeckPrimitives`, alphabetically.
+3. `src/body_node.ts`: its node type in the `BodyNode` union, in the same order.
+4. `src/pack_authoring.ts`: its group in `slidePrimitiveGroups`, and a `describe` entry restating any cross-field rule.
+5. `src/stylesheet.ts`: its Distillate module in `slideModules`.
+6. `src/theme/theme.ts`: its theme group from `src/theme/components/<group>.ts` in `SLIDE_THEME`.
 
 ```ts
 import { myNewPrimitive } from './primitives/my_new_type';
@@ -173,28 +187,27 @@ export const slideDeckPrimitives = [
 ] as const;
 ```
 
-Also add the node type to the `BodyNode` union in `src/body_node.ts`. The two lists cannot be collapsed into one — the container `types.ts` files import `SlideContentNode`, so deriving the union from the registry closes that cycle at the value level (`TS7022`). `src/registry.test.ts` holds both guards: a type-level assertion that the two lists agree in both directions, and `assertPackRegistrationComplete`, which reads `src/primitives/` and fails when a directory is in neither list. Forgetting a step fails the build with the lines to add.
+The registry and the union cannot be collapsed into one — the container `types.ts` files import `SlideContentNode`, so deriving the union from the registry closes that cycle at the value level (`TS7022`). `src/registry.test.ts` guards the first four stops: a type-level assertion that the two lists agree in both directions, `assertPackRegistrationComplete`, which reads `src/primitives/` and fails when a directory is in neither list, and a check that every registered type is in exactly one group. Forgetting one fails the build with the lines to add.
 
 ## Authoring with JSX
 
-`buildJsxShim(slideDeckPrimitives)` turns the primitives into components, so a deck reads as markup instead of a hand-built node tree:
+`slideJsx` is the primitives as components, so a deck reads as markup instead of a hand-built node tree. It is `buildJsxShim(slideDeckPrimitives)` from `@elastic/isomer-sdk/author`, prebuilt in `src/jsx.ts`, with `src/jsx.test.ts` failing when the registry and the shim drift:
 
 ```tsx
-import { buildJsxShim } from '@elastic/isomer-sdk/author';
+import { slideJsx } from '@elastic/isomer-primitives-slides';
 
-const { Composition, SlideFrame, SlideHeading, toComposition } =
-  buildJsxShim(slideDeckPrimitives);
+const { Composition, SlideFrame, SlideHeading, toComposition } = slideJsx;
 
 const composition = toComposition(
   <Composition title="Refunds settle in two days">
-    <SlideFrame brand="Ledger" chapterNumber="02" chapter="Settlement">
+    <SlideFrame brand="Ledger" sectionNumber="02" section="Settlement">
       <SlideHeading title="Refunds settle in two days, not five" />
     </SlideFrame>
   </Composition>
 );
 ```
 
-`toComposition` walks the tree back into the plain `Composition` value every surface renders from — JSX is authoring sugar, not a second representation. `src/examples/deck/index.tsx` is the full worked version, covering every primitive's shim.
+`toComposition` walks the tree back into the plain `Composition` value every surface renders from — JSX is authoring sugar, not a second representation. The Isomer deck (`examples/deck/src/slides/*.tsx` at the repository root) authors every slide this way; the pack's own worked example (`src/examples/worked_example/index.ts`) is the same kind of deck as plain object literals.
 
 ## React hosts
 

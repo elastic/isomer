@@ -61,6 +61,6 @@ This is a React convenience wrapper, not a surface — it applies `slideStyleshe
 
 A browser resolves `Inter` and `Roboto Mono` from the page; an image backend resolves nothing it was not handed, and an unregistered family falls back to the backend's built-in face. So a host rasterizing this pack registers both families itself.
 
-`SLIDE_THEME.font.weight` declares 500, 600, 700, and 800, and anything that does not set a weight inherits the document default of 400. That is the set to register, per family — `src/examples/deck/fonts.ts` derives it from the theme rather than listing it, so a new weight token cannot silently fall back to the nearest registered face.
+`slideFontFaces` is that set: one `{ family, weight, style }` per face the theme needs, derived from `SLIDE_THEME.font` rather than listed, so a new weight token cannot silently fall back to the nearest registered face. It holds the weights `SLIDE_THEME.font.weight` declares (500, 600, 700, and 800) for both families, plus the 400 italic `slideTitle`'s definition line sets; anything that sets no weight inherits the document default of 400. The host maps each face to a font file. The pack's `src/examples/fonts.ts` and the deck's `examples/deck/src/fonts.ts` are the worked loaders, over `@fontsource/*`.
 
 `@fontsource/inter` and `@fontsource/roboto-mono` ship woff2, which takumi decodes natively, so no conversion step is needed. Roboto Mono stops at 700; a weight the family does not ship is dropped rather than substituted.

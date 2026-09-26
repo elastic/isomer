@@ -32,7 +32,7 @@ const items = slidePrimitiveGroups.map(({ title, types }) => ({
 
 export const barsSlide = toComposition(
   <Slide title="What the pack's primitives draw">
-    <SlideFrame {...frame} chapterNumber="04" chapter="Building a pack">
+    <SlideFrame {...frame} sectionNumber="04" section="Building a pack">
       <SlideHeading title="What the pack's primitives draw" />
       <SlideBars {...{ items }} />
       <SlideSource

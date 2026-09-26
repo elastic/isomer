@@ -17,7 +17,7 @@ export const catalog = {
   useWhen: [
     'Every slide; each composition in a deck is exactly one slideFrame and nothing else.',
     'A title, section, or closing slide needs the dark background; set `tone` to `inverse`.',
-    'Slides belong to numbered sections; set `chapterNumber` and `chapter` to the section so the footer tracks it.',
+    'Slides belong to numbered sections; set `sectionNumber` and `section` to the section so the footer tracks it.',
   ],
   avoidWhen: [
     'Content inside a slide needs grouping; frames never nest, so use slideSplit or slideStack.',

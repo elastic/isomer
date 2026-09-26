@@ -15,9 +15,9 @@ import {
 } from '../shim';
 
 export const packagesSlide = toComposition(
-  <Slide title="Six packages ship at one version">
-    <SlideFrame {...frame} chapterNumber="05" chapter="Getting started">
-      <SlideHeading title="Six packages ship at one version" />
+  <Slide title="Four packages publish; two stay in the repo">
+    <SlideFrame {...frame} sectionNumber="05" section="Getting started">
+      <SlideHeading title="Four packages publish; two stay in the repo" />
       <SlideTable
         columns={['Package', 'Role', 'Use']}
         rowHeaders={true}

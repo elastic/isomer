@@ -16,7 +16,7 @@ import {
 
 export const problemSlide = toComposition(
   <Slide title="Every channel has asked for the same missing layer">
-    <SlideFrame {...frame} chapterNumber="01" chapter="The problem">
+    <SlideFrame {...frame} sectionNumber="01" section="The problem">
       <SlideHeading
         title="Every channel has asked for the same missing layer"
         lede="Each wanted the answer somewhere lighter than Kibana. Each time, the answer collapsed to a link back to it."

@@ -11,7 +11,7 @@ import type { Composition } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import type { SlideContentNode } from '../body_node';
-import { deckFonts } from '../examples/deck/fonts';
+import { slideFonts } from '../examples/fonts';
 import { slideDeckFrame, slidesPack } from '../pack';
 import type { SlideFrameNode } from '../primitives/slide_frame/types';
 
@@ -21,7 +21,7 @@ const runtime = createIsomerRuntime({
   packs: [slidesPack],
   frames: { slide: slideDeckFrame },
 });
-const takumi = createTakumiImageBackend({ fonts: deckFonts });
+const takumi = createTakumiImageBackend({ fonts: slideFonts });
 
 const layout = (body: SlideContentNode[]) => {
   const frame: SlideFrameNode = { type: 'slideFrame', body };

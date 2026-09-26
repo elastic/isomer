@@ -14,7 +14,7 @@ import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
 import type { SlideContentNode } from './body_node';
-import { deck } from './examples/deck';
+import { deck } from './examples/worked_example';
 import type { SlideFrameNode } from './primitives/slide_frame/types';
 import { slideDeckPrimitives } from './registry';
 

@@ -16,7 +16,7 @@ import {
 
 export const vocabularySlide = toComposition(
   <Slide title="Six terms describe the whole system">
-    <SlideFrame {...frame} chapterNumber="02" chapter="The model">
+    <SlideFrame {...frame} sectionNumber="02" section="The model">
       <SlideHeading title="Six terms describe the whole system" />
       <SlideGraph
         caption="A runtime is built from packs of primitives, plus optional frames. A composition goes in; a surface comes out."

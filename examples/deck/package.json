@@ -7,11 +7,7 @@
   "type": "module",
   "exports": {
     "./viewer": "./src/viewer/index.ts",
-    "./viewer.css": "./src/viewer/viewer.css",
-    "./runtime": "./src/runtime.ts",
-    "./fonts": "./src/fonts.ts",
-    "./surfaces": "./src/surfaces.ts",
-    "./shim": "./src/shim.ts"
+    "./viewer.css": "./src/viewer/viewer.css"
   },
   "scripts": {
     "dev": "vite",

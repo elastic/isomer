@@ -53,6 +53,29 @@ styleElement.textContent = `:host { all: initial; display: block; }\n${styles.cs
 
 `context` records every style the renderers use, so `css()` read after that render equals `html.render(composition, { css: 'separate' }).css`. Read it in a layout effect and the styles land before the first paint. A host with its own render context spreads both: `{ ...hostContext, ...styles.context }`. A subtree that suspends records its styles after `css()` was read, so this holds for trees that render without suspending.
 
+Three edges are sharp:
+
+- **The collection and the tree are one unit.** `css()` reports what rendered with that collection's `context`, and a pack such as slides collects everything at render time. Create the collection and the tree together and memoize them as a pair; a fresh collection without a re-render of the tree reads back empty CSS.
+- **`wrapper: { theme }` is not decorative.** It is the `.isomer[.framed][.fluid]` `section` the `html` surface wraps its output in, carrying the `aria-label` and `data-theme`. A pack's wrapper rules attach to that element and nowhere else, so a bare tree drops them and drops the theme attribute; pass the wrapper so the tree is the DOM the `html` surface would have produced.
+- **One collection covers one composition.** Each collection holds only the rules its own render reached, and an adapter built with compact names minifies them per collection, so one composition's `css()` does not cover another's. Two compositions on one page need a `<style>` each, or a shadow root each.
+
+### Without a shadow root
+
+A host that cannot attach a shadow root, because the page's React tree and CSS system are not its own, still renders with `createStyleCollection`, mounts the tree in an ordinary element with a class of its own, and puts `css()` in a `<style>` whose rules are confined to that element. `@scope` does that without rewriting selectors, and a cascade layer keeps the pack's rules below the page's own where the two overlap:
+
+```tsx
+const styles = runtime.surfaces.html.createStyleCollection(composition, { theme });
+const node = runtime.surfaces.react.render(composition, {
+  context: styles.context,
+  wrapper: { theme },
+});
+
+// <div className="my-isomer-host">{node}</div>, then in a layout effect:
+styleElement.textContent = `@layer isomer { @scope (.my-isomer-host) { ${styles.css()} } }`;
+```
+
+Where `@scope` is not available, prefix every selector with the host class through a CSS processor instead. Either way this confines the composition's rules; it does not keep the page's out. A host `* { box-sizing }` or a global `h2` rule still reaches in, so the recipe is the pack's stylesheet plus discipline in the host's, and a shadow root remains the only way to have both directions.
+
 ## When not to bother
 
 Isolation costs something. Inside a shadow root the composition no longer inherits the host's font stack or color scheme, so one that is *meant* to look like part of the surrounding page needs those passed in deliberately — through the render `theme` option, or as custom properties set on the host element, which do cross the boundary.

@@ -18,7 +18,7 @@ import {
 
 export const themeSlide = toComposition(
   <Slide title="Every rendered value has one source">
-    <SlideFrame {...frame} chapterNumber="04" chapter="Building a pack">
+    <SlideFrame {...frame} sectionNumber="04" section="Building a pack">
       <SlideHeading
         title="Every rendered value has one source"
         lede="Even the words a primitive draws on its own, like `Source ·`, are theme values."
@@ -33,7 +33,7 @@ export const themeSlide = toComposition(
                 {
                   file: 'src/theme/components/source.ts',
                   language: 'ts',
-                  highlight: [3],
+                  highlightLines: [3],
                   lines: [
                     'export const source = {',
                     '  text: type.chrome,',

@@ -81,7 +81,7 @@ const diffLines = (
 
 export const agentSlide = toComposition(
   <Slide title="The agent path retries until it parses">
-    <SlideFrame {...frame} chapterNumber="02" chapter="The model">
+    <SlideFrame {...frame} sectionNumber="02" section="The model">
       <SlideHeading
         title="The agent path retries until it parses"
         lede={`The host sent back \`${firstErrors}\`. The second attempt added the title.`}

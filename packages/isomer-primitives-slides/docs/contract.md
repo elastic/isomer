@@ -28,7 +28,7 @@ Everything else stays at the SDK default. A new pack declares its own `PackTypes
 
 The pack declares no `surfaces`, because not every primitive has a `slack` renderer. `svg` is not declarable — every pack reaches it through its `react` renderers.
 
-On Slack, the containers (`slideFrame`, `slideSplit`, `slideStack`, `slideWindow`) render each child through `scope.renderSlack`, so the dispatcher decides per child. `slideTable` has a native renderer that keeps row headers bold in a `table` block; every other leaf falls back through its markdown. A container without a `slack` renderer would send its whole subtree through the markdown fallback, and a native renderer below it would never run.
+On Slack, the containers (`slideFrame`, `slideSplit`, `slideStack`, `slideWindow`, `slideTitle`) render each child through `scope.renderSlack`, so the dispatcher decides per child. `slideTable` has a native renderer that keeps row headers bold in a `table` block; every other leaf falls back through its markdown. A container without a `slack` renderer would send its whole subtree through the markdown fallback, and a native renderer below it would never run.
 
 ## The registry
 

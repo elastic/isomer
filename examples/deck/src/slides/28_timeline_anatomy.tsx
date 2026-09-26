@@ -17,7 +17,7 @@ import {
 
 export const timelineAnatomySlide = toComposition(
   <Slide title="Anatomy of a timeline slide">
-    <SlideFrame {...frame} chapterNumber="04" chapter="Building a pack">
+    <SlideFrame {...frame} sectionNumber="04" section="Building a pack">
       <SlideHeading title="Anatomy of a timeline slide" />
       <SlideAnnotatedRender
         render={
@@ -50,7 +50,7 @@ export const timelineAnatomySlide = toComposition(
             x: 28,
             y: 94,
             title: 'Footer',
-            body: 'Brand, chapter, and URL, the same on every slide.',
+            body: 'Brand, section, and URL, the same on every slide.',
           },
         ]}
       />

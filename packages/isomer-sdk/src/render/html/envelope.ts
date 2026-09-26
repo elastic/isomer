@@ -61,7 +61,7 @@ export interface HTMLRenderOptions {
   onValidationError?: ValidationErrorMode;
   /** Opt-in by {@link EnhancementDefinition.id}. One whose content gate does not match the body is dropped. */
   enhancements?: readonly string[];
-  /** Renders node anchors whether or not an enhancement asks for them, e.g. for tests. */
+  /** Renders node anchors without an enhancement asking, for hosts and tests that find nodes in the output with `findNodeElements`. */
   anchors?: boolean;
   /** Opaque to the sdk; forwarded to {@link HTMLStyleAdapter} with the rest of the options. */
   adapterOptions?: Record<string, unknown>;

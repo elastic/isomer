@@ -9,7 +9,7 @@ import { space, stroke, type } from '../base';
 import { literal, paddingXy, px } from '../scale';
 
 /** `slideBulletList`: short unordered points under ruled rows. */
-export const bullets = {
+export const bulletList = {
   labelGap: space.px8,
   rule: stroke.hairline,
   rowPadding: paddingXy(space.px20, literal('0')),

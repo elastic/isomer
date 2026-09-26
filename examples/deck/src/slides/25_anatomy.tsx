@@ -20,7 +20,7 @@ import {
 
 export const anatomySlide = toComposition(
   <Slide title="A primitive is one folder">
-    <SlideFrame {...frame} chapterNumber="04" chapter="Building a pack">
+    <SlideFrame {...frame} sectionNumber="04" section="Building a pack">
       <SlideHeading
         title="A primitive is one folder"
         lede="Schema, catalog copy, examples, renderers, styles, and tests sit together."

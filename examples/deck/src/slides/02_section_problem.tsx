@@ -11,8 +11,8 @@ export const sectionProblemSlide = toComposition(
   <Slide title="The problem">
     <SlideFrame
       {...frame}
-      chapterNumber="01"
-      chapter="The problem"
+      sectionNumber="01"
+      section="The problem"
       tone="inverse">
       <SlideSection
         number="01"

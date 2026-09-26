@@ -15,7 +15,7 @@ import {
 
 export const statementSlide = toComposition(
   <Slide title="A Composition says what the answer is, never how it looks">
-    <SlideFrame {...frame} chapterNumber="02" chapter="The model">
+    <SlideFrame {...frame} sectionNumber="02" section="The model">
       <SlideStatement text="A Composition says **what** the answer is, never **how** it looks." />
     </SlideFrame>
   </Slide>

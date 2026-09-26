@@ -19,7 +19,7 @@ import {
 
 export const documentSlide = toComposition(
   <Slide title="One typed document holds the shared part">
-    <SlideFrame {...frame} chapterNumber="01" chapter="The problem">
+    <SlideFrame {...frame} sectionNumber="01" section="The problem">
       <SlideHeading
         title="One typed document holds the shared part"
         lede="The title slide’s composition, abridged, beside what the svg surface drew from it."
@@ -48,7 +48,7 @@ export const documentSlide = toComposition(
                     '  }]',
                     '}',
                   ],
-                  highlight: [8],
+                  highlightLines: [8],
                 },
               ]}
             />,

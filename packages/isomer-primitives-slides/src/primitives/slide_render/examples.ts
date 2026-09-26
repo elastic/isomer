@@ -19,8 +19,8 @@ export const deliverySlide: Composition<BodyNode> = {
     {
       type: 'slideFrame',
       brand: 'Basket',
-      chapter: 'Operations',
-      chapterNumber: '02',
+      section: 'Operations',
+      sectionNumber: '02',
       body: [
         {
           type: 'slideHeading',

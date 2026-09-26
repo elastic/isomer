@@ -13,14 +13,14 @@ import { slideDeckFrame, slidesPack } from '../pack';
 import { slideDeckPrimitives } from '../registry';
 import { slideOverflow, slideOverlaps } from '../render/overflow';
 
-import { deckFonts } from './deck/fonts';
+import { slideFonts } from './fonts';
 import { previewSlide } from './preview_slide';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
   frames: { slide: slideDeckFrame },
 });
-const takumi = createTakumiImageBackend({ fonts: deckFonts });
+const takumi = createTakumiImageBackend({ fonts: slideFonts });
 
 const cases = slideDeckPrimitives.flatMap(({ type, examples }) =>
   type === 'slideFrame'

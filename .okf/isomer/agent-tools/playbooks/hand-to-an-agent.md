@@ -10,7 +10,7 @@ sources:
     resource: https://github.com/elastic/isomer/blob/main/packages/isomer-agent-tools/docs/index.md
     title: Package docs
   - id: adapter
-    resource: https://github.com/elastic/isomer/blob/main/examples/slides-studio/server/mcp_adapter.ts
+    resource: https://github.com/elastic/isomer/blob/main/examples/slides-studio/server/adapters/mcp.ts
     title: Studio MCP adapter
 ---
 

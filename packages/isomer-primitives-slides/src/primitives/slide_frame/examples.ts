@@ -14,8 +14,8 @@ import type { SlideFrameNode } from './types';
 export const example: SlideFrameNode = {
   type: 'slideFrame',
   brand: 'Ledger',
-  chapter: 'Settlement',
-  chapterNumber: '02',
+  section: 'Settlement',
+  sectionNumber: '02',
   url: 'https://example.com/ledger',
   body: [headingExample],
 };
@@ -25,8 +25,8 @@ export const inverseExample: SlideFrameNode = {
   type: 'slideFrame',
   tone: 'inverse',
   brand: 'Ledger',
-  chapter: 'Settlement',
-  chapterNumber: '02',
+  section: 'Settlement',
+  sectionNumber: '02',
   body: [sectionExample],
 };
 

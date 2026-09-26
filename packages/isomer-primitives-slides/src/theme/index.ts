@@ -6,6 +6,8 @@
  */
 
 export { slideDistillery, themeVarName, toneVar } from './distillery';
+export { slideFontFaces } from './fonts';
+export type { SlideFontFace } from './fonts';
 export { slidePaletteForMode } from './palette';
 export type { SlideFrameTheme, SlidePalette } from './palette';
 export { literal, paddingXy, px, scalePx } from './scale';

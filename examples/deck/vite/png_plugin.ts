@@ -7,7 +7,7 @@
 
 import { createServer, type Plugin, type UserConfig } from 'vite';
 
-import { pngPath, themes } from '../src/surfaces';
+import { pngPath, themes } from '../src/viewer/surfaces';
 
 type PngModule = typeof import('../src/png');
 

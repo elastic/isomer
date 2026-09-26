@@ -9,19 +9,10 @@ import { variants } from '@elastic/distillate';
 
 import { slideDistillery } from '../../theme/distillery';
 import { typeRole } from '../../theme/type_role';
+import { slideTableColumnCounts } from '../../theme/variants';
 
 const { createStyleModule, tokens } = slideDistillery;
 const { color, table } = tokens;
-
-/** Column counts a table allows, by name; index `n - 1` is `n` columns. */
-export const tableColumnCounts = [
-  'one',
-  'two',
-  'three',
-  'four',
-  'five',
-  'six',
-] as const;
 
 /** Distillate module for `slideTable`. */
 export const tableModule = createStyleModule('table', ({ css }) => ({
@@ -37,10 +28,10 @@ export const tableModule = createStyleModule('table', ({ css }) => ({
     overflow: hidden;
   `,
   columns: variants(
-    tableColumnCounts,
+    slideTableColumnCounts,
     (count) => css`
       grid-template-columns: repeat(
-        ${tableColumnCounts.indexOf(count) + 1},
+        ${slideTableColumnCounts.indexOf(count) + 1},
         auto
       );
     `

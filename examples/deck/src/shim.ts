@@ -5,8 +5,7 @@
  * 2.0.
  */
 
-import { slideDeckPrimitives } from '@elastic/isomer-primitives-slides';
-import { buildJsxShim } from '@elastic/isomer-sdk/author';
+import { slideJsx } from '@elastic/isomer-primitives-slides';
 
 export const {
   Composition: Slide,
@@ -54,7 +53,7 @@ export const {
   SlideWindow,
   toComposition,
   toJsx: printJsx,
-} = buildJsxShim(slideDeckPrimitives);
+} = slideJsx;
 
 /** A composition as JSX in this deck's own terms, rooted at `Slide`. */
 export const toJsx = (composition: Parameters<typeof printJsx>[0]): string =>

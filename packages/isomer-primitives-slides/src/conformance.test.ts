@@ -81,7 +81,7 @@ const wrapInFrame = (node: PrimitiveNode): PrimitiveNode =>
     ? node
     : ({
         type: 'slideFrame',
-        chapter: 'Conformance',
+        section: 'Conformance',
         url: 'https://example.com',
         body: [node],
       } as unknown as PrimitiveNode);

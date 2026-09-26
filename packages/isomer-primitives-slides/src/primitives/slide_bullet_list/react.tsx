@@ -18,7 +18,7 @@ import type { SlideBulletMarker } from '../../theme/variants';
 import type { SlideBulletListNode } from './schema';
 import { bulletsModule } from './styles';
 
-const { crossGlyph } = slideDistillery.tokens.bullets;
+const { crossGlyph } = slideDistillery.tokens.bulletList;
 
 const Marker = ({
   marker,

@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useRef } from 'react';
-import type { Theme } from '@elastic/isomer-deck/surfaces';
+import type { Theme } from '@elastic/isomer-deck/viewer';
 
 import { Copyable, TopBar } from './chrome';
 import { type DeckListing, deleteDeck, useDeckList } from './decks';
@@ -115,6 +115,12 @@ export const Home = () => {
             reads the primitive catalog, writes each slide as a composition the
             runtime validates, and looks at it as a PNG before moving on. Each
             slide appears here the moment it is stored.
+          </p>
+          <p className="muted">
+            <a href="https://elastic.github.io/isomer/">What Isomer is</a> ·{' '}
+            <a href="https://elastic.github.io/isomer/deck/">
+              The Isomer deck, itself written with this pack
+            </a>
           </p>
         </section>
 

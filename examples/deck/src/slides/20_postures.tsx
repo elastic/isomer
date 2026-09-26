@@ -16,7 +16,7 @@ import {
 
 export const posturesSlide = toComposition(
   <Slide title="Each surface has one validation posture">
-    <SlideFrame {...frame} chapterNumber="03" chapter="How it works">
+    <SlideFrame {...frame} sectionNumber="03" section="How it works">
       <SlideHeading
         title="Each surface has one validation posture"
         lede="Every primitive renders to react, text, and markdown, so every composition has a form every surface can show."

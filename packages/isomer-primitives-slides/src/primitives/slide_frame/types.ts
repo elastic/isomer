@@ -17,9 +17,9 @@ export interface SlideFrameNode extends PrimitiveNode {
   /** Name at the left of the footer, e.g. the product. */
   brand?: string;
   /** Title of the section this slide belongs to. */
-  chapter?: string;
+  section?: string;
   /** Number of the section this slide belongs to. */
-  chapterNumber?: string;
+  sectionNumber?: string;
   /** Whether the Isomer mark is drawn beside the footer and on a title slide. Defaults to `true`. */
   logo?: boolean;
   /** `inverse` for title, section, and closing slides. Defaults to `page`. */

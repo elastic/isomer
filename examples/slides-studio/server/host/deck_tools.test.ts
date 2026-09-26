@@ -10,13 +10,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import type { IsomerTool } from '@elastic/isomer-agent-tools';
-import { runtime } from '@elastic/isomer-deck/runtime';
 import type {
   SlideOverflow,
   SlideOverlap,
 } from '@elastic/isomer-primitives-slides';
 import { describe, expect, it } from 'vitest';
 
+import { runtime } from '../../common/runtime';
 import { createDeckStore } from '../store';
 
 import { createDeckTools } from './deck_tools';

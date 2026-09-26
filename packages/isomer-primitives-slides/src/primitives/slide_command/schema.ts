@@ -29,7 +29,7 @@ export const schema = z
       .describe(
         `One shell command on one line, without the \`$\` prompt; the slide draws that. At most ${commandMaxLength} characters. It is sized to the full slide width, so do not put it in a slideSplit column.`
       ),
-    highlight: z
+    highlightPrefix: z
       .string()
       .min(1)
       .describe(
@@ -46,9 +46,9 @@ export const schema = z
   )
   .check(
     crossRefine(
-      ({ command, highlight }) =>
-        highlight === undefined || command.startsWith(highlight),
-      { error: 'highlight must be a prefix of command', path: ['highlight'] }
+      ({ command, highlightPrefix }) =>
+        highlightPrefix === undefined || command.startsWith(highlightPrefix),
+      { error: 'highlightPrefix must start command', path: ['highlightPrefix'] }
     )
   );
 

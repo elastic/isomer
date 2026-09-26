@@ -21,7 +21,7 @@ import {
   type ValidationError,
 } from '../composition/validation_error';
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
-import { formatZodIssues } from '../define/zod_format';
+import { formatZodIssue } from '../define/zod_format';
 
 import { getCompositionSchemaForDefinitions } from './composition_schema';
 
@@ -121,7 +121,7 @@ const nodeTypeAt = (
   return found;
 };
 
-/** {@link formatZodIssues}, each error naming the primitive its path lands in. */
+/** {@link formatZodIssue} per issue, each error naming the primitive its path lands in. */
 const valueAt = (value: unknown, segments: readonly PropertyKey[]): unknown =>
   segments.reduce<unknown>(
     (current, segment) =>
@@ -132,7 +132,7 @@ const valueAt = (value: unknown, segments: readonly PropertyKey[]): unknown =>
   );
 
 /**
- * {@link formatZodIssues}, each error naming the primitive its path lands in,
+ * {@link formatZodIssue} per issue, each error naming the primitive its path lands in,
  * and an unknown key on a node listing the fields that node takes.
  */
 const formatIssuesIn = (
@@ -140,16 +140,15 @@ const formatIssuesIn = (
   issues: ReadonlyArray<core.$ZodIssue>,
   fields: ReadonlyMap<string, readonly string[]>
 ): ValidationError[] =>
-  formatZodIssues(issues).map((error, index) => {
-    const issue = issues[index];
-    const path = issue?.path ?? [];
-    const nodeType = nodeTypeAt(value, path, fields);
+  issues.map((issue) => {
+    const error = formatZodIssue(issue);
+    const nodeType = nodeTypeAt(value, issue.path, fields);
     if (nodeType === undefined) {
       return error;
     }
     const onNode =
-      issue?.code === 'unrecognized_keys' &&
-      (valueAt(value, path) as { type?: unknown } | undefined)?.type ===
+      issue.code === 'unrecognized_keys' &&
+      (valueAt(value, issue.path) as { type?: unknown } | undefined)?.type ===
         nodeType;
     const message = onNode
       ? `${error.message}; its fields are ${(fields.get(nodeType) ?? []).join(', ')}`

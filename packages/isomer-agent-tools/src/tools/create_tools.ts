@@ -68,7 +68,7 @@ const viewErrorResult = (error: unknown): IsomerToolResult =>
       )
     : textResult(errorMessage(error), true);
 
-/** The agent tools for `runtime`: the authoring guide, validation, rendering, and the view registry. */
+/** The agent tools for `runtime`: the authoring guide, validation, rendering, and, when the runtime registers any views, the view registry. */
 export const createIsomerTools = <THostContext = unknown>(
   options: IsomerToolsOptions<THostContext>
 ): IsomerTool[] => {
@@ -127,7 +127,7 @@ export const createIsomerTools = <THostContext = unknown>(
     name: ISOMER_TOOL_NAMES.describePrimitives,
     title: 'Describe primitives',
     description:
-      'Returns the full catalog entry and JSON Schema of each primitive type given: when to use it, when not to, an example, and every field. Include the containers you will nest in. Each type comes to about 3,000 characters; up to 12 per call, so call again for more.',
+      'Returns the full catalog entry and JSON Schema of each primitive type given: when to use it, when not to, an example, and every field. Ask in batches for the types you will use, the containers you nest in included; each answer carries the full entry and the schema it reaches. Up to 12 per call, so call again for more.',
     inputSchema: z.object({
       types: z
         .array(z.string())
@@ -197,10 +197,11 @@ export const createIsomerTools = <THostContext = unknown>(
   const requestView = tool({
     name: ISOMER_TOOL_NAMES.requestView,
     title: 'Request a registered view',
-    description:
-      'Builds a registered view by id with its input, and returns the composition with its validation result. Render it with `isomer_render`.',
+    description: `Builds a registered view by id with its input, and returns the composition with its validation result. Render it with \`${ISOMER_TOOL_NAMES.render}\`.`,
     inputSchema: z.object({
-      id: z.string().describe('A view id from `isomer_list_views`.'),
+      id: z
+        .string()
+        .describe(`A view id from \`${ISOMER_TOOL_NAMES.listViews}\`.`),
       input: z
         .record(z.string(), z.unknown())
         .optional()
@@ -222,12 +223,15 @@ export const createIsomerTools = <THostContext = unknown>(
     },
   });
 
+  // A host with no views gets no view tools, so the agent is never offered a call with nothing to return.
+  const viewTools =
+    runtime.viewRegistry.list().length > 0 ? [listViews, requestView] : [];
+
   return [
     authoringGuide,
     describePrimitives,
     validate,
     renderTool,
-    listViews,
-    requestView,
+    ...viewTools,
   ];
 };

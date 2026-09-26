@@ -15,10 +15,11 @@ import {
   defineView,
   type IsomerRuntime,
 } from '@elastic/isomer-runtime';
-import type { Composition } from '@elastic/isomer-sdk';
+import { type Composition, formatValidationError } from '@elastic/isomer-sdk';
 import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { z } from 'zod';
 
+import { checkComposition } from './check';
 import { createIsomerTools } from './create_tools';
 import { DEFAULT_ISOMER_GUIDE } from './guide';
 import { ISOMER_TOOL_NAMES } from './names';
@@ -75,6 +76,21 @@ describe('createIsomerTools', () => {
     expect(tools.map(({ name }) => name)).toEqual(
       Object.values(ISOMER_TOOL_NAMES)
     );
+  });
+
+  it('omits the view tools when the runtime registers no views', () => {
+    const viewless = createIsomerRuntime({
+      packs: [slidesPack],
+      frames: { slide: slideDeckFrame },
+    });
+    expect(
+      createIsomerTools({ runtime: viewless }).map(({ name }) => name)
+    ).toEqual([
+      ISOMER_TOOL_NAMES.authoringGuide,
+      ISOMER_TOOL_NAMES.describePrimitives,
+      ISOMER_TOOL_NAMES.validate,
+      ISOMER_TOOL_NAMES.render,
+    ]);
   });
 
   describe('isomer_authoring_guide', () => {
@@ -306,6 +322,34 @@ describe('createIsomerTools', () => {
       expect(result.isError).toBe(true);
       expect(textOf(result)).toContain('missing');
     });
+  });
+});
+
+describe('checkComposition', () => {
+  it('keeps each error structured beside its string', () => {
+    const { valid, errors, findings } = checkComposition(
+      runtime,
+      slideDeckFrame,
+      { type: 'view', body: [{ ...slide, nope: 1 }] }
+    );
+    expect(valid).toBe(false);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      path: 'body[0]',
+      nodeType: 'slideFrame',
+    });
+    expect(findings[0]?.message).toContain('nope');
+    expect(errors).toEqual(findings.map(formatValidationError));
+  });
+
+  it('reports a frame rule as a finding with an empty path', () => {
+    const { findings } = checkComposition(runtime, slideDeckFrame, {
+      type: 'view',
+      body: [slide, slide],
+    });
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({ path: '' });
+    expect(findings[0]?.message).toMatch(/exactly one "slideFrame"/);
   });
 });
 

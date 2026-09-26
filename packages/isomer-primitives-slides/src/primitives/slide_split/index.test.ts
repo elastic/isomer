@@ -14,6 +14,7 @@ import { stripMarks } from '../../render/marks';
 import { splitFit } from '../../theme/components/split';
 import { sizeForLoad } from '../size';
 import { example as codeExample } from '../slide_code/examples';
+import { authoredStrings, slackText } from '../test_helpers.fixtures';
 
 import { example, examples, mixedExample } from './examples';
 import { splitLoad } from './fit';
@@ -31,18 +32,7 @@ const compose = (node: PrimitiveNode): Composition => ({
   body: [{ type: 'slideFrame', body: [node] } as PrimitiveNode],
 });
 
-/** Every string in Slack blocks, entity-decoded, so authored copy can be found in it. */
-const slackText = (value: unknown): string =>
-  JSON.stringify(value)
-    .match(/"(?:[^"\\]|\\.)*"/g)
-    ?.map((literal) => JSON.parse(literal) as string)
-    .join('\n')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&') ?? '';
-
-/** Keys whose values are enum choices, not authored copy. */
-const enumKeys = new Set([
+const authored = authoredStrings([
   'type',
   'tone',
   'ratio',
@@ -51,19 +41,6 @@ const enumKeys = new Set([
   'role',
   'format',
 ]);
-
-const authored = (value: unknown, key = ''): string[] => {
-  if (typeof value === 'string') {
-    return enumKeys.has(key) || value === '' ? [] : [value];
-  }
-  if (Array.isArray(value)) {
-    return value.flatMap((entry) => authored(entry));
-  }
-  if (value && typeof value === 'object') {
-    return Object.entries(value).flatMap(([k, v]) => authored(v, k));
-  }
-  return [];
-};
 
 describe('slideSplit schema', () => {
   it('holds one to six items a side', () => {

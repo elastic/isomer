@@ -16,7 +16,7 @@ import {
 
 export const lineSlide = toComposition(
   <Slide title="Isomer owns layout. The host owns everything else.">
-    <SlideFrame {...frame} chapterNumber="02" chapter="The model">
+    <SlideFrame {...frame} sectionNumber="02" section="The model">
       <SlideHeading title="Isomer owns layout. The host owns everything else." />
       <SlideSplit
         divider="rule"

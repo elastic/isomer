@@ -34,12 +34,12 @@ const displayUrl = (url: string): string => url.replace(/^https?:\/\//, '');
 
 /** The footer as one line: brand, section, and address. */
 const footerLine = (
-  { brand, chapter, chapterNumber, url }: SlideFrameNode,
+  { brand, section, sectionNumber, url }: SlideFrameNode,
   formatUrl: (url: string) => string
 ): string =>
   [
     brand,
-    [chapterNumber, chapter].filter(Boolean).join(' '),
+    [sectionNumber, section].filter(Boolean).join(' '),
     url ? formatUrl(url) : '',
   ]
     .filter(Boolean)

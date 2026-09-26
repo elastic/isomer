@@ -44,7 +44,7 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | `someBodyNode` | Predicate over a body, following children |
 | `isVisibleOnSurface`, `rendersOnSurface` | Surface-visibility checks |
 | `nodeAnchor`, `NODE_ANCHOR_ATTRIBUTE` | Props a `react` renderer spreads on its root so its element can be found; empty unless `context.anchors` is set |
-| `findNodeElements` | Pairs a body's nodes with their anchored elements under a DOM root |
+| `findNodeElements` | Pairs a body's nodes with their anchored elements under a DOM root. Anchors serve enhancements and host code that must find a node's element; a host that only renders sets nothing and the render is unchanged |
 | `BODY_NODE_SURFACES` | `['react','svg','text','markdown','slack']` |
 
 ## Root entry — composition and validation
@@ -79,7 +79,7 @@ Zod helpers so a pack states constraints the same way everywhere: `z`, `enumOf`,
 
 ## `./html`
 
-`renderHTMLWithDispatcher`, `renderCompositionContent`, `useReactPrimitiveDispatcher`, `createDistillateHtmlStyleAdapter`, and the types a style adapter is written against: `HTMLStyleAdapter`, `DistillateHtmlEngine`, `DistillateThemeVar`, `HTMLRenderOptions`, `HTMLRenderResult`, `HTMLRenderDispatcher`, `HTMLDispatcherRenderOptions`, `HTMLEnhancementScope`, `EnhancementDefinition`, `ReactContentDispatcher`, `ReactContentOptions`. `createHTMLStyleCollection` (with `HTMLStyleCollectionOptions`) returns an `HTMLStyleCollection`, `{ context, css() }`: the same CSS `renderHTMLWithDispatcher` emits, collected from a React render the caller does with `context`, so a host that renders React itself never renders twice for its CSS. `HTMLRenderOptions.enhancements` is a list of enhancement ids; `resolveEnhancements` intersects it with what the body contains and `enhancementScript` concatenates the survivors' scripts, and `rendersAnchors` says whether a render carries node anchors. `HTMLRenderOptions.anchors` turns anchors on directly, for tests. `DISTILLATE_STYLE_COLLECTOR` is the `styleCollector` tag the Distillate adapter publishes, and `flattenSchemeOption` reduces a Distillate light/dark scheme option to one value.
+`renderHTMLWithDispatcher`, `renderCompositionContent`, `useReactPrimitiveDispatcher`, `createDistillateHtmlStyleAdapter`, and the types a style adapter is written against: `HTMLStyleAdapter`, `DistillateHtmlEngine`, `DistillateThemeVar`, `HTMLRenderOptions`, `HTMLRenderResult`, `HTMLRenderDispatcher`, `HTMLDispatcherRenderOptions`, `HTMLEnhancementScope`, `EnhancementDefinition`, `ReactContentDispatcher`, `ReactContentOptions`. `createHTMLStyleCollection` (with `HTMLStyleCollectionOptions`) returns an `HTMLStyleCollection`, `{ context, css() }`: the same CSS `renderHTMLWithDispatcher` emits, collected from a React render the caller does with `context`, so a host that renders React itself never renders twice for its CSS. `HTMLRenderOptions.enhancements` is a list of enhancement ids; `resolveEnhancements` intersects it with what the body contains and `enhancementScript` concatenates the survivors' scripts, and `rendersAnchors` says whether a render carries node anchors. `HTMLRenderOptions.anchors` turns anchors on without an enhancement asking, for hosts and tests that find nodes in the output. `DISTILLATE_STYLE_COLLECTOR` is the `styleCollector` tag the Distillate adapter publishes, and `flattenSchemeOption` reduces a Distillate light/dark scheme option to one value.
 
 ## `./react`
 

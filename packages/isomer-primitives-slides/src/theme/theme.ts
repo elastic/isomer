@@ -9,7 +9,7 @@ import { color, font, inverse, radius, space, stroke, type } from './base';
 import { agenda } from './components/agenda';
 import { annotatedRender } from './components/annotated_render';
 import { bars } from './components/bars';
-import { bullets } from './components/bullets';
+import { bulletList } from './components/bullet_list';
 import { closing } from './components/closing';
 import { code } from './components/code';
 import { columns } from './components/columns';
@@ -42,7 +42,7 @@ import { stat } from './components/stat';
 import { statement } from './components/statement';
 import { stats } from './components/stats';
 import { table } from './components/table';
-import { territory } from './components/territory';
+import { territoryGroup } from './components/territory_group';
 import { timeline } from './components/timeline';
 import { title } from './components/title';
 import { transcript } from './components/transcript';
@@ -71,7 +71,7 @@ export const SLIDE_THEME = {
   agenda,
   bars,
   annotatedRender,
-  bullets,
+  bulletList,
   closing,
   code,
   columns,
@@ -101,7 +101,7 @@ export const SLIDE_THEME = {
   statement,
   stats,
   table,
-  territory,
+  territoryGroup,
   timeline,
   title,
   transcript,

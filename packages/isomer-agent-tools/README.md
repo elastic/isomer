@@ -1,6 +1,6 @@
 # `@elastic/isomer-agent-tools`
 
-Turns any Isomer runtime into transport-neutral agent tools, resources, and a prompt. The tools read the authoring guide, look up the primitives it indexes, validate a composition, render it to text, Markdown, HTML, Slack, or PNG, and request registered views. The host brings the transport: an MCP server, the AI SDK, or its own agent framework.
+Turns any Isomer runtime into transport-neutral agent tools, resources, and a prompt. The tools read the authoring guide, look up the primitives it indexes, validate a composition, render it to text, Markdown, HTML, Slack, or PNG, and, when the runtime registers views, list and request them. The host brings the transport: an MCP server, the AI SDK, or its own agent framework.
 
 It is not published to npm yet; it lives in this repository until its API settles.
 

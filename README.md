@@ -25,7 +25,7 @@ The reference pack's example title slide is one composition. These are its commi
 
 The `svg` surface, rasterized to PNG:
 
-![The example deck's title slide, rendered to PNG through the svg surface](packages/isomer-primitives-slides/src/examples/deck/output/crate.png)
+![The example deck's title slide, rendered to PNG through the svg surface](packages/isomer-primitives-slides/src/examples/worked_example/output/crate.png)
 
 The `markdown` surface:
 

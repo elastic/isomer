@@ -16,7 +16,7 @@ import {
 
 export const commandsSlide = toComposition(
   <Slide title="Preview a primitive in three commands">
-    <SlideFrame {...frame} chapterNumber="05" chapter="Getting started">
+    <SlideFrame {...frame} sectionNumber="05" section="Getting started">
       <SlideHeading
         title="Preview a primitive in three commands"
         lede="The last one renders every example of a primitive to PNG, light and dark."
@@ -29,7 +29,7 @@ export const commandsSlide = toComposition(
       <SlideCommand
         label="Preview one primitive"
         command="SLIDE_PREVIEW=slideBars pnpm vitest run preview.test.ts"
-        highlight="SLIDE_PREVIEW=slideBars"
+        highlightPrefix="SLIDE_PREVIEW=slideBars"
       />
     </SlideFrame>
   </Slide>

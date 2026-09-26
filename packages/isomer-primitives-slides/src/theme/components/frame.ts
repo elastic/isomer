@@ -7,7 +7,7 @@
 
 import type { ScaleToken } from '@elastic/distillate';
 
-import { font, space, type } from '../base';
+import { font, space } from '../base';
 import { literal, px, scalePx } from '../scale';
 
 /** Fixed 16:9 canvas and its one-line footer. */
@@ -23,7 +23,6 @@ export const frame = {
   bodyGap: space.px48,
   footerBottom: space.px48,
   footerGap: space.px14,
-  footerFontSize: type.chrome.size,
   brandFontWeight: font.weight.semibold,
   separator: literal('·'),
   logoSize: px(28),

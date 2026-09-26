@@ -5,6 +5,8 @@
  * 2.0.
  */
 
+// The part a host copies to put the agent tools on an MCP server; the studio's transport stays in `../mcp.ts`.
+
 import type {
   IsomerPrompt,
   IsomerResource,

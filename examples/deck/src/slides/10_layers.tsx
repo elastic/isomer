@@ -16,7 +16,7 @@ import {
 
 export const layersSlide = toComposition(
   <Slide title="Five layers, four owners">
-    <SlideFrame {...frame} chapterNumber="02" chapter="The model">
+    <SlideFrame {...frame} sectionNumber="02" section="The model">
       <SlideHeading title="Five layers, four owners" />
       <SlideLayers
         layers={[

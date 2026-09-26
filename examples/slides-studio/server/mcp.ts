@@ -8,56 +8,25 @@
 import { randomUUID } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
-import { runtime } from '@elastic/isomer-deck/runtime';
-import {
-  slideOverflow,
-  slideOverlaps,
-} from '@elastic/isomer-primitives-slides';
-import type { Composition } from '@elastic/isomer-sdk';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 
-import type { StudioState } from './app';
-import { createSlidesHost } from './host/slides_host';
-import { registerIsomer } from './mcp_adapter';
+import { runtime } from '../common/runtime';
 
-/** Open MCP sessions, by session id, with the module evaluation that built each one's tools. */
-export type McpSessions = Map<
-  string,
-  { transport: StreamableHTTPServerTransport; build: object }
->;
+import { registerIsomer } from './adapters/mcp';
+import { createSlidesHost } from './host/slides_host';
+import { slideRenderers } from './render';
+import type { StudioState } from './state';
 
 // A new object each time Vite re-evaluates this module after the runtime, the pack, or the tools change.
 const build = {};
-
-const pngOf =
-  ({ takumi }: StudioState) =>
-  async (composition: Composition, theme: 'light' | 'dark') =>
-    takumi.png(
-      runtime.surfaces.svg.render(composition, {
-        onValidationError: 'collect',
-        theme,
-      })
-    );
-
-const layoutOf =
-  ({ takumi }: StudioState) =>
-  async (composition: Composition) => {
-    const layout = await takumi.measure(
-      runtime.surfaces.svg.render(composition, {
-        onValidationError: 'collect',
-      })
-    );
-    return { overflow: slideOverflow(layout), overlaps: slideOverlaps(layout) };
-  };
 
 const createServer = (state: StudioState, origin: string) => {
   const host = createSlidesHost({
     runtime,
     store: state.store,
-    png: pngOf(state),
-    layoutOf: layoutOf(state),
+    ...slideRenderers(state.takumi),
     viewerUrl: (id) => `${origin}/decks/${id}`,
   });
   const server = new McpServer(

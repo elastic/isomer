@@ -31,7 +31,7 @@ const packCss = kb(slideStylesheet());
 
 export const renderSlide = toComposition(
   <Slide title="Every render runs the same four steps">
-    <SlideFrame {...frame} chapterNumber="03" chapter="How it works">
+    <SlideFrame {...frame} sectionNumber="03" section="How it works">
       <SlideHeading title="Every render runs the same four steps" />
       <SlidePipeline
         start="Composition"

@@ -18,6 +18,7 @@ import { repoRoot, workspacePackages } from './workspace_packages.js';
 
 /**
  * Specifiers that must stay unreachable from an entry, by package and export key.
+ * A forbidden specifier covers the package and every subpath under it.
  *
  * `react-dom/server` is the one worth guarding: it is the heavy server renderer,
  * and pulling it onto an entry a text-only or edge host imports costs that host
@@ -26,6 +27,9 @@ import { repoRoot, workspacePackages } from './workspace_packages.js';
  * Bare `react` is deliberately absent. `render/primitive_dispatch` uses
  * `cloneElement` and `isValidElement` to carry React renderers, so every surface
  * reaches it through the shared dispatcher — that is the design, not a leak.
+ *
+ * `@elastic/isomer-agent-tools` is transport-neutral: hosts bring the MCP SDK,
+ * so no subpath of it may be reachable.
  */
 const RULES = {
   '@elastic/isomer-sdk': {
@@ -36,12 +40,12 @@ const RULES = {
     './author': ['react-dom', 'react-dom/server'],
   },
   '@elastic/isomer-agent-tools': {
-    '.': [
-      '@modelcontextprotocol/sdk/server/mcp.js',
-      '@modelcontextprotocol/sdk/types.js',
-    ],
+    '.': ['@modelcontextprotocol/sdk'],
   },
 };
+
+const matchesForbidden = (specifier, forbidden) =>
+  specifier === forbidden || specifier.startsWith(`${forbidden}/`);
 
 const specifiersIn = (file) => specifiersInSource(readFileSync(file, 'utf-8'));
 
@@ -97,11 +101,13 @@ for (const [packageName, entryRules] of Object.entries(RULES)) {
     const reachable = reachableBareSpecifiers(entryFile);
     checked += 1;
 
-    for (const specifier of forbidden) {
-      if (reachable.has(specifier)) {
-        violations.push(
-          `${packageName} "${exportKey}" (${relative(repoRoot, entryFile)}) reaches "${specifier}"`
-        );
+    for (const rule of forbidden) {
+      for (const specifier of reachable) {
+        if (matchesForbidden(specifier, rule)) {
+          violations.push(
+            `${packageName} "${exportKey}" (${relative(repoRoot, entryFile)}) reaches "${specifier}"`
+          );
+        }
       }
     }
   }

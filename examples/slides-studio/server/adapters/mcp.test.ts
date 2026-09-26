@@ -25,7 +25,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { registerIsomer } from './mcp_adapter';
+import { registerIsomer } from './mcp';
 
 const slide = slideDeckPrimitives.find(({ type }) => type === 'slideFrame')!
   .examples[0];
@@ -72,12 +72,13 @@ describe('registerIsomer', () => {
     return connection;
   };
 
-  it('lists the tools with JSON Schema inputs', async () => {
+  it('lists the tools with JSON Schema inputs, without the view tools since the studio registers no views', async () => {
     const { client } = await connected();
     const { tools } = await client.listTools();
-    expect(tools.map(({ name }) => name)).toEqual(
-      Object.values(ISOMER_TOOL_NAMES)
-    );
+    const { listViews, requestView, ...offered } = ISOMER_TOOL_NAMES;
+    expect(tools.map(({ name }) => name)).toEqual(Object.values(offered));
+    expect(tools.map(({ name }) => name)).not.toContain(listViews);
+    expect(tools.map(({ name }) => name)).not.toContain(requestView);
     const render = tools.find(({ name }) => name === ISOMER_TOOL_NAMES.render);
     expect(render?.inputSchema.properties?.surface).toMatchObject({
       enum: ['text', 'markdown', 'html', 'slack', 'png'],

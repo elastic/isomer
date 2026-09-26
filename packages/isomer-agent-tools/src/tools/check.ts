@@ -5,7 +5,11 @@
  * 2.0.
  */
 
-import { type Composition, formatValidationError } from '@elastic/isomer-sdk';
+import {
+  type Composition,
+  formatValidationError,
+  type ValidationError,
+} from '@elastic/isomer-sdk';
 
 import type {
   IsomerToolsFrame,
@@ -16,7 +20,10 @@ import type {
 /** The outcome of {@link checkComposition}, worded for a model to act on. */
 export interface CompositionCheck {
   valid: boolean;
+  /** {@link CompositionCheck.findings} as `formatValidationError` strings. */
   errors: string[];
+  /** Every error with its path and node type, for a host that renders findings itself. A frame rule's finding has an empty path. */
+  findings: ValidationError[];
   warnings: string[];
   /** The parsed composition, present whenever it matched the schema. */
   composition?: Composition | undefined;
@@ -34,20 +41,26 @@ export const checkComposition = (
   const parsed = runtime.parse(value);
   const { composition } = parsed;
   if (!parsed.valid || composition === undefined) {
+    const findings = [...parsed.errors];
     return {
       valid: false,
-      errors: parsed.errors.map(formatValidationError),
+      errors: findings.map(formatValidationError),
+      findings,
       warnings: [],
     };
   }
   const { errors, warnings = [] } = runtime.validate(composition);
-  const allErrors = [
-    ...errors.map(formatValidationError),
-    ...(frame?.validateBody?.(composition.body) ?? []),
+  const findings: ValidationError[] = [
+    ...errors,
+    ...(frame?.validateBody?.(composition.body) ?? []).map((message) => ({
+      path: '',
+      message,
+    })),
   ];
   return {
-    valid: allErrors.length === 0,
-    errors: allErrors,
+    valid: findings.length === 0,
+    errors: findings.map(formatValidationError),
+    findings,
     warnings: warnings.map(formatWarning),
     composition,
   };

@@ -6,7 +6,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import type { Theme } from '@elastic/isomer-deck/surfaces';
+import type { Theme } from '@elastic/isomer-deck/viewer';
 
 const key = 'isomer-studio-theme';
 

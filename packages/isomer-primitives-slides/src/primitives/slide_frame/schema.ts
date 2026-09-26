@@ -28,18 +28,18 @@ export const schema = z
         'Name at the left of the footer, e.g. the product. Keep it the same on every slide.'
       )
       .optional(),
-    chapter: z
+    section: z
       .string()
       .min(1)
       .describe(
         'Title of the section this slide belongs to, shown in the footer.'
       )
       .optional(),
-    chapterNumber: z
+    sectionNumber: z
       .string()
       .min(1)
       .describe(
-        'Number of the section this slide belongs to, shown before `chapter`.'
+        'Number of the section this slide belongs to, shown before `section`.'
       )
       .optional(),
     logo: z

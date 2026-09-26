@@ -5,8 +5,8 @@
  * 2.0.
  */
 
-import { toJsx } from '@elastic/isomer-deck/shim';
 import type { DeckSlide } from '@elastic/isomer-deck/viewer';
+import { slideJsx } from '@elastic/isomer-primitives-slides';
 import type { Composition } from '@elastic/isomer-sdk';
 
 import type { Deck } from './decks';
@@ -27,7 +27,7 @@ export const toSlides = ({ slides, stored }: Deck): DeckSlide[] =>
       slug: slugOf(index, composition),
       composition,
       sources: [
-        { id: 'jsx', label: 'JSX', text: toJsx(source) },
+        { id: 'jsx', label: 'JSX', text: slideJsx.toJsx(source) },
         { id: 'json', label: 'JSON', text: JSON.stringify(source, null, 2) },
       ],
     };

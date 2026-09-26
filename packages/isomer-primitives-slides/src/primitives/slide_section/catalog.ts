@@ -15,7 +15,7 @@ export const catalog = {
   purpose:
     'Tell the audience a new part of the deck is starting, and what it will cover.',
   useWhen: [
-    'Opening a chapter of a long deck; it is the only node in an inverse frame.',
+    'Opening a section of a long deck; it is the only node in an inverse frame.',
     'The audience should see the slides ahead as a short list before they start.',
   ],
   avoidWhen: [

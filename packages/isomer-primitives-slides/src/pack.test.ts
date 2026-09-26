@@ -88,7 +88,7 @@ describe('children declarations', () => {
   it('slideFrame.children walks body', () => {
     const frame: SlideFrameNode = {
       type: 'slideFrame',
-      chapter: 'test',
+      section: 'test',
       url: 'https://example.com',
       body: [
         { type: 'slideHeading', title: 'T1' },
@@ -104,7 +104,7 @@ describe('children declarations', () => {
   it('slideFrame.hasOwnContent is true', () => {
     const frame: SlideFrameNode = {
       type: 'slideFrame',
-      chapter: 'c',
+      section: 'c',
       url: 'https://example.com',
       body: [{ type: 'slideHeading', title: 'T' }],
     };
@@ -143,7 +143,7 @@ describe('children declarations', () => {
       body: [
         {
           type: 'slideFrame',
-          chapter: 'c',
+          section: 'c',
           url: 'https://example.com',
           body: [
             {
@@ -177,7 +177,7 @@ describe('RenderScope recursion', () => {
       body: [
         {
           type: 'slideFrame',
-          chapter: 'c',
+          section: 'c',
           url: 'https://example.com',
           body: [
             {
@@ -200,7 +200,7 @@ describe('RenderScope recursion', () => {
       body: [
         {
           type: 'slideFrame',
-          chapter: 'c',
+          section: 'c',
           url: 'https://example.com',
           body: [
             {
@@ -222,7 +222,7 @@ describe('RenderScope recursion', () => {
       body: [
         {
           type: 'slideFrame',
-          chapter: 'c',
+          section: 'c',
           url: 'https://example.com',
           body: [
             {
@@ -244,7 +244,7 @@ describe('RenderScope recursion', () => {
       body: [
         {
           type: 'slideFrame',
-          chapter: 'c',
+          section: 'c',
           url: 'https://example.com',
           body: [
             {
@@ -307,7 +307,7 @@ describe('sanitize via scope', () => {
       body: [
         {
           type: 'slideFrame',
-          chapter: 'c',
+          section: 'c',
           url: 'javascript:alert(1)',
           body: [{ type: 'slideHeading', title: 'Test' }],
         },

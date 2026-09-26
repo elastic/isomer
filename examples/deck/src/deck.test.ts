@@ -12,7 +12,10 @@ import type {
   SlideFrameNode,
   SlideSectionNode,
 } from '@elastic/isomer-primitives-slides';
-import { slideDeckPrimitives } from '@elastic/isomer-primitives-slides';
+import {
+  slideDeckPrimitives,
+  slideJsx,
+} from '@elastic/isomer-primitives-slides';
 import { mapCompositionNodes, type PrimitiveNode } from '@elastic/isomer-sdk';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
@@ -23,7 +26,7 @@ import * as shim from './shim';
 import { slideCount } from './slide_count';
 import { firstAttempt, secondAttempt } from './slides/14_agent';
 import { addedSinceRedesign } from './slides/27_growth';
-import { themes } from './surfaces';
+import { themes } from './viewer/surfaces';
 
 const frameOf = ({ composition }: (typeof deck)[number]) =>
   composition.body[0] as SlideFrameNode;
@@ -72,14 +75,14 @@ describe('deck', () => {
   });
 
   it('footers name the section each slide belongs to', () => {
-    let section: SlideSectionNode | undefined;
+    let current: SlideSectionNode | undefined;
     for (const slide of deck) {
-      section = sectionOf(slide) ?? section;
-      const { chapter, chapterNumber } = frameOf(slide);
-      expect({ slug: slide.slug, chapter, chapterNumber }).toEqual({
+      current = sectionOf(slide) ?? current;
+      const { section, sectionNumber } = frameOf(slide);
+      expect({ slug: slide.slug, section, sectionNumber }).toEqual({
         slug: slide.slug,
-        chapter: section?.title,
-        chapterNumber: section?.number,
+        section: current?.title,
+        sectionNumber: current?.number,
       });
     }
   });
@@ -133,6 +136,20 @@ describe('deck', () => {
       });
       expect(html.match(/\w+Size-[ms]\b/g), composition.title).toBeNull();
     }
+  });
+
+  it('re-exports every slideJsx component, with Composition as Slide', () => {
+    const exported = shim as Record<string, unknown>;
+    // `component` builds components for types outside the pack, which the deck never draws.
+    const missing = Object.keys(slideJsx).filter((name) => {
+      const local = name === 'Composition' ? 'Slide' : name;
+      return name === 'component'
+        ? false
+        : name === 'toJsx'
+          ? typeof exported[local] !== 'function'
+          : exported[local] !== slideJsx[name as keyof typeof slideJsx];
+    });
+    expect(missing).toEqual([]);
   });
 
   it('prints every slide as JSX that parses back to the same composition', () => {

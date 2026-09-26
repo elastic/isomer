@@ -9,7 +9,7 @@ import { slideDistillery } from '../../theme/distillery';
 import { typeRole } from '../../theme/type_role';
 
 const { createStyleModule, tokens } = slideDistillery;
-const { bullets, color } = tokens;
+const { bulletList, color } = tokens;
 
 /** Distillate module for `slideBulletList`. */
 export const bulletsModule = createStyleModule('bullets', ({ css }) => ({
@@ -18,10 +18,10 @@ export const bulletsModule = createStyleModule('bullets', ({ css }) => ({
     flex-direction: column;
   `,
   label: css`
-    margin-bottom: ${bullets.labelGap};
+    margin-bottom: ${bulletList.labelGap};
   `,
   list: css`
-    border-top: ${bullets.rule} solid ${color.border};
+    border-top: ${bulletList.rule} solid ${color.border};
     display: flex;
     flex-direction: column;
     list-style: none;
@@ -29,12 +29,12 @@ export const bulletsModule = createStyleModule('bullets', ({ css }) => ({
     padding: 0;
   `,
   item: css`
-    border-bottom: ${bullets.rule} solid ${color.border};
+    border-bottom: ${bulletList.rule} solid ${color.border};
     color: ${color.text};
     display: flex;
-    gap: ${bullets.markerGap};
-    ${typeRole(bullets.item)}
-    padding: ${bullets.rowPadding};
+    gap: ${bulletList.markerGap};
+    ${typeRole(bulletList.item)}
+    padding: ${bulletList.rowPadding};
   `,
   text: css`
     flex: 1;
@@ -45,23 +45,23 @@ export const bulletsModule = createStyleModule('bullets', ({ css }) => ({
     align-items: center;
     display: flex;
     flex: 0 0 auto;
-    height: ${bullets.markerHeight};
+    height: ${bulletList.markerHeight};
     justify-content: center;
-    width: ${bullets.markerWidth};
+    width: ${bulletList.markerWidth};
   `,
   dot: css`
     background: ${color.primary};
     border-radius: 50%;
-    height: ${bullets.dotSize};
-    width: ${bullets.dotSize};
+    height: ${bulletList.dotSize};
+    width: ${bulletList.dotSize};
   `,
   check: css`
-    border-bottom: ${bullets.checkStroke} solid ${color.primary};
-    border-right: ${bullets.checkStroke} solid ${color.primary};
+    border-bottom: ${bulletList.checkStroke} solid ${color.primary};
+    border-right: ${bulletList.checkStroke} solid ${color.primary};
     box-sizing: border-box;
-    height: ${bullets.checkHeight};
-    transform: rotate(${bullets.checkAngle});
-    width: ${bullets.checkWidth};
+    height: ${bulletList.checkHeight};
+    transform: rotate(${bulletList.checkAngle});
+    width: ${bulletList.checkWidth};
   `,
   cross: css`
     color: ${color.textSubtle};

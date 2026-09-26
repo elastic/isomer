@@ -14,7 +14,7 @@ The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, a
 
 `packages/isomer-agent-tools` turns any runtime into transport-neutral agent tools, resources, and a `compose` prompt. It declares the runtime structurally and depends on the SDK alone; hosts bring the transport, and it must never reach `@modelcontextprotocol/sdk`, which `scripts/check_module_graph.js` enforces.
 
-`examples/` holds private, runnable apps built on the packages. Each is a workspace member outside `packages/`, so publishing, export, and license checks never see it. Vite there is for the apps only; the library build stays `tsc`.
+`examples/` holds private, runnable apps built on the packages. Each is a workspace member outside `packages/`, so publishing, export, and license checks never see it. Vite there is for the apps only; the library build stays `tsc`. `examples/README.md` holds the recipe for adding one.
 
 `examples/deck` is the Isomer deck: one `.tsx` composition per slide, rendered by the slides pack. The docs workflow copies its build to `/deck/` on the Pages site.
 

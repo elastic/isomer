@@ -21,8 +21,8 @@ export const previewSlide = (node: PrimitiveNode): Composition => ({
       : ({
           type: 'slideFrame',
           brand: 'Isomer',
-          chapter: 'Preview',
-          chapterNumber: '01',
+          section: 'Preview',
+          sectionNumber: '01',
           url: 'https://elastic.github.io/isomer',
           tone: inverseTypes.has(node.type) ? 'inverse' : 'page',
           body:

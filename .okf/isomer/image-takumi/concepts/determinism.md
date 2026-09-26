@@ -11,7 +11,7 @@ sources:
     resource: https://github.com/elastic/isomer/blob/main/packages/isomer-image-takumi/docs/index.md
     title: Package docs
   - id: examples
-    resource: https://github.com/elastic/isomer/blob/main/packages/isomer-primitives-slides/src/examples/deck/output
+    resource: https://github.com/elastic/isomer/blob/main/packages/isomer-primitives-slides/src/examples/worked_example/output
     title: Committed PNG artifacts
 ---
 

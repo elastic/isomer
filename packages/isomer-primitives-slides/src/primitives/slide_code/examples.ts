@@ -21,7 +21,7 @@ export const example: SlideCodeNode = {
         '  return notify(order.customer);',
         '};',
       ],
-      highlight: [2],
+      highlightLines: [2],
     },
   ],
 };
@@ -44,7 +44,7 @@ export const traceExample: SlideCodeNode = {
       file: 'config.yaml',
       language: 'yaml',
       lines: ['checkout:', '  timeout: 30s', '  retries: 3'],
-      highlight: [2],
+      highlightLines: [2],
     },
     {
       file: 'client.ts',
@@ -55,7 +55,7 @@ export const traceExample: SlideCodeNode = {
         '  retries: config.checkout.retries,',
         '});',
       ],
-      highlight: [2],
+      highlightLines: [2],
     },
   ],
 };
@@ -84,7 +84,7 @@ export const denseExample: SlideCodeNode = {
         '  }',
         '}',
       ],
-      highlight: [4, 12],
+      highlightLines: [4, 12],
     },
   ],
 };

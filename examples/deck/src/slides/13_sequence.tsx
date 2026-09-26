@@ -26,7 +26,7 @@ const firstErrors = runtime
 
 export const sequenceSlide = toComposition(
   <Slide title="One agent turn, with a retry">
-    <SlideFrame {...frame} chapterNumber="02" chapter="The model">
+    <SlideFrame {...frame} sectionNumber="02" section="The model">
       <SlideHeading title="One agent turn, with a retry" />
       <SlideSequence
         actors={[

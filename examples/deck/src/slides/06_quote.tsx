@@ -9,7 +9,7 @@ import { frame, Slide, SlideFrame, SlideQuote, toComposition } from '../shim';
 
 export const quoteSlide = toComposition(
   <Slide title="JSX is authoring sugar">
-    <SlideFrame {...frame} chapterNumber="01" chapter="The problem">
+    <SlideFrame {...frame} sectionNumber="01" section="The problem">
       <SlideQuote
         text="JSX is **authoring sugar**, not a second representation."
         source="Authoring a primitive"

@@ -16,7 +16,7 @@ import {
 
 export const imagesSlide = toComposition(
   <Slide title="Images take two steps">
-    <SlideFrame {...frame} chapterNumber="03" chapter="How it works">
+    <SlideFrame {...frame} sectionNumber="03" section="How it works">
       <SlideHeading
         title="Images take two steps"
         lede="The svg surface stops at an element and a stylesheet. Turning that into pixels is a capability the host adds."

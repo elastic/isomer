@@ -21,8 +21,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { deck } from './deck';
-import { pngPath } from './surfaces';
 import { Viewer } from './viewer/app';
+import { pngPath } from './viewer/surfaces';
 
 const root = document.getElementById('root');
 if (root) {

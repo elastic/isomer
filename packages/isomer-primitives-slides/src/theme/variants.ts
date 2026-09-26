@@ -106,6 +106,19 @@ export const slideMatrixColumnCounts = [
 /** One of {@link slideMatrixColumnCounts}. */
 export type SlideMatrixColumnCount = (typeof slideMatrixColumnCounts)[number];
 
+/** Column counts a {@link SlideTableNode} allows, by name; index `n - 1` is `n` columns. */
+export const slideTableColumnCounts = [
+  'one',
+  'two',
+  'three',
+  'four',
+  'five',
+  'six',
+] as const;
+
+/** One of {@link slideTableColumnCounts}. */
+export type SlideTableColumnCount = (typeof slideTableColumnCounts)[number];
+
 /** Changes a {@link SlideDiffNode} line can mark. */
 export const slideDiffOps = ['add', 'remove'] as const;
 

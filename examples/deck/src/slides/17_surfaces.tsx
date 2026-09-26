@@ -18,7 +18,7 @@ import { titleSlide } from './00_title';
 
 export const surfacesSlide = toComposition(
   <Slide title="One composition renders to six surfaces">
-    <SlideFrame {...frame} chapterNumber="03" chapter="How it works">
+    <SlideFrame {...frame} sectionNumber="03" section="How it works">
       <SlideHeading
         title="One composition renders to six surfaces"
         lede="Each tile is the same composition, rendered by a different surface."

@@ -19,7 +19,7 @@ import { schema, type SlideBulletListNode } from './schema';
 
 export type { SlideBulletListNode } from './schema';
 
-const { checkGlyph, crossGlyph } = slideDistillery.tokens.bullets;
+const { checkGlyph, crossGlyph } = slideDistillery.tokens.bulletList;
 
 const textMarkers: Record<SlideBulletMarker, string> = {
   dot: '-',

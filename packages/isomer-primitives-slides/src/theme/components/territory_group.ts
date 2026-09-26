@@ -8,7 +8,7 @@
 import { space, stroke, type } from '../base';
 
 /** `slideTerritoryGroup`: who owns what, keyed by tone. */
-export const territory = {
+export const territoryGroup = {
   gap: space.px64,
   rule: stroke.bar,
   paddingLeft: space.px32,

@@ -13,11 +13,6 @@ import type { Deck } from './deck';
 const named = (slides: readonly Composition[]) =>
   slides.map((composition, index) => ({ slug: String(index), composition }));
 
-/**
- * A deck with every `slideRender` reference, a slide index as a string,
- * filled in from its own slides. One that no longer resolves (a slide moved
- * or was removed) draws its placeholder rather than breaking the deck.
- */
 /** A deck as its viewers read it: references filled for drawing, and the slides as stored for showing their source. */
 export interface DeckView extends Deck {
   stored: Composition[];
@@ -29,6 +24,11 @@ export const viewDeck = (deck: Deck): DeckView => ({
   stored: deck.slides,
 });
 
+/**
+ * A deck with every `slideRender` reference, a slide index as a string,
+ * filled in from its own slides. One that no longer resolves (a slide moved
+ * or was removed) draws its placeholder rather than breaking the deck.
+ */
 export const resolveDeck = (deck: Deck): Deck => ({
   ...deck,
   slides: resolveSlideRenders(named(deck.slides), { onUnresolved: 'leave' }),

@@ -23,7 +23,7 @@ import { describe, expect, it } from 'vitest';
 import { slideDeckFrame, slidesPack } from '../pack';
 import { slideDeckPrimitives } from '../registry';
 
-import { deckFonts } from './deck/fonts';
+import { slideFonts } from './fonts';
 import { previewSlide } from './preview_slide';
 
 const requested = process.env.SLIDE_PREVIEW?.split(',').filter(Boolean) ?? [];
@@ -34,7 +34,7 @@ const runtime = createIsomerRuntime({
   packs: [slidesPack],
   frames: { slide: slideDeckFrame },
 });
-const takumi = createTakumiImageBackend({ fonts: deckFonts });
+const takumi = createTakumiImageBackend({ fonts: slideFonts });
 
 const compose = previewSlide;
 

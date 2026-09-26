@@ -73,7 +73,7 @@ export interface PrimitiveRenderContext {
    * still answer the question on its own. See `docs/rendering.md`.
    */
   enhancements?: ReadonlySet<string>;
-  /** Renderers mark their root with `nodeAnchor` so runtime code can find a node's element. */
+  /** Renderers spread `nodeAnchor` on their root so a node's element can be found. Hosts leave it unset unless they call `findNodeElements`. */
   anchors?: boolean;
   /** Raises an interaction for the host to route. Absent means render non-interactively. */
   onEvent?: (event: ActionEventRef) => void;

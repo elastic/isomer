@@ -14,11 +14,10 @@ import { ISOMER_TOOL_NAMES } from './names';
 import type { IsomerToolsBaseOptions } from './types';
 
 /** The guide {@link buildIsomerAuthoringGuide} opens with when a host supplies none. */
-export const DEFAULT_ISOMER_GUIDE =
-  'Answer with a single composition built only from the primitives below. Prefer one primitive that says the whole thing over several that each say part of it. Call `isomer_validate` before rendering and repair every error it reports.';
+export const DEFAULT_ISOMER_GUIDE = `Answer with a single composition built only from the primitives below. Prefer one primitive that says the whole thing over several that each say part of it. When \`${ISOMER_TOOL_NAMES.listViews}\` is offered, prefer a registered view that answers the question over composing one. Call \`${ISOMER_TOOL_NAMES.validate}\` before rendering and repair every error it reports.`;
 
-/** Server or system instructions pointing an agent at the tools in order. */
-export const DEFAULT_ISOMER_INSTRUCTIONS = `Answers are compositions: typed JSON the host validates and renders. Read \`${ISOMER_TOOL_NAMES.authoringGuide}\`, look up the primitives you pick with \`${ISOMER_TOOL_NAMES.describePrimitives}\`, check the composition with \`${ISOMER_TOOL_NAMES.validate}\`, and render it with \`${ISOMER_TOOL_NAMES.render}\`.`;
+/** Server or system instructions pointing an agent at the tools in order. The view tools are named conditionally, since a host without views offers none. */
+export const DEFAULT_ISOMER_INSTRUCTIONS = `Answers are compositions: typed JSON the host validates and renders. Read \`${ISOMER_TOOL_NAMES.authoringGuide}\`, look up the primitives you pick with \`${ISOMER_TOOL_NAMES.describePrimitives}\`, check the composition with \`${ISOMER_TOOL_NAMES.validate}\`, and render it with \`${ISOMER_TOOL_NAMES.render}\`. When \`${ISOMER_TOOL_NAMES.listViews}\` is offered, check it first: a registered view that answers the question is requested with \`${ISOMER_TOOL_NAMES.requestView}\` rather than composed.`;
 
 const LOOKUP = `## Before you write\n\nCall \`${ISOMER_TOOL_NAMES.describePrimitives}\` with every type you plan to use, the containers you nest in included, for each one's full entry and JSON Schema. A validation error names the primitive it lands in, so look that one up when you repair it.`;
 

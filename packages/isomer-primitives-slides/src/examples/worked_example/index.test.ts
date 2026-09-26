@@ -15,8 +15,8 @@ import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { slideFonts } from '../fonts';
 
-import { deckFonts } from './fonts';
 import { deck } from './index';
 
 const outputDir = join(dirname(fileURLToPath(import.meta.url)), 'output');
@@ -26,7 +26,7 @@ const runtime = createIsomerRuntime({
   frames: { slide: slideDeckFrame },
 });
 
-const takumi = createTakumiImageBackend({ fonts: deckFonts });
+const takumi = createTakumiImageBackend({ fonts: slideFonts });
 
 // A slide opens with its own heading; the composition title only names it.
 const heading = false;

@@ -51,7 +51,7 @@ const rows = matrixRows.map((type): SlideMatrixRow => {
 
 export const matrixSlide = toComposition(
   <Slide title="Slack gets Markdown when a primitive has no blocks">
-    <SlideFrame {...frame} chapterNumber="03" chapter="How it works">
+    <SlideFrame {...frame} sectionNumber="03" section="How it works">
       <SlideHeading
         title="Slack gets Markdown when a primitive has no blocks"
         lede="**Partial** means the Slack surface converts the primitive's Markdown to Block Kit."

@@ -49,8 +49,8 @@ const composition: Composition = {
     {
       type: 'slideFrame',
       brand: 'Isomer',
-      chapterNumber: '01',
-      chapter: 'The problem',
+      sectionNumber: '01',
+      section: 'The problem',
       url: 'https://elastic.github.io/isomer',
       body: [
         {

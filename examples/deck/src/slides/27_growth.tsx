@@ -40,7 +40,7 @@ const atRedesign = today - addedSinceRedesign.length;
 
 export const growthSlide = toComposition(
   <Slide title="The pack kept growing after the redesign">
-    <SlideFrame {...frame} chapterNumber="04" chapter="Building a pack">
+    <SlideFrame {...frame} sectionNumber="04" section="Building a pack">
       <SlideHeading title="The pack kept growing after the redesign" />
       <SlideDelta
         before={{ label: 'The redesign', value: String(atRedesign) }}

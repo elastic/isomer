@@ -6,7 +6,7 @@
  */
 
 // Modules more than one primitive reads. Each primitive's own module lives in
-// its folder's `styles.ts`; `slide_modules.ts` collects them all.
+// its folder's `styles.ts`; `src/stylesheet.ts` collects them all.
 
 import { variants } from '@elastic/distillate';
 

@@ -11,8 +11,8 @@ export const startSlide = toComposition(
   <Slide title="Start here">
     <SlideFrame
       {...frame}
-      chapterNumber="05"
-      chapter="Getting started"
+      sectionNumber="05"
+      section="Getting started"
       tone="inverse">
       <SlideClosing
         title="Start here"
@@ -38,8 +38,8 @@ export const startSlide = toComposition(
             body: 'The SDK quick start, then Authoring a primitive',
           },
           {
-            title: 'Wire up an agent',
-            body: 'The authoring context and the parse-and-retry loop',
+            title: 'Watch an agent write a deck',
+            body: '`pnpm studio:dev`, then `claude mcp add --transport http isomer-slides http://localhost:5178/mcp`',
           },
           { title: 'Draw images', body: 'The Takumi backend and its fonts' },
           {

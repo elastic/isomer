@@ -6,9 +6,10 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { runtime } from '@elastic/isomer-deck/runtime';
-import type { Theme } from '@elastic/isomer-deck/surfaces';
+import type { Theme } from '@elastic/isomer-deck/viewer';
 import type { Composition } from '@elastic/isomer-sdk';
+
+import { runtime } from '../common/runtime';
 
 import { TopBar } from './chrome';
 import { useDeck } from './decks';

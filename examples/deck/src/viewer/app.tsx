@@ -17,11 +17,11 @@ import { slideBuilds } from '@elastic/isomer-primitives-slides';
 import { formatValidationError } from '@elastic/isomer-sdk';
 
 import { runtime } from '../runtime';
-import { surfaces, type Theme } from '../surfaces';
 
 import { readRoute, type Route, writeRoute } from './route';
 import { SourcePanel } from './source_panel';
 import { Stage } from './stage';
+import { surfaces, type Theme } from './surfaces';
 import type { DeckSlide, PngUrl } from './types';
 
 const preferredTheme = (): Theme =>

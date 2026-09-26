@@ -19,8 +19,8 @@ export const checkoutSlide: Composition<BodyNode> = {
     {
       type: 'slideFrame',
       brand: 'Basket',
-      chapter: 'Checkout',
-      chapterNumber: '03',
+      section: 'Checkout',
+      sectionNumber: '03',
       body: [
         {
           type: 'slideHeading',
@@ -76,7 +76,7 @@ export const example: SlideAnnotatedRenderNode = {
       x: 27,
       y: 93,
       title: 'Footer',
-      body: 'Brand and chapter, the same on every slide.',
+      body: 'Brand and section, the same on every slide.',
     },
   ],
 };

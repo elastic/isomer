@@ -83,7 +83,7 @@ Runtime code that acts on a rendered node, such as a host stepping through a sli
 react: (node, { context }) => <ol {...nodeAnchor(context, node)}>…</ol>,
 ```
 
-Anchors render only when `context.anchors` is set, so a render nobody acts on carries none. The HTML surface sets it when a resolved enhancement declares `anchors: true`, or when a test asks with `anchors: true`. A React host sets it on the context it passes.
+Anchors are for enhancements and for host code that must find a node's element. A host that only renders sets nothing: `context.anchors` stays off and the render is unchanged. The HTML surface sets it when a resolved enhancement declares `anchors: true`, or when a host or test asks with the `anchors: true` render option. A React host that calls `findNodeElements` sets it on the context it passes.
 
 `findNodeElements(root, composition.body, walk)` pairs each `react`-visible node with its element: the k-th node of a type, walked pre-order, is the k-th element anchored with that type in document order. A type whose counts disagree is left out, so the caller falls back to its baseline. For the pairing to hold, anything a renderer draws that is not one of its `children` must render with `anchors: false`.
 

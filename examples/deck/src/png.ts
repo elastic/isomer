@@ -10,7 +10,7 @@ import { createTakumiImageBackend } from '@elastic/isomer-image-takumi';
 import { deck } from './deck';
 import { deckFonts } from './fonts';
 import { runtime } from './runtime';
-import type { Theme } from './surfaces';
+import type { Theme } from './viewer/surfaces';
 
 const takumi = createTakumiImageBackend({ fonts: deckFonts });
 

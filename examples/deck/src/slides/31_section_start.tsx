@@ -11,14 +11,14 @@ export const sectionStartSlide = toComposition(
   <Slide title="Getting started">
     <SlideFrame
       {...frame}
-      chapterNumber="05"
-      chapter="Getting started"
+      sectionNumber="05"
+      section="Getting started"
       tone="inverse">
       <SlideSection
         number="05"
         title="Getting started"
         contents={[
-          'Six packages ship at one version',
+          'Four packages publish; two stay in the repo',
           'Preview a primitive in three commands',
           'What is done, and what comes next',
           'Start here',

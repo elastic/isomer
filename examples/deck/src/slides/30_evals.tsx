@@ -16,7 +16,7 @@ import {
 
 export const evalsSlide = toComposition(
   <Slide title="Measure a model against your pack">
-    <SlideFrame {...frame} chapterNumber="04" chapter="Building a pack">
+    <SlideFrame {...frame} sectionNumber="04" section="Building a pack">
       <SlideHeading
         title="Measure a model against your pack"
         lede="runEvals replays a corpus with no credentials and scores what the model wrote."

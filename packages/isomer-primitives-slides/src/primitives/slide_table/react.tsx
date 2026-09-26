@@ -11,9 +11,10 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { labelModule, layoutModule } from '../../theme/modules';
+import { slideTableColumnCounts } from '../../theme/variants';
 
 import { type SlideTableNode, tableGroups } from './schema';
-import { tableColumnCounts, tableModule } from './styles';
+import { tableModule } from './styles';
 
 /** React renderer for {@link SlideTableNode}. */
 export const react = (
@@ -24,8 +25,9 @@ export const react = (
   const { columns, label, rowHeaders, type } = node;
   const groups = tableGroups(node);
   const count =
-    tableColumnCounts[Math.min(columns.length, tableColumnCounts.length) - 1] ??
-    'one';
+    slideTableColumnCounts[
+      Math.min(columns.length, slideTableColumnCounts.length) - 1
+    ] ?? 'one';
   return (
     <div
       {...nodeAnchor(context, { type })}

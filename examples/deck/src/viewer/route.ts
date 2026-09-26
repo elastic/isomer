@@ -5,8 +5,7 @@
  * 2.0.
  */
 
-import { type SurfaceId, surfaces, type Theme } from '../surfaces';
-
+import { type SurfaceId, surfaces, type Theme } from './surfaces';
 import { type DeckSlide, type SourceId, sourceIds } from './types';
 
 /** What the URL holds: which slide, how far it has built, which surface, which scheme, and which source is open beside it. */

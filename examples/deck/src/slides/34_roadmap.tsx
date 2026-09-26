@@ -18,7 +18,7 @@ import {
 
 export const roadmapSlide = toComposition(
   <Slide title="What is done, and what comes next">
-    <SlideFrame {...frame} chapterNumber="05" chapter="Getting started">
+    <SlideFrame {...frame} sectionNumber="05" section="Getting started">
       <SlideHeading title="What is done, and what comes next" />
       <SlideRoadmap
         columns={[

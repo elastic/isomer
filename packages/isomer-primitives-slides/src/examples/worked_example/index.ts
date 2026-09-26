@@ -37,13 +37,13 @@ const footer = {
 const slide = (
   name: string,
   body: readonly SlideContentNode[],
-  chapter?: { chapterNumber: string; chapter: string },
+  section?: { sectionNumber: string; section: string },
   tone: 'page' | 'inverse' = 'page'
 ): Composition => {
   const frame: SlideFrameNode = {
     type: 'slideFrame',
     ...footer,
-    ...chapter,
+    ...section,
     tone,
     body,
   };
@@ -63,8 +63,8 @@ const tableAndCode: SlideSplitNode = {
   right: { items: [code] },
 };
 
-const settlement = { chapterNumber: '02', chapter: 'Settlement' };
-const platform = { chapterNumber: '03', chapter: 'Platform' };
+const settlement = { sectionNumber: '02', section: 'Settlement' };
+const platform = { sectionNumber: '03', section: 'Platform' };
 
 /** Example compositions covering this pack's primitives. */
 export const deck: Composition[] = [

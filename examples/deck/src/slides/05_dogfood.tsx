@@ -18,7 +18,7 @@ import {
   toComposition,
 } from '../shim';
 import { slideCount } from '../slide_count';
-import { surfaces } from '../surfaces';
+import { surfaces } from '../viewer/surfaces';
 
 const { schema, primitives } = runtime.getAuthoringContext();
 const contextKb = Math.round(
@@ -27,7 +27,7 @@ const contextKb = Math.round(
 
 export const dogfoodSlide = toComposition(
   <Slide title="This deck is built with Isomer">
-    <SlideFrame {...frame} chapterNumber="01" chapter="The problem">
+    <SlideFrame {...frame} sectionNumber="01" section="The problem">
       <SlideHeading
         title="This deck is built with Isomer"
         lede="Every slide is a Composition that the same runtime validates and renders."

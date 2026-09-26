@@ -19,7 +19,7 @@ import {
 
 export const slackSlide = toComposition(
   <Slide title="The same answer in Slack and in text">
-    <SlideFrame {...frame} chapterNumber="03" chapter="How it works">
+    <SlideFrame {...frame} sectionNumber="03" section="How it works">
       <SlideHeading
         title="The same answer in Slack and in text"
         lede="A brute-force handoff posted to a channel, and the text surface rendering the same composition."

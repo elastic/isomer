@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { stripMarks } from '../../render/marks';
+import { authoredStrings, slackText } from '../test_helpers.fixtures';
 
 import { example, examples } from './examples';
 import { markdown, text } from './index';
@@ -26,28 +27,7 @@ const compose = (node: object): Composition => ({
   body: [{ type: 'slideFrame', body: [node] } as PrimitiveNode],
 });
 
-/** Keys whose values are enum choices, not authored copy. */
-const enumKeys = new Set(['type', 'tone', 'marker']);
-
-const authored = (value: unknown, key = ''): string[] => {
-  if (typeof value === 'string') {
-    return enumKeys.has(key) ? [] : [value];
-  }
-  if (Array.isArray(value)) {
-    return value.flatMap((entry) => authored(entry));
-  }
-  if (value && typeof value === 'object') {
-    return Object.entries(value).flatMap(([k, v]) => authored(v, k));
-  }
-  return [];
-};
-
-const slackText = (value: unknown): string =>
-  authored(value)
-    .filter(
-      (entry) => !/^(mrkdwn|plain_text|section|context|header)$/.test(entry)
-    )
-    .join('\n');
+const authored = authoredStrings(['type', 'tone', 'marker']);
 
 describe('slideColumns', () => {
   it('holds two to four columns of up to six tags', () => {

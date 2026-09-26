@@ -172,8 +172,8 @@ describe('slideTitle logo', () => {
           {
             type: 'slideFrame',
             tone: 'inverse',
-            chapter: 'Opening',
-            chapterNumber: '01',
+            section: 'Opening',
+            sectionNumber: '01',
             ...(logo === undefined ? {} : { logo }),
             body: [example],
           } as PrimitiveNode,

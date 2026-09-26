@@ -99,6 +99,23 @@ Not the document. [Frame](frame.md) is a separate value a host passes to the run
 
 Not composition, either. Duplicate types across packs, renderer overrides, and which frame surrounds a given render are all the assembly layer's, because only it sees the whole set. `composePacks(packs)` is the structural owner of the flattened `definitions` array the schema cache keys on; hold that array rather than `packs.flatMap(…)` per call. It throws on a node type or enhancement id claimed by two packs, naming every offender in one message.
 
+## The pack-author contract
+
+A pack builds on a fixed set of SDK exports, which is what makes one safe to copy from. Everything here is a public root-entry export a pack is expected to use, listed in [the API reference](api.md):
+
+| Helper | Role |
+| --- | --- |
+| `definePrimitive`, `definePrimitiveFor` | One primitive: schema, catalog entry, renderers |
+| `definePrimitivePack` | The pack: primitives, enhancements, style adapter, `themeBound` |
+| `createPrimitiveDispatcher` | The pack's own dispatcher, for its tests and any surface it drives itself |
+| `requiredString`, `optionalString`, `finiteNumber`, `enumOf`, `namedColorSchema`, `unresolvedBodyNodeSchema` | Schema fields that produce the SDK's validation messages, and the child slot of a container |
+| `someBodyNode` | The predicate an enhancement's `appliesTo` gate is written with |
+| `PrimitiveCatalogEntry`, `BodyNodeBase`, `PrimitiveNode` | The entry a primitive publishes, the fields every node carries, and the node type a renderer receives |
+| `formatCompactNumber` | Number formatting shared across packs, so `1.2K` reads the same everywhere |
+| `nodeAnchor` | Spread on a `react` renderer's root, so [node anchors](rendering.md#node-anchors) work |
+
+Two files a pack keeps by hand complete the contract: `registry.ts`, the array of every definition, and `body_node.ts`, the union of every node type. Nothing in the build relates them, so a pack pairs them with a drift test, as [the next section](#keeping-the-registry-honest) shows and as the slides pack's `src/registry.test.ts` does.
+
 ## Keeping the registry honest
 
 A pack keeps two hand-written lists, the registry array and its body-node union, and nothing in the type system relates either to the directory they describe. A primitive missing from **both** leaves them agreeing with each other, so it compiles and every other test passes while the primitive is unreachable.

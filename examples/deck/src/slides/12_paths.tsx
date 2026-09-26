@@ -16,7 +16,7 @@ import {
 
 export const pathsSlide = toComposition(
   <Slide title="A composition comes from code or from a model">
-    <SlideFrame {...frame} chapterNumber="02" chapter="The model">
+    <SlideFrame {...frame} sectionNumber="02" section="The model">
       <SlideHeading
         title="A composition comes from code or from a model"
         lede="The runtime treats the two paths differently."

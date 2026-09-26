@@ -24,8 +24,6 @@
   },
   "files": [
     "dist",
-    "NOTICE.txt",
-    "THIRD_PARTY_LICENSES.md",
     "LICENSE.txt"
   ],
   "scripts": {

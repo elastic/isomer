@@ -10,9 +10,9 @@ import { showSlideBuild } from '@elastic/isomer-primitives-slides';
 import type { Composition } from '@elastic/isomer-sdk';
 
 import { runtime } from '../runtime';
-import type { Theme } from '../surfaces';
 
 import { useOverflow } from './overflow';
+import type { Theme } from './surfaces';
 
 /** The html surface's output in a shadow root, per `runtime/docs/embedding.md`. */
 export const ShadowHtml = ({

@@ -105,7 +105,7 @@ describe('slideAnnotatedRender', () => {
 
       1. Claim — The one sentence the audience should leave with.
       2. Evidence — Three numbers, each with the label that makes it mean something.
-      3. Footer — Brand and chapter, the same on every slide."
+      3. Footer — Brand and section, the same on every slide."
     `);
     expect(runtime.surfaces.markdown.render(composition))
       .toMatchInlineSnapshot(`
@@ -113,7 +113,7 @@ describe('slideAnnotatedRender', () => {
 
       1. **Claim** — The one sentence the audience should leave with.
       2. **Evidence** — Three numbers, each with the label that makes it **mean** something.
-      3. **Footer** — Brand and chapter, the same on every slide."
+      3. **Footer** — Brand and section, the same on every slide."
     `);
   });
 

@@ -6,8 +6,7 @@
  */
 
 import { memo, useMemo } from 'react';
-import type { Theme } from '@elastic/isomer-deck/surfaces';
-import { Scaled, ShadowSlide } from '@elastic/isomer-deck/viewer';
+import { Scaled, ShadowSlide, type Theme } from '@elastic/isomer-deck/viewer';
 import type { Composition } from '@elastic/isomer-sdk';
 
 /** One slide at thumbnail scale, in its own shadow root. Keyed on the composition's JSON, so an unchanged slide never re-renders. */

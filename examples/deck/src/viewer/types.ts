@@ -7,7 +7,7 @@
 
 import type { Composition } from '@elastic/isomer-sdk';
 
-import type { Theme } from '../surfaces';
+import type { Theme } from './surfaces';
 
 /** The ways the source panel can show a slide. */
 export const sourceIds = ['jsx', 'json'] as const;

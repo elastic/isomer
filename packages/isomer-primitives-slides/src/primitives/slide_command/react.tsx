@@ -23,7 +23,7 @@ const { copy, prompt, textSizes } = slideDistillery.tokens.command;
 
 /** React renderer for {@link SlideCommandNode}. */
 export const react = (
-  { type, label, command, highlight = '' }: SlideCommandNode,
+  { type, label, command, highlightPrefix = '' }: SlideCommandNode,
   { context }: SlideReactEnv
 ): ReactNode => {
   const { handles: styles } = commandModule;
@@ -46,10 +46,12 @@ export const react = (
           {prompt.value}
         </span>
         <code className={cls(context, styles.line)}>
-          {highlight ? (
-            <span className={cls(context, styles.highlight)}>{highlight}</span>
+          {highlightPrefix ? (
+            <span className={cls(context, styles.highlight)}>
+              {highlightPrefix}
+            </span>
           ) : null}
-          {command.slice(highlight.length)}
+          {command.slice(highlightPrefix.length)}
         </code>
         {copyable ? (
           <button

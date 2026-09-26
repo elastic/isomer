@@ -21,6 +21,8 @@ export {
   slideBuilds,
 } from './builds';
 
+export { slideJsx } from './jsx';
+
 export {
   SLIDE_HEIGHT,
   SLIDE_WIDTH,
@@ -28,7 +30,6 @@ export {
   slidesPack,
   slideThemes,
 } from './pack';
-
 export { slidePrimitiveGroups } from './pack_authoring';
 export type {
   SlideAgendaNode,
@@ -157,8 +158,8 @@ export { StandaloneSlideNode } from './standalone';
 
 export { slideStylesheet } from './stylesheet';
 
-export { slidePaletteForMode } from './theme';
-export type { SlideFrameTheme, SlidePalette } from './theme';
+export { slideFontFaces, slidePaletteForMode } from './theme';
+export type { SlideFontFace, SlideFrameTheme, SlidePalette } from './theme';
 export {
   slideBulletMarkers,
   slideFrameTones,

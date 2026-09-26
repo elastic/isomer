@@ -20,7 +20,7 @@ export const catalog = {
   ],
   avoidWhen: [
     'The deck is starting; use slideTitle.',
-    'A chapter is starting; use slideSection.',
+    'A section is starting; use slideSection.',
     'The slide makes a claim mid-deck; use slideHeading in a page frame.',
   ],
   example,

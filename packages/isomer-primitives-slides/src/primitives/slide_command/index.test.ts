@@ -55,8 +55,10 @@ describe('slideCommand schema', () => {
   });
 
   it('rejects a highlight that does not start the command', () => {
-    expect(errorPaths({ ...highlightExample, highlight: 'npm run' })).toEqual([
-      'body[0].body[0].highlight: highlight must be a prefix of command',
+    expect(
+      errorPaths({ ...highlightExample, highlightPrefix: 'npm run' })
+    ).toEqual([
+      'body[0].body[0].highlightPrefix: highlightPrefix must start command',
     ]);
   });
 

@@ -33,7 +33,7 @@ const panelSchema = z
       .describe(
         'Source, one entry per line, with indentation kept. Use an empty string for a blank line. One to sixteen lines; ten or fewer stay at the larger size.'
       ),
-    highlight: z
+    highlightLines: z
       .array(z.number().int().positive())
       .min(1)
       .describe(
@@ -50,12 +50,12 @@ const panelSchema = z
   )
   .check(
     crossRefine(
-      ({ highlight, lines }) =>
-        highlight === undefined ||
-        highlight.every((line) => line <= lines.length),
+      ({ highlightLines, lines }) =>
+        highlightLines === undefined ||
+        highlightLines.every((line) => line <= lines.length),
       {
-        error: 'highlight lines must exist in lines',
-        path: ['highlight'],
+        error: 'highlightLines must exist in lines',
+        path: ['highlightLines'],
       }
     )
   );

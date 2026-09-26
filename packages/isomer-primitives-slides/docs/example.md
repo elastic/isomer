@@ -1,14 +1,14 @@
 # Worked example
 
-Eleven compositions built from each primitive's canonical `example`, in `src/examples/deck/index.ts`. A host sequences them; Isomer renders one composition at a time. The [Isomer deck](https://elastic.github.io/isomer/deck/) is the full-size version: every slide in `examples/deck` is a composition, viewable on every surface.
+Eleven compositions built from each primitive's canonical `example`, in `src/examples/worked_example/index.ts`. A host sequences them; Isomer renders one composition at a time. The [Isomer deck](https://elastic.github.io/isomer/deck/) is the full-size version: every slide in `examples/deck` is a composition, viewable on every surface.
 
 ## A deck is a `Composition[]`
 
 ```ts
-const slide = (name, body, chapter, tone = 'page') => ({
+const slide = (name, body, section, tone = 'page') => ({
   type: 'view',
   title: name,
-  body: [{ type: 'slideFrame', brand: 'Crate', url: 'https://example.com/crate', ...chapter, tone, body }],
+  body: [{ type: 'slideFrame', brand: 'Crate', url: 'https://example.com/crate', ...section, tone, body }],
 });
 
 export const deck: Composition[] = [
@@ -23,7 +23,7 @@ Isomer deliberately does not model the sequence, because sequencing is routing a
 
 ## Surface artifacts
 
-Each composition renders on HTML, Markdown, text, Slack Block Kit, and SVG; `src/examples/deck/output/` holds every artifact. The test renders them the way a slide host should: with `heading: false`, because each slide opens with its own heading and the composition's `title` only names it. Every slide's Markdown then opens with exactly one `#` heading, which the test asserts. The markdown and text surfaces are the headline claim: every word on the slide reaches them, so a composition authored once still reads as a few lines of terminal output.
+Each composition renders on HTML, Markdown, text, Slack Block Kit, and SVG; `src/examples/worked_example/output/` holds every artifact. The test renders them the way a slide host should: with `heading: false`, because each slide opens with its own heading and the composition's `title` only names it. Every slide's Markdown then opens with exactly one `#` heading, which the test asserts. The markdown and text surfaces are the headline claim: every word on the slide reaches them, so a composition authored once still reads as a few lines of terminal output.
 
 ### Pipeline
 
@@ -97,7 +97,7 @@ const takumi = createTakumiImageBackend({ fonts });
 const png = await takumi.png(runtime.surfaces.svg.render(composition));
 ```
 
-`fonts` is the host's, and it is not optional in practice — an unregistered family falls back to the backend's built-in face, so an unfonted render is visibly not this pack. [Fonts on the image surface](styling.md#fonts-on-the-image-surface) covers which families and weights to register; `src/examples/deck/fonts.ts` is the worked version, deriving the weight set from the theme.
+`fonts` is the host's, and it is not optional in practice — an unregistered family falls back to the backend's built-in face, so an unfonted render is visibly not this pack. [Fonts on the image surface](styling.md#fonts-on-the-image-surface) covers which families and weights to register: `slideFontFaces` lists them from the theme, and the host maps each face to a font file. The pack's `src/examples/fonts.ts` and the deck's `examples/deck/src/fonts.ts` are the worked loaders, over `@fontsource/*`.
 
 The `.png` files are written by the same test that writes the other four surfaces' artifacts, with one difference: `toMatchFileSnapshot` is text-only, so the PNG case hand-rolls its own comparison, and that comparison is CI-only. A local run always rewrites the artifact — a takumi or font bump would otherwise fail every PNG case on the bump alone, not on a real regression — so `git diff` on them is the review step. Under `CI`, a missing artifact fails instead of being written, and byte equality is asserted against the committed artifact. CI runs Ubuntu only, so this verifies same-input determinism on linux-x64; cross-platform stability (darwin-arm64 producing the same bytes) is an operating assumption at a pinned `@takumi-rs/core` and a fixed font set, not independently verified here — see `@elastic/isomer-image-takumi`'s [Determinism](../../isomer-image-takumi/docs/index.md#determinism) section.
 
@@ -110,4 +110,4 @@ The `.png` files are written by the same test that writes the other four surface
 - `slideSplit` with string items and a rule, and with node items holding `slideTable` and `slideCode`
 - `slideStats` and `slideColumns`
 
-The Isomer deck covers the rest: `slideDefinitions`, `slideList`, `slideTree`, `slideWindow`, `slideTranscript`, `slideRender`, and `slideRenderGrid`.
+That is sixteen of the forty primitives. The Isomer deck covers twenty of the rest: `slideStatement`, `slideQuote`, `slideAgenda`, `slideSource`, `slideWindow`, `slideList`, `slideDefinitions`, `slideRoadmap`, `slideSequence`, `slideTree`, `slideLayers`, `slideQuadrant`, `slideDelta`, `slideBars`, `slideMatrix`, `slideDiff`, `slideCommand`, `slideRender`, `slideAnnotatedRender`, and `slideRenderGrid`. Four appear in neither: `slideBulletList`, `slideStack`, `slideTerritoryGroup`, and `slideTranscript`; their own `examples.ts` and the [preview](primitives.md#previewing-a-primitive) show them.

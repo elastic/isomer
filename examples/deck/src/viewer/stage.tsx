@@ -9,11 +9,11 @@ import { useMemo } from 'react';
 import { SLIDE_BUILDS } from '@elastic/isomer-primitives-slides';
 
 import { runtime } from '../runtime';
-import type { SurfaceId, Theme } from '../surfaces';
 
 import { Scaled } from './scaled';
 import { ShadowHtml } from './shadow_html';
 import { ShadowSlide } from './shadow_slide';
+import type { SurfaceId, Theme } from './surfaces';
 import type { DeckSlide, PngUrl } from './types';
 
 type Rendered =

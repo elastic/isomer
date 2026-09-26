@@ -17,7 +17,7 @@ import type { SlideCodeNode, SlideCodePanel } from './schema';
 import { codeModule } from './styles';
 
 const Panel = ({
-  panel: { file, highlight = [], lines },
+  panel: { file, highlightLines = [], lines },
   dense,
   context,
 }: {
@@ -26,7 +26,7 @@ const Panel = ({
   context: SlideReactEnv['context'];
 }): ReactNode => {
   const { handles: code } = codeModule;
-  const marked = new Set(highlight);
+  const marked = new Set(highlightLines);
   return (
     <figure className={cls(context, code.figure)}>
       {file ? (

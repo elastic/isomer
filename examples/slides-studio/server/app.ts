@@ -8,38 +8,15 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { join } from 'node:path';
 
-import { deckFonts } from '@elastic/isomer-deck/fonts';
-import { runtime } from '@elastic/isomer-deck/runtime';
-import {
-  createTakumiImageBackend,
-  type TakumiImageBackend,
-} from '@elastic/isomer-image-takumi';
 import type { Composition } from '@elastic/isomer-sdk';
 
 import type { DeckStore, DeckSummary } from './host/deck';
 import { resolveDeck, viewDeck } from './host/resolve';
-import { handleMcp, type McpSessions } from './mcp';
-import { createDeckStore } from './store';
+import { handleMcp } from './mcp';
+import { slideRenderers } from './render';
+import { studioState } from './state';
 
-/** Everything that must outlive a module reload under `vite dev`. */
-export interface StudioState {
-  store: DeckStore;
-  takumi: TakumiImageBackend;
-  sessions: McpSessions;
-}
-
-const stateKey = Symbol.for('elastic.isomer.slides_studio');
-
-/** One state per process, so HMR keeps decks and connected agents. */
-export const studioState = (decksDir: string): StudioState => {
-  const holder = globalThis as { [stateKey]?: StudioState };
-  holder[stateKey] ??= {
-    store: createDeckStore(decksDir),
-    takumi: createTakumiImageBackend({ fonts: deckFonts }),
-    sessions: new Map(),
-  };
-  return holder[stateKey];
-};
+export { studioState } from './state';
 
 /** A deck as the landing page lists it. */
 export interface DeckListing extends DeckSummary {
@@ -157,12 +134,7 @@ export const handleStudio = async (
       json(res, { error: 'no such slide' }, 404);
       return;
     }
-    const png = await takumi.png(
-      runtime.surfaces.svg.render(composition, {
-        onValidationError: 'collect',
-        theme,
-      })
-    );
+    const png = await slideRenderers(takumi).png(composition, theme);
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Cache-Control', 'no-store');
     res.end(png);

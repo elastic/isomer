@@ -14,9 +14,9 @@ import {
 import type { Composition } from '@elastic/isomer-sdk';
 
 import { runtime } from '../runtime';
-import type { Theme } from '../surfaces';
 
 import { useOverflow } from './overflow';
+import type { Theme } from './surfaces';
 
 /**
  * One slide from the React surface, in a shadow root holding only the CSS that
