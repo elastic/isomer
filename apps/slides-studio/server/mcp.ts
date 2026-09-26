@@ -15,6 +15,8 @@ import {
 } from '@elastic/isomer-mcp';
 import {
   slideDeckFrame,
+  slideOverflow,
+  slideOverlaps,
   slidesAuthoringGuide,
   slidesAuthoringRules,
 } from '@elastic/isomer-primitives-slides';
@@ -35,7 +37,11 @@ export type McpSessions = Map<
 const build = {};
 
 const instructions =
-  'You write slide decks the user watches in the Isomer studio. Read isomer_authoring_guide once, create a deck with deck_create, then write each slide with deck_set_slide in order. After writing a slide, look at it with deck_render_slide and fix anything crowded or overflowing. Tell the user the viewer URL deck_create returns: it shows every slide as you write it.';
+  'You write slide decks the user watches in the Isomer studio. Read isomer_authoring_guide once, look up the primitives you pick with isomer_describe_primitives (slideFrame included), create a deck with deck_create, then write each slide with deck_set_slide in order. After writing a slide, look at it with deck_render_slide and fix anything crowded or overflowing; each render returns a PNG of up to about 120,000 characters, so render once per change rather than per word. Render a section divider again once its section is written, since its links are checked against the slides that exist. Tell the user the viewer URL deck_create returns: it shows every slide as you write it.';
+
+/** What this host adds to the pack's guide: how its viewer addresses a slide. */
+const studioGuide =
+  'In this studio, the viewer at `/decks/<id>/present` opens a slide at `?slide=<n>`, counting from 0 with the title slide as 0. A `slideSection` `hrefs` entry is that relative link, e.g. `?slide=2`, one per `contents` line.';
 
 const pngOf =
   ({ takumi }: StudioState) =>
@@ -47,6 +53,17 @@ const pngOf =
       })
     );
 
+const layoutOf =
+  ({ takumi }: StudioState) =>
+  async (composition: Composition) => {
+    const layout = await takumi.measure(
+      runtime.surfaces.svg.render(composition, {
+        onValidationError: 'collect',
+      })
+    );
+    return { overflow: slideOverflow(layout), overlaps: slideOverlaps(layout) };
+  };
+
 const createServer = (state: StudioState, origin: string) => {
   const png = pngOf(state);
   const server = createIsomerMcpServer({
@@ -54,7 +71,7 @@ const createServer = (state: StudioState, origin: string) => {
     version: '0.0.0',
     instructions,
     runtime,
-    guide: slidesAuthoringGuide,
+    guide: `${slidesAuthoringGuide}\n\n${studioGuide}`,
     rules: slidesAuthoringRules,
     frame: slideDeckFrame,
     heading: false,
@@ -63,7 +80,12 @@ const createServer = (state: StudioState, origin: string) => {
   });
   registerIsomerTools(
     server,
-    createDeckTools(state.store, png, (id) => `${origin}/decks/${id}`)
+    createDeckTools(
+      state.store,
+      png,
+      layoutOf(state),
+      (id) => `${origin}/decks/${id}`
+    )
   );
   return server;
 };
