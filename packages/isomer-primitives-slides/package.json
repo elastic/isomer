@@ -1,6 +1,7 @@
 {
   "name": "@elastic/isomer-primitives-slides",
   "version": "0.0.0-development",
+  "private": true,
   "description": "Slide-deck primitive pack for Isomer: the in-repo reference pack.",
   "license": "Elastic-2.0",
   "author": "Elastic",

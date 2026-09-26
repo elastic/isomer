@@ -1,6 +1,7 @@
 {
   "name": "@elastic/isomer-mcp",
   "version": "0.0.0-development",
+  "private": true,
   "description": "Agent tools for any Isomer runtime, with an MCP adapter: authoring guide, validation, rendering, and registered views.",
   "license": "Elastic-2.0",
   "author": "Elastic",
@@ -39,9 +40,6 @@
     "THIRD_PARTY_LICENSES.md",
     "LICENSE.txt"
   ],
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
