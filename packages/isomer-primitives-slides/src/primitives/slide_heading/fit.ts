@@ -38,9 +38,9 @@ const headingHeight = (
 const bodyHeight =
   px(frame.height) - px(frame.paddingTop) - px(frame.paddingBottom);
 
-/** Room below a heading, before the body gap. */
+/** Room below a heading, before the body gap; at least a pixel, so crowding stays positive and finite. */
 const roomBelow = (height: number): number =>
-  bodyHeight - height - px(frame.bodyGap);
+  Math.max(1, bodyHeight - height - px(frame.bodyGap));
 
 /** Room below a two-line title and a two-line lede at `l`, which the load budgets are set against. */
 export const referenceRoom = roomBelow(headingHeight(2, 2, 'l'));

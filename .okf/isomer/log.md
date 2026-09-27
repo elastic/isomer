@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-09-27
+
+- **Review fixes**: A misspelling suggestion only measures options within the distance threshold by length, so a huge invalid value costs no more than the options do. `toJsx` escapes carriage returns. `createAuthoringPromptBuilder` forwards `catalog`, `groups`, `heading`, and `intro`, and takes `groups` as a default. `slideFrame` draws the mark beside a footer with no section. `slideHeading`'s crowding stays positive and finite for a heading taller than the frame body. `slideSplit`'s size estimate uses the columns its own divider leaves.
+
 ## 2026-09-26
 
 - **Host renders after main's anchors and scripts**: `createHTMLStyleCollection` turns anchors on through a view of the adapter's context, not a copy, so a class-instance context keeps its methods. The deck viewer's html stage renders with `scripts: 'host'`, runs the render's `js` against its section, and requests `slideCopy`, so Copy works inside its shadow root.

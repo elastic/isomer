@@ -215,6 +215,7 @@ describe('slideSplit size', () => {
     const long = 'East-coast parcels spend fewer days in transit';
     const busy: SlideSplitNode = {
       ...example,
+      divider: 'gap',
       left: { items: [long, long, long] },
       right: { items: [long, long, long] },
     };
@@ -223,5 +224,19 @@ describe('slideSplit size', () => {
       step({ ...busy, ratio: 'aside', right: { items: [long, long, long] } })
     ).toBe('s');
     expect(step({ ...busy, size: 'l' })).toBe('l');
+  });
+
+  it('counts the columns a wider divider takes away', () => {
+    const long = 'East-coast parcels spend fewer days in transit';
+    const node: SlideSplitNode = {
+      ...example,
+      left: { items: [long, long] },
+      right: { items: [long, long] },
+    };
+    const load = (divider: NonNullable<SlideSplitNode['divider']>) =>
+      splitLoad({ ...node, divider });
+    expect(load('rule')).toBeGreaterThan(load('gap'));
+    expect(load('hairline')).toBeGreaterThan(load('gap'));
+    expect(load('rule')).toBeGreaterThan(load('hairline'));
   });
 });

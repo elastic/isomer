@@ -96,7 +96,7 @@ export const react = (
   const { handles: split } = splitModule;
   const step = sizeForLoad(
     size,
-    splitLoad({ left, right, ratio }),
+    splitLoad({ left, right, ratio, divider }),
     splitFit,
     context?.crowding
   );
