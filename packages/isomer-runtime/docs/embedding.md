@@ -61,7 +61,7 @@ const node = runtime.surfaces.react.render(composition, {
 styleElement.textContent = `:host { all: initial; display: block; }\n${styles.css()}`;
 ```
 
-`context` records every style the renderers use, so `css()` read after that render equals `html.render(composition, { css: 'separate' }).css`. The first read computes the CSS and later reads return it. Read it in a layout effect and the styles land before the first paint. A host with its own render context spreads both: `{ ...hostContext, ...styles.context }`. A subtree that suspends records its styles after `css()` was read, so this holds for trees that render without suspending.
+`context` records every style the renderers use, so `css()` read after that render equals `html.render(composition, { css: 'separate' }).css`. The first read computes the CSS and later reads return it. Read it in a layout effect and the styles land before the first paint. Pass `styles.context` as it is. A host that needs fields of its own on the render context adds them in its style adapter's `createRenderContext`, or through a view such as a `Proxy` that forwards to `styles.context`; spreading it into a new object drops the prototype and private state a class-instance context relies on. A subtree that suspends records its styles after `css()` was read, so this holds for trees that render without suspending.
 
 Three edges are sharp:
 

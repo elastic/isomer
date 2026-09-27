@@ -124,6 +124,53 @@ describe('createTakumiImageBackend', () => {
     expect(run?.y).toBeCloseTo(4, 0);
   });
 
+  describe('measures a transformed box and its text on the canvas', () => {
+    const measure = (transform: string) =>
+      createTakumiImageBackend().measure({
+        element: createElement(
+          'div',
+          { className: 'outer' },
+          createElement('div', { className: 'inner' }, 'Ag')
+        ),
+        css: `.outer { width: 200px; height: 100px; padding: 10px 20px; box-sizing: border-box; display: flex } .inner { width: 40px; height: 20px; transform-origin: 0 0; transform: ${transform} }`,
+        width: 200,
+        height: 100,
+      });
+
+    it.each([
+      ['none', { x: 20, y: 10, width: 40, height: 20, scale: 1 }, 20],
+      ['scale(2)', { x: 20, y: 10, width: 80, height: 40, scale: 2 }, 20],
+      [
+        'translate(10px, 5px)',
+        { x: 30, y: 15, width: 40, height: 20, scale: 1 },
+        30,
+      ],
+      // A quarter turn about the top left swings the box left of its origin, and swaps its sides.
+      ['rotate(90deg)', { x: 0, y: 10, width: 20, height: 40, scale: 1 }, -0.7],
+    ] as const)('%s', async (transform, bounds, runX) => {
+      const [inner] = (await measure(transform)).children;
+      for (const [key, value] of Object.entries(bounds)) {
+        expect(inner?.[key as keyof typeof bounds]).toBeCloseTo(value, 3);
+      }
+      const [run] = inner?.runs ?? [];
+      expect(run?.text).toBe('Ag');
+      expect(run?.x).toBeCloseTo(runX, 0);
+    });
+
+    it('scales a text run with its box', async () => {
+      const [plain] = (await measure('none')).children;
+      const [scaled] = (await measure('scale(2)')).children;
+      expect(scaled?.runs[0]?.width).toBeCloseTo(
+        2 * (plain?.runs[0]?.width ?? 0),
+        3
+      );
+      expect(scaled?.runs[0]?.height).toBeCloseTo(
+        2 * (plain?.runs[0]?.height ?? 0),
+        3
+      );
+    });
+  });
+
   it('registers a woff2 face without conversion', async () => {
     const file =
       require.resolve('@fontsource/inter/files/inter-latin-700-normal.woff2');
