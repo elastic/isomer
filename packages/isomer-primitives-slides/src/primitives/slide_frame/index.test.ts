@@ -42,6 +42,20 @@ describe('slideFrame footer', () => {
     ).toContain('<svg');
   });
 
+  it('styles the brand the same with or without a section', () => {
+    const brandClass = (html: string) =>
+      /<span class="([^"]+)">Ledger<\/span>/.exec(html)?.[1];
+    const sectionless = brandClass(
+      footer({ tone: 'inverse', brand: 'Ledger' })
+    );
+    expect(sectionless).toBeDefined();
+    expect(sectionless).toBe(
+      brandClass(
+        footer({ brand: 'Ledger', section: 'Settlement', sectionNumber: '02' })
+      )
+    );
+  });
+
   it('leaves the mark out with logo: false', () => {
     expect(
       footer({ tone: 'inverse', brand: 'Ledger', logo: false })

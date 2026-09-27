@@ -40,10 +40,7 @@ const Footer = ({
       <div className={cls(context, frame.footerStart)}>
         {logo ? <LogoMark className={cls(context, frame.logo)} /> : null}
         {brand ? (
-          <span
-            {...(sectionLine ? { className: cls(context, frame.brand) } : {})}>
-            {brand}
-          </span>
+          <span className={cls(context, frame.brand)}>{brand}</span>
         ) : null}
         {brand && sectionLine ? <span>{separator.value}</span> : null}
         {sectionLine ? <span>{sectionLine}</span> : null}

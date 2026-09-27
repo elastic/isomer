@@ -5,8 +5,10 @@
  * 2.0.
  */
 
-import { font, radius, space, stroke, type } from '../base';
-import { literal, px } from '../scale';
+import { font, monoAdvance, radius, space, stroke, type } from '../base';
+import { literal, px, scalePx } from '../scale';
+
+import { frameContentWidth } from './frame';
 
 /** `slideCode`: one or two code panels. */
 export const code = {
@@ -30,3 +32,17 @@ export const code = {
 
 /** Lines a panel holds before it takes `denseText`. */
 export const codeDenseAfter = 10;
+
+/** Characters a line holds on a full-width slide before its panel clips it, by panel count and density. */
+export const codeLineMaxLength = (panels: 1 | 2, dense: boolean): number => {
+  const width =
+    panels === 1
+      ? frameContentWidth
+      : (frameContentWidth -
+          scalePx(code.arrowWidth) -
+          2 * scalePx(code.panelGap)) /
+        2;
+  const inner = width - 2 * scalePx(code.border) - 2 * scalePx(code.paddingX);
+  const size = dense ? code.denseText.size : code.text.size;
+  return Math.floor(inner / (monoAdvance * scalePx(size)));
+};

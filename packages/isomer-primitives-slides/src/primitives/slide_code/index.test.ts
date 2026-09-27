@@ -10,6 +10,7 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { codeDenseAfter, codeLineMaxLength } from '../../theme/components/code';
 import { slackText } from '../test_helpers.fixtures';
 
 import { example, examples, traceExample } from './examples';
@@ -74,6 +75,36 @@ describe('slideCode schema', () => {
         /^body\[0\]\.body\[0\]\.panels\[0\]\.lines: one line per entry/
       )
     );
+  });
+});
+
+describe('slideCode line width', () => {
+  const widthError: unknown = expect.stringMatching(
+    /^body\[0\]\.body\[0\]\.panels: a line is wider than its panel/
+  );
+
+  it('takes a line that fills one panel and rejects one that would be clipped', () => {
+    const one = codeLineMaxLength(1, false);
+    expect(errorPaths(panel(['x'.repeat(one)]))).toEqual([]);
+    expect(errorPaths(panel(['x'.repeat(one + 1)]))).toContainEqual(widthError);
+  });
+
+  it('holds less in each of two panels, and more once they are dense', () => {
+    const two = codeLineMaxLength(2, false);
+    const pair = (line: string, count = 1): SlideCodeNode => ({
+      type: 'slideCode',
+      panels: [
+        { lines: Array.from({ length: count }, () => line) },
+        { lines: ['y'] },
+      ],
+    });
+    expect(errorPaths(pair('x'.repeat(two)))).toEqual([]);
+    expect(errorPaths(pair('x'.repeat(two + 1)))).toContainEqual(widthError);
+    expect(
+      errorPaths(
+        pair('x'.repeat(codeLineMaxLength(2, true)), codeDenseAfter + 1)
+      )
+    ).toEqual([]);
   });
 });
 

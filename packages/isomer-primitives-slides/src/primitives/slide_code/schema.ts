@@ -9,6 +9,7 @@ import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
 import { hasLineTerminator } from '../../render/marks';
+import { codeDenseAfter, codeLineMaxLength } from '../../theme/components/code';
 import { crossRefine } from '../cross_field';
 
 const panelSchema = z
@@ -73,10 +74,25 @@ export const schema = z
       .min(1)
       .max(2)
       .describe(
-        'One panel, or two side by side with an arrow between them to trace a value from one file to the next. Two panels need the full slide width; do not put them in a slideSplit column.'
+        `One panel, or two side by side with an arrow between them to trace a value from one file to the next. Two panels need the full slide width; do not put them in a slideSplit column. A line holds ${codeLineMaxLength(1, false)} characters in one panel and ${codeLineMaxLength(2, false)} in each of two (${codeLineMaxLength(1, true)} and ${codeLineMaxLength(2, true)} past ${codeDenseAfter} lines); a narrower column holds fewer, and a longer line is clipped.`
       ),
   })
-  .strict();
+  .strict()
+  .check(
+    crossRefine(
+      ({ panels }) => {
+        const dense = panels.some(({ lines }) => lines.length > codeDenseAfter);
+        const max = codeLineMaxLength(panels.length === 2 ? 2 : 1, dense);
+        return panels.every(({ lines }) =>
+          lines.every((line) => line.length <= max)
+        );
+      },
+      {
+        error: `a line is wider than its panel: at most ${codeLineMaxLength(1, false)} characters in one panel, ${codeLineMaxLength(2, false)} in each of two`,
+        path: ['panels'],
+      }
+    )
+  );
 
 /** Source code in one panel, or two joined by an arrow. */
 export type SlideCodeNode = z.infer<typeof schema> & PrimitiveNode;
