@@ -128,9 +128,14 @@ const findInNodeModules = (name, fromDir) => {
 
 const resolvePackageDir = (name, fromDir) => {
   try {
-    return dirname(
-      require.resolve(`${name}/package.json`, { paths: [fromDir] })
+    // A wildcard `exports` entry can map `./package.json` to a nested manifest, so the match is checked by name.
+    const match = packageDirIfNamed(
+      dirname(require.resolve(`${name}/package.json`, { paths: [fromDir] })),
+      name
     );
+    if (match !== undefined) {
+      return match;
+    }
   } catch {
     // Some packages hide `package.json` behind `exports`.
   }
