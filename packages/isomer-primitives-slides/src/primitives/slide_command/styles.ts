@@ -34,6 +34,7 @@ export const commandModule = createStyleModule('command', ({ css }) => ({
       margin-bottom: auto;
     }
   `,
+  // The `slideCopy` script adds the Copy button, so it is styled by `COPY_BUTTON_ATTRIBUTE`, not a class.
   panel: css`
     align-items: center;
     background: ${color.bgSurface};
@@ -45,6 +46,21 @@ export const commandModule = createStyleModule('command', ({ css }) => ({
     ${typeRole(command.text)}
     gap: ${command.gap};
     padding: ${command.paddingY} ${command.paddingX};
+
+    & > [data-slide-copy] {
+      background: transparent;
+      border: ${copy.border} solid ${color.borderDashed};
+      border-radius: ${copy.radius};
+      color: ${color.textSubtle};
+      cursor: pointer;
+      display: flex;
+      flex: 0 0 auto;
+      font-family: inherit;
+      font-size: ${copy.size};
+      line-height: inherit;
+      margin: 0;
+      padding: ${copy.paddingY} ${copy.paddingX};
+    }
   `,
   textSize: variants(
     slideSizes,
@@ -66,23 +82,5 @@ export const commandModule = createStyleModule('command', ({ css }) => ({
   `,
   highlight: css`
     color: ${color.primary};
-  `,
-  copy: css`
-    background: transparent;
-    border: ${copy.border} solid ${color.borderDashed};
-    border-radius: ${copy.radius};
-    color: ${color.textSubtle};
-    cursor: pointer;
-    display: flex;
-    flex: 0 0 auto;
-    font-family: inherit;
-    font-size: ${copy.size};
-    line-height: inherit;
-    margin: 0;
-    padding: ${copy.paddingY} ${copy.paddingX};
-
-    &[hidden] {
-      display: none;
-    }
   `,
 }));

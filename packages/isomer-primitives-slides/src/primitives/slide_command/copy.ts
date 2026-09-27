@@ -11,10 +11,14 @@ import {
   someBodyNode,
 } from '@elastic/isomer-sdk';
 
+import { slideDistillery } from '../../theme/distillery';
+
+const { copy } = slideDistillery.tokens.command;
+
 /** Id of the enhancement that adds a Copy button to each `slideCommand`. */
 export const SLIDE_COPY = 'slideCopy';
 
-/** Marks a Copy button, which renders `hidden` until something wires it. */
+/** Marks the Copy button the {@link SLIDE_COPY} script adds to a command's panel. */
 export const COPY_BUTTON_ATTRIBUTE = 'data-slide-copy';
 
 const isCommand = (node: unknown): boolean =>
@@ -23,22 +27,24 @@ const isCommand = (node: unknown): boolean =>
   (node as { type?: unknown }).type === 'slideCommand';
 
 /**
- * Reveals each Copy button in the render, with `root` its section, and copies
- * a command when its button is clicked. Without a clipboard the buttons stay
- * hidden. A command is found by its anchor, and its text is its `code`.
+ * Adds a Copy button to each command in the render, with `root` its section,
+ * that copies the command's `code` text. A command is found by its anchor. It
+ * adds nothing without a clipboard, and nothing twice.
  */
 export const copyScriptBody = `if (!navigator.clipboard) return;
-const commandSelector = '[${NODE_ANCHOR_ATTRIBUTE}="slideCommand"]';
-for (const button of root.querySelectorAll(commandSelector + ' [${COPY_BUTTON_ATTRIBUTE}]')) {
-  button.hidden = false;
-}
-root.addEventListener('click', (event) => {
-  const button = event.target instanceof Element ? event.target.closest('[${COPY_BUTTON_ATTRIBUTE}]') : null;
-  const command = button ? button.closest(commandSelector) : null;
-  const code = command ? command.querySelector('code') : null;
-  if (!code || !root.contains(command)) return;
-  navigator.clipboard.writeText(code.textContent || '').catch(() => {});
-});`;
+for (const command of root.querySelectorAll('[${NODE_ANCHOR_ATTRIBUTE}="slideCommand"]')) {
+  const code = command.querySelector('code');
+  const panel = code && code.parentElement;
+  if (!panel || panel.querySelector('[${COPY_BUTTON_ATTRIBUTE}]')) continue;
+  const button = root.ownerDocument.createElement('button');
+  button.type = 'button';
+  button.setAttribute('${COPY_BUTTON_ATTRIBUTE}', '');
+  button.textContent = ${JSON.stringify(copy.label.value)};
+  button.addEventListener('click', () => {
+    navigator.clipboard.writeText(code.textContent || '').catch(() => {});
+  });
+  panel.append(button);
+}`;
 
 /** Wires every Copy button in the render that emitted it to the clipboard. */
 export const slideCopyEnhancement: EnhancementDefinition = {

@@ -18,7 +18,7 @@ import {
 import { slideDistillery } from '../../theme/distillery';
 import { monoWidth, sizeForWidth } from '../size';
 
-import { SLIDE_COPY } from './copy';
+import { COPY_BUTTON_ATTRIBUTE, SLIDE_COPY } from './copy';
 import { example, examples, highlightExample } from './examples';
 import { markdown, slack, text } from './index';
 
@@ -120,13 +120,14 @@ describe('slideCommand output', () => {
 describe('slideCopy', () => {
   const anchor = 'data-isomer-node="slideCommand"';
 
-  it('adds a Copy button, the anchor it finds the command by, and its script on the html surface when requested', () => {
-    const { html, measurement } = runtime.surfaces.html.render(
+  it('adds the anchor the script finds the command by, the script, and the button style on the html surface when requested', () => {
+    const { html, css, measurement } = runtime.surfaces.html.render(
       compose(example),
-      { enhancements: [SLIDE_COPY] }
+      { enhancements: [SLIDE_COPY], css: 'separate' }
     );
-    expect(html).toContain('<button');
+    expect(html).not.toContain('<button');
     expect(html).toContain(anchor);
+    expect(css).toContain(`[${COPY_BUTTON_ATTRIBUTE}]`);
     expect(html).toContain('<script data-isomer-script');
     expect(measurement.js).toBeGreaterThan(0);
   });
@@ -151,17 +152,13 @@ describe('slideCopy', () => {
     expect(renderToStaticMarkup(element)).not.toContain('<button');
   });
 
-  it('draws the button on the react surface only when the context has it', () => {
-    const render = (enhancements: readonly string[]) =>
+  it('never draws the button on the react surface, which leaves it to the script', () => {
+    expect(
       renderToStaticMarkup(
         runtime.surfaces.react.render(compose(example), {
-          context: { enhancements: new Set(enhancements) },
+          context: { enhancements: new Set([SLIDE_COPY]) },
         })
-      );
-    expect(
-      renderToStaticMarkup(runtime.surfaces.react.render(compose(example)))
+      )
     ).not.toContain('<button');
-    expect(render([])).not.toContain('<button');
-    expect(render([SLIDE_COPY])).toContain('<button');
   });
 });
