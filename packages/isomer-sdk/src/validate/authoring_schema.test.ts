@@ -95,7 +95,7 @@ describe('buildAuthoringJsonSchema def names', () => {
   });
 
   it('escapes a def id in a $ref as a JSON Pointer in a URI fragment, so every ref resolves', () => {
-    const type = 'a/b~c%2F';
+    const type = 'a/b~c%2F😀';
     const node = {
       type,
       'x/y': { label: 'Then', value: 1 },

@@ -53,7 +53,7 @@ const defRef = (id: string): string =>
   `${DEF_PREFIX}${id
     .replace(/~/g, '~0')
     .replace(/\//g, '~1')
-    .replace(/[^\w\-.~!$&'()*+,;=:@]/g, (char) => encodeURIComponent(char))}`;
+    .replace(/[^\w\-.~!$&'()*+,;=:@]/gu, (char) => encodeURIComponent(char))}`;
 
 const parseDefRef = (ref: unknown): string | undefined => {
   if (typeof ref !== 'string' || !ref.startsWith(DEF_PREFIX)) {
