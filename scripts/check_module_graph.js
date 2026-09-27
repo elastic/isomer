@@ -101,13 +101,11 @@ for (const [packageName, entryRules] of Object.entries(RULES)) {
     const reachable = reachableBareSpecifiers(entryFile);
     checked += 1;
 
-    for (const rule of forbidden) {
-      for (const specifier of reachable) {
-        if (matchesForbidden(specifier, rule)) {
-          violations.push(
-            `${packageName} "${exportKey}" (${relative(repoRoot, entryFile)}) reaches "${specifier}"`
-          );
-        }
+    for (const specifier of reachable) {
+      if (forbidden.some((rule) => matchesForbidden(specifier, rule))) {
+        violations.push(
+          `${packageName} "${exportKey}" (${relative(repoRoot, entryFile)}) reaches "${specifier}"`
+        );
       }
     }
   }
