@@ -8,6 +8,7 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
+import { hasLineTerminator } from '../../render/marks';
 import { slideDiffOps } from '../../theme/variants';
 import { crossRefine } from '../cross_field';
 
@@ -59,7 +60,7 @@ export const schema = z
   .strict()
   .check(
     crossRefine(
-      ({ lines }) => lines.every(({ text }) => !text.includes('\n')),
+      ({ lines }) => !lines.some(({ text }) => hasLineTerminator(text)),
       {
         error:
           'one line per entry: split multi-line source into separate lines',

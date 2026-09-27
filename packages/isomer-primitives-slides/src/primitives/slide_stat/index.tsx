@@ -7,7 +7,12 @@
 
 import { escapeMrkdwn, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import { marksSlack, stripMarks } from '../../render/marks';
+import {
+  markdownText,
+  marksMarkdown,
+  marksSlack,
+  stripMarks,
+} from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -30,7 +35,7 @@ export const text = (node: SlideStatNode): string =>
 /** Markdown renderer for {@link SlideStatNode}. */
 export const markdown = (node: SlideStatNode): string => {
   const value = valueText(node);
-  return `${value ? `**${value}**` : `_${placeholderCaption.value}_`} — ${node.body}`;
+  return `${value ? `**${markdownText(value)}**` : `_${placeholderCaption.value}_`} — ${marksMarkdown(node.body)}`;
 };
 
 /** Slack renderer for {@link SlideStatNode}: one section, the value in bold. */

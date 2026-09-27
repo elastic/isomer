@@ -66,8 +66,10 @@ describe('slideCode schema', () => {
     );
   });
 
-  it('rejects a multi-line entry', () => {
-    expect(errorPaths(panel(['one\ntwo']))).toContainEqual(
+  it.each(
+    ['\n', '\r', '\u2028', '\u2029'].map((mark) => [JSON.stringify(mark), mark])
+  )('rejects an entry split by %s', (_name, mark) => {
+    expect(errorPaths(panel([`one${mark}two`]))).toContainEqual(
       expect.stringMatching(
         /^body\[0\]\.body\[0\]\.panels\[0\]\.lines: one line per entry/
       )

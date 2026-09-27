@@ -7,6 +7,7 @@
 
 import { bold, escapeMrkdwn, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
+import { markdownText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -29,8 +30,10 @@ export const text = ({ source, targets }: SlideFanoutNode): string =>
 /** Markdown renderer for {@link SlideFanoutNode}. */
 export const markdown = ({ source, targets }: SlideFanoutNode): string =>
   [
-    `**${source}** ${arrow.value}`,
-    targets.map(({ name, body }) => `- ${name}: ${body}`).join('\n'),
+    `**${markdownText(source)}** ${arrow.value}`,
+    targets
+      .map(({ name, body }) => `- ${markdownText(name)}: ${markdownText(body)}`)
+      .join('\n'),
   ].join('\n\n');
 
 /** Slack renderer for {@link SlideFanoutNode}: the source, then one bullet per target. */

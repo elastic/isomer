@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { stripMarks } from '../../render/marks';
+import { markdownText, marksMarkdown, stripMarks } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -35,7 +35,12 @@ export const text = ({ items }: SlideTimelineNode): string =>
 
 /** Markdown renderer for {@link SlideTimelineNode}: one bullet per item. */
 export const markdown = ({ items }: SlideTimelineNode): string =>
-  items.map((item) => `- **${when(item)}.** ${quoted(item)}`).join('\n');
+  items
+    .map(
+      (item) =>
+        `- **${when({ ...item, label: markdownText(item.label), channel: markdownText(item.channel) })}.** ${quoted({ ...item, heading: marksMarkdown(item.heading), body: marksMarkdown(item.body) })}`
+    )
+    .join('\n');
 
 /** Catalog, schema, and renderers for {@link SlideTimelineNode}. */
 export const slideTimelinePrimitive = definePrimitive({

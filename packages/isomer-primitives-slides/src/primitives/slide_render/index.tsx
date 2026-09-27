@@ -15,6 +15,7 @@ import {
   renderSlackChildren,
   slackCaption,
 } from '../../render';
+import { markdownText } from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -27,8 +28,14 @@ import type { SlideRenderNode } from './types';
 export type { SlideRenderNode } from './types';
 
 /** `[svg render of slide 00]`, then the caption. */
-const heading = (node: SlideRenderNode): string =>
-  [`[${node.surface} render of ${embeddedLabel(node)}]`, node.caption]
+const heading = (
+  node: SlideRenderNode,
+  format: (text: string) => string = (text) => text
+): string =>
+  [
+    `[${node.surface} render of ${format(embeddedLabel(node))}]`,
+    node.caption && format(node.caption),
+  ]
     .filter(Boolean)
     .join(' ');
 
@@ -51,7 +58,7 @@ export const slideRenderPrimitive = definePrimitive<SlideRenderNode>({
         .join('\n\n'),
     markdown: (node, { scope }) =>
       [
-        `_${heading(node)}_`,
+        `_${heading(node, markdownText)}_`,
         node.composition &&
           quoteMarkdown(
             renderChildren(node.composition.body, scope, 'markdown')

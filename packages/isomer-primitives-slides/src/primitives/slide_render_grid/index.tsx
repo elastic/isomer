@@ -15,6 +15,7 @@ import {
   renderChildren,
   renderSlackChildren,
 } from '../../render';
+import { markdownText } from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -25,8 +26,11 @@ import type { SlideRenderGridNode } from './types';
 
 export type { SlideRenderGridNode, SlideRenderGridTile } from './types';
 
-const heading = ({ composition, tiles }: SlideRenderGridNode): string =>
-  `[${composition.title ?? 'a composition'} on ${tiles.length} surfaces]`;
+const heading = (
+  { composition, tiles }: SlideRenderGridNode,
+  format: (text: string) => string = (text) => text
+): string =>
+  `[${composition.title ? format(composition.title) : 'a composition'} on ${tiles.length} surfaces]`;
 
 /** Catalog, schema, and renderers for {@link SlideRenderGridNode}. */
 export const slideRenderGridPrimitive = definePrimitive<SlideRenderGridNode>({
@@ -49,9 +53,12 @@ export const slideRenderGridPrimitive = definePrimitive<SlideRenderGridNode>({
         .join('\n\n'),
     markdown: (node, { scope }) =>
       [
-        `_${heading(node)}_`,
+        `_${heading(node, markdownText)}_`,
         node.tiles
-          .map(({ surface, caption }) => `- **${surface}**: ${caption}`)
+          .map(
+            ({ surface, caption }) =>
+              `- **${surface}**: ${markdownText(caption)}`
+          )
           .join('\n'),
         quoteMarkdown(renderChildren(node.composition.body, scope, 'markdown')),
       ]

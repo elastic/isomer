@@ -14,6 +14,7 @@ import type {
   SlideRenderContext,
   SlideRenderScope,
 } from '../../render/context';
+import { withContextFields } from '../../render/context_view';
 import { LogoMark } from '../../render/logo';
 import { isomerDeckRoot, slideDistillery } from '../../theme/distillery';
 import { deckRootModule } from '../../theme/modules';
@@ -74,13 +75,10 @@ export const SlideFrameView = ({
   const { type, body, tone, logo } = node;
   const [first] = body;
   const inside: SlideRenderContext | undefined =
-    logo === false ? { ...context, logo } : context;
+    logo === false ? withContextFields(context, { logo }) : context;
   const below: SlideRenderContext | undefined =
     first?.type === 'slideHeading'
-      ? {
-          ...inside,
-          crowding: headingCrowding(first),
-        }
+      ? withContextFields(inside, { crowding: headingCrowding(first) })
       : inside;
   return (
     <div

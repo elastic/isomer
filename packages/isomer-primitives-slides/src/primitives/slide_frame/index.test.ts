@@ -13,6 +13,7 @@ import { slideDeckFrame, slidesPack } from '../../pack';
 import { example as titleExample } from '../slide_title/examples';
 
 import type { SlideFrameNode } from './types';
+import { sanitizeFrameUrl } from './url';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -45,5 +46,25 @@ describe('slideFrame footer', () => {
     expect(
       footer({ tone: 'inverse', brand: 'Ledger', logo: false })
     ).not.toContain('<svg');
+  });
+});
+
+describe('slideFrame url', () => {
+  it.each([
+    'https://?',
+    'https://#',
+    'https://:',
+    'http://',
+    'ftp://host.example',
+  ])('rejects %s, which has no web host', (url) => {
+    expect(sanitizeFrameUrl(url)).toBeNull();
+  });
+
+  it.each([
+    'https://example.com',
+    'http://example.com:8080/a?b#c',
+    'https://elastic.github.io/isomer',
+  ])('accepts %s', (url) => {
+    expect(sanitizeFrameUrl(url)).toBe(url);
   });
 });

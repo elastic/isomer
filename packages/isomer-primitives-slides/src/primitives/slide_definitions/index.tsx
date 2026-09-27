@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { stripMarks } from '../../render/marks';
+import { markdownText, marksMarkdown, stripMarks } from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -21,7 +21,11 @@ export const text = ({ items }: SlideDefinitionsNode): string =>
 
 /** Markdown renderer for {@link SlideDefinitionsNode}: a bullet per term. */
 export const markdown = ({ items }: SlideDefinitionsNode): string =>
-  items.map(({ term, body }) => `- **${term}**: ${body}`).join('\n');
+  items
+    .map(
+      ({ term, body }) => `- **${markdownText(term)}**: ${marksMarkdown(body)}`
+    )
+    .join('\n');
 
 /** Catalog, schema, and renderers for {@link SlideDefinitionsNode}. */
 export const slideDefinitionsPrimitive = definePrimitive({

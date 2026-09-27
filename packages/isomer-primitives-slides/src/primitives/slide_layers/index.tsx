@@ -5,7 +5,12 @@
  * 2.0.
  */
 
-import { stripMarks } from '../../render/marks';
+import {
+  markdownCode,
+  markdownText,
+  marksMarkdown,
+  stripMarks,
+} from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -32,7 +37,7 @@ export const markdown = ({ layers }: SlideLayersNode): string =>
   layers
     .map(
       ({ name, body, chips, owner }, index) =>
-        `${index + 1}. **${name}** ${dash.value} ${chips ? chips.map((chip) => `\`${chip}\``).join(', ') : (body ?? '')} ${separator.value} _${owner}_`
+        `${index + 1}. **${markdownText(name)}** ${dash.value} ${chips ? chips.map((chip) => markdownCode(chip)).join(', ') : marksMarkdown(body ?? '')} ${separator.value} _${markdownText(owner)}_`
     )
     .join('\n');
 

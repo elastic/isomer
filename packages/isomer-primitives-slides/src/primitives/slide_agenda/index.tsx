@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { markdownText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -37,7 +38,13 @@ export const text = ({ sections }: SlideAgendaNode): string =>
 export const markdown = ({ sections }: SlideAgendaNode): string =>
   sections
     .map(
-      (section) => `- **${section.number}** ${section.title}${detail(section)}`
+      (section) =>
+        `- **${markdownText(section.number)}** ${markdownText(section.title)}${detail(
+          {
+            ...section,
+            ...(section.count ? { count: markdownText(section.count) } : {}),
+          }
+        )}`
     )
     .join('\n');
 

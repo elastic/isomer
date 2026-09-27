@@ -12,6 +12,7 @@ import {
 } from '@elastic/isomer-sdk/slack';
 
 import { fencedBlock } from '../../render/fence';
+import { markdownText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -34,7 +35,10 @@ export const text = ({ panels }: SlideCodeNode): string =>
 export const markdown = ({ panels }: SlideCodeNode): string =>
   panels
     .map(({ file, language, lines }) =>
-      [file ? `**${file}**` : '', fencedBlock(lines.join('\n'), language)]
+      [
+        file ? `**${markdownText(file)}**` : '',
+        fencedBlock(lines.join('\n'), language),
+      ]
         .filter(Boolean)
         .join('\n\n')
     )

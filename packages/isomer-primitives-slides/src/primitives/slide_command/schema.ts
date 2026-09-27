@@ -8,6 +8,7 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
+import { hasLineTerminator } from '../../render/marks';
 import { commandMaxLength } from '../../theme/components/command';
 import { crossRefine } from '../cross_field';
 
@@ -39,7 +40,7 @@ export const schema = z
   })
   .strict()
   .check(
-    crossRefine(({ command }) => !command.includes('\n'), {
+    crossRefine(({ command }) => !hasLineTerminator(command), {
       error: 'one line only: a multi-line command belongs in slideCode',
       path: ['command'],
     })

@@ -12,6 +12,7 @@ import {
   renderSlackChildren,
   slackCaption,
 } from '../../render';
+import { markdownText } from '../../render/marks';
 import { contentNode, definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -38,7 +39,10 @@ export const slideWindowPrimitive = definePrimitive<SlideWindowNode>({
         .filter(Boolean)
         .join('\n'),
     markdown: (node, { scope }) =>
-      [`**${windowTitle(node)}**`, renderChildren(node.body, scope, 'markdown')]
+      [
+        `**${windowTitle({ ...node, title: markdownText(node.title) })}**`,
+        renderChildren(node.body, scope, 'markdown'),
+      ]
         .filter(Boolean)
         .join('\n\n'),
     slack: (node, { collector, scope }) => [

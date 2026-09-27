@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { stripMarks } from '../../render/marks';
+import { markdownText, marksMarkdown, stripMarks } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -50,11 +50,11 @@ export const text = (node: SlideDeltaNode): string =>
 /** Markdown renderer for {@link SlideDeltaNode}: the text line with the labels and the change in bold. */
 export const markdown = (node: SlideDeltaNode): string =>
   line(node, {
-    label: (label) => `**${stripMarks(label)}**`,
-    value: (value) => value,
+    label: (label) => `**${markdownText(stripMarks(label))}**`,
+    value: markdownText,
     pending: `_${placeholderCaption.value}_`,
-    change: (change) => `**${change}**`,
-    body: (body) => body,
+    change: (change) => `**${markdownText(change)}**`,
+    body: marksMarkdown,
   });
 
 /** Catalog, schema, and renderers for {@link SlideDeltaNode}. */

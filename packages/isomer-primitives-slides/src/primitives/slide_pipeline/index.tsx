@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { stripMarks } from '../../render/marks';
+import { markdownText, marksMarkdown, stripMarks } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -68,23 +68,32 @@ export const markdown = ({
   end,
   steps,
   spans,
-}: SlidePipelineNode): string =>
-  [
-    chain([start, ...titles(steps), end]),
+}: SlidePipelineNode): string => {
+  const named = steps.map((step) => ({
+    ...step,
+    title: markdownText(step.title),
+  }));
+  return [
+    chain([
+      start && markdownText(start),
+      ...titles(named),
+      end && markdownText(end),
+    ]),
     spans?.length
       ? spans
           .map(
             (span) =>
-              `- **${span.label}** (${covered(steps, span)}): ${detail(span.title, span.body)}`
+              `- **${markdownText(span.label)}** (${covered(named, span)}): ${detail(markdownText(span.title), span.body && marksMarkdown(span.body))}`
           )
           .join('\n')
-      : steps
+      : named
           .map(
             ({ title, body }, index) =>
-              `${index + 1}. ${detail(`**${title}**`, body)}`
+              `${index + 1}. ${detail(`**${title}**`, body && marksMarkdown(body))}`
           )
           .join('\n'),
   ].join('\n\n');
+};
 
 /** Catalog, schema, and renderers for {@link SlidePipelineNode}. */
 export const slidePipelinePrimitive = definePrimitive({

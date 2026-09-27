@@ -37,9 +37,11 @@ describe('slideDiff', () => {
     }
   });
 
-  it('rejects a multi-line entry', () => {
+  it.each(
+    ['\n', '\r', '\u2028', '\u2029'].map((mark) => [JSON.stringify(mark), mark])
+  )('rejects an entry split by %s', (_name, mark) => {
     expect(
-      errorPaths({ type: 'slideDiff', lines: [{ text: 'one\ntwo' }] })
+      errorPaths({ type: 'slideDiff', lines: [{ text: `one${mark}two` }] })
     ).toEqual([
       'body[0].body[0].lines: one line per entry: split multi-line source into separate lines',
     ]);

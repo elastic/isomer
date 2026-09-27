@@ -7,7 +7,12 @@
 
 import { escapeMrkdwn, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import { marksSlack, stripMarks } from '../../render/marks';
+import {
+  markdownText,
+  marksMarkdown,
+  marksSlack,
+  stripMarks,
+} from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -31,8 +36,15 @@ export const text = (node: SlideQuoteNode): string =>
   `${quoted(stripMarks(node.text))} ${attribution(node)}`;
 
 /** Markdown renderer for {@link SlideQuoteNode}: a blockquote with the attribution as its last line. */
-export const markdown = (node: SlideQuoteNode): string =>
-  `> ${quoted(node.text)}\n>\n> ${attribution(node)}`;
+export const markdown = (node: SlideQuoteNode): string => {
+  const { text: said, source, context } = node;
+  const cited = attribution({
+    ...node,
+    source: markdownText(source),
+    ...(context ? { context: markdownText(context) } : {}),
+  });
+  return `> ${quoted(marksMarkdown(said))}\n>\n> ${cited}`;
+};
 
 /** Slack renderer for {@link SlideQuoteNode}: a quoted section. */
 export const slack = (node: SlideQuoteNode): SlackBlock[] => [

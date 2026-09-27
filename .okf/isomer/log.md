@@ -3,6 +3,7 @@
 ## 2026-09-27
 
 - **Review fixes**: A misspelling suggestion only measures options within the distance threshold by length, so a huge invalid value costs no more than the options do. `toJsx` escapes carriage returns. `createAuthoringPromptBuilder` forwards `catalog`, `groups`, `heading`, and `intro`, and takes `groups` as a default. `slideFrame` draws the mark beside a footer with no section. `slideHeading`'s crowding stays positive and finite for a heading taller than the frame body. `slideSplit`'s size estimate uses the columns its own divider leaves.
+- **Markdown and printer hardening**: Every slides primitive's Markdown renderer escapes authored text through `marksMarkdown`, which keeps `` `code` `` and `**strong**`, or `markdownText`; both collapse line terminators and escape anything that could open a block, and `markdownCode` fences code spans past any backtick run. Table cells escape the same way. `slideCode`, `slideCommand`, and `slideDiff` reject every line terminator. The frame's `url` must parse as http(s) with a host. The pack adds context fields through a prototype-preserving view, not a spread. `toJsx` prints a nested `__proto__` key computed, prints a prop that is not an attribute name through a spread, refuses a `__proto__` prop, and escapes U+2028 and U+2029.
 
 ## 2026-09-26
 

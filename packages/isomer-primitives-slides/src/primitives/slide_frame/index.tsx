@@ -13,6 +13,7 @@ import {
   renderSlackChildren,
   slackCaption,
 } from '../../render';
+import { markdownText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { scalePx } from '../../theme/scale';
 import { SLIDE_THEME } from '../../theme/theme';
@@ -60,8 +61,17 @@ export const slideFramePrimitive = definePrimitive<SlideFrameNode>({
         .filter(Boolean)
         .join('\n\n'),
     markdown: (node, { scope }) => {
-      const footer = footerLine(node, (url) =>
-        markdownLink(displayUrl(url), url)
+      const { brand, section, sectionNumber } = node;
+      const footer = footerLine(
+        {
+          ...node,
+          ...(brand ? { brand: markdownText(brand) } : {}),
+          ...(section ? { section: markdownText(section) } : {}),
+          ...(sectionNumber
+            ? { sectionNumber: markdownText(sectionNumber) }
+            : {}),
+        },
+        (url) => markdownLink(displayUrl(url), url)
       );
       return [
         renderChildren(node.body, scope, 'markdown'),

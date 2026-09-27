@@ -5,12 +5,15 @@
  * 2.0.
  */
 
-const escapeCell = (cell: string): string =>
-  cell.replace(/\|/g, '\\|').replace(/\s*\n\s*/g, ' ');
+import { marksMarkdown } from './marks';
 
-/** One GFM pipe-table row. */
+/** One GFM pipe-table row of authored cells, marks kept and everything else escaped. */
 export const markdownRow = (cells: readonly string[]): string =>
-  `| ${cells.map(escapeCell).join(' | ')} |`;
+  `| ${cells.map(marksMarkdown).join(' | ')} |`;
+
+/** The delimiter row under a GFM table's header. */
+export const markdownDelimiterRow = (count: number): string =>
+  `| ${Array.from({ length: count }, () => '---').join(' | ')} |`;
 
 /** A GFM pipe table. The Slack fallback turns it into a native `table` block. */
 export const markdownTable = (
@@ -19,7 +22,7 @@ export const markdownTable = (
 ): string =>
   [
     markdownRow(columns),
-    markdownRow(columns.map(() => '---')),
+    markdownDelimiterRow(columns.length),
     ...rows.map(markdownRow),
   ].join('\n');
 

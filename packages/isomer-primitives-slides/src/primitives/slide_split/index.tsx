@@ -9,7 +9,12 @@ import { bold, type SlackBlock } from '@elastic/isomer-sdk/slack';
 import type { ZodType } from 'zod';
 
 import type { SlideRenderScope } from '../../render/context';
-import { marksSlack, stripMarks } from '../../render/marks';
+import {
+  markdownText,
+  marksMarkdown,
+  marksSlack,
+  stripMarks,
+} from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { contentNode, definePrimitive } from '../define';
 
@@ -37,7 +42,8 @@ const sideText = (
       if (block.kind === 'statements') {
         return block.statements
           .map(
-            ({ text }) => `- ${surface === 'text' ? stripMarks(text) : text}`
+            ({ text }) =>
+              `- ${surface === 'text' ? stripMarks(text) : marksMarkdown(text)}`
           )
           .join('\n');
       }
@@ -51,7 +57,7 @@ const sideText = (
     return blocks;
   }
   return surface === 'markdown'
-    ? `## ${label}\n\n${blocks}`
+    ? `## ${markdownText(label)}\n\n${blocks}`
     : `${label}\n${blocks}`;
 };
 
@@ -67,7 +73,7 @@ const splitText = (
       ? ''
       : surface === 'text'
         ? stripMarks(footnote)
-        : footnote,
+        : marksMarkdown(footnote),
   ]
     .filter(Boolean)
     .join('\n\n');

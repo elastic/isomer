@@ -7,7 +7,7 @@
 
 import { boldSectionLabel } from '@elastic/isomer-sdk/markdown';
 
-import { stripMarks } from '../../render/marks';
+import { markdownText, marksMarkdown, stripMarks } from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -34,11 +34,15 @@ export const text = ({ label, items, footnote }: SlideListNode): string =>
 /** Markdown renderer for {@link SlideListNode}. */
 export const markdown = ({ label, items, footnote }: SlideListNode): string =>
   [
-    label ? boldSectionLabel(label) : undefined,
+    label ? boldSectionLabel(markdownText(label)) : undefined,
     items
-      .map(({ term, body }) => (term ? `- **${term}**: ${body}` : `- ${body}`))
+      .map(({ term, body }) =>
+        term
+          ? `- **${markdownText(term)}**: ${marksMarkdown(body)}`
+          : `- ${marksMarkdown(body)}`
+      )
       .join('\n'),
-    footnote,
+    footnote && marksMarkdown(footnote),
   ]
     .filter(Boolean)
     .join('\n\n');

@@ -15,7 +15,12 @@ import {
   type SlackBlock,
 } from '@elastic/isomer-sdk/slack';
 
-import { marksSlack, stripMarks } from '../../render/marks';
+import {
+  markdownText,
+  marksMarkdown,
+  marksSlack,
+  stripMarks,
+} from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -60,12 +65,17 @@ export const markdown = ({
   paths = [],
 }: SlideClosingNode): string =>
   [
-    `# ${title}`,
+    `# ${markdownText(title)}`,
     ...links.map(
       ({ label, href, text: shown }) =>
-        `**${label}** ${separator.value} ${href ? markdownLink(shown, href) : shown}`
+        `**${markdownText(label)}** ${separator.value} ${href ? markdownLink(shown, href) : markdownText(shown)}`
     ),
-    paths.map(({ title: goal, body }) => `- **${goal}**: ${body}`).join('\n'),
+    paths
+      .map(
+        ({ title: goal, body }) =>
+          `- **${markdownText(goal)}**: ${marksMarkdown(body)}`
+      )
+      .join('\n'),
   ]
     .filter(Boolean)
     .join('\n\n');

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { stripMarks } from '../../render/marks';
+import { markdownText, marksMarkdown, stripMarks } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -50,9 +50,12 @@ export const markdown = ({ columns }: SlideRoadmapNode): string =>
   columns
     .map((column) =>
       [
-        `## ${horizon(column, column.title)}`,
+        `## ${horizon({ ...column, status: markdownText(column.status) }, markdownText(column.title))}`,
         column.items
-          .map(({ title, body }) => `- **${title}**: ${body}`)
+          .map(
+            ({ title, body }) =>
+              `- **${marksMarkdown(title)}**: ${marksMarkdown(body)}`
+          )
           .join('\n'),
       ].join('\n\n')
     )

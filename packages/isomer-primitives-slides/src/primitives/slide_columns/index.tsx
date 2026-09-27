@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { stripMarks } from '../../render/marks';
+import { markdownCode, marksMarkdown, stripMarks } from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -35,11 +35,17 @@ export const text = ({ items, footnote }: SlideColumnsNode): string =>
 export const markdown = ({ items, footnote }: SlideColumnsNode): string =>
   [
     ...items.map(({ title, tags = [], body }) =>
-      [`## ${title}`, tags.map((tag) => `\`${tag}\``).join(' '), body]
+      [
+        `## ${marksMarkdown(title)}`,
+        tags.map((tag) => markdownCode(tag)).join(' '),
+        marksMarkdown(body),
+      ]
         .filter(Boolean)
         .join('\n\n')
     ),
-    footnote ? `\`${footnote.code}\` ${footnote.text}` : '',
+    footnote
+      ? `${markdownCode(footnote.code)} ${marksMarkdown(footnote.text)}`
+      : '',
   ]
     .filter(Boolean)
     .join('\n\n');

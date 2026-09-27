@@ -8,6 +8,7 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
+import { hasLineTerminator } from '../../render/marks';
 import { crossRefine } from '../cross_field';
 
 const panelSchema = z
@@ -43,7 +44,7 @@ const panelSchema = z
   })
   .strict()
   .check(
-    crossRefine(({ lines }) => lines.every((line) => !line.includes('\n')), {
+    crossRefine(({ lines }) => !lines.some(hasLineTerminator), {
       error: 'one line per entry: split multi-line source into separate lines',
       path: ['lines'],
     })

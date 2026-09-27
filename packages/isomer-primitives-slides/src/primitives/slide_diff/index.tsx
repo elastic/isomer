@@ -12,6 +12,7 @@ import {
 } from '@elastic/isomer-sdk/slack';
 
 import { fencedBlock } from '../../render/fence';
+import { markdownText } from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -35,7 +36,7 @@ export const text = ({ file, lines }: SlideDiffNode): string =>
 
 /** Markdown renderer for {@link SlideDiffNode}: a `diff` fence under the caption. */
 export const markdown = ({ file, lines }: SlideDiffNode): string =>
-  [file ? `**${file}**` : '', fencedBlock(unified(lines), 'diff')]
+  [file ? `**${markdownText(file)}**` : '', fencedBlock(unified(lines), 'diff')]
     .filter(Boolean)
     .join('\n\n');
 

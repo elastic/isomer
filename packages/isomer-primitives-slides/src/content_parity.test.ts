@@ -83,7 +83,7 @@ const stringLeaves = (value: unknown): string[] => {
 // Marks render differently per surface, so their markers are compared away.
 const normalize = (text: string) =>
   text
-    .replace(/\\([\\`*_{}[\]()#+\-.!|>~])/g, '$1')
+    .replace(/\\([\\`*_{}[\]()#+\-.!|<>&=~])/g, '$1')
     .replace(/[`*]/g, '')
     .replace(/\s+/g, ' ')
     .toLowerCase();

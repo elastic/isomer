@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { fencedBlock } from '../../render/fence';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -32,7 +33,7 @@ export const text = ({ root, entries }: SlideTreeNode): string => {
 
 /** Markdown renderer for {@link SlideTreeNode}: {@link text} in a fenced block. */
 export const markdown = (node: SlideTreeNode): string =>
-  `\`\`\`text\n${text(node)}\n\`\`\``;
+  fencedBlock(text(node), 'text');
 
 /** Catalog, schema, and renderers for {@link SlideTreeNode}. */
 export const slideTreePrimitive = definePrimitive({

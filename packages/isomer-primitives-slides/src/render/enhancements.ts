@@ -18,6 +18,8 @@ import {
   resolveEnhancements,
 } from '@elastic/isomer-sdk/html';
 
+import { withContextFields } from './context_view';
+
 /**
  * `adapter` with the requested enhancements the body has content for set as
  * `context.enhancements`, and their scripts emitted.
@@ -43,10 +45,10 @@ export const withEnhancements = <
       const [{ body }, , collector, , options, scope] = args;
       resolved.set(collector, resolve(body, options, scope));
     },
-    createRenderContext: (collector, options) => ({
-      ...adapter.createRenderContext(collector, options),
-      enhancements: resolved.get(collector) ?? new Set<string>(),
-    }),
+    createRenderContext: (collector, options) =>
+      withContextFields(adapter.createRenderContext(collector, options), {
+        enhancements: resolved.get(collector) ?? new Set<string>(),
+      } as Partial<TContext>),
     getScriptText: (composition, options, scope) =>
       [
         adapter.getScriptText?.(composition, options, scope) ?? '',

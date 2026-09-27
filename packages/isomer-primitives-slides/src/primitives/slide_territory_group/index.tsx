@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { stripMarks } from '../../render/marks';
+import { markdownText, marksMarkdown, stripMarks } from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -21,7 +21,11 @@ export const text = ({ items }: SlideTerritoryGroupNode): string =>
 
 /** Markdown renderer for {@link SlideTerritoryGroupNode}: a heading per owner. */
 export const markdown = ({ items }: SlideTerritoryGroupNode): string =>
-  items.map(({ title, body }) => `## ${title}\n\n${body}`).join('\n\n');
+  items
+    .map(
+      ({ title, body }) => `## ${markdownText(title)}\n\n${marksMarkdown(body)}`
+    )
+    .join('\n\n');
 
 /** Catalog, schema, and renderers for {@link SlideTerritoryGroupNode}. */
 export const slideTerritoryGroupPrimitive = definePrimitive({

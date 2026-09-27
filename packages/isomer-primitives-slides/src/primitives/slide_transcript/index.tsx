@@ -13,6 +13,7 @@ import {
 } from '@elastic/isomer-sdk/slack';
 
 import { slackCaption } from '../../render';
+import { markdownText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -46,14 +47,17 @@ const fenceFor = (code: string): string =>
 /** Markdown renderer for {@link SlideTranscriptNode}. */
 export const markdown = ({ label, turns }: SlideTranscriptNode): string =>
   [
-    label ? `## ${label}` : '',
+    label ? `## ${markdownText(label)}` : '',
     ...turns.map(({ format, role, text: said }) => {
       const speaker = `**${roleLabel[role].value}**`;
       if (format === 'code') {
         const fence = fenceFor(said);
         return `${speaker}\n\n${fence}text\n${said}\n${fence}`;
       }
-      return `${speaker}\n\n${said}`;
+      return `${speaker}\n\n${said
+        .split(/\r\n|[\n\r]/)
+        .map(markdownText)
+        .join('\n')}`;
     }),
   ]
     .filter(Boolean)

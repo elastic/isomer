@@ -12,6 +12,7 @@ import {
 } from '@elastic/isomer-sdk/slack';
 
 import { fencedBlock } from '../../render/fence';
+import { markdownText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -31,7 +32,7 @@ export const text = ({ label, command }: SlideCommandNode): string =>
 
 /** Markdown renderer for {@link SlideCommandNode}: the label, then a `sh` fence without the prompt, so it pastes. */
 export const markdown = ({ label, command }: SlideCommandNode): string =>
-  [label ? `**${label}**` : '', fencedBlock(command, 'sh')]
+  [label ? `**${markdownText(label)}**` : '', fencedBlock(command, 'sh')]
     .filter(Boolean)
     .join('\n\n');
 

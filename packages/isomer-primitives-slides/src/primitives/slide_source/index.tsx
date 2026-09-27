@@ -7,7 +7,7 @@
 
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import { marksSlack, stripMarks } from '../../render/marks';
+import { marksMarkdown, marksSlack, stripMarks } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -26,7 +26,7 @@ export const text = ({ text: source }: SlideSourceNode): string =>
 
 /** Markdown renderer for {@link SlideSourceNode}: one italic line. */
 export const markdown = ({ text: source }: SlideSourceNode): string =>
-  `_${prefix.value} ${source}_`;
+  `_${prefix.value} ${marksMarkdown(source)}_`;
 
 /** Slack renderer for {@link SlideSourceNode}: a context block. */
 export const slack = ({ text: source }: SlideSourceNode): SlackBlock[] => [

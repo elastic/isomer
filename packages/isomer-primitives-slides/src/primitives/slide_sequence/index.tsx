@@ -5,7 +5,12 @@
  * 2.0.
  */
 
-import { stripMarks } from '../../render/marks';
+import {
+  markdownCode,
+  markdownText,
+  marksMarkdown,
+  stripMarks,
+} from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -45,7 +50,16 @@ export const text = (node: SlideSequenceNode): string =>
 
 /** Markdown renderer for {@link SlideSequenceNode}: a numbered list, with mono labels as code. */
 export const markdown = (node: SlideSequenceNode): string =>
-  lines(node, ({ label, mono }) => (mono ? `\`${label}\`` : label));
+  lines(
+    {
+      ...node,
+      actors: node.actors.map((actor) => ({
+        ...actor,
+        label: markdownText(actor.label),
+      })),
+    },
+    ({ label, mono }) => (mono ? markdownCode(label) : marksMarkdown(label))
+  );
 
 /** Catalog, schema, and renderers for {@link SlideSequenceNode}. */
 export const slideSequencePrimitive = definePrimitive({

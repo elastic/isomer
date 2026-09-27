@@ -46,9 +46,11 @@ describe('slideCommand schema', () => {
     }
   });
 
-  it('rejects a multi-line command', () => {
+  it.each(
+    ['\n', '\r', '\u2028', '\u2029'].map((mark) => [JSON.stringify(mark), mark])
+  )('rejects a command split by %s', (_name, mark) => {
     expect(
-      errorPaths({ type: 'slideCommand', command: 'make\nmake install' })
+      errorPaths({ type: 'slideCommand', command: `make${mark}make install` })
     ).toEqual([
       'body[0].body[0].command: one line only: a multi-line command belongs in slideCode',
     ]);

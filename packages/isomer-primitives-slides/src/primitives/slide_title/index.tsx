@@ -13,7 +13,12 @@ import {
 import type { ZodType } from 'zod';
 
 import { renderSlackChildren, slackCaption } from '../../render';
-import { marksSlack, stripMarks } from '../../render/marks';
+import {
+  markdownText,
+  marksMarkdown,
+  marksSlack,
+  stripMarks,
+} from '../../render/marks';
 import { contentNode, definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -38,10 +43,12 @@ const ownText = ({ eyebrow, title, tagline, definition }: SlideTitleNode) =>
 
 const ownMarkdown = ({ eyebrow, title, tagline, definition }: SlideTitleNode) =>
   [
-    `# ${title}`,
-    eyebrow ? `_${eyebrow}_` : undefined,
-    tagline,
-    definition ? `_${definition.term}_ ${definition.text}` : undefined,
+    `# ${markdownText(title)}`,
+    eyebrow ? `_${markdownText(eyebrow)}_` : undefined,
+    tagline && marksMarkdown(tagline),
+    definition
+      ? `_${markdownText(definition.term)}_ ${marksMarkdown(definition.text)}`
+      : undefined,
   ]
     .filter(Boolean)
     .join('\n\n');

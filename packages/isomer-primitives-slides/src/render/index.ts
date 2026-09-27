@@ -23,6 +23,11 @@ export type {
 } from './context';
 export {
   type MarkRun,
+  LINE_TERMINATORS,
+  hasLineTerminator,
+  markdownCode,
+  markdownText,
+  marksMarkdown,
   marksReact,
   marksSlack,
   parseMarks,
@@ -35,4 +40,9 @@ export {
   slideOverflow,
   slideOverlaps,
 } from './overflow';
-export { markdownRow, markdownTable, textTable } from './table';
+export {
+  markdownDelimiterRow,
+  markdownRow,
+  markdownTable,
+  textTable,
+} from './table';

@@ -9,7 +9,12 @@ import { sanitizeNavigationHref } from '@elastic/isomer-sdk';
 import { markdownLink } from '@elastic/isomer-sdk/markdown';
 import { formatHeaderText, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import { marksSlack, stripMarks } from '../../render/marks';
+import {
+  markdownText,
+  marksMarkdown,
+  marksSlack,
+  stripMarks,
+} from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -37,9 +42,14 @@ export const markdown = (node: SlideSectionNode): string => {
   const { contents, hrefs } = node;
   const lines = contents.map((line, index) => {
     const href = hrefs?.[index];
-    return `${index + 1}. ${href ? markdownLink(line, href) : line}`;
+    return `${index + 1}. ${href ? markdownLink(line, href) : marksMarkdown(line)}`;
   });
-  return [`# ${heading(node)}`, lines.join('\n')].join('\n\n');
+  const title = heading({
+    ...node,
+    number: markdownText(node.number),
+    title: markdownText(node.title),
+  });
+  return [`# ${title}`, lines.join('\n')].join('\n\n');
 };
 
 /** Slack renderer for {@link SlideSectionNode}: a header, then the numbered lines. Slide anchors do not link in Slack. */
