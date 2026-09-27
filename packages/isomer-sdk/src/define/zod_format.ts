@@ -119,10 +119,13 @@ const oneOf = (options: readonly unknown[], input: unknown): string => {
   if (typeof input !== 'string') {
     return list;
   }
+  const limit = Math.max(2, input.length / 4);
+  // The length difference is a lower bound on the distance, so this skips no match and bounds the work by the options' length.
   const [closest] = options
     .filter((option): option is string => typeof option === 'string')
+    .filter((option) => Math.abs(option.length - input.length) <= limit)
     .map((option) => ({ option, distance: editDistance(input, option) }))
-    .filter(({ distance }) => distance <= Math.max(2, input.length / 4))
+    .filter(({ distance }) => distance <= limit)
     .sort((a, b) => a.distance - b.distance);
   return closest === undefined
     ? list

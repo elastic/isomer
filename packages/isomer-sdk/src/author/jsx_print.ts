@@ -30,13 +30,17 @@ export interface JsxPrintEnv {
 const INDENT = '  ';
 const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
 // JSX decodes HTML entities in attribute strings, so text that looks like one must be an expression.
-const UNSAFE_ATTRIBUTE = /["\n\\{}<>]|&(#\d+|#x[\da-f]+|[a-z]+);/i;
+const UNSAFE_ATTRIBUTE = /["\n\r\\{}<>]|&(#\d+|#x[\da-f]+|[a-z]+);/i;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const quote = (text: string): string =>
-  `'${text.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n')}'`;
+  `'${text
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')}'`;
 
 const defined = (entries: [string, unknown][]) =>
   entries.filter(([, value]) => value !== undefined);

@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { buildAuthoringPrompt } from './prompt';
+import { buildAuthoringPrompt, createAuthoringPromptBuilder } from './prompt';
 
 const context = {
   guide: 'Guide',
@@ -140,5 +140,25 @@ describe('buildAuthoringPrompt', () => {
     expect(prompt).not.toContain('Use when');
     expect(prompt).not.toContain('## JSON Schema');
     expect(prompt).not.toContain('against the JSON Schema');
+  });
+
+  it('passes catalog and groups through a prompt builder, with groups from its defaults', () => {
+    const entry = (type: string) => ({
+      type,
+      purpose: `The ${type}.`,
+      useWhen: ['Always.'],
+      avoidWhen: ['Never.'],
+      example: { type },
+    });
+    const build = createAuthoringPromptBuilder({
+      guide: 'Guide',
+      rules: '',
+      schema: {},
+      primitives: [entry('a'), entry('b')],
+      groups: [{ title: 'Firsts', types: ['b'] }],
+    });
+    expect(build('compose-from-primitives', { catalog: 'index' })).toContain(
+      '### Firsts\n\n- `b` — The b.\n\n### Other\n\n- `a` — The a.'
+    );
   });
 });

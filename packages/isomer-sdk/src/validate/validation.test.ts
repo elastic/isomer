@@ -123,6 +123,14 @@ describe('error node types', () => {
     );
   });
 
+  it('suggests nothing for a value far longer than every option', () => {
+    const [error] = validate({
+      type: 'view',
+      body: [{ type: 'k'.repeat(100_000) }],
+    }).errors;
+    expect(error?.message).toMatch(/^must be one of:/);
+  });
+
   it('leaves an unknown type unnamed', () => {
     const [error] = validate({ type: 'view', body: [{ type: 'nope' }] }).errors;
     expect(error?.nodeType).toBeUndefined();

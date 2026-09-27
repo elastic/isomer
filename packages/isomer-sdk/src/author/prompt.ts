@@ -229,6 +229,7 @@ export interface AgentAuthoringContextDefaults {
   rules: string;
   schema: JsonSchema;
   primitives: readonly PrimitiveCatalogEntry[];
+  groups?: readonly PrimitiveGroup[];
   views?: readonly AuthoringViewSummary[];
 }
 
@@ -269,13 +270,16 @@ export const createAuthoringPromptBuilder =
     profile: AuthoringProfileId,
     context: Partial<AuthoringPromptContext> = {}
   ): string => {
-    const resolvedViews = context.views ?? defaults.views;
+    const views = context.views ?? defaults.views;
+    const groups = context.groups ?? defaults.groups;
     return buildAuthoringPrompt(profile, {
+      ...context,
       guide: context.guide ?? defaults.guide,
       rules: context.rules ?? defaults.rules,
       schema: context.schema ?? defaults.schema,
       primitives: context.primitives ?? defaults.primitives,
       examples: context.examples ?? [],
-      ...(resolvedViews === undefined ? {} : { views: resolvedViews }),
+      ...(views === undefined ? {} : { views }),
+      ...(groups === undefined ? {} : { groups }),
     });
   };
