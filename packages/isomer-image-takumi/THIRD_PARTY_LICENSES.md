@@ -8,7 +8,6 @@ Packages a consumer installs with these libraries. Their license texts are folde
 
 | Package | Version | SPDX | Path | Optional dependencies |
 | --- | --- | --- | --- | --- |
-| `@elastic/distillate` | 0.1.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+distillate@0.1.0/node_modules/@elastic/distillate` |  |
 | `@takumi-rs/core` | 2.14.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+core@2.14.0_csstype@3.2.3_react@18.3.1/node_modules/@takumi-rs/core` | `@takumi-rs/core-darwin-arm64`, `@takumi-rs/core-darwin-x64`, `@takumi-rs/core-linux-arm64-gnu`, `@takumi-rs/core-linux-arm64-musl`, `@takumi-rs/core-linux-x64-gnu`, `@takumi-rs/core-linux-x64-musl`, `@takumi-rs/core-win32-arm64-msvc`, `@takumi-rs/core-win32-x64-msvc` |
 | `@takumi-rs/core-darwin-arm64` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
 | `@takumi-rs/core-darwin-x64` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
@@ -19,7 +18,6 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `@takumi-rs/core-win32-arm64-msvc` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
 | `@takumi-rs/core-win32-x64-msvc` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
 | `@takumi-rs/helpers` | 2.14.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+helpers@2.14.0_react@18.3.1/node_modules/@takumi-rs/helpers` |  |
-| `stylis` | 4.4.0 | MIT | `node_modules/.pnpm/stylis@4.4.0/node_modules/stylis` |  |
 
 ## Source and build
 
@@ -55,6 +53,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@commitlint/to-lines` | 19.8.1 | MIT | `node_modules/.pnpm/@commitlint+to-lines@19.8.1/node_modules/@commitlint/to-lines` |  |
 | `@commitlint/top-level` | 19.8.1 | MIT | `node_modules/.pnpm/@commitlint+top-level@19.8.1/node_modules/@commitlint/top-level` |  |
 | `@commitlint/types` | 19.8.1 | MIT | `node_modules/.pnpm/@commitlint+types@19.8.1/node_modules/@commitlint/types` |  |
+| `@elastic/distillate` | 0.1.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+distillate@0.1.0/node_modules/@elastic/distillate` |  |
 | `@eslint-community/eslint-utils` | 4.10.1 | MIT | `node_modules/.pnpm/@eslint-community+eslint-utils@4.10.1_eslint@9.39.5_jiti@2.6.1_/node_modules/@eslint-community/eslint-utils` |  |
 | `@eslint-community/regexpp` | 4.12.2 | MIT | `node_modules/.pnpm/@eslint-community+regexpp@4.12.2/node_modules/@eslint-community/regexpp` |  |
 | `@eslint/config-array` | 0.21.2 | Apache-2.0 | `node_modules/.pnpm/@eslint+config-array@0.21.2/node_modules/@eslint/config-array` |  |
@@ -722,6 +721,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `strip-final-newline` | 4.0.0 | MIT | `node_modules/.pnpm/strip-final-newline@4.0.0/node_modules/strip-final-newline` |  |
 | `strip-json-comments` | 2.0.1 | MIT | `node_modules/.pnpm/strip-json-comments@2.0.1/node_modules/strip-json-comments` |  |
 | `strip-json-comments` | 3.1.1 | MIT | `node_modules/.pnpm/strip-json-comments@3.1.1/node_modules/strip-json-comments` |  |
+| `stylis` | 4.4.0 | MIT | `node_modules/.pnpm/stylis@4.4.0/node_modules/stylis` |  |
 | `super-regex` | 1.1.0 | MIT | `node_modules/.pnpm/super-regex@1.1.0/node_modules/super-regex` |  |
 | `supports-color` | 10.2.2 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/supports-color` |  |
 | `supports-color` | 5.5.0 | MIT | `node_modules/.pnpm/supports-color@5.5.0/node_modules/supports-color` |  |

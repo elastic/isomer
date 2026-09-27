@@ -18,6 +18,7 @@ import { repoRoot, workspacePackages } from './workspace_packages.js';
 
 /**
  * Specifiers that must stay unreachable from an entry, by package and export key.
+ * A forbidden specifier covers the package and every subpath under it.
  *
  * `react-dom/server` is the one worth guarding: it is the heavy server renderer,
  * and pulling it onto an entry a text-only or edge host imports costs that host
@@ -36,6 +37,9 @@ const RULES = {
     './author': ['react-dom', 'react-dom/server'],
   },
 };
+
+const matchesForbidden = (specifier, forbidden) =>
+  specifier === forbidden || specifier.startsWith(`${forbidden}/`);
 
 const specifiersIn = (file) => specifiersInSource(readFileSync(file, 'utf-8'));
 
@@ -91,8 +95,8 @@ for (const [packageName, entryRules] of Object.entries(RULES)) {
     const reachable = reachableBareSpecifiers(entryFile);
     checked += 1;
 
-    for (const specifier of forbidden) {
-      if (reachable.has(specifier)) {
+    for (const specifier of reachable) {
+      if (forbidden.some((rule) => matchesForbidden(specifier, rule))) {
         violations.push(
           `${packageName} "${exportKey}" (${relative(repoRoot, entryFile)}) reaches "${specifier}"`
         );

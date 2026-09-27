@@ -19,11 +19,35 @@ import { dirname, join, resolve } from 'node:path';
 
 import { repoRoot, workspacePackages } from './workspace_packages.js';
 
+const workspace = workspacePackages();
+const privateNames = new Set(
+  workspace
+    .filter(({ manifest }) => manifest.private === true)
+    .map(({ manifest }) => manifest.name)
+);
+
 // Every package that publishes: the packed tarball of each must import with
 // only its declared dependencies and required peers beside it.
-const packageNames = workspacePackages()
-  .filter(({ manifest }) => manifest.private !== true)
-  .map(({ manifest }) => manifest.name);
+const publishing = workspace.filter(
+  ({ manifest }) => manifest.private !== true
+);
+const packageNames = publishing.map(({ manifest }) => manifest.name);
+
+// A published package cannot reach one that never publishes.
+const privateReferences = publishing.flatMap(({ manifest }) =>
+  ['dependencies', 'peerDependencies', 'optionalDependencies'].flatMap(
+    (field) =>
+      Object.keys(manifest[field] ?? {})
+        .filter((name) => privateNames.has(name))
+        .map((name) => `${manifest.name} ${field} lists private ${name}`)
+  )
+);
+if (privateReferences.length > 0) {
+  for (const reference of privateReferences) {
+    console.error(reference);
+  }
+  process.exit(1);
+}
 const tempDir = mkdtempSync(join(tmpdir(), 'isomer-pack-consumer-'));
 
 const linkDirectory = (target, path) => {

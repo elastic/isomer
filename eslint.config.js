@@ -292,6 +292,7 @@ export default tseslint.config(
   {
     files: [
       'packages/**/*.{ts,tsx}',
+      'examples/**/*.{ts,tsx}',
       'scripts/**/*.{js,cjs}',
       'eslint.config.js',
       'vitest.config.ts',
