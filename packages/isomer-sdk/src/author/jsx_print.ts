@@ -170,6 +170,12 @@ export const printJsx = (
     return tag(name, props, asChildren ? children : [], indent);
   };
 
+  if (!COMPONENT_NAME.test(root)) {
+    throw new IsomerError(
+      'INVALID_BODY_NODE',
+      `toJsx: root ${JSON.stringify(root)} is no JSX component name`
+    );
+  }
   const { body, type: _type, ...rest } = composition;
   const nodes = Array.isArray(body) ? body.filter(isNode) : [];
   return tag(root, defined(Object.entries(rest)), nodes, '');

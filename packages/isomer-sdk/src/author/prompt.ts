@@ -100,16 +100,30 @@ const withoutMeta = (value: unknown): unknown => {
   return rest;
 };
 
+/** `text` on one line, so it cannot start a line of its own in the prompt. */
+const oneLine = (text: string): string =>
+  text.replace(/\r\n|[\n\r\u2028\u2029]/g, ' ');
+
+/** `text` as a code span, fenced longer than any backtick run in it. */
+const codeSpan = (text: string): string => {
+  const line = oneLine(text);
+  const fence = '`'.repeat(
+    Math.max(0, ...(line.match(/`+/g) ?? []).map((run) => run.length)) + 1
+  );
+  const pad = line.startsWith('`') || line.endsWith('`') ? ' ' : '';
+  return `${fence}${pad}${line}${pad}${fence}`;
+};
+
 /** One catalog bullet: purpose, `useWhen`, `avoidWhen`, and the example. */
 export const formatPrimitiveEntry = (entry: PrimitiveCatalogEntry): string => {
-  const lines = [`- \`${entry.type}\` — ${entry.purpose}`];
+  const lines = [`- ${codeSpan(entry.type)} — ${oneLine(entry.purpose)}`];
   if (entry.useWhen.length > 0) {
-    lines.push(`  - Use when: ${entry.useWhen.join(' ')}`);
+    lines.push(`  - Use when: ${oneLine(entry.useWhen.join(' '))}`);
   }
   if (entry.avoidWhen.length > 0) {
-    lines.push(`  - Avoid when: ${entry.avoidWhen.join(' ')}`);
+    lines.push(`  - Avoid when: ${oneLine(entry.avoidWhen.join(' '))}`);
   }
-  lines.push(`  - Example: \`${compactJson(entry.example)}\``);
+  lines.push(`  - Example: ${codeSpan(compactJson(entry.example))}`);
   return lines.join('\n');
 };
 
@@ -117,7 +131,7 @@ const renderCatalog = (primitives: readonly PrimitiveCatalogEntry[]): string =>
   primitives.map(formatPrimitiveEntry).join('\n');
 
 const indexLine = ({ type, purpose }: PrimitiveCatalogEntry): string =>
-  `- \`${type}\` — ${purpose}`;
+  `- ${codeSpan(type)} — ${oneLine(purpose)}`;
 
 const OTHER_GROUP = 'Other';
 
@@ -144,7 +158,7 @@ const renderIndex = (
     .filter(({ entries }) => entries.length > 0)
     .map(
       ({ title, entries }) =>
-        `### ${title}\n\n${entries.map(indexLine).join('\n')}`
+        `### ${oneLine(title)}\n\n${entries.map(indexLine).join('\n')}`
     )
     .join('\n\n');
 };

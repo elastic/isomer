@@ -18,6 +18,7 @@ import {
   definePrimitive,
   definePrimitivePack,
   type Frame,
+  nodeAnchor,
   type PrimitiveNode,
   type PrimitivePack,
   runEnhancementScript,
@@ -732,6 +733,62 @@ describe('createIsomerRuntime', () => {
 
     const result = runtime.surfaces.html.render(view('Styled'));
     expect(result.css).toContain('.note { color: red; }');
+  });
+
+  it('collects through html.createStyleCollection the CSS html.render emits, from a React render', () => {
+    const recordingNote = definePrimitive<NoteNode>({
+      ...notePrimitive,
+      renderers: {
+        ...notePrimitive.renderers,
+        react: (node, { context }) => {
+          (context as { use?: (rule: string) => void } | undefined)?.use?.(
+            `.note-${node.text}{}`
+          );
+          return createElement('p', nodeAnchor(context, node), node.text);
+        },
+      },
+    });
+    const pack = definePrimitivePack({
+      id: 'test',
+      surfaces: [],
+      primitives: [recordingNote],
+      enhancements: [{ id: 'find', appliesTo: () => true, anchors: true }],
+    });
+    const runtime = createIsomerRuntime({
+      packs: [pack],
+      styleAdapter: {
+        createCollector: () => ({ rules: new Set<string>() }),
+        createRenderContext: ({ rules }: { rules: Set<string> }) => ({
+          use: (rule: string) => {
+            rules.add(rule);
+          },
+        }),
+        renderStyles: ({ rules }: { rules: Set<string> }) =>
+          [...rules].join(''),
+      },
+    });
+    const options = { enhancements: ['find'] };
+
+    const styles = runtime.surfaces.html.createStyleCollection(
+      view('A'),
+      options
+    );
+    const markup = renderToStaticMarkup(
+      createElement(() =>
+        runtime.surfaces.react.render(view('A'), {
+          context: styles.context,
+          wrapper: styles.wrapper,
+        })
+      )
+    );
+
+    expect(styles.css()).toBe('.note-A{}');
+    expect(styles.css()).toBe(
+      runtime.surfaces.html.render(view('A'), { ...options, css: 'separate' })
+        .css
+    );
+    // The enhancement's `anchors: true` reached the context the host rendered with.
+    expect(markup).toContain('data-isomer-node="note"');
   });
 
   it('honours a validation mode the style adapter derives', () => {

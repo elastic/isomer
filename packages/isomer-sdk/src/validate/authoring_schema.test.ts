@@ -94,8 +94,8 @@ describe('buildAuthoringJsonSchema def names', () => {
     expect($defs.delta?.properties?.note).toMatchObject({ type: 'object' });
   });
 
-  it('escapes a def id in a $ref as a JSON Pointer, so every ref resolves', () => {
-    const type = 'a/b~c';
+  it('escapes a def id in a $ref as a JSON Pointer in a URI fragment, so every ref resolves', () => {
+    const type = 'a/b~c%2F';
     const node = {
       type,
       'x/y': { label: 'Then', value: 1 },
@@ -117,9 +117,9 @@ describe('buildAuthoringJsonSchema def names', () => {
     ].map(([, pointer]) => pointer ?? '');
     expect(refs.length).toBeGreaterThan(0);
     for (const pointer of refs) {
-      expect(pointer).not.toMatch(/\/|~(?![01])/);
+      expect(pointer).not.toMatch(/\/|~(?![01])|%(?![0-9A-F]{2})/);
       expect($defs).toHaveProperty([
-        pointer.replace(/~1/g, '/').replace(/~0/g, '~'),
+        decodeURIComponent(pointer).replace(/~1/g, '/').replace(/~0/g, '~'),
       ]);
     }
   });

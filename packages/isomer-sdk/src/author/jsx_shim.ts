@@ -190,6 +190,21 @@ export const buildJsxShim = <
     ])
   );
   const { authoredByType, childComponents } = collectAuthored(primitives);
+  const named = new Map<string, string>([['Composition', 'view']]);
+  for (const type of [
+    ...primitives.map((primitive) => primitive.type),
+    ...childComponents.keys(),
+  ]) {
+    const name = capitalize(type);
+    const earlier = named.get(name);
+    if (earlier !== undefined && earlier !== type) {
+      throw new IsomerError(
+        'DUPLICATE_PRIMITIVE_TYPE',
+        `buildJsxShim: "${earlier}" and "${type}" both print as the component ${name}`
+      );
+    }
+    named.set(name, type);
+  }
   const view = defineAuthorComponent<CompositionAuthorProps<TNode>, 'view'>(
     'view'
   );

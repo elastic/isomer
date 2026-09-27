@@ -111,6 +111,21 @@ describe('toJsx', () => {
     }
   );
 
+  it('refuses a root option that is no JSX component name', () => {
+    expect(() =>
+      shim.toJsx({ type: 'view', body: [] }, { root: '1bad' })
+    ).toThrow(/no JSX component name/);
+  });
+
+  it('refuses two types that print as the same component', () => {
+    expect(() =>
+      buildJsxShim([
+        { type: 'note' as const },
+        { type: 'Note' as const },
+      ] as const)
+    ).toThrow(/"note" and "Note" both print as the component Note/);
+  });
+
   it('refuses a primitive type that is no JSX component name', () => {
     const odd = buildJsxShim([{ type: 'odd "type"' as const }] as const);
     expect(() =>

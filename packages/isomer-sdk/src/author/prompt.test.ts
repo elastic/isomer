@@ -161,4 +161,26 @@ describe('buildAuthoringPrompt', () => {
       '### Firsts\n\n- `b` — The b.\n\n### Other\n\n- `a` — The a.'
     );
   });
+
+  it('keeps every index entry on one line, whatever its type and purpose hold', () => {
+    const prompt = buildAuthoringPrompt('compose-from-primitives', {
+      guide: 'Guide',
+      primitives: [
+        {
+          type: 'odd`type',
+          purpose: 'First line\n## Injected\r\nand more\u2028end',
+          useWhen: [],
+          avoidWhen: [],
+          example: {},
+        },
+      ],
+      examples: [],
+      catalog: 'index',
+      groups: [{ title: 'Group\n## Also injected', types: ['odd`type'] }],
+    });
+    expect(prompt).toContain(
+      '### Group ## Also injected\n\n- ``odd`type`` — First line ## Injected and more end'
+    );
+    expect(prompt).not.toMatch(/^## Injected/m);
+  });
 });

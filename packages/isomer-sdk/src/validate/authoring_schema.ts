@@ -47,15 +47,21 @@ const isJsonObject = (value: unknown): value is Record<string, unknown> =>
 
 const cloneJson = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
-// A `$ref` is a JSON Pointer, so `~` and `/` in a def id are escaped as `~0` and `~1`.
+// A `$ref` is a JSON Pointer in a URI fragment: `~` and `/` are escaped as `~0` and `~1`, then
+// anything a fragment cannot hold, `%` included, is percent-encoded.
 const defRef = (id: string): string =>
-  `${DEF_PREFIX}${id.replace(/~/g, '~0').replace(/\//g, '~1')}`;
+  `${DEF_PREFIX}${id
+    .replace(/~/g, '~0')
+    .replace(/\//g, '~1')
+    .replace(/[^\w\-.~!$&'()*+,;=:@]/g, (char) => encodeURIComponent(char))}`;
 
 const parseDefRef = (ref: unknown): string | undefined => {
   if (typeof ref !== 'string' || !ref.startsWith(DEF_PREFIX)) {
     return undefined;
   }
-  return ref.slice(DEF_PREFIX.length).replace(/~1/g, '/').replace(/~0/g, '~');
+  return decodeURIComponent(ref.slice(DEF_PREFIX.length))
+    .replace(/~1/g, '/')
+    .replace(/~0/g, '~');
 };
 
 const walkJson = (
@@ -490,11 +496,24 @@ const nameSharedDefs = (schema: JsonSchema): JsonSchema => {
   );
 };
 
+/** Rewrites Zod's `$ref`s, which escape a JSON Pointer but not the URI fragment around it, with {@link defRef}. */
+const encodeZodRefs = (schema: JsonSchema): void => {
+  walkJson(schema, (node) => {
+    const { $ref } = node;
+    if (typeof $ref === 'string' && $ref.startsWith(DEF_PREFIX)) {
+      node.$ref = defRef(
+        $ref.slice(DEF_PREFIX.length).replace(/~1/g, '/').replace(/~0/g, '~')
+      );
+    }
+  });
+};
+
 const slimAuthoringSchema = (
   schema: JsonSchema,
   options: AuthoringJsonSchemaOptions
 ): JsonSchema => {
   const next = cloneJson(schema);
+  encodeZodRefs(next);
   dropSafeIntegerMaxima(next);
   dropNodeIdAndSurfaces(next);
   omitListedProperties(next, options.omitProperties ?? []);
