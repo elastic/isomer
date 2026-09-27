@@ -9,6 +9,8 @@
 // to the same value. A lone unbranded child slot prints as children; every
 // other field prints as a prop, which the shim accepts as plain data.
 
+import { IsomerError } from '../composition/error';
+
 /** Options for {@link JsxShim.toJsx}. */
 export interface JsxPrintOptions {
   /** Name the root element prints as. Defaults to `Composition`, the shim's own. */
@@ -29,8 +31,10 @@ export interface JsxPrintEnv {
 
 const INDENT = '  ';
 const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
+const ATTRIBUTE_NAME = /^[A-Za-z_$][\w$-]*$/;
 // JSX decodes HTML entities in attribute strings, so text that looks like one must be an expression.
-const UNSAFE_ATTRIBUTE = /["\n\r\\{}<>]|&(#\d+|#x[\da-f]+|[a-z]+);/i;
+const UNSAFE_ATTRIBUTE =
+  /["\n\r\u2028\u2029\\{}<>]|&(#\d+|#x[\da-f]+|[a-z]+);/i;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -40,7 +44,17 @@ const quote = (text: string): string =>
     .replace(/\\/g, '\\\\')
     .replace(/'/g, "\\'")
     .replace(/\n/g, '\\n')
-    .replace(/\r/g, '\\r')}'`;
+    .replace(/\r/g, '\\r')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029')}'`;
+
+// A literal `__proto__` key, quoted or not, sets the prototype; only a computed key makes an own property.
+const objectKey = (key: string): string =>
+  key === '__proto__'
+    ? `[${quote(key)}]`
+    : IDENTIFIER.test(key)
+      ? key
+      : quote(key);
 
 const defined = (entries: [string, unknown][]) =>
   entries.filter(([, value]) => value !== undefined);
@@ -77,8 +91,7 @@ export const printJsx = (
     if (isRecord(item)) {
       const inner = indent + INDENT;
       const entries = defined(Object.entries(item)).map(
-        ([key, entry]) =>
-          `${IDENTIFIER.test(key) ? key : quote(key)}: ${value(entry, inner)}`
+        ([key, entry]) => `${objectKey(key)}: ${value(entry, inner)}`
       );
       if (entries.length === 0) {
         return '{}';
@@ -91,10 +104,21 @@ export const printJsx = (
     return String(item);
   };
 
-  const attribute = (key: string, item: unknown, indent: string): string =>
-    typeof item === 'string' && !UNSAFE_ATTRIBUTE.test(item)
+  const attribute = (key: string, item: unknown, indent: string): string => {
+    if (key === '__proto__') {
+      // `createElement` assigns props, so an own `__proto__` prop never reaches the element.
+      throw new IsomerError(
+        'INVALID_BODY_NODE',
+        'toJsx: a `__proto__` prop cannot be carried by JSX'
+      );
+    }
+    if (!ATTRIBUTE_NAME.test(key)) {
+      return `{...{ ${objectKey(key)}: ${value(item, indent)} }}`;
+    }
+    return typeof item === 'string' && !UNSAFE_ATTRIBUTE.test(item)
       ? `${key}="${item}"`
       : `${key}={${value(item, indent)}}`;
+  };
 
   const tag = (
     name: string,
