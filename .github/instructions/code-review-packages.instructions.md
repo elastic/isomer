@@ -5,6 +5,8 @@ excludeAgent: 'cloud-agent'
 
 # Package review checklist
 
+Apply these instructions only when reviewing a pull request.
+
 Past findings fall into these classes. In the first pass, check every changed file against each class that applies.
 
 ## Printers, escapers, and serializers
@@ -37,7 +39,7 @@ Parse URLs with `URL` and check the protocol and hostname. Don't match them with
 - Removing or renaming an export from a package entry is breaking. Search every package's `docs/` for imports of it.
 - A new required member on a type hosts implement structurally (image backends, adapters, render contexts) breaks existing implementations. Prefer an optional member or a separate type.
 - A breaking change needs `!` or a `BREAKING CHANGE:` footer in its conventional commit.
-- New public API updates the package's `docs/api.md` and the `.okf/isomer` concepts in the same PR.
+- New public API updates the package docs page that documents it (`api.md` in the sdk and runtime, `index.md` in takumi and evals, `contract.md` or `primitives.md` in slides) and the `.okf/isomer` concepts in the same PR.
 
 ## Layout and fitting math
 

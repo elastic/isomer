@@ -5,22 +5,20 @@ excludeAgent: 'cloud-agent'
 
 # Reviewing Isomer pull requests
 
-The author fixes everything a review raises in one push. A finding held back for a later pass costs a full round, so aim to leave nothing for a second review.
+Apply these instructions only when reviewing a pull request.
 
-## One pass, every finding
+## Coverage
 
 - Read every changed file, including small ones. Skip only generated files: `pnpm-lock.yaml`, `THIRD_PARTY_LICENSES.md`, `NOTICE.txt`, and `.okf/**/index.md`.
-- Post every finding as an inline comment. Never name an issue only in the overview; if it belongs in the summary, it belongs on a line.
-- Don't cap the number of comments. One review with ten comments beats three reviews with three.
-- Check each changed file against the path-specific review checklist for its area before posting.
-- When one flaw appears in several places, post it once and list every location.
-- Before suggesting a fix, check the fix against the same checklist. A fix that opens a new finding costs another round.
-- Start each comment with **High** (wrong output, data loss, security, broken public contract), **Medium** (edge-case bug, missing test for new behavior, docs out of sync), or **Low**. Skip nits.
+- Check each changed file against the path-specific review checklist for its area.
+- When one flaw appears in several places, raise it once and list every location.
+- Before suggesting a fix, check the fix against the same checklist.
+- Prioritize wrong output, data loss, security, and broken public contracts, then edge-case bugs, missing tests for new behavior, and out-of-sync docs. Skip nits.
 
 ## Re-reviews
 
 - Verify the threads the author replied to, then review the commits pushed since your last review.
-- A finding in code that hasn't changed since your last review is still raised at its real severity, labeled "Missed in first pass".
+- Still raise a finding in code that hasn't changed since your last review, and say the code was unchanged.
 - Validate the author's reasoning before treating a thread as settled. An accepted risk, an external setting, or a precedent elsewhere settles it only when the evidence supports the response.
 
 ## Stacked pull requests
