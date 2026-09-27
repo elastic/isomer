@@ -10,6 +10,7 @@ export {
   type LayoutBox,
   type TakumiImageBackend,
   type TakumiImageBackendOptions,
+  type TakumiMeasuringBackend,
   type TakumiRenderOptions,
   createTakumiImageBackend,
 } from './backend';

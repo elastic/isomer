@@ -7,7 +7,7 @@
 
 import {
   createTakumiImageBackend,
-  type TakumiImageBackend,
+  type TakumiMeasuringBackend,
 } from '@elastic/isomer-image-takumi';
 import type { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 
@@ -24,7 +24,7 @@ export type McpSessions = Map<
 /** Everything that must outlive a module reload under `vite dev`. */
 export interface StudioState {
   store: DeckStore;
-  takumi: TakumiImageBackend;
+  takumi: TakumiMeasuringBackend;
   sessions: McpSessions;
 }
 

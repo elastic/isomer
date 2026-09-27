@@ -10,7 +10,7 @@ export const surfaces = [
   {
     id: 'slide',
     label: 'Slide',
-    call: 'runtime.surfaces.react.render(slide, { heading: false, wrapper: { theme } })',
+    call: 'runtime.surfaces.react.render(slide, { context, heading: false, wrapper })',
   },
   {
     id: 'html',

@@ -23,7 +23,7 @@ describe('html.createStyleCollection', () => {
       const node = runtime.surfaces.react.render(composition, {
         context: styles.context,
         heading: false,
-        wrapper: true,
+        wrapper: styles.wrapper,
       });
       renderToStaticMarkup(createElement(() => node));
       expect(styles.css()).toBe(
@@ -46,7 +46,7 @@ describe('html.createStyleCollection', () => {
       const node = runtime.surfaces.react.render(composition, {
         context: styles.context,
         heading: false,
-        wrapper: true,
+        wrapper: styles.wrapper,
       });
       renderToStaticMarkup(createElement(() => node));
       expect(styles.css()).toBe(

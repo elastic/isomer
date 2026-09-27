@@ -82,6 +82,10 @@ export interface TakumiImageBackend {
   png(input: ImageInput, options?: TakumiRenderOptions): Promise<Buffer>;
   /** Renders to an SVG document. Vector output, so raster options do not apply. */
   svg(input: ImageInput): Promise<string>;
+}
+
+/** A {@link TakumiImageBackend} that also measures layout, as {@link createTakumiImageBackend} returns. */
+export interface TakumiMeasuringBackend extends TakumiImageBackend {
   /** Lays the input out as {@link TakumiImageBackend.png} would, and returns every box, e.g. to find content past its area. */
   measure(input: ImageInput): Promise<LayoutBox>;
 }
@@ -147,7 +151,7 @@ const toTakumiSource = ({ element, css }: ImageInput) =>
 export const createTakumiImageBackend = ({
   fonts = [],
   cacheMaxBytes,
-}: TakumiImageBackendOptions = {}): TakumiImageBackend => {
+}: TakumiImageBackendOptions = {}): TakumiMeasuringBackend => {
   const renderer = new Renderer(
     cacheMaxBytes === undefined ? undefined : { cacheMaxBytes }
   );

@@ -58,7 +58,7 @@ export const ShadowSlide = ({
       node: runtime.surfaces.react.render(composition, {
         context: collection.context,
         heading: false,
-        wrapper: { theme },
+        wrapper: collection.wrapper,
       }),
     };
   }, [composition, theme, building]);

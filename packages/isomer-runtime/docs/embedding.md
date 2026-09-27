@@ -54,19 +54,19 @@ A host that renders with React, to keep links and handlers live, can put the `re
 const styles = runtime.surfaces.html.createStyleCollection(composition, { theme });
 const node = runtime.surfaces.react.render(composition, {
   context: styles.context,
-  wrapper: { theme },
+  wrapper: styles.wrapper,
 });
 
 // In a layout effect, once the portal into the shadow root has rendered:
 styleElement.textContent = `:host { all: initial; display: block; }\n${styles.css()}`;
 ```
 
-`context` records every style the renderers use, so `css()` read after that render equals `html.render(composition, { css: 'separate' }).css`. Read it in a layout effect and the styles land before the first paint. A host with its own render context spreads both: `{ ...hostContext, ...styles.context }`. A subtree that suspends records its styles after `css()` was read, so this holds for trees that render without suspending.
+`context` records every style the renderers use, so `css()` read after that render equals `html.render(composition, { css: 'separate' }).css`. The first read computes the CSS and later reads return it. Read it in a layout effect and the styles land before the first paint. A host with its own render context spreads both: `{ ...hostContext, ...styles.context }`. A subtree that suspends records its styles after `css()` was read, so this holds for trees that render without suspending.
 
 Three edges are sharp:
 
 - **The collection and the tree are one unit.** `css()` reports what rendered with that collection's `context`, and a pack such as slides collects everything at render time. Create the collection and the tree together and memoize them as a pair; a fresh collection without a re-render of the tree reads back empty CSS.
-- **`wrapper: { theme }` is not decorative.** It is the `.isomer[.framed][.fluid]` `section` the `html` surface wraps its output in, carrying the `aria-label` and `data-theme`. A pack's wrapper rules attach to that element and nowhere else, so a bare tree drops them and drops the theme attribute; pass the wrapper so the tree is the DOM the `html` surface would have produced.
+- **`wrapper: styles.wrapper` is not decorative.** It is the `.isomer[.framed][.fluid]` `section` the `html` surface wraps its output in, carrying the `aria-label` and `data-theme`. A pack's wrapper rules attach to that element and nowhere else, so a bare tree drops them and drops the theme attribute. `styles.wrapper` holds the `framed`, `fluid`, and `theme` the CSS was collected for, after the style adapter resolved them, so pass it rather than rebuilding it from your own options.
 - **One collection covers one composition.** Each collection holds only the rules its own render reached, and an adapter built with compact names minifies them per collection, so one composition's `css()` does not cover another's. Two compositions on one page need a `<style>` each, or a shadow root each.
 
 ### Without a shadow root
@@ -77,7 +77,7 @@ A host that cannot attach a shadow root, because the page's React tree and CSS s
 const styles = runtime.surfaces.html.createStyleCollection(composition, { theme });
 const node = runtime.surfaces.react.render(composition, {
   context: styles.context,
-  wrapper: { theme },
+  wrapper: styles.wrapper,
 });
 
 // <div className="my-isomer-host">{node}</div>, then in a layout effect:

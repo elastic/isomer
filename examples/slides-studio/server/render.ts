@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { TakumiImageBackend } from '@elastic/isomer-image-takumi';
+import type { TakumiMeasuringBackend } from '@elastic/isomer-image-takumi';
 import {
   slideOverflow,
   slideOverlaps,
@@ -18,7 +18,7 @@ import type { SlideLayoutCheck, SlidePng } from './host/deck_tools';
 
 /** The renderers the host takes as options and the PNG route serves, built once over one backend. */
 export const slideRenderers = (
-  takumi: TakumiImageBackend
+  takumi: TakumiMeasuringBackend
 ): { png: SlidePng; layoutOf: SlideLayoutCheck } => ({
   png: (composition, theme) =>
     takumi.png(

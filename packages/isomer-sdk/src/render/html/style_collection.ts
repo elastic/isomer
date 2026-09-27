@@ -13,6 +13,7 @@ import type {
   StyledRenderContext,
 } from '../../define/primitive_module';
 import { withContextAnchors } from '../anchors';
+import type { CompositionWrapperOptions } from '../react/content';
 
 import { type EnhancementDefinition, rendersAnchors } from './enhancements';
 import type {
@@ -23,14 +24,19 @@ import type {
 } from './envelope';
 
 /**
- * The html surface's CSS for a render the caller does itself. Hand `context` to
- * that render, then read `css()` once it has finished: the styles are the ones
- * its renderers used. A subtree that suspends records its styles after that.
+ * The html surface's CSS for a render the caller does itself. Hand `context`
+ * and `wrapper` to that render, then read `css()` once it has finished: the
+ * styles are the ones its renderers used. A subtree that suspends records its
+ * styles after that.
  */
 export interface HTMLStyleCollection<TContext = StyledRenderContext> {
   /** The render context every `react` renderer receives; it records the styles they use. */
   readonly context: TContext;
-  /** The CSS for everything rendered with {@link HTMLStyleCollection.context}, with no `<style>` wrapper. */
+  /** The wrapper the CSS was collected for, with the style adapter's resolved options; pass it as the render's `wrapper`. */
+  readonly wrapper: Required<
+    Pick<CompositionWrapperOptions, 'framed' | 'fluid' | 'theme'>
+  >;
+  /** The CSS for everything rendered with {@link HTMLStyleCollection.context}, with no `<style>` wrapper. Computed on the first read. */
   readonly css: () => string;
 }
 
@@ -69,7 +75,9 @@ export const startStyleCollection = <
     options = {},
     enhancementDefinitions = [],
   }: HTMLStyleCollectionOptions<TNode, TCollector, TContext>
-): (HTMLStyleCollection<TContext> & { collector: TCollector }) | undefined => {
+):
+  | (Omit<HTMLStyleCollection<TContext>, 'wrapper'> & { collector: TCollector })
+  | undefined => {
   if (!styleAdapter) {
     return undefined;
   }
@@ -87,12 +95,16 @@ export const startStyleCollection = <
     options,
     scope
   );
+  let css: string | undefined;
   return {
     collector,
     context: styleAdapter.createRenderContext(collector, options),
     css: () => {
-      styleAdapter.collectAfterRender?.(composition, collector, options);
-      return styleAdapter.renderStyles(collector, options);
+      if (css === undefined) {
+        styleAdapter.collectAfterRender?.(composition, collector, options);
+        css = styleAdapter.renderStyles(collector, options);
+      }
+      return css;
     },
   };
 };
@@ -132,5 +144,10 @@ export const createHTMLStyleCollection = <
       definitions: enhancementDefinitions,
     }
   );
-  return { context, css: started ? started.css : () => '' };
+  const wrapper = {
+    framed: resolved.framed ?? true,
+    fluid: Boolean(resolved.fluid),
+    theme: resolved.theme ?? composition.theme ?? 'auto',
+  };
+  return { context, wrapper, css: started ? started.css : () => '' };
 };
