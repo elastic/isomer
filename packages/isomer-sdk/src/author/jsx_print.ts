@@ -177,6 +177,20 @@ export const printJsx = (
     );
   }
   const { body, type: _type, ...rest } = composition;
-  const nodes = Array.isArray(body) ? body.filter(isNode) : [];
+  if (!Array.isArray(body)) {
+    throw new IsomerError(
+      'INVALID_BODY_NODE',
+      'toJsx: `body` must be an array'
+    );
+  }
+  const nodes = body.map((node, index) => {
+    if (!isNode(node)) {
+      throw new IsomerError(
+        'INVALID_BODY_NODE',
+        `toJsx: body[${index}] is not a node of a registered primitive`
+      );
+    }
+    return node;
+  });
   return tag(root, defined(Object.entries(rest)), nodes, '');
 };

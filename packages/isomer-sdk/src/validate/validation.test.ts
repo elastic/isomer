@@ -131,6 +131,33 @@ describe('error node types', () => {
     expect(error?.message).toMatch(/^must be one of:/);
   });
 
+  it('names the node an error lands in, not a nested data object that shares a type', () => {
+    const card = definePrimitive({
+      type: 'card',
+      catalog: {
+        type: 'card',
+        purpose: '',
+        useWhen: [],
+        avoidWhen: [],
+        example: { type: 'card', source: { type: 'kpi', count: 1 } },
+      },
+      examples: [{ type: 'card', source: { type: 'kpi', count: 1 } }],
+      schema: z.object({
+        type: z.literal('card'),
+        source: z.object({ type: z.string(), count: z.number() }),
+      }),
+      renderers,
+    });
+    const [error] = createCompositionValidator([kpi, card])({
+      type: 'view',
+      body: [{ type: 'card', source: { type: 'kpi', count: 'x' } } as never],
+    }).errors;
+    expect(error).toMatchObject({
+      path: 'body[0].source.count',
+      nodeType: 'card',
+    });
+  });
+
   it('leaves an unknown type unnamed', () => {
     const [error] = validate({ type: 'view', body: [{ type: 'nope' }] }).errors;
     expect(error?.nodeType).toBeUndefined();

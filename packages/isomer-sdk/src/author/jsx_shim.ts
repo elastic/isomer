@@ -318,6 +318,9 @@ const toAuthorComposition = <TNode extends PrimitiveNode>(
     body: resolvedBody,
   };
 
+  if (props.version !== undefined) {
+    spec.version = props.version;
+  }
   if (props.title !== undefined) {
     spec.title = props.title;
   }

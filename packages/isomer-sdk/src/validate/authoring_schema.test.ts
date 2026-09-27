@@ -51,6 +51,24 @@ describe('authoringSchemaSubset', () => {
   });
 });
 
+describe('authoringSchemaSubset own keys', () => {
+  it('keeps a def whose id is also an Object.prototype name', () => {
+    const { $defs } = authoringSchemaSubset(
+      {
+        $defs: {
+          constructor: { type: 'object' },
+          toString: { type: 'string' },
+        },
+      },
+      ['constructor', 'toString']
+    );
+    expect($defs).toEqual({
+      constructor: { type: 'object' },
+      toString: { type: 'string' },
+    });
+  });
+});
+
 describe('buildAuthoringJsonSchema def names', () => {
   const point = z.object({ label: z.string(), value: z.number() }).strict();
   const example = {

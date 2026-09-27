@@ -295,13 +295,12 @@ const pruneUnreferencedDefs = (schema: JsonSchema): JsonSchema => {
   visit(root);
   referenced.add(BODY_NODE_ID);
   visit(defs[BODY_NODE_ID]);
-  const kept: Record<string, unknown> = {};
-  for (const [id, def] of Object.entries(defs)) {
-    if (referenced.has(id)) {
-      kept[id] = def;
-    }
-  }
-  return withDefs(schema, kept);
+  return withDefs(
+    schema,
+    Object.fromEntries(
+      Object.entries(defs).filter(([id]) => referenced.has(id))
+    )
+  );
 };
 
 const mergeExtraDefs = (
@@ -562,17 +561,19 @@ export const authoringSchemaSubset = (
   types: readonly string[]
 ): { $defs: Record<string, unknown> } => {
   const defs = defsOf(schema);
-  const kept: Record<string, unknown> = {};
+  // A `Map`, so an id such as `constructor` or `__proto__` is never an inherited key.
+  const kept = new Map<string, unknown>();
   const visit = (id: string): void => {
-    if (id in kept) {
+    if (kept.has(id)) {
       return;
     }
     if (id === BODY_NODE_ID) {
-      kept[id] = BODY_NODE_STUB;
+      kept.set(id, BODY_NODE_STUB);
       return;
     }
-    kept[id] = defs[id];
-    walkJson(defs[id], (value) => {
+    const def = Object.hasOwn(defs, id) ? defs[id] : undefined;
+    kept.set(id, def);
+    walkJson(def, (value) => {
       const ref = parseDefRef(value.$ref);
       if (ref !== undefined) {
         visit(ref);
@@ -582,5 +583,5 @@ export const authoringSchemaSubset = (
   for (const type of types) {
     visit(type);
   }
-  return { $defs: kept };
+  return { $defs: Object.fromEntries(kept) };
 };

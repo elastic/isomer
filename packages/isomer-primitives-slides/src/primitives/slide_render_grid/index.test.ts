@@ -68,7 +68,7 @@ describe('slideRenderGrid', () => {
       [
         {
           "message": "an embedded composition cannot embed another render",
-          "nodeType": "slideRender",
+          "nodeType": "slideRenderGrid",
           "path": "body[0].composition.body[0]",
         },
       ]

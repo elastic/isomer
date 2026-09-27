@@ -93,6 +93,30 @@ describe('toJsx', () => {
     expect(roundTrip(composition)).toEqual(composition);
   });
 
+  it('round-trips the root fields, version included', () => {
+    const composition = {
+      type: 'view' as const,
+      version: 1 as const,
+      title: 'Title',
+      subtitle: 'Subtitle',
+      theme: 'dark' as const,
+      meta: { source: 'test' },
+      body: [{ type: 'note', text: 'a' } as PrimitiveNode],
+    };
+    expect(roundTrip(composition)).toEqual(composition);
+  });
+
+  it('refuses a body entry that is not a registered node, and a body that is no array', () => {
+    expect(() =>
+      shim.toJsx({ type: 'view', body: [{ type: 'unknown' }] })
+    ).toThrow(/body\[0\] is not a node of a registered primitive/);
+    expect(() =>
+      shim.toJsx({ type: 'view', body: 'x' } as unknown as Parameters<
+        typeof shim.toJsx
+      >[0])
+    ).toThrow(/`body` must be an array/);
+  });
+
   it('round-trips a prop whose name is not an attribute name', () => {
     const composition = {
       type: 'view' as const,
