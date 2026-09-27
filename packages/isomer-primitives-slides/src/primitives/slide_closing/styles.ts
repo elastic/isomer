@@ -43,6 +43,7 @@ export const closingModule = createStyleModule('closing', ({ css }) => ({
     color: ${color.text};
     ${typeRole(closing.title)}
     margin: 0;
+    overflow-wrap: anywhere;
   `,
   links: css`
     display: flex;

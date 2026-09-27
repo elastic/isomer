@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { stripMarks } from '../../render/marks';
+import { contentRight, textRightEdge } from '../wrap.fixtures';
 
 import { example, examples } from './examples';
 import { markdown, slack, text } from './index';
@@ -149,5 +150,13 @@ describe('slideClosing', () => {
     const md = runtime.surfaces.markdown.renderNode(unsafe);
     expect(md).toContain('**Docs** · the docs');
     expect(md).not.toContain('javascript:');
+  });
+});
+
+describe('slideClosing title', () => {
+  it('wraps an unbreakable word inside the slide', async () => {
+    expect(
+      await textRightEdge({ ...example, title: 'x'.repeat(40) }, 'inverse')
+    ).toBeLessThanOrEqual(contentRight);
   });
 });

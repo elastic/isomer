@@ -43,6 +43,7 @@ export const sectionModule = createStyleModule('section', ({ css }) => ({
   title: css`
     color: ${color.text};
     ${typeRole(section.title)}
+    overflow-wrap: anywhere;
   `,
   contents: css`
     border-top: ${section.rule} solid ${color.border};

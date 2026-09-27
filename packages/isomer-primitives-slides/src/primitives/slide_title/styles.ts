@@ -56,6 +56,7 @@ export const titleModule = createStyleModule('title', ({ css }) => ({
     color: ${color.text};
     ${typeRole(title.display)}
     margin: ${title.displayGap} 0 0;
+    overflow-wrap: anywhere;
   `,
   tagline: css`
     color: ${color.textSoft};

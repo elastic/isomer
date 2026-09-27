@@ -27,6 +27,7 @@ export const headingModule = createStyleModule('heading', ({ css }) => ({
     ${typeRole(heading.title)}
     margin: 0;
     max-width: ${heading.titleMaxWidth};
+    overflow-wrap: anywhere;
     text-wrap: balance;
   `,
   titleSize: variants(
