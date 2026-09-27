@@ -47,11 +47,15 @@ const isJsonObject = (value: unknown): value is Record<string, unknown> =>
 
 const cloneJson = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
+// A `$ref` is a JSON Pointer, so `~` and `/` in a def id are escaped as `~0` and `~1`.
+const defRef = (id: string): string =>
+  `${DEF_PREFIX}${id.replace(/~/g, '~0').replace(/\//g, '~1')}`;
+
 const parseDefRef = (ref: unknown): string | undefined => {
   if (typeof ref !== 'string' || !ref.startsWith(DEF_PREFIX)) {
     return undefined;
   }
-  return ref.slice(DEF_PREFIX.length);
+  return ref.slice(DEF_PREFIX.length).replace(/~1/g, '/').replace(/~0/g, '~');
 };
 
 const walkJson = (
@@ -104,7 +108,7 @@ const rewriteDefRefs = (
       return node;
     }
     if (typeof replacement === 'string') {
-      return { ...node, $ref: `${DEF_PREFIX}${replacement}` };
+      return { ...node, $ref: defRef(replacement) };
     }
     const rest = { ...node };
     delete rest.$ref;

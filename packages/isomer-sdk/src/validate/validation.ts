@@ -323,13 +323,14 @@ const collectDuplicateNodeIdErrors = (
     if (!node || typeof node !== 'object') {
       return;
     }
-    const { id } = node as { id?: unknown };
+    const { id, type } = node as { id?: unknown; type?: unknown };
     if (typeof id === 'string') {
       const first = seen.get(id);
       if (first) {
         errors.push({
           path: `${path}.id`,
           message: `duplicates id "${id}" first used at ${first}`,
+          ...(typeof type === 'string' ? { nodeType: type } : {}),
         });
       } else {
         seen.set(id, path);

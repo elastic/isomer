@@ -1358,6 +1358,7 @@ describe('createIsomerRuntime', () => {
     expect(errors).toContainEqual({
       path: 'body[1].items[0].id',
       message: 'duplicates id "dup" first used at body[0]',
+      nodeType: 'note',
     });
   });
 

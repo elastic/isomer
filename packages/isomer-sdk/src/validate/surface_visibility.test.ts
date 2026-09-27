@@ -48,6 +48,7 @@ describe('validate vs parse on duplicate ids', () => {
       {
         path: 'body[1].id',
         message: 'duplicates id "dup" first used at body[0]',
+        nodeType: 'note',
       },
     ]);
   });

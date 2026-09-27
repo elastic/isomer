@@ -6,6 +6,7 @@
  */
 
 import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
@@ -13,8 +14,10 @@ import type { Composition } from '../../composition/composition';
 import {
   definePrimitive,
   type PrimitiveNode,
+  type StyledRenderContext,
 } from '../../define/primitive_module';
 import { createPrimitiveDispatcher } from '../primitive_dispatch';
+import { renderCompositionContent } from '../react/content';
 
 import type { HTMLStyleAdapter } from './envelope';
 import { createHTMLStyleCollection } from './style_collection';
@@ -36,7 +39,12 @@ const leaf = definePrimitive<LeafNode>({
   examples: [{ type: 'leaf', text: 'a' }],
   schema: z.object({ type: z.literal('leaf'), text: z.string() }),
   renderers: {
-    react: (node) => createElement('p', null, node.text),
+    react: (node, { context }) => {
+      (context as { use?: (rule: string) => void } | undefined)?.use?.(
+        `.leaf-${node.text}{}`
+      );
+      return createElement('p', null, node.text);
+    },
     text: (node) => node.text,
     markdown: (node) => node.text,
   },
@@ -94,5 +102,35 @@ describe('createHTMLStyleCollection', () => {
     expect(css()).toBe('.after{}');
     expect(css()).toBe('.after{}');
     expect(collectAfterRender).toHaveBeenCalledTimes(1);
+  });
+
+  it('collects the CSS the host render records through its context', () => {
+    interface RecordingContext extends StyledRenderContext {
+      use: (rule: string) => void;
+    }
+    const { context, css } = createHTMLStyleCollection<
+      LeafNode,
+      { rules: string[] },
+      RecordingContext
+    >(composition, {
+      dispatcher,
+      styleAdapter: {
+        createCollector: () => ({ rules: [] }),
+        createRenderContext: ({ rules }) => ({
+          use: (rule) => {
+            rules.push(rule);
+          },
+        }),
+        renderStyles: ({ rules }) => rules.join(''),
+      },
+    });
+    renderToStaticMarkup(
+      createElement(() =>
+        renderCompositionContent(composition, dispatcher, context, {
+          heading: false,
+        })
+      )
+    );
+    expect(css()).toBe('.leaf-a{}');
   });
 });

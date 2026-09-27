@@ -32,6 +32,9 @@ export interface JsxPrintEnv {
 const INDENT = '  ';
 const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
 const ATTRIBUTE_NAME = /^[A-Za-z_$][\w$-]*$/;
+const COMPONENT_NAME = /^[A-Z_$][\w$]*$/;
+// Props JSX cannot carry as data: `createElement` assigns props, so `__proto__` sets the prototype; React consumes `key` and `ref`; the shim reads `children` as JSX children.
+const RESERVED_PROPS = new Set(['__proto__', 'children', 'key', 'ref']);
 // JSX decodes HTML entities in attribute strings, so text that looks like one must be an expression.
 const UNSAFE_ATTRIBUTE =
   /["\n\r\u2028\u2029\\{}<>]|&(#\d+|#x[\da-f]+|[a-z]+);/i;
@@ -105,11 +108,10 @@ export const printJsx = (
   };
 
   const attribute = (key: string, item: unknown, indent: string): string => {
-    if (key === '__proto__') {
-      // `createElement` assigns props, so an own `__proto__` prop never reaches the element.
+    if (RESERVED_PROPS.has(key)) {
       throw new IsomerError(
         'INVALID_BODY_NODE',
-        'toJsx: a `__proto__` prop cannot be carried by JSX'
+        `toJsx: a \`${key}\` prop cannot be carried by JSX`
       );
     }
     if (!ATTRIBUTE_NAME.test(key)) {
@@ -158,7 +160,14 @@ export const printJsx = (
     const props = defined(Object.entries(node)).filter(
       ([key]) => key !== 'type' && !(asChildren && key === slot?.field)
     );
-    return tag(env.nameOf(type), props, asChildren ? children : [], indent);
+    const name = env.nameOf(type);
+    if (!COMPONENT_NAME.test(name)) {
+      throw new IsomerError(
+        'INVALID_BODY_NODE',
+        `toJsx: primitive type ${JSON.stringify(type)} has no JSX component name`
+      );
+    }
+    return tag(name, props, asChildren ? children : [], indent);
   };
 
   const { body, type: _type, ...rest } = composition;

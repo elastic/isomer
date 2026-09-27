@@ -94,6 +94,36 @@ describe('buildAuthoringJsonSchema def names', () => {
     expect($defs.delta?.properties?.note).toMatchObject({ type: 'object' });
   });
 
+  it('escapes a def id in a $ref as a JSON Pointer, so every ref resolves', () => {
+    const type = 'a/b~c';
+    const node = {
+      type,
+      'x/y': { label: 'Then', value: 1 },
+      'y~z': { label: 'Now', value: 2 },
+    };
+    const odd = definePrimitive({
+      type,
+      catalog: { type, purpose: '', useWhen: [], avoidWhen: [], example: node },
+      examples: [node],
+      schema: z
+        .object({ type: z.literal(type), 'x/y': point, 'y~z': point })
+        .strict(),
+      renderers: { react: () => null, text: () => '', markdown: () => '' },
+    });
+    const built = buildAuthoringJsonSchema([odd]);
+    const { $defs } = built as { $defs: Record<string, unknown> };
+    const refs = [
+      ...JSON.stringify(built).matchAll(/"\$ref":"#\/\$defs\/([^"]+)"/g),
+    ].map(([, pointer]) => pointer ?? '');
+    expect(refs.length).toBeGreaterThan(0);
+    for (const pointer of refs) {
+      expect(pointer).not.toMatch(/\/|~(?![01])/);
+      expect($defs).toHaveProperty([
+        pointer.replace(/~1/g, '/').replace(/~0/g, '~'),
+      ]);
+    }
+  });
+
   it('resolves a shared shape reached through a described, inlined one', () => {
     const tone = z.enum(['primary', 'pink']);
     const described = tone.describe('Its color.');

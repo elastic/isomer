@@ -101,6 +101,26 @@ describe('toJsx', () => {
     expect(roundTrip(composition)).toEqual(composition);
   });
 
+  it.each(['children', 'key', 'ref'])(
+    'refuses a %s prop, which JSX consumes',
+    (prop) => {
+      const node = { type: 'note', [prop]: 'x' } as PrimitiveNode;
+      expect(() => shim.toJsx({ type: 'view', body: [node] })).toThrow(
+        new RegExp(`\\\`${prop}\\\``)
+      );
+    }
+  );
+
+  it('refuses a primitive type that is no JSX component name', () => {
+    const odd = buildJsxShim([{ type: 'odd "type"' as const }] as const);
+    expect(() =>
+      odd.toJsx({
+        type: 'view',
+        body: [{ type: 'odd "type"' }],
+      })
+    ).toThrow(/no JSX component name/);
+  });
+
   it('refuses a __proto__ prop, which JSX cannot carry', () => {
     const node = JSON.parse(
       '{"type": "note", "__proto__": 1}'
