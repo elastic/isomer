@@ -24,6 +24,7 @@ import {
   type SlackMrkdwnTextObject,
   type SlackOptionGroup,
   type SlackOptionObject,
+  type SlackPlainTextObject,
   type SlackRichTextBlockElement,
   type SlackRichTextInline,
   type SlackSectionAccessory,
@@ -398,6 +399,7 @@ const clampControl = (element: SlackActionElement): SlackActionElement => {
     };
   }
   const options = element as Partial<{
+    placeholder: SlackPlainTextObject;
     options: SlackOptionObject[];
     option_groups: SlackOptionGroup[];
     initial_option: SlackOptionObject;
@@ -405,11 +407,23 @@ const clampControl = (element: SlackActionElement): SlackActionElement => {
   }>;
   return {
     ...element,
+    ...(options.placeholder
+      ? {
+          placeholder: clampTextObject(
+            options.placeholder,
+            SLACK_LIMITS.placeholderChars
+          ),
+        }
+      : {}),
     ...(options.options ? { options: options.options.map(clampOption) } : {}),
     ...(options.option_groups
       ? {
           option_groups: options.option_groups.map((group) => ({
             ...group,
+            label: clampTextObject(
+              group.label,
+              SLACK_LIMITS.optionGroupLabelChars
+            ),
             options: group.options.map(clampOption),
           })),
         }

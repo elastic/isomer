@@ -219,6 +219,12 @@ describe('Slack envelope transforms', () => {
                 options: [option],
                 initial_option: option,
               },
+              {
+                type: 'static_select',
+                action_id: 'g',
+                placeholder: plain,
+                option_groups: [{ label: plain, options: [option] }],
+              },
             ],
           },
         ],
@@ -246,6 +252,16 @@ describe('Slack envelope transforms', () => {
     );
     expect(select?.type === 'static_select' && select.initial_option).toEqual(
       select?.type === 'static_select' && select.options?.[0]
+    );
+    const grouped = actions.elements[2];
+    if (grouped?.type !== 'static_select') {
+      throw new Error('expected a grouped select');
+    }
+    expect(grouped.placeholder?.text).toHaveLength(
+      SLACK_LIMITS.placeholderChars
+    );
+    expect(grouped.option_groups?.[0]?.label.text).toHaveLength(
+      SLACK_LIMITS.optionGroupLabelChars
     );
   });
 

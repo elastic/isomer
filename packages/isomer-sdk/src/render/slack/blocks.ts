@@ -99,4 +99,8 @@ export const SLACK_LIMITS = {
   videoDescriptionChars: 200,
   /** `button` element `text`. */
   buttonTextChars: 75,
+  /** Select `placeholder`. */
+  placeholderChars: 150,
+  /** `option_groups[].label`. */
+  optionGroupLabelChars: 75,
 } as const;
