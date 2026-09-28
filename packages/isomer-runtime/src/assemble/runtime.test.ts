@@ -1007,6 +1007,65 @@ describe('createIsomerRuntime', () => {
       expect(result.css).toBe('.one.root{}.two.root{}');
     });
 
+    it('keeps each part’s class-instance context working: methods, private state and own fields', () => {
+      class PartContext {
+        readonly #keys: string[];
+        readonly #label: string;
+        readonly brand: string;
+
+        constructor(keys: string[], label: string) {
+          this.#keys = keys;
+          this.#label = label;
+          this.brand = `${label}-brand`;
+        }
+
+        resolveClassName(...handles: StyleHandle[]): string {
+          this.#keys.push(...handles.map(({ key }) => key));
+          return handles.map(({ key }) => key).join(' ');
+        }
+
+        label(): string {
+          return this.#label;
+        }
+      }
+      const instanceAdapter = (prefix: string) => ({
+        ownsHandle: (handle: StyleHandle) => handle.key.startsWith(prefix),
+        createCollector: () => ({ keys: [] as string[] }),
+        createRenderContext: (collector: { keys: string[] }) =>
+          new PartContext(collector.keys, prefix),
+        renderStyles: (collector: { keys: string[] }) =>
+          collector.keys.map((key) => `.${key}{}`).join(''),
+      });
+      const runtime = createIsomerRuntime({
+        packs: styledPacks(instanceAdapter('one.'), instanceAdapter('two.')),
+        rendererOverrides: {
+          note: {
+            react: (node, { context }) => {
+              const part = context as PartContext;
+              return createElement(
+                'span',
+                {
+                  className: part.resolveClassName(
+                    { key: 'one.root', readableName: 'one-root' },
+                    { key: 'two.root', readableName: 'two-root' }
+                  ),
+                  'data-label': part.label(),
+                  'data-brand': part.brand,
+                },
+                (node as NoteNode).text
+              );
+            },
+          },
+        },
+      });
+
+      const result = runtime.surfaces.html.render(view('ok'));
+      expect(result.body).toContain('class="one.root two.root"');
+      expect(result.body).toContain('data-label="two."');
+      expect(result.body).toContain('data-brand="two.-brand"');
+      expect(result.css).toBe('.one.root{}.two.root{}');
+    });
+
     it('scopes each pack adapter script, so two can declare the same const', () => {
       const scripted = (prefix: string) => ({
         ...scopedAdapter(`${prefix}.`),

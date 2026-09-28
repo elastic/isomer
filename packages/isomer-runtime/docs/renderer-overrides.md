@@ -6,10 +6,12 @@ An override replaces one renderer, for one primitive type, on one surface. It is
 createIsomerRuntime({
   packs: [componentsPack],
   rendererOverrides: {
-    table: { react: (node, { context }) => <HostTable node={node} {...context} /> },
+    table: { react: (node, { context }) => <HostTable node={node} context={context} /> },
   },
 });
 ```
+
+Pass `context` along as it is. It may be a class instance, and spreading it into props or a new object drops its prototype and private state.
 
 That table keeps its text, markdown, and Slack renderers. Only React changed — and because the `svg` surface dispatches to `react`, the image picks the override up too.
 

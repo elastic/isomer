@@ -205,36 +205,31 @@ const composeStyleAdapters = (
       const parts = partsOf(collector);
       const contexts = parts.map(({ adapter, collector: own }) => ({
         part: { adapter, collector: own },
-        context: adapter.createRenderContext(own, options) as Record<
-          string,
-          unknown
-        >,
+        context: adapter.createRenderContext(own, options),
       }));
-      const merged = contexts.reduce<Record<string, unknown>>(
-        (into, { context }) => ({ ...into, ...context }),
-        {}
-      );
 
       // A handle no part owns reaches every part, as `servedBy` does for types.
       const isOwned = (handle: StyleHandle): boolean =>
         parts.some(({ adapter }) => adapter.ownsHandle?.(handle));
 
-      return {
-        ...merged,
-        resolveClassName: (...handles: StyleHandle[]) =>
-          contexts
-            .map(({ part, context }) => {
-              const routed = handles.filter(
-                (handle) =>
-                  part.adapter.ownsHandle?.(handle) || !isOwned(handle)
-              );
-              const resolve = context.resolveClassName as
-                ((...next: StyleHandle[]) => string) | undefined;
-              return routed.length > 0 && resolve ? resolve(...routed) : '';
-            })
-            .filter(Boolean)
-            .join(' '),
-      };
+      return mergedContextView(
+        contexts.map(({ context }) => context),
+        {
+          resolveClassName: (...handles: StyleHandle[]) =>
+            contexts
+              .map(({ part, context }) => {
+                const routed = handles.filter(
+                  (handle) =>
+                    part.adapter.ownsHandle?.(handle) || !isOwned(handle)
+                );
+                return routed.length > 0 && hasClassNameResolver(context)
+                  ? context.resolveClassName(...routed)
+                  : '';
+              })
+              .filter(Boolean)
+              .join(' '),
+        }
+      );
     },
 
     renderStyles: (collector, options) =>
@@ -288,3 +283,69 @@ const partsOf = (
 
 const quoteIds = (entries: readonly AdapterEntry[]): string =>
   entries.map(({ packId }) => `"${packId}"`).join(', ');
+
+const hasClassNameResolver = (
+  context: unknown
+): context is { resolveClassName: (...handles: StyleHandle[]) => string } =>
+  typeof context === 'object' &&
+  context !== null &&
+  typeof (context as { resolveClassName?: unknown }).resolveClassName ===
+    'function';
+
+/**
+ * Every part's context as one, reading `fields` first and then the last
+ * context that has the key, as a spread would. A view rather than a copy:
+ * methods stay bound to their own context, so a class-instance context keeps
+ * its prototype and private state.
+ */
+const mergedContextView = (
+  contexts: readonly unknown[],
+  fields: Record<string, unknown>
+): Record<string, unknown> => {
+  const objects = contexts
+    .filter((context): context is object => typeof context === 'object')
+    .filter((context) => context !== null)
+    .reverse();
+  const own = (key: string | symbol) => Object.hasOwn(fields, key);
+  const read = (key: string | symbol): unknown => {
+    const owner = objects.find((context) => Reflect.has(context, key));
+    if (owner === undefined) {
+      return undefined;
+    }
+    const value: unknown = Reflect.get(owner, key, owner);
+    return typeof value === 'function'
+      ? (value as (...args: unknown[]) => unknown).bind(owner)
+      : value;
+  };
+  return new Proxy<Record<string, unknown>>(
+    {},
+    {
+      get: (_, key) =>
+        own(key)
+          ? (fields as Record<string | symbol, unknown>)[key]
+          : read(key),
+      has: (_, key) =>
+        own(key) || objects.some((context) => Reflect.has(context, key)),
+      ownKeys: () => [
+        ...new Set([
+          ...objects.flatMap((context) => Reflect.ownKeys(context)),
+          ...Reflect.ownKeys(fields),
+        ]),
+      ],
+      getOwnPropertyDescriptor: (_, key) => {
+        if (own(key)) {
+          return {
+            value: (fields as Record<string | symbol, unknown>)[key],
+            enumerable: true,
+            configurable: true,
+            writable: true,
+          };
+        }
+        const owner = objects.find((context) => Object.hasOwn(context, key));
+        const descriptor =
+          owner && Reflect.getOwnPropertyDescriptor(owner, key);
+        return descriptor && { ...descriptor, configurable: true };
+      },
+    }
+  );
+};
