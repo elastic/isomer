@@ -21,6 +21,7 @@ import { bulletListBuild } from '../primitives/slide_bullet_list/build';
 import { listBuild } from '../primitives/slide_list/build';
 import { pipelineBuild } from '../primitives/slide_pipeline/build';
 import { sequenceBuild } from '../primitives/slide_sequence/build';
+import { timelineBuild } from '../primitives/slide_timeline/build';
 import { slideDeckPrimitives } from '../registry';
 
 import type { SlideBuild } from './types';
@@ -33,6 +34,7 @@ const buildsByType = {
   slideList: listBuild,
   slidePipeline: pipelineBuild,
   slideSequence: sequenceBuild,
+  slideTimeline: timelineBuild,
 } satisfies Partial<Record<SlideContentNode['type'], SlideBuild<never>>>;
 
 const buildOf = (node: unknown): SlideBuild<never> | undefined => {

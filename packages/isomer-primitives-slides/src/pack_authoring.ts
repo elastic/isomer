@@ -29,15 +29,18 @@ export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
   { title: 'Layout', types: ['slideSplit', 'slideStack'] },
   {
     title: 'Text',
-    types: ['slideList', 'slideBulletList', 'slideDefinitions'],
+    types: ['slideList', 'slideBulletList', 'slideDefinitions', 'slideRoadmap'],
   },
   {
     title: 'Diagrams',
     types: [
+      'slideTimeline',
       'slidePipeline',
       'slideSequence',
       'slideLanes',
+      'slideGraph',
       'slideFanout',
+      'slideTree',
       'slideLayers',
       'slideTerritoryGroup',
       'slideQuadrant',
@@ -80,10 +83,14 @@ export const slidesPackAuthoring = {
       'One or two code panels. Every highlighted line number exists in its panel.',
     slidePipeline:
       'Steps on one rail. Without spans: numbered steps with bodies, optional start and end chips. With spans: steps are chips with no body and no start or end, and each span brackets steps from..to by index (from ≤ to < steps.length); spans do not overlap.',
+    slideRoadmap:
+      'Two to four horizons, left to right, each with one to four items. At most one column is current.',
     slideAgenda:
       'Two to eight sections of the talk, in order. At most one section is current.',
     slideSource:
       'One citation line. When present, it is the last node in the frame body.',
+    slideTimeline:
+      'Three to five points on a rail. At most one item is current.',
     slideStat:
       'One headline number and the sentence that explains it. A unit needs a value; leave value out to show a placeholder.',
     slideDelta:
@@ -92,6 +99,8 @@ export const slidesPackAuthoring = {
       'Two to four comparable numbers. A unit needs a value; leave value out to show a placeholder.',
     slideBars:
       'Two to six bars in one unit. At most one item is highlighted; max, when given, is at least every value.',
+    slideGraph:
+      'A fixed layout: two to four main nodes left to right, joined in order by edges, plus at most one node placed above and one below, each joined by one edge to a main node.',
     slideLanes: 'Exactly two lanes that converge on join.',
     slideLayers:
       'Three to six layers, top to bottom. Each layer has exactly one of body or chips.',

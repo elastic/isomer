@@ -21,6 +21,7 @@ import type { SlideDefinitionsNode } from './primitives/slide_definitions';
 import type { SlideDeltaNode } from './primitives/slide_delta';
 import type { SlideFanoutNode } from './primitives/slide_fanout';
 import type { SlideFrameNode } from './primitives/slide_frame';
+import type { SlideGraphNode } from './primitives/slide_graph';
 import type { SlideHeadingNode } from './primitives/slide_heading';
 import type { SlideLanesNode } from './primitives/slide_lanes';
 import type { SlideLayersNode } from './primitives/slide_layers';
@@ -29,6 +30,7 @@ import type { SlideMatrixNode } from './primitives/slide_matrix';
 import type { SlidePipelineNode } from './primitives/slide_pipeline';
 import type { SlideQuadrantNode } from './primitives/slide_quadrant';
 import type { SlideQuoteNode } from './primitives/slide_quote';
+import type { SlideRoadmapNode } from './primitives/slide_roadmap';
 import type { SlideSectionNode } from './primitives/slide_section';
 import type { SlideSequenceNode } from './primitives/slide_sequence';
 import type { SlideSourceNode } from './primitives/slide_source';
@@ -39,7 +41,9 @@ import type { SlideStatementNode } from './primitives/slide_statement';
 import type { SlideStatsNode } from './primitives/slide_stats';
 import type { SlideTableNode } from './primitives/slide_table';
 import type { SlideTerritoryGroupNode } from './primitives/slide_territory_group';
+import type { SlideTimelineNode } from './primitives/slide_timeline';
 import type { SlideTitleNode } from './primitives/slide_title';
+import type { SlideTreeNode } from './primitives/slide_tree';
 
 /** Discriminated union of every node type this pack defines. */
 export type BodyNode =
@@ -52,6 +56,7 @@ export type BodyNode =
   | SlideDeltaNode
   | SlideFanoutNode
   | SlideFrameNode
+  | SlideGraphNode
   | SlideHeadingNode
   | SlideLanesNode
   | SlideLayersNode
@@ -60,6 +65,7 @@ export type BodyNode =
   | SlidePipelineNode
   | SlideQuadrantNode
   | SlideQuoteNode
+  | SlideRoadmapNode
   | SlideSectionNode
   | SlideSequenceNode
   | SlideSourceNode
@@ -70,7 +76,9 @@ export type BodyNode =
   | SlideStatsNode
   | SlideTableNode
   | SlideTerritoryGroupNode
-  | SlideTitleNode;
+  | SlideTimelineNode
+  | SlideTitleNode
+  | SlideTreeNode;
 
 /** A {@link BodyNode} that may nest inside a {@link SlideFrameNode}; frames cannot nest. */
 export type SlideContentNode = Exclude<BodyNode, SlideFrameNode>;
