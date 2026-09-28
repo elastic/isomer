@@ -293,6 +293,27 @@ describe('toJsx', () => {
     expect(roundTrip(composition)).toEqual(composition);
   });
 
+  it('converts a node nested in a prop of a branded child item', () => {
+    const { Composition, Entry, Group, Note } = shim;
+    const [group] = shim.toComposition(
+      createElement(
+        Composition,
+        null,
+        createElement(
+          Group,
+          null,
+          createElement(Entry, {
+            title: 'a',
+            body: [{ nested: createElement(Note, { text: 'n' }) }],
+          })
+        )
+      )
+    ).body as unknown as [{ items: { body: unknown[] }[] }];
+    expect(group.items[0]?.body).toEqual([
+      { nested: { type: 'note', text: 'n' } },
+    ]);
+  });
+
   it('converts a node inside a null-prototype prop object', () => {
     const { Composition, Note, Pair } = shim;
     const side = Object.assign(Object.create(null) as object, {

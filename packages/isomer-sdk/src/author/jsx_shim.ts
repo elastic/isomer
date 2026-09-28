@@ -478,7 +478,9 @@ const itemFromElement = (
     props[field.textField] = textFromChildren(nestedChildren);
   }
   fillNestedBrands(field.itemSchema, props, nestedChildren, env);
-  return props;
+  return convertNested(props, (node: ReactNode) =>
+    bodyNodeFromElement(node, env)
+  );
 };
 
 const fillNestedBrands = (
