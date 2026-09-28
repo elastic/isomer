@@ -55,10 +55,10 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | --- | --- |
 | `createCompositionValidator` | Trusted-input validator: schema plus semantic passes; returns `{ valid, errors, warnings }` |
 | `createCompositionParser` | Untrusted-input parser: schema only |
-| `enforceValidationMode` | Throws `CompositionValidationError` only on `'throw'` |
+| `enforceValidationMode` | Throws `CompositionValidationError` on `'throw'`, and in either mode for a `refused` result |
 | `IsomerError` | Construction and authoring failures, identified by `name` and `code`. Codes name the condition, not the throwing module. |
 | `CompositionValidationError` | Invalid composition, identified by `name`, `code` (`COMPOSITION_INVALID`), and `errors` |
-| `formatValidationError` | `{ path, message }` as one `<path> message` string |
+| `formatValidationError` | `{ path, message, nodeType? }` as one `<path> (in <nodeType>) message` string |
 | `warningsForSurface` | Narrows warnings to one surface |
 | `resolveVocabulary` | Builds a union whose containers reference it |
 | `getCompositionSchemaForDefinitions` | Memoized schema, keyed on array identity |

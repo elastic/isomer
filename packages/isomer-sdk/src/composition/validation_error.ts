@@ -6,6 +6,7 @@
  */
 
 import { ISOMER_ERROR_CODES } from './error';
+import { nameText } from './one_line';
 
 /**
  * One fatal validation finding.
@@ -18,13 +19,19 @@ import { ISOMER_ERROR_CODES } from './error';
 export interface ValidationError {
   path: string;
   message: string;
+  /** The `type` of the innermost primitive `path` lands in, when there is one. */
+  nodeType?: string;
 }
 
-/** `<path> <message>`, or the message alone for a root finding. */
+/** `<path> (in <nodeType>) <message>`, or the message alone for a root finding. */
 export const formatValidationError = ({
   path,
   message,
-}: ValidationError): string => (path ? `${path} ${message}` : message);
+  nodeType,
+}: ValidationError): string =>
+  path
+    ? `${path}${nodeType === undefined ? '' : ` (in ${nameText(nodeType)})`} ${message}`
+    : message;
 
 /**
  * Thrown when a `Composition` fails validation, carrying every finding

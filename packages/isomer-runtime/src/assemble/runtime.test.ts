@@ -310,6 +310,47 @@ describe('createIsomerRuntime', () => {
     ).toThrow(/primitive type "note" registered by "test" and "test.other"/);
   });
 
+  it('reports a composition nested 500 containers deep instead of throwing', () => {
+    const runtime = createIsomerRuntime({
+      packs: [packOf(holderPrimitive, notePrimitive)],
+    });
+    let node: PrimitiveNode = { type: 'note', text: 'leaf' } as NoteNode;
+    for (let level = 0; level < 500; level += 1) {
+      node = { type: 'holder', child: node } as HolderNode;
+    }
+    const deep: Composition = { type: 'view', body: [node] };
+    const bound = {
+      path: '',
+      message: expect.stringContaining('nests deeper than') as unknown,
+    };
+
+    expect(runtime.parse(deep)).toEqual({ valid: false, errors: [bound] });
+    expect(runtime.validate(deep)).toMatchObject({
+      valid: false,
+      errors: [bound],
+    });
+    const { html, markdown, slack, text } = runtime.surfaces;
+    const renders = [
+      () => text.render(deep),
+      () => text.render(deep, { onValidationError: 'collect' }),
+      () => markdown.render(deep, { onValidationError: 'collect' }),
+      () => slack.render(deep, { onValidationError: 'collect' }),
+      () => html.render(deep),
+      () => html.render(deep, { onValidationError: 'collect' }),
+    ];
+    for (const render of renders) {
+      try {
+        render();
+        expect.unreachable();
+      } catch (error) {
+        expect(error).toMatchObject({
+          name: 'CompositionValidationError',
+          code: 'COMPOSITION_INVALID',
+        });
+      }
+    }
+  });
+
   it('validates and renders custom-only primitive definitions', () => {
     const runtime = createIsomerRuntime({ packs: [packOf(notePrimitive)] });
     const spec = view('Runtime owned');
@@ -1698,6 +1739,7 @@ describe('createIsomerRuntime', () => {
     expect(errors).toContainEqual({
       path: 'body[1].items[0].id',
       message: 'duplicates id "dup" first used at body[0]',
+      nodeType: 'note',
     });
   });
 
@@ -2450,7 +2492,9 @@ describe('createIsomerRuntime', () => {
       body: [{ type: 'note' }],
     }).errors;
 
-    expect(errors).toEqual([{ path: 'body[0].text', message: 'is required' }]);
+    expect(errors).toEqual([
+      { path: 'body[0].text', message: 'is required', nodeType: 'note' },
+    ]);
   });
 
   it('composes a drawing pack with a pack that renders no svg', () => {

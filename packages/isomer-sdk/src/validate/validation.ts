@@ -5,21 +5,25 @@
  * 2.0.
  */
 
+import type { core } from 'zod';
+
 import {
   BODY_NODE_SURFACES,
   type BodyNodeSurface,
   childNodePath,
+  type ChildNodeWalker,
   createChildNodeWalker,
   isVisibleOnSurface,
   rendersOnSurface,
 } from '../composition/body_node_base';
 import type { Composition } from '../composition/composition';
+import { nameText, quoteInput } from '../composition/one_line';
 import {
   CompositionValidationError,
   type ValidationError,
 } from '../composition/validation_error';
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
-import { formatZodIssues } from '../define/zod_format';
+import { formatPath, formatZodIssue } from '../define/zod_format';
 
 import { getCompositionSchemaForDefinitions } from './composition_schema';
 
@@ -57,6 +61,8 @@ export interface ValidationResult {
   errors: ValidationError[];
   /** Advisory findings, empty when there are none. */
   warnings: ValidationWarning[];
+  /** Set when the input is past {@link MAX_COMPOSITION_DEPTH} or {@link MAX_COMPOSITION_VALUES}, so no render can take it. */
+  refused?: true;
 }
 
 /** Narrows a result's warnings to the surface a caller is about to render. */
@@ -71,12 +77,12 @@ export type ValidationErrorMode = 'collect' | 'throw';
 
 export { CompositionValidationError };
 
-/** Raises {@link CompositionValidationError} when `mode` is `throw` and `result` is invalid. */
+/** Raises {@link CompositionValidationError} when `result` is invalid and `mode` is `throw`, or in either mode when `result` is {@link ValidationResult.refused}. */
 export const enforceValidationMode = (
   result: ValidationResult,
   mode?: ValidationErrorMode
 ): void => {
-  if (mode === 'throw' && !result.valid) {
+  if (!result.valid && (mode === 'throw' || result.refused)) {
     throw new CompositionValidationError(result.errors);
   }
 };
@@ -96,6 +102,151 @@ export interface CompositionValidatorOptions {
 }
 
 /**
+ * Each node `walk` reaches in `value`'s body, by the path an issue inside it
+ * starts with. A node the walk cannot descend, being malformed, adds no children.
+ */
+const nodeTypesByPath = (
+  value: unknown,
+  walk: ChildNodeWalker
+): Map<string, string> => {
+  const types = new Map<string, string>();
+  const visit = (node: unknown, path: string): void => {
+    if (typeof node !== 'object' || node === null) {
+      return;
+    }
+    const { type } = node as { type?: unknown };
+    if (typeof type === 'string') {
+      types.set(path, type);
+    }
+    let children: ReturnType<ChildNodeWalker>;
+    try {
+      children = walk(node);
+    } catch {
+      return;
+    }
+    children.forEach(({ node: child, path: field }) => {
+      visit(child, childNodePath(path, field));
+    });
+  };
+  const { body } = (value ?? {}) as { body?: unknown };
+  if (Array.isArray(body)) {
+    body.forEach((node, index) => visit(node, `body[${index}]`));
+  }
+  return types;
+};
+
+/** The `type` of the innermost node of a known primitive type `segments` lands in. */
+const nodeTypeAt = (
+  nodes: ReadonlyMap<string, string>,
+  segments: readonly PropertyKey[],
+  fields: ReadonlyMap<string, unknown>
+): string | undefined => {
+  let found: string | undefined;
+  let path = '';
+  for (const segment of segments) {
+    path = formatPath([segment], path);
+    const type = nodes.get(path);
+    if (type !== undefined && fields.has(type)) {
+      found = type;
+    }
+  }
+  return found;
+};
+
+/**
+ * {@link formatZodIssue} per issue, each error naming the primitive its path lands in,
+ * and an unknown key on a node listing the fields that node takes. Past
+ * {@link MAX_VALIDATION_ERRORS}, one last error counts the rest.
+ */
+const formatIssuesIn = (
+  value: unknown,
+  issues: ReadonlyArray<core.$ZodIssue>,
+  fields: ReadonlyMap<string, readonly string[]>,
+  walk: ChildNodeWalker
+): ValidationError[] => {
+  const nodes = nodeTypesByPath(value, walk);
+  const errors = issues.slice(0, MAX_VALIDATION_ERRORS).map((issue) => {
+    const error = formatZodIssue(issue);
+    const nodeType = nodeTypeAt(nodes, issue.path, fields);
+    if (nodeType === undefined) {
+      return error;
+    }
+    const onNode =
+      issue.code === 'unrecognized_keys' && nodes.get(error.path) === nodeType;
+    const message = onNode
+      ? `${error.message}; its fields are ${(fields.get(nodeType) ?? []).map(nameText).join(', ')}`
+      : error.message;
+    return { ...error, message, nodeType };
+  });
+  return capErrors(errors, issues.length);
+};
+
+/** Errors a result lists before one more error counts the rest. */
+export const MAX_VALIDATION_ERRORS = 50;
+
+/** The first {@link MAX_VALIDATION_ERRORS} of `total` errors, and one last error counting the rest. */
+const capErrors = (
+  errors: readonly ValidationError[],
+  total = errors.length
+): ValidationError[] => {
+  const listed = errors.slice(0, MAX_VALIDATION_ERRORS);
+  const rest = total - listed.length;
+  return rest > 0
+    ? [...listed, { path: '', message: `and ${rest} more errors not listed` }]
+    : listed;
+};
+
+/** Nesting of arrays and objects past which input is refused before the schema runs. The deepest slide the slides pack ships nests 16. */
+export const MAX_COMPOSITION_DEPTH = 64;
+
+/** Values, containers and leaves alike, past which input is refused before the schema runs. */
+export const MAX_COMPOSITION_VALUES = 20_000;
+
+/** Why `value` is too deep or too large to parse, found without recursion. */
+const inputBoundError = (value: unknown): ValidationError | undefined => {
+  const pending: [unknown, number][] = [[value, 1]];
+  let seen = 0;
+  for (let next = pending.pop(); next !== undefined; next = pending.pop()) {
+    const [item, depth] = next;
+    seen += 1;
+    if (typeof item !== 'object' || item === null) {
+      continue;
+    }
+    if (depth > MAX_COMPOSITION_DEPTH) {
+      return {
+        path: '',
+        message: `nests deeper than ${MAX_COMPOSITION_DEPTH} levels of arrays and objects`,
+      };
+    }
+    const size = Object.keys(item).length;
+    if (seen + pending.length + size > MAX_COMPOSITION_VALUES) {
+      return {
+        path: '',
+        message: `holds more than ${MAX_COMPOSITION_VALUES} values`,
+      };
+    }
+    for (const entry of Object.values(item)) {
+      pending.push([entry, depth + 1]);
+    }
+  }
+  return undefined;
+};
+
+/** Fields every node has, which the authoring schema leaves out. */
+const COMMON_FIELDS = new Set(['type', 'id', 'surfaces']);
+
+/** Each primitive's type, and the fields its node takes besides the common ones. */
+const fieldsOf = (
+  definitions: readonly AnyPrimitiveDefinition[]
+): Map<string, string[]> =>
+  new Map(
+    definitions.map(({ type, schema }) => [
+      type,
+      Object.keys(schema.shape).filter((key) => !COMMON_FIELDS.has(key)),
+    ])
+  );
+
+/**
  * Builds the trusted-input validator: schema, then the semantic passes.
  *
  * `definitions` is memoized on array identity, so a caller that rebuilds the
@@ -110,10 +261,17 @@ export const createCompositionValidator = (
 ): ((composition: Composition) => ValidationResult) => {
   const schema = getCompositionSchemaForDefinitions(definitions);
   const walk = createChildNodeWalker(definitions);
+  const fields = fieldsOf(definitions);
   return (composition) => {
+    const bound = inputBoundError(composition);
+    if (bound !== undefined) {
+      return { valid: false, errors: [bound], warnings: [], refused: true };
+    }
     const result = schema.safeParse(composition, { reportInput: true });
     if (result.success) {
-      const idErrors = collectDuplicateNodeIdErrors(composition.body, walk);
+      const idErrors = capErrors(
+        collectDuplicateNodeIdErrors(composition.body, walk)
+      );
       const warnings = [
         ...collectEmptySurfaceWarnings(composition.body, walk),
         ...(options.sizesFromNodeHeights
@@ -124,7 +282,7 @@ export const createCompositionValidator = (
     }
     return {
       valid: false,
-      errors: formatZodIssues(result.error.issues),
+      errors: formatIssuesIn(composition, result.error.issues, fields, walk),
       warnings: [],
     };
   };
@@ -155,7 +313,13 @@ export const createCompositionParser = (
   definitions: readonly AnyPrimitiveDefinition[]
 ): ((value: unknown) => ParsedComposition) => {
   const schema = getCompositionSchemaForDefinitions(definitions);
+  const walk = createChildNodeWalker(definitions);
+  const fields = fieldsOf(definitions);
   return (value) => {
+    const bound = inputBoundError(value);
+    if (bound !== undefined) {
+      return { valid: false, errors: [bound] };
+    }
     const result = schema.safeParse(value, { reportInput: true });
     if (result.success) {
       return {
@@ -164,7 +328,10 @@ export const createCompositionParser = (
         composition: result.data as unknown as Composition,
       };
     }
-    return { valid: false, errors: formatZodIssues(result.error.issues) };
+    return {
+      valid: false,
+      errors: formatIssuesIn(value, result.error.issues, fields, walk),
+    };
   };
 };
 
@@ -214,7 +381,7 @@ const collectMissingSvgHeightWarnings = (
       warnings.push({
         surface: 'svg',
         path,
-        message: `${path} type "${type}" declares no svgHeight metric and will be measured as 0, sizing the frame short`,
+        message: `${path} type ${quoteInput(type)} declares no svgHeight metric and will be measured as 0, sizing the frame short`,
       });
     }
     walk(node).forEach(({ node: child, path: field }) => {
@@ -243,13 +410,14 @@ const collectDuplicateNodeIdErrors = (
     if (!node || typeof node !== 'object') {
       return;
     }
-    const { id } = node as { id?: unknown };
+    const { id, type } = node as { id?: unknown; type?: unknown };
     if (typeof id === 'string') {
       const first = seen.get(id);
       if (first) {
         errors.push({
           path: `${path}.id`,
-          message: `duplicates id "${id}" first used at ${first}`,
+          message: `duplicates id ${quoteInput(id)} first used at ${first}`,
+          ...(typeof type === 'string' ? { nodeType: type } : {}),
         });
       } else {
         seen.set(id, path);

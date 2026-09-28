@@ -23,7 +23,7 @@ Pass `authoring` on `createIsomerRuntime` to name pack-owned `$defs` (`actionIte
 
 ## An index, then lookups
 
-The whole catalog and schema is too much for an agent to read at once. A host can instead send an index — `buildAuthoringPrompt` with `catalog: 'index'`, `groups`, and no `schema` lists each primitive's type and purpose under its group — and answer lookups with `describePrimitives(types)`, which takes at most 100 types and refuses more with `TOO_MANY_TYPES` before reading any. Its `$defs` keep the ids they have in `schema`, so two lookups agree, and `bodyNode` is a stub meaning any primitive rather than the whole union. `schemaFor` differs on both counts: it rebuilds a schema whose body node is only `types`, which suits a registered view's input.
+The whole catalog and schema is too much for an agent to read at once. A host can instead send an index — `buildAuthoringPrompt` with `catalog: 'index'`, `groups`, and no `schema` lists each primitive's type and purpose under its group — and answer lookups with `describePrimitives(types)`, which takes at most 100 types and refuses more with `TOO_MANY_TYPES` before reading any. Its `$defs` keep the ids they have in `schema`, so two lookups agree, and `bodyNode` is a stub meaning any primitive rather than the whole union. `schemaFor` differs on both counts: it rebuilds a schema whose body node is only `types`, which suits a registered view's input. Validation errors name the primitive their path lands in (`body[0].items (in slideTimeline) is required`), so an agent knows what to look up. A misspelled type is answered with the closest one (`is "slideBarz"; did you mean "slideBars"?`), and an unknown key on a node with the fields it takes.
 
 ## Taking the answer back
 

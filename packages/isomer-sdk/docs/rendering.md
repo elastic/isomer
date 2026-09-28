@@ -31,7 +31,7 @@ interface HTMLRenderResult {
 }
 ```
 
-`html` is the wrapper element plus content; `body` is the content alone; `css` is what the adapter emitted; `js` is the enhancement script as a function body over `root` (see [Enhancements](#enhancements)); `measurement` is the byte length of the markup, the stylesheet, the enhancement script as delivered, and their total, for a host that budgets payload size. Validation runs inside, per the caller's `onValidationError` mode, and the findings come back on the result as `validationErrors` (`{ path, message }` each) rather than being thrown by default.
+`html` is the wrapper element plus content; `body` is the content alone; `css` is what the adapter emitted; `js` is the enhancement script as a function body over `root` (see [Enhancements](#enhancements)); `measurement` is the byte length of the markup, the stylesheet, the enhancement script as delivered, and their total, for a host that budgets payload size. Validation runs inside, per the caller's `onValidationError` mode, and the findings come back on the result as `validationErrors` (`{ path, message, nodeType? }` each, as [Composition](composition.md#error-messages) describes) rather than being thrown by default; a `refused` result, which no render can take, throws in either mode.
 
 `validate` defaults to `createCompositionValidator(dispatcher.definitions)`; pass one when validation needs options or a wider inventory.
 
@@ -52,9 +52,9 @@ CSS is not the SDK's. A pack supplies an `HTMLStyleAdapter`, and the SDK calls i
 | `createRenderContext`   | Builds the context every `react` renderer is handed                         |
 | `collectAfterRender?`   | After the tree is rendered                                                  |
 | `renderStyles`          | Emits the stylesheet                                                        |
-| `getScriptText?`        | Emits the adapter's own script, a function body over `root`                 |
+| `getScriptText?`        | Emits the progressive-enhancement script, a function body over `root`       |
 
-`createRenderContext` must return a complete context, because `TContext` is the pack's own type. The HTML surface never writes to it and hands renderers a view of it rather than a copy, so a frozen or class-instance context keeps its methods and private state. Whether renderers emit [node anchors](#node-anchors) during an HTML render is the surface's decision, whatever the context's `anchors` says. The HTML adapter's default `TContext` is `StyledRenderContext` (`resolveClassName`, `cssVarRef`). `PrimitiveRenderContext` itself is `enhancements`, `anchors`, and `onEvent`.
+`createRenderContext` must return a complete context, because `TContext` is the pack's own type. The HTML surface never writes to it, so a frozen or class-instance context keeps its identity and private state. Whether renderers emit [node anchors](#node-anchors) during an HTML render is the surface's decision, whatever the context's `anchors` says. The HTML adapter's default `TContext` is `StyledRenderContext` (`resolveClassName`, `cssVarRef`). `PrimitiveRenderContext` itself is `enhancements`, `anchors`, and `onEvent`.
 
 A pack that authors its CSS with [Distillate](https://elastic.github.io/distillate/), Elastic's typed CSS engine with render-driven style collection, does not write those hooks by hand. `createDistillateHtmlStyleAdapter(distillery)` is the adapter: record handles during render, emit their stylesheet. Put it on `definePrimitivePack({ styleAdapter })` so a host gets it without asking. The SDK does not depend on Distillate; the helper is duck-typed against `artifactCollector`, `renderStyles`, and `registry`.
 
@@ -66,7 +66,7 @@ The wrapper hook is named for the wrapper rather than the SVG frame. The documen
 
 ## Enhancements
 
-A progressive enhancement is an id, a content gate, and usually a script. `resolveEnhancements(body, requested, walk, definitions)` intersects what the host asked for with what the composition actually contains, so a composition with no table never ships the sort script. The host opts in by id: `enhancements: ['tableSort']`. The HTML render resolves the request once for every pack: the set reaches every renderer as `context.enhancements`, in place of anything the adapter's context holds, and each resolved enhancement's script is emitted once. A set rather than a field per feature, so adding one costs no plumbing:
+A progressive enhancement is an id, a content gate, and usually a script. `resolveEnhancements(body, requested, walk, definitions)` intersects what the host asked for with what the composition actually contains, so a composition with no table never ships the sort script. The host opts in by id: `enhancements: ['tableSort']`. The resolved set reaches renderers as `context.enhancements`, a set rather than a field per feature, so adding one costs no plumbing:
 
 ```ts
 context.enhancements?.has('tableSort');
