@@ -116,6 +116,30 @@ describe('createHTMLStyleCollection', () => {
     expect(asked).toBe(1);
   });
 
+  it('turns anchors off when nothing asks for them, whatever the adapter context says', () => {
+    const { context } = createHTMLStyleCollection(composition, {
+      dispatcher,
+      styleAdapter: adapter({ createRenderContext: () => ({ anchors: true }) }),
+    });
+    expect((context as { anchors?: boolean }).anchors).toBe(false);
+  });
+
+  it('returns the heading the style adapter resolved, so the host draws the one html would', () => {
+    const { heading } = createHTMLStyleCollection(composition, {
+      dispatcher,
+      styleAdapter: adapter({
+        resolveOptions: (_composition, options) => ({
+          ...options,
+          heading: false,
+        }),
+      }),
+    });
+    expect(heading).toBe(false);
+    expect(createHTMLStyleCollection(composition, { dispatcher }).heading).toBe(
+      true
+    );
+  });
+
   it('runs the post-render hook once, however often css() is read', () => {
     const collectAfterRender = vi.fn(
       (_composition: unknown, collector: { rules: string[] }) => {

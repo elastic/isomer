@@ -41,6 +41,8 @@ export interface HTMLStyleCollection<TContext = StyledRenderContext> {
   readonly wrapper: Required<
     Pick<CompositionWrapperOptions, 'framed' | 'fluid' | 'theme'>
   >;
+  /** Whether the render draws the composition's title and subtitle, as the style adapter resolved it; pass it as the render's `heading`. */
+  readonly heading: boolean;
   /** The CSS for everything rendered with {@link HTMLStyleCollection.context}, with no `<style>` wrapper. Computed on the first read. */
   readonly css: () => string;
 }
@@ -56,7 +58,7 @@ export interface HTMLStyleCollectionOptions<
   enhancementDefinitions?: readonly EnhancementDefinition[];
 }
 
-/** `context` for a render outside the html surface: carrying the resolved `enhancements`, with node anchors on when `options` or one of those enhancements asks. */
+/** `context` for a render outside the html surface: carrying the resolved `enhancements`, with node anchors on exactly when `options` or one of those enhancements asks. */
 const hostRenderContext = <TContext>(
   context: TContext,
   { body }: Composition,
@@ -69,10 +71,10 @@ const hostRenderContext = <TContext>(
     walk,
     definitions
   );
-  const enhanced = contextWith(context, 'enhancements', enhancements);
-  return anchorsFor(enhancements, options, definitions)
-    ? withContextAnchors(enhanced)
-    : enhanced;
+  return withContextAnchors(
+    contextWith(context, 'enhancements', enhancements),
+    anchorsFor(enhancements, options, definitions)
+  );
 };
 
 /** The collection half of an html render, for {@link renderHTMLWithDispatcher} and for a host rendering the tree itself. `options` are already resolved. */
@@ -89,7 +91,9 @@ export const startStyleCollection = <
     enhancementDefinitions = [],
   }: HTMLStyleCollectionOptions<TNode, TCollector, TContext>
 ):
-  | (Omit<HTMLStyleCollection<TContext>, 'wrapper'> & { collector: TCollector })
+  | (Omit<HTMLStyleCollection<TContext>, 'wrapper' | 'heading'> & {
+      collector: TCollector;
+    })
   | undefined => {
   if (!styleAdapter) {
     return undefined;
@@ -162,5 +166,10 @@ export const createHTMLStyleCollection = <
     fluid: Boolean(resolved.fluid),
     theme: resolved.theme ?? composition.theme ?? 'auto',
   };
-  return { context, wrapper, css: started ? started.css : () => '' };
+  return {
+    context,
+    wrapper,
+    heading: resolved.heading ?? true,
+    css: started ? started.css : () => '',
+  };
 };

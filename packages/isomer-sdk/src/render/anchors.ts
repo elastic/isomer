@@ -73,9 +73,11 @@ export const withAnchors = <TResult>(
 export const withoutAnchors = <TContext>(context: TContext): TContext =>
   contextWith(context, NO_ANCHORS, true);
 
-/** A view of `context` with `anchors: true`, for a React render outside the html surface; see {@link withoutAnchors}. */
-export const withContextAnchors = <TContext>(context: TContext): TContext =>
-  contextWith(context, 'anchors', true);
+/** A view of `context` whose `anchors` is `on`, for a React render outside the html surface; see {@link withoutAnchors}. */
+export const withContextAnchors = <TContext>(
+  context: TContext,
+  on: boolean
+): TContext => contextWith(context, 'anchors', on);
 
 const anchorsOn = (context: unknown): boolean => {
   const carries = isObjectLike(context);

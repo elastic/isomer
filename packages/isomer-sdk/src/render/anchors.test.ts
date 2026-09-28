@@ -330,7 +330,7 @@ describe('withoutAnchors', () => {
 
 describe('withContextAnchors', () => {
   it('turns anchors on for a class-instance context without copying it', () => {
-    const context = withContextAnchors(new InstanceContext());
+    const context = withContextAnchors(new InstanceContext(), true);
     expect(context).toBeInstanceOf(InstanceContext);
     expect(context.describe()).toBe('instance');
     expect(nodeAnchor(context, { type: 'leaf' })).toEqual({
