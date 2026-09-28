@@ -240,4 +240,39 @@ describe('toComposition', () => {
       );
     }
   });
+
+  it('converts a prop nested exactly 256 levels and refuses 257', () => {
+    const nested = (levels: number): unknown => {
+      let value: unknown = createElement(Note, { text: 'leaf' });
+      for (let level = 0; level < levels; level += 1) {
+        value = { value };
+      }
+      return value;
+    };
+    const convert = (meta: unknown) =>
+      shim.toComposition(
+        createElement(Composition, null, createElement(Note, { meta }))
+      );
+    expect(JSON.stringify(convert(nested(256)))).toContain('"text":"leaf"');
+    expectIsomerError(() => convert(nested(257)), 'INVALID_BODY_NODE');
+  });
+
+  it('converts a shared-reference graph once per object, so it costs no more than its size', () => {
+    let shared: unknown[] = [createElement(Note, { text: 'leaf' })];
+    for (let level = 0; level < 200; level += 1) {
+      shared = [shared, shared];
+    }
+    const started = performance.now();
+    const composition = shim.toComposition(
+      createElement(Composition, null, createElement(Note, { meta: shared }))
+    );
+    expect(performance.now() - started).toBeLessThan(1000);
+    const [note] = composition.body;
+    let value: unknown = note && 'meta' in note ? note.meta : undefined;
+    for (let level = 0; level < 200; level += 1) {
+      expect(Array.isArray(value) && value.length === 2).toBe(true);
+      value = (value as unknown[])[0];
+    }
+    expect(value).toEqual([{ type: 'note', text: 'leaf' }]);
+  });
 });

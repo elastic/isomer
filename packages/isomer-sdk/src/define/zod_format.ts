@@ -125,6 +125,9 @@ const editDistance = (a: string, b: string): number => {
   return previous[b.length] ?? 0;
 };
 
+/** Longest input a misspelling suggestion is computed for; the edit distance is quadratic in it. */
+const MAX_SUGGESTED_CHARS = 200;
+
 /** `must be one of: …`, led by the closest option when `input` looks like a misspelling of one. */
 const oneOf = (options: readonly unknown[], input: unknown): string => {
   const list = `must be one of: ${options
@@ -132,7 +135,8 @@ const oneOf = (options: readonly unknown[], input: unknown): string => {
       typeof option === 'string' ? nameText(option) : jsonLine(option)
     )
     .join(', ')}`;
-  if (typeof input !== 'string') {
+  // A quoted input is cut to 100 characters, so a suggestion for a longer one would name nothing readable.
+  if (typeof input !== 'string' || input.length > MAX_SUGGESTED_CHARS) {
     return list;
   }
   const limit = Math.max(2, input.length / 4);

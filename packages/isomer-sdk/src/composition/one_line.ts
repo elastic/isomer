@@ -9,9 +9,19 @@
 export const oneLine = (text: string): string =>
   text.replace(/\r\n|[\n\r\u2028\u2029]/g, ' ');
 
-/** `value` as JSON on one line: `JSON.stringify` escapes `\n` and `\r` but leaves U+2028 and U+2029 raw. */
+const bigintLiteral = (value: bigint): string => `${value}n`;
+
+/**
+ * `value` as JSON on one line: `JSON.stringify` escapes `\n` and `\r` but
+ * leaves U+2028 and U+2029 raw, and refuses a BigInt, which prints as its literal.
+ */
 export const jsonLine = (value: unknown): string =>
-  (JSON.stringify(value) ?? String(value))
+  (typeof value === 'bigint'
+    ? bigintLiteral(value)
+    : (JSON.stringify(value, (_key, entry: unknown) =>
+        typeof entry === 'bigint' ? bigintLiteral(entry) : entry
+      ) ?? String(value))
+  )
     .replace(/\u2028/g, '\\u2028')
     .replace(/\u2029/g, '\\u2029');
 

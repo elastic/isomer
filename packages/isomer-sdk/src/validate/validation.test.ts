@@ -132,6 +132,25 @@ describe('error node types', () => {
     );
   });
 
+  it('suggests nothing for a long value, even against an equally long option', () => {
+    const issue = z
+      .object({ type: z.literal('k'.repeat(100_000)) })
+      .safeParse({ type: 'j'.repeat(100_000) }, { reportInput: true }).error
+      ?.issues[0];
+    const started = performance.now();
+    expect(formatZodIssue(issue!).message).toMatch(/^must be one of:/);
+    expect(performance.now() - started).toBeLessThan(500);
+  });
+
+  it('formats a BigInt option and input without throwing', () => {
+    const issue = z.object({ n: z.literal(1n) }).safeParse({ n: 2n }).error
+      ?.issues[0];
+    expect(formatZodIssue(issue!)).toMatchObject({
+      path: 'n',
+      message: 'must be one of: 1n',
+    });
+  });
+
   it('suggests nothing for a value far longer than every option', () => {
     const [error] = validate({
       type: 'view',

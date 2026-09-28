@@ -22,6 +22,11 @@ describe('oneLine', () => {
 });
 
 describe('jsonLine', () => {
+  it('prints a BigInt, which JSON.stringify refuses, as its literal', () => {
+    expect(jsonLine(1n)).toBe('1n');
+    expect(jsonLine({ n: 1n, list: [2n] })).toBe('{"n":"1n","list":["2n"]}');
+  });
+
   it('escapes the two terminators JSON.stringify leaves raw', () => {
     expect(jsonLine('a\u2028b\u2029c')).toBe('"a\\u2028b\\u2029c"');
     expect(jsonLine(undefined)).toBe('undefined');
