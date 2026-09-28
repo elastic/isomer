@@ -60,7 +60,7 @@ export const buildPrimitiveDescriptions = ({
     .describePrimitives(types);
   return [
     `## Primitives\n\n${primitives.map(formatPrimitiveEntry).join('\n')}`,
-    '## JSON Schema\n\nEach primitive is `$defs.<type>`, and a shape it reuses is named for the properties that hold it, e.g. `<type>.before+after`. `bodyNode` stands for any primitive in the index, as its own object; a container’s description names any it cannot hold.',
+    '## JSON Schema\n\nEach primitive is `$defs.<type>`. `bodyNode` stands for any primitive in the index, as its own object; a container’s description names any it cannot hold.',
     `\`\`\`json\n${JSON.stringify(schema, null, 2)}\n\`\`\``,
   ].join('\n\n');
 };
