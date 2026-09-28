@@ -50,7 +50,7 @@ Every error is a `ValidationError`, `{ path, message, nodeType? }`: `path` locat
 
 `buildCompositionJsonSchema(definitions, options)` projects the composition to draft-2020-12 for hosts that validate outside TypeScript. Two options carry weight: `reused: 'ref'` emits one named `$def` per primitive instead of inlining the union at every container, and `unrepresentable: 'any'` drops what JSON Schema cannot express, which is why anything stated only in a Zod refinement must also be stated in prose an agent will read.
 
-`buildAuthoringJsonSchema` is the projection an agent reads. It starts from the validator schema, names the SDK's shared value schemas (`tone`, `displayValue`, `structuredValue`, `renderTheme`), inlines bare scalar `$defs` and `$ref`-only hops, drops `Number.MAX_SAFE_INTEGER` bounds and per-node `id`/`surfaces`, and accepts `describe` / `omitProperties` / extra pack `$defs` (`actionItem`, `badgeItem`) from the caller. The validator projection is unchanged: a node that emits `id` still parses.
+`buildAuthoringJsonSchema` is the projection an agent reads. It starts from the validator schema, names the SDK's shared value schemas (`tone`, `displayValue`, `structuredValue`, `renderTheme`), inlines bare scalar `$defs` and `$ref`-only hops, drops `Number.MAX_SAFE_INTEGER` bounds and per-node `id`/`surfaces`, and accepts `describe` / `omitProperties` / extra pack `$defs` (`actionItem`, `badgeItem`) from the caller. The validator projection is unchanged: a node that emits `id` still parses. A primitive type or extra def id must not be one the projection already uses: `bodyNode`, a shared def such as `tone`, or an id shaped like the `__schema<n>` Zod generates; any of those throws `INVALID_BODY_NODE`.
 
 ## How the body-node union is built
 

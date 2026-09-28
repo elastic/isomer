@@ -251,17 +251,32 @@ const decodedRefs = (built: unknown): string[] =>
 describe('buildAuthoringJsonSchema unpaired surrogates', () => {
   it.each([
     [
-      'a primitive type',
+      'a primitive type named like a def Zod generates',
       () => buildAuthoringJsonSchema([primitiveOf('__schema3', {})]),
     ],
     [
-      'an extra def',
+      'an extra def named like a def Zod generates',
       () =>
         buildAuthoringJsonSchema([primitiveOf('note', {})], {
           extraDefs: [{ id: '__schema0', schema: z.string() }],
         }),
     ],
-  ])('refuses %s named like a def Zod generates', (_name, build) => {
+    [
+      'a primitive type the body-node union uses',
+      () => buildAuthoringJsonSchema([primitiveOf('bodyNode', {})]),
+    ],
+    [
+      'a primitive type a shared def uses',
+      () => buildAuthoringJsonSchema([primitiveOf('tone', {})]),
+    ],
+    [
+      'an extra def named for the body-node union',
+      () =>
+        buildAuthoringJsonSchema([primitiveOf('note', {})], {
+          extraDefs: [{ id: 'bodyNode', schema: z.string() }],
+        }),
+    ],
+  ])('refuses %s, whose def id is taken', (_name, build) => {
     try {
       build();
       expect.unreachable();
@@ -269,7 +284,7 @@ describe('buildAuthoringJsonSchema unpaired surrogates', () => {
       expect(error).toMatchObject({
         name: 'IsomerError',
         code: 'INVALID_BODY_NODE',
-        message: expect.stringContaining('reserved') as unknown,
+        message: expect.stringMatching(/reserved|taken/) as unknown,
       });
     }
   });

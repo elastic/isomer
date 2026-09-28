@@ -567,6 +567,24 @@ export const buildAuthoringJsonSchema = (
       );
     }
   }
+  // The body-node union and every shared def take a `$defs` id a primitive type would otherwise share.
+  const taken = new Set([
+    BODY_NODE_ID,
+    ...mergeExtraDefs(extraDefs).map((extra) => extra.id),
+  ]);
+  for (const id of [
+    ...definitions.map(({ type }) => type),
+    ...(extraDefs ?? [])
+      .map((extra) => extra.id)
+      .filter((id) => id === BODY_NODE_ID),
+  ]) {
+    if (taken.has(id) || id === BODY_NODE_ID) {
+      throw new IsomerError(
+        'INVALID_BODY_NODE',
+        `buildAuthoringJsonSchema: def id ${JSON.stringify(id)} is taken by ${id === BODY_NODE_ID ? 'the body-node union' : 'a shared def'}`
+      );
+    }
+  }
   const projected = buildCompositionJsonSchema(definitions, {
     ...rest,
     extraDefs: mergeExtraDefs(extraDefs),
