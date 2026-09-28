@@ -24,25 +24,45 @@ export interface MarkRun {
 
 const markPattern = /`([^`\n]+)`|\*\*([^*\n]+?)\*\*/g;
 
-/** Splits `text` into runs. Unpaired markers stay literal. */
+/**
+ * Splits `text` into runs. Unpaired markers stay literal. Whitespace at a
+ * strong run's edges moves outside it, since Markdown and Slack read no
+ * emphasis whose delimiter touches a space, and a strong run of only
+ * whitespace stays literal.
+ */
 export const parseMarks = (text: string): MarkRun[] => {
   const runs: MarkRun[] = [];
+  const push = (run: MarkRun) => {
+    const previous = runs.at(-1);
+    if (run.text === '') {
+      return;
+    }
+    if (run.kind === 'text' && previous?.kind === 'text') {
+      previous.text += run.text;
+    } else {
+      runs.push(run);
+    }
+  };
   let last = 0;
   for (const match of text.matchAll(markPattern)) {
-    const [whole, codeText, strongText] = match;
-    if (match.index > last) {
-      runs.push({ kind: 'text', text: text.slice(last, match.index) });
+    const [whole, codeText, strongText = ''] = match;
+    push({ kind: 'text', text: text.slice(last, match.index) });
+    if (codeText !== undefined) {
+      push({ kind: 'code', text: codeText });
+    } else {
+      const [, lead = '', core = '', trail = ''] =
+        /^(\s*)([\s\S]*?)(\s*)$/.exec(strongText) ?? [];
+      if (core === '') {
+        push({ kind: 'text', text: whole });
+      } else {
+        push({ kind: 'text', text: lead });
+        push({ kind: 'strong', text: core });
+        push({ kind: 'text', text: trail });
+      }
     }
-    runs.push(
-      codeText !== undefined
-        ? { kind: 'code', text: codeText }
-        : { kind: 'strong', text: strongText ?? '' }
-    );
     last = match.index + whole.length;
   }
-  if (last < text.length) {
-    runs.push({ kind: 'text', text: text.slice(last) });
-  }
+  push({ kind: 'text', text: text.slice(last) });
   return runs;
 };
 

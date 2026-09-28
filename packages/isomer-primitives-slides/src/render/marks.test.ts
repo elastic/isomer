@@ -19,6 +19,17 @@ import {
 } from './marks';
 
 describe('marks', () => {
+  it('moves whitespace at a strong run’s edges outside it, so every surface reads the same emphasis', () => {
+    expect(parseMarks('a ** bold ** b')).toEqual([
+      { kind: 'text', text: 'a  ' },
+      { kind: 'strong', text: 'bold' },
+      { kind: 'text', text: '  b' },
+    ]);
+    expect(marksMarkdown('a ** bold ** b')).toBe('a  **bold**  b');
+    expect(marksSlack('a ** bold ** b')).toBe('a  *bold*  b');
+    expect(parseMarks('**   **')).toEqual([{ kind: 'text', text: '**   **' }]);
+  });
+
   it('splits code and strong runs', () => {
     expect(parseMarks('Call `parse` before **render**.')).toEqual([
       { kind: 'text', text: 'Call ' },
