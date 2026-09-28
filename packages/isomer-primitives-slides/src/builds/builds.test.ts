@@ -143,6 +143,17 @@ describe('slide builds', () => {
     expect(hidden).toHaveLength(0);
   });
 
+  it('builds each occurrence of a reused node object on its own', () => {
+    const composition = slide(bullets, bullets);
+    const root = mount(composition);
+    const parts = slideBuildParts(root, composition);
+    expect(parts.map(({ found }) => found)).toEqual([true, true]);
+    expect(parts[0]!.units[0]![0]).not.toBe(parts[1]!.units[0]![0]);
+    showSlideBuild(root, composition, 3);
+    expect(visibility(parts[0]!.units)).toEqual(['', '']);
+    expect(visibility(parts[1]!.units)).toEqual(['', 'hidden']);
+  });
+
   it('leaves a node whole when its parts cannot be found, keeping later offsets', () => {
     const composition = slide(pipeline, bullets);
     const root = mount(composition);

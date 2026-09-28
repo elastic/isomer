@@ -11,7 +11,7 @@ import {
   type Composition,
   createChildNodeWalker,
   type EnhancementDefinition,
-  findNodeElements,
+  findNodeElementPairs,
   isVisibleOnSurface,
   someBodyNode,
 } from '@elastic/isomer-sdk';
@@ -104,17 +104,17 @@ export const slideBuildParts = (
   { body }: Composition,
   primitives: readonly AnyPrimitiveDefinition[] = slideDeckPrimitives
 ): SlideBuildParts[] => {
-  const walk = createChildNodeWalker(primitives);
-  const elements = findNodeElements(root, body, walk);
-  return buildingNodes(body, walk).map((node) => {
-    const build = buildOf(node)!;
-    const count = build.count(node as never);
-    const owner = elements.get(node);
-    const units = owner ? build.units(owner, node as never) : [];
-    const found =
-      units.length === count && units.every((unit) => unit.length > 0);
-    return { node, count, units, found };
-  });
+  // Paired by occurrence, so a node object that appears twice builds twice.
+  return findNodeElementPairs(root, body, createChildNodeWalker(primitives))
+    .filter(({ node }) => buildOf(node) !== undefined)
+    .map(({ node, element: owner }) => {
+      const build = buildOf(node)!;
+      const count = build.count(node as never);
+      const units = owner ? build.units(owner, node as never) : [];
+      const found =
+        units.length === count && units.every((unit) => unit.length > 0);
+      return { node, count, units, found };
+    });
 };
 
 /** Marks what {@link showSlideBuild} hid, so the next call can show it again wherever React reused it. */
