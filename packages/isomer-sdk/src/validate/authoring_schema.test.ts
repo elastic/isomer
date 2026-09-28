@@ -117,6 +117,17 @@ const primitiveOf = (type: string, shape: Record<string, z.ZodType>) => {
 describe('buildAuthoringJsonSchema def ids', () => {
   it.each([
     [
+      'a primitive type named like a def Zod generates',
+      () => buildAuthoringJsonSchema([primitiveOf('__schema3', {})]),
+    ],
+    [
+      'an extra def named like a def Zod generates',
+      () =>
+        buildAuthoringJsonSchema([primitiveOf('note', {})], {
+          extraDefs: [{ id: '__schema0', schema: z.string() }],
+        }),
+    ],
+    [
       'a primitive type the body-node union uses',
       () => buildAuthoringJsonSchema([primitiveOf('bodyNode', {})]),
     ],
@@ -139,7 +150,7 @@ describe('buildAuthoringJsonSchema def ids', () => {
       expect(error).toMatchObject({
         name: 'IsomerError',
         code: 'INVALID_BODY_NODE',
-        message: expect.stringMatching(/taken/) as unknown,
+        message: expect.stringMatching(/reserved|taken/) as unknown,
       });
     }
   });

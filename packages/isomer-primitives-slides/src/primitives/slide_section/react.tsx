@@ -6,7 +6,7 @@
  */
 
 import type { ReactNode } from 'react';
-import { nodeAnchor } from '@elastic/isomer-sdk';
+import { nodeAnchor, sanitizeNavigationHref } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
@@ -52,7 +52,9 @@ export const react = (
       </h2>
       <ol className={cls(context, section.contents)}>
         {contents.map((line, index) => {
-          const href = hrefs?.[index];
+          // The view is exported, so the URL policy holds without the sanitize hook.
+          const authored = hrefs?.[index];
+          const href = authored ? sanitizeNavigationHref(authored) : null;
           return (
             <li key={index} className={cls(context, section.row)}>
               {href ? (

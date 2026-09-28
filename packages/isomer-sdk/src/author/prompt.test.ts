@@ -150,6 +150,25 @@ describe('buildAuthoringPrompt', () => {
     expect(prompt).not.toContain('against the JSON Schema');
   });
 
+  it('indexes a catalog with no groups under Other, the same shape as a grouped one', () => {
+    const prompt = buildAuthoringPrompt('compose-from-primitives', {
+      guide: 'Guide',
+      rules: '',
+      examples: [],
+      primitives: ['a', 'b'].map((type) => ({
+        type,
+        purpose: `The ${type}.`,
+        useWhen: [],
+        avoidWhen: [],
+        example: { type },
+      })),
+      catalog: 'index',
+    });
+    expect(prompt).toContain(
+      '## Primitive catalog\n\n### Other\n\n- `a` — The a.\n- `b` — The b.'
+    );
+  });
+
   it('passes catalog and groups through a prompt builder, with groups from its defaults', () => {
     const entry = (type: string) => ({
       type,

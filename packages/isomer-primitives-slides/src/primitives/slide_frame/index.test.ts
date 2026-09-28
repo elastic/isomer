@@ -5,13 +5,17 @@
  * 2.0.
  */
 
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import type { SlideReactEnv } from '../../render/context';
 import { example as titleExample } from '../slide_title/examples';
 
+import { react } from './react';
 import type { SlideFrameNode } from './types';
 import { sanitizeFrameUrl } from './url';
 
@@ -80,5 +84,22 @@ describe('slideFrame url', () => {
     'https://elastic.github.io/isomer',
   ])('accepts %s', (url) => {
     expect(sanitizeFrameUrl(url)).toBe(url);
+  });
+});
+
+describe('slideFrame view called directly', () => {
+  it('applies the url policy without the sanitize hook', () => {
+    const node: SlideFrameNode = {
+      type: 'slideFrame',
+      body: [],
+      url: 'javascript:alert(1)',
+    };
+    const env = {
+      context: undefined,
+      scope: { renderReact: () => null },
+    } as unknown as SlideReactEnv;
+    const markup = renderToStaticMarkup(createElement(() => react(node, env)));
+    expect(markup).not.toContain('javascript:');
+    expect(markup).not.toContain('<a ');
   });
 });

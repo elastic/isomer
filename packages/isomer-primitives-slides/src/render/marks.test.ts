@@ -35,6 +35,23 @@ describe('marks', () => {
     expect(stripMarks('2 * 3 and a ` tick')).toBe('2 * 3 and a ` tick');
   });
 
+  it.each([
+    ['\\n', '\n'],
+    ['\\r', '\r'],
+    ['\\r\\n', '\r\n'],
+    ['U+2028', '\u2028'],
+    ['U+2029', '\u2029'],
+  ])('reads a mark across %s on every surface', (_name, terminator) => {
+    const text = `**a${terminator}b** \`c${terminator}d\``;
+    expect(parseMarks(text)).toEqual([
+      { kind: 'strong', text: `a${terminator}b` },
+      { kind: 'text', text: ' ' },
+      { kind: 'code', text: `c${terminator}d` },
+    ]);
+    expect(plainText(text)).toBe('a b c d');
+    expect(marksSlack(text)).toBe(`*a${terminator}b* \`c${terminator}d\``);
+  });
+
   it('does not read strong inside code', () => {
     expect(parseMarks('`**x**`')).toEqual([{ kind: 'code', text: '**x**' }]);
   });

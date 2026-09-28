@@ -22,6 +22,7 @@ import { headingCrowding } from '../slide_heading/fit';
 
 import { frameModule } from './styles';
 import type { SlideFrameNode } from './types';
+import { sanitizeFrameUrl } from './url';
 
 const { separator } = slideDistillery.tokens.frame;
 
@@ -33,8 +34,10 @@ const Footer = ({
   context: SlideRenderContext | undefined;
 }): ReactNode => {
   const { handles: frame } = frameModule;
-  const { brand, section, sectionNumber, url, logo = true } = node;
+  const { brand, section, sectionNumber, logo = true } = node;
   const sectionLine = [sectionNumber, section].filter(Boolean).join(' ');
+  // The view is exported, so the URL policy holds when a host calls it without the sanitize hook.
+  const url = node.url ? sanitizeFrameUrl(node.url) : null;
   return (
     <footer className={cls(context, frame.footer)}>
       <div className={cls(context, frame.footerStart)}>

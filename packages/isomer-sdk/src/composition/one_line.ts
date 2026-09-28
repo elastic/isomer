@@ -18,13 +18,15 @@ export const jsonLine = (value: unknown): string =>
 /** Most characters of an echoed input string a message quotes. */
 const MAX_QUOTED_CHARS = 100;
 
-/** An input string quoted for a one-line message, cut to a bounded length. */
-export const quoteInput = (text: string): string =>
-  jsonLine(
-    text.length > MAX_QUOTED_CHARS
-      ? `${text.slice(0, MAX_QUOTED_CHARS)}…`
+/** An input string quoted for a one-line message, cut to a bounded length of code points. */
+export const quoteInput = (text: string): string => {
+  const chars = [...text];
+  return jsonLine(
+    chars.length > MAX_QUOTED_CHARS
+      ? `${chars.slice(0, MAX_QUOTED_CHARS).join('')}…`
       : text
   );
+};
 
 const PLAIN_NAME = /^[\w$-]+$/;
 

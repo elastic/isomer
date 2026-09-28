@@ -136,9 +136,6 @@ const renderIndex = (
   primitives: readonly PrimitiveCatalogEntry[],
   groups: readonly PrimitiveGroup[] = []
 ): string => {
-  if (groups.length === 0) {
-    return primitives.map(indexLine).join('\n');
-  }
   const byType = new Map(primitives.map((entry) => [entry.type, entry]));
   const grouped = new Set(groups.flatMap(({ types }) => types));
   const sections = [

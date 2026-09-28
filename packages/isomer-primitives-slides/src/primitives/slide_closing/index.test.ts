@@ -12,10 +12,12 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import type { SlideReactEnv } from '../../render/context';
 import { stripMarks } from '../../render/marks';
 
 import { example, examples } from './examples';
 import { markdown, slack, text } from './index';
+import { react } from './react';
 import { schema, type SlideClosingNode } from './schema';
 
 const runtime = createIsomerRuntime({
@@ -149,5 +151,20 @@ describe('slideClosing', () => {
     const md = runtime.surfaces.markdown.renderNode(unsafe);
     expect(md).toContain('**Docs** · the docs');
     expect(md).not.toContain('javascript:');
+  });
+});
+
+describe('slideClosing view called directly', () => {
+  it('applies the href policy without the sanitize hook', () => {
+    const unsafe: SlideClosingNode = {
+      ...example,
+      links: [{ label: 'Docs', href: 'javascript:alert(1)', text: 'the docs' }],
+    };
+    const env = { context: undefined } as unknown as SlideReactEnv;
+    const markup = renderToStaticMarkup(
+      createElement(() => react(unsafe, env))
+    );
+    expect(markup).not.toContain('javascript:');
+    expect(markup.match(/<a /g) ?? []).toHaveLength(0);
   });
 });

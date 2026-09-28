@@ -22,7 +22,7 @@ export interface MarkRun {
   text: string;
 }
 
-const markPattern = /`([^`\n]+)`|\*\*([^*\n]+?)\*\*/g;
+const markPattern = /`([^`]+)`|\*\*([^*]+?)\*\*/g;
 
 /**
  * Splits `text` into runs. Unpaired markers stay literal. Whitespace at a

@@ -12,10 +12,12 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import type { SlideReactEnv } from '../../render/context';
 import { stripMarks } from '../../render/marks';
 
 import { example, examples, linkedExample } from './examples';
 import { markdown, slack, text } from './index';
+import { react } from './react';
 import { schema, type SlideSectionNode } from './schema';
 
 const runtime = createIsomerRuntime({
@@ -140,5 +142,20 @@ describe('slideSection', () => {
     const md = runtime.surfaces.markdown.renderNode(unsafe);
     expect(md).toContain('1. Checkout failed for 41 minutes\n');
     expect(md).not.toContain('javascript:');
+  });
+});
+
+describe('slideSection view called directly', () => {
+  it('applies the href policy without the sanitize hook', () => {
+    const unsafe: SlideSectionNode = {
+      ...linkedExample,
+      hrefs: ['javascript:alert(1)', '#b', '#c', '#d', '#e'],
+    };
+    const env = { context: undefined } as unknown as SlideReactEnv;
+    const markup = renderToStaticMarkup(
+      createElement(() => react(unsafe, env))
+    );
+    expect(markup).not.toContain('javascript:');
+    expect(markup.match(/<a /g) ?? []).toHaveLength(4);
   });
 });

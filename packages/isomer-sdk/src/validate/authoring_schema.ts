@@ -333,6 +333,9 @@ const mergeExtraDefs = (
   return [...byId.values()];
 };
 
+/** The ids Zod gives the defs it generates; a primitive or extra def may not take one. */
+const ANONYMOUS_DEF = /^__schema\d+$/;
+
 /** Rewrites Zod's `$ref`s, which escape a JSON Pointer but not the URI fragment around it, with {@link defRef}. */
 const encodeZodRefs = (schema: JsonSchema): void => {
   walkJson(schema, (node) => {
@@ -380,6 +383,12 @@ export const buildAuthoringJsonSchema = (
       throw new IsomerError(
         'INVALID_BODY_NODE',
         `buildAuthoringJsonSchema: def id ${JSON.stringify(id)} holds an unpaired surrogate`
+      );
+    }
+    if (ANONYMOUS_DEF.test(id)) {
+      throw new IsomerError(
+        'INVALID_BODY_NODE',
+        `buildAuthoringJsonSchema: def id ${JSON.stringify(id)} is reserved for the defs Zod generates`
       );
     }
   }
