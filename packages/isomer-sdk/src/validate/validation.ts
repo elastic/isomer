@@ -178,14 +178,23 @@ const formatIssuesIn = (
       : error.message;
     return { ...error, message, nodeType };
   });
-  const rest = issues.length - errors.length;
-  return rest > 0
-    ? [...errors, { path: '', message: `and ${rest} more errors not listed` }]
-    : errors;
+  return capErrors(errors, issues.length);
 };
 
 /** Errors a result lists before one more error counts the rest. */
 export const MAX_VALIDATION_ERRORS = 50;
+
+/** The first {@link MAX_VALIDATION_ERRORS} of `total` errors, and one last error counting the rest. */
+const capErrors = (
+  errors: readonly ValidationError[],
+  total = errors.length
+): ValidationError[] => {
+  const listed = errors.slice(0, MAX_VALIDATION_ERRORS);
+  const rest = total - listed.length;
+  return rest > 0
+    ? [...listed, { path: '', message: `and ${rest} more errors not listed` }]
+    : listed;
+};
 
 /** Nesting of arrays and objects past which input is refused before the schema runs. The deepest slide the slides pack ships nests 16. */
 export const MAX_COMPOSITION_DEPTH = 64;
@@ -260,7 +269,9 @@ export const createCompositionValidator = (
     }
     const result = schema.safeParse(composition, { reportInput: true });
     if (result.success) {
-      const idErrors = collectDuplicateNodeIdErrors(composition.body, walk);
+      const idErrors = capErrors(
+        collectDuplicateNodeIdErrors(composition.body, walk)
+      );
       const warnings = [
         ...collectEmptySurfaceWarnings(composition.body, walk),
         ...(options.sizesFromNodeHeights

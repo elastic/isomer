@@ -148,6 +148,20 @@ describe('toJsx', () => {
     expect(roundTrip(composition)).toEqual(composition);
   });
 
+  it('keeps nested arrays in a prop as nested arrays', () => {
+    const composition = {
+      type: 'view' as const,
+      body: [
+        {
+          type: 'note',
+          grid: [[1, 2], [3], []],
+          meta: { rows: [[['a']]] },
+        } as PrimitiveNode,
+      ],
+    };
+    expect(roundTrip(composition)).toEqual(composition);
+  });
+
   it('prints a field set to undefined as absent, as JSON does', () => {
     const composition = {
       type: 'view' as const,

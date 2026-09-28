@@ -302,6 +302,38 @@ describe('input bounds', () => {
     ]);
   });
 
+  it('lists the first duplicate ids and counts the rest', () => {
+    const { errors } = boundedValidate({
+      type: 'view',
+      body: Array.from(
+        { length: MAX_VALIDATION_ERRORS + 151 },
+        () => ({ type: 'note', id: 'same', body: 'x' }) as PrimitiveNode
+      ),
+    });
+    expect(errors).toHaveLength(MAX_VALIDATION_ERRORS + 1);
+    expect(errors.at(-1)).toEqual({
+      path: '',
+      message: 'and 150 more errors not listed',
+    });
+  });
+
+  it('refuses a cyclic value instead of walking it forever', () => {
+    const cyclic: Record<string, unknown> = { type: 'view', body: [] };
+    (cyclic.body as unknown[]).push(cyclic);
+    for (const { valid, errors } of [
+      boundedParse(cyclic),
+      boundedValidate(cyclic as unknown as Composition),
+    ]) {
+      expect(valid).toBe(false);
+      expect(errors).toEqual([
+        {
+          path: '',
+          message: `nests deeper than ${MAX_COMPOSITION_DEPTH} levels of arrays and objects`,
+        },
+      ]);
+    }
+  });
+
   it('lists the first errors and counts the rest', () => {
     const { errors } = boundedParse({
       type: 'view',
