@@ -138,7 +138,7 @@ describe('slideCopy', () => {
     const { html } = runtime.surfaces.html.render(compose(example));
     expect(html).not.toContain('<button');
     expect(html).not.toContain(anchor);
-    expect(html).not.toContain('<script>');
+    expect(html).not.toContain('<script');
   });
 
   it('ships no script to a composition without a command', () => {
@@ -146,7 +146,7 @@ describe('slideCopy', () => {
       compose({ type: 'slideHeading', title: 'Nothing to copy' }),
       { enhancements: [SLIDE_COPY] }
     );
-    expect(html).not.toContain('<script>');
+    expect(html).not.toContain('<script');
   });
 
   it('never draws the button on the svg surface', () => {

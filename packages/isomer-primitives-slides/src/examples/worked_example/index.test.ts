@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -31,11 +31,25 @@ const takumi = createTakumiImageBackend({ fonts: slideFonts });
 // A slide opens with its own heading; the composition title only names it.
 const heading = false;
 
+const slugs = deck.map(({ title }, index) =>
+  title ? title.toLowerCase().replace(/\s+/g, '-') : `slide-${index}`
+);
+
+const extensions = ['html', 'md', 'png', 'slack.json', 'svg.html', 'txt'];
+
 describe('deck examples', () => {
+  it('commits exactly one file per slide and surface', () => {
+    expect(readdirSync(outputDir).sort()).toEqual(
+      slugs
+        .flatMap((slug) =>
+          extensions.map((extension) => `${slug}.${extension}`)
+        )
+        .sort()
+    );
+  });
+
   for (const [index, composition] of deck.entries()) {
-    const slug = composition.title
-      ? composition.title.toLowerCase().replace(/\s+/g, '-')
-      : `slide-${index}`;
+    const slug = slugs[index]!;
 
     it(`${slug}: html`, async () => {
       const result = runtime.surfaces.html.render(composition, { heading });
@@ -78,7 +92,7 @@ describe('deck examples', () => {
     // Byte comparison is CI-only: a takumi or font bump changes every PNG,
     // and asserting locally would fail on that alone rather than on a real
     // regression. A local run always refreshes the artifact instead;
-    // `git diff` on the five files is the review step for that bump.
+    // `git diff` on the PNGs is the review step for that bump.
     it(`${slug}: png`, async () => {
       const png = await takumi.png(runtime.surfaces.svg.render(composition));
       const artifact = join(outputDir, `${slug}.png`);
