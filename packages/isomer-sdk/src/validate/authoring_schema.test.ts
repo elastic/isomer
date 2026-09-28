@@ -249,6 +249,31 @@ const decodedRefs = (built: unknown): string[] =>
   );
 
 describe('buildAuthoringJsonSchema unpaired surrogates', () => {
+  it.each([
+    [
+      'a primitive type',
+      () => buildAuthoringJsonSchema([primitiveOf('__schema3', {})]),
+    ],
+    [
+      'an extra def',
+      () =>
+        buildAuthoringJsonSchema([primitiveOf('note', {})], {
+          extraDefs: [{ id: '__schema0', schema: z.string() }],
+        }),
+    ],
+  ])('refuses %s named like a def Zod generates', (_name, build) => {
+    try {
+      build();
+      expect.unreachable();
+    } catch (error) {
+      expect(error).toMatchObject({
+        name: 'IsomerError',
+        code: 'INVALID_BODY_NODE',
+        message: expect.stringContaining('reserved') as unknown,
+      });
+    }
+  });
+
   it('refuses a type id with an unpaired surrogate as an IsomerError', () => {
     try {
       buildAuthoringJsonSchema([primitiveOf('a\uD800b', {})]);
