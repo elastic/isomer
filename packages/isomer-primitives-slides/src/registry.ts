@@ -10,10 +10,12 @@
 // `registry.test.ts` fails if the two drift.
 
 import { slideAgendaPrimitive } from './primitives/slide_agenda';
+import { slideAnnotatedRenderPrimitive } from './primitives/slide_annotated_render';
 import { slideBarsPrimitive } from './primitives/slide_bars';
 import { slideBulletListPrimitive } from './primitives/slide_bullet_list';
 import { slideClosingPrimitive } from './primitives/slide_closing';
 import { slideCodePrimitive } from './primitives/slide_code';
+import { slideColumnsPrimitive } from './primitives/slide_columns';
 import { slideCommandPrimitive } from './primitives/slide_command';
 import { slideDefinitionsPrimitive } from './primitives/slide_definitions';
 import { slideDeltaPrimitive } from './primitives/slide_delta';
@@ -29,6 +31,8 @@ import { slideMatrixPrimitive } from './primitives/slide_matrix';
 import { slidePipelinePrimitive } from './primitives/slide_pipeline';
 import { slideQuadrantPrimitive } from './primitives/slide_quadrant';
 import { slideQuotePrimitive } from './primitives/slide_quote';
+import { slideRenderPrimitive } from './primitives/slide_render';
+import { slideRenderGridPrimitive } from './primitives/slide_render_grid';
 import { slideRoadmapPrimitive } from './primitives/slide_roadmap';
 import { slideSectionPrimitive } from './primitives/slide_section';
 import { slideSequencePrimitive } from './primitives/slide_sequence';
@@ -44,14 +48,17 @@ import { slideTimelinePrimitive } from './primitives/slide_timeline';
 import { slideTitlePrimitive } from './primitives/slide_title';
 import { slideTranscriptPrimitive } from './primitives/slide_transcript';
 import { slideTreePrimitive } from './primitives/slide_tree';
+import { slideWindowPrimitive } from './primitives/slide_window';
 
 /** Every primitive definition this pack registers, in alphabetical order. */
 export const slideDeckPrimitives = [
   slideAgendaPrimitive,
+  slideAnnotatedRenderPrimitive,
   slideBarsPrimitive,
   slideBulletListPrimitive,
   slideClosingPrimitive,
   slideCodePrimitive,
+  slideColumnsPrimitive,
   slideCommandPrimitive,
   slideDefinitionsPrimitive,
   slideDeltaPrimitive,
@@ -67,6 +74,8 @@ export const slideDeckPrimitives = [
   slidePipelinePrimitive,
   slideQuadrantPrimitive,
   slideQuotePrimitive,
+  slideRenderPrimitive,
+  slideRenderGridPrimitive,
   slideRoadmapPrimitive,
   slideSectionPrimitive,
   slideSequencePrimitive,
@@ -82,6 +91,7 @@ export const slideDeckPrimitives = [
   slideTitlePrimitive,
   slideTranscriptPrimitive,
   slideTreePrimitive,
+  slideWindowPrimitive,
 ] as const;
 
 /** `type` strings of {@link slideDeckPrimitives}. */

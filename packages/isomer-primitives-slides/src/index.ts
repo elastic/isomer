@@ -5,6 +5,12 @@
  * 2.0.
  */
 
+export {
+  buildSlidesAuthoringPrompt,
+  slidesAuthoringGuide,
+  slidesAuthoringRules,
+} from './agent_guide';
+
 export type { SlideContentNode } from './body_node';
 
 export {
@@ -29,6 +35,10 @@ export type {
   SlideAgendaNode,
   SlideAgendaSection,
 } from './primitives/slide_agenda';
+export type {
+  SlideAnnotatedRenderNode,
+  SlideAnnotatedRenderPin,
+} from './primitives/slide_annotated_render';
 export type { SlideBarsItem, SlideBarsNode } from './primitives/slide_bars';
 export type { SlideBulletListNode } from './primitives/slide_bullet_list';
 export type {
@@ -37,6 +47,7 @@ export type {
   SlideClosingPath,
 } from './primitives/slide_closing';
 export type { SlideCodeNode, SlideCodePanel } from './primitives/slide_code';
+export type { SlideColumn, SlideColumnsNode } from './primitives/slide_columns';
 export { SLIDE_COPY } from './primitives/slide_command';
 export type { SlideCommandNode } from './primitives/slide_command';
 export type {
@@ -78,6 +89,11 @@ export type {
   SlideQuadrantNode,
 } from './primitives/slide_quadrant';
 export type { SlideQuoteNode } from './primitives/slide_quote';
+export type { SlideRenderNode } from './primitives/slide_render';
+export type {
+  SlideRenderGridNode,
+  SlideRenderGridTile,
+} from './primitives/slide_render_grid';
 export type {
   SlideRoadmapColumn,
   SlideRoadmapItem,
@@ -114,6 +130,8 @@ export type {
 } from './primitives/slide_transcript';
 export type { SlideTreeEntry, SlideTreeNode } from './primitives/slide_tree';
 
+export type { SlideWindowNode } from './primitives/slide_window';
+
 export { slideDeckPrimitives, slidePrimitiveTypes } from './registry';
 
 export {
@@ -129,6 +147,12 @@ export type {
   SlideRenderContext,
   SlideRenderScope,
 } from './render';
+
+export {
+  type NamedSlide,
+  type ResolveSlideRendersOptions,
+  resolveSlideRenders,
+} from './resolve_renders';
 
 export { StandaloneSlideNode } from './standalone';
 

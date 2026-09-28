@@ -26,10 +26,16 @@ export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
       'slideSource',
     ],
   },
-  { title: 'Layout', types: ['slideSplit', 'slideStack'] },
+  { title: 'Layout', types: ['slideSplit', 'slideStack', 'slideWindow'] },
   {
     title: 'Text',
-    types: ['slideList', 'slideBulletList', 'slideDefinitions', 'slideRoadmap'],
+    types: [
+      'slideList',
+      'slideBulletList',
+      'slideDefinitions',
+      'slideColumns',
+      'slideRoadmap',
+    ],
   },
   {
     title: 'Diagrams',
@@ -59,7 +65,15 @@ export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
   },
   {
     title: 'Code and renders',
-    types: ['slideCode', 'slideDiff', 'slideCommand', 'slideTranscript'],
+    types: [
+      'slideCode',
+      'slideDiff',
+      'slideCommand',
+      'slideTranscript',
+      'slideRender',
+      'slideAnnotatedRender',
+      'slideRenderGrid',
+    ],
   },
 ];
 
@@ -75,6 +89,10 @@ export const slidesPackAuthoring = {
       'Nodes stacked vertically inside a split column or window, never a slideFrame.',
     slideTitle:
       'The title slide. Its aside is one slide node, never a slideFrame.',
+    slideWindow:
+      'Application chrome around slide nodes. Its body never holds a slideFrame or another slideWindow.',
+    slideColumns:
+      'Two to four parallel options. highlight, when given, is an index into items.',
     slideTable:
       'A grid of short cells. Give either rows or groups, not both; every row has exactly one cell per column.',
     slideMatrix:
@@ -112,5 +130,11 @@ export const slidesPackAuthoring = {
       'Messages between 3–5 actors. Actor ids are unique; every message names two different actors by id in from and to; every actor sends or receives at least one message.',
     slideSection:
       'A section divider. When hrefs is given it has one entry per contents entry.',
+    slideRender:
+      'An embedded render of another slide or composition. Give slide, composition, or both; an embedded composition cannot contain another render.',
+    slideAnnotatedRender:
+      'One slideRender with one to six numbered pins on it. Pin x and y are percentages from the render’s left and top edges; the render’s composition cannot contain another render.',
+    slideRenderGrid:
+      'One composition rendered on two to six surfaces, each surface once. The composition cannot contain another render.',
   },
 } satisfies PackAuthoringOptions;

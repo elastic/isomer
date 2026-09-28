@@ -388,6 +388,12 @@ describe('frames never nest', () => {
       right: { items: ['Right'] },
     },
     'body[0].body[0].items[0]': { type: 'slideStack', items: [inner] },
+    'body[0].body[0].body[0]': {
+      type: 'slideWindow',
+      chrome: 'terminal',
+      title: 'Terminal',
+      body: [inner],
+    },
     'body[0].body[0].aside': { type: 'slideTitle', title: 'T', aside: inner },
   };
 
