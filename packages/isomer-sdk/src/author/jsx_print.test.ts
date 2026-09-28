@@ -148,6 +148,16 @@ describe('toJsx', () => {
     expect(roundTrip(composition)).toEqual(composition);
   });
 
+  it('prints a field set to undefined as absent, as JSON does', () => {
+    const composition = {
+      type: 'view' as const,
+      body: [{ type: 'note', tone: undefined, text: 'a' } as PrimitiveNode],
+    };
+    const json = JSON.parse(JSON.stringify(composition)) as Printable;
+    expect(shim.toJsx(composition)).toBe(shim.toJsx(json));
+    expect(roundTrip(composition)).toEqual(json);
+  });
+
   it('round-trips the root fields, version included', () => {
     const composition = {
       type: 'view' as const,

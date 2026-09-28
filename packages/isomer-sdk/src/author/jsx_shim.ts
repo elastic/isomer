@@ -158,7 +158,7 @@ export type JsxShim<
   toComposition: (
     element: ReactElement<CompositionAuthorProps<TNode>>
   ) => AuthorComposition<TNode>;
-  /** `composition` as JSX source that {@link JsxShim.toComposition} turns back into the same value. */
+  /** `composition` as JSX source that {@link JsxShim.toComposition} turns back into the same value, as JSON sees it: a field set to `undefined` prints as absent. */
   toJsx: (
     composition: AuthorComposition<TNode>,
     options?: JsxPrintOptions
