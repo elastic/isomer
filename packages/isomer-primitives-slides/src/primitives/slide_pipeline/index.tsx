@@ -1,0 +1,114 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+import { oneLine } from '@elastic/isomer-sdk/author';
+
+import { markdownText, marksMarkdown } from '../../render/markdown';
+import { plainText } from '../../render/marks';
+import { slideDistillery } from '../../theme/distillery';
+import { definePrimitive } from '../define';
+
+import { catalog } from './catalog';
+import { examples } from './examples';
+import { react } from './react';
+import {
+  schema,
+  type SlidePipelineNode,
+  type SlidePipelineSpan,
+  type SlidePipelineStep,
+} from './schema';
+
+export type {
+  SlidePipelineNode,
+  SlidePipelineSpan,
+  SlidePipelineStep,
+} from './schema';
+
+const { arrow } = slideDistillery.tokens.pipeline;
+
+const chain = (names: Array<string | undefined>): string =>
+  names.filter(Boolean).join(` ${arrow.value} `);
+
+const titles = (steps: SlidePipelineStep[]): string[] =>
+  steps.map(({ title }) => title);
+
+const covered = (
+  steps: SlidePipelineStep[],
+  { from, to }: SlidePipelineSpan
+): string =>
+  chain(
+    from === to ? [steps[from]?.title] : [steps[from]?.title, steps[to]?.title]
+  );
+
+const detail = (title: string, body: string | undefined): string =>
+  body ? `${title} — ${body}` : title;
+
+const plainDetail = (title: string, body: string | undefined): string =>
+  detail(title, body && plainText(body));
+
+/** Text renderer for {@link SlidePipelineNode}: the chain, then a line per step (steps mode) or per span. */
+export const text = ({ start, end, steps, spans }: SlidePipelineNode): string =>
+  [
+    chain([start, ...titles(steps), end]),
+    ...(spans?.length
+      ? spans.map(
+          (span) =>
+            `${span.label} (${covered(steps, span)}): ${plainDetail(span.title, span.body)}`
+        )
+      : steps.map(
+          ({ title, body }, index) =>
+            `${index + 1}. ${plainDetail(title, body)}`
+        )),
+  ]
+    .map(oneLine)
+    .join('\n');
+
+/** Markdown renderer for {@link SlidePipelineNode}: the chain, then an ordered list of steps or a list of spans. */
+export const markdown = ({
+  start,
+  end,
+  steps,
+  spans,
+}: SlidePipelineNode): string => {
+  const named = steps.map((step) => ({
+    ...step,
+    title: markdownText(step.title),
+  }));
+  return [
+    chain([
+      start && markdownText(start),
+      ...titles(named),
+      end && markdownText(end),
+    ]),
+    spans?.length
+      ? spans
+          .map(
+            (span) =>
+              `- **${markdownText(span.label)}** (${covered(named, span)}): ${detail(markdownText(span.title), span.body && marksMarkdown(span.body))}`
+          )
+          .join('\n')
+      : named
+          .map(
+            ({ title, body }, index) =>
+              `${index + 1}. ${detail(`**${title}**`, body && marksMarkdown(body))}`
+          )
+          .join('\n'),
+  ].join('\n\n');
+};
+
+/** Catalog, schema, and renderers for {@link SlidePipelineNode}. */
+export const slidePipelinePrimitive = definePrimitive({
+  type: 'slidePipeline',
+  catalog,
+  examples,
+  schema,
+  renderers: {
+    react,
+    text,
+    markdown,
+  },
+});

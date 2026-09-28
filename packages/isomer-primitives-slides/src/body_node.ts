@@ -22,11 +22,15 @@ import type { SlideDeltaNode } from './primitives/slide_delta';
 import type { SlideFanoutNode } from './primitives/slide_fanout';
 import type { SlideFrameNode } from './primitives/slide_frame';
 import type { SlideHeadingNode } from './primitives/slide_heading';
+import type { SlideLanesNode } from './primitives/slide_lanes';
+import type { SlideLayersNode } from './primitives/slide_layers';
 import type { SlideListNode } from './primitives/slide_list';
 import type { SlideMatrixNode } from './primitives/slide_matrix';
+import type { SlidePipelineNode } from './primitives/slide_pipeline';
 import type { SlideQuadrantNode } from './primitives/slide_quadrant';
 import type { SlideQuoteNode } from './primitives/slide_quote';
 import type { SlideSectionNode } from './primitives/slide_section';
+import type { SlideSequenceNode } from './primitives/slide_sequence';
 import type { SlideSourceNode } from './primitives/slide_source';
 import type { SlideSplitNode } from './primitives/slide_split';
 import type { SlideStackNode } from './primitives/slide_stack';
@@ -49,11 +53,15 @@ export type BodyNode =
   | SlideFanoutNode
   | SlideFrameNode
   | SlideHeadingNode
+  | SlideLanesNode
+  | SlideLayersNode
   | SlideListNode
   | SlideMatrixNode
+  | SlidePipelineNode
   | SlideQuadrantNode
   | SlideQuoteNode
   | SlideSectionNode
+  | SlideSequenceNode
   | SlideSourceNode
   | SlideSplitNode
   | SlideStackNode

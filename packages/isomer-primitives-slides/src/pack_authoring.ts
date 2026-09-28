@@ -33,7 +33,15 @@ export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
   },
   {
     title: 'Diagrams',
-    types: ['slideFanout', 'slideTerritoryGroup', 'slideQuadrant'],
+    types: [
+      'slidePipeline',
+      'slideSequence',
+      'slideLanes',
+      'slideFanout',
+      'slideLayers',
+      'slideTerritoryGroup',
+      'slideQuadrant',
+    ],
   },
   {
     title: 'Numbers',
@@ -70,6 +78,8 @@ export const slidesPackAuthoring = {
       'Yes, partial, or no marks for one to eight rows against two to six columns. Every row has exactly one mark per column.',
     slideCode:
       'One or two code panels. Every highlighted line number exists in its panel.',
+    slidePipeline:
+      'Steps on one rail. Without spans: numbered steps with bodies, optional start and end chips. With spans: steps are chips with no body and no start or end, and each span brackets steps from..to by index (from ≤ to < steps.length); spans do not overlap.',
     slideAgenda:
       'Two to eight sections of the talk, in order. At most one section is current.',
     slideSource:
@@ -82,6 +92,11 @@ export const slidesPackAuthoring = {
       'Two to four comparable numbers. A unit needs a value; leave value out to show a placeholder.',
     slideBars:
       'Two to six bars in one unit. At most one item is highlighted; max, when given, is at least every value.',
+    slideLanes: 'Exactly two lanes that converge on join.',
+    slideLayers:
+      'Three to six layers, top to bottom. Each layer has exactly one of body or chips.',
+    slideSequence:
+      'Messages between 3–5 actors. Actor ids are unique; every message names two different actors by id in from and to; every actor sends or receives at least one message.',
     slideSection:
       'A section divider. When hrefs is given it has one entry per contents entry.',
   },
