@@ -27,7 +27,7 @@ import {
   unresolvedBodyNodeSchema,
 } from '@elastic/isomer-sdk';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
-import { describe, expect, expectTypeOf, it } from 'vitest';
+import { afterEach, describe, expect, expectTypeOf, it } from 'vitest';
 import { z } from 'zod';
 
 import { defineView } from '../registry';
@@ -572,6 +572,182 @@ describe('createIsomerRuntime', () => {
     expect(() => runtime.getAuthoringContext().schemaFor(['missing'])).toThrow(
       /unknown primitive type.*"missing"/
     );
+  });
+
+  it('describes a subset of primitives from the full schema, body-node union stubbed', () => {
+    const runtime = createIsomerRuntime({
+      packs: [packOf(notePrimitive, boldPrimitive, holderPrimitive)],
+    });
+    const context = runtime.getAuthoringContext();
+    const { primitives, schema } = context.describePrimitives(['holder']);
+    expect(primitives.map(({ type }) => type)).toEqual(['holder']);
+    const defs = (schema as { $defs: Record<string, unknown> }).$defs;
+    expect(defs.holder).toEqual(
+      (context.schema as { $defs: Record<string, unknown> }).$defs.holder
+    );
+    expect(defs.note).toBeUndefined();
+    expect(defs.bodyNode).not.toHaveProperty('oneOf');
+    const refs = [
+      ...JSON.stringify(defs).matchAll(/"\$ref":"#\/\$defs\/([^"]+)"/g),
+    ].map(([, pointer]) =>
+      decodeURIComponent(pointer ?? '')
+        .replace(/~1/g, '/')
+        .replace(/~0/g, '~')
+    );
+    expect(refs.length).toBeGreaterThan(0);
+    for (const id of refs) {
+      expect(Object.hasOwn(defs, id)).toBe(true);
+    }
+  });
+
+  it.each(['schemaFor', 'describePrimitives'] as const)(
+    'refuses a %s lookup of more than 100 types before reading them',
+    (method) => {
+      const runtime = createIsomerRuntime({ packs: [packOf(notePrimitive)] });
+      const context = runtime.getAuthoringContext();
+      // A proxy that throws on any read past `length`, so a refused lookup never touches its entries.
+      const untouched = new Proxy(
+        Array.from({ length: 101 }, () => 'note'),
+        {
+          get: (target, key) => {
+            if (key !== 'length') {
+              throw new Error(`read ${String(key)}`);
+            }
+            return target.length;
+          },
+        }
+      );
+      expect(() => context[method](untouched)).toThrow(
+        expect.objectContaining({
+          name: 'IsomerError',
+          code: 'TOO_MANY_TYPES',
+          message: expect.stringContaining('at most 100') as unknown,
+        }) as unknown
+      );
+      expect(() =>
+        context[method](Array.from({ length: 100 }, () => 'note'))
+      ).not.toThrow();
+    }
+  );
+
+  it('throws for an unknown type passed to describePrimitives', () => {
+    const runtime = createIsomerRuntime({ packs: [packOf(notePrimitive)] });
+    expect(() =>
+      runtime.getAuthoringContext().describePrimitives(['missing'])
+    ).toThrow(/describePrimitives: unknown primitive type.*"missing"/);
+  });
+
+  it('merges each pack’s primitive groups in pack order', () => {
+    const grouped = (
+      id: string,
+      primitive: AnyPrimitiveDefinition,
+      title: string
+    ) =>
+      definePrimitivePack({
+        id,
+        surfaces: [],
+        primitives: [primitive],
+        authoring: { groups: [{ title, types: [primitive.type] }] },
+      });
+    const runtime = createIsomerRuntime({
+      packs: [
+        grouped('first', notePrimitive, 'Text'),
+        grouped('second', boldPrimitive, 'Marks'),
+      ],
+    });
+    expect(runtime.getAuthoringContext().groups).toEqual([
+      { title: 'Text', types: ['note'] },
+      { title: 'Marks', types: ['bold'] },
+    ]);
+  });
+
+  it.each([
+    ['a type no pack registers', ['ghost', 'note'], 'UNKNOWN_PRIMITIVE_TYPE'],
+    ['a type twice', ['note', 'note'], 'DUPLICATE_PRIMITIVE_TYPE'],
+  ])('rejects a group naming %s', (_name, types, code) => {
+    // Spread past `definePrimitivePack`, which checks its own groups.
+    const pack = {
+      ...packOf(notePrimitive),
+      authoring: { groups: [{ title: 'Text', types }] },
+    };
+    try {
+      createIsomerRuntime({ packs: [pack] });
+      expect.unreachable();
+    } catch (error) {
+      expect(error).toMatchObject({ name: 'IsomerError', code });
+    }
+  });
+
+  it('names a bounded number of unknown types, each quoted on one line', () => {
+    const runtime = createIsomerRuntime({ packs: [packOf(notePrimitive)] });
+    const separator = String.fromCharCode(0x2028);
+    const missing = Array.from(
+      { length: 25 },
+      (_, index) => `ghost${separator}${index}`
+    );
+    try {
+      runtime.getAuthoringContext().describePrimitives(missing);
+      expect.unreachable();
+    } catch (error) {
+      const { message } = error as Error;
+      expect(message).toContain('"ghost\\u20280", "ghost\\u20281"');
+      expect(message).toMatch(/"ghost\\u20289" and 15 more$/);
+      expect(message).not.toContain(separator);
+    }
+  });
+
+  describe('a describe entry keyed `__proto__`', () => {
+    afterEach(() => {
+      delete (Object.prototype as { description?: unknown }).description;
+    });
+
+    const protoPrimitive = definePrimitive({
+      type: '__proto__',
+      catalog: {
+        type: '__proto__',
+        purpose: '',
+        useWhen: [],
+        avoidWhen: [],
+        example: { type: '__proto__' },
+      },
+      examples: [{ type: '__proto__' }],
+      schema: z.object({ type: z.literal('__proto__') }),
+      renderers: { react: () => null, text: () => '', markdown: () => '' },
+    });
+    const describeProto = JSON.parse('{"__proto__": "An odd def."}') as Record<
+      string,
+      string
+    >;
+    const protoDef = (runtime: ReturnType<typeof createIsomerRuntime>) => {
+      const defs = runtime.getAuthoringContext().schema.$defs as Record<
+        string,
+        { description?: string }
+      >;
+      return Object.hasOwn(defs, '__proto__') ? defs.__proto__ : undefined;
+    };
+
+    it('describes the def of that name from the runtime option, never Object.prototype', () => {
+      const runtime = createIsomerRuntime({
+        packs: [packOf(notePrimitive)],
+        authoring: { describe: describeProto },
+      });
+      runtime.getAuthoringContext();
+      expect(({} as { description?: unknown }).description).toBeUndefined();
+    });
+
+    it('describes the def of that name from a pack, as the runtime option does', () => {
+      const runtime = createIsomerRuntime({
+        packs: [
+          definePrimitivePack({
+            id: 'odd',
+            primitives: [protoPrimitive],
+            authoring: { describe: describeProto },
+          }),
+        ],
+      });
+      expect(protoDef(runtime)?.description).toBe('An odd def.');
+      expect(({} as { description?: unknown }).description).toBeUndefined();
+    });
   });
 
   it('aggregates registered views into the authoring context', () => {

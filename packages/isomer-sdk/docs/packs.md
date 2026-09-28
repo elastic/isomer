@@ -26,7 +26,7 @@ This page is the pack **contract**. Composing packs into a runtime is the [runti
 | `styleAdapter`    | Optional. This pack's HTML CSS, combined with the other packs'.             |
 | `styleCollector`  | Optional. Derived from `styleAdapter.styleCollector` unless overridden.     |
 | `theme`           | Optional. `themeBound<T>()` so the pack infers `PrimitivePack<T>`.          |
-| `authoring`       | Optional. This pack's `describe` and `omitProperties` for the agent schema. |
+| `authoring`       | Optional. `describe`, `omitProperties`, and `groups` for agent authoring.   |
 
 What comes back adds `types`, a set for duplicate detection across packs, and normalizes the two optional fields. `styleCollector` is read from `styleAdapter.styleCollector` when the pack does not set it; set it only for a pack whose hooks collect into a shape its adapter does not create.
 
@@ -69,17 +69,22 @@ An enhancement the host drives, rather than one that runs in the page, omits `sc
 
 ## `authoring`
 
-A pack's own contribution to the runtime's authoring JSON Schema: `describe` ($def id to description) and `omitProperties` ($defId.property paths to drop), scoped to this pack's own primitives:
+A pack's own contribution to the runtime's authoring material: `describe` ($def id to description) and `omitProperties` ($defId.property paths to drop) for the JSON Schema, and `groups` for the catalog index, all scoped to this pack's own primitives:
 
 ```ts
 definePrimitivePack({
   id: 'metrics',
   primitives: […],
-  authoring: { describe: { kpi: 'A single measured value.' } },
+  authoring: {
+    describe: { kpi: 'A single measured value.' },
+    groups: [{ title: 'Numbers', types: ['kpi', 'delta'] }],
+  },
 });
 ```
 
 A runtime composing several packs merges every pack's `authoring` into one options object before building the schema, so no host hand-merges each pack's `describe`/`omitProperties` itself. The runtime's own `authoring` option is applied last and wins on conflict.
+
+Each group is a `PrimitiveGroup`, a `title` and the `types` listed under it. A prompt built with `catalog: 'index'` lists each type under its group's heading, in order, and any type in no group under "Other". The runtime's authoring context carries every pack's groups in pack order. A group may name only the pack's own types, and a type may sit in only one group: `definePrimitivePack` throws `UNKNOWN_PRIMITIVE_TYPE` or `DUPLICATE_PRIMITIVE_TYPE` otherwise, and a runtime checks the same across packs.
 
 ## The theme a pack requires
 
@@ -100,6 +105,23 @@ A runtime resolves `TTheme` from its packs and requires every frame in its map t
 Not the document. [Frame](frame.md) is a separate value a host passes to the runtime, so a pack is purely additive: composing two packs composes their node types and nothing else.
 
 Not composition, either. Duplicate types across packs, renderer overrides, and which frame surrounds a given render are all the assembly layer's, because only it sees the whole set. `composePacks(packs)` is the structural owner of the flattened `definitions` array the schema cache keys on; hold that array rather than `packs.flatMap(…)` per call. It throws on a node type or enhancement id claimed by two packs, naming every offender in one message.
+
+## The pack-author contract
+
+A pack builds on a fixed set of SDK exports, which is what makes one safe to copy from. Everything here is a public root-entry export a pack is expected to use, listed in [the API reference](api.md):
+
+| Helper | Role |
+| --- | --- |
+| `definePrimitive`, `definePrimitiveFor` | One primitive: schema, catalog entry, renderers |
+| `definePrimitivePack` | The pack: primitives, enhancements, style adapter, `themeBound` |
+| `createPrimitiveDispatcher` | The pack's own dispatcher, for its tests and any surface it drives itself |
+| `requiredString`, `optionalString`, `finiteNumber`, `enumOf`, `namedColorSchema`, `unresolvedBodyNodeSchema` | Schema fields that produce the SDK's validation messages, and the child slot of a container |
+| `someBodyNode` | The predicate an enhancement's `appliesTo` gate is written with |
+| `PrimitiveCatalogEntry`, `BodyNodeBase`, `PrimitiveNode` | The entry a primitive publishes, the fields every node carries, and the node type a renderer receives |
+| `formatCompactNumber` | Number formatting shared across packs, so `1.2K` reads the same everywhere |
+| `nodeAnchor` | Spread on a `react` renderer's root, so [node anchors](rendering.md#node-anchors) work |
+
+Two files a pack keeps by hand complete the contract: `registry.ts`, the array of every definition, and `body_node.ts`, the union of every node type. Nothing in the build relates them, so a pack pairs them with a drift test, as [the next section](#keeping-the-registry-honest) shows and as the slides pack's `src/registry.test.ts` does.
 
 ## Keeping the registry honest
 

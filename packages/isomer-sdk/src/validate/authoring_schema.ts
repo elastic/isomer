@@ -7,6 +7,7 @@
 
 import type { ZodType } from 'zod';
 
+import { IsomerError } from '../composition/error';
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
 
 import {
@@ -42,16 +43,33 @@ export interface AuthoringJsonSchemaOptions extends CompositionJsonSchemaOptions
   omitProperties?: readonly string[];
 }
 
+const LONE_SURROGATE =
+  /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g;
+
+/** `String.prototype.toWellFormed`: `encodeURIComponent` throws on a lone surrogate. */
+const toWellFormed = (text: string): string =>
+  text.replace(LONE_SURROGATE, '\uFFFD');
+
 const isJsonObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const cloneJson = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
+// A `$ref` is a JSON Pointer in a URI fragment: `~` and `/` are escaped as `~0` and `~1`, then
+// anything a fragment cannot hold, `%` included, is percent-encoded.
+const defRef = (id: string): string =>
+  `${DEF_PREFIX}${toWellFormed(id)
+    .replace(/~/g, '~0')
+    .replace(/\//g, '~1')
+    .replace(/[^\w\-.~!$&'()*+,;=:@]/gu, (char) => encodeURIComponent(char))}`;
+
 const parseDefRef = (ref: unknown): string | undefined => {
   if (typeof ref !== 'string' || !ref.startsWith(DEF_PREFIX)) {
     return undefined;
   }
-  return ref.slice(DEF_PREFIX.length);
+  return decodeURIComponent(ref.slice(DEF_PREFIX.length))
+    .replace(/~1/g, '/')
+    .replace(/~0/g, '~');
 };
 
 const walkJson = (
@@ -83,18 +101,19 @@ const mapJson = (
   if (!isJsonObject(node)) {
     return node;
   }
-  const next: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(visit(node))) {
-    next[key] = mapJson(value, visit);
-  }
-  return next;
+  return Object.fromEntries(
+    Object.entries(visit(node)).map(([key, value]) => [
+      key,
+      mapJson(value, visit),
+    ])
+  );
 };
 
 const rewriteDefRefs = (
   schema: JsonSchema,
   rewrite: (id: string) => string | JsonSchema | undefined
-): JsonSchema =>
-  mapJson(schema, (node) => {
+): JsonSchema => {
+  const visit = (node: Record<string, unknown>): Record<string, unknown> => {
     const id = parseDefRef(node.$ref);
     if (id === undefined) {
       return node;
@@ -104,14 +123,15 @@ const rewriteDefRefs = (
       return node;
     }
     if (typeof replacement === 'string') {
-      return { ...node, $ref: `${DEF_PREFIX}${replacement}` };
+      return { ...node, $ref: defRef(replacement) };
     }
     const rest = { ...node };
     delete rest.$ref;
-    return Object.keys(rest).length === 0
-      ? cloneJson(replacement)
-      : { ...cloneJson(replacement), ...rest };
-  }) as JsonSchema;
+    // An inlined def can itself be a `$ref` with a description, which needs resolving in turn.
+    return visit({ ...cloneJson(replacement), ...rest });
+  };
+  return mapJson(schema, visit) as JsonSchema;
+};
 
 const isRefOnlyDef = (def: unknown): def is { $ref: string } =>
   isJsonObject(def) &&
@@ -184,8 +204,12 @@ const omitListedProperties = (
     }
     const defId = path.slice(0, dot);
     const property = path.slice(dot + 1);
-    const def = defs[defId];
-    if (!isJsonObject(def) || !isJsonObject(def.properties)) {
+    const def = Object.hasOwn(defs, defId) ? defs[defId] : undefined;
+    if (
+      !isJsonObject(def) ||
+      !isJsonObject(def.properties) ||
+      !Object.hasOwn(def.properties, property)
+    ) {
       continue;
     }
     delete def.properties[property];
@@ -201,7 +225,7 @@ const applyDescriptions = (
 ): void => {
   const defs = defsOf(schema);
   for (const [id, description] of Object.entries(describe)) {
-    const def = defs[id];
+    const def = Object.hasOwn(defs, id) ? defs[id] : undefined;
     if (isJsonObject(def)) {
       def.description = description;
     }
@@ -276,7 +300,7 @@ const pruneUnreferencedDefs = (schema: JsonSchema): JsonSchema => {
         return;
       }
       referenced.add(id);
-      visit(defs[id]);
+      visit(Object.hasOwn(defs, id) ? defs[id] : undefined);
     });
   };
   const root: JsonSchema = { ...schema };
@@ -284,13 +308,12 @@ const pruneUnreferencedDefs = (schema: JsonSchema): JsonSchema => {
   visit(root);
   referenced.add(BODY_NODE_ID);
   visit(defs[BODY_NODE_ID]);
-  const kept: Record<string, unknown> = {};
-  for (const [id, def] of Object.entries(defs)) {
-    if (referenced.has(id)) {
-      kept[id] = def;
-    }
-  }
-  return withDefs(schema, kept);
+  return withDefs(
+    schema,
+    Object.fromEntries(
+      Object.entries(defs).filter(([id]) => referenced.has(id))
+    )
+  );
 };
 
 const mergeExtraDefs = (
@@ -310,11 +333,27 @@ const mergeExtraDefs = (
   return [...byId.values()];
 };
 
+/** The ids Zod gives the defs it generates; a primitive or extra def may not take one. */
+const ANONYMOUS_DEF = /^__schema\d+$/;
+
+/** Rewrites Zod's `$ref`s, which escape a JSON Pointer but not the URI fragment around it, with {@link defRef}. */
+const encodeZodRefs = (schema: JsonSchema): void => {
+  walkJson(schema, (node) => {
+    const { $ref } = node;
+    if (typeof $ref === 'string' && $ref.startsWith(DEF_PREFIX)) {
+      node.$ref = defRef(
+        $ref.slice(DEF_PREFIX.length).replace(/~1/g, '/').replace(/~0/g, '~')
+      );
+    }
+  });
+};
+
 const slimAuthoringSchema = (
   schema: JsonSchema,
   options: AuthoringJsonSchemaOptions
 ): JsonSchema => {
   const next = cloneJson(schema);
+  encodeZodRefs(next);
   dropSafeIntegerMaxima(next);
   dropNodeIdAndSurfaces(next);
   omitListedProperties(next, options.omitProperties ?? []);
@@ -336,6 +375,51 @@ export const buildAuthoringJsonSchema = (
   options: AuthoringJsonSchemaOptions = {}
 ): JsonSchema => {
   const { describe, omitProperties, extraDefs, ...rest } = options;
+  for (const id of [
+    ...definitions.map(({ type }) => type),
+    ...(extraDefs ?? []).map((extra) => extra.id),
+  ]) {
+    if (toWellFormed(id) !== id) {
+      throw new IsomerError(
+        'INVALID_BODY_NODE',
+        `buildAuthoringJsonSchema: def id ${JSON.stringify(id)} holds an unpaired surrogate`
+      );
+    }
+    if (ANONYMOUS_DEF.test(id)) {
+      throw new IsomerError(
+        'INVALID_BODY_NODE',
+        `buildAuthoringJsonSchema: def id ${JSON.stringify(id)} is reserved for the defs Zod generates`
+      );
+    }
+  }
+  const takenBy = (id: string, owner: string): IsomerError =>
+    new IsomerError(
+      'INVALID_BODY_NODE',
+      `buildAuthoringJsonSchema: def id ${JSON.stringify(id)} is taken by ${owner}`
+    );
+  // An extra def may replace a shared def only by naming that def's own schema.
+  const shared = new Map(
+    DEFAULT_EXTRA_DEFS.map(({ id, schema }) => [id, schema])
+  );
+  for (const { id, schema } of extraDefs ?? []) {
+    if (id === BODY_NODE_ID) {
+      throw takenBy(id, 'the body-node union');
+    }
+    const own = shared.get(id);
+    if (own !== undefined && own !== schema) {
+      throw takenBy(id, 'a shared def');
+    }
+  }
+  // The body-node union and every shared def take a `$defs` id a primitive type would otherwise share.
+  const taken = new Set(mergeExtraDefs(extraDefs).map((extra) => extra.id));
+  for (const { type } of definitions) {
+    if (type === BODY_NODE_ID) {
+      throw takenBy(type, 'the body-node union');
+    }
+    if (taken.has(type)) {
+      throw takenBy(type, 'a shared def');
+    }
+  }
   const projected = buildCompositionJsonSchema(definitions, {
     ...rest,
     extraDefs: mergeExtraDefs(extraDefs),
@@ -344,4 +428,45 @@ export const buildAuthoringJsonSchema = (
     ...(describe === undefined ? {} : { describe }),
     ...(omitProperties === undefined ? {} : { omitProperties }),
   });
+};
+
+/** Stands in for the body-node union in {@link authoringSchemaSubset}. */
+const BODY_NODE_STUB = {
+  description:
+    'Any primitive in the catalog, as its own object with its `type`. A container’s description names any it cannot hold.',
+};
+
+/**
+ * The `$defs` of `types` and every def they reach, cut from a schema
+ * {@link buildAuthoringJsonSchema} built. Def ids stay those of `schema`, and
+ * the body-node union is a stub rather than every primitive.
+ */
+export const authoringSchemaSubset = (
+  schema: JsonSchema,
+  types: readonly string[]
+): { $defs: Record<string, unknown> } => {
+  const defs = defsOf(schema);
+  // A `Map`, so an id such as `constructor` or `__proto__` is never an inherited key.
+  const kept = new Map<string, unknown>();
+  const visit = (id: string): void => {
+    if (kept.has(id)) {
+      return;
+    }
+    if (id === BODY_NODE_ID) {
+      kept.set(id, BODY_NODE_STUB);
+      return;
+    }
+    const def = Object.hasOwn(defs, id) ? defs[id] : undefined;
+    kept.set(id, def);
+    walkJson(def, (value) => {
+      const ref = parseDefRef(value.$ref);
+      if (ref !== undefined) {
+        visit(ref);
+      }
+    });
+  };
+  for (const type of types) {
+    visit(type);
+  }
+  return { $defs: Object.fromEntries(kept) };
 };

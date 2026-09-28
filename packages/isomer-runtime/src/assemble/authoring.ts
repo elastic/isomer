@@ -9,11 +9,14 @@ import {
   type AnyPrimitiveDefinition,
   type AnyPrimitivePack,
   type AuthoringJsonSchemaOptions,
+  authoringSchemaSubset,
   buildAuthoringJsonSchema,
   type HostCapabilities,
   IsomerError,
   type PrimitiveCatalogEntry,
+  type PrimitiveGroup,
 } from '@elastic/isomer-sdk';
+import { quoteInput } from '@elastic/isomer-sdk/author';
 
 import type { JsonSchema, RegisteredViewSummary } from '../registry';
 
@@ -33,6 +36,8 @@ export interface RuntimeAuthoringContext {
   schema: JsonSchema;
   /** Catalog entries describing each available primitive, including one `example`. */
   primitives: PrimitiveCatalogEntry[];
+  /** Every pack's primitive groups, in pack order, for an index of the catalog. */
+  groups: PrimitiveGroup[];
   /**
    * Registered views an agent can request by id, with their input schemas.
    *
@@ -48,6 +53,20 @@ export interface RuntimeAuthoringContext {
    * Throws `UNKNOWN_PRIMITIVE_TYPE` for a type this runtime does not register.
    */
   schemaFor(types: readonly string[]): JsonSchema;
+  /**
+   * The catalog entries of `types` and the slice of {@link RuntimeAuthoringContext.schema}
+   * they reach, for an agent that reads an index first and looks up what it picks.
+   *
+   * Throws `UNKNOWN_PRIMITIVE_TYPE` for a type this runtime does not register.
+   */
+  describePrimitives(types: readonly string[]): PrimitiveDescriptions;
+}
+
+/** What {@link RuntimeAuthoringContext.describePrimitives} returns. */
+export interface PrimitiveDescriptions {
+  primitives: PrimitiveCatalogEntry[];
+  /** The `$defs` the types reach, with the full schema's ids and the body-node union stubbed. */
+  schema: JsonSchema;
 }
 
 /**
@@ -60,10 +79,10 @@ const mergePackAuthoring = (
   packs: readonly AnyPrimitivePack[],
   runtimeAuthoring: AuthoringJsonSchemaOptions
 ): AuthoringJsonSchemaOptions => {
-  const describe: Record<string, string> = {};
+  let describe: Record<string, string> = {};
   const omitProperties: string[] = [];
   for (const pack of packs) {
-    Object.assign(describe, pack.authoring?.describe);
+    describe = { ...describe, ...pack.authoring?.describe };
     omitProperties.push(...(pack.authoring?.omitProperties ?? []));
   }
   return {
@@ -74,6 +93,37 @@ const mergePackAuthoring = (
       ...(runtimeAuthoring.omitProperties ?? []),
     ],
   };
+};
+
+/** Most unknown types an error names before it counts the rest. */
+const MAX_LISTED_TYPES = 10;
+
+/** Most types one `schemaFor` or `describePrimitives` lookup takes; it is refused before any is read. */
+const MAX_LOOKUP_TYPES = 100;
+
+/** Throws if a group names a type no pack registers, or a type sits in two groups across every pack. */
+const assertGroupedOnce = (
+  groups: readonly PrimitiveGroup[],
+  known: ReadonlyMap<string, unknown>
+): void => {
+  const grouped = new Set<string>();
+  for (const { title, types } of groups) {
+    for (const type of types) {
+      if (!known.has(type)) {
+        throw new IsomerError(
+          'UNKNOWN_PRIMITIVE_TYPE',
+          `createIsomerRuntime: group ${quoteInput(title)} names ${quoteInput(type)}, which no pack registers`
+        );
+      }
+      if (grouped.has(type)) {
+        throw new IsomerError(
+          'DUPLICATE_PRIMITIVE_TYPE',
+          `createIsomerRuntime: primitive type ${quoteInput(type)} is grouped twice`
+        );
+      }
+      grouped.add(type);
+    }
+  }
 };
 
 /**
@@ -98,17 +148,33 @@ export const createRuntimeAuthoringContextFactory = (
   const definitionsByType = new Map(
     definitions.map((definition) => [definition.type, definition])
   );
+  const groups = packs.flatMap((pack) => pack.authoring?.groups ?? []);
+  assertGroupedOnce(groups, definitionsByType);
 
-  const schemaFor = (types: readonly string[]): JsonSchema => {
-    const missing = types.filter((type) => !definitionsByType.has(type));
-    if (missing.length > 0) {
+  const assertKnown = (caller: string, types: readonly string[]): void => {
+    if (types.length > MAX_LOOKUP_TYPES) {
       throw new IsomerError(
-        'UNKNOWN_PRIMITIVE_TYPE',
-        `getAuthoringContext.schemaFor: unknown primitive type(s) ${missing
-          .map((type) => `"${type}"`)
-          .join(', ')}`
+        'TOO_MANY_TYPES',
+        `getAuthoringContext.${caller}: at most ${MAX_LOOKUP_TYPES} types per lookup, got ${types.length}`
       );
     }
+    const missing = [
+      ...new Set(types.filter((type) => !definitionsByType.has(type))),
+    ];
+    if (missing.length > 0) {
+      const listed = missing.slice(0, MAX_LISTED_TYPES).map(quoteInput);
+      const rest = missing.length - listed.length;
+      throw new IsomerError(
+        'UNKNOWN_PRIMITIVE_TYPE',
+        `getAuthoringContext.${caller}: unknown primitive type(s) ${listed.join(', ')}${
+          rest > 0 ? ` and ${rest} more` : ''
+        }`
+      );
+    }
+  };
+
+  const schemaFor = (types: readonly string[]): JsonSchema => {
+    assertKnown('schemaFor', types);
     const wanted = new Set(types);
     return buildAuthoringJsonSchema(
       definitions.filter((definition) => wanted.has(definition.type)),
@@ -116,10 +182,26 @@ export const createRuntimeAuthoringContextFactory = (
     );
   };
 
+  const describePrimitives = (
+    types: readonly string[]
+  ): PrimitiveDescriptions => {
+    assertKnown('describePrimitives', types);
+    const wanted = [...new Set(types)];
+    return {
+      primitives: wanted.flatMap((type) => {
+        const catalog = definitionsByType.get(type)?.catalog;
+        return catalog === undefined ? [] : [catalog];
+      }),
+      schema: authoringSchemaSubset(schema, wanted),
+    };
+  };
+
   return () => ({
     schema,
     primitives,
+    groups,
     views: listViews(),
     schemaFor,
+    describePrimitives,
   });
 };

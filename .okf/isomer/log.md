@@ -2,6 +2,8 @@
 
 ## 2026-09-27
 
+- **Authoring schema and index**: `buildAuthoringJsonSchema` keeps Zod's `$defs` as generated, percent-encodes each `$ref` as a URI fragment, and refuses a primitive or extra def id that Zod's generated ids, the body-node union, or a shared def already takes, unless an extra def names that shared def's own schema. `PackAuthoringOptions.groups` indexes a pack's primitives; `definePrimitivePack` and `createIsomerRuntime` reject a group naming an unknown type or a type twice. `buildAuthoringPrompt` takes `catalog: 'index'`, `formatPrimitiveEntry` prints one entry, `authoringSchemaSubset` cuts the `$defs` some types reach, and the runtime's authoring context carries `groups` and `describePrimitives(types)`, which, like `schemaFor`, refuses more than 100 types with `TOO_MANY_TYPES`. `createAgentAuthoringContextFactory` returns an `AgentAuthoringContext` whose `schema` is always present.
+- **One-line helpers**: `./author` exports `oneLine`, `jsonLine`, and `quoteInput` for text a host echoes into a prompt or message.
 - **Enhancements reach every renderer**: The HTML render resolves `enhancements` once, hands every renderer the set as `context.enhancements` through a view of the adapter's context, and emits each resolved enhancement's script itself, so a pack needs no adapter wiring for its enhancements. The runtime's combined style adapter builds its context as a view over each pack's, so a class-instance context keeps its methods and private state.
 
 ## 2026-09-25

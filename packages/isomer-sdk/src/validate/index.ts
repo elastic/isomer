@@ -7,6 +7,7 @@
 
 export {
   type AuthoringJsonSchemaOptions,
+  authoringSchemaSubset,
   buildAuthoringJsonSchema,
 } from './authoring_schema';
 export {

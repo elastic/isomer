@@ -5,7 +5,9 @@
  * 2.0.
  */
 
+import { jsonLine, oneLine } from '../composition/one_line';
 import type { PrimitiveCatalogEntry } from '../define/primitive_module';
+import type { PrimitiveGroup } from '../pack/primitive_pack';
 
 type JsonSchema = Record<string, unknown>;
 
@@ -37,10 +39,14 @@ export interface AuthoringPromptContext {
   guide: string;
   /** Absent or empty drops the `## Rules` section. */
   rules?: string;
-  /** JSON Schema for a whole composition. The router profile does not inline it. */
-  schema: JsonSchema;
+  /** JSON Schema for a whole composition. Absent, or under the router profile, it is not inlined. */
+  schema?: JsonSchema;
   /** Rendered as a bullet per entry, with its `useWhen`, `avoidWhen`, and `example`. */
   primitives: readonly PrimitiveCatalogEntry[];
+  /** `index` lists each primitive's type and purpose only, for a host that serves the rest on request. */
+  catalog?: 'full' | 'index';
+  /** Headings the index sorts primitives under; a type in none goes under "Other". */
+  groups?: readonly PrimitiveGroup[];
   /**
    * Extra host-supplied compositions beyond each primitive's catalog example.
    * Trimmed to the profile's budget. An empty list drops `## Examples`.
@@ -53,6 +59,10 @@ export interface AuthoringPromptContext {
   /** Replaces the profile's own framing sentence. */
   intro?: string;
 }
+
+/** The compose intro when no JSON Schema follows. */
+const COMPOSE_INTRO_WITHOUT_SCHEMA =
+  'You compose views from scratch. Build a single JSON object that answers the question using only the primitives in the catalog below.';
 
 const PROFILE_INTROS: Record<AuthoringProfileId, string> = {
   general:
@@ -76,7 +86,7 @@ const PROFILE_INCLUDES_SCHEMA: Record<AuthoringProfileId, boolean> = {
   'compose-from-primitives': true,
 };
 
-const compactJson = (value: unknown): string => JSON.stringify(value);
+const compactJson = jsonLine;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -91,33 +101,74 @@ const withoutMeta = (value: unknown): unknown => {
   return rest;
 };
 
+/** `text` as a code span, fenced longer than any backtick run in it. */
+const codeSpan = (text: string): string => {
+  const line = oneLine(text);
+  const fence = '`'.repeat(
+    Math.max(0, ...(line.match(/`+/g) ?? []).map((run) => run.length)) + 1
+  );
+  const pad = line.startsWith('`') || line.endsWith('`') ? ' ' : '';
+  return `${fence}${pad}${line}${pad}${fence}`;
+};
+
+/** One catalog bullet: purpose, `useWhen`, `avoidWhen`, and the example. */
+export const formatPrimitiveEntry = (entry: PrimitiveCatalogEntry): string => {
+  const lines = [`- ${codeSpan(entry.type)} — ${oneLine(entry.purpose)}`];
+  if (entry.useWhen.length > 0) {
+    lines.push(`  - Use when: ${oneLine(entry.useWhen.join(' '))}`);
+  }
+  if (entry.avoidWhen.length > 0) {
+    lines.push(`  - Avoid when: ${oneLine(entry.avoidWhen.join(' '))}`);
+  }
+  lines.push(`  - Example: ${codeSpan(compactJson(entry.example))}`);
+  return lines.join('\n');
+};
+
 const renderCatalog = (primitives: readonly PrimitiveCatalogEntry[]): string =>
-  primitives
-    .map((entry) => {
-      const lines = [`- \`${entry.type}\` — ${entry.purpose}`];
-      if (entry.useWhen.length > 0) {
-        lines.push(`  - Use when: ${entry.useWhen.join(' ')}`);
-      }
-      if (entry.avoidWhen.length > 0) {
-        lines.push(`  - Avoid when: ${entry.avoidWhen.join(' ')}`);
-      }
-      lines.push(`  - Example: \`${compactJson(entry.example)}\``);
-      return lines.join('\n');
-    })
-    .join('\n');
+  primitives.map(formatPrimitiveEntry).join('\n');
+
+const indexLine = ({ type, purpose }: PrimitiveCatalogEntry): string =>
+  `- ${codeSpan(type)} — ${oneLine(purpose)}`;
+
+const OTHER_GROUP = 'Other';
+
+const renderIndex = (
+  primitives: readonly PrimitiveCatalogEntry[],
+  groups: readonly PrimitiveGroup[] = []
+): string => {
+  const byType = new Map(primitives.map((entry) => [entry.type, entry]));
+  const grouped = new Set(groups.flatMap(({ types }) => types));
+  const sections = [
+    ...groups.map(({ title, types }) => ({
+      title,
+      entries: types.flatMap((type) => byType.get(type) ?? []),
+    })),
+    {
+      title: OTHER_GROUP,
+      entries: primitives.filter(({ type }) => !grouped.has(type)),
+    },
+  ];
+  return sections
+    .filter(({ entries }) => entries.length > 0)
+    .map(
+      ({ title, entries }) =>
+        `### ${oneLine(title)}\n\n${entries.map(indexLine).join('\n')}`
+    )
+    .join('\n\n');
+};
 
 const renderViews = (views: readonly AuthoringViewSummary[]): string =>
   views
     .map((view) => {
-      const lines = [`- \`${view.id}\` — ${view.title}`];
+      const lines = [`- ${codeSpan(view.id)} — ${oneLine(view.title)}`];
       if (view.description !== undefined && view.description.length > 0) {
-        lines.push(`  - ${view.description}`);
+        lines.push(`  - ${oneLine(view.description)}`);
       }
       if (view.answers.length > 0) {
-        lines.push(`  - Answers: ${view.answers.join('; ')}`);
+        lines.push(`  - Answers: ${oneLine(view.answers.join('; '))}`);
       }
       if (view.inputSchema !== undefined) {
-        lines.push(`  - Input: \`${compactJson(view.inputSchema)}\``);
+        lines.push(`  - Input: ${codeSpan(compactJson(view.inputSchema))}`);
       }
       return lines.join('\n');
     })
@@ -146,9 +197,14 @@ export const buildAuthoringPrompt = (
     .slice(0, PROFILE_EXAMPLE_LIMITS[profile])
     .map(withoutMeta);
   const views = context.views ?? [];
+  const schema = PROFILE_INCLUDES_SCHEMA[profile] ? context.schema : undefined;
+  const intro =
+    profile === 'compose-from-primitives' && schema === undefined
+      ? COMPOSE_INTRO_WITHOUT_SCHEMA
+      : PROFILE_INTROS[profile];
   const sections = [
     context.heading ?? '# View authoring',
-    context.intro ?? PROFILE_INTROS[profile],
+    context.intro ?? intro,
     `## Guide\n\n${context.guide}`,
   ];
   if (context.rules !== undefined && context.rules.length > 0) {
@@ -157,10 +213,16 @@ export const buildAuthoringPrompt = (
   if (views.length > 0) {
     sections.push(`## Registered views\n\n${renderViews(views)}`);
   }
-  sections.push(`## Primitive catalog\n\n${renderCatalog(context.primitives)}`);
-  if (PROFILE_INCLUDES_SCHEMA[profile]) {
+  sections.push(
+    `## Primitive catalog\n\n${
+      context.catalog === 'index'
+        ? renderIndex(context.primitives, context.groups)
+        : renderCatalog(context.primitives)
+    }`
+  );
+  if (schema !== undefined) {
     sections.push(
-      `## JSON Schema\n\n\`\`\`json\n${compactJson(context.schema)}\n\`\`\``
+      `## JSON Schema\n\n\`\`\`json\n${compactJson(schema)}\n\`\`\``
     );
   }
   if (examples.length > 0) {
@@ -175,8 +237,18 @@ export interface AgentAuthoringContextDefaults {
   rules: string;
   schema: JsonSchema;
   primitives: readonly PrimitiveCatalogEntry[];
+  catalog?: NonNullable<AuthoringPromptContext['catalog']>;
+  groups?: readonly PrimitiveGroup[];
   views?: readonly AuthoringViewSummary[];
+  heading?: string;
+  intro?: string;
 }
+
+/** What {@link createAgentAuthoringContextFactory} returns: the defaults, with `schema` still required. */
+export type AgentAuthoringContext<TExample = unknown> = Omit<
+  AuthoringPromptContext,
+  'examples' | 'schema'
+> & { examples: readonly TExample[]; schema: JsonSchema };
 
 /** The only part of an authoring context a caller supplies per request. */
 export interface AgentAuthoringContextOptions<TExample = unknown> {
@@ -192,10 +264,10 @@ export interface AgentAuthoringContextOptions<TExample = unknown> {
  */
 export const createAgentAuthoringContextFactory =
   <TExample = unknown>(defaults: AgentAuthoringContextDefaults) =>
-  ({ examples = [], views }: AgentAuthoringContextOptions<TExample> = {}): Omit<
-    AuthoringPromptContext,
-    'examples'
-  > & { examples: readonly TExample[] } => {
+  ({
+    examples = [],
+    views,
+  }: AgentAuthoringContextOptions<TExample> = {}): AgentAuthoringContext<TExample> => {
     const resolvedViews = views ?? defaults.views;
     return {
       ...defaults,
@@ -207,21 +279,35 @@ export const createAgentAuthoringContextFactory =
 /**
  * Wraps {@link buildAuthoringPrompt} with a pack's defaults, falling back
  * field-by-field when a caller passes a partial context (e.g. a custom guide
- * with the pack's own rules and schema).
+ * with the pack's own rules and schema). A context that sets `schema` to
+ * `undefined` drops the schema rather than falling back.
  */
 export const createAuthoringPromptBuilder =
   (defaults: AgentAuthoringContextDefaults) =>
   (
     profile: AuthoringProfileId,
-    context: Partial<AuthoringPromptContext> = {}
+    context: Partial<Omit<AuthoringPromptContext, 'schema'>> & {
+      schema?: JsonSchema | undefined;
+    } = {}
   ): string => {
-    const resolvedViews = context.views ?? defaults.views;
+    const schema = 'schema' in context ? context.schema : defaults.schema;
+    const {
+      catalog = defaults.catalog,
+      groups = defaults.groups,
+      heading = defaults.heading,
+      intro = defaults.intro,
+      views = defaults.views,
+    } = context;
     return buildAuthoringPrompt(profile, {
       guide: context.guide ?? defaults.guide,
       rules: context.rules ?? defaults.rules,
-      schema: context.schema ?? defaults.schema,
       primitives: context.primitives ?? defaults.primitives,
       examples: context.examples ?? [],
-      ...(resolvedViews === undefined ? {} : { views: resolvedViews }),
+      ...(schema === undefined ? {} : { schema }),
+      ...(catalog === undefined ? {} : { catalog }),
+      ...(groups === undefined ? {} : { groups }),
+      ...(heading === undefined ? {} : { heading }),
+      ...(intro === undefined ? {} : { intro }),
+      ...(views === undefined ? {} : { views }),
     });
   };

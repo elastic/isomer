@@ -10,14 +10,20 @@ const { schema, primitives, views } = runtime.getAuthoringContext();
 | --- | --- | --- |
 | `schema` | Authoring JSON Schema for a `Composition` built from this runtime's primitives | cached |
 | `primitives` | One catalog entry per primitive: purpose, `useWhen`, `avoidWhen`, `example` | cached |
+| `groups` | Every pack's `groups`, in pack order, for an index of the catalog | cached |
 | `views` | Registered-view summaries, each with its input JSON Schema, read from this runtime's own `viewRegistry` — the `views` option to `createIsomerRuntime` or `runtime.viewRegistry.register`, never a separately constructed registry | live |
 | `schemaFor(types)` | Authoring JSON Schema restricted to `types`, e.g. a registered view's narrower input | uncached |
+| `describePrimitives(types)` | The catalog entries of `types` and the `$defs` they reach in `schema`, for an agent that reads an index first | cut from `schema` |
 
 Both halves arrive from one call on purpose. An agent choosing between routing to a registered view and composing from primitives needs to see both options at once, and a host should not have to stitch that catalog together from two sources.
 
 The caching split is equally deliberate. The schema and catalog cannot change for the runtime's lifetime, and projecting a discriminated union is expensive, so they are computed once via the SDK's `buildAuthoringJsonSchema`. The view list is read on every call, because a host may register views after boot and an agent asking now should see what is registered now; each view's summary is projected once at registration, so the read is cheap. `schemaFor` is not cached: it exists for a handful of subsets, not one call per render.
 
 Pass `authoring` on `createIsomerRuntime` to name pack-owned `$defs` (`actionItem`, `badgeItem`), attach refine descriptions, or hide a legacy alias. The validator schema `parse` uses is unchanged. A pack can contribute its own `describe`/`omitProperties` too, via `authoring` on its `PrimitivePackInput` — see [Packs](../../isomer-sdk/docs/packs.md#authoring) — and the runtime merges every composed pack's contribution with this option, which wins on conflict.
+
+## An index, then lookups
+
+The whole catalog and schema is too much for an agent to read at once. A host can instead send an index — `buildAuthoringPrompt` with `catalog: 'index'`, `groups`, and no `schema` lists each primitive's type and purpose under its group — and answer lookups with `describePrimitives(types)`, which takes at most 100 types and refuses more with `TOO_MANY_TYPES` before reading any. Its `$defs` keep the ids they have in `schema`, so two lookups agree, and `bodyNode` is a stub meaning any primitive rather than the whole union. `schemaFor` differs on both counts: it rebuilds a schema whose body node is only `types`, which suits a registered view's input.
 
 ## Taking the answer back
 

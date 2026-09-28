@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+export { jsonLine, oneLine, quoteInput } from '../composition/one_line';
 export {
   type AuthorChildContext,
   type AuthoredChildBrand,
@@ -34,6 +35,7 @@ export {
   withoutChildren,
 } from './jsx_shim';
 export {
+  type AgentAuthoringContext,
   type AgentAuthoringContextDefaults,
   type AgentAuthoringContextOptions,
   type AuthoringProfileId,
@@ -43,4 +45,5 @@ export {
   buildAuthoringPrompt,
   createAgentAuthoringContextFactory,
   createAuthoringPromptBuilder,
+  formatPrimitiveEntry,
 } from './prompt';
