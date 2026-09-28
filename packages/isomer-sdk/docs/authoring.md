@@ -20,7 +20,7 @@ toComposition(
 );
 ```
 
-Nothing renders. `defineAuthorComponent(type)` returns a component that always returns `null` and carries its node type on a symbol key — `Symbol.for('elastic.isomer.author_type')` — so the element tree is read as data rather than executed. `buildJsxShim(primitives)` builds a pack's whole front end from its primitive list: a `Composition` component, a PascalCase component per primitive (`slideFrame` → `SlideFrame`), a PascalCase component per branded child (`slideCard` → `SlideCard`), a `component(type)` factory, and `toComposition`, which walks the tree and converts each element into a node. Pass the registry tuple (`as const`) so those components stay typed. A `PrimitivePack` erases its primitives to `AnyPrimitiveDefinition[]`.
+Nothing renders. `defineAuthorComponent(type)` returns a component that always returns `null` and carries its node type on a symbol key — `Symbol.for('elastic.isomer.author_type')` — so the element tree is read as data rather than executed. `buildJsxShim(primitives)` builds a pack's whole front end from its primitive list: a `Composition` component, a PascalCase component per primitive (`slideFrame` → `SlideFrame`), a PascalCase component per branded child (`slideTurn` → `SlideTurn`), a `component(type)` factory, and `toComposition`, which walks the tree and converts each element into a node. Pass the registry tuple (`as const`) so those components stay typed. A `PrimitivePack` erases its primitives to `AnyPrimitiveDefinition[]`.
 
 Child elements and text children are declared on the schema field, not in a parser. `fromChildren(childType, schema, options?)` and `fromTextChildren(schema, options?)` are identity wrappers. `z.infer` still reads the underlying schema; the shim reads the brand. `.describe()` clones, so describe the inner schema before wrapping it.
 
@@ -44,7 +44,7 @@ Array-shaped authoring props accept either the array or JSX children:
 
 Child-only components (`Badge`, `Stat`, `ListItem`, …) are not composition body nodes. Placing one directly under `<Composition>` throws `"badge" cannot be used as a composition body node.` Passing neither the array nor children yields `[]`, which the validator rejects via the schema `.min(1)`.
 
-When a schema has no brand, the walk still fills a unique child-array field (`body`, `items`, …) from nested body nodes, and a unique single-node field from the first child. A container with more than one such field takes those props explicitly.
+When a schema has no brand, the walk still fills a unique child-array field (`body`, `items`, …) from nested body nodes, and a unique single-node field from the first child. A container with more than one such field takes those props explicitly. Those props take elements directly or nested inside plain objects and arrays (`left={{ items: [<Node />] }}`); the walk converts every author element it finds, and throws `INVALID_BODY_NODE` for a value nested past 256 levels, which also ends a cycle. Two types that capitalize to the same component name, such as `note` and `Note`, throw `DUPLICATE_PRIMITIVE_TYPE` when the shim is built.
 
 `flattenChildren`, `textFromChildren`, `withoutChildren`, `requireAuthorElement`, and `itemsFromChildren` remain for hosts that unwrap children themselves. `textFromChildren` collapses whitespace by default; pass `{ collapseWhitespace: false }` when indentation and newlines are significant.
 

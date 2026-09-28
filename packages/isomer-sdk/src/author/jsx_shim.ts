@@ -16,6 +16,7 @@ import type { z, ZodObject, ZodType } from 'zod';
 
 import type { Composition } from '../composition/composition';
 import { IsomerError } from '../composition/error';
+import { quoteInput } from '../composition/one_line';
 import type { PrimitiveNode } from '../define/primitive_module';
 
 import {
@@ -184,6 +185,21 @@ export const buildJsxShim = <
     ])
   );
   const { authoredByType, childComponents } = collectAuthored(primitives);
+  const named = new Map<string, string>([['Composition', 'view']]);
+  for (const type of [
+    ...primitives.map((primitive) => primitive.type),
+    ...childComponents.keys(),
+  ]) {
+    const name = capitalize(type);
+    const earlier = named.get(name);
+    if (earlier !== undefined && earlier !== type) {
+      throw new IsomerError(
+        'DUPLICATE_PRIMITIVE_TYPE',
+        `buildJsxShim: ${quoteInput(earlier)} and ${quoteInput(type)} both become the component ${quoteInput(name)}`
+      );
+    }
+    named.set(name, type);
+  }
   const view = defineAuthorComponent<CompositionAuthorProps<TNode>, 'view'>(
     'view'
   );
@@ -283,6 +299,9 @@ const toAuthorComposition = <TNode extends PrimitiveNode>(
     body: resolvedBody,
   };
 
+  if (props.version !== undefined) {
+    spec.version = props.version;
+  }
   if (props.title !== undefined) {
     spec.title = props.title;
   }
@@ -308,7 +327,7 @@ const bodyNodeFromElement = <TNode extends PrimitiveNode>(
   if (!env.extensionTypes.has(type)) {
     throw new IsomerError(
       'INVALID_BODY_NODE',
-      `"${type}" cannot be used as a composition body node.`
+      `${quoteInput(type)} cannot be used as a composition body node.`
     );
   }
 
@@ -322,7 +341,7 @@ const bodyNodeFromElement = <TNode extends PrimitiveNode>(
   )) {
     const childField = authored?.children.find((field) => field.field === key);
     converted[key] = childField
-      ? valueFromChildField(value, childField, env)
+      ? valueFromChildField(value, childField, env, parseChild)
       : convertPropValue(value, key, slots, parseChild);
   }
 
@@ -375,15 +394,16 @@ const fillAuthoredFields = (
   }
 };
 
-const valueFromChildField = (
+const valueFromChildField = <TNode extends PrimitiveNode>(
   value: unknown,
   field: AuthoredChildField,
-  env: ParseEnv
+  env: ParseEnv,
+  parseChild: (child: ReactNode) => TNode
 ): unknown => {
   if (isJsxNodes(value)) {
     return itemsFromBrand(value, field, env);
   }
-  return value;
+  return convertNested(value, parseChild);
 };
 
 const isJsxNodes = (value: unknown): value is ReactNode => {
@@ -415,11 +435,14 @@ const itemFromElement = (
     child,
     field.childType
   );
+  const parseChild = (node: ReactNode) => bodyNodeFromElement(node, env);
   if (field.toItem) {
-    return field.toItem(element.props, {
-      parseChildren: (nested) =>
-        flattenChildren(nested).map((node) => bodyNodeFromElement(node, env)),
-    });
+    return convertNested(
+      field.toItem(element.props, {
+        parseChildren: (nested) => flattenChildren(nested).map(parseChild),
+      }),
+      parseChild
+    );
   }
   const props = withoutChildren<Record<string, unknown>>(element);
   const nestedChildren = element.props.children;
@@ -432,7 +455,7 @@ const itemFromElement = (
     props[field.textField] = textFromChildren(nestedChildren);
   }
   fillNestedBrands(field.itemSchema, props, nestedChildren, env);
-  return props;
+  return convertNested(props, parseChild);
 };
 
 const fillNestedBrands = (
@@ -476,13 +499,74 @@ const convertPropValue = <TNode extends PrimitiveNode>(
   if (fromJsx) {
     return asArray ? fromJsx : fromJsx[0];
   }
-  if (Array.isArray(value)) {
-    return value.flatMap((item: unknown) => {
-      const nodes = nodesFromJsx(item, parseChild);
-      return nodes ?? [item];
-    });
+  return convertNested(value, parseChild);
+};
+
+// Any realm's `Object.prototype`, or none.
+const isPlainObject = (value: unknown): value is Record<string, unknown> => {
+  if (typeof value !== 'object' || value === null) {
+    return false;
   }
-  return value;
+  const proto: unknown = Object.getPrototypeOf(value);
+  return proto === null || Object.getPrototypeOf(proto) === null;
+};
+
+/** Nesting past which a prop value is refused, which also ends a cycle. */
+const MAX_PROP_DEPTH = 256;
+
+// Counted across the elements a prop holds, so a cycle through an element still ends; conversion is synchronous.
+let propDepth = 0;
+
+// One conversion per object for the prop being converted, so a value reached by several paths costs its size once.
+let converted = new WeakMap<object, unknown>();
+
+/** Converts author elements anywhere inside a prop value, e.g. `left={{ items: [<Node />] }}`. */
+const convertNested = <TNode extends PrimitiveNode>(
+  value: unknown,
+  parseChild: (child: ReactNode) => TNode
+): unknown => {
+  if (propDepth > MAX_PROP_DEPTH) {
+    throw new IsomerError(
+      'INVALID_BODY_NODE',
+      `toComposition: a prop nests deeper than ${MAX_PROP_DEPTH} levels`
+    );
+  }
+  if (typeof value !== 'object' || value === null) {
+    return value;
+  }
+  if (converted.has(value)) {
+    return converted.get(value);
+  }
+  const outermost = propDepth === 0;
+  propDepth += 1;
+  try {
+    const entry = (item: unknown): { nodes?: TNode[]; value: unknown } => {
+      const nodes = nodesFromJsx(item, parseChild);
+      return nodes
+        ? { nodes, value: nodes }
+        : { value: convertNested(item, parseChild) };
+    };
+    const result = Array.isArray(value)
+      ? value.flatMap((item: unknown) => {
+          const { nodes, value: inner } = entry(item);
+          return nodes ?? [inner];
+        })
+      : isPlainObject(value)
+        ? Object.fromEntries(
+            Object.entries(value).map(([key, item]) => {
+              const { nodes, value: inner } = entry(item);
+              return [key, nodes && nodes.length === 1 ? nodes[0] : inner];
+            })
+          )
+        : value;
+    converted.set(value, result);
+    return result;
+  } finally {
+    propDepth -= 1;
+    if (outermost) {
+      converted = new WeakMap();
+    }
+  }
 };
 
 const nodesFromJsx = <TNode extends PrimitiveNode>(
