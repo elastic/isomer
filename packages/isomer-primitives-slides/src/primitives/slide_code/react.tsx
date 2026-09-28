@@ -42,7 +42,7 @@ const Panel = ({
               marked.has(index + 1) ? code.highlight : code.plain
             )}
             key={index}>
-            {line === '' ? ' ' : line}
+            {line}
           </code>
         ))}
       </pre>

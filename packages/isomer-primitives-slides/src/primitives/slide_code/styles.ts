@@ -56,6 +56,7 @@ export const codeModule = createStyleModule('code', ({ css }) => ({
   line: css`
     display: flex;
     font-family: ${code.text.family};
+    min-height: ${code.text.lineHeight?.value ?? '1'}em;
     padding-right: ${code.paddingX};
     white-space: pre;
   `,

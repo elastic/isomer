@@ -123,9 +123,11 @@ describe('slideDiff', () => {
     );
   });
 
-  it('keeps a blank line visible on the slide', () => {
-    expect(runtime.surfaces.html.render(compose(configExample)).html).toContain(
-      ' '
-    );
+  it('keeps a blank line empty in the markup', () => {
+    const { css, html } = runtime.surfaces.html.render(compose(configExample), {
+      css: 'separate',
+    });
+    expect(html).not.toContain('\u00a0');
+    expect(css).toMatch(/\.diff-line\{[^}]*min-height:/);
   });
 });

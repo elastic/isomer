@@ -5,10 +5,15 @@
  * 2.0.
  */
 
+import {
+  createTakumiImageBackend,
+  type LayoutBox,
+} from '@elastic/isomer-image-takumi';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
+import { slideFonts } from '../../examples/fonts';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { codeDenseAfter, codeLineMaxLength } from '../../theme/components/code';
 import { slackText } from '../test_helpers.fixtures';
@@ -21,6 +26,8 @@ const runtime = createIsomerRuntime({
   packs: [slidesPack],
   frames: { slide: slideDeckFrame },
 });
+
+const takumi = createTakumiImageBackend({ fonts: slideFonts });
 
 const compose = (node: PrimitiveNode): Composition => ({
   type: 'view',
@@ -206,11 +213,29 @@ describe('slideCode output', () => {
     expect(md.trim().endsWith('````')).toBe(true);
   });
 
-  it('keeps a blank line visible on the slide', () => {
+  it('keeps a blank line empty in the markup and one line tall on the slide', async () => {
     const html = runtime.surfaces.html.render(
       compose(panel(['a', '', 'b']))
     ).html;
-    expect(html).toContain('\u00a0');
+    expect(html).not.toContain('\u00a0');
+    const yOf = async (lines: string[]) => {
+      const box = await takumi.measure(
+        runtime.surfaces.svg.render(compose(panel(lines)))
+      );
+      const runs = (node: LayoutBox): LayoutBox['runs'] => [
+        ...node.runs,
+        ...node.children.flatMap(runs),
+      ];
+      return runs(box).find(({ text }) => text.trim() === 'b')!.y;
+    };
+    const [blank, none, filled] = await Promise.all([
+      yOf(['a', '', 'b']),
+      yOf(['a', 'b']),
+      yOf(['a', 'x', 'b']),
+    ]);
+    expect(blank).toBeGreaterThan(none);
+    // A line box rounds its height; the blank line is within a pixel of a filled one.
+    expect(Math.abs(blank - filled)).toBeLessThanOrEqual(1.5);
   });
 
   it.each(examples.map((node, index) => [index, node] as const))(

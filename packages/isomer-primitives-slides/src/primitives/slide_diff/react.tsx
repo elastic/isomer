@@ -55,7 +55,7 @@ export const react = (
                 )}>
                 {op ? marker[op].value : ''}
               </span>
-              <span>{text === '' ? '\u00a0' : text}</span>
+              <span>{text}</span>
             </code>
           ))}
         </pre>

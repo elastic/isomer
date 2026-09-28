@@ -48,6 +48,7 @@ export const diffModule = createStyleModule('diff', ({ css }) => ({
   line: css`
     display: grid;
     font-family: ${diff.text.family};
+    min-height: ${diff.text.lineHeight?.value ?? '1'}em;
     grid-template-columns: ${diff.gutter} minmax(0, 1fr);
     padding-right: ${diff.paddingEnd};
     white-space: pre;
