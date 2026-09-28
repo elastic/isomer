@@ -61,6 +61,8 @@ export interface ValidationResult {
   errors: ValidationError[];
   /** Advisory findings, empty when there are none. */
   warnings: ValidationWarning[];
+  /** Set when the input is past {@link MAX_COMPOSITION_DEPTH} or {@link MAX_COMPOSITION_VALUES}, so no render can take it. */
+  refused?: true;
 }
 
 /** Narrows a result's warnings to the surface a caller is about to render. */
@@ -75,12 +77,12 @@ export type ValidationErrorMode = 'collect' | 'throw';
 
 export { CompositionValidationError };
 
-/** Raises {@link CompositionValidationError} when `mode` is `throw` and `result` is invalid. */
+/** Raises {@link CompositionValidationError} when `result` is invalid and `mode` is `throw`, or in either mode when `result` is {@link ValidationResult.refused}. */
 export const enforceValidationMode = (
   result: ValidationResult,
   mode?: ValidationErrorMode
 ): void => {
-  if (mode === 'throw' && !result.valid) {
+  if (!result.valid && (mode === 'throw' || result.refused)) {
     throw new CompositionValidationError(result.errors);
   }
 };
@@ -254,7 +256,7 @@ export const createCompositionValidator = (
   return (composition) => {
     const bound = inputBoundError(composition);
     if (bound !== undefined) {
-      return { valid: false, errors: [bound], warnings: [] };
+      return { valid: false, errors: [bound], warnings: [], refused: true };
     }
     const result = schema.safeParse(composition, { reportInput: true });
     if (result.success) {

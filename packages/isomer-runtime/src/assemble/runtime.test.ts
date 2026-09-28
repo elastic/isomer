@@ -366,14 +366,25 @@ describe('createIsomerRuntime', () => {
       valid: false,
       errors: [bound],
     });
-    try {
-      runtime.surfaces.text.render(deep);
-      expect.unreachable();
-    } catch (error) {
-      expect(error).toMatchObject({
-        name: 'CompositionValidationError',
-        code: 'COMPOSITION_INVALID',
-      });
+    const { html, markdown, slack, text } = runtime.surfaces;
+    const renders = [
+      () => text.render(deep),
+      () => text.render(deep, { onValidationError: 'collect' }),
+      () => markdown.render(deep, { onValidationError: 'collect' }),
+      () => slack.render(deep, { onValidationError: 'collect' }),
+      () => html.render(deep),
+      () => html.render(deep, { onValidationError: 'collect' }),
+    ];
+    for (const render of renders) {
+      try {
+        render();
+        expect.unreachable();
+      } catch (error) {
+        expect(error).toMatchObject({
+          name: 'CompositionValidationError',
+          code: 'COMPOSITION_INVALID',
+        });
+      }
     }
   });
 
