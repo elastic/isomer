@@ -1,0 +1,177 @@
+[
+  {
+    "type": "header",
+    "text": {
+      "type": "plain_text",
+      "text": "Refund states, and where they are set",
+      "emoji": true
+    }
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "*Checkout, last 24 hours*"
+    }
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": " "
+    }
+  },
+  {
+    "type": "table",
+    "rows": [
+      [
+        {
+          "type": "raw_text",
+          "text": "Region"
+        },
+        {
+          "type": "raw_text",
+          "text": "Orders"
+        },
+        {
+          "type": "raw_text",
+          "text": "p99 latency"
+        },
+        {
+          "type": "raw_text",
+          "text": "Errors"
+        }
+      ],
+      [
+        {
+          "type": "rich_text",
+          "elements": [
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "Europe",
+                  "style": {
+                    "bold": true
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "raw_text",
+          "text": "48,210"
+        },
+        {
+          "type": "raw_text",
+          "text": "410 ms"
+        },
+        {
+          "type": "raw_text",
+          "text": "0.2%"
+        }
+      ],
+      [
+        {
+          "type": "rich_text",
+          "elements": [
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "North America",
+                  "style": {
+                    "bold": true
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "raw_text",
+          "text": "61,905"
+        },
+        {
+          "type": "raw_text",
+          "text": "380 ms"
+        },
+        {
+          "type": "raw_text",
+          "text": "0.1%"
+        }
+      ],
+      [
+        {
+          "type": "rich_text",
+          "elements": [
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "Asia Pacific",
+                  "style": {
+                    "bold": true
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "raw_text",
+          "text": "22,764"
+        },
+        {
+          "type": "raw_text",
+          "text": "1.9 s"
+        },
+        {
+          "type": "raw_text",
+          "text": "2.4%"
+        }
+      ]
+    ],
+    "column_settings": [
+      {
+        "is_wrapped": true
+      },
+      {
+        "is_wrapped": true
+      },
+      {
+        "is_wrapped": true
+      },
+      {
+        "is_wrapped": true
+      }
+    ]
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": " "
+    }
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "refund.ts\n```\nexport const refund = async (order: Order) => {\n  await ledger.write(order.id, -order.total);\n  await fraud.check(order);\n  return notify(order.customer);\n};\n```"
+    }
+  },
+  {
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "Crate · 03 Platform · example.com/crate"
+      }
+    ]
+  }
+]

@@ -1,0 +1,9 @@
+WEB AND PHONE ORDERS MEET AT ONE STEP
+
+Web: Basket → Address → Slot → Review → Place order
+Phone: Call → Agent form → Read back → Confirm → Place order
+
+Self-serve: The customer picks the slot. Validation runs on every field as they type.
+Assisted: An agent keys the order while the customer waits, then reads it back before placing it.
+
+Crate · 03 Platform · example.com/crate

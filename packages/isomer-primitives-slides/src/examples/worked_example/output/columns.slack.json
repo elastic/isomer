@@ -1,0 +1,26 @@
+[
+  {
+    "type": "header",
+    "text": {
+      "type": "plain_text",
+      "text": "Three ways to ship a release",
+      "emoji": true
+    }
+  },
+  {
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": "*Canary*\n\n`1%` `10%` `50%`\n\nA slice of traffic takes the new build first, so a bad release hurts few customers.\n\n*Blue-green*\n\n`blue` `green`\n\nTwo full fleets. The switch is instant, and so is the way back.\n\n*Rolling*\n\n`zone-a` `zone-b` `zone-c` `zone-d`\n\nOne zone at a time, with no spare capacity to pay for.\n\n`auto-rollback` returns any of the three to the last healthy build."
+    }
+  },
+  {
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "Crate · 03 Platform · example.com/crate"
+      }
+    ]
+  }
+]

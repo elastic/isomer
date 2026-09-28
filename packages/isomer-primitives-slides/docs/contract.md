@@ -22,11 +22,13 @@ Everything else stays at the SDK default. A new pack declares its own `PackTypes
 
 ## `themeBound<SlideFrameTheme>()`
 
-`src/pack.ts` passes `theme: themeBound<SlideFrameTheme>()` and `styleAdapter: createDistillateHtmlStyleAdapter(slideDistillery)` to `definePrimitivePack`. The theme is the **declared** lower bound — what any runtime holding this pack must supply to its frames. The style adapter is this pack's CSS, which a runtime combines with every other pack's, and which the `svg` surface emits alongside the tree. Do not annotate the export as `PrimitivePack<SlideFrameTheme>`; derive it.
+`src/pack.ts` passes `theme: themeBound<SlideFrameTheme>()` and a `styleAdapter` to `definePrimitivePack`: `createDistillateHtmlStyleAdapter(slideDistillery)`, and its [enhancements](copy.md#how-the-pack-emits-it). The theme is the **declared** lower bound — what any runtime holding this pack must supply to its frames. The style adapter is this pack's CSS, which a runtime combines with every other pack's, and which the `svg` surface emits alongside the tree. Do not annotate the export as `PrimitivePack<SlideFrameTheme>`; derive it.
 
 ## Surface declaration
 
-The pack declares no `surfaces`. `svg` is not declarable — every pack reaches it through its `react` renderers — and this pack renders Slack through the markdown fallback.
+The pack declares no `surfaces`, because not every primitive has a `slack` renderer. `svg` is not declarable — every pack reaches it through its `react` renderers.
+
+On Slack, the containers (`slideFrame`, `slideSplit`, `slideStack`, `slideWindow`, `slideTitle` for its aside, and `slideRender`, `slideRenderGrid`, and `slideAnnotatedRender` for their embedded composition) render each child through `scope.renderSlack`, so the dispatcher decides per child. These leaves have native renderers: `slideClosing`, `slideCode`, `slideCommand`, `slideDiff`, `slideFanout`, `slideHeading`, `slideQuote`, `slideSection`, `slideSource`, `slideStat`, `slideStatement`, `slideStats`, `slideTable`, and `slideTranscript`. `slideTable`, for one, keeps row headers bold in a `table` block. Every other leaf falls back through its markdown. A container without a `slack` renderer would send its whole subtree through the markdown fallback, and a native renderer below it would never run.
 
 ## The registry
 

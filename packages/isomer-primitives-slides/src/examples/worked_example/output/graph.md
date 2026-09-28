@@ -1,0 +1,14 @@
+# Four terms describe checkout
+
+A basket becomes an order once **pricing and stock** agree.
+
+- **Catalog:** Every product a store can sell.
+- **Basket:** What a customer means to buy.
+- **Order:** A priced basket with a slot.
+- **Delivery:** One van run, many orders.
+- **Pricing:** Offers, fixed at checkout.
+- **Stock:** What the store holds now.
+
+Catalog → Basket, Basket → Order, Order → Delivery, Pricing → Order, Stock → Order
+
+_Crate · 03 Platform · [example.com/crate](https://example.com/crate)_

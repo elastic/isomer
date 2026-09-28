@@ -1,0 +1,12 @@
+A GROCERY DELIVERY PLATFORM
+Crate
+One order. Every store.
+crate n. Everything a customer means to buy, carried from whichever store can fill it.
+
+OrderPlaced →
+  picking: Sends the list to the nearest store
+  payments: Holds the amount on the card
+  email: Confirms the order to the customer
+  courier: Books a delivery window
+
+Crate · example.com/crate

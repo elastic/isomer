@@ -21,39 +21,51 @@ A product answers the same question in more than one place: a page, a Slack mess
 
 ## One composition, three ways
 
-The reference pack's title slide is one composition. These are its committed outputs, written by the same test on every run.
+The reference pack's example title slide is one composition. These are its committed outputs, written by the same test on every run. A slide opens with its own heading, so the test passes `heading: false` and the composition's title only names the slide.
 
 The `svg` surface, rasterized to PNG:
 
-![The reference deck's title slide, rendered to PNG through the svg surface](packages/isomer-primitives-slides/src/examples/deck/output/title-slide.png)
+![The example deck's title slide, rendered to PNG through the svg surface](packages/isomer-primitives-slides/src/examples/worked_example/output/crate.png)
 
 The `markdown` surface:
 
 ```markdown
-# Title slide
+# Crate
 
-## 01 · Primitives
+_A grocery delivery platform_
 
-_Reference pack_
+One order. Every store.
 
-## One composition, every surface.
+_crate n._ Everything a customer means to buy, carried from whichever store can fill it.
 
-The same spec renders as HTML, markdown, text, Slack, and SVG.
+**OrderPlaced** →
+
+- picking: Sends the list to the nearest store
+- payments: Holds the amount on the card
+- email: Confirms the order to the customer
+- courier: Books a delivery window
+
+_Crate · [example.com/crate](https://example.com/crate)_
 ```
 
 The `text` surface:
 
 ```text
-TITLE SLIDE
+A GROCERY DELIVERY PLATFORM
+Crate
+One order. Every store.
+crate n. Everything a customer means to buy, carried from whichever store can fill it.
 
-01 · Primitives
+OrderPlaced →
+  picking: Sends the list to the nearest store
+  payments: Holds the amount on the card
+  email: Confirms the order to the customer
+  courier: Books a delivery window
 
-Reference pack
-One composition, every surface.
-The same spec renders as HTML, markdown, text, Slack, and SVG.
+Crate · example.com/crate
 ```
 
-Slack gets a `header` block and one `mrkdwn` section, and HTML gets a `section.isomer` with only the CSS the slide uses. Every output of every example is in the [reference pack's examples](packages/isomer-primitives-slides/docs/example.md).
+Slack gets a `header` block and one block per part, with the footer as a closing `context` block, and HTML gets a `section.isomer` with only the CSS the slide uses. Every output of every example is in the [reference pack's examples](packages/isomer-primitives-slides/docs/example.md).
 
 ## Two ways a composition is made
 
@@ -120,7 +132,7 @@ Slack gets its blocks through the Markdown fallback, because the pack wrote no S
 | Turn the `svg` surface into PNG | [`@elastic/isomer-image-takumi`](packages/isomer-image-takumi/README.md) |
 | Score what a model composes from your pack | [`@elastic/isomer-evals`](packages/isomer-evals/README.md) |
 
-Every package publishes together at one version: the two a host installs, the reference pack to copy from, a host-side rasterizer, and a harness a pack author runs against their own runtime.
+Four packages publish together at one version: the two a host installs, a host-side rasterizer, and a harness a pack author runs against their own runtime. The reference pack to copy from lives in this repository and is not on npm.
 
 ## Development
 
