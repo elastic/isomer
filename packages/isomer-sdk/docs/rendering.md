@@ -7,14 +7,16 @@ The SDK owns the output shapes: what a whole composition looks like as text, mar
 Three of the four are small, and each takes a narrow dispatcher interface rather than the whole thing — a text envelope needs `renderText` and nothing else.
 
 ```ts
-renderTextEnvelope(composition, dispatcher); // title uppercased, subtitle, nodes, blank-line joined
-renderMarkdownEnvelope(composition, dispatcher); // # title, _subtitle_, nodes
-renderSlackEnvelope(composition, dispatcher, { text, collectAssets, assetPrefix });
+renderTextEnvelope(composition, dispatcher, { heading }); // title uppercased, subtitle, nodes, blank-line joined
+renderMarkdownEnvelope(composition, dispatcher, { heading }); // # title, _subtitle_, nodes
+renderSlackEnvelope(composition, dispatcher, { heading, text, collectAssets, assetPrefix });
 ```
 
-The Slack envelope does the most. It emits a `header` block for the title and a `context` block for the subtitle, then each node's blocks; enforces Slack's 50-block message budget; clamps the fallback `text` to 4,000 characters; and returns only the asset requests whose placeholder block survived the budget — uploading files for elided blocks would be orphaned work.
+`heading` defaults to `true`. Pass `false` when the host already shows the title, or the body opens with its own, and every envelope leaves out the title and subtitle; in Slack that includes the fallback `text`.
 
-`SLACK_LIMITS` publishes the numbers a renderer has to respect: 50 blocks per message, 3,000 characters in a section, 10 fields per section, 10 elements per context block, 25 buttons in an actions block, 150 characters in a header, 75 in an option label.
+The Slack envelope does the most. It emits a `header` block for the title and a `context` block for the subtitle, then each node's blocks; clamps every header, section text, section field, and context element a node's renderer returns to its Slack limit, so one oversized block cannot get the whole message rejected; enforces Slack's 50-block message budget; clamps the fallback `text` to 4,000 characters; and returns only the asset requests whose placeholder block survived the budget — uploading files for elided blocks would be orphaned work.
+
+`SLACK_LIMITS` publishes the numbers a renderer has to respect: 50 blocks per message, 3,000 characters in a section, 2,000 in a section field or a context element, 10 fields per section, 10 elements per context block, 25 buttons in an actions block, 150 characters in a header, 75 in an option label.
 
 ## HTML
 
@@ -31,7 +33,7 @@ interface HTMLRenderResult {
 }
 ```
 
-`html` is the wrapper element plus content; `body` is the content alone; `css` is what the adapter emitted; `js` is the enhancement script as a function body over `root` (see [Enhancements](#enhancements)); `measurement` is the byte length of the markup, the stylesheet, the enhancement script as delivered, and their total, for a host that budgets payload size. Validation runs inside, per the caller's `onValidationError` mode, and the findings come back on the result as `validationErrors` (`{ path, message }` each) rather than being thrown by default.
+`html` is the wrapper element plus content; `body` is the content alone; `css` is what the adapter emitted; `js` is the enhancement script as a function body over `root` (see [Enhancements](#enhancements)); `measurement` is the byte length of the markup, the stylesheet, the enhancement script as delivered, and their total, for a host that budgets payload size. Validation runs inside, per the caller's `onValidationError` mode, and the findings come back on the result as `validationErrors` (`{ path, message, nodeType? }` each, as [Composition](composition.md#error-messages) describes) rather than being thrown by default.
 
 `validate` defaults to `createCompositionValidator(dispatcher.definitions)`; pass one when validation needs options or a wider inventory.
 

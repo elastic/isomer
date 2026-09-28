@@ -26,7 +26,7 @@ This page is the pack **contract**. Composing packs into a runtime is the [runti
 | `styleAdapter`    | Optional. This pack's HTML CSS, combined with the other packs'.             |
 | `styleCollector`  | Optional. Derived from `styleAdapter.styleCollector` unless overridden.     |
 | `theme`           | Optional. `themeBound<T>()` so the pack infers `PrimitivePack<T>`.          |
-| `authoring`       | Optional. This pack's `describe` and `omitProperties` for the agent schema. |
+| `authoring`       | Optional. `describe`, `omitProperties`, and `groups` for agent authoring.   |
 
 What comes back adds `types`, a set for duplicate detection across packs, and normalizes the two optional fields. `styleCollector` is read from `styleAdapter.styleCollector` when the pack does not set it; set it only for a pack whose hooks collect into a shape its adapter does not create.
 
@@ -69,17 +69,22 @@ An enhancement the host drives, rather than one that runs in the page, omits `sc
 
 ## `authoring`
 
-A pack's own contribution to the runtime's authoring JSON Schema: `describe` ($def id to description) and `omitProperties` ($defId.property paths to drop), scoped to this pack's own primitives:
+A pack's own contribution to the runtime's authoring material: `describe` ($def id to description) and `omitProperties` ($defId.property paths to drop) for the JSON Schema, and `groups` for the catalog index, all scoped to this pack's own primitives:
 
 ```ts
 definePrimitivePack({
   id: 'metrics',
   primitives: […],
-  authoring: { describe: { kpi: 'A single measured value.' } },
+  authoring: {
+    describe: { kpi: 'A single measured value.' },
+    groups: [{ title: 'Numbers', types: ['kpi', 'delta'] }],
+  },
 });
 ```
 
 A runtime composing several packs merges every pack's `authoring` into one options object before building the schema, so no host hand-merges each pack's `describe`/`omitProperties` itself. The runtime's own `authoring` option is applied last and wins on conflict.
+
+Each group is a `PrimitiveGroup`, a `title` and the `types` listed under it. A prompt built with `catalog: 'index'` lists each type under its group's heading, in order, and any type in no group under "Other". The runtime's authoring context carries every pack's groups in pack order. A group may name only the pack's own types, and a type may sit in only one group: `definePrimitivePack` throws `UNKNOWN_PRIMITIVE_TYPE` or `DUPLICATE_PRIMITIVE_TYPE` otherwise, and a runtime checks the same across packs.
 
 ## The theme a pack requires
 

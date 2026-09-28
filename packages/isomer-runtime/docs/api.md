@@ -112,7 +112,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 
 | Thrown | By | Carries |
 | --- | --- | --- |
-| `IsomerError` | `createIsomerRuntime`, `viewRegistry.register`, an unknown view id, `getAuthoringContext().schemaFor` on an unknown type (`UNKNOWN_PRIMITIVE_TYPE`), or the `svg` surface | `code` and a message naming the offender |
+| `IsomerError` | `createIsomerRuntime` (including a pack group that names an unregistered type, `UNKNOWN_PRIMITIVE_TYPE`, or repeats one, `DUPLICATE_PRIMITIVE_TYPE`), `viewRegistry.register`, an unknown view id, `getAuthoringContext().schemaFor` or `describePrimitives` on an unknown type (`UNKNOWN_PRIMITIVE_TYPE`, naming at most ten), or the `svg` surface | `code` and a message naming the offender |
 | `RegisteredViewInputError` | `viewRegistry.request`, on invalid input | `code` (`VIEW_INPUT_INVALID`), `viewId`, `errors` (`{ path, message }` each) |
 | `CompositionValidationError` | `text`, `markdown`, `slack`, and `svg` by default; `html` with `onValidationError: 'throw'` | `code` (`COMPOSITION_INVALID`), `errors` |
 
