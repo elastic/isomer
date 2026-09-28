@@ -6,10 +6,10 @@
  */
 
 import type { DeckSlide } from '@elastic/isomer-deck/viewer';
-import { slideJsx } from '@elastic/isomer-primitives-slides';
 import type { Composition } from '@elastic/isomer-sdk';
 
 import type { Deck } from './decks';
+import { jsxSource } from './jsx_source';
 
 export const slugOf = (index: number, { title }: Composition): string =>
   [
@@ -22,7 +22,7 @@ export const slugOf = (index: number, { title }: Composition): string =>
 // A stored slide the printer refuses still shows its JSON.
 const jsxOf = (composition: Composition): string => {
   try {
-    return slideJsx.toJsx(composition);
+    return jsxSource(composition);
   } catch (error) {
     return `// ${error instanceof Error ? error.message : String(error)}`;
   }

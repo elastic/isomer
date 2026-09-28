@@ -54,6 +54,7 @@ In a `slideRender`, `slide` names another slide in the same deck by index, as a 
 | `src/deck_page.tsx`, `src/thumbnail.tsx` | The live slide grid                                                                                                  |
 | `src/present.tsx`                        | The deck viewer from `@elastic/isomer-deck/viewer`, fed live over server-sent events                                 |
 | `src/slides.ts`                          | A stored deck as the viewer's `DeckSlide[]`, each with its JSX and JSON source                                       |
+| `src/jsx_source.ts`                      | A stored slide as JSX to read, printed with Babel; the JSON beside it is exact                                       |
 
 The studio builds its own runtime from the slides pack (`common/runtime.ts`) and takes only the viewer from `@elastic/isomer-deck`. Fonts are the host's job: `server/fonts.ts` maps the pack's `slideFontFaces` to `@fontsource` files for takumi.
 

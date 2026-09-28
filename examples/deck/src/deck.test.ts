@@ -5,9 +5,6 @@
  * 2.0.
  */
 
-import { runInThisContext } from 'node:vm';
-
-import { createElement, type ReactElement } from 'react';
 import type {
   SlideFrameNode,
   SlideSectionNode,
@@ -17,7 +14,6 @@ import {
   slideJsx,
 } from '@elastic/isomer-primitives-slides';
 import { mapCompositionNodes, type PrimitiveNode } from '@elastic/isomer-sdk';
-import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
 import { deck } from './deck';
@@ -151,38 +147,12 @@ describe('deck', () => {
     // `component` builds components for types outside the pack, which the deck never draws.
     const missing = Object.keys(slideJsx).filter((name) => {
       const local = name === 'Composition' ? 'Slide' : name;
-      return name === 'component'
-        ? false
-        : name === 'toJsx'
-          ? typeof exported[local] !== 'function'
-          : exported[local] !== slideJsx[name as keyof typeof slideJsx];
+      return (
+        name !== 'component' &&
+        exported[local] !== slideJsx[name as keyof typeof slideJsx]
+      );
     });
     expect(missing).toEqual([]);
-  });
-
-  it('prints every slide as JSX that parses back to the same composition', () => {
-    const components = Object.entries(shim).filter(([name]) =>
-      /^Slide/.test(name)
-    );
-    for (const { composition } of deck) {
-      const { outputText } = ts.transpileModule(
-        `(${shim.toJsx(composition)})`,
-        {
-          compilerOptions: { jsx: ts.JsxEmit.React, jsxFactory: 'h' },
-        }
-      );
-      const run = runInThisContext(
-        `(h, ${components.map(([name]) => name).join(', ')}) => ${outputText.trim().replace(/;$/, '')}`
-      ) as (...args: unknown[]) => ReactElement;
-      const element = run(
-        createElement,
-        ...components.map(([, component]) => component)
-      );
-      expect(
-        shim.toComposition(element as Parameters<typeof shim.toComposition>[0]),
-        composition.title
-      ).toEqual(composition);
-    }
   });
 
   it('resolves every embedded render', () => {

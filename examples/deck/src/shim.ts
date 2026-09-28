@@ -52,12 +52,7 @@ export const {
   SlideTurn,
   SlideWindow,
   toComposition,
-  toJsx: printJsx,
 } = slideJsx;
-
-/** A composition as JSX in this deck's own terms, rooted at `Slide`. */
-export const toJsx = (composition: Parameters<typeof printJsx>[0]): string =>
-  printJsx(composition, { root: 'Slide' });
 
 /** Footer props every slide shares. */
 export const frame = {

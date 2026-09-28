@@ -22,7 +22,10 @@ const composition: Composition = {
 
 describe('toSlides', () => {
   it('shows a slide the JSX printer refuses with the reason and its JSON', () => {
-    const refused = { ...composition, body: [{ type: 'unknownThing' }] };
+    const refused = {
+      ...composition,
+      body: 'unknownThing',
+    } as unknown as Composition;
     const [slide] = toSlides({
       id: 'd',
       title: 'Deck',
