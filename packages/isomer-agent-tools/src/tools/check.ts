@@ -29,8 +29,9 @@ export interface CompositionCheck {
   composition?: Composition | undefined;
 }
 
-const formatWarning = ({ surface, path, message }: IsomerToolsWarning) =>
-  `${surface}: ${formatValidationError({ path: path ?? '', message })}`;
+// Some warnings already open with their path.
+const formatWarning = ({ surface, path = '', message }: IsomerToolsWarning) =>
+  `${surface}: ${message.startsWith(path) ? message : formatValidationError({ path, message })}`;
 
 /** Parses `value`, then runs the runtime's semantic validation and the frame's body rule on what parsed. */
 export const checkComposition = (

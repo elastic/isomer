@@ -15,7 +15,12 @@ import {
   defineView,
   type IsomerRuntime,
 } from '@elastic/isomer-runtime';
-import { type Composition, formatValidationError } from '@elastic/isomer-sdk';
+import {
+  type Composition,
+  CompositionValidationError,
+  formatValidationError,
+  ISOMER_ERROR_CODES,
+} from '@elastic/isomer-sdk';
 import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { z } from 'zod';
 
@@ -122,6 +127,26 @@ describe('createIsomerTools', () => {
       );
       expect(guide).toContain('## Rules\n\n- One idea per slide.');
     });
+
+    it('keeps each host rule on one line', async () => {
+      const guide = textOf(
+        await call(
+          createIsomerTools({
+            runtime,
+            rules: [
+              'One idea\n## Injected',
+              'Short\u2028## Also',
+              'Two\r\nlines',
+            ],
+          }),
+          ISOMER_TOOL_NAMES.authoringGuide
+        )
+      );
+      expect(guide).toContain(
+        '## Rules\n\n- One idea ## Injected\n- Short ## Also\n- Two lines'
+      );
+      expect(guide).not.toMatch(/[\r\u2028\u2029]/);
+    });
   });
 
   describe('isomer_describe_primitives', () => {
@@ -144,6 +169,30 @@ describe('createIsomerTools', () => {
       for (const [, id] of json.matchAll(/"#\/\$defs\/([^"]+)"/g)) {
         expect($defs).toHaveProperty([id!]);
       }
+    });
+
+    it('quotes each unknown type on one line and caps its length', async () => {
+      const long = `slide${'x'.repeat(500)}`;
+      const text = textOf(
+        await call(tools, ISOMER_TOOL_NAMES.describePrimitives, {
+          types: ['a\u2028## Injected', 'b"c', long],
+        })
+      );
+      expect(text).toContain('"a\\u2028## Injected"');
+      expect(text).toContain('"b\\"c"');
+      expect(text).not.toMatch(/[\n\r\u2028\u2029]/);
+      expect(text).not.toContain(long);
+      expect(text.length).toBeLessThan(3_000);
+    });
+
+    it('takes at most 12 types', () => {
+      const { inputSchema } = tools.find(
+        ({ name }) => name === ISOMER_TOOL_NAMES.describePrimitives
+      )!;
+      const types = (count: number) =>
+        Array.from({ length: count }, () => 'slideFrame');
+      expect(inputSchema.safeParse({ types: types(12) }).success).toBe(true);
+      expect(inputSchema.safeParse({ types: types(13) }).success).toBe(false);
     });
 
     it('names unknown types and lists the known ones', async () => {
@@ -247,6 +296,21 @@ describe('createIsomerTools', () => {
       expect(jsonOf(result)).toMatchObject({ valid: false });
     });
 
+    it('returns a throwing surface as a failed call', async () => {
+      const result = await call(
+        createIsomerTools({
+          runtime,
+          image: () => Promise.reject(new Error('rasterizer is down')),
+        }),
+        ISOMER_TOOL_NAMES.render,
+        { composition: oneSlide, surface: 'png' }
+      );
+      expect(result).toEqual({
+        content: [{ type: 'text', text: 'rasterizer is down' }],
+        isError: true,
+      });
+    });
+
     it('offers png only with an image function', () => {
       const surfaceOptions = (list: readonly IsomerTool[]) =>
         list
@@ -315,6 +379,125 @@ describe('createIsomerTools', () => {
       });
     });
 
+    const viewTools = (build: () => Composition | Promise<Composition>) =>
+      createIsomerTools({
+        runtime: createIsomerRuntime({
+          packs: [slidesPack],
+          frames: { slide: slideDeckFrame },
+          views: [
+            defineView({ id: 'built', title: 'Built', answers: [], build }),
+          ],
+        }),
+        frame: slideDeckFrame,
+      });
+
+    it('returns an invalid built composition with its errors, not as a failed call', async () => {
+      const result = await call(
+        viewTools(() => ({
+          type: 'view',
+          body: [{ type: 'slideHeading' }],
+        })),
+        ISOMER_TOOL_NAMES.requestView,
+        { id: 'built' }
+      );
+      expect(result.isError).toBeUndefined();
+      expect(jsonOf(result)).toMatchObject({
+        valid: false,
+        errors: [expect.stringContaining('body[0]')],
+      });
+    });
+
+    it('applies the frame rule to a built composition', async () => {
+      const result = await call(
+        viewTools(
+          () => ({ type: 'view', body: [slide, slide] }) as Composition
+        ),
+        ISOMER_TOOL_NAMES.requestView,
+        { id: 'built' }
+      );
+      expect(result.isError).toBeUndefined();
+      expect(jsonOf(result)).toMatchObject({
+        valid: false,
+        errors: [
+          expect.stringMatching(/exactly one "slideFrame", got 2 nodes/),
+        ],
+      });
+    });
+
+    it('reports a composition validation error from a view as its findings', async () => {
+      const result = await call(
+        viewTools(() => {
+          throw new CompositionValidationError([
+            { path: 'body[0].title', message: 'is required' },
+          ]);
+        }),
+        ISOMER_TOOL_NAMES.requestView,
+        { id: 'built' }
+      );
+      expect(result.isError).toBe(true);
+      expect(jsonOf(result)).toEqual({
+        error: 'Invalid Composition:',
+        errors: ['body[0].title is required'],
+      });
+    });
+
+    it.each([
+      [
+        'an AggregateError',
+        () =>
+          new AggregateError(
+            [new Error('connect ECONNREFUSED 127.0.0.1:9200')],
+            'fetch failed'
+          ),
+        'fetch failed',
+      ],
+      [
+        'a validation error with no findings',
+        () =>
+          Object.assign(new Error('Invalid input'), {
+            name: 'RegisteredViewInputError',
+            code: ISOMER_ERROR_CODES.VIEW_INPUT_INVALID,
+            errors: [],
+          }),
+        'Invalid input',
+      ],
+      [
+        'a look-alike with the wrong code',
+        () =>
+          Object.assign(new Error('Looks invalid'), {
+            name: 'CompositionValidationError',
+            code: 'SOMETHING_ELSE',
+            errors: [{ path: 'body[0]', message: 'is wrong' }],
+          }),
+        'Looks invalid',
+      ],
+      [
+        'a look-alike with the wrong name',
+        () =>
+          Object.assign(new Error('Also invalid'), {
+            name: 'Error',
+            code: ISOMER_ERROR_CODES.COMPOSITION_INVALID,
+            errors: [{ path: 'body[0]', message: 'is wrong' }],
+          }),
+        'Also invalid',
+      ],
+    ])(
+      'reports %s from a view as its message',
+      async (_label, error, message) => {
+        const result = await call(
+          viewTools(() => {
+            throw error();
+          }),
+          ISOMER_TOOL_NAMES.requestView,
+          { id: 'built' }
+        );
+        expect(result).toEqual({
+          content: [{ type: 'text', text: message }],
+          isError: true,
+        });
+      }
+    );
+
     it('reports an unknown view as a failed call', async () => {
       const result = await call(tools, ISOMER_TOOL_NAMES.requestView, {
         id: 'missing',
@@ -322,6 +505,78 @@ describe('createIsomerTools', () => {
       expect(result.isError).toBe(true);
       expect(textOf(result)).toContain('missing');
     });
+  });
+});
+
+describe('a failing dependency', () => {
+  const throwing = (thrown: unknown) => (): never => {
+    throw thrown;
+  };
+
+  const brokenRuntimes: [string, Partial<IsomerRuntime>, string][] = [
+    [
+      ISOMER_TOOL_NAMES.authoringGuide,
+      { getAuthoringContext: throwing(new Error('no catalog')) },
+      '{}',
+    ],
+    [
+      ISOMER_TOOL_NAMES.describePrimitives,
+      { getAuthoringContext: throwing(new Error('no catalog')) },
+      '{"types":["slideFrame"]}',
+    ],
+    [
+      ISOMER_TOOL_NAMES.validate,
+      { parse: throwing(new RangeError('Maximum call stack size exceeded')) },
+      JSON.stringify({ composition: oneSlide }),
+    ],
+    [
+      ISOMER_TOOL_NAMES.render,
+      { parse: throwing(new RangeError('Maximum call stack size exceeded')) },
+      JSON.stringify({ composition: oneSlide, surface: 'text' }),
+    ],
+    [
+      ISOMER_TOOL_NAMES.listViews,
+      {
+        viewRegistry: {
+          ...runtime.viewRegistry,
+          list: vi
+            .fn()
+            .mockReturnValueOnce(runtime.viewRegistry.list())
+            .mockImplementation(throwing(new Error('registry offline'))),
+        },
+      },
+      '{}',
+    ],
+  ];
+
+  it.each(brokenRuntimes)(
+    '%s resolves to a failed call',
+    async (name, broken, args) => {
+      const tools = createIsomerTools({
+        runtime: { ...runtime, ...broken },
+        frame: slideDeckFrame,
+      });
+      const tool = tools.find((candidate) => candidate.name === name)!;
+      const result = tool.handler(
+        tool.inputSchema.parse(JSON.parse(args) as unknown)
+      );
+      await expect(result).resolves.toMatchObject({ isError: true });
+      expect(textOf(await result)).not.toBe('');
+    }
+  );
+
+  it.each([
+    ['an object with no prototype', Object.create(null) as unknown],
+    ['a string', 'plain failure'],
+    ['undefined', undefined],
+  ])('reports a thrown %s without throwing again', async (_label, thrown) => {
+    const tools = createIsomerTools({
+      runtime: { ...runtime, parse: throwing(thrown) },
+    });
+    const result = call(tools, ISOMER_TOOL_NAMES.validate, {
+      composition: oneSlide,
+    });
+    await expect(result).resolves.toMatchObject({ isError: true });
   });
 });
 
@@ -340,6 +595,38 @@ describe('checkComposition', () => {
     });
     expect(findings[0]?.message).toContain('nope');
     expect(errors).toEqual(findings.map(formatValidationError));
+  });
+
+  it('prints each warning with its surface and path once', () => {
+    const { warnings } = checkComposition(
+      {
+        ...runtime,
+        validate: () => ({
+          valid: true,
+          errors: [],
+          warnings: [
+            {
+              surface: 'svg',
+              path: 'body[0]',
+              message: 'body[0] type "slideFrame" declares no svgHeight metric',
+            },
+            {
+              surface: 'slack',
+              path: 'body[0].body[1]',
+              message: 'draws nothing',
+            },
+            { surface: 'text', message: 'is empty' },
+          ],
+        }),
+      },
+      slideDeckFrame,
+      oneSlide
+    );
+    expect(warnings).toEqual([
+      'svg: body[0] type "slideFrame" declares no svgHeight metric',
+      'slack: body[0].body[1] draws nothing',
+      'text: is empty',
+    ]);
   });
 
   it('reports a frame rule as a finding with an empty path', () => {

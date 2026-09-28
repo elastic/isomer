@@ -8,6 +8,7 @@
 import {
   type Composition,
   formatValidationError,
+  ISOMER_ERROR_CODES,
   type ValidationError,
 } from '@elastic/isomer-sdk';
 import { z, type ZodObject } from 'zod';
@@ -16,6 +17,7 @@ import { checkComposition } from './check';
 import { buildIsomerAuthoringGuide, buildPrimitiveDescriptions } from './guide';
 import { ISOMER_TOOL_NAMES } from './names';
 import { errorMessage, imageResult, jsonResult, textResult } from './result';
+import { quoteName } from './text';
 import type {
   IsomerTool,
   IsomerToolResult,
@@ -42,20 +44,52 @@ const themeInput = z
   .optional()
   .describe('Color scheme; defaults to the composition’s own `theme`.');
 
+/** `definition` with a handler that resolves to a failed call rather than throwing or rejecting. */
 const tool = <TInput extends ZodObject>(
   definition: IsomerTool<TInput>
-): IsomerTool => definition;
+): IsomerTool => {
+  const guarded: IsomerTool<TInput> = {
+    ...definition,
+    handler: async (input) => {
+      try {
+        return await definition.handler(input);
+      } catch (error) {
+        return textResult(errorMessage(error), true);
+      }
+    },
+  };
+  return guarded;
+};
+
+/** The errors that carry `errors: ValidationError[]`, by `name`, with the `code` each must have. */
+const VALIDATION_ERROR_CODES: Readonly<Record<string, string>> = {
+  CompositionValidationError: ISOMER_ERROR_CODES.COMPOSITION_INVALID,
+  RegisteredViewInputError: ISOMER_ERROR_CODES.VIEW_INPUT_INVALID,
+};
+
+const isValidationError = (entry: unknown): entry is ValidationError =>
+  typeof entry === 'object' &&
+  entry !== null &&
+  typeof (entry as ValidationError).path === 'string' &&
+  typeof (entry as ValidationError).message === 'string';
 
 const hasValidationErrors = (
   error: unknown
-): error is { message: string; errors: ValidationError[] } =>
-  error instanceof Error &&
-  'errors' in error &&
-  Array.isArray(error.errors) &&
-  error.errors.every(
-    (entry: unknown) =>
-      typeof entry === 'object' && entry !== null && 'message' in entry
+): error is { message: string; errors: ValidationError[] } => {
+  if (typeof error !== 'object' || error === null) {
+    return false;
+  }
+  const { name, code, message, errors } = error as Record<string, unknown>;
+  return (
+    typeof name === 'string' &&
+    Object.hasOwn(VALIDATION_ERROR_CODES, name) &&
+    VALIDATION_ERROR_CODES[name] === code &&
+    typeof message === 'string' &&
+    Array.isArray(errors) &&
+    errors.length > 0 &&
+    errors.every(isValidationError)
   );
+};
 
 const viewErrorResult = (error: unknown): IsomerToolResult =>
   hasValidationErrors(error)
@@ -143,7 +177,7 @@ export const createIsomerTools = <THostContext = unknown>(
       return Promise.resolve(
         unknown.length > 0
           ? textResult(
-              `Unknown primitive type(s): ${unknown.join(', ')}. Known types: ${[...known].join(', ')}.`,
+              `Unknown primitive type(s): ${unknown.map(quoteName).join(', ')}. Known types: ${[...known].join(', ')}.`,
               true
             )
           : textResult(buildPrimitiveDescriptions({ runtime, types }))

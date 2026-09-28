@@ -19,8 +19,15 @@ export const imageResult = (bytes: Uint8Array): IsomerToolResult => ({
   content: [{ type: 'image', data: toBase64(bytes), mimeType: 'image/png' }],
 });
 
-export const errorMessage = (error: unknown): string =>
-  error instanceof Error ? error.message : String(error);
+/** What a tool reports for a thrown value, whatever was thrown. */
+export const errorMessage = (error: unknown): string => {
+  try {
+    const { message } = (error ?? {}) as { message?: unknown };
+    return typeof message === 'string' ? message : String(error);
+  } catch {
+    return 'The tool failed with a value that has no message.';
+  }
+};
 
 const CHUNK = 0x8000;
 

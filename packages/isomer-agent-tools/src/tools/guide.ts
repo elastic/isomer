@@ -11,6 +11,7 @@ import {
 } from '@elastic/isomer-sdk/author';
 
 import { ISOMER_TOOL_NAMES } from './names';
+import { oneLine } from './text';
 import type { IsomerToolsBaseOptions } from './types';
 
 /** The guide {@link buildIsomerAuthoringGuide} opens with when a host supplies none. */
@@ -41,7 +42,7 @@ export const buildIsomerAuthoringGuide = ({
     ...(groups === undefined ? {} : { groups }),
     ...(rules.length === 0
       ? {}
-      : { rules: rules.map((rule) => `- ${rule}`).join('\n') }),
+      : { rules: rules.map((rule) => `- ${oneLine(rule)}`).join('\n') }),
     ...(views === undefined ? {} : { views }),
   });
   return `${prompt}\n\n${LOOKUP}`;

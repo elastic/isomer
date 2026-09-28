@@ -73,3 +73,43 @@ describe('createIsomerPrompts', () => {
     );
   });
 });
+
+describe('host options', () => {
+  const example = { type: 'view', title: 'Host example', body: [] };
+  const options = {
+    runtime,
+    guide: 'Write for the finance team.',
+    rules: ['One idea per slide.'],
+    examples: [example],
+  };
+
+  const guideOf = (profile?: 'registered-view-router') => {
+    const withProfile =
+      profile === undefined ? options : { ...options, profile };
+    const resource = createIsomerResources(withProfile).find(
+      ({ uri }) => uri === ISOMER_AUTHORING_GUIDE_URI
+    )!;
+    const [compose] = createIsomerPrompts(withProfile);
+    return {
+      resource: resource.read(),
+      prompt: compose!.build(compose!.argsSchema.parse({})),
+    };
+  };
+
+  it('reach the guide resource and the compose prompt alike', () => {
+    const { resource, prompt } = guideOf();
+    expect(prompt).toBe(resource);
+    expect(resource).toContain('## Guide\n\nWrite for the finance team.');
+    expect(resource).toContain('## Rules\n\n- One idea per slide.');
+    expect(resource).toContain(
+      `## Examples\n\n\`\`\`json\n${JSON.stringify(example)}\n\`\`\``
+    );
+  });
+
+  it('frame the guide for the profile, which sets the example budget', () => {
+    const { resource, prompt } = guideOf('registered-view-router');
+    expect(prompt).toBe(resource);
+    expect(resource).toContain('You route questions to registered views.');
+    expect(resource).not.toContain('## Examples');
+  });
+});

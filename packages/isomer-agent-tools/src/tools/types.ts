@@ -141,7 +141,7 @@ export interface IsomerToolsBaseOptions<THostContext = unknown> {
   guide?: string | undefined;
   /** Rendered as the guide's `## Rules` bullets. */
   rules?: readonly string[] | undefined;
-  /** Host compositions shown beyond each primitive's catalog example. */
+  /** Host compositions for the guide's `## Examples`, trimmed to the profile's budget: one, or none under `'registered-view-router'`. */
   examples?: readonly unknown[] | undefined;
   /** Defaults to `'compose-from-primitives'`. */
   profile?: AuthoringProfileId | undefined;
