@@ -6,6 +6,7 @@
  */
 
 import { Fragment, type ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type {
@@ -13,70 +14,50 @@ import type {
   SlideRenderContext,
   SlideRenderScope,
 } from '../../render/context';
+import { withContextFields } from '../../render/context_view';
+import { LogoMark } from '../../render/logo';
 import { isomerDeckRoot, slideDistillery } from '../../theme/distillery';
-import { slideModules } from '../../theme/modules';
+import { deckRootModule } from '../../theme/modules';
+import { headingCrowding } from '../slide_heading/fit';
 
-import {
-  ELASTIC_LOGO_PATHS,
-  ELASTIC_LOGO_STROKE,
-  ISOMER_LOGO_PATHS,
-} from './logo_marks';
+import { frameModule } from './styles';
 import type { SlideFrameNode } from './types';
+import { sanitizeFrameUrl } from './url';
 
-const LogoMark = ({
-  small = false,
+const { separator } = slideDistillery.tokens.frame;
+
+const Footer = ({
+  node,
   context,
 }: {
-  small?: boolean;
+  node: SlideFrameNode;
   context: SlideRenderContext | undefined;
 }): ReactNode => {
-  const { handles: logo } = slideModules.logo;
+  const { handles: frame } = frameModule;
+  const { brand, section, sectionNumber, logo = true } = node;
+  const sectionLine = [sectionNumber, section].filter(Boolean).join(' ');
+  // The view is exported, so the URL policy holds when a host calls it without the sanitize hook.
+  const url = node.url ? sanitizeFrameUrl(node.url) : null;
   return (
-    <svg
-      aria-hidden
-      className={cls(context, logo.logo, small ? logo.logoSmall : undefined)}
-      fill="none"
-      viewBox="0 0 32 32"
-      xmlns="http://www.w3.org/2000/svg">
-      {ISOMER_LOGO_PATHS.map(({ d, fill }, index) => (
-        <path key={index} {...{ d, fill }} />
-      ))}
-    </svg>
+    <footer className={cls(context, frame.footer)}>
+      <div className={cls(context, frame.footerStart)}>
+        {logo ? <LogoMark className={cls(context, frame.logo)} /> : null}
+        {brand ? (
+          <span className={cls(context, frame.brand)}>{brand}</span>
+        ) : null}
+        {brand && sectionLine ? <span>{separator.value}</span> : null}
+        {sectionLine ? <span>{sectionLine}</span> : null}
+      </div>
+      {url ? (
+        <a className={cls(context, frame.url)} href={url}>
+          {url.replace(/^https?:\/\//, '')}
+        </a>
+      ) : null}
+    </footer>
   );
 };
 
-const ElasticLogoMark = ({
-  small = false,
-  context,
-}: {
-  small?: boolean;
-  context: SlideRenderContext | undefined;
-}): ReactNode => {
-  const { handles: logo } = slideModules.logo;
-  return (
-    <svg
-      aria-hidden
-      className={cls(
-        context,
-        logo.elastic,
-        small ? logo.elasticSmall : undefined
-      )}
-      fill="none"
-      viewBox="0 0 32 32"
-      xmlns="http://www.w3.org/2000/svg">
-      {ELASTIC_LOGO_PATHS.map((path, index) => (
-        <path
-          key={index}
-          d={path.d}
-          fill={path.fill}
-          {...ELASTIC_LOGO_STROKE}
-        />
-      ))}
-    </svg>
-  );
-};
-
-/** React view for a {@link SlideFrameNode}, including chrome, body, and footer. */
+/** React view for a {@link SlideFrameNode}: body and footer on the fixed canvas. */
 export const SlideFrameView = ({
   node,
   context,
@@ -89,45 +70,30 @@ export const SlideFrameView = ({
   /** Dispatches nested body nodes on the React surface. */
   scope: SlideRenderScope;
 }): ReactNode => {
-  const layout = node.layout ?? 'content';
-  const { handles: frame } = slideModules.frame;
-  const { handles: deckRoot } = slideModules.deckRoot;
+  const { handles: frame } = frameModule;
+  const { handles: deckRoot } = deckRootModule;
+  const { type, body, tone, logo } = node;
+  const [first] = body;
+  const inside: SlideRenderContext | undefined =
+    logo === false ? withContextFields(context, { logo }) : context;
+  const below: SlideRenderContext | undefined =
+    first?.type === 'slideHeading'
+      ? withContextFields(inside, { crowding: headingCrowding(first) })
+      : inside;
   return (
-    <div className={`${isomerDeckRoot} ${cls(context, deckRoot.root)}`}>
-      <section className={cls(context, frame.slide, frame.layout[layout])}>
-        <div className={cls(context, frame.frame, frame.layout[layout])}>
-          <header className={cls(context, frame.topbar)}>
-            <div className={cls(context, frame.brand)}>
-              <LogoMark context={context} />
-              {node.brand ? <span>{node.brand}</span> : null}
-            </div>
-            <div className={cls(context, frame.chapter)}>
-              {node.chapterNumber ? (
-                <span className={cls(context, frame.chapterNumber)}>
-                  {node.chapterNumber}
-                </span>
-              ) : null}
-              {node.chapterNumber
-                ? slideDistillery.tokens.frame.chapterSeparator.value
-                : null}
-              {node.chapter}
-            </div>
-          </header>
-          <main className={cls(context, frame.body)}>
-            {node.body.map((child, index) => (
-              <Fragment key={index}>
-                {scope.renderReact(child, context)}
-              </Fragment>
-            ))}
-          </main>
-          <footer className={cls(context, frame.footer)}>
-            <span className={cls(context, frame.footerBrand)}>
-              <ElasticLogoMark small context={context} />
-              {slideDistillery.tokens.frame.brandLabel.value}
-            </span>
-            <span>{node.footer}</span>
-          </footer>
-        </div>
+    <div
+      {...nodeAnchor(context, { type })}
+      className={`${isomerDeckRoot} ${cls(context, deckRoot.root)}`}>
+      <section
+        className={cls(context, frame.slide, frame.tone[tone ?? 'page'])}>
+        <main className={cls(context, frame.body)}>
+          {body.map((child, index) => (
+            <Fragment key={index}>
+              {scope.renderReact(child, index === 0 ? inside : below)}
+            </Fragment>
+          ))}
+        </main>
+        <Footer {...{ node, context }} />
       </section>
     </div>
   );

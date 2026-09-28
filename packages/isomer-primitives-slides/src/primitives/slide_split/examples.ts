@@ -5,39 +5,54 @@
  * 2.0.
  */
 
-import { checkExample as bulletExample } from '../slide_bullet_list/examples';
-import { example as cardGroupExample } from '../slide_card_group/examples';
-import { bareExample as codeExample } from '../slide_code/examples';
-import { example as titleExample } from '../slide_title/examples';
+import { example as codeExample } from '../slide_code/examples';
 
 import type { SlideSplitNode } from './types';
 
-/** Canonical {@link SlideSplitNode} example. */
+/** Canonical {@link SlideSplitNode} example: two owners, split by a rule. */
 export const example: SlideSplitNode = {
   type: 'slideSplit',
-  left: [titleExample],
-  right: [cardGroupExample],
+  divider: 'rule',
+  left: {
+    label: 'Payments team',
+    tone: 'primary',
+    items: ['Card capture', 'Fraud scoring', 'Settlement', 'Refunds'],
+  },
+  right: {
+    label: 'Merchant',
+    tone: 'accent',
+    items: ['Prices', 'Stock', 'Shipping', 'Customer support'],
+  },
+  footnote:
+    'Because the line is fixed, a merchant can change prices **without a payments release**.',
 };
 
-/** `wideLeft` ratio. */
-export const wideLeftExample: SlideSplitNode = {
+/** `wideLeft` with an arrow: code on the left becomes the statements on the right. */
+export const arrowExample: SlideSplitNode = {
   type: 'slideSplit',
   ratio: 'wideLeft',
-  left: [codeExample],
-  right: [bulletExample],
+  divider: 'arrow',
+  left: { items: [codeExample] },
+  right: {
+    label: 'After the change',
+    tone: 'primary',
+    items: ['The ledger is written first', 'Refunds settle in two days'],
+  },
 };
 
-/** `wideRight` ratio. */
-export const wideRightExample: SlideSplitNode = {
+/** Statements and a node in one column. */
+export const mixedExample: SlideSplitNode = {
   type: 'slideSplit',
-  ratio: 'wideRight',
-  left: [bulletExample],
-  right: [codeExample],
+  left: {
+    label: 'Before',
+    items: ['Five batch windows', 'Manual retries'],
+  },
+  right: {
+    label: 'After',
+    tone: 'primary',
+    items: ['One nightly run', codeExample],
+  },
 };
 
 /** Conformance examples for {@link SlideSplitNode}. */
-export const examples: SlideSplitNode[] = [
-  example,
-  wideLeftExample,
-  wideRightExample,
-];
+export const examples: SlideSplitNode[] = [example, arrowExample, mixedExample];

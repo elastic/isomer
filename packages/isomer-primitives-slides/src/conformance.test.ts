@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import {
+  createChildNodeWalker,
   definePrimitive,
   definePrimitivePack,
   type PrimitiveNode,
@@ -80,8 +81,8 @@ const wrapInFrame = (node: PrimitiveNode): PrimitiveNode =>
     ? node
     : ({
         type: 'slideFrame',
-        chapter: 'Conformance',
-        footer: 'Conformance',
+        section: 'Conformance',
+        url: 'https://example.com',
         body: [node],
       } as unknown as PrimitiveNode);
 
@@ -109,10 +110,26 @@ const harness: PrimitiveConformanceHarness = {
   estimateSvgHeight: () => 0,
   nestForeignChild: (container) => {
     if (container.type === 'slideSplit') {
+      const { left, right } = container as unknown as Record<
+        'left' | 'right',
+        Record<string, unknown>
+      >;
       return {
         ...container,
-        left: [conformanceForeignNode],
-        right: [conformanceForeignNode],
+        left: { ...left, items: [conformanceForeignNode] },
+        right: { ...right, items: [conformanceForeignNode] },
+      } as unknown as PrimitiveNode;
+    }
+    if (container.type === 'slideTitle') {
+      return {
+        ...container,
+        aside: conformanceForeignNode,
+      } as unknown as PrimitiveNode;
+    }
+    if (container.type === 'slideAnnotatedRender') {
+      return {
+        ...container,
+        render: conformanceForeignNode,
       } as unknown as PrimitiveNode;
     }
     if (container.type === 'slideStack') {
@@ -126,7 +143,12 @@ const harness: PrimitiveConformanceHarness = {
       body: [conformanceForeignNode],
     } as unknown as PrimitiveNode;
   },
-  renderHTML: (composition) => runtime.surfaces.html.render(composition),
+  renderHTML: (composition, options) =>
+    runtime.surfaces.html.render(
+      composition,
+      options?.anchors ? { anchors: true } : {}
+    ),
+  anchorWalk: createChildNodeWalker(runtime.primitives),
   assertVarRefsHaveDeclarations: (css) => {
     const missing = varRefs(css).filter(
       (name) => !new RegExp(`${name}\\s*:`).test(css)

@@ -5,6 +5,10 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
+
+import { markdownText, marksMarkdown } from '../../render/markdown';
+import { plainText } from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -14,11 +18,19 @@ import { schema, type SlideTerritoryGroupNode } from './schema';
 
 export type { SlideTerritory, SlideTerritoryGroupNode } from './schema';
 
-const text = (node: SlideTerritoryGroupNode) =>
-  node.items.map((item) => `${item.title}: ${item.body}`).join('\n');
+/** Text renderer for {@link SlideTerritoryGroupNode}: `Title: body` per owner. */
+export const text = ({ items }: SlideTerritoryGroupNode): string =>
+  items
+    .map(({ title, body }) => `${oneLine(title)}: ${plainText(body)}`)
+    .join('\n');
 
-const markdown = (node: SlideTerritoryGroupNode) =>
-  node.items.map((item) => `### ${item.title}\n\n${item.body}`).join('\n\n');
+/** Markdown renderer for {@link SlideTerritoryGroupNode}: a heading per owner. */
+export const markdown = ({ items }: SlideTerritoryGroupNode): string =>
+  items
+    .map(
+      ({ title, body }) => `## ${markdownText(title)}\n\n${marksMarkdown(body)}`
+    )
+    .join('\n\n');
 
 /** Catalog, schema, and renderers for {@link SlideTerritoryGroupNode}. */
 export const slideTerritoryGroupPrimitive = definePrimitive({

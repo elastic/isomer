@@ -12,10 +12,17 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideTerritoryGroupNode}. */
 export const catalog = {
   type: 'slideTerritoryGroup',
-  purpose: 'Render ownership notes paired with accent colors.',
+  purpose:
+    'Show who owns what, so the audience knows which side is responsible for each part.',
   useWhen: [
-    'A slide needs to distinguish host territory from primitive-pack territory.',
+    'Responsibility splits between your side and another (a host, partner, or vendor), and color should key it.',
+    'Each owner fits a short title and one or two sentences.',
   ],
-  avoidWhen: ['The ownership split is not central to the message.'],
+  avoidWhen: [
+    'Two sides each hold a list of items, with a divider between; use slideSplit.',
+    'The columns are options to choose between, not owners; use slideColumns.',
+    'Ownership is not the point of the slide; use slideBulletList.',
+    'The owned parts stack in order, each resting on the one below; use slideLayers.',
+  ],
   example,
 } satisfies PrimitiveCatalogEntry;

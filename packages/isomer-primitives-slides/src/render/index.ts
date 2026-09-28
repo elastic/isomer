@@ -5,7 +5,15 @@
  * 2.0.
  */
 
-export { renderChildren } from './children';
+export { slideAuthoringNotes } from './authoring_notes';
+export {
+  quoteMarkdown,
+  quoteSlackBlocks,
+  quoteText,
+  renderChildren,
+  renderSlackChildren,
+  slackCaption,
+} from './children';
 export { cls } from './cls';
 export type {
   SlidePackTypes,
@@ -13,3 +21,29 @@ export type {
   SlideRenderContext,
   SlideRenderScope,
 } from './context';
+export {
+  fencedBlock,
+  markdownCode,
+  markdownStrong,
+  markdownTable,
+  markdownText,
+  marksMarkdown,
+} from './markdown';
+export {
+  type MarkRun,
+  LINE_TERMINATORS,
+  hasLineTerminator,
+  marksReact,
+  marksSlack,
+  parseMarks,
+  plainText,
+  stripMarks,
+} from './marks';
+export {
+  type SlideLayoutBox,
+  type SlideOverflow,
+  type SlideOverlap,
+  slideOverflow,
+  slideOverlaps,
+} from './overflow';
+export { textTable } from './table';

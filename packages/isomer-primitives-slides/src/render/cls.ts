@@ -17,8 +17,7 @@ export const cls = (
   const present = handles.filter(
     (handle): handle is StyleHandle => handle !== undefined
   );
-  const { resolveClassName } = context ?? {};
-  return resolveClassName
-    ? resolveClassName(...present)
+  return context?.resolveClassName
+    ? context.resolveClassName(...present)
     : present.map(({ readableName }) => readableName).join(' ');
 };

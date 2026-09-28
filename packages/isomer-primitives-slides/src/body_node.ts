@@ -13,10 +13,10 @@
 // deriving the union from the registry: that closes it at the value level (TS7022).
 
 import type { SlideBulletListNode } from './primitives/slide_bullet_list';
-import type { SlideCardGroupNode } from './primitives/slide_card_group';
 import type { SlideCodeNode } from './primitives/slide_code';
-import type { SlideFlowNode } from './primitives/slide_flow';
+import type { SlideFanoutNode } from './primitives/slide_fanout';
 import type { SlideFrameNode } from './primitives/slide_frame';
+import type { SlideHeadingNode } from './primitives/slide_heading';
 import type { SlideSplitNode } from './primitives/slide_split';
 import type { SlideStackNode } from './primitives/slide_stack';
 import type { SlideTerritoryGroupNode } from './primitives/slide_territory_group';
@@ -25,10 +25,10 @@ import type { SlideTitleNode } from './primitives/slide_title';
 /** Discriminated union of every node type this pack defines. */
 export type BodyNode =
   | SlideBulletListNode
-  | SlideCardGroupNode
   | SlideCodeNode
-  | SlideFlowNode
+  | SlideFanoutNode
   | SlideFrameNode
+  | SlideHeadingNode
   | SlideSplitNode
   | SlideStackNode
   | SlideTerritoryGroupNode

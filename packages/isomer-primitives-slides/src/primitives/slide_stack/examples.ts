@@ -5,32 +5,15 @@
  * 2.0.
  */
 
-import { example as bulletExample } from '../slide_bullet_list/examples';
-import { example as cardGroupExample } from '../slide_card_group/examples';
-import { plainExample as flowExample } from '../slide_flow/examples';
-import { example as titleExample } from '../slide_title/examples';
+import { example as codeExample } from '../slide_code/examples';
 
 import type { SlideStackNode } from './types';
 
 /** Canonical {@link SlideStackNode} example. */
 export const example: SlideStackNode = {
   type: 'slideStack',
-  items: [titleExample, cardGroupExample],
-};
-
-/** `tight` spacing. */
-export const tightExample: SlideStackNode = {
-  type: 'slideStack',
-  spacing: 'tight',
-  items: [flowExample, bulletExample],
-};
-
-/** `loose` spacing. */
-export const looseExample: SlideStackNode = {
-  type: 'slideStack',
-  spacing: 'loose',
-  items: [flowExample, bulletExample],
+  items: [codeExample],
 };
 
 /** Conformance examples for {@link SlideStackNode}. */
-export const examples: SlideStackNode[] = [example, tightExample, looseExample];
+export const examples: SlideStackNode[] = [example];

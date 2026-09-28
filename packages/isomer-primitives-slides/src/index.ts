@@ -8,36 +8,53 @@
 export type { SlideContentNode } from './body_node';
 
 export {
+  type SlideBuildParts,
+  SLIDE_BUILDS,
+  showSlideBuild,
+  slideBuildParts,
+  slideBuilds,
+} from './builds';
+
+export { slideJsx } from './jsx';
+
+export {
   SLIDE_HEIGHT,
   SLIDE_WIDTH,
   slideDeckFrame,
   slidesPack,
   slideThemes,
 } from './pack';
-
+export { slidePrimitiveGroups } from './pack_authoring';
 export type { SlideBulletListNode } from './primitives/slide_bullet_list';
+export type { SlideCodeNode, SlideCodePanel } from './primitives/slide_code';
 export type {
-  SlideCard,
-  SlideCardGroupNode,
-} from './primitives/slide_card_group';
-export type { SlideCodeNode } from './primitives/slide_code';
-export type { SlideFlowNode } from './primitives/slide_flow';
-export { SlideFrameView } from './primitives/slide_frame';
+  SlideFanoutNode,
+  SlideFanoutTarget,
+} from './primitives/slide_fanout';
 export type { SlideFrameNode } from './primitives/slide_frame';
-export type { SlideSplitNode } from './primitives/slide_split';
+export { SlideFrameView } from './primitives/slide_frame';
+export type { SlideHeadingNode } from './primitives/slide_heading';
+export type { SlideSplitNode, SlideSplitSide } from './primitives/slide_split';
 export type { SlideStackNode } from './primitives/slide_stack';
 export type {
   SlideTerritory,
   SlideTerritoryGroupNode,
 } from './primitives/slide_territory_group';
 export type {
-  SlideLedeLink,
-  SlideLedePart,
+  SlideTitleDefinition,
   SlideTitleNode,
 } from './primitives/slide_title';
 
 export { slideDeckPrimitives, slidePrimitiveTypes } from './registry';
 
+export {
+  type SlideLayoutBox,
+  type SlideOverflow,
+  type SlideOverlap,
+  slideAuthoringNotes,
+  slideOverflow,
+  slideOverlaps,
+} from './render';
 export type {
   SlidePackTypes,
   SlideRenderContext,
@@ -46,18 +63,29 @@ export type {
 
 export { StandaloneSlideNode } from './standalone';
 
-export { slidePaletteForMode, slideStylesheet } from './theme';
-export type { SlideFrameTheme, SlidePalette } from './theme';
+export { slideStylesheet } from './stylesheet';
+
+export { slideFontFaces, slidePaletteForMode } from './theme';
+export type { SlideFontFace, SlideFrameTheme, SlidePalette } from './theme';
 export {
   slideBulletMarkers,
-  slideCardColumnCounts,
-  slideCardColumns,
-  slideCardColumnsKey,
-  slideCardGroupStyles,
-  slideFrameLayouts,
+  slideFrameTones,
+  slideRenderSurfaces,
+  slideSplitDividers,
   slideSplitRatios,
   slideStackSpacings,
-  slideTitleSizes,
   slideTones,
+  slideTranscriptFormats,
+  slideTranscriptRoles,
+  slideWindowChromes,
 } from './theme';
-export type { SlideTone } from './theme';
+export type {
+  SlideFrameTone,
+  SlideRenderSurface,
+  SlideSplitDivider,
+  SlideSplitRatio,
+  SlideTone,
+  SlideTranscriptFormat,
+  SlideTranscriptRole,
+  SlideWindowChrome,
+} from './theme';

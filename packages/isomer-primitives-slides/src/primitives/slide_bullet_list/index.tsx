@@ -5,6 +5,13 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
+import { boldSectionLabel } from '@elastic/isomer-sdk/markdown';
+
+import { markdownText, marksMarkdown } from '../../render/markdown';
+import { plainText } from '../../render/marks';
+import { slideDistillery } from '../../theme/distillery';
+import type { SlideBulletMarker } from '../../theme/variants';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -14,15 +21,42 @@ import { schema, type SlideBulletListNode } from './schema';
 
 export type { SlideBulletListNode } from './schema';
 
-const text = (node: SlideBulletListNode) =>
-  [node.label, node.items.map((item) => `- ${item}`).join('\n')]
+const { checkGlyph, crossGlyph } = slideDistillery.tokens.bulletList;
+
+const textMarkers: Record<SlideBulletMarker, string> = {
+  dot: '-',
+  check: checkGlyph.value,
+  x: crossGlyph.value,
+};
+
+/** Text renderer for {@link SlideBulletListNode}: the caption, then one marked line per item. */
+export const text = ({
+  label,
+  items,
+  marker = 'dot',
+}: SlideBulletListNode): string =>
+  [
+    label && oneLine(label).toUpperCase(),
+    items.map((item) => `${textMarkers[marker]} ${plainText(item)}`).join('\n'),
+  ]
     .filter(Boolean)
     .join('\n');
 
-const markdown = (node: SlideBulletListNode) =>
+/** Markdown renderer for {@link SlideBulletListNode}: `check` and `x` keep their glyph after the bullet. */
+export const markdown = ({
+  label,
+  items,
+  marker = 'dot',
+}: SlideBulletListNode): string =>
   [
-    node.label ? `### ${node.label}` : '',
-    node.items.map((item) => `- ${item}`).join('\n'),
+    label ? boldSectionLabel(markdownText(label)) : undefined,
+    items
+      .map((item) =>
+        marker === 'dot'
+          ? `- ${marksMarkdown(item)}`
+          : `- ${textMarkers[marker]} ${marksMarkdown(item)}`
+      )
+      .join('\n'),
   ]
     .filter(Boolean)
     .join('\n\n');
