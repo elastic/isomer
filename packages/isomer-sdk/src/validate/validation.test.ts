@@ -203,6 +203,23 @@ describe('unknown node keys', () => {
 const LINE_SEPARATOR = String.fromCharCode(0x2028);
 
 describe('messages that list schema names', () => {
+  it('quotes a node type that is not a plain name where an error names it', () => {
+    expect(
+      formatValidationError({
+        path: 'body[0]',
+        message: 'is required',
+        nodeType: 'kpi',
+      })
+    ).toBe('body[0] (in kpi) is required');
+    expect(
+      formatValidationError({
+        path: 'body[0]',
+        message: 'is required',
+        nodeType: 'a\nb',
+      })
+    ).toBe('body[0] (in "a\\nb") is required');
+  });
+
   it('quotes an option or field name that is not a plain name, and keeps each on one line', () => {
     const schema = z.object({
       type: z.literal('view'),

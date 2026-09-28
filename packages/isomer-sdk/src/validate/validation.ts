@@ -17,11 +17,11 @@ import {
   rendersOnSurface,
 } from '../composition/body_node_base';
 import type { Composition } from '../composition/composition';
+import { nameText, quoteInput } from '../composition/one_line';
 import {
   CompositionValidationError,
   type ValidationError,
 } from '../composition/validation_error';
-import { nameText, quoteInput } from '../define/one_line';
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
 import { formatPath, formatZodIssue } from '../define/zod_format';
 
@@ -381,7 +381,7 @@ const collectMissingSvgHeightWarnings = (
       warnings.push({
         surface: 'svg',
         path,
-        message: `${path} type "${type}" declares no svgHeight metric and will be measured as 0, sizing the frame short`,
+        message: `${path} type ${quoteInput(type)} declares no svgHeight metric and will be measured as 0, sizing the frame short`,
       });
     }
     walk(node).forEach(({ node: child, path: field }) => {

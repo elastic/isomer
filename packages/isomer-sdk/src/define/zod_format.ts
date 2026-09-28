@@ -7,9 +7,13 @@
 
 import type { core } from 'zod';
 
+import {
+  jsonLine,
+  listBounded,
+  nameText,
+  quoteInput,
+} from '../composition/one_line';
 import type { ValidationError } from '../composition/validation_error';
-
-import { jsonLine, listBounded, nameText, quoteInput } from './one_line';
 
 /**
  * Builds a `body[3].items[0].label` style path from a Zod issue path. Empty

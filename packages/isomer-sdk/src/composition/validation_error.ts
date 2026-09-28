@@ -6,6 +6,7 @@
  */
 
 import { ISOMER_ERROR_CODES } from './error';
+import { nameText } from './one_line';
 
 /**
  * One fatal validation finding.
@@ -29,7 +30,7 @@ export const formatValidationError = ({
   nodeType,
 }: ValidationError): string =>
   path
-    ? `${path}${nodeType === undefined ? '' : ` (in ${nodeType})`} ${message}`
+    ? `${path}${nodeType === undefined ? '' : ` (in ${nameText(nodeType)})`} ${message}`
     : message;
 
 /**

@@ -10,6 +10,7 @@
 // and nothing about a pack decides how a composition is framed.
 
 import { IsomerError } from '../composition/error';
+import { quoteInput } from '../composition/one_line';
 import type {
   AnyPrimitiveDefinition,
   OptionalSurface,
@@ -246,13 +247,13 @@ const assertGroupedOnce = (
       if (!types.has(type)) {
         throw new IsomerError(
           'UNKNOWN_PRIMITIVE_TYPE',
-          `primitive pack "${id}": group "${title}" names "${type}", which the pack does not define`
+          `primitive pack "${id}": group ${quoteInput(title)} names ${quoteInput(type)}, which the pack does not define`
         );
       }
       if (grouped.has(type)) {
         throw new IsomerError(
           'DUPLICATE_PRIMITIVE_TYPE',
-          `primitive pack "${id}": primitive type "${type}" is grouped twice`
+          `primitive pack "${id}": primitive type ${quoteInput(type)} is grouped twice`
         );
       }
       grouped.add(type);

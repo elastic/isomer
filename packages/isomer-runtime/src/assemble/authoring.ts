@@ -109,13 +109,13 @@ const assertGroupedOnce = (
       if (!known.has(type)) {
         throw new IsomerError(
           'UNKNOWN_PRIMITIVE_TYPE',
-          `createIsomerRuntime: group "${title}" names "${type}", which no pack registers`
+          `createIsomerRuntime: group ${quoteInput(title)} names ${quoteInput(type)}, which no pack registers`
         );
       }
       if (grouped.has(type)) {
         throw new IsomerError(
           'DUPLICATE_PRIMITIVE_TYPE',
-          `createIsomerRuntime: primitive type "${type}" is grouped twice`
+          `createIsomerRuntime: primitive type ${quoteInput(type)} is grouped twice`
         );
       }
       grouped.add(type);
