@@ -59,7 +59,7 @@ The studio builds its own runtime from the slides pack (`common/runtime.ts`) and
 
 `server/host/` takes its runtime, store, and renderers as options and imports no transport, app module, or Node built-in, so it can become its own package once a second host needs it. ESLint enforces this: outside its tests it rejects a Node built-in with or without `node:`, a Node global such as `Buffer` or `process`, any dynamic `import()`, a parent-directory import, and Vite, Express, the MCP SDK, the deck, and takumi.
 
-State lives on one `globalThis` singleton so decks and connected agents survive hot reloads. The MCP endpoint only answers `localhost`, `127.0.0.1`, or `[::1]` on the port it is served from, and refuses a request from any other origin.
+State lives on one `globalThis` singleton so decks and connected agents survive hot reloads. The MCP endpoint only answers `localhost`, `127.0.0.1`, or `[::1]` on the port it is served from, and refuses a request from any other origin. The dev server sends no CORS headers, so a page on another origin, another localhost port included, cannot read the studio's API.
 
 Every slide the studio draws, in the viewer, the slide grid, and the deck list, goes through the viewer's `ShadowSlide`: the React surface in a shadow root holding only the CSS the html surface collects for that slide. `DELETE /api/decks/<id>` removes a deck and its file, and refuses a request from another origin.
 

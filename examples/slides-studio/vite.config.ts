@@ -17,5 +17,10 @@ import { studioServer } from './vite/studio_plugin';
 export default defineConfig({
   plugins: [react(), studioServer()],
   resolve: { alias: sourceAliases(), dedupe: ['react', 'react-dom'] },
-  server: { port: 5178, strictPort: true, fs: { allow: [repoRoot] } },
+  server: {
+    port: 5178,
+    strictPort: true,
+    cors: false,
+    fs: { allow: [repoRoot] },
+  },
 });
