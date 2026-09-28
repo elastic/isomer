@@ -21,7 +21,7 @@ const tools = createIsomerTools({ runtime });
 
 | Export | Shape |
 | --- | --- |
-| `createIsomerTools(options)` | `IsomerTool[]`: `name`, `title`, `description`, a Zod `inputSchema`, and `handler`, which receives what `inputSchema` parsed and resolves to `{ content, isError? }`. Each content block is text or a base64 PNG, the same shape as an MCP `CallToolResult` |
+| `createIsomerTools(options)` | `IsomerTool[]`: `name`, `title`, `description`, a Zod `inputSchema`, and `handler`, which receives what `inputSchema` parsed and resolves to `{ content, isError? }`. It never rejects: a failure resolves with its message and `isError: true`. Each content block is text or a base64 PNG, the same shape as an MCP `CallToolResult` |
 | `createIsomerResources(options)` | `IsomerResource[]`: the guide as `isomer://authoring-guide` (`text/markdown`) and the whole composition JSON Schema as `isomer://composition-schema` (`application/json`), each with `read()` |
 | `createIsomerPrompts(options)` | `IsomerPrompt[]`: `compose`, whose `build({ request? })` returns the guide followed by the request. A host without prompts uses it as a system or user message |
 | `DEFAULT_ISOMER_INSTRUCTIONS` | Server or system instructions that point an agent at the tools in order |
@@ -38,7 +38,7 @@ const tools = createIsomerTools({ runtime });
 | `isomer_validate` | `composition` | `{ valid, errors, warnings }` as JSON. An invalid composition is a normal answer, not a failed call |
 | `isomer_render` | `composition`, `surface`, `theme?` | Text, Markdown, HTML with its CSS inline, Slack Block Kit as JSON, or a PNG image. An invalid composition returns its errors with `isError: true` |
 | `isomer_list_views` | none | The registered views, with the questions each answers and its input schema |
-| `isomer_request_view` | `id`, `input?` | The built composition and its validation, as JSON |
+| `isomer_request_view` | `id`, `input?` | `{ composition, valid, errors, warnings }` as JSON. A built composition that fails validation or the frame rule is a normal answer. Input that fails the view's schema, or a `CompositionValidationError` the view throws, returns `{ error, errors }` with `isError: true`. An unknown id or any other failure returns its message as text with `isError: true` |
 
 The two view tools are offered only when the runtime lists at least one view when the tools are created, so a host without views hands the agent no tool with nothing to return. `DEFAULT_ISOMER_INSTRUCTIONS` and `DEFAULT_ISOMER_GUIDE` name them conditionally, as "when `isomer_list_views` is offered".
 
@@ -55,7 +55,7 @@ The guide stays small because it only indexes the catalog: with the catalog and 
 | `runtime` | The runtime whose catalog, validation, surfaces, and views the tools use |
 | `guide` | Prose the guide opens with. Defaults to `DEFAULT_ISOMER_GUIDE` |
 | `rules` | Bullets under the guide's `## Rules` |
-| `examples` | Host compositions beyond each primitive's own catalog example |
+| `examples` | Host compositions shown under the guide's `## Examples`, trimmed to the profile's budget: one, or none under `'registered-view-router'`. The guide indexes the primitives without their own examples; `isomer_describe_primitives` returns those |
 | `profile` | The authoring profile. Defaults to `'compose-from-primitives'` |
 | `frame` | A body rule the runtime does not enforce on every surface. Any SDK `Frame` fits; a frame's `validateBody`, such as the slides pack's one-frame rule, runs on every validation and render |
 | `image` | `(composition, { theme }) => Promise<Uint8Array>`. Present, it adds `png` to the render surfaces |
@@ -69,7 +69,11 @@ An adapter maps the three lists onto a transport. On an MCP `McpServer`:
 ```ts
 for (const tool of tools) {
   const { name, title, description, inputSchema } = tool;
-  server.registerTool(name, { title, description, inputSchema }, (input) => tool.handler(input));
+  if (Object.keys(inputSchema.shape).length === 0) {
+    server.registerTool(name, { title, description }, () => tool.handler(inputSchema.parse({})));
+  } else {
+    server.registerTool(name, { title, description, inputSchema }, (input) => tool.handler(input));
+  }
 }
 for (const resource of resources) {
   const { name, uri, title, description, mimeType } = resource;
@@ -85,7 +89,7 @@ for (const prompt of prompts) {
 }
 ```
 
-The MCP SDK rejects a call that omits `arguments` against any `inputSchema`, so register a tool whose schema has no keys without one. The [slides studio](https://github.com/elastic/isomer/tree/main/examples/slides-studio)'s `server/adapters/mcp.ts` is a complete adapter, served over Streamable HTTP with a server per session. The same function works on the server Vercel's `mcp-handler` hands a route.
+The MCP SDK rejects a call that omits `arguments` against any `inputSchema`, even one with no keys, so a tool whose schema has no keys is registered without one. The [slides studio](https://github.com/elastic/isomer/tree/main/examples/slides-studio)'s `server/adapters/mcp.ts` is a complete adapter, served over Streamable HTTP with a server per session. The same function works on the server Vercel's `mcp-handler` hands a route.
 
 With the AI SDK, each tool becomes a `tool()`:
 
