@@ -26,7 +26,6 @@ import {
   readAuthoredSpec,
 } from './authored_fields';
 import { type AuthorComponent, authorType, defineAuthorComponent } from './jsx';
-import { type JsxPrintOptions, MAX_JSX_DEPTH, printJsx } from './jsx_print';
 
 /** A {@link Composition} whose `body` is the pack's own authoring node type. */
 export type AuthorComposition<TNode extends PrimitiveNode = PrimitiveNode> =
@@ -158,11 +157,6 @@ export type JsxShim<
   toComposition: (
     element: ReactElement<CompositionAuthorProps<TNode>>
   ) => AuthorComposition<TNode>;
-  /** `composition` as JSX source that {@link JsxShim.toComposition} turns back into the same value, as JSON sees it: a field set to `undefined` prints as absent. */
-  toJsx: (
-    composition: AuthorComposition<TNode>,
-    options?: JsxPrintOptions
-  ) => string;
 } & PrimitiveComponentMap<TPrimitives> &
   ChildComponentMap<TPrimitives>;
 
@@ -190,12 +184,6 @@ export const buildJsxShim = <
     ])
   );
   const { authoredByType, childComponents } = collectAuthored(primitives);
-  const walkers = new Map<unknown, unknown>(
-    primitives.map((primitive) => [
-      primitive.type,
-      'children' in primitive ? primitive.children : undefined,
-    ])
-  );
   const named = new Map<string, string>([['Composition', 'view']]);
   for (const type of [
     ...primitives.map((primitive) => primitive.type),
@@ -206,7 +194,7 @@ export const buildJsxShim = <
     if (earlier !== undefined && earlier !== type) {
       throw new IsomerError(
         'DUPLICATE_PRIMITIVE_TYPE',
-        `buildJsxShim: "${earlier}" and "${type}" both print as the component ${name}`
+        `buildJsxShim: "${earlier}" and "${type}" both become the component ${name}`
       );
     }
     named.set(name, type);
@@ -226,21 +214,6 @@ export const buildJsxShim = <
       type: string
     ) => defineAuthorComponent<TProps, string>(type),
     toComposition: (element) => toAuthorComposition<TNode>(element, env),
-    toJsx: (composition, options) =>
-      printJsx(
-        composition,
-        {
-          childField: (type) => {
-            const authored = authoredByType.get(type);
-            const slots = childSlotsByType.get(type) ?? [];
-            return authored || slots.length !== 1 ? undefined : slots[0];
-          },
-          childPaths: (node) => childPathsOf(walkers.get(node.type), node),
-          isPrimitive: (type) => extensionTypes.has(type),
-          nameOf: capitalize,
-        },
-        options
-      ),
     ...Object.fromEntries(
       primitives.map((primitive) => [
         capitalize(primitive.type),
@@ -536,16 +509,19 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> => {
   return proto === null || Object.getPrototypeOf(proto) === null;
 };
 
+/** Nesting past which a prop value is refused, which also ends a cycle. */
+const MAX_PROP_DEPTH = 256;
+
 /** Converts author elements anywhere inside a prop value, e.g. `left={{ items: [<Node />] }}`. */
 const convertNested = <TNode extends PrimitiveNode>(
   value: unknown,
   parseChild: (child: ReactNode) => TNode,
   depth = 0
 ): unknown => {
-  if (depth > MAX_JSX_DEPTH) {
+  if (depth > MAX_PROP_DEPTH) {
     throw new IsomerError(
       'INVALID_BODY_NODE',
-      `toComposition: a prop nests deeper than ${MAX_JSX_DEPTH} levels`
+      `toComposition: a prop nests deeper than ${MAX_PROP_DEPTH} levels`
     );
   }
   if (Array.isArray(value)) {
@@ -634,23 +610,6 @@ const inferChildSlots = (children: unknown): readonly ChildSlot[] => {
     return [...byField.entries()].map(([field, array]) => ({ array, field }));
   } catch {
     return [];
-  }
-};
-
-const childPathsOf = (
-  walker: unknown,
-  node: Record<string, unknown>
-): ReadonlySet<string> => {
-  if (typeof walker !== 'function') {
-    return new Set();
-  }
-  try {
-    const refs: unknown = (walker as (value: unknown) => unknown)(node);
-    return new Set(
-      Array.isArray(refs) ? refs.filter(isChildRef).map(({ path }) => path) : []
-    );
-  } catch {
-    return new Set();
   }
 };
 

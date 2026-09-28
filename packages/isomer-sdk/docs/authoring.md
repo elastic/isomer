@@ -44,18 +44,7 @@ Array-shaped authoring props accept either the array or JSX children:
 
 Child-only components (`Badge`, `Stat`, `ListItem`, …) are not composition body nodes. Placing one directly under `<Composition>` throws `"badge" cannot be used as a composition body node.` Passing neither the array nor children yields `[]`, which the validator rejects via the schema `.min(1)`.
 
-When a schema has no brand, the walk still fills a unique child-array field (`body`, `items`, …) from nested body nodes, and a unique single-node field from the first child. A container with more than one such field takes those props explicitly. Those props take elements directly or nested inside plain objects and arrays (`left={{ items: [<Node />] }}`); the walk converts every author element it finds.
-
-`toJsx` goes the other way: it prints a composition as JSX source that `toComposition` turns back into the same value as JSON sees it, where a field set to `undefined` is absent, so a host holding JSON from an agent can show it as a person would write it. A unique unbranded child field prints as children and every other field as a prop, which the walk above accepts as plain data; pass `{ root: 'Slide' }` when the host renames `Composition`.
-
-```ts
-shim.toJsx(composition, { root: 'Slide' });
-// <Slide title="…">
-//   <SlideFrame url="https://example.com">
-//     <SlideHeading title="…" />
-//   </SlideFrame>
-// </Slide>
-```
+When a schema has no brand, the walk still fills a unique child-array field (`body`, `items`, …) from nested body nodes, and a unique single-node field from the first child. A container with more than one such field takes those props explicitly. Those props take elements directly or nested inside plain objects and arrays (`left={{ items: [<Node />] }}`); the walk converts every author element it finds, and throws `INVALID_BODY_NODE` for a value nested past 256 levels, which also ends a cycle. Two types that capitalize to the same component name, such as `note` and `Note`, throw `DUPLICATE_PRIMITIVE_TYPE` when the shim is built.
 
 `flattenChildren`, `textFromChildren`, `withoutChildren`, `requireAuthorElement`, and `itemsFromChildren` remain for hosts that unwrap children themselves. `textFromChildren` collapses whitespace by default; pass `{ collapseWhitespace: false }` when indentation and newlines are significant.
 

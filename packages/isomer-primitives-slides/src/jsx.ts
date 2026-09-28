@@ -11,7 +11,7 @@ import { slideDeckPrimitives } from './registry';
 
 /**
  * The pack's primitives as JSX components, one per type plus the child
- * components its branded fields declare, with `toComposition` and `toJsx`.
+ * components its branded fields declare, with `toComposition`.
  * A host destructures what it authors with.
  */
 export const slideJsx = buildJsxShim(slideDeckPrimitives);

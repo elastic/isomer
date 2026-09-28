@@ -103,7 +103,7 @@ mrkdwn formatters: `escapeMrkdwn`, `bold`, `italic`, `strike`, `code`, `codeBloc
 
 ## `./author`
 
-JSX: `fromChildren`, `fromTextChildren`, `AuthoredChildBrand`, `AuthoredTextBrand`, `AuthorChildContext`, `defineAuthorComponent`, `AuthorComponent`, `authorType`, `getAuthorType`, `buildJsxShim`, `JsxShim` (whose `toJsx` prints a composition back to JSX that `toComposition` parses to the same value, with `JsxPrintOptions`, and throws `INVALID_BODY_NODE` for what JSX cannot carry: a body entry that is not a registered node, a `__proto__`, `children`, `key`, or `ref` prop, or a primitive type or `root` that is not a component name), `PrimitiveComponentMap`, `CompositionAuthorProps`, `AuthorComposition`, `flattenChildren`, `textFromChildren`, `withoutChildren`, `itemsFromChildren`, `requireAuthorElement`.
+JSX: `fromChildren`, `fromTextChildren`, `AuthoredChildBrand`, `AuthoredTextBrand`, `AuthorChildContext`, `defineAuthorComponent`, `AuthorComponent`, `authorType`, `getAuthorType`, `buildJsxShim`, `JsxShim`, `PrimitiveComponentMap`, `CompositionAuthorProps`, `AuthorComposition`, `flattenChildren`, `textFromChildren`, `withoutChildren`, `itemsFromChildren`, `requireAuthorElement`.
 
 Object builders: `defineNodeBuilder` (a `NodeBuilder` taking a `BuilderInput`, the node without `type`), `buildObjectBuilders` (a `BuilderMap`, one builder per primitive typed from its schema).
 

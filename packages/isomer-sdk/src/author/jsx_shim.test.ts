@@ -372,21 +372,6 @@ const brandedGroup = <TSchema extends z.ZodType>(items: TSchema) => ({
   }),
 });
 
-describe('toJsx', () => {
-  it('escapes carriage returns, so printed JSX parses to the same text', () => {
-    const { toJsx } = buildJsxShim(primitives);
-    const jsx = toJsx({
-      type: 'view',
-      body: [
-        { type: 'note', text: 'a\rb', meta: { note: 'c\rd' } } as PrimitiveNode,
-      ],
-    });
-    expect(jsx).not.toContain('\r');
-    expect(jsx).toContain(`text={'a\\rb'}`);
-    expect(jsx).toContain(`'c\\rd'`);
-  });
-});
-
 describe('recursive fromChildren', () => {
   it('nests items without looping the child signature', () => {
     let nested: z.ZodOptional<z.ZodArray<z.ZodType>> | undefined;
