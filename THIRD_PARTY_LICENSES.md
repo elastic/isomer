@@ -178,7 +178,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@typescript-eslint/visitor-keys` | 8.70.0 | MIT | `node_modules/.pnpm/@typescript-eslint+visitor-keys@8.70.0/node_modules/@typescript-eslint/visitor-keys` |  |
 | `@vitest/coverage-v8` | 4.1.11 | MIT | `node_modules/.pnpm/@vitest+coverage-v8@4.1.11_vitest@4.1.11/node_modules/@vitest/coverage-v8` |  |
 | `@vitest/expect` | 4.1.11 | MIT | `node_modules/.pnpm/@vitest+expect@4.1.11/node_modules/@vitest/expect` |  |
-| `@vitest/mocker` | 4.1.11 | MIT | `node_modules/.pnpm/@vitest+mocker@4.1.11_vite@8.3.0_@types+node@22.20.2_jiti@2.6.1_yaml@2.9.1_/node_modules/@vitest/mocker` |  |
+| `@vitest/mocker` | 4.1.11 | MIT | `node_modules/.pnpm/@vitest+mocker@4.1.11_vite@8.3.0_@types+node@22.20.2_esbuild@0.28.2_jiti@2.6.1_yaml@2.9.1_/node_modules/@vitest/mocker` |  |
 | `@vitest/pretty-format` | 4.1.11 | MIT | `node_modules/.pnpm/@vitest+pretty-format@4.1.11/node_modules/@vitest/pretty-format` |  |
 | `@vitest/runner` | 4.1.11 | MIT | `node_modules/.pnpm/@vitest+runner@4.1.11/node_modules/@vitest/runner` |  |
 | `@vitest/snapshot` | 4.1.11 | MIT | `node_modules/.pnpm/@vitest+snapshot@4.1.11/node_modules/@vitest/snapshot` |  |
@@ -348,6 +348,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `fs-minipass` | 3.0.3 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/fs-minipass` |  |
 | `function-timeout` | 1.0.2 | MIT | `node_modules/.pnpm/function-timeout@1.0.2/node_modules/function-timeout` |  |
 | `get-caller-file` | 2.0.5 | ISC | `node_modules/.pnpm/get-caller-file@2.0.5/node_modules/get-caller-file` |  |
+| `get-east-asian-width` | 1.6.0 | MIT | `node_modules/.pnpm/get-east-asian-width@1.6.0/node_modules/get-east-asian-width` |  |
 | `get-east-asian-width` | 1.7.0 | MIT | `node_modules/.pnpm/get-east-asian-width@1.7.0/node_modules/get-east-asian-width` |  |
 | `get-stream` | 6.0.1 | MIT | `node_modules/.pnpm/get-stream@6.0.1/node_modules/get-stream` |  |
 | `get-stream` | 8.0.1 | MIT | `node_modules/.pnpm/get-stream@8.0.1/node_modules/get-stream` |  |
@@ -729,6 +730,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `string-width` | 4.2.3 | MIT | `node_modules/.pnpm/string-width@4.2.3/node_modules/string-width` |  |
 | `string-width` | 7.2.0 | MIT | `node_modules/.pnpm/string-width@7.2.0/node_modules/string-width` |  |
 | `string-width` | 8.2.1 | MIT | `node_modules/.pnpm/string-width@8.2.1/node_modules/string-width` |  |
+| `string-width` | 8.2.2 | MIT | `node_modules/.pnpm/string-width@8.2.2/node_modules/string-width` |  |
 | `string-width` | 8.3.0 | MIT | `node_modules/.pnpm/string-width@8.3.0/node_modules/string-width` |  |
 | `strip-ansi` | 6.0.1 | MIT | `node_modules/.pnpm/strip-ansi@6.0.1/node_modules/strip-ansi` |  |
 | `strip-ansi` | 7.2.0 | MIT | `node_modules/.pnpm/strip-ansi@7.2.0/node_modules/strip-ansi` |  |
@@ -798,8 +800,8 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `util-deprecate` | 1.0.2 | MIT | `node_modules/.pnpm/util-deprecate@1.0.2/node_modules/util-deprecate` |  |
 | `validate-npm-package-license` | 3.0.4 | Apache-2.0 | `node_modules/.pnpm/validate-npm-package-license@3.0.4/node_modules/validate-npm-package-license` |  |
 | `validate-npm-package-name` | 7.0.2 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/validate-npm-package-name` |  |
-| `vite` | 8.3.0 | MIT | `node_modules/.pnpm/vite@8.3.0_@types+node@22.20.2_jiti@2.6.1_yaml@2.9.1/node_modules/vite` | `fsevents` |
-| `vitest` | 4.1.11 | MIT | `node_modules/.pnpm/vitest@4.1.11_@types+node@22.20.2_@vitest+coverage-v8@4.1.11_happy-dom@20.14.5_vite@8.3_6cd0578c6b434ee6bfe97d45dfc13977/node_modules/vitest` |  |
+| `vite` | 8.3.0 | MIT | `node_modules/.pnpm/vite@8.3.0_@types+node@22.20.2_esbuild@0.28.2_jiti@2.6.1_yaml@2.9.1/node_modules/vite` | `fsevents` |
+| `vitest` | 4.1.11 | MIT | `node_modules/.pnpm/vitest@4.1.11_@types+node@22.20.2_@vitest+coverage-v8@4.1.11_happy-dom@20.14.5_vite@8.3_99f6e94a6cd56a3acca9aeec9a26ad19/node_modules/vitest` |  |
 | `walk-up-path` | 4.0.0 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/walk-up-path` |  |
 | `web-worker` | 1.5.0 | Apache-2.0 | `node_modules/.pnpm/web-worker@1.5.0/node_modules/web-worker` |  |
 | `whatwg-mimetype` | 3.0.0 | MIT | `node_modules/.pnpm/whatwg-mimetype@3.0.0/node_modules/whatwg-mimetype` |  |
@@ -811,7 +813,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `wrap-ansi` | 7.0.0 | MIT | `node_modules/.pnpm/wrap-ansi@7.0.0/node_modules/wrap-ansi` |  |
 | `wrap-ansi` | 9.0.2 | MIT | `node_modules/.pnpm/wrap-ansi@9.0.2/node_modules/wrap-ansi` |  |
 | `write-file-atomic` | 7.0.1 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/write-file-atomic` |  |
-| `ws` | 8.22.0 | MIT | `node_modules/.pnpm/ws@8.22.0/node_modules/ws` |  |
+| `ws` | 8.21.3 | MIT | `node_modules/.pnpm/ws@8.21.3/node_modules/ws` |  |
 | `xtend` | 4.0.2 | MIT | `node_modules/.pnpm/xtend@4.0.2/node_modules/xtend` |  |
 | `y18n` | 5.0.8 | ISC | `node_modules/.pnpm/y18n@5.0.8/node_modules/y18n` |  |
 | `yallist` | 4.0.0 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/minipass-pipeline/node_modules/yallist` |  |
