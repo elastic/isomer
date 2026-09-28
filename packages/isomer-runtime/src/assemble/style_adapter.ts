@@ -293,10 +293,10 @@ const hasClassNameResolver = (
     'function';
 
 /**
- * Every part's context as one, reading `fields` first and then the last
- * context that has the key, as a spread would. A view rather than a copy:
- * methods stay bound to their own context, so a class-instance context keeps
- * its prototype and private state.
+ * Every part's context as one, reading `fields` first, then the last context
+ * that owns the key, as a spread would, then the last that inherits it. A
+ * view rather than a copy: methods stay bound to their own context, so a
+ * class-instance context keeps its prototype and private state.
  */
 const mergedContextView = (
   contexts: readonly unknown[],
@@ -308,7 +308,9 @@ const mergedContextView = (
     .reverse();
   const own = (key: string | symbol) => Object.hasOwn(fields, key);
   const read = (key: string | symbol): unknown => {
-    const owner = objects.find((context) => Reflect.has(context, key));
+    const owner =
+      objects.find((context) => Object.hasOwn(context, key)) ??
+      objects.find((context) => Reflect.has(context, key));
     if (owner === undefined) {
       return undefined;
     }

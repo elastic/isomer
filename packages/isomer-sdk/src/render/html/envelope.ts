@@ -46,7 +46,6 @@ import {
   embedScript,
   type EnhancementDefinition,
   enhancementScript,
-  rendersAnchors,
   resolveEnhancements,
 } from './enhancements';
 
@@ -293,18 +292,17 @@ export const renderHTMLWithDispatcher = <
     walk: createChildNodeWalker(dispatcher.definitions),
     definitions: enhancementDefinitions,
   };
-  const anchors = rendersAnchors(
-    composition.body,
-    options,
-    enhancementScope.walk,
-    enhancementDefinitions
-  );
   const enhancements = resolveEnhancements(
     composition.body,
     options.enhancements,
     enhancementScope.walk,
     enhancementDefinitions
   );
+  const anchors =
+    options.anchors === true ||
+    enhancementDefinitions.some(
+      ({ id, anchors: needed }) => needed === true && enhancements.has(id)
+    );
   const enhanced = (context: TContext): TContext =>
     contextWith(context, 'enhancements', enhancements);
 

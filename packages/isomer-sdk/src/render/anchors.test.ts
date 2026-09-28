@@ -441,6 +441,27 @@ describe('html anchors', () => {
     expect(js).toContain('root.copy = 1;');
   });
 
+  it('asks each enhancement whether it applies once per render, and anchors by that answer', () => {
+    let calls = 0;
+    const { body } = renderHTMLWithDispatcher(composition, {
+      dispatcher,
+      validate: valid,
+      options: { enhancements: ['counted'] },
+      enhancementDefinitions: [
+        {
+          id: 'counted',
+          anchors: true,
+          appliesTo: () => {
+            calls += 1;
+            return true;
+          },
+        },
+      ],
+    });
+    expect(calls).toBe(1);
+    expect(body).toContain(NODE_ANCHOR_ATTRIBUTE);
+  });
+
   it('renders none unless asked, even when the adapter context says otherwise', () => {
     const renderWith = (options: HTMLRenderOptions) =>
       renderHTMLWithDispatcher(composition, {

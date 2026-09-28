@@ -1008,6 +1008,40 @@ describe('createIsomerRuntime', () => {
       expect(result.css).toBe('.one.root{}.two.root{}');
     });
 
+    it('reads a key a part owns before one a later part only inherits, as a spread did', () => {
+      class Inherits {
+        label(): string {
+          return 'method';
+        }
+      }
+      const adapterWith = (prefix: string, context: () => object) => ({
+        ownsHandle: (handle: StyleHandle) => handle.key.startsWith(prefix),
+        createCollector: () => ({}),
+        createRenderContext: context,
+        renderStyles: () => '',
+      });
+      const runtime = createIsomerRuntime({
+        packs: styledPacks(
+          adapterWith('one.', () => ({ label: 'first' })),
+          adapterWith('two.', () => new Inherits())
+        ),
+        rendererOverrides: {
+          note: {
+            react: (node, { context }) =>
+              createElement(
+                'span',
+                { 'data-label': String((context as { label: unknown }).label) },
+                (node as NoteNode).text
+              ),
+          },
+        },
+      });
+
+      expect(runtime.surfaces.html.render(view('ok')).body).toContain(
+        'data-label="first"'
+      );
+    });
+
     it('keeps each part’s class-instance context working: methods, private state and own fields', () => {
       class PartContext {
         readonly #keys: string[];
