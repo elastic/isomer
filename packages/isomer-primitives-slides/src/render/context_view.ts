@@ -13,7 +13,7 @@
  */
 export const withContextFields = <TContext extends object>(
   context: TContext | undefined,
-  fields: Partial<TContext>
+  fields: { [K in keyof TContext]?: TContext[K] | undefined }
 ): TContext => {
   if (context === undefined) {
     return { ...fields } as TContext;

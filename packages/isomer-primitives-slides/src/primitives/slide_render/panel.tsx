@@ -16,6 +16,7 @@ import type {
   SlideRenderContext,
   SlideRenderScope,
 } from '../../render/context';
+import { withContextFields } from '../../render/context_view';
 import { slideDistillery } from '../../theme/distillery';
 import type { SlideRenderSurface } from '../../theme/variants';
 
@@ -40,7 +41,7 @@ const textsIn = (value: unknown): string[] => {
 /** Slack blocks as one line each: the block type, padded, then its text on one line. */
 export const slackLines = (blocks: readonly SlackBlock[]): string[] =>
   blocks.map(({ type, ...rest }) =>
-    `${type.padEnd(typeColumn)}${textsIn(rest).join(' ').replace(/\s+/g, ' ').trim()}`.trimEnd()
+    `${type.padEnd(Math.max(typeColumn, type.length + 1))}${textsIn(rest).join(' ').replace(/\s+/g, ' ').trim()}`.trimEnd()
   );
 
 /** What `surface` outputs for `body`, one entry per non-blank line. */
@@ -86,7 +87,11 @@ export const RenderPanel = ({
   const { handles: render } = renderModule;
   const [first] = body;
   const bare = body.length !== 1 || first?.type !== 'slideFrame';
-  const embedded = withoutAnchors(context);
+  // An embedded slide lays out as it would alone, whatever the host slide around it sets.
+  const embedded = withContextFields(withoutAnchors(context), {
+    crowding: undefined,
+    logo: undefined,
+  });
   return (
     <div className={cls(context, render.panel, size)}>
       {isVisual(surface) ? (

@@ -9,6 +9,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import {
   buildAuthoringJsonSchema,
+  type Composition,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
@@ -23,6 +24,7 @@ import {
   placeholderExample,
   slackExample,
 } from './examples';
+import { slackLines } from './panel';
 
 const runtime = createIsomerRuntime({ packs: [slidesPack] });
 
@@ -225,4 +227,96 @@ describe('slideRender', () => {
     );
     expect(html).toContain('header   Orders now arrive in under 30 minutes');
   });
+
+  it('keeps a space after a block type as long as the column', () => {
+    const [line] = slackLines([
+      {
+        type: 'rich_text',
+        elements: [
+          {
+            type: 'rich_text_section',
+            elements: [{ type: 'text', text: 'checkout/' }],
+          },
+        ],
+      },
+    ]);
+    expect(line).toBe('rich_text checkout/');
+  });
+});
+
+describe('an embedded composition', () => {
+  const view = (body: unknown[]): Composition => ({
+    type: 'view',
+    body: [{ type: 'slideFrame', body } as PrimitiveNode],
+  });
+  const html = (composition: Composition) =>
+    runtime.surfaces.html.render(composition).html;
+  const steps = (markup: string) =>
+    [...markup.matchAll(/statement-textSize-(\w+)/g)].map(([, step]) => step);
+
+  const embedders: Record<string, (composition: Composition) => unknown> = {
+    slideRender: (composition) => ({
+      type: 'slideRender',
+      surface: 'svg',
+      composition,
+    }),
+    slideRenderGrid: (composition) => ({
+      type: 'slideRenderGrid',
+      composition,
+      tiles: [
+        { surface: 'svg', caption: 'Image' },
+        { surface: 'html', caption: 'Web' },
+      ],
+    }),
+    slideAnnotatedRender: (composition) => ({
+      type: 'slideAnnotatedRender',
+      render: { type: 'slideRender', surface: 'svg', composition },
+      pins: [{ x: 50, y: 50, title: 'Claim', body: 'The slide’s point.' }],
+    }),
+  };
+  const headings = [
+    { type: 'slideHeading', title: 'Proof' },
+    {
+      type: 'slideHeading',
+      title: 'Every surface draws the same slide from one composition',
+      lede: 'The render below is the statement slide exactly as the image surface draws it, at full size.',
+    },
+  ];
+  const lengths = Array.from({ length: 16 }, (_, index) => 60 + index * 6);
+
+  it.each(Object.entries(embedders))(
+    'sizes a statement inside %s as it would alone',
+    (_type, embed) => {
+      for (const heading of headings) {
+        for (const length of lengths) {
+          const embedded = view([
+            { type: 'slideStatement', text: 'word '.repeat(length / 5) },
+          ]);
+          const [alone] = steps(html(embedded));
+          const inside = steps(html(view([heading, embed(embedded)])));
+          expect(inside.length).toBeGreaterThan(0);
+          expect(inside, `${heading.title}, ${length} characters`).toEqual(
+            inside.map(() => alone)
+          );
+        }
+      }
+    }
+  );
+
+  it.each(Object.entries(embedders))(
+    'keeps an embedded title’s mark inside %s when the host leaves its own out',
+    (_type, embed) => {
+      const host: Composition = {
+        type: 'view',
+        body: [
+          {
+            type: 'slideFrame',
+            logo: false,
+            body: [embed(view([{ type: 'slideTitle', title: 'Crate' }]))],
+          } as PrimitiveNode,
+        ],
+      };
+      expect(html(host)).toContain('title-logo');
+    }
+  );
 });
