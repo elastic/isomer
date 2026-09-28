@@ -8,12 +8,21 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
+import type { Composition } from '../composition/composition';
 import { formatValidationError } from '../composition/validation_error';
-import { definePrimitive } from '../define/primitive_module';
+import {
+  definePrimitive,
+  type PrimitiveNode,
+} from '../define/primitive_module';
+import { formatPath } from '../define/zod_format';
+import { fixtureDefinitions } from '../testing/sdk.fixtures';
 
 import {
   createCompositionParser,
   createCompositionValidator,
+  MAX_COMPOSITION_DEPTH,
+  MAX_COMPOSITION_VALUES,
+  MAX_VALIDATION_ERRORS,
 } from './validation';
 
 const renderers = {
@@ -175,7 +184,7 @@ describe('unknown node keys', () => {
       {
         path: 'body[0]',
         message:
-          'has unrecognized key(s): hallucinated; its fields are label, delta',
+          'has unrecognized key(s): "hallucinated"; its fields are label, delta',
         nodeType: 'kpi',
       },
     ]);
@@ -188,5 +197,123 @@ describe('unknown node keys', () => {
     });
     expect(result.valid).toBe(true);
     expect(result.composition?.body[0]).toEqual({ type: 'loose', extra: 1 });
+  });
+});
+
+const LINE_SEPARATOR = String.fromCharCode(0x2028);
+
+describe('messages that echo input', () => {
+  it('quotes a misspelled value as JSON', () => {
+    const [error] = validate({ type: 'view', body: [{ type: 'kp"' }] }).errors;
+    expect(error?.message).toMatch(/^is "kp\\""; did you mean "kpi"\?/);
+  });
+
+  it('quotes unknown keys on one line, and lists only the first few', () => {
+    const keys = Array.from({ length: 12 }, (_, index) =>
+      index === 0 ? `a${LINE_SEPARATOR}b` : `extra${index}`
+    );
+    const [error] = parse({
+      type: 'view',
+      body: [
+        {
+          type: 'kpi',
+          label: 'a',
+          ...Object.fromEntries(keys.map((key) => [key, 1])),
+        },
+      ],
+    }).errors;
+    expect(error?.message).toContain('"a\\u2028b", "extra1"');
+    expect(error?.message).toContain('and 2 more');
+    expect(error?.message).not.toContain(LINE_SEPARATOR);
+  });
+
+  it('quotes a duplicated id on one line', () => {
+    const id = `a${LINE_SEPARATOR}b`;
+    const [error] = validate({
+      type: 'view',
+      body: [
+        { type: 'kpi', label: 'a', id } as PrimitiveNode,
+        { type: 'kpi', label: 'b', id } as PrimitiveNode,
+      ],
+    }).errors;
+    expect(error?.message).toBe(
+      'duplicates id "a\\u2028b" first used at body[0]'
+    );
+  });
+
+  it('quotes a path key that is not a plain name', () => {
+    expect(formatPath(['body', 0, 'a b', `x${LINE_SEPARATOR}`, 'ok-key'])).toBe(
+      'body[0]["a b"]["x\\u2028"].ok-key'
+    );
+  });
+});
+
+describe('input bounds', () => {
+  const boundedValidate = createCompositionValidator(fixtureDefinitions);
+  const boundedParse = createCompositionParser(fixtureDefinitions);
+  /** A view whose one body node is `depth` stacks around a note. */
+  const stacked = (depth: number): Composition => {
+    let node: PrimitiveNode = { type: 'note', body: 'leaf' } as PrimitiveNode;
+    for (let level = 0; level < depth; level += 1) {
+      node = { type: 'stack', items: [node] } as PrimitiveNode;
+    }
+    return { type: 'view', body: [node] };
+  };
+
+  it.each([500, 5000])(
+    'reports a composition %i stacks deep instead of throwing',
+    (depth) => {
+      for (const { valid, errors } of [
+        boundedParse(stacked(depth)),
+        boundedValidate(stacked(depth)),
+      ]) {
+        expect(valid).toBe(false);
+        expect(errors).toEqual([
+          {
+            path: '',
+            message: `nests deeper than ${MAX_COMPOSITION_DEPTH} levels of arrays and objects`,
+          },
+        ]);
+      }
+    }
+  );
+
+  it('accepts a composition as deep as the bound allows', () => {
+    // The view, its body, and two levels per stack sit above the leaf.
+    const deepest = stacked(Math.floor((MAX_COMPOSITION_DEPTH - 3) / 2));
+    expect(boundedParse(deepest).valid).toBe(true);
+    expect(boundedValidate(deepest).valid).toBe(true);
+  });
+
+  it('reports a composition with more values than the bound allows', () => {
+    const { valid, errors } = boundedParse({
+      type: 'view',
+      body: Array.from({ length: MAX_COMPOSITION_VALUES }, () => ({
+        type: 'note',
+        body: 'x',
+      })),
+    });
+    expect(valid).toBe(false);
+    expect(errors).toEqual([
+      {
+        path: '',
+        message: `holds more than ${MAX_COMPOSITION_VALUES} values`,
+      },
+    ]);
+  });
+
+  it('lists the first errors and counts the rest', () => {
+    const { errors } = boundedParse({
+      type: 'view',
+      body: Array.from({ length: MAX_VALIDATION_ERRORS + 150 }, () => ({
+        type: 'note',
+      })),
+    });
+    expect(errors).toHaveLength(MAX_VALIDATION_ERRORS + 1);
+    expect(errors.at(-2)).toMatchObject({ message: 'is required' });
+    expect(errors.at(-1)).toEqual({
+      path: '',
+      message: 'and 150 more errors not listed',
+    });
   });
 });

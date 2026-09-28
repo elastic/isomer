@@ -9,9 +9,14 @@ import type { core } from 'zod';
 
 import type { ValidationError } from '../composition/validation_error';
 
+import { listBounded, quoteInput } from './one_line';
+
+const PATH_KEY = /^[\w$-]+$/;
+
 /**
  * Builds a `body[3].items[0].label` style path from a Zod issue path. Empty
- * when the issue is at the schema root.
+ * when the issue is at the schema root. A key with other characters is quoted,
+ * as in `meta["a b"]`.
  */
 export const formatPath = (
   segments: ReadonlyArray<PropertyKey>,
@@ -23,7 +28,11 @@ export const formatPath = (
       result += `[${segment}]`;
     } else {
       const text = String(segment);
-      result += result ? `.${text}` : text;
+      if (!PATH_KEY.test(text)) {
+        result += `[${quoteInput(text)}]`;
+      } else {
+        result += result ? `.${text}` : text;
+      }
     }
   });
   return result;
@@ -57,7 +66,7 @@ export const formatZodIssue = (
   if (issue.code === 'unrecognized_keys') {
     return {
       path,
-      message: `has unrecognized key(s): ${issue.keys.join(', ')}`,
+      message: `has unrecognized key(s): ${listBounded(issue.keys.map(quoteInput))}`,
     };
   }
 
@@ -129,7 +138,7 @@ const oneOf = (options: readonly unknown[], input: unknown): string => {
     .sort((a, b) => a.distance - b.distance);
   return closest === undefined
     ? list
-    : `is "${input}"; did you mean "${closest.option}"? It ${list}`;
+    : `is ${quoteInput(input)}; did you mean ${quoteInput(closest.option)}? It ${list}`;
 };
 
 const sizeMessage = (

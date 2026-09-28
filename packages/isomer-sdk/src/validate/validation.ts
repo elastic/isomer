@@ -21,6 +21,7 @@ import {
   CompositionValidationError,
   type ValidationError,
 } from '../composition/validation_error';
+import { quoteInput } from '../define/one_line';
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
 import { formatPath, formatZodIssue } from '../define/zod_format';
 
@@ -138,18 +139,22 @@ const nodeTypeAt = (
   segments: readonly PropertyKey[],
   fields: ReadonlyMap<string, unknown>
 ): string | undefined => {
-  for (let length = segments.length; length > 0; length -= 1) {
-    const type = nodes.get(formatPath(segments.slice(0, length)));
+  let found: string | undefined;
+  let path = '';
+  for (const segment of segments) {
+    path = formatPath([segment], path);
+    const type = nodes.get(path);
     if (type !== undefined && fields.has(type)) {
-      return type;
+      found = type;
     }
   }
-  return undefined;
+  return found;
 };
 
 /**
  * {@link formatZodIssue} per issue, each error naming the primitive its path lands in,
- * and an unknown key on a node listing the fields that node takes.
+ * and an unknown key on a node listing the fields that node takes. Past
+ * {@link MAX_VALIDATION_ERRORS}, one last error counts the rest.
  */
 const formatIssuesIn = (
   value: unknown,
@@ -158,20 +163,62 @@ const formatIssuesIn = (
   walk: ChildNodeWalker
 ): ValidationError[] => {
   const nodes = nodeTypesByPath(value, walk);
-  return issues.map((issue) => {
+  const errors = issues.slice(0, MAX_VALIDATION_ERRORS).map((issue) => {
     const error = formatZodIssue(issue);
     const nodeType = nodeTypeAt(nodes, issue.path, fields);
     if (nodeType === undefined) {
       return error;
     }
     const onNode =
-      issue.code === 'unrecognized_keys' &&
-      nodes.get(formatPath(issue.path)) === nodeType;
+      issue.code === 'unrecognized_keys' && nodes.get(error.path) === nodeType;
     const message = onNode
       ? `${error.message}; its fields are ${(fields.get(nodeType) ?? []).join(', ')}`
       : error.message;
     return { ...error, message, nodeType };
   });
+  const rest = issues.length - errors.length;
+  return rest > 0
+    ? [...errors, { path: '', message: `and ${rest} more errors not listed` }]
+    : errors;
+};
+
+/** Errors a result lists before one more error counts the rest. */
+export const MAX_VALIDATION_ERRORS = 50;
+
+/** Nesting of arrays and objects past which input is refused before the schema runs. The deepest slide the slides pack ships nests 16. */
+export const MAX_COMPOSITION_DEPTH = 64;
+
+/** Values, containers and leaves alike, past which input is refused before the schema runs. */
+export const MAX_COMPOSITION_VALUES = 20_000;
+
+/** Why `value` is too deep or too large to parse, found without recursion. */
+const inputBoundError = (value: unknown): ValidationError | undefined => {
+  const pending: [unknown, number][] = [[value, 1]];
+  let seen = 0;
+  for (let next = pending.pop(); next !== undefined; next = pending.pop()) {
+    const [item, depth] = next;
+    seen += 1;
+    if (typeof item !== 'object' || item === null) {
+      continue;
+    }
+    if (depth > MAX_COMPOSITION_DEPTH) {
+      return {
+        path: '',
+        message: `nests deeper than ${MAX_COMPOSITION_DEPTH} levels of arrays and objects`,
+      };
+    }
+    const size = Array.isArray(item) ? item.length : Object.keys(item).length;
+    if (seen + pending.length + size > MAX_COMPOSITION_VALUES) {
+      return {
+        path: '',
+        message: `holds more than ${MAX_COMPOSITION_VALUES} values`,
+      };
+    }
+    for (const entry of Object.values(item)) {
+      pending.push([entry, depth + 1]);
+    }
+  }
+  return undefined;
 };
 
 /** Fields every node has, which the authoring schema leaves out. */
@@ -205,6 +252,10 @@ export const createCompositionValidator = (
   const walk = createChildNodeWalker(definitions);
   const fields = fieldsOf(definitions);
   return (composition) => {
+    const bound = inputBoundError(composition);
+    if (bound !== undefined) {
+      return { valid: false, errors: [bound], warnings: [] };
+    }
     const result = schema.safeParse(composition, { reportInput: true });
     if (result.success) {
       const idErrors = collectDuplicateNodeIdErrors(composition.body, walk);
@@ -252,6 +303,10 @@ export const createCompositionParser = (
   const walk = createChildNodeWalker(definitions);
   const fields = fieldsOf(definitions);
   return (value) => {
+    const bound = inputBoundError(value);
+    if (bound !== undefined) {
+      return { valid: false, errors: [bound] };
+    }
     const result = schema.safeParse(value, { reportInput: true });
     if (result.success) {
       return {
@@ -348,7 +403,7 @@ const collectDuplicateNodeIdErrors = (
       if (first) {
         errors.push({
           path: `${path}.id`,
-          message: `duplicates id "${id}" first used at ${first}`,
+          message: `duplicates id ${quoteInput(id)} first used at ${first}`,
           ...(typeof type === 'string' ? { nodeType: type } : {}),
         });
       } else {

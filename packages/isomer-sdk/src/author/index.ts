@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+export { oneLine } from '../define/one_line';
 export {
   type AuthorChildContext,
   type AuthoredChildBrand,
@@ -35,6 +36,7 @@ export {
   withoutChildren,
 } from './jsx_shim';
 export {
+  type AgentAuthoringContext,
   type AgentAuthoringContextDefaults,
   type AgentAuthoringContextOptions,
   type AuthoringProfileId,

@@ -107,7 +107,7 @@ JSX: `fromChildren`, `fromTextChildren`, `AuthoredChildBrand`, `AuthoredTextBran
 
 Object builders: `defineNodeBuilder` (a `NodeBuilder` taking a `BuilderInput`, the node without `type`), `buildObjectBuilders` (a `BuilderMap`, one builder per primitive typed from its schema).
 
-Agent prompts: `buildAuthoringPrompt` (`AuthoringPromptContext`; `catalog: 'index'` lists type and purpose under `groups`, and leaving out `schema` drops it), `formatPrimitiveEntry` (one full catalog bullet), `createAuthoringPromptBuilder`, `createAgentAuthoringContextFactory` (`AgentAuthoringContextOptions`, `AgentAuthoringContextDefaults`), `AUTHORING_PROFILE_IDS` (`AuthoringProfileId`), `AuthoringViewSummary`. `WithNodeFields` is on the root entry, next to `definePrimitive`.
+Agent prompts: `buildAuthoringPrompt` (`AuthoringPromptContext`; `catalog: 'index'` lists type and purpose under `groups`, and leaving out `schema` drops it), `formatPrimitiveEntry` (one full catalog bullet), `createAuthoringPromptBuilder` (a context that sets `schema` to `undefined` drops the pack's schema), `createAgentAuthoringContextFactory` (`AgentAuthoringContextOptions`, `AgentAuthoringContextDefaults`, returning an `AgentAuthoringContext` whose `schema` is always present), `AUTHORING_PROFILE_IDS` (`AuthoringProfileId`), `AuthoringViewSummary`, and `oneLine`, which replaces every line terminator in text a host adds to a prompt with a space. `WithNodeFields` is on the root entry, next to `definePrimitive`.
 
 ## `./testing`
 

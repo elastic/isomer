@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { jsonLine, oneLine } from '../define/one_line';
 import type { PrimitiveCatalogEntry } from '../define/primitive_module';
 import type { PrimitiveGroup } from '../pack/primitive_pack';
 
@@ -85,7 +86,7 @@ const PROFILE_INCLUDES_SCHEMA: Record<AuthoringProfileId, boolean> = {
   'compose-from-primitives': true,
 };
 
-const compactJson = (value: unknown): string => JSON.stringify(value);
+const compactJson = jsonLine;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -99,10 +100,6 @@ const withoutMeta = (value: unknown): unknown => {
   delete rest.meta;
   return rest;
 };
-
-/** `text` on one line, so it cannot start a line of its own in the prompt. */
-const oneLine = (text: string): string =>
-  text.replace(/\r\n|[\n\r\u2028\u2029]/g, ' ');
 
 /** `text` as a code span, fenced longer than any backtick run in it. */
 const codeSpan = (text: string): string => {
@@ -166,15 +163,15 @@ const renderIndex = (
 const renderViews = (views: readonly AuthoringViewSummary[]): string =>
   views
     .map((view) => {
-      const lines = [`- \`${view.id}\` — ${view.title}`];
+      const lines = [`- ${codeSpan(view.id)} — ${oneLine(view.title)}`];
       if (view.description !== undefined && view.description.length > 0) {
-        lines.push(`  - ${view.description}`);
+        lines.push(`  - ${oneLine(view.description)}`);
       }
       if (view.answers.length > 0) {
-        lines.push(`  - Answers: ${view.answers.join('; ')}`);
+        lines.push(`  - Answers: ${oneLine(view.answers.join('; '))}`);
       }
       if (view.inputSchema !== undefined) {
-        lines.push(`  - Input: \`${compactJson(view.inputSchema)}\``);
+        lines.push(`  - Input: ${codeSpan(compactJson(view.inputSchema))}`);
       }
       return lines.join('\n');
     })
@@ -243,9 +240,18 @@ export interface AgentAuthoringContextDefaults {
   rules: string;
   schema: JsonSchema;
   primitives: readonly PrimitiveCatalogEntry[];
+  catalog?: NonNullable<AuthoringPromptContext['catalog']>;
   groups?: readonly PrimitiveGroup[];
   views?: readonly AuthoringViewSummary[];
+  heading?: string;
+  intro?: string;
 }
+
+/** What {@link createAgentAuthoringContextFactory} returns: the defaults, with `schema` still required. */
+export type AgentAuthoringContext<TExample = unknown> = Omit<
+  AuthoringPromptContext,
+  'examples' | 'schema'
+> & { examples: readonly TExample[]; schema: JsonSchema };
 
 /** The only part of an authoring context a caller supplies per request. */
 export interface AgentAuthoringContextOptions<TExample = unknown> {
@@ -261,10 +267,10 @@ export interface AgentAuthoringContextOptions<TExample = unknown> {
  */
 export const createAgentAuthoringContextFactory =
   <TExample = unknown>(defaults: AgentAuthoringContextDefaults) =>
-  ({ examples = [], views }: AgentAuthoringContextOptions<TExample> = {}): Omit<
-    AuthoringPromptContext,
-    'examples'
-  > & { examples: readonly TExample[] } => {
+  ({
+    examples = [],
+    views,
+  }: AgentAuthoringContextOptions<TExample> = {}): AgentAuthoringContext<TExample> => {
     const resolvedViews = views ?? defaults.views;
     return {
       ...defaults,
@@ -276,24 +282,35 @@ export const createAgentAuthoringContextFactory =
 /**
  * Wraps {@link buildAuthoringPrompt} with a pack's defaults, falling back
  * field-by-field when a caller passes a partial context (e.g. a custom guide
- * with the pack's own rules and schema).
+ * with the pack's own rules and schema). A context that sets `schema` to
+ * `undefined` drops the schema rather than falling back.
  */
 export const createAuthoringPromptBuilder =
   (defaults: AgentAuthoringContextDefaults) =>
   (
     profile: AuthoringProfileId,
-    context: Partial<AuthoringPromptContext> = {}
+    context: Partial<Omit<AuthoringPromptContext, 'schema'>> & {
+      schema?: JsonSchema | undefined;
+    } = {}
   ): string => {
-    const views = context.views ?? defaults.views;
-    const groups = context.groups ?? defaults.groups;
+    const schema = 'schema' in context ? context.schema : defaults.schema;
+    const {
+      catalog = defaults.catalog,
+      groups = defaults.groups,
+      heading = defaults.heading,
+      intro = defaults.intro,
+      views = defaults.views,
+    } = context;
     return buildAuthoringPrompt(profile, {
-      ...context,
       guide: context.guide ?? defaults.guide,
       rules: context.rules ?? defaults.rules,
-      schema: context.schema ?? defaults.schema,
       primitives: context.primitives ?? defaults.primitives,
       examples: context.examples ?? [],
-      ...(views === undefined ? {} : { views }),
+      ...(schema === undefined ? {} : { schema }),
+      ...(catalog === undefined ? {} : { catalog }),
       ...(groups === undefined ? {} : { groups }),
+      ...(heading === undefined ? {} : { heading }),
+      ...(intro === undefined ? {} : { intro }),
+      ...(views === undefined ? {} : { views }),
     });
   };

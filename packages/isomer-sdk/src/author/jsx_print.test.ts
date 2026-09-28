@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
 import type { PrimitiveNode } from '../define/primitive_module';
+import { MAX_COMPOSITION_DEPTH } from '../validate/validation';
 
 import { fromChildren, fromTextChildren } from './authored_fields';
 import { buildJsxShim } from './jsx_shim';
@@ -280,6 +281,15 @@ describe('toJsx', () => {
     ).toEqual([
       { type: 'pair', side: { main: { type: 'note', text: 'main' } } },
     ]);
+  });
+
+  it('round-trips a composition as deep as the parser accepts', () => {
+    let node: PrimitiveNode = { type: 'note', text: 'leaf' } as PrimitiveNode;
+    for (let level = 0; level < MAX_COMPOSITION_DEPTH; level += 1) {
+      node = { type: 'stack', items: [node] } as PrimitiveNode;
+    }
+    const composition = { type: 'view' as const, body: [node] };
+    expect(roundTrip(composition)).toEqual(composition);
   });
 
   it('refuses a value nested too deep to print, or a cycle, with an IsomerError', () => {

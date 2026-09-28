@@ -196,6 +196,8 @@ export const definePrimitivePack = <TTheme = unknown>(
   }
   assertUniquePrimitiveTypes(input.id, input.primitives);
   assertUniqueEnhancementIds(input.id, input.enhancements ?? []);
+  const types = new Set(input.primitives.map((definition) => definition.type));
+  assertGroupedOnce(input.id, input.authoring?.groups ?? [], types);
   const styleCollector =
     input.styleCollector ?? input.styleAdapter?.styleCollector;
 
@@ -203,7 +205,7 @@ export const definePrimitivePack = <TTheme = unknown>(
     id: input.id,
     surfaces: input.surfaces ?? [],
     primitives: input.primitives,
-    types: new Set(input.primitives.map((definition) => definition.type)),
+    types,
     enhancements: input.enhancements ?? [],
     slackAssetTypes: new Set(input.slackAssetTypes ?? []),
     ...(input.styleAdapter !== undefined
@@ -229,6 +231,32 @@ const assertUniquePrimitiveTypes = (
       );
     }
     seen.add(type);
+  }
+};
+
+/** Throws if a group names a type outside `types`, or a type sits in two groups. */
+const assertGroupedOnce = (
+  id: string,
+  groups: readonly PrimitiveGroup[],
+  types: ReadonlySet<string>
+): void => {
+  const grouped = new Set<string>();
+  for (const { title, types: members } of groups) {
+    for (const type of members) {
+      if (!types.has(type)) {
+        throw new IsomerError(
+          'UNKNOWN_PRIMITIVE_TYPE',
+          `primitive pack "${id}": group "${title}" names "${type}", which the pack does not define`
+        );
+      }
+      if (grouped.has(type)) {
+        throw new IsomerError(
+          'DUPLICATE_PRIMITIVE_TYPE',
+          `primitive pack "${id}": primitive type "${type}" is grouped twice`
+        );
+      }
+      grouped.add(type);
+    }
   }
 };
 

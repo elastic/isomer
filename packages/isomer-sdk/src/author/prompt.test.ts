@@ -5,9 +5,17 @@
  * 2.0.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { buildAuthoringPrompt, createAuthoringPromptBuilder } from './prompt';
+import { oneLine } from './index';
+import {
+  buildAuthoringPrompt,
+  createAgentAuthoringContextFactory,
+  createAuthoringPromptBuilder,
+} from './prompt';
+
+const LINE_SEPARATOR = String.fromCharCode(0x2028);
+const PARAGRAPH_SEPARATOR = String.fromCharCode(0x2029);
 
 const context = {
   guide: 'Guide',
@@ -182,5 +190,108 @@ describe('buildAuthoringPrompt', () => {
       '### Group ## Also injected\n\n- ``odd`type`` — First line ## Injected and more end'
     );
     expect(prompt).not.toMatch(/^## Injected/m);
+  });
+
+  it('keeps every registered view field on one line', () => {
+    const prompt = buildAuthoringPrompt('general', {
+      ...context,
+      views: [
+        {
+          id: 'odd`id\n## Injected id',
+          title: 'Title\r\n## Injected title',
+          description: `Description${LINE_SEPARATOR}## Injected description`,
+          answers: ['first\n## Injected answer'],
+          inputSchema: { description: 'has ` a backtick\n## Injected input' },
+        },
+      ],
+    });
+    expect(prompt).not.toMatch(/^## Injected/m);
+    expect(prompt).not.toContain(LINE_SEPARATOR);
+    expect(prompt).toContain(
+      '- ``odd`id ## Injected id`` — Title ## Injected title'
+    );
+    expect(prompt).toContain(
+      '- Input: ``{"description":"has ` a backtick\\n## Injected input"}``'
+    );
+  });
+
+  it('escapes line and paragraph separators in example JSON rather than rewriting them', () => {
+    const text = `a${LINE_SEPARATOR}b${PARAGRAPH_SEPARATOR}c`;
+    const prompt = buildAuthoringPrompt('general', {
+      ...context,
+      primitives: [
+        {
+          type: 'note',
+          purpose: 'A note.',
+          useWhen: [],
+          avoidWhen: [],
+          example: { type: 'note', text },
+        },
+      ],
+      examples: [{ type: 'view', body: [{ type: 'note', text }] }],
+    });
+    expect(prompt).not.toContain(LINE_SEPARATOR);
+    expect(prompt).not.toContain(PARAGRAPH_SEPARATOR);
+    expect(prompt).toContain(
+      '- Example: `{"type":"note","text":"a\\u2028b\\u2029c"}`'
+    );
+    expect(prompt).toContain('"text":"a\\u2028b\\u2029c"}]}\n```');
+  });
+
+  it('drops the schema when a builder context sets it to undefined', () => {
+    const build = createAuthoringPromptBuilder({
+      guide: 'Guide',
+      rules: '',
+      schema: { type: 'object' },
+      primitives: [],
+    });
+    expect(build('compose-from-primitives')).toContain('## JSON Schema');
+    expect(
+      build('compose-from-primitives', { catalog: 'index', schema: undefined })
+    ).not.toContain('## JSON Schema');
+  });
+
+  it('takes catalog, heading and intro from a builder’s defaults', () => {
+    const prompt = createAuthoringPromptBuilder({
+      guide: 'Guide',
+      rules: '',
+      schema: {},
+      primitives: [
+        {
+          type: 'a',
+          purpose: 'The a.',
+          useWhen: ['Always.'],
+          avoidWhen: [],
+          example: { type: 'a' },
+        },
+      ],
+      catalog: 'index',
+      heading: '# Pack authoring',
+      intro: 'Pack intro.',
+    })('general');
+    expect(prompt.startsWith('# Pack authoring\n\nPack intro.')).toBe(true);
+    expect(prompt).not.toContain('Use when');
+  });
+});
+
+describe('createAgentAuthoringContextFactory', () => {
+  it('returns the defaults’ schema, typed as present', () => {
+    const schema = { type: 'object' };
+    const context = createAgentAuthoringContextFactory({
+      guide: 'Guide',
+      rules: '',
+      schema,
+      primitives: [],
+    })();
+    expectTypeOf(context.schema).toEqualTypeOf<Record<string, unknown>>();
+    expect(context.schema).toBe(schema);
+  });
+});
+
+describe('oneLine', () => {
+  it('replaces every line terminator with a space', () => {
+    expect(
+      oneLine(`a\nb\r\nc\rd${LINE_SEPARATOR}e${PARAGRAPH_SEPARATOR}f`)
+    ).toBe('a b c d e f');
   });
 });

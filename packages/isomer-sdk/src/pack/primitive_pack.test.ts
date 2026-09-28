@@ -61,6 +61,33 @@ describe('definePrimitivePack', () => {
     }
   });
 
+  it.each([
+    [
+      'a type the pack does not define',
+      [{ title: 'Ghosts', types: ['ghost', 'note'] }],
+      'UNKNOWN_PRIMITIVE_TYPE',
+    ],
+    [
+      'a type twice',
+      [
+        { title: 'First', types: ['note'] },
+        { title: 'Again', types: ['note'] },
+      ],
+      'DUPLICATE_PRIMITIVE_TYPE',
+    ],
+  ])('rejects a group naming %s', (_name, groups, code) => {
+    try {
+      definePrimitivePack({
+        id: 'notes',
+        primitives: [leaf('note')],
+        authoring: { groups },
+      });
+      expect.unreachable();
+    } catch (error) {
+      expect(error).toMatchObject({ name: 'IsomerError', code });
+    }
+  });
+
   it('defaults surfaces to empty when the pack declares none', () => {
     const pack = definePrimitivePack({
       id: 'notes',
