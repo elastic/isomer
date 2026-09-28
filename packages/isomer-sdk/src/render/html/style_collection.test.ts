@@ -89,6 +89,33 @@ describe('createHTMLStyleCollection', () => {
     expect(wrapper).toEqual({ framed: true, fluid: false, theme: 'light' });
   });
 
+  it('hands the host render the enhancements the html render would, and asks each once', () => {
+    let asked = 0;
+    const { context } = createHTMLStyleCollection(composition, {
+      dispatcher,
+      styleAdapter: adapter(),
+      options: { enhancements: ['leafCopy', 'absent'] },
+      enhancementDefinitions: [
+        {
+          id: 'leafCopy',
+          anchors: true,
+          appliesTo: () => {
+            asked += 1;
+            return true;
+          },
+        },
+        { id: 'absent', appliesTo: () => false },
+      ],
+    });
+    const { enhancements, anchors } = context as {
+      enhancements?: ReadonlySet<string>;
+      anchors?: boolean;
+    };
+    expect([...(enhancements ?? [])]).toEqual(['leafCopy']);
+    expect(anchors).toBe(true);
+    expect(asked).toBe(1);
+  });
+
   it('runs the post-render hook once, however often css() is read', () => {
     const collectAfterRender = vi.fn(
       (_composition: unknown, collector: { rules: string[] }) => {
