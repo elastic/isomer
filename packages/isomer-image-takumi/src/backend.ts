@@ -63,7 +63,11 @@ export interface LayoutBox {
   y: number;
   width: number;
   height: number;
-  /** How much the box is scaled on the canvas, e.g. a picture drawn with `transform: scale()`. */
+  /** How much the box's x axis is scaled on the canvas, e.g. by `transform: scale()`. */
+  scaleX: number;
+  /** How much the box's y axis is scaled on the canvas. */
+  scaleY: number;
+  /** Whichever of `scaleX` and `scaleY` is further from 1, so any value but 1 means the box is scaled. */
   scale: number;
   /** Text laid out in this box, each run positioned on the canvas. */
   runs: { text: string; x: number; y: number; width: number; height: number }[];
@@ -125,15 +129,22 @@ const toLayoutBox = ({
   transform,
   runs,
   children,
-}: MeasuredNode): LayoutBox => ({
-  ...mapRect(transform, 0, 0, width, height),
-  scale: Math.hypot(transform[0], transform[1]),
-  runs: runs.map((run) => ({
-    text: run.text,
-    ...mapRect(transform, run.x, run.y, run.width, run.height),
-  })),
-  children: children.map(toLayoutBox),
-});
+}: MeasuredNode): LayoutBox => {
+  const [a, b, c, d] = transform;
+  const scaleX = Math.hypot(a, b);
+  const scaleY = Math.hypot(c, d);
+  return {
+    ...mapRect(transform, 0, 0, width, height),
+    scaleX,
+    scaleY,
+    scale: Math.abs(scaleY - 1) > Math.abs(scaleX - 1) ? scaleY : scaleX,
+    runs: runs.map((run) => ({
+      text: run.text,
+      ...mapRect(transform, run.x, run.y, run.width, run.height),
+    })),
+    children: children.map(toLayoutBox),
+  };
+};
 
 const escapeStyleEndTags = (css: string) =>
   css.replace(/<\/style/gi, (tag) => tag.replace('/', '\\/'));

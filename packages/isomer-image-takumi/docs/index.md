@@ -22,7 +22,7 @@ The `svg` surface returns `{ element, css, width, height }` — the same React t
 
 ## Measuring a layout
 
-`createTakumiImageBackend` returns a `TakumiMeasuringBackend`, and its `measure(input)` lays the input out exactly as `png` would and returns a `LayoutBox` tree: each element's canvas `x`, `y`, `width`, `height`, and `scale`, its text `runs`, and its `children`. A pack can read it to find content past its area where no browser is available; the slides pack's `slideOverflow` does that for a slide. `TakumiImageBackend`, the `{ png, svg }` contract `renderPng` takes, does not include `measure`, so a custom raster backend need not implement it.
+`createTakumiImageBackend` returns a `TakumiMeasuringBackend`, and its `measure(input)` lays the input out exactly as `png` would and returns a `LayoutBox` tree: each element's canvas `x`, `y`, `width`, and `height`, its `scaleX` and `scaleY`, its text `runs`, and its `children`. `scale` is whichever of the two axis scales is further from 1, so any other value means the box is scaled. A pack can read the tree to find content past its area where no browser is available. `TakumiImageBackend`, the `{ png, svg }` contract `renderPng` takes, does not include `measure`, so a custom raster backend need not implement it.
 
 ## Rendering a whole runtime call in one step
 

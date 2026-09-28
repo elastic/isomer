@@ -137,16 +137,38 @@ describe('createTakumiImageBackend', () => {
         height: 100,
       });
 
+    const unscaled = { scale: 1, scaleX: 1, scaleY: 1 };
     it.each([
-      ['none', { x: 20, y: 10, width: 40, height: 20, scale: 1 }, 20],
-      ['scale(2)', { x: 20, y: 10, width: 80, height: 40, scale: 2 }, 20],
+      ['none', { x: 20, y: 10, width: 40, height: 20, ...unscaled }, 20],
+      [
+        'scale(2)',
+        { x: 20, y: 10, width: 80, height: 40, scale: 2, scaleX: 2, scaleY: 2 },
+        20,
+      ],
+      [
+        'scale(1, 0.5)',
+        {
+          x: 20,
+          y: 10,
+          width: 40,
+          height: 10,
+          scale: 0.5,
+          scaleX: 1,
+          scaleY: 0.5,
+        },
+        20,
+      ],
       [
         'translate(10px, 5px)',
-        { x: 30, y: 15, width: 40, height: 20, scale: 1 },
+        { x: 30, y: 15, width: 40, height: 20, ...unscaled },
         30,
       ],
       // A quarter turn about the top left swings the box left of its origin, and swaps its sides.
-      ['rotate(90deg)', { x: 0, y: 10, width: 20, height: 40, scale: 1 }, -0.7],
+      [
+        'rotate(90deg)',
+        { x: 0, y: 10, width: 20, height: 40, ...unscaled },
+        -0.7,
+      ],
     ] as const)('%s', async (transform, bounds, runX) => {
       const [inner] = (await measure(transform)).children;
       for (const [key, value] of Object.entries(bounds)) {
