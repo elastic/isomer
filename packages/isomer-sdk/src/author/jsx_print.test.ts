@@ -5,14 +5,16 @@
  * 2.0.
  */
 
-import { runInThisContext } from 'node:vm';
+import { runInNewContext } from 'node:vm';
 
 import { createElement, type ReactElement } from 'react';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 
 import type { PrimitiveNode } from '../define/primitive_module';
 
+import { fromChildren, fromTextChildren } from './authored_fields';
 import { buildJsxShim } from './jsx_shim';
 
 const primitives = [
@@ -25,6 +27,36 @@ const primitives = [
         path: `items[${index}]`,
       })),
   },
+  {
+    type: 'pair' as const,
+    children: (node: { side: { main: PrimitiveNode } }) => [
+      { node: node.side.main, path: 'side.main' },
+    ],
+  },
+  {
+    type: 'caption' as const,
+    schema: z.object({
+      type: z.literal('caption'),
+      text: fromTextChildren(z.string()),
+    }),
+  },
+  {
+    type: 'group' as const,
+    schema: z.object({
+      type: z.literal('group'),
+      items: fromChildren(
+        'entry',
+        z.array(z.object({ title: z.string(), body: z.array(z.unknown()) }))
+      ),
+    }),
+    children: (node: { items: { body: PrimitiveNode[] }[] }) =>
+      node.items.flatMap(({ body }, index) =>
+        body.map((item, at) => ({
+          node: item,
+          path: `items[${index}].body[${at}]`,
+        }))
+      ),
+  },
 ] as const;
 
 const shim = buildJsxShim(primitives);
@@ -33,17 +65,21 @@ const components = Object.entries(shim).filter(
     name !== 'toComposition' && name !== 'toJsx' && name !== 'component'
 );
 
-/** Compiles printed JSX and runs it against the shim's components, as an author's file would. */
-const roundTrip = (composition: Parameters<typeof shim.toJsx>[0]) => {
-  const { outputText } = ts.transpileModule(`(${shim.toJsx(composition)})`, {
+type Printable = Parameters<typeof shim.toJsx>[0];
+
+/** Writes printed JSX through a UTF-8 file, compiles it, and runs it in another realm against the shim's components, as an author's file would. */
+const roundTrip = (composition: Printable) => {
+  const file = new TextDecoder().decode(
+    new TextEncoder().encode(`(${shim.toJsx(composition)})`)
+  );
+  const { outputText } = ts.transpileModule(file, {
     compilerOptions: {
       jsx: ts.JsxEmit.React,
       jsxFactory: 'h',
       target: ts.ScriptTarget.ES2022,
     },
   });
-  // In this realm, so object literals pass the shim's plain-object check.
-  const run = runInThisContext(
+  const run = runInNewContext(
     `(h, ${components.map(([name]) => name).join(', ')}) => ${outputText.trim().replace(/;$/, '')}`
   ) as (...args: unknown[]) => ReactElement;
   const element = run(
@@ -63,9 +99,27 @@ const hostile = [
   'back\\slash',
   'quote "double" and \'single\'',
   '{braces} <angles> &amp; &#38; &#x26;',
+  'named a&amp;b',
+  'named with digits a&frac12;b m&sup2; &there4;',
+  'decimal a&#38;b',
+  'hex a&#x26;b',
+  'bare & ampersand',
+  'lone high x\uD800y',
+  'lone low x\uDC00y',
+  'trailing high \uD83D',
+  '\uDE00 leading low',
+  'paired \uD83D\uDE00',
   '',
 ];
 
+const expectIsomerError = (run: () => unknown, code: string) => {
+  try {
+    run();
+    expect.unreachable();
+  } catch (error) {
+    expect(error).toMatchObject({ name: 'IsomerError', code });
+  }
+};
 describe('toJsx', () => {
   it.each(hostile.map((text) => [JSON.stringify(text), text] as const))(
     'round-trips %s as an attribute and inside a nested value',
@@ -167,5 +221,83 @@ describe('toJsx', () => {
     expect(() => shim.toJsx({ type: 'view', body: [node] })).toThrow(
       /__proto__/
     );
+  });
+
+  it('round-trips nodes nested inside the items of a branded child field', () => {
+    const composition = {
+      type: 'view' as const,
+      body: [
+        {
+          type: 'group',
+          items: [{ title: 'A', body: [{ type: 'note', text: 'inner' }] }],
+        } as PrimitiveNode,
+      ],
+    };
+    expect(shim.toJsx(composition)).toContain('<Note text="inner" />');
+    expect(roundTrip(composition)).toEqual(composition);
+  });
+
+  it('prints a data object whose `type` is registered as data unless the walker reports it as a child', () => {
+    const composition = {
+      type: 'view' as const,
+      body: [
+        {
+          type: 'stack',
+          items: [{ type: 'note', text: 'child' }],
+          meta: { type: 'caption', count: 1 },
+        } as PrimitiveNode,
+      ],
+    };
+    const jsx = shim.toJsx(composition);
+    expect(jsx).toContain("meta={{ type: 'caption', count: 1 }}");
+    expect(jsx).toContain('<Note text="child" />');
+    expect(roundTrip(composition)).toEqual(composition);
+  });
+
+  it('converts a node inside an object prop from another realm', () => {
+    const composition = {
+      type: 'view' as const,
+      body: [
+        {
+          type: 'pair',
+          side: { main: { type: 'note', text: 'main' }, label: 'L' },
+        } as PrimitiveNode,
+      ],
+    };
+    expect(shim.toJsx(composition)).toContain('<Note text="main" />');
+    expect(roundTrip(composition)).toEqual(composition);
+  });
+
+  it('converts a node inside a null-prototype prop object', () => {
+    const { Composition, Note, Pair } = shim;
+    const side = Object.assign(Object.create(null) as object, {
+      main: createElement(Note, { text: 'main' }),
+    });
+    expect(
+      shim.toComposition(
+        createElement(Composition, null, createElement(Pair, { side }))
+      ).body
+    ).toEqual([
+      { type: 'pair', side: { main: { type: 'note', text: 'main' } } },
+    ]);
+  });
+
+  it('refuses a value nested too deep to print, or a cycle, with an IsomerError', () => {
+    let deep: Record<string, unknown> = {};
+    for (let level = 0; level < 1000; level += 1) {
+      deep = { deep };
+    }
+    const cyclic: Record<string, unknown> = {};
+    cyclic.self = cyclic;
+    for (const meta of [deep, cyclic]) {
+      expectIsomerError(
+        () =>
+          shim.toJsx({
+            type: 'view',
+            body: [{ type: 'note', meta } as PrimitiveNode],
+          }),
+        'INVALID_BODY_NODE'
+      );
+    }
   });
 });

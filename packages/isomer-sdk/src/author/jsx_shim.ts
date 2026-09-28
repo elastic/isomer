@@ -190,6 +190,12 @@ export const buildJsxShim = <
     ])
   );
   const { authoredByType, childComponents } = collectAuthored(primitives);
+  const walkers = new Map<unknown, unknown>(
+    primitives.map((primitive) => [
+      primitive.type,
+      'children' in primitive ? primitive.children : undefined,
+    ])
+  );
   const named = new Map<string, string>([['Composition', 'view']]);
   for (const type of [
     ...primitives.map((primitive) => primitive.type),
@@ -229,6 +235,7 @@ export const buildJsxShim = <
             const slots = childSlotsByType.get(type) ?? [];
             return authored || slots.length !== 1 ? undefined : slots[0];
           },
+          childPaths: (node) => childPathsOf(walkers.get(node.type), node),
           isPrimitive: (type) => extensionTypes.has(type),
           nameOf: capitalize,
         },
@@ -360,7 +367,7 @@ const bodyNodeFromElement = <TNode extends PrimitiveNode>(
   )) {
     const childField = authored?.children.find((field) => field.field === key);
     converted[key] = childField
-      ? valueFromChildField(value, childField, env)
+      ? valueFromChildField(value, childField, env, parseChild)
       : convertPropValue(value, key, slots, parseChild);
   }
 
@@ -413,15 +420,16 @@ const fillAuthoredFields = (
   }
 };
 
-const valueFromChildField = (
+const valueFromChildField = <TNode extends PrimitiveNode>(
   value: unknown,
   field: AuthoredChildField,
-  env: ParseEnv
+  env: ParseEnv,
+  parseChild: (child: ReactNode) => TNode
 ): unknown => {
   if (isJsxNodes(value)) {
     return itemsFromBrand(value, field, env);
   }
-  return value;
+  return convertNested(value, parseChild);
 };
 
 const isJsxNodes = (value: unknown): value is ReactNode => {
@@ -517,10 +525,14 @@ const convertPropValue = <TNode extends PrimitiveNode>(
   return convertNested(value, parseChild);
 };
 
-const isPlainObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' &&
-  value !== null &&
-  Object.getPrototypeOf(value) === Object.prototype;
+// Any realm's `Object.prototype`, or none.
+const isPlainObject = (value: unknown): value is Record<string, unknown> => {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const proto: unknown = Object.getPrototypeOf(value);
+  return proto === null || Object.getPrototypeOf(proto) === null;
+};
 
 /** Converts author elements anywhere inside a prop value, e.g. `left={{ items: [<Node />] }}`. */
 const convertNested = <TNode extends PrimitiveNode>(
@@ -613,6 +625,23 @@ const inferChildSlots = (children: unknown): readonly ChildSlot[] => {
     return [...byField.entries()].map(([field, array]) => ({ array, field }));
   } catch {
     return [];
+  }
+};
+
+const childPathsOf = (
+  walker: unknown,
+  node: Record<string, unknown>
+): ReadonlySet<string> => {
+  if (typeof walker !== 'function') {
+    return new Set();
+  }
+  try {
+    const refs: unknown = (walker as (value: unknown) => unknown)(node);
+    return new Set(
+      Array.isArray(refs) ? refs.filter(isChildRef).map(({ path }) => path) : []
+    );
+  } catch {
+    return new Set();
   }
 };
 
