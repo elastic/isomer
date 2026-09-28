@@ -6,7 +6,6 @@
  */
 
 import { createElement } from 'react';
-import type { StyleHandle } from '@elastic/distillate';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import {
   type Composition,
@@ -14,16 +13,15 @@ import {
   definePrimitivePack,
   type PrimitiveNode,
   type PrimitiveRenderContext,
+  type StyleHandle,
 } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
-import { slidesPack } from '../pack';
-import { SLIDE_COPY } from '../primitives/slide_command';
-import { copyScriptBody } from '../primitives/slide_command/copy';
-import { example as commandExample } from '../primitives/slide_command/examples';
-
-import { withEnhancements } from './enhancements';
+import { slidesPack } from './pack';
+import { SLIDE_COPY } from './primitives/slide_command';
+import { copyScriptBody } from './primitives/slide_command/copy';
+import { example as commandExample } from './primitives/slide_command/examples';
 
 interface CountNode extends PrimitiveNode {
   type: 'count';
@@ -55,21 +53,16 @@ const countPrimitive = definePrimitive<CountNode>({
   },
 });
 
-const countAdapter = withEnhancements(
-  {
+const countPack = definePrimitivePack({
+  id: 'count',
+  primitives: [countPrimitive],
+  enhancements: [{ id: 'count', appliesTo: () => true, script: countScript }],
+  styleAdapter: {
     ownsHandle: ({ key }: StyleHandle) => key.startsWith('count.'),
     createCollector: () => ({}),
     createRenderContext: () => ({}),
     renderStyles: () => '',
   },
-  ['count']
-);
-
-const countPack = definePrimitivePack({
-  id: 'count',
-  primitives: [countPrimitive],
-  enhancements: [{ id: 'count', appliesTo: () => true, script: countScript }],
-  styleAdapter: countAdapter,
 });
 
 const runtime = createIsomerRuntime({ packs: [slidesPack, countPack] });
@@ -84,7 +77,7 @@ const composition: Composition = {
 
 const occurrences = (text: string, part: string) => text.split(part).length - 1;
 
-describe('withEnhancements across two packs', () => {
+describe('enhancements beside another pack', () => {
   const { js, body } = runtime.surfaces.html.render(composition, {
     enhancements: [SLIDE_COPY, 'count'],
     scripts: 'host',

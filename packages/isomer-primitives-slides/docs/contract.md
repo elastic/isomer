@@ -22,7 +22,7 @@ Everything else stays at the SDK default. A new pack declares its own `PackTypes
 
 ## `themeBound<SlideFrameTheme>()`
 
-`src/pack.ts` passes `theme: themeBound<SlideFrameTheme>()` and a `styleAdapter` to `definePrimitivePack`: `createDistillateHtmlStyleAdapter(slideDistillery)`, wrapped in `withEnhancements` with the pack's own enhancement ids so it also resolves the pack's [enhancements](copy.md#how-the-pack-emits-it). The theme is the **declared** lower bound — what any runtime holding this pack must supply to its frames. The style adapter is this pack's CSS, which a runtime combines with every other pack's, and which the `svg` surface emits alongside the tree. Do not annotate the export as `PrimitivePack<SlideFrameTheme>`; derive it.
+`src/pack.ts` passes `theme: themeBound<SlideFrameTheme>()` and a `styleAdapter` to `definePrimitivePack`: `createDistillateHtmlStyleAdapter(slideDistillery)`, and its [enhancements](copy.md#how-the-pack-emits-it). The theme is the **declared** lower bound — what any runtime holding this pack must supply to its frames. The style adapter is this pack's CSS, which a runtime combines with every other pack's, and which the `svg` surface emits alongside the tree. Do not annotate the export as `PrimitivePack<SlideFrameTheme>`; derive it.
 
 ## Surface declaration
 

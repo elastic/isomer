@@ -34,4 +34,4 @@ The Isomer deck viewer's HTML stage (`examples/deck/src/viewer/shadow_html.tsx`)
 
 ## How the pack emits it
 
-`src/pack.ts` wraps the Distillate adapter in `withEnhancements` with the pack's own enhancement ids, so the adapter sets `context.enhancements` and emits the scripts of this pack's enhancements, and no other pack's. A pack that copies this one keeps that wrapper and passes its own ids.
+`src/pack.ts` lists `slideCopyEnhancement` in the pack's `enhancements`, and that is all a pack does: the HTML render resolves what the host requested against every pack's enhancements, hands every renderer the set as `context.enhancements`, and emits each resolved enhancement's script once. The style adapter plays no part.
