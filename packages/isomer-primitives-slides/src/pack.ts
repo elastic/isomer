@@ -21,6 +21,7 @@ import { createDistillateHtmlStyleAdapter } from '@elastic/isomer-sdk/html';
 
 import { slideBuildsEnhancement } from './builds';
 import { slidesPackAuthoring } from './pack_authoring';
+import { slideCopyEnhancement } from './primitives/slide_command/copy';
 import { slideDeckPrimitives } from './registry';
 import { slideDistillery } from './theme/distillery';
 import { type SlideFrameTheme, slidePaletteForMode } from './theme/palette';
@@ -72,7 +73,7 @@ const packInput = {
   id: 'slides',
   primitives: slideDeckPrimitives,
   styleAdapter,
-  enhancements: [slideBuildsEnhancement],
+  enhancements: [slideCopyEnhancement, slideBuildsEnhancement],
   theme: themeBound<SlideFrameTheme>(),
   authoring: slidesPackAuthoring,
 } satisfies PrimitivePackInput<SlideFrameTheme>;

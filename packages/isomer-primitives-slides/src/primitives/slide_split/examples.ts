@@ -6,6 +6,7 @@
  */
 
 import { example as codeExample } from '../slide_code/examples';
+import { example as transcriptExample } from '../slide_transcript/examples';
 
 import type { SlideSplitNode } from './types';
 
@@ -25,6 +26,17 @@ export const example: SlideSplitNode = {
   },
   footnote:
     'Because the line is fixed, a merchant can change prices **without a payments release**.',
+};
+
+/** `narrowLeft`: statements beside a transcript. */
+export const narrowLeftExample: SlideSplitNode = {
+  type: 'slideSplit',
+  ratio: 'narrowLeft',
+  left: {
+    label: 'The assistant can',
+    items: ['Book a slot', 'Move a slot', 'Cancel a slot'],
+  },
+  right: { items: [transcriptExample] },
 };
 
 /** `wideLeft` with an arrow: code on the left becomes the statements on the right. */
@@ -87,6 +99,7 @@ export const asideExample: SlideSplitNode = {
 /** Conformance examples for {@link SlideSplitNode}. */
 export const examples: SlideSplitNode[] = [
   example,
+  narrowLeftExample,
   arrowExample,
   mixedExample,
   asideExample,

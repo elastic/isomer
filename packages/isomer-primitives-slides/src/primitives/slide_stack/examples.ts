@@ -7,6 +7,7 @@
 
 import { example as codeExample } from '../slide_code/examples';
 import { plainExample as tableExample } from '../slide_table/examples';
+import { plainExample as transcriptExample } from '../slide_transcript/examples';
 
 import type { SlideStackNode } from './types';
 
@@ -16,5 +17,19 @@ export const example: SlideStackNode = {
   items: [tableExample, codeExample],
 };
 
+/** `tight` spacing. */
+export const tightExample: SlideStackNode = {
+  type: 'slideStack',
+  spacing: 'tight',
+  items: [transcriptExample, codeExample],
+};
+
+/** `loose` spacing. */
+export const looseExample: SlideStackNode = {
+  type: 'slideStack',
+  spacing: 'loose',
+  items: [transcriptExample, tableExample],
+};
+
 /** Conformance examples for {@link SlideStackNode}. */
-export const examples: SlideStackNode[] = [example];
+export const examples: SlideStackNode[] = [example, tightExample, looseExample];

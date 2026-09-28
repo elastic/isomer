@@ -37,11 +37,14 @@ export type {
   SlideClosingPath,
 } from './primitives/slide_closing';
 export type { SlideCodeNode, SlideCodePanel } from './primitives/slide_code';
+export { SLIDE_COPY } from './primitives/slide_command';
+export type { SlideCommandNode } from './primitives/slide_command';
 export type {
   SlideDefinition,
   SlideDefinitionsNode,
 } from './primitives/slide_definitions';
 export type { SlideDeltaNode, SlideDeltaPoint } from './primitives/slide_delta';
+export type { SlideDiffLine, SlideDiffNode } from './primitives/slide_diff';
 export type {
   SlideFanoutNode,
   SlideFanoutTarget,
@@ -105,6 +108,10 @@ export type {
   SlideTitleDefinition,
   SlideTitleNode,
 } from './primitives/slide_title';
+export type {
+  SlideTranscriptNode,
+  SlideTranscriptTurn,
+} from './primitives/slide_transcript';
 export type { SlideTreeEntry, SlideTreeNode } from './primitives/slide_tree';
 
 export { slideDeckPrimitives, slidePrimitiveTypes } from './registry';

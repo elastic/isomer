@@ -11,8 +11,10 @@ import { bars } from './components/bars';
 import { bulletList } from './components/bullet_list';
 import { closing } from './components/closing';
 import { code } from './components/code';
+import { command } from './components/command';
 import { definitions } from './components/definitions';
 import { delta } from './components/delta';
+import { diff } from './components/diff';
 import { fanout } from './components/fanout';
 import { frame } from './components/frame';
 import { graph } from './components/graph';
@@ -39,6 +41,7 @@ import { table } from './components/table';
 import { territoryGroup } from './components/territory_group';
 import { timeline } from './components/timeline';
 import { title } from './components/title';
+import { transcript } from './components/transcript';
 import { tree } from './components/tree';
 
 /**
@@ -65,8 +68,10 @@ export const SLIDE_THEME = {
   bulletList,
   closing,
   code,
+  command,
   definitions,
   delta,
+  diff,
   fanout,
   graph,
   heading,
@@ -90,6 +95,7 @@ export const SLIDE_THEME = {
   territoryGroup,
   timeline,
   title,
+  transcript,
   tree,
 } as const;
 

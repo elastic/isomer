@@ -16,6 +16,8 @@ const {
   SlideCode,
   SlideTerritory,
   SlideTerritoryGroup,
+  SlideTranscript,
+  SlideTurn,
   toComposition,
 } = buildJsxShim(slideDeckPrimitives);
 
@@ -41,6 +43,31 @@ describe('slide authoring', () => {
       {
         type: 'slideTerritoryGroup',
         items: [{ title: 'Host', tone: 'accent', body: 'Owns routing.' }],
+      },
+    ]);
+  });
+
+  it('maps SlideTurn children onto turns', () => {
+    const spec = toComposition(
+      createElement(
+        Composition,
+        null,
+        createElement(
+          SlideTranscript,
+          null,
+          createElement(SlideTurn, { role: 'user' }, 'Show me refunds.'),
+          createElement(SlideTurn, { role: 'model', format: 'code' }, '{}')
+        )
+      )
+    );
+
+    expect(spec.body).toEqual([
+      {
+        type: 'slideTranscript',
+        turns: [
+          { role: 'user', text: 'Show me refunds.' },
+          { role: 'model', format: 'code', text: '{}' },
+        ],
       },
     ]);
   });

@@ -59,7 +59,7 @@ export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
   },
   {
     title: 'Code and renders',
-    types: ['slideCode'],
+    types: ['slideCode', 'slideDiff', 'slideCommand', 'slideTranscript'],
   },
 ];
 
@@ -81,6 +81,10 @@ export const slidesPackAuthoring = {
       'Yes, partial, or no marks for one to eight rows against two to six columns. Every row has exactly one mark per column.',
     slideCode:
       'One or two code panels. Every highlighted line number exists in its panel.',
+    slideDiff:
+      'One snippet with changed lines marked. Each entry in lines is one line of source, with no newline.',
+    slideCommand:
+      'One shell command on a single line, without the prompt. highlightPrefix, when given, starts command.',
     slidePipeline:
       'Steps on one rail. Without spans: numbered steps with bodies, optional start and end chips. With spans: steps are chips with no body and no start or end, and each span brackets steps from..to by index (from ≤ to < steps.length); spans do not overlap.',
     slideRoadmap:

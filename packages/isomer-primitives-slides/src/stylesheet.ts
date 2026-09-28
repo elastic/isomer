@@ -10,8 +10,10 @@ import { barsModule } from './primitives/slide_bars/styles';
 import { bulletsModule } from './primitives/slide_bullet_list/styles';
 import { closingModule } from './primitives/slide_closing/styles';
 import { codeModule } from './primitives/slide_code/styles';
+import { commandModule } from './primitives/slide_command/styles';
 import { definitionsModule } from './primitives/slide_definitions/styles';
 import { deltaModule } from './primitives/slide_delta/styles';
+import { diffModule } from './primitives/slide_diff/styles';
 import { fanoutModule } from './primitives/slide_fanout/styles';
 import { frameModule } from './primitives/slide_frame/styles';
 import { graphModule } from './primitives/slide_graph/styles';
@@ -36,6 +38,7 @@ import { tableModule } from './primitives/slide_table/styles';
 import { territoryModule } from './primitives/slide_territory_group/styles';
 import { timelineModule } from './primitives/slide_timeline/styles';
 import { titleModule } from './primitives/slide_title/styles';
+import { transcriptModule } from './primitives/slide_transcript/styles';
 import { treeModule } from './primitives/slide_tree/styles';
 import { slideDistillery } from './theme/distillery';
 import {
@@ -62,8 +65,10 @@ export const slideModules = {
   bullets: bulletsModule,
   closing: closingModule,
   code: codeModule,
+  command: commandModule,
   definitions: definitionsModule,
   delta: deltaModule,
+  diff: diffModule,
   fanout: fanoutModule,
   frame: frameModule,
   graph: graphModule,
@@ -88,6 +93,7 @@ export const slideModules = {
   territory: territoryModule,
   timeline: timelineModule,
   title: titleModule,
+  transcript: transcriptModule,
   tree: treeModule,
 };
 

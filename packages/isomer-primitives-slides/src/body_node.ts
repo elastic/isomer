@@ -17,8 +17,10 @@ import type { SlideBarsNode } from './primitives/slide_bars';
 import type { SlideBulletListNode } from './primitives/slide_bullet_list';
 import type { SlideClosingNode } from './primitives/slide_closing';
 import type { SlideCodeNode } from './primitives/slide_code';
+import type { SlideCommandNode } from './primitives/slide_command';
 import type { SlideDefinitionsNode } from './primitives/slide_definitions';
 import type { SlideDeltaNode } from './primitives/slide_delta';
+import type { SlideDiffNode } from './primitives/slide_diff';
 import type { SlideFanoutNode } from './primitives/slide_fanout';
 import type { SlideFrameNode } from './primitives/slide_frame';
 import type { SlideGraphNode } from './primitives/slide_graph';
@@ -43,6 +45,7 @@ import type { SlideTableNode } from './primitives/slide_table';
 import type { SlideTerritoryGroupNode } from './primitives/slide_territory_group';
 import type { SlideTimelineNode } from './primitives/slide_timeline';
 import type { SlideTitleNode } from './primitives/slide_title';
+import type { SlideTranscriptNode } from './primitives/slide_transcript';
 import type { SlideTreeNode } from './primitives/slide_tree';
 
 /** Discriminated union of every node type this pack defines. */
@@ -52,8 +55,10 @@ export type BodyNode =
   | SlideBulletListNode
   | SlideClosingNode
   | SlideCodeNode
+  | SlideCommandNode
   | SlideDefinitionsNode
   | SlideDeltaNode
+  | SlideDiffNode
   | SlideFanoutNode
   | SlideFrameNode
   | SlideGraphNode
@@ -78,6 +83,7 @@ export type BodyNode =
   | SlideTerritoryGroupNode
   | SlideTimelineNode
   | SlideTitleNode
+  | SlideTranscriptNode
   | SlideTreeNode;
 
 /** A {@link BodyNode} that may nest inside a {@link SlideFrameNode}; frames cannot nest. */
