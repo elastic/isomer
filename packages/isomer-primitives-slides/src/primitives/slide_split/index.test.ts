@@ -12,11 +12,12 @@ import { describe, expect, it } from 'vitest';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { stripMarks } from '../../render/marks';
 import { splitFit } from '../../theme/components/split';
+import { slideDistillery } from '../../theme/distillery';
 import { sizeForLoad } from '../size';
 import { example as codeExample } from '../slide_code/examples';
 import { authoredStrings, slackText } from '../test_helpers.fixtures';
 
-import { example, examples, mixedExample } from './examples';
+import { arrowExample, example, examples, mixedExample } from './examples';
 import { splitLoad } from './fit';
 import { slideSplitPrimitive } from './index';
 import { schema } from './schema';
@@ -88,6 +89,23 @@ describe('slideSplit children', () => {
 });
 
 describe('slideSplit output', () => {
+  it('keeps an arrow divider between the sides on every text surface', () => {
+    const arrow = slideDistillery.tokens.split.arrowGlyph.value;
+    const composition = compose(arrowExample);
+    const { blocks } = runtime.surfaces.slack.render(composition);
+    for (const output of [
+      runtime.surfaces.text.render(composition),
+      runtime.surfaces.markdown.render(composition),
+    ]) {
+      expect(output).toContain(`\n\n${arrow}\n\n`);
+    }
+    expect(blocks).toContainEqual({
+      type: 'section',
+      text: { type: 'mrkdwn', text: arrow },
+    });
+    expect(runtime.surfaces.text.render(compose(example))).not.toContain(arrow);
+  });
+
   it('lists each side under its label in text', () => {
     expect(runtime.surfaces.text.renderNode(example)).toMatchInlineSnapshot(`
       "Payments team

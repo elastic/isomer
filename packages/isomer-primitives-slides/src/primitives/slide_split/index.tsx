@@ -28,7 +28,7 @@ import type { SlideSplitNode, SlideSplitSide } from './types';
 
 export type { SlideSplitNode, SlideSplitSide } from './types';
 
-const { slackBullet } = slideDistillery.tokens.split;
+const { arrowGlyph, slackBullet } = slideDistillery.tokens.split;
 
 type TextScope = Pick<SlideRenderScope, 'renderMarkdown' | 'renderText'>;
 
@@ -63,12 +63,13 @@ const sideText = (
 };
 
 const splitText = (
-  { footnote, left, right }: SlideSplitNode,
+  { divider, footnote, left, right }: SlideSplitNode,
   scope: TextScope,
   surface: 'text' | 'markdown'
 ): string =>
   [
     sideText(left, scope, surface),
+    divider === 'arrow' ? arrowGlyph.value : '',
     sideText(right, scope, surface),
     footnote === undefined
       ? ''
@@ -96,9 +97,12 @@ export const slideSplitPrimitive = definePrimitive<SlideSplitNode>({
     react,
     text: (node, { scope }) => splitText(node, scope, 'text'),
     markdown: (node, { scope }) => splitText(node, scope, 'markdown'),
-    slack: ({ footnote, left, right }, { collector, scope }) => [
-      ...[left, right].flatMap((side) =>
-        splitBlocks(side).flatMap((block, index): SlackBlock[] => {
+    slack: ({ divider, footnote, left, right }, { collector, scope }) => [
+      ...[left, right].flatMap((side, sideIndex) => [
+        ...(sideIndex === 1 && divider === 'arrow'
+          ? [section(arrowGlyph.value)]
+          : []),
+        ...splitBlocks(side).flatMap((block, index): SlackBlock[] => {
           const heading =
             index === 0 && side.label ? bold(oneLine(side.label)) : '';
           if (block.kind === 'statements') {
@@ -120,8 +124,8 @@ export const slideSplitPrimitive = definePrimitive<SlideSplitNode>({
             ...(heading ? [section(heading)] : []),
             ...scope.renderSlack(block.node, collector),
           ];
-        })
-      ),
+        }),
+      ]),
       ...(footnote ? [section(oneLine(marksSlack(footnote)))] : []),
     ],
   },

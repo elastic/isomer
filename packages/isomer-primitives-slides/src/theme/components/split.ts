@@ -44,6 +44,8 @@ export const split = {
   statementGap: space.px22,
   /** Marks a statement in Slack, which has no list syntax. */
   slackBullet: literal('•'),
+  /** Between the sides of an `arrow` split in text, Markdown, and Slack, where no arrow is drawn. */
+  arrowGlyph: literal('→'),
   footnote: { ...type.bodyL, lineHeight: font.lineHeight.loose },
   footnoteGap: space.px64,
   // A measure on the 1920px canvas, not spacing.
