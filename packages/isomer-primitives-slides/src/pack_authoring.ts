@@ -14,12 +14,22 @@ import type { PackAuthoringOptions, PrimitiveGroup } from '@elastic/isomer-sdk';
 export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
   {
     title: 'Slide structure',
-    types: ['slideFrame', 'slideHeading', 'slideTitle'],
+    types: [
+      'slideFrame',
+      'slideHeading',
+      'slideStatement',
+      'slideQuote',
+      'slideTitle',
+      'slideSection',
+      'slideAgenda',
+      'slideClosing',
+      'slideSource',
+    ],
   },
   { title: 'Layout', types: ['slideSplit', 'slideStack'] },
   {
     title: 'Text',
-    types: ['slideBulletList'],
+    types: ['slideList', 'slideBulletList', 'slideDefinitions'],
   },
   {
     title: 'Diagrams',
@@ -45,5 +55,11 @@ export const slidesPackAuthoring = {
       'The title slide. Its aside is one slide node, never a slideFrame.',
     slideCode:
       'One or two code panels. Every highlighted line number exists in its panel.',
+    slideAgenda:
+      'Two to eight sections of the talk, in order. At most one section is current.',
+    slideSource:
+      'One citation line. When present, it is the last node in the frame body.',
+    slideSection:
+      'A section divider. When hrefs is given it has one entry per contents entry.',
   },
 } satisfies PackAuthoringOptions;

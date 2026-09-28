@@ -6,6 +6,7 @@
  */
 
 import { example as headingExample } from '../slide_heading/examples';
+import { example as sectionExample } from '../slide_section/examples';
 
 import type { SlideFrameNode } from './types';
 
@@ -19,5 +20,15 @@ export const example: SlideFrameNode = {
   body: [headingExample],
 };
 
+/** An inverse section slide with no address. */
+export const inverseExample: SlideFrameNode = {
+  type: 'slideFrame',
+  tone: 'inverse',
+  brand: 'Ledger',
+  section: 'Settlement',
+  sectionNumber: '02',
+  body: [sectionExample],
+};
+
 /** Conformance examples for {@link SlideFrameNode}. */
-export const examples: SlideFrameNode[] = [example];
+export const examples: SlideFrameNode[] = [example, inverseExample];

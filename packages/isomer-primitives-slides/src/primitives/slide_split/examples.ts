@@ -54,5 +54,40 @@ export const mixedExample: SlideSplitNode = {
   },
 };
 
+/** `aside` with a hairline: code beside a labeled column of notes. */
+export const asideExample: SlideSplitNode = {
+  type: 'slideSplit',
+  ratio: 'aside',
+  divider: 'hairline',
+  left: { items: [codeExample] },
+  right: {
+    label: 'Why this order',
+    items: [
+      {
+        type: 'slideDefinitions',
+        items: [
+          {
+            term: 'ledger first',
+            body: 'Recorded before anything can fail.',
+          },
+          {
+            term: 'fraud second',
+            body: 'The check can reverse a refund, never lose one.',
+          },
+          {
+            term: 'notify last',
+            body: 'Customers hear only about moved money.',
+          },
+        ],
+      },
+    ],
+  },
+};
+
 /** Conformance examples for {@link SlideSplitNode}. */
-export const examples: SlideSplitNode[] = [example, arrowExample, mixedExample];
+export const examples: SlideSplitNode[] = [
+  example,
+  arrowExample,
+  mixedExample,
+  asideExample,
+];
