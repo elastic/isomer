@@ -94,4 +94,16 @@ describe('slideBars', () => {
     expect(drawn).toContain(`>${huge}<`);
     expect(drawn).not.toMatch(/e\+21|0\.30000/);
   });
+
+  it('draws every bar empty when every value is zero', () => {
+    const drawn = html({
+      type: 'slideBars',
+      items: [
+        { label: 'Monday', value: 0 },
+        { label: 'Tuesday', value: 0 },
+      ],
+    });
+    expect(drawn.match(/width:0%/g)).toHaveLength(2);
+    expect(drawn).not.toContain('NaN');
+  });
 });
