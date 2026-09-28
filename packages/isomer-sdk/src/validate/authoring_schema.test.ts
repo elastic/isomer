@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
 import { definePrimitive } from '../define/primitive_module';
@@ -226,5 +226,85 @@ describe('buildAuthoringJsonSchema def names', () => {
     expect($defs.badge?.properties?.tone).toMatchObject({
       enum: ['primary', 'pink'],
     });
+  });
+});
+
+const primitiveOf = (type: string, shape: Record<string, z.ZodType>) => {
+  const node = { type };
+  return definePrimitive({
+    type,
+    catalog: { type, purpose: '', useWhen: [], avoidWhen: [], example: node },
+    examples: [node],
+    schema: z.object({ type: z.literal(type), ...shape }).strict(),
+    renderers: { react: () => null, text: () => '', markdown: () => '' },
+  });
+};
+
+const decodedRefs = (built: unknown): string[] =>
+  [...JSON.stringify(built).matchAll(/"\$ref":"#\/\$defs\/([^"]+)"/g)].map(
+    ([, pointer]) =>
+      decodeURIComponent(pointer ?? '')
+        .replace(/~1/g, '/')
+        .replace(/~0/g, '~')
+  );
+
+describe('buildAuthoringJsonSchema unpaired surrogates', () => {
+  it('refuses a type id with an unpaired surrogate as an IsomerError', () => {
+    try {
+      buildAuthoringJsonSchema([primitiveOf('a\uD800b', {})]);
+      expect.unreachable();
+    } catch (error) {
+      expect(error).toMatchObject({
+        name: 'IsomerError',
+        code: 'INVALID_BODY_NODE',
+      });
+    }
+  });
+
+  it('names a shared def after a property with an unpaired surrogate, and every ref resolves', () => {
+    const point = z.object({ label: z.string(), value: z.number() }).strict();
+    const built = buildAuthoringJsonSchema([
+      primitiveOf('first', { 'a\uDC00': point }),
+      primitiveOf('second', { 'a\uDC00': point }),
+    ]);
+    const { $defs } = built as { $defs: Record<string, unknown> };
+    const refs = decodedRefs(built);
+    expect(refs).toContain('a�');
+    for (const id of refs) {
+      expect(Object.hasOwn($defs, id)).toBe(true);
+    }
+  });
+});
+
+describe('buildAuthoringJsonSchema own keys', () => {
+  afterEach(() => {
+    delete (Object.prototype as { description?: unknown }).description;
+  });
+
+  it('describes only a def the schema holds, never Object.prototype', () => {
+    buildAuthoringJsonSchema([primitiveOf('note', {})], {
+      describe: JSON.parse('{"__proto__": "x"}') as Record<string, string>,
+    });
+    expect(({} as { description?: unknown }).description).toBeUndefined();
+  });
+
+  it('keeps an own __proto__ property through the rewrite passes, and its required entry with it', () => {
+    const point = z.object({ label: z.string() }).strict();
+    const shape: Record<string, z.ZodType> = { before: point, after: point };
+    Object.defineProperty(shape, '__proto__', {
+      configurable: true,
+      enumerable: true,
+      value: z.string(),
+      writable: true,
+    });
+    const { $defs } = buildAuthoringJsonSchema([
+      primitiveOf('delta', shape),
+    ]) as {
+      $defs: {
+        delta: { properties: Record<string, unknown>; required: string[] };
+      };
+    };
+    expect($defs.delta.required).toContain('__proto__');
+    expect(Object.hasOwn($defs.delta.properties, '__proto__')).toBe(true);
   });
 });

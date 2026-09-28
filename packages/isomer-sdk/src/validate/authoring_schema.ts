@@ -7,6 +7,7 @@
 
 import type { ZodType } from 'zod';
 
+import { IsomerError } from '../composition/error';
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
 
 import {
@@ -42,6 +43,13 @@ export interface AuthoringJsonSchemaOptions extends CompositionJsonSchemaOptions
   omitProperties?: readonly string[];
 }
 
+const LONE_SURROGATE =
+  /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g;
+
+/** `String.prototype.toWellFormed`: `encodeURIComponent` throws on a lone surrogate. */
+const toWellFormed = (text: string): string =>
+  text.replace(LONE_SURROGATE, '\uFFFD');
+
 const isJsonObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
@@ -50,7 +58,7 @@ const cloneJson = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 // A `$ref` is a JSON Pointer in a URI fragment: `~` and `/` are escaped as `~0` and `~1`, then
 // anything a fragment cannot hold, `%` included, is percent-encoded.
 const defRef = (id: string): string =>
-  `${DEF_PREFIX}${id
+  `${DEF_PREFIX}${toWellFormed(id)
     .replace(/~/g, '~0')
     .replace(/\//g, '~1')
     .replace(/[^\w\-.~!$&'()*+,;=:@]/gu, (char) => encodeURIComponent(char))}`;
@@ -93,11 +101,12 @@ const mapJson = (
   if (!isJsonObject(node)) {
     return node;
   }
-  const next: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(visit(node))) {
-    next[key] = mapJson(value, visit);
-  }
-  return next;
+  return Object.fromEntries(
+    Object.entries(visit(node)).map(([key, value]) => [
+      key,
+      mapJson(value, visit),
+    ])
+  );
 };
 
 const rewriteDefRefs = (
@@ -195,8 +204,12 @@ const omitListedProperties = (
     }
     const defId = path.slice(0, dot);
     const property = path.slice(dot + 1);
-    const def = defs[defId];
-    if (!isJsonObject(def) || !isJsonObject(def.properties)) {
+    const def = Object.hasOwn(defs, defId) ? defs[defId] : undefined;
+    if (
+      !isJsonObject(def) ||
+      !isJsonObject(def.properties) ||
+      !Object.hasOwn(def.properties, property)
+    ) {
       continue;
     }
     delete def.properties[property];
@@ -212,7 +225,7 @@ const applyDescriptions = (
 ): void => {
   const defs = defsOf(schema);
   for (const [id, description] of Object.entries(describe)) {
-    const def = defs[id];
+    const def = Object.hasOwn(defs, id) ? defs[id] : undefined;
     if (isJsonObject(def)) {
       def.description = description;
     }
@@ -287,7 +300,7 @@ const pruneUnreferencedDefs = (schema: JsonSchema): JsonSchema => {
         return;
       }
       referenced.add(id);
-      visit(defs[id]);
+      visit(Object.hasOwn(defs, id) ? defs[id] : undefined);
     });
   };
   const root: JsonSchema = { ...schema };
@@ -467,10 +480,11 @@ const nameSharedDefs = (schema: JsonSchema): JsonSchema => {
         ...path.slice(1),
       ]);
       const owners = new Set(sites.map(([head]) => head));
-      const base =
+      const base = toWellFormed(
         owners.size > 1
           ? (first.at(-1) ?? owner)
-          : siteName(sites as string[][]);
+          : siteName(sites as string[][])
+      );
       let name = base;
       for (let suffix = 2; taken.has(name); suffix += 1) {
         name = `${base}${suffix}`;
@@ -535,6 +549,17 @@ export const buildAuthoringJsonSchema = (
   options: AuthoringJsonSchemaOptions = {}
 ): JsonSchema => {
   const { describe, omitProperties, extraDefs, ...rest } = options;
+  for (const id of [
+    ...definitions.map(({ type }) => type),
+    ...(extraDefs ?? []).map((extra) => extra.id),
+  ]) {
+    if (toWellFormed(id) !== id) {
+      throw new IsomerError(
+        'INVALID_BODY_NODE',
+        `buildAuthoringJsonSchema: def id ${JSON.stringify(id)} holds an unpaired surrogate`
+      );
+    }
+  }
   const projected = buildCompositionJsonSchema(definitions, {
     ...rest,
     extraDefs: mergeExtraDefs(extraDefs),
