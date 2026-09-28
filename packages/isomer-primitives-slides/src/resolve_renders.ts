@@ -28,6 +28,13 @@ const isUnresolvedRender = (
   typeof (node as SlideRenderNode).slide === 'string' &&
   (node as SlideRenderNode).composition === undefined;
 
+// A JSON string that also escapes the line separators `JSON.stringify` leaves raw, so a message stays on one line.
+const quote = (slug: string): string =>
+  JSON.stringify(slug).replace(
+    /[\u2028\u2029]/g,
+    (separator) => `\\u${separator.charCodeAt(0).toString(16)}`
+  );
+
 /** Options for {@link resolveSlideRenders}. */
 export interface ResolveSlideRendersOptions {
   /**
@@ -42,7 +49,8 @@ export interface ResolveSlideRendersOptions {
  * with that slide's composition, so the pack can draw it.
  *
  * An unknown slug, a slide embedding itself, and a slide embedding one that
- * holds a render of its own (which covers any cycle) cannot be filled.
+ * holds a render of its own (which covers any cycle) cannot be filled. A slug
+ * that names more than one slide throws, whatever `onUnresolved` says.
  */
 export const resolveSlideRenders = (
   slides: readonly NamedSlide[],
@@ -54,7 +62,15 @@ export const resolveSlideRenders = (
     }
     throw new Error(`resolveSlideRenders: ${message}`);
   };
-  const bySlug = new Map(slides.map((slide) => [slide.slug, slide]));
+  const bySlug = new Map<string, NamedSlide>();
+  for (const slide of slides) {
+    if (bySlug.has(slide.slug)) {
+      throw new Error(
+        `resolveSlideRenders: slug ${quote(slide.slug)} names more than one slide`
+      );
+    }
+    bySlug.set(slide.slug, slide);
+  }
   return slides.map(({ slug, composition }) =>
     mapCompositionNodes(composition, slideDeckPrimitives, (node) => {
       if (!isUnresolvedRender(node)) {
@@ -63,15 +79,18 @@ export const resolveSlideRenders = (
       const { slide } = node;
       const target = bySlug.get(slide);
       if (!target) {
-        return fail(node, `slide "${slug}" renders unknown slide "${slide}"`);
+        return fail(
+          node,
+          `slide ${quote(slug)} renders unknown slide ${quote(slide)}`
+        );
       }
       if (target.slug === slug) {
-        return fail(node, `slide "${slug}" renders itself`);
+        return fail(node, `slide ${quote(slug)} renders itself`);
       }
       if (findNestedRender(target.composition.body)) {
         return fail(
           node,
-          `slide "${slug}" renders slide "${target.slug}", which holds a render of its own; an embedded composition cannot embed another render`
+          `slide ${quote(slug)} renders slide ${quote(target.slug)}, which holds a render of its own; an embedded composition cannot embed another render`
         );
       }
       return { ...node, composition: target.composition } as SlideRenderNode;

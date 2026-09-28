@@ -105,4 +105,29 @@ describe('resolveSlideRenders', () => {
       ])
     ).toThrow('slide "c" renders slide "b", which holds a render of its own');
   });
+
+  it.each(['throw', 'leave'] as const)(
+    'rejects a slug named twice, with onUnresolved %s',
+    (onUnresolved) => {
+      expect(() =>
+        resolveSlideRenders(
+          [
+            { slug: 'title', composition: title },
+            { slug: 'title', composition: slide([renderOf('title')]) },
+          ],
+          { onUnresolved }
+        )
+      ).toThrow('resolveSlideRenders: slug "title" names more than one slide');
+    }
+  );
+
+  it('quotes a slug on one line in its messages', () => {
+    const slug = 'a"b\nc\u2028d';
+    expect(() =>
+      resolveSlideRenders([{ slug, composition: slide([renderOf('nope')]) }])
+    ).toThrow('slide "a\\"b\\nc\\u2028d" renders unknown slide "nope"');
+    expect(() =>
+      resolveSlideRenders([{ slug, composition: slide([renderOf(slug)]) }])
+    ).toThrow('slide "a\\"b\\nc\\u2028d" renders itself');
+  });
 });
