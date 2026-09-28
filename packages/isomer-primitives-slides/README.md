@@ -5,7 +5,7 @@ The in-repo reference primitive pack for Isomer, and the one to copy: slide-deck
 It is not published to npm: copy it as the starting point for your own pack, which installs beside the runtime.
 
 ```sh
-npm install @elastic/isomer-runtime @elastic/isomer-sdk react react-dom zod
+npm install @elastic/distillate @elastic/isomer-runtime @elastic/isomer-sdk react react-dom zod
 ```
 
 ```ts
@@ -25,7 +25,7 @@ The pack ships its own style adapter, which the runtime combines with any other 
 
 ## Docs
 
-The [Slides pack](https://elastic.github.io/isomer/slides/) docs cover [authoring a primitive](https://elastic.github.io/isomer/slides/primitives), the [pack contract](https://elastic.github.io/isomer/slides/contract), the [document](https://elastic.github.io/isomer/slides/document), the [theme](https://elastic.github.io/isomer/slides/theme), [styling](https://elastic.github.io/isomer/slides/styling), and the [worked example](https://elastic.github.io/isomer/slides/example) with every surface's output.
+The [Slides pack](https://elastic.github.io/isomer/slides/) docs cover [authoring a primitive](https://elastic.github.io/isomer/slides/primitives), the [pack contract](https://elastic.github.io/isomer/slides/contract), the [document](https://elastic.github.io/isomer/slides/document), the [theme](https://elastic.github.io/isomer/slides/theme), [styling](https://elastic.github.io/isomer/slides/styling), [builds](https://elastic.github.io/isomer/slides/builds), [copy buttons](https://elastic.github.io/isomer/slides/copy), and the [worked example](https://elastic.github.io/isomer/slides/example) with every surface's output.
 
 ## License
 

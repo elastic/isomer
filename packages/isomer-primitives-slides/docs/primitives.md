@@ -94,7 +94,11 @@ A field filled from JSX children is branded on the schema. `fromChildren` and `f
 ```ts
 turns: fromChildren(
   'slideTurn',
-  z.array(turnSchema).min(1).max(8).describe('Turns in order. One to eight.'),
+  z
+    .array(turnSchema)
+    .min(1)
+    .max(4)
+    .describe('Turns in the order they happened. One to four.'),
   { text: 'text' }
 ),
 ```

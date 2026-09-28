@@ -127,6 +127,7 @@ The second group is what this pack adds for its own hosts, none of which the run
 - `slideFontFaces`, the faces an image backend needs, which a host maps to font files.
 - `resolveSlideRenders`, which fills a `slideRender`'s `composition` from a deck by name.
 - `showSlideBuild` and `slideBuilds`, with `SLIDE_BUILDS` and `slideBuildParts`, for [builds](builds.md).
+- `SLIDE_COPY`, the id a host requests for [copy buttons](copy.md) on its commands.
 - `slideStylesheet`, `StandaloneSlideNode`, and `SlideFrameView`, for a host that mounts the React tree itself.
 - `slideOverflow` and `slideOverlaps`, for a host that checks a slide fits.
 - `slideAuthoringNotes`, `buildSlidesAuthoringPrompt`, `slidesAuthoringGuide`, `slidesAuthoringRules`, and `slidePrimitiveGroups`, for a host that prompts a model.

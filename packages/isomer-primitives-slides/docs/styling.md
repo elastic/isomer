@@ -47,9 +47,13 @@ import {
 
 const node: SlideCodeNode = {
   type: 'slideCode',
-  label: 'Composition',
-  language: 'json',
-  code: '{ "type": "view", "body": [] }',
+  panels: [
+    {
+      file: 'Composition',
+      language: 'json',
+      lines: ['{ "type": "view", "body": [] }'],
+    },
+  ],
 };
 
 <StandaloneSlideNode node={node} />
@@ -61,6 +65,6 @@ This is a React convenience wrapper, not a surface — it applies `slideStyleshe
 
 A browser resolves `Inter` and `Roboto Mono` from the page; an image backend resolves nothing it was not handed, and an unregistered family falls back to the backend's built-in face. So a host rasterizing this pack registers both families itself.
 
-`slideFontFaces` is that set: one `{ family, weight, style }` per face the theme needs, derived from `SLIDE_THEME.font` rather than listed, so a new weight token cannot silently fall back to the nearest registered face. It holds the weights `SLIDE_THEME.font.weight` declares (500, 600, 700, and 800) for both families, plus the 400 italic `slideTitle`'s definition line sets; anything that sets no weight inherits the document default of 400. The host maps each face to a font file. The pack's `src/examples/fonts.ts` and the deck's `examples/deck/src/fonts.ts` are the worked loaders, over `@fontsource/*`.
+`slideFontFaces` is that set: one `{ family, weight, style }` per face the theme needs, derived from `SLIDE_THEME.font` rather than listed, so a new weight token cannot silently fall back to the nearest registered face. It holds every weight `SLIDE_THEME.font.weight` declares (400, 500, 600, 700, and 800) for Inter and all but extrabold (400 to 700) for Roboto Mono, since no mono style sets it, plus the 400 italic `slideTitle`'s definition line sets. The host maps each face to a font file. The pack's `src/examples/fonts.ts` and the deck's `examples/deck/src/fonts.ts` are the worked loaders, over `@fontsource/*`.
 
-`@fontsource/inter` and `@fontsource/roboto-mono` ship woff2, which takumi decodes natively, so no conversion step is needed. Roboto Mono stops at 700; a weight the family does not ship is dropped rather than substituted.
+`@fontsource/inter` and `@fontsource/roboto-mono` ship woff2, which takumi decodes natively, so no conversion step is needed. Roboto Mono stops at 700, which is why its faces do. A loader drops a weight the family does not ship rather than substituting one.
