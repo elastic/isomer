@@ -26,9 +26,7 @@ const prefix = { add: '+', remove: '-' } as const;
 
 /** Each line in unified-diff form: `+`, `-`, or a space, then the text. */
 const unified = (lines: readonly SlideDiffLine[]): string =>
-  lines
-    .map(({ text, op }) => `${op ? prefix[op] : ' '} ${text}`.trimEnd())
-    .join('\n');
+  lines.map(({ text, op }) => `${op ? prefix[op] : ' '}${text}`).join('\n');
 
 /** Text renderer for {@link SlideDiffNode}: the caption, then the lines in unified-diff form. */
 export const text = ({ file, lines }: SlideDiffNode): string =>

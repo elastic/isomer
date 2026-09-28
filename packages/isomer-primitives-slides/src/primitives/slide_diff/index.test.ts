@@ -50,26 +50,37 @@ describe('slideDiff', () => {
   it('prefixes each line in text', () => {
     expect(text(example)).toMatchInlineSnapshot(`
       "refund.ts · before and after
-        export const refund = async (order: Order) => {
-      -   await fraud.check(order);
-          await ledger.write(order.id, -order.total);
-      +   await fraud.check(order);
-          return notify(order.customer);
-        };"
+       export const refund = async (order: Order) => {
+      -  await fraud.check(order);
+         await ledger.write(order.id, -order.total);
+      +  await fraud.check(order);
+         return notify(order.customer);
+       };"
     `);
   });
 
   it('fences the lines as diff in markdown', () => {
-    expect(markdown(configExample)).toMatchInlineSnapshot(`
-      "\`\`\`diff
-        checkout:
-      -   timeout: 30s
-      +   timeout: 10s
-      +   retries: 3
+    expect(markdown(configExample).split('\n')).toEqual([
+      '```diff',
+      ' checkout:',
+      '-  timeout: 30s',
+      '+  timeout: 10s',
+      '+  retries: 3',
+      ' ',
+      '   currency: EUR',
+      '```',
+    ]);
+  });
 
-          currency: EUR
-      \`\`\`"
-    `);
+  it('keeps a whitespace-only change visible', () => {
+    const node: SlideDiffNode = {
+      type: 'slideDiff',
+      lines: [
+        { text: 'total: 3 ', op: 'remove' },
+        { text: 'total: 3', op: 'add' },
+      ],
+    };
+    expect(text(node).split('\n')).toEqual(['-total: 3 ', '+total: 3']);
   });
 
   it('lengthens the fence past a backtick run in a line', () => {
@@ -87,12 +98,12 @@ describe('slideDiff', () => {
           "text": {
             "text": "refund.ts · before and after
       \`\`\`
-        export const refund = async (order: Order) => {
-      -   await fraud.check(order);
-          await ledger.write(order.id, -order.total);
-      +   await fraud.check(order);
-          return notify(order.customer);
-        };
+       export const refund = async (order: Order) => {
+      -  await fraud.check(order);
+         await ledger.write(order.id, -order.total);
+      +  await fraud.check(order);
+         return notify(order.customer);
+       };
       \`\`\`",
             "type": "mrkdwn",
           },
