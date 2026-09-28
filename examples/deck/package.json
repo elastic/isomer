@@ -1,0 +1,36 @@
+{
+  "name": "@elastic/isomer-deck",
+  "version": "0.0.0-development",
+  "private": true,
+  "description": "The Isomer deck: every slide is a composition rendered by the slides pack.",
+  "license": "Elastic-2.0",
+  "type": "module",
+  "exports": {
+    "./viewer": "./src/viewer/index.ts",
+    "./viewer.css": "./src/viewer/viewer.css"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@elastic/isomer-primitives-slides": "workspace:*",
+    "@elastic/isomer-runtime": "workspace:*",
+    "@elastic/isomer-sdk": "workspace:*",
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/roboto-mono": "^5.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^4.4.1"
+  },
+  "devDependencies": {
+    "@elastic/isomer-image-takumi": "workspace:*",
+    "@types/node": "^22.15.3",
+    "@types/react": "^18.2.14",
+    "@types/react-dom": "^18.2.6",
+    "@vitejs/plugin-react": "^6.1.1",
+    "vite": "^8.3.0"
+  }
+}

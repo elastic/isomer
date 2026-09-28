@@ -1,0 +1,61 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+import { slideJsx } from '@elastic/isomer-primitives-slides';
+
+export const {
+  Composition: Slide,
+  SlideAgenda,
+  SlideAnnotatedRender,
+  SlideBars,
+  SlideBulletList,
+  SlideClosing,
+  SlideCode,
+  SlideColumns,
+  SlideCommand,
+  SlideDefinitions,
+  SlideDelta,
+  SlideDiff,
+  SlideFanout,
+  SlideFrame,
+  SlideGraph,
+  SlideHeading,
+  SlideLanes,
+  SlideLayers,
+  SlideList,
+  SlideMatrix,
+  SlidePipeline,
+  SlideQuadrant,
+  SlideQuote,
+  SlideRender,
+  SlideRenderGrid,
+  SlideRoadmap,
+  SlideSection,
+  SlideSequence,
+  SlideSource,
+  SlideSplit,
+  SlideStack,
+  SlideStat,
+  SlideStatement,
+  SlideStats,
+  SlideTable,
+  SlideTerritory,
+  SlideTerritoryGroup,
+  SlideTimeline,
+  SlideTitle,
+  SlideTranscript,
+  SlideTree,
+  SlideTurn,
+  SlideWindow,
+  toComposition,
+} = slideJsx;
+
+/** Footer props every slide shares. */
+export const frame = {
+  brand: 'Isomer',
+  url: 'https://elastic.github.io/isomer',
+} as const;

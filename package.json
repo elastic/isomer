@@ -42,6 +42,8 @@
     "docs:assemble": "node scripts/assemble_package_docs.js",
     "docs:build": "pnpm docs:assemble && docs-builder",
     "docs:dev": "node scripts/docs_dev.js",
+    "deck:dev": "pnpm --filter @elastic/isomer-deck dev",
+    "deck:build": "pnpm --filter @elastic/isomer-deck build",
     "okf:check": "okf validate .okf/isomer && node scripts/check_okf_anchors.js && node scripts/write_okf_map.js --check",
     "okf:index": "okf index .okf/isomer && pnpm okf:map",
     "okf:map": "node scripts/write_okf_map.js",

@@ -13,22 +13,32 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 jobs:
   build:
     name: Build documentation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v6.0.6
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - name: Assemble package docs
         run: node scripts/assemble_package_docs.js
       - name: Build documentation
         uses: elastic/docs-builder@main
         with:
           prefix: isomer
+      - name: Build deck
+        run: pnpm deck:build
+        env:
+          DECK_BASE: ./
+      - name: Copy deck into docs output
+        run: |
+          mkdir -p .artifacts/docs/html/deck
+          cp -R examples/deck/dist/. .artifacts/docs/html/deck/
       - uses: actions/upload-artifact@v4
         with:
           name: site
@@ -39,6 +49,10 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     needs: build
     runs-on: ubuntu-latest
+    # Only deploys share the group, so a pull request's build never queues ahead of main's deploy.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
