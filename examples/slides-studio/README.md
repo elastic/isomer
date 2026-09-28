@@ -57,7 +57,7 @@ In a `slideRender`, `slide` names another slide in the same deck by index, as a 
 
 The studio builds its own runtime from the slides pack (`common/runtime.ts`) and takes only the viewer from `@elastic/isomer-deck`. Fonts are the host's job: `server/fonts.ts` maps the pack's `slideFontFaces` to `@fontsource` files for takumi.
 
-`server/host/` takes its runtime, store, and renderers as options and imports no transport, app module, or Node built-in, which ESLint enforces, so it can become its own package once a second host needs it.
+`server/host/` takes its runtime, store, and renderers as options and imports no transport, app module, or Node built-in, so it can become its own package once a second host needs it. ESLint enforces this: outside its tests it rejects a Node built-in with or without `node:`, a Node global such as `Buffer` or `process`, any dynamic `import()`, a parent-directory import, and Vite, Express, the MCP SDK, the deck, and takumi.
 
 State lives on one `globalThis` singleton so decks and connected agents survive hot reloads. The MCP endpoint only answers `localhost`, `127.0.0.1`, or `[::1]` on the port it is served from, and refuses a request from any other origin.
 

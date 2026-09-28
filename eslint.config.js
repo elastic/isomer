@@ -5,6 +5,8 @@
  * 2.0.
  */
 
+import { builtinModules } from 'node:module';
+
 import js from '@eslint/js';
 import licenseHeader from 'eslint-plugin-license-header';
 import perfectionist from 'eslint-plugin-perfectionist';
@@ -54,6 +56,9 @@ const sdkRuntimeImportPatterns = [
       'Internal source files should import sibling internals with relative paths instead of self-importing package entries.',
   },
 ];
+
+const STUDIO_HOST_MESSAGE =
+  'server/host/ takes its runtime, store, and renderers as options and knows no transport, app module, or Node built-in, so it stays extractable.';
 
 // Matches `../render`, `../../render/slack/format`, and any deeper nesting.
 // An enumerated `../`/`../../` list silently stops guarding one directory down.
@@ -297,21 +302,47 @@ export default tseslint.config(
       'no-restricted-imports': [
         'error',
         {
+          paths: builtinModules.map((name) => ({
+            name,
+            message: STUDIO_HOST_MESSAGE,
+          })),
           patterns: [
             {
               group: [
                 '../*',
                 'node:*',
                 'vite',
+                'express',
+                'express/*',
                 '@modelcontextprotocol/*',
                 '@elastic/isomer-deck',
                 '@elastic/isomer-deck/*',
+                '@elastic/isomer-image-takumi',
+                '@elastic/isomer-image-takumi/*',
               ],
-              message:
-                'server/host/ takes its runtime, store, and renderers as options and knows no transport, so it stays extractable.',
+              message: STUDIO_HOST_MESSAGE,
             },
           ],
         },
+      ],
+      // A computed specifier is out of `no-restricted-imports`' reach.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ImportExpression',
+          message: `Import statically: ${STUDIO_HOST_MESSAGE}`,
+        },
+      ],
+      'no-restricted-globals': [
+        'error',
+        ...[
+          'Buffer',
+          'process',
+          'global',
+          'require',
+          '__dirname',
+          '__filename',
+        ].map((name) => ({ name, message: STUDIO_HOST_MESSAGE })),
       ],
     },
   },
