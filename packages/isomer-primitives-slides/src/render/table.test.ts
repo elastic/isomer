@@ -10,6 +10,21 @@ import { describe, expect, it } from 'vitest';
 import { monoColumns } from './mono';
 import { textTable } from './table';
 
+describe('monoColumns', () => {
+  it.each([
+    ['a plain letter', 'a', 1],
+    ['a wide glyph', '界', 2],
+    ['a letter and a combining mark', 'e\u0301', 1],
+    ['a keycap emoji', '1\ufe0f\u20e3', 2],
+    ['an emoji presentation selector', '\u2764\ufe0f', 2],
+    ['a symbol drawn as text', '\u00a9', 1],
+    ['an emoji', '\u{1f642}', 2],
+    ['a joined family', '\u{1f469}\u200d\u{1f469}\u200d\u{1f467}', 2],
+  ])('counts %s as its display width', (_name, text, columns) => {
+    expect(monoColumns(text)).toBe(columns);
+  });
+});
+
 describe('textTable', () => {
   it('aligns columns by display width, wide glyphs and combining marks included', () => {
     const table = textTable(
