@@ -26,6 +26,7 @@ import {
   type SlackSectionBlock,
   type SlackTableBlock,
   type SlackTableCell,
+  type SlackTextObject,
 } from './blocks';
 import {
   bold,
@@ -117,7 +118,7 @@ export const renderSlackEnvelope = <TNode extends PrimitiveNode>(
   const rhythm = applySectionRhythm(
     coalesceFieldSections(enforceTableCharBudget(blocks))
   );
-  const budgeted = enforceBlockBudget(rhythm);
+  const budgeted = enforceBlockBudget(clampBlockText(rhythm));
   // Only ask the host to upload assets whose placeholder block survived the
   // budget; blocks elided by `enforceBlockBudget` are never posted, so
   // uploading their files would be wasted (and orphaned) work.
@@ -363,6 +364,56 @@ const enforceTableCharBudget = (
   }
   return out;
 };
+
+const clampTextObject = <TText extends SlackTextObject>(
+  text: TText,
+  max: number
+): TText =>
+  text.text.length <= max
+    ? text
+    : { ...text, text: clampSlackText(text.text, max) };
+
+// Pack renderers build their own blocks, and one over-long text rejects the whole message.
+const clampBlockText = (blocks: readonly SlackBlock[]): SlackBlock[] =>
+  blocks.map((block): SlackBlock => {
+    switch (block.type) {
+      case 'header':
+        return {
+          ...block,
+          text: clampTextObject(block.text, SLACK_LIMITS.headerTextChars),
+        };
+      case 'section':
+        return {
+          ...block,
+          ...(block.text
+            ? {
+                text: clampTextObject(
+                  block.text,
+                  SLACK_LIMITS.sectionTextChars
+                ),
+              }
+            : {}),
+          ...(block.fields
+            ? {
+                fields: block.fields.map((field) =>
+                  clampTextObject(field, SLACK_LIMITS.sectionFieldChars)
+                ),
+              }
+            : {}),
+        };
+      case 'context':
+        return {
+          ...block,
+          elements: block.elements.map((element) =>
+            element.type === 'image'
+              ? element
+              : clampTextObject(element, SLACK_LIMITS.contextElementChars)
+          ),
+        };
+      default:
+        return block;
+    }
+  });
 
 const enforceBlockBudget = (blocks: SlackBlock[]): SlackBlock[] => {
   if (blocks.length <= SLACK_LIMITS.blocksPerMessage) {

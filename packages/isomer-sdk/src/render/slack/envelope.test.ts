@@ -127,6 +127,60 @@ describe('Slack envelope transforms', () => {
     expect(blocks.some((block) => block.type === 'section')).toBe(true);
   });
 
+  it('clamps every text a pack renderer emits to its Slack limit', () => {
+    const long = 'x'.repeat(5000);
+    const { blocks } = renderSlackEnvelope(
+      { type: 'view', body: [{ type: 'a' }] },
+      dispatcherFor([
+        [
+          { type: 'header', text: { type: 'plain_text', text: long } },
+          {
+            type: 'section',
+            text: { type: 'mrkdwn', text: long },
+            fields: [
+              { type: 'mrkdwn', text: long },
+              { type: 'mrkdwn', text: 'short' },
+            ],
+          },
+          {
+            type: 'context',
+            elements: [
+              { type: 'mrkdwn', text: long },
+              {
+                type: 'image',
+                image_url: 'https://x.test/a.png',
+                alt_text: 'a',
+              },
+            ],
+          },
+        ],
+      ])
+    );
+    const [header, section, context] = blocks.filter(
+      (block) =>
+        block.type === 'header' ||
+        block.type === 'context' ||
+        (block.type === 'section' && block.fields !== undefined)
+    );
+    expect(header).toMatchObject({ type: 'header' });
+    expect(header?.type === 'header' && header.text.text).toHaveLength(
+      SLACK_LIMITS.headerTextChars
+    );
+    if (section?.type !== 'section' || context?.type !== 'context') {
+      throw new Error('expected a section then a context block');
+    }
+    expect(section.text?.text).toHaveLength(SLACK_LIMITS.sectionTextChars);
+    expect(section.fields?.map(({ text }) => text.length)).toEqual([
+      SLACK_LIMITS.sectionFieldChars,
+      5,
+    ]);
+    const [clamped] = context.elements;
+    const text = clamped?.type === 'mrkdwn' ? clamped.text : '';
+    expect(text).toHaveLength(SLACK_LIMITS.contextElementChars);
+    expect(text.endsWith('…')).toBe(true);
+    expect(context.elements[1]).toMatchObject({ type: 'image' });
+  });
+
   it('elides overflow past the block budget and appends a notice', () => {
     const count = SLACK_LIMITS.blocksPerMessage + 5;
     const { blocks } = renderSlackEnvelope(
