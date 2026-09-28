@@ -222,8 +222,15 @@ const composeStyleAdapters = (
                   (handle) =>
                     part.adapter.ownsHandle?.(handle) || !isOwned(handle)
                 );
-                return routed.length > 0 && hasClassNameResolver(context)
-                  ? context.resolveClassName(...routed)
+                if (routed.length === 0 || !isObjectLike(context)) {
+                  return '';
+                }
+                const resolve: unknown = Reflect.get(
+                  context,
+                  'resolveClassName'
+                );
+                return typeof resolve === 'function'
+                  ? String(Reflect.apply(resolve, context, routed))
                   : '';
               })
               .filter(Boolean)
@@ -288,16 +295,10 @@ const quoteIds = (entries: readonly AdapterEntry[]): string =>
 const isObjectLike = (value: unknown): value is object =>
   (typeof value === 'object' && value !== null) || typeof value === 'function';
 
-const hasClassNameResolver = (
-  context: unknown
-): context is { resolveClassName: (...handles: StyleHandle[]) => string } =>
-  isObjectLike(context) &&
-  typeof (context as { resolveClassName?: unknown }).resolveClassName ===
-    'function';
-
 /**
  * Every part's context as one, reading `fields` first, then the last context
- * that owns the key, as a spread would, then the last that inherits it. A
+ * that owns the key enumerably, as a spread would, then the last that has it
+ * at all. A
  * view rather than a copy: methods stay bound to their own context, so a
  * class-instance context keeps its prototype and private state.
  */
@@ -309,8 +310,9 @@ const mergedContextView = (
   const own = (key: string | symbol) => Object.hasOwn(fields, key);
   const read = (key: string | symbol): unknown => {
     const owner =
-      objects.find((context) => Object.hasOwn(context, key)) ??
-      objects.find((context) => Reflect.has(context, key));
+      objects.find((context) =>
+        Object.prototype.propertyIsEnumerable.call(context, key)
+      ) ?? objects.find((context) => Reflect.has(context, key));
     if (owner === undefined) {
       return undefined;
     }
@@ -343,7 +345,10 @@ const mergedContextView = (
             writable: true,
           };
         }
-        const owner = objects.find((context) => Object.hasOwn(context, key));
+        const owner =
+          objects.find((context) =>
+            Object.prototype.propertyIsEnumerable.call(context, key)
+          ) ?? objects.find((context) => Object.hasOwn(context, key));
         const descriptor =
           owner && Reflect.getOwnPropertyDescriptor(owner, key);
         return descriptor && { ...descriptor, configurable: true };

@@ -1082,6 +1082,86 @@ describe('createIsomerRuntime', () => {
       expect(body).toContain('data-brand="two.brand"');
     });
 
+    it('reads a key a part holds enumerably before one another part hides, as a spread did', () => {
+      const adapterWith = (prefix: string, context: () => object) => ({
+        ownsHandle: (handle: StyleHandle) => handle.key.startsWith(prefix),
+        createCollector: () => ({}),
+        createRenderContext: context,
+        renderStyles: () => '',
+      });
+      const runtime = createIsomerRuntime({
+        packs: styledPacks(
+          adapterWith('one.', () => ({ label: 'first' })),
+          adapterWith('two.', () =>
+            Object.defineProperty({}, 'label', {
+              value: 'hidden',
+              enumerable: false,
+            })
+          )
+        ),
+        rendererOverrides: {
+          note: {
+            react: (node, { context }) =>
+              createElement(
+                'span',
+                { 'data-label': String((context as { label: unknown }).label) },
+                (node as NoteNode).text
+              ),
+          },
+        },
+      });
+
+      expect(runtime.surfaces.html.render(view('ok')).body).toContain(
+        'data-label="first"'
+      );
+    });
+
+    it('reads each part’s resolveClassName once per call', () => {
+      const counts = { reads: 0, calls: 0 };
+      const counted = {
+        get resolveClassName() {
+          counts.reads += 1;
+          return (...handles: StyleHandle[]) => {
+            counts.calls += 1;
+            return handles.map(({ key }) => key).join(' ');
+          };
+        },
+      };
+      const runtime = createIsomerRuntime({
+        packs: styledPacks(
+          {
+            ownsHandle: (handle: StyleHandle) => handle.key.startsWith('one.'),
+            createCollector: () => ({}),
+            createRenderContext: () => counted,
+            renderStyles: () => '',
+          },
+          scopedAdapter('two.')
+        ),
+        rendererOverrides: {
+          note: {
+            react: (node, { context }) =>
+              createElement(
+                'span',
+                {
+                  className: (
+                    context as {
+                      resolveClassName: (...handles: StyleHandle[]) => string;
+                    }
+                  ).resolveClassName({ key: 'one.root' } as StyleHandle),
+                },
+                (node as NoteNode).text
+              ),
+          },
+        },
+      });
+
+      expect(runtime.surfaces.html.render(view('ok')).body).toContain(
+        'class="one.root"'
+      );
+      expect(counts.calls).toBeGreaterThan(0);
+      expect(counts.reads).toBe(counts.calls);
+    });
+
     it('keeps each part’s class-instance context working: methods, private state and own fields', () => {
       class PartContext {
         readonly #keys: string[];
