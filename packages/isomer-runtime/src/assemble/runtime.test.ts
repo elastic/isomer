@@ -20,6 +20,7 @@ import {
   type Frame,
   type PrimitiveNode,
   type PrimitivePack,
+  type PrimitiveRenderContext,
   runEnhancementScript,
   type StyleHandle,
   themeBound,
@@ -1007,6 +1008,219 @@ describe('createIsomerRuntime', () => {
       expect(result.css).toBe('.one.root{}.two.root{}');
     });
 
+    it('reads a key a part owns before one a later part only inherits, as a spread did', () => {
+      class Inherits {
+        label(): string {
+          return 'method';
+        }
+      }
+      const adapterWith = (prefix: string, context: () => object) => ({
+        ownsHandle: (handle: StyleHandle) => handle.key.startsWith(prefix),
+        createCollector: () => ({}),
+        createRenderContext: context,
+        renderStyles: () => '',
+      });
+      const runtime = createIsomerRuntime({
+        packs: styledPacks(
+          adapterWith('one.', () => ({ label: 'first' })),
+          adapterWith('two.', () => new Inherits())
+        ),
+        rendererOverrides: {
+          note: {
+            react: (node, { context }) =>
+              createElement(
+                'span',
+                { 'data-label': String((context as { label: unknown }).label) },
+                (node as NoteNode).text
+              ),
+          },
+        },
+      });
+
+      expect(runtime.surfaces.html.render(view('ok')).body).toContain(
+        'data-label="first"'
+      );
+    });
+
+    it('keeps a callable part context’s members and class names', () => {
+      const callable = (prefix: string) =>
+        Object.assign(() => prefix, {
+          brand: `${prefix}brand`,
+          resolveClassName: (...handles: StyleHandle[]) =>
+            handles.map(({ key }) => key).join(' '),
+        });
+      const adapterWith = (prefix: string) => ({
+        ownsHandle: (handle: StyleHandle) => handle.key.startsWith(prefix),
+        createCollector: () => ({}),
+        createRenderContext: () => callable(prefix),
+        renderStyles: () => '',
+      });
+      const runtime = createIsomerRuntime({
+        packs: styledPacks(adapterWith('one.'), adapterWith('two.')),
+        rendererOverrides: {
+          note: {
+            react: (node, { context }) => {
+              const part = context as ReturnType<typeof callable>;
+              return createElement(
+                'span',
+                {
+                  className: part.resolveClassName(
+                    { key: 'one.root' } as StyleHandle,
+                    { key: 'two.root' } as StyleHandle
+                  ),
+                  'data-brand': part.brand,
+                },
+                (node as NoteNode).text
+              );
+            },
+          },
+        },
+      });
+
+      const { body } = runtime.surfaces.html.render(view('ok'));
+      expect(body).toContain('class="one.root two.root"');
+      expect(body).toContain('data-brand="two.brand"');
+    });
+
+    it('reads a key a part holds enumerably before one another part hides, as a spread did', () => {
+      const adapterWith = (prefix: string, context: () => object) => ({
+        ownsHandle: (handle: StyleHandle) => handle.key.startsWith(prefix),
+        createCollector: () => ({}),
+        createRenderContext: context,
+        renderStyles: () => '',
+      });
+      const runtime = createIsomerRuntime({
+        packs: styledPacks(
+          adapterWith('one.', () => ({ label: 'first' })),
+          adapterWith('two.', () =>
+            Object.defineProperty({}, 'label', {
+              value: 'hidden',
+              enumerable: false,
+            })
+          )
+        ),
+        rendererOverrides: {
+          note: {
+            react: (node, { context }) =>
+              createElement(
+                'span',
+                { 'data-label': String((context as { label: unknown }).label) },
+                (node as NoteNode).text
+              ),
+          },
+        },
+      });
+
+      expect(runtime.surfaces.html.render(view('ok')).body).toContain(
+        'data-label="first"'
+      );
+    });
+
+    it('reads each part’s resolveClassName once per call', () => {
+      const counts = { reads: 0, calls: 0 };
+      const counted = {
+        get resolveClassName() {
+          counts.reads += 1;
+          return (...handles: StyleHandle[]) => {
+            counts.calls += 1;
+            return handles.map(({ key }) => key).join(' ');
+          };
+        },
+      };
+      const runtime = createIsomerRuntime({
+        packs: styledPacks(
+          {
+            ownsHandle: (handle: StyleHandle) => handle.key.startsWith('one.'),
+            createCollector: () => ({}),
+            createRenderContext: () => counted,
+            renderStyles: () => '',
+          },
+          scopedAdapter('two.')
+        ),
+        rendererOverrides: {
+          note: {
+            react: (node, { context }) =>
+              createElement(
+                'span',
+                {
+                  className: (
+                    context as {
+                      resolveClassName: (...handles: StyleHandle[]) => string;
+                    }
+                  ).resolveClassName({ key: 'one.root' } as StyleHandle),
+                },
+                (node as NoteNode).text
+              ),
+          },
+        },
+      });
+
+      expect(runtime.surfaces.html.render(view('ok')).body).toContain(
+        'class="one.root"'
+      );
+      expect(counts.calls).toBeGreaterThan(0);
+      expect(counts.reads).toBe(counts.calls);
+    });
+
+    it('keeps each part’s class-instance context working: methods, private state and own fields', () => {
+      class PartContext {
+        readonly #keys: string[];
+        readonly #label: string;
+        readonly brand: string;
+
+        constructor(keys: string[], label: string) {
+          this.#keys = keys;
+          this.#label = label;
+          this.brand = `${label}-brand`;
+        }
+
+        resolveClassName(...handles: StyleHandle[]): string {
+          this.#keys.push(...handles.map(({ key }) => key));
+          return handles.map(({ key }) => key).join(' ');
+        }
+
+        label(): string {
+          return this.#label;
+        }
+      }
+      const instanceAdapter = (prefix: string) => ({
+        ownsHandle: (handle: StyleHandle) => handle.key.startsWith(prefix),
+        createCollector: () => ({ keys: [] as string[] }),
+        createRenderContext: (collector: { keys: string[] }) =>
+          new PartContext(collector.keys, prefix),
+        renderStyles: (collector: { keys: string[] }) =>
+          collector.keys.map((key) => `.${key}{}`).join(''),
+      });
+      const runtime = createIsomerRuntime({
+        packs: styledPacks(instanceAdapter('one.'), instanceAdapter('two.')),
+        rendererOverrides: {
+          note: {
+            react: (node, { context }) => {
+              const part = context as PartContext;
+              return createElement(
+                'span',
+                {
+                  className: part.resolveClassName(
+                    { key: 'one.root', readableName: 'one-root' },
+                    { key: 'two.root', readableName: 'two-root' }
+                  ),
+                  'data-label': part.label(),
+                  'data-brand': part.brand,
+                },
+                (node as NoteNode).text
+              );
+            },
+          },
+        },
+      });
+
+      const result = runtime.surfaces.html.render(view('ok'));
+      expect(result.body).toContain('class="one.root two.root"');
+      expect(result.body).toContain('data-label="two."');
+      expect(result.body).toContain('data-brand="two.-brand"');
+      expect(result.css).toBe('.one.root{}.two.root{}');
+    });
+
     it('scopes each pack adapter script, so two can declare the same const', () => {
       const scripted = (prefix: string) => ({
         ...scopedAdapter(`${prefix}.`),
@@ -1735,6 +1949,85 @@ describe('createIsomerRuntime', () => {
         primitives: [notePrimitive, boldPrimitive],
       })
     ).not.toThrow();
+  });
+
+  describe('enhancements across packs', () => {
+    const hasType =
+      (type: string) =>
+      (body: readonly PrimitiveNode[]): boolean =>
+        body.some((node) => node.type === type);
+    const enhancedPacks = () => [
+      definePrimitivePack({
+        id: 'a',
+        surfaces: [],
+        primitives: [notePrimitive],
+        enhancements: [
+          { id: 'noteCopy', appliesTo: hasType('note'), script: 'root.a = 1;' },
+        ],
+      }),
+      definePrimitivePack({
+        id: 'b',
+        surfaces: [],
+        primitives: [boldPrimitive],
+        enhancements: [
+          { id: 'boldSort', appliesTo: hasType('bold'), script: 'root.b = 1;' },
+        ],
+      }),
+    ];
+    const seen = (context: unknown) =>
+      [...((context as PrimitiveRenderContext).enhancements ?? [])]
+        .sort()
+        .join(',');
+    const runtimeOf = () =>
+      createIsomerRuntime({
+        packs: enhancedPacks(),
+        rendererOverrides: {
+          note: {
+            react: (node, { context }) =>
+              createElement(
+                'span',
+                { 'data-seen': seen(context) },
+                (node as NoteNode).text
+              ),
+          },
+          bold: {
+            react: (node, { context }) =>
+              createElement(
+                'strong',
+                { 'data-seen': seen(context) },
+                (node as BoldNode).text
+              ),
+          },
+        },
+      });
+    const requested = { enhancements: ['noteCopy', 'boldSort', 'absent'] };
+
+    it('hands every pack’s renderers the resolved set and emits each script once', () => {
+      const { body, js } = runtimeOf().surfaces.html.render(
+        {
+          type: 'view',
+          body: [
+            { type: 'note', text: 'n' } as NoteNode,
+            { type: 'bold', text: 'b' } as BoldNode,
+          ],
+        },
+        { ...requested, scripts: 'host' }
+      );
+      expect(body).toContain('<span data-seen="boldSort,noteCopy">');
+      expect(body).toContain('<strong data-seen="boldSort,noteCopy">');
+      expect(js.split('root.a = 1;')).toHaveLength(2);
+      expect(js.split('root.b = 1;')).toHaveLength(2);
+    });
+
+    it('leaves out an enhancement the body has nothing for, and its script', () => {
+      const { body, js } = runtimeOf().surfaces.html.render(
+        { type: 'view', body: [{ type: 'note', text: 'n' } as NoteNode] },
+        { ...requested, scripts: 'host' }
+      );
+      expect(body).toContain('<span data-seen="noteCopy">');
+      expect(js).toContain('root.a = 1;');
+      expect(js).not.toContain('root.b = 1;');
+    });
   });
 
   it('rejects the same enhancement id owned by two packs', () => {

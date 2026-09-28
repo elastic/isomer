@@ -10,6 +10,8 @@ import {
   isVisibleOnSurface,
 } from '../composition/body_node_base';
 
+import { contextWith, isObjectLike } from './context_view';
+
 /** The attribute {@link nodeAnchor} sets to a node's {@link anchorValue}. */
 export const NODE_ANCHOR_ATTRIBUTE = 'data-isomer-node';
 
@@ -65,54 +67,20 @@ export const withAnchors = <TResult>(
  * The result is a view of `context`, not a copy: reads go to `context` itself,
  * with methods bound to it, so getters, methods, private state, and
  * `instanceof` behave as before. The mark survives a context derived from it
- * by spreading. A context that is not an object is returned as it is.
+ * by spreading. A context that is neither an object nor a function is
+ * returned as it is.
  */
-export const withoutAnchors = <TContext>(context: TContext): TContext => {
-  if (typeof context !== 'object' || context === null) {
-    return context;
-  }
-  const original: object = context;
-  // An extensible stand-in, so a frozen context cannot trip the proxy invariants.
-  const standIn = Object.create(
-    Object.getPrototypeOf(original) as object | null
-  ) as object;
-  return new Proxy(standIn, {
-    get: (_, key) => {
-      if (key === NO_ANCHORS) {
-        return true;
-      }
-      const value: unknown = Reflect.get(original, key, original);
-      return typeof value === 'function'
-        ? (value as (...args: unknown[]) => unknown).bind(original)
-        : value;
-    },
-    set: (_, key, value) => Reflect.set(original, key, value, original),
-    has: (_, key) => key === NO_ANCHORS || Reflect.has(original, key),
-    ownKeys: () => [...new Set([...Reflect.ownKeys(original), NO_ANCHORS])],
-    getOwnPropertyDescriptor: (_, key) => {
-      if (key === NO_ANCHORS) {
-        return {
-          value: true,
-          enumerable: true,
-          configurable: true,
-          writable: true,
-        };
-      }
-      const descriptor = Reflect.getOwnPropertyDescriptor(original, key);
-      return descriptor && { ...descriptor, configurable: true };
-    },
-    getPrototypeOf: () => Object.getPrototypeOf(original) as object | null,
-  }) as TContext;
-};
+export const withoutAnchors = <TContext>(context: TContext): TContext =>
+  contextWith(context, NO_ANCHORS, true);
 
 const anchorsOn = (context: unknown): boolean => {
-  const isObject = typeof context === 'object' && context !== null;
-  if (isObject && Reflect.get(context, NO_ANCHORS) === true) {
+  const carries = isObjectLike(context);
+  if (carries && Reflect.get(context, NO_ANCHORS) === true) {
     return false;
   }
   return (
     activeAnchors() ??
-    (isObject && (context as { anchors?: unknown }).anchors === true)
+    (carries && (context as { anchors?: unknown }).anchors === true)
   );
 };
 
