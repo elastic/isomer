@@ -90,7 +90,18 @@ describe('markdownText', () => {
     expect(markdownText('---')).toBe('\\---');
     expect(markdownText('=== ')).toBe('\\=== ');
     expect(markdownText('~~~js')).toBe('\\~~~js');
-    expect(markdownText('    indented code')).toBe('indented code');
+    expect(markdownText('    indented code')).toBe(
+      '&#32;&#32;&#32;&#32;indented code'
+    );
+  });
+});
+
+describe('leading whitespace', () => {
+  it('keeps it as character references, which cannot start an indented code block', () => {
+    expect(markdownText('  label')).toBe('&#32;&#32;label');
+    expect(markdownText('    ')).toBe('&#32;&#32;&#32;&#32;');
+    expect(markdownText('\t# not a heading')).toBe('&#9;# not a heading');
+    expect(marksMarkdown('  `code`')).toBe('&#32;&#32;`code`');
   });
 });
 

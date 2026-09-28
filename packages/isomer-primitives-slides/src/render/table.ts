@@ -8,6 +8,7 @@
 import { oneLine } from '@elastic/isomer-sdk/author';
 
 import { marksMarkdown } from './marks';
+import { monoColumns } from './mono';
 
 /** One GFM pipe-table row of authored cells, marks kept and everything else escaped. */
 export const markdownRow = (cells: readonly string[]): string =>
@@ -42,11 +43,17 @@ export const textTable = (
   );
   const rows = body.filter((line) => typeof line !== 'string');
   const widths = head.map((column, index) =>
-    Math.max(column.length, ...rows.map((row) => row[index]?.length ?? 0))
+    Math.max(
+      monoColumns(column),
+      ...rows.map((row) => monoColumns(row[index] ?? ''))
+    )
   );
   const line = (cells: readonly string[]) =>
     cells
-      .map((cell, index) => cell.padEnd(widths[index] ?? 0))
+      .map(
+        (cell, index) =>
+          `${cell}${' '.repeat(Math.max(0, (widths[index] ?? 0) - monoColumns(cell)))}`
+      )
       .join('  ')
       .trimEnd();
   return [

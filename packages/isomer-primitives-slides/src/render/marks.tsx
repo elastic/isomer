@@ -75,7 +75,10 @@ const escapeMarkdownRun = (text: string): string =>
  */
 const escapeLeadingMarker = (markdown: string): string =>
   markdown
-    .replace(/^\s+/, '')
+    // Leading whitespace as references keeps it, and four spaces can no longer open an indented code block.
+    .replace(/^\s+/, (space) =>
+      [...space].map((char) => `&#${char.codePointAt(0)};`).join('')
+    )
     .replace(
       /^(?:(#{1,6}|-{3,}|={3,}|[+-])(?=\s|$)|(~{3,})|(\d{1,9})([.)])(?=\s|$))/,
       (

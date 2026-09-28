@@ -9,9 +9,9 @@ import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
 import { hasLineTerminator } from '../../render/marks';
+import { monoColumns } from '../../render/mono';
 import { commandMaxLength } from '../../theme/components/command';
 import { crossRefine } from '../cross_field';
-import { monoColumns } from '../size';
 
 /** Zod schema for {@link SlideCommandNode}. */
 export const schema = z

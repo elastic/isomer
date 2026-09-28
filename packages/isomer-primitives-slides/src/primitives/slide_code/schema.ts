@@ -9,9 +9,9 @@ import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
 import { hasLineTerminator } from '../../render/marks';
+import { monoColumns } from '../../render/mono';
 import { codeDenseAfter, codeLineMaxLength } from '../../theme/components/code';
 import { crossRefine } from '../cross_field';
-import { monoColumns } from '../size';
 
 const panelSchema = z
   .object({
