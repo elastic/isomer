@@ -5,12 +5,9 @@
  * 2.0.
  */
 
-import {
-  markdownCode,
-  marksMarkdown,
-  plainText,
-  singleLine,
-} from '../../render/marks';
+import { oneLine } from '@elastic/isomer-sdk/author';
+
+import { markdownCode, marksMarkdown, plainText } from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -26,12 +23,12 @@ export const text = ({ items, footnote }: SlideColumnsNode): string =>
     ...items.map(({ title, tags = [], body }) =>
       [
         tags.length > 0
-          ? `${plainText(title)} (${tags.map(singleLine).join(', ')})`
+          ? `${plainText(title)} (${tags.map(oneLine).join(', ')})`
           : plainText(title),
         plainText(body),
       ].join('\n')
     ),
-    footnote ? `${singleLine(footnote.code)} ${plainText(footnote.text)}` : '',
+    footnote ? `${oneLine(footnote.code)} ${plainText(footnote.text)}` : '',
   ]
     .filter(Boolean)
     .join('\n\n');

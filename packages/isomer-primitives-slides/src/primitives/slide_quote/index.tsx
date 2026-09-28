@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
 import { escapeMrkdwn, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
 import {
@@ -12,7 +13,6 @@ import {
   marksMarkdown,
   marksSlack,
   plainText,
-  singleLine,
 } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
@@ -34,7 +34,7 @@ const attribution = ({ source, context }: SlideQuoteNode): string =>
 
 /** Text renderer for {@link SlideQuoteNode}: the quote, then its attribution. */
 export const text = (node: SlideQuoteNode): string =>
-  `${quoted(plainText(node.text))} ${singleLine(attribution(node))}`;
+  `${quoted(plainText(node.text))} ${oneLine(attribution(node))}`;
 
 /** Markdown renderer for {@link SlideQuoteNode}: a blockquote with the attribution as its last line. */
 export const markdown = (node: SlideQuoteNode): string => {
@@ -53,7 +53,7 @@ export const slack = (node: SlideQuoteNode): SlackBlock[] => [
     type: 'section',
     text: {
       type: 'mrkdwn',
-      text: `> ${quoted(singleLine(marksSlack(node.text)))}\n> ${escapeMrkdwn(singleLine(attribution(node)))}`,
+      text: `> ${quoted(oneLine(marksSlack(node.text)))}\n> ${escapeMrkdwn(oneLine(attribution(node)))}`,
     },
   },
 ];

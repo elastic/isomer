@@ -6,6 +6,7 @@
  */
 
 import { sanitizeNavigationHref } from '@elastic/isomer-sdk';
+import { oneLine } from '@elastic/isomer-sdk/author';
 import { markdownLink } from '@elastic/isomer-sdk/markdown';
 import {
   bold,
@@ -20,7 +21,6 @@ import {
   marksMarkdown,
   marksSlack,
   plainText,
-  singleLine,
 } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
@@ -50,14 +50,12 @@ const textLink = ({ href, text: shown }: SlideClosingLink): string =>
 /** Text renderer for {@link SlideClosingNode}. */
 export const text = ({ title, links, paths = [] }: SlideClosingNode): string =>
   [
-    singleLine(title).toUpperCase(),
+    oneLine(title).toUpperCase(),
     links
-      .map((entry) => singleLine(`${entry.label}: ${textLink(entry)}`))
+      .map((entry) => oneLine(`${entry.label}: ${textLink(entry)}`))
       .join('\n'),
     paths
-      .map(
-        ({ title: goal, body }) => `- ${singleLine(goal)}: ${plainText(body)}`
-      )
+      .map(({ title: goal, body }) => `- ${oneLine(goal)}: ${plainText(body)}`)
       .join('\n'),
   ]
     .filter(Boolean)
@@ -102,7 +100,7 @@ export const slack = ({
       text: links
         .map(
           ({ label, href, text: shown }) =>
-            `${bold(singleLine(label))}  ${href ? link(href, singleLine(shown)) : escapeMrkdwn(singleLine(shown))}`
+            `${bold(oneLine(label))}  ${href ? link(href, oneLine(shown)) : escapeMrkdwn(oneLine(shown))}`
         )
         .join('\n'),
     },
@@ -116,7 +114,7 @@ export const slack = ({
             text: paths
               .map(
                 ({ title: goal, body }) =>
-                  `• ${bold(singleLine(goal))}: ${singleLine(marksSlack(body))}`
+                  `• ${bold(oneLine(goal))}: ${oneLine(marksSlack(body))}`
               )
               .join('\n'),
           },

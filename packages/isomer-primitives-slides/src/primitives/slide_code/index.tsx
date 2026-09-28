@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
 import {
   codeBlock,
   escapeMrkdwn,
@@ -12,7 +13,7 @@ import {
 } from '@elastic/isomer-sdk/slack';
 
 import { fencedBlock } from '../../render/fence';
-import { markdownText, singleLine } from '../../render/marks';
+import { markdownText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -29,7 +30,7 @@ const traceArrow = slideDistillery.tokens.code.traceArrow.value;
 export const text = ({ panels }: SlideCodeNode): string =>
   panels
     .map(({ file, lines }) =>
-      [...(file ? [singleLine(file)] : []), ...lines].join('\n')
+      [...(file ? [oneLine(file)] : []), ...lines].join('\n')
     )
     .join(`\n\n${traceArrow}\n\n`);
 
@@ -62,7 +63,7 @@ export const slack = ({ panels }: SlideCodeNode): SlackBlock[] =>
       text: {
         type: 'mrkdwn',
         text: [
-          file ? escapeMrkdwn(singleLine(file)) : '',
+          file ? escapeMrkdwn(oneLine(file)) : '',
           codeBlock(lines.join('\n')),
         ]
           .filter(Boolean)

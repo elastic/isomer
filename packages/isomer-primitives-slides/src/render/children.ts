@@ -6,6 +6,7 @@
  */
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
+import { oneLine } from '@elastic/isomer-sdk/author';
 import {
   escapeMrkdwn,
   type SlackAssetCollector,
@@ -13,7 +14,7 @@ import {
 } from '@elastic/isomer-sdk/slack';
 
 import type { SlideRenderScope } from './context';
-import { LINE_TERMINATORS, singleLine } from './marks';
+import { LINE_TERMINATORS } from './marks';
 
 /** A container's text or markdown: each child rendered, empties dropped, blank-line joined. */
 export const renderChildren = (
@@ -62,7 +63,7 @@ export const quoteText = (text: string): string =>
 
 /** A one-line `context` block: the chrome a container draws above its children. */
 export const slackCaption = (text: string, strong = false): SlackBlock => {
-  const line = escapeMrkdwn(singleLine(text));
+  const line = escapeMrkdwn(oneLine(text));
   return {
     type: 'context',
     elements: [{ type: 'mrkdwn', text: strong ? `*${line}*` : line }],

@@ -5,13 +5,13 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
 import { formatHeaderText, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
 import {
   marksMarkdown,
   marksSlack,
   plainText,
-  singleLine,
   stripMarks,
 } from '../../render/marks';
 import { definePrimitive } from '../define';
@@ -49,7 +49,7 @@ export const slack = ({ title, lede }: SlideHeadingNode): SlackBlock[] => [
     ? [
         {
           type: 'section',
-          text: { type: 'mrkdwn', text: singleLine(marksSlack(lede)) },
+          text: { type: 'mrkdwn', text: oneLine(marksSlack(lede)) },
         } satisfies SlackBlock,
       ]
     : []),

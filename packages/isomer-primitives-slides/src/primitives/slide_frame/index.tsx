@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
 import { markdownLink } from '@elastic/isomer-sdk/markdown';
 import type { ZodType } from 'zod';
 
@@ -13,7 +14,7 @@ import {
   renderSlackChildren,
   slackCaption,
 } from '../../render';
-import { markdownText, singleLine } from '../../render/marks';
+import { markdownText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { scalePx } from '../../theme/scale';
 import { SLIDE_THEME } from '../../theme/theme';
@@ -59,7 +60,7 @@ export const slideFramePrimitive = definePrimitive<SlideFrameNode>({
     text: (node, { scope }) =>
       [
         renderChildren(node.body, scope, 'text'),
-        singleLine(footerLine(node, displayUrl)),
+        oneLine(footerLine(node, displayUrl)),
       ]
         .filter(Boolean)
         .join('\n\n'),

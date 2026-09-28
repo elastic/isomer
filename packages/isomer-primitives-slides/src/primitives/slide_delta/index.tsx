@@ -5,11 +5,12 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
+
 import {
   markdownText,
   marksMarkdown,
   plainText,
-  singleLine,
   stripMarks,
 } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
@@ -47,9 +48,9 @@ const line = (
 export const text = (node: SlideDeltaNode): string =>
   line(node, {
     label: plainText,
-    value: singleLine,
+    value: oneLine,
     pending: `[${placeholderCaption.value}]`,
-    change: singleLine,
+    change: oneLine,
     body: plainText,
   });
 

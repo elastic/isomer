@@ -5,12 +5,9 @@
  * 2.0.
  */
 
-import {
-  markdownText,
-  marksMarkdown,
-  plainText,
-  singleLine,
-} from '../../render/marks';
+import { oneLine } from '@elastic/isomer-sdk/author';
+
+import { markdownText, marksMarkdown, plainText } from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -23,7 +20,7 @@ export type { SlideDefinition, SlideDefinitionsNode } from './schema';
 /** Text renderer for {@link SlideDefinitionsNode}: one `term: body` line each. */
 export const text = ({ items }: SlideDefinitionsNode): string =>
   items
-    .map(({ term, body }) => `${singleLine(term)}: ${plainText(body)}`)
+    .map(({ term, body }) => `${oneLine(term)}: ${plainText(body)}`)
     .join('\n');
 
 /** Markdown renderer for {@link SlideDefinitionsNode}: a bullet per term. */

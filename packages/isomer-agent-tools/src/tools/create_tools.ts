@@ -11,13 +11,13 @@ import {
   ISOMER_ERROR_CODES,
   type ValidationError,
 } from '@elastic/isomer-sdk';
+import { quoteInput } from '@elastic/isomer-sdk/author';
 import { z, type ZodObject } from 'zod';
 
 import { checkComposition } from './check';
 import { buildIsomerAuthoringGuide, buildPrimitiveDescriptions } from './guide';
 import { ISOMER_TOOL_NAMES } from './names';
 import { errorMessage, imageResult, jsonResult, textResult } from './result';
-import { quoteName } from './text';
 import type {
   IsomerTool,
   IsomerToolResult,
@@ -177,7 +177,7 @@ export const createIsomerTools = <THostContext = unknown>(
       return Promise.resolve(
         unknown.length > 0
           ? textResult(
-              `Unknown primitive type(s): ${unknown.map(quoteName).join(', ')}. Known types: ${[...known].join(', ')}.`,
+              `Unknown primitive type(s): ${unknown.map(quoteInput).join(', ')}. Known types: ${[...known].join(', ')}.`,
               true
             )
           : textResult(buildPrimitiveDescriptions({ runtime, types }))

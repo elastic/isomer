@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -14,7 +15,6 @@ import {
   marksSlack,
   parseMarks,
   plainText,
-  singleLine,
   stripMarks,
 } from './marks';
 
@@ -44,7 +44,7 @@ describe('marks', () => {
     ['U+2028', '\u2028'],
     ['U+2029', '\u2029'],
   ])('puts text on one line across %s', (_name, terminator) => {
-    expect(singleLine(`a${terminator}b`)).toBe('a b');
+    expect(oneLine(`a${terminator}b`)).toBe('a b');
     expect(plainText(`**a**${terminator}\`b\``)).toBe('a b');
   });
 

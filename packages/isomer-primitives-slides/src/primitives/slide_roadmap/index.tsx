@@ -5,12 +5,9 @@
  * 2.0.
  */
 
-import {
-  markdownText,
-  marksMarkdown,
-  plainText,
-  singleLine,
-} from '../../render/marks';
+import { oneLine } from '@elastic/isomer-sdk/author';
+
+import { markdownText, marksMarkdown, plainText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -42,7 +39,7 @@ export const text = ({ columns }: SlideRoadmapNode): string =>
   columns
     .map((column) =>
       [
-        singleLine(horizon(column, column.title.toUpperCase())),
+        oneLine(horizon(column, column.title.toUpperCase())),
         ...column.items.map(
           ({ title, body }) => `- ${plainText(title)}: ${plainText(body)}`
         ),

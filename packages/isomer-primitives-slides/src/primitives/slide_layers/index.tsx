@@ -5,12 +5,13 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
+
 import {
   markdownCode,
   markdownText,
   marksMarkdown,
   plainText,
-  singleLine,
 } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
@@ -29,7 +30,7 @@ export const text = ({ layers }: SlideLayersNode): string =>
   layers
     .map(
       ({ name, body, chips, owner }) =>
-        `${singleLine(name)} ${dash.value} ${chips ? chips.map(singleLine).join(', ') : plainText(body ?? '')} (${singleLine(owner)})`
+        `${oneLine(name)} ${dash.value} ${chips ? chips.map(oneLine).join(', ') : plainText(body ?? '')} (${oneLine(owner)})`
     )
     .join('\n');
 

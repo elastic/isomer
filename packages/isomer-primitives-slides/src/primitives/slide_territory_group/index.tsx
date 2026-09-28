@@ -5,12 +5,9 @@
  * 2.0.
  */
 
-import {
-  markdownText,
-  marksMarkdown,
-  plainText,
-  singleLine,
-} from '../../render/marks';
+import { oneLine } from '@elastic/isomer-sdk/author';
+
+import { markdownText, marksMarkdown, plainText } from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -23,7 +20,7 @@ export type { SlideTerritory, SlideTerritoryGroupNode } from './schema';
 /** Text renderer for {@link SlideTerritoryGroupNode}: `Title: body` per owner. */
 export const text = ({ items }: SlideTerritoryGroupNode): string =>
   items
-    .map(({ title, body }) => `${singleLine(title)}: ${plainText(body)}`)
+    .map(({ title, body }) => `${oneLine(title)}: ${plainText(body)}`)
     .join('\n');
 
 /** Markdown renderer for {@link SlideTerritoryGroupNode}: a heading per owner. */

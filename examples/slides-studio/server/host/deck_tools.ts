@@ -23,6 +23,7 @@ import {
   type SlideOverlap,
 } from '@elastic/isomer-primitives-slides';
 import type { Composition } from '@elastic/isomer-sdk';
+import { jsonLine, quoteInput } from '@elastic/isomer-sdk/author';
 import { z, type ZodObject } from 'zod';
 
 import type { Deck, DeckStore } from './deck';
@@ -86,26 +87,9 @@ const overflowText = (
 
 const slideLink = /^\?slide=(\d+)$/;
 
-const QUOTED_MAX_LENGTH = 80;
-
-/** Model input echoed as a JSON string on one line, cut to {@link QUOTED_MAX_LENGTH} characters. */
-const quoted = (value: string): string =>
-  oneLineJson(
-    value.length > QUOTED_MAX_LENGTH
-      ? `${value.slice(0, QUOTED_MAX_LENGTH)}…`
-      : value
-  );
-
-/** `JSON.stringify`, with the line separators it leaves raw escaped too. */
-const oneLineJson = (value: unknown): string =>
-  JSON.stringify(value).replace(
-    /[\u2028\u2029]/g,
-    (separator) => `\\u${separator.charCodeAt(0).toString(16)}`
-  );
-
 const noDeck = (id: string) =>
   text(
-    `No deck ${quoted(id)}. Call deck_list to see the decks that exist.`,
+    `No deck ${quoteInput(id)}. Call deck_list to see the decks that exist.`,
     true
   );
 
@@ -177,7 +161,7 @@ const sectionLinkNotes = (
         : [
             {
               target,
-              note: `Section link \`${href}\` sits on ${quoted(contents[line] ?? '')} but opens slide ${at}, titled ${quoted(opened.title ?? '')}.`,
+              note: `Section link \`${href}\` sits on ${quoteInput(contents[line] ?? '')} but opens slide ${at}, titled ${quoteInput(opened.title ?? '')}.`,
             },
           ];
     });
@@ -519,7 +503,7 @@ export const createDeckTools = ({
               ? [
                   {
                     type: 'text' as const,
-                    text: `This slide no longer validates; rewrite it with deck_set_slide. Errors: ${oneLineJson(errors)}`,
+                    text: `This slide no longer validates; rewrite it with deck_set_slide. Errors: ${jsonLine(errors)}`,
                   },
                 ]
               : []),

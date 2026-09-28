@@ -8,10 +8,10 @@
 import {
   buildAuthoringPrompt,
   formatPrimitiveEntry,
+  oneLine,
 } from '@elastic/isomer-sdk/author';
 
 import { ISOMER_TOOL_NAMES } from './names';
-import { oneLine } from './text';
 import type { IsomerToolsBaseOptions } from './types';
 
 /** The guide {@link buildIsomerAuthoringGuide} opens with when a host supplies none. */

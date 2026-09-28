@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
 import {
   formatHeaderText,
   italic,
@@ -18,7 +19,6 @@ import {
   marksMarkdown,
   marksSlack,
   plainText,
-  singleLine,
 } from '../../render/marks';
 import { contentNode, definePrimitive } from '../define';
 
@@ -32,11 +32,11 @@ export type { SlideTitleDefinition, SlideTitleNode } from './types';
 
 const ownText = ({ eyebrow, title, tagline, definition }: SlideTitleNode) =>
   [
-    eyebrow && singleLine(eyebrow).toUpperCase(),
-    singleLine(title),
+    eyebrow && oneLine(eyebrow).toUpperCase(),
+    oneLine(title),
     tagline && plainText(tagline),
     definition
-      ? `${singleLine(definition.term)} ${plainText(definition.text)}`
+      ? `${oneLine(definition.term)} ${plainText(definition.text)}`
       : undefined,
   ]
     .filter(Boolean)
@@ -92,7 +92,7 @@ export const slideTitlePrimitive = definePrimitive<SlideTitleNode>({
           ? [
               {
                 type: 'section',
-                text: { type: 'mrkdwn', text: singleLine(marksSlack(tagline)) },
+                text: { type: 'mrkdwn', text: oneLine(marksSlack(tagline)) },
               } satisfies SlackBlock,
             ]
           : []),
@@ -103,7 +103,7 @@ export const slideTitlePrimitive = definePrimitive<SlideTitleNode>({
                 elements: [
                   {
                     type: 'mrkdwn',
-                    text: `${italic(singleLine(definition.term))} ${singleLine(marksSlack(definition.text))}`,
+                    text: `${italic(oneLine(definition.term))} ${oneLine(marksSlack(definition.text))}`,
                   },
                 ],
               } satisfies SlackBlock,

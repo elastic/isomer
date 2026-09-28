@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
 import {
   bold,
   codeBlock,
@@ -14,7 +15,7 @@ import {
 
 import { slackCaption } from '../../render';
 import { fencedBlock } from '../../render/fence';
-import { LINE_TERMINATORS, markdownText, singleLine } from '../../render/marks';
+import { LINE_TERMINATORS, markdownText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -30,7 +31,7 @@ const { roleLabel } = slideDistillery.tokens.transcript;
 /** Text renderer for {@link SlideTranscriptNode}. */
 export const text = ({ label, turns }: SlideTranscriptNode): string =>
   [
-    label ? singleLine(label) : '',
+    label ? oneLine(label) : '',
     ...turns.map(({ role, text: said }) => {
       const lines = said.split(LINE_TERMINATORS);
       return lines.length > 1

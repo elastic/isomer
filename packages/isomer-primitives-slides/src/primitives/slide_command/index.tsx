@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
 import {
   codeBlock,
   escapeMrkdwn,
@@ -12,7 +13,7 @@ import {
 } from '@elastic/isomer-sdk/slack';
 
 import { fencedBlock } from '../../render/fence';
-import { markdownText, singleLine } from '../../render/marks';
+import { markdownText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -28,7 +29,7 @@ const prompt = slideDistillery.tokens.command.prompt.value;
 
 /** Text renderer for {@link SlideCommandNode}: the label, then the command after its prompt. */
 export const text = ({ label, command }: SlideCommandNode): string =>
-  [...(label ? [singleLine(label)] : []), `${prompt} ${command}`].join('\n');
+  [...(label ? [oneLine(label)] : []), `${prompt} ${command}`].join('\n');
 
 /** Markdown renderer for {@link SlideCommandNode}: the label, then a `sh` fence without the prompt, so it pastes. */
 export const markdown = ({ label, command }: SlideCommandNode): string =>
@@ -42,7 +43,7 @@ export const slack = ({ label, command }: SlideCommandNode): SlackBlock[] => [
     type: 'section',
     text: {
       type: 'mrkdwn',
-      text: [label ? escapeMrkdwn(singleLine(label)) : '', codeBlock(command)]
+      text: [label ? escapeMrkdwn(oneLine(label)) : '', codeBlock(command)]
         .filter(Boolean)
         .join('\n'),
     },

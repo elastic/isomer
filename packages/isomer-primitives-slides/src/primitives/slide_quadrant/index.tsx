@@ -5,7 +5,9 @@
  * 2.0.
  */
 
-import { markdownText, singleLine } from '../../render/marks';
+import { oneLine } from '@elastic/isomer-sdk/author';
+
+import { markdownText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -47,7 +49,7 @@ export const text = (node: SlideQuadrantNode): string =>
     axes(node),
     ...cells(node, (label, place, items) => `${label} (${place})${items}`),
   ]
-    .map(singleLine)
+    .map(oneLine)
     .join('\n');
 
 /** Markdown renderer for {@link SlideQuadrantNode}: the axes, then a bullet per quadrant. */

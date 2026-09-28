@@ -5,7 +5,9 @@
  * 2.0.
  */
 
-import { markdownText, singleLine } from '../../render/marks';
+import { oneLine } from '@elastic/isomer-sdk/author';
+
+import { markdownText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -32,7 +34,7 @@ const detail = ({ count, current }: SlideAgendaSection): string =>
 export const text = ({ sections }: SlideAgendaNode): string =>
   sections
     .map((section) =>
-      singleLine(`${section.number} ${section.title}${detail(section)}`)
+      oneLine(`${section.number} ${section.title}${detail(section)}`)
     )
     .join('\n');
 

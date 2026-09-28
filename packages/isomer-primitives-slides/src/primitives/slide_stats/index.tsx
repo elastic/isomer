@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
 import { bold, italic, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
 import {
@@ -12,7 +13,6 @@ import {
   marksMarkdown,
   marksSlack,
   plainText,
-  singleLine,
 } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
@@ -27,14 +27,14 @@ export type { SlideStatsItem, SlideStatsNode } from './schema';
 const { placeholderCaption } = slideDistillery.tokens.stats;
 
 const valueText = ({ value, unit }: SlideStatsItem): string | undefined =>
-  value ? singleLine([value, unit].filter(Boolean).join(' ')) : undefined;
+  value ? oneLine([value, unit].filter(Boolean).join(' ')) : undefined;
 
 /** Text renderer for {@link SlideStatsNode}: `value Label: body` per line. */
 export const text = ({ items }: SlideStatsNode): string =>
   items
     .map(
       (item) =>
-        `${valueText(item) ?? `[${placeholderCaption.value}]`} ${singleLine(item.label)}: ${plainText(item.body)}`
+        `${valueText(item) ?? `[${placeholderCaption.value}]`} ${oneLine(item.label)}: ${plainText(item.body)}`
     )
     .join('\n');
 
@@ -57,8 +57,8 @@ export const slack = ({ items }: SlideStatsNode): SlackBlock[] => [
         type: 'mrkdwn',
         text: [
           value ? bold(value) : italic(placeholderCaption.value),
-          bold(singleLine(item.label)),
-          singleLine(marksSlack(item.body)),
+          bold(oneLine(item.label)),
+          oneLine(marksSlack(item.body)),
         ].join('\n'),
       };
     }),

@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
 import { bold, type SlackBlock } from '@elastic/isomer-sdk/slack';
 import type { ZodType } from 'zod';
 
@@ -14,7 +15,6 @@ import {
   marksMarkdown,
   marksSlack,
   plainText,
-  singleLine,
 } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { contentNode, definePrimitive } from '../define';
@@ -59,7 +59,7 @@ const sideText = (
   }
   return surface === 'markdown'
     ? `## ${markdownText(label)}\n\n${blocks}`
-    : `${singleLine(label)}\n${blocks}`;
+    : `${oneLine(label)}\n${blocks}`;
 };
 
 const splitText = (
@@ -100,7 +100,7 @@ export const slideSplitPrimitive = definePrimitive<SlideSplitNode>({
       ...[left, right].flatMap((side) =>
         splitBlocks(side).flatMap((block, index): SlackBlock[] => {
           const heading =
-            index === 0 && side.label ? bold(singleLine(side.label)) : '';
+            index === 0 && side.label ? bold(oneLine(side.label)) : '';
           if (block.kind === 'statements') {
             return [
               section(
@@ -108,7 +108,7 @@ export const slideSplitPrimitive = definePrimitive<SlideSplitNode>({
                   heading,
                   ...block.statements.map(
                     ({ text }) =>
-                      `${slackBullet.value} ${singleLine(marksSlack(text))}`
+                      `${slackBullet.value} ${oneLine(marksSlack(text))}`
                   ),
                 ]
                   .filter(Boolean)
@@ -122,7 +122,7 @@ export const slideSplitPrimitive = definePrimitive<SlideSplitNode>({
           ];
         })
       ),
-      ...(footnote ? [section(singleLine(marksSlack(footnote)))] : []),
+      ...(footnote ? [section(oneLine(marksSlack(footnote)))] : []),
     ],
   },
   children: ({ left, right }) => [

@@ -5,12 +5,9 @@
  * 2.0.
  */
 
-import {
-  markdownText,
-  marksMarkdown,
-  plainText,
-  singleLine,
-} from '../../render/marks';
+import { oneLine } from '@elastic/isomer-sdk/author';
+
+import { markdownText, marksMarkdown, plainText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -30,14 +27,12 @@ const path = (steps: string[], join: string): string =>
 export const text = ({ lanes, join, notes = [] }: SlideLanesNode): string =>
   [
     lanes
-      .map(({ label, steps }) => singleLine(`${label}: ${path(steps, join)}`))
+      .map(({ label, steps }) => oneLine(`${label}: ${path(steps, join)}`))
       .join('\n'),
     ...(notes.length > 0
       ? [
           notes
-            .map(
-              ({ title, body }) => `${singleLine(title)}: ${plainText(body)}`
-            )
+            .map(({ title, body }) => `${oneLine(title)}: ${plainText(body)}`)
             .join('\n'),
         ]
       : []),

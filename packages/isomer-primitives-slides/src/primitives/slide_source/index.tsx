@@ -5,14 +5,10 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import {
-  marksMarkdown,
-  marksSlack,
-  plainText,
-  singleLine,
-} from '../../render/marks';
+import { marksMarkdown, marksSlack, plainText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -40,7 +36,7 @@ export const slack = ({ text: source }: SlideSourceNode): SlackBlock[] => [
     elements: [
       {
         type: 'mrkdwn',
-        text: `${prefix.value} ${singleLine(marksSlack(source))}`,
+        text: `${prefix.value} ${oneLine(marksSlack(source))}`,
       },
     ],
   },

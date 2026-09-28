@@ -5,7 +5,9 @@
  * 2.0.
  */
 
-import { marksMarkdown, singleLine } from './marks';
+import { oneLine } from '@elastic/isomer-sdk/author';
+
+import { marksMarkdown } from './marks';
 
 /** One GFM pipe-table row of authored cells, marks kept and everything else escaped. */
 export const markdownRow = (cells: readonly string[]): string =>
@@ -34,9 +36,9 @@ export const textTable = (
   columns: readonly string[],
   lines: readonly TextTableLine[]
 ): string => {
-  const head = columns.map(singleLine);
+  const head = columns.map(oneLine);
   const body = lines.map((line) =>
-    typeof line === 'string' ? singleLine(line) : line.map(singleLine)
+    typeof line === 'string' ? oneLine(line) : line.map(oneLine)
   );
   const rows = body.filter((line) => typeof line !== 'string');
   const widths = head.map((column, index) =>

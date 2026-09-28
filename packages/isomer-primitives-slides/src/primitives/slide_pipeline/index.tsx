@@ -5,12 +5,9 @@
  * 2.0.
  */
 
-import {
-  markdownText,
-  marksMarkdown,
-  plainText,
-  singleLine,
-} from '../../render/marks';
+import { oneLine } from '@elastic/isomer-sdk/author';
+
+import { markdownText, marksMarkdown, plainText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -66,7 +63,7 @@ export const text = ({ start, end, steps, spans }: SlidePipelineNode): string =>
             `${index + 1}. ${plainDetail(title, body)}`
         )),
   ]
-    .map(singleLine)
+    .map(oneLine)
     .join('\n');
 
 /** Markdown renderer for {@link SlidePipelineNode}: the chain, then an ordered list of steps or a list of spans. */

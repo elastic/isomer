@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
 import type { ZodType } from 'zod';
 
 import {
@@ -15,7 +16,7 @@ import {
   renderSlackChildren,
   slackCaption,
 } from '../../render';
-import { markdownText, singleLine } from '../../render/marks';
+import { markdownText } from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -50,7 +51,7 @@ export const slideRenderPrimitive = definePrimitive<SlideRenderNode>({
     react,
     text: (node, { scope }) =>
       [
-        singleLine(heading(node)),
+        oneLine(heading(node)),
         node.composition &&
           quoteText(renderChildren(node.composition.body, scope, 'text')),
       ]

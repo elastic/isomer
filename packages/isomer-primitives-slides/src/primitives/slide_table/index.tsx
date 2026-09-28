@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
 import {
   bold,
   SLACK_LIMITS,
@@ -12,7 +13,6 @@ import {
   type SlackTableCell,
 } from '@elastic/isomer-sdk/slack';
 
-import { singleLine } from '../../render/marks';
 import {
   markdownDelimiterRow,
   markdownRow,
@@ -37,7 +37,7 @@ export const text = (node: SlideTableNode): string => {
       ...rows,
     ])
   );
-  return label ? `${singleLine(label)}\n${table}` : table;
+  return label ? `${oneLine(label)}\n${table}` : table;
 };
 
 /** Markdown renderer for {@link SlideTableNode}: a GFM pipe table, one per group under its label. */
@@ -63,16 +63,14 @@ const boldCell = (text: string): SlackTableCell => ({
   elements: [
     {
       type: 'rich_text_section',
-      elements: [
-        { type: 'text', text: singleLine(text), style: { bold: true } },
-      ],
+      elements: [{ type: 'text', text: oneLine(text), style: { bold: true } }],
     },
   ],
 });
 
 const rawCell = (text: string): SlackTableCell => ({
   type: 'raw_text',
-  text: singleLine(text),
+  text: oneLine(text),
 });
 
 /**
@@ -96,7 +94,7 @@ export const slack = (node: SlideTableNode): SlackBlock[] => {
       ? [
           {
             type: 'section',
-            text: { type: 'mrkdwn', text: bold(singleLine(label)) },
+            text: { type: 'mrkdwn', text: bold(oneLine(label)) },
           } satisfies SlackBlock,
         ]
       : []),

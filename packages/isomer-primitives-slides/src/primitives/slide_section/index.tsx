@@ -6,6 +6,7 @@
  */
 
 import { sanitizeNavigationHref } from '@elastic/isomer-sdk';
+import { oneLine } from '@elastic/isomer-sdk/author';
 import { markdownLink } from '@elastic/isomer-sdk/markdown';
 import { formatHeaderText, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
@@ -14,7 +15,6 @@ import {
   marksMarkdown,
   marksSlack,
   plainText,
-  singleLine,
 } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
@@ -34,7 +34,7 @@ const heading = ({ number, title }: SlideSectionNode): string =>
 /** Text renderer for {@link SlideSectionNode}. */
 export const text = ({ number, title, contents }: SlideSectionNode): string =>
   [
-    singleLine(`${number} ${title.toUpperCase()}`),
+    oneLine(`${number} ${title.toUpperCase()}`),
     ...contents.map((line, index) => `${index + 1}. ${plainText(line)}`),
   ].join('\n');
 
@@ -68,7 +68,7 @@ export const slack = (node: SlideSectionNode): SlackBlock[] => [
     text: {
       type: 'mrkdwn',
       text: node.contents
-        .map((line, index) => `${index + 1}. ${singleLine(marksSlack(line))}`)
+        .map((line, index) => `${index + 1}. ${oneLine(marksSlack(line))}`)
         .join('\n'),
     },
   },

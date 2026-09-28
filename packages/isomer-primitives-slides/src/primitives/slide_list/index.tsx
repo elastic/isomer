@@ -5,14 +5,10 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
 import { boldSectionLabel } from '@elastic/isomer-sdk/markdown';
 
-import {
-  markdownText,
-  marksMarkdown,
-  plainText,
-  singleLine,
-} from '../../render/marks';
+import { markdownText, marksMarkdown, plainText } from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -25,10 +21,10 @@ export type { SlideListItem, SlideListNode } from './schema';
 /** Text renderer for {@link SlideListNode}: caption, `term: body` rows, footnote. */
 export const text = ({ label, items, footnote }: SlideListNode): string =>
   [
-    label && singleLine(label).toUpperCase(),
+    label && oneLine(label).toUpperCase(),
     items
       .map(({ term, body }) =>
-        term ? `${singleLine(term)}: ${plainText(body)}` : plainText(body)
+        term ? `${oneLine(term)}: ${plainText(body)}` : plainText(body)
       )
       .join('\n'),
     footnote ? plainText(footnote) : undefined,

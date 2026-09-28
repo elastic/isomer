@@ -5,12 +5,9 @@
  * 2.0.
  */
 
-import {
-  markdownText,
-  marksMarkdown,
-  plainText,
-  singleLine,
-} from '../../render/marks';
+import { oneLine } from '@elastic/isomer-sdk/author';
+
+import { markdownText, marksMarkdown, plainText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -37,7 +34,7 @@ const quoted = ({ heading, body }: SlideTimelineItem): string =>
 /** Text renderer for {@link SlideTimelineNode}: one line per item. */
 export const text = ({ items }: SlideTimelineNode): string =>
   items
-    .map((item) => `${singleLine(when(item))}. ${plainText(quoted(item))}`)
+    .map((item) => `${oneLine(when(item))}. ${plainText(quoted(item))}`)
     .join('\n');
 
 /** Markdown renderer for {@link SlideTimelineNode}: one bullet per item. */

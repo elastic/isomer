@@ -10,6 +10,7 @@ import {
   mapCompositionNodes,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
+import { quoteInput } from '@elastic/isomer-sdk/author';
 
 import { findNestedRender } from './primitives/slide_render/embedded';
 import type { SlideRenderNode } from './primitives/slide_render/types';
@@ -28,14 +29,6 @@ const isUnresolvedRender = (
   typeof (node as SlideRenderNode).slide === 'string' &&
   (node as SlideRenderNode).composition === undefined;
 
-// A JSON string that also escapes the line separators `JSON.stringify` leaves raw, so a message stays on one line.
-const quote = (slug: string): string =>
-  JSON.stringify(slug).replace(
-    /[\u2028\u2029]/g,
-    (separator) => `\\u${separator.charCodeAt(0).toString(16)}`
-  );
-
-/** Options for {@link resolveSlideRenders}. */
 export interface ResolveSlideRendersOptions {
   /**
    * `throw` (the default) rejects a reference it cannot fill; `leave` keeps it
@@ -66,7 +59,7 @@ export const resolveSlideRenders = (
   for (const slide of slides) {
     if (bySlug.has(slide.slug)) {
       throw new Error(
-        `resolveSlideRenders: slug ${quote(slide.slug)} names more than one slide`
+        `resolveSlideRenders: slug ${quoteInput(slide.slug)} names more than one slide`
       );
     }
     bySlug.set(slide.slug, slide);
@@ -81,16 +74,16 @@ export const resolveSlideRenders = (
       if (!target) {
         return fail(
           node,
-          `slide ${quote(slug)} renders unknown slide ${quote(slide)}`
+          `slide ${quoteInput(slug)} renders unknown slide ${quoteInput(slide)}`
         );
       }
       if (target.slug === slug) {
-        return fail(node, `slide ${quote(slug)} renders itself`);
+        return fail(node, `slide ${quoteInput(slug)} renders itself`);
       }
       if (findNestedRender(target.composition.body)) {
         return fail(
           node,
-          `slide ${quote(slug)} renders slide ${quote(target.slug)}, which holds a render of its own; an embedded composition cannot embed another render`
+          `slide ${quoteInput(slug)} renders slide ${quoteInput(target.slug)}, which holds a render of its own; an embedded composition cannot embed another render`
         );
       }
       return { ...node, composition: target.composition } as SlideRenderNode;

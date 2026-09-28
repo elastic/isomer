@@ -5,14 +5,10 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
 import { boldSectionLabel } from '@elastic/isomer-sdk/markdown';
 
-import {
-  markdownText,
-  marksMarkdown,
-  plainText,
-  singleLine,
-} from '../../render/marks';
+import { markdownText, marksMarkdown, plainText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import type { SlideBulletMarker } from '../../theme/variants';
 import { definePrimitive } from '../define';
@@ -39,7 +35,7 @@ export const text = ({
   marker = 'dot',
 }: SlideBulletListNode): string =>
   [
-    label && singleLine(label).toUpperCase(),
+    label && oneLine(label).toUpperCase(),
     items.map((item) => `${textMarkers[marker]} ${plainText(item)}`).join('\n'),
   ]
     .filter(Boolean)

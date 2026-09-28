@@ -5,12 +5,9 @@
  * 2.0.
  */
 
-import {
-  markdownText,
-  marksMarkdown,
-  plainText,
-  singleLine,
-} from '../../render/marks';
+import { oneLine } from '@elastic/isomer-sdk/author';
+
+import { markdownText, marksMarkdown, plainText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -40,9 +37,9 @@ export const text = (node: SlideGraphNode): string =>
   [
     node.caption && plainText(node.caption),
     node.nodes
-      .map(({ term, body }) => `${singleLine(term)}: ${plainText(body)}`)
+      .map(({ term, body }) => `${oneLine(term)}: ${plainText(body)}`)
       .join('\n'),
-    relations(node).map(singleLine).join('\n'),
+    relations(node).map(oneLine).join('\n'),
   ]
     .filter(Boolean)
     .join('\n\n');

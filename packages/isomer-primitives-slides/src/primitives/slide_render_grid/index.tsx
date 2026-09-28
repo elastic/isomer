@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
 import { escapeMrkdwn } from '@elastic/isomer-sdk/slack';
 import type { ZodType } from 'zod';
 
@@ -15,7 +16,7 @@ import {
   renderChildren,
   renderSlackChildren,
 } from '../../render';
-import { markdownText, singleLine } from '../../render/marks';
+import { markdownText } from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -47,7 +48,7 @@ export const slideRenderGridPrimitive = definePrimitive<SlideRenderGridNode>({
           heading(node),
           ...node.tiles.map(({ surface, caption }) => `${surface}: ${caption}`),
         ]
-          .map(singleLine)
+          .map(oneLine)
           .join('\n'),
         quoteText(renderChildren(node.composition.body, scope, 'text')),
       ]
@@ -71,7 +72,7 @@ export const slideRenderGridPrimitive = definePrimitive<SlideRenderGridNode>({
         type: 'context',
         elements: node.tiles.map(({ surface, caption }) => ({
           type: 'mrkdwn',
-          text: `*${surface}* ${escapeMrkdwn(singleLine(caption))}`,
+          text: `*${surface}* ${escapeMrkdwn(oneLine(caption))}`,
         })),
       },
       ...quoteSlackBlocks(

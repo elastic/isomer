@@ -16,6 +16,7 @@ import {
   type PrimitiveCatalogEntry,
   type PrimitiveGroup,
 } from '@elastic/isomer-sdk';
+import { quoteInput } from '@elastic/isomer-sdk/author';
 
 import type { JsonSchema, RegisteredViewSummary } from '../registry';
 
@@ -97,19 +98,6 @@ const mergePackAuthoring = (
 /** Most unknown types an error names before it counts the rest. */
 const MAX_LISTED_TYPES = 10;
 
-/** Most characters of an unknown type an error quotes. */
-const MAX_QUOTED_TYPE_CHARS = 100;
-
-/** `type` as JSON on one line, cut to a bounded length: `JSON.stringify` leaves U+2028 and U+2029 raw. */
-const quoteType = (type: string): string =>
-  JSON.stringify(
-    type.length > MAX_QUOTED_TYPE_CHARS
-      ? `${type.slice(0, MAX_QUOTED_TYPE_CHARS)}…`
-      : type
-  )
-    .replace(/\u2028/g, '\\u2028')
-    .replace(/\u2029/g, '\\u2029');
-
 /** Throws if a group names a type no pack registers, or a type sits in two groups across every pack. */
 const assertGroupedOnce = (
   groups: readonly PrimitiveGroup[],
@@ -165,7 +153,7 @@ export const createRuntimeAuthoringContextFactory = (
       ...new Set(types.filter((type) => !definitionsByType.has(type))),
     ];
     if (missing.length > 0) {
-      const listed = missing.slice(0, MAX_LISTED_TYPES).map(quoteType);
+      const listed = missing.slice(0, MAX_LISTED_TYPES).map(quoteInput);
       const rest = missing.length - listed.length;
       throw new IsomerError(
         'UNKNOWN_PRIMITIVE_TYPE',

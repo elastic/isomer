@@ -8,6 +8,7 @@
 // Inline `code` and `**strong**` marks, parsed once and drawn per surface.
 
 import type { ReactNode } from 'react';
+import { oneLine } from '@elastic/isomer-sdk/author';
 import { code, escapeMrkdwn } from '@elastic/isomer-sdk/slack';
 
 import { marksModule } from '../theme/modules';
@@ -58,12 +59,8 @@ export const LINE_TERMINATORS = /\r\n|[\n\r\u2028\u2029]/g;
 export const hasLineTerminator = (text: string): boolean =>
   /[\n\r\u2028\u2029]/.test(text);
 
-/** `text` on one line: each of {@link LINE_TERMINATORS} becomes a space. */
-export const singleLine = (text: string): string =>
-  text.replace(LINE_TERMINATORS, ' ');
-
 /** `text` for the text surface: marks removed, on one line. */
-export const plainText = (text: string): string => singleLine(stripMarks(text));
+export const plainText = (text: string): string => oneLine(stripMarks(text));
 
 /** Every ASCII character inline Markdown can read as syntax here; CommonMark lets each be backslash-escaped. */
 const markdownSyntax = /[\\`*_[\]<>&|]/g;

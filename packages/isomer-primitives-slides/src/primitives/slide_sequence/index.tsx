@@ -5,12 +5,13 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
+
 import {
   markdownCode,
   markdownText,
   marksMarkdown,
   plainText,
-  singleLine,
 } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
@@ -52,10 +53,10 @@ export const text = (node: SlideSequenceNode): string =>
       ...node,
       actors: node.actors.map((actor) => ({
         ...actor,
-        label: singleLine(actor.label),
+        label: oneLine(actor.label),
       })),
     },
-    ({ label, mono }) => (mono ? singleLine(label) : plainText(label))
+    ({ label, mono }) => (mono ? oneLine(label) : plainText(label))
   );
 
 /** Markdown renderer for {@link SlideSequenceNode}: a numbered list, with mono labels as code. */
