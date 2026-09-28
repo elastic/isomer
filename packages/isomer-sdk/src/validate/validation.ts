@@ -218,7 +218,7 @@ const inputBoundError = (value: unknown): ValidationError | undefined => {
         message: `nests deeper than ${MAX_COMPOSITION_DEPTH} levels of arrays and objects`,
       };
     }
-    const size = Array.isArray(item) ? item.length : Object.keys(item).length;
+    const size = Object.keys(item).length;
     if (seen + pending.length + size > MAX_COMPOSITION_VALUES) {
       return {
         path: '',

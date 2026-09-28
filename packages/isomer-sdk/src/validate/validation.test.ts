@@ -349,6 +349,19 @@ describe('input bounds', () => {
     });
   });
 
+  it('counts an array’s extra enumerable properties toward the value bound', () => {
+    const body = [] as unknown as Record<string, number>;
+    for (let index = 0; index < MAX_COMPOSITION_VALUES + 10; index += 1) {
+      body[`k${index}`] = index;
+    }
+    expect(boundedParse({ type: 'view', body }).errors).toEqual([
+      {
+        path: '',
+        message: `holds more than ${MAX_COMPOSITION_VALUES} values`,
+      },
+    ]);
+  });
+
   it('refuses a cyclic value instead of walking it forever', () => {
     const cyclic: Record<string, unknown> = { type: 'view', body: [] };
     (cyclic.body as unknown[]).push(cyclic);
