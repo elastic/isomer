@@ -32,7 +32,11 @@ const keywordAt = (source, index, keyword) => {
   if (!source.startsWith(keyword, index)) {
     return false;
   }
-  if (index > 0 && isIdentChar(source[index - 1])) {
+  // A member such as `Array.from` or `loader.import` is not the keyword.
+  if (
+    index > 0 &&
+    (isIdentChar(source[index - 1]) || source[index - 1] === '.')
+  ) {
     return false;
   }
   const after = source[index + keyword.length];
@@ -41,6 +45,7 @@ const keywordAt = (source, index, keyword) => {
 
 const tokenize = (source) => {
   const specifiers = [];
+  let computed = false;
   let i = 0;
   while (i < source.length) {
     const ch = source[i];
@@ -70,6 +75,9 @@ const tokenize = (source) => {
       while (j < source.length && /\s/.test(source[j])) {
         j += 1;
       }
+      if (keyword === 'import' && source[j] !== "'" && source[j] !== '"') {
+        computed = true;
+      }
     }
     if (source[j] === "'" || source[j] === '"') {
       const quote = source[j];
@@ -91,8 +99,13 @@ const tokenize = (source) => {
 
     i += 1;
   }
-  return specifiers;
+  return { specifiers, computed };
 };
 
 /** Every static, dynamic, and `require` specifier in `source`, comments excluded. */
-export const specifiersIn = (source) => tokenize(withoutComments(source));
+export const specifiersIn = (source) =>
+  tokenize(withoutComments(source)).specifiers;
+
+/** Whether `source` has an `import()` whose argument is not a string literal, which names a module no scan can see. */
+export const hasComputedImport = (source) =>
+  tokenize(withoutComments(source)).computed;

@@ -13,7 +13,10 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 
-import { specifiersIn as specifiersInSource } from './specifiers.js';
+import {
+  hasComputedImport,
+  specifiersIn as specifiersInSource,
+} from './specifiers.js';
 import { repoRoot, workspacePackages } from './workspace_packages.js';
 
 /**
@@ -49,9 +52,6 @@ const matchesForbidden = (specifier, forbidden) =>
 
 const isRelative = (specifier) => specifier.startsWith('.');
 
-// An `import()` whose argument is not a string literal names a module no scan can see.
-const COMPUTED_IMPORT = /(?<![\w$.])import\s*\(\s*(?!['"])/;
-
 /** The file a relative specifier in `from` names: emitted JavaScript as written, a declaration by probing. */
 const resolveRelative = (from, specifier) => {
   const base = resolve(join(dirname(from), specifier));
@@ -86,7 +86,7 @@ const reachableFrom = (entryFile) => {
     }
     seen.add(file);
     const source = readFileSync(file, 'utf-8');
-    if (COMPUTED_IMPORT.test(withoutComments(source))) {
+    if (hasComputedImport(source)) {
       computed.push(file);
     }
 
@@ -101,9 +101,6 @@ const reachableFrom = (entryFile) => {
 
   return { bare, computed };
 };
-
-const withoutComments = (source) =>
-  source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
 
 /** Packages that must not appear in a package's dependency fields at all, even as an optional peer. */
 const FORBIDDEN_DEPENDENCIES = {
