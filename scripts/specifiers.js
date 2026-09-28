@@ -5,94 +5,63 @@
  * 2.0.
  */
 
-// One import-specifier scanner for every script that walks emitted JavaScript.
+// One import-specifier scanner for every script that walks emitted JavaScript or declarations.
+// It parses with TypeScript, so strings, template interpolations, regex literals, and comments read as they run.
 
-const withoutComments = (source) =>
-  source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+import ts from 'typescript';
 
-const isIdentChar = (ch) => /[A-Za-z0-9_$]/.test(ch);
+const literalText = (node) =>
+  node !== undefined &&
+  (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node))
+    ? node.text
+    : undefined;
 
-const skipQuoted = (source, start) => {
-  const quote = source[start];
-  let i = start + 1;
-  while (i < source.length) {
-    if (source[i] === '\\') {
-      i += 2;
-      continue;
-    }
-    if (source[i] === quote) {
-      return i + 1;
-    }
-    i += 1;
-  }
-  return source.length;
-};
-
-const keywordAt = (source, index, keyword) => {
-  if (!source.startsWith(keyword, index)) {
-    return false;
-  }
-  if (index > 0 && isIdentChar(source[index - 1])) {
-    return false;
-  }
-  const after = source[index + keyword.length];
-  return after === undefined || !isIdentChar(after);
-};
-
-const tokenize = (source) => {
+const scan = (source) => {
   const specifiers = [];
-  let i = 0;
-  while (i < source.length) {
-    const ch = source[i];
-    if (ch === "'" || ch === '"' || ch === '`') {
-      i = skipQuoted(source, i);
-      continue;
+  let computed = false;
+  const add = (node) => {
+    const text = literalText(node);
+    if (text !== undefined) {
+      specifiers.push(text);
     }
-
-    const keyword = keywordAt(source, i, 'from')
-      ? 'from'
-      : keywordAt(source, i, 'import')
-        ? 'import'
-        : keywordAt(source, i, 'require')
-          ? 'require'
-          : undefined;
-    if (keyword === undefined) {
-      i += 1;
-      continue;
-    }
-
-    let j = i + keyword.length;
-    while (j < source.length && /\s/.test(source[j])) {
-      j += 1;
-    }
-    if (source[j] === '(') {
-      j += 1;
-      while (j < source.length && /\s/.test(source[j])) {
-        j += 1;
-      }
-    }
-    if (source[j] === "'" || source[j] === '"') {
-      const quote = source[j];
-      j += 1;
-      let specifier = '';
-      while (j < source.length && source[j] !== quote) {
-        if (source[j] === '\\') {
-          specifier += source[j + 1] ?? '';
-          j += 2;
-          continue;
+  };
+  const visit = (node) => {
+    if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
+      add(node.moduleSpecifier);
+    } else if (
+      ts.isImportEqualsDeclaration(node) &&
+      ts.isExternalModuleReference(node.moduleReference)
+    ) {
+      add(node.moduleReference.expression);
+    } else if (
+      ts.isImportTypeNode(node) &&
+      ts.isLiteralTypeNode(node.argument)
+    ) {
+      add(node.argument.literal);
+    } else if (ts.isCallExpression(node)) {
+      const [argument] = node.arguments;
+      if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+        if (literalText(argument) === undefined) {
+          computed = true;
         }
-        specifier += source[j];
-        j += 1;
+        add(argument);
+      } else if (
+        ts.isIdentifier(node.expression) &&
+        node.expression.text === 'require'
+      ) {
+        add(argument);
       }
-      specifiers.push(specifier);
-      i = j + 1;
-      continue;
     }
-
-    i += 1;
-  }
-  return specifiers;
+    ts.forEachChild(node, visit);
+  };
+  visit(
+    ts.createSourceFile('scanned.ts', source, ts.ScriptTarget.Latest, false)
+  );
+  return { specifiers, computed };
 };
 
-/** Every static, dynamic, and `require` specifier in `source`, comments excluded. */
-export const specifiersIn = (source) => tokenize(withoutComments(source));
+/** Every static, dynamic, `import()` type, and `require` specifier in `source`. */
+export const specifiersIn = (source) => scan(source).specifiers;
+
+/** Whether `source` has an `import()` whose argument is not a string literal, which names a module no scan can see. */
+export const hasComputedImport = (source) => scan(source).computed;
