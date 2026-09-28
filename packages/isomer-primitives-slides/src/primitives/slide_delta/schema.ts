@@ -8,6 +8,7 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
+import { crossRefine } from '../cross_field';
 import { sizeField } from '../size';
 
 const pointSchema = z
@@ -52,7 +53,15 @@ export const schema = z
       ),
     size: sizeField(),
   })
-  .strict();
+  .strict()
+  .check(
+    crossRefine(
+      ({ before, after, change }) =>
+        change === undefined ||
+        (before.value !== undefined && after.value !== undefined),
+      { error: 'change needs both values', path: ['change'] }
+    )
+  );
 
 /** One number before and after a change, with what the change means. */
 export type SlideDeltaNode = z.infer<typeof schema> & PrimitiveNode;

@@ -7,8 +7,9 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { example, pendingExample } from './examples';
+import { example, examples, pendingExample } from './examples';
 import { markdown, text } from './index';
+import { schema } from './schema';
 
 describe('slideDelta', () => {
   it('renders one line with the change before the body', () => {
@@ -27,5 +28,23 @@ describe('slideDelta', () => {
     expect(markdown(pendingExample)).toMatchInlineSnapshot(
       `"**Before the move** 38 → **After the move** _value pending_. Support tickets per thousand orders; the first full month on the new warehouse closes on the 30th."`
     );
+  });
+
+  it.each([
+    ['before', { ...example, before: { label: 'Old checkout' } }],
+    ['after', { ...example, after: { label: 'New checkout' } }],
+  ])('rejects a change when the %s value is missing', (_side, node) => {
+    expect(schema.safeParse(node).error?.issues).toContainEqual(
+      expect.objectContaining({
+        message: 'change needs both values',
+        path: ['change'],
+      })
+    );
+  });
+
+  it('accepts every example', () => {
+    for (const node of examples) {
+      expect(schema.safeParse(node).success).toBe(true);
+    }
   });
 });
