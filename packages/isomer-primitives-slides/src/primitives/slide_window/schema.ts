@@ -10,9 +10,10 @@ import type { ZodType } from 'zod';
 
 import { slideWindowChromes } from '../../theme/variants';
 import { crossRefine } from '../cross_field';
+import { EMBEDDING_TYPES } from '../slide_render/embedded';
 
-// Walks nested slide nodes, skipping a render's embedded composition: that
-// window sits in another slide.
+// Walks nested slide nodes, skipping an embedded composition: that window
+// sits in another slide.
 const holdsWindow = (value: unknown): boolean => {
   if (Array.isArray(value)) {
     return value.some(holdsWindow);
@@ -26,8 +27,11 @@ const holdsWindow = (value: unknown): boolean => {
   }
   return Object.entries(record).some(
     ([key, child]) =>
-      !(record.type === 'slideRender' && key === 'composition') &&
-      holdsWindow(child)
+      !(
+        typeof record.type === 'string' &&
+        EMBEDDING_TYPES.has(record.type) &&
+        key === 'composition'
+      ) && holdsWindow(child)
   );
 };
 

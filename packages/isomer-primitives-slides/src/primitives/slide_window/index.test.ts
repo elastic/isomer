@@ -95,6 +95,30 @@ describe('slideWindow schema', () => {
       }).success
     ).toBe(true);
   });
+
+  it.each([
+    {
+      type: 'slideRenderGrid',
+      composition: { type: 'view', body: [chatExample] },
+      tiles: [
+        { surface: 'svg', caption: 'Image' },
+        { surface: 'text', caption: 'Terminals' },
+      ],
+    },
+    {
+      type: 'slideAnnotatedRender',
+      render: {
+        type: 'slideRender',
+        surface: 'svg',
+        composition: { type: 'view', body: [chatExample] },
+      },
+      pins: [{ x: 50, y: 50, title: 'Reply', body: 'The model’s answer.' }],
+    },
+  ])('allows a window inside the embedded composition of $type', (embedder) => {
+    expect(
+      schema.safeParse({ ...terminalExample, body: [embedder] }).error
+    ).toBeUndefined();
+  });
 });
 
 describe('slideWindow output', () => {
