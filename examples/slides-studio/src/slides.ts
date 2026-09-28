@@ -19,6 +19,15 @@ export const slugOf = (index: number, { title }: Composition): string =>
     .filter(Boolean)
     .join('-');
 
+// A stored slide the printer refuses still shows its JSON.
+const jsxOf = (composition: Composition): string => {
+  try {
+    return slideJsx.toJsx(composition);
+  } catch (error) {
+    return `// ${error instanceof Error ? error.message : String(error)}`;
+  }
+};
+
 /** Each slide drawn from its resolved composition, with its stored one as JSX and JSON. */
 export const toSlides = ({ slides, stored }: Deck): DeckSlide[] =>
   slides.map((composition, index) => {
@@ -27,7 +36,7 @@ export const toSlides = ({ slides, stored }: Deck): DeckSlide[] =>
       slug: slugOf(index, composition),
       composition,
       sources: [
-        { id: 'jsx', label: 'JSX', text: slideJsx.toJsx(source) },
+        { id: 'jsx', label: 'JSX', text: jsxOf(source) },
         { id: 'json', label: 'JSON', text: JSON.stringify(source, null, 2) },
       ],
     };

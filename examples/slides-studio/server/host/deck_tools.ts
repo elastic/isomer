@@ -257,6 +257,16 @@ export const createDeckTools = ({
   };
   const check = (value: unknown) =>
     checkComposition(runtime, slideDeckFrame, value);
+  // A render joins two slides that each validate into one that may not, e.g. past the nesting bound.
+  const filledErrors = (deck: Deck): string[] =>
+    resolveDeck(deck).slides.flatMap((composition, index) => {
+      const { errors } = check(composition);
+      return errors.length > 0 && check(deck.slides[index]).valid
+        ? errors.map(
+            (error) => `Slide ${index}, with its renders filled: ${error}`
+          )
+        : [];
+    });
 
   /** Stores `value` at `at` with `place`; `shifted` is the range of indexes whose slide changes. */
   const storeSlide = (
@@ -286,6 +296,10 @@ export const createDeckTools = ({
     const reference = unresolvedReference(candidate);
     if (reference) {
       return json({ stored: false, errors: [reference] }, true);
+    }
+    const filled = filledErrors({ ...deck, slides: candidate });
+    if (filled.length > 0) {
+      return json({ stored: false, errors: filled }, true);
     }
     const updated = store.update(id, (slides) => {
       place(slides, slide);
@@ -483,7 +497,7 @@ export const createDeckTools = ({
           layoutOf(slide),
         ]);
         const types = bodyTypes(slide);
-        const { errors } = check(deck.slides[at]);
+        const { errors } = check(slide);
         const links = sectionLinkNotes(slide, deck.slides);
         return {
           content: [

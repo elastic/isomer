@@ -461,6 +461,40 @@ describe('deck tools', () => {
     expect(store.get(deckId as string)?.slides).toHaveLength(0);
   });
 
+  it('rejects a slide that validates alone but not with its renders filled, and says so of a stored one', async () => {
+    const { store, call, textOf, notesOf } = setup();
+    let deep: object = { type: 'slideHeading', title: 'Deep' };
+    for (let level = 0; level < 28; level += 1) {
+      deep = { type: 'slideStack', items: [deep] };
+    }
+    const deepSlide = {
+      type: 'view',
+      title: 'Deep',
+      body: [{ type: 'slideFrame', brand: 'Ledger', body: [deep] }],
+    };
+    const deckId = await deckOf({ call, textOf } as never, [deepSlide]);
+    expect(store.get(deckId)?.slides).toHaveLength(1);
+    const result = await call('deck_set_slide', {
+      deckId,
+      index: 1,
+      composition: renderOf('Shows deep', '0'),
+    });
+    expect(result.isError).toBe(true);
+    expect(textOf(result).errors).toEqual([
+      expect.stringContaining('with its renders filled'),
+    ]);
+    expect(store.get(deckId)?.slides).toHaveLength(1);
+
+    store.update(deckId, (slides) => [
+      ...slides,
+      renderOf('Shows deep', '0') as never,
+    ]);
+    const rendered = await call('deck_render_slide', { deckId, index: 1 });
+    expect(notesOf(rendered)).toContainEqual(
+      expect.stringContaining('nests deeper than')
+    );
+  });
+
   it('keeps a deck readable after a referenced slide is removed', async () => {
     const { store, call, textOf } = setup();
     const { deckId } = textOf(await call('deck_create', { title: 'Proof' }));
