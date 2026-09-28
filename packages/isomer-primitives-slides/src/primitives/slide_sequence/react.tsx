@@ -111,7 +111,7 @@ export const react = (
                   tone ? sequence.labelToned : undefined,
                   mono ? sequence.labelMono : undefined
                 )}>
-                {mono ? label : marksReact(label, context)}
+                {marksReact(label, context)}
               </span>
               <div
                 aria-hidden

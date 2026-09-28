@@ -96,14 +96,21 @@ const escapeLeadingMarker = (markdown: string): string =>
 export const markdownText = (text: string): string =>
   escapeLeadingMarker(escapeMarkdownRun(text));
 
-/** `text` as inline Markdown: code spans and strong stay marks, and the rest is escaped as {@link markdownText} escapes it. */
-export const marksMarkdown = (text: string): string =>
+/**
+ * `text` as inline Markdown: code spans and strong stay marks, and the rest is
+ * escaped as {@link markdownText} escapes it. `inStrong` is for text the caller
+ * wraps in `**`, where a strong mark cannot nest, so it prints as plain text.
+ */
+export const marksMarkdown = (
+  text: string,
+  { inStrong = false }: { inStrong?: boolean } = {}
+): string =>
   escapeLeadingMarker(
     parseMarks(text)
       .map(({ kind, text: run }) =>
         kind === 'code'
           ? `\`${run.replace(LINE_TERMINATORS, ' ')}\``
-          : kind === 'strong'
+          : kind === 'strong' && !inStrong
             ? `**${escapeMarkdownRun(run)}**`
             : escapeMarkdownRun(run)
       )

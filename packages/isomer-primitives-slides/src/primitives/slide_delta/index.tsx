@@ -7,12 +7,7 @@
 
 import { oneLine } from '@elastic/isomer-sdk/author';
 
-import {
-  markdownText,
-  marksMarkdown,
-  plainText,
-  stripMarks,
-} from '../../render/marks';
+import { markdownText, marksMarkdown, plainText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -57,7 +52,7 @@ export const text = (node: SlideDeltaNode): string =>
 /** Markdown renderer for {@link SlideDeltaNode}: the text line with the labels and the change in bold. */
 export const markdown = (node: SlideDeltaNode): string =>
   line(node, {
-    label: (label) => `**${markdownText(stripMarks(label))}**`,
+    label: (label) => `**${marksMarkdown(label, { inStrong: true })}**`,
     value: markdownText,
     pending: `_${placeholderCaption.value}_`,
     change: (change) => `**${markdownText(change)}**`,

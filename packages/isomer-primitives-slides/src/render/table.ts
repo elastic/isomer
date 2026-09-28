@@ -11,7 +11,7 @@ import { marksMarkdown } from './marks';
 
 /** One GFM pipe-table row of authored cells, marks kept and everything else escaped. */
 export const markdownRow = (cells: readonly string[]): string =>
-  `| ${cells.map(marksMarkdown).join(' | ')} |`;
+  `| ${cells.map((cell) => marksMarkdown(cell)).join(' | ')} |`;
 
 /** The delimiter row under a GFM table's header. */
 export const markdownDelimiterRow = (count: number): string =>

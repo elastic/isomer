@@ -106,6 +106,12 @@ const render = (node: unknown): string | undefined => {
     : undefined;
 };
 
+const renderMarkdown = (node: unknown): string =>
+  runtime.surfaces.markdown.render({
+    type: 'view',
+    body: [{ type: 'slideFrame', body: [node] } as PrimitiveNode],
+  });
+
 describe('inline marks in field descriptions', () => {
   it.each(slideDeckPrimitives.filter(({ type }) => type !== 'slideFrame'))(
     '$type says so on every field that draws marks',
@@ -128,6 +134,35 @@ describe('inline marks in field descriptions', () => {
         }
       }
       expect([...missing].sort()).toEqual([]);
+    }
+  );
+
+  it.each(slideDeckPrimitives.filter(({ type }) => type !== 'slideFrame'))(
+    '$type draws marks on every field that says it does',
+    ({ schema, examples }) => {
+      const unrendered = new Set<string>();
+      for (const example of examples) {
+        for (const path of stringsIn(example)) {
+          const says = fieldAt(schema as ZodType, path).some((text) =>
+            /marks are allowed/i.test(text)
+          );
+          const node = withAppended(example, path);
+          const html = render(node);
+          if (!says || html === undefined) {
+            continue;
+          }
+          const field = path
+            .filter((step) => typeof step === 'string')
+            .join('.');
+          if (!html.includes('>mk</code>')) {
+            unrendered.add(`${field} (html)`);
+          }
+          if (!renderMarkdown(node).includes('`mk`')) {
+            unrendered.add(`${field} (markdown)`);
+          }
+        }
+      }
+      expect([...unrendered].sort()).toEqual([]);
     }
   );
 });
