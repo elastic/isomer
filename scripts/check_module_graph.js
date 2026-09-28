@@ -10,7 +10,7 @@
 // when any one of its exports is imported, so reachability, not direct import,
 // is what matters.
 
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 
 import { specifiersIn as specifiersInSource } from './specifiers.js';
@@ -47,14 +47,36 @@ const RULES = {
 const matchesForbidden = (specifier, forbidden) =>
   specifier === forbidden || specifier.startsWith(`${forbidden}/`);
 
-const specifiersIn = (file) => specifiersInSource(readFileSync(file, 'utf-8'));
-
 const isRelative = (specifier) => specifier.startsWith('.');
 
-/** Every bare specifier reachable from `entryFile`, following relative imports only. */
-const reachableBareSpecifiers = (entryFile) => {
+// An `import()` whose argument is not a string literal names a module no scan can see.
+const COMPUTED_IMPORT = /(?<![\w$.])import\s*\(\s*(?!['"])/;
+
+/** The file a relative specifier in `from` names: emitted JavaScript as written, a declaration by probing. */
+const resolveRelative = (from, specifier) => {
+  const base = resolve(join(dirname(from), specifier));
+  if (!from.endsWith('.d.ts')) {
+    // The build rewrites relative specifiers to full paths with extensions.
+    return base;
+  }
+  return (
+    [
+      base.replace(/\.js$/, '.d.ts'),
+      `${base}.d.ts`,
+      join(base, 'index.d.ts'),
+      base,
+    ].find((candidate) => existsSync(candidate)) ?? base
+  );
+};
+
+/**
+ * Every bare specifier reachable from `entryFile`, following relative imports
+ * only, and every reachable file with an `import()` of a computed specifier.
+ */
+const reachableFrom = (entryFile) => {
   const seen = new Set();
   const bare = new Set();
+  const computed = [];
   const queue = [resolve(entryFile)];
 
   while (queue.length > 0) {
@@ -63,20 +85,36 @@ const reachableBareSpecifiers = (entryFile) => {
       continue;
     }
     seen.add(file);
+    const source = readFileSync(file, 'utf-8');
+    if (COMPUTED_IMPORT.test(withoutComments(source))) {
+      computed.push(file);
+    }
 
-    for (const specifier of specifiersIn(file)) {
-      if (!isRelative(specifier)) {
+    for (const specifier of specifiersInSource(source)) {
+      if (isRelative(specifier)) {
+        queue.push(resolveRelative(file, specifier));
+      } else {
         bare.add(specifier);
-        continue;
       }
-      // The build rewrites relative specifiers to full paths with extensions,
-      // so this resolves without probing for index files.
-      queue.push(resolve(join(dirname(file), specifier)));
     }
   }
 
-  return bare;
+  return { bare, computed };
 };
+
+const withoutComments = (source) =>
+  source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+
+/** Packages that must not appear in a package's dependency fields at all, even as an optional peer. */
+const FORBIDDEN_DEPENDENCIES = {
+  '@elastic/isomer-agent-tools': ['@modelcontextprotocol/sdk'],
+};
+
+const DEPENDENCY_FIELDS = [
+  'dependencies',
+  'peerDependencies',
+  'optionalDependencies',
+];
 
 const manifests = new Map(
   workspacePackages().map((pkg) => [pkg.manifest.name, pkg])
@@ -92,20 +130,42 @@ for (const [packageName, entryRules] of Object.entries(RULES)) {
   }
 
   for (const [exportKey, forbidden] of Object.entries(entryRules)) {
-    const target = pkg.manifest.exports?.[exportKey]?.import;
-    if (!target) {
+    const entry = pkg.manifest.exports?.[exportKey];
+    if (!entry?.import) {
       throw new Error(`${packageName}: no "import" for export "${exportKey}"`);
     }
 
-    const entryFile = join(pkg.dir, target);
-    const reachable = reachableBareSpecifiers(entryFile);
-    checked += 1;
+    // The declarations count too: a type-only import still makes consumers install the package.
+    for (const target of [entry.import, entry.types].filter(Boolean)) {
+      const entryFile = join(pkg.dir, target);
+      const { bare, computed } = reachableFrom(entryFile);
+      checked += 1;
 
-    for (const specifier of reachable) {
-      if (forbidden.some((rule) => matchesForbidden(specifier, rule))) {
+      for (const specifier of bare) {
+        if (forbidden.some((rule) => matchesForbidden(specifier, rule))) {
+          violations.push(
+            `${packageName} "${exportKey}" (${relative(repoRoot, entryFile)}) reaches "${specifier}"`
+          );
+        }
+      }
+      for (const file of computed) {
         violations.push(
-          `${packageName} "${exportKey}" (${relative(repoRoot, entryFile)}) reaches "${specifier}"`
+          `${packageName} "${exportKey}" reaches a computed import() in ${relative(repoRoot, file)}`
         );
+      }
+    }
+  }
+}
+
+for (const [packageName, forbidden] of Object.entries(FORBIDDEN_DEPENDENCIES)) {
+  const pkg = manifests.get(packageName);
+  if (!pkg) {
+    throw new Error(`${packageName}: not a workspace package`);
+  }
+  for (const field of DEPENDENCY_FIELDS) {
+    for (const name of Object.keys(pkg.manifest[field] ?? {})) {
+      if (forbidden.some((rule) => matchesForbidden(name, rule))) {
+        violations.push(`${packageName} lists forbidden "${name}" in ${field}`);
       }
     }
   }
