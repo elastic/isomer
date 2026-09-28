@@ -5,6 +5,7 @@
     { "path": "packages/isomer-primitives-slides/tsconfig.build.json" },
     { "path": "packages/isomer-runtime/tsconfig.build.json" },
     { "path": "packages/isomer-image-takumi/tsconfig.build.json" },
-    { "path": "packages/isomer-evals/tsconfig.build.json" }
+    { "path": "packages/isomer-evals/tsconfig.build.json" },
+    { "path": "packages/isomer-agent-tools/tsconfig.build.json" }
   ]
 }

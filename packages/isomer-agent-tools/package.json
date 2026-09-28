@@ -1,0 +1,43 @@
+{
+  "name": "@elastic/isomer-agent-tools",
+  "version": "0.0.0-development",
+  "private": true,
+  "description": "Transport-neutral agent tools, resources, and a prompt for any Isomer runtime: authoring guide, validation, rendering, and registered views.",
+  "license": "Elastic-2.0",
+  "author": "Elastic",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elastic/isomer.git",
+    "directory": "packages/isomer-agent-tools"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/cjs/entries/index.js",
+  "module": "./dist/entries/index.js",
+  "types": "./dist/entries/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/entries/index.d.ts",
+      "import": "./dist/entries/index.js",
+      "require": "./dist/cjs/entries/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE.txt"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@elastic/isomer-sdk": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18 <20",
+    "zod": "^4.4.1"
+  },
+  "devDependencies": {
+    "@elastic/isomer-primitives-slides": "workspace:*",
+    "@elastic/isomer-runtime": "workspace:*"
+  }
+}

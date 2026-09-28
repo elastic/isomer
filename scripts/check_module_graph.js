@@ -30,6 +30,9 @@ import { repoRoot, workspacePackages } from './workspace_packages.js';
  * Bare `react` is deliberately absent. `render/primitive_dispatch` uses
  * `cloneElement` and `isValidElement` to carry React renderers, so every surface
  * reaches it through the shared dispatcher — that is the design, not a leak.
+ *
+ * `@elastic/isomer-agent-tools` is transport-neutral: hosts bring the MCP SDK,
+ * so no subpath of it may be reachable.
  */
 const RULES = {
   '@elastic/isomer-sdk': {
@@ -38,6 +41,9 @@ const RULES = {
     './markdown': ['react-dom', 'react-dom/server'],
     './slack': ['react-dom', 'react-dom/server'],
     './author': ['react-dom', 'react-dom/server'],
+  },
+  '@elastic/isomer-agent-tools': {
+    '.': ['@modelcontextprotocol/sdk'],
   },
 };
 
@@ -97,7 +103,9 @@ const reachableFrom = (entryFile) => {
 };
 
 /** Packages that must not appear in a package's dependency fields at all, even as an optional peer. */
-const FORBIDDEN_DEPENDENCIES = {};
+const FORBIDDEN_DEPENDENCIES = {
+  '@elastic/isomer-agent-tools': ['@modelcontextprotocol/sdk'],
+};
 
 const DEPENDENCY_FIELDS = [
   'dependencies',
