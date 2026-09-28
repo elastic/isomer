@@ -14,6 +14,12 @@ The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, a
 
 `packages/isomer-agent-tools` turns any runtime into transport-neutral agent tools, resources, and a `compose` prompt. It declares the runtime structurally and depends on the SDK alone; hosts bring the transport, and it must never reach `@modelcontextprotocol/sdk`, which `scripts/check_module_graph.js` enforces.
 
+`examples/` holds private, runnable apps built on the packages. Each is a workspace member outside `packages/`, so publishing, export, and license checks never see it. Vite there is for the apps only; the library build stays `tsc`. `examples/README.md` holds the recipe for adding one.
+
+`examples/deck` is the Isomer deck: one `.tsx` composition per slide, rendered by the slides pack. The docs workflow copies its build to `/deck/` on the Pages site.
+
+`examples/slides-studio` is a dev-server-only app where an agent writes a slide deck over MCP (`pnpm studio:dev`, then `claude mcp add --transport http isomer-slides http://localhost:5178/mcp`). Its landing page holds the connection instructions and lists decks, `/decks/<id>` shows a deck's slides as they arrive, and `/decks/<id>/present` is the deck's viewer, reused through `@elastic/isomer-deck/viewer`. It registers `@elastic/isomer-agent-tools`' tools, resources, and prompt plus deck tools on an MCP server from `server/`; `server/host/` builds them with no transport, so it can become a package once a second host needs it. It persists decks to its gitignored `.decks/`.
+
 ## Release posture
 
 Every package under `packages/` without `"private": true` publishes, at one version, through the release workflow: `@elastic/isomer-sdk` and `@elastic/isomer-runtime` are what a host installs, takumi is a host-side rasterizer, and evals is a harness a pack author runs against their own runtime. The slides pack is an exemplar to copy and stays private; agent-tools is private until its API settles, and publishing it is removing the flag. A published package never lists a private one in `dependencies` or `peerDependencies`, which `scripts/check_pack_consumer.js` enforces. Do not raise publication, registry access, or dependency licensing as a constraint when planning work in this repository.

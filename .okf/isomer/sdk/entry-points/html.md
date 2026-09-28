@@ -14,7 +14,7 @@ sources:
 
 # Definition
 
-HTML rendering and `createDistillateHtmlStyleAdapter`. Loading this entry is what pulls `react-dom/server`.[^barrel]
+HTML rendering, `createDistillateHtmlStyleAdapter`, and `createHTMLStyleCollection` (`HTMLStyleCollectionOptions`, `HTMLStyleCollection`), which collects the HTML surface's CSS from a React render the caller does with its `context` and `wrapper`. Loading this entry is what pulls `react-dom/server`.[^barrel]
 
 Related: [rendering](/sdk/concepts/rendering.md), [root](/sdk/entry-points/root.md).
 

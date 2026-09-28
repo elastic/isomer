@@ -1,7 +1,7 @@
 ---
 type: Reference
 title: Public contract
-description: private true. Depends on the SDK. The runtime is a dev dependency that proves the structural contract. One entry.
+description: Published with the workspace. Depends on the SDK. The runtime is a dev dependency that proves the structural contract. One entry.
 tags: [isomer, evals, contract]
 status: stable
 stale_after: 2027-03-21

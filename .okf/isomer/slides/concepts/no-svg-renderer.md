@@ -19,7 +19,7 @@ sources:
 
 There is no per-primitive `svg` renderer. The image surface dispatches to `react` and is handed the pack's stylesheet. Do not reintroduce a second tree authored for image layout.
 
-The pack stylesheet does not reach inside an inline `<svg>`. Anything drawn there needs a literal `fill` / `stroke` alongside its class.[^agents][^docs]
+The pack stylesheet does not reach inside an inline `<svg>`. Anything drawn there needs a literal `fill` / `stroke` alongside its class. The pack draws one inline `<svg>`, the Isomer mark, with brand-fixed fills; rails, arrows, and brackets are bordered blocks that follow the theme.[^agents][^docs]
 
 Related: [surfaces](/runtime/concepts/surfaces.md), [raster](/image-takumi/concepts/raster.md).
 

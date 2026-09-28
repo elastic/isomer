@@ -23,7 +23,8 @@ sources:
 2. Call `definePrimitivePack` with a stable `id` and at least one primitive.
 3. If any primitive has `collectStyles`, declare `styleAdapter`; `styleCollector` is derived from it unless overridden.
 4. If svg renderers read a palette, pass `theme: themeBound<T>()`. Never publish a bare `PrimitivePack`.
-5. In tests, call `assertPackRegistrationComplete` on the primitives directory, and assert the registry array and the body-node union agree. Keep that assertion in a test file so it stays outside the build graph.[^docs][^pack][^registration]
+5. For agent authoring, pass `authoring` with `describe` for cross-field rules the JSON Schema drops and `groups` for the catalog index, each type in exactly one group.
+6. In tests, call `assertPackRegistrationComplete` on the primitives directory, and assert the registry array and the body-node union agree. Keep that assertion in a test file so it stays outside the build graph.[^docs][^pack][^registration]
 
 Related: [packs](/sdk/concepts/packs.md), [runtime packs](/runtime/concepts/packs.md).
 

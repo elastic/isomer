@@ -13,6 +13,9 @@ sources:
   - id: adapter
     resource: https://github.com/elastic/isomer/blob/main/packages/isomer-runtime/src/assemble/style_adapter.ts
     title: composeStyleAdapters
+  - id: authoring
+    resource: https://github.com/elastic/isomer/blob/main/packages/isomer-runtime/src/assemble/authoring.ts
+    title: Authoring context
 ---
 
 # Definition
@@ -21,8 +24,12 @@ Two packs in one runtime union their types. Duplicate `type` or enhancement id t
 
 A type no adapter-declaring pack owns still reaches every adapter. Combining adapters where one cannot answer `ownsHandle` throws. A CSS-bearing pack with no adapter throws, naming the pack and the primitive.
 
+Every pack's `authoring.groups` are checked together: a group that names a type no pack registers throws `UNKNOWN_PRIMITIVE_TYPE`, and a type grouped twice across packs throws `DUPLICATE_PRIMITIVE_TYPE`.[^authoring]
+
 Related: [SDK packs](/sdk/concepts/packs.md), [style adapters](/runtime/concepts/style-adapters.md).
 
 [^docs]: Runtime packs
 
 [^adapter]: composeStyleAdapters
+
+[^authoring]: Authoring context

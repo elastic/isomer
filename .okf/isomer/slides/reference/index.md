@@ -6,5 +6,5 @@ Directory: `slides/reference/`
 
 | Title | Type | Description |
 |-------|------|-------------|
-| [Public contract](public-contract.md) | Reference | private true as the in-repo reference pack, distillate from the registry, wor... |
+| [Public contract](public-contract.md) | Reference | private true as the in-repo reference pack to copy, distillate from the regis... |
 

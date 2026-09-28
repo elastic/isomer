@@ -14,7 +14,7 @@ sources:
 
 # Definition
 
-`fromChildren`, `fromTextChildren`, and `buildJsxShim` turn a primitive schema into typed JSX. Prompt builders bind guide, rules, and defaults; hosts supply what varies. The prompt minifies JSON, lists registered views, and inlines each catalog `example`. `registered-view-router` omits the JSON Schema. Showcase `definition.examples` stay off the prompt.[^barrel]
+`fromChildren`, `fromTextChildren`, and `buildJsxShim` turn a primitive schema into typed JSX. Prompt builders bind guide, rules, and defaults; hosts supply what varies. The prompt minifies JSON, lists registered views, and inlines each catalog `example`. `registered-view-router` omits the JSON Schema. Showcase `definition.examples` stay off the prompt. `buildAuthoringPrompt` takes `catalog: 'index'` and `groups`; `formatPrimitiveEntry` prints one entry; `createAgentAuthoringContextFactory` returns an `AgentAuthoringContext`. `oneLine`, `jsonLine`, and `quoteInput` keep echoed text on one line.[^barrel]
 
 Related: [authoring](/sdk/concepts/authoring.md), [authoring context](/runtime/concepts/authoring-context.md).
 

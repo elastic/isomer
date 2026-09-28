@@ -21,7 +21,7 @@ sources:
 - Brands use `Symbol.for`, never bare `Symbol()`.
 - `IsomerError` is identified by `name` and `code`, never `instanceof`. `CompositionValidationError` is identified by `name`, `code`, and `errors`.
 - Stage barrels (`packages/isomer-sdk/src/<stage>/index.ts`) are hand-maintained. TypeScript enforces correctness; keep them alphabetically sorted.
-- `src/entries/*` are hand-curated. `pnpm check:module-graph` fails when `react-dom` or `react-dom/server` is reachable from `.`, `./text`, `./markdown`, `./slack`, or `./author`. Bare `react` is reachable through `render/primitive_dispatch`.[^module-graph]
+- `src/entries/*` are hand-curated. `pnpm check:module-graph` fails when `react-dom` or `react-dom/server` is reachable from `.`, `./text`, `./markdown`, `./slack`, or `./author`. Bare `react` is reachable through `render/primitive_dispatch`. `@elastic/isomer-agent-tools` must never reach `@modelcontextprotocol/sdk`.[^module-graph]
 - `zod` and `react` are peer dependencies. Do not add `zod` to `dependencies`. `react-dom` is an optional peer.
 - The sdk must not import the runtime.
 - No cross-package tsconfig `paths`. Internal resolution is `workspace:*` plus TypeScript project references.

@@ -14,7 +14,7 @@ sources:
 
 # Definition
 
-Plain-text rendering.[^barrel]
+Plain-text rendering: `renderTextEnvelope` with `TextEnvelopeOptions` (`heading`), and `TextEnvelopeDispatcher`.[^barrel]
 
 Related: [rendering](/sdk/concepts/rendering.md).
 

@@ -7,14 +7,18 @@ description: Generated map of the Isomer OKF concept graph.
 
 Generated from `.okf/isomer` by `pnpm okf:map`. Do not edit by hand.
 
-- Concepts: 54
-- Links: 131
+- Concepts: 58
+- Links: 143
 - Isolated concepts: 0
 
 ## Graph
 
 ```mermaid
 flowchart LR
+    agent_tools_concepts_agent_tools["Agent tools"]:::concept
+    agent_tools_entry_points_root["Root"]:::entrypoint
+    agent_tools_playbooks_hand_to_an_agent["Hand to an agent"]:::playbook
+    agent_tools_reference_public_contract["Public contract"]:::reference
     evals_concepts_scoring["Scoring"]:::concept
     evals_entry_points_root["Root"]:::entrypoint
     evals_playbooks_score_a_corpus["Score a corpus"]:::playbook
@@ -69,6 +73,17 @@ flowchart LR
     workspace_playbooks_publish["Publish"]:::playbook
     workspace_playbooks_verify["Verify"]:::playbook
     workspace_reference_conventions["Conventions"]:::reference
+    agent_tools_concepts_agent_tools --> agent_tools_entry_points_root
+    agent_tools_concepts_agent_tools --> agent_tools_playbooks_hand_to_an_agent
+    agent_tools_concepts_agent_tools --> runtime_concepts_authoring_context
+    agent_tools_concepts_agent_tools --> sdk_concepts_authoring
+    agent_tools_entry_points_root --> agent_tools_concepts_agent_tools
+    agent_tools_entry_points_root --> agent_tools_reference_public_contract
+    agent_tools_playbooks_hand_to_an_agent --> agent_tools_concepts_agent_tools
+    agent_tools_playbooks_hand_to_an_agent --> agent_tools_entry_points_root
+    agent_tools_playbooks_hand_to_an_agent --> runtime_concepts_view_registry
+    agent_tools_reference_public_contract --> agent_tools_concepts_agent_tools
+    agent_tools_reference_public_contract --> agent_tools_entry_points_root
     evals_concepts_scoring --> evals_entry_points_root
     evals_concepts_scoring --> evals_playbooks_score_a_corpus
     evals_concepts_scoring --> evals_reference_public_contract
@@ -185,6 +200,7 @@ flowchart LR
     slides_playbooks_author_a_primitive --> slides_concepts_one_source
     slides_reference_public_contract --> slides_concepts_distillate
     slides_reference_public_contract --> slides_concepts_pack
+    workspace_concepts_workspace --> agent_tools_concepts_agent_tools
     workspace_concepts_workspace --> evals_concepts_scoring
     workspace_concepts_workspace --> workspace_playbooks_docs_builder
     workspace_concepts_workspace --> workspace_playbooks_publish
@@ -208,6 +224,10 @@ flowchart LR
 
 ## Concepts
 
+- Agent tools (Concept): `agent-tools/concepts/agent-tools`
+- Root (Entry Point): `agent-tools/entry-points/root`
+- Hand to an agent (Playbook): `agent-tools/playbooks/hand-to-an-agent`
+- Public contract (Reference): `agent-tools/reference/public-contract`
 - Scoring (Concept): `evals/concepts/scoring`
 - Root (Entry Point): `evals/entry-points/root`
 - Score a corpus (Playbook): `evals/playbooks/score-a-corpus`
