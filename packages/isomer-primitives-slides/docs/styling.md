@@ -2,7 +2,7 @@
 
 ## Distillate collection
 
-This pack authors CSS with [Distillate](https://elastic.github.io/distillate/), Elastic's typed CSS engine with render-driven style collection. React renderers call `cls(context, ...handles)` so class names resolve through the HTML adapter's `resolveClassName`. `src/pack.ts` passes `styleAdapter: createDistillateHtmlStyleAdapter(slideDistillery)` to `definePrimitivePack`: it records those handles and `renderStyles` emits the Distillate stylesheet.
+This pack authors CSS with [Distillate](https://elastic.github.io/distillate/), Elastic's typed CSS engine with render-driven style collection. React renderers call `cls(context, ...handles)` so class names resolve through the HTML adapter's `resolveClassName`. `src/pack.ts` passes `createDistillateHtmlStyleAdapter(slideDistillery)`, wrapped in `withEnhancements`, as the `styleAdapter` to `definePrimitivePack`: it records those handles and `renderStyles` emits the Distillate stylesheet.
 
 Used rules are discovered while rendering, via `resolveClassName`. The adapter is part of the pack, so a host supplies nothing:
 

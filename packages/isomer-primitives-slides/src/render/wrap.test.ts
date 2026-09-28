@@ -44,7 +44,8 @@ const skipped: Record<string, string> = {
   'slidePipeline.end': `a terminal; ${nowrap}`,
   'slidePipeline.start': `a terminal; ${nowrap}`,
   'slideQuadrant.quadrants.items': `a chip; ${nowrap}`,
-  'slideQuadrant.x.low': `widens its side column, which pushes the plot's chips out; ${nowrap}`,
+  'slideQuadrant.x.low':
+    'wraps, but its side track grows to the word’s max-content and squeezes the plot until its chips overflow',
   'slideSequence.messages.label': nowrap,
   'slideStat.unit': `inside the value; ${nowrap}`,
   'slideStat.value': nowrap,
