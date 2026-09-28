@@ -13,14 +13,16 @@ runtime.surfaces.slack.render(composition, { collectAssets: true });
 | --- | --- | --- | --- |
 | `react` | `ReactNode` | no | `context` (required only if the pack narrows it), `heading`, `wrapper` |
 | `html` | `HTMLRenderResult` | yes | `theme`, `fluid`, `framed`, `heading`, `css`, `scripts`, `minify`, `enhancements` (ids), `anchors`, `onValidationError` |
-| `text` | `string` | yes | `onValidationError` |
-| `markdown` | `string` | yes | `onValidationError` |
-| `slack` | `{ text, blocks, assets }` | yes | `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
+| `text` | `string` | yes | `heading`, `onValidationError` |
+| `markdown` | `string` | yes | `heading`, `onValidationError` |
+| `slack` | `{ text, blocks, assets }` | yes | `heading`, `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
 | `svg` | `SvgRenderResult` | yes | `frame`, `width`, `height`, `theme`, `onValidationError` |
 
 `HTMLRenderResult` is `{ html, css, js, body, measurement, validationErrors }`. [Embedding](embedding.md) covers getting that markup, stylesheet, and script onto a page a host already controls, including when to render with `scripts: 'host'`. The `svg` entry is `undefined` unless the runtime was given [frames](frame.md), and the factory's return type tracks which.
 
 All six are synchronous.
+
+`heading` defaults to `true` everywhere it appears: the composition's title and subtitle open the output, as an `h2` on `react` and `html`, an `h1` in Markdown, an uppercased line in text, and a `header` block in Slack. Pass `false` when the host already shows the title, or when the body opens with its own heading, as a slide does; the title still backs the `html` wrapper's `aria-label`. `renderNode` never draws one, so Slack's `SlackRenderNodeOptions` omits it too.
 
 ## Validation posture
 

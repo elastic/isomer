@@ -51,7 +51,7 @@ Each exposes `render` and `renderNode`, plus a `validating` field stating its po
 | `slack` | `SlackRenderResult` | `SlackRenderResult` | `true` | `SlackRenderNodeOptions`: `text`, `collectAssets`, `assetPrefix` |
 | `svg` | `SvgRenderResult` | `SvgRenderResult` | `true` | `SvgRenderNodeOptions`: `frame`, `theme` |
 
-Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SvgSurface`; `RuntimeSurfaces` is the record of all six. `render` takes its surface's options type below. `SvgRenderResult` is `{ element, css, width, height }`. The `svg` surface additionally exposes `resolveViewport(composition, options?): { width, height }`, which takes `frame`, `width`, and `height`.
+Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SvgSurface`; `RuntimeSurfaces` is the record of all six. `render` takes its surface's options type below. `SvgRenderResult` is `{ element, css, width, height }`. The `svg` surface additionally exposes `resolveViewport(composition, options?): { width, height }`, which takes `frame`, `width`, and `height`. The `html` surface additionally exposes `createStyleCollection(composition, options?): HTMLStyleCollection`, `{ context, wrapper, heading, css() }`, for a host rendering React itself; see [Embedding](embedding.md#rendering-react-into-the-shadow-root).
 
 ### Options types
 
@@ -60,10 +60,10 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | `ReactRenderOptions` | `context`, `heading`, `wrapper: boolean \| CompositionWrapperOptions`; `ReactRenderArgs` is the tuple form, optional only when `context` is |
 | `ReactRenderNodeOptions` | `ReactRenderOptions` without `heading` |
 | `HTMLRenderOptions` | `theme`, `minify`, `fluid`, `framed`, `heading`, `css: 'inline' \| 'separate'`, `scripts: 'embedded' \| 'host'`, `enhancements: string[]`, `anchors: boolean` (node anchors; `true` for tests), `onValidationError` |
-| `TextRenderOptions` | `onValidationError` |
-| `MarkdownRenderOptions` | `onValidationError` |
-| `SlackRenderOptions` | `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
-| `SlackRenderNodeOptions` | `SlackRenderOptions` without `onValidationError` |
+| `TextRenderOptions` | `heading`, `onValidationError` |
+| `MarkdownRenderOptions` | `heading`, `onValidationError` |
+| `SlackRenderOptions` | `heading`, `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
+| `SlackRenderNodeOptions` | `SlackRenderOptions` without `heading` or `onValidationError` |
 | `SvgRenderOptions` | `frame`, `width`, `height`, `theme`, `onValidationError` |
 
 `onValidationError` is `'collect' | 'throw'`. `html` defaults to `'collect'` and reports on `validationErrors`; `text`, `markdown`, `slack`, and `svg` default to `'throw'`.
@@ -97,7 +97,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | View registry | `ViewRegistry`, `RegisteredView`, `RegisteredViewSummary`, `DefineViewOptions`, `ViewBuildArgs`, `ViewInput`, `ViewResponse`, `RegisteredViewInputError` |
 | Surfaces | `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SvgSurface` |
 | Options | `ReactRenderOptions`, `ReactRenderNodeOptions`, `ReactRenderArgs`, `HTMLRenderOptions`, `HTMLStyleAdapter`, `TextRenderOptions`, `MarkdownRenderOptions`, `SlackRenderOptions`, `SlackRenderNodeOptions`, `SvgRenderOptions`, `SvgRenderNodeOptions` |
-| Results | `HTMLRenderResult`, `SlackRenderResult`, `SvgRenderResult` |
+| Results | `HTMLRenderResult`, `HTMLStyleCollection`, `SlackRenderResult`, `SvgRenderResult` |
 | Errors | `IsomerError`, `IsomerErrorCode`, `ISOMER_ERROR_CODES` |
 
 `src/api_reference.test.ts` fails when a name exported from `src/index.ts` is missing from this page.
@@ -112,7 +112,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 
 | Thrown | By | Carries |
 | --- | --- | --- |
-| `IsomerError` | `createIsomerRuntime`, `viewRegistry.register`, an unknown view id, `getAuthoringContext().schemaFor` on an unknown type (`UNKNOWN_PRIMITIVE_TYPE`), or the `svg` surface | `code` and a message naming the offender |
+| `IsomerError` | `createIsomerRuntime` (including a pack group that names an unregistered type, `UNKNOWN_PRIMITIVE_TYPE`, or repeats one, `DUPLICATE_PRIMITIVE_TYPE`), `viewRegistry.register`, an unknown view id, `getAuthoringContext().schemaFor` or `describePrimitives` on an unknown type (`UNKNOWN_PRIMITIVE_TYPE`, naming at most ten), or the `svg` surface | `code` and a message naming the offender |
 | `RegisteredViewInputError` | `viewRegistry.request`, on invalid input | `code` (`VIEW_INPUT_INVALID`), `viewId`, `errors` (`{ path, message }` each) |
 | `CompositionValidationError` | `text`, `markdown`, `slack`, and `svg` by default; `html` with `onValidationError: 'throw'` | `code` (`COMPOSITION_INVALID`), `errors` |
 

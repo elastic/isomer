@@ -7,14 +7,16 @@ The SDK owns the output shapes: what a whole composition looks like as text, mar
 Three of the four are small, and each takes a narrow dispatcher interface rather than the whole thing — a text envelope needs `renderText` and nothing else.
 
 ```ts
-renderTextEnvelope(composition, dispatcher); // title uppercased, subtitle, nodes, blank-line joined
-renderMarkdownEnvelope(composition, dispatcher); // # title, _subtitle_, nodes
-renderSlackEnvelope(composition, dispatcher, { text, collectAssets, assetPrefix });
+renderTextEnvelope(composition, dispatcher, { heading }); // title uppercased, subtitle, nodes, blank-line joined
+renderMarkdownEnvelope(composition, dispatcher, { heading }); // # title, _subtitle_, nodes
+renderSlackEnvelope(composition, dispatcher, { heading, text, collectAssets, assetPrefix });
 ```
 
-The Slack envelope does the most. It emits a `header` block for the title and a `context` block for the subtitle, then each node's blocks; enforces Slack's 50-block message budget; clamps the fallback `text` to 4,000 characters; and returns only the asset requests whose placeholder block survived the budget — uploading files for elided blocks would be orphaned work.
+`heading` defaults to `true`. Pass `false` when the host already shows the title, or the body opens with its own, and every envelope leaves out the title and subtitle; in Slack that includes the fallback `text`.
 
-`SLACK_LIMITS` publishes the numbers a renderer has to respect: 50 blocks per message, 3,000 characters in a section, 10 fields per section, 10 elements per context block, 25 buttons in an actions block, 150 characters in a header, 75 in an option label.
+The Slack envelope does the most. It emits a `header` block for the title and a `context` block for the subtitle, then each node's blocks; clamps every text a node's renderer returns to its Slack limit — header, section text and fields, context elements, image and video titles, alt text, and video attribution, and button, option, option-group, and placeholder labels — so one oversized block cannot get the whole message rejected; enforces Slack's 50-block message budget; clamps the fallback `text` to 4,000 characters; and returns only the asset requests whose placeholder block survived the budget — uploading files for elided blocks would be orphaned work.
+
+`SLACK_LIMITS` publishes the numbers a renderer has to respect: 50 blocks per message, 3,000 characters in a section, 2,000 in a section field or a context element, 10 fields per section, 10 elements per context block, 25 buttons in an actions block, 150 characters in a header, 75 in an option label.
 
 ## HTML
 
@@ -52,9 +54,9 @@ CSS is not the SDK's. A pack supplies an `HTMLStyleAdapter`, and the SDK calls i
 | `createRenderContext`   | Builds the context every `react` renderer is handed                         |
 | `collectAfterRender?`   | After the tree is rendered                                                  |
 | `renderStyles`          | Emits the stylesheet                                                        |
-| `getScriptText?`        | Emits the progressive-enhancement script, a function body over `root`       |
+| `getScriptText?`        | Emits the adapter's own script, a function body over `root`                 |
 
-`createRenderContext` must return a complete context, because `TContext` is the pack's own type. The HTML surface never writes to it, so a frozen or class-instance context keeps its identity and private state. Whether renderers emit [node anchors](#node-anchors) during an HTML render is the surface's decision, whatever the context's `anchors` says. The HTML adapter's default `TContext` is `StyledRenderContext` (`resolveClassName`, `cssVarRef`). `PrimitiveRenderContext` itself is `enhancements`, `anchors`, and `onEvent`.
+`createRenderContext` must return a complete context, because `TContext` is the pack's own type. The HTML surface never writes to it and hands renderers a view of it rather than a copy, so a frozen or class-instance context keeps its methods and private state. Whether renderers emit [node anchors](#node-anchors) during an HTML render is the surface's decision, whatever the context's `anchors` says. The HTML adapter's default `TContext` is `StyledRenderContext` (`resolveClassName`, `cssVarRef`). `PrimitiveRenderContext` itself is `enhancements`, `anchors`, and `onEvent`.
 
 A pack that authors its CSS with [Distillate](https://elastic.github.io/distillate/), Elastic's typed CSS engine with render-driven style collection, does not write those hooks by hand. `createDistillateHtmlStyleAdapter(distillery)` is the adapter: record handles during render, emit their stylesheet. Put it on `definePrimitivePack({ styleAdapter })` so a host gets it without asking. The SDK does not depend on Distillate; the helper is duck-typed against `artifactCollector`, `renderStyles`, and `registry`.
 
@@ -66,7 +68,7 @@ The wrapper hook is named for the wrapper rather than the SVG frame. The documen
 
 ## Enhancements
 
-A progressive enhancement is an id, a content gate, and usually a script. `resolveEnhancements(body, requested, walk, definitions)` intersects what the host asked for with what the composition actually contains, so a composition with no table never ships the sort script. The host opts in by id: `enhancements: ['tableSort']`. The resolved set reaches renderers as `context.enhancements`, a set rather than a field per feature, so adding one costs no plumbing:
+A progressive enhancement is an id, a content gate, and usually a script. `resolveEnhancements(body, requested, walk, definitions)` intersects what the host asked for with what the composition actually contains, so a composition with no table never ships the sort script. The host opts in by id: `enhancements: ['tableSort']`. The HTML render resolves the request once for every pack: the set reaches every renderer as `context.enhancements`, in place of anything the adapter's context holds, and each resolved enhancement's script is emitted once. A set rather than a field per feature, so adding one costs no plumbing:
 
 ```ts
 context.enhancements?.has('tableSort');
@@ -101,7 +103,7 @@ react: (node, { context }) => <ol {...nodeAnchor(context, node)}>…</ol>,
 
 Anchors render only when something needs them, so a render nobody acts on carries none. During an HTML render the surface decides, for the whole synchronous render and without touching the render context: anchors are on when a resolved enhancement declares `anchors: true`, or when a test passes the `anchors: true` render option, and off otherwise, whatever the context's `anchors` says. `anchors: false` cannot turn off anchors an enhancement needs. Outside an HTML render, on the React and `svg` surfaces, the context's own `anchors` decides: a React host turns them on with `anchors: true` on the context it passes.
 
-`findNodeElements(root, composition.body, walk)` pairs each `react`-visible node with its element: the k-th node of a type, walked pre-order, is the k-th element anchored with that type in document order. `root` holds one render. A type whose counts disagree, for instance because one of its nodes rendered nothing, is left out, so the caller falls back to its baseline. For the pairing to hold, a container draws its `children` in the order its definition returns them, and anything a renderer draws that is not one of its `children` renders with `withoutAnchors(context)`. It returns a view of the context, not a copy, so methods, getters, private state, and `instanceof` keep working; anchors are off for that subtree, and the mark survives contexts derived from it by spreading.
+`findNodeElementPairs(root, composition.body, walk)` lists each `react`-visible node, pre-order, with its element, so a node object used twice pairs twice; `findNodeElements` is the same as a map from node to element. Either way the k-th node of a type, walked pre-order, is the k-th element anchored with that type in document order. `root` holds one render. A type whose counts disagree, for instance because one of its nodes rendered nothing, is left out, so the caller falls back to its baseline. For the pairing to hold, a container draws its `children` in the order its definition returns them, and anything a renderer draws that is not one of its `children` renders with `withoutAnchors(context)`. It returns a view of the context, not a copy, so methods, getters, private state, and `instanceof` keep working; anchors are off for that subtree, and the mark survives contexts derived from it by spreading.
 
 ## How Slack output is fitted
 

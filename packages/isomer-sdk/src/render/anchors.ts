@@ -73,6 +73,12 @@ export const withAnchors = <TResult>(
 export const withoutAnchors = <TContext>(context: TContext): TContext =>
   contextWith(context, NO_ANCHORS, true);
 
+/** A view of `context` whose `anchors` is `on`, for a React render outside the html surface; see {@link withoutAnchors}. */
+export const withContextAnchors = <TContext>(
+  context: TContext,
+  on: boolean
+): TContext => contextWith(context, 'anchors', on);
+
 const anchorsOn = (context: unknown): boolean => {
   const carries = isObjectLike(context);
   if (carries && Reflect.get(context, NO_ANCHORS) === true) {
@@ -120,21 +126,21 @@ export const nodeType = (node: unknown): string | undefined => {
 };
 
 /**
- * Each node of `body` whose rendered root carries its anchor, paired by type
- * and order: the k-th `react`-visible node of a type, walked pre-order, is the
- * k-th element anchored with that type in document order. `root` holds one
- * render.
+ * Every `react`-visible node of `body`, walked pre-order, with the element
+ * its anchor marks under `root`: the k-th node of a type pairs with the k-th
+ * element anchored with that type in document order. `root` holds one render.
  *
  * Pairing holds because every renderer draws its `children` in the order its
  * definition's `children` returns them. A type whose node and element counts
- * disagree, for instance because one of its nodes rendered nothing, is left
- * out.
+ * disagree, for instance because one of its nodes rendered nothing, pairs with
+ * no element. A node object that appears twice appears twice here, each time
+ * with its own element.
  */
-export const findNodeElements = (
+export const findNodeElementPairs = (
   root: ParentNode,
   body: readonly unknown[],
   walk: ChildNodeWalker
-): Map<unknown, Element> => {
+): { node: unknown; element: Element | undefined }[] => {
   // Grouped by attribute value, so a type is never read as selector syntax.
   const elementsByValue = new Map<string, Element[]>();
   for (const element of root.querySelectorAll(`[${NODE_ANCHOR_ATTRIBUTE}]`)) {
@@ -143,22 +149,39 @@ export const findNodeElements = (
     elements.push(element);
     elementsByValue.set(value, elements);
   }
-  const nodesByType = new Map<string, unknown[]>();
-  for (const node of anchoredNodes(body, walk)) {
+  const nodes = anchoredNodes(body, walk);
+  const counts = new Map<string, number>();
+  for (const node of nodes) {
     const type = nodeType(node);
     if (type !== undefined) {
-      const nodes = nodesByType.get(type) ?? [];
-      nodes.push(node);
-      nodesByType.set(type, nodes);
+      counts.set(type, (counts.get(type) ?? 0) + 1);
     }
   }
-  const found = new Map<unknown, Element>();
-  for (const [type, nodes] of nodesByType) {
+  const seen = new Map<string, number>();
+  return nodes.map((node) => {
+    const type = nodeType(node);
+    if (type === undefined) {
+      return { node, element: undefined };
+    }
+    const index = seen.get(type) ?? 0;
+    seen.set(type, index + 1);
     const elements = elementsByValue.get(anchorValue(type)) ?? [];
-    if (elements.length !== nodes.length) {
-      continue;
-    }
-    nodes.forEach((node, index) => found.set(node, elements[index]!));
-  }
-  return found;
+    return {
+      node,
+      element:
+        elements.length === counts.get(type) ? elements[index] : undefined,
+    };
+  });
 };
+
+/** {@link findNodeElementPairs} as a map from node to element, for a body with no node object reused. */
+export const findNodeElements = (
+  root: ParentNode,
+  body: readonly unknown[],
+  walk: ChildNodeWalker
+): Map<unknown, Element> =>
+  new Map(
+    findNodeElementPairs(root, body, walk).flatMap(({ node, element }) =>
+      element === undefined ? [] : [[node, element] as const]
+    )
+  );

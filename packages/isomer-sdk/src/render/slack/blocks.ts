@@ -91,4 +91,18 @@ export const SLACK_LIMITS = {
   imageUrlChars: 3000,
   /** `image`/image-element `alt_text` max length. */
   imageAltTextChars: 2000,
+  /** `image` block `title`. */
+  imageTitleChars: 2000,
+  /** `video` block `title`. */
+  videoTitleChars: 200,
+  /** `video` block `description`. */
+  videoDescriptionChars: 200,
+  /** `video` block `author_name` and `provider_name`. */
+  videoAttributionChars: 50,
+  /** `button` element `text`. */
+  buttonTextChars: 75,
+  /** Select `placeholder`. */
+  placeholderChars: 150,
+  /** `option_groups[].label`. */
+  optionGroupLabelChars: 75,
 } as const;

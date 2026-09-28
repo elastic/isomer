@@ -133,7 +133,7 @@ export interface RuntimeSurfaces<
   TSvg extends SvgSurface | undefined = SvgSurface | undefined,
 > {
   react: ReactSurface<TRenderContext>;
-  html: HtmlSurface;
+  html: HtmlSurface<TRenderContext>;
   text: TextSurface;
   markdown: MarkdownSurface;
   slack: SlackSurface;

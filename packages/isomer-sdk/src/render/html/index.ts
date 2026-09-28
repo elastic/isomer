@@ -27,3 +27,8 @@ export {
   type HTMLStyleAdapter,
   renderHTMLWithDispatcher,
 } from './envelope';
+export {
+  type HTMLStyleCollection,
+  type HTMLStyleCollectionOptions,
+  createHTMLStyleCollection,
+} from './style_collection';

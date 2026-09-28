@@ -14,19 +14,26 @@ import type {
   ValidationResult,
 } from '@elastic/isomer-sdk';
 import {
+  createHTMLStyleCollection,
   type EnhancementDefinition,
   type HTMLRenderOptions,
   type HTMLRenderResult,
   type HTMLStyleAdapter,
+  type HTMLStyleCollection,
   renderHTMLWithDispatcher,
 } from '@elastic/isomer-sdk/html';
 
 import type { RuntimePackTypes } from '../pack_types';
 
-export type { HTMLRenderOptions, HTMLRenderResult, HTMLStyleAdapter };
+export type {
+  HTMLRenderOptions,
+  HTMLRenderResult,
+  HTMLStyleAdapter,
+  HTMLStyleCollection,
+};
 
 /** Renders a composition or node to an HTML document/fragment string. */
-export interface HtmlSurface {
+export interface HtmlSurface<TRenderContext = PrimitiveRenderContext> {
   /** Always `true`: this surface validates the composition before rendering. */
   readonly validating: true;
   /** Renders a full composition to an HTML document/fragment. */
@@ -39,6 +46,16 @@ export interface HtmlSurface {
     node: PrimitiveNode,
     options?: HTMLRenderOptions
   ): HTMLRenderResult;
+  /**
+   * The CSS {@link HtmlSurface.render} would emit for `composition`, collected
+   * from a React render you do yourself: pass `context` to
+   * `surfaces.react.render`, then read `css()` once that tree has rendered.
+   * Neither this call nor that React render validates the composition.
+   */
+  createStyleCollection(
+    composition: Composition,
+    options?: HTMLRenderOptions
+  ): HTMLStyleCollection<TRenderContext>;
 }
 
 /**
@@ -58,7 +75,7 @@ export const createHtmlSurface = <TRenderContext = PrimitiveRenderContext>(
     | undefined,
   enhancementDefinitions: readonly EnhancementDefinition[] = [],
   defaultAriaLabel = 'View'
-): HtmlSurface => {
+): HtmlSurface<TRenderContext> => {
   const renderHtml = (
     composition: Composition,
     options: HTMLRenderOptions
@@ -78,5 +95,16 @@ export const createHtmlSurface = <TRenderContext = PrimitiveRenderContext>(
     render: (composition, options = {}) => renderHtml(composition, options),
     renderNode: (node, options = {}) =>
       renderHtml({ type: 'view', body: [node] }, options),
+    createStyleCollection: (composition, options = {}) =>
+      createHTMLStyleCollection<
+        PrimitiveNode,
+        PrimitiveStyleCollector,
+        TRenderContext
+      >(composition, {
+        dispatcher,
+        styleAdapter,
+        options,
+        enhancementDefinitions,
+      }),
   };
 };

@@ -14,10 +14,11 @@ import type {
 import { enforceValidationMode } from '@elastic/isomer-sdk';
 import {
   type MarkdownEnvelopeDispatcher,
+  type MarkdownEnvelopeOptions,
   renderMarkdownEnvelope,
 } from '@elastic/isomer-sdk/markdown';
 
-export interface MarkdownRenderOptions {
+export interface MarkdownRenderOptions extends MarkdownEnvelopeOptions {
   /** Defaults to `'throw'`: a string has nowhere to carry findings. `'collect'` renders anyway. */
   onValidationError?: ValidationErrorMode;
 }
@@ -43,7 +44,7 @@ export const createMarkdownSurface = (
       validate(composition),
       options.onValidationError ?? 'throw'
     );
-    return renderMarkdownEnvelope(composition, dispatcher);
+    return renderMarkdownEnvelope(composition, dispatcher, options);
   },
   renderNode: (node) => dispatcher.renderMarkdown(node),
 });

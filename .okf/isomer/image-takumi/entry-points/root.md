@@ -14,7 +14,7 @@ sources:
 
 # Definition
 
-`createTakumiImageBackend({ fonts? })` returns `{ png, svg }`. Font types are re-exported from `@takumi-rs/core`.[^barrel]
+`createTakumiImageBackend({ fonts? })` returns a `TakumiMeasuringBackend`, `{ png, svg, measure }`; `measure` lays an input out as `png` would and returns its `LayoutBox` tree: each element's canvas `x`, `y`, `width`, and `height`, its `scaleX` and `scaleY`, `scale` (whichever axis scale is further from 1, so any other value means the box is scaled), its positioned text `runs`, and its `children`. `TakumiImageBackend`, what `renderPng` takes, stays `{ png, svg }`. Font types are re-exported from `@takumi-rs/core`.[^barrel]
 
 Related: [raster](/image-takumi/concepts/raster.md), [public contract](/image-takumi/reference/public-contract.md).
 

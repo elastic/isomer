@@ -45,7 +45,8 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | `isVisibleOnSurface`, `rendersOnSurface` | Surface-visibility checks |
 | `nodeAnchor`, `NODE_ANCHOR_ATTRIBUTE` | Props a `react` renderer spreads on its root so its element can be found; empty unless the HTML surface, or outside it `context.anchors`, turns anchors on |
 | `withoutAnchors` | A context under which nothing renders an anchor, for content that is not one of a node's `children` |
-| `findNodeElements` | Pairs a body's nodes with their anchored elements under a DOM root |
+| `findNodeElementPairs` | Each `react`-visible node of a body, in pre-order, with its anchored element under a DOM root |
+| `findNodeElements` | The same as a map from node to element, for a body that reuses no node object |
 | `anchorValue` | A node type as its anchor carries it, escaped so HTML parsing leaves it unchanged |
 | `BODY_NODE_SURFACES` | `['react','svg','text','markdown','slack']` |
 
@@ -83,7 +84,7 @@ Zod helpers so a pack states constraints the same way everywhere: `z`, `enumOf`,
 
 ## `./html`
 
-`renderHTMLWithDispatcher`, `renderCompositionContent`, `useReactPrimitiveDispatcher`, `createDistillateHtmlStyleAdapter`, and the types a style adapter is written against: `HTMLStyleAdapter`, `DistillateHtmlEngine`, `DistillateThemeVar`, `HTMLRenderOptions`, `HTMLRenderResult`, `HTMLRenderDispatcher`, `HTMLDispatcherRenderOptions`, `HTMLEnhancementScope`, `EnhancementDefinition`, `ReactContentDispatcher`, `ReactContentOptions`. `HTMLRenderOptions.enhancements` is a list of enhancement ids; `resolveEnhancements` intersects it with what the body contains and `enhancementScript` concatenates the survivors' scripts, each in its own function scope, and `rendersAnchors` says whether a render carries node anchors. `HTMLRenderOptions.anchors` turns anchors on directly, for tests. `DISTILLATE_STYLE_COLLECTOR` is the `styleCollector` tag the Distillate adapter publishes, and `flattenSchemeOption` reduces a Distillate light/dark scheme option to one value.
+`renderHTMLWithDispatcher`, `renderCompositionContent`, `useReactPrimitiveDispatcher`, `createDistillateHtmlStyleAdapter`, and the types a style adapter is written against: `HTMLStyleAdapter`, `DistillateHtmlEngine`, `DistillateThemeVar`, `HTMLRenderOptions`, `HTMLRenderResult`, `HTMLRenderDispatcher`, `HTMLDispatcherRenderOptions`, `HTMLEnhancementScope`, `EnhancementDefinition`, `ReactContentDispatcher`, `ReactContentOptions`. `createHTMLStyleCollection` (with `HTMLStyleCollectionOptions`) returns an `HTMLStyleCollection`, `{ context, wrapper, heading, css() }`: the same CSS `renderHTMLWithDispatcher` emits, collected from a React render the caller does with `context` and `wrapper`, so a host that renders React itself never renders twice for its CSS. `HTMLRenderOptions.enhancements` is a list of enhancement ids; `resolveEnhancements` intersects it with what the body contains and `enhancementScript` concatenates the survivors' scripts, each in its own function scope, and `rendersAnchors` says whether a render carries node anchors. `HTMLRenderOptions.anchors` turns anchors on directly, for tests. `DISTILLATE_STYLE_COLLECTOR` is the `styleCollector` tag the Distillate adapter publishes, and `flattenSchemeOption` reduces a Distillate light/dark scheme option to one value.
 
 ## `./react`
 
@@ -91,9 +92,9 @@ Zod helpers so a pack states constraints the same way everywhere: `z`, `enumOf`,
 
 ## `./text`, `./markdown`, `./slack`
 
-`./text` — `renderTextEnvelope` and `TextEnvelopeDispatcher`. Text formatting is pack-owned; the SDK ships no house style.
+`./text` — `renderTextEnvelope` with `TextEnvelopeOptions`, and `TextEnvelopeDispatcher`. Text formatting is pack-owned; the SDK ships no house style.
 
-`./markdown` — `renderMarkdownEnvelope`, `MarkdownEnvelopeDispatcher`, `boldLabelPrefix`, `boldSectionLabel`, `defaultMarkdownFromText`, and the URL-policed formatters `markdownLink`, `markdownImage`, `markdownLinkWrap`, `sanitizeMarkdownSource`.
+`./markdown` — `renderMarkdownEnvelope` with `MarkdownEnvelopeOptions`, `MarkdownEnvelopeDispatcher`, `boldLabelPrefix`, `boldSectionLabel`, `defaultMarkdownFromText`, and the URL-policed formatters `markdownLink`, `markdownImage`, `markdownLinkWrap`, `sanitizeMarkdownSource`.
 
 `./slack` — `renderSlackEnvelope` with `SlackEnvelopeOptions` and `SlackEnvelopeResult`, `SlackEnvelopeDispatcher`, `SLACK_LIMITS`, `createSlackAssetCollector` (`{ prefix? }`), `SlackAssetCollector`, `SlackAssetRequest`, `SlackFileReference`, `isSlackReachableImageUrl`.
 

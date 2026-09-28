@@ -86,6 +86,25 @@ describe('Slack envelope transforms', () => {
     ]);
   });
 
+  it('opens with the body, with no title or divider, when heading is false', () => {
+    const heading: SlackBlock = {
+      type: 'header',
+      text: { type: 'plain_text', text: 'Checkout is healthy', emoji: true },
+    };
+    const { text, blocks } = renderSlackEnvelope(
+      {
+        type: 'view',
+        title: 'Checkout',
+        subtitle: 'last 15m',
+        body: [{ type: 'a' }],
+      },
+      dispatcherFor([[heading, section('A')]]),
+      { heading: false }
+    );
+    expect(blocks).toEqual([heading, section('A')]);
+    expect(text).toBe('a');
+  });
+
   it('inserts spacers between consecutive content sections', () => {
     const { blocks } = renderSlackEnvelope(
       { type: 'view', body: [{ type: 'a' }, { type: 'b' }] },
@@ -106,6 +125,199 @@ describe('Slack envelope transforms', () => {
     );
     expect(blocks.some((block) => block.type === 'table')).toBe(false);
     expect(blocks.some((block) => block.type === 'section')).toBe(true);
+  });
+
+  it('clamps every text a pack renderer emits to its Slack limit', () => {
+    const long = 'x'.repeat(5000);
+    const { blocks } = renderSlackEnvelope(
+      { type: 'view', body: [{ type: 'a' }] },
+      dispatcherFor([
+        [
+          { type: 'header', text: { type: 'plain_text', text: long } },
+          {
+            type: 'section',
+            text: { type: 'mrkdwn', text: long },
+            fields: [
+              { type: 'mrkdwn', text: long },
+              { type: 'mrkdwn', text: 'short' },
+            ],
+          },
+          {
+            type: 'context',
+            elements: [
+              { type: 'mrkdwn', text: long },
+              {
+                type: 'image',
+                image_url: 'https://x.test/a.png',
+                alt_text: 'a',
+              },
+            ],
+          },
+        ],
+      ])
+    );
+    const [header, section, context] = blocks.filter(
+      (block) =>
+        block.type === 'header' ||
+        block.type === 'context' ||
+        (block.type === 'section' && block.fields !== undefined)
+    );
+    expect(header).toMatchObject({ type: 'header' });
+    expect(header?.type === 'header' && header.text.text).toHaveLength(
+      SLACK_LIMITS.headerTextChars
+    );
+    if (section?.type !== 'section' || context?.type !== 'context') {
+      throw new Error('expected a section then a context block');
+    }
+    expect(section.text?.text).toHaveLength(SLACK_LIMITS.sectionTextChars);
+    expect(section.fields?.map(({ text }) => text.length)).toEqual([
+      SLACK_LIMITS.sectionFieldChars,
+      5,
+    ]);
+    const [clamped] = context.elements;
+    const text = clamped?.type === 'mrkdwn' ? clamped.text : '';
+    expect(text).toHaveLength(SLACK_LIMITS.contextElementChars);
+    expect(text.endsWith('…')).toBe(true);
+    expect(context.elements[1]).toMatchObject({ type: 'image' });
+  });
+
+  it('clamps the image, video, button, and option text a pack renderer emits', () => {
+    const long = 'x'.repeat(5000);
+    const plain = { type: 'plain_text' as const, text: long };
+    const option = { text: plain, value: 'v', description: plain };
+    const image = {
+      type: 'image' as const,
+      image_url: 'https://x.test/a.png',
+      alt_text: long,
+    };
+    const { blocks } = renderSlackEnvelope(
+      { type: 'view', body: [{ type: 'a' }] },
+      dispatcherFor([
+        [
+          { ...image, title: plain },
+          {
+            type: 'video',
+            title: plain,
+            description: plain,
+            video_url: 'https://x.test/v',
+            thumbnail_url: 'https://x.test/t.png',
+            alt_text: long,
+            author_name: long,
+            provider_name: long,
+          },
+          { type: 'context', elements: [image] },
+          {
+            type: 'section',
+            text: { type: 'mrkdwn', text: 'with an image' },
+            accessory: image,
+          },
+          {
+            type: 'actions',
+            elements: [
+              { type: 'button', text: plain, action_id: 'b' },
+              {
+                type: 'static_select',
+                action_id: 's',
+                options: [option],
+                initial_option: option,
+              },
+              {
+                type: 'static_select',
+                action_id: 'g',
+                placeholder: plain,
+                option_groups: [{ label: plain, options: [option] }],
+              },
+            ],
+          },
+        ],
+      ])
+    );
+    const byType = <TType extends SlackBlock['type']>(type: TType) =>
+      blocks.find(
+        (block): block is Extract<SlackBlock, { type: TType }> =>
+          block.type === type
+      );
+    const imageBlock = byType('image');
+    const video = byType('video');
+    const context = byType('context');
+    const section = blocks.find(
+      (block): block is Extract<SlackBlock, { type: 'section' }> =>
+        block.type === 'section' && block.accessory !== undefined
+    );
+    const actions = byType('actions');
+    if (
+      imageBlock?.type !== 'image' ||
+      video?.type !== 'video' ||
+      context?.type !== 'context' ||
+      section?.type !== 'section' ||
+      actions?.type !== 'actions'
+    ) {
+      throw new Error('expected image, video, context, section, then actions');
+    }
+    const [button, select, grouped] = actions.elements;
+    if (
+      button?.type !== 'button' ||
+      select?.type !== 'static_select' ||
+      grouped?.type !== 'static_select'
+    ) {
+      throw new Error('expected a button and two selects');
+    }
+    const contextImage = context.elements[0];
+    const accessory = section.accessory;
+    const [selectOption] = select.options ?? [];
+    const [group] = grouped.option_groups ?? [];
+    const lengths = {
+      imageAlt: imageBlock.alt_text,
+      imageTitle: imageBlock.title?.text,
+      videoTitle: video.title.text,
+      videoDescription: video.description?.text,
+      videoAlt: video.alt_text,
+      videoAuthor: video.author_name,
+      videoProvider: video.provider_name,
+      contextImageAlt:
+        contextImage?.type === 'image' ? contextImage.alt_text : undefined,
+      accessoryAlt:
+        accessory?.type === 'image' ? accessory.alt_text : undefined,
+      button: button.text.text,
+      optionText: selectOption?.text.text,
+      optionDescription: selectOption?.description?.text,
+      placeholder: grouped.placeholder?.text,
+      groupLabel: group?.label.text,
+      groupOption: group?.options[0]?.text.text,
+    };
+    const {
+      imageAltTextChars,
+      imageTitleChars,
+      videoTitleChars,
+      videoDescriptionChars,
+      videoAttributionChars,
+      buttonTextChars,
+      optionTextChars,
+      placeholderChars,
+      optionGroupLabelChars,
+    } = SLACK_LIMITS;
+    expect(
+      Object.fromEntries(
+        Object.entries(lengths).map(([field, text]) => [field, text?.length])
+      )
+    ).toEqual({
+      imageAlt: imageAltTextChars,
+      imageTitle: imageTitleChars,
+      videoTitle: videoTitleChars,
+      videoDescription: videoDescriptionChars,
+      videoAlt: imageAltTextChars,
+      videoAuthor: videoAttributionChars,
+      videoProvider: videoAttributionChars,
+      contextImageAlt: imageAltTextChars,
+      accessoryAlt: imageAltTextChars,
+      button: buttonTextChars,
+      optionText: optionTextChars,
+      optionDescription: optionTextChars,
+      placeholder: placeholderChars,
+      groupLabel: optionGroupLabelChars,
+      groupOption: optionTextChars,
+    });
+    expect(select.initial_option).toEqual(selectOption);
   });
 
   it('elides overflow past the block budget and appends a notice', () => {

@@ -18,6 +18,7 @@ import {
   definePrimitive,
   definePrimitivePack,
   type Frame,
+  nodeAnchor,
   type PrimitiveNode,
   type PrimitivePack,
   type PrimitiveRenderContext,
@@ -71,6 +72,8 @@ const view = (text: string) => ({
   type: 'view' as const,
   body: [{ type: 'note' as const, text }],
 });
+
+const titled = { ...view('Body text'), title: 'Composition title' };
 
 interface WrapNode extends PrimitiveNode {
   type: 'wrap';
@@ -308,6 +311,41 @@ describe('createIsomerRuntime', () => {
         ],
       })
     ).toThrow(/primitive type "note" registered by "test" and "test.other"/);
+  });
+
+  it.each([
+    [
+      'text',
+      (runtime: ReturnType<typeof createIsomerRuntime>, heading?: boolean) =>
+        runtime.surfaces.text.render(
+          titled,
+          heading === undefined ? {} : { heading }
+        ),
+    ],
+    [
+      'markdown',
+      (runtime: ReturnType<typeof createIsomerRuntime>, heading?: boolean) =>
+        runtime.surfaces.markdown.render(
+          titled,
+          heading === undefined ? {} : { heading }
+        ),
+    ],
+    [
+      'slack',
+      (runtime: ReturnType<typeof createIsomerRuntime>, heading?: boolean) => {
+        const { blocks, text } = runtime.surfaces.slack.render(
+          titled,
+          heading === undefined ? {} : { heading }
+        );
+        return `${JSON.stringify(blocks)}\n${text}`;
+      },
+    ],
+  ])('forwards heading: false to the %s surface', (_surface, render) => {
+    const runtime = createIsomerRuntime({ packs: [packOf(notePrimitive)] });
+    expect(render(runtime).toLowerCase()).toContain('composition title');
+    const bare = render(runtime, false).toLowerCase();
+    expect(bare).toContain('body text');
+    expect(bare).not.toContain('composition title');
   });
 
   it('reports a composition nested 500 containers deep instead of throwing', () => {
@@ -900,6 +938,62 @@ describe('createIsomerRuntime', () => {
 
     const result = runtime.surfaces.html.render(view('Styled'));
     expect(result.css).toContain('.note { color: red; }');
+  });
+
+  it('collects through html.createStyleCollection the CSS html.render emits, from a React render', () => {
+    const recordingNote = definePrimitive<NoteNode>({
+      ...notePrimitive,
+      renderers: {
+        ...notePrimitive.renderers,
+        react: (node, { context }) => {
+          (context as { use?: (rule: string) => void } | undefined)?.use?.(
+            `.note-${node.text}{}`
+          );
+          return createElement('p', nodeAnchor(context, node), node.text);
+        },
+      },
+    });
+    const pack = definePrimitivePack({
+      id: 'test',
+      surfaces: [],
+      primitives: [recordingNote],
+      enhancements: [{ id: 'find', appliesTo: () => true, anchors: true }],
+    });
+    const runtime = createIsomerRuntime({
+      packs: [pack],
+      styleAdapter: {
+        createCollector: () => ({ rules: new Set<string>() }),
+        createRenderContext: ({ rules }: { rules: Set<string> }) => ({
+          use: (rule: string) => {
+            rules.add(rule);
+          },
+        }),
+        renderStyles: ({ rules }: { rules: Set<string> }) =>
+          [...rules].join(''),
+      },
+    });
+    const options = { enhancements: ['find'] };
+
+    const styles = runtime.surfaces.html.createStyleCollection(
+      view('A'),
+      options
+    );
+    const markup = renderToStaticMarkup(
+      createElement(() =>
+        runtime.surfaces.react.render(view('A'), {
+          context: styles.context,
+          wrapper: styles.wrapper,
+        })
+      )
+    );
+
+    expect(styles.css()).toBe('.note-A{}');
+    expect(styles.css()).toBe(
+      runtime.surfaces.html.render(view('A'), { ...options, css: 'separate' })
+        .css
+    );
+    // The enhancement's `anchors: true` reached the context the host rendered with.
+    expect(markup).toContain('data-isomer-node="note"');
   });
 
   it('honours a validation mode the style adapter derives', () => {

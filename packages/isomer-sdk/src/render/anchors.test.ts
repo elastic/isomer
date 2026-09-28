@@ -24,16 +24,19 @@ import {
 
 import {
   anchorValue,
+  findNodeElementPairs,
   findNodeElements,
   NODE_ANCHOR_ATTRIBUTE,
   nodeAnchor,
   withAnchors,
+  withContextAnchors,
   withoutAnchors,
 } from './anchors';
 import {
   type HTMLRenderOptions,
   renderHTMLWithDispatcher,
 } from './html/envelope';
+import { createHTMLStyleCollection } from './html/style_collection';
 import { createPrimitiveDispatcher } from './primitive_dispatch';
 
 interface LeafNode extends PrimitiveNode {
@@ -326,6 +329,39 @@ describe('withoutAnchors', () => {
   });
 });
 
+describe('withContextAnchors', () => {
+  it('turns anchors on for a class-instance context without copying it', () => {
+    const context = withContextAnchors(new InstanceContext(), true);
+    expect(context).toBeInstanceOf(InstanceContext);
+    expect(context.describe()).toBe('instance');
+    expect(nodeAnchor(context, { type: 'leaf' })).toEqual({
+      [NODE_ANCHOR_ATTRIBUTE]: 'leaf',
+    });
+    expect(nodeAnchor({ ...context }, { type: 'leaf' })).toEqual({
+      [NODE_ANCHOR_ATTRIBUTE]: 'leaf',
+    });
+  });
+
+  it('keeps a style collection’s class-instance context working when anchors are asked for', () => {
+    const { context } = createHTMLStyleCollection(
+      { type: 'view', body: [{ type: 'leaf', text: 'a' }] },
+      {
+        dispatcher: createPrimitiveDispatcher<LeafNode>([describing]),
+        options: { anchors: true },
+        styleAdapter: {
+          createCollector: () => ({}),
+          createRenderContext: () => new InstanceContext(),
+          renderStyles: () => '',
+        },
+      }
+    );
+    expect((context as InstanceContext).describe()).toBe('instance');
+    expect(nodeAnchor(context, { type: 'leaf' })).toEqual({
+      [NODE_ANCHOR_ATTRIBUTE]: 'leaf',
+    });
+  });
+});
+
 describe('html anchors', () => {
   const renderFrozen = (
     context: { anchors: boolean },
@@ -567,6 +603,27 @@ const stubRoot = (types: readonly string[]) => {
     } as unknown as ParentNode,
   };
 };
+
+describe('findNodeElementPairs', () => {
+  it('pairs each occurrence of a reused node object with its own element', () => {
+    const leaf = { type: 'leaf', text: 'twice' };
+    const { root, elements } = stubRoot(['leaf', 'leaf']);
+    expect(findNodeElementPairs(root, [leaf, leaf], walk)).toEqual([
+      { node: leaf, element: elements[0] },
+      { node: leaf, element: elements[1] },
+    ]);
+  });
+
+  it('keeps a node whose type cannot be paired, without an element', () => {
+    const leaf = { type: 'leaf', text: 'x' };
+    const box = { type: 'box', items: [] };
+    const { root } = stubRoot(['leaf', 'leaf']);
+    expect(findNodeElementPairs(root, [box, leaf], walk)).toEqual([
+      { node: box, element: undefined },
+      { node: leaf, element: undefined },
+    ]);
+  });
+});
 
 describe('findNodeElements', () => {
   it('skips a node hidden from react, with its children', () => {

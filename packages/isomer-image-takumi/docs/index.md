@@ -20,6 +20,10 @@ The `svg` surface returns `{ element, css, width, height }` — the same React t
 
 `ImageInput` is declared structurally rather than imported, so this package depends on no isomer package — `react` and `react-dom` are its only peers. `SvgRenderResult` from `@elastic/isomer-runtime` satisfies it.
 
+## Measuring a layout
+
+`createTakumiImageBackend` returns a `TakumiMeasuringBackend`, and its `measure(input)` lays the input out exactly as `png` would and returns a `LayoutBox` tree: each element's canvas `x`, `y`, `width`, and `height`, its `scaleX` and `scaleY`, its text `runs`, and its `children`. `scale` is whichever of the two axis scales is further from 1, so any other value means the box is scaled. A pack can read the tree to find content past its area where no browser is available. `TakumiImageBackend`, the `{ png, svg }` contract `renderPng` takes, does not include `measure`, so a custom raster backend need not implement it.
+
 ## Rendering a whole runtime call in one step
 
 `renderPng(runtime, composition, backend, options?)` bundles validation, the `svg` surface, and rasterization, returning `{ png, width, height, validation }`. It exists because the `svg` surface discards its own validation findings and knows nothing about image backends, so a host that wants the findings next to the bytes would otherwise validate, render, and rasterize in three calls of its own.

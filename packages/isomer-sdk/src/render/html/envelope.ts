@@ -43,11 +43,13 @@ import {
 } from '../react/content';
 
 import {
+  anchorsFor,
   embedScript,
   type EnhancementDefinition,
   enhancementScript,
   resolveEnhancements,
 } from './enhancements';
+import { startStyleCollection } from './style_collection';
 
 /** Knobs for the HTML surface. Every field defaults, so `{}` is valid. */
 export interface HTMLRenderOptions {
@@ -287,7 +289,12 @@ export const renderHTMLWithDispatcher = <
   const theme = options.theme ?? composition.theme ?? 'auto';
   const cssMode = options.css ?? 'inline';
   const scriptsMode = options.scripts ?? 'embedded';
-  const styleState = styleAdapter?.createCollector(options);
+  const collection = startStyleCollection(composition, {
+    dispatcher,
+    styleAdapter,
+    options,
+    enhancementDefinitions,
+  });
   const enhancementScope: HTMLEnhancementScope = {
     walk: createChildNodeWalker(dispatcher.definitions),
     definitions: enhancementDefinitions,
@@ -298,49 +305,34 @@ export const renderHTMLWithDispatcher = <
     enhancementScope.walk,
     enhancementDefinitions
   );
-  const anchors =
-    options.anchors === true ||
-    enhancementDefinitions.some(
-      ({ id, anchors: needed }) => needed === true && enhancements.has(id)
-    );
+  const anchors = anchorsFor(enhancements, options, enhancementDefinitions);
   const enhanced = (context: TContext): TContext =>
     contextWith(context, 'enhancements', enhancements);
 
-  if (styleState) {
-    styleAdapter?.collectWrapperStyles?.(styleState, options);
-    styleAdapter?.collectViewStyles?.(
-      composition,
-      dispatcher,
-      styleState,
-      { fluid: Boolean(options.fluid) },
-      options,
-      enhancementScope
-    );
-    const collectionContext = enhanced(
-      styleAdapter?.createRenderContext(styleState, options) as TContext
-    );
+  if (collection) {
     withAnchors(anchors, () =>
       renderToStaticMarkup(
         createElement(() =>
-          renderCompositionContent(composition, dispatcher, collectionContext, {
-            heading,
-          })
+          renderCompositionContent(
+            composition,
+            dispatcher,
+            enhanced(collection.context),
+            {
+              heading,
+            }
+          )
         )
       )
     );
-    styleAdapter?.collectAfterRender?.(composition, styleState, options);
   }
 
+  const cssText = collection ? collection.css() : '';
   const renderContext = enhanced(
-    styleState && styleAdapter
-      ? styleAdapter.createRenderContext(styleState, options)
+    collection && styleAdapter
+      ? styleAdapter.createRenderContext(collection.collector, options)
       : // No adapter means no class names and no css vars to resolve.
         ({} as TContext)
   );
-  const cssText =
-    styleState && styleAdapter
-      ? styleAdapter.renderStyles(styleState, options)
-      : '';
   const adapterScriptText =
     styleAdapter?.getScriptText?.(composition, options, enhancementScope) ?? '';
   const js = [

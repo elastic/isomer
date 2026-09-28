@@ -17,15 +17,21 @@ import {
 } from './assets';
 import {
   SLACK_LIMITS,
+  type SlackActionElement,
   type SlackBlock,
   type SlackContextBlock,
   type SlackHeaderBlock,
   type SlackMrkdwnTextObject,
+  type SlackOptionGroup,
+  type SlackOptionObject,
+  type SlackPlainTextObject,
   type SlackRichTextBlockElement,
   type SlackRichTextInline,
+  type SlackSectionAccessory,
   type SlackSectionBlock,
   type SlackTableBlock,
   type SlackTableCell,
+  type SlackTextObject,
 } from './blocks';
 import {
   bold,
@@ -56,6 +62,8 @@ export interface SlackEnvelopeDispatcher<
 
 /** Options for {@link renderSlackEnvelope}. */
 export interface SlackEnvelopeOptions {
+  /** Renders the composition's title and subtitle, in the blocks and the fallback `text`. Defaults to `true`. Set `false` when the host already shows the title, or the body opens with its own. */
+  heading?: boolean;
   /** Fallback `text` summary shown in notifications and previews; defaults to the text render. */
   text?: string;
   /** Whether to collect image upload requests alongside the blocks. */
@@ -99,22 +107,21 @@ export const renderSlackEnvelope = <TNode extends PrimitiveNode>(
       )
     : undefined;
 
-  if (composition.title) {
+  const { heading = true } = options;
+  if (heading && composition.title) {
     blocks.push(headerBlock(composition.title, 1));
   }
-  if (composition.subtitle) {
+  if (heading && composition.subtitle) {
     blocks.push(contextBlock([escapeMrkdwn(composition.subtitle)]));
   }
   for (const node of composition.body) {
-    blocks.push(
-      ...clampAssetImageAlts(dispatcher.renderSlack(node, collector))
-    );
+    blocks.push(...dispatcher.renderSlack(node, collector));
   }
 
   const rhythm = applySectionRhythm(
     coalesceFieldSections(enforceTableCharBudget(blocks))
   );
-  const budgeted = enforceBlockBudget(rhythm);
+  const budgeted = enforceBlockBudget(clampBlockText(rhythm));
   // Only ask the host to upload assets whose placeholder block survived the
   // budget; blocks elided by `enforceBlockBudget` are never posted, so
   // uploading their files would be wasted (and orphaned) work.
@@ -122,7 +129,7 @@ export const renderSlackEnvelope = <TNode extends PrimitiveNode>(
 
   return {
     text: clampSlackText(
-      options.text ?? renderTextEnvelope(composition, dispatcher),
+      options.text ?? renderTextEnvelope(composition, dispatcher, { heading }),
       SLACK_LIMITS.fallbackTextChars
     ),
     blocks: budgeted,
@@ -131,17 +138,6 @@ export const renderSlackEnvelope = <TNode extends PrimitiveNode>(
       : [],
   };
 };
-
-const clampAssetImageAlts = (blocks: readonly SlackBlock[]): SlackBlock[] =>
-  blocks.map((block) => {
-    if (block.type !== 'image' || block.slack_file?.ref === undefined) {
-      return block;
-    }
-    return {
-      ...block,
-      alt_text: clampSlackText(block.alt_text, SLACK_LIMITS.imageAltTextChars),
-    };
-  });
 
 const collectSlackFileRefs = (
   blocks: readonly SlackBlock[]
@@ -360,6 +356,179 @@ const enforceTableCharBudget = (
   }
   return out;
 };
+
+const clampTextObject = <TText extends SlackTextObject>(
+  text: TText,
+  max: number
+): TText =>
+  text.text.length <= max
+    ? text
+    : { ...text, text: clampSlackText(text.text, max) };
+
+const clampImage = <TImage extends { alt_text: string }>(
+  image: TImage
+): TImage =>
+  image.alt_text.length <= SLACK_LIMITS.imageAltTextChars
+    ? image
+    : {
+        ...image,
+        alt_text: clampSlackText(
+          image.alt_text,
+          SLACK_LIMITS.imageAltTextChars
+        ),
+      };
+
+const clampOption = (option: SlackOptionObject): SlackOptionObject => ({
+  ...option,
+  text: clampTextObject(option.text, SLACK_LIMITS.optionTextChars),
+  ...(option.description
+    ? {
+        description: clampTextObject(
+          option.description,
+          SLACK_LIMITS.optionTextChars
+        ),
+      }
+    : {}),
+});
+
+const clampControl = (element: SlackActionElement): SlackActionElement => {
+  if (element.type === 'button') {
+    return {
+      ...element,
+      text: clampTextObject(element.text, SLACK_LIMITS.buttonTextChars),
+    };
+  }
+  const options = element as Partial<{
+    placeholder: SlackPlainTextObject;
+    options: SlackOptionObject[];
+    option_groups: SlackOptionGroup[];
+    initial_option: SlackOptionObject;
+    initial_options: SlackOptionObject[];
+  }>;
+  return {
+    ...element,
+    ...(options.placeholder
+      ? {
+          placeholder: clampTextObject(
+            options.placeholder,
+            SLACK_LIMITS.placeholderChars
+          ),
+        }
+      : {}),
+    ...(options.options ? { options: options.options.map(clampOption) } : {}),
+    ...(options.option_groups
+      ? {
+          option_groups: options.option_groups.map((group) => ({
+            ...group,
+            label: clampTextObject(
+              group.label,
+              SLACK_LIMITS.optionGroupLabelChars
+            ),
+            options: group.options.map(clampOption),
+          })),
+        }
+      : {}),
+    ...(options.initial_option
+      ? { initial_option: clampOption(options.initial_option) }
+      : {}),
+    ...(options.initial_options
+      ? { initial_options: options.initial_options.map(clampOption) }
+      : {}),
+  };
+};
+
+const clampAccessory = (
+  element: SlackSectionAccessory
+): SlackSectionAccessory =>
+  element.type === 'image' ? clampImage(element) : clampControl(element);
+
+// Pack renderers build their own blocks, and one over-long text rejects the whole message.
+const clampBlockText = (blocks: readonly SlackBlock[]): SlackBlock[] =>
+  blocks.map((block): SlackBlock => {
+    switch (block.type) {
+      case 'header':
+        return {
+          ...block,
+          text: clampTextObject(block.text, SLACK_LIMITS.headerTextChars),
+        };
+      case 'section':
+        return {
+          ...block,
+          ...(block.text
+            ? {
+                text: clampTextObject(
+                  block.text,
+                  SLACK_LIMITS.sectionTextChars
+                ),
+              }
+            : {}),
+          ...(block.fields
+            ? {
+                fields: block.fields.map((field) =>
+                  clampTextObject(field, SLACK_LIMITS.sectionFieldChars)
+                ),
+              }
+            : {}),
+          ...(block.accessory
+            ? { accessory: clampAccessory(block.accessory) }
+            : {}),
+        };
+      case 'context':
+        return {
+          ...block,
+          elements: block.elements.map((element) =>
+            element.type === 'image'
+              ? clampImage(element)
+              : clampTextObject(element, SLACK_LIMITS.contextElementChars)
+          ),
+        };
+      case 'image':
+        return {
+          ...clampImage(block),
+          ...(block.title
+            ? {
+                title: clampTextObject(
+                  block.title,
+                  SLACK_LIMITS.imageTitleChars
+                ),
+              }
+            : {}),
+        };
+      case 'video':
+        return {
+          ...clampImage(block),
+          title: clampTextObject(block.title, SLACK_LIMITS.videoTitleChars),
+          ...(block.description
+            ? {
+                description: clampTextObject(
+                  block.description,
+                  SLACK_LIMITS.videoDescriptionChars
+                ),
+              }
+            : {}),
+          ...(block.author_name === undefined
+            ? {}
+            : {
+                author_name: clampSlackText(
+                  block.author_name,
+                  SLACK_LIMITS.videoAttributionChars
+                ),
+              }),
+          ...(block.provider_name === undefined
+            ? {}
+            : {
+                provider_name: clampSlackText(
+                  block.provider_name,
+                  SLACK_LIMITS.videoAttributionChars
+                ),
+              }),
+        };
+      case 'actions':
+        return { ...block, elements: block.elements.map(clampControl) };
+      default:
+        return block;
+    }
+  });
 
 const enforceBlockBudget = (blocks: SlackBlock[]): SlackBlock[] => {
   if (blocks.length <= SLACK_LIMITS.blocksPerMessage) {
