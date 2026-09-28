@@ -68,15 +68,18 @@ export const slideDeckFrame: Frame<SlideFrameTheme> = {
   wrap: (_header, body, _viewport) => body[0],
 };
 
+const enhancements = [slideCopyEnhancement, slideBuildsEnhancement];
+
 const styleAdapter = withEnhancements(
-  createDistillateHtmlStyleAdapter(slideDistillery)
+  createDistillateHtmlStyleAdapter(slideDistillery),
+  enhancements.map(({ id }) => id)
 );
 
 const packInput = {
   id: 'slides',
   primitives: slideDeckPrimitives,
   styleAdapter,
-  enhancements: [slideCopyEnhancement, slideBuildsEnhancement],
+  enhancements,
   theme: themeBound<SlideFrameTheme>(),
   authoring: slidesPackAuthoring,
 } satisfies PrimitivePackInput<SlideFrameTheme>;
