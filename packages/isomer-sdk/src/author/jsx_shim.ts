@@ -514,38 +514,45 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> => {
 /** Nesting past which a prop value is refused, which also ends a cycle. */
 const MAX_PROP_DEPTH = 256;
 
+// Counted across the elements a prop holds, so a cycle through an element still ends; conversion is synchronous.
+let propDepth = 0;
+
 /** Converts author elements anywhere inside a prop value, e.g. `left={{ items: [<Node />] }}`. */
 const convertNested = <TNode extends PrimitiveNode>(
   value: unknown,
-  parseChild: (child: ReactNode) => TNode,
-  depth = 0
+  parseChild: (child: ReactNode) => TNode
 ): unknown => {
-  if (depth > MAX_PROP_DEPTH) {
+  if (propDepth >= MAX_PROP_DEPTH) {
     throw new IsomerError(
       'INVALID_BODY_NODE',
       `toComposition: a prop nests deeper than ${MAX_PROP_DEPTH} levels`
     );
   }
-  if (Array.isArray(value)) {
-    return value.flatMap((item: unknown) => {
-      const nodes = nodesFromJsx(item, parseChild);
-      return nodes ?? [convertNested(item, parseChild, depth + 1)];
-    });
+  propDepth += 1;
+  try {
+    if (Array.isArray(value)) {
+      return value.flatMap((item: unknown) => {
+        const nodes = nodesFromJsx(item, parseChild);
+        return nodes ?? [convertNested(item, parseChild)];
+      });
+    }
+    if (isPlainObject(value)) {
+      return Object.fromEntries(
+        Object.entries(value).map(([key, entry]) => {
+          const nodes = nodesFromJsx(entry, parseChild);
+          return [
+            key,
+            nodes && nodes.length === 1
+              ? nodes[0]
+              : (nodes ?? convertNested(entry, parseChild)),
+          ];
+        })
+      );
+    }
+    return value;
+  } finally {
+    propDepth -= 1;
   }
-  if (isPlainObject(value)) {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, entry]) => {
-        const nodes = nodesFromJsx(entry, parseChild);
-        return [
-          key,
-          nodes && nodes.length === 1
-            ? nodes[0]
-            : (nodes ?? convertNested(entry, parseChild, depth + 1)),
-        ];
-      })
-    );
-  }
-  return value;
 };
 
 const nodesFromJsx = <TNode extends PrimitiveNode>(

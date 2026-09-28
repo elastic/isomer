@@ -228,7 +228,9 @@ describe('toComposition', () => {
     }
     const cyclic: Record<string, unknown> = {};
     cyclic.self = [cyclic];
-    for (const meta of [deep, cyclic]) {
+    const throughElement: Record<string, unknown> = {};
+    throughElement.self = createElement(Note, { meta: throughElement });
+    for (const meta of [deep, cyclic, throughElement]) {
       expectIsomerError(
         () =>
           shim.toComposition(
