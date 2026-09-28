@@ -24,6 +24,7 @@ export const deckRootModule = createStyleModule('deckRoot', ({ css }) => ({
     color: ${color.text};
     font-family: ${font.family.sans};
     height: ${frame.height};
+    overflow-wrap: anywhere;
     width: ${frame.width};
   `,
 }));

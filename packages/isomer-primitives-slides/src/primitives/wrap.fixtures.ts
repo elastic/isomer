@@ -5,20 +5,19 @@
  * 2.0.
  */
 
-import { createTakumiImageBackend } from '@elastic/isomer-image-takumi';
+import {
+  createTakumiImageBackend,
+  type LayoutBox,
+} from '@elastic/isomer-image-takumi';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
-import type { Composition } from '@elastic/isomer-sdk';
+import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 
-import type { SlideContentNode } from '../body_node';
 import { slideFonts } from '../examples/fonts';
 import { slideDeckFrame, slidesPack } from '../pack';
 import { frame } from '../theme/components/frame';
 import { scalePx } from '../theme/scale';
-import type { SlideFrameTone } from '../theme/variants';
 
-import type { SlideFrameNode } from './slide_frame/types';
-
-const runtime = createIsomerRuntime({
+export const runtime = createIsomerRuntime({
   packs: [slidesPack],
   frames: { slide: slideDeckFrame },
 });
@@ -27,27 +26,27 @@ const takumi = createTakumiImageBackend({ fonts: slideFonts });
 /** The right edge of the frame body's content on the canvas. */
 export const contentRight = scalePx(frame.width) - scalePx(frame.paddingX);
 
-interface Measured {
-  x: number;
-  width: number;
-  runs: { x: number; width: number }[];
-  children: Measured[];
-}
+const isScaled = ({ scale }: LayoutBox): boolean => Math.abs(scale - 1) > 0.001;
 
-const rightmostRun = ({ runs, children }: Measured): number =>
+// A line's trailing space hangs past its box, so only the run's visible text counts.
+const visibleRight = ({ text, x, width }: LayoutBox['runs'][number]): number =>
+  x + (width * text.trimEnd().length) / Math.max(text.length, 1);
+
+// A scaled box is a picture of another render, clipped by its panel, so its text is not searched.
+const rightmostRun = ({ runs, children }: LayoutBox): number =>
   Math.max(
     0,
-    ...runs.map(({ x, width }) => x + width),
-    ...children.map(rightmostRun)
+    ...runs.map(visibleRight),
+    ...children.filter((child) => !isScaled(child)).map(rightmostRun)
   );
 
-/** The rightmost edge of any text `node` draws on the image surface, alone in a frame. */
-export const textRightEdge = async (
-  node: SlideContentNode,
-  tone: SlideFrameTone = 'page'
-): Promise<number> => {
-  const slide: SlideFrameNode = { type: 'slideFrame', tone, body: [node] };
-  const composition: Composition = { type: 'view', body: [slide] };
+/** `node` alone in a frame, unless it is one. */
+export const inFrame = (node: PrimitiveNode): PrimitiveNode =>
+  node.type === 'slideFrame' ? node : { type: 'slideFrame', body: [node] };
+
+/** The rightmost edge of any text `node` draws on the image surface, alone in a frame unless it is one. */
+export const textRightEdge = async (node: PrimitiveNode): Promise<number> => {
+  const composition: Composition = { type: 'view', body: [inFrame(node)] };
   return rightmostRun(
     await takumi.measure(runtime.surfaces.svg.render(composition))
   );
