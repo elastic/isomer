@@ -20,6 +20,7 @@ import {
   type Frame,
   type PrimitiveNode,
   type PrimitivePack,
+  type PrimitiveRenderContext,
   runEnhancementScript,
   type StyleHandle,
   themeBound,
@@ -1794,6 +1795,85 @@ describe('createIsomerRuntime', () => {
         primitives: [notePrimitive, boldPrimitive],
       })
     ).not.toThrow();
+  });
+
+  describe('enhancements across packs', () => {
+    const hasType =
+      (type: string) =>
+      (body: readonly PrimitiveNode[]): boolean =>
+        body.some((node) => node.type === type);
+    const enhancedPacks = () => [
+      definePrimitivePack({
+        id: 'a',
+        surfaces: [],
+        primitives: [notePrimitive],
+        enhancements: [
+          { id: 'noteCopy', appliesTo: hasType('note'), script: 'root.a = 1;' },
+        ],
+      }),
+      definePrimitivePack({
+        id: 'b',
+        surfaces: [],
+        primitives: [boldPrimitive],
+        enhancements: [
+          { id: 'boldSort', appliesTo: hasType('bold'), script: 'root.b = 1;' },
+        ],
+      }),
+    ];
+    const seen = (context: unknown) =>
+      [...((context as PrimitiveRenderContext).enhancements ?? [])]
+        .sort()
+        .join(',');
+    const runtimeOf = () =>
+      createIsomerRuntime({
+        packs: enhancedPacks(),
+        rendererOverrides: {
+          note: {
+            react: (node, { context }) =>
+              createElement(
+                'span',
+                { 'data-seen': seen(context) },
+                (node as NoteNode).text
+              ),
+          },
+          bold: {
+            react: (node, { context }) =>
+              createElement(
+                'strong',
+                { 'data-seen': seen(context) },
+                (node as BoldNode).text
+              ),
+          },
+        },
+      });
+    const requested = { enhancements: ['noteCopy', 'boldSort', 'absent'] };
+
+    it('hands every pack’s renderers the resolved set and emits each script once', () => {
+      const { body, js } = runtimeOf().surfaces.html.render(
+        {
+          type: 'view',
+          body: [
+            { type: 'note', text: 'n' } as NoteNode,
+            { type: 'bold', text: 'b' } as BoldNode,
+          ],
+        },
+        { ...requested, scripts: 'host' }
+      );
+      expect(body).toContain('<span data-seen="boldSort,noteCopy">');
+      expect(body).toContain('<strong data-seen="boldSort,noteCopy">');
+      expect(js.split('root.a = 1;')).toHaveLength(2);
+      expect(js.split('root.b = 1;')).toHaveLength(2);
+    });
+
+    it('leaves out an enhancement the body has nothing for, and its script', () => {
+      const { body, js } = runtimeOf().surfaces.html.render(
+        { type: 'view', body: [{ type: 'note', text: 'n' } as NoteNode] },
+        { ...requested, scripts: 'host' }
+      );
+      expect(body).toContain('<span data-seen="noteCopy">');
+      expect(js).toContain('root.a = 1;');
+      expect(js).not.toContain('root.b = 1;');
+    });
   });
 
   it('rejects the same enhancement id owned by two packs', () => {

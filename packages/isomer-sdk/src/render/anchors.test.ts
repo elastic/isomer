@@ -348,7 +348,7 @@ describe('html anchors', () => {
     expect(body.split(`${NODE_ANCHOR_ATTRIBUTE}="leaf"`)).toHaveLength(4);
   });
 
-  it('hands renderers the adapter context itself', () => {
+  it('hands renderers a view of the adapter context, not a copy', () => {
     const built = new InstanceContext();
     const seen: unknown[] = [];
     const recording = definePrimitive<LeafNode>({
@@ -375,7 +375,10 @@ describe('html anchors', () => {
       }
     );
     expect(seen.length).toBeGreaterThan(0);
-    expect(seen.every((context) => context === built)).toBe(true);
+    for (const context of seen) {
+      expect(context).toBeInstanceOf(InstanceContext);
+      expect((context as InstanceContext).describe()).toBe('instance');
+    }
     expect(built.anchors).toBeUndefined();
   });
 
@@ -398,6 +401,44 @@ describe('html anchors', () => {
     expect(renderWith({ anchors: true })).toContain(
       `${NODE_ANCHOR_ATTRIBUTE}="leaf"`
     );
+  });
+
+  it('gives a class-instance adapter context the resolved enhancements in place of its own', () => {
+    const seen: string[] = [];
+    const recording = definePrimitive<LeafNode>({
+      ...leaf,
+      renderers: {
+        ...leaf.renderers,
+        react: (node, { context }) => {
+          const { enhancements } = context as { enhancements?: Set<string> };
+          seen.push(
+            `${(context as InstanceContext).describe()}:${[...(enhancements ?? [])].join(',')}`
+          );
+          return createElement('p', null, node.text);
+        },
+      },
+    });
+    const { js } = renderHTMLWithDispatcher(
+      { type: 'view', body: [{ type: 'leaf', text: 'a' }] },
+      {
+        dispatcher: createPrimitiveDispatcher<LeafNode>([recording]),
+        validate: valid,
+        options: { enhancements: ['leafCopy'], scripts: 'host' },
+        enhancementDefinitions: [
+          { id: 'leafCopy', appliesTo: () => true, script: 'root.copy = 1;' },
+        ],
+        styleAdapter: {
+          createCollector: () => ({}),
+          createRenderContext: () =>
+            Object.assign(new InstanceContext(), {
+              enhancements: new Set(['stale']),
+            }),
+          renderStyles: () => '',
+        },
+      }
+    );
+    expect(new Set(seen)).toEqual(new Set(['instance:leafCopy']));
+    expect(js).toContain('root.copy = 1;');
   });
 
   it('renders none unless asked, even when the adapter context says otherwise', () => {
