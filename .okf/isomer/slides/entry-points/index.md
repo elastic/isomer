@@ -6,5 +6,5 @@ Directory: `slides/entry-points/`
 
 | Title | Type | Description |
 |-------|------|-------------|
-| [Root](root.md) | Entry Point | @elastic/isomer-primitives-slides slidesPack, slideDeckFrame, and primitive t... |
+| [Root](root.md) | Entry Point | @elastic/isomer-primitives-slides slidesPack, slideDeckFrame, primitive types... |
 

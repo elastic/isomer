@@ -25,6 +25,10 @@ sources:
 
 A pack is a vocabulary as a value: `id`, `primitives`, optional `surfaces`, `enhancements`, `slackAssetTypes`, `styleAdapter`, `styleCollector`, and `theme`. `definePrimitivePack` builds one and checks it. Node types must be unique within a pack; `definePrimitivePack` and `extendPrimitivePack` throw `DUPLICATE_PRIMITIVE_TYPE` on a repeat, and `composePacks` reports the cross-pack case.[^docs][^pack]
 
+`authoring` is the pack's contribution to agent authoring: `describe` and `omitProperties` for the JSON Schema, and `groups`, each a `PrimitiveGroup` of a `title` and the `types` a catalog index lists under it. A group may name only the pack's own types, and a type may sit in only one group; `definePrimitivePack` throws `UNKNOWN_PRIMITIVE_TYPE` or `DUPLICATE_PRIMITIVE_TYPE` otherwise, and a runtime checks the same across packs.[^docs]
+
+A pack builds on a fixed set of root exports, the pack-author contract: `definePrimitive` and `definePrimitiveFor`, `definePrimitivePack`, `createPrimitiveDispatcher`, the schema field helpers (`requiredString`, `optionalString`, `finiteNumber`, `enumOf`, `namedColorSchema`, `unresolvedBodyNodeSchema`), `someBodyNode`, `formatCompactNumber`, `nodeAnchor`, and the `PrimitiveCatalogEntry`, `BodyNodeBase`, and `PrimitiveNode` types.[^docs]
+
 An enhancement's optional `script` is a function body with `root`, the render's `.isomer` section, in scope. It addresses markup through `data-*` attributes, never uses `document.currentScript`, and dispatches host events with `bubbles: true` and `composed: true`. An enhancement the host drives has no `script`, and one that finds nodes declares `anchors: true`. See [rendering](/sdk/concepts/rendering.md) for who runs it.[^docs][^enhancements]
 
 `styleCollector` names the collector shape `collectStyles` hooks mutate. `definePrimitivePack` derives it from `styleAdapter.styleCollector` unless the pack sets it. Distillate-backed packs use the string `DISTILLATE_STYLE_COLLECTOR` (`'distillate'`). The SDK does not depend on `@elastic/distillate`.

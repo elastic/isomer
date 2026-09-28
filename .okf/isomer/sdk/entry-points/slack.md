@@ -14,7 +14,7 @@ sources:
 
 # Definition
 
-Slack Block Kit rendering and payload types. Reach Slack types through this entry, not `define/slack_*`.[^barrel]
+Slack Block Kit rendering and payload types. `renderSlackEnvelope` takes `heading` and clamps each block's text to `SLACK_LIMITS`. Reach Slack types through this entry, not `define/slack_*`.[^barrel]
 
 Related: [rendering](/sdk/concepts/rendering.md), [packs](/sdk/concepts/packs.md).
 

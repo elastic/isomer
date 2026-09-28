@@ -37,7 +37,7 @@ sources:
 4. Link across packages with a GitHub URL. A relative link to another package is absent from the tarball and fails `pnpm check:pack-contents`.[^pack-contents]
 5. Preview with `pnpm docs:dev` (copies package docs, then `docs-builder serve` at http://localhost:3000). The builder refuses symlinks, so the copies are real directories. Do not commit them.[^assemble][^dev]
 6. CI builds the set with `elastic/docs-builder@main`.[^ci]
-7. `examples/deck` is a Vite app, not pages, outside `docs/`. The docs workflow builds it with `DECK_BASE=./` after docs-builder and copies its build output, the deck's `dist/`, into the site at `/deck/`. Link to it with the absolute URL `https://elastic.github.io/isomer/deck/`. Preview with `pnpm deck:dev`.[^docs-workflow][^deck]
+7. `examples/deck` is a Vite app, not pages, outside `docs/`. The docs workflow builds it with `DECK_BASE=./` after docs-builder and copies its build output, the deck's `dist/`, into the site at `/deck/`. Link to it with the absolute URL `https://elastic.github.io/isomer/deck/`. CI's docs-builder job builds it the same way. Preview with `pnpm deck:dev`.[^docs-workflow][^deck][^ci]
 
 The assembler product id is not registered yet; this repo's docs-builder job is an isolated build.
 

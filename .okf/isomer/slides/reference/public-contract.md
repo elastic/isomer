@@ -14,8 +14,8 @@ sources:
 # Definition
 
 - `private: true`: the reference pack to copy, never published, so no published package may depend on it. Depends on `@elastic/distillate` `^0.1.0` and `@elastic/isomer-sdk` `workspace:*`.
-- Peers: `react` `>=18 <20`, `zod` `^4.4.1`.
-- Dev dependencies: `@elastic/isomer-runtime` and `@elastic/isomer-image-takumi` for examples and raster fixtures.[^package]
+- Peers: `react` and `react-dom` `>=18 <20`, `zod` `^4.4.1`.
+- Dev dependencies: `@elastic/isomer-runtime` and `@elastic/isomer-image-takumi` for examples and raster fixtures, and `@fontsource/inter` and `@fontsource/roboto-mono` for the faces those fixtures register.[^package]
 
 Related: [pack](/slides/concepts/pack.md), [distillate](/slides/concepts/distillate.md).
 

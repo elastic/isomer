@@ -14,7 +14,7 @@ sources:
 
 # Definition
 
-Markdown rendering. Slack falls back to this when a primitive has no Slack renderer.[^barrel]
+Markdown rendering: `renderMarkdownEnvelope` with `MarkdownEnvelopeOptions` (`heading`), and the URL-policed formatters. Slack falls back to this when a primitive has no Slack renderer.[^barrel]
 
 Related: [rendering](/sdk/concepts/rendering.md), [slack](/sdk/entry-points/slack.md).
 

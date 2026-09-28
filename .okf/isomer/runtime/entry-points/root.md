@@ -14,7 +14,7 @@ sources:
 
 # Definition
 
-One entry point. Notable symbols: `createIsomerRuntime`, `defineView`. Surface option and result types are re-exported from here.[^barrel]
+One entry point. Notable symbols: `createIsomerRuntime`, `defineView`. Surface option and result types are re-exported from here, including `HTMLStyleCollection`, and the authoring types `RuntimeAuthoringContext` and `PrimitiveDescriptions`.[^barrel]
 
 Related: [runtime](/runtime/concepts/runtime.md), [public contract](/runtime/reference/public-contract.md).
 
