@@ -10,6 +10,7 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { slideDistillery } from '../../theme/distillery';
 
 import { configExample, example, examples } from './examples';
 import { markdown, slack, text } from './index';
@@ -111,6 +112,15 @@ describe('slideDiff', () => {
         },
       ]
     `);
+  });
+
+  it('names an added or removed marker for assistive technology', () => {
+    const { html } = runtime.surfaces.html.render(compose(example));
+    const { markerLabel } = slideDistillery.tokens.diff;
+    expect(html).toContain(`role="img" aria-label="${markerLabel.add.value}"`);
+    expect(html).toContain(
+      `role="img" aria-label="${markerLabel.remove.value}"`
+    );
   });
 
   it('keeps a blank line visible on the slide', () => {

@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { stripMarks } from '../../render/marks';
+import { slideDistillery } from '../../theme/distillery';
 import { authoredStrings, slackText } from '../test_helpers.fixtures';
 
 import { checkExample, example, examples, xExample } from './examples';
@@ -36,6 +37,19 @@ describe('slideBulletList', () => {
       compose({ ...example, items: Array(7).fill('Point.') })
     );
     expect(errors.map(({ path }) => path)).toContain('body[0].body[0].items');
+  });
+
+  it('names a check or x marker for assistive technology and hides a dot', () => {
+    const html = (node: object) =>
+      runtime.surfaces.html.render(compose(node)).html;
+    const { checkLabel, crossLabel } = slideDistillery.tokens.bulletList;
+    expect(html(checkExample)).toContain(
+      `role="img" aria-label="${checkLabel.value}"`
+    );
+    expect(html(xExample)).toContain(
+      `role="img" aria-label="${crossLabel.value}"`
+    );
+    expect(html(example)).not.toContain('role="img"');
   });
 
   it('renders text and markdown', () => {

@@ -18,7 +18,8 @@ import type { SlideBulletMarker } from '../../theme/variants';
 import type { SlideBulletListNode } from './schema';
 import { bulletsModule } from './styles';
 
-const { crossGlyph } = slideDistillery.tokens.bulletList;
+const { checkLabel, crossGlyph, crossLabel } =
+  slideDistillery.tokens.bulletList;
 
 const Marker = ({
   marker,
@@ -29,9 +30,18 @@ const Marker = ({
 }): ReactNode => {
   const { handles: bullets } = bulletsModule;
   return (
-    <span aria-hidden className={cls(context, bullets.marker)}>
+    <span
+      {...(marker === 'dot'
+        ? { 'aria-hidden': true }
+        : {
+            role: 'img',
+            'aria-label': (marker === 'check' ? checkLabel : crossLabel).value,
+          })}
+      className={cls(context, bullets.marker)}>
       {marker === 'x' ? (
-        <span className={cls(context, bullets.cross)}>{crossGlyph.value}</span>
+        <span aria-hidden className={cls(context, bullets.cross)}>
+          {crossGlyph.value}
+        </span>
       ) : (
         <span
           className={cls(

@@ -27,4 +27,7 @@ export const bulletList = {
   crossGlyph: literal('×'),
   /** Text and markdown only; the image draws the check from borders. */
   checkGlyph: literal('✓'),
+  /** What assistive technology announces for a `check` or `x` marker, which the image draws without words. */
+  checkLabel: literal('Included'),
+  crossLabel: literal('Left out'),
 } as const;

@@ -17,7 +17,7 @@ import { layoutModule } from '../../theme/modules';
 import type { SlideDiffNode } from './schema';
 import { diffModule } from './styles';
 
-const { marker } = slideDistillery.tokens.diff;
+const { marker, markerLabel } = slideDistillery.tokens.diff;
 
 /** React renderer for {@link SlideDiffNode}. */
 export const react = (
@@ -45,7 +45,9 @@ export const react = (
               className={cls(context, diff.line, op ? diff.op[op] : undefined)}
               key={index}>
               <span
-                aria-hidden
+                {...(op
+                  ? { role: 'img', 'aria-label': markerLabel[op].value }
+                  : { 'aria-hidden': true })}
                 className={cls(
                   context,
                   diff.marker,

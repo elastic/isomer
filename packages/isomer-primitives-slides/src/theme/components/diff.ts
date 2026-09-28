@@ -24,4 +24,6 @@ export const diff = {
   bar: stroke.bar,
   markerWeight: font.weight.medium,
   marker: { add: literal('+'), remove: literal('−') },
+  /** What assistive technology announces for a marker, which the image draws as a glyph. */
+  markerLabel: { add: literal('Added'), remove: literal('Removed') },
 } as const;
