@@ -347,6 +347,36 @@ describe('createIsomerRuntime', () => {
     expect(bare).not.toContain('composition title');
   });
 
+  it('reports a composition nested 500 containers deep instead of throwing', () => {
+    const runtime = createIsomerRuntime({
+      packs: [packOf(holderPrimitive, notePrimitive)],
+    });
+    let node: PrimitiveNode = { type: 'note', text: 'leaf' } as NoteNode;
+    for (let level = 0; level < 500; level += 1) {
+      node = { type: 'holder', child: node } as HolderNode;
+    }
+    const deep: Composition = { type: 'view', body: [node] };
+    const bound = {
+      path: '',
+      message: expect.stringContaining('nests deeper than') as unknown,
+    };
+
+    expect(runtime.parse(deep)).toEqual({ valid: false, errors: [bound] });
+    expect(runtime.validate(deep)).toMatchObject({
+      valid: false,
+      errors: [bound],
+    });
+    try {
+      runtime.surfaces.text.render(deep);
+      expect.unreachable();
+    } catch (error) {
+      expect(error).toMatchObject({
+        name: 'CompositionValidationError',
+        code: 'COMPOSITION_INVALID',
+      });
+    }
+  });
+
   it('validates and renders custom-only primitive definitions', () => {
     const runtime = createIsomerRuntime({ packs: [packOf(notePrimitive)] });
     const spec = view('Runtime owned');

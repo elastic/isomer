@@ -269,7 +269,7 @@ describe('buildAuthoringJsonSchema unpaired surrogates', () => {
     ]);
     const { $defs } = built as { $defs: Record<string, unknown> };
     const refs = decodedRefs(built);
-    expect(refs).toContain('a�');
+    expect(refs).toContain('a\uFFFD');
     for (const id of refs) {
       expect(Object.hasOwn($defs, id)).toBe(true);
     }
