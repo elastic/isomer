@@ -91,6 +91,8 @@ export const slidesPackAuthoring = {
       'The title slide. Its aside is one slide node, never a slideFrame.',
     slideWindow:
       'Application chrome around slide nodes. Its body never holds a slideFrame or another slideWindow.',
+    slideColumns:
+      'Two to four parallel options. highlight, when given, is an index into items.',
     slideTable:
       'A grid of short cells. Give either rows or groups, not both; every row has exactly one cell per column.',
     slideMatrix:
@@ -113,6 +115,8 @@ export const slidesPackAuthoring = {
       'Three to five points on a rail. At most one item is current.',
     slideStat:
       'One headline number and the sentence that explains it. A unit needs a value; leave value out to show a placeholder.',
+    slideDelta:
+      'One number before and after a change. change needs both values; leave a value out to show a placeholder.',
     slideStats:
       'Two to four comparable numbers. A unit needs a value; leave value out to show a placeholder.',
     slideBars:
@@ -131,6 +135,6 @@ export const slidesPackAuthoring = {
     slideAnnotatedRender:
       'One slideRender with one to six numbered pins on it. Pin x and y are percentages from the render’s left and top edges; the render’s composition cannot contain another render.',
     slideRenderGrid:
-      'One composition rendered on several surfaces. The composition cannot contain another render.',
+      'One composition rendered on two to six surfaces, each surface once. The composition cannot contain another render.',
   },
 } satisfies PackAuthoringOptions;
