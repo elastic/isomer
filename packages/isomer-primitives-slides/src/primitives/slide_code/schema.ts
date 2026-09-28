@@ -11,6 +11,7 @@ import { z } from '@elastic/isomer-sdk';
 import { hasLineTerminator } from '../../render/marks';
 import { codeDenseAfter, codeLineMaxLength } from '../../theme/components/code';
 import { crossRefine } from '../cross_field';
+import { monoColumns } from '../size';
 
 const panelSchema = z
   .object({
@@ -33,7 +34,7 @@ const panelSchema = z
       .min(1)
       .max(16)
       .describe(
-        'Source, one entry per line, with indentation kept. Use an empty string for a blank line. One to sixteen lines; ten or fewer stay at the larger size.'
+        'Source, one entry per line, indented with spaces rather than tabs. Use an empty string for a blank line. One to sixteen lines; ten or fewer stay at the larger size.'
       ),
     highlightLines: z
       .array(z.number().int().positive())
@@ -47,6 +48,12 @@ const panelSchema = z
   .check(
     crossRefine(({ lines }) => !lines.some(hasLineTerminator), {
       error: 'one line per entry: split multi-line source into separate lines',
+      path: ['lines'],
+    })
+  )
+  .check(
+    crossRefine(({ lines }) => !lines.some((line) => line.includes('\t')), {
+      error: 'indent with spaces, not tabs',
       path: ['lines'],
     })
   )
@@ -74,7 +81,7 @@ export const schema = z
       .min(1)
       .max(2)
       .describe(
-        `One panel, or two side by side with an arrow between them to trace a value from one file to the next. Two panels need the full slide width; do not put them in a slideSplit column. A line holds ${codeLineMaxLength(1, false)} characters in one panel and ${codeLineMaxLength(2, false)} in each of two (${codeLineMaxLength(1, true)} and ${codeLineMaxLength(2, true)} past ${codeDenseAfter} lines); a narrower column holds fewer, and a longer line is clipped.`
+        `One panel, or two side by side with an arrow between them to trace a value from one file to the next. Two panels need the full slide width; do not put them in a slideSplit column. A line holds ${codeLineMaxLength(1, false)} characters in one panel and ${codeLineMaxLength(2, false)} in each of two (${codeLineMaxLength(1, true)} and ${codeLineMaxLength(2, true)} past ${codeDenseAfter} lines), a wide glyph such as CJK or an emoji counting as two; a narrower column holds fewer, and a longer line is clipped.`
       ),
   })
   .strict()
@@ -84,7 +91,7 @@ export const schema = z
         const dense = panels.some(({ lines }) => lines.length > codeDenseAfter);
         const max = codeLineMaxLength(panels.length === 2 ? 2 : 1, dense);
         return panels.every(({ lines }) =>
-          lines.every((line) => line.length <= max)
+          lines.every((line) => monoColumns(line) <= max)
         );
       },
       {

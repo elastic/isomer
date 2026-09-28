@@ -106,6 +106,20 @@ describe('slideCode line width', () => {
       )
     ).toEqual([]);
   });
+
+  it('counts a wide glyph as two columns and a combining mark as none', () => {
+    const one = codeLineMaxLength(1, false);
+    const wide = '漢'.repeat(Math.floor(one / 2));
+    expect(errorPaths(panel([wide]))).toEqual([]);
+    expect(errorPaths(panel([`${wide}漢`]))).toContainEqual(widthError);
+    expect(errorPaths(panel(['e\u0301'.repeat(one)]))).toEqual([]);
+  });
+
+  it('rejects a tab, whose width depends on the renderer', () => {
+    expect(errorPaths(panel(['\tindented']))).toEqual([
+      'body[0].body[0].panels[0].lines: indent with spaces, not tabs',
+    ]);
+  });
 });
 
 describe('slideCode output', () => {

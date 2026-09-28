@@ -64,6 +64,17 @@ describe('slideCommand schema', () => {
     ]);
   });
 
+  it('counts a wide glyph as two columns against the cap, and rejects a tab', () => {
+    const wide = '漢'.repeat(Math.floor(commandMaxLength / 2));
+    expect(errorPaths({ type: 'slideCommand', command: wide })).toEqual([]);
+    expect(
+      errorPaths({ type: 'slideCommand', command: `${wide}漢x` })
+    ).toHaveLength(1);
+    expect(errorPaths({ type: 'slideCommand', command: 'a\tb' })).toEqual([
+      'body[0].body[0].command: separate words with spaces, not tabs',
+    ]);
+  });
+
   it('caps the command at a length that fits at the smallest step', () => {
     const longest = 'x'.repeat(commandMaxLength);
     expect(errorPaths({ type: 'slideCommand', command: longest })).toEqual([]);

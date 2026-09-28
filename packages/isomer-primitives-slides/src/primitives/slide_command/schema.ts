@@ -11,6 +11,7 @@ import { z } from '@elastic/isomer-sdk';
 import { hasLineTerminator } from '../../render/marks';
 import { commandMaxLength } from '../../theme/components/command';
 import { crossRefine } from '../cross_field';
+import { monoColumns } from '../size';
 
 /** Zod schema for {@link SlideCommandNode}. */
 export const schema = z
@@ -28,7 +29,7 @@ export const schema = z
       .min(1)
       .max(commandMaxLength)
       .describe(
-        `One shell command on one line, without the \`$\` prompt; the slide draws that. At most ${commandMaxLength} characters. It is sized to the full slide width, so do not put it in a slideSplit column.`
+        `One shell command on one line, without the \`$\` prompt; the slide draws that. At most ${commandMaxLength} characters, a wide glyph such as CJK or an emoji counting as two, with spaces rather than tabs. It is sized to the full slide width, so do not put it in a slideSplit column.`
       ),
     highlightPrefix: z
       .string()
@@ -44,6 +45,24 @@ export const schema = z
       error: 'one line only: a multi-line command belongs in slideCode',
       path: ['command'],
     })
+  )
+  .check(
+    crossRefine(({ command }) => !command.includes('\t'), {
+      error: 'separate words with spaces, not tabs',
+      path: ['command'],
+    })
+  )
+  .check(
+    crossRefine(
+      // The schema's `max` already reports a command longer in characters.
+      ({ command }) =>
+        command.length > commandMaxLength ||
+        monoColumns(command) <= commandMaxLength,
+      {
+        error: `wider than the slide: at most ${commandMaxLength} characters, a wide glyph counting as two`,
+        path: ['command'],
+      }
+    )
   )
   .check(
     crossRefine(
