@@ -78,10 +78,10 @@ const mergePackAuthoring = (
   packs: readonly AnyPrimitivePack[],
   runtimeAuthoring: AuthoringJsonSchemaOptions
 ): AuthoringJsonSchemaOptions => {
-  const describe: Record<string, string> = {};
+  let describe: Record<string, string> = {};
   const omitProperties: string[] = [];
   for (const pack of packs) {
-    Object.assign(describe, pack.authoring?.describe);
+    describe = { ...describe, ...pack.authoring?.describe };
     omitProperties.push(...(pack.authoring?.omitProperties ?? []));
   }
   return {
@@ -92,6 +92,47 @@ const mergePackAuthoring = (
       ...(runtimeAuthoring.omitProperties ?? []),
     ],
   };
+};
+
+/** Most unknown types an error names before it counts the rest. */
+const MAX_LISTED_TYPES = 10;
+
+/** Most characters of an unknown type an error quotes. */
+const MAX_QUOTED_TYPE_CHARS = 100;
+
+/** `type` as JSON on one line, cut to a bounded length: `JSON.stringify` leaves U+2028 and U+2029 raw. */
+const quoteType = (type: string): string =>
+  JSON.stringify(
+    type.length > MAX_QUOTED_TYPE_CHARS
+      ? `${type.slice(0, MAX_QUOTED_TYPE_CHARS)}…`
+      : type
+  )
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+
+/** Throws if a group names a type no pack registers, or a type sits in two groups across every pack. */
+const assertGroupedOnce = (
+  groups: readonly PrimitiveGroup[],
+  known: ReadonlyMap<string, unknown>
+): void => {
+  const grouped = new Set<string>();
+  for (const { title, types } of groups) {
+    for (const type of types) {
+      if (!known.has(type)) {
+        throw new IsomerError(
+          'UNKNOWN_PRIMITIVE_TYPE',
+          `createIsomerRuntime: group "${title}" names "${type}", which no pack registers`
+        );
+      }
+      if (grouped.has(type)) {
+        throw new IsomerError(
+          'DUPLICATE_PRIMITIVE_TYPE',
+          `createIsomerRuntime: primitive type "${type}" is grouped twice`
+        );
+      }
+      grouped.add(type);
+    }
+  }
 };
 
 /**
@@ -113,19 +154,24 @@ export const createRuntimeAuthoringContextFactory = (
   const options = mergePackAuthoring(packs, runtimeAuthoring);
   const schema = buildAuthoringJsonSchema(definitions, options);
   const primitives = definitions.map((definition) => definition.catalog);
-  const groups = packs.flatMap((pack) => pack.authoring?.groups ?? []);
   const definitionsByType = new Map(
     definitions.map((definition) => [definition.type, definition])
   );
+  const groups = packs.flatMap((pack) => pack.authoring?.groups ?? []);
+  assertGroupedOnce(groups, definitionsByType);
 
   const assertKnown = (caller: string, types: readonly string[]): void => {
-    const missing = types.filter((type) => !definitionsByType.has(type));
+    const missing = [
+      ...new Set(types.filter((type) => !definitionsByType.has(type))),
+    ];
     if (missing.length > 0) {
+      const listed = missing.slice(0, MAX_LISTED_TYPES).map(quoteType);
+      const rest = missing.length - listed.length;
       throw new IsomerError(
         'UNKNOWN_PRIMITIVE_TYPE',
-        `getAuthoringContext.${caller}: unknown primitive type(s) ${missing
-          .map((type) => `"${type}"`)
-          .join(', ')}`
+        `getAuthoringContext.${caller}: unknown primitive type(s) ${listed.join(', ')}${
+          rest > 0 ? ` and ${rest} more` : ''
+        }`
       );
     }
   };

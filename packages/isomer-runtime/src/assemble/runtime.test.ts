@@ -27,7 +27,7 @@ import {
   unresolvedBodyNodeSchema,
 } from '@elastic/isomer-sdk';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
-import { describe, expect, expectTypeOf, it } from 'vitest';
+import { afterEach, describe, expect, expectTypeOf, it } from 'vitest';
 import { z } from 'zod';
 
 import { defineView } from '../registry';
@@ -71,6 +71,8 @@ const view = (text: string) => ({
   type: 'view' as const,
   body: [{ type: 'note' as const, text }],
 });
+
+const titled = { ...view('Body text'), title: 'Composition title' };
 
 interface WrapNode extends PrimitiveNode {
   type: 'wrap';
@@ -308,6 +310,41 @@ describe('createIsomerRuntime', () => {
         ],
       })
     ).toThrow(/primitive type "note" registered by "test" and "test.other"/);
+  });
+
+  it.each([
+    [
+      'text',
+      (runtime: ReturnType<typeof createIsomerRuntime>, heading?: boolean) =>
+        runtime.surfaces.text.render(
+          titled,
+          heading === undefined ? {} : { heading }
+        ),
+    ],
+    [
+      'markdown',
+      (runtime: ReturnType<typeof createIsomerRuntime>, heading?: boolean) =>
+        runtime.surfaces.markdown.render(
+          titled,
+          heading === undefined ? {} : { heading }
+        ),
+    ],
+    [
+      'slack',
+      (runtime: ReturnType<typeof createIsomerRuntime>, heading?: boolean) => {
+        const { blocks, text } = runtime.surfaces.slack.render(
+          titled,
+          heading === undefined ? {} : { heading }
+        );
+        return `${JSON.stringify(blocks)}\n${text}`;
+      },
+    ],
+  ])('forwards heading: false to the %s surface', (_surface, render) => {
+    const runtime = createIsomerRuntime({ packs: [packOf(notePrimitive)] });
+    expect(render(runtime).toLowerCase()).toContain('composition title');
+    const bare = render(runtime, false).toLowerCase();
+    expect(bare).toContain('body text');
+    expect(bare).not.toContain('composition title');
   });
 
   it('validates and renders custom-only primitive definitions', () => {
@@ -587,9 +624,16 @@ describe('createIsomerRuntime', () => {
     );
     expect(defs.note).toBeUndefined();
     expect(defs.bodyNode).not.toHaveProperty('oneOf');
-    const refs = JSON.stringify(defs).match(/#\/\$defs\/[\w]+/g) ?? [];
-    for (const ref of refs) {
-      expect(defs).toHaveProperty(ref.replace('#/$defs/', ''));
+    const refs = [
+      ...JSON.stringify(defs).matchAll(/"\$ref":"#\/\$defs\/([^"]+)"/g),
+    ].map(([, pointer]) =>
+      decodeURIComponent(pointer ?? '')
+        .replace(/~1/g, '/')
+        .replace(/~0/g, '~')
+    );
+    expect(refs.length).toBeGreaterThan(0);
+    for (const id of refs) {
+      expect(Object.hasOwn(defs, id)).toBe(true);
     }
   });
 
@@ -622,6 +666,95 @@ describe('createIsomerRuntime', () => {
       { title: 'Text', types: ['note'] },
       { title: 'Marks', types: ['bold'] },
     ]);
+  });
+
+  it.each([
+    ['a type no pack registers', ['ghost', 'note'], 'UNKNOWN_PRIMITIVE_TYPE'],
+    ['a type twice', ['note', 'note'], 'DUPLICATE_PRIMITIVE_TYPE'],
+  ])('rejects a group naming %s', (_name, types, code) => {
+    // Spread past `definePrimitivePack`, which checks its own groups.
+    const pack = {
+      ...packOf(notePrimitive),
+      authoring: { groups: [{ title: 'Text', types }] },
+    };
+    try {
+      createIsomerRuntime({ packs: [pack] });
+      expect.unreachable();
+    } catch (error) {
+      expect(error).toMatchObject({ name: 'IsomerError', code });
+    }
+  });
+
+  it('names a bounded number of unknown types, each quoted on one line', () => {
+    const runtime = createIsomerRuntime({ packs: [packOf(notePrimitive)] });
+    const separator = String.fromCharCode(0x2028);
+    const missing = Array.from(
+      { length: 25 },
+      (_, index) => `ghost${separator}${index}`
+    );
+    try {
+      runtime.getAuthoringContext().describePrimitives(missing);
+      expect.unreachable();
+    } catch (error) {
+      const { message } = error as Error;
+      expect(message).toContain('"ghost\\u20280", "ghost\\u20281"');
+      expect(message).toMatch(/"ghost\\u20289" and 15 more$/);
+      expect(message).not.toContain(separator);
+    }
+  });
+
+  describe('a describe entry keyed `__proto__`', () => {
+    afterEach(() => {
+      delete (Object.prototype as { description?: unknown }).description;
+    });
+
+    const protoPrimitive = definePrimitive({
+      type: '__proto__',
+      catalog: {
+        type: '__proto__',
+        purpose: '',
+        useWhen: [],
+        avoidWhen: [],
+        example: { type: '__proto__' },
+      },
+      examples: [{ type: '__proto__' }],
+      schema: z.object({ type: z.literal('__proto__') }),
+      renderers: { react: () => null, text: () => '', markdown: () => '' },
+    });
+    const describeProto = JSON.parse('{"__proto__": "An odd def."}') as Record<
+      string,
+      string
+    >;
+    const protoDef = (runtime: ReturnType<typeof createIsomerRuntime>) => {
+      const defs = runtime.getAuthoringContext().schema.$defs as Record<
+        string,
+        { description?: string }
+      >;
+      return Object.hasOwn(defs, '__proto__') ? defs.__proto__ : undefined;
+    };
+
+    it('describes the def of that name from the runtime option, never Object.prototype', () => {
+      const runtime = createIsomerRuntime({
+        packs: [packOf(notePrimitive)],
+        authoring: { describe: describeProto },
+      });
+      runtime.getAuthoringContext();
+      expect(({} as { description?: unknown }).description).toBeUndefined();
+    });
+
+    it('describes the def of that name from a pack, as the runtime option does', () => {
+      const runtime = createIsomerRuntime({
+        packs: [
+          definePrimitivePack({
+            id: 'odd',
+            primitives: [protoPrimitive],
+            authoring: { describe: describeProto },
+          }),
+        ],
+      });
+      expect(protoDef(runtime)?.description).toBe('An odd def.');
+      expect(({} as { description?: unknown }).description).toBeUndefined();
+    });
   });
 
   it('aggregates registered views into the authoring context', () => {
@@ -1111,6 +1244,65 @@ describe('createIsomerRuntime', () => {
 
       const result = runtime.surfaces.html.render(view('ok'));
       expect(result.body).toContain('class="one.root two.root"');
+      expect(result.css).toBe('.one.root{}.two.root{}');
+    });
+
+    it('keeps each part’s class-instance context working: methods, private state and own fields', () => {
+      class PartContext {
+        readonly #keys: string[];
+        readonly #label: string;
+        readonly brand: string;
+
+        constructor(keys: string[], label: string) {
+          this.#keys = keys;
+          this.#label = label;
+          this.brand = `${label}-brand`;
+        }
+
+        resolveClassName(...handles: StyleHandle[]): string {
+          this.#keys.push(...handles.map(({ key }) => key));
+          return handles.map(({ key }) => key).join(' ');
+        }
+
+        label(): string {
+          return this.#label;
+        }
+      }
+      const instanceAdapter = (prefix: string) => ({
+        ownsHandle: (handle: StyleHandle) => handle.key.startsWith(prefix),
+        createCollector: () => ({ keys: [] as string[] }),
+        createRenderContext: (collector: { keys: string[] }) =>
+          new PartContext(collector.keys, prefix),
+        renderStyles: (collector: { keys: string[] }) =>
+          collector.keys.map((key) => `.${key}{}`).join(''),
+      });
+      const runtime = createIsomerRuntime({
+        packs: styledPacks(instanceAdapter('one.'), instanceAdapter('two.')),
+        rendererOverrides: {
+          note: {
+            react: (node, { context }) => {
+              const part = context as PartContext;
+              return createElement(
+                'span',
+                {
+                  className: part.resolveClassName(
+                    { key: 'one.root', readableName: 'one-root' },
+                    { key: 'two.root', readableName: 'two-root' }
+                  ),
+                  'data-label': part.label(),
+                  'data-brand': part.brand,
+                },
+                (node as NoteNode).text
+              );
+            },
+          },
+        },
+      });
+
+      const result = runtime.surfaces.html.render(view('ok'));
+      expect(result.body).toContain('class="one.root two.root"');
+      expect(result.body).toContain('data-label="two."');
+      expect(result.body).toContain('data-brand="two.-brand"');
       expect(result.css).toBe('.one.root{}.two.root{}');
     });
 
