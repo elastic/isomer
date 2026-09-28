@@ -11,10 +11,13 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { codeDenseAfter } from '../../theme/components/code';
+import { slideDistillery } from '../../theme/distillery';
 import { connectorModule, layoutModule } from '../../theme/modules';
 
 import type { SlideCodeNode, SlideCodePanel } from './schema';
 import { codeModule } from './styles';
+
+const { label: connectorLabel } = slideDistillery.tokens.connector;
 
 const Panel = ({
   panel: { file, highlightLines = [], lines },
@@ -70,7 +73,8 @@ export const react = (
         {second ? (
           <>
             <div
-              aria-hidden
+              role="img"
+              aria-label={connectorLabel.value}
               className={cls(context, connector.across, connector.primary)}>
               <div className={cls(context, connector.railAcross)} />
               <div className={cls(context, connector.headRight)} />

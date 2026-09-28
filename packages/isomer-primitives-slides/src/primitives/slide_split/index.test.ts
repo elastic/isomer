@@ -101,6 +101,13 @@ describe('slideSplit children', () => {
 });
 
 describe('slideSplit output', () => {
+  it('names an arrow divider for assistive technology', () => {
+    const { label } = slideDistillery.tokens.connector;
+    expect(runtime.surfaces.html.render(compose(arrowExample)).html).toContain(
+      `role="img" aria-label="${label.value}"`
+    );
+  });
+
   it('keeps an arrow divider between the sides on every text surface', () => {
     const arrow = slideDistillery.tokens.split.arrowGlyph.value;
     const composition = compose(arrowExample);

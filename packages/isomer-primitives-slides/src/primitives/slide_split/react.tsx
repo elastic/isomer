@@ -12,6 +12,7 @@ import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { marksReact } from '../../render/marks';
 import { splitFit } from '../../theme/components/split';
+import { slideDistillery } from '../../theme/distillery';
 import {
   connectorModule,
   layoutModule,
@@ -24,6 +25,8 @@ import { splitLoad } from './fit';
 import { splitBlocks } from './items';
 import { splitModule } from './styles';
 import type { SlideSplitNode, SlideSplitSide } from './types';
+
+const { label: connectorLabel } = slideDistillery.tokens.connector;
 
 const Side = ({
   side,
@@ -119,7 +122,8 @@ export const react = (
           <div aria-hidden className={cls(context, split.hairline)} />
         ) : divider === 'arrow' ? (
           <div
-            aria-hidden
+            role="img"
+            aria-label={connectorLabel.value}
             className={cls(
               context,
               split.arrow,

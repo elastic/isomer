@@ -40,4 +40,6 @@ export const connector = {
   // Arrowhead drawn from borders: 10px either side, 16px long.
   headHalf: literal('10px'),
   headLength: literal('16px'),
+  /** What assistive technology announces for a connector that relates two sides, as a split's or a code trace's arrow does. */
+  label: literal('leads to'),
 } as const;
