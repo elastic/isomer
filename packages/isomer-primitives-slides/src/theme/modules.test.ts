@@ -22,11 +22,16 @@ const ruleFor = (css: string, readableName: string): string => {
 describe('slide theme', () => {
   it('no two tones render the same color', () => {
     const css = slideStylesheet();
-    const rules = slideTones.map((tone) =>
-      ruleFor(css, slideModules.tones.handles.tone[tone].readableName)
-    );
-    expect(new Set(rules).size).toBe(rules.length);
-    expect(rules.every(Boolean)).toBe(true);
+    // The declarations, not the rule: distinct selectors would make any two rules differ.
+    const bodies = slideTones.map((tone) => {
+      const rule = ruleFor(
+        css,
+        slideModules.tones.handles.tone[tone].readableName
+      );
+      return rule.slice(rule.indexOf('{'));
+    });
+    expect(bodies.every((body) => /--[\w-]+:\s*\S/.test(body))).toBe(true);
+    expect(new Set(bodies).size).toBe(bodies.length);
   });
 
   it('sets nothing below 24px', () => {
