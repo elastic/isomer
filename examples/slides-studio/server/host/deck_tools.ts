@@ -455,7 +455,7 @@ export const createDeckTools = ({
       name: 'deck_render_slide',
       title: 'Look at a slide',
       description:
-        'Renders a stored slide to PNG so you can check it the way the audience will see it: overflow, crowding, and balance. A note says where content runs past the slide’s body or nodes are drawn over each other, or that the slide fits; another flags a section link that points past the deck or at a slide with a different title. The fit note measures geometry only, so the image is the check for wrapping and alignment. Fix what you see with deck_set_slide.',
+        'Renders a stored slide to PNG so you can check it the way the audience will see it: overflow, crowding, and balance. A note says where content runs past the slide’s body or body nodes are drawn over each other, or that the slide fits; another flags a section link that points past the deck or at a slide with a different title. The fit note measures geometry and compares only the body’s own nodes, so the image is the check for crowding inside a container, wrapping, and alignment. Fix what you see with deck_set_slide.',
       inputSchema: z.object({
         deckId,
         index,
@@ -511,7 +511,7 @@ export const createDeckTools = ({
               ? [
                   {
                     type: 'text' as const,
-                    text: 'Fits its frame: nothing runs past the body, and no nodes are drawn over each other. This checks geometry only; look at the image for wrapping, balance, and alignment.',
+                    text: 'Fits its frame: nothing runs past the body, and no body nodes are drawn over each other. This checks geometry and the body’s own nodes only; look at the image for crowding inside a container, wrapping, balance, and alignment.',
                   },
                 ]
               : []),
