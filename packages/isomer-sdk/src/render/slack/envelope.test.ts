@@ -202,6 +202,8 @@ describe('Slack envelope transforms', () => {
             video_url: 'https://x.test/v',
             thumbnail_url: 'https://x.test/t.png',
             alt_text: long,
+            author_name: long,
+            provider_name: long,
           },
           { type: 'context', elements: [image] },
           {
@@ -230,39 +232,92 @@ describe('Slack envelope transforms', () => {
         ],
       ])
     );
-    const lengths = JSON.stringify(blocks).match(/x+…?/g) ?? [];
-    const { imageAltTextChars, videoTitleChars, optionTextChars } =
-      SLACK_LIMITS;
-    expect(Math.max(...lengths.map((text) => text.length))).toBeLessThanOrEqual(
-      imageAltTextChars
-    );
-    const byType = (type: string) =>
-      blocks.find((block) => block.type === type);
+    const byType = <TType extends SlackBlock['type']>(type: TType) =>
+      blocks.find(
+        (block): block is Extract<SlackBlock, { type: TType }> =>
+          block.type === type
+      );
+    const imageBlock = byType('image');
     const video = byType('video');
-    expect(video?.type === 'video' && video.title.text).toHaveLength(
-      videoTitleChars
+    const context = byType('context');
+    const section = blocks.find(
+      (block): block is Extract<SlackBlock, { type: 'section' }> =>
+        block.type === 'section' && block.accessory !== undefined
     );
     const actions = byType('actions');
-    if (actions?.type !== 'actions') {
-      throw new Error('expected an actions block');
+    if (
+      imageBlock?.type !== 'image' ||
+      video?.type !== 'video' ||
+      context?.type !== 'context' ||
+      section?.type !== 'section' ||
+      actions?.type !== 'actions'
+    ) {
+      throw new Error('expected image, video, context, section, then actions');
     }
-    const [button, select] = actions.elements;
-    expect(button?.type === 'button' && button.text.text).toHaveLength(
-      optionTextChars
-    );
-    expect(select?.type === 'static_select' && select.initial_option).toEqual(
-      select?.type === 'static_select' && select.options?.[0]
-    );
-    const grouped = actions.elements[2];
-    if (grouped?.type !== 'static_select') {
-      throw new Error('expected a grouped select');
+    const [button, select, grouped] = actions.elements;
+    if (
+      button?.type !== 'button' ||
+      select?.type !== 'static_select' ||
+      grouped?.type !== 'static_select'
+    ) {
+      throw new Error('expected a button and two selects');
     }
-    expect(grouped.placeholder?.text).toHaveLength(
-      SLACK_LIMITS.placeholderChars
-    );
-    expect(grouped.option_groups?.[0]?.label.text).toHaveLength(
-      SLACK_LIMITS.optionGroupLabelChars
-    );
+    const contextImage = context.elements[0];
+    const accessory = section.accessory;
+    const [selectOption] = select.options ?? [];
+    const [group] = grouped.option_groups ?? [];
+    const lengths = {
+      imageAlt: imageBlock.alt_text,
+      imageTitle: imageBlock.title?.text,
+      videoTitle: video.title.text,
+      videoDescription: video.description?.text,
+      videoAlt: video.alt_text,
+      videoAuthor: video.author_name,
+      videoProvider: video.provider_name,
+      contextImageAlt:
+        contextImage?.type === 'image' ? contextImage.alt_text : undefined,
+      accessoryAlt:
+        accessory?.type === 'image' ? accessory.alt_text : undefined,
+      button: button.text.text,
+      optionText: selectOption?.text.text,
+      optionDescription: selectOption?.description?.text,
+      placeholder: grouped.placeholder?.text,
+      groupLabel: group?.label.text,
+      groupOption: group?.options[0]?.text.text,
+    };
+    const {
+      imageAltTextChars,
+      imageTitleChars,
+      videoTitleChars,
+      videoDescriptionChars,
+      videoAttributionChars,
+      buttonTextChars,
+      optionTextChars,
+      placeholderChars,
+      optionGroupLabelChars,
+    } = SLACK_LIMITS;
+    expect(
+      Object.fromEntries(
+        Object.entries(lengths).map(([field, text]) => [field, text?.length])
+      )
+    ).toEqual({
+      imageAlt: imageAltTextChars,
+      imageTitle: imageTitleChars,
+      videoTitle: videoTitleChars,
+      videoDescription: videoDescriptionChars,
+      videoAlt: imageAltTextChars,
+      videoAuthor: videoAttributionChars,
+      videoProvider: videoAttributionChars,
+      contextImageAlt: imageAltTextChars,
+      accessoryAlt: imageAltTextChars,
+      button: buttonTextChars,
+      optionText: optionTextChars,
+      optionDescription: optionTextChars,
+      placeholder: placeholderChars,
+      groupLabel: optionGroupLabelChars,
+      groupOption: optionTextChars,
+    });
+    expect(select.initial_option).toEqual(selectOption);
   });
 
   it('elides overflow past the block budget and appends a notice', () => {

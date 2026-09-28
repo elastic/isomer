@@ -506,6 +506,22 @@ const clampBlockText = (blocks: readonly SlackBlock[]): SlackBlock[] =>
                 ),
               }
             : {}),
+          ...(block.author_name === undefined
+            ? {}
+            : {
+                author_name: clampSlackText(
+                  block.author_name,
+                  SLACK_LIMITS.videoAttributionChars
+                ),
+              }),
+          ...(block.provider_name === undefined
+            ? {}
+            : {
+                provider_name: clampSlackText(
+                  block.provider_name,
+                  SLACK_LIMITS.videoAttributionChars
+                ),
+              }),
         };
       case 'actions':
         return { ...block, elements: block.elements.map(clampControl) };

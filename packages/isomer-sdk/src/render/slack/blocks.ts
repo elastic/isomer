@@ -97,6 +97,8 @@ export const SLACK_LIMITS = {
   videoTitleChars: 200,
   /** `video` block `description`. */
   videoDescriptionChars: 200,
+  /** `video` block `author_name` and `provider_name`. */
+  videoAttributionChars: 50,
   /** `button` element `text`. */
   buttonTextChars: 75,
   /** Select `placeholder`. */
