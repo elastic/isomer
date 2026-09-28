@@ -6,7 +6,7 @@
  */
 
 /** Whether `value` can carry properties: a non-null object or a function. */
-const isObjectLike = (value: unknown): value is object =>
+export const isObjectLike = (value: unknown): value is object =>
   (typeof value === 'object' && value !== null) || typeof value === 'function';
 
 /**

@@ -207,6 +207,16 @@ describe('withoutAnchors', () => {
     expect(nodeAnchor(derived, { type: 'leaf' })).toEqual({});
   });
 
+  it('turns anchors off for a callable context, which stays callable', () => {
+    const callable = Object.assign(() => 'called', { anchors: true });
+    const off = withoutAnchors(callable);
+    withAnchors(true, () => {
+      expect(nodeAnchor(off, { type: 'leaf' })).toEqual({});
+    });
+    expect(nodeAnchor(off, { type: 'leaf' })).toEqual({});
+    expect(off()).toBe('called');
+  });
+
   it('returns a context that is not an object as it is', () => {
     expect(withoutAnchors(undefined)).toBeUndefined();
   });

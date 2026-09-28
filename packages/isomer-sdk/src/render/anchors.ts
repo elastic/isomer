@@ -10,7 +10,7 @@ import {
   isVisibleOnSurface,
 } from '../composition/body_node_base';
 
-import { contextWith } from './context_view';
+import { contextWith, isObjectLike } from './context_view';
 
 /** The attribute {@link nodeAnchor} sets to a node's {@link anchorValue}. */
 export const NODE_ANCHOR_ATTRIBUTE = 'data-isomer-node';
@@ -67,19 +67,20 @@ export const withAnchors = <TResult>(
  * The result is a view of `context`, not a copy: reads go to `context` itself,
  * with methods bound to it, so getters, methods, private state, and
  * `instanceof` behave as before. The mark survives a context derived from it
- * by spreading. A context that is not an object is returned as it is.
+ * by spreading. A context that is neither an object nor a function is
+ * returned as it is.
  */
 export const withoutAnchors = <TContext>(context: TContext): TContext =>
   contextWith(context, NO_ANCHORS, true);
 
 const anchorsOn = (context: unknown): boolean => {
-  const isObject = typeof context === 'object' && context !== null;
-  if (isObject && Reflect.get(context, NO_ANCHORS) === true) {
+  const carries = isObjectLike(context);
+  if (carries && Reflect.get(context, NO_ANCHORS) === true) {
     return false;
   }
   return (
     activeAnchors() ??
-    (isObject && (context as { anchors?: unknown }).anchors === true)
+    (carries && (context as { anchors?: unknown }).anchors === true)
   );
 };
 
