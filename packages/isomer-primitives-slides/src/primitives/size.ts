@@ -12,7 +12,7 @@
 import type { ScaleToken } from '@elastic/distillate';
 import { z } from '@elastic/isomer-sdk';
 
-import { monoColumns } from '../render/mono';
+import { displayColumns, WIDE } from '../render/mono';
 import { extraboldAdvance, monoAdvance } from '../theme/base';
 import { scalePx } from '../theme/scale';
 import { type SlideSize, slideSizes } from '../theme/variants';
@@ -50,31 +50,36 @@ export const rowLoad = (items: readonly (readonly (string | undefined)[])[]) =>
   Math.max(
     0,
     ...items.map((texts) =>
-      texts.reduce((total, text) => total + (text?.length ?? 0), 0)
+      texts.reduce((total, text) => total + displayColumns(text ?? ''), 0)
     )
   ) * items.length;
+
+const glyphAdvance = (glyph: string): number =>
+  WIDE.test(glyph)
+    ? extraboldAdvance.fullwidth
+    : /[iljtfrI.,:;!|'’ ]/.test(glyph)
+      ? extraboldAdvance.narrow
+      : /[mwMW]/.test(glyph)
+        ? extraboldAdvance.wide
+        : /[0-9]/.test(glyph)
+          ? extraboldAdvance.digit
+          : /[A-Z]/.test(glyph)
+            ? extraboldAdvance.upper
+            : extraboldAdvance.other;
 
 /** Width of `text` in ems of Inter ExtraBold, with `tracking` after every glyph. */
 export const emWidth = (text: string, tracking: ScaleToken): number =>
   [...text].reduce(
     (total, glyph) =>
-      total +
-      (/[iljtfrI.,:;!|'’ ]/.test(glyph)
-        ? extraboldAdvance.narrow
-        : /[mwMW]/.test(glyph)
-          ? extraboldAdvance.wide
-          : /[0-9]/.test(glyph)
-            ? extraboldAdvance.digit
-            : /[A-Z]/.test(glyph)
-              ? extraboldAdvance.upper
-              : extraboldAdvance.other) +
-      parseFloat(tracking.value),
+      /\p{M}/u.test(glyph)
+        ? total
+        : total + glyphAdvance(glyph) + parseFloat(tracking.value),
     0
   );
 
 /** Width of `text` in ems of Roboto Mono. */
 export const monoWidth = (text: string): number =>
-  monoColumns(text) * monoAdvance;
+  displayColumns(text) * monoAdvance;
 
 /** The node's own `size`, else the largest step at which `text`, `ems` wide per pixel of type, fits in `width` pixels. */
 export const sizeForWidth = (
@@ -90,7 +95,8 @@ export const longestWord = (text: string): string =>
   text
     .split(/\s+/)
     .reduce(
-      (longest, word) => (word.length > longest.length ? word : longest),
+      (longest, word) =>
+        displayColumns(word) > displayColumns(longest) ? word : longest,
       ''
     );
 

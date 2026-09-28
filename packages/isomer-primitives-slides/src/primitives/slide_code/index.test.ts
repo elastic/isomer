@@ -16,6 +16,7 @@ import { describe, expect, it } from 'vitest';
 import { slideFonts } from '../../examples/fonts';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { codeDenseAfter, codeLineMaxLength } from '../../theme/components/code';
+import { slideDistillery } from '../../theme/distillery';
 import { slackText } from '../test_helpers.fixtures';
 
 import { example, examples, traceExample } from './examples';
@@ -122,6 +123,14 @@ describe('slideCode line width', () => {
     expect(errorPaths(panel(['e\u0301'.repeat(one)]))).toEqual([]);
   });
 
+  it('refuses a line far past any panel before measuring it', () => {
+    expect(errorPaths(panel(['x'.repeat(100_000)]))).toContainEqual(
+      expect.stringMatching(
+        /^body\[0\]\.body\[0\]\.panels\[0\]\.lines\[0\]: must be at most \d+ characters$/
+      )
+    );
+  });
+
   it('rejects a tab, whose width depends on the renderer', () => {
     expect(errorPaths(panel(['\tindented']))).toEqual([
       'body[0].body[0].panels[0].lines: indent with spaces, not tabs',
@@ -211,6 +220,13 @@ describe('slideCode output', () => {
     );
     expect(md).toMatch(/^````md\n/);
     expect(md.trim().endsWith('````')).toBe(true);
+  });
+
+  it('names the trace arrow between two panels for assistive technology', () => {
+    const { label } = slideDistillery.tokens.connector;
+    expect(runtime.surfaces.html.render(compose(traceExample)).html).toContain(
+      `role="img" aria-label="${label.value}"`
+    );
   });
 
   it('keeps a blank line empty in the markup and one line tall on the slide', async () => {

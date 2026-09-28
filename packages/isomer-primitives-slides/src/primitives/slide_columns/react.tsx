@@ -11,6 +11,7 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { marksReact, stripMarks } from '../../render/marks';
+import { displayColumns } from '../../render/mono';
 import { columnsFit } from '../../theme/components/columns';
 import { layoutModule } from '../../theme/modules';
 import { rowLoad, sizeForLoad } from '../size';
@@ -34,7 +35,10 @@ export const react = (
         stripMarks(body),
       ])
     ) +
-      (footnote ? footnote.code.length + stripMarks(footnote.text).length : 0),
+      (footnote
+        ? displayColumns(footnote.code) +
+          displayColumns(stripMarks(footnote.text))
+        : 0),
     columnsFit,
     context?.crowding
   );

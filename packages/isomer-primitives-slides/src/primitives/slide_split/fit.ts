@@ -6,6 +6,7 @@
  */
 
 import { stripMarks } from '../../render/marks';
+import { displayColumns } from '../../render/mono';
 import { frameContentWidth } from '../../theme/components/frame';
 import { split, splitStatementMinLoad } from '../../theme/components/split';
 import { scalePx } from '../../theme/scale';
@@ -49,7 +50,8 @@ const sideLoad = ({ items }: SlideSplitSide, width: number): number =>
   (items.reduce<number>(
     (total, item) =>
       typeof item === 'string'
-        ? total + Math.max(stripMarks(item).length, splitStatementMinLoad)
+        ? total +
+          Math.max(displayColumns(stripMarks(item)), splitStatementMinLoad)
         : total,
     0
   ) *

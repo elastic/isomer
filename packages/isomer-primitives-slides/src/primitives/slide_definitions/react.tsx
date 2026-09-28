@@ -11,6 +11,7 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { marksReact, stripMarks } from '../../render/marks';
+import { displayColumns } from '../../render/mono';
 import { definitionsFit } from '../../theme/components/definitions';
 import { layoutModule } from '../../theme/modules';
 import { sizeForLoad } from '../size';
@@ -46,7 +47,7 @@ export const react = (
         ...columns.map((column) =>
           column.reduce(
             (total, { term, body }) =>
-              total + term.length + stripMarks(body).length,
+              total + displayColumns(term) + displayColumns(stripMarks(body)),
             0
           )
         )

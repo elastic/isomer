@@ -117,4 +117,13 @@ describe('slideHeading step', () => {
   it('keeps an authored size', () => {
     expect(stepOf({ ...titled(10), size: 's' })).toBe('s');
   });
+
+  it('counts a wide glyph as two characters, as it is about twice as wide', () => {
+    const wide = (count: number) => ({
+      type: 'slideHeading',
+      title: '界'.repeat(count),
+    });
+    expect(stepOf(wide(headingFit.l / 2))).toBe('l');
+    expect(stepOf(wide(headingFit.l / 2 + 1))).toBe('m');
+  });
 });

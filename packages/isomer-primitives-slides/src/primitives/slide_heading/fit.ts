@@ -8,6 +8,7 @@
 import type { ScaleToken } from '@elastic/distillate';
 
 import { stripMarks } from '../../render/marks';
+import { displayColumns } from '../../render/mono';
 import { regularAdvance } from '../../theme/base';
 import { frame } from '../../theme/components/frame';
 import { heading, headingFit } from '../../theme/components/heading';
@@ -47,7 +48,7 @@ export const referenceRoom = roomBelow(headingHeight(2, 2, 'l'));
 
 /** The title step {@link SlideHeadingNode} draws. */
 export const headingStep = ({ title, size }: SlideHeadingNode): SlideSize =>
-  sizeForLoad(size, stripMarks(title).length, headingFit);
+  sizeForLoad(size, displayColumns(stripMarks(title)), headingFit);
 
 /** How much tighter than the reference the room below `node` is, for {@link SlideRenderContext.crowding}. */
 export const headingCrowding = (node: SlideHeadingNode): number => {
@@ -61,7 +62,9 @@ export const headingCrowding = (node: SlideHeadingNode): number => {
   );
   const ledeLines = node.lede
     ? lines(
-        stripMarks(node.lede).length * regularAdvance * px(heading.lede.size),
+        displayColumns(stripMarks(node.lede)) *
+          regularAdvance *
+          px(heading.lede.size),
         heading.ledeMaxWidth
       )
     : 0;

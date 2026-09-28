@@ -11,6 +11,7 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { marksReact, stripMarks } from '../../render/marks';
+import { displayColumns } from '../../render/mono';
 import { statementFit } from '../../theme/components/statement';
 import { layoutModule } from '../../theme/modules';
 import { sizeForLoad } from '../size';
@@ -26,7 +27,7 @@ export const react = (
   const { handles: statement } = statementModule;
   const step = sizeForLoad(
     size,
-    stripMarks(text).length,
+    displayColumns(stripMarks(text)),
     statementFit,
     context?.crowding
   );

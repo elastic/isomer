@@ -114,6 +114,8 @@ export const extraboldAdvance = {
   upper: 0.7,
   digit: 0.62,
   other: 0.58,
+  /** A wide East Asian glyph, which falls back to a CJK face a full em across. */
+  fullwidth: 1,
 } as const;
 
 /** Average Inter Regular glyph width in ems, for estimating how many lines running text takes. */

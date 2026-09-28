@@ -7,10 +7,10 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { monoColumns } from './mono';
+import { displayColumns } from './mono';
 import { textTable } from './table';
 
-describe('monoColumns', () => {
+describe('displayColumns', () => {
   it.each([
     ['a plain letter', 'a', 1],
     ['a wide glyph', '界', 2],
@@ -21,7 +21,14 @@ describe('monoColumns', () => {
     ['an emoji', '\u{1f642}', 2],
     ['a joined family', '\u{1f469}\u200d\u{1f469}\u200d\u{1f467}', 2],
   ])('counts %s as its display width', (_name, text, columns) => {
-    expect(monoColumns(text)).toBe(columns);
+    expect(displayColumns(text)).toBe(columns);
+  });
+});
+
+describe('displayColumns with a limit', () => {
+  it('stops counting once it passes the limit', () => {
+    expect(displayColumns('a'.repeat(1_000_000), 10)).toBe(11);
+    expect(displayColumns('abc', 10)).toBe(3);
   });
 });
 
@@ -37,7 +44,7 @@ describe('textTable', () => {
     );
     const starts = table
       .split('\n')
-      .map((line) => monoColumns(line.slice(0, line.lastIndexOf(' ') + 1)));
+      .map((line) => displayColumns(line.slice(0, line.lastIndexOf(' ') + 1)));
     expect(new Set(starts)).toEqual(new Set([starts[0]]));
   });
 });

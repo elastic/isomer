@@ -8,6 +8,7 @@
 import { oneLine } from '@elastic/isomer-sdk/author';
 
 import { fencedBlock } from '../../render/fence';
+import { displayColumns } from '../../render/mono';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -26,13 +27,13 @@ export const text = ({ root, entries }: SlideTreeNode): string => {
     name: oneLine(name),
     body: oneLine(body),
   }));
-  const width = Math.max(...rows.map(({ name }) => name.length));
+  const width = Math.max(...rows.map(({ name }) => displayColumns(name)));
   return [
     oneLine(root),
     ...rows.map(({ name, body }, index) => {
       const connector =
         index === rows.length - 1 ? glyph.last.value : glyph.branch.value;
-      return `${connector} ${name.padEnd(width)}  ${body}`;
+      return `${connector} ${name}${' '.repeat(width - displayColumns(name))}  ${body}`;
     }),
   ].join('\n');
 };

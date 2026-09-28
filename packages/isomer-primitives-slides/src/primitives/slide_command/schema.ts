@@ -9,7 +9,7 @@ import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
 import { hasLineTerminator } from '../../render/marks';
-import { monoColumns } from '../../render/mono';
+import { displayColumns } from '../../render/mono';
 import { commandMaxLength } from '../../theme/components/command';
 import { crossRefine } from '../cross_field';
 
@@ -57,7 +57,7 @@ export const schema = z
       // The schema's `max` already reports a command longer in characters.
       ({ command }) =>
         command.length > commandMaxLength ||
-        monoColumns(command) <= commandMaxLength,
+        displayColumns(command, commandMaxLength) <= commandMaxLength,
       {
         error: `wider than the slide: at most ${commandMaxLength} characters, a wide glyph counting as two`,
         path: ['command'],

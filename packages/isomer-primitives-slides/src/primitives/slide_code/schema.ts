@@ -9,9 +9,13 @@ import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
 import { hasLineTerminator } from '../../render/marks';
-import { monoColumns } from '../../render/mono';
+import { displayColumns } from '../../render/mono';
 import { codeDenseAfter, codeLineMaxLength } from '../../theme/components/code';
 import { crossRefine } from '../cross_field';
+
+// Past this many UTF-16 units a line cannot fit any panel, so it is refused before its width is measured.
+const RAW_LINE_LIMIT =
+  Math.max(codeLineMaxLength(1, false), codeLineMaxLength(1, true)) * 8;
 
 const panelSchema = z
   .object({
@@ -30,7 +34,7 @@ const panelSchema = z
       )
       .optional(),
     lines: z
-      .array(z.string())
+      .array(z.string().max(RAW_LINE_LIMIT))
       .min(1)
       .max(16)
       .describe(
@@ -91,7 +95,7 @@ export const schema = z
         const dense = panels.some(({ lines }) => lines.length > codeDenseAfter);
         const max = codeLineMaxLength(panels.length === 2 ? 2 : 1, dense);
         return panels.every(({ lines }) =>
-          lines.every((line) => monoColumns(line) <= max)
+          lines.every((line) => displayColumns(line, max) <= max)
         );
       },
       {

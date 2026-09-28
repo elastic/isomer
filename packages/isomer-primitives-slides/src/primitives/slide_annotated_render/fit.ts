@@ -11,6 +11,7 @@
 import type { ScaleToken } from '@elastic/distillate';
 
 import { stripMarks } from '../../render/marks';
+import { displayColumns } from '../../render/mono';
 import { regularAdvance } from '../../theme/base';
 import {
   annotatedRender,
@@ -64,7 +65,7 @@ const legendHeight = (
       2 * scalePx(padding) +
       scalePx(title) * parseFloat(legend.title.lineHeight.value) +
       scalePx(legend.textGap) +
-      Math.ceil(stripMarks(text).length / charsPerLine) * bodyLine +
+      Math.ceil(displayColumns(stripMarks(text)) / charsPerLine) * bodyLine +
       scalePx(legend.rule),
     scalePx(legend.rule)
   );

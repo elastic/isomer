@@ -11,6 +11,7 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { marksReact, stripMarks } from '../../render/marks';
+import { displayColumns } from '../../render/mono';
 import { quoteFit } from '../../theme/components/quote';
 import { slideDistillery } from '../../theme/distillery';
 import { layoutModule } from '../../theme/modules';
@@ -29,7 +30,7 @@ export const react = (
   const { handles: quote } = quoteModule;
   const step = sizeForLoad(
     size,
-    stripMarks(text).length,
+    displayColumns(stripMarks(text)),
     quoteFit,
     context?.crowding
   );

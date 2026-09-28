@@ -11,6 +11,7 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 import { cls } from '../../render/cls';
 import type { SlideReactEnv, SlideRenderContext } from '../../render/context';
 import { marksReact, stripMarks } from '../../render/marks';
+import { displayColumns } from '../../render/mono';
 import { graphFit } from '../../theme/components/graph';
 import { connectorModule, layoutModule } from '../../theme/modules';
 import type { SlideSize } from '../../theme/variants';
@@ -172,11 +173,14 @@ export const react = (
   const { main, above, below } = graphLayout(node);
   const rows = [main, above, below].filter((row) => row !== undefined).length;
   const longest = Math.max(
-    ...node.nodes.map(({ term, body }) => term.length + stripMarks(body).length)
+    ...node.nodes.map(
+      ({ term, body }) =>
+        displayColumns(term) + displayColumns(stripMarks(body))
+    )
   );
   const step = sizeForLoad(
     size,
-    rows * longest + (caption ? stripMarks(caption).length : 0),
+    rows * longest + (caption ? displayColumns(stripMarks(caption)) : 0),
     graphFit,
     context?.crowding
   );
