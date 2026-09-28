@@ -14,7 +14,7 @@ import {
   definePrimitive,
   type PrimitiveNode,
 } from '../define/primitive_module';
-import { formatPath } from '../define/zod_format';
+import { formatPath, formatZodIssue } from '../define/zod_format';
 import { fixtureDefinitions } from '../testing/sdk.fixtures';
 
 import {
@@ -201,6 +201,21 @@ describe('unknown node keys', () => {
 });
 
 const LINE_SEPARATOR = String.fromCharCode(0x2028);
+
+describe('messages that list schema names', () => {
+  it('quotes an option or field name that is not a plain name, and keeps each on one line', () => {
+    const schema = z.object({
+      type: z.literal('view'),
+      mode: z.enum(['plain', 'line\nfeed', 'say "hi"', 'sep\u2028x']),
+    });
+    const [issue] = schema.safeParse({ type: 'view', mode: 'x' }).error!.issues;
+    const { message } = formatZodIssue(issue!);
+    expect(message).not.toMatch(/[\n\u2028]/);
+    expect(message).toBe(
+      'must be one of: plain, "line\\nfeed", "say \\"hi\\"", "sep\\u2028x"'
+    );
+  });
+});
 
 describe('messages that echo input', () => {
   it('quotes a misspelled value as JSON', () => {

@@ -9,9 +9,7 @@ import type { core } from 'zod';
 
 import type { ValidationError } from '../composition/validation_error';
 
-import { listBounded, quoteInput } from './one_line';
-
-const PATH_KEY = /^[\w$-]+$/;
+import { jsonLine, listBounded, nameText, quoteInput } from './one_line';
 
 /**
  * Builds a `body[3].items[0].label` style path from a Zod issue path. Empty
@@ -28,8 +26,9 @@ export const formatPath = (
       result += `[${segment}]`;
     } else {
       const text = String(segment);
-      if (!PATH_KEY.test(text)) {
-        result += `[${quoteInput(text)}]`;
+      const name = nameText(text);
+      if (name !== text) {
+        result += `[${name}]`;
       } else {
         result += result ? `.${text}` : text;
       }
@@ -124,7 +123,11 @@ const editDistance = (a: string, b: string): number => {
 
 /** `must be one of: …`, led by the closest option when `input` looks like a misspelling of one. */
 const oneOf = (options: readonly unknown[], input: unknown): string => {
-  const list = `must be one of: ${options.join(', ')}`;
+  const list = `must be one of: ${options
+    .map((option) =>
+      typeof option === 'string' ? nameText(option) : jsonLine(option)
+    )
+    .join(', ')}`;
   if (typeof input !== 'string') {
     return list;
   }

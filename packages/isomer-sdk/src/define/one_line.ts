@@ -26,6 +26,12 @@ export const quoteInput = (text: string): string =>
       : text
   );
 
+const PLAIN_NAME = /^[\w$-]+$/;
+
+/** A schema name for a message: as it is when plain, else quoted as {@link quoteInput} quotes input. */
+export const nameText = (name: string): string =>
+  PLAIN_NAME.test(name) ? name : quoteInput(name);
+
 /** Most items a message lists before it counts the rest. */
 const MAX_LISTED = 10;
 

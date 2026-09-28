@@ -21,7 +21,7 @@ import {
   CompositionValidationError,
   type ValidationError,
 } from '../composition/validation_error';
-import { quoteInput } from '../define/one_line';
+import { nameText, quoteInput } from '../define/one_line';
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
 import { formatPath, formatZodIssue } from '../define/zod_format';
 
@@ -174,7 +174,7 @@ const formatIssuesIn = (
     const onNode =
       issue.code === 'unrecognized_keys' && nodes.get(error.path) === nodeType;
     const message = onNode
-      ? `${error.message}; its fields are ${(fields.get(nodeType) ?? []).join(', ')}`
+      ? `${error.message}; its fields are ${(fields.get(nodeType) ?? []).map(nameText).join(', ')}`
       : error.message;
     return { ...error, message, nodeType };
   });
