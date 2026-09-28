@@ -64,6 +64,17 @@ export const embedScript = (body: string): string =>
  * declared by a requested enhancement that applies to `body`. `anchors: false`
  * cannot turn off anchors an enhancement needs.
  */
+/** Whether a render whose resolved enhancements are `enhancements` carries node anchors. */
+export const anchorsFor = (
+  enhancements: ReadonlySet<string>,
+  { anchors }: { anchors?: boolean },
+  definitions: readonly EnhancementDefinition[]
+): boolean =>
+  anchors === true ||
+  definitions.some(
+    ({ id, anchors: needed }) => needed === true && enhancements.has(id)
+  );
+
 export const rendersAnchors = (
   body: readonly PrimitiveNode[],
   {

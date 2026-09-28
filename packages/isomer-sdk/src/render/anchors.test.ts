@@ -14,6 +14,7 @@ import type { Composition } from '../composition/composition';
 import {
   definePrimitive,
   type PrimitiveNode,
+  type PrimitiveRenderContext,
 } from '../define/primitive_module';
 import type { EnhancementDefinition } from '../pack/enhancements';
 import {
@@ -208,6 +209,16 @@ describe('withoutAnchors', () => {
     expect(nodeAnchor(derived, { type: 'leaf' })).toEqual({});
   });
 
+  it('turns anchors off for a callable context, which stays callable', () => {
+    const callable = Object.assign(() => 'called', { anchors: true });
+    const off = withoutAnchors(callable);
+    withAnchors(true, () => {
+      expect(nodeAnchor(off, { type: 'leaf' })).toEqual({});
+    });
+    expect(nodeAnchor(off, { type: 'leaf' })).toEqual({});
+    expect(off()).toBe('called');
+  });
+
   it('returns a context that is not an object as it is', () => {
     expect(withoutAnchors(undefined)).toBeUndefined();
   });
@@ -383,7 +394,7 @@ describe('html anchors', () => {
     expect(body.split(`${NODE_ANCHOR_ATTRIBUTE}="leaf"`)).toHaveLength(4);
   });
 
-  it('hands renderers the adapter context itself', () => {
+  it('hands renderers a view of the adapter context, not a copy', () => {
     const built = new InstanceContext();
     const seen: unknown[] = [];
     const recording = definePrimitive<LeafNode>({
@@ -410,7 +421,10 @@ describe('html anchors', () => {
       }
     );
     expect(seen.length).toBeGreaterThan(0);
-    expect(seen.every((context) => context === built)).toBe(true);
+    for (const context of seen) {
+      expect(context).toBeInstanceOf(InstanceContext);
+      expect((context as InstanceContext).describe()).toBe('instance');
+    }
     expect(built.anchors).toBeUndefined();
   });
 
@@ -433,6 +447,98 @@ describe('html anchors', () => {
     expect(renderWith({ anchors: true })).toContain(
       `${NODE_ANCHOR_ATTRIBUTE}="leaf"`
     );
+  });
+
+  it('gives a class-instance adapter context the resolved enhancements in place of its own', () => {
+    const seen: string[] = [];
+    const recording = definePrimitive<LeafNode>({
+      ...leaf,
+      renderers: {
+        ...leaf.renderers,
+        react: (node, { context }) => {
+          const { enhancements } = context as { enhancements?: Set<string> };
+          seen.push(
+            `${(context as InstanceContext).describe()}:${[...(enhancements ?? [])].join(',')}`
+          );
+          return createElement('p', null, node.text);
+        },
+      },
+    });
+    const { js } = renderHTMLWithDispatcher(
+      { type: 'view', body: [{ type: 'leaf', text: 'a' }] },
+      {
+        dispatcher: createPrimitiveDispatcher<LeafNode>([recording]),
+        validate: valid,
+        options: { enhancements: ['leafCopy'], scripts: 'host' },
+        enhancementDefinitions: [
+          { id: 'leafCopy', appliesTo: () => true, script: 'root.copy = 1;' },
+        ],
+        styleAdapter: {
+          createCollector: () => ({}),
+          createRenderContext: () =>
+            Object.assign(new InstanceContext(), {
+              enhancements: new Set(['stale']),
+            }),
+          renderStyles: () => '',
+        },
+      }
+    );
+    expect(new Set(seen)).toEqual(new Set(['instance:leafCopy']));
+    expect(js).toContain('root.copy = 1;');
+  });
+
+  it('asks each enhancement whether it applies once per render, and anchors by that answer', () => {
+    let calls = 0;
+    const { body } = renderHTMLWithDispatcher(composition, {
+      dispatcher,
+      validate: valid,
+      options: { enhancements: ['counted'] },
+      enhancementDefinitions: [
+        {
+          id: 'counted',
+          anchors: true,
+          appliesTo: () => {
+            calls += 1;
+            return true;
+          },
+        },
+      ],
+    });
+    expect(calls).toBe(1);
+    expect(body).toContain(NODE_ANCHOR_ATTRIBUTE);
+  });
+
+  it('gives a callable adapter context the resolved enhancements, and keeps it callable', () => {
+    const seen: string[] = [];
+    const recording = definePrimitive<LeafNode>({
+      ...leaf,
+      renderers: {
+        ...leaf.renderers,
+        react: (node, { context }) => {
+          const call = context as unknown as (() => string) & {
+            enhancements?: Set<string>;
+          };
+          seen.push(`${call()}:${[...(call.enhancements ?? [])].join(',')}`);
+          return createElement('p', null, node.text);
+        },
+      },
+    });
+    renderHTMLWithDispatcher(
+      { type: 'view', body: [{ type: 'leaf', text: 'a' }] },
+      {
+        dispatcher: createPrimitiveDispatcher<LeafNode>([recording]),
+        validate: valid,
+        options: { enhancements: ['leafCopy'] },
+        enhancementDefinitions: [{ id: 'leafCopy', appliesTo: () => true }],
+        styleAdapter: {
+          createCollector: () => ({}),
+          createRenderContext: () =>
+            (() => 'called') as unknown as PrimitiveRenderContext,
+          renderStyles: () => '',
+        },
+      }
+    );
+    expect(new Set(seen)).toEqual(new Set(['called:leafCopy']));
   });
 
   it('renders none unless asked, even when the adapter context says otherwise', () => {

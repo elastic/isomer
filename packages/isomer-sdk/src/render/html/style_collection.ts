@@ -13,9 +13,14 @@ import type {
   StyledRenderContext,
 } from '../../define/primitive_module';
 import { withContextAnchors } from '../anchors';
+import { contextWith } from '../context_view';
 import type { CompositionWrapperOptions } from '../react/content';
 
-import { type EnhancementDefinition, rendersAnchors } from './enhancements';
+import {
+  anchorsFor,
+  type EnhancementDefinition,
+  resolveEnhancements,
+} from './enhancements';
 import type {
   HTMLEnhancementScope,
   HTMLRenderDispatcher,
@@ -51,16 +56,24 @@ export interface HTMLStyleCollectionOptions<
   enhancementDefinitions?: readonly EnhancementDefinition[];
 }
 
-/** `context` with node anchors on when `options` ask for them or a resolved enhancement declares them, for a render outside the html surface. */
-const anchoredContext = <TContext>(
+/** `context` for a render outside the html surface: carrying the resolved `enhancements`, with node anchors on when `options` or one of those enhancements asks. */
+const hostRenderContext = <TContext>(
   context: TContext,
   { body }: Composition,
   options: HTMLRenderOptions,
   { walk, definitions }: HTMLEnhancementScope
-): TContext =>
-  rendersAnchors(body, options, walk, definitions)
-    ? withContextAnchors(context)
-    : context;
+): TContext => {
+  const enhancements = resolveEnhancements(
+    body,
+    options.enhancements,
+    walk,
+    definitions
+  );
+  const enhanced = contextWith(context, 'enhancements', enhancements);
+  return anchorsFor(enhancements, options, definitions)
+    ? withContextAnchors(enhanced)
+    : enhanced;
+};
 
 /** The collection half of an html render, for {@link renderHTMLWithDispatcher} and for a host rendering the tree itself. `options` are already resolved. */
 export const startStyleCollection = <
@@ -134,7 +147,7 @@ export const createHTMLStyleCollection = <
     ...settings,
     options: resolved,
   });
-  const context = anchoredContext(
+  const context = hostRenderContext(
     // No adapter means no class names and no css vars to resolve.
     started ? started.context : ({} as TContext),
     composition,

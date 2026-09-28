@@ -34,6 +34,7 @@ import {
   type ValidationResult,
 } from '../../validate/validation';
 import { withAnchors } from '../anchors';
+import { contextWith } from '../context_view';
 import { byteLength, type PayloadMeasurement } from '../payload';
 import {
   type ReactContentDispatcher,
@@ -42,9 +43,11 @@ import {
 } from '../react/content';
 
 import {
+  anchorsFor,
   embedScript,
   type EnhancementDefinition,
-  rendersAnchors,
+  enhancementScript,
+  resolveEnhancements,
 } from './enhancements';
 import { startStyleCollection } from './style_collection';
 
@@ -244,8 +247,9 @@ export interface HTMLDispatcherRenderOptions<
   scriptText?: string;
   /**
    * Progressive enhancements declared by the packs this render was composed
-   * from. The adapter content-gates them against the body via
-   * {@link HTMLEnhancementScope.walk}.
+   * from. The render resolves {@link HTMLRenderOptions.enhancements} against
+   * them once, hands every renderer the set as `context.enhancements`, and
+   * emits each resolved one's script.
    */
   enhancementDefinitions?: readonly EnhancementDefinition[];
 }
@@ -295,12 +299,15 @@ export const renderHTMLWithDispatcher = <
     walk: createChildNodeWalker(dispatcher.definitions),
     definitions: enhancementDefinitions,
   };
-  const anchors = rendersAnchors(
+  const enhancements = resolveEnhancements(
     composition.body,
-    options,
+    options.enhancements,
     enhancementScope.walk,
     enhancementDefinitions
   );
+  const anchors = anchorsFor(enhancements, options, enhancementDefinitions);
+  const enhanced = (context: TContext): TContext =>
+    contextWith(context, 'enhancements', enhancements);
 
   if (collection) {
     withAnchors(anchors, () =>
@@ -309,7 +316,7 @@ export const renderHTMLWithDispatcher = <
           renderCompositionContent(
             composition,
             dispatcher,
-            collection.context,
+            enhanced(collection.context),
             {
               heading,
             }
@@ -320,16 +327,19 @@ export const renderHTMLWithDispatcher = <
   }
 
   const cssText = collection ? collection.css() : '';
-  const renderContext: TContext =
+  const renderContext = enhanced(
     collection && styleAdapter
       ? styleAdapter.createRenderContext(collection.collector, options)
       : // No adapter means no class names and no css vars to resolve.
-        ({} as TContext);
+        ({} as TContext)
+  );
   const adapterScriptText =
     styleAdapter?.getScriptText?.(composition, options, enhancementScope) ?? '';
-  const js = [scriptText, adapterScriptText]
+  const js = [
+    ...[scriptText, adapterScriptText].filter(Boolean).map(scopeScript),
+    enhancementScript(enhancements, enhancementDefinitions),
+  ]
     .filter(Boolean)
-    .map(scopeScript)
     .join('\n');
   const embeddedScript =
     js && scriptsMode === 'embedded' ? embedScript(js) : '';

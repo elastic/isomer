@@ -14,6 +14,7 @@
 - **Agent tools**: `@elastic/isomer-agent-tools` turns any runtime into transport-neutral tools (`isomer_authoring_guide`, `isomer_describe_primitives`, `isomer_validate`, `isomer_render`, and the view tools when a view is registered), the guide and schema resources, and a `compose` prompt. It depends on the SDK alone, and `scripts/check_module_graph.js` fails when it reaches `@modelcontextprotocol/sdk`, walking declarations and flagging a computed `import()` too.
 - **Examples**: `examples/*` are private workspace apps. `examples/deck` is the Isomer deck, one `.tsx` composition per slide, with a viewer exported as `./viewer` that shows every surface, JSX and JSON source, builds, and Copy; CI builds it and the docs workflow copies it to `/deck/`. `examples/slides-studio` serves the slides runtime and deck tools over MCP on loopback, for an agent to write a deck while you watch.
 - **Release posture**: `@elastic/isomer-agent-tools` is private until its API settles, beside the private slides pack; the SDK, runtime, image-takumi, and evals publish.
+- **Enhancements reach every renderer**: The HTML render resolves `enhancements` once, hands every renderer the set as `context.enhancements` through a view of the adapter's context, and emits each resolved enhancement's script itself, so a pack needs no adapter wiring for its enhancements. The runtime's combined style adapter builds its context as a view over each pack's, so a class-instance context keeps its methods and private state.
 
 ## 2026-09-25
 
