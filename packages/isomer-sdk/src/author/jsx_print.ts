@@ -37,7 +37,8 @@ const ATTRIBUTE_NAME = /^[A-Za-z_$][\w$-]*$/;
 const COMPONENT_NAME = /^[A-Z_$][\w$]*$/;
 const LONE_SURROGATE =
   /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g;
-const MAX_DEPTH = 256;
+/** Nesting past which the printer and the shim refuse a value, which also ends a cycle. */
+export const MAX_JSX_DEPTH = 256;
 // Props JSX cannot carry as data: `createElement` assigns props, so `__proto__` sets the prototype; React consumes `key` and `ref`; the shim reads `children` as JSX children.
 const RESERVED_PROPS = new Set(['__proto__', 'children', 'key', 'ref']);
 // JSX decodes HTML entities in attribute strings, so any `&` must be an expression; a lone surrogate does not survive a UTF-8 file.
@@ -91,10 +92,10 @@ export const printJsx = (
     !text.includes('\n') && indent.length + text.length <= width;
 
   const assertDepth = (indent: string): void => {
-    if (indent.length > MAX_DEPTH * INDENT.length) {
+    if (indent.length > MAX_JSX_DEPTH * INDENT.length) {
       throw new IsomerError(
         'INVALID_BODY_NODE',
-        `toJsx: the composition nests deeper than ${MAX_DEPTH} levels`
+        `toJsx: the composition nests deeper than ${MAX_JSX_DEPTH} levels`
       );
     }
   };

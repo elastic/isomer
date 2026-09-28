@@ -307,6 +307,25 @@ describe('toJsx', () => {
     ]);
   });
 
+  it('refuses a prop value nested too deep to convert, or a cycle, with an IsomerError', () => {
+    const { Composition, Note } = shim;
+    let deep: Record<string, unknown> = {};
+    for (let level = 0; level < 1000; level += 1) {
+      deep = { deep };
+    }
+    const cyclic: Record<string, unknown> = {};
+    cyclic.self = [cyclic];
+    for (const meta of [deep, cyclic]) {
+      expectIsomerError(
+        () =>
+          shim.toComposition(
+            createElement(Composition, null, createElement(Note, { meta }))
+          ),
+        'INVALID_BODY_NODE'
+      );
+    }
+  });
+
   it('round-trips a composition as deep as the parser accepts', () => {
     let node: PrimitiveNode = { type: 'note', text: 'leaf' } as PrimitiveNode;
     for (let level = 0; level < MAX_COMPOSITION_DEPTH; level += 1) {

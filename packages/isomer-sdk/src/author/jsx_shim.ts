@@ -26,7 +26,7 @@ import {
   readAuthoredSpec,
 } from './authored_fields';
 import { type AuthorComponent, authorType, defineAuthorComponent } from './jsx';
-import { type JsxPrintOptions, printJsx } from './jsx_print';
+import { type JsxPrintOptions, MAX_JSX_DEPTH, printJsx } from './jsx_print';
 
 /** A {@link Composition} whose `body` is the pack's own authoring node type. */
 export type AuthorComposition<TNode extends PrimitiveNode = PrimitiveNode> =
@@ -537,12 +537,19 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> => {
 /** Converts author elements anywhere inside a prop value, e.g. `left={{ items: [<Node />] }}`. */
 const convertNested = <TNode extends PrimitiveNode>(
   value: unknown,
-  parseChild: (child: ReactNode) => TNode
+  parseChild: (child: ReactNode) => TNode,
+  depth = 0
 ): unknown => {
+  if (depth > MAX_JSX_DEPTH) {
+    throw new IsomerError(
+      'INVALID_BODY_NODE',
+      `toComposition: a prop nests deeper than ${MAX_JSX_DEPTH} levels`
+    );
+  }
   if (Array.isArray(value)) {
     return value.flatMap((item: unknown) => {
       const nodes = nodesFromJsx(item, parseChild);
-      return nodes ?? [convertNested(item, parseChild)];
+      return nodes ?? [convertNested(item, parseChild, depth + 1)];
     });
   }
   if (isPlainObject(value)) {
@@ -553,7 +560,7 @@ const convertNested = <TNode extends PrimitiveNode>(
           key,
           nodes && nodes.length === 1
             ? nodes[0]
-            : (nodes ?? convertNested(entry, parseChild)),
+            : (nodes ?? convertNested(entry, parseChild, depth + 1)),
         ];
       })
     );
