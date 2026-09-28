@@ -14,6 +14,7 @@ import { catalog } from './catalog';
 import { examples } from './examples';
 import { react } from './react';
 import { schema, type SlideBarsNode } from './schema';
+import { barValue } from './value';
 
 export type { SlideBarsItem, SlideBarsNode } from './schema';
 
@@ -29,7 +30,7 @@ const table = ({ items }: SlideBarsNode) => {
     ],
     body: items.map(({ label, value, detail }) => [
       label,
-      String(value),
+      barValue(value),
       ...(details ? [detail ?? ''] : []),
     ]),
   };

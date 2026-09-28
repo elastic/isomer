@@ -5,11 +5,26 @@
  * 2.0.
  */
 
+import { createIsomerRuntime } from '@elastic/isomer-runtime';
+import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
+
+import { slideDeckFrame, slidesPack } from '../../pack';
 
 import { example, scaledExample } from './examples';
 import { markdown, text } from './index';
-import { schema } from './schema';
+import { schema, type SlideBarsNode } from './schema';
+
+const runtime = createIsomerRuntime({
+  packs: [slidesPack],
+  frames: { slide: slideDeckFrame },
+});
+
+const html = (node: SlideBarsNode): string =>
+  runtime.surfaces.html.render({
+    type: 'view',
+    body: [{ type: 'slideFrame', body: [node] } as PrimitiveNode],
+  } satisfies Composition).html;
 
 describe('slideBars', () => {
   it('rejects more than one highlighted item', () => {
@@ -56,5 +71,27 @@ describe('slideBars', () => {
       | Reviews | 63 |
       | Wishlist | 51 |"
     `);
+  });
+
+  it('prints a value without float noise or an exponent on every surface', () => {
+    const node: SlideBarsNode = {
+      type: 'slideBars',
+      items: [
+        { label: 'Sum', value: 0.1 + 0.2 },
+        { label: 'Huge', value: 1e21 },
+        { label: 'Zero', value: -0 },
+      ],
+    };
+    const huge = '1000000000000000000000';
+    expect(text(node).split('\n').slice(2)).toEqual([
+      'Sum    0.3',
+      `Huge   ${huge}`,
+      'Zero   0',
+    ]);
+    expect(markdown(node)).toContain(`| Sum | 0.3 |\n| Huge | ${huge} |`);
+    const drawn = html(node);
+    expect(drawn).toContain('>0.3<');
+    expect(drawn).toContain(`>${huge}<`);
+    expect(drawn).not.toMatch(/e\+21|0\.30000/);
   });
 });

@@ -17,6 +17,7 @@ import { sizeForLoad } from '../size';
 
 import type { SlideBarsNode } from './schema';
 import { barsModule } from './styles';
+import { barValue } from './value';
 
 const maxShare = parseFloat(theme.barMaxShare.value);
 
@@ -66,7 +67,7 @@ export const react = (
                     bars.valueSize[step],
                     highlight ? bars.valueHighlight : undefined
                   )}>
-                  {String(value)}
+                  {barValue(value)}
                 </span>
               </div>
               {detail ? (

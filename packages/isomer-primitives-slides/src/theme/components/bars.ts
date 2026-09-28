@@ -40,5 +40,11 @@ export const bars = {
   },
 } as const;
 
+/** How a bar's value prints on every surface, under the `en-US` locale. */
+export const barsValueFormat = {
+  maximumFractionDigits: 2,
+  useGrouping: false,
+} as const satisfies Intl.NumberFormatOptions;
+
 /** Load each step holds: two per bar, one per detail line. */
 export const barsFit = { l: 13, m: 16 } as const;
