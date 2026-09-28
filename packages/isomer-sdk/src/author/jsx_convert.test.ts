@@ -103,7 +103,7 @@ describe('toComposition', () => {
         { type: 'note' as const },
         { type: 'Note' as const },
       ] as const)
-    ).toThrow(/"note" and "Note" both become the component Note/);
+    ).toThrow(/"note" and "Note" both become the component "Note"/);
   });
 
   it('converts nodes nested inside the items of a branded child field', () => {
@@ -148,6 +148,36 @@ describe('toComposition', () => {
     expect(group.items[0]?.body).toEqual([
       { nested: { type: 'note', text: 'n' } },
     ]);
+  });
+
+  it('converts a node nested in what a toItem callback returns', () => {
+    const custom = buildJsxShim([
+      { type: 'note' as const },
+      {
+        type: 'deck' as const,
+        schema: z.object({
+          type: z.literal('deck'),
+          cards: fromChildren('card', z.array(z.unknown()), {
+            toItem: (props: Record<string, unknown>) => ({
+              wrapped: props.payload,
+            }),
+          }),
+        }),
+      },
+    ] as const);
+    const { Card, Composition: Root, Deck, Note: Leaf } = custom;
+    const [deck] = custom.toComposition(
+      createElement(
+        Root,
+        null,
+        createElement(
+          Deck,
+          null,
+          createElement(Card, { payload: createElement(Leaf, { text: 'n' }) })
+        )
+      )
+    ).body as unknown as [{ cards: unknown[] }];
+    expect(deck.cards).toEqual([{ wrapped: { type: 'note', text: 'n' } }]);
   });
 
   it('converts a node inside a prop object from another realm', () => {

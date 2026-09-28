@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-export { jsonLine, oneLine, quoteInput } from '../define/one_line';
+export { jsonLine, oneLine, quoteInput } from '../composition/one_line';
 export {
   type AuthorChildContext,
   type AuthoredChildBrand,

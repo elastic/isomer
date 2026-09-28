@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { jsonLine, oneLine } from '../define/one_line';
+import { jsonLine, oneLine } from '../composition/one_line';
 import type { PrimitiveCatalogEntry } from '../define/primitive_module';
 import type { PrimitiveGroup } from '../pack/primitive_pack';
 

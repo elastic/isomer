@@ -16,6 +16,7 @@ import type { z, ZodObject, ZodType } from 'zod';
 
 import type { Composition } from '../composition/composition';
 import { IsomerError } from '../composition/error';
+import { quoteInput } from '../composition/one_line';
 import type { PrimitiveNode } from '../define/primitive_module';
 
 import {
@@ -194,7 +195,7 @@ export const buildJsxShim = <
     if (earlier !== undefined && earlier !== type) {
       throw new IsomerError(
         'DUPLICATE_PRIMITIVE_TYPE',
-        `buildJsxShim: "${earlier}" and "${type}" both become the component ${name}`
+        `buildJsxShim: ${quoteInput(earlier)} and ${quoteInput(type)} both become the component ${quoteInput(name)}`
       );
     }
     named.set(name, type);
@@ -326,7 +327,7 @@ const bodyNodeFromElement = <TNode extends PrimitiveNode>(
   if (!env.extensionTypes.has(type)) {
     throw new IsomerError(
       'INVALID_BODY_NODE',
-      `"${type}" cannot be used as a composition body node.`
+      `${quoteInput(type)} cannot be used as a composition body node.`
     );
   }
 
@@ -434,11 +435,14 @@ const itemFromElement = (
     child,
     field.childType
   );
+  const parseChild = (node: ReactNode) => bodyNodeFromElement(node, env);
   if (field.toItem) {
-    return field.toItem(element.props, {
-      parseChildren: (nested) =>
-        flattenChildren(nested).map((node) => bodyNodeFromElement(node, env)),
-    });
+    return convertNested(
+      field.toItem(element.props, {
+        parseChildren: (nested) => flattenChildren(nested).map(parseChild),
+      }),
+      parseChild
+    );
   }
   const props = withoutChildren<Record<string, unknown>>(element);
   const nestedChildren = element.props.children;
@@ -451,9 +455,7 @@ const itemFromElement = (
     props[field.textField] = textFromChildren(nestedChildren);
   }
   fillNestedBrands(field.itemSchema, props, nestedChildren, env);
-  return convertNested(props, (node: ReactNode) =>
-    bodyNodeFromElement(node, env)
-  );
+  return convertNested(props, parseChild);
 };
 
 const fillNestedBrands = (
