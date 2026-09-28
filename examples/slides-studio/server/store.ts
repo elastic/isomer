@@ -11,14 +11,20 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  renameSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 
 import type { Deck, DeckStore, DeckSummary } from './host/deck';
 
 const anyDeck = Symbol('any deck');
+
+/** Every id the store makes or accepts, so an id is always a file name inside its directory. */
+const deckId = /^[\w-]+$/;
+
+const isDeckId = (id: string): boolean => deckId.test(id);
 
 const summarize = ({ id, title, slides, updatedAt }: Deck): DeckSummary => ({
   id,
@@ -27,14 +33,46 @@ const summarize = ({ id, title, slides, updatedAt }: Deck): DeckSummary => ({
   updatedAt,
 });
 
+const isDeck = (value: unknown, id: string): value is Deck => {
+  const deck = value as Partial<Deck> | null;
+  return (
+    typeof deck === 'object' &&
+    deck !== null &&
+    deck.id === id &&
+    typeof deck.title === 'string' &&
+    Array.isArray(deck.slides) &&
+    typeof deck.updatedAt === 'string'
+  );
+};
+
+const readDeck = (dir: string, file: string): Deck | undefined => {
+  const id = basename(file, '.json');
+  try {
+    const deck: unknown = JSON.parse(readFileSync(join(dir, file), 'utf8'));
+    return isDeckId(id) && isDeck(deck, id) ? deck : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 const readDecks = (dir: string): Map<string, Deck> => {
   mkdirSync(dir, { recursive: true });
   const decks = new Map<string, Deck>();
+  const skipped: string[] = [];
   for (const file of readdirSync(dir).filter((name) =>
     name.endsWith('.json')
   )) {
-    const deck = JSON.parse(readFileSync(join(dir, file), 'utf8')) as Deck;
-    decks.set(deck.id, deck);
+    const deck = readDeck(dir, file);
+    if (deck) {
+      decks.set(deck.id, deck);
+    } else {
+      skipped.push(file);
+    }
+  }
+  if (skipped.length > 0) {
+    console.warn(
+      `slides studio: skipped ${skipped.join(', ')} in ${dir}, which are not decks this studio wrote.`
+    );
   }
   return decks;
 };
@@ -47,10 +85,10 @@ export const createDeckStore = (dir: string): DeckStore => {
 
   const save = (deck: Deck): Deck => {
     decks.set(deck.id, deck);
-    writeFileSync(
-      join(dir, `${deck.id}.json`),
-      `${JSON.stringify(deck, null, 2)}\n`
-    );
+    const file = join(dir, `${deck.id}.json`);
+    const partial = join(dir, `.${deck.id}.json.tmp`);
+    writeFileSync(partial, `${JSON.stringify(deck, null, 2)}\n`);
+    renameSync(partial, file);
     events.emit(deck.id, deck);
     events.emit(anyDeck);
     return deck;
@@ -88,8 +126,12 @@ export const createDeckStore = (dir: string): DeckStore => {
       });
     },
     remove: (id) => {
+      if (!isDeckId(id)) {
+        return false;
+      }
       const existed = decks.delete(id);
       rmSync(join(dir, `${id}.json`), { force: true });
+      events.emit(id, undefined);
       events.emit(anyDeck);
       return existed;
     },

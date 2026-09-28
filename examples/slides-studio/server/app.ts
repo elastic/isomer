@@ -10,6 +10,8 @@ import { join } from 'node:path';
 
 import type { Composition } from '@elastic/isomer-sdk';
 
+import { DECK_GONE_EVENT } from '../common/events';
+
 import type { DeckStore, DeckSummary } from './host/deck';
 import { resolveDeck, viewDeck } from './host/resolve';
 import { handleMcp } from './mcp';
@@ -20,13 +22,14 @@ export { studioState } from './state';
 
 /** A deck as the landing page lists it. */
 export interface DeckListing extends DeckSummary {
-  /** The first slide, for a thumbnail. Nothing it could reference comes before it, so it needs no resolving. */
+  /** The first slide, its references filled, for a thumbnail. */
   cover?: Composition;
 }
 
 const listDecks = (store: DeckStore): DeckListing[] =>
   store.list().map((summary) => {
-    const cover = store.get(summary.id)?.slides[0];
+    const deck = store.get(summary.id);
+    const cover = deck ? resolveDeck(deck).slides[0] : undefined;
     return cover ? { ...summary, cover } : summary;
   });
 
@@ -36,6 +39,7 @@ const json = (res: ServerResponse, body: unknown, status = 200) => {
   res.end(JSON.stringify(body));
 };
 
+/** Server-sent events: `current()` now and after each change, until it is `undefined`, which sends {@link DECK_GONE_EVENT} and ends. */
 const stream = (
   req: IncomingMessage,
   res: ServerResponse,
@@ -47,17 +51,35 @@ const stream = (
     'Cache-Control': 'no-cache',
     Connection: 'keep-alive',
   });
-  const send = () => res.write(`data: ${JSON.stringify(current())}\n\n`);
+  let unsubscribe = () => {};
+  const send = () => {
+    const value = current();
+    if (value === undefined) {
+      unsubscribe();
+      res.end(`event: ${DECK_GONE_EVENT}\ndata: \n\n`);
+      return;
+    }
+    res.write(`data: ${JSON.stringify(value)}\n\n`);
+  };
   send();
-  const unsubscribe = subscribe(send);
+  unsubscribe = subscribe(send);
   req.on('close', unsubscribe);
 };
 
 const deckRoute = /^\/api\/decks\/([\w-]+)(\/events)?$/;
 
+/** The origin's host, or `undefined` for an opaque (`null`) or unparsable one. */
+const originHost = (origin: string): string | undefined => {
+  try {
+    return new URL(origin).host || undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 // A page on another origin can send a simple request here, so a change must come from the studio's own pages.
 const isSameOrigin = ({ headers: { origin, host } }: IncomingMessage) =>
-  origin === undefined || new URL(origin).host === host;
+  origin === undefined || originHost(origin) === host;
 const pngRoute = /^\/png\/([\w-]+)\/(\d+)\.(light|dark)\.png$/;
 
 /** Handles the studio's routes; anything else goes to `next`. */
@@ -111,7 +133,10 @@ export const handleStudio = async (
         req,
         res,
         (send) => store.subscribe(id, send),
-        () => viewDeck(store.get(id) ?? deck)
+        () => {
+          const current = store.get(id);
+          return current ? viewDeck(current) : undefined;
+        }
       );
       return;
     }

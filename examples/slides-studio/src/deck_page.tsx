@@ -120,9 +120,11 @@ export const DeckPage = ({ id }: { id: string }) => {
     <div className="page">
       <TopBar>
         <span className="spacer" />
-        <span className={live ? 'live on' : 'live'}>
-          {live ? 'Live' : 'Reconnecting'}
-        </span>
+        {missing ? null : (
+          <span className={live ? 'live on' : 'live'}>
+            {live ? 'Live' : 'Reconnecting'}
+          </span>
+        )}
         <label className="follow">
           <input
             checked={follow}

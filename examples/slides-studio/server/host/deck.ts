@@ -33,8 +33,11 @@ export interface DeckStore {
     change: (slides: Composition[]) => Composition[]
   ) => Deck;
   remove: (id: string) => boolean;
-  /** Calls `listener` with the deck after every change to it; returns the unsubscribe. */
-  subscribe: (id: string, listener: (deck: Deck) => void) => () => void;
+  /** Calls `listener` with the deck after every change to it, and with `undefined` once it is removed; returns the unsubscribe. */
+  subscribe: (
+    id: string,
+    listener: (deck: Deck | undefined) => void
+  ) => () => void;
   /** Calls `listener` after any deck changes; returns the unsubscribe. */
   subscribeAll: (listener: () => void) => () => void;
 }

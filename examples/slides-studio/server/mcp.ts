@@ -22,6 +22,9 @@ import type { StudioState } from './state';
 // A new object each time Vite re-evaluates this module after the runtime, the pack, or the tools change.
 const build = {};
 
+/** The names the endpoint answers on, with the port it is served from; a request from any other host or origin is refused. */
+const LOOPBACK_HOSTNAMES = ['localhost', '127.0.0.1', '[::1]'];
+
 const createServer = (state: StudioState, origin: string) => {
   const host = createSlidesHost({
     runtime,
@@ -69,13 +72,15 @@ export const handleMcp = async (
     return;
   }
   const port = req.socket.localPort ?? 5178;
+  const hosts = LOOPBACK_HOSTNAMES.map((hostname) => `${hostname}:${port}`);
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: () => randomUUID(),
     onsessioninitialized: (id) => {
       sessions.set(id, { transport, build });
     },
     enableDnsRebindingProtection: true,
-    allowedHosts: [`localhost:${port}`, `127.0.0.1:${port}`],
+    allowedHosts: hosts,
+    allowedOrigins: hosts.map((host) => `http://${host}`),
   });
   transport.onclose = () => {
     if (transport.sessionId) {

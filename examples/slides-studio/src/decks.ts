@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from 'react';
 
+import { DECK_GONE_EVENT } from '../common/events';
 import type { DeckListing } from '../server/app';
 import type { DeckView } from '../server/host/resolve';
 
@@ -38,7 +39,7 @@ export const deleteDeck = async (id: string): Promise<void> => {
 export interface LiveDeck {
   /** `undefined` until the first snapshot arrives. */
   deck: Deck | undefined;
-  /** The server has no deck by this id. */
+  /** The server has no deck by this id, or it was removed while open. */
   missing: boolean;
   /** The event stream is open, so changes arrive as they happen. */
   live: boolean;
@@ -57,6 +58,10 @@ export const useDeck = (id: string): LiveDeck => {
     source.onopen = () => setState((prev) => ({ ...prev, live: true }));
     source.onmessage = ({ data }: MessageEvent<string>) =>
       setState({ deck: JSON.parse(data) as Deck, missing: false, live: true });
+    source.addEventListener(DECK_GONE_EVENT, () => {
+      source.close();
+      setState({ deck: undefined, missing: true, live: false });
+    });
     source.onerror = () =>
       setState((prev) => ({
         ...prev,
