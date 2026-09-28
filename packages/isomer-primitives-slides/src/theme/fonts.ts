@@ -26,6 +26,9 @@ const weights = [
   ),
 ].sort((a, b) => a - b);
 
+// No mono style sets extrabold, which Roboto Mono does not ship.
+const extrabold = Number(SLIDE_THEME.font.weight.extrabold.value);
+
 /**
  * The faces to register with an image backend, derived from the theme so a new
  * weight token cannot silently fall back to the nearest registered face. The
@@ -39,9 +42,11 @@ export const slideFontFaces: readonly SlideFontFace[] = [
     weight,
     style: 'normal',
   })),
-  ...weights.map((weight): SlideFontFace => ({
-    family: mono,
-    weight,
-    style: 'normal',
-  })),
+  ...weights
+    .filter((weight) => weight !== extrabold)
+    .map((weight): SlideFontFace => ({
+      family: mono,
+      weight,
+      style: 'normal',
+    })),
 ];
