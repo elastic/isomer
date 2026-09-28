@@ -7,7 +7,12 @@
 
 import { boldSectionLabel } from '@elastic/isomer-sdk/markdown';
 
-import { markdownText, marksMarkdown, stripMarks } from '../../render/marks';
+import {
+  markdownText,
+  marksMarkdown,
+  plainText,
+  singleLine,
+} from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -20,13 +25,13 @@ export type { SlideListItem, SlideListNode } from './schema';
 /** Text renderer for {@link SlideListNode}: caption, `term: body` rows, footnote. */
 export const text = ({ label, items, footnote }: SlideListNode): string =>
   [
-    label?.toUpperCase(),
+    label && singleLine(label).toUpperCase(),
     items
       .map(({ term, body }) =>
-        term ? `${term}: ${stripMarks(body)}` : stripMarks(body)
+        term ? `${singleLine(term)}: ${plainText(body)}` : plainText(body)
       )
       .join('\n'),
-    footnote ? stripMarks(footnote) : undefined,
+    footnote ? plainText(footnote) : undefined,
   ]
     .filter(Boolean)
     .join('\n\n');

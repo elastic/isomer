@@ -13,7 +13,8 @@ import {
   markdownText,
   marksMarkdown,
   marksSlack,
-  stripMarks,
+  plainText,
+  singleLine,
 } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
@@ -33,8 +34,8 @@ const heading = ({ number, title }: SlideSectionNode): string =>
 /** Text renderer for {@link SlideSectionNode}. */
 export const text = ({ number, title, contents }: SlideSectionNode): string =>
   [
-    `${number} ${title.toUpperCase()}`,
-    ...contents.map((line, index) => `${index + 1}. ${stripMarks(line)}`),
+    singleLine(`${number} ${title.toUpperCase()}`),
+    ...contents.map((line, index) => `${index + 1}. ${plainText(line)}`),
   ].join('\n');
 
 /** Markdown renderer for {@link SlideSectionNode}; a line with an `hrefs` entry is a link. */
@@ -67,7 +68,7 @@ export const slack = (node: SlideSectionNode): SlackBlock[] => [
     text: {
       type: 'mrkdwn',
       text: node.contents
-        .map((line, index) => `${index + 1}. ${marksSlack(line)}`)
+        .map((line, index) => `${index + 1}. ${singleLine(marksSlack(line))}`)
         .join('\n'),
     },
   },

@@ -13,6 +13,7 @@ import {
 } from '@elastic/isomer-sdk/slack';
 
 import type { SlideRenderScope } from './context';
+import { LINE_TERMINATORS, singleLine } from './marks';
 
 /** A container's text or markdown: each child rendered, empties dropped, blank-line joined. */
 export const renderChildren = (
@@ -30,7 +31,7 @@ export const renderChildren = (
 /** Markdown as a blockquote, so an embedded document's headings stay out of the outer outline. */
 export const quoteMarkdown = (markdown: string): string =>
   markdown
-    .split('\n')
+    .split(LINE_TERMINATORS)
     .map((line) => (line ? `> ${line}` : '>'))
     .join('\n');
 
@@ -55,17 +56,15 @@ export const quoteSlackBlocks = (blocks: readonly SlackBlock[]): SlackBlock[] =>
 /** Text indented two spaces, so an embedded document reads as set apart. */
 export const quoteText = (text: string): string =>
   text
-    .split('\n')
+    .split(LINE_TERMINATORS)
     .map((line) => (line ? `  ${line}` : line))
     .join('\n');
 
 /** A one-line `context` block: the chrome a container draws above its children. */
-export const slackCaption = (text: string, strong = false): SlackBlock => ({
-  type: 'context',
-  elements: [
-    {
-      type: 'mrkdwn',
-      text: strong ? `*${escapeMrkdwn(text)}*` : escapeMrkdwn(text),
-    },
-  ],
-});
+export const slackCaption = (text: string, strong = false): SlackBlock => {
+  const line = escapeMrkdwn(singleLine(text));
+  return {
+    type: 'context',
+    elements: [{ type: 'mrkdwn', text: strong ? `*${line}*` : line }],
+  };
+};

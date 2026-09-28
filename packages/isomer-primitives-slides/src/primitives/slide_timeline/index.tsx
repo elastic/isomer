@@ -5,7 +5,12 @@
  * 2.0.
  */
 
-import { markdownText, marksMarkdown, stripMarks } from '../../render/marks';
+import {
+  markdownText,
+  marksMarkdown,
+  plainText,
+  singleLine,
+} from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -31,7 +36,9 @@ const quoted = ({ heading, body }: SlideTimelineItem): string =>
 
 /** Text renderer for {@link SlideTimelineNode}: one line per item. */
 export const text = ({ items }: SlideTimelineNode): string =>
-  items.map((item) => `${when(item)}. ${stripMarks(quoted(item))}`).join('\n');
+  items
+    .map((item) => `${singleLine(when(item))}. ${plainText(quoted(item))}`)
+    .join('\n');
 
 /** Markdown renderer for {@link SlideTimelineNode}: one bullet per item. */
 export const markdown = ({ items }: SlideTimelineNode): string =>

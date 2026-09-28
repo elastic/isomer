@@ -13,7 +13,8 @@ import {
 } from '@elastic/isomer-sdk/slack';
 
 import { slackCaption } from '../../render';
-import { markdownText } from '../../render/marks';
+import { fencedBlock } from '../../render/fence';
+import { LINE_TERMINATORS, markdownText, singleLine } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -29,20 +30,16 @@ const { roleLabel } = slideDistillery.tokens.transcript;
 /** Text renderer for {@link SlideTranscriptNode}. */
 export const text = ({ label, turns }: SlideTranscriptNode): string =>
   [
-    label ?? '',
-    ...turns.map(({ role, text: said }) =>
-      said.includes('\n')
-        ? `${roleLabel[role].value}:\n${said}`
-        : `${roleLabel[role].value}: ${said}`
-    ),
+    label ? singleLine(label) : '',
+    ...turns.map(({ role, text: said }) => {
+      const lines = said.split(LINE_TERMINATORS);
+      return lines.length > 1
+        ? `${roleLabel[role].value}:\n${lines.join('\n')}`
+        : `${roleLabel[role].value}: ${said}`;
+    }),
   ]
     .filter(Boolean)
     .join('\n');
-
-const fenceFor = (code: string): string =>
-  '`'.repeat(
-    Math.max(2, ...(code.match(/`+/g) ?? []).map((run) => run.length)) + 1
-  );
 
 /** Markdown renderer for {@link SlideTranscriptNode}. */
 export const markdown = ({ label, turns }: SlideTranscriptNode): string =>
@@ -51,11 +48,10 @@ export const markdown = ({ label, turns }: SlideTranscriptNode): string =>
     ...turns.map(({ format, role, text: said }) => {
       const speaker = `**${roleLabel[role].value}**`;
       if (format === 'code') {
-        const fence = fenceFor(said);
-        return `${speaker}\n\n${fence}text\n${said}\n${fence}`;
+        return `${speaker}\n\n${fencedBlock(said, 'text')}`;
       }
       return `${speaker}\n\n${said
-        .split(/\r\n|[\n\r]/)
+        .split(LINE_TERMINATORS)
         .map(markdownText)
         .join('\n')}`;
     }),
@@ -71,7 +67,9 @@ export const slack = ({ label, turns }: SlideTranscriptNode): SlackBlock[] => [
     text: {
       type: 'mrkdwn',
       text: `${bold(roleLabel[role].value)}\n${
-        format === 'code' ? codeBlock(said) : escapeMrkdwn(said)
+        format === 'code'
+          ? codeBlock(said)
+          : escapeMrkdwn(said.split(LINE_TERMINATORS).join('\n'))
       }`,
     },
   })),

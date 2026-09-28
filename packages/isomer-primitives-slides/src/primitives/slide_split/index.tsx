@@ -13,7 +13,8 @@ import {
   markdownText,
   marksMarkdown,
   marksSlack,
-  stripMarks,
+  plainText,
+  singleLine,
 } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { contentNode, definePrimitive } from '../define';
@@ -43,7 +44,7 @@ const sideText = (
         return block.statements
           .map(
             ({ text }) =>
-              `- ${surface === 'text' ? stripMarks(text) : marksMarkdown(text)}`
+              `- ${surface === 'text' ? plainText(text) : marksMarkdown(text)}`
           )
           .join('\n');
       }
@@ -58,7 +59,7 @@ const sideText = (
   }
   return surface === 'markdown'
     ? `## ${markdownText(label)}\n\n${blocks}`
-    : `${label}\n${blocks}`;
+    : `${singleLine(label)}\n${blocks}`;
 };
 
 const splitText = (
@@ -72,7 +73,7 @@ const splitText = (
     footnote === undefined
       ? ''
       : surface === 'text'
-        ? stripMarks(footnote)
+        ? plainText(footnote)
         : marksMarkdown(footnote),
   ]
     .filter(Boolean)
@@ -98,14 +99,16 @@ export const slideSplitPrimitive = definePrimitive<SlideSplitNode>({
     slack: ({ footnote, left, right }, { collector, scope }) => [
       ...[left, right].flatMap((side) =>
         splitBlocks(side).flatMap((block, index): SlackBlock[] => {
-          const heading = index === 0 && side.label ? bold(side.label) : '';
+          const heading =
+            index === 0 && side.label ? bold(singleLine(side.label)) : '';
           if (block.kind === 'statements') {
             return [
               section(
                 [
                   heading,
                   ...block.statements.map(
-                    ({ text }) => `${slackBullet.value} ${marksSlack(text)}`
+                    ({ text }) =>
+                      `${slackBullet.value} ${singleLine(marksSlack(text))}`
                   ),
                 ]
                   .filter(Boolean)
@@ -119,7 +122,7 @@ export const slideSplitPrimitive = definePrimitive<SlideSplitNode>({
           ];
         })
       ),
-      ...(footnote ? [section(marksSlack(footnote))] : []),
+      ...(footnote ? [section(singleLine(marksSlack(footnote)))] : []),
     ],
   },
   children: ({ left, right }) => [

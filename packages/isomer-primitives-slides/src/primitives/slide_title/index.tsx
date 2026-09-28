@@ -17,7 +17,8 @@ import {
   markdownText,
   marksMarkdown,
   marksSlack,
-  stripMarks,
+  plainText,
+  singleLine,
 } from '../../render/marks';
 import { contentNode, definePrimitive } from '../define';
 
@@ -31,11 +32,11 @@ export type { SlideTitleDefinition, SlideTitleNode } from './types';
 
 const ownText = ({ eyebrow, title, tagline, definition }: SlideTitleNode) =>
   [
-    eyebrow?.toUpperCase(),
-    title,
-    tagline && stripMarks(tagline),
+    eyebrow && singleLine(eyebrow).toUpperCase(),
+    singleLine(title),
+    tagline && plainText(tagline),
     definition
-      ? `${definition.term} ${stripMarks(definition.text)}`
+      ? `${singleLine(definition.term)} ${plainText(definition.text)}`
       : undefined,
   ]
     .filter(Boolean)
@@ -91,7 +92,7 @@ export const slideTitlePrimitive = definePrimitive<SlideTitleNode>({
           ? [
               {
                 type: 'section',
-                text: { type: 'mrkdwn', text: marksSlack(tagline) },
+                text: { type: 'mrkdwn', text: singleLine(marksSlack(tagline)) },
               } satisfies SlackBlock,
             ]
           : []),
@@ -102,7 +103,7 @@ export const slideTitlePrimitive = definePrimitive<SlideTitleNode>({
                 elements: [
                   {
                     type: 'mrkdwn',
-                    text: `${italic(definition.term)} ${marksSlack(definition.text)}`,
+                    text: `${italic(singleLine(definition.term))} ${singleLine(marksSlack(definition.text))}`,
                   },
                 ],
               } satisfies SlackBlock,

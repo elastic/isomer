@@ -19,7 +19,8 @@ import {
   markdownText,
   marksMarkdown,
   marksSlack,
-  stripMarks,
+  plainText,
+  singleLine,
 } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
@@ -49,10 +50,14 @@ const textLink = ({ href, text: shown }: SlideClosingLink): string =>
 /** Text renderer for {@link SlideClosingNode}. */
 export const text = ({ title, links, paths = [] }: SlideClosingNode): string =>
   [
-    title.toUpperCase(),
-    links.map((entry) => `${entry.label}: ${textLink(entry)}`).join('\n'),
+    singleLine(title).toUpperCase(),
+    links
+      .map((entry) => singleLine(`${entry.label}: ${textLink(entry)}`))
+      .join('\n'),
     paths
-      .map(({ title: goal, body }) => `- ${goal}: ${stripMarks(body)}`)
+      .map(
+        ({ title: goal, body }) => `- ${singleLine(goal)}: ${plainText(body)}`
+      )
       .join('\n'),
   ]
     .filter(Boolean)
@@ -97,7 +102,7 @@ export const slack = ({
       text: links
         .map(
           ({ label, href, text: shown }) =>
-            `${bold(label)}  ${href ? link(href, shown) : escapeMrkdwn(shown)}`
+            `${bold(singleLine(label))}  ${href ? link(href, singleLine(shown)) : escapeMrkdwn(singleLine(shown))}`
         )
         .join('\n'),
     },
@@ -111,7 +116,7 @@ export const slack = ({
             text: paths
               .map(
                 ({ title: goal, body }) =>
-                  `• ${bold(goal)}: ${marksSlack(body)}`
+                  `• ${bold(singleLine(goal))}: ${singleLine(marksSlack(body))}`
               )
               .join('\n'),
           },

@@ -5,7 +5,12 @@
  * 2.0.
  */
 
-import { markdownCode, marksMarkdown, stripMarks } from '../../render/marks';
+import {
+  markdownCode,
+  marksMarkdown,
+  plainText,
+  singleLine,
+} from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -21,12 +26,12 @@ export const text = ({ items, footnote }: SlideColumnsNode): string =>
     ...items.map(({ title, tags = [], body }) =>
       [
         tags.length > 0
-          ? `${stripMarks(title)} (${tags.join(', ')})`
-          : stripMarks(title),
-        stripMarks(body),
+          ? `${plainText(title)} (${tags.map(singleLine).join(', ')})`
+          : plainText(title),
+        plainText(body),
       ].join('\n')
     ),
-    footnote ? `${footnote.code} ${stripMarks(footnote.text)}` : '',
+    footnote ? `${singleLine(footnote.code)} ${plainText(footnote.text)}` : '',
   ]
     .filter(Boolean)
     .join('\n\n');

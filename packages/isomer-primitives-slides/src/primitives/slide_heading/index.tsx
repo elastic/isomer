@@ -7,7 +7,13 @@
 
 import { formatHeaderText, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import { marksMarkdown, marksSlack, stripMarks } from '../../render/marks';
+import {
+  marksMarkdown,
+  marksSlack,
+  plainText,
+  singleLine,
+  stripMarks,
+} from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -19,7 +25,7 @@ export type { SlideHeadingNode } from './schema';
 
 /** Text renderer for {@link SlideHeadingNode}. */
 export const text = ({ title, lede }: SlideHeadingNode): string =>
-  [stripMarks(title).toUpperCase(), lede ? stripMarks(lede) : undefined]
+  [plainText(title).toUpperCase(), lede ? plainText(lede) : undefined]
     .filter(Boolean)
     .join('\n');
 
@@ -43,7 +49,7 @@ export const slack = ({ title, lede }: SlideHeadingNode): SlackBlock[] => [
     ? [
         {
           type: 'section',
-          text: { type: 'mrkdwn', text: marksSlack(lede) },
+          text: { type: 'mrkdwn', text: singleLine(marksSlack(lede)) },
         } satisfies SlackBlock,
       ]
     : []),

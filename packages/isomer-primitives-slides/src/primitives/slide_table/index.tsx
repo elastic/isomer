@@ -12,7 +12,12 @@ import {
   type SlackTableCell,
 } from '@elastic/isomer-sdk/slack';
 
-import { markdownDelimiterRow, markdownRow } from '../../render/table';
+import { singleLine } from '../../render/marks';
+import {
+  markdownDelimiterRow,
+  markdownRow,
+  textTable,
+} from '../../render/table';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -25,27 +30,14 @@ export type { SlideTableGroup, SlideTableNode } from './schema';
 /** Text renderer for {@link SlideTableNode}: space-padded columns, a label line above each group. */
 export const text = (node: SlideTableNode): string => {
   const { columns, label } = node;
-  const groups = tableGroups(node);
-  const allRows = groups.flatMap(({ rows }) => rows);
-  const widths = columns.map((column, index) =>
-    Math.max(column.length, ...allRows.map((row) => row[index]?.length ?? 0))
-  );
-  const line = (cells: readonly string[]) =>
-    cells
-      .map((cell, index) => cell.padEnd(widths[index] ?? 0))
-      .join('  ')
-      .trimEnd();
-  return [
-    label ?? '',
-    line(columns),
-    line(widths.map((width) => '-'.repeat(width))),
-    ...groups.flatMap(({ label: group, rows }) => [
+  const table = textTable(
+    columns,
+    tableGroups(node).flatMap(({ label: group, rows }) => [
       ...(group ? [group.toUpperCase()] : []),
-      ...rows.map(line),
-    ]),
-  ]
-    .filter(Boolean)
-    .join('\n');
+      ...rows,
+    ])
+  );
+  return label ? `${singleLine(label)}\n${table}` : table;
 };
 
 /** Markdown renderer for {@link SlideTableNode}: a GFM pipe table, one per group under its label. */
@@ -71,12 +63,17 @@ const boldCell = (text: string): SlackTableCell => ({
   elements: [
     {
       type: 'rich_text_section',
-      elements: [{ type: 'text', text, style: { bold: true } }],
+      elements: [
+        { type: 'text', text: singleLine(text), style: { bold: true } },
+      ],
     },
   ],
 });
 
-const rawCell = (text: string): SlackTableCell => ({ type: 'raw_text', text });
+const rawCell = (text: string): SlackTableCell => ({
+  type: 'raw_text',
+  text: singleLine(text),
+});
 
 /**
  * Slack renderer for {@link SlideTableNode}: one native `table` block whose row
@@ -99,7 +96,7 @@ export const slack = (node: SlideTableNode): SlackBlock[] => {
       ? [
           {
             type: 'section',
-            text: { type: 'mrkdwn', text: bold(label) },
+            text: { type: 'mrkdwn', text: bold(singleLine(label)) },
           } satisfies SlackBlock,
         ]
       : []),

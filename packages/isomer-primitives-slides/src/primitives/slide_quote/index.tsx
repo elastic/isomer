@@ -11,7 +11,8 @@ import {
   markdownText,
   marksMarkdown,
   marksSlack,
-  stripMarks,
+  plainText,
+  singleLine,
 } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
@@ -33,7 +34,7 @@ const attribution = ({ source, context }: SlideQuoteNode): string =>
 
 /** Text renderer for {@link SlideQuoteNode}: the quote, then its attribution. */
 export const text = (node: SlideQuoteNode): string =>
-  `${quoted(stripMarks(node.text))} ${attribution(node)}`;
+  `${quoted(plainText(node.text))} ${singleLine(attribution(node))}`;
 
 /** Markdown renderer for {@link SlideQuoteNode}: a blockquote with the attribution as its last line. */
 export const markdown = (node: SlideQuoteNode): string => {
@@ -52,7 +53,7 @@ export const slack = (node: SlideQuoteNode): SlackBlock[] => [
     type: 'section',
     text: {
       type: 'mrkdwn',
-      text: `> ${quoted(marksSlack(node.text))}\n> ${escapeMrkdwn(attribution(node))}`,
+      text: `> ${quoted(singleLine(marksSlack(node.text)))}\n> ${escapeMrkdwn(singleLine(attribution(node)))}`,
     },
   },
 ];

@@ -31,6 +31,8 @@ export {
   marksReact,
   marksSlack,
   parseMarks,
+  plainText,
+  singleLine,
   stripMarks,
 } from './marks';
 export {

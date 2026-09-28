@@ -13,7 +13,7 @@ import {
   renderSlackChildren,
   slackCaption,
 } from '../../render';
-import { markdownText } from '../../render/marks';
+import { markdownText, singleLine } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { scalePx } from '../../theme/scale';
 import { SLIDE_THEME } from '../../theme/theme';
@@ -57,7 +57,10 @@ export const slideFramePrimitive = definePrimitive<SlideFrameNode>({
   renderers: {
     react,
     text: (node, { scope }) =>
-      [renderChildren(node.body, scope, 'text'), footerLine(node, displayUrl)]
+      [
+        renderChildren(node.body, scope, 'text'),
+        singleLine(footerLine(node, displayUrl)),
+      ]
         .filter(Boolean)
         .join('\n\n'),
     markdown: (node, { scope }) => {

@@ -9,7 +9,12 @@ import { type SlackBlock } from '@elastic/isomer-sdk/slack';
 import type { ZodType } from 'zod';
 
 import { renderChildren, renderSlackChildren } from '../../render';
-import { marksMarkdown, marksSlack, stripMarks } from '../../render/marks';
+import {
+  marksMarkdown,
+  marksSlack,
+  plainText,
+  singleLine,
+} from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -41,7 +46,7 @@ export const slideAnnotatedRenderPrimitive =
           renderChildren([render], scope, 'text'),
           legend(
             pins,
-            ({ title, body }) => `${stripMarks(title)} — ${stripMarks(body)}`
+            ({ title, body }) => `${plainText(title)} — ${plainText(body)}`
           ),
         ].join('\n\n'),
       markdown: ({ render, pins }, { scope }) =>
@@ -62,7 +67,7 @@ export const slideAnnotatedRenderPrimitive =
             text: legend(
               pins,
               ({ title, body }) =>
-                `*${marksSlack(title)}* — ${marksSlack(body)}`
+                `*${singleLine(marksSlack(title))}* — ${singleLine(marksSlack(body))}`
             ),
           },
         } satisfies SlackBlock,

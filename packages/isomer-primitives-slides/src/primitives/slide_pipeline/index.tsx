@@ -5,7 +5,12 @@
  * 2.0.
  */
 
-import { markdownText, marksMarkdown, stripMarks } from '../../render/marks';
+import {
+  markdownText,
+  marksMarkdown,
+  plainText,
+  singleLine,
+} from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -45,7 +50,7 @@ const detail = (title: string, body: string | undefined): string =>
   body ? `${title} — ${body}` : title;
 
 const plainDetail = (title: string, body: string | undefined): string =>
-  detail(title, body && stripMarks(body));
+  detail(title, body && plainText(body));
 
 /** Text renderer for {@link SlidePipelineNode}: the chain, then a line per step (steps mode) or per span. */
 export const text = ({ start, end, steps, spans }: SlidePipelineNode): string =>
@@ -60,7 +65,9 @@ export const text = ({ start, end, steps, spans }: SlidePipelineNode): string =>
           ({ title, body }, index) =>
             `${index + 1}. ${plainDetail(title, body)}`
         )),
-  ].join('\n');
+  ]
+    .map(singleLine)
+    .join('\n');
 
 /** Markdown renderer for {@link SlidePipelineNode}: the chain, then an ordered list of steps or a list of spans. */
 export const markdown = ({

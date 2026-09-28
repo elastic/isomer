@@ -11,7 +11,8 @@ import {
   markdownText,
   marksMarkdown,
   marksSlack,
-  stripMarks,
+  plainText,
+  singleLine,
 } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
@@ -26,11 +27,11 @@ export type { SlideStatNode } from './schema';
 const { placeholderCaption } = slideDistillery.tokens.stat;
 
 const valueText = ({ value, unit }: SlideStatNode): string | undefined =>
-  value ? [value, unit].filter(Boolean).join(' ') : undefined;
+  value ? singleLine([value, unit].filter(Boolean).join(' ')) : undefined;
 
 /** Text renderer for {@link SlideStatNode}: `value unit — body`, or a pending marker. */
 export const text = (node: SlideStatNode): string =>
-  `${valueText(node) ?? `[${placeholderCaption.value}]`} — ${stripMarks(node.body)}`;
+  `${valueText(node) ?? `[${placeholderCaption.value}]`} — ${plainText(node.body)}`;
 
 /** Markdown renderer for {@link SlideStatNode}. */
 export const markdown = (node: SlideStatNode): string => {
@@ -46,7 +47,7 @@ export const slack = (node: SlideStatNode): SlackBlock[] => {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `${value ? `*${escapeMrkdwn(value)}*` : `_${placeholderCaption.value}_`} — ${marksSlack(node.body)}`,
+        text: `${value ? `*${escapeMrkdwn(value)}*` : `_${placeholderCaption.value}_`} — ${singleLine(marksSlack(node.body))}`,
       },
     },
   ];

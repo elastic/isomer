@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { markdownText } from '../../render/marks';
+import { markdownText, singleLine } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -46,7 +46,9 @@ export const text = (node: SlideQuadrantNode): string =>
   [
     axes(node),
     ...cells(node, (label, place, items) => `${label} (${place})${items}`),
-  ].join('\n');
+  ]
+    .map(singleLine)
+    .join('\n');
 
 /** Markdown renderer for {@link SlideQuadrantNode}: the axes, then a bullet per quadrant. */
 export const markdown = (node: SlideQuadrantNode): string =>

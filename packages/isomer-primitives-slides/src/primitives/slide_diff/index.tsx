@@ -12,7 +12,7 @@ import {
 } from '@elastic/isomer-sdk/slack';
 
 import { fencedBlock } from '../../render/fence';
-import { markdownText } from '../../render/marks';
+import { markdownText, singleLine } from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -32,7 +32,7 @@ const unified = (lines: readonly SlideDiffLine[]): string =>
 
 /** Text renderer for {@link SlideDiffNode}: the caption, then the lines in unified-diff form. */
 export const text = ({ file, lines }: SlideDiffNode): string =>
-  [...(file ? [file] : []), unified(lines)].join('\n');
+  [...(file ? [singleLine(file)] : []), unified(lines)].join('\n');
 
 /** Markdown renderer for {@link SlideDiffNode}: a `diff` fence under the caption. */
 export const markdown = ({ file, lines }: SlideDiffNode): string =>
@@ -46,7 +46,10 @@ export const slack = ({ file, lines }: SlideDiffNode): SlackBlock[] => [
     type: 'section',
     text: {
       type: 'mrkdwn',
-      text: [file ? escapeMrkdwn(file) : '', codeBlock(unified(lines))]
+      text: [
+        file ? escapeMrkdwn(singleLine(file)) : '',
+        codeBlock(unified(lines)),
+      ]
         .filter(Boolean)
         .join('\n'),
     },

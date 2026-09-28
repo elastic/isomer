@@ -12,7 +12,7 @@ import {
 } from '@elastic/isomer-sdk/slack';
 
 import { fencedBlock } from '../../render/fence';
-import { markdownText } from '../../render/marks';
+import { markdownText, singleLine } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -28,7 +28,9 @@ const traceArrow = slideDistillery.tokens.code.traceArrow.value;
 /** Text renderer for {@link SlideCodeNode}: each panel under its caption, joined by an arrow. */
 export const text = ({ panels }: SlideCodeNode): string =>
   panels
-    .map(({ file, lines }) => [...(file ? [file] : []), ...lines].join('\n'))
+    .map(({ file, lines }) =>
+      [...(file ? [singleLine(file)] : []), ...lines].join('\n')
+    )
     .join(`\n\n${traceArrow}\n\n`);
 
 /** Markdown renderer for {@link SlideCodeNode}: one fenced block per panel. */
@@ -59,7 +61,10 @@ export const slack = ({ panels }: SlideCodeNode): SlackBlock[] =>
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: [file ? escapeMrkdwn(file) : '', codeBlock(lines.join('\n'))]
+        text: [
+          file ? escapeMrkdwn(singleLine(file)) : '',
+          codeBlock(lines.join('\n')),
+        ]
           .filter(Boolean)
           .join('\n'),
       },

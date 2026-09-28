@@ -5,7 +5,13 @@
  * 2.0.
  */
 
-import { markdownText, marksMarkdown, stripMarks } from '../../render/marks';
+import {
+  markdownText,
+  marksMarkdown,
+  plainText,
+  singleLine,
+  stripMarks,
+} from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -40,11 +46,11 @@ const line = (
 /** Text renderer for {@link SlideDeltaNode}: `Before 13 → After 26. +13: body`. */
 export const text = (node: SlideDeltaNode): string =>
   line(node, {
-    label: stripMarks,
-    value: (value) => value,
+    label: plainText,
+    value: singleLine,
     pending: `[${placeholderCaption.value}]`,
-    change: (change) => change,
-    body: stripMarks,
+    change: singleLine,
+    body: plainText,
   });
 
 /** Markdown renderer for {@link SlideDeltaNode}: the text line with the labels and the change in bold. */

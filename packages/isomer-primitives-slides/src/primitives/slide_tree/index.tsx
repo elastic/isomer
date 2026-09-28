@@ -6,6 +6,7 @@
  */
 
 import { fencedBlock } from '../../render/fence';
+import { singleLine } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -20,12 +21,16 @@ const { glyph } = slideDistillery.tokens.tree;
 
 /** The tree as aligned lines: root, then one connector, name, and body per entry. */
 export const text = ({ root, entries }: SlideTreeNode): string => {
-  const width = Math.max(...entries.map(({ name }) => name.length));
+  const rows = entries.map(({ name, body }) => ({
+    name: singleLine(name),
+    body: singleLine(body),
+  }));
+  const width = Math.max(...rows.map(({ name }) => name.length));
   return [
-    root,
-    ...entries.map(({ name, body }, index) => {
+    singleLine(root),
+    ...rows.map(({ name, body }, index) => {
       const connector =
-        index === entries.length - 1 ? glyph.last.value : glyph.branch.value;
+        index === rows.length - 1 ? glyph.last.value : glyph.branch.value;
       return `${connector} ${name.padEnd(width)}  ${body}`;
     }),
   ].join('\n');

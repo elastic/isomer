@@ -9,7 +9,8 @@ import {
   markdownCode,
   markdownText,
   marksMarkdown,
-  stripMarks,
+  plainText,
+  singleLine,
 } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
@@ -28,7 +29,7 @@ export const text = ({ layers }: SlideLayersNode): string =>
   layers
     .map(
       ({ name, body, chips, owner }) =>
-        `${name} ${dash.value} ${chips ? chips.join(', ') : stripMarks(body ?? '')} (${owner})`
+        `${singleLine(name)} ${dash.value} ${chips ? chips.map(singleLine).join(', ') : plainText(body ?? '')} (${singleLine(owner)})`
     )
     .join('\n');
 

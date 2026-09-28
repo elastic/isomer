@@ -7,7 +7,7 @@
 
 import { bold, escapeMrkdwn, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import { markdownText } from '../../render/marks';
+import { markdownText, singleLine } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -23,8 +23,10 @@ const { arrow } = slideDistillery.tokens.fanout;
 /** Text renderer for {@link SlideFanoutNode}. */
 export const text = ({ source, targets }: SlideFanoutNode): string =>
   [
-    `${source} ${arrow.value}`,
-    ...targets.map(({ name, body }) => `  ${name}: ${body}`),
+    `${singleLine(source)} ${arrow.value}`,
+    ...targets.map(
+      ({ name, body }) => `  ${singleLine(name)}: ${singleLine(body)}`
+    ),
   ].join('\n');
 
 /** Markdown renderer for {@link SlideFanoutNode}. */
@@ -43,9 +45,10 @@ export const slack = ({ source, targets }: SlideFanoutNode): SlackBlock[] => [
     text: {
       type: 'mrkdwn',
       text: [
-        `${bold(source)} ${arrow.value}`,
+        `${bold(singleLine(source))} ${arrow.value}`,
         ...targets.map(
-          ({ name, body }) => `• ${bold(name)}: ${escapeMrkdwn(body)}`
+          ({ name, body }) =>
+            `• ${bold(singleLine(name))}: ${escapeMrkdwn(singleLine(body))}`
         ),
       ].join('\n'),
     },

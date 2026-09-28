@@ -15,7 +15,7 @@ import {
   renderChildren,
   renderSlackChildren,
 } from '../../render';
-import { markdownText } from '../../render/marks';
+import { markdownText, singleLine } from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -46,7 +46,9 @@ export const slideRenderGridPrimitive = definePrimitive<SlideRenderGridNode>({
         [
           heading(node),
           ...node.tiles.map(({ surface, caption }) => `${surface}: ${caption}`),
-        ].join('\n'),
+        ]
+          .map(singleLine)
+          .join('\n'),
         quoteText(renderChildren(node.composition.body, scope, 'text')),
       ]
         .filter(Boolean)
@@ -69,7 +71,7 @@ export const slideRenderGridPrimitive = definePrimitive<SlideRenderGridNode>({
         type: 'context',
         elements: node.tiles.map(({ surface, caption }) => ({
           type: 'mrkdwn',
-          text: `*${surface}* ${escapeMrkdwn(caption)}`,
+          text: `*${surface}* ${escapeMrkdwn(singleLine(caption))}`,
         })),
       },
       ...quoteSlackBlocks(

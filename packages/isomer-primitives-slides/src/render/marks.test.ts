@@ -13,6 +13,8 @@ import {
   marksMarkdown,
   marksSlack,
   parseMarks,
+  plainText,
+  singleLine,
   stripMarks,
 } from './marks';
 
@@ -33,6 +35,17 @@ describe('marks', () => {
 
   it('does not read strong inside code', () => {
     expect(parseMarks('`**x**`')).toEqual([{ kind: 'code', text: '**x**' }]);
+  });
+
+  it.each([
+    ['\\n', '\n'],
+    ['\\r', '\r'],
+    ['\\r\\n', '\r\n'],
+    ['U+2028', '\u2028'],
+    ['U+2029', '\u2029'],
+  ])('puts text on one line across %s', (_name, terminator) => {
+    expect(singleLine(`a${terminator}b`)).toBe('a b');
+    expect(plainText(`**a**${terminator}\`b\``)).toBe('a b');
   });
 
   it('strips marks for text', () => {

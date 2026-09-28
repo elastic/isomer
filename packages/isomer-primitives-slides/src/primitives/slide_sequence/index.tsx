@@ -9,7 +9,8 @@ import {
   markdownCode,
   markdownText,
   marksMarkdown,
-  stripMarks,
+  plainText,
+  singleLine,
 } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
@@ -46,7 +47,16 @@ const lines = (
 
 /** Text renderer for {@link SlideSequenceNode}: one numbered `from → to: label` line per message. */
 export const text = (node: SlideSequenceNode): string =>
-  lines(node, ({ label, mono }) => (mono ? label : stripMarks(label)));
+  lines(
+    {
+      ...node,
+      actors: node.actors.map((actor) => ({
+        ...actor,
+        label: singleLine(actor.label),
+      })),
+    },
+    ({ label, mono }) => (mono ? singleLine(label) : plainText(label))
+  );
 
 /** Markdown renderer for {@link SlideSequenceNode}: a numbered list, with mono labels as code. */
 export const markdown = (node: SlideSequenceNode): string =>

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { marksMarkdown } from './marks';
+import { marksMarkdown, singleLine } from './marks';
 
 /** One GFM pipe-table row of authored cells, marks kept and everything else escaped. */
 export const markdownRow = (cells: readonly string[]): string =>
@@ -26,12 +26,20 @@ export const markdownTable = (
     ...rows.map(markdownRow),
   ].join('\n');
 
-/** Space-padded columns under a dashed rule. */
+/** A {@link textTable} body line: a row of cells, or a heading on a line of its own. */
+export type TextTableLine = readonly string[] | string;
+
+/** Space-padded columns under a dashed rule, every cell and heading on one line. */
 export const textTable = (
   columns: readonly string[],
-  rows: readonly (readonly string[])[]
+  lines: readonly TextTableLine[]
 ): string => {
-  const widths = columns.map((column, index) =>
+  const head = columns.map(singleLine);
+  const body = lines.map((line) =>
+    typeof line === 'string' ? singleLine(line) : line.map(singleLine)
+  );
+  const rows = body.filter((line) => typeof line !== 'string');
+  const widths = head.map((column, index) =>
     Math.max(column.length, ...rows.map((row) => row[index]?.length ?? 0))
   );
   const line = (cells: readonly string[]) =>
@@ -40,8 +48,8 @@ export const textTable = (
       .join('  ')
       .trimEnd();
   return [
-    line(columns),
+    line(head),
     line(widths.map((width) => '-'.repeat(width))),
-    ...rows.map(line),
+    ...body.map((entry) => (typeof entry === 'string' ? entry : line(entry))),
   ].join('\n');
 };

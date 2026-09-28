@@ -11,7 +11,8 @@ import {
   markdownText,
   marksMarkdown,
   marksSlack,
-  stripMarks,
+  plainText,
+  singleLine,
 } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
@@ -26,14 +27,14 @@ export type { SlideStatsItem, SlideStatsNode } from './schema';
 const { placeholderCaption } = slideDistillery.tokens.stats;
 
 const valueText = ({ value, unit }: SlideStatsItem): string | undefined =>
-  value ? [value, unit].filter(Boolean).join(' ') : undefined;
+  value ? singleLine([value, unit].filter(Boolean).join(' ')) : undefined;
 
 /** Text renderer for {@link SlideStatsNode}: `value Label: body` per line. */
 export const text = ({ items }: SlideStatsNode): string =>
   items
     .map(
       (item) =>
-        `${valueText(item) ?? `[${placeholderCaption.value}]`} ${item.label}: ${stripMarks(item.body)}`
+        `${valueText(item) ?? `[${placeholderCaption.value}]`} ${singleLine(item.label)}: ${plainText(item.body)}`
     )
     .join('\n');
 
@@ -56,8 +57,8 @@ export const slack = ({ items }: SlideStatsNode): SlackBlock[] => [
         type: 'mrkdwn',
         text: [
           value ? bold(value) : italic(placeholderCaption.value),
-          bold(item.label),
-          marksSlack(item.body),
+          bold(singleLine(item.label)),
+          singleLine(marksSlack(item.body)),
         ].join('\n'),
       };
     }),

@@ -5,7 +5,12 @@
  * 2.0.
  */
 
-import { markdownText, marksMarkdown, stripMarks } from '../../render/marks';
+import {
+  markdownText,
+  marksMarkdown,
+  plainText,
+  singleLine,
+} from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -37,9 +42,9 @@ export const text = ({ columns }: SlideRoadmapNode): string =>
   columns
     .map((column) =>
       [
-        horizon(column, column.title.toUpperCase()),
+        singleLine(horizon(column, column.title.toUpperCase())),
         ...column.items.map(
-          ({ title, body }) => `- ${stripMarks(title)}: ${stripMarks(body)}`
+          ({ title, body }) => `- ${plainText(title)}: ${plainText(body)}`
         ),
       ].join('\n')
     )

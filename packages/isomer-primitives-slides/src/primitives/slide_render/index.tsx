@@ -15,7 +15,7 @@ import {
   renderSlackChildren,
   slackCaption,
 } from '../../render';
-import { markdownText } from '../../render/marks';
+import { markdownText, singleLine } from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -50,7 +50,7 @@ export const slideRenderPrimitive = definePrimitive<SlideRenderNode>({
     react,
     text: (node, { scope }) =>
       [
-        heading(node),
+        singleLine(heading(node)),
         node.composition &&
           quoteText(renderChildren(node.composition.body, scope, 'text')),
       ]

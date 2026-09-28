@@ -7,7 +7,7 @@
 
 import { formatHeaderText, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import { marksMarkdown, stripMarks } from '../../render/marks';
+import { marksMarkdown, plainText, stripMarks } from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -19,7 +19,7 @@ export type { SlideStatementNode } from './schema';
 
 /** Text renderer for {@link SlideStatementNode}. */
 export const text = ({ text: statement }: SlideStatementNode): string =>
-  stripMarks(statement);
+  plainText(statement);
 
 /** Markdown renderer for {@link SlideStatementNode}: the slide's claim, as its heading. */
 export const markdown = ({ text: statement }: SlideStatementNode): string =>

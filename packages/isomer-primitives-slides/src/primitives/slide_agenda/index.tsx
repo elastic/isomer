@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { markdownText } from '../../render/marks';
+import { markdownText, singleLine } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -31,7 +31,9 @@ const detail = ({ count, current }: SlideAgendaSection): string =>
 /** Text renderer for {@link SlideAgendaNode}: one line per section. */
 export const text = ({ sections }: SlideAgendaNode): string =>
   sections
-    .map((section) => `${section.number} ${section.title}${detail(section)}`)
+    .map((section) =>
+      singleLine(`${section.number} ${section.title}${detail(section)}`)
+    )
     .join('\n');
 
 /** Markdown renderer for {@link SlideAgendaNode}: one bullet per section, its number in bold. */

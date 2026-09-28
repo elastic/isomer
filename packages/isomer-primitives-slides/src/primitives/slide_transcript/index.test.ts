@@ -55,6 +55,26 @@ describe('slideTranscript', () => {
     `);
   });
 
+  it.each([
+    ['\\r', '\r'],
+    ['\\r\\n', '\r\n'],
+    ['U+2028', '\u2028'],
+    ['U+2029', '\u2029'],
+  ])('breaks a prose turn at %s as at a newline', (_name, terminator) => {
+    const node = {
+      type: 'slideTranscript',
+      turns: [{ role: 'model', text: `First line.${terminator}Second line.` }],
+    } as const;
+    expect(text(node)).toBe('Model:\nFirst line.\nSecond line.');
+    expect(markdown(node)).toBe('**Model**\n\nFirst line.\nSecond line.');
+    expect(slack(node)).toEqual([
+      {
+        type: 'section',
+        text: { type: 'mrkdwn', text: '*Model*\nFirst line.\nSecond line.' },
+      },
+    ]);
+  });
+
   it('fences code turns in markdown', () => {
     expect(markdown(example)).toContain(
       '**Host**\n\n```text\nwindow: expected a start and end time\n```'
