@@ -17,12 +17,16 @@ import {
 } from './assets';
 import {
   SLACK_LIMITS,
+  type SlackActionElement,
   type SlackBlock,
   type SlackContextBlock,
   type SlackHeaderBlock,
   type SlackMrkdwnTextObject,
+  type SlackOptionGroup,
+  type SlackOptionObject,
   type SlackRichTextBlockElement,
   type SlackRichTextInline,
+  type SlackSectionAccessory,
   type SlackSectionBlock,
   type SlackTableBlock,
   type SlackTableCell,
@@ -110,9 +114,7 @@ export const renderSlackEnvelope = <TNode extends PrimitiveNode>(
     blocks.push(contextBlock([escapeMrkdwn(composition.subtitle)]));
   }
   for (const node of composition.body) {
-    blocks.push(
-      ...clampAssetImageAlts(dispatcher.renderSlack(node, collector))
-    );
+    blocks.push(...dispatcher.renderSlack(node, collector));
   }
 
   const rhythm = applySectionRhythm(
@@ -135,17 +137,6 @@ export const renderSlackEnvelope = <TNode extends PrimitiveNode>(
       : [],
   };
 };
-
-const clampAssetImageAlts = (blocks: readonly SlackBlock[]): SlackBlock[] =>
-  blocks.map((block) => {
-    if (block.type !== 'image' || block.slack_file?.ref === undefined) {
-      return block;
-    }
-    return {
-      ...block,
-      alt_text: clampSlackText(block.alt_text, SLACK_LIMITS.imageAltTextChars),
-    };
-  });
 
 const collectSlackFileRefs = (
   blocks: readonly SlackBlock[]
@@ -373,6 +364,70 @@ const clampTextObject = <TText extends SlackTextObject>(
     ? text
     : { ...text, text: clampSlackText(text.text, max) };
 
+const clampImage = <TImage extends { alt_text: string }>(
+  image: TImage
+): TImage =>
+  image.alt_text.length <= SLACK_LIMITS.imageAltTextChars
+    ? image
+    : {
+        ...image,
+        alt_text: clampSlackText(
+          image.alt_text,
+          SLACK_LIMITS.imageAltTextChars
+        ),
+      };
+
+const clampOption = (option: SlackOptionObject): SlackOptionObject => ({
+  ...option,
+  text: clampTextObject(option.text, SLACK_LIMITS.optionTextChars),
+  ...(option.description
+    ? {
+        description: clampTextObject(
+          option.description,
+          SLACK_LIMITS.optionTextChars
+        ),
+      }
+    : {}),
+});
+
+const clampControl = (element: SlackActionElement): SlackActionElement => {
+  if (element.type === 'button') {
+    return {
+      ...element,
+      text: clampTextObject(element.text, SLACK_LIMITS.buttonTextChars),
+    };
+  }
+  const options = element as Partial<{
+    options: SlackOptionObject[];
+    option_groups: SlackOptionGroup[];
+    initial_option: SlackOptionObject;
+    initial_options: SlackOptionObject[];
+  }>;
+  return {
+    ...element,
+    ...(options.options ? { options: options.options.map(clampOption) } : {}),
+    ...(options.option_groups
+      ? {
+          option_groups: options.option_groups.map((group) => ({
+            ...group,
+            options: group.options.map(clampOption),
+          })),
+        }
+      : {}),
+    ...(options.initial_option
+      ? { initial_option: clampOption(options.initial_option) }
+      : {}),
+    ...(options.initial_options
+      ? { initial_options: options.initial_options.map(clampOption) }
+      : {}),
+  };
+};
+
+const clampAccessory = (
+  element: SlackSectionAccessory
+): SlackSectionAccessory =>
+  element.type === 'image' ? clampImage(element) : clampControl(element);
+
 // Pack renderers build their own blocks, and one over-long text rejects the whole message.
 const clampBlockText = (blocks: readonly SlackBlock[]): SlackBlock[] =>
   blocks.map((block): SlackBlock => {
@@ -400,16 +455,46 @@ const clampBlockText = (blocks: readonly SlackBlock[]): SlackBlock[] =>
                 ),
               }
             : {}),
+          ...(block.accessory
+            ? { accessory: clampAccessory(block.accessory) }
+            : {}),
         };
       case 'context':
         return {
           ...block,
           elements: block.elements.map((element) =>
             element.type === 'image'
-              ? element
+              ? clampImage(element)
               : clampTextObject(element, SLACK_LIMITS.contextElementChars)
           ),
         };
+      case 'image':
+        return {
+          ...clampImage(block),
+          ...(block.title
+            ? {
+                title: clampTextObject(
+                  block.title,
+                  SLACK_LIMITS.imageTitleChars
+                ),
+              }
+            : {}),
+        };
+      case 'video':
+        return {
+          ...clampImage(block),
+          title: clampTextObject(block.title, SLACK_LIMITS.videoTitleChars),
+          ...(block.description
+            ? {
+                description: clampTextObject(
+                  block.description,
+                  SLACK_LIMITS.videoDescriptionChars
+                ),
+              }
+            : {}),
+        };
+      case 'actions':
+        return { ...block, elements: block.elements.map(clampControl) };
       default:
         return block;
     }

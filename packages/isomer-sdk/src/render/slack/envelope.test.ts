@@ -181,6 +181,74 @@ describe('Slack envelope transforms', () => {
     expect(context.elements[1]).toMatchObject({ type: 'image' });
   });
 
+  it('clamps the image, video, button, and option text a pack renderer emits', () => {
+    const long = 'x'.repeat(5000);
+    const plain = { type: 'plain_text' as const, text: long };
+    const option = { text: plain, value: 'v', description: plain };
+    const image = {
+      type: 'image' as const,
+      image_url: 'https://x.test/a.png',
+      alt_text: long,
+    };
+    const { blocks } = renderSlackEnvelope(
+      { type: 'view', body: [{ type: 'a' }] },
+      dispatcherFor([
+        [
+          { ...image, title: plain },
+          {
+            type: 'video',
+            title: plain,
+            description: plain,
+            video_url: 'https://x.test/v',
+            thumbnail_url: 'https://x.test/t.png',
+            alt_text: long,
+          },
+          { type: 'context', elements: [image] },
+          {
+            type: 'section',
+            text: { type: 'mrkdwn', text: 'with an image' },
+            accessory: image,
+          },
+          {
+            type: 'actions',
+            elements: [
+              { type: 'button', text: plain, action_id: 'b' },
+              {
+                type: 'static_select',
+                action_id: 's',
+                options: [option],
+                initial_option: option,
+              },
+            ],
+          },
+        ],
+      ])
+    );
+    const lengths = JSON.stringify(blocks).match(/x+…?/g) ?? [];
+    const { imageAltTextChars, videoTitleChars, optionTextChars } =
+      SLACK_LIMITS;
+    expect(Math.max(...lengths.map((text) => text.length))).toBeLessThanOrEqual(
+      imageAltTextChars
+    );
+    const byType = (type: string) =>
+      blocks.find((block) => block.type === type);
+    const video = byType('video');
+    expect(video?.type === 'video' && video.title.text).toHaveLength(
+      videoTitleChars
+    );
+    const actions = byType('actions');
+    if (actions?.type !== 'actions') {
+      throw new Error('expected an actions block');
+    }
+    const [button, select] = actions.elements;
+    expect(button?.type === 'button' && button.text.text).toHaveLength(
+      optionTextChars
+    );
+    expect(select?.type === 'static_select' && select.initial_option).toEqual(
+      select?.type === 'static_select' && select.options?.[0]
+    );
+  });
+
   it('elides overflow past the block budget and appends a notice', () => {
     const count = SLACK_LIMITS.blocksPerMessage + 5;
     const { blocks } = renderSlackEnvelope(

@@ -14,7 +14,7 @@ renderSlackEnvelope(composition, dispatcher, { heading, text, collectAssets, ass
 
 `heading` defaults to `true`. Pass `false` when the host already shows the title, or the body opens with its own, and every envelope leaves out the title and subtitle; in Slack that includes the fallback `text`.
 
-The Slack envelope does the most. It emits a `header` block for the title and a `context` block for the subtitle, then each node's blocks; clamps every header, section text, section field, and context element a node's renderer returns to its Slack limit, so one oversized block cannot get the whole message rejected; enforces Slack's 50-block message budget; clamps the fallback `text` to 4,000 characters; and returns only the asset requests whose placeholder block survived the budget — uploading files for elided blocks would be orphaned work.
+The Slack envelope does the most. It emits a `header` block for the title and a `context` block for the subtitle, then each node's blocks; clamps every text a node's renderer returns to its Slack limit — header, section text and fields, context elements, image and video titles and alt text, and button and option labels — so one oversized block cannot get the whole message rejected; enforces Slack's 50-block message budget; clamps the fallback `text` to 4,000 characters; and returns only the asset requests whose placeholder block survived the budget — uploading files for elided blocks would be orphaned work.
 
 `SLACK_LIMITS` publishes the numbers a renderer has to respect: 50 blocks per message, 3,000 characters in a section, 2,000 in a section field or a context element, 10 fields per section, 10 elements per context block, 25 buttons in an actions block, 150 characters in a header, 75 in an option label.
 
