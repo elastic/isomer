@@ -34,12 +34,15 @@ export const resolveDeck = (deck: Deck): Deck => ({
   slides: resolveSlideRenders(named(deck.slides), { onUnresolved: 'leave' }),
 });
 
-/** Why `slides` has a reference that cannot be filled, or `undefined` when every one resolves. */
+/** Why `slides` has a reference that cannot be filled, or `undefined` when every one resolves. Throws what fails for any other reason. */
 export const unresolvedReference = (
   slides: readonly Composition[]
 ): string | undefined => {
+  const deck = named(slides);
+  // Leaving references unfilled never throws for one, so whatever this throws is not about references.
+  resolveSlideRenders(deck, { onUnresolved: 'leave' });
   try {
-    resolveSlideRenders(named(slides));
+    resolveSlideRenders(deck);
     return undefined;
   } catch (error) {
     return error instanceof Error ? error.message : String(error);

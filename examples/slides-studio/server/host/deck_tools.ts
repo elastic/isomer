@@ -12,6 +12,7 @@ import type {
 } from '@elastic/isomer-agent-tools';
 import {
   checkComposition,
+  imageResult,
   jsonResult as json,
   textResult as text,
 } from '@elastic/isomer-agent-tools';
@@ -85,6 +86,39 @@ const overflowText = (
 
 const slideLink = /^\?slide=(\d+)$/;
 
+const QUOTED_MAX_LENGTH = 80;
+
+/** Model input echoed as a JSON string on one line, cut to {@link QUOTED_MAX_LENGTH} characters. */
+const quoted = (value: string): string =>
+  oneLineJson(
+    value.length > QUOTED_MAX_LENGTH
+      ? `${value.slice(0, QUOTED_MAX_LENGTH)}…`
+      : value
+  );
+
+/** `JSON.stringify`, with the line separators it leaves raw escaped too. */
+const oneLineJson = (value: unknown): string =>
+  JSON.stringify(value).replace(
+    /[\u2028\u2029]/g,
+    (separator) => `\\u${separator.charCodeAt(0).toString(16)}`
+  );
+
+const noDeck = (id: string) =>
+  text(
+    `No deck ${quoted(id)}. Call deck_list to see the decks that exist.`,
+    true
+  );
+
+/** What a tool reports for a thrown value, whatever was thrown. */
+const errorMessage = (error: unknown): string => {
+  try {
+    const { message } = (error ?? {}) as { message?: unknown };
+    return typeof message === 'string' ? message : String(error);
+  } catch {
+    return 'The tool failed with a value that has no message.';
+  }
+};
+
 /** The pack's authoring rules, and a reminder that the Isomer mark is drawn unless the frame says not to. */
 const authoringNotes = (slide: Composition): string[] => {
   const [frame] = slide.body as { logo?: boolean }[];
@@ -98,11 +132,17 @@ const authoringNotes = (slide: Composition): string[] => {
   ];
 };
 
+/** A note on one section link, with the index of the slide it opens. */
+interface LinkNote {
+  target: number;
+  note: string;
+}
+
 /** Section links that point past the deck, or at a slide whose title is not the line they sit on. */
 const sectionLinkNotes = (
   slide: Composition,
   slides: readonly Composition[]
-): string[] => {
+): LinkNote[] => {
   const [frame] = slide.body as { body?: unknown[] }[];
   return (frame?.body ?? []).flatMap((node) => {
     const {
@@ -122,24 +162,58 @@ const sectionLinkNotes = (
       if (at === undefined) {
         return [];
       }
-      const target = slides[Number(at)];
-      if (target === undefined) {
+      const target = Number(at);
+      const opened = slides[target];
+      if (opened === undefined) {
         return [
-          `Section link \`${href}\` points past the deck's ${slides.length} slides; that is expected until the slide is written, so render this divider again once it is.`,
+          {
+            target,
+            note: `Section link \`${href}\` points past the deck's ${slides.length} slides; that is expected until the slide is written, so render this divider again once it is.`,
+          },
         ];
       }
-      return target.title === contents[line]
+      return opened.title === contents[line]
         ? []
         : [
-            `Section link \`${href}\` sits on "${contents[line] ?? ''}" but opens slide ${at}, titled "${target.title ?? ''}".`,
+            {
+              target,
+              note: `Section link \`${href}\` sits on ${quoted(contents[line] ?? '')} but opens slide ${at}, titled ${quoted(opened.title ?? '')}.`,
+            },
           ];
     });
   });
 };
 
+/** Every link in `slides` whose target is in `[from, to]`, each named by the slide it sits on, less the slide at `skip`. */
+const linkWarnings = (
+  slides: readonly Composition[],
+  [from, to]: readonly [number, number],
+  skip?: number
+): string[] =>
+  slides.flatMap((slide, index) =>
+    index === skip
+      ? []
+      : sectionLinkNotes(slide, slides)
+          .filter(({ target }) => target >= from && target <= to)
+          .map(({ note }) => `Slide ${index}: ${note}`)
+  );
+
+/** `definition` with a handler that resolves to a failed call rather than throwing or rejecting. */
 const tool = <TInput extends ZodObject>(
   definition: IsomerTool<TInput>
-): IsomerTool => definition;
+): IsomerTool => {
+  const guarded: IsomerTool<TInput> = {
+    ...definition,
+    handler: async (input) => {
+      try {
+        return await definition.handler(input);
+      } catch (error) {
+        return text(errorMessage(error), true);
+      }
+    },
+  };
+  return guarded;
+};
 
 const deckId = z
   .string()
@@ -184,18 +258,17 @@ export const createDeckTools = ({
   const check = (value: unknown) =>
     checkComposition(runtime, slideDeckFrame, value);
 
+  /** Stores `value` at `at` with `place`; `shifted` is the range of indexes whose slide changes. */
   const storeSlide = (
     id: string,
     at: number,
     value: unknown,
-    place: (slides: Composition[], slide: Composition) => void
+    place: (slides: Composition[], slide: Composition) => void,
+    shifted: readonly [number, number]
   ): IsomerToolResult => {
     const deck = store.get(id);
     if (!deck) {
-      return text(
-        `No deck "${id}". Call deck_list to see the decks that exist.`,
-        true
-      );
+      return noDeck(id);
     }
     if (at > deck.slides.length) {
       return text(
@@ -218,18 +291,19 @@ export const createDeckTools = ({
       place(slides, slide);
       return slides;
     });
-    // A retitled slide leaves stale any divider that links to it.
-    const stale = updated.slides.flatMap((other, index) =>
-      index === at
-        ? []
-        : sectionLinkNotes(other, updated.slides)
-            .filter((note) => note.includes(`opens slide ${at},`))
-            .map((note) => `Slide ${index}: ${note}`)
-    );
+    // Its own links past the deck are expected while the deck is written in order.
+    const own = sectionLinkNotes(slide, updated.slides)
+      .filter(({ target }) => target < updated.slides.length)
+      .map(({ note }) => `Slide ${at}: ${note}`);
     return json({
       stored: true,
       index: at,
-      warnings: [...result.warnings, ...authoringNotes(slide), ...stale],
+      warnings: [
+        ...result.warnings,
+        ...authoringNotes(slide),
+        ...own,
+        ...linkWarnings(updated.slides, shifted, at),
+      ],
       deck: outline(updated),
       viewer: viewerUrl(id),
     });
@@ -274,7 +348,7 @@ export const createDeckTools = ({
         return Promise.resolve(
           deck
             ? json({ ...outline(deck), compositions: deck.slides })
-            : text(`No deck "${id}".`, true)
+            : noDeck(id)
         );
       },
     }),
@@ -282,68 +356,100 @@ export const createDeckTools = ({
       name: 'deck_set_slide',
       title: 'Write a slide',
       description:
-        "Validates one slide and stores it at `index`, replacing what is there; `index` equal to the slide count appends. An invalid slide is not stored, and the errors say what to fix. `warnings` covers the stored slide and any other slide it affects, such as a divider whose link to it no longer matches its title; links past the deck's end are checked when a divider is rendered.",
+        "Validates one slide and stores it at `index`, replacing what is there; `index` equal to the slide count appends. An invalid slide is not stored, and the errors say what to fix. `warnings` covers the stored slide, including its own section links, and every divider whose link to it no longer matches its title; the stored slide's links past the deck's end are checked when it is rendered.",
       inputSchema: z.object({ deckId, index, composition }),
       handler: ({ deckId: id, index: at, composition: value }) =>
         Promise.resolve(
-          storeSlide(id, at, value, (slides, slide) => {
-            slides[at] = slide;
-          })
+          storeSlide(
+            id,
+            at,
+            value,
+            (slides, slide) => {
+              slides[at] = slide;
+            },
+            [at, at]
+          )
         ),
     }),
     tool({
       name: 'deck_insert_slide',
       title: 'Insert a slide',
       description:
-        'Validates one slide and inserts it before `index`, shifting later slides down.',
+        'Validates one slide and inserts it before `index`, shifting later slides down. `warnings` names every section link into the shifted slides that no longer matches.',
       inputSchema: z.object({ deckId, index, composition }),
       handler: ({ deckId: id, index: at, composition: value }) =>
         Promise.resolve(
-          storeSlide(id, at, value, (slides, slide) => {
-            slides.splice(at, 0, slide);
-          })
+          storeSlide(
+            id,
+            at,
+            value,
+            (slides, slide) => {
+              slides.splice(at, 0, slide);
+            },
+            [at, Number.POSITIVE_INFINITY]
+          )
         ),
     }),
     tool({
       name: 'deck_remove_slide',
       title: 'Remove a slide',
-      description: 'Removes the slide at `index`.',
+      description:
+        'Removes the slide at `index`. `warnings` names every section link into the shifted slides that no longer matches or now points past the deck.',
       inputSchema: z.object({ deckId, index }),
       handler: ({ deckId: id, index: at }) => {
         const deck = store.get(id);
+        if (!deck) {
+          return Promise.resolve(noDeck(id));
+        }
+        if (at >= deck.slides.length) {
+          return Promise.resolve(
+            text(`No slide ${at}; the deck has ${deck.slides.length}.`, true)
+          );
+        }
+        const updated = store.update(id, (slides) =>
+          slides.filter((_, i) => i !== at)
+        );
         return Promise.resolve(
-          !deck || at >= deck.slides.length
-            ? text(`No slide ${at} in deck "${id}".`, true)
-            : json(
-                outline(
-                  store.update(id, (slides) =>
-                    slides.filter((_, i) => i !== at)
-                  )
-                )
-              )
+          json({
+            ...outline(updated),
+            warnings: linkWarnings(updated.slides, [
+              at,
+              Number.POSITIVE_INFINITY,
+            ]),
+          })
         );
       },
     }),
     tool({
       name: 'deck_move_slide',
       title: 'Move a slide',
-      description: 'Moves the slide at `from` to `to`.',
+      description:
+        'Moves the slide at `from` to `to`. `warnings` names every section link into the shifted slides that no longer matches.',
       inputSchema: z.object({ deckId, from: index, to: index }),
       handler: ({ deckId: id, from, to }) => {
         const deck = store.get(id);
-        const count = deck?.slides.length ?? 0;
+        if (!deck) {
+          return Promise.resolve(noDeck(id));
+        }
+        const count = deck.slides.length;
+        if (from >= count || to >= count) {
+          return Promise.resolve(
+            text(`Both positions must be below ${count}.`, true)
+          );
+        }
+        const updated = store.update(id, (slides) => {
+          const [moved] = slides.splice(from, 1);
+          slides.splice(to, 0, moved!);
+          return slides;
+        });
         return Promise.resolve(
-          from >= count || to >= count
-            ? text(`Both positions must be below ${count}.`, true)
-            : json(
-                outline(
-                  store.update(id, (slides) => {
-                    const [moved] = slides.splice(from, 1);
-                    slides.splice(to, 0, moved!);
-                    return slides;
-                  })
-                )
-              )
+          json({
+            ...outline(updated),
+            warnings: linkWarnings(updated.slides, [
+              Math.min(from, to),
+              Math.max(from, to),
+            ]),
+          })
         );
       },
     }),
@@ -362,24 +468,26 @@ export const createDeckTools = ({
       }),
       handler: async ({ deckId: id, index: at, theme = 'light' }) => {
         const deck = store.get(id);
-        const slide = deck ? resolveDeck(deck).slides[at] : undefined;
+        if (!deck) {
+          return noDeck(id);
+        }
+        const slide = resolveDeck(deck).slides[at];
         if (!slide) {
-          return text(`No slide ${at} in deck "${id}".`, true);
+          return text(
+            `No slide ${at}; the deck has ${deck.slides.length}.`,
+            true
+          );
         }
         const [bytes, { overflow, overlaps }] = await Promise.all([
           png(slide, theme),
           layoutOf(slide),
         ]);
         const types = bodyTypes(slide);
-        const { errors } = check(deck?.slides[at]);
-        const links = sectionLinkNotes(slide, deck?.slides ?? []);
+        const { errors } = check(deck.slides[at]);
+        const links = sectionLinkNotes(slide, deck.slides);
         return {
           content: [
-            {
-              type: 'image',
-              data: Buffer.from(bytes).toString('base64'),
-              mimeType: 'image/png',
-            },
+            ...imageResult(bytes).content,
             ...(overflow === undefined
               ? []
               : [
@@ -392,12 +500,12 @@ export const createDeckTools = ({
               type: 'text' as const,
               text: overlapText(defs, overlap, types),
             })),
-            ...links.map((note) => ({ type: 'text' as const, text: note })),
+            ...links.map(({ note }) => ({ type: 'text' as const, text: note })),
             ...(errors.length > 0
               ? [
                   {
                     type: 'text' as const,
-                    text: `This slide no longer validates; rewrite it with deck_set_slide.\n${errors.join('\n')}`,
+                    text: `This slide no longer validates; rewrite it with deck_set_slide. Errors: ${oneLineJson(errors)}`,
                   },
                 ]
               : []),
