@@ -99,17 +99,21 @@ export const markdownText = (text: string): string =>
 /**
  * `text` as inline Markdown: code spans and strong stay marks, and the rest is
  * escaped as {@link markdownText} escapes it. `inStrong` is for text the caller
- * wraps in `**`, where a strong mark cannot nest, so it prints as plain text.
+ * wraps in `**`, where a strong mark cannot nest, so it prints as plain text;
+ * `inTable` is for a GFM table cell, as {@link markdownCode} takes it.
  */
 export const marksMarkdown = (
   text: string,
-  { inStrong = false }: { inStrong?: boolean } = {}
+  {
+    inStrong = false,
+    inTable = false,
+  }: { inStrong?: boolean; inTable?: boolean } = {}
 ): string =>
   escapeLeadingMarker(
     parseMarks(text)
       .map(({ kind, text: run }) =>
         kind === 'code'
-          ? `\`${run.replace(LINE_TERMINATORS, ' ')}\``
+          ? markdownCode(run, { inTable })
           : kind === 'strong' && !inStrong
             ? `**${escapeMarkdownRun(run)}**`
             : escapeMarkdownRun(run)
@@ -117,15 +121,26 @@ export const marksMarkdown = (
       .join('')
   );
 
-/** `code` as an inline Markdown code span, fenced longer than any backtick run in it and kept on one line. */
-export const markdownCode = (code: string): string => {
-  const text = code.replace(LINE_TERMINATORS, ' ');
+/**
+ * `code` as an inline Markdown code span, fenced longer than any backtick run
+ * in it and kept on one line. CommonMark strips one space from each end of a
+ * span that starts and ends with one, so such a value is padded to survive.
+ * `inTable` escapes `|`, which splits a GFM table cell even inside a code span.
+ */
+export const markdownCode = (
+  code: string,
+  { inTable = false }: { inTable?: boolean } = {}
+): string => {
+  const line = code.replace(LINE_TERMINATORS, ' ');
+  const text = inTable ? line.replace(/\|/g, '\\|') : line;
   const longest = Math.max(
     0,
     ...(text.match(/`+/g) ?? []).map((run) => run.length)
   );
   const fence = '`'.repeat(longest + 1);
-  const pad = text.startsWith('`') || text.endsWith('`') ? ' ' : '';
+  const stripped =
+    text.startsWith(' ') && text.endsWith(' ') && text.trim() !== '';
+  const pad = text.startsWith('`') || text.endsWith('`') || stripped ? ' ' : '';
   return `${fence}${pad}${text}${pad}${fence}`;
 };
 

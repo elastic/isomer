@@ -120,4 +120,17 @@ describe('markdownCode', () => {
     expect(markdownCode('`edge`')).toBe('`` `edge` ``');
     expect(markdownCode('one\ntwo')).toBe('`one two`');
   });
+
+  it('pads a value that starts and ends with a space, which CommonMark would strip', () => {
+    expect(markdownCode(' a ')).toBe('`  a  `');
+    expect(markdownCode('   ')).toBe('`   `');
+    expect(markdownCode(' a')).toBe('` a`');
+  });
+
+  it('escapes a pipe inside a table cell', () => {
+    expect(markdownCode('a|b', { inTable: true })).toBe('`a\\|b`');
+    expect(marksMarkdown('see `a|b` here', { inTable: true })).toBe(
+      'see `a\\|b` here'
+    );
+  });
 });
