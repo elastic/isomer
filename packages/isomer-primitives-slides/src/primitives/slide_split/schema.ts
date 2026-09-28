@@ -13,6 +13,7 @@ import {
   slideSplitRatios,
   slideTones,
 } from '../../theme/variants';
+import { crossRefine } from '../cross_field';
 import { sizeField } from '../size';
 
 const sideSchema = (nodeSchema: ZodType<unknown>) =>
@@ -26,7 +27,7 @@ const sideSchema = (nodeSchema: ZodType<unknown>) =>
       tone: z
         .enum(slideTones)
         .describe(
-          'The tone of the label: `primary` for your product or system, `accent` for the other party. Leave it out for a neutral label.'
+          'The tone of the label, so only with `label`: `primary` for your product or system, `accent` for the other party. Leave it out for a neutral label.'
         )
         .optional(),
       items: z
@@ -37,7 +38,16 @@ const sideSchema = (nodeSchema: ZodType<unknown>) =>
           'One to six items, top to bottom. A string is a short bold statement; an object is a slide node (e.g. slideCode, slideTable) and renders as itself. Several nodes stack in order on their own, with no slideStack around them. `code` and `**strong**` marks are allowed.'
         ),
     })
-    .strict();
+    .strict()
+    .check(
+      crossRefine(
+        ({ label, tone }) => tone === undefined || label !== undefined,
+        {
+          error: 'tone colors the label, so it needs one',
+          path: ['tone'],
+        }
+      )
+    );
 
 /** The split schema over `nodeSchema`, shared by `schema` and `schemaFor`. */
 export const buildSchema = (nodeSchema: ZodType<unknown>) => {

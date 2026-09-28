@@ -55,6 +55,18 @@ describe('slideSplit schema', () => {
     expect(examples.every((node) => schema.safeParse(node).success)).toBe(true);
   });
 
+  it('rejects a tone on a side with no label, which it would color', () => {
+    const { errors } = runtime.validate(
+      compose({
+        ...example,
+        left: { tone: 'primary', items: ['Statement.'] },
+      } as PrimitiveNode)
+    );
+    expect(errors.map(({ path, message }) => `${path}: ${message}`)).toEqual([
+      'body[0].body[0].left.tone: tone colors the label, so it needs one',
+    ]);
+  });
+
   it('reports an invalid node item at its index', () => {
     const { errors } = runtime.validate(
       compose({
