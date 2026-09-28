@@ -15,7 +15,7 @@ const handle = (readableName: string) => ({ readableName }) as StyleHandle;
 class Context {
   readonly #prefix = 'x-';
 
-  resolveClassName(...handles: StyleHandle[]) {
+  resolveClassName(...handles: Pick<StyleHandle, 'readableName'>[]) {
     return handles
       .map(({ readableName }) => `${this.#prefix}${readableName}`)
       .join(' ');

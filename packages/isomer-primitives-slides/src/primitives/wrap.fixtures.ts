@@ -41,8 +41,13 @@ const rightmostRun = ({ runs, children }: LayoutBox): number =>
   );
 
 /** `node` alone in a frame, unless it is one. */
-export const inFrame = (node: PrimitiveNode): PrimitiveNode =>
-  node.type === 'slideFrame' ? node : { type: 'slideFrame', body: [node] };
+export const inFrame = (node: PrimitiveNode): PrimitiveNode => {
+  if (node.type === 'slideFrame') {
+    return node;
+  }
+  const frame = { type: 'slideFrame', body: [node] };
+  return frame;
+};
 
 /** The rightmost edge of any text `node` draws on the image surface, alone in a frame unless it is one. */
 export const textRightEdge = async (node: PrimitiveNode): Promise<number> => {

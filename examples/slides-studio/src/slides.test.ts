@@ -10,16 +10,15 @@ import { describe, expect, it } from 'vitest';
 
 import { toSlides } from './slides';
 
+const frame = {
+  type: 'slideFrame',
+  body: [{ type: 'slideHeading', title: 'Refunds' }],
+};
 const composition: Composition = {
   type: 'view',
   title: 'Refunds',
-  body: [
-    {
-      type: 'slideFrame',
-      body: [{ type: 'slideHeading', title: 'Refunds' }],
-    },
-  ],
-} as Composition;
+  body: [frame],
+};
 
 describe('toSlides', () => {
   it('shows a slide the JSX printer refuses with the reason and its JSON', () => {

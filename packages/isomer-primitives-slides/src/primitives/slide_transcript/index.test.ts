@@ -14,6 +14,7 @@ import { slackText } from '../test_helpers.fixtures';
 
 import { example, examples, plainExample } from './examples';
 import { markdown, slack, text } from './index';
+import type { SlideTranscriptNode } from './schema';
 import { schema } from './schema';
 
 const runtime = createIsomerRuntime({
@@ -61,10 +62,10 @@ describe('slideTranscript', () => {
     ['U+2028', '\u2028'],
     ['U+2029', '\u2029'],
   ])('breaks a prose turn at %s as at a newline', (_name, terminator) => {
-    const node = {
+    const node: SlideTranscriptNode = {
       type: 'slideTranscript',
       turns: [{ role: 'model', text: `First line.${terminator}Second line.` }],
-    } as const;
+    };
     expect(text(node)).toBe('Model:\nFirst line.\nSecond line.');
     expect(markdown(node)).toBe('**Model**\n\nFirst line.\nSecond line.');
     expect(slack(node)).toEqual([
