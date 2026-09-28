@@ -60,7 +60,7 @@ const ownsKey = (target: EventTarget | undefined, key: string): boolean => {
   return key === ' ' && target.closest('button') !== null;
 };
 
-/** The in-deck link a plain click landed on, looking through shadow roots. */
+/** The `?slide=` link a plain click landed on, looking through shadow roots. */
 const deckLink = (event: MouseEvent): string | undefined => {
   if (
     event.defaultPrevented ||
@@ -79,7 +79,9 @@ const deckLink = (event: MouseEvent): string | undefined => {
         target instanceof HTMLAnchorElement
     );
   const href = link?.getAttribute('href');
-  return href?.startsWith('?') && (!link?.target || link.target === '_self')
+  return href?.startsWith('?') &&
+    new URLSearchParams(href).has('slide') &&
+    (!link?.target || link.target === '_self')
     ? href
     : undefined;
 };

@@ -123,6 +123,38 @@ describe('Viewer', () => {
     );
   });
 
+  it('leaves a query link that names no slide to the browser', () => {
+    const themed = slideOf('themed', {
+      type: 'slideSection',
+      number: '01',
+      title: 'Themed',
+      contents: ['Dark'],
+      hrefs: ['?theme=dark'],
+    });
+    open('?slide=themed', [end, themed]);
+    const link = stageRoot().querySelector('a[href="?theme=dark"]')!;
+    let intercepted: boolean | undefined;
+    // Runs after the viewer's own listener, and keeps happy-dom from navigating.
+    const record = (event: Event) => {
+      intercepted = event.defaultPrevented;
+      event.preventDefault();
+    };
+    window.addEventListener('click', record);
+    act(() => {
+      link.dispatchEvent(
+        new MouseEvent('click', {
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+          button: 0,
+        })
+      );
+    });
+    window.removeEventListener('click', record);
+    expect(intercepted).toBe(false);
+    expect(pager()).toBe('01 / 01');
+  });
+
   it('reveals a slide’s parts from the pager before moving on', () => {
     open('?slide=list&build=0', [intro, list, end]);
     expect(pager()).toBe('01 / 02 · 0/3');
@@ -184,13 +216,16 @@ describe('Viewer', () => {
     expect(pager()).toBe('01 / 02 · 0/3');
   });
 
-  it('checks overflow again when a part is revealed, not when the viewer re-renders', () => {
-    open('?slide=list&build=0', [intro, list, end]);
-    const initial = overflowChecks.mock.calls.length;
-    expect(initial).toBeGreaterThan(0);
-    press('s');
-    expect(overflowChecks.mock.calls.length).toBe(initial);
-    press('ArrowRight');
-    expect(overflowChecks.mock.calls.length).toBeGreaterThan(initial);
-  });
+  it.each(['slide', 'html'])(
+    'checks overflow on the %s stage again when a part is revealed, not when the viewer re-renders',
+    (surface) => {
+      open(`?slide=list&build=0&surface=${surface}`, [intro, list, end]);
+      const initial = overflowChecks.mock.calls.length;
+      expect(initial).toBeGreaterThan(0);
+      press('s');
+      expect(overflowChecks.mock.calls.length).toBe(initial);
+      press('ArrowRight');
+      expect(overflowChecks.mock.calls.length).toBeGreaterThan(initial);
+    }
+  );
 });
