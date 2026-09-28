@@ -6,13 +6,14 @@
  */
 
 import { example as codeExample } from '../slide_code/examples';
+import { plainExample as tableExample } from '../slide_table/examples';
 
 import type { SlideStackNode } from './types';
 
 /** Canonical {@link SlideStackNode} example. */
 export const example: SlideStackNode = {
   type: 'slideStack',
-  items: [codeExample],
+  items: [tableExample, codeExample],
 };
 
 /** Conformance examples for {@link SlideStackNode}. */

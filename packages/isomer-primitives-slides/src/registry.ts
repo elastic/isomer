@@ -10,40 +10,54 @@
 // `registry.test.ts` fails if the two drift.
 
 import { slideAgendaPrimitive } from './primitives/slide_agenda';
+import { slideBarsPrimitive } from './primitives/slide_bars';
 import { slideBulletListPrimitive } from './primitives/slide_bullet_list';
 import { slideClosingPrimitive } from './primitives/slide_closing';
 import { slideCodePrimitive } from './primitives/slide_code';
 import { slideDefinitionsPrimitive } from './primitives/slide_definitions';
+import { slideDeltaPrimitive } from './primitives/slide_delta';
 import { slideFanoutPrimitive } from './primitives/slide_fanout';
 import { slideFramePrimitive } from './primitives/slide_frame';
 import { slideHeadingPrimitive } from './primitives/slide_heading';
 import { slideListPrimitive } from './primitives/slide_list';
+import { slideMatrixPrimitive } from './primitives/slide_matrix';
+import { slideQuadrantPrimitive } from './primitives/slide_quadrant';
 import { slideQuotePrimitive } from './primitives/slide_quote';
 import { slideSectionPrimitive } from './primitives/slide_section';
 import { slideSourcePrimitive } from './primitives/slide_source';
 import { slideSplitPrimitive } from './primitives/slide_split';
 import { slideStackPrimitive } from './primitives/slide_stack';
+import { slideStatPrimitive } from './primitives/slide_stat';
 import { slideStatementPrimitive } from './primitives/slide_statement';
+import { slideStatsPrimitive } from './primitives/slide_stats';
+import { slideTablePrimitive } from './primitives/slide_table';
 import { slideTerritoryGroupPrimitive } from './primitives/slide_territory_group';
 import { slideTitlePrimitive } from './primitives/slide_title';
 
 /** Every primitive definition this pack registers, in alphabetical order. */
 export const slideDeckPrimitives = [
   slideAgendaPrimitive,
+  slideBarsPrimitive,
   slideBulletListPrimitive,
   slideClosingPrimitive,
   slideCodePrimitive,
   slideDefinitionsPrimitive,
+  slideDeltaPrimitive,
   slideFanoutPrimitive,
   slideFramePrimitive,
   slideHeadingPrimitive,
   slideListPrimitive,
+  slideMatrixPrimitive,
+  slideQuadrantPrimitive,
   slideQuotePrimitive,
   slideSectionPrimitive,
   slideSourcePrimitive,
   slideSplitPrimitive,
   slideStackPrimitive,
+  slideStatPrimitive,
   slideStatementPrimitive,
+  slideStatsPrimitive,
+  slideTablePrimitive,
   slideTerritoryGroupPrimitive,
   slideTitlePrimitive,
 ] as const;

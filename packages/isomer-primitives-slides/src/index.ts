@@ -29,6 +29,7 @@ export type {
   SlideAgendaNode,
   SlideAgendaSection,
 } from './primitives/slide_agenda';
+export type { SlideBarsItem, SlideBarsNode } from './primitives/slide_bars';
 export type { SlideBulletListNode } from './primitives/slide_bullet_list';
 export type {
   SlideClosingLink,
@@ -40,6 +41,7 @@ export type {
   SlideDefinition,
   SlideDefinitionsNode,
 } from './primitives/slide_definitions';
+export type { SlideDeltaNode, SlideDeltaPoint } from './primitives/slide_delta';
 export type {
   SlideFanoutNode,
   SlideFanoutTarget,
@@ -48,12 +50,23 @@ export type { SlideFrameNode } from './primitives/slide_frame';
 export { SlideFrameView } from './primitives/slide_frame';
 export type { SlideHeadingNode } from './primitives/slide_heading';
 export type { SlideListItem, SlideListNode } from './primitives/slide_list';
+export type {
+  SlideMatrixNode,
+  SlideMatrixRow,
+} from './primitives/slide_matrix';
+export type {
+  SlideQuadrant,
+  SlideQuadrantNode,
+} from './primitives/slide_quadrant';
 export type { SlideQuoteNode } from './primitives/slide_quote';
 export type { SlideSectionNode } from './primitives/slide_section';
 export type { SlideSourceNode } from './primitives/slide_source';
 export type { SlideSplitNode, SlideSplitSide } from './primitives/slide_split';
 export type { SlideStackNode } from './primitives/slide_stack';
+export type { SlideStatNode } from './primitives/slide_stat';
 export type { SlideStatementNode } from './primitives/slide_statement';
+export type { SlideStatsItem, SlideStatsNode } from './primitives/slide_stats';
+export type { SlideTableGroup, SlideTableNode } from './primitives/slide_table';
 export type {
   SlideTerritory,
   SlideTerritoryGroupNode,
