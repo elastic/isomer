@@ -14,6 +14,7 @@ import type { Composition } from '../composition/composition';
 import {
   definePrimitive,
   type PrimitiveNode,
+  type PrimitiveRenderContext,
 } from '../define/primitive_module';
 import type { EnhancementDefinition } from '../pack/enhancements';
 import {
@@ -460,6 +461,39 @@ describe('html anchors', () => {
     });
     expect(calls).toBe(1);
     expect(body).toContain(NODE_ANCHOR_ATTRIBUTE);
+  });
+
+  it('gives a callable adapter context the resolved enhancements, and keeps it callable', () => {
+    const seen: string[] = [];
+    const recording = definePrimitive<LeafNode>({
+      ...leaf,
+      renderers: {
+        ...leaf.renderers,
+        react: (node, { context }) => {
+          const call = context as unknown as (() => string) & {
+            enhancements?: Set<string>;
+          };
+          seen.push(`${call()}:${[...(call.enhancements ?? [])].join(',')}`);
+          return createElement('p', null, node.text);
+        },
+      },
+    });
+    renderHTMLWithDispatcher(
+      { type: 'view', body: [{ type: 'leaf', text: 'a' }] },
+      {
+        dispatcher: createPrimitiveDispatcher<LeafNode>([recording]),
+        validate: valid,
+        options: { enhancements: ['leafCopy'] },
+        enhancementDefinitions: [{ id: 'leafCopy', appliesTo: () => true }],
+        styleAdapter: {
+          createCollector: () => ({}),
+          createRenderContext: () =>
+            (() => 'called') as unknown as PrimitiveRenderContext,
+          renderStyles: () => '',
+        },
+      }
+    );
+    expect(new Set(seen)).toEqual(new Set(['called:leafCopy']));
   });
 
   it('renders none unless asked, even when the adapter context says otherwise', () => {

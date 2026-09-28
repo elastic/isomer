@@ -284,11 +284,14 @@ const partsOf = (
 const quoteIds = (entries: readonly AdapterEntry[]): string =>
   entries.map(({ packId }) => `"${packId}"`).join(', ');
 
+/** Whether `value` can carry properties: a non-null object or a function. */
+const isObjectLike = (value: unknown): value is object =>
+  (typeof value === 'object' && value !== null) || typeof value === 'function';
+
 const hasClassNameResolver = (
   context: unknown
 ): context is { resolveClassName: (...handles: StyleHandle[]) => string } =>
-  typeof context === 'object' &&
-  context !== null &&
+  isObjectLike(context) &&
   typeof (context as { resolveClassName?: unknown }).resolveClassName ===
     'function';
 
@@ -302,10 +305,7 @@ const mergedContextView = (
   contexts: readonly unknown[],
   fields: Record<string, unknown>
 ): Record<string, unknown> => {
-  const objects = contexts
-    .filter((context): context is object => typeof context === 'object')
-    .filter((context) => context !== null)
-    .reverse();
+  const objects = contexts.filter(isObjectLike).reverse();
   const own = (key: string | symbol) => Object.hasOwn(fields, key);
   const read = (key: string | symbol): unknown => {
     const owner =

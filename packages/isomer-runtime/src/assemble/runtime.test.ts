@@ -1042,6 +1042,46 @@ describe('createIsomerRuntime', () => {
       );
     });
 
+    it('keeps a callable part context’s members and class names', () => {
+      const callable = (prefix: string) =>
+        Object.assign(() => prefix, {
+          brand: `${prefix}brand`,
+          resolveClassName: (...handles: StyleHandle[]) =>
+            handles.map(({ key }) => key).join(' '),
+        });
+      const adapterWith = (prefix: string) => ({
+        ownsHandle: (handle: StyleHandle) => handle.key.startsWith(prefix),
+        createCollector: () => ({}),
+        createRenderContext: () => callable(prefix),
+        renderStyles: () => '',
+      });
+      const runtime = createIsomerRuntime({
+        packs: styledPacks(adapterWith('one.'), adapterWith('two.')),
+        rendererOverrides: {
+          note: {
+            react: (node, { context }) => {
+              const part = context as ReturnType<typeof callable>;
+              return createElement(
+                'span',
+                {
+                  className: part.resolveClassName(
+                    { key: 'one.root' } as StyleHandle,
+                    { key: 'two.root' } as StyleHandle
+                  ),
+                  'data-brand': part.brand,
+                },
+                (node as NoteNode).text
+              );
+            },
+          },
+        },
+      });
+
+      const { body } = runtime.surfaces.html.render(view('ok'));
+      expect(body).toContain('class="one.root two.root"');
+      expect(body).toContain('data-brand="two.brand"');
+    });
+
     it('keeps each part’s class-instance context working: methods, private state and own fields', () => {
       class PartContext {
         readonly #keys: string[];
