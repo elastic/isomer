@@ -8,13 +8,16 @@
 import { describe, expect, it } from 'vitest';
 
 import { font } from '../theme/base';
+import { heading } from '../theme/components/heading';
+import { scalePx } from '../theme/scale';
 
 import {
   emWidth,
-  longestWord,
   rowLoad,
+  sizeForLines,
   sizeForLoad,
   sizeForWidth,
+  widestWord,
 } from './size';
 import { headingCrowding } from './slide_heading/fit';
 import { statsValueSize } from './slide_stats/react';
@@ -57,6 +60,21 @@ describe('sizeForWidth', () => {
   });
 });
 
+describe('sizeForLines', () => {
+  it('measures every word proportionally when choosing a step', () => {
+    const tracking = heading.title.tracking;
+    const wide = 'WWWWWWWWWW';
+    const width = emWidth(wide, tracking) * scalePx(steps.m) + 1;
+    expect(sizeForLines(undefined, wide, tracking, width, steps)).toBe('m');
+    expect(
+      sizeForLines(undefined, `iiiiiiiiii ${wide}`, tracking, width, steps)
+    ).toBe('m');
+    expect(widestWord(`iiiiiiiiii ${wide}`, tracking)).toBe(
+      emWidth(wide, tracking)
+    );
+  });
+});
+
 describe('text measures', () => {
   it('counts the longest item times the item count', () => {
     expect(rowLoad([['ab', 'c'], ['abcd'], [undefined]])).toBe(12);
@@ -69,10 +87,6 @@ describe('text measures', () => {
     expect(emWidth('abc', font.tracking.max)).toBeLessThan(
       emWidth('abc', none)
     );
-  });
-
-  it('finds the longest word', () => {
-    expect(longestWord('Start building')).toBe('building');
   });
 });
 

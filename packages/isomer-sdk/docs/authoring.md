@@ -68,8 +68,10 @@ The other kind of author is a model, and what it needs is not a component tree b
 interface AuthoringPromptContext {
   guide: string; // the pack's prose
   rules?: string; // distilled generation rules; omitted when empty
-  schema: JsonSchema; // the authoring projection; the router profile does not inline it
+  schema?: JsonSchema; // the authoring projection; absent, or under the router profile, it is not inlined
   primitives: readonly PrimitiveCatalogEntry[]; // each bullet includes `example`
+  catalog?: 'full' | 'index'; // `index` lists each type and purpose only, for a host that answers lookups
+  groups?: readonly PrimitiveGroup[]; // headings the index sorts primitives under; the rest go under "Other"
   examples: readonly unknown[]; // extra host-supplied compositions, not catalog copies
   views?: readonly AuthoringViewSummary[]; // registered views the model can request by id
 }
@@ -84,6 +86,8 @@ Three profiles, because the job differs:
 | `compose-from-primitives` | Build a composition from the catalog, checked against the schema           |
 
 `general` and `compose-from-primitives` inline the JSON Schema. The router profile does not: it requests a view by id and never composes a node. Each catalog bullet carries its `example` as compact JSON. `examples` is an extra host-supplied composition, capped at one, with `meta` stripped. The showcase arrays on `definition.examples` stay off the prompt; the conformance harness still reads them.
+
+A large catalog is too much for a model to read whole. A host sends an index instead: `catalog: 'index'` with the pack's `groups` and no `schema` lists each primitive's type and purpose under its group, and the host answers lookups with the runtime's `describePrimitives(types)`, which returns the entries and the `$defs` they reach. [Authoring context](../../isomer-runtime/docs/authoring-context.md#an-index-then-lookups) describes the flow from the runtime's side.
 
 `createAuthoringPromptBuilder` and `createAgentAuthoringContextFactory` let a pack bind its own guide, rules, and defaults once so a host supplies only what varies. The structural half of the context — authoring schema, catalog, views — comes from the runtime's [authoring context](../../isomer-runtime/docs/authoring-context.md); the prose half belongs to the pack, because it describes a vocabulary rather than a composition.
 

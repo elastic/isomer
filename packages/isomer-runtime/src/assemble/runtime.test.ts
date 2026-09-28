@@ -679,6 +679,36 @@ describe('createIsomerRuntime', () => {
     }
   });
 
+  it.each(['schemaFor', 'describePrimitives'] as const)(
+    'refuses a %s lookup of more than 100 types before reading them',
+    (method) => {
+      const runtime = createIsomerRuntime({ packs: [packOf(notePrimitive)] });
+      const context = runtime.getAuthoringContext();
+      // A proxy that throws on any read past `length`, so a refused lookup never touches its entries.
+      const untouched = new Proxy(
+        Array.from({ length: 101 }, () => 'note'),
+        {
+          get: (target, key) => {
+            if (key !== 'length') {
+              throw new Error(`read ${String(key)}`);
+            }
+            return target.length;
+          },
+        }
+      );
+      expect(() => context[method](untouched)).toThrow(
+        expect.objectContaining({
+          name: 'IsomerError',
+          code: 'TOO_MANY_TYPES',
+          message: expect.stringContaining('at most 100') as unknown,
+        }) as unknown
+      );
+      expect(() =>
+        context[method](Array.from({ length: 100 }, () => 'note'))
+      ).not.toThrow();
+    }
+  );
+
   it('throws for an unknown type passed to describePrimitives', () => {
     const runtime = createIsomerRuntime({ packs: [packOf(notePrimitive)] });
     expect(() =>

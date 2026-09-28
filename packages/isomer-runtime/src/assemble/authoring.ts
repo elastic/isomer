@@ -98,6 +98,9 @@ const mergePackAuthoring = (
 /** Most unknown types an error names before it counts the rest. */
 const MAX_LISTED_TYPES = 10;
 
+/** Most types one `schemaFor` or `describePrimitives` lookup takes; it is refused before any is read. */
+const MAX_LOOKUP_TYPES = 100;
+
 /** Throws if a group names a type no pack registers, or a type sits in two groups across every pack. */
 const assertGroupedOnce = (
   groups: readonly PrimitiveGroup[],
@@ -149,6 +152,12 @@ export const createRuntimeAuthoringContextFactory = (
   assertGroupedOnce(groups, definitionsByType);
 
   const assertKnown = (caller: string, types: readonly string[]): void => {
+    if (types.length > MAX_LOOKUP_TYPES) {
+      throw new IsomerError(
+        'TOO_MANY_TYPES',
+        `getAuthoringContext.${caller}: at most ${MAX_LOOKUP_TYPES} types per lookup, got ${types.length}`
+      );
+    }
     const missing = [
       ...new Set(types.filter((type) => !definitionsByType.has(type))),
     ];

@@ -59,6 +59,19 @@ export const markdownStrong = (text: string): string =>
 export const markdownCode = (code: string): string =>
   inline([{ type: 'inlineCode', value: code.replace(LINE_TERMINATORS, ' ') }]);
 
+// GFM trims a cell's edges before reading it, so whitespace there survives only as a character reference.
+const reference = (whitespace: string): PhrasingContent[] =>
+  [...whitespace].map((char) => ({
+    type: 'html',
+    value: `&#x${(char.codePointAt(0) ?? 0).toString(16).toUpperCase()};`,
+  }));
+
+const cellPhrasing = (cell: string): PhrasingContent[] => {
+  const [, lead = '', core = '', trail = ''] =
+    /^(\s*)([\s\S]*?)(\s*)$/.exec(cell.replace(LINE_TERMINATORS, ' ')) ?? [];
+  return [...reference(lead), ...phrasing(core), ...reference(trail)];
+};
+
 /** A GFM pipe table, marks kept and everything else escaped. The Slack fallback turns it into a native `table` block. */
 export const markdownTable = (
   columns: readonly string[],
@@ -70,7 +83,7 @@ export const markdownTable = (
       type: 'tableRow',
       children: cells.map((cell) => ({
         type: 'tableCell',
-        children: phrasing(cell),
+        children: cellPhrasing(cell),
       })),
     })),
   });

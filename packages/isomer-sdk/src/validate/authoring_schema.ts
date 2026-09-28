@@ -392,22 +392,32 @@ export const buildAuthoringJsonSchema = (
       );
     }
   }
+  const takenBy = (id: string, owner: string): IsomerError =>
+    new IsomerError(
+      'INVALID_BODY_NODE',
+      `buildAuthoringJsonSchema: def id ${JSON.stringify(id)} is taken by ${owner}`
+    );
+  // An extra def may replace a shared def only by naming that def's own schema.
+  const shared = new Map(
+    DEFAULT_EXTRA_DEFS.map(({ id, schema }) => [id, schema])
+  );
+  for (const { id, schema } of extraDefs ?? []) {
+    if (id === BODY_NODE_ID) {
+      throw takenBy(id, 'the body-node union');
+    }
+    const own = shared.get(id);
+    if (own !== undefined && own !== schema) {
+      throw takenBy(id, 'a shared def');
+    }
+  }
   // The body-node union and every shared def take a `$defs` id a primitive type would otherwise share.
-  const taken = new Set([
-    BODY_NODE_ID,
-    ...mergeExtraDefs(extraDefs).map((extra) => extra.id),
-  ]);
-  for (const id of [
-    ...definitions.map(({ type }) => type),
-    ...(extraDefs ?? [])
-      .map((extra) => extra.id)
-      .filter((id) => id === BODY_NODE_ID),
-  ]) {
-    if (taken.has(id) || id === BODY_NODE_ID) {
-      throw new IsomerError(
-        'INVALID_BODY_NODE',
-        `buildAuthoringJsonSchema: def id ${JSON.stringify(id)} is taken by ${id === BODY_NODE_ID ? 'the body-node union' : 'a shared def'}`
-      );
+  const taken = new Set(mergeExtraDefs(extraDefs).map((extra) => extra.id));
+  for (const { type } of definitions) {
+    if (type === BODY_NODE_ID) {
+      throw takenBy(type, 'the body-node union');
+    }
+    if (taken.has(type)) {
+      throw takenBy(type, 'a shared def');
     }
   }
   const projected = buildCompositionJsonSchema(definitions, {

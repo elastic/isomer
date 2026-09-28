@@ -136,6 +136,13 @@ describe('buildAuthoringJsonSchema def ids', () => {
       () => buildAuthoringJsonSchema([primitiveOf('tone', {})]),
     ],
     [
+      'an extra def named for a shared def it does not replace',
+      () =>
+        buildAuthoringJsonSchema([primitiveOf('note', {})], {
+          extraDefs: [{ id: 'tone', schema: z.string() }],
+        }),
+    ],
+    [
       'an extra def named for the body-node union',
       () =>
         buildAuthoringJsonSchema([primitiveOf('note', {})], {

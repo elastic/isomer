@@ -96,15 +96,9 @@ export const sizeForWidth = (
 ): SlideSize =>
   size ?? slideSizes.find((step) => ems * scalePx(steps[step]) <= width) ?? 's';
 
-/** The longest word of `text`, which is what a wrapping display line cannot break. */
-export const longestWord = (text: string): string =>
-  text
-    .split(/\s+/)
-    .reduce(
-      (longest, word) =>
-        displayColumns(word) > displayColumns(longest) ? word : longest,
-      ''
-    );
+/** Width in ems of the widest word of `text`, which is what a wrapping display line cannot break. */
+export const widestWord = (text: string, tracking: ScaleToken): number =>
+  Math.max(0, ...text.split(/\s+/).map((word) => emWidth(word, tracking)));
 
 /** Lines a greedy word wrap gives `text` at `fontPx` in a column `width` pixels wide. */
 export const wrappedLines = (
@@ -144,7 +138,7 @@ export const sizeForLines = (
   slideSizes.find((step) => {
     const fontPx = scalePx(steps[step]);
     return (
-      emWidth(longestWord(text), tracking) * fontPx <= width &&
+      widestWord(text, tracking) * fontPx <= width &&
       wrappedLines(text, fontPx, width * lineFill, tracking) <= maxLines
     );
   }) ??

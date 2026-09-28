@@ -160,18 +160,20 @@ describe('markdownTable', () => {
     );
   });
 
-  // A cell holds no whitespace at its edges, which GFM trims on the way in.
-  it.each(hostileValues)('holds %j in one cell', (value) => {
-    const [table] = readBlocks(markdownTable(['Column'], [[value]]));
-    expect(table?.type).toBe('table');
-    if (table?.type !== 'table') {
-      return;
+  it.each([...hostileValues, '  padded  ', '\ttab\t', ' ', '**bold** '])(
+    'holds %j in one cell',
+    (value) => {
+      const [table] = readBlocks(markdownTable(['Column'], [[value]]));
+      expect(table?.type).toBe('table');
+      if (table?.type !== 'table') {
+        return;
+      }
+      expect(table.children).toHaveLength(2);
+      expect(readRuns(table.children[1]!.children[0]!.children)).toEqual(
+        parseMarks(value.replace(LINE_TERMINATORS, ' '))
+      );
     }
-    expect(table.children).toHaveLength(2);
-    expect(readRuns(table.children[1]!.children[0]!.children)).toEqual(
-      parseMarks(value.replace(LINE_TERMINATORS, ' ').trim())
-    );
-  });
+  );
 
   it('keeps every row to the header’s columns', () => {
     expect(markdownTable(['A', 'B'], [['1', '2']])).toBe(
