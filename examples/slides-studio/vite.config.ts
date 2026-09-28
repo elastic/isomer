@@ -16,6 +16,8 @@ import { studioServer } from './vite/studio_plugin';
 // The MCP URL agents are given must not drift, so the port is fixed.
 export default defineConfig({
   plugins: [react(), studioServer()],
+  // @babel/types, which prints the JSX tab, reads this flag from a `process` the browser lacks.
+  define: { 'process.env.BABEL_TYPES_8_BREAKING': 'false' },
   resolve: { alias: sourceAliases(), dedupe: ['react', 'react-dom'] },
   server: {
     port: 5178,

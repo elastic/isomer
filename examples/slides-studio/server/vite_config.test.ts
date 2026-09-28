@@ -12,3 +12,9 @@ import config from '../vite.config';
 it('sends no CORS headers, so a page on another localhost port cannot read the studio API', () => {
   expect(config.server?.cors).toBe(false);
 });
+
+it('defines the one process.env flag @babel/types reads in the browser', () => {
+  expect(config.define).toEqual({
+    'process.env.BABEL_TYPES_8_BREAKING': 'false',
+  });
+});
