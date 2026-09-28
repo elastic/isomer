@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { showSlideBuild } from '@elastic/isomer-primitives-slides';
 import { type Composition, runEnhancementScript } from '@elastic/isomer-sdk';
 
@@ -69,7 +69,8 @@ export const ShadowHtml = ({
     }
   }, [root, html, composition, build]);
 
-  useOverflow(root, html, onOverflow);
+  const layout = useMemo(() => [html, build], [html, build]);
+  useOverflow(root, layout, onOverflow);
 
   return <div ref={host} />;
 };

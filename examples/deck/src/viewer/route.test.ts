@@ -16,6 +16,61 @@ const slides: DeckSlide[] = ['title', 'render'].map((slug) => ({
   sources: [],
 }));
 
+describe('route slide', () => {
+  it('reads a slide by slug or by position, falling back to the first', () => {
+    const at = (search: string) => readRoute(slides, search, 'light').index;
+    expect(at('')).toBe(0);
+    expect(at('?slide=render')).toBe(1);
+    expect(at('?slide=1')).toBe(1);
+    expect(at('?slide=2')).toBe(0);
+    expect(at('?slide=-1')).toBe(0);
+    expect(at('?slide=missing')).toBe(0);
+  });
+
+  it('writes the slide by slug, keeping other parameters', () => {
+    const route = readRoute(slides, '', 'light');
+    const url = new URLSearchParams(
+      writeRoute(slides, { ...route, index: 1 }, '?deck=a1')
+    );
+    expect(url.get('slide')).toBe('render');
+    expect(url.get('deck')).toBe('a1');
+  });
+});
+
+describe('route theme, surface, and source', () => {
+  it('reads each, falling back per field', () => {
+    expect(
+      readRoute(slides, '?theme=dark&surface=html&source=json', 'light')
+    ).toMatchObject({ theme: 'dark', surface: 'html', source: 'json' });
+    expect(
+      readRoute(slides, '?theme=sepia&surface=pdf&source=yaml', 'dark')
+    ).toMatchObject({ theme: 'dark', surface: 'slide', source: undefined });
+  });
+
+  it('reads `surface=jsx` as an unknown surface', () => {
+    expect(readRoute(slides, '?surface=jsx', 'light')).toMatchObject({
+      surface: 'slide',
+      source: undefined,
+    });
+  });
+
+  it('round-trips through the URL', () => {
+    const route = {
+      ...readRoute(slides, '', 'light'),
+      index: 1,
+      theme: 'dark' as const,
+      surface: 'markdown' as const,
+      source: 'jsx' as const,
+    };
+    expect(readRoute(slides, writeRoute(slides, route), 'light')).toEqual(
+      route
+    );
+    expect(
+      writeRoute(slides, { ...route, source: undefined }, '?source=json')
+    ).not.toContain('source=');
+  });
+});
+
 describe('route builds', () => {
   it('builds by default and starts finished', () => {
     const route = readRoute(slides, '?slide=render', 'light');

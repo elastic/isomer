@@ -29,10 +29,60 @@ const preferredTheme = (): Theme =>
 
 const number = (index: number) => String(index).padStart(2, '0');
 
-const isTyping = (target: EventTarget | null) =>
+const isTyping = (target: EventTarget | undefined) =>
   target instanceof HTMLElement &&
   (target.isContentEditable ||
     ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName));
+
+const SCROLL_KEYS = new Set([
+  ' ',
+  'ArrowUp',
+  'ArrowDown',
+  'ArrowLeft',
+  'ArrowRight',
+  'PageUp',
+  'PageDown',
+  'Home',
+  'End',
+]);
+
+/** Whether the focused control owns `key`: the source panel's scrolling, a tab's arrows, and any button's Space. */
+const ownsKey = (target: EventTarget | undefined, key: string): boolean => {
+  if (!(target instanceof Element)) {
+    return false;
+  }
+  if (target.closest('.source-panel')) {
+    return SCROLL_KEYS.has(key);
+  }
+  if (target.closest('[role="tab"]')) {
+    return key === ' ' || key.startsWith('Arrow');
+  }
+  return key === ' ' && target.closest('button') !== null;
+};
+
+/** The in-deck link a plain click landed on, looking through shadow roots. */
+const deckLink = (event: MouseEvent): string | undefined => {
+  if (
+    event.defaultPrevented ||
+    event.button !== 0 ||
+    event.altKey ||
+    event.ctrlKey ||
+    event.metaKey ||
+    event.shiftKey
+  ) {
+    return undefined;
+  }
+  const link = event
+    .composedPath()
+    .find(
+      (target): target is HTMLAnchorElement =>
+        target instanceof HTMLAnchorElement
+    );
+  const href = link?.getAttribute('href');
+  return href?.startsWith('?') && (!link?.target || link.target === '_self')
+    ? href
+    : undefined;
+};
 
 export interface ViewerProps {
   /** The deck, in order. May change while mounted (a live deck). */
@@ -99,15 +149,6 @@ export const Viewer = ({
     (next: Partial<Route>) => setRoute((prev) => ({ ...prev, ...next })),
     []
   );
-  const step = useCallback(
-    (by: number) =>
-      setRoute((prev) => ({
-        ...prev,
-        index: Math.min(Math.max(prev.index + by, 0), last),
-        build: undefined,
-      })),
-    [last]
-  );
   const startAt = useCallback(
     (position: number) =>
       go({ index: position, build: countAt(position) > 0 ? 0 : undefined }),
@@ -128,6 +169,10 @@ export const Viewer = ({
       go({ index: index - 1, build: undefined });
     }
   }, [go, shown, index]);
+  const onOverflow = useCallback(
+    (overflows: boolean) => setOverflowing(overflows ? slide : undefined),
+    [slide]
+  );
   const firstSource = slide?.sources[0]?.id;
   const toggleSource = useCallback(
     () =>
@@ -188,12 +233,26 @@ export const Viewer = ({
   }, [index]);
 
   useEffect(() => {
+    const onClick = (event: MouseEvent) => {
+      const href = deckLink(event);
+      if (href !== undefined) {
+        event.preventDefault();
+        startAt(readRoute(slides, href, theme).index);
+      }
+    };
+    window.addEventListener('click', onClick);
+    return () => window.removeEventListener('click', onClick);
+  }, [slides, theme, startAt]);
+
+  useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      const [target] = event.composedPath();
       if (
         event.altKey ||
         event.ctrlKey ||
         event.metaKey ||
-        isTyping(event.target)
+        isTyping(target) ||
+        ownsKey(target, event.key)
       ) {
         return;
       }
@@ -251,8 +310,8 @@ export const Viewer = ({
         <div className="pager">
           <button
             aria-label="Previous slide"
-            disabled={index === 0}
-            onClick={() => step(-1)}
+            disabled={index === 0 && shown === 0}
+            onClick={retreat}
             type="button">
             ‹
           </button>
@@ -267,8 +326,8 @@ export const Viewer = ({
           </span>
           <button
             aria-label="Next slide"
-            disabled={index === last}
-            onClick={() => step(1)}
+            disabled={index === last && shown >= count}
+            onClick={advance}
             type="button">
             ›
           </button>
@@ -369,11 +428,8 @@ export const Viewer = ({
                 className={`stage stage-${current.id}`}
                 ref={stage}>
                 <Stage
-                  {...{ fullscreen, pngUrl, slide, surface, theme }}
+                  {...{ fullscreen, pngUrl, slide, surface, theme, onOverflow }}
                   build={builds ? shown : undefined}
-                  onOverflow={(overflows) =>
-                    setOverflowing(overflows ? slide : undefined)
-                  }
                 />
               </section>
               <p className="call">

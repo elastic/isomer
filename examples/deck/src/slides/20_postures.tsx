@@ -41,7 +41,7 @@ export const posturesSlide = toComposition(
         ]}
         footnote={{
           code: 'onValidationError',
-          text: "flips any surface's posture.",
+          text: "flips a validating surface's posture.",
         }}
       />
     </SlideFrame>

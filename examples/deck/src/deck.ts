@@ -76,14 +76,19 @@ const slide = (file: string, composition: Composition): DeckSlide => {
         text: source.replace(licenseHeader, ''),
         file: `examples/deck/src/slides/${file}.tsx`,
       },
-      {
-        id: 'json',
-        label: 'JSON',
-        text: JSON.stringify(composition, null, 2),
-      },
     ],
   };
 };
+
+/** `entry` drawing `composition`, which its JSON source shows. */
+const drawing = (entry: DeckSlide, composition: Composition): DeckSlide => ({
+  ...entry,
+  composition,
+  sources: [
+    ...entry.sources,
+    { id: 'json', label: 'JSON', text: JSON.stringify(composition, null, 2) },
+  ],
+});
 
 const authored: readonly DeckSlide[] = [
   slide('00_title', titleSlide),
@@ -135,7 +140,7 @@ const resolve = (slides: readonly DeckSlide[]): DeckSlide[] => {
     const [frame] = composition.body as SlideFrameNode[];
     const [first] = frame?.body ?? [];
     if (first?.type !== 'slideSection') {
-      return { ...entry, composition };
+      return drawing(entry, composition);
     }
     const next = slides.findIndex(
       ({ composition: later }, position) =>
@@ -147,13 +152,11 @@ const resolve = (slides: readonly DeckSlide[]): DeckSlide[] => {
       ...first,
       hrefs: owned.map(({ slug }) => `?slide=${slug}`),
     };
-    return {
-      ...entry,
-      composition: {
-        ...composition,
-        body: [{ ...frame!, body: [section, ...frame!.body.slice(1)] }],
-      },
+    const linked: SlideFrameNode = {
+      ...frame!,
+      body: [section, ...frame!.body.slice(1)],
     };
+    return drawing(entry, { ...composition, body: [linked] });
   });
 };
 

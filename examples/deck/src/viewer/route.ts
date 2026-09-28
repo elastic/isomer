@@ -58,15 +58,13 @@ export const readRoute = (
   const surface = params.get('surface');
   const theme = params.get('theme');
   const source = params.get('source');
-  // `surface=jsx` links predate the source panel; they open it instead.
-  const legacySource = surface === 'jsx' ? 'jsx' : undefined;
   return {
     index: slideIndex(slides, params.get('slide')),
     build: buildStep(params.get('build')),
     builds: params.get('builds') !== 'off',
     surface: isSurface(surface) ? surface : 'slide',
     theme: theme === 'light' || theme === 'dark' ? theme : fallbackTheme,
-    source: isSource(source) ? source : legacySource,
+    source: isSource(source) ? source : undefined,
   };
 };
 

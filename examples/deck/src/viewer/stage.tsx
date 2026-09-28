@@ -6,7 +6,12 @@
  */
 
 import { useMemo } from 'react';
-import { SLIDE_BUILDS, SLIDE_COPY } from '@elastic/isomer-primitives-slides';
+import {
+  SLIDE_BUILDS,
+  SLIDE_COPY,
+  SLIDE_HEIGHT,
+  SLIDE_WIDTH,
+} from '@elastic/isomer-primitives-slides';
 
 import { runtime } from '../runtime';
 
@@ -104,8 +109,11 @@ export const Stage = ({
     case 'slide':
       return (
         <Scaled {...{ fullscreen }}>
+          {/* The copy script adds buttons React does not own, so each slide gets a fresh tree. */}
           <ShadowSlide
             composition={slide.composition}
+            key={slide.slug}
+            scripts
             {...{ build, theme, onOverflow }}
           />
         </Scaled>
@@ -128,9 +136,9 @@ export const Stage = ({
           <img
             alt={rendered.alt}
             className="png"
-            height={1080}
+            height={SLIDE_HEIGHT}
             src={rendered.src}
-            width={1920}
+            width={SLIDE_WIDTH}
           />
         </Scaled>
       );

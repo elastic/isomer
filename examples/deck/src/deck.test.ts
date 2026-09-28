@@ -74,6 +74,14 @@ describe('deck', () => {
     }
   });
 
+  it.each(deck)(
+    '$slug shows the composition it draws as its JSON source',
+    ({ composition, sources }) => {
+      const json = sources.find(({ id }) => id === 'json');
+      expect(JSON.parse(json?.text ?? 'null')).toEqual(composition);
+    }
+  );
+
   it('footers name the section each slide belongs to', () => {
     let current: SlideSectionNode | undefined;
     for (const slide of deck) {

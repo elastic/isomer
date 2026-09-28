@@ -36,8 +36,8 @@ export const roadmapSlide = toComposition(
                 body: '`code` and **strong** in headings, lists, and columns',
               },
               {
-                title: 'Copy button',
-                body: 'On commands, in react and html',
+                title: 'Copy and builds',
+                body: 'Copy on commands, slides revealed in steps, in react and html',
               },
               {
                 title: 'Agent tools',
@@ -49,10 +49,6 @@ export const roadmapSlide = toComposition(
             title: 'Next',
             status: 'Planned',
             items: [
-              {
-                title: 'Builds',
-                body: 'Reveal a slide in steps, stepped by the viewer',
-              },
               {
                 title: 'Marks everywhere',
                 body: 'The rest of the pack’s text fields',
