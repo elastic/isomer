@@ -3,7 +3,7 @@
 ## Checkout, last 24 hours
 
 | Region | Orders | p99 latency | Errors |
-| --- | --- | --- | --- |
+| - | - | - | - |
 | Europe | 48,210 | 410 ms | 0.2% |
 | North America | 61,905 | 380 ms | 0.1% |
 | Asia Pacific | 22,764 | 1.9 s | 2.4% |

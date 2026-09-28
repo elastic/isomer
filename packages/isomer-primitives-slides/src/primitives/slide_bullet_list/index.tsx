@@ -8,7 +8,8 @@
 import { oneLine } from '@elastic/isomer-sdk/author';
 import { boldSectionLabel } from '@elastic/isomer-sdk/markdown';
 
-import { markdownText, marksMarkdown, plainText } from '../../render/marks';
+import { markdownText, marksMarkdown } from '../../render/markdown';
+import { plainText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import type { SlideBulletMarker } from '../../theme/variants';
 import { definePrimitive } from '../define';

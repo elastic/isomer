@@ -16,7 +16,7 @@ import {
   renderSlackChildren,
   slackCaption,
 } from '../../render';
-import { markdownText } from '../../render/marks';
+import { markdownText } from '../../render/markdown';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';

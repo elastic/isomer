@@ -7,7 +7,8 @@
 
 import { formatHeaderText, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import { marksMarkdown, plainText, stripMarks } from '../../render/marks';
+import { marksMarkdown } from '../../render/markdown';
+import { plainText, stripMarks } from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';

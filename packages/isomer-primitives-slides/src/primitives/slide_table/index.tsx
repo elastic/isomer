@@ -13,11 +13,9 @@ import {
   type SlackTableCell,
 } from '@elastic/isomer-sdk/slack';
 
-import {
-  markdownDelimiterRow,
-  markdownRow,
-  textTable,
-} from '../../render/table';
+import { markdownStrong, markdownText } from '../../render/markdown';
+import { markdownTable } from '../../render/markdown';
+import { textTable } from '../../render/table';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -43,15 +41,12 @@ export const text = (node: SlideTableNode): string => {
 /** Markdown renderer for {@link SlideTableNode}: a GFM pipe table, one per group under its label. */
 export const markdown = (node: SlideTableNode): string => {
   const { columns, label } = node;
-  const head = [markdownRow(columns), markdownDelimiterRow(columns.length)];
   return [
-    label ? `## ${label}` : '',
+    label ? `## ${markdownText(label)}` : '',
     ...tableGroups(node).map(({ label: group, rows }) =>
-      [
-        ...(group ? [`**${group}**`, ''] : []),
-        ...head,
-        ...rows.map(markdownRow),
-      ].join('\n')
+      [group ? markdownStrong(group) : '', markdownTable(columns, rows)]
+        .filter(Boolean)
+        .join('\n\n')
     ),
   ]
     .filter(Boolean)

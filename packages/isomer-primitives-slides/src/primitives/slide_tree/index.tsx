@@ -7,7 +7,7 @@
 
 import { oneLine } from '@elastic/isomer-sdk/author';
 
-import { fencedBlock } from '../../render/fence';
+import { fencedBlock } from '../../render/markdown';
 import { displayColumns } from '../../render/mono';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';

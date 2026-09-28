@@ -63,7 +63,7 @@ describe('slideBars', () => {
     `);
     expect(markdown(scaledExample)).toMatchInlineSnapshot(`
       "| Label | Value |
-      | --- | --- |
+      | - | - |
       | Search | 92 |
       | Checkout | 88 |
       | Basket | 81 |

@@ -14,8 +14,9 @@ import {
 } from '@elastic/isomer-sdk/slack';
 
 import { slackCaption } from '../../render';
-import { fencedBlock } from '../../render/fence';
-import { LINE_TERMINATORS, markdownText } from '../../render/marks';
+import { fencedBlock } from '../../render/markdown';
+import { markdownText } from '../../render/markdown';
+import { LINE_TERMINATORS } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 

@@ -22,12 +22,17 @@ export type {
   SlideRenderScope,
 } from './context';
 export {
+  fencedBlock,
+  markdownCode,
+  markdownStrong,
+  markdownTable,
+  markdownText,
+  marksMarkdown,
+} from './markdown';
+export {
   type MarkRun,
   LINE_TERMINATORS,
   hasLineTerminator,
-  markdownCode,
-  markdownText,
-  marksMarkdown,
   marksReact,
   marksSlack,
   parseMarks,
@@ -41,9 +46,4 @@ export {
   slideOverflow,
   slideOverlaps,
 } from './overflow';
-export {
-  markdownDelimiterRow,
-  markdownRow,
-  markdownTable,
-  textTable,
-} from './table';
+export { textTable } from './table';

@@ -5,8 +5,9 @@
  * 2.0.
  */
 
+import { markdownTable } from '../../render/markdown';
 import { stripMarks } from '../../render/marks';
-import { markdownTable, textTable } from '../../render/table';
+import { textTable } from '../../render/table';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 

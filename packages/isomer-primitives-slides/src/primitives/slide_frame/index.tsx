@@ -14,7 +14,7 @@ import {
   renderSlackChildren,
   slackCaption,
 } from '../../render';
-import { markdownText } from '../../render/marks';
+import { markdownText } from '../../render/markdown';
 import { slideDistillery } from '../../theme/distillery';
 import { scalePx } from '../../theme/scale';
 import { SLIDE_THEME } from '../../theme/theme';

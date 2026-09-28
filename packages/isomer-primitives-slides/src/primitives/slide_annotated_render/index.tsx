@@ -10,7 +10,8 @@ import { type SlackBlock } from '@elastic/isomer-sdk/slack';
 import type { ZodType } from 'zod';
 
 import { renderChildren, renderSlackChildren } from '../../render';
-import { marksMarkdown, marksSlack, plainText } from '../../render/marks';
+import { marksMarkdown } from '../../render/markdown';
+import { marksSlack, plainText } from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';

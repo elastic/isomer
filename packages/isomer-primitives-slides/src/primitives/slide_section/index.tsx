@@ -10,12 +10,8 @@ import { oneLine } from '@elastic/isomer-sdk/author';
 import { markdownLink } from '@elastic/isomer-sdk/markdown';
 import { formatHeaderText, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import {
-  markdownText,
-  marksMarkdown,
-  marksSlack,
-  plainText,
-} from '../../render/marks';
+import { markdownText, marksMarkdown } from '../../render/markdown';
+import { marksSlack, plainText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 

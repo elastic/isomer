@@ -7,7 +7,8 @@
 
 import { oneLine } from '@elastic/isomer-sdk/author';
 
-import { markdownText, marksMarkdown, plainText } from '../../render/marks';
+import { markdownText, marksMarkdown } from '../../render/markdown';
+import { plainText } from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';

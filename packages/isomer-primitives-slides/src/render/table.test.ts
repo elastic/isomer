@@ -20,6 +20,9 @@ describe('displayColumns', () => {
     ['a symbol drawn as text', '\u00a9', 1],
     ['an emoji', '\u{1f642}', 2],
     ['a joined family', '\u{1f469}\u200d\u{1f469}\u200d\u{1f467}', 2],
+    ['a tab', '\t', 0],
+    ['a zero-width space', '\u200b', 0],
+    ['an escape sequence, glyph by glyph', '\u001b[31m', 4],
   ])('counts %s as its display width', (_name, text, columns) => {
     expect(displayColumns(text)).toBe(columns);
   });

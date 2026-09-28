@@ -11,8 +11,9 @@
 
 import type { ScaleToken } from '@elastic/distillate';
 import { z } from '@elastic/isomer-sdk';
+import { eastAsianWidthType } from 'get-east-asian-width';
 
-import { displayColumns, WIDE } from '../render/mono';
+import { displayColumns } from '../render/mono';
 import { extraboldAdvance, monoAdvance } from '../theme/base';
 import { scalePx } from '../theme/scale';
 import { type SlideSize, slideSizes } from '../theme/variants';
@@ -54,8 +55,13 @@ export const rowLoad = (items: readonly (readonly (string | undefined)[])[]) =>
     )
   ) * items.length;
 
+const wide = (glyph: string): boolean => {
+  const type = eastAsianWidthType(glyph.codePointAt(0) ?? 0);
+  return type === 'wide' || type === 'fullwidth';
+};
+
 const glyphAdvance = (glyph: string): number =>
-  WIDE.test(glyph)
+  wide(glyph)
     ? extraboldAdvance.fullwidth
     : /[iljtfrI.,:;!|'’ ]/.test(glyph)
       ? extraboldAdvance.narrow

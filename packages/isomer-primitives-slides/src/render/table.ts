@@ -7,27 +7,7 @@
 
 import { oneLine } from '@elastic/isomer-sdk/author';
 
-import { marksMarkdown } from './marks';
 import { displayColumns } from './mono';
-
-/** One GFM pipe-table row of authored cells, marks kept and everything else escaped. */
-export const markdownRow = (cells: readonly string[]): string =>
-  `| ${cells.map((cell) => marksMarkdown(cell, { inTable: true })).join(' | ')} |`;
-
-/** The delimiter row under a GFM table's header. */
-export const markdownDelimiterRow = (count: number): string =>
-  `| ${Array.from({ length: count }, () => '---').join(' | ')} |`;
-
-/** A GFM pipe table. The Slack fallback turns it into a native `table` block. */
-export const markdownTable = (
-  columns: readonly string[],
-  rows: readonly (readonly string[])[]
-): string =>
-  [
-    markdownRow(columns),
-    markdownDelimiterRow(columns.length),
-    ...rows.map(markdownRow),
-  ].join('\n');
 
 /** A {@link textTable} body line: a row of cells, or a heading on a line of its own. */
 export type TextTableLine = readonly string[] | string;

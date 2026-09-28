@@ -51,8 +51,8 @@ describe('slideMatrix', () => {
       Disputes         Yes   Yes      Partial  No"
     `);
     expect(markdown(pairExample)).toMatchInlineSnapshot(`
-      "|  | Basic | Plus |
-      | --- | --- | --- |
+      "| | Basic | Plus |
+      | - | - | - |
       | Free delivery | No | Yes |
       | Order tracking | Yes | Yes |
       | Priority slots | No | Yes |"

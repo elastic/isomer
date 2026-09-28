@@ -10,12 +10,8 @@ import { bold, type SlackBlock } from '@elastic/isomer-sdk/slack';
 import type { ZodType } from 'zod';
 
 import type { SlideRenderScope } from '../../render/context';
-import {
-  markdownText,
-  marksMarkdown,
-  marksSlack,
-  plainText,
-} from '../../render/marks';
+import { markdownText, marksMarkdown } from '../../render/markdown';
+import { marksSlack, plainText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { contentNode, definePrimitive } from '../define';
 

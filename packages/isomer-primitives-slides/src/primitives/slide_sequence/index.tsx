@@ -11,8 +11,8 @@ import {
   markdownCode,
   markdownText,
   marksMarkdown,
-  plainText,
-} from '../../render/marks';
+} from '../../render/markdown';
+import { plainText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 

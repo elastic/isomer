@@ -7,7 +7,7 @@
 
 import { oneLine } from '@elastic/isomer-sdk/author';
 
-import { markdownText } from '../../render/marks';
+import { markdownText } from '../../render/markdown';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 

@@ -122,14 +122,14 @@ describe('slideTable output', () => {
       "**Every order**
 
       | Service | Role | On call |
-      | --- | --- | --- |
+      | - | - | - |
       | cart-api | Holds the basket | Payments |
       | ledger | Records the charge | Finance platform |
 
       **Only on refunds**
 
       | Service | Role | On call |
-      | --- | --- | --- |
+      | - | - | - |
       | refund-worker | Reverses the charge | Payments |
       | notifier | Emails the customer | Growth |"
     `);

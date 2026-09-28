@@ -16,12 +16,8 @@ import {
   type SlackBlock,
 } from '@elastic/isomer-sdk/slack';
 
-import {
-  markdownText,
-  marksMarkdown,
-  marksSlack,
-  plainText,
-} from '../../render/marks';
+import { markdownText, marksMarkdown } from '../../render/markdown';
+import { marksSlack, plainText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 

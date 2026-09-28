@@ -139,7 +139,7 @@ describe('slideWindow output', () => {
 
   it('bolds the title in markdown', () => {
     expect(runtime.surfaces.markdown.renderNode(terminalExample)).toMatch(
-      /^\*\*~\/shop — release\*\*\n\n```text\n/
+      /^\*\*\\~\/shop — release\*\*\n\n```text\n/
     );
   });
 

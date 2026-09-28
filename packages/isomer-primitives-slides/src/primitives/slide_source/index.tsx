@@ -8,7 +8,8 @@
 import { oneLine } from '@elastic/isomer-sdk/author';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import { marksMarkdown, marksSlack, plainText } from '../../render/marks';
+import { marksMarkdown } from '../../render/markdown';
+import { marksSlack, plainText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
