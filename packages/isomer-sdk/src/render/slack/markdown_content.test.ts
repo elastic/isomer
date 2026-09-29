@@ -1,0 +1,439 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+import { describe, expect, it } from 'vitest';
+
+import { markdownFromString, md } from '../markdown/builder';
+import { SAFE_INPUTS } from '../markdown/safe_inputs.fixtures';
+
+import { SLACK_LIMITS } from './blocks';
+import { markdownContentToSlackBlocks } from './markdown_content';
+
+describe('markdownContentToSlackBlocks', () => {
+  it('keeps text literal and carries formatting, nested at any depth, as styles', () => {
+    expect(
+      markdownContentToSlackBlocks(
+        md.paragraph(
+          '_y_ *x* <b> & ',
+          md.strong(md.emphasis(md.strong('deep'), ' ', md.code('a**b')))
+        )
+      )
+    ).toEqual([
+      {
+        type: 'rich_text',
+        elements: [
+          {
+            type: 'rich_text_section',
+            elements: [
+              { type: 'text', text: '_y_ *x* <b> & ' },
+              {
+                type: 'text',
+                text: 'deep',
+                style: { bold: true, italic: true },
+              },
+              { type: 'text', text: ' ', style: { bold: true, italic: true } },
+              {
+                type: 'text',
+                text: 'a**b',
+                style: { bold: true, italic: true, code: true },
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('links a safe destination, and an image to its source', () => {
+    const [block] = markdownContentToSlackBlocks(
+      md.paragraph(
+        md.link(['a ', md.strong('b')], 'https://a.b'),
+        md.link('', 'https://c.d'),
+        md.image('alt', 'https://e.f/i.png'),
+        md.image('data', 'data:image/png;base64,AA')
+      )
+    );
+    expect(block).toEqual({
+      type: 'rich_text',
+      elements: [
+        {
+          type: 'rich_text_section',
+          elements: [
+            { type: 'link', url: 'https://a.b', text: 'a ' },
+            {
+              type: 'link',
+              url: 'https://a.b',
+              text: 'b',
+              style: { bold: true },
+            },
+            { type: 'link', url: 'https://c.d' },
+            { type: 'link', url: 'https://e.f/i.png', text: 'alt' },
+            { type: 'text', text: 'data' },
+          ],
+        },
+      ],
+    });
+  });
+
+  it('shares one rich_text block across a run and splits it at a table', () => {
+    const blocks = markdownContentToSlackBlocks([
+      md.heading(2, 'Title'),
+      md.paragraph('one'),
+      md.table(['h', md.strong('b')], [['1', md.code('2')]]),
+      md.codeBlock('```\ninner', 'ts'),
+    ]);
+    expect(blocks).toEqual([
+      {
+        type: 'rich_text',
+        elements: [
+          {
+            type: 'rich_text_section',
+            elements: [
+              { type: 'text', text: 'Title', style: { bold: true } },
+              { type: 'text', text: '\n' },
+            ],
+          },
+          {
+            type: 'rich_text_section',
+            elements: [{ type: 'text', text: 'one' }],
+          },
+        ],
+      },
+      {
+        type: 'table',
+        rows: [
+          [
+            { type: 'raw_text', text: 'h' },
+            {
+              type: 'rich_text',
+              elements: [
+                {
+                  type: 'rich_text_section',
+                  elements: [
+                    { type: 'text', text: 'b', style: { bold: true } },
+                  ],
+                },
+              ],
+            },
+          ],
+          [
+            { type: 'raw_text', text: '1' },
+            {
+              type: 'rich_text',
+              elements: [
+                {
+                  type: 'rich_text_section',
+                  elements: [
+                    { type: 'text', text: '2', style: { code: true } },
+                  ],
+                },
+              ],
+            },
+          ],
+        ],
+        column_settings: [
+          { align: 'left', is_wrapped: true },
+          { align: 'left', is_wrapped: true },
+        ],
+      },
+      {
+        type: 'rich_text',
+        elements: [
+          {
+            type: 'rich_text_preformatted',
+            elements: [{ type: 'text', text: '```\ninner' }],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it.each(SAFE_INPUTS)(
+    'keeps %j exact in rich text, never on the string path',
+    (input) => {
+      const expected = input.replace(/\r\n|[\n\r\u2028\u2029]/g, ' ');
+      const blocks = markdownContentToSlackBlocks([
+        md.paragraph(input),
+        md.paragraph(md.strong(input)),
+        md.list([input]),
+        md.table(['h'], [[input]]),
+      ]);
+      expect(blocks.some((block) => block.type === 'section')).toBe(false);
+      const [richText, table] = blocks;
+      if (richText?.type !== 'rich_text' || table?.type !== 'table') {
+        throw new Error('expected rich text then a table');
+      }
+      const texts = richText.elements.map((element) =>
+        (element.type === 'rich_text_list'
+          ? element.elements.flatMap((item) => item.elements)
+          : element.elements
+        )
+          .map((inline) =>
+            inline.type === 'link' ? (inline.text ?? inline.url) : inline.text
+          )
+          .join('')
+          .replace(/\n$/, '')
+      );
+      expect(texts).toEqual([expected, expected, expected]);
+      expect(table.rows[1]).toEqual([{ type: 'raw_text', text: expected }]);
+    }
+  );
+
+  it('clamps a section to the section text budget', () => {
+    const [block] = markdownContentToSlackBlocks(
+      md.paragraph('a'.repeat(SLACK_LIMITS.sectionTextChars), md.strong('b'))
+    );
+    expect(block).toMatchObject({
+      elements: [
+        { elements: [{ text: 'a'.repeat(SLACK_LIMITS.sectionTextChars) }] },
+      ],
+    });
+  });
+
+  it('keeps a full section and its line break within the budget', () => {
+    const [block] = markdownContentToSlackBlocks([
+      md.paragraph('a'.repeat(SLACK_LIMITS.sectionTextChars)),
+      md.paragraph('b'),
+    ]);
+    if (block?.type !== 'rich_text') {
+      throw new Error('expected rich text');
+    }
+    const [first] = block.elements;
+    const length =
+      first?.type === 'rich_text_section'
+        ? first.elements
+            .map((inline) =>
+              inline.type === 'link' ? (inline.text ?? inline.url) : inline.text
+            )
+            .join('').length
+        : 0;
+    expect(length).toBe(SLACK_LIMITS.sectionTextChars);
+  });
+
+  it('bolds a heading inside a list item as it does at the top level', () => {
+    const [block] = markdownContentToSlackBlocks(md.list([md.heading(3, 'h')]));
+    expect(block).toMatchObject({
+      elements: [
+        { elements: [{ elements: [{ text: 'h', style: { bold: true } }] }] },
+      ],
+    });
+  });
+
+  it('numbers a list authored from 0 from 1, sending no negative offset', () => {
+    const [block] = markdownContentToSlackBlocks(
+      md.list(['a'], { ordered: true, start: 0 })
+    );
+    expect(block).toMatchObject({ elements: [{ style: 'ordered' }] });
+    expect(JSON.stringify(block)).not.toContain('offset');
+  });
+
+  it('keeps a first grapheme when one character of the budget is left', () => {
+    const budget = SLACK_LIMITS.sectionTextChars;
+    const [styled] = markdownContentToSlackBlocks(
+      md.paragraph('a'.repeat(budget - 1), md.strong('bc'))
+    );
+    expect(styled).toMatchObject({
+      elements: [{ elements: [{}, { text: 'b', style: { bold: true } }] }],
+    });
+    const [bare] = markdownContentToSlackBlocks(
+      md.paragraph('a'.repeat(budget - 1), md.link('', 'https://a.b'))
+    );
+    expect(bare).toMatchObject({
+      elements: [{ elements: [{}, { type: 'link', text: 'h' }] }],
+    });
+  });
+
+  it('keeps list item content in source order around a nested list', () => {
+    const [block] = markdownContentToSlackBlocks(
+      md.list([
+        [md.paragraph('before'), md.list(['inner']), md.paragraph('after')],
+        'next',
+      ])
+    );
+    expect(block).toMatchObject({
+      elements: [
+        {
+          type: 'rich_text_list',
+          elements: [{ elements: [{ text: 'before' }] }],
+        },
+        { type: 'rich_text_list', indent: 1 },
+        { type: 'rich_text_section', elements: [{ text: 'after' }] },
+        {
+          type: 'rich_text_list',
+          elements: [{ elements: [{ text: 'next' }] }],
+        },
+      ],
+    });
+  });
+
+  it('gives no number to an item holding only a nested list', () => {
+    const [block] = markdownContentToSlackBlocks(
+      md.list([md.list(['inner']), 'next'], { ordered: true })
+    );
+    expect(block).toMatchObject({
+      elements: [
+        { style: 'bullet', indent: 1 },
+        { style: 'ordered', elements: [{ elements: [{ text: 'next' }] }] },
+      ],
+    });
+    expect(block).not.toMatchObject({ elements: [{}, { offset: 1 }] });
+  });
+
+  it('sends a list holding a table through the string path whole', () => {
+    const blocks = markdownContentToSlackBlocks(
+      md.list([[md.table(['A', 'B'], [['1', '2']])]])
+    );
+    expect(blocks.some((block) => block.type === 'rich_text')).toBe(false);
+    const text = JSON.stringify(blocks);
+    expect(text).toContain('A | B');
+    expect(text).toContain('1 | 2');
+  });
+
+  it('prints nothing for a table with no columns and drops a row with no cells', () => {
+    expect(markdownContentToSlackBlocks(md.table([], []))).toEqual([]);
+    expect(markdownContentToSlackBlocks(md.table(['a'], [[]]))).toEqual([
+      {
+        type: 'table',
+        rows: [[{ type: 'raw_text', text: 'a' }]],
+        column_settings: [{ align: 'left', is_wrapped: true }],
+      },
+    ]);
+  });
+
+  it('caps list indent at the Slack maximum and keeps every item', () => {
+    const depth = SLACK_LIMITS.richTextListMaxIndent + 3;
+    let nested = md.list([`d${depth}`]);
+    for (let level = depth - 1; level >= 0; level -= 1) {
+      nested = md.list([[md.paragraph(`d${level}`), nested]]);
+    }
+    const [block] = markdownContentToSlackBlocks(nested);
+    if (block?.type !== 'rich_text') {
+      throw new Error('expected rich text');
+    }
+    const lists = block.elements.filter(
+      (element) => element.type === 'rich_text_list'
+    );
+    expect(
+      lists.every(
+        (list) => (list.indent ?? 0) <= SLACK_LIMITS.richTextListMaxIndent
+      )
+    ).toBe(true);
+    expect(lists.map((list) => list.indent ?? 0)).toContain(
+      SLACK_LIMITS.richTextListMaxIndent
+    );
+    const texts = JSON.stringify(block);
+    for (let level = 0; level <= depth; level += 1) {
+      expect(texts).toContain(`"d${level}"`);
+    }
+  });
+
+  it.each([0, 1])(
+    'keeps a table to the row and column limits, %i past each',
+    (over) => {
+      const columns = Array.from(
+        { length: SLACK_LIMITS.tableColumns + over },
+        (_, index) => `c${index}`
+      );
+      const rows = Array.from(
+        { length: SLACK_LIMITS.tableRows - 1 + over },
+        (_, index) => columns.map(() => String(index))
+      );
+      const [table] = markdownContentToSlackBlocks(md.table(columns, rows));
+      if (table?.type !== 'table') {
+        throw new Error('expected a table');
+      }
+      expect(table.rows).toHaveLength(SLACK_LIMITS.tableRows);
+      expect(
+        table.rows.every((row) => row.length === SLACK_LIMITS.tableColumns)
+      ).toBe(true);
+      expect(table.column_settings).toHaveLength(SLACK_LIMITS.tableColumns);
+      expect(table.rows[0]?.at(-1)).toEqual({
+        type: 'raw_text',
+        text: `c${SLACK_LIMITS.tableColumns - 1}`,
+      });
+    }
+  );
+
+  it('drops an empty paragraph or code block', () => {
+    expect(
+      markdownContentToSlackBlocks([md.paragraph(''), md.codeBlock('')])
+    ).toEqual([]);
+  });
+
+  it('indents a nested list and resumes the outer list at its next number', () => {
+    const [block] = markdownContentToSlackBlocks(
+      md.list(
+        [[md.paragraph('a'), md.paragraph('a2'), md.list(['a.i'])], 'b'],
+        { ordered: true, start: 3 }
+      )
+    );
+    expect(block).toEqual({
+      type: 'rich_text',
+      elements: [
+        {
+          type: 'rich_text_list',
+          style: 'ordered',
+          offset: 2,
+          elements: [
+            {
+              type: 'rich_text_section',
+              elements: [
+                { type: 'text', text: 'a' },
+                { type: 'text', text: '\n' },
+                { type: 'text', text: 'a2' },
+              ],
+            },
+          ],
+        },
+        {
+          type: 'rich_text_list',
+          style: 'bullet',
+          indent: 1,
+          elements: [
+            {
+              type: 'rich_text_section',
+              elements: [{ type: 'text', text: 'a.i' }],
+            },
+          ],
+        },
+        {
+          type: 'rich_text_list',
+          style: 'ordered',
+          offset: 3,
+          elements: [
+            {
+              type: 'rich_text_section',
+              elements: [{ type: 'text', text: 'b' }],
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  it('sends Markdown printed as written, and a block holding it, through the string path', () => {
+    expect(
+      markdownContentToSlackBlocks([
+        md.paragraph('built'),
+        md.list([markdownFromString('**legacy**'), 'x']),
+        md.authored('_authored_'),
+      ])
+    ).toEqual([
+      {
+        type: 'rich_text',
+        elements: [
+          {
+            type: 'rich_text_section',
+            elements: [{ type: 'text', text: 'built' }],
+          },
+        ],
+      },
+      { type: 'section', text: { type: 'mrkdwn', text: '- *legacy*\n- x' } },
+      { type: 'section', text: { type: 'mrkdwn', text: '_authored_' } },
+    ]);
+  });
+});
