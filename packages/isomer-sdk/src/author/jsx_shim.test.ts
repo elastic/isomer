@@ -67,6 +67,32 @@ describe('buildJsxShim', () => {
     });
   });
 
+  it('carries every root field onto the composition', () => {
+    const spec = toComposition(
+      createElement(
+        Composition,
+        {
+          version: 1,
+          title: 'Title',
+          subtitle: 'Subtitle',
+          theme: 'dark',
+          meta: { source: 'test' },
+        },
+        createElement(Note, { body: 'Hello' })
+      )
+    );
+
+    expect(spec).toEqual({
+      type: 'view',
+      version: 1,
+      title: 'Title',
+      subtitle: 'Subtitle',
+      theme: 'dark',
+      meta: { source: 'test' },
+      body: [{ type: 'note', body: 'Hello' }],
+    });
+  });
+
   it('maps JSX children onto a unique child-array field from children()', () => {
     const spec = toComposition(
       createElement(
