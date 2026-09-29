@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-09-29
+
+- **Slack envelope clamps every block's text**: `renderSlackEnvelope` clamps each Slack-limited text in the blocks a renderer returns, not just asset-image alt text. `SLACK_LIMITS` gains `imageTitleChars`, `videoTitleChars`, `videoDescriptionChars`, `videoAuthorNameChars`, `buttonTextChars`, `placeholderChars`, and `optionGroupLabelChars`.
+
 ## 2026-09-28
 
 - **Unique JSX component names**: `buildJsxShim` throws `DUPLICATE_PRIMITIVE_TYPE`, naming both types, when two primitive or child types capitalize to one component name or a type collides with the root `Composition`.
