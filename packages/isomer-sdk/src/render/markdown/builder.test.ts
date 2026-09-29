@@ -228,6 +228,28 @@ describe('md', () => {
     ).toBe('## Title\n\na *b*\n\nx\n\nc');
   });
 
+  it('prints no markers for empty inline content', () => {
+    expect(
+      serializeMarkdown(
+        md.paragraph(
+          'a',
+          md.strong(''),
+          md.emphasis(md.strong()),
+          md.code(''),
+          'b'
+        )
+      )
+    ).toBe('ab');
+  });
+
+  it('adds no blank lines for trailing whitespace in printed-as-written content', () => {
+    expect(serializeMarkdown([md.authored('a\n\n\n'), md.paragraph('b')])).toBe(
+      'a\n\nb'
+    );
+    expect(serializeMarkdown(markdownFromString('x\r\n\n  '))).toBe('x');
+    expect(serializeMarkdown(markdownFromString('\n \n'))).toBe('');
+  });
+
   it('builds tight lists and indents a nested multi-line string', () => {
     expect(serializeMarkdown(md.list(['one', 'two']))).toBe('- one\n- two');
     expect(

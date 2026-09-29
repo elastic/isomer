@@ -86,9 +86,27 @@ const itemContent = (
     ? [{ type: 'paragraph', children: [phrasing(item)] }]
     : (rootContent(item) as ListItem['children']);
 
-// Printed as written, for Markdown that is already safe.
+// Printed as written, for Markdown that is already safe. Trailing whitespace
+// would add blank lines between blocks.
 const verbatim = (markdown: string): MarkdownBlock =>
-  block({ type: VERBATIM, value: markdown } as unknown as RootContent);
+  block({
+    type: VERBATIM,
+    value: markdown.trimEnd(),
+  } as unknown as RootContent);
+
+const emptyText = (): PhrasingContent => ({ type: 'text', value: '' });
+
+const isEmptyText = (node: PhrasingContent): boolean =>
+  node.type === 'text' && node.value === '';
+
+// An empty wrapper prints its markers alone: `****` reads as a thematic break.
+const wrapper = (
+  type: 'strong' | 'emphasis',
+  inputs: MarkdownInlineInput[]
+): MarkdownInline => {
+  const children = inputs.map(phrasing);
+  return inline(children.every(isEmptyText) ? emptyText() : { type, children });
+};
 
 /**
  * Builds Markdown as content rather than strings, so escaping follows where
@@ -102,11 +120,13 @@ const verbatim = (markdown: string): MarkdownBlock =>
 export const md = {
   text: (value: string): MarkdownInline => inline(phrasing(value)),
   strong: (...children: MarkdownInlineInput[]): MarkdownInline =>
-    inline({ type: 'strong', children: children.map(phrasing) }),
+    wrapper('strong', children),
   emphasis: (...children: MarkdownInlineInput[]): MarkdownInline =>
-    inline({ type: 'emphasis', children: children.map(phrasing) }),
+    wrapper('emphasis', children),
   code: (value: string): MarkdownInline =>
-    inline({ type: 'inlineCode', value: oneLine(value) }),
+    inline(
+      value === '' ? emptyText() : { type: 'inlineCode', value: oneLine(value) }
+    ),
   link: (
     label: MarkdownInlineInput | readonly MarkdownInlineInput[],
     href: string
@@ -178,7 +198,7 @@ export const md = {
 
 /** A renderer's string output as content, printed as written. */
 export const markdownFromString = (markdown: string): MarkdownContent =>
-  markdown === '' ? [] : verbatim(markdown);
+  markdown.trim() === '' ? [] : verbatim(markdown);
 
 const asText: Handle = (
   node: { value?: string; alt?: string | null },
