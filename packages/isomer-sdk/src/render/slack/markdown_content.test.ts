@@ -284,14 +284,22 @@ describe('markdownContentToSlackBlocks', () => {
     ).toEqual(['list: i\nq\nr', 'list: n']);
   });
 
-  it('quotes Markdown printed as written line by line', () => {
+  it('quotes Markdown printed as written, its code and lists bordered', () => {
     expect(
       outline(
         markdownContentToSlackBlocks(
-          md.blockquote(markdownFromString('**e**\n\nf'))
+          md.blockquote(
+            markdownFromString('**e**\n\nf\n\n```\n*g*\n```'),
+            md.list([[md.paragraph('h'), md.table(['i'], [])]])
+          )
         )
       )
-    ).toEqual(['section: > *e*\n\n> f']);
+    ).toEqual([
+      'section: > *e*\n\n> f',
+      'preformatted|: *g*',
+      'section: > - h',
+      'table: i',
+    ]);
   });
 
   it('hands the string path a break as a line ending and a quote as its blocks', () => {

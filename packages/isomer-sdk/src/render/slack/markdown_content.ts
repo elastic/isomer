@@ -343,14 +343,28 @@ type Piece = SlackRichTextBlockElement | SlackBlock;
 const isElement = (piece: Piece): piece is SlackRichTextBlockElement =>
   piece.type.startsWith('rich_text_');
 
-// What a quote holds besides text keeps a quote's border.
-const bordered = (piece: Piece): Piece => {
-  switch (piece.type) {
+const borderedElement = (
+  element: SlackRichTextBlockElement
+): SlackRichTextBlockElement => {
+  switch (element.type) {
     case 'rich_text_list':
     case 'rich_text_preformatted':
-      return { ...piece, border: 1 };
+      return { ...element, border: 1 };
     case 'rich_text_section':
-      return { type: 'rich_text_quote', elements: piece.elements };
+      return { type: 'rich_text_quote', elements: element.elements };
+    default:
+      return element;
+  }
+};
+
+// What a quote holds besides text keeps a quote's border; a table has none.
+const bordered = (piece: Piece): Piece => {
+  if (isElement(piece)) {
+    return borderedElement(piece);
+  }
+  switch (piece.type) {
+    case 'rich_text':
+      return { ...piece, elements: piece.elements.map(borderedElement) };
     case 'section':
       return piece.text?.type === 'mrkdwn'
         ? {
