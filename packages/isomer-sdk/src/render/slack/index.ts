@@ -81,6 +81,7 @@ export {
   formatHeaderText,
   gfmToSlackBlocks,
   gfmToSlackMrkdwn,
+  isAbsoluteHttpUrl,
   italic,
   joinMrkdwn,
   link,

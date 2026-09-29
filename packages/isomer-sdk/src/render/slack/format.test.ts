@@ -7,6 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { isSlackReachableImageUrl } from './assets';
 import { SLACK_LIMITS } from './blocks';
 import {
   bold,
@@ -53,13 +54,35 @@ describe('mrkdwn helpers', () => {
     expect(link('mailto:a@b.c', 'Mail')).toBe('<mailto:a@b.c|Mail>');
   });
 
-  it.each(['#', '/path', './a', '//host/a'])(
-    'prints the label of a link to %s, which Slack cannot resolve',
-    (href) => {
-      expect(link(href, 'x')).toBe('x');
-      expect(gfmToSlackMrkdwn(`[x](${href}) ![alt](${href})`)).toBe('x alt');
+  it.each([
+    '#',
+    '/path',
+    './a',
+    '//host/a',
+    'https://',
+    'http://?q=1',
+    'https:///path',
+    'http://\\host',
+    'mailto:',
+    'mailto:?subject=x',
+  ])('prints the label of a link to %s, which Slack cannot resolve', (href) => {
+    expect(link(href, 'x')).toBe('x');
+    expect(gfmToSlackMrkdwn(`[x](${href}) ![alt](${href})`)).toBe('x alt');
+  });
+});
+
+describe('isSlackReachableImageUrl', () => {
+  it('needs an https URL with a host', () => {
+    expect(isSlackReachableImageUrl('https://a.b/i.png')).toBe(true);
+    for (const src of [
+      'http://a.b/i.png',
+      'https://',
+      'https:///i.png',
+      '/i.png',
+    ]) {
+      expect(isSlackReachableImageUrl(src)).toBe(false);
     }
-  );
+  });
 });
 
 describe('clamping', () => {

@@ -63,7 +63,21 @@ export const code = (text: string): string =>
 export const codeBlock = (text: string): string =>
   `\`\`\`\n${text.replace(/```/g, '``\u200d`')}\n\`\`\``;
 
-const ABSOLUTE_URL_RE = /^(?:https?:\/\/|mailto:)/i;
+const parsedUrl = (url: string): URL | null => {
+  try {
+    return new URL(url);
+  } catch {
+    return null;
+  }
+};
+
+// `URL` repairs a missing authority (`https:///a` has host `a`), so the literal
+// authority is checked too.
+const HTTP_AUTHORITY_RE = /^https?:\/\/[^/?#\\]/i;
+
+/** Whether `url` is an `http:` or `https:` URL with a host. */
+export const isAbsoluteHttpUrl = (url: string): boolean =>
+  HTTP_AUTHORITY_RE.test(url) && Boolean(parsedUrl(url)?.hostname);
 
 /**
  * `href` when it passes {@link sanitizeNavigationHref} as an absolute URL,
@@ -71,7 +85,13 @@ const ABSOLUTE_URL_RE = /^(?:https?:\/\/|mailto:)/i;
  */
 export const slackLinkUrl = (href: string): string | null => {
   const url = sanitizeNavigationHref(href);
-  return url !== null && ABSOLUTE_URL_RE.test(url) ? url : null;
+  if (url === null) {
+    return null;
+  }
+  return isAbsoluteHttpUrl(url) ||
+    (/^mailto:/i.test(url) && Boolean(parsedUrl(url)?.pathname))
+    ? url
+    : null;
 };
 
 /**

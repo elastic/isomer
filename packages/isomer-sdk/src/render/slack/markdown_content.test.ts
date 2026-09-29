@@ -79,34 +79,42 @@ describe('markdownContentToSlackBlocks', () => {
     });
   });
 
-  it.each(['javascript:alert(1)', '#', '/path', './a', '//host/a', 'https:/a'])(
-    'keeps the styled label of a link to %s',
-    (href) => {
-      expect(
-        markdownContentToSlackBlocks(
-          md.paragraph(
-            md.link(['a ', md.strong('b')], href),
-            md.link('', href),
-            md.image('alt', '/i.png')
-          )
+  it.each([
+    'javascript:alert(1)',
+    '#',
+    '/path',
+    './a',
+    '//host/a',
+    'https:/a',
+    'https://',
+    'http://?q=1',
+    'https:///path',
+    'mailto:',
+  ])('keeps the styled label of a link to %s', (href) => {
+    expect(
+      markdownContentToSlackBlocks(
+        md.paragraph(
+          md.link(['a ', md.strong('b')], href),
+          md.link('', href),
+          md.image('alt', '/i.png')
         )
-      ).toEqual([
-        {
-          type: 'rich_text',
-          elements: [
-            {
-              type: 'rich_text_section',
-              elements: [
-                { type: 'text', text: 'a ' },
-                { type: 'text', text: 'b', style: { bold: true } },
-                { type: 'text', text: 'alt' },
-              ],
-            },
-          ],
-        },
-      ]);
-    }
-  );
+      )
+    ).toEqual([
+      {
+        type: 'rich_text',
+        elements: [
+          {
+            type: 'rich_text_section',
+            elements: [
+              { type: 'text', text: 'a ' },
+              { type: 'text', text: 'b', style: { bold: true } },
+              { type: 'text', text: 'alt' },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
 
   it('links an absolute URL, mailto included, and a table cell only to one', () => {
     const [paragraph, table] = markdownContentToSlackBlocks([
