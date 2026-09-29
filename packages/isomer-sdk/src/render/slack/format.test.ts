@@ -237,13 +237,63 @@ describe('gfmToSlackMrkdwn', () => {
   );
 
   it.each(['\n', '\r\n'])(
+    'reads a hard break across quote depths, list items, and lazy lines with %j line endings',
+    (eol) => {
+      const breaks = (...lines: string[]): boolean =>
+        !gfmToSlackMrkdwn(lines.join(eol)).split('\n')[0]!.endsWith('\\');
+      for (const lines of [
+        ['> a\\', '> | h |', '> | - |'],
+        ['> a\\', '> > b'],
+        ['- > a\\', '  > > b'],
+        ['> - a\\', '>   > b'],
+        ['> - a\\', '>      # b'],
+        ['> a\\', '2. b'],
+        ['> a\\', '<span>'],
+        ['- a\\', '<span>'],
+      ]) {
+        expect(breaks(...lines)).toBe(false);
+      }
+      for (const lines of [
+        ['> > a\\', '> | h |', '> | - |'],
+        ['- a\\', '| h |', '| - |'],
+        ['> a\\', 'b'],
+        ['> > a\\', '> b'],
+        ['- a\\', '  2. b'],
+        ['> - a\\', '>   2. b'],
+        ['> a\\', '==='],
+        ['- a\\', '==='],
+      ]) {
+        expect(breaks(...lines)).toBe(true);
+      }
+    }
+  );
+
+  it.each(['\n', '\r\n'])(
+    'keeps a quoted code fence as written with %j line endings',
+    (eol) => {
+      const lines = (...text: string[]): string => text.join(eol);
+      expect(
+        gfmToSlackMrkdwn(
+          lines('> ```ts', '> *x* \\*', '>', '> > y', '> ```', 'after')
+        )
+      ).toBe('> ```\n> *x* \\*\n>\n> > y\n> ```\nafter');
+      expect(gfmToSlackMrkdwn(lines('> > ```', '> > a', 'b'))).toBe(
+        '> ```\n> a\n> ```\nb'
+      );
+      expect(gfmToSlackMrkdwn(lines('- > ```', '  > x', '  > ```'))).toBe(
+        '- ```\n  x\n  ```'
+      );
+    }
+  );
+
+  it.each(['\n', '\r\n'])(
     'prints a quote inside a list item as its text with %j line endings',
     (eol) => {
       const lines = (...text: string[]): string => text.join(eol);
       expect(
         gfmToSlackMrkdwn(lines('- > a\\', '  > b', '  >', '  > ## c', 'd'))
       ).toBe('- a\n  b\n  *c*\nd');
-      expect(gfmToSlackMrkdwn(lines('1. x', '   > q\\', '   > > r'))).toBe(
+      expect(gfmToSlackMrkdwn(lines('1. x', '   > q\\', '   > r'))).toBe(
         '1. x\n   q\n   r'
       );
       expect(gfmToSlackMrkdwn(lines('- - > a\\', '    > b'))).toBe(

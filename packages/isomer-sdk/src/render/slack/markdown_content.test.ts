@@ -190,8 +190,7 @@ describe('markdownContentToSlackBlocks', () => {
         md.blockquote(
           md.paragraph('> a', md.break(), md.strong('b')),
           md.heading(2, '# c'),
-          md.blockquote(md.paragraph('d')),
-          md.codeBlock('e')
+          md.blockquote(md.paragraph('d'))
         ),
         md.list([md.blockquote(md.paragraph('f', md.break(), 'g'))]),
       ])
@@ -209,8 +208,6 @@ describe('markdownContentToSlackBlocks', () => {
               { type: 'text', text: '# c', style: { bold: true } },
               { type: 'text', text: '\n' },
               { type: 'text', text: 'd' },
-              { type: 'text', text: '\n' },
-              { type: 'text', text: 'e', style: { code: true } },
             ],
           },
           {
@@ -228,6 +225,25 @@ describe('markdownContentToSlackBlocks', () => {
             ],
           },
         ],
+      },
+    ]);
+  });
+
+  it('sends a quote holding code through the string path, the code kept as written', () => {
+    expect(
+      markdownContentToSlackBlocks(
+        md.blockquote(
+          md.paragraph('a'),
+          md.codeBlock('*b* \\*\n> c\n\n  d', 'ts')
+        )
+      )
+    ).toEqual([
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: '> a\n> ```\n> *b* \\*\n> > c\n>\n>   d\n> ```',
+        },
       },
     ]);
   });

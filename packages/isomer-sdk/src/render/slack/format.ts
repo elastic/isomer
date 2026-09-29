@@ -604,6 +604,7 @@ const closesFence = (line: string, opening: string): boolean =>
 const TABLE_SEPARATOR_RE =
   /^(?=[^|]*\|)\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
 const TABLE_ROW_RE = /^\s*\|.*\|\s*$/;
+const QUOTE_MARKER_RE = /^ {0,3}>[ \t]?/;
 const QUOTE_MARKERS_RE = /^(?: {0,3}>[ \t]?)+/;
 const LIST_ITEM_RE = /^(?:[ \t]*(?:[-+*]|\d{1,9}[.)])[ \t]+)+/;
 const LIST_LEAD_RE = /^(?:[ \t]*(?:[-+*]|\d{1,9}[.)])[ \t]+)*[ \t]*/;
@@ -669,6 +670,7 @@ interface QuotedLine {
   // The list markers and indent a quote inside a list item keeps.
   lead: string;
   body: string;
+  depth: number;
 }
 
 const splitQuote = (
@@ -681,23 +683,40 @@ const splitQuote = (
   const lead = inList ? (LIST_LEAD_RE.exec(line)?.[0] ?? '') : '';
   const markers = QUOTE_MARKERS_RE.exec(line.slice(lead.length))?.[0];
   return markers
-    ? { lead, body: line.slice(lead.length + markers.length) }
+    ? {
+        lead,
+        body: line.slice(lead.length + markers.length),
+        depth: markers.split('>').length - 1,
+      }
     : undefined;
 };
 
-// The next line's quoted text when it continues the same quoted paragraph.
-const nextQuoteBody = (
+// `line` after exactly `depth` quote markers, or `undefined` with fewer.
+const unquote = (line: string, depth: number): string | undefined => {
+  let rest = line;
+  for (let level = 0; level < depth; level += 1) {
+    const marker = QUOTE_MARKER_RE.exec(rest)?.[0];
+    if (marker === undefined) {
+      return undefined;
+    }
+    rest = rest.slice(marker.length);
+  }
+  return rest;
+};
+
+// The next line as a quote in the same list item, if it is one.
+const nextQuote = (
   next: string | undefined,
   listOffset: number | undefined
-): string | undefined => {
+): QuotedLine | undefined => {
   if (listOffset === undefined) {
-    return splitQuote(next, false)?.body;
+    return splitQuote(next, false);
   }
   return next === undefined ||
     LIST_ITEM_RE.test(next) ||
     listOffsetAfter(next, listOffset) === undefined
     ? undefined
-    : splitQuote(next, true)?.body;
+    : splitQuote(next, true);
 };
 
 // CommonMark's HTML block type 6 tag names.
@@ -708,36 +727,43 @@ const HTML_BLOCK_NAMES =
   'link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|search|' +
   'section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul';
 
-// Block openers that can interrupt a paragraph, a setext underline included.
-// An ordered item interrupts only from 1 outside a list.
-const PARAGRAPH_INTERRUPT_RES = [
+// Blocks that start wherever they appear.
+const BLOCK_START_RES = [
   /^ {0,3}>/,
   /^ {0,3}#{1,6}(?:[ \t]|$)/,
   /^ {0,3}(?:`{3,}[^`]*|~{3,}.*)$/,
-  /^ {0,3}(?:=+|-+)[ \t]*$/,
   /^ {0,3}([*_-])(?:[ \t]*\1){2,}[ \t]*$/,
-  /^ {0,3}[-+*][ \t]+\S/,
   new RegExp(
     `^ {0,3}<(?:(?:script|pre|style|textarea)(?:[\\s>]|$)|!--|\\?|![A-Za-z]|!\\[CDATA\\[|/?(?:${HTML_BLOCK_NAMES})(?:[\\s/>]|$))`,
     'i'
   ),
 ];
-const ORDERED_ITEM_RE = /^ {0,3}(\d{1,9})[.)][ \t]+\S/;
+// A setext underline, and the list items that may interrupt a paragraph.
+const INTERRUPT_RES = [
+  /^ {0,3}(?:=+|-+)[ \t]*$/,
+  /^ {0,3}(?:[-+*]|1[.)])[ \t]+\S/,
+];
+// Blocks a lazy line starts though they cannot interrupt a paragraph.
+const LAZY_START_RES = [
+  /^ {0,3}(?:[-+*]|\d{1,9}[.)])(?:[ \t]|$)/,
+  /^ {0,3}(?:<[A-Za-z][A-Za-z0-9-]*(?:\s+[A-Za-z_:][\w.:-]*(?:\s*=\s*(?:[^\s"'=<>`]+|'[^']*'|"[^"]*"))?)*\s*\/?>|<\/[A-Za-z][A-Za-z0-9-]*\s*>)[ \t]*$/,
+];
 
 // Whether `next` continues the paragraph, so a trailing backslash before it is
-// a hard break.
+// a hard break. A `lazy` line sits outside the paragraph's container, where
+// any block may start and no table can.
 const continuesParagraph = (
   next: string | undefined,
   afterNext: string | undefined,
-  inList: boolean
+  lazy: boolean
 ): boolean =>
   next !== undefined &&
   next.trim() !== '' &&
-  !PARAGRAPH_INTERRUPT_RES.some((re) => re.test(next)) &&
-  !(inList
-    ? ORDERED_ITEM_RE.test(next)
-    : ORDERED_ITEM_RE.exec(next)?.[1] === '1') &&
+  ![...BLOCK_START_RES, ...(lazy ? LAZY_START_RES : INTERRUPT_RES)].some((re) =>
+    re.test(next)
+  ) &&
   !(
+    !lazy &&
     TABLE_ROW_RE.test(next) &&
     afterNext !== undefined &&
     TABLE_SEPARATOR_RE.test(afterNext)
@@ -765,6 +791,50 @@ const withinItem = (
   line.length - line.trimStart().length >= listOffset
     ? line.slice(listOffset)
     : line;
+
+// A line outside the item is lazy.
+const continuesInItem = (
+  next: string | undefined,
+  afterNext: string | undefined,
+  itemOffset: number | undefined
+): boolean => {
+  const inItem =
+    next !== undefined &&
+    (itemOffset === undefined ||
+      next.length - next.trimStart().length >= itemOffset);
+  return inItem
+    ? continuesParagraph(
+        withinItem(next, itemOffset),
+        withinItem(afterNext, itemOffset),
+        false
+      )
+    : continuesParagraph(next, undefined, true);
+};
+
+// A deeper quote opens a block; a shallower or unquoted line continues lazily.
+const continuesQuote = (
+  quote: QuotedLine,
+  next: string | undefined,
+  afterNext: string | undefined,
+  listOffset: number | undefined
+): boolean => {
+  const following = nextQuote(next, listOffset);
+  if (following === undefined) {
+    return continuesParagraph(withinItem(next, listOffset), undefined, true);
+  }
+  if (following.depth !== quote.depth) {
+    return (
+      following.depth < quote.depth &&
+      continuesParagraph(following.body, undefined, true)
+    );
+  }
+  const after = nextQuote(afterNext, listOffset);
+  return continuesInItem(
+    following.body,
+    after?.depth === quote.depth ? after.body : undefined,
+    LIST_ITEM_RE.exec(quote.body)?.[0].length
+  );
+};
 
 /**
  * Translates GFM into one Slack `mrkdwn` string:
@@ -838,21 +908,51 @@ export const gfmToSlackMrkdwn = (gfm: string): string => {
       out.push(
         renderLine(
           text,
-          continuesParagraph(
-            withinItem(next, listOffset),
-            lines[i + 2]?.replace(/\r$/, ''),
-            inList
-          )
+          continuesInItem(next, lines[i + 2]?.replace(/\r$/, ''), listOffset)
         )
       );
+    } else if (FENCE_RE.test(quote.body)) {
+      // The fence ends at its closing line or where the quote does.
+      const opening = FENCE_RE.exec(quote.body)![1]!;
+      const body: string[] = [];
+      i += 1;
+      while (i < lines.length) {
+        const raw = lines[i]!.replace(/\r$/, '');
+        const indent = raw.length - raw.trimStart().length;
+        const inner =
+          listOffset !== undefined && indent < listOffset
+            ? undefined
+            : unquote(inList ? raw.trimStart() : raw, quote.depth);
+        if (inner === undefined) {
+          break;
+        }
+        i += 1;
+        if (closesFence(inner, opening)) {
+          break;
+        }
+        body.push(inner);
+      }
+      const rest = inList ? ' '.repeat(quote.lead.length) : '> ';
+      out.push(
+        codeBlock(body.join('\n'))
+          .split('\n')
+          .map((row, index) =>
+            row === ''
+              ? rest.trimEnd()
+              : `${index === 0 && inList ? quote.lead : rest}${row}`
+          )
+          .join('\n')
+      );
+      continue;
     } else if (quote.body.trim()) {
       out.push(
         `${inList ? quote.lead : '> '}${renderLine(
           quote.body,
-          continuesParagraph(
-            nextQuoteBody(next, listOffset),
-            undefined,
-            LIST_ITEM_RE.test(quote.body)
+          continuesQuote(
+            quote,
+            next,
+            lines[i + 2]?.replace(/\r$/, ''),
+            listOffset
           )
         )}`
       );

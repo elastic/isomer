@@ -316,12 +316,11 @@ const containsVerbatim = (node: Nodes): boolean =>
 const QUOTE_CONTENT: ReadonlySet<string> = new Set([
   'paragraph',
   'heading',
-  'code',
   'blockquote',
 ]);
 
-// A rich-text quote holds lines of text, so a quote holding any other block,
-// such as a list, goes through the string translator whole.
+// A rich-text quote holds inline elements alone, so a quote holding any other
+// block, such as a list or code, goes through the string translator whole.
 const fitsRichTextQuote = (quote: Blockquote): boolean =>
   quote.children.every(
     (child) =>
@@ -331,6 +330,7 @@ const fitsRichTextQuote = (quote: Blockquote): boolean =>
 
 const LIST_ITEM_CONTENT: ReadonlySet<string> = new Set([
   ...QUOTE_CONTENT,
+  'code',
   'list',
 ]);
 
