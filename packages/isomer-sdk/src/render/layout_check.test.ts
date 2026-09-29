@@ -125,6 +125,25 @@ describe('checkLayout', () => {
     expect(checkLayout(layout, [leaf, leaf], walk, 'svg')).toEqual([]);
   });
 
+  it('reports text that lands on a sibling drawn as a bare box', () => {
+    const layout = canvas(
+      anchored('leaf', {
+        ...box(0, 0, 400, 50),
+        runs: [{ x: 0, y: 80, width: 80, height: 20 }],
+      }),
+      anchored('leaf', box(40, 90, 200, 4))
+    );
+    expect(checkLayout(layout, [leaf, leaf], walk, 'svg')).toEqual([
+      {
+        kind: 'overlap',
+        path: 'body[0]',
+        type: 'leaf',
+        with: { path: 'body[1]', type: 'leaf' },
+        by: 10,
+      },
+    ]);
+  });
+
   it('never compares a root node with the nodes nested in it', () => {
     const layout = anchored(
       'stack',
