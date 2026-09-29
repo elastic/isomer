@@ -46,6 +46,35 @@ Both halves matter and they are not the same mechanism. The shadow boundary stop
 
 `display: block` is restated because `all: initial` resets `display` to `inline`, which is almost never what a rendered composition wants.
 
+## Rendering React into the shadow root
+
+A React host can skip the HTML string and render the React surface into the shadow root itself, so the tree stays live. The CSS then comes from the Distillate distillery the pack's styles were authored with, rather than from the `html` surface: `liveCollection` records the styles that one render resolves, and `createDomSink` keeps a `<style>` in the shadow root current as it grows. Pass the pack's enhancement definitions as `enhancements`, the same ones its `html` render resolves by id.
+
+```tsx
+import { createDomSink } from '@elastic/distillate';
+import type { Composition } from '@elastic/isomer-sdk';
+import { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
+
+const Slide = ({ composition, shadow }: { composition: Composition; shadow: ShadowRoot }) => {
+  const [live] = useState(() =>
+    distillery.liveCollection({ sink: createDomSink({ document, parent: shadow }) })
+  );
+  const tree = useMemo(
+    () =>
+      runtime.surfaces.react.render(composition, {
+        context: { resolveClassName: live.resolveClassName },
+        wrapper: true,
+        enhancements: pack.enhancements,
+      }),
+    [composition, live]
+  );
+  return createPortal(tree, shadow);
+};
+```
+
+Each applied enhancement's `script` runs against the wrapper section once it mounts, so there is no `runEnhancementScript` call to make. A new composition object mounts a fresh section, so keep the object stable across re-renders. An enhancement the host drives itself, such as one that reveals a node's parts step by step, declares `anchors: true` and no `script`: after the render commits, `findNodeElementPairs(section, composition.body, createChildNodeWalker(runtime.primitives))` pairs each node occurrence with its element. Pass `render: { scheme }` to `liveCollection` for a fixed color scheme, and restate `:host { all: initial; display: block; }` as above.
+
 ## When not to bother
 
 Isolation costs something. Inside a shadow root the composition no longer inherits the host's font stack or color scheme, so one that is *meant* to look like part of the surrounding page needs those passed in deliberately — through the render `theme` option, or as custom properties set on the host element, which do cross the boundary.

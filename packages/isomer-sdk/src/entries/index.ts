@@ -110,6 +110,7 @@ export {
   anchorValue,
   byteLength,
   createPrimitiveDispatcher,
+  findNodeElementPairs,
   findNodeElements,
   formatCompactNumber,
   formatDisplayValue,

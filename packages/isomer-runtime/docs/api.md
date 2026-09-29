@@ -44,7 +44,7 @@ Each exposes `render` and `renderNode`, plus a `validating` field stating its po
 
 | Surface | `render` returns | `renderNode` returns | `validating` | `renderNode` takes |
 | --- | --- | --- | --- | --- |
-| `react` | `ReactNode` | `ReactNode` | `false` | `ReactRenderNodeOptions`: `context`, `wrapper` |
+| `react` | `ReactNode` | `ReactNode` | `false` | `ReactRenderNodeOptions`: `context`, `wrapper`, `enhancements` |
 | `html` | `HTMLRenderResult` | `HTMLRenderResult` | `true` | `HTMLRenderOptions` |
 | `text` | `string` | `string` | `true` | nothing |
 | `markdown` | `string` | `string` | `true` | nothing |
@@ -57,7 +57,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 
 | Type | Fields |
 | --- | --- |
-| `ReactRenderOptions` | `context`, `heading`, `wrapper: boolean \| CompositionWrapperOptions`; `ReactRenderArgs` is the tuple form, optional only when `context` is |
+| `ReactRenderOptions` | `context`, `heading`, `wrapper: boolean \| CompositionWrapperOptions`, `enhancements: readonly EnhancementDefinition[]`; `ReactRenderArgs` is the tuple form, optional only when `context` is |
 | `ReactRenderNodeOptions` | `ReactRenderOptions` without `heading` |
 | `HTMLRenderOptions` | `theme`, `minify`, `fluid`, `framed`, `heading`, `css: 'inline' \| 'separate'`, `scripts: 'embedded' \| 'host'`, `enhancements: string[]`, `anchors: boolean` (node anchors; `true` for tests), `onValidationError` |
 | `TextRenderOptions` | `heading`, `onValidationError` |
