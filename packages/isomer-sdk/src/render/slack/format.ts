@@ -142,15 +142,55 @@ interface InlineSegment {
   url?: string;
 }
 
-const BOLD_RE = /\*\*([^*\n][^*\n]*?)\*\*/;
-const ITALIC_RE = /(?<![\w])_([^_\n][^_\n]*?)_(?![\w])/;
-const LINK_RE = /\[([^\]]+)\]\(([^)]+)\)/;
+const BOLD_RE = /\*\*((?:\\.|[^*\n\\])+?)\*\*/;
+const ITALIC_RE = /(?<![\w])_((?:\\.|[^_\n\\])+?)_(?![\w])/;
+const LINK_RE = /\[((?:\\.|[^\]\\])+)\]\(([^)]+)\)/;
 const CODE_RE = /`([^`\n]+)`/;
+// A CommonMark backslash escape: any ASCII punctuation character.
+const ESCAPE_RE = /\\([!-/:-@[-`{-~])/;
+// An escape, a code span (left as written), or a numeric character reference.
+const UNESCAPE_RE =
+  /\\([!-/:-@[-`{-~])|(`+)(?:(?!\2)[\s\S])+?\2(?!`)|&#(?:[xX]([0-9a-fA-F]{1,6})|(\d{1,7}));/g;
+
+const decodeCodePoint = (codePoint: number): string =>
+  codePoint > 0 &&
+  codePoint <= 0x10ffff &&
+  (codePoint < 0xd800 || codePoint > 0xdfff)
+    ? String.fromCodePoint(codePoint)
+    : '\uFFFD';
+
+// Resolves the backslash escapes and numeric character references a GFM
+// serializer writes, which Slack would otherwise show literally.
+const unescapeGfm = (text: string): string =>
+  text.replace(
+    UNESCAPE_RE,
+    (
+      match,
+      escaped?: string,
+      fence?: string,
+      hex?: string,
+      decimal?: string
+    ) => {
+      if (escaped !== undefined) {
+        return escaped;
+      }
+      if (fence !== undefined) {
+        return match;
+      }
+      return decodeCodePoint(
+        hex === undefined ? Number(decimal) : parseInt(hex, 16)
+      );
+    }
+  );
+
+// A link destination may be wrapped in angle brackets (`[x](<dest>)`).
+const linkDestination = (dest: string): string =>
+  unescapeGfm(dest.replace(/^<([^<>]*)>$/, '$1'));
 
 // Tokenizes a single line of GFM into ordered inline segments. Order matters:
 // code spans win over everything (no inner formatting), then links, then
 // bold (which uses `**` so we must consume both characters before italic with
-// `_` is considered).
+// `_` is considered). An escaped character is text and never a delimiter.
 const tokenizeInline = (line: string): InlineSegment[] => {
   const segments: InlineSegment[] = [];
   let cursor = 0;
@@ -160,7 +200,9 @@ const tokenizeInline = (line: string): InlineSegment[] => {
     const linkMatch = LINK_RE.exec(remainder);
     const boldMatch = BOLD_RE.exec(remainder);
     const italicMatch = ITALIC_RE.exec(remainder);
+    const escapeMatch = ESCAPE_RE.exec(remainder);
     const candidates = [
+      { kind: 'escape' as const, match: escapeMatch },
       { kind: 'code' as const, match: codeMatch },
       { kind: 'link' as const, match: linkMatch },
       { kind: 'bold' as const, match: boldMatch },
@@ -180,7 +222,9 @@ const tokenizeInline = (line: string): InlineSegment[] => {
         text: remainder.slice(0, first.match.index),
       });
     }
-    if (first.kind === 'link') {
+    if (first.kind === 'escape') {
+      segments.push({ kind: 'text', text: first.match[1] ?? '' });
+    } else if (first.kind === 'link') {
       segments.push({
         kind: 'link',
         text: first.match[1] ?? '',
@@ -200,17 +244,20 @@ const renderInline = (line: string): string => {
     .map((segment) => {
       switch (segment.kind) {
         case 'text':
-          return escapeMrkdwn(segment.text);
+          return escapeMrkdwn(unescapeGfm(segment.text));
         case 'code':
           // Code spans pass through with mrkdwn's single-backtick syntax, but
           // we still need to neutralize any embedded backticks.
           return code(segment.text);
         case 'bold':
-          return bold(segment.text);
+          return bold(unescapeGfm(segment.text));
         case 'italic':
-          return italic(segment.text);
+          return italic(unescapeGfm(segment.text));
         case 'link':
-          return link(segment.url ?? '', segment.text);
+          return link(
+            linkDestination(segment.url ?? ''),
+            unescapeGfm(segment.text)
+          );
         default: {
           const unexpected: never = segment.kind;
           return unexpected;
@@ -281,7 +328,7 @@ export const gfmToSlackMrkdwn = (gfm: string): string => {
       // Headings have no first-class mrkdwn equivalent. Bolding the text keeps
       // the visual hierarchy without inventing markup Slack would render as
       // a literal `#`.
-      out.push(bold(headingMatch[2] ?? ''));
+      out.push(bold(unescapeGfm(headingMatch[2] ?? '')));
       i += 1;
       continue;
     }
@@ -320,15 +367,16 @@ const slackPreformattedBlock = (code: string): SlackRichTextBlock => ({
   ],
 });
 
-// Splits a `| a | b |` row into trimmed cell strings, dropping the optional
-// leading/trailing pipes.
+// Splits a `| a | b |` row on its unescaped pipes into cell text, dropping the
+// optional leading/trailing pipes.
 const splitPipeRow = (line: string): string[] =>
   line
     .trim()
     .replace(/^\|/, '')
-    .replace(/\|$/, '')
-    .split('|')
-    .map((cell) => cell.trim());
+    .replace(/(?<!\\)\|$/, '')
+    .split(/(?<!\\)\|/)
+    // GFM unescapes `\|` in a cell before reading it, code spans included.
+    .map((cell) => unescapeGfm(cell.trim().replaceAll('\\|', '|')));
 
 // Reads a GFM alignment marker (`:---`, `---:`, `:---:`) into a column align.
 const parseColumnAlign = (marker: string): 'left' | 'center' | 'right' => {
