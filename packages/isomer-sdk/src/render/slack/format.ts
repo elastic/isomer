@@ -69,9 +69,15 @@ const DNS_NAME_RE =
   /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*\.?$/i;
 const IPV6_HOST_RE = /^\[[0-9a-f:.]+\]$/i;
 
-// `url` parsed, when `URL` prints it as written up to the case of its scheme
-// and authority and a `/` for an empty path.
+const MALFORMED_ESCAPE_RE = /%(?![0-9a-f]{2})/i;
+
+// `url` parsed, when its escapes are well formed and `URL` prints it as
+// written up to the case of its scheme and authority and a `/` for an empty
+// path.
 const parsedAsWritten = (url: string): URL | null => {
+  if (MALFORMED_ESCAPE_RE.test(url)) {
+    return null;
+  }
   let parsed: URL;
   try {
     parsed = new URL(url);
