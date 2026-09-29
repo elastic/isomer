@@ -18,7 +18,58 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `@takumi-rs/core-win32-arm64-msvc` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
 | `@takumi-rs/core-win32-x64-msvc` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
 | `@takumi-rs/helpers` | 2.14.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+helpers@2.14.0_react@18.3.1/node_modules/@takumi-rs/helpers` |  |
+| `@types/debug` | 4.1.13 | MIT | `node_modules/.pnpm/@types+debug@4.1.13/node_modules/@types/debug` |  |
+| `@types/mdast` | 4.0.4 | MIT | `node_modules/.pnpm/@types+mdast@4.0.4/node_modules/@types/mdast` |  |
+| `@types/ms` | 2.1.0 | MIT | `node_modules/.pnpm/@types+ms@2.1.0/node_modules/@types/ms` |  |
+| `@types/unist` | 3.0.3 | MIT | `node_modules/.pnpm/@types+unist@3.0.3/node_modules/@types/unist` |  |
+| `ccount` | 2.0.1 | MIT | `node_modules/.pnpm/ccount@2.0.1/node_modules/ccount` |  |
+| `character-entities` | 2.0.2 | MIT | `node_modules/.pnpm/character-entities@2.0.2/node_modules/character-entities` |  |
+| `debug` | 4.4.3 | MIT | `node_modules/.pnpm/debug@4.4.3/node_modules/debug` |  |
+| `decode-named-character-reference` | 1.3.0 | MIT | `node_modules/.pnpm/decode-named-character-reference@1.3.0/node_modules/decode-named-character-reference` |  |
+| `dequal` | 2.0.3 | MIT | `node_modules/.pnpm/dequal@2.0.3/node_modules/dequal` |  |
+| `devlop` | 1.1.0 | MIT | `node_modules/.pnpm/devlop@1.1.0/node_modules/devlop` |  |
+| `escape-string-regexp` | 5.0.0 | MIT | `node_modules/.pnpm/escape-string-regexp@5.0.0/node_modules/escape-string-regexp` |  |
+| `longest-streak` | 3.1.0 | MIT | `node_modules/.pnpm/longest-streak@3.1.0/node_modules/longest-streak` |  |
+| `markdown-table` | 3.0.4 | MIT | `node_modules/.pnpm/markdown-table@3.0.4/node_modules/markdown-table` |  |
+| `mdast-util-find-and-replace` | 3.0.2 | MIT | `node_modules/.pnpm/mdast-util-find-and-replace@3.0.2/node_modules/mdast-util-find-and-replace` |  |
+| `mdast-util-from-markdown` | 2.0.3 | MIT | `node_modules/.pnpm/mdast-util-from-markdown@2.0.3/node_modules/mdast-util-from-markdown` |  |
+| `mdast-util-gfm` | 3.1.0 | MIT | `node_modules/.pnpm/mdast-util-gfm@3.1.0/node_modules/mdast-util-gfm` |  |
+| `mdast-util-gfm-autolink-literal` | 2.0.1 | MIT | `node_modules/.pnpm/mdast-util-gfm-autolink-literal@2.0.1/node_modules/mdast-util-gfm-autolink-literal` |  |
+| `mdast-util-gfm-footnote` | 2.1.0 | MIT | `node_modules/.pnpm/mdast-util-gfm-footnote@2.1.0/node_modules/mdast-util-gfm-footnote` |  |
+| `mdast-util-gfm-strikethrough` | 2.0.1 | MIT | `node_modules/.pnpm/mdast-util-gfm-strikethrough@2.0.1/node_modules/mdast-util-gfm-strikethrough` |  |
+| `mdast-util-gfm-table` | 2.0.0 | MIT | `node_modules/.pnpm/mdast-util-gfm-table@2.0.0/node_modules/mdast-util-gfm-table` |  |
+| `mdast-util-gfm-task-list-item` | 2.0.0 | MIT | `node_modules/.pnpm/mdast-util-gfm-task-list-item@2.0.0/node_modules/mdast-util-gfm-task-list-item` |  |
+| `mdast-util-phrasing` | 4.1.0 | MIT | `node_modules/.pnpm/mdast-util-phrasing@4.1.0/node_modules/mdast-util-phrasing` |  |
+| `mdast-util-to-markdown` | 2.1.3 | MIT | `node_modules/.pnpm/mdast-util-to-markdown@2.1.3/node_modules/mdast-util-to-markdown` |  |
+| `mdast-util-to-string` | 4.0.0 | MIT | `node_modules/.pnpm/mdast-util-to-string@4.0.0/node_modules/mdast-util-to-string` |  |
+| `micromark` | 4.0.2 | MIT | `node_modules/.pnpm/micromark@4.0.2/node_modules/micromark` |  |
+| `micromark-core-commonmark` | 2.0.3 | MIT | `node_modules/.pnpm/micromark-core-commonmark@2.0.3/node_modules/micromark-core-commonmark` |  |
+| `micromark-factory-destination` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-factory-destination@2.0.1/node_modules/micromark-factory-destination` |  |
+| `micromark-factory-label` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-factory-label@2.0.1/node_modules/micromark-factory-label` |  |
+| `micromark-factory-space` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-factory-space@2.0.1/node_modules/micromark-factory-space` |  |
+| `micromark-factory-title` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-factory-title@2.0.1/node_modules/micromark-factory-title` |  |
+| `micromark-factory-whitespace` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-factory-whitespace@2.0.1/node_modules/micromark-factory-whitespace` |  |
+| `micromark-util-character` | 2.1.1 | MIT | `node_modules/.pnpm/micromark-util-character@2.1.1/node_modules/micromark-util-character` |  |
+| `micromark-util-chunked` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-chunked@2.0.1/node_modules/micromark-util-chunked` |  |
+| `micromark-util-classify-character` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-classify-character@2.0.1/node_modules/micromark-util-classify-character` |  |
+| `micromark-util-combine-extensions` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-combine-extensions@2.0.1/node_modules/micromark-util-combine-extensions` |  |
+| `micromark-util-decode-numeric-character-reference` | 2.0.2 | MIT | `node_modules/.pnpm/micromark-util-decode-numeric-character-reference@2.0.2/node_modules/micromark-util-decode-numeric-character-reference` |  |
+| `micromark-util-decode-string` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-decode-string@2.0.1/node_modules/micromark-util-decode-string` |  |
+| `micromark-util-encode` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-encode@2.0.1/node_modules/micromark-util-encode` |  |
+| `micromark-util-html-tag-name` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-html-tag-name@2.0.1/node_modules/micromark-util-html-tag-name` |  |
+| `micromark-util-normalize-identifier` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-normalize-identifier@2.0.1/node_modules/micromark-util-normalize-identifier` |  |
+| `micromark-util-resolve-all` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-resolve-all@2.0.1/node_modules/micromark-util-resolve-all` |  |
+| `micromark-util-sanitize-uri` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-sanitize-uri@2.0.1/node_modules/micromark-util-sanitize-uri` |  |
+| `micromark-util-subtokenize` | 2.1.0 | MIT | `node_modules/.pnpm/micromark-util-subtokenize@2.1.0/node_modules/micromark-util-subtokenize` |  |
+| `micromark-util-symbol` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-symbol@2.0.1/node_modules/micromark-util-symbol` |  |
+| `micromark-util-types` | 2.0.2 | MIT | `node_modules/.pnpm/micromark-util-types@2.0.2/node_modules/micromark-util-types` |  |
+| `ms` | 2.1.3 | MIT | `node_modules/.pnpm/ms@2.1.3/node_modules/ms` |  |
 | `takumi-pdf` | 0.15.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/takumi-pdf@0.15.0_react@18.3.1/node_modules/takumi-pdf` |  |
+| `unist-util-is` | 6.0.1 | MIT | `node_modules/.pnpm/unist-util-is@6.0.1/node_modules/unist-util-is` |  |
+| `unist-util-stringify-position` | 4.0.0 | MIT | `node_modules/.pnpm/unist-util-stringify-position@4.0.0/node_modules/unist-util-stringify-position` |  |
+| `unist-util-visit` | 5.1.0 | MIT | `node_modules/.pnpm/unist-util-visit@5.1.0/node_modules/unist-util-visit` |  |
+| `unist-util-visit-parents` | 6.0.2 | MIT | `node_modules/.pnpm/unist-util-visit-parents@6.0.2/node_modules/unist-util-visit-parents` |  |
+| `zwitch` | 2.0.4 | MIT | `node_modules/.pnpm/zwitch@2.0.4/node_modules/zwitch` |  |
 
 ## Source and build
 
@@ -158,6 +209,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@types/estree` | 1.0.9 | MIT | `node_modules/.pnpm/@types+estree@1.0.9/node_modules/@types/estree` |  |
 | `@types/json-schema` | 7.0.15 | MIT | `node_modules/.pnpm/@types+json-schema@7.0.15/node_modules/@types/json-schema` |  |
 | `@types/katex` | 0.16.8 | MIT | `node_modules/.pnpm/@types+katex@0.16.8/node_modules/@types/katex` |  |
+| `@types/mdast` | 4.0.4 | MIT | `node_modules/.pnpm/@types+mdast@4.0.4/node_modules/@types/mdast` |  |
 | `@types/ms` | 2.1.0 | MIT | `node_modules/.pnpm/@types+ms@2.1.0/node_modules/@types/ms` |  |
 | `@types/node` | 22.20.2 | MIT | `node_modules/.pnpm/@types+node@22.20.2/node_modules/@types/node` |  |
 | `@types/normalize-package-data` | 2.4.4 | MIT | `node_modules/.pnpm/@types+normalize-package-data@2.4.4/node_modules/@types/normalize-package-data` |  |
@@ -165,6 +217,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@types/react` | 18.3.31 | MIT | `node_modules/.pnpm/@types+react@18.3.31/node_modules/@types/react` |  |
 | `@types/react-dom` | 18.3.7 | MIT | `node_modules/.pnpm/@types+react-dom@18.3.7_@types+react@18.3.31/node_modules/@types/react-dom` |  |
 | `@types/unist` | 2.0.11 | MIT | `node_modules/.pnpm/@types+unist@2.0.11/node_modules/@types/unist` |  |
+| `@types/unist` | 3.0.3 | MIT | `node_modules/.pnpm/@types+unist@3.0.3/node_modules/@types/unist` |  |
 | `@typescript-eslint/eslint-plugin` | 8.70.0 | MIT | `node_modules/.pnpm/@typescript-eslint+eslint-plugin@8.70.0_@typescript-eslint+parser@8.70.0_eslint@9.39.5__6275fc40e814d6e52430554ca2625ac6/node_modules/@typescript-eslint/eslint-plugin` |  |
 | `@typescript-eslint/parser` | 8.70.0 | MIT | `node_modules/.pnpm/@typescript-eslint+parser@8.70.0_eslint@9.39.5_jiti@2.6.1__typescript@5.9.3/node_modules/@typescript-eslint/parser` |  |
 | `@typescript-eslint/project-service` | 8.70.0 | MIT | `node_modules/.pnpm/@typescript-eslint+project-service@8.70.0_typescript@5.9.3/node_modules/@typescript-eslint/project-service` |  |
@@ -545,6 +598,8 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `marked` | 15.0.12 | MIT | `node_modules/.pnpm/marked@15.0.12/node_modules/marked` |  |
 | `marked-terminal` | 7.3.0 | MIT | `node_modules/.pnpm/marked-terminal@7.3.0_marked@15.0.12/node_modules/marked-terminal` |  |
 | `math-intrinsics` | 1.1.0 | MIT | `node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics` |  |
+| `mdast-util-from-markdown` | 2.0.3 | MIT | `node_modules/.pnpm/mdast-util-from-markdown@2.0.3/node_modules/mdast-util-from-markdown` |  |
+| `mdast-util-to-string` | 4.0.0 | MIT | `node_modules/.pnpm/mdast-util-to-string@4.0.0/node_modules/mdast-util-to-string` |  |
 | `mdurl` | 2.1.0 | MIT | `node_modules/.pnpm/mdurl@2.1.0/node_modules/mdurl` |  |
 | `meow` | 12.1.1 | MIT | `node_modules/.pnpm/meow@12.1.1/node_modules/meow` |  |
 | `meow` | 13.2.0 | MIT | `node_modules/.pnpm/meow@13.2.0/node_modules/meow` |  |
@@ -553,9 +608,13 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `micromark` | 4.0.2 | MIT | `node_modules/.pnpm/micromark@4.0.2/node_modules/micromark` |  |
 | `micromark-core-commonmark` | 2.0.3 | MIT | `node_modules/.pnpm/micromark-core-commonmark@2.0.3/node_modules/micromark-core-commonmark` |  |
 | `micromark-extension-directive` | 4.0.0 | MIT | `node_modules/.pnpm/micromark-extension-directive@4.0.0/node_modules/micromark-extension-directive` |  |
+| `micromark-extension-gfm` | 3.0.0 | MIT | `node_modules/.pnpm/micromark-extension-gfm@3.0.0/node_modules/micromark-extension-gfm` |  |
 | `micromark-extension-gfm-autolink-literal` | 2.1.0 | MIT | `node_modules/.pnpm/micromark-extension-gfm-autolink-literal@2.1.0/node_modules/micromark-extension-gfm-autolink-literal` |  |
 | `micromark-extension-gfm-footnote` | 2.1.0 | MIT | `node_modules/.pnpm/micromark-extension-gfm-footnote@2.1.0/node_modules/micromark-extension-gfm-footnote` |  |
+| `micromark-extension-gfm-strikethrough` | 2.1.0 | MIT | `node_modules/.pnpm/micromark-extension-gfm-strikethrough@2.1.0/node_modules/micromark-extension-gfm-strikethrough` |  |
 | `micromark-extension-gfm-table` | 2.1.1 | MIT | `node_modules/.pnpm/micromark-extension-gfm-table@2.1.1/node_modules/micromark-extension-gfm-table` |  |
+| `micromark-extension-gfm-tagfilter` | 2.0.0 | MIT | `node_modules/.pnpm/micromark-extension-gfm-tagfilter@2.0.0/node_modules/micromark-extension-gfm-tagfilter` |  |
+| `micromark-extension-gfm-task-list-item` | 2.1.0 | MIT | `node_modules/.pnpm/micromark-extension-gfm-task-list-item@2.1.0/node_modules/micromark-extension-gfm-task-list-item` |  |
 | `micromark-extension-math` | 3.1.0 | MIT | `node_modules/.pnpm/micromark-extension-math@3.1.0/node_modules/micromark-extension-math` |  |
 | `micromark-factory-destination` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-factory-destination@2.0.1/node_modules/micromark-factory-destination` |  |
 | `micromark-factory-label` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-factory-label@2.0.1/node_modules/micromark-factory-label` |  |
@@ -567,6 +626,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `micromark-util-classify-character` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-classify-character@2.0.1/node_modules/micromark-util-classify-character` |  |
 | `micromark-util-combine-extensions` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-combine-extensions@2.0.1/node_modules/micromark-util-combine-extensions` |  |
 | `micromark-util-decode-numeric-character-reference` | 2.0.2 | MIT | `node_modules/.pnpm/micromark-util-decode-numeric-character-reference@2.0.2/node_modules/micromark-util-decode-numeric-character-reference` |  |
+| `micromark-util-decode-string` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-decode-string@2.0.1/node_modules/micromark-util-decode-string` |  |
 | `micromark-util-encode` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-encode@2.0.1/node_modules/micromark-util-encode` |  |
 | `micromark-util-html-tag-name` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-html-tag-name@2.0.1/node_modules/micromark-util-html-tag-name` |  |
 | `micromark-util-normalize-identifier` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-normalize-identifier@2.0.1/node_modules/micromark-util-normalize-identifier` |  |
@@ -822,6 +882,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `unicorn-magic` | 0.3.0 | MIT | `node_modules/.pnpm/unicorn-magic@0.3.0/node_modules/unicorn-magic` |  |
 | `unicorn-magic` | 0.4.0 | MIT | `node_modules/.pnpm/unicorn-magic@0.4.0/node_modules/unicorn-magic` |  |
 | `unique-string` | 3.0.0 | MIT | `node_modules/.pnpm/unique-string@3.0.0/node_modules/unique-string` |  |
+| `unist-util-stringify-position` | 4.0.0 | MIT | `node_modules/.pnpm/unist-util-stringify-position@4.0.0/node_modules/unist-util-stringify-position` |  |
 | `universal-user-agent` | 7.0.3 | ISC | `node_modules/.pnpm/universal-user-agent@7.0.3/node_modules/universal-user-agent` |  |
 | `universalify` | 0.2.0 | MIT | `node_modules/.pnpm/universalify@0.2.0/node_modules/universalify` |  |
 | `universalify` | 2.0.1 | MIT | `node_modules/.pnpm/universalify@2.0.1/node_modules/universalify` |  |

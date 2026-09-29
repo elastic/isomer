@@ -10,6 +10,7 @@ import { cloneElement, isValidElement, type ReactNode } from 'react';
 import { isVisibleOnSurface } from '../composition/body_node_base';
 import { IsomerError } from '../composition/error';
 import type { ValidationError } from '../composition/validation_error';
+import type { MarkdownContent } from '../define/markdown_content';
 import {
   type AnyPrimitiveDefinition,
   type DefaultPackTypes,
@@ -24,6 +25,7 @@ import {
 } from '../define/primitive_module';
 import { createNodeIssueFormatter } from '../validate/node_issues';
 
+import { markdownFromString, serializeMarkdown } from './markdown/builder';
 import type { SlackAssetCollector } from './slack/assets';
 import type { SlackBlock, SlackImageBlock } from './slack/blocks';
 import { gfmToSlackBlocks } from './slack/format';
@@ -73,7 +75,10 @@ export interface PrimitiveDispatcher<
     key: string
   ): ReactNode;
   renderText(node: TNode): string;
+  /** Builder content is serialized per node. */
   renderMarkdown(node: TNode): string;
+  /** A string result comes back as content printed as written. */
+  renderMarkdownContent(node: TNode): MarkdownContent;
   /**
    * Empty only when the node is hidden from `slack` or `sanitize` drops it. A
    * node with no `slack` renderer degrades through its markdown.
@@ -196,8 +201,19 @@ export const createPrimitiveDispatcher = <
       : renderer(safeNode, { ...extras, scope: scope() });
   };
 
-  const renderMarkdown = (node: TNode): string =>
-    renderOn('markdown', node, {}) ?? '';
+  const renderMarkdown = (node: TNode): string => {
+    const rendered = renderOn('markdown', node, {}) ?? '';
+    return typeof rendered === 'string'
+      ? rendered
+      : serializeMarkdown(rendered);
+  };
+
+  const renderMarkdownContent = (node: TNode): MarkdownContent => {
+    const rendered = renderOn('markdown', node, {}) ?? '';
+    return typeof rendered === 'string'
+      ? markdownFromString(rendered)
+      : rendered;
+  };
 
   self = {
     definitions,
@@ -233,6 +249,7 @@ export const createPrimitiveDispatcher = <
     },
     renderText: (node) => renderOn('text', node, {}) ?? '',
     renderMarkdown,
+    renderMarkdownContent,
     renderSlack: (node, collector) => {
       if (!isVisibleOnSurface(node, 'slack')) {
         return [];

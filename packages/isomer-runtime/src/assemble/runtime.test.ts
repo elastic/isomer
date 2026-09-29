@@ -27,6 +27,7 @@ import {
   themeBound,
   unresolvedBodyNodeSchema,
 } from '@elastic/isomer-sdk';
+import { md } from '@elastic/isomer-sdk/markdown';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { z } from 'zod';
@@ -471,6 +472,45 @@ describe('createIsomerRuntime', () => {
     });
 
     expect(runtime.surfaces.text.render(view('ok'))).toBe('override:ok');
+  });
+
+  it('applies a markdown override built with md to markdown and the Slack fallback', () => {
+    const fallbackNote = definePrimitive<NoteNode>({
+      type: 'note',
+      catalog: {
+        type: 'note',
+        purpose: 'Render a note through the markdown fallback.',
+        useWhen: [],
+        avoidWhen: [],
+        example: { type: 'note', text: 'Hello' },
+      },
+      examples: [{ type: 'note', text: 'Hello' }],
+      schema: z.object({ type: z.literal('note'), text: z.string().min(1) }),
+      renderers: {
+        react: () => null,
+        text: (node) => node.text,
+        markdown: (node) => node.text,
+      },
+    });
+    const runtime = createIsomerRuntime({
+      packs: [packOf(fallbackNote)],
+      rendererOverrides: {
+        note: {
+          markdown: (node: NoteNode) =>
+            md.paragraph(md.strong(node.text), ' *literal*'),
+        },
+      },
+    });
+
+    expect(
+      runtime.surfaces.markdown.render(view('a*b'), { heading: false })
+    ).toBe('**a\\*b** \\*literal\\*');
+    expect(
+      runtime.surfaces.slack.render(view('a*b'), { heading: false }).blocks
+    ).toContainEqual({
+      type: 'section',
+      text: { type: 'mrkdwn', text: '*a*b* *literal*' },
+    });
   });
 
   // `react` serves the `svg` surface, so one override reaches both.

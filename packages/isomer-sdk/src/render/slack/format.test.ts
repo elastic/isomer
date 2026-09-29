@@ -87,6 +87,23 @@ describe('gfmToSlackMrkdwn', () => {
     ).toBe('*bold* and _it_ and `a<b` <https://x.y|L>');
   });
 
+  it('reads single-asterisk emphasis as italics', () => {
+    expect(gfmToSlackMrkdwn('a*b*c and *d e* but not * f * or \\*g*')).toBe(
+      'a_b_c and _d e_ but not * f * or *g*'
+    );
+  });
+
+  it('applies GFM flanking and escape parity to emphasis', () => {
+    expect(gfmToSlackMrkdwn('a*.*b and *(x)*')).toBe('a*.*b and _(x)_');
+    // An escaped backslash leaves the `*` after it free to open.
+    expect(gfmToSlackMrkdwn('\\\\*x* and \\\\\\*y*')).toBe('\\_x_ and \\*y*');
+    expect(gfmToSlackMrkdwn('(_x_) and a_b_')).toBe('(_x_) and a_b_');
+    // A delimiter that can neither open nor close is text between the pair.
+    expect(gfmToSlackMrkdwn('*a * b*')).toBe('_a * b_');
+    // An emoji is one symbol, not two surrogates.
+    expect(gfmToSlackMrkdwn('a*😀*b and *😀*')).toBe('a*😀*b and _😀_');
+  });
+
   it('bolds ATX headings', () => {
     expect(gfmToSlackMrkdwn('## Title ##')).toBe('*Title*');
   });
@@ -195,6 +212,15 @@ describe('gfmToSlackMrkdwn', () => {
         ' '
       ),
       '\\*'.repeat(size),
+      `*${'\\*'.repeat(size)}`,
+      '*a '.repeat(size / 3),
+      '\\_'.repeat(size),
+      'a*.'.repeat(size / 3),
+      `*${'a * '.repeat(size / 4)}`,
+      '[`a` '.repeat(size / 5),
+      '**`x` '.repeat(size / 6),
+      `[${'`](x) '.repeat(size / 6)}`,
+      `\\${'\\\\*'.repeat(size / 3)}`,
       '\\``'.repeat(size / 3),
       '['.repeat(size),
       '[a](x'.repeat(size / 5),
@@ -332,9 +358,69 @@ describe('gfmToSlackBlocks', () => {
     }
     expect(table.rows).toEqual([
       [
-        { type: 'raw_text', text: '`a\\.b`' },
-        { type: 'raw_text', text: '`a|b`' },
+        { type: 'raw_text', text: 'a\\.b' },
+        { type: 'raw_text', text: 'a|b' },
       ],
+    ]);
+  });
+
+  it('prints a formatted cell or link label as its text, and an image as a link', () => {
+    const [table] = gfmToSlackBlocks('| **b** _i_ `c` |\n| - |');
+    expect(table).toMatchObject({ rows: [[{ text: 'b i c' }]] });
+    expect(
+      gfmToSlackMrkdwn(
+        '[**x** _y_ `z`](https://a.b) ![alt](https://a.b/i.png) ![d](data:image/png;base64,AA)'
+      )
+    ).toBe('<https://a.b|x y z> <https://a.b/i.png|alt> d');
+  });
+
+  it('closes a fence only on spaces and tabs after the backticks', () => {
+    expect(gfmToSlackBlocks('```\ncode\n```\u00a0\nstill code\n```')).toEqual([
+      expect.objectContaining({
+        elements: [
+          expect.objectContaining({
+            elements: [{ type: 'text', text: 'code\n```\u00a0\nstill code' }],
+          }),
+        ],
+      }),
+    ]);
+  });
+
+  it('opens a fence only as GFM does, and closes one on a CRLF line', () => {
+    for (const notFence of ['    ```\nprose', '```js`x\nprose']) {
+      expect(gfmToSlackBlocks(notFence)).toEqual([
+        expect.objectContaining({ type: 'section' }),
+      ]);
+      expect(gfmToSlackMrkdwn(notFence)).not.toMatch(/^```\n/);
+    }
+    expect(gfmToSlackBlocks('```\r\ncode\r\n```\r\nafter')).toEqual([
+      expect.objectContaining({ type: 'rich_text' }),
+      expect.objectContaining({ type: 'section' }),
+    ]);
+    expect(gfmToSlackMrkdwn('```\r\ncode\r\n```\r\nafter')).toMatch(
+      /^```\ncode\r\n```\nafter/
+    );
+  });
+
+  it('reads a single-column table and closes a fence only on one as long', () => {
+    expect(gfmToSlackBlocks('| a |\n| - |\n| 1 |')).toEqual([
+      expect.objectContaining({
+        type: 'table',
+        rows: [
+          [{ type: 'raw_text', text: 'a' }],
+          [{ type: 'raw_text', text: '1' }],
+        ],
+      }),
+    ]);
+    expect(gfmToSlackBlocks('````\n```\ninner\n````\nafter')).toEqual([
+      expect.objectContaining({
+        elements: [
+          expect.objectContaining({
+            elements: [{ type: 'text', text: '```\ninner' }],
+          }),
+        ],
+      }),
+      { type: 'section', text: { type: 'mrkdwn', text: 'after' } },
     ]);
   });
 

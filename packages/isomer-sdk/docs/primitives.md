@@ -8,6 +8,7 @@ The word names the _definition_, never the instance. An instance in a compositio
 
 ```tsx
 import { type PrimitiveNode, definePrimitive, optionalString, requiredString, z } from '@elastic/isomer-sdk';
+import { md } from '@elastic/isomer-sdk/markdown';
 import { type SlackBlock } from '@elastic/isomer-sdk/slack';
 
 export const kpiSchema = z.object({
@@ -35,7 +36,12 @@ export const kpi = definePrimitive({
   renderers: {
     react: (node) => <p>{`${node.label}: ${node.value}`}</p>,
     text: (node) => `${node.label}: ${node.value}${node.delta ? ` (${node.delta})` : ''}`,
-    markdown: (node) => `**${node.label}**: ${node.value}${node.delta ? ` _(${node.delta})_` : ''}`,
+    markdown: (node) =>
+      md.paragraph(
+        md.strong(node.label),
+        `: ${node.value}`,
+        ...(node.delta ? [' ', md.emphasis(`(${node.delta})`)] : [])
+      ),
     slack: (node): SlackBlock => ({
       type: 'section',
       text: { type: 'mrkdwn', text: `*${node.label}*\n${node.value}` },
@@ -69,11 +75,13 @@ The schema is the declaration: the node type is `z.infer` of it, the typed `exam
 ```ts
 react(node, { context, scope }): ReactNode      // always
 text(node, { scope }): string                   // always
-markdown(node, { scope }): string               // always
+markdown(node, { scope }): string | MarkdownContent  // always
 slack?(node, { collector, scope }): unknown | readonly unknown[]
 ```
 
 There is no `svg` renderer. The `svg` surface dispatches to `react`: an image backend lays out the pack's DOM tree and stylesheet, so a second tree authored for the image would be the same layout stated twice. Targeting images therefore costs a primitive nothing.
+
+A `markdown` renderer returns content built with `md` from `./markdown`, or a string. `md` escapes each value where it lands, so authored `*`, `|`, or a leading `#` stays text, and its links and images apply the [URL policy](url-trust.md). A string is printed as written, so it must already be safe Markdown; `md.authored` holds authored Markdown source after `sanitizeMarkdownSource`.
 
 `slack` is the one optional renderer, and it degrades: with none the dispatcher converts the mandatory markdown to Block Kit, so a missing renderer costs fidelity and nothing else.
 
@@ -112,7 +120,7 @@ renderers: {
     <>{node.items.map((item, i) => <Fragment key={i}>{scope.renderReact(item.node, context)}</Fragment>)}</>
   ),
   text: (node, { scope }) => node.items.map((item) => scope.renderText(item.node)).join('\n'),
-  markdown: (node, { scope }) => node.items.map((item) => scope.renderMarkdown(item.node)).join('\n\n'),
+  markdown: (node, { scope }) => node.items.map((item) => scope.renderMarkdownContent(item.node)),
 },
 ```
 

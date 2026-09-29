@@ -331,6 +331,158 @@ const findCodeSpan: InlineFinder = (line, from, closer) => {
   return null;
 };
 
+const WHITESPACE_RE = /\s/u;
+const PUNCTUATION_RE = /[\p{P}\p{S}]/u;
+
+// The line's edges count as whitespace.
+const isSpace = (char: string | undefined): boolean =>
+  char === undefined || WHITESPACE_RE.test(char);
+
+const isPunctuation = (char: string | undefined): boolean =>
+  char !== undefined && PUNCTUATION_RE.test(char);
+
+// An odd run of backslashes escapes the character at `index`.
+const isEscaped = (line: string, index: number): boolean => {
+  let run = 0;
+  while (line[index - 1 - run] === '\\') {
+    run += 1;
+  }
+  return run % 2 === 1;
+};
+
+// GFM's flanking rules for a lone delimiter; `_` also cannot open or close
+// inside a word.
+const flanking = (
+  line: string,
+  index: number,
+  delimiter: '*' | '_'
+): { opens: boolean; closes: boolean } => {
+  // Whole code points, so an astral symbol such as an emoji is classified as one.
+  const trailing = line.charCodeAt(index - 1);
+  const before =
+    index === 0
+      ? undefined
+      : trailing >= 0xdc00 && trailing <= 0xdfff && index >= 2
+        ? String.fromCodePoint(line.codePointAt(index - 2) ?? trailing)
+        : line[index - 1];
+  const next = line.codePointAt(index + 1);
+  const after = next === undefined ? undefined : String.fromCodePoint(next);
+  if (before === delimiter || after === delimiter) {
+    return { opens: false, closes: false };
+  }
+  const left =
+    !isSpace(after) &&
+    (!isPunctuation(after) || isSpace(before) || isPunctuation(before));
+  const right =
+    !isSpace(before) &&
+    (!isPunctuation(before) || isSpace(after) || isPunctuation(after));
+  return delimiter === '*'
+    ? { opens: left, closes: right }
+    : {
+        opens: left && (!right || isPunctuation(before)),
+        closes: right && (!left || isPunctuation(after)),
+      };
+};
+
+// The index past what starts at `index` when it is an escape or a code span,
+// whose characters are never delimiters, or past one character otherwise.
+const stepOver = (
+  line: string,
+  index: number,
+  closer: CodeSpanCloser
+): number => {
+  if (line[index] === '\\') {
+    return index + 2;
+  }
+  if (line[index] === '`') {
+    return codeSpanAt(line, index, closer)?.end ?? backtickRunEnd(line, index);
+  }
+  return index + 1;
+};
+
+const LINK_DESTINATION_RE = /\((<[^<>\n]*>|(?:\\.|[^\s()\\]|\([^()\s]*\))+)\)/y;
+
+// A link, or an image, which degrades to a link to its source labelled with
+// its alt text. The label may hold escapes and code spans but no bare bracket.
+const findLink: InlineFinder = (line, from, closer) => {
+  let open = line.indexOf('[', from);
+  while (open !== -1) {
+    let index = open + 1;
+    while (index < line.length && line[index] !== '[' && line[index] !== ']') {
+      index = stepOver(line, index, closer);
+    }
+    if (line[index] === ']') {
+      LINK_DESTINATION_RE.lastIndex = index + 1;
+      const destination = LINK_DESTINATION_RE.exec(line);
+      if (destination) {
+        const bang = line[open - 1] === '!' && !isEscaped(line, open - 1);
+        return {
+          index: bang ? open - 1 : open,
+          end: LINK_DESTINATION_RE.lastIndex,
+          segment: {
+            kind: 'link',
+            text: line.slice(open + 1, index),
+            url: destination[1] ?? '',
+          },
+        };
+      }
+    }
+    open = line.indexOf('[', index);
+  }
+  return null;
+};
+
+// Strong between `**` pairs whose body holds no `*` outside escapes and code.
+const findBold: InlineFinder = (line, from, closer) => {
+  let open = line.indexOf('**', from);
+  while (open !== -1) {
+    let index = open + 2;
+    while (index < line.length && line[index] !== '*') {
+      index = stepOver(line, index, closer);
+    }
+    if (index > open + 2 && line.startsWith('**', index)) {
+      return {
+        index: open,
+        end: index + 2,
+        segment: { kind: 'bold', text: line.slice(open + 2, index) },
+      };
+    }
+    open = line.indexOf('**', index > open + 2 ? index : open + 1);
+  }
+  return null;
+};
+
+// Emphasis between two lone `delimiter`s, in one forward pass: the first
+// closer pairs with the nearest opener before it, and a delimiter that can
+// do neither is text.
+const emphasisFinder =
+  (delimiter: '*' | '_'): InlineFinder =>
+  (line, from, closer) => {
+    let open = -1;
+    let index = from;
+    while (index < line.length) {
+      if (line[index] === '\\' || line[index] === '`') {
+        index = stepOver(line, index, closer);
+        continue;
+      }
+      if (line[index] === delimiter && !isEscaped(line, index)) {
+        const { opens, closes } = flanking(line, index, delimiter);
+        if (open !== -1 && closes) {
+          return {
+            index: open,
+            end: index + 1,
+            segment: { kind: 'italic', text: line.slice(open + 1, index) },
+          };
+        }
+        if (opens) {
+          open = index;
+        }
+      }
+      index += 1;
+    }
+    return null;
+  };
+
 // In tie order. Each label, destination, or body stops at the first character
 // that cannot continue it, so one search from a position is linear.
 const INLINE_FINDERS: readonly InlineFinder[] = [
@@ -340,18 +492,10 @@ const INLINE_FINDERS: readonly InlineFinder[] = [
     text,
   })),
   findCodeSpan,
-  regexFinder(
-    /\[((?:\\.|[^[\]\\])+)\]\((<[^<>\n]*>|(?:\\.|[^\s()\\]|\([^()\s]*\))+)\)/g,
-    ([, text = '', url = '']) => ({ kind: 'link', text, url })
-  ),
-  regexFinder(/\*\*((?:\\.|[^*\n\\])+?)\*\*/g, ([, text = '']) => ({
-    kind: 'bold',
-    text,
-  })),
-  regexFinder(/(?<![\w])_((?:\\.|[^_\n\\])+?)_(?![\w])/g, ([, text = '']) => ({
-    kind: 'italic',
-    text,
-  })),
+  findLink,
+  findBold,
+  emphasisFinder('_'),
+  emphasisFinder('*'),
 ];
 
 // Tokenizes a single line of GFM into ordered inline segments. The earliest
@@ -416,14 +560,15 @@ const renderInline = (line: string): string => {
           // Code spans pass through with mrkdwn's single-backtick syntax, but
           // we still need to neutralize any embedded backticks.
           return code(segment.text);
+        // The inner text is translated too, so `**a _b_**` nests.
         case 'bold':
-          return bold(unescapeGfm(segment.text));
+          return `*${renderInline(segment.text)}*`;
         case 'italic':
-          return italic(unescapeGfm(segment.text));
+          return `_${renderInline(segment.text)}_`;
         case 'link':
           return link(
             linkDestination(segment.url ?? ''),
-            unescapeGfm(segment.text)
+            plainInline(segment.text)
           );
         default: {
           const unexpected: never = segment.kind;
@@ -434,8 +579,30 @@ const renderInline = (line: string): string => {
     .join('');
 };
 
-const FENCE_RE = /^\s*```/;
-const TABLE_SEPARATOR_RE = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$/;
+// Inline GFM as its text alone, for a link label or a table cell, where
+// mrkdwn formatting would show its markers.
+const plainInline = (line: string): string =>
+  tokenizeInline(line)
+    .map(({ kind, text }) =>
+      kind === 'text'
+        ? unescapeGfm(text)
+        : kind === 'code'
+          ? text
+          : plainInline(text)
+    )
+    .join('');
+
+// GFM: up to three spaces of indent, and no backtick in the opener's info.
+const FENCE_RE = /^ {0,3}(`{3,})[^`]*$/;
+// Spaces and tabs only after it, plus the `\r` a CRLF line keeps.
+const CLOSING_FENCE_RE = /^ {0,3}(`{3,})[ \t]*\r?$/;
+
+// A closing fence is backticks alone, at least as long as the opening run.
+const closesFence = (line: string, opening: string): boolean =>
+  (CLOSING_FENCE_RE.exec(line)?.[1]?.length ?? 0) >= opening.length;
+// At least one pipe, so a single-column table counts and a thematic break does not.
+const TABLE_SEPARATOR_RE =
+  /^(?=[^|]*\|)\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
 const TABLE_ROW_RE = /^\s*\|.*\|\s*$/;
 const BLOCKQUOTE_RE = /^(>\s?)(.*)$/;
 
@@ -480,7 +647,7 @@ const splitPipeRow = (line: string): string[] => {
   if (row.startsWith('|')) {
     cells.shift();
   }
-  return cells.map((value) => unescapeGfm(value.trim()));
+  return cells.map((value) => plainInline(value.trim()));
 };
 
 /**
@@ -501,13 +668,14 @@ export const gfmToSlackMrkdwn = (gfm: string): string => {
   let i = 0;
   while (i < lines.length) {
     const line = lines[i]!;
-    if (FENCE_RE.test(line)) {
+    const opening = FENCE_RE.exec(line)?.[1];
+    if (opening !== undefined) {
       // Fenced code block: copy the body verbatim. Slack honours the
       // triple-backtick fence but ignores the language hint, so we strip it
       // for cleanliness.
       const body: string[] = [];
       i += 1;
-      while (i < lines.length && !FENCE_RE.test(lines[i]!)) {
+      while (i < lines.length && !closesFence(lines[i]!, opening)) {
         body.push(lines[i]!);
         i += 1;
       }
@@ -653,11 +821,12 @@ export const gfmToSlackBlocks = (gfm: string): SlackBlock[] => {
   let i = 0;
   while (i < lines.length) {
     const line = lines[i]!;
-    if (FENCE_RE.test(line)) {
+    const opening = FENCE_RE.exec(line)?.[1];
+    if (opening !== undefined) {
       flushProse();
       i += 1;
       const code: string[] = [];
-      while (i < lines.length && !FENCE_RE.test(lines[i]!)) {
+      while (i < lines.length && !closesFence(lines[i]!, opening)) {
         code.push(lines[i]!);
         i += 1;
       }

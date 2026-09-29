@@ -10,6 +10,7 @@ import { z } from 'zod';
 
 import type { ValidationError } from '../composition/validation_error';
 import { definePrimitive } from '../define/primitive_module';
+import { md } from '../render/markdown/builder';
 import { createSlackAssetCollector } from '../render/slack/assets';
 import { gfmToSlackBlocks } from '../render/slack/format';
 import type {
@@ -201,6 +202,64 @@ describe('RenderScope', () => {
         items: [{ type: 'note', body: 'hello' }],
       })
     ).toBe('a:hello');
+  });
+
+  it('embeds a child as content, printing a string result as written', () => {
+    const catalog = {
+      purpose: '',
+      useWhen: [],
+      avoidWhen: [],
+      example: {},
+    };
+    const listStack = definePrimitive<TaggedStack>({
+      type: 'stack',
+      catalog: { type: 'stack', ...catalog },
+      examples: [],
+      schema: z.object({ type: z.literal('stack') }),
+      renderers: {
+        react: () => null,
+        text: () => '',
+        markdown: (node, { scope }) =>
+          md.list(node.items.map((item) => scope.renderMarkdownContent(item))),
+      },
+    });
+    const builtNote = definePrimitive<TaggedNote>({
+      type: 'note',
+      catalog: { type: 'note', ...catalog },
+      examples: [],
+      schema: z.object({ type: z.literal('note'), body: z.string() }),
+      renderers: {
+        react: (node) => node.body,
+        text: (node) => node.body,
+        markdown: (node) => md.paragraph(node.body),
+      },
+    });
+    const items = [
+      { type: 'note' as const, body: 'line1\nline2' },
+      { type: 'note' as const, body: '*b*' },
+    ];
+
+    const withStrings = createPrimitiveDispatcher<TaggedStack | TaggedNote>([
+      listStack,
+      taggedNote('a'),
+    ]);
+    expect(withStrings.renderMarkdown({ type: 'stack', items })).toBe(
+      '- line1\n  line2\n- *b*'
+    );
+
+    const withContent = createPrimitiveDispatcher<TaggedStack | TaggedNote>([
+      listStack,
+      builtNote,
+    ]);
+    expect(withContent.renderMarkdown({ type: 'stack', items })).toBe(
+      '- line1 line2\n- \\*b\\*'
+    );
+    expect(withContent.renderMarkdown(items[1]!)).toBe('\\*b\\*');
+
+    const hidden = { type: 'note' as const, body: 'x', surfaces: ['text'] };
+    expect(
+      withContent.renderMarkdown({ type: 'stack', items: [hidden, items[1]!] })
+    ).toBe('- \\*b\\*');
   });
 
   it('does not leak a nested dispatcher into the outer render', () => {

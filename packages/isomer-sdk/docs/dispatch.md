@@ -19,7 +19,8 @@ Duplicate types throw at construction, with the label in front of the message so
 | `renderReact(node, context?)`          | `ReactNode`                                                                     |
 | `renderSvg(node, context, theme, key)` | `ReactNode` — the `react` renderer, gated on `svg` visibility and keyed         |
 | `renderText(node)`                     | `string` — empty when nothing rendered                                          |
-| `renderMarkdown(node)`                 | `string` — empty when nothing rendered                                          |
+| `renderMarkdown(node)`                 | `string` — `md` content serialized; empty when nothing rendered                 |
+| `renderMarkdownContent(node)`          | `MarkdownContent` — a string result printed as written                          |
 | `renderSlack(node, collector?)`        | `readonly T['slackBlock'][]` — `SlackBlock` unless the pack binds it            |
 | `collectStyles(node, styles, context)` | nothing; the collector is mutated                                               |
 | `estimateSvgHeight(node)`              | `number` — `0` when hidden or unmeasured                                        |
@@ -55,7 +56,7 @@ The dispatcher's own methods (`renderText(node)`, `renderSlack(node, collector?)
 
 **Picture swap.** When a collector is passed and the node's type was declared a picture by its pack, the node never reaches its renderer: the dispatcher renders its _text_ as alt text, allocates a file reference, and emits an `image` block. That is how a chart arrives in Slack as a PNG rather than as a markdown approximation of one.
 
-**Markdown fallback.** With no Slack renderer, the dispatcher converts the node's mandatory markdown to Block Kit. A missing renderer degrades; it does not disappear. The conversion reads a backslash escape or a numeric character reference outside a code span as the character it stands for, so neither reaches Slack and an escaped `\*` is never converted to formatting. Slack may still format a literal pair such as `_y_` itself.
+**Markdown fallback.** With no Slack renderer, the dispatcher converts the node's mandatory markdown to Block Kit. A missing renderer degrades; it does not disappear. The conversion reads a backslash escape or a numeric character reference outside a code span as the character it stands for, so neither reaches Slack and an escaped `\*` is never converted to formatting. Slack may still format a literal pair such as `_y_` itself. Emphasis follows GFM's rules for `*` and `_`, and bold and italic nest. An image becomes a link to its source labelled with its alt text, and a link label or table cell prints as plain text, since mrkdwn would show its markers there.
 
 The collector is opt-in, so default output stays safe for a caller that cannot upload files. `slackBlock` and `slackCollector` default to `SlackBlock` and `SlackAssetCollector` in `DefaultPackTypes`, so a dispatcher built from any pack is already a `SlackEnvelopeDispatcher`; a pack narrows them only when it carries its own block extensions.
 

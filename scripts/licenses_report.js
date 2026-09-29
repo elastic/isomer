@@ -7,6 +7,7 @@
 
 import {
   existsSync,
+  readdirSync,
   readFileSync,
   realpathSync,
   rmSync,
@@ -99,11 +100,15 @@ const exactVersion = (range) =>
     ? range
     : undefined;
 
+// Case-insensitive: packages ship `license` as often as `LICENSE`.
 const readFirstExisting = (dir, names) => {
+  const entries = existsSync(dir) ? readdirSync(dir) : [];
   for (const name of names) {
-    const candidate = join(dir, name);
-    if (existsSync(candidate)) {
-      return readFileSync(candidate, 'utf-8').trim();
+    const match = entries.find(
+      (entry) => entry.toLowerCase() === name.toLowerCase()
+    );
+    if (match !== undefined) {
+      return readFileSync(join(dir, match), 'utf-8').trim();
     }
   }
   return undefined;
