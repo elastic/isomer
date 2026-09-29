@@ -93,7 +93,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | Concern | Names |
 | --- | --- |
 | Runtime | `CreateIsomerRuntime`, `IsomerRuntime`, `IsomerRuntimeOptions`, `RuntimeSurfaces`, `FrameMap`, `RuntimeRendererOverrides`, `RuntimePackTypes` |
-| Authoring | `RuntimeAuthoringContext`, `HostCapabilities`, `JsonSchema` |
+| Authoring | `RuntimeAuthoringContext`, `PrimitiveDescriptions`, `HostCapabilities`, `JsonSchema` |
 | View registry | `ViewRegistry`, `RegisteredView`, `RegisteredViewSummary`, `DefineViewOptions`, `ViewBuildArgs`, `ViewInput`, `ViewResponse`, `RegisteredViewInputError` |
 | Surfaces | `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SvgSurface` |
 | Options | `ReactRenderOptions`, `ReactRenderNodeOptions`, `ReactRenderArgs`, `HTMLRenderOptions`, `HTMLStyleAdapter`, `TextRenderOptions`, `MarkdownRenderOptions`, `SlackRenderOptions`, `SlackRenderNodeOptions`, `SvgRenderOptions`, `SvgRenderNodeOptions` |
@@ -112,7 +112,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 
 | Thrown | By | Carries |
 | --- | --- | --- |
-| `IsomerError` | `createIsomerRuntime`, `viewRegistry.register`, an unknown view id, `getAuthoringContext().schemaFor` on an unknown type (`UNKNOWN_PRIMITIVE_TYPE`), or the `svg` surface | `code` and a message naming the offender |
+| `IsomerError` | `createIsomerRuntime`, `viewRegistry.register`, an unknown view id, `getAuthoringContext().schemaFor` or `describePrimitives` on an unknown type (`UNKNOWN_PRIMITIVE_TYPE`), or the `svg` surface | `code` and a message naming the offender |
 | `RegisteredViewInputError` | `viewRegistry.request`, on invalid input | `code` (`VIEW_INPUT_INVALID`), `viewId`, `errors` (`{ path, message }` each) |
 | `CompositionValidationError` | `text`, `markdown`, `slack`, and `svg` by default; `html` with `onValidationError: 'throw'` | `code` (`COMPOSITION_INVALID`), `errors` |
 

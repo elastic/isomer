@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-09-28
+
+- **Index catalog and primitive lookups**: A pack declares `authoring.groups`, the authoring prompt prints `catalog: 'index'` as one line per primitive under those groups with `schema` optional, and the runtime's authoring context adds `groups` and `describePrimitives(types)`, backed by the SDK's `authoringSchemaSubset` and `formatPrimitiveEntry`. Every catalog and registered-view line collapses line terminators, and each code span is fenced longer than any backtick run inside it.
+
 ## 2026-09-27
 
 - **Enhancements reach every renderer**: The HTML render resolves `enhancements` once, hands every renderer the set as `context.enhancements` through a view of the adapter's context, and emits each resolved enhancement's script itself, so a pack needs no adapter wiring for its enhancements. The runtime's combined style adapter builds its context as a view over each pack's, so a class-instance context keeps its methods and private state.

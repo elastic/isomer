@@ -17,7 +17,10 @@ import {
   unresolvedBodyNodeSchema,
 } from '../define/primitive_module';
 
-import { buildAuthoringJsonSchema } from './authoring_schema';
+import {
+  authoringSchemaSubset,
+  buildAuthoringJsonSchema,
+} from './authoring_schema';
 import { resolveVocabulary } from './composition_schema';
 import { buildCompositionJsonSchema } from './json_schema';
 import { namedColorSchema } from './value_schemas';
@@ -269,5 +272,48 @@ describe('buildAuthoringJsonSchema', () => {
     };
     expect(metric.properties?.id).toBeDefined();
     expect(metric.properties?.surfaces).toBeDefined();
+  });
+});
+
+describe('authoringSchemaSubset', () => {
+  const badge = define({
+    type: 'badge',
+    catalog: {
+      type: 'badge',
+      purpose: '',
+      useWhen: [],
+      avoidWhen: [],
+      example: {},
+    },
+    examples: [],
+    schema: z.object({ type: z.literal('badge'), tone: namedColorSchema }),
+    renderers,
+  });
+  const schema = buildAuthoringJsonSchema([container, badge, leaf('alpha')]);
+
+  const refsIn = (value: unknown): string[] =>
+    [...JSON.stringify(value).matchAll(/"#\/\$defs\/([^"]+)"/g)].map(
+      ([, id]) => id ?? ''
+    );
+
+  it('keeps the defs a type reaches and nothing else', () => {
+    const { $defs } = authoringSchemaSubset(schema, ['badge']);
+
+    expect(Object.keys($defs).sort()).toEqual(['badge', 'tone']);
+    expect($defs.badge).toEqual(defsOf(schema).badge);
+  });
+
+  it('stubs the body-node union rather than every primitive', () => {
+    const { $defs } = authoringSchemaSubset(schema, ['holder']);
+
+    expect(Object.keys($defs).sort()).toEqual(['bodyNode', 'holder']);
+    expect(refsIn($defs.bodyNode)).toEqual([]);
+    for (const id of refsIn($defs)) {
+      expect(Object.hasOwn($defs, id)).toBe(true);
+    }
+  });
+
+  it('never reads an inherited key as a def', () => {
+    expect(authoringSchemaSubset(schema, ['constructor']).$defs).toEqual({});
   });
 });

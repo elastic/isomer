@@ -345,3 +345,42 @@ export const buildAuthoringJsonSchema = (
     ...(omitProperties === undefined ? {} : { omitProperties }),
   });
 };
+
+const BODY_NODE_STUB = {
+  description:
+    'Any primitive in the catalog, as its own object with its `type`.',
+};
+
+/**
+ * The `$defs` that `types` reach in a schema from {@link buildAuthoringJsonSchema},
+ * keyed as `schema` keys them, with the body-node union stubbed so a container
+ * does not pull in every primitive.
+ */
+export const authoringSchemaSubset = (
+  schema: JsonSchema,
+  types: readonly string[]
+): { $defs: Record<string, unknown> } => {
+  const defs = defsOf(schema);
+  // A `Map`, so an id such as `constructor` is never an inherited key.
+  const kept = new Map<string, unknown>();
+  const visit = (id: string): void => {
+    if (kept.has(id) || !Object.hasOwn(defs, id)) {
+      return;
+    }
+    if (id === BODY_NODE_ID) {
+      kept.set(id, BODY_NODE_STUB);
+      return;
+    }
+    kept.set(id, defs[id]);
+    walkJson(defs[id], (value) => {
+      const ref = parseDefRef(value.$ref);
+      if (ref !== undefined) {
+        visit(ref);
+      }
+    });
+  };
+  for (const type of types) {
+    visit(type);
+  }
+  return { $defs: Object.fromEntries(kept) };
+};

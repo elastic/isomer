@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { buildAuthoringPrompt } from './prompt';
+import { buildAuthoringPrompt, formatPrimitiveEntry } from './prompt';
 
 const context = {
   guide: 'Guide',
@@ -87,6 +87,37 @@ describe('buildAuthoringPrompt', () => {
     );
   });
 
+  it('keeps each registered view field on one line and in its code span', () => {
+    const prompt = buildAuthoringPrompt('general', {
+      ...context,
+      views: [
+        {
+          id: 'test`hosts',
+          title: 'Top\u2028hosts',
+          description: 'Noisy\nhosts.',
+          answers: ['which\r\nhosts?'],
+          inputSchema: { description: 'A `limit`.' },
+        },
+      ],
+    });
+    expect(prompt).toContain(
+      [
+        '- ``test`hosts`` — Top hosts',
+        '  - Noisy hosts.',
+        '  - Answers: which hosts?',
+        '  - Input: ``{"description":"A `limit`."}``',
+      ].join('\n')
+    );
+  });
+
+  it('JSON-quotes a view id that would not survive printing bare', () => {
+    const prompt = buildAuthoringPrompt('general', {
+      ...context,
+      views: [{ id: 'hosts\n', title: 'Hosts', answers: [] }],
+    });
+    expect(prompt).toContain('- `"hosts\\n"` — Hosts');
+  });
+
   it('omits the JSON Schema for the router profile', () => {
     const prompt = buildAuthoringPrompt('registered-view-router', context);
     expect(prompt).not.toContain('## JSON Schema');
@@ -117,5 +148,142 @@ describe('buildAuthoringPrompt', () => {
     expect(prompt).toContain('"text":"one"');
     expect(prompt).not.toContain('fixture');
     expect(prompt).not.toContain('"text":"two"');
+  });
+});
+
+describe('the index catalog', () => {
+  const entry = (type: string, purpose: string) => ({
+    type,
+    purpose,
+    useWhen: ['Always.'],
+    avoidWhen: [],
+    example: { type },
+  });
+  const primitives = [
+    entry('stat', 'One number.'),
+    entry('quote', 'A pull\nquote.'),
+    entry('note', 'A note.'),
+    entry('table', 'Rows.'),
+  ];
+
+  it('lists each primitive under its group, and the rest under Other', () => {
+    const prompt = buildAuthoringPrompt('general', {
+      ...context,
+      primitives,
+      catalog: 'index',
+      groups: [
+        { title: 'Data', types: ['table', 'stat'] },
+        { title: 'Text', types: ['quote'] },
+      ],
+    });
+    expect(prompt).toContain(
+      [
+        '### Data\n\n- `table` — Rows.\n- `stat` — One number.',
+        '### Text\n\n- `quote` — A pull quote.',
+        '### Other\n\n- `note` — A note.',
+      ].join('\n\n')
+    );
+    expect(prompt).toContain(
+      'request its catalog entry and JSON Schema by type'
+    );
+    expect(prompt).not.toContain('Use when');
+  });
+
+  it('frames composing without a schema when none is given', () => {
+    const prompt = buildAuthoringPrompt('compose-from-primitives', {
+      guide: 'Guide',
+      examples: [],
+      primitives,
+      catalog: 'index',
+    });
+    expect(prompt).not.toContain('JSON Schema before responding');
+    expect(prompt).not.toContain('## JSON Schema');
+  });
+});
+
+const quoteless = {
+  type: 'plain',
+  purpose: 'Plain.',
+  useWhen: [],
+  avoidWhen: [],
+  example: {},
+};
+
+describe('formatPrimitiveEntry', () => {
+  it('prints the full catalog bullet on one line per field', () => {
+    const quote = {
+      type: 'quote',
+      purpose: 'A pull\n  quote.',
+      useWhen: ['Someone said it.'],
+      avoidWhen: ['It is\nlong.'],
+      example: { type: 'quote' },
+    };
+    expect(formatPrimitiveEntry(quote)).toBe(
+      [
+        '- `quote` — A pull quote.',
+        '  - Use when: Someone said it.',
+        '  - Avoid when: It is long.',
+        '  - Example: `{"type":"quote"}`',
+      ].join('\n')
+    );
+    expect(
+      buildAuthoringPrompt('general', { ...context, primitives: [quote] })
+    ).toContain(formatPrimitiveEntry(quote));
+  });
+  it('collapses every line terminator', () => {
+    for (const lineBreak of ['\n', '\r', '\r\n', '\u2028', '\u2029']) {
+      const entry = formatPrimitiveEntry({
+        type: 'note',
+        purpose: `A${lineBreak}note.`,
+        useWhen: [`One${lineBreak}line.`],
+        avoidWhen: [],
+        example: {},
+      });
+      expect(entry.split('\n')).toEqual([
+        '- `note` — A note.',
+        '  - Use when: One line.',
+        '  - Example: `{}`',
+      ]);
+    }
+  });
+
+  it('fences code spans longer than any backtick run inside them', () => {
+    const entry = formatPrimitiveEntry({
+      type: 'a`b',
+      purpose: 'Ticks.',
+      useWhen: [],
+      avoidWhen: [],
+      example: { text: '``x``', lead: '`' },
+    });
+    expect(entry).toBe(
+      [
+        '- ``a`b`` — Ticks.',
+        '  - Example: ```{"text":"``x``","lead":"`"}```',
+      ].join('\n')
+    );
+    expect(formatPrimitiveEntry({ ...quoteless, type: '`tick' })).toContain(
+      '- `` `tick `` — Plain.'
+    );
+  });
+
+  it('JSON-quotes a type that would not survive printing bare', () => {
+    const cases: [string, string][] = [
+      ['a\r\nb', '`"a\\r\\nb"`'],
+      ['a\u2028b', '`"a\\u2028b"`'],
+      ['a\uD800b', '`"a\\ud800b"`'],
+      ['', '`""`'],
+      ['  ', '`"  "`'],
+    ];
+    for (const [type, span] of cases) {
+      expect(formatPrimitiveEntry({ ...quoteless, type })).toContain(
+        `- ${span} — Plain.`
+      );
+    }
+  });
+
+  it('keeps a line separator inside an example value', () => {
+    expect(
+      formatPrimitiveEntry({ ...quoteless, example: { text: 'a\u2028b' } })
+    ).toContain('  - Example: `{"text":"a\\u2028b"}`');
   });
 });

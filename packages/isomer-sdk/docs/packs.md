@@ -26,7 +26,7 @@ This page is the pack **contract**. Composing packs into a runtime is the [runti
 | `styleAdapter`    | Optional. This pack's HTML CSS, combined with the other packs'.             |
 | `styleCollector`  | Optional. Derived from `styleAdapter.styleCollector` unless overridden.     |
 | `theme`           | Optional. `themeBound<T>()` so the pack infers `PrimitivePack<T>`.          |
-| `authoring`       | Optional. This pack's `describe` and `omitProperties` for the agent schema. |
+| `authoring`       | Optional. `describe`, `omitProperties`, and index `groups` for agents.      |
 
 What comes back adds `types`, a set for duplicate detection across packs, and normalizes the two optional fields. `styleCollector` is read from `styleAdapter.styleCollector` when the pack does not set it; set it only for a pack whose hooks collect into a shape its adapter does not create.
 
@@ -80,6 +80,8 @@ definePrimitivePack({
 ```
 
 A runtime composing several packs merges every pack's `authoring` into one options object before building the schema, so no host hand-merges each pack's `describe`/`omitProperties` itself. The runtime's own `authoring` option is applied last and wins on conflict.
+
+`groups` titles sets of this pack's primitive types for an [index catalog](authoring.md#an-index-then-lookups), in the order they are listed. A group naming a type the pack does not register, or a type in two groups, throws at `definePrimitivePack`; a type in no group is listed under "Other".
 
 ## The theme a pack requires
 
