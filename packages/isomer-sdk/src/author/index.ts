@@ -43,4 +43,5 @@ export {
   buildAuthoringPrompt,
   createAgentAuthoringContextFactory,
   createAuthoringPromptBuilder,
+  formatPrimitiveEntry,
 } from './prompt';

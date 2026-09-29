@@ -574,6 +574,49 @@ describe('createIsomerRuntime', () => {
     );
   });
 
+  it("collects every pack's groups in pack order", () => {
+    const runtime = createIsomerRuntime({
+      packs: [
+        definePrimitivePack({
+          id: 'test.a',
+          primitives: [notePrimitive],
+          authoring: { groups: [{ title: 'Text', types: ['note'] }] },
+        }),
+        definePrimitivePack({
+          id: 'test.b',
+          primitives: [holderPrimitive],
+          authoring: { groups: [{ title: 'Layout', types: ['holder'] }] },
+        }),
+      ],
+    });
+    expect(runtime.getAuthoringContext().groups).toEqual([
+      { title: 'Text', types: ['note'] },
+      { title: 'Layout', types: ['holder'] },
+    ]);
+  });
+
+  it('describes requested primitives with the defs they reach', () => {
+    const runtime = createIsomerRuntime({
+      packs: [packOf(holderPrimitive, notePrimitive, boldPrimitive)],
+    });
+    const { primitives, schema } = runtime
+      .getAuthoringContext()
+      .describePrimitives(['holder', 'holder']);
+
+    expect(primitives.map(({ type }) => type)).toEqual(['holder']);
+    expect(Object.keys(schema.$defs as object).sort()).toEqual([
+      'bodyNode',
+      'holder',
+    ]);
+  });
+
+  it('throws for an unknown type passed to describePrimitives', () => {
+    const runtime = createIsomerRuntime({ packs: [packOf(notePrimitive)] });
+    expect(() =>
+      runtime.getAuthoringContext().describePrimitives(['missing'])
+    ).toThrow(/describePrimitives: unknown primitive type.*"missing"/);
+  });
+
   it('aggregates registered views into the authoring context', () => {
     const runtime = createIsomerRuntime({ packs: [packOf(notePrimitive)] });
 

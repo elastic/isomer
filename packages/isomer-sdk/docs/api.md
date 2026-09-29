@@ -29,9 +29,9 @@ What each entry point exports, and which ones cost you a dependency.
 | `describeCapabilities` | Reports primitives, formats, and enhancements for a set of packs |
 | `unresolvedBodyNodeSchema` | The child slot in a container's standalone schema |
 
-Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `PrimitiveSchema` (a `ZodObject`), `PrimitiveCatalogEntry`, `PrimitiveMetrics`, `PrimitiveChildRef`, `PrimitiveRenderContext`, `StyledRenderContext`, `PrimitiveStyleCollector`, `PrimitiveStyleCollectionContext`, `PackTypes`, `DefaultPackTypes`, `Renderer` (`(node, env)` — `env` is `SurfaceMap<T>[S]['env']`), `Renderers`, `RenderScope`, `ReactContextArg` (the context parameter a `react` renderer receives), `SurfaceMap`, `SurfaceName`, `OptionalSurface`, `PrimitivePack`, `AnyPrimitivePack`, `PrimitivePackInput`, `PackStyleAdapter`, `PackAuthoringOptions`, `ComposedPacks`, `Frame`, `FrameBody`, `BoundFrame`, `FrameDispatcher`, `FrameHeader`, `FrameComposition`, `FrameViewport`, `ThemePair`, `EnhancementDefinition`, `HostCapabilities`, `StyleHandle`, `ThemeTokenPath`, `SvgRenderThemeBase`, `Composition`, `BodyNode` (the same type as `PrimitiveNode`, kept for hosts that name body nodes), `BodyNodeBase`, `BodyNodeSurface`, `ActionEventRef`, `IsomerError`, `IsomerErrorCode`.
+Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `PrimitiveSchema` (a `ZodObject`), `PrimitiveCatalogEntry`, `PrimitiveMetrics`, `PrimitiveChildRef`, `PrimitiveRenderContext`, `StyledRenderContext`, `PrimitiveStyleCollector`, `PrimitiveStyleCollectionContext`, `PackTypes`, `DefaultPackTypes`, `Renderer` (`(node, env)` — `env` is `SurfaceMap<T>[S]['env']`), `Renderers`, `RenderScope`, `ReactContextArg` (the context parameter a `react` renderer receives), `SurfaceMap`, `SurfaceName`, `OptionalSurface`, `PrimitivePack`, `AnyPrimitivePack`, `PrimitivePackInput`, `PackStyleAdapter`, `PackAuthoringOptions`, `PrimitiveGroup`, `ComposedPacks`, `Frame`, `FrameBody`, `BoundFrame`, `FrameDispatcher`, `FrameHeader`, `FrameComposition`, `FrameViewport`, `ThemePair`, `EnhancementDefinition`, `HostCapabilities`, `StyleHandle`, `ThemeTokenPath`, `SvgRenderThemeBase`, `Composition`, `BodyNode` (the same type as `PrimitiveNode`, kept for hosts that name body nodes), `BodyNodeBase`, `BodyNodeSurface`, `ActionEventRef`, `IsomerError`, `IsomerErrorCode`.
 
-`react` and `svg` renderers receive `env.theme`: the frame's resolved palette (`T['theme']`) when reached through the `svg` surface, `undefined` outside one. A pack whose `svg` renderers read tokens still declares `theme: themeBound<TTheme>()` on its pack input. `PrimitivePackInput.authoring` (a `PackAuthoringOptions`) is this pack's own contribution — `describe` and `omitProperties` — to the runtime's merged authoring schema.
+`react` and `svg` renderers receive `env.theme`: the frame's resolved palette (`T['theme']`) when reached through the `svg` surface, `undefined` outside one. A pack whose `svg` renderers read tokens still declares `theme: themeBound<TTheme>()` on its pack input. `PrimitivePackInput.authoring` (a `PackAuthoringOptions`) is this pack's own contribution — `describe` and `omitProperties` — to the runtime's merged authoring schema, plus `groups` for an index catalog.
 
 ## Root entry — dispatch
 
@@ -64,6 +64,7 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | `getCompositionSchemaForDefinitions` | Memoized schema, keyed on array identity |
 | `buildCompositionJsonSchema` | Draft-2020-12 projection for hosts that validate outside TypeScript |
 | `buildAuthoringJsonSchema` | Agent-facing projection: named shared defs, inlined scalars, no `id`/`surfaces` |
+| `authoringSchemaSubset` | The `$defs` some types reach in an authoring schema, with the body-node union stubbed |
 | `formatZodIssue`, `formatZodIssues`, `formatPath` | Zod issues as `ValidationError`s |
 
 Types: `ValidationError`, `ValidationResult`, `ValidationWarning`, `ValidationErrorMode`, `CompositionValidatorOptions`, `ParsedComposition` (`{ valid, errors, composition? }`), `ResolvedVocabulary`, `CompositionSchemaOptions`, `CompositionJsonSchemaOptions`, `AuthoringJsonSchemaOptions`, `IsomerErrorCode`.
@@ -106,7 +107,7 @@ JSX: `fromChildren`, `fromTextChildren`, `AuthoredChildBrand`, `AuthoredTextBran
 
 Object builders: `defineNodeBuilder` (a `NodeBuilder` taking a `BuilderInput`, the node without `type`), `buildObjectBuilders` (a `BuilderMap`, one builder per primitive typed from its schema).
 
-Agent prompts: `buildAuthoringPrompt` (`AuthoringPromptContext`), `createAuthoringPromptBuilder`, `createAgentAuthoringContextFactory` (`AgentAuthoringContextOptions`, `AgentAuthoringContextDefaults`), `AUTHORING_PROFILE_IDS` (`AuthoringProfileId`), `AuthoringViewSummary`. `WithNodeFields` is on the root entry, next to `definePrimitive`.
+Agent prompts: `buildAuthoringPrompt` (`AuthoringPromptContext`), `createAuthoringPromptBuilder`, `createAgentAuthoringContextFactory` (`AgentAuthoringContextOptions`, `AgentAuthoringContextDefaults`), `formatPrimitiveEntry` (one full catalog bullet), `AUTHORING_PROFILE_IDS` (`AuthoringProfileId`), `AuthoringViewSummary`. `WithNodeFields` is on the root entry, next to `definePrimitive`.
 
 ## `./testing`
 

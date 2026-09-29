@@ -3,6 +3,7 @@
 ## 2026-09-28
 
 - **Validation errors name their node**: `ValidationError` gains `nodeType`, the innermost primitive node its path lands in, set by the parser, the validator, the duplicate-id pass, and a dispatcher's `validate`. `formatValidationError` prints `<path> (in <nodeType>) <message>`, and an unknown key on a node lists that node's declared fields. Names and ids a finding echoes are JSON-quoted when not plain, with line terminators escaped.
+- **Index catalog and primitive lookups**: A pack declares `authoring.groups`, the authoring prompt prints `catalog: 'index'` as one line per primitive under those groups with `schema` optional, and the runtime's authoring context adds `groups` and `describePrimitives(types)`, backed by the SDK's `authoringSchemaSubset` and `formatPrimitiveEntry`. Every catalog and registered-view line collapses line terminators, and each code span is fenced longer than any backtick run inside it.
 
 ## 2026-09-27
 
