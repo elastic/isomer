@@ -1,7 +1,7 @@
 ---
 type: Concept
 title: Pack
-description: Nine slide-deck primitives, six surfaces, one Distillate HTML adapter.
+description: Eight slide-deck primitives, six surfaces, one Distillate HTML adapter.
 resource: https://github.com/elastic/isomer/blob/main/packages/isomer-primitives-slides/src/pack.ts
 tags: [isomer, slides]
 status: stable
@@ -17,7 +17,7 @@ sources:
 
 # Definition
 
-The in-repo reference pack. Primitives: `slideFrame`, `slideSplit`, `slideStack`, `slideBulletList`, `slideCardGroup`, `slideCode`, `slideFlow`, `slideTerritoryGroup`, `slideTitle`. Surfaces: React, HTML, text, Markdown, Slack, and SVG, the last only when the runtime is given frames. The pack ships its own Distillate HTML adapter and declares `styleCollector: DISTILLATE_STYLE_COLLECTOR`.[^pack][^docs]
+The in-repo reference pack. Primitives: `slideFrame`, `slideHeading`, `slideTitle`, `slideSplit`, `slideStack`, `slideBulletList`, `slideTerritoryGroup`, `slideCode`. Surfaces: React, HTML, text, Markdown, Slack, and SVG, the last only when the runtime is given frames. Every primitive has a native `slack` renderer, and every `markdown` renderer returns `md` builder content. `slideSplit` takes its two panes as `SlideSplitPane` children in JSX. The pack declares `authoring.groups` and exports `buildSlidesAuthoringPrompt`, `slideJsx`, `slidePrimitiveGroups`, and `slideFontFaces`. The pack ships its own Distillate HTML adapter and declares `styleCollector: DISTILLATE_STYLE_COLLECTOR`.[^pack][^docs]
 
 Related: [theme](/slides/concepts/theme.md), [one source](/slides/concepts/one-source.md), [document](/slides/concepts/document.md).
 

@@ -5,39 +5,120 @@
  * 2.0.
  */
 
-import { checkExample as bulletExample } from '../slide_bullet_list/examples';
-import { example as cardGroupExample } from '../slide_card_group/examples';
-import { bareExample as codeExample } from '../slide_code/examples';
-import { example as titleExample } from '../slide_title/examples';
+import { example as codeExample } from '../slide_code/examples';
 
 import type { SlideSplitNode } from './types';
 
-/** Canonical {@link SlideSplitNode} example. */
+/** Canonical {@link SlideSplitNode} example: two owners, split by a rule. */
 export const example: SlideSplitNode = {
   type: 'slideSplit',
-  left: [titleExample],
-  right: [cardGroupExample],
+  divider: 'rule',
+  panes: [
+    {
+      label: 'Payments team',
+      tone: 'primary',
+      items: [
+        {
+          type: 'slideBulletList',
+          items: ['Card capture', 'Fraud scoring', 'Settlement', 'Refunds'],
+        },
+      ],
+    },
+    {
+      label: 'Merchant',
+      tone: 'accent',
+      items: [
+        {
+          type: 'slideBulletList',
+          items: ['Prices', 'Stock', 'Shipping', 'Customer support'],
+        },
+      ],
+    },
+  ],
+  footnote:
+    'Because the line is fixed, a merchant can change prices **without a payments release**.',
 };
 
-/** `wideLeft` ratio. */
-export const wideLeftExample: SlideSplitNode = {
+/** `wideLeft` with an arrow: the code on the left becomes the points on the right. */
+export const arrowExample: SlideSplitNode = {
   type: 'slideSplit',
   ratio: 'wideLeft',
-  left: [codeExample],
-  right: [bulletExample],
+  divider: 'arrow',
+  panes: [
+    { items: [codeExample] },
+    {
+      label: 'After the change',
+      tone: 'primary',
+      items: [
+        {
+          type: 'slideBulletList',
+          marker: 'check',
+          items: [
+            'The ledger is written first.',
+            'Refunds settle in two days.',
+          ],
+        },
+      ],
+    },
+  ],
 };
 
-/** `wideRight` ratio. */
-export const wideRightExample: SlideSplitNode = {
+/** Two nodes in one column. */
+export const stackedExample: SlideSplitNode = {
   type: 'slideSplit',
-  ratio: 'wideRight',
-  left: [bulletExample],
-  right: [codeExample],
+  ratio: 'narrowLeft',
+  panes: [
+    {
+      label: 'Before',
+      items: [
+        {
+          type: 'slideBulletList',
+          marker: 'x',
+          items: ['Five batch windows.', 'Manual retries.'],
+        },
+      ],
+    },
+    {
+      label: 'After',
+      tone: 'primary',
+      items: [
+        { type: 'slideBulletList', items: ['One nightly run.'] },
+        {
+          type: 'slideCode',
+          panels: [{ lines: ['npm run settle -- --nightly'] }],
+        },
+      ],
+    },
+  ],
+};
+
+/** `aside` with a hairline: code beside a labeled column of notes. */
+export const asideExample: SlideSplitNode = {
+  type: 'slideSplit',
+  ratio: 'aside',
+  divider: 'hairline',
+  panes: [
+    { items: [codeExample] },
+    {
+      label: 'Why this order',
+      items: [
+        {
+          type: 'slideBulletList',
+          items: [
+            'The ledger records it before anything can fail.',
+            'Fraud can reverse a refund, never lose one.',
+            'Customers hear only about moved money.',
+          ],
+        },
+      ],
+    },
+  ],
 };
 
 /** Conformance examples for {@link SlideSplitNode}. */
 export const examples: SlideSplitNode[] = [
   example,
-  wideLeftExample,
-  wideRightExample,
+  arrowExample,
+  stackedExample,
+  asideExample,
 ];

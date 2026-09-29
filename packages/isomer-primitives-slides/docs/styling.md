@@ -2,7 +2,7 @@
 
 ## Distillate collection
 
-This pack authors CSS with [Distillate](https://elastic.github.io/distillate/), Elastic's typed CSS engine with render-driven style collection. React renderers call `cls(context, ...handles)` so class names resolve through the HTML adapter's `resolveClassName`. `src/pack.ts` passes `styleAdapter: createDistillateHtmlStyleAdapter(slideDistillery)` to `definePrimitivePack`: it records those handles and `renderStyles` emits the Distillate stylesheet.
+This pack authors CSS with [Distillate](https://elastic.github.io/distillate/), Elastic's typed CSS engine with render-driven style collection. React renderers call `cls(context, ...handles)` so class names resolve through the HTML adapter's `resolveClassName`. `src/pack.ts` passes `createDistillateHtmlStyleAdapter(slideDistillery)` as the `styleAdapter` to `definePrimitivePack`: it records those handles and `renderStyles` emits the Distillate stylesheet.
 
 Used rules are discovered while rendering, via `resolveClassName`. The adapter is part of the pack, so a host supplies nothing:
 
@@ -47,9 +47,13 @@ import {
 
 const node: SlideCodeNode = {
   type: 'slideCode',
-  label: 'Composition',
-  language: 'json',
-  code: '{ "type": "view", "body": [] }',
+  panels: [
+    {
+      file: 'Composition',
+      language: 'json',
+      lines: ['{ "type": "view", "body": [] }'],
+    },
+  ],
 };
 
 <StandaloneSlideNode node={node} />
@@ -61,8 +65,8 @@ This is a React convenience wrapper, not a surface — it applies `slideStyleshe
 
 A browser resolves `Inter` and `Roboto Mono` from the page; an image backend resolves nothing it was not handed, and an unregistered family falls back to the backend's built-in face. So a host rasterizing this pack registers both families itself.
 
-`SLIDE_THEME.font.weight` declares 500, 600, 700, and 800, and anything that does not set a weight inherits the document default of 400. That is the set to register, per family — `src/examples/deck/fonts.ts` derives it from the theme rather than listing it, so a new weight token cannot silently fall back to the nearest registered face.
+`slideFontFaces` is that set: one `{ family, weight, style }` per face the theme needs, derived from `SLIDE_THEME.font` rather than listed, so a new weight token cannot silently fall back to the nearest registered face. It holds every weight `SLIDE_THEME.font.weight` declares (400, 500, 600, 700, and 800) for Inter and all but extrabold (400 to 700) for Roboto Mono, since no mono style sets it, plus the 400 italic `slideTitle`'s definition line sets. The host maps each face to a font file; `src/examples/fonts.ts` is the worked loader, over `@fontsource/*`.
 
-`@fontsource/inter` and `@fontsource/roboto-mono` ship woff2, which takumi decodes natively, so no conversion step is needed. Roboto Mono stops at 700; a weight the family does not ship is dropped rather than substituted.
+`@fontsource/inter` and `@fontsource/roboto-mono` ship woff2, which takumi decodes natively, so no conversion step is needed. Roboto Mono stops at 700, which is why its faces do. A loader drops a weight the family does not ship rather than substituting one.
 
-The theme's `check` and `x` bullet markers are `✓` and `✕`, which neither family covers. A PNG draws them from the backend's built-in face; a PDF rejects a glyph no registered font covers. `fonts.ts` therefore registers `@fontsource/noto-sans-symbols-2` last, so it serves only what the two families miss.
+The image draws no glyph outside those two families: the `check` bullet marker is drawn from borders, and `x` is `×`, which Inter covers. `✓` appears only in text, Markdown, and Slack.

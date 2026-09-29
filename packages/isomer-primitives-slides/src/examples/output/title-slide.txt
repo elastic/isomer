@@ -1,0 +1,10 @@
+REFERENCE PACK
+Isomer
+One composition, every surface.
+
+✓ React and HTML
+✓ Markdown and plain text
+✓ Slack Block Kit
+✓ SVG and PNG
+
+Isomer · elastic.github.io/isomer

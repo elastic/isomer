@@ -7,19 +7,102 @@
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
-import { fromTextChildren } from '@elastic/isomer-sdk/author';
+
+import { hasLineTerminator } from '../../render/marks';
+import { displayColumns } from '../../render/mono';
+import { codeDenseAfter, codeLineMaxLength } from '../../theme/components/code';
+import { crossRefine } from '../cross_field';
+
+// Past this many UTF-16 units a line fits no panel, so it is refused before measuring.
+const RAW_LINE_LIMIT =
+  Math.max(codeLineMaxLength(1, false), codeLineMaxLength(1, true)) * 8;
+
+const panelSchema = z
+  .object({
+    file: z
+      .string()
+      .min(1)
+      .describe(
+        'Caption above the panel: a file name, or what the code is (e.g. `checkout.ts`).'
+      )
+      .optional(),
+    language: z
+      .string()
+      .min(1)
+      .describe(
+        'Language of this panel, e.g. `ts` or `json`. Sets the markdown fence; the slide shows no syntax colors.'
+      )
+      .optional(),
+    lines: z
+      .array(z.string().max(RAW_LINE_LIMIT))
+      .min(1)
+      .max(16)
+      .describe(
+        'Source, one entry per line, indented with spaces rather than tabs. Use an empty string for a blank line. One to sixteen lines; ten or fewer stay at the larger size.'
+      ),
+    highlightLines: z
+      .array(z.number().int().positive())
+      .min(1)
+      .describe(
+        '1-based line numbers to mark with a tinted band. Other lines stay at full strength.'
+      )
+      .optional(),
+  })
+  .strict()
+  .check(
+    crossRefine(({ lines }) => !lines.some(hasLineTerminator), {
+      error: 'one line per entry: split multi-line source into separate lines',
+      path: ['lines'],
+    })
+  )
+  .check(
+    crossRefine(({ lines }) => !lines.some((line) => line.includes('\t')), {
+      error: 'indent with spaces, not tabs',
+      path: ['lines'],
+    })
+  )
+  .check(
+    crossRefine(
+      ({ highlightLines, lines }) =>
+        highlightLines === undefined ||
+        highlightLines.every((line) => line <= lines.length),
+      {
+        error: 'highlightLines must exist in lines',
+        path: ['highlightLines'],
+      }
+    )
+  );
+
+export type SlideCodePanel = z.infer<typeof panelSchema>;
 
 /** Zod schema for {@link SlideCodeNode}. */
 export const schema = z
   .object({
     type: z.literal('slideCode'),
-    code: fromTextChildren(z.string().min(1).describe('Source to display.'), {
-      collapseWhitespace: false,
-    }),
-    label: z.string().describe('Optional heading above the block.').optional(),
-    language: z.string().describe('Used for the markdown fence.').optional(),
+    panels: z
+      .array(panelSchema)
+      .min(1)
+      .max(2)
+      .describe(
+        `One panel, or two side by side with an arrow between them to trace a value from one file to the next. Two panels need the full slide width; do not put them in a slideSplit column. A line holds ${codeLineMaxLength(1, false)} characters in one panel and ${codeLineMaxLength(2, false)} in each of two (${codeLineMaxLength(1, true)} and ${codeLineMaxLength(2, true)} past ${codeDenseAfter} lines), a wide glyph such as CJK or an emoji counting as two; a narrower column holds fewer, and a longer line is clipped.`
+      ),
   })
-  .strict();
+  .strict()
+  .check(
+    crossRefine(
+      ({ panels }) => {
+        const dense = panels.some(({ lines }) => lines.length > codeDenseAfter);
+        const max = codeLineMaxLength(panels.length === 2 ? 2 : 1, dense);
+        return panels.every(({ lines }) =>
+          lines.every((line) => displayColumns(line, max) <= max)
+        );
+      },
+      {
+        error: `a line is wider than its panel: at most ${codeLineMaxLength(1, false)} characters in one panel, ${codeLineMaxLength(2, false)} in each of two`,
+        path: ['panels'],
+      }
+    )
+  );
 
-/** Labeled code block with an optional language hint. */
+/** Source code in one panel, or two joined by an arrow. */
 export type SlideCodeNode = z.infer<typeof schema> & PrimitiveNode;

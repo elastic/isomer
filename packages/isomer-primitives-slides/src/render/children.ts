@@ -6,18 +6,43 @@
  */
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
+import type { MarkdownContent } from '@elastic/isomer-sdk/markdown';
+import {
+  escapeMrkdwn,
+  type SlackAssetCollector,
+  type SlackBlock,
+} from '@elastic/isomer-sdk/slack';
 
 import type { SlideRenderScope } from './context';
+import { oneLine } from './one_line';
 
-/** A container's text or markdown: each child rendered, empties dropped, blank-line joined. */
-export const renderChildren = (
+/** Each child rendered, empties dropped, blank-line joined. */
+export const renderTextChildren = (
   nodes: readonly PrimitiveNode[],
-  scope: Pick<SlideRenderScope, 'renderMarkdown' | 'renderText'>,
-  surface: 'markdown' | 'text'
+  scope: Pick<SlideRenderScope, 'renderText'>
 ): string =>
   nodes
-    .map((node) =>
-      surface === 'text' ? scope.renderText(node) : scope.renderMarkdown(node)
-    )
+    .map((node) => scope.renderText(node))
     .filter(Boolean)
     .join('\n\n');
+
+export const renderMarkdownChildren = (
+  nodes: readonly PrimitiveNode[],
+  scope: Pick<SlideRenderScope, 'renderMarkdownContent'>
+): MarkdownContent => nodes.map((node) => scope.renderMarkdownContent(node));
+
+/** Each child through `scope`, so a native renderer below is reached. */
+export const renderSlackChildren = (
+  nodes: readonly PrimitiveNode[],
+  scope: Pick<SlideRenderScope, 'renderSlack'>,
+  collector: SlackAssetCollector | undefined
+): SlackBlock[] => nodes.flatMap((node) => scope.renderSlack(node, collector));
+
+/** A one-line `context` block: the chrome a container draws above its children. */
+export const slackCaption = (text: string, strong = false): SlackBlock => {
+  const line = escapeMrkdwn(oneLine(text));
+  return {
+    type: 'context',
+    elements: [{ type: 'mrkdwn', text: strong ? `*${line}*` : line }],
+  };
+};

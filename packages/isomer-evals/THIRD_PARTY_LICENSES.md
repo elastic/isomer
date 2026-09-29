@@ -116,7 +116,6 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@eslint/object-schema` | 2.1.7 | Apache-2.0 | `node_modules/.pnpm/@eslint+object-schema@2.1.7/node_modules/@eslint/object-schema` |  |
 | `@eslint/plugin-kit` | 0.4.1 | Apache-2.0 | `node_modules/.pnpm/@eslint+plugin-kit@0.4.1/node_modules/@eslint/plugin-kit` |  |
 | `@fontsource/inter` | 5.3.0 | OFL-1.1 | `node_modules/.pnpm/@fontsource+inter@5.3.0/node_modules/@fontsource/inter` |  |
-| `@fontsource/noto-sans-symbols-2` | 5.3.0 | OFL-1.1 | `node_modules/.pnpm/@fontsource+noto-sans-symbols-2@5.3.0/node_modules/@fontsource/noto-sans-symbols-2` |  |
 | `@fontsource/roboto-mono` | 5.3.0 | OFL-1.1 | `node_modules/.pnpm/@fontsource+roboto-mono@5.3.0/node_modules/@fontsource/roboto-mono` |  |
 | `@gar/promise-retry` | 1.0.3 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/@gar/promise-retry` |  |
 | `@humanfs/core` | 0.19.2 | Apache-2.0 | `node_modules/.pnpm/@humanfs+core@0.19.2/node_modules/@humanfs/core` |  |
@@ -280,6 +279,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `cacache` | 20.0.4 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/cacache` |  |
 | `call-bind-apply-helpers` | 1.0.2 | MIT | `node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers` |  |
 | `callsites` | 3.1.0 | MIT | `node_modules/.pnpm/callsites@3.1.0/node_modules/callsites` |  |
+| `ccount` | 2.0.1 | MIT | `node_modules/.pnpm/ccount@2.0.1/node_modules/ccount` |  |
 | `chai` | 6.2.2 | MIT | `node_modules/.pnpm/chai@6.2.2/node_modules/chai` |  |
 | `chalk` | 2.4.2 | MIT | `node_modules/.pnpm/chalk@2.4.2/node_modules/chalk` |  |
 | `chalk` | 4.1.2 | MIT | `node_modules/.pnpm/chalk@4.1.2/node_modules/chalk` |  |
@@ -582,6 +582,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `lodash.uniqby` | 4.7.0 | MIT | `node_modules/.pnpm/lodash.uniqby@4.7.0/node_modules/lodash.uniqby` |  |
 | `lodash.upperfirst` | 4.3.1 | MIT | `node_modules/.pnpm/lodash.upperfirst@4.3.1/node_modules/lodash.upperfirst` |  |
 | `log-update` | 6.1.0 | MIT | `node_modules/.pnpm/log-update@6.1.0/node_modules/log-update` |  |
+| `longest-streak` | 3.1.0 | MIT | `node_modules/.pnpm/longest-streak@3.1.0/node_modules/longest-streak` |  |
 | `loose-envify` | 1.4.0 | MIT | `node_modules/.pnpm/loose-envify@1.4.0/node_modules/loose-envify` |  |
 | `lru-cache` | 10.4.3 | ISC | `node_modules/.pnpm/lru-cache@10.4.3/node_modules/lru-cache` |  |
 | `lru-cache` | 11.5.1 | BlueOak-1.0.0 | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/lru-cache` |  |
@@ -592,13 +593,23 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `make-dir` | 4.0.0 | MIT | `node_modules/.pnpm/make-dir@4.0.0/node_modules/make-dir` |  |
 | `make-fetch-happen` | 15.0.6 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/make-fetch-happen` |  |
 | `markdown-it` | 14.3.0 | MIT | `node_modules/.pnpm/markdown-it@14.3.0/node_modules/markdown-it` |  |
+| `markdown-table` | 3.0.4 | MIT | `node_modules/.pnpm/markdown-table@3.0.4/node_modules/markdown-table` |  |
 | `markdownlint` | 0.41.1 | MIT | `node_modules/.pnpm/markdownlint@0.41.1/node_modules/markdownlint` |  |
 | `markdownlint-cli2` | 0.23.2 | MIT | `node_modules/.pnpm/markdownlint-cli2@0.23.2/node_modules/markdownlint-cli2` |  |
 | `markdownlint-cli2-formatter-default` | 0.0.6 | MIT | `node_modules/.pnpm/markdownlint-cli2-formatter-default@0.0.6_markdownlint-cli2@0.23.2/node_modules/markdownlint-cli2-formatter-default` |  |
 | `marked` | 15.0.12 | MIT | `node_modules/.pnpm/marked@15.0.12/node_modules/marked` |  |
 | `marked-terminal` | 7.3.0 | MIT | `node_modules/.pnpm/marked-terminal@7.3.0_marked@15.0.12/node_modules/marked-terminal` |  |
 | `math-intrinsics` | 1.1.0 | MIT | `node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics` |  |
+| `mdast-util-find-and-replace` | 3.0.2 | MIT | `node_modules/.pnpm/mdast-util-find-and-replace@3.0.2/node_modules/mdast-util-find-and-replace` |  |
 | `mdast-util-from-markdown` | 2.0.3 | MIT | `node_modules/.pnpm/mdast-util-from-markdown@2.0.3/node_modules/mdast-util-from-markdown` |  |
+| `mdast-util-gfm` | 3.1.0 | MIT | `node_modules/.pnpm/mdast-util-gfm@3.1.0/node_modules/mdast-util-gfm` |  |
+| `mdast-util-gfm-autolink-literal` | 2.0.1 | MIT | `node_modules/.pnpm/mdast-util-gfm-autolink-literal@2.0.1/node_modules/mdast-util-gfm-autolink-literal` |  |
+| `mdast-util-gfm-footnote` | 2.1.0 | MIT | `node_modules/.pnpm/mdast-util-gfm-footnote@2.1.0/node_modules/mdast-util-gfm-footnote` |  |
+| `mdast-util-gfm-strikethrough` | 2.0.1 | MIT | `node_modules/.pnpm/mdast-util-gfm-strikethrough@2.0.1/node_modules/mdast-util-gfm-strikethrough` |  |
+| `mdast-util-gfm-table` | 2.0.0 | MIT | `node_modules/.pnpm/mdast-util-gfm-table@2.0.0/node_modules/mdast-util-gfm-table` |  |
+| `mdast-util-gfm-task-list-item` | 2.0.0 | MIT | `node_modules/.pnpm/mdast-util-gfm-task-list-item@2.0.0/node_modules/mdast-util-gfm-task-list-item` |  |
+| `mdast-util-phrasing` | 4.1.0 | MIT | `node_modules/.pnpm/mdast-util-phrasing@4.1.0/node_modules/mdast-util-phrasing` |  |
+| `mdast-util-to-markdown` | 2.1.3 | MIT | `node_modules/.pnpm/mdast-util-to-markdown@2.1.3/node_modules/mdast-util-to-markdown` |  |
 | `mdast-util-to-string` | 4.0.0 | MIT | `node_modules/.pnpm/mdast-util-to-string@4.0.0/node_modules/mdast-util-to-string` |  |
 | `mdurl` | 2.1.0 | MIT | `node_modules/.pnpm/mdurl@2.1.0/node_modules/mdurl` |  |
 | `meow` | 12.1.1 | MIT | `node_modules/.pnpm/meow@12.1.1/node_modules/meow` |  |
@@ -882,7 +893,10 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `unicorn-magic` | 0.3.0 | MIT | `node_modules/.pnpm/unicorn-magic@0.3.0/node_modules/unicorn-magic` |  |
 | `unicorn-magic` | 0.4.0 | MIT | `node_modules/.pnpm/unicorn-magic@0.4.0/node_modules/unicorn-magic` |  |
 | `unique-string` | 3.0.0 | MIT | `node_modules/.pnpm/unique-string@3.0.0/node_modules/unique-string` |  |
+| `unist-util-is` | 6.0.1 | MIT | `node_modules/.pnpm/unist-util-is@6.0.1/node_modules/unist-util-is` |  |
 | `unist-util-stringify-position` | 4.0.0 | MIT | `node_modules/.pnpm/unist-util-stringify-position@4.0.0/node_modules/unist-util-stringify-position` |  |
+| `unist-util-visit` | 5.1.0 | MIT | `node_modules/.pnpm/unist-util-visit@5.1.0/node_modules/unist-util-visit` |  |
+| `unist-util-visit-parents` | 6.0.2 | MIT | `node_modules/.pnpm/unist-util-visit-parents@6.0.2/node_modules/unist-util-visit-parents` |  |
 | `universal-user-agent` | 7.0.3 | ISC | `node_modules/.pnpm/universal-user-agent@7.0.3/node_modules/universal-user-agent` |  |
 | `universalify` | 0.2.0 | MIT | `node_modules/.pnpm/universalify@0.2.0/node_modules/universalify` |  |
 | `universalify` | 2.0.1 | MIT | `node_modules/.pnpm/universalify@2.0.1/node_modules/universalify` |  |
@@ -928,6 +942,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `yocto-queue` | 1.2.2 | MIT | `node_modules/.pnpm/yocto-queue@1.2.2/node_modules/yocto-queue` |  |
 | `yoctocolors` | 2.2.0 | MIT | `node_modules/.pnpm/yoctocolors@2.2.0/node_modules/yoctocolors` |  |
 | `zod` | 4.6.5 | MIT | `node_modules/.pnpm/zod@4.6.5/node_modules/zod` |  |
+| `zwitch` | 2.0.4 | MIT | `node_modules/.pnpm/zwitch@2.0.4/node_modules/zwitch` |  |
 
 ## Optional dependencies
 

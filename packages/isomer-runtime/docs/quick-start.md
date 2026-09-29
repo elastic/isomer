@@ -37,28 +37,36 @@ The pack ships its own style adapter, so the runtime has CSS without being told.
 
 ## 3. Write a composition
 
-A `Composition` says what the answer is, not how it looks. The wire discriminator stays `type: 'view'`. This one is the reference deck's title slide.
+A `Composition` says what the answer is, not how it looks. The wire discriminator stays `type: 'view'`. This one is the reference pack's title slide.
 
 ```ts
 import { type Composition } from '@elastic/isomer-sdk';
 
 const composition: Composition = {
   type: 'view',
-  title: 'Title slide',
+  title: 'Isomer',
   body: [
     {
       type: 'slideFrame',
+      tone: 'inverse',
       brand: 'Isomer',
-      chapter: '01 · Primitives',
-      footer: 'Elastic',
-      layout: 'title',
+      url: 'https://elastic.github.io/isomer',
       body: [
         {
           type: 'slideTitle',
           eyebrow: 'Reference pack',
-          title: 'One composition, every surface.',
-          lede: 'The same spec renders as HTML, markdown, text, Slack, and SVG.',
-          size: 'hero',
+          title: 'Isomer',
+          tagline: 'One composition, **every surface**.',
+          aside: {
+            type: 'slideBulletList',
+            marker: 'check',
+            items: [
+              'React and HTML',
+              'Markdown and plain text',
+              'Slack Block Kit',
+              'SVG and PNG',
+            ],
+          },
         },
       ],
     },
@@ -70,11 +78,11 @@ runtime.validate(composition); // { valid: true, errors: [], warnings: [] }
 
 ## 4. Render it
 
-Each surface takes the same composition.
+Each surface takes the same composition. A slide opens with its own heading, so the text and Markdown renders pass `heading: false` rather than repeat the composition's `title`.
 
 ```ts
-runtime.surfaces.text.render(composition);
-runtime.surfaces.markdown.render(composition);
+runtime.surfaces.text.render(composition, { heading: false });
+runtime.surfaces.markdown.render(composition, { heading: false });
 
 const { html, css, validationErrors } = runtime.surfaces.html.render(composition, {
   theme: 'auto',
@@ -88,30 +96,36 @@ const { text, blocks, assets } = runtime.surfaces.slack.render(composition, {
 The `text` surface gives:
 
 ```text
-TITLE SLIDE
-
-01 · Primitives
-
-Reference pack
+REFERENCE PACK
+Isomer
 One composition, every surface.
-The same spec renders as HTML, markdown, text, Slack, and SVG.
+
+✓ React and HTML
+✓ Markdown and plain text
+✓ Slack Block Kit
+✓ SVG and PNG
+
+Isomer · elastic.github.io/isomer
 ```
 
 The `markdown` surface gives:
 
 ```markdown
-# Title slide
-
-## 01 · Primitives
+# Isomer
 
 _Reference pack_
 
-## One composition, every surface.
+One composition, **every surface**.
 
-The same spec renders as HTML, markdown, text, Slack, and SVG.
+- ✓ React and HTML
+- ✓ Markdown and plain text
+- ✓ Slack Block Kit
+- ✓ SVG and PNG
+
+_Isomer · [elastic.github.io/isomer](https://elastic.github.io/isomer)_
 ```
 
-Slack gives a `header` block and one `mrkdwn` section, through the Markdown fallback, because this pack writes no Slack renderer. HTML gives `<section class="isomer framed" role="group" aria-label="Title slide">…</section>` with a `<style>` holding only the rules this slide uses.
+Slack gives a `header` block, the eyebrow and footer as `context` blocks, the tagline as a `section`, and the list as a native `rich_text` list, all from the pack's own Slack renderers. HTML gives `<section class="isomer framed" role="group" aria-label="Isomer">…</section>` with a `<style>` holding only the rules this slide uses.
 
 Each surface has one validation posture. `html` renders and reports findings on `validationErrors`, because a partial document is still worth showing. `text`, `markdown`, `slack`, and `svg` throw `CompositionValidationError` on an invalid composition by default, because a string, a message, or an image has nowhere to carry findings. `react` never validates. `onValidationError` flips any of them; see [Surfaces](surfaces.md).
 

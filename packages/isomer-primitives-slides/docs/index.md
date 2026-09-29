@@ -16,7 +16,7 @@ The in-repo reference primitive pack for Isomer. Slide-deck primitives, every su
 | [Document](document.md) | Geometry, `validateBody`, `wrap` |
 | [Theme](theme.md) | The one-field bound and how palette selection works |
 | [Styling](styling.md) | Distillate collection, the pack's own adapter, and the React surface |
-| [Worked example](example.md) | The five example compositions, their artifacts, and how to get a PNG |
+| [Worked example](example.md) | The example compositions, their artifacts, and how to get a PNG |
 
 ## Quick start
 
@@ -41,12 +41,11 @@ runtime.surfaces.text.render(composition);
 
 | Type | Description |
 | --- | --- |
-| `slideFrame` | The 16:9 root node — topbar, body, footer. Required by the document. |
-| `slideSplit` | Two-column layout with optional width ratio. |
-| `slideStack` | Vertical stack with controlled spacing. |
-| `slideBulletList` | Labeled bullet list with dot, check, or × markers. |
-| `slideCardGroup` | Grid of labeled cards with optional badges and tones. |
-| `slideCode` | Labeled code block. |
-| `slideFlow` | Horizontal sequence of labeled boxes connected by lines. |
-| `slideTerritoryGroup` | Ownership annotations paired with accent colors. |
-| `slideTitle` | Eyebrow, headline, and optional lede with inline links. |
+| `slideFrame` | The 16:9 root node: the slide body and a one-line footer. Required by the document. |
+| `slideHeading` | A content slide's claim and optional lede. |
+| `slideTitle` | The deck's opening slide, with an optional node beside it. |
+| `slideSplit` | Two panes of slide nodes, with a width ratio and a divider. |
+| `slideStack` | Slide nodes stacked with controlled spacing, for a one-node slot. |
+| `slideBulletList` | Short points with a dot, check, or × marker. |
+| `slideTerritoryGroup` | Who owns what, one color-keyed column per owner. |
+| `slideCode` | Source in one panel, or two joined by an arrow. |

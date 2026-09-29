@@ -13,13 +13,14 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideFrame',
   purpose:
-    'Render a fixed 16:9 presentation slide from nested slide primitives.',
+    'Hold one 16:9 slide: its content top to bottom and a footer naming the deck, the section, and its address.',
   useWhen: [
-    'A registered view needs presentation-grade layout.',
-    'The same slide should degrade to markdown or plain text.',
+    'Every slide; each composition in a deck is exactly one slideFrame and nothing else.',
+    'A title, section, or closing slide needs the dark background; set `tone` to `inverse`.',
+    'Slides belong to numbered sections; set `sectionNumber` and `section` to the section so the footer tracks it.',
   ],
   avoidWhen: [
-    'The content is a normal app or report view that does not require slide layout.',
+    'Content inside a slide needs grouping; frames never nest, so use slideSplit or slideStack.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

@@ -5,7 +5,15 @@
  * 2.0.
  */
 
+export {
+  buildSlidesAuthoringPrompt,
+  slidesAuthoringGuide,
+  slidesAuthoringRules,
+} from './agent_guide';
+
 export type { SlideContentNode } from './body_node';
+
+export { slideJsx } from './jsx';
 
 export {
   SLIDE_HEIGHT,
@@ -14,25 +22,21 @@ export {
   slidesPack,
   slideThemes,
 } from './pack';
+export { slidePrimitiveGroups } from './pack_authoring';
 
 export type { SlideBulletListNode } from './primitives/slide_bullet_list';
-export type {
-  SlideCard,
-  SlideCardGroupNode,
-} from './primitives/slide_card_group';
-export type { SlideCodeNode } from './primitives/slide_code';
-export type { SlideFlowNode } from './primitives/slide_flow';
+export type { SlideCodeNode, SlideCodePanel } from './primitives/slide_code';
 export { SlideFrameView } from './primitives/slide_frame';
 export type { SlideFrameNode } from './primitives/slide_frame';
-export type { SlideSplitNode } from './primitives/slide_split';
+export type { SlideHeadingNode } from './primitives/slide_heading';
+export type { SlideSplitNode, SlideSplitPane } from './primitives/slide_split';
 export type { SlideStackNode } from './primitives/slide_stack';
 export type {
   SlideTerritory,
   SlideTerritoryGroupNode,
 } from './primitives/slide_territory_group';
 export type {
-  SlideLedeLink,
-  SlideLedePart,
+  SlideTitleDefinition,
   SlideTitleNode,
 } from './primitives/slide_title';
 
@@ -46,18 +50,25 @@ export type {
 
 export { StandaloneSlideNode } from './standalone';
 
-export { slidePaletteForMode, slideStylesheet } from './theme';
-export type { SlideFrameTheme, SlidePalette } from './theme';
+export { slideStylesheet } from './stylesheet';
+
+export { slideFontFaces, slidePaletteForMode } from './theme';
+export type { SlideFontFace, SlideFrameTheme, SlidePalette } from './theme';
 export {
   slideBulletMarkers,
-  slideCardColumnCounts,
-  slideCardColumns,
-  slideCardColumnsKey,
-  slideCardGroupStyles,
-  slideFrameLayouts,
+  slideFrameTones,
+  slideSizes,
+  slideSplitDividers,
   slideSplitRatios,
   slideStackSpacings,
-  slideTitleSizes,
   slideTones,
 } from './theme';
-export type { SlideTone } from './theme';
+export type {
+  SlideBulletMarker,
+  SlideFrameTone,
+  SlideSize,
+  SlideSplitDivider,
+  SlideSplitRatio,
+  SlideStackSpacing,
+  SlideTone,
+} from './theme';

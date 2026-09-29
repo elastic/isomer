@@ -5,42 +5,44 @@
  * 2.0.
  */
 
-import type { SlideTitleNode } from './schema';
+import type { SlideTitleNode } from './types';
 
 /** Canonical {@link SlideTitleNode} example. */
 export const example: SlideTitleNode = {
   type: 'slideTitle',
-  eyebrow: 'Proof point',
-  title: 'This slide is built from Isomer primitives.',
-  lede: 'The same spec renders as HTML, markdown, text, Slack, and SVG.',
+  eyebrow: 'A grocery delivery platform',
+  title: 'Crate',
+  tagline: 'One order. Every store.',
+  definition: {
+    term: 'crate n.',
+    text: 'Everything a customer means to buy, carried from whichever store can fill it.',
+  },
+  aside: {
+    type: 'slideBulletList',
+    marker: 'check',
+    items: [
+      'Splits one order across nearby stores.',
+      'Books one courier for the whole basket.',
+      'Charges the card once.',
+    ],
+  },
 };
 
-/** `jumbo` size, a non-default tone, and a lede mixing text and a link. */
-export const jumboExample: SlideTitleNode = {
+export const soloExample: SlideTitleNode = {
   type: 'slideTitle',
-  eyebrow: 'Reference pack',
-  size: 'jumbo',
-  title: 'Six.',
-  tone: 'teal',
-  lede: [
-    'Surfaces from one composition; see ',
-    {
-      type: 'link',
-      text: 'the runtime docs',
-      href: 'https://github.com/elastic/isomer',
-      openInNewTab: true,
-    },
-    '.',
-  ],
+  eyebrow: 'Quarterly review',
+  title: 'Payments',
+  tagline: 'Faster refunds, **fewer disputes**.',
 };
 
-/** `hero` size with the `subtle` tone and no lede. */
-export const heroExample: SlideTitleNode = {
+export const minimalExample: SlideTitleNode = {
   type: 'slideTitle',
-  size: 'hero',
-  title: 'One composition, every surface.',
-  tone: 'subtle',
+  title: 'Onboarding',
 };
 
 /** Conformance examples for {@link SlideTitleNode}. */
-export const examples: SlideTitleNode[] = [example, jumboExample, heroExample];
+export const examples: SlideTitleNode[] = [
+  example,
+  soloExample,
+  minimalExample,
+];

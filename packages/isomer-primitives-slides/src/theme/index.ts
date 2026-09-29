@@ -5,31 +5,27 @@
  * 2.0.
  */
 
-export { slideDistillery, toneBgVar, toneVar } from './distillery';
-export { slideModules, slideStylesheet } from './modules';
+export { slideDistillery, themeVarName, toneVar } from './distillery';
+export { slideFontFaces } from './fonts';
+export type { SlideFontFace } from './fonts';
 export { slidePaletteForMode } from './palette';
 export type { SlideFrameTheme, SlidePalette } from './palette';
 export { literal, paddingXy, px, scalePx } from './scale';
 export {
   slideBulletMarkers,
-  slideCardColumnCounts,
-  slideCardColumns,
-  slideCardColumnsKey,
-  slideCardGroupStyles,
-  slideFrameLayouts,
+  slideFrameTones,
+  slideSizes,
+  slideSplitDividers,
   slideSplitRatios,
   slideStackSpacings,
-  slideTitleSizes,
   slideTones,
 } from './variants';
 export type {
   SlideBulletMarker,
-  SlideCardColumnCount,
-  SlideCardColumns,
-  SlideCardGroupStyle,
-  SlideFrameLayout,
+  SlideFrameTone,
+  SlideSize,
+  SlideSplitDivider,
   SlideSplitRatio,
   SlideStackSpacing,
-  SlideTitleSize,
   SlideTone,
 } from './variants';

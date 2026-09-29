@@ -4,7 +4,7 @@
 
 ## Geometry
 
-Width 1920 × height 1080 (fixed; `sizesFromNodeHeights: false`). The eight non-frame primitives declare no `metrics.svgHeight` because the frame provides the canvas, and `slideFrame` reports the canvas height; the missing-`svgHeight` warning is silent for this pack.
+Width 1920 × height 1080 (fixed; `sizesFromNodeHeights: false`). The primitives inside the frame declare no `metrics.svgHeight` because the frame provides the canvas, and `slideFrame` reports the canvas height; the missing-`svgHeight` warning is silent for this pack.
 
 ## `validateBody`
 
@@ -35,11 +35,17 @@ The frame is called `slideDeckFrame` (qualified) to avoid colliding with the `sl
 
 ## Footer chrome
 
-The footer's left side always renders the mark and the theme's `frame.brandLabel`; `footer` (right side) is the only configurable footer text. There is no node field to replace or hide the mark.
+The frame draws one footer line and nothing else: the Isomer mark, `brand`, and the section (`sectionNumber` and `section`) on the left, `url` on the right. A slide with no section, such as the title slide, shows `brand` alone. `logo: false` leaves the mark out of the footer and out of a `slideTitle` inside the frame, for a deck about something other than Isomer. `url` is a link on the web surfaces and must be an absolute `http` or `https` address, such as `https://example.com`: a footer has no page to be relative to. One that is not is dropped before render.
+
+## Tone
+
+`tone: 'inverse'` gives the title slide the dark background by redeclaring the page palette for the frame's subtree; see [Theme](theme.md#inverse-tone).
 
 ## Degrading to text and markdown
 
-`chapter` (and `chapterNumber`, if present) becomes an `h2` heading ahead of the body, the same level as a slide title. `brand` and `footer` are image-only chrome and do not reach either surface.
+The body renders first, then the footer as one line (`Isomer · 01 Primitives · elastic.github.io/isomer`), italic in Markdown with `url` as a link. Slack sends the same line as a closing `context` block.
+
+A slide opens with its own heading: `slideTitle` or `slideHeading`, each a `#` in Markdown, with sub-headings inside the slide, such as a `slideSplit` pane label, at `##`. Render a slide with `heading: false` on the `text`, `markdown`, and `slack` surfaces, as on `react` and `html`, so the composition's `title` names the slide without repeating it.
 
 ## `slideDeckFrame` vs `slideFrame`
 
