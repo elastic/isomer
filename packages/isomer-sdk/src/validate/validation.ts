@@ -5,13 +5,10 @@
  * 2.0.
  */
 
-import type { core } from 'zod';
-
 import {
   BODY_NODE_SURFACES,
   type BodyNodeSurface,
   childNodePath,
-  type ChildNodeWalker,
   createChildNodeWalker,
   isVisibleOnSurface,
   rendersOnSurface,
@@ -23,13 +20,9 @@ import {
   type ValidationError,
 } from '../composition/validation_error';
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
-import {
-  declaredFieldsNote,
-  formatPath,
-  formatZodIssue,
-} from '../define/zod_format';
 
 import { getCompositionSchemaForDefinitions } from './composition_schema';
+import { createNodeIssueFormatter, type IssueRoot } from './node_issues';
 
 /**
  * A non-fatal validation finding, scoped to the surface it concerns.
@@ -103,90 +96,12 @@ export interface CompositionValidatorOptions {
   sizesFromNodeHeights?: boolean;
 }
 
-/** Each primitive's type, and the {@link declaredFieldsNote} for its node. */
-const fieldNotesOf = (
-  definitions: readonly AnyPrimitiveDefinition[]
-): Map<string, string> =>
-  new Map(
-    definitions.map(({ type, schema }) => [type, declaredFieldsNote(schema)])
-  );
-
-/**
- * Each node `walk` reaches in `value`'s body, keyed by its path. The input has
- * failed the schema, so a node whose children cannot be walked adds none.
- */
-const nodeTypesByPath = (
-  value: unknown,
-  walk: ChildNodeWalker
-): Map<string, string> => {
-  const types = new Map<string, string>();
-  const visit = (node: unknown, path: string): void => {
-    if (typeof node !== 'object' || node === null) {
-      return;
-    }
-    const { type } = node as { type?: unknown };
-    if (typeof type === 'string') {
-      types.set(path, type);
-    }
-    let children: ReturnType<ChildNodeWalker>;
-    try {
-      children = walk(node);
-    } catch {
-      return;
-    }
-    children.forEach(({ node: child, path: field }) => {
-      visit(child, childNodePath(path, field));
-    });
-  };
+/** The body's nodes, as {@link IssueRoot}s for a node issue formatter. */
+const bodyRoots = (value: unknown): IssueRoot[] => {
   const { body } = (value ?? {}) as { body?: unknown };
-  if (Array.isArray(body)) {
-    body.forEach((node, index) => visit(node, `body[${index}]`));
-  }
-  return types;
-};
-
-/** The `type` of the innermost node of a known primitive type that `segments` lands in. */
-const nodeTypeAt = (
-  nodes: ReadonlyMap<string, string>,
-  segments: readonly PropertyKey[],
-  known: ReadonlyMap<string, unknown>
-): string | undefined => {
-  let found: string | undefined;
-  let path = '';
-  for (const segment of segments) {
-    path = formatPath([segment], path);
-    const type = nodes.get(path);
-    if (type !== undefined && known.has(type)) {
-      found = type;
-    }
-  }
-  return found;
-};
-
-/**
- * {@link formatZodIssue} per issue, each error naming the primitive its path
- * lands in, and an unknown key on a node listing the fields that node declares.
- */
-const formatIssuesIn = (
-  value: unknown,
-  issues: ReadonlyArray<core.$ZodIssue>,
-  fieldNotes: ReadonlyMap<string, string>,
-  walk: ChildNodeWalker
-): ValidationError[] => {
-  const nodes = nodeTypesByPath(value, walk);
-  return issues.map((issue) => {
-    const error = formatZodIssue(issue);
-    const nodeType = nodeTypeAt(nodes, issue.path, fieldNotes);
-    if (nodeType === undefined) {
-      return error;
-    }
-    const onNode =
-      issue.code === 'unrecognized_keys' && nodes.get(error.path) === nodeType;
-    const message = onNode
-      ? `${error.message}; ${fieldNotes.get(nodeType)}`
-      : error.message;
-    return { ...error, message, nodeType };
-  });
+  return Array.isArray(body)
+    ? body.map((node, index) => [node, `body[${index}]`] as const)
+    : [];
 };
 
 /**
@@ -204,7 +119,7 @@ export const createCompositionValidator = (
 ): ((composition: Composition) => ValidationResult) => {
   const schema = getCompositionSchemaForDefinitions(definitions);
   const walk = createChildNodeWalker(definitions);
-  const fieldNotes = fieldNotesOf(definitions);
+  const formatIssues = createNodeIssueFormatter(definitions);
   return (composition) => {
     const result = schema.safeParse(composition, { reportInput: true });
     if (result.success) {
@@ -219,12 +134,7 @@ export const createCompositionValidator = (
     }
     return {
       valid: false,
-      errors: formatIssuesIn(
-        composition,
-        result.error.issues,
-        fieldNotes,
-        walk
-      ),
+      errors: formatIssues(bodyRoots(composition), result.error.issues),
       warnings: [],
     };
   };
@@ -255,8 +165,7 @@ export const createCompositionParser = (
   definitions: readonly AnyPrimitiveDefinition[]
 ): ((value: unknown) => ParsedComposition) => {
   const schema = getCompositionSchemaForDefinitions(definitions);
-  const walk = createChildNodeWalker(definitions);
-  const fieldNotes = fieldNotesOf(definitions);
+  const formatIssues = createNodeIssueFormatter(definitions);
   return (value) => {
     const result = schema.safeParse(value, { reportInput: true });
     if (result.success) {
@@ -268,7 +177,7 @@ export const createCompositionParser = (
     }
     return {
       valid: false,
-      errors: formatIssuesIn(value, result.error.issues, fieldNotes, walk),
+      errors: formatIssues(bodyRoots(value), result.error.issues),
     };
   };
 };

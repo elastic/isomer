@@ -22,7 +22,7 @@ import {
   type SurfaceMap,
   type SurfaceName,
 } from '../define/primitive_module';
-import { declaredFieldsNote, formatZodIssue } from '../define/zod_format';
+import { createNodeIssueFormatter } from '../validate/node_issues';
 
 import type { SlackAssetCollector } from './slack/assets';
 import type { SlackBlock, SlackImageBlock } from './slack/blocks';
@@ -136,6 +136,7 @@ export const createPrimitiveDispatcher = <
   options: PrimitiveDispatcherOptions = {}
 ): PrimitiveDispatcher<TNode, T> => {
   const { isSlackAssetType } = options;
+  const formatIssues = createNodeIssueFormatter(definitions);
   const byType = new Map<string, AnyPrimitiveDefinition>();
   for (const definition of definitions) {
     const existing = byType.get(definition.type);
@@ -277,21 +278,12 @@ export const createPrimitiveDispatcher = <
       return svgHeight?.(node) ?? 0;
     },
     validate: (node, path, errors) => {
-      const { schema, type } = getDefinition(node);
-      const result = schema.safeParse(node, { reportInput: true });
-      if (result.success) {
-        return;
+      const result = getDefinition(node).schema.safeParse(node, {
+        reportInput: true,
+      });
+      if (!result.success) {
+        errors.push(...formatIssues([[node, path]], result.error.issues, path));
       }
-      errors.push(
-        ...result.error.issues.map((issue) => {
-          const error = formatZodIssue(issue, path);
-          const message =
-            issue.code === 'unrecognized_keys' && issue.path.length === 0
-              ? `${error.message}; ${declaredFieldsNote(schema)}`
-              : error.message;
-          return { ...error, message, nodeType: type };
-        })
-      );
     },
   };
   return self;

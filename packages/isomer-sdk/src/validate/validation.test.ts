@@ -167,6 +167,32 @@ describe('error node types', () => {
     expect(error?.nodeType).toBeUndefined();
   });
 
+  it.each([{ type: 'nope' }, { type: 5 }])(
+    'leaves a nested child of unknown type %j unnamed, not its container',
+    (child) => {
+      const { errors } = parse({
+        type: 'view',
+        body: [{ type: 'holder', items: [child] }],
+      });
+      expect(errors).not.toHaveLength(0);
+      for (const error of errors) {
+        expect(error.path).toMatch(/^body\[0\]\.items\[0\]/);
+        expect(error).not.toHaveProperty('nodeType');
+      }
+    }
+  );
+
+  it('names the container for a child slot that holds no node', () => {
+    const [error] = parse({
+      type: 'view',
+      body: [{ type: 'holder', items: [5] }],
+    }).errors;
+    expect(error).toMatchObject({
+      path: 'body[0].items[0]',
+      nodeType: 'holder',
+    });
+  });
+
   it('prints a root finding unchanged', () => {
     const [error] = parse(null).errors;
     expect(error?.nodeType).toBeUndefined();

@@ -62,7 +62,21 @@ describe('createPrimitiveDispatcher', () => {
     }
   });
 
-  it('names the node type on each schema failure', () => {
+  it('names the node type on a schema failure in the node itself', () => {
+    const errors: ValidationError[] = [];
+    dispatcher().validate(
+      { type: 'stack', items: 'none' } as unknown as FixtureNode,
+      'body[0]',
+      errors
+    );
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatchObject({
+      path: 'body[0].items',
+      nodeType: 'stack',
+    });
+  });
+
+  it('leaves a child of unknown type unnamed, not its container', () => {
     const errors: ValidationError[] = [];
     dispatcher().validate(
       { type: 'stack', items: [{ type: '' }] } as unknown as FixtureNode,
@@ -70,11 +84,7 @@ describe('createPrimitiveDispatcher', () => {
       errors
     );
     expect(errors).toEqual([
-      {
-        path: 'body[0].items[0].type',
-        message: 'must be a non-empty string',
-        nodeType: 'stack',
-      },
+      { path: 'body[0].items[0].type', message: 'must be a non-empty string' },
     ]);
   });
 

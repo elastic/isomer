@@ -19,6 +19,23 @@ describe('quoteText', () => {
       expect(JSON.parse(quoteText(text))).toBe(text);
     }
   );
+
+  it.each([
+    '',
+    '"',
+    '\\',
+    '\\u2028',
+    'a & b &amp;',
+    '{}',
+    '[]',
+    '<b>',
+    '\t\u0000',
+  ])('round-trips %j as one JSON string', (text) => {
+    const quoted = quoteText(text);
+    expect(quoted).toMatch(/^".*"$/s);
+    expect(quoted).not.toMatch(LINE_TERMINATOR);
+    expect(JSON.parse(quoted)).toBe(text);
+  });
 });
 
 describe('nameText', () => {
