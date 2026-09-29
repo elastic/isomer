@@ -6,6 +6,7 @@
  */
 
 import { ISOMER_ERROR_CODES } from './error';
+import { nameText } from './one_line';
 
 /**
  * One fatal validation finding.
@@ -22,8 +23,6 @@ export interface ValidationError {
   nodeType?: string;
 }
 
-const PLAIN_NAME = /^[\w$-]+$/;
-
 /** `<path> (in <nodeType>) <message>`, or the message alone for a root finding. */
 export const formatValidationError = ({
   path,
@@ -33,11 +32,9 @@ export const formatValidationError = ({
   if (!path) {
     return message;
   }
-  if (nodeType === undefined) {
-    return `${path} ${message}`;
-  }
-  const name = PLAIN_NAME.test(nodeType) ? nodeType : JSON.stringify(nodeType);
-  return `${path} (in ${name}) ${message}`;
+  return nodeType === undefined
+    ? `${path} ${message}`
+    : `${path} (in ${nameText(nodeType)}) ${message}`;
 };
 
 /**

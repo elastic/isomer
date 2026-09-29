@@ -198,6 +198,39 @@ describe('error node types', () => {
       })
     ).toBe('body[0].label (in "my kpi") is required');
   });
+
+  it('keeps echoed names on one line', () => {
+    const odd = definePrimitive({
+      ...kpi,
+      type: 'odd\u2028type',
+      schema: z.object({
+        type: z.literal('odd\u2028type'),
+        'line\nfield': z.string().optional(),
+      }),
+    });
+    const check = createCompositionValidator([odd]);
+    const { errors } = check({
+      type: 'view',
+      body: [
+        { type: 'odd\u2028type', 'key\u2029x': 1 } as never,
+        { type: 'odd\u2028type', id: 'a\u2028' },
+      ],
+    });
+    const lines = errors.map(formatValidationError);
+    expect(lines).toEqual([
+      'body[0] (in "odd\\u2028type") has unrecognized key(s): "key\\u2029x"; its fields are "line\\nfield"',
+    ]);
+    const [duplicate] = check({
+      type: 'view',
+      body: [
+        { type: 'odd\u2028type', id: 'a\u2028' },
+        { type: 'odd\u2028type', id: 'a\u2028' },
+      ],
+    }).errors;
+    expect(duplicate && formatValidationError(duplicate)).not.toMatch(
+      /[\n\r\u2028\u2029]/
+    );
+  });
 });
 
 describe('unknown node keys', () => {

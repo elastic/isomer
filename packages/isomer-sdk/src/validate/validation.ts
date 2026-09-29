@@ -17,6 +17,7 @@ import {
   rendersOnSurface,
 } from '../composition/body_node_base';
 import type { Composition } from '../composition/composition';
+import { nameText, quoteText } from '../composition/one_line';
 import {
   CompositionValidationError,
   type ValidationError,
@@ -186,7 +187,7 @@ const formatIssuesIn = (
       issue.code === 'unrecognized_keys' && nodes.get(error.path) === nodeType;
     const message =
       onNode && declared.length > 0
-        ? `${error.message}; its fields are ${declared.join(', ')}`
+        ? `${error.message}; its fields are ${declared.map(nameText).join(', ')}`
         : error.message;
     return { ...error, message, nodeType };
   });
@@ -317,7 +318,7 @@ const collectMissingSvgHeightWarnings = (
       warnings.push({
         surface: 'svg',
         path,
-        message: `${path} type "${type}" declares no svgHeight metric and will be measured as 0, sizing the frame short`,
+        message: `${path} type ${quoteText(type)} declares no svgHeight metric and will be measured as 0, sizing the frame short`,
       });
     }
     walk(node).forEach(({ node: child, path: field }) => {
@@ -352,7 +353,7 @@ const collectDuplicateNodeIdErrors = (
       if (first) {
         errors.push({
           path: `${path}.id`,
-          message: `duplicates id "${id}" first used at ${first}`,
+          message: `duplicates id ${quoteText(id)} first used at ${first}`,
           ...(typeof type === 'string' ? { nodeType: type } : {}),
         });
       } else {

@@ -7,6 +7,7 @@
 
 import type { core } from 'zod';
 
+import { nameText } from '../composition/one_line';
 import type { ValidationError } from '../composition/validation_error';
 
 /**
@@ -51,20 +52,20 @@ export const formatZodIssue = (
   }
 
   if (issue.code === 'invalid_value' && Array.isArray(issue.values)) {
-    return { path, message: `must be one of: ${issue.values.join(', ')}` };
+    return { path, message: oneOf(issue.values) };
   }
 
   if (issue.code === 'unrecognized_keys') {
     return {
       path,
-      message: `has unrecognized key(s): ${issue.keys.join(', ')}`,
+      message: `has unrecognized key(s): ${issue.keys.map(nameText).join(', ')}`,
     };
   }
 
   if (issue.code === 'invalid_union') {
     const { options } = issue as { options?: unknown };
     if (Array.isArray(options)) {
-      return { path, message: `must be one of: ${options.join(', ')}` };
+      return { path, message: oneOf(options) };
     }
   }
 
@@ -85,6 +86,13 @@ export const formatZodIssue = (
 
   return { path, message: issue.message };
 };
+
+const oneOf = (options: readonly unknown[]): string =>
+  `must be one of: ${options
+    .map((option) =>
+      typeof option === 'string' ? nameText(option) : String(option)
+    )
+    .join(', ')}`;
 
 const sizeMessage = (
   bound: 'at least' | 'at most',
