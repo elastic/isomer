@@ -227,6 +227,7 @@ describe('gfmToSlackMrkdwn', () => {
       `# a${' '.repeat(size)}x`,
       `| ${'`'.repeat(size)} | b |\n| - | - |`,
       `${'| - '.repeat(size / 4)}x`,
+      `| a |\n| -${' '.repeat(size)}x|`,
       `# ${distinctFences}`,
       `| ${distinctFences} | b |\n| - | - |`,
     ];

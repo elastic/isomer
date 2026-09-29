@@ -6,6 +6,7 @@
  */
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
+import { oneLine } from '@elastic/isomer-sdk/author';
 import type { MarkdownContent } from '@elastic/isomer-sdk/markdown';
 import {
   escapeMrkdwn,
@@ -14,7 +15,6 @@ import {
 } from '@elastic/isomer-sdk/slack';
 
 import type { SlideRenderScope } from './context';
-import { oneLine } from './one_line';
 
 /** Each child rendered, empties dropped, blank-line joined. */
 export const renderTextChildren = (
