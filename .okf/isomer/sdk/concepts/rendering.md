@@ -23,7 +23,7 @@ sources:
 
 # Definition
 
-Renderers return envelopes, not bare strings or elements. HTML may run a style adapter and pack `collectStyles` hooks. `createDistillateHtmlStyleAdapter` publishes `DISTILLATE_STYLE_COLLECTOR`; combining adapters is the runtime's job.[^docs][^distillate-adapter]
+Renderers return envelopes, not bare strings or elements. The text, markdown, and Slack envelopes take `heading`, which defaults to `true`; `false` leaves out the title and subtitle, and Slack's default fallback `text` with them. HTML may run a style adapter and pack `collectStyles` hooks. `createDistillateHtmlStyleAdapter` publishes `DISTILLATE_STYLE_COLLECTOR`; combining adapters is the runtime's job.[^docs][^distillate-adapter]
 
 HTML returns `{ html, css, js, body, measurement, validationErrors }`. Every script it carries is a function body with `root`, the `.isomer` section, in scope, and each part runs in its own function. `scripts: 'embedded'` (the default) puts one `<script>` in `html` that binds `root` to its parent section. It never runs in a shadow root or when the host inserts `html` itself, so those hosts use `scripts: 'host'`: no `<script>`, and the host calls `runEnhancementScript(js, section)`. An embedded script with no root warns; `runEnhancementScript` throws `ENHANCEMENT_ROOT_MISSING` without a section and warns when the section also carries an embedded script. It uses `new Function`, so a strict CSP needs `'unsafe-eval'`. The render resolves `enhancements` once against every pack's definitions: each renderer's context carries the resolved set as `context.enhancements`, through a view of the adapter's context, and `js` carries each resolved enhancement's script once, after the caller's and the adapter's.[^docs][^envelope]
 

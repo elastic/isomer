@@ -18,6 +18,12 @@ export interface MarkdownEnvelopeDispatcher<
   renderMarkdown(node: TNode): string;
 }
 
+/** Options for {@link renderMarkdownEnvelope}. */
+export interface MarkdownEnvelopeOptions {
+  /** Renders the composition's title and subtitle. Defaults to `true`. Pass `false` when the host already shows the title, or the body opens with its own. */
+  heading?: boolean;
+}
+
 /**
  * The composition as GFM: title as `h1`, subtitle italicized, then every node
  * that rendered anything. The title and subtitle go through
@@ -26,13 +32,14 @@ export interface MarkdownEnvelopeDispatcher<
  */
 export const renderMarkdownEnvelope = <TNode extends PrimitiveNode>(
   composition: Composition<TNode>,
-  dispatcher: MarkdownEnvelopeDispatcher<TNode>
+  dispatcher: MarkdownEnvelopeDispatcher<TNode>,
+  { heading = true }: MarkdownEnvelopeOptions = {}
 ): string => {
   const blocks: string[] = [];
-  if (composition.title) {
+  if (heading && composition.title) {
     blocks.push(`# ${sanitizeMarkdownSource(composition.title)}`);
   }
-  if (composition.subtitle) {
+  if (heading && composition.subtitle) {
     blocks.push(`_${sanitizeMarkdownSource(composition.subtitle)}_`);
   }
   for (const node of composition.body) {

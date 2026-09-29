@@ -328,6 +328,29 @@ describe('createIsomerRuntime', () => {
     ]);
   });
 
+  it('leaves out the title and subtitle on text, markdown, and slack when heading is false', () => {
+    const runtime = createIsomerRuntime({ packs: [packOf(notePrimitive)] });
+    const spec = {
+      ...view('Runtime owned'),
+      title: 'Checkout',
+      subtitle: 'last 15m',
+    };
+
+    expect(runtime.surfaces.text.render(spec, { heading: false })).toBe(
+      'Runtime owned'
+    );
+    expect(runtime.surfaces.markdown.render(spec, { heading: false })).toBe(
+      'Runtime owned'
+    );
+    expect(runtime.surfaces.slack.render(spec, { heading: false })).toEqual({
+      text: 'Runtime owned',
+      blocks: [
+        { type: 'section', text: { type: 'mrkdwn', text: 'Runtime owned' } },
+      ],
+      assets: [],
+    });
+  });
+
   it('exposes the same schema validate/parse use internally, memoized', () => {
     const runtime = createIsomerRuntime({ packs: [packOf(notePrimitive)] });
     const spec = view('Runtime owned');

@@ -53,4 +53,19 @@ describe('renderTextEnvelope', () => {
       )
     ).toBe('one\n\ntwo');
   });
+
+  it('leaves out the title and subtitle when heading is false', () => {
+    expect(
+      renderTextEnvelope(
+        {
+          type: 'view',
+          title: 'Checkout',
+          subtitle: 'last 15m',
+          body: [{ type: 'note', body: 'one' }],
+        },
+        dispatcher,
+        { heading: false }
+      )
+    ).toBe('one');
+  });
 });

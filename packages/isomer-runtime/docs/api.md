@@ -60,10 +60,10 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | `ReactRenderOptions` | `context`, `heading`, `wrapper: boolean \| CompositionWrapperOptions`; `ReactRenderArgs` is the tuple form, optional only when `context` is |
 | `ReactRenderNodeOptions` | `ReactRenderOptions` without `heading` |
 | `HTMLRenderOptions` | `theme`, `minify`, `fluid`, `framed`, `heading`, `css: 'inline' \| 'separate'`, `scripts: 'embedded' \| 'host'`, `enhancements: string[]`, `anchors: boolean` (node anchors; `true` for tests), `onValidationError` |
-| `TextRenderOptions` | `onValidationError` |
-| `MarkdownRenderOptions` | `onValidationError` |
-| `SlackRenderOptions` | `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
-| `SlackRenderNodeOptions` | `SlackRenderOptions` without `onValidationError` |
+| `TextRenderOptions` | `heading`, `onValidationError` |
+| `MarkdownRenderOptions` | `heading`, `onValidationError` |
+| `SlackRenderOptions` | `heading`, `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
+| `SlackRenderNodeOptions` | `SlackRenderOptions` without `heading` or `onValidationError` |
 | `SvgRenderOptions` | `frame`, `width`, `height`, `theme`, `onValidationError` |
 
 `onValidationError` is `'collect' | 'throw'`. `html` defaults to `'collect'` and reports on `validationErrors`; `text`, `markdown`, `slack`, and `svg` default to `'throw'`.

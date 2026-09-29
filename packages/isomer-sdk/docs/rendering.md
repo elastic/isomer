@@ -7,12 +7,14 @@ The SDK owns the output shapes: what a whole composition looks like as text, mar
 Three of the four are small, and each takes a narrow dispatcher interface rather than the whole thing — a text envelope needs `renderText` and nothing else.
 
 ```ts
-renderTextEnvelope(composition, dispatcher); // title uppercased, subtitle, nodes, blank-line joined
-renderMarkdownEnvelope(composition, dispatcher); // # title, _subtitle_, nodes
-renderSlackEnvelope(composition, dispatcher, { text, collectAssets, assetPrefix });
+renderTextEnvelope(composition, dispatcher, { heading }); // title uppercased, subtitle, nodes, blank-line joined
+renderMarkdownEnvelope(composition, dispatcher, { heading }); // # title, _subtitle_, nodes
+renderSlackEnvelope(composition, dispatcher, { heading, text, collectAssets, assetPrefix });
 ```
 
-The Slack envelope does the most. It emits a `header` block for the title and a `context` block for the subtitle, then each node's blocks; enforces Slack's 50-block message budget; clamps the fallback `text` to 4,000 characters; and returns only the asset requests whose placeholder block survived the budget — uploading files for elided blocks would be orphaned work.
+`heading: false` leaves out the title and subtitle, and nothing else; the Slack envelope also leaves them out of its default fallback `text`. It defaults to `true`.
+
+The Slack envelope does the most. It emits a `header` block for the title and a `context` block for the subtitle unless `heading` is `false`, then each node's blocks; enforces Slack's 50-block message budget; clamps the fallback `text` to 4,000 characters; and returns only the asset requests whose placeholder block survived the budget — uploading files for elided blocks would be orphaned work.
 
 `SLACK_LIMITS` publishes the numbers a renderer has to respect: 50 blocks per message, 3,000 characters in a section, 10 fields per section, 10 elements per context block, 25 buttons in an actions block, 150 characters in a header, 75 in an option label.
 

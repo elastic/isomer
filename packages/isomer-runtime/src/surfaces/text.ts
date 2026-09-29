@@ -15,9 +15,11 @@ import { enforceValidationMode } from '@elastic/isomer-sdk';
 import {
   renderTextEnvelope,
   type TextEnvelopeDispatcher,
+  type TextEnvelopeOptions,
 } from '@elastic/isomer-sdk/text';
 
-export interface TextRenderOptions {
+/** {@link TextEnvelopeOptions} plus the surface's validation posture. */
+export interface TextRenderOptions extends TextEnvelopeOptions {
   /** Defaults to `'throw'`: a string has nowhere to carry findings. `'collect'` renders anyway. */
   onValidationError?: ValidationErrorMode;
 }
@@ -43,7 +45,7 @@ export const createTextSurface = (
       validate(composition),
       options.onValidationError ?? 'throw'
     );
-    return renderTextEnvelope(composition, dispatcher);
+    return renderTextEnvelope(composition, dispatcher, options);
   },
   renderNode: (node) => dispatcher.renderText(node),
 });
