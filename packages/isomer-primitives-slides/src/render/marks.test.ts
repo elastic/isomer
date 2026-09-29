@@ -93,4 +93,10 @@ describe('marks', () => {
       )
     ).toBe('Call `a*b` before **render** & \\*go\\*.');
   });
+
+  it('reads a strong run with a long whitespace run in linear time', () => {
+    const started = performance.now();
+    expect(parseMarks(`**a${' '.repeat(100_000)}b**`)).toHaveLength(1);
+    expect(performance.now() - started).toBeLessThan(1_000);
+  });
 });

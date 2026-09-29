@@ -53,8 +53,10 @@ export const parseMarks = (text: string): MarkRun[] => {
     if (codeText !== undefined) {
       push({ kind: 'code', text: codeText });
     } else {
-      const [, lead = '', core = '', trail = ''] =
-        /^(\s*)([\s\S]*?)(\s*)$/.exec(strongText) ?? [];
+      const core = strongText.trim();
+      const start = strongText.length - strongText.trimStart().length;
+      const lead = strongText.slice(0, start);
+      const trail = strongText.slice(start + core.length);
       if (core === '') {
         push({ kind: 'text', text: whole });
       } else {
