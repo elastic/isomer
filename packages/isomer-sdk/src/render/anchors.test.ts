@@ -24,6 +24,7 @@ import {
 
 import {
   anchorValue,
+  findNodeElementPairs,
   findNodeElements,
   NODE_ANCHOR_ATTRIBUTE,
   nodeAnchor,
@@ -568,6 +569,27 @@ const stubRoot = (types: readonly string[]) => {
   };
 };
 
+describe('findNodeElementPairs', () => {
+  it('pairs each occurrence of a reused node object with its own element', () => {
+    const leaf = { type: 'leaf', text: 'twice' };
+    const { root, elements } = stubRoot(['leaf', 'leaf']);
+    expect(findNodeElementPairs(root, [leaf, leaf], walk)).toEqual([
+      { node: leaf, element: elements[0] },
+      { node: leaf, element: elements[1] },
+    ]);
+  });
+
+  it('keeps a node whose type cannot be paired, without an element', () => {
+    const leaf = { type: 'leaf', text: 'x' };
+    const box = { type: 'box', items: [] };
+    const { root } = stubRoot(['leaf', 'leaf']);
+    expect(findNodeElementPairs(root, [box, leaf], walk)).toEqual([
+      { node: box, element: undefined },
+      { node: leaf, element: undefined },
+    ]);
+  });
+});
+
 describe('findNodeElements', () => {
   it('skips a node hidden from react, with its children', () => {
     const hidden = {
@@ -579,6 +601,14 @@ describe('findNodeElements', () => {
     const { root, elements } = stubRoot(['leaf']);
     const found = findNodeElements(root, [hidden, shown], walk);
     expect(found.get(shown)).toBe(elements[0]);
+    expect(found.size).toBe(1);
+  });
+
+  it('keeps the last occurrence of a reused node object', () => {
+    const leaf = { type: 'leaf', text: 'twice' };
+    const { root, elements } = stubRoot(['leaf', 'leaf']);
+    const found = findNodeElements(root, [leaf, leaf], walk);
+    expect(found.get(leaf)).toBe(elements[1]);
     expect(found.size).toBe(1);
   });
 

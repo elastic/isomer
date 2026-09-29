@@ -50,7 +50,7 @@ CI pins the CLI version in `.github/workflows/okf.yml`. Record meaningful bundle
 
 ## Pull requests
 
-- Use [conventional commits](https://www.conventionalcommits.org/). `feat:` and `fix:` drive the next release version.
+- Use [conventional commits](https://www.conventionalcommits.org/). `feat:` and `fix:` drive the next release version when they change a published package.
 - Add tests for behavioral changes.
 - Run `pnpm verify` before opening a PR.
 
