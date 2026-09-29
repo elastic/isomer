@@ -9,7 +9,7 @@ import { createElement } from 'react';
 import type { SvgRenderOptions } from '@elastic/isomer-runtime';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { createTakumiImageBackend } from './backend';
+import { createTakumiImageBackend, type TakumiImageBackend } from './backend';
 import type {
   PngRuntime,
   PngSvgOptions,
@@ -40,6 +40,20 @@ const runtimeReturning = (validation: PngValidationResult): PngRuntime => ({
 describe('renderPng', () => {
   it('accepts the runtime svg surface options without importing them', () => {
     expectTypeOf<SvgRenderOptions>().toExtend<PngSvgOptions>();
+  });
+
+  it('takes a custom backend with only png and svg', async () => {
+    const takumi = createTakumiImageBackend();
+    const backend: TakumiImageBackend = {
+      png: (input, options) => takumi.png(input, options),
+      svg: (input) => takumi.svg(input),
+    };
+    const result = await renderPng(
+      runtimeReturning({ valid: true, errors: [] }),
+      { type: 'view' },
+      backend
+    );
+    expect(result.png.subarray(0, 4).equals(PNG_MAGIC)).toBe(true);
   });
 
   it('renders even an invalid composition and reports why', async () => {
