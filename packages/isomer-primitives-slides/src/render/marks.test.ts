@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
 import { md, serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
@@ -15,7 +16,6 @@ import {
   plainText,
   stripMarks,
 } from './marks';
-import { oneLine } from './one_line';
 
 describe('marks', () => {
   it('moves whitespace at a strong run’s edges outside it, so every surface reads the same emphasis', () => {
