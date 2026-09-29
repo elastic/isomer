@@ -13,6 +13,7 @@ import { assertPackRegistrationComplete } from '@elastic/isomer-sdk/testing';
 import { describe, expect, it } from 'vitest';
 
 import type { BodyNode } from './body_node';
+import { slidePrimitiveGroups } from './pack_authoring';
 import { slideDeckPrimitives, slidePrimitiveTypes } from './registry';
 
 /** Every node type reachable from the registry, via `examples: readonly TNode[]`. */
@@ -35,6 +36,19 @@ describe('registry', () => {
       primitivesDir: new URL('./primitives/', import.meta.url),
       registered: slideDeckPrimitives,
     });
+  });
+
+  it('indexes every registered type in exactly one group', () => {
+    const grouped = slidePrimitiveGroups.flatMap(({ types }) => types);
+    expect([...grouped].sort()).toEqual([...slidePrimitiveTypes].sort());
+  });
+
+  it('gives every primitive a slack renderer', () => {
+    expect(
+      slideDeckPrimitives
+        .filter(({ renderers }) => !('slack' in renderers))
+        .map(({ type }) => type)
+    ).toEqual([]);
   });
 
   it('registers each type once', () => {

@@ -10,22 +10,20 @@
 // `registry.test.ts` fails if the two drift.
 
 import { slideBulletListPrimitive } from './primitives/slide_bullet_list';
-import { slideCardGroupPrimitive } from './primitives/slide_card_group';
 import { slideCodePrimitive } from './primitives/slide_code';
-import { slideFlowPrimitive } from './primitives/slide_flow';
 import { slideFramePrimitive } from './primitives/slide_frame';
+import { slideHeadingPrimitive } from './primitives/slide_heading';
 import { slideSplitPrimitive } from './primitives/slide_split';
 import { slideStackPrimitive } from './primitives/slide_stack';
 import { slideTerritoryGroupPrimitive } from './primitives/slide_territory_group';
 import { slideTitlePrimitive } from './primitives/slide_title';
 
-/** The nine primitive definitions this pack registers, in alphabetical order. */
+/** Every primitive definition this pack registers, in alphabetical order. */
 export const slideDeckPrimitives = [
   slideBulletListPrimitive,
-  slideCardGroupPrimitive,
   slideCodePrimitive,
-  slideFlowPrimitive,
   slideFramePrimitive,
+  slideHeadingPrimitive,
   slideSplitPrimitive,
   slideStackPrimitive,
   slideTerritoryGroupPrimitive,

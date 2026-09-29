@@ -1,6 +1,6 @@
 # `@elastic/isomer-primitives-slides`
 
-The in-repo reference primitive pack for Isomer, and the one to copy: slide-deck primitives that render on every surface, a theme with one authoring source per rendered value, a fixed 16:9 frame, and committed output for every example on every surface.
+The in-repo reference primitive pack for Isomer, and the one to copy: slide-deck primitives that render on every surface, a theme with one authoring source per rendered value, a fixed 16:9 frame, and committed output for an example deck.
 
 ```sh
 npm install @elastic/isomer-primitives-slides @elastic/isomer-runtime @elastic/isomer-sdk react react-dom zod
@@ -23,7 +23,7 @@ The pack ships its own style adapter, which the runtime combines with any other 
 
 ## Docs
 
-The [Slides pack](https://elastic.github.io/isomer/slides/) docs cover [authoring a primitive](https://elastic.github.io/isomer/slides/primitives), the [pack contract](https://elastic.github.io/isomer/slides/contract), the [document](https://elastic.github.io/isomer/slides/document), the [theme](https://elastic.github.io/isomer/slides/theme), [styling](https://elastic.github.io/isomer/slides/styling), and the [worked example](https://elastic.github.io/isomer/slides/example) with every surface's output.
+The [Slides pack](https://elastic.github.io/isomer/slides/) docs cover [authoring a primitive](https://elastic.github.io/isomer/slides/primitives), the [pack contract](https://elastic.github.io/isomer/slides/contract), the [document](https://elastic.github.io/isomer/slides/document), the [theme](https://elastic.github.io/isomer/slides/theme), [styling](https://elastic.github.io/isomer/slides/styling), and the [worked example](https://elastic.github.io/isomer/slides/example) with its output.
 
 ## License
 

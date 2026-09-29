@@ -9,9 +9,9 @@ import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../pack';
+import { slideStylesheet } from '../stylesheet';
 
 import { slideDistillery } from './distillery';
-import { slideStylesheet } from './modules';
 import { slidePaletteForMode } from './palette';
 import { SLIDE_THEME } from './theme';
 
@@ -28,12 +28,14 @@ describe('pack styleAdapter default', () => {
 describe('palette values agree with distillate tokens', () => {
   it('stylesheet emits light-dark() pairs from the theme color group', () => {
     const css = slideStylesheet();
+    // An inverse frame redeclares some of these; only the theme scope's own block is checked.
+    const root = css.slice(0, css.indexOf('}'));
     for (const [key, pair] of Object.entries<{ light: string; dark: string }>(
       SLIDE_THEME.color
     )) {
       const decl = `--slide-color-${key}:light-dark(${pair.light},${pair.dark})`;
-      if (css.includes(`--slide-color-${key}:`)) {
-        expect(css, key).toContain(decl);
+      if (root.includes(`--slide-color-${key}:`)) {
+        expect(root, key).toContain(decl);
       }
     }
   });
@@ -42,9 +44,10 @@ describe('palette values agree with distillate tokens', () => {
   // becoming custom properties, which is what lets the SVG surface read them.
   it('emits no custom property for non-color theme groups', () => {
     const css = slideStylesheet();
-    expect(css).not.toContain('--slide-size-');
+    expect(css).not.toContain('--slide-space-');
     expect(css).not.toContain('--slide-font-');
     expect(css).not.toContain('--slide-radius-');
+    expect(css).not.toContain('--slide-type-');
   });
 
   it('SVG palettes pick Distillate resolveValues for the matching scheme', () => {

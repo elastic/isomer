@@ -8,22 +8,18 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 
 import type { SlideContentNode } from '../../body_node';
-import type { SlideFrameLayout } from '../../theme/variants';
+import type { SlideFrameTone } from '../../theme/variants';
 
-/** Fixed 16:9 root: topbar, body, and footer. Required as the document's sole body node. */
+/** Fixed 16:9 root: body plus a one-line footer. The document's sole body node. */
 export interface SlideFrameNode extends PrimitiveNode {
-  /** Discriminator. Always `slideFrame`. */
   type: 'slideFrame';
-  /** Product or pack name shown beside the mark. */
   brand?: string;
-  /** Section title in the topbar. */
-  chapter: string;
-  /** Optional index shown before {@link SlideFrameNode.chapter}. */
-  chapterNumber?: string;
-  /** Right-side footer copy. */
-  footer: string;
-  /** `title` centers the body. Defaults to `content`. */
-  layout?: SlideFrameLayout;
-  /** Nested slide content. At least one node. */
+  section?: string;
+  sectionNumber?: string;
+  /** Defaults to `true`. */
+  logo?: boolean;
+  /** Defaults to `page`. */
+  tone?: SlideFrameTone;
+  url?: string;
   body: readonly SlideContentNode[];
 }

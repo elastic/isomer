@@ -15,11 +15,15 @@ export const schema = z
     type: z.literal('slideStack'),
     spacing: z
       .enum(slideStackSpacings)
-      .describe('Gap between items. Defaults to `normal`.')
+      .describe(
+        'Gap between items: `tight` 24px, `normal` 48px, `loose` 72px. Defaults to `normal`.'
+      )
       .optional(),
     items: z
       .array(unresolvedBodyNodeSchema)
       .min(1)
-      .describe('Nodes from top to bottom. At least one.'),
+      .describe(
+        'Nodes from top to bottom. At least one. Only useful in a one-node slot or for its spacing; the slide body and a slideSplit pane already stack.'
+      ),
   })
   .strict();

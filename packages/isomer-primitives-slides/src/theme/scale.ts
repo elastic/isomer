@@ -19,3 +19,7 @@ export const literal = (value: string): ScaleToken => cq(value, value);
 
 /** Numeric pixels from a {@link ScaleToken}, for the frame's geometry. */
 export const scalePx = (token: ScaleToken): number => parseFloat(token.value);
+
+/** A `grid-template-columns` value of `minmax(0, Nfr)` tracks, one per share. */
+export const trackList = (shares: readonly number[]): ScaleToken =>
+  literal(shares.map((share) => `minmax(0, ${share}fr)`).join(' '));
