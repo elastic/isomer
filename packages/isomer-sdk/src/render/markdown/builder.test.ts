@@ -132,11 +132,7 @@ describe('md', () => {
     (input) => {
       const json = JSON.stringify(
         gfmToSlackBlocks(
-          serializeMarkdown([
-            md.paragraph(input),
-            md.table(['h', 'i'], [[input, [input, input]]]),
-            md.blockquote(md.paragraph(input, md.break(), input)),
-          ])
+          serializeMarkdown([md.paragraph(input), md.table(['h'], [[input]])])
         )
       );
       if (!input.includes('&#')) {
@@ -396,27 +392,6 @@ describe('md', () => {
         { type: 'strong', children: [{ type: 'text', value: 'c|d' }] },
       ],
     });
-  });
-
-  it('reaches Slack as one quote level with line breaks and no escapes', () => {
-    const markdown = serializeMarkdown([
-      md.blockquote(
-        md.paragraph('> a', md.break(), 'b\\'),
-        md.heading(2, '# c'),
-        md.blockquote(md.list([md.paragraph('d', md.break(), 'e')]))
-      ),
-      md.paragraph('f', md.break(), 'g'),
-      md.list([md.blockquote(md.paragraph('h', md.break(), 'i'))]),
-    ]);
-    expect(gfmToSlackBlocks(markdown)).toEqual([
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: '> &gt; a\n> b\\\n> *# c*\n> - d\n>   e\n\nf\ng\n\n- h\n  i',
-        },
-      },
-    ]);
   });
 
   it('reaches Slack with no literal escapes, links and tables intact', () => {

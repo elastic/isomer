@@ -229,33 +229,149 @@ describe('markdownContentToSlackBlocks', () => {
     ]);
   });
 
-  it('sends a quote holding code through the string path, the code kept as written', () => {
+  it('keeps a quote holding code, a list, or a table on the tree, bordered', () => {
     expect(
       markdownContentToSlackBlocks(
         md.blockquote(
-          md.paragraph('a'),
-          md.codeBlock('*b* \\*\n> c\n\n  d', 'ts')
+          md.paragraph('a', md.break(), 'b'),
+          md.codeBlock('*x*'),
+          md.list(['c']),
+          md.table(['h'], [['1']]),
+          md.blockquote(md.paragraph('d'))
         )
       )
     ).toEqual([
       {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: '> a\n> ```\n> *b* \\*\n> > c\n>\n>   d\n> ```',
-        },
+        type: 'rich_text',
+        elements: [
+          {
+            type: 'rich_text_quote',
+            elements: [
+              { type: 'text', text: 'a' },
+              { type: 'text', text: '\n' },
+              { type: 'text', text: 'b' },
+            ],
+          },
+          {
+            type: 'rich_text_preformatted',
+            elements: [{ type: 'text', text: '*x*' }],
+            border: 1,
+          },
+          {
+            type: 'rich_text_list',
+            style: 'bullet',
+            elements: [
+              {
+                type: 'rich_text_section',
+                elements: [{ type: 'text', text: 'c' }],
+              },
+            ],
+            border: 1,
+          },
+        ],
+      },
+      {
+        type: 'table',
+        rows: [
+          [{ type: 'raw_text', text: 'h' }],
+          [{ type: 'raw_text', text: '1' }],
+        ],
+        column_settings: [{ align: 'left', is_wrapped: true }],
+      },
+      {
+        type: 'rich_text',
+        elements: [
+          { type: 'rich_text_quote', elements: [{ type: 'text', text: 'd' }] },
+        ],
       },
     ]);
   });
 
-  it('sends a quote holding a list or a table through the string path whole', () => {
-    expect(markdownContentToSlackBlocks(md.blockquote(md.list(['a'])))).toEqual(
-      [{ type: 'section', text: { type: 'mrkdwn', text: '> - a' } }]
-    );
-    const blocks = markdownContentToSlackBlocks(
-      md.list([md.blockquote(md.table(['b'], []))])
-    );
-    expect(blocks.some((block) => block.type === 'rich_text')).toBe(false);
+  it('reads a quote in a list item as the item content', () => {
+    expect(
+      markdownContentToSlackBlocks(
+        md.list([
+          [
+            md.paragraph('i'),
+            md.blockquote(md.paragraph('q'), md.list(['n']), md.codeBlock('z')),
+          ],
+        ])
+      )
+    ).toEqual([
+      {
+        type: 'rich_text',
+        elements: [
+          {
+            type: 'rich_text_list',
+            style: 'bullet',
+            elements: [
+              {
+                type: 'rich_text_section',
+                elements: [
+                  { type: 'text', text: 'i' },
+                  { type: 'text', text: '\n' },
+                  { type: 'text', text: 'q' },
+                ],
+              },
+            ],
+          },
+          {
+            type: 'rich_text_list',
+            style: 'bullet',
+            indent: 1,
+            elements: [
+              {
+                type: 'rich_text_section',
+                elements: [{ type: 'text', text: 'n' }],
+              },
+            ],
+          },
+          {
+            type: 'rich_text_section',
+            elements: [{ type: 'text', text: 'z', style: { code: true } }],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('quotes Markdown printed as written line by line', () => {
+    expect(
+      markdownContentToSlackBlocks(
+        md.blockquote(markdownFromString('**e**\n\nf'))
+      )
+    ).toEqual([
+      { type: 'section', text: { type: 'mrkdwn', text: '> *e*\n\n> f' } },
+    ]);
+  });
+
+  it('hands the string path a break as a line ending and a quote as its blocks', () => {
+    expect(
+      markdownContentToSlackBlocks([
+        md.list([
+          [
+            md.paragraph('a', md.break(), 'b'),
+            md.blockquote(md.paragraph('q', md.break(), 'r')),
+            md.table(['h'], []),
+          ],
+        ]),
+        md.list([
+          md.paragraph('c', md.break(), 'd'),
+          markdownFromString('**x**'),
+        ]),
+      ])
+    ).toEqual([
+      {
+        type: 'section',
+        text: { type: 'mrkdwn', text: '- a\n  b\n\n  q\n  r' },
+      },
+      {
+        type: 'table',
+        rows: [[{ type: 'raw_text', text: 'h' }]],
+        column_settings: [{ align: 'left', is_wrapped: true }],
+      },
+      { type: 'section', text: { type: 'mrkdwn', text: '- c\n  d\n- *x*' } },
+    ]);
   });
 
   it('carries a multi-run table cell and the label forms as styles', () => {

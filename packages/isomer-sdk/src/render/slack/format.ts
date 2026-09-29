@@ -604,10 +604,7 @@ const closesFence = (line: string, opening: string): boolean =>
 const TABLE_SEPARATOR_RE =
   /^(?=[^|]*\|)\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
 const TABLE_ROW_RE = /^\s*\|.*\|\s*$/;
-const QUOTE_MARKER_RE = /^ {0,3}>[ \t]?/;
-const QUOTE_MARKERS_RE = /^(?: {0,3}>[ \t]?)+/;
-const LIST_ITEM_RE = /^(?:[ \t]*(?:[-+*]|\d{1,9}[.)])[ \t]+)+/;
-const LIST_LEAD_RE = /^(?:[ \t]*(?:[-+*]|\d{1,9}[.)])[ \t]+)*[ \t]*/;
+const BLOCKQUOTE_RE = /^(>\s?)(.*)$/;
 
 // An ATX heading's text without its closing `#` run, or `undefined`. An
 // escaped `\#` is text, not part of the closing run.
@@ -653,197 +650,11 @@ const splitPipeRow = (line: string): string[] => {
   return cells.map((value) => plainInline(value.trim()));
 };
 
-// The content offset of the list item a line leaves open, or `undefined`.
-const listOffsetAfter = (
-  line: string,
-  offset: number | undefined
-): number | undefined => {
-  const item = LIST_ITEM_RE.exec(line)?.[0];
-  if (item !== undefined) {
-    return item.length;
-  }
-  const indent = line.length - line.trimStart().length;
-  return line.trim() && indent < (offset ?? 0) ? undefined : offset;
-};
-
-interface QuotedLine {
-  // The list markers and indent a quote inside a list item keeps.
-  lead: string;
-  body: string;
-  depth: number;
-}
-
-const splitQuote = (
-  line: string | undefined,
-  inList: boolean
-): QuotedLine | undefined => {
-  if (line === undefined) {
-    return undefined;
-  }
-  const lead = inList ? (LIST_LEAD_RE.exec(line)?.[0] ?? '') : '';
-  const markers = QUOTE_MARKERS_RE.exec(line.slice(lead.length))?.[0];
-  return markers
-    ? {
-        lead,
-        body: line.slice(lead.length + markers.length),
-        depth: markers.split('>').length - 1,
-      }
-    : undefined;
-};
-
-// `line` after exactly `depth` quote markers, or `undefined` with fewer.
-const unquote = (line: string, depth: number): string | undefined => {
-  let rest = line;
-  for (let level = 0; level < depth; level += 1) {
-    const marker = QUOTE_MARKER_RE.exec(rest)?.[0];
-    if (marker === undefined) {
-      return undefined;
-    }
-    rest = rest.slice(marker.length);
-  }
-  return rest;
-};
-
-// The next line as a quote in the same list item, if it is one.
-const nextQuote = (
-  next: string | undefined,
-  listOffset: number | undefined
-): QuotedLine | undefined => {
-  if (listOffset === undefined) {
-    return splitQuote(next, false);
-  }
-  return next === undefined ||
-    LIST_ITEM_RE.test(next) ||
-    listOffsetAfter(next, listOffset) === undefined
-    ? undefined
-    : splitQuote(next, true);
-};
-
-// CommonMark's HTML block type 6 tag names.
-const HTML_BLOCK_NAMES =
-  'address|article|aside|base|basefont|blockquote|body|caption|center|col|' +
-  'colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|' +
-  'footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|' +
-  'link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|search|' +
-  'section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul';
-
-// Blocks that start wherever they appear.
-const BLOCK_START_RES = [
-  /^ {0,3}>/,
-  /^ {0,3}#{1,6}(?:[ \t]|$)/,
-  /^ {0,3}(?:`{3,}[^`]*|~{3,}.*)$/,
-  /^ {0,3}([*_-])(?:[ \t]*\1){2,}[ \t]*$/,
-  new RegExp(
-    `^ {0,3}<(?:(?:script|pre|style|textarea)(?:[\\s>]|$)|!--|\\?|![A-Za-z]|!\\[CDATA\\[|/?(?:${HTML_BLOCK_NAMES})(?:[\\s/>]|$))`,
-    'i'
-  ),
-];
-// A setext underline, and the list items that may interrupt a paragraph.
-const INTERRUPT_RES = [
-  /^ {0,3}(?:=+|-+)[ \t]*$/,
-  /^ {0,3}(?:[-+*]|1[.)])[ \t]+\S/,
-];
-// Blocks a lazy line starts though they cannot interrupt a paragraph.
-const LAZY_START_RES = [
-  /^ {0,3}(?:[-+*]|\d{1,9}[.)])(?:[ \t]|$)/,
-  /^ {0,3}(?:<[A-Za-z][A-Za-z0-9-]*(?:\s+[A-Za-z_:][\w.:-]*(?:\s*=\s*(?:[^\s"'=<>`]+|'[^']*'|"[^"]*"))?)*\s*\/?>|<\/[A-Za-z][A-Za-z0-9-]*\s*>)[ \t]*$/,
-];
-
-// Whether `next` continues the paragraph, so a trailing backslash before it is
-// a hard break. A `lazy` line sits outside the paragraph's container, where
-// any block may start and no table can.
-const continuesParagraph = (
-  next: string | undefined,
-  afterNext: string | undefined,
-  lazy: boolean
-): boolean =>
-  next !== undefined &&
-  next.trim() !== '' &&
-  ![...BLOCK_START_RES, ...(lazy ? LAZY_START_RES : INTERRUPT_RES)].some((re) =>
-    re.test(next)
-  ) &&
-  !(
-    !lazy &&
-    TABLE_ROW_RE.test(next) &&
-    afterNext !== undefined &&
-    TABLE_SEPARATOR_RE.test(afterNext)
-  );
-
-// Headings have no mrkdwn equivalent, so they bold. A trailing odd backslash
-// run before a line that continues the paragraph is a hard break.
-const renderLine = (line: string, continues: boolean): string => {
-  const heading = headingText(line);
-  if (heading !== undefined) {
-    return bold(unescapeGfm(heading));
-  }
-  return renderInline(
-    continues && isEscaped(line, line.length) ? line.slice(0, -1) : line
-  );
-};
-
-// `line` relative to the list item content it continues.
-const withinItem = (
-  line: string | undefined,
-  listOffset: number | undefined
-): string | undefined =>
-  line !== undefined &&
-  listOffset !== undefined &&
-  line.length - line.trimStart().length >= listOffset
-    ? line.slice(listOffset)
-    : line;
-
-// A line outside the item is lazy.
-const continuesInItem = (
-  next: string | undefined,
-  afterNext: string | undefined,
-  itemOffset: number | undefined
-): boolean => {
-  const inItem =
-    next !== undefined &&
-    (itemOffset === undefined ||
-      next.length - next.trimStart().length >= itemOffset);
-  return inItem
-    ? continuesParagraph(
-        withinItem(next, itemOffset),
-        withinItem(afterNext, itemOffset),
-        false
-      )
-    : continuesParagraph(next, undefined, true);
-};
-
-// A deeper quote opens a block; a shallower or unquoted line continues lazily.
-const continuesQuote = (
-  quote: QuotedLine,
-  next: string | undefined,
-  afterNext: string | undefined,
-  listOffset: number | undefined
-): boolean => {
-  const following = nextQuote(next, listOffset);
-  if (following === undefined) {
-    return continuesParagraph(withinItem(next, listOffset), undefined, true);
-  }
-  if (following.depth !== quote.depth) {
-    return (
-      following.depth < quote.depth &&
-      continuesParagraph(following.body, undefined, true)
-    );
-  }
-  const after = nextQuote(afterNext, listOffset);
-  return continuesInItem(
-    following.body,
-    after?.depth === quote.depth ? after.body : undefined,
-    LIST_ITEM_RE.exec(quote.body)?.[0].length
-  );
-};
-
 /**
  * Translates GFM into one Slack `mrkdwn` string:
  *
  * - Bold `**X**` to `*X*`, links `[L](U)` to `<U|L>`.
  * - ATX headings to bold, since Slack renders no headings.
- * - Blockquotes, nested ones included, to one `>` level with no empty lines.
- *   Inside a list item a quote prints as the item's text, since a mrkdwn quote
- *   must start its line.
  * - Pipe tables into a fenced code block, mrkdwn having no table syntax — the
  *   monospace alignment is all that survives. Prefer
  *   {@link gfmToSlackBlocks} when a native `table` block is acceptable.
@@ -854,11 +665,9 @@ const continuesQuote = (
 export const gfmToSlackMrkdwn = (gfm: string): string => {
   const lines = gfm.split('\n');
   const out: string[] = [];
-  let listOffset: number | undefined;
   let i = 0;
   while (i < lines.length) {
     const line = lines[i]!;
-    listOffset = listOffsetAfter(line, listOffset);
     const opening = FENCE_RE.exec(line)?.[1];
     if (opening !== undefined) {
       // Fenced code block: copy the body verbatim. Slack honours the
@@ -900,63 +709,27 @@ export const gfmToSlackMrkdwn = (gfm: string): string => {
       );
       continue;
     }
-    const text = line.replace(/\r$/, '');
-    const next = lines[i + 1]?.replace(/\r$/, '');
-    const inList = listOffset !== undefined;
-    const quote = splitQuote(text, inList);
-    if (quote === undefined) {
-      out.push(
-        renderLine(
-          text,
-          continuesInItem(next, lines[i + 2]?.replace(/\r$/, ''), listOffset)
-        )
-      );
-    } else if (FENCE_RE.test(quote.body)) {
-      // The fence ends at its closing line or where the quote does.
-      const opening = FENCE_RE.exec(quote.body)![1]!;
-      const body: string[] = [];
+    const heading = headingText(line);
+    if (heading !== undefined) {
+      // Headings have no first-class mrkdwn equivalent. Bolding the text keeps
+      // the visual hierarchy without inventing markup Slack would render as
+      // a literal `#`.
+      out.push(bold(unescapeGfm(heading)));
       i += 1;
-      while (i < lines.length) {
-        const raw = lines[i]!.replace(/\r$/, '');
-        const indent = raw.length - raw.trimStart().length;
-        const inner =
-          listOffset !== undefined && indent < listOffset
-            ? undefined
-            : unquote(inList ? raw.trimStart() : raw, quote.depth);
-        if (inner === undefined) {
-          break;
-        }
-        i += 1;
-        if (closesFence(inner, opening)) {
-          break;
-        }
-        body.push(inner);
-      }
-      const rest = inList ? ' '.repeat(quote.lead.length) : '> ';
-      out.push(
-        codeBlock(body.join('\n'))
-          .split('\n')
-          .map((row, index) =>
-            row === ''
-              ? rest.trimEnd()
-              : `${index === 0 && inList ? quote.lead : rest}${row}`
-          )
-          .join('\n')
-      );
       continue;
-    } else if (quote.body.trim()) {
-      out.push(
-        `${inList ? quote.lead : '> '}${renderLine(
-          quote.body,
-          continuesQuote(
-            quote,
-            next,
-            lines[i + 2]?.replace(/\r$/, ''),
-            listOffset
-          )
-        )}`
-      );
     }
+    const blockquoteMatch = line.match(BLOCKQUOTE_RE);
+    if (blockquoteMatch) {
+      // Slack mrkdwn supports `>` blockquotes. Preserve the prefix verbatim
+      // and run only the body through inline transformation so that bold,
+      // italic, links, and emoji glyphs inside the quote still translate.
+      out.push(
+        `${blockquoteMatch[1]}${renderInline(blockquoteMatch[2] ?? '')}`
+      );
+      i += 1;
+      continue;
+    }
+    out.push(renderInline(line));
     i += 1;
   }
   return out.join('\n');
