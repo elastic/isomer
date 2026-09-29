@@ -21,8 +21,8 @@ import {
   type RenderScope,
   type SurfaceMap,
   type SurfaceName,
-  validateWithSchema,
 } from '../define/primitive_module';
+import { declaredFieldsNote, formatZodIssue } from '../define/zod_format';
 
 import type { SlackAssetCollector } from './slack/assets';
 import type { SlackBlock, SlackImageBlock } from './slack/blocks';
@@ -84,7 +84,10 @@ export interface PrimitiveDispatcher<
   ): readonly T['slackBlock'][];
   /** `0` when the node is hidden from `svg` or its primitive declares no `metrics.svgHeight`. */
   estimateSvgHeight(node: TNode): number;
-  /** Appends schema failures under `path` to `errors`, each naming `node`'s type. */
+  /**
+   * Appends schema failures under `path` to `errors`, each naming `node`'s
+   * type, and an unknown key on `node` listing the fields it declares.
+   */
   validate(node: TNode, path: string, errors: ValidationError[]): void;
 }
 
@@ -275,9 +278,20 @@ export const createPrimitiveDispatcher = <
     },
     validate: (node, path, errors) => {
       const { schema, type } = getDefinition(node);
-      const found: ValidationError[] = [];
-      validateWithSchema(schema, node, path, found);
-      errors.push(...found.map((error) => ({ ...error, nodeType: type })));
+      const result = schema.safeParse(node, { reportInput: true });
+      if (result.success) {
+        return;
+      }
+      errors.push(
+        ...result.error.issues.map((issue) => {
+          const error = formatZodIssue(issue, path);
+          const message =
+            issue.code === 'unrecognized_keys' && issue.path.length === 0
+              ? `${error.message}; ${declaredFieldsNote(schema)}`
+              : error.message;
+          return { ...error, message, nodeType: type };
+        })
+      );
     },
   };
   return self;

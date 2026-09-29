@@ -94,7 +94,12 @@ export {
   type SlackTextObject,
   type SlackVideoBlock,
 } from './slack_blocks';
-export { formatPath, formatZodIssue, formatZodIssues } from './zod_format';
+export {
+  declaredFieldsNote,
+  formatPath,
+  formatZodIssue,
+  formatZodIssues,
+} from './zod_format';
 export {
   enumOf,
   finiteNumber,

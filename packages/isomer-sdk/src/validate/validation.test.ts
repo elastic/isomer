@@ -250,6 +250,21 @@ describe('unknown node keys', () => {
     ]);
   });
 
+  it('says so when a node declares no fields of its own', () => {
+    const bare = definePrimitive({
+      ...kpi,
+      type: 'bare',
+      schema: z.object({ type: z.literal('bare') }),
+    });
+    const { errors } = createCompositionParser([bare])({
+      type: 'view',
+      body: [{ type: 'bare', extra: 1 }],
+    });
+    expect(errors.map(formatValidationError)).toEqual([
+      'body[0] (in bare) has unrecognized key(s): extra; it declares no fields',
+    ]);
+  });
+
   it('keeps an explicitly loose schema loose', () => {
     const result = parse({
       type: 'view',

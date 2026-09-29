@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { core } from 'zod';
+import type { core, ZodObject } from 'zod';
 
 import { nameText } from '../composition/one_line';
 import type { ValidationError } from '../composition/validation_error';
@@ -85,6 +85,19 @@ export const formatZodIssue = (
   }
 
   return { path, message: issue.message };
+};
+
+/** Fields every node takes, which {@link declaredFieldsNote} leaves out. */
+const COMMON_NODE_FIELDS = new Set(['type', 'id', 'surfaces']);
+
+/** What an unknown-key error on a node of `schema` adds: the fields that node declares. */
+export const declaredFieldsNote = ({ shape }: ZodObject): string => {
+  const declared = Object.keys(shape).filter(
+    (key) => !COMMON_NODE_FIELDS.has(key)
+  );
+  return declared.length === 0
+    ? 'it declares no fields'
+    : `its fields are ${declared.map(nameText).join(', ')}`;
 };
 
 const oneOf = (options: readonly unknown[]): string =>

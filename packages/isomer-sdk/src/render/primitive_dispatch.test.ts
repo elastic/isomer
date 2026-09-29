@@ -78,6 +78,22 @@ describe('createPrimitiveDispatcher', () => {
     ]);
   });
 
+  it('lists the declared fields on an unknown key', () => {
+    const errors: ValidationError[] = [];
+    dispatcher().validate(
+      { type: 'note', body: 'Hi', extra: 1 } as unknown as FixtureNode,
+      'body[0]',
+      errors
+    );
+    expect(errors).toEqual([
+      {
+        path: 'body[0]',
+        message: 'has unrecognized key(s): extra; its fields are body',
+        nodeType: 'note',
+      },
+    ]);
+  });
+
   it('degrades a primitive with no slack renderer through its markdown', () => {
     const blocks = dispatcher().renderSlack({
       type: 'caption',
