@@ -9,6 +9,7 @@ export {
   type ImageInput,
   type LayoutBox,
   type PdfInput,
+  type TakumiBackend,
   type TakumiImageBackend,
   type TakumiImageBackendOptions,
   type TakumiMeasuringBackend,

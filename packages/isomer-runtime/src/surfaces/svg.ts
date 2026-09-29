@@ -328,7 +328,7 @@ export const createSvgSurface = <TRenderContext = unknown>(
       return renderDocument(
         [first, ...rest],
         options,
-        (index) => `page ${index}`
+        (index) => `page ${index + 1}`
       );
     },
     resolveViewport: (composition, options = {}) => {

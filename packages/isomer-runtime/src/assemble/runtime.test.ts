@@ -1885,7 +1885,7 @@ describe('createIsomerRuntime', () => {
     two.body.push({ type: 'note', text: 'more' });
 
     expect(() => runtime.surfaces.svg?.renderPages([view('one'), two])).toThrow(
-      /frame "single" cannot draw page 1: needs exactly one node/
+      /frame "single" cannot draw page 2: needs exactly one node/
     );
   });
 

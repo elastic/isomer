@@ -13,7 +13,7 @@ sources:
 
 # Definition
 
-- Published with the workspace at one version, as a host-side rasterizer. Depends on `@takumi-rs/core` and `@takumi-rs/helpers` 2.14.0 (native) and `takumi-pdf` 0.15.0 (WebAssembly, loaded at import). Peers: `react`, `react-dom` `>=18 <20`. No isomer package dependency.[^package]
+- Published with the workspace at one version, as a host-side rasterizer. Depends on `@takumi-rs/core` and `@takumi-rs/helpers` 2.14.0 (native) and `takumi-pdf` 0.15.0 (WebAssembly, imported on the first PDF). Peers: `react`, `react-dom` `>=18 <20`. No isomer package dependency.[^package]
 
 Related: [raster](/image-takumi/concepts/raster.md), [root](/image-takumi/entry-points/root.md).
 

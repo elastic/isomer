@@ -14,10 +14,9 @@ import {
   type RenderOptions,
 } from '@takumi-rs/core';
 import { fromHtml } from '@takumi-rs/helpers/html';
-import {
-  type ImagesInput,
-  PdfRenderer,
-  type RenderOptions as PdfRenderOptions,
+import type {
+  ImagesInput,
+  RenderOptions as PdfRenderOptions,
 } from 'takumi-pdf';
 
 /**
@@ -155,15 +154,15 @@ export interface TakumiPdfBackend {
   pdf(input: PdfInput, options?: TakumiPdfOptions): Promise<Buffer>;
 }
 
-/**
- * A {@link TakumiImageBackend} that also measures layout and writes PDF, as
- * {@link createTakumiImageBackend} returns.
- */
-export interface TakumiMeasuringBackend
-  extends TakumiImageBackend, TakumiPdfBackend {
+/** A {@link TakumiImageBackend} that also measures layout. */
+export interface TakumiMeasuringBackend extends TakumiImageBackend {
   /** Lays the input out as {@link TakumiImageBackend.png} would, and returns every box, e.g. to find content past its area. */
   measure(input: ImageInput): Promise<LayoutBox>;
 }
+
+/** Everything {@link createTakumiImageBackend} returns: raster, measure, and PDF. */
+export interface TakumiBackend
+  extends TakumiMeasuringBackend, TakumiPdfBackend {}
 
 type Matrix = MeasuredNode['transform'];
 
@@ -275,7 +274,7 @@ const once = <T>(create: () => Promise<T>): (() => Promise<T>) => {
 export const createTakumiImageBackend = ({
   fonts = [],
   cacheMaxBytes,
-}: TakumiImageBackendOptions = {}): TakumiMeasuringBackend => {
+}: TakumiImageBackendOptions = {}): TakumiBackend => {
   const renderer = new Renderer(
     cacheMaxBytes === undefined ? undefined : { cacheMaxBytes }
   );
@@ -296,8 +295,11 @@ export const createTakumiImageBackend = ({
     return engine;
   };
   const ready = once(() => registerFonts(renderer));
-  /** A second engine, created only when a PDF is asked for, so a raster-only host never loads one. */
-  const pdfReady = once(() => registerFonts(new PdfRenderer()));
+  /** A second engine, imported and created on the first PDF, so a raster-only host never loads its wasm. */
+  const pdfReady = once(async () => {
+    const { PdfRenderer } = await import('takumi-pdf');
+    return registerFonts(new PdfRenderer());
+  });
 
   return {
     png: async (input, options = {}) => {

@@ -23,11 +23,11 @@ The `svg` surface returns `{ element, css, width, height }` — the same React t
 
 ## Measuring a layout
 
-`createTakumiImageBackend` returns a `TakumiMeasuringBackend`, whose `measure(input)` lays the input out exactly as `png` would and returns a `LayoutBox` tree: each element's canvas `x`, `y`, `width`, and `height`, its `scaleX` and `scaleY`, its text `runs`, its `attributes`, and its `children`. `scale` is whichever axis scale is further from 1, so any other value means the box is scaled. A host reads the tree to find content past its area without a browser.
+`createTakumiImageBackend` returns a `TakumiBackend`: a `TakumiMeasuringBackend`, whose `measure(input)` lays the input out exactly as `png` would and returns a `LayoutBox` tree: each element's canvas `x`, `y`, `width`, and `height`, its `scaleX` and `scaleY`, its text `runs`, its `attributes`, and its `children`. `scale` is whichever axis scale is further from 1, so any other value means the box is scaled. A host reads the tree to find content past its area without a browser.
 
 `attributes` holds everything but `class`, `id`, and `style`, so a node anchor (`data-isomer-node`) comes back on the box its element laid out. Render with the `svg` surface's `anchors: true` and the tree can go straight to the SDK's `checkLayout`, which reports nodes past their room or on a sibling. Takumi folds inline content into its parent's text runs, so where a parent's laid-out children do not line up one to one with its elements, none of those children carry attributes rather than the wrong ones.
 
-`TakumiImageBackend`, the `{ png, svg }` contract `renderPng` takes, does not include `measure` or `pdf`, so a custom raster backend need not implement them; `TakumiPdfBackend`, what `renderPdf` takes, is `{ pdf }` alone.
+`TakumiImageBackend`, the `{ png, svg }` contract `renderPng` takes, does not include `measure` or `pdf`, so a custom raster backend need not implement them; `TakumiMeasuringBackend` adds only `measure`, and `TakumiPdfBackend`, what `renderPdf` takes, is `{ pdf }` alone. `TakumiBackend` is all three.
 
 ## Rendering a whole runtime call in one step
 
@@ -81,4 +81,4 @@ A PDF is byte-stable on the same terms once `metadata.creationDate` is fixed; le
 
 ## Status
 
-Published with the other workspace packages at one version. It is a host-side rasterizer: the runtime stays free of native dependencies, and a host that draws images adds this package. `@takumi-rs/core` is a native binary; `takumi-pdf` is WebAssembly, loaded when the package is imported.
+Published with the other workspace packages at one version. It is a host-side rasterizer: the runtime stays free of native dependencies, and a host that draws images adds this package. `@takumi-rs/core` is a native binary, loaded when the package is imported; `takumi-pdf` is WebAssembly, imported on the first PDF, so a host that never asks for one never loads it.
