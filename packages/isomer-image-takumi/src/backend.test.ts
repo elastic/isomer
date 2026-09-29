@@ -14,6 +14,9 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import {
   createTakumiImageBackend,
   type ImageInput,
+  type PdfInput,
+  type TakumiPdfMetadata,
+  type TakumiPdfOptions,
   type TakumiRenderOptions,
 } from './backend';
 
@@ -324,5 +327,173 @@ describe('createTakumiImageBackend', () => {
 
     expect(png.subarray(0, 4).equals(PNG_MAGIC)).toBe(true);
     expect(reads).toBe(2);
+  });
+
+  describe('pdf', () => {
+    const pages = (
+      texts: readonly string[],
+      css = '.box { background: #ff0000; }'
+    ): PdfInput => ({
+      pages: texts.map((text) =>
+        createElement('div', { className: 'box' }, text)
+      ),
+      css,
+      width: 64,
+      height: 32,
+    });
+    const text = (pdf: Buffer) => pdf.toString('latin1');
+    /** `\b` keeps `/Pages` out of the count. */
+    const pageCount = (pdf: Buffer) =>
+      (text(pdf).match(/\/Type\s*\/Page\b/g) ?? []).length;
+    const stable = { metadata: { creationDate: '2026-01-01T00:00:00' } };
+    /** Tiny PNG bytes, for `images`. */
+    const PIXEL = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+      'base64'
+    );
+
+    it('writes one page per input at the shared size', async () => {
+      const pdf = await createTakumiImageBackend().pdf(pages(['a', 'b', 'c']));
+
+      expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+      expect(text(pdf)).toMatch(/\/Count 3\b/);
+      expect(pageCount(pdf)).toBe(3);
+      // Points are CSS px × 0.75.
+      expect(text(pdf)).toMatch(
+        /MediaBox\s*\[\s*0\s+0\s+48(?:\.0+)?\s+24(?:\.0+)?\s*\]/
+      );
+    });
+
+    it('renders the same pages twice to identical bytes at a fixed creation date', async () => {
+      const backend = createTakumiImageBackend();
+      const first = await backend.pdf(pages(['a']), stable);
+      const second = await backend.pdf(pages(['a']), stable);
+
+      expect(first.equals(second)).toBe(true);
+    });
+
+    it('applies the shared stylesheet', async () => {
+      const backend = createTakumiImageBackend();
+      const red = await backend.pdf(pages(['a']), stable);
+      const blue = await backend.pdf(
+        pages(['a'], '.box { background: #0000ff; }'),
+        stable
+      );
+
+      expect(red.equals(blue)).toBe(false);
+    });
+
+    it('rejects an empty page list', async () => {
+      await expect(createTakumiImageBackend().pdf(pages([]))).rejects.toThrow(
+        /at least one/
+      );
+    });
+
+    it('exposes only the document options', () => {
+      expectTypeOf<TakumiPdfOptions>().toEqualTypeOf<{
+        metadata?: TakumiPdfMetadata;
+        uncoveredText?: 'error' | 'placeholder' | 'blank';
+        images?: TakumiPdfOptions['images'];
+        outline?: boolean;
+        lang?: string;
+        backgroundColor?: string;
+      }>();
+    });
+
+    it('rejects a glyph no registered font covers unless told otherwise', async () => {
+      const backend = createTakumiImageBackend();
+
+      await expect(backend.pdf(pages(['✓']))).rejects.toThrow(/U\+2713/);
+      const blank = await backend.pdf(pages(['✓']), {
+        uncoveredText: 'blank',
+      });
+      expect(blank.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+    });
+
+    it('registers fonts on the pdf engine', async () => {
+      const file =
+        require.resolve('@fontsource/inter/files/inter-latin-700-normal.woff2');
+      const css = '.box { font-family: Inter; font-weight: 700; }';
+      const styled = await createTakumiImageBackend({
+        fonts: [{ name: 'Inter', weight: 700, data: () => readFile(file) }],
+      }).pdf(pages(['Ag'], css), stable);
+      const fallback = await createTakumiImageBackend().pdf(
+        pages(['Ag'], css),
+        stable
+      );
+
+      expect(styled.equals(fallback)).toBe(false);
+    });
+
+    it('draws an image only from the bytes it is given', async () => {
+      const src = 'https://example.invalid/logo.png';
+      const withImage: PdfInput = {
+        ...pages(['']),
+        pages: [createElement('img', { src, width: 16, height: 16 })],
+      };
+      const backend = createTakumiImageBackend();
+      const blank = await backend.pdf(withImage, stable);
+      const drawn = await backend.pdf(withImage, {
+        ...stable,
+        images: [{ src, data: PIXEL }],
+      });
+
+      expect(blank.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+      expect(drawn.equals(blank)).toBe(false);
+    });
+
+    it('reads a lazy font once per engine', async () => {
+      let reads = 0;
+      const file =
+        require.resolve('@fontsource/inter/files/inter-latin-400-normal.woff2');
+      const backend = createTakumiImageBackend({
+        fonts: [
+          {
+            name: 'Inter',
+            weight: 400,
+            data: () => {
+              reads += 1;
+              return readFile(file);
+            },
+          },
+        ],
+      });
+
+      await backend.png(input('.box { font-family: Inter; }'));
+      await backend.pdf(pages(['a'], '.box { font-family: Inter; }'));
+      await backend.pdf(pages(['a'], '.box { font-family: Inter; }'));
+
+      expect(reads).toBe(2);
+    });
+
+    it('retries font registration after a failed load', async () => {
+      let reads = 0;
+      const file =
+        require.resolve('@fontsource/inter/files/inter-latin-400-normal.woff2');
+      const backend = createTakumiImageBackend({
+        fonts: [
+          {
+            name: 'Inter',
+            weight: 400,
+            data: () => {
+              reads += 1;
+              return reads === 1
+                ? Promise.reject(new Error('transient'))
+                : readFile(file);
+            },
+          },
+        ],
+      });
+
+      await expect(
+        backend.pdf(pages(['a'], '.box { font-family: Inter; }'))
+      ).rejects.toThrow('transient');
+      const pdf = await backend.pdf(
+        pages(['a'], '.box { font-family: Inter; }')
+      );
+
+      expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+      expect(reads).toBe(2);
+    });
   });
 });
