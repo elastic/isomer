@@ -184,17 +184,21 @@ const backtickRunEnd = (text: string, start: number): number => {
   return end;
 };
 
-// Where the next backtick run exactly `length` long starts, or -1.
-const closingFence = (text: string, from: number, length: number): number => {
-  let start = text.indexOf('`', from);
+// Every maximal backtick run's start, keyed by the run's length, in order.
+const backtickRuns = (text: string): Map<number, number[]> => {
+  const runs = new Map<number, number[]>();
+  let start = text.indexOf('`');
   while (start !== -1) {
     const end = backtickRunEnd(text, start);
-    if (end - start === length) {
-      return start;
+    const starts = runs.get(end - start);
+    if (starts) {
+      starts.push(start);
+    } else {
+      runs.set(end - start, [start]);
     }
     start = text.indexOf('`', end);
   }
-  return -1;
+  return runs;
 };
 
 // Resolves the backslash escapes and numeric character references a GFM
@@ -203,8 +207,9 @@ const closingFence = (text: string, from: number, length: number): number => {
 const unescapeGfm = (text: string): string => {
   let out = '';
   let index = 0;
-  // A fence length with no closer from one position has none from any later one.
-  const unclosed = new Set<number>();
+  // Indexed once, on the first backtick; each length's cursor only moves forward.
+  let runs: Map<number, number[]> | undefined;
+  const cursors = new Map<number, number>();
   while (index < text.length) {
     const char = text[index]!;
     const next = text[index + 1];
@@ -220,11 +225,15 @@ const unescapeGfm = (text: string): string => {
     if (char === '`') {
       const fenceEnd = backtickRunEnd(text, index);
       const length = fenceEnd - index;
-      const close = unclosed.has(length)
-        ? -1
-        : closingFence(text, fenceEnd, length);
-      if (close === -1) {
-        unclosed.add(length);
+      runs ??= backtickRuns(text);
+      const starts = runs.get(length) ?? [];
+      let cursor = cursors.get(length) ?? 0;
+      while (cursor < starts.length && starts[cursor]! < fenceEnd) {
+        cursor += 1;
+      }
+      cursors.set(length, cursor);
+      const close = starts[cursor];
+      if (close === undefined) {
         out += text.slice(index, fenceEnd);
         index = fenceEnd;
       } else {

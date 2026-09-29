@@ -155,6 +155,10 @@ describe('gfmToSlackMrkdwn', () => {
 
   it('translates adversarial lines in linear time', () => {
     const size = 50_000;
+    // Every run a new length, so no closer search can be shared.
+    const distinctFences = Array.from({ length: 1_500 }, (_, i) =>
+      '`'.repeat(i + 1)
+    ).join(' ');
     const inputs = [
       '`'.repeat(size),
       Array.from({ length: size / 4 }, (_, i) => '`'.repeat((i % 7) + 1)).join(
@@ -166,6 +170,8 @@ describe('gfmToSlackMrkdwn', () => {
       `# a${' '.repeat(size)}x`,
       `| ${'`'.repeat(size)} | b |\n| - | - |`,
       `${'| - '.repeat(size / 4)}x`,
+      `# ${distinctFences}`,
+      `| ${distinctFences} | b |\n| - | - |`,
     ];
     const started = performance.now();
     for (const input of inputs) {
@@ -178,6 +184,10 @@ describe('gfmToSlackMrkdwn', () => {
   it('applies the URL policy to the decoded destination', () => {
     expect(gfmToSlackMrkdwn('[x](&#106;avascript:alert%281%29)')).toBe('x');
     expect(gfmToSlackMrkdwn('[x](<javascript:alert%281%29>)')).toBe('x');
+    // `&amp;` decodes to a literal `&`, so this is a relative path, not a scheme.
+    expect(
+      gfmToSlackMrkdwn('[x](&amp;#106;avascript:alert%281%29)')
+    ).not.toMatch(/<javascript:/);
   });
 
   it('decodes numeric character references and keeps an escaped one literal', () => {
