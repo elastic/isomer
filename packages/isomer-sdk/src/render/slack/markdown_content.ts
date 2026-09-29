@@ -114,13 +114,14 @@ const inlineText = (element: SlackRichTextInline): string =>
 // The envelope leaves rich text alone, so a section keeps to the budget the
 // string path gives a section's text.
 const clampInline = (
-  elements: readonly SlackRichTextInline[]
+  elements: readonly SlackRichTextInline[],
+  budget: number = SLACK_LIMITS.sectionTextChars
 ): SlackRichTextInline[] => {
   const kept: SlackRichTextInline[] = [];
   let spent = 0;
   for (const element of elements) {
     const length = inlineText(element).length;
-    const rest = SLACK_LIMITS.sectionTextChars - spent;
+    const rest = budget - spent;
     if (length <= rest) {
       kept.push(element);
       spent += length;
@@ -155,6 +156,8 @@ const listElements = (list: List, indent: number): SlackRichTextList[] => {
         type: 'rich_text_list',
         style,
         ...(indent > 0 ? { indent } : {}),
+        // A list starting at 0 would need a negative offset, which Slack
+        // may reject along with the whole message; it starts at 1 instead.
         ...(list.ordered && offset > 0 ? { offset } : {}),
         elements: current,
       });
@@ -277,7 +280,13 @@ export const markdownContentToSlackBlocks = (
           elements[index + 1]?.type === 'rich_text_section'
             ? {
                 ...element,
-                elements: [...element.elements, { type: 'text', text: '\n' }],
+                elements: [
+                  ...clampInline(
+                    element.elements,
+                    SLACK_LIMITS.sectionTextChars - 1
+                  ),
+                  { type: 'text', text: '\n' },
+                ],
               }
             : element
         ),

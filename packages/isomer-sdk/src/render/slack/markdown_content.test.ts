@@ -188,6 +188,34 @@ describe('markdownContentToSlackBlocks', () => {
     });
   });
 
+  it('keeps a full section and its line break within the budget', () => {
+    const [block] = markdownContentToSlackBlocks([
+      md.paragraph('a'.repeat(SLACK_LIMITS.sectionTextChars)),
+      md.paragraph('b'),
+    ]);
+    if (block?.type !== 'rich_text') {
+      throw new Error('expected rich text');
+    }
+    const [first] = block.elements;
+    const length =
+      first?.type === 'rich_text_section'
+        ? first.elements
+            .map((inline) =>
+              inline.type === 'link' ? (inline.text ?? inline.url) : inline.text
+            )
+            .join('').length
+        : 0;
+    expect(length).toBe(SLACK_LIMITS.sectionTextChars);
+  });
+
+  it('numbers a list authored from 0 from 1, sending no negative offset', () => {
+    const [block] = markdownContentToSlackBlocks(
+      md.list(['a'], { ordered: true, start: 0 })
+    );
+    expect(block).toMatchObject({ elements: [{ style: 'ordered' }] });
+    expect(JSON.stringify(block)).not.toContain('offset');
+  });
+
   it('gives no number to an item holding only a nested list', () => {
     const [block] = markdownContentToSlackBlocks(
       md.list([md.list(['inner']), 'next'], { ordered: true })
