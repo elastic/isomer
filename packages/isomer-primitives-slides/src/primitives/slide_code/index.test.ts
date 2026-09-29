@@ -16,10 +16,20 @@ import { describe, expect, it } from 'vitest';
 
 import { slideFonts } from '../../examples/fonts';
 import { slideDeckFrame, slidesPack } from '../../pack';
-import { codeDenseAfter, codeLineMaxLength } from '../../theme/components/code';
+import {
+  codeDenseAfter,
+  codeLineMaxLength,
+  codeMaxLines,
+} from '../../theme/components/code';
 import { slideDistillery } from '../../theme/distillery';
 
-import { example, examples, traceExample } from './examples';
+import {
+  denseExample,
+  denseTraceExample,
+  example,
+  examples,
+  traceExample,
+} from './examples';
 import { markdown as markdownContent, slack, text } from './index';
 import { schema, type SlideCodeNode } from './schema';
 
@@ -62,6 +72,12 @@ describe('slideCode schema', () => {
       false
     );
     expect(examples.every((node) => schema.safeParse(node).success)).toBe(true);
+    // The fit test measures these, so they hold the most lines a panel takes.
+    for (const { panels } of [denseExample, denseTraceExample]) {
+      for (const { lines } of panels) {
+        expect(lines).toHaveLength(codeMaxLines);
+      }
+    }
   });
 
   it('rejects a highlight past the end of its panel, at that panel', () => {
@@ -266,14 +282,17 @@ describe('slideCode output', () => {
       ];
       return runs(box).find(({ text }) => text.trim() === 'b')!.y;
     };
-    const [blank, none, filled] = await Promise.all([
-      yOf(['a', '', 'b']),
-      yOf(['a', 'b']),
-      yOf(['a', 'x', 'b']),
-    ]);
-    expect(blank).toBeGreaterThan(none);
-    // A line box rounds its height; the blank line is within a pixel of a filled one.
-    expect(Math.abs(blank - filled)).toBeLessThanOrEqual(1.5);
+    // At both sizes: past `codeDenseAfter` lines the panel is dense.
+    for (const lead of [[], Array<string>(codeDenseAfter).fill('z')]) {
+      const [blank, none, filled] = await Promise.all([
+        yOf([...lead, 'a', '', 'b']),
+        yOf([...lead, 'a', 'b']),
+        yOf([...lead, 'a', 'x', 'b']),
+      ]);
+      expect(blank).toBeGreaterThan(none);
+      // A line box rounds its height; the blank line is within a pixel of a filled one.
+      expect(Math.abs(blank - filled)).toBeLessThanOrEqual(1.5);
+    }
   });
 });
 

@@ -40,7 +40,7 @@ export const SLIDE_THEME = {
   font: { family: { sans, mono }, size: { px24: px(24), …, px280: px(280) }, weight, tracking, lineHeight },
   type: { display, heading, lede, body, label, mono, chrome, … },
   // Shared groups (`components/shared.ts`, `components/marks.ts`).
-  glyph: { arrow, separator, dash }, label: { … }, connector: { … }, marks: { … },
+  glyph: { arrow, separator, dash }, label: { … }, connector: { … }, tone: { … }, marks: { … },
   // One group per primitive (`components/<group>.ts`).
   frame: { … }, heading: { title: type.heading, lede: type.lede, … }, split: { … }, …
 } as const;
@@ -77,6 +77,8 @@ Where the theme cannot guarantee that the smallest step fits, a field's `describ
 ## Tones mean something
 
 `slideTones` is `['primary', 'accent']`, named for theme roles rather than hues. `primary` marks the product, the runtime, or whatever is in focus; `accent` marks the host or another party. Everything else is neutral: `text`, and `line` for rails and arrows, or the quieter `textSoft`, `textSubtle`, and `border`. Authoring copy names tones and never colors, so a theme can change what each role looks like.
+
+A tone is never color alone. A toned title puts `ToneCue` (`src/render/tone_cue.tsx`) before its text: a filled dot for `primary` and a ring for `accent`, in the tone's color, which assistive technology announces as `tone.label` ("Yours", "Another party"). Its `text`, `markdown`, and `slack` renderers prefix `toneCueText(tone)`, the tone's `tone.glyph` (`●` or `○`). A neutral title gets neither. A primitive that takes a `tone` uses both, so every surface carries it.
 
 A module's rules reach the stylesheet sorted by name, and a variant that overrides a base rule wins only by coming later at the same specificity. Name the override so it sorts after its base: `titleHighlighted` after `title`, not `highlightedTitle`.
 

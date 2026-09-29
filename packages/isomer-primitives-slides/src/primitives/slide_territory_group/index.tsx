@@ -10,6 +10,7 @@ import { md } from '@elastic/isomer-sdk/markdown';
 import { bold, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
 import { marksMarkdown, marksSlack, plainText } from '../../render/marks';
+import { toneCueText } from '../../render/tone_cue';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -21,21 +22,24 @@ export type { SlideTerritory, SlideTerritoryGroupNode } from './schema';
 
 export const text = ({ items }: SlideTerritoryGroupNode): string =>
   items
-    .map(({ title, body }) => `${oneLine(title)}: ${plainText(body)}`)
+    .map(
+      ({ title, body, tone }) =>
+        `${toneCueText(tone)}${oneLine(title)}: ${plainText(body)}`
+    )
     .join('\n');
 
 export const markdown = ({ items }: SlideTerritoryGroupNode) =>
-  items.flatMap(({ title, body }) => [
-    md.heading(2, title),
+  items.flatMap(({ title, body, tone }) => [
+    md.heading(2, `${toneCueText(tone)}${title}`),
     md.paragraph(...marksMarkdown(body)),
   ]);
 
 export const slack = ({ items }: SlideTerritoryGroupNode): SlackBlock[] => [
   {
     type: 'section',
-    fields: items.map(({ title, body }) => ({
+    fields: items.map(({ title, body, tone }) => ({
       type: 'mrkdwn',
-      text: `${bold(oneLine(title))}\n${oneLine(marksSlack(body))}`,
+      text: `${toneCueText(tone)}${bold(oneLine(title))}\n${oneLine(marksSlack(body))}`,
     })),
   },
 ];

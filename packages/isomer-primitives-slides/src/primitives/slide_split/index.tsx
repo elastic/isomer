@@ -17,6 +17,7 @@ import {
   slackCaption,
 } from '../../render';
 import { marksMarkdown, marksSlack, plainText } from '../../render/marks';
+import { toneCueText } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { contentNode, definePrimitive } from '../define';
 
@@ -45,10 +46,10 @@ export const slideSplitPrimitive = definePrimitive<
     react,
     text: ({ divider, footnote, panes }, { scope }) =>
       [
-        ...panes.flatMap(({ label, items }, index) => [
+        ...panes.flatMap(({ label, tone, items }, index) => [
           index > 0 && divider === 'arrow' ? arrowGlyph : '',
           [
-            label ? oneLine(label).toUpperCase() : '',
+            label ? `${toneCueText(tone)}${oneLine(label).toUpperCase()}` : '',
             renderTextChildren(items, scope),
           ]
             .filter(Boolean)
@@ -59,17 +60,19 @@ export const slideSplitPrimitive = definePrimitive<
         .filter(Boolean)
         .join('\n\n'),
     markdown: ({ divider, footnote, panes }, { scope }) => [
-      ...panes.flatMap(({ label, items }, index) => [
+      ...panes.flatMap(({ label, tone, items }, index) => [
         ...(index > 0 && divider === 'arrow' ? [md.paragraph(arrowGlyph)] : []),
-        ...(label ? [md.heading(2, label)] : []),
+        ...(label ? [md.heading(2, `${toneCueText(tone)}${label}`)] : []),
         renderMarkdownChildren(items, scope),
       ]),
       ...(footnote ? [md.paragraph(...marksMarkdown(footnote))] : []),
     ],
     slack: ({ divider, footnote, panes }, { collector, scope }) => [
-      ...panes.flatMap(({ label, items }, index) => [
+      ...panes.flatMap(({ label, tone, items }, index) => [
         ...(index > 0 && divider === 'arrow' ? [slackCaption(arrowGlyph)] : []),
-        ...(label ? [slackCaption(label.toUpperCase(), true)] : []),
+        ...(label
+          ? [slackCaption(`${toneCueText(tone)}${label.toUpperCase()}`, true)]
+          : []),
         ...renderSlackChildren(items, scope, collector),
       ]),
       ...(footnote

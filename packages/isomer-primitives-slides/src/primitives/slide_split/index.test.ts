@@ -140,7 +140,7 @@ describe('slideSplit output', () => {
       × Five batch windows.
       × Manual retries.
 
-      AFTER
+      ● AFTER
       - One nightly run.
 
       npm run settle -- --nightly"
@@ -152,7 +152,7 @@ describe('slideSplit output', () => {
       - × Five batch windows.
       - × Manual retries.
 
-      ## After
+      ## ● After
 
       - One nightly run.
 
@@ -212,7 +212,7 @@ describe('slideSplit output', () => {
         {
           "elements": [
             {
-              "text": "*AFTER*",
+              "text": "*● AFTER*",
               "type": "mrkdwn",
             },
           ],

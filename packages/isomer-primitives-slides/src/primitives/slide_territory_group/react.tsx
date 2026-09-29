@@ -11,6 +11,7 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { marksReact } from '../../render/marks';
+import { ToneCue } from '../../render/tone_cue';
 import { labelModule, layoutModule, tonesModule } from '../../theme/modules';
 
 import type { SlideTerritoryGroupNode } from './schema';
@@ -44,6 +45,7 @@ export const react = (
                 label.toned,
                 territory.title
               )}>
+              <ToneCue {...{ tone, context }} />
               {title}
             </h2>
             <p className={cls(context, territory.body)}>

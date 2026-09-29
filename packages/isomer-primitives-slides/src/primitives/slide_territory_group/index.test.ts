@@ -11,8 +11,10 @@ import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { slideDistillery } from '../../theme/distillery';
+import type { SlideTone } from '../../theme/variants';
 
-import { example } from './examples';
+import { example, fullExample } from './examples';
 import { markdown as markdownContent, text } from './index';
 import { schema } from './schema';
 
@@ -47,17 +49,25 @@ describe('slideTerritoryGroup', () => {
     );
   });
 
+  it('names each toned owner for assistive technology, and no neutral one', () => {
+    const { html } = runtime.surfaces.html.render(compose(fullExample));
+    const { label } = slideDistillery.tokens.tone;
+    const named = (tone: SlideTone) =>
+      html.split(`role="img" aria-label="${label[tone].value}"`).length - 1;
+    expect([named('primary'), named('accent')]).toEqual([1, 2]);
+  });
+
   it('renders text and markdown', () => {
     expect(text(example)).toMatchInlineSnapshot(`
-      "Payments team: Card capture, fraud checks, and the ledger write.
-      Card network: Authorization, chargebacks, and settlement timing."
+      "● Payments team: Card capture, fraud checks, and the ledger write.
+      ○ Card network: Authorization, chargebacks, and settlement timing."
     `);
     expect(markdown(example)).toMatchInlineSnapshot(`
-      "## Payments team
+      "## ● Payments team
 
       Card capture, fraud checks, and **the ledger write**.
 
-      ## Card network
+      ## ○ Card network
 
       Authorization, chargebacks, and settlement timing."
     `);
@@ -70,12 +80,12 @@ describe('slideTerritoryGroup', () => {
         {
           "fields": [
             {
-              "text": "*Payments team*
+              "text": "● *Payments team*
       Card capture, fraud checks, and *the ledger write*.",
               "type": "mrkdwn",
             },
             {
-              "text": "*Card network*
+              "text": "○ *Card network*
       Authorization, chargebacks, and settlement timing.",
               "type": "mrkdwn",
             },
