@@ -26,6 +26,8 @@ The `svg` surface returns `{ element, css, width, height }` — the same React t
 
 `attributes` holds everything but `class`, `id`, and `style`, so a node anchor (`data-isomer-node`) comes back on the box its element laid out. Takumi folds inline content into its parent's text runs, so where a parent's laid-out children do not line up one to one with its elements, none of those children carry attributes rather than the wrong ones.
 
+Takumi places a text run from its owner's content box and reports no padding or border, so `measure` appends a zero-size, absolutely positioned probe to each element before laying it out. The probe moves no glyph, but it makes takumi lay text out in a box of its own on the content box, so every run lands where `png` draws it. The probes are removed from the result, and an element holding only text reports its runs itself.
+
 `TakumiImageBackend`, the `{ png, svg }` contract `renderPng` takes, does not include `measure`, so a custom raster backend need not implement it.
 
 ## Rendering a whole runtime call in one step

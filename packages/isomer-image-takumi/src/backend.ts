@@ -130,33 +130,97 @@ const mapRect = (
   };
 };
 
+type MeasuredRun = MeasuredNode['runs'][number];
+
+const placeRun = (
+  transform: Matrix,
+  { text, x, y, width, height }: MeasuredRun
+) => ({
+  text,
+  ...mapRect(transform, x, y, width, height),
+});
+
+/**
+ * Takumi places a run from its owner's content box but reports no padding or
+ * border (https://takumi.kane.tw/docs/measure-api#coordinates). With this
+ * appended, it lays text out in a generated box on the content box instead,
+ * which moves no glyph.
+ */
+const probe: SourceNode = {
+  type: 'container',
+  style: { position: 'absolute', width: 0, height: 0 },
+};
+
+const isBareText = (node: SourceNode | undefined): boolean =>
+  node?.type === 'text' && node.tagName === undefined;
+
+const withProbes = (node: SourceNode): SourceNode => {
+  if (node.type === 'image' || isBareText(node)) {
+    return node;
+  }
+  if (node.type === 'text') {
+    const { text, ...element } = node;
+    return {
+      ...element,
+      type: 'container',
+      children: [{ type: 'text', text }, probe],
+    };
+  }
+  return {
+    ...node,
+    children: [...(node.children ?? []).map(withProbes), probe],
+  };
+};
+
+const isProbeBox = (node: MeasuredNode | undefined): boolean =>
+  node !== undefined &&
+  node.width === 0 &&
+  node.height === 0 &&
+  node.runs.length === 0 &&
+  node.children.length === 0;
+
 /**
  * Takumi reports each node's size in its own units with its full canvas
  * transform, and carries no attributes, so those come from the `fromHtml`
- * node at the same position.
+ * node at the same position. An element holding only text keeps the runs of
+ * the boxes generated for it, rather than those boxes.
  */
 const toLayoutBox = (
-  { width, height, transform, runs, children }: MeasuredNode,
+  measured: MeasuredNode,
   source: SourceNode | undefined
 ): LayoutBox => {
+  const { width, height, transform } = measured;
   const [a, b, c, d] = transform;
   const scaleX = Math.hypot(a, b);
   const scaleY = Math.hypot(c, d);
   const sources = source?.type === 'container' ? (source.children ?? []) : [];
-  const paired = sources.length === children.length;
+  const probed = sources[sources.length - 1] === probe;
+  const elements = probed ? sources.slice(0, -1) : sources;
+  const children =
+    probed && isProbeBox(measured.children[measured.children.length - 1])
+      ? measured.children.slice(0, -1)
+      : measured.children;
+  const textOnly = elements.length === 1 && isBareText(elements[0]);
+  const paired = elements.length === children.length;
   return {
     ...mapRect(transform, 0, 0, width, height),
     scaleX,
     scaleY,
     scale: Math.abs(scaleY - 1) > Math.abs(scaleX - 1) ? scaleY : scaleX,
-    runs: runs.map((run) => ({
-      text: run.text,
-      ...mapRect(transform, run.x, run.y, run.width, run.height),
-    })),
+    runs: [
+      ...measured.runs.map((run) => placeRun(transform, run)),
+      ...(textOnly
+        ? children.flatMap((child) =>
+            child.runs.map((run) => placeRun(child.transform, run))
+          )
+        : []),
+    ],
     ...(source?.attributes && { attributes: { ...source.attributes } }),
-    children: children.map((child, index) =>
-      toLayoutBox(child, paired ? sources[index] : undefined)
-    ),
+    children: textOnly
+      ? []
+      : children.map((child, index) =>
+          toLayoutBox(child, paired ? elements[index] : undefined)
+        ),
   };
 };
 
@@ -227,12 +291,13 @@ export const createTakumiImageBackend = ({
     measure: async (input) => {
       await ready();
       const { node, css } = toTakumiSource(input);
-      const measured = await renderer.measure(node, {
+      const probed = withProbes(node);
+      const measured = await renderer.measure(probed, {
         width: input.width,
         height: input.height,
         css,
       });
-      return toLayoutBox(measured, node);
+      return toLayoutBox(measured, probed);
     },
   };
 };

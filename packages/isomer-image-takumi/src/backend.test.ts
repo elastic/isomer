@@ -216,6 +216,54 @@ describe('createTakumiImageBackend', () => {
       });
     });
 
+    describe('places text inside padding and border where takumi draws it', () => {
+      const firstGlyphX = (svg: string) =>
+        Number(/<use href="#g\d+" x="([\d.]+)"/.exec(svg)?.[1]);
+      const padded =
+        'width: 160px; height: 60px; padding: 10px 20px; border: 5px solid red; box-sizing: border-box';
+
+      it.each([
+        ['block', padded, createElement('div', { className: 'p' }, 'Ag')],
+        [
+          'centered flex',
+          `${padded}; display: flex; justify-content: center; align-items: center`,
+          createElement('div', { className: 'p' }, 'Ag'),
+        ],
+        [
+          'centered text',
+          `${padded}; text-align: center`,
+          createElement('div', { className: 'p' }, 'Ag'),
+        ],
+        [
+          'text in an inline span',
+          padded,
+          createElement(
+            'div',
+            { className: 'p' },
+            createElement('span', null, 'A', createElement('b', null, 'g'))
+          ),
+        ],
+      ] as const)('%s', async (_name, style, element) => {
+        const input: ImageInput = {
+          element: createElement('div', { className: 'o' }, element),
+          css: `.o { width: 200px; height: 100px; display: flex; padding: 7px 3px } .p { ${style} }`,
+          width: 200,
+          height: 100,
+        };
+        const takumi = createTakumiImageBackend();
+        const [box] = (await takumi.measure(input)).children;
+        const [run, ...rest] = [
+          ...(box?.runs ?? []),
+          ...(box?.children ?? []).flatMap(({ runs }) => runs),
+        ];
+
+        expect(run?.x).toBeCloseTo(firstGlyphX(await takumi.svg(input)), 1);
+        expect(run?.x).toBeGreaterThanOrEqual(3 + 5 + 20);
+        expect(run?.y).toBeGreaterThanOrEqual(7 + 5 + 10 - 0.5);
+        expect(rest.every(({ x }) => x > (run?.x ?? 0))).toBe(true);
+      });
+    });
+
     it('carries each element’s attributes onto its box', async () => {
       const box = await measure(
         createElement(
