@@ -21,7 +21,7 @@ sources:
 
 1. Dispatch the Publish a Release workflow. Dry run is the default.[^workflow]
 2. The job runs `pnpm verify`, then installs `npm@^11.5.1`. pnpm 10 delegates `pnpm publish` to the ambient npm CLI, and trusted publishing needs npm >= 11.5.1.
-3. `pnpm semantic-release` runs `semantic-release` 25. The workspace plugin analyzes and writes notes for only the commits that change a published package's folder or a root build input, then publishes `@elastic/isomer-sdk`, `@elastic/isomer-runtime`, `@elastic/isomer-image-takumi`, and `@elastic/isomer-evals` with `pnpm publish --access public`. The private slides pack never publishes. Authentication is the job's `id-token: write` permission.[^releaserc][^workspace-plugin]
+3. `pnpm semantic-release` runs `semantic-release` 25. The workspace plugin analyzes and writes notes for only the commits that change a package published now or at the last release, a root build input, the root `build` scripts, or a published package's reference in `tsconfig.workspace.json`, then publishes `@elastic/isomer-sdk`, `@elastic/isomer-runtime`, `@elastic/isomer-image-takumi`, and `@elastic/isomer-evals` with `pnpm publish --access public`. The private slides pack never publishes. Authentication is the job's `id-token: write` permission.[^releaserc][^workspace-plugin]
 
 Related: [workspace](/workspace/concepts/workspace.md), [verify](/workspace/playbooks/verify.md).
 

@@ -12,64 +12,152 @@ import { describe, expect, it } from 'vitest';
 
 import {
   BUILD_INPUTS,
+  BUILD_SLICES,
   partitionCommits,
-  releasePaths,
+  publishedFolders,
+  shipsChange,
 } from './semantic_release_workspace.js';
 import { repoRoot, workspacePackages } from './workspace_packages.js';
 
-const partition = (filesByHash) =>
-  partitionCommits(
-    Object.keys(filesByHash).map((hash) => ({ hash })),
-    ({ hash }) => filesByHash[hash],
-    releasePaths()
-  );
+const FOLDERS = ['isomer-runtime', 'isomer-sdk'];
 
-const hashes = (commits) => commits.map(({ hash }) => hash);
+const pkg = (folder, isPrivate) => ({
+  folder,
+  manifest: isPrivate ? { private: true } : {},
+});
 
-describe('partitionCommits', () => {
-  it('keeps a commit that changes a published package or a build input', () => {
-    const { dropped, kept } = partition({
-      build: ['tsconfig.base.json'],
-      mixed: ['docs/index.md', 'packages/isomer-sdk/src/index.ts'],
-      runtime: ['packages/isomer-runtime/package.json'],
-    });
-    expect(hashes(kept)).toEqual(['build', 'mixed', 'runtime']);
-    expect(dropped).toEqual([]);
+const reference = (path) => ({ path });
+
+const workspace = (...paths) =>
+  JSON.stringify({ files: [], references: paths.map(reference) });
+
+const ships = (files, roots = {}) =>
+  shipsChange(files, FOLDERS, (file, side) => roots[file]?.[side]);
+
+describe('shipsChange', () => {
+  it.each([
+    ['a build input', ['tsconfig.base.json']],
+    [
+      'a published file among others',
+      ['docs/index.md', 'packages/isomer-sdk/src/index.ts'],
+    ],
+    ['a published manifest', ['packages/isomer-runtime/package.json']],
+  ])('counts %s', (_, files) => {
+    expect(ships(files)).toBe(true);
   });
 
-  it('drops a commit that changes only private or unpublished paths', () => {
-    const { dropped, kept } = partition({
-      docs: ['docs/index.md', 'README.md'],
-      empty: [],
-      licenses: [
+  it.each([
+    ['docs', ['docs/index.md', 'README.md']],
+    ['nothing', []],
+    [
+      'license reports and a private manifest',
+      [
         'packages/isomer-primitives-slides/package.json',
         'packages/isomer-sdk/THIRD_PARTY_LICENSES.md',
       ],
-      prefix: ['packages/isomer-sdk-extra/index.ts'],
-      slides: ['packages/isomer-primitives-slides/src/registry.ts'],
+    ],
+    [
+      'a sibling folder sharing a prefix',
+      ['packages/isomer-sdk-extra/index.ts'],
+    ],
+    [
+      'a private package',
+      ['packages/isomer-primitives-slides/src/registry.ts'],
+    ],
+  ])('ignores %s', (_, files) => {
+    expect(ships(files)).toBe(false);
+  });
+
+  describe('tsconfig.workspace.json', () => {
+    const sdk = 'packages/isomer-sdk/tsconfig.build.json';
+    const slides = 'packages/isomer-primitives-slides/tsconfig.build.json';
+    const runtime = 'packages/isomer-runtime/tsconfig.build.json';
+    const change = (before, after) =>
+      ships(['tsconfig.workspace.json'], {
+        'tsconfig.workspace.json': { after, before },
+      });
+
+    it('counts a repointed, removed, or first published reference', () => {
+      expect(
+        change(
+          workspace(sdk),
+          workspace('packages/isomer-sdk/tsconfig.other.json')
+        )
+      ).toBe(true);
+      expect(change(workspace(sdk, runtime), workspace(sdk))).toBe(true);
+      expect(change(undefined, workspace(sdk))).toBe(true);
     });
-    expect(kept).toEqual([]);
-    expect(hashes(dropped)).toEqual([
-      'docs',
-      'empty',
-      'licenses',
-      'prefix',
-      'slides',
-    ]);
+
+    it('ignores a private reference or a reorder', () => {
+      expect(change(workspace(sdk), workspace(sdk, slides))).toBe(false);
+      expect(
+        change(workspace(sdk, runtime), workspace(runtime, `./${sdk}`))
+      ).toBe(false);
+      expect(change(undefined, workspace(slides))).toBe(false);
+    });
+  });
+
+  describe('package.json', () => {
+    const manifest = (scripts, devDependencies = {}) =>
+      JSON.stringify({ devDependencies, scripts });
+    const change = (before, after) =>
+      ships(['package.json'], { 'package.json': { after, before } });
+    const build = { build: 'pnpm build:esm', 'build:esm': 'tsc --build' };
+
+    it('counts a changed build script', () => {
+      expect(
+        change(
+          manifest(build),
+          manifest({ ...build, 'build:esm': 'tsc --build --force' })
+        )
+      ).toBe(true);
+    });
+
+    it('ignores other scripts and dependencies', () => {
+      expect(
+        change(
+          manifest(build),
+          manifest({ ...build, test: 'vitest' }, { zod: '^4' })
+        )
+      ).toBe(false);
+    });
   });
 });
 
-describe('releasePaths', () => {
-  it('lists every non-private package folder and no private one', () => {
-    const packages = workspacePackages();
-    const paths = releasePaths();
-    for (const { folder, manifest } of packages) {
-      expect(paths.includes(`packages/${folder}/`)).toBe(
-        manifest.private !== true
-      );
+describe('partitionCommits', () => {
+  it('splits commits by the predicate', () => {
+    const commits = ['a', 'b', 'c'].map((hash) => ({ hash }));
+    expect(partitionCommits(commits, ({ hash }) => hash !== 'b')).toEqual({
+      dropped: [{ hash: 'b' }],
+      kept: [{ hash: 'a' }, { hash: 'c' }],
+    });
+  });
+});
+
+describe('publishedFolders', () => {
+  it('lists every non-private workspace package and no private one', () => {
+    const folders = publishedFolders(workspacePackages());
+    for (const { folder, manifest } of workspacePackages()) {
+      expect(folders.includes(folder)).toBe(manifest.private !== true);
     }
   });
 
+  it('keeps a package published at the last release that is now private or gone', () => {
+    expect(
+      publishedFolders(
+        [pkg('isomer-sdk'), pkg('isomer-runtime', true)],
+        [
+          pkg('isomer-sdk'),
+          pkg('isomer-runtime'),
+          pkg('isomer-gone'),
+          pkg('slides', true),
+        ]
+      )
+    ).toEqual(['isomer-sdk', 'isomer-runtime', 'isomer-gone']);
+  });
+});
+
+describe('build inputs', () => {
   it('covers every local script the build runs', () => {
     const { scripts } = JSON.parse(
       readFileSync(join(repoRoot, 'package.json'), 'utf-8')
@@ -91,6 +179,23 @@ describe('releasePaths', () => {
     }
     expect(
       [...seen].filter((script) => !BUILD_INPUTS.includes(script))
+    ).toEqual([]);
+  });
+  it('covers every root JSON file the build names', () => {
+    const { scripts } = JSON.parse(
+      readFileSync(join(repoRoot, 'package.json'), 'utf-8')
+    );
+    const named = Object.entries(scripts)
+      .filter(([name]) => name.startsWith('build:'))
+      .flatMap(
+        ([, command]) => command.match(/(?<=^|\s)[\w.]+\.json\b/g) ?? []
+      );
+    expect(named).not.toEqual([]);
+    expect(
+      named.filter(
+        (file) =>
+          !BUILD_INPUTS.includes(file) && !Object.hasOwn(BUILD_SLICES, file)
+      )
     ).toEqual([]);
   });
 });

@@ -2,7 +2,7 @@
 
 ## 2026-09-29
 
-- **Releases follow published packages**: The workspace semantic-release plugin runs the commit analyzer and notes generator over only the commits that change a non-private package under `packages/` or a root build input, so slides-pack, docs, and tooling commits no longer cut a release. The publish playbook lists all four published packages.
+- **Releases follow published packages**: The workspace semantic-release plugin runs the commit analyzer and notes generator over only the commits that change a package published now or at the last release, a root build input, the root `build` scripts, or a published package's reference in `tsconfig.workspace.json`, so slides-pack, docs, and tooling commits no longer cut a release. The publish playbook lists all four published packages.
 - **`!` marks a breaking change**: `.releaserc.json` adds a `breakingHeaderPattern` to the angular preset's parser options, so a `feat!:` or `fix(scope)!:` header drives a major release and lands under breaking changes in the notes without a `BREAKING CHANGE` footer.
 
 ## 2026-09-28
