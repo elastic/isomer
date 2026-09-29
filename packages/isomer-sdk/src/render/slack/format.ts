@@ -384,17 +384,85 @@ const flanking = (
       };
 };
 
+// The index past what starts at `index` when it is an escape or a code span,
+// whose characters are never delimiters, or past one character otherwise.
+const stepOver = (
+  line: string,
+  index: number,
+  closer: CodeSpanCloser
+): number => {
+  if (line[index] === '\\') {
+    return index + 2;
+  }
+  if (line[index] === '`') {
+    return codeSpanAt(line, index, closer)?.end ?? backtickRunEnd(line, index);
+  }
+  return index + 1;
+};
+
+const LINK_DESTINATION_RE = /\((<[^<>\n]*>|(?:\\.|[^\s()\\]|\([^()\s]*\))+)\)/y;
+
+// A link, or an image, which degrades to a link to its source labelled with
+// its alt text. The label may hold escapes and code spans but no bare bracket.
+const findLink: InlineFinder = (line, from, closer) => {
+  let open = line.indexOf('[', from);
+  while (open !== -1) {
+    let index = open + 1;
+    while (index < line.length && line[index] !== '[' && line[index] !== ']') {
+      index = stepOver(line, index, closer);
+    }
+    if (line[index] === ']') {
+      LINK_DESTINATION_RE.lastIndex = index + 1;
+      const destination = LINK_DESTINATION_RE.exec(line);
+      if (destination) {
+        const bang = line[open - 1] === '!' && !isEscaped(line, open - 1);
+        return {
+          index: bang ? open - 1 : open,
+          end: LINK_DESTINATION_RE.lastIndex,
+          segment: {
+            kind: 'link',
+            text: line.slice(open + 1, index),
+            url: destination[1] ?? '',
+          },
+        };
+      }
+    }
+    open = line.indexOf('[', index);
+  }
+  return null;
+};
+
+// Strong between `**` pairs whose body holds no `*` outside escapes and code.
+const findBold: InlineFinder = (line, from, closer) => {
+  let open = line.indexOf('**', from);
+  while (open !== -1) {
+    let index = open + 2;
+    while (index < line.length && line[index] !== '*') {
+      index = stepOver(line, index, closer);
+    }
+    if (index > open + 2 && line.startsWith('**', index)) {
+      return {
+        index: open,
+        end: index + 2,
+        segment: { kind: 'bold', text: line.slice(open + 2, index) },
+      };
+    }
+    open = line.indexOf('**', index > open + 2 ? index : open + 1);
+  }
+  return null;
+};
+
 // Emphasis between two lone `delimiter`s, in one forward pass: the first
 // closer pairs with the nearest opener before it, and a delimiter that can
 // do neither is text.
 const emphasisFinder =
   (delimiter: '*' | '_'): InlineFinder =>
-  (line, from) => {
+  (line, from, closer) => {
     let open = -1;
     let index = from;
     while (index < line.length) {
-      if (line[index] === '\\') {
-        index += 2;
+      if (line[index] === '\\' || line[index] === '`') {
+        index = stepOver(line, index, closer);
         continue;
       }
       if (line[index] === delimiter && !isEscaped(line, index)) {
@@ -424,15 +492,8 @@ const INLINE_FINDERS: readonly InlineFinder[] = [
     text,
   })),
   findCodeSpan,
-  regexFinder(
-    // An image degrades to a link to its source, labelled with its alt text.
-    /!?\[((?:\\.|[^[\]\\])*)\]\((<[^<>\n]*>|(?:\\.|[^\s()\\]|\([^()\s]*\))+)\)/g,
-    ([, text = '', url = '']) => ({ kind: 'link', text, url })
-  ),
-  regexFinder(/\*\*((?:\\.|[^*\n\\])+?)\*\*/g, ([, text = '']) => ({
-    kind: 'bold',
-    text,
-  })),
+  findLink,
+  findBold,
   emphasisFinder('_'),
   emphasisFinder('*'),
 ];

@@ -178,6 +178,27 @@ describe('md', () => {
     expect(typesIn(root)).toContain('emphasis');
   });
 
+  it('reaches Slack intact when a wrapper holds code containing its delimiter', () => {
+    const markdown = serializeMarkdown(
+      md.paragraph(
+        md.strong(md.code('a**b')),
+        ' ',
+        md.emphasis(md.code('c_d')),
+        ' ',
+        md.link(md.code('e]f'), 'https://a.b')
+      )
+    );
+    expect(gfmToSlackBlocks(markdown)).toEqual([
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: '*`a**b`* _`c_d`_ <https://a.b|e]f>',
+        },
+      },
+    ]);
+  });
+
   it('reaches Slack as a bare link for an empty link label or image alt', () => {
     const markdown = serializeMarkdown(
       md.paragraph(
