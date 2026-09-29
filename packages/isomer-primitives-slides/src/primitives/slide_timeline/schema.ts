@@ -46,7 +46,7 @@ export const schema = z
       .min(3)
       .max(5)
       .describe(
-        '3–5 points in chronological order, left to right. Mark the latest or most relevant one current. Type steps down with the load, but long headings and bodies can still run past the slide at `s`; a layout check reports it.'
+        '3–5 points in chronological order, left to right. Mark the latest or most relevant one current. Type steps down with the load, but a long label, heading, or body can still run past its column at `s`; a layout check reports it.'
       ),
     size: sizeField(),
   })

@@ -93,14 +93,6 @@ export const connectorModule = createStyleModule('connector', ({ css }) => ({
     min-height: 0;
     width: ${connector.rail};
   `,
-  headRight: css`
-    border-bottom: ${connector.headHalf} solid transparent;
-    border-left: ${connector.headLength} solid ${color.line};
-    border-top: ${connector.headHalf} solid transparent;
-    flex: 0 0 auto;
-    height: 0;
-    width: 0;
-  `,
   headDown: css`
     border-left: ${connector.headHalf} solid transparent;
     border-right: ${connector.headHalf} solid transparent;
@@ -113,6 +105,14 @@ export const connectorModule = createStyleModule('connector', ({ css }) => ({
     border-bottom: ${connector.headLength} solid ${color.line};
     border-left: ${connector.headHalf} solid transparent;
     border-right: ${connector.headHalf} solid transparent;
+    flex: 0 0 auto;
+    height: 0;
+    width: 0;
+  `,
+  headRight: css`
+    border-bottom: ${connector.headHalf} solid transparent;
+    border-left: ${connector.headLength} solid ${color.line};
+    border-top: ${connector.headHalf} solid transparent;
     flex: 0 0 auto;
     height: 0;
     width: 0;

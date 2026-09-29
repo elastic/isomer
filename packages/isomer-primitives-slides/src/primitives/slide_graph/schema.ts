@@ -27,7 +27,7 @@ const nodeSchema = z
     emphasis: z
       .boolean()
       .describe(
-        'Draws the node with a heavier primary border and term to mark the concept the slide centers on. Use on one node at most. Defaults to false.'
+        'Draws the node with a bar-weight primary border and term to mark the concept the slide centers on. Use on one node at most. Defaults to false.'
       )
       .optional(),
     placement: z
@@ -48,7 +48,7 @@ export const schema = z
       .min(2)
       .max(graphMaxMain + slideGraphPlacements.length)
       .describe(
-        `2–${graphMaxMain + slideGraphPlacements.length} named concepts. Nodes without \`placement\` form the main row, left to right in array order (2–${graphMaxMain} of them). Add at most one \`placement: "above"\` and one \`placement: "below"\` node.`
+        `2–${graphMaxMain + slideGraphPlacements.length} named concepts. Nodes without \`placement\` form the main row, left to right in array order (2–${graphMaxMain} of them). Add at most one \`placement: "above"\` and one \`placement: "below"\` node. Type steps down with the load, but long bodies or a long caption can still run past the slide at \`s\`; a layout check reports it.`
       ),
     edges: z
       .array(

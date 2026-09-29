@@ -16,8 +16,7 @@ export const graph = {
   node: {
     fill: color.bgSurface,
     border: stroke.panel,
-    // Between the chip and bar strokes.
-    emphasisBorder: px(2.5),
+    emphasisBorder: stroke.bar,
     radius: radius.panel,
     paddings: {
       l: paddingXy(space.px20, space.px24),
