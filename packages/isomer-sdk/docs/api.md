@@ -49,6 +49,7 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | `findNodeElementPairs` | Each `react`-visible node of a body, in pre-order, with its anchored element under a DOM root |
 | `findNodeElements` | The same as a map from node to element, for a body that reuses no node object |
 | `anchorValue` | A node type as its anchor carries it, escaped so HTML parsing leaves it unchanged |
+| `measureDom` | The `LayoutBox` tree a browser laid an element out as, for `checkLayout` |
 | `checkLayout` | Where a measured render's nodes run past their room or onto a sibling, as `LayoutFinding`s over a `LayoutBox` tree of `LayoutRect`s |
 | `BODY_NODE_SURFACES` | `['react','svg','text','markdown','slack']` |
 
