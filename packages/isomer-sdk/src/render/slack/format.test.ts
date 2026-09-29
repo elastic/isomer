@@ -87,6 +87,12 @@ describe('gfmToSlackMrkdwn', () => {
     ).toBe('*bold* and _it_ and `a<b` <https://x.y|L>');
   });
 
+  it('reads single-asterisk emphasis as italics', () => {
+    expect(gfmToSlackMrkdwn('a*b*c and *d e* but not * f * or \\*g*')).toBe(
+      'a_b_c and _d e_ but not * f * or *g*'
+    );
+  });
+
   it('bolds ATX headings', () => {
     expect(gfmToSlackMrkdwn('## Title ##')).toBe('*Title*');
   });
@@ -195,6 +201,8 @@ describe('gfmToSlackMrkdwn', () => {
         ' '
       ),
       '\\*'.repeat(size),
+      `*${'\\*'.repeat(size)}`,
+      '*a '.repeat(size / 3),
       '\\``'.repeat(size / 3),
       '['.repeat(size),
       '[a](x'.repeat(size / 5),
@@ -335,6 +343,28 @@ describe('gfmToSlackBlocks', () => {
         { type: 'raw_text', text: '`a\\.b`' },
         { type: 'raw_text', text: '`a|b`' },
       ],
+    ]);
+  });
+
+  it('reads a single-column table and closes a fence only on one as long', () => {
+    expect(gfmToSlackBlocks('| a |\n| - |\n| 1 |')).toEqual([
+      expect.objectContaining({
+        type: 'table',
+        rows: [
+          [{ type: 'raw_text', text: 'a' }],
+          [{ type: 'raw_text', text: '1' }],
+        ],
+      }),
+    ]);
+    expect(gfmToSlackBlocks('````\n```\ninner\n````\nafter')).toEqual([
+      expect.objectContaining({
+        elements: [
+          expect.objectContaining({
+            elements: [{ type: 'text', text: '```\ninner' }],
+          }),
+        ],
+      }),
+      { type: 'section', text: { type: 'mrkdwn', text: 'after' } },
     ]);
   });
 

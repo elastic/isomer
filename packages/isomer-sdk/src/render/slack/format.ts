@@ -352,6 +352,10 @@ const INLINE_FINDERS: readonly InlineFinder[] = [
     kind: 'italic',
     text,
   })),
+  regexFinder(
+    /(?<![\\*])\*(?![\s*])((?:\\.|[^*\n\\])+?)(?<!\s)\*(?!\*)/g,
+    ([, text = '']) => ({ kind: 'italic', text })
+  ),
 ];
 
 // Tokenizes a single line of GFM into ordered inline segments. The earliest
@@ -434,8 +438,15 @@ const renderInline = (line: string): string => {
     .join('');
 };
 
-const FENCE_RE = /^\s*```/;
-const TABLE_SEPARATOR_RE = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$/;
+const FENCE_RE = /^\s*(`{3,})/;
+const CLOSING_FENCE_RE = /^\s*(`{3,})[ \t]*$/;
+
+// A closing fence is backticks alone, at least as long as the opening run.
+const closesFence = (line: string, opening: string): boolean =>
+  (CLOSING_FENCE_RE.exec(line)?.[1]?.length ?? 0) >= opening.length;
+// At least one pipe, so a single-column table counts and a thematic break does not.
+const TABLE_SEPARATOR_RE =
+  /^(?=[^|]*\|)\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
 const TABLE_ROW_RE = /^\s*\|.*\|\s*$/;
 const BLOCKQUOTE_RE = /^(>\s?)(.*)$/;
 
@@ -501,13 +512,14 @@ export const gfmToSlackMrkdwn = (gfm: string): string => {
   let i = 0;
   while (i < lines.length) {
     const line = lines[i]!;
-    if (FENCE_RE.test(line)) {
+    const opening = FENCE_RE.exec(line)?.[1];
+    if (opening !== undefined) {
       // Fenced code block: copy the body verbatim. Slack honours the
       // triple-backtick fence but ignores the language hint, so we strip it
       // for cleanliness.
       const body: string[] = [];
       i += 1;
-      while (i < lines.length && !FENCE_RE.test(lines[i]!)) {
+      while (i < lines.length && !closesFence(lines[i]!, opening)) {
         body.push(lines[i]!);
         i += 1;
       }
@@ -653,11 +665,12 @@ export const gfmToSlackBlocks = (gfm: string): SlackBlock[] => {
   let i = 0;
   while (i < lines.length) {
     const line = lines[i]!;
-    if (FENCE_RE.test(line)) {
+    const opening = FENCE_RE.exec(line)?.[1];
+    if (opening !== undefined) {
       flushProse();
       i += 1;
       const code: string[] = [];
-      while (i < lines.length && !FENCE_RE.test(lines[i]!)) {
+      while (i < lines.length && !closesFence(lines[i]!, opening)) {
         code.push(lines[i]!);
         i += 1;
       }
