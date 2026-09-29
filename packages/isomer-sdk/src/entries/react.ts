@@ -10,6 +10,7 @@ export {
   type ReactContentDispatcher,
   type ReactContentOptions,
   type ReactTreeDispatcher,
+  applyEnhancements,
   PrimitiveDispatcherContext,
   renderCompositionContent,
   useReactPrimitiveDispatcher,

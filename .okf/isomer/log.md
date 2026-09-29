@@ -2,6 +2,7 @@
 
 ## 2026-09-28
 
+- **Enhancements on the React surface**: `ReactRenderOptions.enhancements` takes enhancement definitions; those that apply reach every renderer as `context.enhancements`, turn node anchors on when one asks, and run their scripts against the wrapper section once it mounts. The SDK's React entry adds `applyEnhancements`, and `findNodeElementPairs` lists each node occurrence with its anchored element, so a node object used twice pairs twice. The embedding doc covers a React host with a Distillate live collection, and the slides pack takes `@elastic/distillate` `^0.2.0`.
 - **Unique JSX component names**: `buildJsxShim` throws `DUPLICATE_PRIMITIVE_TYPE`, naming both types, when two primitive or child types capitalize to one component name or a type collides with the root `Composition`.
 - **`toComposition` keeps `version`**: The JSX shim carries the root element's `version` onto the composition alongside `title`, `subtitle`, `theme`, and `meta`.
 - **Validation errors name their node**: `ValidationError` gains `nodeType`, the innermost primitive node its path lands in, set by the parser, the validator, the duplicate-id pass, and a dispatcher's `validate`. `formatValidationError` prints `<path> (in <nodeType>) <message>`, and an unknown key on a node lists that node's declared fields. Names and ids a finding echoes are JSON-quoted when not plain, with line terminators escaped.

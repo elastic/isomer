@@ -30,7 +30,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@elastic/distillate": "^0.1.0",
+    "@elastic/distillate": "^0.2.0",
     "@elastic/isomer-sdk": "workspace:*"
   },
   "peerDependencies": {
