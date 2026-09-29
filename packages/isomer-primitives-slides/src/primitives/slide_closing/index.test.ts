@@ -47,8 +47,8 @@ describe('slideClosing', () => {
     expect(text(example)).toMatchInlineSnapshot(`
       "START HERE
 
-      Docs: example.com/ledger/docs
-      Runbook: example.com/ledger/runbook
+      DOCS · example.com/ledger/docs
+      RUNBOOK · example.com/ledger/runbook
 
       - Issue a refund: The refunds guide, then POST /refunds
       - Reconcile a day: The settlement report and its columns
@@ -58,9 +58,9 @@ describe('slideClosing', () => {
     expect(markdown(example)).toMatchInlineSnapshot(`
       "# Start here
 
-      **Docs** · [example.com/ledger/docs](https://example.com/ledger/docs)
+      **DOCS** · [example.com/ledger/docs](https://example.com/ledger/docs)
 
-      **Runbook** · [example.com/ledger/runbook](https://example.com/ledger/runbook)
+      **RUNBOOK** · [example.com/ledger/runbook](https://example.com/ledger/runbook)
 
       - **Issue a refund**: The refunds guide, then \`POST /refunds\`
       - **Reconcile a day**: The settlement report and its columns
@@ -84,7 +84,7 @@ describe('slideClosing', () => {
         },
         {
           "text": {
-            "text": "*Questions*  <mailto:payments@example.com|payments@example.com>",
+            "text": "*QUESTIONS* · <mailto:payments@example.com|payments@example.com>",
             "type": "mrkdwn",
           },
           "type": "section",
@@ -140,15 +140,30 @@ describe('slideClosing', () => {
     ).toMatchInlineSnapshot(`
       "THANK YOU
 
-      Docs: The docs (/docs)"
+      DOCS · The docs (/docs)"
     `);
+  });
+
+  it('links only an absolute URL in Slack', () => {
+    const [, links] = slack({
+      ...linkOnlyExample,
+      links: [
+        { label: 'Docs', href: '/docs', text: 'The docs' },
+        { label: 'Src', href: 'https://example.com/src', text: 'Source' },
+      ],
+    });
+    expect(links).toMatchObject({
+      text: {
+        text: '*DOCS* · The docs\n*SRC* · <https://example.com/src|Source>',
+      },
+    });
   });
 
   it('sets a link whose href is unsafe as plain text', () => {
     expect(runtime.surfaces.markdown.renderNode(unsafe)).toMatchInlineSnapshot(`
       "# Thank you
 
-      **Chat** · chat"
+      **CHAT** · chat"
     `);
     const { html } = runtime.surfaces.html.render(compose(unsafe));
     expect(html).not.toContain('javascript:');

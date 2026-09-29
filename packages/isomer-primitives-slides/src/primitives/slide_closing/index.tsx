@@ -51,7 +51,11 @@ export const text = ({ title, links, paths = [] }: SlideClosingNode): string =>
   [
     oneLine(title).toUpperCase(),
     links
-      .map((entry) => oneLine(`${entry.label}: ${textLink(entry)}`))
+      .map((entry) =>
+        oneLine(
+          `${entry.label.toUpperCase()} ${separator.value} ${textLink(entry)}`
+        )
+      )
       .join('\n'),
     paths
       .map(({ title: goal, body }) => `- ${oneLine(goal)}: ${plainText(body)}`)
@@ -64,7 +68,7 @@ export const markdown = ({ title, links, paths = [] }: SlideClosingNode) => [
   md.heading(1, title),
   ...links.map(({ label, href, text: shown }) =>
     md.paragraph(
-      md.strong(label),
+      md.strong(label.toUpperCase()),
       ` ${separator.value} `,
       href ? md.link(shown, href) : shown
     )
@@ -96,7 +100,7 @@ export const slack = ({
       text: links
         .map(
           ({ label, href, text: shown }) =>
-            `${bold(oneLine(label))}  ${href ? link(href, oneLine(shown)) : escapeMrkdwn(oneLine(shown))}`
+            `${bold(oneLine(label).toUpperCase())} ${separator.value} ${href ? link(href, oneLine(shown)) : escapeMrkdwn(oneLine(shown))}`
         )
         .join('\n'),
     },

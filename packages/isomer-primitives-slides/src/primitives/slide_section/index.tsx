@@ -8,9 +8,13 @@
 import { sanitizeNavigationHref } from '@elastic/isomer-sdk';
 import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
-import { formatHeaderText, type SlackBlock } from '@elastic/isomer-sdk/slack';
+import {
+  formatHeaderText,
+  markdownContentToSlackBlocks,
+  type SlackBlock,
+} from '@elastic/isomer-sdk/slack';
 
-import { marksMarkdown, marksSlack, plainText } from '../../render/marks';
+import { marksMarkdown, plainText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -29,25 +33,27 @@ const heading = ({ number, title }: SlideSectionNode): string =>
 
 export const text = ({ number, title, contents }: SlideSectionNode): string =>
   [
-    oneLine(`${number} ${title.toUpperCase()}`),
+    oneLine(`${number} ${separator.value} ${title.toUpperCase()}`),
     ...contents.map((line, index) => `${index + 1}. ${plainText(line)}`),
   ].join('\n');
 
-/** A line with an `hrefs` entry is a link. */
-export const markdown = (node: SlideSectionNode) => [
-  md.heading(1, heading(node)),
+const contentsList = ({ contents, hrefs }: SlideSectionNode) =>
   md.list(
-    node.contents.map((line, index) => {
-      const href = lineHref(node.hrefs, index);
+    contents.map((line, index) => {
+      const href = lineHref(hrefs, index);
       return href
         ? md.paragraph(md.link(marksMarkdown(line), href))
         : md.paragraph(...marksMarkdown(line));
     }),
     { ordered: true }
-  ),
+  );
+
+export const markdown = (node: SlideSectionNode) => [
+  md.heading(1, heading(node)),
+  contentsList(node),
 ];
 
-/** Slide anchors do not link in Slack. */
+/** A line links in Slack only when its href is an absolute URL. */
 export const slack = (node: SlideSectionNode): SlackBlock[] => [
   {
     type: 'header',
@@ -57,15 +63,7 @@ export const slack = (node: SlideSectionNode): SlackBlock[] => [
       emoji: true,
     },
   },
-  {
-    type: 'section',
-    text: {
-      type: 'mrkdwn',
-      text: node.contents
-        .map((line, index) => `${index + 1}. ${oneLine(marksSlack(line))}`)
-        .join('\n'),
-    },
-  },
+  ...markdownContentToSlackBlocks(contentsList(node)),
 ];
 
 /** Catalog, schema, and renderers for {@link SlideSectionNode}. */

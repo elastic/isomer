@@ -46,7 +46,7 @@ describe('slideSection', () => {
 
   it('renders text, markdown, and Slack', () => {
     expect(text(example)).toMatchInlineSnapshot(`
-      "02 SETTLEMENT
+      "02 · SETTLEMENT
       1. Refunds settle in two days, not five
       2. The ledger writes before the fraud check
       3. Three batch windows are gone"
@@ -69,13 +69,42 @@ describe('slideSection', () => {
           "type": "header",
         },
         {
-          "text": {
-            "text": "1. Refunds settle in two days, not five
-      2. The ledger writes before the fraud check
-      3. Three batch windows are gone",
-            "type": "mrkdwn",
-          },
-          "type": "section",
+          "elements": [
+            {
+              "elements": [
+                {
+                  "elements": [
+                    {
+                      "text": "Refunds settle in two days, not five",
+                      "type": "text",
+                    },
+                  ],
+                  "type": "rich_text_section",
+                },
+                {
+                  "elements": [
+                    {
+                      "text": "The ledger writes before the fraud check",
+                      "type": "text",
+                    },
+                  ],
+                  "type": "rich_text_section",
+                },
+                {
+                  "elements": [
+                    {
+                      "text": "Three batch windows are gone",
+                      "type": "text",
+                    },
+                  ],
+                  "type": "rich_text_section",
+                },
+              ],
+              "style": "ordered",
+              "type": "rich_text_list",
+            },
+          ],
+          "type": "rich_text",
         },
       ]
     `);
@@ -94,6 +123,18 @@ describe('slideSection', () => {
     expect(runtime.surfaces.html.render(compose(linkedExample)).html).toContain(
       'href="#slide-13"'
     );
+  });
+
+  it('links only an absolute URL in Slack', () => {
+    const blocks = JSON.stringify(
+      slack({
+        ...example,
+        contents: ['Anchored', 'Hosted'],
+        hrefs: ['#slide-12', 'https://example.com/deck/13'],
+      })
+    );
+    expect(blocks).not.toContain('#slide-12');
+    expect(blocks).toContain('"url":"https://example.com/deck/13"');
   });
 
   it('sets a line whose href is unsafe as plain text', () => {

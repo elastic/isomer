@@ -26,5 +26,5 @@ export const definitions = {
 /** Past this many terms the list splits into two columns. */
 export const definitionsSingleColumnMax = 4;
 
-/** The longest column's characters times the column count. */
+/** Largest `rowLoad` each step holds. */
 export const definitionsFit = { l: 480, m: 560 } as const;

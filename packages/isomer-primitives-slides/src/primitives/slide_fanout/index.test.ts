@@ -66,13 +66,71 @@ describe('slideFanout', () => {
     expect(slack(pairExample)).toMatchInlineSnapshot(`
       [
         {
-          "text": {
-            "text": "*release tag* →
-      • *changelog*: Drafted from merged pull requests
-      • *registry*: Receives the signed build",
-            "type": "mrkdwn",
-          },
-          "type": "section",
+          "elements": [
+            {
+              "elements": [
+                {
+                  "style": {
+                    "bold": true,
+                  },
+                  "text": "release tag",
+                  "type": "text",
+                },
+                {
+                  "text": " →",
+                  "type": "text",
+                },
+              ],
+              "type": "rich_text_section",
+            },
+            {
+              "elements": [
+                {
+                  "elements": [
+                    {
+                      "style": {
+                        "bold": true,
+                      },
+                      "text": "changelog",
+                      "type": "text",
+                    },
+                    {
+                      "text": ": ",
+                      "type": "text",
+                    },
+                    {
+                      "text": "Drafted from merged pull requests",
+                      "type": "text",
+                    },
+                  ],
+                  "type": "rich_text_section",
+                },
+                {
+                  "elements": [
+                    {
+                      "style": {
+                        "bold": true,
+                      },
+                      "text": "registry",
+                      "type": "text",
+                    },
+                    {
+                      "text": ": ",
+                      "type": "text",
+                    },
+                    {
+                      "text": "Receives the signed build",
+                      "type": "text",
+                    },
+                  ],
+                  "type": "rich_text_section",
+                },
+              ],
+              "style": "bullet",
+              "type": "rich_text_list",
+            },
+          ],
+          "type": "rich_text",
         },
       ]
     `);

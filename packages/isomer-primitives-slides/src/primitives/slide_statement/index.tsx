@@ -21,7 +21,6 @@ export type { SlideStatementNode } from './schema';
 export const text = ({ text: statement }: SlideStatementNode): string =>
   plainText(statement);
 
-/** The slide's claim, as its heading. */
 export const markdown = ({ text: statement }: SlideStatementNode) => [
   md.heading(1, ...marksMarkdown(statement)),
 ];

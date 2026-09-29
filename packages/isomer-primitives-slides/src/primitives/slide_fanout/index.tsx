@@ -7,7 +7,10 @@
 
 import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
-import { bold, escapeMrkdwn, type SlackBlock } from '@elastic/isomer-sdk/slack';
+import {
+  markdownContentToSlackBlocks,
+  type SlackBlock,
+} from '@elastic/isomer-sdk/slack';
 
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
@@ -34,21 +37,8 @@ export const markdown = ({ source, targets }: SlideFanoutNode) => [
   ),
 ];
 
-export const slack = ({ source, targets }: SlideFanoutNode): SlackBlock[] => [
-  {
-    type: 'section',
-    text: {
-      type: 'mrkdwn',
-      text: [
-        `${bold(oneLine(source))} ${arrow.value}`,
-        ...targets.map(
-          ({ name, body }) =>
-            `• ${bold(oneLine(name))}: ${escapeMrkdwn(oneLine(body))}`
-        ),
-      ].join('\n'),
-    },
-  },
-];
+export const slack = (node: SlideFanoutNode): SlackBlock[] =>
+  markdownContentToSlackBlocks(markdown(node));
 
 /** Catalog, schema, and renderers for {@link SlideFanoutNode}. */
 export const slideFanoutPrimitive = definePrimitive({
