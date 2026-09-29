@@ -59,4 +59,4 @@ A Slack bot or an MCP server can use the surface-specific subpaths without loadi
 
 ## Package facts
 
-`zod` and `react` are required peers. `react-dom` is optional and needed by `./html`. Only `./testing` touches Node built-ins. The SDK must not import the runtime.
+`zod` and `react` are required peers. `react-dom` is optional and needed by `./html`. Only `./testing` touches Node built-ins. On Node it needs 22.13.0 or later, the first 22.x release whose `require()` loads an ES module without a warning. The SDK must not import the runtime.
