@@ -42,7 +42,7 @@ export interface EnhancementDefinition {
    * stops at a shadow boundary.
    */
   script?: string;
-  /** Renders node anchors when resolved, for an enhancement that finds nodes with `findNodeElements`. */
+  /** Renders node anchors when resolved, for an enhancement that finds nodes with `findNodeElementPairs`. */
   anchors?: true;
 }
 

@@ -9,6 +9,7 @@ import {
   createContext,
   createElement,
   Fragment,
+  type ReactElement,
   type ReactNode,
   useContext,
 } from 'react';
@@ -140,7 +141,7 @@ export const wrapCompositionContent = <TNode extends PrimitiveNode>(
     theme = 'auto',
     defaultAriaLabel = 'View',
   }: CompositionWrapperOptions = {}
-): ReactNode =>
+): ReactElement =>
   createElement(
     'section',
     {

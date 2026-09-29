@@ -53,7 +53,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@commitlint/to-lines` | 19.8.1 | MIT | `node_modules/.pnpm/@commitlint+to-lines@19.8.1/node_modules/@commitlint/to-lines` |  |
 | `@commitlint/top-level` | 19.8.1 | MIT | `node_modules/.pnpm/@commitlint+top-level@19.8.1/node_modules/@commitlint/top-level` |  |
 | `@commitlint/types` | 19.8.1 | MIT | `node_modules/.pnpm/@commitlint+types@19.8.1/node_modules/@commitlint/types` |  |
-| `@elastic/distillate` | 0.1.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+distillate@0.1.0/node_modules/@elastic/distillate` |  |
+| `@elastic/distillate` | 0.2.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+distillate@0.2.0/node_modules/@elastic/distillate` |  |
 | `@eslint-community/eslint-utils` | 4.10.1 | MIT | `node_modules/.pnpm/@eslint-community+eslint-utils@4.10.1_eslint@9.39.5_jiti@2.6.1_/node_modules/@eslint-community/eslint-utils` |  |
 | `@eslint-community/regexpp` | 4.12.2 | MIT | `node_modules/.pnpm/@eslint-community+regexpp@4.12.2/node_modules/@eslint-community/regexpp` |  |
 | `@eslint/config-array` | 0.21.2 | Apache-2.0 | `node_modules/.pnpm/@eslint+config-array@0.21.2/node_modules/@eslint/config-array` |  |
@@ -162,6 +162,8 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@types/react` | 18.3.31 | MIT | `node_modules/.pnpm/@types+react@18.3.31/node_modules/@types/react` |  |
 | `@types/react-dom` | 18.3.7 | MIT | `node_modules/.pnpm/@types+react-dom@18.3.7_@types+react@18.3.31/node_modules/@types/react-dom` |  |
 | `@types/unist` | 2.0.11 | MIT | `node_modules/.pnpm/@types+unist@2.0.11/node_modules/@types/unist` |  |
+| `@types/whatwg-mimetype` | 3.0.2 | MIT | `node_modules/.pnpm/@types+whatwg-mimetype@3.0.2/node_modules/@types/whatwg-mimetype` |  |
+| `@types/ws` | 8.18.1 | MIT | `node_modules/.pnpm/@types+ws@8.18.1/node_modules/@types/ws` |  |
 | `@typescript-eslint/eslint-plugin` | 8.70.0 | MIT | `node_modules/.pnpm/@typescript-eslint+eslint-plugin@8.70.0_@typescript-eslint+parser@8.70.0_eslint@9.39.5__6275fc40e814d6e52430554ca2625ac6/node_modules/@typescript-eslint/eslint-plugin` |  |
 | `@typescript-eslint/parser` | 8.70.0 | MIT | `node_modules/.pnpm/@typescript-eslint+parser@8.70.0_eslint@9.39.5_jiti@2.6.1__typescript@5.9.3/node_modules/@typescript-eslint/parser` |  |
 | `@typescript-eslint/project-service` | 8.70.0 | MIT | `node_modules/.pnpm/@typescript-eslint+project-service@8.70.0_typescript@5.9.3/node_modules/@typescript-eslint/project-service` |  |
@@ -216,6 +218,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `brace-expansion` | 5.0.9 | MIT | `node_modules/.pnpm/brace-expansion@5.0.9/node_modules/brace-expansion` |  |
 | `brace-expansion` | 5.0.9 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/brace-expansion` |  |
 | `braces` | 3.0.3 | MIT | `node_modules/.pnpm/braces@3.0.3/node_modules/braces` |  |
+| `buffer-image-size` | 0.6.4 | MIT | `node_modules/.pnpm/buffer-image-size@0.6.4/node_modules/buffer-image-size` |  |
 | `cacache` | 20.0.4 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/cacache` |  |
 | `callsites` | 3.1.0 | MIT | `node_modules/.pnpm/callsites@3.1.0/node_modules/callsites` |  |
 | `chai` | 6.2.2 | MIT | `node_modules/.pnpm/chai@6.2.2/node_modules/chai` |  |
@@ -286,6 +289,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `emoji-regex` | 8.0.0 | MIT | `node_modules/.pnpm/emoji-regex@8.0.0/node_modules/emoji-regex` |  |
 | `emojilib` | 2.4.0 | MIT | `node_modules/.pnpm/emojilib@2.4.0/node_modules/emojilib` |  |
 | `entities` | 4.5.0 | BSD-2-Clause | `node_modules/.pnpm/entities@4.5.0/node_modules/entities` |  |
+| `entities` | 7.0.1 | BSD-2-Clause | `node_modules/.pnpm/entities@7.0.1/node_modules/entities` |  |
 | `env-ci` | 11.2.0 | MIT | `node_modules/.pnpm/env-ci@11.2.0/node_modules/env-ci` |  |
 | `env-paths` | 2.2.1 | MIT | `node_modules/.pnpm/env-paths@2.2.1/node_modules/env-paths` |  |
 | `env-paths` | 2.2.1 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/env-paths` |  |
@@ -361,6 +365,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `graceful-fs` | 4.2.11 | ISC | `node_modules/.pnpm/graceful-fs@4.2.11/node_modules/graceful-fs` |  |
 | `graceful-fs` | 4.2.11 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/graceful-fs` |  |
 | `handlebars` | 4.7.9 | MIT | `node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars` | `uglify-js` |
+| `happy-dom` | 20.14.5 | MIT | `node_modules/.pnpm/happy-dom@20.14.5/node_modules/happy-dom` |  |
 | `has-flag` | 3.0.0 | MIT | `node_modules/.pnpm/has-flag@3.0.0/node_modules/has-flag` |  |
 | `has-flag` | 4.0.0 | MIT | `node_modules/.pnpm/has-flag@4.0.0/node_modules/has-flag` |  |
 | `highlight.js` | 10.7.3 | BSD-3-Clause | `node_modules/.pnpm/highlight.js@10.7.3/node_modules/highlight.js` |  |
@@ -779,9 +784,10 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `validate-npm-package-license` | 3.0.4 | Apache-2.0 | `node_modules/.pnpm/validate-npm-package-license@3.0.4/node_modules/validate-npm-package-license` |  |
 | `validate-npm-package-name` | 7.0.2 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/validate-npm-package-name` |  |
 | `vite` | 8.3.0 | MIT | `node_modules/.pnpm/vite@8.3.0_@types+node@22.20.2_jiti@2.6.1_yaml@2.9.1/node_modules/vite` | `fsevents` |
-| `vitest` | 4.1.11 | MIT | `node_modules/.pnpm/vitest@4.1.11_@types+node@22.20.2_@vitest+coverage-v8@4.1.11_vite@8.3.0_@types+node@22.20.2_jiti@2.6.1_yaml@2.9.1_/node_modules/vitest` |  |
+| `vitest` | 4.1.11 | MIT | `node_modules/.pnpm/vitest@4.1.11_@types+node@22.20.2_@vitest+coverage-v8@4.1.11_happy-dom@20.14.5_vite@8.3_6cd0578c6b434ee6bfe97d45dfc13977/node_modules/vitest` |  |
 | `walk-up-path` | 4.0.0 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/walk-up-path` |  |
 | `web-worker` | 1.5.0 | Apache-2.0 | `node_modules/.pnpm/web-worker@1.5.0/node_modules/web-worker` |  |
+| `whatwg-mimetype` | 3.0.0 | MIT | `node_modules/.pnpm/whatwg-mimetype@3.0.0/node_modules/whatwg-mimetype` |  |
 | `which` | 2.0.2 | ISC | `node_modules/.pnpm/which@2.0.2/node_modules/which` |  |
 | `which` | 6.0.1 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/which` |  |
 | `why-is-node-running` | 2.3.0 | MIT | `node_modules/.pnpm/why-is-node-running@2.3.0/node_modules/why-is-node-running` |  |
@@ -790,6 +796,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `wrap-ansi` | 7.0.0 | MIT | `node_modules/.pnpm/wrap-ansi@7.0.0/node_modules/wrap-ansi` |  |
 | `wrap-ansi` | 9.0.2 | MIT | `node_modules/.pnpm/wrap-ansi@9.0.2/node_modules/wrap-ansi` |  |
 | `write-file-atomic` | 7.0.1 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/write-file-atomic` |  |
+| `ws` | 8.22.0 | MIT | `node_modules/.pnpm/ws@8.22.0/node_modules/ws` |  |
 | `xtend` | 4.0.2 | MIT | `node_modules/.pnpm/xtend@4.0.2/node_modules/xtend` |  |
 | `y18n` | 5.0.8 | ISC | `node_modules/.pnpm/y18n@5.0.8/node_modules/y18n` |  |
 | `yallist` | 4.0.0 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/minipass-pipeline/node_modules/yallist` |  |

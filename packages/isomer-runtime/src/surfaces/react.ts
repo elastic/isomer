@@ -5,15 +5,28 @@
  * 2.0.
  */
 
-import type { ReactNode } from 'react';
-import type {
-  Composition,
-  PrimitiveDispatcher,
-  PrimitiveNode,
-  PrimitiveRenderContext,
-  ReactContextArg,
+import {
+  cloneElement,
+  createElement,
+  type ReactElement,
+  type ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from 'react';
+import {
+  type Composition,
+  createChildNodeWalker,
+  type EnhancementDefinition,
+  type PrimitiveDispatcher,
+  type PrimitiveNode,
+  type PrimitiveRenderContext,
+  type ReactContextArg,
+  runEnhancementScript,
+  scopeScript,
 } from '@elastic/isomer-sdk';
 import {
+  applyEnhancements,
   type CompositionWrapperOptions,
   renderCompositionContent,
   wrapCompositionContent,
@@ -33,6 +46,14 @@ export type ReactRenderOptions<TRenderContext = PrimitiveRenderContext> = {
    * `fluid`, `theme`, and `defaultAriaLabel`. Absent means bare content.
    */
   wrapper?: boolean | CompositionWrapperOptions;
+  /**
+   * Enhancements to render with, as the `html` surface does: those that apply
+   * reach every renderer as `context.enhancements`, turn node anchors on when
+   * one asks, and run their `script` against the `wrapper` section once it
+   * mounts and again for a new composition or node object, so keep it stable
+   * across re-renders. A `script` needs `wrapper`.
+   */
+  enhancements?: readonly EnhancementDefinition[];
 } & (Record<string, never> extends TRenderContext
   ? { context?: TRenderContext }
   : { context: TRenderContext });
@@ -79,6 +100,37 @@ export interface ReactSurface<TRenderContext = PrimitiveRenderContext> {
   ): ReactNode;
 }
 
+const useIsomorphicLayoutEffect =
+  typeof document === 'undefined' ? useEffect : useLayoutEffect;
+
+/** What each mounted wrapper last ran scripts for, so a remount or re-render of it runs them once. */
+const ranFor = new WeakMap<Element, { source: unknown; js: string }>();
+
+/** `section` with `js` run against its element once it mounts, and again when `source` or `js` changes. */
+const ScriptedSection = ({
+  section,
+  source,
+  js,
+}: {
+  section: ReactElement;
+  source: unknown;
+  js: string;
+}): ReactNode => {
+  const ref = useRef<HTMLElement>(null);
+  useIsomorphicLayoutEffect(() => {
+    const root = ref.current;
+    if (!root) {
+      return;
+    }
+    const ran = ranFor.get(root);
+    if (ran?.source !== source || ran?.js !== js) {
+      ranFor.set(root, { source, js });
+      runEnhancementScript(js, root);
+    }
+  }, [source, js]);
+  return cloneElement(section, { ref });
+};
+
 /**
  * Creates the `react` {@link RuntimeSurfaces} entry.
  *
@@ -92,27 +144,42 @@ export const createReactSurface = <TRenderContext = PrimitiveRenderContext>(
   >,
   defaultAriaLabel = 'View'
 ): ReactSurface<TRenderContext> => {
+  const walk = createChildNodeWalker(dispatcher.definitions);
+
   const renderWith = (
     composition: Composition,
     heading: boolean,
-    options: ReactRenderNodeOptions<TRenderContext> | undefined
+    options: ReactRenderNodeOptions<TRenderContext> | undefined,
+    source: unknown = composition
   ): ReactNode => {
+    const { wrapper, enhancements } = options ?? {};
     // `{}` only ever runs when `context` was optional, which
     // `ReactRenderOptions` allows exactly when `{}` is a complete context.
-    const content = renderCompositionContent(
-      composition,
-      dispatcher,
-      options?.context ?? ({} as TRenderContext),
-      { heading }
-    );
-    const { wrapper } = options ?? {};
+    const hostContext = options?.context ?? ({} as TRenderContext);
+    const { context, applied } = enhancements
+      ? applyEnhancements(hostContext, composition.body, walk, enhancements)
+      : { context: hostContext, applied: [] };
+    const js = applied
+      .flatMap(({ script }) => (script ? [scopeScript(script)] : []))
+      .join('\n');
+    const content = renderCompositionContent(composition, dispatcher, context, {
+      heading,
+    });
     if (!wrapper) {
+      if (js) {
+        console.warn(
+          'isomer: enhancement scripts run against the wrapper section; render with `wrapper` to run them'
+        );
+      }
       return content;
     }
-    return wrapCompositionContent(content, composition, {
+    const section = wrapCompositionContent(content, composition, {
       defaultAriaLabel,
       ...(wrapper === true ? {} : wrapper),
     });
+    return js
+      ? createElement(ScriptedSection, { section, source, js })
+      : section;
   };
 
   return {
@@ -120,6 +187,6 @@ export const createReactSurface = <TRenderContext = PrimitiveRenderContext>(
     render: (composition, ...[options]) =>
       renderWith(composition, options?.heading ?? true, options),
     renderNode: (node, ...[options]) =>
-      renderWith({ type: 'view', body: [node] }, false, options),
+      renderWith({ type: 'view', body: [node] }, false, options, node),
   };
 };

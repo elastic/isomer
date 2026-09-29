@@ -8,6 +8,7 @@
 export {
   NODE_ANCHOR_ATTRIBUTE,
   anchorValue,
+  findNodeElementPairs,
   findNodeElements,
   nodeAnchor,
   withoutAnchors,

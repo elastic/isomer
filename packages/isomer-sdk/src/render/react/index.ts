@@ -15,3 +15,4 @@ export {
   useReactPrimitiveDispatcher,
   wrapCompositionContent,
 } from './content';
+export { applyEnhancements } from './enhancements';
