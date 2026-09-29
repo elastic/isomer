@@ -92,21 +92,28 @@ describe('measureDom', () => {
   });
 
   it('scales a box drawn at another size than it was laid out at', () => {
-    const root = parse('<div><div></div><div></div></div>');
-    const [scaled, rounded] = Array.from(root.children);
+    const root = parse(
+      '<div><div></div><div></div><div></div><div></div></div>'
+    );
+    const [wide, rounded, tall, both] = Array.from(root.children);
     laidOut(root, [0, 0, 400, 200]);
-    laidOut(scaled!, [0, 0, 50, 20]);
+    laidOut(wide!, [0, 0, 50, 20]);
     laidOut(rounded!, [0, 20, 100.4, 20]);
-    for (const element of [scaled!, rounded!]) {
+    laidOut(tall!, [0, 40, 100, 10]);
+    laidOut(both!, [0, 60, 110, 10]);
+    for (const element of [wide!, rounded!, tall!, both!]) {
       Object.defineProperties(element, {
         offsetWidth: { value: 100 },
         offsetHeight: { value: 20 },
       });
     }
 
-    const [first, second] = measureDom(root).children;
+    const [first, second, third, fourth] = measureDom(root).children;
     expect(first?.scale).toBe(0.5);
     expect(second).not.toHaveProperty('scale');
+    expect(third?.scale).toBe(0.5);
+    // Width scales by 1.1 and height by 0.5; the one further from 1 wins.
+    expect(fourth?.scale).toBe(0.5);
   });
 
   it('never scales an SVG element, which has no layout size', () => {
