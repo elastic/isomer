@@ -185,7 +185,7 @@ export const md = {
       ? inline(phrasing(alt))
       : inline({ type: 'image', url, alt: oneLine(alt) });
   },
-  /** A hard line break, printed as a backslash before the line ending. Outside a paragraph, or at its edge, it is a space or nothing. */
+  /** A hard line break, printed as a backslash before the line ending. Inside a heading, strong, emphasis, link label, or table cell it is a space; at the start or end of any of these, or of a paragraph, it is dropped. */
   break: (): MarkdownInline => inline({ type: 'break' }),
   paragraph: (...children: MarkdownInlineInput[]): MarkdownBlock =>
     block({ type: 'paragraph', children: withoutEdgeBreaks(children) }),

@@ -341,7 +341,7 @@ describe('md', () => {
     expect(cells).toEqual(['a|b', 'c', '1', '2']);
   });
 
-  it('breaks a paragraph line with a backslash, and prints a space elsewhere', () => {
+  it('breaks a paragraph line with a backslash, prints a space elsewhere, and drops an edge break', () => {
     expect(serializeMarkdown(md.paragraph('a', md.break(), 'b'))).toBe(
       'a\\\nb'
     );
@@ -350,11 +350,15 @@ describe('md', () => {
     ).toBe('a');
     expect(
       serializeMarkdown([
-        md.heading(3, 'a', md.break(), 'b'),
+        md.heading(3, md.break(), 'a', md.break(), 'b'),
         md.paragraph(md.strong('c', md.break(), 'd', md.break())),
-        md.table([['e', md.break(), 'f']], []),
+        md.paragraph(
+          md.emphasis(md.break(), 'g'),
+          md.link(['h', md.break()], 'https://a.b')
+        ),
+        md.table([[md.break(), 'e', md.break(), 'f', md.break()]], []),
       ])
-    ).toBe('### a b\n\n**c d**\n\n| e f |\n| - |');
+    ).toBe('### a b\n\n**c d**\n\n_g_[h](https://a.b)\n\n| e f |\n| - |');
   });
 
   it('quotes builder blocks and embedded content, and drops an empty quote', () => {

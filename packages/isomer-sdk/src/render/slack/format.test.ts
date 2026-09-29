@@ -163,6 +163,9 @@ describe('gfmToSlackMrkdwn', () => {
       expect(gfmToSlackMrkdwn(lines('> > a', '>', '>  > b', '   > c'))).toBe(
         '> a\n> b\n> c'
       );
+      expect(gfmToSlackBlocks(lines('> a', '>', '> > b'))).toEqual([
+        { type: 'section', text: { type: 'mrkdwn', text: '> a\n> b' } },
+      ]);
       expect(gfmToSlackMrkdwn(lines('> ## T ##', '> # x', 'y'))).toBe(
         '> *T*\n> *x*\ny'
       );
@@ -175,6 +178,61 @@ describe('gfmToSlackMrkdwn', () => {
       expect(gfmToSlackMrkdwn(lines('a\\', '> b\\', '', 'c\\'))).toBe(
         'a\\\n> b\\\n\nc\\'
       );
+    }
+  );
+
+  it.each(['\n', '\r\n'])(
+    'keeps a trailing backslash before a line that opens a block with %j line endings',
+    (eol) => {
+      const kept = (first: string, ...rest: string[]): void => {
+        const [line] = gfmToSlackMrkdwn([first, ...rest].join(eol)).split('\n');
+        expect(line?.endsWith('\\')).toBe(true);
+      };
+      for (const opener of [
+        '# b',
+        '- b',
+        '+ b',
+        '* b',
+        '1. b',
+        '1) b',
+        '```',
+        '~~~',
+        '> b',
+        '---',
+        '***',
+        '_ _ _',
+        '===',
+        '<div>',
+        '</p>',
+        '<!-- c -->',
+        '<?x',
+        '<!X',
+        '<![CDATA[',
+        '<script>',
+      ]) {
+        kept('a\\', opener);
+      }
+      kept('a\\', '| b |', '| - |');
+      kept('- a\\', '- b');
+      kept('- a\\', '  - b');
+      kept('1. a\\', '2. b');
+      kept('1. a\\', '   # b');
+      kept('> a\\', '> # b');
+      kept('> - a\\', '> - b');
+      kept('> 1. a\\', '> 2. b');
+      expect(
+        [
+          ['a\\', 'b'],
+          ['a\\', '#b'],
+          ['a\\', '2. b'],
+          ['a\\', '    code'],
+          ['a\\', '<span>'],
+          ['a\\', '| b |'],
+          ['- a\\', '  b'],
+          ['> a\\', '> 2. b'],
+          ['> - d\\', '>   e'],
+        ].map((lines) => gfmToSlackMrkdwn(lines.join(eol)).split('\n')[0])
+      ).toEqual(['a', 'a', 'a', 'a', 'a', 'a', '- a', '> a', '> - d']);
     }
   );
 

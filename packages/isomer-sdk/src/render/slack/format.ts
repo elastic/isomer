@@ -700,17 +700,71 @@ const nextQuoteBody = (
     : splitQuote(next, true)?.body;
 };
 
+// CommonMark's HTML block type 6 tag names.
+const HTML_BLOCK_NAMES =
+  'address|article|aside|base|basefont|blockquote|body|caption|center|col|' +
+  'colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|' +
+  'footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|' +
+  'link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|search|' +
+  'section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul';
+
+// Block openers that can interrupt a paragraph, a setext underline included.
+// An ordered item interrupts only from 1 outside a list.
+const PARAGRAPH_INTERRUPT_RES = [
+  /^ {0,3}>/,
+  /^ {0,3}#{1,6}(?:[ \t]|$)/,
+  /^ {0,3}(?:`{3,}[^`]*|~{3,}.*)$/,
+  /^ {0,3}(?:=+|-+)[ \t]*$/,
+  /^ {0,3}([*_-])(?:[ \t]*\1){2,}[ \t]*$/,
+  /^ {0,3}[-+*][ \t]+\S/,
+  new RegExp(
+    `^ {0,3}<(?:(?:script|pre|style|textarea)(?:[\\s>]|$)|!--|\\?|![A-Za-z]|!\\[CDATA\\[|/?(?:${HTML_BLOCK_NAMES})(?:[\\s/>]|$))`,
+    'i'
+  ),
+];
+const ORDERED_ITEM_RE = /^ {0,3}(\d{1,9})[.)][ \t]+\S/;
+
+// Whether `next` continues the paragraph, so a trailing backslash before it is
+// a hard break.
+const continuesParagraph = (
+  next: string | undefined,
+  afterNext: string | undefined,
+  inList: boolean
+): boolean =>
+  next !== undefined &&
+  next.trim() !== '' &&
+  !PARAGRAPH_INTERRUPT_RES.some((re) => re.test(next)) &&
+  !(inList
+    ? ORDERED_ITEM_RE.test(next)
+    : ORDERED_ITEM_RE.exec(next)?.[1] === '1') &&
+  !(
+    TABLE_ROW_RE.test(next) &&
+    afterNext !== undefined &&
+    TABLE_SEPARATOR_RE.test(afterNext)
+  );
+
 // Headings have no mrkdwn equivalent, so they bold. A trailing odd backslash
 // run before a line that continues the paragraph is a hard break.
-const renderLine = (line: string, next: string | undefined): string => {
+const renderLine = (line: string, continues: boolean): string => {
   const heading = headingText(line);
   if (heading !== undefined) {
     return bold(unescapeGfm(heading));
   }
   return renderInline(
-    next?.trim() && isEscaped(line, line.length) ? line.slice(0, -1) : line
+    continues && isEscaped(line, line.length) ? line.slice(0, -1) : line
   );
 };
+
+// `line` relative to the list item content it continues.
+const withinItem = (
+  line: string | undefined,
+  listOffset: number | undefined
+): string | undefined =>
+  line !== undefined &&
+  listOffset !== undefined &&
+  line.length - line.trimStart().length >= listOffset
+    ? line.slice(listOffset)
+    : line;
 
 /**
  * Translates GFM into one Slack `mrkdwn` string:
@@ -781,10 +835,26 @@ export const gfmToSlackMrkdwn = (gfm: string): string => {
     const inList = listOffset !== undefined;
     const quote = splitQuote(text, inList);
     if (quote === undefined) {
-      out.push(renderLine(text, splitQuote(next, inList) ? '' : next));
+      out.push(
+        renderLine(
+          text,
+          continuesParagraph(
+            withinItem(next, listOffset),
+            lines[i + 2]?.replace(/\r$/, ''),
+            inList
+          )
+        )
+      );
     } else if (quote.body.trim()) {
       out.push(
-        `${inList ? quote.lead : '> '}${renderLine(quote.body, nextQuoteBody(next, listOffset))}`
+        `${inList ? quote.lead : '> '}${renderLine(
+          quote.body,
+          continuesParagraph(
+            nextQuoteBody(next, listOffset),
+            undefined,
+            LIST_ITEM_RE.test(quote.body)
+          )
+        )}`
       );
     }
     i += 1;
