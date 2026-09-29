@@ -63,42 +63,39 @@ export const code = (text: string): string =>
 export const codeBlock = (text: string): string =>
   `\`\`\`\n${text.replace(/```/g, '``\u200d`')}\n\`\`\``;
 
-const HTTP_URL_RE = /^(https?:\/\/[^/?#]*)(.*)$/is;
+const URL_PARTS_RE = /^([a-z][a-z0-9+.-]*:(?:\/\/[^/?#]*)?)(.*)$/is;
 // Letter, digit, and hyphen labels, with an optional DNS root dot.
 const DNS_NAME_RE =
   /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*\.?$/i;
 const IPV6_HOST_RE = /^\[[0-9a-f:.]+\]$/i;
 
-// Non-ASCII outside the authority, UTF-8 percent-encoded as `URL` prints it.
-const encodedNonAscii = (value: string): string | null => {
-  try {
-    return value.replace(/[^\p{ASCII}]+/gu, encodeURIComponent);
-  } catch {
-    return null;
-  }
-};
-
-/**
- * Whether `url` is an `http:` or `https:` URL with a host, printed by `URL`
- * as written up to the authority's case, a `/` for an empty path, and
- * non-ASCII percent-encoded outside the authority. Anything `URL` repairs,
- * such as a backslash, whitespace, or a Unicode host, fails.
- */
-export const isAbsoluteHttpUrl = (url: string): boolean => {
+// `url` parsed, when `URL` prints it as written up to the case of its scheme
+// and authority and a `/` for an empty path.
+const parsedAsWritten = (url: string): URL | null => {
   let parsed: URL;
   try {
     parsed = new URL(url);
   } catch {
-    return false;
+    return null;
   }
-  const [, authority, rest] = HTTP_URL_RE.exec(url) ?? [];
-  const [, printedAuthority, printedRest] = HTTP_URL_RE.exec(parsed.href) ?? [];
-  const expectedRest = encodedNonAscii(rest ?? '');
+  const [, prefix, rest] = URL_PARTS_RE.exec(url) ?? [];
+  const [, printedPrefix, printedRest] = URL_PARTS_RE.exec(parsed.href) ?? [];
+  return prefix !== undefined &&
+    prefix.toLowerCase() === printedPrefix?.toLowerCase() &&
+    (printedRest === rest || printedRest === `/${rest}`)
+    ? parsed
+    : null;
+};
+
+/**
+ * Whether `url` is an `http:` or `https:` URL with a DNS or IPv6 host that
+ * `URL` prints as written, so nothing it repairs or encodes, such as a
+ * backslash, whitespace, or non-ASCII, passes.
+ */
+export const isAbsoluteHttpUrl = (url: string): boolean => {
+  const parsed = parsedAsWritten(url);
   return (
-    authority !== undefined &&
-    authority.toLowerCase() === printedAuthority?.toLowerCase() &&
-    expectedRest !== null &&
-    (printedRest === expectedRest || printedRest === `/${expectedRest}`) &&
+    (parsed?.protocol === 'http:' || parsed?.protocol === 'https:') &&
     (DNS_NAME_RE.test(parsed.hostname) || IPV6_HOST_RE.test(parsed.hostname))
   );
 };
@@ -125,10 +122,11 @@ const decoded = (value: string): string | null => {
 };
 
 // Every comma-separated recipient before the query or fragment is a mailbox.
-const hasMailtoRecipients = (url: string): boolean => {
+const isMailtoUrl = (url: string): boolean => {
   const [, recipients] = /^mailto:([^?#]*)/i.exec(url) ?? [];
   return (
     recipients !== undefined &&
+    parsedAsWritten(url) !== null &&
     recipients
       .split(',')
       .every((recipient) => isMailbox(decoded(recipient) ?? ''))
@@ -144,7 +142,7 @@ export const slackLinkUrl = (href: string): string | null => {
   if (url === null) {
     return null;
   }
-  return isAbsoluteHttpUrl(url) || hasMailtoRecipients(url) ? url : null;
+  return isAbsoluteHttpUrl(url) || isMailtoUrl(url) ? url : null;
 };
 
 /**
