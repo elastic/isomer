@@ -331,6 +331,82 @@ const findCodeSpan: InlineFinder = (line, from, closer) => {
   return null;
 };
 
+const WHITESPACE_RE = /\s/u;
+const PUNCTUATION_RE = /[\p{P}\p{S}]/u;
+
+// The line's edges count as whitespace.
+const isSpace = (char: string | undefined): boolean =>
+  char === undefined || WHITESPACE_RE.test(char);
+
+const isPunctuation = (char: string | undefined): boolean =>
+  char !== undefined && PUNCTUATION_RE.test(char);
+
+// An odd run of backslashes escapes the character at `index`.
+const isEscaped = (line: string, index: number): boolean => {
+  let run = 0;
+  while (line[index - 1 - run] === '\\') {
+    run += 1;
+  }
+  return run % 2 === 1;
+};
+
+// GFM's flanking rules for a lone delimiter; `_` also cannot open or close
+// inside a word.
+const flanking = (
+  line: string,
+  index: number,
+  delimiter: '*' | '_'
+): { opens: boolean; closes: boolean } => {
+  const before = line[index - 1];
+  const after = line[index + 1];
+  if (before === delimiter || after === delimiter) {
+    return { opens: false, closes: false };
+  }
+  const left =
+    !isSpace(after) &&
+    (!isPunctuation(after) || isSpace(before) || isPunctuation(before));
+  const right =
+    !isSpace(before) &&
+    (!isPunctuation(before) || isSpace(after) || isPunctuation(after));
+  return delimiter === '*'
+    ? { opens: left, closes: right }
+    : {
+        opens: left && (!right || isPunctuation(before)),
+        closes: right && (!left || isPunctuation(after)),
+      };
+};
+
+// Emphasis between two lone `delimiter`s. A search from an opener stops at
+// the next unescaped delimiter, which is the next candidate, so a line is
+// scanned once.
+const emphasisFinder =
+  (delimiter: '*' | '_'): InlineFinder =>
+  (line, from) => {
+    let open = line.indexOf(delimiter, from);
+    while (open !== -1) {
+      let close = open + 1;
+      while (close < line.length && line[close] !== delimiter) {
+        close += line[close] === '\\' ? 2 : 1;
+      }
+      if (close >= line.length) {
+        return null;
+      }
+      if (
+        !isEscaped(line, open) &&
+        flanking(line, open, delimiter).opens &&
+        flanking(line, close, delimiter).closes
+      ) {
+        return {
+          index: open,
+          end: close + 1,
+          segment: { kind: 'italic', text: line.slice(open + 1, close) },
+        };
+      }
+      open = close;
+    }
+    return null;
+  };
+
 // In tie order. Each label, destination, or body stops at the first character
 // that cannot continue it, so one search from a position is linear.
 const INLINE_FINDERS: readonly InlineFinder[] = [
@@ -348,14 +424,8 @@ const INLINE_FINDERS: readonly InlineFinder[] = [
     kind: 'bold',
     text,
   })),
-  regexFinder(/(?<![\w])_((?:\\.|[^_\n\\])+?)_(?![\w])/g, ([, text = '']) => ({
-    kind: 'italic',
-    text,
-  })),
-  regexFinder(
-    /(?<![\\*])\*(?![\s*])((?:\\.|[^*\n\\])+?)(?<!\s)\*(?!\*)/g,
-    ([, text = '']) => ({ kind: 'italic', text })
-  ),
+  emphasisFinder('_'),
+  emphasisFinder('*'),
 ];
 
 // Tokenizes a single line of GFM into ordered inline segments. The earliest

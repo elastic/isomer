@@ -93,6 +93,13 @@ describe('gfmToSlackMrkdwn', () => {
     );
   });
 
+  it('applies GFM flanking and escape parity to emphasis', () => {
+    expect(gfmToSlackMrkdwn('a*.*b and *(x)*')).toBe('a*.*b and _(x)_');
+    // An escaped backslash leaves the `*` after it free to open.
+    expect(gfmToSlackMrkdwn('\\\\*x* and \\\\\\*y*')).toBe('\\_x_ and \\*y*');
+    expect(gfmToSlackMrkdwn('(_x_) and a_b_')).toBe('(_x_) and a_b_');
+  });
+
   it('bolds ATX headings', () => {
     expect(gfmToSlackMrkdwn('## Title ##')).toBe('*Title*');
   });
@@ -203,6 +210,9 @@ describe('gfmToSlackMrkdwn', () => {
       '\\*'.repeat(size),
       `*${'\\*'.repeat(size)}`,
       '*a '.repeat(size / 3),
+      '\\_'.repeat(size),
+      'a*.'.repeat(size / 3),
+      `\\${'\\\\*'.repeat(size / 3)}`,
       '\\``'.repeat(size / 3),
       '['.repeat(size),
       '[a](x'.repeat(size / 5),
