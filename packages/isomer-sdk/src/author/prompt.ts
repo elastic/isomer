@@ -102,18 +102,31 @@ const withoutMeta = (value: unknown): unknown => {
   return rest;
 };
 
-const oneLine = (text: string): string => text.replace(/\s*[\r\n]+\s*/g, ' ');
+const oneLine = (text: string): string =>
+  text.replace(/\s*[\r\n\u2028\u2029]+\s*/g, ' ');
+
+/** `text` as a Markdown code span, fenced longer than any backtick run inside it. */
+const codeSpan = (text: string): string => {
+  const line = oneLine(text);
+  const longestRun = Math.max(
+    0,
+    ...(line.match(/`+/g) ?? []).map(({ length }) => length)
+  );
+  const fence = '`'.repeat(longestRun + 1);
+  const pad = /^[` ]|[` ]$/.test(line) ? ' ' : '';
+  return `${fence}${pad}${line}${pad}${fence}`;
+};
 
 /** One primitive's catalog bullet: its purpose, `useWhen`, `avoidWhen`, and example. */
 export const formatPrimitiveEntry = (entry: PrimitiveCatalogEntry): string => {
-  const lines = [`- \`${entry.type}\` — ${oneLine(entry.purpose)}`];
+  const lines = [`- ${codeSpan(entry.type)} — ${oneLine(entry.purpose)}`];
   if (entry.useWhen.length > 0) {
     lines.push(`  - Use when: ${oneLine(entry.useWhen.join(' '))}`);
   }
   if (entry.avoidWhen.length > 0) {
     lines.push(`  - Avoid when: ${oneLine(entry.avoidWhen.join(' '))}`);
   }
-  lines.push(`  - Example: \`${compactJson(entry.example)}\``);
+  lines.push(`  - Example: ${codeSpan(compactJson(entry.example))}`);
   return lines.join('\n');
 };
 
@@ -143,7 +156,9 @@ const renderIndex = (
       .map(
         ({ title, entries }) =>
           `### ${oneLine(title)}\n\n${entries
-            .map(({ type, purpose }) => `- \`${type}\` — ${oneLine(purpose)}`)
+            .map(
+              ({ type, purpose }) => `- ${codeSpan(type)} — ${oneLine(purpose)}`
+            )
             .join('\n')}`
       ),
   ].join('\n\n');
@@ -152,15 +167,15 @@ const renderIndex = (
 const renderViews = (views: readonly AuthoringViewSummary[]): string =>
   views
     .map((view) => {
-      const lines = [`- \`${view.id}\` — ${view.title}`];
+      const lines = [`- ${codeSpan(view.id)} — ${oneLine(view.title)}`];
       if (view.description !== undefined && view.description.length > 0) {
-        lines.push(`  - ${view.description}`);
+        lines.push(`  - ${oneLine(view.description)}`);
       }
       if (view.answers.length > 0) {
-        lines.push(`  - Answers: ${view.answers.join('; ')}`);
+        lines.push(`  - Answers: ${oneLine(view.answers.join('; '))}`);
       }
       if (view.inputSchema !== undefined) {
-        lines.push(`  - Input: \`${compactJson(view.inputSchema)}\``);
+        lines.push(`  - Input: ${codeSpan(compactJson(view.inputSchema))}`);
       }
       return lines.join('\n');
     })

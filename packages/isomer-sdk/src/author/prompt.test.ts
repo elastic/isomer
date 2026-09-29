@@ -87,6 +87,29 @@ describe('buildAuthoringPrompt', () => {
     );
   });
 
+  it('keeps each registered view field on one line and in its code span', () => {
+    const prompt = buildAuthoringPrompt('general', {
+      ...context,
+      views: [
+        {
+          id: 'test`hosts',
+          title: 'Top\u2028hosts',
+          description: 'Noisy\nhosts.',
+          answers: ['which\r\nhosts?'],
+          inputSchema: { description: 'A `limit`.' },
+        },
+      ],
+    });
+    expect(prompt).toContain(
+      [
+        '- ``test`hosts`` — Top hosts',
+        '  - Noisy hosts.',
+        '  - Answers: which hosts?',
+        '  - Input: ``{"description":"A `limit`."}``',
+      ].join('\n')
+    );
+  });
+
   it('omits the JSON Schema for the router profile', () => {
     const prompt = buildAuthoringPrompt('registered-view-router', context);
     expect(prompt).not.toContain('## JSON Schema');
@@ -170,6 +193,14 @@ describe('the index catalog', () => {
   });
 });
 
+const quoteless = {
+  type: 'plain',
+  purpose: 'Plain.',
+  useWhen: [],
+  avoidWhen: [],
+  example: {},
+};
+
 describe('formatPrimitiveEntry', () => {
   it('prints the full catalog bullet on one line per field', () => {
     const quote = {
@@ -190,5 +221,40 @@ describe('formatPrimitiveEntry', () => {
     expect(
       buildAuthoringPrompt('general', { ...context, primitives: [quote] })
     ).toContain(formatPrimitiveEntry(quote));
+  });
+  it('collapses every line terminator', () => {
+    for (const lineBreak of ['\n', '\r', '\r\n', '\u2028', '\u2029']) {
+      const entry = formatPrimitiveEntry({
+        type: 'note',
+        purpose: `A${lineBreak}note.`,
+        useWhen: [`One${lineBreak}line.`],
+        avoidWhen: [],
+        example: {},
+      });
+      expect(entry.split('\n')).toEqual([
+        '- `note` — A note.',
+        '  - Use when: One line.',
+        '  - Example: `{}`',
+      ]);
+    }
+  });
+
+  it('fences code spans longer than any backtick run inside them', () => {
+    const entry = formatPrimitiveEntry({
+      type: 'a`b',
+      purpose: 'Ticks.',
+      useWhen: [],
+      avoidWhen: [],
+      example: { text: '``x``', lead: '`' },
+    });
+    expect(entry).toBe(
+      [
+        '- ``a`b`` — Ticks.',
+        '  - Example: ```{"text":"``x``","lead":"`"}```',
+      ].join('\n')
+    );
+    expect(formatPrimitiveEntry({ ...quoteless, type: '`tick' })).toContain(
+      '- `` `tick `` — Plain.'
+    );
   });
 });
