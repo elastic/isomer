@@ -156,7 +156,9 @@ describe('react surface enhancements', () => {
     act(() => root!.render(render(composition)));
     expect(section.dataset.runs).toBe('1');
     act(() => root!.render(render({ ...composition })));
-    expect(section.dataset.runs).toBe('2');
+    const fresh = container.querySelector('section')!;
+    expect(fresh).not.toBe(section);
+    expect(fresh.dataset.runs).toBe('1');
   });
 
   it('runs once for a node rendered again', () => {

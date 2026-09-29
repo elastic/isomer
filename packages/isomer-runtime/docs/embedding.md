@@ -73,7 +73,7 @@ const Slide = ({ composition, shadow }: { composition: Composition; shadow: Shad
 };
 ```
 
-Each applied enhancement's `script` runs against the wrapper section once it mounts, so there is no `runEnhancementScript` call to make. It runs again only for a new composition object, so keep the object stable across re-renders. An enhancement the host drives itself, such as one that reveals a node's parts step by step, declares `anchors: true` and no `script`: after the render commits, `findNodeElementPairs(section, composition.body, createChildNodeWalker(runtime.primitives))` pairs each node occurrence with its element. Pass `render: { scheme }` to `liveCollection` for a fixed color scheme, and restate `:host { all: initial; display: block; }` as above.
+Each applied enhancement's `script` runs against the wrapper section once it mounts, so there is no `runEnhancementScript` call to make. A new composition object mounts a fresh section, so keep the object stable across re-renders. An enhancement the host drives itself, such as one that reveals a node's parts step by step, declares `anchors: true` and no `script`: after the render commits, `findNodeElementPairs(section, composition.body, createChildNodeWalker(runtime.primitives))` pairs each node occurrence with its element. Pass `render: { scheme }` to `liveCollection` for a fixed color scheme, and restate `:host { all: initial; display: block; }` as above.
 
 ## When not to bother
 

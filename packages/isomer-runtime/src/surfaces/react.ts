@@ -50,8 +50,8 @@ export type ReactRenderOptions<TRenderContext = PrimitiveRenderContext> = {
    * Enhancements to render with, as the `html` surface does: those that apply
    * reach every renderer as `context.enhancements`, turn node anchors on when
    * one asks, and run their `script` against the `wrapper` section once it
-   * mounts and again for a new composition or node object, so keep it stable
-   * across re-renders. A `script` needs `wrapper`.
+   * mounts. A new composition or node object mounts a fresh section, so keep
+   * it stable across re-renders. A `script` needs `wrapper`.
    */
   enhancements?: readonly EnhancementDefinition[];
 } & (Record<string, never> extends TRenderContext
@@ -103,32 +103,38 @@ export interface ReactSurface<TRenderContext = PrimitiveRenderContext> {
 const useIsomorphicLayoutEffect =
   typeof document === 'undefined' ? useEffect : useLayoutEffect;
 
-/** What each mounted wrapper last ran scripts for, so a remount or re-render of it runs them once. */
-const ranFor = new WeakMap<Element, { source: unknown; js: string }>();
+/** Sections whose scripts have run, so StrictMode's second effect pass skips them. */
+const ran = new WeakSet<Element>();
 
-/** `section` with `js` run against its element once it mounts, and again when `source` or `js` changes. */
+/** `section` with `js` run against its element once it mounts. */
 const ScriptedSection = ({
   section,
-  source,
   js,
 }: {
   section: ReactElement;
-  source: unknown;
   js: string;
 }): ReactNode => {
   const ref = useRef<HTMLElement>(null);
   useIsomorphicLayoutEffect(() => {
     const root = ref.current;
-    if (!root) {
-      return;
-    }
-    const ran = ranFor.get(root);
-    if (ran?.source !== source || ran?.js !== js) {
-      ranFor.set(root, { source, js });
+    if (root && !ran.has(root)) {
+      ran.add(root);
       runEnhancementScript(js, root);
     }
-  }, [source, js]);
+  }, []);
   return cloneElement(section, { ref });
+};
+
+const keys = new WeakMap<object, Map<string, string>>();
+let nextKey = 0;
+
+/** One key per `source` object and script, so either changing mounts a fresh section rather than rerunning scripts on reused DOM. */
+const scriptedKey = (source: object, js: string): string => {
+  const bySource = keys.get(source) ?? new Map<string, string>();
+  keys.set(source, bySource);
+  const key = bySource.get(js) ?? String(nextKey++);
+  bySource.set(js, key);
+  return key;
 };
 
 /**
@@ -150,7 +156,7 @@ export const createReactSurface = <TRenderContext = PrimitiveRenderContext>(
     composition: Composition,
     heading: boolean,
     options: ReactRenderNodeOptions<TRenderContext> | undefined,
-    source: unknown = composition
+    source: object = composition
   ): ReactNode => {
     const { wrapper, enhancements } = options ?? {};
     // `{}` only ever runs when `context` was optional, which
@@ -178,7 +184,11 @@ export const createReactSurface = <TRenderContext = PrimitiveRenderContext>(
       ...(wrapper === true ? {} : wrapper),
     });
     return js
-      ? createElement(ScriptedSection, { section, source, js })
+      ? createElement(ScriptedSection, {
+          key: scriptedKey(source, js),
+          section,
+          js,
+        })
       : section;
   };
 
