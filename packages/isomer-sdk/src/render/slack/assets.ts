@@ -12,16 +12,16 @@ import type {
 } from '../../define/slack_assets';
 
 import { SLACK_LIMITS } from './blocks';
-import { clampSlackText } from './format';
+import { clampSlackText, isAbsoluteHttpUrl } from './format';
 
 export type { SlackAssetCollector, SlackAssetRequest };
 
 /**
- * Whether Slack's servers can fetch `src` themselves. `https:` only, so a data
- * URL or a host-relative path has to go through an upload instead.
+ * Whether Slack's servers can fetch `src` themselves: an `https:` URL with a
+ * host, so a data URL or a host-relative path has to go through an upload.
  */
 export const isSlackReachableImageUrl = (src: string): boolean =>
-  /^https:\/\//i.test(src);
+  /^https:/i.test(src) && isAbsoluteHttpUrl(src);
 
 /**
  * A fresh {@link SlackAssetCollector} handing out `{prefix}-0`, `{prefix}-1`,

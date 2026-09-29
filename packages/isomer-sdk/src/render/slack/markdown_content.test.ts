@@ -128,6 +128,76 @@ describe('markdownContentToSlackBlocks', () => {
     });
   });
 
+  it.each([
+    'javascript:alert(1)',
+    '#',
+    '/path',
+    './a',
+    '//host/a',
+    'https:/a',
+    'https://',
+    'http://?q=1',
+    'https:///path',
+    'mailto:',
+  ])('keeps the styled label of a link to %s', (href) => {
+    expect(
+      markdownContentToSlackBlocks(
+        md.paragraph(
+          md.link(['a ', md.strong('b')], href),
+          md.link('', href),
+          md.image('alt', '/i.png')
+        )
+      )
+    ).toEqual([
+      {
+        type: 'rich_text',
+        elements: [
+          {
+            type: 'rich_text_section',
+            elements: [
+              { type: 'text', text: 'a ' },
+              { type: 'text', text: 'b', style: { bold: true } },
+              { type: 'text', text: 'alt' },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('links an absolute URL, mailto included, and a table cell only to one', () => {
+    const [paragraph, table] = markdownContentToSlackBlocks([
+      md.paragraph(
+        md.link(md.emphasis('a'), 'mailto:a@b.c'),
+        md.link('b', 'http://a.b')
+      ),
+      md.table(['h'], [[md.link('x', '/path')]]),
+    ]);
+    expect(paragraph).toEqual({
+      type: 'rich_text',
+      elements: [
+        {
+          type: 'rich_text_section',
+          elements: [
+            {
+              type: 'link',
+              url: 'mailto:a@b.c',
+              text: 'a',
+              style: { italic: true },
+            },
+            { type: 'link', url: 'http://a.b', text: 'b' },
+          ],
+        },
+      ],
+    });
+    expect(table).toMatchObject({
+      rows: [
+        [{ type: 'raw_text', text: 'h' }],
+        [{ type: 'raw_text', text: 'x' }],
+      ],
+    });
+  });
+
   it('shares one rich_text block across a run and splits it at a table', () => {
     const blocks = markdownContentToSlackBlocks([
       md.heading(2, 'Title'),
@@ -324,6 +394,37 @@ describe('markdownContentToSlackBlocks', () => {
       'table: h',
       'section: - c\n  d\n- x',
     ]);
+  });
+
+  it('links only an absolute URL in quotes, list items, and multi-run cells', () => {
+    const payload = JSON.stringify(
+      markdownContentToSlackBlocks([
+        md.blockquote(
+          md.paragraph(
+            md.link('a', '/p'),
+            md.break(),
+            md.link('b', 'https://b.c')
+          ),
+          md.list([[md.paragraph(md.link('c', './c'))]]),
+          markdownFromString('[d](/d) [e](https://e.f)')
+        ),
+        md.list([
+          [
+            md.paragraph('i'),
+            md.blockquote(md.paragraph(md.image('g', '/g.png'))),
+          ],
+        ]),
+        md.table(['h'], [[[md.link('x', '#'), md.link('y', 'https://y.z')]]]),
+      ])
+    );
+    expect(
+      [...payload.matchAll(/"url":"([^"]*)"|<([^|>]*)\|/g)].map(
+        ([, url, mrkdwn]) => url ?? mrkdwn
+      )
+    ).toEqual(['https://b.c', 'https://e.f', 'https://y.z']);
+    for (const label of ['"a"', '"c"', 'd ', '"g"', '"x"']) {
+      expect(payload).toContain(label);
+    }
   });
 
   it('carries a multi-run table cell and the label forms as styles', () => {
