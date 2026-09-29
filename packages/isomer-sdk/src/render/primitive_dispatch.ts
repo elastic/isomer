@@ -84,7 +84,7 @@ export interface PrimitiveDispatcher<
   ): readonly T['slackBlock'][];
   /** `0` when the node is hidden from `svg` or its primitive declares no `metrics.svgHeight`. */
   estimateSvgHeight(node: TNode): number;
-  /** Appends schema failures under `path` to `errors`. */
+  /** Appends schema failures under `path` to `errors`, each naming `node`'s type. */
   validate(node: TNode, path: string, errors: ValidationError[]): void;
 }
 
@@ -274,7 +274,10 @@ export const createPrimitiveDispatcher = <
       return svgHeight?.(node) ?? 0;
     },
     validate: (node, path, errors) => {
-      validateWithSchema(getDefinition(node).schema, node, path, errors);
+      const { schema, type } = getDefinition(node);
+      const found: ValidationError[] = [];
+      validateWithSchema(schema, node, path, found);
+      errors.push(...found.map((error) => ({ ...error, nodeType: type })));
     },
   };
   return self;

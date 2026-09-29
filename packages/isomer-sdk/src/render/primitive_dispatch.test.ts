@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
+import type { ValidationError } from '../composition/validation_error';
 import { definePrimitive } from '../define/primitive_module';
 import { createSlackAssetCollector } from '../render/slack/assets';
 import { gfmToSlackBlocks } from '../render/slack/format';
@@ -59,6 +60,22 @@ describe('createPrimitiveDispatcher', () => {
         code: 'UNKNOWN_PRIMITIVE_TYPE',
       });
     }
+  });
+
+  it('names the node type on each schema failure', () => {
+    const errors: ValidationError[] = [];
+    dispatcher().validate(
+      { type: 'stack', items: [{ type: '' }] } as unknown as FixtureNode,
+      'body[0]',
+      errors
+    );
+    expect(errors).toEqual([
+      {
+        path: 'body[0].items[0].type',
+        message: 'must be a non-empty string',
+        nodeType: 'stack',
+      },
+    ]);
   });
 
   it('degrades a primitive with no slack renderer through its markdown', () => {

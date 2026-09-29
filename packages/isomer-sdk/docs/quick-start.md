@@ -135,7 +135,7 @@ Quiet, and correctly so: `kpi` declares no `metrics.svgHeight`, but this runtime
 
 ```ts
 runtime.parse({ type: 'view', body: [{ type: 'kpi', label: 'x' }] });
-// { valid: false, errors: [{ path: 'body[0].value', message: 'is required' }] }
+// { valid: false, errors: [{ path: 'body[0].value', message: 'is required', nodeType: 'kpi' }] }
 ```
 
 ## 6. See what an agent would

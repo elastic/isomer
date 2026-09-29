@@ -2,7 +2,7 @@
 
 ## 2026-09-28
 
-- **Validation errors name their node**: `ValidationError` gains `nodeType`, the innermost primitive node its path lands in, set by the parser, the validator, and the duplicate-id pass. `formatValidationError` prints `<path> (in <nodeType>) <message>`, and an unknown key on a node lists that node's declared fields.
+- **Validation errors name their node**: `ValidationError` gains `nodeType`, the innermost primitive node its path lands in, set by the parser, the validator, the duplicate-id pass, and a dispatcher's `validate`. `formatValidationError` prints `<path> (in <nodeType>) <message>`, and an unknown key on a node lists that node's declared fields.
 
 ## 2026-09-27
 
