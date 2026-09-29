@@ -111,7 +111,7 @@ JSX: `fromChildren`, `fromTextChildren`, `AuthoredChildBrand`, `AuthoredTextBran
 
 Object builders: `defineNodeBuilder` (a `NodeBuilder` taking a `BuilderInput`, the node without `type`), `buildObjectBuilders` (a `BuilderMap`, one builder per primitive typed from its schema).
 
-Agent prompts: `buildAuthoringPrompt` (`AuthoringPromptContext`), `createAuthoringPromptBuilder`, `createAgentAuthoringContextFactory` (`AgentAuthoringContextOptions`, `AgentAuthoringContextDefaults`), `formatPrimitiveEntry` (one full catalog bullet), `AUTHORING_PROFILE_IDS` (`AuthoringProfileId`), `AuthoringViewSummary`. `WithNodeFields` is on the root entry, next to `definePrimitive`.
+Agent prompts: `buildAuthoringPrompt` (`AuthoringPromptContext`), `createAuthoringPromptBuilder`, `createAgentAuthoringContextFactory` (`AgentAuthoringContextOptions`, `AgentAuthoringContextDefaults`), `formatPrimitiveEntry` (one full catalog bullet), `oneLine` (text a host echoes into a prompt, on one line), `AUTHORING_PROFILE_IDS` (`AuthoringProfileId`), `AuthoringViewSummary`. `WithNodeFields` is on the root entry, next to `definePrimitive`.
 
 ## `./testing`
 

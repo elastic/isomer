@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
 import { type MarkdownInlineInput, md } from '@elastic/isomer-sdk/markdown';
 import type { ZodType } from 'zod';
 
@@ -14,7 +15,6 @@ import {
   renderTextChildren,
   slackCaption,
 } from '../../render';
-import { oneLine } from '../../render/one_line';
 import { slideDistillery } from '../../theme/distillery';
 import { scalePx } from '../../theme/scale';
 import { SLIDE_THEME } from '../../theme/theme';

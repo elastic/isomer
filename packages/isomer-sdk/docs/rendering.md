@@ -130,7 +130,7 @@ Findings are advice, not validation errors, and no surface runs the check: an ov
 
 ## Formatting helpers
 
-`./markdown` publishes the `md` builder, `serializeMarkdown`, `boldLabelPrefix`, and `boldSectionLabel`, all printed through one GFM serializer that escapes each value where it lands; `./slack` the escaping, clamping, and Block Kit constructors. `formatCompactNumber` and the structured-value formatters live on the root entry, since every surface needs them. `./text` publishes no formatters: line width, trend glyphs, and threshold copy are editorial choices a pack makes, not contract.
+`./markdown` publishes the `md` builder, `serializeMarkdown`, `boldLabelPrefix`, and `boldSectionLabel` (with builder forms on `md`), all printed through one GFM serializer that escapes each value where it lands; `./slack` the escaping, clamping, and Block Kit constructors. `formatCompactNumber` and the structured-value formatters live on the root entry, since every surface needs them. `./text` publishes no formatters: line width, trend glyphs, and threshold copy are editorial choices a pack makes, not contract.
 
 ## Next
 

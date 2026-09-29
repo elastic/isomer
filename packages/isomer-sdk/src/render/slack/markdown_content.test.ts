@@ -10,8 +10,57 @@ import { describe, expect, it } from 'vitest';
 import { markdownFromString, md } from '../markdown/builder';
 import { SAFE_INPUTS } from '../markdown/safe_inputs.fixtures';
 
-import { SLACK_LIMITS } from './blocks';
+import {
+  SLACK_LIMITS,
+  type SlackBlock,
+  type SlackRichTextBlockElement,
+  type SlackRichTextInline,
+} from './blocks';
 import { markdownContentToSlackBlocks } from './markdown_content';
+
+const runs = (inlines: readonly SlackRichTextInline[]): string =>
+  inlines
+    .map((run) => {
+      const text = run.type === 'link' ? (run.text ?? run.url) : run.text;
+      const style = Object.keys(run.style ?? {}).join();
+      return style ? `[${style}:${text}]` : text;
+    })
+    .join('');
+
+// An element as its type, `|` when bordered, and its runs, a styled run as
+// `[style:text]`; list items are joined with ` / `.
+const element = (item: SlackRichTextBlockElement): string =>
+  `${item.type.replace('rich_text_', '')}${'border' in item && item.border ? '|' : ''}: ${
+    item.type === 'rich_text_list'
+      ? item.elements.map(({ elements }) => runs(elements)).join(' / ')
+      : runs(item.elements)
+  }`;
+
+const outline = (blocks: readonly SlackBlock[]): string[] =>
+  blocks.flatMap((block) => {
+    switch (block.type) {
+      case 'rich_text':
+        return block.elements.map(element);
+      case 'section':
+        return [`section: ${block.text?.text}`];
+      case 'table':
+        return [
+          `table: ${block.rows
+            .map((row) =>
+              row
+                .map((cell) =>
+                  cell.type === 'raw_text'
+                    ? cell.text
+                    : cell.elements.map(element).join()
+                )
+                .join(' | ')
+            )
+            .join(' / ')}`,
+        ];
+      default:
+        return [block.type];
+    }
+  });
 
 describe('markdownContentToSlackBlocks', () => {
   it('keeps text literal and carries formatting, nested at any depth, as styles', () => {
@@ -160,6 +209,7 @@ describe('markdownContentToSlackBlocks', () => {
         md.paragraph(input),
         md.paragraph(md.strong(input)),
         md.list([input]),
+        md.blockquote(md.paragraph(input)),
         md.table(['h'], [[input]]),
       ]);
       expect(blocks.some((block) => block.type === 'section')).toBe(false);
@@ -178,10 +228,127 @@ describe('markdownContentToSlackBlocks', () => {
           .join('')
           .replace(/\n$/, '')
       );
-      expect(texts).toEqual([expected, expected, expected]);
+      expect(texts).toEqual([expected, expected, expected, expected]);
       expect(table.rows[1]).toEqual([{ type: 'raw_text', text: expected }]);
     }
   );
+
+  it('quotes one level, a hard break as a line break', () => {
+    expect(
+      outline(
+        markdownContentToSlackBlocks(
+          md.blockquote(
+            md.paragraph('> a', md.break(), md.strong('b')),
+            md.heading(2, '# c'),
+            md.blockquote(md.paragraph('d'))
+          )
+        )
+      )
+    ).toEqual(['quote: > a\n[bold:b]\n[bold:# c]\nd']);
+  });
+
+  it('keeps a quote holding code, a list, or a table on the tree, bordered', () => {
+    expect(
+      outline(
+        markdownContentToSlackBlocks(
+          md.blockquote(
+            md.paragraph('a'),
+            md.codeBlock('*x*'),
+            md.list(['c']),
+            md.table(['h'], [['1']]),
+            md.blockquote(md.paragraph('d'))
+          )
+        )
+      )
+    ).toEqual([
+      'quote: a',
+      'preformatted|: *x*',
+      'list|: c',
+      'table: h / 1',
+      'quote: d',
+    ]);
+  });
+
+  it('reads a quote in a list item as the item content', () => {
+    expect(
+      outline(
+        markdownContentToSlackBlocks(
+          md.list([
+            [
+              md.paragraph('i'),
+              md.blockquote(md.paragraph('q', md.break(), 'r'), md.list(['n'])),
+            ],
+          ])
+        )
+      )
+    ).toEqual(['list: i\nq\nr', 'list: n']);
+  });
+
+  it('quotes Markdown printed as written, its code and lists bordered', () => {
+    expect(
+      outline(
+        markdownContentToSlackBlocks(
+          md.blockquote(
+            markdownFromString('**e**\n\nf\n\n```\n*g*\n```'),
+            md.list([[md.paragraph('h'), md.table(['i'], [])]])
+          )
+        )
+      )
+    ).toEqual([
+      'section: > *e*\n\n> f',
+      'preformatted|: *g*',
+      'section: > - h',
+      'table: i',
+    ]);
+  });
+
+  it('hands the string path a break as a line ending and a quote as its blocks', () => {
+    expect(
+      outline(
+        markdownContentToSlackBlocks([
+          md.list([
+            [
+              md.paragraph('a', md.break(), 'b'),
+              md.blockquote(md.paragraph('q')),
+              md.table(['h'], []),
+            ],
+          ]),
+          md.list([
+            md.paragraph('c', md.break(), 'd'),
+            markdownFromString('x'),
+          ]),
+        ])
+      )
+    ).toEqual([
+      'section: - a\n  b\n\n  q',
+      'table: h',
+      'section: - c\n  d\n- x',
+    ]);
+  });
+
+  it('carries a multi-run table cell and the label forms as styles', () => {
+    expect(
+      outline(
+        markdownContentToSlackBlocks([
+          md.boldSectionLabel('label'),
+          md.paragraph(...md.boldLabelPrefix('Key: value', 'Key')),
+          md.table(
+            ['h', 'i'],
+            [
+              [
+                ['a', md.strong('b')],
+                ['c', 'd'],
+              ],
+            ]
+          ),
+        ])
+      )
+    ).toEqual([
+      'section: [bold:LABEL]\n',
+      'section: [bold:Key]: value',
+      'table: h | i / section: a[bold:b] | cd',
+    ]);
+  });
 
   it('clamps a section to the section text budget', () => {
     const [block] = markdownContentToSlackBlocks(
