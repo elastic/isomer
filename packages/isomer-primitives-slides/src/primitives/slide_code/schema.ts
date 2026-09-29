@@ -10,7 +10,12 @@ import { z } from '@elastic/isomer-sdk';
 
 import { hasLineTerminator } from '../../render/marks';
 import { displayColumns } from '../../render/mono';
-import { codeDenseAfter, codeLineMaxLength } from '../../theme/components/code';
+import {
+  codeDenseAfter,
+  codeLineMaxLength,
+  codeMaxLines,
+} from '../../theme/components/code';
+import { lineText } from '../authored_text';
 import { crossRefine } from '../cross_field';
 
 // Past this many UTF-16 units a line fits no panel, so it is refused before measuring.
@@ -19,16 +24,12 @@ const RAW_LINE_LIMIT =
 
 const panelSchema = z
   .object({
-    file: z
-      .string()
-      .min(1)
+    file: lineText()
       .describe(
         'Caption above the panel: a file name, or what the code is (e.g. `checkout.ts`).'
       )
       .optional(),
-    language: z
-      .string()
-      .min(1)
+    language: lineText()
       .describe(
         'Language of this panel, e.g. `ts` or `json`. Sets the markdown fence; the slide shows no syntax colors.'
       )
@@ -36,13 +37,14 @@ const panelSchema = z
     lines: z
       .array(z.string().max(RAW_LINE_LIMIT))
       .min(1)
-      .max(16)
+      .max(codeMaxLines)
       .describe(
-        'Source, one entry per line, indented with spaces rather than tabs. Use an empty string for a blank line. One to sixteen lines; while every panel has ten or fewer, they stay at the larger size.'
+        `Source, one entry per line, indented with spaces rather than tabs. Use an empty string for a blank line. 1 to ${codeMaxLines} lines; while every panel has ${codeDenseAfter} or fewer, they stay at the larger size.`
       ),
     highlightLines: z
       .array(z.number().int().positive())
       .min(1)
+      .max(codeMaxLines)
       .describe(
         '1-based line numbers to mark with a tinted band. Other lines stay at full strength.'
       )

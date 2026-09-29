@@ -22,7 +22,7 @@ import { headingCrowding } from '../slide_heading/fit';
 
 import { frameModule } from './styles';
 import type { SlideFrameNode } from './types';
-import { sanitizeFrameUrl } from './url';
+import { displayFrameUrl, sanitizeFrameUrl } from './url';
 
 const { separator } = slideDistillery.tokens.frame;
 
@@ -50,7 +50,7 @@ const Footer = ({
       </div>
       {url ? (
         <a className={cls(context, frame.url)} href={url}>
-          {url.replace(/^https?:\/\//, '')}
+          {displayFrameUrl(url)}
         </a>
       ) : null}
     </footer>

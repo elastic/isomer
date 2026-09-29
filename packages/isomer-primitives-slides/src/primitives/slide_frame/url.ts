@@ -21,3 +21,7 @@ export const sanitizeFrameUrl = (url: string): string | null => {
     ? safe
     : null;
 };
+
+/** The address without its scheme, in any case the scheme was written. */
+export const displayFrameUrl = (url: string): string =>
+  url.replace(/^https?:\/\//i, '');

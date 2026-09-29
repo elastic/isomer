@@ -7,22 +7,17 @@
 
 import { unresolvedBodyNodeSchema, z } from '@elastic/isomer-sdk';
 
+import { lineText, wrappedText } from '../authored_text';
 import { sizeField } from '../size';
 
 const definitionSchema = z
   .object({
-    term: z
-      .string()
-      .min(1)
-      .describe(
-        'The word being defined, with its part of speech, e.g. `ledger n.`. Set in italics.'
-      ),
-    text: z
-      .string()
-      .min(1)
-      .describe(
-        'The definition, in one sentence. `code` and `**strong**` marks are allowed.'
-      ),
+    term: lineText().describe(
+      'The word being defined, with its part of speech, e.g. `ledger n.`. Set in italics.'
+    ),
+    text: wrappedText().describe(
+      'The definition, in one sentence. `code` and `**strong**` marks are allowed.'
+    ),
   })
   .strict();
 
@@ -30,22 +25,15 @@ const definitionSchema = z
 export const schema = z
   .object({
     type: z.literal('slideTitle'),
-    eyebrow: z
-      .string()
-      .min(1)
+    eyebrow: lineText()
       .describe(
         'What the subject is, in a few words above the title, e.g. `A delivery platform`. Rendered uppercase.'
       )
       .optional(),
-    title: z
-      .string()
-      .min(1)
-      .describe(
-        'The deck’s subject, usually a single name. Set very large; one or two words.'
-      ),
-    tagline: z
-      .string()
-      .min(1)
+    title: wrappedText().describe(
+      'The deck’s subject, usually a single name. Set very large; one or two words.'
+    ),
+    tagline: wrappedText()
       .describe(
         'The deck’s promise in one short sentence. `code` and `**strong**` marks are allowed.'
       )

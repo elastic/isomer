@@ -9,21 +9,20 @@ import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
 import { slideBulletMarkers } from '../../theme/variants';
+import { lineText, wrappedText } from '../authored_text';
 
 /** Zod schema for {@link SlideBulletListNode}. */
 export const schema = z
   .object({
     type: z.literal('slideBulletList'),
     items: z
-      .array(z.string().min(1))
+      .array(wrappedText())
       .min(1)
       .max(6)
       .describe(
         'Points, top to bottom, one short sentence each. 1 to 6. `code` and `**strong**` marks are allowed. Type does not step down, so long points can run past the slide; a layout check reports it.'
       ),
-    label: z
-      .string()
-      .min(1)
+    label: lineText()
       .describe('Uppercase caption above the list, in a few words.')
       .optional(),
     marker: z

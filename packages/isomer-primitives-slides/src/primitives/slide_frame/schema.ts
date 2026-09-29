@@ -8,6 +8,7 @@
 import { unresolvedBodyNodeSchema, z } from '@elastic/isomer-sdk';
 
 import { slideFrameTones } from '../../theme/variants';
+import { lineText } from '../authored_text';
 
 import { FRAME_URL_MESSAGE, sanitizeFrameUrl } from './url';
 
@@ -21,23 +22,17 @@ export const schema = z
       .describe(
         'Slide content, top to bottom. Open a content slide with `slideHeading`. At least one node.'
       ),
-    brand: z
-      .string()
-      .min(1)
+    brand: lineText()
       .describe(
         'Name at the left of the footer, e.g. the product. Keep it the same on every slide.'
       )
       .optional(),
-    section: z
-      .string()
-      .min(1)
+    section: lineText()
       .describe(
         'Title of the section this slide belongs to, shown in the footer.'
       )
       .optional(),
-    sectionNumber: z
-      .string()
-      .min(1)
+    sectionNumber: lineText()
       .describe(
         'Number of the section this slide belongs to, shown before `section`.'
       )
@@ -54,9 +49,7 @@ export const schema = z
         '`inverse` for title, section, and closing slides; `page` for everything else. Defaults to `page`.'
       )
       .optional(),
-    url: z
-      .string()
-      .min(1)
+    url: lineText()
       .refine((value) => sanitizeFrameUrl(value) !== null, {
         error: FRAME_URL_MESSAGE,
       })

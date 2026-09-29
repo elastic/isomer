@@ -29,12 +29,12 @@ const weights = [
 // Roboto Mono ships no extrabold, so no mono style sets it.
 const extrabold = Number(SLIDE_THEME.font.weight.extrabold.value);
 
-/**
- * Derived from the theme, so a new weight cannot silently fall back to the nearest registered face.
- * `slideTitle`'s definition is the one italic run.
- */
+// `slideTitle`'s definition term is the one italic run.
+const italic = Number(SLIDE_THEME.title.definition.weight.value);
+
+/** Derived from the theme, so a new weight cannot silently fall back to the nearest registered face. */
 export const slideFontFaces: readonly SlideFontFace[] = [
-  { family: sans, weight: 400, style: 'italic' },
+  { family: sans, weight: italic, style: 'italic' },
   ...weights.map((weight): SlideFontFace => ({
     family: sans,
     weight,

@@ -32,6 +32,9 @@ export const code = {
 /** Lines a panel holds before it takes `denseText`. */
 export const codeDenseAfter = 10;
 
+/** Lines a panel holds at `denseText`. */
+export const codeMaxLines = 16;
+
 /** Characters a line holds on a full-width slide before its panel clips it, by panel count and density. */
 export const codeLineMaxLength = (panels: 1 | 2, dense: boolean): number => {
   const width =

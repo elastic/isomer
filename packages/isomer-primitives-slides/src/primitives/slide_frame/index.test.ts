@@ -87,6 +87,40 @@ describe('slideFrame url', () => {
   });
 });
 
+describe('slideFrame url display', () => {
+  const node = {
+    type: 'slideFrame',
+    body: [titleExample],
+    url: 'HTTPS://Example.com/deck',
+  } as PrimitiveNode;
+  const composition: Composition = { type: 'view', body: [node] };
+
+  it.each([
+    [
+      'html',
+      () => runtime.surfaces.html.render(composition).html,
+      '>Example.com/deck</a>',
+    ],
+    [
+      'text',
+      () => runtime.surfaces.text.render(composition),
+      '\n\nExample.com/deck',
+    ],
+    [
+      'markdown',
+      () => runtime.surfaces.markdown.render(composition),
+      '[Example.com/deck](',
+    ],
+    [
+      'slack',
+      () => JSON.stringify(runtime.surfaces.slack.render(composition).blocks),
+      '"text":"Example.com/deck"',
+    ],
+  ])('drops an upper-case scheme on %s', (_surface, render, shown) => {
+    expect(render()).toContain(shown);
+  });
+});
+
 describe('slideFrame view called directly', () => {
   it('applies the url policy without the sanitize hook', () => {
     const node: SlideFrameNode = {

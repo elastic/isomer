@@ -9,20 +9,17 @@ import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 import { fromChildren } from '@elastic/isomer-sdk/author';
 
+import { lineText, wrappedText } from '../authored_text';
 import { slideToneSchema } from '../tone_schema';
 
 const territorySchema = z
   .object({
-    body: z
-      .string()
-      .min(1)
-      .describe(
-        'What this owner is responsible for, in one or two sentences. `code` and `**strong**` marks are allowed.'
-      ),
-    title: z
-      .string()
-      .min(1)
-      .describe('The owner, in one to three words, e.g. a team or a system.'),
+    body: wrappedText().describe(
+      'What this owner is responsible for, in one or two sentences. `code` and `**strong**` marks are allowed.'
+    ),
+    title: lineText().describe(
+      'The owner, in one to three words, e.g. a team or a system.'
+    ),
     tone: slideToneSchema
       .describe(
         'The tone of the rule and title: `primary` for your side, `accent` for the other side (a host, a partner, a customer). Leave it out for a neutral owner.'

@@ -18,6 +18,7 @@ import {
   slideSplitRatios,
   slideTones,
 } from '../../theme/variants';
+import { lineText, wrappedText } from '../authored_text';
 import { crossRefine } from '../cross_field';
 
 import type { SlideSplitPane } from './types';
@@ -25,9 +26,7 @@ import type { SlideSplitPane } from './types';
 const paneSchema = (nodeSchema: ZodType<unknown>) =>
   z
     .object({
-      label: z
-        .string()
-        .min(1)
+      label: lineText()
         .describe('Short uppercase label over the column.')
         .optional(),
       tone: z
@@ -79,9 +78,7 @@ export const buildSchema = <TPanes extends ZodType>(panes: TPanes) =>
           'Between the columns: `gap` is space only; `rule` a vertical line, for two sides that own different things; `hairline` a thin rule, for notes beside a main idea with `aside`; `arrow`, for the left turning into the right. Defaults to `gap`.'
         )
         .optional(),
-      footnote: z
-        .string()
-        .min(1)
+      footnote: wrappedText()
         .describe(
           'One sentence under both columns that draws the conclusion. `code` and `**strong**` marks are allowed.'
         )

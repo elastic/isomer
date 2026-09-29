@@ -25,14 +25,12 @@ import { examples } from './examples';
 import { react } from './react';
 import { schema } from './schema';
 import type { SlideFrameNode } from './types';
-import { sanitizeFrameUrl } from './url';
+import { displayFrameUrl, sanitizeFrameUrl } from './url';
 
 export { SlideFrameView } from './react';
 export type { SlideFrameNode } from './types';
 
 const separator = ` ${slideDistillery.tokens.frame.separator.value} `;
-
-const displayUrl = (url: string): string => url.replace(/^https?:\/\//, '');
 
 const footerParts = ({
   brand,
@@ -44,14 +42,14 @@ const footerParts = ({
   );
 
 const footerText = (node: SlideFrameNode): string =>
-  [...footerParts(node), ...(node.url ? [displayUrl(node.url)] : [])]
+  [...footerParts(node), ...(node.url ? [displayFrameUrl(node.url)] : [])]
     .map(oneLine)
     .join(separator);
 
 const footerMarkdown = (node: SlideFrameNode) => {
   const parts: MarkdownInlineInput[] = [
     ...footerParts(node),
-    ...(node.url ? [md.link(displayUrl(node.url), node.url)] : []),
+    ...(node.url ? [md.link(displayFrameUrl(node.url), node.url)] : []),
   ];
   return parts.length === 0
     ? []

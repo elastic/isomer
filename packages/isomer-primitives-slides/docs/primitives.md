@@ -85,6 +85,8 @@ export const slideHeadingPrimitive = definePrimitive({
 
 Leave both type arguments inferred. Passing `TNode` alone widens the schema and drops field brands. The node type is `z.infer<typeof schema> & PrimitiveNode`, exported from `schema.ts`.
 
+An authored string is `lineText()` or `wrappedText()` from `src/primitives/authored_text.ts`, never a bare `z.string()`. Each caps its length at more than the canvas holds in its smallest, narrowest type, on one line or across the body, so validation refuses oversized text before any renderer parses marks or estimates a size.
+
 There is no `svg` renderer, and adding one is the mistake this pack exists to rule out. The image surface lays out the `react` tree against the pack's stylesheet, so a second hand-authored tree is a second thing to keep in sync and a second thing to get wrong. [Drawing inside an `svg`](#drawing-inside-an-svg) covers the one place that equivalence stops.
 
 The `text`, `markdown`, and `slack` renderers live in `index.tsx`. A `markdown` renderer returns the SDK's `md` builder content, never a string, so the serializer escapes each value where it lands. A one-line authored value goes through `oneLine` (`src/render/one_line.ts`) on the text and Slack surfaces; `src/content_parity.test.ts` fails when a line break survives on any of them. Every primitive has a `slack` renderer, and `src/registry.test.ts` fails when one does not.
@@ -162,11 +164,12 @@ A container that also draws chrome of its own sets two more. `hasOwnContent: () 
 
 ## Tests
 
-Each primitive's `index.test.ts` covers its schema rejections and every surface's output. Three pack-level tests run over the whole registry, so a new primitive is covered by registering it:
+Each primitive's `index.test.ts` covers its schema rejections and every surface's output. These pack-level tests run over the whole registry, so a new primitive is covered by registering it:
 
 - `src/content_parity.test.ts` checks that text, Markdown, and Slack carry every authored string of every example, reading Markdown back through `mdast-util-from-markdown` with GFM and Slack mrkdwn back to its text; that entity-like text such as `&lt;` and unpaired `` ` `` or `*` print as authored, one field at a time; and that a line break in a one-line field reads as a space on each surface.
 - `src/examples/fit.test.ts` renders every example on a slide (a frame as it is, a title slide alone, anything else under a heading and lede), measures it with takumi, and expects no finding from `checkLayout` and nothing past the frame's body.
 - `src/conformance.test.ts` runs the SDK's conformance harness.
+- `src/primitives/authored_text.test.ts` fails when any string in an example accepts more text than the body can draw.
 
 The tests that rasterize need `@elastic/isomer-image-takumi` and `@fontsource/*` as devDependencies.
 
