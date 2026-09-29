@@ -357,8 +357,16 @@ const flanking = (
   index: number,
   delimiter: '*' | '_'
 ): { opens: boolean; closes: boolean } => {
-  const before = line[index - 1];
-  const after = line[index + 1];
+  // Whole code points, so an astral symbol such as an emoji is classified as one.
+  const trailing = line.charCodeAt(index - 1);
+  const before =
+    index === 0
+      ? undefined
+      : trailing >= 0xdc00 && trailing <= 0xdfff && index >= 2
+        ? String.fromCodePoint(line.codePointAt(index - 2) ?? trailing)
+        : line[index - 1];
+  const next = line.codePointAt(index + 1);
+  const after = next === undefined ? undefined : String.fromCodePoint(next);
   if (before === delimiter || after === delimiter) {
     return { opens: false, closes: false };
   }
@@ -376,33 +384,33 @@ const flanking = (
       };
 };
 
-// Emphasis between two lone `delimiter`s. A search from an opener stops at
-// the next unescaped delimiter, which is the next candidate, so a line is
-// scanned once.
+// Emphasis between two lone `delimiter`s, in one forward pass: the first
+// closer pairs with the nearest opener before it, and a delimiter that can
+// do neither is text.
 const emphasisFinder =
   (delimiter: '*' | '_'): InlineFinder =>
   (line, from) => {
-    let open = line.indexOf(delimiter, from);
-    while (open !== -1) {
-      let close = open + 1;
-      while (close < line.length && line[close] !== delimiter) {
-        close += line[close] === '\\' ? 2 : 1;
+    let open = -1;
+    let index = from;
+    while (index < line.length) {
+      if (line[index] === '\\') {
+        index += 2;
+        continue;
       }
-      if (close >= line.length) {
-        return null;
+      if (line[index] === delimiter && !isEscaped(line, index)) {
+        const { opens, closes } = flanking(line, index, delimiter);
+        if (open !== -1 && closes) {
+          return {
+            index: open,
+            end: index + 1,
+            segment: { kind: 'italic', text: line.slice(open + 1, index) },
+          };
+        }
+        if (opens) {
+          open = index;
+        }
       }
-      if (
-        !isEscaped(line, open) &&
-        flanking(line, open, delimiter).opens &&
-        flanking(line, close, delimiter).closes
-      ) {
-        return {
-          index: open,
-          end: close + 1,
-          segment: { kind: 'italic', text: line.slice(open + 1, close) },
-        };
-      }
-      open = close;
+      index += 1;
     }
     return null;
   };

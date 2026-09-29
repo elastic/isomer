@@ -98,6 +98,10 @@ describe('gfmToSlackMrkdwn', () => {
     // An escaped backslash leaves the `*` after it free to open.
     expect(gfmToSlackMrkdwn('\\\\*x* and \\\\\\*y*')).toBe('\\_x_ and \\*y*');
     expect(gfmToSlackMrkdwn('(_x_) and a_b_')).toBe('(_x_) and a_b_');
+    // A delimiter that can neither open nor close is text between the pair.
+    expect(gfmToSlackMrkdwn('*a * b*')).toBe('_a * b_');
+    // An emoji is one symbol, not two surrogates.
+    expect(gfmToSlackMrkdwn('a*😀*b and *😀*')).toBe('a*😀*b and _😀_');
   });
 
   it('bolds ATX headings', () => {
@@ -212,6 +216,7 @@ describe('gfmToSlackMrkdwn', () => {
       '*a '.repeat(size / 3),
       '\\_'.repeat(size),
       'a*.'.repeat(size / 3),
+      `*${'a * '.repeat(size / 4)}`,
       `\\${'\\\\*'.repeat(size / 3)}`,
       '\\``'.repeat(size / 3),
       '['.repeat(size),
