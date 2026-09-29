@@ -426,7 +426,7 @@ const INLINE_FINDERS: readonly InlineFinder[] = [
   findCodeSpan,
   regexFinder(
     // An image degrades to a link to its source, labelled with its alt text.
-    /!?\[((?:\\.|[^[\]\\])+)\]\((<[^<>\n]*>|(?:\\.|[^\s()\\]|\([^()\s]*\))+)\)/g,
+    /!?\[((?:\\.|[^[\]\\])*)\]\((<[^<>\n]*>|(?:\\.|[^\s()\\]|\([^()\s]*\))+)\)/g,
     ([, text = '', url = '']) => ({ kind: 'link', text, url })
   ),
   regexFinder(/\*\*((?:\\.|[^*\n\\])+?)\*\*/g, ([, text = '']) => ({

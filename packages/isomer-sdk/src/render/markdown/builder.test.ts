@@ -178,6 +178,22 @@ describe('md', () => {
     expect(typesIn(root)).toContain('emphasis');
   });
 
+  it('reaches Slack as a bare link for an empty link label or image alt', () => {
+    const markdown = serializeMarkdown(
+      md.paragraph(
+        md.link('', 'https://a.b'),
+        ' ',
+        md.image('', 'https://a.b/i.png')
+      )
+    );
+    expect(gfmToSlackBlocks(markdown)).toEqual([
+      {
+        type: 'section',
+        text: { type: 'mrkdwn', text: '<https://a.b> <https://a.b/i.png>' },
+      },
+    ]);
+  });
+
   it('prints nested strong and emphasis unambiguously, and Slack nests them', () => {
     const markdown = serializeMarkdown(
       md.paragraph(
