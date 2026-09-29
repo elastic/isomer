@@ -44,7 +44,7 @@ const LINE_TERMINATORS_RE = /\r\n|[\n\r\u2028\u2029]/g;
 // A fence-info string only allows word-ish tokens; anything else would
 // terminate the fence early or inject markdown.
 const FENCE_INFO_RE = /^[\w+#.-]+$/;
-const VERBATIM = 'isomerVerbatim';
+export const VERBATIM = 'isomerVerbatim';
 
 const oneLine = (value: string): string =>
   value.replace(LINE_TERMINATORS_RE, ' ');
@@ -251,9 +251,8 @@ const handlers: Record<string, Handle> = {
 
 const OPTIONS: Options = {
   bullet: '-',
-  // With `*`, emphasis around strong prints `***x***`, which the Slack
-  // fallback cannot split. `_` costs character references around emphasis
-  // inside a word.
+  // Nested strong and emphasis never share a delimiter run (`***x***`), at the
+  // cost of character references around emphasis inside a word.
   emphasis: '_',
   fence: '`',
   listItemIndent: 'one',

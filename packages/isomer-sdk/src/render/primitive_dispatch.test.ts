@@ -255,6 +255,18 @@ describe('RenderScope', () => {
       '- line1 line2\n- \\*b\\*'
     );
     expect(withContent.renderMarkdown(items[1]!)).toBe('\\*b\\*');
+    expect(withStrings.renderSlack({ type: 'stack', items })).toEqual([
+      {
+        type: 'section',
+        text: { type: 'mrkdwn', text: '- line1\n  line2\n- _b_' },
+      },
+    ]);
+    expect(withContent.renderSlack({ type: 'stack', items })).toEqual([
+      {
+        type: 'section',
+        text: { type: 'mrkdwn', text: '- line1 line2\n- \u2217b*' },
+      },
+    ]);
 
     const hidden = { type: 'note' as const, body: 'x', surfaces: ['text'] };
     expect(

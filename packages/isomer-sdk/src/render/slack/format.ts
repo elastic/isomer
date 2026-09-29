@@ -133,12 +133,12 @@ export const joinMrkdwn = (
 // ---------------------------------------------------------------------------
 // GitHub-flavored markdown -> Slack mrkdwn translation.
 //
-// Per-primitive `renderMarkdown(node)` implementations emit GFM. The Slack
-// dispatcher runs it through here to fill a `section` block when a primitive
-// has no stronger Block Kit override.
+// The Slack dispatcher runs a `markdown` renderer's string result through here
+// when a primitive has no `slack` renderer.
 
 interface InlineSegment {
-  kind: 'text' | 'code' | 'bold' | 'italic' | 'link';
+  // A `mark` is a delimiter GFM paired, printed as `text`.
+  kind: 'text' | 'code' | 'link' | 'mark';
   text: string;
   url?: string;
 }
@@ -350,33 +350,30 @@ const isEscaped = (line: string, index: number): boolean => {
   return run % 2 === 1;
 };
 
-// GFM's flanking rules for a lone delimiter; `_` also cannot open or close
-// inside a word.
+// GFM's flanking rules for the delimiter run `line[start, end)`; `_` also
+// cannot open or close inside a word.
 const flanking = (
   line: string,
-  index: number,
-  delimiter: '*' | '_'
+  start: number,
+  end: number
 ): { opens: boolean; closes: boolean } => {
   // Whole code points, so an astral symbol such as an emoji is classified as one.
-  const trailing = line.charCodeAt(index - 1);
+  const trailing = line.charCodeAt(start - 1);
   const before =
-    index === 0
+    start === 0
       ? undefined
-      : trailing >= 0xdc00 && trailing <= 0xdfff && index >= 2
-        ? String.fromCodePoint(line.codePointAt(index - 2) ?? trailing)
-        : line[index - 1];
-  const next = line.codePointAt(index + 1);
+      : trailing >= 0xdc00 && trailing <= 0xdfff && start >= 2
+        ? String.fromCodePoint(line.codePointAt(start - 2) ?? trailing)
+        : line[start - 1];
+  const next = line.codePointAt(end);
   const after = next === undefined ? undefined : String.fromCodePoint(next);
-  if (before === delimiter || after === delimiter) {
-    return { opens: false, closes: false };
-  }
   const left =
     !isSpace(after) &&
     (!isPunctuation(after) || isSpace(before) || isPunctuation(before));
   const right =
     !isSpace(before) &&
     (!isPunctuation(before) || isSpace(after) || isPunctuation(after));
-  return delimiter === '*'
+  return line[start] === '*'
     ? { opens: left, closes: right }
     : {
         opens: left && (!right || isPunctuation(before)),
@@ -432,58 +429,109 @@ const findLink: InlineFinder = (line, from, closer) => {
   return null;
 };
 
-// Strong between `**` pairs whose body holds no `*` outside escapes and code.
-const findBold: InlineFinder = (line, from, closer) => {
-  let open = line.indexOf('**', from);
-  while (open !== -1) {
-    let index = open + 2;
-    while (index < line.length && line[index] !== '*') {
+interface DelimiterRun {
+  opens: boolean;
+  closes: boolean;
+  size: number;
+  // The unpaired delimiters are `[from, from + length)`.
+  from: number;
+  length: number;
+}
+
+// CommonMark's rule of three.
+const canPair = (opener: DelimiterRun, closer: DelimiterRun): boolean =>
+  !(
+    (opener.closes || closer.opens) &&
+    (opener.size + closer.size) % 3 === 0 &&
+    (opener.size % 3 !== 0 || closer.size % 3 !== 0)
+  );
+
+// Each `*` and `_` delimiter run outside escapes, code spans, and links.
+const delimiterRuns = (
+  line: string,
+  closer: CodeSpanCloser
+): DelimiterRun[] => {
+  const runs: DelimiterRun[] = [];
+  let link = findLink(line, 0, closer);
+  let index = 0;
+  while (index < line.length) {
+    if (link && index > link.index) {
+      link = findLink(line, index, closer);
+    }
+    const char = line[index];
+    if (link?.index === index) {
+      index = link.end;
+    } else if (char === '*' || char === '_') {
+      let end = index + 1;
+      while (line[end] === char) {
+        end += 1;
+      }
+      const size = end - index;
+      runs.push({
+        ...flanking(line, index, end),
+        size,
+        from: index,
+        length: size,
+      });
+      index = end;
+    } else {
       index = stepOver(line, index, closer);
     }
-    if (index > open + 2 && line.startsWith('**', index)) {
-      return {
-        index: open,
-        end: index + 2,
-        segment: { kind: 'bold', text: line.slice(open + 2, index) },
-      };
-    }
-    open = line.indexOf('**', index > open + 2 ? index : open + 1);
   }
-  return null;
+  return runs;
 };
 
-// Emphasis between two lone `delimiter`s, in one forward pass: the first
-// closer pairs with the nearest opener before it, and a delimiter that can
-// do neither is text.
-const emphasisFinder =
-  (delimiter: '*' | '_'): InlineFinder =>
-  (line, from, closer) => {
-    let open = -1;
-    let index = from;
-    while (index < line.length) {
-      if (line[index] === '\\' || line[index] === '`') {
-        index = stepOver(line, index, closer);
-        continue;
+// GFM's delimiter-run pairing, linear through `openers_bottom`. Strong prints
+// as `*` and emphasis as `_`; Slack cannot nest a style in itself, so an inner
+// pair of the enclosing style prints nothing.
+const emphasisMarks = (line: string, closer: CodeSpanCloser): InlineMatch[] => {
+  const pairs: { open: number; close: number; use: 1 | 2 }[] = [];
+  const stack: DelimiterRun[] = [];
+  const bottoms = new Map<string, number>();
+  for (const run of delimiterRuns(line, closer)) {
+    const char = line[run.from];
+    const key = `${char}${run.opens}${run.size % 3}`;
+    while (run.closes && run.length > 0) {
+      const bottom = Math.min(bottoms.get(key) ?? 0, stack.length);
+      let at = stack.length - 1;
+      while (
+        at >= bottom &&
+        (line[stack[at]!.from] !== char || !canPair(stack[at]!, run))
+      ) {
+        at -= 1;
       }
-      if (line[index] === delimiter && !isEscaped(line, index)) {
-        const { opens, closes } = flanking(line, index, delimiter);
-        if (open !== -1 && closes) {
-          return {
-            index: open,
-            end: index + 1,
-            segment: { kind: 'italic', text: line.slice(open + 1, index) },
-          };
-        }
-        if (opens) {
-          open = index;
-        }
+      if (at < bottom) {
+        bottoms.set(key, stack.length);
+        break;
       }
-      index += 1;
+      const opener = stack[at]!;
+      const use = opener.length >= 2 && run.length >= 2 ? 2 : 1;
+      opener.length -= use;
+      pairs.push({ open: opener.from + opener.length, close: run.from, use });
+      run.from += use;
+      run.length -= use;
+      stack.length = opener.length > 0 ? at + 1 : at;
     }
-    return null;
-  };
+    if (run.opens && run.length > 0) {
+      stack.push(run);
+    }
+  }
+  const depth = { 1: 0, 2: 0 };
+  return pairs
+    .flatMap(({ open, close, use }) => [
+      { index: open, use, opens: true },
+      { index: close, use, opens: false },
+    ])
+    .sort((a, b) => a.index - b.index)
+    .map(({ index, use, opens }): InlineMatch => {
+      depth[use] -= opens ? 0 : 1;
+      const text = depth[use] > 0 ? '' : use === 2 ? '*' : '_';
+      depth[use] += opens ? 1 : 0;
+      return { index, end: index + use, segment: { kind: 'mark', text } };
+    });
+};
 
-// In tie order. Each label, destination, or body stops at the first character
+// In tie order. Each label or destination stops at the first character
 // that cannot continue it, so one search from a position is linear.
 const INLINE_FINDERS: readonly InlineFinder[] = [
   // A CommonMark backslash escape: any ASCII punctuation character.
@@ -493,9 +541,6 @@ const INLINE_FINDERS: readonly InlineFinder[] = [
   })),
   findCodeSpan,
   findLink,
-  findBold,
-  emphasisFinder('_'),
-  emphasisFinder('*'),
 ];
 
 // Tokenizes a single line of GFM into ordered inline segments. The earliest
@@ -505,6 +550,17 @@ const INLINE_FINDERS: readonly InlineFinder[] = [
 const tokenizeInline = (line: string): InlineSegment[] => {
   const segments: InlineSegment[] = [];
   const closer = codeSpanCloser(line);
+  const marks = emphasisMarks(line, closer);
+  let nextMark = 0;
+  const finders: readonly InlineFinder[] = [
+    ...INLINE_FINDERS,
+    (_line, from) => {
+      while ((marks[nextMark]?.index ?? Infinity) < from) {
+        nextMark += 1;
+      }
+      return marks[nextMark] ?? null;
+    },
+  ];
   const found = new Map<InlineFinder, InlineMatch | null>();
   const nextMatch = (
     finder: InlineFinder,
@@ -521,7 +577,7 @@ const tokenizeInline = (line: string): InlineSegment[] => {
   let cursor = 0;
   while (cursor < line.length) {
     let first: InlineMatch | undefined;
-    for (const finder of INLINE_FINDERS) {
+    for (const finder of finders) {
       const match = nextMatch(finder, cursor);
       if (match && (first === undefined || match.index < first.index)) {
         first = match;
@@ -560,11 +616,8 @@ const renderInline = (line: string): string => {
           // Code spans pass through with mrkdwn's single-backtick syntax, but
           // we still need to neutralize any embedded backticks.
           return code(segment.text);
-        // The inner text is translated too, so `**a _b_**` nests.
-        case 'bold':
-          return `*${renderInline(segment.text)}*`;
-        case 'italic':
-          return `_${renderInline(segment.text)}_`;
+        case 'mark':
+          return segment.text;
         case 'link':
           return link(
             linkDestination(segment.url ?? ''),
@@ -588,7 +641,9 @@ const plainInline = (line: string): string =>
         ? unescapeGfm(text)
         : kind === 'code'
           ? text
-          : plainInline(text)
+          : kind === 'mark'
+            ? ''
+            : plainInline(text)
     )
     .join('');
 
@@ -738,7 +793,7 @@ export const gfmToSlackMrkdwn = (gfm: string): string => {
 // ---------------------------------------------------------------------------
 // GFM -> Slack *block* translation.
 
-const slackPreformattedBlock = (code: string): SlackRichTextBlock => ({
+export const slackPreformattedBlock = (code: string): SlackRichTextBlock => ({
   type: 'rich_text',
   elements: [
     {
@@ -763,33 +818,39 @@ const parseColumnAlign = (marker: string): 'left' | 'center' | 'right' => {
   return right ? 'right' : 'left';
 };
 
+/** A header row, then body rows, clamped to the table limits. */
+export const slackTableBlock = (
+  rows: readonly (readonly string[])[],
+  aligns: readonly ('left' | 'center' | 'right')[]
+): SlackTableBlock => ({
+  type: 'table',
+  rows: rows.slice(0, SLACK_LIMITS.tableRows).map((cells) =>
+    cells
+      .slice(0, SLACK_LIMITS.tableColumns)
+      .map((text): SlackRawTextElement => ({
+        type: 'raw_text',
+        text,
+      }))
+  ),
+  column_settings: aligns
+    .slice(0, SLACK_LIMITS.tableColumns)
+    .map((align): SlackTableColumnSetting => ({ align, is_wrapped: true })),
+});
+
 const pipeTableToTableBlock = (lines: readonly string[]): SlackTableBlock => {
   const [headerLine, separatorLine, ...bodyLines] = lines;
-  const aligns = splitPipeRow(separatorLine ?? '').map(parseColumnAlign);
-  const rows = [splitPipeRow(headerLine ?? ''), ...bodyLines.map(splitPipeRow)]
-    .slice(0, SLACK_LIMITS.tableRows)
-    .map((cells) =>
-      cells
-        .slice(0, SLACK_LIMITS.tableColumns)
-        .map((value): SlackRawTextElement => ({
-          type: 'raw_text',
-          text: value,
-        }))
-    );
-  return {
-    type: 'table',
-    rows,
-    column_settings: aligns
-      .slice(0, SLACK_LIMITS.tableColumns)
-      .map((align): SlackTableColumnSetting => ({ align, is_wrapped: true })),
-  };
+  return slackTableBlock(
+    [splitPipeRow(headerLine ?? ''), ...bodyLines.map(splitPipeRow)],
+    splitPipeRow(separatorLine ?? '').map(parseColumnAlign)
+  );
 };
 
 /**
  * Translates GFM into structural Block Kit: prose runs as `section`, fenced
  * code as `rich_text_preformatted`, pipe tables as a native `table` block.
  *
- * The markdown fallback for any primitive without a dedicated `slack` renderer.
+ * The fallback for a string `markdown` result when a primitive has no `slack`
+ * renderer.
  * Preferred over {@link gfmToSlackMrkdwn}, which collapses code and tables into
  * a section-level fence that Slack and pixel-faithful previews render poorly.
  */

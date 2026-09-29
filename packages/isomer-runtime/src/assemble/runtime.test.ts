@@ -509,7 +509,7 @@ describe('createIsomerRuntime', () => {
       runtime.surfaces.slack.render(view('a*b'), { heading: false }).blocks
     ).toContainEqual({
       type: 'section',
-      text: { type: 'mrkdwn', text: '*a*b* *literal*' },
+      text: { type: 'mrkdwn', text: '*a*b* \u2217literal*' },
     });
   });
 

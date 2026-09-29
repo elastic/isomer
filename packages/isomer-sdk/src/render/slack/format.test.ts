@@ -104,6 +104,20 @@ describe('gfmToSlackMrkdwn', () => {
     expect(gfmToSlackMrkdwn('a*😀*b and *😀*')).toBe('a*😀*b and _😀_');
   });
 
+  it('pairs delimiter runs as GFM does, printing a style nested in itself once', () => {
+    expect(gfmToSlackMrkdwn('**_**x**_** ***y*** *a *b* c* a ***b** c*')).toBe(
+      '*_x_* _*y*_ _a b c_ a _*b* c_'
+    );
+    expect(gfmToSlackMrkdwn('*x* [a*](u) b* and _a_b_')).toBe(
+      '_x_ <u|a*> b* and _a_b_'
+    );
+  });
+
+  // Each line is read on its own, so an inline construct spanning lines is not.
+  it('does not recognize a code span or emphasis across lines', () => {
+    expect(gfmToSlackMrkdwn('x `a\nb\\*` y *c\nd*')).toBe('x `a\nb*` y *c\nd*');
+  });
+
   it('bolds ATX headings', () => {
     expect(gfmToSlackMrkdwn('## Title ##')).toBe('*Title*');
   });
@@ -220,6 +234,9 @@ describe('gfmToSlackMrkdwn', () => {
       '[`a` '.repeat(size / 5),
       '**`x` '.repeat(size / 6),
       `[${'`](x) '.repeat(size / 6)}`,
+      `${'*a '.repeat(size / 6)}x${' b*'.repeat(size / 6)}`,
+      `${'*_'.repeat(size / 4)}x${'_*'.repeat(size / 4)}`,
+      `${'*a _b '.repeat(size / 12)}x${' c_'.repeat(size / 12)}`,
       `\\${'\\\\*'.repeat(size / 3)}`,
       '\\``'.repeat(size / 3),
       '['.repeat(size),
