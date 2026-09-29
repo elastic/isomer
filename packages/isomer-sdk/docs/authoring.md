@@ -89,7 +89,7 @@ Three profiles, because the job differs:
 
 ### An index, then lookups
 
-A large pack's full catalog and schema crowd out the question. With `catalog: 'index'` the prompt lists one line per primitive, sorted under the pack's [`groups`](packs.md#authoring) with the rest under "Other", and tells the model to ask for detail by type. Leave `schema` out too, and serve each request with the runtime's `describePrimitives(types)`: `formatPrimitiveEntry` prints each returned entry as the full catalog would, and the returned `$defs` are the slice of the authoring schema those types reach.
+A large pack's full catalog and schema crowd out the question. With `catalog: 'index'` the prompt lists one line per primitive, sorted under the pack's [`groups`](packs.md#authoring) with the rest under "Other", and tells the model to ask for detail by type. Leave `schema` out too, and serve each request with the runtime's `describePrimitives(types)`: `formatPrimitiveEntry` prints each returned entry as the full catalog would, and the returned `$defs` are the slice of the authoring schema those types reach. A type or view id that would not survive printing bare, such as one holding a line break, is shown as a JSON string.
 
 `createAuthoringPromptBuilder` and `createAgentAuthoringContextFactory` let a pack bind its own guide, rules, and defaults once so a host supplies only what varies. The structural half of the context — authoring schema, catalog, views — comes from the runtime's [authoring context](../../isomer-runtime/docs/authoring-context.md); the prose half belongs to the pack, because it describes a vocabulary rather than a composition.
 

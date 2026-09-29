@@ -87,7 +87,12 @@ const PROFILE_INCLUDES_SCHEMA: Record<AuthoringProfileId, boolean> = {
   'compose-from-primitives': true,
 };
 
-const compactJson = (value: unknown): string => JSON.stringify(value);
+/** Minified JSON with U+2028 and U+2029 escaped, so it always prints on one line. */
+const compactJson = (value: unknown): string =>
+  String(JSON.stringify(value)).replace(
+    /[\u2028\u2029]/g,
+    (separator) => `\\u${separator.charCodeAt(0).toString(16)}`
+  );
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -107,19 +112,26 @@ const oneLine = (text: string): string =>
 
 /** `text` as a Markdown code span, fenced longer than any backtick run inside it. */
 const codeSpan = (text: string): string => {
-  const line = oneLine(text);
   const longestRun = Math.max(
     0,
-    ...(line.match(/`+/g) ?? []).map(({ length }) => length)
+    ...(text.match(/`+/g) ?? []).map(({ length }) => length)
   );
   const fence = '`'.repeat(longestRun + 1);
-  const pad = /^[` ]|[` ]$/.test(line) ? ' ' : '';
-  return `${fence}${pad}${line}${pad}${fence}`;
+  const pad = /^`|`$/.test(text) ? ' ' : '';
+  return `${fence}${pad}${text}${pad}${fence}`;
 };
+
+/** A lookup key as a code span, JSON-quoted when it would not survive printing bare. */
+const keySpan = (key: string): string =>
+  codeSpan(
+    key !== '' && key.trim() === key && !/[\p{Cc}\p{Cs}\u2028\u2029]/u.test(key)
+      ? key
+      : compactJson(key)
+  );
 
 /** One primitive's catalog bullet: its purpose, `useWhen`, `avoidWhen`, and example. */
 export const formatPrimitiveEntry = (entry: PrimitiveCatalogEntry): string => {
-  const lines = [`- ${codeSpan(entry.type)} — ${oneLine(entry.purpose)}`];
+  const lines = [`- ${keySpan(entry.type)} — ${oneLine(entry.purpose)}`];
   if (entry.useWhen.length > 0) {
     lines.push(`  - Use when: ${oneLine(entry.useWhen.join(' '))}`);
   }
@@ -157,7 +169,7 @@ const renderIndex = (
         ({ title, entries }) =>
           `### ${oneLine(title)}\n\n${entries
             .map(
-              ({ type, purpose }) => `- ${codeSpan(type)} — ${oneLine(purpose)}`
+              ({ type, purpose }) => `- ${keySpan(type)} — ${oneLine(purpose)}`
             )
             .join('\n')}`
       ),
@@ -167,7 +179,7 @@ const renderIndex = (
 const renderViews = (views: readonly AuthoringViewSummary[]): string =>
   views
     .map((view) => {
-      const lines = [`- ${codeSpan(view.id)} — ${oneLine(view.title)}`];
+      const lines = [`- ${keySpan(view.id)} — ${oneLine(view.title)}`];
       if (view.description !== undefined && view.description.length > 0) {
         lines.push(`  - ${oneLine(view.description)}`);
       }

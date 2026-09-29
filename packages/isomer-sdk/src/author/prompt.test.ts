@@ -110,6 +110,14 @@ describe('buildAuthoringPrompt', () => {
     );
   });
 
+  it('JSON-quotes a view id that would not survive printing bare', () => {
+    const prompt = buildAuthoringPrompt('general', {
+      ...context,
+      views: [{ id: 'hosts\n', title: 'Hosts', answers: [] }],
+    });
+    expect(prompt).toContain('- `"hosts\\n"` — Hosts');
+  });
+
   it('omits the JSON Schema for the router profile', () => {
     const prompt = buildAuthoringPrompt('registered-view-router', context);
     expect(prompt).not.toContain('## JSON Schema');
@@ -256,5 +264,26 @@ describe('formatPrimitiveEntry', () => {
     expect(formatPrimitiveEntry({ ...quoteless, type: '`tick' })).toContain(
       '- `` `tick `` — Plain.'
     );
+  });
+
+  it('JSON-quotes a type that would not survive printing bare', () => {
+    const cases: [string, string][] = [
+      ['a\r\nb', '`"a\\r\\nb"`'],
+      ['a\u2028b', '`"a\\u2028b"`'],
+      ['a\uD800b', '`"a\\ud800b"`'],
+      ['', '`""`'],
+      ['  ', '`"  "`'],
+    ];
+    for (const [type, span] of cases) {
+      expect(formatPrimitiveEntry({ ...quoteless, type })).toContain(
+        `- ${span} — Plain.`
+      );
+    }
+  });
+
+  it('keeps a line separator inside an example value', () => {
+    expect(
+      formatPrimitiveEntry({ ...quoteless, example: { text: 'a\u2028b' } })
+    ).toContain('  - Example: `{"text":"a\\u2028b"}`');
   });
 });
