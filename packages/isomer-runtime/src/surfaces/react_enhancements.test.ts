@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-// @vitest-environment happy-dom
+// @vitest-environment jsdom
 
 import { act, createElement, type ReactNode, StrictMode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
