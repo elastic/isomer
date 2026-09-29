@@ -64,7 +64,10 @@ export const codeBlock = (text: string): string =>
   `\`\`\`\n${text.replace(/```/g, '``\u200d`')}\n\`\`\``;
 
 const HTTP_URL_RE = /^(https?:\/\/[^/?#]*)(.*)$/is;
-const HOSTNAME_RE = /^[^.]+(?:\.[^.]+)*\.?$/;
+// Letter, digit, and hyphen labels, with an optional DNS root dot.
+const DNS_NAME_RE =
+  /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*\.?$/i;
+const IPV6_HOST_RE = /^\[[0-9a-f:.]+\]$/i;
 
 // Non-ASCII outside the authority, UTF-8 percent-encoded as `URL` prints it.
 const encodedNonAscii = (value: string): string | null => {
@@ -96,11 +99,22 @@ export const isAbsoluteHttpUrl = (url: string): boolean => {
     authority.toLowerCase() === printedAuthority?.toLowerCase() &&
     expectedRest !== null &&
     (printedRest === expectedRest || printedRest === `/${expectedRest}`) &&
-    HOSTNAME_RE.test(parsed.hostname)
+    (DNS_NAME_RE.test(parsed.hostname) || IPV6_HOST_RE.test(parsed.hostname))
   );
 };
 
-const MAILBOX_RE = /^[^\s@/\\]+@[^\s@/\\.]+(?:\.[^\s@/\\.]+)*$/;
+// RFC 5322 dot-atom text, less `/`, `?`, `#`, and `%`.
+const LOCAL_PART_RE =
+  /^[a-z0-9!$&'*+=^_`{|}~-]+(?:\.[a-z0-9!$&'*+=^_`{|}~-]+)*$/i;
+
+const isMailbox = (recipient: string): boolean => {
+  const at = recipient.lastIndexOf('@');
+  return (
+    at > 0 &&
+    LOCAL_PART_RE.test(recipient.slice(0, at)) &&
+    DNS_NAME_RE.test(recipient.slice(at + 1))
+  );
+};
 
 const decoded = (value: string): string | null => {
   try {
@@ -117,7 +131,7 @@ const hasMailtoRecipients = (url: string): boolean => {
     recipients !== undefined &&
     recipients
       .split(',')
-      .every((recipient) => MAILBOX_RE.test(decoded(recipient) ?? ''))
+      .every((recipient) => isMailbox(decoded(recipient) ?? ''))
   );
 };
 

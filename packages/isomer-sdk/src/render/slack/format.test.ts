@@ -96,6 +96,17 @@ const UNLINKABLE = [
   'mailto:a@b\\c',
   'mailto:,a@b.c',
   'mailto:a@b.c,',
+  'mailto:abc',
+  'mailto:a@b:c',
+  'mailto:a@b.c%3Fbad',
+  'mailto:a@b@c.d',
+  'mailto:a@b/c.d',
+  'mailto:a@b%2Fc.d',
+  'mailto:a@b%20c.d',
+  'mailto:a@-b.c',
+  'mailto:"a b"@c.d',
+  'mailto:.a@b.c',
+  'http://a_b.c/',
 ];
 
 const LINKABLE = [
@@ -114,6 +125,8 @@ const LINKABLE = [
   'mailto:a%40b.c',
   'mailto:a@b.c,d@e.f?subject=x',
   'mailto:a@b.c#f',
+  "mailto:a.b+c_d'e@xn--bcher-kva.de.",
+  'http://127.0.0.1:8080/',
 ];
 
 describe('slackLinkUrl', () => {
