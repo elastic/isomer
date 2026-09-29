@@ -36,6 +36,15 @@ const leaf = (type: string) =>
     renderers,
   });
 
+const caught = (run: () => unknown): unknown => {
+  try {
+    run();
+  } catch (error) {
+    return error;
+  }
+  return undefined;
+};
+
 const enhancement = (id: string): EnhancementDefinition => ({
   id,
   appliesTo: () => true,
@@ -162,6 +171,37 @@ describe('definePrimitivePack', () => {
       authoring,
     });
     expect(pack.authoring).toBe(authoring);
+  });
+
+  it('rejects a group naming a type the pack does not register', () => {
+    const define = () =>
+      definePrimitivePack({
+        id: 'grouped',
+        primitives: [leaf('note')],
+        authoring: { groups: [{ title: 'Text', types: ['note', 'quote'] }] },
+      });
+    expect(define).toThrow(
+      'primitive pack "grouped": group "Text" names primitive type "quote", which the pack does not register'
+    );
+    expect(caught(define)).toMatchObject({ code: 'UNKNOWN_PRIMITIVE_TYPE' });
+  });
+
+  it('rejects a type in two groups', () => {
+    const define = () =>
+      definePrimitivePack({
+        id: 'grouped',
+        primitives: [leaf('note')],
+        authoring: {
+          groups: [
+            { title: 'Text', types: ['note'] },
+            { title: 'Notes', types: ['note'] },
+          ],
+        },
+      });
+    expect(define).toThrow(
+      'primitive pack "grouped": primitive type "note" is in two groups'
+    );
+    expect(caught(define)).toMatchObject({ code: 'DUPLICATE_PRIMITIVE_TYPE' });
   });
 });
 

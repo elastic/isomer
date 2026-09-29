@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { buildAuthoringPrompt } from './prompt';
+import { buildAuthoringPrompt, formatPrimitiveEntry } from './prompt';
 
 const context = {
   guide: 'Guide',
@@ -117,5 +117,78 @@ describe('buildAuthoringPrompt', () => {
     expect(prompt).toContain('"text":"one"');
     expect(prompt).not.toContain('fixture');
     expect(prompt).not.toContain('"text":"two"');
+  });
+});
+
+describe('the index catalog', () => {
+  const entry = (type: string, purpose: string) => ({
+    type,
+    purpose,
+    useWhen: ['Always.'],
+    avoidWhen: [],
+    example: { type },
+  });
+  const primitives = [
+    entry('stat', 'One number.'),
+    entry('quote', 'A pull\nquote.'),
+    entry('note', 'A note.'),
+    entry('table', 'Rows.'),
+  ];
+
+  it('lists each primitive under its group, and the rest under Other', () => {
+    const prompt = buildAuthoringPrompt('general', {
+      ...context,
+      primitives,
+      catalog: 'index',
+      groups: [
+        { title: 'Data', types: ['table', 'stat'] },
+        { title: 'Text', types: ['quote'] },
+      ],
+    });
+    expect(prompt).toContain(
+      [
+        '### Data\n\n- `table` — Rows.\n- `stat` — One number.',
+        '### Text\n\n- `quote` — A pull quote.',
+        '### Other\n\n- `note` — A note.',
+      ].join('\n\n')
+    );
+    expect(prompt).toContain(
+      'request its catalog entry and JSON Schema by type'
+    );
+    expect(prompt).not.toContain('Use when');
+  });
+
+  it('frames composing without a schema when none is given', () => {
+    const prompt = buildAuthoringPrompt('compose-from-primitives', {
+      guide: 'Guide',
+      examples: [],
+      primitives,
+      catalog: 'index',
+    });
+    expect(prompt).not.toContain('JSON Schema before responding');
+    expect(prompt).not.toContain('## JSON Schema');
+  });
+});
+
+describe('formatPrimitiveEntry', () => {
+  it('prints the full catalog bullet on one line per field', () => {
+    const quote = {
+      type: 'quote',
+      purpose: 'A pull\n  quote.',
+      useWhen: ['Someone said it.'],
+      avoidWhen: ['It is\nlong.'],
+      example: { type: 'quote' },
+    };
+    expect(formatPrimitiveEntry(quote)).toBe(
+      [
+        '- `quote` — A pull quote.',
+        '  - Use when: Someone said it.',
+        '  - Avoid when: It is long.',
+        '  - Example: `{"type":"quote"}`',
+      ].join('\n')
+    );
+    expect(
+      buildAuthoringPrompt('general', { ...context, primitives: [quote] })
+    ).toContain(formatPrimitiveEntry(quote));
   });
 });

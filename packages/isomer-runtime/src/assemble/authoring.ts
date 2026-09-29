@@ -9,10 +9,12 @@ import {
   type AnyPrimitiveDefinition,
   type AnyPrimitivePack,
   type AuthoringJsonSchemaOptions,
+  authoringSchemaSubset,
   buildAuthoringJsonSchema,
   type HostCapabilities,
   IsomerError,
   type PrimitiveCatalogEntry,
+  type PrimitiveGroup,
 } from '@elastic/isomer-sdk';
 
 import type { JsonSchema, RegisteredViewSummary } from '../registry';
@@ -33,6 +35,8 @@ export interface RuntimeAuthoringContext {
   schema: JsonSchema;
   /** Catalog entries describing each available primitive, including one `example`. */
   primitives: PrimitiveCatalogEntry[];
+  /** Every pack's primitive groups, in pack order, for an index catalog. */
+  groups: PrimitiveGroup[];
   /**
    * Registered views an agent can request by id, with their input schemas.
    *
@@ -48,6 +52,20 @@ export interface RuntimeAuthoringContext {
    * Throws `UNKNOWN_PRIMITIVE_TYPE` for a type this runtime does not register.
    */
   schemaFor(types: readonly string[]): JsonSchema;
+  /**
+   * The catalog entries of `types` and the `$defs` of {@link RuntimeAuthoringContext.schema}
+   * they reach, for an agent that reads an index catalog and then looks up what it picks.
+   *
+   * Throws `UNKNOWN_PRIMITIVE_TYPE` for a type this runtime does not register.
+   */
+  describePrimitives(types: readonly string[]): PrimitiveDescriptions;
+}
+
+/** What {@link RuntimeAuthoringContext.describePrimitives} returns. */
+export interface PrimitiveDescriptions {
+  primitives: PrimitiveCatalogEntry[];
+  /** `{ $defs }` only: the defs the types reach, keyed as in the full schema, with the body-node union stubbed. */
+  schema: JsonSchema;
 }
 
 /**
@@ -98,17 +116,22 @@ export const createRuntimeAuthoringContextFactory = (
   const definitionsByType = new Map(
     definitions.map((definition) => [definition.type, definition])
   );
+  const groups = packs.flatMap((pack) => pack.authoring?.groups ?? []);
 
-  const schemaFor = (types: readonly string[]): JsonSchema => {
+  const assertKnown = (caller: string, types: readonly string[]): void => {
     const missing = types.filter((type) => !definitionsByType.has(type));
     if (missing.length > 0) {
       throw new IsomerError(
         'UNKNOWN_PRIMITIVE_TYPE',
-        `getAuthoringContext.schemaFor: unknown primitive type(s) ${missing
+        `getAuthoringContext.${caller}: unknown primitive type(s) ${missing
           .map((type) => `"${type}"`)
           .join(', ')}`
       );
     }
+  };
+
+  const schemaFor = (types: readonly string[]): JsonSchema => {
+    assertKnown('schemaFor', types);
     const wanted = new Set(types);
     return buildAuthoringJsonSchema(
       definitions.filter((definition) => wanted.has(definition.type)),
@@ -116,10 +139,25 @@ export const createRuntimeAuthoringContextFactory = (
     );
   };
 
+  const describePrimitives = (
+    types: readonly string[]
+  ): PrimitiveDescriptions => {
+    assertKnown('describePrimitives', types);
+    const wanted = [...new Set(types)];
+    return {
+      primitives: wanted.flatMap(
+        (type) => definitionsByType.get(type)?.catalog ?? []
+      ),
+      schema: authoringSchemaSubset(schema, wanted),
+    };
+  };
+
   return () => ({
     schema,
     primitives,
+    groups,
     views: listViews(),
     schemaFor,
+    describePrimitives,
   });
 };
