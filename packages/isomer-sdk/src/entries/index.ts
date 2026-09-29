@@ -119,6 +119,7 @@ export {
   formatCompactNumber,
   formatDisplayValue,
   isStructuredValue,
+  measureDom,
   nodeAnchor,
   rawDisplayValue,
   withNodeAnchors,

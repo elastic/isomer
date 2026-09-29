@@ -27,6 +27,7 @@ export {
   type LayoutRect,
   checkLayout,
 } from './layout_check';
+export { measureDom } from './measure_dom';
 export { type PayloadMeasurement, byteLength } from './payload';
 export {
   type PrimitiveDispatcher,
