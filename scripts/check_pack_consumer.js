@@ -77,6 +77,11 @@ const packPackage = (packageName) => {
   return { dir, manifest, sourceDir };
 };
 
+// Fails an import on any process warning, such as the `ExperimentalWarning`
+// Node 22.12 prints when `require()` loads an ES module.
+const failOnWarning =
+  "process.on('warning', (warning) => { console.error(warning); process.exitCode = 1; });";
+
 /** Where pnpm installed `dependency` for the workspace package, or `undefined`. */
 const installedDependency = (pkg, dependency) =>
   [
@@ -137,13 +142,18 @@ try {
     linkDirectory(pkg.dir, join(consumerDir, 'node_modules', packageName));
     execFileSync(
       process.execPath,
-      ['--input-type=module', '--eval', `await import('${packageName}')`],
+      [
+        '--input-type=module',
+        '--eval',
+        `${failOnWarning} await import('${packageName}')`,
+      ],
       { cwd: consumerDir, stdio: 'inherit' }
     );
-    execFileSync(process.execPath, ['--eval', `require('${packageName}')`], {
-      cwd: consumerDir,
-      stdio: 'inherit',
-    });
+    execFileSync(
+      process.execPath,
+      ['--eval', `${failOnWarning} require('${packageName}')`],
+      { cwd: consumerDir, stdio: 'inherit' }
+    );
 
     console.log(
       `${packageName}: packed root imports passed with required peers (${requiredPeers.join(', ')}).`

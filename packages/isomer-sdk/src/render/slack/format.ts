@@ -67,7 +67,8 @@ export const codeBlock = (text: string): string =>
  * Slack mrkdwn link, `<url|label>`, or a bare `<url>` when `label` is omitted.
  *
  * URL and label are both escaped so `&` and `>` cannot break Slack's link
- * parser. A URL failing the navigation policy in `src/validate/url.ts` degrades
+ * parser, and a `|` in the URL is percent-encoded so it cannot end the URL
+ * early. A URL failing the navigation policy in `src/validate/url.ts` degrades
  * to plain escaped text with no link.
  */
 export const link = (url: string, label?: string): string => {
@@ -75,7 +76,7 @@ export const link = (url: string, label?: string): string => {
   if (!sanitized) {
     return escapeMrkdwn(label ?? url);
   }
-  const safeUrl = escapeMrkdwn(sanitized);
+  const safeUrl = escapeMrkdwn(sanitized).replaceAll('|', '%7C');
   if (!label) {
     return `<${safeUrl}>`;
   }
@@ -142,54 +143,264 @@ interface InlineSegment {
   url?: string;
 }
 
-const BOLD_RE = /\*\*([^*\n][^*\n]*?)\*\*/;
-const ITALIC_RE = /(?<![\w])_([^_\n][^_\n]*?)_(?![\w])/;
-const LINK_RE = /\[([^\]]+)\]\(([^)]+)\)/;
-const CODE_RE = /`([^`\n]+)`/;
+interface InlineMatch {
+  index: number;
+  end: number;
+  segment: InlineSegment;
+}
 
-// Tokenizes a single line of GFM into ordered inline segments. Order matters:
-// code spans win over everything (no inner formatting), then links, then
-// bold (which uses `**` so we must consume both characters before italic with
-// `_` is considered).
+// The closer of a code-span opener ending at `end`: the start of the next
+// maximal backtick run exactly `length` long.
+type CodeSpanCloser = (end: number, length: number) => number | undefined;
+
+const ASCII_PUNCTUATION_RE = /[!-/:-@[-`{-~]/;
+const NUMERIC_REFERENCE_RE = /&#(?:[xX]([0-9a-fA-F]{1,6})|(\d{1,7}));/y;
+
+// micromark's rule: controls other than tab and line breaks, surrogates,
+// noncharacters, and out-of-range values become U+FFFD.
+const decodeCodePoint = (codePoint: number): string =>
+  codePoint < 9 ||
+  codePoint === 11 ||
+  (codePoint > 13 && codePoint < 32) ||
+  (codePoint > 126 && codePoint < 160) ||
+  (codePoint > 55_295 && codePoint < 57_344) ||
+  (codePoint > 64_975 && codePoint < 65_008) ||
+  codePoint % 65_536 >= 65_534 ||
+  codePoint > 1_114_111
+    ? '�'
+    : String.fromCodePoint(codePoint);
+
+const backtickRunEnd = (text: string, start: number): number => {
+  let end = start;
+  while (text[end] === '`') {
+    end += 1;
+  }
+  return end;
+};
+
+// Every maximal backtick run's start, keyed by the run's length, in order.
+const backtickRuns = (text: string): Map<number, number[]> => {
+  const runs = new Map<number, number[]>();
+  let start = text.indexOf('`');
+  while (start !== -1) {
+    const end = backtickRunEnd(text, start);
+    const starts = runs.get(end - start);
+    if (starts) {
+      starts.push(start);
+    } else {
+      runs.set(end - start, [start]);
+    }
+    start = text.indexOf('`', end);
+  }
+  return runs;
+};
+
+const firstAtOrAfter = (
+  sorted: readonly number[],
+  from: number
+): number | undefined => {
+  let low = 0;
+  let high = sorted.length;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (sorted[middle]! < from) {
+      low = middle + 1;
+    } else {
+      high = middle;
+    }
+  }
+  return sorted[low];
+};
+
+// Indexes `text`'s backtick runs once, on the first query.
+const codeSpanCloser = (text: string): CodeSpanCloser => {
+  let runs: Map<number, number[]> | undefined;
+  return (end, length) => {
+    runs ??= backtickRuns(text);
+    return firstAtOrAfter(runs.get(length) ?? [], end);
+  };
+};
+
+// CommonMark strips one space from each side of a span that is not all spaces.
+const codeSpanText = (content: string): string =>
+  /[^ ]/.test(content) && content.startsWith(' ') && content.endsWith(' ')
+    ? content.slice(1, -1)
+    : content;
+
+// Resolves the backslash escapes and numeric character references a GFM
+// serializer writes, which Slack would otherwise show literally, and leaves
+// code spans as written.
+const unescapeGfm = (text: string): string => {
+  const closer = codeSpanCloser(text);
+  let out = '';
+  let index = 0;
+  while (index < text.length) {
+    const char = text[index]!;
+    const next = text[index + 1];
+    if (
+      char === '\\' &&
+      next !== undefined &&
+      ASCII_PUNCTUATION_RE.test(next)
+    ) {
+      out += next;
+      index += 2;
+      continue;
+    }
+    if (char === '`') {
+      const fenceEnd = backtickRunEnd(text, index);
+      const close = closer(fenceEnd, fenceEnd - index);
+      const end = close === undefined ? fenceEnd : close + fenceEnd - index;
+      out += text.slice(index, end);
+      index = end;
+      continue;
+    }
+    if (char === '&') {
+      NUMERIC_REFERENCE_RE.lastIndex = index;
+      const reference = NUMERIC_REFERENCE_RE.exec(text);
+      if (reference) {
+        const [match, hex, decimal] = reference;
+        out += decodeCodePoint(
+          hex === undefined ? Number(decimal) : parseInt(hex, 16)
+        );
+        index += match.length;
+        continue;
+      }
+    }
+    out += char;
+    index += 1;
+  }
+  return out;
+};
+
+// A link destination may be wrapped in angle brackets (`[x](<dest>)`).
+const linkDestination = (dest: string): string =>
+  unescapeGfm(dest.replace(/^<([^<>]*)>$/, '$1'));
+
+// The code span whose opener starts at `open`, or `undefined`.
+const codeSpanAt = (
+  line: string,
+  open: number,
+  closer: CodeSpanCloser
+): InlineMatch | undefined => {
+  const fenceEnd = backtickRunEnd(line, open);
+  const close = closer(fenceEnd, fenceEnd - open);
+  return close === undefined
+    ? undefined
+    : {
+        index: open,
+        end: close + fenceEnd - open,
+        segment: {
+          kind: 'code',
+          text: codeSpanText(line.slice(fenceEnd, close)),
+        },
+      };
+};
+
+type InlineFinder = (
+  line: string,
+  from: number,
+  closer: CodeSpanCloser
+) => InlineMatch | null;
+
+const regexFinder =
+  (
+    pattern: RegExp,
+    toSegment: (match: RegExpExecArray) => InlineSegment
+  ): InlineFinder =>
+  (line, from) => {
+    pattern.lastIndex = from;
+    const match = pattern.exec(line);
+    return (
+      match && {
+        index: match.index,
+        end: match.index + match[0].length,
+        segment: toSegment(match),
+      }
+    );
+  };
+
+const findCodeSpan: InlineFinder = (line, from, closer) => {
+  let open = line.indexOf('`', from);
+  while (open !== -1) {
+    const span = codeSpanAt(line, open, closer);
+    if (span) {
+      return span;
+    }
+    open = line.indexOf('`', backtickRunEnd(line, open));
+  }
+  return null;
+};
+
+// In tie order. Each label, destination, or body stops at the first character
+// that cannot continue it, so one search from a position is linear.
+const INLINE_FINDERS: readonly InlineFinder[] = [
+  // A CommonMark backslash escape: any ASCII punctuation character.
+  regexFinder(/\\([!-/:-@[-`{-~])/g, ([, text = '']) => ({
+    kind: 'text',
+    text,
+  })),
+  findCodeSpan,
+  regexFinder(
+    /\[((?:\\.|[^[\]\\])+)\]\((<[^<>\n]*>|(?:\\.|[^\s()\\]|\([^()\s]*\))+)\)/g,
+    ([, text = '', url = '']) => ({ kind: 'link', text, url })
+  ),
+  regexFinder(/\*\*((?:\\.|[^*\n\\])+?)\*\*/g, ([, text = '']) => ({
+    kind: 'bold',
+    text,
+  })),
+  regexFinder(/(?<![\w])_((?:\\.|[^_\n\\])+?)_(?![\w])/g, ([, text = '']) => ({
+    kind: 'italic',
+    text,
+  })),
+];
+
+// Tokenizes a single line of GFM into ordered inline segments. The earliest
+// match wins; on a tie, the order of `INLINE_FINDERS` does. An escaped
+// character is text and never a delimiter. Each finder's next match is reused
+// until the cursor passes it, so a line is not rescanned per segment.
 const tokenizeInline = (line: string): InlineSegment[] => {
   const segments: InlineSegment[] = [];
+  const closer = codeSpanCloser(line);
+  const found = new Map<InlineFinder, InlineMatch | null>();
+  const nextMatch = (
+    finder: InlineFinder,
+    cursor: number
+  ): InlineMatch | null => {
+    const cached = found.get(finder);
+    if (cached === null || (cached !== undefined && cached.index >= cursor)) {
+      return cached;
+    }
+    const match = finder(line, cursor, closer);
+    found.set(finder, match);
+    return match;
+  };
   let cursor = 0;
   while (cursor < line.length) {
-    const remainder = line.slice(cursor);
-    const codeMatch = CODE_RE.exec(remainder);
-    const linkMatch = LINK_RE.exec(remainder);
-    const boldMatch = BOLD_RE.exec(remainder);
-    const italicMatch = ITALIC_RE.exec(remainder);
-    const candidates = [
-      { kind: 'code' as const, match: codeMatch },
-      { kind: 'link' as const, match: linkMatch },
-      { kind: 'bold' as const, match: boldMatch },
-      { kind: 'italic' as const, match: italicMatch },
-    ].filter((c): c is { kind: typeof c.kind; match: RegExpExecArray } =>
-      Boolean(c.match)
-    );
-    if (candidates.length === 0) {
-      segments.push({ kind: 'text', text: remainder });
+    let first: InlineMatch | undefined;
+    for (const finder of INLINE_FINDERS) {
+      const match = nextMatch(finder, cursor);
+      if (match && (first === undefined || match.index < first.index)) {
+        first = match;
+      }
+    }
+    if (first === undefined) {
+      segments.push({ kind: 'text', text: line.slice(cursor) });
       break;
     }
-    candidates.sort((a, b) => a.match.index - b.match.index);
-    const first = candidates[0]!;
-    if (first.match.index > 0) {
-      segments.push({
-        kind: 'text',
-        text: remainder.slice(0, first.match.index),
-      });
+    if (first.index > cursor) {
+      segments.push({ kind: 'text', text: line.slice(cursor, first.index) });
     }
-    if (first.kind === 'link') {
-      segments.push({
-        kind: 'link',
-        text: first.match[1] ?? '',
-        url: first.match[2] ?? '',
-      });
-    } else {
-      segments.push({ kind: first.kind, text: first.match[1] ?? '' });
+    segments.push(first.segment);
+    cursor = first.end;
+    // Backticks after an escaped one open a shorter run of their own.
+    if (line[cursor - 1] === '`' && line[cursor] === '`') {
+      const span = codeSpanAt(line, cursor, closer);
+      const end = span?.end ?? backtickRunEnd(line, cursor);
+      segments.push(
+        span?.segment ?? { kind: 'text', text: line.slice(cursor, end) }
+      );
+      cursor = end;
     }
-    cursor += first.match.index + first.match[0].length;
   }
   return segments;
 };
@@ -200,17 +411,20 @@ const renderInline = (line: string): string => {
     .map((segment) => {
       switch (segment.kind) {
         case 'text':
-          return escapeMrkdwn(segment.text);
+          return escapeMrkdwn(unescapeGfm(segment.text));
         case 'code':
           // Code spans pass through with mrkdwn's single-backtick syntax, but
           // we still need to neutralize any embedded backticks.
           return code(segment.text);
         case 'bold':
-          return bold(segment.text);
+          return bold(unescapeGfm(segment.text));
         case 'italic':
-          return italic(segment.text);
+          return italic(unescapeGfm(segment.text));
         case 'link':
-          return link(segment.url ?? '', segment.text);
+          return link(
+            linkDestination(segment.url ?? ''),
+            unescapeGfm(segment.text)
+          );
         default: {
           const unexpected: never = segment.kind;
           return unexpected;
@@ -220,11 +434,54 @@ const renderInline = (line: string): string => {
     .join('');
 };
 
-const HEADING_RE = /^(#{1,6})\s+(.+?)\s*#*\s*$/;
 const FENCE_RE = /^\s*```/;
 const TABLE_SEPARATOR_RE = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$/;
 const TABLE_ROW_RE = /^\s*\|.*\|\s*$/;
 const BLOCKQUOTE_RE = /^(>\s?)(.*)$/;
+
+// An ATX heading's text without its closing `#` run, or `undefined`. An
+// escaped `\#` is text, not part of the closing run.
+const headingText = (line: string): string | undefined => {
+  const text = /^#{1,6}[ \t]+(.*)$/.exec(line)?.[1]?.trimEnd();
+  if (text === undefined) {
+    return undefined;
+  }
+  const closing = /(?:^|[ \t])#+$/.exec(text);
+  const content = closing ? text.slice(0, closing.index).trimEnd() : text;
+  return content.length > 0 ? content : undefined;
+};
+
+// Splits a `| a | b |` row on its unescaped pipes into cell text, dropping the
+// optional leading/trailing pipes. GFM unescapes `\|` before reading a cell,
+// code spans included.
+const splitPipeRow = (line: string): string[] => {
+  const row = line.trim();
+  const cells: string[] = [];
+  let cell = '';
+  let endsWithPipe = false;
+  for (let index = 0; index < row.length; index += 1) {
+    const char = row[index]!;
+    const next = row[index + 1];
+    endsWithPipe = false;
+    if (char === '\\' && next !== undefined) {
+      cell += next === '|' ? '|' : `\\${next}`;
+      index += 1;
+    } else if (char === '|') {
+      cells.push(cell);
+      cell = '';
+      endsWithPipe = true;
+    } else {
+      cell += char;
+    }
+  }
+  if (!endsWithPipe) {
+    cells.push(cell);
+  }
+  if (row.startsWith('|')) {
+    cells.shift();
+  }
+  return cells.map((value) => unescapeGfm(value.trim()));
+};
 
 /**
  * Translates GFM into one Slack `mrkdwn` string:
@@ -245,16 +502,16 @@ export const gfmToSlackMrkdwn = (gfm: string): string => {
   while (i < lines.length) {
     const line = lines[i]!;
     if (FENCE_RE.test(line)) {
-      // Fenced code block: copy verbatim, including the opening/closing
-      // fences. Slack honours the triple-backtick fence but ignores the
-      // language hint, so we strip it for cleanliness.
-      out.push('```');
+      // Fenced code block: copy the body verbatim. Slack honours the
+      // triple-backtick fence but ignores the language hint, so we strip it
+      // for cleanliness.
+      const body: string[] = [];
       i += 1;
       while (i < lines.length && !FENCE_RE.test(lines[i]!)) {
-        out.push(lines[i]!);
+        body.push(lines[i]!);
         i += 1;
       }
-      out.push('```');
+      out.push(codeBlock(body.join('\n')));
       i += 1;
       continue;
     }
@@ -271,17 +528,25 @@ export const gfmToSlackMrkdwn = (gfm: string): string => {
         tableLines.push(lines[i]!);
         i += 1;
       }
-      out.push('```');
-      out.push(...tableLines);
-      out.push('```');
+      out.push(
+        codeBlock(
+          tableLines
+            .map((row) =>
+              TABLE_SEPARATOR_RE.test(row)
+                ? row
+                : `| ${splitPipeRow(row).join(' | ')} |`
+            )
+            .join('\n')
+        )
+      );
       continue;
     }
-    const headingMatch = line.match(HEADING_RE);
-    if (headingMatch) {
+    const heading = headingText(line);
+    if (heading !== undefined) {
       // Headings have no first-class mrkdwn equivalent. Bolding the text keeps
       // the visual hierarchy without inventing markup Slack would render as
       // a literal `#`.
-      out.push(bold(headingMatch[2] ?? ''));
+      out.push(bold(unescapeGfm(heading)));
       i += 1;
       continue;
     }
@@ -319,16 +584,6 @@ const slackPreformattedBlock = (code: string): SlackRichTextBlock => ({
     },
   ],
 });
-
-// Splits a `| a | b |` row into trimmed cell strings, dropping the optional
-// leading/trailing pipes.
-const splitPipeRow = (line: string): string[] =>
-  line
-    .trim()
-    .replace(/^\|/, '')
-    .replace(/\|$/, '')
-    .split('|')
-    .map((cell) => cell.trim());
 
 // Reads a GFM alignment marker (`:---`, `---:`, `:---:`) into a column align.
 const parseColumnAlign = (marker: string): 'left' | 'center' | 'right' => {

@@ -55,7 +55,7 @@ The dispatcher's own methods (`renderText(node)`, `renderSlack(node, collector?)
 
 **Picture swap.** When a collector is passed and the node's type was declared a picture by its pack, the node never reaches its renderer: the dispatcher renders its _text_ as alt text, allocates a file reference, and emits an `image` block. That is how a chart arrives in Slack as a PNG rather than as a markdown approximation of one.
 
-**Markdown fallback.** With no Slack renderer, the dispatcher converts the node's mandatory markdown to Block Kit. A missing renderer degrades; it does not disappear.
+**Markdown fallback.** With no Slack renderer, the dispatcher converts the node's mandatory markdown to Block Kit. A missing renderer degrades; it does not disappear. The conversion reads a backslash escape or a numeric character reference outside a code span as the character it stands for, so neither reaches Slack and an escaped `\*` is never converted to formatting. Slack may still format a literal pair such as `_y_` itself.
 
 The collector is opt-in, so default output stays safe for a caller that cannot upload files. `slackBlock` and `slackCollector` default to `SlackBlock` and `SlackAssetCollector` in `DefaultPackTypes`, so a dispatcher built from any pack is already a `SlackEnvelopeDispatcher`; a pack narrows them only when it carries its own block extensions.
 

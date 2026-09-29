@@ -11,6 +11,9 @@
   },
   "type": "module",
   "sideEffects": false,
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "main": "./dist/cjs/entries/index.js",
   "module": "./dist/entries/index.js",
   "types": "./dist/entries/index.d.ts",

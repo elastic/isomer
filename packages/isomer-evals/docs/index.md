@@ -5,7 +5,7 @@ description: Scores whether a model produces valid, well-chosen compositions fro
 
 # Isomer evals
 
-`@elastic/isomer-evals` scores whether a model produces valid, well-chosen compositions from a pack's authoring context.
+`@elastic/isomer-evals` scores whether a model produces valid, well-chosen compositions from a pack's authoring context. On Node it needs 22.13.0 or later, like the SDK it depends on.
 
 Conformance answers "does this primitive render?" This answers the other half: "does an agent handed the catalog reach for the right one?" Catalog `useWhen` / `avoidWhen` copy is the tunable, and without a measurement it is unfalsifiable.
 
