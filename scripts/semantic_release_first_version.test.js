@@ -27,14 +27,16 @@ const { FIRST_RELEASE } = await import(
   'semantic-release/lib/definitions/constants.js'
 );
 const { release } = await import('semantic-release/lib/branches/normalize.js');
-const version = getNextVersion({
-  branch: { type: 'release' },
-  nextRelease: { type: 'minor' },
-  lastRelease: {},
-  logger: { log() {} },
-});
+const versions = ['minor', 'major'].map((type) =>
+  getNextVersion({
+    branch: { type: 'release' },
+    nextRelease: { type },
+    lastRelease: {},
+    logger: { log() {} },
+  })
+);
 const [{ range }] = release({ release: [{ name: 'main', tags: [] }] });
-process.stdout.write(JSON.stringify({ firstRelease: FIRST_RELEASE, version, range }));
+process.stdout.write(JSON.stringify({ firstRelease: FIRST_RELEASE, versions, range }));
 `;
 
 const probeRelease = (registerLoader) => {
@@ -75,16 +77,16 @@ describe('semantic_release_loader', () => {
   it('keeps 1.0.0 as the first version and main range without the loader', () => {
     expect(probeRelease(false)).toEqual({
       firstRelease: '1.0.0',
-      version: '1.0.0',
+      versions: ['1.0.0', '1.0.0'],
       range: '>=1.0.0',
     });
   });
 
-  it('sets 0.1.0 as the first version and allows it on main', () => {
+  it('sets 0.1.0 as the first version, even for a breaking change, and allows it on main', () => {
     const probed = probeRelease(true);
     expect(probed).toEqual({
       firstRelease: DEFAULT_FIRST_VERSION,
-      version: DEFAULT_FIRST_VERSION,
+      versions: [DEFAULT_FIRST_VERSION, DEFAULT_FIRST_VERSION],
       range: `>=${DEFAULT_FIRST_VERSION}`,
     });
   });
