@@ -172,6 +172,34 @@ describe('react surface enhancements', () => {
     expect(section.dataset.runs).toBe('1');
   });
 
+  it('keeps sibling renders of one composition apart', () => {
+    const error = vi.spyOn(console, 'error');
+    const render = (target: Composition) =>
+      runtime.surfaces.react.render(target, {
+        wrapper: true,
+        enhancements: [counted],
+      });
+    const [first, second] = mount(
+      createElement('div', null, render(composition), render(composition))
+    ).querySelectorAll('section');
+    act(() =>
+      root!.render(
+        createElement(
+          'div',
+          null,
+          render(composition),
+          render({ ...composition })
+        )
+      )
+    );
+    const [kept, fresh] = container.querySelectorAll('section');
+    expect(error).not.toHaveBeenCalled();
+    expect(kept).toBe(first);
+    expect(kept!.dataset.runs).toBe('1');
+    expect(fresh).not.toBe(second);
+    expect(fresh!.dataset.runs).toBe('1');
+  });
+
   it('leaves out an enhancement with nothing to act on', () => {
     const section = mount(
       runtime.surfaces.react.render(

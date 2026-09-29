@@ -103,28 +103,6 @@ export interface ReactSurface<TRenderContext = PrimitiveRenderContext> {
 const useIsomorphicLayoutEffect =
   typeof document === 'undefined' ? useEffect : useLayoutEffect;
 
-/** Sections whose scripts have run, so StrictMode's second effect pass skips them. */
-const ran = new WeakSet<Element>();
-
-/** `section` with `js` run against its element once it mounts. */
-const ScriptedSection = ({
-  section,
-  js,
-}: {
-  section: ReactElement;
-  js: string;
-}): ReactNode => {
-  const ref = useRef<HTMLElement>(null);
-  useIsomorphicLayoutEffect(() => {
-    const root = ref.current;
-    if (root && !ran.has(root)) {
-      ran.add(root);
-      runEnhancementScript(js, root);
-    }
-  }, []);
-  return cloneElement(section, { ref });
-};
-
 const keys = new WeakMap<object, Map<string, string>>();
 let nextKey = 0;
 
@@ -135,6 +113,31 @@ const scriptedKey = (source: object, js: string): string => {
   const key = bySource.get(js) ?? String(nextKey++);
   bySource.set(js, key);
   return key;
+};
+
+/** Sections whose scripts have run, so StrictMode's second effect pass skips them. */
+const ran = new WeakSet<Element>();
+
+/** `section` with `js` run against its element once it mounts. The remount key sits on `section`, leaving sibling identity to the host. */
+const ScriptedSection = ({
+  section,
+  source,
+  js,
+}: {
+  section: ReactElement;
+  source: object;
+  js: string;
+}): ReactNode => {
+  const ref = useRef<HTMLElement>(null);
+  const key = scriptedKey(source, js);
+  useIsomorphicLayoutEffect(() => {
+    const root = ref.current;
+    if (root && !ran.has(root)) {
+      ran.add(root);
+      runEnhancementScript(js, root);
+    }
+  }, [key]);
+  return cloneElement(section, { key, ref });
 };
 
 /**
@@ -184,11 +187,7 @@ export const createReactSurface = <TRenderContext = PrimitiveRenderContext>(
       ...(wrapper === true ? {} : wrapper),
     });
     return js
-      ? createElement(ScriptedSection, {
-          key: scriptedKey(source, js),
-          section,
-          js,
-        })
+      ? createElement(ScriptedSection, { section, source, js })
       : section;
   };
 
