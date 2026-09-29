@@ -66,7 +66,7 @@ export const markdownLinkWrap = (inner: string, href: string): string =>
 // rather than truncated at the inner `)`, and the optional title is matched
 // separately so `[x](dest "title")` does not swallow the closing paren.
 const INLINE_LINK_RE =
-  /(!?)\[([^\]]*)\]\(\s*(?:<([^<>]*)>|((?:[^\s()]|\([^()]*\))*))\s*("[^"]*"|'[^']*')?\s*\)/g;
+  /(!?)\[([^\]]*)\]\(\s*(?!\s)(?:<([^<>]*)>|((?:[^\s()]|\([^()]*\))*))\s*(?!\s)("[^"]*"|'[^']*')?\s*\)/g;
 const AUTOLINK_RE = /<([a-z][a-z0-9+.-]*:[^<>\s]*)>/gi;
 // Link reference definition: `[label]: destination "optional title"` at the
 // start of a line (up to three leading spaces per CommonMark).
@@ -81,7 +81,7 @@ const REFERENCE_DEF_RE =
 // the scheme) and email autolinks (`<sre@example.test>`); they key on shape,
 // not safety, so de-bracketing an unsafe autolink stays the autolink pass's job.
 const RAW_HTML_START_RE =
-  /<(?!\/?[a-z][a-z0-9+.-]*:)(?![^\s<>@]+@[^\s<>@]+>)(?=\/?[a-zA-Z!?][^>]*>)/gi;
+  /<(?!\/?[a-z][a-z0-9+.-]*:)(?![^\s<>@]+@[^\s<>@]+>)(?=\/?[a-zA-Z!?])/gi;
 
 // Code spans and fenced blocks are never interpreted as links or HTML, so no
 // pass may touch them: rewriting there would mangle inert sample text, and an
@@ -126,9 +126,18 @@ export const sanitizeMarkdownSource = (markdown: string): string =>
     .split(CODE_SEGMENT_RE)
     .map((segment, index) =>
       // Odd indices are the captured code delimiters — passed through verbatim.
-      index % 2 === 1 ? segment : sanitizeMarkdownSegment(segment)
+      index % 2 === 1
+        ? segment
+        : escapeRawHtml(sanitizeMarkdownSegment(segment))
     )
     .join('');
+
+const escapeRawHtml = (text: string): string => {
+  const lastClose = text.lastIndexOf('>');
+  return text.replace(RAW_HTML_START_RE, (open, offset: number) =>
+    offset < lastClose ? '&lt;' : open
+  );
+};
 
 const sanitizeMarkdownSegment = (segment: string): string =>
   segment
@@ -162,5 +171,4 @@ const sanitizeMarkdownSegment = (segment: string): string =>
         const safe = sanitizeNavigationHref(unwrapDestination(dest));
         return `${prefix}${safe ?? BLOCKED_HREF}${title ?? ''}`;
       }
-    )
-    .replace(RAW_HTML_START_RE, '&lt;');
+    );

@@ -89,7 +89,7 @@ An authored string is `lineText()` or `wrappedText()` from `src/primitives/autho
 
 There is no `svg` renderer, and adding one is the mistake this pack exists to rule out. The image surface lays out the `react` tree against the pack's stylesheet, so a second hand-authored tree is a second thing to keep in sync and a second thing to get wrong. [Drawing inside an `svg`](#drawing-inside-an-svg) covers the one place that equivalence stops.
 
-The `text`, `markdown`, and `slack` renderers live in `index.tsx`. A `markdown` renderer returns the SDK's `md` builder content, never a string, so the serializer escapes each value where it lands. A one-line authored value goes through `oneLine` (`src/render/one_line.ts`) on the text and Slack surfaces; `src/content_parity.test.ts` fails when a line break survives on any of them. Every primitive has a `slack` renderer, and `src/registry.test.ts` fails when one does not.
+The `text`, `markdown`, and `slack` renderers live in `index.tsx`. A `markdown` renderer returns the SDK's `md` builder content, never a string, so the serializer escapes each value where it lands. A one-line authored value goes through the SDK's `oneLine` on the text and Slack surfaces; `src/content_parity.test.ts` fails when a line break survives on any of them. Every primitive has a `slack` renderer, and `src/registry.test.ts` fails when one does not.
 
 Spread `nodeAnchor(context, { type })` from `@elastic/isomer-sdk` on the renderer's root element. It renders nothing unless a host asks for anchors, and it is what `checkLayout` pairs measured boxes to nodes by.
 

@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
 import { md, serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
@@ -15,7 +16,6 @@ import {
   plainText,
   stripMarks,
 } from './marks';
-import { oneLine } from './one_line';
 
 describe('marks', () => {
   it('moves whitespace at a strong run’s edges outside it, so every surface reads the same emphasis', () => {
@@ -92,5 +92,11 @@ describe('marks', () => {
         md.paragraph(...marksMarkdown('Call `a*b` before **render** & *go*.'))
       )
     ).toBe('Call `a*b` before **render** & \\*go\\*.');
+  });
+
+  it('reads a strong run with a long whitespace run in linear time', () => {
+    const started = performance.now();
+    expect(parseMarks(`**a${' '.repeat(100_000)}b**`)).toHaveLength(1);
+    expect(performance.now() - started).toBeLessThan(1_000);
   });
 });

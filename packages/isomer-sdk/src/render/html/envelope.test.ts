@@ -261,4 +261,10 @@ describe('renderHTMLWithDispatcher', () => {
     );
     expect(render(view(authored), { minify: false }).html).toContain(authored);
   });
+
+  it('collapses a long whitespace run between tags in linear time', () => {
+    const started = performance.now();
+    render(view(`<p>${'\n '.repeat(50_000)}x</p>`));
+    expect(performance.now() - started).toBeLessThan(1_000);
+  });
 });

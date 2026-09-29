@@ -10,6 +10,7 @@
 // so nothing is escaped and nesting survives exactly.
 
 import type {
+  Blockquote,
   List,
   ListItem,
   Nodes,
@@ -159,6 +160,10 @@ const childInline = (
 // nested list follows at the next indent; what the item holds after a nested
 // list follows unbulleted, since a Slack list item cannot resume; and the
 // outer list resumes at its next number.
+// A quote holds its blocks at one level.
+const unquoted = (node: RootContent): RootContent[] =>
+  node.type === 'blockquote' ? node.children.flatMap(unquoted) : [node];
+
 const listElements = (
   list: List,
   indent: number
@@ -201,7 +206,9 @@ const listElements = (
         numbered = true;
       }
     };
-    for (const child of item.children) {
+    for (const child of item.children.flatMap(
+      unquoted
+    ) as ListItem['children']) {
       if (child.type === 'list') {
         emit();
         flush();
@@ -303,18 +310,130 @@ const LIST_ITEM_CONTENT: ReadonlySet<string> = new Set([
 // block, such as a table, goes through the string translator whole.
 const fitsRichTextList = (list: List): boolean =>
   list.children.every((item) =>
-    item.children.every(
-      (child) =>
-        LIST_ITEM_CONTENT.has(child.type) &&
-        (child.type !== 'list' || fitsRichTextList(child))
-    )
+    item.children
+      .flatMap(unquoted)
+      .every(
+        (child) =>
+          LIST_ITEM_CONTENT.has(child.type) &&
+          (child.type !== 'list' || fitsRichTextList(child))
+      )
   );
 
+// The string translator reads a line at a time, so a hard break reaches it as
+// a line ending and a quote as its blocks.
+const forStringPath = (node: Nodes): Nodes[] => {
+  if (node.type === 'break') {
+    return [{ type: 'text', value: '\n' }];
+  }
+  if (node.type === 'blockquote') {
+    return node.children.flatMap(forStringPath);
+  }
+  return 'children' in node
+    ? [{ ...node, children: node.children.flatMap(forStringPath) } as Nodes]
+    : [node];
+};
+
+const viaStringPath = (node: RootContent): SlackBlock[] =>
+  gfmToSlackBlocks(
+    serializeMarkdown(forStringPath(node) as unknown as MarkdownContent)
+  );
+
+type Piece = SlackRichTextBlockElement | SlackBlock;
+
+const isElement = (piece: Piece): piece is SlackRichTextBlockElement =>
+  piece.type.startsWith('rich_text_');
+
+const borderedElement = (
+  element: SlackRichTextBlockElement
+): SlackRichTextBlockElement => {
+  switch (element.type) {
+    case 'rich_text_list':
+    case 'rich_text_preformatted':
+      return { ...element, border: 1 };
+    case 'rich_text_section':
+      return { type: 'rich_text_quote', elements: element.elements };
+    default:
+      return element;
+  }
+};
+
+// What a quote holds besides text keeps a quote's border; a table has none.
+const bordered = (piece: Piece): Piece => {
+  if (isElement(piece)) {
+    return borderedElement(piece);
+  }
+  switch (piece.type) {
+    case 'rich_text':
+      return { ...piece, elements: piece.elements.map(borderedElement) };
+    case 'section':
+      return piece.text?.type === 'mrkdwn'
+        ? {
+            ...piece,
+            text: {
+              ...piece.text,
+              text: piece.text.text.replace(/^(?=.*\S)/gm, '> '),
+            },
+          }
+        : piece;
+    default:
+      return piece;
+  }
+};
+
+const blockPieces = (node: RootContent): Piece[] => {
+  if (node.type === 'blockquote') {
+    return quotePieces(node);
+  }
+  if (
+    containsVerbatim(node) ||
+    (node.type === 'list' && !fitsRichTextList(node))
+  ) {
+    return viaStringPath(node);
+  }
+  if (node.type === 'table') {
+    return tableBlock(node);
+  }
+  const translated = richTextElements(node);
+  return translated.length === 0 &&
+    !['paragraph', 'heading', 'code'].includes(node.type)
+    ? viaStringPath(node)
+    : translated;
+};
+
+// A quote is one level, nested quotes spread into it: its text as
+// `rich_text_quote`, and any other block it holds with a border.
+const quotePieces = (quote: Blockquote): Piece[] => {
+  const out: Piece[] = [];
+  let runs: SlackRichTextInline[] = [];
+  const flush = (): void => {
+    const elements = clampInline(runs);
+    runs = [];
+    if (elements.length > 0) {
+      out.push({ type: 'rich_text_quote', elements });
+    }
+  };
+  for (const child of quote.children.flatMap(unquoted)) {
+    if (child.type === 'paragraph' || child.type === 'heading') {
+      const line = childInline(child);
+      runs.push(
+        ...(runs.length > 0 && line.length > 0 ? textElement('\n', {}) : []),
+        ...line
+      );
+    } else {
+      flush();
+      out.push(...blockPieces(child).map(bordered));
+    }
+  }
+  flush();
+  return out;
+};
+
 /**
- * Builder content as Block Kit: paragraphs, headings, lists, and code as
- * `rich_text`, tables as `table` blocks. A run of rich-text blocks shares one
- * `rich_text` block. Markdown printed as written, and any block holding it,
- * goes through {@link gfmToSlackBlocks}.
+ * Builder content as Block Kit: paragraphs, headings, lists, quotes, and code
+ * as `rich_text`, tables as `table` blocks. A quote is one level, and inside a
+ * list item its blocks are the item's. A run of rich-text blocks shares one
+ * `rich_text` block. Markdown printed as written, any block holding it, and a
+ * list holding a table go through {@link gfmToSlackBlocks}.
  */
 export const markdownContentToSlackBlocks = (
   content: MarkdownContent
@@ -347,33 +466,12 @@ export const markdownContentToSlackBlocks = (
     elements = [];
   };
   for (const node of markdownBlocks(content) as RootContent[]) {
-    if (
-      containsVerbatim(node) ||
-      (node.type === 'list' && !fitsRichTextList(node))
-    ) {
-      flush();
-      blocks.push(
-        ...gfmToSlackBlocks(
-          serializeMarkdown(node as unknown as MarkdownContent)
-        )
-      );
-    } else if (node.type === 'table') {
-      flush();
-      blocks.push(...tableBlock(node));
-    } else {
-      const translated = richTextElements(node);
-      if (
-        translated.length === 0 &&
-        !['paragraph', 'heading', 'code'].includes(node.type)
-      ) {
-        flush();
-        blocks.push(
-          ...gfmToSlackBlocks(
-            serializeMarkdown(node as unknown as MarkdownContent)
-          )
-        );
+    for (const piece of blockPieces(node)) {
+      if (isElement(piece)) {
+        elements.push(piece);
       } else {
-        elements.push(...translated);
+        flush();
+        blocks.push(piece);
       }
     }
   }

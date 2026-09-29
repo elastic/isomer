@@ -450,17 +450,22 @@ const PRE_BLOCK = /<pre[\s>][\s\S]*?<\/pre>/g;
 
 // Only whitespace spanning a line break is collapsed: a single space between
 // inline elements (`<b>a</b> <i>b</i>`) is authored content.
-const TAG_GAP_WITH_NEWLINE = />\s*\n\s*</g;
+const TAG_GAP = />(\s*)</g;
+
+const collapseTagGaps = (html: string): string =>
+  html.replace(TAG_GAP, (gap, space: string) =>
+    space.includes('\n') ? '><' : gap
+  );
 
 const minifyHtml = (value: string): string => {
   let result = '';
   let cursor = 0;
   for (const match of value.matchAll(PRE_BLOCK)) {
     const start = match.index;
-    result += value.slice(cursor, start).replace(TAG_GAP_WITH_NEWLINE, '><');
+    result += collapseTagGaps(value.slice(cursor, start));
     result += match[0];
     cursor = start + match[0].length;
   }
-  result += value.slice(cursor).replace(TAG_GAP_WITH_NEWLINE, '><');
+  result += collapseTagGaps(value.slice(cursor));
   return result.trim();
 };

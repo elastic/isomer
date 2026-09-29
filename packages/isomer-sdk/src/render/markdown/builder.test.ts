@@ -51,18 +51,34 @@ const textOf = (node: Nodes): string =>
 const typesIn = (root: Root): string[] =>
   descendants(root).map(({ type }) => type);
 
-// Where each input lands, and the node its text should come back in.
+const trim = (text: string): string => text.trim();
+
+// Where each input lands, the node its text should come back in, and that text.
 const PLACEMENTS: readonly [
   string,
   (input: string) => MarkdownContent,
   string,
+  ((text: string) => string)?,
 ][] = [
   ['paragraph', (input) => md.paragraph(input), 'paragraph'],
+  [
+    'paragraph around a hard break',
+    (input) => md.paragraph(input, md.break(), input),
+    'paragraph',
+    (text) => text + text,
+  ],
+  ['blockquote', (input) => md.blockquote(md.paragraph(input)), 'paragraph'],
   ['heading', (input) => md.heading(2, input), 'heading'],
   ['strong', (input) => md.paragraph(md.strong(input)), 'strong'],
   ['emphasis', (input) => md.paragraph(md.emphasis(input)), 'emphasis'],
   ['list item', (input) => md.list([input]), 'paragraph'],
-  ['table cell', (input) => md.table(['h'], [[input]]), 'tableCell'],
+  ['table cell', (input) => md.table(['h'], [[input]]), 'tableCell', trim],
+  [
+    'multi-run table cell',
+    (input) => md.table(['h'], [[[input, input]]]),
+    'tableCell',
+    (text) => trim(text + text),
+  ],
   [
     'link label',
     (input) => md.paragraph(md.link(input, 'https://x.y')),
@@ -88,17 +104,14 @@ const LIVE_TYPES = new Set([
 const AUTOLINK_INPUT_RE = /www\.|https?:\/\/|@/;
 
 describe('md', () => {
-  describe.each(PLACEMENTS)('in a %s', (_placement, place, container) => {
+  describe.each(PLACEMENTS)('in a %s', (_placement, place, container, text) => {
     it.each(SAFE_INPUTS)('keeps %j as text', (input) => {
       const root = read(place(input));
       const holder = descendants(root)
         .filter(({ type }) => type === container)
         .at(-1);
       const expected = input.replace(/\r\n|[\n\r\u2028\u2029]/g, ' ');
-      // GFM trims a cell's edge whitespace.
-      expect(holder && textOf(holder)).toBe(
-        container === 'tableCell' ? expected.trim() : expected
-      );
+      expect(holder && textOf(holder)).toBe(text?.(expected) ?? expected);
 
       const live = descendants(root).filter(
         (node) => LIVE_TYPES.has(node.type) && node.type !== container
@@ -324,6 +337,63 @@ describe('md', () => {
     expect(cells).toEqual(['a|b', 'c', '1', '2']);
   });
 
+  it('breaks a paragraph line with a backslash, prints a space elsewhere, and drops an edge break', () => {
+    expect(serializeMarkdown(md.paragraph('a', md.break(), 'b'))).toBe(
+      'a\\\nb'
+    );
+    expect(
+      serializeMarkdown(md.paragraph(md.break(), 'a', md.break(), ''))
+    ).toBe('a');
+    expect(
+      serializeMarkdown([
+        md.heading(3, md.break(), 'a', md.break(), 'b'),
+        md.paragraph(md.strong('c', md.break(), 'd', md.break())),
+        md.paragraph(
+          md.emphasis(md.break(), 'g'),
+          md.link(['h', md.break()], 'https://a.b')
+        ),
+        md.table([[md.break(), 'e', md.break(), 'f', md.break()]], []),
+      ])
+    ).toBe('### a b\n\n**c d**\n\n_g_[h](https://a.b)\n\n| e f |\n| - |');
+  });
+
+  it('quotes builder blocks and embedded content, and drops an empty quote', () => {
+    const markdown = serializeMarkdown([
+      md.blockquote(
+        md.paragraph('# a'),
+        md.list(['b']),
+        markdownFromString('c\n\nd'),
+        md.blockquote(md.paragraph('> e'))
+      ),
+      md.blockquote(markdownFromString('')),
+    ]);
+    expect(markdown).toBe('> \\# a\n>\n> - b\n>\n> c\n>\n> d\n>\n> > \\> e');
+    const [quote] = parse(markdown).children;
+    expect(quote?.type === 'blockquote' && quote.children.map(textOf)).toEqual([
+      '# a',
+      'b',
+      'c',
+      'd',
+      '> e',
+    ]);
+  });
+
+  it('keeps code, strong, and pipes in one multi-run cell', () => {
+    const root = read(
+      md.table(['h'], [[[md.code('a|b'), ' | ', md.strong('c|d')]]])
+    );
+    const cell = descendants(root).filter(
+      ({ type }) => type === 'tableCell'
+    )[1];
+    expect(cell).toMatchObject({
+      children: [
+        { type: 'inlineCode', value: 'a|b' },
+        { type: 'text', value: ' | ' },
+        { type: 'strong', children: [{ type: 'text', value: 'c|d' }] },
+      ],
+    });
+  });
+
   it('reaches Slack with no literal escapes, links and tables intact', () => {
     const blocks = gfmToSlackBlocks(
       serializeMarkdown([
@@ -351,5 +421,15 @@ describe('label helpers', () => {
   it('escapes the label they bold', () => {
     expect(boldSectionLabel('a*b')).toBe('**A\\*B**');
     expect(boldLabelPrefix('2*3: six', '2*3')).toBe('**2\\*3**: six');
+  });
+
+  it('build the same labels as content, escaping the text too', () => {
+    expect(
+      serializeMarkdown([
+        md.boldSectionLabel('a*b'),
+        md.paragraph(...md.boldLabelPrefix('2*3: six*', '2*3')),
+        md.paragraph(...md.boldLabelPrefix('x: *y*', 'z')),
+      ])
+    ).toBe('**A\\*B**\n\n**2\\*3**: six\\*\n\nx: \\*y\\*');
   });
 });

@@ -7,12 +7,12 @@
 
 import { Fragment, type ReactNode } from 'react';
 import { nodeAnchor } from '@elastic/isomer-sdk';
+import { oneLine } from '@elastic/isomer-sdk/author';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv, SlideRenderContext } from '../../render/context';
 import { marksReact, stripMarks } from '../../render/marks';
 import { displayColumns } from '../../render/mono';
-import { oneLine } from '../../render/one_line';
 import { graphFit } from '../../theme/components/graph';
 import { slideDistillery } from '../../theme/distillery';
 import { connectorModule, layoutModule } from '../../theme/modules';
