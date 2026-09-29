@@ -355,10 +355,20 @@ describe('gfmToSlackBlocks', () => {
     }
     expect(table.rows).toEqual([
       [
-        { type: 'raw_text', text: '`a\\.b`' },
-        { type: 'raw_text', text: '`a|b`' },
+        { type: 'raw_text', text: 'a\\.b' },
+        { type: 'raw_text', text: 'a|b' },
       ],
     ]);
+  });
+
+  it('prints a formatted cell or link label as its text, and an image as a link', () => {
+    const [table] = gfmToSlackBlocks('| **b** _i_ `c` |\n| - |');
+    expect(table).toMatchObject({ rows: [[{ text: 'b i c' }]] });
+    expect(
+      gfmToSlackMrkdwn(
+        '[**x** _y_ `z`](https://a.b) ![alt](https://a.b/i.png) ![d](data:image/png;base64,AA)'
+      )
+    ).toBe('<https://a.b|x y z> <https://a.b/i.png|alt> d');
   });
 
   it('opens a fence only as GFM does, and closes one on a CRLF line', () => {

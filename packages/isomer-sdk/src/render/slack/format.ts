@@ -425,7 +425,8 @@ const INLINE_FINDERS: readonly InlineFinder[] = [
   })),
   findCodeSpan,
   regexFinder(
-    /\[((?:\\.|[^[\]\\])+)\]\((<[^<>\n]*>|(?:\\.|[^\s()\\]|\([^()\s]*\))+)\)/g,
+    // An image degrades to a link to its source, labelled with its alt text.
+    /!?\[((?:\\.|[^[\]\\])+)\]\((<[^<>\n]*>|(?:\\.|[^\s()\\]|\([^()\s]*\))+)\)/g,
     ([, text = '', url = '']) => ({ kind: 'link', text, url })
   ),
   regexFinder(/\*\*((?:\\.|[^*\n\\])+?)\*\*/g, ([, text = '']) => ({
@@ -506,7 +507,7 @@ const renderInline = (line: string): string => {
         case 'link':
           return link(
             linkDestination(segment.url ?? ''),
-            unescapeGfm(segment.text)
+            plainInline(segment.text)
           );
         default: {
           const unexpected: never = segment.kind;
@@ -516,6 +517,19 @@ const renderInline = (line: string): string => {
     })
     .join('');
 };
+
+// Inline GFM as its text alone, for a link label or a table cell, where
+// mrkdwn formatting would show its markers.
+const plainInline = (line: string): string =>
+  tokenizeInline(line)
+    .map(({ kind, text }) =>
+      kind === 'text'
+        ? unescapeGfm(text)
+        : kind === 'code'
+          ? text
+          : plainInline(text)
+    )
+    .join('');
 
 // GFM: up to three spaces of indent, and no backtick in the opener's info.
 const FENCE_RE = /^ {0,3}(`{3,})[^`]*$/;
@@ -571,7 +585,7 @@ const splitPipeRow = (line: string): string[] => {
   if (row.startsWith('|')) {
     cells.shift();
   }
-  return cells.map((value) => unescapeGfm(value.trim()));
+  return cells.map((value) => plainInline(value.trim()));
 };
 
 /**
