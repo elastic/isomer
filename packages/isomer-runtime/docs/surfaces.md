@@ -16,7 +16,7 @@ runtime.surfaces.slack.render(composition, { collectAssets: true });
 | `text` | `string` | yes | `heading`, `onValidationError` |
 | `markdown` | `string` | yes | `heading`, `onValidationError` |
 | `slack` | `{ text, blocks, assets }` | yes | `heading`, `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
-| `svg` | `SvgRenderResult` | yes | `frame`, `width`, `height`, `theme`, `onValidationError` |
+| `svg` | `SvgRenderResult` | yes | `frame`, `width`, `height`, `theme`, `anchors`, `onValidationError` |
 
 `HTMLRenderResult` is `{ html, css, js, body, measurement, validationErrors }`. [Embedding](embedding.md) covers getting that markup, stylesheet, and script onto a page a host already controls, including when to render with `scripts: 'host'`. The `svg` entry is `undefined` unless the runtime was given [frames](frame.md), and the factory's return type tracks which.
 
@@ -89,7 +89,9 @@ const { width, height } = svg.resolveViewport(composition);
 const { element, css } = svg.render(composition, { theme: 'light' });
 ```
 
-`renderNode` on this surface takes only `frame` and `theme`. Geometry is absent deliberately: a node drawn with no surround has nothing for a width or height to size.
+`anchors: true` renders node anchors into `element`, so a measured layout of it can be handed to the SDK's `checkLayout`.
+
+`renderNode` on this surface takes only `frame`, `theme`, and `anchors`. Geometry is absent deliberately: a node drawn with no surround has nothing for a width or height to size.
 
 ## Warnings are per surface
 

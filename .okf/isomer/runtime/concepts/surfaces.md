@@ -26,7 +26,7 @@ The runtime exposes `react`, `html`, `text`, `markdown`, `slack`, and `svg`. `ht
 
 `heading: false` leaves the composition's title and subtitle out of `react`, `html`, `text`, `markdown`, and `slack`, including Slack's fallback `text`; it defaults to `true`. `slack.renderNode` returns the same `{ text, blocks, assets }` as `render`, with `collectAssets` and `assetPrefix` honoured. `react.renderNode` and `slack.renderNode` take options without `heading`.[^docs]
 
-`svg` returns `{ element, css, width, height }` — the same React tree the DOM gets, plus the pack stylesheet and viewport. Rasterizing that result is [takumi](/image-takumi/concepts/raster.md).[^svg]
+`svg` returns `{ element, css, width, height }` — the same React tree the DOM gets, plus the pack stylesheet and viewport. `anchors: true` renders node anchors into it, for the SDK's `checkLayout`. Rasterizing that result is [takumi](/image-takumi/concepts/raster.md).[^svg]
 
 Related: [runtime](/runtime/concepts/runtime.md), [frame](/runtime/concepts/frame.md).
 

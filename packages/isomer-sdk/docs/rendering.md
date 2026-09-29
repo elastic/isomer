@@ -101,9 +101,21 @@ Runtime code that acts on a rendered node, such as a host stepping through a sli
 react: (node, { context }) => <ol {...nodeAnchor(context, node)}>…</ol>,
 ```
 
-Anchors render only when something needs them, so a render nobody acts on carries none. During an HTML render the surface decides, for the whole synchronous render and without touching the render context: anchors are on when a resolved enhancement declares `anchors: true`, or when a test passes the `anchors: true` render option, and off otherwise, whatever the context's `anchors` says. `anchors: false` cannot turn off anchors an enhancement needs. Outside an HTML render, on the React and `svg` surfaces, the context's own `anchors` decides: a React host turns them on with `anchors: true` on the context it passes, or by passing the runtime's React surface an enhancement that declares `anchors: true`.
+Anchors render only when something needs them, so a render nobody acts on carries none. During an HTML render the surface decides, for the whole synchronous render and without touching the render context: anchors are on when a resolved enhancement declares `anchors: true`, or when a test passes the `anchors: true` render option, and off otherwise, whatever the context's `anchors` says. `anchors: false` cannot turn off anchors an enhancement needs. Outside an HTML render, on the React and `svg` surfaces, the context's own `anchors` decides: a React host turns them on with `withNodeAnchors(context)` or `anchors: true` on the context it passes, or by passing the runtime's React surface an enhancement that declares `anchors: true`; the runtime's `svg` surface takes an `anchors: true` render option.
 
 `findNodeElementPairs(root, composition.body, walk)` lists each `react`-visible node, pre-order, with its element, so a node object used twice pairs twice; `findNodeElements` is the same as a map from node to element. Either way the k-th node of a type, walked pre-order, is the k-th element anchored with that type in document order. `root` holds one render. A type whose counts disagree, for instance because one of its nodes rendered nothing, is left out, so the caller falls back to its baseline. For the pairing to hold, a container draws its `children` in the order its definition returns them, and anything a renderer draws that is not one of its `children` renders with `withoutAnchors(context)`. It returns a view of the context, not a copy, so methods, getters, private state, and `instanceof` keep working; anchors are off for that subtree, and the mark survives contexts derived from it by spreading.
+
+## Checking a layout
+
+`checkLayout(layout, composition.body, walk)` reports where nodes run past the room their container gives them or land on each other, from a measured render with anchors on. `layout` is a `LayoutBox` tree: canvas `x`, `y`, `width`, and `height`, an optional `scale`, text `runs`, `attributes`, and `children`. It is declared by shape, so the takumi backend's `measure` produces one, and so can a walk over a browser's DOM. Boxes pair with nodes by the same rule as `findNodeElementPairs`.
+
+Each `LayoutFinding` is `{ kind, path, type, with?, by }`, with `path` in validation's form. The rules know nothing about any pack:
+
+- A node's room is the box of its nearest anchored ancestor, or the whole canvas at the top level. `overflow` is its element boxes past that room; its text runs are left out, because glyphs overhang a tight line height.
+- `overlap` is text or childless boxes shared by two siblings under the same anchored parent, `by` how far they would move apart to clear. A node is never compared with the nodes nested in it.
+- A scaled box is one opaque box, and nothing inside it is checked. One pixel of spill is tolerated.
+
+Findings are advice, not validation errors, and no surface runs the check: an overlap may be intended, and the agent or author reading them decides. `overflow: hidden` and a frame's own body region are not visible to it. A pack whose renderers spread no anchors gets no findings, and a type whose counts disagree is left out, as with `findNodeElementPairs`. Findings belong to the engine that measured the layout: the same composition can fit in a browser and overflow in takumi.
 
 ## How Slack output is fitted
 

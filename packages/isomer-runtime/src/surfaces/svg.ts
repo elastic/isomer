@@ -20,6 +20,7 @@ import {
   type RenderTheme,
   type ValidationErrorMode,
   type ValidationResult,
+  withNodeAnchors,
 } from '@elastic/isomer-sdk';
 import {
   flattenSchemeOption,
@@ -40,6 +41,8 @@ export interface SvgRenderOptions {
   theme?: RenderTheme;
   /** Defaults to `'throw'`: an image is all or nothing. `'collect'` renders anyway. */
   onValidationError?: ValidationErrorMode;
+  /** Renders node anchors, e.g. so `checkLayout` can pair a measured layout with its nodes. */
+  anchors?: boolean;
 }
 
 /**
@@ -48,7 +51,10 @@ export interface SvgRenderOptions {
  * Geometry is absent deliberately: one node is drawn with no surround, so there
  * is nothing for a width or a height to size.
  */
-export type SvgRenderNodeOptions = Pick<SvgRenderOptions, 'frame' | 'theme'>;
+export type SvgRenderNodeOptions = Pick<
+  SvgRenderOptions,
+  'frame' | 'theme' | 'anchors'
+>;
 
 /**
  * A tree and the stylesheet it is laid out against.
@@ -158,11 +164,15 @@ export const createSvgSurface = <TRenderContext = unknown>(
 
   const frameDispatcherFor = (
     context: TRenderContext,
-    theme: unknown
-  ): FrameDispatcher => ({
-    renderSvg: (node, key) => dispatcher.renderSvg(node, context, theme, key),
-    estimateSvgHeight: (node) => dispatcher.estimateSvgHeight(node),
-  });
+    theme: unknown,
+    anchors: boolean | undefined
+  ): FrameDispatcher => {
+    const drawn = anchors === true ? withNodeAnchors(context) : context;
+    return {
+      renderSvg: (node, key) => dispatcher.renderSvg(node, drawn, theme, key),
+      estimateSvgHeight: (node) => dispatcher.estimateSvgHeight(node),
+    };
+  };
 
   /**
    * Runs the pack twice, in the same hook order as the SDK's HTML envelope:
@@ -230,7 +240,7 @@ export const createSvgSurface = <TRenderContext = unknown>(
             named.frame.render(
               composition,
               { ...viewport, mode },
-              frameDispatcherFor(context, theme)
+              frameDispatcherFor(context, theme, options.anchors)
             ),
           composition,
           schemeFor(mode)
@@ -250,7 +260,10 @@ export const createSvgSurface = <TRenderContext = unknown>(
         height: frame.estimateHeight(composition, measuringOnly),
         ...withStyles(
           (context) =>
-            frame.renderNode(node, frameDispatcherFor(context, theme)),
+            frame.renderNode(
+              node,
+              frameDispatcherFor(context, theme, options.anchors)
+            ),
           composition,
           schemeFor(options.theme)
         ),

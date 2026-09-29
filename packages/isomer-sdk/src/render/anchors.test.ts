@@ -29,6 +29,7 @@ import {
   NODE_ANCHOR_ATTRIBUTE,
   nodeAnchor,
   withAnchors,
+  withNodeAnchors,
   withoutAnchors,
 } from './anchors';
 import {
@@ -194,6 +195,19 @@ describe('withAnchors', () => {
       expect(nodeAnchor({}, { type: 'leaf' })).not.toEqual({});
     });
     expect(nodeAnchor({}, { type: 'leaf' })).toEqual({});
+  });
+});
+
+describe('withNodeAnchors', () => {
+  it('turns anchors on without touching the context, and yields to withoutAnchors', () => {
+    const context = new InstanceContext();
+    const anchored = withNodeAnchors(context);
+    expect(nodeAnchor(anchored, { type: 'leaf' })).toEqual({
+      [NODE_ANCHOR_ATTRIBUTE]: 'leaf',
+    });
+    expect(anchored.describe()).toBe('instance');
+    expect(context.anchors).toBeUndefined();
+    expect(nodeAnchor(withoutAnchors(anchored), { type: 'leaf' })).toEqual({});
   });
 });
 

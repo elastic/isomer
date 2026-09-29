@@ -11,6 +11,7 @@ export {
   findNodeElementPairs,
   findNodeElements,
   nodeAnchor,
+  withNodeAnchors,
   withoutAnchors,
 } from './anchors';
 export {
@@ -20,6 +21,12 @@ export {
   rawDisplayValue,
 } from './format_display_value';
 export { formatCompactNumber } from './format_number';
+export {
+  type LayoutBox,
+  type LayoutFinding,
+  type LayoutRect,
+  checkLayout,
+} from './layout_check';
 export { type PayloadMeasurement, byteLength } from './payload';
 export {
   type PrimitiveDispatcher,

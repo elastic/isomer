@@ -18,6 +18,7 @@ import {
   definePrimitive,
   definePrimitivePack,
   type Frame,
+  nodeAnchor,
   type PrimitiveNode,
   type PrimitivePack,
   type PrimitiveRenderContext,
@@ -1686,6 +1687,32 @@ describe('createIsomerRuntime', () => {
       text: 'Bare',
     } as NoteNode);
     expect(renderToStaticMarkup(node.element)).toContain('Bare');
+  });
+
+  it('renders node anchors on the svg surface only when asked', () => {
+    const anchoredNote = definePrimitive<NoteNode>({
+      ...notePrimitive,
+      renderers: {
+        ...notePrimitive.renderers,
+        react: (node, { context }) =>
+          createElement('span', nodeAnchor(context, node), node.text),
+      },
+    });
+    const { svg } = drawingRuntime(anchoredNote).surfaces;
+    const note = { type: 'note', text: 'Anchored' } as NoteNode;
+    const markupOf = ({ element }: { element: ReactNode }) =>
+      renderToStaticMarkup(element);
+
+    expect(markupOf(svg.render(view('Anchored')))).not.toContain(
+      'data-isomer-node'
+    );
+    expect(markupOf(svg.render(view('Anchored'), { anchors: true }))).toContain(
+      'data-isomer-node="note"'
+    );
+    expect(markupOf(svg.renderNode(note))).not.toContain('data-isomer-node');
+    expect(markupOf(svg.renderNode(note, { anchors: true }))).toContain(
+      'data-isomer-node="note"'
+    );
   });
 
   it('honours width and height overrides on the svg surface', () => {
