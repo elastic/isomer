@@ -122,6 +122,9 @@ describe('gfmToSlackMrkdwn', () => {
     expect(gfmToSlackMrkdwn('``a`b\\*`` and ` c `')).toBe(
       '`a\u02CBb\\*` and `c`'
     );
+    // Backslashes are literal inside a code span, so `\\`` there still closes it.
+    expect(gfmToSlackMrkdwn('`a\\*b\\`')).toBe('`a\\*b\\`');
+    expect(gfmToSlackMrkdwn('# `a\\*b\\`')).toBe('*`a\\*b\\`*');
     // An escaped backtick is text, and the run after it opens its own span.
     expect(gfmToSlackMrkdwn('\\``a` ``b`')).toBe('``a` ``b`');
   });
