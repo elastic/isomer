@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-09-29
+
+- **Own keys in the authoring schema**: `buildAuthoringJsonSchema` reads and writes only own keys, so a `describe` entry, def id, or property named `__proto__` never reaches `Object.prototype` or drops out of the schema.
+
 ## 2026-09-28
 
 - **Enhancements on the React surface**: `ReactRenderOptions.enhancements` takes enhancement definitions; those that apply reach every renderer as `context.enhancements`, turn node anchors on when one asks, and run their scripts against the wrapper section once it mounts. The SDK's React entry adds `applyEnhancements`, and `findNodeElementPairs` lists each node occurrence with its anchored element, so a node object used twice pairs twice. The embedding doc covers a React host with a Distillate live collection, and the slides pack takes `@elastic/distillate` `^0.2.0`.

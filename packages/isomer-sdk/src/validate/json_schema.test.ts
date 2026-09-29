@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { z, type ZodType } from 'zod';
 
 import type {
@@ -272,6 +272,56 @@ describe('buildAuthoringJsonSchema', () => {
     };
     expect(metric.properties?.id).toBeDefined();
     expect(metric.properties?.surfaces).toBeDefined();
+  });
+});
+
+describe('buildAuthoringJsonSchema own keys', () => {
+  afterEach(() => {
+    delete (Object.prototype as { description?: unknown }).description;
+  });
+
+  it('describes only a def the schema holds, never Object.prototype', () => {
+    buildAuthoringJsonSchema([leaf('alpha')], {
+      describe: JSON.parse('{"__proto__": "x"}') as Record<string, string>,
+    });
+
+    expect(({} as { description?: unknown }).description).toBeUndefined();
+  });
+
+  it('keeps an own __proto__ property through the rewrite passes', () => {
+    const scalar = z.string().min(1);
+    const shape: Record<string, ZodType> = { a: scalar, b: scalar };
+    Object.defineProperty(shape, '__proto__', {
+      configurable: true,
+      enumerable: true,
+      value: z.string(),
+      writable: true,
+    });
+    const odd = define({
+      type: 'odd',
+      catalog: {
+        type: 'odd',
+        purpose: '',
+        useWhen: [],
+        avoidWhen: [],
+        example: {},
+      },
+      examples: [],
+      schema: z.object({ type: z.literal('odd'), ...shape }),
+      renderers,
+    });
+    const { odd: def } = collectDefs(buildAuthoringJsonSchema([odd])) as {
+      odd: { properties: Record<string, unknown>; required: string[] };
+    };
+
+    expect(def.required).toContain('__proto__');
+    expect(Object.hasOwn(def.properties, '__proto__')).toBe(true);
+  });
+
+  it('keeps a def whose id is __proto__', () => {
+    const $defs = collectDefs(buildAuthoringJsonSchema([leaf('__proto__')]));
+
+    expect(Object.hasOwn($defs, '__proto__')).toBe(true);
   });
 });
 
