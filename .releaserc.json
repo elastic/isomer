@@ -13,7 +13,7 @@
   ],
   "plugins": [
     [
-      "@semantic-release/commit-analyzer",
+      "./scripts/semantic_release_workspace.js",
       {
         "preset": "angular",
         "releaseRules": [
@@ -39,12 +39,11 @@
           }
         ],
         "parserOpts": {
-          "noteKeywords": ["BREAKING CHANGE", "BREAKING CHANGES"]
+          "noteKeywords": ["BREAKING CHANGE", "BREAKING CHANGES"],
+          "breakingHeaderPattern": "^(\\w*)(?:\\((.*)\\))?!: (.*)$"
         }
       }
     ],
-    "@semantic-release/release-notes-generator",
-    "./scripts/semantic_release_workspace.js",
     [
       "@semantic-release/github",
       {

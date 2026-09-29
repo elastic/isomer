@@ -70,7 +70,7 @@ A model owns the composition. The runtime hands it `getAuthoringContext()`: a JS
 | [`@elastic/isomer-image-takumi`](image-takumi/index.md) | Turns the `svg` surface's element and stylesheet into PNG or SVG bytes with Takumi. Declares the input shape structurally, so it depends on no Isomer package. |
 | [`@elastic/isomer-evals`](evals/index.md) | A harness a pack author runs against their own runtime: how often a model's compositions parse, validate, recover on retry, pick the right primitives, and answer the question. Runs with no credentials on a replayed corpus. |
 
-Every package publishes together at one version. A host installs the SDK and the runtime. The reference pack is there to copy from or to render slide decks with, the rasterizer is added by a host that draws images, and the eval harness is something a pack author runs against their own runtime.
+Every package except the reference pack publishes together at one version. A host installs the SDK and the runtime. The reference pack is there to copy from or to render slide decks with, the rasterizer is added by a host that draws images, and the eval harness is something a pack author runs against their own runtime.
 
 **Peers.** The SDK and the runtime need `react` and `zod`. The runtime also needs `react-dom`, because its single entry constructs the HTML surface and that surface renders through `react-dom/server`; the SDK marks `react-dom` optional and confines it to its `./html` entry.
 
