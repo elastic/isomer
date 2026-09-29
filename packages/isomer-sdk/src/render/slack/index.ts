@@ -81,9 +81,11 @@ export {
   formatHeaderText,
   gfmToSlackBlocks,
   gfmToSlackMrkdwn,
+  isAbsoluteHttpUrl,
   italic,
   joinMrkdwn,
   link,
+  slackLinkUrl,
   strike,
 } from './format';
 
