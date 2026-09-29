@@ -38,7 +38,7 @@ const panelSchema = z
       .min(1)
       .max(16)
       .describe(
-        'Source, one entry per line, indented with spaces rather than tabs. Use an empty string for a blank line. One to sixteen lines; ten or fewer stay at the larger size.'
+        'Source, one entry per line, indented with spaces rather than tabs. Use an empty string for a blank line. One to sixteen lines; while every panel has ten or fewer, they stay at the larger size.'
       ),
     highlightLines: z
       .array(z.number().int().positive())
@@ -75,6 +75,12 @@ const panelSchema = z
 
 export type SlideCodePanel = z.infer<typeof panelSchema>;
 
+const isDense = (panels: SlideCodePanel[]) =>
+  panels.some(({ lines }) => lines.length > codeDenseAfter);
+
+const lineLimit = (panels: SlideCodePanel[]) =>
+  codeLineMaxLength(panels.length === 2 ? 2 : 1, isDense(panels));
+
 /** Zod schema for {@link SlideCodeNode}. */
 export const schema = z
   .object({
@@ -84,21 +90,28 @@ export const schema = z
       .min(1)
       .max(2)
       .describe(
-        `One panel, or two side by side with an arrow between them to trace a value from one file to the next. Two panels need the full slide width; do not put them in a slideSplit column. A line holds ${codeLineMaxLength(1, false)} characters in one panel and ${codeLineMaxLength(2, false)} in each of two (${codeLineMaxLength(1, true)} and ${codeLineMaxLength(2, true)} past ${codeDenseAfter} lines), a wide glyph such as CJK or an emoji counting as two; a narrower column holds fewer, and a longer line is clipped.`
+        `One panel, or two side by side with an arrow between them to trace a value from one file to the next. Two panels need the full slide width; do not put them in a slideSplit column. A line holds ${codeLineMaxLength(1, false)} columns in one panel and ${codeLineMaxLength(2, false)} in each of two (${codeLineMaxLength(1, true)} and ${codeLineMaxLength(2, true)} once a panel passes ${codeDenseAfter} lines), a wide glyph such as CJK or an emoji counting as two; a narrower column holds fewer, and a longer line is clipped.`
       ),
   })
   .strict()
   .check(
     crossRefine(
       ({ panels }) => {
-        const dense = panels.some(({ lines }) => lines.length > codeDenseAfter);
-        const max = codeLineMaxLength(panels.length === 2 ? 2 : 1, dense);
+        const max = lineLimit(panels);
         return panels.every(({ lines }) =>
           lines.every((line) => displayColumns(line, max) <= max)
         );
       },
       {
-        error: `a line is wider than its panel: at most ${codeLineMaxLength(1, false)} characters in one panel, ${codeLineMaxLength(2, false)} in each of two`,
+        error: ({ input }) => {
+          const { panels } = input as { panels: SlideCodePanel[] };
+          const where =
+            panels.length === 2 ? 'in each of two panels' : 'in one panel';
+          const dense = isDense(panels)
+            ? ` once a panel passes ${codeDenseAfter} lines`
+            : '';
+          return `a line is wider than its panel: at most ${lineLimit(panels)} columns ${where}${dense}, a wide glyph counting as two`;
+        },
         path: ['panels'],
       }
     )

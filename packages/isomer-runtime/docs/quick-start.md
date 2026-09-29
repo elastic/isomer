@@ -78,18 +78,20 @@ runtime.validate(composition); // { valid: true, errors: [], warnings: [] }
 
 ## 4. Render it
 
-Each surface takes the same composition. A slide opens with its own heading, so the text and Markdown renders pass `heading: false` rather than repeat the composition's `title`.
+Each surface takes the same composition. A slide opens with its own heading, so every surface that draws the composition's `title` is passed `heading: false` rather than repeat it.
 
 ```ts
 runtime.surfaces.text.render(composition, { heading: false });
 runtime.surfaces.markdown.render(composition, { heading: false });
 
 const { html, css, validationErrors } = runtime.surfaces.html.render(composition, {
+  heading: false,
   theme: 'auto',
 });
 
 const { text, blocks, assets } = runtime.surfaces.slack.render(composition, {
   collectAssets: true,
+  heading: false,
 });
 ```
 
@@ -134,6 +136,7 @@ React returns bare content by default; `wrapper` adds the same `section` the HTM
 ```tsx
 runtime.surfaces.react.render(composition, {
   context: { onEvent: handleEvent },
+  heading: false,
   wrapper: true,
 });
 ```

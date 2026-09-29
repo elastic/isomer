@@ -59,6 +59,25 @@ const authoredStrings = (value: unknown, key = ''): string[] => {
   return [];
 };
 
+const entities: Record<string, string> = {
+  '&lt;': '<',
+  '&gt;': '>',
+  '&amp;': '&',
+};
+
+/** Inverts `code`, `codeBlock`, and `marksSlack`: code stays literal, strong loses its delimiters, and entities decode. */
+const readMrkdwn = (mrkdwn: string): string =>
+  mrkdwn
+    .split(/(```\n[\s\S]*?\n```|`[^`\n]+`)/)
+    .map((part, index) =>
+      index % 2 === 1
+        ? part.replace(/^```\n|\n```$|^`|`$/g, '')
+        : part
+            .replace(/\*(?=\S)([^*\n]*?\S)\*/g, '$1')
+            .replace(/&(?:lt|gt|amp);/g, (entity) => entities[entity] ?? entity)
+    )
+    .join('');
+
 const stringLeaves = (value: unknown): string[] => {
   if (typeof value === 'string') {
     return [value];
@@ -66,12 +85,16 @@ const stringLeaves = (value: unknown): string[] => {
   if (Array.isArray(value)) {
     return value.flatMap(stringLeaves);
   }
-  const { type, elements } = (value ?? {}) as {
+  const { type, elements, text } = (value ?? {}) as {
     type?: unknown;
     elements?: { text?: string }[];
+    text?: unknown;
   };
+  if (type === 'mrkdwn' && typeof text === 'string') {
+    return [readMrkdwn(text)];
+  }
   if (type === 'rich_text_section' && elements) {
-    return [elements.map(({ text = '' }) => text).join('')];
+    return [elements.map(({ text: run = '' }) => run).join('')];
   }
   if (typeof value === 'object' && value !== null) {
     return Object.values(value).flatMap(stringLeaves);
@@ -89,14 +112,17 @@ const phrasingParents = new Set([
   'tableCell',
 ]);
 
+// Raw HTML is markup a reader never sees as text.
 const textOf = (node: Nodes): string =>
-  'value' in node
-    ? node.value
-    : 'children' in node
-      ? node.children
-          .map(textOf)
-          .join(phrasingParents.has(node.type) ? '' : '\n')
-      : '';
+  node.type === 'html'
+    ? ''
+    : 'value' in node
+      ? node.value
+      : 'children' in node
+        ? node.children
+            .map(textOf)
+            .join(phrasingParents.has(node.type) ? '' : '\n')
+        : '';
 
 const readMarkdown = (markdown: string): string =>
   textOf(
@@ -106,16 +132,9 @@ const readMarkdown = (markdown: string): string =>
     })
   );
 
-// Marks render differently per surface, so their markers are compared away.
+// Surfaces wrap lines and set some labels in capitals.
 const normalize = (text: string) =>
-  stripMarks(text)
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&')
-    .replace(/[`*]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toLowerCase();
+  text.replace(/\s+/g, ' ').trim().toLowerCase();
 
 const surfaces = {
   text: (node: PrimitiveNode) => runtime.surfaces.text.renderNode(node),
@@ -129,7 +148,9 @@ const missingFrom = (output: string, node: unknown): string[] => {
   const normalized = normalize(output);
   return authoredStrings(node)
     .flatMap((text) => text.split('\n'))
-    .filter((word) => word.trim() && !normalized.includes(normalize(word)));
+    .filter(
+      (word) => word.trim() && !normalized.includes(normalize(stripMarks(word)))
+    );
 };
 
 const rows = slideDeckPrimitives.flatMap(({ type, examples }) =>
@@ -207,4 +228,62 @@ describe('line terminators in one-line fields', () => {
       expect(missingFrom(surfaces.text(spaced), spaced)).toEqual([]);
     }
   );
+});
+
+type Path = (string | number)[];
+
+const wordPaths = (value: unknown, path: Path = [], key = ''): Path[] => {
+  if (notWords.has(key)) {
+    return [];
+  }
+  if (typeof value === 'string') {
+    return value.trim() ? [path] : [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap((entry, index) =>
+      wordPaths(entry, [...path, index], key)
+    );
+  }
+  if (typeof value === 'object' && value !== null) {
+    return Object.entries(value).flatMap(([name, entry]) =>
+      wordPaths(entry, [...path, name], name)
+    );
+  }
+  return [];
+};
+
+const appendAt = (
+  value: unknown,
+  [head, ...rest]: Path,
+  tail: string
+): unknown => {
+  if (head === undefined) {
+    return `${value as string}${tail}`;
+  }
+  if (Array.isArray(value)) {
+    return (value as unknown[]).map((entry, index) =>
+      index === head ? appendAt(entry, rest, tail) : entry
+    );
+  }
+  const record = value as Record<string, unknown>;
+  return { ...record, [head]: appendAt(record[head], rest, tail) };
+};
+
+// No paired marks, so every surface prints it as written.
+// One field at a time: mrkdwn has no escape for `` ` `` or `*`, so a delimiter in each of two fields Slack joins into one string can pair.
+const literals = ' &lt; <b> & &amp;lt; a ` b * c ** d';
+
+const literalRows = rows.flatMap(({ name, node }) =>
+  wordPaths(node).map((path) => ({
+    name: `${name} ${path.join('.')}`,
+    node: appendAt(node, path, literals) as PrimitiveNode,
+  }))
+);
+
+describe('entity-like text and unpaired delimiters', () => {
+  it.each(literalRows)('$name prints them as authored', ({ node }) => {
+    for (const [surface, render] of Object.entries(surfaces)) {
+      expect(missingFrom(render(node), node), surface).toEqual([]);
+    }
+  });
 });

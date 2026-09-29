@@ -164,8 +164,8 @@ A container that also draws chrome of its own sets two more. `hasOwnContent: () 
 
 Each primitive's `index.test.ts` covers its schema rejections and every surface's output. Three pack-level tests run over the whole registry, so a new primitive is covered by registering it:
 
-- `src/content_parity.test.ts` checks that text, Markdown, and Slack carry every authored string of every example, reading Markdown back through `mdast-util-from-markdown` with GFM, and that a line break in a one-line field reads as a space on each surface.
-- `src/examples/fit.test.ts` renders every example on a slide under a heading and lede, measures it with takumi, and expects no finding from `checkLayout` and nothing past the frame's body.
+- `src/content_parity.test.ts` checks that text, Markdown, and Slack carry every authored string of every example, reading Markdown back through `mdast-util-from-markdown` with GFM and Slack mrkdwn back to its text; that entity-like text such as `&lt;` and unpaired `` ` `` or `*` print as authored, one field at a time; and that a line break in a one-line field reads as a space on each surface.
+- `src/examples/fit.test.ts` renders every example on a slide (a frame as it is, a title slide alone, anything else under a heading and lede), measures it with takumi, and expects no finding from `checkLayout` and nothing past the frame's body.
 - `src/conformance.test.ts` runs the SDK's conformance harness.
 
 The tests that rasterize need `@elastic/isomer-image-takumi` and `@fontsource/*` as devDependencies.

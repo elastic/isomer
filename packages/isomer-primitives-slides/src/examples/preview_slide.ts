@@ -9,7 +9,7 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 
 const inverseTypes = new Set(['slideTitle']);
 
-/** Under a heading and lede, or alone on the tone its kind takes. */
+/** A frame as it is; anything else in one, under a heading and lede or alone on the tone its kind takes. */
 export const previewSlide = (node: PrimitiveNode): Composition => ({
   type: 'view',
   title: node.type,

@@ -118,6 +118,25 @@ describe('slideCode line width', () => {
     ).toEqual([]);
   });
 
+  it('reports the limit it applied', () => {
+    const one = codeLineMaxLength(1, false);
+    expect(errorPaths(panel(['x'.repeat(one + 1)]))).toContainEqual(
+      `body[0].body[0].panels: a line is wider than its panel: at most ${one} columns in one panel, a wide glyph counting as two`
+    );
+    const dense = codeLineMaxLength(2, true);
+    expect(
+      errorPaths({
+        type: 'slideCode',
+        panels: [
+          { lines: ['x'.repeat(dense + 1)] },
+          { lines: Array<string>(codeDenseAfter + 1).fill('y') },
+        ],
+      })
+    ).toContainEqual(
+      `body[0].body[0].panels: a line is wider than its panel: at most ${dense} columns in each of two panels once a panel passes ${codeDenseAfter} lines, a wide glyph counting as two`
+    );
+  });
+
   it('counts a wide glyph as two columns and a combining mark as none', () => {
     const one = codeLineMaxLength(1, false);
     const wide = '漢'.repeat(Math.floor(one / 2));

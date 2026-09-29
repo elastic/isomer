@@ -35,12 +35,10 @@ const walk = createChildNodeWalker(runtime.primitives);
 const tolerance = 1;
 
 const cases = slideDeckPrimitives.flatMap(({ type, examples }) =>
-  type === 'slideFrame'
-    ? []
-    : examples.map((example, index) => ({
-        name: `${type} #${index}`,
-        slide: previewSlide(example as PrimitiveNode),
-      }))
+  examples.map((example, index) => ({
+    name: `${type} #${index}`,
+    slide: previewSlide(example as PrimitiveNode),
+  }))
 );
 
 const descendants = (box: LayoutBox): LayoutBox[] =>
@@ -66,7 +64,7 @@ const pastBody = (layout: LayoutBox): LayoutBox[] => {
   );
 };
 
-describe('every example fits a slide under a heading and lede', () => {
+describe('every example fits its preview slide', () => {
   it.each(cases)('$name', async ({ slide }) => {
     const layout = await takumi.measure(
       runtime.surfaces.svg.render(slide, { anchors: true })

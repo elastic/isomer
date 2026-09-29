@@ -59,7 +59,7 @@ One composition, every surface.
 Isomer · elastic.github.io/isomer
 ```
 
-Slack gets a `header` block, the tagline as a `section`, the list as a native `rich_text` list, and the footer as a `context` block, and HTML gets a `section.isomer` with only the CSS the slide uses. The reference pack's [worked example](packages/isomer-primitives-slides/docs/example.md) has the rest of its output.
+Slack gets a `header` block, the eyebrow and footer as `context` blocks, the tagline as a `section`, and the list as a native `rich_text` list, and HTML gets a `section.isomer` with only the CSS the slide uses. The reference pack's [worked example](packages/isomer-primitives-slides/docs/example.md) has the rest of its output.
 
 ## Two ways a composition is made
 

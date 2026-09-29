@@ -96,24 +96,30 @@ const fieldAt = (schema: ZodType, path: Path): string[] => {
   return [];
 };
 
-const render = (node: unknown): string | undefined => {
-  const composition = {
+const onSlide = (node: unknown): Composition => {
+  const primitive = node as PrimitiveNode;
+  return {
     type: 'view',
-    body: [{ type: 'slideFrame', body: [node] } as PrimitiveNode],
-  } as Composition;
+    body: [
+      primitive.type === 'slideFrame'
+        ? primitive
+        : ({ type: 'slideFrame', body: [primitive] } as PrimitiveNode),
+    ],
+  };
+};
+
+const render = (node: unknown): string | undefined => {
+  const composition = onSlide(node);
   return runtime.validate(composition).errors.length === 0
     ? runtime.surfaces.html.render(composition).html
     : undefined;
 };
 
 const renderMarkdown = (node: unknown): string =>
-  runtime.surfaces.markdown.render({
-    type: 'view',
-    body: [{ type: 'slideFrame', body: [node] } as PrimitiveNode],
-  });
+  runtime.surfaces.markdown.render(onSlide(node));
 
 describe('inline marks in field descriptions', () => {
-  it.each(slideDeckPrimitives.filter(({ type }) => type !== 'slideFrame'))(
+  it.each(slideDeckPrimitives)(
     '$type says so on every field that draws marks',
     ({ schema, examples }) => {
       const missing = new Set<string>();
@@ -137,7 +143,7 @@ describe('inline marks in field descriptions', () => {
     }
   );
 
-  it.each(slideDeckPrimitives.filter(({ type }) => type !== 'slideFrame'))(
+  it.each(slideDeckPrimitives)(
     '$type draws marks on every field that says it does',
     ({ schema, examples }) => {
       const unrendered = new Set<string>();
@@ -146,15 +152,17 @@ describe('inline marks in field descriptions', () => {
           const says = fieldAt(schema as ZodType, path).some((text) =>
             /marks are allowed/i.test(text)
           );
-          const node = withAppended(example, path);
-          const html = render(node);
-          if (!says || html === undefined) {
+          if (!says) {
             continue;
           }
+          const node = withAppended(example, path);
+          const html = render(node);
           const field = path
             .filter((step) => typeof step === 'string')
             .join('.');
-          if (!html.includes('>mk</code>')) {
+          if (html === undefined) {
+            unrendered.add(`${field} (invalid)`);
+          } else if (!html.includes('>mk</code>')) {
             unrendered.add(`${field} (html)`);
           }
           if (!renderMarkdown(node).includes('`mk`')) {
