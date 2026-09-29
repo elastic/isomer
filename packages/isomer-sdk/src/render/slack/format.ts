@@ -64,7 +64,7 @@ export const codeBlock = (text: string): string =>
   `\`\`\`\n${text.replace(/```/g, '``\u200d`')}\n\`\`\``;
 
 const HTTP_URL_RE = /^(https?:\/\/[^/?#]*)(.*)$/is;
-const HOSTNAME_RE = /^[^.]+(?:\.[^.]+)*$/;
+const HOSTNAME_RE = /^[^.]+(?:\.[^.]+)*\.?$/;
 
 // Non-ASCII outside the authority, UTF-8 percent-encoded as `URL` prints it.
 const encodedNonAscii = (value: string): string | null => {
