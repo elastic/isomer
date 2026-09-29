@@ -102,7 +102,7 @@ code: fromTextChildren(z.string().min(1).describe('Source to display.'), {
 };`}</SlideCode>
 ```
 
-Required text that is missing throws `IsomerError` with code `MISSING_AUTHORED_TEXT`. Two primitives that brand the same child type with different item shapes throw `DUPLICATE_AUTHORED_CHILD` when the shim is built.
+Required text that is missing throws `IsomerError` with code `MISSING_AUTHORED_TEXT`. Two primitives that brand the same child type with different item shapes throw `DUPLICATE_AUTHORED_CHILD` when the shim is built. Two types that capitalize to the same component name, such as `slideStat` and `SlideStat`, or a type named `composition`, throw `DUPLICATE_PRIMITIVE_TYPE`.
 
 One branch: a primitive that declares `schemaFor` also hand-writes its node type. The body-node union is injected per composition, so it cannot appear in a static schema — which is why `schemaFor` exists — and `z.infer` cannot name that cycle (`TS2456`, `TS7022`). Brand the child field the same way. When one child element is not the array element, pass `toItem`; its props annotation is the child component's props. `slideFrame`, `slideSplit`, and `slideStack` are that branch. Every other primitive's schema is its only declaration.
 
