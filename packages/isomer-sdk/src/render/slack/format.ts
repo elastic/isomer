@@ -490,10 +490,11 @@ const renderInline = (line: string): string => {
           // Code spans pass through with mrkdwn's single-backtick syntax, but
           // we still need to neutralize any embedded backticks.
           return code(segment.text);
+        // The inner text is translated too, so `**a _b_**` nests.
         case 'bold':
-          return bold(unescapeGfm(segment.text));
+          return `*${renderInline(segment.text)}*`;
         case 'italic':
-          return italic(unescapeGfm(segment.text));
+          return `_${renderInline(segment.text)}_`;
         case 'link':
           return link(
             linkDestination(segment.url ?? ''),
@@ -508,8 +509,9 @@ const renderInline = (line: string): string => {
     .join('');
 };
 
-const FENCE_RE = /^\s*(`{3,})/;
-const CLOSING_FENCE_RE = /^\s*(`{3,})[ \t]*$/;
+// GFM: up to three spaces of indent, and no backtick in the opener's info.
+const FENCE_RE = /^ {0,3}(`{3,})[^`]*$/;
+const CLOSING_FENCE_RE = /^ {0,3}(`{3,})\s*$/;
 
 // A closing fence is backticks alone, at least as long as the opening run.
 const closesFence = (line: string, opening: string): boolean =>

@@ -172,12 +172,31 @@ describe('md', () => {
     expect(typesIn(root)).not.toContain('image');
   });
 
-  it('keeps emphasis beside word characters readable', () => {
+  it('keeps emphasis beside word characters as emphasis', () => {
+    const root = read(md.paragraph('a', md.emphasis('b'), 'c'));
+    expect(textOf(root)).toBe('abc');
+    expect(typesIn(root)).toContain('emphasis');
+  });
+
+  it('prints nested strong and emphasis unambiguously, and Slack nests them', () => {
     const markdown = serializeMarkdown(
-      md.paragraph('a', md.emphasis('b'), 'c')
+      md.paragraph(
+        md.strong(md.emphasis('x')),
+        ' ',
+        md.strong('a ', md.emphasis('b'), ' c'),
+        ' ',
+        md.emphasis('d ', md.strong('e')),
+        ' ',
+        md.emphasis(md.strong('f'))
+      )
     );
-    expect(markdown).toBe('a*b*c');
-    expect(typesIn(parse(markdown))).toContain('emphasis');
+    expect(markdown).toBe('**_x_** **a _b_ c** _d **e**_ _**f**_');
+    expect(gfmToSlackBlocks(markdown)).toEqual([
+      {
+        type: 'section',
+        text: { type: 'mrkdwn', text: '*_x_* *a _b_ c* _d *e*_ _*f*_' },
+      },
+    ]);
   });
 
   it('applies the URL policy to links and images', () => {

@@ -356,6 +356,22 @@ describe('gfmToSlackBlocks', () => {
     ]);
   });
 
+  it('opens a fence only as GFM does, and closes one on a CRLF line', () => {
+    for (const notFence of ['    ```\nprose', '```js`x\nprose']) {
+      expect(gfmToSlackBlocks(notFence)).toEqual([
+        expect.objectContaining({ type: 'section' }),
+      ]);
+      expect(gfmToSlackMrkdwn(notFence)).not.toMatch(/^```\n/);
+    }
+    expect(gfmToSlackBlocks('```\r\ncode\r\n```\r\nafter')).toEqual([
+      expect.objectContaining({ type: 'rich_text' }),
+      expect.objectContaining({ type: 'section' }),
+    ]);
+    expect(gfmToSlackMrkdwn('```\r\ncode\r\n```\r\nafter')).toMatch(
+      /^```\ncode\r\n```\nafter/
+    );
+  });
+
   it('reads a single-column table and closes a fence only on one as long', () => {
     expect(gfmToSlackBlocks('| a |\n| - |\n| 1 |')).toEqual([
       expect.objectContaining({

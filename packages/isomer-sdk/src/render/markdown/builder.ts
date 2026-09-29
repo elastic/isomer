@@ -233,8 +233,10 @@ const handlers: Record<string, Handle> = {
 
 const OPTIONS: Options = {
   bullet: '-',
-  // `_` cannot open emphasis inside a word, so the serializer would encode its neighbours.
-  emphasis: '*',
+  // With `*`, emphasis around strong prints `***x***`, which the Slack
+  // fallback cannot split. `_` costs character references around emphasis
+  // inside a word.
+  emphasis: '_',
   fence: '`',
   listItemIndent: 'one',
   rule: '-',
