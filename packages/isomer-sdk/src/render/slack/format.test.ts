@@ -39,6 +39,10 @@ describe('mrkdwn helpers', () => {
     expect(codeBlock('x\n```\ny')).toBe('```\nx\n``‍`\ny\n```');
   });
 
+  it('percent-encodes a pipe so it cannot end the link URL', () => {
+    expect(link('https://a.b/a|b', 'x')).toBe('<https://a.b/a%7Cb|x>');
+  });
+
   it('builds links and degrades a blocked destination to text', () => {
     expect(link('https://example.com/?a=1&b=2', 'Docs & more')).toBe(
       '<https://example.com/?a=1&amp;b=2|Docs &amp; more>'
@@ -97,6 +101,29 @@ describe('gfmToSlackMrkdwn', () => {
     expect(gfmToSlackMrkdwn('| a | b |\n| --- | --- |\n| 1 | 2 |')).toBe(
       '```\n| a | b |\n| --- | --- |\n| 1 | 2 |\n```'
     );
+  });
+
+  it('keeps a decoded or embedded fence from closing a code block early', () => {
+    expect(
+      gfmToSlackMrkdwn('| &#96;&#96;&#96; | \\`\\`\\` |\n| --- | --- |')
+    ).toBe('```\n| ``\u200d` | ``\u200d` |\n| --- | --- |\n```');
+    expect(gfmToSlackMrkdwn('```\na ``` b\n```')).toBe(
+      '```\na ``\u200d` b\n```'
+    );
+  });
+
+  it('keeps a decoded pipe inside the link URL', () => {
+    expect(gfmToSlackMrkdwn('[x](https://a.b/a\\|b)')).toBe(
+      '<https://a.b/a%7Cb|x>'
+    );
+  });
+
+  it('pairs backtick runs of equal length into code spans', () => {
+    expect(gfmToSlackMrkdwn('``a`b\\*`` and ` c `')).toBe(
+      '`a\u02CBb\\*` and `c`'
+    );
+    // An escaped backtick is text, and the run after it opens its own span.
+    expect(gfmToSlackMrkdwn('\\``a` ``b`')).toBe('``a` ``b`');
   });
 
   it('decodes fenced table cells as the table block does', () => {
@@ -165,6 +192,7 @@ describe('gfmToSlackMrkdwn', () => {
         ' '
       ),
       '\\*'.repeat(size),
+      '\\``'.repeat(size / 3),
       '['.repeat(size),
       '[a](x'.repeat(size / 5),
       `# a${' '.repeat(size)}x`,

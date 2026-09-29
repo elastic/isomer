@@ -67,7 +67,8 @@ export const codeBlock = (text: string): string =>
  * Slack mrkdwn link, `<url|label>`, or a bare `<url>` when `label` is omitted.
  *
  * URL and label are both escaped so `&` and `>` cannot break Slack's link
- * parser. A URL failing the navigation policy in `src/validate/url.ts` degrades
+ * parser, and a `|` in the URL is percent-encoded so it cannot end the URL
+ * early. A URL failing the navigation policy in `src/validate/url.ts` degrades
  * to plain escaped text with no link.
  */
 export const link = (url: string, label?: string): string => {
@@ -75,7 +76,7 @@ export const link = (url: string, label?: string): string => {
   if (!sanitized) {
     return escapeMrkdwn(label ?? url);
   }
-  const safeUrl = escapeMrkdwn(sanitized);
+  const safeUrl = escapeMrkdwn(sanitized).replaceAll('|', '%7C');
   if (!label) {
     return `<${safeUrl}>`;
   }
@@ -136,28 +137,21 @@ export const joinMrkdwn = (
 // dispatcher runs it through here to fill a `section` block when a primitive
 // has no stronger Block Kit override.
 
-type InlineKind = 'escape' | 'code' | 'link' | 'bold' | 'italic';
-
 interface InlineSegment {
   kind: 'text' | 'code' | 'bold' | 'italic' | 'link';
   text: string;
   url?: string;
 }
 
-// In tie order. Each label, destination, or body stops at the first character
-// that cannot continue it, so one search from a position is linear.
-const INLINE_PATTERNS: ReadonlyArray<{ kind: InlineKind; pattern: RegExp }> = [
-  // A CommonMark backslash escape: any ASCII punctuation character.
-  { kind: 'escape', pattern: /\\([!-/:-@[-`{-~])/g },
-  { kind: 'code', pattern: /`([^`\n]+)`/g },
-  {
-    kind: 'link',
-    pattern:
-      /\[((?:\\.|[^[\]\\])+)\]\((<[^<>\n]*>|(?:\\.|[^\s()\\]|\([^()\s]*\))+)\)/g,
-  },
-  { kind: 'bold', pattern: /\*\*((?:\\.|[^*\n\\])+?)\*\*/g },
-  { kind: 'italic', pattern: /(?<![\w])_((?:\\.|[^_\n\\])+?)_(?![\w])/g },
-];
+interface InlineMatch {
+  index: number;
+  end: number;
+  segment: InlineSegment;
+}
+
+// The closer of a code-span opener ending at `end`: the start of the next
+// maximal backtick run exactly `length` long.
+type CodeSpanCloser = (end: number, length: number) => number | undefined;
 
 const ASCII_PUNCTUATION_RE = /[!-/:-@[-`{-~]/;
 const NUMERIC_REFERENCE_RE = /&#(?:[xX]([0-9a-fA-F]{1,6})|(\d{1,7}));/y;
@@ -173,7 +167,7 @@ const decodeCodePoint = (codePoint: number): string =>
   (codePoint > 64_975 && codePoint < 65_008) ||
   codePoint % 65_536 >= 65_534 ||
   codePoint > 1_114_111
-    ? '\uFFFD'
+    ? '�'
     : String.fromCodePoint(codePoint);
 
 const backtickRunEnd = (text: string, start: number): number => {
@@ -201,15 +195,45 @@ const backtickRuns = (text: string): Map<number, number[]> => {
   return runs;
 };
 
+const firstAtOrAfter = (
+  sorted: readonly number[],
+  from: number
+): number | undefined => {
+  let low = 0;
+  let high = sorted.length;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (sorted[middle]! < from) {
+      low = middle + 1;
+    } else {
+      high = middle;
+    }
+  }
+  return sorted[low];
+};
+
+// Indexes `text`'s backtick runs once, on the first query.
+const codeSpanCloser = (text: string): CodeSpanCloser => {
+  let runs: Map<number, number[]> | undefined;
+  return (end, length) => {
+    runs ??= backtickRuns(text);
+    return firstAtOrAfter(runs.get(length) ?? [], end);
+  };
+};
+
+// CommonMark strips one space from each side of a span that is not all spaces.
+const codeSpanText = (content: string): string =>
+  /[^ ]/.test(content) && content.startsWith(' ') && content.endsWith(' ')
+    ? content.slice(1, -1)
+    : content;
+
 // Resolves the backslash escapes and numeric character references a GFM
 // serializer writes, which Slack would otherwise show literally, and leaves
 // code spans as written.
 const unescapeGfm = (text: string): string => {
+  const closer = codeSpanCloser(text);
   let out = '';
   let index = 0;
-  // Indexed once, on the first backtick; each length's cursor only moves forward.
-  let runs: Map<number, number[]> | undefined;
-  const cursors = new Map<number, number>();
   while (index < text.length) {
     const char = text[index]!;
     const next = text[index + 1];
@@ -224,22 +248,10 @@ const unescapeGfm = (text: string): string => {
     }
     if (char === '`') {
       const fenceEnd = backtickRunEnd(text, index);
-      const length = fenceEnd - index;
-      runs ??= backtickRuns(text);
-      const starts = runs.get(length) ?? [];
-      let cursor = cursors.get(length) ?? 0;
-      while (cursor < starts.length && starts[cursor]! < fenceEnd) {
-        cursor += 1;
-      }
-      cursors.set(length, cursor);
-      const close = starts[cursor];
-      if (close === undefined) {
-        out += text.slice(index, fenceEnd);
-        index = fenceEnd;
-      } else {
-        out += text.slice(index, close + length);
-        index = close + length;
-      }
+      const close = closer(fenceEnd, fenceEnd - index);
+      const end = close === undefined ? fenceEnd : close + fenceEnd - index;
+      out += text.slice(index, end);
+      index = end;
       continue;
     }
     if (char === '&') {
@@ -264,52 +276,131 @@ const unescapeGfm = (text: string): string => {
 const linkDestination = (dest: string): string =>
   unescapeGfm(dest.replace(/^<([^<>]*)>$/, '$1'));
 
+// The code span whose opener starts at `open`, or `undefined`.
+const codeSpanAt = (
+  line: string,
+  open: number,
+  closer: CodeSpanCloser
+): InlineMatch | undefined => {
+  const fenceEnd = backtickRunEnd(line, open);
+  const close = closer(fenceEnd, fenceEnd - open);
+  return close === undefined
+    ? undefined
+    : {
+        index: open,
+        end: close + fenceEnd - open,
+        segment: {
+          kind: 'code',
+          text: codeSpanText(line.slice(fenceEnd, close)),
+        },
+      };
+};
+
+type InlineFinder = (
+  line: string,
+  from: number,
+  closer: CodeSpanCloser
+) => InlineMatch | null;
+
+const regexFinder =
+  (
+    pattern: RegExp,
+    toSegment: (match: RegExpExecArray) => InlineSegment
+  ): InlineFinder =>
+  (line, from) => {
+    pattern.lastIndex = from;
+    const match = pattern.exec(line);
+    return (
+      match && {
+        index: match.index,
+        end: match.index + match[0].length,
+        segment: toSegment(match),
+      }
+    );
+  };
+
+const findCodeSpan: InlineFinder = (line, from, closer) => {
+  let open = line.indexOf('`', from);
+  while (open !== -1) {
+    const span = codeSpanAt(line, open, closer);
+    if (span) {
+      return span;
+    }
+    open = line.indexOf('`', backtickRunEnd(line, open));
+  }
+  return null;
+};
+
+// In tie order. Each label, destination, or body stops at the first character
+// that cannot continue it, so one search from a position is linear.
+const INLINE_FINDERS: readonly InlineFinder[] = [
+  // A CommonMark backslash escape: any ASCII punctuation character.
+  regexFinder(/\\([!-/:-@[-`{-~])/g, ([, text = '']) => ({
+    kind: 'text',
+    text,
+  })),
+  findCodeSpan,
+  regexFinder(
+    /\[((?:\\.|[^[\]\\])+)\]\((<[^<>\n]*>|(?:\\.|[^\s()\\]|\([^()\s]*\))+)\)/g,
+    ([, text = '', url = '']) => ({ kind: 'link', text, url })
+  ),
+  regexFinder(/\*\*((?:\\.|[^*\n\\])+?)\*\*/g, ([, text = '']) => ({
+    kind: 'bold',
+    text,
+  })),
+  regexFinder(/(?<![\w])_((?:\\.|[^_\n\\])+?)_(?![\w])/g, ([, text = '']) => ({
+    kind: 'italic',
+    text,
+  })),
+];
+
 // Tokenizes a single line of GFM into ordered inline segments. The earliest
-// match wins; on a tie, the order of `INLINE_PATTERNS` does. An escaped
-// character is text and never a delimiter. Each pattern's next match is reused
+// match wins; on a tie, the order of `INLINE_FINDERS` does. An escaped
+// character is text and never a delimiter. Each finder's next match is reused
 // until the cursor passes it, so a line is not rescanned per segment.
 const tokenizeInline = (line: string): InlineSegment[] => {
   const segments: InlineSegment[] = [];
-  const found = new Map<InlineKind, RegExpExecArray | null>();
+  const closer = codeSpanCloser(line);
+  const found = new Map<InlineFinder, InlineMatch | null>();
   const nextMatch = (
-    kind: InlineKind,
-    pattern: RegExp,
+    finder: InlineFinder,
     cursor: number
-  ): RegExpExecArray | null => {
-    const cached = found.get(kind);
+  ): InlineMatch | null => {
+    const cached = found.get(finder);
     if (cached === null || (cached !== undefined && cached.index >= cursor)) {
       return cached;
     }
-    pattern.lastIndex = cursor;
-    const match = pattern.exec(line);
-    found.set(kind, match);
+    const match = finder(line, cursor, closer);
+    found.set(finder, match);
     return match;
   };
   let cursor = 0;
   while (cursor < line.length) {
-    let first: { kind: InlineKind; match: RegExpExecArray } | undefined;
-    for (const { kind, pattern } of INLINE_PATTERNS) {
-      const match = nextMatch(kind, pattern, cursor);
-      if (match && (first === undefined || match.index < first.match.index)) {
-        first = { kind, match };
+    let first: InlineMatch | undefined;
+    for (const finder of INLINE_FINDERS) {
+      const match = nextMatch(finder, cursor);
+      if (match && (first === undefined || match.index < first.index)) {
+        first = match;
       }
     }
     if (first === undefined) {
       segments.push({ kind: 'text', text: line.slice(cursor) });
       break;
     }
-    const { kind, match } = first;
-    if (match.index > cursor) {
-      segments.push({ kind: 'text', text: line.slice(cursor, match.index) });
+    if (first.index > cursor) {
+      segments.push({ kind: 'text', text: line.slice(cursor, first.index) });
     }
-    if (kind === 'escape') {
-      segments.push({ kind: 'text', text: match[1] ?? '' });
-    } else if (kind === 'link') {
-      segments.push({ kind, text: match[1] ?? '', url: match[2] ?? '' });
-    } else {
-      segments.push({ kind, text: match[1] ?? '' });
+    segments.push(first.segment);
+    cursor = first.end;
+    // Backticks after an escaped one open a shorter run of their own.
+    if (line[cursor - 1] === '`' && line[cursor] === '`') {
+      const span = codeSpanAt(line, cursor, closer);
+      const end = span?.end ?? backtickRunEnd(line, cursor);
+      segments.push(
+        span?.segment ?? { kind: 'text', text: line.slice(cursor, end) }
+      );
+      cursor = end;
     }
-    cursor = match.index + match[0].length;
   }
   return segments;
 };
@@ -411,16 +502,16 @@ export const gfmToSlackMrkdwn = (gfm: string): string => {
   while (i < lines.length) {
     const line = lines[i]!;
     if (FENCE_RE.test(line)) {
-      // Fenced code block: copy verbatim, including the opening/closing
-      // fences. Slack honours the triple-backtick fence but ignores the
-      // language hint, so we strip it for cleanliness.
-      out.push('```');
+      // Fenced code block: copy the body verbatim. Slack honours the
+      // triple-backtick fence but ignores the language hint, so we strip it
+      // for cleanliness.
+      const body: string[] = [];
       i += 1;
       while (i < lines.length && !FENCE_RE.test(lines[i]!)) {
-        out.push(lines[i]!);
+        body.push(lines[i]!);
         i += 1;
       }
-      out.push('```');
+      out.push(codeBlock(body.join('\n')));
       i += 1;
       continue;
     }
@@ -437,15 +528,17 @@ export const gfmToSlackMrkdwn = (gfm: string): string => {
         tableLines.push(lines[i]!);
         i += 1;
       }
-      out.push('```');
       out.push(
-        ...tableLines.map((row) =>
-          TABLE_SEPARATOR_RE.test(row)
-            ? row
-            : `| ${splitPipeRow(row).join(' | ')} |`
+        codeBlock(
+          tableLines
+            .map((row) =>
+              TABLE_SEPARATOR_RE.test(row)
+                ? row
+                : `| ${splitPipeRow(row).join(' | ')} |`
+            )
+            .join('\n')
         )
       );
-      out.push('```');
       continue;
     }
     const heading = headingText(line);
