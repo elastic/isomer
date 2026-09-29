@@ -355,6 +355,36 @@ describe('buildJsxShim', () => {
       })
     );
   });
+
+  it('throws when two types become the same component name', () => {
+    expect(() =>
+      buildJsxShim([{ type: 'slideStat' }, { type: 'SlideStat' }])
+    ).toThrow(
+      expect.objectContaining({
+        name: 'IsomerError',
+        code: 'DUPLICATE_PRIMITIVE_TYPE',
+        message:
+          'buildJsxShim: "slideStat" and "SlideStat" both become the component SlideStat',
+      })
+    );
+    expect(() => buildJsxShim([{ type: 'composition' }])).toThrow(
+      expect.objectContaining({ code: 'DUPLICATE_PRIMITIVE_TYPE' })
+    );
+    expect(() =>
+      buildJsxShim([
+        { type: 'Item' },
+        brandedGroup(
+          fromChildren('item', z.array(z.object({ label: z.string() })))
+        ),
+      ])
+    ).toThrow(
+      expect.objectContaining({
+        code: 'DUPLICATE_PRIMITIVE_TYPE',
+        message:
+          'buildJsxShim: "Item" and "item" both become the component Item',
+      })
+    );
+  });
 });
 
 const brandedGroup = <TSchema extends z.ZodType>(items: TSchema) => ({
