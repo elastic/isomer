@@ -7,6 +7,7 @@
 
 export {
   type MarkdownEnvelopeDispatcher,
+  type MarkdownEnvelopeOptions,
   renderMarkdownEnvelope,
 } from './envelope';
 

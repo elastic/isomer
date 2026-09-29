@@ -2,6 +2,7 @@
 
 ## 2026-09-28
 
+- **`heading` on text, markdown, and slack**: `renderTextEnvelope`, `renderMarkdownEnvelope`, and `renderSlackEnvelope` take `heading` (default `true`) through the new `TextEnvelopeOptions` and `MarkdownEnvelopeOptions` and the existing `SlackEnvelopeOptions`; `false` leaves out the title and subtitle, and Slack's fallback `text` with them. The runtime's `TextRenderOptions` and `MarkdownRenderOptions` extend those types, and `SlackRenderNodeOptions` omits `heading`.
 - **Index catalog and primitive lookups**: A pack declares `authoring.groups`, the authoring prompt prints `catalog: 'index'` as one line per primitive under those groups with `schema` optional, and the runtime's authoring context adds `groups` and `describePrimitives(types)`, backed by the SDK's `authoringSchemaSubset` and `formatPrimitiveEntry`. Every catalog and registered-view line collapses line terminators, and each code span is fenced longer than any backtick run inside it.
 
 ## 2026-09-27
