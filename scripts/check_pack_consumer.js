@@ -94,6 +94,9 @@ try {
     packageNames.map((packageName) => [packageName, packPackage(packageName)])
   );
 
+  // Every packed package gets its dependencies before any is imported, since
+  // one package's import loads another's packed copy.
+  const requiredPeersOf = new Map();
   for (const [packageName, pkg] of packages) {
     const dependencies = Object.keys(pkg.manifest.dependencies ?? {});
     const requiredPeers = Object.keys(
@@ -137,7 +140,11 @@ try {
         }
       }
     }
+    requiredPeersOf.set(packageName, requiredPeers);
+  }
 
+  for (const [packageName, pkg] of packages) {
+    const requiredPeers = requiredPeersOf.get(packageName);
     const consumerDir = join(tempDir, 'consumers', packageName);
     linkDirectory(pkg.dir, join(consumerDir, 'node_modules', packageName));
     execFileSync(
