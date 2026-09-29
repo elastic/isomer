@@ -44,6 +44,7 @@ export const codeModule = createStyleModule('code', ({ css }) => ({
     margin: 0;
     overflow: hidden;
     padding: ${code.paddingY} 0;
+    white-space: normal;
   `,
   regular: css`
     ${typeRole(code.text)}
@@ -66,5 +67,10 @@ export const codeModule = createStyleModule('code', ({ css }) => ({
     background: ${color.primaryTint};
     border-left: ${code.highlightBar} solid ${color.primary};
     padding-left: ${code.highlightPaddingStart};
+  `,
+  // The band is drawn by `highlight`; `mark` only tells assistive technology.
+  mark: css`
+    background: none;
+    color: inherit;
   `,
 }));

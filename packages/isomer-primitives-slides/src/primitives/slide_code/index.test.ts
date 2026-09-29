@@ -276,3 +276,46 @@ describe('slideCode output', () => {
     expect(Math.abs(blank - filled)).toBeLessThanOrEqual(1.5);
   });
 });
+
+describe('slideCode in the DOM', () => {
+  const entities: Record<string, string> = {
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&#x27;': "'",
+  };
+  const panelsOf = (node: SlideCodeNode) =>
+    [
+      ...runtime.surfaces.html
+        .render(compose(node))
+        .html.matchAll(/<pre[^>]*>([\s\S]*?)<\/pre>/g),
+    ].map(([, inner = '']) => inner);
+  const textOf = (html: string) =>
+    html
+      .replace(/<[^>]+>/g, '')
+      .replace(
+        /&(?:amp|lt|gt|quot|#x27);/g,
+        (entity) => entities[entity] ?? entity
+      );
+
+  it.each(examples.map((node, index) => [index, node] as const))(
+    'example %i keeps each line, blank ones too, in its text',
+    (_index, node) => {
+      expect(panelsOf(node).map(textOf)).toEqual(
+        node.panels.map(({ lines }) => lines.join('\n'))
+      );
+    }
+  );
+
+  it.each(examples.map((node, index) => [index, node] as const))(
+    'example %i marks every highlighted line',
+    (_index, node) => {
+      expect(
+        panelsOf(node).map((html) => html.match(/<mark[\s>]/g)?.length ?? 0)
+      ).toEqual(
+        node.panels.map(({ highlightLines = [] }) => highlightLines.length)
+      );
+    }
+  );
+});

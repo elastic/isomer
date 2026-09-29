@@ -36,7 +36,7 @@ const Pane = ({
   return (
     <div className={cls(context, split.column)}>
       {label ? (
-        <div
+        <h2
           className={cls(
             context,
             split.label,
@@ -44,7 +44,7 @@ const Pane = ({
             tone ? split.tonedLabel : split.plainLabel
           )}>
           {label}
-        </div>
+        </h2>
       ) : null}
       <div className={cls(context, split.items)}>
         {items.map((node, index) => (

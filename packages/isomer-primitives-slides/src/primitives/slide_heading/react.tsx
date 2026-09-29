@@ -27,14 +27,14 @@ export const react = (
     <header
       {...nodeAnchor(context, { type })}
       className={cls(context, heading.root)}>
-      <h2
+      <h1
         className={cls(
           context,
           heading.title,
           heading.titleSize[headingStep(node)]
         )}>
         {marksReact(title, context, 'primary')}
-      </h2>
+      </h1>
       {lede ? (
         <p className={cls(context, heading.lede)}>
           {marksReact(lede, context)}

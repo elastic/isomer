@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
@@ -38,15 +38,19 @@ const Panel = ({
       <pre
         className={cls(context, code.panel, dense ? code.dense : code.regular)}>
         {lines.map((line, index) => (
-          <code
-            className={cls(
-              context,
-              code.line,
-              marked.has(index + 1) ? code.highlight : code.plain
+          <Fragment key={index}>
+            {/* `panel` collapses it: the line break is in the text, never drawn. */}
+            {index > 0 ? '\n' : null}
+            {marked.has(index + 1) ? (
+              <code className={cls(context, code.line, code.highlight)}>
+                <mark className={cls(context, code.mark)}>{line}</mark>
+              </code>
+            ) : (
+              <code className={cls(context, code.line, code.plain)}>
+                {line}
+              </code>
             )}
-            key={index}>
-            {line}
-          </code>
+          </Fragment>
         ))}
       </pre>
     </figure>

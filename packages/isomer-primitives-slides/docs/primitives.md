@@ -170,6 +170,7 @@ Each primitive's `index.test.ts` covers its schema rejections and every surface'
 - `src/examples/fit.test.ts` renders every example on a slide (a frame as it is, a title slide alone, anything else under a heading and lede), measures it with takumi, and expects no finding from `checkLayout` and nothing past the frame's body.
 - `src/conformance.test.ts` runs the SDK's conformance harness.
 - `src/primitives/authored_text.test.ts` fails when any string in an example accepts more text than the body can draw.
+- `src/heading_levels.test.ts` fails when an example's HTML headings and Markdown headings differ in level or order.
 
 The tests that rasterize need `@elastic/isomer-image-takumi` and `@fontsource/*` as devDependencies.
 

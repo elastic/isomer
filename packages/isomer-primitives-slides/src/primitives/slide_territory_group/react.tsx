@@ -37,7 +37,7 @@ export const react = (
               tone ? tones.tone[tone] : territory.plain
             )}
             key={index}>
-            <h3
+            <h2
               className={cls(
                 context,
                 label.label,
@@ -45,7 +45,7 @@ export const react = (
                 territory.title
               )}>
               {title}
-            </h3>
+            </h2>
             <p className={cls(context, territory.body)}>
               {marksReact(body, context)}
             </p>
