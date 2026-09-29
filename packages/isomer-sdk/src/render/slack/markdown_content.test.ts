@@ -304,6 +304,60 @@ describe('markdownContentToSlackBlocks', () => {
     ]);
   });
 
+  it('caps list indent at the Slack maximum and keeps every item', () => {
+    const depth = SLACK_LIMITS.richTextListMaxIndent + 3;
+    let nested = md.list([`d${depth}`]);
+    for (let level = depth - 1; level >= 0; level -= 1) {
+      nested = md.list([[md.paragraph(`d${level}`), nested]]);
+    }
+    const [block] = markdownContentToSlackBlocks(nested);
+    if (block?.type !== 'rich_text') {
+      throw new Error('expected rich text');
+    }
+    const lists = block.elements.filter(
+      (element) => element.type === 'rich_text_list'
+    );
+    expect(
+      lists.every(
+        (list) => (list.indent ?? 0) <= SLACK_LIMITS.richTextListMaxIndent
+      )
+    ).toBe(true);
+    expect(lists.map((list) => list.indent ?? 0)).toContain(
+      SLACK_LIMITS.richTextListMaxIndent
+    );
+    const texts = JSON.stringify(block);
+    for (let level = 0; level <= depth; level += 1) {
+      expect(texts).toContain(`"d${level}"`);
+    }
+  });
+
+  it.each([0, 1])(
+    'keeps a table to the row and column limits, %i past each',
+    (over) => {
+      const columns = Array.from(
+        { length: SLACK_LIMITS.tableColumns + over },
+        (_, index) => `c${index}`
+      );
+      const rows = Array.from(
+        { length: SLACK_LIMITS.tableRows - 1 + over },
+        (_, index) => columns.map(() => String(index))
+      );
+      const [table] = markdownContentToSlackBlocks(md.table(columns, rows));
+      if (table?.type !== 'table') {
+        throw new Error('expected a table');
+      }
+      expect(table.rows).toHaveLength(SLACK_LIMITS.tableRows);
+      expect(
+        table.rows.every((row) => row.length === SLACK_LIMITS.tableColumns)
+      ).toBe(true);
+      expect(table.column_settings).toHaveLength(SLACK_LIMITS.tableColumns);
+      expect(table.rows[0]?.at(-1)).toEqual({
+        type: 'raw_text',
+        text: `c${SLACK_LIMITS.tableColumns - 1}`,
+      });
+    }
+  );
+
   it('drops an empty paragraph or code block', () => {
     expect(
       markdownContentToSlackBlocks([md.paragraph(''), md.codeBlock('')])
