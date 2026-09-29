@@ -160,6 +160,7 @@ describe('markdownContentToSlackBlocks', () => {
         md.paragraph(input),
         md.paragraph(md.strong(input)),
         md.list([input]),
+        md.blockquote(md.paragraph(input)),
         md.table(['h'], [[input]]),
       ]);
       expect(blocks.some((block) => block.type === 'section')).toBe(false);
@@ -178,10 +179,134 @@ describe('markdownContentToSlackBlocks', () => {
           .join('')
           .replace(/\n$/, '')
       );
-      expect(texts).toEqual([expected, expected, expected]);
+      expect(texts).toEqual([expected, expected, expected, expected]);
       expect(table.rows[1]).toEqual([{ type: 'raw_text', text: expected }]);
     }
   );
+
+  it('quotes one level with hard breaks as line breaks, and a quote in a list item as its text', () => {
+    expect(
+      markdownContentToSlackBlocks([
+        md.blockquote(
+          md.paragraph('> a', md.break(), md.strong('b')),
+          md.heading(2, '# c'),
+          md.blockquote(md.paragraph('d')),
+          md.codeBlock('e')
+        ),
+        md.list([md.blockquote(md.paragraph('f', md.break(), 'g'))]),
+      ])
+    ).toEqual([
+      {
+        type: 'rich_text',
+        elements: [
+          {
+            type: 'rich_text_quote',
+            elements: [
+              { type: 'text', text: '> a' },
+              { type: 'text', text: '\n' },
+              { type: 'text', text: 'b', style: { bold: true } },
+              { type: 'text', text: '\n' },
+              { type: 'text', text: '# c', style: { bold: true } },
+              { type: 'text', text: '\n' },
+              { type: 'text', text: 'd' },
+              { type: 'text', text: '\n' },
+              { type: 'text', text: 'e', style: { code: true } },
+            ],
+          },
+          {
+            type: 'rich_text_list',
+            style: 'bullet',
+            elements: [
+              {
+                type: 'rich_text_section',
+                elements: [
+                  { type: 'text', text: 'f' },
+                  { type: 'text', text: '\n' },
+                  { type: 'text', text: 'g' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('sends a quote holding a list or a table through the string path whole', () => {
+    expect(markdownContentToSlackBlocks(md.blockquote(md.list(['a'])))).toEqual(
+      [{ type: 'section', text: { type: 'mrkdwn', text: '> - a' } }]
+    );
+    const blocks = markdownContentToSlackBlocks(
+      md.list([md.blockquote(md.table(['b'], []))])
+    );
+    expect(blocks.some((block) => block.type === 'rich_text')).toBe(false);
+  });
+
+  it('carries a multi-run table cell and the label forms as styles', () => {
+    expect(
+      markdownContentToSlackBlocks([
+        md.boldSectionLabel('label'),
+        md.paragraph(...md.boldLabelPrefix('Key: value', 'Key')),
+        md.table(
+          ['h', 'i'],
+          [
+            [
+              ['a', md.strong('b')],
+              ['c', 'd'],
+            ],
+          ]
+        ),
+      ])
+    ).toEqual([
+      {
+        type: 'rich_text',
+        elements: [
+          {
+            type: 'rich_text_section',
+            elements: [
+              { type: 'text', text: 'LABEL', style: { bold: true } },
+              { type: 'text', text: '\n' },
+            ],
+          },
+          {
+            type: 'rich_text_section',
+            elements: [
+              { type: 'text', text: 'Key', style: { bold: true } },
+              { type: 'text', text: ': value' },
+            ],
+          },
+        ],
+      },
+      {
+        type: 'table',
+        rows: [
+          [
+            { type: 'raw_text', text: 'h' },
+            { type: 'raw_text', text: 'i' },
+          ],
+          [
+            {
+              type: 'rich_text',
+              elements: [
+                {
+                  type: 'rich_text_section',
+                  elements: [
+                    { type: 'text', text: 'a' },
+                    { type: 'text', text: 'b', style: { bold: true } },
+                  ],
+                },
+              ],
+            },
+            { type: 'raw_text', text: 'cd' },
+          ],
+        ],
+        column_settings: [
+          { align: 'left', is_wrapped: true },
+          { align: 'left', is_wrapped: true },
+        ],
+      },
+    ]);
+  });
 
   it('clamps a section to the section text budget', () => {
     const [block] = markdownContentToSlackBlocks(

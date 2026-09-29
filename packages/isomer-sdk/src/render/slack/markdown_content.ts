@@ -10,6 +10,7 @@
 // so nothing is escaped and nesting survives exactly.
 
 import type {
+  Blockquote,
   List,
   ListItem,
   Nodes,
@@ -144,8 +145,11 @@ const section = (elements: SlackRichTextInline[]): SlackRichTextSection[] => {
 
 const childInline = (
   child: ListItem['children'][number]
-): SlackRichTextInline[] =>
-  'children' in child
+): SlackRichTextInline[] => {
+  if (child.type === 'blockquote') {
+    return quoteInline(child);
+  }
+  return 'children' in child
     ? inline(
         child.children as PhrasingContent[],
         child.type === 'heading' ? { bold: true } : {}
@@ -154,11 +158,22 @@ const childInline = (
         plainText(child),
         child.type === 'code' ? { code: true } : {}
       );
+};
 
-// An item's children are read in order. Its paragraphs share one bullet; a
-// nested list follows at the next indent; what the item holds after a nested
-// list follows unbulleted, since a Slack list item cannot resume; and the
-// outer list resumes at its next number.
+// A quote's blocks as lines, nested quotes flattened into it.
+const quoteInline = (quote: Blockquote): SlackRichTextInline[] =>
+  quote.children
+    .map(childInline)
+    .filter((runs) => runs.length > 0)
+    .flatMap((runs, index) => [
+      ...(index > 0 ? textElement('\n', {}) : []),
+      ...runs,
+    ]);
+
+// An item's children are read in order. Its paragraphs and quotes share one
+// bullet; a nested list follows at the next indent; what the item holds after
+// a nested list follows unbulleted, since a Slack list item cannot resume; and
+// the outer list resumes at its next number.
 const listElements = (
   list: List,
   indent: number
@@ -232,6 +247,12 @@ const richTextElements = (node: RootContent): SlackRichTextBlockElement[] => {
       return section(inline(node.children, { bold: true }));
     case 'list':
       return listElements(node, 0);
+    case 'blockquote': {
+      const elements = clampInline(quoteInline(node));
+      return elements.length === 0
+        ? []
+        : [{ type: 'rich_text_quote', elements }];
+    }
     case 'code':
       return node.value === ''
         ? []
@@ -292,10 +313,24 @@ const containsVerbatim = (node: Nodes): boolean =>
   (node.type as string) === VERBATIM_TYPE ||
   ('children' in node && node.children.some(containsVerbatim));
 
-const LIST_ITEM_CONTENT: ReadonlySet<string> = new Set([
+const QUOTE_CONTENT: ReadonlySet<string> = new Set([
   'paragraph',
   'heading',
   'code',
+  'blockquote',
+]);
+
+// A rich-text quote holds lines of text, so a quote holding any other block,
+// such as a list, goes through the string translator whole.
+const fitsRichTextQuote = (quote: Blockquote): boolean =>
+  quote.children.every(
+    (child) =>
+      QUOTE_CONTENT.has(child.type) &&
+      (child.type !== 'blockquote' || fitsRichTextQuote(child))
+  );
+
+const LIST_ITEM_CONTENT: ReadonlySet<string> = new Set([
+  ...QUOTE_CONTENT,
   'list',
 ]);
 
@@ -306,13 +341,15 @@ const fitsRichTextList = (list: List): boolean =>
     item.children.every(
       (child) =>
         LIST_ITEM_CONTENT.has(child.type) &&
-        (child.type !== 'list' || fitsRichTextList(child))
+        (child.type !== 'list' || fitsRichTextList(child)) &&
+        (child.type !== 'blockquote' || fitsRichTextQuote(child))
     )
   );
 
 /**
- * Builder content as Block Kit: paragraphs, headings, lists, and code as
- * `rich_text`, tables as `table` blocks. A run of rich-text blocks shares one
+ * Builder content as Block Kit: paragraphs, headings, lists, quotes, and code
+ * as `rich_text`, tables as `table` blocks. A quote is one level, and inside a
+ * list item it prints as the item's text. A run of rich-text blocks shares one
  * `rich_text` block. Markdown printed as written, and any block holding it,
  * goes through {@link gfmToSlackBlocks}.
  */
@@ -349,7 +386,8 @@ export const markdownContentToSlackBlocks = (
   for (const node of markdownBlocks(content) as RootContent[]) {
     if (
       containsVerbatim(node) ||
-      (node.type === 'list' && !fitsRichTextList(node))
+      (node.type === 'list' && !fitsRichTextList(node)) ||
+      (node.type === 'blockquote' && !fitsRichTextQuote(node))
     ) {
       flush();
       blocks.push(
@@ -364,7 +402,7 @@ export const markdownContentToSlackBlocks = (
       const translated = richTextElements(node);
       if (
         translated.length === 0 &&
-        !['paragraph', 'heading', 'code'].includes(node.type)
+        !['paragraph', 'heading', 'code', 'blockquote'].includes(node.type)
       ) {
         flush();
         blocks.push(
