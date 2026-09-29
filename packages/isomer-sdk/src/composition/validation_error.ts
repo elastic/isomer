@@ -18,13 +18,27 @@ import { ISOMER_ERROR_CODES } from './error';
 export interface ValidationError {
   path: string;
   message: string;
+  /** The `type` of the innermost primitive node `path` lands in, when there is one. */
+  nodeType?: string;
 }
 
-/** `<path> <message>`, or the message alone for a root finding. */
+const PLAIN_NAME = /^[\w$-]+$/;
+
+/** `<path> (in <nodeType>) <message>`, or the message alone for a root finding. */
 export const formatValidationError = ({
   path,
   message,
-}: ValidationError): string => (path ? `${path} ${message}` : message);
+  nodeType,
+}: ValidationError): string => {
+  if (!path) {
+    return message;
+  }
+  if (nodeType === undefined) {
+    return `${path} ${message}`;
+  }
+  const name = PLAIN_NAME.test(nodeType) ? nodeType : JSON.stringify(nodeType);
+  return `${path} (in ${name}) ${message}`;
+};
 
 /**
  * Thrown when a `Composition` fails validation, carrying every finding

@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-09-28
+
+- **Validation errors name their node**: `ValidationError` gains `nodeType`, the innermost primitive node its path lands in, set by the parser, the validator, and the duplicate-id pass. `formatValidationError` prints `<path> (in <nodeType>) <message>`, and an unknown key on a node lists that node's declared fields.
+
 ## 2026-09-27
 
 - **Enhancements reach every renderer**: The HTML render resolves `enhancements` once, hands every renderer the set as `context.enhancements` through a view of the adapter's context, and emits each resolved enhancement's script itself, so a pack needs no adapter wiring for its enhancements. The runtime's combined style adapter builds its context as a view over each pack's, so a class-instance context keeps its methods and private state.

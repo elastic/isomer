@@ -1522,6 +1522,7 @@ describe('createIsomerRuntime', () => {
     expect(errors).toContainEqual({
       path: 'body[1].items[0].id',
       message: 'duplicates id "dup" first used at body[0]',
+      nodeType: 'note',
     });
   });
 
@@ -2274,7 +2275,9 @@ describe('createIsomerRuntime', () => {
       body: [{ type: 'note' }],
     }).errors;
 
-    expect(errors).toEqual([{ path: 'body[0].text', message: 'is required' }]);
+    expect(errors).toEqual([
+      { path: 'body[0].text', message: 'is required', nodeType: 'note' },
+    ]);
   });
 
   it('composes a drawing pack with a pack that renders no svg', () => {

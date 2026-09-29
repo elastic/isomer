@@ -6,9 +6,13 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { z } from 'zod';
+import { z, type ZodType } from 'zod';
 
-import { definePrimitive } from '../define/primitive_module';
+import { formatValidationError } from '../composition/validation_error';
+import {
+  definePrimitive,
+  unresolvedBodyNodeSchema,
+} from '../define/primitive_module';
 
 import {
   createCompositionParser,
@@ -53,14 +57,35 @@ const loose = definePrimitive({
   renderers,
 });
 
-const definitions = [kpi, loose];
+const holder = definePrimitive({
+  type: 'holder',
+  catalog: {
+    type: 'holder',
+    purpose: '',
+    useWhen: [],
+    avoidWhen: [],
+    example: { type: 'holder', items: [] },
+  },
+  examples: [{ type: 'holder', items: [] }],
+  schema: z.object({
+    type: z.literal('holder'),
+    items: z.array(unresolvedBodyNodeSchema),
+  }),
+  schemaFor: (bodyNodeSchema: ZodType<unknown>) =>
+    z.object({ type: z.literal('holder'), items: z.array(bodyNodeSchema) }),
+  children: ({ items }) =>
+    items.map((node, index) => ({ node, path: `items[${index}]` })),
+  renderers,
+});
+
+const definitions = [kpi, loose, holder];
 const validate = createCompositionValidator(definitions);
 const parse = createCompositionParser(definitions);
 
 describe('validation messages', () => {
   it('names a missing required field', () => {
     expect(validate({ type: 'view', body: [{ type: 'kpi' }] }).errors).toEqual([
-      { path: 'body[0].label', message: 'is required' },
+      { path: 'body[0].label', message: 'is required', nodeType: 'kpi' },
     ]);
   });
 
@@ -89,7 +114,13 @@ describe('validation messages', () => {
     const check = createCompositionParser([strict]);
     expect(
       check({ type: 'view', body: [{ type: 'strict', label: '' }] }).errors
-    ).toEqual([{ path: 'body[0].label', message: 'must not be empty' }]);
+    ).toEqual([
+      {
+        path: 'body[0].label',
+        message: 'must not be empty',
+        nodeType: 'strict',
+      },
+    ]);
     expect(check({ type: 'view', body: [{ type: 'nope' }] }).errors).toEqual([
       { path: 'body[0].type', message: 'must be one of: strict' },
     ]);
@@ -101,6 +132,74 @@ describe('validation messages', () => {
   });
 });
 
+describe('error node types', () => {
+  it('prints the primitive an error lands in', () => {
+    const [error] = validate({ type: 'view', body: [{ type: 'kpi' }] }).errors;
+    expect(error && formatValidationError(error)).toBe(
+      'body[0].label (in kpi) is required'
+    );
+  });
+
+  it('names the innermost primitive, not its container', () => {
+    const { errors } = parse({
+      type: 'view',
+      body: [{ type: 'holder', items: [{ type: 'kpi', label: 'a', x: 1 }] }],
+    });
+    expect(errors.map(formatValidationError)).toEqual([
+      'body[0].items[0] (in kpi) has unrecognized key(s): x; its fields are label, delta',
+    ]);
+  });
+
+  it('names the container for an error in its own fields', () => {
+    const { errors } = parse({
+      type: 'view',
+      body: [{ type: 'holder', items: 'none' }],
+    });
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatchObject({
+      path: 'body[0].items',
+      nodeType: 'holder',
+    });
+  });
+
+  it('leaves an unknown type unnamed', () => {
+    const [error] = validate({ type: 'view', body: [{ type: 'nope' }] }).errors;
+    expect(error?.nodeType).toBeUndefined();
+  });
+
+  it('prints a root finding unchanged', () => {
+    const [error] = parse(null).errors;
+    expect(error?.nodeType).toBeUndefined();
+    expect(error && formatValidationError(error)).toBe(error?.message);
+  });
+
+  it('names the primitive a duplicate id lands on', () => {
+    const { errors } = validate({
+      type: 'view',
+      body: [
+        { type: 'kpi', id: 'a', label: 'a' } as never,
+        {
+          type: 'holder',
+          items: [{ type: 'kpi', id: 'a', label: 'b' }],
+        } as never,
+      ],
+    });
+    expect(errors.map(formatValidationError)).toEqual([
+      'body[1].items[0].id (in kpi) duplicates id "a" first used at body[0]',
+    ]);
+  });
+
+  it('quotes a type that is not a plain name', () => {
+    expect(
+      formatValidationError({
+        path: 'body[0].label',
+        message: 'is required',
+        nodeType: 'my kpi',
+      })
+    ).toBe('body[0].label (in "my kpi") is required');
+  });
+});
+
 describe('unknown node keys', () => {
   it('rejects an unknown key on a node, matching the root and the JSON Schema', () => {
     const { valid, errors } = parse({
@@ -109,7 +208,12 @@ describe('unknown node keys', () => {
     });
     expect(valid).toBe(false);
     expect(errors).toEqual([
-      { path: 'body[0]', message: 'has unrecognized key(s): hallucinated' },
+      {
+        path: 'body[0]',
+        message:
+          'has unrecognized key(s): hallucinated; its fields are label, delta',
+        nodeType: 'kpi',
+      },
     ]);
   });
 
