@@ -13,7 +13,7 @@
   ],
   "plugins": [
     [
-      "@semantic-release/commit-analyzer",
+      "./scripts/semantic_release_workspace.js",
       {
         "preset": "angular",
         "releaseRules": [
@@ -43,8 +43,6 @@
         }
       }
     ],
-    "@semantic-release/release-notes-generator",
-    "./scripts/semantic_release_workspace.js",
     [
       "@semantic-release/github",
       {

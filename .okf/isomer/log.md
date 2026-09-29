@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-09-29
+
+- **Releases follow published packages**: The workspace semantic-release plugin runs the commit analyzer and notes generator over only the commits that change a non-private package under `packages/` or a root build input, so slides-pack, docs, and tooling commits no longer cut a release. The publish playbook lists all four published packages.
+
 ## 2026-09-28
 
 - **Unique JSX component names**: `buildJsxShim` throws `DUPLICATE_PRIMITIVE_TYPE`, naming both types, when two primitive or child types capitalize to one component name or a type collides with the root `Composition`.
