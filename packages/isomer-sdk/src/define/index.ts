@@ -17,6 +17,12 @@ export {
   bindFrame,
 } from './frame';
 export {
+  type MarkdownBlock,
+  type MarkdownContent,
+  type MarkdownInline,
+  type MarkdownInlineInput,
+} from './markdown_content';
+export {
   type AnyPrimitiveDefinition,
   type DefaultPackTypes,
   type OptionalSurface,

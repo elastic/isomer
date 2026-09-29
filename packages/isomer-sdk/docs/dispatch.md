@@ -19,7 +19,8 @@ Duplicate types throw at construction, with the label in front of the message so
 | `renderReact(node, context?)`          | `ReactNode`                                                                     |
 | `renderSvg(node, context, theme, key)` | `ReactNode` — the `react` renderer, gated on `svg` visibility and keyed         |
 | `renderText(node)`                     | `string` — empty when nothing rendered                                          |
-| `renderMarkdown(node)`                 | `string` — empty when nothing rendered                                          |
+| `renderMarkdown(node)`                 | `string` — `md` content serialized; empty when nothing rendered                 |
+| `renderMarkdownContent(node)`          | `MarkdownContent` — a string result printed as written                          |
 | `renderSlack(node, collector?)`        | `readonly T['slackBlock'][]` — `SlackBlock` unless the pack binds it            |
 | `collectStyles(node, styles, context)` | nothing; the collector is mutated                                               |
 | `estimateSvgHeight(node)`              | `number` — `0` when hidden or unmeasured                                        |

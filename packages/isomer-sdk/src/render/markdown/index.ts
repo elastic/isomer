@@ -6,15 +6,20 @@
  */
 
 export {
+  boldLabelPrefix,
+  boldSectionLabel,
+  defaultMarkdownFromText,
+  md,
+  serializeMarkdown,
+} from './builder';
+
+export {
   type MarkdownEnvelopeDispatcher,
   type MarkdownEnvelopeOptions,
   renderMarkdownEnvelope,
 } from './envelope';
 
 export {
-  boldLabelPrefix,
-  boldSectionLabel,
-  defaultMarkdownFromText,
   markdownImage,
   markdownLink,
   markdownLinkWrap,

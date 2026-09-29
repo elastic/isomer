@@ -96,7 +96,7 @@ Zod helpers so a pack states constraints the same way everywhere: `z`, `enumOf`,
 
 `./text` — `renderTextEnvelope` with `TextEnvelopeOptions`, and `TextEnvelopeDispatcher`. Text formatting is pack-owned; the SDK ships no house style.
 
-`./markdown` — `renderMarkdownEnvelope` with `MarkdownEnvelopeOptions`, `MarkdownEnvelopeDispatcher`, `boldLabelPrefix`, `boldSectionLabel`, `defaultMarkdownFromText`, and the URL-policed formatters `markdownLink`, `markdownImage`, `markdownLinkWrap`, `sanitizeMarkdownSource`.
+`./markdown` — `renderMarkdownEnvelope` with `MarkdownEnvelopeOptions`, `MarkdownEnvelopeDispatcher`, the `md` builder with `MarkdownBlock`, `MarkdownInline`, `MarkdownInlineInput`, and `MarkdownContent`, `serializeMarkdown`, `boldLabelPrefix`, `boldSectionLabel`, `defaultMarkdownFromText`, and the URL-policed formatters `markdownLink`, `markdownImage`, `markdownLinkWrap`, `sanitizeMarkdownSource`.
 
 `./slack` — `renderSlackEnvelope` with `SlackEnvelopeOptions` and `SlackEnvelopeResult`, `SlackEnvelopeDispatcher`, `SLACK_LIMITS`, `createSlackAssetCollector` (`{ prefix? }`), `SlackAssetCollector`, `SlackAssetRequest`, `SlackFileReference`, `isSlackReachableImageUrl`.
 

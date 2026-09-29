@@ -17,6 +17,7 @@ import {
 import type { PrimitiveNode } from '../composition/node';
 import type { ValidationError } from '../composition/validation_error';
 
+import type { MarkdownContent } from './markdown_content';
 import type { SlackAssetCollector } from './slack_assets';
 import type { SlackBlock } from './slack_blocks';
 import { formatZodIssues } from './zod_format';
@@ -202,11 +203,12 @@ export interface SurfaceMap<T extends PackTypes = DefaultPackTypes> {
     };
     output: string;
   };
+  /** A string is printed as written; content from `md` is escaped where it lands. */
   markdown: {
     env: {
       scope: RenderScope<T>;
     };
-    output: string;
+    output: string | MarkdownContent;
   };
   /**
    * Returns one payload or several, so a primitive need not wrap a single
@@ -254,6 +256,8 @@ export interface RenderScope<T extends PackTypes = DefaultPackTypes> {
   ): void;
   renderText(node: PrimitiveNode): string;
   renderMarkdown(node: PrimitiveNode): string;
+  /** A child as content, for a container building with `md`; a string result is printed as written. */
+  renderMarkdownContent(node: PrimitiveNode): MarkdownContent;
   renderSlack(
     node: PrimitiveNode,
     collector?: T['slackCollector']
@@ -319,7 +323,7 @@ export interface Renderers<
     env: {
       scope: RenderScope<T>;
     }
-  ): string;
+  ): string | MarkdownContent;
   slack?(
     node: TNode,
     env: {

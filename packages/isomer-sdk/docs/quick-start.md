@@ -30,6 +30,7 @@ export type KpiNode = z.infer<typeof kpiSchema> & PrimitiveNode;
 
 ```tsx
 import { definePrimitive } from '@elastic/isomer-sdk';
+import { md } from '@elastic/isomer-sdk/markdown';
 import { type SlackBlock } from '@elastic/isomer-sdk/slack';
 
 const examples: KpiNode[] = [
@@ -52,7 +53,11 @@ export const kpi = definePrimitive({
     text: (node) =>
       `${node.label}: ${node.value}${node.delta ? ` (${node.delta})` : ''}`,
     markdown: (node) =>
-      `**${node.label}**: ${node.value}${node.delta ? ` _(${node.delta})_` : ''}`,
+      md.paragraph(
+        md.strong(node.label),
+        `: ${node.value}`,
+        ...(node.delta ? [' ', md.emphasis(`(${node.delta})`)] : [])
+      ),
     slack: (node): SlackBlock => ({
       type: 'section',
       text: { type: 'mrkdwn', text: `*${node.label}*\n${node.value}` },
