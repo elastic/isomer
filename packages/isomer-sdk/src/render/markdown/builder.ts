@@ -9,6 +9,7 @@
 // module, so no emitted declaration names one.
 
 import type {
+  Blockquote,
   Definition,
   Image,
   Link,
@@ -68,6 +69,36 @@ const phrasing = (input: MarkdownInlineInput): PhrasingContent =>
     ? { type: 'text', value: oneLine(input) }
     : (input as unknown as PhrasingContent);
 
+const emptyText = (): PhrasingContent => ({ type: 'text', value: '' });
+
+const isEmptyText = (node: PhrasingContent): boolean =>
+  node.type === 'text' && node.value === '';
+
+// A break at either edge prints as a literal `\` or loose markers.
+const withoutEdgeBreaks = (
+  inputs: readonly MarkdownInlineInput[]
+): PhrasingContent[] => {
+  const children = inputs.map(phrasing).filter((node) => !isEmptyText(node));
+  let start = 0;
+  let end = children.length;
+  while (start < end && children[start]!.type === 'break') {
+    start += 1;
+  }
+  while (end > start && children[end - 1]!.type === 'break') {
+    end -= 1;
+  }
+  return children.slice(start, end);
+};
+
+// Only a paragraph breaks a line: a heading with one turns setext, and the
+// Slack fallback reads a line at a time.
+const inlineChildren = (
+  inputs: readonly MarkdownInlineInput[]
+): PhrasingContent[] =>
+  withoutEdgeBreaks(inputs).map((node) =>
+    node.type === 'break' ? { type: 'text', value: ' ' } : node
+  );
+
 const rootContent = (content: MarkdownContent): RootContent[] =>
   isContentList(content)
     ? content.flatMap(rootContent)
@@ -83,7 +114,7 @@ const itemContent = (
   item: MarkdownInlineInput | MarkdownContent
 ): ListItem['children'] =>
   isInlineInput(item)
-    ? [{ type: 'paragraph', children: [phrasing(item)] }]
+    ? [{ type: 'paragraph', children: withoutEdgeBreaks([item]) }]
     : (rootContent(item) as ListItem['children']);
 
 // GFM reads a list number of at most nine digits, so the last item's must fit.
@@ -106,19 +137,18 @@ const verbatim = (markdown: string): MarkdownBlock =>
     value: markdown.trimEnd(),
   } as unknown as RootContent);
 
-const emptyText = (): PhrasingContent => ({ type: 'text', value: '' });
-
-const isEmptyText = (node: PhrasingContent): boolean =>
-  node.type === 'text' && node.value === '';
-
 // An empty wrapper prints its markers alone: `****` reads as a thematic break.
 const wrapper = (
   type: 'strong' | 'emphasis',
   inputs: MarkdownInlineInput[]
 ): MarkdownInline => {
-  const children = inputs.map(phrasing);
-  return inline(children.every(isEmptyText) ? emptyText() : { type, children });
+  const children = inlineChildren(inputs);
+  return inline(children.length === 0 ? emptyText() : { type, children });
 };
+
+const inlineRuns = (
+  runs: MarkdownInlineInput | readonly MarkdownInlineInput[]
+): PhrasingContent[] => inlineChildren(isInlineList(runs) ? runs : [runs]);
 
 /**
  * Builds Markdown as content rather than strings, so escaping follows where
@@ -146,7 +176,7 @@ export const md = {
     inline({
       type: 'link',
       url: sanitizeNavigationHref(href) ?? BLOCKED_HREF,
-      children: (isInlineList(label) ? label : [label]).map(phrasing),
+      children: inlineRuns(label),
     }),
   image: (alt: string, src: string): MarkdownInline => {
     const url = sanitizeAssetUrl(src);
@@ -154,13 +184,25 @@ export const md = {
       ? inline(phrasing(alt))
       : inline({ type: 'image', url, alt: oneLine(alt) });
   },
+  /** A hard line break, printed as a backslash before the line ending. Outside a paragraph, or at its edge, it is a space or nothing. */
+  break: (): MarkdownInline => inline({ type: 'break' }),
   paragraph: (...children: MarkdownInlineInput[]): MarkdownBlock =>
-    block({ type: 'paragraph', children: children.map(phrasing) }),
+    block({ type: 'paragraph', children: withoutEdgeBreaks(children) }),
   heading: (
     depth: 1 | 2 | 3 | 4 | 5 | 6,
     ...children: MarkdownInlineInput[]
   ): MarkdownBlock =>
-    block({ type: 'heading', depth, children: children.map(phrasing) }),
+    block({ type: 'heading', depth, children: inlineChildren(children) }),
+  /** A quote with no blocks, such as one holding only a hidden child, is dropped. */
+  blockquote: (...children: MarkdownContent[]): MarkdownContent => {
+    const content = rootContent(children);
+    return content.length === 0
+      ? []
+      : block({
+          type: 'blockquote',
+          children: content as Blockquote['children'],
+        });
+  },
   /**
    * An item that is inline input becomes one paragraph; one with no blocks,
    * such as a hidden child, is dropped. A `start` that would print a marker
@@ -184,10 +226,12 @@ export const md = {
       children,
     });
   },
-  /** GFM trims a cell's edge whitespace. */
+  /** A cell is one inline run or several. GFM trims a cell's edge whitespace. */
   table: (
-    columns: readonly MarkdownInlineInput[],
-    rows: readonly (readonly MarkdownInlineInput[])[]
+    columns: readonly (MarkdownInlineInput | readonly MarkdownInlineInput[])[],
+    rows: readonly (readonly (
+      MarkdownInlineInput | readonly MarkdownInlineInput[]
+    )[])[]
   ): MarkdownBlock =>
     block({
       type: 'table',
@@ -195,7 +239,7 @@ export const md = {
         type: 'tableRow',
         children: cells.map((cell) => ({
           type: 'tableCell',
-          children: [phrasing(cell)],
+          children: inlineRuns(cell),
         })),
       })),
     }),
@@ -212,6 +256,17 @@ export const md = {
   /** Authored Markdown source, after {@link sanitizeMarkdownSource}. */
   authored: (source: string): MarkdownBlock =>
     verbatim(sanitizeMarkdownSource(source)),
+  /** Plain `text` with a leading `label:` in strong, as {@link boldLabelPrefix} does for GFM. */
+  boldLabelPrefix: (
+    text: string,
+    label: string | undefined
+  ): MarkdownInline[] =>
+    label && text.startsWith(`${label}:`)
+      ? [md.strong(label), md.text(text.slice(label.length))]
+      : [md.text(text)],
+  /** `label` uppercased in strong, as its own paragraph. */
+  boldSectionLabel: (label: string): MarkdownBlock =>
+    md.paragraph(md.strong(label.toUpperCase())),
 };
 
 /** A renderer's string output as content, printed as written. */
@@ -294,7 +349,7 @@ export const boldLabelPrefix = (
  * list-shaped markdown blocks (stat groups, description lists, badge groups).
  */
 export const boldSectionLabel = (label: string): string =>
-  serializeMarkdown(md.paragraph(md.strong(label.toUpperCase())));
+  serializeMarkdown(md.boldSectionLabel(label));
 
 /**
  * A markdown renderer for a primitive whose text output is already valid GFM.

@@ -107,7 +107,8 @@ const withoutMeta = (value: unknown): unknown => {
   return rest;
 };
 
-const oneLine = (text: string): string =>
+/** `text` on one line: each run of line terminators, with the whitespace around it, becomes one space. */
+export const oneLine = (text: string): string =>
   text.replace(/\s*[\r\n\u2028\u2029]+\s*/g, ' ');
 
 /** `text` as a Markdown code span, fenced longer than any backtick run inside it. */

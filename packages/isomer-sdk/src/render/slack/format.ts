@@ -604,7 +604,7 @@ const closesFence = (line: string, opening: string): boolean =>
 const TABLE_SEPARATOR_RE =
   /^(?=[^|]*\|)\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
 const TABLE_ROW_RE = /^\s*\|.*\|\s*$/;
-const BLOCKQUOTE_RE = /^(>\s?)(.*)$/;
+const QUOTE_MARKERS_RE = /^(?:>[ \t]?)+/;
 
 // An ATX heading's text without its closing `#` run, or `undefined`. An
 // escaped `\#` is text, not part of the closing run.
@@ -650,11 +650,30 @@ const splitPipeRow = (line: string): string[] => {
   return cells.map((value) => plainInline(value.trim()));
 };
 
+// The line after its quote markers, or `undefined` when it is not quoted.
+const quoteBody = (line: string | undefined): string | undefined => {
+  const markers = line && QUOTE_MARKERS_RE.exec(line)?.[0];
+  return markers ? line.slice(markers.length) : undefined;
+};
+
+// Headings have no mrkdwn equivalent, so they bold. A trailing odd backslash
+// run before a line that continues the paragraph is a hard break.
+const renderLine = (line: string, next: string | undefined): string => {
+  const heading = headingText(line);
+  if (heading !== undefined) {
+    return bold(unescapeGfm(heading));
+  }
+  return renderInline(
+    next?.trim() && isEscaped(line, line.length) ? line.slice(0, -1) : line
+  );
+};
+
 /**
  * Translates GFM into one Slack `mrkdwn` string:
  *
  * - Bold `**X**` to `*X*`, links `[L](U)` to `<U|L>`.
  * - ATX headings to bold, since Slack renders no headings.
+ * - Blockquotes, nested ones included, to one `>` level with no empty lines.
  * - Pipe tables into a fenced code block, mrkdwn having no table syntax — the
  *   monospace alignment is all that survives. Prefer
  *   {@link gfmToSlackBlocks} when a native `table` block is acceptable.
@@ -709,27 +728,13 @@ export const gfmToSlackMrkdwn = (gfm: string): string => {
       );
       continue;
     }
-    const heading = headingText(line);
-    if (heading !== undefined) {
-      // Headings have no first-class mrkdwn equivalent. Bolding the text keeps
-      // the visual hierarchy without inventing markup Slack would render as
-      // a literal `#`.
-      out.push(bold(unescapeGfm(heading)));
-      i += 1;
-      continue;
+    const next = lines[i + 1];
+    const quoted = quoteBody(line);
+    if (quoted === undefined) {
+      out.push(renderLine(line, quoteBody(next) === undefined ? next : ''));
+    } else if (quoted.trim()) {
+      out.push(`> ${renderLine(quoted, quoteBody(next))}`);
     }
-    const blockquoteMatch = line.match(BLOCKQUOTE_RE);
-    if (blockquoteMatch) {
-      // Slack mrkdwn supports `>` blockquotes. Preserve the prefix verbatim
-      // and run only the body through inline transformation so that bold,
-      // italic, links, and emoji glyphs inside the quote still translate.
-      out.push(
-        `${blockquoteMatch[1]}${renderInline(blockquoteMatch[2] ?? '')}`
-      );
-      i += 1;
-      continue;
-    }
-    out.push(renderInline(line));
     i += 1;
   }
   return out.join('\n');

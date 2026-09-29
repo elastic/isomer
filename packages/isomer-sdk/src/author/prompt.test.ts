@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { buildAuthoringPrompt, formatPrimitiveEntry } from './prompt';
+import { buildAuthoringPrompt, formatPrimitiveEntry, oneLine } from './prompt';
 
 const context = {
   guide: 'Guide',
@@ -285,5 +285,11 @@ describe('formatPrimitiveEntry', () => {
     expect(
       formatPrimitiveEntry({ ...quoteless, example: { text: 'a\u2028b' } })
     ).toContain('  - Example: `{"text":"a\\u2028b"}`');
+  });
+});
+
+describe('oneLine', () => {
+  it('collapses each run of line terminators and its surrounding whitespace', () => {
+    expect(oneLine('a \r\n\n  b\u2028c\u2029 d')).toBe('a b c d');
   });
 });
