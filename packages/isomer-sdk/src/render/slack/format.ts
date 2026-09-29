@@ -604,7 +604,9 @@ const closesFence = (line: string, opening: string): boolean =>
 const TABLE_SEPARATOR_RE =
   /^(?=[^|]*\|)\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
 const TABLE_ROW_RE = /^\s*\|.*\|\s*$/;
-const QUOTE_MARKERS_RE = /^(?:>[ \t]?)+/;
+const QUOTE_MARKERS_RE = /^(?: {0,3}>[ \t]?)+/;
+const LIST_ITEM_RE = /^(?:[ \t]*(?:[-+*]|\d{1,9}[.)])[ \t]+)+/;
+const LIST_LEAD_RE = /^(?:[ \t]*(?:[-+*]|\d{1,9}[.)])[ \t]+)*[ \t]*/;
 
 // An ATX heading's text without its closing `#` run, or `undefined`. An
 // escaped `\#` is text, not part of the closing run.
@@ -650,10 +652,52 @@ const splitPipeRow = (line: string): string[] => {
   return cells.map((value) => plainInline(value.trim()));
 };
 
-// The line after its quote markers, or `undefined` when it is not quoted.
-const quoteBody = (line: string | undefined): string | undefined => {
-  const markers = line && QUOTE_MARKERS_RE.exec(line)?.[0];
-  return markers ? line.slice(markers.length) : undefined;
+// The content offset of the list item a line leaves open, or `undefined`.
+const listOffsetAfter = (
+  line: string,
+  offset: number | undefined
+): number | undefined => {
+  const item = LIST_ITEM_RE.exec(line)?.[0];
+  if (item !== undefined) {
+    return item.length;
+  }
+  const indent = line.length - line.trimStart().length;
+  return line.trim() && indent < (offset ?? 0) ? undefined : offset;
+};
+
+interface QuotedLine {
+  // The list markers and indent a quote inside a list item keeps.
+  lead: string;
+  body: string;
+}
+
+const splitQuote = (
+  line: string | undefined,
+  inList: boolean
+): QuotedLine | undefined => {
+  if (line === undefined) {
+    return undefined;
+  }
+  const lead = inList ? (LIST_LEAD_RE.exec(line)?.[0] ?? '') : '';
+  const markers = QUOTE_MARKERS_RE.exec(line.slice(lead.length))?.[0];
+  return markers
+    ? { lead, body: line.slice(lead.length + markers.length) }
+    : undefined;
+};
+
+// The next line's quoted text when it continues the same quoted paragraph.
+const nextQuoteBody = (
+  next: string | undefined,
+  listOffset: number | undefined
+): string | undefined => {
+  if (listOffset === undefined) {
+    return splitQuote(next, false)?.body;
+  }
+  return next === undefined ||
+    LIST_ITEM_RE.test(next) ||
+    listOffsetAfter(next, listOffset) === undefined
+    ? undefined
+    : splitQuote(next, true)?.body;
 };
 
 // Headings have no mrkdwn equivalent, so they bold. A trailing odd backslash
@@ -674,6 +718,8 @@ const renderLine = (line: string, next: string | undefined): string => {
  * - Bold `**X**` to `*X*`, links `[L](U)` to `<U|L>`.
  * - ATX headings to bold, since Slack renders no headings.
  * - Blockquotes, nested ones included, to one `>` level with no empty lines.
+ *   Inside a list item a quote prints as the item's text, since a mrkdwn quote
+ *   must start its line.
  * - Pipe tables into a fenced code block, mrkdwn having no table syntax — the
  *   monospace alignment is all that survives. Prefer
  *   {@link gfmToSlackBlocks} when a native `table` block is acceptable.
@@ -684,9 +730,11 @@ const renderLine = (line: string, next: string | undefined): string => {
 export const gfmToSlackMrkdwn = (gfm: string): string => {
   const lines = gfm.split('\n');
   const out: string[] = [];
+  let listOffset: number | undefined;
   let i = 0;
   while (i < lines.length) {
     const line = lines[i]!;
+    listOffset = listOffsetAfter(line, listOffset);
     const opening = FENCE_RE.exec(line)?.[1];
     if (opening !== undefined) {
       // Fenced code block: copy the body verbatim. Slack honours the
@@ -728,12 +776,16 @@ export const gfmToSlackMrkdwn = (gfm: string): string => {
       );
       continue;
     }
-    const next = lines[i + 1];
-    const quoted = quoteBody(line);
-    if (quoted === undefined) {
-      out.push(renderLine(line, quoteBody(next) === undefined ? next : ''));
-    } else if (quoted.trim()) {
-      out.push(`> ${renderLine(quoted, quoteBody(next))}`);
+    const text = line.replace(/\r$/, '');
+    const next = lines[i + 1]?.replace(/\r$/, '');
+    const inList = listOffset !== undefined;
+    const quote = splitQuote(text, inList);
+    if (quote === undefined) {
+      out.push(renderLine(text, splitQuote(next, inList) ? '' : next));
+    } else if (quote.body.trim()) {
+      out.push(
+        `${inList ? quote.lead : '> '}${renderLine(quote.body, nextQuoteBody(next, listOffset))}`
+      );
     }
     i += 1;
   }

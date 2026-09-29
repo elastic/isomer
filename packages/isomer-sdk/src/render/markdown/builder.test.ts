@@ -436,13 +436,14 @@ describe('md', () => {
         md.blockquote(md.list([md.paragraph('d', md.break(), 'e')]))
       ),
       md.paragraph('f', md.break(), 'g'),
+      md.list([md.blockquote(md.paragraph('h', md.break(), 'i'))]),
     ]);
     expect(gfmToSlackBlocks(markdown)).toEqual([
       {
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: '> &gt; a\n> b\\\n> *# c*\n> - d\n>   e\n\nf\ng',
+          text: '> &gt; a\n> b\\\n> *# c*\n> - d\n>   e\n\nf\ng\n\n- h\n  i',
         },
       },
     ]);

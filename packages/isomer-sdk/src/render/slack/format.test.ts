@@ -156,6 +156,50 @@ describe('gfmToSlackMrkdwn', () => {
     expect(gfmToSlackMrkdwn('> **note** & more')).toBe('> *note* &amp; more');
   });
 
+  it.each(['\n', '\r\n'])(
+    'flattens quotes and reads backslash hard breaks with %j line endings',
+    (eol) => {
+      const lines = (...text: string[]): string => text.join(eol);
+      expect(gfmToSlackMrkdwn(lines('> > a', '>', '>  > b', '   > c'))).toBe(
+        '> a\n> b\n> c'
+      );
+      expect(gfmToSlackMrkdwn(lines('> ## T ##', '> # x', 'y'))).toBe(
+        '> *T*\n> *x*\ny'
+      );
+      expect(gfmToSlackMrkdwn(lines('a\\', 'b\\\\', 'c\\\\\\', 'd'))).toBe(
+        'a\nb\\\nc\\\nd'
+      );
+      expect(gfmToSlackMrkdwn(lines('> a\\', '> b\\', '>', '> c\\'))).toBe(
+        '> a\n> b\\\n> c\\'
+      );
+      expect(gfmToSlackMrkdwn(lines('a\\', '> b\\', '', 'c\\'))).toBe(
+        'a\\\n> b\\\n\nc\\'
+      );
+    }
+  );
+
+  it.each(['\n', '\r\n'])(
+    'prints a quote inside a list item as its text with %j line endings',
+    (eol) => {
+      const lines = (...text: string[]): string => text.join(eol);
+      expect(
+        gfmToSlackMrkdwn(lines('- > a\\', '  > b', '  >', '  > ## c', 'd'))
+      ).toBe('- a\n  b\n  *c*\nd');
+      expect(gfmToSlackMrkdwn(lines('1. x', '   > q\\', '   > > r'))).toBe(
+        '1. x\n   q\n   r'
+      );
+      expect(gfmToSlackMrkdwn(lines('- - > a\\', '    > b'))).toBe(
+        '- - a\n    b'
+      );
+      expect(gfmToSlackMrkdwn(lines('- > a\\', '- > b\\', '> c'))).toBe(
+        '- a\\\n- b\\\n> c'
+      );
+      expect(gfmToSlackMrkdwn(lines('- a', '', '  > b', '', ' > c'))).toBe(
+        '- a\n\n  b\n\n> c'
+      );
+    }
+  );
+
   it('passes list markers through as plain lines', () => {
     expect(gfmToSlackMrkdwn('- one\n- **two**')).toBe('- one\n- *two*');
   });
