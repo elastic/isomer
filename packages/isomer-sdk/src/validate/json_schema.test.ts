@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { z, type ZodType } from 'zod';
 
 import type {
@@ -272,6 +272,92 @@ describe('buildAuthoringJsonSchema', () => {
     };
     expect(metric.properties?.id).toBeDefined();
     expect(metric.properties?.surfaces).toBeDefined();
+  });
+});
+
+describe('buildAuthoringJsonSchema own keys', () => {
+  const primitiveOf = (
+    type: string,
+    shape: Record<string, ZodType>
+  ): AnyPrimitiveDefinition =>
+    define({
+      type,
+      catalog: { type, purpose: '', useWhen: [], avoidWhen: [], example: {} },
+      examples: [],
+      schema: z.object({ type: z.literal(type), ...shape }),
+      renderers,
+    });
+
+  const withInherited = (key: string, value: unknown, run: () => void) => {
+    Object.defineProperty(Object.prototype, key, {
+      configurable: true,
+      value,
+      writable: true,
+    });
+    try {
+      run();
+    } finally {
+      delete (Object.prototype as Record<string, unknown>)[key];
+    }
+  };
+
+  const scalar = z.string().min(1);
+
+  afterEach(() => {
+    delete (Object.prototype as { description?: unknown }).description;
+  });
+
+  it('describes only a def the schema holds, never Object.prototype', () => {
+    buildAuthoringJsonSchema([leaf('alpha')], {
+      describe: JSON.parse('{"__proto__": "x"}') as Record<string, string>,
+    });
+
+    expect(({} as { description?: unknown }).description).toBeUndefined();
+  });
+
+  it('keeps an own __proto__ property through the rewrite passes', () => {
+    const shape: Record<string, ZodType> = { a: scalar, b: scalar };
+    Object.defineProperty(shape, '__proto__', {
+      configurable: true,
+      enumerable: true,
+      value: z.string(),
+      writable: true,
+    });
+    const { odd } = collectDefs(
+      buildAuthoringJsonSchema([primitiveOf('odd', shape)])
+    ) as { odd: { properties: Record<string, unknown>; required: string[] } };
+
+    expect(odd.required).toContain('__proto__');
+    expect(Object.hasOwn(odd.properties, '__proto__')).toBe(true);
+  });
+
+  it('keeps a def whose id is __proto__', () => {
+    const $defs = collectDefs(buildAuthoringJsonSchema([leaf('__proto__')]));
+
+    expect(Object.hasOwn($defs, '__proto__')).toBe(true);
+  });
+
+  it('inlines a bare scalar def whatever Object.prototype holds', () => {
+    withInherited('const', 'x', () => {
+      const { pair } = collectDefs(
+        buildAuthoringJsonSchema([
+          primitiveOf('pair', { a: scalar, b: scalar }),
+        ])
+      ) as { pair: { properties: Record<string, unknown> } };
+
+      expect(pair.properties.a).toEqual({ type: 'string', minLength: 1 });
+    });
+  });
+
+  it('never omits a property from an inherited def', () => {
+    const inherited = { properties: { x: {} }, required: ['x'] };
+    withInherited('inherited', inherited, () => {
+      buildAuthoringJsonSchema([leaf('alpha')], {
+        omitProperties: ['inherited.x'],
+      });
+    });
+
+    expect(inherited).toEqual({ properties: { x: {} }, required: ['x'] });
   });
 });
 
