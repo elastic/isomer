@@ -489,8 +489,6 @@ export const bulletsModule = createStyleModule('bullets', ({ css }) => ({
       line-height: ${bullets.itemLineHeight};
     }
     & li::before {
-      color: ${color.primary};
-      content: '${bullets.markerGlyph.dot}';
       font-weight: ${bullets.markerFontWeight};
       line-height: 1;
       margin-top: ${bullets.markerOffset};
@@ -499,7 +497,17 @@ export const bulletsModule = createStyleModule('bullets', ({ css }) => ({
       min-width: 0;
     }
   `,
+  // Every marker sets `content` from its own variant, never from `root`: at
+  // equal specificity the later rule wins, and the output order is not ours.
   marker: variants(slideBulletMarkers, (marker) => {
+    if (marker === 'dot') {
+      return css`
+        & li::before {
+          color: ${color.primary};
+          content: '${bullets.markerGlyph.dot}';
+        }
+      `;
+    }
     if (marker === 'check') {
       return css`
         & li::before {
