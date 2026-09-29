@@ -633,7 +633,7 @@ const closesFence = (line: string, opening: string): boolean =>
   (CLOSING_FENCE_RE.exec(line)?.[1]?.length ?? 0) >= opening.length;
 // At least one pipe, so a single-column table counts and a thematic break does not.
 const TABLE_SEPARATOR_RE =
-  /^(?=[^|]*\|)\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
+  /^(?=[^|]*\|)\s*(?!\s)\|?\s*:?-+:?\s*(?!\s)(\|\s*:?-+:?\s*(?!\s))*\|?\s*$/;
 const TABLE_ROW_RE = /^\s*\|.*\|\s*$/;
 const BLOCKQUOTE_RE = /^(>\s?)(.*)$/;
 

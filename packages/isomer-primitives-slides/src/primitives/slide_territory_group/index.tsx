@@ -5,11 +5,11 @@
  * 2.0.
  */
 
+import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
 import { bold, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
 import { marksMarkdown, marksSlack, plainText } from '../../render/marks';
-import { oneLine } from '../../render/one_line';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';

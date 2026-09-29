@@ -178,4 +178,16 @@ describe('sanitizeMarkdownSource', () => {
       expect(sanitizeMarkdownSource('p95 <y and q <z')).toBe('p95 <y and q <z');
     });
   });
+
+  it('runs in linear time on long whitespace and unclosed tags', () => {
+    const started = performance.now();
+    for (const input of [
+      `[a](${' '.repeat(50_000)}x`,
+      `[a](x${' '.repeat(50_000)}y`,
+      '<a'.repeat(50_000),
+    ]) {
+      sanitizeMarkdownSource(input);
+    }
+    expect(performance.now() - started).toBeLessThan(1_000);
+  });
 });
