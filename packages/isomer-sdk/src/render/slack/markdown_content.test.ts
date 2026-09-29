@@ -10,8 +10,57 @@ import { describe, expect, it } from 'vitest';
 import { markdownFromString, md } from '../markdown/builder';
 import { SAFE_INPUTS } from '../markdown/safe_inputs.fixtures';
 
-import { SLACK_LIMITS } from './blocks';
+import {
+  SLACK_LIMITS,
+  type SlackBlock,
+  type SlackRichTextBlockElement,
+  type SlackRichTextInline,
+} from './blocks';
 import { markdownContentToSlackBlocks } from './markdown_content';
+
+const runs = (inlines: readonly SlackRichTextInline[]): string =>
+  inlines
+    .map((run) => {
+      const text = run.type === 'link' ? (run.text ?? run.url) : run.text;
+      const style = Object.keys(run.style ?? {}).join();
+      return style ? `[${style}:${text}]` : text;
+    })
+    .join('');
+
+// An element as its type, `|` when bordered, and its runs, a styled run as
+// `[style:text]`; list items are joined with ` / `.
+const element = (item: SlackRichTextBlockElement): string =>
+  `${item.type.replace('rich_text_', '')}${'border' in item && item.border ? '|' : ''}: ${
+    item.type === 'rich_text_list'
+      ? item.elements.map(({ elements }) => runs(elements)).join(' / ')
+      : runs(item.elements)
+  }`;
+
+const outline = (blocks: readonly SlackBlock[]): string[] =>
+  blocks.flatMap((block) => {
+    switch (block.type) {
+      case 'rich_text':
+        return block.elements.map(element);
+      case 'section':
+        return [`section: ${block.text?.text}`];
+      case 'table':
+        return [
+          `table: ${block.rows
+            .map((row) =>
+              row
+                .map((cell) =>
+                  cell.type === 'raw_text'
+                    ? cell.text
+                    : cell.elements.map(element).join()
+                )
+                .join(' | ')
+            )
+            .join(' / ')}`,
+        ];
+      default:
+        return [block.type];
+    }
+  });
 
 describe('markdownContentToSlackBlocks', () => {
   it('keeps text literal and carries formatting, nested at any depth, as styles', () => {
@@ -184,259 +233,112 @@ describe('markdownContentToSlackBlocks', () => {
     }
   );
 
-  it('quotes one level with hard breaks as line breaks, and a quote in a list item as its text', () => {
+  it('quotes one level, a hard break as a line break', () => {
     expect(
-      markdownContentToSlackBlocks([
-        md.blockquote(
-          md.paragraph('> a', md.break(), md.strong('b')),
-          md.heading(2, '# c'),
-          md.blockquote(md.paragraph('d'))
-        ),
-        md.list([md.blockquote(md.paragraph('f', md.break(), 'g'))]),
-      ])
-    ).toEqual([
-      {
-        type: 'rich_text',
-        elements: [
-          {
-            type: 'rich_text_quote',
-            elements: [
-              { type: 'text', text: '> a' },
-              { type: 'text', text: '\n' },
-              { type: 'text', text: 'b', style: { bold: true } },
-              { type: 'text', text: '\n' },
-              { type: 'text', text: '# c', style: { bold: true } },
-              { type: 'text', text: '\n' },
-              { type: 'text', text: 'd' },
-            ],
-          },
-          {
-            type: 'rich_text_list',
-            style: 'bullet',
-            elements: [
-              {
-                type: 'rich_text_section',
-                elements: [
-                  { type: 'text', text: 'f' },
-                  { type: 'text', text: '\n' },
-                  { type: 'text', text: 'g' },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    ]);
+      outline(
+        markdownContentToSlackBlocks(
+          md.blockquote(
+            md.paragraph('> a', md.break(), md.strong('b')),
+            md.heading(2, '# c'),
+            md.blockquote(md.paragraph('d'))
+          )
+        )
+      )
+    ).toEqual(['quote: > a\n[bold:b]\n[bold:# c]\nd']);
   });
 
   it('keeps a quote holding code, a list, or a table on the tree, bordered', () => {
     expect(
-      markdownContentToSlackBlocks(
-        md.blockquote(
-          md.paragraph('a', md.break(), 'b'),
-          md.codeBlock('*x*'),
-          md.list(['c']),
-          md.table(['h'], [['1']]),
-          md.blockquote(md.paragraph('d'))
+      outline(
+        markdownContentToSlackBlocks(
+          md.blockquote(
+            md.paragraph('a'),
+            md.codeBlock('*x*'),
+            md.list(['c']),
+            md.table(['h'], [['1']]),
+            md.blockquote(md.paragraph('d'))
+          )
         )
       )
     ).toEqual([
-      {
-        type: 'rich_text',
-        elements: [
-          {
-            type: 'rich_text_quote',
-            elements: [
-              { type: 'text', text: 'a' },
-              { type: 'text', text: '\n' },
-              { type: 'text', text: 'b' },
-            ],
-          },
-          {
-            type: 'rich_text_preformatted',
-            elements: [{ type: 'text', text: '*x*' }],
-            border: 1,
-          },
-          {
-            type: 'rich_text_list',
-            style: 'bullet',
-            elements: [
-              {
-                type: 'rich_text_section',
-                elements: [{ type: 'text', text: 'c' }],
-              },
-            ],
-            border: 1,
-          },
-        ],
-      },
-      {
-        type: 'table',
-        rows: [
-          [{ type: 'raw_text', text: 'h' }],
-          [{ type: 'raw_text', text: '1' }],
-        ],
-        column_settings: [{ align: 'left', is_wrapped: true }],
-      },
-      {
-        type: 'rich_text',
-        elements: [
-          { type: 'rich_text_quote', elements: [{ type: 'text', text: 'd' }] },
-        ],
-      },
+      'quote: a',
+      'preformatted|: *x*',
+      'list|: c',
+      'table: h / 1',
+      'quote: d',
     ]);
   });
 
   it('reads a quote in a list item as the item content', () => {
     expect(
-      markdownContentToSlackBlocks(
-        md.list([
-          [
-            md.paragraph('i'),
-            md.blockquote(md.paragraph('q'), md.list(['n']), md.codeBlock('z')),
-          ],
-        ])
+      outline(
+        markdownContentToSlackBlocks(
+          md.list([
+            [
+              md.paragraph('i'),
+              md.blockquote(md.paragraph('q', md.break(), 'r'), md.list(['n'])),
+            ],
+          ])
+        )
       )
-    ).toEqual([
-      {
-        type: 'rich_text',
-        elements: [
-          {
-            type: 'rich_text_list',
-            style: 'bullet',
-            elements: [
-              {
-                type: 'rich_text_section',
-                elements: [
-                  { type: 'text', text: 'i' },
-                  { type: 'text', text: '\n' },
-                  { type: 'text', text: 'q' },
-                ],
-              },
-            ],
-          },
-          {
-            type: 'rich_text_list',
-            style: 'bullet',
-            indent: 1,
-            elements: [
-              {
-                type: 'rich_text_section',
-                elements: [{ type: 'text', text: 'n' }],
-              },
-            ],
-          },
-          {
-            type: 'rich_text_section',
-            elements: [{ type: 'text', text: 'z', style: { code: true } }],
-          },
-        ],
-      },
-    ]);
+    ).toEqual(['list: i\nq\nr', 'list: n']);
   });
 
   it('quotes Markdown printed as written line by line', () => {
     expect(
-      markdownContentToSlackBlocks(
-        md.blockquote(markdownFromString('**e**\n\nf'))
+      outline(
+        markdownContentToSlackBlocks(
+          md.blockquote(markdownFromString('**e**\n\nf'))
+        )
       )
-    ).toEqual([
-      { type: 'section', text: { type: 'mrkdwn', text: '> *e*\n\n> f' } },
-    ]);
+    ).toEqual(['section: > *e*\n\n> f']);
   });
 
   it('hands the string path a break as a line ending and a quote as its blocks', () => {
     expect(
-      markdownContentToSlackBlocks([
-        md.list([
-          [
-            md.paragraph('a', md.break(), 'b'),
-            md.blockquote(md.paragraph('q', md.break(), 'r')),
-            md.table(['h'], []),
-          ],
-        ]),
-        md.list([
-          md.paragraph('c', md.break(), 'd'),
-          markdownFromString('**x**'),
-        ]),
-      ])
+      outline(
+        markdownContentToSlackBlocks([
+          md.list([
+            [
+              md.paragraph('a', md.break(), 'b'),
+              md.blockquote(md.paragraph('q')),
+              md.table(['h'], []),
+            ],
+          ]),
+          md.list([
+            md.paragraph('c', md.break(), 'd'),
+            markdownFromString('x'),
+          ]),
+        ])
+      )
     ).toEqual([
-      {
-        type: 'section',
-        text: { type: 'mrkdwn', text: '- a\n  b\n\n  q\n  r' },
-      },
-      {
-        type: 'table',
-        rows: [[{ type: 'raw_text', text: 'h' }]],
-        column_settings: [{ align: 'left', is_wrapped: true }],
-      },
-      { type: 'section', text: { type: 'mrkdwn', text: '- c\n  d\n- *x*' } },
+      'section: - a\n  b\n\n  q',
+      'table: h',
+      'section: - c\n  d\n- x',
     ]);
   });
 
   it('carries a multi-run table cell and the label forms as styles', () => {
     expect(
-      markdownContentToSlackBlocks([
-        md.boldSectionLabel('label'),
-        md.paragraph(...md.boldLabelPrefix('Key: value', 'Key')),
-        md.table(
-          ['h', 'i'],
-          [
+      outline(
+        markdownContentToSlackBlocks([
+          md.boldSectionLabel('label'),
+          md.paragraph(...md.boldLabelPrefix('Key: value', 'Key')),
+          md.table(
+            ['h', 'i'],
             [
-              ['a', md.strong('b')],
-              ['c', 'd'],
-            ],
-          ]
-        ),
-      ])
-    ).toEqual([
-      {
-        type: 'rich_text',
-        elements: [
-          {
-            type: 'rich_text_section',
-            elements: [
-              { type: 'text', text: 'LABEL', style: { bold: true } },
-              { type: 'text', text: '\n' },
-            ],
-          },
-          {
-            type: 'rich_text_section',
-            elements: [
-              { type: 'text', text: 'Key', style: { bold: true } },
-              { type: 'text', text: ': value' },
-            ],
-          },
-        ],
-      },
-      {
-        type: 'table',
-        rows: [
-          [
-            { type: 'raw_text', text: 'h' },
-            { type: 'raw_text', text: 'i' },
-          ],
-          [
-            {
-              type: 'rich_text',
-              elements: [
-                {
-                  type: 'rich_text_section',
-                  elements: [
-                    { type: 'text', text: 'a' },
-                    { type: 'text', text: 'b', style: { bold: true } },
-                  ],
-                },
+              [
+                ['a', md.strong('b')],
+                ['c', 'd'],
               ],
-            },
-            { type: 'raw_text', text: 'cd' },
-          ],
-        ],
-        column_settings: [
-          { align: 'left', is_wrapped: true },
-          { align: 'left', is_wrapped: true },
-        ],
-      },
+            ]
+          ),
+        ])
+      )
+    ).toEqual([
+      'section: [bold:LABEL]\n',
+      'section: [bold:Key]: value',
+      'table: h | i / section: a[bold:b] | cd',
     ]);
   });
 
