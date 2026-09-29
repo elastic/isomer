@@ -10,7 +10,11 @@ import { bulletList } from './components/bullet_list';
 import { code } from './components/code';
 import { frame } from './components/frame';
 import { heading } from './components/heading';
+import { lanes } from './components/lanes';
+import { layers } from './components/layers';
 import { marks } from './components/marks';
+import { pipeline } from './components/pipeline';
+import { sequence } from './components/sequence';
 import { connector, glyph, label } from './components/shared';
 import { split } from './components/split';
 import { stack } from './components/stack';
@@ -38,6 +42,10 @@ export const SLIDE_THEME = {
   bulletList,
   code,
   heading,
+  lanes,
+  layers,
+  pipeline,
+  sequence,
   split,
   stack,
   territoryGroup,

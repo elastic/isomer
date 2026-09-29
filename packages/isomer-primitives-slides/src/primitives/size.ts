@@ -10,7 +10,7 @@
 import type { ScaleToken } from '@elastic/distillate';
 import { z } from '@elastic/isomer-sdk';
 
-import { isWide } from '../render/mono';
+import { displayColumns, isWide } from '../render/mono';
 import { extraboldAdvance } from '../theme/base';
 import { scalePx } from '../theme/scale';
 import { type SlideSize, slideSizes } from '../theme/variants';
@@ -41,6 +41,15 @@ export const sizeForLoad = (
   const scaled = load * crowding;
   return size ?? (scaled <= budget.l ? 'l' : scaled <= budget.m ? 'm' : 's');
 };
+
+/** The longest item's characters times the item count. */
+export const rowLoad = (items: readonly (readonly (string | undefined)[])[]) =>
+  Math.max(
+    0,
+    ...items.map((texts) =>
+      texts.reduce((total, text) => total + displayColumns(text ?? ''), 0)
+    )
+  ) * items.length;
 
 const glyphAdvance = (glyph: string): number =>
   isWide(glyph)

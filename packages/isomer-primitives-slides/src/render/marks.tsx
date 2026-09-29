@@ -92,16 +92,26 @@ export const marksSlack = (text: string): string =>
     )
     .join('');
 
+export const richTextRun = (
+  text: string,
+  style?: SlackRichTextText['style']
+): SlackRichTextText => ({
+  type: 'text',
+  text: oneLine(text),
+  ...(style ? { style } : {}),
+});
+
 export const marksRichText = (text: string): SlackRichTextText[] =>
-  parseMarks(text).map(({ kind, text: run }) => ({
-    type: 'text',
-    text: oneLine(run),
-    ...(kind === 'code'
-      ? { style: { code: true } }
-      : kind === 'strong'
-        ? { style: { bold: true } }
-        : {}),
-  }));
+  parseMarks(text).map(({ kind, text: run }) =>
+    richTextRun(
+      run,
+      kind === 'code'
+        ? { code: true }
+        : kind === 'strong'
+          ? { bold: true }
+          : undefined
+    )
+  );
 
 export const marksMarkdown = (text: string): MarkdownInline[] =>
   parseMarks(text).map(({ kind, text: run }) =>

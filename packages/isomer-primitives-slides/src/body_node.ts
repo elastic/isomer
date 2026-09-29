@@ -16,6 +16,10 @@ import type { SlideBulletListNode } from './primitives/slide_bullet_list';
 import type { SlideCodeNode } from './primitives/slide_code';
 import type { SlideFrameNode } from './primitives/slide_frame';
 import type { SlideHeadingNode } from './primitives/slide_heading';
+import type { SlideLanesNode } from './primitives/slide_lanes';
+import type { SlideLayersNode } from './primitives/slide_layers';
+import type { SlidePipelineNode } from './primitives/slide_pipeline';
+import type { SlideSequenceNode } from './primitives/slide_sequence';
 import type { SlideSplitNode } from './primitives/slide_split';
 import type { SlideStackNode } from './primitives/slide_stack';
 import type { SlideTerritoryGroupNode } from './primitives/slide_territory_group';
@@ -27,6 +31,10 @@ export type BodyNode =
   | SlideCodeNode
   | SlideFrameNode
   | SlideHeadingNode
+  | SlideLanesNode
+  | SlideLayersNode
+  | SlidePipelineNode
+  | SlideSequenceNode
   | SlideSplitNode
   | SlideStackNode
   | SlideTerritoryGroupNode

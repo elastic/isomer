@@ -13,6 +13,10 @@ import { slideBulletListPrimitive } from './primitives/slide_bullet_list';
 import { slideCodePrimitive } from './primitives/slide_code';
 import { slideFramePrimitive } from './primitives/slide_frame';
 import { slideHeadingPrimitive } from './primitives/slide_heading';
+import { slideLanesPrimitive } from './primitives/slide_lanes';
+import { slideLayersPrimitive } from './primitives/slide_layers';
+import { slidePipelinePrimitive } from './primitives/slide_pipeline';
+import { slideSequencePrimitive } from './primitives/slide_sequence';
 import { slideSplitPrimitive } from './primitives/slide_split';
 import { slideStackPrimitive } from './primitives/slide_stack';
 import { slideTerritoryGroupPrimitive } from './primitives/slide_territory_group';
@@ -24,6 +28,10 @@ export const slideDeckPrimitives = [
   slideCodePrimitive,
   slideFramePrimitive,
   slideHeadingPrimitive,
+  slideLanesPrimitive,
+  slideLayersPrimitive,
+  slidePipelinePrimitive,
+  slideSequencePrimitive,
   slideSplitPrimitive,
   slideStackPrimitive,
   slideTerritoryGroupPrimitive,

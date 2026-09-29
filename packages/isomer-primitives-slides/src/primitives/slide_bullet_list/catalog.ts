@@ -19,6 +19,7 @@ export const catalog = {
     'You want to show what is in scope and what is not, with `check` and `x` markers.',
   ],
   avoidWhen: [
+    'The order matters, as steps; use slidePipeline.',
     'The points split by who owns them; use slideTerritoryGroup.',
     'The points are source code or commands; use slideCode.',
   ],

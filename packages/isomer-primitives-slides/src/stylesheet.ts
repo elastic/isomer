@@ -9,6 +9,10 @@ import { bulletsModule } from './primitives/slide_bullet_list/styles';
 import { codeModule } from './primitives/slide_code/styles';
 import { frameModule } from './primitives/slide_frame/styles';
 import { headingModule } from './primitives/slide_heading/styles';
+import { lanesModule } from './primitives/slide_lanes/styles';
+import { layersModule } from './primitives/slide_layers/styles';
+import { pipelineModule } from './primitives/slide_pipeline/styles';
+import { sequenceModule } from './primitives/slide_sequence/styles';
 import { splitModule } from './primitives/slide_split/styles';
 import { stackModule } from './primitives/slide_stack/styles';
 import { territoryModule } from './primitives/slide_territory_group/styles';
@@ -35,6 +39,10 @@ export const slideModules = {
   code: codeModule,
   frame: frameModule,
   heading: headingModule,
+  lanes: lanesModule,
+  layers: layersModule,
+  pipeline: pipelineModule,
+  sequence: sequenceModule,
   split: splitModule,
   stack: stackModule,
   territory: territoryModule,

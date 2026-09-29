@@ -89,8 +89,20 @@ export const connectorModule = createStyleModule('connector', ({ css }) => ({
     height: 0;
     width: 0;
   `,
+  headLeft: css`
+    border-bottom: ${connector.headHalf} solid transparent;
+    border-right: ${connector.headLength} solid ${color.line};
+    border-top: ${connector.headHalf} solid transparent;
+    flex: 0 0 auto;
+    height: 0;
+    width: 0;
+  `,
   primary: css`
     ${themeVarName('color/line')}: ${color.primary};
+  `,
+  /** Draws the connector in the enclosing {@link toneVar}. */
+  toned: css`
+    ${themeVarName('color/line')}: ${toneVar};
   `,
 }));
 

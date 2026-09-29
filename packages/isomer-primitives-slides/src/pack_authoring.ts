@@ -17,7 +17,16 @@ export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
   },
   { title: 'Layout', types: ['slideSplit', 'slideStack'] },
   { title: 'Text', types: ['slideBulletList'] },
-  { title: 'Diagrams', types: ['slideTerritoryGroup'] },
+  {
+    title: 'Diagrams',
+    types: [
+      'slidePipeline',
+      'slideSequence',
+      'slideLanes',
+      'slideLayers',
+      'slideTerritoryGroup',
+    ],
+  },
   { title: 'Code', types: ['slideCode'] },
 ];
 
@@ -32,6 +41,13 @@ export const slidesPackAuthoring = {
       'Nodes stacked vertically in a one-node slot, never a slideFrame.',
     slideTitle:
       'The title slide. Its aside is one slide node, never a slideFrame.',
+    slidePipeline:
+      'Steps on one rail. Without spans: numbered steps with bodies, optional start and end chips. With spans: steps are chips with no body and no start or end, and each span brackets steps from..to by index (from ≤ to < steps.length); spans do not overlap.',
+    slideSequence:
+      'Messages between three to five actors. Actor ids are unique; every message names two different actors by id in from and to; every actor sends or receives at least one message.',
+    slideLanes: 'Exactly two lanes that converge on join.',
+    slideLayers:
+      'Three to six layers, top to bottom. Each layer has exactly one of body or chips.',
     slideCode:
       'One or two code panels. Every highlighted line number exists in its panel.',
   },

@@ -47,5 +47,9 @@ runtime.surfaces.text.render(composition);
 | `slideSplit` | Two panes of slide nodes, with a width ratio and a divider. |
 | `slideStack` | Slide nodes stacked with controlled spacing, for a one-node slot. |
 | `slideBulletList` | Short points with a dot, check, or × marker. |
+| `slidePipeline` | Ordered steps along one path, or chips bracketed by who owns each run. |
+| `slideSequence` | Messages between three to five actors, top to bottom in time order. |
+| `slideLanes` | Two parallel paths converging on one join step. |
+| `slideLayers` | An ordered stack of layers, each with an owner. |
 | `slideTerritoryGroup` | Who owns what, one color-keyed column per owner. |
 | `slideCode` | Source in one panel, or two joined by an arrow. |

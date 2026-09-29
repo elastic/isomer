@@ -68,9 +68,10 @@ Slides are read embedded at roughly half scale, so no rule sets a `font-size` un
 
 Length-sensitive primitives take an optional `size`: `l`, `m`, or `s`, each a set of theme tokens (`heading.titleSizes`, `title.displaySizes`), none below 24px. Left out, the renderer picks the step from the node's own text, so every surface draws the same size; the image surface cannot measure, and does not support container units, `min()`, or `clamp()`. An explicit `size` always wins.
 
-- **Load:** `slideHeading` compares its title's character count with `headingFit`, a wide East Asian glyph or an emoji counting as two (`src/render/mono.ts`).
+- **Load:** `slideHeading` compares its title's character count with `headingFit`, a wide East Asian glyph or an emoji counting as two (`src/render/mono.ts`). `slidePipeline` compares `rowLoad`, its longest step's characters times the step count, with `pipelineFit`.
+- **Count:** `slideSequence` steps by its message count against `sequenceFit`, and `slideLayers` by its layer count against `layersFit`.
 - **Width:** `slideTitle` takes the largest step at which its longest word fits its column and the title holds two lines, estimated from `extraboldAdvance` glyph widths and the role's tracking.
-- **Crowding:** `slideFrame` estimates how much room its opening `slideHeading` leaves and passes `crowding` to the rest of the slide on the render context: 1 under a two-line title and a two-line lede, below 1 under a shorter heading. It is reserved for primitives below the heading that size by load, which pass it to `sizeForLoad`; none in this pack does yet.
+- **Crowding:** `slideFrame` estimates how much room its opening `slideHeading` leaves and passes `crowding` to the rest of the slide on the render context: 1 under a two-line title and a two-line lede, below 1 under a shorter heading. Primitives below the heading that size by load or count pass it to `sizeForLoad`: `slidePipeline`, `slideSequence`, and `slideLayers`.
 
 Where the theme cannot guarantee that the smallest step fits, a field's `describe` says so and points at the layout check. `src/examples/fit.test.ts` measures every example with takumi and fails on any `checkLayout` finding.
 
