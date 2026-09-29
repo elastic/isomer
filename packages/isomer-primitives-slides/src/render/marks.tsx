@@ -94,16 +94,26 @@ export const marksSlack = (text: string): string =>
     )
     .join('');
 
+export const richTextRun = (
+  text: string,
+  style?: SlackRichTextText['style']
+): SlackRichTextText => ({
+  type: 'text',
+  text: oneLine(text),
+  ...(style ? { style } : {}),
+});
+
 export const marksRichText = (text: string): SlackRichTextText[] =>
-  parseMarks(text).map(({ kind, text: run }) => ({
-    type: 'text',
-    text: oneLine(run),
-    ...(kind === 'code'
-      ? { style: { code: true } }
-      : kind === 'strong'
-        ? { style: { bold: true } }
-        : {}),
-  }));
+  parseMarks(text).map(({ kind, text: run }) =>
+    richTextRun(
+      run,
+      kind === 'code'
+        ? { code: true }
+        : kind === 'strong'
+          ? { bold: true }
+          : undefined
+    )
+  );
 
 export const marksMarkdown = (text: string): MarkdownInline[] =>
   parseMarks(text).map(({ kind, text: run }) =>
@@ -113,6 +123,21 @@ export const marksMarkdown = (text: string): MarkdownInline[] =>
         ? md.strong(run)
         : md.text(run)
   );
+
+/** The whole text in strong; its own strong marks fold in rather than nest. */
+export const strongMarksMarkdown = (text: string): MarkdownInline =>
+  md.strong(
+    ...parseMarks(text).map(({ kind, text: run }) =>
+      kind === 'code' ? md.code(run) : md.text(run)
+    )
+  );
+
+/** {@link marksRichText} with every run bold. */
+export const strongMarksRichText = (text: string): SlackRichTextText[] =>
+  marksRichText(text).map((run) => ({
+    ...run,
+    style: { ...run.style, bold: true },
+  }));
 
 /**
  * Strong is ink at bold weight, or `primary` at the run's weight when `strong` is `'primary'`.

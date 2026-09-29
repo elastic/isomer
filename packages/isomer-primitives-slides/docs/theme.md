@@ -40,7 +40,7 @@ export const SLIDE_THEME = {
   font: { family: { sans, mono }, size: { px24: px(24), …, px280: px(280) }, weight, tracking, lineHeight },
   type: { display, heading, lede, body, label, mono, chrome, … },
   // Shared groups (`components/shared.ts`, `components/marks.ts`).
-  glyph: { arrow, separator, dash }, label: { … }, connector: { … }, marks: { … },
+  glyph: { arrow, separator, dash }, label: { … }, connector: { … }, placeholder: { … }, marks: { … },
   // One group per primitive (`components/<group>.ts`).
   frame: { … }, heading: { title: type.heading, lede: type.lede, … }, split: { … }, …
 } as const;
@@ -68,11 +68,16 @@ Slides are read embedded at roughly half scale, so no rule sets a `font-size` un
 
 Length-sensitive primitives take an optional `size`: `l`, `m`, or `s`, each a set of theme tokens (`heading.titleSizes`, `title.displaySizes`), none below 24px. Left out, the renderer picks the step from the node's own text, so every surface draws the same size; the image surface cannot measure, and does not support container units, `min()`, or `clamp()`. An explicit `size` always wins.
 
-- **Load:** `slideHeading` compares its title's character count with `headingFit`, a wide East Asian glyph or an emoji counting as two (`src/render/mono.ts`).
-- **Width:** `slideTitle` takes the largest step at which its longest word fits its column and the title holds two lines, estimated from `extraboldAdvance` glyph widths and the role's tracking.
-- **Crowding:** `slideFrame` estimates how much room its opening `slideHeading` leaves and passes `crowding` to the rest of the slide on the render context: 1 under a two-line title and a two-line lede, below 1 under a shorter heading. It is reserved for primitives below the heading that size by load, which pass it to `sizeForLoad`; none in this pack does yet.
+- **Load:** `slideHeading` compares its title's character count with `headingFit`, a wide East Asian glyph or an emoji counting as two (`src/render/mono.ts`). `slideBars` counts two per bar and one per detail line against `barsFit`.
+- **Count:** `slideMatrix` steps by its row count against `matrixFit`, and `slideQuadrant` by its fullest top cell's items plus its fullest bottom cell's against `quadrantFit`.
+- **Width:** `slideTitle` takes the largest step at which its longest word fits its column and the title holds two lines, estimated from `extraboldAdvance` glyph widths and the role's tracking. `slideStats` and `slideDelta` take the largest of the shared `statValueSizes` at which every value fits its column, so values in one row share a size.
+- **Crowding:** `slideFrame` estimates how much room its opening `slideHeading` leaves and passes `crowding` to the rest of the slide on the render context: 1 under a two-line title and a two-line lede, below 1 under a shorter heading. Primitives below the heading that size by load or count pass it to `sizeForLoad`: `slideBars`, `slideMatrix`, and `slideQuadrant`.
 
 Where the theme cannot guarantee that the smallest step fits, a field's `describe` says so and points at the layout check. `src/examples/fit.test.ts` measures every example with takumi and fails on any `checkLayout` finding.
+
+## Placeholders
+
+A number that is not measured yet is left out, never invented. `slideStat`, `slideStats`, and `slideDelta` then draw `placeholderModule`: a striped box captioned `placeholder.caption`, one line of the value's type tall, so the row keeps its shape. Text, Markdown, and Slack print the same caption.
 
 ## Tones mean something
 
@@ -95,6 +100,7 @@ The `svg` surface's CSS goes to takumi, which lays out a subset of CSS. The pack
 - `text-wrap: pretty` is not applied, so a paragraph can end on one word. Short copy that wraps, such as a footnote or a tagline, uses `balance` instead.
 - `flex: none` is ignored, so an item meant to keep its size shrinks with its row. Write `flex: 0 0 auto`; a stylesheet test rejects `flex: none`.
 - A `calc()` nested inside another is not evaluated; the same test rejects one.
+- `display: contents` is laid out as a block, so a table's rows cannot share one grid. `slideTable` and `slideMatrix` make each row its own grid with the same tracks, and give the table elements explicit roles, since some browsers drop table semantics once `display` changes.
 - A `flex: 1` child of a column with no set height collapses to nothing. The layout `fill` role uses `flex: 1 1 auto`, and centers with auto margins, so content taller than its space runs down rather than up over the heading.
 
 ## `SlidePalette`

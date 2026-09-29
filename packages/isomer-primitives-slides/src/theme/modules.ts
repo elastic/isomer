@@ -10,10 +10,11 @@
 import { variants } from '@elastic/distillate';
 
 import { slideDistillery, themeVarName, toneVar } from './distillery';
+import { typeRole } from './type_role';
 import { slideTones } from './variants';
 
 const { createStyleModule, tokens } = slideDistillery;
-const { color, connector, font, frame, label, marks } = tokens;
+const { color, connector, font, frame, label, marks, placeholder } = tokens;
 
 export const deckRootModule = createStyleModule('deckRoot', ({ css }) => ({
   root: css`
@@ -116,3 +117,32 @@ export const marksModule = createStyleModule('marks', ({ css }) => ({
     font-weight: inherit;
   `,
 }));
+
+export const placeholderModule = createStyleModule(
+  'placeholder',
+  ({ css }) => ({
+    root: css`
+      align-items: center;
+      background: repeating-linear-gradient(
+        ${placeholder.angle},
+        ${color.placeholderStripe} 0 ${placeholder.stripe},
+        ${color.bgPage} ${placeholder.stripe} ${placeholder.stripeEnd}
+      );
+      border: ${placeholder.border} dashed ${color.borderDashed};
+      border-radius: ${placeholder.radius};
+      box-sizing: border-box;
+      display: flex;
+      justify-content: center;
+      min-height: 0;
+      min-width: 0;
+    `,
+    caption: css`
+      background: ${color.bgPage};
+      border-radius: ${placeholder.captionRadius};
+      color: ${color.textSubtle};
+      display: flex;
+      ${typeRole(placeholder.captionType)}
+      padding: ${placeholder.captionPadding};
+    `,
+  })
+);

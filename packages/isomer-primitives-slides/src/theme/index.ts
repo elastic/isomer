@@ -14,6 +14,7 @@ export { literal, paddingXy, px, scalePx } from './scale';
 export {
   slideBulletMarkers,
   slideFrameTones,
+  slideMatrixMarks,
   slideSizes,
   slideSplitDividers,
   slideSplitRatios,
@@ -23,6 +24,7 @@ export {
 export type {
   SlideBulletMarker,
   SlideFrameTone,
+  SlideMatrixMark,
   SlideSize,
   SlideSplitDivider,
   SlideSplitRatio,

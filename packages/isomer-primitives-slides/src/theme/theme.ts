@@ -6,14 +6,21 @@
  */
 
 import { color, font, inverse, radius, space, stroke, type } from './base';
+import { bars } from './components/bars';
 import { bulletList } from './components/bullet_list';
 import { code } from './components/code';
+import { delta } from './components/delta';
 import { frame } from './components/frame';
 import { heading } from './components/heading';
 import { marks } from './components/marks';
-import { connector, glyph, label } from './components/shared';
+import { matrix } from './components/matrix';
+import { quadrant } from './components/quadrant';
+import { connector, glyph, label, placeholder } from './components/shared';
 import { split } from './components/split';
 import { stack } from './components/stack';
+import { stat } from './components/stat';
+import { stats } from './components/stats';
+import { table } from './components/table';
 import { territoryGroup } from './components/territory_group';
 import { title } from './components/title';
 
@@ -33,13 +40,21 @@ export const SLIDE_THEME = {
   glyph,
   label,
   connector,
+  placeholder,
   marks,
   frame,
+  bars,
   bulletList,
   code,
+  delta,
   heading,
+  matrix,
+  quadrant,
   split,
   stack,
+  stat,
+  stats,
+  table,
   territoryGroup,
   title,
 } as const;

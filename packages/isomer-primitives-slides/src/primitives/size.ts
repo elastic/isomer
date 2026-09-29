@@ -65,6 +65,15 @@ export const emWidth = (text: string, tracking: ScaleToken): number =>
     0
   );
 
+/** The node's own `size`, else the largest step at which `ems` of type fits `width` pixels. */
+export const sizeForWidth = (
+  size: SlideSize | undefined,
+  ems: number,
+  width: number,
+  steps: Readonly<Record<SlideSize, ScaleToken>>
+): SlideSize =>
+  size ?? slideSizes.find((step) => ems * scalePx(steps[step]) <= width) ?? 's';
+
 /** What a wrapping display line cannot break. */
 export const widestWord = (text: string, tracking: ScaleToken): number =>
   Math.max(0, ...text.split(/\s+/).map((word) => emWidth(word, tracking)));
