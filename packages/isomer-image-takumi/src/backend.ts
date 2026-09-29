@@ -7,7 +7,12 @@
 
 import type { ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { type FontLoader, Renderer, type RenderOptions } from '@takumi-rs/core';
+import {
+  type FontLoader,
+  type MeasuredNode,
+  Renderer,
+  type RenderOptions,
+} from '@takumi-rs/core';
 import { fromHtml } from '@takumi-rs/helpers/html';
 
 /**
@@ -52,6 +57,29 @@ export interface TakumiRenderOptions {
   devicePixelRatio?: number;
 }
 
+/** A laid-out element on the canvas, in pixels, with the elements nested in it. */
+export interface LayoutBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  /** How much the box's x axis is scaled on the canvas, e.g. by `transform: scale()`. */
+  scaleX: number;
+  /** How much the box's y axis is scaled on the canvas. */
+  scaleY: number;
+  /** Whichever of `scaleX` and `scaleY` is further from 1, so any value but 1 means the box is scaled. */
+  scale: number;
+  /** Text laid out in this box, each run positioned on the canvas. */
+  runs: { text: string; x: number; y: number; width: number; height: number }[];
+  /**
+   * The element's attributes other than `class`, `id`, and `style`, such as
+   * `data-*`. Absent when it has none, or when its parent's laid-out children
+   * do not line up with its elements, as when inline content folds into runs.
+   */
+  attributes?: Record<string, string>;
+  children: LayoutBox[];
+}
+
 /**
  * Rasterizes the `svg` surface's output.
  *
@@ -65,6 +93,72 @@ export interface TakumiImageBackend {
   /** Renders to an SVG document. Vector output, so raster options do not apply. */
   svg(input: ImageInput): Promise<string>;
 }
+
+/** A {@link TakumiImageBackend} that also measures layout, as {@link createTakumiImageBackend} returns. */
+export interface TakumiMeasuringBackend extends TakumiImageBackend {
+  /** Lays the input out as {@link TakumiImageBackend.png} would, and returns every box, e.g. to find content past its area. */
+  measure(input: ImageInput): Promise<LayoutBox>;
+}
+
+type Matrix = MeasuredNode['transform'];
+
+type SourceNode = ReturnType<typeof fromHtml>['node'];
+
+/** The canvas rectangle `transform` maps a local `width` × `height` box at `x`, `y` to. */
+const mapRect = (
+  [a, b, c, d, e, f]: Matrix,
+  x: number,
+  y: number,
+  width: number,
+  height: number
+): { x: number; y: number; width: number; height: number } => {
+  const corners = [
+    [x, y],
+    [x + width, y],
+    [x, y + height],
+    [x + width, y + height],
+  ].map(([px = 0, py = 0]) => [a * px + c * py + e, b * px + d * py + f]);
+  const xs = corners.map(([cx = 0]) => cx);
+  const ys = corners.map(([, cy = 0]) => cy);
+  const left = Math.min(...xs);
+  const top = Math.min(...ys);
+  return {
+    x: left,
+    y: top,
+    width: Math.max(...xs) - left,
+    height: Math.max(...ys) - top,
+  };
+};
+
+/**
+ * Takumi reports each node's size in its own units with its full canvas
+ * transform, and carries no attributes, so those come from the `fromHtml`
+ * node at the same position.
+ */
+const toLayoutBox = (
+  { width, height, transform, runs, children }: MeasuredNode,
+  source: SourceNode | undefined
+): LayoutBox => {
+  const [a, b, c, d] = transform;
+  const scaleX = Math.hypot(a, b);
+  const scaleY = Math.hypot(c, d);
+  const sources = source?.type === 'container' ? (source.children ?? []) : [];
+  const paired = sources.length === children.length;
+  return {
+    ...mapRect(transform, 0, 0, width, height),
+    scaleX,
+    scaleY,
+    scale: Math.abs(scaleY - 1) > Math.abs(scaleX - 1) ? scaleY : scaleX,
+    runs: runs.map((run) => ({
+      text: run.text,
+      ...mapRect(transform, run.x, run.y, run.width, run.height),
+    })),
+    ...(source?.attributes && { attributes: { ...source.attributes } }),
+    children: children.map((child, index) =>
+      toLayoutBox(child, paired ? sources[index] : undefined)
+    ),
+  };
+};
 
 const escapeStyleEndTags = (css: string) =>
   css.replace(/<\/style/gi, (tag) => tag.replace('/', '\\/'));
@@ -82,7 +176,7 @@ const toTakumiSource = ({ element, css }: ImageInput) =>
 export const createTakumiImageBackend = ({
   fonts = [],
   cacheMaxBytes,
-}: TakumiImageBackendOptions = {}): TakumiImageBackend => {
+}: TakumiImageBackendOptions = {}): TakumiMeasuringBackend => {
   const renderer = new Renderer(
     cacheMaxBytes === undefined ? undefined : { cacheMaxBytes }
   );
@@ -129,6 +223,16 @@ export const createTakumiImageBackend = ({
         height: input.height,
         css,
       });
+    },
+    measure: async (input) => {
+      await ready();
+      const { node, css } = toTakumiSource(input);
+      const measured = await renderer.measure(node, {
+        width: input.width,
+        height: input.height,
+        css,
+      });
+      return toLayoutBox(measured, node);
     },
   };
 };
