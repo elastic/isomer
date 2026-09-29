@@ -15,14 +15,15 @@ import { checkLayout, type LayoutBox } from './layout_check';
 interface TestNode {
   type: string;
   items?: TestNode[];
+  surfaces?: ('react' | 'svg')[];
 }
 
+const items = ({ items = [] }: TestNode) =>
+  items.map((node, index) => ({ node, path: `items[${index}]` }));
+
 const walk = createChildNodeWalker([
-  {
-    type: 'stack',
-    children: ({ items = [] }: TestNode) =>
-      items.map((node, index) => ({ node, path: `items[${index}]` })),
-  },
+  { type: 'stack', children: items },
+  { type: 'panel', children: items },
 ]);
 
 const leaf: TestNode = { type: 'leaf' };
@@ -59,7 +60,9 @@ describe('checkLayout', () => {
       ),
       anchored('leaf', box(500, 0, 100, 40))
     );
-    expect(checkLayout(layout, [stack(leaf, leaf), leaf], walk)).toEqual([]);
+    expect(checkLayout(layout, [stack(leaf, leaf), leaf], walk, 'svg')).toEqual(
+      []
+    );
   });
 
   it('reports a node past its anchored parent, by its path', () => {
@@ -76,14 +79,14 @@ describe('checkLayout', () => {
         )
       )
     );
-    expect(checkLayout(layout, [stack(leaf, leaf)], walk)).toEqual([
+    expect(checkLayout(layout, [stack(leaf, leaf)], walk, 'svg')).toEqual([
       { kind: 'overflow', path: 'body[0].items[1]', type: 'leaf', by: 330 },
     ]);
   });
 
   it('reports a top-level node past the canvas', () => {
     const layout = canvas(anchored('leaf', box(950, 0, 100, 40)));
-    expect(checkLayout(layout, [leaf], walk)).toEqual([
+    expect(checkLayout(layout, [leaf], walk, 'svg')).toEqual([
       { kind: 'overflow', path: 'body[0]', type: 'leaf', by: 50 },
     ]);
   });
@@ -102,7 +105,7 @@ describe('checkLayout', () => {
         )
       )
     );
-    expect(checkLayout(layout, [stack(leaf, leaf)], walk)).toEqual([
+    expect(checkLayout(layout, [stack(leaf, leaf)], walk, 'svg')).toEqual([
       {
         kind: 'overlap',
         path: 'body[0].items[0]',
@@ -119,7 +122,7 @@ describe('checkLayout', () => {
       anchored('leaf', { ...box(0, 0, 400, 100), runs: [run(0, 0)] }),
       anchored('leaf', { ...box(0, 50, 400, 100), runs: [run(0, 80)] })
     );
-    expect(checkLayout(layout, [leaf, leaf], walk)).toEqual([]);
+    expect(checkLayout(layout, [leaf, leaf], walk, 'svg')).toEqual([]);
   });
 
   it('never compares a root node with the nodes nested in it', () => {
@@ -134,7 +137,7 @@ describe('checkLayout', () => {
         anchored('leaf', box(0, 100, 400, 50))
       )
     );
-    expect(checkLayout(layout, [stack(leaf, leaf)], walk)).toEqual([]);
+    expect(checkLayout(layout, [stack(leaf, leaf)], walk, 'svg')).toEqual([]);
   });
 
   it('never compares a node with the nodes nested in it', () => {
@@ -144,7 +147,7 @@ describe('checkLayout', () => {
         box(0, 0, 400, 200, anchored('leaf', box(0, 0, 400, 200)))
       )
     );
-    expect(checkLayout(layout, [stack(leaf)], walk)).toEqual([]);
+    expect(checkLayout(layout, [stack(leaf)], walk, 'svg')).toEqual([]);
   });
 
   it('leaves the content of a scaled box unchecked', () => {
@@ -162,23 +165,84 @@ describe('checkLayout', () => {
       ),
       scale: 0.5,
     };
-    expect(checkLayout(canvas(picture), [stack(leaf, leaf)], walk)).toEqual([]);
+    expect(
+      checkLayout(canvas(picture), [stack(leaf, leaf)], walk, 'svg')
+    ).toEqual([]);
   });
 
   it('checks a scaled node by its own box', () => {
     const picture = { ...anchored('leaf', box(900, 0, 200, 100)), scale: 0.5 };
-    expect(checkLayout(canvas(picture), [leaf], walk)).toEqual([
+    expect(checkLayout(canvas(picture), [leaf], walk, 'svg')).toEqual([
       { kind: 'overflow', path: 'body[0]', type: 'leaf', by: 100 },
     ]);
   });
 
   it('reports nothing for a type whose anchors and nodes disagree in count', () => {
     const layout = canvas(anchored('leaf', box(950, 0, 100, 40)));
-    expect(checkLayout(layout, [leaf, leaf], walk)).toEqual([]);
+    expect(checkLayout(layout, [leaf, leaf], walk, 'svg')).toEqual([]);
+  });
+
+  it('measures a contained overlap by the distance that clears it', () => {
+    const layout = canvas(
+      anchored('leaf', box(0, 0, 100, 40)),
+      anchored('leaf', box(40, 10, 20, 20))
+    );
+    expect(checkLayout(layout, [leaf, leaf], walk, 'svg')).toEqual([
+      {
+        kind: 'overlap',
+        path: 'body[0]',
+        type: 'leaf',
+        with: { path: 'body[1]', type: 'leaf' },
+        by: 30,
+      },
+    ]);
+  });
+
+  it('pairs only the nodes the measured surface draws at the top level', () => {
+    const svgOnly: TestNode = { type: 'leaf', surfaces: ['svg'] };
+    const layout = canvas(
+      anchored('leaf', box(0, 0, 100, 40)),
+      anchored('leaf', box(950, 100, 100, 40))
+    );
+    expect(checkLayout(layout, [svgOnly, leaf], walk, 'svg')).toEqual([
+      { kind: 'overflow', path: 'body[1]', type: 'leaf', by: 50 },
+    ]);
+    expect(checkLayout(layout, [svgOnly, leaf], walk, 'react')).toEqual([]);
+  });
+
+  it('keeps an unpaired anchor as the room of the nodes inside it', () => {
+    const panel = (...items: TestNode[]): TestNode => ({
+      type: 'panel',
+      items,
+    });
+    const layout = canvas(
+      anchored(
+        'stack',
+        box(
+          0,
+          0,
+          400,
+          200,
+          anchored(
+            'panel',
+            box(0, 0, 100, 100, anchored('leaf', box(0, 0, 300, 50)))
+          )
+        )
+      ),
+      anchored('panel', box(500, 0, 10, 10))
+    );
+    expect(checkLayout(layout, [stack(panel(leaf))], walk, 'svg')).toEqual([
+      {
+        kind: 'overflow',
+        path: 'body[0].items[0].items[0]',
+        type: 'leaf',
+        by: 200,
+      },
+    ]);
   });
 
   it('ignores sub-pixel spill', () => {
     const layout = canvas(anchored('leaf', box(0, 0, 1000.5, 40)));
-    expect(checkLayout(layout, [leaf], walk)).toEqual([]);
+    expect(checkLayout(layout, [leaf], walk, 'svg')).toEqual([]);
   });
 });

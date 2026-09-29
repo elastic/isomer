@@ -107,16 +107,25 @@ const pastRoom = (room: LayoutRect, { x, y, width, height }: LayoutRect) =>
     y + height - (room.y + room.height)
   );
 
-/** How far `a` and `b` would have to move apart to clear each other. */
+/** How far `a` and `b` would have to move apart, along one axis, to clear each other. */
 const overlapOf = (a: LayoutRect, b: LayoutRect): number => {
   const width = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x);
   const height = Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y);
-  return width > tolerance && height > tolerance ? Math.min(width, height) : 0;
+  if (width <= tolerance || height <= tolerance) {
+    return 0;
+  }
+  return Math.min(
+    a.x + a.width - b.x,
+    b.x + b.width - a.x,
+    a.y + a.height - b.y,
+    b.y + b.height - a.y
+  );
 };
 
 /**
  * Where the nodes of `body` run past their room or onto each other in
- * `layout`, a measured render with node anchors on. Empty when nothing does.
+ * `layout`, a measured render on `surface` with node anchors on. Empty when
+ * nothing does.
  *
  * A node's room is the box of its nearest anchored ancestor, or `layout` at
  * the top level, and only siblings under one anchored parent are compared.
@@ -126,11 +135,13 @@ const overlapOf = (a: LayoutRect, b: LayoutRect): number => {
 export const checkLayout = (
   layout: LayoutBox,
   body: readonly unknown[],
-  walk: ChildNodeWalker
+  walk: ChildNodeWalker,
+  surface: 'react' | 'svg'
 ): LayoutFinding[] => {
-  const nodes = anchoredNodePaths(body, walk);
+  const nodes = anchoredNodePaths(body, walk, surface);
+  const anchored = anchoredBoxes(layout);
   const boxes = pairAnchors(
-    anchoredBoxes(layout),
+    anchored,
     nodes.map(({ node }) => node)
   );
   const placed = new Map<LayoutBox, PlacedNode>();
@@ -142,21 +153,24 @@ export const checkLayout = (
     }
   });
 
+  // Every anchored box bounds its ancestors' content, paired or not.
+  const nested = new Set(anchored.map(([, box]) => box));
   const rooms = new Map<PlacedNode, LayoutBox>();
-  const siblings = new Map<PlacedNode | undefined, PlacedNode[]>();
-  const visit = (box: LayoutBox, parent: PlacedNode | undefined): void => {
+  const siblings = new Map<LayoutBox | undefined, PlacedNode[]>();
+  const visit = (box: LayoutBox, parent: LayoutBox | undefined): void => {
     const node = placed.get(box);
     if (node !== undefined) {
-      rooms.set(node, parent?.box ?? layout);
+      rooms.set(node, parent ?? layout);
       siblings.set(parent, [...(siblings.get(parent) ?? []), node]);
     }
     if (!isScaled(box)) {
-      box.children.forEach((child) => visit(child, node ?? parent));
+      box.children.forEach((child) =>
+        visit(child, nested.has(box) ? box : parent)
+      );
     }
   };
   visit(layout, undefined);
 
-  const nested = new Set(placed.keys());
   const overflows = [...rooms].flatMap(([node, room]): LayoutFinding[] => {
     const by = Math.max(
       0,

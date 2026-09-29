@@ -87,8 +87,8 @@ describe('checkLayout over a takumi measure', () => {
       runtime.surfaces.svg.render({ type: 'view', body }, { anchors: true })
     );
 
-    expect(checkLayout(layout, body, createChildNodeWalker([block]))).toEqual([
-      { kind: 'overflow', path: 'body[1]', type: 'block', by: 150 },
-    ]);
+    expect(
+      checkLayout(layout, body, createChildNodeWalker([block]), 'svg')
+    ).toEqual([{ kind: 'overflow', path: 'body[1]', type: 'block', by: 150 }]);
   });
 });

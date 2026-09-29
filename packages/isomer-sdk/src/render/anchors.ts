@@ -104,24 +104,30 @@ export const nodeAnchor = (
 ): Readonly<Record<string, string>> =>
   anchorsOn(context) ? { [NODE_ANCHOR_ATTRIBUTE]: anchorValue(type) } : {};
 
-/** The `react`-visible nodes of `body`, pre-order, each with its path in validation's `body[0].items[1]` form. */
+/**
+ * The nodes of `body` a render on `surface` draws, pre-order, each with its
+ * path in validation's `body[0].items[1]` form. Nested nodes follow `react`,
+ * as a container renders them through `renderReact` on either surface.
+ */
 export const anchoredNodePaths = (
   body: readonly unknown[],
-  walk: ChildNodeWalker
+  walk: ChildNodeWalker,
+  surface: 'react' | 'svg' = 'react'
 ): { node: unknown; path: string }[] => {
   const visit = (
     node: unknown,
     path: string
-  ): { node: unknown; path: string }[] =>
-    isVisibleOnSurface(node, 'react')
-      ? [
-          { node, path },
-          ...walk(node).flatMap((child) =>
-            visit(child.node, childNodePath(path, child.path))
-          ),
-        ]
-      : [];
-  return body.flatMap((node, index) => visit(node, `body[${index}]`));
+  ): { node: unknown; path: string }[] => [
+    { node, path },
+    ...walk(node).flatMap((child) =>
+      isVisibleOnSurface(child.node, 'react')
+        ? visit(child.node, childNodePath(path, child.path))
+        : []
+    ),
+  ];
+  return body.flatMap((node, index) =>
+    isVisibleOnSurface(node, surface) ? visit(node, `body[${index}]`) : []
+  );
 };
 
 /** The `react`-visible nodes of `body`, pre-order: the order their anchors render in. */
