@@ -25,6 +25,7 @@ import {
   md,
   serializeMarkdown,
 } from './builder';
+import { SAFE_INPUTS } from './safe_inputs.fixtures';
 
 const parse = (markdown: string): Root =>
   fromMarkdown(markdown, {
@@ -49,41 +50,6 @@ const textOf = (node: Nodes): string =>
 
 const typesIn = (root: Root): string[] =>
   descendants(root).map(({ type }) => type);
-
-// Inputs that must stay text wherever they land (elastic/isomer#23).
-const SAFE_INPUTS = [
-  'line\nbreak',
-  'carriage\rreturn',
-  'crlf\r\nbreak',
-  'line\u2028separator',
-  'paragraph\u2029separator',
-  'back\\slash',
-  'trailing\\',
-  '[x](javascript:alert(1))',
-  '<img src=x onerror=alert(1)>',
-  '<b>bold</b>',
-  '*star* and _under_',
-  '**strong** and __strong__',
-  '~strike~ and ~~strike~~',
-  '`tick` and ``ticks``',
-  'a | b',
-  '# heading',
-  '- item',
-  '+ item',
-  '* item',
-  '1. item',
-  '1) item',
-  '---',
-  '===',
-  '~~~',
-  '```',
-  '    indented',
-  '> quote',
-  '&amp; &#x41;',
-  'wow![x](y)',
-  '[^1] and [x]: https://a.b',
-  '<https://a.b> and www.x.com',
-];
 
 // Where each input lands, and the node its text should come back in.
 const PLACEMENTS: readonly [
