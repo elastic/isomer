@@ -44,7 +44,8 @@ const LINE_TERMINATORS_RE = /\r\n|[\n\r\u2028\u2029]/g;
 // A fence-info string only allows word-ish tokens; anything else would
 // terminate the fence early or inject markdown.
 const FENCE_INFO_RE = /^[\w+#.-]+$/;
-const VERBATIM = 'isomerVerbatim';
+/** The node type of Markdown printed as written. */
+export const VERBATIM_TYPE = 'isomerVerbatim';
 
 const oneLine = (value: string): string =>
   value.replace(LINE_TERMINATORS_RE, ' ');
@@ -102,7 +103,7 @@ const isListStart = (
 // would add blank lines between blocks.
 const verbatim = (markdown: string): MarkdownBlock =>
   block({
-    type: VERBATIM,
+    type: VERBATIM_TYPE,
     value: markdown.trimEnd(),
   } as unknown as RootContent);
 
@@ -246,7 +247,7 @@ const handlers: Record<string, Handle> = {
       : defaultHandlers.image({ ...node, url }, ...rest);
   },
   html: asText,
-  [VERBATIM]: (node: { value: string }) => node.value,
+  [VERBATIM_TYPE]: (node: { value: string }) => node.value,
 };
 
 const OPTIONS: Options = {
@@ -262,6 +263,10 @@ const OPTIONS: Options = {
   extensions: [gfmToMarkdown({ tablePipeAlign: false })],
   handlers: handlers as Options['handlers'],
 };
+
+/** `content` as flat mdast blocks, typed `unknown` so no declaration names mdast. */
+export const markdownBlocks = (content: MarkdownContent): readonly unknown[] =>
+  rootContent(content);
 
 /** `content` as GFM, without a trailing line break. */
 export const serializeMarkdown = (content: MarkdownContent): string =>

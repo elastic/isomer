@@ -14,7 +14,7 @@ sources:
 
 # Definition
 
-Slack Block Kit rendering and payload types. Reach Slack types through this entry, not `define/slack_*`.[^barrel]
+Slack Block Kit rendering and payload types. Reach Slack types through this entry, not `define/slack_*`.[^barrel] `markdownContentToSlackBlocks` translates content built with `md` to `rich_text` and `table` blocks from its tree; `gfmToSlackBlocks` translates a GFM string. `SlackRichTextList` takes `offset` for an ordered list that starts past 1.[^barrel]
 
 Related: [rendering](/sdk/concepts/rendering.md), [packs](/sdk/concepts/packs.md).
 

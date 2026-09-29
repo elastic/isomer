@@ -171,6 +171,8 @@ export interface SlackRichTextList {
   type: 'rich_text_list';
   style: 'bullet' | 'ordered';
   indent?: number;
+  /** Added to an ordered list's first number, which is otherwise 1. */
+  offset?: number;
   border?: number;
   elements: SlackRichTextSection[];
 }
