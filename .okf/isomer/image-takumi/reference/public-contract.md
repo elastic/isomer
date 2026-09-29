@@ -1,7 +1,7 @@
 ---
 type: Reference
 title: Public contract
-description: private true, no isomer dependencies, takumi core and helpers pinned at 2.14.0.
+description: Published, no isomer dependencies, takumi core and helpers pinned at 2.14.0 and takumi-pdf at 0.15.0.
 tags: [isomer, image-takumi, contract]
 status: stable
 stale_after: 2027-03-18
@@ -13,7 +13,7 @@ sources:
 
 # Definition
 
-- Published with the workspace at one version, as a host-side rasterizer. Depends on `@takumi-rs/core` and `@takumi-rs/helpers` 2.14.0. Peers: `react`, `react-dom` `>=18 <20`. No isomer package dependency.[^package]
+- Published with the workspace at one version, as a host-side rasterizer. Depends on `@takumi-rs/core` and `@takumi-rs/helpers` 2.14.0 (native) and `takumi-pdf` 0.15.0 (WebAssembly, loaded at import). Peers: `react`, `react-dom` `>=18 <20`. No isomer package dependency.[^package]
 
 Related: [raster](/image-takumi/concepts/raster.md), [root](/image-takumi/entry-points/root.md).
 

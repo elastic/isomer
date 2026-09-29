@@ -138,6 +138,9 @@ importers:
       '@takumi-rs/helpers':
         specifier: 2.14.0
         version: 2.14.0(react@18.3.1)
+      takumi-pdf:
+        specifier: 0.15.0
+        version: 0.15.0(react@18.3.1)
     devDependencies:
       '@fontsource/inter':
         specifier: ^5.3.0
@@ -174,6 +177,9 @@ importers:
         specifier: workspace:*
         version: link:../isomer-runtime
       '@fontsource/inter':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/noto-sans-symbols-2':
         specifier: ^5.3.0
         version: 5.3.0
       '@fontsource/roboto-mono':
@@ -372,6 +378,9 @@ packages:
 
   '@fontsource/inter@5.3.0':
     resolution: {integrity: sha512-RofMylZmjlJEfELXeNHFWBRcSs75rGU/6bV2S2jfnvv/3rPXPGe0LgUJTklcHZ9lM4OZmAVFhcJPnACfb91A3g==}
+
+  '@fontsource/noto-sans-symbols-2@5.3.0':
+    resolution: {integrity: sha512-hFnEnIXOIgLLJ61SO9icRXKoS+LSWoq7ZqKJQ/NaQR7ptdC6+7yW4ci6EuXgsS1S9JmWpciX6w0AFZkU1DKn1A==}
 
   '@fontsource/roboto-mono@5.3.0':
     resolution: {integrity: sha512-yhwplHMHW9dCk+1pZuERfcJe+K3rosGVZEoK0XktkxRSqQ9qsipSwwiuW2/8Qmtp9lzu3Ixa/ie4BMH3i8CkZQ==}
@@ -2843,6 +2852,15 @@ packages:
     resolution: {integrity: sha512-yEFYrVhod+hdNyx7g5Bnkkb0G6si8HJurOoOEgC8B/O0uXLHlaey/65KRv6cuWBNhBgHKAROVpc7QyYqE5gFng==}
     engines: {node: '>=20'}
 
+  takumi-pdf@0.15.0:
+    resolution: {integrity: sha512-LvK3GxvYsQYHDvx6pVO6tg2QWUC45iSGDDp5thijkP3WYHj0bcnNoQRp9dpUDRZlri+dwRIwkGNXA+DZGonCvg==}
+    engines: {node: '>=20.19'}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      react:
+        optional: true
+
   temp-dir@3.0.0:
     resolution: {integrity: sha512-nHc6S/bwIilKHNRgK/3jlhDoIHcp45YgyiwcAk46Tr0LfEqGBVpmiAyuiuxeVE44m3mXnEeVhaipLOEWmH+Njw==}
     engines: {node: '>=14.16'}
@@ -3423,6 +3441,8 @@ snapshots:
       levn: 0.4.1
 
   '@fontsource/inter@5.3.0': {}
+
+  '@fontsource/noto-sans-symbols-2@5.3.0': {}
 
   '@fontsource/roboto-mono@5.3.0': {}
 
@@ -5902,6 +5922,14 @@ snapshots:
       '@pkgr/core': 0.3.6
 
   tagged-tag@1.0.0: {}
+
+  takumi-pdf@0.15.0(react@18.3.1):
+    dependencies:
+      '@takumi-rs/helpers': 2.14.0(react@18.3.1)
+    optionalDependencies:
+      react: 18.3.1
+    transitivePeerDependencies:
+      - preact
 
   temp-dir@3.0.0: {}
 

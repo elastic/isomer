@@ -1,12 +1,13 @@
 # `@elastic/isomer-image-takumi`
 
-Rasterizes the `svg` surface's output with [takumi](https://takumi.kane.tw). PNG or SVG out; nothing else.
+Rasterizes the `svg` surface's output with [takumi](https://takumi.kane.tw). PNG, SVG, or PDF out; nothing else.
 
 ```ts
 import { createTakumiImageBackend } from '@elastic/isomer-image-takumi';
 
 const takumi = createTakumiImageBackend({ fonts });
 const png = await takumi.png(runtime.surfaces.svg.render(composition));
+const pdf = await takumi.pdf(runtime.surfaces.svg.renderPages(deck));
 ```
 
 A host-side rasterizer: it depends on no Isomer package and is the one workspace package that pulls a native dependency. Docs: [Takumi image backend](https://elastic.github.io/isomer/image-takumi/).

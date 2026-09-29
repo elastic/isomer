@@ -14,6 +14,11 @@ import {
   type RenderOptions,
 } from '@takumi-rs/core';
 import { fromHtml } from '@takumi-rs/helpers/html';
+import {
+  type ImagesInput,
+  PdfRenderer,
+  type RenderOptions as PdfRenderOptions,
+} from 'takumi-pdf';
 
 /**
  * What the `svg` surface returns: a React tree and the stylesheet it is laid
@@ -25,6 +30,18 @@ import { fromHtml } from '@takumi-rs/helpers/html';
 export interface ImageInput {
   /** A single root, as image layout requires: one element, string, or number, never an array or fragment. */
   element: ReactNode;
+  css: string;
+  width: number;
+  height: number;
+}
+
+/**
+ * What the `svg` surface's `renderPages` returns: one root per page, all laid
+ * out against one stylesheet at one size. Structural like {@link ImageInput};
+ * `SvgPagesResult` satisfies it.
+ */
+export interface PdfInput {
+  pages: readonly ReactNode[];
   css: string;
   width: number;
   height: number;
@@ -55,6 +72,40 @@ export interface TakumiRenderOptions {
    * of this value; it does not produce a larger raster.
    */
   devicePixelRatio?: number;
+}
+
+/** Document properties written into a PDF. */
+export interface TakumiPdfMetadata {
+  title?: string;
+  description?: string;
+  authors?: string[];
+  keywords?: string[];
+  creator?: string;
+  /** UTC, `YYYY-MM-DD` or `YYYY-MM-DDTHH:MM:SS`. Fixing it makes the bytes stable across renders. */
+  creationDate?: string;
+}
+
+/** Per-document options for {@link TakumiPdfBackend.pdf}. Geometry comes from the input. */
+export interface TakumiPdfOptions {
+  metadata?: TakumiPdfMetadata;
+  /**
+   * What a glyph no registered font covers becomes. The default, `'error'`,
+   * rejects the render naming the code point, where `png` draws takumi's
+   * built-in face instead; `'placeholder'` draws the font's glyph 0 and
+   * `'blank'` draws nothing.
+   */
+  uncoveredText?: 'error' | 'placeholder' | 'blank';
+  /**
+   * Bytes for the `img` sources in the tree. The PDF engine fetches nothing,
+   * so a remote `src` with no entry here draws blank; a `data:` URI needs none.
+   */
+  images?: ImagesInput;
+  /** Writes a document outline from the headings. */
+  outline?: boolean;
+  /** BCP 47 tag for the document's language. */
+  lang?: string;
+  /** Paper color painted under every page; unset leaves the page empty. */
+  backgroundColor?: string;
 }
 
 /** A laid-out element on the canvas, in pixels, with the elements nested in it. */
@@ -94,8 +145,22 @@ export interface TakumiImageBackend {
   svg(input: ImageInput): Promise<string>;
 }
 
-/** A {@link TakumiImageBackend} that also measures layout, as {@link createTakumiImageBackend} returns. */
-export interface TakumiMeasuringBackend extends TakumiImageBackend {
+/** Writes the `svg` surface's pages as a PDF, one page each. */
+export interface TakumiPdfBackend {
+  /**
+   * Renders one page per entry in `pages`, each the input's size with no
+   * margin, so a frame fills its page. Vector output with selectable text and
+   * the registered fonts subset and embedded.
+   */
+  pdf(input: PdfInput, options?: TakumiPdfOptions): Promise<Buffer>;
+}
+
+/**
+ * A {@link TakumiImageBackend} that also measures layout and writes PDF, as
+ * {@link createTakumiImageBackend} returns.
+ */
+export interface TakumiMeasuringBackend
+  extends TakumiImageBackend, TakumiPdfBackend {
   /** Lays the input out as {@link TakumiImageBackend.png} would, and returns every box, e.g. to find content past its area. */
   measure(input: ImageInput): Promise<LayoutBox>;
 }
@@ -164,14 +229,48 @@ const escapeStyleEndTags = (css: string) =>
   css.replace(/<\/style/gi, (tag) => tag.replace('/', '\\/'));
 
 /**
- * Serializes the tree with its stylesheet inlined, the form `fromHtml` lifts
- * into its own `css` list. Passing the stylesheet as a separate `CssInput`
- * entry is a different path through takumi and changes the committed PNG bytes.
+ * Inlines the stylesheet ahead of the markup, the form `fromHtml` lifts into
+ * its own `css` list. Passing the stylesheet as a separate `CssInput` entry is
+ * a different path through takumi and changes the committed PNG bytes.
  */
+const withStylesheet = (css: string, markup: string) =>
+  `<style>${escapeStyleEndTags(css)}</style>${markup}`;
+
 const toTakumiSource = ({ element, css }: ImageInput) =>
-  fromHtml(
-    `<style>${escapeStyleEndTags(css)}</style>${renderToStaticMarkup(element)}`
-  );
+  fromHtml(withStylesheet(css, renderToStaticMarkup(element)));
+
+/** Inline, so no pack class name can collide with it. */
+const PAGE_STYLE = 'overflow:hidden;break-after:page;break-inside:avoid';
+
+/** Each page in a fixed-size block that ends the page, so a frame never spills onto the next. */
+const toPagedSource = ({ pages, css, width, height }: PdfInput) => {
+  if (pages.length === 0) {
+    throw new Error('pdf: no pages; a document needs at least one');
+  }
+  const markup = pages
+    .map(
+      (page) =>
+        `<div style="width:${width}px;height:${height}px;${PAGE_STYLE}">${renderToStaticMarkup(page)}</div>`
+    )
+    .join('');
+  return {
+    ...fromHtml(withStylesheet(css, `<div>${markup}</div>`)),
+    width,
+    height,
+  };
+};
+
+/** Runs `create` once for every caller. A rejection is forgotten, so the next call retries instead of inheriting it. */
+const once = <T>(create: () => Promise<T>): (() => Promise<T>) => {
+  let pending: Promise<T> | undefined;
+  return () => {
+    pending ??= create().catch((error: unknown) => {
+      pending = undefined;
+      throw error;
+    });
+    return pending;
+  };
+};
 
 export const createTakumiImageBackend = ({
   fonts = [],
@@ -182,23 +281,23 @@ export const createTakumiImageBackend = ({
   );
 
   /**
-   * Registration is async and every render needs it, so it runs once and is
-   * awaited rather than repeated. Sequential because the registration order is
-   * the default fallback order. A failed attempt is forgotten so the next
-   * render retries instead of inheriting the rejection.
+   * Registration is async and every render needs it, so each engine registers
+   * once and is awaited. Sequential because the registration order is the
+   * default fallback order.
    */
-  let registered: Promise<void> | undefined;
-  const ready = () => {
-    registered ??= (async () => {
-      for (const font of fonts) {
-        await renderer.registerFont(font);
-      }
-    })().catch((error: unknown) => {
-      registered = undefined;
-      throw error;
-    });
-    return registered;
+  const registerFonts = async <
+    TEngine extends { registerFont(font: FontLoader): Promise<unknown> },
+  >(
+    engine: TEngine
+  ): Promise<TEngine> => {
+    for (const font of fonts) {
+      await engine.registerFont(font);
+    }
+    return engine;
   };
+  const ready = once(() => registerFonts(renderer));
+  /** A second engine, created only when a PDF is asked for, so a raster-only host never loads one. */
+  const pdfReady = once(() => registerFonts(new PdfRenderer()));
 
   return {
     png: async (input, options = {}) => {
@@ -233,6 +332,18 @@ export const createTakumiImageBackend = ({
         css,
       });
       return toLayoutBox(measured, node);
+    },
+    pdf: async (input, options = {}) => {
+      const engine = await pdfReady();
+      const { node, css, width, height } = toPagedSource(input);
+      const renderOptions: PdfRenderOptions = {
+        ...options,
+        size: { width, height },
+        margin: 0,
+        css,
+      };
+      // Copied out of wasm memory, which a later render can move.
+      return Buffer.from(await engine.render(node, renderOptions));
     },
   };
 };

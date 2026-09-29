@@ -18,6 +18,7 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `@takumi-rs/core-win32-arm64-msvc` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
 | `@takumi-rs/core-win32-x64-msvc` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
 | `@takumi-rs/helpers` | 2.14.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+helpers@2.14.0_react@18.3.1/node_modules/@takumi-rs/helpers` |  |
+| `takumi-pdf` | 0.15.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/takumi-pdf@0.15.0_react@18.3.1/node_modules/takumi-pdf` |  |
 
 ## Source and build
 
@@ -64,6 +65,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@eslint/object-schema` | 2.1.7 | Apache-2.0 | `node_modules/.pnpm/@eslint+object-schema@2.1.7/node_modules/@eslint/object-schema` |  |
 | `@eslint/plugin-kit` | 0.4.1 | Apache-2.0 | `node_modules/.pnpm/@eslint+plugin-kit@0.4.1/node_modules/@eslint/plugin-kit` |  |
 | `@fontsource/inter` | 5.3.0 | OFL-1.1 | `node_modules/.pnpm/@fontsource+inter@5.3.0/node_modules/@fontsource/inter` |  |
+| `@fontsource/noto-sans-symbols-2` | 5.3.0 | OFL-1.1 | `node_modules/.pnpm/@fontsource+noto-sans-symbols-2@5.3.0/node_modules/@fontsource/noto-sans-symbols-2` |  |
 | `@fontsource/roboto-mono` | 5.3.0 | OFL-1.1 | `node_modules/.pnpm/@fontsource+roboto-mono@5.3.0/node_modules/@fontsource/roboto-mono` |  |
 | `@gar/promise-retry` | 1.0.3 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/@gar/promise-retry` |  |
 | `@humanfs/core` | 0.19.2 | Apache-2.0 | `node_modules/.pnpm/@humanfs+core@0.19.2/node_modules/@humanfs/core` |  |

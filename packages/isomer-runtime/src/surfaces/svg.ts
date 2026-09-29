@@ -72,11 +72,23 @@ export interface SvgRenderResult {
   height: number;
 }
 
+/** Several compositions laid out against one stylesheet, one page each, as a paged document needs. */
+export interface SvgPagesResult {
+  /** One root element per composition, in order. */
+  pages: readonly ReactNode[];
+  /** The pack's CSS for every page, with `light-dark(…)` resolved to the document's scheme. */
+  css: string;
+  /** Every page's width. */
+  width: number;
+  /** Every page's height. */
+  height: number;
+}
+
 /**
  * Renders a composition or node to an image backend's input: the same React
  * tree the DOM gets, paired with the pack's stylesheet.
  *
- * `svg` is a render surface; projecting it to SVG or PNG is a separate
+ * `svg` is a render surface; projecting it to SVG, PNG, or PDF is a separate
  * capability a host opts into.
  */
 export interface SvgSurface {
@@ -84,6 +96,19 @@ export interface SvgSurface {
   readonly validating: true;
   /** Renders a full composition inside the chosen frame. */
   render(composition: Composition, options?: SvgRenderOptions): SvgRenderResult;
+  /**
+   * Renders several compositions under one frame with one stylesheet, one
+   * page each. Every page is the same size, the tallest estimate unless
+   * `height` is given, and the first composition's `theme` decides the palette
+   * unless `theme` is given.
+   *
+   * Throws `EMPTY_PAGES` for an empty list, and validates each composition in
+   * order as {@link SvgSurface.render} does.
+   */
+  renderPages(
+    compositions: readonly Composition[],
+    options?: SvgRenderOptions
+  ): SvgPagesResult;
   /**
    * The width and height {@link SvgSurface.render} would use for this
    * composition. Rasterizing consumers need the viewport the element was laid
@@ -134,15 +159,22 @@ export const createSvgSurface = <TRenderContext = unknown>(
     | HTMLStyleAdapter<PrimitiveNode, PrimitiveStyleCollector, TRenderContext>
     | undefined
 ): SvgSurface => {
+  /** A composition and how to draw it once a render context exists. */
+  interface StyledPage {
+    composition: Composition;
+    build: (context: TRenderContext) => ReactNode;
+  }
+
   const assertBody = (
     { name, frame }: NamedFrame,
-    composition: Composition
+    composition: Composition,
+    subject: string
   ): void => {
     const errors = frame.validateBody(composition.body);
     if (errors.length > 0) {
       throw new IsomerError(
         'INVALID_FRAME_BODY',
-        `runtime: frame "${name}" cannot draw this composition: ${errors.join('; ')}`
+        `runtime: frame "${name}" cannot draw ${subject}: ${errors.join('; ')}`
       );
     }
   };
@@ -153,13 +185,20 @@ export const createSvgSurface = <TRenderContext = unknown>(
     estimateSvgHeight: (node) => dispatcher.estimateSvgHeight(node),
   };
 
+  /** One viewport for every composition: the tallest estimate, unless overridden. */
   const viewportFor = (
     frame: BoundFrame,
-    composition: Composition,
+    compositions: readonly Composition[],
     options: Pick<SvgRenderOptions, 'width' | 'height'>
   ): { width: number; height: number } => ({
     width: options.width ?? frame.defaultWidth,
-    height: options.height ?? frame.estimateHeight(composition, measuringOnly),
+    height:
+      options.height ??
+      Math.max(
+        ...compositions.map((composition) =>
+          frame.estimateHeight(composition, measuringOnly)
+        )
+      ),
   });
 
   const frameDispatcherFor = (
@@ -178,95 +217,146 @@ export const createSvgSurface = <TRenderContext = unknown>(
    * Runs the pack twice, in the same hook order as the SDK's HTML envelope:
    * class names are collected as a side effect of rendering, so the stylesheet
    * only exists once a pass has resolved them. `react` renderers must therefore
-   * be side-effect free.
+   * be side-effect free. One collector spans every page, so a document gets
+   * one stylesheet; the adapter settles its options against the first page.
    */
   const withStyles = (
-    build: (context: TRenderContext) => ReactNode,
-    composition: Composition,
+    [first, ...rest]: readonly [StyledPage, ...StyledPage[]],
     scheme: 'light' | 'dark'
-  ): { element: ReactNode; css: string } => {
+  ): { elements: ReactNode[]; css: string } => {
+    const pages = [first, ...rest];
     if (!styleAdapter) {
-      return { element: build({} as TRenderContext), css: '' };
+      return {
+        elements: pages.map(({ build }) => build({} as TRenderContext)),
+        css: '',
+      };
     }
     const requested: HTMLRenderOptions = {
       theme: scheme,
       adapterOptions: { [flattenSchemeOption]: scheme },
     };
     const options =
-      styleAdapter.resolveOptions?.(composition, requested) ?? requested;
+      styleAdapter.resolveOptions?.(first.composition, requested) ?? requested;
     const collector = styleAdapter.createCollector(options);
     styleAdapter.collectWrapperStyles?.(collector, options);
-    styleAdapter.collectViewStyles?.(
-      composition,
-      dispatcher,
-      collector,
-      { fluid: Boolean(options.fluid) },
-      options,
-      {
-        walk: createChildNodeWalker(dispatcher.definitions),
-        definitions: [],
-      }
-    );
+    const scope = {
+      walk: createChildNodeWalker(dispatcher.definitions),
+      definitions: [],
+    };
+    for (const { composition } of pages) {
+      styleAdapter.collectViewStyles?.(
+        composition,
+        dispatcher,
+        collector,
+        { fluid: Boolean(options.fluid) },
+        options,
+        scope
+      );
+    }
+    const collecting = styleAdapter.createRenderContext(collector, options);
     renderToStaticMarkup(
       createElement(
         Fragment,
         null,
-        build(styleAdapter.createRenderContext(collector, options))
+        ...pages.map(({ build }) => build(collecting))
       )
     );
-    styleAdapter.collectAfterRender?.(composition, collector, options);
+    for (const { composition } of pages) {
+      styleAdapter.collectAfterRender?.(composition, collector, options);
+    }
+    const context = styleAdapter.createRenderContext(collector, options);
     return {
-      element: build(styleAdapter.createRenderContext(collector, options)),
+      elements: pages.map(({ build }) => build(context)),
       css: styleAdapter.renderStyles(collector, options),
     };
+  };
+
+  /** `subject` names a page in the frame's rejection, e.g. `page 2`. */
+  const renderDocument = (
+    [first, ...rest]: readonly [Composition, ...Composition[]],
+    options: SvgRenderOptions,
+    subject: (index: number) => string
+  ): SvgPagesResult => {
+    const compositions = [first, ...rest];
+    for (const composition of compositions) {
+      enforceValidationMode(
+        validate(composition),
+        options.onValidationError ?? 'throw'
+      );
+    }
+    const named = frameFor(options.frame);
+    compositions.forEach((composition, index) => {
+      assertBody(named, composition, subject(index));
+    });
+    const viewport = viewportFor(named.frame, compositions, options);
+    const mode = options.theme ?? first.theme;
+    const theme = named.frame.resolveTheme(mode);
+    const page = (composition: Composition): StyledPage => ({
+      composition,
+      build: (context) =>
+        named.frame.render(
+          composition,
+          { ...viewport, mode },
+          frameDispatcherFor(context, theme, options.anchors)
+        ),
+    });
+    const { elements, css } = withStyles(
+      [page(first), ...rest.map(page)],
+      schemeFor(mode)
+    );
+    return { ...viewport, pages: elements, css };
   };
 
   return {
     validating: true,
     render: (composition, options = {}) => {
-      enforceValidationMode(
-        validate(composition),
-        options.onValidationError ?? 'throw'
+      const { pages, ...viewport } = renderDocument(
+        [composition],
+        options,
+        () => 'this composition'
       );
-      const named = frameFor(options.frame);
-      assertBody(named, composition);
-      const viewport = viewportFor(named.frame, composition, options);
-      const mode = options.theme ?? composition.theme;
-      const theme = named.frame.resolveTheme(mode);
-      return {
-        ...viewport,
-        ...withStyles(
-          (context) =>
-            named.frame.render(
-              composition,
-              { ...viewport, mode },
-              frameDispatcherFor(context, theme, options.anchors)
-            ),
-          composition,
-          schemeFor(mode)
-        ),
-      };
+      return { ...viewport, element: pages[0] };
+    },
+    renderPages: (compositions, options = {}) => {
+      const [first, ...rest] = compositions;
+      if (first === undefined) {
+        throw new IsomerError(
+          'EMPTY_PAGES',
+          'runtime: renderPages needs at least one composition'
+        );
+      }
+      return renderDocument(
+        [first, ...rest],
+        options,
+        (index) => `page ${index}`
+      );
     },
     resolveViewport: (composition, options = {}) => {
       const { frame } = frameFor(options.frame);
-      return viewportFor(frame, composition, options);
+      return viewportFor(frame, [composition], options);
     },
     renderNode: (node, options = {}) => {
       const { frame } = frameFor(options.frame);
       const composition: Composition = { type: 'view', body: [node] };
       const theme = frame.resolveTheme(options.theme);
+      const { elements, css } = withStyles(
+        [
+          {
+            composition,
+            build: (context) =>
+              frame.renderNode(
+                node,
+                frameDispatcherFor(context, theme, options.anchors)
+              ),
+          },
+        ],
+        schemeFor(options.theme)
+      );
       return {
         width: frame.defaultWidth,
         height: frame.estimateHeight(composition, measuringOnly),
-        ...withStyles(
-          (context) =>
-            frame.renderNode(
-              node,
-              frameDispatcherFor(context, theme, options.anchors)
-            ),
-          composition,
-          schemeFor(options.theme)
-        ),
+        element: elements[0],
+        css,
       };
     },
   };

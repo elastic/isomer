@@ -44,7 +44,21 @@ const fontsourceFamily = (
       return { name: family, weight, data: () => readFile(file) };
     });
 
-/** Registered in order, which is also takumi's fallback order. */
+/**
+ * Covers the theme's `✓` and `✕` markers, which neither text family does.
+ * A PNG would draw them from the backend's built-in face; a PDF rejects an
+ * uncovered glyph.
+ */
+export const symbolFont: FontLoader = {
+  name: 'Noto Sans Symbols 2',
+  weight: 400,
+  data: () =>
+    readFile(
+      require.resolve('@fontsource/noto-sans-symbols-2/files/noto-sans-symbols-2-symbols-400-normal.woff2')
+    ),
+};
+
+/** Registered in order, which is also takumi's fallback order; the symbol face last, so it serves only what the others miss. */
 export const deckFonts: readonly FontLoader[] = [
   ...fontsourceFamily(
     '@fontsource/inter',
@@ -58,4 +72,5 @@ export const deckFonts: readonly FontLoader[] = [
     'roboto-mono',
     [100, 200, 300, 400, 500, 600, 700]
   ),
+  symbolFont,
 ];

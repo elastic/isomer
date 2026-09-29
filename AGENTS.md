@@ -8,7 +8,7 @@ The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, a
 
 `packages/isomer-primitives-slides` is the in-repo reference pack. Its `src/registry.ts` and `src/body_node.ts` are hand-maintained the same way, and `src/registry.test.ts` fails when they drift. Its docs live in `packages/isomer-primitives-slides/docs/`. Primitive packs for Kibana iterate in that repo.
 
-`packages/isomer-image-takumi` rasterizes the `svg` surface's output to PNG or SVG. It depends on no isomer package — it declares the surface's result shape structurally.
+`packages/isomer-image-takumi` renders the `svg` surface's output to PNG, SVG, or PDF. It depends on no isomer package — it declares the surface's result shape structurally.
 
 `packages/isomer-evals` scores whether a model produces valid, well-chosen compositions from a pack's authoring context. It depends on the SDK's public API alone and runs with no credentials.
 
