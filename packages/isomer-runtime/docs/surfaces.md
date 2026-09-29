@@ -13,14 +13,16 @@ runtime.surfaces.slack.render(composition, { collectAssets: true });
 | --- | --- | --- | --- |
 | `react` | `ReactNode` | no | `context` (required only if the pack narrows it), `heading`, `wrapper` |
 | `html` | `HTMLRenderResult` | yes | `theme`, `fluid`, `framed`, `heading`, `css`, `scripts`, `minify`, `enhancements` (ids), `anchors`, `onValidationError` |
-| `text` | `string` | yes | `onValidationError` |
-| `markdown` | `string` | yes | `onValidationError` |
-| `slack` | `{ text, blocks, assets }` | yes | `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
+| `text` | `string` | yes | `heading`, `onValidationError` |
+| `markdown` | `string` | yes | `heading`, `onValidationError` |
+| `slack` | `{ text, blocks, assets }` | yes | `heading`, `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
 | `svg` | `SvgRenderResult` | yes | `frame`, `width`, `height`, `theme`, `onValidationError` |
 
 `HTMLRenderResult` is `{ html, css, js, body, measurement, validationErrors }`. [Embedding](embedding.md) covers getting that markup, stylesheet, and script onto a page a host already controls, including when to render with `scripts: 'host'`. The `svg` entry is `undefined` unless the runtime was given [frames](frame.md), and the factory's return type tracks which.
 
 All six are synchronous.
+
+`heading` defaults to `true` wherever it appears: the composition's title and subtitle open the output, as an `h2` and `p.sub` on `react` and `html`, an `h1` and italic line in Markdown, an uppercased line in text, and a `header` and `context` block in Slack. Pass `false` when the host already shows the title, or the body opens with its own heading, as a slide does. Slack then leaves them out of its fallback `text` too, and `html` still uses the title for the wrapper's `aria-label`.
 
 ## Validation posture
 
@@ -44,7 +46,7 @@ runtime.surfaces.react.render(composition, {
 
 Omit `wrapper` and the surface returns bare content.
 
-`renderNode` takes `ReactRenderNodeOptions`, which is `ReactRenderOptions` without `heading`: a lone node has no composition title to draw. `heading` still controls it on `render`.
+`renderNode` takes `ReactRenderNodeOptions`, which is `ReactRenderOptions` without `heading`: a lone node has no composition title to draw. `heading` still controls it on `render`. Slack's `SlackRenderNodeOptions` omits `heading` for the same reason.
 
 The options argument, and `context` inside it, is optional only when omitting it is sound. The SDK's own render context has no required field, so `{}` is a complete value and both may be left off; a pack that narrows the context with something mandatory makes them required for that binding rather than letting the surface fabricate a value missing fields its renderers will read.
 

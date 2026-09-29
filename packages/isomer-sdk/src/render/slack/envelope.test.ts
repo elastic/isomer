@@ -86,6 +86,21 @@ describe('Slack envelope transforms', () => {
     ]);
   });
 
+  it('opens with the body in the blocks and the fallback text when heading is false', () => {
+    const { text, blocks } = renderSlackEnvelope(
+      {
+        type: 'view',
+        title: 'Checkout',
+        subtitle: 'last 15m',
+        body: [{ type: 'a' }],
+      },
+      dispatcherFor([[section('A')]]),
+      { heading: false }
+    );
+    expect(blocks).toEqual([section('A')]);
+    expect(text).toBe('a');
+  });
+
   it('inserts spacers between consecutive content sections', () => {
     const { blocks } = renderSlackEnvelope(
       { type: 'view', body: [{ type: 'a' }, { type: 'b' }] },

@@ -14,14 +14,22 @@ export interface TextEnvelopeDispatcher<TNode extends PrimitiveNode> {
   renderText(node: TNode): string;
 }
 
+/** Options for {@link renderTextEnvelope}. */
+export interface TextEnvelopeOptions {
+  /** Renders the composition's title and subtitle. Defaults to `true`. Pass `false` when the host already shows the title, or the body opens with its own. */
+  heading?: boolean;
+}
+
 /** The composition as plain text: title uppercased, subtitle, then nodes. */
 export const renderTextEnvelope = <TNode extends PrimitiveNode>(
   composition: Composition<TNode>,
-  dispatcher: TextEnvelopeDispatcher<TNode>
+  dispatcher: TextEnvelopeDispatcher<TNode>,
+  { heading = true }: TextEnvelopeOptions = {}
 ): string => {
   const lines = [
-    composition.title?.toUpperCase(),
-    composition.subtitle,
+    ...(heading
+      ? [composition.title?.toUpperCase(), composition.subtitle]
+      : []),
     ...composition.body.map((node) => dispatcher.renderText(node)),
   ].filter(Boolean);
 

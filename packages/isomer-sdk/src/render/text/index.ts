@@ -5,4 +5,8 @@
  * 2.0.
  */
 
-export { type TextEnvelopeDispatcher, renderTextEnvelope } from './envelope';
+export {
+  type TextEnvelopeDispatcher,
+  type TextEnvelopeOptions,
+  renderTextEnvelope,
+} from './envelope';
