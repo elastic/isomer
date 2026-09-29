@@ -101,6 +101,163 @@ describe('createTakumiImageBackend', () => {
     expect(svg).toContain('width="64"');
   });
 
+  describe('measure', () => {
+    const measure = (element: ImageInput['element'], css: string) =>
+      createTakumiImageBackend().measure({
+        element,
+        css,
+        width: 200,
+        height: 100,
+      });
+
+    it('nests boxes inside a root the size of the png canvas', async () => {
+      const twoBoxes: ImageInput = {
+        element: createElement(
+          'div',
+          { className: 'outer' },
+          createElement('div', { className: 'inner' }, 'Ag'),
+          createElement('div', { className: 'inner' }, 'Ag')
+        ),
+        css: '.outer { width: 64px; height: 32px; padding: 4px 6px; box-sizing: border-box; display: flex; gap: 2px } .inner { width: 20px; height: 10px }',
+        width: 64,
+        height: 32,
+      };
+      const takumi = createTakumiImageBackend();
+      const png = await takumi.png(twoBoxes);
+      const box = await takumi.measure(twoBoxes);
+
+      expect(box).toMatchObject({
+        x: 0,
+        y: 0,
+        width: png.readUInt32BE(16),
+        height: png.readUInt32BE(20),
+      });
+      expect(box.children).toMatchObject([
+        { x: 6, y: 4, width: 20, height: 10 },
+        { x: 28, y: 4, width: 20, height: 10 },
+      ]);
+      const [run] = box.children[0]?.runs ?? [];
+      expect(run).toMatchObject({ text: 'Ag', x: 6 });
+      expect(run?.y).toBeCloseTo(4, 0);
+    });
+
+    describe('maps a transformed box and its text to the canvas', () => {
+      const transformed = (transform: string) =>
+        measure(
+          createElement(
+            'div',
+            { className: 'outer' },
+            createElement('div', { className: 'inner' }, 'Ag')
+          ),
+          `.outer { width: 200px; height: 100px; padding: 10px 20px; box-sizing: border-box; display: flex } .inner { width: 40px; height: 20px; transform-origin: 0 0; transform: ${transform} }`
+        );
+
+      const unscaled = { scale: 1, scaleX: 1, scaleY: 1 };
+      it.each([
+        ['none', { x: 20, y: 10, width: 40, height: 20, ...unscaled }, 20],
+        [
+          'scale(2)',
+          {
+            x: 20,
+            y: 10,
+            width: 80,
+            height: 40,
+            scale: 2,
+            scaleX: 2,
+            scaleY: 2,
+          },
+          20,
+        ],
+        [
+          'scale(1, 0.5)',
+          {
+            x: 20,
+            y: 10,
+            width: 40,
+            height: 10,
+            scale: 0.5,
+            scaleX: 1,
+            scaleY: 0.5,
+          },
+          20,
+        ],
+        [
+          'translate(10px, 5px)',
+          { x: 30, y: 15, width: 40, height: 20, ...unscaled },
+          30,
+        ],
+        // A quarter turn about the top left swings the box left of its origin and swaps its sides.
+        [
+          'rotate(90deg)',
+          { x: 0, y: 10, width: 20, height: 40, ...unscaled },
+          -0.7,
+        ],
+      ] as const)('%s', async (transform, bounds, runX) => {
+        const [inner] = (await transformed(transform)).children;
+        for (const [key, value] of Object.entries(bounds)) {
+          expect(inner?.[key as keyof typeof bounds]).toBeCloseTo(value, 3);
+        }
+        const [run] = inner?.runs ?? [];
+        expect(run?.text).toBe('Ag');
+        expect(run?.x).toBeCloseTo(runX, 0);
+      });
+
+      it('scales a text run with its box', async () => {
+        const [plain] = (await transformed('none')).children;
+        const [scaled] = (await transformed('scale(2)')).children;
+        expect(scaled?.runs[0]?.width).toBeCloseTo(
+          2 * (plain?.runs[0]?.width ?? 0),
+          3
+        );
+        expect(scaled?.runs[0]?.height).toBeCloseTo(
+          2 * (plain?.runs[0]?.height ?? 0),
+          3
+        );
+      });
+    });
+
+    it('carries each element’s attributes onto its box', async () => {
+      const box = await measure(
+        createElement(
+          'div',
+          { className: 'row', 'data-isomer-node': 'row' },
+          createElement(
+            'div',
+            { id: 'first', 'data-isomer-node': 'item', 'aria-label': 'First' },
+            'a'
+          ),
+          'loose text',
+          createElement('div', null, createElement('b', null, 'b'))
+        ),
+        '.row { display: flex }'
+      );
+
+      expect(box.attributes).toEqual({ 'data-isomer-node': 'row' });
+      expect(box.children.map(({ attributes }) => attributes)).toEqual([
+        { 'data-isomer-node': 'item', 'aria-label': 'First' },
+        undefined,
+        undefined,
+      ]);
+    });
+
+    it('drops attributes where inline content folds children together', async () => {
+      const box = await measure(
+        createElement(
+          'div',
+          null,
+          'before ',
+          createElement('span', { 'data-isomer-node': 'chip' }, 'chip'),
+          createElement('div', { 'data-isomer-node': 'block' }, 'block'),
+          ' after'
+        ),
+        ''
+      );
+
+      expect(box.children).not.toHaveLength(4);
+      expect(box.children.every(({ attributes }) => !attributes)).toBe(true);
+    });
+  });
+
   it('registers a woff2 face without conversion', async () => {
     const file =
       require.resolve('@fontsource/inter/files/inter-latin-700-normal.woff2');
