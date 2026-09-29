@@ -49,7 +49,7 @@ Each exposes `render` and `renderNode`, plus a `validating` field stating its po
 | `text` | `string` | `string` | `true` | nothing |
 | `markdown` | `string` | `string` | `true` | nothing |
 | `slack` | `SlackRenderResult` | `SlackRenderResult` | `true` | `SlackRenderNodeOptions`: `text`, `collectAssets`, `assetPrefix` |
-| `svg` | `SvgRenderResult` | `SvgRenderResult` | `true` | `SvgRenderNodeOptions`: `frame`, `theme` |
+| `svg` | `SvgRenderResult` | `SvgRenderResult` | `true` | `SvgRenderNodeOptions`: `frame`, `theme`, `anchors` |
 
 Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SvgSurface`; `RuntimeSurfaces` is the record of all six. `render` takes its surface's options type below. `SvgRenderResult` is `{ element, css, width, height }`. The `svg` surface additionally exposes `resolveViewport(composition, options?): { width, height }`, which takes `frame`, `width`, and `height`.
 
@@ -64,7 +64,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | `MarkdownRenderOptions` | `heading`, `onValidationError` |
 | `SlackRenderOptions` | `heading`, `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
 | `SlackRenderNodeOptions` | `SlackRenderOptions` without `heading` or `onValidationError` |
-| `SvgRenderOptions` | `frame`, `width`, `height`, `theme`, `onValidationError` |
+| `SvgRenderOptions` | `frame`, `width`, `height`, `theme`, `anchors: boolean` (node anchors, e.g. for `checkLayout`), `onValidationError` |
 
 `onValidationError` is `'collect' | 'throw'`. `html` defaults to `'collect'` and reports on `validationErrors`; `text`, `markdown`, `slack`, and `svg` default to `'throw'`.
 

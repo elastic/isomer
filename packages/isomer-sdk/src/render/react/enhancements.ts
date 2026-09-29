@@ -8,6 +8,7 @@
 import type { ChildNodeWalker } from '../../composition/body_node_base';
 import type { PrimitiveNode } from '../../composition/node';
 import type { EnhancementDefinition } from '../../pack/enhancements';
+import { withNodeAnchors } from '../anchors';
 import { contextWith } from '../context_view';
 
 /**
@@ -33,7 +34,7 @@ export const applyEnhancements = <TContext>(
   const enhanced = contextWith(context, 'enhancements', ids);
   return {
     context: applied.some(({ anchors }) => anchors)
-      ? contextWith(enhanced, 'anchors', true)
+      ? withNodeAnchors(enhanced)
       : enhanced,
     applied,
   };
