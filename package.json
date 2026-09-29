@@ -1,5 +1,5 @@
 {
-  "name": "isomer-workspace",
+  "name": "@elastic/isomer-monorepo",
   "version": "0.0.0-development",
   "private": true,
   "description": "Isomer: a portable UI runtime that turns one typed Composition into React, HTML, SVG, PNG, Slack Block Kit, Markdown, and plain text.",
