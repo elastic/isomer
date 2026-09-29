@@ -94,8 +94,7 @@ const exactVersion = (range) =>
     ? range
     : undefined;
 
-// Matched case-insensitively: packages ship `license` as often as `LICENSE`,
-// and a case-insensitive filesystem would hide the difference locally.
+// Case-insensitive: packages ship `license` as often as `LICENSE`.
 const readFirstExisting = (dir, names) => {
   const entries = existsSync(dir) ? readdirSync(dir) : [];
   for (const name of names) {
