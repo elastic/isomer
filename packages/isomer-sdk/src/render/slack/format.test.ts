@@ -371,6 +371,18 @@ describe('gfmToSlackBlocks', () => {
     ).toBe('<https://a.b|x y z> <https://a.b/i.png|alt> d');
   });
 
+  it('closes a fence only on spaces and tabs after the backticks', () => {
+    expect(gfmToSlackBlocks('```\ncode\n```\u00a0\nstill code\n```')).toEqual([
+      expect.objectContaining({
+        elements: [
+          expect.objectContaining({
+            elements: [{ type: 'text', text: 'code\n```\u00a0\nstill code' }],
+          }),
+        ],
+      }),
+    ]);
+  });
+
   it('opens a fence only as GFM does, and closes one on a CRLF line', () => {
     for (const notFence of ['    ```\nprose', '```js`x\nprose']) {
       expect(gfmToSlackBlocks(notFence)).toEqual([

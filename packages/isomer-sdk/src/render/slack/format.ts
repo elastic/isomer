@@ -533,7 +533,8 @@ const plainInline = (line: string): string =>
 
 // GFM: up to three spaces of indent, and no backtick in the opener's info.
 const FENCE_RE = /^ {0,3}(`{3,})[^`]*$/;
-const CLOSING_FENCE_RE = /^ {0,3}(`{3,})\s*$/;
+// Spaces and tabs only after it, plus the `\r` a CRLF line keeps.
+const CLOSING_FENCE_RE = /^ {0,3}(`{3,})[ \t]*\r?$/;
 
 // A closing fence is backticks alone, at least as long as the opening run.
 const closesFence = (line: string, opening: string): boolean =>

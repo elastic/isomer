@@ -296,6 +296,22 @@ describe('md', () => {
     expect(serializeMarkdown(markdownFromString(''))).toBe('');
   });
 
+  it('ignores a list start GFM would not read as a list number', () => {
+    for (const start of [1.5, -1, Number.POSITIVE_INFINITY, 999_999_999]) {
+      expect(
+        serializeMarkdown(md.list(['a', 'b'], { ordered: true, start }))
+      ).toBe('1. a\n2. b');
+    }
+    expect(
+      serializeMarkdown(
+        md.list(['a', 'b'], { ordered: true, start: 999_999_998 })
+      )
+    ).toBe('999999998. a\n999999999. b');
+    expect(serializeMarkdown(md.list(['a'], { ordered: true, start: 0 }))).toBe(
+      '0. a'
+    );
+  });
+
   it('fences code past any backtick run inside it and drops an unsafe language', () => {
     const inline = read(md.paragraph(md.code('a`b')));
     expect(

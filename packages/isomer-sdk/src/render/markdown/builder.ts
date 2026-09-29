@@ -86,6 +86,18 @@ const itemContent = (
     ? [{ type: 'paragraph', children: [phrasing(item)] }]
     : (rootContent(item) as ListItem['children']);
 
+// GFM reads a list number of at most nine digits, so the last item's must fit.
+const MAX_LIST_NUMBER = 999_999_999;
+
+const isListStart = (
+  start: number | undefined,
+  count: number
+): start is number =>
+  start !== undefined &&
+  Number.isInteger(start) &&
+  start >= 0 &&
+  start + Math.max(count - 1, 0) <= MAX_LIST_NUMBER;
+
 // Printed as written, for Markdown that is already safe. Trailing whitespace
 // would add blank lines between blocks.
 const verbatim = (markdown: string): MarkdownBlock =>
@@ -149,23 +161,29 @@ export const md = {
     ...children: MarkdownInlineInput[]
   ): MarkdownBlock =>
     block({ type: 'heading', depth, children: children.map(phrasing) }),
-  /** An item that is inline input becomes one paragraph; one with no blocks, such as a hidden child, is dropped. */
+  /**
+   * An item that is inline input becomes one paragraph; one with no blocks,
+   * such as a hidden child, is dropped. A `start` that would print a marker
+   * GFM does not read as a list number is ignored.
+   */
   list: (
     items: readonly (MarkdownInlineInput | MarkdownContent)[],
     { ordered = false, start }: { ordered?: boolean; start?: number } = {}
-  ): MarkdownBlock =>
-    block({
+  ): MarkdownBlock => {
+    const children = items.flatMap((item): ListItem[] => {
+      const content = itemContent(item);
+      return content.length === 0
+        ? []
+        : [{ type: 'listItem', spread: false, children: content }];
+    });
+    return block({
       type: 'list',
       ordered,
-      ...(start === undefined ? {} : { start }),
+      ...(isListStart(start, children.length) ? { start } : {}),
       spread: false,
-      children: items.flatMap((item): ListItem[] => {
-        const children = itemContent(item);
-        return children.length === 0
-          ? []
-          : [{ type: 'listItem', spread: false, children }];
-      }),
-    }),
+      children,
+    });
+  },
   /** GFM trims a cell's edge whitespace. */
   table: (
     columns: readonly MarkdownInlineInput[],
