@@ -21,8 +21,8 @@ import {
   type RenderScope,
   type SurfaceMap,
   type SurfaceName,
-  validateWithSchema,
 } from '../define/primitive_module';
+import { createNodeIssueFormatter } from '../validate/node_issues';
 
 import type { SlackAssetCollector } from './slack/assets';
 import type { SlackBlock, SlackImageBlock } from './slack/blocks';
@@ -84,7 +84,10 @@ export interface PrimitiveDispatcher<
   ): readonly T['slackBlock'][];
   /** `0` when the node is hidden from `svg` or its primitive declares no `metrics.svgHeight`. */
   estimateSvgHeight(node: TNode): number;
-  /** Appends schema failures under `path` to `errors`. */
+  /**
+   * Appends schema failures under `path` to `errors`, each naming `node`'s
+   * type, and an unknown key on `node` listing the fields it declares.
+   */
   validate(node: TNode, path: string, errors: ValidationError[]): void;
 }
 
@@ -133,6 +136,7 @@ export const createPrimitiveDispatcher = <
   options: PrimitiveDispatcherOptions = {}
 ): PrimitiveDispatcher<TNode, T> => {
   const { isSlackAssetType } = options;
+  const formatIssues = createNodeIssueFormatter(definitions);
   const byType = new Map<string, AnyPrimitiveDefinition>();
   for (const definition of definitions) {
     const existing = byType.get(definition.type);
@@ -274,7 +278,12 @@ export const createPrimitiveDispatcher = <
       return svgHeight?.(node) ?? 0;
     },
     validate: (node, path, errors) => {
-      validateWithSchema(getDefinition(node).schema, node, path, errors);
+      const result = getDefinition(node).schema.safeParse(node, {
+        reportInput: true,
+      });
+      if (!result.success) {
+        errors.push(...formatIssues([[node, path]], result.error.issues, path));
+      }
     },
   };
   return self;

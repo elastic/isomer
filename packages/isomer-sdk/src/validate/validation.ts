@@ -14,14 +14,15 @@ import {
   rendersOnSurface,
 } from '../composition/body_node_base';
 import type { Composition } from '../composition/composition';
+import { quoteText } from '../composition/one_line';
 import {
   CompositionValidationError,
   type ValidationError,
 } from '../composition/validation_error';
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
-import { formatZodIssues } from '../define/zod_format';
 
 import { getCompositionSchemaForDefinitions } from './composition_schema';
+import { createNodeIssueFormatter, type IssueRoot } from './node_issues';
 
 /**
  * A non-fatal validation finding, scoped to the surface it concerns.
@@ -95,6 +96,14 @@ export interface CompositionValidatorOptions {
   sizesFromNodeHeights?: boolean;
 }
 
+/** The body's nodes, as {@link IssueRoot}s for a node issue formatter. */
+const bodyRoots = (value: unknown): IssueRoot[] => {
+  const { body } = (value ?? {}) as { body?: unknown };
+  return Array.isArray(body)
+    ? body.map((node, index) => [node, `body[${index}]`] as const)
+    : [];
+};
+
 /**
  * Builds the trusted-input validator: schema, then the semantic passes.
  *
@@ -110,6 +119,7 @@ export const createCompositionValidator = (
 ): ((composition: Composition) => ValidationResult) => {
   const schema = getCompositionSchemaForDefinitions(definitions);
   const walk = createChildNodeWalker(definitions);
+  const formatIssues = createNodeIssueFormatter(definitions);
   return (composition) => {
     const result = schema.safeParse(composition, { reportInput: true });
     if (result.success) {
@@ -124,7 +134,7 @@ export const createCompositionValidator = (
     }
     return {
       valid: false,
-      errors: formatZodIssues(result.error.issues),
+      errors: formatIssues(bodyRoots(composition), result.error.issues),
       warnings: [],
     };
   };
@@ -155,6 +165,7 @@ export const createCompositionParser = (
   definitions: readonly AnyPrimitiveDefinition[]
 ): ((value: unknown) => ParsedComposition) => {
   const schema = getCompositionSchemaForDefinitions(definitions);
+  const formatIssues = createNodeIssueFormatter(definitions);
   return (value) => {
     const result = schema.safeParse(value, { reportInput: true });
     if (result.success) {
@@ -164,7 +175,10 @@ export const createCompositionParser = (
         composition: result.data as unknown as Composition,
       };
     }
-    return { valid: false, errors: formatZodIssues(result.error.issues) };
+    return {
+      valid: false,
+      errors: formatIssues(bodyRoots(value), result.error.issues),
+    };
   };
 };
 
@@ -214,7 +228,7 @@ const collectMissingSvgHeightWarnings = (
       warnings.push({
         surface: 'svg',
         path,
-        message: `${path} type "${type}" declares no svgHeight metric and will be measured as 0, sizing the frame short`,
+        message: `${path} type ${quoteText(type)} declares no svgHeight metric and will be measured as 0, sizing the frame short`,
       });
     }
     walk(node).forEach(({ node: child, path: field }) => {
@@ -243,13 +257,14 @@ const collectDuplicateNodeIdErrors = (
     if (!node || typeof node !== 'object') {
       return;
     }
-    const { id } = node as { id?: unknown };
+    const { id, type } = node as { id?: unknown; type?: unknown };
     if (typeof id === 'string') {
       const first = seen.get(id);
       if (first) {
         errors.push({
           path: `${path}.id`,
-          message: `duplicates id "${id}" first used at ${first}`,
+          message: `duplicates id ${quoteText(id)} first used at ${first}`,
+          ...(typeof type === 'string' ? { nodeType: type } : {}),
         });
       } else {
         seen.set(id, path);
