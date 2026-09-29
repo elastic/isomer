@@ -29,6 +29,8 @@ const notWords = new Set([
   'type',
   'id',
   'tone',
+  'href',
+  'hrefs',
   'url',
   'size',
   'language',

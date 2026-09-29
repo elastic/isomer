@@ -45,7 +45,7 @@ export const schema = z
       .optional(),
     aside: unresolvedBodyNodeSchema
       .describe(
-        'One compact node drawn beside the title in a column under half the slide, such as a short `slideBulletList` of what the subject does. Omit to leave the title alone.'
+        'One compact node drawn beside the title in a column under half the slide: a `slideFanout` of what the subject feeds, or a short `slideList` or `slideBulletList`. Omit to leave the title alone.'
       )
       .optional(),
     size: sizeField(),

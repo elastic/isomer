@@ -7,7 +7,7 @@
 
 // Bounded before marks are parsed or text is measured, at more than any slide can draw.
 
-import { z } from '@elastic/isomer-sdk';
+import { navigationHref, z } from '@elastic/isomer-sdk';
 
 import {
   frameBodyCharacters,
@@ -19,3 +19,6 @@ export const lineText = () => z.string().min(1).max(frameLineCharacters);
 
 /** A field that wraps. */
 export const wrappedText = () => z.string().min(1).max(frameBodyCharacters);
+
+/** An `href`, bounded as {@link lineText} is. */
+export const boundedHref = () => navigationHref().max(frameLineCharacters);
