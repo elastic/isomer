@@ -192,7 +192,10 @@ const itemInline = (item: ListItem): SlackRichTextInline[] =>
     .flatMap((child, index): SlackRichTextInline[] => [
       ...(index > 0 ? textElement('\n', {}) : []),
       ...('children' in child && child.type !== 'table'
-        ? inline(child.children as PhrasingContent[])
+        ? inline(
+            child.children as PhrasingContent[],
+            child.type === 'heading' ? { bold: true } : {}
+          )
         : textElement(
             plainText(child),
             child.type === 'code' ? { code: true } : {}

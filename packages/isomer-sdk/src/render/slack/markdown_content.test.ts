@@ -208,6 +208,15 @@ describe('markdownContentToSlackBlocks', () => {
     expect(length).toBe(SLACK_LIMITS.sectionTextChars);
   });
 
+  it('bolds a heading inside a list item as it does at the top level', () => {
+    const [block] = markdownContentToSlackBlocks(md.list([md.heading(3, 'h')]));
+    expect(block).toMatchObject({
+      elements: [
+        { elements: [{ elements: [{ text: 'h', style: { bold: true } }] }] },
+      ],
+    });
+  });
+
   it('numbers a list authored from 0 from 1, sending no negative offset', () => {
     const [block] = markdownContentToSlackBlocks(
       md.list(['a'], { ordered: true, start: 0 })
