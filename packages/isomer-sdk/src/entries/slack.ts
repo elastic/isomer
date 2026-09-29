@@ -67,6 +67,7 @@ export {
   italic,
   joinMrkdwn,
   link,
+  markdownContentToSlackBlocks,
   renderSlackEnvelope,
   slackActionId,
   slackButtonStyle,

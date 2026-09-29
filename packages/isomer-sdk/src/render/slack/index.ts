@@ -86,3 +86,5 @@ export {
   link,
   strike,
 } from './format';
+
+export { markdownContentToSlackBlocks } from './markdown_content';

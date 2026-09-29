@@ -113,6 +113,42 @@ describe('createPrimitiveDispatcher', () => {
     expect(blocks).toEqual(gfmToSlackBlocks('Aside'));
   });
 
+  it('degrades builder content through its tree, not the string translator', () => {
+    const builtNote = definePrimitive<TaggedNote>({
+      type: 'note',
+      catalog: {
+        type: 'note',
+        purpose: '',
+        useWhen: [],
+        avoidWhen: [],
+        example: {},
+      },
+      examples: [],
+      schema: z.object({ type: z.literal('note'), body: z.string() }),
+      renderers: {
+        react: (node) => node.body,
+        text: (node) => node.body,
+        markdown: (node) => md.paragraph(md.strong(node.body)),
+      },
+    });
+    expect(
+      createPrimitiveDispatcher<TaggedNote>([builtNote]).renderSlack({
+        type: 'note',
+        body: '_x_',
+      })
+    ).toEqual([
+      {
+        type: 'rich_text',
+        elements: [
+          {
+            type: 'rich_text_section',
+            elements: [{ type: 'text', text: '_x_', style: { bold: true } }],
+          },
+        ],
+      },
+    ]);
+  });
+
   // The envelope only ever sees a container's own output, so a child that
   // degraded to nothing here could not be recovered downstream.
   it('degrades a child with no slack renderer nested inside a container', () => {

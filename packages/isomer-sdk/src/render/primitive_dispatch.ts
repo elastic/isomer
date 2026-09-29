@@ -29,6 +29,7 @@ import { markdownFromString, serializeMarkdown } from './markdown/builder';
 import type { SlackAssetCollector } from './slack/assets';
 import type { SlackBlock, SlackImageBlock } from './slack/blocks';
 import { gfmToSlackBlocks } from './slack/format';
+import { markdownContentToSlackBlocks } from './slack/markdown_content';
 
 /**
  * Renders a node on any surface by looking its `type` up in one flattened
@@ -272,8 +273,11 @@ export const createPrimitiveDispatcher = <
         // Degrading here rather than in the envelope is what reaches nested
         // children: a container's `slack` renderer recurses through this
         // method, and the envelope only ever sees the container's own output.
+        const markdown = renderOn('markdown', node, {}) ?? '';
         return asSlackPayload<T['slackBlock']>(
-          gfmToSlackBlocks(renderMarkdown(node))
+          typeof markdown === 'string'
+            ? gfmToSlackBlocks(markdown)
+            : markdownContentToSlackBlocks(markdown)
         );
       }
       const safeNode = sanitizeNode(definition, node);
