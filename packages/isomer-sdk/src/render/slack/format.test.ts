@@ -99,6 +99,12 @@ describe('gfmToSlackMrkdwn', () => {
     );
   });
 
+  it('decodes fenced table cells as the table block does', () => {
+    expect(
+      gfmToSlackMrkdwn('| a \\| b | &#x20;c |\n| --- | --- |\n| 1\\* | 2 |')
+    ).toBe('```\n| a | b |  c |\n| --- | --- |\n| 1* | 2 |\n```');
+  });
+
   it('keeps the blockquote prefix and translates its body', () => {
     expect(gfmToSlackMrkdwn('> **note** & more')).toBe('> *note* &amp; more');
   });
@@ -133,6 +139,40 @@ describe('gfmToSlackMrkdwn', () => {
   it('keeps backslashes inside code spans in headings and emphasis', () => {
     expect(gfmToSlackMrkdwn('# use `x\\*y`')).toBe('*use `x\\*y`*');
     expect(gfmToSlackMrkdwn('**`a\\.b`**')).toBe('*`a\\.b`*');
+  });
+
+  it('reads an escaped closing delimiter as text', () => {
+    expect(
+      gfmToSlackMrkdwn('[x](https://a.b/a\\)b) [y](https://a.b/(c))')
+    ).toBe('<https://a.b/a)b|x> <https://a.b/(c)|y>');
+    expect(gfmToSlackMrkdwn('# title \\#')).toBe('*title #*');
+    expect(gfmToSlackMrkdwn('# title #')).toBe('*title*');
+  });
+
+  it('decodes a control-character reference to U+FFFD, as micromark does', () => {
+    expect(gfmToSlackMrkdwn('a&#x80;b&#127;c&#9;d')).toBe('a\uFFFDb\uFFFDc\td');
+  });
+
+  it('translates adversarial lines in linear time', () => {
+    const size = 50_000;
+    const inputs = [
+      '`'.repeat(size),
+      Array.from({ length: size / 4 }, (_, i) => '`'.repeat((i % 7) + 1)).join(
+        ' '
+      ),
+      '\\*'.repeat(size),
+      '['.repeat(size),
+      '[a](x'.repeat(size / 5),
+      `# a${' '.repeat(size)}x`,
+      `| ${'`'.repeat(size)} | b |\n| - | - |`,
+      `${'| - '.repeat(size / 4)}x`,
+    ];
+    const started = performance.now();
+    for (const input of inputs) {
+      gfmToSlackMrkdwn(input);
+      gfmToSlackBlocks(input);
+    }
+    expect(performance.now() - started).toBeLessThan(2_000);
   });
 
   it('applies the URL policy to the decoded destination', () => {
@@ -227,6 +267,19 @@ describe('gfmToSlackBlocks', () => {
       [
         { type: 'raw_text', text: '1*' },
         { type: 'raw_text', text: '_2' },
+      ],
+    ]);
+  });
+
+  it('splits on a pipe after an even run of backslashes', () => {
+    const [table] = gfmToSlackBlocks('| a \\\\| b |\n| - | - |');
+    if (table?.type !== 'table') {
+      throw new Error('expected a table block');
+    }
+    expect(table.rows).toEqual([
+      [
+        { type: 'raw_text', text: 'a \\' },
+        { type: 'raw_text', text: 'b' },
       ],
     ]);
   });

@@ -136,104 +136,171 @@ export const joinMrkdwn = (
 // dispatcher runs it through here to fill a `section` block when a primitive
 // has no stronger Block Kit override.
 
+type InlineKind = 'escape' | 'code' | 'link' | 'bold' | 'italic';
+
 interface InlineSegment {
   kind: 'text' | 'code' | 'bold' | 'italic' | 'link';
   text: string;
   url?: string;
 }
 
-const BOLD_RE = /\*\*((?:\\.|[^*\n\\])+?)\*\*/;
-const ITALIC_RE = /(?<![\w])_((?:\\.|[^_\n\\])+?)_(?![\w])/;
-const LINK_RE = /\[((?:\\.|[^\]\\])+)\]\(([^)]+)\)/;
-const CODE_RE = /`([^`\n]+)`/;
-// A CommonMark backslash escape: any ASCII punctuation character.
-const ESCAPE_RE = /\\([!-/:-@[-`{-~])/;
-// An escape, a code span (left as written), or a numeric character reference.
-const UNESCAPE_RE =
-  /\\([!-/:-@[-`{-~])|(`+)(?:(?!\2)[\s\S])+?\2(?!`)|&#(?:[xX]([0-9a-fA-F]{1,6})|(\d{1,7}));/g;
+// In tie order. Each label, destination, or body stops at the first character
+// that cannot continue it, so one search from a position is linear.
+const INLINE_PATTERNS: ReadonlyArray<{ kind: InlineKind; pattern: RegExp }> = [
+  // A CommonMark backslash escape: any ASCII punctuation character.
+  { kind: 'escape', pattern: /\\([!-/:-@[-`{-~])/g },
+  { kind: 'code', pattern: /`([^`\n]+)`/g },
+  {
+    kind: 'link',
+    pattern:
+      /\[((?:\\.|[^[\]\\])+)\]\((<[^<>\n]*>|(?:\\.|[^\s()\\]|\([^()\s]*\))+)\)/g,
+  },
+  { kind: 'bold', pattern: /\*\*((?:\\.|[^*\n\\])+?)\*\*/g },
+  { kind: 'italic', pattern: /(?<![\w])_((?:\\.|[^_\n\\])+?)_(?![\w])/g },
+];
 
+const ASCII_PUNCTUATION_RE = /[!-/:-@[-`{-~]/;
+const NUMERIC_REFERENCE_RE = /&#(?:[xX]([0-9a-fA-F]{1,6})|(\d{1,7}));/y;
+
+// micromark's rule: controls other than tab and line breaks, surrogates,
+// noncharacters, and out-of-range values become U+FFFD.
 const decodeCodePoint = (codePoint: number): string =>
-  codePoint > 0 &&
-  codePoint <= 0x10ffff &&
-  (codePoint < 0xd800 || codePoint > 0xdfff)
-    ? String.fromCodePoint(codePoint)
-    : '\uFFFD';
+  codePoint < 9 ||
+  codePoint === 11 ||
+  (codePoint > 13 && codePoint < 32) ||
+  (codePoint > 126 && codePoint < 160) ||
+  (codePoint > 55_295 && codePoint < 57_344) ||
+  (codePoint > 64_975 && codePoint < 65_008) ||
+  codePoint % 65_536 >= 65_534 ||
+  codePoint > 1_114_111
+    ? '\uFFFD'
+    : String.fromCodePoint(codePoint);
+
+const backtickRunEnd = (text: string, start: number): number => {
+  let end = start;
+  while (text[end] === '`') {
+    end += 1;
+  }
+  return end;
+};
+
+// Where the next backtick run exactly `length` long starts, or -1.
+const closingFence = (text: string, from: number, length: number): number => {
+  let start = text.indexOf('`', from);
+  while (start !== -1) {
+    const end = backtickRunEnd(text, start);
+    if (end - start === length) {
+      return start;
+    }
+    start = text.indexOf('`', end);
+  }
+  return -1;
+};
 
 // Resolves the backslash escapes and numeric character references a GFM
-// serializer writes, which Slack would otherwise show literally.
-const unescapeGfm = (text: string): string =>
-  text.replace(
-    UNESCAPE_RE,
-    (
-      match,
-      escaped?: string,
-      fence?: string,
-      hex?: string,
-      decimal?: string
-    ) => {
-      if (escaped !== undefined) {
-        return escaped;
-      }
-      if (fence !== undefined) {
-        return match;
-      }
-      return decodeCodePoint(
-        hex === undefined ? Number(decimal) : parseInt(hex, 16)
-      );
+// serializer writes, which Slack would otherwise show literally, and leaves
+// code spans as written.
+const unescapeGfm = (text: string): string => {
+  let out = '';
+  let index = 0;
+  // A fence length with no closer from one position has none from any later one.
+  const unclosed = new Set<number>();
+  while (index < text.length) {
+    const char = text[index]!;
+    const next = text[index + 1];
+    if (
+      char === '\\' &&
+      next !== undefined &&
+      ASCII_PUNCTUATION_RE.test(next)
+    ) {
+      out += next;
+      index += 2;
+      continue;
     }
-  );
+    if (char === '`') {
+      const fenceEnd = backtickRunEnd(text, index);
+      const length = fenceEnd - index;
+      const close = unclosed.has(length)
+        ? -1
+        : closingFence(text, fenceEnd, length);
+      if (close === -1) {
+        unclosed.add(length);
+        out += text.slice(index, fenceEnd);
+        index = fenceEnd;
+      } else {
+        out += text.slice(index, close + length);
+        index = close + length;
+      }
+      continue;
+    }
+    if (char === '&') {
+      NUMERIC_REFERENCE_RE.lastIndex = index;
+      const reference = NUMERIC_REFERENCE_RE.exec(text);
+      if (reference) {
+        const [match, hex, decimal] = reference;
+        out += decodeCodePoint(
+          hex === undefined ? Number(decimal) : parseInt(hex, 16)
+        );
+        index += match.length;
+        continue;
+      }
+    }
+    out += char;
+    index += 1;
+  }
+  return out;
+};
 
 // A link destination may be wrapped in angle brackets (`[x](<dest>)`).
 const linkDestination = (dest: string): string =>
   unescapeGfm(dest.replace(/^<([^<>]*)>$/, '$1'));
 
-// Tokenizes a single line of GFM into ordered inline segments. Order matters:
-// code spans win over everything (no inner formatting), then links, then
-// bold (which uses `**` so we must consume both characters before italic with
-// `_` is considered). An escaped character is text and never a delimiter.
+// Tokenizes a single line of GFM into ordered inline segments. The earliest
+// match wins; on a tie, the order of `INLINE_PATTERNS` does. An escaped
+// character is text and never a delimiter. Each pattern's next match is reused
+// until the cursor passes it, so a line is not rescanned per segment.
 const tokenizeInline = (line: string): InlineSegment[] => {
   const segments: InlineSegment[] = [];
+  const found = new Map<InlineKind, RegExpExecArray | null>();
+  const nextMatch = (
+    kind: InlineKind,
+    pattern: RegExp,
+    cursor: number
+  ): RegExpExecArray | null => {
+    const cached = found.get(kind);
+    if (cached === null || (cached !== undefined && cached.index >= cursor)) {
+      return cached;
+    }
+    pattern.lastIndex = cursor;
+    const match = pattern.exec(line);
+    found.set(kind, match);
+    return match;
+  };
   let cursor = 0;
   while (cursor < line.length) {
-    const remainder = line.slice(cursor);
-    const codeMatch = CODE_RE.exec(remainder);
-    const linkMatch = LINK_RE.exec(remainder);
-    const boldMatch = BOLD_RE.exec(remainder);
-    const italicMatch = ITALIC_RE.exec(remainder);
-    const escapeMatch = ESCAPE_RE.exec(remainder);
-    const candidates = [
-      { kind: 'escape' as const, match: escapeMatch },
-      { kind: 'code' as const, match: codeMatch },
-      { kind: 'link' as const, match: linkMatch },
-      { kind: 'bold' as const, match: boldMatch },
-      { kind: 'italic' as const, match: italicMatch },
-    ].filter((c): c is { kind: typeof c.kind; match: RegExpExecArray } =>
-      Boolean(c.match)
-    );
-    if (candidates.length === 0) {
-      segments.push({ kind: 'text', text: remainder });
+    let first: { kind: InlineKind; match: RegExpExecArray } | undefined;
+    for (const { kind, pattern } of INLINE_PATTERNS) {
+      const match = nextMatch(kind, pattern, cursor);
+      if (match && (first === undefined || match.index < first.match.index)) {
+        first = { kind, match };
+      }
+    }
+    if (first === undefined) {
+      segments.push({ kind: 'text', text: line.slice(cursor) });
       break;
     }
-    candidates.sort((a, b) => a.match.index - b.match.index);
-    const first = candidates[0]!;
-    if (first.match.index > 0) {
-      segments.push({
-        kind: 'text',
-        text: remainder.slice(0, first.match.index),
-      });
+    const { kind, match } = first;
+    if (match.index > cursor) {
+      segments.push({ kind: 'text', text: line.slice(cursor, match.index) });
     }
-    if (first.kind === 'escape') {
-      segments.push({ kind: 'text', text: first.match[1] ?? '' });
-    } else if (first.kind === 'link') {
-      segments.push({
-        kind: 'link',
-        text: first.match[1] ?? '',
-        url: first.match[2] ?? '',
-      });
+    if (kind === 'escape') {
+      segments.push({ kind: 'text', text: match[1] ?? '' });
+    } else if (kind === 'link') {
+      segments.push({ kind, text: match[1] ?? '', url: match[2] ?? '' });
     } else {
-      segments.push({ kind: first.kind, text: first.match[1] ?? '' });
+      segments.push({ kind, text: match[1] ?? '' });
     }
-    cursor += first.match.index + first.match[0].length;
+    cursor = match.index + match[0].length;
   }
   return segments;
 };
@@ -267,11 +334,54 @@ const renderInline = (line: string): string => {
     .join('');
 };
 
-const HEADING_RE = /^(#{1,6})\s+(.+?)\s*#*\s*$/;
 const FENCE_RE = /^\s*```/;
 const TABLE_SEPARATOR_RE = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$/;
 const TABLE_ROW_RE = /^\s*\|.*\|\s*$/;
 const BLOCKQUOTE_RE = /^(>\s?)(.*)$/;
+
+// An ATX heading's text without its closing `#` run, or `undefined`. An
+// escaped `\#` is text, not part of the closing run.
+const headingText = (line: string): string | undefined => {
+  const text = /^#{1,6}[ \t]+(.*)$/.exec(line)?.[1]?.trimEnd();
+  if (text === undefined) {
+    return undefined;
+  }
+  const closing = /(?:^|[ \t])#+$/.exec(text);
+  const content = closing ? text.slice(0, closing.index).trimEnd() : text;
+  return content.length > 0 ? content : undefined;
+};
+
+// Splits a `| a | b |` row on its unescaped pipes into cell text, dropping the
+// optional leading/trailing pipes. GFM unescapes `\|` before reading a cell,
+// code spans included.
+const splitPipeRow = (line: string): string[] => {
+  const row = line.trim();
+  const cells: string[] = [];
+  let cell = '';
+  let endsWithPipe = false;
+  for (let index = 0; index < row.length; index += 1) {
+    const char = row[index]!;
+    const next = row[index + 1];
+    endsWithPipe = false;
+    if (char === '\\' && next !== undefined) {
+      cell += next === '|' ? '|' : `\\${next}`;
+      index += 1;
+    } else if (char === '|') {
+      cells.push(cell);
+      cell = '';
+      endsWithPipe = true;
+    } else {
+      cell += char;
+    }
+  }
+  if (!endsWithPipe) {
+    cells.push(cell);
+  }
+  if (row.startsWith('|')) {
+    cells.shift();
+  }
+  return cells.map((value) => unescapeGfm(value.trim()));
+};
 
 /**
  * Translates GFM into one Slack `mrkdwn` string:
@@ -319,16 +429,22 @@ export const gfmToSlackMrkdwn = (gfm: string): string => {
         i += 1;
       }
       out.push('```');
-      out.push(...tableLines);
+      out.push(
+        ...tableLines.map((row) =>
+          TABLE_SEPARATOR_RE.test(row)
+            ? row
+            : `| ${splitPipeRow(row).join(' | ')} |`
+        )
+      );
       out.push('```');
       continue;
     }
-    const headingMatch = line.match(HEADING_RE);
-    if (headingMatch) {
+    const heading = headingText(line);
+    if (heading !== undefined) {
       // Headings have no first-class mrkdwn equivalent. Bolding the text keeps
       // the visual hierarchy without inventing markup Slack would render as
       // a literal `#`.
-      out.push(bold(unescapeGfm(headingMatch[2] ?? '')));
+      out.push(bold(unescapeGfm(heading)));
       i += 1;
       continue;
     }
@@ -366,17 +482,6 @@ const slackPreformattedBlock = (code: string): SlackRichTextBlock => ({
     },
   ],
 });
-
-// Splits a `| a | b |` row on its unescaped pipes into cell text, dropping the
-// optional leading/trailing pipes.
-const splitPipeRow = (line: string): string[] =>
-  line
-    .trim()
-    .replace(/^\|/, '')
-    .replace(/(?<!\\)\|$/, '')
-    .split(/(?<!\\)\|/)
-    // GFM unescapes `\|` in a cell before reading it, code spans included.
-    .map((cell) => unescapeGfm(cell.trim().replaceAll('\\|', '|')));
 
 // Reads a GFM alignment marker (`:---`, `---:`, `:---:`) into a column align.
 const parseColumnAlign = (marker: string): 'left' | 'center' | 'right' => {
