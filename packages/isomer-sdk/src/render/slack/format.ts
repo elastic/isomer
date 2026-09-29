@@ -77,7 +77,23 @@ const HTTP_AUTHORITY_RE = /^https?:\/\/[^/?#\\]/i;
 
 /** Whether `url` is an `http:` or `https:` URL with a host. */
 export const isAbsoluteHttpUrl = (url: string): boolean =>
-  HTTP_AUTHORITY_RE.test(url) && Boolean(parsedUrl(url)?.hostname);
+  HTTP_AUTHORITY_RE.test(url) && /[^.]/.test(parsedUrl(url)?.hostname ?? '');
+
+const decoded = (value: string): string => {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return '';
+  }
+};
+
+// At least one of the comma-separated recipients is an `x@y` address.
+const hasMailtoRecipient = (url: string): boolean => {
+  const [, recipients = ''] = /^mailto:([^?]*)/i.exec(url) ?? [];
+  return recipients
+    .split(',')
+    .some((recipient) => /^[^\s@]+@[^\s@/]+$/.test(decoded(recipient).trim()));
+};
 
 /**
  * `href` when it passes {@link sanitizeNavigationHref} as an absolute URL,
@@ -88,10 +104,7 @@ export const slackLinkUrl = (href: string): string | null => {
   if (url === null) {
     return null;
   }
-  return isAbsoluteHttpUrl(url) ||
-    (/^mailto:/i.test(url) && Boolean(parsedUrl(url)?.pathname))
-    ? url
-    : null;
+  return isAbsoluteHttpUrl(url) || hasMailtoRecipient(url) ? url : null;
 };
 
 /**

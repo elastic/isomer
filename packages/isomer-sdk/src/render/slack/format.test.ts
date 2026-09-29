@@ -52,6 +52,14 @@ describe('mrkdwn helpers', () => {
     expect(link('javascript:alert(1)', 'Click')).toBe('Click');
     expect(link('javascript:alert(1)')).toBe('javascript:alert(1)');
     expect(link('mailto:a@b.c', 'Mail')).toBe('<mailto:a@b.c|Mail>');
+    for (const href of [
+      'mailto:a%40b.c',
+      'mailto:,a@b.c',
+      'mailto:a@b.c,d@e.f?subject=x',
+      'https://u@a.b:8080/p',
+    ]) {
+      expect(link(href, 'x')).toBe(`<${escapeMrkdwn(href)}|x>`);
+    }
   });
 
   it.each([
@@ -65,6 +73,16 @@ describe('mrkdwn helpers', () => {
     'http://\\host',
     'mailto:',
     'mailto:?subject=x',
+    'mailto:/',
+    'mailto://host/a',
+    'mailto:a@',
+    'mailto:@b',
+    'mailto:%zz',
+    'http://@/',
+    'https://:80',
+    'http://user:pw@',
+    'http://./',
+    'https://..',
   ])('prints the label of a link to %s, which Slack cannot resolve', (href) => {
     expect(link(href, 'x')).toBe('x');
     expect(gfmToSlackMrkdwn(`[x](${href}) ![alt](${href})`)).toBe('x alt');
