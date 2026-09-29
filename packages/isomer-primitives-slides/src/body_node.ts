@@ -14,23 +14,29 @@
 
 import type { SlideBulletListNode } from './primitives/slide_bullet_list';
 import type { SlideCodeNode } from './primitives/slide_code';
+import type { SlideCommandNode } from './primitives/slide_command';
+import type { SlideDiffNode } from './primitives/slide_diff';
 import type { SlideFrameNode } from './primitives/slide_frame';
 import type { SlideHeadingNode } from './primitives/slide_heading';
 import type { SlideSplitNode } from './primitives/slide_split';
 import type { SlideStackNode } from './primitives/slide_stack';
 import type { SlideTerritoryGroupNode } from './primitives/slide_territory_group';
 import type { SlideTitleNode } from './primitives/slide_title';
+import type { SlideTranscriptNode } from './primitives/slide_transcript';
 
 /** Discriminated union of every node type this pack defines. */
 export type BodyNode =
   | SlideBulletListNode
   | SlideCodeNode
+  | SlideCommandNode
+  | SlideDiffNode
   | SlideFrameNode
   | SlideHeadingNode
   | SlideSplitNode
   | SlideStackNode
   | SlideTerritoryGroupNode
-  | SlideTitleNode;
+  | SlideTitleNode
+  | SlideTranscriptNode;
 
 /** A {@link BodyNode} that may nest inside a {@link SlideFrameNode}; frames cannot nest. */
 export type SlideContentNode = Exclude<BodyNode, SlideFrameNode>;

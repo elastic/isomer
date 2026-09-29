@@ -18,7 +18,10 @@ export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
   { title: 'Layout', types: ['slideSplit', 'slideStack'] },
   { title: 'Text', types: ['slideBulletList'] },
   { title: 'Diagrams', types: ['slideTerritoryGroup'] },
-  { title: 'Code', types: ['slideCode'] },
+  {
+    title: 'Code',
+    types: ['slideCode', 'slideDiff', 'slideCommand', 'slideTranscript'],
+  },
 ];
 
 export const slidesPackAuthoring = {
@@ -34,5 +37,7 @@ export const slidesPackAuthoring = {
       'The title slide. Its aside is one slide node, never a slideFrame.',
     slideCode:
       'One or two code panels. Every highlighted line number exists in its panel.',
+    slideCommand:
+      'One shell command on a single line, without the prompt. highlightPrefix, when given, starts command.',
   },
 } satisfies PackAuthoringOptions;

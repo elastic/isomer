@@ -172,7 +172,7 @@ Each primitive's `index.test.ts` covers its schema rejections and every surface'
 - `src/primitives/authored_text.test.ts` fails when any string in an example accepts more text than the body can draw.
 - `src/heading_levels.test.ts` fails when an example's HTML headings and Markdown headings differ in level or order.
 
-The tests that rasterize need `@elastic/isomer-image-takumi` and `@fontsource/*` as devDependencies.
+The tests that rasterize need `@elastic/isomer-image-takumi` and `@fontsource/*` as devDependencies. `src/primitives/slide_command/copy.test.ts` runs under `jsdom` through a `// @vitest-environment jsdom` pragma, so a pack lifted out of this monorepo installs `jsdom` too.
 
 ## Registering the primitive
 

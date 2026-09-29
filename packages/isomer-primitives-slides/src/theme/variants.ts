@@ -40,3 +40,15 @@ export type SlideStackSpacing = (typeof slideStackSpacings)[number];
 export const slideBulletMarkers = ['dot', 'check', 'x'] as const;
 
 export type SlideBulletMarker = (typeof slideBulletMarkers)[number];
+
+export const slideDiffOps = ['add', 'remove'] as const;
+
+export type SlideDiffOp = (typeof slideDiffOps)[number];
+
+export const slideTranscriptRoles = ['user', 'model', 'host'] as const;
+
+export type SlideTranscriptRole = (typeof slideTranscriptRoles)[number];
+
+export const slideTranscriptFormats = ['prose', 'code'] as const;
+
+export type SlideTranscriptFormat = (typeof slideTranscriptFormats)[number];

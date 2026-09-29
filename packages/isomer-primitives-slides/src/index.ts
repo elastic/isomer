@@ -26,6 +26,9 @@ export { slidePrimitiveGroups } from './pack_authoring';
 
 export type { SlideBulletListNode } from './primitives/slide_bullet_list';
 export type { SlideCodeNode, SlideCodePanel } from './primitives/slide_code';
+export { SLIDE_COPY, slideCopyEnhancement } from './primitives/slide_command';
+export type { SlideCommandNode } from './primitives/slide_command';
+export type { SlideDiffLine, SlideDiffNode } from './primitives/slide_diff';
 export { SlideFrameView } from './primitives/slide_frame';
 export type { SlideFrameNode } from './primitives/slide_frame';
 export type { SlideHeadingNode } from './primitives/slide_heading';
@@ -39,6 +42,10 @@ export type {
   SlideTitleDefinition,
   SlideTitleNode,
 } from './primitives/slide_title';
+export type {
+  SlideTranscriptNode,
+  SlideTranscriptTurn,
+} from './primitives/slide_transcript';
 
 export { slideDeckPrimitives, slidePrimitiveTypes } from './registry';
 
@@ -56,19 +63,25 @@ export { slideFontFaces, slidePaletteForMode } from './theme';
 export type { SlideFontFace, SlideFrameTheme, SlidePalette } from './theme';
 export {
   slideBulletMarkers,
+  slideDiffOps,
   slideFrameTones,
   slideSizes,
   slideSplitDividers,
   slideSplitRatios,
   slideStackSpacings,
   slideTones,
+  slideTranscriptFormats,
+  slideTranscriptRoles,
 } from './theme';
 export type {
   SlideBulletMarker,
+  SlideDiffOp,
   SlideFrameTone,
   SlideSize,
   SlideSplitDivider,
   SlideSplitRatio,
   SlideStackSpacing,
   SlideTone,
+  SlideTranscriptFormat,
+  SlideTranscriptRole,
 } from './theme';

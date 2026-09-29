@@ -8,6 +8,8 @@
 import { color, font, inverse, radius, space, stroke, type } from './base';
 import { bulletList } from './components/bullet_list';
 import { code } from './components/code';
+import { command } from './components/command';
+import { diff } from './components/diff';
 import { frame } from './components/frame';
 import { heading } from './components/heading';
 import { marks } from './components/marks';
@@ -16,6 +18,7 @@ import { split } from './components/split';
 import { stack } from './components/stack';
 import { territoryGroup } from './components/territory_group';
 import { title } from './components/title';
+import { transcript } from './components/transcript';
 
 /**
  * Every value the pack renders, in one tree. `lightDark` leaves become
@@ -37,11 +40,14 @@ export const SLIDE_THEME = {
   frame,
   bulletList,
   code,
+  command,
+  diff,
   heading,
   split,
   stack,
   territoryGroup,
   title,
+  transcript,
 } as const;
 
 export type SlideColorName = keyof typeof color;
