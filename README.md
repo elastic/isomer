@@ -25,35 +25,41 @@ The reference pack's title slide is one composition. These are its committed out
 
 The `svg` surface, rasterized to PNG:
 
-![The reference deck's title slide, rendered to PNG through the svg surface](packages/isomer-primitives-slides/src/examples/deck/output/title-slide.png)
+![The reference pack's title slide, rendered to PNG through the svg surface](packages/isomer-primitives-slides/src/examples/output/title-slide.png)
 
 The `markdown` surface:
 
 ```markdown
-# Title slide
-
-## 01 · Primitives
+# Isomer
 
 _Reference pack_
 
-## One composition, every surface.
+One composition, **every surface**.
 
-The same spec renders as HTML, markdown, text, Slack, and SVG.
+- ✓ React and HTML
+- ✓ Markdown and plain text
+- ✓ Slack Block Kit
+- ✓ SVG and PNG
+
+_Isomer · [elastic.github.io/isomer](https://elastic.github.io/isomer)_
 ```
 
 The `text` surface:
 
 ```text
-TITLE SLIDE
-
-01 · Primitives
-
-Reference pack
+REFERENCE PACK
+Isomer
 One composition, every surface.
-The same spec renders as HTML, markdown, text, Slack, and SVG.
+
+✓ React and HTML
+✓ Markdown and plain text
+✓ Slack Block Kit
+✓ SVG and PNG
+
+Isomer · elastic.github.io/isomer
 ```
 
-Slack gets a `header` block and one `mrkdwn` section, and HTML gets a `section.isomer` with only the CSS the slide uses. Every output of every example is in the [reference pack's examples](packages/isomer-primitives-slides/docs/example.md).
+Slack gets a `header` block, the eyebrow and footer as `context` blocks, the tagline as a `section`, and the list as a native `rich_text` list, and HTML gets a `section.isomer` with only the CSS the slide uses. The reference pack's [worked example](packages/isomer-primitives-slides/docs/example.md) has the rest of its output.
 
 ## Two ways a composition is made
 

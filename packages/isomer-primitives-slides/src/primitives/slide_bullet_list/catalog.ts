@@ -12,8 +12,15 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideBulletListNode}. */
 export const catalog = {
   type: 'slideBulletList',
-  purpose: 'Render concise slide bullets with a consistent marker.',
-  useWhen: ['A slide needs a short list of implications or constraints.'],
-  avoidWhen: ['The list is tabular or requires nested hierarchy.'],
+  purpose:
+    'Give the audience a few short, unordered points, marked as neutral, done, or left out.',
+  useWhen: [
+    'You have two to six short points with no names or numbers to key them by.',
+    'You want to show what is in scope and what is not, with `check` and `x` markers.',
+  ],
+  avoidWhen: [
+    'The points split by who owns them; use slideTerritoryGroup.',
+    'The points are source code or commands; use slideCode.',
+  ],
   example,
 } satisfies PrimitiveCatalogEntry;

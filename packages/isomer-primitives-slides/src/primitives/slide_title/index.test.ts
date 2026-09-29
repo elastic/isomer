@@ -5,19 +5,187 @@
  * 2.0.
  */
 
+import { createIsomerRuntime } from '@elastic/isomer-runtime';
+import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
-import { markdown } from './index';
+import { slideDeckFrame, slidesPack } from '../../pack';
 
-describe('slideTitle lede markdown link', () => {
-  it('escapes a label containing ] and a destination containing )', () => {
-    const md = markdown({
-      type: 'slideTitle',
-      title: 'T',
-      lede: [
-        { type: 'link', text: 'a] link', href: 'https://example.com/(x)' },
-      ],
-    });
-    expect(md).toContain('[a\\] link](https://example.com/%28x%29)');
+import { example, examples } from './examples';
+
+const runtime = createIsomerRuntime({
+  packs: [slidesPack],
+  frames: { slide: slideDeckFrame },
+});
+
+const compose = (node: PrimitiveNode): Composition => ({
+  type: 'view',
+  body: [
+    { type: 'slideFrame', tone: 'inverse', body: [node] } as PrimitiveNode,
+  ],
+});
+
+describe('slideTitle', () => {
+  it('validates every example inside an inverse frame', () => {
+    for (const node of examples) {
+      expect(runtime.validate(compose(node)).errors).toEqual([]);
+    }
+  });
+
+  it('rejects an aside that is not a slide node', () => {
+    const { errors } = runtime.validate(
+      compose({ ...example, aside: { type: 'nope' } } as PrimitiveNode)
+    );
+    expect(errors).not.toEqual([]);
+  });
+
+  it('rejects the retired fields', () => {
+    const { errors } = runtime.validate(
+      compose({ type: 'slideTitle', title: 'T', lede: 'L' } as PrimitiveNode)
+    );
+    expect(errors).not.toEqual([]);
+  });
+
+  it('renders its own lines, then the aside', () => {
+    const composition = compose(example);
+    expect(runtime.surfaces.text.render(composition)).toMatchInlineSnapshot(`
+      "A GROCERY DELIVERY PLATFORM
+      Crate
+      One order. Every store.
+      crate n. Everything a customer means to buy, carried from whichever store can fill it.
+
+      ✓ Splits one order across nearby stores.
+      ✓ Books one courier for the whole basket.
+      ✓ Charges the card once."
+    `);
+    expect(runtime.surfaces.markdown.render(composition))
+      .toMatchInlineSnapshot(`
+      "# Crate
+
+      _A grocery delivery platform_
+
+      One order. Every store.
+
+      _crate n._ Everything a customer means to buy, carried from whichever store can fill it.
+
+      - ✓ Splits one order across nearby stores.
+      - ✓ Books one courier for the whole basket.
+      - ✓ Charges the card once."
+    `);
+    expect(runtime.surfaces.slack.render(composition).blocks)
+      .toMatchInlineSnapshot(`
+      [
+        {
+          "text": {
+            "emoji": true,
+            "text": "Crate",
+            "type": "plain_text",
+          },
+          "type": "header",
+        },
+        {
+          "elements": [
+            {
+              "text": "*A grocery delivery platform*",
+              "type": "mrkdwn",
+            },
+          ],
+          "type": "context",
+        },
+        {
+          "text": {
+            "text": "One order. Every store.",
+            "type": "mrkdwn",
+          },
+          "type": "section",
+        },
+        {
+          "elements": [
+            {
+              "text": "_crate n._ Everything a customer means to buy, carried from whichever store can fill it.",
+              "type": "mrkdwn",
+            },
+          ],
+          "type": "context",
+        },
+        {
+          "elements": [
+            {
+              "elements": [
+                {
+                  "elements": [
+                    {
+                      "text": "✓ ",
+                      "type": "text",
+                    },
+                    {
+                      "text": "Splits one order across nearby stores.",
+                      "type": "text",
+                    },
+                  ],
+                  "type": "rich_text_section",
+                },
+                {
+                  "elements": [
+                    {
+                      "text": "✓ ",
+                      "type": "text",
+                    },
+                    {
+                      "text": "Books one courier for the whole basket.",
+                      "type": "text",
+                    },
+                  ],
+                  "type": "rich_text_section",
+                },
+                {
+                  "elements": [
+                    {
+                      "text": "✓ ",
+                      "type": "text",
+                    },
+                    {
+                      "text": "Charges the card once.",
+                      "type": "text",
+                    },
+                  ],
+                  "type": "rich_text_section",
+                },
+              ],
+              "style": "bullet",
+              "type": "rich_text_list",
+            },
+          ],
+          "type": "rich_text",
+        },
+      ]
+    `);
+  });
+});
+
+describe('slideTitle logo', () => {
+  const marks = (logo?: boolean): number =>
+    runtime.surfaces.html
+      .render({
+        type: 'view',
+        body: [
+          {
+            type: 'slideFrame',
+            tone: 'inverse',
+            section: 'Opening',
+            sectionNumber: '01',
+            ...(logo === undefined ? {} : { logo }),
+            body: [example],
+          } as PrimitiveNode,
+        ],
+      })
+      .html.split('viewBox="0 0 32 32"').length - 1;
+
+  it('draws the mark on the title and beside the footer by default', () => {
+    expect(marks()).toBe(2);
+  });
+
+  it('leaves both out when its frame sets `logo: false`', () => {
+    expect(marks(false)).toBe(0);
   });
 });

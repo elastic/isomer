@@ -5,7 +5,12 @@
  * 2.0.
  */
 
-export { renderChildren } from './children';
+export {
+  renderMarkdownChildren,
+  renderSlackChildren,
+  renderTextChildren,
+  slackCaption,
+} from './children';
 export { cls } from './cls';
 export type {
   SlidePackTypes,

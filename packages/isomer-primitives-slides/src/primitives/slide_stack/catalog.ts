@@ -12,8 +12,15 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideStackNode}. */
 export const catalog = {
   type: 'slideStack',
-  purpose: 'Stack slide primitives vertically with controlled spacing.',
-  useWhen: ['A slide needs two or more vertically arranged content blocks.'],
-  avoidWhen: ['A split layout or a single block would be clearer.'],
+  purpose:
+    'Keep several nodes together as one block, one above the next, where a slot takes a single node.',
+  useWhen: [
+    'A slot that takes one node, such as a slideTitle aside, needs two.',
+    'Nodes need tighter or looser spacing than the column around them gives.',
+  ],
+  avoidWhen: [
+    'The nodes sit directly in the slide body or a slideSplit pane, which already stack them.',
+    'The two blocks belong side by side; use slideSplit.',
+  ],
   example,
 } satisfies PrimitiveCatalogEntry;

@@ -12,10 +12,8 @@ import type { SlideStackSpacing } from '../../theme/variants';
 
 /** Vertical stack of slide primitives with controlled spacing. */
 export interface SlideStackNode extends PrimitiveNode {
-  /** Discriminator. Always `slideStack`. */
   type: 'slideStack';
-  /** Gap between items. Defaults to `normal`. */
+  /** Defaults to `normal`. */
   spacing?: SlideStackSpacing;
-  /** Nodes from top to bottom. At least one. */
   items: readonly SlideContentNode[];
 }
