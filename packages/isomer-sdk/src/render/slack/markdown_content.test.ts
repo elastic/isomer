@@ -63,7 +63,13 @@ describe('markdownContentToSlackBlocks', () => {
         {
           type: 'rich_text_section',
           elements: [
-            { type: 'link', url: 'https://a.b', text: 'a b' },
+            { type: 'link', url: 'https://a.b', text: 'a ' },
+            {
+              type: 'link',
+              url: 'https://a.b',
+              text: 'b',
+              style: { bold: true },
+            },
             { type: 'link', url: 'https://c.d' },
             { type: 'link', url: 'https://e.f/i.png', text: 'alt' },
             { type: 'text', text: 'data' },
@@ -223,6 +229,45 @@ describe('markdownContentToSlackBlocks', () => {
     );
     expect(block).toMatchObject({ elements: [{ style: 'ordered' }] });
     expect(JSON.stringify(block)).not.toContain('offset');
+  });
+
+  it('keeps a first grapheme when one character of the budget is left', () => {
+    const budget = SLACK_LIMITS.sectionTextChars;
+    const [styled] = markdownContentToSlackBlocks(
+      md.paragraph('a'.repeat(budget - 1), md.strong('bc'))
+    );
+    expect(styled).toMatchObject({
+      elements: [{ elements: [{}, { text: 'b', style: { bold: true } }] }],
+    });
+    const [bare] = markdownContentToSlackBlocks(
+      md.paragraph('a'.repeat(budget - 1), md.link('', 'https://a.b'))
+    );
+    expect(bare).toMatchObject({
+      elements: [{ elements: [{}, { type: 'link', text: 'h' }] }],
+    });
+  });
+
+  it('keeps list item content in source order around a nested list', () => {
+    const [block] = markdownContentToSlackBlocks(
+      md.list([
+        [md.paragraph('before'), md.list(['inner']), md.paragraph('after')],
+        'next',
+      ])
+    );
+    expect(block).toMatchObject({
+      elements: [
+        {
+          type: 'rich_text_list',
+          elements: [{ elements: [{ text: 'before' }] }],
+        },
+        { type: 'rich_text_list', indent: 1 },
+        { type: 'rich_text_section', elements: [{ text: 'after' }] },
+        {
+          type: 'rich_text_list',
+          elements: [{ elements: [{ text: 'next' }] }],
+        },
+      ],
+    });
   });
 
   it('gives no number to an item holding only a nested list', () => {

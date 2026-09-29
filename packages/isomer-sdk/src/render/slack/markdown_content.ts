@@ -31,7 +31,6 @@ import {
   type SlackBlock,
   type SlackRichTextBlockElement,
   type SlackRichTextInline,
-  type SlackRichTextList,
   type SlackRichTextSection,
   type SlackRichTextStyle,
   type SlackTableBlock,
@@ -62,24 +61,24 @@ const textElement = (
     : [{ type: 'text', text, ...(withStyle ? { style: withStyle } : {}) }];
 };
 
-const linkElement = (
+// One link element per styled run of the label, so its formatting survives;
+// an empty label is a bare link.
+const linkRuns = (
   href: string,
-  text: string,
+  runs: SlackRichTextInline[],
   style: SlackRichTextStyle
 ): SlackRichTextInline[] => {
   const url = sanitizeNavigationHref(href);
   if (url === null) {
-    return textElement(text, style);
+    return runs;
   }
-  const withStyle = styled(style);
-  return [
-    {
-      type: 'link',
-      url,
-      ...(text === '' ? {} : { text }),
-      ...(withStyle ? { style: withStyle } : {}),
-    },
-  ];
+  if (runs.length === 0) {
+    const withStyle = styled(style);
+    return [{ type: 'link', url, ...(withStyle ? { style: withStyle } : {}) }];
+  }
+  return runs.map((run) =>
+    run.type === 'text' ? { ...run, type: 'link', url } : run
+  );
 };
 
 const inline = (
@@ -97,10 +96,10 @@ const inline = (
       case 'inlineCode':
         return textElement(node.value, { ...style, code: true });
       case 'link':
-        return linkElement(node.url, plainText(node), style);
+        return linkRuns(node.url, inline(node.children, style), style);
       // Slack draws no inline image, so it links to the source.
       case 'image':
-        return linkElement(node.url, node.alt ?? '', style);
+        return linkRuns(node.url, textElement(node.alt ?? '', style), style);
       case 'break':
         return textElement('\n', style);
       default:
@@ -127,8 +126,9 @@ const clampInline = (
       spent += length;
       continue;
     }
-    if (rest > 1 && element.text !== undefined) {
-      kept.push({ ...element, text: clampSlackText(element.text, rest) });
+    const text = rest > 0 ? clampSlackText(inlineText(element), rest) : '';
+    if (text !== '') {
+      kept.push({ ...element, text });
     }
     break;
   }
@@ -142,17 +142,35 @@ const section = (elements: SlackRichTextInline[]): SlackRichTextSection[] => {
     : [{ type: 'rich_text_section', elements: clamped }];
 };
 
-// An item's paragraphs share one section, so they stay one bullet; a nested
-// list follows at the next indent, and the outer list resumes after it.
-const listElements = (list: List, indent: number): SlackRichTextList[] => {
+const childInline = (
+  child: ListItem['children'][number]
+): SlackRichTextInline[] =>
+  'children' in child && child.type !== 'table'
+    ? inline(
+        child.children as PhrasingContent[],
+        child.type === 'heading' ? { bold: true } : {}
+      )
+    : textElement(
+        plainText(child),
+        child.type === 'code' ? { code: true } : {}
+      );
+
+// An item's children are read in order. Its paragraphs share one bullet; a
+// nested list follows at the next indent; what the item holds after a nested
+// list follows unbulleted, since a Slack list item cannot resume; and the
+// outer list resumes at its next number.
+const listElements = (
+  list: List,
+  indent: number
+): SlackRichTextBlockElement[] => {
   const style = list.ordered ? 'ordered' : 'bullet';
-  const lists: SlackRichTextList[] = [];
+  const out: SlackRichTextBlockElement[] = [];
   let current: SlackRichTextSection[] = [];
   let number = list.start ?? 1;
   let offset = number - 1;
   const flush = (): void => {
     if (current.length > 0) {
-      lists.push({
+      out.push({
         type: 'rich_text_list',
         style,
         ...(indent > 0 ? { indent } : {}),
@@ -166,41 +184,45 @@ const listElements = (list: List, indent: number): SlackRichTextList[] => {
     offset = number - 1;
   };
   for (const item of list.children) {
-    // An item holding only a nested list shows no number, so takes none.
-    const itemSection = section(itemInline(item));
-    current.push(...itemSection);
-    number += itemSection.length;
+    let runs: SlackRichTextInline[] = [];
+    let numbered = false;
+    const emit = (): void => {
+      const sections = section(runs);
+      runs = [];
+      if (sections.length === 0) {
+        return;
+      }
+      if (numbered) {
+        flush();
+        out.push(...sections);
+      } else {
+        current.push(...sections);
+        number += 1;
+        numbered = true;
+      }
+    };
     for (const child of item.children) {
       if (child.type === 'list') {
+        emit();
         flush();
-        lists.push(
+        out.push(
           ...listElements(
             child,
             Math.min(indent + 1, SLACK_LIMITS.richTextListMaxIndent)
           )
         );
+      } else {
+        runs.push(
+          ...(runs.length > 0 ? textElement('\n', {}) : []),
+          ...childInline(child)
+        );
       }
     }
+    emit();
   }
   flush();
-  return lists;
+  return out;
 };
-
-const itemInline = (item: ListItem): SlackRichTextInline[] =>
-  item.children
-    .filter((child) => child.type !== 'list')
-    .flatMap((child, index): SlackRichTextInline[] => [
-      ...(index > 0 ? textElement('\n', {}) : []),
-      ...('children' in child && child.type !== 'table'
-        ? inline(
-            child.children as PhrasingContent[],
-            child.type === 'heading' ? { bold: true } : {}
-          )
-        : textElement(
-            plainText(child),
-            child.type === 'code' ? { code: true } : {}
-          )),
-    ]);
 
 const richTextElements = (node: RootContent): SlackRichTextBlockElement[] => {
   switch (node.type) {
