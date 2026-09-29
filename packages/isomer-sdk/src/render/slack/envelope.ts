@@ -17,15 +17,18 @@ import {
 } from './assets';
 import {
   SLACK_LIMITS,
+  type SlackActionElement,
   type SlackBlock,
   type SlackContextBlock,
   type SlackHeaderBlock,
   type SlackMrkdwnTextObject,
+  type SlackOptionObject,
   type SlackRichTextBlockElement,
   type SlackRichTextInline,
   type SlackSectionBlock,
   type SlackTableBlock,
   type SlackTableCell,
+  type SlackTextObject,
 } from './blocks';
 import {
   bold,
@@ -82,7 +85,7 @@ export interface SlackEnvelopeResult {
  *
  * Degradation for a node with no `slack` renderer is the dispatcher's, which
  * has to own it to reach a child nested inside a container. The result is
- * fitted to Slack's limits — oversized tables
+ * fitted to Slack's limits — Slack-limited text is clamped, oversized tables
  * become sections, spacers and then whole blocks are dropped — so the output is
  * always postable. `assets` stays empty unless `collectAssets` is set.
  */
@@ -109,9 +112,7 @@ export const renderSlackEnvelope = <TNode extends PrimitiveNode>(
     blocks.push(contextBlock([escapeMrkdwn(composition.subtitle)]));
   }
   for (const node of composition.body) {
-    blocks.push(
-      ...clampAssetImageAlts(dispatcher.renderSlack(node, collector))
-    );
+    blocks.push(...dispatcher.renderSlack(node, collector).map(clampBlockText));
   }
 
   const rhythm = applySectionRhythm(
@@ -135,16 +136,136 @@ export const renderSlackEnvelope = <TNode extends PrimitiveNode>(
   };
 };
 
-const clampAssetImageAlts = (blocks: readonly SlackBlock[]): SlackBlock[] =>
-  blocks.map((block) => {
-    if (block.type !== 'image' || block.slack_file?.ref === undefined) {
-      return block;
-    }
+const clampText = <TText extends SlackTextObject>(
+  text: TText,
+  max: number
+): TText =>
+  text.text.length <= max
+    ? text
+    : { ...text, text: clampSlackText(text.text, max) };
+
+const clampAlt = <TImage extends { alt_text: string }>(
+  image: TImage
+): TImage =>
+  image.alt_text.length <= SLACK_LIMITS.imageAltTextChars
+    ? image
+    : {
+        ...image,
+        alt_text: clampSlackText(
+          image.alt_text,
+          SLACK_LIMITS.imageAltTextChars
+        ),
+      };
+
+const clampOption = (option: SlackOptionObject): SlackOptionObject => ({
+  ...option,
+  text: clampText(option.text, SLACK_LIMITS.optionTextChars),
+  ...(option.description && {
+    description: clampText(option.description, SLACK_LIMITS.optionTextChars),
+  }),
+});
+
+// `initial_option(s)` go through the same `clampOption` as `options`, since
+// Slack rejects an initial option that matches none of them.
+const clampControl = (element: SlackActionElement): SlackActionElement => {
+  if (element.type === 'button') {
     return {
-      ...block,
-      alt_text: clampSlackText(block.alt_text, SLACK_LIMITS.imageAltTextChars),
+      ...element,
+      text: clampText(element.text, SLACK_LIMITS.buttonTextChars),
     };
-  });
+  }
+  const menu = { ...element };
+  if (menu.options) {
+    menu.options = menu.options.map(clampOption);
+  }
+  if ('placeholder' in menu && menu.placeholder) {
+    menu.placeholder = clampText(
+      menu.placeholder,
+      SLACK_LIMITS.placeholderChars
+    );
+  }
+  if ('option_groups' in menu && menu.option_groups) {
+    menu.option_groups = menu.option_groups.map((group) => ({
+      ...group,
+      label: clampText(group.label, SLACK_LIMITS.optionGroupLabelChars),
+      options: group.options.map(clampOption),
+    }));
+  }
+  if ('initial_option' in menu && menu.initial_option) {
+    menu.initial_option = clampOption(menu.initial_option);
+  }
+  if ('initial_options' in menu && menu.initial_options) {
+    menu.initial_options = menu.initial_options.map(clampOption);
+  }
+  return menu;
+};
+
+// Pack renderers build their own blocks, and one overlong text makes Slack
+// reject the whole message.
+const clampBlockText = (block: SlackBlock): SlackBlock => {
+  switch (block.type) {
+    case 'header':
+      return {
+        ...block,
+        text: clampText(block.text, SLACK_LIMITS.headerTextChars),
+      };
+    case 'section':
+      return {
+        ...block,
+        ...(block.text && {
+          text: clampText(block.text, SLACK_LIMITS.sectionTextChars),
+        }),
+        ...(block.fields && {
+          fields: block.fields.map((field) =>
+            clampText(field, SLACK_LIMITS.sectionFieldChars)
+          ),
+        }),
+        ...(block.accessory && {
+          accessory:
+            block.accessory.type === 'image'
+              ? clampAlt(block.accessory)
+              : clampControl(block.accessory),
+        }),
+      };
+    case 'context':
+      return {
+        ...block,
+        elements: block.elements.map((element) =>
+          element.type === 'image'
+            ? clampAlt(element)
+            : clampText(element, SLACK_LIMITS.contextElementChars)
+        ),
+      };
+    case 'image':
+      return {
+        ...clampAlt(block),
+        ...(block.title && {
+          title: clampText(block.title, SLACK_LIMITS.imageTitleChars),
+        }),
+      };
+    case 'video':
+      return {
+        ...block,
+        title: clampText(block.title, SLACK_LIMITS.videoTitleChars),
+        ...(block.description && {
+          description: clampText(
+            block.description,
+            SLACK_LIMITS.videoDescriptionChars
+          ),
+        }),
+        ...(block.author_name !== undefined && {
+          author_name: clampSlackText(
+            block.author_name,
+            SLACK_LIMITS.videoAuthorNameChars
+          ),
+        }),
+      };
+    case 'actions':
+      return { ...block, elements: block.elements.map(clampControl) };
+    default:
+      return block;
+  }
+};
 
 const collectSlackFileRefs = (
   blocks: readonly SlackBlock[]

@@ -14,9 +14,9 @@ renderSlackEnvelope(composition, dispatcher, { heading, text, collectAssets, ass
 
 `heading: false` leaves out the title and subtitle, and nothing else; the Slack envelope also leaves them out of its default fallback `text`. It defaults to `true`.
 
-The Slack envelope does the most. It emits a `header` block for the title and a `context` block for the subtitle unless `heading` is `false`, then each node's blocks; enforces Slack's 50-block message budget; clamps the fallback `text` to 4,000 characters; and returns only the asset requests whose placeholder block survived the budget — uploading files for elided blocks would be orphaned work.
+The Slack envelope does the most. It emits a `header` block for the title and a `context` block for the subtitle unless `heading` is `false`, then each node's blocks; clamps every text field Slack limits; enforces Slack's 50-block message budget; clamps the fallback `text` to 4,000 characters; and returns only the asset requests whose placeholder block survived the budget — uploading files for elided blocks would be orphaned work.
 
-`SLACK_LIMITS` publishes the numbers a renderer has to respect: 50 blocks per message, 3,000 characters in a section, 10 fields per section, 10 elements per context block, 25 buttons in an actions block, 150 characters in a header, 75 in an option label.
+`SLACK_LIMITS` publishes the numbers a renderer has to respect: 50 blocks per message, 3,000 characters in a section, 10 fields per section, 10 elements per context block, 25 buttons in an actions block, 150 characters in a header, 75 in an option label or button.
 
 ## HTML
 
@@ -109,11 +109,12 @@ Anchors render only when something needs them, so a render nobody acts on carrie
 
 `renderSlackEnvelope` always returns a postable payload, fitting the rendered blocks to Slack's limits (`SLACK_LIMITS`) in a fixed order:
 
-1. **Table character budget.** Slack counts table cell characters across the whole message, not per block, so tables that individually fit can still push the message over. Tables are kept in document order until `tableCellCharsPerMessage` runs out; the rest degrade to one mrkdwn section per row, keyed by the header row.
-2. **Section rhythm.** A divider goes in front of every header and the actions block; a spacer follows each content block except a table about to be followed by a divider. Consecutive field-only sections are not spaced, since they read as one grid.
-3. **Block budget.** If the block count still exceeds `blocksPerMessage`, spacers are dropped first, from the end backward, since they cost nothing but rhythm. If that alone is not enough, the remainder is truncated and replaced with a trailing context block noting how many were elided.
+1. **Text clamping.** Every block a renderer returns has each Slack-limited text cut to its `SLACK_LIMITS` entry, keeping the leading text, cut at a grapheme boundary, and ending in `…`: header, section text and fields, context elements, image and video titles, video description and `author_name`, image alt text, button text, select placeholders, and option and option-group labels. An `initial_option` is clamped the same way as the options it has to match. Rich-text and table cell text is left alone.
+2. **Table character budget.** Slack counts table cell characters across the whole message, not per block, so tables that individually fit can still push the message over. Tables are kept in document order until `tableCellCharsPerMessage` runs out; the rest degrade to one mrkdwn section per row, keyed by the header row.
+3. **Section rhythm.** A divider goes in front of every header and the actions block; a spacer follows each content block except a table about to be followed by a divider. Consecutive field-only sections are not spaced, since they read as one grid.
+4. **Block budget.** If the block count still exceeds `blocksPerMessage`, spacers are dropped first, from the end backward, since they cost nothing but rhythm. If that alone is not enough, the remainder is truncated and replaced with a trailing context block noting how many were elided.
 
-`assets` is filtered to the requests whose placeholder block survived step 3 — a block `enforceBlockBudget` elides is never posted, so uploading its file would be wasted, orphaned work.
+`assets` is filtered to the requests whose placeholder block survived step 4 — a block `enforceBlockBudget` elides is never posted, so uploading its file would be wasted, orphaned work.
 
 ## Formatting helpers
 
