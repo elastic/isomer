@@ -103,12 +103,16 @@ export {
 } from '../pack';
 export {
   type FormatDisplayValueOptions,
+  type LayoutBox,
+  type LayoutFinding,
+  type LayoutRect,
   type PayloadMeasurement,
   type PrimitiveDispatcher,
   type PrimitiveDispatcherOptions,
   NODE_ANCHOR_ATTRIBUTE,
   anchorValue,
   byteLength,
+  checkLayout,
   createPrimitiveDispatcher,
   findNodeElementPairs,
   findNodeElements,
@@ -117,6 +121,7 @@ export {
   isStructuredValue,
   nodeAnchor,
   rawDisplayValue,
+  withNodeAnchors,
   withoutAnchors,
 } from '../render';
 export {
