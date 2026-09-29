@@ -83,17 +83,26 @@ export const link = (url: string, label?: string): string => {
 };
 
 /**
- * Truncates `value` to `max` characters, appending an ellipsis when it had to
- * cut. Pass a `SLACK_LIMITS` constant as the budget.
+ * Truncates `value` to `max` UTF-16 code units at a grapheme boundary,
+ * appending an ellipsis when it had to cut. Pass a `SLACK_LIMITS` constant as
+ * the budget.
  */
 export const clampSlackText = (value: string, max: number): string => {
   if (value.length <= max) {
     return value;
   }
-  if (max <= 1) {
-    return value.slice(0, max);
+  const budget = max <= 1 ? max : max - 1;
+  let end = 0;
+  for (const { index, segment } of new Intl.Segmenter(undefined, {
+    granularity: 'grapheme',
+  }).segment(value)) {
+    if (index + segment.length > budget) {
+      break;
+    }
+    end = index + segment.length;
   }
-  return `${value.slice(0, max - 1).trimEnd()}…`;
+  const head = value.slice(0, end);
+  return max <= 1 ? head : `${head.trimEnd()}…`;
 };
 
 /**

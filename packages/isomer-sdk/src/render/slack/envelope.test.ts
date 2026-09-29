@@ -17,7 +17,15 @@ import { fixtureDefinitions } from '../../testing/sdk.fixtures';
 import { createPrimitiveDispatcher } from '../primitive_dispatch';
 
 import type { SlackAssetCollector } from './assets';
-import type { SlackBlock, SlackTableBlock } from './blocks';
+import type {
+  SlackActionElement,
+  SlackBlock,
+  SlackButtonElement,
+  SlackOptionObject,
+  SlackPlainTextObject,
+  SlackTableBlock,
+  SlackVideoBlock,
+} from './blocks';
 import { SLACK_LIMITS } from './blocks';
 import { renderSlackEnvelope, type SlackEnvelopeDispatcher } from './envelope';
 
@@ -60,6 +68,37 @@ const dispatcherFor = (
     renderSlack: () => blocks[index++] ?? [],
   };
 };
+
+const plain = (text: string): SlackPlainTextObject => ({
+  type: 'plain_text',
+  text,
+});
+
+const option = (text: string): SlackOptionObject => ({
+  text: plain(text),
+  value: 'v',
+});
+
+const long = 'x'.repeat(SLACK_LIMITS.optionTextChars + 1);
+
+const button = (text: string): SlackButtonElement => ({
+  type: 'button',
+  text: plain(text),
+});
+
+const actions = (element: SlackActionElement): SlackBlock => ({
+  type: 'actions',
+  elements: [element],
+});
+
+const video = (fields: Partial<SlackVideoBlock>): SlackBlock => ({
+  type: 'video',
+  title: plain('V'),
+  video_url: 'https://x.test/v',
+  thumbnail_url: 'https://x.test/t.png',
+  alt_text: 'V',
+  ...fields,
+});
 
 const cell = (text: string) => ({ type: 'raw_text' as const, text });
 
@@ -121,6 +160,212 @@ describe('Slack envelope transforms', () => {
     );
     expect(blocks.some((block) => block.type === 'table')).toBe(false);
     expect(blocks.some((block) => block.type === 'section')).toBe(true);
+  });
+
+  it('produces a valid header for a title over the header limit', () => {
+    const { blocks } = renderSlackEnvelope(
+      {
+        type: 'view',
+        title: 'T'.repeat(SLACK_LIMITS.headerTextChars + 1),
+        body: [],
+      },
+      dispatcherFor([])
+    );
+    const [header] = blocks;
+    expect(header?.type === 'header' && header.text.text).toHaveLength(
+      SLACK_LIMITS.headerTextChars
+    );
+  });
+
+  it.each<[string, number, (text: string) => SlackBlock]>([
+    [
+      'header text',
+      SLACK_LIMITS.headerTextChars,
+      (text) => ({ type: 'header', text: plain(text) }),
+    ],
+    ['section text', SLACK_LIMITS.sectionTextChars, section],
+    ['section field', SLACK_LIMITS.sectionFieldChars, fieldSection],
+    [
+      'accessory button text',
+      SLACK_LIMITS.buttonTextChars,
+      (text) => ({ ...section('S'), accessory: button(text) }),
+    ],
+    [
+      'accessory image alt text',
+      SLACK_LIMITS.imageAltTextChars,
+      (text) => ({
+        ...section('S'),
+        accessory: {
+          type: 'image',
+          image_url: 'https://x.test/a.png',
+          alt_text: text,
+        },
+      }),
+    ],
+    [
+      'context text element',
+      SLACK_LIMITS.contextElementChars,
+      (text) => ({ type: 'context', elements: [{ type: 'mrkdwn', text }] }),
+    ],
+    [
+      'context image alt text',
+      SLACK_LIMITS.imageAltTextChars,
+      (text) => ({
+        type: 'context',
+        elements: [
+          { type: 'image', image_url: 'https://x.test/a.png', alt_text: text },
+        ],
+      }),
+    ],
+    [
+      'image alt text',
+      SLACK_LIMITS.imageAltTextChars,
+      (text) => ({
+        type: 'image',
+        image_url: 'https://x.test/a.png',
+        alt_text: text,
+      }),
+    ],
+    [
+      'image title',
+      SLACK_LIMITS.imageTitleChars,
+      (text) => ({
+        type: 'image',
+        image_url: 'https://x.test/a.png',
+        alt_text: 'A',
+        title: plain(text),
+      }),
+    ],
+    [
+      'video title',
+      SLACK_LIMITS.videoTitleChars,
+      (text) => video({ title: plain(text) }),
+    ],
+    [
+      'video description',
+      SLACK_LIMITS.videoDescriptionChars,
+      (text) => video({ description: plain(text) }),
+    ],
+    [
+      'video author name',
+      SLACK_LIMITS.videoAuthorNameChars,
+      (text) => video({ author_name: text }),
+    ],
+    [
+      'actions button text',
+      SLACK_LIMITS.buttonTextChars,
+      (text) => actions(button(text)),
+    ],
+    [
+      'select placeholder',
+      SLACK_LIMITS.placeholderChars,
+      (text) =>
+        actions({
+          type: 'static_select',
+          action_id: 's',
+          placeholder: plain(text),
+          options: [option('O')],
+        }),
+    ],
+    [
+      'option text',
+      SLACK_LIMITS.optionTextChars,
+      (text) =>
+        actions({ type: 'overflow', action_id: 'o', options: [option(text)] }),
+    ],
+    [
+      'option description',
+      SLACK_LIMITS.optionTextChars,
+      (text) =>
+        actions({
+          type: 'radio_buttons',
+          action_id: 'r',
+          options: [{ ...option('O'), description: plain(text) }],
+        }),
+    ],
+    [
+      'option group label',
+      SLACK_LIMITS.optionGroupLabelChars,
+      (text) =>
+        actions({
+          type: 'static_select',
+          action_id: 's',
+          option_groups: [{ label: plain(text), options: [option('O')] }],
+        }),
+    ],
+    [
+      'grouped option text',
+      SLACK_LIMITS.optionTextChars,
+      (text) =>
+        actions({
+          type: 'static_select',
+          action_id: 's',
+          option_groups: [{ label: plain('G'), options: [option(text)] }],
+        }),
+    ],
+  ])('clamps a pack-emitted %s to its limit', (_, limit, build) => {
+    const { blocks } = renderSlackEnvelope(
+      { type: 'view', body: [{ type: 'a' }] },
+      dispatcherFor([[build('x'.repeat(limit + 1))]])
+    );
+    const json = JSON.stringify(blocks);
+    expect(json).toContain(`"${'x'.repeat(limit - 1)}…"`);
+    expect(json).not.toContain('x'.repeat(limit));
+  });
+
+  it.each<[string, SlackActionElement]>([
+    [
+      'static_select',
+      {
+        type: 'static_select',
+        action_id: 's',
+        options: [option(long)],
+        initial_option: option(long),
+      },
+    ],
+    [
+      'radio_buttons',
+      {
+        type: 'radio_buttons',
+        action_id: 'r',
+        options: [option(long)],
+        initial_option: option(long),
+      },
+    ],
+    [
+      'multi_static_select',
+      {
+        type: 'multi_static_select',
+        action_id: 'm',
+        options: [option(long)],
+        initial_options: [option(long)],
+      },
+    ],
+    [
+      'checkboxes',
+      {
+        type: 'checkboxes',
+        action_id: 'c',
+        options: [option(long)],
+        initial_options: [option(long)],
+      },
+    ],
+  ])('keeps a clamped %s initial option equal to its option', (_, element) => {
+    const { blocks } = renderSlackEnvelope(
+      { type: 'view', body: [{ type: 'a' }] },
+      dispatcherFor([[actions(element)]])
+    );
+    const [block] = blocks;
+    const [clamped] = block?.type === 'actions' ? block.elements : [];
+    const { options = [] } = clamped && 'options' in clamped ? clamped : {};
+    const initial =
+      clamped && 'initial_option' in clamped
+        ? clamped.initial_option
+        : clamped && 'initial_options' in clamped
+          ? clamped.initial_options?.[0]
+          : undefined;
+    expect(options[0]?.text.text).toHaveLength(SLACK_LIMITS.optionTextChars);
+    expect(initial).toEqual(options[0]);
   });
 
   it('elides overflow past the block budget and appends a notice', () => {

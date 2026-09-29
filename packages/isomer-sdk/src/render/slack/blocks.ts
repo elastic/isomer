@@ -91,4 +91,18 @@ export const SLACK_LIMITS = {
   imageUrlChars: 3000,
   /** `image`/image-element `alt_text` max length. */
   imageAltTextChars: 2000,
+  /** `image` block `title`. */
+  imageTitleChars: 2000,
+  /** `video` block `title`; Slack requires fewer than 200. */
+  videoTitleChars: 199,
+  /** `video` block `description`; Slack requires fewer than 200. */
+  videoDescriptionChars: 199,
+  /** `video` block `author_name`; Slack requires fewer than 50. */
+  videoAuthorNameChars: 49,
+  /** `button` element `text`. */
+  buttonTextChars: 75,
+  /** Select `placeholder`. */
+  placeholderChars: 150,
+  /** `option_groups[].label`. */
+  optionGroupLabelChars: 75,
 } as const;
