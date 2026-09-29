@@ -30,9 +30,10 @@ const scaleOf = (
 
 /**
  * The {@link LayoutBox} tree a browser laid `root` out as, measured from
- * `root`'s top left, for {@link checkLayout}. A box's `scale` is its drawn
- * size over its layout size, so a rotated box reads as scaled. jsdom does no
- * layout, so every box it measures is empty.
+ * `root`'s top left, for {@link checkLayout}. An HTML element's `scale` is its
+ * drawn size over its layout size, so a rotated one reads as scaled; an SVG
+ * element has no layout size and is never scaled. jsdom does no layout, so
+ * every box it measures is empty.
  */
 export const measureDom = (root: Element): LayoutBox => {
   const origin = root.getBoundingClientRect();
@@ -47,12 +48,11 @@ export const measureDom = (root: Element): LayoutBox => {
   const measure = (element: Element): LayoutBox => {
     const rect = element.getBoundingClientRect();
     const scale = scaleOf(element, rect);
-    const attributes: Record<string, string> = {};
-    for (const { name, value } of Array.from(element.attributes)) {
-      if (!unlisted.has(name)) {
-        attributes[name] = value;
-      }
-    }
+    const attributes = Object.fromEntries(
+      Array.from(element.attributes)
+        .filter(({ name }) => !unlisted.has(name))
+        .map(({ name, value }): [string, string] => [name, value])
+    );
     return {
       ...place(rect),
       ...(scale !== 1 && { scale }),

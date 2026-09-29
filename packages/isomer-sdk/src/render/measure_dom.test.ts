@@ -109,6 +109,33 @@ describe('measureDom', () => {
     expect(second).not.toHaveProperty('scale');
   });
 
+  it('never scales an SVG element, which has no layout size', () => {
+    const root = parse(
+      '<div><svg width="100" height="20"><rect width="100" height="20"></rect></svg></div>'
+    );
+    const svg = root.firstElementChild!;
+    laidOut(root, [0, 0, 400, 200]);
+    laidOut(svg, [0, 0, 20, 100]);
+    laidOut(svg.firstElementChild!, [0, 0, 20, 100]);
+
+    const [box] = measureDom(root).children;
+    expect(box).not.toHaveProperty('scale');
+    expect(box?.children[0]).not.toHaveProperty('scale');
+  });
+
+  it('keeps an attribute whose name is an Object.prototype key', () => {
+    const root = parse('<div data-a="1"></div>');
+    root.setAttribute('__proto__', 'kept');
+    laidOut(root, [0, 0, 10, 10]);
+
+    const { attributes } = measureDom(root);
+    expect(Object.getOwnPropertyNames(attributes)).toEqual([
+      'data-a',
+      '__proto__',
+    ]);
+    expect(Object.getPrototypeOf(attributes)).toBe(Object.prototype);
+  });
+
   it('feeds checkLayout a browser render of anchored nodes', () => {
     const root = parse(
       `<div><p ${NODE_ANCHOR_ATTRIBUTE}="leaf">one</p><p ${NODE_ANCHOR_ATTRIBUTE}="leaf">two</p></div>`
