@@ -1,5 +1,10 @@
 # Directory Update Log
 
+## 2026-09-29
+
+- **Releases follow published packages**: The workspace semantic-release plugin runs the commit analyzer and notes generator over only the commits that change a package published now or at the last release, a root build input, the root `build` scripts, or a published package's reference in `tsconfig.workspace.json`, so slides-pack, docs, and tooling commits no longer cut a release. The publish playbook lists all four published packages.
+- **`!` marks a breaking change**: `.releaserc.json` adds a `breakingHeaderPattern` to the angular preset's parser options, so a `feat!:` or `fix(scope)!:` header drives a major release and lands under breaking changes in the notes without a `BREAKING CHANGE` footer.
+
 ## 2026-09-28
 
 - **Enhancements on the React surface**: `ReactRenderOptions.enhancements` takes enhancement definitions; those that apply reach every renderer as `context.enhancements`, turn node anchors on when one asks, and run their scripts against the wrapper section once it mounts. The SDK's React entry adds `applyEnhancements`, and `findNodeElementPairs` lists each node occurrence with its anchored element, so a node object used twice pairs twice. The embedding doc covers a React host with a Distillate live collection, and the slides pack takes `@elastic/distillate` `^0.2.0`.
