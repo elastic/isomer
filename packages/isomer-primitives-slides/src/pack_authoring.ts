@@ -7,6 +7,8 @@
 
 import type { PackAuthoringOptions, PrimitiveGroup } from '@elastic/isomer-sdk';
 
+import { slideGraphShape } from './primitives/slide_graph/schema';
+
 // `z.toJSONSchema` drops `.refine` text, so cross-field rules are restated as each `$def` description.
 
 /** Every primitive once, by what it draws, in the order an author usually chooses. */
@@ -16,8 +18,11 @@ export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
     types: ['slideFrame', 'slideHeading', 'slideTitle'],
   },
   { title: 'Layout', types: ['slideSplit', 'slideStack'] },
-  { title: 'Text', types: ['slideBulletList'] },
-  { title: 'Diagrams', types: ['slideTerritoryGroup'] },
+  { title: 'Text', types: ['slideBulletList', 'slideRoadmap'] },
+  {
+    title: 'Diagrams',
+    types: ['slideTerritoryGroup', 'slideGraph', 'slideTimeline', 'slideTree'],
+  },
   { title: 'Code', types: ['slideCode'] },
 ];
 
@@ -34,5 +39,8 @@ export const slidesPackAuthoring = {
       'The title slide. Its aside is one slide node, never a slideFrame.',
     slideCode:
       'One or two code panels. Every highlighted line number exists in its panel.',
+    slideGraph: `Terms joined by arrows. ${slideGraphShape}. Every edge names a node id.`,
+    slideRoadmap: 'Two to four horizons. At most one column is current.',
+    slideTimeline: 'Three to five dated points. At most one item is current.',
   },
 } satisfies PackAuthoringOptions;

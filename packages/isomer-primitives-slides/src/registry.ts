@@ -12,22 +12,30 @@
 import { slideBulletListPrimitive } from './primitives/slide_bullet_list';
 import { slideCodePrimitive } from './primitives/slide_code';
 import { slideFramePrimitive } from './primitives/slide_frame';
+import { slideGraphPrimitive } from './primitives/slide_graph';
 import { slideHeadingPrimitive } from './primitives/slide_heading';
+import { slideRoadmapPrimitive } from './primitives/slide_roadmap';
 import { slideSplitPrimitive } from './primitives/slide_split';
 import { slideStackPrimitive } from './primitives/slide_stack';
 import { slideTerritoryGroupPrimitive } from './primitives/slide_territory_group';
+import { slideTimelinePrimitive } from './primitives/slide_timeline';
 import { slideTitlePrimitive } from './primitives/slide_title';
+import { slideTreePrimitive } from './primitives/slide_tree';
 
 /** Every primitive definition this pack registers, in alphabetical order. */
 export const slideDeckPrimitives = [
   slideBulletListPrimitive,
   slideCodePrimitive,
   slideFramePrimitive,
+  slideGraphPrimitive,
   slideHeadingPrimitive,
+  slideRoadmapPrimitive,
   slideSplitPrimitive,
   slideStackPrimitive,
   slideTerritoryGroupPrimitive,
+  slideTimelinePrimitive,
   slideTitlePrimitive,
+  slideTreePrimitive,
 ] as const;
 
 /** `type` strings of {@link slideDeckPrimitives}. */

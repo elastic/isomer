@@ -36,6 +36,8 @@ const notWords = new Set([
   'divider',
   'spacing',
   'marker',
+  'edges',
+  'placement',
 ]);
 
 /** Fields whose line breaks are meant, or that no degraded surface prints. */

@@ -8,11 +8,15 @@
 import { bulletsModule } from './primitives/slide_bullet_list/styles';
 import { codeModule } from './primitives/slide_code/styles';
 import { frameModule } from './primitives/slide_frame/styles';
+import { graphModule } from './primitives/slide_graph/styles';
 import { headingModule } from './primitives/slide_heading/styles';
+import { roadmapModule } from './primitives/slide_roadmap/styles';
 import { splitModule } from './primitives/slide_split/styles';
 import { stackModule } from './primitives/slide_stack/styles';
 import { territoryModule } from './primitives/slide_territory_group/styles';
+import { timelineModule } from './primitives/slide_timeline/styles';
 import { titleModule } from './primitives/slide_title/styles';
+import { treeModule } from './primitives/slide_tree/styles';
 import { slideDistillery } from './theme/distillery';
 import {
   connectorModule,
@@ -34,11 +38,15 @@ export const slideModules = {
   bullets: bulletsModule,
   code: codeModule,
   frame: frameModule,
+  graph: graphModule,
   heading: headingModule,
+  roadmap: roadmapModule,
   split: splitModule,
   stack: stackModule,
   territory: territoryModule,
+  timeline: timelineModule,
   title: titleModule,
+  tree: treeModule,
 };
 
 /** Hosts include this beside React markup. */

@@ -47,5 +47,9 @@ runtime.surfaces.text.render(composition);
 | `slideSplit` | Two panes of slide nodes, with a width ratio and a divider. |
 | `slideStack` | Slide nodes stacked with controlled spacing, for a one-node slot. |
 | `slideBulletList` | Short points with a dot, check, or × marker. |
+| `slideRoadmap` | Planned work in ruled columns by horizon, at most one current. |
 | `slideTerritoryGroup` | Who owns what, one color-keyed column per owner. |
+| `slideGraph` | Named terms in a main chain, with at most one node above and one below. |
+| `slideTimeline` | Dated points on a rail, read left to right, at most one current. |
+| `slideTree` | A folder and its entries, each with a one-line note. |
 | `slideCode` | Source in one panel, or two joined by an arrow. |

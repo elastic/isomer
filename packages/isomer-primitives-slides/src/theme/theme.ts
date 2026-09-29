@@ -9,13 +9,17 @@ import { color, font, inverse, radius, space, stroke, type } from './base';
 import { bulletList } from './components/bullet_list';
 import { code } from './components/code';
 import { frame } from './components/frame';
+import { graph } from './components/graph';
 import { heading } from './components/heading';
 import { marks } from './components/marks';
+import { roadmap } from './components/roadmap';
 import { connector, glyph, label } from './components/shared';
 import { split } from './components/split';
 import { stack } from './components/stack';
 import { territoryGroup } from './components/territory_group';
+import { timeline } from './components/timeline';
 import { title } from './components/title';
+import { tree } from './components/tree';
 
 /**
  * Every value the pack renders, in one tree. `lightDark` leaves become
@@ -37,11 +41,15 @@ export const SLIDE_THEME = {
   frame,
   bulletList,
   code,
+  graph,
   heading,
+  roadmap,
   split,
   stack,
   territoryGroup,
+  timeline,
   title,
+  tree,
 } as const;
 
 export type SlideColorName = keyof typeof color;

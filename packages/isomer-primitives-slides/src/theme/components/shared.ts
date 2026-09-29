@@ -29,3 +29,8 @@ export const glyph = {
   separator: literal('·'),
   dash: literal('—'),
 } as const;
+
+/** Marks the current item or column in text, Markdown, and Slack. */
+export const current = {
+  mark: literal('now'),
+} as const;

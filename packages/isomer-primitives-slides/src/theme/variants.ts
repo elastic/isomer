@@ -40,3 +40,12 @@ export type SlideStackSpacing = (typeof slideStackSpacings)[number];
 export const slideBulletMarkers = ['dot', 'check', 'x'] as const;
 
 export type SlideBulletMarker = (typeof slideBulletMarkers)[number];
+
+// Variant keys must start with a letter.
+export const countKey = (n: number): string => `n${n}`;
+
+export const countOf = (key: string): number => Number(key.slice(1));
+
+/** {@link countKey}s from `from` to `to`, inclusive. */
+export const countKeys = (from: number, to: number): string[] =>
+  Array.from({ length: to - from + 1 }, (_, index) => countKey(from + index));
