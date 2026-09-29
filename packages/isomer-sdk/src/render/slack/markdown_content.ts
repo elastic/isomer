@@ -145,7 +145,7 @@ const section = (elements: SlackRichTextInline[]): SlackRichTextSection[] => {
 const childInline = (
   child: ListItem['children'][number]
 ): SlackRichTextInline[] =>
-  'children' in child && child.type !== 'table'
+  'children' in child
     ? inline(
         child.children as PhrasingContent[],
         child.type === 'heading' ? { bold: true } : {}
@@ -262,26 +262,53 @@ const tableCell = (cell: PhrasingContent[]): SlackTableCell => {
       };
 };
 
-const tableBlock = (table: Table): SlackTableBlock => ({
-  type: 'table',
-  rows: table.children
+// Slack rejects a row with no cells, so such rows are dropped, and a table
+// whose header has none prints nothing.
+const tableBlock = (table: Table): SlackTableBlock[] => {
+  const rows = table.children
     .slice(0, SLACK_LIMITS.tableRows)
     .map((row) =>
       row.children
         .slice(0, SLACK_LIMITS.tableColumns)
         .map((cell) => tableCell(cell.children))
-    ),
-  column_settings: (table.children[0]?.children ?? [])
-    .slice(0, SLACK_LIMITS.tableColumns)
-    .map((_cell, index) => ({
-      align: table.align?.[index] ?? 'left',
-      is_wrapped: true,
-    })),
-});
+    );
+  const [header] = rows;
+  if (header === undefined || header.length === 0) {
+    return [];
+  }
+  return [
+    {
+      type: 'table',
+      rows: rows.filter((cells) => cells.length > 0),
+      column_settings: header.map((_cell, index) => ({
+        align: table.align?.[index] ?? 'left',
+        is_wrapped: true,
+      })),
+    },
+  ];
+};
 
 const containsVerbatim = (node: Nodes): boolean =>
   (node.type as string) === VERBATIM_TYPE ||
   ('children' in node && node.children.some(containsVerbatim));
+
+const LIST_ITEM_CONTENT: ReadonlySet<string> = new Set([
+  'paragraph',
+  'heading',
+  'code',
+  'list',
+]);
+
+// A rich-text list item holds lines of text, so a list holding any other
+// block, such as a table, goes through the string translator whole.
+const fitsRichTextList = (list: List): boolean =>
+  list.children.every((item) =>
+    item.children.every(
+      (child) =>
+        LIST_ITEM_CONTENT.has(child.type) &&
+        (child.type !== 'list' || fitsRichTextList(child))
+    )
+  );
 
 /**
  * Builder content as Block Kit: paragraphs, headings, lists, and code as
@@ -320,7 +347,10 @@ export const markdownContentToSlackBlocks = (
     elements = [];
   };
   for (const node of markdownBlocks(content) as RootContent[]) {
-    if (containsVerbatim(node)) {
+    if (
+      containsVerbatim(node) ||
+      (node.type === 'list' && !fitsRichTextList(node))
+    ) {
       flush();
       blocks.push(
         ...gfmToSlackBlocks(
@@ -329,7 +359,7 @@ export const markdownContentToSlackBlocks = (
       );
     } else if (node.type === 'table') {
       flush();
-      blocks.push(tableBlock(node));
+      blocks.push(...tableBlock(node));
     } else {
       const translated = richTextElements(node);
       if (

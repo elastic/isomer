@@ -283,6 +283,27 @@ describe('markdownContentToSlackBlocks', () => {
     expect(block).not.toMatchObject({ elements: [{}, { offset: 1 }] });
   });
 
+  it('sends a list holding a table through the string path whole', () => {
+    const blocks = markdownContentToSlackBlocks(
+      md.list([[md.table(['A', 'B'], [['1', '2']])]])
+    );
+    expect(blocks.some((block) => block.type === 'rich_text')).toBe(false);
+    const text = JSON.stringify(blocks);
+    expect(text).toContain('A | B');
+    expect(text).toContain('1 | 2');
+  });
+
+  it('prints nothing for a table with no columns and drops a row with no cells', () => {
+    expect(markdownContentToSlackBlocks(md.table([], []))).toEqual([]);
+    expect(markdownContentToSlackBlocks(md.table(['a'], [[]]))).toEqual([
+      {
+        type: 'table',
+        rows: [[{ type: 'raw_text', text: 'a' }]],
+        column_settings: [{ align: 'left', is_wrapped: true }],
+      },
+    ]);
+  });
+
   it('drops an empty paragraph or code block', () => {
     expect(
       markdownContentToSlackBlocks([md.paragraph(''), md.codeBlock('')])
