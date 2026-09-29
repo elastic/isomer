@@ -23,6 +23,8 @@ A `Composition` is `{ type: 'view', version?: 1, title?, subtitle?, theme?, body
 
 `createCompositionValidator` is the trusted-input path. `createCompositionParser` is the untrusted path. `buildCompositionJsonSchema` is the validator's JSON Schema projection. `buildAuthoringJsonSchema` is the smaller walk an agent reads: named shared defs, inlined scalars, and no `id` or `surfaces`.[^spec]
 
+A `ValidationError` is `{ path, message, nodeType? }`. `nodeType` names the innermost primitive node the path lands in, and `formatValidationError` prints `<path> (in <nodeType>) <message>`, or the message alone for a root finding. An unknown key on a node lists that node's declared fields.[^spec]
+
 Related: [primitives](/sdk/concepts/primitives.md), [dispatch](/sdk/concepts/dispatch.md), [pipeline](/sdk/concepts/pipeline.md).
 
 [^spec]: Spec and validation
