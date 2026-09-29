@@ -56,6 +56,14 @@ describe('clamping', () => {
     expect(clampSlackText('hello world', 1)).toBe('h');
   });
 
+  it('clamps at a grapheme boundary, never splitting a surrogate pair or emoji sequence', () => {
+    expect(clampSlackText(`a${'😀'.repeat(75)}`, 75)).toBe(
+      `a${'😀'.repeat(36)}…`
+    );
+    expect(clampSlackText('ab👨‍👩‍👧cd', 6)).toBe('ab…');
+    expect(clampSlackText('😀😀', 1)).toBe('');
+  });
+
   it('collapses whitespace in header text and clamps to the header budget', () => {
     expect(formatHeaderText('  a \n\t b  ')).toBe('a b');
     const long = 'x'.repeat(SLACK_LIMITS.headerTextChars + 10);

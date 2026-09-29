@@ -2,7 +2,7 @@
 
 ## 2026-09-29
 
-- **Slack envelope clamps every block's text**: `renderSlackEnvelope` clamps each Slack-limited text in the blocks a renderer returns, not just asset-image alt text. `SLACK_LIMITS` gains `imageTitleChars`, `videoTitleChars`, `videoDescriptionChars`, `videoAuthorNameChars`, `buttonTextChars`, `placeholderChars`, and `optionGroupLabelChars`.
+- **Slack envelope clamps every block's text**: `renderSlackEnvelope` clamps each Slack-limited text in the blocks a renderer returns, not just asset-image alt text. `SLACK_LIMITS` gains `imageTitleChars`, `videoTitleChars`, `videoDescriptionChars`, `videoAuthorNameChars`, `buttonTextChars`, `placeholderChars`, and `optionGroupLabelChars`. `clampSlackText` cuts at a grapheme boundary, so it never splits a surrogate pair or emoji sequence.
 
 ## 2026-09-28
 
