@@ -63,16 +63,27 @@ export const code = (text: string): string =>
 export const codeBlock = (text: string): string =>
   `\`\`\`\n${text.replace(/```/g, '``\u200d`')}\n\`\`\``;
 
+const ABSOLUTE_URL_RE = /^(?:https?:\/\/|mailto:)/i;
+
+/**
+ * `href` when it passes {@link sanitizeNavigationHref} as an absolute URL,
+ * `null` otherwise. Slack has no page to resolve a relative URL against.
+ */
+export const slackLinkUrl = (href: string): string | null => {
+  const url = sanitizeNavigationHref(href);
+  return url !== null && ABSOLUTE_URL_RE.test(url) ? url : null;
+};
+
 /**
  * Slack mrkdwn link, `<url|label>`, or a bare `<url>` when `label` is omitted.
  *
  * URL and label are both escaped so `&` and `>` cannot break Slack's link
  * parser, and a `|` in the URL is percent-encoded so it cannot end the URL
- * early. A URL failing the navigation policy in `src/validate/url.ts` degrades
- * to plain escaped text with no link.
+ * early. A URL {@link slackLinkUrl} rejects degrades to plain escaped text
+ * with no link.
  */
 export const link = (url: string, label?: string): string => {
-  const sanitized = sanitizeNavigationHref(url);
+  const sanitized = slackLinkUrl(url);
   if (!sanitized) {
     return escapeMrkdwn(label ?? url);
   }

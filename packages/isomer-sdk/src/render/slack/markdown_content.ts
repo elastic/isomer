@@ -19,7 +19,6 @@ import type {
 } from 'mdast';
 
 import type { MarkdownContent } from '../../define/markdown_content';
-import { sanitizeNavigationHref } from '../../validate/url';
 import {
   markdownBlocks,
   serializeMarkdown,
@@ -36,7 +35,7 @@ import {
   type SlackTableBlock,
   type SlackTableCell,
 } from './blocks';
-import { clampSlackText, gfmToSlackBlocks } from './format';
+import { clampSlackText, gfmToSlackBlocks, slackLinkUrl } from './format';
 
 const plainText = (node: Nodes): string => {
   if ('value' in node) {
@@ -62,13 +61,13 @@ const textElement = (
 };
 
 // One link element per styled run of the label, so its formatting survives;
-// an empty label is a bare link.
+// an empty label is a bare link. A URL Slack cannot link leaves the label.
 const linkRuns = (
   href: string,
   runs: SlackRichTextInline[],
   style: SlackRichTextStyle
 ): SlackRichTextInline[] => {
-  const url = sanitizeNavigationHref(href);
+  const url = slackLinkUrl(href);
   if (url === null) {
     return runs;
   }

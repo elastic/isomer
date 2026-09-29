@@ -50,7 +50,16 @@ describe('mrkdwn helpers', () => {
     expect(link('https://example.com')).toBe('<https://example.com>');
     expect(link('javascript:alert(1)', 'Click')).toBe('Click');
     expect(link('javascript:alert(1)')).toBe('javascript:alert(1)');
+    expect(link('mailto:a@b.c', 'Mail')).toBe('<mailto:a@b.c|Mail>');
   });
+
+  it.each(['#', '/path', './a', '//host/a'])(
+    'prints the label of a link to %s, which Slack cannot resolve',
+    (href) => {
+      expect(link(href, 'x')).toBe('x');
+      expect(gfmToSlackMrkdwn(`[x](${href}) ![alt](${href})`)).toBe('x alt');
+    }
+  );
 });
 
 describe('clamping', () => {

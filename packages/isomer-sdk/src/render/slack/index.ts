@@ -84,6 +84,7 @@ export {
   italic,
   joinMrkdwn,
   link,
+  slackLinkUrl,
   strike,
 } from './format';
 
