@@ -63,36 +63,62 @@ export const code = (text: string): string =>
 export const codeBlock = (text: string): string =>
   `\`\`\`\n${text.replace(/```/g, '``\u200d`')}\n\`\`\``;
 
-const parsedUrl = (url: string): URL | null => {
+const HTTP_URL_RE = /^(https?:\/\/[^/?#]*)(.*)$/is;
+const HOSTNAME_RE = /^[^.]+(?:\.[^.]+)*$/;
+
+// Non-ASCII outside the authority, UTF-8 percent-encoded as `URL` prints it.
+const encodedNonAscii = (value: string): string | null => {
   try {
-    return new URL(url);
+    return value.replace(/[^\p{ASCII}]+/gu, encodeURIComponent);
   } catch {
     return null;
   }
 };
 
-// `URL` repairs a missing authority (`https:///a` has host `a`), so the literal
-// authority is checked too.
-const HTTP_AUTHORITY_RE = /^https?:\/\/[^/?#\\]/i;
+/**
+ * Whether `url` is an `http:` or `https:` URL with a host, printed by `URL`
+ * as written up to the authority's case, a `/` for an empty path, and
+ * non-ASCII percent-encoded outside the authority. Anything `URL` repairs,
+ * such as a backslash, whitespace, or a Unicode host, fails.
+ */
+export const isAbsoluteHttpUrl = (url: string): boolean => {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+  const [, authority, rest] = HTTP_URL_RE.exec(url) ?? [];
+  const [, printedAuthority, printedRest] = HTTP_URL_RE.exec(parsed.href) ?? [];
+  const expectedRest = encodedNonAscii(rest ?? '');
+  return (
+    authority !== undefined &&
+    authority.toLowerCase() === printedAuthority?.toLowerCase() &&
+    expectedRest !== null &&
+    (printedRest === expectedRest || printedRest === `/${expectedRest}`) &&
+    HOSTNAME_RE.test(parsed.hostname)
+  );
+};
 
-/** Whether `url` is an `http:` or `https:` URL with a host. */
-export const isAbsoluteHttpUrl = (url: string): boolean =>
-  HTTP_AUTHORITY_RE.test(url) && /[^.]/.test(parsedUrl(url)?.hostname ?? '');
+const MAILBOX_RE = /^[^\s@/\\]+@[^\s@/\\.]+(?:\.[^\s@/\\.]+)*$/;
 
-const decoded = (value: string): string => {
+const decoded = (value: string): string | null => {
   try {
     return decodeURIComponent(value);
   } catch {
-    return '';
+    return null;
   }
 };
 
-// At least one of the comma-separated recipients is an `x@y` address.
-const hasMailtoRecipient = (url: string): boolean => {
-  const [, recipients = ''] = /^mailto:([^?]*)/i.exec(url) ?? [];
-  return recipients
-    .split(',')
-    .some((recipient) => /^[^\s@]+@[^\s@/]+$/.test(decoded(recipient).trim()));
+// Every comma-separated recipient before the query or fragment is a mailbox.
+const hasMailtoRecipients = (url: string): boolean => {
+  const [, recipients] = /^mailto:([^?#]*)/i.exec(url) ?? [];
+  return (
+    recipients !== undefined &&
+    recipients
+      .split(',')
+      .every((recipient) => MAILBOX_RE.test(decoded(recipient) ?? ''))
+  );
 };
 
 /**
@@ -104,7 +130,7 @@ export const slackLinkUrl = (href: string): string | null => {
   if (url === null) {
     return null;
   }
-  return isAbsoluteHttpUrl(url) || hasMailtoRecipient(url) ? url : null;
+  return isAbsoluteHttpUrl(url) || hasMailtoRecipients(url) ? url : null;
 };
 
 /**

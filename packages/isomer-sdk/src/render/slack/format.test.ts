@@ -21,6 +21,7 @@ import {
   italic,
   joinMrkdwn,
   link,
+  slackLinkUrl,
   strike,
 } from './format';
 
@@ -52,54 +53,82 @@ describe('mrkdwn helpers', () => {
     expect(link('javascript:alert(1)', 'Click')).toBe('Click');
     expect(link('javascript:alert(1)')).toBe('javascript:alert(1)');
     expect(link('mailto:a@b.c', 'Mail')).toBe('<mailto:a@b.c|Mail>');
-    for (const href of [
-      'mailto:a%40b.c',
-      'mailto:,a@b.c',
-      'mailto:a@b.c,d@e.f?subject=x',
-      'https://u@a.b:8080/p',
-    ]) {
-      expect(link(href, 'x')).toBe(`<${escapeMrkdwn(href)}|x>`);
-    }
-  });
-
-  it.each([
-    '#',
-    '/path',
-    './a',
-    '//host/a',
-    'https://',
-    'http://?q=1',
-    'https:///path',
-    'http://\\host',
-    'mailto:',
-    'mailto:?subject=x',
-    'mailto:/',
-    'mailto://host/a',
-    'mailto:a@',
-    'mailto:@b',
-    'mailto:%zz',
-    'http://@/',
-    'https://:80',
-    'http://user:pw@',
-    'http://./',
-    'https://..',
-  ])('prints the label of a link to %s, which Slack cannot resolve', (href) => {
-    expect(link(href, 'x')).toBe('x');
-    expect(gfmToSlackMrkdwn(`[x](${href}) ![alt](${href})`)).toBe('x alt');
   });
 });
 
-describe('isSlackReachableImageUrl', () => {
-  it('needs an https URL with a host', () => {
-    expect(isSlackReachableImageUrl('https://a.b/i.png')).toBe(true);
-    for (const src of [
-      'http://a.b/i.png',
-      'https://',
-      'https:///i.png',
-      '/i.png',
-    ]) {
-      expect(isSlackReachableImageUrl(src)).toBe(false);
-    }
+// Each entry either names no absolute destination or is one `URL` repairs.
+const UNLINKABLE = [
+  'javascript:alert(1)',
+  '#',
+  '/path',
+  './a',
+  '//host/a',
+  'https:/a',
+  'https://',
+  'http://?q=1',
+  'https:///path',
+  'http://\\host',
+  'https://a.b\\@evil.com/path',
+  'https://a.b/p q',
+  'http://@/',
+  'https://:80',
+  'http://user:pw@',
+  'http://./',
+  'https://..',
+  'http://a..b/',
+  'https://bücher.de/',
+  'https://a.b:443/',
+  'mailto:',
+  'mailto:?subject=x',
+  'mailto:/',
+  'mailto://host/a',
+  'mailto:/user@example.com',
+  'mailto://user@example.com',
+  'mailto:abc@#frag',
+  'mailto:a@',
+  'mailto:@b',
+  'mailto:%zz',
+  'mailto:a@b..c',
+  'mailto:a b@c.d',
+  'mailto:a%2Fb@c.d',
+  'mailto:a@b\\c',
+  'mailto:,a@b.c',
+  'mailto:a@b.c,',
+];
+
+const LINKABLE = [
+  'https://a.b',
+  'HTTPS://A.B/p',
+  'http://a.b?q=1',
+  'https://a.b/p?q=1#f',
+  'https://a.b:8080/p',
+  'https://u@a.b/',
+  'https://xn--bcher-kva.de/',
+  'https://de.wikipedia.org/wiki/Bücher',
+  'http://[::1]:3000/',
+  'mailto:a@b.c',
+  'mailto:a%40b.c',
+  'mailto:a@b.c,d@e.f?subject=x',
+  'mailto:a@b.c#f',
+];
+
+describe('slackLinkUrl', () => {
+  it.each(UNLINKABLE)('prints the label of a link to %s', (href) => {
+    expect(slackLinkUrl(href)).toBeNull();
+    expect(link(href, 'x')).toBe('x');
+    expect(isSlackReachableImageUrl(href)).toBe(false);
+  });
+
+  it.each(LINKABLE)('links %s as written', (href) => {
+    expect(slackLinkUrl(href)).toBe(href);
+    expect(link(href, 'x')).toBe(`<${escapeMrkdwn(href)}|x>`);
+    expect(isSlackReachableImageUrl(href)).toBe(/^https:/i.test(href));
+  });
+
+  it('prints the label of a GFM link or image Slack cannot resolve', () => {
+    expect(gfmToSlackMrkdwn('[x](/p) ![alt](mailto:/) [y](https://a.b)')).toBe(
+      'x alt <https://a.b|y>'
+    );
   });
 });
 
