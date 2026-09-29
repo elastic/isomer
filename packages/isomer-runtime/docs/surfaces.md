@@ -91,6 +91,8 @@ const { element, css } = svg.render(composition, { theme: 'light' });
 
 `anchors: true` renders node anchors into `element`, so a measured layout of it can be handed to the SDK's `checkLayout`.
 
+`renderPages(compositions, options?)` lays several compositions out as one document, `{ pages, css, width, height }`: one root per composition against one stylesheet. A paged output such as a PDF needs that, and per-composition `render` calls cannot give it, because each collects only the CSS its own composition uses. Every page is the same size, the tallest estimate unless `height` is given, and the first composition's `theme` decides the palette unless `theme` is given. An empty list throws `EMPTY_PAGES`, and a body the frame rejects names its page, counted from 1.
+
 `renderNode` on this surface takes only `frame`, `theme`, and `anchors`. Geometry is absent deliberately: a node drawn with no surround has nothing for a width or height to size.
 
 ## Warnings are per surface

@@ -8,12 +8,23 @@
 export {
   type ImageInput,
   type LayoutBox,
+  type PdfInput,
+  type TakumiBackend,
   type TakumiImageBackend,
   type TakumiImageBackendOptions,
   type TakumiMeasuringBackend,
+  type TakumiPdfBackend,
+  type TakumiPdfMetadata,
+  type TakumiPdfOptions,
   type TakumiRenderOptions,
   createTakumiImageBackend,
 } from './backend';
+export {
+  type PdfRuntime,
+  type RenderPdfOptions,
+  type RenderPdfResult,
+  renderPdf,
+} from './render_pdf';
 export {
   type PngRuntime,
   type PngSvgOptions,
@@ -23,3 +34,4 @@ export {
   renderPng,
 } from './render_png';
 export type { Font, FontDetails, FontLoader } from '@takumi-rs/core';
+export type { ImagesInput } from 'takumi-pdf';

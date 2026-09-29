@@ -64,3 +64,5 @@ A browser resolves `Inter` and `Roboto Mono` from the page; an image backend res
 `SLIDE_THEME.font.weight` declares 500, 600, 700, and 800, and anything that does not set a weight inherits the document default of 400. That is the set to register, per family — `src/examples/deck/fonts.ts` derives it from the theme rather than listing it, so a new weight token cannot silently fall back to the nearest registered face.
 
 `@fontsource/inter` and `@fontsource/roboto-mono` ship woff2, which takumi decodes natively, so no conversion step is needed. Roboto Mono stops at 700; a weight the family does not ship is dropped rather than substituted.
+
+The theme's `check` and `x` bullet markers are `✓` and `✕`, which neither family covers. A PNG draws them from the backend's built-in face; a PDF rejects a glyph no registered font covers. `fonts.ts` therefore registers `@fontsource/noto-sans-symbols-2` last, so it serves only what the two families miss.

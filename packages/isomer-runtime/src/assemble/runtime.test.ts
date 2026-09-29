@@ -1822,6 +1822,113 @@ describe('createIsomerRuntime', () => {
     ).toBe('.isomer{}.fluid{}.after{}');
   });
 
+  it('renders pages against one stylesheet collected across every composition', () => {
+    const styleAdapter = {
+      createCollector: () => ({ rules: [] as string[] }),
+      collectWrapperStyles: (collector: { rules: string[] }) => {
+        collector.rules.push('.isomer{}');
+      },
+      collectViewStyles: (
+        composition: Composition,
+        _dispatcher: unknown,
+        collector: { rules: string[] }
+      ) => {
+        collector.rules.push(`.${(composition.body[0] as NoteNode).text}{}`);
+      },
+      createRenderContext: () => ({}),
+      renderStyles: (collector: { rules: string[] }) =>
+        collector.rules.join(''),
+    };
+    const runtime = createIsomerRuntime({
+      packs: [svgPackOf(notePrimitive)],
+      frames: { card: testFrame },
+      styleAdapter,
+    });
+    const two = view('two');
+    two.body.push({ type: 'note', text: 'more' });
+
+    const rendered = runtime.surfaces.svg.renderPages([view('one'), two], {
+      theme: 'dark',
+    });
+    const [first, second] = rendered.pages as ReactElement<{
+      width: number;
+      height: number;
+      theme: string;
+    }>[];
+
+    expect(rendered.css).toBe('.isomer{}.one{}.two{}');
+    // Every page takes the tallest estimate: two notes at 40 each.
+    expect(rendered).toMatchObject({ width: 600, height: 80 });
+    expect(first?.props).toMatchObject({
+      width: 600,
+      height: 80,
+      theme: 'dark-theme',
+    });
+    expect(renderToStaticMarkup(second)).toContain('more');
+  });
+
+  it("draws every page in the first composition's theme", () => {
+    const runtime = drawingRuntime(notePrimitive);
+
+    const { pages } = runtime.surfaces.svg.renderPages([
+      { ...view('a'), theme: 'dark' },
+      { ...view('b'), theme: 'light' },
+    ]);
+
+    for (const page of pages as ReactElement<{ theme: string }>[]) {
+      expect(page.props.theme).toBe('dark-theme');
+    }
+  });
+
+  it('renders one page the way render does', () => {
+    const runtime = drawingRuntime(notePrimitive);
+
+    const single = runtime.surfaces.svg.render(view('same'));
+    const paged = runtime.surfaces.svg.renderPages([view('same')]);
+
+    expect(paged).toMatchObject({
+      css: single.css,
+      width: single.width,
+      height: single.height,
+    });
+    expect(renderToStaticMarkup(paged.pages[0])).toBe(
+      renderToStaticMarkup(single.element)
+    );
+  });
+
+  it('refuses an empty page list', () => {
+    const runtime = drawingRuntime(notePrimitive);
+
+    try {
+      runtime.surfaces.svg.renderPages([]);
+      expect.unreachable();
+    } catch (error) {
+      expect(error).toMatchObject({
+        name: 'IsomerError',
+        code: 'EMPTY_PAGES',
+      });
+    }
+  });
+
+  it("names the page a frame's own rule rejects", () => {
+    const runtime = createIsomerRuntime({
+      packs: [svgPackOf(notePrimitive)],
+      frames: {
+        single: {
+          ...testFrame,
+          validateBody: (body) =>
+            body.length === 1 ? [] : ['needs exactly one node'],
+        },
+      },
+    });
+    const two = view('two');
+    two.body.push({ type: 'note', text: 'more' });
+
+    expect(() => runtime.surfaces.svg?.renderPages([view('one'), two])).toThrow(
+      /frame "single" cannot draw page 2: needs exactly one node/
+    );
+  });
+
   it("hands a primitive the frame's resolved theme as env.theme", () => {
     interface SwatchNode extends PrimitiveNode {
       type: 'swatch';

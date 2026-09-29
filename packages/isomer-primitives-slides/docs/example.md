@@ -227,6 +227,8 @@ const png = await takumi.png(runtime.surfaces.svg.render(composition));
 
 The five `.png` files are written by the same test that writes the other four surfaces' artifacts, with one difference: `toMatchFileSnapshot` is text-only, so the PNG case hand-rolls its own comparison, and that comparison is CI-only. A local run always rewrites the artifact — a takumi or font bump would otherwise fail every PNG case on the bump alone, not on a real regression — so `git diff` on the five files is the review step. Under `CI`, a missing artifact fails instead of being written, and byte equality is asserted against the committed artifact. CI runs Ubuntu only, so this verifies same-input determinism on linux-x64; cross-platform stability (darwin-arm64 producing the same bytes) is an operating assumption at a pinned `@takumi-rs/core` and a fixed font set, not independently verified here — see `@elastic/isomer-image-takumi`'s [Determinism](../../isomer-image-takumi/docs/index.md#determinism) section.
 
+The same test writes `deck.pdf`: the whole deck as one document, a page per slide, through `runtime.surfaces.svg.renderPages(deck)` and the backend's `pdf`. Its `creationDate` is fixed so the bytes do not carry the render time, and it is compared the way the PNGs are. A second case renders a slide with the `check` and `x` bullet markers and is not committed: a PDF rejects a glyph no registered font covers, so it proves the symbol face in `fonts.ts` reaches them.
+
 ## What this demonstrates
 
 The five compositions together exercise every primitive at least once:

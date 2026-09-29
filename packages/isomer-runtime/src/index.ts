@@ -54,6 +54,7 @@ export type {
   SlackSurface,
 } from './surfaces/slack';
 export type {
+  SvgPagesResult,
   SvgRenderNodeOptions,
   SvgRenderOptions,
   SvgRenderResult,

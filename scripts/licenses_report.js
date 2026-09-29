@@ -34,12 +34,8 @@ const LICENSE_BASENAMES = [
 ];
 
 const NOTICE_BASENAMES = ['NOTICE', 'NOTICE.txt', 'NOTICE.md'];
-const TAKUMI_LICENSE_PATH = join(
-  repoRoot,
-  'third_party_licenses',
-  'takumi-2.14.0-MIT.txt'
-);
-const takumiLicense = readFileSync(TAKUMI_LICENSE_PATH, 'utf-8').trim();
+const curatedLicense = (file) =>
+  readFileSync(join(repoRoot, 'third_party_licenses', file), 'utf-8').trim();
 const TAKUMI_PACKAGE_NAMES = [
   '@takumi-rs/core',
   '@takumi-rs/helpers',
@@ -52,7 +48,19 @@ const TAKUMI_PACKAGE_NAMES = [
   '@takumi-rs/core-win32-arm64-msvc',
   '@takumi-rs/core-win32-x64-msvc',
 ];
-const TAKUMI_PACKAGES = new Set(TAKUMI_PACKAGE_NAMES);
+/** Packages whose tarballs ship no license file, with the text their pinned version publishes. */
+const CURATED_LICENSES = [
+  {
+    names: TAKUMI_PACKAGE_NAMES,
+    version: '2.14.0',
+    text: curatedLicense('takumi-2.14.0-MIT.txt'),
+  },
+  {
+    names: ['takumi-pdf'],
+    version: '0.15.0',
+    text: curatedLicense('takumi-pdf-0.15.0-MIT.txt'),
+  },
+];
 
 const readPackage = (dir) =>
   JSON.parse(readFileSync(join(dir, 'package.json'), 'utf-8'));
@@ -73,12 +81,10 @@ const licenseOf = (pkg) => {
   return 'UNKNOWN';
 };
 
-const curatedLicenseText = (pkg) => {
-  if (pkg.version === '2.14.0' && TAKUMI_PACKAGES.has(pkg.name)) {
-    return takumiLicense;
-  }
-  return undefined;
-};
+const curatedLicenseText = (pkg) =>
+  CURATED_LICENSES.find(
+    ({ names, version }) => version === pkg.version && names.includes(pkg.name)
+  )?.text;
 
 const licenseTextOf = (pkg, dir) => {
   const licenseText = readFirstExisting(dir, LICENSE_BASENAMES);
