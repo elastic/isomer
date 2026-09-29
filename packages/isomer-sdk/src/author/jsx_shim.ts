@@ -184,6 +184,10 @@ export const buildJsxShim = <
     ])
   );
   const { authoredByType, childComponents } = collectAuthored(primitives);
+  assertUniqueComponentNames([
+    ...primitives.map(({ type }) => type),
+    ...childComponents.keys(),
+  ]);
   const view = defineAuthorComponent<CompositionAuthorProps<TNode>, 'view'>(
     'view'
   );
@@ -262,6 +266,22 @@ const collectAuthored = (
     }
   }
   return { authoredByType, childComponents };
+};
+
+/** Throws when two types, or a type and the root `Composition`, capitalize to one component name. */
+const assertUniqueComponentNames = (types: readonly string[]): void => {
+  const typeByName = new Map([['Composition', 'view']]);
+  for (const type of types) {
+    const name = capitalize(type);
+    const earlier = typeByName.get(name);
+    if (earlier !== undefined && earlier !== type) {
+      throw new IsomerError(
+        'DUPLICATE_PRIMITIVE_TYPE',
+        `buildJsxShim: "${earlier}" and "${type}" both become the component ${name}`
+      );
+    }
+    typeByName.set(name, type);
+  }
 };
 
 const isZodType = (schema: unknown): schema is ZodType =>
