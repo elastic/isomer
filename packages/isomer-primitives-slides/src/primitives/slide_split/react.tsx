@@ -18,8 +18,9 @@ import {
   layoutModule,
   tonesModule,
 } from '../../theme/modules';
+import { slideLayout, withLayout } from '../layout';
 
-import { paneContexts } from './pane_context';
+import { paneLayouts } from './pane_layout';
 import { splitModule } from './styles';
 import type { SlideSplitNode, SlideSplitPane } from './types';
 
@@ -74,9 +75,9 @@ export const react = (
     ratio = 'even',
     type,
   } = node;
-  const [leftContext, rightContext] = paneContexts(context, node);
   const { handles: split } = splitModule;
   const { handles: connector } = connectorModule;
+  const [leftLayout, rightLayout] = paneLayouts(slideLayout(context), node);
   return (
     <div
       {...nodeAnchor(context, { type })}
@@ -88,7 +89,11 @@ export const react = (
           split.ratio[ratio],
           split.divider[divider]
         )}>
-        <Pane pane={left} itemContext={leftContext} {...{ context, scope }} />
+        <Pane
+          pane={left}
+          itemContext={withLayout(context, leftLayout)}
+          {...{ context, scope }}
+        />
         {divider === 'rule' ? (
           <div aria-hidden className={cls(context, split.rule)} />
         ) : divider === 'hairline' ? (
@@ -109,7 +114,11 @@ export const react = (
         ) : (
           <div aria-hidden />
         )}
-        <Pane pane={right} itemContext={rightContext} {...{ context, scope }} />
+        <Pane
+          pane={right}
+          itemContext={withLayout(context, rightLayout)}
+          {...{ context, scope }}
+        />
       </div>
       {footnote ? (
         <p className={cls(context, split.footnote)}>

@@ -5,12 +5,11 @@
  * 2.0.
  */
 
-import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import { describe, expect, it } from 'vitest';
 
-import { layoutFindings, noFindings, slideOf } from '../../examples/measure';
-import { slideDeckFrame, slidesPack } from '../../pack';
+import { findings, slideOf } from '../../examples/measure';
 import { sequenceFit } from '../../theme/components/sequence';
+import { layoutContext, renderedStep } from '../size.fixtures';
 import { tallestExample } from '../slide_heading/examples';
 
 import { fullExample } from './examples';
@@ -29,41 +28,46 @@ const firstMessages = (count: number): SlideSequenceNode => {
   };
 };
 
-const runtime = createIsomerRuntime({
-  packs: [slidesPack],
-  frames: { slide: slideDeckFrame },
-});
-
-const html = (...body: object[]) =>
-  runtime.surfaces.html.render(slideOf(...body)).html;
-
 describe('sequenceStep', () => {
   it('steps down at each budget, on both sides of it', () => {
-    expect(sequenceStep(firstMessages(sequenceFit.l), {})).toBe('l');
-    expect(sequenceStep(firstMessages(sequenceFit.l + 1), {})).toBe('m');
-    expect(sequenceStep(firstMessages(sequenceFit.m), {})).toBe('m');
-    expect(sequenceStep(firstMessages(sequenceFit.m + 1), {})).toBe('s');
+    expect(sequenceStep(firstMessages(sequenceFit.l), layoutContext())).toBe(
+      'l'
+    );
+    expect(
+      sequenceStep(firstMessages(sequenceFit.l + 1), layoutContext())
+    ).toBe('m');
+    expect(sequenceStep(firstMessages(sequenceFit.m), layoutContext())).toBe(
+      'm'
+    );
+    expect(
+      sequenceStep(firstMessages(sequenceFit.m + 1), layoutContext())
+    ).toBe('s');
   });
 
   it('keeps an authored size', () => {
-    expect(sequenceStep({ ...fullExample, size: 'l' }, {})).toBe('l');
+    expect(sequenceStep({ ...fullExample, size: 'l' }, layoutContext())).toBe(
+      'l'
+    );
   });
 
   it('takes the whole body on a slide without a heading', () => {
     const node = firstMessages(sequenceFit.m);
-    expect(html(node)).toBe(html({ ...node, size: 'l' }));
-    expect(html(node)).not.toBe(html({ ...node, size: 'm' }));
-    expect(html(tallestExample, node)).toBe(
-      html(tallestExample, { ...node, size: 'm' })
-    );
+    expect(renderedStep('sequence-gapSize', node)).toBe('l');
+    expect(renderedStep('sequence-gapSize', node, tallestExample)).toBe('m');
   });
 
   it('steps down under a crowded heading', () => {
-    expect(sequenceStep(firstMessages(sequenceFit.l), { crowding: 1.1 })).toBe(
-      'm'
-    );
     expect(
-      sequenceStep(firstMessages(sequenceFit.l + 1), { crowding: 0.8 })
+      sequenceStep(
+        firstMessages(sequenceFit.l),
+        layoutContext({ crowding: 1.1 })
+      )
+    ).toBe('m');
+    expect(
+      sequenceStep(
+        firstMessages(sequenceFit.l + 1),
+        layoutContext({ crowding: 0.8 })
+      )
     ).toBe('l');
   });
 });
@@ -76,9 +80,9 @@ describe('sequence budgets fit what they allow', () => {
     { step: 's', count: sequenceMaxMessages },
   ] as const)('$count messages at $step', async ({ step, count }) => {
     const node = firstMessages(count);
-    expect(sequenceStep(node, {})).toBe(step);
+    expect(sequenceStep(node, layoutContext())).toBe(step);
     expect(
-      await layoutFindings(slideOf(tallestExample, { ...node, size: step }))
-    ).toEqual(noFindings);
+      await findings(slideOf(tallestExample, { ...node, size: step }))
+    ).toEqual([]);
   });
 });

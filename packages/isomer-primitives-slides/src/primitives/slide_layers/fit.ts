@@ -14,6 +14,7 @@ import { layers as theme, layersFit } from '../../theme/components/layers';
 import { label, tone as toneCue } from '../../theme/components/shared';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
+import { slideLayout } from '../layout';
 import { emWidth, packedLines, proseLines, sizeForLoad } from '../size';
 
 import type { SlideLayer, SlideLayersNode } from './schema';
@@ -64,10 +65,12 @@ export const layersLoad = (
 export const layersStep = (
   node: SlideLayersNode,
   context: SlideRenderContext | undefined
-): SlideSize =>
-  sizeForLoad(
+): SlideSize => {
+  const { width, crowding } = slideLayout(context);
+  return sizeForLoad(
     node.size,
-    (step) => layersLoad(node, step, context?.width),
+    (step) => layersLoad(node, step, width),
     layersFit,
-    context?.crowding
+    crowding
   );
+};

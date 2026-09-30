@@ -5,16 +5,12 @@
  * 2.0.
  */
 
-import {
-  createTakumiImageBackend,
-  type LayoutBox,
-} from '@elastic/isomer-image-takumi';
+import { createTakumiImageBackend } from '@elastic/isomer-image-takumi';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import {
   checkLayout,
   type Composition,
   createChildNodeWalker,
-  NODE_ANCHOR_ATTRIBUTE,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
 
@@ -28,32 +24,6 @@ const runtime = createIsomerRuntime({
 });
 const takumi = createTakumiImageBackend({ fonts: slideFonts });
 const walk = createChildNodeWalker(runtime.primitives);
-
-// Sub-pixel rounding reads as overflow without it.
-const tolerance = 1;
-
-const descendants = (box: LayoutBox): LayoutBox[] =>
-  box.children.flatMap((child) => [child, ...descendants(child)]);
-
-// `checkLayout` bounds a top-level node by the frame's whole canvas, so this also holds it to the frame's body, above the footer.
-const pastBody = (layout: LayoutBox): LayoutBox[] => {
-  const frame = [layout, ...descendants(layout)].find(
-    ({ attributes }) => attributes?.[NODE_ANCHOR_ATTRIBUTE] === 'slideFrame'
-  );
-  const body = frame?.children[0]?.children[0];
-  if (body === undefined) {
-    throw new Error('no frame body in the measured layout');
-  }
-  return descendants(body).filter(
-    ({ x, y, width, height }) =>
-      width > 0 &&
-      height > 0 &&
-      (x < body.x - tolerance ||
-        y < body.y - tolerance ||
-        x + width > body.x + body.width + tolerance ||
-        y + height > body.y + body.height + tolerance)
-  );
-};
 
 /** A frame holding `body`, with the footer every preview carries. */
 export const slideOf = (...body: object[]): Composition => ({
@@ -70,15 +40,11 @@ export const slideOf = (...body: object[]): Composition => ({
   ],
 });
 
-/** What takumi measures running past the canvas, overlapping, or past the frame body. */
-export const layoutFindings = async (slide: Composition) => {
-  const layout = await takumi.measure(
-    runtime.surfaces.svg.render(slide, { anchors: true })
+/** What `checkLayout` finds in takumi's measure of `slide`. */
+export const findings = async (slide: Composition) =>
+  checkLayout(
+    await takumi.measure(runtime.surfaces.svg.render(slide, { anchors: true })),
+    slide.body,
+    walk,
+    'svg'
   );
-  return {
-    checkLayout: checkLayout(layout, slide.body, walk, 'svg'),
-    pastBody: pastBody(layout),
-  };
-};
-
-export const noFindings = { checkLayout: [], pastBody: [] };

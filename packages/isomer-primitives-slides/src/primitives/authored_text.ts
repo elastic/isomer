@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { z } from '@elastic/isomer-sdk';
+import { navigationHref, z } from '@elastic/isomer-sdk';
 
 /** Input-size guard against far too much text, checked before marks are parsed or text is measured; not a layout limit. */
 export const authoredTextMaxLength = 10_000;
@@ -15,3 +15,6 @@ export const lineText = () => z.string().min(1).max(authoredTextMaxLength);
 
 /** A field that wraps. */
 export const wrappedText = () => z.string().min(1).max(authoredTextMaxLength);
+
+/** An `href`, bounded as {@link lineText} is. */
+export const boundedHref = () => navigationHref().max(authoredTextMaxLength);

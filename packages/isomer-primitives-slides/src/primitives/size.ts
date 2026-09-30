@@ -31,16 +31,36 @@ const sizeSchema = z
 
 export const sizeField = () => sizeSchema;
 
-/** The node's own `size`, else the largest step whose budget holds `load`, scaled by `crowding`; a function gives the load each step measures. */
+/** The node's own `size`, else the largest step whose budget holds `load` at that step, scaled by `crowding`. */
 export const sizeForLoad = (
   size: SlideSize | undefined,
   load: number | ((step: SlideSize) => number),
   budget: LoadBudget,
   crowding = 1
 ): SlideSize => {
-  const fits = (step: 'l' | 'm') =>
+  const at = (step: 'l' | 'm') =>
     (typeof load === 'number' ? load : load(step)) * crowding <= budget[step];
-  return size ?? (fits('l') ? 'l' : fits('m') ? 'm' : 's');
+  return size ?? (at('l') ? 'l' : at('m') ? 'm' : 's');
+};
+
+/** The smaller of two steps. */
+export const smallerStep = (a: SlideSize, b: SlideSize): SlideSize =>
+  slideSizes.indexOf(a) > slideSizes.indexOf(b) ? a : b;
+
+/** How many times over `measure` exceeds the room across; 1 when it fits. A room under a pixel counts as one, so the ratio stays finite. */
+export const narrowing = (measure: number, width = Infinity): number =>
+  Math.max(1, measure / Math.max(1, width));
+
+/** Width of track `index` when `total` pixels split into `shares` fr tracks with `gap` between; 0 when the gaps leave none. */
+export const trackWidth = (
+  total: number,
+  shares: readonly number[],
+  gap: ScaleToken,
+  index = 0
+): number => {
+  const sum = shares.reduce((all, share) => all + share, 0);
+  const free = total - scalePx(gap) * (shares.length - 1);
+  return Math.max(0, (free * (shares[index] ?? 0)) / sum);
 };
 
 /** The longest item's characters times the item count. */
@@ -79,7 +99,7 @@ export const emWidth = (text: string, tracking: ScaleToken): number =>
 export const widestWord = (text: string, tracking: ScaleToken): number =>
   Math.max(0, ...text.split(/\s+/).map((word) => emWidth(word, tracking)));
 
-/** Lines a greedy wrap packs items of `advances` px into, `gap` px apart, within `width`. */
+/** Lines a greedy wrap packs items `advances` px wide into, `gap` px apart, across `width`. */
 export const packedLines = (
   advances: readonly number[],
   gap: number,

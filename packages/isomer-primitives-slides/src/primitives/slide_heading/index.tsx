@@ -9,7 +9,12 @@ import { md } from '@elastic/isomer-sdk/markdown';
 import { type SlackBlock } from '@elastic/isomer-sdk/slack';
 
 import { slackHeading, slackMarksSection } from '../../render';
-import { marksMarkdown, plainText, stripMarks } from '../../render/marks';
+import {
+  marksMarkdown,
+  marksRichText,
+  plainText,
+  stripMarks,
+} from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -30,7 +35,7 @@ export const markdown = ({ title, lede }: SlideHeadingNode) => [
 ];
 
 export const slack = ({ title, lede }: SlideHeadingNode): SlackBlock[] => [
-  slackHeading(stripMarks(title)),
+  slackHeading(stripMarks(title), marksRichText(title)),
   ...(lede ? [slackMarksSection(lede)] : []),
 ];
 

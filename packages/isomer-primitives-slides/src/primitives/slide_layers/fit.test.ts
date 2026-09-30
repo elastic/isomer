@@ -7,11 +7,12 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { layoutFindings, noFindings, slideOf } from '../../examples/measure';
+import { findings, slideOf } from '../../examples/measure';
 import { frameContentWidth } from '../../theme/components/frame';
 import { layersFit } from '../../theme/components/layers';
+import { layoutContext } from '../size.fixtures';
 import { tallestExample } from '../slide_heading/examples';
-import { paneWidths } from '../slide_split/pane_context';
+import { paneWidths } from '../slide_split/pane_layout';
 
 import { layersLoad, layersStep } from './fit';
 import type { SlideLayer, SlideLayersNode } from './schema';
@@ -57,30 +58,43 @@ describe('layersLoad', () => {
 
 describe('layersStep', () => {
   it('steps down at each budget, on both sides of it', () => {
-    expect(layersStep(stack(...repeat(layersFit.l, oneLine)), {})).toBe('l');
-    expect(layersStep(stack(...repeat(layersFit.l + 1, oneLine)), {})).toBe(
-      'm'
-    );
-    expect(layersStep(stack(...repeat(layersFit.m, oneLine)), {})).toBe('m');
     expect(
-      layersStep(stack(twoLines, ...repeat(layersFit.m - 1, oneLine)), {})
+      layersStep(stack(...repeat(layersFit.l, oneLine)), layoutContext())
+    ).toBe('l');
+    expect(
+      layersStep(stack(...repeat(layersFit.l + 1, oneLine)), layoutContext())
+    ).toBe('m');
+    expect(
+      layersStep(stack(...repeat(layersFit.m, oneLine)), layoutContext())
+    ).toBe('m');
+    expect(
+      layersStep(
+        stack(twoLines, ...repeat(layersFit.m - 1, oneLine)),
+        layoutContext()
+      )
     ).toBe('s');
   });
 
   it('keeps an authored size', () => {
     expect(
-      layersStep({ ...stack(...repeat(6, twoLines)), size: 'l' }, {})
+      layersStep(
+        { ...stack(...repeat(6, twoLines)), size: 'l' },
+        layoutContext()
+      )
     ).toBe('l');
   });
 
   it('steps down under a crowded heading and in a narrower band', () => {
     const node = stack(...repeat(layersFit.l, oneLine));
-    expect(layersStep(node, { crowding: 1.1 })).toBe('m');
+    expect(layersStep(node, layoutContext({ crowding: 1.1 }))).toBe('m');
     expect(
-      layersStep(stack(...repeat(layersFit.l + 1, oneLine)), { crowding: 0.8 })
+      layersStep(
+        stack(...repeat(layersFit.l + 1, oneLine)),
+        layoutContext({ crowding: 0.8 })
+      )
     ).toBe('l');
     const [half] = paneWidths(frameContentWidth, 'even', 'gap');
-    expect(layersStep(node, { width: half })).toBe('s');
+    expect(layersStep(node, layoutContext({ width: half }))).toBe('s');
   });
 });
 
@@ -92,18 +106,18 @@ describe('layers budgets fit what they allow', () => {
     { step: 'm', node: stack(...repeat(layersFit.m, oneLine)) },
     { step: 'm', node: stack(...repeat(layersFit.m / 2, twoLines)) },
   ] as const)('$node.layers.length layers at $step', async ({ step, node }) => {
-    expect(layersStep(node, {})).toBe(step);
+    expect(layersStep(node, layoutContext())).toBe(step);
     expect(
-      await layoutFindings(slideOf(tallestExample, { ...node, size: step }))
-    ).toEqual(noFindings);
+      await findings(slideOf(tallestExample, { ...node, size: step }))
+    ).toEqual([]);
   });
 
   it('in half a split', async () => {
     const [width] = paneWidths(frameContentWidth, 'even', 'gap');
     const node = stack(...repeat(layersFit.l, 'Edge cache'));
-    expect(layersStep(node, { width })).toBe('l');
+    expect(layersStep(node, layoutContext({ width }))).toBe('l');
     expect(
-      await layoutFindings(
+      await findings(
         slideOf(tallestExample, {
           type: 'slideSplit',
           panes: [
@@ -112,6 +126,6 @@ describe('layers budgets fit what they allow', () => {
           ],
         })
       )
-    ).toEqual(noFindings);
+    ).toEqual([]);
   });
 });

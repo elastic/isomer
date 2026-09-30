@@ -7,11 +7,12 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { layoutFindings, noFindings, slideOf } from '../../examples/measure';
+import { findings, slideOf } from '../../examples/measure';
 import { frameContentWidth } from '../../theme/components/frame';
 import { type SlideSize, slideSizes } from '../../theme/variants';
+import { layoutContext } from '../size.fixtures';
 import { tallestExample } from '../slide_heading/examples';
-import { paneWidths } from '../slide_split/pane_context';
+import { paneWidths } from '../slide_split/pane_layout';
 
 import { pipelineLoad, pipelineStep } from './fit';
 import type { SlidePipelineNode } from './schema';
@@ -43,7 +44,8 @@ const drawsAt = (
   step: SlideSize,
   width = frameContentWidth
 ) =>
-  slideSizes.indexOf(pipelineStep(node, { width })) <= slideSizes.indexOf(step);
+  slideSizes.indexOf(pipelineStep(node, layoutContext({ width }))) <=
+  slideSizes.indexOf(step);
 
 /** The longest body at which `make` still draws at `step` or larger in `width`. */
 const heaviest = (
@@ -84,22 +86,30 @@ describe('pipelineStep', () => {
   const atM = heaviest(make, 'm');
 
   it('steps down at each budget, on both sides of it', () => {
-    expect(pipelineStep(make(atL), {})).toBe('l');
-    expect(pipelineStep(make(atL + 1), {})).toBe('m');
-    expect(pipelineStep(make(atM), {})).toBe('m');
-    expect(pipelineStep(make(atM + 1), {})).toBe('s');
+    expect(pipelineStep(make(atL), layoutContext())).toBe('l');
+    expect(pipelineStep(make(atL + 1), layoutContext())).toBe('m');
+    expect(pipelineStep(make(atM), layoutContext())).toBe('m');
+    expect(pipelineStep(make(atM + 1), layoutContext())).toBe('s');
   });
 
   it('keeps an authored size', () => {
-    expect(pipelineStep({ ...make(atM + 1), size: 'l' }, {})).toBe('l');
-    expect(pipelineStep({ ...make(1), size: 's' }, {})).toBe('s');
+    expect(pipelineStep({ ...make(atM + 1), size: 'l' }, layoutContext())).toBe(
+      'l'
+    );
+    expect(pipelineStep({ ...make(1), size: 's' }, layoutContext())).toBe('s');
   });
 
   it('steps down under a crowded heading and in a narrower column', () => {
-    expect(pipelineStep(make(atL), { crowding: 1.05 })).toBe('m');
-    expect(pipelineStep(make(atL + 1), { crowding: 0.8 })).toBe('l');
+    expect(pipelineStep(make(atL), layoutContext({ crowding: 1.05 }))).toBe(
+      'm'
+    );
+    expect(pipelineStep(make(atL + 1), layoutContext({ crowding: 0.8 }))).toBe(
+      'l'
+    );
     const [half] = paneWidths(frameContentWidth, 'even', 'gap');
-    expect(pipelineStep(make(atL), { width: half })).not.toBe('l');
+    expect(pipelineStep(make(atL), layoutContext({ width: half }))).not.toBe(
+      'l'
+    );
   });
 });
 
@@ -121,10 +131,10 @@ describe('pipeline budgets fit what they allow', () => {
     async ({ count, terminals, step }) => {
       const make = shape(count, terminals);
       const node = make(heaviest(make, step));
-      expect(pipelineStep(node, {})).toBe(step);
+      expect(pipelineStep(node, layoutContext())).toBe(step);
       expect(
-        await layoutFindings(slideOf(tallestExample, { ...node, size: step }))
-      ).toEqual(noFindings);
+        await findings(slideOf(tallestExample, { ...node, size: step }))
+      ).toEqual([]);
     }
   );
 
@@ -133,7 +143,7 @@ describe('pipeline budgets fit what they allow', () => {
     const make = shape(3, false);
     const node = make(heaviest(make, step, width));
     expect(
-      await layoutFindings(
+      await findings(
         slideOf(tallestExample, {
           type: 'slideSplit',
           panes: [
@@ -142,6 +152,6 @@ describe('pipeline budgets fit what they allow', () => {
           ],
         })
       )
-    ).toEqual(noFindings);
+    ).toEqual([]);
   });
 });

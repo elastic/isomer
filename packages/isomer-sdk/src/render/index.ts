@@ -6,10 +6,12 @@
  */
 
 export {
+  LAYOUT_ROOM_ATTRIBUTE,
   NODE_ANCHOR_ATTRIBUTE,
   anchorValue,
   findNodeElementPairs,
   findNodeElements,
+  layoutRoom,
   nodeAnchor,
   withNodeAnchors,
   withoutAnchors,

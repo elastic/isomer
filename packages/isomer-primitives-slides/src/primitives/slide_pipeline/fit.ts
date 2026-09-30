@@ -13,7 +13,15 @@ import { frameContentWidth } from '../../theme/components/frame';
 import { pipeline, pipelineFit } from '../../theme/components/pipeline';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
-import { lineFill, rowLoad, sizeForLoad, widestWord } from '../size';
+import { slideLayout } from '../layout';
+import {
+  lineFill,
+  narrowing,
+  rowLoad,
+  sizeForLoad,
+  trackWidth,
+  widestWord,
+} from '../size';
 
 import type { SlidePipelineNode } from './schema';
 
@@ -27,42 +35,37 @@ const terminalWidth = (text: string): number =>
 
 type Shape = Pick<SlidePipelineNode, 'start' | 'end' | 'steps'>;
 
-/** Width of all step columns together, less the gaps between them. */
-const columnsWidth = ({ start, end, steps }: Shape, width: number): number =>
-  Math.max(
-    1,
-    width -
-      [start, end].reduce(
-        (total, text) => total + (text ? terminalWidth(text) : 0),
-        0
-      ) -
-      scalePx(pipeline.gap) * (steps.length - 1)
+const terminalsWidth = ({ start, end }: Shape): number =>
+  [start, end].reduce(
+    (total, text) => total + (text ? terminalWidth(text) : 0),
+    0
   );
 
-/** {@link rowLoad} of the steps, as if their columns filled the frame body; unbounded at a step where a title's widest word outgrows its column. */
+/** {@link rowLoad} of the steps, scaled by how many times over their columns fall short of the frame body; unbounded at a step where a title's widest word outgrows its column. */
 export const pipelineLoad = (
   shape: Shape,
   step: SlideSize,
   width = frameContentWidth
 ): number => {
   const { steps } = shape;
-  const columns = columnsWidth(shape, width);
+  const column = trackWidth(
+    width - terminalsWidth(shape),
+    steps.map(() => 1),
+    pipeline.gap
+  );
   if (
     steps.some(
       ({ title }) =>
         widestWord(title, pipeline.title.tracking) *
           scalePx(pipeline.titleSizes[step]) >
-        (columns / steps.length) * lineFill
+        column * lineFill
     )
   ) {
     return Infinity;
   }
   return (
-    (rowLoad(
-      steps.map(({ title, body }) => [title, body && stripMarks(body)])
-    ) *
-      frameContentWidth) /
-    columns
+    rowLoad(steps.map(({ title, body }) => [title, body && stripMarks(body)])) *
+    narrowing(frameContentWidth, column * steps.length)
   );
 };
 
@@ -70,10 +73,12 @@ export const pipelineLoad = (
 export const pipelineStep = (
   node: SlidePipelineNode,
   context: SlideRenderContext | undefined
-): SlideSize =>
-  sizeForLoad(
+): SlideSize => {
+  const { width, crowding } = slideLayout(context);
+  return sizeForLoad(
     node.size,
-    (step) => pipelineLoad(node, step, context?.width),
+    (step) => pipelineLoad(node, step, width),
     pipelineFit,
-    context?.crowding
+    crowding
   );
+};
