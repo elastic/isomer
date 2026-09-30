@@ -12,6 +12,16 @@ import { SLACK_LIMITS, type SlackBlock } from '@elastic/isomer-sdk/slack';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { frameContentWidth } from '../../theme/components/frame';
+import { openBody } from '../layout';
+import {
+  crowdingHeading,
+  referenceHeading,
+  renderedStep,
+} from '../size.fixtures';
+import { headingRoom, referenceRoom } from '../slide_heading/fit';
+import { paneLayouts } from '../slide_split/pane_layout';
+import type { SlideSplitNode } from '../slide_split/types';
 
 import { example, fullExample, groupsExample, plainExample } from './examples';
 import { tableSize } from './fit';
@@ -382,18 +392,18 @@ describe('slideTable', () => {
       ...example,
       rows: Array.from({ length: count }, () => [...cells]),
     });
+    const reference = { width: frameContentWidth, height: referenceRoom };
 
     it.each([
-      [5, 1, 'l'],
-      [6, 1, 'm'],
-      [7, 1, 's'],
-      [7, 0.8, 'l'],
-      [8, 0.8, 'm'],
-      [9, 0.8, 's'],
+      [5, 'reference', reference, 'l'],
+      [6, 'reference', reference, 'm'],
+      [7, 'reference', reference, 's'],
+      [9, 'open', openBody, 'l'],
+      [10, 'open', openBody, 'm'],
     ] as const)(
-      '%i rows under crowding %d take %s',
-      (count, crowding, step) => {
-        expect(tableSize(rows(count), crowding)).toBe(step);
+      '%i rows in the %s layout take %s',
+      (count, _name, layout, step) => {
+        expect(tableSize(rows(count), layout)).toBe(step);
       }
     );
 
@@ -404,17 +414,62 @@ describe('slideTable', () => {
         '380 ms',
         '0.1%',
       ];
-      expect(tableSize(rows(4), 1)).toBe('l');
-      expect(tableSize(rows(4, long), 1)).toBe('s');
+      expect(tableSize(rows(4), reference)).toBe('l');
+      expect(tableSize(rows(4, long), reference)).toBe('s');
+    });
+
+    it('measures its cells across the layout width', () => {
+      expect(tableSize(rows(4), reference)).toBe('l');
+      expect(
+        tableSize(rows(4), { ...reference, width: frameContentWidth / 2 })
+      ).toBe('s');
+      expect(tableSize(rows(1), { ...openBody, width: 0 })).toBe('s');
     });
 
     it('keeps an authored size', () => {
-      expect(tableSize({ ...rows(12), size: 'l' }, 1)).toBe('l');
+      expect(tableSize({ ...rows(12), size: 'l' }, reference)).toBe('l');
     });
 
-    it('draws the full example, twelve rows, at the smallest step', () => {
+    it('draws the full example, twelve rows, at the smallest step under a heading', () => {
       expect(fullExample.rows).toHaveLength(12);
-      expect(tableSize(fullExample, 1)).toBe('s');
+      expect(tableSize(fullExample, reference)).toBe('s');
+    });
+
+    it.each([
+      ['alone', rows(10), undefined, openBody],
+      [
+        'under a crowding heading',
+        rows(4),
+        crowdingHeading,
+        { width: frameContentWidth, height: headingRoom(crowdingHeading) },
+      ],
+    ] as const)(
+      'draws the step it measures %s',
+      (_name, node, heading, layout) => {
+        expect(renderedStep('table-headStep', node, heading)).toBe(
+          tableSize(node, layout)
+        );
+      }
+    );
+
+    it('draws the step it measures in a split pane', () => {
+      const node = rows(5);
+      const split: SlideSplitNode = {
+        type: 'slideSplit',
+        panes: [
+          { label: 'Regions', items: [node] },
+          { items: [{ type: 'slideBulletList', items: ['One'] }] },
+        ],
+      };
+      const [pane] = paneLayouts(
+        { width: frameContentWidth, height: headingRoom(referenceHeading) },
+        split
+      );
+      const step = tableSize(node, pane);
+      expect(step).not.toBe(tableSize(node, reference));
+      expect(renderedStep('table-headStep', split, referenceHeading)).toBe(
+        step
+      );
     });
   });
 });

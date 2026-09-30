@@ -12,6 +12,17 @@ import { SLACK_LIMITS, type SlackBlock } from '@elastic/isomer-sdk/slack';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { frameContentWidth } from '../../theme/components/frame';
+import { slideLayout } from '../layout';
+import {
+  crowdingBelow,
+  crowdingHeading,
+  referenceHeading,
+  renderedStep,
+} from '../size.fixtures';
+import { headingRoom } from '../slide_heading/fit';
+import { paneLayouts } from '../slide_split/pane_layout';
+import type { SlideSplitNode } from '../slide_split/types';
 
 import { example, fullExample, pairExample } from './examples';
 import { markdown as markdownContent, text } from './index';
@@ -250,6 +261,44 @@ describe('slideMatrix', () => {
 
     it('keeps an authored size', () => {
       expect(matrixSize({ rows: rows(8), size: 'l' }, 1)).toBe('l');
+    });
+
+    it.each([
+      ['alone', 6, undefined, slideLayout(undefined).crowding],
+      [
+        'under a crowding heading',
+        4,
+        crowdingHeading,
+        crowdingBelow(crowdingHeading),
+      ],
+    ] as const)(
+      'draws the step it counts %s',
+      (_name, count, heading, crowding) => {
+        const node = { ...pairExample, rows: rows(count) };
+        const step = matrixSize(node, crowding);
+        expect(step).not.toBe(matrixSize(node, 1));
+        expect(renderedStep('matrix-cellPadding', node, heading)).toBe(step);
+      }
+    );
+
+    it('draws the step it counts in a split pane', () => {
+      const node = { ...pairExample, rows: rows(4) };
+      const split: SlideSplitNode = {
+        type: 'slideSplit',
+        panes: [
+          { label: 'Plans', items: [node] },
+          { items: [{ type: 'slideBulletList', items: ['One'] }] },
+        ],
+      };
+      const [pane] = paneLayouts(
+        { width: frameContentWidth, height: headingRoom(referenceHeading) },
+        split
+      );
+      const step = matrixSize(node, slideLayout({ layout: pane }).crowding);
+      expect(step).not.toBe(matrixSize(node, 1));
+      expect(renderedStep('matrix-cellPadding', split, referenceHeading)).toBe(
+        step
+      );
     });
 
     it('draws the full example, six columns and eight rows, at the smallest step', () => {

@@ -11,6 +11,21 @@ import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import {
+  frameBodyHeight,
+  frameContentWidth,
+} from '../../theme/components/frame';
+import { title, titleShares } from '../../theme/components/title';
+import { slideLayout } from '../layout';
+import { trackWidth } from '../size';
+import {
+  crowdingHeading,
+  referenceHeading,
+  renderedStep,
+} from '../size.fixtures';
+import { headingRoom } from '../slide_heading/fit';
+import { paneLayouts } from '../slide_split/pane_layout';
+import type { SlideSplitNode } from '../slide_split/types';
 
 import { example, fullExample, menuExample } from './examples';
 import { markdown as markdownContent, text } from './index';
@@ -152,19 +167,112 @@ describe('slideQuadrant', () => {
     ] as const)(
       '%i top and %i bottom items under crowding %d take %s',
       (top, bottom, crowding, step) => {
-        expect(quadrantSize(cells(top, bottom), crowding)).toBe(step);
+        expect(
+          quadrantSize(cells(top, bottom), {
+            width: frameContentWidth,
+            crowding,
+          })
+        ).toBe(step);
       }
     );
 
+    it('scales its count by how much narrower than the frame body its layout is', () => {
+      const node = cells(2, 1);
+      expect(
+        quadrantSize(node, { width: frameContentWidth, crowding: 1 })
+      ).toBe('l');
+      expect(
+        quadrantSize(node, { width: frameContentWidth / 2, crowding: 1 })
+      ).toBe('m');
+      expect(quadrantSize(node, { width: 0, crowding: 1 })).toBe('s');
+    });
+
     it('keeps an authored size', () => {
-      expect(quadrantSize({ ...cells(4, 4), size: 'l' }, 1)).toBe('l');
+      expect(
+        quadrantSize(
+          { ...cells(4, 4), size: 'l' },
+          { width: frameContentWidth, crowding: 1 }
+        )
+      ).toBe('l');
+    });
+
+    it.each([
+      ['alone', cells(3, 3), undefined, slideLayout(undefined)],
+      [
+        'under a crowding heading',
+        cells(2, 2),
+        crowdingHeading,
+        slideLayout({
+          layout: {
+            width: frameContentWidth,
+            height: headingRoom(crowdingHeading),
+          },
+        }),
+      ],
+    ] as const)(
+      'draws the step it counts %s',
+      (_name, node, heading, layout) => {
+        const step = quadrantSize(node, layout);
+        expect(step).not.toBe(
+          quadrantSize(node, { width: frameContentWidth, crowding: 1 })
+        );
+        expect(renderedStep('quadrant-cellSize', node, heading)).toBe(step);
+      }
+    );
+
+    it('draws the step it counts in a split pane', () => {
+      const node = cells(2, 1);
+      const split: SlideSplitNode = {
+        type: 'slideSplit',
+        panes: [
+          { label: 'Features', items: [node] },
+          { items: [{ type: 'slideBulletList', items: ['One'] }] },
+        ],
+      };
+      const [pane] = paneLayouts(
+        { width: frameContentWidth, height: headingRoom(referenceHeading) },
+        split
+      );
+      const step = quadrantSize(node, slideLayout({ layout: pane }));
+      expect(step).not.toBe('l');
+      expect(renderedStep('quadrant-cellSize', split, referenceHeading)).toBe(
+        step
+      );
+    });
+
+    it('draws the step it counts as a title aside', () => {
+      const node = cells(2, 1);
+      const step = quadrantSize(
+        node,
+        slideLayout({
+          layout: {
+            width: trackWidth(
+              frameContentWidth,
+              titleShares,
+              title.columnGap,
+              1
+            ),
+            height: frameBodyHeight,
+          },
+        })
+      );
+      expect(step).not.toBe('l');
+      expect(
+        renderedStep('quadrant-cellSize', {
+          type: 'slideTitle',
+          title: 'Crate',
+          aside: node,
+        })
+      ).toBe(step);
     });
 
     it('draws the full example, four items in every cell, at the smallest step', () => {
       expect(
         fullExample.quadrants.every(({ items }) => items.length === 4)
       ).toBe(true);
-      expect(quadrantSize(fullExample, 1)).toBe('s');
+      expect(
+        quadrantSize(fullExample, { width: frameContentWidth, crowding: 1 })
+      ).toBe('s');
     });
   });
 });

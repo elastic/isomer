@@ -19,6 +19,7 @@ export const catalog = {
     'The items fall into a few named groups, such as required and optional services.',
   ],
   avoidWhen: [
+    'Each item is a name and one line about it; use slideList.',
     'Every cell answers yes, partly, or no, and marks would read faster than words; use slideMatrix.',
     'There are more than twelve rows; split them across two slides, each with its own slideTable.',
   ],

@@ -21,6 +21,7 @@ import {
   slideMatrixMarks,
   type SlideSize,
 } from '../../theme/variants';
+import { slideLayout } from '../layout';
 import { sizeForLoad } from '../size';
 
 import type { SlideMatrixNode } from './schema';
@@ -68,7 +69,9 @@ export const react = (
   const { handles: matrix } = matrixModule;
   const tracks = matrix.columns[countKey(columns.length)];
   const padding =
-    matrix.cellPadding[matrixSize({ rows, size }, context?.crowding)];
+    matrix.cellPadding[
+      matrixSize({ rows, size }, slideLayout(context).crowding)
+    ];
   const used = slideMatrixMarks.filter((kind) =>
     rows.some(({ marks }) => marks.includes(kind))
   );
