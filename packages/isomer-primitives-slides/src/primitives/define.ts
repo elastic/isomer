@@ -18,6 +18,8 @@ import type { ZodObject, ZodType } from 'zod';
 
 import type { SlidePackTypes } from '../render/context';
 
+import { statedRefine } from './cross_field';
+
 /** {@link CorePrimitiveDefinition} bound to this pack's types. */
 export type PrimitiveDefinition<
   TNode extends PrimitiveNode,
@@ -39,9 +41,12 @@ const isFrame = (node: unknown): boolean =>
 
 /** The runtime's body-node union minus `slideFrame`, which never nests. */
 export const contentNode = (bodyNodeSchema: ZodType<unknown>) =>
-  bodyNodeSchema.refine((node) => !isFrame(node), {
-    error: 'a slideFrame cannot sit inside another node; frames never nest',
-  });
+  bodyNodeSchema.check(
+    statedRefine((node) => !isFrame(node), {
+      error: 'a slideFrame cannot sit inside another node; frames never nest',
+      rule: 'never a slideFrame',
+    })
+  );
 
 /** {@link contentNode}s in place of `unresolvedBodyNodeSchema`, described as `field` is. */
 export const bodyNodes = (
