@@ -33,7 +33,7 @@ const turnSchema = z
         'Who speaks: `user` (right-aligned), `model`, or the `host` application that runs the model.'
       ),
     text: wrappedText().describe(
-      'What was said. Keep it to a sentence or a short line of code. Line breaks are kept; blank lines at either end are dropped.'
+      'What was said. Keep it to a sentence or a short line of code. Line breaks are kept; blank lines at either end are dropped, and a turn of only blank lines is refused.'
     ),
   })
   .strict()
