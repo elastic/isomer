@@ -11,7 +11,13 @@ import { font } from '../theme/base';
 import { heading } from '../theme/components/heading';
 import { scalePx } from '../theme/scale';
 
-import { emWidth, sizeForLines, sizeForLoad, widestWord } from './size';
+import {
+  emWidth,
+  rowLoad,
+  sizeForLines,
+  sizeForLoad,
+  widestWord,
+} from './size';
 import { headingCrowding } from './slide_heading/fit';
 
 const steps = { l: font.size.px200, m: font.size.px128, s: font.size.px96 };
@@ -33,6 +39,14 @@ describe('sizeForLoad', () => {
   it('keeps an explicit size', () => {
     expect(sizeForLoad('s', 1, budget)).toBe('s');
     expect(sizeForLoad('l', 1000, budget, 3)).toBe('l');
+  });
+});
+
+describe('rowLoad', () => {
+  it('multiplies the longest item by the item count', () => {
+    expect(rowLoad([['ab', 'cd'], ['abc', undefined], ['a']])).toBe(12);
+    expect(rowLoad([['日本']])).toBe(4);
+    expect(rowLoad([])).toBe(0);
   });
 });
 

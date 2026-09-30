@@ -10,8 +10,10 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
+import { withContextFields } from '../../render/context_view';
 import { marksReact } from '../../render/marks';
 import { ToneCue } from '../../render/tone_cue';
+import { frameContentWidth } from '../../theme/components/frame';
 import { slideDistillery } from '../../theme/distillery';
 import {
   connectorModule,
@@ -19,6 +21,7 @@ import {
   tonesModule,
 } from '../../theme/modules';
 
+import { paneWidths } from './pane_width';
 import { splitModule } from './styles';
 import type { SlideSplitNode, SlideSplitPane } from './types';
 
@@ -70,6 +73,13 @@ export const react = (
 ): ReactNode => {
   const { handles: split } = splitModule;
   const { handles: connector } = connectorModule;
+  const widths = paneWidths(
+    context?.width ?? frameContentWidth,
+    ratio,
+    divider
+  );
+  const paneContext = (index: 0 | 1) =>
+    withContextFields(context, { width: widths[index] });
   return (
     <div
       {...nodeAnchor(context, { type })}
@@ -81,7 +91,7 @@ export const react = (
           split.ratio[ratio],
           split.divider[divider]
         )}>
-        <Pane pane={left} {...{ context, scope }} />
+        <Pane pane={left} context={paneContext(0)} {...{ scope }} />
         {divider === 'rule' ? (
           <div aria-hidden className={cls(context, split.rule)} />
         ) : divider === 'hairline' ? (
@@ -102,7 +112,7 @@ export const react = (
         ) : (
           <div aria-hidden />
         )}
-        <Pane pane={right} {...{ context, scope }} />
+        <Pane pane={right} context={paneContext(1)} {...{ scope }} />
       </div>
       {footnote ? (
         <p className={cls(context, split.footnote)}>

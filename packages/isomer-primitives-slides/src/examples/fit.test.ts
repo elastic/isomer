@@ -12,6 +12,7 @@ import {
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import {
   checkLayout,
+  type Composition,
   createChildNodeWalker,
   NODE_ANCHOR_ATTRIBUTE,
   type PrimitiveNode,
@@ -19,6 +20,9 @@ import {
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../pack';
+import { referenceHeading } from '../primitives/size.fixtures';
+import { longExample as agendaExample } from '../primitives/slide_agenda/examples';
+import { fullExample as definitionsExample } from '../primitives/slide_definitions/examples';
 import { slideDeckPrimitives } from '../registry';
 
 import { slideFonts } from './fonts';
@@ -64,12 +68,28 @@ const pastBody = (layout: LayoutBox): LayoutBox[] => {
   );
 };
 
+/** The fullest count-sized examples, under the heading their load budgets are set against. */
+const referenceCases = [agendaExample, definitionsExample].map((example) => {
+  const slide = previewSlide(example);
+  const frame = slide.body[0] as PrimitiveNode & { body: PrimitiveNode[] };
+  return {
+    name: `${example.type} below the reference heading`,
+    slide: {
+      ...slide,
+      body: [{ ...frame, body: [referenceHeading, example] }],
+    },
+  };
+});
+
+const fits = async ({ slide }: { slide: Composition }) => {
+  const layout = await takumi.measure(
+    runtime.surfaces.svg.render(slide, { anchors: true })
+  );
+  expect(checkLayout(layout, slide.body, walk, 'svg')).toEqual([]);
+  expect(pastBody(layout)).toEqual([]);
+};
+
 describe('every example fits its preview slide', () => {
-  it.each(cases)('$name', async ({ slide }) => {
-    const layout = await takumi.measure(
-      runtime.surfaces.svg.render(slide, { anchors: true })
-    );
-    expect(checkLayout(layout, slide.body, walk, 'svg')).toEqual([]);
-    expect(pastBody(layout)).toEqual([]);
-  });
+  it.each(cases)('$name', fits);
+  it.each(referenceCases)('$name', fits);
 });

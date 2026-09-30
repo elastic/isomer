@@ -40,7 +40,7 @@ export const SLIDE_THEME = {
   font: { family: { sans, mono }, size: { px24: px(24), …, px280: px(280) }, weight, tracking, lineHeight },
   type: { display, heading, lede, body, label, mono, chrome, … },
   // Shared groups (`components/shared.ts`, `components/marks.ts`).
-  glyph: { arrow, separator, dash }, label: { … }, connector: { … }, tone: { … }, marks: { … },
+  glyph: { arrow, separator, dash, termJoiner }, link: { decoration }, label: { … }, connector: { … }, tone: { … }, marks: { … },
   // One group per primitive (`components/<group>.ts`).
   frame: { … }, heading: { title: type.heading, lede: type.lede, … }, split: { … }, …
 } as const;
@@ -68,9 +68,10 @@ Slides are read embedded at roughly half scale, so no rule sets a `font-size` un
 
 Length-sensitive primitives take an optional `size`: `l`, `m`, or `s`, each a set of theme tokens (`heading.titleSizes`, `title.displaySizes`), none below 24px. Left out, the renderer picks the step from the node's own text, so every surface draws the same size; the image surface cannot measure, and does not support container units, `min()`, or `clamp()`. An explicit `size` always wins.
 
-- **Load:** `slideHeading` compares its title's character count with `headingFit`, a wide East Asian glyph or an emoji counting as two (`src/render/mono.ts`).
-- **Width:** `slideTitle` takes the largest step at which its longest word fits its column and the title holds two lines, estimated from `extraboldAdvance` glyph widths and the role's tracking.
-- **Crowding:** `slideFrame` estimates how much room its opening `slideHeading` leaves and passes `crowding` to the rest of the slide on the render context: 1 under a two-line title and a two-line lede, below 1 under a shorter heading. It is reserved for primitives below the heading that size by load, which pass it to `sizeForLoad`; none in this pack does yet.
+- **Load:** `slideHeading`, `slideStatement`, and `slideQuote` compare their text's character count with `headingFit`, `statementFit`, and `quoteFit`, a wide East Asian glyph or an emoji counting as two (`src/render/mono.ts`). `slideDefinitions` compares `rowLoad`, its longest column's characters times the column count, with `definitionsFit`, and its longer column's rows with `definitionsRowFit`, and takes the smaller step; past `definitionsSingleColumnMax` terms it splits into two columns. In a narrower room than their measure, such as a `slideSplit` pane, statement, quote, and definitions scale their load by how many times over it falls short (`narrowing`).
+- **Count:** `slideAgenda` counts its title lines, one a section and more where a title wraps in its track, against `agendaFit`.
+- **Width:** `slideTitle`, `slideSection`, and `slideClosing` take the largest step at which their title's longest word fits its column and the title holds two lines, estimated from `extraboldAdvance` glyph widths and the role's tracking.
+- **Crowding:** `slideFrame` estimates how much room its opening `slideHeading` leaves and passes `crowding` to the rest of the slide on the render context: 1 under a two-line title and a two-line lede, below 1 under a shorter heading. Primitives below the heading that size by load or count pass it to `sizeForLoad`: `slideStatement`, `slideQuote`, `slideAgenda`, and `slideDefinitions`. `slideSplit` passes each pane its `width` the same way, and `slideTitle` its aside the aside column's, and every load-, count-, and width-sized primitive measures against it; a pane that nested splits leave no room for measures as zero, so its content takes the smallest step.
 
 Past the smallest step, nothing on a field says how much it holds. The agent guide says once that overflow is reported by the takumi layout check (`checkLayout`), and `src/examples/fit.test.ts` measures every example with takumi and fails on any `checkLayout` finding.
 
