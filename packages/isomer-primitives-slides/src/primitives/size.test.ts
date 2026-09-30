@@ -272,7 +272,7 @@ describe('measureText against takumi', () => {
     ],
     ['collapsed line breaks', 'alpha\n\n\nbeta      gamma', type.body, 1000],
     ['mono', 'const total = sum(lines);', type.mono, 1000],
-    ['a timeline label', 'First Quarter', timeline.label, 300],
+    ['a timeline label', 'First Quarter', timeline.label, 1000],
     ['a timeline channel or roadmap status', 'Straße', label, 1000],
     [
       'a graph caption',

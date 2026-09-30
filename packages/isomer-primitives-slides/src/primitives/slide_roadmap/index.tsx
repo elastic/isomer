@@ -20,6 +20,7 @@ import {
 import { toneCueText } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
+import { styledText } from '../size';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
@@ -37,11 +38,12 @@ export type {
 } from './schema';
 
 const { separator } = slideDistillery.tokens.roadmap;
+const { label } = slideDistillery.tokens;
 const termJoiner = slideDistillery.tokens.glyph.termJoiner.value;
 
 const horizon = ({ title, status, current }: SlideRoadmapColumn): string =>
   oneLine(
-    `${toneCueText(current ? 'primary' : undefined)}${title} ${separator.value} ${status.toUpperCase()}`
+    `${toneCueText(current ? 'primary' : undefined)}${title} ${separator.value} ${styledText(status, label)}`
   );
 
 export const text = ({ columns }: SlideRoadmapNode): string =>

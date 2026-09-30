@@ -40,8 +40,10 @@ import {
   definitionsFit,
   definitionsRowFit,
 } from '../theme/components/definitions';
+import { graph } from '../theme/components/graph';
 import { quoteFit } from '../theme/components/quote';
 import { statementFit } from '../theme/components/statement';
+import { scalePx } from '../theme/scale';
 
 import { slideFonts } from './fonts';
 import { previewSlide } from './preview_slide';
@@ -220,12 +222,40 @@ describe('a graph caption is set in the width its step is measured in', () => {
           .map((child) => captionBox(child, start))
           .find((found) => found !== undefined);
 
-  it.each(
-    graphExamples.filter(
+  const besideMiddle: SlideGraphNode & { caption: string } = {
+    type: 'slideGraph',
+    caption: 'Reconciliation runs nightly.',
+    nodes: [
+      { id: 'a', term: 'Cart', body: 'What the shopper holds.' },
+      { id: 'b', term: 'Order', body: 'What the shop owes.' },
+      { id: 'c', term: 'Ledger', body: 'What was paid.' },
+      {
+        id: 'd',
+        term: 'Pricing',
+        body: 'What each costs.',
+        placement: 'above',
+      },
+    ],
+    edges: [
+      ['a', 'b'],
+      ['b', 'c'],
+      ['d', 'b'],
+    ],
+  };
+
+  it('spans one track beside an upper node on the second', () => {
+    expect(
+      graphCaptionWidth(besideMiddle, slideLayout(undefined).width)
+    ).toBeLessThan(scalePx(graph.captionMaxWidth));
+  });
+
+  it.each([
+    ...graphExamples.filter(
       (node): node is SlideGraphNode & { caption: string } =>
         node.caption !== undefined
-    )
-  )('$caption', async (node) => {
+    ),
+    besideMiddle,
+  ])('$caption', async (node) => {
     const box = await takumi.measure(
       runtime.surfaces.svg.render(inFrame([node]))
     );

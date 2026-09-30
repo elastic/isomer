@@ -18,6 +18,7 @@ import {
 import { toneCueText } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
+import { styledText } from '../size';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
@@ -32,10 +33,11 @@ export type { SlideTimelineItem, SlideTimelineNode } from './schema';
 
 const { quoteOpen, quoteClose, separator, labelEnd } =
   slideDistillery.tokens.timeline;
+const { label: labelRole } = slideDistillery.tokens;
 
 const when = ({ label, channel, current }: SlideTimelineItem): string =>
   oneLine(
-    `${toneCueText(current ? 'primary' : undefined)}${label} ${separator.value} ${channel.toUpperCase()}${labelEnd.value}`
+    `${toneCueText(current ? 'primary' : undefined)}${label} ${separator.value} ${styledText(channel, labelRole)}${labelEnd.value}`
   );
 
 export const text = ({ items }: SlideTimelineNode): string =>
