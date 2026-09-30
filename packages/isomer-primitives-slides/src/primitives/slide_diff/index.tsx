@@ -7,14 +7,9 @@
 
 import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
-import {
-  codeBlock,
-  escapeMrkdwn,
-  type SlackBlock,
-} from '@elastic/isomer-sdk/slack';
+import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import { richTextSection, slackRichText, slackSection } from '../../render';
-import { richTextRun } from '../../render/marks';
+import { slackCodePanel } from '../../render';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -40,21 +35,9 @@ export const markdown = ({ file, lines }: SlideDiffNode) => [
   md.codeBlock(unified(lines), 'diff'),
 ];
 
-export const slack = ({ file, lines }: SlideDiffNode): SlackBlock[] => {
-  const source = unified(lines);
-  return [
-    slackSection(
-      [file ? escapeMrkdwn(oneLine(file)) : '', codeBlock(source)]
-        .filter(Boolean)
-        .join('\n'),
-      () =>
-        slackRichText(...(file ? [richTextSection(richTextRun(file))] : []), {
-          type: 'rich_text_preformatted',
-          elements: [{ type: 'text', text: source }],
-        })
-    ),
-  ];
-};
+export const slack = ({ file, lines }: SlideDiffNode): SlackBlock[] => [
+  slackCodePanel(unified(lines), file),
+];
 
 export const slideDiffPrimitive = definePrimitive({
   type: 'slideDiff',

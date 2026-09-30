@@ -7,16 +7,14 @@
 
 import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
-import {
-  codeBlock,
-  escapeMrkdwn,
-  type SlackBlock,
-} from '@elastic/isomer-sdk/slack';
+import { escapeMrkdwn, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
 import {
+  hasMrkdwnDelimiter,
   richTextSection,
   slackBold,
   slackCaption,
+  slackCodePanel,
   slackRichText,
   slackSection,
 } from '../../render';
@@ -70,19 +68,20 @@ export const slack = ({ label, turns }: SlideTranscriptNode): SlackBlock[] => [
   ...(label ? [slackCaption(label.toUpperCase(), true)] : []),
   ...turns.map(({ format, role, text: said }): SlackBlock => {
     const lines = turnLines(said).join('\n');
-    const body = { type: 'text', text: lines } as const;
-    return slackSection(
-      `${slackBold(speaker(role))}\n${
-        format === 'code' ? codeBlock(lines) : escapeMrkdwn(lines)
-      }`,
-      () =>
-        slackRichText(
-          richTextSection(richTextRun(speaker(role), { bold: true })),
-          format === 'code'
-            ? { type: 'rich_text_preformatted', elements: [body] }
-            : richTextSection(body)
-        )
-    );
+    if (format === 'code') {
+      return slackCodePanel(lines, speaker(role), true);
+    }
+    const literal = () =>
+      slackRichText(
+        richTextSection(richTextRun(speaker(role), { bold: true })),
+        richTextSection({ type: 'text', text: lines })
+      );
+    return hasMrkdwnDelimiter(lines)
+      ? literal()
+      : slackSection(
+          `${slackBold(speaker(role))}\n${escapeMrkdwn(lines)}`,
+          literal
+        );
   }),
 ];
 

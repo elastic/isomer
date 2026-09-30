@@ -10,6 +10,7 @@
 import { oneLine } from '@elastic/isomer-sdk/author';
 import {
   clampSlackText,
+  codeBlock,
   escapeMrkdwn,
   formatHeaderText,
   SLACK_LIMITS,
@@ -22,6 +23,14 @@ import {
 } from '@elastic/isomer-sdk/slack';
 
 import { marksRichText, marksSlack, richTextRun } from './marks';
+
+/** Whether `text` holds a character `mrkdwn` reads as formatting and {@link escapeMrkdwn} leaves as is. */
+export const hasMrkdwnDelimiter = (text: string): boolean =>
+  /[*_~`]/.test(text);
+
+/** Whether a `mrkdwn` code block might not print `text` as written: `codeBlock` breaks a backtick fence, and Slack reads `<` and the `&amp;`, `&lt;`, and `&gt;` escapes. */
+export const alteredInCodeBlock = (text: string): boolean =>
+  /```|<|&(?:amp|lt|gt);/.test(text);
 
 /** Whether Slack keeps all of `text` in a field of `limit` characters. */
 export const fitsSlack = (text: string, limit: number): boolean =>
@@ -122,3 +131,40 @@ export const slackMarksSection = (text: string): SlackBlock =>
 /** Authored text with marks as a context line, whole at any length. */
 export const slackMarksContext = (text: string): SlackBlock =>
   slackContext(oneLine(marksSlack(text)), () => marksRichTextBlock(text));
+
+/** A code block under an optional caption, or literal rich text where `mrkdwn` would not print either as written. */
+export const slackCodePanel = (
+  source: string,
+  caption?: string,
+  strong = false
+): SlackBlock => {
+  const literal = () =>
+    slackRichText(
+      ...(caption
+        ? [
+            richTextSection(
+              richTextRun(caption, strong ? { bold: true } : undefined)
+            ),
+          ]
+        : []),
+      {
+        type: 'rich_text_preformatted',
+        elements: [{ type: 'text', text: source }],
+      }
+    );
+  if (
+    (caption !== undefined && hasMrkdwnDelimiter(caption)) ||
+    alteredInCodeBlock(source)
+  ) {
+    return literal();
+  }
+  const heading = caption
+    ? strong
+      ? slackBold(caption)
+      : escapeMrkdwn(oneLine(caption))
+    : '';
+  return slackSection(
+    [heading, codeBlock(source)].filter(Boolean).join('\n'),
+    literal
+  );
+};

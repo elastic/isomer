@@ -7,15 +7,9 @@
 
 import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
-import { codeBlock, type SlackBlock } from '@elastic/isomer-sdk/slack';
+import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import {
-  richTextSection,
-  slackBold,
-  slackRichText,
-  slackSection,
-} from '../../render';
-import { richTextRun } from '../../render/marks';
+import { slackCodePanel } from '../../render';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -40,26 +34,9 @@ export const markdown = ({ label, command }: SlideCommandNode) => [
   md.codeBlock(command, 'sh'),
 ];
 
-export const slack = ({ label, command }: SlideCommandNode): SlackBlock[] => {
-  const caption = label?.toUpperCase();
-  return [
-    slackSection(
-      [caption ? slackBold(caption) : '', codeBlock(command)]
-        .filter(Boolean)
-        .join('\n'),
-      () =>
-        slackRichText(
-          ...(caption
-            ? [richTextSection(richTextRun(caption, { bold: true }))]
-            : []),
-          {
-            type: 'rich_text_preformatted',
-            elements: [{ type: 'text', text: command }],
-          }
-        )
-    ),
-  ];
-};
+export const slack = ({ label, command }: SlideCommandNode): SlackBlock[] => [
+  slackCodePanel(command, label?.toUpperCase(), true),
+];
 
 export const slideCommandPrimitive = definePrimitive({
   type: 'slideCommand',
