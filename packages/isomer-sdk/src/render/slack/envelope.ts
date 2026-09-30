@@ -433,33 +433,37 @@ const cellInlines = (cell: SlackTableCell): SlackRichTextInline[] =>
 
 const lineBreak: SlackRichTextInline = { type: 'text', text: '\n' };
 
+const bolded = (inline: SlackRichTextInline): SlackRichTextInline => ({
+  ...inline,
+  style: { ...inline.style, bold: true },
+});
+
 // A table over the message-wide cell budget degrades to rich text, each row as
 // `heading: cell` lines keyed by the header row with a blank line between rows,
-// which Slack keeps whole and never reads as mrkdwn.
+// which Slack keeps whole and never reads as mrkdwn. A column with an empty
+// heading prints its cell alone.
 const degradeTable = (block: SlackTableBlock): SlackBlock[] => {
   const [header, ...rows] = block.rows;
   if (!header) {
     return [];
   }
-  const labels = header.map((cell): SlackRichTextInline => ({
-    type: 'text',
-    text: tableCellText(cell),
-    style: { bold: true },
-  }));
+  const labels = header.map((cell) => cellInlines(cell).map(bolded));
   const lines =
     rows.length === 0
       ? [
-          labels.flatMap((label, index) =>
-            index > 0
-              ? [{ type: 'text' as const, text: ' · ' }, label]
-              : [label]
-          ),
+          labels
+            .filter((label) => label.length > 0)
+            .flatMap((label, index): SlackRichTextInline[] => [
+              ...(index > 0 ? [{ type: 'text' as const, text: ' · ' }] : []),
+              ...label,
+            ]),
         ]
       : rows.map((row) =>
           labels.flatMap((label, index): SlackRichTextInline[] => [
             ...(index > 0 ? [lineBreak] : []),
-            label,
-            { type: 'text', text: ': ' },
+            ...(label.length > 0
+              ? [...label, { type: 'text' as const, text: ': ' }]
+              : []),
             ...(row[index] ? cellInlines(row[index]) : []),
           ])
         );

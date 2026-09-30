@@ -207,6 +207,47 @@ describe('Slack envelope transforms', () => {
     });
   });
 
+  it('keeps a styled heading and drops the separator for an empty one past the aggregate budget', () => {
+    const half = SLACK_LIMITS.tableCellCharsPerMessage / 2;
+    const code = {
+      type: 'rich_text' as const,
+      elements: [
+        {
+          type: 'rich_text_section' as const,
+          elements: [
+            { type: 'text' as const, text: 'iOS', style: { code: true } },
+          ],
+        },
+      ],
+    };
+    const matrix: SlackTableBlock = {
+      type: 'table',
+      rows: [
+        [cell(''), code],
+        [cell('x'.repeat(half)), cell('Yes')],
+      ],
+    };
+    const { blocks } = renderSlackEnvelope(
+      { type: 'view', body: [{ type: 'a' }, { type: 'b' }] },
+      dispatcherFor([[tableBlock(half)], [matrix]])
+    );
+    expect(blocks.at(-1)).toEqual({
+      type: 'rich_text',
+      elements: [
+        {
+          type: 'rich_text_section',
+          elements: [
+            { type: 'text', text: 'x'.repeat(half) },
+            { type: 'text', text: '\n' },
+            { type: 'text', text: 'iOS', style: { code: true, bold: true } },
+            { type: 'text', text: ': ' },
+            { type: 'text', text: 'Yes' },
+          ],
+        },
+      ],
+    });
+  });
+
   it('produces a valid header for a title over the header limit', () => {
     const { blocks } = renderSlackEnvelope(
       {
