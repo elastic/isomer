@@ -482,6 +482,41 @@ describe('Slack envelope transforms', () => {
       ]);
     });
 
+    it.each<[string, SlackTableCell[][], SlackRichTextBlockElement[]]>([
+      ['an empty table', [], []],
+      ['a table of empty rows', [[], []], []],
+      ['a header with empty cells and no rows', [[cell(''), rich()], []], []],
+      [
+        'empty rows after the header',
+        [[cell('H')], [], [cell('a')], []],
+        [section(...lead('H'), text('a'))],
+      ],
+      [
+        'only empty rows after the header',
+        [[cell('H')], []],
+        [section(strong('H'))],
+      ],
+      [
+        'an empty header and empty elements in a cell',
+        [[], [rich(section(), quote, { ...list, elements: [] })]],
+        [quote],
+      ],
+      [
+        'empty rows, cells, and elements mixed',
+        [[cell('H'), cell('')], [], [rich(section()), cell('b')], [cell('c')]],
+        [
+          section(...lead('H'), text('\n')),
+          section(text('b'), text('\n')),
+          blank,
+          section(...lead('H'), text('c')),
+        ],
+      ],
+    ])('sends %s through the fallback', (_name, rows, elements) => {
+      expect(render([{ type: 'table', rows }])).toEqual(
+        elements.length === 0 ? [] : [{ type: 'rich_text', elements }]
+      );
+    });
+
     it.each([
       ['keeps tables that fit exactly', [4999, 4999], ['table', 'table']],
       ['degrades the table one past', [4999, 5000], ['table', 'rich_text']],

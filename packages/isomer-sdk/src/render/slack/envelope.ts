@@ -435,7 +435,7 @@ const cellElements = (
   cell: SlackTableCell | undefined
 ): SlackRichTextBlockElement[] => {
   if (cell?.type === 'rich_text') {
-    return cell.elements;
+    return cell.elements.filter(({ elements }) => elements.length > 0);
   }
   return cell?.text ? [richSection([textRun(cell.text)])] : [];
 };
@@ -563,10 +563,12 @@ const splitLongElement = (
 // A table Slack would reject is replaced by one `rich_text` block. Each row's
 // columns run `heading: cell` to the wider of the header and the row, and a
 // blank section parts the rows. A cell keeps its inlines, styles, and blocks; a
-// header-only table prints its headings.
+// table whose rows past the header have no cells prints its headings, and one
+// with nothing to print is dropped.
 const degradeTable = ({
-  rows: [header = [], ...rows],
+  rows: [header = [], ...body],
 }: SlackTableBlock): SlackBlock[] => {
+  const rows = body.filter((row) => row.length > 0);
   const pieces =
     rows.length === 0
       ? [
@@ -594,8 +596,11 @@ const degradeTable = ({
 };
 
 const fitsTableShape = ({ rows }: SlackTableBlock): boolean =>
+  rows.length > 0 &&
   rows.length <= SLACK_LIMITS.tableRows &&
-  rows.every((row) => row.length <= SLACK_LIMITS.tableColumns);
+  rows.every(
+    (row) => row.length > 0 && row.length <= SLACK_LIMITS.tableColumns
+  );
 
 // Slack counts table cell characters across the whole message, not per block,
 // so a composition whose tables individually fit can still be rejected. In
