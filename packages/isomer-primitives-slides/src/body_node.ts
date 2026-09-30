@@ -12,25 +12,35 @@
 // this imports their node types) is type-only and intentional. Do not break it by
 // deriving the union from the registry: that closes it at the value level (TS7022).
 
+import type { SlideAnnotatedRenderNode } from './primitives/slide_annotated_render';
 import type { SlideBulletListNode } from './primitives/slide_bullet_list';
 import type { SlideCodeNode } from './primitives/slide_code';
+import type { SlideColumnsNode } from './primitives/slide_columns';
 import type { SlideFrameNode } from './primitives/slide_frame';
 import type { SlideHeadingNode } from './primitives/slide_heading';
+import type { SlideRenderNode } from './primitives/slide_render';
+import type { SlideRenderGridNode } from './primitives/slide_render_grid';
 import type { SlideSplitNode } from './primitives/slide_split';
 import type { SlideStackNode } from './primitives/slide_stack';
 import type { SlideTerritoryGroupNode } from './primitives/slide_territory_group';
 import type { SlideTitleNode } from './primitives/slide_title';
+import type { SlideWindowNode } from './primitives/slide_window';
 
 /** Discriminated union of every node type this pack defines. */
 export type BodyNode =
+  | SlideAnnotatedRenderNode
   | SlideBulletListNode
   | SlideCodeNode
+  | SlideColumnsNode
   | SlideFrameNode
   | SlideHeadingNode
+  | SlideRenderNode
+  | SlideRenderGridNode
   | SlideSplitNode
   | SlideStackNode
   | SlideTerritoryGroupNode
-  | SlideTitleNode;
+  | SlideTitleNode
+  | SlideWindowNode;
 
 /** A {@link BodyNode} that may nest inside a {@link SlideFrameNode}; frames cannot nest. */
 export type SlideContentNode = Exclude<BodyNode, SlideFrameNode>;

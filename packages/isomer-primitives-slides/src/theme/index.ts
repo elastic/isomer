@@ -14,18 +14,22 @@ export { literal, paddingXy, px, scalePx } from './scale';
 export {
   slideBulletMarkers,
   slideFrameTones,
+  slideRenderSurfaces,
   slideSizes,
   slideSplitDividers,
   slideSplitRatios,
   slideStackSpacings,
   slideTones,
+  slideWindowChromes,
 } from './variants';
 export type {
   SlideBulletMarker,
   SlideFrameTone,
+  SlideRenderSurface,
   SlideSize,
   SlideSplitDivider,
   SlideSplitRatio,
   SlideStackSpacing,
   SlideTone,
+  SlideWindowChrome,
 } from './variants';

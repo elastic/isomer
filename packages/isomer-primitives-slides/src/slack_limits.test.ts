@@ -212,6 +212,88 @@ const cases: LimitCase[] = [
       panels: [{ file: `order ${fill}`, lines: ['{}'] }],
     }),
   },
+  {
+    name: 'slideColumns fields',
+    slot: 'fields',
+    limit: SLACK_LIMITS.sectionFieldChars,
+    filler: 'x',
+    max: 4000,
+    node: (fill) => ({
+      type: 'slideColumns',
+      items: [
+        { title: 'A', body: `So ${fill}` },
+        { title: 'B', body: 'Short.' },
+      ],
+    }),
+  },
+  {
+    name: 'slideColumns footnote',
+    slot: 'context',
+    limit: SLACK_LIMITS.contextElementChars,
+    filler: 'x',
+    max: 4000,
+    node: (fill) => ({
+      type: 'slideColumns',
+      items: [
+        { title: 'A', body: 'One.' },
+        { title: 'B', body: 'Two.' },
+      ],
+      footnote: { code: 'flag', text: `So ${fill}` },
+    }),
+  },
+  {
+    name: 'slideWindow title',
+    slot: 'context',
+    limit: SLACK_LIMITS.contextElementChars,
+    filler: 'x',
+    max: 4000,
+    node: (fill) => ({
+      type: 'slideWindow',
+      chrome: 'chat',
+      title: `Chat ${fill}`,
+      body: [{ type: 'slideBulletList', items: ['One'] }],
+    }),
+  },
+  {
+    name: 'slideRender caption',
+    slot: 'context',
+    limit: SLACK_LIMITS.contextElementChars,
+    filler: 'x',
+    max: 4000,
+    node: (fill) => ({
+      type: 'slideRender',
+      slide: 'next',
+      surface: 'svg',
+      caption: `Shown ${fill}`,
+    }),
+  },
+  {
+    name: 'slideRenderGrid tile caption',
+    slot: 'context',
+    limit: SLACK_LIMITS.contextElementChars,
+    filler: 'x',
+    max: 4000,
+    node: (fill) => ({
+      type: 'slideRenderGrid',
+      body: [{ type: 'slideBulletList', items: ['One'] }],
+      tiles: [
+        { surface: 'svg', caption: `For ${fill}` },
+        { surface: 'text', caption: 'SMS' },
+      ],
+    }),
+  },
+  {
+    name: 'slideAnnotatedRender legend',
+    slot: 'section',
+    limit: SLACK_LIMITS.sectionTextChars,
+    filler: 'x',
+    max: 4000,
+    node: (fill) => ({
+      type: 'slideAnnotatedRender',
+      render: { type: 'slideRender', slide: 'next', surface: 'svg' },
+      pins: [{ x: 10, y: 10, title: 'Claim', body: `So ${fill}` }],
+    }),
+  },
 ];
 
 const schemas = new Map<string, (typeof slideDeckPrimitives)[number]['schema']>(

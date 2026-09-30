@@ -49,3 +49,10 @@ runtime.surfaces.text.render(composition);
 | `slideBulletList` | Short points with a dot, check, or × marker. |
 | `slideTerritoryGroup` | Who owns what, one color-keyed column per owner. |
 | `slideCode` | Source in one panel, or two joined by an arrow. |
+| `slideColumns` | Two to four parallel options, one recommended. |
+| `slideWindow` | Slide nodes in one app's title bar: a browser, terminal, chat, or Slack channel. |
+| `slideRender` | Another slide as one surface renders it, or a placeholder for a host reference. |
+| `slideRenderGrid` | One slide on two to six surfaces, side by side. |
+| `slideAnnotatedRender` | A `slideRender` with numbered pins and a legend. |
+
+A render's `body` is the slide it embeds, not a walked child: its ids are its own, it renders no node anchors, and in JSX it is a prop of elements, `<SlideRender surface="svg" body={[<SlideFrame>…</SlideFrame>]} />`. `resolveSlideRenders(slides)` fills each `slide` reference in a deck with that slide's body. Ordered primitives reveal one part per click; see [builds](builds.md).

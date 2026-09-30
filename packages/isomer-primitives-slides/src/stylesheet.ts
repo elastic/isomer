@@ -5,14 +5,19 @@
  * 2.0.
  */
 
+import { annotatedRenderModule } from './primitives/slide_annotated_render/styles';
 import { bulletsModule } from './primitives/slide_bullet_list/styles';
 import { codeModule } from './primitives/slide_code/styles';
+import { columnsModule } from './primitives/slide_columns/styles';
 import { frameModule } from './primitives/slide_frame/styles';
 import { headingModule } from './primitives/slide_heading/styles';
+import { renderModule } from './primitives/slide_render/styles';
+import { renderGridModule } from './primitives/slide_render_grid/styles';
 import { splitModule } from './primitives/slide_split/styles';
 import { stackModule } from './primitives/slide_stack/styles';
 import { territoryModule } from './primitives/slide_territory_group/styles';
 import { titleModule } from './primitives/slide_title/styles';
+import { windowModule } from './primitives/slide_window/styles';
 import { slideDistillery } from './theme/distillery';
 import {
   connectorModule,
@@ -31,14 +36,19 @@ export const slideModules = {
   label: labelModule,
   connector: connectorModule,
   marks: marksModule,
+  annotatedRender: annotatedRenderModule,
   bullets: bulletsModule,
   code: codeModule,
+  columns: columnsModule,
   frame: frameModule,
   heading: headingModule,
+  render: renderModule,
+  renderGrid: renderGridModule,
   split: splitModule,
   stack: stackModule,
   territory: territoryModule,
   title: titleModule,
+  window: windowModule,
 };
 
 /** Hosts include this beside React markup. */

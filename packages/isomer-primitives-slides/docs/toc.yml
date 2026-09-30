@@ -6,6 +6,7 @@
 toc:
   - file: index.md
   - file: primitives.md
+  - file: builds.md
   - file: contract.md
   - file: document.md
   - file: theme.md

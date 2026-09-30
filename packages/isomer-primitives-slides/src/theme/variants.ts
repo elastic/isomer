@@ -40,3 +40,25 @@ export type SlideStackSpacing = (typeof slideStackSpacings)[number];
 export const slideBulletMarkers = ['dot', 'check', 'x'] as const;
 
 export type SlideBulletMarker = (typeof slideBulletMarkers)[number];
+
+/** Only the title bar changes; `slack` reads the title as a channel. */
+export const slideWindowChromes = [
+  'browser',
+  'terminal',
+  'slack',
+  'chat',
+] as const;
+
+export type SlideWindowChrome = (typeof slideWindowChromes)[number];
+
+/** The first three draw the slide; the rest print their output. */
+export const slideRenderSurfaces = [
+  'react',
+  'html',
+  'svg',
+  'markdown',
+  'text',
+  'slack',
+] as const;
+
+export type SlideRenderSurface = (typeof slideRenderSurfaces)[number];
