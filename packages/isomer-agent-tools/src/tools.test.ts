@@ -211,17 +211,33 @@ describe('createIsomerTools', () => {
       expect(errors).toEqual([expect.stringContaining('(in slideFrame)')]);
     });
 
-    it('refuses a composition over the input budget before parsing it', async () => {
+    // The view, its body, and the stack hold three of the levels.
+    const stackOfDepth = (depth: number) => ({
+      type: 'view',
+      body: [{ type: 'slideStack', children: nested(depth - 3) }],
+    });
+
+    it('parses a composition at the depth limit', async () => {
+      const parse = vi.fn((value: unknown) => runtime.parse(value));
+      const { errors } = jsonOf(
+        await call(
+          createIsomerTools({ runtime: { ...runtime, parse } }),
+          ISOMER_TOOL_NAMES.validate,
+          { composition: stackOfDepth(MAX_INPUT_DEPTH) }
+        )
+      );
+      expect(parse).toHaveBeenCalledOnce();
+      expect(errors).not.toContain(
+        `The input nests deeper than ${MAX_INPUT_DEPTH} levels.`
+      );
+    });
+
+    it('refuses a composition past the depth limit before parsing it', async () => {
       const parse = vi.fn((value: unknown) => runtime.parse(value));
       const result = await call(
         createIsomerTools({ runtime: { ...runtime, parse } }),
         ISOMER_TOOL_NAMES.validate,
-        {
-          composition: {
-            type: 'view',
-            body: [{ type: 'slideStack', children: nested(MAX_INPUT_DEPTH) }],
-          },
-        }
+        { composition: stackOfDepth(MAX_INPUT_DEPTH + 1) }
       );
       expect(parse).not.toHaveBeenCalled();
       expect(result.isError).toBeUndefined();
@@ -284,6 +300,24 @@ describe('createIsomerTools', () => {
         errors: [expect.stringMatching(FRAME_RULE)],
       });
     });
+
+    it.each([
+      [undefined, 'data-theme="dark"'],
+      ['light', 'data-theme="light"'],
+    ])(
+      'renders html with theme %s over the composition’s dark, its CSS inline',
+      async (theme, attribute) => {
+        const html = textOf(
+          await call(tools, ISOMER_TOOL_NAMES.render, {
+            composition: { ...oneSlide, theme: 'dark' },
+            surface: 'html',
+            ...(theme === undefined ? {} : { theme }),
+          })
+        );
+        expect(html).toContain(attribute);
+        expect(html).toContain('<style>');
+      }
+    );
 
     it('returns a composition over the input budget as a failed call', async () => {
       const result = await call(tools, ISOMER_TOOL_NAMES.render, {
@@ -385,27 +419,52 @@ describe('createIsomerTools', () => {
       });
     });
 
-    it('refuses view input over the input budget before the view sees it', async () => {
+    const requestSpy = () => {
       const request = vi.fn(runtime.viewRegistry.request);
-      const input = { title: [] as unknown[] };
-      input.title.push(input);
-      const result = await call(
-        createIsomerTools({
-          runtime: {
-            ...runtime,
-            viewRegistry: { ...runtime.viewRegistry, request },
-          },
-        }),
-        ISOMER_TOOL_NAMES.requestView,
-        { id: 'one-slide', input }
-      );
-      expect(request).not.toHaveBeenCalled();
-      expect(result.isError).toBe(true);
-      expect(jsonOf(result)).toEqual({
-        error: 'Invalid input for view "one-slide":',
-        errors: ['The input contains itself.'],
+      const spied = createIsomerTools({
+        runtime: {
+          ...runtime,
+          viewRegistry: { ...runtime.viewRegistry, request },
+        },
       });
+      return { request, spied };
+    };
+
+    it('passes view input at the depth limit to the view', async () => {
+      const { request, spied } = requestSpy();
+      await call(spied, ISOMER_TOOL_NAMES.requestView, {
+        id: 'one-slide',
+        input: { title: nested(MAX_INPUT_DEPTH - 1) },
+      });
+      expect(request).toHaveBeenCalledOnce();
     });
+
+    const cyclic = { title: [] as unknown[] };
+    cyclic.title.push(cyclic);
+
+    it.each([
+      [
+        'past the depth limit',
+        { title: nested(MAX_INPUT_DEPTH) },
+        `The input nests deeper than ${MAX_INPUT_DEPTH} levels.`,
+      ],
+      ['that contains itself', cyclic, 'The input contains itself.'],
+    ])(
+      'refuses view input %s before the view sees it',
+      async (_label, input, reason) => {
+        const { request, spied } = requestSpy();
+        const result = await call(spied, ISOMER_TOOL_NAMES.requestView, {
+          id: 'one-slide',
+          input,
+        });
+        expect(request).not.toHaveBeenCalled();
+        expect(result.isError).toBe(true);
+        expect(jsonOf(result)).toEqual({
+          error: 'Invalid input for view "one-slide":',
+          errors: [reason],
+        });
+      }
+    );
 
     const viewTools = (
       build: (context: unknown) => Composition | Promise<Composition>,
