@@ -7,7 +7,7 @@
 
 import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
-import { bold, escapeMrkdwn, type SlackBlock } from '@elastic/isomer-sdk/slack';
+import { escapeMrkdwn, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
 import {
   marksMarkdown,
@@ -20,6 +20,7 @@ import { pending } from '../../render/pending';
 import {
   richTextBreak,
   richTextSection,
+  slackBold,
   slackFields,
   slackRichText,
 } from '../../render/slack_text';
@@ -69,7 +70,7 @@ export const slack = ({ items }: SlideStatsNode): SlackBlock[] => [
   slackFields(
     items.map((item) => {
       const value = valueText(item);
-      return `${value ? bold(value) : pending.mrkdwn} ${escapeMrkdwn(oneLine(item.label))}: ${oneLine(marksSlack(item.body))}`;
+      return `${value ? slackBold(value) : pending.mrkdwn} ${escapeMrkdwn(oneLine(item.label))}: ${oneLine(marksSlack(item.body))}`;
     }),
     () =>
       slackRichText(

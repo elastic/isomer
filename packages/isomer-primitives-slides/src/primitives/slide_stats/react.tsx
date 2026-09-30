@@ -11,12 +11,12 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { marksReact } from '../../render/marks';
-import { frameContentWidth } from '../../theme/components/frame';
 import { stats as theme } from '../../theme/components/stats';
 import { slideDistillery } from '../../theme/distillery';
 import { layoutModule, placeholderModule } from '../../theme/modules';
 import { scalePx } from '../../theme/scale';
 import { type SlideSize, slideSizes } from '../../theme/variants';
+import { slideLayout } from '../layout';
 import { emWidth, sizeForWidth } from '../size';
 
 import type { SlideStatsNode } from './schema';
@@ -24,10 +24,13 @@ import { statsModule } from './styles';
 
 const { caption } = slideDistillery.tokens.placeholder;
 
-/** The step at which every value, beside its unit, fits its column. */
-export const statsValueSize = ({ items, size }: SlideStatsNode): SlideSize => {
+/** The step at which every value, beside its unit, fits its column of `width`. */
+export const statsValueSize = (
+  { items, size }: SlideStatsNode,
+  width: number
+): SlideSize => {
   const gutters = (items.length - 1) * 2 * scalePx(theme.columnPadding);
-  const column = (frameContentWidth - gutters) / items.length;
+  const column = (width - gutters) / items.length;
   return items.reduce<SlideSize>((worst, { value = '', unit }) => {
     const step = sizeForWidth(
       size,
@@ -51,7 +54,7 @@ export const react = (
   const { type, items } = node;
   const { handles: stats } = statsModule;
   const { handles: placeholder } = placeholderModule;
-  const step = statsValueSize(node);
+  const step = statsValueSize(node, slideLayout(context).width);
   return (
     <div
       {...nodeAnchor(context, { type })}

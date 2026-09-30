@@ -12,6 +12,8 @@ import { SLACK_LIMITS, type SlackBlock } from '@elastic/isomer-sdk/slack';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { openBody } from '../layout';
+import { renderedStep } from '../size.fixtures';
 
 import { denseExample, example, scaledExample } from './examples';
 import { markdown as markdownContent, text } from './index';
@@ -296,18 +298,49 @@ describe('slideBars', () => {
     ] as const)(
       '%i bars with %i details under crowding %d take %s',
       (count, details, crowding, step) => {
-        expect(barsSize(bars(count, details), crowding)).toBe(step);
+        expect(
+          barsSize(bars(count, details), { width: openBody.width, crowding })
+        ).toBe(step);
       }
     );
 
+    const full = { width: openBody.width, crowding: 1 };
+
+    it('fits each value beside its bar across the layout width', () => {
+      const pair = (value: number, max?: number): SlideBarsNode => ({
+        type: 'slideBars',
+        ...(max === undefined ? {} : { max }),
+        items: [
+          { label: 'A', value },
+          { label: 'B', value: 1 },
+        ],
+      });
+      expect(barsSize(pair(123456), full)).toBe('l');
+      expect(barsSize(pair(1234567), full)).toBe('m');
+      expect(barsSize(pair(12345678), full)).toBe('s');
+      expect(barsSize(pair(12345678, 100000000), full)).toBe('l');
+      expect(barsSize(pair(123456), { ...full, width: 1200 })).toBe('s');
+    });
+
+    it('takes a smaller step as a title aside', () => {
+      expect(renderedStep('bars-labelSize', example)).toBe('l');
+      expect(
+        renderedStep('bars-labelSize', {
+          type: 'slideTitle',
+          title: 'Payments',
+          aside: example,
+        })
+      ).not.toBe('l');
+    });
+
     it('keeps an authored size', () => {
-      expect(barsSize({ ...bars(6, 6), size: 'l' }, 1)).toBe('l');
+      expect(barsSize({ ...bars(6, 6), size: 'l' }, full)).toBe('l');
     });
 
     it('draws the dense example, six bars each with a detail, at the smallest step', () => {
       expect(denseExample.items).toHaveLength(6);
       expect(denseExample.items.every(({ detail }) => detail)).toBe(true);
-      expect(barsSize(denseExample, 1)).toBe('s');
+      expect(barsSize(denseExample, full)).toBe('s');
     });
   });
   it('prints every value and the highlight cue on every surface', () => {

@@ -12,7 +12,6 @@ import { cls } from '../../render/cls';
 import type { SlideReactEnv, SlideRenderContext } from '../../render/context';
 import { marksReact } from '../../render/marks';
 import { delta as theme } from '../../theme/components/delta';
-import { frameContentWidth } from '../../theme/components/frame';
 import { slideDistillery } from '../../theme/distillery';
 import {
   connectorModule,
@@ -21,6 +20,7 @@ import {
 } from '../../theme/modules';
 import { scalePx } from '../../theme/scale';
 import { type SlideSize, slideSizes } from '../../theme/variants';
+import { slideLayout } from '../layout';
 import { emWidth, sizeForWidth } from '../size';
 
 import type { SlideDeltaNode, SlideDeltaPoint } from './schema';
@@ -28,25 +28,24 @@ import { deltaModule } from './styles';
 
 const { connector, placeholder: pending } = slideDistillery.tokens;
 
-/** Width each value may take once the arrow, gaps, and the note's floor are set aside. */
-const valueWidth =
-  (frameContentWidth -
+/** Width each value may take of `width` once the arrow, gaps, and the note's floor are set aside. */
+const valueWidth = (width: number): number =>
+  (width -
     scalePx(theme.arrowWidth) -
     3 * scalePx(theme.columnGap) -
     scalePx(theme.noteMinWidth)) /
   2;
 
-/** The one step at which both values fit, so they read as a pair. */
-export const deltaValueSize = ({
-  before,
-  after,
-  size,
-}: SlideDeltaNode): SlideSize =>
+/** The one step at which both values fit across `width`, so they read as a pair. */
+export const deltaValueSize = (
+  { before, after, size }: SlideDeltaNode,
+  width: number
+): SlideSize =>
   [before, after].reduce<SlideSize>((worst, { value = '' }) => {
     const step = sizeForWidth(
       size,
       emWidth(value, theme.value.tracking),
-      valueWidth,
+      valueWidth(width),
       theme.valueSizes
     );
     return slideSizes.indexOf(step) > slideSizes.indexOf(worst) ? step : worst;
@@ -110,7 +109,7 @@ export const react = (
   const { type, before, after, change, body } = node;
   const { handles: delta } = deltaModule;
   const { handles: arrow } = connectorModule;
-  const step = deltaValueSize(node);
+  const step = deltaValueSize(node, slideLayout(context).width);
   return (
     <div
       {...nodeAnchor(context, { type })}

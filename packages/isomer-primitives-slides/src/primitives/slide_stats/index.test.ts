@@ -11,6 +11,9 @@ import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { openBody } from '../layout';
+import { renderedStep } from '../size.fixtures';
+import { paneWidths } from '../slide_split/pane_layout';
 
 import { example, pendingExample } from './examples';
 import { markdown as markdownContent, text } from './index';
@@ -141,25 +144,50 @@ describe('slideStats', () => {
       [4, '0000', undefined, 'm'],
       [4, '00000', undefined, 's'],
     ] as const)('%i values of %s %s take %s', (count, value, unit, step) => {
-      expect(statsValueSize(row(count, value, unit))).toBe(step);
+      expect(statsValueSize(row(count, value, unit), openBody.width)).toBe(
+        step
+      );
     });
 
     it('takes the widest value’s step for the whole row', () => {
       const node = row(3, '0');
       node.items[1] = { ...node.items[1]!, value: '000000' };
-      expect(statsValueSize(node)).toBe('s');
+      expect(statsValueSize(node, openBody.width)).toBe('s');
     });
 
     it('keeps an authored size', () => {
-      expect(statsValueSize({ ...row(4, '00000'), size: 'l' })).toBe('l');
+      expect(
+        statsValueSize({ ...row(4, '00000'), size: 'l' }, openBody.width)
+      ).toBe('l');
     });
 
     it('fills four columns in the pending example, the most a row holds', () => {
       expect(pendingExample.items).toHaveLength(4);
     });
 
+    it('measures its columns across a split pane and a title aside', () => {
+      const node = row(2, '000000');
+      const [pane] = paneWidths(openBody.width, 'even', 'gap');
+      const bullets = { type: 'slideBulletList', items: ['One'] };
+      expect(renderedStep('stats-valueSize', node)).toBe('l');
+      expect(statsValueSize(node, pane)).not.toBe('l');
+      expect(
+        renderedStep('stats-valueSize', {
+          type: 'slideSplit',
+          panes: [{ items: [node] }, { items: [bullets] }],
+        })
+      ).toBe(statsValueSize(node, pane));
+      expect(
+        renderedStep('stats-valueSize', {
+          type: 'slideTitle',
+          title: 'Payments',
+          aside: node,
+        })
+      ).not.toBe('l');
+    });
+
     it('sizes a missing value as the largest step', () => {
-      expect(statsValueSize(pendingExample)).toBe('l');
+      expect(statsValueSize(pendingExample, openBody.width)).toBe('l');
     });
   });
   it('prints the pending caption on every surface', () => {

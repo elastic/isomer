@@ -11,6 +11,9 @@ import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { openBody } from '../layout';
+import { renderedStep } from '../size.fixtures';
+import { paneWidths } from '../slide_split/pane_layout';
 
 import { example, pendingExample, wideExample } from './examples';
 import { markdown as markdownContent, text } from './index';
@@ -153,24 +156,47 @@ describe('slideDelta', () => {
       ['0000', 'm'],
       ['00000', 's'],
     ] as const)('%s takes %s', (value, step) => {
-      expect(deltaValueSize(pair(value))).toBe(step);
+      expect(deltaValueSize(pair(value), openBody.width)).toBe(step);
     });
 
     it('sizes both values by the wider', () => {
       expect(
-        deltaValueSize({
-          ...pair('0'),
-          after: { label: 'After', value: '00000' },
-        })
+        deltaValueSize(
+          { ...pair('0'), after: { label: 'After', value: '00000' } },
+          openBody.width
+        )
       ).toBe('s');
     });
 
     it('keeps an authored size', () => {
-      expect(deltaValueSize({ ...pair('00000'), size: 'l' })).toBe('l');
+      expect(
+        deltaValueSize({ ...pair('00000'), size: 'l' }, openBody.width)
+      ).toBe('l');
     });
 
     it('draws the wide example at the smallest step', () => {
-      expect(deltaValueSize(wideExample)).toBe('s');
+      expect(deltaValueSize(wideExample, openBody.width)).toBe('s');
+    });
+
+    it('measures its values across a split pane and a title aside', () => {
+      const node = pair('000');
+      const [pane] = paneWidths(openBody.width, 'even', 'gap');
+      const bullets = { type: 'slideBulletList', items: ['One'] };
+      expect(renderedStep('delta-valueSize', node)).toBe('l');
+      expect(deltaValueSize(node, pane)).not.toBe('l');
+      expect(
+        renderedStep('delta-valueSize', {
+          type: 'slideSplit',
+          panes: [{ items: [node] }, { items: [bullets] }],
+        })
+      ).toBe(deltaValueSize(node, pane));
+      expect(
+        renderedStep('delta-valueSize', {
+          type: 'slideTitle',
+          title: 'Payments',
+          aside: node,
+        })
+      ).not.toBe('l');
     });
   });
   it('prints the pending caption on every surface', () => {

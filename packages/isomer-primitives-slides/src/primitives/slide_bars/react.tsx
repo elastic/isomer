@@ -14,9 +14,10 @@ import { marksReact } from '../../render/marks';
 import { ToneCue } from '../../render/tone_cue';
 import { bars as theme, barsFit } from '../../theme/components/bars';
 import { layoutModule } from '../../theme/modules';
+import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
 import { slideLayout } from '../layout';
-import { sizeForLoad } from '../size';
+import { emWidth, sizeForLoad, sizeForWidth, smallerStep } from '../size';
 
 import type { SlideBarsNode } from './schema';
 import { barsModule } from './styles';
@@ -28,16 +29,34 @@ const maxShare = parseFloat(theme.barMaxShare.value);
 const barsMax = ({ items, max }: SlideBarsNode): number =>
   (max ?? Math.max(...items.map(({ value }) => value))) || 1;
 
+/** The smallest of the step the rows' load takes under `crowding` and those at which each value fits beside its bar across `width`. */
 export const barsSize = (
-  { items, size }: SlideBarsNode,
-  crowding?: number
-): SlideSize =>
-  sizeForLoad(
-    size,
-    2 * items.length + items.filter(({ detail }) => detail).length,
-    barsFit,
-    crowding
+  node: SlideBarsNode,
+  { width, crowding }: { width: number; crowding: number }
+): SlideSize => {
+  const { items, size } = node;
+  const track = width - scalePx(theme.labelWidth);
+  const max = barsMax(node);
+  return items.reduce<SlideSize>(
+    (worst, { value }) =>
+      smallerStep(
+        worst,
+        sizeForWidth(
+          size,
+          emWidth(barValue(value), theme.value.tracking),
+          track * (1 - ((value / max) * maxShare) / 100) -
+            scalePx(theme.valueGap),
+          theme.valueSizes
+        )
+      ),
+    sizeForLoad(
+      size,
+      2 * items.length + items.filter(({ detail }) => detail).length,
+      barsFit,
+      crowding
+    )
   );
+};
 
 /** React renderer for {@link SlideBarsNode}. */
 export const react = (
@@ -46,7 +65,7 @@ export const react = (
 ): ReactNode => {
   const { type, items } = node;
   const { handles: bars } = barsModule;
-  const step = barsSize(node, slideLayout(context).crowding);
+  const step = barsSize(node, slideLayout(context));
   const max = barsMax(node);
   return (
     <div

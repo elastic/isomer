@@ -25,7 +25,7 @@ export interface LoadBudget {
 const sizeSchema = z
   .enum(slideSizes)
   .describe(
-    'Type size: `l`, `m`, or `s`. Leave it out and the slide picks the largest that fits its text; if a render still runs past its body or crowds inside a container, set the step below the one it drew.'
+    'Type size: `l`, `m`, or `s`. Leave it out and the slide picks the largest that fits its text.'
   )
   .optional();
 
