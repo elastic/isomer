@@ -5,8 +5,6 @@
  * 2.0.
  */
 
-import type { ScaleToken } from '@elastic/distillate';
-
 import type { SlideRenderContext } from '../../render/context';
 import { layers as theme } from '../../theme/components/layers';
 import { label, tone as toneCue } from '../../theme/components/shared';
@@ -14,28 +12,25 @@ import { scalePx } from '../../theme/scale';
 import { type SlideSize, slideSizes } from '../../theme/variants';
 import { slideLayout } from '../layout';
 import {
-  brokenLines,
   codeGrowth,
-  emWidth,
+  lineBox,
+  lineFill,
   markedLines,
+  measureText,
   monoWidth,
   packedLines,
+  wrappedLines,
 } from '../size';
 
 import type { SlideLayer, SlideLayersNode } from './schema';
 
 const { band, chip } = theme;
 
-const lineHeight = (
-  size: ScaleToken,
-  { lineHeight: leading }: { lineHeight: ScaleToken }
-): number => scalePx(size) * parseFloat(leading.value);
-
 const ownerWidth = ({ owner, tone }: SlideLayer): number =>
   scalePx(theme.ownerGap) +
   Math.max(
     scalePx(theme.ownerColumn),
-    emWidth(owner.toUpperCase(), label.tracking) * scalePx(label.size) +
+    measureText(owner, label).widest +
       (tone ? scalePx(toneCue.cue.size) + scalePx(toneCue.cue.gap) : 0)
   );
 
@@ -60,21 +55,25 @@ const bandHeight = (
     return Infinity;
   }
   const rows = packedLines(widths, scalePx(theme.chipGap), inner);
-  const lines = markedLines(body, scalePx(theme.bodySizes[step]), inner);
+  const lines = markedLines(
+    body,
+    scalePx(theme.bodySizes[step]),
+    inner * lineFill
+  );
   const content = chips
     ? rows *
-        (lineHeight(theme.chipSizes[step], chip.type) +
+        (lineBox({ ...chip.type, size: theme.chipSizes[step] }) +
           2 * (scalePx(chip.paddingY) + scalePx(chip.border))) +
       (rows - 1) * scalePx(theme.chipGap)
-    : lines * lineHeight(theme.bodySizes[step], theme.body) +
+    : lines * lineBox({ ...theme.body, size: theme.bodySizes[step] }) +
       codeGrowth(body, lines);
   const named =
-    brokenLines(
+    wrappedLines(
       name,
       scalePx(theme.nameSizes[step]),
-      scalePx(theme.nameColumn),
+      scalePx(theme.nameColumn) * lineFill,
       theme.name.tracking
-    ) * lineHeight(theme.nameSizes[step], theme.name);
+    ) * lineBox({ ...theme.name, size: theme.nameSizes[step] });
   return (
     2 * (scalePx(band.border) + scalePx(band.paddingY[step])) +
     Math.max(content, named)

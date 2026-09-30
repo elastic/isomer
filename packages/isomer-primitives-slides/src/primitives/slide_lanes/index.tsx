@@ -10,7 +10,6 @@ import { md } from '@elastic/isomer-sdk/markdown';
 import { escapeMrkdwn, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
 import {
-  hasMrkdwnDelimiter,
   richTextBreak,
   richTextSection,
   slackBold,
@@ -24,7 +23,6 @@ import {
   marksSlack,
   plainText,
   richTextRun as run,
-  stripMarks,
 } from '../../render/marks';
 import { toneCueText } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
@@ -103,39 +101,30 @@ const notesRichText = (notes: SlideLanesNote[]): SlackBlock =>
     )
   );
 
-// `mrkdwn` would read an authored `*`, `_`, `~`, or backtick as formatting, so such text goes to literal rich text.
 export const slack = (node: SlideLanesNode): SlackBlock[] => {
   const { lanes, join, notes = [] } = node;
-  const lanesLiteral = hasMrkdwnDelimiter(
-    [join, ...lanes.flatMap(({ label, steps }) => [label, ...steps])].join('')
-  );
-  const notesLiteral = hasMrkdwnDelimiter(
-    notes.map(({ title, body }) => title + stripMarks(body)).join('')
-  );
   return [
-    lanesLiteral
-      ? lanesRichText(node)
-      : slackSection(
-          lanes
-            .map(
-              ({ label, steps, tone }) =>
-                `${toneCueText(tone)}${slackBold(shown(label))}${termJoiner}${escapeMrkdwn(path(steps, join))}`
-            )
-            .join('\n'),
-          () => lanesRichText(node)
-        ),
+    slackSection(
+      lanes
+        .map(
+          ({ label, steps, tone }) =>
+            `${toneCueText(tone)}${slackBold(shown(label))}${termJoiner}${escapeMrkdwn(path(steps, join))}`
+        )
+        .join('\n'),
+      () => lanesRichText(node),
+      [join, ...lanes.flatMap(({ label, steps }) => [label, ...steps])]
+    ),
     ...(notes.length === 0
       ? []
       : [
-          notesLiteral
-            ? notesRichText(notes)
-            : slackFields(
-                notes.map(
-                  ({ title, body }) =>
-                    `${slackBold(title)}\n${oneLine(marksSlack(body))}`
-                ),
-                () => notesRichText(notes)
-              ),
+          slackFields(
+            notes.map(
+              ({ title, body }) =>
+                `${slackBold(title)}\n${oneLine(marksSlack(body))}`
+            ),
+            () => notesRichText(notes),
+            notes.flatMap(({ title, body }) => [title, { marks: body }])
+          ),
         ]),
   ];
 };

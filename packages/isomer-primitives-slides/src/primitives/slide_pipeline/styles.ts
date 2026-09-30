@@ -201,7 +201,6 @@ export const pipelineModule = createStyleModule('pipeline', ({ css }) => ({
   captionLabel: css`
     color: ${toneVar};
     ${typeRole(caption.label)}
-    text-transform: uppercase;
   `,
   captionTitle: css`
     color: ${color.text};

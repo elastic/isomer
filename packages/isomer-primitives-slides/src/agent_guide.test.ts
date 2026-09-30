@@ -62,28 +62,3 @@ describe('slides authoring schema', () => {
     );
   });
 });
-
-// `z.toJSONSchema` drops refinements, so each flow primitive's cross-field rules are restated in its own description.
-describe('slides authoring schema restates the flow primitives’ cross-field rules', () => {
-  const { $defs = {} } = buildAuthoringJsonSchema(
-    slideDeckPrimitives,
-    slidesPackAuthoring
-  ) as { $defs?: Record<string, { description?: string }> };
-
-  it.each([
-    ['slidePipeline', 'from ≤ to < steps.length'],
-    ['slidePipeline', 'spans do not overlap'],
-    ['slidePipeline', 'no start or end'],
-    ['slidePipeline', 'and no size'],
-    ['slidePipeline', 'chips with no body'],
-    ['slideSequence', 'Actor ids are unique'],
-    [
-      'slideSequence',
-      'every message names two different actors by id in from and to',
-    ],
-    ['slideSequence', 'every actor sends or receives at least one message'],
-    ['slideLayers', 'Each layer has exactly one of body or chips'],
-  ])('%s: %s', (type, stated) => {
-    expect($defs[type]?.description).toContain(stated);
-  });
-});

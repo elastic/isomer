@@ -48,7 +48,6 @@ export const lanesModule = createStyleModule('lanes', ({ css }) => ({
     display: flex;
     flex: 0 0 auto;
     ${typeRole(lanes.label)}
-    text-transform: uppercase;
   `,
   labelSize: variants(
     slideSizes,

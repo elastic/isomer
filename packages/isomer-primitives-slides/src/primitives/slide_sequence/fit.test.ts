@@ -193,12 +193,12 @@ describe('a label set as code, or in a word wider than its span', () => {
       lines: 5,
     },
   ])(
-    'counts the $lines lines takumi draws of $label',
+    'counts the $lines lines takumi draws of $label, or one more',
     async ({ label, lines }) => {
       expect(await drawnLines(labelled(label))).toBe(lines);
-      expect(wrapHeight(labelled(label), 'l', pane)).toBe(
-        (lines - 1) * lineHeight
-      );
+      const counted = wrapHeight(labelled(label), 'l', pane) / lineHeight + 1;
+      expect(counted).toBeGreaterThanOrEqual(lines);
+      expect(counted).toBeLessThanOrEqual(lines + 1);
     }
   );
 

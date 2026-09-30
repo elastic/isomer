@@ -14,11 +14,13 @@ import { scalePx } from '../../theme/scale';
 import { type SlideSize, slideSizes } from '../../theme/variants';
 import { slideLayout } from '../layout';
 import {
-  brokenLines,
   codeGrowth,
+  lineFill,
   markedLines,
+  measureText,
   monoWidth,
   trackWidth,
+  wrappedLines,
 } from '../size';
 
 import type { SlideLanesLane, SlideLanesNode } from './schema';
@@ -60,14 +62,12 @@ const labelHeight = (
   const column =
     scalePx(theme.labelColumns[step]) -
     (tone ? scalePx(toneCue.cue.size) + scalePx(toneCue.cue.gap) : 0);
-  return (
-    brokenLines(
-      label.toUpperCase(),
-      scalePx(theme.labelSizes[step]),
-      column,
-      theme.label.tracking
-    ) * lineHeight(theme.labelSizes[step], theme.label)
+  const { lines } = measureText(
+    label,
+    { ...theme.label, size: theme.labelSizes[step] },
+    column * lineFill
   );
+  return Math.max(1, lines) * lineHeight(theme.labelSizes[step], theme.label);
 };
 
 /** The height the lanes and their notes take at `step` across `width`. */
@@ -92,12 +92,16 @@ export const lanesHeight = (
     notes.columnGaps[step]
   );
   const noteHeight = ({ title, body }: { title: string; body: string }) => {
-    const lines = markedLines(body, scalePx(notes.bodySizes[step]), column);
+    const lines = markedLines(
+      body,
+      scalePx(notes.bodySizes[step]),
+      column * lineFill
+    );
     return (
-      brokenLines(
+      wrappedLines(
         title,
         scalePx(notes.titleSizes[step]),
-        column,
+        column * lineFill,
         notes.title.tracking
       ) *
         lineHeight(notes.titleSizes[step], notes.title) +

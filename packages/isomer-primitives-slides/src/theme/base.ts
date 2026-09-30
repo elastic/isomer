@@ -175,6 +175,8 @@ export const font = {
     label: literal('0.12em'),
     labelWide: literal('0.14em'),
   },
+  transform: { uppercase: literal('uppercase') },
+  whiteSpace: { nowrap: literal('nowrap') },
   lineHeight: {
     tightest: literal('0.85'),
     display: literal('0.9'),
@@ -190,7 +192,7 @@ export const font = {
   },
 } as const;
 
-const { family, size, weight, tracking, lineHeight } = font;
+const { family, size, weight, tracking, transform, lineHeight } = font;
 
 /** A component reads a role, never size, weight, tracking, and leading separately. */
 export const type = {
@@ -283,6 +285,7 @@ export const type = {
     weight: weight.bold,
     tracking: tracking.labelWide,
     lineHeight: lineHeight.body,
+    transform: transform.uppercase,
   },
   mono: {
     family: family.mono,

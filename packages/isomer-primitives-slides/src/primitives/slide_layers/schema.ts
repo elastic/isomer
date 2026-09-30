@@ -48,7 +48,10 @@ const layerSchema = z
   .check(
     crossRefine(
       ({ body, chips }) => (body === undefined) !== (chips === undefined),
-      { error: 'a layer has exactly one of `body` or `chips`' }
+      {
+        error: 'a layer has exactly one of `body` or `chips`',
+        rule: 'Each layer has exactly one of body or chips',
+      }
     )
   );
 

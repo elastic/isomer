@@ -5,16 +5,12 @@
  * 2.0.
  */
 
-import type { ScaleToken } from '@elastic/distillate';
-
 import { stripMarks } from '../../render/marks';
-import { collapsedColumns } from '../../render/mono';
-import { regularAdvance } from '../../theme/base';
 import { frame, frameBodyHeight } from '../../theme/components/frame';
 import { heading, headingFit } from '../../theme/components/heading';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
-import { emWidth, sizeForLoad } from '../size';
+import { measureText, sizeForLoad, textColumns } from '../size';
 
 import type { SlideHeadingNode } from './schema';
 
@@ -48,25 +44,19 @@ const roomBelow = (
 export const referenceRoom = roomBelow(2, 2, 'l');
 
 export const headingStep = ({ title, size }: SlideHeadingNode): SlideSize =>
-  sizeForLoad(size, collapsedColumns(stripMarks(title)), headingFit);
+  sizeForLoad(size, textColumns(stripMarks(title)), headingFit);
 
 /** Height a frame's body has left below `node`. */
 export const headingRoom = (node: SlideHeadingNode): number => {
   const step = headingStep(node);
-  const lines = (width: number, max: ScaleToken) =>
-    Math.max(1, Math.ceil(width / px(max)));
-  const titleLines = lines(
-    emWidth(stripMarks(node.title), heading.title.tracking) *
-      px(heading.titleSizes[step]),
-    heading.titleMaxWidth
-  );
+  const titleLines = measureText(
+    stripMarks(node.title),
+    { ...heading.title, size: heading.titleSizes[step] },
+    px(heading.titleMaxWidth)
+  ).lines;
   const ledeLines = node.lede
-    ? lines(
-        collapsedColumns(stripMarks(node.lede)) *
-          regularAdvance *
-          px(heading.lede.size),
-        heading.ledeMaxWidth
-      )
+    ? measureText(stripMarks(node.lede), heading.lede, px(heading.ledeMaxWidth))
+        .lines
     : 0;
-  return roomBelow(titleLines, ledeLines, step);
+  return roomBelow(Math.max(1, titleLines), ledeLines, step);
 };

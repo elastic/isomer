@@ -81,7 +81,7 @@ export const labelModule = createStyleModule('label', ({ css }) => ({
     font-size: ${label.size};
     font-weight: ${label.weight};
     letter-spacing: ${label.tracking};
-    text-transform: uppercase;
+    text-transform: ${label.transform};
   `,
   toned: css`
     color: ${toneVar};

@@ -115,6 +115,7 @@ export const schema = z
       {
         error: 'each span needs `from` ≤ `to` < the number of steps',
         path: ['spans'],
+        rule: 'from ≤ to < steps.length',
       }
     )
   )
@@ -128,7 +129,11 @@ export const schema = z
           .every(
             ({ from }, index, sorted) => from > (sorted[index - 1]?.to ?? -1)
           ),
-      { error: 'spans must not overlap', path: ['spans'] }
+      {
+        error: 'spans must not overlap',
+        path: ['spans'],
+        rule: 'spans do not overlap',
+      }
     )
   )
   .check(
@@ -141,6 +146,7 @@ export const schema = z
         error:
           '`start` and `end` are steps mode only; with `spans`, make them the first and last steps',
         path: ['spans'],
+        rule: 'no start or end',
       }
     )
   )
@@ -151,6 +157,7 @@ export const schema = z
       {
         error: '`size` is steps mode only; spans-mode chips take one size',
         path: ['size'],
+        rule: 'no size',
       }
     )
   )
@@ -164,6 +171,7 @@ export const schema = z
         error:
           'step bodies are steps mode only; with `spans`, put the detail in the span’s body',
         path: ['steps'],
+        rule: 'chips with no body',
       }
     )
   );

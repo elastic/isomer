@@ -77,61 +77,68 @@ export const schema = z
   })
   .strict()
   .check(
-    crossSuperRefine(({ actors, messages }, context) => {
-      if (
-        actors.length > sequenceMaxActors ||
-        messages.length > sequenceMaxMessages ||
-        ![
-          ...actors.map(({ id }) => id),
-          ...messages.flatMap(({ from, to }) => [from, to]),
-        ].every(isId)
-      ) {
-        return;
-      }
-      const ids = new Set<string>();
-      actors.forEach(({ id }, index) => {
-        if (ids.has(id)) {
-          context.addIssue({
-            code: 'custom',
-            message: `duplicate actor id "${id}"`,
-            path: ['actors', index, 'id'],
-          });
+    crossSuperRefine(
+      ({ actors, messages }, context) => {
+        if (
+          actors.length > sequenceMaxActors ||
+          messages.length > sequenceMaxMessages ||
+          ![
+            ...actors.map(({ id }) => id),
+            ...messages.flatMap(({ from, to }) => [from, to]),
+          ].every(isId)
+        ) {
+          return;
         }
-        ids.add(id);
-      });
-      const used = new Set<string>();
-      messages.forEach(({ from, to }, index) => {
-        for (const [key, id] of [
-          ['from', from],
-          ['to', to],
-        ] as const) {
-          if (!ids.has(id)) {
+        const ids = new Set<string>();
+        actors.forEach(({ id }, index) => {
+          if (ids.has(id)) {
             context.addIssue({
               code: 'custom',
-              message: `message ${key} names unknown actor "${id}"`,
-              path: ['messages', index, key],
+              message: `duplicate actor id "${id}"`,
+              path: ['actors', index, 'id'],
             });
           }
-          used.add(id);
-        }
-        if (from === to) {
-          context.addIssue({
-            code: 'custom',
-            message: `message from "${from}" to itself; a message joins two different actors`,
-            path: ['messages', index, 'to'],
-          });
-        }
-      });
-      actors.forEach(({ id }, index) => {
-        if (!used.has(id)) {
-          context.addIssue({
-            code: 'custom',
-            message: `actor "${id}" sends or receives no message`,
-            path: ['actors', index],
-          });
-        }
-      });
-    })
+          ids.add(id);
+        });
+        const used = new Set<string>();
+        messages.forEach(({ from, to }, index) => {
+          for (const [key, id] of [
+            ['from', from],
+            ['to', to],
+          ] as const) {
+            if (!ids.has(id)) {
+              context.addIssue({
+                code: 'custom',
+                message: `message ${key} names unknown actor "${id}"`,
+                path: ['messages', index, key],
+              });
+            }
+            used.add(id);
+          }
+          if (from === to) {
+            context.addIssue({
+              code: 'custom',
+              message: `message from "${from}" to itself; a message joins two different actors`,
+              path: ['messages', index, 'to'],
+            });
+          }
+        });
+        actors.forEach(({ id }, index) => {
+          if (!used.has(id)) {
+            context.addIssue({
+              code: 'custom',
+              message: `actor "${id}" sends or receives no message`,
+              path: ['actors', index],
+            });
+          }
+        });
+      },
+      [
+        'Actor ids are unique',
+        'every message names two different actors by id in from and to',
+        'every actor sends or receives at least one message',
+      ]
+    )
   );
 
 /** Messages between actors, top to bottom in time order. */

@@ -13,7 +13,7 @@ import { connector, tone as toneCue } from '../../theme/components/shared';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
 import { slideLayout } from '../layout';
-import { markedLines, monoWidth, packedLines, sizeForLoad } from '../size';
+import { lineFill, markedLines, monoLines, sizeForLoad } from '../size';
 
 import type { SlideSequenceNode } from './schema';
 
@@ -21,18 +21,6 @@ const { actor } = sequence;
 
 const lineHeight = (size: ScaleToken, leading: ScaleToken): number =>
   scalePx(size) * parseFloat(leading.value);
-
-/** Lines of mono `text` at `size` across `width`. */
-const monoLines = (text: string, size: ScaleToken, width: number): number =>
-  packedLines(
-    text
-      .split(/\s+/)
-      .filter(Boolean)
-      .map((word) => monoWidth(word, size)),
-    monoWidth(' ', size),
-    width,
-    width
-  );
 
 /** The height a message row takes at `step` with a one-line label. */
 const rowHeight = (step: SlideSize): number =>
@@ -52,7 +40,7 @@ export const wrapHeight = (
     ...actors.map(({ label, tone }) =>
       monoLines(
         label,
-        actor.sizes[step],
+        scalePx(actor.sizes[step]),
         column -
           scalePx(actor.gutter) -
           2 * (scalePx(actor.paddingX) + scalePx(actor.border)) -
@@ -67,7 +55,11 @@ export const wrapHeight = (
       apart * column -
       (apart > 1 ? scalePx(sequence.labelOffset) : 0) -
       2 * scalePx(sequence.labelInset);
-    return markedLines(label, scalePx(sequence.labelSizes[step]), span);
+    return markedLines(
+      label,
+      scalePx(sequence.labelSizes[step]),
+      span * lineFill
+    );
   });
   return (
     (actorLines - 1) * lineHeight(actor.sizes[step], actor.type.lineHeight) +
