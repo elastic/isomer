@@ -10,7 +10,11 @@ import {
   type LayoutBox,
 } from '@elastic/isomer-image-takumi';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
-import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
+import {
+  type Composition,
+  NODE_ANCHOR_ATTRIBUTE,
+  type PrimitiveNode,
+} from '@elastic/isomer-sdk';
 import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { SLACK_LIMITS, type SlackBlock } from '@elastic/isomer-sdk/slack';
 import { describe, expect, it } from 'vitest';
@@ -284,6 +288,57 @@ describe('slideBars', () => {
     ]);
   });
 
+  describe('as drawn by takumi', () => {
+    const takumi = createTakumiImageBackend({ fonts: slideFonts });
+    const boxes = (box: LayoutBox): LayoutBox[] => [
+      box,
+      ...box.children.flatMap(boxes),
+    ];
+    const drawn = async (slide: Composition): Promise<LayoutBox> =>
+      boxes(
+        await takumi.measure(
+          runtime.surfaces.svg.render(slide, { anchors: true })
+        )
+      ).find(
+        ({ attributes }) => attributes?.[NODE_ANCHOR_ATTRIBUTE] === 'slideBars'
+      )!;
+
+    it('draws a positive bar at least its minimum width however small its share, and a zero bar not at all', async () => {
+      const node: SlideBarsNode = {
+        type: 'slideBars',
+        max: 10_000_000,
+        items: [
+          { label: 'One', value: 1 },
+          { label: 'None', value: 0 },
+        ],
+      };
+      expect(html(node).match(/class="[^"]*bars-barPositive/g)).toHaveLength(1);
+      const bars = boxes(await drawn(compose(node))).filter(
+        ({ attributes }) => attributes?.['aria-hidden'] === 'true'
+      );
+      expect(bars.map(({ width }) => width)).toEqual([
+        scalePx(barsTheme.barMinWidth),
+        0,
+      ]);
+    });
+
+    it('keeps its rows inside a split pane in a title aside', async () => {
+      const root = await drawn(
+        compose({
+          type: 'slideTitle',
+          title: 'Payments',
+          aside: {
+            type: 'slideSplit',
+            panes: [{ items: [example] }, { items: [example] }],
+          },
+        })
+      );
+      for (const { x, width } of boxes(root)) {
+        expect(x + width).toBeLessThanOrEqual(root.x + root.width + 0.5);
+      }
+    });
+  });
+
   it('marks the highlighted bar with a cue that is not color alone', () => {
     expect(html(example)).toContain('role="img" aria-label="Primary"');
   });
@@ -456,6 +511,18 @@ describe('slideBars', () => {
           );
           expect(lines).toBe(4);
           expect(lines).toBe(await drawnLines(pair(code), 'i'));
+        });
+
+        it('measures the spaces of a multiword code label in mono', async () => {
+          const words = `\`${Array.from({ length: 9 }, () => 'iii').join(' ')}\``;
+          const step = barsSize(pair(words), full);
+          const { lines } = measureMarks(
+            words,
+            { ...barsTheme.label, size: barsTheme.labelSizes[step] },
+            scalePx(barsTheme.labelWidth),
+            'primary'
+          );
+          expect(lines).toBe(await drawnLines(pair(words), 'i'));
         });
 
         it('measures a code detail in mono with its chip, and strong in bold', () => {
