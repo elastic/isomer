@@ -7,27 +7,48 @@
 
 import { color, font, inverse, radius, space, stroke, type } from './base';
 import { agenda } from './components/agenda';
+import { bars } from './components/bars';
 import { bulletList } from './components/bullet_list';
 import { closing } from './components/closing';
 import { code } from './components/code';
+import { command } from './components/command';
 import { definitions } from './components/definitions';
+import { delta } from './components/delta';
+import { diff } from './components/diff';
 import { fanout } from './components/fanout';
 import { frame } from './components/frame';
 import { graph } from './components/graph';
 import { heading } from './components/heading';
+import { lanes } from './components/lanes';
+import { layers } from './components/layers';
 import { list } from './components/list';
 import { marks } from './components/marks';
+import { matrix } from './components/matrix';
+import { pipeline } from './components/pipeline';
+import { quadrant } from './components/quadrant';
 import { quote } from './components/quote';
 import { roadmap } from './components/roadmap';
 import { section } from './components/section';
-import { connector, glyph, label, link, tone } from './components/shared';
+import { sequence } from './components/sequence';
+import {
+  connector,
+  glyph,
+  label,
+  link,
+  placeholder,
+  tone,
+} from './components/shared';
 import { source } from './components/source';
 import { split } from './components/split';
 import { stack } from './components/stack';
+import { stat } from './components/stat';
 import { statement } from './components/statement';
+import { stats } from './components/stats';
+import { table } from './components/table';
 import { territoryGroup } from './components/territory_group';
 import { timeline } from './components/timeline';
 import { title } from './components/title';
+import { transcript } from './components/transcript';
 import { tree } from './components/tree';
 
 /**
@@ -48,27 +69,42 @@ export const SLIDE_THEME = {
   label,
   connector,
   tone,
+  placeholder,
   marks,
   agenda,
+  bars,
   bulletList,
   closing,
   code,
+  command,
   definitions,
+  delta,
+  diff,
   fanout,
   frame,
   graph,
   heading,
+  lanes,
+  layers,
   list,
+  matrix,
+  pipeline,
+  quadrant,
   quote,
   roadmap,
   section,
+  sequence,
   source,
   split,
   stack,
+  stat,
   statement,
+  stats,
+  table,
   territoryGroup,
   timeline,
   title,
+  transcript,
   tree,
 } as const;
 

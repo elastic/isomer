@@ -21,6 +21,7 @@ import {
   primitiveConformanceCases,
   type PrimitiveConformanceHarness,
 } from '../testing/conformance';
+import type { CheckedComposition } from '../validate/validation';
 
 import {
   anchorValue,
@@ -93,7 +94,14 @@ const box = definePrimitive<BoxNode>({
 
 const dispatcher = createPrimitiveDispatcher<LeafNode | BoxNode>([leaf, box]);
 const walk = createChildNodeWalker([leaf, box]);
-const valid = () => ({ valid: true, errors: [], warnings: [] });
+const valid = <TNode extends PrimitiveNode>(
+  composition: Composition<TNode>
+) => ({
+  valid: true,
+  errors: [],
+  warnings: [],
+  composition: composition as CheckedComposition<TNode>,
+});
 
 const composition: Composition<LeafNode | BoxNode> = {
   type: 'view',

@@ -48,9 +48,10 @@ const { view, composition, validation } = await runtime.viewRegistry.request(
 The sequence is short and the order matters:
 
 1. Look up the id — an unknown one throws `IsomerError` with `UNKNOWN_VIEW`.
-2. If the view declared an input schema, parse the raw input through it. This happens **before** the builder runs, so bad input fails as a typed error rather than as something opaque from inside composition-building code.
-3. Await the builder. A view may fetch; `context` is whatever the host passes — a session, a request, a services bundle — and this package never inspects it.
-4. Validate the built composition and return it alongside the result.
+2. Refuse input over [the input budget](../../isomer-sdk/docs/composition.md#the-input-budget), or not plain data, with `RegisteredViewInputError`, whose one error has the code `INPUT_OVER_BUDGET` or `INPUT_NOT_PLAIN_DATA`. What passes continues as the plain copy the check built, so the schema and the builder never read the original.
+3. If the view declared an input schema, parse that copy through it; a view without one receives the copy itself. This happens **before** the builder runs, so bad input fails as a typed error rather than as something opaque from inside composition-building code.
+4. Await the builder. A view may fetch; `context` is whatever the host passes — a session, a request, a services bundle — and this package never inspects it.
+5. Validate the built composition and return the copy validation checked alongside the result, so `composition` is what `validation` describes. Only input the budget refuses comes back as built.
 
 Validation here is **reported, not enforced**. `request` hands back a `ValidationResult` and lets the caller decide; enforcement is the [surfaces'](surfaces.md) job, and doing it in both places would mean doing it inconsistently.
 
@@ -61,7 +62,7 @@ await runtime.viewRegistry.request('checkout.snapshot', ctx, { range: 42 });
 // throws RegisteredViewInputError
 //   .code → 'VIEW_INPUT_INVALID'
 //   .viewId → 'checkout.snapshot'
-//   .errors → [{ path, message }]
+//   .errors → [{ path, message, code? }]
 ```
 
 Catch it by `name` and `code`, or by import: `RegisteredViewInputError` is exported from the package entry.

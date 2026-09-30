@@ -506,11 +506,11 @@ const textUnits = (text: string, max: number): string[] =>
     ({ segment }) => (segment.length > max ? Array.from(segment) : [segment])
   ).flat();
 
-// A section, quote, or preformatted element past `sectionTextChars` splits into
-// adjacent ones of its type. A link or tag no longer than that stays whole;
-// anything longer splits at grapheme boundaries into inlines of its own type,
-// a link's label (or URL) across links to the same URL.
-const splitLongElement = (
+/**
+ * A section, quote, or preformatted element past `sectionTextChars` as adjacent ones of its type, with nothing added between them; a list comes back as is.
+ * A link or tag no longer than that stays whole; anything longer splits at grapheme boundaries into inlines of its own type, a link's label (or URL) across links to the same URL.
+ */
+export const splitRichTextElement = (
   element: SlackRichTextBlockElement
 ): SlackRichTextBlockElement[] => {
   const max = SLACK_LIMITS.sectionTextChars;
@@ -590,7 +590,7 @@ const degradeTable = ({
     : [
         {
           type: 'rich_text',
-          elements: breakSections(elements).flatMap(splitLongElement),
+          elements: breakSections(elements).flatMap(splitRichTextElement),
         },
       ];
 };

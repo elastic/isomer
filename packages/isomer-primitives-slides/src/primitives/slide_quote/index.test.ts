@@ -99,6 +99,16 @@ describe('slideQuote', () => {
     ).toBe(step);
   });
 
+  it('counts a line break as the space it draws', () => {
+    expect(
+      stepOf({
+        type: 'slideQuote',
+        text: `${'x'.repeat(quoteFit.l - 1)}\nx`,
+        source: 'A',
+      })
+    ).toBe('m');
+  });
+
   it('sets the longest example at the smallest step', () => {
     expect(stepOf(longExample)).toBe('s');
   });

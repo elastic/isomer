@@ -33,7 +33,7 @@ if (!parsed.valid) {
 render(parsed.composition!);
 ```
 
-`parse` answers one question — is this a `Composition` for this runtime? — and stops there. It runs the schema but not the semantic passes, so a composition with two nodes sharing an `id` parses as valid. If you want those checks, run `validate` on the parsed composition:
+`parse` answers one question — is this a `Composition` for this runtime? — and stops there. It runs the input budget and the schema but not the semantic passes, so a composition with two nodes sharing an `id` parses as valid. If you want those checks, run `validate` on the parsed composition:
 
 ```ts
 import { warningsForSurface } from '@elastic/isomer-sdk';

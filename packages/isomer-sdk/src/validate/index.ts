@@ -21,6 +21,14 @@ export {
   resolveVocabulary,
 } from './composition_schema';
 export {
+  type InputBudget,
+  type InputBudgetCheck,
+  MAX_INPUT_CHARACTERS,
+  MAX_INPUT_DEPTH,
+  MAX_INPUT_VALUES,
+  checkInputBudget,
+} from './input_budget';
+export {
   type CompositionJsonSchemaOptions,
   buildCompositionJsonSchema,
 } from './json_schema';
@@ -35,11 +43,14 @@ export {
   sanitizeNavigationHref,
 } from './url';
 export {
+  type CheckedComposition,
+  type CheckedValidationResult,
   type CompositionValidatorOptions,
   type ParsedComposition,
   type ValidationErrorMode,
   type ValidationResult,
   type ValidationWarning,
+  compositionToRender,
   CompositionValidationError,
   createCompositionParser,
   createCompositionValidator,

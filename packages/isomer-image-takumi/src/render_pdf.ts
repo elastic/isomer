@@ -6,14 +6,19 @@
  */
 
 import type { PdfInput, TakumiPdfBackend, TakumiPdfOptions } from './backend';
-import type { PngSvgOptions, PngValidationResult } from './render_png';
+import {
+  checkedForDrawing,
+  type PngCheckedValidationResult,
+  type PngSvgOptions,
+  type PngValidationResult,
+} from './render_png';
 
 /**
  * The slice of `IsomerRuntime` this helper needs, declared structurally like
  * {@link PdfInput}. A runtime built with `frames` satisfies it.
  */
 export interface PdfRuntime {
-  validate(composition: unknown): PngValidationResult;
+  validate(composition: unknown): PngCheckedValidationResult;
   surfaces: {
     svg: {
       renderPages(
@@ -44,9 +49,10 @@ export interface RenderPdfResult {
  * composition.
  *
  * Every composition is rendered, even an invalid one: `validations` is how a
- * caller finds out, rather than a thrown error. Validation runs twice, once
- * here and once inside `renderPages`, which discards its own result. An
- * empty deck throws the runtime's `EMPTY_PAGES`.
+ * caller finds out, rather than a thrown error. What is drawn is the copy
+ * validation checked. Validation runs twice, once here and once inside
+ * `renderPages`, which discards its own result. An empty deck throws the
+ * runtime's `EMPTY_PAGES`.
  */
 export const renderPdf = async (
   runtime: PdfRuntime,
@@ -54,11 +60,17 @@ export const renderPdf = async (
   backend: TakumiPdfBackend,
   { svg, ...options }: RenderPdfOptions = {}
 ): Promise<RenderPdfResult> => {
-  const validations = deck.map((composition) => runtime.validate(composition));
-  const rendered = runtime.surfaces.svg.renderPages(deck, {
-    ...svg,
-    onValidationError: 'collect',
-  });
+  const pages = deck.map((composition) =>
+    checkedForDrawing('renderPdf', runtime.validate(composition))
+  );
+  const validations = pages.map(({ validation }) => validation);
+  const rendered = runtime.surfaces.svg.renderPages(
+    pages.map(({ checked }) => checked),
+    {
+      ...svg,
+      onValidationError: 'collect',
+    }
+  );
   const pdf = await backend.pdf(rendered, options);
   return {
     pdf,

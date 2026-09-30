@@ -14,7 +14,10 @@ import {
   marksSlack,
   parseMarks,
   plainText,
+  splitLines,
   stripMarks,
+  strongMarksMarkdown,
+  strongMarksRichText,
 } from './marks';
 
 describe('marks', () => {
@@ -97,6 +100,39 @@ describe('marks', () => {
   it('reads a strong run with a long whitespace run in linear time', () => {
     const started = performance.now();
     expect(parseMarks(`**a${' '.repeat(100_000)}b**`)).toHaveLength(1);
+    expect(performance.now() - started).toBeLessThan(1_000);
+  });
+
+  it('sets a whole text in strong, folding its own strong in and keeping code', () => {
+    const text = 'Run `make` **now** please';
+    expect(serializeMarkdown(md.paragraph(strongMarksMarkdown(text)))).toBe(
+      '**Run `make` now please**'
+    );
+    expect(strongMarksRichText(text)).toEqual([
+      { type: 'text', text: 'Run ', style: { bold: true } },
+      { type: 'text', text: 'make', style: { code: true, bold: true } },
+      { type: 'text', text: ' ', style: { bold: true } },
+      { type: 'text', text: 'now', style: { bold: true } },
+      { type: 'text', text: ' please', style: { bold: true } },
+    ]);
+  });
+
+  it('splits lines at every terminator, a CRLF pair as one, and keeps blank lines', () => {
+    expect(splitLines('a\r\nb\rc\nd\u2028e\u2029f\n\ng')).toEqual([
+      'a',
+      'b',
+      'c',
+      'd',
+      'e',
+      'f',
+      '',
+      'g',
+    ]);
+  });
+
+  it('splits a long run of terminators in linear time', () => {
+    const started = performance.now();
+    expect(splitLines('\r'.repeat(100_000) + 'x')).toHaveLength(100_001);
     expect(performance.now() - started).toBeLessThan(1_000);
   });
 });

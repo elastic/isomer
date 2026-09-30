@@ -16,7 +16,7 @@ import { roadmap, roadmapFit } from '../../theme/components/roadmap';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
 import { measureText } from '../size';
-import { layoutAt, renderedStep, shortWords } from '../size.fixtures';
+import { layoutContext, renderedStep, shortWords } from '../size.fixtures';
 
 import { example, fullExample, twoColumnsExample } from './examples';
 import { roadmapLoad, roadmapStep, roadmapWordStep } from './fit';
@@ -300,34 +300,45 @@ describe('slideRoadmap', () => {
     expect(roadmapWordStep(node, layoutWidth('l', 1))).toBe('l');
     expect(roadmapWordStep(node, layoutWidth('l', -1))).toBe('m');
     expect(roadmapWordStep(node, layoutWidth('m', -1))).toBe('s');
-    expect(roadmapStep(node, layoutAt(1, layoutWidth('m', -1)))).toBe('s');
     expect(
-      roadmapStep({ ...node, size: 'l' }, layoutAt(1, layoutWidth('s', -1)))
+      roadmapStep(node, layoutContext({ width: layoutWidth('m', -1) }))
+    ).toBe('s');
+    expect(
+      roadmapStep(
+        { ...node, size: 'l' },
+        layoutContext({ width: layoutWidth('s', -1) })
+      )
     ).toBe('l');
   });
 
   it('takes the whole body on a slide with no heading', () => {
     const node = twoColumns(roadmapFit.l + 2);
-    expect(roadmapStep(node, layoutAt(1))).toBe('m');
+    expect(roadmapStep(node, layoutContext())).toBe('m');
     expect(roadmapStep(node, undefined)).toBe('l');
     expect(renderedStep('roadmap-titleSize', node)).toBe('l');
   });
 
   it('steps down at each budget, under crowding, and in a narrower box, unless sized', () => {
-    const edge = (load: number) => roadmapStep(twoColumns(load), layoutAt(1));
+    const edge = (load: number) =>
+      roadmapStep(twoColumns(load), layoutContext());
     expect(edge(roadmapFit.l)).toBe('l');
     expect(edge(roadmapFit.l + 2)).toBe('m');
     expect(edge(roadmapFit.m)).toBe('m');
     expect(edge(roadmapFit.m + 2)).toBe('s');
-    expect(roadmapStep(twoColumns(roadmapFit.l), layoutAt(1.1))).toBe('m');
+    expect(
+      roadmapStep(twoColumns(roadmapFit.l), layoutContext({ crowding: 1.1 }))
+    ).toBe('m');
     expect(
       roadmapStep(
         twoColumns(roadmapFit.l),
-        layoutAt(1, frameContentWidth * 0.95)
+        layoutContext({ width: frameContentWidth * 0.95 })
       )
     ).toBe('m');
     expect(
-      roadmapStep({ ...twoColumns(roadmapFit.m + 2), size: 'l' }, layoutAt(3))
+      roadmapStep(
+        { ...twoColumns(roadmapFit.m + 2), size: 'l' },
+        layoutContext({ crowding: 3 })
+      )
     ).toBe('l');
   });
 });

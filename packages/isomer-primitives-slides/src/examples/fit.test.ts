@@ -5,23 +5,14 @@
  * 2.0.
  */
 
-import {
-  createTakumiImageBackend,
-  type LayoutBox,
-} from '@elastic/isomer-image-takumi';
-import { createIsomerRuntime } from '@elastic/isomer-runtime';
-import {
-  checkLayout,
-  type Composition,
-  createChildNodeWalker,
-  type PrimitiveNode,
-} from '@elastic/isomer-sdk';
+import type { LayoutBox } from '@elastic/isomer-image-takumi';
+import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
-import { slideDeckFrame, slidesPack } from '../pack';
 import { slideLayout } from '../primitives/layout';
 import { referenceHeading, renderedStep } from '../primitives/size.fixtures';
 import { longExample as agendaExample } from '../primitives/slide_agenda/examples';
+import { denseExample as barsExample } from '../primitives/slide_bars/examples';
 import { fullExample as definitionsExample } from '../primitives/slide_definitions/examples';
 import { wideExample as fanoutExample } from '../primitives/slide_fanout/examples';
 import { examples as graphExamples } from '../primitives/slide_graph/examples';
@@ -32,7 +23,22 @@ import {
   tallestExample,
 } from '../primitives/slide_heading/examples';
 import { fullExample as listExample } from '../primitives/slide_list/examples';
+import {
+  fullExample as matrixFullExample,
+  pairExample,
+} from '../primitives/slide_matrix/examples';
+import {
+  example as quadrantExample,
+  fullExample as quadrantFullExample,
+} from '../primitives/slide_quadrant/examples';
+import type { SlideQuadrantNode } from '../primitives/slide_quadrant/schema';
 import { fullExample as roadmapExample } from '../primitives/slide_roadmap/examples';
+import {
+  example as tableExample,
+  fullExample as tableFullExample,
+} from '../primitives/slide_table/examples';
+import { tableSize } from '../primitives/slide_table/fit';
+import type { SlideTableNode } from '../primitives/slide_table/schema';
 import { fullExample as treeExample } from '../primitives/slide_tree/examples';
 import { slideDeckPrimitives } from '../registry';
 import { agendaFit } from '../theme/components/agenda';
@@ -41,19 +47,14 @@ import {
   definitionsRowFit,
 } from '../theme/components/definitions';
 import { graph } from '../theme/components/graph';
+import { matrixFit } from '../theme/components/matrix';
+import { quadrantFit } from '../theme/components/quadrant';
 import { quoteFit } from '../theme/components/quote';
 import { statementFit } from '../theme/components/statement';
 import { scalePx } from '../theme/scale';
 
-import { slideFonts } from './fonts';
+import { findings, measured } from './measure';
 import { previewSlide } from './preview_slide';
-
-const runtime = createIsomerRuntime({
-  packs: [slidesPack],
-  frames: { slide: slideDeckFrame },
-});
-const takumi = createTakumiImageBackend({ fonts: slideFonts });
-const walk = createChildNodeWalker(runtime.primitives);
 
 const cases = slideDeckPrimitives.flatMap(({ type, examples }) =>
   examples.map((example, index) => ({
@@ -74,14 +75,6 @@ const referenceCases = [agendaExample, definitionsExample].map((example) => {
     },
   };
 });
-
-const findings = async (slide: Composition) =>
-  checkLayout(
-    await takumi.measure(runtime.surfaces.svg.render(slide, { anchors: true })),
-    slide.body,
-    walk,
-    'svg'
-  );
 
 const fits = async ({ slide }: { slide: Composition }) => {
   expect(await findings(slide)).toEqual([]);
@@ -104,6 +97,22 @@ describe('the largest steps a slide with no heading takes still fit', () => {
     type: 'view',
     body: [{ type: 'slideFrame', body: [node] } as PrimitiveNode],
   });
+  const [, typical = []] = tableExample.rows ?? [];
+  const tableRows = (count: number): SlideTableNode => ({
+    ...tableExample,
+    rows: Array.from({ length: count }, () => [...typical]),
+  });
+  const quadrantWith = (items: number): SlideQuadrantNode => {
+    const top = Math.ceil(items / 2);
+    const bottom = items - top;
+    return {
+      ...quadrantExample,
+      quadrants: [top, top, bottom, bottom].map((count, index) => ({
+        label: `Cell ${index}`,
+        items: Array.from({ length: count }, (_, item) => `item ${item}`),
+      })),
+    };
+  };
   const term = (length: number) => ({
     term: 'ledger',
     body: prose(length - 'ledger'.length),
@@ -144,12 +153,79 @@ describe('the largest steps a slide with no heading takes still fit', () => {
         ),
       },
     },
+    {
+      step,
+      variant: 'matrix-cellPadding',
+      node: {
+        ...pairExample,
+        rows: Array.from(
+          {
+            length: Math.min(
+              matrixFullExample.rows.length,
+              most(matrixFit[step])
+            ),
+          },
+          () => pairExample.rows[0]!
+        ),
+      },
+    },
+    {
+      step,
+      variant: 'quadrant-cellSize',
+      node: quadrantWith(
+        Math.min(
+          2 * (quadrantFullExample.quadrants[0]?.items.length ?? 0),
+          most(quadrantFit[step])
+        )
+      ),
+    },
+    {
+      step,
+      variant: 'table-headStep',
+      node: tableRows(
+        Math.max(
+          ...Array.from(
+            { length: tableFullExample.rows?.length ?? 0 },
+            (_, index) => index + 1
+          ).filter((count) => tableSize(tableRows(count)) === step)
+        )
+      ),
+    },
   ]);
 
-  it.each(steps)('$variant at $step', async ({ step, variant, node }) => {
-    expect(renderedStep(variant, node)).toBe(step);
-    expect(await findings(alone(node))).toEqual([]);
+  const statsRow = (count: number, value: string, unit?: string) => ({
+    type: 'slideStats',
+    items: Array.from({ length: count }, () => ({
+      value,
+      ...(unit ? { unit } : {}),
+      label: 'Label',
+      body: 'Body.',
+    })),
   });
+  const figures = [
+    { step: 'l', variant: 'bars-labelSize', node: barsExample },
+    { step: 'l', variant: 'stats-valueSize', node: statsRow(2, '000000') },
+    { step: 'l', variant: 'stats-valueSize', node: statsRow(3, '00', 'ms') },
+    { step: 'l', variant: 'stats-valueSize', node: statsRow(4, '00') },
+    {
+      step: 'l',
+      variant: 'delta-valueSize',
+      node: {
+        type: 'slideDelta',
+        before: { label: 'Before', value: '0000' },
+        after: { label: 'After', value: '0' },
+        body: 'Body.',
+      },
+    },
+  ] as const;
+
+  it.each([...steps, ...figures])(
+    '$variant at $step',
+    async ({ step, variant, node }) => {
+      expect(renderedStep(variant, node)).toBe(step);
+      expect(await findings(alone(node))).toEqual([]);
+    }
+  );
 });
 
 const fitsBody = async (slide: Composition): Promise<boolean> =>
@@ -256,9 +332,7 @@ describe('a graph caption is set in the width its step is measured in', () => {
     ),
     besideMiddle,
   ])('$caption', async (node) => {
-    const box = await takumi.measure(
-      runtime.surfaces.svg.render(inFrame([node]))
-    );
+    const box = await measured(inFrame([node]));
     const caption = captionBox(box, node.caption.slice(0, 8));
     expect(caption?.width).toBeCloseTo(
       graphCaptionWidth(node, slideLayout(undefined).width),
@@ -283,6 +357,8 @@ describe('checkLayout reports a node past the frame body', () => {
     fanoutExample,
     listExample,
     halfWrappedAgenda,
+    { ...barsExample, size: 'l' },
+    tableFullExample,
     roadmapExample,
     treeExample,
   ])('$type below the tallest heading', async (node) => {

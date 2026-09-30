@@ -17,7 +17,7 @@ import { graph, graphFit, graphMaxMain } from '../../theme/components/graph';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
 import { measureText } from '../size';
-import { layoutAt, renderedStep, shortWords } from '../size.fixtures';
+import { layoutContext, renderedStep, shortWords } from '../size.fixtures';
 
 import { example, outwardEdgesExample, pairExample } from './examples';
 import { graphCaptionWidth, graphLoad, graphStep, graphWordStep } from './fit';
@@ -435,9 +435,14 @@ describe('slideGraph', () => {
     expect(graphWordStep(node, layoutWidth('l', 1))).toBe('l');
     expect(graphWordStep(node, layoutWidth('l', -1))).toBe('m');
     expect(graphWordStep(node, layoutWidth('s', 1))).toBe('s');
-    expect(graphStep(node, layoutAt(1, layoutWidth('m', -1)))).toBe('s');
     expect(
-      graphStep({ ...node, size: 'l' }, layoutAt(1, layoutWidth('s', -1)))
+      graphStep(node, layoutContext({ width: layoutWidth('m', -1) }))
+    ).toBe('s');
+    expect(
+      graphStep(
+        { ...node, size: 'l' },
+        layoutContext({ width: layoutWidth('s', -1) })
+      )
     ).toBe('l');
   });
 
@@ -482,23 +487,31 @@ describe('slideGraph', () => {
 
   it('takes the whole body on a slide with no heading', () => {
     const node = pair(graphFit.l + 1);
-    expect(graphStep(node, layoutAt(1))).toBe('m');
+    expect(graphStep(node, layoutContext())).toBe('m');
     expect(graphStep(node, undefined)).toBe('l');
     expect(renderedStep('graph-termSize', node)).toBe('l');
   });
 
   it('steps down at each budget, under crowding, and in a narrower box, unless sized', () => {
-    const edge = (load: number) => graphStep(pair(load), layoutAt(1));
+    const edge = (load: number) => graphStep(pair(load), layoutContext());
     expect(edge(graphFit.l)).toBe('l');
     expect(edge(graphFit.l + 1)).toBe('m');
     expect(edge(graphFit.m)).toBe('m');
     expect(edge(graphFit.m + 1)).toBe('s');
-    expect(graphStep(pair(graphFit.l), layoutAt(1.1))).toBe('m');
-    expect(
-      graphStep(pair(graphFit.l), layoutAt(1, frameContentWidth * 0.95))
-    ).toBe('m');
-    expect(graphStep({ ...pair(graphFit.m + 1), size: 'l' }, layoutAt(3))).toBe(
-      'l'
+    expect(graphStep(pair(graphFit.l), layoutContext({ crowding: 1.1 }))).toBe(
+      'm'
     );
+    expect(
+      graphStep(
+        pair(graphFit.l),
+        layoutContext({ width: frameContentWidth * 0.95 })
+      )
+    ).toBe('m');
+    expect(
+      graphStep(
+        { ...pair(graphFit.m + 1), size: 'l' },
+        layoutContext({ crowding: 3 })
+      )
+    ).toBe('l');
   });
 });

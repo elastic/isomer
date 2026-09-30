@@ -5,8 +5,8 @@
  * 2.0.
  */
 
-import { space, stroke, type } from '../base';
-import { literal } from '../scale';
+import { font, radius, space, stroke, type } from '../base';
+import { literal, paddingXy } from '../scale';
 
 export const label = {
   size: type.label.size,
@@ -37,6 +37,18 @@ export const tone = {
 /** Marks a link by more than its color. */
 export const link = {
   decoration: literal('underline'),
+} as const;
+
+export const placeholder = {
+  stripe: space.px14,
+  stripeEnd: space.px28,
+  angle: literal('135deg'),
+  border: stroke.hairline,
+  radius: radius.panel,
+  caption: literal('value pending'),
+  captionType: { ...type.mono, size: font.size.px24 },
+  captionPadding: paddingXy(space.px6, space.px14),
+  captionRadius: radius.chipSmall,
 } as const;
 
 export const glyph = {

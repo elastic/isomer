@@ -6,12 +6,12 @@
  */
 
 import type {
+  CheckedValidationResult,
   Composition,
   PrimitiveNode,
   ValidationErrorMode,
-  ValidationResult,
 } from '@elastic/isomer-sdk';
-import { enforceValidationMode } from '@elastic/isomer-sdk';
+import { compositionToRender } from '@elastic/isomer-sdk';
 import {
   renderSlackEnvelope,
   type SlackEnvelopeDispatcher,
@@ -35,7 +35,7 @@ export type SlackRenderResult = SlackEnvelopeResult;
 
 /** Renders a composition or node to Slack Block Kit blocks. */
 export interface SlackSurface {
-  /** Always `true`: this surface validates the composition before rendering. */
+  /** Always `true`: this surface validates the composition and renders the copy it checked, never the caller's value. */
   readonly validating: true;
   /** Renders a full composition to a Slack message (blocks, fallback text, assets). */
   render(
@@ -56,15 +56,15 @@ export interface SlackSurface {
 /** Creates the `slack` {@link RuntimeSurfaces} entry. */
 export const createSlackSurface = (
   dispatcher: SlackEnvelopeDispatcher<PrimitiveNode>,
-  validate: (composition: Composition) => ValidationResult
+  validate: (composition: Composition) => CheckedValidationResult
 ): SlackSurface => ({
   validating: true,
   render: (composition, options = {}) => {
-    enforceValidationMode(
+    const checked = compositionToRender(
       validate(composition),
       options.onValidationError ?? 'throw'
     );
-    return renderSlackEnvelope(composition, dispatcher, options);
+    return renderSlackEnvelope(checked, dispatcher, options);
   },
   renderNode: (node, options = {}) =>
     renderSlackEnvelope({ type: 'view', body: [node] }, dispatcher, options),

@@ -16,7 +16,7 @@ import { timeline, timelineFit } from '../../theme/components/timeline';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
 import { measureText } from '../size';
-import { layoutAt, renderedStep, shortWords } from '../size.fixtures';
+import { layoutContext, renderedStep, shortWords } from '../size.fixtures';
 
 import { example, fiveItemsExample, threeItemsExample } from './examples';
 import {
@@ -293,10 +293,13 @@ describe('slideTimeline', () => {
     expect(timelineWordStep(node, at('l', 1))).toBe('l');
     expect(timelineWordStep(node, at('l', -1))).toBe('m');
     expect(timelineWordStep(node, at('m', -1))).toBe('s');
-    expect(timelineStep(node, layoutAt(1, at('m', -1)))).toBe('s');
-    expect(timelineStep({ ...node, size: 'l' }, layoutAt(1, at('s', -1)))).toBe(
-      'l'
-    );
+    expect(timelineStep(node, layoutContext({ width: at('m', -1) }))).toBe('s');
+    expect(
+      timelineStep(
+        { ...node, size: 'l' },
+        layoutContext({ width: at('s', -1) })
+      )
+    ).toBe('l');
   });
 
   it('measures a label whole, on the one line it is set on', () => {
@@ -311,26 +314,32 @@ describe('slideTimeline', () => {
 
   it('takes the whole body on a slide with no heading', () => {
     const node = fourItems(timelineFit.l + 4);
-    expect(timelineStep(node, layoutAt(1))).toBe('m');
+    expect(timelineStep(node, layoutContext())).toBe('m');
     expect(timelineStep(node, undefined)).toBe('l');
     expect(renderedStep('timeline-headingSize', node)).toBe('l');
   });
 
   it('steps down at each budget, under crowding, and in a narrower box, unless sized', () => {
-    const edge = (load: number) => timelineStep(fourItems(load), layoutAt(1));
+    const edge = (load: number) =>
+      timelineStep(fourItems(load), layoutContext());
     expect(edge(timelineFit.l)).toBe('l');
     expect(edge(timelineFit.l + 4)).toBe('m');
     expect(edge(timelineFit.m)).toBe('m');
     expect(edge(timelineFit.m + 4)).toBe('s');
-    expect(timelineStep(fourItems(timelineFit.l), layoutAt(1.1))).toBe('m');
+    expect(
+      timelineStep(fourItems(timelineFit.l), layoutContext({ crowding: 1.1 }))
+    ).toBe('m');
     expect(
       timelineStep(
         fourItems(timelineFit.l),
-        layoutAt(1, frameContentWidth * 0.95)
+        layoutContext({ width: frameContentWidth * 0.95 })
       )
     ).toBe('m');
     expect(
-      timelineStep({ ...fourItems(timelineFit.m + 4), size: 'l' }, layoutAt(3))
+      timelineStep(
+        { ...fourItems(timelineFit.m + 4), size: 'l' },
+        layoutContext({ crowding: 3 })
+      )
     ).toBe('l');
   });
 });

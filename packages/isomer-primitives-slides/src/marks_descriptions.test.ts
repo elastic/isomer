@@ -39,25 +39,21 @@ const stringsIn = (value: unknown, path: Path = []): Path[] => {
   return [];
 };
 
-const fieldName = (path: Path): string =>
-  path.filter((step) => typeof step === 'string').join('.');
-
-/** One path to each field of `node`; a field's items share its description and renderer. */
-const fieldsIn = (node: unknown): Path[] => [
-  ...new Map(stringsIn(node).map((path) => [fieldName(path), path])).values(),
-];
-
-const withAppended = (value: unknown, [head, ...rest]: Path): unknown => {
+const withAppended = (
+  value: unknown,
+  [head, ...rest]: Path,
+  mark = 'mk'
+): unknown => {
   if (head === undefined) {
-    return `${value as string} \`mk\``;
+    return `${value as string} \`${mark}\``;
   }
   if (Array.isArray(value)) {
     return (value as unknown[]).map((item, index) =>
-      index === head ? withAppended(item, rest) : item
+      index === head ? withAppended(item, rest, mark) : item
     );
   }
   const record = value as Record<string, unknown>;
-  return { ...record, [head]: withAppended(record[head], rest) };
+  return { ...record, [head]: withAppended(record[head], rest, mark) };
 };
 
 interface ZodDef {
@@ -116,34 +112,58 @@ const onSlide = (node: unknown): Composition => {
   };
 };
 
-const render = (node: unknown): string | undefined => {
-  const composition = onSlide(node);
-  return runtime.validate(composition).errors.length === 0
-    ? runtime.surfaces.html.render(composition).html
-    : undefined;
+const isValid = (node: unknown): boolean =>
+  runtime.validate(onSlide(node)).errors.length === 0;
+
+interface Drawn {
+  /** Absent when the node with a mark in this field is invalid. */
+  html?: boolean;
+  markdown?: boolean;
+}
+
+/** Whether a mark appended to each of `paths` is drawn, from one render of `example` with a distinct mark in every valid field. */
+const drawnMarks = (example: unknown, paths: readonly Path[]): Drawn[] => {
+  const valid = paths.map((path) => isValid(withAppended(example, path)));
+  const marked = paths.reduce<unknown>(
+    (node, path, index) =>
+      valid[index] ? withAppended(node, path, `mk${index}`) : node,
+    example
+  );
+  if (!isValid(marked)) {
+    throw new Error('marks valid in each field alone are invalid together');
+  }
+  const html = runtime.surfaces.html.render(onSlide(marked)).html;
+  const markdown = runtime.surfaces.markdown.render(onSlide(marked));
+  return paths.map((_, index) =>
+    valid[index]
+      ? {
+          html: html.includes(`>mk${index}</code>`),
+          markdown: markdown.includes(`\`mk${index}\``),
+        }
+      : {}
+  );
 };
 
-const renderMarkdown = (node: unknown): string =>
-  runtime.surfaces.markdown.render(onSlide(node));
-
 describe('inline marks in field descriptions', () => {
+  const says = (schema: unknown, path: Path) =>
+    fieldAt(schema as ZodType, path).some((text) =>
+      /marks are allowed/i.test(text)
+    );
+  const fieldName = (path: Path) =>
+    path.filter((step) => typeof step === 'string').join('.');
+
   it.each(slideDeckPrimitives)(
     '$type says so on every field that draws marks',
     ({ schema, examples }) => {
       const missing = new Set<string>();
       for (const example of examples) {
-        for (const path of fieldsIn(example)) {
-          const html = render(withAppended(example, path));
-          if (!html?.includes('>mk</code>')) {
-            continue;
-          }
-          const described = fieldAt(schema as ZodType, path).some((text) =>
-            /marks are allowed/i.test(text)
-          );
-          if (!described) {
+        const paths = stringsIn(example);
+        drawnMarks(example, paths).forEach(({ html }, index) => {
+          const path = paths[index]!;
+          if (html && !says(schema, path)) {
             missing.add(fieldName(path));
           }
-        }
+        });
       }
       expect([...missing].sort()).toEqual([]);
     }
@@ -154,25 +174,20 @@ describe('inline marks in field descriptions', () => {
     ({ schema, examples }) => {
       const unrendered = new Set<string>();
       for (const example of examples) {
-        for (const path of fieldsIn(example)) {
-          const says = fieldAt(schema as ZodType, path).some((text) =>
-            /marks are allowed/i.test(text)
-          );
-          if (!says) {
-            continue;
-          }
-          const node = withAppended(example, path);
-          const html = render(node);
-          const field = fieldName(path);
+        const paths = stringsIn(example).filter((path) => says(schema, path));
+        drawnMarks(example, paths).forEach(({ html, markdown }, index) => {
+          const field = fieldName(paths[index]!);
           if (html === undefined) {
             unrendered.add(`${field} (invalid)`);
-          } else if (!html.includes('>mk</code>')) {
+            return;
+          }
+          if (!html) {
             unrendered.add(`${field} (html)`);
           }
-          if (!renderMarkdown(node).includes('`mk`')) {
+          if (!markdown) {
             unrendered.add(`${field} (markdown)`);
           }
-        }
+        });
       }
       expect([...unrendered].sort()).toEqual([]);
     }

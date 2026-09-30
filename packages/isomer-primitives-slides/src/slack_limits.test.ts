@@ -9,7 +9,12 @@
 
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
-import { SLACK_LIMITS, type SlackBlock } from '@elastic/isomer-sdk/slack';
+import {
+  SLACK_LIMITS,
+  type SlackBlock,
+  type SlackRichTextBlockElement,
+  type SlackRichTextInline,
+} from '@elastic/isomer-sdk/slack';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from './pack';
@@ -311,6 +316,77 @@ const cases: LimitCase[] = [
     }),
   },
   {
+    name: 'slideStat body',
+    slot: 'section',
+    limit: SLACK_LIMITS.sectionTextChars,
+    filler: 'x',
+    max: 4000,
+    node: (fill) => ({ type: 'slideStat', value: '2.1', body: `Days ${fill}` }),
+  },
+  {
+    name: 'slideStats body',
+    slot: 'fields',
+    limit: SLACK_LIMITS.sectionFieldChars,
+    filler: 'x',
+    max: 3000,
+    node: (fill) => ({
+      type: 'slideStats',
+      items: [
+        { value: '3', label: 'Regions', body: `Active ${fill}` },
+        { value: '40', label: 'Latency', body: 'At the edge.' },
+      ],
+    }),
+  },
+  {
+    name: 'slideTable label',
+    slot: 'context',
+    limit: SLACK_LIMITS.contextElementChars,
+    filler: '&',
+    max: 3000,
+    node: (fill) => ({
+      type: 'slideTable',
+      label: fill,
+      columns: ['Region'],
+      rows: [['Europe']],
+    }),
+  },
+  {
+    name: 'slideQuadrant label',
+    slot: 'fields',
+    limit: SLACK_LIMITS.sectionFieldChars,
+    filler: 'x',
+    max: 3000,
+    node: (fill) => ({
+      type: 'slideQuadrant',
+      x: { low: 'Easy', high: 'Hard' },
+      y: { low: 'Minor', high: 'Major' },
+      quadrants: [
+        { label: `Wins ${fill}`, items: ['dark mode'] },
+        { label: 'Big bets', items: [] },
+        { label: 'Fill-ins', items: [] },
+        { label: 'Money pits', items: [] },
+      ],
+    }),
+  },
+  {
+    name: 'slideQuadrant axis',
+    slot: 'context',
+    limit: SLACK_LIMITS.contextElementChars,
+    filler: '&',
+    max: 3000,
+    node: (fill) => ({
+      type: 'slideQuadrant',
+      x: { low: fill, high: 'Hard' },
+      y: { low: 'Minor', high: 'Major' },
+      quadrants: [
+        { label: 'Quick wins', items: ['dark mode'] },
+        { label: 'Big bets', items: [] },
+        { label: 'Fill-ins', items: [] },
+        { label: 'Money pits', items: [] },
+      ],
+    }),
+  },
+  {
     name: 'slideSource',
     slot: 'context',
     limit: SLACK_LIMITS.contextElementChars,
@@ -328,6 +404,113 @@ const cases: LimitCase[] = [
       type: 'slideList',
       label: fill,
       items: [{ body: 'One' }],
+    }),
+  },
+  {
+    name: 'slidePipeline chain',
+    slot: 'context',
+    limit: SLACK_LIMITS.contextElementChars,
+    filler: 'x',
+    max: 3000,
+    node: (fill) => ({
+      type: 'slidePipeline',
+      steps: [{ title: `Order ${fill}` }, { title: 'Receipt' }],
+    }),
+  },
+  {
+    name: 'slideLanes lanes',
+    slot: 'section',
+    limit: SLACK_LIMITS.sectionTextChars,
+    filler: 'x',
+    max: 4000,
+    node: (fill) => ({
+      type: 'slideLanes',
+      lanes: [
+        { label: 'Web', steps: [`Basket ${fill}`] },
+        { label: 'Phone', steps: ['Call'] },
+      ],
+      join: 'Checkout',
+    }),
+  },
+  {
+    name: 'slideLanes toned lane',
+    slot: 'section',
+    limit: SLACK_LIMITS.sectionTextChars,
+    filler: '&',
+    max: 1000,
+    node: (fill) => ({
+      type: 'slideLanes',
+      lanes: [
+        { label: 'Web', steps: [fill], tone: 'primary' },
+        { label: 'Phone', steps: ['Call'], tone: 'accent' },
+      ],
+      join: 'Checkout',
+    }),
+  },
+  {
+    name: 'slideLanes notes',
+    slot: 'fields',
+    limit: SLACK_LIMITS.sectionFieldChars,
+    filler: 'x',
+    max: 3000,
+    node: (fill) => ({
+      type: 'slideLanes',
+      lanes: [
+        { label: 'Web', steps: ['Basket'] },
+        { label: 'Phone', steps: ['Call'] },
+      ],
+      join: 'Checkout',
+      notes: [
+        { title: 'Self-serve', body: `The customer ${fill}` },
+        { title: 'Assisted', body: 'An agent keys it' },
+      ],
+    }),
+  },
+  {
+    name: 'slideCommand label',
+    slot: 'section',
+    limit: SLACK_LIMITS.sectionTextChars,
+    filler: '&',
+    max: 1000,
+    node: (fill) => ({
+      type: 'slideCommand',
+      label: fill,
+      command: 'npm install',
+    }),
+  },
+  {
+    name: 'slideDiff file',
+    slot: 'section',
+    limit: SLACK_LIMITS.sectionTextChars,
+    filler: '&',
+    max: 1000,
+    node: (fill) => ({
+      type: 'slideDiff',
+      file: fill,
+      lines: [{ text: 'x', op: 'add' }],
+    }),
+  },
+  ...(['prose', 'code'] as const).map((format): LimitCase => ({
+    name: `slideTranscript ${format} turn`,
+    slot: 'section',
+    limit: SLACK_LIMITS.sectionTextChars,
+    filler: 'x',
+    max: 4000,
+    node: (fill) => ({
+      type: 'slideTranscript',
+      turns: [{ role: 'user', format, text: `Book ${fill}` }],
+    }),
+  })),
+  {
+    name: 'slideTranscript label',
+    slot: 'context',
+    limit: SLACK_LIMITS.contextElementChars,
+    filler: '&',
+    max: 1000,
+    node: (fill) => ({
+      type: 'slideTranscript',
+      label: fill,
+      turns: [{ role: 'user', text: 'Book' }],
     }),
   },
 ];
@@ -370,8 +553,30 @@ const fitting = (
     .flatMap((block) => slotTexts(block, slot))
     .find((text) => text.includes(printed(filler, length)));
 
+const inlineText = (inline: SlackRichTextInline): string =>
+  inline.type === 'link' ? (inline.text ?? inline.url) : inline.text;
+
+const elementText = (element: SlackRichTextBlockElement): string =>
+  element.type === 'rich_text_list'
+    ? element.elements.map(elementText).join('')
+    : element.elements.map(inlineText).join('');
+
+const richTextElements = (blocks: SlackBlock[]): SlackRichTextBlockElement[] =>
+  blocks.flatMap((block) => (block.type === 'rich_text' ? block.elements : []));
+
 const richText = (blocks: SlackBlock[]): string =>
-  JSON.stringify(blocks.filter(({ type }) => type === 'rich_text'));
+  richTextElements(blocks).map(elementText).join('');
+
+/** Every rich-text element but a list, which Slack cannot split without adding an item, fits a section. */
+const expectSectionSized = (blocks: SlackBlock[]) => {
+  for (const element of richTextElements(blocks)) {
+    if (element.type !== 'rich_text_list') {
+      expect(elementText(element).length).toBeLessThanOrEqual(
+        SLACK_LIMITS.sectionTextChars
+      );
+    }
+  }
+};
 
 describe('Slack slots below their schema cap', () => {
   it.each(cases)(
@@ -401,6 +606,7 @@ describe('Slack slots below their schema cap', () => {
       );
       expect(fitting(row, low + 1)).toBeUndefined();
       expect(richText(render(over))).toContain(long(low + 1, row.filler));
+      expectSectionSized(render(over));
     }
   );
 
@@ -440,5 +646,6 @@ describe('Slack slots below their schema cap', () => {
     const primitive = node as PrimitiveNode;
     expect(schemas.get(primitive.type)?.safeParse(node).success).toBe(true);
     expect(richText(render(primitive))).toContain(past);
+    expectSectionSized(render(primitive));
   });
 });

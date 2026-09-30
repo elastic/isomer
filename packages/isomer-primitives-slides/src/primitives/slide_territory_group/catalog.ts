@@ -21,6 +21,7 @@ export const catalog = {
   avoidWhen: [
     'Two sides each hold a list of items, with a divider between; use slideSplit.',
     'Ownership is not the point of the slide; use slideBulletList.',
+    'The owned parts stack in order, each resting on the one below; use slideLayers.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

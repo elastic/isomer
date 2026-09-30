@@ -28,10 +28,11 @@ import {
   scopeScript,
 } from '../../pack/enhancements';
 import {
+  type CheckedValidationResult,
+  compositionToRender,
   createCompositionValidator,
   enforceValidationMode,
   type ValidationErrorMode,
-  type ValidationResult,
 } from '../../validate/validation';
 import { withAnchors } from '../anchors';
 import { contextWith } from '../context_view';
@@ -231,8 +232,10 @@ export interface HTMLDispatcherRenderOptions<
   TContext = StyledRenderContext,
 > {
   dispatcher: HTMLRenderDispatcher<TNode, TCollector, TContext>;
-  /** Runs once before rendering; {@link HTMLRenderOptions.onValidationError} decides what becomes of its errors. Defaults to `createCompositionValidator(dispatcher.definitions)`. */
-  validate?: (composition: Composition<TNode>) => ValidationResult;
+  /** Runs once before rendering, which draws the composition it returns; {@link HTMLRenderOptions.onValidationError} decides what becomes of its errors. Defaults to `createCompositionValidator(dispatcher.definitions)`. */
+  validate?: (
+    composition: Composition<TNode>
+  ) => CheckedValidationResult<TNode>;
   options?: HTMLRenderOptions;
   /** Used only when the composition has neither `meta.ariaLabel` nor a `title`. Defaults to `'View'`. */
   defaultAriaLabel?: string;
@@ -265,10 +268,10 @@ export const renderHTMLWithDispatcher = <
   TCollector extends PrimitiveStyleCollector = PrimitiveStyleCollector,
   TContext = StyledRenderContext,
 >(
-  composition: Composition<TNode>,
+  input: Composition<TNode>,
   {
     dispatcher,
-    validate = createCompositionValidator(dispatcher.definitions),
+    validate = createCompositionValidator<TNode>(dispatcher.definitions),
     options: rawOptions = {},
     defaultAriaLabel = 'View',
     styleAdapter,
@@ -276,11 +279,12 @@ export const renderHTMLWithDispatcher = <
     enhancementDefinitions = [],
   }: HTMLDispatcherRenderOptions<TNode, TCollector, TContext>
 ): HTMLRenderResult => {
+  const validation = validate(input);
+  const composition = compositionToRender(validation);
   // Resolved before the validation mode is read, so an adapter can derive
   // `onValidationError`.
   const options =
     styleAdapter?.resolveOptions?.(composition, rawOptions) ?? rawOptions;
-  const validation = validate(composition);
   enforceValidationMode(validation, options.onValidationError);
   const framed = options.framed ?? true;
   const heading = options.heading ?? true;

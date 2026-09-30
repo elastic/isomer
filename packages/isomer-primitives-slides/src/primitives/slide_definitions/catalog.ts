@@ -20,6 +20,7 @@ export const catalog = {
   ],
   avoidWhen: [
     'The items are short facts rather than terms to learn; use slideList.',
+    'Each item has several attributes to compare; use slideTable.',
     'The items split by who owns them; use slideTerritoryGroup.',
     'The terms connect to each other and the links matter; use slideGraph.',
   ],
