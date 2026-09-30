@@ -13,6 +13,9 @@ import { describe, expect, it } from 'vitest';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { agendaFit } from '../../theme/components/agenda';
 import { slideDistillery } from '../../theme/distillery';
+import { sizeForLoad } from '../size';
+import { crowdingHeading, renderedStep } from '../size.fixtures';
+import { headingCrowding } from '../slide_heading/fit';
 
 import { example, outlineExample } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
@@ -174,5 +177,26 @@ describe('slideAgenda', () => {
     expect(stepOf({ type: 'slideAgenda', sections: sections(count) })).toBe(
       step
     );
+  });
+
+  it('keeps an authored size', () => {
+    expect(
+      stepOf({ type: 'slideAgenda', sections: sections(8), size: 'l' })
+    ).toBe('l');
+    expect(
+      stepOf({ type: 'slideAgenda', sections: sections(2), size: 's' })
+    ).toBe('s');
+  });
+
+  it("scales its count by the heading's crowding", () => {
+    const node = { type: 'slideAgenda', sections: sections(agendaFit.l) };
+    const step = sizeForLoad(
+      undefined,
+      agendaFit.l,
+      agendaFit,
+      headingCrowding(crowdingHeading)
+    );
+    expect(step).not.toBe('l');
+    expect(renderedStep('agenda-rowSize', node, crowdingHeading)).toBe(step);
   });
 });

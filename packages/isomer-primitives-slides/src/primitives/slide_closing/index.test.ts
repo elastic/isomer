@@ -11,6 +11,9 @@ import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { closing, closingShares } from '../../theme/components/closing';
+import { columnWidth, frameContentWidth } from '../../theme/components/frame';
+import { sizeForLines } from '../size';
 
 import { example, linkOnlyExample } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
@@ -170,13 +173,65 @@ describe('slideClosing', () => {
     expect(html).not.toContain('<a ');
   });
 
-  it('sizes the title to the width its layout gives it', () => {
+  describe('title size', () => {
+    const titleOf = (length: number) =>
+      'Next '.repeat(46).slice(0, length).trim();
     const stepOf = (node: object) =>
       /closing-titleSize-(\w+)/.exec(
         runtime.surfaces.html.render(compose(node)).html
       )?.[1];
-    const title = 'Questions and next steps';
-    expect(stepOf({ ...linkOnlyExample, title, paths: undefined })).toBe('l');
-    expect(stepOf({ ...example, title })).toBe('s');
+    const layouts = [
+      {
+        name: 'beside paths',
+        node: example,
+        width: columnWidth(closingShares, closing.columnGap),
+      },
+      {
+        name: 'alone',
+        node: { ...linkOnlyExample, paths: undefined },
+        width: frameContentWidth,
+      },
+    ];
+
+    it.each(layouts)(
+      'steps down at each boundary of its width $name',
+      ({ node, width }) => {
+        const measured = (title: string) =>
+          sizeForLines(
+            undefined,
+            title,
+            closing.title.tracking,
+            width,
+            closing.titleSizes
+          );
+        const flips = Array.from(
+          { length: 229 },
+          (_, index) => index + 2
+        ).filter(
+          (length) =>
+            measured(titleOf(length)) !== measured(titleOf(length - 1))
+        );
+        expect(flips.map((length) => measured(titleOf(length)))).toEqual([
+          'm',
+          's',
+        ]);
+        for (const length of flips) {
+          for (const title of [titleOf(length - 1), titleOf(length)]) {
+            expect(stepOf({ ...node, title })).toBe(measured(title));
+          }
+        }
+      }
+    );
+
+    it('measures a title alone at the full width', () => {
+      const title = 'Questions and next steps';
+      expect(stepOf({ ...linkOnlyExample, title, paths: undefined })).toBe('l');
+      expect(stepOf({ ...example, title })).toBe('s');
+    });
+
+    it('keeps an authored size', () => {
+      expect(stepOf({ ...example, title: titleOf(200), size: 'l' })).toBe('l');
+      expect(stepOf({ ...example, title: 'Next', size: 's' })).toBe('s');
+    });
   });
 });

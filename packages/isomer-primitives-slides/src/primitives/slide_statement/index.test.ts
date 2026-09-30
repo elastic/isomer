@@ -12,6 +12,9 @@ import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { statementFit } from '../../theme/components/statement';
+import { sizeForLoad } from '../size';
+import { crowdingHeading, renderedStep } from '../size.fixtures';
+import { headingCrowding } from '../slide_heading/fit';
 
 import { example, longExample } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
@@ -65,6 +68,7 @@ describe('slideStatement', () => {
   it.each([
     [statementFit.l, 'l'],
     [statementFit.l + 1, 'm'],
+    [statementFit.m, 'm'],
     [statementFit.m + 1, 's'],
   ])('sets %i characters at %s', (length, step) => {
     expect(stepOf({ type: 'slideStatement', text: 'x'.repeat(length) })).toBe(
@@ -74,5 +78,19 @@ describe('slideStatement', () => {
 
   it('keeps an authored size', () => {
     expect(stepOf({ ...longExample, size: 'l' })).toBe('l');
+  });
+
+  it("scales its load by the heading's crowding", () => {
+    const node = { type: 'slideStatement', text: 'x'.repeat(statementFit.l) };
+    const step = sizeForLoad(
+      undefined,
+      statementFit.l,
+      statementFit,
+      headingCrowding(crowdingHeading)
+    );
+    expect(step).not.toBe('l');
+    expect(renderedStep('statement-textSize', node, crowdingHeading)).toBe(
+      step
+    );
   });
 });

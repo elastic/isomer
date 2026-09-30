@@ -11,7 +11,13 @@ import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
-import { definitionsSingleColumnMax } from '../../theme/components/definitions';
+import {
+  definitionsFit,
+  definitionsSingleColumnMax,
+} from '../../theme/components/definitions';
+import { sizeForLoad } from '../size';
+import { crowdingHeading, renderedStep } from '../size.fixtures';
+import { headingCrowding } from '../slide_heading/fit';
 
 import { example, fullExample } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
@@ -84,5 +90,58 @@ describe('slideDefinitions', () => {
         },
       ]
     `);
+  });
+
+  describe('size', () => {
+    const one = (load: number) => ({
+      type: 'slideDefinitions',
+      items: [{ term: 'a', body: 'x'.repeat(load - 1) }],
+    });
+    // Five terms split three and two, so the load is three rows' characters times two columns.
+    const split = (rowCharacters: number) => ({
+      type: 'slideDefinitions',
+      items: Array.from({ length: definitionsSingleColumnMax + 1 }, () => ({
+        term: 'a',
+        body: 'x'.repeat(rowCharacters - 1),
+      })),
+    });
+    const stepOf = (node: object) => renderedStep('definitions-rowSize', node);
+
+    it.each([
+      [definitionsFit.l, 'l'],
+      [definitionsFit.l + 1, 'm'],
+      [definitionsFit.m, 'm'],
+      [definitionsFit.m + 1, 's'],
+    ])('sets a load of %i at %s', (load, step) => {
+      expect(stepOf(one(load))).toBe(step);
+    });
+
+    it('loads two columns by the longer one times two', () => {
+      const perRow = definitionsFit.l / 6;
+      expect(stepOf(split(perRow))).toBe('l');
+      expect(stepOf(split(perRow + 1))).toBe('m');
+    });
+
+    it('keeps an authored size', () => {
+      expect(stepOf({ ...one(definitionsFit.m + 1), size: 'l' })).toBe('l');
+      expect(stepOf({ ...one(10), size: 's' })).toBe('s');
+    });
+
+    it("scales its load by the heading's crowding", () => {
+      const step = sizeForLoad(
+        undefined,
+        definitionsFit.l,
+        definitionsFit,
+        headingCrowding(crowdingHeading)
+      );
+      expect(step).not.toBe('l');
+      expect(
+        renderedStep(
+          'definitions-rowSize',
+          one(definitionsFit.l),
+          crowdingHeading
+        )
+      ).toBe(step);
+    });
   });
 });

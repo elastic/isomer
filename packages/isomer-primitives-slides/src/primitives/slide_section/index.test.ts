@@ -11,6 +11,9 @@ import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { columnWidth } from '../../theme/components/frame';
+import { section, sectionShares } from '../../theme/components/section';
+import { sizeForLines } from '../size';
 
 import { example, linkedExample } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
@@ -154,5 +157,41 @@ describe('slideSection', () => {
     expect(
       /<h1[^>]*>(.*?)<\/h1>/.exec(html)?.[1]?.replace(/<[^>]+>/g, '')
     ).toBe('02 Settlement');
+  });
+
+  describe('title size', () => {
+    const titleOf = (length: number) =>
+      'Part '.repeat(46).slice(0, length).trim();
+    const stepOf = (title: string, size?: string) =>
+      /section-titleSize-(\w+)/.exec(
+        runtime.surfaces.html.render(compose({ ...example, title, size })).html
+      )?.[1];
+    const measured = (title: string) =>
+      sizeForLines(
+        undefined,
+        title,
+        section.title.tracking,
+        columnWidth(sectionShares, section.columnGap),
+        section.titleSizes
+      );
+    const flips = Array.from({ length: 220 }, (_, index) => index + 2).filter(
+      (length) => measured(titleOf(length)) !== measured(titleOf(length - 1))
+    );
+
+    it('steps down at each boundary of its column width', () => {
+      expect(flips.map((length) => measured(titleOf(length)))).toEqual([
+        'm',
+        's',
+      ]);
+      for (const length of flips) {
+        expect(stepOf(titleOf(length - 1))).toBe(measured(titleOf(length - 1)));
+        expect(stepOf(titleOf(length))).toBe(measured(titleOf(length)));
+      }
+    });
+
+    it('keeps an authored size', () => {
+      expect(stepOf(titleOf(200), 'l')).toBe('l');
+      expect(stepOf('Part', 's')).toBe('s');
+    });
   });
 });

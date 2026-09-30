@@ -12,6 +12,9 @@ import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { quoteFit } from '../../theme/components/quote';
+import { sizeForLoad } from '../size';
+import { crowdingHeading, renderedStep } from '../size.fixtures';
+import { headingCrowding } from '../slide_heading/fit';
 
 import { example, longExample, shortExample } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
@@ -72,6 +75,7 @@ describe('slideQuote', () => {
 
   it.each([
     [quoteFit.l, 'l'],
+    [quoteFit.l + 1, 'm'],
     [quoteFit.m, 'm'],
     [quoteFit.m + 1, 's'],
   ])('sets %i characters at %s', (length, step) => {
@@ -82,5 +86,26 @@ describe('slideQuote', () => {
 
   it('sets the longest example at the smallest step', () => {
     expect(stepOf(longExample)).toBe('s');
+  });
+
+  it('keeps an authored size', () => {
+    expect(stepOf({ ...longExample, size: 'l' })).toBe('l');
+    expect(stepOf({ ...shortExample, size: 's' })).toBe('s');
+  });
+
+  it("scales its load by the heading's crowding", () => {
+    const node = {
+      type: 'slideQuote',
+      text: 'x'.repeat(quoteFit.l),
+      source: 'A',
+    };
+    const step = sizeForLoad(
+      undefined,
+      quoteFit.l,
+      quoteFit,
+      headingCrowding(crowdingHeading)
+    );
+    expect(step).not.toBe('l');
+    expect(renderedStep('quote-textSize', node, crowdingHeading)).toBe(step);
   });
 });
