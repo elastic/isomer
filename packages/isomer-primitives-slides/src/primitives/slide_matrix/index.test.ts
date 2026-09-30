@@ -12,8 +12,13 @@ import { SLACK_LIMITS, type SlackBlock } from '@elastic/isomer-sdk/slack';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
-import { frameContentWidth } from '../../theme/components/frame';
+import {
+  frameBodyHeight,
+  frameContentWidth,
+} from '../../theme/components/frame';
+import { title, titleShares } from '../../theme/components/title';
 import { slideLayout } from '../layout';
+import { trackWidth } from '../size';
 import {
   crowdingBelow,
   crowdingHeading,
@@ -280,6 +285,32 @@ describe('slideMatrix', () => {
         expect(renderedStep('matrix-cellPadding', node, heading)).toBe(step);
       }
     );
+
+    it('draws the step it counts as a title aside', () => {
+      const node = { ...pairExample, rows: rows(6) };
+      const step = matrixSize(
+        node,
+        slideLayout({
+          layout: {
+            width: trackWidth(
+              frameContentWidth,
+              titleShares,
+              title.columnGap,
+              1
+            ),
+            height: frameBodyHeight,
+          },
+        }).crowding
+      );
+      expect(step).not.toBe(matrixSize(node, 1));
+      expect(
+        renderedStep('matrix-cellPadding', {
+          type: 'slideTitle',
+          title: 'Crate',
+          aside: node,
+        })
+      ).toBe(step);
+    });
 
     it('draws the step it counts in a split pane', () => {
       const node = { ...pairExample, rows: rows(4) };

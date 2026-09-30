@@ -12,8 +12,13 @@ import { SLACK_LIMITS, type SlackBlock } from '@elastic/isomer-sdk/slack';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
-import { frameContentWidth } from '../../theme/components/frame';
+import {
+  frameBodyHeight,
+  frameContentWidth,
+} from '../../theme/components/frame';
+import { title, titleShares } from '../../theme/components/title';
 import { openBody } from '../layout';
+import { trackWidth } from '../size';
 import {
   crowdingHeading,
   referenceHeading,
@@ -24,7 +29,7 @@ import { paneLayouts } from '../slide_split/pane_layout';
 import type { SlideSplitNode } from '../slide_split/types';
 
 import { example, fullExample, groupsExample, plainExample } from './examples';
-import { tableSize } from './fit';
+import { tableHeight, tableSize } from './fit';
 import { markdown as markdownContent, text } from './index';
 import type { SlideTableNode } from './schema';
 
@@ -386,6 +391,69 @@ describe('slideTable', () => {
     expect(JSON.stringify(over)).toContain(`${at}y`);
   });
 
+  it.each(['*', '_', '~', '`'])(
+    'prints a caption holding %s as literal rich text, not mrkdwn',
+    (delimiter) => {
+      const label = `p${delimiter}95 ${delimiter}latency${delimiter}`;
+      const node: SlideTableNode = { ...example, label };
+      const [caption] = runtime.surfaces.slack.renderNode(node).blocks;
+      expect(caption).toEqual({
+        type: 'rich_text',
+        elements: [
+          {
+            type: 'rich_text_section',
+            elements: [
+              {
+                type: 'text',
+                text: label.toUpperCase(),
+                style: { bold: true },
+              },
+            ],
+          },
+        ],
+      });
+    }
+  );
+
+  it('prints a caption with no delimiter as a mrkdwn context', () => {
+    const node: SlideTableNode = { ...example, label: 'p95 latency' };
+    const [caption] = runtime.surfaces.slack.renderNode(node).blocks;
+    expect(caption?.type).toBe('context');
+  });
+
+  it('keeps a table past the message-wide cell budget whole and literal', () => {
+    const half = SLACK_LIMITS.tableCellCharsPerMessage / 2;
+    const table = (cell: string) => ({
+      type: 'slideTable',
+      columns: ['Region'],
+      rows: [[cell]],
+    });
+    const long = `*${'x'.repeat(half)}_`;
+    const { blocks } = runtime.surfaces.slack.render({
+      type: 'view',
+      body: [
+        {
+          type: 'slideFrame',
+          body: [table('y'.repeat(half)), table(long)],
+        } as PrimitiveNode,
+      ],
+    });
+    expect(blocks.filter(({ type }) => type === 'table')).toHaveLength(1);
+    expect(blocks).toContainEqual({
+      type: 'rich_text',
+      elements: [
+        {
+          type: 'rich_text_section',
+          elements: [
+            { type: 'text', text: 'REGION', style: { bold: true } },
+            { type: 'text', text: ': ' },
+            { type: 'text', text: long },
+          ],
+        },
+      ],
+    });
+  });
+
   describe('size', () => {
     const [, typical = []] = example.rows ?? [];
     const rows = (count: number, cells = typical): SlideTableNode => ({
@@ -426,6 +494,23 @@ describe('slideTable', () => {
       expect(tableSize(rows(1), { ...openBody, width: 0 })).toBe('s');
     });
 
+    it('counts the lines a group label wraps to across the table', () => {
+      const [first, second] = groupsExample.groups ?? [];
+      const withLabel = (label: string): SlideTableNode => ({
+        ...groupsExample,
+        groups: [{ ...first!, label }, second!],
+      });
+      const short = withLabel('Every order');
+      const long = withLabel(
+        'Every order placed through the new checkout across every region we run in'
+      );
+      const width = frameContentWidth / 2;
+      const layout = { width, height: tableHeight(short, 'l', width) };
+      expect(tableSize(short, layout)).toBe('l');
+      expect(tableHeight(long, 'l', width)).toBeGreaterThan(layout.height);
+      expect(tableSize(long, layout)).not.toBe('l');
+    });
+
     it('keeps an authored size', () => {
       expect(tableSize({ ...rows(12), size: 'l' }, reference)).toBe('l');
     });
@@ -451,6 +536,22 @@ describe('slideTable', () => {
         );
       }
     );
+
+    it('draws the step it measures as a title aside', () => {
+      const node = rows(9);
+      const step = tableSize(node, {
+        width: trackWidth(frameContentWidth, titleShares, title.columnGap, 1),
+        height: frameBodyHeight,
+      });
+      expect(step).not.toBe(tableSize(node, openBody));
+      expect(
+        renderedStep('table-headStep', {
+          type: 'slideTitle',
+          title: 'Crate',
+          aside: node,
+        })
+      ).toBe(step);
+    });
 
     it('draws the step it measures in a split pane', () => {
       const node = rows(5);

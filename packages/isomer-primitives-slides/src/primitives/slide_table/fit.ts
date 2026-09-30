@@ -60,7 +60,14 @@ export const tableHeight = (
       total +
       (group
         ? px((index > 0 ? table.groupGaps : table.groupPaddingsTop)[step]) +
-          labelLine +
+          wrappedLines(
+            group.toUpperCase(),
+            px(table.group.size),
+            Math.max(1, width - 2 * border - 2 * px(table.paddingsX[step])),
+            table.group.tracking
+          ) *
+            px(table.group.size) *
+            leading(table.group.lineHeight) +
           px(table.groupPaddingsBottom[step]) +
           px(table.groupRule)
         : 0) +

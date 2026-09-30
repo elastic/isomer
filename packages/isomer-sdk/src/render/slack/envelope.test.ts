@@ -159,7 +159,52 @@ describe('Slack envelope transforms', () => {
       dispatcherFor([[tableBlock(over)]])
     );
     expect(blocks.some((block) => block.type === 'table')).toBe(false);
-    expect(blocks.some((block) => block.type === 'section')).toBe(true);
+    expect(blocks.some((block) => block.type === 'rich_text')).toBe(true);
+  });
+
+  it('keeps every cell of a table past the aggregate budget whole and literal', () => {
+    const half = SLACK_LIMITS.tableCellCharsPerMessage / 2;
+    const text = `*${'x'.repeat(half)}_~\``;
+    const second: SlackTableBlock = {
+      type: 'table',
+      rows: [
+        [cell('H'), cell('I')],
+        [
+          cell(text),
+          {
+            type: 'rich_text',
+            elements: [
+              {
+                type: 'rich_text_section',
+                elements: [{ type: 'text', text: 'y', style: { code: true } }],
+              },
+            ],
+          },
+        ],
+      ],
+    };
+    const { blocks } = renderSlackEnvelope(
+      { type: 'view', body: [{ type: 'a' }, { type: 'b' }] },
+      dispatcherFor([[tableBlock(half)], [second]])
+    );
+    expect(blocks.filter((block) => block.type === 'table')).toHaveLength(1);
+    expect(blocks.at(-1)).toEqual({
+      type: 'rich_text',
+      elements: [
+        {
+          type: 'rich_text_section',
+          elements: [
+            { type: 'text', text: 'H', style: { bold: true } },
+            { type: 'text', text: ': ' },
+            { type: 'text', text },
+            { type: 'text', text: '\n' },
+            { type: 'text', text: 'I', style: { bold: true } },
+            { type: 'text', text: ': ' },
+            { type: 'text', text: 'y', style: { code: true } },
+          ],
+        },
+      ],
+    });
   });
 
   it('produces a valid header for a title over the header limit', () => {

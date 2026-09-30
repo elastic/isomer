@@ -23,6 +23,10 @@ import {
 
 import { marksRichText, marksSlack, richTextRun } from './marks';
 
+/** Whether `text` holds a character `mrkdwn` reads as formatting and {@link escapeMrkdwn} leaves as is. */
+export const hasMrkdwnDelimiter = (text: string): boolean =>
+  /[*_~`]/.test(text);
+
 /** Whether Slack keeps all of `text` in a field of `limit` characters. */
 export const fitsSlack = (text: string, limit: number): boolean =>
   clampSlackText(text, limit) === text;

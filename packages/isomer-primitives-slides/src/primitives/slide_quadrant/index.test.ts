@@ -148,6 +148,42 @@ describe('slideQuadrant', () => {
     expect(html(menuExample)).toContain('role="img" aria-label="Primary"');
   });
 
+  describe.each(['*', '_', '~', '`'])(
+    'a Slack field holding %s',
+    (delimiter) => {
+      const word = `1${delimiter}2${delimiter}`;
+      const [first, ...rest] = example.quadrants;
+      const blocks = (node: SlideQuadrantNode) =>
+        runtime.surfaces.slack.renderNode(node).blocks;
+      const literal = (block: unknown) => {
+        expect(block).toMatchObject({ type: 'rich_text' });
+        expect(JSON.stringify(block)).toContain(
+          JSON.stringify(word).slice(1, -1)
+        );
+      };
+
+      it('prints an axis end as literal rich text', () => {
+        literal(blocks({ ...example, x: { ...example.x, low: word } })[0]);
+      });
+
+      it.each([
+        ['label', { ...first!, label: word }],
+        ['item', { ...first!, items: [word] }],
+      ] as const)(
+        'prints a quadrant %s as literal rich text',
+        (_name, cell) => {
+          const node = {
+            ...example,
+            quadrants: [cell, ...rest] as SlideQuadrantNode['quadrants'],
+          };
+          const [caption, fields] = blocks(node);
+          expect(caption?.type).toBe('context');
+          literal(fields);
+        }
+      );
+    }
+  );
+
   describe('size', () => {
     const cells = (top: number, bottom: number): SlideQuadrantNode => ({
       ...example,
