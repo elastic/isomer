@@ -65,3 +65,9 @@ export const layoutContext = ({
   width = frameContentWidth,
 }: { crowding?: number; width?: number } = {}) =>
   withLayout(undefined, { width, height: referenceRoom / crowding });
+
+/** `length` columns of four-letter words, so a load test measures load and not a word too wide for its column. */
+export const shortWords = (length: number): string =>
+  Array.from({ length }, (_, index) =>
+    index % 5 === 4 && index < length - 1 ? ' ' : 'x'
+  ).join('');

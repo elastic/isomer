@@ -41,6 +41,8 @@ const notWords = new Set([
   'divider',
   'spacing',
   'marker',
+  'edges',
+  'placement',
   'op',
   'role',
   'format',

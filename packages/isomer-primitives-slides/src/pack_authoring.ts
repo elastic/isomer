@@ -7,6 +7,8 @@
 
 import type { PackAuthoringOptions, PrimitiveGroup } from '@elastic/isomer-sdk';
 
+import { slideGraphShape } from './primitives/slide_graph/schema';
+
 // `z.toJSONSchema` drops refinements; a `describe` entry may state a rule from `primitives/cross_field.ts`.
 
 /** Every primitive once, by what it draws, in the order an author usually chooses. */
@@ -28,7 +30,7 @@ export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
   { title: 'Layout', types: ['slideSplit', 'slideStack'] },
   {
     title: 'Text',
-    types: ['slideList', 'slideBulletList', 'slideDefinitions'],
+    types: ['slideList', 'slideBulletList', 'slideDefinitions', 'slideRoadmap'],
   },
   {
     title: 'Diagrams',
@@ -39,6 +41,9 @@ export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
       'slideLanes',
       'slideLayers',
       'slideTerritoryGroup',
+      'slideGraph',
+      'slideTimeline',
+      'slideTree',
     ],
   },
   {
@@ -100,5 +105,8 @@ export const slidesPackAuthoring = {
     slideSource: 'One citation line.',
     slideSection:
       'A section divider. When hrefs is given it has one entry per contents entry.',
+    slideGraph: `Terms joined by arrows. ${slideGraphShape}. Node ids are unique. Every edge names a node id. No edge repeats. At most one node is emphasized.`,
+    slideRoadmap: 'Two to four horizons. At most one column is current.',
+    slideTimeline: 'Three to five dated points. At most one item is current.',
   },
 } satisfies PackAuthoringOptions;

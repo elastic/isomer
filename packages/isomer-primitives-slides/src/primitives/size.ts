@@ -18,6 +18,7 @@ import {
   monoAdvance,
   regularAdvance,
 } from '../theme/base';
+import { frameContentWidth } from '../theme/components/frame';
 import { marks } from '../theme/components/marks';
 import { px, scalePx } from '../theme/scale';
 import type { TypeRole } from '../theme/type_role';
@@ -58,6 +59,21 @@ export const smallerStep = (a: SlideSize, b: SlideSize): SlideSize =>
 /** How many times over `measure` exceeds the room across; 1 when it fits. A room under a pixel counts as one, so the ratio stays finite. */
 export const narrowing = (measure: number, width = Infinity): number =>
   Math.max(1, measure / Math.max(1, width));
+
+/** {@link sizeForLoad} for columns set across a layout from `slideLayout`, `gutters` px between them in all, so a narrower layout weighs the load heavier. */
+export const sizeForWidthLoad = (
+  size: SlideSize | undefined,
+  load: number,
+  budget: LoadBudget,
+  { width, crowding }: { readonly width: number; readonly crowding: number },
+  gutters = 0
+): SlideSize =>
+  sizeForLoad(
+    size,
+    load * narrowing(frameContentWidth - gutters, width - gutters),
+    budget,
+    crowding
+  );
 
 /** Width of track `index` when `total` pixels split into `shares` fr tracks with `gap` between; 0 when the gaps leave none. */
 export const trackWidth = (
@@ -229,6 +245,10 @@ const faceOf = ({ family, weight }: TypeRole): ((glyph: string) => number) =>
       ? displayAdvance
       : (glyph) => displayColumns(glyph) * regularAdvance;
 
+/** `text` as `role` transforms it. */
+export const styledText = (text: string, { transform }: TypeRole): string =>
+  transform?.value === 'uppercase' ? text.toUpperCase() : text;
+
 /** Text set in one role; a `chip` is a `code` chip, whose padding and border pad both its ends. */
 interface StyledRun {
   readonly text: string;
@@ -259,9 +279,7 @@ const runWords = (runs: readonly StyledRun[]): Word[] => {
     const inset = chip
       ? scalePx(marks.codeInset) + scalePx(marks.codeBorder)
       : 0;
-    const glyphs = [
-      ...(role.transform?.value === 'uppercase' ? text.toUpperCase() : text),
-    ];
+    const glyphs = [...styledText(text, role)];
     const first = glyphs.findIndex((glyph) => !isCollapsible(glyph));
     const last =
       glyphs.length -
@@ -315,37 +333,40 @@ export const measureText = (
   return { lines, widest };
 };
 
+/** `text`'s runs, each in the face `marksReact` draws it in for `strong`. */
+const markRuns = (
+  text: string,
+  role: TypeRole,
+  strong: 'ink' | 'primary'
+): StyledRun[] =>
+  parseMarks(text).map(({ kind, text: run }): StyledRun => {
+    if (kind === 'text') {
+      return { text: run, role };
+    }
+    if (strong === 'primary') {
+      return kind === 'code'
+        ? {
+            text: run,
+            role: { ...role, ...marks.displayCode },
+          }
+        : { text: run, role };
+    }
+    return kind === 'code'
+      ? {
+          text: run,
+          role: { ...role, ...marks.code },
+          chip: true,
+        }
+      : { text: run, role: { ...role, ...marks.strong } };
+  });
+
 /** {@link measureText} for text with marks, each run in the face `marksReact` draws it in for `strong`. */
 export const measureMarks = (
   text: string,
   role: TypeRole,
   width = Infinity,
   strong: 'ink' | 'primary' = 'ink'
-): MarksMeasure =>
-  measureRuns(
-    parseMarks(text).map(({ kind, text: run }): StyledRun => {
-      if (kind === 'text') {
-        return { text: run, role };
-      }
-      if (strong === 'primary') {
-        return kind === 'code'
-          ? {
-              text: run,
-              role: { ...role, ...marks.displayCode },
-            }
-          : { text: run, role };
-      }
-      return kind === 'code'
-        ? {
-            text: run,
-            role: { ...role, ...marks.code },
-            chip: true,
-          }
-        : { text: run, role: { ...role, ...marks.strong } };
-    }),
-    role,
-    width
-  );
+): MarksMeasure => measureRuns(markRuns(text, role, strong), role, width);
 
 /** Lines `text` in Inter ExtraBold at `fontPx` takes across `width`, from {@link measureText}. */
 export const wrappedLines = (
@@ -434,3 +455,41 @@ export const sizeForLines = (
     );
   }) ??
   's';
+
+const sizeForRuns = (
+  runs: (role: TypeRole) => readonly StyledRun[],
+  role: TypeRole,
+  sizes: Readonly<Record<SlideSize, ScaleToken>>,
+  width: number
+): SlideSize =>
+  slideSizes.find((step) => {
+    const at = { ...role, size: sizes[step] };
+    const widest =
+      at.whiteSpace?.value === 'nowrap'
+        ? measureRuns(runs(at), at, Infinity).widest
+        : Math.max(
+            0,
+            ...runWords(runs(at)).map(({ glyphs }) =>
+              glyphs.reduce((total, { advance }) => total + advance, 0)
+            )
+          );
+    return widest <= width;
+  }) ?? 's';
+
+/** The largest step at which `role`, sized from `sizes`, sets no word of `text` wider than `width`; under `nowrap`, the whole text. */
+export const sizeForWords = (
+  text: string,
+  role: TypeRole,
+  sizes: Readonly<Record<SlideSize, ScaleToken>>,
+  width: number
+): SlideSize => sizeForRuns((at) => [{ text, role: at }], role, sizes, width);
+
+/** {@link sizeForWords} for text with marks, each run in the face `marksReact` draws it in for `strong`, a `code` chip's sides on its word. */
+export const sizeForMarkedWords = (
+  text: string,
+  role: TypeRole,
+  sizes: Readonly<Record<SlideSize, ScaleToken>>,
+  width: number,
+  strong: 'ink' | 'primary' = 'ink'
+): SlideSize =>
+  sizeForRuns((at) => markRuns(text, at, strong), role, sizes, width);

@@ -20,6 +20,7 @@ import { slideDeltaPrimitive } from './primitives/slide_delta';
 import { slideDiffPrimitive } from './primitives/slide_diff';
 import { slideFanoutPrimitive } from './primitives/slide_fanout';
 import { slideFramePrimitive } from './primitives/slide_frame';
+import { slideGraphPrimitive } from './primitives/slide_graph';
 import { slideHeadingPrimitive } from './primitives/slide_heading';
 import { slideLanesPrimitive } from './primitives/slide_lanes';
 import { slideLayersPrimitive } from './primitives/slide_layers';
@@ -28,6 +29,7 @@ import { slideMatrixPrimitive } from './primitives/slide_matrix';
 import { slidePipelinePrimitive } from './primitives/slide_pipeline';
 import { slideQuadrantPrimitive } from './primitives/slide_quadrant';
 import { slideQuotePrimitive } from './primitives/slide_quote';
+import { slideRoadmapPrimitive } from './primitives/slide_roadmap';
 import { slideSectionPrimitive } from './primitives/slide_section';
 import { slideSequencePrimitive } from './primitives/slide_sequence';
 import { slideSourcePrimitive } from './primitives/slide_source';
@@ -38,8 +40,10 @@ import { slideStatementPrimitive } from './primitives/slide_statement';
 import { slideStatsPrimitive } from './primitives/slide_stats';
 import { slideTablePrimitive } from './primitives/slide_table';
 import { slideTerritoryGroupPrimitive } from './primitives/slide_territory_group';
+import { slideTimelinePrimitive } from './primitives/slide_timeline';
 import { slideTitlePrimitive } from './primitives/slide_title';
 import { slideTranscriptPrimitive } from './primitives/slide_transcript';
+import { slideTreePrimitive } from './primitives/slide_tree';
 
 /** Every primitive definition this pack registers, in alphabetical order. */
 export const slideDeckPrimitives = [
@@ -54,6 +58,7 @@ export const slideDeckPrimitives = [
   slideDiffPrimitive,
   slideFanoutPrimitive,
   slideFramePrimitive,
+  slideGraphPrimitive,
   slideHeadingPrimitive,
   slideLanesPrimitive,
   slideLayersPrimitive,
@@ -62,6 +67,7 @@ export const slideDeckPrimitives = [
   slidePipelinePrimitive,
   slideQuadrantPrimitive,
   slideQuotePrimitive,
+  slideRoadmapPrimitive,
   slideSectionPrimitive,
   slideSequencePrimitive,
   slideSourcePrimitive,
@@ -72,8 +78,10 @@ export const slideDeckPrimitives = [
   slideStatsPrimitive,
   slideTablePrimitive,
   slideTerritoryGroupPrimitive,
+  slideTimelinePrimitive,
   slideTitlePrimitive,
   slideTranscriptPrimitive,
+  slideTreePrimitive,
 ] as const;
 
 /** `type` strings of {@link slideDeckPrimitives}. */

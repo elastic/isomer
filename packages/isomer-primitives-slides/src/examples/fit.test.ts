@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import type { LayoutBox } from '@elastic/isomer-image-takumi';
 import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
@@ -14,7 +15,13 @@ import { longExample as agendaExample } from '../primitives/slide_agenda/example
 import { denseExample as barsExample } from '../primitives/slide_bars/examples';
 import { fullExample as definitionsExample } from '../primitives/slide_definitions/examples';
 import { wideExample as fanoutExample } from '../primitives/slide_fanout/examples';
-import { tallestExample } from '../primitives/slide_heading/examples';
+import { examples as graphExamples } from '../primitives/slide_graph/examples';
+import { graphCaptionWidth } from '../primitives/slide_graph/fit';
+import type { SlideGraphNode } from '../primitives/slide_graph/schema';
+import {
+  example as headingExample,
+  tallestExample,
+} from '../primitives/slide_heading/examples';
 import { fullExample as listExample } from '../primitives/slide_list/examples';
 import {
   fullExample as matrixFullExample,
@@ -25,24 +32,28 @@ import {
   fullExample as quadrantFullExample,
 } from '../primitives/slide_quadrant/examples';
 import type { SlideQuadrantNode } from '../primitives/slide_quadrant/schema';
+import { fullExample as roadmapExample } from '../primitives/slide_roadmap/examples';
 import {
   example as tableExample,
   fullExample as tableFullExample,
 } from '../primitives/slide_table/examples';
 import { tableSize } from '../primitives/slide_table/fit';
 import type { SlideTableNode } from '../primitives/slide_table/schema';
+import { fullExample as treeExample } from '../primitives/slide_tree/examples';
 import { slideDeckPrimitives } from '../registry';
 import { agendaFit } from '../theme/components/agenda';
 import {
   definitionsFit,
   definitionsRowFit,
 } from '../theme/components/definitions';
+import { graph } from '../theme/components/graph';
 import { matrixFit } from '../theme/components/matrix';
 import { quadrantFit } from '../theme/components/quadrant';
 import { quoteFit } from '../theme/components/quote';
 import { statementFit } from '../theme/components/statement';
+import { scalePx } from '../theme/scale';
 
-import { findings } from './measure';
+import { findings, measured } from './measure';
 import { previewSlide } from './preview_slide';
 
 const cases = slideDeckPrimitives.flatMap(({ type, examples }) =>
@@ -217,6 +228,119 @@ describe('the largest steps a slide with no heading takes still fit', () => {
   );
 });
 
+const fitsBody = async (slide: Composition): Promise<boolean> =>
+  (await findings(slide)).length === 0;
+
+const inFrame = (body: PrimitiveNode[]): Composition => ({
+  type: 'view',
+  body: [{ type: 'slideFrame', body } as PrimitiveNode],
+});
+
+const paneOf = (node: PrimitiveNode): PrimitiveNode =>
+  ({
+    type: 'slideSplit',
+    panes: [
+      { label: 'Pane', items: [node] },
+      { items: [{ type: 'slideBulletList', items: ['One', 'Two'] }] },
+    ],
+  }) as PrimitiveNode;
+
+const placements: [string, (node: PrimitiveNode) => Composition][] = [
+  ['alone', (node) => inFrame([node])],
+  ['under the tallest heading', (node) => inFrame([tallestExample, node])],
+  [
+    'as a title aside',
+    (node) =>
+      inFrame([
+        { type: 'slideTitle', title: 'Isomer', aside: node } as PrimitiveNode,
+      ]),
+  ],
+  [
+    'in a split pane under a heading',
+    (node) => inFrame([headingExample, paneOf(node)]),
+  ],
+  ['in a split pane alone', (node) => inFrame([paneOf(node)])],
+];
+
+const widthLoaded = new Set(['slideGraph', 'slideRoadmap', 'slideTimeline']);
+
+interface SizedCase {
+  name: string;
+  node: PrimitiveNode;
+  place: (node: PrimitiveNode) => Composition;
+}
+
+const sized: SizedCase[] = slideDeckPrimitives
+  .filter(({ type }) => widthLoaded.has(type))
+  .flatMap(({ type, examples }) =>
+    examples.flatMap((example, index) =>
+      placements.map(([where, place]) => ({
+        name: `${type} #${index} ${where}`,
+        node: example,
+        place,
+      }))
+    )
+  );
+
+describe('a picked size fits wherever the smallest does', () => {
+  it.each(sized)('$name', async ({ node, place }) => {
+    if (await fitsBody(place({ ...node, size: 's' } as PrimitiveNode))) {
+      expect(await fitsBody(place(node))).toBe(true);
+    }
+  });
+});
+
+describe('a graph caption is set in the width its step is measured in', () => {
+  const captionBox = (box: LayoutBox, start: string): LayoutBox | undefined =>
+    box.runs[0]?.text.startsWith(start)
+      ? box
+      : box.children
+          .map((child) => captionBox(child, start))
+          .find((found) => found !== undefined);
+
+  const besideMiddle: SlideGraphNode & { caption: string } = {
+    type: 'slideGraph',
+    caption: 'Reconciliation runs nightly.',
+    nodes: [
+      { id: 'a', term: 'Cart', body: 'What the shopper holds.' },
+      { id: 'b', term: 'Order', body: 'What the shop owes.' },
+      { id: 'c', term: 'Ledger', body: 'What was paid.' },
+      {
+        id: 'd',
+        term: 'Pricing',
+        body: 'What each costs.',
+        placement: 'above',
+      },
+    ],
+    edges: [
+      ['a', 'b'],
+      ['b', 'c'],
+      ['d', 'b'],
+    ],
+  };
+
+  it('spans one track beside an upper node on the second', () => {
+    expect(
+      graphCaptionWidth(besideMiddle, slideLayout(undefined).width)
+    ).toBeLessThan(scalePx(graph.captionMaxWidth));
+  });
+
+  it.each([
+    ...graphExamples.filter(
+      (node): node is SlideGraphNode & { caption: string } =>
+        node.caption !== undefined
+    ),
+    besideMiddle,
+  ])('$caption', async (node) => {
+    const box = await measured(inFrame([node]));
+    const caption = captionBox(box, node.caption.slice(0, 8));
+    expect(caption?.width).toBeCloseTo(
+      graphCaptionWidth(node, slideLayout(undefined).width),
+      0
+    );
+  });
+});
+
 describe('checkLayout reports a node past the frame body', () => {
   const wrapped =
     'and what it means for every team that ships a service to production across every region we run in today';
@@ -235,6 +359,8 @@ describe('checkLayout reports a node past the frame body', () => {
     halfWrappedAgenda,
     { ...barsExample, size: 'l' },
     tableFullExample,
+    roadmapExample,
+    treeExample,
   ])('$type below the tallest heading', async (node) => {
     const slide: Composition = {
       type: 'view',

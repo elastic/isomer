@@ -60,3 +60,19 @@ export const nodeBox = (layout: LayoutBox, type: string): LayoutBox => {
   }
   return found;
 };
+
+/** The first box in `layout` with a text run holding `text`. */
+export const textBox = (layout: LayoutBox, text: string): LayoutBox => {
+  const holding = (box: LayoutBox): LayoutBox | undefined =>
+    box.runs.some((run) => run.text.includes(text))
+      ? box
+      : box.children.reduce<LayoutBox | undefined>(
+          (found, child) => found ?? holding(child),
+          undefined
+        );
+  const found = holding(layout);
+  if (found === undefined) {
+    throw new Error(`no run holding ${text} in the measured layout`);
+  }
+  return found;
+};

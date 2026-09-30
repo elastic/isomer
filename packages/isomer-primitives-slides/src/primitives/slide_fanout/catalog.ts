@@ -20,6 +20,7 @@ export const catalog = {
   ],
   avoidWhen: [
     'The steps happen in order; use slidePipeline.',
+    'Several things connect to each other, not just to one source; use slideGraph.',
     'The destinations split by who owns them and ownership is the point; use slideTerritoryGroup.',
     'The points share no source; use slideBulletList.',
   ],

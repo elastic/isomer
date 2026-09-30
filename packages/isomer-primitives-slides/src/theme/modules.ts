@@ -96,11 +96,39 @@ export const connectorModule = createStyleModule('connector', ({ css }) => ({
     display: flex;
     min-width: 0;
   `,
+  down: css`
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  `,
   railAcross: css`
     background: ${color.line};
     flex: 1;
     height: ${connector.rail};
     min-width: 0;
+  `,
+  railDown: css`
+    background: ${color.line};
+    flex: 1;
+    min-height: 0;
+    width: ${connector.rail};
+  `,
+  headDown: css`
+    border-left: ${connector.headHalf} solid transparent;
+    border-right: ${connector.headHalf} solid transparent;
+    border-top: ${connector.headLength} solid ${color.line};
+    flex: 0 0 auto;
+    height: 0;
+    width: 0;
+  `,
+  headUp: css`
+    border-bottom: ${connector.headLength} solid ${color.line};
+    border-left: ${connector.headHalf} solid transparent;
+    border-right: ${connector.headHalf} solid transparent;
+    flex: 0 0 auto;
+    height: 0;
+    width: 0;
   `,
   headRight: css`
     border-bottom: ${connector.headHalf} solid transparent;
