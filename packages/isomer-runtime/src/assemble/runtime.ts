@@ -121,7 +121,7 @@ export interface IsomerRuntimeOptions<
   defaultAriaLabel?: string;
   /** Options for the authoring JSON Schema `getAuthoringContext` returns. */
   authoring?: AuthoringJsonSchemaOptions;
-  /** Limits every composition and view input is checked against before it is parsed; see `checkInputBudget`. */
+  /** Limits `checkInputBudget` applies in `parse`, `validate`, every surface but `react`, which does not validate, and view input. */
   inputBudget?: InputBudget;
 }
 

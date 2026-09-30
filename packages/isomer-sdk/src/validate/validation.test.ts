@@ -329,6 +329,12 @@ describe('the input budget', () => {
     });
   });
 
+  it('refuses a container inherited past the walk', () => {
+    const [node] = deep(100_000).body;
+    const smuggled = { type: 'view', body: [Object.create(node as object)] };
+    expect(parse(smuggled).errors[0]?.code).toBe('INPUT_NOT_PLAIN_DATA');
+  });
+
   it('takes a host override', () => {
     const budget = { inputBudget: { depth: 4 } };
     expect(parse(deep(1)).valid).toBe(true);

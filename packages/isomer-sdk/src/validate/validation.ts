@@ -14,7 +14,6 @@ import {
   rendersOnSurface,
 } from '../composition/body_node_base';
 import type { Composition } from '../composition/composition';
-import { ISOMER_ERROR_CODES } from '../composition/error';
 import { quoteText } from '../composition/one_line';
 import {
   CompositionValidationError,
@@ -23,7 +22,11 @@ import {
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
 
 import { getCompositionSchemaForDefinitions } from './composition_schema';
-import { checkInputBudget, type InputBudget } from './input_budget';
+import {
+  checkInputBudget,
+  INPUT_REFUSAL_CODES,
+  type InputBudget,
+} from './input_budget';
 import { createNodeIssueFormatter, type IssueRoot } from './node_issues';
 
 /**
@@ -74,7 +77,7 @@ export type ValidationErrorMode = 'collect' | 'throw';
 
 export { CompositionValidationError };
 
-/** Raises {@link CompositionValidationError} when `mode` is `throw` and `result` is invalid, or in any mode when the input is over its budget, which nothing can render. */
+/** Raises {@link CompositionValidationError} when `mode` is `throw` and `result` is invalid, or in any mode when {@link checkInputBudget} refused the input, which nothing can render. */
 export const enforceValidationMode = (
   result: ValidationResult,
   mode?: ValidationErrorMode
@@ -82,9 +85,7 @@ export const enforceValidationMode = (
   if (
     !result.valid &&
     (mode === 'throw' ||
-      result.errors.some(
-        ({ code }) => code === ISOMER_ERROR_CODES.INPUT_OVER_BUDGET
-      ))
+      result.errors.some(({ code }) => INPUT_REFUSAL_CODES.has(code)))
   ) {
     throw new CompositionValidationError(result.errors);
   }

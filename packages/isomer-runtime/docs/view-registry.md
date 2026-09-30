@@ -48,7 +48,7 @@ const { view, composition, validation } = await runtime.viewRegistry.request(
 The sequence is short and the order matters:
 
 1. Look up the id — an unknown one throws `IsomerError` with `UNKNOWN_VIEW`.
-2. Refuse input over [the input budget](../../isomer-sdk/docs/composition.md#the-input-budget) with `RegisteredViewInputError`, whose one error has the code `INPUT_OVER_BUDGET`.
+2. Refuse input over [the input budget](../../isomer-sdk/docs/composition.md#the-input-budget), or not plain data, with `RegisteredViewInputError`, whose one error has the code `INPUT_OVER_BUDGET` or `INPUT_NOT_PLAIN_DATA`.
 3. If the view declared an input schema, parse the raw input through it. This happens **before** the builder runs, so bad input fails as a typed error rather than as something opaque from inside composition-building code.
 4. Await the builder. A view may fetch; `context` is whatever the host passes — a session, a request, a services bundle — and this package never inspects it.
 5. Validate the built composition and return it alongside the result.

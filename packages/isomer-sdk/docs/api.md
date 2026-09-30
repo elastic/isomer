@@ -60,8 +60,8 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | --- | --- |
 | `createCompositionValidator` | Trusted-input validator: schema plus semantic passes; returns `{ valid, errors, warnings }` |
 | `createCompositionParser` | Untrusted-input parser: schema only |
-| `checkInputBudget` | The finding, `INPUT_OVER_BUDGET`, for input past `MAX_INPUT_DEPTH`, `MAX_INPUT_VALUES`, or `MAX_INPUT_CHARACTERS`; the validator and parser run it first |
-| `enforceValidationMode` | Throws `CompositionValidationError` on `'throw'`, or on over-budget input in any mode |
+| `checkInputBudget` | The finding for input past `MAX_INPUT_DEPTH`, `MAX_INPUT_VALUES`, or `MAX_INPUT_CHARACTERS` (`INPUT_OVER_BUDGET`) or not plain data (`INPUT_NOT_PLAIN_DATA`); the validator and parser run it first |
+| `enforceValidationMode` | Throws `CompositionValidationError` on `'throw'`, or in any mode on input `checkInputBudget` refused |
 | `IsomerError` | Construction and authoring failures, identified by `name` and `code`. Codes name the condition, not the throwing module. |
 | `CompositionValidationError` | Invalid composition, identified by `name`, `code` (`COMPOSITION_INVALID`), and `errors` |
 | `formatValidationError` | `{ path, message, nodeType? }` as one `<path> (in <nodeType>) <message>` string |

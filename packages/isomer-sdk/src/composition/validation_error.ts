@@ -21,7 +21,7 @@ export interface ValidationError {
   message: string;
   /** The `type` of the innermost primitive node `path` lands in, when there is one. */
   nodeType?: string;
-  /** Set only on a finding a host branches on, such as `INPUT_OVER_BUDGET`. */
+  /** Set only on a finding a host branches on, such as `INPUT_OVER_BUDGET` or `INPUT_NOT_PLAIN_DATA`. */
   code?: IsomerErrorCode;
 }
 

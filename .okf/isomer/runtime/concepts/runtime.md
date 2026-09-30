@@ -17,7 +17,7 @@ sources:
 
 # Definition
 
-`createIsomerRuntime({ packs, frames?, styleAdapter?, authoring?, inputBudget? })` builds a working runtime. `packs` is required. `authoring` names pack-owned `$defs`, attaches refine descriptions, or hides a legacy alias on the agent schema. `inputBudget` overrides the SDK's input budget for `parse`, `validate`, every surface, and view input. It renders nothing itself: primitives and themes come from packs; schema, dispatch, and envelopes come from the SDK.[^runtime][^docs]
+`createIsomerRuntime({ packs, frames?, styleAdapter?, authoring?, inputBudget? })` builds a working runtime. `packs` is required. `authoring` names pack-owned `$defs`, attaches refine descriptions, or hides a legacy alias on the agent schema. `inputBudget` overrides the SDK's input budget for `parse`, `validate`, view input, and every surface but `react`, which does not validate. It renders nothing itself: primitives and themes come from packs; schema, dispatch, and envelopes come from the SDK.[^runtime][^docs]
 
 `TRenderContext` is inferred from `styleAdapter` alone; a host with no adapter and a pack that narrows its context names all three type parameters positionally, `createIsomerRuntime<THostContext, TRenderContext, TTheme>(…)`.[^docs]
 

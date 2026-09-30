@@ -104,7 +104,76 @@ describe('checkInputBudget', () => {
       }
     );
     expect(message(huge)).toMatch(/values/);
-    // `for…in` and `Object.hasOwn` each read a key's descriptor once.
-    expect(visited).toBeLessThanOrEqual(2 * MAX_INPUT_VALUES);
+    expect(visited).toBeLessThanOrEqual(MAX_INPUT_VALUES);
+  });
+
+  const deepBody = { body: nested(100_000) };
+
+  it.each([
+    [
+      'an inherited field',
+      () => Object.create(deepBody) as unknown,
+      /plain object/,
+    ],
+    [
+      'a non-enumerable field',
+      () => Object.defineProperty({}, 'body', { value: deepBody.body }),
+      /non-enumerable/,
+    ],
+    [
+      'a getter',
+      () => ({
+        get body() {
+          return deepBody.body;
+        },
+      }),
+      /accessor/,
+    ],
+    [
+      'a class instance',
+      () =>
+        new (class {
+          body = 1;
+        })(),
+      /plain object/,
+    ],
+    ['a symbol key', () => ({ [Symbol.for('body')]: 1 }), /symbol key/],
+    ['a function', () => ({ render: () => null }), /a function/],
+    [
+      'an array hole',
+      () => Object.assign(new Array<number>(3), { 0: 1, 2: 2 }),
+      /array hole/,
+    ],
+    ['a Map', () => new Map(), /plain object/],
+  ])('refuses %s as not plain data', (_label, build, reason) => {
+    const refusal = checkInputBudget({ type: 'view', items: [build()] });
+    expect(refusal?.code).toBe('INPUT_NOT_PLAIN_DATA');
+    expect(refusal?.message).toMatch(reason);
+  });
+
+  it('refuses a huge inherited key set without enumerating it', () => {
+    const keys = Array.from({ length: 200_000 }, (_, index) => `k${index}`);
+    let reads = 0;
+    const inherited = new Proxy(
+      {},
+      {
+        ownKeys: () => {
+          reads += 1;
+          return keys;
+        },
+        getOwnPropertyDescriptor: () => {
+          reads += 1;
+          return { value: 0, enumerable: true, configurable: true };
+        },
+      }
+    );
+    const refusal = checkInputBudget([Object.create(inherited)]);
+    expect(refusal?.code).toBe('INPUT_NOT_PLAIN_DATA');
+    expect(reads).toBe(0);
+  });
+
+  it('passes a null-prototype object and undefined fields', () => {
+    const bare = Object.assign(Object.create(null) as object, { a: [1] });
+    expect(checkInputBudget({ bare, missing: undefined })).toBeUndefined();
   });
 });

@@ -27,6 +27,12 @@ export interface InputBudget {
   characters?: number;
 }
 
+/** The codes {@link checkInputBudget} refuses with. */
+export const INPUT_REFUSAL_CODES: ReadonlySet<string | undefined> = new Set([
+  ISOMER_ERROR_CODES.INPUT_NOT_PLAIN_DATA,
+  ISOMER_ERROR_CODES.INPUT_OVER_BUDGET,
+]);
+
 interface Entry {
   value: object;
   depth: number;
@@ -39,17 +45,20 @@ const overBudget = (message: string): ValidationError => ({
   code: ISOMER_ERROR_CODES.INPUT_OVER_BUDGET,
 });
 
+const notPlainData = (what: string): ValidationError => ({
+  path: '',
+  message: `input holds ${what}, which is not plain data`,
+  code: ISOMER_ERROR_CODES.INPUT_NOT_PLAIN_DATA,
+});
+
 const leafLength = (value: unknown): number =>
-  typeof value === 'string'
-    ? value.length
-    : typeof value === 'function'
-      ? 0
-      : String(value).length;
+  typeof value === 'string' ? value.length : String(value).length;
 
 /**
- * Why `value` is over `budget`, or `undefined` when it fits.
+ * Why `value` is over `budget` or is not plain data, or `undefined` when it is neither.
  *
- * Iterative and cycle-safe, and counts each child before queuing it, so a deep, cyclic, or huge value is refused without overflowing the stack or reading past the limit.
+ * Plain data is what the schema reads exactly as walked: arrays without holes, objects whose prototype is `Object.prototype` or `null`, and only enumerable own data properties with string keys.
+ * Iterative and cycle-safe, and counts a container's children before reading them, so a deep, cyclic, or huge value is refused without overflowing the stack or reading past the limit.
  */
 export const checkInputBudget = (
   value: unknown,
@@ -60,6 +69,7 @@ export const checkInputBudget = (
     values: maxValues = MAX_INPUT_VALUES,
     characters: maxCharacters = MAX_INPUT_CHARACTERS,
   } = budget;
+  const tooManyValues = overBudget(`input holds more than ${maxValues} values`);
   const ancestors = new Set<object>();
   const stack: Entry[] = [];
   let values = 0;
@@ -71,7 +81,10 @@ export const checkInputBudget = (
   ): ValidationError | undefined => {
     values += 1;
     if (values > maxValues) {
-      return overBudget(`input holds more than ${maxValues} values`);
+      return tooManyValues;
+    }
+    if (typeof child === 'function') {
+      return notPlainData('a function');
     }
     if (typeof child === 'object' && child !== null) {
       stack.push({ value: child, depth });
@@ -82,6 +95,44 @@ export const checkInputBudget = (
     return characters > maxCharacters
       ? overBudget(`input holds more than ${maxCharacters} characters`)
       : undefined;
+  };
+  const enqueueChildren = (
+    container: object,
+    depth: number
+  ): ValidationError | undefined => {
+    const isArray = Array.isArray(container);
+    const prototype = isArray ? null : Reflect.getPrototypeOf(container);
+    if (prototype !== Object.prototype && prototype !== null) {
+      return notPlainData('an object that is not a plain object or array');
+    }
+    const keys = isArray ? undefined : Reflect.ownKeys(container);
+    const count = keys?.length ?? (container as unknown[]).length;
+    if (values + count > maxValues) {
+      return tooManyValues;
+    }
+    for (let index = 0; index < count; index += 1) {
+      const key = keys === undefined ? index : keys[index]!;
+      if (typeof key === 'symbol') {
+        return notPlainData('a symbol key');
+      }
+      const descriptor = Reflect.getOwnPropertyDescriptor(container, key);
+      const refusal =
+        descriptor === undefined
+          ? notPlainData('an array hole')
+          : !('value' in descriptor)
+            ? notPlainData('an accessor property')
+            : !descriptor.enumerable
+              ? notPlainData('a non-enumerable property')
+              : enqueue(
+                  descriptor.value,
+                  depth,
+                  typeof key === 'string' ? key.length : 0
+                );
+      if (refusal !== undefined) {
+        return refusal;
+      }
+    }
+    return undefined;
   };
   let refusal = enqueue(value, 1, 0);
   while (refusal === undefined && stack.length > 0) {
@@ -98,25 +149,7 @@ export const checkInputBudget = (
     }
     ancestors.add(current);
     stack.push({ value: current, depth, leave: true });
-    if (Array.isArray(current)) {
-      for (
-        let index = 0;
-        refusal === undefined && index < current.length;
-        index += 1
-      ) {
-        refusal = enqueue(current[index], depth + 1, 0);
-      }
-    } else {
-      const record = current as Record<string, unknown>;
-      for (const key in record) {
-        if (Object.hasOwn(record, key)) {
-          refusal = enqueue(record[key], depth + 1, key.length);
-          if (refusal !== undefined) {
-            break;
-          }
-        }
-      }
-    }
+    refusal = enqueueChildren(current, depth + 1);
   }
   return refusal;
 };
