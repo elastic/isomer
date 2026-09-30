@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { slideDistillery } from '../../theme/distillery';
+import { type SlideTone, slideTones } from '../../theme/variants';
 import { example as codeExample } from '../slide_code/examples';
 
 import { arrowExample, example, examples, stackedExample } from './examples';
@@ -29,6 +30,36 @@ const compose = (node: PrimitiveNode): Composition => ({
 });
 
 const bullets = { type: 'slideBulletList', items: ['Point.'] };
+
+/** Cues per tone on each surface: the accessible name in HTML, the glyph elsewhere. */
+const toneCues = (
+  node: PrimitiveNode,
+  names: Readonly<Record<SlideTone, { value: string }>>
+) => {
+  const composition = compose(node);
+  const { glyph } = slideDistillery.tokens.tone;
+  const count = (output: string, mark: string) => output.split(mark).length - 1;
+  const glyphs = (output: string) =>
+    slideTones.map((tone) => count(output, glyph[tone].value));
+  const { html } = runtime.surfaces.html.render(composition);
+  return {
+    react: slideTones.map((tone) =>
+      count(html, `role="img" aria-label="${names[tone].value}"`)
+    ),
+    text: glyphs(runtime.surfaces.text.render(composition)),
+    markdown: glyphs(runtime.surfaces.markdown.render(composition)),
+    slack: glyphs(
+      JSON.stringify(runtime.surfaces.slack.render(composition).blocks)
+    ),
+  };
+};
+
+const onEverySurface = (counts: number[]) => ({
+  react: counts,
+  text: counts,
+  markdown: counts,
+  slack: counts,
+});
 
 describe('slideSplit schema', () => {
   it('accepts every example', () => {
@@ -110,6 +141,17 @@ describe('slideSplit children', () => {
 });
 
 describe('slideSplit output', () => {
+  it('names a toned label with its tone on every surface', () => {
+    const { label } = slideDistillery.tokens.tone;
+    expect(toneCues(example, label)).toEqual(onEverySurface([1, 1]));
+  });
+
+  it('gives a neutral label no cue', () => {
+    const { label } = slideDistillery.tokens.tone;
+    // `Before` is neutral; `After` is `primary`.
+    expect(toneCues(stackedExample, label)).toEqual(onEverySurface([1, 0]));
+  });
+
   it('names an arrow divider for assistive technology', () => {
     const { label } = slideDistillery.tokens.connector;
     expect(runtime.surfaces.html.render(compose(arrowExample)).html).toContain(

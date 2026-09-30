@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { slideDistillery } from '../../theme/distillery';
-import type { SlideTone } from '../../theme/variants';
+import { type SlideTone, slideTones } from '../../theme/variants';
 
 import { example, fullExample } from './examples';
 import { markdown as markdownContent, text } from './index';
@@ -26,6 +26,36 @@ const runtime = createIsomerRuntime({
 const compose = (node: object): Composition => ({
   type: 'view',
   body: [{ type: 'slideFrame', body: [node] } as PrimitiveNode],
+});
+
+/** Cues per tone on each surface: the accessible name in HTML, the glyph elsewhere. */
+const toneCues = (
+  node: object,
+  names: Readonly<Record<SlideTone, { value: string }>>
+) => {
+  const composition = compose(node);
+  const { glyph } = slideDistillery.tokens.tone;
+  const count = (output: string, mark: string) => output.split(mark).length - 1;
+  const glyphs = (output: string) =>
+    slideTones.map((tone) => count(output, glyph[tone].value));
+  const { html } = runtime.surfaces.html.render(composition);
+  return {
+    react: slideTones.map((tone) =>
+      count(html, `role="img" aria-label="${names[tone].value}"`)
+    ),
+    text: glyphs(runtime.surfaces.text.render(composition)),
+    markdown: glyphs(runtime.surfaces.markdown.render(composition)),
+    slack: glyphs(
+      JSON.stringify(runtime.surfaces.slack.render(composition).blocks)
+    ),
+  };
+};
+
+const onEverySurface = (counts: number[]) => ({
+  react: counts,
+  text: counts,
+  markdown: counts,
+  slack: counts,
 });
 
 const markdown = (node: Parameters<typeof markdownContent>[0]): string =>
@@ -49,12 +79,10 @@ describe('slideTerritoryGroup', () => {
     );
   });
 
-  it('names each toned owner for assistive technology, and no neutral one', () => {
-    const { html } = runtime.surfaces.html.render(compose(fullExample));
-    const { toneLabel: label } = slideDistillery.tokens.territoryGroup;
-    const named = (tone: SlideTone) =>
-      html.split(`role="img" aria-label="${label[tone].value}"`).length - 1;
-    expect([named('primary'), named('accent')]).toEqual([1, 2]);
+  it('names each toned owner in its own words on every surface, and no neutral one', () => {
+    const { toneLabel } = slideDistillery.tokens.territoryGroup;
+    // One `primary`, two `accent`, and one neutral owner.
+    expect(toneCues(fullExample, toneLabel)).toEqual(onEverySurface([1, 2]));
   });
 
   it('renders text and markdown', () => {
