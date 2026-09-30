@@ -17,6 +17,9 @@ importers:
       '@commitlint/config-conventional':
         specifier: ^19.8.1
         version: 19.8.1
+      '@elastic/isomer-agent-tools':
+        specifier: workspace:*
+        version: link:packages/isomer-agent-tools
       '@elastic/isomer-evals':
         specifier: workspace:*
         version: link:packages/isomer-evals
@@ -113,6 +116,25 @@ importers:
       zod:
         specifier: ^4.4.1
         version: 4.6.5
+
+  packages/isomer-agent-tools:
+    dependencies:
+      '@elastic/isomer-sdk':
+        specifier: workspace:*
+        version: link:../isomer-sdk
+      react:
+        specifier: '>=18 <20'
+        version: 18.3.1
+      zod:
+        specifier: ^4.4.1
+        version: 4.6.5
+    devDependencies:
+      '@elastic/isomer-primitives-slides':
+        specifier: workspace:*
+        version: link:../isomer-primitives-slides
+      '@elastic/isomer-runtime':
+        specifier: workspace:*
+        version: link:../isomer-runtime
 
   packages/isomer-evals:
     dependencies:
