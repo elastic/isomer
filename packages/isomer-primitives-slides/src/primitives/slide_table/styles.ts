@@ -67,7 +67,6 @@ export const tableModule = createStyleModule('table', ({ css }) => ({
     display: flex;
     ${typeRole(table.head)}
     text-align: left;
-    text-transform: uppercase;
   `,
   headStep: variants(
     slideSizes,
@@ -113,7 +112,6 @@ export const tableModule = createStyleModule('table', ({ css }) => ({
     display: flex;
     ${typeRole(table.group)}
     text-align: left;
-    text-transform: uppercase;
   `,
   groupStep: variants(
     slideSizes,

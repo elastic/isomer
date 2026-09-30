@@ -68,56 +68,63 @@ export const schema = z
   })
   .strict()
   .check(
-    crossSuperRefine(({ columns, groups, rows }, context) => {
-      if ((rows === undefined) === (groups === undefined)) {
-        context.addIssue({
-          code: 'custom',
-          message: 'give exactly one of rows or groups',
-          path: [rows === undefined ? 'rows' : 'groups'],
-        });
-        return;
-      }
-      if (
-        columns.length > tableMaxColumns ||
-        (rows?.length ?? 0) > maxRows ||
-        (groups?.length ?? 0) > maxRows ||
-        groups?.some((group) => group.rows.length > maxRows)
-      ) {
-        return;
-      }
-      if (
-        groups &&
-        groups.reduce((sum, group) => sum + group.rows.length, 0) > maxRows
-      ) {
-        context.addIssue({
-          code: 'custom',
-          message: `at most ${maxRows} rows across all groups`,
-          path: ['groups'],
-        });
-        return;
-      }
-      const checkRows = (
-        body: readonly (readonly string[])[],
-        path: (string | number)[]
-      ) =>
-        body.forEach((row, index) => {
-          if (row.length !== columns.length) {
-            context.addIssue({
-              code: 'custom',
-              message: `every row needs one cell per column (${columns.length})`,
-              path: [...path, index],
-            });
-          }
-        });
-      if (rows) {
-        checkRows(rows, ['rows']);
-      }
-      if (groups) {
-        groups.forEach((group, index) =>
-          checkRows(group.rows, ['groups', index, 'rows'])
-        );
-      }
-    })
+    crossSuperRefine(
+      ({ columns, groups, rows }, context) => {
+        if ((rows === undefined) === (groups === undefined)) {
+          context.addIssue({
+            code: 'custom',
+            message: 'give exactly one of rows or groups',
+            path: [rows === undefined ? 'rows' : 'groups'],
+          });
+          return;
+        }
+        if (
+          columns.length > tableMaxColumns ||
+          (rows?.length ?? 0) > maxRows ||
+          (groups?.length ?? 0) > maxRows ||
+          groups?.some((group) => group.rows.length > maxRows)
+        ) {
+          return;
+        }
+        if (
+          groups &&
+          groups.reduce((sum, group) => sum + group.rows.length, 0) > maxRows
+        ) {
+          context.addIssue({
+            code: 'custom',
+            message: `at most ${maxRows} rows across all groups`,
+            path: ['groups'],
+          });
+          return;
+        }
+        const checkRows = (
+          body: readonly (readonly string[])[],
+          path: (string | number)[]
+        ) =>
+          body.forEach((row, index) => {
+            if (row.length !== columns.length) {
+              context.addIssue({
+                code: 'custom',
+                message: `every row needs one cell per column (${columns.length})`,
+                path: [...path, index],
+              });
+            }
+          });
+        if (rows) {
+          checkRows(rows, ['rows']);
+        }
+        if (groups) {
+          groups.forEach((group, index) =>
+            checkRows(group.rows, ['groups', index, 'rows'])
+          );
+        }
+      },
+      [
+        'Give either `rows` or `groups`',
+        'one cell per column',
+        `${maxRows} rows at most across all groups`,
+      ]
+    )
   );
 
 /** Headed grid of short text cells, optionally in labeled groups. */

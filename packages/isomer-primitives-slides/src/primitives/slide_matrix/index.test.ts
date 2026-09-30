@@ -264,9 +264,8 @@ describe('slideMatrix', () => {
     expect(JSON.stringify(over)).toContain(`${at}y`);
   });
 
-  it('keeps a marked heading and no empty corner label past the message-wide cell budget', () => {
-    const half = SLACK_LIMITS.tableCellCharsPerMessage / 2;
-    const label = 'x'.repeat(half);
+  it('prints its row labels and marks when an earlier table spends the message’s cell budget', () => {
+    const label = 'x'.repeat(2000);
     const { blocks } = runtime.surfaces.slack.render({
       type: 'view',
       body: [
@@ -276,11 +275,17 @@ describe('slideMatrix', () => {
             {
               type: 'slideTable',
               columns: ['Region'],
-              rows: [['y'.repeat(half)]],
+              rows: [
+                [
+                  'y'.repeat(
+                    SLACK_LIMITS.tableCellCharsPerMessage - 'Region'.length
+                  ),
+                ],
+              ],
             },
             {
               type: 'slideMatrix',
-              columns: ['`iOS`', 'Web'],
+              columns: ['iOS', 'Web'],
               rows: [{ label, marks: ['full', 'none'] }],
               legend: false,
             },
@@ -288,35 +293,11 @@ describe('slideMatrix', () => {
         } as PrimitiveNode,
       ],
     });
-    expect(blocks).toContainEqual({
-      type: 'rich_text',
-      elements: [
-        {
-          type: 'rich_text_section',
-          elements: [
-            { type: 'text', text: label },
-            { type: 'text', text: '\n' },
-          ],
-        },
-        {
-          type: 'rich_text_section',
-          elements: [
-            { type: 'text', text: 'iOS', style: { code: true, bold: true } },
-            { type: 'text', text: ': ' },
-            { type: 'text', text: 'Yes' },
-            { type: 'text', text: '\n' },
-          ],
-        },
-        {
-          type: 'rich_text_section',
-          elements: [
-            { type: 'text', text: 'Web', style: { bold: true } },
-            { type: 'text', text: ': ' },
-            { type: 'text', text: 'No' },
-          ],
-        },
-      ],
-    });
+    expect(blocks.filter(({ type }) => type === 'table')).toHaveLength(1);
+    const printed = JSON.stringify(blocks);
+    for (const text of [label, 'iOS', 'Web', 'Yes', 'No']) {
+      expect(printed).toContain(text);
+    }
   });
 
   describe('size', () => {

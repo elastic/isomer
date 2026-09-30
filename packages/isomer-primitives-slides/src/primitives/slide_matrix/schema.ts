@@ -70,27 +70,33 @@ export const schema = z
   })
   .strict()
   .check(
-    crossSuperRefine(({ columns, rows, highlight }, context) => {
-      if (highlight !== undefined && highlight >= columns.length) {
-        context.addIssue({
-          code: 'custom',
-          message: `must be a column index below ${columns.length}`,
-          path: ['highlight'],
-        });
-      }
-      if (columns.length > matrixMaxColumns || rows.length > maxRows) {
-        return;
-      }
-      rows.forEach(({ marks }, index) => {
-        if (marks.length !== columns.length) {
+    crossSuperRefine(
+      ({ columns, rows, highlight }, context) => {
+        if (highlight !== undefined && highlight >= columns.length) {
           context.addIssue({
             code: 'custom',
-            message: `every row needs one mark per column (${columns.length})`,
-            path: ['rows', index, 'marks'],
+            message: `must be a column index below ${columns.length}`,
+            path: ['highlight'],
           });
         }
-      });
-    })
+        if (columns.length > matrixMaxColumns || rows.length > maxRows) {
+          return;
+        }
+        rows.forEach(({ marks }, index) => {
+          if (marks.length !== columns.length) {
+            context.addIssue({
+              code: 'custom',
+              message: `every row needs one mark per column (${columns.length})`,
+              path: ['rows', index, 'marks'],
+            });
+          }
+        });
+      },
+      [
+        'Zero-based index into `columns`, below their count',
+        'One mark per column',
+      ]
+    )
   );
 
 /** Yes, partial, or no marks for each row against each column. */

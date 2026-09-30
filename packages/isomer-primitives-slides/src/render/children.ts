@@ -17,7 +17,6 @@ import {
 import type { SlideRenderScope } from './context';
 import { richTextRun } from './marks';
 import {
-  hasMrkdwnDelimiter,
   richTextSection,
   slackBold,
   slackContext,
@@ -47,15 +46,12 @@ export const renderSlackChildren = (
 ): SlackBlock[] => nodes.flatMap((node) => scope.renderSlack(node, collector));
 
 /** A one-line `context` block: the chrome a container draws above its children. */
-export const slackCaption = (text: string, strong = false): SlackBlock => {
-  const literal = () =>
-    slackRichText(
-      richTextSection(richTextRun(text, strong ? { bold: true } : undefined))
-    );
-  return hasMrkdwnDelimiter(text)
-    ? literal()
-    : slackContext(
-        strong ? slackBold(text) : escapeMrkdwn(oneLine(text)),
-        literal
-      );
-};
+export const slackCaption = (text: string, strong = false): SlackBlock =>
+  slackContext(
+    strong ? slackBold(text) : escapeMrkdwn(oneLine(text)),
+    () =>
+      slackRichText(
+        richTextSection(richTextRun(text, strong ? { bold: true } : undefined))
+      ),
+    [text]
+  );

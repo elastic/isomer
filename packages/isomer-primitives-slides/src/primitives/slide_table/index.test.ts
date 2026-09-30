@@ -429,37 +429,31 @@ describe('slideTable', () => {
     expect(caption?.type).toBe('context');
   });
 
-  it('keeps a table past the message-wide cell budget whole and literal', () => {
-    const half = SLACK_LIMITS.tableCellCharsPerMessage / 2;
+  it('prints its cells when an earlier table spends the message’s cell budget', () => {
     const table = (cell: string) => ({
       type: 'slideTable',
       columns: ['Region'],
       rows: [[cell]],
     });
-    const long = `*${'x'.repeat(half)}_`;
+    const later = 'x'.repeat(2000);
     const { blocks } = runtime.surfaces.slack.render({
       type: 'view',
       body: [
         {
           type: 'slideFrame',
-          body: [table('y'.repeat(half)), table(long)],
+          body: [
+            table(
+              'y'.repeat(
+                SLACK_LIMITS.tableCellCharsPerMessage - 'Region'.length
+              )
+            ),
+            table(later),
+          ],
         } as PrimitiveNode,
       ],
     });
     expect(blocks.filter(({ type }) => type === 'table')).toHaveLength(1);
-    expect(blocks).toContainEqual({
-      type: 'rich_text',
-      elements: [
-        {
-          type: 'rich_text_section',
-          elements: [
-            { type: 'text', text: 'REGION', style: { bold: true } },
-            { type: 'text', text: ': ' },
-            { type: 'text', text: long },
-          ],
-        },
-      ],
-    });
+    expect(JSON.stringify(blocks)).toContain(later);
   });
 
   it('sets its caption at the line height the estimate charges', () => {

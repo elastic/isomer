@@ -8,7 +8,7 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
-import { boundedHref, lineText, wrappedText } from '../authored_text';
+import { boundedHref, hrefRule, lineText, wrappedText } from '../authored_text';
 import { sizeField } from '../size';
 
 const linkSchema = z
@@ -16,7 +16,7 @@ const linkSchema = z
     label: lineText().describe(
       'One-word caption above the link, e.g. `Docs`. Rendered uppercase.'
     ),
-    href: boundedHref().describe('Where the link goes.'),
+    href: boundedHref().describe(`Where the link goes: ${hrefRule}.`),
     text: lineText().describe(
       'The link as the audience reads it: `href` without its scheme, e.g. `example.com/docs` for `https://example.com/docs`, so someone can type what they see. Keep it short: it is set large.'
     ),

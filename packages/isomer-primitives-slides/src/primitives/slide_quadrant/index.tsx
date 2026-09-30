@@ -12,7 +12,6 @@ import { escapeMrkdwn, type SlackBlock } from '@elastic/isomer-sdk/slack';
 import { slackCaption } from '../../render';
 import { richTextRun } from '../../render/marks';
 import {
-  hasMrkdwnDelimiter,
   richTextBreak,
   richTextSection,
   slackBold,
@@ -76,27 +75,32 @@ export const markdown = (node: SlideQuadrantNode) => [
 ];
 
 export const slack = (node: SlideQuadrantNode): SlackBlock[] => {
+  const { x, y, quadrants } = node;
   const lines = cells(node);
-  const literal = () =>
-    slackRichText(
-      richTextSection(
-        ...lines.flatMap(({ label, rest }, index) => [
-          ...(index > 0 ? [richTextBreak] : []),
-          richTextRun(label, { bold: true }),
-          richTextRun(` ${rest}`),
-        ])
-      )
-    );
   return [
     slackCaption(axes(node)),
-    lines.some(({ label, rest }) => hasMrkdwnDelimiter(label + rest))
-      ? literal()
-      : slackFields(
-          lines.map(
-            ({ label, rest }) => `${slackBold(label)} ${escapeMrkdwn(rest)}`
-          ),
-          literal
+    slackFields(
+      lines.map(
+        ({ label, rest }) => `${slackBold(label)} ${escapeMrkdwn(rest)}`
+      ),
+      () =>
+        slackRichText(
+          richTextSection(
+            ...lines.flatMap(({ label, rest }, index) => [
+              ...(index > 0 ? [richTextBreak] : []),
+              richTextRun(label, { bold: true }),
+              richTextRun(` ${rest}`),
+            ])
+          )
         ),
+      [
+        x.low,
+        x.high,
+        y.low,
+        y.high,
+        ...quadrants.flatMap(({ label, items }) => [label, ...items]),
+      ]
+    ),
   ];
 };
 

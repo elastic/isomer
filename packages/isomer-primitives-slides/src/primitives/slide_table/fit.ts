@@ -6,17 +6,18 @@
  */
 
 import type { SlideLayout } from '../../render/context';
-import { font } from '../../theme/base';
 import { label as labelTheme } from '../../theme/components/shared';
 import { table } from '../../theme/components/table';
 import { scalePx as px } from '../../theme/scale';
+import type { TypeRole } from '../../theme/type_role';
 import { type SlideSize, slideSizes } from '../../theme/variants';
 import { openBody } from '../layout';
-import { lineFill, proseLines, wrappedLines } from '../size';
+import { lineBox, lineFill, measureText } from '../size';
 
 import { type SlideTableNode, tableGroups } from './schema';
 
-const leading = ({ value }: { value: string }): number => parseFloat(value);
+const lines = (text: string, role: TypeRole, width: number): number =>
+  Math.max(1, measureText(text, role, width).lines);
 
 /** Estimated height at `step` across `width`, from the caption down, each row as tall as its longest cell wraps. */
 export const tableHeight = (
@@ -26,30 +27,26 @@ export const tableHeight = (
 ): number => {
   const { columns, label, rowHeaders } = node;
   const border = px(table.border);
-  const cellWidth = Math.max(
-    1,
-    (width - 2 * border) / columns.length - 2 * px(table.paddingsX[step])
-  );
-  const fontPx = px(table.cellSizes[step]);
-  const across = cellWidth * lineFill;
-  const lines = (text: string, index: number): number =>
-    rowHeaders && index === 0
-      ? wrappedLines(text, fontPx, across, font.tracking.none)
-      : proseLines(text, fontPx, across);
-  const labelLine = px(table.head.size) * leading(table.head.lineHeight);
+  const padding = 2 * px(table.paddingsX[step]);
+  const inner = width - 2 * border;
+  const cellWidth = inner / columns.length - padding;
+  const cell = { ...table.cell, size: table.cellSizes[step] };
+  const rowHeader = { ...cell, weight: table.rowHeaderWeight };
   const headLines = Math.max(
-    1,
-    ...columns.map((column) =>
-      wrappedLines(
-        column.toUpperCase(),
-        px(table.head.size),
-        cellWidth,
-        table.head.tracking
-      )
-    )
+    ...columns.map((column) => lines(column, table.head, cellWidth))
   );
   const rowHeight = (row: readonly string[]): number =>
-    Math.max(1, ...row.map(lines)) * fontPx * leading(table.cell.lineHeight) +
+    Math.max(
+      1,
+      ...row.map((text, index) =>
+        lines(
+          text,
+          rowHeaders && index === 0 ? rowHeader : cell,
+          cellWidth * lineFill
+        )
+      )
+    ) *
+      lineBox(cell) +
     2 * px(table.cellPaddingsY[step]) +
     px(table.divider);
   const body = tableGroups(node).reduce(
@@ -57,14 +54,7 @@ export const tableHeight = (
       total +
       (group
         ? px((index > 0 ? table.groupGaps : table.groupPaddingsTop)[step]) +
-          wrappedLines(
-            group.toUpperCase(),
-            px(table.group.size),
-            Math.max(1, width - 2 * border - 2 * px(table.paddingsX[step])),
-            table.group.tracking
-          ) *
-            px(table.group.size) *
-            leading(table.group.lineHeight) +
+          lines(group, table.group, inner - padding) * lineBox(table.group) +
           px(table.groupPaddingsBottom[step]) +
           px(table.groupRule)
         : 0) +
@@ -73,17 +63,14 @@ export const tableHeight = (
   );
   return (
     (label
-      ? wrappedLines(
-          label.toUpperCase(),
-          px(labelTheme.size),
-          width,
-          labelTheme.tracking
-        ) *
-          px(labelTheme.size) *
-          leading(table.labelLineHeight) +
+      ? lines(label, labelTheme, width) *
+          lineBox({
+            size: labelTheme.size,
+            lineHeight: table.labelLineHeight,
+          }) +
         px(table.labelGap)
       : 0) +
-    headLines * labelLine +
+    headLines * lineBox(table.head) +
     2 * px(table.headPaddingsY[step]) +
     px(table.divider) +
     body +
