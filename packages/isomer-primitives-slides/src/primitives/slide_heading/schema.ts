@@ -20,7 +20,7 @@ export const schema = z
     ),
     lede: wrappedText()
       .describe(
-        'One or two sentences that support the title. `code` and `**strong**` marks are allowed.'
+        `One or two sentences that support the title; a longer lede pushes the body past the slide, and ${layoutCheckNote}. \`code\` and \`**strong**\` marks are allowed.`
       )
       .optional(),
     size: sizeField(),

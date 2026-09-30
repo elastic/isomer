@@ -31,7 +31,7 @@ export const schema = z
       )
       .optional(),
     title: wrappedText().describe(
-      'The deck’s subject, usually a single name. Set very large; one or two words.'
+      `The deck’s subject, usually a single name. Set very large; one or two words, since the type steps down only so far and a longer title can run past the slide; ${layoutCheckNote}.`
     ),
     tagline: wrappedText()
       .describe(
@@ -40,12 +40,12 @@ export const schema = z
       .optional(),
     definition: definitionSchema
       .describe(
-        'A dictionary-style line under the tagline that explains the name.'
+        `A dictionary-style line under the tagline that explains the name. A long one can run past the slide; ${layoutCheckNote}.`
       )
       .optional(),
     aside: unresolvedBodyNodeSchema
       .describe(
-        'One compact node drawn beside the title in a column under half the slide, such as a short `slideBulletList` of what the subject does. Omit to leave the title alone.'
+        `One compact node drawn beside the title in a column under half the slide, such as a short \`slideBulletList\` of what the subject does. Omit to leave the title alone. A node keeps its size there, so a large one can run past the slide; ${layoutCheckNote}.`
       )
       .optional(),
     size: sizeField(),

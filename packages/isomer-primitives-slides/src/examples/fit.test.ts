@@ -27,7 +27,7 @@ import type { SlideCodeNode } from '../primitives/slide_code/schema';
 import { tallestExample as tallestHeading } from '../primitives/slide_heading/examples';
 import { headingCrowding } from '../primitives/slide_heading/fit';
 import { slideDeckPrimitives } from '../registry';
-import { codeLineMaxLength, codeMaxLines } from '../theme/components/code';
+import { codeLineMaxLength } from '../theme/components/code';
 import { frameLineCharacters } from '../theme/components/frame';
 
 import { slideFonts } from './fonts';
@@ -93,7 +93,11 @@ interface JsonNode {
   type?: string;
   const?: unknown;
   enum?: unknown[];
+  description?: string;
+  required?: string[];
+  minItems?: number;
   maxItems?: number;
+  minLength?: number;
   maxLength?: number;
   items?: JsonNode;
   properties?: Record<string, JsonNode>;
@@ -112,121 +116,183 @@ const describesLayoutCheck = (primitive: SlidePrimitive) =>
 
 const refName = ($ref: string) => $ref.split('/').at(-1)!;
 
-/** Nested slide nodes, an array with no `maxItems`, or a string with no `maxLength`: no most content to measure. */
-const unbounded = (
-  node: JsonNode,
-  defs: Record<string, JsonNode>,
-  seen = new Set<string>()
-): boolean => {
-  const { $ref, type, maxItems, maxLength, items, properties } = node;
-  if ($ref !== undefined) {
-    const name = refName($ref);
-    if (name === 'bodyNode' || seen.has(name)) {
-      return name === 'bodyNode';
-    }
-    seen.add(name);
-    return unbounded(defs[name] ?? {}, defs, seen);
-  }
-  if (type === 'array' && maxItems === undefined) {
-    return true;
-  }
-  if (
-    type === 'string' &&
-    node.const === undefined &&
-    node.enum === undefined &&
-    maxLength === undefined
-  ) {
-    return true;
-  }
-  return [
-    ...(items ? [items] : []),
-    ...Object.values(properties ?? {}),
-    ...(node.oneOf ?? []),
-    ...(node.anyOf ?? []),
-    ...(node.allOf ?? []),
-  ].some((child) => unbounded(child, defs, seen));
-};
+type Defs = Record<string, JsonNode>;
 
-// `W` is the widest glyph the image draws; an enum's first value is its largest `size`.
+// A path segment is a property name, or `[]` for an array's items.
+type SchemaPath = readonly string[];
+
+// `W` is the widest glyph the image draws.
 const widest = 'W';
 
-/** The most a bounded schema takes: every field present, every string and array at its cap. */
-const mostContent = (
+const resolve = (node: JsonNode, defs: Defs): JsonNode =>
+  node.$ref !== undefined && refName(node.$ref) !== 'bodyNode'
+    ? resolve(defs[refName(node.$ref)] ?? {}, defs)
+    : node;
+
+const isBodyNode = ({ $ref }: JsonNode) =>
+  $ref !== undefined && refName($ref) === 'bodyNode';
+
+const isFreeString = (node: JsonNode) =>
+  node.type === 'string' && node.const === undefined && node.enum === undefined;
+
+/** Every field under `node`, by path, with the nodes along the way. */
+const fieldsOf = (
   node: JsonNode,
-  defs: Record<string, JsonNode>
-): unknown => {
-  const { $ref, type, maxItems, maxLength, items, properties } = node;
-  if ($ref !== undefined) {
-    return mostContent(defs[refName($ref)] ?? {}, defs);
+  defs: Defs,
+  trail: JsonNode[] = [node],
+  path: SchemaPath = []
+): Array<{ path: SchemaPath; trail: JsonNode[] }> => {
+  const own = resolve(node, defs);
+  const children: Array<[string, JsonNode]> = [
+    ...Object.entries(own.properties ?? {}),
+    ...(own.type === 'array' && own.items
+      ? [['[]', own.items] as [string, JsonNode]]
+      : []),
+  ];
+  return [
+    ...(path.length > 0 ? [{ path, trail }] : []),
+    ...(isBodyNode(own)
+      ? []
+      : children.flatMap(([key, child]) =>
+          fieldsOf(
+            child,
+            defs,
+            [...trail, child, resolve(child, defs)],
+            [...path, key]
+          )
+        )),
+  ];
+};
+
+/** Nested slide nodes, an array with no `maxItems`, or a string with no `maxLength`: no most content to measure. */
+const isUnbounded = (node: JsonNode) =>
+  isBodyNode(node) ||
+  (node.type === 'array' && node.maxItems === undefined) ||
+  (isFreeString(node) && node.maxLength === undefined);
+
+const isCapped = (node: JsonNode) =>
+  (node.type === 'array' && node.maxItems !== undefined) ||
+  (isFreeString(node) && node.maxLength !== undefined);
+
+const oneBullet = { type: 'slideBulletList', items: [widest] };
+
+/** The least a schema takes: required fields only, each string one glyph, each array at its minimum. */
+const leastContent = (node: JsonNode, defs: Defs): unknown => {
+  if (isBodyNode(node)) {
+    return oneBullet;
   }
-  if (node.const !== undefined) {
-    return node.const;
+  const own = resolve(node, defs);
+  const { type, items, properties } = own;
+  if (own.const !== undefined) {
+    return own.const;
   }
-  if (node.enum !== undefined) {
-    return node.enum[0];
+  if (own.enum !== undefined) {
+    return own.enum[0];
   }
-  const [variant] = node.oneOf ?? node.anyOf ?? node.allOf ?? [];
+  const [variant] = own.oneOf ?? own.anyOf ?? own.allOf ?? [];
   if (variant !== undefined) {
-    return mostContent(variant, defs);
+    return leastContent(variant, defs);
   }
   if (type === 'string') {
-    return widest.repeat(maxLength ?? 1);
+    return widest.repeat(Math.max(1, own.minLength ?? 1));
   }
   if (type === 'array') {
-    return Array.from({ length: maxItems ?? 1 }, () =>
-      mostContent(items ?? {}, defs)
+    return Array.from({ length: own.minItems ?? 0 }, () =>
+      leastContent(items ?? {}, defs)
     );
   }
   if (type === 'object') {
     return Object.fromEntries(
-      Object.entries(properties ?? {}).map(([key, child]) => [
-        key,
-        mostContent(child, defs),
-      ])
+      Object.entries(properties ?? {})
+        .filter(([key]) => own.required?.includes(key))
+        .map(([key, child]) => [key, leastContent(child, defs)])
     );
   }
   return 1;
 };
 
-// Code's line width is a cross-field cap the schema cannot state, so its most content is written out.
-const codeWorstCase: SlideCodeNode = {
-  type: 'slideCode',
-  panels: Array.from({ length: 2 }, () => ({
-    file: widest.repeat(frameLineCharacters),
-    lines: Array<string>(codeMaxLines).fill(
-      widest.repeat(codeLineMaxLength(2, true))
-    ),
-  })),
+/** {@link leastContent}, with the field at `path` at its cap. */
+const oneFieldAtCap = (
+  node: JsonNode,
+  defs: Defs,
+  path: SchemaPath
+): unknown => {
+  const own = resolve(node, defs);
+  const [head, ...rest] = path;
+  if (head === undefined) {
+    return own.type === 'array'
+      ? Array.from({ length: own.maxItems ?? 1 }, () =>
+          leastContent(own.items ?? {}, defs)
+        )
+      : widest.repeat(own.maxLength ?? 1);
+  }
+  if (head === '[]') {
+    const least = leastContent(own, defs) as unknown[];
+    return [oneFieldAtCap(own.items ?? {}, defs, rest), ...least.slice(1)];
+  }
+  return {
+    ...(leastContent(own, defs) as object),
+    [head]: oneFieldAtCap(own.properties?.[head] ?? {}, defs, rest),
+  };
 };
 
-const worstCases: Partial<Record<string, PrimitiveNode>> = {
-  slideCode: codeWorstCase,
+/**
+ * Fields a schema-built value would fail (a cross-field cap, a URL format), by `type` and path, written out at their cap.
+ * `null` marks a field that adds no height of its own.
+ */
+const worstCases: Partial<Record<string, PrimitiveNode | null>> = {
+  'slideCode panels.[].lines.[]': {
+    type: 'slideCode',
+    panels: [{ lines: [widest.repeat(codeLineMaxLength(1, false))] }],
+  } satisfies SlideCodeNode as PrimitiveNode,
+  // Highlights only mark lines, so `lines` measures the height.
+  'slideCode panels.[].highlightLines': null,
+  'slideFrame url': {
+    type: 'slideFrame',
+    url: `https://example.com/${widest.repeat(frameLineCharacters - 20)}`,
+    body: [oneBullet],
+  } as PrimitiveNode,
 };
 
-const worstCase = (primitive: SlidePrimitive): PrimitiveNode => {
-  const { $defs } = authoringSchema(primitive);
-  return (worstCases[primitive.type] ??
-    mostContent($defs[primitive.type] ?? {}, $defs)) as PrimitiveNode;
-};
+const notes = (trail: JsonNode[]) =>
+  trail.some(({ description }) => description?.includes(layoutCheckNote));
 
-// #43: the note appears exactly where the theme cannot hold a primitive's most content under the tallest heading.
-describe('a primitive notes the layout check exactly when its most content can overflow', () => {
-  it.each(slideDeckPrimitives.map((primitive) => ({ primitive })))(
-    '$primitive.type',
-    async ({ primitive }) => {
+// #43: every field that can run past the slide under the tallest heading carries the note on itself or a field that holds it.
+describe('the layout-check note sits on each field that can overflow', () => {
+  it.each(
+    slideDeckPrimitives.flatMap((primitive) => {
       const { $defs } = authoringSchema(primitive);
-      if (unbounded($defs[primitive.type] ?? {}, $defs)) {
-        expect(describesLayoutCheck(primitive)).toBe(true);
-        return;
-      }
-      const most = worstCase(primitive);
-      expect(
-        runtime.validate(previewSlide(most, tallestHeading)).errors
-      ).toEqual([]);
-      const found = await findings(previewSlide(most, tallestHeading));
-      expect(describesLayoutCheck(primitive)).toBe(found.length > 0);
+      const root = $defs[primitive.type] ?? {};
+      return fieldsOf(root, $defs)
+        .filter(({ trail }) => {
+          const field = trail.at(-1)!;
+          return isUnbounded(field) || isCapped(field);
+        })
+        .map(({ path, trail }) => ({
+          name: `${primitive.type} ${path.join('.')}`,
+          root,
+          $defs,
+          path,
+          trail,
+        }));
+    })
+  )('$name', async ({ name, root, $defs, path, trail }) => {
+    if (isUnbounded(trail.at(-1)!)) {
+      expect(notes(trail)).toBe(true);
+      return;
     }
-  );
+    const override = worstCases[name];
+    if (override === null) {
+      return;
+    }
+    const node = (override ??
+      oneFieldAtCap(root, $defs, path)) as PrimitiveNode;
+    const slide = previewSlide(node, tallestHeading);
+    expect(runtime.validate(slide).errors).toEqual([]);
+    if ((await findings(slide)).length > 0) {
+      expect(notes(trail)).toBe(true);
+    }
+  });
 });
 
 // A primitive whose most content can overflow the tallest heading says so in its schema, so an author knows to run the check.

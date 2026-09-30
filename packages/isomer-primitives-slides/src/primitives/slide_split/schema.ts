@@ -80,7 +80,7 @@ export const buildSchema = <TPanes extends ZodType>(panes: TPanes) =>
         .optional(),
       footnote: wrappedText()
         .describe(
-          'One sentence under both columns that draws the conclusion. `code` and `**strong**` marks are allowed.'
+          `One sentence under both columns that draws the conclusion; a long one can run past the slide, and ${layoutCheckNote}. \`code\` and \`**strong**\` marks are allowed.`
         )
         .optional(),
     })
