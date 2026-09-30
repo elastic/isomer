@@ -295,6 +295,64 @@ describe('Slack envelope transforms', () => {
         ],
       });
     });
+
+    it('prints a cell past the last heading alone', () => {
+      expect(
+        degraded([[cell('H')], [cell('a'), cell('b')], [cell('c')]])
+      ).toEqual({
+        type: 'rich_text',
+        elements: [
+          section(bold('H'), text(': '), text('a'), text('\n')),
+          section(text('b'), text('\n')),
+          blank,
+          section(bold('H'), text(': '), text('c')),
+        ],
+      });
+      expect(degraded([[], [cell('a'), rich(list)]])).toEqual({
+        type: 'rich_text',
+        elements: [section(text('a')), list],
+      });
+    });
+
+    it('leaves out a row with nothing to print', () => {
+      expect(
+        degraded([[cell('')], [cell('a')], [cell('')], [], [cell('b')]])
+      ).toEqual({
+        type: 'rich_text',
+        elements: [section(text('a'), text('\n')), blank, section(text('b'))],
+      });
+    });
+
+    it('sets the sections, list items, and blocks of a heading a space apart', () => {
+      expect(
+        degraded([
+          [rich(section(text('A', { code: true })), list, quote)],
+          [cell('x')],
+        ])
+      ).toEqual({
+        type: 'rich_text',
+        elements: [
+          section(
+            text('A', { code: true, bold: true }),
+            bold(' '),
+            bold('first'),
+            bold(' '),
+            bold('second'),
+            bold(' '),
+            bold('quoted'),
+            text(': '),
+            text('x')
+          ),
+        ],
+      });
+    });
+
+    it('names the headings of a table with no rows', () => {
+      expect(degraded([[cell('H'), cell(''), cell('I')]])).toEqual({
+        type: 'rich_text',
+        elements: [section(bold('H'), text(' · '), bold('I'))],
+      });
+    });
   });
 
   it('produces a valid header for a title over the header limit', () => {

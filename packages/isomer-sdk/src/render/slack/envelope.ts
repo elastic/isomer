@@ -433,14 +433,17 @@ const cellElements = (cell: SlackTableCell): SlackRichTextBlockElement[] =>
       : []
     : cell.elements;
 
-/** A heading's runs, bold; a block in a heading reads as its text. */
+/** A heading's runs on one line, bold; its sections, list items, and blocks sit a space apart. */
 const headingRuns = (cell: SlackTableCell): SlackRichTextInline[] =>
   cellElements(cell)
     .flatMap((element) =>
-      element.type === 'rich_text_section'
-        ? element.elements
-        : [textRun(richTextElementText(element))]
+      element.type === 'rich_text_list' ? element.elements : [element]
     )
+    .filter(({ elements }) => elements.length > 0)
+    .flatMap(({ elements }, index) => [
+      ...(index > 0 ? [textRun(' ')] : []),
+      ...elements,
+    ])
     .map((inline) => ({ ...inline, style: { ...inline.style, bold: true } }));
 
 /** One column of a row: `heading: ` leading the cell's first section, or on its own line before a block. */
@@ -479,8 +482,8 @@ const breakSections = (
 // A table over the message-wide cell budget degrades to rich text: each row as
 // `heading: cell` lines keyed by the header row, rows apart by a blank line.
 // Slack keeps it whole and never reads it as mrkdwn. A cell keeps its own
-// sections, lists, quotes, and preformatted blocks, and a column with an empty
-// heading prints its cell alone.
+// sections, lists, quotes, and preformatted blocks. A cell under an empty
+// heading, or past the header's last column, prints alone.
 const degradeTable = (block: SlackTableBlock): SlackBlock[] => {
   const [header, ...rows] = block.rows;
   if (!header) {
@@ -499,12 +502,18 @@ const degradeTable = (block: SlackTableBlock): SlackBlock[] => {
               ])
           ),
         ]
-      : rows.flatMap((row, index) => [
-          ...(index > 0 ? [section([textRun('\n')])] : []),
-          ...headings.flatMap((heading, column) =>
-            columnElements(heading, row[column])
-          ),
-        ]);
+      : rows
+          .map((row) =>
+            Array.from(
+              { length: Math.max(headings.length, row.length) },
+              (_, column) => columnElements(headings[column] ?? [], row[column])
+            ).flat()
+          )
+          .filter((row) => row.length > 0)
+          .flatMap((row, index) => [
+            ...(index > 0 ? [section([textRun('\n')])] : []),
+            ...row,
+          ]);
   return [{ type: 'rich_text', elements: breakSections(elements) }];
 };
 

@@ -5,18 +5,26 @@
  * 2.0.
  */
 
+import {
+  createTakumiImageBackend,
+  type LayoutBox,
+} from '@elastic/isomer-image-takumi';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { SLACK_LIMITS, type SlackBlock } from '@elastic/isomer-sdk/slack';
 import { describe, expect, it } from 'vitest';
 
+import { slideFonts } from '../../examples/fonts';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import {
   frameBodyHeight,
   frameContentWidth,
 } from '../../theme/components/frame';
+import { label as labelTheme } from '../../theme/components/shared';
+import { table } from '../../theme/components/table';
 import { title, titleShares } from '../../theme/components/title';
+import { scalePx } from '../../theme/scale';
 import { openBody } from '../layout';
 import { trackWidth } from '../size';
 import {
@@ -454,6 +462,63 @@ describe('slideTable', () => {
     });
   });
 
+  it('sets its caption at the line height the estimate charges', () => {
+    const { css } = runtime.surfaces.html.render(compose(example));
+    const [rule] = /\.table-caption\{[^}]*\}/.exec(css) ?? [];
+    expect(rule).toContain(`line-height:${table.labelLineHeight.value}`);
+  });
+
+  describe('drawn by takumi', () => {
+    const takumi = createTakumiImageBackend({ fonts: slideFonts });
+    const find = (
+      box: LayoutBox,
+      matches: (box: LayoutBox) => boolean
+    ): LayoutBox | undefined =>
+      matches(box)
+        ? box
+        : box.children.map((child) => find(child, matches)).find(Boolean);
+    const runs = (box: LayoutBox): LayoutBox['runs'] => [
+      ...box.runs,
+      ...box.children.flatMap(runs),
+    ];
+    const drawn = async (node: SlideTableNode) => {
+      const layout = await takumi.measure(
+        runtime.surfaces.svg.render(compose(node))
+      );
+      return find(layout, ({ attributes }) => attributes?.role === 'table');
+    };
+    const label =
+      'Checkout by region over the last twenty four hours, every market we run in, refunds and chargebacks included, measured at the edge';
+
+    it('draws a wrapped caption’s lines as far apart as estimated', async () => {
+      const box = await drawn({ ...example, label });
+      const lines = [
+        ...new Set(
+          runs(box!)
+            .filter(({ text }) => /CHECKOUT|CHARGEBACKS/.test(text))
+            .map(({ y }) => y)
+        ),
+      ];
+      expect(lines).toHaveLength(2);
+      expect(lines[1]! - lines[0]!).toBeCloseTo(
+        scalePx(labelTheme.size) * parseFloat(table.labelLineHeight.value),
+        0
+      );
+    });
+
+    // Takumi snaps each row to whole pixels, so the two differ by a pixel or so.
+    it.each(['l', 'm', 's'] as const)(
+      'is as tall at %s as estimated, with a wrapped caption and group labels',
+      async (size) => {
+        const node: SlideTableNode = { ...groupsExample, label, size };
+        const box = await drawn(node);
+        expect(
+          Math.abs(box!.height - tableHeight(node, size, frameContentWidth))
+        ).toBeLessThan(2);
+      }
+    );
+  });
+
   describe('size', () => {
     const [, typical = []] = example.rows ?? [];
     const rows = (count: number, cells = typical): SlideTableNode => ({
@@ -509,6 +574,84 @@ describe('slideTable', () => {
       expect(tableSize(short, layout)).toBe('l');
       expect(tableHeight(long, 'l', width)).toBeGreaterThan(layout.height);
       expect(tableSize(long, layout)).not.toBe('l');
+    });
+
+    it('counts the lines a heading wraps to in its column', () => {
+      const withHeading = (heading: string): SlideTableNode => ({
+        ...example,
+        columns: [heading, 'Orders', 'p99', 'Errors'],
+      });
+      const short = withHeading('Region');
+      const long = withHeading('Region shipped');
+      const width = frameContentWidth / 2;
+      const layout = { width, height: tableHeight(short, 'l', width) };
+      expect(tableSize(short, layout)).toBe('l');
+      expect(tableHeight(long, 'l', width) - layout.height).toBeCloseTo(
+        scalePx(table.head.size) * parseFloat(table.head.lineHeight.value)
+      );
+      expect(tableSize(long, layout)).not.toBe('l');
+    });
+
+    it('counts the lines a caption wraps to across the table', () => {
+      const short: SlideTableNode = { ...example, label: 'Checkout' };
+      const long: SlideTableNode = {
+        ...example,
+        label:
+          'Checkout by region over the last day, refunds and chargebacks included',
+      };
+      const width = frameContentWidth / 2;
+      const layout = { width, height: tableHeight(short, 'l', width) };
+      expect(tableSize(short, layout)).toBe('l');
+      expect(tableHeight(long, 'l', width) - layout.height).toBeCloseTo(
+        scalePx(labelTheme.size) * parseFloat(table.labelLineHeight.value)
+      );
+      expect(tableSize(long, layout)).not.toBe('l');
+    });
+
+    it.each([
+      ['caption', (word: string) => ({ ...groupsExample, label: word })],
+      [
+        'heading',
+        (word: string) => ({ ...groupsExample, columns: [word, 'Role', 'On'] }),
+      ],
+      [
+        'group label',
+        (word: string) => ({
+          ...groupsExample,
+          groups: groupsExample.groups?.map((group, index) =>
+            index === 0 ? { ...group, label: word } : group
+          ),
+        }),
+      ],
+      [
+        'cell',
+        (word: string) => ({
+          ...groupsExample,
+          groups: groupsExample.groups?.map((group, index) =>
+            index === 0 ? { ...group, rows: [[word, 'Role', 'On']] } : group
+          ),
+        }),
+      ],
+    ] as const)(
+      'counts the lines an unbroken %s breaks across',
+      (_name, withWord) => {
+        const height = (length: number) =>
+          tableHeight(withWord('x'.repeat(length)), 'l', frameContentWidth);
+        expect(height(400)).toBeGreaterThan(height(200));
+        expect(height(200)).toBeGreaterThan(height(4));
+      }
+    );
+
+    it('measures a row header in its bold face', () => {
+      const node = (rowHeaders: boolean): SlideTableNode => ({
+        type: 'slideTable',
+        columns: ['Name'],
+        rowHeaders,
+        rows: [['WWWW MMMM']],
+      });
+      expect(tableHeight(node(true), 'l', 247)).toBeGreaterThan(
+        tableHeight(node(false), 'l', 247)
+      );
     });
 
     it('keeps an authored size', () => {

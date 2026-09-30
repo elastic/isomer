@@ -7,7 +7,7 @@
 
 import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
-import { bold, escapeMrkdwn, type SlackBlock } from '@elastic/isomer-sdk/slack';
+import { escapeMrkdwn, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
 import { slackCaption } from '../../render';
 import { richTextRun } from '../../render/marks';
@@ -15,6 +15,7 @@ import {
   hasMrkdwnDelimiter,
   richTextBreak,
   richTextSection,
+  slackBold,
   slackFields,
   slackRichText,
 } from '../../render/slack_text';
@@ -66,7 +67,7 @@ export const text = (node: SlideQuadrantNode): string =>
   ].join('\n');
 
 export const markdown = (node: SlideQuadrantNode) => [
-  md.paragraph(axes(node)),
+  md.paragraph(oneLine(axes(node))),
   md.list(
     cells(node).map(({ label, rest }) =>
       md.paragraph(md.strong(label), ` ${rest}`)
@@ -92,7 +93,7 @@ export const slack = (node: SlideQuadrantNode): SlackBlock[] => {
       ? literal()
       : slackFields(
           lines.map(
-            ({ label, rest }) => `${bold(label)} ${escapeMrkdwn(rest)}`
+            ({ label, rest }) => `${slackBold(label)} ${escapeMrkdwn(rest)}`
           ),
           literal
         ),

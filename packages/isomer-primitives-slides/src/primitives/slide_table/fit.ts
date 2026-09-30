@@ -6,8 +6,7 @@
  */
 
 import type { SlideLayout } from '../../render/context';
-import { displayColumns } from '../../render/mono';
-import { regularAdvance, type } from '../../theme/base';
+import { font } from '../../theme/base';
 import { label as labelTheme } from '../../theme/components/shared';
 import { table } from '../../theme/components/table';
 import { scalePx as px } from '../../theme/scale';
@@ -25,7 +24,7 @@ export const tableHeight = (
   step: SlideSize,
   width: number
 ): number => {
-  const { columns, label } = node;
+  const { columns, label, rowHeaders } = node;
   const border = px(table.border);
   const cellWidth = Math.max(
     1,
@@ -33,12 +32,10 @@ export const tableHeight = (
   );
   const fontPx = px(table.cellSizes[step]);
   const across = cellWidth * lineFill;
-  // A word wider than its cell counts the lines its characters would fill.
-  const lines = (text: string): number =>
-    Math.max(
-      proseLines(text, fontPx, across),
-      Math.ceil((displayColumns(text) * regularAdvance * fontPx) / across)
-    );
+  const lines = (text: string, index: number): number =>
+    rowHeaders && index === 0
+      ? wrappedLines(text, fontPx, across, font.tracking.none)
+      : proseLines(text, fontPx, across);
   const labelLine = px(table.head.size) * leading(table.head.lineHeight);
   const headLines = Math.max(
     1,
@@ -83,7 +80,7 @@ export const tableHeight = (
           labelTheme.tracking
         ) *
           px(labelTheme.size) *
-          leading(type.label.lineHeight) +
+          leading(table.labelLineHeight) +
         px(table.labelGap)
       : 0) +
     headLines * labelLine +

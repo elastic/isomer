@@ -11,6 +11,7 @@ export const table = {
   border: stroke.panel,
   radius: radius.chip,
   divider: stroke.panel,
+  labelLineHeight: type.label.lineHeight,
   labelGap: space.px20,
   head: { ...type.label, tracking: font.tracking.label },
   headPaddingsY: { l: space.px14, m: space.px12, s: space.px8 },

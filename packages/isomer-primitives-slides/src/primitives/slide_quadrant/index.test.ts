@@ -148,6 +148,15 @@ describe('slideQuadrant', () => {
     expect(html(menuExample)).toContain('role="img" aria-label="Primary"');
   });
 
+  it('bolds a Slack label whose edges are spaces', () => {
+    const [first, ...rest] = example.quadrants;
+    const [, fields] = runtime.surfaces.slack.renderNode({
+      ...example,
+      quadrants: [{ ...first!, label: ' Quick wins ' }, ...rest],
+    } as SlideQuadrantNode).blocks;
+    expect(JSON.stringify(fields)).toContain('"*Quick wins* (Major, Easy)');
+  });
+
   describe.each(['*', '_', '~', '`'])(
     'a Slack field holding %s',
     (delimiter) => {

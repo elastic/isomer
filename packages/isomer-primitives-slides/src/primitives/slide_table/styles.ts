@@ -25,6 +25,7 @@ export const tableModule = createStyleModule('table', ({ css }) => ({
   `,
   caption: css`
     display: flex;
+    line-height: ${table.labelLineHeight};
     margin-bottom: ${table.labelGap};
   `,
   // The caption sits above the border, so the row groups draw it between them.

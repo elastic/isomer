@@ -13,10 +13,13 @@ import { scalePx } from '../theme/scale';
 
 import {
   emWidth,
+  packedLines,
+  proseLines,
   rowLoad,
   sizeForLines,
   sizeForLoad,
   widestWord,
+  wrappedLines,
 } from './size';
 
 const steps = { l: font.size.px200, m: font.size.px128, s: font.size.px96 };
@@ -64,7 +67,42 @@ describe('sizeForLines', () => {
   });
 });
 
+describe('packedLines', () => {
+  it('wraps between items, never inside one that fits', () => {
+    expect(packedLines([100, 100, 100], 10, 320)).toBe(1);
+    expect(packedLines([100, 100, 100], 10, 319)).toBe(2);
+    expect(packedLines([340], 10, 340)).toBe(1);
+    expect(packedLines([], 10, 340)).toBe(1);
+  });
+
+  it('runs an item wider than the line over the lines it fills', () => {
+    expect(packedLines([341], 10, 340)).toBe(2);
+    expect(packedLines([1000], 10, 340)).toBe(3);
+    // It starts its own line, and the next item shares its last line when it fits there.
+    expect(packedLines([100, 700, 100], 10, 340)).toBe(4);
+    expect(packedLines([100, 1000, 100], 10, 340)).toBe(5);
+  });
+
+  it('counts a line a pixel across when there is no room', () => {
+    expect(packedLines([10, 10], 1, 0)).toBe(20);
+  });
+});
+
 describe('text measures', () => {
+  it.each([
+    [
+      'display',
+      (text: string) => wrappedLines(text, 32, 340, font.tracking.none),
+    ],
+    ['prose', (text: string) => proseLines(text, 32, 340)],
+  ] as const)('breaks a word wider than a %s line', (_name, lines) => {
+    expect(lines('x'.repeat(10))).toBe(1);
+    expect(lines('x'.repeat(60))).toBeGreaterThan(2);
+    expect(lines(`${'x'.repeat(60)} ${'x'.repeat(60)}`)).toBe(
+      2 * lines('x'.repeat(60))
+    );
+  });
+
   it('reads narrow glyphs narrower than wide ones', () => {
     const none = font.tracking.none;
     expect(emWidth('ill', none)).toBeLessThan(emWidth('mmm', none));
