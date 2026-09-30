@@ -126,7 +126,7 @@ export const marksModule = createStyleModule('marks', ({ css }) => ({
   displayCode: css`
     font-family: ${marks.displayCode.family};
     font-weight: ${marks.displayCode.weight};
-    text-transform: none;
+    text-transform: ${marks.displayCode.transform};
   `,
   strong: css`
     color: ${color.text};

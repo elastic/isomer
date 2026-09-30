@@ -20,7 +20,7 @@ import { slideDeckFrame, slidesPack } from '../../pack';
 import { bars as barsTheme } from '../../theme/components/bars';
 import { scalePx } from '../../theme/scale';
 import { openBody } from '../layout';
-import { measureText } from '../size';
+import { measureMarks, measureText } from '../size';
 import { renderedStep } from '../size.fixtures';
 
 import { denseExample, example, scaledExample } from './examples';
@@ -47,6 +47,26 @@ const markdown = (node: Parameters<typeof markdownContent>[0]): string =>
 
 const html = (node: object): string =>
   runtime.surfaces.html.render(compose(node)).html;
+
+/** Each `rich_text_section`'s text in a degraded table. */
+const sectionTexts = (block: SlackBlock | undefined): string[] => {
+  if (block?.type !== 'rich_text') {
+    throw new Error(`expected rich_text, got ${block?.type}`);
+  }
+  return block.elements.map((element) =>
+    element.type === 'rich_text_section'
+      ? element.elements
+          .map((run) => (run.type === 'text' ? run.text : ''))
+          .join('')
+      : ''
+  );
+};
+
+const expectWithinSectionLimit = (sections: readonly string[]) => {
+  for (const section of sections) {
+    expect(section.length).toBeLessThanOrEqual(SLACK_LIMITS.sectionTextChars);
+  }
+};
 
 describe('slideBars', () => {
   const everySurface = (node: object): string[] => [
@@ -266,7 +286,7 @@ describe('slideBars', () => {
     expect(html(example)).toContain('role="img" aria-label="Primary"');
   });
 
-  it('keeps the Slack table whole at the cell budget, and falls back to rich text one past it', () => {
+  it('keeps the Slack table whole at the cell budget, and one past it prints as rich text sections within Slack’s section limit', () => {
     const [first, ...rest] = scaledExample.items;
     const withLabel = (label: string) =>
       runtime.surfaces.slack.renderNode({
@@ -295,8 +315,10 @@ describe('slideBars', () => {
     const at = 'x'.repeat(SLACK_LIMITS.tableCellCharsPerMessage - spent);
     expect(withLabel(at)?.type).toBe('table');
     const over = withLabel(`${at}y`);
-    expect(over?.type).toBe('rich_text');
-    expect(JSON.stringify(over)).toContain(`${at}y`);
+    const sections = sectionTexts(over);
+    expect(sections.length).toBeGreaterThan(2);
+    expectWithinSectionLimit(sections);
+    expect(sections.join('')).toContain(`${at}y`);
   });
 
   describe('size', () => {
@@ -416,6 +438,34 @@ describe('slideBars', () => {
         expect(lines).toBe(5);
         expect(lines).toBe(await drawnLines(pair('A', 'y'.repeat(400)), 'y'));
       });
+
+      describe('marked runs', () => {
+        const code = `\`${'i'.repeat(60)}\``;
+
+        it('measures a code label in mono, as it is drawn', async () => {
+          expect(barsSize(pair('i'.repeat(60)), full)).toBe('l');
+          const step = barsSize(pair(code), full);
+          expect(step).not.toBe('l');
+          const { lines } = measureMarks(
+            code,
+            { ...barsTheme.label, size: barsTheme.labelSizes[step] },
+            scalePx(barsTheme.labelWidth),
+            'primary'
+          );
+          expect(lines).toBe(4);
+          expect(lines).toBe(await drawnLines(pair(code), 'i'));
+        });
+
+        it('measures a code detail in mono with its chip, and strong in bold', () => {
+          const detail = (text: string) =>
+            measureMarks(text, barsTheme.detail).widest;
+          expect(detail('`abc`')).toBeGreaterThan(detail('abc'));
+          const regular = { size: barsTheme.detail.size };
+          expect(measureMarks('**Leeds**', regular).widest).toBeGreaterThan(
+            measureMarks('Leeds', regular).widest
+          );
+        });
+      });
     });
 
     it('draws the dense example, six bars each with a detail, at the smallest step under crowding 1', () => {
@@ -445,7 +495,7 @@ describe('slideBars', () => {
         { label: 'B', value: 1 },
       ],
     });
-    const later = 'x'.repeat(2000);
+    const later = 'x'.repeat(5000);
     const { blocks } = runtime.surfaces.slack.render({
       type: 'view',
       body: [
@@ -459,7 +509,11 @@ describe('slideBars', () => {
       ],
     });
     expect(blocks.filter(({ type }) => type === 'table')).toHaveLength(1);
-    expect(JSON.stringify(blocks)).toContain(later);
+    const sections = sectionTexts(
+      blocks.find(({ type }) => type === 'rich_text')
+    );
+    expectWithinSectionLimit(sections);
+    expect(sections.join('')).toContain(later);
   });
 
   it('never prints a positive value as zero on any surface', () => {

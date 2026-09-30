@@ -53,7 +53,9 @@ describe('slideStat', () => {
 
   it.each([
     ['value', { ...example, value: ' ' }],
+    ['value', { ...example, value: '\u200B' }],
     ['unit', { ...example, unit: '\t' }],
+    ['unit', { ...example, unit: '\u0301' }],
   ])('needs a visible character in a %s', (field, node) => {
     expect(errorPaths(node)).toEqual([`body[0].body[0].${field}`]);
     expect(errorPaths({ ...example, [field]: ' x ' })).toEqual([]);

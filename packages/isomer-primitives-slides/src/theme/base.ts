@@ -179,7 +179,7 @@ export const font = {
     label: literal('0.12em'),
     labelWide: literal('0.14em'),
   },
-  transform: { uppercase: literal('uppercase') },
+  transform: { none: literal('none'), uppercase: literal('uppercase') },
   whiteSpace: { nowrap: literal('nowrap') },
   lineHeight: {
     tightest: literal('0.85'),

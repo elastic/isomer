@@ -8,7 +8,12 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
-import { figureText, lineText, wrappedText } from '../authored_text';
+import {
+  figureRule,
+  figureText,
+  lineText,
+  wrappedText,
+} from '../authored_text';
 import { crossRefine } from '../cross_field';
 import { sizeField } from '../size';
 
@@ -19,7 +24,7 @@ const pointSchema = z
     ),
     value: figureText()
       .describe(
-        'The number as it should read, unit included, e.g. `26` or `4.2s`. Omit it when the number is not known yet: the slide shows a placeholder, never an invented value.'
+        `The number as it should read, unit included, e.g. \`26\` or \`4.2s\`. Omit it when the number is not known yet: the slide shows a placeholder, never an invented value. ${figureRule}.`
       )
       .optional(),
   })
@@ -36,7 +41,7 @@ export const schema = z
     after: pointSchema.describe('The number now, on the right, in primary.'),
     change: figureText()
       .describe(
-        'The difference as it should read, e.g. `+13` or `−40%`. Leave it out when either value is missing.'
+        `The difference as it should read, e.g. \`+13\` or \`−40%\`. Leave it out when either value is missing. ${figureRule}.`
       )
       .optional(),
     body: wrappedText().describe(

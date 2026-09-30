@@ -10,7 +10,7 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
-import { marksReact, stripMarks } from '../../render/marks';
+import { marksReact } from '../../render/marks';
 import { ToneCue } from '../../render/tone_cue';
 import { bars as theme, barsFit } from '../../theme/components/bars';
 import { tone } from '../../theme/components/shared';
@@ -19,7 +19,7 @@ import { scalePx } from '../../theme/scale';
 import type { TypeRole } from '../../theme/type_role';
 import type { SlideSize } from '../../theme/variants';
 import { slideLayout } from '../layout';
-import { measureText, sizeForLoad, sizeForWidth, smallerStep } from '../size';
+import { measureMarks, sizeForLoad, sizeForWidth, smallerStep } from '../size';
 
 import type { SlideBarsItem, SlideBarsNode } from './schema';
 import { barsModule } from './styles';
@@ -33,8 +33,12 @@ const barsMax = ({ items, max }: SlideBarsNode): number =>
 
 const cueWidth = scalePx(tone.cue.size) + scalePx(tone.cue.gap);
 
-const lines = (marked: string, role: TypeRole, width: number): number =>
-  Math.max(1, measureText(stripMarks(marked), role, width).lines);
+const lines = (
+  marked: string,
+  role: TypeRole,
+  width: number,
+  strong?: 'primary'
+): number => Math.max(1, measureMarks(marked, role, width, strong).lines);
 
 /** Two per label line, since a label line is a bar tall, and one per detail line under the bar. */
 const rowsLoad =
@@ -46,7 +50,8 @@ const rowsLoad =
           lines(
             label,
             { ...theme.label, size: theme.labelSizes[step] },
-            scalePx(theme.labelWidth) - (highlight ? cueWidth : 0)
+            scalePx(theme.labelWidth) - (highlight ? cueWidth : 0),
+            'primary'
           ) +
         (detail ? lines(detail, theme.detail, track) : 0),
       0

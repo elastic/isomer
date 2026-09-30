@@ -80,6 +80,9 @@ describe('slideStats', () => {
     expect(errorPaths(with_(' '))).toEqual([
       `body[0].body[0].items[0].${field}`,
     ]);
+    expect(errorPaths(with_('\u200B\u0301'))).toEqual([
+      `body[0].body[0].items[0].${field}`,
+    ]);
     expect(errorPaths(with_(' 3 '))).toEqual([]);
   });
 

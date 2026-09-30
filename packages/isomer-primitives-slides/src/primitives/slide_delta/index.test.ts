@@ -58,7 +58,11 @@ describe('slideDelta', () => {
 
   it.each([
     ['before.value', { ...example, before: { ...example.before, value: ' ' } }],
-    ['change', { ...example, change: ' ' }],
+    [
+      'after.value',
+      { ...example, after: { ...example.after, value: '\u200B' } },
+    ],
+    ['change', { ...example, change: '\u0301' }],
   ])('needs a visible character in %s', (field, node) => {
     expect(errorPaths(node)).toEqual([`body[0].body[0].${field}`]);
   });
@@ -234,6 +238,17 @@ describe('slideDelta', () => {
       expect(
         deltaValueSize({ ...pair('0'), before: { label: 'Before' } }, 400)
       ).toBe('s');
+    });
+
+    it('measures a code label in mono, as it is drawn', () => {
+      const labelled = (label: string) =>
+        deltaValueSize(
+          { ...pair('0'), before: { label, value: '0' } },
+          openBody.width
+        );
+      const letters = 'i'.repeat(80);
+      expect(labelled(letters)).toBe('l');
+      expect(labelled(`\`${letters}\``)).toBe('s');
     });
 
     it('measures its values across a split pane and a title aside', () => {

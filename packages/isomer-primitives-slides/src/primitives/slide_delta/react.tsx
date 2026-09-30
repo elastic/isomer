@@ -10,7 +10,7 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv, SlideRenderContext } from '../../render/context';
-import { marksReact, stripMarks } from '../../render/marks';
+import { marksReact } from '../../render/marks';
 import { delta as theme } from '../../theme/components/delta';
 import { slideDistillery } from '../../theme/distillery';
 import {
@@ -21,7 +21,7 @@ import {
 import { scalePx } from '../../theme/scale';
 import { type SlideSize, slideSizes } from '../../theme/variants';
 import { slideLayout } from '../layout';
-import { measureText } from '../size';
+import { measureMarks, measureText } from '../size';
 
 import type { SlideDeltaNode, SlideDeltaPoint } from './schema';
 import { deltaModule } from './styles';
@@ -31,7 +31,7 @@ const { connector, placeholder: pending } = slideDistillery.tokens;
 /** A side's width at `step`: its value, or its placeholder, and never less than its label. */
 const sideWidth = ({ label, value }: SlideDeltaPoint, step: SlideSize) =>
   Math.max(
-    measureText(stripMarks(label), theme.label).widest,
+    measureMarks(label, theme.label, Infinity, 'primary').widest,
     value
       ? measureText(value, { ...theme.value, size: theme.valueSizes[step] })
           .widest

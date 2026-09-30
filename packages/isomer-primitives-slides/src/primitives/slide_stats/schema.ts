@@ -8,7 +8,12 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
-import { figureText, lineText, wrappedText } from '../authored_text';
+import {
+  figureRule,
+  figureText,
+  lineText,
+  wrappedText,
+} from '../authored_text';
 import { crossRefine } from '../cross_field';
 import { sizeField } from '../size';
 
@@ -16,12 +21,12 @@ const statSchema = z
   .object({
     value: figureText()
       .describe(
-        'The number as it should read, e.g. `13` or `2.4`. Omit it when the number is not known yet: the column shows a placeholder, never an invented value.'
+        `The number as it should read, e.g. \`13\` or \`2.4\`. Omit it when the number is not known yet: the column shows a placeholder, never an invented value. ${figureRule}.`
       )
       .optional(),
     unit: figureText()
       .describe(
-        'Short unit set smaller after the value, e.g. `KB` or `ms`. Requires `value`.'
+        `Short unit set smaller after the value, e.g. \`KB\` or \`ms\`. Requires \`value\`. ${figureRule}.`
       )
       .optional(),
     label: lineText().describe(

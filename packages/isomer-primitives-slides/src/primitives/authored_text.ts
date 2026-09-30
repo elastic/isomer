@@ -23,9 +23,21 @@ export const lineText = () => z.string().min(1).max(authoredTextMaxLength);
 /** A field that wraps. */
 export const wrappedText = () => z.string().min(1).max(authoredTextMaxLength);
 
-/** A figure as it should read; a blank one is not a figure, so leave it out for a placeholder. */
+/** What {@link figureText} takes, for each field's description to state. */
+export const figureRule =
+  'It shows at least one letter, digit, punctuation mark, or symbol';
+
+const invisible = /[\p{Default_Ignorable_Code_Point}\p{M}]/gu;
+const visible = /[\p{L}\p{N}\p{P}\p{S}]/u;
+
+/** A figure as it should read; one with nothing visible is not a figure, so leave it out for a placeholder. */
 export const figureText = () =>
-  lineText().regex(/\S/, 'needs a visible character');
+  lineText().check(
+    statedRefine((value) => visible.test(value.replace(invisible, '')), {
+      error: 'needs a visible character',
+      rule: figureRule,
+    })
+  );
 
 /** What {@link boundedHref} takes, for each field's description to state. */
 export const hrefRule =

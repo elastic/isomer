@@ -12,6 +12,7 @@ import { describe, expect, it } from 'vitest';
 import { slideFonts } from '../examples/fonts';
 import { font, type } from '../theme/base';
 import { heading } from '../theme/components/heading';
+import { marks } from '../theme/components/marks';
 import { split } from '../theme/components/split';
 import { scalePx } from '../theme/scale';
 import { type TypeRole, typeRole } from '../theme/type_role';
@@ -19,6 +20,7 @@ import { type TypeRole, typeRole } from '../theme/type_role';
 import {
   emWidth,
   lineBox,
+  measureMarks,
   measureText,
   monoLines,
   proseLines,
@@ -197,6 +199,43 @@ describe('measureText', () => {
     expect(measureText('abc de', body, 0).lines).toBe(5);
     expect(measureText(' \n ', body)).toEqual({ lines: 0, widest: 0 });
     expect(proseLines('', 20, 0)).toBe(1);
+  });
+});
+
+describe('measureMarks', () => {
+  const role: TypeRole = {
+    size: font.size.px32,
+    weight: font.weight.bold,
+    transform: font.transform.uppercase,
+  };
+  const mono = { ...role, ...marks.code };
+  const inset = scalePx(marks.codeInset) + scalePx(marks.codeBorder);
+
+  it('measures a word across runs as one word, each run in its own face', () => {
+    const { lines, widest } = measureMarks('`aa`bb', role, 1000);
+    expect(lines).toBe(1);
+    expect(widest).toBeCloseTo(
+      measureText('aa', mono).widest +
+        2 * inset +
+        measureText('bb', role).widest
+    );
+  });
+
+  it('sets code in display text in mono without its chip, and strong in the role’s weight', () => {
+    expect(
+      measureMarks('`aa` **bb**', role, Infinity, 'primary').widest
+    ).toBeCloseTo(
+      measureText('aa', { ...role, ...marks.displayCode }).widest +
+        measureText('x bb', role).widest -
+        measureText('x', role).widest
+    );
+  });
+
+  it('sets strong in bold in body copy', () => {
+    const regular = { size: font.size.px32 };
+    expect(measureMarks('**bb**', regular).widest).toBe(
+      measureText('bb', { ...regular, ...marks.strong }).widest
+    );
   });
 });
 

@@ -10,6 +10,7 @@
 import type { ScaleToken } from '@elastic/distillate';
 import { z } from '@elastic/isomer-sdk';
 
+import { parseMarks } from '../render/marks';
 import { displayColumns, isWide } from '../render/mono';
 import {
   extraboldAdvance,
@@ -17,6 +18,7 @@ import {
   monoAdvance,
   regularAdvance,
 } from '../theme/base';
+import { marks } from '../theme/components/marks';
 import { px, scalePx } from '../theme/scale';
 import type { TypeRole } from '../theme/type_role';
 import { type SlideSize, slideSizes } from '../theme/variants';
@@ -200,6 +202,68 @@ const faceOf = ({ family, weight }: TypeRole): ((glyph: string) => number) =>
       ? displayAdvance
       : (glyph) => displayColumns(glyph) * regularAdvance;
 
+/** Text set in one role; `inset` pixels pad both its ends, as a code chip's padding and border do. */
+interface StyledRun {
+  readonly text: string;
+  readonly role: TypeRole;
+  readonly inset?: number;
+}
+
+const glyphPx = (role: TypeRole): ((glyph: string) => number) => {
+  const fontPx = scalePx(role.size);
+  const tracking = role.tracking ? parseFloat(role.tracking.value) : 0;
+  const advance = faceOf(role);
+  return (glyph) => {
+    const em = advance(glyph);
+    return em === 0 ? 0 : (em + tracking) * fontPx;
+  };
+};
+
+const isCollapsible = (glyph: string) => collapsible.test(glyph);
+
+/** Each word's glyph advances across `runs`, so a word can span runs set differently. */
+const runWords = (runs: readonly StyledRun[]): number[][] => {
+  const found: number[][] = [];
+  let word: number[] = [];
+  for (const { text, role, inset = 0 } of runs) {
+    const advance = glyphPx(role);
+    const glyphs = [
+      ...(role.transform?.value === 'uppercase' ? text.toUpperCase() : text),
+    ];
+    const first = glyphs.findIndex((glyph) => !isCollapsible(glyph));
+    const last =
+      glyphs.length -
+      1 -
+      [...glyphs].reverse().findIndex((glyph) => !isCollapsible(glyph));
+    glyphs.forEach((glyph, index) => {
+      if (isCollapsible(glyph)) {
+        if (word.length > 0) {
+          found.push(word);
+        }
+        word = [];
+      } else {
+        word.push(
+          advance(glyph) +
+            (index === first ? inset : 0) +
+            (index === last ? inset : 0)
+        );
+      }
+    });
+  }
+  return word.length > 0 ? [...found, word] : found;
+};
+
+const measureRuns = (
+  runs: readonly StyledRun[],
+  role: TypeRole,
+  width: number
+): TextMeasure =>
+  measureWords(
+    runWords(runs),
+    glyphPx(role)(' '),
+    role.whiteSpace?.value === 'nowrap' ? Infinity : width
+  );
+
 /**
  * `text` as `role` sets it across `width` pixels: transformed, whitespace collapsed, wrapped at spaces, and a word wider than a line broken between glyphs (`overflow-wrap: anywhere`); `nowrap` keeps one line.
  * Pass the role at the step drawn, and marks already stripped.
@@ -208,22 +272,39 @@ export const measureText = (
   text: string,
   role: TypeRole,
   width = Infinity
-): TextMeasure => {
-  const fontPx = scalePx(role.size);
-  const tracking = role.tracking ? parseFloat(role.tracking.value) : 0;
-  const advance = faceOf(role);
-  const glyphPx = (glyph: string) => {
-    const em = advance(glyph);
-    return em === 0 ? 0 : (em + tracking) * fontPx;
-  };
-  const shown =
-    role.transform?.value === 'uppercase' ? text.toUpperCase() : text;
-  return measureWords(
-    words(shown).map((word) => [...word].map(glyphPx)),
-    glyphPx(' '),
-    role.whiteSpace?.value === 'nowrap' ? Infinity : width
+): TextMeasure => measureRuns([{ text, role }], role, width);
+
+/** {@link measureText} for text with marks, each run in the face `marksReact` draws it in for `strong`. */
+export const measureMarks = (
+  text: string,
+  role: TypeRole,
+  width = Infinity,
+  strong: 'ink' | 'primary' = 'ink'
+): TextMeasure =>
+  measureRuns(
+    parseMarks(text).map(({ kind, text: run }): StyledRun => {
+      if (kind === 'text') {
+        return { text: run, role };
+      }
+      if (strong === 'primary') {
+        return kind === 'code'
+          ? {
+              text: run,
+              role: { ...role, ...marks.displayCode },
+            }
+          : { text: run, role };
+      }
+      return kind === 'code'
+        ? {
+            text: run,
+            role: { ...role, ...marks.code },
+            inset: scalePx(marks.codeInset) + scalePx(marks.codeBorder),
+          }
+        : { text: run, role: { ...role, ...marks.strong } };
+    }),
+    role,
+    width
   );
-};
 
 /** Lines `text` in Inter ExtraBold at `fontPx` takes across `width`, from {@link measureText}. */
 export const wrappedLines = (
