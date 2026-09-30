@@ -33,6 +33,11 @@ export const tone = {
   label: { primary: literal('Primary'), accent: literal('Accent') },
 } as const;
 
+/** Marks a link by more than its color. */
+export const link = {
+  decoration: literal('underline'),
+} as const;
+
 export const placeholder = {
   stripe: space.px14,
   stripeEnd: space.px28,
@@ -49,4 +54,6 @@ export const glyph = {
   arrow: literal('→'),
   separator: literal('·'),
   dash: literal('—'),
+  /** Between a term and what is said of it, in text, Markdown, and Slack. */
+  termJoiner: literal(': '),
 } as const;

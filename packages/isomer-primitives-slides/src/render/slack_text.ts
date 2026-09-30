@@ -10,12 +10,15 @@
 import { oneLine } from '@elastic/isomer-sdk/author';
 import {
   clampSlackText,
+  escapeMrkdwn,
   formatHeaderText,
   SLACK_LIMITS,
   type SlackBlock,
+  slackLinkUrl,
   type SlackRichTextBlockElement,
   type SlackRichTextInline,
   type SlackRichTextSection,
+  type SlackRichTextText,
 } from '@elastic/isomer-sdk/slack';
 
 import { marksRichText, marksSlack, richTextRun } from './marks';
@@ -35,15 +38,47 @@ export const richTextSection = (
 /** A literal line break, which {@link richTextRun} would fold into a space. */
 export const richTextBreak: SlackRichTextInline = { type: 'text', text: '\n' };
 
-/** A `header` when it keeps all of `text`, bold rich text otherwise. */
-export const slackHeading = (text: string): SlackBlock => {
+/** `runs` linked to `href` when Slack can link it, as they are otherwise. */
+export const richTextLinked = (
+  runs: readonly SlackRichTextText[],
+  href: string | undefined
+): SlackRichTextInline[] => {
+  const url = href ? slackLinkUrl(href) : null;
+  return url === null
+    ? [...runs]
+    : runs.map(({ text, style }) => ({
+        type: 'link',
+        url,
+        text,
+        ...(style ? { style } : {}),
+      }));
+};
+
+/** `*text*` on one line, its edge whitespace dropped, since Slack will not bold against a space. */
+export const slackBold = (text: string): string => {
+  const line = escapeMrkdwn(oneLine(text)).trim();
+  return line ? `*${line}*` : '';
+};
+
+/** A `header` when it keeps all of `text`, otherwise bold rich text, from `runs` when the text has marks. */
+export const slackHeading = (
+  text: string,
+  runs: readonly SlackRichTextText[] = [richTextRun(text)]
+): SlackBlock => {
   const normalized = text.replace(/\s+/g, ' ').trim();
   return formatHeaderText(normalized) === normalized
     ? {
         type: 'header',
         text: { type: 'plain_text', text: normalized, emoji: true },
       }
-    : slackRichText(richTextSection(richTextRun(normalized, { bold: true })));
+    : slackRichText(
+        richTextSection(
+          ...runs.map((run) => ({
+            ...run,
+            style: { ...run.style, bold: true },
+          }))
+        )
+      );
 };
 
 /** A `mrkdwn` section when it keeps all of `text`, `fallback` otherwise. */

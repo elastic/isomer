@@ -15,6 +15,7 @@ import { ToneCue } from '../../render/tone_cue';
 import { bars as theme, barsFit } from '../../theme/components/bars';
 import { layoutModule } from '../../theme/modules';
 import type { SlideSize } from '../../theme/variants';
+import { slideLayout } from '../layout';
 import { sizeForLoad } from '../size';
 
 import type { SlideBarsNode } from './schema';
@@ -45,7 +46,7 @@ export const react = (
 ): ReactNode => {
   const { type, items } = node;
   const { handles: bars } = barsModule;
-  const step = barsSize(node, context?.crowding);
+  const step = barsSize(node, slideLayout(context).crowding);
   const max = barsMax(node);
   return (
     <div

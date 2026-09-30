@@ -111,11 +111,11 @@ Anchors render only when something needs them, so a render nobody acts on carrie
 
 Each `LayoutFinding` is `{ kind, path, type, with?, by }`, with `path` in validation's form. The rules know nothing about any pack:
 
-- A node's room is the box of its nearest anchored ancestor, or the whole canvas at the top level. An anchored box whose type is left out still counts as a room and bounds its parent's content. `overflow` is its element boxes past that room; its text runs are left out, because glyphs overhang a tight line height.
-- `overlap` is text or childless boxes shared by two siblings under the same anchored parent, `by` the shortest distance along one axis that would clear them, which for one inside the other is more than their shared width. A node is never compared with the nodes nested in it.
+- A node's room is the box of its nearest anchored ancestor, or of an element inside it that spreads `layoutRoom(context)`, such as a frame's body, or the whole canvas at the top level. `layoutRoom` sets `data-isomer-room` (`LAYOUT_ROOM_ATTRIBUTE`) whenever `nodeAnchor` would render; it bounds the nodes nested in it, not its own node's content. An anchored box whose type is left out still counts as a room and bounds its parent's content. `overflow` is its element boxes past that room; its text runs are left out, because glyphs overhang a tight line height.
+- `overlap` is text or childless boxes shared by two siblings under the same room, `by` the shortest distance along one axis that would clear them, which for one inside the other is more than their shared width. A node is never compared with the nodes nested in it.
 - A scaled box is one opaque box, and nothing inside it is checked. One pixel of spill is tolerated.
 
-Findings are advice, not validation errors, and no surface runs the check: an overlap may be intended, and the agent or author reading them decides. `overflow: hidden` and a frame's own body region are not visible to it. A pack whose renderers spread no anchors gets no findings, and a type whose counts disagree is not reported, as with `findNodeElementPairs`. Findings belong to the engine that measured the layout: the same composition can fit in a browser and overflow in takumi.
+Findings are advice, not validation errors, and no surface runs the check: an overlap may be intended, and the agent or author reading them decides. `overflow: hidden` is not visible to it, and a container's inner region is only a room when the renderer marks it with `layoutRoom`. A pack whose renderers spread no anchors gets no findings, and a type whose counts disagree is not reported, as with `findNodeElementPairs`. Findings belong to the engine that measured the layout: the same composition can fit in a browser and overflow in takumi.
 
 ## How Slack output is fitted
 

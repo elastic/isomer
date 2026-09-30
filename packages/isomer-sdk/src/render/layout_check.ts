@@ -9,6 +9,7 @@ import type { ChildNodeWalker } from '../composition/body_node_base';
 
 import {
   anchoredNodePaths,
+  LAYOUT_ROOM_ATTRIBUTE,
   NODE_ANCHOR_ATTRIBUTE,
   nodeType,
   pairAnchors,
@@ -67,6 +68,11 @@ const anchoredBoxes = (box: LayoutBox): [string, LayoutBox][] => {
     ...box.children.flatMap(anchoredBoxes),
   ];
 };
+
+const roomBoxes = (box: LayoutBox): LayoutBox[] => [
+  ...(box.attributes?.[LAYOUT_ROOM_ATTRIBUTE] === undefined ? [] : [box]),
+  ...box.children.flatMap(roomBoxes),
+];
 
 /**
  * The element boxes a node's own content fills: its box and those under it,
@@ -127,9 +133,9 @@ const overlapOf = (a: LayoutRect, b: LayoutRect): number => {
  * `layout`, a measured render on `surface` with node anchors on. Empty when
  * nothing does.
  *
- * A node's room is the box of its nearest anchored ancestor, or `layout` at
- * the top level, and only siblings under one anchored parent are compared.
- * Nothing inside a scaled box is checked. A finding is advice, not an error:
+ * A node's room is the box of its nearest anchored or `layoutRoom` ancestor,
+ * or `layout` at the top level, and only siblings under one room are
+ * compared. Nothing inside a scaled box is checked. A finding is advice, not an error:
  * an overlap may be intended.
  */
 export const checkLayout = (
@@ -155,6 +161,7 @@ export const checkLayout = (
 
   // Every anchored box bounds its ancestors' content, paired or not.
   const nested = new Set(anchored.map(([, box]) => box));
+  const bounding = new Set([...nested, ...roomBoxes(layout)]);
   const rooms = new Map<PlacedNode, LayoutBox>();
   const siblings = new Map<LayoutBox | undefined, PlacedNode[]>();
   const visit = (box: LayoutBox, parent: LayoutBox | undefined): void => {
@@ -165,7 +172,7 @@ export const checkLayout = (
     }
     if (!isScaled(box)) {
       box.children.forEach((child) =>
-        visit(child, nested.has(box) ? box : parent)
+        visit(child, bounding.has(box) ? box : parent)
       );
     }
   };

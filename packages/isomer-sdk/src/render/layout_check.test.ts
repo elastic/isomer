@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createChildNodeWalker } from '../composition/body_node_base';
 
-import { NODE_ANCHOR_ATTRIBUTE } from './anchors';
+import { LAYOUT_ROOM_ATTRIBUTE, NODE_ANCHOR_ATTRIBUTE } from './anchors';
 import { checkLayout, type LayoutBox } from './layout_check';
 
 interface TestNode {
@@ -43,6 +43,11 @@ const anchored = (type: string, laid: LayoutBox): LayoutBox => ({
 });
 
 const canvas = (...children: LayoutBox[]) => box(0, 0, 1000, 500, ...children);
+
+const room = (laid: LayoutBox): LayoutBox => ({
+  ...laid,
+  attributes: { [LAYOUT_ROOM_ATTRIBUTE]: '' },
+});
 
 describe('checkLayout', () => {
   it('finds nothing when every node fits its room and clears its siblings', () => {
@@ -258,6 +263,71 @@ describe('checkLayout', () => {
         by: 200,
       },
     ]);
+  });
+
+  it('measures nested nodes against a room inside their parent, and the parent against its own room', () => {
+    const layout = canvas(
+      anchored(
+        'stack',
+        box(
+          0,
+          0,
+          400,
+          400,
+          room(box(0, 0, 400, 200, anchored('leaf', box(0, 150, 100, 100)))),
+          box(0, 350, 450, 10)
+        )
+      )
+    );
+    expect(checkLayout(layout, [stack(leaf)], walk, 'svg')).toEqual([
+      { kind: 'overflow', path: 'body[0].items[0]', type: 'leaf', by: 50 },
+    ]);
+    expect(
+      checkLayout(
+        canvas(
+          anchored('stack', box(0, 0, 400, 400, room(box(0, 0, 400, 200))))
+        ),
+        [stack()],
+        walk,
+        'svg'
+      )
+    ).toEqual([]);
+  });
+
+  it('compares the nodes inside a room with each other, not with a node outside it', () => {
+    const layout = canvas(
+      anchored(
+        'stack',
+        box(
+          0,
+          0,
+          400,
+          400,
+          room(
+            box(
+              0,
+              0,
+              400,
+              200,
+              anchored('leaf', box(0, 0, 100, 50)),
+              anchored('leaf', box(0, 30, 100, 40))
+            )
+          ),
+          anchored('leaf', box(0, 10, 100, 40))
+        )
+      )
+    );
+    expect(checkLayout(layout, [stack(leaf, leaf, leaf)], walk, 'svg')).toEqual(
+      [
+        {
+          kind: 'overlap',
+          path: 'body[0].items[0]',
+          type: 'leaf',
+          with: { path: 'body[0].items[1]', type: 'leaf' },
+          by: 20,
+        },
+      ]
+    );
   });
 
   it('ignores sub-pixel spill', () => {

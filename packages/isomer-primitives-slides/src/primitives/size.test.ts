@@ -11,8 +11,13 @@ import { font } from '../theme/base';
 import { heading } from '../theme/components/heading';
 import { scalePx } from '../theme/scale';
 
-import { emWidth, sizeForLines, sizeForLoad, widestWord } from './size';
-import { headingCrowding } from './slide_heading/fit';
+import {
+  emWidth,
+  rowLoad,
+  sizeForLines,
+  sizeForLoad,
+  widestWord,
+} from './size';
 
 const steps = { l: font.size.px200, m: font.size.px128, s: font.size.px96 };
 
@@ -33,6 +38,14 @@ describe('sizeForLoad', () => {
   it('keeps an explicit size', () => {
     expect(sizeForLoad('s', 1, budget)).toBe('s');
     expect(sizeForLoad('l', 1000, budget, 3)).toBe('l');
+  });
+});
+
+describe('rowLoad', () => {
+  it('multiplies the longest item by the item count', () => {
+    expect(rowLoad([['ab', 'cd'], ['abc', undefined], ['a']])).toBe(12);
+    expect(rowLoad([['日本']])).toBe(4);
+    expect(rowLoad([])).toBe(0);
   });
 });
 
@@ -58,34 +71,5 @@ describe('text measures', () => {
     expect(emWidth('abc', font.tracking.max)).toBeLessThan(
       emWidth('abc', none)
     );
-  });
-});
-
-describe('heading crowding', () => {
-  const sentence =
-    'A lede long enough to take two lines of the heading measure at the lede size on the canvas.';
-
-  it('is 1 under a two-line title and a two-line lede', () => {
-    expect(
-      headingCrowding({
-        type: 'slideHeading',
-        title: 'A title long enough to wrap onto a second line of the slide',
-        lede: sentence,
-      })
-    ).toBeCloseTo(1);
-  });
-
-  it('is below 1 under a short heading, and above 1 under a three-line one', () => {
-    expect(
-      headingCrowding({ type: 'slideHeading', title: 'Short' })
-    ).toBeLessThan(1);
-    expect(
-      headingCrowding({
-        type: 'slideHeading',
-        title:
-          'A title so long that it wraps past two lines and onto a third line, even at the smallest step it can take',
-        lede: `${sentence} ${sentence}`,
-      })
-    ).toBeGreaterThan(1);
   });
 });

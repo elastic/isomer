@@ -5,15 +5,24 @@
  * 2.0.
  */
 
+import { agendaModule } from './primitives/slide_agenda/styles';
 import { barsModule } from './primitives/slide_bars/styles';
 import { bulletsModule } from './primitives/slide_bullet_list/styles';
+import { closingModule } from './primitives/slide_closing/styles';
 import { codeModule } from './primitives/slide_code/styles';
+import { definitionsModule } from './primitives/slide_definitions/styles';
 import { deltaModule } from './primitives/slide_delta/styles';
+import { fanoutModule } from './primitives/slide_fanout/styles';
 import { frameModule } from './primitives/slide_frame/styles';
 import { headingModule } from './primitives/slide_heading/styles';
+import { listModule } from './primitives/slide_list/styles';
+import { quoteModule } from './primitives/slide_quote/styles';
+import { sectionModule } from './primitives/slide_section/styles';
+import { sourceModule } from './primitives/slide_source/styles';
 import { splitModule } from './primitives/slide_split/styles';
 import { stackModule } from './primitives/slide_stack/styles';
 import { statModule } from './primitives/slide_stat/styles';
+import { statementModule } from './primitives/slide_statement/styles';
 import { statsModule } from './primitives/slide_stats/styles';
 import { territoryModule } from './primitives/slide_territory_group/styles';
 import { titleModule } from './primitives/slide_title/styles';
@@ -37,15 +46,24 @@ export const slideModules = {
   connector: connectorModule,
   marks: marksModule,
   placeholder: placeholderModule,
+  agenda: agendaModule,
   bars: barsModule,
   bullets: bulletsModule,
+  closing: closingModule,
   code: codeModule,
+  definitions: definitionsModule,
   delta: deltaModule,
+  fanout: fanoutModule,
   frame: frameModule,
   heading: headingModule,
+  list: listModule,
+  quote: quoteModule,
+  section: sectionModule,
+  source: sourceModule,
   split: splitModule,
   stack: stackModule,
   stat: statModule,
+  statement: statementModule,
   stats: statsModule,
   territory: territoryModule,
   title: titleModule,

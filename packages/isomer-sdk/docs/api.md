@@ -44,6 +44,7 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | `someBodyNode` | Predicate over a body, following children |
 | `isVisibleOnSurface`, `rendersOnSurface` | Surface-visibility checks |
 | `nodeAnchor`, `NODE_ANCHOR_ATTRIBUTE` | Props a `react` renderer spreads on its root so its element can be found; empty unless the HTML surface, or outside it `context.anchors`, turns anchors on |
+| `layoutRoom`, `LAYOUT_ROOM_ATTRIBUTE` | Props a renderer spreads on an element inside its node, such as a frame's body, so `checkLayout` measures the nodes nested in it against that element; rendered when `nodeAnchor` would be |
 | `withNodeAnchors` | A view of a context with anchors on, as an enhancement declaring `anchors: true` turns them on |
 | `withoutAnchors` | A context under which nothing renders an anchor, for content that is not one of a node's `children` |
 | `findNodeElementPairs` | Each `react`-visible node of a body, in pre-order, with its anchored element under a DOM root |
@@ -103,7 +104,7 @@ Zod helpers so a pack states constraints the same way everywhere: `z`, `enumOf`,
 
 Block Kit types: `SlackBlock` and its variants `SlackHeaderBlock` (`SlackHeaderLevel`), `SlackSectionBlock` (`SlackSectionAccessory`), `SlackContextBlock`, `SlackDividerBlock`, `SlackImageBlock`, `SlackVideoBlock`, `SlackActionsBlock` (`SlackActionElement`), `SlackTableBlock` (`SlackTableCell`, `SlackTableColumnSetting`, `SlackRawTextElement`), `SlackRichTextBlock` (`SlackRichTextBlockElement`, `SlackRichTextSection`, `SlackRichTextList`, `SlackRichTextPreformatted`, `SlackRichTextQuote`, `SlackRichTextInline`, `SlackRichTextText`, `SlackRichTextLink`, `SlackRichTextTag`, `SlackRichTextStyle`, `SlackTagColor`); text objects `SlackTextObject`, `SlackPlainTextObject`, `SlackMrkdwnTextObject`; elements `SlackButtonElement`, `SlackImageElement`, `SlackStaticSelectElement`, `SlackMultiStaticSelectElement`, `SlackOverflowElement`, `SlackRadioButtonsElement`, `SlackCheckboxesElement`, `SlackOptionObject`, `SlackOptionGroup`.
 
-mrkdwn formatters: `escapeMrkdwn`, `bold`, `italic`, `strike`, `code`, `codeBlock`, `link`, `clampSlackText`, `formatHeaderText`, `joinMrkdwn`, `gfmToSlackMrkdwn`, `gfmToSlackBlocks`, and `markdownContentToSlackBlocks` for content built with `md`. Element constructors, each clamped to the Slack budget: `slackPlainText`, `slackActionId`, `slackSelectOption` (`SlackSelectOptionInput`), `slackStaticSelect`, `slackOverflowElement` (`SlackOverflowOptionInput`), `slackUrlButton`, `slackButtonStyle`.
+mrkdwn formatters: `escapeMrkdwn`, `bold`, `italic`, `strike`, `code`, `codeBlock`, `link`, `slackLinkUrl` (the URL `link` would link, or `null`), `clampSlackText`, `formatHeaderText`, `joinMrkdwn`, `gfmToSlackMrkdwn`, `gfmToSlackBlocks`, and `markdownContentToSlackBlocks` for content built with `md`. Element constructors, each clamped to the Slack budget: `slackPlainText`, `slackActionId`, `slackSelectOption` (`SlackSelectOptionInput`), `slackStaticSelect`, `slackOverflowElement` (`SlackOverflowOptionInput`), `slackUrlButton`, `slackButtonStyle`.
 
 ## `./author`
 

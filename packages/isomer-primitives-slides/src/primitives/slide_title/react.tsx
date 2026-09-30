@@ -12,9 +12,9 @@ import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { LogoMark } from '../../render/logo';
 import { marksReact } from '../../render/marks';
-import { columnWidth, frameContentWidth } from '../../theme/components/frame';
 import { title as theme, titleShares } from '../../theme/components/title';
-import { sizeForLines } from '../size';
+import { slideLayout, withLayout } from '../layout';
+import { sizeForLines, trackWidth } from '../size';
 
 import { titleModule } from './styles';
 import type { SlideTitleNode } from './types';
@@ -25,6 +25,9 @@ export const react = (
   { context, scope }: SlideReactEnv
 ): ReactNode => {
   const { handles: styles } = titleModule;
+  const { width, height } = slideLayout(context);
+  const column = (index: 0 | 1) =>
+    trackWidth(width, titleShares, theme.columnGap, index);
   return (
     <div
       {...nodeAnchor(context, { type })}
@@ -45,9 +48,7 @@ export const react = (
                 size,
                 title,
                 theme.display.tracking,
-                aside
-                  ? columnWidth(titleShares, theme.columnGap)
-                  : frameContentWidth,
+                aside ? column(0) : width,
                 theme.displaySizes
               )
             ]
@@ -70,7 +71,10 @@ export const react = (
       </div>
       {aside ? (
         <div className={cls(context, styles.aside)}>
-          {scope.renderReact(aside, context)}
+          {scope.renderReact(
+            aside,
+            withLayout(context, { width: column(1), height })
+          )}
         </div>
       ) : null}
     </div>

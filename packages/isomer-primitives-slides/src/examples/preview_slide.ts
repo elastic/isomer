@@ -7,7 +7,9 @@
 
 import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 
-const inverseTypes = new Set(['slideTitle']);
+const inverseTypes = new Set(['slideClosing', 'slideSection', 'slideTitle']);
+/** Page slides that open without a heading. */
+const openerTypes = new Set(['slideQuote', 'slideStatement']);
 
 /** A frame as it is; anything else in one, under a heading and lede or alone on the tone its kind takes. */
 export const previewSlide = (node: PrimitiveNode): Composition => ({
@@ -23,16 +25,17 @@ export const previewSlide = (node: PrimitiveNode): Composition => ({
           sectionNumber: '01',
           url: 'https://elastic.github.io/isomer',
           tone: inverseTypes.has(node.type) ? 'inverse' : 'page',
-          body: inverseTypes.has(node.type)
-            ? [node]
-            : [
-                {
-                  type: 'slideHeading',
-                  title: `Preview of ${node.type}`,
-                  lede: 'A heading gives the primitive its real place in the frame.',
-                },
-                node,
-              ],
+          body:
+            inverseTypes.has(node.type) || openerTypes.has(node.type)
+              ? [node]
+              : [
+                  {
+                    type: 'slideHeading',
+                    title: `Preview of ${node.type}`,
+                    lede: 'A heading gives the primitive its real place in the frame.',
+                  },
+                  node,
+                ],
         } as PrimitiveNode),
   ],
 });
