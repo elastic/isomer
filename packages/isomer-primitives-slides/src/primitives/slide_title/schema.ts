@@ -7,7 +7,7 @@
 
 import { unresolvedBodyNodeSchema, z } from '@elastic/isomer-sdk';
 
-import { layoutCheckNote, lineText, wrappedText } from '../authored_text';
+import { lineText, wrappedText } from '../authored_text';
 import { sizeField } from '../size';
 
 const definitionSchema = z
@@ -31,21 +31,21 @@ export const schema = z
       )
       .optional(),
     title: wrappedText().describe(
-      `The deck’s subject, usually a single name. Set very large; one or two words, since the type steps down only so far and a longer title can run past the slide; ${layoutCheckNote}.`
+      'The deck’s subject, usually a single name. Set very large; one or two words.'
     ),
     tagline: wrappedText()
       .describe(
-        `The deck’s promise in one short sentence; a long one can run past the slide, and ${layoutCheckNote}. \`code\` and \`**strong**\` marks are allowed.`
+        'The deck’s promise in one short sentence. `code` and `**strong**` marks are allowed.'
       )
       .optional(),
     definition: definitionSchema
       .describe(
-        `A dictionary-style line under the tagline that explains the name. A long one can run past the slide; ${layoutCheckNote}.`
+        'A dictionary-style line under the tagline that explains the name.'
       )
       .optional(),
     aside: unresolvedBodyNodeSchema
       .describe(
-        `One compact node drawn beside the title in a column under half the slide, such as a short \`slideBulletList\` of what the subject does. Omit to leave the title alone. A node keeps its size there, so a large one can run past the slide; ${layoutCheckNote}.`
+        'One compact node drawn beside the title in a column under half the slide, such as a short `slideBulletList` of what the subject does. Omit to leave the title alone.'
       )
       .optional(),
     size: sizeField(),

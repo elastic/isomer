@@ -15,12 +15,8 @@ import {
   codeLineMaxLength,
   codeMaxLines,
 } from '../../theme/components/code';
-import { layoutCheckNote, lineText } from '../authored_text';
+import { authoredTextMaxLength, lineText } from '../authored_text';
 import { crossRefine } from '../cross_field';
-
-// Past this many UTF-16 units a line fits no panel, so it is refused before measuring.
-const RAW_LINE_LIMIT =
-  Math.max(codeLineMaxLength(1, false), codeLineMaxLength(1, true)) * 8;
 
 const panelSchema = z
   .object({
@@ -35,11 +31,11 @@ const panelSchema = z
       )
       .optional(),
     lines: z
-      .array(z.string().max(RAW_LINE_LIMIT))
+      .array(z.string().max(authoredTextMaxLength))
       .min(1)
       .max(codeMaxLines)
       .describe(
-        `Source, one entry per line, indented with spaces rather than tabs. Use an empty string for a blank line. 1 to ${codeMaxLines} lines; while every panel has ${codeDenseAfter} or fewer, they stay at the larger size. Under a two-line heading and lede, the most lines can run past the slide; ${layoutCheckNote}.`
+        `Source, one entry per line, indented with spaces rather than tabs. Use an empty string for a blank line. 1 to ${codeMaxLines} lines; while every panel has ${codeDenseAfter} or fewer, they stay at the larger size.`
       ),
     highlightLines: z
       .array(z.number().int().positive())

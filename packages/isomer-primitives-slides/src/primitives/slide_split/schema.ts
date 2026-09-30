@@ -18,7 +18,7 @@ import {
   slideSplitRatios,
   slideTones,
 } from '../../theme/variants';
-import { layoutCheckNote, lineText, wrappedText } from '../authored_text';
+import { lineText, wrappedText } from '../authored_text';
 import { crossRefine } from '../cross_field';
 
 import type { SlideSplitPane } from './types';
@@ -40,7 +40,7 @@ const paneSchema = (nodeSchema: ZodType<unknown>) =>
         .min(1)
         .max(6)
         .describe(
-          `One to six slide nodes, top to bottom, e.g. a slideBulletList of short points or a slideCode. They stack on their own, with no slideStack around them. Nodes keep their size in a pane, so a full one can run past the slide; ${layoutCheckNote}.`
+          'One to six slide nodes, top to bottom, e.g. a slideBulletList of short points or a slideCode. They stack on their own, with no slideStack around them.'
         ),
     })
     .strict()
@@ -80,7 +80,7 @@ export const buildSchema = <TPanes extends ZodType>(panes: TPanes) =>
         .optional(),
       footnote: wrappedText()
         .describe(
-          `One sentence under both columns that draws the conclusion; a long one can run past the slide, and ${layoutCheckNote}. \`code\` and \`**strong**\` marks are allowed.`
+          'One sentence under both columns that draws the conclusion. `code` and `**strong**` marks are allowed.'
         )
         .optional(),
     })

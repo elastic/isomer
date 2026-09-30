@@ -18,7 +18,7 @@ sources:
 3. Implement `react`, `text`, `markdown`, and `slack`. `markdown` returns `md` builder content, never a string. Reuse `react` for image layout, and spread `nodeAnchor` on its root.
 4. If you draw inside an inline `<svg>`, set literal `fill` / `stroke` alongside the class.
 5. A `tone` is never color alone: put `ToneCue` first in the toned title and prefix `toneCueText(tone)` on text, Markdown, and Slack.
-6. Add an example at the most content the schema takes, so the fit test measures it. If it overflows under the tallest heading, end the field's `describe` with `layoutCheckNote`.[^docs]
+6. Add an example at the most content the schema takes, so the fit test measures it. Cap authored strings with `lineText()` or `wrappedText()`, whose `authoredTextMaxLength` is an input-size guard, and leave overflow to the layout check.[^docs]
 
 Related: [one source](/slides/concepts/one-source.md), [no svg renderer](/slides/concepts/no-svg-renderer.md).
 

@@ -85,7 +85,7 @@ export const slideHeadingPrimitive = definePrimitive({
 
 Leave both type arguments inferred. Passing `TNode` alone widens the schema and drops field brands. The node type is `z.infer<typeof schema> & PrimitiveNode`, exported from `schema.ts`.
 
-An authored string is `lineText()` or `wrappedText()` from `src/primitives/authored_text.ts`, never a bare `z.string()`. Each caps its length at more than the canvas holds in its smallest, narrowest type, on one line or across the body, so validation refuses oversized text before any renderer parses marks or estimates a size.
+An authored string is `lineText()` or `wrappedText()` from `src/primitives/authored_text.ts`, never a bare `z.string()`. Both cap its length at `authoredTextMaxLength` (10,000 characters), an input-size guard against far too much text rather than a layout limit, so validation refuses it before any renderer parses marks or estimates a size. Whether text fits is the layout check's job, not the schema's.
 
 There is no `svg` renderer, and adding one is the mistake this pack exists to rule out. The image surface lays out the `react` tree against the pack's stylesheet, so a second hand-authored tree is a second thing to keep in sync and a second thing to get wrong. [Drawing inside an `svg`](#drawing-inside-an-svg) covers the one place that equivalence stops.
 
@@ -167,9 +167,9 @@ A container that also draws chrome of its own sets two more. `hasOwnContent: () 
 Each primitive's `index.test.ts` covers its schema rejections and every surface's output. These pack-level tests run over the whole registry, so a new primitive is covered by registering it:
 
 - `src/content_parity.test.ts` checks that text, Markdown, and Slack carry every authored string of every example, reading Markdown back through `mdast-util-from-markdown` with GFM and Slack mrkdwn back to its text; that entity-like text such as `&lt;` and unpaired `` ` `` or `*` print as authored, one field at a time; and that a line break in a one-line field reads as a space on each surface.
-- `src/examples/fit.test.ts` renders every example on a slide (a frame as it is, a title slide alone, anything else under a heading and lede), measures it with takumi, and expects no finding from `checkLayout` and nothing past the frame's body. Give each primitive an example at its most content, the most items, lines, or panels its schema takes, so the test measures the worst case. It measures each again under the tallest heading, and an example that overflows there fails unless its primitive's `describe` carries `layoutCheckNote`. The note belongs on the field that can overflow, or one that holds it: a field with no cap (nested nodes, an uncapped array or string) always, and a capped one when it overflows at its cap.
+- `src/examples/fit.test.ts` renders every example on a slide (a frame as it is, a title slide alone, anything else under a heading and lede), measures it with takumi, and expects no finding from `checkLayout` and nothing past the frame's body. Give each primitive an example at its most content, the most items, lines, or panels its schema takes, so the test measures the worst case.
 - `src/conformance.test.ts` runs the SDK's conformance harness.
-- `src/primitives/authored_text.test.ts` fails when any string in an example accepts more text than the body can draw.
+- `src/primitives/authored_text.test.ts` fails when any string in an example accepts more than `authoredTextMaxLength`.
 - `src/heading_levels.test.ts` fails when an example's HTML headings and Markdown headings differ in level or order.
 
 The tests that rasterize need `@elastic/isomer-image-takumi` and `@fontsource/*` as devDependencies.

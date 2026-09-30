@@ -8,7 +8,7 @@
 import { unresolvedBodyNodeSchema, z } from '@elastic/isomer-sdk';
 
 import { slideFrameTones } from '../../theme/variants';
-import { layoutCheckNote, lineText } from '../authored_text';
+import { lineText } from '../authored_text';
 
 import { FRAME_URL_MESSAGE, sanitizeFrameUrl } from './url';
 
@@ -20,7 +20,7 @@ export const schema = z
       .array(unresolvedBodyNodeSchema)
       .min(1)
       .describe(
-        `Slide content, top to bottom. Open a content slide with \`slideHeading\`. At least one node. Nodes keep their size, so many can run past the footer; ${layoutCheckNote}.`
+        'Slide content, top to bottom. Open a content slide with `slideHeading`. At least one node.'
       ),
     brand: lineText()
       .describe(

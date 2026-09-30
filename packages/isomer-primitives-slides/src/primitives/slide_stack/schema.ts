@@ -8,7 +8,6 @@
 import { unresolvedBodyNodeSchema, z } from '@elastic/isomer-sdk';
 
 import { slideStackSpacings } from '../../theme/variants';
-import { layoutCheckNote } from '../authored_text';
 
 /** Zod schema for {@link SlideStackNode}. */
 export const schema = z
@@ -24,7 +23,7 @@ export const schema = z
       .array(unresolvedBodyNodeSchema)
       .min(1)
       .describe(
-        `Nodes from top to bottom. At least one. Only useful in a one-node slot or for its spacing; the slide body and a slideSplit pane already stack. Nodes keep their size, so many can run past the slide; ${layoutCheckNote}.`
+        'Nodes from top to bottom. At least one. Only useful in a one-node slot or for its spacing; the slide body and a slideSplit pane already stack.'
       ),
   })
   .strict();

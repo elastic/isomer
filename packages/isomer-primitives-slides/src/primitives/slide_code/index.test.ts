@@ -161,7 +161,7 @@ describe('slideCode line width', () => {
     expect(errorPaths(panel(['e\u0301'.repeat(one)]))).toEqual([]);
   });
 
-  it('refuses a line far past any panel before measuring it', () => {
+  it('refuses a line past the input-size guard before measuring it', () => {
     expect(errorPaths(panel(['x'.repeat(100_000)]))).toContainEqual(
       expect.stringMatching(
         /^body\[0\]\.body\[0\]\.panels\[0\]\.lines\[0\]: must be at most \d+ characters$/
