@@ -16,12 +16,15 @@ import { fanoutModule } from './primitives/slide_fanout/styles';
 import { frameModule } from './primitives/slide_frame/styles';
 import { headingModule } from './primitives/slide_heading/styles';
 import { listModule } from './primitives/slide_list/styles';
+import { matrixModule } from './primitives/slide_matrix/styles';
+import { quadrantModule } from './primitives/slide_quadrant/styles';
 import { quoteModule } from './primitives/slide_quote/styles';
 import { sectionModule } from './primitives/slide_section/styles';
 import { sourceModule } from './primitives/slide_source/styles';
 import { splitModule } from './primitives/slide_split/styles';
 import { stackModule } from './primitives/slide_stack/styles';
 import { statementModule } from './primitives/slide_statement/styles';
+import { tableModule } from './primitives/slide_table/styles';
 import { territoryModule } from './primitives/slide_territory_group/styles';
 import { titleModule } from './primitives/slide_title/styles';
 import { transcriptModule } from './primitives/slide_transcript/styles';
@@ -54,12 +57,15 @@ export const slideModules = {
   frame: frameModule,
   heading: headingModule,
   list: listModule,
+  matrix: matrixModule,
+  quadrant: quadrantModule,
   quote: quoteModule,
   section: sectionModule,
   source: sourceModule,
   split: splitModule,
   stack: stackModule,
   statement: statementModule,
+  table: tableModule,
   territory: territoryModule,
   title: titleModule,
   transcript: transcriptModule,

@@ -23,12 +23,29 @@ import { fullExample as definitionsExample } from '../primitives/slide_definitio
 import { wideExample as fanoutExample } from '../primitives/slide_fanout/examples';
 import { tallestExample } from '../primitives/slide_heading/examples';
 import { fullExample as listExample } from '../primitives/slide_list/examples';
+import {
+  fullExample as matrixFullExample,
+  pairExample,
+} from '../primitives/slide_matrix/examples';
+import {
+  example as quadrantExample,
+  fullExample as quadrantFullExample,
+} from '../primitives/slide_quadrant/examples';
+import type { SlideQuadrantNode } from '../primitives/slide_quadrant/schema';
+import {
+  example as tableExample,
+  fullExample as tableFullExample,
+} from '../primitives/slide_table/examples';
+import { tableSize } from '../primitives/slide_table/fit';
+import type { SlideTableNode } from '../primitives/slide_table/schema';
 import { slideDeckPrimitives } from '../registry';
 import { agendaFit } from '../theme/components/agenda';
 import {
   definitionsFit,
   definitionsRowFit,
 } from '../theme/components/definitions';
+import { matrixFit } from '../theme/components/matrix';
+import { quadrantFit } from '../theme/components/quadrant';
 import { quoteFit } from '../theme/components/quote';
 import { statementFit } from '../theme/components/statement';
 
@@ -91,6 +108,22 @@ describe('the largest steps a slide with no heading takes still fit', () => {
     type: 'view',
     body: [{ type: 'slideFrame', body: [node] } as PrimitiveNode],
   });
+  const [, typical = []] = tableExample.rows ?? [];
+  const tableRows = (count: number): SlideTableNode => ({
+    ...tableExample,
+    rows: Array.from({ length: count }, () => [...typical]),
+  });
+  const quadrantWith = (items: number): SlideQuadrantNode => {
+    const top = Math.ceil(items / 2);
+    const bottom = items - top;
+    return {
+      ...quadrantExample,
+      quadrants: [top, top, bottom, bottom].map((count, index) => ({
+        label: `Cell ${index}`,
+        items: Array.from({ length: count }, (_, item) => `item ${item}`),
+      })),
+    };
+  };
   const term = (length: number) => ({
     term: 'ledger',
     body: prose(length - 'ledger'.length),
@@ -131,6 +164,44 @@ describe('the largest steps a slide with no heading takes still fit', () => {
         ),
       },
     },
+    {
+      step,
+      variant: 'matrix-cellPadding',
+      node: {
+        ...pairExample,
+        rows: Array.from(
+          {
+            length: Math.min(
+              matrixFullExample.rows.length,
+              most(matrixFit[step])
+            ),
+          },
+          () => pairExample.rows[0]!
+        ),
+      },
+    },
+    {
+      step,
+      variant: 'quadrant-cellSize',
+      node: quadrantWith(
+        Math.min(
+          2 * (quadrantFullExample.quadrants[0]?.items.length ?? 0),
+          most(quadrantFit[step])
+        )
+      ),
+    },
+    {
+      step,
+      variant: 'table-headStep',
+      node: tableRows(
+        Math.max(
+          ...Array.from(
+            { length: tableFullExample.rows?.length ?? 0 },
+            (_, index) => index + 1
+          ).filter((count) => tableSize(tableRows(count)) === step)
+        )
+      ),
+    },
   ]);
 
   it.each(steps)('$variant at $step', async ({ step, variant, node }) => {
@@ -151,7 +222,7 @@ describe('checkLayout reports a node past the frame body', () => {
     ),
   };
 
-  it.each([fanoutExample, listExample, halfWrappedAgenda])(
+  it.each([fanoutExample, listExample, halfWrappedAgenda, tableFullExample])(
     '$type below the tallest heading',
     async (node) => {
       const slide: Composition = {

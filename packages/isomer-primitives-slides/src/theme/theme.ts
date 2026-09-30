@@ -18,6 +18,8 @@ import { frame } from './components/frame';
 import { heading } from './components/heading';
 import { list } from './components/list';
 import { marks } from './components/marks';
+import { matrix } from './components/matrix';
+import { quadrant } from './components/quadrant';
 import { quote } from './components/quote';
 import { section } from './components/section';
 import { connector, glyph, label, link, tone } from './components/shared';
@@ -25,6 +27,7 @@ import { source } from './components/source';
 import { split } from './components/split';
 import { stack } from './components/stack';
 import { statement } from './components/statement';
+import { table } from './components/table';
 import { territoryGroup } from './components/territory_group';
 import { title } from './components/title';
 import { transcript } from './components/transcript';
@@ -59,12 +62,15 @@ export const SLIDE_THEME = {
   frame,
   heading,
   list,
+  matrix,
+  quadrant,
   quote,
   section,
   source,
   split,
   stack,
   statement,
+  table,
   territoryGroup,
   title,
   transcript,

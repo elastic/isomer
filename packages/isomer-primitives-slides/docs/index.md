@@ -58,6 +58,9 @@ runtime.surfaces.text.render(composition);
 | `slideDefinitions` | Terms and their meanings as a ruled glossary. |
 | `slideFanout` | One source branching to several unordered targets. |
 | `slideTerritoryGroup` | Who owns what, one color-keyed column per owner. |
+| `slideTable` | A headed table of short cells, optionally in labeled groups. |
+| `slideMatrix` | Yes, partial, or no marks for each row against each column. |
+| `slideQuadrant` | Items sorted into four quadrants by two labeled axes. |
 | `slideCode` | Source in one panel, or two joined by an arrow. |
 | `slideDiff` | Source with the lines a change added and removed marked. |
 | `slideCommand` | One shell command on a single line, with an optional [Copy button](copy.md). |

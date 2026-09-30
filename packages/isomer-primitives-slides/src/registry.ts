@@ -20,12 +20,15 @@ import { slideFanoutPrimitive } from './primitives/slide_fanout';
 import { slideFramePrimitive } from './primitives/slide_frame';
 import { slideHeadingPrimitive } from './primitives/slide_heading';
 import { slideListPrimitive } from './primitives/slide_list';
+import { slideMatrixPrimitive } from './primitives/slide_matrix';
+import { slideQuadrantPrimitive } from './primitives/slide_quadrant';
 import { slideQuotePrimitive } from './primitives/slide_quote';
 import { slideSectionPrimitive } from './primitives/slide_section';
 import { slideSourcePrimitive } from './primitives/slide_source';
 import { slideSplitPrimitive } from './primitives/slide_split';
 import { slideStackPrimitive } from './primitives/slide_stack';
 import { slideStatementPrimitive } from './primitives/slide_statement';
+import { slideTablePrimitive } from './primitives/slide_table';
 import { slideTerritoryGroupPrimitive } from './primitives/slide_territory_group';
 import { slideTitlePrimitive } from './primitives/slide_title';
 import { slideTranscriptPrimitive } from './primitives/slide_transcript';
@@ -43,12 +46,15 @@ export const slideDeckPrimitives = [
   slideFramePrimitive,
   slideHeadingPrimitive,
   slideListPrimitive,
+  slideMatrixPrimitive,
+  slideQuadrantPrimitive,
   slideQuotePrimitive,
   slideSectionPrimitive,
   slideSourcePrimitive,
   slideSplitPrimitive,
   slideStackPrimitive,
   slideStatementPrimitive,
+  slideTablePrimitive,
   slideTerritoryGroupPrimitive,
   slideTitlePrimitive,
   slideTranscriptPrimitive,
