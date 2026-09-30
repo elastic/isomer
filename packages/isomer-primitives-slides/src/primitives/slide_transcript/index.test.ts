@@ -56,44 +56,45 @@ describe('slideTranscript examples', () => {
 
 describe('slideTranscript in Slack past a section', () => {
   const past = 'x'.repeat(3001);
+  const pieces = ['x'.repeat(3000), 'x'];
 
-  it.each([
-    [
-      'prose',
-      { type: 'rich_text_section', elements: [{ type: 'text', text: past }] },
-    ],
-    [
-      'code',
-      {
-        type: 'rich_text_preformatted',
-        elements: [{ type: 'text', text: past }],
-      },
-    ],
-  ] as const)('keeps a %s turn whole in rich text', (format, body) => {
-    expect(
-      slack({
-        type: 'slideTranscript',
-        turns: [{ role: 'user', format, text: past }],
-      })
-    ).toEqual([
-      {
-        type: 'rich_text',
-        elements: [
-          {
-            type: 'rich_text_section',
-            elements: [
-              {
-                type: 'text',
-                text: roleLabel.user.value.toUpperCase(),
-                style: { bold: true },
-              },
-            ],
-          },
-          body,
-        ],
-      },
-    ]);
-  });
+  it.each(['rich_text_section', 'rich_text_preformatted'] as const)(
+    'splits a turn past a section into adjacent %s elements',
+    (type) => {
+      expect(
+        slack({
+          type: 'slideTranscript',
+          turns: [
+            {
+              role: 'user',
+              format: type === 'rich_text_section' ? 'prose' : 'code',
+              text: past,
+            },
+          ],
+        })
+      ).toEqual([
+        {
+          type: 'rich_text',
+          elements: [
+            {
+              type: 'rich_text_section',
+              elements: [
+                {
+                  type: 'text',
+                  text: roleLabel.user.value.toUpperCase(),
+                  style: { bold: true },
+                },
+              ],
+            },
+            ...pieces.map((text) => ({
+              type,
+              elements: [{ type: 'text', text }],
+            })),
+          ],
+        },
+      ]);
+    }
+  );
 });
 
 describe('slideTranscript output', () => {
