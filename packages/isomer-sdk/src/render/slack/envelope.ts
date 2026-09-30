@@ -25,13 +25,14 @@ import {
   type SlackOptionObject,
   type SlackRichTextBlockElement,
   type SlackRichTextInline,
+  type SlackRichTextSection,
+  type SlackRichTextText,
   type SlackSectionBlock,
   type SlackTableBlock,
   type SlackTableCell,
   type SlackTextObject,
 } from './blocks';
 import {
-  bold,
   clampSlackText,
   escapeMrkdwn,
   formatHeaderText,
@@ -85,9 +86,9 @@ export interface SlackEnvelopeResult {
  *
  * Degradation for a node with no `slack` renderer is the dispatcher's, which
  * has to own it to reach a child nested inside a container. The result is
- * fitted to Slack's limits — Slack-limited text is clamped, oversized tables
- * become sections, spacers and then whole blocks are dropped — so the output is
- * always postable. `assets` stays empty unless `collectAssets` is set.
+ * fitted to Slack's limits — Slack-limited text is clamped, tables past the
+ * message's cell budget become rich text, spacers and then whole blocks are
+ * dropped — so the output is always postable. `assets` stays empty unless `collectAssets` is set.
  */
 export const renderSlackEnvelope = <TNode extends PrimitiveNode>(
   composition: Composition<TNode>,
@@ -421,41 +422,171 @@ const tableCharCount = (block: SlackTableBlock): number =>
     0
   );
 
-// A table over the message-wide cell budget degrades to one mrkdwn section per
-// row, keyed by the header row, rather than costing the caller the whole
-// message: Slack rejects the payload outright once the aggregate is exceeded.
-const degradeTableToSections = (block: SlackTableBlock): SlackBlock[] => {
-  const [header, ...rows] = block.rows;
-  if (!header) {
-    return [];
+const textRun = (text: string): SlackRichTextText => ({ type: 'text', text });
+
+const richSection = (
+  elements: SlackRichTextInline[]
+): SlackRichTextSection => ({ type: 'rich_text_section', elements });
+
+const rowBreak = richSection([textRun('\n')]);
+
+const cellElements = (
+  cell: SlackTableCell | undefined
+): SlackRichTextBlockElement[] => {
+  if (cell?.type === 'rich_text') {
+    return cell.elements;
   }
-  const labels = header.map((cell) => tableCellText(cell));
-  const section = (text: string): SlackSectionBlock => ({
-    type: 'section',
-    text: {
-      type: 'mrkdwn',
-      text: clampSlackText(text, SLACK_LIMITS.sectionTextChars),
-    },
-  });
-  if (rows.length === 0) {
-    return [section(labels.map(bold).join(' · '))];
+  return cell?.text ? [richSection([textRun(cell.text)])] : [];
+};
+
+const boldInline = (inline: SlackRichTextInline): SlackRichTextInline => ({
+  ...inline,
+  style: { ...inline.style, bold: true },
+});
+
+const boldElement = (
+  element: SlackRichTextBlockElement
+): SlackRichTextBlockElement =>
+  element.type === 'rich_text_list'
+    ? {
+        ...element,
+        elements: element.elements.map((item) => ({
+          ...item,
+          elements: item.elements.map(boldInline),
+        })),
+      }
+    : { ...element, elements: element.elements.map(boldInline) };
+
+const isBlank = (cell: SlackTableCell | undefined): boolean =>
+  cell === undefined || tableCellText(cell).trim() === '';
+
+// A one-section heading leads its cell as `heading: `; any other heading keeps
+// its blocks, bold, above the cell. A blank heading leaves the cell alone.
+const columnElements = (
+  heading: SlackTableCell | undefined,
+  cell: SlackTableCell | undefined
+): SlackRichTextBlockElement[] => {
+  const body = cellElements(cell);
+  if (isBlank(heading)) {
+    return body;
   }
-  return rows.map((row) =>
-    section(
-      labels
-        .map((label, index) => {
-          const cell = row[index];
-          const value = cell ? escapeMrkdwn(tableCellText(cell)) : '';
-          return `${bold(label)}: ${value}`;
-        })
-        .join('\n')
-    )
+  const head = cellElements(heading);
+  const [only] = head;
+  if (head.length !== 1 || only?.type !== 'rich_text_section') {
+    return [...head.map(boldElement), ...body];
+  }
+  const lead = [...only.elements.map(boldInline), textRun(': ')];
+  const [first, ...rest] = body;
+  return first?.type === 'rich_text_section'
+    ? [richSection([...lead, ...first.elements]), ...rest]
+    : [richSection(lead), ...body];
+};
+
+const endsLine = (element: SlackRichTextBlockElement): boolean => {
+  const last = element.elements.at(-1);
+  return last?.type === 'text' && last.text.endsWith('\n');
+};
+
+// Slack runs adjacent sections together, so a section followed by another ends
+// its line.
+const breakSections = (
+  elements: readonly SlackRichTextBlockElement[]
+): SlackRichTextBlockElement[] =>
+  elements.map((element, index) =>
+    element.type === 'rich_text_section' &&
+    elements[index + 1]?.type === 'rich_text_section' &&
+    !endsLine(element)
+      ? richSection([...element.elements, textRun('\n')])
+      : element
   );
+
+// A section, quote, or preformatted element past `sectionTextChars` splits into
+// adjacent ones of its type, a text run at a grapheme boundary; links and tags
+// stay whole.
+const splitLongElement = (
+  element: SlackRichTextBlockElement
+): SlackRichTextBlockElement[] => {
+  if (
+    element.type === 'rich_text_list' ||
+    richTextElementText(element).length <= SLACK_LIMITS.sectionTextChars
+  ) {
+    return [element];
+  }
+  const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+  const chunks: SlackRichTextInline[][] = [];
+  let chunk: SlackRichTextInline[] = [];
+  let room: number = SLACK_LIMITS.sectionTextChars;
+  const flush = (): void => {
+    chunks.push(chunk);
+    chunk = [];
+    room = SLACK_LIMITS.sectionTextChars;
+  };
+  for (const inline of element.elements) {
+    if (inline.type !== 'text') {
+      const { length } = richTextInlineText(inline);
+      if (length > room && chunk.length > 0) {
+        flush();
+      }
+      chunk.push(inline);
+      room -= length;
+      continue;
+    }
+    let text = '';
+    for (const { segment } of graphemes.segment(inline.text)) {
+      if (text.length + segment.length > room && (text || chunk.length > 0)) {
+        if (text) {
+          chunk.push({ ...inline, text });
+        }
+        flush();
+        text = '';
+      }
+      text += segment;
+    }
+    if (text) {
+      chunk.push({ ...inline, text });
+      room -= text.length;
+    }
+  }
+  flush();
+  return chunks.map((elements) => ({ ...element, elements }));
+};
+
+// A table past the message-wide cell budget is replaced by one `rich_text`
+// block. Each row's columns run `heading: cell` to the wider of the header and
+// the row, and a blank section parts the rows. A cell keeps its inlines,
+// styles, and blocks; a header-only table prints its headings.
+const degradeTable = ({
+  rows: [header = [], ...rows],
+}: SlackTableBlock): SlackBlock[] => {
+  const pieces =
+    rows.length === 0
+      ? [
+          header
+            .filter((heading) => !isBlank(heading))
+            .flatMap((heading) => cellElements(heading).map(boldElement)),
+        ]
+      : rows.map((row) =>
+          Array.from(
+            { length: Math.max(header.length, row.length) },
+            (_, column) => columnElements(header[column], row[column])
+          ).flat()
+        );
+  const elements = pieces
+    .filter((piece) => piece.length > 0)
+    .flatMap((piece, index) => (index > 0 ? [rowBreak, ...piece] : piece));
+  return elements.length === 0
+    ? []
+    : [
+        {
+          type: 'rich_text',
+          elements: breakSections(elements).flatMap(splitLongElement),
+        },
+      ];
 };
 
 // Slack counts table cell characters across the whole message, not per block,
-// so a composition whose tables individually fit can still be rejected. Tables
-// are kept in document order until the budget runs out; the rest degrade.
+// so a composition whose tables individually fit can still be rejected. In
+// document order, a table is kept if it fits what the kept ones left.
 const enforceTableCharBudget = (
   blocks: readonly SlackBlock[]
 ): SlackBlock[] => {
@@ -480,7 +611,7 @@ const enforceTableCharBudget = (
       out.push(block);
       continue;
     }
-    out.push(...degradeTableToSections(block));
+    out.push(...degradeTable(block));
   }
   return out;
 };

@@ -23,7 +23,14 @@ import type {
   SlackButtonElement,
   SlackOptionObject,
   SlackPlainTextObject,
+  SlackRichTextBlock,
+  SlackRichTextBlockElement,
+  SlackRichTextInline,
+  SlackRichTextList,
+  SlackRichTextSection,
+  SlackRichTextStyle,
   SlackTableBlock,
+  SlackTableCell,
   SlackVideoBlock,
 } from './blocks';
 import { SLACK_LIMITS } from './blocks';
@@ -152,14 +159,229 @@ describe('Slack envelope transforms', () => {
     ]);
   });
 
-  it('degrades a table that exceeds the message-wide cell budget', () => {
-    const over = SLACK_LIMITS.tableCellCharsPerMessage + 1;
-    const { blocks } = renderSlackEnvelope(
-      { type: 'view', body: [{ type: 'table' }] },
-      dispatcherFor([[tableBlock(over)]])
-    );
-    expect(blocks.some((block) => block.type === 'table')).toBe(false);
-    expect(blocks.some((block) => block.type === 'section')).toBe(true);
+  describe('the message-wide table cell budget', () => {
+    const budget = SLACK_LIMITS.tableCellCharsPerMessage;
+    const limit = SLACK_LIMITS.sectionTextChars;
+    const text = (value: string, style?: SlackRichTextStyle) => ({
+      type: 'text' as const,
+      text: value,
+      ...(style && { style }),
+    });
+    const strong = (value: string) => text(value, { bold: true });
+    const section = (
+      ...elements: SlackRichTextInline[]
+    ): SlackRichTextSection => ({ type: 'rich_text_section', elements });
+    const rich = (
+      ...elements: SlackRichTextBlockElement[]
+    ): SlackTableCell => ({
+      type: 'rich_text',
+      elements,
+    });
+    const list: SlackRichTextList = {
+      type: 'rich_text_list',
+      style: 'bullet',
+      elements: [section(text('first')), section(text('second'))],
+    };
+    const quote: SlackRichTextBlockElement = {
+      type: 'rich_text_quote',
+      elements: [text('quoted')],
+    };
+    const preformatted: SlackRichTextBlockElement = {
+      type: 'rich_text_preformatted',
+      elements: [text('code')],
+    };
+    const inlines: SlackRichTextInline[] = [
+      text('run', { code: true }),
+      text(' and ', { bold: true }),
+      { type: 'link', url: 'https://x.test', text: 'link' },
+      { type: 'tag', text: 'tag', color: 'red' },
+    ];
+    const blank = section(text('\n'));
+    const lead = (heading: string) => [strong(heading), text(': ')];
+
+    const render = (tables: SlackTableBlock[]) =>
+      renderSlackEnvelope(
+        { type: 'view', body: tables.map(() => ({ type: 'table' })) },
+        dispatcherFor(tables.map((table) => [table]))
+      ).blocks.filter((block) => block.type !== 'section');
+    // The first table spends the whole budget, so the second degrades.
+    const degrade = (rows: SlackTableCell[][]) =>
+      render([tableBlock(budget - 1), { type: 'table', rows }]);
+
+    const elementText = (element: SlackRichTextBlockElement): string =>
+      element.type === 'rich_text_list'
+        ? element.elements.map(elementText).join('')
+        : element.elements
+            .map((inline) =>
+              inline.type === 'link' ? (inline.text ?? inline.url) : inline.text
+            )
+            .join('');
+    const cellTexts = (cell: SlackTableCell): string[] =>
+      cell.type === 'raw_text' ? [cell.text] : cell.elements.map(elementText);
+
+    it.each<[string, SlackTableCell[][], SlackRichTextBlockElement[]]>([
+      [
+        'plain cells, rows parted by a blank section',
+        [
+          [cell('H'), cell('I')],
+          [cell('a'), cell('b')],
+          [cell('c'), cell('d')],
+        ],
+        [
+          section(...lead('H'), text('a'), text('\n')),
+          section(...lead('I'), text('b'), text('\n')),
+          blank,
+          section(...lead('H'), text('c'), text('\n')),
+          section(...lead('I'), text('d')),
+        ],
+      ],
+      [
+        'rich inlines in a cell and a heading',
+        [
+          [rich(section(text('iOS', { code: true })))],
+          [rich(section(...inlines))],
+        ],
+        [
+          section(
+            text('iOS', { code: true, bold: true }),
+            text(': '),
+            ...inlines
+          ),
+        ],
+      ],
+      [
+        'empty and blank headings',
+        [
+          [cell(''), cell('  '), cell('H')],
+          [cell('a'), cell('b'), cell('c')],
+        ],
+        [
+          section(text('a'), text('\n')),
+          section(text('b'), text('\n')),
+          section(...lead('H'), text('c')),
+        ],
+      ],
+      [
+        'a heading with blocks',
+        [[rich(list)], [cell('a')]],
+        [
+          {
+            ...list,
+            elements: [section(strong('first')), section(strong('second'))],
+          },
+          section(text('a')),
+        ],
+      ],
+      [
+        'sections, a list, a quote, and preformatted text in cells',
+        [
+          [cell('A'), cell('B')],
+          [
+            rich(section(text('one')), section(text('two')), list),
+            rich(quote, preformatted),
+          ],
+        ],
+        [
+          section(...lead('A'), text('one'), text('\n')),
+          section(text('two')),
+          list,
+          section(...lead('B')),
+          quote,
+          preformatted,
+        ],
+      ],
+      ...[list, quote, preformatted].map(
+        (block): [string, SlackTableCell[][], SlackRichTextBlockElement[]] => [
+          `rows that end and start with a ${block.type}`,
+          [[cell('')], [rich(block)], [rich(block)]],
+          [block, blank, block],
+        ]
+      ),
+      [
+        'a row wider than the header',
+        [[cell('A')], [cell('a'), cell('b')]],
+        [section(...lead('A'), text('a'), text('\n')), section(text('b'))],
+      ],
+      [
+        'a row narrower than the header',
+        [[cell('A'), cell('B')], [cell('a')]],
+        [section(...lead('A'), text('a'), text('\n')), section(...lead('B'))],
+      ],
+      [
+        'a header with no rows',
+        [[cell('A'), cell(''), rich(section(text('B', { code: true })))]],
+        [
+          section(strong('A'), text('\n')),
+          section(text('B', { code: true, bold: true })),
+        ],
+      ],
+      [
+        'a cell past a section’s limit, split without a break',
+        [[cell('H')], [cell('x'.repeat(limit + 2000))]],
+        [
+          section(...lead('H'), text('x'.repeat(limit - 3))),
+          section(text('x'.repeat(2003))),
+        ],
+      ],
+      [
+        'a link whole when it would cross a section’s limit',
+        [[cell('')], [rich(section(text('x'.repeat(limit - 2)), inlines[2]!))]],
+        [section(text('x'.repeat(limit - 2))), section(inlines[2]!)],
+      ],
+      [
+        'every shape at once',
+        [
+          [cell(''), rich(section(text('K', { code: true })))],
+          [cell('row'), rich(quote), cell('extra')],
+          [rich(list)],
+        ],
+        [
+          section(text('row'), text('\n')),
+          section(text('K', { code: true, bold: true }), text(': ')),
+          quote,
+          section(text('extra'), text('\n')),
+          blank,
+          list,
+          section(text('K', { code: true, bold: true }), text(': ')),
+        ],
+      ],
+    ])('keeps %s', (_name, rows, elements) => {
+      const blocks = degrade(rows);
+      expect(blocks.map(({ type }) => type)).toEqual(['table', 'rich_text']);
+      const degraded = blocks[1] as SlackRichTextBlock;
+      expect(degraded).toEqual({ type: 'rich_text', elements });
+      const all = degraded.elements.map(elementText).join('');
+      for (const source of rows.flat()) {
+        for (const piece of cellTexts(source)) {
+          expect(all).toContain(piece.trim());
+        }
+      }
+      for (const element of degraded.elements) {
+        if (element.type !== 'rich_text_list') {
+          expect(elementText(element).length).toBeLessThanOrEqual(limit);
+        }
+      }
+    });
+
+    it.each([
+      ['keeps tables that fit exactly', [4999, 4999], ['table', 'table']],
+      ['degrades the table one past', [4999, 5000], ['table', 'rich_text']],
+      ['degrades one table alone over', [budget], ['rich_text']],
+      [
+        'keeps a later table that fits what is left',
+        [5999, 5999, 3999],
+        ['table', 'rich_text', 'table'],
+      ],
+    ])('%s', (_name, sizes, types) => {
+      const tables = sizes.map(tableBlock);
+      const blocks = render(tables);
+      expect(blocks.map(({ type }) => type)).toEqual(types);
+      blocks.forEach((block, index) => {
+        if (block.type === 'table') {
+          expect(block).toBe(tables[index]);
+        }
+      });
+    });
   });
 
   it('produces a valid header for a title over the header limit', () => {
