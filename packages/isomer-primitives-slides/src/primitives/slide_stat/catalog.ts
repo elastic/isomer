@@ -20,6 +20,7 @@ export const catalog = {
   ],
   avoidWhen: [
     'There are two to four numbers to compare side by side; use slideStats.',
+    'The number is one attribute among many for several items; use slideTable.',
     'The point is how far the number moved from a before to an after; use slideDelta.',
     'There are many comparable values to rank by size; use slideBars.',
   ],

@@ -11,13 +11,17 @@ import { bars } from './components/bars';
 import { bulletList } from './components/bullet_list';
 import { closing } from './components/closing';
 import { code } from './components/code';
+import { command } from './components/command';
 import { definitions } from './components/definitions';
 import { delta } from './components/delta';
+import { diff } from './components/diff';
 import { fanout } from './components/fanout';
 import { frame } from './components/frame';
 import { heading } from './components/heading';
 import { list } from './components/list';
 import { marks } from './components/marks';
+import { matrix } from './components/matrix';
+import { quadrant } from './components/quadrant';
 import { quote } from './components/quote';
 import { section } from './components/section';
 import {
@@ -34,8 +38,10 @@ import { stack } from './components/stack';
 import { stat } from './components/stat';
 import { statement } from './components/statement';
 import { stats } from './components/stats';
+import { table } from './components/table';
 import { territoryGroup } from './components/territory_group';
 import { title } from './components/title';
+import { transcript } from './components/transcript';
 
 /**
  * Every value the pack renders, in one tree. `lightDark` leaves become
@@ -62,12 +68,16 @@ export const SLIDE_THEME = {
   bulletList,
   closing,
   code,
+  command,
   definitions,
   delta,
+  diff,
   fanout,
   frame,
   heading,
   list,
+  matrix,
+  quadrant,
   quote,
   section,
   source,
@@ -76,8 +86,10 @@ export const SLIDE_THEME = {
   stat,
   statement,
   stats,
+  table,
   territoryGroup,
   title,
+  transcript,
 } as const;
 
 export type SlideColorName = keyof typeof color;

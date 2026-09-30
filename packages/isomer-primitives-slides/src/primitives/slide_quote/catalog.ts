@@ -20,6 +20,7 @@ export const catalog = {
   ],
   avoidWhen: [
     'The sentence is your own claim; use slideStatement.',
+    'Several people speak in turn; use slideTranscript.',
     'The source is a report or dataset behind the slide’s figures; cite it with slideSource.',
   ],
   example,

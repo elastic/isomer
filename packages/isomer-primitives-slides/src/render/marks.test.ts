@@ -14,6 +14,7 @@ import {
   marksSlack,
   parseMarks,
   plainText,
+  splitLines,
   stripMarks,
   strongMarksMarkdown,
   strongMarksRichText,
@@ -114,5 +115,24 @@ describe('marks', () => {
       { type: 'text', text: 'now', style: { bold: true } },
       { type: 'text', text: ' please', style: { bold: true } },
     ]);
+  });
+
+  it('splits lines at every terminator, a CRLF pair as one, and keeps blank lines', () => {
+    expect(splitLines('a\r\nb\rc\nd\u2028e\u2029f\n\ng')).toEqual([
+      'a',
+      'b',
+      'c',
+      'd',
+      'e',
+      'f',
+      '',
+      'g',
+    ]);
+  });
+
+  it('splits a long run of terminators in linear time', () => {
+    const started = performance.now();
+    expect(splitLines('\r'.repeat(100_000) + 'x')).toHaveLength(100_001);
+    expect(performance.now() - started).toBeLessThan(1_000);
   });
 });

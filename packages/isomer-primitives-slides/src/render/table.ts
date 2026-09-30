@@ -7,24 +7,31 @@
 
 import { oneLine } from '@elastic/isomer-sdk/author';
 import type {
+  SlackBlock,
   SlackRichTextText,
-  SlackTableBlock,
   SlackTableCell,
 } from '@elastic/isomer-sdk/slack';
 
+import { richTextRun } from './marks';
 import { displayColumns } from './mono';
+
+/** A row of cells, or a heading on its own line. */
+export type TextTableLine = readonly string[] | string;
 
 /** Space-padded columns under a dashed rule. */
 export const textTable = (
   columns: readonly string[],
-  rows: readonly (readonly string[])[]
+  lines: readonly TextTableLine[]
 ): string => {
   const head = columns.map(oneLine);
-  const body = rows.map((row) => row.map(oneLine));
+  const body = lines.map((line) =>
+    typeof line === 'string' ? oneLine(line) : line.map(oneLine)
+  );
+  const rows = body.filter((line) => typeof line !== 'string');
   const widths = head.map((column, index) =>
     Math.max(
       displayColumns(column),
-      ...body.map((row) => displayColumns(row[index] ?? ''))
+      ...rows.map((row) => displayColumns(row[index] ?? ''))
     )
   );
   const line = (cells: readonly string[]) =>
@@ -38,7 +45,7 @@ export const textTable = (
   return [
     line(head),
     line(widths.map((width) => '-'.repeat(width))),
-    ...body.map(line),
+    ...body.map((entry) => (typeof entry === 'string' ? entry : line(entry))),
   ].join('\n');
 };
 
@@ -56,12 +63,19 @@ export const slackTableCell = (
 /** Each cell as its runs. */
 export type SlackTableRow = readonly (readonly SlackRichTextText[])[];
 
-/** A `table` block of wrapped columns; `renderSlackEnvelope` turns one Slack would refuse into rich text. */
+/** One `table` block, a heading line as a bold first cell; the Slack envelope degrades one Slack would reject. */
 export const slackTable = (
   head: SlackTableRow,
-  rows: readonly SlackTableRow[]
-): SlackTableBlock => ({
+  lines: readonly (SlackTableRow | string)[]
+): SlackBlock => ({
   type: 'table',
-  rows: [head, ...rows].map((row) => row.map(slackTableCell)),
+  rows: [
+    head,
+    ...lines.map((line) =>
+      typeof line === 'string'
+        ? [[richTextRun(line, { bold: true })], ...head.slice(1).map(() => [])]
+        : line
+    ),
+  ].map((row) => row.map(slackTableCell)),
   column_settings: head.map(() => ({ is_wrapped: true })),
 });

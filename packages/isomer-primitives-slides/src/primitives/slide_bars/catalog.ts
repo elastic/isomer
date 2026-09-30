@@ -21,6 +21,7 @@ export const catalog = {
   avoidWhen: [
     'There are two to four numbers to remember rather than compare; use slideStats.',
     'One number changed from before to after; use slideDelta.',
+    'Each item has several attributes, not one amount; use slideTable.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

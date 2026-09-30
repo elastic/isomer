@@ -21,6 +21,7 @@ export const catalog = {
   ],
   avoidWhen: [
     'There is one headline number supporting other content; use slideStat.',
+    'Each item has several attributes, not one number; use slideTable.',
     'The numbers are one measure before and after a change; use slideDelta.',
     'There are more than four values, or their relative size is the point; use slideBars.',
   ],

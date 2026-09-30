@@ -33,9 +33,20 @@ export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
   { title: 'Diagrams', types: ['slideFanout', 'slideTerritoryGroup'] },
   {
     title: 'Data',
-    types: ['slideStat', 'slideStats', 'slideDelta', 'slideBars'],
+    types: [
+      'slideStat',
+      'slideStats',
+      'slideDelta',
+      'slideBars',
+      'slideTable',
+      'slideMatrix',
+      'slideQuadrant',
+    ],
   },
-  { title: 'Code', types: ['slideCode'] },
+  {
+    title: 'Code',
+    types: ['slideCode', 'slideDiff', 'slideCommand', 'slideTranscript'],
+  },
 ];
 
 export const slidesPackAuthoring = {
@@ -57,8 +68,16 @@ export const slidesPackAuthoring = {
       'One number before and after a change. change needs both values; leave a value out to show a placeholder.',
     slideBars:
       'Two to six bars in one unit. At most one item is highlighted; max, when given, is at least every value.',
+    slideTable:
+      'A grid of short cells. Give either rows or groups, not both; every row has exactly one cell per column; twelve rows at most across all groups.',
+    slideMatrix:
+      'Yes, partial, or no marks for one to eight rows against two to six columns. Every row has exactly one mark per column; highlight, when given, is an index into columns.',
     slideCode:
       'One or two code panels. Every highlighted line number exists in its panel.',
+    slideDiff:
+      'One snippet with changed lines marked. Each entry in lines is one line of source, with no newline.',
+    slideCommand:
+      'One shell command on a single line, without the prompt. highlightPrefix, when given, starts command.',
     slideAgenda:
       'Two to eight sections of the talk, in order. At most one section is current.',
     slideSource: 'One citation line.',

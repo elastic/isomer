@@ -24,7 +24,7 @@ const runtime = createIsomerRuntime({
   frames: { slide: slideDeckFrame },
 });
 
-/** Keys holding identifiers, enums, or addresses, not authored words. */
+/** Keys holding identifiers, enums, addresses, or words another field already holds. */
 const notWords = new Set([
   'type',
   'id',
@@ -34,14 +34,24 @@ const notWords = new Set([
   'url',
   'size',
   'language',
+  'marks',
   'ratio',
   'divider',
   'spacing',
   'marker',
+  'op',
+  'role',
+  'format',
+  'highlightPrefix',
 ]);
 
 /** Fields whose line breaks are meant, or that no degraded surface prints. */
-const keptAsAuthored = new Set(['slideCode.lines']);
+const keptAsAuthored = new Set([
+  'slideCode.lines',
+  'slideCommand.command',
+  'slideDiff.text',
+  'slideTranscript.text',
+]);
 
 const authoredStrings = (value: unknown, key = ''): string[] => {
   if (notWords.has(key)) {

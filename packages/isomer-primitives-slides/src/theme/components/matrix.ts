@@ -1,0 +1,47 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+import { font, radius, space, stroke, type } from '../base';
+import { literal, px } from '../scale';
+
+export const matrix = {
+  // Track width, not spacing.
+  labelWidth: px(340),
+  head: { ...type.mono, size: font.size.px28, weight: font.weight.medium },
+  headPaddingBottom: space.px18,
+  headRule: stroke.hairline,
+  label: {
+    size: font.size.px30,
+    weight: font.weight.bold,
+    lineHeight: font.lineHeight.item,
+  },
+  rowRule: stroke.panel,
+  // How far the highlighted band reaches above its heading.
+  bandTop: space.px14,
+  bandRadius: radius.chipSmall,
+  // At `s` the label's leading alone spaces the rows, so eight fit under the tallest heading.
+  rowPaddings: { l: space.px20, m: space.px14, s: literal('0') },
+  // Mark geometry, not spacing.
+  markSize: px(28),
+  ring: stroke.rail,
+  dashWidth: px(24),
+  dashHeight: stroke.rail,
+  legendTop: space.px32,
+  legendGap: space.px48,
+  legendItemGap: space.px14,
+  legendMarkSize: px(24),
+  legend: type.bodyS,
+  /** In the legend, the marks' labels, and the degraded tables. */
+  markWords: {
+    full: literal('Yes'),
+    partial: literal('Partial'),
+    none: literal('No'),
+  },
+} as const;
+
+/** `s` drops row padding for up to eight. */
+export const matrixFit = { l: 4, m: 5 } as const;

@@ -40,20 +40,27 @@ export const codeDenseAfter = 10;
 /** Lines a panel holds at `denseText`. */
 export const codeMaxLines = 16;
 
+/** Characters a line holds in a code panel `panel` pixels wide once `inset`, the chrome either side of the text, is taken out. */
+export const codePanelColumns = (
+  panel: number,
+  inset: number,
+  dense: boolean
+): number => {
+  const inner = Math.max(0, panel - 2 * scalePx(code.border) - inset);
+  const size = dense ? code.denseText.size : code.text.size;
+  return Math.floor(inner / (monoAdvance * scalePx(size)));
+};
+
 /** Characters a line holds across `width`, a full-width slide by default, before its panel clips it, by panel count and density. */
 export const codeLineMaxLength = (
   panels: 1 | 2,
   dense: boolean,
   width = frameContentWidth
-): number => {
-  const panel =
+): number =>
+  codePanelColumns(
     panels === 1
       ? width
-      : (width - scalePx(code.arrowWidth) - 2 * scalePx(code.panelGap)) / 2;
-  const inner = Math.max(
-    0,
-    panel - 2 * scalePx(code.border) - 2 * scalePx(code.paddingX)
+      : (width - scalePx(code.arrowWidth) - 2 * scalePx(code.panelGap)) / 2,
+    2 * scalePx(code.paddingX),
+    dense
   );
-  const size = dense ? code.denseText.size : code.text.size;
-  return Math.floor(inner / (monoAdvance * scalePx(size)));
-};
