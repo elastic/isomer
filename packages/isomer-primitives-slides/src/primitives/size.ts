@@ -108,36 +108,82 @@ export const emWidth = (text: string, tracking: ScaleToken): number =>
 export const widestWord = (text: string, tracking: ScaleToken): number =>
   Math.max(0, ...text.split(/\s+/).map((word) => emWidth(word, tracking)));
 
-/** Lines a greedy wrap packs items `advances` px wide into, `gap` px apart, across `width`. */
-export const packedLines = (
-  advances: readonly number[],
+/**
+ * Lines a greedy wrap takes for `words`, each a list of glyph advances in px, `gap` px apart across `width`. As `overflow-wrap: anywhere` does, a word that fits no line starts its own and breaks between glyphs, at least one glyph a line.
+ */
+const breakingLines = (
+  words: readonly (readonly number[])[],
   gap: number,
   width: number
 ): number => {
   let lines = 1;
   let used = 0;
-  for (const advance of advances) {
-    if (used > 0 && used + gap + advance > width) {
+  for (const glyphs of words) {
+    const advance = glyphs.reduce((total, glyph) => total + glyph, 0);
+    if (used > 0 && used + gap + advance <= width) {
+      used += gap + advance;
+      continue;
+    }
+    if (used > 0) {
       lines += 1;
+      used = 0;
+    }
+    if (advance <= width) {
       used = advance;
-    } else {
-      used += (used > 0 ? gap : 0) + advance;
+      continue;
+    }
+    for (const glyph of glyphs) {
+      if (used > 0 && used + glyph > width) {
+        lines += 1;
+        used = glyph;
+      } else {
+        used += glyph;
+      }
     }
   }
   return lines;
 };
 
+/** Lines a greedy wrap packs items `advances` px wide into, `gap` px apart, across `width`; an item never breaks. */
+export const packedLines = (
+  advances: readonly number[],
+  gap: number,
+  width: number
+): number =>
+  breakingLines(
+    advances.map((advance) => [advance]),
+    gap,
+    width
+  );
+
 const words = (text: string): string[] => text.split(/\s+/).filter(Boolean);
 
+/** Lines `text` in Inter ExtraBold at `fontPx` takes across `width`, breaking a word too wide for any line. */
 export const wrappedLines = (
   text: string,
   fontPx: number,
   width: number,
   tracking: ScaleToken
 ): number =>
-  packedLines(
-    words(text).map((word) => emWidth(word, tracking) * fontPx),
+  breakingLines(
+    words(text).map((word) =>
+      [...word].map((glyph) => emWidth(glyph, tracking) * fontPx)
+    ),
     emWidth(' ', tracking) * fontPx,
+    width
+  );
+
+const columnLines = (
+  text: string,
+  advance: number,
+  fontPx: number,
+  width: number
+): number =>
+  breakingLines(
+    words(text).map((word) =>
+      [...word].map((glyph) => displayColumns(glyph) * advance * fontPx)
+    ),
+    advance * fontPx,
     width
   );
 
@@ -146,24 +192,14 @@ export const proseLines = (
   text: string,
   fontPx: number,
   width: number
-): number =>
-  packedLines(
-    words(text).map((word) => displayColumns(word) * regularAdvance * fontPx),
-    regularAdvance * fontPx,
-    width
-  );
+): number => columnLines(text, regularAdvance, fontPx, width);
 
 /** {@link wrappedLines} for Roboto Mono, from {@link monoAdvance}. */
 export const monoLines = (
   text: string,
   fontPx: number,
   width: number
-): number =>
-  packedLines(
-    words(text).map((word) => displayColumns(word) * monoAdvance * fontPx),
-    monoAdvance * fontPx,
-    width
-  );
+): number => columnLines(text, monoAdvance, fontPx, width);
 
 /** Glyph estimates run a few percent short over a line, so lines pack into this share of the column. */
 export const lineFill = 0.92;
@@ -182,7 +218,11 @@ export const sizeForLines = (
     const fontPx = scalePx(steps[step]);
     return (
       widestWord(text, tracking) * fontPx <= width &&
-      wrappedLines(text, fontPx, width * lineFill, tracking) <= maxLines
+      packedLines(
+        words(text).map((word) => emWidth(word, tracking) * fontPx),
+        emWidth(' ', tracking) * fontPx,
+        width * lineFill
+      ) <= maxLines
     );
   }) ??
   's';

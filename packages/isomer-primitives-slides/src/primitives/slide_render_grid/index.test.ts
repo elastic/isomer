@@ -54,6 +54,9 @@ describe('slideRenderGrid layout', () => {
     expect(tileScale(grid(4, 'SMS '.repeat(30)), underHeading)).toBeLessThan(
       tileScale(grid(4), underHeading)
     );
+    expect(
+      tileScale(grid(4, 'orders-admin-'.repeat(12)), underHeading)
+    ).toBeLessThan(tileScale(grid(4), underHeading));
   });
 
   it('takes a shape from its tile count, and stretches panels only across two rows', () => {

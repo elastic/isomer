@@ -63,18 +63,32 @@ export const headline = (node: {
     .filter(Boolean)
     .join(` ${separator.value} `);
 
+/** Every `text` and `alt_text` string in `value`, in document order. */
 const textsIn = (value: unknown): string[] => {
-  if (Array.isArray(value)) {
-    return value.flatMap(textsIn);
+  const texts: string[] = [];
+  const stack: ({ text: string } | { value: unknown })[] = [{ value }];
+  for (let next = stack.pop(); next; next = stack.pop()) {
+    if ('text' in next) {
+      texts.push(next.text);
+      continue;
+    }
+    const { value: current } = next;
+    if (typeof current !== 'object' || current === null) {
+      continue;
+    }
+    const entries: [string, unknown][] = Array.isArray(current)
+      ? current.map((item) => ['', item])
+      : Object.entries(current);
+    for (let at = entries.length - 1; at >= 0; at -= 1) {
+      const [key, child] = entries[at]!;
+      stack.push(
+        (key === 'text' || key === 'alt_text') && typeof child === 'string'
+          ? { text: child }
+          : { value: child }
+      );
+    }
   }
-  if (typeof value !== 'object' || value === null) {
-    return [];
-  }
-  return Object.entries(value).flatMap(([key, child]) =>
-    (key === 'text' || key === 'alt_text') && typeof child === 'string'
-      ? [child]
-      : textsIn(child)
-  );
+  return texts;
 };
 
 /** Slack blocks one per line: the block type, padded, then its text. */

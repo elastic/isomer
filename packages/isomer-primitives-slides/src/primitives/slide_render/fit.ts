@@ -45,19 +45,13 @@ export const scaledWidth = (scale: number): number => slideWidth * scale;
 /** Height in pixels of a slide drawn at `scale`. */
 export const scaledHeight = (scale: number): number => slideHeight * scale;
 
-/** The scale that fits a whole slide under `caption` in `layout`, no larger than `cap`; the caption wraps at the drawn slide's width. */
+/** The scale that fits a whole slide under `caption` in `layout`, no larger than `cap`; the caption wraps across the layout's width, whatever the scale. */
 export const scaleUnderCaption = (
   caption: string,
   { width, height }: SlideLayout,
   cap?: ScaleToken
-): number => {
-  const at = (captionWidth: number) =>
-    embeddedScale(
-      { width, height: height - captionHeight(caption, captionWidth) },
-      cap
-    );
-  return at(scaledWidth(at(width)));
-};
+): number =>
+  embeddedScale({ width, height: height - captionHeight(caption, width) }, cap);
 
 /** The scale a `slideRender` draws its slide at in `layout`. */
 export const renderScale = (

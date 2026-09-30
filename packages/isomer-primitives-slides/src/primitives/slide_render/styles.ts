@@ -29,7 +29,7 @@ export const renderModule = createStyleModule('render', ({ css }) => ({
     ${typeRole(render.caption)}
     margin: 0;
   `,
-  /** The column's width, capped at the scaled slide, at 16:9. */
+  /** 16:9, at the width of the slide drawn in it. */
   fit: css`
     aspect-ratio: ${render.panel.aspect};
     box-sizing: border-box;

@@ -155,6 +155,17 @@ describe('slideColumns size', () => {
     ).toBe('l');
   });
 
+  it('counts a chip too wide for its column as wrapping its own text', () => {
+    const items = (tag: string) => [
+      { title: 'A', tags: [tag], body: 'x' },
+      { title: 'B', body: 'x' },
+    ];
+    const narrow = { ...full, width: 600 };
+    expect(
+      columnsHeadHeight(items('x'.repeat(60)), 'l', narrow)
+    ).toBeGreaterThan(columnsHeadHeight(items('x'.repeat(6)), 'l', narrow));
+  });
+
   it('wraps titles at the width its layout gives each column', () => {
     const node = {
       ...loaded(0, 0),

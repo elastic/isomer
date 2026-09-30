@@ -29,7 +29,7 @@ interface PanelProps {
   context: SlideRenderContext | undefined;
   /** Gives the panel its shape in the parent's layout. */
   size: StyleHandle;
-  /** Of the whole slide; the panel is no wider than the slide at this scale. */
+  /** Of the whole slide; the panel is as wide as the slide at this scale. */
   scale: number;
   /** Stretch to the cell instead, no shorter than the slide at `scale`. */
   fill?: boolean;
@@ -54,7 +54,7 @@ export const RenderPanel = ({
   const { handles: render } = renderModule;
   const style = fill
     ? { minHeight: `${scaledHeight(scale)}px` }
-    : { maxWidth: `${scaledWidth(scale)}px` };
+    : { width: `${scaledWidth(scale)}px` };
   if (!body) {
     return (
       <div className={cls(context, render.placeholder, size)} style={style}>

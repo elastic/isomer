@@ -11,25 +11,22 @@ import type { ZodType } from 'zod';
 import { slideWindowChromes } from '../../theme/variants';
 import { lineText } from '../authored_text';
 import { crossRefine } from '../cross_field';
-import { EMBEDDING_TYPES } from '../slide_render/embedded';
+import {
+  EMBEDDING_TYPES,
+  findInTree,
+  TREE_WALK_MAX_DEPTH,
+  TREE_WALK_MAX_VALUES,
+  treeLimitMessage,
+} from '../slide_render/embedded';
 
 // A window inside an embedded slide sits in another slide, so embedded bodies are skipped.
-const holdsWindow = (value: unknown, skip: ReadonlySet<string>): boolean => {
-  if (Array.isArray(value)) {
-    return value.some((item) => holdsWindow(item, skip));
-  }
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-  const record = value as Record<string, unknown>;
-  if (record.type === 'slideWindow') {
-    return true;
-  }
-  const embeds = typeof record.type === 'string' && skip.has(record.type);
-  return Object.entries(record).some(
-    ([key, child]) => !(embeds && key === 'body') && holdsWindow(child, skip)
+const findWindow = (body: unknown) =>
+  findInTree(
+    body,
+    ({ type }) => type === 'slideWindow',
+    ({ type }, key) =>
+      key === 'body' && typeof type === 'string' && EMBEDDING_TYPES.has(type)
   );
-};
 
 /** Shared by `schema` and `schemaFor`. */
 export const buildSchema = (nodeSchema: ZodType<unknown>) =>
@@ -53,8 +50,14 @@ export const buildSchema = (nodeSchema: ZodType<unknown>) =>
     })
     .strict()
     .check(
-      crossRefine(({ body }) => !holdsWindow(body, EMBEDDING_TYPES), {
+      crossRefine(({ body }) => findWindow(body).kind !== 'found', {
         error: 'a window cannot hold another window',
+        path: ['body'],
+      })
+    )
+    .check(
+      crossRefine(({ body }) => !treeLimitMessage(findWindow(body)), {
+        error: `a window body cannot be checked past ${TREE_WALK_MAX_DEPTH} levels or ${TREE_WALK_MAX_VALUES} values`,
         path: ['body'],
       })
     );

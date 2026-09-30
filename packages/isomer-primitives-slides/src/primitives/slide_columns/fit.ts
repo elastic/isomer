@@ -17,8 +17,8 @@ import { slideLayout } from '../layout';
 import {
   lineBox,
   lineFill,
+  monoLines,
   narrowing,
-  packedLines,
   rowLoad,
   sizeForLoad,
   smallerStep,
@@ -75,6 +75,37 @@ export const columnInnerWidth = (count: number, width: number): number =>
       count
   );
 
+/** Height of `tags` as chips wrapped across `inner`; a chip wider than the column wraps its own text. */
+const tagsHeight = (tags: readonly string[], inner: number): number => {
+  const tagPx = scalePx(columns.tag.size);
+  const frame =
+    2 * scalePx(columns.tagPaddingX) + 2 * scalePx(columns.tagBorder);
+  const chrome =
+    2 * scalePx(columns.tagPaddingY) + 2 * scalePx(columns.tagBorder);
+  const gap = scalePx(columns.tagGap);
+  let total = 0;
+  let row = 0;
+  let used = 0;
+  for (const tag of tags) {
+    const natural = displayColumns(tag) * monoAdvance * tagPx + frame;
+    const width = Math.min(natural, inner);
+    const height =
+      (natural > inner
+        ? monoLines(tag, tagPx, Math.max(0, inner - frame))
+        : 1) *
+        lineBox(columns.tag) +
+      chrome;
+    if (used > 0 && used + gap + width > inner) {
+      total += row + gap;
+      row = 0;
+      used = 0;
+    }
+    used += (used > 0 ? gap : 0) + width;
+    row = Math.max(row, height);
+  }
+  return total + row;
+};
+
 /** The tallest column's title and tags, so every body starts level. */
 export const columnsHeadHeight = (
   items: SlideColumnsNode['items'],
@@ -83,14 +114,6 @@ export const columnsHeadHeight = (
 ): number => {
   const inner = columnInnerWidth(items.length, width);
   const titleSize = columns.titleSizes[step];
-  const tagPx = scalePx(columns.tag.size);
-  const tagFrame =
-    2 * scalePx(columns.tagPaddingX) + 2 * scalePx(columns.tagBorder);
-  const tagHeight =
-    lineBox(columns.tag) +
-    2 * scalePx(columns.tagPaddingY) +
-    2 * scalePx(columns.tagBorder);
-  const gap = scalePx(columns.tagGap);
   return Math.max(
     ...items.map(({ title, tags = [] }) => {
       const titleHeight =
@@ -100,17 +123,9 @@ export const columnsHeadHeight = (
           inner * lineFill,
           columns.title.tracking
         ) * lineBox({ size: titleSize, lineHeight: columns.title.lineHeight });
-      if (tags.length === 0) {
-        return titleHeight;
-      }
-      const rows = packedLines(
-        tags.map((tag) => displayColumns(tag) * monoAdvance * tagPx + tagFrame),
-        gap,
-        inner
-      );
-      return (
-        titleHeight + scalePx(columns.gap) + rows * tagHeight + (rows - 1) * gap
-      );
+      return tags.length === 0
+        ? titleHeight
+        : titleHeight + scalePx(columns.gap) + tagsHeight(tags, inner);
     })
   );
 };

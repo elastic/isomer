@@ -38,21 +38,29 @@ const buildOf = (node: unknown): SlideBuild<never> | undefined => {
     : undefined;
 };
 
+/** The nodes of `body` that build, pre-order. */
 const buildingNodes = (
   body: readonly unknown[],
   walk: ChildNodeWalker
-): unknown[] =>
-  body.flatMap((node) =>
-    isVisibleOnSurface(node, 'react')
-      ? [
-          ...(buildOf(node) ? [node] : []),
-          ...buildingNodes(
-            walk(node).map((child) => child.node),
-            walk
-          ),
-        ]
-      : []
-  );
+): unknown[] => {
+  const found: unknown[] = [];
+  const stack = [...body].reverse();
+  while (stack.length > 0) {
+    const node = stack.pop();
+    if (!isVisibleOnSurface(node, 'react')) {
+      continue;
+    }
+    if (buildOf(node)) {
+      found.push(node);
+    }
+    stack.push(
+      ...walk(node)
+        .map((child) => child.node)
+        .reverse()
+    );
+  }
+  return found;
+};
 
 /** Hides the parts of an ordered primitive until the host reveals them with {@link showSlideBuild}. */
 export const slideBuildsEnhancement: EnhancementDefinition = {

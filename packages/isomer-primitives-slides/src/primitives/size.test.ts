@@ -13,10 +13,14 @@ import { scalePx } from '../theme/scale';
 
 import {
   emWidth,
+  monoLines,
+  packedLines,
+  proseLines,
   rowLoad,
   sizeForLines,
   sizeForLoad,
   widestWord,
+  wrappedLines,
 } from './size';
 
 const steps = { l: font.size.px200, m: font.size.px128, s: font.size.px96 };
@@ -61,6 +65,39 @@ describe('sizeForLines', () => {
     expect(widestWord(`iiiiiiiiii ${wide}`, tracking)).toBe(
       emWidth(wide, tracking)
     );
+  });
+});
+
+describe('line counts', () => {
+  // At 20px, a regular or mono glyph advances 10 or 12px.
+  const long = 'x'.repeat(100);
+
+  it('breaks a word too wide for any line, as `overflow-wrap: anywhere` does', () => {
+    expect(proseLines(long, 20, 1000)).toBe(1);
+    expect(proseLines(long, 20, 999)).toBe(2);
+    expect(proseLines(long, 20, 200)).toBe(5);
+    expect(proseLines(`ab ${long}`, 20, 200)).toBe(6);
+    expect(monoLines(long, 20, 1200)).toBe(1);
+    expect(monoLines(long, 20, 1199)).toBe(2);
+    expect(
+      wrappedLines(
+        long,
+        20,
+        emWidth(long, font.tracking.none) * 10 + 0.5,
+        font.tracking.none
+      )
+    ).toBe(2);
+  });
+
+  it('puts one glyph on each line at zero or sub-glyph width', () => {
+    expect(proseLines('abc de', 20, 0)).toBe(5);
+    expect(monoLines('abc de', 20, 5)).toBe(5);
+    expect(proseLines('', 20, 0)).toBe(1);
+  });
+
+  it('never breaks a packed item', () => {
+    expect(packedLines([300, 50], 10, 100)).toBe(2);
+    expect(packedLines([40, 50], 10, 100)).toBe(1);
   });
 });
 

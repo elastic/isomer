@@ -13,7 +13,6 @@ import type { SlideReactEnv } from '../../render/context';
 import { marksReact } from '../../render/marks';
 import { layoutModule } from '../../theme/modules';
 import { slideLayout } from '../layout';
-import { scaledWidth } from '../slide_render/fit';
 import { headline } from '../slide_render/output';
 import { RenderPanel } from '../slide_render/panel';
 import { renderModule } from '../slide_render/styles';
@@ -40,8 +39,7 @@ export const react = (
       <div className={cls(context, annotated.grid)}>
         <figure
           {...nodeAnchor(context, { type: node.type })}
-          className={cls(context, annotated.figure)}
-          style={{ maxWidth: `${scaledWidth(scale)}px` }}>
+          className={cls(context, annotated.figure)}>
           <figcaption className={cls(context, render.caption)}>
             {headline(node)}
           </figcaption>

@@ -28,7 +28,7 @@ import { title, titleShares } from '../theme/components/title';
 import { scalePx } from '../theme/scale';
 
 import { openBody, slideLayout, withLayout } from './layout';
-import { trackWidth } from './size';
+import { trackWidth, wrappedLines } from './size';
 import { referenceHeading } from './size.fixtures';
 import { example as agendaExample } from './slide_agenda/examples';
 import { example as closingExample } from './slide_closing/examples';
@@ -253,9 +253,22 @@ describe('slideSplit layout', () => {
     const expected = (depth: number): SlideLayout => {
       let layout = openBody;
       for (let level = 0; level < depth; level += 1) {
+        const [width] = paneWidths(layout.width, 'aside', 'hairline');
+        // A pane too narrow for its label breaks it, as `overflow-wrap: anywhere` does.
+        const labelLines = wrappedLines(
+          'LABEL',
+          scalePx(split.label.size),
+          width,
+          split.label.tracking
+        );
         layout = {
-          width: paneWidths(layout.width, 'aside', 'hairline')[0],
-          height: Math.max(0, layout.height - labelHeight),
+          width,
+          height: Math.max(
+            0,
+            layout.height -
+              labelLines * lineHeight(split.label) -
+              scalePx(split.labelGap)
+          ),
         };
       }
       return layout;

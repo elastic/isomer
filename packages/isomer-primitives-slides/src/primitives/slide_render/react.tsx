@@ -12,7 +12,7 @@ import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { slideLayout } from '../layout';
 
-import { renderScale, scaledWidth } from './fit';
+import { renderScale } from './fit';
 import { headline } from './output';
 import { RenderPanel } from './panel';
 import { renderModule } from './styles';
@@ -29,8 +29,7 @@ export const react = (
   return (
     <figure
       {...nodeAnchor(context, { type })}
-      className={cls(context, render.root)}
-      style={{ maxWidth: `${scaledWidth(scale)}px` }}>
+      className={cls(context, render.root)}>
       <figcaption className={cls(context, render.caption)}>
         {headline(node)}
       </figcaption>

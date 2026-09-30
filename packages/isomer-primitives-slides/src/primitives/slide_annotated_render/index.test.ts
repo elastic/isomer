@@ -87,6 +87,15 @@ describe('slideAnnotatedRender', () => {
     );
   });
 
+  it('budgets a pin title that wraps across the legend', () => {
+    const titled = (title: string) =>
+      placeholderExample.pins.map((pin) => ({ ...pin, title }));
+    expect(legendStep(titled('Search'), openBody)).toBe('l');
+    expect(
+      legendStep(titled('Search filters the rows by store and date'), openBody)
+    ).not.toBe('l');
+  });
+
   it('steps the legend down as its layout shortens', () => {
     const at = (height: number) =>
       legendStep(placeholderExample.pins, { ...openBody, height });

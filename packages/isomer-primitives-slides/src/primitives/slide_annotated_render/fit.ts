@@ -13,7 +13,7 @@ import {
 } from '../../theme/components/annotated_render';
 import { scalePx } from '../../theme/scale';
 import { type SlideSize, slideSizes } from '../../theme/variants';
-import { lineBox, proseLines, trackWidth } from '../size';
+import { lineBox, proseLines, trackWidth, wrappedLines } from '../size';
 import { scaleUnderCaption } from '../slide_render/fit';
 import { headline } from '../slide_render/output';
 import type { SlideRenderNode } from '../slide_render/types';
@@ -39,10 +39,11 @@ const legendHeight = (
 ): number => {
   const { padding, title, body } = legend.steps[step];
   return pins.reduce(
-    (height, { body: text }) =>
+    (height, { title: name, body: text }) =>
       height +
       2 * scalePx(padding) +
-      lineBox({ size: title, lineHeight: legend.title.lineHeight }) +
+      wrappedLines(name, scalePx(title), textWidth, legend.title.tracking) *
+        lineBox({ size: title, lineHeight: legend.title.lineHeight }) +
       scalePx(legend.textGap) +
       proseLines(stripMarks(text), scalePx(body), textWidth) *
         lineBox({ size: body, lineHeight: legend.body.lineHeight }) +
@@ -51,13 +52,13 @@ const legendHeight = (
   );
 };
 
-/** The largest legend step whose rows fit the height of `layout`, their text wrapped across its second column. */
+/** The largest legend step whose rows fit the height of `layout`, their titles and text wrapped across its second column. */
 export const legendStep = (
   pins: readonly SlideAnnotatedRenderPin[],
   { width, height }: SlideLayout
 ): SlideSize => {
   const textWidth = Math.max(
-    1,
+    0,
     column(width, 1) - scalePx(legend.marker) - scalePx(legend.columnGap)
   );
   return (

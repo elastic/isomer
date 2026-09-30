@@ -112,7 +112,21 @@ describe('slideRender layout', () => {
     );
   });
 
-  it('leaves room for a caption that wraps at the drawn slide’s width', () => {
+  it('fits the slide under a caption wrapped across the layout, at any length that leaves room', () => {
+    const room = { width: 1000, height: 460 };
+    for (const caption of [
+      'The delivery slide '.repeat(16).trim(),
+      'delivery-times-'.repeat(20),
+    ]) {
+      const node = { type: 'slideRender', surface: 'svg', caption } as const;
+      const scale = renderScale(node, room);
+      expect(
+        scale * 1080 + captionHeight(headline(node), room.width)
+      ).toBeLessThanOrEqual(room.height);
+    }
+  });
+
+  it('leaves room for a caption that wraps', () => {
     const short = {
       type: 'slideRender',
       surface: 'svg',

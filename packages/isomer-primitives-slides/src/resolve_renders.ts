@@ -11,7 +11,10 @@ import {
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
 
-import { findNestedRender } from './primitives/slide_render/embedded';
+import {
+  findNestedRender,
+  treeLimitMessage,
+} from './primitives/slide_render/embedded';
 import type { SlideRenderNode } from './primitives/slide_render/types';
 import { slideDeckPrimitives } from './registry';
 
@@ -74,7 +77,15 @@ export const resolveSlideRenders = (
       if (target.slug === slug) {
         return fail(node, `slide ${quote(slug)} renders itself`);
       }
-      if (findNestedRender(target.composition.body)) {
+      const search = findNestedRender(target.composition.body);
+      const limit = treeLimitMessage(search);
+      if (limit) {
+        return fail(
+          node,
+          `slide ${quote(slug)} renders slide ${quote(target.slug)}, which cannot be checked: it ${limit}`
+        );
+      }
+      if (search.kind === 'found') {
         return fail(
           node,
           `slide ${quote(slug)} renders slide ${quote(target.slug)}, which holds a render of its own`
