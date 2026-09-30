@@ -21,7 +21,7 @@ const middle: Record<SlideSplitDivider, number> = {
 const fr = ({ value }: ScaleToken): number | undefined =>
   value.endsWith('fr') ? parseFloat(value) : undefined;
 
-/** The two panes' widths in pixels when the split spans `total`. */
+/** The two panes' widths in pixels when the split spans `total`; a flexible pane the fixed tracks leave no room for is 0, never negative. */
 export const paneWidths = (
   total: number,
   ratio: SlideSplitRatio,
@@ -38,7 +38,7 @@ export const paneWidths = (
     const share = fr(track);
     return share === undefined
       ? scalePx(track)
-      : ((free - fixed) * share) / shares;
+      : Math.max(0, ((free - fixed) * share) / shares);
   };
   return [width(left), width(right)];
 };

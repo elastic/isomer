@@ -18,7 +18,7 @@ import { list } from './components/list';
 import { marks } from './components/marks';
 import { quote } from './components/quote';
 import { section } from './components/section';
-import { connector, glyph, label, tone } from './components/shared';
+import { connector, glyph, label, link, tone } from './components/shared';
 import { source } from './components/source';
 import { split } from './components/split';
 import { stack } from './components/stack';
@@ -40,6 +40,7 @@ export const SLIDE_THEME = {
   font,
   type,
   glyph,
+  link,
   label,
   connector,
   tone,

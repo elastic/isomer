@@ -28,7 +28,7 @@ export const agenda = {
     lineHeight: font.lineHeight.snug,
   },
   titleSizes: { l: font.size.px48, m: font.size.px40, s: font.size.px30 },
-  rowPaddings: { l: space.px24, m: space.px20, s: space.px12 },
+  rowPaddings: { l: space.px24, m: space.px20, s: space.px8 },
   count: {
     size: font.size.px26,
     weight: font.weight.regular,

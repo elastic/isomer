@@ -43,6 +43,28 @@ describe('paneWidths', () => {
     );
   });
 
+  it('leaves a pane that nested splits squeeze out at zero, and its content at the smallest step', () => {
+    const widths = [frameContentWidth];
+    for (let depth = 0; depth < 3; depth += 1) {
+      widths.push(paneWidths(widths.at(-1)!, 'aside', 'hairline')[0]);
+    }
+    expect(widths.at(-2)).toBeGreaterThan(0);
+    expect(widths.at(-1)).toBe(0);
+    expect(narrowing(scalePx(statement.maxWidth), 0)).toBe(Infinity);
+
+    const bullets = { type: 'slideBulletList', items: ['One'] };
+    let nested: object = { type: 'slideStatement', text: 'Short' };
+    for (let depth = 0; depth < 3; depth += 1) {
+      nested = {
+        type: 'slideSplit',
+        ratio: 'aside',
+        divider: 'hairline',
+        panes: [{ items: [nested] }, { items: [bullets] }],
+      };
+    }
+    expect(renderedStep('statement-textSize', nested)).toBe('s');
+  });
+
   it('sizes a statement in a pane against the pane, not the frame', () => {
     const text = 'x'.repeat(statementFit.l);
     const [pane] = paneWidths(frameContentWidth, 'even', 'gap');

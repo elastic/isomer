@@ -35,6 +35,13 @@ export const renderedStep = (
     }).html
   )?.[1];
 
+/** A two-line title and lede at `l`: the room load budgets are set against, so its crowding is 1. */
+export const referenceHeading: SlideHeadingNode = {
+  type: 'slideHeading',
+  title: 'Four words carry the rest of this talk about payments today',
+  lede: 'Each one names a step money takes between the card and the merchant account, and we will use them on every slide after this one.',
+};
+
 /** A three-line heading, which leaves less room below than load budgets assume. */
 export const crowdingHeading: SlideHeadingNode = {
   type: 'slideHeading',

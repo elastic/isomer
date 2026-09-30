@@ -10,6 +10,11 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { columnWidth } from '../../theme/components/frame';
+import { statement, statementFit } from '../../theme/components/statement';
+import { title, titleShares } from '../../theme/components/title';
+import { scalePx } from '../../theme/scale';
+import { narrowing, sizeForLoad } from '../size';
 
 import { example, examples } from './examples';
 
@@ -187,5 +192,29 @@ describe('slideTitle logo', () => {
 
   it('leaves both out when its frame sets `logo: false`', () => {
     expect(marks(false)).toBe(0);
+  });
+});
+
+describe('slideTitle aside', () => {
+  it('sizes its aside against the aside column, not the frame', () => {
+    const text = 'x'.repeat(statementFit.l);
+    const aside = { type: 'slideStatement', text };
+    const step = sizeForLoad(
+      undefined,
+      text.length *
+        narrowing(
+          scalePx(statement.maxWidth),
+          columnWidth(titleShares, title.columnGap, 1)
+        ),
+      statementFit
+    );
+    expect(step).not.toBe('l');
+    expect(
+      /statement-textSize-(\w+)/.exec(
+        runtime.surfaces.html.render(
+          compose({ ...example, aside } as PrimitiveNode)
+        ).html
+      )?.[1]
+    ).toBe(step);
   });
 });

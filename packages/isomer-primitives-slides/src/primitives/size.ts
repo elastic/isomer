@@ -47,11 +47,11 @@ export const sizeForLoad = (
 export const smallerStep = (a: SlideSize, b: SlideSize): SlideSize =>
   slideSizes.indexOf(a) > slideSizes.indexOf(b) ? a : b;
 
-/** How many times over `measure` exceeds the room across; 1 when it fits. */
+/** How many times over `measure` exceeds the room across; 1 when it fits, infinite when there is no room. */
 export const narrowing = (measure: number, width = Infinity): number =>
   Math.max(1, measure / width);
 
-/** Width of track `index` when `total` pixels split into `shares` fr tracks with `gap` between. */
+/** Width of track `index` when `total` pixels split into `shares` fr tracks with `gap` between; 0 when the gaps leave none. */
 export const trackWidth = (
   total: number,
   shares: readonly number[],
@@ -60,7 +60,7 @@ export const trackWidth = (
 ): number => {
   const sum = shares.reduce((all, share) => all + share, 0);
   const free = total - scalePx(gap) * (shares.length - 1);
-  return (free * (shares[index] ?? 0)) / sum;
+  return Math.max(0, (free * (shares[index] ?? 0)) / sum);
 };
 
 /** The longest item's characters times the item count. */
