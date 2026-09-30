@@ -6,11 +6,13 @@
  */
 
 import { agendaModule } from './primitives/slide_agenda/styles';
+import { barsModule } from './primitives/slide_bars/styles';
 import { bulletsModule } from './primitives/slide_bullet_list/styles';
 import { closingModule } from './primitives/slide_closing/styles';
 import { codeModule } from './primitives/slide_code/styles';
 import { commandModule } from './primitives/slide_command/styles';
 import { definitionsModule } from './primitives/slide_definitions/styles';
+import { deltaModule } from './primitives/slide_delta/styles';
 import { diffModule } from './primitives/slide_diff/styles';
 import { fanoutModule } from './primitives/slide_fanout/styles';
 import { frameModule } from './primitives/slide_frame/styles';
@@ -23,7 +25,9 @@ import { sectionModule } from './primitives/slide_section/styles';
 import { sourceModule } from './primitives/slide_source/styles';
 import { splitModule } from './primitives/slide_split/styles';
 import { stackModule } from './primitives/slide_stack/styles';
+import { statModule } from './primitives/slide_stat/styles';
 import { statementModule } from './primitives/slide_statement/styles';
+import { statsModule } from './primitives/slide_stats/styles';
 import { tableModule } from './primitives/slide_table/styles';
 import { territoryModule } from './primitives/slide_territory_group/styles';
 import { titleModule } from './primitives/slide_title/styles';
@@ -35,6 +39,7 @@ import {
   labelModule,
   layoutModule,
   marksModule,
+  placeholderModule,
   tonesModule,
 } from './theme/modules';
 
@@ -46,12 +51,15 @@ export const slideModules = {
   label: labelModule,
   connector: connectorModule,
   marks: marksModule,
+  placeholder: placeholderModule,
   agenda: agendaModule,
+  bars: barsModule,
   bullets: bulletsModule,
   closing: closingModule,
   code: codeModule,
   command: commandModule,
   definitions: definitionsModule,
+  delta: deltaModule,
   diff: diffModule,
   fanout: fanoutModule,
   frame: frameModule,
@@ -64,7 +72,9 @@ export const slideModules = {
   source: sourceModule,
   split: splitModule,
   stack: stackModule,
+  stat: statModule,
   statement: statementModule,
+  stats: statsModule,
   table: tableModule,
   territory: territoryModule,
   title: titleModule,
