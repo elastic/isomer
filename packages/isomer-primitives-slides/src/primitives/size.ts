@@ -122,10 +122,6 @@ export const emWidth = (text: string, tracking: ScaleToken): number =>
     0
   );
 
-/** Width in px of `text` on one line of the mono face at `size`. */
-export const monoWidth = (text: string, size: ScaleToken): number =>
-  textColumns(text) * monoAdvance * scalePx(size);
-
 /** What a wrapping display line cannot break. */
 export const widestWord = (text: string, tracking: ScaleToken): number =>
   Math.max(0, ...words(text).map((word) => emWidth(word, tracking)));
@@ -200,6 +196,19 @@ const faceOf = ({ family, weight }: TypeRole): ((glyph: string) => number) =>
       ? displayAdvance
       : (glyph) => displayColumns(glyph) * regularAdvance;
 
+const glyphPxOf = (role: TypeRole): ((glyph: string) => number) => {
+  const fontPx = scalePx(role.size);
+  const tracking = role.tracking ? parseFloat(role.tracking.value) : 0;
+  const advance = faceOf(role);
+  return (glyph) => {
+    const em = advance(glyph);
+    return em === 0 ? 0 : (em + tracking) * fontPx;
+  };
+};
+
+const shownAs = (text: string, { transform }: TypeRole): string =>
+  transform?.value === 'uppercase' ? text.toUpperCase() : text;
+
 /**
  * `text` as `role` sets it across `width` pixels: transformed, whitespace collapsed, wrapped at spaces, and a word wider than a line broken between glyphs (`overflow-wrap: anywhere`); `nowrap` keeps one line.
  * Pass the role at the step drawn, and marks already stripped.
@@ -209,17 +218,9 @@ export const measureText = (
   role: TypeRole,
   width = Infinity
 ): TextMeasure => {
-  const fontPx = scalePx(role.size);
-  const tracking = role.tracking ? parseFloat(role.tracking.value) : 0;
-  const advance = faceOf(role);
-  const glyphPx = (glyph: string) => {
-    const em = advance(glyph);
-    return em === 0 ? 0 : (em + tracking) * fontPx;
-  };
-  const shown =
-    role.transform?.value === 'uppercase' ? text.toUpperCase() : text;
+  const glyphPx = glyphPxOf(role);
   return measureWords(
-    words(shown).map((word) => [...word].map(glyphPx)),
+    words(shownAs(text, role)).map((word) => [...word].map(glyphPx)),
     glyphPx(' '),
     role.whiteSpace?.value === 'nowrap' ? Infinity : width
   );
@@ -262,31 +263,42 @@ export const monoLines = (
 
 const codeChipSide = scalePx(marks.codePaddingX) + scalePx(marks.codeBorder);
 
-/** {@link proseLines} of authored text with its marks: a `code` run is set in the mono face between its chip's sides. */
+const markRoles = { text: {}, code: marks.code, strong: marks.strong };
+const leadingSpace = new RegExp(`^${collapsible.source}`);
+const trailingSpace = new RegExp(`${collapsible.source}$`);
+
+/** Lines authored text with its marks takes across `width` in `role`: each run in the face it renders in, a `code` run between its chip's sides, and runs with no space between them one word. */
 export const markedLines = (
   text: string,
-  fontPx: number,
+  role: TypeRole,
   width: number
-): number =>
-  Math.max(
-    1,
-    measureWords(
-      parseMarks(text).flatMap(({ kind, text: run }) => {
-        const advance =
-          (kind === 'code' ? monoAdvance : regularAdvance) * fontPx;
-        const glyphs = words(run).map((word) =>
-          [...word].map((glyph) => displayColumns(glyph) * advance)
-        );
-        if (kind === 'code') {
-          glyphs.at(0)?.unshift(codeChipSide);
-          glyphs.at(-1)?.push(codeChipSide);
-        }
-        return glyphs;
-      }),
-      regularAdvance * fontPx,
-      width
-    ).lines
-  );
+): number => {
+  const glyphs: number[][] = [];
+  let open = false;
+  for (const { kind, text: run } of parseMarks(text)) {
+    const glyphPx = glyphPxOf({ ...role, ...markRoles[kind] });
+    const [first, ...rest] = words(shownAs(run, role)).map((word) =>
+      [...word].map(glyphPx)
+    );
+    if (first === undefined) {
+      open &&= run === '';
+      continue;
+    }
+    if (kind === 'code') {
+      first.unshift(codeChipSide);
+      (rest.at(-1) ?? first).push(codeChipSide);
+    }
+    const last = glyphs.at(-1);
+    if (open && last !== undefined && !leadingSpace.test(run)) {
+      last.push(...first);
+    } else {
+      glyphs.push(first);
+    }
+    glyphs.push(...rest);
+    open = !trailingSpace.test(run);
+  }
+  return Math.max(1, measureWords(glyphs, glyphPxOf(role)(' '), width).lines);
+};
 
 /** What `code` marks' borders add to the height of `lines` lines of `text`, at most once a line. */
 export const codeGrowth = (text: string, lines: number): number =>

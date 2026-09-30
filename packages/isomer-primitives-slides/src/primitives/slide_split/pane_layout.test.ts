@@ -14,6 +14,7 @@ import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideFonts } from '../../examples/fonts';
+import { findings, slideOf } from '../../examples/measure';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import {
   frameBodyHeight,
@@ -25,8 +26,9 @@ import { statement, statementFit } from '../../theme/components/statement';
 import { scalePx } from '../../theme/scale';
 import { slideSplitDividers, slideSplitRatios } from '../../theme/variants';
 import { openBody, slideLayout } from '../layout';
-import { narrowing, sizeForLoad } from '../size';
+import { lineBox, narrowing, sizeForLoad } from '../size';
 import { renderedStep } from '../size.fixtures';
+import { fullExample as fullLayers } from '../slide_layers/examples';
 
 import { paneLayouts, paneWidths } from './pane_layout';
 import type { SlideSplitNode } from './types';
@@ -203,5 +205,59 @@ describe('paneLayouts', () => {
     expect(lines).toBe(2);
     expect(Math.round(estimatedLines(node))).toBeGreaterThanOrEqual(lines);
     expect(Math.round(estimatedLines(node))).toBeLessThanOrEqual(lines + 1);
+  });
+});
+
+describe('a pane', () => {
+  const tall = (label?: string): SlideSplitNode => ({
+    type: 'slideSplit',
+    footnote: 'Figures are from the last quarter.',
+    panes: [
+      {
+        ...(label && { label }),
+        items: [
+          { type: 'slideBulletList', items: ['One', 'Two'] },
+          { ...fullLayers, size: 'l' },
+        ],
+      },
+      { label: 'After', items: [{ type: 'slideBulletList', items: ['One'] }] },
+    ],
+  });
+
+  it.each([undefined, 'Before'])(
+    'reports an item past its height, under label %s and the footnote',
+    async (label) => {
+      expect(await findings(slideOf(tall(label)))).toEqual([
+        {
+          kind: 'overflow',
+          path: 'body[0].body[0].panes[0].items[1]',
+          type: 'slideLayers',
+          by: expect.any(Number) as number,
+        },
+      ]);
+    }
+  );
+
+  it('counts its label against the item below it', async () => {
+    const past = async (label?: string) =>
+      (await findings(slideOf(tall(label))))[0]?.by ?? 0;
+    const labelled = (await past('Before')) - (await past());
+    expect(labelled).toBeGreaterThan(scalePx(split.labelGap));
+    expect(labelled).toBeLessThanOrEqual(
+      lineBox(split.label) + scalePx(split.labelGap)
+    );
+  });
+
+  it('reports nothing when its items fit', async () => {
+    const node = tall('Before');
+    const [left, right] = node.panes;
+    expect(
+      await findings(
+        slideOf({
+          ...node,
+          panes: [{ ...left, items: left.items.slice(0, 1) }, right],
+        })
+      )
+    ).toEqual([]);
   });
 });

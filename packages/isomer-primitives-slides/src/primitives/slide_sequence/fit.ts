@@ -5,26 +5,32 @@
  * 2.0.
  */
 
-import type { ScaleToken } from '@elastic/distillate';
-
 import type { SlideRenderContext } from '../../render/context';
 import { sequence, sequenceFit } from '../../theme/components/sequence';
 import { connector, tone as toneCue } from '../../theme/components/shared';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
 import { slideLayout } from '../layout';
-import { lineFill, markedLines, monoLines, sizeForLoad } from '../size';
+import {
+  lineBox,
+  lineFill,
+  markedLines,
+  measureText,
+  sizeForLoad,
+} from '../size';
 
 import type { SlideSequenceNode } from './schema';
 
 const { actor } = sequence;
 
-const lineHeight = (size: ScaleToken, leading: ScaleToken): number =>
-  scalePx(size) * parseFloat(leading.value);
+const labelRole = (step: SlideSize) => ({
+  size: sequence.labelSizes[step],
+  lineHeight: sequence.labelLineHeight,
+});
 
 /** The height a message row takes at `step` with a one-line label. */
 const rowHeight = (step: SlideSize): number =>
-  lineHeight(sequence.labelSizes[step], sequence.labelLineHeight) +
+  lineBox(labelRole(step)) +
   scalePx(sequence.labelGaps[step]) +
   2 * scalePx(connector.headHalf) +
   scalePx(sequence.rowGaps[step]);
@@ -36,16 +42,19 @@ export const wrapHeight = (
   width: number
 ): number => {
   const column = width / actors.length;
+  const actorRole = { ...actor.type, size: actor.sizes[step] };
   const actorLines = Math.max(
-    ...actors.map(({ label, tone }) =>
-      monoLines(
-        label,
-        scalePx(actor.sizes[step]),
-        column -
-          scalePx(actor.gutter) -
-          2 * (scalePx(actor.paddingX) + scalePx(actor.border)) -
-          (tone ? scalePx(toneCue.cue.size) + scalePx(toneCue.cue.gap) : 0)
-      )
+    1,
+    ...actors.map(
+      ({ label, tone }) =>
+        measureText(
+          label,
+          actorRole,
+          column -
+            scalePx(actor.gutter) -
+            2 * (scalePx(actor.paddingX) + scalePx(actor.border)) -
+            (tone ? scalePx(toneCue.cue.size) + scalePx(toneCue.cue.gap) : 0)
+        ).lines
     )
   );
   const indexOf = new Map(actors.map(({ id }, index) => [id, index]));
@@ -55,16 +64,12 @@ export const wrapHeight = (
       apart * column -
       (apart > 1 ? scalePx(sequence.labelOffset) : 0) -
       2 * scalePx(sequence.labelInset);
-    return markedLines(
-      label,
-      scalePx(sequence.labelSizes[step]),
-      span * lineFill
-    );
+    return markedLines(label, labelRole(step), span * lineFill);
   });
   return (
-    (actorLines - 1) * lineHeight(actor.sizes[step], actor.type.lineHeight) +
+    (actorLines - 1) * lineBox(actorRole) +
     labelLines.reduce((total, lines) => total + lines - 1, 0) *
-      lineHeight(sequence.labelSizes[step], sequence.labelLineHeight)
+      lineBox(labelRole(step))
   );
 };
 

@@ -14,7 +14,7 @@ import type { SlideSize } from '../../theme/variants';
 import { slideLayout } from '../layout';
 import {
   lineFill,
-  monoWidth,
+  measureText,
   narrowing,
   rowLoad,
   sizeForLoad,
@@ -28,7 +28,7 @@ const { terminal } = pipeline;
 
 /** A terminal chip and the stub joining it to the steps. */
 const terminalWidth = (text: string): number =>
-  monoWidth(text, terminal.type.size) +
+  measureText(text, terminal.type).widest +
   2 * (scalePx(terminal.paddingX) + scalePx(terminal.border)) +
   scalePx(pipeline.gap);
 

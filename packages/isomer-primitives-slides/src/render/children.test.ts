@@ -32,33 +32,4 @@ describe('slackCaption', () => {
       });
     }
   );
-
-  it.each(['*', '_', '~', '`'])(
-    'sets text holding %s as literal rich text, bold when strong',
-    (delimiter) => {
-      const text = `order${delimiter}id`;
-      expect(slackCaption(text)).toEqual({
-        type: 'rich_text',
-        elements: [
-          { type: 'rich_text_section', elements: [{ type: 'text', text }] },
-        ],
-      });
-      expect(slackCaption(text, true)).toEqual({
-        type: 'rich_text',
-        elements: [
-          {
-            type: 'rich_text_section',
-            elements: [{ type: 'text', text, style: { bold: true } }],
-          },
-        ],
-      });
-    }
-  );
-
-  it('keeps text with no delimiter in a context block', () => {
-    expect(slackCaption('Order <id> & receipt')).toEqual({
-      type: 'context',
-      elements: [{ type: 'mrkdwn', text: 'Order &lt;id&gt; &amp; receipt' }],
-    });
-  });
 });

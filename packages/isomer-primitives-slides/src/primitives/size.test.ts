@@ -12,6 +12,7 @@ import { describe, expect, it } from 'vitest';
 import { slideFonts } from '../examples/fonts';
 import { font, type } from '../theme/base';
 import { heading } from '../theme/components/heading';
+import { marks } from '../theme/components/marks';
 import { split } from '../theme/components/split';
 import { scalePx } from '../theme/scale';
 import { type TypeRole, typeRole } from '../theme/type_role';
@@ -22,7 +23,6 @@ import {
   markedLines,
   measureText,
   monoLines,
-  monoWidth,
   proseLines,
   rowLoad,
   sizeForLines,
@@ -65,38 +65,57 @@ describe('rowLoad', () => {
   });
 });
 
-describe('monoWidth', () => {
-  it('measures a line break or a tab as the space it draws', () => {
-    const size = font.size.px26;
-    expect(monoWidth('a\nb\r\nc\td', size)).toBe(monoWidth('a b c d', size));
-    expect(monoWidth('a\nb', size)).toBeGreaterThan(monoWidth('ab', size));
-  });
-});
-
 describe('markedLines', () => {
+  const body = { ...type.body, size: font.size.px26 };
+  const mono = { ...body, ...marks.code };
+  const strong = { ...body, ...marks.strong };
+  const chipSide = scalePx(marks.codePaddingX) + scalePx(marks.codeBorder);
   const call = 'x'.repeat(17);
   const width = 276;
 
-  it('counts prose as proseLines does', () => {
+  it('counts prose as measureText does', () => {
     const text = 'Match the order, the amount, and the card on file';
-    expect(markedLines(text, 26, width)).toBe(proseLines(text, 26, width));
-    expect(markedLines(text, 26, width)).toBeGreaterThan(1);
+    expect(markedLines(text, body, width)).toBe(
+      measureText(text, body, width).lines
+    );
+    expect(markedLines(text, body, width)).toBeGreaterThan(1);
   });
 
   // Seventeen mono columns fit the line; the chip's padding and border tip them over it.
   it('sets a `code` run in the mono face, between its chip’s sides', () => {
-    expect(monoWidth(call, font.size.px26)).toBeLessThanOrEqual(width);
-    expect(markedLines(call, 26, width)).toBe(1);
-    expect(markedLines(`\`${call}\``, 26, width)).toBe(2);
-    expect(markedLines(`\`${call.slice(1)}\``, 26, width)).toBe(1);
+    expect(measureText(call, mono).widest).toBeLessThanOrEqual(width);
+    expect(markedLines(call, body, width)).toBe(1);
+    expect(markedLines(`\`${call}\``, body, width)).toBe(2);
+    expect(markedLines(`\`${call.slice(1)}\``, body, width)).toBe(1);
+  });
+
+  it('sets a `strong` run in the bold face', () => {
+    const text = 'mmmm mmmm';
+    const fits = measureText(text, body).widest;
+    expect(measureText(text, strong).widest).toBeGreaterThan(fits);
+    expect(markedLines(text, body, fits)).toBe(1);
+    expect(markedLines(`**${text}**`, body, fits)).toBe(2);
+  });
+
+  it('keeps runs with no space between them one word', () => {
+    const joined =
+      measureText('abcd', body).widest + measureText('efgh', strong).widest;
+    expect(markedLines('abcd**efgh**', body, joined)).toBe(1);
+    expect(markedLines('abcd **efgh**', body, joined)).toBe(2);
+    const chipped =
+      measureText('ab', mono).widest +
+      2 * chipSide +
+      measureText('.', body).widest;
+    expect(markedLines('`ab`.', body, chipped)).toBe(1);
+    expect(markedLines('`ab`\u2028.', body, chipped)).toBe(2);
   });
 
   it('breaks a word wider than the line between glyphs', () => {
-    expect(markedLines('x'.repeat(80), 26, width)).toBe(4);
+    expect(markedLines('x'.repeat(80), body, width)).toBe(4);
   });
 
   it('counts one line for no text', () => {
-    expect(markedLines('', 26, width)).toBe(1);
+    expect(markedLines('', body, width)).toBe(1);
   });
 });
 

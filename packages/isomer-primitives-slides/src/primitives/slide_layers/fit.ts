@@ -17,7 +17,6 @@ import {
   lineFill,
   markedLines,
   measureText,
-  monoWidth,
   packedLines,
   wrappedLines,
 } from '../size';
@@ -35,7 +34,7 @@ const ownerWidth = ({ owner, tone }: SlideLayer): number =>
   );
 
 const chipWidth = (text: string, step: SlideSize): number =>
-  monoWidth(text, theme.chipSizes[step]) +
+  measureText(text, { ...chip.type, size: theme.chipSizes[step] }).widest +
   2 * (scalePx(chip.paddingX) + scalePx(chip.border));
 
 /** The height `layer`'s band takes at `step` in a stack `width` wide: its padding and border around its name, body lines, or chip rows, whichever is tallest. Unbounded where a chip outgrows its column. */
@@ -55,18 +54,14 @@ const bandHeight = (
     return Infinity;
   }
   const rows = packedLines(widths, scalePx(theme.chipGap), inner);
-  const lines = markedLines(
-    body,
-    scalePx(theme.bodySizes[step]),
-    inner * lineFill
-  );
+  const bodyRole = { ...theme.body, size: theme.bodySizes[step] };
+  const lines = markedLines(body, bodyRole, inner * lineFill);
   const content = chips
     ? rows *
         (lineBox({ ...chip.type, size: theme.chipSizes[step] }) +
           2 * (scalePx(chip.paddingY) + scalePx(chip.border))) +
       (rows - 1) * scalePx(theme.chipGap)
-    : lines * lineBox({ ...theme.body, size: theme.bodySizes[step] }) +
-      codeGrowth(body, lines);
+    : lines * lineBox(bodyRole) + codeGrowth(body, lines);
   const named =
     wrappedLines(
       name,

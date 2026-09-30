@@ -39,7 +39,7 @@ const Pane = ({
 }): ReactNode => {
   const { handles: split } = splitModule;
   return (
-    <div className={cls(context, split.column)}>
+    <div {...layoutRoom(context)} className={cls(context, split.column)}>
       {label ? (
         <h2
           className={cls(
@@ -52,7 +52,7 @@ const Pane = ({
           {label}
         </h2>
       ) : null}
-      <div {...layoutRoom(context)} className={cls(context, split.items)}>
+      <div className={cls(context, split.items)}>
         {items.map((node, index) => (
           <Fragment key={index}>
             {scope.renderReact(node, itemContext)}
