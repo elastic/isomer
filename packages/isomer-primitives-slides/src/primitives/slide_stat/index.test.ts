@@ -137,6 +137,23 @@ describe('slideStat', () => {
     expect(JSON.stringify(block)).toContain(
       '{"type":"text","text":"value pending","style":{"italic":true}}'
     );
-    expect(JSON.stringify(block)).toContain(body);
+    const texts =
+      block?.type === 'rich_text'
+        ? block.elements.map((element) =>
+            element.type === 'rich_text_list'
+              ? ''
+              : element.elements
+                  .map((inline) =>
+                    'text' in inline ? (inline.text ?? '') : ''
+                  )
+                  .join('')
+          )
+        : [];
+    for (const elementText of texts) {
+      expect(elementText.length).toBeLessThanOrEqual(
+        SLACK_LIMITS.sectionTextChars
+      );
+    }
+    expect(texts.join('')).toContain(body);
   });
 });
