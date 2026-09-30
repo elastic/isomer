@@ -5,6 +5,8 @@
  * 2.0.
  */
 
+import type { ScaleToken } from '@elastic/distillate';
+
 import type { SlideLayout } from '../../render/context';
 import { stripMarks } from '../../render/marks';
 import {
@@ -12,8 +14,9 @@ import {
   annotatedRenderShares,
 } from '../../theme/components/annotated_render';
 import { scalePx } from '../../theme/scale';
+import type { TypeRole } from '../../theme/type_role';
 import { type SlideSize, slideSizes } from '../../theme/variants';
-import { lineBox, proseLines, trackWidth, wrappedLines } from '../size';
+import { lineBox, measureText, trackWidth } from '../size';
 import { scaleUnderCaption } from '../slide_render/fit';
 import { headline } from '../slide_render/output';
 import type { SlideRenderNode } from '../slide_render/types';
@@ -37,16 +40,18 @@ const legendHeight = (
   step: SlideSize,
   textWidth: number
 ): number => {
-  const { padding, title, body } = legend.steps[step];
+  const { padding, ...sizes } = legend.steps[step];
+  const title = { ...legend.title, size: sizes.title };
+  const body = { ...legend.body, size: sizes.body };
+  const lines = (text: string, role: TypeRole & { lineHeight: ScaleToken }) =>
+    Math.max(1, measureText(text, role, textWidth).lines) * lineBox(role);
   return pins.reduce(
     (height, { title: name, body: text }) =>
       height +
       2 * scalePx(padding) +
-      wrappedLines(name, scalePx(title), textWidth, legend.title.tracking) *
-        lineBox({ size: title, lineHeight: legend.title.lineHeight }) +
+      lines(name, title) +
       scalePx(legend.textGap) +
-      proseLines(stripMarks(text), scalePx(body), textWidth) *
-        lineBox({ size: body, lineHeight: legend.body.lineHeight }) +
+      lines(stripMarks(text), body) +
       scalePx(legend.rule),
     scalePx(legend.rule)
   );

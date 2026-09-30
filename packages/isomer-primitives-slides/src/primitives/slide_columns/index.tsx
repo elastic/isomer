@@ -133,14 +133,23 @@ export const slack = (node: SlideColumnsNode): SlackBlock[] => {
   );
   return [
     items.every(({ tags = [] }) => tags.every(codeSafe))
-      ? slackFields(fields, () => richColumns(node))
+      ? slackFields(
+          fields,
+          () => richColumns(node),
+          items.flatMap(({ title, tags = [], body }) => [
+            title,
+            ...tags.map((tag) => ({ code: tag })),
+            { marks: body },
+          ])
+        )
       : richColumns(node),
     ...(footnote
       ? [
           codeSafe(footnote.code)
             ? slackContext(
                 `${code(oneLine(footnote.code))} ${oneLine(marksSlack(footnote.text))}`,
-                () => richFootnote(footnote)
+                () => richFootnote(footnote),
+                [{ code: footnote.code }, { marks: footnote.text }]
               )
             : richFootnote(footnote),
         ]

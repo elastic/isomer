@@ -72,7 +72,11 @@ export const schema = z
     crossRefine(
       ({ items, highlight }) =>
         highlight === undefined || highlight < items.length,
-      { error: 'must be an index into `items`', path: ['highlight'] }
+      {
+        error: 'must be an index into `items`',
+        path: ['highlight'],
+        rule: '`highlight`, when set, is an index into `items`.',
+      }
     )
   );
 

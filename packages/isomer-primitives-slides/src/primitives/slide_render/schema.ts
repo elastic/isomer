@@ -24,11 +24,7 @@ export const buildSchema = (bodyNodeSchema: ZodType<unknown>) =>
           'The host’s reference to the slide to embed, e.g. its slug. Until the host fills in `body`, a striped placeholder labeled with this reference stands in. A render needs `slide`, `body`, or both.'
         )
         .optional(),
-      body: embeddedBody(bodyNodeSchema)
-        .describe(
-          'What to render: one `slideFrame` alone, holding a whole slide, or one or more nodes that are not frames. Its ids are its own; it cannot hold another slideRender, slideRenderGrid, or slideAnnotatedRender.'
-        )
-        .optional(),
+      body: embeddedBody(bodyNodeSchema, 'What to render.').optional(),
       surface: z
         .enum(slideRenderSurfaces)
         .describe(
@@ -42,7 +38,11 @@ export const buildSchema = (bodyNodeSchema: ZodType<unknown>) =>
     .check(
       crossRefine(
         ({ slide, body }) => slide !== undefined || body !== undefined,
-        { error: 'needs a `slide` reference or a `body`', path: ['body'] }
+        {
+          error: 'needs a `slide` reference or a `body`',
+          path: ['body'],
+          rule: 'A render needs `slide`, `body`, or both.',
+        }
       )
     );
 

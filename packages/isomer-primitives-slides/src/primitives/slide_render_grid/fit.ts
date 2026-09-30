@@ -6,14 +6,12 @@
  */
 
 import type { SlideLayout } from '../../render/context';
-import { displayColumns } from '../../render/mono';
-import { monoAdvance } from '../../theme/base';
 import {
   renderGrid,
   type RenderGridShape,
 } from '../../theme/components/render_grid';
 import { scalePx } from '../../theme/scale';
-import { lineBox, proseLines, trackWidth } from '../size';
+import { lineBox, measureText, trackWidth } from '../size';
 import { embeddedScale } from '../slide_render/fit';
 
 import type { SlideRenderGridNode } from './types';
@@ -38,14 +36,16 @@ const headHeight = (
 ): number =>
   Math.max(
     ...tiles.map(({ surface, caption }) => {
-      const name =
-        displayColumns(surface) * monoAdvance * scalePx(renderGrid.name.size);
+      const name = measureText(surface, renderGrid.name).widest;
       return Math.max(
         lineBox(renderGrid.name),
-        proseLines(
-          caption,
-          scalePx(renderGrid.caption.size),
-          Math.max(1, cell - name - scalePx(renderGrid.headGap))
+        Math.max(
+          1,
+          measureText(
+            caption,
+            renderGrid.caption,
+            Math.max(1, cell - name - scalePx(renderGrid.headGap))
+          ).lines
         ) * lineBox(renderGrid.caption)
       );
     })

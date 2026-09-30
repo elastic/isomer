@@ -10,10 +10,9 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { oneLine } from '@elastic/isomer-sdk/author';
 import { type MarkdownContent, md } from '@elastic/isomer-sdk/markdown';
-import {
-  escapeMrkdwn,
-  type SlackAssetCollector,
-  type SlackBlock,
+import type {
+  SlackAssetCollector,
+  SlackBlock,
 } from '@elastic/isomer-sdk/slack';
 
 import {
@@ -22,7 +21,14 @@ import {
   renderTextChildren,
 } from '../../render/children';
 import type { SlideRenderScope } from '../../render/context';
-import { slackRichText } from '../../render/slack_text';
+import { richTextRun } from '../../render/marks';
+import {
+  richTextSection,
+  slackBold,
+  slackCodePanel,
+  slackRichText,
+  slackSection,
+} from '../../render/slack_text';
 import { slideDistillery } from '../../theme/distillery';
 import type { SlideRenderSurface } from '../../theme/variants';
 
@@ -148,6 +154,13 @@ export const embeddedMarkdown = (
     ? md.blockquote(renderMarkdownChildren(body, scope))
     : md.codeBlock(outputLines(surface, body, scope).join('\n'));
 
+const boldSection = (text: string): SlackBlock =>
+  slackSection(
+    slackBold(text),
+    () => slackRichText(richTextSection(richTextRun(text, { bold: true }))),
+    [text]
+  );
+
 /** A drawn slide's `header` blocks become bold sections, so the outer message keeps one header. */
 export const embeddedSlack = (
   body: readonly PrimitiveNode[],
@@ -157,24 +170,6 @@ export const embeddedSlack = (
 ): SlackBlock[] =>
   isDrawn(surface)
     ? renderSlackChildren(body, scope, collector).map((block) =>
-        block.type === 'header'
-          ? {
-              type: 'section',
-              text: {
-                type: 'mrkdwn',
-                text: `*${escapeMrkdwn(block.text.text)}*`,
-              },
-            }
-          : block
+        block.type === 'header' ? boldSection(block.text.text) : block
       )
-    : [
-        slackRichText({
-          type: 'rich_text_preformatted',
-          elements: [
-            {
-              type: 'text',
-              text: outputLines(surface, body, scope).join('\n'),
-            },
-          ],
-        }),
-      ];
+    : [slackCodePanel(outputLines(surface, body, scope).join('\n'))];

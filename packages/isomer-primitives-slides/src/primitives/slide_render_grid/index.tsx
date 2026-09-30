@@ -10,7 +10,12 @@ import { md } from '@elastic/isomer-sdk/markdown';
 import { bold, escapeMrkdwn, SLACK_LIMITS } from '@elastic/isomer-sdk/slack';
 import type { ZodType } from 'zod';
 
-import { fitsSlack, richTextSection, slackRichText } from '../../render';
+import {
+  fitsSlack,
+  mrkdwnKeeps,
+  richTextSection,
+  slackRichText,
+} from '../../render';
 import { richTextRun } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
@@ -60,6 +65,7 @@ export const slideRenderGridPrimitive = definePrimitive<SlideRenderGridNode>({
           `${bold(surface)}${join}${escapeMrkdwn(oneLine(caption))}`
       );
       return [
+        mrkdwnKeeps(tiles.map(({ caption }) => caption)) &&
         texts.every((text) => fitsSlack(text, SLACK_LIMITS.contextElementChars))
           ? {
               type: 'context',

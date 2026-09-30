@@ -372,8 +372,31 @@ const mrkdwnCases = {
   entity: ' &amp;',
 };
 
+const outputSurfaces = new Set(['markdown', 'text', 'slack']);
+
+// A body shown as another surface's output prints that surface's escaped source, and a grid always draws one.
+const withoutOutputBodies = (value: unknown): unknown => {
+  if (Array.isArray(value)) {
+    return value.map(withoutOutputBodies);
+  }
+  if (typeof value !== 'object' || value === null) {
+    return value;
+  }
+  const { type, surface } = value as { type?: unknown; surface?: unknown };
+  const printsOutput =
+    type === 'slideRenderGrid' ||
+    (type === 'slideRender' &&
+      typeof surface === 'string' &&
+      outputSurfaces.has(surface));
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => !(key === 'body' && printsOutput))
+      .map(([key, entry]) => [key, withoutOutputBodies(entry)])
+  );
+};
+
 const mrkdwnRows = rows.flatMap(({ name, node }) =>
-  wordPaths(node).flatMap((path) =>
+  wordPaths(withoutOutputBodies(node)).flatMap((path) =>
     Object.entries(mrkdwnCases).map(([kind, tail]) => ({
       name: `${name} ${path.join('.')}`,
       kind,

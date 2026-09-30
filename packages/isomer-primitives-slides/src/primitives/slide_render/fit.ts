@@ -11,7 +11,7 @@ import type { SlideLayout } from '../../render/context';
 import { frame } from '../../theme/components/frame';
 import { render } from '../../theme/components/render';
 import { scalePx } from '../../theme/scale';
-import { lineBox, monoLines } from '../size';
+import { lineBox, measureText } from '../size';
 
 import { headline } from './output';
 import type { SlideRenderNode } from './types';
@@ -21,7 +21,7 @@ const slideHeight = scalePx(frame.height);
 
 /** A render's caption wrapped across `width`, and the gap below it. */
 export const captionHeight = (caption: string, width: number): number =>
-  monoLines(caption, scalePx(render.caption.size), width) *
+  Math.max(1, measureText(caption, render.caption, width).lines) *
     lineBox(render.caption) +
   scalePx(render.captionGap);
 

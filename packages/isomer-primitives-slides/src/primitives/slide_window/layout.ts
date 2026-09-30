@@ -6,10 +6,9 @@
  */
 
 import type { SlideLayout } from '../../render/context';
-import { font } from '../../theme/base';
 import { window } from '../../theme/components/window';
 import { scalePx } from '../../theme/scale';
-import { lineBox, monoLines, wrappedLines } from '../size';
+import { lineBox, measureText } from '../size';
 
 import { windowTitle } from './title';
 import type { SlideWindowNode } from './types';
@@ -28,10 +27,7 @@ export const windowBodyLayout = (
       2 * border -
       2 * scalePx(slack ? window.slackBarPaddingX : window.barPaddingX)
   );
-  const title = windowTitle(node);
-  const lines = slack
-    ? wrappedLines(title, scalePx(role.size), across, font.tracking.none)
-    : monoLines(title, scalePx(role.size), across);
+  const lines = Math.max(1, measureText(windowTitle(node), role, across).lines);
   const bar =
     lines * lineBox(role) +
     2 * scalePx(slack ? window.slackBarPaddingY : window.barPaddingY) +

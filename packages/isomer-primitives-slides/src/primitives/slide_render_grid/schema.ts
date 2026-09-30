@@ -18,9 +18,7 @@ export const buildSchema = (bodyNodeSchema: ZodType<unknown>) =>
   z
     .object({
       type: z.literal('slideRenderGrid'),
-      body: embeddedBody(bodyNodeSchema).describe(
-        'What every tile renders: one `slideFrame` alone, or one or more nodes that are not frames. Its ids are its own; it cannot hold another slideRender, slideRenderGrid, or slideAnnotatedRender.'
-      ),
+      body: embeddedBody(bodyNodeSchema, 'What every tile renders.'),
       tiles: z
         .array(
           z
@@ -47,7 +45,11 @@ export const buildSchema = (bodyNodeSchema: ZodType<unknown>) =>
       crossRefine(
         ({ tiles }) =>
           new Set(tiles.map(({ surface }) => surface)).size === tiles.length,
-        { error: 'each surface may appear once', path: ['tiles'] }
+        {
+          error: 'each surface may appear once',
+          path: ['tiles'],
+          rule: 'Tiles in reading order, two to six, each surface once.',
+        }
       )
     );
 

@@ -8,6 +8,8 @@
 import { z } from '@elastic/isomer-sdk';
 import type { ZodType } from 'zod';
 
+import { crossSuperRefine } from '../cross_field';
+
 /** Primitive types that hold an embedded body. */
 export const EMBEDDING_TYPES: ReadonlySet<string> = new Set([
   'slideAnnotatedRender',
@@ -112,6 +114,9 @@ export const findNestedRender = (value: unknown): TreeSearch =>
     ({ type }) => typeof type === 'string' && EMBEDDING_TYPES.has(type)
   );
 
+/** The walk budget, as a body's description states it. */
+export const treeLimitRule = `It nests at most ${TREE_WALK_MAX_DEPTH} levels deep and holds at most ${TREE_WALK_MAX_VALUES} values.`;
+
 /** Why a {@link TreeSearch} stopped short, as a validation message; `undefined` when it did not. */
 export const treeLimitMessage = (search: TreeSearch): string | undefined =>
   search.kind === 'tooDeep'
@@ -125,40 +130,52 @@ const isFrame = (node: unknown): boolean =>
   node !== null &&
   (node as { type?: unknown }).type === 'slideFrame';
 
+const frameRule =
+  'One `slideFrame` alone, holding a whole slide, or one or more nodes that are not frames.';
+
+const nestedRule =
+  'It cannot hold another slideRender, slideRenderGrid, or slideAnnotatedRender.';
+
 /**
- * An embedded body: one `slideFrame`, or one or more nodes that are not frames. It is not a walked child, so its ids are its own and nothing in it renders an anchor.
+ * An embedded body, described as `lead` then its rules. It is not a walked child, so its ids are its own and nothing in it renders an anchor.
  */
-export const embeddedBody = (bodyNodeSchema: ZodType<unknown>) =>
+export const embeddedBody = (bodyNodeSchema: ZodType<unknown>, lead: string) =>
   z
     .array(bodyNodeSchema)
     .min(1)
     .check(
-      z.superRefine((body, ctx) => {
-        if (body.length > 1) {
-          body.forEach((node, index) => {
-            if (isFrame(node)) {
-              ctx.addIssue({
-                code: 'custom',
-                message:
-                  'a slideFrame must be the only node of an embedded body',
-                path: [index],
-              });
-            }
-          });
-        }
-        const search = findNestedRender(body);
-        const limit = treeLimitMessage(search);
-        if (limit) {
-          ctx.addIssue({
-            code: 'custom',
-            message: `an embedded body cannot be checked: it ${limit}`,
-          });
-        } else if (search.kind === 'found') {
-          ctx.addIssue({
-            code: 'custom',
-            message: 'an embedded body cannot hold another render',
-            path: search.path,
-          });
-        }
-      })
+      crossSuperRefine<unknown[]>(
+        (body, ctx) => {
+          if (body.length > 1) {
+            body.forEach((node, index) => {
+              if (isFrame(node)) {
+                ctx.addIssue({
+                  code: 'custom',
+                  message:
+                    'a slideFrame must be the only node of an embedded body',
+                  path: [index],
+                });
+              }
+            });
+          }
+          const search = findNestedRender(body);
+          const limit = treeLimitMessage(search);
+          if (limit) {
+            ctx.addIssue({
+              code: 'custom',
+              message: `an embedded body cannot be checked: it ${limit}`,
+            });
+          } else if (search.kind === 'found') {
+            ctx.addIssue({
+              code: 'custom',
+              message: 'an embedded body cannot hold another render',
+              path: search.path,
+            });
+          }
+        },
+        [frameRule, nestedRule, treeLimitRule]
+      )
+    )
+    .describe(
+      `${lead} ${frameRule} Its ids are its own. ${nestedRule} ${treeLimitRule}`
     );

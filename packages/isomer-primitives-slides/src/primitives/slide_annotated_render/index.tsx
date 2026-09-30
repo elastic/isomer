@@ -88,7 +88,8 @@ export const slideAnnotatedRenderPrimitive =
                 `${index + 1}. ${bold(oneLine(title))}${dash}${oneLine(marksSlack(body))}`
             )
             .join('\n'),
-          () => richLegend(pins)
+          () => richLegend(pins),
+          pins.flatMap(({ title, body }) => [title, { marks: body }])
         ),
       ],
     },

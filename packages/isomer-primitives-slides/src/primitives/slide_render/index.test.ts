@@ -116,7 +116,7 @@ describe('slideRender schema', () => {
         (entry) => entry.type === type
       )!.schema;
       expect(JSON.stringify(z.toJSONSchema(schema))).toContain(
-        'one `slideFrame` alone'
+        'One `slideFrame` alone'
       );
     }
   );
@@ -274,6 +274,24 @@ describe('slideRender output', () => {
     expect(blocks).toContainEqual({
       type: 'section',
       text: { type: 'mrkdwn', text: '*Orders now arrive in under 30 minutes*' },
+    });
+  });
+
+  it('keeps an embedded header’s formatting characters as authored', () => {
+    const title = 'Ship *a* <b>';
+    const node = {
+      type: 'slideRender',
+      surface: 'svg',
+      body: [{ ...heading, title }],
+    };
+    expect(runtime.surfaces.slack.renderNode(node).blocks).toContainEqual({
+      type: 'rich_text',
+      elements: [
+        {
+          type: 'rich_text_section',
+          elements: [{ type: 'text', text: title, style: { bold: true } }],
+        },
+      ],
     });
   });
 });

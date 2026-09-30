@@ -17,6 +17,7 @@ import {
   TREE_WALK_MAX_DEPTH,
   TREE_WALK_MAX_VALUES,
   treeLimitMessage,
+  treeLimitRule,
 } from '../slide_render/embedded';
 
 // A window inside an embedded slide sits in another slide, so embedded bodies are skipped.
@@ -45,7 +46,7 @@ export const buildSchema = (nodeSchema: ZodType<unknown>) =>
         .array(nodeSchema)
         .min(1)
         .describe(
-          'Slide nodes shown inside the window, top to bottom, e.g. a slideCode or slideBulletList. At least one; never another slideWindow.'
+          `Slide nodes shown inside the window, top to bottom, e.g. a slideCode or slideBulletList. At least one; never another slideWindow. ${treeLimitRule}`
         ),
     })
     .strict()
@@ -53,12 +54,14 @@ export const buildSchema = (nodeSchema: ZodType<unknown>) =>
       crossRefine(({ body }) => findWindow(body).kind !== 'found', {
         error: 'a window cannot hold another window',
         path: ['body'],
+        rule: 'At least one; never another slideWindow.',
       })
     )
     .check(
       crossRefine(({ body }) => !treeLimitMessage(findWindow(body)), {
         error: `a window body cannot be checked past ${TREE_WALK_MAX_DEPTH} levels or ${TREE_WALK_MAX_VALUES} values`,
         path: ['body'],
+        rule: treeLimitRule,
       })
     );
 
