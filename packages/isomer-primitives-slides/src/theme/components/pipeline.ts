@@ -11,6 +11,7 @@ import { paddingXy, px, scalePx } from '../scale';
 import { glyph } from './shared';
 
 const circleSize = space.px72;
+const terminalPaddingX = space.px20;
 
 export const pipeline = {
   gap: space.px48,
@@ -27,7 +28,8 @@ export const pipeline = {
   bodySizes: { l: type.body.size, m: font.size.px26, s: font.size.px24 },
   terminal: {
     type: type.mono,
-    padding: paddingXy(space.px14, space.px20),
+    padding: paddingXy(space.px14, terminalPaddingX),
+    paddingX: terminalPaddingX,
     border: stroke.chip,
     radius: radius.chip,
   },
@@ -60,4 +62,4 @@ export const pipeline = {
   dash: glyph.dash,
 } as const;
 
-export const pipelineFit = { l: 500, m: 600 } as const;
+export const pipelineFit = { l: 940, m: 1030 } as const;

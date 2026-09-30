@@ -12,8 +12,9 @@ import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
 
-import { example } from './examples';
+import { example, fullExample } from './examples';
 import { markdown as markdownContent, text } from './index';
+import { layersMaxLayers } from './schema';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -32,6 +33,11 @@ const markdown = (node: Parameters<typeof markdownContent>[0]): string =>
   serializeMarkdown(markdownContent(node));
 
 describe('slideLayers', () => {
+  // The fit test measures this, so it holds the most layers a stack takes.
+  it('pins the fullest example at the cap', () => {
+    expect(fullExample.layers).toHaveLength(layersMaxLayers);
+  });
+
   it('holds three to six layers, each with body or chips', () => {
     expect(errorPaths({ ...example, layers: example.layers.slice(0, 2) }))
       .toMatchInlineSnapshot(`
@@ -61,253 +67,265 @@ describe('slideLayers', () => {
 
   it('renders text and markdown', () => {
     expect(text(example)).toMatchInlineSnapshot(`
-      "Apps — ios, android, web · Client team
-      Gateway — Routes, rate-limits, and authenticates every request · Platform
+      "Apps — ios, android, web · ● Client team
+      Gateway — Routes, rate-limits, and authenticates every request · ● Platform
       Services — Orders, catalog, and delivery slots, each deployed on its own · Product teams
       Data — postgres, redis, kafka · Data team
-      Cloud — Compute, storage, and the network under all of it · Provider"
+      Cloud — Compute, storage, and the network under all of it · ○ Provider"
     `);
     expect(markdown(example)).toMatchInlineSnapshot(`
-      "1. **Apps** — \`ios\`, \`android\`, \`web\` · _Client team_
-      2. **Gateway** — Routes, rate-limits, and authenticates every request · _Platform_
+      "1. **Apps** — \`ios\`, \`android\`, \`web\` · ● _Client team_
+      2. **Gateway** — Routes, rate-limits, and authenticates every request · ● _Platform_
       3. **Services** — Orders, catalog, and **delivery slots**, each deployed on its own · _Product teams_
       4. **Data** — \`postgres\`, \`redis\`, \`kafka\` · _Data team_
-      5. **Cloud** — Compute, storage, and the network under all of it · _Provider_"
+      5. **Cloud** — Compute, storage, and the network under all of it · ○ _Provider_"
     `);
   });
 
   it('renders Slack as an ordered list, top layer first', () => {
     expect(runtime.surfaces.slack.renderNode(example).blocks)
       .toMatchInlineSnapshot(`
-      [
-        {
-          "elements": [
-            {
-              "elements": [
-                {
-                  "elements": [
-                    {
-                      "style": {
-                        "bold": true,
+        [
+          {
+            "elements": [
+              {
+                "elements": [
+                  {
+                    "elements": [
+                      {
+                        "style": {
+                          "bold": true,
+                        },
+                        "text": "Apps",
+                        "type": "text",
                       },
-                      "text": "Apps",
-                      "type": "text",
-                    },
-                    {
-                      "text": " — ",
-                      "type": "text",
-                    },
-                    {
-                      "style": {
-                        "code": true,
+                      {
+                        "text": " — ",
+                        "type": "text",
                       },
-                      "text": "ios",
-                      "type": "text",
-                    },
-                    {
-                      "text": ", ",
-                      "type": "text",
-                    },
-                    {
-                      "style": {
-                        "code": true,
+                      {
+                        "style": {
+                          "code": true,
+                        },
+                        "text": "ios",
+                        "type": "text",
                       },
-                      "text": "android",
-                      "type": "text",
-                    },
-                    {
-                      "text": ", ",
-                      "type": "text",
-                    },
-                    {
-                      "style": {
-                        "code": true,
+                      {
+                        "text": ", ",
+                        "type": "text",
                       },
-                      "text": "web",
-                      "type": "text",
-                    },
-                    {
-                      "text": " · ",
-                      "type": "text",
-                    },
-                    {
-                      "style": {
-                        "italic": true,
+                      {
+                        "style": {
+                          "code": true,
+                        },
+                        "text": "android",
+                        "type": "text",
                       },
-                      "text": "Client team",
-                      "type": "text",
-                    },
-                  ],
-                  "type": "rich_text_section",
-                },
-                {
-                  "elements": [
-                    {
-                      "style": {
-                        "bold": true,
+                      {
+                        "text": ", ",
+                        "type": "text",
                       },
-                      "text": "Gateway",
-                      "type": "text",
-                    },
-                    {
-                      "text": " — ",
-                      "type": "text",
-                    },
-                    {
-                      "text": "Routes, rate-limits, and authenticates every request",
-                      "type": "text",
-                    },
-                    {
-                      "text": " · ",
-                      "type": "text",
-                    },
-                    {
-                      "style": {
-                        "italic": true,
+                      {
+                        "style": {
+                          "code": true,
+                        },
+                        "text": "web",
+                        "type": "text",
                       },
-                      "text": "Platform",
-                      "type": "text",
-                    },
-                  ],
-                  "type": "rich_text_section",
-                },
-                {
-                  "elements": [
-                    {
-                      "style": {
-                        "bold": true,
+                      {
+                        "text": " · ",
+                        "type": "text",
                       },
-                      "text": "Services",
-                      "type": "text",
-                    },
-                    {
-                      "text": " — ",
-                      "type": "text",
-                    },
-                    {
-                      "text": "Orders, catalog, and ",
-                      "type": "text",
-                    },
-                    {
-                      "style": {
-                        "bold": true,
+                      {
+                        "text": "● ",
+                        "type": "text",
                       },
-                      "text": "delivery slots",
-                      "type": "text",
-                    },
-                    {
-                      "text": ", each deployed on its own",
-                      "type": "text",
-                    },
-                    {
-                      "text": " · ",
-                      "type": "text",
-                    },
-                    {
-                      "style": {
-                        "italic": true,
+                      {
+                        "style": {
+                          "italic": true,
+                        },
+                        "text": "Client team",
+                        "type": "text",
                       },
-                      "text": "Product teams",
-                      "type": "text",
-                    },
-                  ],
-                  "type": "rich_text_section",
-                },
-                {
-                  "elements": [
-                    {
-                      "style": {
-                        "bold": true,
+                    ],
+                    "type": "rich_text_section",
+                  },
+                  {
+                    "elements": [
+                      {
+                        "style": {
+                          "bold": true,
+                        },
+                        "text": "Gateway",
+                        "type": "text",
                       },
-                      "text": "Data",
-                      "type": "text",
-                    },
-                    {
-                      "text": " — ",
-                      "type": "text",
-                    },
-                    {
-                      "style": {
-                        "code": true,
+                      {
+                        "text": " — ",
+                        "type": "text",
                       },
-                      "text": "postgres",
-                      "type": "text",
-                    },
-                    {
-                      "text": ", ",
-                      "type": "text",
-                    },
-                    {
-                      "style": {
-                        "code": true,
+                      {
+                        "text": "Routes, rate-limits, and authenticates every request",
+                        "type": "text",
                       },
-                      "text": "redis",
-                      "type": "text",
-                    },
-                    {
-                      "text": ", ",
-                      "type": "text",
-                    },
-                    {
-                      "style": {
-                        "code": true,
+                      {
+                        "text": " · ",
+                        "type": "text",
                       },
-                      "text": "kafka",
-                      "type": "text",
-                    },
-                    {
-                      "text": " · ",
-                      "type": "text",
-                    },
-                    {
-                      "style": {
-                        "italic": true,
+                      {
+                        "text": "● ",
+                        "type": "text",
                       },
-                      "text": "Data team",
-                      "type": "text",
-                    },
-                  ],
-                  "type": "rich_text_section",
-                },
-                {
-                  "elements": [
-                    {
-                      "style": {
-                        "bold": true,
+                      {
+                        "style": {
+                          "italic": true,
+                        },
+                        "text": "Platform",
+                        "type": "text",
                       },
-                      "text": "Cloud",
-                      "type": "text",
-                    },
-                    {
-                      "text": " — ",
-                      "type": "text",
-                    },
-                    {
-                      "text": "Compute, storage, and the network under all of it",
-                      "type": "text",
-                    },
-                    {
-                      "text": " · ",
-                      "type": "text",
-                    },
-                    {
-                      "style": {
-                        "italic": true,
+                    ],
+                    "type": "rich_text_section",
+                  },
+                  {
+                    "elements": [
+                      {
+                        "style": {
+                          "bold": true,
+                        },
+                        "text": "Services",
+                        "type": "text",
                       },
-                      "text": "Provider",
-                      "type": "text",
-                    },
-                  ],
-                  "type": "rich_text_section",
-                },
-              ],
-              "style": "ordered",
-              "type": "rich_text_list",
-            },
-          ],
-          "type": "rich_text",
-        },
-      ]
-    `);
+                      {
+                        "text": " — ",
+                        "type": "text",
+                      },
+                      {
+                        "text": "Orders, catalog, and ",
+                        "type": "text",
+                      },
+                      {
+                        "style": {
+                          "bold": true,
+                        },
+                        "text": "delivery slots",
+                        "type": "text",
+                      },
+                      {
+                        "text": ", each deployed on its own",
+                        "type": "text",
+                      },
+                      {
+                        "text": " · ",
+                        "type": "text",
+                      },
+                      {
+                        "style": {
+                          "italic": true,
+                        },
+                        "text": "Product teams",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "rich_text_section",
+                  },
+                  {
+                    "elements": [
+                      {
+                        "style": {
+                          "bold": true,
+                        },
+                        "text": "Data",
+                        "type": "text",
+                      },
+                      {
+                        "text": " — ",
+                        "type": "text",
+                      },
+                      {
+                        "style": {
+                          "code": true,
+                        },
+                        "text": "postgres",
+                        "type": "text",
+                      },
+                      {
+                        "text": ", ",
+                        "type": "text",
+                      },
+                      {
+                        "style": {
+                          "code": true,
+                        },
+                        "text": "redis",
+                        "type": "text",
+                      },
+                      {
+                        "text": ", ",
+                        "type": "text",
+                      },
+                      {
+                        "style": {
+                          "code": true,
+                        },
+                        "text": "kafka",
+                        "type": "text",
+                      },
+                      {
+                        "text": " · ",
+                        "type": "text",
+                      },
+                      {
+                        "style": {
+                          "italic": true,
+                        },
+                        "text": "Data team",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "rich_text_section",
+                  },
+                  {
+                    "elements": [
+                      {
+                        "style": {
+                          "bold": true,
+                        },
+                        "text": "Cloud",
+                        "type": "text",
+                      },
+                      {
+                        "text": " — ",
+                        "type": "text",
+                      },
+                      {
+                        "text": "Compute, storage, and the network under all of it",
+                        "type": "text",
+                      },
+                      {
+                        "text": " · ",
+                        "type": "text",
+                      },
+                      {
+                        "text": "○ ",
+                        "type": "text",
+                      },
+                      {
+                        "style": {
+                          "italic": true,
+                        },
+                        "text": "Provider",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "rich_text_section",
+                  },
+                ],
+                "style": "ordered",
+                "type": "rich_text_list",
+              },
+            ],
+            "type": "rich_text",
+          },
+        ]
+      `);
   });
 });

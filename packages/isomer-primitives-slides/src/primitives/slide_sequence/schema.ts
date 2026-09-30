@@ -40,7 +40,7 @@ const messageSchema = z
       'The receiving actor’s `id`, never the same as `from`.'
     ),
     label: lineText().describe(
-      'What is sent, set above the arrow on one line that never wraps: a few words, e.g. "Card declined". `code` and `**strong**` marks are allowed; set a call, a path, or an error string as `code`.'
+      'What is sent, set above the arrow on one line: a few words, e.g. "Card declined". `code` and `**strong**` marks are allowed; set a call, a path, or an error string as `code`.'
     ),
   })
   .strict();
@@ -74,6 +74,12 @@ export const schema = z
   .strict()
   .check(
     crossSuperRefine(({ actors, messages }, context) => {
+      if (
+        actors.length > sequenceMaxActors ||
+        messages.length > sequenceMaxMessages
+      ) {
+        return;
+      }
       const ids = new Set<string>();
       actors.forEach(({ id }, index) => {
         if (ids.has(id)) {

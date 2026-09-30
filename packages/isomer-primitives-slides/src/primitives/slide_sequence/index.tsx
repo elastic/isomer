@@ -10,6 +10,7 @@ import { md } from '@elastic/isomer-sdk/markdown';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
 import { marksMarkdown, marksRichText, plainText } from '../../render/marks';
+import { toneCueText } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -26,9 +27,14 @@ export type {
 
 const arrow = ` ${slideDistillery.tokens.sequence.arrow.value} `;
 
-/** Each message's `from → to: ` route, by actor label, never id, and its label. */
+/** Each message's `from → to: ` route, by actor label and tone cue, never id, and its label. */
 const routed = ({ actors, messages }: SlideSequenceNode) => {
-  const names = new Map(actors.map(({ id, label }) => [id, oneLine(label)]));
+  const names = new Map(
+    actors.map(({ id, label, tone }) => [
+      id,
+      `${toneCueText(tone)}${oneLine(label)}`,
+    ])
+  );
   const name = (id: string) => names.get(id) ?? oneLine(id);
   return messages.map(({ from, to, label }) => ({
     route: `${name(from)}${arrow}${name(to)}: `,

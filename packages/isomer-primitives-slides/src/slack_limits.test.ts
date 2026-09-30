@@ -212,6 +212,66 @@ const cases: LimitCase[] = [
       panels: [{ file: `order ${fill}`, lines: ['{}'] }],
     }),
   },
+  {
+    name: 'slidePipeline chain',
+    slot: 'context',
+    limit: SLACK_LIMITS.contextElementChars,
+    filler: 'x',
+    max: 3000,
+    node: (fill) => ({
+      type: 'slidePipeline',
+      steps: [{ title: `Order ${fill}` }, { title: 'Receipt' }],
+    }),
+  },
+  {
+    name: 'slideLanes lanes',
+    slot: 'section',
+    limit: SLACK_LIMITS.sectionTextChars,
+    filler: 'x',
+    max: 4000,
+    node: (fill) => ({
+      type: 'slideLanes',
+      lanes: [
+        { label: 'Web', steps: [`Basket ${fill}`] },
+        { label: 'Phone', steps: ['Call'] },
+      ],
+      join: 'Checkout',
+    }),
+  },
+  {
+    name: 'slideLanes toned lane',
+    slot: 'section',
+    limit: SLACK_LIMITS.sectionTextChars,
+    filler: '&',
+    max: 1000,
+    node: (fill) => ({
+      type: 'slideLanes',
+      lanes: [
+        { label: 'Web', steps: [fill], tone: 'primary' },
+        { label: 'Phone', steps: ['Call'], tone: 'accent' },
+      ],
+      join: 'Checkout',
+    }),
+  },
+  {
+    name: 'slideLanes notes',
+    slot: 'fields',
+    limit: SLACK_LIMITS.sectionFieldChars,
+    filler: 'x',
+    max: 3000,
+    node: (fill) => ({
+      type: 'slideLanes',
+      lanes: [
+        { label: 'Web', steps: ['Basket'] },
+        { label: 'Phone', steps: ['Call'] },
+      ],
+      join: 'Checkout',
+      notes: [
+        { title: 'Self-serve', body: `The customer ${fill}` },
+        { title: 'Assisted', body: 'An agent keys it' },
+      ],
+    }),
+  },
 ];
 
 const schemas = new Map<string, (typeof slideDeckPrimitives)[number]['schema']>(

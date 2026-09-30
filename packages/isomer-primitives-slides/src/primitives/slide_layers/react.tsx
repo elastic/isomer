@@ -11,22 +11,23 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { marksReact } from '../../render/marks';
-import { layersFit } from '../../theme/components/layers';
+import { ToneCue } from '../../render/tone_cue';
 import { labelModule, layoutModule, tonesModule } from '../../theme/modules';
-import { sizeForLoad } from '../size';
 
+import { layersStep } from './fit';
 import type { SlideLayersNode } from './schema';
 import { layersModule } from './styles';
 
 /** React renderer for {@link SlideLayersNode}. */
 export const react = (
-  { type, layers, size }: SlideLayersNode,
+  node: SlideLayersNode,
   { context }: SlideReactEnv
 ): ReactNode => {
+  const { type, layers } = node;
   const { handles: style } = layersModule;
   const { handles: label } = labelModule;
   const { handles: tones } = tonesModule;
-  const step = sizeForLoad(size, layers.length, layersFit, context?.crowding);
+  const step = layersStep(node, context);
   return (
     <div
       {...nodeAnchor(context, { type })}
@@ -61,6 +62,7 @@ export const react = (
                 style.owner,
                 ...(tone ? [tones.tone[tone], label.toned] : [])
               )}>
+              <ToneCue {...{ tone, context }} />
               {owner}
             </span>
           </li>

@@ -8,7 +8,12 @@
 import { describe, expect, it } from 'vitest';
 
 import { tallestExample } from './examples';
-import { headingCrowding, headingStep } from './fit';
+import {
+  crowdingAfter,
+  headingCrowding,
+  headingStep,
+  openCrowding,
+} from './fit';
 
 describe('headingCrowding', () => {
   it('stays positive and finite for a heading taller than the frame body', () => {
@@ -31,5 +36,22 @@ describe('headingCrowding', () => {
     expect(
       headingCrowding({ type: 'slideHeading', title: 'Short' })
     ).toBeLessThanOrEqual(1);
+  });
+});
+
+describe('openCrowding', () => {
+  it('leaves more room than any heading does', () => {
+    expect(openCrowding).toBeLessThan(
+      headingCrowding({ type: 'slideHeading', title: 'Short' })
+    );
+  });
+});
+
+describe('crowdingAfter', () => {
+  it('rises as height is taken, and stays finite past the room', () => {
+    expect(crowdingAfter(1, 0)).toBe(1);
+    expect(crowdingAfter(1, 100)).toBeGreaterThan(1);
+    expect(crowdingAfter(0.8, 100)).toBeGreaterThan(0.8);
+    expect(Number.isFinite(crowdingAfter(1, 1e6))).toBe(true);
   });
 });

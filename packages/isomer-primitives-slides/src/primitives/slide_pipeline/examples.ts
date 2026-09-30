@@ -49,6 +49,25 @@ export const bareStepsExample: SlidePipelineNode = {
 };
 
 /** Spans mode: chips bracketed by who owns each run. */
+/** The most steps a pipeline takes, each with a body. */
+export const fullExample: SlidePipelineNode = {
+  type: 'slidePipeline',
+  steps: [
+    { title: 'Commit', body: 'A merge to `main` starts the run.' },
+    { title: 'Build', body: 'One image per service, tagged by commit.' },
+    { title: 'Test', body: 'Unit and contract suites run in parallel.' },
+    { title: 'Stage', body: 'The image serves replayed traffic for an hour.' },
+    {
+      title: 'Approve',
+      body: 'An owner signs off on the diff and the graphs.',
+    },
+    {
+      title: 'Release',
+      body: 'Regions update one at a time, watching errors.',
+    },
+  ],
+};
+
 export const spansExample: SlidePipelineNode = {
   type: 'slidePipeline',
   steps: [
@@ -119,6 +138,7 @@ export const threeSpansExample: SlidePipelineNode = {
 export const examples: SlidePipelineNode[] = [
   example,
   bareStepsExample,
+  fullExample,
   spansExample,
   threeSpansExample,
 ];

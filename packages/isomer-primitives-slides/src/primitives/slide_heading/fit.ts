@@ -47,6 +47,13 @@ const referenceRoom = roomBelow(headingHeight(2, 2, 'l'));
 export const headingStep = ({ title, size }: SlideHeadingNode): SlideSize =>
   sizeForLoad(size, displayColumns(stripMarks(title)), headingFit);
 
+/** {@link SlideRenderContext.crowding} for a body that opens without a heading. */
+export const openCrowding = referenceRoom / bodyHeight;
+
+/** `crowding` once `height` more px of the room is taken. */
+export const crowdingAfter = (crowding: number, height: number): number =>
+  referenceRoom / Math.max(1, referenceRoom / crowding - height);
+
 /** For {@link SlideRenderContext.crowding}. */
 export const headingCrowding = (node: SlideHeadingNode): number => {
   const step = headingStep(node);

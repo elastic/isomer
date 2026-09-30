@@ -18,7 +18,7 @@ import { withContextFields } from '../../render/context_view';
 import { LogoMark } from '../../render/logo';
 import { isomerDeckRoot, slideDistillery } from '../../theme/distillery';
 import { deckRootModule } from '../../theme/modules';
-import { headingCrowding } from '../slide_heading/fit';
+import { headingCrowding, openCrowding } from '../slide_heading/fit';
 
 import { frameModule } from './styles';
 import type { SlideFrameNode } from './types';
@@ -76,10 +76,10 @@ export const SlideFrameView = ({
   const [first] = body;
   const inside: SlideRenderContext | undefined =
     logo === false ? withContextFields(context, { logo }) : context;
-  const below: SlideRenderContext | undefined =
-    first?.type === 'slideHeading'
-      ? withContextFields(inside, { crowding: headingCrowding(first) })
-      : inside;
+  const opensWithHeading = first?.type === 'slideHeading';
+  const below = withContextFields(inside, {
+    crowding: opensWithHeading ? headingCrowding(first) : openCrowding,
+  });
   return (
     <div
       {...nodeAnchor(context, { type })}
@@ -89,7 +89,10 @@ export const SlideFrameView = ({
         <main className={cls(context, frame.body)}>
           {body.map((child, index) => (
             <Fragment key={index}>
-              {scope.renderReact(child, index === 0 ? inside : below)}
+              {scope.renderReact(
+                child,
+                opensWithHeading && index === 0 ? inside : below
+              )}
             </Fragment>
           ))}
         </main>

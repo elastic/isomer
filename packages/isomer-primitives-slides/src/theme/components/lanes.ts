@@ -6,7 +6,7 @@
  */
 
 import { font, radius, space, stroke, type } from '../base';
-import { paddingXy, px, scalePx } from '../scale';
+import { literal, paddingXy, px, scalePx } from '../scale';
 
 import { glyph } from './shared';
 
@@ -48,4 +48,6 @@ export const lanes = {
     body: type.body,
   },
   arrow: glyph.arrow,
+  /** Joins the two lanes' names in what assistive technology announces for the merge. */
+  mergeJoiner: literal('and'),
 } as const;

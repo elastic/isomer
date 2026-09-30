@@ -11,7 +11,7 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { marksReact } from '../../render/marks';
-import { sequenceFit } from '../../theme/components/sequence';
+import { ToneCue } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import {
   connectorModule,
@@ -19,8 +19,8 @@ import {
   tonesModule,
 } from '../../theme/modules';
 import { countKey } from '../../theme/variants';
-import { sizeForLoad } from '../size';
 
+import { sequenceStep } from './fit';
 import type { SlideSequenceNode } from './schema';
 import { sequenceModule } from './styles';
 
@@ -34,15 +34,11 @@ const centerLine = (index: number): number => 2 * index + 2;
 
 /** React renderer for {@link SlideSequenceNode}. */
 export const react = (
-  { type, actors, messages, size }: SlideSequenceNode,
+  node: SlideSequenceNode,
   { context }: SlideReactEnv
 ): ReactNode => {
-  const step = sizeForLoad(
-    size,
-    messages.length,
-    sequenceFit,
-    context?.crowding
-  );
+  const { type, actors, messages } = node;
+  const step = sequenceStep(node, context);
   const indexOf = new Map(actors.map(({ id }, index) => [id, index]));
   const byId = new Map(actors.map((actor) => [actor.id, actor]));
   const span = (index: number) => [
@@ -73,11 +69,13 @@ export const react = (
             className={cls(
               context,
               sequence.actor,
+              sequence.actorSize[step],
               sequence.row[countKey(1)],
               ...span(index),
               ...(tone ? [tones.tone[tone], sequence.actorToned] : [])
             )}
             key={id}>
+            <ToneCue {...{ tone, context }} />
             {label}
           </span>
         ))}

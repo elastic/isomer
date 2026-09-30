@@ -12,8 +12,14 @@ import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
 
-import { example, spansExample } from './examples';
+import {
+  example,
+  fullExample,
+  spansExample,
+  threeSpansExample,
+} from './examples';
 import { markdown as markdownContent, text } from './index';
+import { pipelineMaxSpans, pipelineMaxSteps } from './schema';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -34,6 +40,13 @@ const markdown = (node: Parameters<typeof markdownContent>[0]): string =>
   serializeMarkdown(markdownContent(node));
 
 describe('slidePipeline', () => {
+  // The fit test measures these, so they hold the most steps and spans a pipeline takes.
+  it('pins the fullest examples at the caps', () => {
+    expect(fullExample.steps).toHaveLength(pipelineMaxSteps);
+    expect(fullExample.steps.every(({ body }) => body)).toBe(true);
+    expect(threeSpansExample.spans).toHaveLength(pipelineMaxSpans);
+  });
+
   it('keeps spans in range, apart, and free of steps-mode fields', () => {
     const [first, second] = spansExample.spans ?? [];
     expect(
@@ -54,6 +67,17 @@ describe('slidePipeline', () => {
         "body[0].body[0].steps: step bodies are steps mode only; with \`spans\`, put the detail in the span’s body",
       ]
     `);
+  });
+
+  it('runs no cross-field check once a count is over its cap', () => {
+    const [span] = spansExample.spans ?? [];
+    const found = errors({
+      ...spansExample,
+      steps: [{ title: 'In', body: 'Held.' }, ...spansExample.steps],
+      spans: Array.from({ length: pipelineMaxSpans + 1 }, () => span),
+    });
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatch(/^body\[0\]\.body\[0\]\.spans: /);
   });
 
   it('renders text and markdown in steps mode', () => {
@@ -77,14 +101,14 @@ describe('slidePipeline', () => {
   it('renders text and markdown in spans mode', () => {
     expect(text(spansExample)).toMatchInlineSnapshot(`
       "Basket → Checkout → Payment intent → Card network → Bank
-      Our app (Basket → Payment intent): We own the basket to the intent — Every step here ships with the app and is covered by our own tests.
-      Partners (Card network → Bank): Settlement is theirs — The network and the bank decide timing; we only see the result."
+      ● Our app (Basket → Payment intent): We own the basket to the intent — Every step here ships with the app and is covered by our own tests.
+      ○ Partners (Card network → Bank): Settlement is theirs — The network and the bank decide timing; we only see the result."
     `);
     expect(markdown(spansExample)).toMatchInlineSnapshot(`
       "Basket → Checkout → Payment intent → Card network → Bank
 
-      - **Our app** (Basket → Payment intent): We own the basket to the intent — Every step here ships with the app and is covered by our own tests.
-      - **Partners** (Card network → Bank): Settlement is theirs — The network and the bank decide timing; we only see the result."
+      - ● **Our app** (Basket → Payment intent): We own the basket to the intent — Every step here ships with the app and is covered by our own tests.
+      - ○ **Partners** (Card network → Bank): Settlement is theirs — The network and the bank decide timing; we only see the result."
     `);
   });
 
@@ -214,84 +238,92 @@ describe('slidePipeline', () => {
     `);
     expect(runtime.surfaces.slack.renderNode(spansExample).blocks)
       .toMatchInlineSnapshot(`
-      [
-        {
-          "elements": [
-            {
-              "text": "Basket → Checkout → Payment intent → Card network → Bank",
-              "type": "mrkdwn",
-            },
-          ],
-          "type": "context",
-        },
-        {
-          "elements": [
-            {
-              "elements": [
-                {
-                  "elements": [
-                    {
-                      "style": {
-                        "bold": true,
+        [
+          {
+            "elements": [
+              {
+                "text": "Basket → Checkout → Payment intent → Card network → Bank",
+                "type": "mrkdwn",
+              },
+            ],
+            "type": "context",
+          },
+          {
+            "elements": [
+              {
+                "elements": [
+                  {
+                    "elements": [
+                      {
+                        "text": "● ",
+                        "type": "text",
                       },
-                      "text": "Our app",
-                      "type": "text",
-                    },
-                    {
-                      "text": " (Basket → Payment intent): ",
-                      "type": "text",
-                    },
-                    {
-                      "text": "We own the basket to the intent",
-                      "type": "text",
-                    },
-                    {
-                      "text": " — ",
-                      "type": "text",
-                    },
-                    {
-                      "text": "Every step here ships with the app and is covered by our own tests.",
-                      "type": "text",
-                    },
-                  ],
-                  "type": "rich_text_section",
-                },
-                {
-                  "elements": [
-                    {
-                      "style": {
-                        "bold": true,
+                      {
+                        "style": {
+                          "bold": true,
+                        },
+                        "text": "Our app",
+                        "type": "text",
                       },
-                      "text": "Partners",
-                      "type": "text",
-                    },
-                    {
-                      "text": " (Card network → Bank): ",
-                      "type": "text",
-                    },
-                    {
-                      "text": "Settlement is theirs",
-                      "type": "text",
-                    },
-                    {
-                      "text": " — ",
-                      "type": "text",
-                    },
-                    {
-                      "text": "The network and the bank decide timing; we only see the result.",
-                      "type": "text",
-                    },
-                  ],
-                  "type": "rich_text_section",
-                },
-              ],
-              "style": "bullet",
-              "type": "rich_text_list",
-            },
-          ],
-          "type": "rich_text",
-        },
-      ]
-    `);
+                      {
+                        "text": " (Basket → Payment intent): ",
+                        "type": "text",
+                      },
+                      {
+                        "text": "We own the basket to the intent",
+                        "type": "text",
+                      },
+                      {
+                        "text": " — ",
+                        "type": "text",
+                      },
+                      {
+                        "text": "Every step here ships with the app and is covered by our own tests.",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "rich_text_section",
+                  },
+                  {
+                    "elements": [
+                      {
+                        "text": "○ ",
+                        "type": "text",
+                      },
+                      {
+                        "style": {
+                          "bold": true,
+                        },
+                        "text": "Partners",
+                        "type": "text",
+                      },
+                      {
+                        "text": " (Card network → Bank): ",
+                        "type": "text",
+                      },
+                      {
+                        "text": "Settlement is theirs",
+                        "type": "text",
+                      },
+                      {
+                        "text": " — ",
+                        "type": "text",
+                      },
+                      {
+                        "text": "The network and the bank decide timing; we only see the result.",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "rich_text_section",
+                  },
+                ],
+                "style": "bullet",
+                "type": "rich_text_list",
+              },
+            ],
+            "type": "rich_text",
+          },
+        ]
+      `);
   });
 });

@@ -16,6 +16,7 @@ import {
   plainText,
   richTextRun as run,
 } from '../../render/marks';
+import { toneCueText } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -63,7 +64,7 @@ export const text = ({ start, end, steps, spans }: SlidePipelineNode): string =>
     ...(spans?.length
       ? spans.map(
           (span) =>
-            `${oneLine(span.label)} (${covered(steps, span)}): ${oneLine(span.title)}${breaker}${plainText(span.body)}`
+            `${toneCueText(span.tone)}${oneLine(span.label)} (${covered(steps, span)}): ${oneLine(span.title)}${breaker}${plainText(span.body)}`
         )
       : steps.map(
           ({ title, body }, index) =>
@@ -77,6 +78,7 @@ export const markdown = ({ start, end, steps, spans }: SlidePipelineNode) => [
     ? md.list(
         spans.map((span) =>
           md.paragraph(
+            toneCueText(span.tone),
             md.strong(span.label),
             ` (${covered(steps, span)}): `,
             span.title,
@@ -113,6 +115,7 @@ export const slack = ({
             elements: spans.map((span) => ({
               type: 'rich_text_section',
               elements: [
+                run(toneCueText(span.tone)),
                 run(span.label, { bold: true }),
                 run(` (${covered(steps, span)}): `),
                 run(span.title),

@@ -12,8 +12,9 @@ import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
 
-import { example, shortExample } from './examples';
+import { example, fullExample, shortExample } from './examples';
 import { markdown as markdownContent, text } from './index';
+import { sequenceMaxActors, sequenceMaxMessages } from './schema';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -34,6 +35,25 @@ const markdown = (node: Parameters<typeof markdownContent>[0]): string =>
   serializeMarkdown(markdownContent(node));
 
 describe('slideSequence', () => {
+  // The fit test measures this, so it holds the most actors and messages a sequence takes.
+  it('pins the fullest example at the caps', () => {
+    expect(fullExample.actors).toHaveLength(sequenceMaxActors);
+    expect(fullExample.messages).toHaveLength(sequenceMaxMessages);
+  });
+
+  it('runs no cross-field check once a count is over its cap', () => {
+    const found = errors({
+      ...shortExample,
+      messages: Array.from({ length: sequenceMaxMessages + 1 }, () => ({
+        from: 'user',
+        to: 'ghost',
+        label: 'Boo',
+      })),
+    });
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatch(/^body\[0\]\.body\[0\]\.messages: /);
+  });
+
   it('joins known, distinct actors and uses every actor', () => {
     const [user, site, mail] = shortExample.actors;
     expect(
@@ -63,96 +83,96 @@ describe('slideSequence', () => {
 
   it('renders text and markdown by actor label', () => {
     expect(text(example)).toMatchInlineSnapshot(`
-      "1. shopper → store: Place order
-      2. store → payments: authorize(card)
-      3. payments → bank: Charge request
-      4. bank → payments: DECLINED 51
-      5. store → shopper: Try another card
-      6. shopper → store: Second card
-      7. payments → store: Approved"
+      "1. shopper → ● store: Place order
+      2. ● store → payments: authorize(card)
+      3. payments → ○ bank: Charge request
+      4. ○ bank → payments: DECLINED 51
+      5. ● store → shopper: Try another card
+      6. shopper → ● store: Second card
+      7. payments → ● store: Approved"
     `);
     expect(markdown(example)).toMatchInlineSnapshot(`
-      "1. shopper → store: Place order
-      2. store → payments: \`authorize(card)\`
-      3. payments → bank: Charge request
-      4. bank → payments: \`DECLINED 51\`
-      5. store → shopper: Try another card
-      6. shopper → store: Second card
-      7. payments → store: Approved"
+      "1. shopper → ● store: Place order
+      2. ● store → payments: \`authorize(card)\`
+      3. payments → ○ bank: Charge request
+      4. ○ bank → payments: \`DECLINED 51\`
+      5. ● store → shopper: Try another card
+      6. shopper → ● store: Second card
+      7. payments → ● store: Approved"
     `);
   });
 
   it('renders Slack as an ordered list', () => {
     expect(runtime.surfaces.slack.renderNode(shortExample).blocks)
       .toMatchInlineSnapshot(`
-      [
-        {
-          "elements": [
-            {
-              "elements": [
-                {
-                  "elements": [
-                    {
-                      "text": "user → site: ",
-                      "type": "text",
-                    },
-                    {
-                      "text": "Forgot password",
-                      "type": "text",
-                    },
-                  ],
-                  "type": "rich_text_section",
-                },
-                {
-                  "elements": [
-                    {
-                      "text": "site → mail: ",
-                      "type": "text",
-                    },
-                    {
-                      "text": "Send reset link",
-                      "type": "text",
-                    },
-                  ],
-                  "type": "rich_text_section",
-                },
-                {
-                  "elements": [
-                    {
-                      "text": "mail → user: ",
-                      "type": "text",
-                    },
-                    {
-                      "text": "Reset email",
-                      "type": "text",
-                    },
-                  ],
-                  "type": "rich_text_section",
-                },
-                {
-                  "elements": [
-                    {
-                      "text": "user → site: ",
-                      "type": "text",
-                    },
-                    {
-                      "style": {
-                        "code": true,
+        [
+          {
+            "elements": [
+              {
+                "elements": [
+                  {
+                    "elements": [
+                      {
+                        "text": "user → ● site: ",
+                        "type": "text",
                       },
-                      "text": "POST /reset",
-                      "type": "text",
-                    },
-                  ],
-                  "type": "rich_text_section",
-                },
-              ],
-              "style": "ordered",
-              "type": "rich_text_list",
-            },
-          ],
-          "type": "rich_text",
-        },
-      ]
-    `);
+                      {
+                        "text": "Forgot password",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "rich_text_section",
+                  },
+                  {
+                    "elements": [
+                      {
+                        "text": "● site → ○ mail: ",
+                        "type": "text",
+                      },
+                      {
+                        "text": "Send reset link",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "rich_text_section",
+                  },
+                  {
+                    "elements": [
+                      {
+                        "text": "○ mail → user: ",
+                        "type": "text",
+                      },
+                      {
+                        "text": "Reset email",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "rich_text_section",
+                  },
+                  {
+                    "elements": [
+                      {
+                        "text": "user → ● site: ",
+                        "type": "text",
+                      },
+                      {
+                        "style": {
+                          "code": true,
+                        },
+                        "text": "POST /reset",
+                        "type": "text",
+                      },
+                    ],
+                    "type": "rich_text_section",
+                  },
+                ],
+                "style": "ordered",
+                "type": "rich_text_list",
+              },
+            ],
+            "type": "rich_text",
+          },
+        ]
+      `);
   });
 });

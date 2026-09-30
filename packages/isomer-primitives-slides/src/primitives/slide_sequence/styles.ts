@@ -68,6 +68,7 @@ export const sequenceModule = createStyleModule('sequence', ({ css }) => ({
     width: 0;
   `,
   actor: css`
+    align-items: center;
     background: ${color.bgPage};
     border: ${actor.border} solid ${color.text};
     border-radius: ${actor.radius};
@@ -75,10 +76,15 @@ export const sequenceModule = createStyleModule('sequence', ({ css }) => ({
     display: flex;
     ${typeRole(actor.type)}
     justify-self: center;
-    margin: 0 0 ${actor.gap};
-    padding: ${actor.padding};
     white-space: nowrap;
   `,
+  actorSize: variants(
+    slideSizes,
+    (size) => css`
+      margin: 0 0 ${actor.gaps[size]};
+      padding: ${actor.paddings[size]};
+    `
+  ),
   actorToned: css`
     border-color: ${toneVar};
     color: ${toneVar};

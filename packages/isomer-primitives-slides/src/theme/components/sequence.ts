@@ -15,8 +15,12 @@ export const sequence = {
     type: { ...type.mono, size: font.size.px28 },
     border: stroke.chip,
     radius: radius.chip,
-    padding: paddingXy(space.px12, space.px24),
-    gap: space.px12,
+    paddings: {
+      l: paddingXy(space.px12, space.px24),
+      m: paddingXy(space.px12, space.px24),
+      s: paddingXy(space.px8, space.px24),
+    },
+    gaps: { l: space.px12, m: space.px12, s: space.px8 },
   },
   lifeline: stroke.hairline,
   // Labels never wrap, so leading only adds height.
@@ -32,4 +36,4 @@ export const sequence = {
   direction: literal('to'),
 } as const;
 
-export const sequenceFit = { l: 6, m: 7 } as const;
+export const sequenceFit = { l: 7, m: 8 } as const;

@@ -15,6 +15,7 @@ import {
   plainText,
   richTextRun as run,
 } from '../../render/marks';
+import { toneCueText } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -31,14 +32,14 @@ const separator = ` ${slideDistillery.tokens.layers.separator.value} `;
 export const text = ({ layers }: SlideLayersNode): string =>
   layers
     .map(
-      ({ name, body, chips, owner }) =>
-        `${oneLine(name)}${dash}${chips ? chips.map(oneLine).join(', ') : plainText(body ?? '')}${separator}${oneLine(owner)}`
+      ({ name, body, chips, owner, tone }) =>
+        `${oneLine(name)}${dash}${chips ? chips.map(oneLine).join(', ') : plainText(body ?? '')}${separator}${toneCueText(tone)}${oneLine(owner)}`
     )
     .join('\n');
 
 export const markdown = ({ layers }: SlideLayersNode) =>
   md.list(
-    layers.map(({ name, body, chips, owner }) =>
+    layers.map(({ name, body, chips, owner, tone }) =>
       md.paragraph(
         md.strong(name),
         dash,
@@ -49,6 +50,7 @@ export const markdown = ({ layers }: SlideLayersNode) =>
             ])
           : marksMarkdown(body ?? '')),
         separator,
+        toneCueText(tone),
         md.emphasis(owner)
       )
     ),
@@ -62,7 +64,7 @@ export const slack = ({ layers }: SlideLayersNode): SlackBlock[] => [
       {
         type: 'rich_text_list',
         style: 'ordered',
-        elements: layers.map(({ name, body, chips, owner }) => ({
+        elements: layers.map(({ name, body, chips, owner, tone }) => ({
           type: 'rich_text_section',
           elements: [
             run(name, { bold: true }),
@@ -74,6 +76,7 @@ export const slack = ({ layers }: SlideLayersNode): SlackBlock[] => [
                 ])
               : marksRichText(body ?? '')),
             run(separator),
+            ...(tone ? [run(toneCueText(tone))] : []),
             run(owner, { italic: true }),
           ],
         })),

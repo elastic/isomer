@@ -11,6 +11,7 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { marksReact } from '../../render/marks';
+import { ToneCue } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { layoutModule, tonesModule } from '../../theme/modules';
 
@@ -18,6 +19,7 @@ import type { SlideLanesNode } from './schema';
 import { lanesModule } from './styles';
 
 const { label: connectorLabel } = slideDistillery.tokens.connector;
+const { mergeJoiner } = slideDistillery.tokens.lanes;
 
 /** React renderer for {@link SlideLanesNode}. */
 export const react = (
@@ -41,6 +43,7 @@ export const react = (
                   toned,
                   tone && style.tonedLabel
                 )}>
+                <ToneCue {...{ tone, context }} />
                 {label}
               </span>
               <ol className={cls(context, style.steps, toned)}>
@@ -70,7 +73,7 @@ export const react = (
         })}
         <div
           role="img"
-          aria-label={connectorLabel.value}
+          aria-label={`${lanes.map(({ label }) => label).join(` ${mergeJoiner.value} `)} ${connectorLabel.value} ${join}`}
           className={cls(context, style.merge)}>
           <span className={cls(context, style.bracket)} />
           <span className={cls(context, style.stub)} />

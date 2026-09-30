@@ -10,6 +10,9 @@ import { paddingXy, px } from '../scale';
 
 import { glyph } from './shared';
 
+const bandPaddingX = { l: space.px36, m: space.px32, s: space.px28 } as const;
+const chipPaddingX = space.px14;
+
 export const layers = {
   gaps: { l: space.px16, m: space.px12, s: space.px8 },
   // Track widths, not spacing.
@@ -19,10 +22,11 @@ export const layers = {
     border: stroke.panel,
     radius: radius.panel,
     paddings: {
-      l: paddingXy(space.px24, space.px36),
-      m: paddingXy(space.px16, space.px32),
-      s: paddingXy(space.px12, space.px28),
+      l: paddingXy(space.px24, bandPaddingX.l),
+      m: paddingXy(space.px16, bandPaddingX.m),
+      s: paddingXy(space.px12, bandPaddingX.s),
     },
+    paddingX: bandPaddingX,
   },
   name: { ...type.itemTitle, size: font.size.px40 },
   nameSizes: { l: font.size.px40, m: font.size.px36, s: font.size.px32 },
@@ -32,7 +36,8 @@ export const layers = {
     type: { ...type.mono, weight: font.weight.medium },
     border: stroke.panel,
     radius: radius.chipSmall,
-    padding: paddingXy(space.px4, space.px14),
+    padding: paddingXy(space.px4, chipPaddingX),
+    paddingX: chipPaddingX,
   },
   chipSizes: { l: type.mono.size, m: font.size.px24, s: font.size.px24 },
   chipGap: space.px12,
@@ -40,4 +45,4 @@ export const layers = {
   separator: glyph.separator,
 } as const;
 
-export const layersFit = { l: 4, m: 5 } as const;
+export const layersFit = { l: 4, m: 6 } as const;

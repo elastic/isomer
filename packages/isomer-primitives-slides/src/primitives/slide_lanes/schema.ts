@@ -11,6 +11,10 @@ import { z } from '@elastic/isomer-sdk';
 import { lineText, wrappedText } from '../authored_text';
 import { slideToneSchema } from '../tone_schema';
 
+export const lanesMaxSteps = 5;
+
+export const lanesMaxNotes = 4;
+
 const laneSchema = z
   .object({
     label: lineText().describe(
@@ -19,9 +23,9 @@ const laneSchema = z
     steps: z
       .array(lineText().describe('One step, set as a code-style chip.'))
       .min(1)
-      .max(5)
+      .max(lanesMaxSteps)
       .describe(
-        'Steps along this path, left to right, each one to three words. 1 to 5. Chips do not wrap and type does not step down, so long steps can run past the slide; a layout check reports it.'
+        `Steps along this path, left to right, each one to three words. 1 to ${lanesMaxSteps}.`
       ),
     tone: slideToneSchema
       .describe(
@@ -61,9 +65,9 @@ export const schema = z
     ),
     notes: z
       .array(noteSchema)
-      .max(4)
+      .max(lanesMaxNotes)
       .describe(
-        'Notes under the lanes, two per row, usually one per lane in lane order, saying how that path differs. Up to 4. Leave it out for none. Type does not step down, so long notes can run past the slide; a layout check reports it.'
+        `Notes under the lanes, two per row, usually one per lane in lane order, saying how that path differs. Up to ${lanesMaxNotes}. Leave it out for none.`
       )
       .optional(),
   })

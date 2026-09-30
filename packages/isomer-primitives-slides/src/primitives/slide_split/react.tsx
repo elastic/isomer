@@ -19,6 +19,7 @@ import {
   tonesModule,
 } from '../../theme/modules';
 
+import { paneContexts } from './pane_context';
 import { splitModule } from './styles';
 import type { SlideSplitNode, SlideSplitPane } from './types';
 
@@ -27,10 +28,12 @@ const { label: connectorLabel } = slideDistillery.tokens.connector;
 const Pane = ({
   pane: { label, tone, items },
   context,
+  itemContext,
   scope,
 }: {
   pane: SlideSplitPane;
   context: SlideReactEnv['context'];
+  itemContext: SlideReactEnv['context'];
   scope: SlideReactEnv['scope'];
 }): ReactNode => {
   const { handles: split } = splitModule;
@@ -50,7 +53,9 @@ const Pane = ({
       ) : null}
       <div className={cls(context, split.items)}>
         {items.map((node, index) => (
-          <Fragment key={index}>{scope.renderReact(node, context)}</Fragment>
+          <Fragment key={index}>
+            {scope.renderReact(node, itemContext)}
+          </Fragment>
         ))}
       </div>
     </div>
@@ -59,15 +64,17 @@ const Pane = ({
 
 /** React renderer for {@link SlideSplitNode}. */
 export const react = (
-  {
+  node: SlideSplitNode,
+  { context, scope }: SlideReactEnv
+): ReactNode => {
+  const {
     divider = 'gap',
     footnote,
     panes: [left, right],
     ratio = 'even',
     type,
-  }: SlideSplitNode,
-  { context, scope }: SlideReactEnv
-): ReactNode => {
+  } = node;
+  const [leftContext, rightContext] = paneContexts(context, node);
   const { handles: split } = splitModule;
   const { handles: connector } = connectorModule;
   return (
@@ -81,7 +88,7 @@ export const react = (
           split.ratio[ratio],
           split.divider[divider]
         )}>
-        <Pane pane={left} {...{ context, scope }} />
+        <Pane pane={left} itemContext={leftContext} {...{ context, scope }} />
         {divider === 'rule' ? (
           <div aria-hidden className={cls(context, split.rule)} />
         ) : divider === 'hairline' ? (
@@ -102,7 +109,7 @@ export const react = (
         ) : (
           <div aria-hidden />
         )}
-        <Pane pane={right} {...{ context, scope }} />
+        <Pane pane={right} itemContext={rightContext} {...{ context, scope }} />
       </div>
       {footnote ? (
         <p className={cls(context, split.footnote)}>

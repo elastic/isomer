@@ -15,10 +15,18 @@ import { slideToneSchema } from '../tone_schema';
 
 export const pipelineMaxSteps = 6;
 
+export const pipelineMaxSpans = 3;
+
+const countsInBounds = (
+  steps: readonly unknown[],
+  spans: readonly unknown[] = []
+): boolean =>
+  steps.length <= pipelineMaxSteps && spans.length <= pipelineMaxSpans;
+
 const stepSchema = z
   .object({
     title: lineText().describe(
-      'The step’s name: one to three words. In spans mode it is the chip’s text, so keep it short enough to fit on one line.'
+      'The step’s name: one to three words. In spans mode it is the chip’s text.'
     ),
     body: wrappedText()
       .describe(
@@ -80,13 +88,13 @@ export const schema = z
       .min(2)
       .max(pipelineMaxSteps)
       .describe(
-        `Steps in the order they run, left to right. 2 to ${pipelineMaxSteps}. Without \`spans\` they render numbered, each with a title and body, and type steps down as the text grows but not past \`s\`, so long bodies can run past the slide; a layout check reports it. With \`spans\` they render as chips joined by lines.`
+        `Steps in the order they run, left to right. 2 to ${pipelineMaxSteps}. Without \`spans\` they render numbered, each with a title and body. With \`spans\` they render as chips joined by lines.`
       ),
     spans: z
       .array(spanSchema)
-      .max(3)
+      .max(pipelineMaxSpans)
       .describe(
-        'Brackets under runs of adjacent steps, each captioned with who owns that part. Up to 3. A non-empty list switches to spans mode: steps become chips, and `start`, `end`, and step bodies are not allowed. Spans must not overlap. Leave it out or empty for steps mode. Chips do not wrap and type does not step down, so long chips or span bodies can run past the slide; a layout check reports it.'
+        `Brackets under runs of adjacent steps, each captioned with who owns that part. Up to ${pipelineMaxSpans}. A non-empty list switches to spans mode: steps become chips, and \`start\`, \`end\`, and step bodies are not allowed. Spans must not overlap. Leave it out or empty for steps mode.`
       )
       .optional(),
     size: sizeField(),
@@ -95,6 +103,7 @@ export const schema = z
   .check(
     crossRefine(
       ({ steps, spans = [] }) =>
+        !countsInBounds(steps, spans) ||
         spans.every(({ from, to }) => from <= to && to < steps.length),
       {
         error: 'each span needs `from` ≤ `to` < the number of steps',
@@ -104,7 +113,8 @@ export const schema = z
   )
   .check(
     crossRefine(
-      ({ spans = [] }) =>
+      ({ steps, spans = [] }) =>
+        !countsInBounds(steps, spans) ||
         [...spans]
           .sort((a, b) => a.from - b.from)
           .every(
@@ -127,7 +137,9 @@ export const schema = z
   .check(
     crossRefine(
       ({ spans, steps }) =>
-        !spans?.length || steps.every(({ body }) => body === undefined),
+        !countsInBounds(steps, spans) ||
+        !spans?.length ||
+        steps.every(({ body }) => body === undefined),
       {
         error:
           'step bodies are steps mode only; with `spans`, put the detail in the span’s body',

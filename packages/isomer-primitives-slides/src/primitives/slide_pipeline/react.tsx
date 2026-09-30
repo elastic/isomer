@@ -10,13 +10,13 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv, SlideRenderContext } from '../../render/context';
-import { marksReact, stripMarks } from '../../render/marks';
-import { pipelineFit } from '../../theme/components/pipeline';
+import { marksReact } from '../../render/marks';
+import { ToneCue } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { layoutModule, tonesModule } from '../../theme/modules';
 import { countKey, type SlideSize } from '../../theme/variants';
-import { rowLoad, sizeForLoad } from '../size';
 
+import { pipelineStep } from './fit';
 import type {
   SlidePipelineNode,
   SlidePipelineSpan,
@@ -152,6 +152,7 @@ const SpansMode = ({
                 ...placed(captionFirst, last)
               )}>
               <strong className={cls(context, pipeline.captionLabel)}>
+                <ToneCue {...{ tone, context }} />
                 {label}
               </strong>
               <p className={cls(context, pipeline.captionTitle)}>{title}</p>
@@ -168,26 +169,22 @@ const SpansMode = ({
 
 /** React renderer for {@link SlidePipelineNode}. */
 export const react = (
-  { type, start, end, steps, spans, size }: SlidePipelineNode,
+  node: SlidePipelineNode,
   { context }: SlideReactEnv
-): ReactNode => (
-  <div
-    {...nodeAnchor(context, { type })}
-    className={cls(context, layoutModule.handles.fill)}>
-    {spans?.length ? (
-      <SpansMode {...{ steps, spans, context }} />
-    ) : (
-      <StepsMode
-        step={sizeForLoad(
-          size,
-          rowLoad(
-            steps.map(({ title, body }) => [title, body && stripMarks(body)])
-          ),
-          pipelineFit,
-          context?.crowding
-        )}
-        {...{ start, end, steps, context }}
-      />
-    )}
-  </div>
-);
+): ReactNode => {
+  const { type, start, end, steps, spans } = node;
+  return (
+    <div
+      {...nodeAnchor(context, { type })}
+      className={cls(context, layoutModule.handles.fill)}>
+      {spans?.length ? (
+        <SpansMode {...{ steps, spans, context }} />
+      ) : (
+        <StepsMode
+          step={pipelineStep(node, context)}
+          {...{ start, end, steps, context }}
+        />
+      )}
+    </div>
+  );
+};

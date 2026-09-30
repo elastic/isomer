@@ -13,6 +13,8 @@ import { crossRefine } from '../cross_field';
 import { sizeField } from '../size';
 import { slideToneSchema } from '../tone_schema';
 
+export const layersMaxLayers = 6;
+
 const layerSchema = z
   .object({
     name: lineText().describe(
@@ -58,9 +60,9 @@ export const schema = z
     layers: z
       .array(layerSchema)
       .min(3)
-      .max(6)
+      .max(layersMaxLayers)
       .describe(
-        'Layers, top to bottom in stack order: the layer nearest the user first. 3 to 6.'
+        `Layers, top to bottom in stack order: the layer nearest the user first. 3 to ${layersMaxLayers}.`
       ),
     size: sizeField(),
   })
