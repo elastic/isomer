@@ -23,9 +23,9 @@ export type JsonSchema = Record<string, unknown>;
 export type ViewInput = Record<string, unknown>;
 
 /**
- * Thrown by {@link ViewRegistry.request} when a view declares a Zod `input`
- * schema and the supplied input fails validation. `errors` has the same
- * `{ path, message }` shape as composition validation.
+ * Thrown by {@link ViewRegistry.request} when `checkInputBudget` refuses the
+ * input or it fails the view's Zod `input` schema. `errors` are the same
+ * `ValidationError`s composition validation returns.
  *
  * Identify it by `name`, `code`, `viewId`, and `errors`, never `instanceof`.
  */
@@ -134,7 +134,7 @@ export interface ViewRegistry<
   /**
    * Checks `input` against the input budget and the view's schema (if any),
    * builds its composition, and validates the result. Throws
-   * {@link RegisteredViewInputError} on over-budget or invalid input, or {@link IsomerError}
+   * {@link RegisteredViewInputError} on refused or invalid input, or {@link IsomerError}
    * (`UNKNOWN_VIEW`) if `id` is unregistered.
    */
   request: (

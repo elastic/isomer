@@ -62,7 +62,7 @@ await runtime.viewRegistry.request('checkout.snapshot', ctx, { range: 42 });
 // throws RegisteredViewInputError
 //   .code → 'VIEW_INPUT_INVALID'
 //   .viewId → 'checkout.snapshot'
-//   .errors → [{ path, message }]
+//   .errors → [{ path, message, code? }]
 ```
 
 Catch it by `name` and `code`, or by import: `RegisteredViewInputError` is exported from the package entry.

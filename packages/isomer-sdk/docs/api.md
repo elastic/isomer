@@ -58,13 +58,13 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 
 | Export | What it is |
 | --- | --- |
-| `createCompositionValidator` | Trusted-input validator: schema plus semantic passes; returns `{ valid, errors, warnings }` |
-| `createCompositionParser` | Untrusted-input parser: schema only |
+| `createCompositionValidator` | Trusted-input validator: the input budget, the schema, then semantic passes; returns `{ valid, errors, warnings }` |
+| `createCompositionParser` | Untrusted-input parser: the input budget, then the schema only |
 | `checkInputBudget` | The finding for input past `MAX_INPUT_DEPTH`, `MAX_INPUT_VALUES`, or `MAX_INPUT_CHARACTERS` (`INPUT_OVER_BUDGET`) or not plain data (`INPUT_NOT_PLAIN_DATA`); the validator and parser run it first |
 | `enforceValidationMode` | Throws `CompositionValidationError` on `'throw'`, or in any mode on input `checkInputBudget` refused |
 | `IsomerError` | Construction and authoring failures, identified by `name` and `code`. Codes name the condition, not the throwing module. |
 | `CompositionValidationError` | Invalid composition, identified by `name`, `code` (`COMPOSITION_INVALID`), and `errors` |
-| `formatValidationError` | `{ path, message, nodeType? }` as one `<path> (in <nodeType>) <message>` string |
+| `formatValidationError` | A `ValidationError` as one `<path> (in <nodeType>) <message>` string |
 | `warningsForSurface` | Narrows warnings to one surface |
 | `resolveVocabulary` | Builds a union whose containers reference it |
 | `getCompositionSchemaForDefinitions` | Memoized schema, keyed on array identity |

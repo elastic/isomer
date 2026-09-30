@@ -89,7 +89,7 @@ describe('checkInputBudget', () => {
     expect(reads).toBeLessThanOrEqual(MAX_INPUT_VALUES);
   });
 
-  it('stops enumerating a huge record at the value limit', () => {
+  it('reads no more of a huge record than the value limit', () => {
     const keys = Array.from({ length: 200_000 }, (_, index) => `k${index}`);
     let visited = 0;
     const huge = new Proxy(

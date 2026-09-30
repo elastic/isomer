@@ -75,7 +75,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | --- | --- |
 | `HTMLRenderResult` | `{ html, css, js, body, measurement, validationErrors }` |
 | `SlackRenderResult` | `{ text, blocks, assets }` |
-| `ValidationResult` | `{ valid, errors, warnings }` — each error is `{ path, message }` |
+| `ValidationResult` | `{ valid, errors, warnings }` — each error is a `ValidationError`, `{ path, message, nodeType?, code? }`, where `code` (`INPUT_OVER_BUDGET` or `INPUT_NOT_PLAIN_DATA`) marks input refused before parsing |
 | `ParsedComposition` | `{ valid, errors, composition? }` |
 
 ## View registry
@@ -114,7 +114,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | Thrown | By | Carries |
 | --- | --- | --- |
 | `IsomerError` | `createIsomerRuntime`, `viewRegistry.register`, an unknown view id, `getAuthoringContext().schemaFor` or `describePrimitives` on an unknown type (`UNKNOWN_PRIMITIVE_TYPE`), or the `svg` surface, including `renderPages` on an empty list (`EMPTY_PAGES`) | `code` and a message naming the offender |
-| `RegisteredViewInputError` | `viewRegistry.request`, on over-budget or invalid input | `code` (`VIEW_INPUT_INVALID`), `viewId`, `errors` (`{ path, message }` each) |
+| `RegisteredViewInputError` | `viewRegistry.request`, on input refused before parsing or invalid against the view's schema | `code` (`VIEW_INPUT_INVALID`), `viewId`, `errors` (`{ path, message, nodeType?, code? }` each) |
 | `CompositionValidationError` | `text`, `markdown`, `slack`, and `svg` by default; `html` with `onValidationError: 'throw'`; every validating surface on input the SDK refuses before parsing | `code` (`COMPOSITION_INVALID`), `errors` |
 
 ## Where the code is

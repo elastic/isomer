@@ -116,7 +116,7 @@ const bodyRoots = (value: unknown): IssueRoot[] => {
 };
 
 /**
- * Builds the trusted-input validator: schema, then the semantic passes.
+ * Builds the trusted-input validator: {@link checkInputBudget}, the schema, then the semantic passes.
  *
  * `definitions` is memoized on array identity, so a caller that rebuilds the
  * array per call (`createCompositionValidator(packs.flatMap(…))`) gets a fresh
@@ -166,7 +166,7 @@ export interface ParsedComposition {
 }
 
 /**
- * Builds the untrusted-input parser: schema only, reported rather than thrown.
+ * Builds the untrusted-input parser: {@link checkInputBudget}, then the schema only, reported rather than thrown.
  *
  * Deliberately narrower than {@link createCompositionValidator}. This answers
  * "is this a `Composition`", not "is this a good one" — it does not run the

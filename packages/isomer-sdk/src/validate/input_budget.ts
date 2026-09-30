@@ -58,7 +58,7 @@ const leafLength = (value: unknown): number =>
  * Why `value` is over `budget` or is not plain data, or `undefined` when it is neither.
  *
  * Plain data is what the schema reads exactly as walked: arrays without holes, objects whose prototype is `Object.prototype` or `null`, and only enumerable own data properties with string keys.
- * Iterative and cycle-safe, and counts a container's children before reading them, so a deep, cyclic, or huge value is refused without overflowing the stack or reading past the limit.
+ * Iterative and cycle-safe. Its cost is linear in the input's size: it lists a container's own keys, then refuses past the value limit before reading any of them, so nothing is visited twice and the stack never grows.
  */
 export const checkInputBudget = (
   value: unknown,
