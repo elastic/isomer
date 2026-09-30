@@ -18,6 +18,7 @@ import {
 } from '../../theme/components/definitions';
 import { frameContentWidth } from '../../theme/components/frame';
 import { layoutModule } from '../../theme/modules';
+import { slideLayout } from '../layout';
 import { narrowing, rowLoad, sizeForLoad, smallerStep } from '../size';
 
 import type { SlideDefinition, SlideDefinitionsNode } from './schema';
@@ -41,6 +42,7 @@ export const react = (
 ): ReactNode => {
   const { handles: definitions } = definitionsModule;
   const columns = toColumns(items);
+  const { width, crowding } = slideLayout(context);
   const step = smallerStep(
     sizeForLoad(
       size,
@@ -48,15 +50,15 @@ export const react = (
         columns.map((column) =>
           column.flatMap(({ term, body }) => [term, stripMarks(body)])
         )
-      ) * narrowing(frameContentWidth, context?.width),
+      ) * narrowing(frameContentWidth, width),
       definitionsFit,
-      context?.crowding
+      crowding
     ),
     sizeForLoad(
       size,
       Math.max(...columns.map(({ length }) => length)),
       definitionsRowFit,
-      context?.crowding
+      crowding
     )
   );
   return (

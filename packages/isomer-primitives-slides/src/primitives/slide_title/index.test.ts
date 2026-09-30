@@ -10,11 +10,12 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
-import { columnWidth } from '../../theme/components/frame';
+import { frameContentWidth } from '../../theme/components/frame';
 import { statement, statementFit } from '../../theme/components/statement';
 import { title, titleShares } from '../../theme/components/title';
 import { scalePx } from '../../theme/scale';
-import { narrowing, sizeForLoad } from '../size';
+import { slideLayout } from '../layout';
+import { narrowing, sizeForLoad, trackWidth } from '../size';
 
 import { example, examples } from './examples';
 
@@ -204,9 +205,10 @@ describe('slideTitle aside', () => {
       text.length *
         narrowing(
           scalePx(statement.maxWidth),
-          columnWidth(titleShares, title.columnGap, 1)
+          trackWidth(frameContentWidth, titleShares, title.columnGap, 1)
         ),
-      statementFit
+      statementFit,
+      slideLayout(undefined).crowding
     );
     expect(step).not.toBe('l');
     expect(

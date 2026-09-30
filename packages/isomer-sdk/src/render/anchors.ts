@@ -104,6 +104,19 @@ export const nodeAnchor = (
 ): Readonly<Record<string, string>> =>
   anchorsOn(context) ? { [NODE_ANCHOR_ATTRIBUTE]: anchorValue(type) } : {};
 
+/** The attribute {@link layoutRoom} sets. */
+export const LAYOUT_ROOM_ATTRIBUTE = 'data-isomer-room';
+
+/**
+ * Props a renderer spreads on an element inside its node that bounds the nodes
+ * nested in it, such as a frame's body, so `checkLayout` measures them against
+ * it. Rendered when {@link nodeAnchor} would be.
+ */
+export const layoutRoom = (
+  context: unknown
+): Readonly<Record<string, string>> =>
+  anchorsOn(context) ? { [LAYOUT_ROOM_ATTRIBUTE]: '' } : {};
+
 /**
  * The nodes of `body` a render on `surface` draws, pre-order, each with its
  * path in validation's `body[0].items[1]` form. Nested nodes follow `react`,

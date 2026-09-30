@@ -40,16 +40,17 @@ export const codeDenseAfter = 10;
 /** Lines a panel holds at `denseText`. */
 export const codeMaxLines = 16;
 
-/** Characters a line holds on a full-width slide before its panel clips it, by panel count and density. */
-export const codeLineMaxLength = (panels: 1 | 2, dense: boolean): number => {
-  const width =
+/** Characters a line holds across `width`, a full-width slide by default, before its panel clips it, by panel count and density. */
+export const codeLineMaxLength = (
+  panels: 1 | 2,
+  dense: boolean,
+  width = frameContentWidth
+): number => {
+  const panel =
     panels === 1
-      ? frameContentWidth
-      : (frameContentWidth -
-          scalePx(code.arrowWidth) -
-          2 * scalePx(code.panelGap)) /
-        2;
-  const inner = width - 2 * scalePx(code.border) - 2 * scalePx(code.paddingX);
+      ? width
+      : (width - scalePx(code.arrowWidth) - 2 * scalePx(code.panelGap)) / 2;
+  const inner = panel - 2 * scalePx(code.border) - 2 * scalePx(code.paddingX);
   const size = dense ? code.denseText.size : code.text.size;
   return Math.floor(inner / (monoAdvance * scalePx(size)));
 };

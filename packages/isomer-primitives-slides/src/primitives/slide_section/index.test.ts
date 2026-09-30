@@ -11,10 +11,10 @@ import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
-import { columnWidth } from '../../theme/components/frame';
+import { frameContentWidth } from '../../theme/components/frame';
 import { section, sectionShares } from '../../theme/components/section';
 import { expectCountBounds } from '../bounds.fixtures';
-import { sizeForLines } from '../size';
+import { sizeForLines, trackWidth } from '../size';
 
 import { example, linkedExample, longExample } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
@@ -173,7 +173,7 @@ describe('slideSection', () => {
         undefined,
         title,
         section.title.tracking,
-        columnWidth(sectionShares, section.columnGap),
+        trackWidth(frameContentWidth, sectionShares, section.columnGap),
         section.titleSizes
       );
     const flips = Array.from({ length: 220 }, (_, index) => index + 2).filter(

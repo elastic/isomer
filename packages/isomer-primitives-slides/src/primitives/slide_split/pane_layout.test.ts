@@ -13,10 +13,11 @@ import { split } from '../../theme/components/split';
 import { statement, statementFit } from '../../theme/components/statement';
 import { scalePx } from '../../theme/scale';
 import { slideSplitDividers, slideSplitRatios } from '../../theme/variants';
+import { slideLayout } from '../layout';
 import { narrowing, sizeForLoad } from '../size';
 import { renderedStep } from '../size.fixtures';
 
-import { paneWidths } from './pane_width';
+import { paneWidths } from './pane_layout';
 
 const middle = {
   gap: 0,
@@ -80,7 +81,8 @@ describe('paneWidths', () => {
     const step = sizeForLoad(
       undefined,
       text.length * narrowing(scalePx(statement.maxWidth), pane),
-      statementFit
+      statementFit,
+      slideLayout(undefined).crowding
     );
     expect(step).not.toBe('l');
     expect(renderedStep('statement-textSize', node)).toBe(step);
@@ -99,7 +101,8 @@ describe('paneWidths', () => {
     const step = sizeForLoad(
       undefined,
       quoteFit.l * narrowing(scalePx(quoteTheme.maxWidth), pane),
-      quoteFit
+      quoteFit,
+      slideLayout(undefined).crowding
     );
     expect(step).not.toBe('l');
     expect(

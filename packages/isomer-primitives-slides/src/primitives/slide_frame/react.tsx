@@ -6,7 +6,7 @@
  */
 
 import { Fragment, type ReactNode } from 'react';
-import { nodeAnchor } from '@elastic/isomer-sdk';
+import { layoutRoom, nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type {
@@ -18,7 +18,8 @@ import { withContextFields } from '../../render/context_view';
 import { LogoMark } from '../../render/logo';
 import { isomerDeckRoot, slideDistillery } from '../../theme/distillery';
 import { deckRootModule } from '../../theme/modules';
-import { headingCrowding } from '../slide_heading/fit';
+import { openBody, withLayout } from '../layout';
+import { headingRoom } from '../slide_heading/fit';
 
 import { frameModule } from './styles';
 import type { SlideFrameNode } from './types';
@@ -76,20 +77,21 @@ export const SlideFrameView = ({
   const [first] = body;
   const inside: SlideRenderContext | undefined =
     logo === false ? withContextFields(context, { logo }) : context;
-  const below: SlideRenderContext | undefined =
+  const open = withLayout(inside, openBody);
+  const below =
     first?.type === 'slideHeading'
-      ? withContextFields(inside, { crowding: headingCrowding(first) })
-      : inside;
+      ? withLayout(inside, { ...openBody, height: headingRoom(first) })
+      : open;
   return (
     <div
       {...nodeAnchor(context, { type })}
       className={`${isomerDeckRoot} ${cls(context, deckRoot.root)}`}>
       <section
         className={cls(context, frame.slide, frame.tone[tone ?? 'page'])}>
-        <main className={cls(context, frame.body)}>
+        <main {...layoutRoom(context)} className={cls(context, frame.body)}>
           {body.map((child, index) => (
             <Fragment key={index}>
-              {scope.renderReact(child, index === 0 ? inside : below)}
+              {scope.renderReact(child, index === 0 ? open : below)}
             </Fragment>
           ))}
         </main>

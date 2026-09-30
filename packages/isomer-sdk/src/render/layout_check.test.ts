@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createChildNodeWalker } from '../composition/body_node_base';
 
-import { NODE_ANCHOR_ATTRIBUTE } from './anchors';
+import { LAYOUT_ROOM_ATTRIBUTE, NODE_ANCHOR_ATTRIBUTE } from './anchors';
 import { checkLayout, type LayoutBox } from './layout_check';
 
 interface TestNode {
@@ -258,6 +258,39 @@ describe('checkLayout', () => {
         by: 200,
       },
     ]);
+  });
+
+  it('measures nested nodes against a room inside their parent, and the parent against its own room', () => {
+    const room = (laid: LayoutBox): LayoutBox => ({
+      ...laid,
+      attributes: { [LAYOUT_ROOM_ATTRIBUTE]: '' },
+    });
+    const layout = canvas(
+      anchored(
+        'stack',
+        box(
+          0,
+          0,
+          400,
+          400,
+          room(box(0, 0, 400, 200, anchored('leaf', box(0, 150, 100, 100)))),
+          box(0, 350, 450, 10)
+        )
+      )
+    );
+    expect(checkLayout(layout, [stack(leaf)], walk, 'svg')).toEqual([
+      { kind: 'overflow', path: 'body[0].items[0]', type: 'leaf', by: 50 },
+    ]);
+    expect(
+      checkLayout(
+        canvas(
+          anchored('stack', box(0, 0, 400, 400, room(box(0, 0, 400, 200))))
+        ),
+        [stack()],
+        walk,
+        'svg'
+      )
+    ).toEqual([]);
   });
 
   it('ignores sub-pixel spill', () => {

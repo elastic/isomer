@@ -18,6 +18,7 @@ import {
 } from '../../theme/components/statement';
 import { layoutModule } from '../../theme/modules';
 import { scalePx } from '../../theme/scale';
+import { slideLayout } from '../layout';
 import { narrowing, sizeForLoad } from '../size';
 
 import type { SlideStatementNode } from './schema';
@@ -29,12 +30,13 @@ export const react = (
   { context }: SlideReactEnv
 ): ReactNode => {
   const { handles: statement } = statementModule;
+  const { width, crowding } = slideLayout(context);
   const step = sizeForLoad(
     size,
     displayColumns(stripMarks(text)) *
-      narrowing(scalePx(theme.maxWidth), context?.width),
+      narrowing(scalePx(theme.maxWidth), width),
     statementFit,
-    context?.crowding
+    crowding
   );
   return (
     <div

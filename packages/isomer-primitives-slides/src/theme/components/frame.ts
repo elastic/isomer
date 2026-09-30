@@ -5,8 +5,6 @@
  * 2.0.
  */
 
-import type { ScaleToken } from '@elastic/distillate';
-
 import { font, space } from '../base';
 import { px, scalePx } from '../scale';
 
@@ -31,13 +29,7 @@ export const frame = {
 export const frameContentWidth =
   scalePx(frame.width) - 2 * scalePx(frame.paddingX);
 
-/** Width of column `index` in a row of `shares` fr tracks separated by `gap`. */
-export const columnWidth = (
-  shares: readonly number[],
-  gap: ScaleToken,
-  index = 0
-): number => {
-  const total = shares.reduce((sum, share) => sum + share, 0);
-  const free = frameContentWidth - scalePx(gap) * (shares.length - 1);
-  return (free * (shares[index] ?? 0)) / total;
-};
+export const frameBodyHeight =
+  scalePx(frame.height) -
+  scalePx(frame.paddingTop) -
+  scalePx(frame.paddingBottom);

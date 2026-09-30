@@ -7,9 +7,14 @@
 
 import type { ScaleToken } from '@elastic/distillate';
 
+import type { SlideLayout } from '../../render/context';
+import { stripMarks } from '../../render/marks';
 import { split } from '../../theme/components/split';
 import { scalePx } from '../../theme/scale';
 import type { SlideSplitDivider, SlideSplitRatio } from '../../theme/variants';
+import { proseLines } from '../size';
+
+import type { SlideSplitNode, SlideSplitPane } from './types';
 
 const middle: Record<SlideSplitDivider, number> = {
   gap: 0,
@@ -41,4 +46,34 @@ export const paneWidths = (
       : Math.max(0, ((free - fixed) * share) / shares);
   };
   return [width(left), width(right)];
+};
+
+const lineHeight = (role: { size: ScaleToken; lineHeight: ScaleToken }) =>
+  scalePx(role.size) * parseFloat(role.lineHeight.value);
+
+/** The layout each pane's items get inside `layout`: the pane's width, and the height its label and the split's footnote leave. */
+export const paneLayouts = (
+  { width, height }: SlideLayout,
+  { panes, ratio = 'even', divider = 'gap', footnote }: SlideSplitNode
+): [SlideLayout, SlideLayout] => {
+  const footnoteHeight = footnote
+    ? scalePx(split.footnoteGap) +
+      proseLines(
+        stripMarks(footnote),
+        scalePx(split.footnote.size),
+        Math.min(width, scalePx(split.footnoteMaxWidth))
+      ) *
+        lineHeight(split.footnote)
+    : 0;
+  const widths = paneWidths(width, ratio, divider);
+  const pane = ({ label }: SlideSplitPane, index: 0 | 1): SlideLayout => ({
+    width: widths[index],
+    height: Math.max(
+      0,
+      height -
+        footnoteHeight -
+        (label ? lineHeight(split.label) + scalePx(split.labelGap) : 0)
+    ),
+  });
+  return [pane(panes[0], 0), pane(panes[1], 1)];
 };

@@ -11,11 +11,11 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { marksReact } from '../../render/marks';
-import { frameContentWidth } from '../../theme/components/frame';
 import {
   section as theme,
   sectionShares,
 } from '../../theme/components/section';
+import { slideLayout } from '../layout';
 import { sizeForLines, trackWidth } from '../size';
 
 import { lineHref } from './href';
@@ -33,11 +33,7 @@ export const react = (
     size,
     title,
     theme.title.tracking,
-    trackWidth(
-      context?.width ?? frameContentWidth,
-      sectionShares,
-      theme.columnGap
-    ),
+    trackWidth(slideLayout(context).width, sectionShares, theme.columnGap),
     theme.titleSizes
   );
   return (

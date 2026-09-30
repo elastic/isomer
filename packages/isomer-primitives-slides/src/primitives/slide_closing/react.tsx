@@ -15,8 +15,8 @@ import {
   closing as theme,
   closingShares,
 } from '../../theme/components/closing';
-import { frameContentWidth } from '../../theme/components/frame';
 import { labelModule } from '../../theme/modules';
+import { slideLayout } from '../layout';
 import { sizeForLines, trackWidth } from '../size';
 
 import type { SlideClosingNode } from './schema';
@@ -28,17 +28,14 @@ export const react = (
   { context }: SlideReactEnv
 ): ReactNode => {
   const { handles: closing } = closingModule;
+  const { width } = slideLayout(context);
   const step = sizeForLines(
     size,
     title,
     theme.title.tracking,
     paths.length > 0
-      ? trackWidth(
-          context?.width ?? frameContentWidth,
-          closingShares,
-          theme.columnGap
-        )
-      : (context?.width ?? frameContentWidth),
+      ? trackWidth(width, closingShares, theme.columnGap)
+      : width,
     theme.titleSizes
   );
   return (

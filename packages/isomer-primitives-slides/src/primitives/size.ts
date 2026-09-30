@@ -11,7 +11,7 @@ import type { ScaleToken } from '@elastic/distillate';
 import { z } from '@elastic/isomer-sdk';
 
 import { displayColumns, isWide } from '../render/mono';
-import { extraboldAdvance } from '../theme/base';
+import { extraboldAdvance, regularAdvance } from '../theme/base';
 import { scalePx } from '../theme/scale';
 import { type SlideSize, slideSizes } from '../theme/variants';
 
@@ -99,17 +99,15 @@ export const emWidth = (text: string, tracking: ScaleToken): number =>
 export const widestWord = (text: string, tracking: ScaleToken): number =>
   Math.max(0, ...text.split(/\s+/).map((word) => emWidth(word, tracking)));
 
-export const wrappedLines = (
-  text: string,
-  fontPx: number,
-  width: number,
-  tracking: ScaleToken
+/** Lines a greedy wrap packs items `advances` px wide into, `gap` px apart, across `width`. */
+export const packedLines = (
+  advances: readonly number[],
+  gap: number,
+  width: number
 ): number => {
-  const gap = emWidth(' ', tracking) * fontPx;
   let lines = 1;
   let used = 0;
-  for (const word of text.split(/\s+/).filter(Boolean)) {
-    const advance = emWidth(word, tracking) * fontPx;
+  for (const advance of advances) {
     if (used > 0 && used + gap + advance > width) {
       lines += 1;
       used = advance;
@@ -119,6 +117,32 @@ export const wrappedLines = (
   }
   return lines;
 };
+
+const words = (text: string): string[] => text.split(/\s+/).filter(Boolean);
+
+export const wrappedLines = (
+  text: string,
+  fontPx: number,
+  width: number,
+  tracking: ScaleToken
+): number =>
+  packedLines(
+    words(text).map((word) => emWidth(word, tracking) * fontPx),
+    emWidth(' ', tracking) * fontPx,
+    width
+  );
+
+/** {@link wrappedLines} for Inter Regular, from {@link regularAdvance}. */
+export const proseLines = (
+  text: string,
+  fontPx: number,
+  width: number
+): number =>
+  packedLines(
+    words(text).map((word) => displayColumns(word) * regularAdvance * fontPx),
+    regularAdvance * fontPx,
+    width
+  );
 
 /** Glyph estimates run a few percent short over a line, so lines pack into this share of the column. */
 export const lineFill = 0.92;

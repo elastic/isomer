@@ -6,15 +6,20 @@
  */
 
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
-import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
+import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { quoteFit } from '../../theme/components/quote';
+import { slideLayout } from '../layout';
 import { sizeForLoad } from '../size';
-import { crowdingHeading, renderedStep } from '../size.fixtures';
-import { headingCrowding } from '../slide_heading/fit';
+import {
+  crowdingBelow,
+  crowdingHeading,
+  referenceHeading,
+  renderedStep,
+} from '../size.fixtures';
 
 import { example, longExample, shortExample } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
@@ -28,13 +33,9 @@ const runtime = createIsomerRuntime({
 const markdown = (node: Parameters<typeof markdownContent>[0]): string =>
   serializeMarkdown(markdownContent(node));
 
+// Load budgets are set below the reference heading, where crowding is 1.
 const stepOf = (node: object): string | undefined =>
-  /quote-textSize-(\w+)/.exec(
-    runtime.surfaces.html.render({
-      type: 'view',
-      body: [{ type: 'slideFrame', body: [node] } as PrimitiveNode],
-    } satisfies Composition).html
-  )?.[1];
+  renderedStep('quote-textSize', node, referenceHeading);
 
 describe('slideQuote', () => {
   it('needs words and a source', () => {
@@ -107,6 +108,23 @@ describe('slideQuote', () => {
     expect(stepOf({ ...shortExample, size: 's' })).toBe('s');
   });
 
+  it('takes the whole body on a slide with no heading', () => {
+    const node = {
+      type: 'slideQuote',
+      text: 'x'.repeat(quoteFit.l + 1),
+      source: 'A',
+    };
+    const step = sizeForLoad(
+      undefined,
+      quoteFit.l + 1,
+      quoteFit,
+      slideLayout(undefined).crowding
+    );
+    expect(stepOf(node)).toBe('m');
+    expect(step).toBe('l');
+    expect(renderedStep('quote-textSize', node)).toBe(step);
+  });
+
   it("scales its load by the heading's crowding", () => {
     const node = {
       type: 'slideQuote',
@@ -117,7 +135,7 @@ describe('slideQuote', () => {
       undefined,
       quoteFit.l,
       quoteFit,
-      headingCrowding(crowdingHeading)
+      crowdingBelow(crowdingHeading)
     );
     expect(step).not.toBe('l');
     expect(renderedStep('quote-textSize', node, crowdingHeading)).toBe(step);
