@@ -129,6 +129,8 @@ export {
 } from '../render';
 export {
   type AuthoringJsonSchemaOptions,
+  type CheckedComposition,
+  type CheckedValidationResult,
   type CompositionJsonSchemaOptions,
   type CompositionSchemaOptions,
   type CompositionValidatorOptions,
@@ -150,6 +152,7 @@ export {
   buildAuthoringJsonSchema,
   buildCompositionJsonSchema,
   checkInputBudget,
+  compositionToRender,
   createCompositionParser,
   createCompositionValidator,
   displayValueSchema,

@@ -6,12 +6,12 @@
  */
 
 import type {
+  CheckedValidationResult,
   Composition,
   PrimitiveNode,
   ValidationErrorMode,
-  ValidationResult,
 } from '@elastic/isomer-sdk';
-import { enforceValidationMode } from '@elastic/isomer-sdk';
+import { compositionToRender } from '@elastic/isomer-sdk';
 import {
   renderTextEnvelope,
   type TextEnvelopeDispatcher,
@@ -26,7 +26,7 @@ export interface TextRenderOptions extends TextEnvelopeOptions {
 
 /** Renders a composition or node to plain text. */
 export interface TextSurface {
-  /** Always `true`: this surface validates the composition before rendering. */
+  /** Always `true`: this surface validates the composition and renders the copy it checked, never the caller's value. */
   readonly validating: true;
   /** Renders a full composition to plain text. */
   render(composition: Composition, options?: TextRenderOptions): string;
@@ -37,15 +37,15 @@ export interface TextSurface {
 /** Creates the `text` {@link RuntimeSurfaces} entry. */
 export const createTextSurface = (
   dispatcher: TextEnvelopeDispatcher<PrimitiveNode>,
-  validate: (composition: Composition) => ValidationResult
+  validate: (composition: Composition) => CheckedValidationResult
 ): TextSurface => ({
   validating: true,
   render: (composition, options = {}) => {
-    enforceValidationMode(
+    const checked = compositionToRender(
       validate(composition),
       options.onValidationError ?? 'throw'
     );
-    return renderTextEnvelope(composition, dispatcher, options);
+    return renderTextEnvelope(checked, dispatcher, options);
   },
   renderNode: (node) => dispatcher.renderText(node),
 });

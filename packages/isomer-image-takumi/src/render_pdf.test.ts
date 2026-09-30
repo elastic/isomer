@@ -58,6 +58,39 @@ describe('renderPdf', () => {
     expect(result).toMatchObject({ pageCount: 2, width: 64, height: 32 });
   });
 
+  it('draws the copies validation checked', async () => {
+    let drawn: readonly unknown[] = [];
+    const runtime: PdfRuntime = {
+      validate: (composition) => ({
+        valid: true,
+        errors: [],
+        composition: { copy: composition },
+      }),
+      surfaces: {
+        svg: {
+          renderPages: (compositions) => {
+            drawn = compositions;
+            return {
+              pages: compositions.map(() => createElement('div', null, 'Ag')),
+              css: '',
+              width: 64,
+              height: 32,
+            };
+          },
+        },
+      },
+    };
+    const deck = [{ type: 'view' }, { type: 'view', title: 'two' }];
+
+    const result = await renderPdf(runtime, deck, createTakumiImageBackend());
+
+    expect(drawn).toEqual(deck.map((composition) => ({ copy: composition })));
+    expect(result.validations).toEqual([
+      { valid: true, errors: [] },
+      { valid: true, errors: [] },
+    ]);
+  });
+
   it('renders every composition and reports each validation in order', async () => {
     const invalid = { type: 'view', title: 'broken' };
     const runtime = runtimeReturning((composition) =>

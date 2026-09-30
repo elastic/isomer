@@ -13,7 +13,10 @@ import type { PngSvgOptions, PngValidationResult } from './render_png';
  * {@link PdfInput}. A runtime built with `frames` satisfies it.
  */
 export interface PdfRuntime {
-  validate(composition: unknown): PngValidationResult;
+  /** `composition` is the copy validation checked, which is what gets drawn. */
+  validate(
+    composition: unknown
+  ): PngValidationResult & { composition?: unknown };
   surfaces: {
     svg: {
       renderPages(
@@ -44,9 +47,10 @@ export interface RenderPdfResult {
  * composition.
  *
  * Every composition is rendered, even an invalid one: `validations` is how a
- * caller finds out, rather than a thrown error. Validation runs twice, once
- * here and once inside `renderPages`, which discards its own result. An
- * empty deck throws the runtime's `EMPTY_PAGES`.
+ * caller finds out, rather than a thrown error. What is drawn is the copy
+ * validation checked. Validation runs twice, once here and once inside
+ * `renderPages`, which discards its own result. An empty deck throws the
+ * runtime's `EMPTY_PAGES`.
  */
 export const renderPdf = async (
   runtime: PdfRuntime,
@@ -54,11 +58,19 @@ export const renderPdf = async (
   backend: TakumiPdfBackend,
   { svg, ...options }: RenderPdfOptions = {}
 ): Promise<RenderPdfResult> => {
-  const validations = deck.map((composition) => runtime.validate(composition));
-  const rendered = runtime.surfaces.svg.renderPages(deck, {
-    ...svg,
-    onValidationError: 'collect',
+  const checked = deck.map((composition) => {
+    const { composition: copy = composition, ...validation } =
+      runtime.validate(composition);
+    return { copy, validation };
   });
+  const validations = checked.map(({ validation }) => validation);
+  const rendered = runtime.surfaces.svg.renderPages(
+    checked.map(({ copy }) => copy),
+    {
+      ...svg,
+      onValidationError: 'collect',
+    }
+  );
   const pdf = await backend.pdf(rendered, options);
   return {
     pdf,

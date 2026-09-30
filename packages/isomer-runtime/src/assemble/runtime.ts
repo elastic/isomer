@@ -11,6 +11,7 @@ import {
   type AuthoringJsonSchemaOptions,
   bindFrame,
   type BoundFrame,
+  type CheckedValidationResult,
   composePacks,
   type Composition,
   createCompositionParser,
@@ -26,7 +27,6 @@ import {
   type PrimitivePack,
   type PrimitiveRenderContext,
   type PrimitiveStyleCollector,
-  type ValidationResult,
 } from '@elastic/isomer-sdk';
 import type { ZodObject } from 'zod';
 
@@ -165,8 +165,8 @@ export interface IsomerRuntime<
   getAuthoringContext(): RuntimeAuthoringContext;
   /** Reports the primitive types and render formats this runtime supports. */
   getCapabilities(): HostCapabilities;
-  /** Validates a composition against this runtime's primitives. */
-  validate(composition: Composition): ValidationResult;
+  /** Validates a composition against this runtime's primitives; `composition` on the result is the copy it checked. */
+  validate(composition: Composition): CheckedValidationResult;
   /** Parses and validates an unknown value as a `Composition`. */
   parse(value: unknown): ParsedComposition;
   /**

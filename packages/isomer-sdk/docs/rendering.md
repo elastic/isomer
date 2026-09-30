@@ -35,7 +35,7 @@ interface HTMLRenderResult {
 
 `html` is the wrapper element plus content; `body` is the content alone; `css` is what the adapter emitted; `js` is the enhancement script as a function body over `root` (see [Enhancements](#enhancements)); `measurement` is the byte length of the markup, the stylesheet, the enhancement script as delivered, and their total, for a host that budgets payload size. Validation runs inside, per the caller's `onValidationError` mode, and the findings come back on the result as `validationErrors` (`{ path, message, nodeType?, code? }` each) rather than being thrown by default; input refused by [the budget](composition.md#the-input-budget) throws in either mode.
 
-`validate` defaults to `createCompositionValidator(dispatcher.definitions)`; pass one when validation needs options or a wider inventory.
+`validate` defaults to `createCompositionValidator(dispatcher.definitions)`; pass one when validation needs options or a wider inventory. The render draws the `composition` its result carries, the copy it checked, and never reads its input again.
 
 React content is shared with the React surface through one helper, so the two cannot diverge: an `h2` and a `p.sub` for the composition's title and subtitle when `heading` is not `false`, then the body nodes, inside a dispatcher context provider.
 

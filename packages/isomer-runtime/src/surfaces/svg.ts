@@ -9,9 +9,11 @@ import { createElement, Fragment, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {
   type BoundFrame,
+  type CheckedComposition,
+  type CheckedValidationResult,
   type Composition,
+  compositionToRender,
   createChildNodeWalker,
-  enforceValidationMode,
   type FrameDispatcher,
   IsomerError,
   type PrimitiveDispatcher,
@@ -19,7 +21,6 @@ import {
   type PrimitiveStyleCollector,
   type RenderTheme,
   type ValidationErrorMode,
-  type ValidationResult,
   withNodeAnchors,
 } from '@elastic/isomer-sdk';
 import {
@@ -92,7 +93,7 @@ export interface SvgPagesResult {
  * capability a host opts into.
  */
 export interface SvgSurface {
-  /** Always `true`: this surface validates the composition before rendering. */
+  /** Always `true`: this surface validates the composition and renders the copy it checked, never the caller's value. */
   readonly validating: true;
   /** Renders a full composition inside the chosen frame. */
   render(composition: Composition, options?: SvgRenderOptions): SvgRenderResult;
@@ -153,7 +154,7 @@ export const createSvgSurface = <TRenderContext = unknown>(
     PrimitiveNode,
     RuntimePackTypes<TRenderContext>
   >,
-  validate: (composition: Composition) => ValidationResult,
+  validate: (composition: Composition) => CheckedValidationResult,
   frameFor: (name: string | undefined) => NamedFrame,
   styleAdapter:
     | HTMLStyleAdapter<PrimitiveNode, PrimitiveStyleCollector, TRenderContext>
@@ -273,17 +274,18 @@ export const createSvgSurface = <TRenderContext = unknown>(
 
   /** `subject` names a page in the frame's rejection, e.g. `page 2`. */
   const renderDocument = (
-    [first, ...rest]: readonly [Composition, ...Composition[]],
+    [head, ...tail]: readonly [Composition, ...Composition[]],
     options: SvgRenderOptions,
     subject: (index: number) => string
   ): SvgPagesResult => {
-    const compositions = [first, ...rest];
-    for (const composition of compositions) {
-      enforceValidationMode(
+    const check = (composition: Composition): CheckedComposition =>
+      compositionToRender(
         validate(composition),
         options.onValidationError ?? 'throw'
       );
-    }
+    const first = check(head);
+    const rest = tail.map(check);
+    const compositions = [first, ...rest];
     const named = frameFor(options.frame);
     compositions.forEach((composition, index) => {
       assertBody(named, composition, subject(index));
@@ -291,7 +293,7 @@ export const createSvgSurface = <TRenderContext = unknown>(
     const viewport = viewportFor(named.frame, compositions, options);
     const mode = options.theme ?? first.theme;
     const theme = named.frame.resolveTheme(mode);
-    const page = (composition: Composition): StyledPage => ({
+    const page = (composition: CheckedComposition): StyledPage => ({
       composition,
       build: (context) =>
         named.frame.render(

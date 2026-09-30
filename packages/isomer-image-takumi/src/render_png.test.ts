@@ -87,6 +87,36 @@ describe('renderPng', () => {
     expect(result.validation).toEqual({ valid: true, errors: [] });
   });
 
+  it('draws the copy validation checked and reports the result without it', async () => {
+    const drawn: unknown[] = [];
+    const checked = { type: 'view', title: 'checked' };
+    const runtime: PngRuntime = {
+      validate: () => ({ valid: true, errors: [], composition: checked }),
+      surfaces: {
+        svg: {
+          render: (composition) => {
+            drawn.push(composition);
+            return {
+              element: createElement('div', null, 'Ag'),
+              css: '',
+              width: 64,
+              height: 32,
+            };
+          },
+        },
+      },
+    };
+
+    const result = await renderPng(
+      runtime,
+      { type: 'view', title: 'input' },
+      createTakumiImageBackend()
+    );
+
+    expect(drawn).toEqual([checked]);
+    expect(result.validation).toEqual({ valid: true, errors: [] });
+  });
+
   it('forwards svg and raster options to the render and the backend', async () => {
     let seenSvgOptions: unknown;
     const runtime: PngRuntime = {

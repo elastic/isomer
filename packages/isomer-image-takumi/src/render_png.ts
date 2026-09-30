@@ -39,7 +39,10 @@ export interface PngSvgOptions {
  * runtime built with `frames` carries `SvgSurface` there and satisfies this.
  */
 export interface PngRuntime {
-  validate(composition: unknown): PngValidationResult;
+  /** `composition` is the copy validation checked, which is what gets drawn. */
+  validate(
+    composition: unknown
+  ): PngValidationResult & { composition?: unknown };
   surfaces: {
     svg: {
       render(
@@ -68,8 +71,9 @@ export interface RenderPngResult {
  *
  * The composition is rendered even when invalid: `validation` is how a caller
  * finds out, rather than a thrown error. Input refused before parsing
- * throws `CompositionValidationError`. Validation runs twice, once
- * here and once inside `render`, which discards its own result.
+ * throws `CompositionValidationError`. What is drawn is the copy validation
+ * checked. Validation runs twice, once here and once inside `render`, which
+ * discards its own result.
  */
 export const renderPng = async (
   runtime: PngRuntime,
@@ -77,8 +81,9 @@ export const renderPng = async (
   backend: TakumiImageBackend,
   { svg, ...options }: RenderPngOptions = {}
 ): Promise<RenderPngResult> => {
-  const validation = runtime.validate(composition);
-  const rendered = runtime.surfaces.svg.render(composition, {
+  const { composition: checked = composition, ...validation } =
+    runtime.validate(composition);
+  const rendered = runtime.surfaces.svg.render(checked, {
     ...svg,
     onValidationError: 'collect',
   });

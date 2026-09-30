@@ -58,10 +58,11 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 
 | Export | What it is |
 | --- | --- |
-| `createCompositionValidator` | Trusted-input validator: the input budget, the schema, then semantic passes; returns `{ valid, errors, warnings }` |
+| `createCompositionValidator` | Trusted-input validator: the input budget, the schema, then semantic passes; returns `{ valid, errors, warnings, composition }`, where `composition` is the checked copy |
 | `createCompositionParser` | Untrusted-input parser: the input budget, then the schema only |
 | `checkInputBudget` | A plain copy of the input to parse in its place (`InputBudgetCheck`), or the refusal for input past `MAX_INPUT_DEPTH`, `MAX_INPUT_VALUES`, or `MAX_INPUT_CHARACTERS` (`INPUT_OVER_BUDGET`) or not plain data (`INPUT_NOT_PLAIN_DATA`); the validator and parser run it first |
 | `enforceValidationMode` | Throws `CompositionValidationError` on `'throw'`, or in any mode on input refused by `checkInputBudget` |
+| `compositionToRender` | `enforceValidationMode`, then the validator's checked copy, which a validating render draws in place of its input |
 | `IsomerError` | Construction and authoring failures, identified by `name` and `code`. Codes name the condition, not the throwing module. |
 | `CompositionValidationError` | Invalid composition, identified by `name`, `code` (`COMPOSITION_INVALID`), and `errors` |
 | `formatValidationError` | A `ValidationError` as one `<path> (in <nodeType>) <message>` string |
@@ -73,7 +74,7 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | `authoringSchemaSubset` | The `$defs` some types reach in an authoring schema, with the body-node union stubbed |
 | `formatZodIssue`, `formatZodIssues`, `formatPath` | Zod issues as `ValidationError`s |
 
-Types: `ValidationError`, `ValidationResult`, `ValidationWarning`, `ValidationErrorMode`, `CompositionValidatorOptions`, `InputBudget`, `InputBudgetCheck`, `ParsedComposition` (`{ valid, errors, composition? }`), `ResolvedVocabulary`, `CompositionSchemaOptions`, `CompositionJsonSchemaOptions`, `AuthoringJsonSchemaOptions`, `IsomerErrorCode`.
+Types: `ValidationError`, `ValidationResult`, `CheckedValidationResult` (`ValidationResult` plus `composition`), `CheckedComposition`, `ValidationWarning`, `ValidationErrorMode`, `CompositionValidatorOptions`, `InputBudget`, `InputBudgetCheck`, `ParsedComposition` (`{ valid, errors, composition? }`), `ResolvedVocabulary`, `CompositionSchemaOptions`, `CompositionJsonSchemaOptions`, `AuthoringJsonSchemaOptions`, `IsomerErrorCode`.
 
 ## Root entry — values, URLs, helpers
 

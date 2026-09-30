@@ -6,9 +6,10 @@
  */
 
 import type {
+  CheckedComposition,
+  CheckedValidationResult,
   Composition,
   PrimitiveNode,
-  ValidationResult,
 } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
@@ -27,14 +28,19 @@ interface TestTextNode extends PrimitiveNode {
 
 const validateComposition = (
   composition: Composition<TestTextNode>
-): ValidationResult =>
-  composition.body.length > 0
-    ? { valid: true, errors: [], warnings: [] }
+): CheckedValidationResult<TestTextNode> => {
+  const checked = structuredClone(
+    composition
+  ) as CheckedComposition<TestTextNode>;
+  return composition.body.length > 0
+    ? { valid: true, errors: [], warnings: [], composition: checked }
     : {
         valid: false,
         errors: [{ path: 'body', message: 'must contain at least one node' }],
         warnings: [],
+        composition: checked,
       };
+};
 
 const textComposition = (body: string): Composition<TestTextNode> => ({
   type: 'view',

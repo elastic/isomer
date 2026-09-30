@@ -15,6 +15,7 @@ import {
 } from '../define/primitive_module';
 
 import {
+  compositionToRender,
   createCompositionParser,
   createCompositionValidator,
   enforceValidationMode,
@@ -350,6 +351,29 @@ describe('the input budget', () => {
       }
     );
     expect(parse({ type: 'view', body: [shifty] }).valid).toBe(true);
+  });
+
+  it('returns the checked copy, which compositionToRender hands a render', () => {
+    const input = { type: 'view', body: [{ type: 'loose', extra: { a: 1 } }] };
+    const result = validate(input as never);
+    expect(result.composition).toEqual(input);
+    expect(result.composition).not.toBe(input);
+    expect(result.composition?.body[0]).not.toBe(input.body[0]);
+    expect(compositionToRender(result)).toBe(result.composition);
+    const invalid = validate({
+      type: 'view',
+      body: [{ type: 'kpi' }],
+    } as never);
+    expect(invalid.composition).toEqual({
+      type: 'view',
+      body: [{ type: 'kpi' }],
+    });
+    expect(compositionToRender(invalid, 'collect')).toBe(invalid.composition);
+    const refused = validate(deep(100) as never);
+    expect(refused.composition).toBeUndefined();
+    expect(() => compositionToRender(refused, 'collect')).toThrow(
+      expect.objectContaining({ name: 'CompositionValidationError' })
+    );
   });
 
   it('takes a host override', () => {

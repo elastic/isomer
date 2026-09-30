@@ -73,7 +73,7 @@ const composition: Composition = {
   ],
 };
 
-runtime.validate(composition); // { valid: true, errors: [], warnings: [] }
+runtime.validate(composition); // { valid: true, errors: [], warnings: [], composition: <its checked copy> }
 ```
 
 ## 4. Render it
