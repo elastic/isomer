@@ -12,7 +12,12 @@ import { describe, expect, it } from 'vitest';
 import { slideDeckFrame, slidesPack } from '../pack';
 import { slideDeckPrimitives } from '../registry';
 
-import { authoredTextMaxLength, lineText, wrappedText } from './authored_text';
+import {
+  authoredTextMaxLength,
+  figureText,
+  lineText,
+  wrappedText,
+} from './authored_text';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -87,6 +92,20 @@ describe('authored text', () => {
       field().safeParse('x'.repeat(authoredTextMaxLength + 1)).success
     ).toBe(false);
   });
+
+  it.each([' ', '\u200B', '\u0301', '\uFEFF', '\u3164', ' \u200B\u0301 '])(
+    'figureText refuses %j, which shows nothing',
+    (text) => {
+      expect(figureText().safeParse(text).success).toBe(false);
+    }
+  );
+
+  it.each(['3', ' x ', '1\u200B', '€', '+3%', 'e\u0301'])(
+    'figureText takes %j',
+    (text) => {
+      expect(figureText().safeParse(text).success).toBe(true);
+    }
+  );
 
   it.each(cases)('$name refuses more than the input-size guard', ({ node }) => {
     expect(runtime.validate({ type: 'view', body: [node] }).valid).toBe(false);

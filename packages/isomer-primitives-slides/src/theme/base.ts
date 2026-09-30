@@ -101,14 +101,18 @@ export const stroke = {
 } as const;
 
 /**
- * Inter ExtraBold glyph widths in ems, by class, before tracking.
+ * Inter ExtraBold glyph widths in ems, by class, before tracking; a figure's classes take their widest glyph.
  * Sizes display text before render, which the image surface cannot measure.
  */
 export const extraboldAdvance = {
   narrow: 0.3,
+  punctuation: 0.36,
   wide: 0.9,
   upper: 0.7,
-  digit: 0.62,
+  digit: 0.7,
+  /** `+`, `−`, `×`, `±`, `#`, and currency. */
+  sign: 0.7,
+  percent: 1.03,
   other: 0.58,
   /** Falls back to a CJK face a full em across. */
   fullwidth: 1,
@@ -175,7 +179,7 @@ export const font = {
     label: literal('0.12em'),
     labelWide: literal('0.14em'),
   },
-  transform: { uppercase: literal('uppercase') },
+  transform: { none: literal('none'), uppercase: literal('uppercase') },
   whiteSpace: { nowrap: literal('nowrap') },
   lineHeight: {
     tightest: literal('0.85'),

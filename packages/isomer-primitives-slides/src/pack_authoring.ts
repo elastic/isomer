@@ -33,7 +33,15 @@ export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
   { title: 'Diagrams', types: ['slideFanout', 'slideTerritoryGroup'] },
   {
     title: 'Data',
-    types: ['slideTable', 'slideMatrix', 'slideQuadrant'],
+    types: [
+      'slideStat',
+      'slideStats',
+      'slideDelta',
+      'slideBars',
+      'slideTable',
+      'slideMatrix',
+      'slideQuadrant',
+    ],
   },
   {
     title: 'Code',
@@ -52,6 +60,14 @@ export const slidesPackAuthoring = {
       'Nodes stacked vertically in a one-node slot, never a slideFrame.',
     slideTitle:
       'The title slide. Its aside is one slide node, never a slideFrame.',
+    slideStat:
+      'One headline number and the sentence that explains it. A unit needs a value; leave value out to show a placeholder.',
+    slideStats:
+      'Two to four comparable numbers. A unit needs a value; leave value out to show a placeholder.',
+    slideDelta:
+      'One number before and after a change. change needs both values; leave a value out to show a placeholder.',
+    slideBars:
+      'Two to six bars in one unit. At most one item is highlighted; max, when given, is at least every value.',
     slideTable:
       'A grid of short cells. Give either rows or groups, not both; every row has exactly one cell per column; twelve rows at most across all groups.',
     slideMatrix:
