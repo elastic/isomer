@@ -218,6 +218,30 @@ describe('slideStats', () => {
     expect(JSON.stringify(block)).toContain(body);
   });
 
+  describe.each(['*', '_', '~', '`'])('a figure holding %s', (delimiter) => {
+    const word = `1${delimiter}2${delimiter}`;
+    const [first, ...rest] = example.items;
+
+    it.each([
+      ['value', { ...first!, value: word }],
+      ['unit', { ...first!, unit: word }],
+      ['label', { ...first!, label: word }],
+    ] as const)(
+      'prints a %s as literal rich text, not mrkdwn',
+      (_name, item) => {
+        const node: SlideStatsNode = { ...example, items: [item, ...rest] };
+        const [block] = runtime.surfaces.slack.renderNode(node).blocks;
+        expect(block?.type).toBe('rich_text');
+        expect(JSON.stringify(block)).toContain(
+          JSON.stringify(word).slice(1, -1)
+        );
+        expect(JSON.stringify(block)).toContain(
+          '{"type":"text","text":"active-active","style":{"bold":true}}'
+        );
+      }
+    );
+  });
+
   it('prints the pending caption on every surface', () => {
     for (const output of everySurface(pendingExample)) {
       expect(output).toContain('value pending');

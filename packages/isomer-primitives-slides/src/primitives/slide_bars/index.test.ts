@@ -5,15 +5,22 @@
  * 2.0.
  */
 
+import {
+  createTakumiImageBackend,
+  type LayoutBox,
+} from '@elastic/isomer-image-takumi';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { SLACK_LIMITS, type SlackBlock } from '@elastic/isomer-sdk/slack';
 import { describe, expect, it } from 'vitest';
 
+import { slideFonts } from '../../examples/fonts';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { bars as barsTheme } from '../../theme/components/bars';
+import { scalePx } from '../../theme/scale';
 import { openBody } from '../layout';
+import { monoLines, wrappedLines } from '../size';
 import { renderedStep } from '../size.fixtures';
 
 import { denseExample, example, scaledExample } from './examples';
@@ -360,6 +367,56 @@ describe('slideBars', () => {
       expect(
         barsSize(labelled('Customer support tickets opened'), full)
       ).not.toBe('l');
+    });
+
+    describe('a word wider than its line', () => {
+      const pair = (label: string, detail?: string): SlideBarsNode => ({
+        type: 'slideBars',
+        items: [2, 1].map((value) => ({
+          label,
+          value,
+          ...(detail ? { detail } : {}),
+        })),
+      });
+      const takumi = createTakumiImageBackend({ fonts: slideFonts });
+      const runs = (box: LayoutBox): LayoutBox['runs'] => [
+        ...box.runs,
+        ...box.children.flatMap(runs),
+      ];
+      /** Lines takumi draws each item's run of `letter`s across. */
+      const drawnLines = async (node: SlideBarsNode, letter: string) => {
+        const drawn = runs(
+          await takumi.measure(runtime.surfaces.svg.render(compose(node)))
+        ).filter(({ text }) => text.startsWith(letter));
+        return new Set(drawn.map(({ y }) => Math.round(y))).size / 2;
+      };
+
+      it('counts the lines an unbroken label breaks across its column', async () => {
+        expect(barsSize(pair('x'.repeat(10)), full)).toBe('l');
+        expect(barsSize(pair('x'.repeat(60)), full)).toBe('m');
+        const lines = wrappedLines(
+          'x'.repeat(60),
+          scalePx(barsTheme.labelSizes.m),
+          scalePx(barsTheme.labelWidth),
+          barsTheme.label.tracking
+        );
+        expect(lines).toBe(4);
+        expect(lines).toBeGreaterThanOrEqual(
+          await drawnLines(pair('x'.repeat(60)), 'x')
+        );
+      });
+
+      it('counts the lines an unbroken detail breaks across its track', async () => {
+        expect(barsSize(pair('A', 'y'.repeat(90)), full)).toBe('l');
+        expect(barsSize(pair('A', 'y'.repeat(400)), full)).toBe('m');
+        const lines = monoLines(
+          'y'.repeat(400),
+          scalePx(barsTheme.detail.size),
+          openBody.width - scalePx(barsTheme.labelWidth)
+        );
+        expect(lines).toBe(5);
+        expect(lines).toBe(await drawnLines(pair('A', 'y'.repeat(400)), 'y'));
+      });
     });
 
     it('draws the dense example, six bars each with a detail, at the smallest step under crowding 1', () => {

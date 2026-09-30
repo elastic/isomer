@@ -260,11 +260,13 @@ describe('slideSplit layout', () => {
       }
       return layout;
     };
-    for (const depth of [1, 2, 3]) {
+    for (const depth of [1, 2]) {
       expect(layouts(nest(depth)).get('inner')).toEqual(expected(depth));
     }
     expect(expected(2).width).toBeGreaterThan(0);
     expect(expected(3).width).toBe(0);
+    // A label with no width to wrap across leaves no height.
+    expect(layouts(nest(3)).get('inner')).toEqual({ width: 0, height: 0 });
   });
 });
 

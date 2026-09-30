@@ -114,21 +114,26 @@ export const sizeForWidth = (
 export const widestWord = (text: string, tracking: ScaleToken): number =>
   Math.max(0, ...text.split(/\s+/).map((word) => emWidth(word, tracking)));
 
-/** Lines a greedy wrap packs items `advances` px wide into, `gap` px apart, across `width`. */
+/**
+ * Lines a greedy wrap packs items `advances` px wide into, `gap` px apart, across `width`.
+ * An item wider than `width` runs over the lines it fills, as `overflow-wrap: anywhere` breaks a word.
+ */
 export const packedLines = (
   advances: readonly number[],
   gap: number,
   width: number
 ): number => {
+  const room = Math.max(1, width);
   let lines = 1;
   let used = 0;
   for (const advance of advances) {
-    if (used > 0 && used + gap + advance > width) {
-      lines += 1;
-      used = advance;
-    } else {
-      used += (used > 0 ? gap : 0) + advance;
+    if (used > 0 && used + gap + advance <= room) {
+      used += gap + advance;
+      continue;
     }
+    const filled = Math.max(1, Math.ceil(advance / room));
+    lines += filled - (used > 0 ? 0 : 1);
+    used = advance - (filled - 1) * room;
   }
   return lines;
 };
@@ -186,9 +191,17 @@ export const sizeForLines = (
   size ??
   slideSizes.find((step) => {
     const fontPx = scalePx(steps[step]);
+    const fill = width * lineFill;
     return (
       widestWord(text, tracking) * fontPx <= width &&
-      wrappedLines(text, fontPx, width * lineFill, tracking) <= maxLines
+      // A word that fits the column holds one line, though it overruns the column's `lineFill` share.
+      packedLines(
+        words(text).map((word) =>
+          Math.min(emWidth(word, tracking) * fontPx, fill)
+        ),
+        emWidth(' ', tracking) * fontPx,
+        fill
+      ) <= maxLines
     );
   }) ??
   's';

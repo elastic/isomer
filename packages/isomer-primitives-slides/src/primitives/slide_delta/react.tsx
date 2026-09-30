@@ -38,26 +38,33 @@ const sideWidth = ({ label, value }: SlideDeltaPoint, step: SlideSize) =>
       : scalePx(theme.placeholderWidth)
   );
 
+/** The largest step at which both sides fit `room` between them. */
 const largestWithin = (
   points: readonly SlideDeltaPoint[],
   room: number
 ): SlideSize | undefined =>
-  slideSizes.find((step) =>
-    points.every((point) => sideWidth(point, step) <= room)
+  slideSizes.find(
+    (step) =>
+      points.reduce((sum, point) => sum + sideWidth(point, step), 0) <= room
   );
 
-/** The one step at which both sides fit across `width`, beside the note's floor if any step allows, else with the note wrapped under them. */
+/** What the note takes of the row at its narrowest: its gap, measure, padding, and rule. */
+const noteFloor =
+  scalePx(theme.columnGap) +
+  scalePx(theme.noteMinWidth) +
+  scalePx(theme.notePadding) +
+  scalePx(theme.rule);
+
+/** The largest step at which the row holds both sides beside the note's floor across `width`, else the largest at which it holds them with the note wrapped under. */
 export const deltaValueSize = (
   { before, after, size }: SlideDeltaNode,
   width: number
 ): SlideSize => {
   const pair = width - scalePx(theme.arrowWidth) - 2 * scalePx(theme.columnGap);
-  const beside =
-    (pair - scalePx(theme.columnGap) - scalePx(theme.noteMinWidth)) / 2;
   return (
     size ??
-    largestWithin([before, after], beside) ??
-    largestWithin([before, after], pair / 2) ??
+    largestWithin([before, after], pair - noteFloor) ??
+    largestWithin([before, after], pair) ??
     's'
   );
 };

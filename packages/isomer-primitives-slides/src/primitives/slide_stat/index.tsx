@@ -18,6 +18,7 @@ import {
 } from '../../render/marks';
 import { pending } from '../../render/pending';
 import {
+  hasMrkdwnDelimiter,
   richTextSection,
   slackBold,
   slackRichText,
@@ -52,18 +53,21 @@ export const markdown = (node: SlideStatNode) => {
 
 export const slack = (node: SlideStatNode): SlackBlock[] => {
   const value = valueText(node);
+  const literal = () =>
+    slackRichText(
+      richTextSection(
+        value ? richTextRun(value, { bold: true }) : pending.richText,
+        richTextRun(dash),
+        ...marksRichText(node.body)
+      )
+    );
   return [
-    slackSection(
-      `${value ? slackBold(value) : pending.mrkdwn}${dash}${oneLine(marksSlack(node.body))}`,
-      () =>
-        slackRichText(
-          richTextSection(
-            value ? richTextRun(value, { bold: true }) : pending.richText,
-            richTextRun(dash),
-            ...marksRichText(node.body)
-          )
-        )
-    ),
+    value && hasMrkdwnDelimiter(value)
+      ? literal()
+      : slackSection(
+          `${value ? slackBold(value) : pending.mrkdwn}${dash}${oneLine(marksSlack(node.body))}`,
+          literal
+        ),
   ];
 };
 

@@ -18,6 +18,7 @@ import {
 } from '../../render/marks';
 import { pending } from '../../render/pending';
 import {
+  hasMrkdwnDelimiter,
   richTextBreak,
   richTextSection,
   slackBold,
@@ -66,23 +67,30 @@ const itemRichText = (item: SlideStatsItem) => {
   ];
 };
 
-export const slack = ({ items }: SlideStatsNode): SlackBlock[] => [
-  slackFields(
-    items.map((item) => {
-      const value = valueText(item);
-      return `${value ? slackBold(value) : pending.mrkdwn} ${escapeMrkdwn(oneLine(item.label))}: ${oneLine(marksSlack(item.body))}`;
-    }),
-    () =>
-      slackRichText(
-        richTextSection(
-          ...items.flatMap((item, index) => [
-            ...(index > 0 ? [richTextBreak] : []),
-            ...itemRichText(item),
-          ])
-        )
+export const slack = ({ items }: SlideStatsNode): SlackBlock[] => {
+  const literal = () =>
+    slackRichText(
+      richTextSection(
+        ...items.flatMap((item, index) => [
+          ...(index > 0 ? [richTextBreak] : []),
+          ...itemRichText(item),
+        ])
       )
-  ),
-];
+    );
+  return [
+    items.some((item) =>
+      hasMrkdwnDelimiter(`${valueText(item) ?? ''}${item.label}`)
+    )
+      ? literal()
+      : slackFields(
+          items.map((item) => {
+            const value = valueText(item);
+            return `${value ? slackBold(value) : pending.mrkdwn} ${escapeMrkdwn(oneLine(item.label))}: ${oneLine(marksSlack(item.body))}`;
+          }),
+          literal
+        ),
+  ];
+};
 
 /** Catalog, schema, and renderers for {@link SlideStatsNode}. */
 export const slideStatsPrimitive = definePrimitive({

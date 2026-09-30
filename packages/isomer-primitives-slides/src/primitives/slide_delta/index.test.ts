@@ -5,19 +5,28 @@
  * 2.0.
  */
 
+import {
+  createTakumiImageBackend,
+  type LayoutBox,
+} from '@elastic/isomer-image-takumi';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
+import { slideFonts } from '../../examples/fonts';
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { delta as theme } from '../../theme/components/delta';
+import { scalePx } from '../../theme/scale';
 import { openBody } from '../layout';
+import { emWidth } from '../size';
 import { renderedStep } from '../size.fixtures';
 import { paneWidths } from '../slide_split/pane_layout';
 
 import { example, pendingExample, wideExample } from './examples';
 import { markdown as markdownContent, text } from './index';
 import { deltaValueSize } from './react';
+import type { SlideDeltaNode } from './schema';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -152,27 +161,38 @@ describe('slideDelta', () => {
   });
 
   describe('value size', () => {
-    const pair = (value: string) => ({
+    const pair = (before: string, after = '0'): SlideDeltaNode => ({
       ...example,
-      before: { label: 'Before', value },
-      after: { label: 'After', value: '0' },
+      before: { label: 'Before', value: before },
+      after: { label: 'After', value: after },
+      body: 'Body.',
     });
+    const valueWidth = (value: string, step: 'l' | 'm' | 's') =>
+      emWidth(value, theme.value.tracking) * scalePx(theme.valueSizes[step]);
+    /** The row a pair of values takes at `l`, up to the arrow's far gap. */
+    const pairWidth = (before: string, after: string) =>
+      valueWidth(before, 'l') +
+      valueWidth(after, 'l') +
+      scalePx(theme.arrowWidth) +
+      2 * scalePx(theme.columnGap);
+    const noteFloor =
+      scalePx(theme.columnGap) +
+      scalePx(theme.noteMinWidth) +
+      scalePx(theme.notePadding) +
+      scalePx(theme.rule);
 
     it.each([
-      ['000', 'l'],
-      ['0000', 'm'],
-      ['00000', 's'],
-    ] as const)('%s takes %s', (value, step) => {
+      ['0000', 'l'],
+      ['00000', 'm'],
+      ['00000000', 's'],
+    ] as const)('%s beside one digit takes %s', (value, step) => {
       expect(deltaValueSize(pair(value), openBody.width)).toBe(step);
     });
 
-    it('sizes both values by the wider', () => {
-      expect(
-        deltaValueSize(
-          { ...pair('0'), after: { label: 'After', value: '00000' } },
-          openBody.width
-        )
-      ).toBe('s');
+    it('sizes the row by both sides together, not by the wider alone', () => {
+      expect(deltaValueSize(pair('0000', '0'), openBody.width)).toBe('l');
+      expect(deltaValueSize(pair('0', '0000'), openBody.width)).toBe('l');
+      expect(deltaValueSize(pair('000', '000'), openBody.width)).toBe('m');
     });
 
     it('keeps an authored size', () => {
@@ -185,12 +205,16 @@ describe('slideDelta', () => {
       expect(deltaValueSize(wideExample, openBody.width)).toBe('s');
     });
 
-    it('keeps the note beside the pair while a step fits, and wraps it under the pair past that', () => {
-      const [pane] = paneWidths(openBody.width, 'even', 'gap');
-      expect(deltaValueSize(pair('000'), openBody.width)).toBe('l');
-      expect(deltaValueSize(pair('0'), pane)).toBe('l');
-      expect(deltaValueSize(pair('00'), pane)).toBe('m');
-      expect(deltaValueSize(pair('000'), pane)).toBe('s');
+    it('holds the note’s measure, padding, and rule beside the pair, to the pixel', () => {
+      const row = pairWidth('000', '00') + noteFloor;
+      expect(deltaValueSize(pair('000', '00'), row + 0.5)).toBe('l');
+      expect(deltaValueSize(pair('000', '00'), row - 0.5)).toBe('m');
+    });
+
+    it('wraps the note under the pair when no step holds it beside them', () => {
+      const alone = pairWidth('000', '00');
+      expect(deltaValueSize(pair('000', '00'), alone + 0.5)).toBe('l');
+      expect(deltaValueSize(pair('000', '00'), alone - 0.5)).toBe('m');
     });
 
     it('measures a label wider than its value, and a placeholder for a missing value', () => {
@@ -231,6 +255,41 @@ describe('slideDelta', () => {
           aside: node,
         })
       ).not.toBe('l');
+    });
+
+    describe('drawn by takumi', () => {
+      const takumi = createTakumiImageBackend({ fonts: slideFonts });
+      const runs = (box: LayoutBox): LayoutBox['runs'] => [
+        ...box.runs,
+        ...box.children.flatMap(runs),
+      ];
+      /** The second value and the note's body, as drawn. */
+      const drawn = async (node: SlideDeltaNode) => {
+        const all = runs(
+          await takumi.measure(runtime.surfaces.svg.render(compose(node)))
+        );
+        const run = (text: string | undefined) =>
+          all.find((candidate) => candidate.text.trim() === text)!;
+        return { value: run(node.after.value), body: run(node.body) };
+      };
+
+      it.each([
+        ['a four-digit value beside one digit, at l', pair('0000', '0'), 'l'],
+        ['four digits and three, at m', pair('0000', '000'), 'm'],
+      ] as const)('keeps the note beside %s', async (_name, node, step) => {
+        expect(deltaValueSize(node, openBody.width)).toBe(step);
+        const { value, body } = await drawn(node);
+        expect(body.x).toBeGreaterThan(value.x + value.width);
+        expect(body.y).toBeLessThan(value.y + value.height);
+      });
+
+      it('wraps the note under four digits and three at l, the step it passes over', async () => {
+        const { value, body } = await drawn({
+          ...pair('0000', '000'),
+          size: 'l',
+        });
+        expect(body.y).toBeGreaterThan(value.y + value.height);
+      });
     });
   });
   it('prints the pending caption on every surface', () => {

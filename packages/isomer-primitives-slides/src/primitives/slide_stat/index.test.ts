@@ -89,6 +89,38 @@ describe('slideStat', () => {
     `);
   });
 
+  describe.each(['*', '_', '~', '`'])('a figure holding %s', (delimiter) => {
+    const word = `1${delimiter}2${delimiter}`;
+
+    it.each([
+      ['value', { ...example, value: word }],
+      ['unit', { ...example, unit: word }],
+    ] as const)(
+      'prints a %s as literal rich text, not mrkdwn',
+      (_name, node) => {
+        const [block] = runtime.surfaces.slack.renderNode(node).blocks;
+        expect(block).toMatchObject({
+          type: 'rich_text',
+          elements: [
+            {
+              elements: [
+                {
+                  type: 'text',
+                  text: [node.value, node.unit].join(' '),
+                  style: { bold: true },
+                },
+                { type: 'text', text: ' — ' },
+                { type: 'text' },
+                { type: 'text', text: 'five', style: { bold: true } },
+                { type: 'text', text: '.' },
+              ],
+            },
+          ],
+        });
+      }
+    );
+  });
+
   it('prints the pending caption on every surface', () => {
     for (const output of everySurface(pendingExample)) {
       expect(output).toContain('value pending');

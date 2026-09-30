@@ -153,8 +153,8 @@ describe('the largest steps a slide with no heading takes still fit', () => {
       variant: 'delta-valueSize',
       node: {
         type: 'slideDelta',
-        before: { label: 'Before', value: '000' },
-        after: { label: 'After', value: '000' },
+        before: { label: 'Before', value: '0000' },
+        after: { label: 'After', value: '0' },
         body: 'Body.',
       },
     },
