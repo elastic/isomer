@@ -39,7 +39,7 @@ export const react = (
     timelineHeadingLineCount(
       items.map(({ heading }) => heading),
       step,
-      context?.width
+      context
     )
   );
   return (

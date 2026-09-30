@@ -10,6 +10,7 @@ import { stripMarks } from '../../render/marks';
 import { roadmap, roadmapFit } from '../../theme/components/roadmap';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
+import { slideLayout } from '../layout';
 import { rowLoad, sizeForWidthLoad } from '../size';
 
 import type { SlideRoadmapNode } from './schema';
@@ -31,7 +32,7 @@ export const roadmapStep = (
     node.size,
     roadmapLoad(node),
     roadmapFit,
-    context,
+    slideLayout(context),
     (2 * scalePx(roadmap.columnPadding) + scalePx(roadmap.rule)) *
       (node.columns.length - 1)
   );

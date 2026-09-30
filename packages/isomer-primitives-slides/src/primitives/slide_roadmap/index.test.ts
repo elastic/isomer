@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { frameContentWidth } from '../../theme/components/frame';
 import { roadmapFit } from '../../theme/components/roadmap';
+import { layoutAt } from '../size.fixtures';
 
 import { example, fullExample, twoColumnsExample } from './examples';
 import { roadmapLoad, roadmapStep } from './fit';
@@ -252,20 +253,20 @@ describe('slideRoadmap', () => {
   });
 
   it('steps down at each budget, under crowding, and in a narrower box, unless sized', () => {
-    const edge = (load: number) => roadmapStep(twoColumns(load), undefined);
+    const edge = (load: number) => roadmapStep(twoColumns(load), layoutAt(1));
     expect(edge(roadmapFit.l)).toBe('l');
     expect(edge(roadmapFit.l + 2)).toBe('m');
     expect(edge(roadmapFit.m)).toBe('m');
     expect(edge(roadmapFit.m + 2)).toBe('s');
-    expect(roadmapStep(twoColumns(roadmapFit.l), { crowding: 1.1 })).toBe('m');
-    expect(
-      roadmapStep(twoColumns(roadmapFit.l), { width: frameContentWidth * 0.95 })
-    ).toBe('m');
+    expect(roadmapStep(twoColumns(roadmapFit.l), layoutAt(1.1))).toBe('m');
     expect(
       roadmapStep(
-        { ...twoColumns(roadmapFit.m + 2), size: 'l' },
-        { crowding: 3 }
+        twoColumns(roadmapFit.l),
+        layoutAt(1, frameContentWidth * 0.95)
       )
+    ).toBe('m');
+    expect(
+      roadmapStep({ ...twoColumns(roadmapFit.m + 2), size: 'l' }, layoutAt(3))
     ).toBe('l');
   });
 });

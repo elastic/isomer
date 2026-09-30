@@ -5,26 +5,35 @@
  * 2.0.
  */
 
-import {
-  createTakumiImageBackend,
-  type LayoutBox,
-} from '@elastic/isomer-image-takumi';
+import { createTakumiImageBackend } from '@elastic/isomer-image-takumi';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import {
   checkLayout,
   type Composition,
   createChildNodeWalker,
-  NODE_ANCHOR_ATTRIBUTE,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../pack';
+import { slideLayout } from '../primitives/layout';
+import { referenceHeading, renderedStep } from '../primitives/size.fixtures';
+import { longExample as agendaExample } from '../primitives/slide_agenda/examples';
+import { fullExample as definitionsExample } from '../primitives/slide_definitions/examples';
+import { wideExample as fanoutExample } from '../primitives/slide_fanout/examples';
 import {
   example as headingExample,
   tallestExample,
 } from '../primitives/slide_heading/examples';
+import { fullExample as listExample } from '../primitives/slide_list/examples';
 import { slideDeckPrimitives } from '../registry';
+import { agendaFit } from '../theme/components/agenda';
+import {
+  definitionsFit,
+  definitionsRowFit,
+} from '../theme/components/definitions';
+import { quoteFit } from '../theme/components/quote';
+import { statementFit } from '../theme/components/statement';
 
 import { slideFonts } from './fonts';
 import { previewSlide } from './preview_slide';
@@ -36,9 +45,6 @@ const runtime = createIsomerRuntime({
 const takumi = createTakumiImageBackend({ fonts: slideFonts });
 const walk = createChildNodeWalker(runtime.primitives);
 
-// Sub-pixel rounding reads as overflow without it.
-const tolerance = 1;
-
 const cases = slideDeckPrimitives.flatMap(({ type, examples }) =>
   examples.map((example, index) => ({
     name: `${type} #${index}`,
@@ -46,53 +52,112 @@ const cases = slideDeckPrimitives.flatMap(({ type, examples }) =>
   }))
 );
 
-const descendants = (box: LayoutBox): LayoutBox[] =>
-  box.children.flatMap((child) => [child, ...descendants(child)]);
+/** The fullest count-sized examples, under the heading their load budgets are set against. */
+const referenceCases = [agendaExample, definitionsExample].map((example) => {
+  const slide = previewSlide(example);
+  const frame = slide.body[0] as PrimitiveNode & { body: PrimitiveNode[] };
+  return {
+    name: `${example.type} below the reference heading`,
+    slide: {
+      ...slide,
+      body: [{ ...frame, body: [referenceHeading, example] }],
+    },
+  };
+});
 
-// `checkLayout` bounds a top-level node by the frame's whole canvas, so this also holds it to the frame's body, above the footer.
-const pastBody = (layout: LayoutBox): LayoutBox[] => {
-  const frame = [layout, ...descendants(layout)].find(
-    ({ attributes }) => attributes?.[NODE_ANCHOR_ATTRIBUTE] === 'slideFrame'
+const findings = async (slide: Composition) =>
+  checkLayout(
+    await takumi.measure(runtime.surfaces.svg.render(slide, { anchors: true })),
+    slide.body,
+    walk,
+    'svg'
   );
-  const body = frame?.children[0]?.children[0];
-  if (body === undefined) {
-    throw new Error('no frame body in the measured layout');
-  }
-  return descendants(body).filter(
-    ({ x, y, width, height }) =>
-      width > 0 &&
-      height > 0 &&
-      (x < body.x - tolerance ||
-        y < body.y - tolerance ||
-        x + width > body.x + body.width + tolerance ||
-        y + height > body.y + body.height + tolerance)
-  );
+
+const fits = async ({ slide }: { slide: Composition }) => {
+  expect(await findings(slide)).toEqual([]);
 };
 
 describe('every example fits its preview slide', () => {
-  it.each(cases)('$name', async ({ slide }) => {
-    const layout = await takumi.measure(
-      runtime.surfaces.svg.render(slide, { anchors: true })
-    );
-    expect(checkLayout(layout, slide.body, walk, 'svg')).toEqual([]);
-    expect(pastBody(layout)).toEqual([]);
+  it.each(cases)('$name', fits);
+  it.each(referenceCases)('$name', fits);
+});
+
+describe('the largest steps a slide with no heading takes still fit', () => {
+  const { crowding } = slideLayout(undefined);
+  const prose = (length: number) =>
+    'Refunds settle in two days because the ledger writes first and the batch waits. '
+      .repeat(Math.ceil(length / 60))
+      .slice(0, length)
+      .trim();
+  const most = (budget: number) => Math.floor(budget / crowding);
+  const alone = (node: object): Composition => ({
+    type: 'view',
+    body: [{ type: 'slideFrame', body: [node] } as PrimitiveNode],
+  });
+  const term = (length: number) => ({
+    term: 'ledger',
+    body: prose(length - 'ledger'.length),
+  });
+
+  const steps = (['l', 'm'] as const).flatMap((step) => [
+    {
+      step,
+      variant: 'statement-textSize',
+      node: { type: 'slideStatement', text: prose(most(statementFit[step])) },
+    },
+    {
+      step,
+      variant: 'quote-textSize',
+      node: {
+        type: 'slideQuote',
+        text: prose(most(quoteFit[step])),
+        source: 'A',
+      },
+    },
+    {
+      step,
+      variant: 'agenda-rowSize',
+      node: {
+        ...agendaExample,
+        sections: agendaExample.sections.slice(0, most(agendaFit[step])),
+      },
+    },
+    {
+      step,
+      variant: 'definitions-rowSize',
+      node: {
+        type: 'slideDefinitions',
+        items: Array.from({ length: most(definitionsRowFit.l) }, () =>
+          term(
+            Math.floor(most(definitionsFit[step]) / most(definitionsRowFit.l))
+          )
+        ),
+      },
+    },
+  ]);
+
+  it.each(steps)('$variant at $step', async ({ step, variant, node }) => {
+    expect(renderedStep(variant, node)).toBe(step);
+    expect(await findings(alone(node))).toEqual([]);
   });
 });
 
-const fits = async (slide: Composition): Promise<boolean> => {
-  const layout = await takumi.measure(
-    runtime.surfaces.svg.render(slide, { anchors: true })
-  );
-  return (
-    checkLayout(layout, slide.body, walk, 'svg').length === 0 &&
-    pastBody(layout).length === 0
-  );
-};
+const fitsBody = async (slide: Composition): Promise<boolean> =>
+  (await findings(slide)).length === 0;
 
 const inFrame = (body: PrimitiveNode[]): Composition => ({
   type: 'view',
   body: [{ type: 'slideFrame', body } as PrimitiveNode],
 });
+
+const paneOf = (node: PrimitiveNode): PrimitiveNode =>
+  ({
+    type: 'slideSplit',
+    panes: [
+      { label: 'Pane', items: [node] },
+      { items: [{ type: 'slideBulletList', items: ['One', 'Two'] }] },
+    ],
+  }) as PrimitiveNode;
 
 const placements: [string, (node: PrimitiveNode) => Composition][] = [
   ['under the tallest heading', (node) => inFrame([tallestExample, node])],
@@ -103,23 +168,9 @@ const placements: [string, (node: PrimitiveNode) => Composition][] = [
         { type: 'slideTitle', title: 'Isomer', aside: node } as PrimitiveNode,
       ]),
   ],
-  [
-    'in a split pane',
-    (node) =>
-      inFrame([
-        headingExample,
-        {
-          type: 'slideSplit',
-          panes: [
-            { label: 'Pane', items: [node] },
-            { items: [{ type: 'slideBulletList', items: ['One', 'Two'] }] },
-          ],
-        } as PrimitiveNode,
-      ]),
-  ],
+  ['in a split pane', (node) => inFrame([headingExample, paneOf(node)])],
 ];
 
-// Sized by `sizeForWidthLoad`, which reads the heading's crowding and the pane's width.
 const widthLoaded = new Set(['slideGraph', 'slideRoadmap', 'slideTimeline']);
 
 interface SizedCase {
@@ -142,8 +193,44 @@ const sized: SizedCase[] = slideDeckPrimitives
 
 describe('a picked size fits wherever the smallest does', () => {
   it.each(sized)('$name', async ({ node, place }) => {
-    if (await fits(place({ ...node, size: 's' } as PrimitiveNode))) {
-      expect(await fits(place(node))).toBe(true);
+    if (await fitsBody(place({ ...node, size: 's' } as PrimitiveNode))) {
+      expect(await fitsBody(place(node))).toBe(true);
     }
   });
+});
+
+describe('checkLayout reports a node past the frame body', () => {
+  const wrapped =
+    'and what it means for every team that ships a service to production across every region we run in today';
+  const halfWrappedAgenda = {
+    ...agendaExample,
+    sections: agendaExample.sections.map((section, index) =>
+      index % 2 === 0
+        ? { ...section, title: `${section.title} ${wrapped}` }
+        : section
+    ),
+  };
+
+  it.each([fanoutExample, listExample, halfWrappedAgenda])(
+    '$type below the tallest heading',
+    async (node) => {
+      const slide: Composition = {
+        type: 'view',
+        body: [
+          {
+            type: 'slideFrame',
+            body: [tallestExample, node],
+          } as PrimitiveNode,
+        ],
+      };
+      expect(await findings(slide)).toEqual([
+        {
+          kind: 'overflow',
+          path: 'body[0].body[1]',
+          type: node.type,
+          by: expect.any(Number) as number,
+        },
+      ]);
+    }
+  );
 });

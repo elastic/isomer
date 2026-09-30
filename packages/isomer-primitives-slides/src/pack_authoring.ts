@@ -15,13 +15,32 @@ import { slideGraphShape } from './primitives/slide_graph/schema';
 export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
   {
     title: 'Slide structure',
-    types: ['slideFrame', 'slideHeading', 'slideTitle'],
+    types: [
+      'slideFrame',
+      'slideHeading',
+      'slideStatement',
+      'slideQuote',
+      'slideTitle',
+      'slideSection',
+      'slideAgenda',
+      'slideClosing',
+      'slideSource',
+    ],
   },
   { title: 'Layout', types: ['slideSplit', 'slideStack'] },
-  { title: 'Text', types: ['slideBulletList', 'slideRoadmap'] },
+  {
+    title: 'Text',
+    types: ['slideList', 'slideBulletList', 'slideDefinitions', 'slideRoadmap'],
+  },
   {
     title: 'Diagrams',
-    types: ['slideTerritoryGroup', 'slideGraph', 'slideTimeline', 'slideTree'],
+    types: [
+      'slideFanout',
+      'slideTerritoryGroup',
+      'slideGraph',
+      'slideTimeline',
+      'slideTree',
+    ],
   },
   { title: 'Code', types: ['slideCode'] },
 ];
@@ -39,6 +58,11 @@ export const slidesPackAuthoring = {
       'The title slide. Its aside is one slide node, never a slideFrame.',
     slideCode:
       'One or two code panels. Every highlighted line number exists in its panel.',
+    slideAgenda:
+      'Two to eight sections of the talk, in order. At most one section is current.',
+    slideSource: 'One citation line.',
+    slideSection:
+      'A section divider. When hrefs is given it has one entry per contents entry.',
     slideGraph: `Terms joined by arrows. ${slideGraphShape}. Every edge names a node id.`,
     slideRoadmap: 'Two to four horizons. At most one column is current.',
     slideTimeline: 'Three to five dated points. At most one item is current.',

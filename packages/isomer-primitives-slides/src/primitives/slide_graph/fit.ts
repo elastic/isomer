@@ -11,6 +11,7 @@ import { displayColumns } from '../../render/mono';
 import { graph, graphFit } from '../../theme/components/graph';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
+import { slideLayout } from '../layout';
 import { sizeForWidthLoad } from '../size';
 
 import { graphLayout } from './layout';
@@ -39,6 +40,6 @@ export const graphStep = (
     node.size,
     graphLoad(node),
     graphFit,
-    context,
+    slideLayout(context),
     scalePx(graph.track) * (graphLayout(node).main.length - 1)
   );

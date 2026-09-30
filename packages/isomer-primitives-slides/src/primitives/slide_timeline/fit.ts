@@ -8,11 +8,17 @@
 import type { SlideRenderContext } from '../../render/context';
 import { stripMarks } from '../../render/marks';
 import { font } from '../../theme/base';
-import { frameContentWidth } from '../../theme/components/frame';
 import { timeline, timelineFit } from '../../theme/components/timeline';
 import { scalePx } from '../../theme/scale';
 import { countKeys, type SlideSize } from '../../theme/variants';
-import { lineFill, rowLoad, sizeForWidthLoad, wrappedLines } from '../size';
+import { slideLayout } from '../layout';
+import {
+  lineFill,
+  rowLoad,
+  sizeForWidthLoad,
+  trackWidth,
+  wrappedLines,
+} from '../size';
 
 import type { SlideTimelineNode } from './schema';
 
@@ -29,7 +35,7 @@ export const timelineStep = (
     node.size,
     timelineLoad(node),
     timelineFit,
-    context,
+    slideLayout(context),
     scalePx(timeline.gap) * (node.items.length - 1)
   );
 
@@ -40,11 +46,13 @@ export const timelineHeadingLines = countKeys(1, 6);
 export const timelineHeadingLineCount = (
   headings: readonly string[],
   step: SlideSize,
-  rowWidth = frameContentWidth
+  context?: SlideRenderContext
 ): number => {
-  const width =
-    (rowWidth - scalePx(timeline.gap) * (headings.length - 1)) /
-    headings.length;
+  const width = trackWidth(
+    slideLayout(context).width,
+    headings.map(() => 1),
+    timeline.gap
+  );
   const lines = Math.max(
     ...headings.map((heading) =>
       wrappedLines(

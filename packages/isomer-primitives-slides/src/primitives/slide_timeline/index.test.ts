@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { frameContentWidth } from '../../theme/components/frame';
 import { timelineFit } from '../../theme/components/timeline';
+import { layoutAt } from '../size.fixtures';
 
 import { example, fiveItemsExample, threeItemsExample } from './examples';
 import {
@@ -240,22 +241,20 @@ describe('slideTimeline', () => {
   });
 
   it('steps down at each budget, under crowding, and in a narrower box, unless sized', () => {
-    const edge = (load: number) => timelineStep(fourItems(load), undefined);
+    const edge = (load: number) => timelineStep(fourItems(load), layoutAt(1));
     expect(edge(timelineFit.l)).toBe('l');
     expect(edge(timelineFit.l + 4)).toBe('m');
     expect(edge(timelineFit.m)).toBe('m');
     expect(edge(timelineFit.m + 4)).toBe('s');
-    expect(timelineStep(fourItems(timelineFit.l), { crowding: 1.1 })).toBe('m');
-    expect(
-      timelineStep(fourItems(timelineFit.l), {
-        width: frameContentWidth * 0.95,
-      })
-    ).toBe('m');
+    expect(timelineStep(fourItems(timelineFit.l), layoutAt(1.1))).toBe('m');
     expect(
       timelineStep(
-        { ...fourItems(timelineFit.m + 4), size: 'l' },
-        { crowding: 3 }
+        fourItems(timelineFit.l),
+        layoutAt(1, frameContentWidth * 0.95)
       )
+    ).toBe('m');
+    expect(
+      timelineStep({ ...fourItems(timelineFit.m + 4), size: 'l' }, layoutAt(3))
     ).toBe('l');
   });
 });

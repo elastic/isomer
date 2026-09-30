@@ -14,6 +14,7 @@ import { describe, expect, it } from 'vitest';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { frameContentWidth } from '../../theme/components/frame';
 import { graphFit, graphMaxMain } from '../../theme/components/graph';
+import { layoutAt } from '../size.fixtures';
 
 import { example, outwardEdgesExample, pairExample } from './examples';
 import { graphLoad, graphStep } from './fit';
@@ -326,17 +327,17 @@ describe('slideGraph', () => {
   });
 
   it('steps down at each budget, under crowding, and in a narrower box, unless sized', () => {
-    const edge = (load: number) => graphStep(pair(load), undefined);
+    const edge = (load: number) => graphStep(pair(load), layoutAt(1));
     expect(edge(graphFit.l)).toBe('l');
     expect(edge(graphFit.l + 1)).toBe('m');
     expect(edge(graphFit.m)).toBe('m');
     expect(edge(graphFit.m + 1)).toBe('s');
-    expect(graphStep(pair(graphFit.l), { crowding: 1.1 })).toBe('m');
+    expect(graphStep(pair(graphFit.l), layoutAt(1.1))).toBe('m');
     expect(
-      graphStep(pair(graphFit.l), { width: frameContentWidth * 0.95 })
+      graphStep(pair(graphFit.l), layoutAt(1, frameContentWidth * 0.95))
     ).toBe('m');
-    expect(
-      graphStep({ ...pair(graphFit.m + 1), size: 'l' }, { crowding: 3 })
-    ).toBe('l');
+    expect(graphStep({ ...pair(graphFit.m + 1), size: 'l' }, layoutAt(3))).toBe(
+      'l'
+    );
   });
 });
