@@ -68,6 +68,16 @@ describe('slideQuote', () => {
     `);
   });
 
+  it('sets source, joiner, and context as one run beside the rule', () => {
+    const { html } = runtime.surfaces.html.render({
+      type: 'view',
+      body: [{ type: 'slideFrame', body: [example] } as PrimitiveNode],
+    });
+    expect(/<figcaption[^>]*>(.*?)<\/figcaption>/.exec(html)?.[1]).toMatch(
+      /^<span[^>]*><\/span><span><span[^>]*>Priya N\.<\/span>, <span[^>]*>Customer interview, March<\/span><\/span>$/
+    );
+  });
+
   it('leaves the context out of the attribution when there is none', () => {
     expect(text(shortExample)).toMatchInlineSnapshot(
       `

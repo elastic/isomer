@@ -50,7 +50,9 @@ describe('paneWidths', () => {
     }
     expect(widths.at(-2)).toBeGreaterThan(0);
     expect(widths.at(-1)).toBe(0);
-    expect(narrowing(scalePx(statement.maxWidth), 0)).toBe(Infinity);
+    const ratio = narrowing(scalePx(statement.maxWidth), 0);
+    expect(Number.isFinite(ratio)).toBe(true);
+    expect(ratio).toBe(scalePx(statement.maxWidth));
 
     const bullets = { type: 'slideBulletList', items: ['One'] };
     let nested: object = { type: 'slideStatement', text: 'Short' };

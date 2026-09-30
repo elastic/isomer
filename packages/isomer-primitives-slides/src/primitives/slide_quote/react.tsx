@@ -48,13 +48,15 @@ export const react = (
         </blockquote>
         <figcaption className={cls(context, quote.attribution)}>
           <span aria-hidden className={cls(context, quote.rule)} />
-          <span className={cls(context, quote.source)}>{source}</span>
-          {where ? (
-            <>
-              {contextJoiner.value}
-              <span className={cls(context, quote.context)}>{where}</span>
-            </>
-          ) : null}
+          <span>
+            <span className={cls(context, quote.source)}>{source}</span>
+            {where ? (
+              <>
+                {contextJoiner.value}
+                <span className={cls(context, quote.context)}>{where}</span>
+              </>
+            ) : null}
+          </span>
         </figcaption>
       </figure>
     </div>

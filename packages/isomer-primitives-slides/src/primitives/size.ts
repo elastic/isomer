@@ -47,9 +47,9 @@ export const sizeForLoad = (
 export const smallerStep = (a: SlideSize, b: SlideSize): SlideSize =>
   slideSizes.indexOf(a) > slideSizes.indexOf(b) ? a : b;
 
-/** How many times over `measure` exceeds the room across; 1 when it fits, infinite when there is no room. */
+/** How many times over `measure` exceeds the room across; 1 when it fits. A room under a pixel counts as one, so the ratio stays finite. */
 export const narrowing = (measure: number, width = Infinity): number =>
-  Math.max(1, measure / width);
+  Math.max(1, measure / Math.max(1, width));
 
 /** Width of track `index` when `total` pixels split into `shares` fr tracks with `gap` between; 0 when the gaps leave none. */
 export const trackWidth = (
