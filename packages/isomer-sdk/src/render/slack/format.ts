@@ -63,16 +63,104 @@ export const code = (text: string): string =>
 export const codeBlock = (text: string): string =>
   `\`\`\`\n${text.replace(/```/g, '``\u200d`')}\n\`\`\``;
 
+const URL_PARTS_RE = /^([a-z][a-z0-9+.-]*:(?:\/\/[^/?#]*)?)(.*)$/is;
+// Letter, digit, and hyphen labels, with an optional DNS root dot.
+const DNS_NAME_RE =
+  /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*\.?$/i;
+const IPV6_HOST_RE = /^\[[0-9a-f:.]+\]$/i;
+
+const MALFORMED_ESCAPE_RE = /%(?![0-9a-f]{2})/i;
+
+// `url` parsed, when its escapes are well formed and `URL` prints it as
+// written up to the case of its scheme and authority and a `/` for an empty
+// path.
+const parsedAsWritten = (url: string): URL | null => {
+  if (MALFORMED_ESCAPE_RE.test(url)) {
+    return null;
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return null;
+  }
+  const [, prefix, rest] = URL_PARTS_RE.exec(url) ?? [];
+  const [, printedPrefix, printedRest] = URL_PARTS_RE.exec(parsed.href) ?? [];
+  return prefix !== undefined &&
+    prefix.toLowerCase() === printedPrefix?.toLowerCase() &&
+    (printedRest === rest || printedRest === `/${rest}`)
+    ? parsed
+    : null;
+};
+
+/**
+ * Whether `url` is an `http:` or `https:` URL with a DNS or IPv6 host that
+ * `URL` prints as written, so nothing it repairs or encodes, such as a
+ * backslash, whitespace, or non-ASCII, passes.
+ */
+export const isAbsoluteHttpUrl = (url: string): boolean => {
+  const parsed = parsedAsWritten(url);
+  return (
+    (parsed?.protocol === 'http:' || parsed?.protocol === 'https:') &&
+    (DNS_NAME_RE.test(parsed.hostname) || IPV6_HOST_RE.test(parsed.hostname))
+  );
+};
+
+// RFC 5322 dot-atom text, less `/`, `?`, `#`, and `%`.
+const LOCAL_PART_RE =
+  /^[a-z0-9!$&'*+=^_`{|}~-]+(?:\.[a-z0-9!$&'*+=^_`{|}~-]+)*$/i;
+
+const isMailbox = (recipient: string): boolean => {
+  const at = recipient.lastIndexOf('@');
+  return (
+    at > 0 &&
+    LOCAL_PART_RE.test(recipient.slice(0, at)) &&
+    DNS_NAME_RE.test(recipient.slice(at + 1))
+  );
+};
+
+const decoded = (value: string): string | null => {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return null;
+  }
+};
+
+// Every comma-separated recipient before the query or fragment is a mailbox.
+const isMailtoUrl = (url: string): boolean => {
+  const [, recipients] = /^mailto:([^?#]*)/i.exec(url) ?? [];
+  return (
+    recipients !== undefined &&
+    parsedAsWritten(url) !== null &&
+    recipients
+      .split(',')
+      .every((recipient) => isMailbox(decoded(recipient) ?? ''))
+  );
+};
+
+/**
+ * `href` when it passes {@link sanitizeNavigationHref} as an absolute URL,
+ * `null` otherwise. Slack has no page to resolve a relative URL against.
+ */
+export const slackLinkUrl = (href: string): string | null => {
+  const url = sanitizeNavigationHref(href);
+  if (url === null) {
+    return null;
+  }
+  return isAbsoluteHttpUrl(url) || isMailtoUrl(url) ? url : null;
+};
+
 /**
  * Slack mrkdwn link, `<url|label>`, or a bare `<url>` when `label` is omitted.
  *
  * URL and label are both escaped so `&` and `>` cannot break Slack's link
  * parser, and a `|` in the URL is percent-encoded so it cannot end the URL
- * early. A URL failing the navigation policy in `src/validate/url.ts` degrades
- * to plain escaped text with no link.
+ * early. A URL {@link slackLinkUrl} rejects degrades to plain escaped text
+ * with no link.
  */
 export const link = (url: string, label?: string): string => {
-  const sanitized = sanitizeNavigationHref(url);
+  const sanitized = slackLinkUrl(url);
   if (!sanitized) {
     return escapeMrkdwn(label ?? url);
   }

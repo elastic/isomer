@@ -41,9 +41,7 @@ export const schema = z
         .array(territorySchema)
         .min(1)
         .max(4)
-        .describe(
-          'Owners, left to right, in equal columns. 1 to 4. Type does not step down, so long bodies can run past the slide; a layout check reports it.'
-        ),
+        .describe('Owners, left to right, in equal columns. 1 to 4.'),
       { text: 'body' }
     ),
   })

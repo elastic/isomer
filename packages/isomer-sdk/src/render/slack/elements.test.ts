@@ -74,6 +74,13 @@ describe('slackUrlButton', () => {
     });
   });
 
+  it('omits a relative href', () => {
+    expect(slackUrlButton({ label: 'Go', href: '/path' })).toEqual({
+      type: 'button',
+      text: { type: 'plain_text', text: 'Go', emoji: true },
+    });
+  });
+
   it('omits a blocked href and an unmapped color', () => {
     expect(
       slackUrlButton({
@@ -141,5 +148,13 @@ describe('slackOverflowElement', () => {
       url: 'https://x.y/1',
       description: { type: 'plain_text', text: 'd', emoji: true },
     });
+  });
+
+  it('drops a relative href', () => {
+    expect(
+      slackOverflowElement('menu', [{ label: 'L', href: './a' }]).options
+    ).toEqual([
+      { text: { type: 'plain_text', text: 'L', emoji: true }, value: '0' },
+    ]);
   });
 });

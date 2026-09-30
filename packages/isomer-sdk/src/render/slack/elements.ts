@@ -6,7 +6,6 @@
  */
 
 import type { NamedColor } from '../../composition/named_color';
-import { sanitizeNavigationHref } from '../../validate/url';
 
 import {
   SLACK_LIMITS,
@@ -16,7 +15,7 @@ import {
   type SlackPlainTextObject,
   type SlackStaticSelectElement,
 } from './blocks';
-import { clampSlackText } from './format';
+import { clampSlackText, slackLinkUrl } from './format';
 
 const OPTION_VALUE_CHARS = 75;
 
@@ -62,10 +61,10 @@ export const slackSelectOption = (
   return option;
 };
 
-/** Item for {@link slackOverflowElement}; `href` gets the navigation policy. */
+/** Item for {@link slackOverflowElement}; `href` goes through {@link slackLinkUrl}. */
 export interface SlackOverflowOptionInput {
   label: string;
-  /** An `href` the navigation policy rejects leaves the item in the menu with no URL. */
+  /** An `href` {@link slackLinkUrl} rejects leaves the item in the menu with no URL. */
   href: string;
   description?: string;
 }
@@ -84,8 +83,8 @@ export const slackButtonStyle = (
       : undefined;
 
 /**
- * Link button. An `href` that fails the navigation policy is omitted rather
- * than blocked in place, so the button renders but does nothing.
+ * Link button. An `href` {@link slackLinkUrl} rejects is omitted rather than
+ * blocked in place, so the button renders but does nothing.
  */
 export const slackUrlButton = (input: {
   label: string;
@@ -96,7 +95,7 @@ export const slackUrlButton = (input: {
     type: 'button',
     text: slackPlainText(input.label),
   };
-  const url = sanitizeNavigationHref(input.href);
+  const url = slackLinkUrl(input.href);
   if (url) {
     button.url = url;
   }
@@ -153,7 +152,7 @@ export const slackOverflowElement = (
         text: slackPlainText(item.label),
         value: String(index),
       };
-      const url = sanitizeNavigationHref(item.href);
+      const url = slackLinkUrl(item.href);
       if (url) {
         option.url = url;
       }

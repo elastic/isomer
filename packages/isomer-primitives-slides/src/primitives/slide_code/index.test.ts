@@ -16,10 +16,21 @@ import { describe, expect, it } from 'vitest';
 
 import { slideFonts } from '../../examples/fonts';
 import { slideDeckFrame, slidesPack } from '../../pack';
-import { codeDenseAfter, codeLineMaxLength } from '../../theme/components/code';
+import {
+  codeDenseAfter,
+  codeLineMaxLength,
+  codeMaxLines,
+} from '../../theme/components/code';
 import { slideDistillery } from '../../theme/distillery';
+import { authoredTextMaxLength } from '../authored_text';
 
-import { example, examples, traceExample } from './examples';
+import {
+  denseExample,
+  denseTraceExample,
+  example,
+  examples,
+  traceExample,
+} from './examples';
 import { markdown as markdownContent, slack, text } from './index';
 import { schema, type SlideCodeNode } from './schema';
 
@@ -62,6 +73,12 @@ describe('slideCode schema', () => {
       false
     );
     expect(examples.every((node) => schema.safeParse(node).success)).toBe(true);
+    // The fit test measures these, so they hold the most lines a panel takes.
+    for (const { panels } of [denseExample, denseTraceExample]) {
+      for (const { lines } of panels) {
+        expect(lines).toHaveLength(codeMaxLines);
+      }
+    }
   });
 
   it('rejects a highlight past the end of its panel, at that panel', () => {
@@ -145,12 +162,26 @@ describe('slideCode line width', () => {
     expect(errorPaths(panel(['e\u0301'.repeat(one)]))).toEqual([]);
   });
 
-  it('refuses a line far past any panel before measuring it', () => {
-    expect(errorPaths(panel(['x'.repeat(100_000)]))).toContainEqual(
-      expect.stringMatching(
-        /^body\[0\]\.body\[0\]\.panels\[0\]\.lines\[0\]: must be at most \d+ characters$/
-      )
-    );
+  it('measures a line at the input-size guard and refuses one past it unmeasured', () => {
+    expect(errorPaths(panel(['x'.repeat(authoredTextMaxLength)]))).toEqual([
+      widthError,
+    ]);
+    expect(
+      errorPaths(panel([`\t${'x'.repeat(authoredTextMaxLength)}`]))
+    ).toEqual([
+      `body[0].body[0].panels[0].lines[0]: must be at most ${authoredTextMaxLength} characters`,
+    ]);
+  });
+
+  it('reads no line of a panel or group past its count', () => {
+    const tabs = Array<string>(codeMaxLines + 1).fill('\tx');
+    expect(errorPaths(panel(tabs, { highlightLines: [99] }))).toEqual([
+      expect.stringMatching(/^body\[0\]\.body\[0\]\.panels\[0\]\.lines: /),
+    ]);
+    const wide = { lines: ['x'.repeat(codeLineMaxLength(1, false) + 1)] };
+    expect(
+      errorPaths({ type: 'slideCode', panels: [wide, wide, wide] })
+    ).toEqual([expect.stringMatching(/^body\[0\]\.body\[0\]\.panels: /)]);
   });
 
   it('rejects a tab, whose width depends on the renderer', () => {
@@ -266,14 +297,17 @@ describe('slideCode output', () => {
       ];
       return runs(box).find(({ text }) => text.trim() === 'b')!.y;
     };
-    const [blank, none, filled] = await Promise.all([
-      yOf(['a', '', 'b']),
-      yOf(['a', 'b']),
-      yOf(['a', 'x', 'b']),
-    ]);
-    expect(blank).toBeGreaterThan(none);
-    // A line box rounds its height; the blank line is within a pixel of a filled one.
-    expect(Math.abs(blank - filled)).toBeLessThanOrEqual(1.5);
+    // At both sizes: past `codeDenseAfter` lines the panel is dense.
+    for (const lead of [[], Array<string>(codeDenseAfter).fill('z')]) {
+      const [blank, none, filled] = await Promise.all([
+        yOf([...lead, 'a', '', 'b']),
+        yOf([...lead, 'a', 'b']),
+        yOf([...lead, 'a', 'x', 'b']),
+      ]);
+      expect(blank).toBeGreaterThan(none);
+      // A line box rounds its height; the blank line is within a pixel of a filled one.
+      expect(Math.abs(blank - filled)).toBeLessThanOrEqual(1.5);
+    }
   });
 });
 

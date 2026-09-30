@@ -19,5 +19,17 @@ export const titleOnlyExample: SlideHeadingNode = {
   title: 'Every region now reads from one catalog',
 };
 
+/** Two title lines at the largest size and a two-line lede: the tallest heading the frame's load budgets allow for. */
+export const tallestExample: SlideHeadingNode = {
+  type: 'slideHeading',
+  title:
+    'Refunds settle in two days, not five, because the ledger writes first',
+  lede: 'Moving the ledger write ahead of the fraud check removed three batch windows, so the money reaches the customer before the weekend ever starts.',
+};
+
 /** Conformance examples for {@link SlideHeadingNode}. */
-export const examples: SlideHeadingNode[] = [example, titleOnlyExample];
+export const examples: SlideHeadingNode[] = [
+  example,
+  titleOnlyExample,
+  tallestExample,
+];

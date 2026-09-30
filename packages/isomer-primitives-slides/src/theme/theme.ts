@@ -15,7 +15,7 @@ import { layers } from './components/layers';
 import { marks } from './components/marks';
 import { pipeline } from './components/pipeline';
 import { sequence } from './components/sequence';
-import { connector, glyph, label } from './components/shared';
+import { connector, glyph, label, tone } from './components/shared';
 import { split } from './components/split';
 import { stack } from './components/stack';
 import { territoryGroup } from './components/territory_group';
@@ -37,6 +37,7 @@ export const SLIDE_THEME = {
   glyph,
   label,
   connector,
+  tone,
   marks,
   frame,
   bulletList,
