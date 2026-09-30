@@ -68,6 +68,14 @@ describe('slideTerritoryGroup', () => {
       schema.safeParse({ ...example, items: Array(5).fill(example.items[0]) })
         .success
     ).toBe(false);
+    // `fullExample` is the most owners a row holds.
+    expect(schema.safeParse(fullExample).success).toBe(true);
+    expect(
+      schema.safeParse({
+        ...fullExample,
+        items: [...fullExample.items, example.items[0]],
+      }).success
+    ).toBe(false);
     const { errors } = runtime.validate(
       compose({
         ...example,
