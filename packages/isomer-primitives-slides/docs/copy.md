@@ -8,7 +8,7 @@
 | --- | --- |
 | `slideCommand` | A Copy button at the end of its panel, copying the `code` element's text |
 
-No renderer draws the button. The enhancement's script adds it wherever the script runs: the HTML surface with `SLIDE_COPY` requested, or the React surface given `slideCopyEnhancement` and a wrapper. The image, text, Markdown, and Slack surfaces never show one. The script adds nothing without `navigator.clipboard`, and never adds a second button to a panel that has one. The button is a native `<button type="button">` whose text is its label, so it takes focus and responds to Enter and Space.
+No renderer draws the button. The enhancement's script adds it wherever the script runs: the HTML surface with `SLIDE_COPY` requested, or the React surface given `slideCopyEnhancement` and a wrapper. The image, text, Markdown, and Slack surfaces never show one. The script adds nothing without `navigator.clipboard`, and never adds a second button to a panel that has one. The button is a native `<button type="button">` whose text is its label, so it takes focus and responds to Enter and Space; its accessible name is the label followed by the command, so several buttons on one slide are told apart.
 
 The panel's stylesheet styles the button by `COPY_BUTTON_ATTRIBUTE` (`data-slide-copy`), because a script-made element carries no class names. The label and the button's lengths come from the theme's `command.copy` group, and the command's line length already leaves room for the button.
 

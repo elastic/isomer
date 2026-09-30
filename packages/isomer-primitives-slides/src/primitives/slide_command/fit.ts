@@ -19,6 +19,8 @@ export const commandWidth = (text: string, size: SlideSize): number =>
   monoAdvance *
   scalePx(textSizes[size]);
 
-export const commandSize = (text: string): SlideSize =>
-  slideSizes.find((size) => commandWidth(text, size) <= commandLineWidth) ??
-  's';
+/** The largest step at which `text` fits a layout `width` wide. */
+export const commandSize = (text: string, width?: number): SlideSize =>
+  slideSizes.find(
+    (size) => commandWidth(text, size) <= commandLineWidth(width)
+  ) ?? 's';

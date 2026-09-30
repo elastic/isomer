@@ -37,6 +37,7 @@ for (const command of root.querySelectorAll('[${NODE_ANCHOR_ATTRIBUTE}="slideCom
   button.type = 'button';
   button.setAttribute('${COPY_BUTTON_ATTRIBUTE}', '');
   button.textContent = ${JSON.stringify(copy.label.value)};
+  button.setAttribute('aria-label', button.textContent + ' ' + code.textContent);
   button.addEventListener('click', () => {
     navigator.clipboard.writeText(code.textContent || '').catch(() => {});
   });

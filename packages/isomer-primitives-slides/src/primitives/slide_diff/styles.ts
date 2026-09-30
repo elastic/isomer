@@ -8,48 +8,19 @@
 import { variants } from '@elastic/distillate';
 
 import { slideDistillery } from '../../theme/distillery';
-import { typeRole } from '../../theme/type_role';
 import { slideDiffOps } from '../../theme/variants';
 
 const { createStyleModule, tokens } = slideDistillery;
-const { color, diff } = tokens;
+const { code, color, diff } = tokens;
 
+/** What `slideDiff` adds to `slideCode`'s panel: the gutter, the change bands, and the marker. */
 export const diffModule = createStyleModule('diff', ({ css }) => ({
-  figure: css`
-    display: flex;
-    flex-direction: column;
-    margin: 0;
-    min-width: 0;
-  `,
-  file: css`
-    color: ${color.textSubtle};
-    ${typeRole(diff.file)}
-    margin-bottom: ${diff.fileGap};
-  `,
-  panel: css`
-    background: ${color.bgSurface};
-    border: ${diff.border} solid ${color.border};
-    border-radius: ${diff.radius};
-    color: ${color.text};
-    display: flex;
-    flex-direction: column;
-    margin: 0;
-    overflow: hidden;
-    padding: ${diff.paddingY} 0;
-    white-space: normal;
-  `,
-  regular: css`
-    ${typeRole(diff.text)}
-  `,
-  dense: css`
-    ${typeRole(diff.denseText)}
-  `,
+  // Takumi gives `code` a generic monospace family, so the line restates it.
   line: css`
     display: grid;
-    font-family: ${diff.text.family};
+    font-family: ${code.text.family};
     grid-template-columns: ${diff.gutter} minmax(0, 1fr);
-    min-height: ${diff.text.lineHeight.value}em;
-    padding-right: ${diff.paddingEnd};
+    padding-right: ${code.paddingX};
     white-space: pre;
   `,
   op: variants(slideDiffOps, (op) =>

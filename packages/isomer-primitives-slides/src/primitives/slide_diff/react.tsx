@@ -10,35 +10,42 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
-import { codeDenseAfter } from '../../theme/components/code';
+import { diffLineMaxLength } from '../../theme/components/diff';
 import { slideDistillery } from '../../theme/distillery';
 import { layoutModule } from '../../theme/modules';
+import { slideLayout } from '../layout';
+import { codeIsDense } from '../slide_code/fit';
+import { codeModule } from '../slide_code/styles';
 
 import type { SlideDiffNode } from './schema';
 import { diffModule } from './styles';
 
 const { marker, markerLabel } = slideDistillery.tokens.diff;
 
-/** React renderer for {@link SlideDiffNode}. */
+/** React renderer for {@link SlideDiffNode}, drawn in `slideCode`'s panel. */
 export const react = (
   { type, file, lines }: SlideDiffNode,
   { context }: SlideReactEnv
 ): ReactNode => {
+  const { handles: code } = codeModule;
   const { handles: diff } = diffModule;
-  const dense = lines.length > codeDenseAfter;
+  const dense = codeIsDense(
+    [lines.map(({ text }) => text)],
+    diffLineMaxLength(false, slideLayout(context).width)
+  );
   return (
     <div
       {...nodeAnchor(context, { type })}
       className={cls(context, layoutModule.handles.fill)}>
-      <figure className={cls(context, diff.figure)}>
+      <figure className={cls(context, code.figure)}>
         {file ? (
-          <figcaption className={cls(context, diff.file)}>{file}</figcaption>
+          <figcaption className={cls(context, code.file)}>{file}</figcaption>
         ) : null}
         <pre
           className={cls(
             context,
-            diff.panel,
-            dense ? diff.dense : diff.regular
+            code.panel,
+            dense ? code.dense : code.regular
           )}>
           {lines.map(({ text, op }, index) => (
             <Fragment key={index}>
@@ -48,6 +55,7 @@ export const react = (
                 className={cls(
                   context,
                   diff.line,
+                  dense ? code.denseLine : code.regularLine,
                   op ? diff.op[op] : undefined
                 )}>
                 <span

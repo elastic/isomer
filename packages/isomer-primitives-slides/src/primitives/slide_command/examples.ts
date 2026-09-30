@@ -21,12 +21,12 @@ export const highlightExample: SlideCommandNode = {
   highlightPrefix: 'REGION=eu-west-1',
 };
 
-/** A long command that takes a smaller step. */
+/** The widest command a full-width slide holds, at the smallest step. */
 export const longExample: SlideCommandNode = {
   type: 'slideCommand',
   label: 'Export last month’s refunds',
   command:
-    'pg_dump --table=refunds --data-only --column-inserts --file=refunds.sql "$DB_URL"',
+    'pg_dump --table=refunds --data-only --column-inserts --file=refunds.sql "$LEDGER_DB"',
 };
 
 /** Conformance examples for {@link SlideCommandNode}. */

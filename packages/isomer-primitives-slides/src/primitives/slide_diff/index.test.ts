@@ -5,11 +5,13 @@
  * 2.0.
  */
 
-import { createTakumiImageBackend } from '@elastic/isomer-image-takumi';
+import {
+  createTakumiImageBackend,
+  type LayoutBox,
+} from '@elastic/isomer-image-takumi';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import {
   type Composition,
-  type LayoutBox,
   NODE_ANCHOR_ATTRIBUTE,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
@@ -19,16 +21,16 @@ import { describe, expect, it } from 'vitest';
 import { slideFonts } from '../../examples/fonts';
 import { previewSlide } from '../../examples/preview_slide';
 import { slideDeckFrame, slidesPack } from '../../pack';
-import { codeDenseAfter } from '../../theme/components/code';
-import {
-  diff,
-  diffLineMaxLength,
-  diffMaxLines,
-} from '../../theme/components/diff';
+import { code as codeTheme, codeDenseAfter } from '../../theme/components/code';
+import { diffLineMaxLength, diffMaxLines } from '../../theme/components/diff';
+import { frameContentWidth } from '../../theme/components/frame';
 import { slideDistillery } from '../../theme/distillery';
 import { scalePx } from '../../theme/scale';
+import { authoredTextMaxLength } from '../authored_text';
+import { paneWidths } from '../slide_split/pane_layout';
+import type { SlideSplitNode } from '../slide_split/types';
 
-import { configExample, example, examples } from './examples';
+import { configExample, denseExample, example, examples } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
 import { schema, type SlideDiffLine, type SlideDiffNode } from './schema';
 
@@ -103,6 +105,31 @@ describe('slideDiff schema', () => {
     ]);
   });
 
+  it('pins the dense example at the most lines it holds', () => {
+    expect(denseExample.lines).toHaveLength(diffMaxLines);
+  });
+
+  it('measures a line at the input-size guard and refuses one past it unmeasured', () => {
+    expect(
+      errorPaths(diffOf([{ text: 'x'.repeat(authoredTextMaxLength) }]))
+    ).toEqual([expect.stringMatching(/lines: a line is wider than its panel/)]);
+    expect(
+      errorPaths(diffOf([{ text: `\t${'x'.repeat(authoredTextMaxLength)}` }]))
+    ).toEqual([
+      `body[0].body[0].lines[0].text: must be at most ${authoredTextMaxLength} characters`,
+    ]);
+  });
+
+  it('reads no line past its count', () => {
+    expect(
+      errorPaths(
+        diffOf(Array<SlideDiffLine>(diffMaxLines + 1).fill({ text: '\tx\n' }))
+      )
+    ).toEqual([
+      `body[0].body[0].lines: must have at most ${diffMaxLines} items`,
+    ]);
+  });
+
   it('counts a wide glyph as two columns', () => {
     const wide = '漢'.repeat(Math.floor(diffLineMaxLength(false) / 2));
     expect(errorPaths(diffOf([{ text: wide }]))).toEqual([]);
@@ -166,6 +193,27 @@ describe('slideDiff output', () => {
   });
 });
 
+describe('slideDiff in Slack past a section', () => {
+  it('keeps a long caption and the lines whole in rich text', () => {
+    const file = '&'.repeat(3000);
+    expect(slack(diffOf([{ text: 'x', op: 'add' }], file))).toEqual([
+      {
+        type: 'rich_text',
+        elements: [
+          {
+            type: 'rich_text_section',
+            elements: [{ type: 'text', text: file }],
+          },
+          {
+            type: 'rich_text_preformatted',
+            elements: [{ type: 'text', text: `${marker.add.value}x` }],
+          },
+        ],
+      },
+    ]);
+  });
+});
+
 describe('slideDiff in the DOM', () => {
   const entities: Record<string, string> = {
     '&amp;': '&',
@@ -217,6 +265,81 @@ describe('slideDiff in the DOM', () => {
   });
 });
 
+describe('slideDiff sizing', () => {
+  const [pane] = paneWidths(frameContentWidth, 'even', 'gap');
+  const inPane = (node: SlideDiffNode): SlideSplitNode => ({
+    type: 'slideSplit',
+    panes: [
+      { items: [node] },
+      { items: [{ type: 'slideBulletList', items: ['One'] }] },
+    ],
+  });
+  const html = (node: PrimitiveNode) =>
+    runtime.surfaces.html.render(compose(node)).html;
+  const density = (node: PrimitiveNode) =>
+    /code-(dense|regular)\b/.exec(html(node))?.[1];
+
+  it('takes the dense size past the regular line count, and only then', () => {
+    const lines = (count: number) =>
+      Array<SlideDiffLine>(count).fill({ text: 'x' });
+    expect(density(diffOf(lines(codeDenseAfter)))).toBe('regular');
+    expect(density(diffOf(lines(codeDenseAfter + 1)))).toBe('dense');
+  });
+
+  it('holds each line open at the leading of its size', () => {
+    const lines = (count: number) =>
+      Array<SlideDiffLine>(count).fill({ text: 'x' });
+    expect(html(diffOf(lines(codeDenseAfter)))).toMatch(/code-regularLine/);
+    expect(html(diffOf(lines(codeDenseAfter)))).not.toMatch(/code-denseLine/);
+    expect(html(diffOf(lines(codeDenseAfter + 1)))).toMatch(/code-denseLine/);
+    expect(html(diffOf(lines(codeDenseAfter + 1)))).not.toMatch(
+      /code-regularLine/
+    );
+  });
+
+  it('takes the dense size when a line would clip at the pane width, and only then', () => {
+    const fits = 'x'.repeat(diffLineMaxLength(false, pane));
+    const clips = `${fits}x`;
+    expect(clips.length).toBeLessThanOrEqual(diffLineMaxLength(true, pane));
+    expect(density(diffOf([{ text: clips }]))).toBe('regular');
+    expect(density(inPane(diffOf([{ text: fits }])))).toBe('regular');
+    expect(density(inPane(diffOf([{ text: clips }])))).toBe('dense');
+  });
+
+  it('holds no characters, never fewer, in a layout narrower than its chrome', () => {
+    for (const dense of [false, true]) {
+      expect(diffLineMaxLength(dense, 0)).toBe(0);
+      expect(diffLineMaxLength(dense, 40)).toBe(0);
+    }
+  });
+
+  it('draws that line inside its panel', async () => {
+    const takumi = createTakumiImageBackend({ fonts: slideFonts });
+    const clips = 'x'.repeat(diffLineMaxLength(false, pane) + 1);
+    const layout = await takumi.measure(
+      runtime.surfaces.svg.render(compose(inPane(diffOf([{ text: clips }]))), {
+        anchors: true,
+      })
+    );
+    const boxes = (box: LayoutBox): LayoutBox[] => [
+      box,
+      ...box.children.flatMap(boxes),
+    ];
+    const root = boxes(layout).find(
+      ({ attributes }) => attributes?.[NODE_ANCHOR_ATTRIBUTE] === 'slideDiff'
+    )!;
+    const run = boxes(root)
+      .flatMap(({ runs }) => runs)
+      .find(({ text }) => text.includes('xxx'))!;
+    const inner =
+      root.x +
+      root.width -
+      scalePx(codeTheme.border) -
+      scalePx(codeTheme.paddingX);
+    expect(run.x + run.width).toBeLessThanOrEqual(inner + 1);
+  });
+});
+
 describe('slideDiff at its bounds', () => {
   const takumi = createTakumiImageBackend({ fonts: slideFonts });
   const descendants = (box: LayoutBox): LayoutBox[] =>
@@ -245,7 +368,7 @@ describe('slideDiff at its bounds', () => {
       );
       const body = anchored(layout, 'slideFrame').children[0]!.children[0]!;
       const root = anchored(layout, 'slideDiff');
-      const textEnd = root.x + root.width - scalePx(diff.paddingEnd);
+      const textEnd = root.x + root.width - scalePx(codeTheme.paddingX);
       expect(
         descendants(root).filter(
           ({ y, height }) => y + height > body.y + body.height + tolerance

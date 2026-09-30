@@ -12,6 +12,7 @@ import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { slideDistillery } from '../../theme/distillery';
 import { labelModule } from '../../theme/modules';
+import { slideLayout } from '../layout';
 
 import { commandSize } from './fit';
 import type { SlideCommandNode } from './schema';
@@ -29,7 +30,7 @@ export const react = (
     <div
       {...nodeAnchor(context, { type })}
       className={cls(context, styles.root)}>
-      {/* The space after the label is never drawn; it keeps the label apart in the text. */}
+      {/* Flex drops the spaces after the label and prompt; they keep words apart in the text. */}
       {label ? (
         <>
           <span className={cls(context, labelModule.handles.label)}>
@@ -41,16 +42,16 @@ export const react = (
         className={cls(
           context,
           styles.panel,
-          styles.textSize[commandSize(command)]
+          styles.textSize[commandSize(command, slideLayout(context).width)]
         )}>
         <span aria-hidden className={cls(context, styles.prompt)}>
           {prompt.value}
-        </span>
+        </span>{' '}
         <code className={cls(context, styles.line)}>
           {highlightPrefix ? (
-            <span className={cls(context, styles.highlight)}>
+            <mark className={cls(context, styles.highlight)}>
               {highlightPrefix}
-            </span>
+            </mark>
           ) : null}
           {command.slice(highlightPrefix.length)}
         </code>

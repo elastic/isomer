@@ -71,7 +71,7 @@ describe('slideCopy script', () => {
     expect(writeText).toHaveBeenCalledWith(highlightExample.command);
   });
 
-  it('adds a labelled, focusable button to each command', () => {
+  it('adds a labelled, focusable button to each command, named for its command', () => {
     vi.stubGlobal('navigator', { clipboard: { writeText: vi.fn() } });
     const buttons = copyButtons(mount());
     expect(buttons).toHaveLength(2);
@@ -82,6 +82,12 @@ describe('slideCopy script', () => {
       );
       expect(button.tabIndex).toBe(0);
     }
+    expect(buttons.map((button) => button.getAttribute('aria-label'))).toEqual(
+      [example, highlightExample].map(
+        ({ command }) =>
+          `${slideDistillery.tokens.command.copy.label.value} ${command}`
+      )
+    );
   });
 
   it('adds no button until the script runs', () => {

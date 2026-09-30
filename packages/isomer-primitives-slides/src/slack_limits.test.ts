@@ -320,6 +320,53 @@ const cases: LimitCase[] = [
       items: [{ body: 'One' }],
     }),
   },
+  {
+    name: 'slideCommand label',
+    slot: 'section',
+    limit: SLACK_LIMITS.sectionTextChars,
+    filler: '&',
+    max: 1000,
+    node: (fill) => ({
+      type: 'slideCommand',
+      label: fill,
+      command: 'npm install',
+    }),
+  },
+  {
+    name: 'slideDiff file',
+    slot: 'section',
+    limit: SLACK_LIMITS.sectionTextChars,
+    filler: '&',
+    max: 1000,
+    node: (fill) => ({
+      type: 'slideDiff',
+      file: fill,
+      lines: [{ text: 'x', op: 'add' }],
+    }),
+  },
+  ...(['prose', 'code'] as const).map((format): LimitCase => ({
+    name: `slideTranscript ${format} turn`,
+    slot: 'section',
+    limit: SLACK_LIMITS.sectionTextChars,
+    filler: 'x',
+    max: 4000,
+    node: (fill) => ({
+      type: 'slideTranscript',
+      turns: [{ role: 'user', format, text: `Book ${fill}` }],
+    }),
+  })),
+  {
+    name: 'slideTranscript label',
+    slot: 'context',
+    limit: SLACK_LIMITS.contextElementChars,
+    filler: '&',
+    max: 1000,
+    node: (fill) => ({
+      type: 'slideTranscript',
+      label: fill,
+      turns: [{ role: 'user', text: 'Book' }],
+    }),
+  },
 ];
 
 const schemas = new Map<string, (typeof slideDeckPrimitives)[number]['schema']>(

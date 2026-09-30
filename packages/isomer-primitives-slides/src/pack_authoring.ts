@@ -50,6 +50,8 @@ export const slidesPackAuthoring = {
       'The title slide. Its aside is one slide node, never a slideFrame.',
     slideCode:
       'One or two code panels. Every highlighted line number exists in its panel.',
+    slideDiff:
+      'One snippet with changed lines marked. Each entry in lines is one line of source, with no newline.',
     slideCommand:
       'One shell command on a single line, without the prompt. highlightPrefix, when given, starts command.',
     slideAgenda:

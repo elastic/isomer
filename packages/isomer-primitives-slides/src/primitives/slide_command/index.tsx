@@ -7,8 +7,15 @@
 
 import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
-import { bold, codeBlock, type SlackBlock } from '@elastic/isomer-sdk/slack';
+import { codeBlock, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
+import {
+  richTextSection,
+  slackBold,
+  slackRichText,
+  slackSection,
+} from '../../render';
+import { richTextRun } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -33,22 +40,27 @@ export const markdown = ({ label, command }: SlideCommandNode) => [
   md.codeBlock(command, 'sh'),
 ];
 
-export const slack = ({ label, command }: SlideCommandNode): SlackBlock[] => [
-  {
-    type: 'section',
-    text: {
-      type: 'mrkdwn',
-      text: [
-        label ? bold(oneLine(label).toUpperCase()) : '',
-        codeBlock(command),
-      ]
+export const slack = ({ label, command }: SlideCommandNode): SlackBlock[] => {
+  const caption = label?.toUpperCase();
+  return [
+    slackSection(
+      [caption ? slackBold(caption) : '', codeBlock(command)]
         .filter(Boolean)
         .join('\n'),
-    },
-  },
-];
+      () =>
+        slackRichText(
+          ...(caption
+            ? [richTextSection(richTextRun(caption, { bold: true }))]
+            : []),
+          {
+            type: 'rich_text_preformatted',
+            elements: [{ type: 'text', text: command }],
+          }
+        )
+    ),
+  ];
+};
 
-/** Catalog, schema, and renderers for {@link SlideCommandNode}. */
 export const slideCommandPrimitive = definePrimitive({
   type: 'slideCommand',
   catalog,

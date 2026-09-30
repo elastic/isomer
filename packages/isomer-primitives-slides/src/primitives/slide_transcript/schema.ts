@@ -51,9 +51,7 @@ export const schema = z
         .array(turnSchema)
         .min(1)
         .max(4)
-        .describe(
-          'Turns in the order they happened. 1 to 4. Type does not step down, so long turns can run past the slide; a layout check reports it.'
-        ),
+        .describe('Turns in the order they happened. 1 to 4.'),
       { text: 'text' }
     ),
   })

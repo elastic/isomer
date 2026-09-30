@@ -30,7 +30,8 @@ const compose = (node: PrimitiveNode): Composition => ({
   body: [{ type: 'slideFrame', body: [node] } as PrimitiveNode],
 });
 
-const { roleLabel } = slideDistillery.tokens.transcript;
+const { glyph, transcript } = slideDistillery.tokens;
+const { roleLabel } = transcript;
 
 describe('slideTranscript schema', () => {
   it('holds one to four turns', () => {
@@ -43,22 +44,69 @@ describe('slideTranscript schema', () => {
   });
 });
 
+describe('slideTranscript examples', () => {
+  it('pins an example at the most turns it holds', () => {
+    expect(example.turns).toHaveLength(4);
+  });
+});
+
+describe('slideTranscript in Slack past a section', () => {
+  const past = 'x'.repeat(3001);
+
+  it.each([
+    [
+      'prose',
+      { type: 'rich_text_section', elements: [{ type: 'text', text: past }] },
+    ],
+    [
+      'code',
+      {
+        type: 'rich_text_preformatted',
+        elements: [{ type: 'text', text: past }],
+      },
+    ],
+  ] as const)('keeps a %s turn whole in rich text', (format, body) => {
+    expect(
+      slack({
+        type: 'slideTranscript',
+        turns: [{ role: 'user', format, text: past }],
+      })
+    ).toEqual([
+      {
+        type: 'rich_text',
+        elements: [
+          {
+            type: 'rich_text_section',
+            elements: [
+              {
+                type: 'text',
+                text: roleLabel.user.value.toUpperCase(),
+                style: { bold: true },
+              },
+            ],
+          },
+          body,
+        ],
+      },
+    ]);
+  });
+});
+
 describe('slideTranscript output', () => {
   it('prefixes each turn with its speaker in text', () => {
     expect(text(example).split('\n')).toEqual([
       'BOOKING A DELIVERY SLOT',
-      'User: Deliver my groceries tomorrow morning.',
-      'Model: {"action":"book","window":"tomorrow"}',
-      'Host: window: expected a start and end time',
-      'Model: {"action":"book","window":{"start":"08:00","end":"10:00"}}',
+      'USER: Deliver my groceries tomorrow morning.',
+      'MODEL: {"action":"book","window":"tomorrow"}',
+      'HOST: window: expected a start and end time',
+      'MODEL: {"action":"book","window":{"start":"08:00","end":"10:00"}}',
     ]);
   });
 
-  it('breaks a multi-line turn under its speaker', () => {
+  it('keeps each line of a multi-line turn on its own line', () => {
     expect(text(plainExample).split('\n')).toEqual([
-      'User: Why did the nightly build fail?',
-      'Model:',
-      'The lockfile changed without a version bump.',
+      'USER: Why did the nightly build fail?',
+      'MODEL: The lockfile changed without a version bump.',
       'Run the install step again.',
     ]);
   });
@@ -74,27 +122,35 @@ describe('slideTranscript output', () => {
       type: 'slideTranscript',
       turns: [{ role: 'model', text: `First line.${terminator}Second line.` }],
     };
-    expect(text(node)).toBe('Model:\nFirst line.\nSecond line.');
-    expect(markdown(node)).toBe('**Model**\n\nFirst line.\\\nSecond line.');
+    expect(text(node)).toBe('MODEL: First line.\nSecond line.');
+    expect(markdown(node)).toBe('**MODEL**\n\nFirst line.\\\nSecond line.');
     expect(slack(node)).toEqual([
       {
         type: 'section',
-        text: { type: 'mrkdwn', text: '*Model*\nFirst line.\nSecond line.' },
+        text: { type: 'mrkdwn', text: '*MODEL*\nFirst line.\nSecond line.' },
       },
     ]);
   });
 
   it('fences a code turn in markdown and Slack', () => {
     expect(markdown(example)).toContain(
-      '**Host**\n\n```text\nwindow: expected a start and end time\n```'
+      '**HOST**\n\n```text\nwindow: expected a start and end time\n```'
     );
     expect(slack(example)).toContainEqual({
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: '*Host*\n```\nwindow: expected a start and end time\n```',
+        text: '*HOST*\n```\nwindow: expected a start and end time\n```',
       },
     });
+  });
+
+  it('sets each speaker in capitals from its theme label, as the slide draws it', () => {
+    for (const { role } of example.turns) {
+      const shown = roleLabel[role].value.toUpperCase();
+      expect(text(example)).toContain(`${shown}${glyph.termJoiner.value}`);
+      expect(markdown(example)).toContain(`**${shown}**`);
+    }
   });
 
   it('sets the label in capitals, as the slide draws it', () => {
@@ -126,6 +182,13 @@ describe('slideTranscript in the DOM', () => {
       );
     }
   );
+
+  it('announces each speaker: the role is text, not hidden from assistive technology', () => {
+    const { html } = runtime.surfaces.html.render(compose(example));
+    const list = /<ol[\s>][\s\S]*?<\/ol>/.exec(html)?.[0] ?? '';
+    expect(list.match(/<li[\s>]/g)).toHaveLength(example.turns.length);
+    expect(list).not.toContain('aria-hidden');
+  });
 
   it('breaks a turn at any line terminator as at a newline', () => {
     expect(

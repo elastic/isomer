@@ -10,12 +10,12 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
-import { displayColumns } from '../../render/mono';
-import { codeDenseAfter, codeLineMaxLength } from '../../theme/components/code';
+import { codeLineMaxLength } from '../../theme/components/code';
 import { slideDistillery } from '../../theme/distillery';
 import { connectorModule, layoutModule } from '../../theme/modules';
 import { slideLayout } from '../layout';
 
+import { codeIsDense } from './fit';
 import type { SlideCodeNode, SlideCodePanel } from './schema';
 import { codeModule } from './styles';
 
@@ -75,10 +75,9 @@ export const react = (
     slideLayout(context).width
   );
   // One size for both panels, so a trace reads at one scale.
-  const dense = panels.some(
-    ({ lines }) =>
-      lines.length > codeDenseAfter ||
-      lines.some((line) => displayColumns(line, regularMax) > regularMax)
+  const dense = codeIsDense(
+    panels.map(({ lines }) => lines),
+    regularMax
   );
   return (
     <div

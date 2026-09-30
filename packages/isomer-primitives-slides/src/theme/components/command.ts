@@ -39,14 +39,19 @@ const copyWidth =
   2 * scalePx(copy.paddingX) +
   2 * scalePx(copy.border);
 
-/** The frame's width less the panel's padding, border, gaps, and Copy chip. */
-export const commandLineWidth =
-  frameContentWidth -
-  2 * scalePx(command.paddingX) -
-  2 * scalePx(command.border) -
-  2 * scalePx(command.gap) -
-  copyWidth;
+/** Width a command's text has in a layout `width` wide, a full-width slide by default: less the panel's padding, border, gaps, and Copy chip. */
+export const commandLineWidth = (width = frameContentWidth): number =>
+  Math.max(
+    0,
+    width -
+      2 * scalePx(command.paddingX) -
+      2 * scalePx(command.border) -
+      2 * scalePx(command.gap) -
+      copyWidth
+  );
 
-export const commandMaxLength =
-  Math.floor(commandLineWidth / (monoAdvance * scalePx(command.textSizes.s))) -
-  [...prompt.value].length;
+/** Columns a command holds beside its prompt on a full-width slide at the smallest step. */
+export const commandMaxColumns =
+  Math.floor(
+    commandLineWidth() / (monoAdvance * scalePx(command.textSizes.s))
+  ) - [...prompt.value].length;

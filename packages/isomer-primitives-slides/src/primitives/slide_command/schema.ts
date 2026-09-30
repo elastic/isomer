@@ -10,9 +10,16 @@ import { z } from '@elastic/isomer-sdk';
 
 import { hasLineTerminator } from '../../render/marks';
 import { displayColumns } from '../../render/mono';
-import { commandMaxLength } from '../../theme/components/command';
-import { lineText } from '../authored_text';
+import {
+  command as commandTheme,
+  commandMaxColumns,
+} from '../../theme/components/command';
+import { authoredTextMaxLength, lineText } from '../authored_text';
 import { crossRefine } from '../cross_field';
+
+/** Whether `text` is within its length cap, so a check that always runs may read it. */
+const inBounds = (text: string): boolean =>
+  text.length <= authoredTextMaxLength;
 
 /** Zod schema for {@link SlideCommandNode}. */
 export const schema = z
@@ -23,40 +30,41 @@ export const schema = z
         'A few words above the panel saying what the command does, e.g. "Install".'
       )
       .optional(),
-    command: z
-      .string()
-      .min(1)
-      .max(commandMaxLength)
-      .describe(
-        `One shell command on one line, without the \`$\` prompt; the slide draws that. At most ${commandMaxLength} columns, a wide glyph such as CJK or an emoji counting as two, with spaces rather than tabs. It is sized to the full slide width, so do not put it in a slideSplit column.`
-      ),
+    command: lineText().describe(
+      `One shell command on one line, without the \`${commandTheme.prompt.value}\` prompt; the slide draws that. Separate words with spaces rather than tabs. It holds ${commandMaxColumns} columns on a full-width slide, a wide glyph such as CJK or an emoji counting as two; a narrower column holds fewer, and a longer command is clipped.`
+    ),
     highlightPrefix: lineText()
       .describe(
-        'The start of `command` to draw in primary, such as an environment variable the audience should notice. Must be a prefix of `command`.'
+        'The start of `command` to mark, such as an environment variable the audience should notice. Must be a prefix of `command`.'
       )
       .optional(),
   })
   .strict()
   .check(
-    crossRefine(({ command }) => !hasLineTerminator(command), {
-      error: 'one line only: a multi-line command belongs in slideCode',
-      path: ['command'],
-    })
-  )
-  .check(
-    crossRefine(({ command }) => !command.includes('\t'), {
-      error: 'separate words with spaces, not tabs',
-      path: ['command'],
-    })
+    crossRefine(
+      ({ command }) => !inBounds(command) || !hasLineTerminator(command),
+      {
+        error: 'one line only: a multi-line command belongs in slideCode',
+        path: ['command'],
+      }
+    )
   )
   .check(
     crossRefine(
-      // The schema's `max` already reports a command too long in characters.
-      ({ command }) =>
-        command.length > commandMaxLength ||
-        displayColumns(command, commandMaxLength) <= commandMaxLength,
+      ({ command }) => !inBounds(command) || !command.includes('\t'),
       {
-        error: `wider than the slide: at most ${commandMaxLength} columns, a wide glyph counting as two`,
+        error: 'separate words with spaces, not tabs',
+        path: ['command'],
+      }
+    )
+  )
+  .check(
+    crossRefine(
+      ({ command }) =>
+        !inBounds(command) ||
+        displayColumns(command, commandMaxColumns) <= commandMaxColumns,
+      {
+        error: `wider than the slide: at most ${commandMaxColumns} columns, a wide glyph counting as two`,
         path: ['command'],
       }
     )
@@ -64,10 +72,12 @@ export const schema = z
   .check(
     crossRefine(
       ({ command, highlightPrefix }) =>
-        highlightPrefix === undefined || command.startsWith(highlightPrefix),
+        highlightPrefix === undefined ||
+        !inBounds(command) ||
+        !inBounds(highlightPrefix) ||
+        command.startsWith(highlightPrefix),
       { error: 'highlightPrefix must start command', path: ['highlightPrefix'] }
     )
   );
 
-/** One shell command the audience can run, on a single line. */
 export type SlideCommandNode = z.infer<typeof schema> & PrimitiveNode;

@@ -13,17 +13,14 @@ import { displayColumns } from '../../render/mono';
 import { codeDenseAfter } from '../../theme/components/code';
 import { diffLineMaxLength, diffMaxLines } from '../../theme/components/diff';
 import { slideDiffOps } from '../../theme/variants';
-import { lineText } from '../authored_text';
+import { authoredTextMaxLength, lineText } from '../authored_text';
 import { crossRefine } from '../cross_field';
-
-// Past this many UTF-16 units a line fits no panel, so it is refused before measuring.
-const RAW_LINE_LIMIT = diffLineMaxLength(true) * 8;
 
 const lineSchema = z
   .object({
     text: z
       .string()
-      .max(RAW_LINE_LIMIT)
+      .max(authoredTextMaxLength)
       .describe(
         'One line of source, indented with spaces rather than tabs. Use an empty string for a blank line.'
       ),
@@ -37,6 +34,14 @@ const lineSchema = z
   .strict();
 
 export type SlideDiffLine = z.infer<typeof lineSchema>;
+
+/** Whether `lines` is within its count and length caps, so a check that always runs may read it. */
+const linesInBounds = (lines: readonly SlideDiffLine[]): boolean =>
+  lines.length <= diffMaxLines &&
+  lines.every(
+    ({ text }) =>
+      typeof text === 'string' && text.length <= authoredTextMaxLength
+  );
 
 const isDense = (lines: readonly SlideDiffLine[]) =>
   lines.length > codeDenseAfter;
@@ -66,7 +71,9 @@ export const schema = z
   .strict()
   .check(
     crossRefine(
-      ({ lines }) => !lines.some(({ text }) => hasLineTerminator(text)),
+      ({ lines }) =>
+        !linesInBounds(lines) ||
+        !lines.some(({ text }) => hasLineTerminator(text)),
       {
         error:
           'one line per entry: split multi-line source into separate lines',
@@ -75,14 +82,21 @@ export const schema = z
     )
   )
   .check(
-    crossRefine(({ lines }) => !lines.some(({ text }) => text.includes('\t')), {
-      error: 'indent with spaces, not tabs',
-      path: ['lines'],
-    })
+    crossRefine(
+      ({ lines }) =>
+        !linesInBounds(lines) || !lines.some(({ text }) => text.includes('\t')),
+      {
+        error: 'indent with spaces, not tabs',
+        path: ['lines'],
+      }
+    )
   )
   .check(
     crossRefine(
       ({ lines }) => {
+        if (!linesInBounds(lines)) {
+          return true;
+        }
         const max = diffLineMaxLength(isDense(lines));
         return lines.every(({ text }) => displayColumns(text, max) <= max);
       },

@@ -24,11 +24,18 @@ import { previewSlide } from '../../examples/preview_slide';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import {
   commandLineWidth,
-  commandMaxLength,
+  commandMaxColumns,
 } from '../../theme/components/command';
+import { frameContentWidth } from '../../theme/components/frame';
+import { marks as marksTheme } from '../../theme/components/marks';
+import { type SlideSize, slideSizes } from '../../theme/variants';
+import { authoredTextMaxLength } from '../authored_text';
+import { renderedStep } from '../size.fixtures';
+import { paneWidths } from '../slide_split/pane_layout';
+import type { SlideSplitNode } from '../slide_split/types';
 
 import { COPY_BUTTON_ATTRIBUTE, SLIDE_COPY } from './copy';
-import { example, examples, highlightExample } from './examples';
+import { example, examples, highlightExample, longExample } from './examples';
 import { commandSize, commandWidth } from './fit';
 import { markdown as markdownContent, slack, text } from './index';
 import type { SlideCommandNode } from './schema';
@@ -87,23 +94,105 @@ describe('slideCommand schema', () => {
   });
 
   it('counts a wide glyph as two columns and reports the limit', () => {
-    const wide = '漢'.repeat(Math.floor(commandMaxLength / 2));
+    const wide = '漢'.repeat(Math.floor(commandMaxColumns / 2));
     expect(errorPaths(commandOf(wide))).toEqual([]);
     expect(errorPaths(commandOf(`${wide}漢x`))).toEqual([
-      `body[0].body[0].command: wider than the slide: at most ${commandMaxLength} columns, a wide glyph counting as two`,
+      `body[0].body[0].command: wider than the slide: at most ${commandMaxColumns} columns, a wide glyph counting as two`,
     ]);
   });
 
-  it('caps the command at a length that fits at the smallest step', () => {
-    const longest = 'x'.repeat(commandMaxLength);
+  it('takes the widest command a full-width slide holds and rejects one more column', () => {
+    const longest = 'x'.repeat(commandMaxColumns);
     expect(errorPaths(commandOf(longest))).toEqual([]);
     expect(errorPaths(commandOf(`${longest}x`))).toHaveLength(1);
     expect(commandSize(longest)).toBe('s');
-    expect(commandWidth(longest, 's')).toBeLessThanOrEqual(commandLineWidth);
+    expect(commandWidth(longest, 's')).toBeLessThanOrEqual(commandLineWidth());
   });
+
+  it('pins the long example at the widest command', () => {
+    expect(longExample.command).toHaveLength(commandMaxColumns);
+  });
+
+  it('measures a command at the input-size guard and refuses one past it unmeasured', () => {
+    expect(errorPaths(commandOf('x'.repeat(authoredTextMaxLength)))).toEqual([
+      expect.stringMatching(/command: wider than the slide/),
+    ]);
+    expect(
+      errorPaths({
+        ...commandOf(`\t${'x'.repeat(authoredTextMaxLength)}\n`),
+        highlightPrefix: 'y',
+      })
+    ).toEqual([
+      `body[0].body[0].command: must be at most ${authoredTextMaxLength} characters`,
+    ]);
+  });
+});
+
+describe('slideCommand sizing', () => {
+  const [pane] = paneWidths(frameContentWidth, 'even', 'gap');
+  const inPane = (node: SlideCommandNode): SlideSplitNode => ({
+    type: 'slideSplit',
+    panes: [
+      { items: [node] },
+      { items: [{ type: 'slideBulletList', items: ['One'] }] },
+    ],
+  });
+  /** The most `x`s that fit at `size` across `width`. */
+  const most = (size: SlideSize, width?: number) => {
+    let length = 0;
+    while (
+      commandWidth('x'.repeat(length + 1), size) <= commandLineWidth(width)
+    ) {
+      length += 1;
+    }
+    return length;
+  };
 
   it('takes the largest step a short command fits', () => {
     expect(commandSize(example.command)).toBe('l');
+  });
+
+  it.each([
+    ['a full-width slide', undefined, (node: SlideCommandNode) => node],
+    ['a split pane', pane, inPane],
+  ] as const)(
+    'steps down at each step boundary across %s',
+    (_name, width, place) => {
+      for (const [index, size] of slideSizes.slice(0, -1).entries()) {
+        const next = slideSizes[index + 1];
+        const fits = 'x'.repeat(most(size, width));
+        expect(commandSize(fits, width)).toBe(size);
+        expect(commandSize(`${fits}x`, width)).toBe(next);
+        expect(renderedStep('command-textSize', place(commandOf(fits)))).toBe(
+          size
+        );
+        expect(
+          renderedStep('command-textSize', place(commandOf(`${fits}x`)))
+        ).toBe(next);
+      }
+    }
+  );
+
+  it('draws the widest command a pane holds at the smallest step inside its panel', async () => {
+    const takumi = createTakumiImageBackend({ fonts: slideFonts });
+    const command = 'x'.repeat(most('s', pane));
+    const layout = await takumi.measure(
+      runtime.surfaces.svg.render(compose(inPane(commandOf(command))), {
+        anchors: true,
+      })
+    );
+    const boxes = (box: LayoutBox): LayoutBox[] => [
+      box,
+      ...box.children.flatMap(boxes),
+    ];
+    const root = boxes(layout).find(
+      ({ attributes }) => attributes?.[NODE_ANCHOR_ATTRIBUTE] === 'slideCommand'
+    )!;
+    const drawn = boxes(root)
+      .flatMap(({ runs }) => runs)
+      .reduce((total, { width }) => total + width, 0);
+    expect(root.width).toBeLessThanOrEqual(pane + 1);
+    expect(drawn).toBeLessThanOrEqual(commandLineWidth(pane));
   });
 });
 
@@ -137,11 +226,47 @@ describe('slideCommand output', () => {
   });
 });
 
+describe('slideCommand in Slack past a section', () => {
+  it('keeps a long label and the command whole in rich text', () => {
+    const label = '&'.repeat(3000);
+    expect(slack({ ...example, label })).toEqual([
+      {
+        type: 'rich_text',
+        elements: [
+          {
+            type: 'rich_text_section',
+            elements: [{ type: 'text', text: label, style: { bold: true } }],
+          },
+          {
+            type: 'rich_text_preformatted',
+            elements: [{ type: 'text', text: example.command }],
+          },
+        ],
+      },
+    ]);
+  });
+});
+
 describe('slideCommand in the DOM', () => {
+  it('marks the highlight in markup and in weight, not color alone', () => {
+    const { html, css } = runtime.surfaces.html.render(
+      compose(highlightExample),
+      { css: 'separate' }
+    );
+    const [, name = ''] =
+      /<mark class="([^"]+)">REGION=eu-west-1<\/mark>/.exec(html) ?? [];
+    expect(name).not.toBe('');
+    expect(css).toMatch(
+      new RegExp(
+        `\\.${name.split(' ').at(-1)}\\{[^}]*font-weight:${marksTheme.strong.weight.value}`
+      )
+    );
+  });
+
   it('keeps the label apart from the command in the text', () => {
     const { html } = runtime.surfaces.html.render(compose(example));
     expect(html.replace(/<[^>]+>/g, '')).toContain(
-      `${example.label} $${example.command}`
+      `${example.label} $ ${example.command}`
     );
   });
 });
@@ -152,8 +277,8 @@ describe('slideCommand at its bound', () => {
     box.children.flatMap((child) => [child, ...descendants(child)]);
 
   it.each([
-    ['narrow', 'x'.repeat(commandMaxLength)],
-    ['wide', '漢'.repeat(Math.floor(commandMaxLength / 2))],
+    ['narrow', 'x'.repeat(commandMaxColumns)],
+    ['wide', '漢'.repeat(Math.floor(commandMaxColumns / 2))],
   ])(
     'draws the longest %s command within the room left for the Copy chip',
     async (_name, command) => {
@@ -169,7 +294,7 @@ describe('slideCommand at its bound', () => {
       const drawn = descendants(root)
         .flatMap(({ runs }) => runs)
         .reduce((total, { width }) => total + width, 0);
-      expect(drawn).toBeLessThanOrEqual(commandLineWidth);
+      expect(drawn).toBeLessThanOrEqual(commandLineWidth());
     }
   );
 });

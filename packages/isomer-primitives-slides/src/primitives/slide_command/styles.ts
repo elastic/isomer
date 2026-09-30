@@ -14,7 +14,7 @@ import { slideSizes } from '../../theme/variants';
 import { COPY_BUTTON_ATTRIBUTE } from './copy';
 
 const { createStyleModule, tokens } = slideDistillery;
-const { color, command } = tokens;
+const { color, command, marks } = tokens;
 const { copy } = command;
 
 export const commandModule = createStyleModule('command', ({ css }) => ({
@@ -82,7 +82,10 @@ export const commandModule = createStyleModule('command', ({ css }) => ({
     overflow: hidden;
     white-space: pre;
   `,
+  // Bold as well as `primary`, like strong in regular copy; the mono face keeps its advance at every weight.
   highlight: css`
+    background: none;
     color: ${color.primary};
+    font-weight: ${marks.strong.weight};
   `,
 }));
