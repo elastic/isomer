@@ -13,7 +13,7 @@ import { tone as toneTheme } from '../../theme/components/shared';
 import { split } from '../../theme/components/split';
 import { scalePx } from '../../theme/scale';
 import type { SlideSplitDivider, SlideSplitRatio } from '../../theme/variants';
-import { lineBox, proseLines, wrappedLines } from '../size';
+import { lineBox, measureText } from '../size';
 
 import type { SlideSplitNode, SlideSplitPane } from './types';
 
@@ -57,12 +57,7 @@ const cueWidth = scalePx(toneTheme.cue.size) + scalePx(toneTheme.cue.gap);
 
 const labelHeight = ({ label, tone }: SlideSplitPane, width: number): number =>
   label
-    ? wrappedLines(
-        label.toUpperCase(),
-        scalePx(split.label.size),
-        Math.max(1, width - (tone ? cueWidth : 0)),
-        split.label.tracking
-      ) *
+    ? measureText(label, split.label, width - (tone ? cueWidth : 0)).lines *
         lineBox(split.label) +
       scalePx(split.labelGap)
     : 0;
@@ -74,11 +69,11 @@ export const paneLayouts = (
 ): [SlideLayout, SlideLayout] => {
   const footnoteHeight = footnote
     ? scalePx(split.footnoteGap) +
-      proseLines(
+      measureText(
         stripMarks(footnote),
-        scalePx(split.footnote.size),
+        split.footnote,
         Math.min(width, scalePx(split.footnoteMaxWidth))
-      ) *
+      ).lines *
         lineBox(split.footnote)
     : 0;
   const widths = paneWidths(width, ratio, divider);

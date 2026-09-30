@@ -35,10 +35,13 @@ export const markdown = ({ text: source }: SlideSourceNode) => [
 ];
 
 export const slack = ({ text: source }: SlideSourceNode): SlackBlock[] => [
-  slackContext(`${prefix} ${oneLine(marksSlack(source))}`, () =>
-    slackRichText(
-      richTextSection(richTextRun(`${prefix} `), ...marksRichText(source))
-    )
+  slackContext(
+    `${prefix} ${oneLine(marksSlack(source))}`,
+    () =>
+      slackRichText(
+        richTextSection(richTextRun(`${prefix} `), ...marksRichText(source))
+      ),
+    [{ marks: source }]
   ),
 ];
 

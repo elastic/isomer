@@ -49,7 +49,7 @@ const panelSchema = z
       .min(1)
       .max(codeMaxLines)
       .describe(
-        '1-based line numbers to mark with a tinted band. Other lines stay at full strength.'
+        '1-based line numbers to mark with a tinted band. Each is a line of this panel. Other lines stay at full strength.'
       )
       .optional(),
   })
@@ -61,6 +61,7 @@ const panelSchema = z
         error:
           'one line per entry: split multi-line source into separate lines',
         path: ['lines'],
+        rule: 'Source, one entry per line',
       }
     )
   )
@@ -71,6 +72,7 @@ const panelSchema = z
       {
         error: 'indent with spaces, not tabs',
         path: ['lines'],
+        rule: 'indented with spaces rather than tabs',
       }
     )
   )
@@ -84,6 +86,7 @@ const panelSchema = z
       {
         error: 'highlightLines must exist in lines',
         path: ['highlightLines'],
+        rule: 'Each is a line of this panel.',
       }
     )
   );
@@ -134,6 +137,7 @@ export const schema = z
           return `a line is wider than its panel: at most ${lineLimit(panels)} columns ${where}${dense}, a wide glyph counting as two`;
         },
         path: ['panels'],
+        rule: `A line holds ${codeLineMaxLength(1, false)} columns in one panel`,
       }
     )
   );

@@ -5,7 +5,14 @@
  * 2.0.
  */
 
-import { navigationHref, z } from '@elastic/isomer-sdk';
+import {
+  NAVIGATION_HREF_MESSAGE,
+  requiredString,
+  sanitizeNavigationHref,
+  z,
+} from '@elastic/isomer-sdk';
+
+import { statedRefine } from './cross_field';
 
 /** Input-size guard against far too much text, checked before marks are parsed or text is measured; not a layout limit. */
 export const authoredTextMaxLength = 10_000;
@@ -16,5 +23,17 @@ export const lineText = () => z.string().min(1).max(authoredTextMaxLength);
 /** A field that wraps. */
 export const wrappedText = () => z.string().min(1).max(authoredTextMaxLength);
 
+/** What {@link boundedHref} takes, for each field's description to state. */
+export const hrefRule =
+  'an `https`, `http`, or `mailto` URL, or a relative path';
+
 /** An `href`, bounded as {@link lineText} is. */
-export const boundedHref = () => navigationHref().max(authoredTextMaxLength);
+export const boundedHref = () =>
+  requiredString()
+    .max(authoredTextMaxLength)
+    .check(
+      statedRefine((value) => sanitizeNavigationHref(value) !== null, {
+        error: NAVIGATION_HREF_MESSAGE,
+        rule: hrefRule,
+      })
+    );
