@@ -5,12 +5,16 @@
  * 2.0.
  */
 
-import { createTakumiImageBackend } from '@elastic/isomer-image-takumi';
+import {
+  createTakumiImageBackend,
+  type LayoutBox,
+} from '@elastic/isomer-image-takumi';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import {
   checkLayout,
   type Composition,
   createChildNodeWalker,
+  NODE_ANCHOR_ATTRIBUTE,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
 
@@ -40,11 +44,27 @@ export const slideOf = (...body: object[]): Composition => ({
   ],
 });
 
+/** Takumi's measure of `slide`, with node anchors on. */
+export const measured = (slide: Composition): Promise<LayoutBox> =>
+  takumi.measure(runtime.surfaces.svg.render(slide, { anchors: true }));
+
 /** What `checkLayout` finds in takumi's measure of `slide`. */
 export const findings = async (slide: Composition) =>
-  checkLayout(
-    await takumi.measure(runtime.surfaces.svg.render(slide, { anchors: true })),
-    slide.body,
-    walk,
-    'svg'
-  );
+  checkLayout(await measured(slide), slide.body, walk, 'svg');
+
+const anchored = (box: LayoutBox, type: string): LayoutBox | undefined =>
+  box.attributes?.[NODE_ANCHOR_ATTRIBUTE] === type
+    ? box
+    : box.children.reduce<LayoutBox | undefined>(
+        (found, child) => found ?? anchored(child, type),
+        undefined
+      );
+
+/** The first box in `layout` anchored to a node of `type`. */
+export const nodeBox = (layout: LayoutBox, type: string): LayoutBox => {
+  const found = anchored(layout, type);
+  if (found === undefined) {
+    throw new Error(`no ${type} in the measured layout`);
+  }
+  return found;
+};

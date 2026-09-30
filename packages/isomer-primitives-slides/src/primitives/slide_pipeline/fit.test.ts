@@ -5,10 +5,13 @@
  * 2.0.
  */
 
+import type { LayoutBox } from '@elastic/isomer-image-takumi';
 import { describe, expect, it } from 'vitest';
 
-import { findings, slideOf } from '../../examples/measure';
+import { findings, measured, nodeBox, slideOf } from '../../examples/measure';
 import { frameContentWidth } from '../../theme/components/frame';
+import { pipeline } from '../../theme/components/pipeline';
+import { scalePx } from '../../theme/scale';
 import { type SlideSize, slideSizes } from '../../theme/variants';
 import { layoutContext } from '../size.fixtures';
 import { tallestExample } from '../slide_heading/examples';
@@ -153,5 +156,37 @@ describe('pipeline budgets fit what they allow', () => {
         })
       )
     ).toEqual([]);
+  });
+});
+
+describe('terminal chips', () => {
+  // Steps never shrink under their numerals, so terminals too wide for the row push it past its room.
+  it('push the steps past the body rather than crushing them', async () => {
+    const node: SlidePipelineNode = {
+      type: 'slidePipeline',
+      start: 'An incoming refund request from the customer portal',
+      end: 'A reconciled ledger entry in the finance warehouse',
+      steps: titles.slice(0, 4).map((title) => ({ title })),
+    };
+    const slide = slideOf(tallestExample, node);
+    const circle = scalePx(pipeline.circleSize);
+    const boxes = (box: LayoutBox): LayoutBox[] =>
+      box.children.flatMap((child) => [child, ...boxes(child)]);
+    const numerals = boxes(
+      nodeBox(await measured(slide), 'slidePipeline')
+    ).filter(({ width, height }) => width === circle && height === circle);
+    expect(numerals).toHaveLength(node.steps.length);
+    numerals.slice(1).forEach((numeral, index) => {
+      const before = numerals[index]!;
+      expect(before.x + before.width).toBeLessThanOrEqual(numeral.x);
+    });
+    expect(await findings(slide)).toEqual([
+      {
+        kind: 'overflow',
+        path: 'body[0].body[1]',
+        type: 'slidePipeline',
+        by: expect.any(Number) as number,
+      },
+    ]);
   });
 });

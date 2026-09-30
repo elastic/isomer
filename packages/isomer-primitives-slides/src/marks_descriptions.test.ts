@@ -39,17 +39,21 @@ const stringsIn = (value: unknown, path: Path = []): Path[] => {
   return [];
 };
 
-const withAppended = (value: unknown, [head, ...rest]: Path): unknown => {
+const withAppended = (
+  value: unknown,
+  [head, ...rest]: Path,
+  marker: string
+): unknown => {
   if (head === undefined) {
-    return `${value as string} \`mk\``;
+    return `${value as string} \`${marker}\``;
   }
   if (Array.isArray(value)) {
     return (value as unknown[]).map((item, index) =>
-      index === head ? withAppended(item, rest) : item
+      index === head ? withAppended(item, rest, marker) : item
     );
   }
   const record = value as Record<string, unknown>;
-  return { ...record, [head]: withAppended(record[head], rest) };
+  return { ...record, [head]: withAppended(record[head], rest, marker) };
 };
 
 interface ZodDef {
@@ -108,68 +112,87 @@ const onSlide = (node: unknown): Composition => {
   };
 };
 
-const render = (node: unknown): string | undefined => {
+const isValid = (node: unknown): boolean =>
+  runtime.validate(onSlide(node)).errors.length === 0;
+
+interface MarkedField {
+  path: Path;
+  /** `false` when appending a mark alone makes the node invalid. */
+  valid: boolean;
+  html: boolean;
+  markdown: boolean;
+}
+
+/** Whether each string field of `example` draws a mark appended to it, from one render with a distinct mark in every valid field. */
+const markedFields = (example: unknown): MarkedField[] => {
+  const paths = stringsIn(example).map((path, index) => ({
+    path,
+    marker: `mk${index}`,
+  }));
+  const valid = paths.filter(({ path, marker }) =>
+    isValid(withAppended(example, path, marker))
+  );
+  const node = valid.reduce<unknown>(
+    (marked, { path, marker }) => withAppended(marked, path, marker),
+    example
+  );
   const composition = onSlide(node);
-  return runtime.validate(composition).errors.length === 0
-    ? runtime.surfaces.html.render(composition).html
-    : undefined;
+  const { html } = runtime.surfaces.html.render(composition);
+  const markdown = runtime.surfaces.markdown.render(composition);
+  return paths.map(({ path, marker }) => {
+    const isMarked = valid.some((field) => field.marker === marker);
+    return {
+      path,
+      valid: isMarked,
+      html: isMarked && html.includes(`>${marker}</code>`),
+      markdown: isMarked && markdown.includes(`\`${marker}\``),
+    };
+  });
 };
 
-const renderMarkdown = (node: unknown): string =>
-  runtime.surfaces.markdown.render(onSlide(node));
+const fieldsOf = new Map(
+  slideDeckPrimitives.map(({ type, examples }) => [
+    type,
+    examples.flatMap((example) => markedFields(example)),
+  ])
+);
+
+const fieldName = (path: Path): string =>
+  path.filter((step) => typeof step === 'string').join('.');
+
+const saysMarks = (schema: ZodType, path: Path): boolean =>
+  fieldAt(schema, path).some((text) => /marks are allowed/i.test(text));
 
 describe('inline marks in field descriptions', () => {
   it.each(slideDeckPrimitives)(
     '$type says so on every field that draws marks',
-    ({ schema, examples }) => {
-      const missing = new Set<string>();
-      for (const example of examples) {
-        for (const path of stringsIn(example)) {
-          const html = render(withAppended(example, path));
-          if (!html?.includes('>mk</code>')) {
-            continue;
-          }
-          const described = fieldAt(schema as ZodType, path).some((text) =>
-            /marks are allowed/i.test(text)
-          );
-          if (!described) {
-            missing.add(
-              path.filter((step) => typeof step === 'string').join('.')
-            );
-          }
-        }
-      }
+    ({ type, schema }) => {
+      const missing = new Set(
+        (fieldsOf.get(type) ?? [])
+          .filter(
+            ({ path, html }) => html && !saysMarks(schema as ZodType, path)
+          )
+          .map(({ path }) => fieldName(path))
+      );
       expect([...missing].sort()).toEqual([]);
     }
   );
 
   it.each(slideDeckPrimitives)(
     '$type draws marks on every field that says it does',
-    ({ schema, examples }) => {
-      const unrendered = new Set<string>();
-      for (const example of examples) {
-        for (const path of stringsIn(example)) {
-          const says = fieldAt(schema as ZodType, path).some((text) =>
-            /marks are allowed/i.test(text)
-          );
-          if (!says) {
-            continue;
-          }
-          const node = withAppended(example, path);
-          const html = render(node);
-          const field = path
-            .filter((step) => typeof step === 'string')
-            .join('.');
-          if (html === undefined) {
-            unrendered.add(`${field} (invalid)`);
-          } else if (!html.includes('>mk</code>')) {
-            unrendered.add(`${field} (html)`);
-          }
-          if (!renderMarkdown(node).includes('`mk`')) {
-            unrendered.add(`${field} (markdown)`);
-          }
-        }
-      }
+    ({ type, schema }) => {
+      const unrendered = new Set(
+        (fieldsOf.get(type) ?? [])
+          .filter(({ path }) => saysMarks(schema as ZodType, path))
+          .flatMap(({ path, valid, html, markdown }) =>
+            !valid
+              ? [`${fieldName(path)} (invalid)`]
+              : [
+                  ...(html ? [] : [`${fieldName(path)} (html)`]),
+                  ...(markdown ? [] : [`${fieldName(path)} (markdown)`]),
+                ]
+          )
+      );
       expect([...unrendered].sort()).toEqual([]);
     }
   );

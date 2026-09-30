@@ -13,6 +13,7 @@ import { glyph } from './shared';
 export const sequence = {
   actor: {
     type: { ...type.mono, size: font.size.px28 },
+    sizes: { l: font.size.px28, m: font.size.px26, s: font.size.px24 },
     border: stroke.chip,
     radius: radius.chip,
     paddings: {
@@ -23,7 +24,7 @@ export const sequence = {
     gaps: { l: space.px12, m: space.px12, s: space.px8 },
   },
   lifeline: stroke.hairline,
-  // Labels never wrap, so leading only adds height.
+  // Most labels hold one line, where leading only adds height.
   labelLineHeight: font.lineHeight.solid,
   labelInset: space.px8,
   // From the sender's lifeline.

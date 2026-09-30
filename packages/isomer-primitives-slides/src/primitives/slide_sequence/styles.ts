@@ -67,6 +67,7 @@ export const sequenceModule = createStyleModule('sequence', ({ css }) => ({
     justify-self: center;
     width: 0;
   `,
+  // Wraps within its two tracks, so a long label never runs onto its neighbor's.
   actor: css`
     align-items: center;
     background: ${color.bgPage};
@@ -75,12 +76,15 @@ export const sequenceModule = createStyleModule('sequence', ({ css }) => ({
     color: ${color.text};
     display: flex;
     ${typeRole(actor.type)}
+    align-self: start;
     justify-self: center;
-    white-space: nowrap;
+    max-width: 100%;
+    text-align: center;
   `,
   actorSize: variants(
     slideSizes,
     (size) => css`
+      font-size: ${actor.sizes[size]};
       margin: 0 0 ${actor.gaps[size]};
       padding: ${actor.paddings[size]};
     `
@@ -105,18 +109,21 @@ export const sequenceModule = createStyleModule('sequence', ({ css }) => ({
   labelFromStart: css`
     align-self: flex-start;
     margin-left: ${sequence.labelOffset};
+    max-width: calc(100% - ${sequence.labelOffset});
   `,
   labelFromEnd: css`
     align-self: flex-end;
     margin-right: ${sequence.labelOffset};
+    max-width: calc(100% - ${sequence.labelOffset});
   `,
-  // The fill masks the lifelines a label crosses.
+  // The fill masks the lifelines a label crosses; it wraps within its message's span.
   label: css`
     background: ${color.bgPage};
     color: ${color.text};
     line-height: ${sequence.labelLineHeight};
+    max-width: 100%;
     padding: 0 ${sequence.labelInset};
-    white-space: nowrap;
+    text-align: center;
   `,
   labelSize: variants(
     slideSizes,

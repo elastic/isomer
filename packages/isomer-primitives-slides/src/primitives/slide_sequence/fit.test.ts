@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { findings, slideOf } from '../../examples/measure';
+import { findings, measured, nodeBox, slideOf } from '../../examples/measure';
 import { sequenceFit } from '../../theme/components/sequence';
 import { layoutContext, renderedStep } from '../size.fixtures';
 import { tallestExample } from '../slide_heading/examples';
@@ -84,5 +84,56 @@ describe('sequence budgets fit what they allow', () => {
     expect(
       await findings(slideOf(tallestExample, { ...node, size: step }))
     ).toEqual([]);
+  });
+});
+
+describe('long actor and message labels', () => {
+  const node: SlideSequenceNode = {
+    type: 'slideSequence',
+    actors: [
+      { id: 'web', label: 'checkout frontend service' },
+      { id: 'psp', label: 'payment orchestration gateway' },
+      { id: 'bank', label: 'bank' },
+      { id: 'ledger', label: 'ledger' },
+      { id: 'mail', label: 'mail' },
+    ],
+    messages: [
+      {
+        from: 'web',
+        to: 'psp',
+        label: 'Authorize the card for the full basket amount now',
+      },
+      { from: 'psp', to: 'bank', label: 'Charge' },
+      { from: 'bank', to: 'ledger', label: 'Post' },
+      { from: 'ledger', to: 'mail', label: 'Notify' },
+    ],
+  };
+  const split = {
+    type: 'slideSplit',
+    panes: [
+      { items: [node] },
+      { items: [{ type: 'slideBulletList', items: ['One'] }] },
+    ],
+  };
+
+  // Lifelines, then actors, then messages, each a label and its arrow.
+  it.each([
+    { name: 'full width', slide: slideOf(tallestExample, node) },
+    { name: 'half a split', slide: slideOf(split) },
+  ])('wrap within their spans at $name', async ({ slide }) => {
+    const [grid] = nodeBox(await measured(slide), 'slideSequence').children;
+    const { length } = node.actors;
+    const actors = grid!.children.slice(length, 2 * length);
+    actors.slice(1).forEach((actor, index) => {
+      const before = actors[index]!;
+      expect(before.x + before.width).toBeLessThanOrEqual(actor.x + 1);
+    });
+    const [message] = grid!.children.slice(2 * length);
+    const [label] = message!.children;
+    expect(label!.x).toBeGreaterThanOrEqual(message!.x - 1);
+    expect(label!.x + label!.width).toBeLessThanOrEqual(
+      message!.x + message!.width + 1
+    );
+    expect(await findings(slide)).toEqual([]);
   });
 });

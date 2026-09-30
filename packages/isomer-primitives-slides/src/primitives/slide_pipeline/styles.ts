@@ -48,9 +48,9 @@ export const pipelineModule = createStyleModule('pipeline', ({ css }) => ({
     margin-top: ${pipeline.railTop};
     width: ${pipeline.gap};
   `,
+  // Never narrower than its steps, so terminals too wide for the row push it past its room.
   track: css`
     flex: 1;
-    min-width: 0;
     position: relative;
   `,
   // Runs to the track's edge beside a terminal chip, else stops at the end circle.
@@ -100,7 +100,6 @@ export const pipelineModule = createStyleModule('pipeline', ({ css }) => ({
     display: flex;
     flex: 1 1 0;
     flex-direction: column;
-    min-width: 0;
     text-align: center;
   `,
   numeral: css`
