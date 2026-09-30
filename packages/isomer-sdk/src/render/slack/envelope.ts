@@ -482,13 +482,11 @@ const columnElements = (
     : [richSection(lead), ...body];
 };
 
-const endsLine = (element: SlackRichTextBlockElement): boolean => {
-  const last = element.elements.at(-1);
-  return last?.type === 'text' && last.text.endsWith('\n');
-};
+const endsLine = (element: SlackRichTextBlockElement): boolean =>
+  /[\n\r\u2028\u2029]$/u.test(richTextElementText(element));
 
 // Slack runs adjacent sections together, so a section followed by another ends
-// its line.
+// its line unless its rendered text already does.
 const breakSections = (
   elements: readonly SlackRichTextBlockElement[]
 ): SlackRichTextBlockElement[] =>

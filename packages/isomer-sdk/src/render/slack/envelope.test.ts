@@ -363,6 +363,55 @@ describe('Slack envelope transforms', () => {
       }
     });
 
+    const endings = ['\n', '\r\n', '\r', '\u2028', '\u2029'];
+    const ending = (value: string): [string, SlackRichTextInline][] => [
+      ['text', text(value)],
+      ['link text', { type: 'link', url: 'https://x.test', text: value }],
+      ['link url', { type: 'link', url: `https://x.test/${value}` }],
+      ['tag', { type: 'tag', text: value }],
+    ];
+    const breakCase = (
+      name: string,
+      last: SlackRichTextInline[],
+      broken: boolean
+    ): [string, SlackRichTextInline[], boolean] => [name, last, broken];
+
+    it.each([
+      ...endings.flatMap((end) =>
+        ending(`a${end}`).map(([type, inline]) =>
+          breakCase(
+            `a ${type} ending in ${JSON.stringify(end)}`,
+            [inline],
+            false
+          )
+        )
+      ),
+      ...ending('a').map(([type, inline]) =>
+        breakCase(`a ${type} ending in text`, [inline], true)
+      ),
+      breakCase(
+        'an empty run after a line end',
+        [text('a\n'), text('')],
+        false
+      ),
+    ])(
+      'breaks a section before the next only when %s does not end its line',
+      (_name, last, broken) => {
+        expect(
+          degrade([
+            [cell(''), cell('')],
+            [rich(section(...last)), cell('b')],
+          ]).at(-1)
+        ).toEqual({
+          type: 'rich_text',
+          elements: [
+            section(...last, ...(broken ? [text('\n')] : [])),
+            section(text('b')),
+          ],
+        });
+      }
+    );
+
     it.each([
       ['keeps tables that fit exactly', [4999, 4999], ['table', 'table']],
       ['degrades the table one past', [4999, 5000], ['table', 'rich_text']],
