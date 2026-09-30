@@ -73,6 +73,20 @@ describe('findInTree', () => {
     });
   });
 
+  it('stops a very wide array or record once its value budget is spent', () => {
+    const wide = new Array<number>(5_000_000).fill(0);
+    const started = performance.now();
+    expect(findInTree(wide, never)).toEqual({ kind: 'tooLarge' });
+    expect(findInTree([{ items: wide }], never)).toEqual({ kind: 'tooLarge' });
+    expect(performance.now() - started).toBeLessThan(1_000);
+    const record = Object.fromEntries(
+      Array.from({ length: TREE_WALK_MAX_VALUES }, (_, at) => [`k${at}`, at])
+    );
+    expect(findInTree(record, never)).toEqual({ kind: 'tooLarge' });
+    delete record.k0;
+    expect(findInTree(record, never)).toEqual({ kind: 'none' });
+  });
+
   it('returns the first match in reading order, with its path', () => {
     const body = [
       { type: 'slideStack', items: [{ type: 'slideRender', surface: 'svg' }] },

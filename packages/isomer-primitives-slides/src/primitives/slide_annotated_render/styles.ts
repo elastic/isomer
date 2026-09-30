@@ -33,7 +33,7 @@ export const annotatedRenderModule = createStyleModule(
       min-width: 0;
       width: 100%;
     `,
-    // Holds the panel alone, so pins place against it and not the caption.
+    // Holds the panel alone, at its width, so pins place against the slide and not the caption.
     stage: css`
       position: relative;
     `,

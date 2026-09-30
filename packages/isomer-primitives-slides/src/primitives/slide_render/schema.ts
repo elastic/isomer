@@ -21,12 +21,12 @@ export const buildSchema = (bodyNodeSchema: ZodType<unknown>) =>
       type: z.literal('slideRender'),
       slide: lineText()
         .describe(
-          'The host’s reference to the slide to embed, e.g. its slug. Until the host fills in `body`, a striped placeholder labeled with this reference stands in.'
+          'The host’s reference to the slide to embed, e.g. its slug. Until the host fills in `body`, a striped placeholder labeled with this reference stands in. A render needs `slide`, `body`, or both.'
         )
         .optional(),
       body: embeddedBody(bodyNodeSchema)
         .describe(
-          'What to render, usually one `slideFrame` holding a whole slide. Its ids are its own; it cannot hold another slideRender, slideRenderGrid, or slideAnnotatedRender.'
+          'What to render: one `slideFrame` alone, holding a whole slide, or one or more nodes that are not frames. Its ids are its own; it cannot hold another slideRender, slideRenderGrid, or slideAnnotatedRender.'
         )
         .optional(),
       surface: z

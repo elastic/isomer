@@ -8,6 +8,8 @@
 import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
+import { TREE_WALK_MAX_DEPTH } from './primitives/slide_render/embedded';
+import { slideDeckPrimitives } from './registry';
 import { type NamedSlide, resolveSlideRenders } from './resolve_renders';
 
 const frame = (...body: object[]): Composition => ({
@@ -83,5 +85,47 @@ describe('resolveSlideRenders', () => {
         { onUnresolved: 'leave' }
       )
     ).toThrow('slug "a" names more than one slide');
+  });
+
+  it('returns a slide too deep to check as it is when leaving, and throws otherwise', () => {
+    let deep: object = heading;
+    for (let level = 0; level < 100_000; level += 1) {
+      deep = { type: 'slideStack', items: [deep] };
+    }
+    const slides = [
+      { slug: 'host', composition: frame(renderOf('deep')) },
+      { slug: 'deep', composition: frame(deep) },
+    ];
+    const [host, left] = resolveSlideRenders(slides, { onUnresolved: 'leave' });
+    expect(bodyOf(host!)[0]).toEqual(renderOf('deep'));
+    expect(left).toBe(slides[1]!.composition);
+    expect(() => resolveSlideRenders(slides.slice(1))).toThrow(
+      `slide "deep" cannot be checked: it nests deeper than ${TREE_WALK_MAX_DEPTH} levels`
+    );
+  });
+
+  it('fills a reference inside another pack’s container when given its primitives', () => {
+    const box = {
+      type: 'box',
+      children: ({ items }: { items: PrimitiveNode[] }) =>
+        items.map((node, index) => ({ node, path: `items[${index}]` })),
+    };
+    const slides = [
+      { slug: 'target', composition: frame(heading) },
+      {
+        slug: 'host',
+        composition: frame({ type: 'box', items: [renderOf('target')] }),
+      },
+    ];
+    const inBox = (deck: Composition[]) =>
+      (bodyOf(deck[1]!)[0] as { items: Record<string, unknown>[] }).items[0];
+    expect(inBox(resolveSlideRenders(slides))).toEqual(renderOf('target'));
+    expect(
+      inBox(
+        resolveSlideRenders(slides, {
+          primitives: [...slideDeckPrimitives, box],
+        })
+      )
+    ).toEqual({ ...renderOf('target'), body: slides[0]!.composition.body });
   });
 });

@@ -79,6 +79,7 @@ export const renderModule = createStyleModule('render', ({ css }) => ({
     width: 100%;
   `,
   line: css`
+    min-height: ${render.outputLine};
     overflow: hidden;
     white-space: pre;
   `,

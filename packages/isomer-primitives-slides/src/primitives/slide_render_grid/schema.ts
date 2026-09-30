@@ -19,7 +19,7 @@ export const buildSchema = (bodyNodeSchema: ZodType<unknown>) =>
     .object({
       type: z.literal('slideRenderGrid'),
       body: embeddedBody(bodyNodeSchema).describe(
-        'What every tile renders, usually one `slideFrame`. Its ids are its own; it cannot hold another slideRender, slideRenderGrid, or slideAnnotatedRender.'
+        'What every tile renders: one `slideFrame` alone, or one or more nodes that are not frames. Its ids are its own; it cannot hold another slideRender, slideRenderGrid, or slideAnnotatedRender.'
       ),
       tiles: z
         .array(

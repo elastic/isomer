@@ -27,7 +27,6 @@ export const windowModule = createStyleModule('window', ({ css }) => ({
     display: flex;
     flex: 0 0 auto;
     margin: 0;
-    white-space: nowrap;
   `,
   appBar: css`
     color: ${color.textSubtle};

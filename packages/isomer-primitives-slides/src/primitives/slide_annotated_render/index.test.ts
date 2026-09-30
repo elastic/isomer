@@ -6,6 +6,7 @@
  */
 
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
+import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
@@ -17,10 +18,12 @@ import { frame } from '../../theme/components/frame';
 import { scalePx } from '../../theme/scale';
 import { openBody } from '../layout';
 import { trackWidth } from '../size';
+import { tallestExample } from '../slide_heading/examples';
+import { headingRoom } from '../slide_heading/fit';
 import { captionHeight } from '../slide_render/fit';
 import { headline } from '../slide_render/output';
 
-import { placeholderExample } from './examples';
+import { example, placeholderExample } from './examples';
 import { annotatedScale, legendStep } from './fit';
 import { slideAnnotatedRenderPrimitive } from './index';
 
@@ -40,6 +43,18 @@ const node = {
 describe('slideAnnotatedRender', () => {
   it('measures six pins, the most a legend holds', () => {
     expect(placeholderExample.pins).toHaveLength(6);
+  });
+
+  it('takes pin positions from 0 to 100, never NaN or infinite', () => {
+    const at = (x: number) =>
+      slideAnnotatedRenderPrimitive.schema.safeParse({
+        ...node,
+        pins: [{ ...node.pins[0]!, x }],
+      }).success;
+    expect([0, 100].map(at)).toEqual([true, true]);
+    expect([-0.1, 100.1, NaN, Infinity, -Infinity].map(at)).toEqual(
+      Array(5).fill(false)
+    );
   });
 
   it('walks its render as its one child', () => {
@@ -103,5 +118,31 @@ describe('slideAnnotatedRender', () => {
     expect([615.5, 616].map(at)).toEqual(['s', 'm']);
     expect(legendStep(node.pins, openBody)).toBe('l');
     expect(legendStep(node.pins, { ...openBody, height: 254.5 })).toBe('m');
+  });
+
+  it('places pins against the drawn slide when height limits its scale', () => {
+    const { html } = runtime.surfaces.html.render({
+      type: 'view',
+      body: [
+        {
+          type: 'slideFrame',
+          body: [tallestExample, example],
+        } as PrimitiveNode,
+      ],
+    });
+    const width = (handle: string) =>
+      new RegExp(`class="[^"]*${handle}[^"]*" style="width:([\\d.]+)px`).exec(
+        html
+      )?.[1];
+    const layout = {
+      width: openBody.width,
+      height: headingRoom(tallestExample),
+    };
+    expect(annotatedScale(example.render, layout)).toBeLessThan(
+      trackWidth(layout.width, annotatedRenderShares, annotatedRender.gap) /
+        slideWidth
+    );
+    expect(width('annotatedRender-stage')).toBeDefined();
+    expect(width('annotatedRender-stage')).toBe(width('render-panel'));
   });
 });

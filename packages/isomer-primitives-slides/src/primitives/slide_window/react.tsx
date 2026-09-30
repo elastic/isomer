@@ -28,7 +28,7 @@ export const react = (
   const slack = chrome === 'slack';
   const inside = withLayout(
     context,
-    windowBodyLayout(slideLayout(context), chrome)
+    windowBodyLayout(slideLayout(context), node)
   );
   return (
     <div

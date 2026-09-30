@@ -13,6 +13,13 @@ import { frame } from './frame';
 const slideWidth = scalePx(frame.width);
 const slideHeight = scalePx(frame.height);
 
+const output = {
+  family: font.family.mono,
+  size: font.size.px24,
+  weight: font.weight.regular,
+  lineHeight: font.lineHeight.compact,
+} as const;
+
 export const render = {
   caption: { ...type.mono, size: font.size.px24 },
   captionGap: space.px14,
@@ -30,12 +37,9 @@ export const render = {
   },
   /** The largest scale a render draws its slide at; 0.38 × 1920 ≈ 730, a split column beside a code panel. */
   maxScale: literal('0.38'),
-  output: {
-    family: font.family.mono,
-    size: font.size.px24,
-    weight: font.weight.regular,
-    lineHeight: font.lineHeight.compact,
-  },
+  output,
+  /** One output line's box, so a blank line keeps its height. */
+  outputLine: px(scalePx(output.size) * parseFloat(output.lineHeight.value)),
   outputPadding: paddingXy(space.px16, space.px24),
   /** Characters the Slack block type is padded to, so block text lines up. */
   slackTypeColumn: literal('9'),

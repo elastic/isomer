@@ -20,6 +20,7 @@ export const window = {
   radius: radius.panel,
   bar: { ...type.mono, size: font.size.px24 },
   barPaddingY,
+  barPaddingX,
   barPadding: paddingXy(barPaddingY, barPaddingX),
   slackBar: {
     size: font.size.px26,
@@ -27,6 +28,7 @@ export const window = {
     lineHeight: font.lineHeight.body,
   },
   slackBarPaddingY,
+  slackBarPaddingX,
   slackBarPadding: paddingXy(slackBarPaddingY, slackBarPaddingX),
   channelPrefix: literal('#'),
   bodyPaddingY,

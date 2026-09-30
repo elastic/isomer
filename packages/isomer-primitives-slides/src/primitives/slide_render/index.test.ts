@@ -16,6 +16,7 @@ import {
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 
 import { slideJsx } from '../../jsx';
 import { slideDeckFrame, slidesPack } from '../../pack';
@@ -52,6 +53,8 @@ const compose = (...body: object[]): Composition => ({
   ],
 });
 
+const heading = { type: 'slideHeading', title: 'Embedded' };
+
 const errorsOf = (node: object) =>
   runtime
     .validate(compose(node))
@@ -63,6 +66,13 @@ describe('slideRender schema', () => {
       'body[0].body[1].body: needs a `slide` reference or a `body`',
     ]);
     expect(errorsOf(placeholderExample)).toEqual([]);
+    expect(
+      JSON.stringify(
+        z.toJSONSchema(
+          slideDeckPrimitives.find(({ type }) => type === 'slideRender')!.schema
+        )
+      )
+    ).toContain('A render needs `slide`, `body`, or both.');
   });
 
   it('embeds whole slides, but never another render', () => {
@@ -76,6 +86,40 @@ describe('slideRender schema', () => {
       'body[0].body[1].body[0].items[0]: an embedded body cannot hold another render'
     );
   });
+
+  it.each(['slideRender', 'slideRenderGrid'] as const)(
+    'takes a %s body of one frame alone, or of loose nodes',
+    (type) => {
+      const withBody = (body: object[]) =>
+        type === 'slideRender'
+          ? { type, surface: 'svg', body }
+          : {
+              type,
+              body,
+              tiles: [
+                { surface: 'svg', caption: 'A' },
+                { surface: 'text', caption: 'B' },
+              ],
+            };
+      const lone = { type: 'slideFrame', body: [heading] };
+      const rule = 'a slideFrame must be the only node of an embedded body';
+      expect(errorsOf(withBody([lone]))).toEqual([]);
+      expect(errorsOf(withBody([heading, heading]))).toEqual([]);
+      expect(errorsOf(withBody([lone, heading]))).toEqual([
+        `body[0].body[1].body[0]: ${rule}`,
+      ]);
+      expect(errorsOf(withBody([lone, lone]))).toEqual([
+        `body[0].body[1].body[0]: ${rule}`,
+        `body[0].body[1].body[1]: ${rule}`,
+      ]);
+      const schema = slideDeckPrimitives.find(
+        (entry) => entry.type === type
+      )!.schema;
+      expect(JSON.stringify(z.toJSONSchema(schema))).toContain(
+        'one `slideFrame` alone'
+      );
+    }
+  );
 
   it('keeps embedded ids its own', () => {
     const heading = { type: 'slideHeading', id: 'same', title: 'Twice' };
@@ -209,14 +253,16 @@ describe('slideRender output', () => {
     `);
     expect(runtime.surfaces.markdown.renderNode(markdownExample))
       .toMatchInlineSnapshot(`
-      "_The delivery slide, as Markdown · markdown_
+        "_The delivery slide, as Markdown · markdown_
 
-      \`\`\`
-      # Orders now arrive in under 30 minutes
-      Routing from the nearest store cut the median wait by eleven minutes.
-      _Basket · 02 Operations_
-      \`\`\`"
-    `);
+        \`\`\`
+        # Orders now arrive in under 30 minutes
+
+        Routing from the nearest store cut the median wait by eleven minutes.
+
+        _Basket · 02 Operations_
+        \`\`\`"
+      `);
     expect(runtime.surfaces.text.renderNode(placeholderExample)).toBe(
       'The weekly summary, from the svg surface · weekly-summary · svg'
     );
@@ -229,6 +275,31 @@ describe('slideRender output', () => {
       type: 'section',
       text: { type: 'mrkdwn', text: '*Orders now arrive in under 30 minutes*' },
     });
+  });
+});
+
+describe('slideRender blank lines', () => {
+  const code = {
+    type: 'slideCode',
+    panels: [{ file: 'a.ts', lines: ['const a = 1;', '', 'const b = 2;'] }],
+  };
+  const node = { type: 'slideRender', surface: 'text', body: [code] };
+
+  it('keeps a blank line inside the output in its panel and every preview', () => {
+    const { html } = runtime.surfaces.html.render(compose(node));
+    const lines = [
+      ...html.matchAll(/class="[^"]*render-line[^"]*">([^<]*)</g),
+    ].map(([, line]) => line);
+    expect(lines).toEqual(['a.ts', 'const a = 1;', '', 'const b = 2;']);
+    expect(runtime.surfaces.text.renderNode(node)).toContain(
+      'const a = 1;\n\n  const b = 2;'
+    );
+    expect(runtime.surfaces.markdown.renderNode(node)).toContain(
+      'const a = 1;\n\nconst b = 2;'
+    );
+    expect(JSON.stringify(runtime.surfaces.slack.renderNode(node))).toContain(
+      'const a = 1;\\n\\nconst b = 2;'
+    );
   });
 });
 

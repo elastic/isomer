@@ -97,19 +97,35 @@ const slackLines = (blocks: readonly SlackBlock[]): string[] =>
     `${type.padEnd(Math.max(typeColumn, type.length + 1))}${textsIn(rest).join(' ').replace(/\s+/g, ' ').trim()}`.trimEnd()
   );
 
-/** What `surface` outputs for `body`, one entry per non-blank line. */
+const isBlank = (line: string | undefined) => line?.trim() === '';
+
+/** `lines` without the blank ones at either end. */
+const trimBlankEnds = (lines: readonly string[]): string[] => {
+  let start = 0;
+  let end = lines.length;
+  while (start < end && isBlank(lines[start])) {
+    start += 1;
+  }
+  while (end > start && isBlank(lines[end - 1])) {
+    end -= 1;
+  }
+  return lines.slice(start, end);
+};
+
+/** What `surface` outputs for `body`, one entry per line, blank lines inside it kept. */
 export const outputLines = (
   surface: OutputSurface,
   body: readonly PrimitiveNode[],
   scope: SlideRenderScope
 ): string[] =>
-  (surface === 'slack'
-    ? slackLines(renderSlackChildren(body, scope, undefined))
-    : (surface === 'text'
-        ? renderTextChildren(body, scope)
-        : body.map((node) => scope.renderMarkdown(node)).join('\n\n')
-      ).split(LINE_TERMINATORS)
-  ).filter((line) => line.trim() !== '');
+  trimBlankEnds(
+    surface === 'slack'
+      ? slackLines(renderSlackChildren(body, scope, undefined))
+      : (surface === 'text'
+          ? renderTextChildren(body, scope)
+          : body.map((node) => scope.renderMarkdown(node)).join('\n\n')
+        ).split(LINE_TERMINATORS)
+  );
 
 export const embeddedText = (
   body: readonly PrimitiveNode[],

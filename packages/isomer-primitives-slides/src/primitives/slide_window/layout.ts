@@ -6,20 +6,34 @@
  */
 
 import type { SlideLayout } from '../../render/context';
+import { font } from '../../theme/base';
 import { window } from '../../theme/components/window';
 import { scalePx } from '../../theme/scale';
-import type { SlideWindowChrome } from '../../theme/variants';
-import { lineBox } from '../size';
+import { lineBox, monoLines, wrappedLines } from '../size';
 
-/** The layout a window's body nodes get inside `layout`: less its border, one-line title bar, and body padding. */
+import { windowTitle } from './title';
+import type { SlideWindowNode } from './types';
+
+/** The layout a window's body nodes get inside `layout`: less its border, its title bar with the title wrapped across it, and body padding. */
 export const windowBodyLayout = (
   { width, height }: SlideLayout,
-  chrome: SlideWindowChrome
+  node: SlideWindowNode
 ): SlideLayout => {
-  const slack = chrome === 'slack';
+  const slack = node.chrome === 'slack';
   const border = scalePx(window.border);
+  const role = slack ? window.slackBar : window.bar;
+  const across = Math.max(
+    0,
+    width -
+      2 * border -
+      2 * scalePx(slack ? window.slackBarPaddingX : window.barPaddingX)
+  );
+  const title = windowTitle(node);
+  const lines = slack
+    ? wrappedLines(title, scalePx(role.size), across, font.tracking.none)
+    : monoLines(title, scalePx(role.size), across);
   const bar =
-    lineBox(slack ? window.slackBar : window.bar) +
+    lines * lineBox(role) +
     2 * scalePx(slack ? window.slackBarPaddingY : window.barPaddingY) +
     border;
   const padY = scalePx(slack ? window.slackBodyPadding : window.bodyPaddingY);
