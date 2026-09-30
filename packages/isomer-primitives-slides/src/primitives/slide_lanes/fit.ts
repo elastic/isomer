@@ -12,10 +12,9 @@ import { scalePx } from '../../theme/scale';
 import { type SlideSize, slideSizes } from '../../theme/variants';
 import { slideLayout } from '../layout';
 import {
-  codeGrowth,
   lineBox,
   lineFill,
-  measureMarks,
+  marksHeight,
   measureText,
   trackWidth,
   wrappedLines,
@@ -88,22 +87,20 @@ export const lanesHeight = (
     [1, 1],
     notes.columnGaps[step]
   );
-  const noteHeight = ({ title, body }: { title: string; body: string }) => {
-    const bodyRole = { ...notes.body, size: notes.bodySizes[step] };
-    const { lines } = measureMarks(body, bodyRole, column * lineFill);
-    return (
-      wrappedLines(
-        title,
-        scalePx(notes.titleSizes[step]),
-        column * lineFill,
-        notes.title.tracking
-      ) *
-        lineBox({ ...notes.title, size: notes.titleSizes[step] }) +
-      scalePx(notes.itemGap) +
-      lines * lineBox(bodyRole) +
-      codeGrowth(body, lines)
+  const noteHeight = ({ title, body }: { title: string; body: string }) =>
+    wrappedLines(
+      title,
+      scalePx(notes.titleSizes[step]),
+      column * lineFill,
+      notes.title.tracking
+    ) *
+      lineBox({ ...notes.title, size: notes.titleSizes[step] }) +
+    scalePx(notes.itemGap) +
+    marksHeight(
+      body,
+      { ...notes.body, size: notes.bodySizes[step] },
+      column * lineFill
     );
-  };
   const noteRows = Array.from(
     { length: Math.ceil(items.length / 2) },
     (_, row) => Math.max(...items.slice(2 * row, 2 * row + 2).map(noteHeight))

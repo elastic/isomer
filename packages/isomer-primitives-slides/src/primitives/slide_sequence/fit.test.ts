@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 
 import { findings, measured, nodeBox, slideOf } from '../../examples/measure';
 import { frameContentWidth } from '../../theme/components/frame';
+import { marks } from '../../theme/components/marks';
 import { sequence, sequenceFit } from '../../theme/components/sequence';
 import { scalePx } from '../../theme/scale';
 import { layoutContext, renderedStep } from '../size.fixtures';
@@ -19,9 +20,12 @@ import { fullExample } from './examples';
 import { sequenceLoad, sequenceStep, wrapHeight } from './fit';
 import { sequenceMaxMessages, type SlideSequenceNode } from './schema';
 
-/** The first `count` messages of {@link fullExample}, with the actors they name. */
+/** The first `count` messages of {@link fullExample}, without code marks, with the actors they name. */
 const firstMessages = (count: number): SlideSequenceNode => {
-  const messages = fullExample.messages.slice(0, count);
+  const messages = fullExample.messages.slice(0, count).map((message) => ({
+    ...message,
+    label: message.label.replaceAll('`', ''),
+  }));
   return {
     ...fullExample,
     actors: fullExample.actors.filter(({ id }) =>
@@ -30,6 +34,8 @@ const firstMessages = (count: number): SlideSequenceNode => {
     messages,
   };
 };
+
+const codeRise = 2 * (scalePx(marks.codePaddingY) + scalePx(marks.codeBorder));
 
 const inSplit = (node: SlideSequenceNode) => ({
   type: 'slideSplit',
@@ -98,6 +104,27 @@ describe('sequence budgets fit what they allow', () => {
   });
 });
 
+describe('labels set as code', () => {
+  const plain = firstMessages(sequenceFit.l);
+  const coded: SlideSequenceNode = {
+    ...plain,
+    messages: plain.messages.map((message) => ({
+      ...message,
+      label: `\`${message.label.replaceAll('**', '')}\``,
+    })),
+  };
+
+  it('add each chip’s padding and border, so the l budget of them takes m', async () => {
+    expect(wrapHeight(plain, 'l', frameContentWidth)).toBe(0);
+    expect(wrapHeight(coded, 'l', frameContentWidth)).toBe(
+      coded.messages.length * codeRise
+    );
+    expect(sequenceStep(plain, layoutContext())).toBe('l');
+    expect(sequenceStep(coded, layoutContext())).toBe('m');
+    expect(await findings(slideOf(tallestExample, coded))).toEqual([]);
+  });
+});
+
 describe('long actor and message labels', () => {
   const node: SlideSequenceNode = {
     type: 'slideSequence',
@@ -121,8 +148,9 @@ describe('long actor and message labels', () => {
   };
 
   it('counts what wrapping adds, in message rows', () => {
-    expect(sequenceLoad(fullExample, 'l', frameContentWidth)).toBe(
-      fullExample.messages.length
+    const plain = firstMessages(sequenceMaxMessages);
+    expect(sequenceLoad(plain, 'l', frameContentWidth)).toBe(
+      plain.messages.length
     );
     const [pane] = paneWidths(frameContentWidth, 'even', 'gap');
     const wrapped = sequenceLoad(node, 'l', pane);
@@ -185,20 +213,31 @@ describe('a label set as code, or in a word wider than its span', () => {
   };
 
   it.each([
-    { label: '`POST /api/v1/payments/authorize/card-token`', lines: 4 },
-    { label: '`authorize(card, amount)` then `capture(id)`', lines: 3 },
-    { label: 'Supercalifragilisticexpialidocious', lines: 2 },
+    {
+      label: '`POST /api/v1/payments/authorize/card-token`',
+      lines: 4,
+      code: true,
+    },
+    {
+      label: '`authorize(card, amount)` then `capture(id)`',
+      lines: 3,
+      code: true,
+    },
+    { label: 'Supercalifragilisticexpialidocious', lines: 2, code: false },
     {
       label: 'Send https://example.com/orders/1234567890/receipts/latest now',
       lines: 5,
+      code: false,
     },
   ])(
-    'counts the $lines lines takumi draws of $label, or one more',
-    async ({ label, lines }) => {
+    'counts the $lines lines takumi draws of $label, or one more, and each line’s chip',
+    async ({ label, lines, code }) => {
       expect(await drawnLines(labelled(label))).toBe(lines);
       const counted = wrapHeight(labelled(label), 'l', pane) / lineHeight + 1;
       expect(counted).toBeGreaterThanOrEqual(lines);
-      expect(counted).toBeLessThanOrEqual(lines + 1);
+      expect(counted).toBeLessThanOrEqual(
+        (lines + 1) * (1 + (code ? codeRise / lineHeight : 0))
+      );
     }
   );
 

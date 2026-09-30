@@ -12,10 +12,9 @@ import { scalePx } from '../../theme/scale';
 import { type SlideSize, slideSizes } from '../../theme/variants';
 import { slideLayout } from '../layout';
 import {
-  codeGrowth,
   lineBox,
   lineFill,
-  measureMarks,
+  marksHeight,
   measureText,
   packedLines,
   wrappedLines,
@@ -54,14 +53,16 @@ const bandHeight = (
     return Infinity;
   }
   const rows = packedLines(widths, scalePx(theme.chipGap), inner);
-  const bodyRole = { ...theme.body, size: theme.bodySizes[step] };
-  const { lines } = measureMarks(body, bodyRole, inner * lineFill);
   const content = chips
     ? rows *
         (lineBox({ ...chip.type, size: theme.chipSizes[step] }) +
           2 * (scalePx(chip.paddingY) + scalePx(chip.border))) +
       (rows - 1) * scalePx(theme.chipGap)
-    : lines * lineBox(bodyRole) + codeGrowth(body, lines);
+    : marksHeight(
+        body,
+        { ...theme.body, size: theme.bodySizes[step] },
+        inner * lineFill
+      );
   const named =
     wrappedLines(
       name,

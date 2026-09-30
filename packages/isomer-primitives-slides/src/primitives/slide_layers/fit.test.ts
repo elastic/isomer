@@ -9,6 +9,8 @@ import { describe, expect, it } from 'vitest';
 
 import { findings, measured, nodeBox, slideOf } from '../../examples/measure';
 import { frameContentWidth } from '../../theme/components/frame';
+import { marks } from '../../theme/components/marks';
+import { scalePx } from '../../theme/scale';
 import { type SlideSize, slideSizes } from '../../theme/variants';
 import { openBody, withLayout } from '../layout';
 import { renderedStep } from '../size.fixtures';
@@ -21,6 +23,13 @@ import { layersHeight, layersStep } from './fit';
 import type { SlideLayer, SlideLayersNode } from './schema';
 
 const oneLine = 'Routes, rate-limits, and authenticates every request';
+const retries =
+  ', then retries the ones that fail with a backoff that doubles each time';
+const calls = 'Calls authorize(card) on every request';
+const codedCalls = 'Calls `authorize(card)` on every request';
+const codedLines =
+  'Calls `authorize(card)` then `capture(id)` on each order, and `refund(id)` or `void(id)` when it fails';
+const codeRise = 2 * (scalePx(marks.codePaddingY) + scalePx(marks.codeBorder));
 const twoLines = `${oneLine}, then retries the ones that fail with a backoff that doubles each time`;
 
 const stack = (...bodies: string[]): SlideLayersNode => ({
@@ -143,7 +152,12 @@ describe('layersHeight', () => {
     { name: 'chips in every layer', node: allChips(6) },
     {
       name: 'code in a body',
-      node: stack('Calls `authorize(card)` on every request', oneLine, oneLine),
+      node: stack(codedCalls, oneLine, oneLine),
+    },
+    {
+      name: 'code on every line of every body',
+      node: stack(...repeat(4, codedLines)),
+      slack: 4 * 2 * codeRise,
     },
     {
       name: 'a name broken across lines',
@@ -155,14 +169,14 @@ describe('layersHeight', () => {
         ],
       },
     },
-  ] as { name: string; node: SlideLayersNode }[])(
+  ] as { name: string; node: SlideLayersNode; slack?: number }[])(
     'is never less than takumi draws of $name, at any step',
-    async ({ node }) => {
+    async ({ node, slack = 0 }) => {
       for (const size of slideSizes) {
         const { height } = await drawn(slideOf({ ...node, size }));
         const estimate = layersHeight(node, size, openBody.width);
         expect(estimate).toBeGreaterThanOrEqual(height);
-        expect(estimate - height).toBeLessThan(2 * node.layers.length);
+        expect(estimate - height).toBeLessThan(2 * node.layers.length + slack);
       }
     }
   );
@@ -181,6 +195,18 @@ describe('layersStep', () => {
       ).toBe(slideSizes[slideSizes.indexOf(step) + 1]);
     }
   );
+
+  it('takes m where code chips grow the bands past the height plain bodies take at l', async () => {
+    const plain = stack(...repeat(4, `${calls}${retries}`));
+    const coded = stack(...repeat(4, `${codedCalls}${retries}`));
+    const height = layersHeight(plain, 'l', openBody.width);
+    expect(layersHeight(coded, 'l', openBody.width)).toBe(
+      height + 4 * codeRise
+    );
+    expect(layersStep(plain, inLayout(openBody.width, height))).toBe('l');
+    expect(layersStep(coded, inLayout(openBody.width, height))).toBe('m');
+    expect(await findings(slideOf(tallestExample, coded))).toEqual([]);
+  });
 
   it('takes s, the smallest step, where nothing fits', () => {
     expect(layersStep(fullExample, inLayout(openBody.width, 1))).toBe('s');
