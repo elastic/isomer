@@ -22,7 +22,7 @@ import {
   type SlackRichTextText,
 } from '@elastic/isomer-sdk/slack';
 
-import { marksRichText, marksSlack, richTextRun } from './marks';
+import { marksRichText, marksSlack, parseMarks, richTextRun } from './marks';
 
 /** Whether `text` holds a character `mrkdwn` reads as formatting and {@link escapeMrkdwn} leaves as is. */
 export const hasMrkdwnDelimiter = (text: string): boolean =>
@@ -31,6 +31,25 @@ export const hasMrkdwnDelimiter = (text: string): boolean =>
 /** Whether a `mrkdwn` code block might not print `text` as written: `codeBlock` breaks a backtick fence, and Slack reads `<` and the `&amp;`, `&lt;`, and `&gt;` escapes. */
 export const alteredInCodeBlock = (text: string): boolean =>
   /```|<|&(?:amp|lt|gt);/.test(text);
+
+/** Authored text a `mrkdwn` string carries: as written, with the marks {@link marksSlack} draws, or in a code block. */
+export type MrkdwnSource =
+  string | { readonly marks: string } | { readonly code: string };
+
+const keptInMrkdwn = (source: MrkdwnSource): boolean =>
+  typeof source === 'string'
+    ? !hasMrkdwnDelimiter(source)
+    : 'code' in source
+      ? !alteredInCodeBlock(source.code)
+      : parseMarks(source.marks).every(({ kind, text }) =>
+          kind === 'code'
+            ? !alteredInCodeBlock(text)
+            : !hasMrkdwnDelimiter(text)
+        );
+
+/** Whether Slack prints every source in `mrkdwn` as authored; when it would not, the text goes as literal `rich_text`. */
+export const mrkdwnKeeps = (sources: readonly MrkdwnSource[]): boolean =>
+  sources.every(keptInMrkdwn);
 
 /** Whether Slack keeps all of `text` in a field of `limit` characters. */
 export const fitsSlack = (text: string, limit: number): boolean =>
@@ -90,29 +109,33 @@ export const slackHeading = (
       );
 };
 
-/** A `mrkdwn` section when it keeps all of `text`, `fallback` otherwise. */
+/** A `mrkdwn` section when it keeps all of `text` and prints `sources` as authored, `fallback` otherwise. */
 export const slackSection = (
   text: string,
-  fallback: () => SlackBlock
+  fallback: () => SlackBlock,
+  sources: readonly MrkdwnSource[]
 ): SlackBlock =>
-  fitsSlack(text, SLACK_LIMITS.sectionTextChars)
+  mrkdwnKeeps(sources) && fitsSlack(text, SLACK_LIMITS.sectionTextChars)
     ? { type: 'section', text: { type: 'mrkdwn', text } }
     : fallback();
 
-/** A one-element `mrkdwn` context when it keeps all of `text`, `fallback` otherwise. */
+/** A one-element `mrkdwn` context when it keeps all of `text` and prints `sources` as authored, `fallback` otherwise. */
 export const slackContext = (
   text: string,
-  fallback: () => SlackBlock
+  fallback: () => SlackBlock,
+  sources: readonly MrkdwnSource[]
 ): SlackBlock =>
-  fitsSlack(text, SLACK_LIMITS.contextElementChars)
+  mrkdwnKeeps(sources) && fitsSlack(text, SLACK_LIMITS.contextElementChars)
     ? { type: 'context', elements: [{ type: 'mrkdwn', text }] }
     : fallback();
 
-/** A section of `mrkdwn` fields when each keeps all of its text, `fallback` otherwise. */
+/** A section of `mrkdwn` fields when each keeps all of its text and `sources` print as authored, `fallback` otherwise. */
 export const slackFields = (
   fields: readonly string[],
-  fallback: () => SlackBlock
+  fallback: () => SlackBlock,
+  sources: readonly MrkdwnSource[]
 ): SlackBlock =>
+  mrkdwnKeeps(sources) &&
   fields.length <= SLACK_LIMITS.fieldsPerSection &&
   fields.every((text) => fitsSlack(text, SLACK_LIMITS.sectionFieldChars))
     ? {
@@ -124,13 +147,17 @@ export const slackFields = (
 const marksRichTextBlock = (text: string): SlackBlock =>
   slackRichText(richTextSection(...marksRichText(text)));
 
-/** Authored text with marks as a section, whole at any length. */
+/** Authored text with marks as a section, whole and as authored. */
 export const slackMarksSection = (text: string): SlackBlock =>
-  slackSection(oneLine(marksSlack(text)), () => marksRichTextBlock(text));
+  slackSection(oneLine(marksSlack(text)), () => marksRichTextBlock(text), [
+    { marks: text },
+  ]);
 
-/** Authored text with marks as a context line, whole at any length. */
+/** Authored text with marks as a context line, whole and as authored. */
 export const slackMarksContext = (text: string): SlackBlock =>
-  slackContext(oneLine(marksSlack(text)), () => marksRichTextBlock(text));
+  slackContext(oneLine(marksSlack(text)), () => marksRichTextBlock(text), [
+    { marks: text },
+  ]);
 
 /** A code block under an optional caption, or literal rich text where `mrkdwn` would not print either as written. */
 export const slackCodePanel = (
@@ -138,26 +165,6 @@ export const slackCodePanel = (
   caption?: string,
   strong = false
 ): SlackBlock => {
-  const literal = () =>
-    slackRichText(
-      ...(caption
-        ? [
-            richTextSection(
-              richTextRun(caption, strong ? { bold: true } : undefined)
-            ),
-          ]
-        : []),
-      {
-        type: 'rich_text_preformatted',
-        elements: [{ type: 'text', text: source }],
-      }
-    );
-  if (
-    (caption !== undefined && hasMrkdwnDelimiter(caption)) ||
-    alteredInCodeBlock(source)
-  ) {
-    return literal();
-  }
   const heading = caption
     ? strong
       ? slackBold(caption)
@@ -165,6 +172,20 @@ export const slackCodePanel = (
     : '';
   return slackSection(
     [heading, codeBlock(source)].filter(Boolean).join('\n'),
-    literal
+    () =>
+      slackRichText(
+        ...(caption
+          ? [
+              richTextSection(
+                richTextRun(caption, strong ? { bold: true } : undefined)
+              ),
+            ]
+          : []),
+        {
+          type: 'rich_text_preformatted',
+          elements: [{ type: 'text', text: source }],
+        }
+      ),
+    [...(caption === undefined ? [] : [caption]), { code: source }]
   );
 };

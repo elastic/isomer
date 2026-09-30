@@ -64,7 +64,8 @@ export const slack = ({ items }: SlideDefinitionsNode): SlackBlock[] => [
             ...marksRichText(body)
           )
         ),
-      })
+      }),
+    items.flatMap(({ term, body }) => [term, { marks: body }])
   ),
 ];
 
