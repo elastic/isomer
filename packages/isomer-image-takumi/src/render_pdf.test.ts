@@ -20,7 +20,7 @@ const runtimeReturning = (
   validation: (composition: unknown) => { valid: boolean; errors: [] },
   seen: (options: unknown) => void = () => undefined
 ): PdfRuntime => ({
-  validate: validation,
+  validate: (composition) => ({ ...validation(composition), composition }),
   surfaces: {
     svg: {
       renderPages: (compositions, options) => {
@@ -89,6 +89,38 @@ describe('renderPdf', () => {
       { valid: true, errors: [] },
       { valid: true, errors: [] },
     ]);
+  });
+
+  it('throws rather than draw a page the runtime returned no copy of', async () => {
+    let drawn = false;
+    const runtime: PdfRuntime = {
+      validate: (composition) => ({
+        valid: true,
+        errors: [],
+        composition: (composition as { title?: string }).title
+          ? undefined
+          : composition,
+      }),
+      surfaces: {
+        svg: {
+          renderPages: () => {
+            drawn = true;
+            return { pages: [], css: '', width: 1, height: 1 };
+          },
+        },
+      },
+    };
+
+    await expect(
+      renderPdf(
+        runtime,
+        [{ type: 'view' }, { type: 'view', title: 'unchecked' }],
+        createTakumiImageBackend()
+      )
+    ).rejects.toThrow(
+      'renderPdf: runtime.validate returned no checked composition'
+    );
+    expect(drawn).toBe(false);
   });
 
   it('renders every composition and reports each validation in order', async () => {

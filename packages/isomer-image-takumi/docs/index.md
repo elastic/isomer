@@ -41,7 +41,7 @@ const { png, validation } = await renderPng(runtime, composition, takumi, {
 });
 ```
 
-The composition is rendered even when invalid — `validation` is how a caller finds out, rather than a thrown error — unless it was refused before parsing, which throws `CompositionValidationError`. What is drawn is the `composition` the validation result carries, the copy it checked, so `validation` describes the image. `runtime` and `composition` are declared structurally, the same way `ImageInput` is.
+The composition is rendered even when invalid — `validation` is how a caller finds out, rather than a thrown error — unless it was refused before parsing, which throws `CompositionValidationError`. What is drawn is the `composition` the validation result carries, the copy it checked, so `validation` describes the image; a runtime whose `validate` returns no such copy is refused with an error rather than drawing the input. `runtime` and `composition` are declared structurally, the same way `ImageInput` is.
 
 ## Rendering a PDF
 

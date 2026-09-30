@@ -21,7 +21,7 @@ const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 
 /** Stands in for `IsomerRuntime`: validates by a simple rule, renders a fixed box. */
 const runtimeReturning = (validation: PngValidationResult): PngRuntime => ({
-  validate: () => validation,
+  validate: (composition) => ({ ...validation, composition }),
   surfaces: {
     svg: {
       render: (_composition, options) => {
@@ -117,10 +117,48 @@ describe('renderPng', () => {
     expect(result.validation).toEqual({ valid: true, errors: [] });
   });
 
+  it('throws rather than draw the input when the runtime returns no copy', async () => {
+    const drawn: unknown[] = [];
+    const runtimeWith = (validation: PngValidationResult): PngRuntime => ({
+      validate: () => ({ ...validation, composition: undefined }),
+      surfaces: {
+        svg: {
+          render: (composition) => {
+            drawn.push(composition);
+            return { element: null, css: '', width: 1, height: 1 };
+          },
+        },
+      },
+    });
+    const errors = [{ path: '', message: 'input nests deeper than 64 levels' }];
+
+    await expect(
+      renderPng(
+        runtimeWith({ valid: false, errors }),
+        { type: 'view' },
+        createTakumiImageBackend()
+      )
+    ).rejects.toMatchObject({
+      name: 'CompositionValidationError',
+      code: 'COMPOSITION_INVALID',
+      errors,
+    });
+    await expect(
+      renderPng(
+        runtimeWith({ valid: true, errors: [] }),
+        { type: 'view' },
+        createTakumiImageBackend()
+      )
+    ).rejects.toThrow(
+      'renderPng: runtime.validate returned no checked composition'
+    );
+    expect(drawn).toEqual([]);
+  });
+
   it('forwards svg and raster options to the render and the backend', async () => {
     let seenSvgOptions: unknown;
     const runtime: PngRuntime = {
-      validate: () => ({ valid: true, errors: [] }),
+      validate: (composition) => ({ valid: true, errors: [], composition }),
       surfaces: {
         svg: {
           render: (_composition, options) => {

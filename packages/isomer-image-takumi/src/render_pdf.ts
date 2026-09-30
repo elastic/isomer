@@ -6,17 +6,19 @@
  */
 
 import type { PdfInput, TakumiPdfBackend, TakumiPdfOptions } from './backend';
-import type { PngSvgOptions, PngValidationResult } from './render_png';
+import {
+  checkedForDrawing,
+  type PngCheckedValidationResult,
+  type PngSvgOptions,
+  type PngValidationResult,
+} from './render_png';
 
 /**
  * The slice of `IsomerRuntime` this helper needs, declared structurally like
  * {@link PdfInput}. A runtime built with `frames` satisfies it.
  */
 export interface PdfRuntime {
-  /** `composition` is the copy validation checked, which is what gets drawn. */
-  validate(
-    composition: unknown
-  ): PngValidationResult & { composition?: unknown };
+  validate(composition: unknown): PngCheckedValidationResult;
   surfaces: {
     svg: {
       renderPages(
@@ -58,14 +60,12 @@ export const renderPdf = async (
   backend: TakumiPdfBackend,
   { svg, ...options }: RenderPdfOptions = {}
 ): Promise<RenderPdfResult> => {
-  const checked = deck.map((composition) => {
-    const { composition: copy = composition, ...validation } =
-      runtime.validate(composition);
-    return { copy, validation };
-  });
-  const validations = checked.map(({ validation }) => validation);
+  const pages = deck.map((composition) =>
+    checkedForDrawing('renderPdf', runtime.validate(composition))
+  );
+  const validations = pages.map(({ validation }) => validation);
   const rendered = runtime.surfaces.svg.renderPages(
-    checked.map(({ copy }) => copy),
+    pages.map(({ checked }) => checked),
     {
       ...svg,
       onValidationError: 'collect',
