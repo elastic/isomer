@@ -13,6 +13,8 @@ import {
   type SlackBlock,
 } from '@elastic/isomer-sdk/slack';
 
+import { richTextSection, slackRichText, slackSection } from '../../render';
+import { richTextRun } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -49,18 +51,16 @@ export const slack = ({ panels }: SlideCodeNode): SlackBlock[] =>
           } satisfies SlackBlock,
         ]
       : []),
-    {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: [
-          file ? escapeMrkdwn(oneLine(file)) : '',
-          codeBlock(lines.join('\n')),
-        ]
-          .filter(Boolean)
-          .join('\n'),
-      },
-    } satisfies SlackBlock,
+    slackSection(
+      [file ? escapeMrkdwn(oneLine(file)) : '', codeBlock(lines.join('\n'))]
+        .filter(Boolean)
+        .join('\n'),
+      () =>
+        slackRichText(...(file ? [richTextSection(richTextRun(file))] : []), {
+          type: 'rich_text_preformatted',
+          elements: [{ type: 'text', text: lines.join('\n') }],
+        })
+    ),
   ]);
 
 /** Catalog, schema, and renderers for {@link SlideCodeNode}. */

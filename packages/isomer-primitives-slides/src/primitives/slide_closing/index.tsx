@@ -11,11 +11,12 @@ import { md } from '@elastic/isomer-sdk/markdown';
 import {
   bold,
   escapeMrkdwn,
-  formatHeaderText,
   link,
+  markdownContentToSlackBlocks,
   type SlackBlock,
 } from '@elastic/isomer-sdk/slack';
 
+import { slackHeading, slackRichText, slackSection } from '../../render';
 import {
   marksMarkdown,
   marksRichText,
@@ -64,15 +65,18 @@ export const text = ({ title, links, paths = [] }: SlideClosingNode): string =>
     .filter(Boolean)
     .join('\n\n');
 
-export const markdown = ({ title, links, paths = [] }: SlideClosingNode) => [
-  md.heading(1, title),
-  ...links.map(({ label, href, text: shown }) =>
+const linkParagraphs = (links: readonly SlideClosingLink[]) =>
+  links.map(({ label, href, text: shown }) =>
     md.paragraph(
       md.strong(label.toUpperCase()),
       ` ${separator.value} `,
       href ? md.link(shown, href) : shown
     )
-  ),
+  );
+
+export const markdown = ({ title, links, paths = [] }: SlideClosingNode) => [
+  md.heading(1, title),
+  ...linkParagraphs(links),
   ...(paths.length > 0
     ? [
         md.list(
@@ -89,22 +93,21 @@ export const slack = ({
   links,
   paths = [],
 }: SlideClosingNode): SlackBlock[] => [
-  {
-    type: 'header',
-    text: { type: 'plain_text', text: formatHeaderText(title), emoji: true },
-  },
-  {
-    type: 'section',
-    text: {
-      type: 'mrkdwn',
-      text: links
-        .map(
-          ({ label, href, text: shown }) =>
-            `${bold(oneLine(label).toUpperCase())} ${separator.value} ${href ? link(href, oneLine(shown)) : escapeMrkdwn(oneLine(shown))}`
+  slackHeading(title),
+  slackSection(
+    links
+      .map(
+        ({ label, href, text: shown }) =>
+          `${bold(oneLine(label).toUpperCase())} ${separator.value} ${href ? link(href, oneLine(shown)) : escapeMrkdwn(oneLine(shown))}`
+      )
+      .join('\n'),
+    () =>
+      slackRichText(
+        ...markdownContentToSlackBlocks(linkParagraphs(links)).flatMap(
+          (block) => (block.type === 'rich_text' ? block.elements : [])
         )
-        .join('\n'),
-    },
-  },
+      )
+  ),
   ...(paths.length > 0
     ? [
         {

@@ -9,7 +9,14 @@ import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
 import { bold, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import { marksMarkdown, marksSlack, plainText } from '../../render/marks';
+import { richTextSection, slackFields, slackRichText } from '../../render';
+import {
+  marksMarkdown,
+  marksRichText,
+  marksSlack,
+  plainText,
+  richTextRun,
+} from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -33,13 +40,23 @@ export const markdown = ({ items }: SlideDefinitionsNode) => [
 ];
 
 export const slack = ({ items }: SlideDefinitionsNode): SlackBlock[] => [
-  {
-    type: 'section',
-    fields: items.map(({ term, body }) => ({
-      type: 'mrkdwn',
-      text: `${bold(oneLine(term))}\n${oneLine(marksSlack(body))}`,
-    })),
-  },
+  slackFields(
+    items.map(
+      ({ term, body }) => `${bold(oneLine(term))}\n${oneLine(marksSlack(body))}`
+    ),
+    () =>
+      slackRichText({
+        type: 'rich_text_list',
+        style: 'bullet',
+        elements: items.map(({ term, body }) =>
+          richTextSection(
+            richTextRun(term, { bold: true }),
+            richTextRun(': '),
+            ...marksRichText(body)
+          )
+        ),
+      })
+  ),
 ];
 
 /** Catalog, schema, and renderers for {@link SlideDefinitionsNode}. */

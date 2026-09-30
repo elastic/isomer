@@ -7,11 +7,10 @@
 
 import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
-import {
-  markdownContentToSlackBlocks,
-  type SlackBlock,
-} from '@elastic/isomer-sdk/slack';
+import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
+import { richTextSection, slackRichText } from '../../render';
+import { richTextRun } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -37,8 +36,25 @@ export const markdown = ({ source, targets }: SlideFanoutNode) => [
   ),
 ];
 
-export const slack = (node: SlideFanoutNode): SlackBlock[] =>
-  markdownContentToSlackBlocks(markdown(node));
+export const slack = ({ source, targets }: SlideFanoutNode): SlackBlock[] => [
+  slackRichText(
+    richTextSection(
+      richTextRun(source, { bold: true }),
+      richTextRun(` ${arrow.value}`)
+    ),
+    {
+      type: 'rich_text_list',
+      style: 'bullet',
+      elements: targets.map(({ name, body }) =>
+        richTextSection(
+          richTextRun(name, { bold: true }),
+          richTextRun(': '),
+          richTextRun(body)
+        )
+      ),
+    }
+  ),
+];
 
 /** Catalog, schema, and renderers for {@link SlideFanoutNode}. */
 export const slideFanoutPrimitive = definePrimitive({

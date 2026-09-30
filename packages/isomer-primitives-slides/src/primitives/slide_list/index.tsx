@@ -9,11 +9,10 @@ import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import { slackCaption } from '../../render';
+import { slackCaption, slackMarksContext } from '../../render';
 import {
   marksMarkdown,
   marksRichText,
-  marksSlack,
   plainText,
   richTextRun,
 } from '../../render/marks';
@@ -76,14 +75,7 @@ export const slack = ({
       },
     ],
   },
-  ...(footnote
-    ? [
-        {
-          type: 'context',
-          elements: [{ type: 'mrkdwn', text: oneLine(marksSlack(footnote)) }],
-        } satisfies SlackBlock,
-      ]
-    : []),
+  ...(footnote ? [slackMarksContext(footnote)] : []),
 ];
 
 /** Catalog, schema, and renderers for {@link SlideListNode}. */

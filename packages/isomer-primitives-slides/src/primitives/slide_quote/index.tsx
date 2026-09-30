@@ -9,7 +9,14 @@ import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
 import { escapeMrkdwn, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import { marksMarkdown, marksSlack, plainText } from '../../render/marks';
+import { richTextBreak, slackRichText, slackSection } from '../../render';
+import {
+  marksMarkdown,
+  marksRichText,
+  marksSlack,
+  plainText,
+  richTextRun,
+} from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -42,13 +49,20 @@ export const markdown = (node: SlideQuoteNode) =>
   );
 
 export const slack = (node: SlideQuoteNode): SlackBlock[] => [
-  {
-    type: 'section',
-    text: {
-      type: 'mrkdwn',
-      text: `> ${quoteOpen.value}${oneLine(marksSlack(node.text))}${quoteClose.value}\n> ${escapeMrkdwn(attribution(node))}`,
-    },
-  },
+  slackSection(
+    `> ${quoteOpen.value}${oneLine(marksSlack(node.text))}${quoteClose.value}\n> ${escapeMrkdwn(attribution(node))}`,
+    () =>
+      slackRichText({
+        type: 'rich_text_quote',
+        elements: [
+          richTextRun(quoteOpen.value),
+          ...marksRichText(node.text),
+          richTextRun(quoteClose.value),
+          richTextBreak,
+          richTextRun(attribution(node)),
+        ],
+      })
+  ),
 ];
 
 /** Catalog, schema, and renderers for {@link SlideQuoteNode}. */

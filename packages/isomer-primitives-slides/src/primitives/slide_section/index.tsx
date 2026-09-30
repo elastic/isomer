@@ -9,11 +9,11 @@ import { sanitizeNavigationHref } from '@elastic/isomer-sdk';
 import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
 import {
-  formatHeaderText,
   markdownContentToSlackBlocks,
   type SlackBlock,
 } from '@elastic/isomer-sdk/slack';
 
+import { slackHeading } from '../../render';
 import { marksMarkdown, plainText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
@@ -55,14 +55,7 @@ export const markdown = (node: SlideSectionNode) => [
 
 /** A line links in Slack only when its href is an absolute URL. */
 export const slack = (node: SlideSectionNode): SlackBlock[] => [
-  {
-    type: 'header',
-    text: {
-      type: 'plain_text',
-      text: formatHeaderText(heading(node)),
-      emoji: true,
-    },
-  },
+  slackHeading(heading(node)),
   ...markdownContentToSlackBlocks(contentsList(node)),
 ];
 

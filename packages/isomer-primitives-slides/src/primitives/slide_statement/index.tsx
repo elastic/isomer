@@ -6,8 +6,9 @@
  */
 
 import { md } from '@elastic/isomer-sdk/markdown';
-import { formatHeaderText, type SlackBlock } from '@elastic/isomer-sdk/slack';
+import { type SlackBlock } from '@elastic/isomer-sdk/slack';
 
+import { slackHeading } from '../../render';
 import { marksMarkdown, plainText, stripMarks } from '../../render/marks';
 import { definePrimitive } from '../define';
 
@@ -27,16 +28,7 @@ export const markdown = ({ text: statement }: SlideStatementNode) => [
 
 export const slack = ({
   text: statement,
-}: SlideStatementNode): SlackBlock[] => [
-  {
-    type: 'header',
-    text: {
-      type: 'plain_text',
-      text: formatHeaderText(stripMarks(statement)),
-      emoji: true,
-    },
-  },
-];
+}: SlideStatementNode): SlackBlock[] => [slackHeading(stripMarks(statement))];
 
 /** Catalog, schema, and renderers for {@link SlideStatementNode}. */
 export const slideStatementPrimitive = definePrimitive({

@@ -91,6 +91,8 @@ There is no `svg` renderer, and adding one is the mistake this pack exists to ru
 
 The `text`, `markdown`, and `slack` renderers live in `index.tsx`. A `markdown` renderer returns the SDK's `md` builder content, never a string, so the serializer escapes each value where it lands. A one-line authored value goes through the SDK's `oneLine` on the text and Slack surfaces; `src/content_parity.test.ts` fails when a line break survives on any of them. Every primitive has a `slack` renderer, and `src/registry.test.ts` fails when one does not.
 
+Slack clamps `header`, `section`, field, and `context` text below what `wrappedText()`, and with `mrkdwn` escaping `lineText()`, accept, and leaves `rich_text` whole. Build those blocks through `src/render/slack_text.ts` (`slackHeading`, `slackSection`, `slackContext`, `slackFields`, `slackMarksSection`, `slackMarksContext`), which keep the block when it holds the whole text and fall back to rich text when it does not; `src/slack_limits.test.ts` checks each such slot at its limit and one past it.
+
 Spread `nodeAnchor(context, { type })` from `@elastic/isomer-sdk` on the renderer's root element. It renders nothing unless a host asks for anchors, and it is what `checkLayout` pairs measured boxes to nodes by.
 
 ## Children come from the schema field
@@ -167,7 +169,8 @@ A container that also draws chrome of its own sets two more. `hasOwnContent: () 
 Each primitive's `index.test.ts` covers its schema rejections and every surface's output. These pack-level tests run over the whole registry, so a new primitive is covered by registering it:
 
 - `src/content_parity.test.ts` checks that text, Markdown, Slack, and HTML carry every authored string of every example, reading Markdown back through `mdast-util-from-markdown` with GFM and Slack mrkdwn back to its text; that entity-like text such as `&lt;` and unpaired `` ` `` or `*` print as authored, one field at a time; and that a line break in a one-line field reads as a space on each surface.
-- `src/examples/fit.test.ts` renders every example on a slide (a frame as it is, a title slide alone, anything else under a heading and lede), measures it with takumi, and expects no finding from `checkLayout` and nothing past the frame's body.
+- `src/slack_limits.test.ts` renders each Slack slot whose limit is below its schema cap at the limit and one past it, and expects the authored text whole both times.
+- `src/examples/fit.test.ts` renders every example on a slide (a frame as it is; a title, section, or closing slide alone on an inverse frame; a statement or quote alone on a page frame; anything else under a heading and lede on a page frame), measures it with takumi, and expects no finding from `checkLayout` and nothing past the frame's body.
 - `src/conformance.test.ts` runs the SDK's conformance harness.
 - `src/primitives/authored_text.test.ts` fails when any string in an example accepts more text than the body can draw.
 - `src/heading_levels.test.ts` fails when an example's HTML headings and Markdown headings differ in level or order.
