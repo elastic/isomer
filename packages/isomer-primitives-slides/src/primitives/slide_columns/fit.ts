@@ -5,24 +5,49 @@
  * 2.0.
  */
 
+import type { SlideLayout } from '../../render/context';
 import { stripMarks } from '../../render/marks';
 import { displayColumns } from '../../render/mono';
 import { monoAdvance } from '../../theme/base';
 import { columns, columnsFit } from '../../theme/components/columns';
 import { frameContentWidth } from '../../theme/components/frame';
 import { scalePx } from '../../theme/scale';
-import type { SlideSize } from '../../theme/variants';
-import { lineFill, rowLoad, sizeForLoad, wrappedLines } from '../size';
+import { type SlideSize, slideSizes } from '../../theme/variants';
+import { slideLayout } from '../layout';
+import {
+  lineBox,
+  lineFill,
+  narrowing,
+  packedLines,
+  rowLoad,
+  sizeForLoad,
+  smallerStep,
+  widestWord,
+  wrappedLines,
+} from '../size';
 
 import type { SlideColumnsNode } from './schema';
 
+/** Budgets hold across the frame body; a narrower layout scales the load up, and no step breaks a title word. */
 export const columnsStep = (
   { items, footnote, size }: SlideColumnsNode,
-  crowding?: number
-): SlideSize =>
-  sizeForLoad(
-    size,
-    rowLoad(
+  { width, crowding } = slideLayout(undefined)
+): SlideSize => {
+  if (size) {
+    return size;
+  }
+  const inner = columnInnerWidth(items.length, width);
+  const unbroken =
+    slideSizes.find((step) =>
+      items.every(
+        ({ title }) =>
+          widestWord(stripMarks(title), columns.title.tracking) *
+            scalePx(columns.titleSizes[step]) <=
+          inner
+      )
+    ) ?? 's';
+  const load =
+    (rowLoad(
       items.map(({ title, tags = [], body }) => [
         stripMarks(title),
         ...tags,
@@ -32,42 +57,37 @@ export const columnsStep = (
       (footnote
         ? displayColumns(footnote.code) +
           displayColumns(stripMarks(footnote.text))
-        : 0),
-    columnsFit,
-    crowding
+        : 0)) *
+    narrowing(frameContentWidth, width);
+  return smallerStep(
+    sizeForLoad(undefined, load, columnsFit, crowding),
+    unbroken
   );
-
-const chipRows = (widths: readonly number[], width: number, gap: number) => {
-  let rows = 1;
-  let used = 0;
-  for (const chip of widths) {
-    if (used > 0 && used + gap + chip > width) {
-      rows += 1;
-      used = chip;
-    } else {
-      used += (used > 0 ? gap : 0) + chip;
-    }
-  }
-  return rows;
 };
+
+/** Text width inside each of `count` columns across `width`. */
+export const columnInnerWidth = (count: number, width: number): number =>
+  Math.max(
+    0,
+    (width -
+      (count - 1) *
+        (2 * scalePx(columns.columnPadding) + scalePx(columns.rule))) /
+      count
+  );
 
 /** The tallest column's title and tags, so every body starts level. */
 export const columnsHeadHeight = (
   items: SlideColumnsNode['items'],
-  step: SlideSize
+  step: SlideSize,
+  { width }: SlideLayout
 ): number => {
-  const inner =
-    (frameContentWidth -
-      (items.length - 1) *
-        (2 * scalePx(columns.columnPadding) + scalePx(columns.rule))) /
-    items.length;
-  const titlePx = scalePx(columns.titleSizes[step]);
-  const titleLine = titlePx * parseFloat(columns.title.lineHeight.value);
+  const inner = columnInnerWidth(items.length, width);
+  const titleSize = columns.titleSizes[step];
   const tagPx = scalePx(columns.tag.size);
   const tagFrame =
     2 * scalePx(columns.tagPaddingX) + 2 * scalePx(columns.tagBorder);
   const tagHeight =
-    tagPx * parseFloat(columns.tag.lineHeight.value) +
+    lineBox(columns.tag) +
     2 * scalePx(columns.tagPaddingY) +
     2 * scalePx(columns.tagBorder);
   const gap = scalePx(columns.tagGap);
@@ -76,17 +96,17 @@ export const columnsHeadHeight = (
       const titleHeight =
         wrappedLines(
           stripMarks(title),
-          titlePx,
+          scalePx(titleSize),
           inner * lineFill,
           columns.title.tracking
-        ) * titleLine;
+        ) * lineBox({ size: titleSize, lineHeight: columns.title.lineHeight });
       if (tags.length === 0) {
         return titleHeight;
       }
-      const rows = chipRows(
+      const rows = packedLines(
         tags.map((tag) => displayColumns(tag) * monoAdvance * tagPx + tagFrame),
-        inner,
-        gap
+        gap,
+        inner
       );
       return (
         titleHeight + scalePx(columns.gap) + rows * tagHeight + (rows - 1) * gap

@@ -20,7 +20,7 @@ export const catalog = {
   ],
   avoidWhen: [
     'The render speaks for itself and needs no pointers; use slideRender.',
-    'The parts are ideas, not places in a picture; list them with slideBulletList.',
+    'The parts are ideas, not places in a picture; list them with slideDefinitions.',
     'The same slide should appear on several surfaces; use slideRenderGrid.',
   ],
   example,

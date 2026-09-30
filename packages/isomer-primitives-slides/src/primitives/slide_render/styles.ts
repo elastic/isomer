@@ -21,7 +21,6 @@ export const renderModule = createStyleModule('render', ({ css }) => ({
     flex-direction: column;
     gap: ${render.captionGap};
     margin: 0;
-    max-width: ${render.fit.width};
     min-width: 0;
     width: 100%;
   `,
@@ -64,9 +63,6 @@ export const renderModule = createStyleModule('render', ({ css }) => ({
   bare: css`
     gap: ${frame.bodyGap};
     padding: ${frame.paddingTop} ${frame.paddingX} ${frame.paddingBottom};
-  `,
-  slideScale: css`
-    transform: scale(${render.fit.scale});
   `,
   output: css`
     box-sizing: border-box;

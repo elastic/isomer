@@ -23,7 +23,9 @@ export const catalog = {
   avoidWhen: [
     'There are exactly two sides, one per owner, each holding slide nodes; use slideSplit.',
     'The columns name who owns what; use slideTerritoryGroup.',
-    'The items are short points in a single list; use slideBulletList.',
+    'The items are terms the audience must learn; use slideDefinitions.',
+    'The items are short facts in a single list; use slideList.',
+    'Three or four options would sit in a slideSplit pane, too narrow for a column each; give them the slide’s full width.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

@@ -102,6 +102,30 @@ describe('slide builds', () => {
     expect(visibility(root)).toEqual(Array(5).fill(''));
   });
 
+  it('builds a slideList one row at a time, with or without terms', () => {
+    const plain = {
+      type: 'slideList',
+      label: 'Facts',
+      items: [{ body: 'One' }, { body: 'Two' }],
+      footnote: 'Always.',
+    };
+    const termed = {
+      type: 'slideList',
+      items: [
+        { term: 'A', body: 'One' },
+        { body: 'Two' },
+        { term: 'C', body: 'Three' },
+      ],
+    };
+    expect(slideBuilds(slide(plain, termed))).toBe(5);
+    const composition = slide(plain, termed);
+    const root = mount(composition);
+    showSlideBuild(root, composition, 3);
+    expect(visibility(root)).toEqual(['', '', '', 'hidden', 'hidden']);
+    expect(root.textContent).toContain('Facts');
+    expect(root.textContent).toContain('Always.');
+  });
+
   it('builds each occurrence of a reused node object on its own', () => {
     const composition = slide(two, two);
     const root = mount(composition);

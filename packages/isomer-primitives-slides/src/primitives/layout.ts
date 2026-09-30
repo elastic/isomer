@@ -9,7 +9,8 @@ import type { SlideLayout, SlideRenderContext } from '../render/context';
 import { withContextFields } from '../render/context_view';
 import { frameBodyHeight, frameContentWidth } from '../theme/components/frame';
 
-import { referenceRoom } from './slide_heading/fit';
+import { headingRoom, referenceRoom } from './slide_heading/fit';
+import type { SlideHeadingNode } from './slide_heading/schema';
 
 /** A frame's body with nothing above it. */
 export const openBody: SlideLayout = {
@@ -36,3 +37,17 @@ export const withLayout = (
   withContextFields(context, {
     layout: { width: Math.max(0, width), height: Math.max(0, height) },
   });
+
+const isHeading = (node: { type: string }): node is SlideHeadingNode =>
+  node.type === 'slideHeading';
+
+/** The layout a frame body gives its node at `index`: the whole body, or below a leading `slideHeading` the height it leaves. */
+export const frameBodyLayout = (
+  body: readonly { type: string }[],
+  index: number
+): SlideLayout => {
+  const [first] = body;
+  return index > 0 && first !== undefined && isHeading(first)
+    ? { ...openBody, height: headingRoom(first) }
+    : openBody;
+};

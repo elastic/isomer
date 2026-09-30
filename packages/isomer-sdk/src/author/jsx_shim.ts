@@ -361,6 +361,11 @@ const bodyNodeFromElement = <TNode extends PrimitiveNode>(
     ) {
       const nested = flattenChildren(rawChildren).map(parseChild);
       converted[unique.field] = unique.array ? nested : nested[0];
+    } else if (slots.length === 0 && flattenChildren(rawChildren).length > 0) {
+      throw new IsomerError(
+        'UNEXPECTED_CHILDREN',
+        `<${capitalize(type)}> takes no JSX children; pass nodes through the prop that holds them.`
+      );
     }
   }
 

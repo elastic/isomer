@@ -21,6 +21,7 @@ export const catalog = {
   avoidWhen: [
     'The destinations split by who owns them and ownership is the point; use slideTerritoryGroup.',
     'The points share no source; use slideBulletList.',
+    'The targets need more than a line each; use slideColumns.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

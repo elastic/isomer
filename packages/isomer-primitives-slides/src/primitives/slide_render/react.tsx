@@ -10,7 +10,9 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
+import { slideLayout } from '../layout';
 
+import { renderScale, scaledWidth } from './fit';
 import { headline } from './output';
 import { RenderPanel } from './panel';
 import { renderModule } from './styles';
@@ -23,18 +25,19 @@ export const react = (
 ): ReactNode => {
   const { handles: render } = renderModule;
   const { type, surface } = node;
+  const scale = renderScale(node, slideLayout(context));
   return (
     <figure
       {...nodeAnchor(context, { type })}
-      className={cls(context, render.root)}>
+      className={cls(context, render.root)}
+      style={{ maxWidth: `${scaledWidth(scale)}px` }}>
       <figcaption className={cls(context, render.caption)}>
         {headline(node)}
       </figcaption>
       <RenderPanel
         size={render.fit}
-        slideScale={render.slideScale}
         outputScale={render.outputScale}
-        {...{ node, surface, scope, context }}
+        {...{ node, surface, scope, context, scale }}
       />
     </figure>
   );

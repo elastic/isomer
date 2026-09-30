@@ -42,12 +42,12 @@ export const renderGrid = {
     lineHeight: font.lineHeight.body,
   },
   caption: { ...type.chrome, size: font.size.px24 },
-  // Each scale fits a slide in one cell under a one-line lede; two-row cells are height-bound.
+  // The largest scale each shape draws a slide at: one cell's width across the frame body.
   shape: {
     twoByOne: shape(2, 1, 0.42),
     threeByOne: shape(3, 1, 0.27),
-    twoByTwo: shape(2, 2, 0.21),
-    threeByTwo: shape(3, 2, 0.21),
+    twoByTwo: shape(2, 2, 0.42),
+    threeByTwo: shape(3, 2, 0.27),
   } satisfies Record<RenderGridShape, ReturnType<typeof shape>>,
   /** A tile shows more of a surface's output at this scale. */
   outputScale: literal('0.7'),

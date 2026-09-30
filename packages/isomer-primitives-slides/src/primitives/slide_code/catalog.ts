@@ -20,6 +20,7 @@ export const catalog = {
   ],
   avoidWhen: [
     'The snippet needs more than sixteen lines; cut it down to the lines that matter.',
+    'The output belongs to a place, like a terminal or a Slack channel; put it in a slideWindow.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

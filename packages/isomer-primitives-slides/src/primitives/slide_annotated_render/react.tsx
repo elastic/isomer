@@ -12,11 +12,13 @@ import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { marksReact } from '../../render/marks';
 import { layoutModule } from '../../theme/modules';
+import { slideLayout } from '../layout';
+import { scaledWidth } from '../slide_render/fit';
 import { headline } from '../slide_render/output';
 import { RenderPanel } from '../slide_render/panel';
 import { renderModule } from '../slide_render/styles';
 
-import { legendStep, renderStep } from './fit';
+import { annotatedScale, legendStep } from './fit';
 import { annotatedRenderModule } from './styles';
 import type { SlideAnnotatedRenderNode } from './types';
 
@@ -28,8 +30,9 @@ export const react = (
   const { handles: annotated } = annotatedRenderModule;
   const { handles: render } = renderModule;
   const { surface } = node;
-  const step = renderStep(context?.crowding);
-  const legend = legendStep(pins, context?.crowding);
+  const layout = slideLayout(context);
+  const scale = annotatedScale(node, layout);
+  const legend = legendStep(pins, layout);
   return (
     <div
       {...nodeAnchor(context, { type })}
@@ -37,20 +40,16 @@ export const react = (
       <div className={cls(context, annotated.grid)}>
         <figure
           {...nodeAnchor(context, { type: node.type })}
-          className={cls(
-            context,
-            annotated.figure,
-            annotated.figureSize[step]
-          )}>
+          className={cls(context, annotated.figure)}
+          style={{ maxWidth: `${scaledWidth(scale)}px` }}>
           <figcaption className={cls(context, render.caption)}>
             {headline(node)}
           </figcaption>
           <div className={cls(context, annotated.stage)}>
             <RenderPanel
               size={annotated.fit}
-              slideScale={annotated.slideScale[step]}
               outputScale={render.outputScale}
-              {...{ node, surface, scope, context }}
+              {...{ node, surface, scope, context, scale }}
             />
             {pins.map(({ x, y }, index) => (
               <span

@@ -13,10 +13,6 @@ import { frame } from './frame';
 const slideWidth = scalePx(frame.width);
 const slideHeight = scalePx(frame.height);
 
-/** Scale that draws a whole slide at `width` pixels wide, with that width as a token. */
-export const slideFit = (scale: number) =>
-  ({ scale: literal(String(scale)), width: px(slideWidth * scale) }) as const;
-
 export const render = {
   caption: { ...type.mono, size: font.size.px24 },
   captionGap: space.px14,
@@ -32,8 +28,8 @@ export const render = {
     offsetX: px(-slideWidth / 2),
     offsetY: px(-slideHeight / 2),
   },
-  // 0.38 × 1920 ≈ 730: a split column beside a code panel.
-  fit: slideFit(0.38),
+  /** The largest scale a render draws its slide at; 0.38 × 1920 ≈ 730, a split column beside a code panel. */
+  maxScale: literal('0.38'),
   output: {
     family: font.family.mono,
     size: font.size.px24,

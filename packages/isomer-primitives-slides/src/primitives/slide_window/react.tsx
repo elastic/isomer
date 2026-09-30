@@ -6,12 +6,14 @@
  */
 
 import { Fragment, type ReactNode } from 'react';
-import { nodeAnchor } from '@elastic/isomer-sdk';
+import { layoutRoom, nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { layoutModule } from '../../theme/modules';
+import { slideLayout, withLayout } from '../layout';
 
+import { windowBodyLayout } from './layout';
 import { windowModule } from './styles';
 import { windowTitle } from './title';
 import type { SlideWindowNode } from './types';
@@ -24,6 +26,10 @@ export const react = (
   const { body, chrome, type } = node;
   const { handles: window } = windowModule;
   const slack = chrome === 'slack';
+  const inside = withLayout(
+    context,
+    windowBodyLayout(slideLayout(context), chrome)
+  );
   return (
     <div
       {...nodeAnchor(context, { type })}
@@ -38,13 +44,14 @@ export const react = (
           {windowTitle(node)}
         </p>
         <div
+          {...layoutRoom(context)}
           className={cls(
             context,
             window.body,
             slack ? window.slackBody : window.appBody
           )}>
           {body.map((child, index) => (
-            <Fragment key={index}>{scope.renderReact(child, context)}</Fragment>
+            <Fragment key={index}>{scope.renderReact(child, inside)}</Fragment>
           ))}
         </div>
       </div>

@@ -15,6 +15,7 @@ import { slideDeckFrame, slidesPack } from '../../pack';
 
 import { example, terminalExample } from './examples';
 import { slideWindowPrimitive } from './index';
+import { windowBodyLayout } from './layout';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -57,6 +58,27 @@ describe('slideWindow schema', () => {
     expect(
       slideWindowPrimitive.children?.(example).map(({ path }) => path)
     ).toEqual(['body[0]']);
+  });
+});
+
+describe('slideWindow layout', () => {
+  it('gives its body the room inside its border, one-line title bar, and padding', () => {
+    const room = { width: 1000, height: 600 };
+    expect(windowBodyLayout(room, 'browser')).toEqual({
+      width: 949,
+      height: 505.9,
+    });
+    expect(windowBodyLayout(room, 'terminal')).toEqual(
+      windowBodyLayout(room, 'chat')
+    );
+    expect(windowBodyLayout(room, 'slack')).toEqual({
+      width: 941,
+      height: 471.1,
+    });
+    expect(windowBodyLayout({ width: 40, height: 40 }, 'chat')).toEqual({
+      width: 0,
+      height: 0,
+    });
   });
 });
 

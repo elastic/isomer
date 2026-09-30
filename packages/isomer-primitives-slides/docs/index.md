@@ -64,4 +64,4 @@ runtime.surfaces.text.render(composition);
 | `slideRenderGrid` | One slide on two to six surfaces, side by side. |
 | `slideAnnotatedRender` | A `slideRender` with numbered pins and a legend. |
 
-A render's `body` is the slide it embeds, not a walked child: its ids are its own, it renders no node anchors, and in JSX it is a prop of elements, `<SlideRender surface="svg" body={[<SlideFrame>…</SlideFrame>]} />`. `resolveSlideRenders(slides)` fills each `slide` reference in a deck with that slide's body. Ordered primitives reveal one part per click; see [builds](builds.md).
+A render's `body` is the slide it embeds, not a walked child: its ids are its own, it renders no node anchors, and in JSX it is a prop of elements, `<SlideRender surface="svg" body={[<SlideFrame>…</SlideFrame>]} />`; passed as children, it throws `UNEXPECTED_CHILDREN`. An embedded slide lays out on a fresh full slide wherever the render sits, and is drawn scaled to fit the render's room. `resolveSlideRenders(slides)` fills each `slide` reference in a deck with that slide's body. Ordered primitives reveal one part per click; see [builds](builds.md).

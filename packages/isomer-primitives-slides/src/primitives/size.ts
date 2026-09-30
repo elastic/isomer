@@ -11,7 +11,7 @@ import type { ScaleToken } from '@elastic/distillate';
 import { z } from '@elastic/isomer-sdk';
 
 import { displayColumns, isWide } from '../render/mono';
-import { extraboldAdvance, regularAdvance } from '../theme/base';
+import { extraboldAdvance, monoAdvance, regularAdvance } from '../theme/base';
 import { scalePx } from '../theme/scale';
 import { type SlideSize, slideSizes } from '../theme/variants';
 
@@ -62,6 +62,15 @@ export const trackWidth = (
   const free = total - scalePx(gap) * (shares.length - 1);
   return Math.max(0, (free * (shares[index] ?? 0)) / sum);
 };
+
+/** Height in pixels of one line of a type role. */
+export const lineBox = ({
+  size,
+  lineHeight,
+}: {
+  size: ScaleToken;
+  lineHeight: ScaleToken;
+}): number => scalePx(size) * parseFloat(lineHeight.value);
 
 /** The longest item's characters times the item count. */
 export const rowLoad = (items: readonly (readonly (string | undefined)[])[]) =>
@@ -141,6 +150,18 @@ export const proseLines = (
   packedLines(
     words(text).map((word) => displayColumns(word) * regularAdvance * fontPx),
     regularAdvance * fontPx,
+    width
+  );
+
+/** {@link wrappedLines} for Roboto Mono, from {@link monoAdvance}. */
+export const monoLines = (
+  text: string,
+  fontPx: number,
+  width: number
+): number =>
+  packedLines(
+    words(text).map((word) => displayColumns(word) * monoAdvance * fontPx),
+    monoAdvance * fontPx,
     width
   );
 

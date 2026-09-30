@@ -6,26 +6,13 @@
  */
 
 import { font, space, stroke, type } from '../base';
-import { px, scalePx, trackList } from '../scale';
+import { px, trackList } from '../scale';
 
-import { columnWidth, frame } from './frame';
-import { slideFit } from './render';
-
-const shares = [1.45, 1] as const;
-const gap = space.px72;
+export const annotatedRenderShares = [1.45, 1] as const;
 
 export const annotatedRender = {
-  columns: trackList(shares),
-  gap,
-  /** The render at `l` fills its column; `m` and `s` leave room under a taller heading. */
-  fits: {
-    l: slideFit(
-      Math.floor((columnWidth(shares, gap) / scalePx(frame.width)) * 1000) /
-        1000
-    ),
-    m: slideFit(0.42),
-    s: slideFit(0.36),
-  },
+  columns: trackList(annotatedRenderShares),
+  gap: space.px72,
   pin: {
     size: space.px56,
     ring: stroke.bar,
@@ -33,7 +20,7 @@ export const annotatedRender = {
   },
   legend: {
     rule: stroke.hairline,
-    /** Row padding and type per step; `m` and `s` fit five or six pins under a taller heading. */
+    /** Row padding and type per step. */
     steps: {
       l: { padding: space.px24, title: font.size.px32, body: font.size.px26 },
       m: { padding: space.px12, title: font.size.px32, body: font.size.px26 },
@@ -54,9 +41,3 @@ export const annotatedRender = {
     body: type.bodyS,
   },
 } as const;
-
-/** Width of the legend's text, beside its numbered discs. */
-export const annotatedRenderLegendWidth =
-  columnWidth(shares, gap, 1) -
-  scalePx(annotatedRender.legend.marker) -
-  scalePx(annotatedRender.legend.columnGap);

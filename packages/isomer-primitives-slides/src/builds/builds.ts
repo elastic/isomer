@@ -18,6 +18,7 @@ import {
 
 import type { SlideContentNode } from '../body_node';
 import { bulletListBuild } from '../primitives/slide_bullet_list/build';
+import { listBuild } from '../primitives/slide_list/build';
 import { slideDeckPrimitives } from '../registry';
 
 import type { SlideBuild } from './types';
@@ -27,6 +28,7 @@ export const SLIDE_BUILDS = 'slideBuilds';
 /** The primitives that build. Every other node shows whole from the first click. */
 const buildsByType = {
   slideBulletList: bulletListBuild,
+  slideList: listBuild,
 } satisfies Partial<Record<SlideContentNode['type'], SlideBuild<never>>>;
 
 const buildOf = (node: unknown): SlideBuild<never> | undefined => {

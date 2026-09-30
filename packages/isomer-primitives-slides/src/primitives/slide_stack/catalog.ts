@@ -19,7 +19,7 @@ export const catalog = {
     'Nodes need tighter or looser spacing than the column around them gives.',
   ],
   avoidWhen: [
-    'The nodes sit directly in the slide body or a slideSplit pane, which already stack them.',
+    'The nodes sit directly in the slide body, a slideSplit pane, or a slideWindow body, which already stack them.',
     'The two blocks belong side by side; use slideSplit.',
   ],
   example,

@@ -13,7 +13,7 @@ import { slideSizes } from '../../theme/variants';
 
 const { createStyleModule, tokens } = slideDistillery;
 const { annotatedRender, color, render } = tokens;
-const { fits, legend, pin } = annotatedRender;
+const { legend, pin } = annotatedRender;
 
 export const annotatedRenderModule = createStyleModule(
   'annotatedRender',
@@ -33,12 +33,6 @@ export const annotatedRenderModule = createStyleModule(
       min-width: 0;
       width: 100%;
     `,
-    figureSize: variants(
-      slideSizes,
-      (size) => css`
-        max-width: ${fits[size].width};
-      `
-    ),
     // Holds the panel alone, so pins place against it and not the caption.
     stage: css`
       position: relative;
@@ -49,12 +43,6 @@ export const annotatedRenderModule = createStyleModule(
       flex: 0 0 auto;
       width: 100%;
     `,
-    slideScale: variants(
-      slideSizes,
-      (size) => css`
-        transform: scale(${fits[size].scale});
-      `
-    ),
     pin: css`
       align-items: center;
       background: ${color.primary};

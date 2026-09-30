@@ -5,75 +5,63 @@
  * 2.0.
  */
 
-// The render's step and the legend's step, from their estimated heights against the room a two-line title and lede leave.
-
-import type { ScaleToken } from '@elastic/distillate';
-
+import type { SlideLayout } from '../../render/context';
 import { stripMarks } from '../../render/marks';
-import { displayColumns } from '../../render/mono';
-import { regularAdvance } from '../../theme/base';
 import {
   annotatedRender,
-  annotatedRenderLegendWidth,
+  annotatedRenderShares,
 } from '../../theme/components/annotated_render';
-import { render } from '../../theme/components/render';
 import { scalePx } from '../../theme/scale';
 import { type SlideSize, slideSizes } from '../../theme/variants';
-import { referenceRoom } from '../slide_heading/fit';
+import { lineBox, proseLines, trackWidth } from '../size';
+import { scaleUnderCaption } from '../slide_render/fit';
+import { headline } from '../slide_render/output';
+import type { SlideRenderNode } from '../slide_render/types';
 
 import type { SlideAnnotatedRenderPin } from './schema';
 
-const lineHeight = ({
-  size,
-  lineHeight: leading,
-}: {
-  size: ScaleToken;
-  lineHeight: ScaleToken;
-}) => scalePx(size) * parseFloat(leading.value);
+const column = (width: number, index: 0 | 1) =>
+  trackWidth(width, annotatedRenderShares, annotatedRender.gap, index);
 
-const [aspectWidth, aspectHeight] = render.panel.aspect.value
-  .split('/')
-  .map(Number) as [number, number];
-
-const captionHeight = lineHeight(render.caption) + scalePx(render.captionGap);
-
-/** The render and the caption line above it. */
-export const renderStep = (crowding = 1): SlideSize =>
-  slideSizes.find(
-    (step) =>
-      ((scalePx(annotatedRender.fits[step].width) * aspectHeight) /
-        aspectWidth +
-        captionHeight) *
-        crowding <=
-      referenceRoom
-  ) ?? 's';
+/** The scale `render` draws its slide at in the first column of `layout`. */
+export const annotatedScale = (
+  render: SlideRenderNode,
+  { width, height }: SlideLayout
+): number =>
+  scaleUnderCaption(headline(render), { width: column(width, 0), height });
 
 const { legend } = annotatedRender;
 
 const legendHeight = (
   pins: readonly SlideAnnotatedRenderPin[],
-  step: SlideSize
+  step: SlideSize,
+  textWidth: number
 ): number => {
   const { padding, title, body } = legend.steps[step];
-  const bodyLine = scalePx(body) * parseFloat(legend.body.lineHeight.value);
-  const charsPerLine =
-    annotatedRenderLegendWidth / (regularAdvance * scalePx(body));
   return pins.reduce(
     (height, { body: text }) =>
       height +
       2 * scalePx(padding) +
-      scalePx(title) * parseFloat(legend.title.lineHeight.value) +
+      lineBox({ size: title, lineHeight: legend.title.lineHeight }) +
       scalePx(legend.textGap) +
-      Math.ceil(displayColumns(stripMarks(text)) / charsPerLine) * bodyLine +
+      proseLines(stripMarks(text), scalePx(body), textWidth) *
+        lineBox({ size: body, lineHeight: legend.body.lineHeight }) +
       scalePx(legend.rule),
     scalePx(legend.rule)
   );
 };
 
+/** The largest legend step whose rows fit the height of `layout`, their text wrapped across its second column. */
 export const legendStep = (
   pins: readonly SlideAnnotatedRenderPin[],
-  crowding = 1
-): SlideSize =>
-  slideSizes.find(
-    (step) => legendHeight(pins, step) * crowding <= referenceRoom
-  ) ?? 's';
+  { width, height }: SlideLayout
+): SlideSize => {
+  const textWidth = Math.max(
+    1,
+    column(width, 1) - scalePx(legend.marker) - scalePx(legend.columnGap)
+  );
+  return (
+    slideSizes.find((step) => legendHeight(pins, step, textWidth) <= height) ??
+    's'
+  );
+};

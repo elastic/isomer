@@ -13,7 +13,7 @@ import { tone as toneTheme } from '../../theme/components/shared';
 import { split } from '../../theme/components/split';
 import { scalePx } from '../../theme/scale';
 import type { SlideSplitDivider, SlideSplitRatio } from '../../theme/variants';
-import { proseLines, wrappedLines } from '../size';
+import { lineBox, proseLines, wrappedLines } from '../size';
 
 import type { SlideSplitNode, SlideSplitPane } from './types';
 
@@ -53,9 +53,6 @@ export const paneWidths = (
   return [width(left), width(right)];
 };
 
-const lineHeight = (role: { size: ScaleToken; lineHeight: ScaleToken }) =>
-  scalePx(role.size) * parseFloat(role.lineHeight.value);
-
 const cueWidth = scalePx(toneTheme.cue.size) + scalePx(toneTheme.cue.gap);
 
 const labelHeight = ({ label, tone }: SlideSplitPane, width: number): number =>
@@ -66,7 +63,7 @@ const labelHeight = ({ label, tone }: SlideSplitPane, width: number): number =>
         Math.max(1, width - (tone ? cueWidth : 0)),
         split.label.tracking
       ) *
-        lineHeight(split.label) +
+        lineBox(split.label) +
       scalePx(split.labelGap)
     : 0;
 
@@ -82,7 +79,7 @@ export const paneLayouts = (
         scalePx(split.footnote.size),
         Math.min(width, scalePx(split.footnoteMaxWidth))
       ) *
-        lineHeight(split.footnote)
+        lineBox(split.footnote)
     : 0;
   const widths = paneWidths(width, ratio, divider);
   const pane = (fields: SlideSplitPane, index: 0 | 1): SlideLayout => ({

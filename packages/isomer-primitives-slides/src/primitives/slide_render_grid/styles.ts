@@ -61,12 +61,6 @@ export const renderGridModule = createStyleModule('renderGrid', ({ css }) => ({
       width: 100%;
     `;
   }),
-  slideScale: variants(
-    renderGridShapes,
-    (shape) => css`
-      transform: scale(${renderGrid.shape[shape].scale});
-    `
-  ),
   outputScale: css`
     transform: scale(${renderGrid.outputScale});
     transform-origin: 0 0;

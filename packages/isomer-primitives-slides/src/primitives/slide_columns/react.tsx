@@ -13,6 +13,7 @@ import type { SlideReactEnv } from '../../render/context';
 import { marksReact } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { layoutModule } from '../../theme/modules';
+import { slideLayout } from '../layout';
 
 import { columnsHeadHeight, columnsStep } from './fit';
 import type { SlideColumnsNode } from './schema';
@@ -27,8 +28,9 @@ export const react = (
 ): ReactNode => {
   const { type, items, footnote, highlight } = node;
   const { handles: columns } = columnsModule;
-  const step = columnsStep(node, context?.crowding);
-  const headHeight = columnsHeadHeight(items, step);
+  const layout = slideLayout(context);
+  const step = columnsStep(node, layout);
+  const headHeight = columnsHeadHeight(items, step, layout);
   return (
     <div
       {...nodeAnchor(context, { type })}

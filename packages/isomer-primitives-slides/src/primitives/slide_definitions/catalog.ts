@@ -21,6 +21,7 @@ export const catalog = {
   avoidWhen: [
     'The items are short facts rather than terms to learn; use slideList.',
     'The items split by who owns them; use slideTerritoryGroup.',
+    'The items are parallel options with tags; use slideColumns.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

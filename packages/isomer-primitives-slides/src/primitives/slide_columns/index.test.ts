@@ -14,10 +14,17 @@ import { describe, expect, it } from 'vitest';
 
 import { slideJsx } from '../../jsx';
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { columns } from '../../theme/components/columns';
+import { frameContentWidth } from '../../theme/components/frame';
 import { slideDistillery } from '../../theme/distillery';
+import { scalePx } from '../../theme/scale';
+import { slideLayout } from '../layout';
+import { widestWord } from '../size';
+import { referenceHeading, renderedStep } from '../size.fixtures';
+import { referenceRoom } from '../slide_heading/fit';
 
 import { example, plainExample, wideExample } from './examples';
-import { columnsStep } from './fit';
+import { columnInnerWidth, columnsHeadHeight, columnsStep } from './fit';
 import { markdown, slack, text } from './index';
 import { schema, type SlideColumnsNode } from './schema';
 
@@ -32,6 +39,11 @@ const compose = (node: object): Composition => ({
 });
 
 const { highlightLabel } = slideDistillery.tokens.columns;
+
+// The frame body below a two-line title and lede, where load budgets hold at crowding 1.
+const full = slideLayout({
+  layout: { width: frameContentWidth, height: referenceRoom },
+});
 
 // Two columns of `A` and `n` characters, and a footnote of `c` and `k`: a load of 2(1 + n) + 1 + k.
 const loaded = (n: number, k: number): SlideColumnsNode => ({
@@ -78,7 +90,7 @@ describe('slideColumns size', () => {
     [258, 1, 'm'],
     [258, 2, 's'],
   ] as const)('a load from %i and %i takes %s', (n, k, step) => {
-    expect(columnsStep(loaded(n, k))).toBe(step);
+    expect(columnsStep(loaded(n, k), full)).toBe(step);
   });
 
   it('keeps an authored size', () => {
@@ -87,7 +99,73 @@ describe('slideColumns size', () => {
   });
 
   it('steps down under a crowded heading', () => {
-    expect(columnsStep(loaded(198, 1), 1.1)).toBe('m');
+    expect(columnsStep(loaded(198, 1), { ...full, crowding: 1.1 })).toBe('m');
+  });
+
+  it('steps down in a layout narrower than the frame body', () => {
+    expect(columnsStep(loaded(198, 1), full)).toBe('l');
+    expect(
+      columnsStep(loaded(198, 1), { ...full, width: full.width - 20 })
+    ).toBe('m');
+  });
+
+  it('reads the layout a window or split pane gives it', () => {
+    const node = loaded(198, 1);
+    expect(renderedStep('columns-titleSize', node, referenceHeading)).toBe('l');
+    const inWindow = {
+      type: 'slideWindow',
+      chrome: 'browser',
+      title: 'shop.example',
+      body: [node],
+    };
+    expect(
+      renderedStep('columns-titleSize', inWindow, referenceHeading)
+    ).not.toBe('l');
+    const inPane = {
+      type: 'slideSplit',
+      panes: [
+        { items: [node] },
+        { items: [{ type: 'slideStatement', text: 'x' }] },
+      ],
+    };
+    expect(renderedStep('columns-titleSize', inPane, referenceHeading)).toBe(
+      's'
+    );
+  });
+
+  it('steps down until no title word breaks in its column', () => {
+    const node = {
+      ...loaded(0, 0),
+      items: [
+        { title: 'Observability', body: 'x' },
+        { title: 'B', body: 'x' },
+      ],
+    };
+    const word = widestWord('Observability', columns.title.tracking);
+    // The layout width whose two columns are exactly as wide as the word at `step`.
+    const snug = (step: 'l' | 'm') =>
+      2 * word * scalePx(columns.titleSizes[step]) +
+      (full.width - 2 * columnInnerWidth(2, full.width));
+    expect(columnsStep(node, { ...full, width: snug('l') })).toBe('l');
+    expect(columnsStep(node, { ...full, width: snug('l') - 1 })).toBe('m');
+    expect(columnsStep(node, { ...full, width: snug('m') })).toBe('m');
+    expect(columnsStep(node, { ...full, width: snug('m') - 1 })).toBe('s');
+    expect(
+      columnsStep({ ...node, size: 'l' }, { ...full, width: snug('m') - 1 })
+    ).toBe('l');
+  });
+
+  it('wraps titles at the width its layout gives each column', () => {
+    const node = {
+      ...loaded(0, 0),
+      items: [
+        { title: 'A title long enough to wrap', body: 'x' },
+        { title: 'B', body: 'x' },
+      ],
+    };
+    expect(columnsHeadHeight(node.items, 'l', full)).toBeLessThan(
+      columnsHeadHeight(node.items, 'l', { ...full, width: full.width / 3 })
+    );
   });
 });
 

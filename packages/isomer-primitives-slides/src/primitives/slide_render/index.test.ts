@@ -20,6 +20,10 @@ import { describe, expect, it } from 'vitest';
 import { slideJsx } from '../../jsx';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { slideDeckPrimitives } from '../../registry';
+import { render } from '../../theme/components/render';
+import { statementFit } from '../../theme/components/statement';
+import { openBody } from '../layout';
+import { renderedStep } from '../size.fixtures';
 import { example as annotatedExample } from '../slide_annotated_render/examples';
 import { example as gridExample } from '../slide_render_grid/examples';
 
@@ -30,6 +34,8 @@ import {
   markdownExample,
   placeholderExample,
 } from './examples';
+import { captionHeight, renderScale } from './fit';
+import { headline } from './output';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -85,6 +91,69 @@ describe('slideRender schema', () => {
         })
       ).errors
     ).toEqual([]);
+  });
+});
+
+describe('slideRender layout', () => {
+  it('draws the slide no larger than its cap, its layout’s width, or the room under its caption', () => {
+    const short = {
+      type: 'slideRender',
+      surface: 'svg',
+      slide: 'next',
+    } as const;
+    expect(renderScale(short, openBody)).toBe(
+      parseFloat(render.maxScale.value)
+    );
+    expect(renderScale(short, { width: 500, height: 900 })).toBeCloseTo(
+      500 / 1920
+    );
+    expect(renderScale(short, { width: 1600, height: 300 })).toBeCloseTo(
+      (300 - captionHeight(headline(short), 1600)) / 1080
+    );
+  });
+
+  it('leaves room for a caption that wraps at the drawn slide’s width', () => {
+    const short = {
+      type: 'slideRender',
+      surface: 'svg',
+      slide: 'next',
+    } as const;
+    const long = { ...short, caption: 'The delivery slide, '.repeat(6) };
+    const room = { width: 1000, height: 400 };
+    expect(captionHeight(headline(long), 600)).toBeGreaterThan(
+      captionHeight(headline(short), 600)
+    );
+    expect(renderScale(long, room)).toBeLessThan(renderScale(short, room));
+  });
+
+  it('lays out an embedded slide on a fresh full slide, wherever the render sits', () => {
+    const statement = {
+      type: 'slideStatement',
+      text: 'x'.repeat(statementFit.l + 1),
+    };
+    const alone = renderedStep('statement-textSize', statement);
+    const inPane = (node: object) =>
+      renderedStep('statement-textSize', {
+        type: 'slideSplit',
+        panes: [
+          { items: [node] },
+          { items: [{ type: 'slideBulletList', items: ['Beside'] }] },
+        ],
+      });
+    const embedded = (body: object[]) =>
+      inPane({ type: 'slideRender', surface: 'svg', body });
+    expect(alone).toBe('l');
+    expect(inPane(statement)).not.toBe(alone);
+    expect(embedded([statement])).toBe(alone);
+    expect(embedded([{ type: 'slideFrame', body: [statement] }])).toBe(alone);
+    expect(
+      embedded([{ type: 'slideHeading', title: 'Embedded' }, statement])
+    ).toBe(
+      renderedStep('statement-textSize', statement, {
+        type: 'slideHeading',
+        title: 'Embedded',
+      })
+    );
   });
 });
 
@@ -173,4 +242,24 @@ describe('slideRender JSX', () => {
       body: [{ type: 'slideHeading', title: 'Embedded' }],
     });
   });
+
+  it.each(['SlideRender', 'SlideRenderGrid'] as const)(
+    'refuses embedded slides passed to <%s> as children',
+    (name) => {
+      const { Composition: View, SlideHeading, toComposition } = slideJsx;
+      expect(() =>
+        toComposition(
+          createElement(
+            View,
+            null,
+            createElement(
+              slideJsx[name],
+              { surface: 'svg', tiles: [] },
+              createElement(SlideHeading, { title: 'Embedded' })
+            )
+          )
+        )
+      ).toThrow(`<${name}> takes no JSX children`);
+    }
+  );
 });

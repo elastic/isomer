@@ -8,19 +8,30 @@
 import { font, radius, space, stroke, type } from '../base';
 import { literal, paddingXy } from '../scale';
 
+const barPaddingY = space.px12;
+const barPaddingX = space.px24;
+const slackBarPaddingY = space.px16;
+const slackBarPaddingX = space.px28;
+const bodyPaddingY = space.px16;
+const bodyPaddingX = space.px24;
+
 export const window = {
   border: stroke.panel,
   radius: radius.panel,
   bar: { ...type.mono, size: font.size.px24 },
-  barPadding: paddingXy(space.px12, space.px24),
+  barPaddingY,
+  barPadding: paddingXy(barPaddingY, barPaddingX),
   slackBar: {
     size: font.size.px26,
     weight: font.weight.bold,
     lineHeight: font.lineHeight.body,
   },
-  slackBarPadding: paddingXy(space.px16, space.px28),
+  slackBarPaddingY,
+  slackBarPadding: paddingXy(slackBarPaddingY, slackBarPaddingX),
   channelPrefix: literal('#'),
-  bodyPadding: paddingXy(space.px16, space.px24),
+  bodyPaddingY,
+  bodyPaddingX,
+  bodyPadding: paddingXy(bodyPaddingY, bodyPaddingX),
   slackBodyPadding: space.px28,
   bodyGap: space.px24,
 } as const;

@@ -10,20 +10,12 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
-import type { RenderGridShape } from '../../theme/components/render_grid';
+import { slideLayout } from '../layout';
 import { RenderPanel } from '../slide_render/panel';
 
+import { fillsCell, shapeFor, tileScale } from './fit';
 import { renderGridModule } from './styles';
 import type { SlideRenderGridNode } from './types';
-
-const shapeFor = (count: number): RenderGridShape =>
-  count <= 2
-    ? 'twoByOne'
-    : count === 3
-      ? 'threeByOne'
-      : count === 4
-        ? 'twoByTwo'
-        : 'threeByTwo';
 
 /** React renderer for {@link SlideRenderGridNode}. */
 export const react = (
@@ -33,6 +25,7 @@ export const react = (
   const { type, tiles } = node;
   const { handles: grid } = renderGridModule;
   const shape = shapeFor(tiles.length);
+  const scale = tileScale(node, slideLayout(context));
   return (
     <div
       {...nodeAnchor(context, { type })}
@@ -45,9 +38,9 @@ export const react = (
           </figcaption>
           <RenderPanel
             size={grid.panel[shape]}
-            slideScale={grid.slideScale[shape]}
             outputScale={grid.outputScale}
-            {...{ node, surface, scope, context }}
+            fill={fillsCell(shape)}
+            {...{ node, surface, scope, context, scale }}
           />
         </figure>
       ))}
