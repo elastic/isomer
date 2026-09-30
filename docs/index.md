@@ -69,8 +69,9 @@ A model owns the composition. The runtime hands it `getAuthoringContext()`: a JS
 | [`@elastic/isomer-primitives-slides`](slides/index.md) | The reference pack, and the one to copy: slide-deck primitives, a theme with one authoring source per rendered value, a fixed 16:9 frame, and committed output for an example deck. |
 | [`@elastic/isomer-image-takumi`](image-takumi/index.md) | Turns the `svg` surface's element and stylesheet into PNG, SVG, or PDF bytes with Takumi. Declares the input shape structurally, so it depends on no Isomer package. |
 | [`@elastic/isomer-evals`](evals/index.md) | A harness a pack author runs against their own runtime: how often a model's compositions parse, validate, recover on retry, pick the right primitives, and answer the question. Runs with no credentials on a replayed corpus. |
+| [`@elastic/isomer-agent-tools`](agent-tools/index.md) | Turns any runtime into transport-neutral agent tools, resources, and a prompt: authoring guide, primitive lookups, validate, render, and registered views. The host brings the transport: MCP, the AI SDK, or its own framework. Not on npm yet. |
 
-Every package except the reference pack publishes together at one version. A host installs the SDK and the runtime. The reference pack is there to copy from or to render slide decks with, the rasterizer is added by a host that draws images, and the eval harness is something a pack author runs against their own runtime.
+Every package except the reference pack and the agent tools publishes together at one version. A host installs the SDK and the runtime. The reference pack is there to copy from or to render slide decks with, the rasterizer is added by a host that draws images, and the eval harness is something a pack author runs against their own runtime. The agent tools stay in the repository until their API settles.
 
 **Peers.** The SDK and the runtime need `react` and `zod`. The runtime also needs `react-dom`, because its single entry constructs the HTML surface and that surface renders through `react-dom/server`; the SDK marks `react-dom` optional and confines it to its `./html` entry.
 
@@ -96,7 +97,7 @@ Every package except the reference pack publishes together at one version. A hos
 | --- | --- |
 | Render compositions in a host | The runtime's [quick start](runtime/quick-start.md), then [Surfaces](runtime/surfaces.md) and [View registry](runtime/view-registry.md) |
 | Write primitives, a theme, or a frame | The SDK's [quick start](sdk/quick-start.md) and [Primitives](sdk/primitives.md), then the slides pack's [Authoring a primitive](slides/primitives.md) and [Theme](slides/theme.md) |
-| Wire up an agent | The runtime's [Authoring context](runtime/authoring-context.md) and the SDK's [Authoring](sdk/authoring.md) |
+| Wire up an agent | The runtime's [Authoring context](runtime/authoring-context.md) and the SDK's [Authoring](sdk/authoring.md), or [Agent tools](agent-tools/index.md) for a ready-made tool set |
 | Turn images into PNG | [Takumi image backend](image-takumi/index.md) |
 | Measure a model against your pack | [Evals](evals/index.md), including how to read the numbers |
 | Contribute or release | [CONTRIBUTING.md](https://github.com/elastic/isomer/blob/main/CONTRIBUTING.md), [RELEASING.md](https://github.com/elastic/isomer/blob/main/RELEASING.md), and [AGENTS.md](https://github.com/elastic/isomer/blob/main/AGENTS.md) for the invariants |

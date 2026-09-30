@@ -3,14 +3,5 @@
 # 2.0; you may not use this file except in compliance with the Elastic License
 # 2.0.
 
-project: 'Isomer'
-# Package pages live in packages/*/docs. `pnpm docs:assemble` copies them here for the builder.
 toc:
   - file: index.md
-  - toc: runtime
-  - toc: sdk
-  - toc: slides
-  - toc: image-takumi
-  - toc: evals
-  - toc: agent-tools
-  - toc: reference
