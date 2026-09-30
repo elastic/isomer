@@ -196,13 +196,14 @@ export const createViewRegistry = <
       }
       const { view, summary } = entry;
 
-      const over = checkInputBudget(input, inputBudget);
-      if (over) {
-        throw new RegisteredViewInputError(view.id, [over]);
+      const checked = checkInputBudget(input, inputBudget);
+      if (!checked.valid) {
+        throw new RegisteredViewInputError(view.id, [checked.error]);
       }
+      const plain = checked.value as ViewInput;
       const parsedInput = view.input
-        ? validateAndParseInput(view.id, view.input, input)
-        : input;
+        ? validateAndParseInput(view.id, view.input, plain)
+        : plain;
 
       const composition = await view.build({ context, input: parsedInput });
       return {

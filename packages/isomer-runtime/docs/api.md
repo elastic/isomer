@@ -67,7 +67,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | `SlackRenderNodeOptions` | `SlackRenderOptions` without `heading` or `onValidationError` |
 | `SvgRenderOptions` | `frame`, `width`, `height`, `theme`, `anchors: boolean` (node anchors, e.g. for `checkLayout`), `onValidationError` |
 
-`onValidationError` is `'collect' | 'throw'`. `html` defaults to `'collect'` and reports on `validationErrors`; `text`, `markdown`, `slack`, and `svg` default to `'throw'`. Input [the SDK refuses before parsing](../../isomer-sdk/docs/composition.md#the-input-budget) throws on every surface in either mode.
+`onValidationError` is `'collect' | 'throw'`. `html` defaults to `'collect'` and reports on `validationErrors`; `text`, `markdown`, `slack`, and `svg` default to `'throw'`. Input [refused before parsing](../../isomer-sdk/docs/composition.md#the-input-budget) throws on every surface in either mode.
 
 ### Result types
 
@@ -115,7 +115,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | --- | --- | --- |
 | `IsomerError` | `createIsomerRuntime`, `viewRegistry.register`, an unknown view id, `getAuthoringContext().schemaFor` or `describePrimitives` on an unknown type (`UNKNOWN_PRIMITIVE_TYPE`), or the `svg` surface, including `renderPages` on an empty list (`EMPTY_PAGES`) | `code` and a message naming the offender |
 | `RegisteredViewInputError` | `viewRegistry.request`, on input refused before parsing or invalid against the view's schema | `code` (`VIEW_INPUT_INVALID`), `viewId`, `errors` (`{ path, message, nodeType?, code? }` each) |
-| `CompositionValidationError` | `text`, `markdown`, `slack`, and `svg` by default; `html` with `onValidationError: 'throw'`; every validating surface on input the SDK refuses before parsing | `code` (`COMPOSITION_INVALID`), `errors` |
+| `CompositionValidationError` | `text`, `markdown`, `slack`, and `svg` by default; `html` with `onValidationError: 'throw'`; every validating surface on input refused before parsing | `code` (`COMPOSITION_INVALID`), `errors` |
 
 ## Where the code is
 

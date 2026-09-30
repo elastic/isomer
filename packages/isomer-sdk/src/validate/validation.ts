@@ -116,7 +116,7 @@ const bodyRoots = (value: unknown): IssueRoot[] => {
 };
 
 /**
- * Builds the trusted-input validator: {@link checkInputBudget}, the schema, then the semantic passes.
+ * Builds the trusted-input validator: {@link checkInputBudget}, then the schema and the semantic passes on its copy.
  *
  * `definitions` is memoized on array identity, so a caller that rebuilds the
  * array per call (`createCompositionValidator(packs.flatMap(…))`) gets a fresh
@@ -132,24 +132,26 @@ export const createCompositionValidator = (
   const walk = createChildNodeWalker(definitions);
   const formatIssues = createNodeIssueFormatter(definitions);
   return (composition) => {
-    const over = checkInputBudget(composition, options.inputBudget);
-    if (over) {
-      return { valid: false, errors: [over], warnings: [] };
+    const checked = checkInputBudget(composition, options.inputBudget);
+    if (!checked.valid) {
+      return { valid: false, errors: [checked.error], warnings: [] };
     }
-    const result = schema.safeParse(composition, { reportInput: true });
+    const plain = checked.value as Composition;
+    const result = schema.safeParse(plain, { reportInput: true });
     if (result.success) {
-      const idErrors = collectDuplicateNodeIdErrors(composition.body, walk);
+      const { body } = plain;
+      const idErrors = collectDuplicateNodeIdErrors(body, walk);
       const warnings = [
-        ...collectEmptySurfaceWarnings(composition.body, walk),
+        ...collectEmptySurfaceWarnings(body, walk),
         ...(options.sizesFromNodeHeights
-          ? collectMissingSvgHeightWarnings(composition.body, definitions, walk)
+          ? collectMissingSvgHeightWarnings(body, definitions, walk)
           : []),
       ];
       return { valid: idErrors.length === 0, errors: idErrors, warnings };
     }
     return {
       valid: false,
-      errors: formatIssues(bodyRoots(composition), result.error.issues),
+      errors: formatIssues(bodyRoots(plain), result.error.issues),
       warnings: [],
     };
   };
@@ -166,7 +168,7 @@ export interface ParsedComposition {
 }
 
 /**
- * Builds the untrusted-input parser: {@link checkInputBudget}, then the schema only, reported rather than thrown.
+ * Builds the untrusted-input parser: {@link checkInputBudget}, then the schema only on its copy, reported rather than thrown.
  *
  * Deliberately narrower than {@link createCompositionValidator}. This answers
  * "is this a `Composition`", not "is this a good one" — it does not run the
@@ -183,11 +185,11 @@ export const createCompositionParser = (
   const schema = getCompositionSchemaForDefinitions(definitions);
   const formatIssues = createNodeIssueFormatter(definitions);
   return (value) => {
-    const over = checkInputBudget(value, inputBudget);
-    if (over) {
-      return { valid: false, errors: [over] };
+    const checked = checkInputBudget(value, inputBudget);
+    if (!checked.valid) {
+      return { valid: false, errors: [checked.error] };
     }
-    const result = schema.safeParse(value, { reportInput: true });
+    const result = schema.safeParse(checked.value, { reportInput: true });
     if (result.success) {
       return {
         valid: true,
@@ -197,7 +199,7 @@ export const createCompositionParser = (
     }
     return {
       valid: false,
-      errors: formatIssues(bodyRoots(value), result.error.issues),
+      errors: formatIssues(bodyRoots(checked.value), result.error.issues),
     };
   };
 };

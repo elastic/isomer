@@ -133,6 +133,7 @@ export {
   type CompositionSchemaOptions,
   type CompositionValidatorOptions,
   type InputBudget,
+  type InputBudgetCheck,
   type ParsedComposition,
   type ResolvedVocabulary,
   type ValidationErrorMode,

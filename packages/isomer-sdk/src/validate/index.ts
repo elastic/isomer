@@ -22,6 +22,7 @@ export {
 } from './composition_schema';
 export {
   type InputBudget,
+  type InputBudgetCheck,
   MAX_INPUT_CHARACTERS,
   MAX_INPUT_DEPTH,
   MAX_INPUT_VALUES,

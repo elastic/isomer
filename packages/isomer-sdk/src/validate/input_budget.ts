@@ -33,123 +33,158 @@ export const INPUT_REFUSAL_CODES: ReadonlySet<string | undefined> = new Set([
   ISOMER_ERROR_CODES.INPUT_OVER_BUDGET,
 ]);
 
+/** A plain copy of the input to parse in its place, or why there is none. */
+export type InputBudgetCheck =
+  { valid: true; value: unknown } | { valid: false; error: ValidationError };
+
+type PlainContainer = unknown[] | Record<string, unknown>;
+
 interface Entry {
-  value: object;
+  source: object;
+  copy: PlainContainer;
   depth: number;
   leave?: true;
 }
 
-const overBudget = (message: string): ValidationError => ({
-  path: '',
-  message,
-  code: ISOMER_ERROR_CODES.INPUT_OVER_BUDGET,
-});
+class Refusal extends Error {
+  constructor(readonly error: ValidationError) {
+    super(error.message);
+  }
+}
 
-const notPlainData = (what: string): ValidationError => ({
-  path: '',
-  message: `input holds ${what}, which is not plain data`,
-  code: ISOMER_ERROR_CODES.INPUT_NOT_PLAIN_DATA,
-});
+const overBudget = (message: string): Refusal =>
+  new Refusal({
+    path: '',
+    message,
+    code: ISOMER_ERROR_CODES.INPUT_OVER_BUDGET,
+  });
+
+const notPlainData = (what: string): Refusal =>
+  new Refusal({
+    path: '',
+    message: `input holds ${what}, which is not plain data`,
+    code: ISOMER_ERROR_CODES.INPUT_NOT_PLAIN_DATA,
+  });
 
 const leafLength = (value: unknown): number =>
   typeof value === 'string' ? value.length : String(value).length;
 
+/** Reads `key` once, through its descriptor. */
+const plainProperty = (source: object, key: string | number): unknown => {
+  const descriptor = Reflect.getOwnPropertyDescriptor(source, key);
+  if (descriptor === undefined) {
+    throw notPlainData('an array hole');
+  }
+  if (!('value' in descriptor)) {
+    throw notPlainData('an accessor property');
+  }
+  if (!descriptor.enumerable) {
+    throw notPlainData('a non-enumerable property');
+  }
+  return descriptor.value;
+};
+
 /**
- * Why `value` is over `budget` or is not plain data, or `undefined` when it is neither.
+ * A plain copy of `value` within `budget`, or why there is none: it is over `budget` or is not plain data.
  *
- * Plain data is what the schema reads exactly as walked: arrays without holes, objects whose prototype is `Object.prototype` or `null`, and only enumerable own data properties with string keys.
- * Iterative and cycle-safe. Its cost is linear in the input's size: it lists a container's own keys, then refuses past the value limit before reading any of them, so nothing is visited twice and the stack never grows.
+ * Plain data is arrays without holes, objects whose prototype is `Object.prototype` or `null`, enumerable own data properties with string keys, and primitives other than functions.
+ * Each property is read once, so a caller that parses the copy parses exactly what was checked; an array's other own properties are left out.
+ * Iterative and cycle-safe. Its cost is linear in the input's size: it lists a container's own keys, then refuses past the value limit before reading any of them.
  */
 export const checkInputBudget = (
   value: unknown,
   budget: InputBudget = {}
-): ValidationError | undefined => {
+): InputBudgetCheck => {
   const {
     depth: maxDepth = MAX_INPUT_DEPTH,
     values: maxValues = MAX_INPUT_VALUES,
     characters: maxCharacters = MAX_INPUT_CHARACTERS,
   } = budget;
-  const tooManyValues = overBudget(`input holds more than ${maxValues} values`);
+  const tooManyValues = `input holds more than ${maxValues} values`;
   const ancestors = new Set<object>();
   const stack: Entry[] = [];
   let values = 0;
   let characters = 0;
+  const countCharacters = (count: number): void => {
+    characters += count;
+    if (characters > maxCharacters) {
+      throw overBudget(`input holds more than ${maxCharacters} characters`);
+    }
+  };
   const enqueue = (
     child: unknown,
     depth: number,
     keyLength: number
-  ): ValidationError | undefined => {
+  ): unknown => {
     values += 1;
     if (values > maxValues) {
-      return tooManyValues;
+      throw overBudget(tooManyValues);
     }
     if (typeof child === 'function') {
-      return notPlainData('a function');
+      throw notPlainData('a function');
     }
-    if (typeof child === 'object' && child !== null) {
-      stack.push({ value: child, depth });
-      characters += keyLength;
-    } else {
-      characters += keyLength + leafLength(child);
+    if (typeof child !== 'object' || child === null) {
+      countCharacters(keyLength + leafLength(child));
+      return child;
     }
-    return characters > maxCharacters
-      ? overBudget(`input holds more than ${maxCharacters} characters`)
-      : undefined;
+    let copy: PlainContainer = [];
+    if (!Array.isArray(child)) {
+      const prototype = Reflect.getPrototypeOf(child);
+      if (prototype !== Object.prototype && prototype !== null) {
+        throw notPlainData('an object that is not a plain object or array');
+      }
+      copy = Object.create(prototype) as Record<string, unknown>;
+    }
+    countCharacters(keyLength);
+    stack.push({ source: child, copy, depth });
+    return copy;
   };
-  const enqueueChildren = (
-    container: object,
-    depth: number
-  ): ValidationError | undefined => {
-    const isArray = Array.isArray(container);
-    const prototype = isArray ? null : Reflect.getPrototypeOf(container);
-    if (prototype !== Object.prototype && prototype !== null) {
-      return notPlainData('an object that is not a plain object or array');
-    }
-    const keys = isArray ? undefined : Reflect.ownKeys(container);
-    const count = keys?.length ?? (container as unknown[]).length;
+  const copyChildren = ({ source, copy, depth }: Entry): void => {
+    const keys = Array.isArray(copy) ? undefined : Reflect.ownKeys(source);
+    const count = keys?.length ?? (source as unknown[]).length;
     if (values + count > maxValues) {
-      return tooManyValues;
+      throw overBudget(tooManyValues);
     }
     for (let index = 0; index < count; index += 1) {
       const key = keys === undefined ? index : keys[index]!;
       if (typeof key === 'symbol') {
-        return notPlainData('a symbol key');
+        throw notPlainData('a symbol key');
       }
-      const descriptor = Reflect.getOwnPropertyDescriptor(container, key);
-      const refusal =
-        descriptor === undefined
-          ? notPlainData('an array hole')
-          : !('value' in descriptor)
-            ? notPlainData('an accessor property')
-            : !descriptor.enumerable
-              ? notPlainData('a non-enumerable property')
-              : enqueue(
-                  descriptor.value,
-                  depth,
-                  typeof key === 'string' ? key.length : 0
-                );
-      if (refusal !== undefined) {
-        return refusal;
+      const child = plainProperty(source, key);
+      if (Array.isArray(copy)) {
+        copy.push(enqueue(child, depth, 0));
+      } else {
+        Object.defineProperty(copy, key, {
+          value: enqueue(child, depth, String(key).length),
+          writable: true,
+          enumerable: true,
+          configurable: true,
+        });
       }
     }
-    return undefined;
   };
-  let refusal = enqueue(value, 1, 0);
-  while (refusal === undefined && stack.length > 0) {
-    const { value: current, depth, leave } = stack.pop()!;
-    if (leave) {
-      ancestors.delete(current);
-      continue;
+  try {
+    const root = enqueue(value, 1, 0);
+    while (stack.length > 0) {
+      const entry = stack.pop()!;
+      const { source, depth, leave } = entry;
+      if (leave) {
+        ancestors.delete(source);
+      } else if (ancestors.has(source)) {
+        throw overBudget('input contains itself');
+      } else if (depth > maxDepth) {
+        throw overBudget(`input nests deeper than ${maxDepth} levels`);
+      } else {
+        ancestors.add(source);
+        stack.push({ ...entry, leave: true });
+        copyChildren({ ...entry, depth: depth + 1 });
+      }
     }
-    if (ancestors.has(current)) {
-      return overBudget('input contains itself');
+    return { valid: true, value: root };
+  } catch (error) {
+    if (error instanceof Refusal) {
+      return { valid: false, error: error.error };
     }
-    if (depth > maxDepth) {
-      return overBudget(`input nests deeper than ${maxDepth} levels`);
-    }
-    ancestors.add(current);
-    stack.push({ value: current, depth, leave: true });
-    refusal = enqueueChildren(current, depth + 1);
+    throw error;
   }
-  return refusal;
 };

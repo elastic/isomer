@@ -2788,6 +2788,28 @@ describe('the input budget', () => {
     expect(built).toBe(false);
   });
 
+  it('hands a view the checked copy of its input', async () => {
+    let received: unknown;
+    const runtime = createIsomerRuntime({
+      packs: [packOf(notePrimitive)],
+      views: [
+        defineView({
+          id: 'test.copy',
+          title: 'Copy',
+          answers: [],
+          build: ({ input }) => {
+            received = input;
+            return view('x');
+          },
+        }),
+      ],
+    });
+    const input = { list: Object.assign([1], { extra: 2 }) };
+    await runtime.viewRegistry.request('test.copy', undefined, input);
+    expect(received).toEqual({ list: [1] });
+    expect(received).not.toBe(input);
+  });
+
   it('takes the host’s limits', () => {
     const runtime = createIsomerRuntime({
       packs: [packOf(notePrimitive)],

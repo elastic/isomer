@@ -335,6 +335,23 @@ describe('the input budget', () => {
     expect(parse(smuggled).errors[0]?.code).toBe('INPUT_NOT_PLAIN_DATA');
   });
 
+  it('parses the checked copy, never the input', () => {
+    const node = { type: 'loose', extra: { a: 1 } };
+    const { composition } = parse({ type: 'view', body: [node] });
+    const [parsed] = (composition?.body ?? []) as (typeof node)[];
+    expect(parsed).toEqual(node);
+    expect(parsed?.extra).not.toBe(node.extra);
+    const [deepNode] = deep(100_000).body;
+    const shifty = new Proxy(
+      { type: 'holder', items: [] as unknown[] },
+      {
+        get: (target, key) =>
+          key === 'items' ? [deepNode] : target[key as 'type'],
+      }
+    );
+    expect(parse({ type: 'view', body: [shifty] }).valid).toBe(true);
+  });
+
   it('takes a host override', () => {
     const budget = { inputBudget: { depth: 4 } };
     expect(parse(deep(1)).valid).toBe(true);
