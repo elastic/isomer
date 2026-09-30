@@ -57,6 +57,7 @@ export const treeModule = createStyleModule('tree', ({ css }) => ({
   `,
   railLast: css`
     border-left: ${tree.connector} solid ${color.line};
+    box-sizing: border-box;
     height: ${tree.railLastHeight};
     left: ${tree.railInset};
     position: absolute;
@@ -64,6 +65,7 @@ export const treeModule = createStyleModule('tree', ({ css }) => ({
   `,
   tick: css`
     border-top: ${tree.connector} solid ${color.line};
+    box-sizing: border-box;
     left: ${tree.railInset};
     position: absolute;
     top: ${tree.tickTop};
