@@ -54,7 +54,11 @@ export const schema = z
       ({ sections }) =>
         sections.length > sectionsMax ||
         sections.filter(({ current }) => current).length <= 1,
-      { error: 'at most one section can be current', path: ['sections'] }
+      {
+        error: 'at most one section can be current',
+        path: ['sections'],
+        rule: 'At most one section is current.',
+      }
     )
   );
 
