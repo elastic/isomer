@@ -19,7 +19,7 @@ export const catalog = {
     'You want to show where a value is defined and where it is used, as two panels joined by an arrow.',
   ],
   avoidWhen: [
-    'The snippet needs more than sixteen lines; cut it down to the lines that matter.',
+    'The snippet needs more than sixteen lines; cut it down, or name the files with slideTree.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

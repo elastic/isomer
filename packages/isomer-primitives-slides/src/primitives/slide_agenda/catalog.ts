@@ -20,6 +20,7 @@ export const catalog = {
   ],
   avoidWhen: [
     'The slide opens one section and lists what that section covers; use slideSection.',
+    'The rows are dated events or stages of work; use slideTimeline or slideRoadmap.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

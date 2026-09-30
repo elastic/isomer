@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { frameContentWidth } from '../../theme/components/frame';
 import { timelineFit } from '../../theme/components/timeline';
-import { layoutAt } from '../size.fixtures';
+import { layoutAt, renderedStep } from '../size.fixtures';
 
 import { example, fiveItemsExample, threeItemsExample } from './examples';
 import {
@@ -238,6 +238,13 @@ describe('slideTimeline', () => {
 
   it('loads the longest item times the item count', () => {
     expect(timelineLoad(fourItems(400))).toBe(400);
+  });
+
+  it('takes the whole body on a slide with no heading', () => {
+    const node = fourItems(timelineFit.l + 4);
+    expect(timelineStep(node, layoutAt(1))).toBe('m');
+    expect(timelineStep(node, undefined)).toBe('l');
+    expect(renderedStep('timeline-headingSize', node)).toBe('l');
   });
 
   it('steps down at each budget, under crowding, and in a narrower box, unless sized', () => {

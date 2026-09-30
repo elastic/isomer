@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { font } from '../theme/base';
+import { frameContentWidth } from '../theme/components/frame';
 import { heading } from '../theme/components/heading';
 import { scalePx } from '../theme/scale';
 
@@ -16,6 +17,7 @@ import {
   rowLoad,
   sizeForLines,
   sizeForLoad,
+  sizeForWidthLoad,
   widestWord,
 } from './size';
 
@@ -38,6 +40,36 @@ describe('sizeForLoad', () => {
   it('keeps an explicit size', () => {
     expect(sizeForLoad('s', 1, budget)).toBe('s');
     expect(sizeForLoad('l', 1000, budget, 3)).toBe('l');
+  });
+});
+
+describe('sizeForWidthLoad', () => {
+  const budget = { l: 100, m: 200 };
+  const at = (width: number, crowding = 1) => ({ width, crowding });
+  const half = (frameContentWidth - 64) / 2 + 64;
+
+  it('reads a layout as wide as the frame as sizeForLoad does', () => {
+    expect(
+      sizeForWidthLoad(undefined, 100, budget, at(frameContentWidth))
+    ).toBe('l');
+    expect(
+      sizeForWidthLoad(undefined, 101, budget, at(frameContentWidth))
+    ).toBe('m');
+    expect(
+      sizeForWidthLoad(undefined, 100, budget, at(frameContentWidth, 2))
+    ).toBe('m');
+  });
+
+  it('weighs the load by how much narrower the layout is, less its gutters', () => {
+    expect(sizeForWidthLoad(undefined, 50, budget, at(half), 64)).toBe('l');
+    expect(sizeForWidthLoad(undefined, 51, budget, at(half), 64)).toBe('m');
+    expect(sizeForWidthLoad(undefined, 51, budget, at(half))).toBe('l');
+  });
+
+  it('takes `s` when the gutters leave no width, and keeps an explicit size', () => {
+    expect(sizeForWidthLoad(undefined, 1, budget, at(64), 64)).toBe('s');
+    expect(sizeForWidthLoad(undefined, 1, budget, at(0))).toBe('s');
+    expect(sizeForWidthLoad('l', 1000, budget, at(0, 3))).toBe('l');
   });
 });
 

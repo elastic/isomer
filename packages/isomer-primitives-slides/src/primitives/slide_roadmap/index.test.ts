@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { frameContentWidth } from '../../theme/components/frame';
 import { roadmapFit } from '../../theme/components/roadmap';
-import { layoutAt } from '../size.fixtures';
+import { layoutAt, renderedStep } from '../size.fixtures';
 
 import { example, fullExample, twoColumnsExample } from './examples';
 import { roadmapLoad, roadmapStep } from './fit';
@@ -250,6 +250,13 @@ describe('slideRoadmap', () => {
 
   it('loads the longest column times the column count', () => {
     expect(roadmapLoad(twoColumns(400))).toBe(400);
+  });
+
+  it('takes the whole body on a slide with no heading', () => {
+    const node = twoColumns(roadmapFit.l + 2);
+    expect(roadmapStep(node, layoutAt(1))).toBe('m');
+    expect(roadmapStep(node, undefined)).toBe('l');
+    expect(renderedStep('roadmap-titleSize', node)).toBe('l');
   });
 
   it('steps down at each budget, under crowding, and in a narrower box, unless sized', () => {

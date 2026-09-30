@@ -26,6 +26,8 @@ import {
   tallestExample,
 } from '../primitives/slide_heading/examples';
 import { fullExample as listExample } from '../primitives/slide_list/examples';
+import { fullExample as roadmapExample } from '../primitives/slide_roadmap/examples';
+import { fullExample as treeExample } from '../primitives/slide_tree/examples';
 import { slideDeckPrimitives } from '../registry';
 import { agendaFit } from '../theme/components/agenda';
 import {
@@ -160,6 +162,7 @@ const paneOf = (node: PrimitiveNode): PrimitiveNode =>
   }) as PrimitiveNode;
 
 const placements: [string, (node: PrimitiveNode) => Composition][] = [
+  ['alone', (node) => inFrame([node])],
   ['under the tallest heading', (node) => inFrame([tallestExample, node])],
   [
     'as a title aside',
@@ -168,7 +171,11 @@ const placements: [string, (node: PrimitiveNode) => Composition][] = [
         { type: 'slideTitle', title: 'Isomer', aside: node } as PrimitiveNode,
       ]),
   ],
-  ['in a split pane', (node) => inFrame([headingExample, paneOf(node)])],
+  [
+    'in a split pane under a heading',
+    (node) => inFrame([headingExample, paneOf(node)]),
+  ],
+  ['in a split pane alone', (node) => inFrame([paneOf(node)])],
 ];
 
 const widthLoaded = new Set(['slideGraph', 'slideRoadmap', 'slideTimeline']);
@@ -211,26 +218,29 @@ describe('checkLayout reports a node past the frame body', () => {
     ),
   };
 
-  it.each([fanoutExample, listExample, halfWrappedAgenda])(
-    '$type below the tallest heading',
-    async (node) => {
-      const slide: Composition = {
-        type: 'view',
-        body: [
-          {
-            type: 'slideFrame',
-            body: [tallestExample, node],
-          } as PrimitiveNode,
-        ],
-      };
-      expect(await findings(slide)).toEqual([
+  it.each([
+    fanoutExample,
+    listExample,
+    halfWrappedAgenda,
+    roadmapExample,
+    treeExample,
+  ])('$type below the tallest heading', async (node) => {
+    const slide: Composition = {
+      type: 'view',
+      body: [
         {
-          kind: 'overflow',
-          path: 'body[0].body[1]',
-          type: node.type,
-          by: expect.any(Number) as number,
-        },
-      ]);
-    }
-  );
+          type: 'slideFrame',
+          body: [tallestExample, node],
+        } as PrimitiveNode,
+      ],
+    };
+    expect(await findings(slide)).toEqual([
+      {
+        kind: 'overflow',
+        path: 'body[0].body[1]',
+        type: node.type,
+        by: expect.any(Number) as number,
+      },
+    ]);
+  });
 });

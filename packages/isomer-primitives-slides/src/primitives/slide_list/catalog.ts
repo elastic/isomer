@@ -21,6 +21,7 @@ export const catalog = {
   ],
   avoidWhen: [
     'The terms are new vocabulary the audience must learn; use slideDefinitions.',
+    'The items are files and folders; use slideTree.',
     'The points are the slide’s main content and want a marker each; use slideBulletList.',
   ],
   example,

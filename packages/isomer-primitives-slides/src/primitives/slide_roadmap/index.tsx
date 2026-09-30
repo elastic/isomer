@@ -37,6 +37,7 @@ export type {
 } from './schema';
 
 const { separator } = slideDistillery.tokens.roadmap;
+const termJoiner = slideDistillery.tokens.glyph.termJoiner.value;
 
 const horizon = ({ title, status, current }: SlideRoadmapColumn): string =>
   oneLine(
@@ -49,7 +50,8 @@ export const text = ({ columns }: SlideRoadmapNode): string =>
       [
         horizon(column),
         ...column.items.map(
-          ({ title, body }) => `- ${plainText(title)}: ${plainText(body)}`
+          ({ title, body }) =>
+            `- ${plainText(title)}${termJoiner}${plainText(body)}`
         ),
       ].join('\n')
     )
@@ -60,7 +62,11 @@ export const markdown = ({ columns }: SlideRoadmapNode) =>
     md.heading(2, horizon(column)),
     md.list(
       column.items.map(({ title, body }) =>
-        md.paragraph(strongMarksMarkdown(title), ': ', ...marksMarkdown(body))
+        md.paragraph(
+          strongMarksMarkdown(title),
+          termJoiner,
+          ...marksMarkdown(body)
+        )
       )
     ),
   ]);
@@ -80,7 +86,7 @@ export const slack = ({ columns }: SlideRoadmapNode): SlackBlock[] =>
           type: 'rich_text_section',
           elements: [
             ...strongMarksRichText(title),
-            richTextRun(': '),
+            richTextRun(termJoiner),
             ...marksRichText(body),
           ],
         })),

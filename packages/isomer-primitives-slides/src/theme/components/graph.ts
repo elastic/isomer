@@ -49,4 +49,4 @@ export const graph = {
 export const graphMaxMain = 4;
 
 /** Node rows times the longest node's characters, plus the caption. */
-export const graphFit = { l: 150, m: 280 } as const;
+export const graphFit = { l: 150, m: 260 } as const;

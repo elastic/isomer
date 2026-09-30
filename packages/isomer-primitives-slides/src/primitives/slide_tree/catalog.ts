@@ -19,7 +19,8 @@ export const catalog = {
     'Each file or subfolder earns a short note on its job.',
   ],
   avoidWhen: [
-    'The items are not files or folders; use slideBulletList.',
+    'The items are not files or folders; use slideList.',
+    'The entries are terms to learn rather than paths; use slideDefinitions.',
     'The point is the code inside a file; use slideCode.',
   ],
   example,

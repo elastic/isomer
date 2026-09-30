@@ -32,6 +32,7 @@ export type {
 } from './schema';
 
 const { arrow, relationJoiner } = slideDistillery.tokens.graph;
+const termJoiner = slideDistillery.tokens.glyph.termJoiner.value;
 
 const cue = ({ emphasis }: SlideGraphTerm): string =>
   toneCueText(emphasis ? 'primary' : undefined);
@@ -52,7 +53,8 @@ export const text = (node: SlideGraphNode): string =>
     node.caption && plainText(node.caption),
     node.nodes
       .map(
-        (term) => `${cue(term)}${oneLine(term.term)}: ${plainText(term.body)}`
+        (term) =>
+          `${cue(term)}${oneLine(term.term)}${termJoiner}${plainText(term.body)}`
       )
       .join('\n'),
     relations(node),
@@ -66,8 +68,8 @@ export const markdown = (node: SlideGraphNode) => [
     node.nodes.map((term) =>
       md.paragraph(
         ...(term.emphasis ? [cue(term)] : []),
-        md.strong(`${term.term}:`),
-        ' ',
+        md.strong(term.term),
+        termJoiner,
         ...marksMarkdown(term.body)
       )
     )
@@ -94,8 +96,8 @@ export const slack = (node: SlideGraphNode): SlackBlock[] => [
           type: 'rich_text_section',
           elements: [
             ...(term.emphasis ? [richTextRun(cue(term))] : []),
-            richTextRun(`${term.term}:`, { bold: true }),
-            richTextRun(' '),
+            richTextRun(term.term, { bold: true }),
+            richTextRun(termJoiner),
             ...marksRichText(term.body),
           ],
         })),

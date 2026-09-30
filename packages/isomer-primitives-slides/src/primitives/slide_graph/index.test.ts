@@ -14,7 +14,7 @@ import { describe, expect, it } from 'vitest';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { frameContentWidth } from '../../theme/components/frame';
 import { graphFit, graphMaxMain } from '../../theme/components/graph';
-import { layoutAt } from '../size.fixtures';
+import { layoutAt, renderedStep } from '../size.fixtures';
 
 import { example, outwardEdgesExample, pairExample } from './examples';
 import { graphLoad, graphStep } from './fit';
@@ -195,12 +195,12 @@ describe('slideGraph', () => {
     expect(markdown(example)).toMatchInlineSnapshot(`
       "A basket becomes an order once **pricing and stock** agree.
 
-      - **Catalog:** Every product a store can sell.
-      - **Basket:** What a customer means to buy.
-      - ● **Order:** A priced basket with a slot.
-      - **Delivery:** One van run, many orders.
-      - **Pricing:** Offers, fixed at checkout.
-      - **Stock:** What the store holds now.
+      - **Catalog**: Every product a store can sell.
+      - **Basket**: What a customer means to buy.
+      - ● **Order**: A priced basket with a slot.
+      - **Delivery**: One van run, many orders.
+      - **Pricing**: Offers, fixed at checkout.
+      - **Stock**: What the store holds now.
 
       Catalog → Basket, Basket → Order, Order → Delivery, Pricing → Order, Stock → Order"
     `);
@@ -240,11 +240,11 @@ describe('slideGraph', () => {
                       "style": {
                         "bold": true,
                       },
-                      "text": "Incident:",
+                      "text": "Incident",
                       "type": "text",
                     },
                     {
-                      "text": " ",
+                      "text": ": ",
                       "type": "text",
                     },
                     {
@@ -264,11 +264,11 @@ describe('slideGraph', () => {
                       "style": {
                         "bold": true,
                       },
-                      "text": "Review:",
+                      "text": "Review",
                       "type": "text",
                     },
                     {
-                      "text": " ",
+                      "text": ": ",
                       "type": "text",
                     },
                     {
@@ -324,6 +324,13 @@ describe('slideGraph', () => {
       3 * 'CatalogEvery product a store can sell.'.length +
         'A basket becomes an order once pricing and stock agree.'.length
     );
+  });
+
+  it('takes the whole body on a slide with no heading', () => {
+    const node = pair(graphFit.l + 1);
+    expect(graphStep(node, layoutAt(1))).toBe('m');
+    expect(graphStep(node, undefined)).toBe('l');
+    expect(renderedStep('graph-termSize', node)).toBe('l');
   });
 
   it('steps down at each budget, under crowding, and in a narrower box, unless sized', () => {

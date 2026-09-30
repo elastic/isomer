@@ -19,7 +19,8 @@ export const catalog = {
     'The concepts form a chain with at most one concept feeding in from above and one from below.',
   ],
   avoidWhen: [
-    'The terms have no arrows between them; use slideBulletList.',
+    'One source feeds many targets; use slideFanout.',
+    'The terms have no arrows between them; use slideDefinitions.',
     'The points are dated events in order; use slideTimeline.',
   ],
   example,
