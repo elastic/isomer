@@ -13,6 +13,7 @@ import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
 import { slideLayout } from '../layout';
 import {
+  sizeForMarkedWords,
   sizeForWidthLoad,
   sizeForWords,
   smallerStep,
@@ -75,12 +76,12 @@ export const graphWordStep = (
         graph.termSizes,
         inner - (emphasis ? cueWidth : 0)
       ),
-      sizeForWords(stripMarks(body), graph.body, graph.bodySizes, inner),
+      sizeForMarkedWords(body, graph.body, graph.bodySizes, inner),
     ]),
     ...(node.caption
       ? [
-          sizeForWords(
-            stripMarks(node.caption),
+          sizeForMarkedWords(
+            node.caption,
             graph.caption,
             graph.captionSizes,
             graphCaptionWidth(node, width)

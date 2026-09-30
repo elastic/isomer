@@ -14,8 +14,9 @@ import { countKeys, type SlideSize } from '../../theme/variants';
 import { slideLayout } from '../layout';
 import {
   lineFill,
-  measureText,
+  measureMarks,
   rowLoad,
+  sizeForMarkedWords,
   sizeForWidthLoad,
   sizeForWords,
   smallerStep,
@@ -26,7 +27,7 @@ import {
 import type { SlideTimelineNode } from './schema';
 
 const quoted = (heading: string): string =>
-  `${timeline.quoteOpen.value}${stripMarks(heading)}${timeline.quoteClose.value}`;
+  `${timeline.quoteOpen.value}${heading}${timeline.quoteClose.value}`;
 
 const columnWidth = (count: number, width: number): number =>
   trackWidth(
@@ -55,18 +56,14 @@ export const timelineWordStep = (
     (step, { label, heading, body }) =>
       [
         sizeForWords(label, timeline.label, timeline.labelSizes, column),
-        sizeForWords(
+        sizeForMarkedWords(
           quoted(heading),
           timeline.heading,
           timeline.headingSizes,
-          column
+          column,
+          'primary'
         ),
-        sizeForWords(
-          stripMarks(body),
-          timeline.body,
-          timeline.bodySizes,
-          column
-        ),
+        sizeForMarkedWords(body, timeline.body, timeline.bodySizes, column),
       ].reduce(smallerStep, step),
     'l'
   );
@@ -106,10 +103,11 @@ export const timelineHeadingLineCount = (
     ...headings.map((heading) =>
       Math.max(
         1,
-        measureText(
+        measureMarks(
           quoted(heading),
           { ...timeline.heading, size: timeline.headingSizes[step] },
-          width * lineFill
+          width * lineFill,
+          'primary'
         ).lines
       )
     )

@@ -14,6 +14,7 @@ import type { SlideSize } from '../../theme/variants';
 import { slideLayout } from '../layout';
 import {
   rowLoad,
+  sizeForMarkedWords,
   sizeForWidthLoad,
   sizeForWords,
   smallerStep,
@@ -46,14 +47,15 @@ export const roadmapWordStep = (
       [
         sizeForWords(title, roadmap.title, roadmap.titleSizes, column),
         ...items.flatMap((item) => [
-          sizeForWords(
-            stripMarks(item.title),
+          sizeForMarkedWords(
+            item.title,
             roadmap.itemTitle,
             roadmap.itemTitleSizes,
-            column
+            column,
+            'primary'
           ),
-          sizeForWords(
-            stripMarks(item.body),
+          sizeForMarkedWords(
+            item.body,
             roadmap.itemBody,
             roadmap.itemBodySizes,
             column

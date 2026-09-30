@@ -32,6 +32,7 @@ import {
   rowLoad,
   sizeForLines,
   sizeForLoad,
+  sizeForMarkedWords,
   sizeForWidth,
   sizeForWidthLoad,
   sizeForWords,
@@ -136,6 +137,65 @@ describe('sizeForWords', () => {
     const width = at('Quarter', 'l') + 1;
     expect(sizeForWords('First Quarter', role, steps, width)).toBe('l');
     expect(sizeForWords('First Quarter', nowrap, steps, width)).toBe('s');
+  });
+});
+
+describe('sizeForMarkedWords', () => {
+  const role = { ...type.body, size: steps.l };
+  const inset = scalePx(marks.codeInset) + scalePx(marks.codeBorder);
+  const plainAt = (text: string, step: 'l' | 'm') =>
+    measureText(text, { ...role, size: steps[step] }).widest;
+  const codeAt = (text: string, step: 'l' | 'm') =>
+    measureText(text, { ...role, ...marks.code, size: steps[step] }).widest +
+    2 * inset;
+
+  it('measures a `code` word in mono between its chip’s sides', () => {
+    const width = codeAt('capture', 'l');
+    expect(plainAt('capture', 'l')).toBeLessThan(width - 1);
+    expect(sizeForWords('go capture', role, steps, width - 1)).toBe('l');
+    expect(sizeForMarkedWords('go `capture`', role, steps, width, 'ink')).toBe(
+      'l'
+    );
+    expect(
+      sizeForMarkedWords('go `capture`', role, steps, width - 1, 'ink')
+    ).toBe('m');
+    expect(
+      sizeForMarkedWords(
+        'go `capture`',
+        role,
+        steps,
+        codeAt('capture', 'm') - 1
+      )
+    ).toBe('s');
+  });
+
+  it('sets `code` in display text in mono without its chip', () => {
+    const width = measureText('capture', {
+      ...role,
+      ...marks.displayCode,
+    }).widest;
+    expect(sizeForMarkedWords('`capture`', role, steps, width, 'primary')).toBe(
+      'l'
+    );
+    expect(
+      sizeForMarkedWords('`capture`', role, steps, width - 1, 'primary')
+    ).toBe('m');
+    expect(width).toBeLessThan(codeAt('capture', 'l') - 1);
+  });
+
+  it('measures a word across runs whole, and strong in bold', () => {
+    const width = measureMarks('**cap**`ture`', role).widest;
+    expect(sizeForMarkedWords('**cap**`ture`', role, steps, width)).toBe('l');
+    expect(sizeForMarkedWords('**cap**`ture`', role, steps, width - 1)).toBe(
+      'm'
+    );
+  });
+
+  it('holds the whole text to the width under `nowrap`', () => {
+    const nowrap = { ...role, whiteSpace: font.whiteSpace.nowrap };
+    const width = codeAt('b', 'l') + 1;
+    expect(sizeForMarkedWords('a `b`', role, steps, width)).toBe('l');
+    expect(sizeForMarkedWords('a `b`', nowrap, steps, width)).toBe('s');
   });
 });
 
