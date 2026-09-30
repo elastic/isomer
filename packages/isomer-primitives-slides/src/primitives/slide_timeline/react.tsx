@@ -47,7 +47,10 @@ export const react = (
       {...nodeAnchor(context, { type })}
       className={cls(context, layoutModule.handles.fill)}>
       <div className={cls(context, timeline.row)}>
-        <div aria-hidden className={cls(context, timeline.rail)} />
+        <div
+          aria-hidden
+          className={cls(context, timeline.rail, timeline.railTop[step])}
+        />
         <ol className={cls(context, timeline.list)}>
           {items.map(
             ({ label: when, channel, heading, body, current }, index) => (
@@ -59,10 +62,11 @@ export const react = (
                   className={cls(
                     context,
                     timeline.label,
+                    timeline.labelSize[step],
                     current ? timeline.labelCurrent : timeline.labelPast
                   )}>
                   {when}
-                </span>
+                </span>{' '}
                 <span
                   aria-hidden
                   className={cls(

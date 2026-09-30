@@ -38,5 +38,7 @@ export const tree = {
   glyph: {
     branch: literal('├─'),
     last: literal('└─'),
+    /** Between the padded name column and the note. */
+    gutter: literal('  '),
   },
 } as const;

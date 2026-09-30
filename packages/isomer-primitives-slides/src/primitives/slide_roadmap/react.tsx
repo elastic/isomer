@@ -81,7 +81,7 @@ export const react = (
                       roadmap.itemTitleSize[step]
                     )}>
                     {marksReact(item.title, context, 'primary')}
-                  </span>
+                  </span>{' '}
                   <span
                     className={cls(
                       context,

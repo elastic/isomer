@@ -35,8 +35,13 @@ export const timelineModule = createStyleModule('timeline', ({ css }) => ({
     left: 0;
     position: absolute;
     right: 0;
-    top: ${timeline.railTop};
   `,
+  railTop: variants(
+    slideSizes,
+    (size) => css`
+      top: ${timeline.railTops[size]};
+    `
+  ),
   // Positioned so it paints above the rail.
   item: css`
     display: flex;
@@ -45,6 +50,12 @@ export const timelineModule = createStyleModule('timeline', ({ css }) => ({
     min-width: 0;
     position: relative;
   `,
+  labelSize: variants(
+    slideSizes,
+    (size) => css`
+      font-size: ${timeline.labelSizes[size]};
+    `
+  ),
   // The rail sits under one line of label.
   label: css`
     ${typeRole(timeline.label)}

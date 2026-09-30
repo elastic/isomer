@@ -13,11 +13,14 @@ import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { frameContentWidth } from '../../theme/components/frame';
-import { graphFit, graphMaxMain } from '../../theme/components/graph';
-import { layoutAt, renderedStep } from '../size.fixtures';
+import { graph, graphFit, graphMaxMain } from '../../theme/components/graph';
+import { scalePx } from '../../theme/scale';
+import type { SlideSize } from '../../theme/variants';
+import { widestWord } from '../size';
+import { layoutAt, renderedStep, shortWords } from '../size.fixtures';
 
 import { example, outwardEdgesExample, pairExample } from './examples';
-import { graphLoad, graphStep } from './fit';
+import { graphLoad, graphStep, graphWordStep } from './fit';
 import { markdown as markdownContent, slack, text } from './index';
 import { graphLayout } from './layout';
 import { schema, type SlideGraphNode } from './schema';
@@ -397,7 +400,7 @@ describe('slideGraph', () => {
   const pair = (load: number): SlideGraphNode => ({
     type: 'slideGraph',
     nodes: [
-      { id: 'a', term: 'A', body: 'x'.repeat(load - 1) },
+      { id: 'a', term: 'A', body: shortWords(load - 1) },
       { id: 'b', term: 'B', body: 'y' },
     ],
     edges: [['a', 'b']],
@@ -409,6 +412,33 @@ describe('slideGraph', () => {
       3 * 'CatalogEvery product a store can sell.'.length +
         'A basket becomes an order once pricing and stock agree.'.length
     );
+  });
+
+  it('steps down until its widest term word fits its node', () => {
+    const word = 'Substitutions';
+    const node: SlideGraphNode = {
+      ...pairExample,
+      nodes: [
+        { id: 'a', term: word, body: 'x' },
+        { id: 'b', term: 'B', body: 'y' },
+      ],
+    };
+    const inset =
+      2 * (scalePx(graph.node.paddingX.l) + scalePx(graph.node.emphasisBorder));
+    const layoutWidth = (step: SlideSize, over: number) =>
+      2 *
+        (widestWord(word, graph.term.tracking) *
+          scalePx(graph.termSizes[step]) +
+          over +
+          inset) +
+      scalePx(graph.track);
+    expect(graphWordStep(node, layoutWidth('l', 1))).toBe('l');
+    expect(graphWordStep(node, layoutWidth('l', -1))).toBe('m');
+    expect(graphWordStep(node, layoutWidth('s', 1))).toBe('s');
+    expect(graphStep(node, layoutAt(1, layoutWidth('m', -1)))).toBe('s');
+    expect(
+      graphStep({ ...node, size: 'l' }, layoutAt(1, layoutWidth('s', -1)))
+    ).toBe('l');
   });
 
   it('takes the whole body on a slide with no heading', () => {

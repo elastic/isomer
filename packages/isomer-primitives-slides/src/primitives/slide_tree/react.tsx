@@ -41,7 +41,7 @@ export const react = (
                   ) : null}
                   <span aria-hidden className={cls(context, tree.tick)} />
                   <span className={cls(context, tree.nameText)}>{name}</span>
-                </span>
+                </span>{' '}
                 <span className={cls(context, tree.body)}>{body}</span>
               </li>
             );

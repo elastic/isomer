@@ -12,11 +12,14 @@ import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { frameContentWidth } from '../../theme/components/frame';
-import { roadmapFit } from '../../theme/components/roadmap';
-import { layoutAt, renderedStep } from '../size.fixtures';
+import { roadmap, roadmapFit } from '../../theme/components/roadmap';
+import { scalePx } from '../../theme/scale';
+import type { SlideSize } from '../../theme/variants';
+import { widestWord } from '../size';
+import { layoutAt, renderedStep, shortWords } from '../size.fixtures';
 
 import { example, fullExample, twoColumnsExample } from './examples';
-import { roadmapLoad, roadmapStep } from './fit';
+import { roadmapLoad, roadmapStep, roadmapWordStep } from './fit';
 import { markdown as markdownContent, slack, text } from './index';
 import { schema, type SlideRoadmapNode } from './schema';
 
@@ -86,6 +89,14 @@ describe('slideRoadmap', () => {
         .safeParse({ ...example, columns })
         .error?.issues.map(({ path }) => path)
     ).toEqual([['columns']]);
+  });
+
+  it('keeps a space between an item title and its body in the HTML text', () => {
+    const { html } = runtime.surfaces.html.render(compose(example));
+    const [item] = example.columns[0]?.items ?? [];
+    expect(html.replace(/<[^>]+>/g, '')).toContain(
+      `${item?.title} ${item?.body}`
+    );
   });
 
   it('marks the current column for assistive technology and with a cue', () => {
@@ -249,12 +260,38 @@ describe('slideRoadmap', () => {
     columns: ['A', 'B'].map((title) => ({
       title,
       status: 'S',
-      items: [{ title: 'I', body: 'x'.repeat(Math.ceil(load / 2) - 3) }],
+      items: [{ title: 'I', body: shortWords(Math.ceil(load / 2) - 3) }],
     })),
   });
 
   it('loads the longest column times the column count', () => {
     expect(roadmapLoad(twoColumns(400))).toBe(400);
+  });
+
+  it('steps down until its widest horizon word fits its column', () => {
+    const title = 'Afterwards';
+    const node: SlideRoadmapNode = {
+      ...twoColumnsExample,
+      columns: twoColumnsExample.columns.map((column) => ({
+        ...column,
+        title,
+        items: [{ title: 'I', body: 'x' }],
+      })),
+    };
+    const gutter = 2 * scalePx(roadmap.columnPadding) + scalePx(roadmap.rule);
+    const layoutWidth = (step: SlideSize, over: number) =>
+      2 *
+        (widestWord(title, roadmap.title.tracking) *
+          scalePx(roadmap.titleSizes[step]) +
+          over) +
+      gutter;
+    expect(roadmapWordStep(node, layoutWidth('l', 1))).toBe('l');
+    expect(roadmapWordStep(node, layoutWidth('l', -1))).toBe('m');
+    expect(roadmapWordStep(node, layoutWidth('m', -1))).toBe('s');
+    expect(roadmapStep(node, layoutAt(1, layoutWidth('m', -1)))).toBe('s');
+    expect(
+      roadmapStep({ ...node, size: 'l' }, layoutAt(1, layoutWidth('s', -1)))
+    ).toBe('l');
   });
 
   it('takes the whole body on a slide with no heading', () => {

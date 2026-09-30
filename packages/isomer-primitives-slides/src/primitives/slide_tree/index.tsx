@@ -33,7 +33,7 @@ export const text = ({ root, entries }: SlideTreeNode): string => {
     ...rows.map(({ name, body }, index) => {
       const connector =
         index === rows.length - 1 ? glyph.last.value : glyph.branch.value;
-      return `${connector} ${name}${' '.repeat(width - displayColumns(name))}  ${body}`;
+      return `${connector} ${name}${' '.repeat(width - displayColumns(name))}${glyph.gutter.value}${body}`;
     }),
   ].join('\n');
 };

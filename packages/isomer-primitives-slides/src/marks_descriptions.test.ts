@@ -39,6 +39,14 @@ const stringsIn = (value: unknown, path: Path = []): Path[] => {
   return [];
 };
 
+const fieldName = (path: Path): string =>
+  path.filter((step) => typeof step === 'string').join('.');
+
+/** One path to each field of `node`; a field's items share its description and renderer. */
+const fieldsIn = (node: unknown): Path[] => [
+  ...new Map(stringsIn(node).map((path) => [fieldName(path), path])).values(),
+];
+
 const withAppended = (value: unknown, [head, ...rest]: Path): unknown => {
   if (head === undefined) {
     return `${value as string} \`mk\``;
@@ -124,7 +132,7 @@ describe('inline marks in field descriptions', () => {
     ({ schema, examples }) => {
       const missing = new Set<string>();
       for (const example of examples) {
-        for (const path of stringsIn(example)) {
+        for (const path of fieldsIn(example)) {
           const html = render(withAppended(example, path));
           if (!html?.includes('>mk</code>')) {
             continue;
@@ -133,9 +141,7 @@ describe('inline marks in field descriptions', () => {
             /marks are allowed/i.test(text)
           );
           if (!described) {
-            missing.add(
-              path.filter((step) => typeof step === 'string').join('.')
-            );
+            missing.add(fieldName(path));
           }
         }
       }
@@ -148,7 +154,7 @@ describe('inline marks in field descriptions', () => {
     ({ schema, examples }) => {
       const unrendered = new Set<string>();
       for (const example of examples) {
-        for (const path of stringsIn(example)) {
+        for (const path of fieldsIn(example)) {
           const says = fieldAt(schema as ZodType, path).some((text) =>
             /marks are allowed/i.test(text)
           );
@@ -157,9 +163,7 @@ describe('inline marks in field descriptions', () => {
           }
           const node = withAppended(example, path);
           const html = render(node);
-          const field = path
-            .filter((step) => typeof step === 'string')
-            .join('.');
+          const field = fieldName(path);
           if (html === undefined) {
             unrendered.add(`${field} (invalid)`);
           } else if (!html.includes('>mk</code>')) {

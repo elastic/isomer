@@ -30,11 +30,12 @@ import {
 
 export type { SlideTimelineItem, SlideTimelineNode } from './schema';
 
-const { quoteOpen, quoteClose, separator } = slideDistillery.tokens.timeline;
+const { quoteOpen, quoteClose, separator, labelEnd } =
+  slideDistillery.tokens.timeline;
 
 const when = ({ label, channel, current }: SlideTimelineItem): string =>
   oneLine(
-    `${toneCueText(current ? 'primary' : undefined)}${label} ${separator.value} ${channel.toUpperCase()}.`
+    `${toneCueText(current ? 'primary' : undefined)}${label} ${separator.value} ${channel.toUpperCase()}${labelEnd.value}`
   );
 
 export const text = ({ items }: SlideTimelineNode): string =>

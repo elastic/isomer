@@ -12,8 +12,11 @@ import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { frameContentWidth } from '../../theme/components/frame';
-import { timelineFit } from '../../theme/components/timeline';
-import { layoutAt, renderedStep } from '../size.fixtures';
+import { timeline, timelineFit } from '../../theme/components/timeline';
+import { scalePx } from '../../theme/scale';
+import type { SlideSize } from '../../theme/variants';
+import { widestWord } from '../size';
+import { layoutAt, renderedStep, shortWords } from '../size.fixtures';
 
 import { example, fiveItemsExample, threeItemsExample } from './examples';
 import {
@@ -21,6 +24,7 @@ import {
   timelineHeadingLines,
   timelineLoad,
   timelineStep,
+  timelineWordStep,
 } from './fit';
 import { markdown as markdownContent, slack, text } from './index';
 import { schema, type SlideTimelineNode } from './schema';
@@ -93,6 +97,14 @@ describe('slideTimeline', () => {
     expect(
       timelineHeadingLineCount(['Short.', 'Short.', 'word '.repeat(200)], 'l')
     ).toBe(timelineHeadingLines.length);
+  });
+
+  it('keeps a space between a label and its channel in the HTML text', () => {
+    const { html } = runtime.surfaces.html.render(compose(example));
+    const [item] = example.items;
+    expect(html.replace(/<[^>]+>/g, '')).toContain(
+      `${item?.label} ${item?.channel}`
+    );
   });
 
   it('marks the current item for assistive technology and with a cue', () => {
@@ -235,13 +247,40 @@ describe('slideTimeline', () => {
       ...item,
       label: 'L',
       channel: 'C',
-      heading: 'x'.repeat(Math.ceil(load / 4) - 3),
+      heading: shortWords(Math.ceil(load / 4) - 3),
       body: 'y',
     })),
   });
 
   it('loads the longest item, label and channel included, times the item count', () => {
     expect(timelineLoad(fourItems(400))).toBe(400);
+  });
+
+  it('steps down until its widest label word fits its column', () => {
+    const label = 'September';
+    const node: SlideTimelineNode = {
+      ...threeItemsExample,
+      items: threeItemsExample.items.map((item) => ({
+        ...item,
+        label,
+        heading: 'x',
+        body: 'y',
+      })),
+    };
+    const { length } = node.items;
+    const layoutWidth = (step: SlideSize, over: number) =>
+      length *
+        (widestWord(label, timeline.label.tracking) *
+          scalePx(timeline.labelSizes[step]) +
+          over) +
+      scalePx(timeline.gap) * (length - 1);
+    expect(timelineWordStep(node, layoutWidth('l', 1))).toBe('l');
+    expect(timelineWordStep(node, layoutWidth('l', -1))).toBe('m');
+    expect(timelineWordStep(node, layoutWidth('m', -1))).toBe('s');
+    expect(timelineStep(node, layoutAt(1, layoutWidth('m', -1)))).toBe('s');
+    expect(
+      timelineStep({ ...node, size: 'l' }, layoutAt(1, layoutWidth('s', -1)))
+    ).toBe('l');
   });
 
   it('takes the whole body on a slide with no heading', () => {

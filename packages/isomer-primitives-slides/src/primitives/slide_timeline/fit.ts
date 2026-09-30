@@ -15,7 +15,9 @@ import { slideLayout } from '../layout';
 import {
   lineFill,
   rowLoad,
+  sizeForLines,
   sizeForWidthLoad,
+  smallerStep,
   trackWidth,
   wrappedLines,
 } from '../size';
@@ -32,17 +34,67 @@ export const timelineLoad = ({ items }: SlideTimelineNode): number =>
     ])
   );
 
+/** The largest step at which no word of a label, heading, or body is wider than its column. */
+export const timelineWordStep = (
+  { items }: SlideTimelineNode,
+  width: number
+): SlideSize => {
+  const column = trackWidth(
+    width,
+    items.map(() => 1),
+    timeline.gap
+  );
+  return items.reduce<SlideSize>(
+    (step, { label, heading, body }) =>
+      [
+        sizeForLines(
+          undefined,
+          label,
+          timeline.label.tracking,
+          column,
+          timeline.labelSizes,
+          Infinity
+        ),
+        sizeForLines(
+          undefined,
+          `${timeline.quoteOpen.value}${stripMarks(heading)}${timeline.quoteClose.value}`,
+          font.tracking.none,
+          column,
+          timeline.headingSizes,
+          Infinity
+        ),
+        sizeForLines(
+          undefined,
+          stripMarks(body),
+          timeline.body.tracking,
+          column,
+          timeline.bodySizes,
+          Infinity
+        ),
+      ].reduce(smallerStep, step),
+    'l'
+  );
+};
+
 export const timelineStep = (
   node: SlideTimelineNode,
   context: SlideRenderContext | undefined
-): SlideSize =>
-  sizeForWidthLoad(
-    node.size,
-    timelineLoad(node),
-    timelineFit,
-    slideLayout(context),
-    scalePx(timeline.gap) * (node.items.length - 1)
+): SlideSize => {
+  const layout = slideLayout(context);
+  return (
+    node.size ??
+    smallerStep(
+      sizeForWidthLoad(
+        undefined,
+        timelineLoad(node),
+        timelineFit,
+        layout,
+        scalePx(timeline.gap) * (node.items.length - 1)
+      ),
+      timelineWordStep(node, layout.width)
+    )
   );
+};
 
 /** Heading heights the row can match; a taller heading runs past the others. */
 export const timelineHeadingLines = countKeys(1, 6);

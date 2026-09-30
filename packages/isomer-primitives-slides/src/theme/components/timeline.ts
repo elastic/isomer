@@ -5,20 +5,35 @@
  * 2.0.
  */
 
+import type { ScaleToken } from '@elastic/distillate';
+
 import { color, font, space, stroke, type } from '../base';
 import { literal, px, scalePx } from '../scale';
 
 import { currentToneLabel, glyph } from './shared';
 
-const labelSize = font.size.px72;
+const labelSizes = {
+  l: font.size.px72,
+  m: font.size.px56,
+  s: font.size.px44,
+} as const;
 // Dot geometry, not spacing.
 const dotSize = px(20);
 const dotGap = px(13);
 
+const railTop = (labelSize: ScaleToken): ScaleToken =>
+  px(
+    scalePx(labelSize) +
+      scalePx(dotGap) +
+      scalePx(dotSize) / 2 -
+      scalePx(stroke.rail) / 2
+  );
+
 export const timeline = {
   gap: space.px56,
+  labelSizes,
   label: {
-    size: labelSize,
+    size: labelSizes.l,
     weight: font.weight.extrabold,
     tracking: font.tracking.heading,
     lineHeight: font.lineHeight.solid,
@@ -29,13 +44,12 @@ export const timeline = {
   haloColor: color.primaryTint,
   rail: stroke.rail,
   railColor: color.border,
-  // Centers the rail on the dots.
-  railTop: px(
-    scalePx(labelSize) +
-      scalePx(dotGap) +
-      scalePx(dotSize) / 2 -
-      scalePx(stroke.rail) / 2
-  ),
+  // Centers the rail on the dots, below one line of label.
+  railTops: {
+    l: railTop(labelSizes.l),
+    m: railTop(labelSizes.m),
+    s: railTop(labelSizes.s),
+  },
   channelGap: space.px36,
   headingGap: space.px14,
   headingSizes: { l: font.size.px36, m: font.size.px32, s: font.size.px28 },
@@ -50,6 +64,8 @@ export const timeline = {
   quoteOpen: literal('“'),
   quoteClose: literal('”'),
   separator: glyph.separator,
+  /** Closes the label and channel before the quote, in text, Markdown, and Slack. */
+  labelEnd: literal('.'),
   toneLabel: currentToneLabel,
 } as const;
 

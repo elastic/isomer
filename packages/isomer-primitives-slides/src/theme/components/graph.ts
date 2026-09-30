@@ -10,6 +10,8 @@ import { literal, paddingXy, px } from '../scale';
 
 import { glyph, tone } from './shared';
 
+const paddingX = { l: space.px24, m: space.px20, s: space.px20 } as const;
+
 export const graph = {
   track: space.px64,
   connectorInset: space.px6,
@@ -19,10 +21,11 @@ export const graph = {
     emphasisBorder: stroke.bar,
     radius: radius.panel,
     paddings: {
-      l: paddingXy(space.px20, space.px24),
-      m: paddingXy(space.px16, space.px20),
-      s: paddingXy(space.px12, space.px20),
+      l: paddingXy(space.px20, paddingX.l),
+      m: paddingXy(space.px16, paddingX.m),
+      s: paddingXy(space.px12, paddingX.s),
     },
+    paddingX,
     gap: space.px8,
   },
   rows: { l: space.px48, m: space.px40, s: space.px32 },
