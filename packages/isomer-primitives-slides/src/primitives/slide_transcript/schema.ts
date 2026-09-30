@@ -5,15 +5,19 @@
  * 2.0.
  */
 
+import type { ReactNode } from 'react';
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
-import { fromChildren } from '@elastic/isomer-sdk/author';
+import { fromChildren, textFromChildren } from '@elastic/isomer-sdk/author';
 
 import {
   slideTranscriptFormats,
   slideTranscriptRoles,
 } from '../../theme/variants';
-import { lineText, wrappedText } from '../authored_text';
+import { authoredTextMaxLength, lineText, wrappedText } from '../authored_text';
+import { crossRefine } from '../cross_field';
+
+import { turnLines } from './lines';
 
 const turnSchema = z
   .object({
@@ -29,12 +33,22 @@ const turnSchema = z
         'Who speaks: `user` (right-aligned), `model`, or the `host` application that runs the model.'
       ),
     text: wrappedText().describe(
-      'What was said. Keep it to a sentence or a short line of code. Line breaks are kept.'
+      'What was said. Keep it to a sentence or a short line of code. Line breaks are kept; blank lines at either end are dropped.'
     ),
   })
-  .strict();
+  .strict()
+  .check(
+    crossRefine(
+      ({ text }) =>
+        text.length > authoredTextMaxLength || turnLines(text).length > 0,
+      { error: 'a turn says something: text is blank', path: ['text'] }
+    )
+  );
 
 export type SlideTranscriptTurn = z.infer<typeof turnSchema>;
+
+type SlideTurnProps = Omit<SlideTranscriptTurn, 'text'> &
+  Partial<Pick<SlideTranscriptTurn, 'text'>> & { children?: ReactNode };
 
 /** Zod schema for {@link SlideTranscriptNode}. */
 export const schema = z
@@ -52,7 +66,18 @@ export const schema = z
         .min(1)
         .max(4)
         .describe('Turns in the order they happened. 1 to 4.'),
-      { text: 'text' }
+      {
+        text: 'text',
+        // Keeps the line breaks the default copy would collapse.
+        toItem: ({ children, ...turn }: SlideTurnProps) => ({
+          ...turn,
+          ...(turn.text === undefined && children !== undefined
+            ? {
+                text: textFromChildren(children, { collapseWhitespace: false }),
+              }
+            : {}),
+        }),
+      }
     ),
   })
   .strict();

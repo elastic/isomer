@@ -5,13 +5,17 @@
  * 2.0.
  */
 
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
+import { slideJsx } from '../../jsx';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { slideDistillery } from '../../theme/distillery';
+import type { SlideFrameNode } from '../slide_frame';
 
 import { example, examples, plainExample } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
@@ -198,4 +202,101 @@ describe('slideTranscript in the DOM', () => {
       })
     ).toEqual([`${roleLabel.host.value} one\ntwo\nthree`]);
   });
+});
+
+describe('slideTranscript from JSX', () => {
+  const { Composition, SlideFrame, SlideTranscript, SlideTurn, toComposition } =
+    slideJsx;
+  const turnsFrom = (...children: ReturnType<typeof createElement>[]) => {
+    const composition = toComposition(
+      createElement(
+        Composition,
+        null,
+        createElement(
+          SlideFrame,
+          null,
+          createElement(SlideTranscript, null, ...children)
+        )
+      )
+    );
+    const [frame] = composition.body as SlideFrameNode[];
+    return (frame?.body[0] as SlideTranscriptNode).turns;
+  };
+
+  it('keeps the line breaks in a turn’s text children', () => {
+    expect(
+      turnsFrom(
+        createElement(
+          SlideTurn,
+          { role: 'model' },
+          'First line.\nSecond line.'
+        ),
+        createElement(
+          SlideTurn,
+          { role: 'host', format: 'code' },
+          'a:  1\n',
+          '  b: 2'
+        )
+      )
+    ).toEqual([
+      { role: 'model', text: 'First line.\nSecond line.' },
+      { role: 'host', format: 'code', text: 'a:  1\n  b: 2' },
+    ]);
+  });
+
+  it('takes a text prop over children', () => {
+    expect(
+      turnsFrom(createElement(SlideTurn, { role: 'user', text: 'Hi' }))
+    ).toEqual([{ role: 'user', text: 'Hi' }]);
+  });
+});
+
+describe('slideTranscript edge line breaks', () => {
+  const surfacesOf = (said: string) => {
+    const node: SlideTranscriptNode = {
+      type: 'slideTranscript',
+      turns: [{ role: 'model', text: said }],
+    };
+    return {
+      text: text(node),
+      markdown: markdown(node),
+      slack: slack(node),
+      react: renderToStaticMarkup(
+        runtime.surfaces.react.render(compose(node))
+      ).replace(/[\s\S]*<p[^>]*>([\s\S]*?)<\/p>[\s\S]*/, '$1'),
+    };
+  };
+  const inner = surfacesOf('First line.\nSecond line.');
+
+  it.each([
+    ['leading', '\n\r\nFirst line.\nSecond line.'],
+    ['trailing', 'First line.\nSecond line.\u2029 \n'],
+    ['both', ' \nFirst line.\nSecond line.\n'],
+  ])('drops %s blank lines on every surface alike', (_name, said) => {
+    expect(
+      schema.safeParse({
+        type: 'slideTranscript',
+        turns: [{ role: 'model', text: said }],
+      }).success
+    ).toBe(true);
+    expect(surfacesOf(said)).toEqual(inner);
+  });
+
+  it.each(['\n', ' \r\n ', '\u2028'])(
+    'rejects a turn with only blank lines: %j',
+    (said) => {
+      expect(
+        runtime
+          .validate(
+            compose({
+              type: 'slideTranscript',
+              turns: [{ role: 'model', text: said }],
+            } as PrimitiveNode)
+          )
+          .errors.map(({ path, message }) => `${path}: ${message}`)
+      ).toEqual([
+        'body[0].body[0].turns[0].text: a turn says something: text is blank',
+      ]);
+    }
+  );
 });

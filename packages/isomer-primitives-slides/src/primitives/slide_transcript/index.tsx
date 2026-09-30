@@ -20,12 +20,13 @@ import {
   slackRichText,
   slackSection,
 } from '../../render';
-import { richTextRun, splitLines } from '../../render/marks';
+import { richTextRun } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { turnLines } from './lines';
 import { react } from './react';
 import {
   schema,
@@ -45,7 +46,7 @@ export const text = ({ label, turns }: SlideTranscriptNode): string =>
     label && oneLine(label).toUpperCase(),
     ...turns.map(
       ({ role, text: said }) =>
-        `${speaker(role)}${glyph.termJoiner.value}${splitLines(said).join('\n')}`
+        `${speaker(role)}${glyph.termJoiner.value}${turnLines(said).join('\n')}`
     ),
   ]
     .filter(Boolean)
@@ -56,9 +57,9 @@ export const markdown = ({ label, turns }: SlideTranscriptNode) => [
   ...turns.flatMap(({ format, role, text: said }) => [
     md.paragraph(md.strong(speaker(role))),
     format === 'code'
-      ? md.codeBlock(splitLines(said).join('\n'), 'text')
+      ? md.codeBlock(turnLines(said).join('\n'), 'text')
       : md.paragraph(
-          ...splitLines(said).flatMap((line, row) =>
+          ...turnLines(said).flatMap((line, row) =>
             row > 0 ? [md.break(), line] : [line]
           )
         ),
@@ -68,7 +69,7 @@ export const markdown = ({ label, turns }: SlideTranscriptNode) => [
 export const slack = ({ label, turns }: SlideTranscriptNode): SlackBlock[] => [
   ...(label ? [slackCaption(label.toUpperCase(), true)] : []),
   ...turns.map(({ format, role, text: said }): SlackBlock => {
-    const lines = splitLines(said).join('\n');
+    const lines = turnLines(said).join('\n');
     const body = { type: 'text', text: lines } as const;
     return slackSection(
       `${slackBold(speaker(role))}\n${

@@ -33,6 +33,8 @@ A composition with no `slideCommand` ships no script, and the enhancement adds [
 A React host passes the definition instead of the id:
 
 ```tsx
+import { slideCopyEnhancement } from '@elastic/isomer-primitives-slides';
+
 runtime.surfaces.react.render(composition, {
   wrapper: true,
   enhancements: [slideCopyEnhancement],

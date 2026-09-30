@@ -10,10 +10,10 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
-import { splitLines } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { labelModule, layoutModule } from '../../theme/modules';
 
+import { turnLines } from './lines';
 import type { SlideTranscriptNode } from './schema';
 import { transcriptModule } from './styles';
 
@@ -47,7 +47,7 @@ export const react = (
                 transcript.text,
                 transcript.format[format]
               )}>
-              {splitLines(text).map((line, row) => (
+              {turnLines(text).map((line, row) => (
                 <Fragment key={row}>
                   {row > 0 ? '\n' : null}
                   {line}
