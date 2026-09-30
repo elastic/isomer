@@ -20,6 +20,7 @@ import { type TypeRole, typeRole } from '../theme/type_role';
 import {
   emWidth,
   lineBox,
+  marksHeight,
   measureMarks,
   measureText,
   monoLines,
@@ -269,6 +270,62 @@ describe('measureMarks', () => {
       expect(measureText(text, strong).widest).toBeGreaterThan(fits);
       expect(lines(text, fits)).toBe(1);
       expect(lines(`**${text}**`, fits)).toBe(2);
+    });
+
+    describe('counts the lines holding a `code` chip', () => {
+      const chip = measureMarks('`aaaa`', body).widest;
+
+      it('every line a code run wrapped across touches', () => {
+        expect(measureMarks('`aaaa aaaa aaaa`', body, chip)).toMatchObject({
+          lines: 3,
+          codeLines: 3,
+        });
+      });
+
+      it('every line a code word broken between glyphs lands on', () => {
+        const { lines, codeLines } = measureMarks(
+          `\`${'a'.repeat(40)}\``,
+          body,
+          chip
+        );
+        expect(lines).toBeGreaterThan(1);
+        expect(codeLines).toBe(lines);
+      });
+
+      it('once for runs that share a line', () => {
+        expect(measureMarks('`aa` and `bb`', body)).toMatchObject({
+          lines: 1,
+          codeLines: 1,
+        });
+      });
+
+      it('none for a line without code', () => {
+        const width = measureText('plain words', body).widest;
+        expect(measureMarks('plain words `aa`', body, width)).toMatchObject({
+          lines: 2,
+          codeLines: 1,
+        });
+        expect(measureMarks('plain words', body)).toMatchObject({
+          lines: 1,
+          codeLines: 0,
+        });
+      });
+
+      it('none in display text, which draws no chip', () => {
+        expect(
+          measureMarks('`aa` and `bb`', body, Infinity, 'primary').codeLines
+        ).toBe(0);
+      });
+    });
+
+    it('grows each line holding a chip by the chip’s padding and border', () => {
+      const text = 'plain words `aa`';
+      const width = measureText('plain words', body).widest;
+      expect(marksHeight(text, body, width)).toBe(
+        2 * lineBox(body) +
+          2 * (scalePx(marks.codePaddingY) + scalePx(marks.codeBorder))
+      );
+      expect(marksHeight('plain words', body, width)).toBe(lineBox(body));
     });
 
     it('splits runs at a space or line separator between them', () => {

@@ -14,7 +14,7 @@ import { slideLayout } from '../layout';
 import {
   lineBox,
   lineFill,
-  measureMarks,
+  marksHeight,
   measureText,
   sizeForLoad,
 } from '../size';
@@ -35,7 +35,7 @@ const rowHeight = (step: SlideSize): number =>
   2 * scalePx(connector.headHalf) +
   scalePx(sequence.rowGaps[step]);
 
-/** The height actor chips and message labels add at `step` across `width` by wrapping past one line. */
+/** The height actor chips and message labels add at `step` across `width` past one line, by wrapping or by a label's `code` chips. */
 export const wrapHeight = (
   { actors, messages }: Pick<SlideSequenceNode, 'actors' | 'messages'>,
   step: SlideSize,
@@ -58,18 +58,20 @@ export const wrapHeight = (
     )
   );
   const indexOf = new Map(actors.map(({ id }, index) => [id, index]));
-  const labelLines = messages.map(({ from, to, label }) => {
+  const labelGrowth = messages.map(({ from, to, label }) => {
     const apart = Math.abs((indexOf.get(to) ?? 0) - (indexOf.get(from) ?? 0));
     const span =
       apart * column -
       (apart > 1 ? scalePx(sequence.labelOffset) : 0) -
       2 * scalePx(sequence.labelInset);
-    return measureMarks(label, labelRole(step), span * lineFill).lines;
+    return (
+      marksHeight(label, labelRole(step), span * lineFill) -
+      lineBox(labelRole(step))
+    );
   });
   return (
     (actorLines - 1) * lineBox(actorRole) +
-    labelLines.reduce((total, lines) => total + lines - 1, 0) *
-      lineBox(labelRole(step))
+    labelGrowth.reduce((total, height) => total + height, 0)
   );
 };
 
