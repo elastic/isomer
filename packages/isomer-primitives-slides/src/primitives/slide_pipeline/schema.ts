@@ -94,7 +94,7 @@ export const schema = z
       .array(spanSchema)
       .max(pipelineMaxSpans)
       .describe(
-        `Brackets under runs of adjacent steps, each captioned with who owns that part. Up to ${pipelineMaxSpans}. A non-empty list switches to spans mode: steps become chips, and \`start\`, \`end\`, and step bodies are not allowed. Spans must not overlap. Leave it out or empty for steps mode.`
+        `Brackets under runs of adjacent steps, each captioned with who owns that part. Up to ${pipelineMaxSpans}. A non-empty list switches to spans mode: steps become chips, and \`start\`, \`end\`, \`size\`, and step bodies are not allowed. Spans must not overlap. Leave it out or empty for steps mode.`
       )
       .optional(),
     size: sizeField(),
@@ -133,6 +133,12 @@ export const schema = z
         path: ['spans'],
       }
     )
+  )
+  .check(
+    crossRefine(({ spans, size }) => !spans?.length || size === undefined, {
+      error: '`size` is steps mode only; spans-mode chips take one size',
+      path: ['size'],
+    })
   )
   .check(
     crossRefine(

@@ -7,15 +7,19 @@
 
 import type { SlideRenderContext } from '../../render/context';
 import { stripMarks } from '../../render/marks';
-import { displayColumns } from '../../render/mono';
-import { monoAdvance } from '../../theme/base';
 import { frameContentWidth } from '../../theme/components/frame';
 import { layers as theme, layersFit } from '../../theme/components/layers';
 import { label, tone as toneCue } from '../../theme/components/shared';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
 import { slideLayout } from '../layout';
-import { emWidth, packedLines, proseLines, sizeForLoad } from '../size';
+import {
+  emWidth,
+  monoWidth,
+  packedLines,
+  proseLines,
+  sizeForLoad,
+} from '../size';
 
 import type { SlideLayer, SlideLayersNode } from './schema';
 
@@ -29,7 +33,7 @@ const ownerWidth = ({ owner, tone }: SlideLayer): number =>
   );
 
 const chipWidth = (text: string, step: SlideSize): number =>
-  displayColumns(text) * monoAdvance * scalePx(theme.chipSizes[step]) +
+  monoWidth(text, theme.chipSizes[step]) +
   2 * (scalePx(chip.paddingX) + scalePx(chip.border));
 
 /** Lines of body text or rows of chips `layer` takes at `step` in a band `width` wide. */

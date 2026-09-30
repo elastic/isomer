@@ -6,7 +6,7 @@
  */
 
 import { Fragment, type ReactNode } from 'react';
-import { nodeAnchor } from '@elastic/isomer-sdk';
+import { layoutRoom, nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
@@ -52,7 +52,7 @@ const Pane = ({
           {label}
         </h2>
       ) : null}
-      <div className={cls(context, split.items)}>
+      <div {...layoutRoom(context)} className={cls(context, split.items)}>
         {items.map((node, index) => (
           <Fragment key={index}>
             {scope.renderReact(node, itemContext)}

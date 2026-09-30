@@ -21,6 +21,7 @@ export const catalog = {
   avoidWhen: [
     'Two separate paths run side by side and meet at one point; use slideLanes.',
     'Participants pass messages back and forth rather than handing off once; use slideSequence.',
+    'One source feeds many targets; use slideFanout.',
     'The items have no order; use slideBulletList.',
   ],
   example,

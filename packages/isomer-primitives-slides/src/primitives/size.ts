@@ -11,7 +11,7 @@ import type { ScaleToken } from '@elastic/distillate';
 import { z } from '@elastic/isomer-sdk';
 
 import { displayColumns, isWide } from '../render/mono';
-import { extraboldAdvance, regularAdvance } from '../theme/base';
+import { extraboldAdvance, monoAdvance, regularAdvance } from '../theme/base';
 import { scalePx } from '../theme/scale';
 import { type SlideSize, slideSizes } from '../theme/variants';
 
@@ -94,6 +94,10 @@ export const emWidth = (text: string, tracking: ScaleToken): number =>
         : total + glyphAdvance(glyph) + parseFloat(tracking.value),
     0
   );
+
+/** Width in px of `text` set in the mono face at `size`. */
+export const monoWidth = (text: string, size: ScaleToken): number =>
+  displayColumns(text) * monoAdvance * scalePx(size);
 
 /** What a wrapping display line cannot break. */
 export const widestWord = (text: string, tracking: ScaleToken): number =>

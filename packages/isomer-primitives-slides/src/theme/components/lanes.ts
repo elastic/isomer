@@ -10,42 +10,67 @@ import { literal, paddingXy, px, scalePx } from '../scale';
 
 import { glyph } from './shared';
 
-const rowHeight = space.px88;
+const rowHeights = { l: space.px88, m: space.px72, s: space.px56 } as const;
+const chipPaddingX = { l: space.px22, m: space.px18, s: space.px12 } as const;
+const joinPaddingX = { l: space.px32, m: space.px24, s: space.px16 } as const;
 
 export const lanes = {
-  // Track width, not spacing.
-  labelColumn: px(240),
-  bracketColumn: space.px72,
-  rowHeight,
-  rowGap: space.px48,
+  // Column widths, not spacing.
+  labelColumns: { l: px(240), m: px(200), s: px(160) },
+  bracketColumns: { l: space.px72, m: space.px56, s: space.px32 },
+  rowHeights,
+  rowGaps: { l: space.px48, m: space.px32, s: space.px24 },
   label: { ...type.label, size: font.size.px26, tracking: font.tracking.label },
+  labelSizes: { l: font.size.px26, m: font.size.px24, s: font.size.px24 },
   chip: {
     type: { ...type.mono, weight: font.weight.medium },
-    padding: paddingXy(space.px14, space.px22),
+    paddings: {
+      l: paddingXy(space.px14, chipPaddingX.l),
+      m: paddingXy(space.px12, chipPaddingX.m),
+      s: paddingXy(space.px8, chipPaddingX.s),
+    },
+    paddingX: chipPaddingX,
     border: stroke.chip,
     radius: radius.chip,
   },
+  chipSizes: { l: type.mono.size, m: font.size.px24, s: font.size.px24 },
   line: stroke.rail,
-  lineMin: space.px32,
+  lineMins: { l: space.px32, m: space.px24, s: space.px12 },
   bracket: {
     border: stroke.rail,
     radius: radius.panel,
     // From the first lane's center to the second's.
-    inset: px(scalePx(rowHeight) / 2),
-    stub: space.px36,
+    insets: {
+      l: px(scalePx(rowHeights.l) / 2),
+      m: px(scalePx(rowHeights.m) / 2),
+      s: px(scalePx(rowHeights.s) / 2),
+    },
+    stubs: { l: space.px36, m: space.px28, s: space.px16 },
   },
   join: {
     type: { ...type.mono, size: font.size.px30, weight: font.weight.medium },
-    padding: paddingXy(space.px20, space.px32),
+    paddings: {
+      l: paddingXy(space.px20, joinPaddingX.l),
+      m: paddingXy(space.px16, joinPaddingX.m),
+      s: paddingXy(space.px12, joinPaddingX.s),
+    },
+    paddingX: joinPaddingX,
     radius: radius.panel,
   },
+  joinSizes: { l: font.size.px30, m: font.size.px26, s: font.size.px24 },
   notes: {
-    gap: space.px72,
-    columnGap: space.px96,
-    rowGap: space.px48,
+    gaps: { l: space.px72, m: space.px48, s: space.px32 },
+    columnGaps: { l: space.px96, m: space.px64, s: space.px48 },
+    rowGaps: { l: space.px48, m: space.px32, s: space.px24 },
     itemGap: space.px12,
     title: type.nodeTitle,
+    titleSizes: {
+      l: type.nodeTitle.size,
+      m: font.size.px32,
+      s: font.size.px28,
+    },
     body: type.body,
+    bodySizes: { l: type.body.size, m: font.size.px26, s: font.size.px24 },
   },
   arrow: glyph.arrow,
   /** Joins the two lanes' names in what assistive technology announces for the merge. */

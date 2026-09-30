@@ -53,6 +53,7 @@ describe('slidePipeline', () => {
       errors({
         ...spansExample,
         start: 'In',
+        size: 's',
         steps: [{ title: 'Basket', body: 'Held.' }, ...spansExample.steps],
         spans: [
           { ...first, to: 9 },
@@ -64,6 +65,7 @@ describe('slidePipeline', () => {
         "body[0].body[0].spans: each span needs \`from\` ≤ \`to\` < the number of steps",
         "body[0].body[0].spans: spans must not overlap",
         "body[0].body[0].spans: \`start\` and \`end\` are steps mode only; with \`spans\`, make them the first and last steps",
+        "body[0].body[0].size: \`size\` is steps mode only; spans-mode chips take one size",
         "body[0].body[0].steps: step bodies are steps mode only; with \`spans\`, put the detail in the span’s body",
       ]
     `);

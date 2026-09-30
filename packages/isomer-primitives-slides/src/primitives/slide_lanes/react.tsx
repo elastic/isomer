@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { Fragment, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
@@ -15,6 +15,7 @@ import { ToneCue } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { layoutModule, tonesModule } from '../../theme/modules';
 
+import { lanesStep } from './fit';
 import type { SlideLanesNode } from './schema';
 import { lanesModule } from './styles';
 
@@ -23,69 +24,94 @@ const { mergeJoiner } = slideDistillery.tokens.lanes;
 
 /** React renderer for {@link SlideLanesNode}. */
 export const react = (
-  { type, lanes, join, notes = [] }: SlideLanesNode,
+  node: SlideLanesNode,
   { context }: SlideReactEnv
 ): ReactNode => {
+  const { type, lanes, join, notes = [] } = node;
   const { handles: style } = lanesModule;
+  const size = lanesStep(node, context);
   return (
     <div
       {...nodeAnchor(context, { type })}
       className={cls(context, layoutModule.handles.fill)}>
-      <div className={cls(context, style.grid)}>
-        {lanes.map(({ label, steps, tone }, index) => {
-          const toned = tone ? tonesModule.handles.tone[tone] : undefined;
-          return (
-            <Fragment key={index}>
-              <span
-                className={cls(
-                  context,
-                  style.label,
-                  toned,
-                  tone && style.tonedLabel
-                )}>
-                <ToneCue {...{ tone, context }} />
-                {label}
-              </span>
-              <ol className={cls(context, style.steps, toned)}>
-                {steps.map((step, stepIndex) => (
-                  <li key={stepIndex} className={cls(context, style.step)}>
-                    <span
-                      className={cls(
-                        context,
-                        style.chip,
-                        tone && style.tonedChip
-                      )}>
-                      {step}
-                    </span>
-                    <span
-                      aria-hidden
-                      className={cls(
-                        context,
-                        style.line,
-                        tone && style.tonedLine
-                      )}
-                    />
-                  </li>
-                ))}
-              </ol>
-            </Fragment>
-          );
-        })}
+      <div className={cls(context, style.row)}>
+        <div className={cls(context, style.lanes, style.lanesSize[size])}>
+          {lanes.map(({ label, steps, tone }, index) => {
+            const toned = tone ? tonesModule.handles.tone[tone] : undefined;
+            return (
+              <div
+                key={index}
+                className={cls(context, style.lane, style.laneSize[size])}>
+                <span
+                  className={cls(
+                    context,
+                    style.label,
+                    style.labelSize[size],
+                    toned,
+                    tone && style.tonedLabel
+                  )}>
+                  <ToneCue {...{ tone, context }} />
+                  {label}
+                </span>
+                <ol className={cls(context, style.steps, toned)}>
+                  {steps.map((step, stepIndex) => (
+                    <li key={stepIndex} className={cls(context, style.step)}>
+                      <span
+                        className={cls(
+                          context,
+                          style.chip,
+                          style.chipSize[size],
+                          tone && style.tonedChip
+                        )}>
+                        {step}
+                      </span>
+                      <span
+                        aria-hidden
+                        className={cls(
+                          context,
+                          style.line,
+                          style.lineSize[size],
+                          tone && style.tonedLine
+                        )}
+                      />
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            );
+          })}
+        </div>
         <div
           role="img"
           aria-label={`${lanes.map(({ label }) => label).join(` ${mergeJoiner.value} `)} ${connectorLabel.value} ${join}`}
-          className={cls(context, style.merge)}>
-          <span className={cls(context, style.bracket)} />
-          <span className={cls(context, style.stub)} />
+          className={cls(context, style.merge, style.mergeSize[size])}>
+          <span
+            className={cls(context, style.bracket, style.bracketSize[size])}
+          />
+          <span className={cls(context, style.stub, style.stubSize[size])} />
         </div>
-        <span className={cls(context, style.join)}>{join}</span>
+        <span className={cls(context, style.join, style.joinSize[size])}>
+          {join}
+        </span>
       </div>
       {notes.length > 0 ? (
-        <dl className={cls(context, style.notes)}>
+        <dl className={cls(context, style.notes, style.notesSize[size])}>
           {notes.map(({ title, body }, index) => (
             <div key={index} className={cls(context, style.note)}>
-              <dt className={cls(context, style.noteTitle)}>{title}</dt>
-              <dd className={cls(context, style.noteBody)}>
+              <dt
+                className={cls(
+                  context,
+                  style.noteTitle,
+                  style.noteTitleSize[size]
+                )}>
+                {title}
+              </dt>
+              <dd
+                className={cls(
+                  context,
+                  style.noteBody,
+                  style.noteBodySize[size]
+                )}>
                 {marksReact(body, context)}
               </dd>
             </div>

@@ -7,8 +7,6 @@
 
 import type { SlideRenderContext } from '../../render/context';
 import { stripMarks } from '../../render/marks';
-import { displayColumns } from '../../render/mono';
-import { monoAdvance } from '../../theme/base';
 import { frameContentWidth } from '../../theme/components/frame';
 import { pipeline, pipelineFit } from '../../theme/components/pipeline';
 import { scalePx } from '../../theme/scale';
@@ -16,6 +14,7 @@ import type { SlideSize } from '../../theme/variants';
 import { slideLayout } from '../layout';
 import {
   lineFill,
+  monoWidth,
   narrowing,
   rowLoad,
   sizeForLoad,
@@ -29,7 +28,7 @@ const { terminal } = pipeline;
 
 /** A terminal chip and the stub joining it to the steps. */
 const terminalWidth = (text: string): number =>
-  displayColumns(text) * monoAdvance * scalePx(terminal.type.size) +
+  monoWidth(text, terminal.type.size) +
   2 * (scalePx(terminal.paddingX) + scalePx(terminal.border)) +
   scalePx(pipeline.gap);
 

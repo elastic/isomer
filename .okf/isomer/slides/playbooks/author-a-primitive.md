@@ -19,7 +19,7 @@ sources:
 4. If you draw inside an inline `<svg>`, set literal `fill` / `stroke` alongside the class.
 5. A `tone` is never color alone: put `ToneCue` first in the toned title and prefix `toneCueText(tone)` on text, Markdown, and Slack.
 6. Add an example at the most items, lines, or panels the schema takes, in representative copy, so the fit test measures the most structure; it does not prove every schema-valid string fits. Cap authored strings with `lineText()` or `wrappedText()`, whose `authoredTextMaxLength` is an input-size guard, and leave overflow to the layout check.[^docs]
-7. To size to the room, read `slideLayout(context)` (`width`, `height`, and the derived `crowding`); a container gives its children theirs with `withLayout(context, { width, height })` after taking out what it draws around them.[^docs]
+7. To size to the room, read `slideLayout(context)` (`width`, `height`, and the derived `crowding`); a container gives its children theirs with `withLayout(context, { width, height })` after taking out what it draws around them, and spreads `layoutRoom(context)` on the element that holds them, as the frame body and split panes do, so `checkLayout` measures them against it.[^docs]
 
 Related: [one source](/slides/concepts/one-source.md), [no svg renderer](/slides/concepts/no-svg-renderer.md).
 

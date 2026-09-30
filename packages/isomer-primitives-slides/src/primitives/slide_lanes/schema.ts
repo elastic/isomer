@@ -9,6 +9,7 @@ import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
 import { lineText, wrappedText } from '../authored_text';
+import { sizeField } from '../size';
 import { slideToneSchema } from '../tone_schema';
 
 export const lanesMaxSteps = 5;
@@ -70,6 +71,7 @@ export const schema = z
         `Notes under the lanes, two per row, usually one per lane in lane order, saying how that path differs. Up to ${lanesMaxNotes}. Leave it out for none.`
       )
       .optional(),
+    size: sizeField(),
   })
   .strict();
 
