@@ -6,16 +6,25 @@
  */
 
 import { color, font, inverse, radius, space, stroke, type } from './base';
+import { agenda } from './components/agenda';
 import { bulletList } from './components/bullet_list';
+import { closing } from './components/closing';
 import { code } from './components/code';
+import { definitions } from './components/definitions';
+import { fanout } from './components/fanout';
 import { frame } from './components/frame';
 import { heading } from './components/heading';
+import { list } from './components/list';
 import { marks } from './components/marks';
 import { matrix } from './components/matrix';
 import { quadrant } from './components/quadrant';
-import { connector, glyph, label, tone } from './components/shared';
+import { quote } from './components/quote';
+import { section } from './components/section';
+import { connector, glyph, label, link, tone } from './components/shared';
+import { source } from './components/source';
 import { split } from './components/split';
 import { stack } from './components/stack';
+import { statement } from './components/statement';
 import { table } from './components/table';
 import { territoryGroup } from './components/territory_group';
 import { title } from './components/title';
@@ -34,18 +43,28 @@ export const SLIDE_THEME = {
   font,
   type,
   glyph,
+  link,
   label,
   connector,
   tone,
   marks,
-  frame,
+  agenda,
   bulletList,
+  closing,
   code,
+  definitions,
+  fanout,
+  frame,
   heading,
+  list,
   matrix,
   quadrant,
+  quote,
+  section,
+  source,
   split,
   stack,
+  statement,
   table,
   territoryGroup,
   title,

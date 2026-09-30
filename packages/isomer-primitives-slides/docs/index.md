@@ -43,10 +43,19 @@ runtime.surfaces.text.render(composition);
 | --- | --- |
 | `slideFrame` | The 16:9 root node: the slide body and a one-line footer. Required by the document. |
 | `slideHeading` | A content slide's claim and optional lede. |
+| `slideStatement` | One thesis sentence set large on a slide of its own. |
+| `slideQuote` | Someone else's words set large, with the source beneath. |
 | `slideTitle` | The deck's opening slide, with an optional node beside it. |
+| `slideSection` | A section divider: number, title, and the slides it holds. |
+| `slideAgenda` | Every section of the talk, with the current one marked. |
+| `slideClosing` | The deck's last slide: links and next steps by goal. |
+| `slideSource` | One citation line at the foot of a slide. |
 | `slideSplit` | Two panes of slide nodes, with a width ratio and a divider. |
 | `slideStack` | Slide nodes stacked with controlled spacing, for a one-node slot. |
+| `slideList` | Short facts, each optionally keyed by a term, with a caption and a footnote. |
 | `slideBulletList` | Short points with a dot, check, or × marker. |
+| `slideDefinitions` | Terms and their meanings as a ruled glossary. |
+| `slideFanout` | One source branching to several unordered targets. |
 | `slideTerritoryGroup` | Who owns what, one color-keyed column per owner. |
 | `slideTable` | A headed table of short cells, optionally in labeled groups. |
 | `slideMatrix` | Yes, partial, or no marks for each row against each column. |
