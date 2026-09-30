@@ -412,6 +412,76 @@ describe('Slack envelope transforms', () => {
       }
     );
 
+    const over = 'y'.repeat(limit * 2 + 5);
+    const cluster = `e${'\u0301'.repeat(limit + 5)}`;
+    it('reads the long cluster as one grapheme', () => {
+      const graphemes = new Intl.Segmenter(undefined, {
+        granularity: 'grapheme',
+      }).segment(cluster);
+      expect([...graphemes]).toHaveLength(1);
+    });
+    it.each<[string, SlackRichTextInline]>([
+      ['a text run', text(over, { italic: true })],
+      ['a link label', { type: 'link', url: 'https://x.test', text: over }],
+      ['a link URL', { type: 'link', url: `https://x.test/${over}` }],
+      ['a tag', { type: 'tag', text: over, color: 'red' }],
+      ['one grapheme', text(cluster)],
+    ])(
+      'splits %s past a section’s limit into inlines of its own type',
+      (_name, inline) => {
+        const [, degraded] = degrade([
+          [cell('')],
+          [rich(section(text('a'), inline, text('b')))],
+        ]);
+        const { elements } = degraded as SlackRichTextBlock;
+        const whole = elementText(section(inline));
+        expect(elements.map(elementText).join('')).toBe(`a${whole}b`);
+        const pieces = elements.flatMap((element) => {
+          expect(element.type).toBe('rich_text_section');
+          expect(elementText(element).length).toBeLessThanOrEqual(limit);
+          return (element as SlackRichTextSection).elements;
+        });
+        for (const piece of pieces.slice(1, -1)) {
+          expect({ ...piece, text: undefined }).toEqual({
+            ...inline,
+            text: undefined,
+          });
+        }
+      }
+    );
+
+    const grid = (height: number, width: number): SlackTableBlock => ({
+      type: 'table',
+      rows: Array.from({ length: height }, () =>
+        Array.from({ length: width }, () => cell('c'))
+      ),
+    });
+    it.each([
+      ['keeps a table at the row limit', SLACK_LIMITS.tableRows, 1, 'table'],
+      [
+        'degrades a table one row past',
+        SLACK_LIMITS.tableRows + 1,
+        1,
+        'rich_text',
+      ],
+      [
+        'keeps a table at the column limit',
+        2,
+        SLACK_LIMITS.tableColumns,
+        'table',
+      ],
+      [
+        'degrades a table one column past',
+        2,
+        SLACK_LIMITS.tableColumns + 1,
+        'rich_text',
+      ],
+    ])('%s', (_name, height, width, type) => {
+      expect(render([grid(height, width)]).map((block) => block.type)).toEqual([
+        type,
+      ]);
+    });
+
     it.each([
       ['keeps tables that fit exactly', [4999, 4999], ['table', 'table']],
       ['degrades the table one past', [4999, 5000], ['table', 'rich_text']],

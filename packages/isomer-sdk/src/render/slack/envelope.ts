@@ -86,9 +86,10 @@ export interface SlackEnvelopeResult {
  *
  * Degradation for a node with no `slack` renderer is the dispatcher's, which
  * has to own it to reach a child nested inside a container. The result is
- * fitted to Slack's limits — Slack-limited text is clamped, tables past the
- * message's cell budget become rich text, spacers and then whole blocks are
- * dropped — so the output is always postable. `assets` stays empty unless `collectAssets` is set.
+ * fitted to Slack's limits — Slack-limited text is clamped, tables past a table
+ * limit or the message's cell budget become rich text, spacers and then whole
+ * blocks are dropped — so the output is always postable. `assets` stays empty
+ * unless `collectAssets` is set.
  */
 export const renderSlackEnvelope = <TNode extends PrimitiveNode>(
   composition: Composition<TNode>,
@@ -117,7 +118,7 @@ export const renderSlackEnvelope = <TNode extends PrimitiveNode>(
   }
 
   const rhythm = applySectionRhythm(
-    coalesceFieldSections(enforceTableCharBudget(blocks))
+    coalesceFieldSections(enforceTableLimits(blocks))
   );
   const budgeted = enforceBlockBudget(rhythm);
   // Only ask the host to upload assets whose placeholder block survived the
@@ -428,7 +429,7 @@ const richSection = (
   elements: SlackRichTextInline[]
 ): SlackRichTextSection => ({ type: 'rich_text_section', elements });
 
-const rowBreak = richSection([textRun('\n')]);
+const rowBreak = (): SlackRichTextSection => richSection([textRun('\n')]);
 
 const cellElements = (
   cell: SlackTableCell | undefined
@@ -498,47 +499,57 @@ const breakSections = (
       : element
   );
 
+// Graphemes, and the code points of any grapheme past `max`.
+const textUnits = (text: string, max: number): string[] =>
+  Array.from(
+    new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(text),
+    ({ segment }) => (segment.length > max ? Array.from(segment) : [segment])
+  ).flat();
+
 // A section, quote, or preformatted element past `sectionTextChars` splits into
-// adjacent ones of its type, a text run at a grapheme boundary; links and tags
-// stay whole.
+// adjacent ones of its type. A link or tag no longer than that stays whole;
+// anything longer splits at grapheme boundaries into inlines of its own type,
+// a link's label (or URL) across links to the same URL.
 const splitLongElement = (
   element: SlackRichTextBlockElement
 ): SlackRichTextBlockElement[] => {
+  const max = SLACK_LIMITS.sectionTextChars;
   if (
     element.type === 'rich_text_list' ||
-    richTextElementText(element).length <= SLACK_LIMITS.sectionTextChars
+    richTextElementText(element).length <= max
   ) {
     return [element];
   }
-  const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
   const chunks: SlackRichTextInline[][] = [];
   let chunk: SlackRichTextInline[] = [];
-  let room: number = SLACK_LIMITS.sectionTextChars;
+  let room: number = max;
   const flush = (): void => {
-    chunks.push(chunk);
+    if (chunk.length > 0) {
+      chunks.push(chunk);
+    }
     chunk = [];
-    room = SLACK_LIMITS.sectionTextChars;
+    room = max;
   };
   for (const inline of element.elements) {
-    if (inline.type !== 'text') {
-      const { length } = richTextInlineText(inline);
-      if (length > room && chunk.length > 0) {
+    const whole = richTextInlineText(inline);
+    if (inline.type !== 'text' && whole.length <= max) {
+      if (whole.length > room) {
         flush();
       }
       chunk.push(inline);
-      room -= length;
+      room -= whole.length;
       continue;
     }
     let text = '';
-    for (const { segment } of graphemes.segment(inline.text)) {
-      if (text.length + segment.length > room && (text || chunk.length > 0)) {
+    for (const unit of textUnits(whole, max)) {
+      if (text.length + unit.length > room) {
         if (text) {
           chunk.push({ ...inline, text });
         }
         flush();
         text = '';
       }
-      text += segment;
+      text += unit;
     }
     if (text) {
       chunk.push({ ...inline, text });
@@ -549,10 +560,10 @@ const splitLongElement = (
   return chunks.map((elements) => ({ ...element, elements }));
 };
 
-// A table past the message-wide cell budget is replaced by one `rich_text`
-// block. Each row's columns run `heading: cell` to the wider of the header and
-// the row, and a blank section parts the rows. A cell keeps its inlines,
-// styles, and blocks; a header-only table prints its headings.
+// A table Slack would reject is replaced by one `rich_text` block. Each row's
+// columns run `heading: cell` to the wider of the header and the row, and a
+// blank section parts the rows. A cell keeps its inlines, styles, and blocks; a
+// header-only table prints its headings.
 const degradeTable = ({
   rows: [header = [], ...rows],
 }: SlackTableBlock): SlackBlock[] => {
@@ -571,7 +582,7 @@ const degradeTable = ({
         );
   const elements = pieces
     .filter((piece) => piece.length > 0)
-    .flatMap((piece, index) => (index > 0 ? [rowBreak, ...piece] : piece));
+    .flatMap((piece, index) => (index > 0 ? [rowBreak(), ...piece] : piece));
   return elements.length === 0
     ? []
     : [
@@ -582,36 +593,30 @@ const degradeTable = ({
       ];
 };
 
+const fitsTableShape = ({ rows }: SlackTableBlock): boolean =>
+  rows.length <= SLACK_LIMITS.tableRows &&
+  rows.every((row) => row.length <= SLACK_LIMITS.tableColumns);
+
 // Slack counts table cell characters across the whole message, not per block,
 // so a composition whose tables individually fit can still be rejected. In
-// document order, a table is kept if it fits what the kept ones left.
-const enforceTableCharBudget = (
-  blocks: readonly SlackBlock[]
-): SlackBlock[] => {
-  const total = blocks.reduce(
-    (sum, block) =>
-      block.type === 'table' ? sum + tableCharCount(block) : sum,
-    0
-  );
-  if (total <= SLACK_LIMITS.tableCellCharsPerMessage) {
-    return [...blocks];
-  }
-  const out: SlackBlock[] = [];
+// document order, a table is kept if its shape fits and its cells fit what the
+// kept ones left.
+const enforceTableLimits = (blocks: readonly SlackBlock[]): SlackBlock[] => {
   let spent = 0;
-  for (const block of blocks) {
+  return blocks.flatMap((block) => {
     if (block.type !== 'table') {
-      out.push(block);
-      continue;
+      return [block];
     }
     const cost = tableCharCount(block);
-    if (spent + cost <= SLACK_LIMITS.tableCellCharsPerMessage) {
+    if (
+      fitsTableShape(block) &&
+      spent + cost <= SLACK_LIMITS.tableCellCharsPerMessage
+    ) {
       spent += cost;
-      out.push(block);
-      continue;
+      return [block];
     }
-    out.push(...degradeTable(block));
-  }
-  return out;
+    return degradeTable(block);
+  });
 };
 
 const enforceBlockBudget = (blocks: SlackBlock[]): SlackBlock[] => {
