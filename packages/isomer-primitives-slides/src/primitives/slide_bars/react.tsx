@@ -19,13 +19,29 @@ import { scalePx } from '../../theme/scale';
 import type { TypeRole } from '../../theme/type_role';
 import type { SlideSize } from '../../theme/variants';
 import { slideLayout } from '../layout';
-import { measureMarks, sizeForLoad, sizeForWidth, smallerStep } from '../size';
+import {
+  measureMarks,
+  measureText,
+  sizeForLoad,
+  sizeForWidth,
+  smallerStep,
+} from '../size';
 
 import type { SlideBarsItem, SlideBarsNode } from './schema';
 import { barsModule } from './styles';
 import { barValue } from './value';
 
 const maxShare = parseFloat(theme.barMaxShare.value);
+const labelShare = parseFloat(theme.labelMaxShare.value) / 100;
+
+/** The label column, `labelWidth` or `labelMaxShare` of a layout too narrow for it, and the track beside it. */
+const barsColumns = (width: number): { column: number; track: number } => {
+  const column = Math.min(
+    scalePx(theme.labelWidth),
+    Math.max(0, width) * labelShare
+  );
+  return { column, track: Math.max(0, width - column) };
+};
 
 /** `max`, else the largest value, else 1 when every value is 0. */
 const barsMax = ({ items, max }: SlideBarsNode): number =>
@@ -42,7 +58,8 @@ const lines = (
 
 /** Two per label line, since a label line is a bar tall, and one per detail line under the bar. */
 const rowsLoad =
-  (items: readonly SlideBarsItem[], track: number) => (step: SlideSize) =>
+  (items: readonly SlideBarsItem[], column: number, track: number) =>
+  (step: SlideSize) =>
     items.reduce(
       (load, { label, detail, highlight }) =>
         load +
@@ -50,7 +67,7 @@ const rowsLoad =
           lines(
             label,
             { ...theme.label, size: theme.labelSizes[step] },
-            scalePx(theme.labelWidth) - (highlight ? cueWidth : 0),
+            column - (highlight ? cueWidth : 0),
             'primary'
           ) +
         (detail ? lines(detail, theme.detail, track) : 0),
@@ -63,8 +80,9 @@ export const barsSize = (
   { width, crowding }: { width: number; crowding: number }
 ): SlideSize => {
   const { items, size } = node;
-  const track = width - scalePx(theme.labelWidth);
+  const { column, track } = barsColumns(width);
   const max = barsMax(node);
+  const barMin = scalePx(theme.barMinWidth);
   return items.reduce<SlideSize>(
     (worst, { value }) =>
       smallerStep(
@@ -73,12 +91,42 @@ export const barsSize = (
           size,
           barValue(value),
           theme.value,
-          track * (1 - ((value / max) * maxShare) / 100) -
+          track -
+            (value > 0
+              ? Math.max((track * (value / max) * maxShare) / 100, barMin)
+              : 0) -
             scalePx(theme.valueGap),
           theme.valueSizes
         )
       ),
-    sizeForLoad(size, rowsLoad(items, track), barsFit, crowding)
+    sizeForLoad(size, rowsLoad(items, column, track), barsFit, crowding)
+  );
+};
+
+/** The percent of the track a bar at `max` draws at `step`: `barMaxShare`, less whatever keeps each value beside its bar. */
+const barShare = (
+  node: SlideBarsNode,
+  track: number,
+  step: SlideSize
+): number => {
+  const max = barsMax(node);
+  const role = { ...theme.value, size: theme.valueSizes[step] };
+  return Math.max(
+    0,
+    Math.min(
+      maxShare,
+      ...node.items
+        .filter(({ value }) => value > 0)
+        .map(
+          ({ value }) =>
+            ((track -
+              scalePx(theme.valueGap) -
+              measureText(barValue(value), role).widest) /
+              Math.max(1, track)) *
+            100 *
+            (max / value)
+        )
+    )
   );
 };
 
@@ -89,15 +137,22 @@ export const react = (
 ): ReactNode => {
   const { type, items } = node;
   const { handles: bars } = barsModule;
-  const step = barsSize(node, slideLayout(context));
+  const layout = slideLayout(context);
+  const step = barsSize(node, layout);
   const max = barsMax(node);
+  const { column, track } = barsColumns(layout.width);
+  const share = barShare(node, track, step);
+  const columns = `${Number(column.toFixed(2))}px minmax(0, 1fr)`;
   return (
     <div
       {...nodeAnchor(context, { type })}
       className={cls(context, layoutModule.handles.fill)}>
       <ul className={cls(context, bars.list, bars.rowGap[step])}>
         {items.map(({ label, value, detail, highlight }, index) => (
-          <li className={cls(context, bars.row)} key={index}>
+          <li
+            className={cls(context, bars.row)}
+            key={index}
+            style={{ gridTemplateColumns: columns }}>
             <span className={cls(context, bars.label, bars.labelSize[step])}>
               {highlight ? <ToneCue tone="primary" {...{ context }} /> : null}
               {marksReact(label, context, 'primary')}
@@ -110,10 +165,11 @@ export const react = (
                     context,
                     bars.bar,
                     bars.barHeight[step],
+                    value > 0 ? bars.barPositive : undefined,
                     highlight ? bars.barHighlighted : undefined
                   )}
                   style={{
-                    width: `${Number(((value / max) * maxShare).toFixed(4))}%`,
+                    width: `${Number(((value / max) * share).toFixed(4))}%`,
                   }}
                 />
                 <span

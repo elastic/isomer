@@ -28,10 +28,10 @@ export const barsModule = createStyleModule('bars', ({ css }) => ({
       gap: ${bars.rowGaps[size]};
     `
   ),
+  /** Its columns come inline, since the label column narrows with the layout. */
   row: css`
     align-items: start;
     display: grid;
-    grid-template-columns: ${bars.labelWidth} minmax(0, 1fr);
   `,
   label: css`
     color: ${color.text};
@@ -73,6 +73,9 @@ export const barsModule = createStyleModule('bars', ({ css }) => ({
       height: ${bars.barHeights[size]};
     `
   ),
+  barPositive: css`
+    min-width: ${bars.barMinWidth};
+  `,
   barHighlighted: css`
     background: ${color.primary};
   `,
