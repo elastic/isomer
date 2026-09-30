@@ -21,6 +21,7 @@ Everything `@elastic/isomer-runtime` exports from its single entry point, plus w
 | `styleAdapter` | `HTMLStyleAdapter<…>` | Replaces every pack's adapter. Defaults to the packs' own, combined. Required when any pack declares `collectStyles` and no adapter is otherwise available. |
 | `defaultAriaLabel` | `string` | Fallback `aria-label` for `html` and for `react` with `wrapper`. Defaults to `'View'`. |
 | `authoring` | `AuthoringJsonSchemaOptions` | Options for the authoring JSON Schema `getAuthoringContext` returns. |
+| `inputBudget` | `InputBudget` | Limits every composition and view input is checked against before it is parsed. |
 
 `CreateIsomerRuntime` is the factory's overloaded signature: `frames` present types `surfaces.svg` as `SvgSurface`, `frames` absent types it `undefined`, and options not statically known get the union. `TRenderContext` is inferred from `styleAdapter` alone; a host that supplies none and loads a pack that narrows its context names all three type parameters positionally, as [Runtime](runtime.md#typing-the-render-context) shows.
 
@@ -113,7 +114,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | Thrown | By | Carries |
 | --- | --- | --- |
 | `IsomerError` | `createIsomerRuntime`, `viewRegistry.register`, an unknown view id, `getAuthoringContext().schemaFor` or `describePrimitives` on an unknown type (`UNKNOWN_PRIMITIVE_TYPE`), or the `svg` surface, including `renderPages` on an empty list (`EMPTY_PAGES`) | `code` and a message naming the offender |
-| `RegisteredViewInputError` | `viewRegistry.request`, on invalid input | `code` (`VIEW_INPUT_INVALID`), `viewId`, `errors` (`{ path, message }` each) |
+| `RegisteredViewInputError` | `viewRegistry.request`, on over-budget or invalid input | `code` (`VIEW_INPUT_INVALID`), `viewId`, `errors` (`{ path, message }` each) |
 | `CompositionValidationError` | `text`, `markdown`, `slack`, and `svg` by default; `html` with `onValidationError: 'throw'` | `code` (`COMPOSITION_INVALID`), `errors` |
 
 ## Where the code is

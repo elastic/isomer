@@ -6,9 +6,11 @@
  */
 
 import {
+  checkInputBudget,
   type Composition,
   formatValidationError,
   formatZodIssues,
+  type InputBudget,
   ISOMER_ERROR_CODES,
   IsomerError,
   type PrimitiveNode,
@@ -130,9 +132,9 @@ export interface ViewRegistry<
   /** Looks up a view's summary by id, or `undefined` if unregistered. */
   get: (id: string) => RegisteredViewSummary | undefined;
   /**
-   * Validates `input` against the view's schema (if any), builds its
-   * composition, and validates the result. Throws
-   * {@link RegisteredViewInputError} on invalid input, or {@link IsomerError}
+   * Checks `input` against the input budget and the view's schema (if any),
+   * builds its composition, and validates the result. Throws
+   * {@link RegisteredViewInputError} on over-budget or invalid input, or {@link IsomerError}
    * (`UNKNOWN_VIEW`) if `id` is unregistered.
    */
   request: (
@@ -167,7 +169,8 @@ export const createViewRegistry = <
   THostContext = unknown,
   TNode extends PrimitiveNode = PrimitiveNode,
 >(
-  validateComposition: (composition: Composition<TNode>) => ValidationResult
+  validateComposition: (composition: Composition<TNode>) => ValidationResult,
+  { inputBudget }: { inputBudget?: InputBudget } = {}
 ): ViewRegistry<THostContext, TNode> => {
   const views = new Map<string, RegisteredEntry<THostContext, TNode>>();
 
@@ -193,6 +196,10 @@ export const createViewRegistry = <
       }
       const { view, summary } = entry;
 
+      const over = checkInputBudget(input, inputBudget);
+      if (over) {
+        throw new RegisteredViewInputError(view.id, [over]);
+      }
       const parsedInput = view.input
         ? validateAndParseInput(view.id, view.input, input)
         : input;

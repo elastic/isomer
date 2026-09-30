@@ -21,6 +21,13 @@ export {
   resolveVocabulary,
 } from './composition_schema';
 export {
+  type InputBudget,
+  MAX_INPUT_CHARACTERS,
+  MAX_INPUT_DEPTH,
+  MAX_INPUT_VALUES,
+  checkInputBudget,
+} from './input_budget';
+export {
   type CompositionJsonSchemaOptions,
   buildCompositionJsonSchema,
 } from './json_schema';

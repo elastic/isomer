@@ -14,6 +14,7 @@ import {
   rendersOnSurface,
 } from '../composition/body_node_base';
 import type { Composition } from '../composition/composition';
+import { ISOMER_ERROR_CODES } from '../composition/error';
 import { quoteText } from '../composition/one_line';
 import {
   CompositionValidationError,
@@ -22,6 +23,7 @@ import {
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
 
 import { getCompositionSchemaForDefinitions } from './composition_schema';
+import { checkInputBudget, type InputBudget } from './input_budget';
 import { createNodeIssueFormatter, type IssueRoot } from './node_issues';
 
 /**
@@ -72,12 +74,18 @@ export type ValidationErrorMode = 'collect' | 'throw';
 
 export { CompositionValidationError };
 
-/** Raises {@link CompositionValidationError} when `mode` is `throw` and `result` is invalid. */
+/** Raises {@link CompositionValidationError} when `mode` is `throw` and `result` is invalid, or in any mode when the input is over its budget, which nothing can render. */
 export const enforceValidationMode = (
   result: ValidationResult,
   mode?: ValidationErrorMode
 ): void => {
-  if (mode === 'throw' && !result.valid) {
+  if (
+    !result.valid &&
+    (mode === 'throw' ||
+      result.errors.some(
+        ({ code }) => code === ISOMER_ERROR_CODES.INPUT_OVER_BUDGET
+      ))
+  ) {
     throw new CompositionValidationError(result.errors);
   }
 };
@@ -94,6 +102,8 @@ export interface CompositionValidatorOptions {
    * runtime with no frame at all reports nothing about a value nothing reads.
    */
   sizesFromNodeHeights?: boolean;
+  /** Limits checked before the schema runs; see {@link checkInputBudget}. */
+  inputBudget?: InputBudget;
 }
 
 /** The body's nodes, as {@link IssueRoot}s for a node issue formatter. */
@@ -121,6 +131,10 @@ export const createCompositionValidator = (
   const walk = createChildNodeWalker(definitions);
   const formatIssues = createNodeIssueFormatter(definitions);
   return (composition) => {
+    const over = checkInputBudget(composition, options.inputBudget);
+    if (over) {
+      return { valid: false, errors: [over], warnings: [] };
+    }
     const result = schema.safeParse(composition, { reportInput: true });
     if (result.success) {
       const idErrors = collectDuplicateNodeIdErrors(composition.body, walk);
@@ -162,11 +176,16 @@ export interface ParsedComposition {
  * Shares {@link createCompositionValidator}'s memoization identity requirement.
  */
 export const createCompositionParser = (
-  definitions: readonly AnyPrimitiveDefinition[]
+  definitions: readonly AnyPrimitiveDefinition[],
+  { inputBudget }: Pick<CompositionValidatorOptions, 'inputBudget'> = {}
 ): ((value: unknown) => ParsedComposition) => {
   const schema = getCompositionSchemaForDefinitions(definitions);
   const formatIssues = createNodeIssueFormatter(definitions);
   return (value) => {
+    const over = checkInputBudget(value, inputBudget);
+    if (over) {
+      return { valid: false, errors: [over] };
+    }
     const result = schema.safeParse(value, { reportInput: true });
     if (result.success) {
       return {

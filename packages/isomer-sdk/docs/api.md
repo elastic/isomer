@@ -60,7 +60,8 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | --- | --- |
 | `createCompositionValidator` | Trusted-input validator: schema plus semantic passes; returns `{ valid, errors, warnings }` |
 | `createCompositionParser` | Untrusted-input parser: schema only |
-| `enforceValidationMode` | Throws `CompositionValidationError` only on `'throw'` |
+| `checkInputBudget` | The finding, `INPUT_OVER_BUDGET`, for input past `MAX_INPUT_DEPTH`, `MAX_INPUT_VALUES`, or `MAX_INPUT_CHARACTERS`; the validator and parser run it first |
+| `enforceValidationMode` | Throws `CompositionValidationError` on `'throw'`, or on over-budget input in any mode |
 | `IsomerError` | Construction and authoring failures, identified by `name` and `code`. Codes name the condition, not the throwing module. |
 | `CompositionValidationError` | Invalid composition, identified by `name`, `code` (`COMPOSITION_INVALID`), and `errors` |
 | `formatValidationError` | `{ path, message, nodeType? }` as one `<path> (in <nodeType>) <message>` string |
@@ -72,7 +73,7 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | `authoringSchemaSubset` | The `$defs` some types reach in an authoring schema, with the body-node union stubbed |
 | `formatZodIssue`, `formatZodIssues`, `formatPath` | Zod issues as `ValidationError`s |
 
-Types: `ValidationError`, `ValidationResult`, `ValidationWarning`, `ValidationErrorMode`, `CompositionValidatorOptions`, `ParsedComposition` (`{ valid, errors, composition? }`), `ResolvedVocabulary`, `CompositionSchemaOptions`, `CompositionJsonSchemaOptions`, `AuthoringJsonSchemaOptions`, `IsomerErrorCode`.
+Types: `ValidationError`, `ValidationResult`, `ValidationWarning`, `ValidationErrorMode`, `CompositionValidatorOptions`, `InputBudget`, `ParsedComposition` (`{ valid, errors, composition? }`), `ResolvedVocabulary`, `CompositionSchemaOptions`, `CompositionJsonSchemaOptions`, `AuthoringJsonSchemaOptions`, `IsomerErrorCode`.
 
 ## Root entry — values, URLs, helpers
 

@@ -13,13 +13,19 @@ The discriminator is `'view'` and does not change. `version` is an optional lite
 Two functions, deliberately different in scope.
 
 ```ts
-const validate = createCompositionValidator(definitions, { sizesFromNodeHeights });
-const parse = createCompositionParser(definitions);
+const validate = createCompositionValidator(definitions, { sizesFromNodeHeights, inputBudget });
+const parse = createCompositionParser(definitions, { inputBudget });
 ```
 
 `createCompositionValidator` is the **trusted-input** path: schema first, then the semantic passes. It returns `{ valid, errors, warnings }`, where `valid` turns on duplicate-id errors and the warnings are advisory (empty when there are none).
 
 `createCompositionParser` is the **untrusted-input** path: schema only, reported rather than thrown, returning `{ valid, errors, composition? }`. It answers "is this a `Composition`", not "is this a good one": it does not run the duplicate-id pass and produces no warnings, so a composition with two nodes sharing an `id` parses as valid. A caller that wants the semantic checks runs `validate` on the parsed composition.
+
+## The input budget
+
+Both refuse input over its budget before the schema runs, since Zod parses nested containers recursively and a deep enough body would overflow the stack. `checkInputBudget(value, budget?)` walks the value without recursion and stops at the first limit it passes: nesting deeper than `MAX_INPUT_DEPTH` (64) objects and arrays, the input itself included; more than `MAX_INPUT_VALUES` (20,000) objects, arrays, and leaves; or more than `MAX_INPUT_CHARACTERS` (1,000,000) characters across object keys, strings, and each other leaf as `String` prints it. A value that contains itself is refused too; one repeated beside itself is not. It counts each child before reading the next, so a huge array or record is refused without reading past the limit.
+
+The finding is one root `ValidationError` whose `code` is `INPUT_OVER_BUDGET`, the only kind that carries a `code`, and `enforceValidationMode` throws it as a `CompositionValidationError` even when collecting, since nothing can render it. Pass `inputBudget` (`{ depth?, values?, characters? }`) in `createCompositionValidator`'s options or `createCompositionParser`'s to change a limit; one left out keeps its default.
 
 ## The semantic passes
 
@@ -42,7 +48,7 @@ warningsForSurface(result, 'svg');
 
 Every error is a `ValidationError`, `{ path, message, nodeType? }`: `path` locates the value (`body[3].items[0].label`, empty for the document as a whole), `message` is a predicate, and `nodeType` is the `type` of the innermost primitive node the path lands in, so a repair loop knows which primitive to fix. `formatValidationError` joins them into one sentence for a log or a model: `body[2].items[0].label (in kpi) is required`, or the message alone for a root finding. A node type, key, field, or enum value that is not a plain name prints JSON-quoted, and an echoed id always does, with every line terminator escaped so a finding stays on one line. The parser, the validator, the duplicate-id pass, and a dispatcher's `validate` all set `nodeType`; a node of unknown type has none to name, and a finding inside one, even nested in a known container, carries none rather than the container's. `formatZodIssue` does the conversion from a Zod issue, with three cases worded centrally so per-schema messages carry no boilerplate: a missing required field is `is required`, an enum or discriminator mismatch is `must be one of: a, b, c`, unknown keys are `has unrecognized key(s): …` followed, on a primitive node, by `; its fields are …` (the node's declared fields, without `type`, `id`, and `surfaces`) or `; it declares no fields`, and Zod's default size wording becomes `must not be empty` or `must be at least 3 characters`. A schema's own message is never rewritten, so the `requiredString` / `enumOf` helpers and a `.min(1, { error })` of your own read the same way.
 
-`enforceValidationMode(result, mode)` is the shared throw-or-collect switch: it raises `CompositionValidationError` only when the caller passed `'throw'`.
+`enforceValidationMode(result, mode)` is the shared throw-or-collect switch: it raises `CompositionValidationError` only when the caller passed `'throw'`, or when the input was over its budget.
 
 ## JSON Schema
 

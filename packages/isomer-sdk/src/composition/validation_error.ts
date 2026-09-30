@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { ISOMER_ERROR_CODES } from './error';
+import { ISOMER_ERROR_CODES, type IsomerErrorCode } from './error';
 import { nameText } from './one_line';
 
 /**
@@ -21,6 +21,8 @@ export interface ValidationError {
   message: string;
   /** The `type` of the innermost primitive node `path` lands in, when there is one. */
   nodeType?: string;
+  /** Set only on a finding a host branches on, such as `INPUT_OVER_BUDGET`. */
+  code?: IsomerErrorCode;
 }
 
 /** `<path> (in <nodeType>) <message>`, or the message alone for a root finding. */

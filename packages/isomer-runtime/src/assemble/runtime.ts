@@ -19,6 +19,7 @@ import {
   describeCapabilities,
   type Frame,
   getCompositionSchemaForDefinitions,
+  type InputBudget,
   IsomerError,
   type ParsedComposition,
   type PrimitiveNode,
@@ -120,6 +121,8 @@ export interface IsomerRuntimeOptions<
   defaultAriaLabel?: string;
   /** Options for the authoring JSON Schema `getAuthoringContext` returns. */
   authoring?: AuthoringJsonSchemaOptions;
+  /** Limits every composition and view input is checked against before it is parsed; see `checkInputBudget`. */
+  inputBudget?: InputBudget;
 }
 
 /**
@@ -233,14 +236,18 @@ export const createIsomerRuntime: CreateIsomerRuntime = (<
     label: 'runtime',
     isSlackAssetType: (type) => slackAssetTypes.has(type),
   });
+  const { inputBudget } = options;
+  const budget = inputBudget === undefined ? {} : { inputBudget };
   const validate = createCompositionValidator(definitions, {
+    ...budget,
     sizesFromNodeHeights: Object.values(frames).some(
       (frame) => frame.sizesFromNodeHeights
     ),
   });
-  const parse = createCompositionParser(definitions);
+  const parse = createCompositionParser(definitions, budget);
   const viewRegistry = createViewRegistry<THostContext, PrimitiveNode>(
-    validate
+    validate,
+    budget
   );
   options.views?.forEach(viewRegistry.register);
   const getAuthoringContext = createRuntimeAuthoringContextFactory(
