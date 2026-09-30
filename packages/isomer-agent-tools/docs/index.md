@@ -27,11 +27,11 @@ const prompts = createIsomerPrompts({ runtime });
 | `createIsomerResources(options)` | `IsomerResource[]`: the guide as `ISOMER_AUTHORING_GUIDE_URI` (`isomer://authoring-guide`, `text/markdown`) and the whole composition JSON Schema as `ISOMER_COMPOSITION_SCHEMA_URI` (`isomer://composition-schema`, `application/json`), each with a live `read()` |
 | `createIsomerPrompts(options)` | `IsomerPrompt[]`: `ISOMER_COMPOSE_PROMPT` (`compose`), whose `build({ request? })` returns the guide followed by the request. A host without prompts uses it as a system or user message |
 | `buildIsomerAuthoringGuide(options)`, `buildPrimitiveDescriptions({ runtime, types })` | The text `isomer_authoring_guide` and `isomer_describe_primitives` return |
-| `checkComposition(runtime, frame, value)` | Parses, validates, and applies the frame's body rule, returning `IsomerCompositionCheck`: `{ valid, errors, findings, warnings, composition? }` |
+| `checkComposition(runtime, frame, value)` | Refuses input over the budget below, then parses, validates, and applies the frame's body rule, returning `IsomerCompositionCheck`: `{ valid, errors, findings, warnings, composition? }` |
 | `textResult`, `jsonResult`, `imageResult` | Build results in the tools' shape, for a host's own tools |
 | `ISOMER_TOOL_NAMES` | The six tool names below |
 
-`runtime` is declared structurally, as `IsomerToolsRuntime`, so this package does not depend on `@elastic/isomer-runtime`. Pass a real `IsomerRuntime`, which satisfies it.
+`runtime` is declared structurally, as `IsomerToolsRuntime`, so only this package's tests import `@elastic/isomer-runtime`. Pass a real `IsomerRuntime`, which satisfies it.
 
 ## The tools
 
@@ -112,4 +112,4 @@ const aiTools = Object.fromEntries(
 
 ## Model output is untrusted
 
-Every composition a tool receives came from a model. `isomer_render` parses and validates before rendering, and renders the composition `parse` returned, never the raw input; URL fields go through the SDK's sanitizers on every surface. The tools read and write nothing beyond what the runtime and the host's `image` and view builders do, so authorization stays with the host: decide what `hostContext` a caller gets and which views are registered before building the tools.
+Every composition a tool receives came from a model. Before any parsing, a composition and a view's `input` must nest at most 64 objects and arrays deep, hold at most 20,000 values, and hold at most 1,000,000 characters across keys and leaves, with no cycle. Over that budget, `isomer_validate` answers `valid: false`, `isomer_render` fails with the same errors, and `isomer_request_view` fails with `{ error, errors }` before the view sees the input. `isomer_render` parses and validates before rendering, and renders the composition `parse` returned, never the raw input; URL fields go through the SDK's sanitizers on every surface. The tools read and write nothing beyond what the runtime and the host's `image` and view builders do, so authorization stays with the host: decide what `hostContext` a caller gets and which views are registered before building the tools.

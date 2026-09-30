@@ -24,6 +24,7 @@ import {
 import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { z } from 'zod';
 
+import { MAX_INPUT_CHARACTERS, MAX_INPUT_DEPTH } from './budget';
 import { checkComposition } from './check';
 import { ISOMER_TOOL_NAMES } from './names';
 import { createIsomerTools } from './tools';
@@ -72,6 +73,9 @@ const textOf = ({ content }: IsomerToolResult): string => {
 
 const jsonOf = (result: IsomerToolResult): Record<string, unknown> =>
   JSON.parse(textOf(result)) as Record<string, unknown>;
+
+const nested = (depth: number): unknown =>
+  Array.from({ length: depth - 1 }).reduce<unknown>((inner) => [inner], []);
 
 const FRAME_RULE = /exactly one "slideFrame" node, got 2 nodes/;
 
@@ -207,6 +211,27 @@ describe('createIsomerTools', () => {
       expect(errors).toEqual([expect.stringContaining('(in slideFrame)')]);
     });
 
+    it('refuses a composition over the input budget before parsing it', async () => {
+      const parse = vi.fn((value: unknown) => runtime.parse(value));
+      const result = await call(
+        createIsomerTools({ runtime: { ...runtime, parse } }),
+        ISOMER_TOOL_NAMES.validate,
+        {
+          composition: {
+            type: 'view',
+            body: [{ type: 'slideStack', children: nested(MAX_INPUT_DEPTH) }],
+          },
+        }
+      );
+      expect(parse).not.toHaveBeenCalled();
+      expect(result.isError).toBeUndefined();
+      expect(jsonOf(result)).toEqual({
+        valid: false,
+        errors: [`The input nests deeper than ${MAX_INPUT_DEPTH} levels.`],
+        warnings: [],
+      });
+    });
+
     it('skips the body rule without a frame', async () => {
       const { valid } = jsonOf(
         await call(createIsomerTools({ runtime }), ISOMER_TOOL_NAMES.validate, {
@@ -257,6 +282,20 @@ describe('createIsomerTools', () => {
       expect(jsonOf(result)).toMatchObject({
         valid: false,
         errors: [expect.stringMatching(FRAME_RULE)],
+      });
+    });
+
+    it('returns a composition over the input budget as a failed call', async () => {
+      const result = await call(tools, ISOMER_TOOL_NAMES.render, {
+        composition: { ...oneSlide, title: 'x'.repeat(MAX_INPUT_CHARACTERS) },
+        surface: 'text',
+      });
+      expect(result.isError).toBe(true);
+      expect(jsonOf(result)).toEqual({
+        valid: false,
+        errors: [
+          `The input holds more than ${MAX_INPUT_CHARACTERS} characters.`,
+        ],
       });
     });
 
@@ -343,6 +382,28 @@ describe('createIsomerTools', () => {
       expect(jsonOf(result)).toMatchObject({
         error: 'Invalid input for view "one-slide":',
         errors: [expect.stringContaining('title')],
+      });
+    });
+
+    it('refuses view input over the input budget before the view sees it', async () => {
+      const request = vi.fn(runtime.viewRegistry.request);
+      const input = { title: [] as unknown[] };
+      input.title.push(input);
+      const result = await call(
+        createIsomerTools({
+          runtime: {
+            ...runtime,
+            viewRegistry: { ...runtime.viewRegistry, request },
+          },
+        }),
+        ISOMER_TOOL_NAMES.requestView,
+        { id: 'one-slide', input }
+      );
+      expect(request).not.toHaveBeenCalled();
+      expect(result.isError).toBe(true);
+      expect(jsonOf(result)).toEqual({
+        error: 'Invalid input for view "one-slide":',
+        errors: ['The input contains itself.'],
       });
     });
 

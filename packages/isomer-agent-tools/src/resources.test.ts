@@ -6,7 +6,7 @@
  */
 
 import { slidesPack } from '@elastic/isomer-primitives-slides';
-import { createIsomerRuntime } from '@elastic/isomer-runtime';
+import { createIsomerRuntime, defineView } from '@elastic/isomer-runtime';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -35,6 +35,23 @@ describe('createIsomerResources', () => {
     expect(guide.mimeType).toBe('text/markdown');
     expect(guide.read()).toContain('## Primitive catalog');
     expect(guide.read()).not.toContain('## JSON Schema');
+  });
+
+  it('reads a view registered after the resources were created', () => {
+    const late = createIsomerRuntime({ packs: [slidesPack] });
+    const [guide] = createIsomerResources({ runtime: late });
+    const [compose] = createIsomerPrompts({ runtime: late });
+    expect(guide!.read()).not.toContain('`late-view`');
+    late.viewRegistry.register(
+      defineView({
+        id: 'late-view',
+        title: 'Late view',
+        answers: ['show a late view'],
+        build: () => ({ type: 'view', body: [] }),
+      })
+    );
+    expect(guide!.read()).toContain('`late-view`');
+    expect(compose!.build({})).toContain('`late-view`');
   });
 
   it('reads the whole composition schema as JSON', () => {

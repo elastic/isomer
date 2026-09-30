@@ -14,6 +14,7 @@ import {
 } from '@elastic/isomer-sdk';
 import { z, type ZodObject } from 'zod';
 
+import { overInputBudget } from './budget';
 import { checkComposition } from './check';
 import { buildIsomerAuthoringGuide, buildPrimitiveDescriptions } from './guide';
 import { ISOMER_TOOL_NAMES } from './names';
@@ -233,6 +234,13 @@ export const createIsomerTools = <THostContext = unknown>(
         .describe('Matches the view’s input schema.'),
     }),
     handler: async ({ id, input }) => {
+      const over = overInputBudget(input);
+      if (over !== undefined) {
+        return jsonResult(
+          { error: `Invalid input for view "${id}":`, errors: [over] },
+          true
+        );
+      }
       try {
         const { composition } = await runtime.viewRegistry.request(
           id,

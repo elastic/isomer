@@ -62,7 +62,7 @@ export interface IsomerPrompt<TArgs extends ZodObject = ZodObject> {
 /** The surfaces `isomer_render` can target. */
 export type IsomerToolSurface = 'text' | 'markdown' | 'html' | 'slack' | 'png';
 
-/** The part of `IsomerRuntime` the tools use, declared structurally so this package does not depend on the runtime. */
+/** The part of `IsomerRuntime` the tools use, declared structurally so only tests import the runtime. */
 export interface IsomerToolsRuntime<THostContext = unknown> {
   getAuthoringContext(): {
     schema: Record<string, unknown>;

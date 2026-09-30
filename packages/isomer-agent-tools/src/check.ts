@@ -12,6 +12,7 @@ import {
   type ValidationWarning,
 } from '@elastic/isomer-sdk';
 
+import { overInputBudget } from './budget';
 import type { IsomerToolsFrame, IsomerToolsRuntime } from './types';
 
 /** The outcome of {@link checkComposition}, worded for a model to act on. */
@@ -30,22 +31,27 @@ export interface IsomerCompositionCheck {
 const formatWarning = ({ surface, path = '', message }: ValidationWarning) =>
   `${surface}: ${message.startsWith(path) ? message : formatValidationError({ path, message })}`;
 
-/** Parses `value`, then runs the runtime's semantic validation and the frame's body rule on what parsed. */
+const refused = (findings: ValidationError[]): IsomerCompositionCheck => ({
+  valid: false,
+  errors: findings.map(formatValidationError),
+  findings,
+  warnings: [],
+});
+
+/** Refuses `value` over the input budget, then parses it and runs the runtime's semantic validation and the frame's body rule on what parsed. */
 export const checkComposition = (
   runtime: Pick<IsomerToolsRuntime, 'parse' | 'validate'>,
   frame: IsomerToolsFrame | undefined,
   value: unknown
 ): IsomerCompositionCheck => {
+  const over = overInputBudget(value);
+  if (over !== undefined) {
+    return refused([{ path: '', message: over }]);
+  }
   const parsed = runtime.parse(value);
   const { composition } = parsed;
   if (!parsed.valid || composition === undefined) {
-    const findings = [...parsed.errors];
-    return {
-      valid: false,
-      errors: findings.map(formatValidationError),
-      findings,
-      warnings: [],
-    };
+    return refused([...parsed.errors]);
   }
   const { errors, warnings } = runtime.validate(composition);
   const findings: ValidationError[] = [
