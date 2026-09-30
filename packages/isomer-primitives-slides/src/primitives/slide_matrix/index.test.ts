@@ -70,6 +70,20 @@ const tableChars = (block: SlackBlock | undefined): number =>
         .join('').length
     : Number.NaN;
 
+/** Each `rich_text` element's text, which Slack caps at `sectionTextChars`. */
+const richTextElements = (blocks: readonly SlackBlock[]): string[] =>
+  blocks.flatMap((block) =>
+    block.type === 'rich_text'
+      ? block.elements.map((element) =>
+          element.type === 'rich_text_list'
+            ? ''
+            : element.elements
+                .map((run) => (run.type === 'text' ? run.text : ''))
+                .join('')
+        )
+      : []
+  );
+
 const everySurface = (node: object): string[] => [
   runtime.surfaces.text.renderNode(node as PrimitiveNode),
   runtime.surfaces.markdown.renderNode(node as PrimitiveNode),
@@ -246,26 +260,30 @@ describe('slideMatrix', () => {
     expect(html(pairExample)).toContain('role="img" aria-label="Primary"');
   });
 
-  it('keeps the Slack table whole at the cell budget, and falls back to rich text one past it', () => {
+  it('keeps the Slack table whole at the cell budget, and splits its rich text fallback one past it', () => {
     const [first, ...rest] = pairExample.rows;
     const withLabel = (label: string) =>
       runtime.surfaces.slack.renderNode({
         ...pairExample,
         rows: [{ ...first!, label }, ...rest],
-      } as PrimitiveNode).blocks[0];
+      } as PrimitiveNode).blocks;
     const at = 'x'.repeat(
-      SLACK_LIMITS.tableCellCharsPerMessage - tableChars(withLabel(''))
+      SLACK_LIMITS.tableCellCharsPerMessage - tableChars(withLabel('')[0])
     );
-    expect(tableChars(withLabel(at))).toBe(
+    expect(tableChars(withLabel(at)[0])).toBe(
       SLACK_LIMITS.tableCellCharsPerMessage
     );
     const over = withLabel(`${at}y`);
-    expect(over?.type).toBe('rich_text');
-    expect(JSON.stringify(over)).toContain(`${at}y`);
+    expect(over.map(({ type }) => type)).toEqual(['rich_text']);
+    const elements = richTextElements(over);
+    expect(
+      Math.max(...elements.map(({ length }) => length))
+    ).toBeLessThanOrEqual(SLACK_LIMITS.sectionTextChars);
+    expect(elements.join('')).toContain(`${at}y`);
   });
 
-  it('prints its row labels and marks when an earlier table spends the message’s cell budget', () => {
-    const label = 'x'.repeat(2000);
+  it('prints its row labels and marks, split to the Slack section limit, when an earlier table spends the message’s cell budget', () => {
+    const label = 'x'.repeat(SLACK_LIMITS.sectionTextChars + 2000);
     const { blocks } = runtime.surfaces.slack.render({
       type: 'view',
       body: [
@@ -294,7 +312,12 @@ describe('slideMatrix', () => {
       ],
     });
     expect(blocks.filter(({ type }) => type === 'table')).toHaveLength(1);
-    const printed = JSON.stringify(blocks);
+    const elements = richTextElements(blocks);
+    expect(elements.length).toBeGreaterThan(1);
+    expect(
+      Math.max(...elements.map(({ length }) => length))
+    ).toBeLessThanOrEqual(SLACK_LIMITS.sectionTextChars);
+    const printed = elements.join('');
     for (const text of [label, 'iOS', 'Web', 'Yes', 'No']) {
       expect(printed).toContain(text);
     }

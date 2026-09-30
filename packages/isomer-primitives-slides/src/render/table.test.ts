@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { SLACK_LIMITS, type SlackBlock } from '@elastic/isomer-sdk/slack';
+import { SLACK_LIMITS } from '@elastic/isomer-sdk/slack';
 import { describe, expect, it } from 'vitest';
 
 import { richTextRun } from './marks';
@@ -53,56 +53,32 @@ describe('slackTableCell', () => {
 
 describe('slackTable', () => {
   const cell = (text: string) => [richTextRun(text)];
-  const head = [cell('A'), cell('B')];
-  const { tableCellCharsPerMessage, tableColumns, tableRows } = SLACK_LIMITS;
 
-  /** Every run's text, in order. */
-  const richText = (block: SlackBlock): string => {
-    if (block.type !== 'rich_text') {
-      throw new Error(`expected rich_text, got ${block.type}`);
-    }
-    return block.elements
-      .flatMap((element) =>
-        element.type === 'rich_text_section' ? element.elements : []
-      )
-      .map((run) => (run.type === 'text' ? run.text : ''))
-      .join('');
-  };
-
-  it('keeps a table whose cells total the message budget, and falls back one character past it', () => {
-    const at = tableCellCharsPerMessage - 3;
-    expect(slackTable(head, [[cell('x'.repeat(at)), cell('y')]]).type).toBe(
-      'table'
-    );
-    const over = 'x'.repeat(at + 1);
-    expect(richText(slackTable(head, [[cell(over), cell('y')]]))).toBe(
-      `A: ${over}\nB: y`
-    );
-  });
-
-  it('keeps a table at the row and column limits, and falls back one past each', () => {
-    const rows = (count: number) =>
-      Array.from({ length: count }, () => [cell('x'), cell('y')]);
-    expect(slackTable(head, rows(tableRows - 1)).type).toBe('table');
-    expect(slackTable(head, rows(tableRows)).type).toBe('rich_text');
-    const wide = (count: number) =>
-      slackTable(
-        Array.from({ length: count }, () => cell('h')),
-        [Array.from({ length: count }, () => cell('c'))]
-      ).type;
-    expect(wide(tableColumns)).toBe('table');
-    expect(wide(tableColumns + 1)).toBe('rich_text');
-  });
-
-  it('prints a heading on its own line and leaves out empty cells and empty column names', () => {
-    const over = 'x'.repeat(tableCellCharsPerMessage);
+  it('prints a heading line as a bold first cell, the rest empty', () => {
     expect(
-      richText(
-        slackTable(
-          [cell(''), cell('B')],
-          ['GROUP', [cell('a'), cell('')], [cell('b'), cell(over)]]
-        )
-      )
-    ).toBe(`GROUP\n\na\n\nb\nB: ${over}`);
+      slackTable([cell('A'), cell('B')], ['GROUP', [cell('a'), cell('b')]])
+    ).toEqual({
+      type: 'table',
+      rows: [
+        [
+          { type: 'raw_text', text: 'A' },
+          { type: 'raw_text', text: 'B' },
+        ],
+        [
+          slackTableCell([richTextRun('GROUP', { bold: true })]),
+          { type: 'raw_text', text: '' },
+        ],
+        [
+          { type: 'raw_text', text: 'a' },
+          { type: 'raw_text', text: 'b' },
+        ],
+      ],
+      column_settings: [{ is_wrapped: true }, { is_wrapped: true }],
+    });
+  });
+
+  it('leaves a table past the cell budget to the envelope', () => {
+    const over = 'x'.repeat(SLACK_LIMITS.tableCellCharsPerMessage);
+    expect(slackTable([cell('A')], [[cell(over)]]).type).toBe('table');
   });
 });

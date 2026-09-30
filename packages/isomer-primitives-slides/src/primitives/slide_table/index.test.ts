@@ -78,6 +78,20 @@ const tableChars = (block: SlackBlock | undefined): number =>
         .join('').length
     : Number.NaN;
 
+/** Each `rich_text` element's text, which Slack caps at `sectionTextChars`. */
+const richTextElements = (blocks: readonly SlackBlock[]): string[] =>
+  blocks.flatMap((block) =>
+    block.type === 'rich_text'
+      ? block.elements.map((element) =>
+          element.type === 'rich_text_list'
+            ? ''
+            : element.elements
+                .map((run) => (run.type === 'text' ? run.text : ''))
+                .join('')
+        )
+      : []
+  );
+
 const everySurface = (node: object): string[] => [
   runtime.surfaces.text.renderNode(node as PrimitiveNode),
   runtime.surfaces.markdown.renderNode(node as PrimitiveNode),
@@ -381,22 +395,26 @@ describe('slideTable', () => {
     }
   });
 
-  it('keeps the Slack table whole at the cell budget, and falls back to rich text one past it', () => {
+  it('keeps the Slack table whole at the cell budget, and splits its rich text fallback one past it', () => {
     const [[, ...rest] = [], ...rows] = plainExample.rows ?? [];
     const withCell = (cell: string) =>
       runtime.surfaces.slack.renderNode({
         ...plainExample,
         rows: [[cell, ...rest], ...rows],
-      } as PrimitiveNode).blocks[0];
+      } as PrimitiveNode).blocks;
     const at = 'x'.repeat(
-      SLACK_LIMITS.tableCellCharsPerMessage - tableChars(withCell(''))
+      SLACK_LIMITS.tableCellCharsPerMessage - tableChars(withCell('')[0])
     );
-    expect(tableChars(withCell(at))).toBe(
+    expect(tableChars(withCell(at)[0])).toBe(
       SLACK_LIMITS.tableCellCharsPerMessage
     );
     const over = withCell(`${at}y`);
-    expect(over?.type).toBe('rich_text');
-    expect(JSON.stringify(over)).toContain(`${at}y`);
+    expect(over.map(({ type }) => type)).toEqual(['rich_text']);
+    const elements = richTextElements(over);
+    expect(
+      Math.max(...elements.map(({ length }) => length))
+    ).toBeLessThanOrEqual(SLACK_LIMITS.sectionTextChars);
+    expect(elements.join('')).toContain(`${at}y`);
   });
 
   it.each(['*', '_', '~', '`'])(
@@ -429,13 +447,13 @@ describe('slideTable', () => {
     expect(caption?.type).toBe('context');
   });
 
-  it('prints its cells when an earlier table spends the message’s cell budget', () => {
+  it('prints its cells, split to the Slack section limit, when an earlier table spends the message’s cell budget', () => {
     const table = (cell: string) => ({
       type: 'slideTable',
       columns: ['Region'],
       rows: [[cell]],
     });
-    const later = 'x'.repeat(2000);
+    const later = 'x'.repeat(SLACK_LIMITS.sectionTextChars + 2000);
     const { blocks } = runtime.surfaces.slack.render({
       type: 'view',
       body: [
@@ -453,7 +471,12 @@ describe('slideTable', () => {
       ],
     });
     expect(blocks.filter(({ type }) => type === 'table')).toHaveLength(1);
-    expect(JSON.stringify(blocks)).toContain(later);
+    const elements = richTextElements(blocks);
+    expect(elements.length).toBeGreaterThan(1);
+    expect(
+      Math.max(...elements.map(({ length }) => length))
+    ).toBeLessThanOrEqual(SLACK_LIMITS.sectionTextChars);
+    expect(elements.join('')).toContain(later);
   });
 
   it('sets its caption at the line height the estimate charges', () => {

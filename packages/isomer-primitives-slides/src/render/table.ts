@@ -6,18 +6,14 @@
  */
 
 import { oneLine } from '@elastic/isomer-sdk/author';
-import {
-  SLACK_LIMITS,
-  type SlackBlock,
-  type SlackRichTextText,
-  type SlackTableCell,
+import type {
+  SlackBlock,
+  SlackRichTextText,
+  SlackTableCell,
 } from '@elastic/isomer-sdk/slack';
-
-import { glyph } from '../theme/components/shared';
 
 import { richTextRun } from './marks';
 import { displayColumns } from './mono';
-import { richTextBreak, richTextSection, slackRichText } from './slack_text';
 
 /** A row of cells, or a heading on its own line. */
 export type TextTableLine = readonly string[] | string;
@@ -67,63 +63,19 @@ export const slackTableCell = (
 /** Each cell as its runs. */
 export type SlackTableRow = readonly (readonly SlackRichTextText[])[];
 
-const runsLength = (runs: readonly SlackRichTextText[]): number =>
-  runs.reduce((total, { text }) => total + text.length, 0);
-
-const bolded = (runs: readonly SlackRichTextText[]): SlackRichTextText[] =>
-  runs.map((run) => ({ ...run, style: { ...run.style, bold: true } }));
-
-/**
- * A `table` block when Slack keeps every cell whole.
- * Otherwise rich text: each row as `column: cell` lines, a heading line bold, and a blank line between.
- */
+/** One `table` block, a heading line as a bold first cell; the Slack envelope degrades one Slack would reject. */
 export const slackTable = (
   head: SlackTableRow,
   lines: readonly (SlackTableRow | string)[]
-): SlackBlock => {
-  const rows = lines.map((line) =>
-    typeof line === 'string'
-      ? [[richTextRun(line, { bold: true })], ...head.slice(1).map(() => [])]
-      : line
-  );
-  const fits =
-    rows.length + 1 <= SLACK_LIMITS.tableRows &&
-    head.length <= SLACK_LIMITS.tableColumns &&
-    [head, ...rows]
-      .flat()
-      .reduce((total, cell) => total + runsLength(cell), 0) <=
-      SLACK_LIMITS.tableCellCharsPerMessage;
-  if (fits) {
-    return {
-      type: 'table',
-      rows: [head, ...rows].map((row) => row.map(slackTableCell)),
-      column_settings: head.map(() => ({ is_wrapped: true })),
-    };
-  }
-  const entries = lines.map((line) =>
-    typeof line === 'string'
-      ? [richTextRun(line, { bold: true })]
-      : line
-          .flatMap((cell, index) => {
-            const column = head[index] ?? [];
-            return runsLength(cell) === 0
-              ? []
-              : [
-                  richTextBreak,
-                  ...(runsLength(column) === 0
-                    ? []
-                    : [...bolded(column), richTextRun(glyph.termJoiner.value)]),
-                  ...cell,
-                ];
-          })
-          .slice(1)
-  );
-  return slackRichText(
-    richTextSection(
-      ...entries.flatMap((entry, index) => [
-        ...(index > 0 ? [richTextBreak, richTextBreak] : []),
-        ...entry,
-      ])
-    )
-  );
-};
+): SlackBlock => ({
+  type: 'table',
+  rows: [
+    head,
+    ...lines.map((line) =>
+      typeof line === 'string'
+        ? [[richTextRun(line, { bold: true })], ...head.slice(1).map(() => [])]
+        : line
+    ),
+  ].map((row) => row.map(slackTableCell)),
+  column_settings: head.map(() => ({ is_wrapped: true })),
+});
