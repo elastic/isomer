@@ -58,12 +58,13 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 
 | Export | What it is |
 | --- | --- |
-| `createCompositionValidator` | Trusted-input validator: schema plus semantic passes; returns `{ valid, errors, warnings }` |
-| `createCompositionParser` | Untrusted-input parser: schema only |
-| `enforceValidationMode` | Throws `CompositionValidationError` only on `'throw'` |
+| `createCompositionValidator` | Trusted-input validator: the input budget, the schema, then semantic passes; returns `{ valid, errors, warnings }` |
+| `createCompositionParser` | Untrusted-input parser: the input budget, then the schema only |
+| `checkInputBudget` | A plain copy of the input to parse in its place (`InputBudgetCheck`), or the refusal for input past `MAX_INPUT_DEPTH`, `MAX_INPUT_VALUES`, or `MAX_INPUT_CHARACTERS` (`INPUT_OVER_BUDGET`) or not plain data (`INPUT_NOT_PLAIN_DATA`); the validator and parser run it first |
+| `enforceValidationMode` | Throws `CompositionValidationError` on `'throw'`, or in any mode on input refused by `checkInputBudget` |
 | `IsomerError` | Construction and authoring failures, identified by `name` and `code`. Codes name the condition, not the throwing module. |
 | `CompositionValidationError` | Invalid composition, identified by `name`, `code` (`COMPOSITION_INVALID`), and `errors` |
-| `formatValidationError` | `{ path, message, nodeType? }` as one `<path> (in <nodeType>) <message>` string |
+| `formatValidationError` | A `ValidationError` as one `<path> (in <nodeType>) <message>` string |
 | `warningsForSurface` | Narrows warnings to one surface |
 | `resolveVocabulary` | Builds a union whose containers reference it |
 | `getCompositionSchemaForDefinitions` | Memoized schema, keyed on array identity |
@@ -72,7 +73,7 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | `authoringSchemaSubset` | The `$defs` some types reach in an authoring schema, with the body-node union stubbed |
 | `formatZodIssue`, `formatZodIssues`, `formatPath` | Zod issues as `ValidationError`s |
 
-Types: `ValidationError`, `ValidationResult`, `ValidationWarning`, `ValidationErrorMode`, `CompositionValidatorOptions`, `ParsedComposition` (`{ valid, errors, composition? }`), `ResolvedVocabulary`, `CompositionSchemaOptions`, `CompositionJsonSchemaOptions`, `AuthoringJsonSchemaOptions`, `IsomerErrorCode`.
+Types: `ValidationError`, `ValidationResult`, `ValidationWarning`, `ValidationErrorMode`, `CompositionValidatorOptions`, `InputBudget`, `InputBudgetCheck`, `ParsedComposition` (`{ valid, errors, composition? }`), `ResolvedVocabulary`, `CompositionSchemaOptions`, `CompositionJsonSchemaOptions`, `AuthoringJsonSchemaOptions`, `IsomerErrorCode`.
 
 ## Root entry — values, URLs, helpers
 
@@ -104,7 +105,7 @@ Zod helpers so a pack states constraints the same way everywhere: `z`, `enumOf`,
 
 Block Kit types: `SlackBlock` and its variants `SlackHeaderBlock` (`SlackHeaderLevel`), `SlackSectionBlock` (`SlackSectionAccessory`), `SlackContextBlock`, `SlackDividerBlock`, `SlackImageBlock`, `SlackVideoBlock`, `SlackActionsBlock` (`SlackActionElement`), `SlackTableBlock` (`SlackTableCell`, `SlackTableColumnSetting`, `SlackRawTextElement`), `SlackRichTextBlock` (`SlackRichTextBlockElement`, `SlackRichTextSection`, `SlackRichTextList`, `SlackRichTextPreformatted`, `SlackRichTextQuote`, `SlackRichTextInline`, `SlackRichTextText`, `SlackRichTextLink`, `SlackRichTextTag`, `SlackRichTextStyle`, `SlackTagColor`); text objects `SlackTextObject`, `SlackPlainTextObject`, `SlackMrkdwnTextObject`; elements `SlackButtonElement`, `SlackImageElement`, `SlackStaticSelectElement`, `SlackMultiStaticSelectElement`, `SlackOverflowElement`, `SlackRadioButtonsElement`, `SlackCheckboxesElement`, `SlackOptionObject`, `SlackOptionGroup`.
 
-mrkdwn formatters: `escapeMrkdwn`, `bold`, `italic`, `strike`, `code`, `codeBlock`, `link`, `slackLinkUrl` (the URL `link` would link, or `null`), `clampSlackText`, `formatHeaderText`, `joinMrkdwn`, `gfmToSlackMrkdwn`, `gfmToSlackBlocks`, and `markdownContentToSlackBlocks` for content built with `md`. Element constructors, each clamped to the Slack budget: `slackPlainText`, `slackActionId`, `slackSelectOption` (`SlackSelectOptionInput`), `slackStaticSelect`, `slackOverflowElement` (`SlackOverflowOptionInput`), `slackUrlButton`, `slackButtonStyle`.
+mrkdwn formatters: `escapeMrkdwn`, `bold`, `italic`, `strike`, `code`, `codeBlock`, `link`, `slackLinkUrl` (the URL `link` would link, or `null`), `clampSlackText`, `formatHeaderText`, `joinMrkdwn`, `gfmToSlackMrkdwn`, `gfmToSlackBlocks`, and `markdownContentToSlackBlocks` for content built with `md`. `splitRichTextElement` splits a rich-text section, quote, or preformatted element past `sectionTextChars` into adjacent ones of its type without losing text. Element constructors, each clamped to the Slack budget: `slackPlainText`, `slackActionId`, `slackSelectOption` (`SlackSelectOptionInput`), `slackStaticSelect`, `slackOverflowElement` (`SlackOverflowOptionInput`), `slackUrlButton`, `slackButtonStyle`.
 
 ## `./author`
 

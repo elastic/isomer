@@ -24,6 +24,7 @@ Build one per process, at module scope. It is a plain object with no lifecycle a
 | `styleAdapter` | at most one | The HTML surface's CSS and class-name strategy. Defaults to the packs' own adapters, combined. Required when any pack declares `collectStyles` and no pack (or this option) supplies an adapter. |
 | `defaultAriaLabel` | one string | Fallback `aria-label` when the composition has neither `meta.ariaLabel` nor a `title`. Defaults to `'View'`. |
 | `authoring` | optional | Options for the authoring JSON Schema `getAuthoringContext` returns. |
+| `inputBudget` | optional | Limits `checkInputBudget` applies in `parse`, `validate`, the `html`, `text`, `markdown`, `slack`, and `svg` surfaces, and `viewRegistry.request` input; `react` does not validate, so it is not checked. Defaults to the SDK's; see [the input budget](../../isomer-sdk/docs/composition.md#the-input-budget). |
 
 A runtime is homogeneous in its theme. `TTheme` resolves from the packs — each declares the palette its `svg` renderers read — and every frame in the map must supply it, so a mismatch is a compile error rather than a render-time failure. Packs wanting different palettes belong in different runtimes; see [Frame](frame.md).
 

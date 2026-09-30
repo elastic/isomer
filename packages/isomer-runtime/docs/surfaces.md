@@ -28,7 +28,7 @@ All six are synchronous.
 
 Whether a surface validates is a declared field on its type — `readonly validating: true` or `false` — so a host can reason about it without reading implementations.
 
-The HTML surface reports: the render proceeds and the findings come back as `validationErrors` on the result, because a partial document is still worth showing. The other four validating surfaces throw `CompositionValidationError` by default, because a string, a Slack payload, or an image has no place to carry findings and would otherwise go out as if it were sound. `onValidationError` flips either posture: `'throw'` on HTML, `'collect'` on the rest to validate and render anyway.
+The HTML surface reports: the render proceeds and the findings come back as `validationErrors` on the result, because a partial document is still worth showing. The other four validating surfaces throw `CompositionValidationError` by default, because a string, a Slack payload, or an image has no place to carry findings and would otherwise go out as if it were sound. `onValidationError` flips either posture: `'throw'` on HTML, `'collect'` on the rest to validate and render anyway. One finding it cannot flip: input refused before parsing, over its [input budget](../../isomer-sdk/docs/composition.md#the-input-budget) or not plain data, throws on every validating surface, since nothing can render it.
 
 React is the exception, deliberately. It is the interactive target, where a partial render beats a thrown error and a host would rather show the parts of a composition that are well-formed. `surfaces.react.render` will render a composition that `runtime.validate` rejects. A host that wants the other behaviour validates first.
 

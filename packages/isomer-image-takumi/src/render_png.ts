@@ -66,8 +66,9 @@ export interface RenderPngResult {
 /**
  * Validates, renders, and rasterizes a composition in one call.
  *
- * The composition is always rendered, even when invalid: `validation` is how
- * a caller finds out, rather than a thrown error. Validation runs twice, once
+ * The composition is rendered even when invalid: `validation` is how a caller
+ * finds out, rather than a thrown error. Input refused before parsing
+ * throws `CompositionValidationError`. Validation runs twice, once
  * here and once inside `render`, which discards its own result.
  */
 export const renderPng = async (

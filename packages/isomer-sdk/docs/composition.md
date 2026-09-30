@@ -13,13 +13,23 @@ The discriminator is `'view'` and does not change. `version` is an optional lite
 Two functions, deliberately different in scope.
 
 ```ts
-const validate = createCompositionValidator(definitions, { sizesFromNodeHeights });
-const parse = createCompositionParser(definitions);
+const validate = createCompositionValidator(definitions, { sizesFromNodeHeights, inputBudget });
+const parse = createCompositionParser(definitions, { inputBudget });
 ```
 
 `createCompositionValidator` is the **trusted-input** path: schema first, then the semantic passes. It returns `{ valid, errors, warnings }`, where `valid` turns on duplicate-id errors and the warnings are advisory (empty when there are none).
 
 `createCompositionParser` is the **untrusted-input** path: schema only, reported rather than thrown, returning `{ valid, errors, composition? }`. It answers "is this a `Composition`", not "is this a good one": it does not run the duplicate-id pass and produces no warnings, so a composition with two nodes sharing an `id` parses as valid. A caller that wants the semantic checks runs `validate` on the parsed composition.
+
+## The input budget
+
+Both refuse input over its budget before the schema runs, since Zod parses nested containers recursively and a deep enough body would overflow the stack. `checkInputBudget(value, budget?)` walks the value without recursion and stops at the first limit it passes: nesting deeper than `MAX_INPUT_DEPTH` (64) objects and arrays, the input itself included; more than `MAX_INPUT_VALUES` (20,000) objects, arrays, and leaves; or more than `MAX_INPUT_CHARACTERS` (1,000,000) characters across object keys, strings, and each other leaf as `String` prints it. A value that contains itself is refused too; one repeated beside itself is not. Its cost is linear in the input's size: it lists a container's own keys, as any enumeration in JavaScript does, then refuses past the value limit before reading any of them, so a huge array or record costs one pass over its keys and no more.
+
+It also refuses what is not plain data, because the schema reads fields by ordinary property access and would reach what the walk could not see: an array with a hole, an object whose prototype is not `Object.prototype` or `null` (a class instance, a `Map`, an object inheriting its fields), a symbol key, an accessor or non-enumerable property, or a function. A `JSON.parse` result is always plain data; an object from another realm, such as an iframe, is not, since its prototype is that realm's `Object.prototype`.
+
+What passes comes back as `{ valid: true, value }`, where `value` is a plain copy built during the walk: plain objects keep a `null` prototype, arrays keep only their indices, and each property is read once through its descriptor. The validator and parser hand that copy to the schema and the semantic passes, never the input, so a proxy, a getter, or a value read twice cannot differ between the check and the parse. A refusal comes back as `{ valid: false, error }`.
+
+The `error` is one root `ValidationError` whose `code` is `INPUT_OVER_BUDGET` or `INPUT_NOT_PLAIN_DATA`, the only kinds that carry a `code`, and `enforceValidationMode` throws either as a `CompositionValidationError` even when collecting, since nothing can render it. Pass `inputBudget` (`{ depth?, values?, characters? }`) in `createCompositionValidator`'s options or `createCompositionParser`'s to change a limit; one left out keeps its default.
 
 ## The semantic passes
 
@@ -40,9 +50,9 @@ warningsForSurface(result, 'svg');
 
 ## Error messages
 
-Every error is a `ValidationError`, `{ path, message, nodeType? }`: `path` locates the value (`body[3].items[0].label`, empty for the document as a whole), `message` is a predicate, and `nodeType` is the `type` of the innermost primitive node the path lands in, so a repair loop knows which primitive to fix. `formatValidationError` joins them into one sentence for a log or a model: `body[2].items[0].label (in kpi) is required`, or the message alone for a root finding. A node type, key, field, or enum value that is not a plain name prints JSON-quoted, and an echoed id always does, with every line terminator escaped so a finding stays on one line. The parser, the validator, the duplicate-id pass, and a dispatcher's `validate` all set `nodeType`; a node of unknown type has none to name, and a finding inside one, even nested in a known container, carries none rather than the container's. `formatZodIssue` does the conversion from a Zod issue, with three cases worded centrally so per-schema messages carry no boilerplate: a missing required field is `is required`, an enum or discriminator mismatch is `must be one of: a, b, c`, unknown keys are `has unrecognized key(s): …` followed, on a primitive node, by `; its fields are …` (the node's declared fields, without `type`, `id`, and `surfaces`) or `; it declares no fields`, and Zod's default size wording becomes `must not be empty` or `must be at least 3 characters`. A schema's own message is never rewritten, so the `requiredString` / `enumOf` helpers and a `.min(1, { error })` of your own read the same way.
+Every error is a `ValidationError`, `{ path, message, nodeType?, code? }`: `path` locates the value (`body[3].items[0].label`, empty for the document as a whole), `message` is a predicate, `code` is set only on a [refusal before parsing](#the-input-budget), and `nodeType` is the `type` of the innermost primitive node the path lands in, so a repair loop knows which primitive to fix. `formatValidationError` joins them into one sentence for a log or a model: `body[2].items[0].label (in kpi) is required`, or the message alone for a root finding. A node type, key, field, or enum value that is not a plain name prints JSON-quoted, and an echoed id always does, with every line terminator escaped so a finding stays on one line. The parser, the validator, the duplicate-id pass, and a dispatcher's `validate` all set `nodeType`; a node of unknown type has none to name, and a finding inside one, even nested in a known container, carries none rather than the container's. `formatZodIssue` does the conversion from a Zod issue, with three cases worded centrally so per-schema messages carry no boilerplate: a missing required field is `is required`, an enum or discriminator mismatch is `must be one of: a, b, c`, unknown keys are `has unrecognized key(s): …` followed, on a primitive node, by `; its fields are …` (the node's declared fields, without `type`, `id`, and `surfaces`) or `; it declares no fields`, and Zod's default size wording becomes `must not be empty` or `must be at least 3 characters`. A schema's own message is never rewritten, so the `requiredString` / `enumOf` helpers and a `.min(1, { error })` of your own read the same way.
 
-`enforceValidationMode(result, mode)` is the shared throw-or-collect switch: it raises `CompositionValidationError` only when the caller passed `'throw'`.
+`enforceValidationMode(result, mode)` is the shared throw-or-collect switch: it raises `CompositionValidationError` only when the caller passed `'throw'`, or when `checkInputBudget` refuses the input.
 
 ## JSON Schema
 
