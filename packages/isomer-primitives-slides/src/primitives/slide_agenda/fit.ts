@@ -9,16 +9,15 @@ import { agenda } from '../../theme/components/agenda';
 import { label } from '../../theme/components/shared';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
-import { emWidth, lineFill, wrappedLines } from '../size';
+import { lineFill, measureText } from '../size';
 
 import type { SlideAgendaSection } from './schema';
 
 const trailingWidth = ({ count, current }: SlideAgendaSection): number =>
   current
-    ? emWidth(agenda.here.value.toUpperCase(), label.tracking) *
-      scalePx(label.size)
+    ? measureText(agenda.here.value, label).widest
     : count
-      ? emWidth(count, agenda.count.tracking) * scalePx(agenda.count.size)
+      ? measureText(count, agenda.count).widest
       : 0;
 
 /** Title lines the sections take at `step` across `width`, for {@link agendaFit}. */
@@ -35,11 +34,13 @@ export const agendaLines = (
       trailingWidth(section);
     return (
       lines +
-      wrappedLines(
-        section.title,
-        scalePx(agenda.titleSizes[step]),
-        Math.max(1, titleWidth * lineFill),
-        agenda.title.tracking
+      Math.max(
+        1,
+        measureText(
+          section.title,
+          { ...agenda.title, size: agenda.titleSizes[step] },
+          titleWidth * lineFill
+        ).lines
       )
     );
   }, 0);

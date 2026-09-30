@@ -63,7 +63,8 @@ export const slack = ({ items }: SlideTerritoryGroupNode): SlackBlock[] => [
             ...(index < items.length - 1 ? [richTextBreak] : [])
           )
         )
-      )
+      ),
+    items.flatMap(({ title, body }) => [title, { marks: body }])
   ),
 ];
 

@@ -12,6 +12,7 @@ export const label = {
   size: type.label.size,
   weight: type.label.weight,
   tracking: type.label.tracking,
+  transform: type.label.transform,
   gap: space.px16,
 } as const;
 
