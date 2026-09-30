@@ -18,7 +18,7 @@ import {
   slideSplitRatios,
   slideTones,
 } from '../../theme/variants';
-import { lineText, wrappedText } from '../authored_text';
+import { layoutCheckNote, lineText, wrappedText } from '../authored_text';
 import { crossRefine } from '../cross_field';
 
 import type { SlideSplitPane } from './types';
@@ -40,7 +40,7 @@ const paneSchema = (nodeSchema: ZodType<unknown>) =>
         .min(1)
         .max(6)
         .describe(
-          'One to six slide nodes, top to bottom, e.g. a slideBulletList of short points or a slideCode. They stack on their own, with no slideStack around them.'
+          `One to six slide nodes, top to bottom, e.g. a slideBulletList of short points or a slideCode. They stack on their own, with no slideStack around them. Nodes keep their size in a pane, so a full one can run past the slide; ${layoutCheckNote}.`
         ),
     })
     .strict()

@@ -54,6 +54,14 @@ describe('slide theme', () => {
     }
   });
 
+  it('marks strong in display text with more than color', () => {
+    const rule = ruleFor(
+      slideStylesheet(),
+      slideModules.marks.handles.strongPrimary.readableName
+    );
+    expect(rule).toMatch(/text-decoration:\s*underline/);
+  });
+
   it('sets nothing below 24px', () => {
     const sizes = [
       ...slideStylesheet().matchAll(/font-size:\s*([\d.]+)px/g),

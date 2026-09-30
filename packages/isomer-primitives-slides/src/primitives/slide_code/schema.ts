@@ -15,7 +15,7 @@ import {
   codeLineMaxLength,
   codeMaxLines,
 } from '../../theme/components/code';
-import { lineText } from '../authored_text';
+import { layoutCheckNote, lineText } from '../authored_text';
 import { crossRefine } from '../cross_field';
 
 // Past this many UTF-16 units a line fits no panel, so it is refused before measuring.
@@ -39,7 +39,7 @@ const panelSchema = z
       .min(1)
       .max(codeMaxLines)
       .describe(
-        `Source, one entry per line, indented with spaces rather than tabs. Use an empty string for a blank line. 1 to ${codeMaxLines} lines; while every panel has ${codeDenseAfter} or fewer, they stay at the larger size.`
+        `Source, one entry per line, indented with spaces rather than tabs. Use an empty string for a blank line. 1 to ${codeMaxLines} lines; while every panel has ${codeDenseAfter} or fewer, they stay at the larger size. Under a two-line heading and lede, the most lines can run past the slide; ${layoutCheckNote}.`
       ),
     highlightLines: z
       .array(z.number().int().positive())

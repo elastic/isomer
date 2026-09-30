@@ -51,7 +51,7 @@ describe('slideTerritoryGroup', () => {
 
   it('names each toned owner for assistive technology, and no neutral one', () => {
     const { html } = runtime.surfaces.html.render(compose(fullExample));
-    const { label } = slideDistillery.tokens.tone;
+    const { toneLabel: label } = slideDistillery.tokens.territoryGroup;
     const named = (tone: SlideTone) =>
       html.split(`role="img" aria-label="${label[tone].value}"`).length - 1;
     expect([named('primary'), named('accent')]).toEqual([1, 2]);

@@ -29,8 +29,8 @@ export const tone = {
   cue: { size: space.px14, gap: space.px12, ring: stroke.rail },
   /** Text, Markdown, and Slack only; the image draws the cue from its box. */
   glyph: { primary: literal('●'), accent: literal('○') },
-  /** What assistive technology announces for the cue. */
-  label: { primary: literal('Yours'), accent: literal('Another party') },
+  /** What assistive technology announces for the cue, unless a primitive names its tones itself. */
+  label: { primary: literal('Primary'), accent: literal('Accent') },
 } as const;
 
 export const glyph = {

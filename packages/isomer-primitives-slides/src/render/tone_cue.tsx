@@ -20,9 +20,12 @@ const { glyph, label } = slideDistillery.tokens.tone;
 export const ToneCue = ({
   tone,
   context,
+  labels = label,
 }: {
   tone: SlideTone | undefined;
   context: SlideRenderContext | undefined;
+  /** A primitive's own name for each tone, from its theme group. */
+  labels?: Readonly<Record<SlideTone, { value: string }>>;
 }): ReactNode => {
   if (tone === undefined) {
     return null;
@@ -31,7 +34,7 @@ export const ToneCue = ({
   return (
     <span
       role="img"
-      aria-label={label[tone].value}
+      aria-label={labels[tone].value}
       className={cls(
         context,
         tones.tone[tone],

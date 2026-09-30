@@ -11,7 +11,9 @@ import {
 } from '@elastic/isomer-image-takumi';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import {
+  buildAuthoringJsonSchema,
   checkLayout,
+  type Composition,
   createChildNodeWalker,
   NODE_ANCHOR_ATTRIBUTE,
   type PrimitiveNode,
@@ -19,6 +21,10 @@ import {
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../pack';
+import { slidesPackAuthoring } from '../pack_authoring';
+import { layoutCheckNote } from '../primitives/authored_text';
+import { tallestExample as tallestHeading } from '../primitives/slide_heading/examples';
+import { headingCrowding } from '../primitives/slide_heading/fit';
 import { slideDeckPrimitives } from '../registry';
 
 import { slideFonts } from './fonts';
@@ -64,12 +70,45 @@ const pastBody = (layout: LayoutBox): LayoutBox[] => {
   );
 };
 
+const findings = async (slide: Composition) => {
+  const layout = await takumi.measure(
+    runtime.surfaces.svg.render(slide, { anchors: true })
+  );
+  return [...checkLayout(layout, slide.body, walk, 'svg'), ...pastBody(layout)];
+};
+
 describe('every example fits its preview slide', () => {
   it.each(cases)('$name', async ({ slide }) => {
-    const layout = await takumi.measure(
-      runtime.surfaces.svg.render(slide, { anchors: true })
-    );
-    expect(checkLayout(layout, slide.body, walk, 'svg')).toEqual([]);
-    expect(pastBody(layout)).toEqual([]);
+    expect(await findings(slide)).toEqual([]);
+  });
+});
+
+const describesLayoutCheck = (
+  primitive: (typeof slideDeckPrimitives)[number]
+) =>
+  JSON.stringify(
+    buildAuthoringJsonSchema([primitive], slidesPackAuthoring)
+  ).includes(layoutCheckNote);
+
+// A primitive whose most content can overflow the tallest heading says so in its schema, so an author knows to run the check.
+describe('under the tallest heading, every example fits or its schema notes the layout check', () => {
+  // Crowding is 1 exactly for the two-line title and lede that load budgets are set against.
+  it('measures under the heading load budgets are set against', () => {
+    expect(headingCrowding(tallestHeading)).toBe(1);
+  });
+
+  it.each(
+    slideDeckPrimitives.flatMap((primitive) =>
+      primitive.examples.map((example, index) => ({
+        name: `${primitive.type} #${index}`,
+        primitive,
+        slide: previewSlide(example as PrimitiveNode, tallestHeading),
+      }))
+    )
+  )('$name', async ({ primitive, slide }) => {
+    const found = await findings(slide);
+    if (found.length > 0) {
+      expect(describesLayoutCheck(primitive)).toBe(true);
+    }
   });
 });

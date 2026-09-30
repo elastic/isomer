@@ -72,13 +72,13 @@ Length-sensitive primitives take an optional `size`: `l`, `m`, or `s`, each a se
 - **Width:** `slideTitle` takes the largest step at which its longest word fits its column and the title holds two lines, estimated from `extraboldAdvance` glyph widths and the role's tracking.
 - **Crowding:** `slideFrame` estimates how much room its opening `slideHeading` leaves and passes `crowding` to the rest of the slide on the render context: 1 under a two-line title and a two-line lede, below 1 under a shorter heading. It is reserved for primitives below the heading that size by load, which pass it to `sizeForLoad`; none in this pack does yet.
 
-Where the theme cannot guarantee that the smallest step fits, a field's `describe` says so and points at the layout check. `src/examples/fit.test.ts` measures every example with takumi and fails on any `checkLayout` finding.
+Where the theme cannot guarantee that the smallest step fits, a field's `describe` says so and ends with `layoutCheckNote` (`src/primitives/authored_text.ts`). `src/examples/fit.test.ts` measures every example with takumi and fails on any `checkLayout` finding. It measures every example again under `slideHeading`'s `tallestExample`, a two-line title at `l` and a two-line lede, and fails when one overflows there and its primitive's schema lacks the note.
 
 ## Tones mean something
 
 `slideTones` is `['primary', 'accent']`, named for theme roles rather than hues. `primary` marks the product, the runtime, or whatever is in focus; `accent` marks the host or another party. Everything else is neutral: `text`, and `line` for rails and arrows, or the quieter `textSoft`, `textSubtle`, and `border`. Authoring copy names tones and never colors, so a theme can change what each role looks like.
 
-A tone is never color alone. A toned title puts `ToneCue` (`src/render/tone_cue.tsx`) before its text: a filled dot for `primary` and a ring for `accent`, in the tone's color, which assistive technology announces as `tone.label` ("Yours", "Another party"). Its `text`, `markdown`, and `slack` renderers prefix `toneCueText(tone)`, the tone's `tone.glyph` (`●` or `○`). A neutral title gets neither. A primitive that takes a `tone` uses both, so every surface carries it.
+A tone is never color alone. A toned title puts `ToneCue` (`src/render/tone_cue.tsx`) before its text: a filled dot for `primary` and a ring for `accent`, in the tone's color, which assistive technology announces as `tone.label` ("Primary", "Accent"), or as the primitive's own names, such as `territoryGroup.toneLabel` ("Yours", "Another party"), passed as `labels`. Its `text`, `markdown`, and `slack` renderers prefix `toneCueText(tone)`, the tone's `tone.glyph` (`●` or `○`). A neutral title gets neither. A primitive that takes a `tone` uses both, so every surface carries it.
 
 A module's rules reach the stylesheet sorted by name, and a variant that overrides a base rule wins only by coming later at the same specificity. Name the override so it sorts after its base: `titleHighlighted` after `title`, not `highlightedTitle`.
 

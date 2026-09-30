@@ -12,10 +12,13 @@ import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { marksReact } from '../../render/marks';
 import { ToneCue } from '../../render/tone_cue';
+import { slideDistillery } from '../../theme/distillery';
 import { labelModule, layoutModule, tonesModule } from '../../theme/modules';
 
 import type { SlideTerritoryGroupNode } from './schema';
 import { territoryModule } from './styles';
+
+const { toneLabel: labels } = slideDistillery.tokens.territoryGroup;
 
 /** React renderer for {@link SlideTerritoryGroupNode}. */
 export const react = (
@@ -45,7 +48,7 @@ export const react = (
                 label.toned,
                 territory.title
               )}>
-              <ToneCue {...{ tone, context }} />
+              <ToneCue {...{ tone, context, labels }} />
               {title}
             </h2>
             <p className={cls(context, territory.body)}>

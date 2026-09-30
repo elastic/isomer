@@ -53,7 +53,7 @@ Two traps worth naming:
 
 ## Inline marks
 
-Text fields that accept `` `code` `` and `**strong**` render through `src/render/marks.tsx`: `marksReact` on the React surface, `plainText` for text, `stripMarks` for fit estimates, `marksMarkdown` for the Markdown builder, and `marksSlack` or `marksRichText` for Slack. Strong is bold ink in regular-weight copy and primary in text that is already bold or display-sized (headings, taglines), where extra weight would not show. Say so in the field's `.describe()`, so a model knows the field takes them; `src/marks_descriptions.test.ts` fails when the two disagree.
+Text fields that accept `` `code` `` and `**strong**` render through `src/render/marks.tsx`: `marksReact` on the React surface, `plainText` for text, `stripMarks` for fit estimates, `marksMarkdown` for the Markdown builder, and `marksSlack` or `marksRichText` for Slack. Strong is bold ink in regular-weight copy and underlined primary in text that is already bold or display-sized (headings, taglines), where extra weight would not show, so it is never color alone. Say so in the field's `.describe()`, so a model knows the field takes them; `src/marks_descriptions.test.ts` fails when the two disagree.
 
 ## Writing a leaf primitive
 
@@ -167,7 +167,7 @@ A container that also draws chrome of its own sets two more. `hasOwnContent: () 
 Each primitive's `index.test.ts` covers its schema rejections and every surface's output. These pack-level tests run over the whole registry, so a new primitive is covered by registering it:
 
 - `src/content_parity.test.ts` checks that text, Markdown, and Slack carry every authored string of every example, reading Markdown back through `mdast-util-from-markdown` with GFM and Slack mrkdwn back to its text; that entity-like text such as `&lt;` and unpaired `` ` `` or `*` print as authored, one field at a time; and that a line break in a one-line field reads as a space on each surface.
-- `src/examples/fit.test.ts` renders every example on a slide (a frame as it is, a title slide alone, anything else under a heading and lede), measures it with takumi, and expects no finding from `checkLayout` and nothing past the frame's body. Give each primitive an example at its most content, the most items, lines, or panels its schema takes, so the test measures the worst case.
+- `src/examples/fit.test.ts` renders every example on a slide (a frame as it is, a title slide alone, anything else under a heading and lede), measures it with takumi, and expects no finding from `checkLayout` and nothing past the frame's body. Give each primitive an example at its most content, the most items, lines, or panels its schema takes, so the test measures the worst case. It measures each again under the tallest heading, and an example that overflows there fails unless its primitive's `describe` carries `layoutCheckNote`.
 - `src/conformance.test.ts` runs the SDK's conformance harness.
 - `src/primitives/authored_text.test.ts` fails when any string in an example accepts more text than the body can draw.
 - `src/heading_levels.test.ts` fails when an example's HTML headings and Markdown headings differ in level or order.

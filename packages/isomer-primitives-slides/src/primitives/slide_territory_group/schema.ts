@@ -9,7 +9,7 @@ import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 import { fromChildren } from '@elastic/isomer-sdk/author';
 
-import { lineText, wrappedText } from '../authored_text';
+import { layoutCheckNote, lineText, wrappedText } from '../authored_text';
 import { slideToneSchema } from '../tone_schema';
 
 const territorySchema = z
@@ -42,7 +42,7 @@ export const schema = z
         .min(1)
         .max(4)
         .describe(
-          'Owners, left to right, in equal columns. 1 to 4. Type does not step down, so long bodies can run past the slide; a layout check reports it.'
+          `Owners, left to right, in equal columns. 1 to 4. Type does not step down, so long bodies can run past the slide; ${layoutCheckNote}.`
         ),
       { text: 'body' }
     ),

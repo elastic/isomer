@@ -17,5 +17,8 @@ import {
 /** A field drawn on one line. */
 export const lineText = () => z.string().min(1).max(frameLineCharacters);
 
+/** Ends a `describe` wherever the most a field takes can run past the slide under the tallest heading. */
+export const layoutCheckNote = 'a layout check reports it';
+
 /** A field that wraps. */
 export const wrappedText = () => z.string().min(1).max(frameBodyCharacters);

@@ -133,5 +133,8 @@ export const marksModule = createStyleModule('marks', ({ css }) => ({
   strongPrimary: css`
     color: ${color.primary};
     font-weight: inherit;
+    text-decoration: underline;
+    text-decoration-thickness: ${marks.displayStrong.rule};
+    text-underline-offset: ${marks.displayStrong.offset};
   `,
 }));
