@@ -443,6 +443,16 @@ describe('createIsomerTools', () => {
       });
     });
 
+    it('bounds the length of the view id', () => {
+      const { inputSchema } = tools.find(
+        ({ name }) => name === ISOMER_TOOL_NAMES.requestView
+      )!;
+      const parses = (id: string) => inputSchema.safeParse({ id }).success;
+      expect(parses('')).toBe(false);
+      expect(parses('x'.repeat(200))).toBe(true);
+      expect(parses('x'.repeat(201))).toBe(false);
+    });
+
     it('reports an unknown view as a failed call', async () => {
       const result = await call(tools, ISOMER_TOOL_NAMES.requestView, {
         id: 'missing',

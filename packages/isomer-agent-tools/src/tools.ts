@@ -29,6 +29,8 @@ const TEXT_SURFACES = ['text', 'markdown', 'html', 'slack'] as const;
 
 const MAX_DESCRIBED_TYPES = 12;
 
+const MAX_INPUT_STRING_LENGTH = 200;
+
 // The recursive node union is too large for a tool schema, so `isomer_validate` enforces shape.
 const compositionInput = z
   .looseObject({})
@@ -150,7 +152,7 @@ export const createIsomerTools = <THostContext = unknown>(
     description: `Returns the full catalog entry and JSON Schema of each primitive type given: when to use it, when not to, an example, and every field. Ask for the types you will use, the containers you nest in included. Up to ${MAX_DESCRIBED_TYPES} per call, so call again for more.`,
     inputSchema: z.object({
       types: z
-        .array(z.string().min(1).max(200))
+        .array(z.string().min(1).max(MAX_INPUT_STRING_LENGTH))
         .min(1)
         .max(MAX_DESCRIBED_TYPES)
         .describe('Primitive types from the guide’s index.'),
@@ -222,6 +224,8 @@ export const createIsomerTools = <THostContext = unknown>(
     inputSchema: z.object({
       id: z
         .string()
+        .min(1)
+        .max(MAX_INPUT_STRING_LENGTH)
         .describe(`A view id from \`${ISOMER_TOOL_NAMES.listViews}\`.`),
       input: z
         .record(z.string(), z.unknown())

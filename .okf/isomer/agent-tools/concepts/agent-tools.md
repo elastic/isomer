@@ -23,7 +23,7 @@ sources:
 
 # Definition
 
-`createIsomerTools(options)` returns `isomer_authoring_guide`, `isomer_describe_primitives`, `isomer_validate`, and `isomer_render`, plus `isomer_list_views` and `isomer_request_view` when the runtime's view registry lists a view at creation, as `IsomerTool` values: a name, a title, a description, a Zod `inputSchema`, and a `handler` that resolves to `{ content, isError? }` with text or base64 PNG blocks. A handler never rejects: a failure resolves with its message and `isError: true`.[^tools]
+`createIsomerTools(options)` returns `isomer_authoring_guide`, `isomer_describe_primitives`, `isomer_validate`, and `isomer_render`, plus `isomer_list_views` and `isomer_request_view` when the runtime's view registry lists a view at creation, as `IsomerTool` values: a name, a title, a description, a Zod `inputSchema`, and a `handler` that resolves to `{ content, isError? }` with text or base64 PNG blocks. A handler never rejects: a failure resolves with its message and `isError: true`. `isomer_describe_primitives` takes one to twelve `types` and `isomer_request_view` one `id`, each 1–200 characters.[^tools]
 
 `createIsomerResources(options)` returns the guide (`isomer://authoring-guide`, `text/markdown`) and the whole composition JSON Schema (`isomer://composition-schema`, `application/json`) with a live `read()`. `createIsomerPrompts(options)` returns `compose`, whose `build({ request? })` is the guide followed by the request.[^resources] The host maps each list onto MCP, the AI SDK, or its own framework.
 

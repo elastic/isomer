@@ -38,11 +38,11 @@ const prompts = createIsomerPrompts({ runtime });
 | Tool | Input | Returns |
 | --- | --- | --- |
 | `isomer_authoring_guide` | none | The guide, rules, registered views, and an index of the primitives, one line each under the packs' groups |
-| `isomer_describe_primitives` | `types` (1–12) | Each type's full catalog entry, with its example, then the JSON Schema `$defs` those types reach. `bodyNode` is a stub meaning any primitive. An unknown type is an error, as JSON with `unknown` and `known` |
+| `isomer_describe_primitives` | `types` (1–12, each 1–200 characters) | Each type's full catalog entry, with its example, then the JSON Schema `$defs` those types reach. `bodyNode` is a stub meaning any primitive. An unknown type is an error, as JSON with `unknown` and `known` |
 | `isomer_validate` | `composition` | `{ valid, errors, warnings }` as JSON. An invalid composition is a normal answer, not a failed call |
 | `isomer_render` | `composition`, `surface`, `theme?` | Text, Markdown, HTML with its CSS inline, Slack Block Kit as JSON, or, with `image`, a PNG. An invalid composition returns its errors with `isError: true` |
 | `isomer_list_views` | none | The registered views, with the questions each answers and its input schema |
-| `isomer_request_view` | `id`, `input?` | `{ composition, valid, errors, warnings }` as JSON; a built composition that fails validation is a normal answer. Input that fails the view's schema, or a `CompositionValidationError` the view throws, returns `{ error, errors }` with `isError: true`. Any other failure returns its message with `isError: true` |
+| `isomer_request_view` | `id` (1–200 characters), `input?` | `{ composition, valid, errors, warnings }` as JSON; a built composition that fails validation is a normal answer. Input that fails the view's schema, or a `CompositionValidationError` the view throws, returns `{ error, errors }` with `isError: true`. Any other failure returns its message with `isError: true` |
 
 The two view tools are offered only when the runtime lists a view when the tools are created.
 
