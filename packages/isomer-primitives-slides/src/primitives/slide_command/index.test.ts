@@ -152,6 +152,12 @@ describe('slideCommand sizing', () => {
     expect(commandSize(example.command)).toBe('l');
   });
 
+  it('measures every space, as the line keeps them', () => {
+    expect(commandWidth(' echo  "a    b" ', 'l')).toBe(
+      commandWidth('xechoxx"axxxxb"x', 'l')
+    );
+  });
+
   it.each([
     ['a full-width slide', undefined, (node: SlideCommandNode) => node],
     ['a split pane', pane, inPane],

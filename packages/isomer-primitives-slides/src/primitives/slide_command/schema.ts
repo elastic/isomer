@@ -46,6 +46,7 @@ export const schema = z
       {
         error: 'one line only: a multi-line command belongs in slideCode',
         path: ['command'],
+        rule: 'One shell command on one line',
       }
     )
   )
@@ -55,6 +56,7 @@ export const schema = z
       {
         error: 'separate words with spaces, not tabs',
         path: ['command'],
+        rule: 'Separate words with spaces rather than tabs.',
       }
     )
   )
@@ -66,6 +68,7 @@ export const schema = z
       {
         error: `wider than the slide: at most ${commandMaxColumns} columns, a wide glyph counting as two`,
         path: ['command'],
+        rule: `It holds ${commandMaxColumns} columns on a full-width slide`,
       }
     )
   )
@@ -76,7 +79,11 @@ export const schema = z
         !inBounds(command) ||
         !inBounds(highlightPrefix) ||
         command.startsWith(highlightPrefix),
-      { error: 'highlightPrefix must start command', path: ['highlightPrefix'] }
+      {
+        error: 'highlightPrefix must start command',
+        path: ['highlightPrefix'],
+        rule: 'Must be a prefix of `command`.',
+      }
     )
   );
 

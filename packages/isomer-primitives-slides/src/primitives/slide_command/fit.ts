@@ -5,19 +5,19 @@
  * 2.0.
  */
 
-import { displayColumns } from '../../render/mono';
-import { monoAdvance } from '../../theme/base';
 import { command, commandLineWidth } from '../../theme/components/command';
-import { scalePx } from '../../theme/scale';
 import { type SlideSize, slideSizes } from '../../theme/variants';
+import { measureText } from '../size';
 
-const { prompt, textSizes } = command;
+const { prompt, text: role, textSizes } = command;
 
 /** Pixels at `size`, prompt included. */
 export const commandWidth = (text: string, size: SlideSize): number =>
-  displayColumns(`${prompt.value}${text}`) *
-  monoAdvance *
-  scalePx(textSizes[size]);
+  // The line is `white-space: pre`, so every space is a glyph `measureText` must not collapse.
+  measureText(`${prompt.value}${text}`.replace(/ /g, ' '), {
+    ...role,
+    size: textSizes[size],
+  }).widest;
 
 /** The largest step at which `text` fits a layout `width` wide. */
 export const commandSize = (text: string, width?: number): SlideSize =>

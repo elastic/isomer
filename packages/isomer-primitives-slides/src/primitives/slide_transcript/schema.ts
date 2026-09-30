@@ -41,7 +41,11 @@ const turnSchema = z
     crossRefine(
       ({ text }) =>
         text.length > authoredTextMaxLength || turnLines(text).length > 0,
-      { error: 'a turn says something: text is blank', path: ['text'] }
+      {
+        error: 'a turn says something: text is blank',
+        path: ['text'],
+        rule: 'a turn of only blank lines is refused',
+      }
     )
   );
 

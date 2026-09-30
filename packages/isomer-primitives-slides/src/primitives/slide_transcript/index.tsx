@@ -10,7 +10,6 @@ import { md } from '@elastic/isomer-sdk/markdown';
 import { escapeMrkdwn, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
 import {
-  hasMrkdwnDelimiter,
   richTextSection,
   slackBold,
   slackCaption,
@@ -76,12 +75,11 @@ export const slack = ({ label, turns }: SlideTranscriptNode): SlackBlock[] => [
         richTextSection(richTextRun(speaker(role), { bold: true })),
         richTextSection({ type: 'text', text: lines })
       );
-    return hasMrkdwnDelimiter(lines)
-      ? literal()
-      : slackSection(
-          `${slackBold(speaker(role))}\n${escapeMrkdwn(lines)}`,
-          literal
-        );
+    return slackSection(
+      `${slackBold(speaker(role))}\n${escapeMrkdwn(lines)}`,
+      literal,
+      [lines]
+    );
   }),
 ];
 

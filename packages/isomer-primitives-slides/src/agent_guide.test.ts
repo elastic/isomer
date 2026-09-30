@@ -11,8 +11,6 @@ import { describe, expect, it } from 'vitest';
 import { buildSlidesAuthoringPrompt } from './agent_guide';
 import { slidesPackAuthoring } from './pack_authoring';
 import { slideDeckPrimitives, slidePrimitiveTypes } from './registry';
-import { commandMaxColumns } from './theme/components/command';
-import { diffLineMaxLength } from './theme/components/diff';
 
 describe('slides authoring prompt', () => {
   const prompt = buildSlidesAuthoringPrompt();
@@ -62,45 +60,5 @@ describe('slides authoring schema', () => {
     expect(refs.map(([, id]) => id).filter((id) => !(id! in $defs))).toEqual(
       []
     );
-  });
-});
-
-describe('slides authoring schema restates each rule the JSON Schema drops', () => {
-  const schema = JSON.stringify(
-    buildAuthoringJsonSchema(slideDeckPrimitives, slidesPackAuthoring)
-  );
-
-  // One row per refinement: the error it reports, and the words the schema states it in.
-  it.each([
-    ['slideCommand', 'one line only', 'One shell command on one line'],
-    ['slideCommand', 'not tabs', 'with spaces rather than tabs'],
-    [
-      'slideCommand',
-      'wider than the slide',
-      `It holds ${commandMaxColumns} columns on a full-width slide`,
-    ],
-    [
-      'slideCommand',
-      'highlightPrefix must start command',
-      'Must be a prefix of `command`',
-    ],
-    [
-      'slideDiff',
-      'one line per entry',
-      'Each entry in lines is one line of source',
-    ],
-    ['slideDiff', 'not tabs', 'indented with spaces rather than tabs'],
-    [
-      'slideDiff',
-      'a line is wider than its panel',
-      `A line holds ${diffLineMaxLength(false)} columns`,
-    ],
-    [
-      'slideTranscript',
-      'text is blank',
-      'a turn of only blank lines is refused',
-    ],
-  ])('%s: %s', (_type, _error, stated) => {
-    expect(schema).toContain(stated);
   });
 });

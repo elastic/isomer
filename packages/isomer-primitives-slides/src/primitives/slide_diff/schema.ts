@@ -78,6 +78,7 @@ export const schema = z
         error:
           'one line per entry: split multi-line source into separate lines',
         path: ['lines'],
+        rule: 'Each entry in lines is one line of source',
       }
     )
   )
@@ -88,6 +89,7 @@ export const schema = z
       {
         error: 'indent with spaces, not tabs',
         path: ['lines'],
+        rule: 'indented with spaces rather than tabs',
       }
     )
   )
@@ -109,6 +111,7 @@ export const schema = z
           return `a line is wider than its panel: at most ${diffLineMaxLength(isDense(lines))} columns${dense}, a wide glyph counting as two`;
         },
         path: ['lines'],
+        rule: `A line holds ${diffLineMaxLength(false)} columns`,
       }
     )
   );
