@@ -6,6 +6,7 @@
  */
 
 import {
+  type CheckedValidationResult,
   checkInputBudget,
   type Composition,
   formatValidationError,
@@ -51,7 +52,7 @@ export class RegisteredViewInputError extends Error {
 export interface ViewBuildArgs<THostContext, TInput> {
   /** Whatever the host passes to `request`: a session, a request, a services bundle. */
   context: THostContext;
-  /** Validated against the view's `input` schema when it declares one; otherwise the raw record. */
+  /** The input budget's plain copy of the host's record, parsed through the view's `input` schema when it declares one. */
   input: TInput;
 }
 
@@ -73,7 +74,8 @@ export interface RegisteredView<
    * Zod schema for the view's input. When present, `registry.request` parses
    * the input through it before `build` runs (throwing
    * {@link RegisteredViewInputError} on failure) and derives the summary's
-   * `inputSchema` from it. When absent, `build` receives the raw record.
+   * `inputSchema` from it. When absent, `build` receives the input budget's
+   * plain copy of the record.
    */
   input?: ZodType<TInput>;
   /**
@@ -114,7 +116,7 @@ export interface RegisteredViewSummary {
 export interface ViewResponse<TNode extends PrimitiveNode = PrimitiveNode> {
   /** Summary of the requested view. */
   view: RegisteredViewSummary;
-  /** The composition the view built. */
+  /** The copy of the built composition that `validation` checked, or the built value when the input budget refused it. */
   composition: Composition<TNode>;
   /** Result of validating `composition`. */
   validation: ValidationResult;
@@ -169,7 +171,9 @@ export const createViewRegistry = <
   THostContext = unknown,
   TNode extends PrimitiveNode = PrimitiveNode,
 >(
-  validateComposition: (composition: Composition<TNode>) => ValidationResult,
+  validateComposition: (
+    composition: Composition<TNode>
+  ) => CheckedValidationResult<TNode>,
   { inputBudget }: { inputBudget?: InputBudget } = {}
 ): ViewRegistry<THostContext, TNode> => {
   const views = new Map<string, RegisteredEntry<THostContext, TNode>>();
@@ -205,12 +209,9 @@ export const createViewRegistry = <
         ? validateAndParseInput(view.id, view.input, plain)
         : plain;
 
-      const composition = await view.build({ context, input: parsedInput });
-      return {
-        view: summary,
-        composition,
-        validation: validateComposition(composition),
-      };
+      const built = await view.build({ context, input: parsedInput });
+      const { composition = built, ...validation } = validateComposition(built);
+      return { view: summary, composition, validation };
     },
   };
 };

@@ -41,7 +41,7 @@ const { png, validation } = await renderPng(runtime, composition, takumi, {
 });
 ```
 
-The composition is rendered even when invalid — `validation` is how a caller finds out, rather than a thrown error — unless it was refused before parsing, which throws `CompositionValidationError`. `runtime` and `composition` are declared structurally, the same way `ImageInput` is.
+The composition is rendered even when invalid — `validation` is how a caller finds out, rather than a thrown error — unless it was refused before parsing, which throws `CompositionValidationError`. What is drawn is the `composition` the validation result carries, the copy it checked, so `validation` describes the image; a runtime whose `validate` returns no such copy is refused with an error rather than drawing the input. `runtime` and `composition` are declared structurally, the same way `ImageInput` is.
 
 ## Rendering a PDF
 
@@ -57,7 +57,7 @@ Each page is wrapped in a fixed-size block that ends the page, so a frame that r
 
 Two differences from `png` matter. A glyph no registered font covers rejects the render by default, naming the code point, where `png` draws takumi's built-in face; `uncoveredText: 'placeholder'` or `'blank'` relaxes that, and the better fix is registering a face that covers what the theme draws, including anything it draws through CSS `content:`. And the PDF engine fetches nothing: a remote `img` source draws blank unless its bytes are passed in `images` as `[{ src, data }]`, while a `data:` URI needs no entry. Takumi's PDF output also rejects `filter: blur()`, `drop-shadow()`, and `backdrop-filter`.
 
-`renderPdf(runtime, deck, backend, options?)` is `renderPng`'s counterpart: it validates every composition, calls `renderPages` with `onValidationError: 'collect'`, and returns `{ pdf, pageCount, width, height, validations }`, one validation per composition. As with `renderPng`, input refused before parsing throws. An empty deck throws the runtime's `EMPTY_PAGES`.
+`renderPdf(runtime, deck, backend, options?)` is `renderPng`'s counterpart: it validates every composition, calls `renderPages` on the copies validation checked with `onValidationError: 'collect'`, and returns `{ pdf, pageCount, width, height, validations }`, one validation per composition. As with `renderPng`, input refused before parsing throws. An empty deck throws the runtime's `EMPTY_PAGES`.
 
 ## Fonts
 

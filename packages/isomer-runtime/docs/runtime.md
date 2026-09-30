@@ -64,7 +64,7 @@ runtime.surfaces.react.render(composition, { context: { resolveClassName } });
 | `primitives` | Every pack's definitions, flattened — the dispatcher's inventory |
 | `surfaces` | `{ react, html, text, markdown, slack, svg }` — `svg` is `undefined` without `frames`, and typed present with them |
 | `viewRegistry` | Register, list, get, and request registered views |
-| `validate(composition)` | Schema plus semantic passes; returns errors and warnings |
+| `validate(composition)` | The input budget, the schema, then the semantic passes, all on one plain copy; returns errors, warnings, and that copy |
 | `parse(value)` | Schema only, for untrusted input; returns a composition or errors |
 | `getAuthoringContext()` | Authoring schema, catalog, and live view summaries for an agent |
 | `getCapabilities()` | The primitive types, formats, and enhancements this host supports |

@@ -6,12 +6,12 @@
  */
 
 import type {
+  CheckedValidationResult,
   Composition,
   PrimitiveNode,
   ValidationErrorMode,
-  ValidationResult,
 } from '@elastic/isomer-sdk';
-import { enforceValidationMode } from '@elastic/isomer-sdk';
+import { compositionToRender } from '@elastic/isomer-sdk';
 import {
   type MarkdownEnvelopeDispatcher,
   type MarkdownEnvelopeOptions,
@@ -26,7 +26,7 @@ export interface MarkdownRenderOptions extends MarkdownEnvelopeOptions {
 
 /** Renders a composition or node to Markdown. */
 export interface MarkdownSurface {
-  /** Always `true`: this surface validates the composition before rendering. */
+  /** Always `true`: this surface validates the composition and renders the copy it checked, never the caller's value. */
   readonly validating: true;
   /** Renders a full composition to Markdown. */
   render(composition: Composition, options?: MarkdownRenderOptions): string;
@@ -37,15 +37,15 @@ export interface MarkdownSurface {
 /** Creates the `markdown` {@link RuntimeSurfaces} entry. */
 export const createMarkdownSurface = (
   dispatcher: MarkdownEnvelopeDispatcher<PrimitiveNode>,
-  validate: (composition: Composition) => ValidationResult
+  validate: (composition: Composition) => CheckedValidationResult
 ): MarkdownSurface => ({
   validating: true,
   render: (composition, options = {}) => {
-    enforceValidationMode(
+    const checked = compositionToRender(
       validate(composition),
       options.onValidationError ?? 'throw'
     );
-    return renderMarkdownEnvelope(composition, dispatcher, options);
+    return renderMarkdownEnvelope(checked, dispatcher, options);
   },
   renderNode: (node) => dispatcher.renderMarkdown(node),
 });

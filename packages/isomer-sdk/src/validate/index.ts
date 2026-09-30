@@ -43,11 +43,14 @@ export {
   sanitizeNavigationHref,
 } from './url';
 export {
+  type CheckedComposition,
+  type CheckedValidationResult,
   type CompositionValidatorOptions,
   type ParsedComposition,
   type ValidationErrorMode,
   type ValidationResult,
   type ValidationWarning,
+  compositionToRender,
   CompositionValidationError,
   createCompositionParser,
   createCompositionValidator,

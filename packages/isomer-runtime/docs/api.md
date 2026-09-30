@@ -35,7 +35,7 @@ Everything `@elastic/isomer-runtime` exports from its single entry point, plus w
 | `viewRegistry` | `ViewRegistry<THostContext, PrimitiveNode>` |
 | `getAuthoringContext()` | `RuntimeAuthoringContext` |
 | `getCapabilities()` | `HostCapabilities` |
-| `validate(composition)` | `ValidationResult` |
+| `validate(composition)` | `CheckedValidationResult` |
 | `parse(value)` | `ParsedComposition` |
 | `getCompositionSchema()` | `ZodObject` |
 
@@ -76,6 +76,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | `HTMLRenderResult` | `{ html, css, js, body, measurement, validationErrors }` |
 | `SlackRenderResult` | `{ text, blocks, assets }` |
 | `ValidationResult` | `{ valid, errors, warnings }` — each error is a `ValidationError`, `{ path, message, nodeType?, code? }`, where `code` (`INPUT_OVER_BUDGET` or `INPUT_NOT_PLAIN_DATA`) marks input refused before parsing |
+| `CheckedValidationResult` | `ValidationResult` plus `composition`, the plain copy validation checked, which validating surfaces render; `undefined` only when refused before parsing |
 | `ParsedComposition` | `{ valid, errors, composition? }` |
 
 ## View registry
@@ -107,7 +108,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 
 ## Import from the SDK
 
-`PrimitiveNode`, `Composition`, `ValidationResult`, `ValidationWarning`, `warningsForSurface`, `definePrimitive`, `describeCapabilities`, `PrimitivePack`, `Frame`, `CompositionValidationError`.
+`PrimitiveNode`, `Composition`, `CheckedValidationResult`, `ValidationResult`, `ValidationWarning`, `warningsForSurface`, `definePrimitive`, `describeCapabilities`, `PrimitivePack`, `Frame`, `CompositionValidationError`.
 
 ## Errors
 

@@ -26,6 +26,7 @@ export {
   renderPdf,
 } from './render_pdf';
 export {
+  type PngCheckedValidationResult,
   type PngRuntime,
   type PngSvgOptions,
   type PngValidationResult,

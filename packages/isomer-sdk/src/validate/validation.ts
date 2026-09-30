@@ -14,6 +14,7 @@ import {
   rendersOnSurface,
 } from '../composition/body_node_base';
 import type { Composition } from '../composition/composition';
+import type { PrimitiveNode } from '../composition/node';
 import { quoteText } from '../composition/one_line';
 import {
   CompositionValidationError,
@@ -65,6 +66,20 @@ export interface ValidationResult {
   warnings: ValidationWarning[];
 }
 
+const checkedComposition = Symbol.for('elastic.isomer.checked_composition');
+
+/** The copy {@link createCompositionValidator} checked, which a validating render draws in place of the caller's value. The brand is type-only. */
+export type CheckedComposition<TNode extends PrimitiveNode = PrimitiveNode> =
+  Composition<TNode> & { readonly [checkedComposition]: true };
+
+/** A {@link ValidationResult} with the composition it describes. */
+export interface CheckedValidationResult<
+  TNode extends PrimitiveNode = PrimitiveNode,
+> extends ValidationResult {
+  /** Undefined only when {@link checkInputBudget} refused the input. */
+  composition: CheckedComposition<TNode> | undefined;
+}
+
 /** Narrows a result's warnings to the surface a caller is about to render. */
 export const warningsForSurface = (
   result: ValidationResult,
@@ -89,6 +104,19 @@ export const enforceValidationMode = (
   ) {
     throw new CompositionValidationError(result.errors);
   }
+};
+
+/** {@link enforceValidationMode}, then the composition `result` checked, which is what a render draws; a result without one throws as a refusal does. */
+export const compositionToRender = <TNode extends PrimitiveNode>(
+  result: CheckedValidationResult<TNode>,
+  mode?: ValidationErrorMode
+): CheckedComposition<TNode> => {
+  enforceValidationMode(result, mode);
+  const { composition } = result;
+  if (composition === undefined) {
+    throw new CompositionValidationError(result.errors);
+  }
+  return composition;
 };
 
 /** Runtime facts the semantic passes need beyond the primitive inventory. */
@@ -116,7 +144,7 @@ const bodyRoots = (value: unknown): IssueRoot[] => {
 };
 
 /**
- * Builds the trusted-input validator: {@link checkInputBudget}, then the schema and the semantic passes on its copy.
+ * Builds the trusted-input validator: {@link checkInputBudget}, then the schema and the semantic passes on its copy, which the result carries.
  *
  * `definitions` is memoized on array identity, so a caller that rebuilds the
  * array per call (`createCompositionValidator(packs.flatMap(…))`) gets a fresh
@@ -124,19 +152,26 @@ const bodyRoots = (value: unknown): IssueRoot[] => {
  * returns and reuse it across the validator, the parser, and the authoring
  * context.
  */
-export const createCompositionValidator = (
+export const createCompositionValidator = <
+  TNode extends PrimitiveNode = PrimitiveNode,
+>(
   definitions: readonly AnyPrimitiveDefinition[],
   options: CompositionValidatorOptions = {}
-): ((composition: Composition) => ValidationResult) => {
+): ((composition: Composition<TNode>) => CheckedValidationResult<TNode>) => {
   const schema = getCompositionSchemaForDefinitions(definitions);
   const walk = createChildNodeWalker(definitions);
   const formatIssues = createNodeIssueFormatter(definitions);
   return (composition) => {
     const checked = checkInputBudget(composition, options.inputBudget);
     if (!checked.valid) {
-      return { valid: false, errors: [checked.error], warnings: [] };
+      return {
+        valid: false,
+        errors: [checked.error],
+        warnings: [],
+        composition: undefined,
+      };
     }
-    const plain = checked.value as Composition;
+    const plain = checked.value as CheckedComposition<TNode>;
     const result = schema.safeParse(plain, { reportInput: true });
     if (result.success) {
       const { body } = plain;
@@ -147,12 +182,18 @@ export const createCompositionValidator = (
           ? collectMissingSvgHeightWarnings(body, definitions, walk)
           : []),
       ];
-      return { valid: idErrors.length === 0, errors: idErrors, warnings };
+      return {
+        valid: idErrors.length === 0,
+        errors: idErrors,
+        warnings,
+        composition: plain,
+      };
     }
     return {
       valid: false,
       errors: formatIssues(bodyRoots(plain), result.error.issues),
       warnings: [],
+      composition: plain,
     };
   };
 };
