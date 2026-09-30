@@ -41,6 +41,9 @@ export const quadrant = {
   axisNames: { x: literal('x'), y: literal('y') },
   arrow: glyph.arrow,
   separator: glyph.separator,
+  termJoiner: glyph.termJoiner,
+  /** Between a place's axis ends and between a cell's items, on every surface. */
+  listJoiner: literal(', '),
 } as const;
 
 /** The fullest top cell's items plus the fullest bottom cell's. */

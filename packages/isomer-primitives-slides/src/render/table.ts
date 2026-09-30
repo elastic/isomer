@@ -13,6 +13,8 @@ import {
   type SlackTableCell,
 } from '@elastic/isomer-sdk/slack';
 
+import { glyph } from '../theme/components/shared';
+
 import { richTextRun } from './marks';
 import { displayColumns } from './mono';
 import { richTextBreak, richTextSection, slackRichText } from './slack_text';
@@ -110,7 +112,7 @@ export const slackTable = (
                   richTextBreak,
                   ...(runsLength(column) === 0
                     ? []
-                    : [...bolded(column), richTextRun(': ')]),
+                    : [...bolded(column), richTextRun(glyph.termJoiner.value)]),
                   ...cell,
                 ];
           })

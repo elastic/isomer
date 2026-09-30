@@ -29,7 +29,8 @@ import { quadrantPlaces, schema, type SlideQuadrantNode } from './schema';
 
 export type { SlideQuadrant, SlideQuadrantNode } from './schema';
 
-const { arrow, axisNames, separator } = slideDistillery.tokens.quadrant;
+const { arrow, axisNames, listJoiner, separator, termJoiner } =
+  slideDistillery.tokens.quadrant;
 
 /** `y: LOW → HIGH · x: LOW → HIGH`, the ends uppercase as drawn. */
 const axes = ({ x, y }: SlideQuadrantNode): string =>
@@ -41,7 +42,7 @@ const axes = ({ x, y }: SlideQuadrantNode): string =>
   )
     .map(
       ([name, { low, high }]) =>
-        `${name.value}: ${low.toUpperCase()} ${arrow.value} ${high.toUpperCase()}`
+        `${name.value}${termJoiner.value}${low.toUpperCase()} ${arrow.value} ${high.toUpperCase()}`
     )
     .join(` ${separator.value} `);
 
@@ -53,7 +54,7 @@ const cells = (node: SlideQuadrantNode) => {
       index === node.highlight ? `${toneCueText('primary')}${label}` : label
     ),
     rest: oneLine(
-      `(${places[index] ?? ''})${items.length > 0 ? `: ${items.join(', ')}` : ''}`
+      `(${places[index] ?? ''})${items.length > 0 ? `${termJoiner.value}${items.join(listJoiner.value)}` : ''}`
     ),
   }));
 };

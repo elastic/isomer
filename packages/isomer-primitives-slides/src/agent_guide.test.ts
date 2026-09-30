@@ -62,3 +62,45 @@ describe('slides authoring schema', () => {
     );
   });
 });
+
+describe('slides authoring schema restates each rule the JSON Schema drops', () => {
+  const schema = JSON.stringify(
+    buildAuthoringJsonSchema(slideDeckPrimitives, slidesPackAuthoring)
+  );
+
+  // One row per refinement: the error it reports, and the words the schema states it in.
+  it.each([
+    [
+      'slideTable',
+      'give exactly one of rows or groups',
+      'Give either `rows` or `groups`',
+    ],
+    [
+      'slideTable',
+      'every row needs one cell per column',
+      'Body rows, one cell per column',
+    ],
+    [
+      'slideTable',
+      'every row needs one cell per column',
+      'The group’s rows, one cell per column',
+    ],
+    [
+      'slideTable',
+      'at most 12 rows across all groups',
+      '12 rows at most across all groups',
+    ],
+    [
+      'slideMatrix',
+      'must be a column index below',
+      'Zero-based index into `columns`, below their count',
+    ],
+    [
+      'slideMatrix',
+      'every row needs one mark per column',
+      'One mark per column',
+    ],
+  ])('%s: %s', (_type, _error, stated) => {
+    expect(schema).toContain(JSON.stringify(stated).slice(1, -1));
+  });
+});

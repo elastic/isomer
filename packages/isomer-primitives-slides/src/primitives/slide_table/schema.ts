@@ -21,7 +21,10 @@ const rowsSchema = z.array(z.array(lineText()).max(tableMaxColumns));
 const groupSchema = z
   .object({
     label: lineText().describe('Short uppercase label over the group’s rows.'),
-    rows: rowsSchema.min(1).describe('The group’s rows, one cell per column.'),
+    rows: rowsSchema
+      .min(1)
+      .max(maxRows)
+      .describe('The group’s rows, one cell per column.'),
   })
   .strict();
 
@@ -77,7 +80,8 @@ export const schema = z
       if (
         columns.length > tableMaxColumns ||
         (rows?.length ?? 0) > maxRows ||
-        (groups?.length ?? 0) > maxRows
+        (groups?.length ?? 0) > maxRows ||
+        groups?.some((group) => group.rows.length > maxRows)
       ) {
         return;
       }

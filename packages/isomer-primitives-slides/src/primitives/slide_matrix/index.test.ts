@@ -296,10 +296,20 @@ describe('slideMatrix', () => {
           elements: [
             { type: 'text', text: label },
             { type: 'text', text: '\n' },
+          ],
+        },
+        {
+          type: 'rich_text_section',
+          elements: [
             { type: 'text', text: 'iOS', style: { code: true, bold: true } },
             { type: 'text', text: ': ' },
             { type: 'text', text: 'Yes' },
             { type: 'text', text: '\n' },
+          ],
+        },
+        {
+          type: 'rich_text_section',
+          elements: [
             { type: 'text', text: 'Web', style: { bold: true } },
             { type: 'text', text: ': ' },
             { type: 'text', text: 'No' },

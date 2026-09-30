@@ -420,99 +420,92 @@ const tableCharCount = (block: SlackTableBlock): number =>
     0
   );
 
-/** Inline runs flow into the open section; a list, quote, or preformatted block starts its own line. */
-type TablePiece =
-  | SlackRichTextInline
-  | Exclude<SlackRichTextBlockElement, { type: 'rich_text_section' }>;
+const textRun = (text: string): SlackRichTextInline => ({ type: 'text', text });
 
-const lineBreak: SlackRichTextInline = { type: 'text', text: '\n' };
+const section = (
+  elements: SlackRichTextInline[]
+): SlackRichTextBlockElement => ({ type: 'rich_text_section', elements });
 
-const isInline = (piece: TablePiece): piece is SlackRichTextInline =>
-  !piece.type.startsWith('rich_text_');
-
-// Sections in one cell are separate lines; blocks keep their own structure.
-const cellPieces = (cell: SlackTableCell): TablePiece[] =>
+const cellElements = (cell: SlackTableCell): SlackRichTextBlockElement[] =>
   cell.type === 'raw_text'
     ? cell.text
-      ? [{ type: 'text', text: cell.text }]
+      ? [section([textRun(cell.text)])]
       : []
-    : cell.elements.flatMap((element, index): TablePiece[] => [
-        ...(index > 0 && element.type === 'rich_text_section'
-          ? [lineBreak]
-          : []),
-        ...(element.type === 'rich_text_section'
-          ? element.elements
-          : [element]),
-      ]);
+    : cell.elements;
 
-const isLineBreak = (piece: TablePiece | undefined): boolean =>
-  piece?.type === 'text' && piece.text === '\n';
+/** A heading's runs, bold; a block in a heading reads as its text. */
+const headingRuns = (cell: SlackTableCell): SlackRichTextInline[] =>
+  cellElements(cell)
+    .flatMap((element) =>
+      element.type === 'rich_text_section'
+        ? element.elements
+        : [textRun(richTextElementText(element))]
+    )
+    .map((inline) => ({ ...inline, style: { ...inline.style, bold: true } }));
 
-/** Runs between blocks become sections, without the line break a block already gives. */
-const tableElements = (
-  pieces: readonly TablePiece[]
+/** One column of a row: `heading: ` leading the cell's first section, or on its own line before a block. */
+const columnElements = (
+  heading: SlackRichTextInline[],
+  cell: SlackTableCell | undefined
 ): SlackRichTextBlockElement[] => {
-  const elements: SlackRichTextBlockElement[] = [];
-  let runs: SlackRichTextInline[] = [];
-  const flush = (beforeBlock: boolean) => {
-    const trimmed =
-      beforeBlock && isLineBreak(runs.at(-1)) ? runs.slice(0, -1) : runs;
-    if (trimmed.length > 0) {
-      elements.push({ type: 'rich_text_section', elements: trimmed });
-    }
-    runs = [];
-  };
-  for (const piece of pieces) {
-    if (isInline(piece)) {
-      if (!(runs.length === 0 && elements.length > 0 && isLineBreak(piece))) {
-        runs.push(piece);
-      }
-    } else {
-      flush(true);
-      elements.push(piece);
-    }
+  const [first, ...rest] = cell ? cellElements(cell) : [];
+  if (heading.length === 0) {
+    return first ? [first, ...rest] : [];
   }
-  flush(false);
-  return elements;
+  const lead = [...heading, textRun(': ')];
+  return first?.type === 'rich_text_section'
+    ? [section([...lead, ...first.elements]), ...rest]
+    : [section(lead), ...(first ? [first, ...rest] : [])];
 };
 
-const bolded = (inline: SlackRichTextInline): SlackRichTextInline => ({
-  ...inline,
-  style: { ...inline.style, bold: true },
-});
+const endsLine = (element: SlackRichTextBlockElement): boolean => {
+  const last = element.elements.at(-1);
+  return last?.type === 'text' && last.text.endsWith('\n');
+};
 
-// A table over the message-wide cell budget degrades to rich text, each row as
-// `heading: cell` lines keyed by the header row with a blank line between rows,
-// which Slack keeps whole and never reads as mrkdwn. A cell keeps its sections,
-// lists, quotes, and preformatted blocks; a column with an empty heading prints
-// its cell alone.
+// Slack runs adjacent sections together, so a section followed by another ends
+// its line; a blank section between rows is the row boundary.
+const breakSections = (
+  elements: readonly SlackRichTextBlockElement[]
+): SlackRichTextBlockElement[] =>
+  elements.map((element, index) =>
+    element.type === 'rich_text_section' &&
+    elements[index + 1]?.type === 'rich_text_section' &&
+    !endsLine(element)
+      ? section([...element.elements, textRun('\n')])
+      : element
+  );
+
+// A table over the message-wide cell budget degrades to rich text: each row as
+// `heading: cell` lines keyed by the header row, rows apart by a blank line.
+// Slack keeps it whole and never reads it as mrkdwn. A cell keeps its own
+// sections, lists, quotes, and preformatted blocks, and a column with an empty
+// heading prints its cell alone.
 const degradeTable = (block: SlackTableBlock): SlackBlock[] => {
   const [header, ...rows] = block.rows;
   if (!header) {
     return [];
   }
-  const labels = header.map((cell) =>
-    cellPieces(cell).map((piece) => (isInline(piece) ? bolded(piece) : piece))
-  );
-  const pieces =
+  const headings = header.map(headingRuns);
+  const elements =
     rows.length === 0
-      ? labels
-          .filter((label) => label.length > 0)
-          .flatMap((label, index): TablePiece[] => [
-            ...(index > 0 ? [{ type: 'text' as const, text: ' · ' }] : []),
-            ...label,
-          ])
-      : rows.flatMap((row, rowIndex) => [
-          ...(rowIndex > 0 ? [lineBreak, lineBreak] : []),
-          ...labels.flatMap((label, index): TablePiece[] => [
-            ...(index > 0 ? [lineBreak] : []),
-            ...(label.length > 0
-              ? [...label, { type: 'text' as const, text: ': ' }]
-              : []),
-            ...(row[index] ? cellPieces(row[index]) : []),
-          ]),
+      ? [
+          section(
+            headings
+              .filter((runs) => runs.length > 0)
+              .flatMap((runs, index) => [
+                ...(index > 0 ? [textRun(' · ')] : []),
+                ...runs,
+              ])
+          ),
+        ]
+      : rows.flatMap((row, index) => [
+          ...(index > 0 ? [section([textRun('\n')])] : []),
+          ...headings.flatMap((heading, column) =>
+            columnElements(heading, row[column])
+          ),
         ]);
-  return [{ type: 'rich_text', elements: tableElements(pieces) }];
+  return [{ type: 'rich_text', elements: breakSections(elements) }];
 };
 
 // Slack counts table cell characters across the whole message, not per block,

@@ -57,7 +57,7 @@ export const schema = z
       .int()
       .min(0)
       .describe(
-        'Index into `columns` of the one to single out, such as the option you chose: its column draws in primary, its heading marked on every surface. Leave it out to weigh the columns evenly.'
+        'Zero-based index into `columns`, below their count, of the one to single out, such as the option you chose: its column draws in primary, its heading marked on every surface. Leave it out to weigh the columns evenly.'
       )
       .optional(),
     legend: z

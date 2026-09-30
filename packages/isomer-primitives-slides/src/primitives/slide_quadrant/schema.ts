@@ -8,6 +8,7 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
+import { quadrant } from '../../theme/components/quadrant';
 import { lineText } from '../authored_text';
 import { sizeField } from '../size';
 
@@ -80,4 +81,4 @@ export const quadrantPlaces = ({
     [y.high, x.high],
     [y.low, x.low],
     [y.low, x.high],
-  ].map((ends) => ends.join(', '));
+  ].map((ends) => ends.join(quadrant.listJoiner.value));

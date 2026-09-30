@@ -360,7 +360,7 @@ describe('slideTable', () => {
         rows: undefined,
         groups: [{ label: 'All', rows }],
       })
-    ).toEqual(['body[0].body[0].groups']);
+    ).toEqual(['body[0].body[0].groups[0].rows']);
   });
 
   it('prints headings and labels uppercase on every surface, as drawn', () => {
