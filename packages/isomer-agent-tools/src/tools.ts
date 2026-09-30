@@ -14,7 +14,6 @@ import {
 } from '@elastic/isomer-sdk';
 import { z, type ZodObject } from 'zod';
 
-import { overInputBudget } from './budget';
 import { checkComposition } from './check';
 import { buildIsomerAuthoringGuide, buildPrimitiveDescriptions } from './guide';
 import { ISOMER_TOOL_NAMES } from './names';
@@ -52,6 +51,11 @@ const tool = <TInput extends ZodObject>(
     }
   },
 });
+
+const INPUT_REFUSAL_CODES: ReadonlySet<string | undefined> = new Set([
+  ISOMER_ERROR_CODES.INPUT_NOT_PLAIN_DATA,
+  ISOMER_ERROR_CODES.INPUT_OVER_BUDGET,
+]);
 
 const VALIDATION_ERROR_CODES: Readonly<Record<string, string>> = {
   CompositionValidationError: ISOMER_ERROR_CODES.COMPOSITION_INVALID,
@@ -234,22 +238,29 @@ export const createIsomerTools = <THostContext = unknown>(
         .describe('Matches the view’s input schema.'),
     }),
     handler: async ({ id, input }) => {
-      const over = overInputBudget(input);
-      if (over !== undefined) {
-        return jsonResult(
-          { error: `Invalid input for view "${id}":`, errors: [over] },
-          true
-        );
-      }
       try {
-        const { composition } = await runtime.viewRegistry.request(
+        const { composition: built } = await runtime.viewRegistry.request(
           id,
           // `IsomerToolsOptions` requires it whenever `THostContext` excludes `undefined`.
           hostContext as THostContext,
           input
         );
-        const { valid, errors, warnings } = check(composition);
-        return jsonResult({ composition, valid, errors, warnings });
+        const {
+          valid,
+          errors,
+          warnings,
+          findings,
+          composition = built,
+        } = check(built);
+        const refused = findings.some(({ code }) =>
+          INPUT_REFUSAL_CODES.has(code)
+        );
+        return jsonResult({
+          ...(refused ? {} : { composition }),
+          valid,
+          errors,
+          warnings,
+        });
       } catch (error) {
         return viewErrorResult(error);
       }

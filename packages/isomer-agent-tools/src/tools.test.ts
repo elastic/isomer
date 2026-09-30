@@ -20,11 +20,12 @@ import {
   CompositionValidationError,
   formatValidationError,
   ISOMER_ERROR_CODES,
+  MAX_INPUT_CHARACTERS,
+  MAX_INPUT_DEPTH,
 } from '@elastic/isomer-sdk';
 import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { z } from 'zod';
 
-import { MAX_INPUT_CHARACTERS, MAX_INPUT_DEPTH } from './budget';
 import { checkComposition } from './check';
 import { ISOMER_TOOL_NAMES } from './names';
 import { createIsomerTools } from './tools';
@@ -78,6 +79,21 @@ const nested = (depth: number): unknown =>
   Array.from({ length: depth - 1 }).reduce<unknown>((inner) => [inner], []);
 
 const FRAME_RULE = /exactly one "slideFrame" node, got 2 nodes/;
+
+const recordValidate = () => {
+  const validated: unknown[] = [];
+  const validate = (composition: Composition) => {
+    const result = runtime.validate(composition);
+    validated.push(result.composition);
+    return result;
+  };
+  return { validate, validated };
+};
+
+const TOO_DEEP = `input nests deeper than ${MAX_INPUT_DEPTH} levels`;
+
+const NOT_PLAIN_OBJECT =
+  'input holds an object that is not a plain object or array, which is not plain data';
 
 describe('createIsomerTools', () => {
   const tools = createIsomerTools({ runtime, frame: slideDeckFrame });
@@ -227,26 +243,30 @@ describe('createIsomerTools', () => {
         )
       );
       expect(parse).toHaveBeenCalledOnce();
-      expect(errors).not.toContain(
-        `The input nests deeper than ${MAX_INPUT_DEPTH} levels.`
-      );
+      expect(errors).not.toContain(TOO_DEEP);
     });
 
-    it('refuses a composition past the depth limit before parsing it', async () => {
-      const parse = vi.fn((value: unknown) => runtime.parse(value));
-      const result = await call(
-        createIsomerTools({ runtime: { ...runtime, parse } }),
-        ISOMER_TOOL_NAMES.validate,
-        { composition: stackOfDepth(MAX_INPUT_DEPTH + 1) }
-      );
-      expect(parse).not.toHaveBeenCalled();
-      expect(result.isError).toBeUndefined();
-      expect(jsonOf(result)).toEqual({
-        valid: false,
-        errors: [`The input nests deeper than ${MAX_INPUT_DEPTH} levels.`],
-        warnings: [],
-      });
-    });
+    it.each([
+      ['past the depth limit', stackOfDepth(MAX_INPUT_DEPTH + 1), TOO_DEEP],
+      [
+        'that is not plain data',
+        { ...oneSlide, meta: { at: new Date(0) } },
+        NOT_PLAIN_OBJECT,
+      ],
+    ])(
+      'reports the runtime’s refusal of a composition %s without failing the call',
+      async (_label, composition, reason) => {
+        const result = await call(tools, ISOMER_TOOL_NAMES.validate, {
+          composition,
+        });
+        expect(result.isError).toBeUndefined();
+        expect(jsonOf(result)).toEqual({
+          valid: false,
+          errors: [reason],
+          warnings: [],
+        });
+      }
+    );
 
     it('skips the body rule without a frame', async () => {
       const { valid } = jsonOf(
@@ -319,18 +339,41 @@ describe('createIsomerTools', () => {
       }
     );
 
-    it('returns a composition over the input budget as a failed call', async () => {
-      const result = await call(tools, ISOMER_TOOL_NAMES.render, {
-        composition: { ...oneSlide, title: 'x'.repeat(MAX_INPUT_CHARACTERS) },
-        surface: 'text',
-      });
-      expect(result.isError).toBe(true);
-      expect(jsonOf(result)).toEqual({
-        valid: false,
-        errors: [
-          `The input holds more than ${MAX_INPUT_CHARACTERS} characters.`,
-        ],
-      });
+    it.each([
+      [
+        'over the input budget',
+        { ...oneSlide, title: 'x'.repeat(MAX_INPUT_CHARACTERS) },
+        `input holds more than ${MAX_INPUT_CHARACTERS} characters`,
+      ],
+      [
+        'that is not plain data',
+        { ...oneSlide, meta: { at: new Date(0) } },
+        NOT_PLAIN_OBJECT,
+      ],
+    ])(
+      'returns a composition %s as a failed call',
+      async (_label, composition, reason) => {
+        const result = await call(tools, ISOMER_TOOL_NAMES.render, {
+          composition,
+          surface: 'text',
+        });
+        expect(result.isError).toBe(true);
+        expect(jsonOf(result)).toEqual({ valid: false, errors: [reason] });
+      }
+    );
+
+    it('rasterizes the copy the runtime validated', async () => {
+      const { validate, validated } = recordValidate();
+      const image = vi.fn((_composition: Composition) =>
+        Promise.resolve(new Uint8Array())
+      );
+      await call(
+        createIsomerTools({ runtime: { ...runtime, validate }, image }),
+        ISOMER_TOOL_NAMES.render,
+        { composition: oneSlide, surface: 'png' }
+      );
+      expect(validated).toHaveLength(1);
+      expect(image.mock.calls[0]?.[0]).toBe(validated[0]);
     });
 
     it('offers png only with an image function', () => {
@@ -419,53 +462,6 @@ describe('createIsomerTools', () => {
       });
     });
 
-    const requestSpy = () => {
-      const request = vi.fn(runtime.viewRegistry.request);
-      const spied = createIsomerTools({
-        runtime: {
-          ...runtime,
-          viewRegistry: { ...runtime.viewRegistry, request },
-        },
-      });
-      return { request, spied };
-    };
-
-    it('passes view input at the depth limit to the view', async () => {
-      const { request, spied } = requestSpy();
-      await call(spied, ISOMER_TOOL_NAMES.requestView, {
-        id: 'one-slide',
-        input: { title: nested(MAX_INPUT_DEPTH - 1) },
-      });
-      expect(request).toHaveBeenCalledOnce();
-    });
-
-    const cyclic = { title: [] as unknown[] };
-    cyclic.title.push(cyclic);
-
-    it.each([
-      [
-        'past the depth limit',
-        { title: nested(MAX_INPUT_DEPTH) },
-        `The input nests deeper than ${MAX_INPUT_DEPTH} levels.`,
-      ],
-      ['that contains itself', cyclic, 'The input contains itself.'],
-    ])(
-      'refuses view input %s before the view sees it',
-      async (_label, input, reason) => {
-        const { request, spied } = requestSpy();
-        const result = await call(spied, ISOMER_TOOL_NAMES.requestView, {
-          id: 'one-slide',
-          input,
-        });
-        expect(request).not.toHaveBeenCalled();
-        expect(result.isError).toBe(true);
-        expect(jsonOf(result)).toEqual({
-          error: 'Invalid input for view "one-slide":',
-          errors: [reason],
-        });
-      }
-    );
-
     const viewTools = (
       build: (context: unknown) => Composition | Promise<Composition>,
       hostContext?: unknown
@@ -485,6 +481,86 @@ describe('createIsomerTools', () => {
         frame: slideDeckFrame,
         hostContext,
       });
+
+    it('passes view input at the depth limit to the view', async () => {
+      const build = vi.fn(() => oneSlide as Composition);
+      const title = nested(MAX_INPUT_DEPTH - 1);
+      await call(viewTools(build), ISOMER_TOOL_NAMES.requestView, {
+        id: 'built',
+        input: { title },
+      });
+      expect(build).toHaveBeenCalledOnce();
+    });
+
+    const cyclic = { title: [] as unknown[] };
+    cyclic.title.push(cyclic);
+
+    it.each([
+      ['past the depth limit', { title: nested(MAX_INPUT_DEPTH) }, TOO_DEEP],
+      ['that contains itself', cyclic, 'input contains itself'],
+      ['that is not plain data', { title: new Map() }, NOT_PLAIN_OBJECT],
+    ])(
+      'reports the runtime’s refusal of view input %s before the view sees it',
+      async (_label, input, reason) => {
+        const build = vi.fn(() => oneSlide as Composition);
+        const result = await call(
+          viewTools(build),
+          ISOMER_TOOL_NAMES.requestView,
+          {
+            id: 'built',
+            input,
+          }
+        );
+        expect(build).not.toHaveBeenCalled();
+        expect(result.isError).toBe(true);
+        expect(jsonOf(result)).toEqual({
+          error: 'Invalid input for view "built":',
+          errors: [reason],
+        });
+      }
+    );
+
+    const cyclicBody: unknown[] = [];
+    cyclicBody.push(cyclicBody);
+
+    it.each([
+      ['past the depth limit', nested(MAX_INPUT_DEPTH), TOO_DEEP],
+      ['that contains itself', cyclicBody, 'input contains itself'],
+    ])(
+      'reports a built composition %s without echoing it',
+      async (_label, body, reason) => {
+        const result = await call(
+          viewTools(() => ({ type: 'view', body }) as Composition),
+          ISOMER_TOOL_NAMES.requestView,
+          { id: 'built' }
+        );
+        expect(result.isError).toBeUndefined();
+        expect(jsonOf(result)).toEqual({
+          valid: false,
+          errors: [reason],
+          warnings: [],
+        });
+      }
+    );
+
+    it('returns a built composition that fails the schema with its findings', async () => {
+      const result = await call(
+        viewTools(
+          () =>
+            ({
+              type: 'view',
+              body: [{ ...slide, nope: 1 }],
+            }) as unknown as Composition
+        ),
+        ISOMER_TOOL_NAMES.requestView,
+        { id: 'built' }
+      );
+      expect(jsonOf(result)).toMatchObject({
+        composition: { type: 'view', body: [{ nope: 1 }] },
+        valid: false,
+        errors: [expect.stringContaining('(in slideFrame)')],
+      });
+    });
 
     it('passes hostContext to the view', async () => {
       const build = vi.fn(() => oneSlide as Composition);
@@ -644,7 +720,8 @@ describe('checkComposition', () => {
     const { warnings } = checkComposition(
       {
         ...runtime,
-        validate: () => ({
+        validate: (composition) => ({
+          composition,
           valid: true,
           errors: [],
           warnings: [
@@ -670,6 +747,43 @@ describe('checkComposition', () => {
       'slack: body[0].body[1] draws nothing',
       'text: is empty',
     ]);
+  });
+
+  it.each([
+    [
+      'over the input budget',
+      { type: 'view', body: nested(MAX_INPUT_DEPTH) },
+      ISOMER_ERROR_CODES.INPUT_OVER_BUDGET,
+    ],
+    [
+      'that is not plain data',
+      { type: 'view', body: [() => slide] },
+      ISOMER_ERROR_CODES.INPUT_NOT_PLAIN_DATA,
+    ],
+  ])(
+    'keeps the code of the runtime’s refusal of a value %s',
+    (_label, value, code) => {
+      const { valid, findings, composition } = checkComposition(
+        runtime,
+        slideDeckFrame,
+        value
+      );
+      expect(valid).toBe(false);
+      expect(findings).toEqual([expect.objectContaining({ path: '', code })]);
+      expect(composition).toBeUndefined();
+    }
+  );
+
+  it('returns the copy the runtime validated', () => {
+    const { validate, validated } = recordValidate();
+    const { composition } = checkComposition(
+      { ...runtime, validate },
+      slideDeckFrame,
+      oneSlide
+    );
+    expect(validated).toHaveLength(1);
+    expect(composition).toBe(validated[0]);
+    expect(composition).not.toBe(oneSlide);
   });
 
   it('reports a frame rule as a finding with an empty path', () => {

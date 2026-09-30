@@ -75,7 +75,10 @@ export interface IsomerToolsRuntime<THostContext = unknown> {
     };
   };
   parse(value: unknown): ParsedComposition;
-  validate(composition: Composition): ValidationResult;
+  /** `composition` is the copy the result describes, and `undefined` only when the input budget refused it. */
+  validate(
+    composition: Composition
+  ): ValidationResult & { composition: Composition | undefined };
   surfaces: {
     text: {
       render(composition: Composition, options?: { heading?: boolean }): string;

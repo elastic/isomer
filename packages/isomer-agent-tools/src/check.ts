@@ -12,7 +12,6 @@ import {
   type ValidationWarning,
 } from '@elastic/isomer-sdk';
 
-import { overInputBudget } from './budget';
 import type { IsomerToolsFrame, IsomerToolsRuntime } from './types';
 
 /** The outcome of {@link checkComposition}, worded for a model to act on. */
@@ -23,7 +22,7 @@ export interface IsomerCompositionCheck {
   /** A frame rule's finding has an empty path. */
   findings: ValidationError[];
   warnings: string[];
-  /** Present whenever the value matched the schema. */
+  /** The copy `validate` checked, present whenever the value matched the schema. */
   composition?: Composition | undefined;
 }
 
@@ -38,22 +37,22 @@ const refused = (findings: ValidationError[]): IsomerCompositionCheck => ({
   warnings: [],
 });
 
-/** Refuses `value` over the input budget, then parses it and runs the runtime's semantic validation and the frame's body rule on what parsed. */
+/** Parses `value`, then runs the runtime's semantic validation and the frame's body rule on the copy `validate` checked. The runtime's input budget refuses through `parse`. */
 export const checkComposition = (
   runtime: Pick<IsomerToolsRuntime, 'parse' | 'validate'>,
   frame: IsomerToolsFrame | undefined,
   value: unknown
 ): IsomerCompositionCheck => {
-  const over = overInputBudget(value);
-  if (over !== undefined) {
-    return refused([{ path: '', message: over }]);
-  }
   const parsed = runtime.parse(value);
-  const { composition } = parsed;
-  if (!parsed.valid || composition === undefined) {
+  if (!parsed.valid || parsed.composition === undefined) {
     return refused([...parsed.errors]);
   }
-  const { errors, warnings } = runtime.validate(composition);
+  const { errors, warnings, composition } = runtime.validate(
+    parsed.composition
+  );
+  if (composition === undefined) {
+    return refused([...errors]);
+  }
   const findings: ValidationError[] = [
     ...errors,
     ...(frame?.validateBody?.(composition.body) ?? []).map((message) => ({

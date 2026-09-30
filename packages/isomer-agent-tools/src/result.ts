@@ -12,8 +12,19 @@ export const textResult = (text: string, isError = false): IsomerToolResult =>
     ? { content: [{ type: 'text', text }], isError }
     : { content: [{ type: 'text', text }] };
 
-export const jsonResult = (value: unknown, isError = false): IsomerToolResult =>
-  textResult(JSON.stringify(value, null, 2), isError);
+/** `value` as indented JSON, `null` for what JSON cannot hold; a value `JSON.stringify` throws on, such as a cycle or a `BigInt`, becomes a failed result. */
+export const jsonResult = (
+  value: unknown,
+  isError = false
+): IsomerToolResult => {
+  let text: string | undefined;
+  try {
+    text = JSON.stringify(value, null, 2);
+  } catch (error) {
+    return textResult(errorMessage(error), true);
+  }
+  return textResult(text ?? 'null', isError);
+};
 
 export const imageResult = (bytes: Uint8Array): IsomerToolResult => ({
   content: [{ type: 'image', data: toBase64(bytes), mimeType: 'image/png' }],
