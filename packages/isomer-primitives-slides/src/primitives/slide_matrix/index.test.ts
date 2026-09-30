@@ -222,6 +222,23 @@ describe('slideMatrix', () => {
     ]);
   });
 
+  it('draws marks in the highlighted heading in primary, and in ink elsewhere', () => {
+    const headings = [
+      ...html({
+        ...pairExample,
+        columns: ['**iOS** `app`', '**Web** `app`'],
+        highlight: 0,
+      }).matchAll(/<th[^>]*role="columnheader"[^>]*>(.*?)<\/th>/g),
+    ].map(([, inner]) => inner ?? '');
+    expect(headings).toHaveLength(2);
+    const [highlighted, plain] = headings;
+    expect(highlighted).toMatch(/marks-strongPrimary/);
+    expect(highlighted).toMatch(/marks-displayCode/);
+    expect(highlighted).not.toMatch(/marks-strong\b(?!Primary)|marks-code\b/);
+    expect(plain).toMatch(/marks-strong\b(?!Primary)/);
+    expect(plain).toMatch(/marks-code\b/);
+  });
+
   it('marks the highlighted heading with a cue on every surface', () => {
     for (const output of everySurface(pairExample)) {
       expect(output).toContain('● Plus');
@@ -245,6 +262,51 @@ describe('slideMatrix', () => {
     const over = withLabel(`${at}y`);
     expect(over?.type).toBe('rich_text');
     expect(JSON.stringify(over)).toContain(`${at}y`);
+  });
+
+  it('keeps a marked heading and no empty corner label past the message-wide cell budget', () => {
+    const half = SLACK_LIMITS.tableCellCharsPerMessage / 2;
+    const label = 'x'.repeat(half);
+    const { blocks } = runtime.surfaces.slack.render({
+      type: 'view',
+      body: [
+        {
+          type: 'slideFrame',
+          body: [
+            {
+              type: 'slideTable',
+              columns: ['Region'],
+              rows: [['y'.repeat(half)]],
+            },
+            {
+              type: 'slideMatrix',
+              columns: ['`iOS`', 'Web'],
+              rows: [{ label, marks: ['full', 'none'] }],
+              legend: false,
+            },
+          ],
+        } as PrimitiveNode,
+      ],
+    });
+    expect(blocks).toContainEqual({
+      type: 'rich_text',
+      elements: [
+        {
+          type: 'rich_text_section',
+          elements: [
+            { type: 'text', text: label },
+            { type: 'text', text: '\n' },
+            { type: 'text', text: 'iOS', style: { code: true, bold: true } },
+            { type: 'text', text: ': ' },
+            { type: 'text', text: 'Yes' },
+            { type: 'text', text: '\n' },
+            { type: 'text', text: 'Web', style: { bold: true } },
+            { type: 'text', text: ': ' },
+            { type: 'text', text: 'No' },
+          ],
+        },
+      ],
+    });
   });
 
   describe('size', () => {

@@ -98,7 +98,11 @@ export const react = (
                 {index === highlight ? (
                   <ToneCue tone="primary" {...{ context }} />
                 ) : null}
-                {marksReact(column, context)}
+                {marksReact(
+                  column,
+                  context,
+                  index === highlight ? 'primary' : 'ink'
+                )}
               </th>
             ))}
           </tr>
