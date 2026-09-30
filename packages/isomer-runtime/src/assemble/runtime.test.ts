@@ -2719,3 +2719,104 @@ const primitiveNamed = (type: string) =>
       markdown: () => type,
     },
   });
+
+describe('the input budget', () => {
+  const deep = (): unknown => {
+    let value: unknown = [];
+    for (let level = 0; level < 100_000; level += 1) {
+      value = [value];
+    }
+    return value;
+  };
+  const composition = {
+    type: 'view',
+    body: [{ type: 'note', text: deep() }],
+  } as unknown as Composition;
+  const overBudget = {
+    path: '',
+    message: 'input nests deeper than 64 levels',
+    code: 'INPUT_OVER_BUDGET',
+  };
+  const refused = {
+    name: 'CompositionValidationError',
+    code: 'COMPOSITION_INVALID',
+    errors: [overBudget],
+  };
+
+  it('refuses over-budget input at parse, validate, and every validating surface', () => {
+    const runtime = drawingRuntime(notePrimitive);
+    const { html, text, markdown, slack, svg } = runtime.surfaces;
+    expect(runtime.parse(composition)).toEqual({
+      valid: false,
+      errors: [overBudget],
+    });
+    expect(runtime.validate(composition).errors).toEqual([overBudget]);
+    for (const render of [
+      () => html.render(composition),
+      () => text.render(composition, { onValidationError: 'collect' }),
+      () => markdown.render(composition, { onValidationError: 'collect' }),
+      () => slack.render(composition, { onValidationError: 'collect' }),
+      () => svg.render(composition, { onValidationError: 'collect' }),
+    ]) {
+      expect(render).toThrow(expect.objectContaining(refused));
+    }
+  });
+
+  it('refuses over-budget view input before the view runs', async () => {
+    let built = false;
+    const runtime = createIsomerRuntime({
+      packs: [packOf(notePrimitive)],
+      views: [
+        defineView({
+          id: 'test.any',
+          title: 'Any',
+          answers: [],
+          build: () => {
+            built = true;
+            return view('x');
+          },
+        }),
+      ],
+    });
+    await expect(
+      runtime.viewRegistry.request('test.any', undefined, { deep: deep() })
+    ).rejects.toMatchObject({
+      name: 'RegisteredViewInputError',
+      code: 'VIEW_INPUT_INVALID',
+      errors: [overBudget],
+    });
+    expect(built).toBe(false);
+  });
+
+  it('hands a view the checked copy of its input', async () => {
+    let received: unknown;
+    const runtime = createIsomerRuntime({
+      packs: [packOf(notePrimitive)],
+      views: [
+        defineView({
+          id: 'test.copy',
+          title: 'Copy',
+          answers: [],
+          build: ({ input }) => {
+            received = input;
+            return view('x');
+          },
+        }),
+      ],
+    });
+    const input = { list: Object.assign([1], { extra: 2 }) };
+    await runtime.viewRegistry.request('test.copy', undefined, input);
+    expect(received).toEqual({ list: [1] });
+    expect(received).not.toBe(input);
+  });
+
+  it('takes the host’s limits', () => {
+    const runtime = createIsomerRuntime({
+      packs: [packOf(notePrimitive)],
+      inputBudget: { characters: 3 },
+    });
+    expect(runtime.parse(view('four')).errors).toEqual([
+      { ...overBudget, message: 'input holds more than 3 characters' },
+    ]);
+  });
+});
