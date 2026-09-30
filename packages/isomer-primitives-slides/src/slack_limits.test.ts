@@ -296,6 +296,28 @@ const cases: LimitCase[] = [
     }),
   },
   {
+    name: 'slideStat body',
+    slot: 'section',
+    limit: SLACK_LIMITS.sectionTextChars,
+    filler: 'x',
+    max: 4000,
+    node: (fill) => ({ type: 'slideStat', value: '2.1', body: `Days ${fill}` }),
+  },
+  {
+    name: 'slideStats body',
+    slot: 'fields',
+    limit: SLACK_LIMITS.sectionFieldChars,
+    filler: 'x',
+    max: 3000,
+    node: (fill) => ({
+      type: 'slideStats',
+      items: [
+        { value: '3', label: 'Regions', body: `Active ${fill}` },
+        { value: '40', label: 'Latency', body: 'At the edge.' },
+      ],
+    }),
+  },
+  {
     name: 'slideTable label',
     slot: 'context',
     limit: SLACK_LIMITS.contextElementChars,

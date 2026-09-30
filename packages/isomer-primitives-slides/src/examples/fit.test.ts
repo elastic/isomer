@@ -19,6 +19,7 @@ import { slideDeckFrame, slidesPack } from '../pack';
 import { slideLayout } from '../primitives/layout';
 import { referenceHeading, renderedStep } from '../primitives/size.fixtures';
 import { longExample as agendaExample } from '../primitives/slide_agenda/examples';
+import { denseExample as barsExample } from '../primitives/slide_bars/examples';
 import { fullExample as definitionsExample } from '../primitives/slide_definitions/examples';
 import { wideExample as fanoutExample } from '../primitives/slide_fanout/examples';
 import { tallestExample } from '../primitives/slide_heading/examples';
@@ -204,10 +205,39 @@ describe('the largest steps a slide with no heading takes still fit', () => {
     },
   ]);
 
-  it.each(steps)('$variant at $step', async ({ step, variant, node }) => {
-    expect(renderedStep(variant, node)).toBe(step);
-    expect(await findings(alone(node))).toEqual([]);
+  const statsRow = (count: number, value: string, unit?: string) => ({
+    type: 'slideStats',
+    items: Array.from({ length: count }, () => ({
+      value,
+      ...(unit ? { unit } : {}),
+      label: 'Label',
+      body: 'Body.',
+    })),
   });
+  const figures = [
+    { step: 'l', variant: 'bars-labelSize', node: barsExample },
+    { step: 'l', variant: 'stats-valueSize', node: statsRow(2, '000000') },
+    { step: 'l', variant: 'stats-valueSize', node: statsRow(3, '00', 'ms') },
+    { step: 'l', variant: 'stats-valueSize', node: statsRow(4, '00') },
+    {
+      step: 'l',
+      variant: 'delta-valueSize',
+      node: {
+        type: 'slideDelta',
+        before: { label: 'Before', value: '0000' },
+        after: { label: 'After', value: '0' },
+        body: 'Body.',
+      },
+    },
+  ] as const;
+
+  it.each([...steps, ...figures])(
+    '$variant at $step',
+    async ({ step, variant, node }) => {
+      expect(renderedStep(variant, node)).toBe(step);
+      expect(await findings(alone(node))).toEqual([]);
+    }
+  );
 });
 
 describe('checkLayout reports a node past the frame body', () => {
@@ -222,26 +252,29 @@ describe('checkLayout reports a node past the frame body', () => {
     ),
   };
 
-  it.each([fanoutExample, listExample, halfWrappedAgenda, tableFullExample])(
-    '$type below the tallest heading',
-    async (node) => {
-      const slide: Composition = {
-        type: 'view',
-        body: [
-          {
-            type: 'slideFrame',
-            body: [tallestExample, node],
-          } as PrimitiveNode,
-        ],
-      };
-      expect(await findings(slide)).toEqual([
+  it.each([
+    fanoutExample,
+    listExample,
+    halfWrappedAgenda,
+    { ...barsExample, size: 'l' },
+    tableFullExample,
+  ])('$type below the tallest heading', async (node) => {
+    const slide: Composition = {
+      type: 'view',
+      body: [
         {
-          kind: 'overflow',
-          path: 'body[0].body[1]',
-          type: node.type,
-          by: expect.any(Number) as number,
-        },
-      ]);
-    }
-  );
+          type: 'slideFrame',
+          body: [tallestExample, node],
+        } as PrimitiveNode,
+      ],
+    };
+    expect(await findings(slide)).toEqual([
+      {
+        kind: 'overflow',
+        path: 'body[0].body[1]',
+        type: node.type,
+        by: expect.any(Number) as number,
+      },
+    ]);
+  });
 });

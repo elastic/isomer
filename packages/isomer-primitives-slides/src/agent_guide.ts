@@ -21,7 +21,7 @@ export const slidesAuthoringGuide = [
   'There are five kinds of slide:',
   '- Title (first): `tone: "inverse"`, body `[slideTitle]`, optionally with one compact node as its `aside`, such as a `slideFanout`.',
   '- Section divider: `tone: "inverse"`, body `[slideSection]` whose `contents` lists, in order, the composition `title` of each slide in that section. Keep those titles to a few words. The closing slide is in no section\'s `contents`.',
-  '- Content: `tone: "page"`, body starts with `slideHeading`, then one primitive that carries the idea. Put two things side by side with `slideSplit`; give it `ratio: "aside"` and `divider: "hairline"` for a main idea with a narrow column of notes. A `slideSource` line closes any slide that shows figures or claims taken from a real source; illustrative scenarios need none.',
+  '- Content: `tone: "page"`, body starts with `slideHeading`, then one primitive that carries the idea. Put two things side by side with `slideSplit`; give it `ratio: "aside"` and `divider: "hairline"` for a main idea with a narrow column of notes. A `slideStat` band may follow as a closing proof point, and a `slideSource` line closes any slide that shows figures or claims taken from a real source; illustrative scenarios need none.',
   '- Statement or quote: `tone: "page"`, body `[slideStatement]` for one thesis sentence of your own, or `[slideQuote]` for someone else\'s words. No heading.',
   '- Closing (last): `tone: "inverse"`, body `[slideClosing]`.',
   'The heading title is the slide\'s claim written as a sentence ("Refunds settle in two days, not five"), not a topic label ("Refunds"). The lede supports it in one or two sentences. A title that needs two lines breaks near its middle, since both lines balance, so keep a strong phrase short enough to stay on one of them.',
@@ -31,7 +31,7 @@ export const slidesAuthoringGuide = [
   'Headings, the title slide, and every primitive with a `size` field size their type to their text: with `size` left out they pick the largest of `l`, `m`, and `s` that fits. The pick is an estimate: if a render still runs past the footer, set `size` one step below what it drew, then shorten the copy. `s` is the smallest step, so after it only shorter text helps. Anything that still runs past the slide body is reported by the takumi layout check (`checkLayout`).',
   'The same slide also renders as text, Markdown, and Slack, where every string you write appears in full. Write strings that read well on their own, with typographic punctuation: ’ for apostrophes, “ ” for quotes, – for ranges, and — for a break. Straight marks render as typed.',
   "Fields whose description says so accept inline marks: `` `code` `` for identifiers and commands, and `**strong**` for the words that carry a sentence. Strong takes the `primary` tone where the text is already bold or display-sized, such as headings, taglines, statements, and quotes, and is bold in the text's own tone in regular copy. So never strong-mark another party's name in display text; give it the `accent` tone where the primitive takes one. In a quote, strong is the speaker's own stress, not ownership, so mark only the words they leaned on. Use marks sparingly.",
-  'Never invent numbers or screenshots.',
+  'Never invent numbers or screenshots. `slideStat`, `slideStats`, and `slideDelta` take a figure with its `value` left out and draw a labeled placeholder. `slideBars` needs every value, so use it only for figures you have.',
 ].join('\n\n');
 
 export const slidesAuthoringRules: readonly string[] = [
