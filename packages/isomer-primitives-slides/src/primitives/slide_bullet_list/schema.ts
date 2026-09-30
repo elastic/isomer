@@ -20,7 +20,7 @@ export const schema = z
       .min(1)
       .max(6)
       .describe(
-        'Points, top to bottom, one short sentence each. 1 to 6. `code` and `**strong**` marks are allowed. Type does not step down, so long points can run past the slide; a layout check reports it.'
+        'Points, top to bottom, one short sentence each. 1 to 6. `code` and `**strong**` marks are allowed.'
       ),
     label: lineText()
       .describe('Uppercase caption above the list, in a few words.')

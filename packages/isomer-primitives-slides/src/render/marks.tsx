@@ -140,7 +140,7 @@ export const strongMarksRichText = (text: string): SlackRichTextText[] =>
   }));
 
 /**
- * Strong is ink at bold weight, or `primary` at the run's weight when `strong` is `'primary'`.
+ * Strong is ink at bold weight, or underlined `primary` at the run's weight when `strong` is `'primary'`.
  * Then code is mono without its chip.
  */
 export const marksReact = (

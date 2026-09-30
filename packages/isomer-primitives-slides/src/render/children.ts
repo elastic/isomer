@@ -15,6 +15,8 @@ import {
 } from '@elastic/isomer-sdk/slack';
 
 import type { SlideRenderScope } from './context';
+import { richTextRun } from './marks';
+import { richTextSection, slackContext, slackRichText } from './slack_text';
 
 /** Each child rendered, empties dropped, blank-line joined. */
 export const renderTextChildren = (
@@ -41,8 +43,9 @@ export const renderSlackChildren = (
 /** A one-line `context` block: the chrome a container draws above its children. */
 export const slackCaption = (text: string, strong = false): SlackBlock => {
   const line = escapeMrkdwn(oneLine(text));
-  return {
-    type: 'context',
-    elements: [{ type: 'mrkdwn', text: strong ? `*${line}*` : line }],
-  };
+  return slackContext(strong ? `*${line}*` : line, () =>
+    slackRichText(
+      richTextSection(richTextRun(text, strong ? { bold: true } : undefined))
+    )
+  );
 };
