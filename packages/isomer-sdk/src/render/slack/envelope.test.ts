@@ -248,6 +248,68 @@ describe('Slack envelope transforms', () => {
     });
   });
 
+  it('keeps the sections, list items, quotes, and preformatted blocks of a cell past the aggregate budget', () => {
+    const half = SLACK_LIMITS.tableCellCharsPerMessage / 2;
+    const text = (value: string) => ({ type: 'text' as const, text: value });
+    const section = (value: string) => ({
+      type: 'rich_text_section' as const,
+      elements: [text(value)],
+    });
+    const list = {
+      type: 'rich_text_list' as const,
+      style: 'bullet' as const,
+      elements: [section('first'), section('second')],
+    };
+    const quote = {
+      type: 'rich_text_quote' as const,
+      elements: [text('quoted')],
+    };
+    const preformatted = {
+      type: 'rich_text_preformatted' as const,
+      elements: [text('code')],
+    };
+    const structured: SlackTableBlock = {
+      type: 'table',
+      rows: [
+        [cell('A'), cell('B')],
+        [
+          {
+            type: 'rich_text',
+            elements: [section('x'.repeat(half)), section('two'), list],
+          },
+          { type: 'rich_text', elements: [quote, preformatted] },
+        ],
+      ],
+    };
+    const { blocks } = renderSlackEnvelope(
+      { type: 'view', body: [{ type: 'a' }, { type: 'b' }] },
+      dispatcherFor([[tableBlock(half)], [structured]])
+    );
+    const bold = (value: string) => ({
+      ...text(value),
+      style: { bold: true },
+    });
+    expect(blocks.at(-1)).toEqual({
+      type: 'rich_text',
+      elements: [
+        {
+          type: 'rich_text_section',
+          elements: [
+            bold('A'),
+            text(': '),
+            text('x'.repeat(half)),
+            text('\n'),
+            text('two'),
+          ],
+        },
+        list,
+        { type: 'rich_text_section', elements: [bold('B'), text(': ')] },
+        quote,
+        preformatted,
+      ],
+    });
+  });
+
   it('produces a valid header for a title over the header limit', () => {
     const { blocks } = renderSlackEnvelope(
       {

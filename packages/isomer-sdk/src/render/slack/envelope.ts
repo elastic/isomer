@@ -420,18 +420,61 @@ const tableCharCount = (block: SlackTableBlock): number =>
     0
   );
 
-const cellInlines = (cell: SlackTableCell): SlackRichTextInline[] =>
+/** Inline runs flow into the open section; a list, quote, or preformatted block starts its own line. */
+type TablePiece =
+  | SlackRichTextInline
+  | Exclude<SlackRichTextBlockElement, { type: 'rich_text_section' }>;
+
+const lineBreak: SlackRichTextInline = { type: 'text', text: '\n' };
+
+const isInline = (piece: TablePiece): piece is SlackRichTextInline =>
+  !piece.type.startsWith('rich_text_');
+
+// Sections in one cell are separate lines; blocks keep their own structure.
+const cellPieces = (cell: SlackTableCell): TablePiece[] =>
   cell.type === 'raw_text'
     ? cell.text
       ? [{ type: 'text', text: cell.text }]
       : []
-    : cell.elements.flatMap((element) =>
-        element.type === 'rich_text_list'
-          ? element.elements.flatMap(({ elements }) => elements)
-          : element.elements
-      );
+    : cell.elements.flatMap((element, index): TablePiece[] => [
+        ...(index > 0 && element.type === 'rich_text_section'
+          ? [lineBreak]
+          : []),
+        ...(element.type === 'rich_text_section'
+          ? element.elements
+          : [element]),
+      ]);
 
-const lineBreak: SlackRichTextInline = { type: 'text', text: '\n' };
+const isLineBreak = (piece: TablePiece | undefined): boolean =>
+  piece?.type === 'text' && piece.text === '\n';
+
+/** Runs between blocks become sections, without the line break a block already gives. */
+const tableElements = (
+  pieces: readonly TablePiece[]
+): SlackRichTextBlockElement[] => {
+  const elements: SlackRichTextBlockElement[] = [];
+  let runs: SlackRichTextInline[] = [];
+  const flush = (beforeBlock: boolean) => {
+    const trimmed =
+      beforeBlock && isLineBreak(runs.at(-1)) ? runs.slice(0, -1) : runs;
+    if (trimmed.length > 0) {
+      elements.push({ type: 'rich_text_section', elements: trimmed });
+    }
+    runs = [];
+  };
+  for (const piece of pieces) {
+    if (isInline(piece)) {
+      if (!(runs.length === 0 && elements.length > 0 && isLineBreak(piece))) {
+        runs.push(piece);
+      }
+    } else {
+      flush(true);
+      elements.push(piece);
+    }
+  }
+  flush(false);
+  return elements;
+};
 
 const bolded = (inline: SlackRichTextInline): SlackRichTextInline => ({
   ...inline,
@@ -440,47 +483,36 @@ const bolded = (inline: SlackRichTextInline): SlackRichTextInline => ({
 
 // A table over the message-wide cell budget degrades to rich text, each row as
 // `heading: cell` lines keyed by the header row with a blank line between rows,
-// which Slack keeps whole and never reads as mrkdwn. A column with an empty
-// heading prints its cell alone.
+// which Slack keeps whole and never reads as mrkdwn. A cell keeps its sections,
+// lists, quotes, and preformatted blocks; a column with an empty heading prints
+// its cell alone.
 const degradeTable = (block: SlackTableBlock): SlackBlock[] => {
   const [header, ...rows] = block.rows;
   if (!header) {
     return [];
   }
-  const labels = header.map((cell) => cellInlines(cell).map(bolded));
-  const lines =
+  const labels = header.map((cell) =>
+    cellPieces(cell).map((piece) => (isInline(piece) ? bolded(piece) : piece))
+  );
+  const pieces =
     rows.length === 0
-      ? [
-          labels
-            .filter((label) => label.length > 0)
-            .flatMap((label, index): SlackRichTextInline[] => [
-              ...(index > 0 ? [{ type: 'text' as const, text: ' · ' }] : []),
-              ...label,
-            ]),
-        ]
-      : rows.map((row) =>
-          labels.flatMap((label, index): SlackRichTextInline[] => [
+      ? labels
+          .filter((label) => label.length > 0)
+          .flatMap((label, index): TablePiece[] => [
+            ...(index > 0 ? [{ type: 'text' as const, text: ' · ' }] : []),
+            ...label,
+          ])
+      : rows.flatMap((row, rowIndex) => [
+          ...(rowIndex > 0 ? [lineBreak, lineBreak] : []),
+          ...labels.flatMap((label, index): TablePiece[] => [
             ...(index > 0 ? [lineBreak] : []),
             ...(label.length > 0
               ? [...label, { type: 'text' as const, text: ': ' }]
               : []),
-            ...(row[index] ? cellInlines(row[index]) : []),
-          ])
-        );
-  return [
-    {
-      type: 'rich_text',
-      elements: [
-        {
-          type: 'rich_text_section',
-          elements: lines.flatMap((line, index) => [
-            ...(index > 0 ? [lineBreak, lineBreak] : []),
-            ...line,
+            ...(row[index] ? cellPieces(row[index]) : []),
           ]),
-        },
-      ],
-    },
-  ];
+        ]);
+  return [{ type: 'rich_text', elements: tableElements(pieces) }];
 };
 
 // Slack counts table cell characters across the whole message, not per block,
