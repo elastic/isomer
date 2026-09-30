@@ -10,7 +10,9 @@ import { agenda } from './components/agenda';
 import { bulletList } from './components/bullet_list';
 import { closing } from './components/closing';
 import { code } from './components/code';
+import { command } from './components/command';
 import { definitions } from './components/definitions';
+import { diff } from './components/diff';
 import { fanout } from './components/fanout';
 import { frame } from './components/frame';
 import { heading } from './components/heading';
@@ -28,6 +30,7 @@ import { statement } from './components/statement';
 import { table } from './components/table';
 import { territoryGroup } from './components/territory_group';
 import { title } from './components/title';
+import { transcript } from './components/transcript';
 
 /**
  * Every value the pack renders, in one tree. `lightDark` leaves become
@@ -52,7 +55,9 @@ export const SLIDE_THEME = {
   bulletList,
   closing,
   code,
+  command,
   definitions,
+  diff,
   fanout,
   frame,
   heading,
@@ -68,6 +73,7 @@ export const SLIDE_THEME = {
   table,
   territoryGroup,
   title,
+  transcript,
 } as const;
 
 export type SlideColorName = keyof typeof color;

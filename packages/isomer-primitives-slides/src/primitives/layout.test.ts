@@ -330,6 +330,12 @@ describe('auto-sizing primitives read the layout they are given', () => {
     ['closing-titleSize', closingExample, [narrow]],
     ['title-titleSize', titleExample, [narrow]],
     ['code', { type: 'slideCode', panels: [{ lines: [line] }] }, [narrow]],
+    ['code', { type: 'slideDiff', lines: [{ text: line }] }, [narrow]],
+    [
+      'command-textSize',
+      { type: 'slideCommand', command: 'x'.repeat(30) },
+      [narrow],
+    ],
   ] as [string, PrimitiveNode, SlideLayout[]][];
   const patternOf = (variant: string) =>
     new RegExp(`${variant}-(l|m|s|regular|dense)\\b`);

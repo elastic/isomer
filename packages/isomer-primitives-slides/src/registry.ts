@@ -13,7 +13,9 @@ import { slideAgendaPrimitive } from './primitives/slide_agenda';
 import { slideBulletListPrimitive } from './primitives/slide_bullet_list';
 import { slideClosingPrimitive } from './primitives/slide_closing';
 import { slideCodePrimitive } from './primitives/slide_code';
+import { slideCommandPrimitive } from './primitives/slide_command';
 import { slideDefinitionsPrimitive } from './primitives/slide_definitions';
+import { slideDiffPrimitive } from './primitives/slide_diff';
 import { slideFanoutPrimitive } from './primitives/slide_fanout';
 import { slideFramePrimitive } from './primitives/slide_frame';
 import { slideHeadingPrimitive } from './primitives/slide_heading';
@@ -29,6 +31,7 @@ import { slideStatementPrimitive } from './primitives/slide_statement';
 import { slideTablePrimitive } from './primitives/slide_table';
 import { slideTerritoryGroupPrimitive } from './primitives/slide_territory_group';
 import { slideTitlePrimitive } from './primitives/slide_title';
+import { slideTranscriptPrimitive } from './primitives/slide_transcript';
 
 /** Every primitive definition this pack registers, in alphabetical order. */
 export const slideDeckPrimitives = [
@@ -36,7 +39,9 @@ export const slideDeckPrimitives = [
   slideBulletListPrimitive,
   slideClosingPrimitive,
   slideCodePrimitive,
+  slideCommandPrimitive,
   slideDefinitionsPrimitive,
+  slideDiffPrimitive,
   slideFanoutPrimitive,
   slideFramePrimitive,
   slideHeadingPrimitive,
@@ -52,6 +57,7 @@ export const slideDeckPrimitives = [
   slideTablePrimitive,
   slideTerritoryGroupPrimitive,
   slideTitlePrimitive,
+  slideTranscriptPrimitive,
 ] as const;
 
 /** `type` strings of {@link slideDeckPrimitives}. */
