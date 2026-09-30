@@ -57,7 +57,6 @@ export const splitModule = createStyleModule('split', ({ css }) => ({
   label: css`
     ${typeRole(split.label)}
     margin: 0;
-    text-transform: uppercase;
   `,
   plainLabel: css`
     color: ${color.textSubtle};

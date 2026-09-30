@@ -107,7 +107,8 @@ export const slideTitlePrimitive = definePrimitive<SlideTitleNode>({
                       richTextRun(' '),
                       ...marksRichText(definition.text)
                     )
-                  )
+                  ),
+                [definition.term, { marks: definition.text }]
               ),
             ]
           : []),

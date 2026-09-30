@@ -61,7 +61,8 @@ export const slack = (node: SlideQuoteNode): SlackBlock[] => [
           richTextBreak,
           richTextRun(attribution(node)),
         ],
-      })
+      }),
+    [{ marks: node.text }, attribution(node)]
   ),
 ];
 

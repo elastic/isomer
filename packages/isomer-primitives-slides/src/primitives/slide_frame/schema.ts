@@ -9,6 +9,7 @@ import { unresolvedBodyNodeSchema, z } from '@elastic/isomer-sdk';
 
 import { slideFrameTones } from '../../theme/variants';
 import { lineText } from '../authored_text';
+import { statedRefine } from '../cross_field';
 
 import { FRAME_URL_MESSAGE, sanitizeFrameUrl } from './url';
 
@@ -50,11 +51,14 @@ export const schema = z
       )
       .optional(),
     url: lineText()
-      .refine((value) => sanitizeFrameUrl(value) !== null, {
-        error: FRAME_URL_MESSAGE,
-      })
+      .check(
+        statedRefine((value) => sanitizeFrameUrl(value) !== null, {
+          error: FRAME_URL_MESSAGE,
+          rule: 'An absolute `http` or `https` address',
+        })
+      )
       .describe(
-        'Absolute address at the right of the footer, with its scheme, e.g. "https://example.com". A link on web surfaces.'
+        'An absolute `http` or `https` address at the right of the footer, with its scheme, e.g. "https://example.com". A link on web surfaces.'
       )
       .optional(),
   })
