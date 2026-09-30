@@ -48,12 +48,17 @@ describe('slideRoadmap', () => {
     expect(
       schema.safeParse({ ...example, columns: Array(5).fill(column) }).success
     ).toBe(false);
-    expect(
+    expect(schema.safeParse(twoColumnsExample).success).toBe(true);
+    const [left, right] = twoColumnsExample.columns;
+    const items = (count: number) =>
       schema.safeParse({
         ...twoColumnsExample,
-        columns: [{ ...column, items: [] }, column],
-      }).success
-    ).toBe(false);
+        columns: [{ ...left, items: Array(count).fill(left?.items[0]) }, right],
+      }).success;
+    expect(items(0)).toBe(false);
+    expect(items(1)).toBe(true);
+    expect(items(4)).toBe(true);
+    expect(items(5)).toBe(false);
   });
 
   it('rejects more than one current column', () => {

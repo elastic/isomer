@@ -44,6 +44,8 @@ describe('slideTimeline', () => {
     expect(schema.safeParse({ ...example, items: [item, item] }).success).toBe(
       false
     );
+    expect(threeItemsExample.items).toHaveLength(3);
+    expect(schema.safeParse(threeItemsExample).success).toBe(true);
     // The fit test measures `fiveItemsExample` as the most items a timeline takes.
     expect(schema.safeParse(fiveItemsExample).success).toBe(true);
     expect(
@@ -231,12 +233,14 @@ describe('slideTimeline', () => {
     ...example,
     items: example.items.map((item) => ({
       ...item,
-      heading: 'x'.repeat(Math.ceil(load / 4) - 1),
+      label: 'L',
+      channel: 'C',
+      heading: 'x'.repeat(Math.ceil(load / 4) - 3),
       body: 'y',
     })),
   });
 
-  it('loads the longest item times the item count', () => {
+  it('loads the longest item, label and channel included, times the item count', () => {
     expect(timelineLoad(fourItems(400))).toBe(400);
   });
 

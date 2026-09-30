@@ -20,6 +20,10 @@ export const slideGraphShape = `slideGraph supports one left-to-right main row o
 const maxNodes = graphMaxMain + slideGraphPlacements.length;
 const maxEdges = graphMaxMain - 1 + slideGraphPlacements.length;
 
+/** `[from, to]` as a key no id text can collide with. */
+const edgeKey = (from: string, to: string): string =>
+  JSON.stringify([from, to]);
+
 const nodeSchema = z
   .object({
     id: lineText().describe('A unique id that `edges` refer to, e.g. "cart".'),
@@ -95,6 +99,14 @@ export const schema = z
         ids.add(id);
       });
 
+      nodes
+        .map(({ emphasis }, index) => ({ emphasis, index }))
+        .filter(({ emphasis }) => emphasis === true)
+        .slice(1)
+        .forEach(({ index }) =>
+          fail('more than one node is emphasized', ['nodes', index, 'emphasis'])
+        );
+
       const main = nodes.filter(({ placement }) => placement === undefined);
       if (main.length < 2 || main.length > graphMaxMain) {
         fail(`the main row has ${main.length} nodes`, ['nodes']);
@@ -106,9 +118,11 @@ export const schema = z
       }
 
       const mainIds = main.map(({ id }) => id);
-      const chain = new Set(
-        mainIds.slice(1).map((to, index) => `${mainIds[index]}→${to}`)
-      );
+      const links = mainIds.flatMap((from, index) => {
+        const to = mainIds[index + 1];
+        return to === undefined ? [] : [[from, to] as const];
+      });
+      const chain = new Set(links.map(([from, to]) => edgeKey(from, to)));
       const seen = new Set<string>();
       const attached = new Map<string, number>();
       edges.forEach(([from, to], index) => {
@@ -118,7 +132,7 @@ export const schema = z
           fail(`edge [${from}, ${to}] names unknown node "${unknown}"`, path);
           return;
         }
-        const key = `${from}→${to}`;
+        const key = edgeKey(from, to);
         if (seen.has(key)) {
           fail(`edge [${from}, ${to}] is repeated`, path);
           return;
@@ -137,9 +151,8 @@ export const schema = z
         attached.set(offRow, (attached.get(offRow) ?? 0) + 1);
       });
 
-      mainIds.slice(1).forEach((to, index) => {
-        const from = mainIds[index];
-        if (!seen.has(`${from}→${to}`)) {
+      links.forEach(([from, to]) => {
+        if (!seen.has(edgeKey(from, to))) {
           fail(`missing main-row edge [${from}, ${to}]`, ['edges']);
         }
       });

@@ -53,5 +53,5 @@ export const timeline = {
   toneLabel: currentToneLabel,
 } as const;
 
-/** The longest item's characters times the item count. */
-export const timelineFit = { l: 500, m: 560 } as const;
+/** The longest item's characters, label and channel included, times the item count. */
+export const timelineFit = { l: 540, m: 600 } as const;

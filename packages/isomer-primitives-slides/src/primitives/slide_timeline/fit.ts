@@ -24,7 +24,12 @@ import type { SlideTimelineNode } from './schema';
 
 export const timelineLoad = ({ items }: SlideTimelineNode): number =>
   rowLoad(
-    items.map(({ heading, body }) => [stripMarks(heading), stripMarks(body)])
+    items.map(({ label, channel, heading, body }) => [
+      label,
+      channel,
+      stripMarks(heading),
+      stripMarks(body),
+    ])
   );
 
 export const timelineStep = (

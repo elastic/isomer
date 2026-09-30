@@ -110,6 +110,91 @@ describe('slideGraph', () => {
     ).toEqual([expect.stringMatching(/"stock" needs exactly one edge/)]);
   });
 
+  it('takes one emphasized node and rejects a second', () => {
+    expect(messages(pairExample)).toEqual([]);
+    expect(
+      messages({
+        ...pairExample,
+        nodes: pairExample.nodes.map((node) => ({ ...node, emphasis: true })),
+      })
+    ).toEqual([expect.stringMatching(/more than one node is emphasized/)]);
+    expect(
+      schema.safeParse({
+        ...pairExample,
+        nodes: pairExample.nodes.map((node) => ({ ...node, emphasis: true })),
+      }).error?.issues[0]?.path
+    ).toEqual(['nodes', 1, 'emphasis']);
+  });
+
+  it('keeps ids that hold the arrow apart from the edges they would spell', () => {
+    const joined = {
+      type: 'slideGraph',
+      nodes: [
+        { id: 'a→b', term: 'A', body: 'x' },
+        { id: 'c', term: 'C', body: 'y' },
+      ],
+      edges: [['a→b', 'c']],
+    };
+    expect(messages(joined)).toEqual([]);
+    expect(
+      messages({
+        type: 'slideGraph',
+        nodes: [
+          { id: 'a', term: 'A', body: 'x' },
+          { id: 'b→c', term: 'B', body: 'y' },
+          { id: 'a→b', term: 'C', body: 'z', placement: 'above' },
+          { id: 'c', term: 'D', body: 'w', placement: 'below' },
+        ],
+        edges: [
+          ['a→b', 'c'],
+          ['a→b', 'a'],
+          ['c', 'b→c'],
+        ],
+      })
+    ).toEqual([
+      expect.stringMatching(/edge \[a→b, c\] does not fit the layout/),
+      expect.stringMatching(/missing main-row edge \[a, b→c\]/),
+    ]);
+    expect(
+      messages({
+        ...joined,
+        edges: [
+          ['a→b', 'c'],
+          ['a→b', 'c'],
+        ],
+      })
+    ).toEqual([expect.stringMatching(/edge \[a→b, c\] is repeated/)]);
+  });
+
+  it('holds two to six nodes, two to four in the main row, and one to five edges', () => {
+    const [first] = example.nodes;
+    expect(messages({ ...pairExample, nodes: [first] })).toContainEqual(
+      expect.stringMatching(/Too small/)
+    );
+    expect(
+      messages({
+        ...pairExample,
+        nodes: [
+          pairExample.nodes[0],
+          { ...pairExample.nodes[1], placement: 'above' },
+        ],
+      })
+    ).toContainEqual(expect.stringMatching(/main row has 1 nodes/));
+    expect(
+      messages({
+        ...example,
+        nodes: [...example.nodes, { ...first, id: 'extra' }],
+      })
+    ).toEqual([expect.stringMatching(/Too big/)]);
+    expect(messages({ ...pairExample, edges: [] })).toContainEqual(
+      expect.stringMatching(/Too small/)
+    );
+    expect(example.edges).toHaveLength(5);
+    expect(
+      messages({ ...example, edges: [...example.edges, ['catalog', 'basket']] })
+    ).toEqual([expect.stringMatching(/Too big/)]);
+  });
+
   it('pins `example` at the most nodes the layout takes', () => {
     // The fit test measures it as the densest graph.
     const { main, above, below } = graphLayout(example);

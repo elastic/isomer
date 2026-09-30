@@ -63,7 +63,7 @@ export const slidesPackAuthoring = {
     slideSource: 'One citation line.',
     slideSection:
       'A section divider. When hrefs is given it has one entry per contents entry.',
-    slideGraph: `Terms joined by arrows. ${slideGraphShape}. Every edge names a node id.`,
+    slideGraph: `Terms joined by arrows. ${slideGraphShape}. Every edge names a node id. At most one node is emphasized.`,
     slideRoadmap: 'Two to four horizons. At most one column is current.',
     slideTimeline: 'Three to five dated points. At most one item is current.',
   },

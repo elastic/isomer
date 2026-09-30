@@ -36,6 +36,8 @@ const errorPaths = (node: object) =>
 describe('slideTree', () => {
   it('holds one to eight entries', () => {
     expect(schema.safeParse({ ...example, entries: [] }).success).toBe(false);
+    expect(singleExample.entries).toHaveLength(1);
+    expect(errorPaths(singleExample)).toEqual([]);
     // The fit test measures `fullExample` as the most entries a tree takes.
     expect(errorPaths(fullExample)).toEqual([]);
     expect(
