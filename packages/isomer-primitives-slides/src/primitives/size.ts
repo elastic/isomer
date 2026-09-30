@@ -349,6 +349,15 @@ export const monoLines = (
       .lines
   );
 
+/** What `code` marks' borders add to the height of `lines` lines of `text`, at most once a line. */
+export const codeGrowth = (text: string, lines: number): number =>
+  Math.min(
+    lines,
+    parseMarks(text).filter(({ kind }) => kind === 'code').length
+  ) *
+  2 *
+  scalePx(marks.codeBorder);
+
 /** The node's own `size`, else the largest step at which `text`, set in `role` at the step's size, fits `width` pixels on one line. */
 export const sizeForWidth = (
   size: SlideSize | undefined,

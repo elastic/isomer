@@ -51,17 +51,33 @@ export type {
 export { SlideFrameView } from './primitives/slide_frame';
 export type { SlideFrameNode } from './primitives/slide_frame';
 export type { SlideHeadingNode } from './primitives/slide_heading';
+export type {
+  SlideLanesLane,
+  SlideLanesNode,
+  SlideLanesNote,
+} from './primitives/slide_lanes';
+export type { SlideLayer, SlideLayersNode } from './primitives/slide_layers';
 export type { SlideListItem, SlideListNode } from './primitives/slide_list';
 export type {
   SlideMatrixNode,
   SlideMatrixRow,
 } from './primitives/slide_matrix';
 export type {
+  SlidePipelineNode,
+  SlidePipelineSpan,
+  SlidePipelineStep,
+} from './primitives/slide_pipeline';
+export type {
   SlideQuadrant,
   SlideQuadrantNode,
 } from './primitives/slide_quadrant';
 export type { SlideQuoteNode } from './primitives/slide_quote';
 export type { SlideSectionNode } from './primitives/slide_section';
+export type {
+  SlideSequenceActor,
+  SlideSequenceMessage,
+  SlideSequenceNode,
+} from './primitives/slide_sequence';
 export type { SlideSourceNode } from './primitives/slide_source';
 export type { SlideSplitNode, SlideSplitPane } from './primitives/slide_split';
 export type { SlideStackNode } from './primitives/slide_stack';

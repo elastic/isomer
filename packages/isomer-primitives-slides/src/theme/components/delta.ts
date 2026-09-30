@@ -14,6 +14,11 @@ import { stat, statPlaceholderHeights, statValueSizes } from './stat';
 // Centers the arrow on the digits.
 const arrowLift = 0.38;
 
+const rule = stroke.hairline;
+const notePadding = space.px56;
+// Measure, not spacing.
+const noteMeasure = px(480);
+
 export const delta = {
   columnGap: space.px56,
   rowGap: space.px40,
@@ -30,12 +35,12 @@ export const delta = {
   valueSizes: statValueSizes,
   placeholderHeights: statPlaceholderHeights,
   placeholderWidth: stat.placeholderWidth,
-  rule: stroke.hairline,
-  notePadding: space.px56,
+  rule,
+  notePadding,
   noteGap: space.px16,
   noteBottom: space.px12,
-  // Measure, not spacing.
-  noteMinWidth: px(480),
+  // Border to border: its measure, padding, and rule.
+  noteMinWidth: px(scalePx(noteMeasure) + scalePx(notePadding) + scalePx(rule)),
   change: {
     size: font.size.px72,
     weight: font.weight.extrabold,

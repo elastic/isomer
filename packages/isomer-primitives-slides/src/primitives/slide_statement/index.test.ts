@@ -66,6 +66,15 @@ describe('slideStatement', () => {
     );
   });
 
+  it('counts a line break as the space it draws', () => {
+    expect(
+      stepOf({
+        type: 'slideStatement',
+        text: `${'x'.repeat(statementFit.l - 1)}\nx`,
+      })
+    ).toBe('m');
+  });
+
   it('keeps an authored size', () => {
     expect(stepOf({ ...longExample, size: 'l' })).toBe('l');
     expect(stepOf({ ...example, size: 's' })).toBe('s');

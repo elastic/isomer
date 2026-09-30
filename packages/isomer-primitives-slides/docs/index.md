@@ -57,6 +57,10 @@ runtime.surfaces.text.render(composition);
 | `slideBulletList` | Short points with a dot, check, or × marker. |
 | `slideDefinitions` | Terms and their meanings as a ruled glossary. |
 | `slideFanout` | One source branching to several unordered targets. |
+| `slidePipeline` | Ordered steps along one path, or chips bracketed by who owns each run. |
+| `slideSequence` | Messages between three to five actors, top to bottom in time order. |
+| `slideLanes` | Two parallel paths converging on one join step. |
+| `slideLayers` | An ordered stack of layers, each with an owner. |
 | `slideTerritoryGroup` | Who owns what, one color-keyed column per owner. |
 | `slideStat` | One headline number beside the sentence that explains it, as a band under the body. |
 | `slideStats` | Two to four comparable numbers in ruled columns. |

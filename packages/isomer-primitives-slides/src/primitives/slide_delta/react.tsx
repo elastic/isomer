@@ -49,11 +49,7 @@ const largestWithin = (
   );
 
 /** What the note takes of the row at its narrowest: its gap, measure, padding, and rule. */
-const noteFloor =
-  scalePx(theme.columnGap) +
-  scalePx(theme.noteMinWidth) +
-  scalePx(theme.notePadding) +
-  scalePx(theme.rule);
+const noteFloor = scalePx(theme.columnGap) + scalePx(theme.noteMinWidth);
 
 /** The largest step at which the row holds both sides beside the note's floor across `width`, else the largest at which it holds them with the note wrapped under. */
 export const deltaValueSize = (

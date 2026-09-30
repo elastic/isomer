@@ -245,6 +245,45 @@ describe('measureMarks', () => {
       measureText('bb', { ...regular, ...marks.strong }).widest
     );
   });
+
+  describe('in body copy', () => {
+    const body = { ...type.body, size: font.size.px26 };
+    const bodyMono = { ...body, ...marks.code };
+    const strong = { ...body, ...marks.strong };
+    const lines = (text: string, width: number) =>
+      measureMarks(text, body, width).lines;
+
+    // Seventeen mono columns fit the line; the chip's padding and border tip them over it.
+    it('sets a `code` run between its chip’s sides', () => {
+      const call = 'x'.repeat(17);
+      const width = 276;
+      expect(measureText(call, bodyMono).widest).toBeLessThanOrEqual(width);
+      expect(lines(call, width)).toBe(1);
+      expect(lines(`\`${call}\``, width)).toBe(2);
+      expect(lines(`\`${call.slice(1)}\``, width)).toBe(1);
+    });
+
+    it('wraps a `strong` run in the bold face', () => {
+      const text = 'mmmm mmmm';
+      const fits = measureText(text, body).widest;
+      expect(measureText(text, strong).widest).toBeGreaterThan(fits);
+      expect(lines(text, fits)).toBe(1);
+      expect(lines(`**${text}**`, fits)).toBe(2);
+    });
+
+    it('splits runs at a space or line separator between them', () => {
+      const joined =
+        measureText('abcd', body).widest + measureText('efgh', strong).widest;
+      expect(lines('abcd**efgh**', joined)).toBe(1);
+      expect(lines('abcd **efgh**', joined)).toBe(2);
+      const chipped =
+        measureText('ab', bodyMono).widest +
+        2 * inset +
+        measureText('.', body).widest;
+      expect(lines('`ab`.', chipped)).toBe(1);
+      expect(lines('`ab`\u2028.', chipped)).toBe(2);
+    });
+  });
 });
 
 describe('measureText against takumi', () => {

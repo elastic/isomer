@@ -70,6 +70,7 @@ export const deltaModule = createStyleModule('delta', ({ css }) => ({
   ),
   note: css`
     border-left: ${delta.rule} solid ${color.border};
+    box-sizing: border-box;
     display: flex;
     flex: 1 1 0;
     flex-direction: column;
