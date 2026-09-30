@@ -12,8 +12,11 @@ import { describe, expect, it } from 'vitest';
 import { slideFonts } from '../examples/fonts';
 import { font, type } from '../theme/base';
 import { frameContentWidth } from '../theme/components/frame';
+import { graph } from '../theme/components/graph';
 import { heading } from '../theme/components/heading';
+import { label } from '../theme/components/shared';
 import { split } from '../theme/components/split';
+import { timeline } from '../theme/components/timeline';
 import { scalePx } from '../theme/scale';
 import { type TypeRole, typeRole } from '../theme/type_role';
 
@@ -27,6 +30,8 @@ import {
   sizeForLines,
   sizeForLoad,
   sizeForWidthLoad,
+  sizeForWords,
+  styledText,
   widestWord,
   wrappedLines,
 } from './size';
@@ -107,6 +112,33 @@ describe('sizeForLines', () => {
     expect(widestWord(`iiiiiiiiii ${wide}`, tracking)).toBe(
       emWidth(wide, tracking)
     );
+  });
+});
+
+describe('sizeForWords', () => {
+  const role = { ...type.body, size: steps.l };
+  const at = (text: string, step: 'l' | 'm') =>
+    measureText(text, { ...role, size: steps[step] }).widest;
+
+  it('takes the largest step at which no word is wider than the width', () => {
+    const text = 'iii WWWW';
+    expect(sizeForWords(text, role, steps, at('WWWW', 'l'))).toBe('l');
+    expect(sizeForWords(text, role, steps, at('WWWW', 'l') - 1)).toBe('m');
+    expect(sizeForWords(text, role, steps, at('WWWW', 'm') - 1)).toBe('s');
+  });
+
+  it('holds the whole text to the width under `nowrap`', () => {
+    const nowrap = { ...role, whiteSpace: font.whiteSpace.nowrap };
+    const width = at('Quarter', 'l') + 1;
+    expect(sizeForWords('First Quarter', role, steps, width)).toBe('l');
+    expect(sizeForWords('First Quarter', nowrap, steps, width)).toBe('s');
+  });
+});
+
+describe('styledText', () => {
+  it('sets text in its role’s transform, as every surface prints it', () => {
+    expect(styledText('Straße', label)).toBe('STRASSE');
+    expect(styledText('Straße', type.body)).toBe('Straße');
   });
 });
 
@@ -240,6 +272,14 @@ describe('measureText against takumi', () => {
     ],
     ['collapsed line breaks', 'alpha\n\n\nbeta      gamma', type.body, 1000],
     ['mono', 'const total = sum(lines);', type.mono, 1000],
+    ['a timeline label', 'First Quarter', timeline.label, 300],
+    ['a timeline channel or roadmap status', 'Straße', label, 1000],
+    [
+      'a graph caption',
+      'Checkout reads the cart and writes the ledger before settlement.',
+      graph.caption,
+      400,
+    ],
     [
       'a no-wrap phrase',
       'a long phrase',

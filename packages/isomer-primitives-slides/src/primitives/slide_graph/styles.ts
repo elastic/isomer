@@ -51,9 +51,6 @@ export const graphModule = createStyleModule('graph', ({ css }) => ({
       grid-column-end: span ${countOf(span)};
     `
   ),
-  columnRest: css`
-    grid-column-end: -1;
-  `,
   nodeSize: variants(
     slideSizes,
     (size) => css`

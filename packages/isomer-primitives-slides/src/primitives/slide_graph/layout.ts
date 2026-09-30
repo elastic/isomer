@@ -50,3 +50,14 @@ export const graphLayout = (node: SlideGraphNode): GraphLayout => {
     below: branch(node, main, 'below'),
   };
 };
+
+/** The first and last main-row node the caption spans: beside the upper node, or the whole row with none. */
+export const captionNodes = ({
+  main,
+  above,
+}: GraphLayout): readonly [number, number] =>
+  above === undefined
+    ? [0, main.length - 1]
+    : above.at === 0
+      ? [1, main.length - 1]
+      : [0, above.at - 1];

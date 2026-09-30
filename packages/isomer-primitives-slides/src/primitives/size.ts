@@ -210,6 +210,10 @@ const faceOf = ({ family, weight }: TypeRole): ((glyph: string) => number) =>
       ? displayAdvance
       : (glyph) => displayColumns(glyph) * regularAdvance;
 
+/** `text` as `role` transforms it. */
+export const styledText = (text: string, { transform }: TypeRole): string =>
+  transform?.value === 'uppercase' ? text.toUpperCase() : text;
+
 /**
  * `text` as `role` sets it across `width` pixels: transformed, whitespace collapsed, wrapped at spaces, and a word wider than a line broken between glyphs (`overflow-wrap: anywhere`); `nowrap` keeps one line.
  * Pass the role at the step drawn, and marks already stripped.
@@ -226,10 +230,8 @@ export const measureText = (
     const em = advance(glyph);
     return em === 0 ? 0 : (em + tracking) * fontPx;
   };
-  const shown =
-    role.transform?.value === 'uppercase' ? text.toUpperCase() : text;
   return measureWords(
-    words(shown).map((word) => [...word].map(glyphPx)),
+    words(styledText(text, role)).map((word) => [...word].map(glyphPx)),
     glyphPx(' '),
     role.whiteSpace?.value === 'nowrap' ? Infinity : width
   );
@@ -295,3 +297,17 @@ export const sizeForLines = (
     );
   }) ??
   's';
+
+/** The largest step at which `role`, sized from `sizes`, sets no word of `text` wider than `width`; under `nowrap`, the whole text. */
+export const sizeForWords = (
+  text: string,
+  role: TypeRole,
+  sizes: Readonly<Record<SlideSize, ScaleToken>>,
+  width: number
+): SlideSize =>
+  slideSizes.find((step) => {
+    const at = { ...role, size: sizes[step] };
+    return (at.whiteSpace?.value === 'nowrap' ? [text] : words(text)).every(
+      (word) => measureText(word, at).widest <= width
+    );
+  }) ?? 's';

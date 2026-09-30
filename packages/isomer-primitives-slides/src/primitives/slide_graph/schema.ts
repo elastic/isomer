@@ -80,91 +80,104 @@ export const schema = z
   })
   .strict()
   .check(
-    crossSuperRefine(({ nodes, edges }, ctx) => {
-      if (nodes.length > maxNodes || edges.length > maxEdges) {
-        return;
-      }
-      const fail = (message: string, path: PropertyKey[]) =>
-        ctx.addIssue({
-          code: 'custom',
-          message: `${message}. ${slideGraphShape}.`,
-          path,
+    crossSuperRefine(
+      ({ nodes, edges }, ctx) => {
+        if (nodes.length > maxNodes || edges.length > maxEdges) {
+          return;
+        }
+        const fail = (message: string, path: PropertyKey[]) =>
+          ctx.addIssue({
+            code: 'custom',
+            message: `${message}. ${slideGraphShape}.`,
+            path,
+          });
+
+        const ids = new Set<string>();
+        nodes.forEach(({ id }, index) => {
+          if (ids.has(id)) {
+            fail(`duplicate node id "${id}"`, ['nodes', index, 'id']);
+          }
+          ids.add(id);
         });
 
-      const ids = new Set<string>();
-      nodes.forEach(({ id }, index) => {
-        if (ids.has(id)) {
-          fail(`duplicate node id "${id}"`, ['nodes', index, 'id']);
-        }
-        ids.add(id);
-      });
-
-      nodes
-        .map(({ emphasis }, index) => ({ emphasis, index }))
-        .filter(({ emphasis }) => emphasis === true)
-        .slice(1)
-        .forEach(({ index }) =>
-          fail('more than one node is emphasized', ['nodes', index, 'emphasis'])
-        );
-
-      const main = nodes.filter(({ placement }) => placement === undefined);
-      if (main.length < 2 || main.length > graphMaxMain) {
-        fail(`the main row has ${main.length} nodes`, ['nodes']);
-      }
-      for (const side of slideGraphPlacements) {
-        if (nodes.filter(({ placement }) => placement === side).length > 1) {
-          fail(`more than one node is placed ${side}`, ['nodes']);
-        }
-      }
-
-      const mainIds = main.map(({ id }) => id);
-      const links = mainIds.flatMap((from, index) => {
-        const to = mainIds[index + 1];
-        return to === undefined ? [] : [[from, to] as const];
-      });
-      const chain = new Set(links.map(([from, to]) => edgeKey(from, to)));
-      const seen = new Set<string>();
-      const attached = new Map<string, number>();
-      edges.forEach(([from, to], index) => {
-        const path = ['edges', index];
-        const unknown = [from, to].find((id) => !ids.has(id));
-        if (unknown !== undefined) {
-          fail(`edge [${from}, ${to}] names unknown node "${unknown}"`, path);
-          return;
-        }
-        const key = edgeKey(from, to);
-        if (seen.has(key)) {
-          fail(`edge [${from}, ${to}] is repeated`, path);
-          return;
-        }
-        seen.add(key);
-        if (chain.has(key)) {
-          return;
-        }
-        const [offRow, ...rest] = [from, to].filter(
-          (id) => !mainIds.includes(id)
-        );
-        if (offRow === undefined || rest.length > 0) {
-          fail(`edge [${from}, ${to}] does not fit the layout`, path);
-          return;
-        }
-        attached.set(offRow, (attached.get(offRow) ?? 0) + 1);
-      });
-
-      links.forEach(([from, to]) => {
-        if (!seen.has(edgeKey(from, to))) {
-          fail(`missing main-row edge [${from}, ${to}]`, ['edges']);
-        }
-      });
-      nodes.forEach(({ id, placement }, index) => {
-        if (placement !== undefined && attached.get(id) !== 1) {
-          fail(
-            `the ${placement} node "${id}" needs exactly one edge to a main-row node`,
-            ['nodes', index]
+        nodes
+          .map(({ emphasis }, index) => ({ emphasis, index }))
+          .filter(({ emphasis }) => emphasis === true)
+          .slice(1)
+          .forEach(({ index }) =>
+            fail('more than one node is emphasized', [
+              'nodes',
+              index,
+              'emphasis',
+            ])
           );
+
+        const main = nodes.filter(({ placement }) => placement === undefined);
+        if (main.length < 2 || main.length > graphMaxMain) {
+          fail(`the main row has ${main.length} nodes`, ['nodes']);
         }
-      });
-    })
+        for (const side of slideGraphPlacements) {
+          if (nodes.filter(({ placement }) => placement === side).length > 1) {
+            fail(`more than one node is placed ${side}`, ['nodes']);
+          }
+        }
+
+        const mainIds = main.map(({ id }) => id);
+        const links = mainIds.flatMap((from, index) => {
+          const to = mainIds[index + 1];
+          return to === undefined ? [] : [[from, to] as const];
+        });
+        const chain = new Set(links.map(([from, to]) => edgeKey(from, to)));
+        const seen = new Set<string>();
+        const attached = new Map<string, number>();
+        edges.forEach(([from, to], index) => {
+          const path = ['edges', index];
+          const unknown = [from, to].find((id) => !ids.has(id));
+          if (unknown !== undefined) {
+            fail(`edge [${from}, ${to}] names unknown node "${unknown}"`, path);
+            return;
+          }
+          const key = edgeKey(from, to);
+          if (seen.has(key)) {
+            fail(`edge [${from}, ${to}] is repeated`, path);
+            return;
+          }
+          seen.add(key);
+          if (chain.has(key)) {
+            return;
+          }
+          const [offRow, ...rest] = [from, to].filter(
+            (id) => !mainIds.includes(id)
+          );
+          if (offRow === undefined || rest.length > 0) {
+            fail(`edge [${from}, ${to}] does not fit the layout`, path);
+            return;
+          }
+          attached.set(offRow, (attached.get(offRow) ?? 0) + 1);
+        });
+
+        links.forEach(([from, to]) => {
+          if (!seen.has(edgeKey(from, to))) {
+            fail(`missing main-row edge [${from}, ${to}]`, ['edges']);
+          }
+        });
+        nodes.forEach(({ id, placement }, index) => {
+          if (placement !== undefined && attached.get(id) !== 1) {
+            fail(
+              `the ${placement} node "${id}" needs exactly one edge to a main-row node`,
+              ['nodes', index]
+            );
+          }
+        });
+      },
+      [
+        slideGraphShape,
+        'Node ids are unique.',
+        'Every edge names a node id.',
+        'No edge repeats.',
+        'At most one node is emphasized.',
+      ]
+    )
   );
 
 export type SlideGraphTerm = z.infer<typeof nodeSchema>;

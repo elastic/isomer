@@ -7,20 +7,20 @@
 
 import type { SlideRenderContext } from '../../render/context';
 import { stripMarks } from '../../render/marks';
-import { displayColumns } from '../../render/mono';
 import { graph, graphFit } from '../../theme/components/graph';
 import { tone } from '../../theme/components/shared';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
 import { slideLayout } from '../layout';
 import {
-  sizeForLines,
   sizeForWidthLoad,
+  sizeForWords,
   smallerStep,
+  textColumns,
   trackWidth,
 } from '../size';
 
-import { graphLayout } from './layout';
+import { captionNodes, type GraphLayout, graphLayout } from './layout';
 import type { SlideGraphNode } from './schema';
 
 export const graphLoad = (node: SlideGraphNode): number => {
@@ -28,56 +28,66 @@ export const graphLoad = (node: SlideGraphNode): number => {
   const rows = [main, above, below].filter((row) => row !== undefined).length;
   const longest = Math.max(
     ...node.nodes.map(
-      ({ term, body }) =>
-        displayColumns(term) + displayColumns(stripMarks(body))
+      ({ term, body }) => textColumns(term) + textColumns(stripMarks(body))
     )
   );
   return (
-    rows * longest +
-    (node.caption ? displayColumns(stripMarks(node.caption)) : 0)
+    rows * longest + (node.caption ? textColumns(stripMarks(node.caption)) : 0)
   );
 };
 
 const cueWidth = scalePx(tone.cue.size) + scalePx(tone.cue.gap);
 
-/** The largest step at which no word of a term or body is wider than its node. */
+const nodeTrack = ({ main }: GraphLayout, width: number): number =>
+  trackWidth(
+    width,
+    main.map(() => 1),
+    graph.track
+  );
+
+/** The width the caption is set in across a layout `width` wide: the tracks it spans, up to its measure. */
+export const graphCaptionWidth = (
+  node: SlideGraphNode,
+  width: number
+): number => {
+  const layout = graphLayout(node);
+  const [first, last] = captionNodes(layout);
+  const spanned = last - first + 1;
+  return Math.min(
+    spanned * nodeTrack(layout, width) + (spanned - 1) * scalePx(graph.track),
+    scalePx(graph.captionMaxWidth)
+  );
+};
+
+/** The largest step at which no word of a term, body, or the caption is wider than its node or span. */
 export const graphWordStep = (
   node: SlideGraphNode,
   width: number
 ): SlideSize => {
-  const { main } = graphLayout(node);
   const inner =
-    trackWidth(
-      width,
-      main.map(() => 1),
-      graph.track
-    ) -
+    nodeTrack(graphLayout(node), width) -
     2 * (scalePx(graph.node.paddingX.l) + scalePx(graph.node.emphasisBorder));
-  return node.nodes.reduce<SlideSize>(
-    (step, { term, body, emphasis }) =>
-      smallerStep(
-        step,
-        smallerStep(
-          sizeForLines(
-            undefined,
-            term,
-            graph.term.tracking,
-            inner - (emphasis ? cueWidth : 0),
-            graph.termSizes,
-            Infinity
-          ),
-          sizeForLines(
-            undefined,
-            stripMarks(body),
-            graph.body.tracking,
-            inner,
-            graph.bodySizes,
-            Infinity
-          )
-        )
+  return [
+    ...node.nodes.flatMap(({ term, body, emphasis }) => [
+      sizeForWords(
+        term,
+        graph.term,
+        graph.termSizes,
+        inner - (emphasis ? cueWidth : 0)
       ),
-    'l'
-  );
+      sizeForWords(stripMarks(body), graph.body, graph.bodySizes, inner),
+    ]),
+    ...(node.caption
+      ? [
+          sizeForWords(
+            stripMarks(node.caption),
+            graph.caption,
+            graph.captionSizes,
+            graphCaptionWidth(node, width)
+          ),
+        ]
+      : []),
+  ].reduce(smallerStep, 'l');
 };
 
 export const graphStep = (

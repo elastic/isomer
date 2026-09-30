@@ -5,7 +5,10 @@
  * 2.0.
  */
 
-import { createTakumiImageBackend } from '@elastic/isomer-image-takumi';
+import {
+  createTakumiImageBackend,
+  type LayoutBox,
+} from '@elastic/isomer-image-takumi';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import {
   checkLayout,
@@ -21,6 +24,9 @@ import { referenceHeading, renderedStep } from '../primitives/size.fixtures';
 import { longExample as agendaExample } from '../primitives/slide_agenda/examples';
 import { fullExample as definitionsExample } from '../primitives/slide_definitions/examples';
 import { wideExample as fanoutExample } from '../primitives/slide_fanout/examples';
+import { examples as graphExamples } from '../primitives/slide_graph/examples';
+import { graphCaptionWidth } from '../primitives/slide_graph/fit';
+import type { SlideGraphNode } from '../primitives/slide_graph/schema';
 import {
   example as headingExample,
   tallestExample,
@@ -203,6 +209,31 @@ describe('a picked size fits wherever the smallest does', () => {
     if (await fitsBody(place({ ...node, size: 's' } as PrimitiveNode))) {
       expect(await fitsBody(place(node))).toBe(true);
     }
+  });
+});
+
+describe('a graph caption is set in the width its step is measured in', () => {
+  const captionBox = (box: LayoutBox, start: string): LayoutBox | undefined =>
+    box.runs[0]?.text.startsWith(start)
+      ? box
+      : box.children
+          .map((child) => captionBox(child, start))
+          .find((found) => found !== undefined);
+
+  it.each(
+    graphExamples.filter(
+      (node): node is SlideGraphNode & { caption: string } =>
+        node.caption !== undefined
+    )
+  )('$caption', async (node) => {
+    const box = await takumi.measure(
+      runtime.surfaces.svg.render(inFrame([node]))
+    );
+    const caption = captionBox(box, node.caption.slice(0, 8));
+    expect(caption?.width).toBeCloseTo(
+      graphCaptionWidth(node, slideLayout(undefined).width),
+      0
+    );
   });
 });
 

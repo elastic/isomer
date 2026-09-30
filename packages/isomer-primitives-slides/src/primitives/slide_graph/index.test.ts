@@ -16,11 +16,11 @@ import { frameContentWidth } from '../../theme/components/frame';
 import { graph, graphFit, graphMaxMain } from '../../theme/components/graph';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
-import { widestWord } from '../size';
+import { measureText } from '../size';
 import { layoutAt, renderedStep, shortWords } from '../size.fixtures';
 
 import { example, outwardEdgesExample, pairExample } from './examples';
-import { graphLoad, graphStep, graphWordStep } from './fit';
+import { graphCaptionWidth, graphLoad, graphStep, graphWordStep } from './fit';
 import { markdown as markdownContent, slack, text } from './index';
 import { graphLayout } from './layout';
 import { schema, type SlideGraphNode } from './schema';
@@ -427,8 +427,8 @@ describe('slideGraph', () => {
       2 * (scalePx(graph.node.paddingX.l) + scalePx(graph.node.emphasisBorder));
     const layoutWidth = (step: SlideSize, over: number) =>
       2 *
-        (widestWord(word, graph.term.tracking) *
-          scalePx(graph.termSizes[step]) +
+        (measureText(word, { ...graph.term, size: graph.termSizes[step] })
+          .widest +
           over +
           inset) +
       scalePx(graph.track);
@@ -439,6 +439,45 @@ describe('slideGraph', () => {
     expect(
       graphStep({ ...node, size: 'l' }, layoutAt(1, layoutWidth('s', -1)))
     ).toBe('l');
+  });
+
+  it('measures the caption at each step in the tracks beside the upper node', () => {
+    const word = 'Reconciliation';
+    const node: SlideGraphNode = {
+      type: 'slideGraph',
+      caption: `The ${word} runs nightly.`,
+      nodes: [
+        { id: 'a', term: 'A', body: 'x' },
+        { id: 'b', term: 'B', body: 'x' },
+        { id: 'c', term: 'C', body: 'x' },
+        { id: 'd', term: 'D', body: 'x', placement: 'above' },
+      ],
+      edges: [
+        ['a', 'b'],
+        ['b', 'c'],
+        ['d', 'b'],
+      ],
+    };
+    const widest = (step: SlideSize) =>
+      measureText(word, { ...graph.caption, size: graph.captionSizes[step] })
+        .widest;
+    const track = widest('l') - 1;
+    const width = 3 * track + 2 * scalePx(graph.track);
+    expect(graphCaptionWidth(node, width)).toBeCloseTo(track);
+    expect(graphWordStep(node, width)).toBe('m');
+    expect(
+      graphWordStep(
+        {
+          ...node,
+          nodes: node.nodes.slice(0, 3),
+          edges: node.edges.slice(0, 2),
+        },
+        width
+      )
+    ).toBe('l');
+    expect(graphCaptionWidth(example, frameContentWidth)).toBe(
+      scalePx(graph.captionMaxWidth)
+    );
   });
 
   it('takes the whole body on a slide with no heading', () => {

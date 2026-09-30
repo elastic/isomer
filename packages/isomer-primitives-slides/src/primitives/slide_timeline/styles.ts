@@ -59,7 +59,6 @@ export const timelineModule = createStyleModule('timeline', ({ css }) => ({
   // The rail sits under one line of label.
   label: css`
     ${typeRole(timeline.label)}
-    white-space: nowrap;
   `,
   labelPast: css`
     color: ${color.text};

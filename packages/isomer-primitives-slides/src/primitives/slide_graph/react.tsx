@@ -18,7 +18,12 @@ import { connectorModule, layoutModule } from '../../theme/modules';
 import { countKey, type SlideSize } from '../../theme/variants';
 
 import { graphStep } from './fit';
-import { type GraphBranch, graphLayout } from './layout';
+import {
+  captionNodes,
+  type GraphBranch,
+  type GraphLayout,
+  graphLayout,
+} from './layout';
 import type { SlideGraphNode, SlideGraphTerm } from './schema';
 import { graphModule, type graphRows } from './styles';
 
@@ -127,33 +132,16 @@ const Branch = ({
 
 const Caption = ({
   caption,
-  above,
+  layout,
   step,
   context,
 }: {
   caption: string;
-  above: GraphBranch | undefined;
+  layout: GraphLayout;
   step: SlideSize;
   context: Context;
 }) => {
-  const placement =
-    above === undefined
-      ? [
-          graph.columnStart[countKey(1)],
-          graph.columnRest,
-          graph.captionAlone[step],
-        ]
-      : above.at === 0
-        ? [
-            graph.columnStart[countKey(3)],
-            graph.columnRest,
-            graph.captionBeside,
-          ]
-        : [
-            graph.columnStart[countKey(1)],
-            graph.columnSpan[countKey(nodeLine(above.at) - 2)],
-            graph.captionBeside,
-          ];
+  const [first, last] = captionNodes(layout);
   return (
     <p
       className={cls(
@@ -161,7 +149,11 @@ const Caption = ({
         graph.caption,
         graph.captionSize[step],
         graph.row.above,
-        ...placement
+        graph.columnStart[countKey(nodeLine(first))],
+        graph.columnSpan[countKey(nodeLine(last) - nodeLine(first) + 1)],
+        layout.above === undefined
+          ? graph.captionAlone[step]
+          : graph.captionBeside
       )}>
       {marksReact(caption, context)}
     </p>
@@ -174,7 +166,8 @@ export const react = (
   { context }: SlideReactEnv
 ): ReactNode => {
   const { type, caption } = node;
-  const { main, above, below } = graphLayout(node);
+  const layout = graphLayout(node);
+  const { main, above, below } = layout;
   const step = graphStep(node, context);
   return (
     <div
@@ -186,7 +179,7 @@ export const react = (
           graph.grid,
           graph.columns[countKey(main.length)]
         )}>
-        {caption ? <Caption {...{ caption, above, step, context }} /> : null}
+        {caption ? <Caption {...{ caption, layout, step, context }} /> : null}
         {above ? (
           <Branch branch={above} side="above" {...{ main, step, context }} />
         ) : null}

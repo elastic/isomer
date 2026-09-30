@@ -15,7 +15,7 @@ import { frameContentWidth } from '../../theme/components/frame';
 import { timeline, timelineFit } from '../../theme/components/timeline';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
-import { widestWord } from '../size';
+import { measureText } from '../size';
 import { layoutAt, renderedStep, shortWords } from '../size.fixtures';
 
 import { example, fiveItemsExample, threeItemsExample } from './examples';
@@ -256,31 +256,57 @@ describe('slideTimeline', () => {
     expect(timelineLoad(fourItems(400))).toBe(400);
   });
 
-  it('steps down until its widest label word fits its column', () => {
-    const label = 'September';
-    const node: SlideTimelineNode = {
-      ...threeItemsExample,
-      items: threeItemsExample.items.map((item) => ({
-        ...item,
-        label,
-        heading: 'x',
-        body: 'y',
-      })),
-    };
-    const { length } = node.items;
-    const layoutWidth = (step: SlideSize, over: number) =>
-      length *
-        (widestWord(label, timeline.label.tracking) *
-          scalePx(timeline.labelSizes[step]) +
-          over) +
-      scalePx(timeline.gap) * (length - 1);
-    expect(timelineWordStep(node, layoutWidth('l', 1))).toBe('l');
-    expect(timelineWordStep(node, layoutWidth('l', -1))).toBe('m');
-    expect(timelineWordStep(node, layoutWidth('m', -1))).toBe('s');
-    expect(timelineStep(node, layoutAt(1, layoutWidth('m', -1)))).toBe('s');
-    expect(
-      timelineStep({ ...node, size: 'l' }, layoutAt(1, layoutWidth('s', -1)))
-    ).toBe('l');
+  it('loads a channel as it prints, uppercase', () => {
+    const withChannel = (channel: string) => ({
+      ...fourItems(400),
+      items: fourItems(400).items.map((item) => ({ ...item, channel })),
+    });
+    expect(timelineLoad(withChannel('ßßßß'))).toBe(
+      timelineLoad(withChannel('SSSSSSSS'))
+    );
+  });
+
+  const labelled = (label: string): SlideTimelineNode => ({
+    ...threeItemsExample,
+    items: threeItemsExample.items.map((item) => ({
+      ...item,
+      label,
+      heading: 'x',
+      body: 'y',
+    })),
+  });
+
+  /** A layout whose columns are `over` px wider than `text` set as a label at `step`. */
+  const layoutWidth = (text: string, step: SlideSize, over: number) => {
+    const { length } = threeItemsExample.items;
+    const { widest } = measureText(text, {
+      ...timeline.label,
+      size: timeline.labelSizes[step],
+    });
+    return length * (widest + over) + scalePx(timeline.gap) * (length - 1);
+  };
+
+  it('steps down until its label fits its column', () => {
+    const node = labelled('September');
+    const at = (step: SlideSize, over: number) =>
+      layoutWidth('September', step, over);
+    expect(timelineWordStep(node, at('l', 1))).toBe('l');
+    expect(timelineWordStep(node, at('l', -1))).toBe('m');
+    expect(timelineWordStep(node, at('m', -1))).toBe('s');
+    expect(timelineStep(node, layoutAt(1, at('m', -1)))).toBe('s');
+    expect(timelineStep({ ...node, size: 'l' }, layoutAt(1, at('s', -1)))).toBe(
+      'l'
+    );
+  });
+
+  it('measures a label whole, on the one line it is set on', () => {
+    const node = labelled('First Quarter');
+    const width = layoutWidth('Quarter', 'l', 1);
+    expect(timelineWordStep(labelled('Quarter'), width)).toBe('l');
+    expect(timelineWordStep(node, width)).toBe('s');
+    expect(timelineWordStep(node, layoutWidth('First Quarter', 'm', 1))).toBe(
+      'm'
+    );
   });
 
   it('takes the whole body on a slide with no heading', () => {

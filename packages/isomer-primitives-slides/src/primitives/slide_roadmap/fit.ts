@@ -5,15 +5,20 @@
  * 2.0.
  */
 
-import type { ScaleToken } from '@elastic/distillate';
-
 import type { SlideRenderContext } from '../../render/context';
 import { stripMarks } from '../../render/marks';
 import { roadmap, roadmapFit } from '../../theme/components/roadmap';
+import { label } from '../../theme/components/shared';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
 import { slideLayout } from '../layout';
-import { rowLoad, sizeForLines, sizeForWidthLoad, smallerStep } from '../size';
+import {
+  rowLoad,
+  sizeForWidthLoad,
+  sizeForWords,
+  smallerStep,
+  styledText,
+} from '../size';
 
 import type { SlideRoadmapNode } from './schema';
 
@@ -21,7 +26,7 @@ export const roadmapLoad = ({ columns }: SlideRoadmapNode): number =>
   rowLoad(
     columns.map(({ title, status, items }) => [
       title,
-      status,
+      styledText(status, label),
       ...items.flatMap((item) => [item.title, item.body].map(stripMarks)),
     ])
   );
@@ -36,25 +41,22 @@ export const roadmapWordStep = (
   width: number
 ): SlideSize => {
   const column = Math.max(0, width - gutters(node)) / node.columns.length;
-  const fits = (
-    text: string,
-    tracking: ScaleToken,
-    sizes: Readonly<Record<SlideSize, ScaleToken>>
-  ) => sizeForLines(undefined, text, tracking, column, sizes, Infinity);
   return node.columns.reduce<SlideSize>(
     (step, { title, items }) =>
       [
-        fits(title, roadmap.title.tracking, roadmap.titleSizes),
+        sizeForWords(title, roadmap.title, roadmap.titleSizes, column),
         ...items.flatMap((item) => [
-          fits(
+          sizeForWords(
             stripMarks(item.title),
-            roadmap.itemTitle.tracking,
-            roadmap.itemTitleSizes
+            roadmap.itemTitle,
+            roadmap.itemTitleSizes,
+            column
           ),
-          fits(
+          sizeForWords(
             stripMarks(item.body),
-            roadmap.itemBody.tracking,
-            roadmap.itemBodySizes
+            roadmap.itemBody,
+            roadmap.itemBodySizes,
+            column
           ),
         ]),
       ].reduce(smallerStep, step),

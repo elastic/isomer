@@ -15,7 +15,7 @@ import { frameContentWidth } from '../../theme/components/frame';
 import { roadmap, roadmapFit } from '../../theme/components/roadmap';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
-import { widestWord } from '../size';
+import { measureText } from '../size';
 import { layoutAt, renderedStep, shortWords } from '../size.fixtures';
 
 import { example, fullExample, twoColumnsExample } from './examples';
@@ -268,6 +268,16 @@ describe('slideRoadmap', () => {
     expect(roadmapLoad(twoColumns(400))).toBe(400);
   });
 
+  it('loads a status as it prints, uppercase', () => {
+    const withStatus = (status: string) => ({
+      ...twoColumns(400),
+      columns: twoColumns(400).columns.map((column) => ({ ...column, status })),
+    });
+    expect(roadmapLoad(withStatus('ßßßß'))).toBe(
+      roadmapLoad(withStatus('SSSSSSSS'))
+    );
+  });
+
   it('steps down until its widest horizon word fits its column', () => {
     const title = 'Afterwards';
     const node: SlideRoadmapNode = {
@@ -281,8 +291,10 @@ describe('slideRoadmap', () => {
     const gutter = 2 * scalePx(roadmap.columnPadding) + scalePx(roadmap.rule);
     const layoutWidth = (step: SlideSize, over: number) =>
       2 *
-        (widestWord(title, roadmap.title.tracking) *
-          scalePx(roadmap.titleSizes[step]) +
+        (measureText(title, {
+          ...roadmap.title,
+          size: roadmap.titleSizes[step],
+        }).widest +
           over) +
       gutter;
     expect(roadmapWordStep(node, layoutWidth('l', 1))).toBe('l');

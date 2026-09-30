@@ -58,7 +58,11 @@ export const schema = z
       ({ items }) =>
         items.length > maxItems ||
         items.filter(({ current }) => current).length <= 1,
-      { error: 'at most one item can be current', path: ['items'] }
+      {
+        error: 'at most one item can be current',
+        path: ['items'],
+        rule: 'At most one item is current.',
+      }
     )
   );
 

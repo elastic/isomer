@@ -37,6 +37,7 @@ export const timeline = {
     weight: font.weight.extrabold,
     tracking: font.tracking.heading,
     lineHeight: font.lineHeight.solid,
+    whiteSpace: font.whiteSpace.nowrap,
   },
   dotSize,
   dotGap,

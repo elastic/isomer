@@ -7,69 +7,65 @@
 
 import type { SlideRenderContext } from '../../render/context';
 import { stripMarks } from '../../render/marks';
-import { font } from '../../theme/base';
+import { label as labelRole } from '../../theme/components/shared';
 import { timeline, timelineFit } from '../../theme/components/timeline';
 import { scalePx } from '../../theme/scale';
 import { countKeys, type SlideSize } from '../../theme/variants';
 import { slideLayout } from '../layout';
 import {
   lineFill,
+  measureText,
   rowLoad,
-  sizeForLines,
   sizeForWidthLoad,
+  sizeForWords,
   smallerStep,
+  styledText,
   trackWidth,
-  wrappedLines,
 } from '../size';
 
 import type { SlideTimelineNode } from './schema';
+
+const quoted = (heading: string): string =>
+  `${timeline.quoteOpen.value}${stripMarks(heading)}${timeline.quoteClose.value}`;
+
+const columnWidth = (count: number, width: number): number =>
+  trackWidth(
+    width,
+    Array.from({ length: count }, () => 1),
+    timeline.gap
+  );
 
 export const timelineLoad = ({ items }: SlideTimelineNode): number =>
   rowLoad(
     items.map(({ label, channel, heading, body }) => [
       label,
-      channel,
+      styledText(channel, labelRole),
       stripMarks(heading),
       stripMarks(body),
     ])
   );
 
-/** The largest step at which no word of a label, heading, or body is wider than its column. */
+/** The largest step at which no label, and no word of a heading or body, is wider than its column. */
 export const timelineWordStep = (
   { items }: SlideTimelineNode,
   width: number
 ): SlideSize => {
-  const column = trackWidth(
-    width,
-    items.map(() => 1),
-    timeline.gap
-  );
+  const column = columnWidth(items.length, width);
   return items.reduce<SlideSize>(
     (step, { label, heading, body }) =>
       [
-        sizeForLines(
-          undefined,
-          label,
-          timeline.label.tracking,
-          column,
-          timeline.labelSizes,
-          Infinity
-        ),
-        sizeForLines(
-          undefined,
-          `${timeline.quoteOpen.value}${stripMarks(heading)}${timeline.quoteClose.value}`,
-          font.tracking.none,
-          column,
+        sizeForWords(label, timeline.label, timeline.labelSizes, column),
+        sizeForWords(
+          quoted(heading),
+          timeline.heading,
           timeline.headingSizes,
-          Infinity
+          column
         ),
-        sizeForLines(
-          undefined,
+        sizeForWords(
           stripMarks(body),
-          timeline.body.tracking,
-          column,
+          timeline.body,
           timeline.bodySizes,
-          Infinity
+          column
         ),
       ].reduce(smallerStep, step),
     'l'
@@ -105,18 +101,16 @@ export const timelineHeadingLineCount = (
   step: SlideSize,
   context?: SlideRenderContext
 ): number => {
-  const width = trackWidth(
-    slideLayout(context).width,
-    headings.map(() => 1),
-    timeline.gap
-  );
+  const width = columnWidth(headings.length, slideLayout(context).width);
   const lines = Math.max(
     ...headings.map((heading) =>
-      wrappedLines(
-        `${timeline.quoteOpen.value}${stripMarks(heading)}${timeline.quoteClose.value}`,
-        scalePx(timeline.headingSizes[step]),
-        width * lineFill,
-        font.tracking.none
+      Math.max(
+        1,
+        measureText(
+          quoted(heading),
+          { ...timeline.heading, size: timeline.headingSizes[step] },
+          width * lineFill
+        ).lines
       )
     )
   );

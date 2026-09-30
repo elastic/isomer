@@ -70,7 +70,11 @@ export const schema = z
       ({ columns }) =>
         columns.length > maxColumns ||
         columns.filter(({ current }) => current).length <= 1,
-      { error: 'at most one column can be current', path: ['columns'] }
+      {
+        error: 'at most one column can be current',
+        path: ['columns'],
+        rule: 'At most one column is current.',
+      }
     )
   );
 
