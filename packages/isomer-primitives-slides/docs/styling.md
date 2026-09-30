@@ -69,4 +69,4 @@ A browser resolves `Inter` and `Roboto Mono` from the page; an image backend res
 
 `@fontsource/inter` and `@fontsource/roboto-mono` ship woff2, which takumi decodes natively, so no conversion step is needed. Roboto Mono stops at 700, which is why its faces do. A loader drops a weight the family does not ship rather than substituting one.
 
-The image draws no glyph outside those two families: the `check` bullet marker is drawn from borders, and `x` is `×`, which Inter covers. `✓` appears only in text, Markdown, and Slack.
+The image draws no glyph outside those two families: the `check` bullet marker and the tone cue are drawn from boxes and borders, and `x` is `×`, which Inter covers. `✓`, `●`, and `○` appear only in text, Markdown, and Slack.

@@ -94,16 +94,26 @@ export const marksSlack = (text: string): string =>
     )
     .join('');
 
+export const richTextRun = (
+  text: string,
+  style?: SlackRichTextText['style']
+): SlackRichTextText => ({
+  type: 'text',
+  text: oneLine(text),
+  ...(style ? { style } : {}),
+});
+
 export const marksRichText = (text: string): SlackRichTextText[] =>
-  parseMarks(text).map(({ kind, text: run }) => ({
-    type: 'text',
-    text: oneLine(run),
-    ...(kind === 'code'
-      ? { style: { code: true } }
-      : kind === 'strong'
-        ? { style: { bold: true } }
-        : {}),
-  }));
+  parseMarks(text).map(({ kind, text: run }) =>
+    richTextRun(
+      run,
+      kind === 'code'
+        ? { code: true }
+        : kind === 'strong'
+          ? { bold: true }
+          : undefined
+    )
+  );
 
 export const marksMarkdown = (text: string): MarkdownInline[] =>
   parseMarks(text).map(({ kind, text: run }) =>
@@ -115,7 +125,7 @@ export const marksMarkdown = (text: string): MarkdownInline[] =>
   );
 
 /**
- * Strong is ink at bold weight, or `primary` at the run's weight when `strong` is `'primary'`.
+ * Strong is ink at bold weight, or underlined `primary` at the run's weight when `strong` is `'primary'`.
  * Then code is mono without its chip.
  */
 export const marksReact = (

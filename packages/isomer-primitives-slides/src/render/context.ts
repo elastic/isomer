@@ -14,13 +14,16 @@ import type {
 
 import type { SlideFrameTheme } from '../theme/palette';
 
+/** The box a container gives the nodes it renders, in pixels, after what it draws around them. */
+export interface SlideLayout {
+  readonly width: number;
+  readonly height: number;
+}
+
 /** Render context the pack's Distillate HTML adapter fills; `resolveClassName` is absent when no adapter runs. */
 export interface SlideRenderContext extends StyledRenderContext {
-  /**
-   * How much less room the heading leaves than a two-line title and lede; above 1 is tighter.
-   * Absent means 1.
-   */
-  crowding?: number;
+  /** Set by every container for its children. Absent means a frame's body with nothing above it. */
+  layout?: SlideLayout;
   /** `false` when the frame leaves the mark out, so nothing inside draws it. */
   logo?: boolean;
 }

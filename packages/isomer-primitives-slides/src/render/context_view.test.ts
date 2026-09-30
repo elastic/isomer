@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { withContextFields } from './context_view';
 
 class Context {
-  crowding?: number;
+  layout?: { width: number };
   logo?: boolean;
   readonly #name = 'context';
 
@@ -30,10 +30,10 @@ describe('withContextFields', () => {
   it('layers views and keeps the fields when spread', () => {
     const view = withContextFields(
       withContextFields(new Context(), { logo: false }),
-      { crowding: 2 }
+      { layout: { width: 2 } }
     );
     expect(view.describe()).toBe('context');
-    expect({ ...view }).toEqual({ logo: false, crowding: 2 });
+    expect({ ...view }).toEqual({ logo: false, layout: { width: 2 } });
   });
 
   it('works on a frozen context and leaves it untouched', () => {

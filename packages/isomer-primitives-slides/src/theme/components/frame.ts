@@ -5,9 +5,7 @@
  * 2.0.
  */
 
-import type { ScaleToken } from '@elastic/distillate';
-
-import { extraboldAdvance, font, space } from '../base';
+import { font, space } from '../base';
 import { px, scalePx } from '../scale';
 
 import { glyph } from './shared';
@@ -31,34 +29,7 @@ export const frame = {
 export const frameContentWidth =
   scalePx(frame.width) - 2 * scalePx(frame.paddingX);
 
-/** Width of column `index` in a row of `shares` fr tracks separated by `gap`. */
-export const columnWidth = (
-  shares: readonly number[],
-  gap: ScaleToken,
-  index = 0
-): number => {
-  const total = shares.reduce((sum, share) => sum + share, 0);
-  const free = frameContentWidth - scalePx(gap) * (shares.length - 1);
-  return (free * (shares[index] ?? 0)) / total;
-};
-
-const smallestType = Math.min(...Object.values(font.size).map(scalePx));
-
-/** Characters of the smallest, narrowest type one full-width line holds; no one-line field draws more. */
-export const frameLineCharacters = Math.floor(
-  frameContentWidth /
-    (Math.min(...Object.values(extraboldAdvance)) * smallestType)
-);
-
-/** Characters the body holds in the smallest type at the tightest leading; no field draws more. */
-export const frameBodyCharacters =
-  frameLineCharacters *
-  Math.floor(
-    (scalePx(frame.height) -
-      scalePx(frame.paddingTop) -
-      scalePx(frame.paddingBottom)) /
-      (smallestType *
-        Math.min(
-          ...Object.values(font.lineHeight).map(({ value }) => Number(value))
-        ))
-  );
+export const frameBodyHeight =
+  scalePx(frame.height) -
+  scalePx(frame.paddingTop) -
+  scalePx(frame.paddingBottom);

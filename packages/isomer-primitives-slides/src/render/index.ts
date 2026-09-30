@@ -13,8 +13,23 @@ export {
 } from './children';
 export { cls } from './cls';
 export type {
+  SlideLayout,
   SlidePackTypes,
   SlideReactEnv,
   SlideRenderContext,
   SlideRenderScope,
 } from './context';
+export {
+  fitsSlack,
+  richTextBreak,
+  richTextLinked,
+  richTextSection,
+  slackBold,
+  slackContext,
+  slackFields,
+  slackHeading,
+  slackMarksContext,
+  slackMarksSection,
+  slackRichText,
+  slackSection,
+} from './slack_text';

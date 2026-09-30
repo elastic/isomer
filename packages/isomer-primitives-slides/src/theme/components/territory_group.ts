@@ -6,6 +6,7 @@
  */
 
 import { space, stroke, type } from '../base';
+import { literal } from '../scale';
 
 export const territoryGroup = {
   gap: space.px64,
@@ -13,4 +14,6 @@ export const territoryGroup = {
   paddingLeft: space.px32,
   titleGap: space.px16,
   body: type.bodyL,
+  /** What assistive technology announces for each tone's cue. */
+  toneLabel: { primary: literal('Yours'), accent: literal('Another party') },
 } as const;

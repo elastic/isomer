@@ -24,8 +24,24 @@ export const connector = {
   label: literal('leads to'),
 } as const;
 
+/** A toned title's non-color cue: a filled dot for `primary`, a ring for `accent`. */
+export const tone = {
+  cue: { size: space.px14, gap: space.px12, ring: stroke.rail },
+  /** Text, Markdown, and Slack only; the image draws the cue from its box. */
+  glyph: { primary: literal('●'), accent: literal('○') },
+  /** What assistive technology announces for the cue, unless a primitive names its tones itself. */
+  label: { primary: literal('Primary'), accent: literal('Accent') },
+} as const;
+
+/** Marks a link by more than its color. */
+export const link = {
+  decoration: literal('underline'),
+} as const;
+
 export const glyph = {
   arrow: literal('→'),
   separator: literal('·'),
   dash: literal('—'),
+  /** Between a term and what is said of it, in text, Markdown, and Slack. */
+  termJoiner: literal(': '),
 } as const;

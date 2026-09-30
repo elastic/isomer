@@ -5,13 +5,13 @@
  * 2.0.
  */
 
-import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
-import { formatHeaderText, type SlackBlock } from '@elastic/isomer-sdk/slack';
+import { type SlackBlock } from '@elastic/isomer-sdk/slack';
 
+import { slackHeading, slackMarksSection } from '../../render';
 import {
   marksMarkdown,
-  marksSlack,
+  marksRichText,
   plainText,
   stripMarks,
 } from '../../render/marks';
@@ -35,22 +35,8 @@ export const markdown = ({ title, lede }: SlideHeadingNode) => [
 ];
 
 export const slack = ({ title, lede }: SlideHeadingNode): SlackBlock[] => [
-  {
-    type: 'header',
-    text: {
-      type: 'plain_text',
-      text: formatHeaderText(stripMarks(title)),
-      emoji: true,
-    },
-  },
-  ...(lede
-    ? [
-        {
-          type: 'section',
-          text: { type: 'mrkdwn', text: oneLine(marksSlack(lede)) },
-        } satisfies SlackBlock,
-      ]
-    : []),
+  slackHeading(stripMarks(title), marksRichText(title)),
+  ...(lede ? [slackMarksSection(lede)] : []),
 ];
 
 /** Catalog, schema, and renderers for {@link SlideHeadingNode}. */
