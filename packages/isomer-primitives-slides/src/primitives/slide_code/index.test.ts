@@ -22,6 +22,7 @@ import {
   codeMaxLines,
 } from '../../theme/components/code';
 import { slideDistillery } from '../../theme/distillery';
+import { authoredTextMaxLength } from '../authored_text';
 
 import {
   denseExample,
@@ -161,12 +162,26 @@ describe('slideCode line width', () => {
     expect(errorPaths(panel(['e\u0301'.repeat(one)]))).toEqual([]);
   });
 
-  it('refuses a line past the input-size guard before measuring it', () => {
-    expect(errorPaths(panel(['x'.repeat(100_000)]))).toContainEqual(
-      expect.stringMatching(
-        /^body\[0\]\.body\[0\]\.panels\[0\]\.lines\[0\]: must be at most \d+ characters$/
-      )
-    );
+  it('measures a line at the input-size guard and refuses one past it unmeasured', () => {
+    expect(errorPaths(panel(['x'.repeat(authoredTextMaxLength)]))).toEqual([
+      widthError,
+    ]);
+    expect(
+      errorPaths(panel([`\t${'x'.repeat(authoredTextMaxLength)}`]))
+    ).toEqual([
+      `body[0].body[0].panels[0].lines[0]: must be at most ${authoredTextMaxLength} characters`,
+    ]);
+  });
+
+  it('reads no line of a panel or group past its count', () => {
+    const tabs = Array<string>(codeMaxLines + 1).fill('\tx');
+    expect(errorPaths(panel(tabs, { highlightLines: [99] }))).toEqual([
+      expect.stringMatching(/^body\[0\]\.body\[0\]\.panels\[0\]\.lines: /),
+    ]);
+    const wide = { lines: ['x'.repeat(codeLineMaxLength(1, false) + 1)] };
+    expect(
+      errorPaths({ type: 'slideCode', panels: [wide, wide, wide] })
+    ).toEqual([expect.stringMatching(/^body\[0\]\.body\[0\]\.panels: /)]);
   });
 
   it('rejects a tab, whose width depends on the renderer', () => {

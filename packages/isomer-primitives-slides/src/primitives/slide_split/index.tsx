@@ -7,7 +7,6 @@
 
 import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
-import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 import type { ZodType } from 'zod';
 
 import {
@@ -15,8 +14,9 @@ import {
   renderSlackChildren,
   renderTextChildren,
   slackCaption,
+  slackMarksSection,
 } from '../../render';
-import { marksMarkdown, marksSlack, plainText } from '../../render/marks';
+import { marksMarkdown, plainText } from '../../render/marks';
 import { toneCueText } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { contentNode, definePrimitive } from '../define';
@@ -75,14 +75,7 @@ export const slideSplitPrimitive = definePrimitive<
           : []),
         ...renderSlackChildren(items, scope, collector),
       ]),
-      ...(footnote
-        ? [
-            {
-              type: 'section',
-              text: { type: 'mrkdwn', text: oneLine(marksSlack(footnote)) },
-            } satisfies SlackBlock,
-          ]
-        : []),
+      ...(footnote ? [slackMarksSection(footnote)] : []),
     ],
   },
   children: ({ panes }) =>

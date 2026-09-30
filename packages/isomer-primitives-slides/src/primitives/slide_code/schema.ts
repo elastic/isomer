@@ -18,6 +18,13 @@ import {
 import { authoredTextMaxLength, lineText } from '../authored_text';
 import { crossRefine } from '../cross_field';
 
+/** Whether `lines` is within its count and length caps, so a check that always runs may read it. */
+const linesInBounds = (lines: readonly unknown[]): boolean =>
+  lines.length <= codeMaxLines &&
+  lines.every(
+    (line) => typeof line === 'string' && line.length <= authoredTextMaxLength
+  );
+
 const panelSchema = z
   .object({
     file: lineText()
@@ -48,21 +55,31 @@ const panelSchema = z
   })
   .strict()
   .check(
-    crossRefine(({ lines }) => !lines.some(hasLineTerminator), {
-      error: 'one line per entry: split multi-line source into separate lines',
-      path: ['lines'],
-    })
+    crossRefine(
+      ({ lines }) => !linesInBounds(lines) || !lines.some(hasLineTerminator),
+      {
+        error:
+          'one line per entry: split multi-line source into separate lines',
+        path: ['lines'],
+      }
+    )
   )
   .check(
-    crossRefine(({ lines }) => !lines.some((line) => line.includes('\t')), {
-      error: 'indent with spaces, not tabs',
-      path: ['lines'],
-    })
+    crossRefine(
+      ({ lines }) =>
+        !linesInBounds(lines) || !lines.some((line) => line.includes('\t')),
+      {
+        error: 'indent with spaces, not tabs',
+        path: ['lines'],
+      }
+    )
   )
   .check(
     crossRefine(
       ({ highlightLines, lines }) =>
         highlightLines === undefined ||
+        highlightLines.length > codeMaxLines ||
+        lines.length > codeMaxLines ||
         highlightLines.every((line) => line <= lines.length),
       {
         error: 'highlightLines must exist in lines',
@@ -95,6 +112,12 @@ export const schema = z
   .check(
     crossRefine(
       ({ panels }) => {
+        if (
+          panels.length > 2 ||
+          !panels.every(({ lines }) => linesInBounds(lines))
+        ) {
+          return true;
+        }
         const max = lineLimit(panels);
         return panels.every(({ lines }) =>
           lines.every((line) => displayColumns(line, max) <= max)

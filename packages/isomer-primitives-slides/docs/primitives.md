@@ -91,6 +91,8 @@ There is no `svg` renderer, and adding one is the mistake this pack exists to ru
 
 The `text`, `markdown`, and `slack` renderers live in `index.tsx`. A `markdown` renderer returns the SDK's `md` builder content, never a string, so the serializer escapes each value where it lands. A one-line authored value goes through the SDK's `oneLine` on the text and Slack surfaces; `src/content_parity.test.ts` fails when a line break survives on any of them. Every primitive has a `slack` renderer, and `src/registry.test.ts` fails when one does not.
 
+Slack clamps `header`, `section`, field, and `context` text well below `authoredTextMaxLength`, and leaves `rich_text` whole. Build those blocks through `src/render/slack_text.ts` (`slackHeading`, `slackSection`, `slackContext`, `slackFields`, `slackMarksSection`, `slackMarksContext`), which keep the block when it holds the whole text and fall back to rich text when it does not; `src/slack_limits.test.ts` checks each such slot at its limit and one past it.
+
 Spread `nodeAnchor(context, { type })` from `@elastic/isomer-sdk` on the renderer's root element. It renders nothing unless a host asks for anchors, and it is what `checkLayout` pairs measured boxes to nodes by.
 
 ## Children come from the schema field
@@ -160,16 +162,17 @@ A container that also draws chrome of its own sets two more. `hasOwnContent: () 
 - `useWhen` holds two or three author intents, each a situation rather than a shape.
 - Every `avoidWhen` entry names the primitive to use instead, by `type` ("The points split by who owns them; use slideTerritoryGroup."). Name only registered primitives: `src/agent_guide.test.ts` fails when the prompt, schema descriptions and examples included, names a type the pack does not register.
 - `example` uses neutral subject matter. A model copies the example's register, so an example about Isomer produces slides about Isomer.
-- Write a cross-field constraint as `.check(crossRefine(…))` from `src/primitives/cross_field.ts`, not a bare `.refine`: Zod skips a bare one once any field fails, so an author would fix one error only to meet the next. It is invisible in the JSON Schema; restate it in `src/pack_authoring.ts`.
+- Write a cross-field constraint as `.check(crossRefine(…))` from `src/primitives/cross_field.ts`, not a bare `.refine`: Zod skips a bare one once any field fails, so an author would fix one error only to meet the next. Because it runs after a size bound fails, have it pass without reading a field whose count or length is already over its cap. It is invisible in the JSON Schema; restate it in `src/pack_authoring.ts`.
 
 ## Tests
 
 Each primitive's `index.test.ts` covers its schema rejections and every surface's output. These pack-level tests run over the whole registry, so a new primitive is covered by registering it:
 
 - `src/content_parity.test.ts` checks that text, Markdown, and Slack carry every authored string of every example, reading Markdown back through `mdast-util-from-markdown` with GFM and Slack mrkdwn back to its text; that entity-like text such as `&lt;` and unpaired `` ` `` or `*` print as authored, one field at a time; and that a line break in a one-line field reads as a space on each surface.
-- `src/examples/fit.test.ts` renders every example on a slide (a frame as it is, a title slide alone, anything else under a heading and lede), measures it with takumi, and expects no finding from `checkLayout` and nothing past the frame's body. Give each primitive an example at its most content, the most items, lines, or panels its schema takes, so the test measures the worst case.
+- `src/slack_limits.test.ts` renders each Slack slot whose limit is below its schema cap at the limit and one past it, and expects the authored text whole both times.
+- `src/examples/fit.test.ts` renders every example on a slide (a frame as it is, a title slide alone, anything else under a heading and lede), measures it with takumi, and expects no finding from `checkLayout` and nothing past the frame's body. Give each primitive an example at the most items, lines, or panels its schema takes, in representative copy. That proves the most structure fits, not every schema-valid string: a string may hold far more than a slide draws, which `checkLayout` reports.
 - `src/conformance.test.ts` runs the SDK's conformance harness.
-- `src/primitives/authored_text.test.ts` fails when any string in an example accepts more than `authoredTextMaxLength`.
+- `src/primitives/authored_text.test.ts` checks that `lineText()` and `wrappedText()` take exactly `authoredTextMaxLength` and refuse one more, and that every string in every example refuses one more.
 - `src/heading_levels.test.ts` fails when an example's HTML headings and Markdown headings differ in level or order.
 
 The tests that rasterize need `@elastic/isomer-image-takumi` and `@fontsource/*` as devDependencies.
