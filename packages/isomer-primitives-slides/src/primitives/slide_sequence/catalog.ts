@@ -21,6 +21,7 @@ export const catalog = {
   avoidWhen: [
     'Each step hands off to the next and nothing comes back; use slidePipeline.',
     'Two routes converge on one step; use slideLanes.',
+    'The messages are whole turns of text between a user, a model, and a host; use slideTranscript.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

@@ -13,50 +13,70 @@
 // deriving the union from the registry: that closes it at the value level (TS7022).
 
 import type { SlideAgendaNode } from './primitives/slide_agenda';
+import type { SlideBarsNode } from './primitives/slide_bars';
 import type { SlideBulletListNode } from './primitives/slide_bullet_list';
 import type { SlideClosingNode } from './primitives/slide_closing';
 import type { SlideCodeNode } from './primitives/slide_code';
+import type { SlideCommandNode } from './primitives/slide_command';
 import type { SlideDefinitionsNode } from './primitives/slide_definitions';
+import type { SlideDeltaNode } from './primitives/slide_delta';
+import type { SlideDiffNode } from './primitives/slide_diff';
 import type { SlideFanoutNode } from './primitives/slide_fanout';
 import type { SlideFrameNode } from './primitives/slide_frame';
 import type { SlideHeadingNode } from './primitives/slide_heading';
 import type { SlideLanesNode } from './primitives/slide_lanes';
 import type { SlideLayersNode } from './primitives/slide_layers';
 import type { SlideListNode } from './primitives/slide_list';
+import type { SlideMatrixNode } from './primitives/slide_matrix';
 import type { SlidePipelineNode } from './primitives/slide_pipeline';
+import type { SlideQuadrantNode } from './primitives/slide_quadrant';
 import type { SlideQuoteNode } from './primitives/slide_quote';
 import type { SlideSectionNode } from './primitives/slide_section';
 import type { SlideSequenceNode } from './primitives/slide_sequence';
 import type { SlideSourceNode } from './primitives/slide_source';
 import type { SlideSplitNode } from './primitives/slide_split';
 import type { SlideStackNode } from './primitives/slide_stack';
+import type { SlideStatNode } from './primitives/slide_stat';
 import type { SlideStatementNode } from './primitives/slide_statement';
+import type { SlideStatsNode } from './primitives/slide_stats';
+import type { SlideTableNode } from './primitives/slide_table';
 import type { SlideTerritoryGroupNode } from './primitives/slide_territory_group';
 import type { SlideTitleNode } from './primitives/slide_title';
+import type { SlideTranscriptNode } from './primitives/slide_transcript';
 
 /** Discriminated union of every node type this pack defines. */
 export type BodyNode =
   | SlideAgendaNode
+  | SlideBarsNode
   | SlideBulletListNode
   | SlideClosingNode
   | SlideCodeNode
+  | SlideCommandNode
   | SlideDefinitionsNode
+  | SlideDeltaNode
+  | SlideDiffNode
   | SlideFanoutNode
   | SlideFrameNode
   | SlideHeadingNode
   | SlideLanesNode
   | SlideLayersNode
   | SlideListNode
+  | SlideMatrixNode
   | SlidePipelineNode
+  | SlideQuadrantNode
   | SlideQuoteNode
   | SlideSectionNode
   | SlideSequenceNode
   | SlideSourceNode
   | SlideSplitNode
   | SlideStackNode
+  | SlideStatNode
   | SlideStatementNode
+  | SlideStatsNode
+  | SlideTableNode
   | SlideTerritoryGroupNode
-  | SlideTitleNode;
+  | SlideTitleNode
+  | SlideTranscriptNode;
 
 /** A {@link BodyNode} that may nest inside a {@link SlideFrameNode}; frames cannot nest. */
 export type SlideContentNode = Exclude<BodyNode, SlideFrameNode>;

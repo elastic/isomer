@@ -15,7 +15,7 @@ import {
   codeGrowth,
   lineBox,
   lineFill,
-  markedLines,
+  measureMarks,
   measureText,
   trackWidth,
   wrappedLines,
@@ -90,7 +90,7 @@ export const lanesHeight = (
   );
   const noteHeight = ({ title, body }: { title: string; body: string }) => {
     const bodyRole = { ...notes.body, size: notes.bodySizes[step] };
-    const lines = markedLines(body, bodyRole, column * lineFill);
+    const { lines } = measureMarks(body, bodyRole, column * lineFill);
     return (
       wrappedLines(
         title,

@@ -14,7 +14,7 @@ import { slideLayout } from '../layout';
 import {
   lineBox,
   lineFill,
-  markedLines,
+  measureMarks,
   measureText,
   sizeForLoad,
 } from '../size';
@@ -64,7 +64,7 @@ export const wrapHeight = (
       apart * column -
       (apart > 1 ? scalePx(sequence.labelOffset) : 0) -
       2 * scalePx(sequence.labelInset);
-    return markedLines(label, labelRole(step), span * lineFill);
+    return measureMarks(label, labelRole(step), span * lineFill).lines;
   });
   return (
     (actorLines - 1) * lineBox(actorRole) +

@@ -15,7 +15,7 @@ import {
   codeGrowth,
   lineBox,
   lineFill,
-  markedLines,
+  measureMarks,
   measureText,
   packedLines,
   wrappedLines,
@@ -55,7 +55,7 @@ const bandHeight = (
   }
   const rows = packedLines(widths, scalePx(theme.chipGap), inner);
   const bodyRole = { ...theme.body, size: theme.bodySizes[step] };
-  const lines = markedLines(body, bodyRole, inner * lineFill);
+  const { lines } = measureMarks(body, bodyRole, inner * lineFill);
   const content = chips
     ? rows *
         (lineBox({ ...chip.type, size: theme.chipSizes[step] }) +

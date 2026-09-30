@@ -37,6 +37,10 @@ export const slideStackSpacings = ['tight', 'normal', 'loose'] as const;
 
 export type SlideStackSpacing = (typeof slideStackSpacings)[number];
 
+export const slideMatrixMarks = ['full', 'partial', 'none'] as const;
+
+export type SlideMatrixMark = (typeof slideMatrixMarks)[number];
+
 export const slideBulletMarkers = ['dot', 'check', 'x'] as const;
 
 export type SlideBulletMarker = (typeof slideBulletMarkers)[number];
@@ -49,3 +53,15 @@ export const countOf = (key: string): number => Number(key.slice(1));
 /** {@link countKey}s from `from` to `to`, inclusive. */
 export const countKeys = (from: number, to: number): string[] =>
   Array.from({ length: to - from + 1 }, (_, index) => countKey(from + index));
+
+export const slideDiffOps = ['add', 'remove'] as const;
+
+export type SlideDiffOp = (typeof slideDiffOps)[number];
+
+export const slideTranscriptRoles = ['user', 'model', 'host'] as const;
+
+export type SlideTranscriptRole = (typeof slideTranscriptRoles)[number];
+
+export const slideTranscriptFormats = ['prose', 'code'] as const;
+
+export type SlideTranscriptFormat = (typeof slideTranscriptFormats)[number];

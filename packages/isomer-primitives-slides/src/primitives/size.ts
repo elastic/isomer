@@ -33,7 +33,7 @@ export interface LoadBudget {
 const sizeSchema = z
   .enum(slideSizes)
   .describe(
-    'Type size: `l`, `m`, or `s`. Leave it out and the slide picks the largest that fits its text; if a render still runs past its body or crowds inside a container, set the step below the one it drew.'
+    'Type size: `l`, `m`, or `s`. Leave it out and the slide picks the largest that fits its text.'
   )
   .optional();
 
@@ -102,15 +102,21 @@ export const rowLoad = (items: readonly (readonly (string | undefined)[])[]) =>
 const glyphAdvance = (glyph: string): number =>
   isWide(glyph)
     ? extraboldAdvance.fullwidth
-    : /[iljtfrI.,:;!|'’ ]/.test(glyph)
-      ? extraboldAdvance.narrow
-      : /[mwMW]/.test(glyph)
-        ? extraboldAdvance.wide
-        : /[0-9]/.test(glyph)
-          ? extraboldAdvance.digit
-          : /[A-Z]/.test(glyph)
-            ? extraboldAdvance.upper
-            : extraboldAdvance.other;
+    : glyph === '%'
+      ? extraboldAdvance.percent
+      : /[.,:;]/.test(glyph)
+        ? extraboldAdvance.punctuation
+        : /[iljtfrI!|'’ ]/.test(glyph)
+          ? extraboldAdvance.narrow
+          : /[mwMW]/.test(glyph)
+            ? extraboldAdvance.wide
+            : /[0-9]/.test(glyph)
+              ? extraboldAdvance.digit
+              : /[+−×±#$€£¥]/.test(glyph)
+                ? extraboldAdvance.sign
+                : /[A-Z]/.test(glyph)
+                  ? extraboldAdvance.upper
+                  : extraboldAdvance.other;
 
 /** Width in ems of Inter ExtraBold, with `tracking` after every glyph. */
 export const emWidth = (text: string, tracking: ScaleToken): number =>
@@ -196,7 +202,14 @@ const faceOf = ({ family, weight }: TypeRole): ((glyph: string) => number) =>
       ? displayAdvance
       : (glyph) => displayColumns(glyph) * regularAdvance;
 
-const glyphPxOf = (role: TypeRole): ((glyph: string) => number) => {
+/** Text set in one role; `inset` pixels pad both its ends, as a code chip's padding and border do. */
+interface StyledRun {
+  readonly text: string;
+  readonly role: TypeRole;
+  readonly inset?: number;
+}
+
+const glyphPx = (role: TypeRole): ((glyph: string) => number) => {
   const fontPx = scalePx(role.size);
   const tracking = role.tracking ? parseFloat(role.tracking.value) : 0;
   const advance = faceOf(role);
@@ -206,8 +219,50 @@ const glyphPxOf = (role: TypeRole): ((glyph: string) => number) => {
   };
 };
 
-const shownAs = (text: string, { transform }: TypeRole): string =>
-  transform?.value === 'uppercase' ? text.toUpperCase() : text;
+const isCollapsible = (glyph: string) => collapsible.test(glyph);
+
+/** Each word's glyph advances across `runs`, so a word can span runs set differently. */
+const runWords = (runs: readonly StyledRun[]): number[][] => {
+  const found: number[][] = [];
+  let word: number[] = [];
+  for (const { text, role, inset = 0 } of runs) {
+    const advance = glyphPx(role);
+    const glyphs = [
+      ...(role.transform?.value === 'uppercase' ? text.toUpperCase() : text),
+    ];
+    const first = glyphs.findIndex((glyph) => !isCollapsible(glyph));
+    const last =
+      glyphs.length -
+      1 -
+      [...glyphs].reverse().findIndex((glyph) => !isCollapsible(glyph));
+    glyphs.forEach((glyph, index) => {
+      if (isCollapsible(glyph)) {
+        if (word.length > 0) {
+          found.push(word);
+        }
+        word = [];
+      } else {
+        word.push(
+          advance(glyph) +
+            (index === first ? inset : 0) +
+            (index === last ? inset : 0)
+        );
+      }
+    });
+  }
+  return word.length > 0 ? [...found, word] : found;
+};
+
+const measureRuns = (
+  runs: readonly StyledRun[],
+  role: TypeRole,
+  width: number
+): TextMeasure =>
+  measureWords(
+    runWords(runs),
+    glyphPx(role)(' '),
+    role.whiteSpace?.value === 'nowrap' ? Infinity : width
+  );
 
 /**
  * `text` as `role` sets it across `width` pixels: transformed, whitespace collapsed, wrapped at spaces, and a word wider than a line broken between glyphs (`overflow-wrap: anywhere`); `nowrap` keeps one line.
@@ -217,14 +272,39 @@ export const measureText = (
   text: string,
   role: TypeRole,
   width = Infinity
-): TextMeasure => {
-  const glyphPx = glyphPxOf(role);
-  return measureWords(
-    words(shownAs(text, role)).map((word) => [...word].map(glyphPx)),
-    glyphPx(' '),
-    role.whiteSpace?.value === 'nowrap' ? Infinity : width
+): TextMeasure => measureRuns([{ text, role }], role, width);
+
+/** {@link measureText} for text with marks, each run in the face `marksReact` draws it in for `strong`. */
+export const measureMarks = (
+  text: string,
+  role: TypeRole,
+  width = Infinity,
+  strong: 'ink' | 'primary' = 'ink'
+): TextMeasure =>
+  measureRuns(
+    parseMarks(text).map(({ kind, text: run }): StyledRun => {
+      if (kind === 'text') {
+        return { text: run, role };
+      }
+      if (strong === 'primary') {
+        return kind === 'code'
+          ? {
+              text: run,
+              role: { ...role, ...marks.displayCode },
+            }
+          : { text: run, role };
+      }
+      return kind === 'code'
+        ? {
+            text: run,
+            role: { ...role, ...marks.code },
+            inset: scalePx(marks.codeInset) + scalePx(marks.codeBorder),
+          }
+        : { text: run, role: { ...role, ...marks.strong } };
+    }),
+    role,
+    width
   );
-};
 
 /** Lines `text` in Inter ExtraBold at `fontPx` takes across `width`, from {@link measureText}. */
 export const wrappedLines = (
@@ -261,45 +341,6 @@ export const monoLines = (
       .lines
   );
 
-const codeChipSide = scalePx(marks.codePaddingX) + scalePx(marks.codeBorder);
-
-const markRoles = { text: {}, code: marks.code, strong: marks.strong };
-const leadingSpace = new RegExp(`^${collapsible.source}`);
-const trailingSpace = new RegExp(`${collapsible.source}$`);
-
-/** Lines authored text with its marks takes across `width` in `role`: each run in the face it renders in, a `code` run between its chip's sides, and runs with no space between them one word. */
-export const markedLines = (
-  text: string,
-  role: TypeRole,
-  width: number
-): number => {
-  const glyphs: number[][] = [];
-  let open = false;
-  for (const { kind, text: run } of parseMarks(text)) {
-    const glyphPx = glyphPxOf({ ...role, ...markRoles[kind] });
-    const [first, ...rest] = words(shownAs(run, role)).map((word) =>
-      [...word].map(glyphPx)
-    );
-    if (first === undefined) {
-      open &&= run === '';
-      continue;
-    }
-    if (kind === 'code') {
-      first.unshift(codeChipSide);
-      (rest.at(-1) ?? first).push(codeChipSide);
-    }
-    const last = glyphs.at(-1);
-    if (open && last !== undefined && !leadingSpace.test(run)) {
-      last.push(...first);
-    } else {
-      glyphs.push(first);
-    }
-    glyphs.push(...rest);
-    open = !trailingSpace.test(run);
-  }
-  return Math.max(1, measureWords(glyphs, glyphPxOf(role)(' '), width).lines);
-};
-
 /** What `code` marks' borders add to the height of `lines` lines of `text`, at most once a line. */
 export const codeGrowth = (text: string, lines: number): number =>
   Math.min(
@@ -308,6 +349,20 @@ export const codeGrowth = (text: string, lines: number): number =>
   ) *
   2 *
   scalePx(marks.codeBorder);
+
+/** The node's own `size`, else the largest step at which `text`, set in `role` at the step's size, fits `width` pixels on one line. */
+export const sizeForWidth = (
+  size: SlideSize | undefined,
+  text: string,
+  role: Omit<TypeRole, 'size'>,
+  width: number,
+  steps: Readonly<Record<SlideSize, ScaleToken>>
+): SlideSize =>
+  size ??
+  slideSizes.find(
+    (step) => measureText(text, { ...role, size: steps[step] }).widest <= width
+  ) ??
+  's';
 
 /** Glyph estimates run a few percent short over a line, so lines pack into this share of the column. */
 export const lineFill = 0.92;
