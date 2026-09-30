@@ -10,7 +10,7 @@
 // when any one of its exports is imported, so reachability, not direct import,
 // is what matters.
 
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 
 import { specifiersIn as specifiersInSource } from './specifiers.js';
@@ -100,6 +100,39 @@ for (const [packageName, entryRules] of Object.entries(RULES)) {
         violations.push(
           `${packageName} "${exportKey}" (${relative(repoRoot, entryFile)}) reaches "${specifier}"`
         );
+      }
+    }
+  }
+}
+
+/** Packages a package must never reach: no specifier in its source, no entry in its dependency fields. */
+const FORBIDDEN_PACKAGES = {
+  '@elastic/isomer-agent-tools': ['@modelcontextprotocol/sdk'],
+};
+
+for (const [packageName, forbidden] of Object.entries(FORBIDDEN_PACKAGES)) {
+  const pkg = manifests.get(packageName);
+  if (!pkg) {
+    throw new Error(`${packageName}: not a workspace package`);
+  }
+  const sources = readdirSync(join(pkg.dir, 'src'), { recursive: true })
+    .filter((file) => /\.[cm]?[jt]sx?$/.test(file))
+    .map((file) => join(pkg.dir, 'src', file));
+  for (const file of sources) {
+    for (const specifier of specifiersIn(file)) {
+      if (forbidden.some((rule) => matchesForbidden(specifier, rule))) {
+        violations.push(`${relative(repoRoot, file)} imports "${specifier}"`);
+      }
+    }
+  }
+  for (const field of [
+    'dependencies',
+    'peerDependencies',
+    'optionalDependencies',
+  ]) {
+    for (const name of Object.keys(pkg.manifest[field] ?? {})) {
+      if (forbidden.some((rule) => matchesForbidden(name, rule))) {
+        violations.push(`${packageName} ${field} lists "${name}"`);
       }
     }
   }

@@ -9,6 +9,8 @@ import { describe, expect, it } from 'vitest';
 
 import { findings, measured, nodeBox, slideOf } from '../../examples/measure';
 import { frameContentWidth } from '../../theme/components/frame';
+import { marks } from '../../theme/components/marks';
+import { scalePx } from '../../theme/scale';
 import { type SlideSize, slideSizes } from '../../theme/variants';
 import { openBody, withLayout } from '../layout';
 import { renderedStep } from '../size.fixtures';
@@ -43,6 +45,17 @@ const prose =
   'The customer picks the slot and validation runs on every field as they type it in ';
 const coded =
   'The customer calls `reserve` and validation runs on every field as they type it in ';
+
+const codeRise = 2 * (scalePx(marks.codePaddingY) + scalePx(marks.codeBorder));
+
+/** {@link fourNotesExample} with every note's body `body`. */
+const withBodies = (body: string): SlideLanesNode => ({
+  ...fourNotesExample,
+  notes: fourNotesExample.notes!.map((note) => ({ ...note, body })),
+});
+
+const plainNotes = withBodies('Both settle through one capture call.');
+const codedNotes = withBodies('Both settle through one `capture` call.');
 
 /** `count` notes whose bodies repeat `text` to `length` characters. */
 const noted =
@@ -204,6 +217,31 @@ describe('lanesStep', () => {
       expect(
         lanesStep(unevenLanesExample, inLayout(width - 1, openBody.height))
       ).toBe(slideSizes[slideSizes.indexOf(step) + 1]);
+    }
+  );
+
+  it('takes m where code chips grow the notes past the height plain notes take at l', async () => {
+    const height = lanesHeight(plainNotes, 'l', openBody.width);
+    expect(lanesHeight(codedNotes, 'l', openBody.width)).toBe(
+      height + 2 * codeRise
+    );
+    expect(lanesStep(plainNotes, inLayout(openBody.width, height))).toBe('l');
+    expect(lanesStep(codedNotes, inLayout(openBody.width, height))).toBe('m');
+    expect(await findings(slideOf(tallestExample, codedNotes))).toEqual([]);
+  });
+
+  it.each(slideSizes)(
+    'is never less than takumi draws of notes with code, at %s',
+    async (size) => {
+      // The node fills its room; the row of lanes and the notes are what it draws.
+      const [row, notes] = nodeBox(
+        await measured(slideOf({ ...codedNotes, size })),
+        'slideLanes'
+      ).children;
+      const height = notes!.y + notes!.height - row!.y;
+      const estimate = lanesHeight(codedNotes, size, openBody.width);
+      expect(estimate).toBeGreaterThanOrEqual(height);
+      expect(estimate - height).toBeLessThan(2 * codeRise + 2);
     }
   );
 
