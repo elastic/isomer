@@ -16,6 +16,7 @@ import {
   type PrimitiveRenderContext,
   type PrimitiveStyleCollector,
 } from '../../define/primitive_module';
+import type { CheckedComposition } from '../../validate/validation';
 import { byteLength } from '../payload';
 import { createPrimitiveDispatcher } from '../primitive_dispatch';
 
@@ -50,11 +51,20 @@ const raw = definePrimitive<RawNode>({
 });
 
 const dispatcher = createPrimitiveDispatcher<RawNode>([raw]);
-const valid = () => ({ valid: true, errors: [], warnings: [] });
-const invalid = () => ({
+const valid = <TNode extends PrimitiveNode>(
+  composition: Composition<TNode>
+) => ({
+  valid: true,
+  errors: [],
+  warnings: [],
+  composition: composition as CheckedComposition<TNode>,
+});
+const invalid = <TNode extends PrimitiveNode>(
+  composition: Composition<TNode>
+) => ({
+  ...valid(composition),
   valid: false,
   errors: [{ path: 'body[0]', message: 'is broken' }],
-  warnings: [],
 });
 
 const view = (html: string, extra: Partial<Composition<RawNode>> = {}) => ({
@@ -240,6 +250,50 @@ describe('renderHTMLWithDispatcher', () => {
       dispatcher,
     });
     expect(validationErrors.map(({ path }) => path)).toEqual(['body[0].html']);
+  });
+
+  it('draws the composition validate returns, never its input', () => {
+    const seen: unknown[] = [];
+    const { html } = render(
+      view('<p>input</p>'),
+      {},
+      {
+        validate: () => valid(view('<p>checked</p>', { title: 'Checked' })),
+        styleAdapter: {
+          ...adapter,
+          resolveOptions: (composition, options) => {
+            seen.push(composition.title);
+            return options;
+          },
+        },
+      }
+    );
+    expect(html).toContain('<p>checked</p>');
+    expect(html).toContain('Checked');
+    expect(html).not.toContain('input');
+    expect(seen).toEqual(['Checked']);
+  });
+
+  it('reads a proxy once by default, so a second read cannot change what is drawn', () => {
+    let reads = 0;
+    const input = new Proxy(view('<p>x</p>'), {
+      get: (target, key, receiver): unknown =>
+        key === 'title'
+          ? reads++ === 0
+            ? 'Safe'
+            : 'UNSAFE'
+          : Reflect.get(target, key, receiver),
+      getOwnPropertyDescriptor: (target, key) => {
+        const descriptor = Reflect.getOwnPropertyDescriptor(target, key);
+        return key === 'title' && descriptor
+          ? { ...descriptor, value: reads++ === 0 ? 'Safe' : 'UNSAFE' }
+          : descriptor;
+      },
+    });
+    const { html } = renderHTMLWithDispatcher(input, { dispatcher });
+    expect(html).toContain('Safe');
+    expect(html).not.toContain('UNSAFE');
+    expect(reads).toBe(1);
   });
 
   it('sets data-theme from the option, then the composition, and not for auto', () => {

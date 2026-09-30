@@ -24,24 +24,36 @@ const runtime = createIsomerRuntime({
   frames: { slide: slideDeckFrame },
 });
 
-/** Keys holding identifiers, enums, or addresses, not authored words. */
+/** Keys holding identifiers, enums, addresses, or words another field already holds. */
 const notWords = new Set([
   'type',
   'id',
+  'from',
+  'to',
   'tone',
   'href',
   'hrefs',
   'url',
   'size',
   'language',
+  'marks',
   'ratio',
   'divider',
   'spacing',
   'marker',
+  'op',
+  'role',
+  'format',
+  'highlightPrefix',
 ]);
 
 /** Fields whose line breaks are meant, or that no degraded surface prints. */
-const keptAsAuthored = new Set(['slideCode.lines']);
+const keptAsAuthored = new Set([
+  'slideCode.lines',
+  'slideCommand.command',
+  'slideDiff.text',
+  'slideTranscript.text',
+]);
 
 const authoredStrings = (value: unknown, key = ''): string[] => {
   if (notWords.has(key)) {
@@ -67,18 +79,40 @@ const entities: Record<string, string> = {
   '&amp;': '&',
 };
 
-/** Inverts `code`, `codeBlock`, and `marksSlack`: code stays literal, strong loses its delimiters, and entities decode. */
+const formatting = /([*_~])(?=\S)([^\n]*?\S)\1/g;
+
+/** Every `*`, `_`, and `~` pair Slack could read as formatting, outermost first. */
+const unformat = (text: string): string => {
+  let read = text;
+  for (let last = ''; last !== read;) {
+    last = read;
+    read = read.replace(formatting, '$2');
+  }
+  return read;
+};
+
+/** Slack's reading of `mrkdwn`: code keeps its characters, other text loses its formatting pairs, and `<url|label>` markup and entities decode in both. */
 const readMrkdwn = (mrkdwn: string): string =>
   mrkdwn
     .split(/(```\n[\s\S]*?\n```|`[^`\n]+`)/)
     .map((part, index) =>
-      index % 2 === 1
+      (index % 2 === 1
         ? part.replace(/^```\n|\n```$|^`|`$/g, '')
-        : part
-            .replace(/\*(?=\S)([^*\n]*?\S)\*/g, '$1')
-            .replace(/&(?:lt|gt|amp);/g, (entity) => entities[entity] ?? entity)
+        : unformat(part)
+      )
+        .replace(
+          /<([^<>|]*)(?:\|([^<>]*))?>/g,
+          (_, url: string, label?: string) => label ?? url
+        )
+        .replace(/&(?:lt|gt|amp);/g, (entity) => entities[entity] ?? entity)
     )
     .join('');
+
+const richRuns = new Set([
+  'rich_text_section',
+  'rich_text_quote',
+  'rich_text_preformatted',
+]);
 
 const stringLeaves = (value: unknown): string[] => {
   if (typeof value === 'string') {
@@ -95,7 +129,7 @@ const stringLeaves = (value: unknown): string[] => {
   if (type === 'mrkdwn' && typeof text === 'string') {
     return [readMrkdwn(text)];
   }
-  if (type === 'rich_text_section' && elements) {
+  if (typeof type === 'string' && richRuns.has(type) && elements) {
     return [elements.map(({ text: run = '' }) => run).join('')];
   }
   if (typeof value === 'object' && value !== null) {
@@ -299,7 +333,6 @@ const appendAt = (
 };
 
 // No paired marks, so every surface prints it as written.
-// One field at a time: mrkdwn has no escape for `` ` `` or `*`, so a delimiter in each of two fields Slack joins into one string can pair.
 const literals = ' &lt; <b> & &amp;lt; a ` b * c ** d';
 
 const literalRows = rows.flatMap(({ name, node }) =>
@@ -314,5 +347,49 @@ describe('entity-like text and unpaired delimiters', () => {
     for (const [surface, render] of Object.entries(surfaces)) {
       expect(missingFrom(render(node), node), surface).toEqual([]);
     }
+  });
+});
+
+// Each alone, so a field that sends one to `mrkdwn` fails by name.
+const mrkdwnCases = {
+  asterisks: ' *a*',
+  underscores: ' _a_',
+  tildes: ' ~a~',
+  backticks: ' `a`',
+  fence: ' a```b',
+  'angle brackets': ' <b>',
+  entity: ' &amp;',
+};
+
+const mrkdwnRows = rows.flatMap(({ name, node }) =>
+  wordPaths(node).flatMap((path) =>
+    Object.entries(mrkdwnCases).map(([kind, tail]) => ({
+      name: `${name} ${path.join('.')}`,
+      kind,
+      node: appendAt(node, path, tail) as PrimitiveNode,
+    }))
+  )
+);
+
+/** Each authored line as the slide draws it: marks drawn where the field takes them, as written where it does not. */
+const drawnLines = (node: PrimitiveNode): string[] => {
+  const lines = authoredStrings(node)
+    .flatMap((text) => text.split('\n'))
+    .filter((line) => line.trim());
+  if (lines.every((line) => stripMarks(line) === line)) {
+    return lines;
+  }
+  const drawn = normalize(htmlText(node));
+  return lines.map((line) =>
+    drawn.includes(normalize(line)) ? line : stripMarks(line)
+  );
+};
+
+describe('Slack formatting characters', () => {
+  it.each(mrkdwnRows)('$name keeps $kind as authored', ({ node }) => {
+    const slack = normalize(surfaces.slack(node));
+    expect(
+      drawnLines(node).filter((line) => !slack.includes(normalize(line)))
+    ).toEqual([]);
   });
 });

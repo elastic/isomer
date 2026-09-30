@@ -21,6 +21,7 @@ Everything `@elastic/isomer-runtime` exports from its single entry point, plus w
 | `styleAdapter` | `HTMLStyleAdapter<…>` | Replaces every pack's adapter. Defaults to the packs' own, combined. Required when any pack declares `collectStyles` and no adapter is otherwise available. |
 | `defaultAriaLabel` | `string` | Fallback `aria-label` for `html` and for `react` with `wrapper`. Defaults to `'View'`. |
 | `authoring` | `AuthoringJsonSchemaOptions` | Options for the authoring JSON Schema `getAuthoringContext` returns. |
+| `inputBudget` | `InputBudget` | Limits `checkInputBudget` applies in `parse`, `validate`, the `html`, `text`, `markdown`, `slack`, and `svg` surfaces, and `viewRegistry.request` input; `react` does not validate, so it is not checked. |
 
 `CreateIsomerRuntime` is the factory's overloaded signature: `frames` present types `surfaces.svg` as `SvgSurface`, `frames` absent types it `undefined`, and options not statically known get the union. `TRenderContext` is inferred from `styleAdapter` alone; a host that supplies none and loads a pack that narrows its context names all three type parameters positionally, as [Runtime](runtime.md#typing-the-render-context) shows.
 
@@ -34,7 +35,7 @@ Everything `@elastic/isomer-runtime` exports from its single entry point, plus w
 | `viewRegistry` | `ViewRegistry<THostContext, PrimitiveNode>` |
 | `getAuthoringContext()` | `RuntimeAuthoringContext` |
 | `getCapabilities()` | `HostCapabilities` |
-| `validate(composition)` | `ValidationResult` |
+| `validate(composition)` | `CheckedValidationResult` |
 | `parse(value)` | `ParsedComposition` |
 | `getCompositionSchema()` | `ZodObject` |
 
@@ -66,7 +67,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | `SlackRenderNodeOptions` | `SlackRenderOptions` without `heading` or `onValidationError` |
 | `SvgRenderOptions` | `frame`, `width`, `height`, `theme`, `anchors: boolean` (node anchors, e.g. for `checkLayout`), `onValidationError` |
 
-`onValidationError` is `'collect' | 'throw'`. `html` defaults to `'collect'` and reports on `validationErrors`; `text`, `markdown`, `slack`, and `svg` default to `'throw'`.
+`onValidationError` is `'collect' | 'throw'`. `html` defaults to `'collect'` and reports on `validationErrors`; `text`, `markdown`, `slack`, and `svg` default to `'throw'`. Input [refused before parsing](../../isomer-sdk/docs/composition.md#the-input-budget) throws on every surface in either mode.
 
 ### Result types
 
@@ -74,7 +75,8 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | --- | --- |
 | `HTMLRenderResult` | `{ html, css, js, body, measurement, validationErrors }` |
 | `SlackRenderResult` | `{ text, blocks, assets }` |
-| `ValidationResult` | `{ valid, errors, warnings }` — each error is `{ path, message }` |
+| `ValidationResult` | `{ valid, errors, warnings }` — each error is a `ValidationError`, `{ path, message, nodeType?, code? }`, where `code` (`INPUT_OVER_BUDGET` or `INPUT_NOT_PLAIN_DATA`) marks input refused before parsing |
+| `CheckedValidationResult` | `ValidationResult` plus `composition`, the plain copy validation checked, which validating surfaces render; `undefined` only when refused before parsing |
 | `ParsedComposition` | `{ valid, errors, composition? }` |
 
 ## View registry
@@ -106,15 +108,15 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 
 ## Import from the SDK
 
-`PrimitiveNode`, `Composition`, `ValidationResult`, `ValidationWarning`, `warningsForSurface`, `definePrimitive`, `describeCapabilities`, `PrimitivePack`, `Frame`, `CompositionValidationError`.
+`PrimitiveNode`, `Composition`, `CheckedValidationResult`, `ValidationResult`, `ValidationWarning`, `warningsForSurface`, `definePrimitive`, `describeCapabilities`, `PrimitivePack`, `Frame`, `CompositionValidationError`.
 
 ## Errors
 
 | Thrown | By | Carries |
 | --- | --- | --- |
 | `IsomerError` | `createIsomerRuntime`, `viewRegistry.register`, an unknown view id, `getAuthoringContext().schemaFor` or `describePrimitives` on an unknown type (`UNKNOWN_PRIMITIVE_TYPE`), or the `svg` surface, including `renderPages` on an empty list (`EMPTY_PAGES`) | `code` and a message naming the offender |
-| `RegisteredViewInputError` | `viewRegistry.request`, on invalid input | `code` (`VIEW_INPUT_INVALID`), `viewId`, `errors` (`{ path, message }` each) |
-| `CompositionValidationError` | `text`, `markdown`, `slack`, and `svg` by default; `html` with `onValidationError: 'throw'` | `code` (`COMPOSITION_INVALID`), `errors` |
+| `RegisteredViewInputError` | `viewRegistry.request`, on input refused before parsing or invalid against the view's schema | `code` (`VIEW_INPUT_INVALID`), `viewId`, `errors` (`{ path, message, nodeType?, code? }` each) |
+| `CompositionValidationError` | `text`, `markdown`, `slack`, and `svg` by default; `html` with `onValidationError: 'throw'`; every validating surface on input refused before parsing | `code` (`COMPOSITION_INVALID`), `errors` |
 
 ## Where the code is
 

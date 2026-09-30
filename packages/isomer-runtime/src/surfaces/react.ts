@@ -79,8 +79,9 @@ export type ReactRenderArgs<
  * Renders a composition or node to a React tree.
  *
  * The one non-validating surface, deliberately. React is the interactive
- * target, where a partial render beats a thrown error. A host that wants the
- * other behaviour calls `validate` itself first.
+ * target, where a partial render beats a thrown error. It renders the value it
+ * is given, reading it as it draws; a host that wants the other behaviour
+ * calls `validate` itself and renders the result's `composition`.
  */
 export interface ReactSurface<TRenderContext = PrimitiveRenderContext> {
   /** Always `false`: see the note above. */

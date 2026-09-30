@@ -10,9 +10,17 @@
 import type { ScaleToken } from '@elastic/distillate';
 import { z } from '@elastic/isomer-sdk';
 
+import { parseMarks } from '../render/marks';
 import { displayColumns, isWide } from '../render/mono';
-import { extraboldAdvance, regularAdvance } from '../theme/base';
-import { scalePx } from '../theme/scale';
+import {
+  extraboldAdvance,
+  font,
+  monoAdvance,
+  regularAdvance,
+} from '../theme/base';
+import { marks } from '../theme/components/marks';
+import { px, scalePx } from '../theme/scale';
+import type { TypeRole } from '../theme/type_role';
 import { type SlideSize, slideSizes } from '../theme/variants';
 
 /** The largest load each step holds; anything heavier takes `s`. */
@@ -25,7 +33,7 @@ export interface LoadBudget {
 const sizeSchema = z
   .enum(slideSizes)
   .describe(
-    'Type size: `l`, `m`, or `s`. Leave it out and the slide picks the largest that fits its text; if a render still runs past its body or crowds inside a container, set the step below the one it drew.'
+    'Type size: `l`, `m`, or `s`. Leave it out and the slide picks the largest that fits its text.'
   )
   .optional();
 
@@ -63,27 +71,52 @@ export const trackWidth = (
   return Math.max(0, (free * (shares[index] ?? 0)) / sum);
 };
 
+/** Height in pixels of one line of a type role. */
+export const lineBox = ({
+  size,
+  lineHeight,
+}: {
+  size: ScaleToken;
+  lineHeight: ScaleToken;
+}): number => scalePx(size) * parseFloat(lineHeight.value);
+
+// What collapses to one space and breaks, with the line and paragraph separators takumi reads as spaces; a no-break space stays a glyph.
+const collapsible = /[ \t\n\r\f\u2028\u2029]+/;
+
+const words = (text: string): string[] =>
+  text.split(collapsible).filter(Boolean);
+
+/** Columns `text` fills once its whitespace collapses as CSS collapses it. */
+export const textColumns = (text: string): number =>
+  displayColumns(words(text).join(' '));
+
 /** The longest item's characters times the item count. */
 export const rowLoad = (items: readonly (readonly (string | undefined)[])[]) =>
   Math.max(
     0,
     ...items.map((texts) =>
-      texts.reduce((total, text) => total + displayColumns(text ?? ''), 0)
+      texts.reduce((total, text) => total + textColumns(text ?? ''), 0)
     )
   ) * items.length;
 
 const glyphAdvance = (glyph: string): number =>
   isWide(glyph)
     ? extraboldAdvance.fullwidth
-    : /[iljtfrI.,:;!|'’ ]/.test(glyph)
-      ? extraboldAdvance.narrow
-      : /[mwMW]/.test(glyph)
-        ? extraboldAdvance.wide
-        : /[0-9]/.test(glyph)
-          ? extraboldAdvance.digit
-          : /[A-Z]/.test(glyph)
-            ? extraboldAdvance.upper
-            : extraboldAdvance.other;
+    : glyph === '%'
+      ? extraboldAdvance.percent
+      : /[.,:;]/.test(glyph)
+        ? extraboldAdvance.punctuation
+        : /[iljtfrI!|'’ ]/.test(glyph)
+          ? extraboldAdvance.narrow
+          : /[mwMW]/.test(glyph)
+            ? extraboldAdvance.wide
+            : /[0-9]/.test(glyph)
+              ? extraboldAdvance.digit
+              : /[+−×±#$€£¥]/.test(glyph)
+                ? extraboldAdvance.sign
+                : /[A-Z]/.test(glyph)
+                  ? extraboldAdvance.upper
+                  : extraboldAdvance.other;
 
 /** Width in ems of Inter ExtraBold, with `tracking` after every glyph. */
 export const emWidth = (text: string, tracking: ScaleToken): number =>
@@ -97,9 +130,9 @@ export const emWidth = (text: string, tracking: ScaleToken): number =>
 
 /** What a wrapping display line cannot break. */
 export const widestWord = (text: string, tracking: ScaleToken): number =>
-  Math.max(0, ...text.split(/\s+/).map((word) => emWidth(word, tracking)));
+  Math.max(0, ...words(text).map((word) => emWidth(word, tracking)));
 
-/** Lines a greedy wrap packs items `advances` px wide into, `gap` px apart, across `width`. */
+/** Lines a greedy wrap packs items `advances` px wide into, `gap` px apart, across `width`; an item never breaks. */
 export const packedLines = (
   advances: readonly number[],
   gap: number,
@@ -118,31 +151,226 @@ export const packedLines = (
   return lines;
 };
 
-const words = (text: string): string[] => text.split(/\s+/).filter(Boolean);
+/** Lines and the widest line's width in pixels. */
+export interface TextMeasure {
+  readonly lines: number;
+  readonly widest: number;
+}
 
+/** A word's glyph advances, and the space before it in the face of the run that space is set in. */
+interface Word {
+  readonly glyphs: readonly number[];
+  readonly gap: number;
+}
+
+const measureWords = (words: readonly Word[], width: number): TextMeasure => {
+  let lines = 0;
+  let used = 0;
+  let widest = 0;
+  const startLine = () => {
+    widest = Math.max(widest, used);
+    lines += 1;
+    used = 0;
+  };
+  for (const { glyphs: word, gap } of words) {
+    const advance = word.reduce((total, glyph) => total + glyph, 0);
+    if (lines > 0 && used + gap + advance <= width) {
+      used += gap + advance;
+    } else if (advance <= width) {
+      startLine();
+      used = advance;
+    } else {
+      // Breaks at the space before it first, then between glyphs, one glyph a line at least.
+      startLine();
+      for (const glyph of word) {
+        if (used > 0 && used + glyph > width) {
+          startLine();
+        }
+        used += glyph;
+      }
+    }
+  }
+  return { lines, widest: Math.max(widest, used) };
+};
+
+const displayAdvance = (glyph: string): number =>
+  displayColumns(glyph) === 0 ? 0 : glyphAdvance(glyph);
+
+/** The face's advance in ems for one glyph: mono and regular by column, anything semibold or heavier by Inter ExtraBold's glyph classes. */
+const faceOf = ({ family, weight }: TypeRole): ((glyph: string) => number) =>
+  family === font.family.mono
+    ? (glyph) => displayColumns(glyph) * monoAdvance
+    : parseFloat(weight?.value ?? '400') >= 600
+      ? displayAdvance
+      : (glyph) => displayColumns(glyph) * regularAdvance;
+
+/** Text set in one role; `inset` pixels pad both its ends, as a code chip's padding and border do. */
+interface StyledRun {
+  readonly text: string;
+  readonly role: TypeRole;
+  readonly inset?: number;
+}
+
+const glyphPx = (role: TypeRole): ((glyph: string) => number) => {
+  const fontPx = scalePx(role.size);
+  const tracking = role.tracking ? parseFloat(role.tracking.value) : 0;
+  const advance = faceOf(role);
+  return (glyph) => {
+    const em = advance(glyph);
+    return em === 0 ? 0 : (em + tracking) * fontPx;
+  };
+};
+
+const isCollapsible = (glyph: string) => collapsible.test(glyph);
+
+/** Each word across `runs`, so a word can span runs set differently; whitespace collapses to its first space, as CSS keeps it. */
+const runWords = (runs: readonly StyledRun[]): Word[] => {
+  const found: Word[] = [];
+  let word: number[] = [];
+  let gap = 0;
+  let nextGap: number | undefined;
+  for (const { text, role, inset = 0 } of runs) {
+    const advance = glyphPx(role);
+    const glyphs = [
+      ...(role.transform?.value === 'uppercase' ? text.toUpperCase() : text),
+    ];
+    const first = glyphs.findIndex((glyph) => !isCollapsible(glyph));
+    const last =
+      glyphs.length -
+      1 -
+      [...glyphs].reverse().findIndex((glyph) => !isCollapsible(glyph));
+    glyphs.forEach((glyph, index) => {
+      if (isCollapsible(glyph)) {
+        if (word.length > 0) {
+          found.push({ glyphs: word, gap });
+        }
+        word = [];
+        nextGap ??= advance(' ');
+      } else {
+        if (word.length === 0) {
+          gap = nextGap ?? 0;
+          nextGap = undefined;
+        }
+        word.push(
+          advance(glyph) +
+            (index === first ? inset : 0) +
+            (index === last ? inset : 0)
+        );
+      }
+    });
+  }
+  return word.length > 0 ? [...found, { glyphs: word, gap }] : found;
+};
+
+const measureRuns = (
+  runs: readonly StyledRun[],
+  role: TypeRole,
+  width: number
+): TextMeasure =>
+  measureWords(
+    runWords(runs),
+    role.whiteSpace?.value === 'nowrap' ? Infinity : width
+  );
+
+/**
+ * `text` as `role` sets it across `width` pixels: transformed, whitespace collapsed, wrapped at spaces, and a word wider than a line broken between glyphs (`overflow-wrap: anywhere`); `nowrap` keeps one line.
+ * Pass the role at the step drawn, and marks already stripped.
+ */
+export const measureText = (
+  text: string,
+  role: TypeRole,
+  width = Infinity
+): TextMeasure => measureRuns([{ text, role }], role, width);
+
+/** {@link measureText} for text with marks, each run in the face `marksReact` draws it in for `strong`. */
+export const measureMarks = (
+  text: string,
+  role: TypeRole,
+  width = Infinity,
+  strong: 'ink' | 'primary' = 'ink'
+): TextMeasure =>
+  measureRuns(
+    parseMarks(text).map(({ kind, text: run }): StyledRun => {
+      if (kind === 'text') {
+        return { text: run, role };
+      }
+      if (strong === 'primary') {
+        return kind === 'code'
+          ? {
+              text: run,
+              role: { ...role, ...marks.displayCode },
+            }
+          : { text: run, role };
+      }
+      return kind === 'code'
+        ? {
+            text: run,
+            role: { ...role, ...marks.code },
+            inset: scalePx(marks.codeInset) + scalePx(marks.codeBorder),
+          }
+        : { text: run, role: { ...role, ...marks.strong } };
+    }),
+    role,
+    width
+  );
+
+/** Lines `text` in Inter ExtraBold at `fontPx` takes across `width`, from {@link measureText}. */
 export const wrappedLines = (
   text: string,
   fontPx: number,
   width: number,
   tracking: ScaleToken
 ): number =>
-  packedLines(
-    words(text).map((word) => emWidth(word, tracking) * fontPx),
-    emWidth(' ', tracking) * fontPx,
-    width
+  Math.max(
+    1,
+    measureText(
+      text,
+      { size: px(fontPx), weight: font.weight.extrabold, tracking },
+      width
+    ).lines
   );
 
-/** {@link wrappedLines} for Inter Regular, from {@link regularAdvance}. */
+/** {@link wrappedLines} for Inter Regular. */
 export const proseLines = (
   text: string,
   fontPx: number,
   width: number
+): number => Math.max(1, measureText(text, { size: px(fontPx) }, width).lines);
+
+/** {@link wrappedLines} for Roboto Mono. */
+export const monoLines = (
+  text: string,
+  fontPx: number,
+  width: number
 ): number =>
-  packedLines(
-    words(text).map((word) => displayColumns(word) * regularAdvance * fontPx),
-    regularAdvance * fontPx,
-    width
+  Math.max(
+    1,
+    measureText(text, { family: font.family.mono, size: px(fontPx) }, width)
+      .lines
   );
+
+/** What `code` marks' borders add to the height of `lines` lines of `text`, at most once a line. */
+export const codeGrowth = (text: string, lines: number): number =>
+  Math.min(
+    lines,
+    parseMarks(text).filter(({ kind }) => kind === 'code').length
+  ) *
+  2 *
+  scalePx(marks.codeBorder);
+
+/** The node's own `size`, else the largest step at which `text`, set in `role` at the step's size, fits `width` pixels on one line. */
+export const sizeForWidth = (
+  size: SlideSize | undefined,
+  text: string,
+  role: Omit<TypeRole, 'size'>,
+  width: number,
+  steps: Readonly<Record<SlideSize, ScaleToken>>
+): SlideSize =>
+  size ??
+  slideSizes.find(
+    (step) => measureText(text, { ...role, size: steps[step] }).widest <= width
+  ) ??
+  's';
 
 /** Glyph estimates run a few percent short over a line, so lines pack into this share of the column. */
 export const lineFill = 0.92;
@@ -161,7 +389,11 @@ export const sizeForLines = (
     const fontPx = scalePx(steps[step]);
     return (
       widestWord(text, tracking) * fontPx <= width &&
-      wrappedLines(text, fontPx, width * lineFill, tracking) <= maxLines
+      packedLines(
+        words(text).map((word) => emWidth(word, tracking) * fontPx),
+        emWidth(' ', tracking) * fontPx,
+        width * lineFill
+      ) <= maxLines
     );
   }) ??
   's';

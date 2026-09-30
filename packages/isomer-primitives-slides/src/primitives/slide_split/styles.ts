@@ -16,10 +16,11 @@ const { color, split } = tokens;
 
 export const splitModule = createStyleModule('split', ({ css }) => ({
   // The middle track is `auto`, sized by the divider (zero wide for `gap`).
-  // Columns align at the top so labels line up; the fill role centers the grid.
+  // The fill role centers the grid and shrinks it to the room left, so each column is its pane's height and bounds its items.
   grid: css`
-    align-items: start;
     display: grid;
+    grid-template-rows: minmax(0, 1fr);
+    min-height: 0;
   `,
   ratio: variants(slideSplitRatios, (ratio) => {
     const { left, right } = split.ratio[ratio];
@@ -57,7 +58,6 @@ export const splitModule = createStyleModule('split', ({ css }) => ({
   label: css`
     ${typeRole(split.label)}
     margin: 0;
-    text-transform: uppercase;
   `,
   plainLabel: css`
     color: ${color.textSubtle};
@@ -69,6 +69,7 @@ export const splitModule = createStyleModule('split', ({ css }) => ({
     display: flex;
     flex-direction: column;
     gap: ${split.itemGap};
+    min-height: 0;
   `,
   footnote: css`
     color: ${color.textSoft};

@@ -106,7 +106,7 @@ const composition = {
   ],
 };
 
-runtime.validate(composition); // { valid: true, errors: [], warnings: [] }
+runtime.validate(composition); // { valid: true, errors: [], warnings: [], composition: <its checked copy> }
 runtime.surfaces.text.render(composition);
 runtime.surfaces.markdown.render(composition);
 runtime.surfaces.slack.render(composition).blocks;

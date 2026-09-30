@@ -8,7 +8,7 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
-import { boundedHref, lineText } from '../authored_text';
+import { boundedHref, hrefRule, lineText } from '../authored_text';
 import { crossRefine } from '../cross_field';
 import { sizeField } from '../size';
 
@@ -33,7 +33,7 @@ export const schema = z
       .array(boundedHref())
       .max(sectionContentsMax)
       .describe(
-        'Link for each `contents` line, in the same order and of the same length. On web surfaces each line links to its slide. Slide addresses belong to the host: use the form its guide gives, and leave this out when it gives none.'
+        `Link for each \`contents\` line, in the same order and of the same length, each ${hrefRule}. On web surfaces each line links to its slide. Slide addresses belong to the host: use the form its guide gives, and leave this out when it gives none.`
       )
       .optional(),
     size: sizeField(),
@@ -45,6 +45,7 @@ export const schema = z
       {
         error: '`hrefs` needs one entry per `contents` line',
         path: ['hrefs'],
+        rule: 'one entry per contents entry',
       }
     )
   );

@@ -2719,3 +2719,200 @@ const primitiveNamed = (type: string) =>
       markdown: () => type,
     },
   });
+
+describe('the input budget', () => {
+  const deep = (): unknown => {
+    let value: unknown = [];
+    for (let level = 0; level < 100_000; level += 1) {
+      value = [value];
+    }
+    return value;
+  };
+  const composition = {
+    type: 'view',
+    body: [{ type: 'note', text: deep() }],
+  } as unknown as Composition;
+  const overBudget = {
+    path: '',
+    message: 'input nests deeper than 64 levels',
+    code: 'INPUT_OVER_BUDGET',
+  };
+  const refused = {
+    name: 'CompositionValidationError',
+    code: 'COMPOSITION_INVALID',
+    errors: [overBudget],
+  };
+
+  it('refuses over-budget input at parse, validate, and every validating surface', () => {
+    const runtime = drawingRuntime(notePrimitive);
+    const { html, text, markdown, slack, svg } = runtime.surfaces;
+    expect(runtime.parse(composition)).toEqual({
+      valid: false,
+      errors: [overBudget],
+    });
+    expect(runtime.validate(composition).errors).toEqual([overBudget]);
+    for (const render of [
+      () => html.render(composition),
+      () => text.render(composition, { onValidationError: 'collect' }),
+      () => markdown.render(composition, { onValidationError: 'collect' }),
+      () => slack.render(composition, { onValidationError: 'collect' }),
+      () => svg.render(composition, { onValidationError: 'collect' }),
+    ]) {
+      expect(render).toThrow(expect.objectContaining(refused));
+    }
+  });
+
+  it('refuses over-budget view input before the view runs', async () => {
+    let built = false;
+    const runtime = createIsomerRuntime({
+      packs: [packOf(notePrimitive)],
+      views: [
+        defineView({
+          id: 'test.any',
+          title: 'Any',
+          answers: [],
+          build: () => {
+            built = true;
+            return view('x');
+          },
+        }),
+      ],
+    });
+    await expect(
+      runtime.viewRegistry.request('test.any', undefined, { deep: deep() })
+    ).rejects.toMatchObject({
+      name: 'RegisteredViewInputError',
+      code: 'VIEW_INPUT_INVALID',
+      errors: [overBudget],
+    });
+    expect(built).toBe(false);
+  });
+
+  it('hands a view the checked copy of its input', async () => {
+    let received: unknown;
+    const runtime = createIsomerRuntime({
+      packs: [packOf(notePrimitive)],
+      views: [
+        defineView({
+          id: 'test.copy',
+          title: 'Copy',
+          answers: [],
+          build: ({ input }) => {
+            received = input;
+            return view('x');
+          },
+        }),
+      ],
+    });
+    const input = { list: Object.assign([1], { extra: 2 }) };
+    await runtime.viewRegistry.request('test.copy', undefined, input);
+    expect(received).toEqual({ list: [1] });
+    expect(received).not.toBe(input);
+  });
+
+  it('takes the host’s limits', () => {
+    const runtime = createIsomerRuntime({
+      packs: [packOf(notePrimitive)],
+      inputBudget: { characters: 3 },
+    });
+    expect(runtime.parse(view('four')).errors).toEqual([
+      { ...overBudget, message: 'input holds more than 3 characters' },
+    ]);
+  });
+});
+
+describe('the checked composition', () => {
+  /** A note whose `text` reads `safe` once, through either trap, and `UNSAFE` after. */
+  const shifty = () => {
+    let reads = 0;
+    const text = () => (reads++ === 0 ? 'safe' : 'UNSAFE');
+    const node = new Proxy<NoteNode>(
+      { type: 'note', text: 'safe' },
+      {
+        get: (target, key, receiver): unknown =>
+          key === 'text' ? text() : Reflect.get(target, key, receiver),
+        getOwnPropertyDescriptor: (target, key) => {
+          const descriptor = Reflect.getOwnPropertyDescriptor(target, key);
+          return key === 'text' && descriptor
+            ? { ...descriptor, value: text() }
+            : descriptor;
+        },
+      }
+    );
+    const composition: Composition = { type: 'view', body: [node] };
+    return { composition, reads: () => reads };
+  };
+
+  it('renders what validation checked on every validating surface, reading the input once', () => {
+    const { html, text, markdown, slack, svg } =
+      drawingRuntime(notePrimitive).surfaces;
+    const renders: ((composition: Composition) => string)[] = [
+      (composition) => html.render(composition).html,
+      (composition) => text.render(composition),
+      (composition) => markdown.render(composition),
+      (composition) => JSON.stringify(slack.render(composition)),
+      (composition) => renderToStaticMarkup(svg.render(composition).element),
+    ];
+    for (const render of renders) {
+      const { composition, reads } = shifty();
+      const output = render(composition);
+      expect(output).toContain('safe');
+      expect(output).not.toContain('UNSAFE');
+      expect(reads()).toBe(1);
+    }
+    const pages = [shifty(), shifty()];
+    const document = svg.renderPages(
+      pages.map(({ composition }) => composition)
+    );
+    const output = renderToStaticMarkup(
+      createElement(Fragment, null, ...document.pages)
+    );
+    expect(output).not.toContain('UNSAFE');
+    expect(pages.map(({ reads }) => reads())).toEqual([1, 1]);
+  });
+
+  it('returns the copy from validate and from a view request', async () => {
+    const runtime = createIsomerRuntime({
+      packs: [packOf(notePrimitive)],
+      views: [
+        defineView({
+          id: 'test.shifty',
+          title: 'Shifty',
+          answers: [],
+          build: () => shifty().composition,
+        }),
+      ],
+    });
+    expect(runtime.validate(shifty().composition).composition).toEqual(
+      view('safe')
+    );
+    const { composition } = await runtime.viewRegistry.request(
+      'test.shifty',
+      undefined
+    );
+    expect(composition).toEqual(view('safe'));
+    expect(runtime.surfaces.text.render(composition)).toBe('safe');
+  });
+
+  it('leaves plain input as it was, drawn from a copy', async () => {
+    const built = view('plain');
+    const runtime = createIsomerRuntime({
+      packs: [packOf(notePrimitive)],
+      views: [
+        defineView({
+          id: 'test.plain',
+          title: 'Plain',
+          answers: [],
+          build: () => built,
+        }),
+      ],
+    });
+    const { composition, validation } = await runtime.viewRegistry.request(
+      'test.plain',
+      undefined
+    );
+    expect(composition).toEqual(built);
+    expect(composition).not.toBe(built);
+    expect(validation).toEqual({ valid: true, errors: [], warnings: [] });
+  });
+});

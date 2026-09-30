@@ -8,15 +8,23 @@
 import { font, radius, space, stroke } from '../base';
 import { literal, paddingXy } from '../scale';
 
+// Little side padding keeps punctuation close.
+const codeInset = space.px6;
+
 export const marks = {
   // The chip keeps its run's font size; a smaller em would drop body copy under 24px.
   code: { family: font.family.mono },
   codeBorder: stroke.panel,
   codeRadius: radius.chipSmall,
-  // No vertical padding keeps the chip in its line box; little side padding keeps punctuation close.
-  codePadding: paddingXy(literal('0'), space.px6),
+  codeInset,
+  // No vertical padding keeps the chip in its line box.
+  codePadding: paddingXy(literal('0'), codeInset),
   // In bold or display text a chip outweighs its words, so code is mono alone.
-  displayCode: { family: font.family.mono, weight: font.weight.medium },
+  displayCode: {
+    family: font.family.mono,
+    weight: font.weight.medium,
+    transform: font.transform.none,
+  },
   strong: { weight: font.weight.bold },
   // Weight cannot carry strong in display text, so it is underlined as well as `primary`.
   displayStrong: { rule: stroke.bar, offset: space.px8 },

@@ -6,9 +6,12 @@
  */
 
 import {
+  type CheckedValidationResult,
+  checkInputBudget,
   type Composition,
   formatValidationError,
   formatZodIssues,
+  type InputBudget,
   ISOMER_ERROR_CODES,
   IsomerError,
   type PrimitiveNode,
@@ -21,9 +24,9 @@ export type JsonSchema = Record<string, unknown>;
 export type ViewInput = Record<string, unknown>;
 
 /**
- * Thrown by {@link ViewRegistry.request} when a view declares a Zod `input`
- * schema and the supplied input fails validation. `errors` has the same
- * `{ path, message }` shape as composition validation.
+ * Thrown by {@link ViewRegistry.request} when `checkInputBudget` refuses the
+ * input or it fails the view's Zod `input` schema. `errors` are the same
+ * `ValidationError`s composition validation returns.
  *
  * Identify it by `name`, `code`, `viewId`, and `errors`, never `instanceof`.
  */
@@ -49,7 +52,7 @@ export class RegisteredViewInputError extends Error {
 export interface ViewBuildArgs<THostContext, TInput> {
   /** Whatever the host passes to `request`: a session, a request, a services bundle. */
   context: THostContext;
-  /** Validated against the view's `input` schema when it declares one; otherwise the raw record. */
+  /** The input budget's plain copy of the host's record, parsed through the view's `input` schema when it declares one. */
   input: TInput;
 }
 
@@ -71,7 +74,8 @@ export interface RegisteredView<
    * Zod schema for the view's input. When present, `registry.request` parses
    * the input through it before `build` runs (throwing
    * {@link RegisteredViewInputError} on failure) and derives the summary's
-   * `inputSchema` from it. When absent, `build` receives the raw record.
+   * `inputSchema` from it. When absent, `build` receives the input budget's
+   * plain copy of the record.
    */
   input?: ZodType<TInput>;
   /**
@@ -112,7 +116,7 @@ export interface RegisteredViewSummary {
 export interface ViewResponse<TNode extends PrimitiveNode = PrimitiveNode> {
   /** Summary of the requested view. */
   view: RegisteredViewSummary;
-  /** The composition the view built. */
+  /** The copy of the built composition that `validation` checked, or the built value when the input budget refused it. */
   composition: Composition<TNode>;
   /** Result of validating `composition`. */
   validation: ValidationResult;
@@ -130,9 +134,9 @@ export interface ViewRegistry<
   /** Looks up a view's summary by id, or `undefined` if unregistered. */
   get: (id: string) => RegisteredViewSummary | undefined;
   /**
-   * Validates `input` against the view's schema (if any), builds its
-   * composition, and validates the result. Throws
-   * {@link RegisteredViewInputError} on invalid input, or {@link IsomerError}
+   * Checks `input` against the input budget and the view's schema (if any),
+   * builds its composition, and validates the result. Throws
+   * {@link RegisteredViewInputError} on refused or invalid input, or {@link IsomerError}
    * (`UNKNOWN_VIEW`) if `id` is unregistered.
    */
   request: (
@@ -167,7 +171,10 @@ export const createViewRegistry = <
   THostContext = unknown,
   TNode extends PrimitiveNode = PrimitiveNode,
 >(
-  validateComposition: (composition: Composition<TNode>) => ValidationResult
+  validateComposition: (
+    composition: Composition<TNode>
+  ) => CheckedValidationResult<TNode>,
+  { inputBudget }: { inputBudget?: InputBudget } = {}
 ): ViewRegistry<THostContext, TNode> => {
   const views = new Map<string, RegisteredEntry<THostContext, TNode>>();
 
@@ -193,16 +200,18 @@ export const createViewRegistry = <
       }
       const { view, summary } = entry;
 
+      const checked = checkInputBudget(input, inputBudget);
+      if (!checked.valid) {
+        throw new RegisteredViewInputError(view.id, [checked.error]);
+      }
+      const plain = checked.value as ViewInput;
       const parsedInput = view.input
-        ? validateAndParseInput(view.id, view.input, input)
-        : input;
+        ? validateAndParseInput(view.id, view.input, plain)
+        : plain;
 
-      const composition = await view.build({ context, input: parsedInput });
-      return {
-        view: summary,
-        composition,
-        validation: validateComposition(composition),
-      };
+      const built = await view.build({ context, input: parsedInput });
+      const { composition = built, ...validation } = validateComposition(built);
+      return { view: summary, composition, validation };
     },
   };
 };

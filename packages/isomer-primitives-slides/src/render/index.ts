@@ -20,11 +20,16 @@ export type {
   SlideRenderScope,
 } from './context';
 export {
+  type MrkdwnSource,
+  alteredInCodeBlock,
   fitsSlack,
+  hasMrkdwnDelimiter,
+  mrkdwnKeeps,
   richTextBreak,
   richTextLinked,
   richTextSection,
   slackBold,
+  slackCodePanel,
   slackContext,
   slackFields,
   slackHeading,

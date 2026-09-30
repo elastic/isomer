@@ -28,7 +28,7 @@ import { title, titleShares } from '../theme/components/title';
 import { scalePx } from '../theme/scale';
 
 import { openBody, slideLayout, withLayout } from './layout';
-import { trackWidth } from './size';
+import { lineBox, trackWidth } from './size';
 import { referenceHeading } from './size.fixtures';
 import { example as agendaExample } from './slide_agenda/examples';
 import { example as closingExample } from './slide_closing/examples';
@@ -88,10 +88,7 @@ const leaf = (text: string): SlideStatementNode => ({
 const inFrame = (...body: object[]) =>
   ({ type: 'slideFrame', body }) as PrimitiveNode;
 
-const lineHeight = ({ size, lineHeight }: typeof split.label) =>
-  scalePx(size) * parseFloat(lineHeight.value);
-
-const labelHeight = lineHeight(split.label) + scalePx(split.labelGap);
+const labelHeight = lineBox(split.label) + scalePx(split.labelGap);
 
 describe('slideLayout', () => {
   it('reads a frame body with nothing above it when no container set one', () => {
@@ -207,8 +204,7 @@ describe('slideSplit layout', () => {
     expect(labelled.get('right')?.height).toBe(frameBodyHeight);
 
     const noted = layouts(panes({ footnote }));
-    const footnoteHeight =
-      scalePx(split.footnoteGap) + lineHeight(split.footnote);
+    const footnoteHeight = scalePx(split.footnoteGap) + lineBox(split.footnote);
     expect(noted.get('left')?.height).toBe(frameBodyHeight - footnoteHeight);
     expect(noted.get('right')?.height).toBe(frameBodyHeight - footnoteHeight);
 
@@ -231,9 +227,7 @@ describe('slideSplit layout', () => {
       panes({ footnote: 'A footnote that runs on and on. '.repeat(20) })
     );
     expect(seen.get('left')?.height).toBeLessThan(
-      frameBodyHeight -
-        scalePx(split.footnoteGap) -
-        2 * lineHeight(split.footnote)
+      frameBodyHeight - scalePx(split.footnoteGap) - 2 * lineBox(split.footnote)
     );
   });
 
@@ -250,13 +244,16 @@ describe('slideSplit layout', () => {
               { items: [] },
             ],
           } as PrimitiveNode);
+    // A label with no width breaks between every glyph.
+    const labelAt = (width: number) =>
+      width > 0
+        ? labelHeight
+        : 'Label'.length * lineBox(split.label) + scalePx(split.labelGap);
     const expected = (depth: number): SlideLayout => {
       let layout = openBody;
       for (let level = 0; level < depth; level += 1) {
-        layout = {
-          width: paneWidths(layout.width, 'aside', 'hairline')[0],
-          height: Math.max(0, layout.height - labelHeight),
-        };
+        const [width] = paneWidths(layout.width, 'aside', 'hairline');
+        layout = { width, height: Math.max(0, layout.height - labelAt(width)) };
       }
       return layout;
     };
@@ -333,6 +330,12 @@ describe('auto-sizing primitives read the layout they are given', () => {
     ['closing-titleSize', closingExample, [narrow]],
     ['title-titleSize', titleExample, [narrow]],
     ['code', { type: 'slideCode', panels: [{ lines: [line] }] }, [narrow]],
+    ['code', { type: 'slideDiff', lines: [{ text: line }] }, [narrow]],
+    [
+      'command-textSize',
+      { type: 'slideCommand', command: 'x'.repeat(30) },
+      [narrow],
+    ],
   ] as [string, PrimitiveNode, SlideLayout[]][];
   const patternOf = (variant: string) =>
     new RegExp(`${variant}-(l|m|s|regular|dense)\\b`);

@@ -11,6 +11,14 @@ const inverseTypes = new Set(['slideClosing', 'slideSection', 'slideTitle']);
 /** Page slides that open without a heading. */
 const openerTypes = new Set(['slideQuote', 'slideStatement']);
 
+/** The footer every preview frame carries. */
+export const previewFooter = {
+  brand: 'Isomer',
+  section: 'Preview',
+  sectionNumber: '01',
+  url: 'https://elastic.github.io/isomer',
+} as const;
+
 /** A frame as it is; anything else in one, under a heading and lede or alone on the tone its kind takes. */
 export const previewSlide = (node: PrimitiveNode): Composition => ({
   type: 'view',
@@ -20,10 +28,7 @@ export const previewSlide = (node: PrimitiveNode): Composition => ({
       ? node
       : ({
           type: 'slideFrame',
-          brand: 'Isomer',
-          section: 'Preview',
-          sectionNumber: '01',
-          url: 'https://elastic.github.io/isomer',
+          ...previewFooter,
           tone: inverseTypes.has(node.type) ? 'inverse' : 'page',
           body:
             inverseTypes.has(node.type) || openerTypes.has(node.type)

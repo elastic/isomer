@@ -80,6 +80,9 @@ export const stripMarks = (text: string): string =>
 export const hasLineTerminator = (text: string): boolean =>
   /[\n\r\u2028\u2029]/.test(text);
 
+export const splitLines = (text: string): string[] =>
+  text.split(/\r\n|[\n\r\u2028\u2029]/);
+
 export const plainText = (text: string): string => oneLine(stripMarks(text));
 
 /** Strong becomes `*bold*`. */
@@ -123,6 +126,21 @@ export const marksMarkdown = (text: string): MarkdownInline[] =>
         ? md.strong(run)
         : md.text(run)
   );
+
+/** The whole text in strong; its own strong marks fold in rather than nest. */
+export const strongMarksMarkdown = (text: string): MarkdownInline =>
+  md.strong(
+    ...parseMarks(text).map(({ kind, text: run }) =>
+      kind === 'code' ? md.code(run) : md.text(run)
+    )
+  );
+
+/** {@link marksRichText} with every run bold. */
+export const strongMarksRichText = (text: string): SlackRichTextText[] =>
+  marksRichText(text).map((run) => ({
+    ...run,
+    style: { ...run.style, bold: true },
+  }));
 
 /**
  * Strong is ink at bold weight, or underlined `primary` at the run's weight when `strong` is `'primary'`.

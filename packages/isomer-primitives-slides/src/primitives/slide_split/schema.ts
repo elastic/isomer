@@ -50,6 +50,7 @@ const paneSchema = (nodeSchema: ZodType<unknown>) =>
         {
           error: 'tone colors the label, so it needs one',
           path: ['tone'],
+          rule: 'so only with `label`',
         }
       )
     );

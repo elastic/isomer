@@ -10,10 +10,11 @@
 import { variants } from '@elastic/distillate';
 
 import { slideDistillery, themeVarName, toneVar } from './distillery';
+import { typeRole } from './type_role';
 import { slideTones } from './variants';
 
 const { createStyleModule, tokens } = slideDistillery;
-const { color, connector, font, frame, label, marks } = tokens;
+const { color, connector, font, frame, label, marks, placeholder } = tokens;
 const { cue } = tokens.tone;
 
 export const deckRootModule = createStyleModule('deckRoot', ({ css }) => ({
@@ -58,6 +59,7 @@ export const tonesModule = createStyleModule('tones', ({ css }) => ({
     border-radius: 50%;
     box-sizing: border-box;
     display: inline-block;
+    flex: 0 0 auto;
     height: ${cue.size};
     margin-right: ${cue.gap};
     vertical-align: middle;
@@ -80,7 +82,7 @@ export const labelModule = createStyleModule('label', ({ css }) => ({
     font-size: ${label.size};
     font-weight: ${label.weight};
     letter-spacing: ${label.tracking};
-    text-transform: uppercase;
+    text-transform: ${label.transform};
   `,
   toned: css`
     color: ${toneVar};
@@ -108,8 +110,20 @@ export const connectorModule = createStyleModule('connector', ({ css }) => ({
     height: 0;
     width: 0;
   `,
+  headLeft: css`
+    border-bottom: ${connector.headHalf} solid transparent;
+    border-right: ${connector.headLength} solid ${color.line};
+    border-top: ${connector.headHalf} solid transparent;
+    flex: 0 0 auto;
+    height: 0;
+    width: 0;
+  `,
   primary: css`
     ${themeVarName('color/line')}: ${color.primary};
+  `,
+  /** Draws the connector in the enclosing {@link toneVar}. */
+  toned: css`
+    ${themeVarName('color/line')}: ${toneVar};
   `,
 }));
 
@@ -125,6 +139,7 @@ export const marksModule = createStyleModule('marks', ({ css }) => ({
   displayCode: css`
     font-family: ${marks.displayCode.family};
     font-weight: ${marks.displayCode.weight};
+    text-transform: ${marks.displayCode.transform};
   `,
   strong: css`
     color: ${color.text};
@@ -138,3 +153,32 @@ export const marksModule = createStyleModule('marks', ({ css }) => ({
     text-underline-offset: ${marks.displayStrong.offset};
   `,
 }));
+
+export const placeholderModule = createStyleModule(
+  'placeholder',
+  ({ css }) => ({
+    root: css`
+      align-items: center;
+      background: repeating-linear-gradient(
+        ${placeholder.angle},
+        ${color.placeholderStripe} 0 ${placeholder.stripe},
+        ${color.bgPage} ${placeholder.stripe} ${placeholder.stripeEnd}
+      );
+      border: ${placeholder.border} dashed ${color.borderDashed};
+      border-radius: ${placeholder.radius};
+      box-sizing: border-box;
+      display: flex;
+      justify-content: center;
+      min-height: 0;
+      min-width: 0;
+    `,
+    caption: css`
+      background: ${color.bgPage};
+      border-radius: ${placeholder.captionRadius};
+      color: ${color.textSubtle};
+      display: flex;
+      ${typeRole(placeholder.captionType)}
+      padding: ${placeholder.captionPadding};
+    `,
+  })
+);
