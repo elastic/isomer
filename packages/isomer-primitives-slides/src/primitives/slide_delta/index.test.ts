@@ -179,11 +179,7 @@ describe('slideDelta', () => {
       valueWidth(after, 'l') +
       scalePx(theme.arrowWidth) +
       2 * scalePx(theme.columnGap);
-    const noteFloor =
-      scalePx(theme.columnGap) +
-      scalePx(theme.noteMinWidth) +
-      scalePx(theme.notePadding) +
-      scalePx(theme.rule);
+    const noteFloor = scalePx(theme.columnGap) + scalePx(theme.noteMinWidth);
 
     it.each([
       ['0000', 'l'],

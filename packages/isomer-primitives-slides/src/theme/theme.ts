@@ -18,12 +18,16 @@ import { diff } from './components/diff';
 import { fanout } from './components/fanout';
 import { frame } from './components/frame';
 import { heading } from './components/heading';
+import { lanes } from './components/lanes';
+import { layers } from './components/layers';
 import { list } from './components/list';
 import { marks } from './components/marks';
 import { matrix } from './components/matrix';
+import { pipeline } from './components/pipeline';
 import { quadrant } from './components/quadrant';
 import { quote } from './components/quote';
 import { section } from './components/section';
+import { sequence } from './components/sequence';
 import {
   connector,
   glyph,
@@ -75,11 +79,15 @@ export const SLIDE_THEME = {
   fanout,
   frame,
   heading,
+  lanes,
+  layers,
   list,
   matrix,
+  pipeline,
   quadrant,
   quote,
   section,
+  sequence,
   source,
   split,
   stack,

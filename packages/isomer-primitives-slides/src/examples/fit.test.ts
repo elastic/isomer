@@ -5,17 +5,9 @@
  * 2.0.
  */
 
-import { createTakumiImageBackend } from '@elastic/isomer-image-takumi';
-import { createIsomerRuntime } from '@elastic/isomer-runtime';
-import {
-  checkLayout,
-  type Composition,
-  createChildNodeWalker,
-  type PrimitiveNode,
-} from '@elastic/isomer-sdk';
+import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
-import { slideDeckFrame, slidesPack } from '../pack';
 import { slideLayout } from '../primitives/layout';
 import { referenceHeading, renderedStep } from '../primitives/size.fixtures';
 import { longExample as agendaExample } from '../primitives/slide_agenda/examples';
@@ -50,15 +42,8 @@ import { quadrantFit } from '../theme/components/quadrant';
 import { quoteFit } from '../theme/components/quote';
 import { statementFit } from '../theme/components/statement';
 
-import { slideFonts } from './fonts';
+import { findings } from './measure';
 import { previewSlide } from './preview_slide';
-
-const runtime = createIsomerRuntime({
-  packs: [slidesPack],
-  frames: { slide: slideDeckFrame },
-});
-const takumi = createTakumiImageBackend({ fonts: slideFonts });
-const walk = createChildNodeWalker(runtime.primitives);
 
 const cases = slideDeckPrimitives.flatMap(({ type, examples }) =>
   examples.map((example, index) => ({
@@ -79,14 +64,6 @@ const referenceCases = [agendaExample, definitionsExample].map((example) => {
     },
   };
 });
-
-const findings = async (slide: Composition) =>
-  checkLayout(
-    await takumi.measure(runtime.surfaces.svg.render(slide, { anchors: true })),
-    slide.body,
-    walk,
-    'svg'
-  );
 
 const fits = async ({ slide }: { slide: Composition }) => {
   expect(await findings(slide)).toEqual([]);

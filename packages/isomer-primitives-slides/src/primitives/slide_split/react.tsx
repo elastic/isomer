@@ -6,7 +6,7 @@
  */
 
 import { Fragment, type ReactNode } from 'react';
-import { nodeAnchor } from '@elastic/isomer-sdk';
+import { layoutRoom, nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
@@ -39,7 +39,7 @@ const Pane = ({
 }): ReactNode => {
   const { handles: split } = splitModule;
   return (
-    <div className={cls(context, split.column)}>
+    <div {...layoutRoom(context)} className={cls(context, split.column)}>
       {label ? (
         <h2
           className={cls(
