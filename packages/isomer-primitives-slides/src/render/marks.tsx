@@ -80,6 +80,9 @@ export const stripMarks = (text: string): string =>
 export const hasLineTerminator = (text: string): boolean =>
   /[\n\r\u2028\u2029]/.test(text);
 
+export const splitLines = (text: string): string[] =>
+  text.split(/\r\n|[\n\r\u2028\u2029]/);
+
 export const plainText = (text: string): string => oneLine(stripMarks(text));
 
 /** Strong becomes `*bold*`. */

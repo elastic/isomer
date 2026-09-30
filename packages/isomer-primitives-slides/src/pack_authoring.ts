@@ -31,7 +31,10 @@ export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
     types: ['slideList', 'slideBulletList', 'slideDefinitions'],
   },
   { title: 'Diagrams', types: ['slideFanout', 'slideTerritoryGroup'] },
-  { title: 'Code', types: ['slideCode'] },
+  {
+    title: 'Code',
+    types: ['slideCode', 'slideDiff', 'slideCommand', 'slideTranscript'],
+  },
 ];
 
 export const slidesPackAuthoring = {
@@ -47,6 +50,10 @@ export const slidesPackAuthoring = {
       'The title slide. Its aside is one slide node, never a slideFrame.',
     slideCode:
       'One or two code panels. Every highlighted line number exists in its panel.',
+    slideDiff:
+      'One snippet with changed lines marked. Each entry in lines is one line of source, with no newline.',
+    slideCommand:
+      'One shell command on a single line, without the prompt. highlightPrefix, when given, starts command.',
     slideAgenda:
       'Two to eight sections of the talk, in order. At most one section is current.',
     slideSource: 'One citation line.',

@@ -35,10 +35,13 @@ export type {
   SlideClosingPath,
 } from './primitives/slide_closing';
 export type { SlideCodeNode, SlideCodePanel } from './primitives/slide_code';
+export { SLIDE_COPY, slideCopyEnhancement } from './primitives/slide_command';
+export type { SlideCommandNode } from './primitives/slide_command';
 export type {
   SlideDefinition,
   SlideDefinitionsNode,
 } from './primitives/slide_definitions';
+export type { SlideDiffLine, SlideDiffNode } from './primitives/slide_diff';
 export type {
   SlideFanoutNode,
   SlideFanoutTarget,
@@ -61,6 +64,10 @@ export type {
   SlideTitleDefinition,
   SlideTitleNode,
 } from './primitives/slide_title';
+export type {
+  SlideTranscriptNode,
+  SlideTranscriptTurn,
+} from './primitives/slide_transcript';
 
 export { slideDeckPrimitives, slidePrimitiveTypes } from './registry';
 
@@ -79,19 +86,25 @@ export { slideFontFaces, slidePaletteForMode } from './theme';
 export type { SlideFontFace, SlideFrameTheme, SlidePalette } from './theme';
 export {
   slideBulletMarkers,
+  slideDiffOps,
   slideFrameTones,
   slideSizes,
   slideSplitDividers,
   slideSplitRatios,
   slideStackSpacings,
   slideTones,
+  slideTranscriptFormats,
+  slideTranscriptRoles,
 } from './theme';
 export type {
   SlideBulletMarker,
+  SlideDiffOp,
   SlideFrameTone,
   SlideSize,
   SlideSplitDivider,
   SlideSplitRatio,
   SlideStackSpacing,
   SlideTone,
+  SlideTranscriptFormat,
+  SlideTranscriptRole,
 } from './theme';

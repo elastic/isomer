@@ -9,7 +9,9 @@ import { agendaModule } from './primitives/slide_agenda/styles';
 import { bulletsModule } from './primitives/slide_bullet_list/styles';
 import { closingModule } from './primitives/slide_closing/styles';
 import { codeModule } from './primitives/slide_code/styles';
+import { commandModule } from './primitives/slide_command/styles';
 import { definitionsModule } from './primitives/slide_definitions/styles';
+import { diffModule } from './primitives/slide_diff/styles';
 import { fanoutModule } from './primitives/slide_fanout/styles';
 import { frameModule } from './primitives/slide_frame/styles';
 import { headingModule } from './primitives/slide_heading/styles';
@@ -22,6 +24,7 @@ import { stackModule } from './primitives/slide_stack/styles';
 import { statementModule } from './primitives/slide_statement/styles';
 import { territoryModule } from './primitives/slide_territory_group/styles';
 import { titleModule } from './primitives/slide_title/styles';
+import { transcriptModule } from './primitives/slide_transcript/styles';
 import { slideDistillery } from './theme/distillery';
 import {
   connectorModule,
@@ -44,7 +47,9 @@ export const slideModules = {
   bullets: bulletsModule,
   closing: closingModule,
   code: codeModule,
+  command: commandModule,
   definitions: definitionsModule,
+  diff: diffModule,
   fanout: fanoutModule,
   frame: frameModule,
   heading: headingModule,
@@ -57,6 +62,7 @@ export const slideModules = {
   statement: statementModule,
   territory: territoryModule,
   title: titleModule,
+  transcript: transcriptModule,
 };
 
 /** Hosts include this beside React markup. */
