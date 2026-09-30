@@ -14,12 +14,14 @@
 
 import type { SlideAgendaNode } from './primitives/slide_agenda';
 import type { SlideAnnotatedRenderNode } from './primitives/slide_annotated_render';
+import type { SlideBarsNode } from './primitives/slide_bars';
 import type { SlideBulletListNode } from './primitives/slide_bullet_list';
 import type { SlideClosingNode } from './primitives/slide_closing';
 import type { SlideCodeNode } from './primitives/slide_code';
 import type { SlideColumnsNode } from './primitives/slide_columns';
 import type { SlideCommandNode } from './primitives/slide_command';
 import type { SlideDefinitionsNode } from './primitives/slide_definitions';
+import type { SlideDeltaNode } from './primitives/slide_delta';
 import type { SlideDiffNode } from './primitives/slide_diff';
 import type { SlideFanoutNode } from './primitives/slide_fanout';
 import type { SlideFrameNode } from './primitives/slide_frame';
@@ -34,7 +36,9 @@ import type { SlideSectionNode } from './primitives/slide_section';
 import type { SlideSourceNode } from './primitives/slide_source';
 import type { SlideSplitNode } from './primitives/slide_split';
 import type { SlideStackNode } from './primitives/slide_stack';
+import type { SlideStatNode } from './primitives/slide_stat';
 import type { SlideStatementNode } from './primitives/slide_statement';
+import type { SlideStatsNode } from './primitives/slide_stats';
 import type { SlideTableNode } from './primitives/slide_table';
 import type { SlideTerritoryGroupNode } from './primitives/slide_territory_group';
 import type { SlideTitleNode } from './primitives/slide_title';
@@ -45,12 +49,14 @@ import type { SlideWindowNode } from './primitives/slide_window';
 export type BodyNode =
   | SlideAgendaNode
   | SlideAnnotatedRenderNode
+  | SlideBarsNode
   | SlideBulletListNode
   | SlideClosingNode
   | SlideCodeNode
   | SlideColumnsNode
   | SlideCommandNode
   | SlideDefinitionsNode
+  | SlideDeltaNode
   | SlideDiffNode
   | SlideFanoutNode
   | SlideFrameNode
@@ -65,7 +71,9 @@ export type BodyNode =
   | SlideSourceNode
   | SlideSplitNode
   | SlideStackNode
+  | SlideStatNode
   | SlideStatementNode
+  | SlideStatsNode
   | SlideTableNode
   | SlideTerritoryGroupNode
   | SlideTitleNode

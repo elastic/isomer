@@ -8,12 +8,14 @@
 import { color, font, inverse, radius, space, stroke, type } from './base';
 import { agenda } from './components/agenda';
 import { annotatedRender } from './components/annotated_render';
+import { bars } from './components/bars';
 import { bulletList } from './components/bullet_list';
 import { closing } from './components/closing';
 import { code } from './components/code';
 import { columns } from './components/columns';
 import { command } from './components/command';
 import { definitions } from './components/definitions';
+import { delta } from './components/delta';
 import { diff } from './components/diff';
 import { fanout } from './components/fanout';
 import { frame } from './components/frame';
@@ -26,11 +28,20 @@ import { quote } from './components/quote';
 import { render } from './components/render';
 import { renderGrid } from './components/render_grid';
 import { section } from './components/section';
-import { connector, glyph, label, link, tone } from './components/shared';
+import {
+  connector,
+  glyph,
+  label,
+  link,
+  placeholder,
+  tone,
+} from './components/shared';
 import { source } from './components/source';
 import { split } from './components/split';
 import { stack } from './components/stack';
+import { stat } from './components/stat';
 import { statement } from './components/statement';
+import { stats } from './components/stats';
 import { table } from './components/table';
 import { territoryGroup } from './components/territory_group';
 import { title } from './components/title';
@@ -55,15 +66,18 @@ export const SLIDE_THEME = {
   label,
   connector,
   tone,
+  placeholder,
   marks,
   agenda,
   annotatedRender,
+  bars,
   bulletList,
   closing,
   code,
   columns,
   command,
   definitions,
+  delta,
   diff,
   fanout,
   frame,
@@ -78,7 +92,9 @@ export const SLIDE_THEME = {
   source,
   split,
   stack,
+  stat,
   statement,
+  stats,
   table,
   territoryGroup,
   title,

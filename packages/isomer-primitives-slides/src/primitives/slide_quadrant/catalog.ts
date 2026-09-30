@@ -19,6 +19,7 @@ export const catalog = {
     'You want the audience to find where each option lands, not read exact scores.',
   ],
   avoidWhen: [
+    'The options differ on one quality only; use slideBars.',
     'Each option has several attributes to compare side by side; use slideTable.',
     'The options fall into groups without two axes behind them; use slideColumns.',
   ],

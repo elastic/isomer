@@ -21,6 +21,7 @@ export const catalog = {
     'One option is the recommendation: set `highlight` to its column.',
   ],
   avoidWhen: [
+    'The columns are numbers to compare; use slideStats.',
     'There are exactly two sides, one per owner, each holding slide nodes; use slideSplit.',
     'The columns name who owns what; use slideTerritoryGroup.',
     'The items are terms the audience must learn; use slideDefinitions.',
