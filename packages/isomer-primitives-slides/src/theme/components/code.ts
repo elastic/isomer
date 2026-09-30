@@ -50,7 +50,10 @@ export const codeLineMaxLength = (
     panels === 1
       ? width
       : (width - scalePx(code.arrowWidth) - 2 * scalePx(code.panelGap)) / 2;
-  const inner = panel - 2 * scalePx(code.border) - 2 * scalePx(code.paddingX);
+  const inner = Math.max(
+    0,
+    panel - 2 * scalePx(code.border) - 2 * scalePx(code.paddingX)
+  );
   const size = dense ? code.denseText.size : code.text.size;
   return Math.floor(inner / (monoAdvance * scalePx(size)));
 };

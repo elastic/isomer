@@ -309,7 +309,7 @@ describe('auto-sizing primitives read the layout they are given', () => {
   const short: SlideLayout = { width: frameContentWidth, height: 120 };
   const line = 'x'.repeat(60);
 
-  it.each([
+  const cases = [
     [
       'statement-textSize',
       { type: 'slideStatement', text: 'x'.repeat(statementFit.l) },
@@ -333,16 +333,29 @@ describe('auto-sizing primitives read the layout they are given', () => {
     ['closing-titleSize', closingExample, [narrow]],
     ['title-titleSize', titleExample, [narrow]],
     ['code', { type: 'slideCode', panels: [{ lines: [line] }] }, [narrow]],
-  ] as [string, PrimitiveNode, SlideLayout[]][])(
+  ] as [string, PrimitiveNode, SlideLayout[]][];
+  const patternOf = (variant: string) =>
+    new RegExp(`${variant}-(l|m|s|regular|dense)\\b`);
+
+  it.each(cases)(
     '%s steps down in a smaller layout',
     (variant, node, smaller) => {
-      const pattern = new RegExp(`${variant}-(l|m|s|regular|dense)\\b`);
+      const pattern = patternOf(variant);
       const open = stepIn(node, pattern);
       expect(open).toMatch(/^(l|regular)$/);
       expect(stepIn(node, pattern, openBody)).toBe(open);
       for (const layout of smaller) {
         expect(stepIn(node, pattern, layout)).not.toBe(open);
       }
+    }
+  );
+
+  it.each(cases)(
+    '%s takes its smallest step with no room at all',
+    (variant, node) => {
+      expect(stepIn(node, patternOf(variant), { width: 0, height: 0 })).toMatch(
+        /^(s|dense)$/
+      );
     }
   );
 });

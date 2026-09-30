@@ -223,6 +223,15 @@ describe('slideCode in a split pane', () => {
     expect(density(inPane(panel([line])))).toBe('dense');
   });
 
+  it('holds no characters, never fewer, in a layout narrower than its chrome', () => {
+    for (const panels of [1, 2] as const) {
+      for (const dense of [false, true]) {
+        expect(codeLineMaxLength(panels, dense, 0)).toBe(0);
+        expect(codeLineMaxLength(panels, dense, 40)).toBe(0);
+      }
+    }
+  });
+
   it('measures each of two panels across the layout width', () => {
     const two = codeLineMaxLength(2, false, frameContentWidth);
     const pair = (width: string) => ({
