@@ -31,7 +31,6 @@ import {
   type SlackTextObject,
 } from './blocks';
 import {
-  bold,
   clampSlackText,
   escapeMrkdwn,
   formatHeaderText,
@@ -421,36 +420,63 @@ const tableCharCount = (block: SlackTableBlock): number =>
     0
   );
 
-// A table over the message-wide cell budget degrades to one mrkdwn section per
-// row, keyed by the header row, rather than costing the caller the whole
-// message: Slack rejects the payload outright once the aggregate is exceeded.
-const degradeTableToSections = (block: SlackTableBlock): SlackBlock[] => {
+const cellInlines = (cell: SlackTableCell): SlackRichTextInline[] =>
+  cell.type === 'raw_text'
+    ? cell.text
+      ? [{ type: 'text', text: cell.text }]
+      : []
+    : cell.elements.flatMap((element) =>
+        element.type === 'rich_text_list'
+          ? element.elements.flatMap(({ elements }) => elements)
+          : element.elements
+      );
+
+const lineBreak: SlackRichTextInline = { type: 'text', text: '\n' };
+
+// A table over the message-wide cell budget degrades to rich text, each row as
+// `heading: cell` lines keyed by the header row with a blank line between rows,
+// which Slack keeps whole and never reads as mrkdwn.
+const degradeTable = (block: SlackTableBlock): SlackBlock[] => {
   const [header, ...rows] = block.rows;
   if (!header) {
     return [];
   }
-  const labels = header.map((cell) => tableCellText(cell));
-  const section = (text: string): SlackSectionBlock => ({
-    type: 'section',
-    text: {
-      type: 'mrkdwn',
-      text: clampSlackText(text, SLACK_LIMITS.sectionTextChars),
+  const labels = header.map((cell): SlackRichTextInline => ({
+    type: 'text',
+    text: tableCellText(cell),
+    style: { bold: true },
+  }));
+  const lines =
+    rows.length === 0
+      ? [
+          labels.flatMap((label, index) =>
+            index > 0
+              ? [{ type: 'text' as const, text: ' · ' }, label]
+              : [label]
+          ),
+        ]
+      : rows.map((row) =>
+          labels.flatMap((label, index): SlackRichTextInline[] => [
+            ...(index > 0 ? [lineBreak] : []),
+            label,
+            { type: 'text', text: ': ' },
+            ...(row[index] ? cellInlines(row[index]) : []),
+          ])
+        );
+  return [
+    {
+      type: 'rich_text',
+      elements: [
+        {
+          type: 'rich_text_section',
+          elements: lines.flatMap((line, index) => [
+            ...(index > 0 ? [lineBreak, lineBreak] : []),
+            ...line,
+          ]),
+        },
+      ],
     },
-  });
-  if (rows.length === 0) {
-    return [section(labels.map(bold).join(' · '))];
-  }
-  return rows.map((row) =>
-    section(
-      labels
-        .map((label, index) => {
-          const cell = row[index];
-          const value = cell ? escapeMrkdwn(tableCellText(cell)) : '';
-          return `${bold(label)}: ${value}`;
-        })
-        .join('\n')
-    )
-  );
+  ];
 };
 
 // Slack counts table cell characters across the whole message, not per block,
@@ -480,7 +506,7 @@ const enforceTableCharBudget = (
       out.push(block);
       continue;
     }
-    out.push(...degradeTableToSections(block));
+    out.push(...degradeTable(block));
   }
   return out;
 };

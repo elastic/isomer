@@ -12,6 +12,7 @@ import { SLACK_LIMITS, type SlackBlock } from '@elastic/isomer-sdk/slack';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { bars as barsTheme } from '../../theme/components/bars';
 import { openBody } from '../layout';
 import { renderedStep } from '../size.fixtures';
 
@@ -19,6 +20,7 @@ import { denseExample, example, scaledExample } from './examples';
 import { markdown as markdownContent, text } from './index';
 import { barsSize } from './react';
 import type { SlideBarsNode } from './schema';
+import { barValue } from './value';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -343,6 +345,83 @@ describe('slideBars', () => {
       expect(barsSize(denseExample, full)).toBe('s');
     });
   });
+  it.each([
+    [0, '0'],
+    [-0, '0'],
+    [0.004, '<0.01'],
+    [0.00499, '<0.01'],
+    [0.005, '0.01'],
+    [0.01, '0.01'],
+    [1.004, '1'],
+    [1e21, '1000000000000000000000'],
+  ])('prints %d as %s', (value, shown) => {
+    expect(barValue(value)).toBe(shown);
+  });
+
+  it('keeps a chart past the message-wide cell budget whole and literal', () => {
+    const half = SLACK_LIMITS.tableCellCharsPerMessage / 2;
+    const chart = (label: string) => ({
+      type: 'slideBars',
+      items: [
+        { label, value: 2 },
+        { label: 'B', value: 1 },
+      ],
+    });
+    const long = `*${'x'.repeat(half)}_`;
+    const { blocks } = runtime.surfaces.slack.render({
+      type: 'view',
+      body: [
+        {
+          type: 'slideFrame',
+          body: [chart('y'.repeat(half)), chart(long)],
+        } as PrimitiveNode,
+      ],
+    });
+    expect(blocks.filter(({ type }) => type === 'table')).toHaveLength(1);
+    const heading = (text: string) => ({
+      type: 'text',
+      text,
+      style: { bold: true },
+    });
+    const cell = (label: string, value: string) => [
+      heading(barsTheme.heads.label.value),
+      { type: 'text', text: ': ' },
+      { type: 'text', text: label },
+      { type: 'text', text: '\n' },
+      heading(barsTheme.heads.value.value),
+      { type: 'text', text: ': ' },
+      { type: 'text', text: value },
+    ];
+    expect(blocks).toContainEqual({
+      type: 'rich_text',
+      elements: [
+        {
+          type: 'rich_text_section',
+          elements: [
+            ...cell(long, '2'),
+            { type: 'text', text: '\n' },
+            { type: 'text', text: '\n' },
+            ...cell('B', '1'),
+          ],
+        },
+      ],
+    });
+  });
+
+  it('never prints a positive value as zero on any surface', () => {
+    const node: SlideBarsNode = {
+      type: 'slideBars',
+      items: [
+        { label: 'Tiny', value: 0.004 },
+        { label: 'None', value: 0 },
+      ],
+    };
+    expect(html(node)).toContain('>&lt;0.01</span>');
+    for (const output of everySurface(node)) {
+      expect(output).toMatch(/<0\.01|&lt;0\.01/);
+    }
+  });
+
   it('prints every value and the highlight cue on every surface', () => {
     for (const output of everySurface(example)) {
       expect(output).toContain('● Bristol');

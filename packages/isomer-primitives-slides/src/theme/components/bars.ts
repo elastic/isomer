@@ -27,6 +27,8 @@ export const bars = {
     lineHeight: font.lineHeight.solid,
   },
   valueSizes: { l: font.size.px40, m: font.size.px36, s: font.size.px32 },
+  /** Before the smallest printable step, for a positive value that rounds to zero. */
+  valueBelow: literal('<'),
   detail: { ...type.mono, size: font.size.px24 },
   detailGaps: { l: space.px8, m: space.px8, s: space.px4 },
   /** Column headings of the degraded tables. */
