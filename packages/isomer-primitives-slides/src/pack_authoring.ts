@@ -13,11 +13,27 @@ import type { PackAuthoringOptions, PrimitiveGroup } from '@elastic/isomer-sdk';
 export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
   {
     title: 'Slide structure',
-    types: ['slideFrame', 'slideHeading', 'slideTitle'],
+    types: [
+      'slideFrame',
+      'slideHeading',
+      'slideStatement',
+      'slideQuote',
+      'slideTitle',
+      'slideSection',
+      'slideAgenda',
+      'slideClosing',
+      'slideSource',
+    ],
   },
-  { title: 'Layout', types: ['slideSplit', 'slideStack', 'slideWindow'] },
-  { title: 'Text', types: ['slideBulletList', 'slideColumns'] },
-  { title: 'Diagrams', types: ['slideTerritoryGroup'] },
+  {
+    title: 'Layout',
+    types: ['slideSplit', 'slideStack', 'slideWindow'],
+  },
+  {
+    title: 'Text',
+    types: ['slideList', 'slideBulletList', 'slideDefinitions', 'slideColumns'],
+  },
+  { title: 'Diagrams', types: ['slideFanout', 'slideTerritoryGroup'] },
   { title: 'Code', types: ['slideCode'] },
   {
     title: 'Renders',
@@ -48,5 +64,10 @@ export const slidesPackAuthoring = {
       'One slideRender with one to six pins. The render needs a `slide` reference or a `body`, and its body never holds another render.',
     slideCode:
       'One or two code panels. Every highlighted line number exists in its panel.',
+    slideAgenda:
+      'Two to eight sections of the talk, in order. At most one section is current.',
+    slideSource: 'One citation line.',
+    slideSection:
+      'A section divider. When hrefs is given it has one entry per contents entry.',
   },
 } satisfies PackAuthoringOptions;

@@ -5,16 +5,25 @@
  * 2.0.
  */
 
+import { agendaModule } from './primitives/slide_agenda/styles';
 import { annotatedRenderModule } from './primitives/slide_annotated_render/styles';
 import { bulletsModule } from './primitives/slide_bullet_list/styles';
+import { closingModule } from './primitives/slide_closing/styles';
 import { codeModule } from './primitives/slide_code/styles';
 import { columnsModule } from './primitives/slide_columns/styles';
+import { definitionsModule } from './primitives/slide_definitions/styles';
+import { fanoutModule } from './primitives/slide_fanout/styles';
 import { frameModule } from './primitives/slide_frame/styles';
 import { headingModule } from './primitives/slide_heading/styles';
+import { listModule } from './primitives/slide_list/styles';
+import { quoteModule } from './primitives/slide_quote/styles';
 import { renderModule } from './primitives/slide_render/styles';
 import { renderGridModule } from './primitives/slide_render_grid/styles';
+import { sectionModule } from './primitives/slide_section/styles';
+import { sourceModule } from './primitives/slide_source/styles';
 import { splitModule } from './primitives/slide_split/styles';
 import { stackModule } from './primitives/slide_stack/styles';
+import { statementModule } from './primitives/slide_statement/styles';
 import { territoryModule } from './primitives/slide_territory_group/styles';
 import { titleModule } from './primitives/slide_title/styles';
 import { windowModule } from './primitives/slide_window/styles';
@@ -36,16 +45,25 @@ export const slideModules = {
   label: labelModule,
   connector: connectorModule,
   marks: marksModule,
+  agenda: agendaModule,
   annotatedRender: annotatedRenderModule,
   bullets: bulletsModule,
+  closing: closingModule,
   code: codeModule,
   columns: columnsModule,
+  definitions: definitionsModule,
+  fanout: fanoutModule,
   frame: frameModule,
   heading: headingModule,
+  list: listModule,
+  quote: quoteModule,
   render: renderModule,
   renderGrid: renderGridModule,
+  section: sectionModule,
+  source: sourceModule,
   split: splitModule,
   stack: stackModule,
+  statement: statementModule,
   territory: territoryModule,
   title: titleModule,
   window: windowModule,
