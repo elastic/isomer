@@ -20,6 +20,7 @@ import { slideLayout } from '../primitives/layout';
 import { referenceHeading, renderedStep } from '../primitives/size.fixtures';
 import { longExample as agendaExample } from '../primitives/slide_agenda/examples';
 import { denseExample as barsExample } from '../primitives/slide_bars/examples';
+import { wideExample as columnsExample } from '../primitives/slide_columns/examples';
 import { fullExample as definitionsExample } from '../primitives/slide_definitions/examples';
 import { wideExample as fanoutExample } from '../primitives/slide_fanout/examples';
 import { tallestExample } from '../primitives/slide_heading/examples';
@@ -33,6 +34,8 @@ import {
   fullExample as quadrantFullExample,
 } from '../primitives/slide_quadrant/examples';
 import type { SlideQuadrantNode } from '../primitives/slide_quadrant/schema';
+import { example as renderExample } from '../primitives/slide_render/examples';
+import { example as gridExample } from '../primitives/slide_render_grid/examples';
 import {
   example as tableExample,
   fullExample as tableFullExample,
@@ -277,4 +280,29 @@ describe('checkLayout reports a node past the frame body', () => {
       },
     ]);
   });
+});
+
+describe('a window sizes the nodes below its heading to the room left', () => {
+  it.each([renderExample, gridExample, columnsExample])(
+    '$type below the tallest heading',
+    async (node) => {
+      const slide: Composition = {
+        type: 'view',
+        body: [
+          {
+            type: 'slideFrame',
+            body: [
+              {
+                type: 'slideWindow',
+                chrome: 'browser',
+                title: 'shop.example',
+                body: [tallestExample, node],
+              },
+            ],
+          } as PrimitiveNode,
+        ],
+      };
+      expect(await findings(slide)).toEqual([]);
+    }
+  );
 });

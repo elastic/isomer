@@ -8,6 +8,7 @@
 import type { SlideLayout } from '../../render/context';
 import { window } from '../../theme/components/window';
 import { scalePx } from '../../theme/scale';
+import { bodyLayout } from '../layout';
 import { lineBox, measureText } from '../size';
 
 import { windowTitle } from './title';
@@ -39,3 +40,16 @@ export const windowBodyLayout = (
     height: Math.max(0, height - 2 * border - bar - 2 * padY),
   };
 };
+
+/** The layout a window in `layout` gives its body node at `index`, below any leading heading. */
+export const windowNodeLayout = (
+  layout: SlideLayout,
+  node: SlideWindowNode,
+  index: number
+): SlideLayout =>
+  bodyLayout(
+    windowBodyLayout(layout, node),
+    scalePx(window.bodyGap),
+    node.body,
+    index
+  );

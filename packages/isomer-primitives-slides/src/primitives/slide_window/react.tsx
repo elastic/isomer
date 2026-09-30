@@ -13,7 +13,7 @@ import type { SlideReactEnv } from '../../render/context';
 import { layoutModule } from '../../theme/modules';
 import { slideLayout, withLayout } from '../layout';
 
-import { windowBodyLayout } from './layout';
+import { windowNodeLayout } from './layout';
 import { windowModule } from './styles';
 import { windowTitle } from './title';
 import type { SlideWindowNode } from './types';
@@ -26,10 +26,7 @@ export const react = (
   const { body, chrome, type } = node;
   const { handles: window } = windowModule;
   const slack = chrome === 'slack';
-  const inside = withLayout(
-    context,
-    windowBodyLayout(slideLayout(context), node)
-  );
+  const layout = slideLayout(context);
   return (
     <div
       {...nodeAnchor(context, { type })}
@@ -51,7 +48,12 @@ export const react = (
             slack ? window.slackBody : window.appBody
           )}>
           {body.map((child, index) => (
-            <Fragment key={index}>{scope.renderReact(child, inside)}</Fragment>
+            <Fragment key={index}>
+              {scope.renderReact(
+                child,
+                withLayout(context, windowNodeLayout(layout, node, index))
+              )}
+            </Fragment>
           ))}
         </div>
       </div>

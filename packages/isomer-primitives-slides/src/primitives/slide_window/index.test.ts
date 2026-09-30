@@ -15,7 +15,7 @@ import { slideDeckFrame, slidesPack } from '../../pack';
 
 import { example, terminalExample } from './examples';
 import { slideWindowPrimitive } from './index';
-import { windowBodyLayout } from './layout';
+import { windowBodyLayout, windowNodeLayout } from './layout';
 import type { SlideWindowNode } from './types';
 
 const runtime = createIsomerRuntime({
@@ -88,6 +88,24 @@ describe('slideWindow layout', () => {
         windowBodyLayout(room, { ...example, chrome, title: 'shop' }).height
       );
     }
+  });
+
+  it('gives a node below a leading heading the height the heading and gap leave', () => {
+    const room = { width: 1000, height: 600 };
+    const node: SlideWindowNode = {
+      ...example,
+      body: [
+        { type: 'slideHeading', title: 'Checkout', lede: 'Two releases.' },
+        { type: 'slideBulletList', items: ['One'] },
+        { type: 'slideBulletList', items: ['Two'] },
+      ],
+    };
+    const inner = windowBodyLayout(room, node);
+    expect(windowNodeLayout(room, node, 0)).toEqual(inner);
+    const below = windowNodeLayout(room, node, 1);
+    expect(below.width).toBe(inner.width);
+    expect(below.height).toBeLessThan(inner.height);
+    expect(windowNodeLayout(room, node, 2)).toEqual(below);
   });
 });
 
