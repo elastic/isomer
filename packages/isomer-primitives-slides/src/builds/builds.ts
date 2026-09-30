@@ -19,6 +19,7 @@ import {
 import type { SlideContentNode } from '../body_node';
 import { bulletListBuild } from '../primitives/slide_bullet_list/build';
 import { listBuild } from '../primitives/slide_list/build';
+import { transcriptBuild } from '../primitives/slide_transcript/build';
 import { slideDeckPrimitives } from '../registry';
 
 import type { SlideBuild } from './types';
@@ -29,6 +30,7 @@ export const SLIDE_BUILDS = 'slideBuilds';
 const buildsByType = {
   slideBulletList: bulletListBuild,
   slideList: listBuild,
+  slideTranscript: transcriptBuild,
 } satisfies Partial<Record<SlideContentNode['type'], SlideBuild<never>>>;
 
 const buildOf = (node: unknown): SlideBuild<never> | undefined => {

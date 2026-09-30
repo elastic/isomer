@@ -48,10 +48,13 @@ export type {
 } from './primitives/slide_closing';
 export type { SlideCodeNode, SlideCodePanel } from './primitives/slide_code';
 export type { SlideColumn, SlideColumnsNode } from './primitives/slide_columns';
+export { SLIDE_COPY, slideCopyEnhancement } from './primitives/slide_command';
+export type { SlideCommandNode } from './primitives/slide_command';
 export type {
   SlideDefinition,
   SlideDefinitionsNode,
 } from './primitives/slide_definitions';
+export type { SlideDiffLine, SlideDiffNode } from './primitives/slide_diff';
 export type {
   SlideFanoutNode,
   SlideFanoutTarget,
@@ -60,6 +63,14 @@ export { SlideFrameView } from './primitives/slide_frame';
 export type { SlideFrameNode } from './primitives/slide_frame';
 export type { SlideHeadingNode } from './primitives/slide_heading';
 export type { SlideListItem, SlideListNode } from './primitives/slide_list';
+export type {
+  SlideMatrixNode,
+  SlideMatrixRow,
+} from './primitives/slide_matrix';
+export type {
+  SlideQuadrant,
+  SlideQuadrantNode,
+} from './primitives/slide_quadrant';
 export type { SlideQuoteNode } from './primitives/slide_quote';
 export type { SlideRenderNode } from './primitives/slide_render';
 export type {
@@ -71,6 +82,7 @@ export type { SlideSourceNode } from './primitives/slide_source';
 export type { SlideSplitNode, SlideSplitPane } from './primitives/slide_split';
 export type { SlideStackNode } from './primitives/slide_stack';
 export type { SlideStatementNode } from './primitives/slide_statement';
+export type { SlideTableGroup, SlideTableNode } from './primitives/slide_table';
 export type {
   SlideTerritory,
   SlideTerritoryGroupNode,
@@ -79,6 +91,10 @@ export type {
   SlideTitleDefinition,
   SlideTitleNode,
 } from './primitives/slide_title';
+export type {
+  SlideTranscriptNode,
+  SlideTranscriptTurn,
+} from './primitives/slide_transcript';
 export type { SlideWindowNode } from './primitives/slide_window';
 
 export { slideDeckPrimitives, slidePrimitiveTypes } from './registry';
@@ -104,23 +120,31 @@ export { slideFontFaces, slidePaletteForMode } from './theme';
 export type { SlideFontFace, SlideFrameTheme, SlidePalette } from './theme';
 export {
   slideBulletMarkers,
+  slideDiffOps,
   slideFrameTones,
+  slideMatrixMarks,
   slideRenderSurfaces,
   slideSizes,
   slideSplitDividers,
   slideSplitRatios,
   slideStackSpacings,
   slideTones,
+  slideTranscriptFormats,
+  slideTranscriptRoles,
   slideWindowChromes,
 } from './theme';
 export type {
   SlideBulletMarker,
+  SlideDiffOp,
   SlideFrameTone,
+  SlideMatrixMark,
   SlideRenderSurface,
   SlideSize,
   SlideSplitDivider,
   SlideSplitRatio,
   SlideStackSpacing,
   SlideTone,
+  SlideTranscriptFormat,
+  SlideTranscriptRole,
   SlideWindowChrome,
 } from './theme';

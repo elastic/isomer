@@ -12,12 +12,16 @@ import { bulletList } from './components/bullet_list';
 import { closing } from './components/closing';
 import { code } from './components/code';
 import { columns } from './components/columns';
+import { command } from './components/command';
 import { definitions } from './components/definitions';
+import { diff } from './components/diff';
 import { fanout } from './components/fanout';
 import { frame } from './components/frame';
 import { heading } from './components/heading';
 import { list } from './components/list';
 import { marks } from './components/marks';
+import { matrix } from './components/matrix';
+import { quadrant } from './components/quadrant';
 import { quote } from './components/quote';
 import { render } from './components/render';
 import { renderGrid } from './components/render_grid';
@@ -27,8 +31,10 @@ import { source } from './components/source';
 import { split } from './components/split';
 import { stack } from './components/stack';
 import { statement } from './components/statement';
+import { table } from './components/table';
 import { territoryGroup } from './components/territory_group';
 import { title } from './components/title';
+import { transcript } from './components/transcript';
 import { window } from './components/window';
 
 /**
@@ -56,11 +62,15 @@ export const SLIDE_THEME = {
   closing,
   code,
   columns,
+  command,
   definitions,
+  diff,
   fanout,
   frame,
   heading,
   list,
+  matrix,
+  quadrant,
   quote,
   render,
   renderGrid,
@@ -69,8 +79,10 @@ export const SLIDE_THEME = {
   split,
   stack,
   statement,
+  table,
   territoryGroup,
   title,
+  transcript,
   window,
 } as const;
 

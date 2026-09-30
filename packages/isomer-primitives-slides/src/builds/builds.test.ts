@@ -126,6 +126,23 @@ describe('slide builds', () => {
     expect(root.textContent).toContain('Always.');
   });
 
+  it('builds a slideTranscript one turn at a time', () => {
+    const composition = slide({
+      type: 'slideTranscript',
+      label: 'Retry',
+      turns: [
+        { role: 'user', text: 'Chart revenue.' },
+        { role: 'model', text: '{}', format: 'code' },
+        { role: 'host', text: 'Rejected.' },
+      ],
+    });
+    expect(slideBuilds(composition)).toBe(3);
+    const root = mount(composition);
+    showSlideBuild(root, composition, 1);
+    expect(visibility(root)).toEqual(['', 'hidden', 'hidden']);
+    expect(root.textContent).toContain('Retry');
+  });
+
   it('builds each occurrence of a reused node object on its own', () => {
     const composition = slide(two, two);
     const root = mount(composition);

@@ -8,6 +8,7 @@ A build reveals a slide one part per click. Order comes from the slide's structu
 | --- | --- |
 | `slideBulletList` | an item |
 | `slideList` | a row |
+| `slideTranscript` | a turn |
 
 A slide embedded with `slideRender`, `slideRenderGrid`, or `slideAnnotatedRender` is a picture of a finished slide and never builds. Hidden parts keep their layout box (`visibility: hidden`), so nothing moves when one appears.
 

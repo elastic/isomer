@@ -30,7 +30,7 @@ This does not reach every literal in a module: `1fr`, `minmax(0, …)`, `50%`, a
 
 [Distillate](https://elastic.github.io/distillate/) theme leaves are not color-only: a plain `string` becomes a CSS custom property with identical light/dark values; `lightDark(light, dark)` is the scheme-varying color helper; a `ScaleToken` (`cq` / `scaleToken`, wrapped here as `px` and `literal`) inlines as a literal and cannot vary across schemes or overlays. This pack uses `ScaleToken` for everything outside `color` and `inverse` because the 16:9 canvas is fixed — a host that wants different geometry replaces the frame (`docs/document.md`, `docs/theme.md`), not a token. Reach for a string leaf only when a value is meant to be host-themeable.
 
-A CSS module that branches on an enum field uses `variants(domain, factory)` with the domain array already in `src/theme/variants.ts`. Do not add a private `switch`.
+A CSS module that branches on an enum field uses `variants(domain, factory)` with the domain array already in `src/theme/variants.ts`. Do not add a private `switch`. One that branches on a count or a grid line builds its domain with `countKeys` and reads a key with `countKey`, since a variant key must start with a letter.
 
 ## Drawing inside an `svg`
 
@@ -187,7 +187,7 @@ Each primitive's `index.test.ts` covers its schema rejections and every surface'
 - `src/heading_levels.test.ts` fails when an example's HTML headings and Markdown headings differ in level or order.
 - `src/stated_rules.test.ts` fails when a custom check does not go through `src/primitives/cross_field.ts` or its rule is not in the primitive's authoring schema.
 
-The tests that rasterize need `@elastic/isomer-image-takumi` and `@fontsource/*` as devDependencies.
+The tests that rasterize need `@elastic/isomer-image-takumi` and `@fontsource/*` as devDependencies. `src/primitives/slide_command/copy.test.ts` runs under `jsdom` through a `// @vitest-environment jsdom` pragma, so a pack lifted out of this monorepo installs `jsdom` too.
 
 ## Registering the primitive
 

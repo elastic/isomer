@@ -34,7 +34,14 @@ export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
     types: ['slideList', 'slideBulletList', 'slideDefinitions', 'slideColumns'],
   },
   { title: 'Diagrams', types: ['slideFanout', 'slideTerritoryGroup'] },
-  { title: 'Code', types: ['slideCode'] },
+  {
+    title: 'Data',
+    types: ['slideTable', 'slideMatrix', 'slideQuadrant'],
+  },
+  {
+    title: 'Code',
+    types: ['slideCode', 'slideDiff', 'slideCommand', 'slideTranscript'],
+  },
   {
     title: 'Renders',
     types: ['slideRender', 'slideRenderGrid', 'slideAnnotatedRender'],
@@ -62,8 +69,16 @@ export const slidesPackAuthoring = {
       'One body on two to six surfaces, each surface once. The body never holds another render.',
     slideAnnotatedRender:
       'One slideRender with one to six pins. The render needs a `slide` reference or a `body`, and its body never holds another render.',
+    slideTable:
+      'A grid of short cells. Give either rows or groups, not both; every row has exactly one cell per column; twelve rows at most across all groups.',
+    slideMatrix:
+      'Yes, partial, or no marks for one to eight rows against two to six columns. Every row has exactly one mark per column; highlight, when given, is an index into columns.',
     slideCode:
       'One or two code panels. Every highlighted line number exists in its panel.',
+    slideDiff:
+      'One snippet with changed lines marked. Each entry in lines is one line of source, with no newline.',
+    slideCommand:
+      'One shell command on a single line, without the prompt. highlightPrefix, when given, starts command.',
     slideAgenda:
       'Two to eight sections of the talk, in order. At most one section is current.',
     slideSource: 'One citation line.',

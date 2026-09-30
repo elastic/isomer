@@ -19,8 +19,11 @@ export const catalog = {
     'You want to show where a value is defined and where it is used, as two panels joined by an arrow.',
   ],
   avoidWhen: [
+    'The code is a back-and-forth between a person, a model, and a program; use slideTranscript.',
     'The snippet needs more than sixteen lines; cut it down to the lines that matter.',
     'The output belongs to a place, like a terminal or a Slack channel; put it in a slideWindow.',
+    'The point is what a change did to the code, lines added and removed; use slideDiff.',
+    'The snippet is one shell command for the audience to run; use slideCommand.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

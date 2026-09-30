@@ -13,23 +13,31 @@ export type { SlideFrameTheme, SlidePalette } from './palette';
 export { literal, paddingXy, px, scalePx } from './scale';
 export {
   slideBulletMarkers,
+  slideDiffOps,
   slideFrameTones,
+  slideMatrixMarks,
   slideRenderSurfaces,
   slideSizes,
   slideSplitDividers,
   slideSplitRatios,
   slideStackSpacings,
   slideTones,
+  slideTranscriptFormats,
+  slideTranscriptRoles,
   slideWindowChromes,
 } from './variants';
 export type {
   SlideBulletMarker,
+  SlideDiffOp,
   SlideFrameTone,
+  SlideMatrixMark,
   SlideRenderSurface,
   SlideSize,
   SlideSplitDivider,
   SlideSplitRatio,
   SlideStackSpacing,
   SlideTone,
+  SlideTranscriptFormat,
+  SlideTranscriptRole,
   SlideWindowChrome,
 } from './variants';

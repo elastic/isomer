@@ -16,6 +16,7 @@ The in-repo reference primitive pack for Isomer. Slide-deck primitives, every su
 | [Document](document.md) | Geometry, `validateBody`, `wrap` |
 | [Theme](theme.md) | The one-field bound and how palette selection works |
 | [Styling](styling.md) | Distillate collection, the pack's own adapter, and the React surface |
+| [Copy buttons](copy.md) | The `slideCopy` enhancement on `slideCommand` |
 | [Worked example](example.md) | The example compositions, their artifacts, and how to get a PNG |
 
 ## Quick start
@@ -57,7 +58,13 @@ runtime.surfaces.text.render(composition);
 | `slideDefinitions` | Terms and their meanings as a ruled glossary. |
 | `slideFanout` | One source branching to several unordered targets. |
 | `slideTerritoryGroup` | Who owns what, one color-keyed column per owner. |
+| `slideTable` | A headed table of short cells, optionally in labeled groups. |
+| `slideMatrix` | Yes, partial, or no marks for each row against each column. |
+| `slideQuadrant` | Items sorted into four quadrants by two labeled axes. |
 | `slideCode` | Source in one panel, or two joined by an arrow. |
+| `slideDiff` | Source with the lines a change added and removed marked. |
+| `slideCommand` | One shell command on a single line, with an optional [Copy button](copy.md). |
+| `slideTranscript` | A short exchange between a user, a model, and the host, turn by turn. |
 | `slideColumns` | Two to four parallel options, one recommended. |
 | `slideWindow` | Slide nodes in one app's title bar: a browser, terminal, chat, or Slack channel. |
 | `slideRender` | Another slide as one surface renders it, or a placeholder for a host reference. |

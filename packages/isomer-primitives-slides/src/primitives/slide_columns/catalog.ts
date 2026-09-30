@@ -25,6 +25,7 @@ export const catalog = {
     'The columns name who owns what; use slideTerritoryGroup.',
     'The items are terms the audience must learn; use slideDefinitions.',
     'The items are short facts in a single list; use slideList.',
+    'Every option shares the same attributes to compare cell by cell; use slideTable.',
     'Three or four options would sit in a slideSplit pane, too narrow for a column each; give them the slide’s full width.',
   ],
   example,

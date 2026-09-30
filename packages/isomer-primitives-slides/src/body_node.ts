@@ -18,11 +18,15 @@ import type { SlideBulletListNode } from './primitives/slide_bullet_list';
 import type { SlideClosingNode } from './primitives/slide_closing';
 import type { SlideCodeNode } from './primitives/slide_code';
 import type { SlideColumnsNode } from './primitives/slide_columns';
+import type { SlideCommandNode } from './primitives/slide_command';
 import type { SlideDefinitionsNode } from './primitives/slide_definitions';
+import type { SlideDiffNode } from './primitives/slide_diff';
 import type { SlideFanoutNode } from './primitives/slide_fanout';
 import type { SlideFrameNode } from './primitives/slide_frame';
 import type { SlideHeadingNode } from './primitives/slide_heading';
 import type { SlideListNode } from './primitives/slide_list';
+import type { SlideMatrixNode } from './primitives/slide_matrix';
+import type { SlideQuadrantNode } from './primitives/slide_quadrant';
 import type { SlideQuoteNode } from './primitives/slide_quote';
 import type { SlideRenderNode } from './primitives/slide_render';
 import type { SlideRenderGridNode } from './primitives/slide_render_grid';
@@ -31,8 +35,10 @@ import type { SlideSourceNode } from './primitives/slide_source';
 import type { SlideSplitNode } from './primitives/slide_split';
 import type { SlideStackNode } from './primitives/slide_stack';
 import type { SlideStatementNode } from './primitives/slide_statement';
+import type { SlideTableNode } from './primitives/slide_table';
 import type { SlideTerritoryGroupNode } from './primitives/slide_territory_group';
 import type { SlideTitleNode } from './primitives/slide_title';
+import type { SlideTranscriptNode } from './primitives/slide_transcript';
 import type { SlideWindowNode } from './primitives/slide_window';
 
 /** Discriminated union of every node type this pack defines. */
@@ -43,11 +49,15 @@ export type BodyNode =
   | SlideClosingNode
   | SlideCodeNode
   | SlideColumnsNode
+  | SlideCommandNode
   | SlideDefinitionsNode
+  | SlideDiffNode
   | SlideFanoutNode
   | SlideFrameNode
   | SlideHeadingNode
   | SlideListNode
+  | SlideMatrixNode
+  | SlideQuadrantNode
   | SlideQuoteNode
   | SlideRenderNode
   | SlideRenderGridNode
@@ -56,8 +66,10 @@ export type BodyNode =
   | SlideSplitNode
   | SlideStackNode
   | SlideStatementNode
+  | SlideTableNode
   | SlideTerritoryGroupNode
   | SlideTitleNode
+  | SlideTranscriptNode
   | SlideWindowNode;
 
 /** A {@link BodyNode} that may nest inside a {@link SlideFrameNode}; frames cannot nest. */
