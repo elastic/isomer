@@ -49,7 +49,7 @@ export const lanes = {
   bracket: {
     border: stroke.rail,
     radius: radius.panel,
-    // From the first lane's center to the second's.
+    // From a lane's outer edge to its line, half a row in.
     insets: {
       l: px(scalePx(rowHeights.l) / 2),
       m: px(scalePx(rowHeights.m) / 2),

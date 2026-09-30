@@ -8,7 +8,7 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
-import { lineText } from '../authored_text';
+import { authoredTextMaxLength, lineText } from '../authored_text';
 import { crossSuperRefine } from '../cross_field';
 import { sizeField } from '../size';
 import { slideToneSchema } from '../tone_schema';
@@ -16,6 +16,10 @@ import { slideToneSchema } from '../tone_schema';
 export const sequenceMaxActors = 5;
 
 export const sequenceMaxMessages = 10;
+
+/** Whether an id passed its own check, so a rule comparing ids has one to read. */
+const isId = (id: unknown): id is string =>
+  typeof id === 'string' && id.length > 0 && id.length <= authoredTextMaxLength;
 
 const actorSchema = z
   .object({
@@ -64,10 +68,10 @@ export const schema = z
       ),
     messages: z
       .array(messageSchema)
-      .min(1)
+      .min(2)
       .max(sequenceMaxMessages)
       .describe(
-        `Messages, top to bottom in the order they happen, each one arrow from sender to receiver. 1 to ${sequenceMaxMessages}.`
+        `Messages, top to bottom in the order they happen, each one arrow from sender to receiver. 2 to ${sequenceMaxMessages}, enough for every actor to take part.`
       ),
     size: sizeField(),
   })
@@ -76,7 +80,11 @@ export const schema = z
     crossSuperRefine(({ actors, messages }, context) => {
       if (
         actors.length > sequenceMaxActors ||
-        messages.length > sequenceMaxMessages
+        messages.length > sequenceMaxMessages ||
+        ![
+          ...actors.map(({ id }) => id),
+          ...messages.flatMap(({ from, to }) => [from, to]),
+        ].every(isId)
       ) {
         return;
       }

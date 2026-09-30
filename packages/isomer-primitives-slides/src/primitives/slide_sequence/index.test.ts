@@ -54,6 +54,86 @@ describe('slideSequence', () => {
     expect(found[0]).toMatch(/^body\[0\]\.body\[0\]\.messages: /);
   });
 
+  it('holds three to five actors and two to ten messages', () => {
+    const named = (count: number) =>
+      Array.from({ length: count }, (_, index) => ({
+        id: `a${index}`,
+        label: `actor ${index}`,
+      }));
+    // Each actor sends to the next, and the last to the first, until `count` messages.
+    const chained = (actors: number, count: number) =>
+      Array.from({ length: count }, (_, index) => ({
+        from: `a${index % actors}`,
+        to: `a${(index + 1) % actors}`,
+        label: 'Ping',
+      }));
+    const found = (actors: number, messages: number) =>
+      errors({
+        type: 'slideSequence',
+        actors: named(actors),
+        messages: chained(actors, messages),
+      });
+    expect(found(3, 3)).toEqual([]);
+    expect(found(sequenceMaxActors, sequenceMaxActors)).toEqual([]);
+    expect(found(2, 2)).toHaveLength(1);
+    expect(found(sequenceMaxActors + 1, sequenceMaxActors + 1)).toHaveLength(1);
+    expect(found(3, 2)).toEqual([]);
+    expect(found(3, sequenceMaxMessages)).toEqual([]);
+    expect(found(3, 1)).toContainEqual(
+      expect.stringMatching(/^body\[0\]\.body\[0\]\.messages: /)
+    );
+    expect(found(3, sequenceMaxMessages + 1)).toHaveLength(1);
+  });
+
+  it('reports a field and a cross-field rule together', () => {
+    const [user, site, mail] = shortExample.actors;
+    expect(
+      errors({
+        ...shortExample,
+        actors: [{ ...user, label: '' }, site, { ...mail, id: 'site' }],
+      }).map((error) => error.replace(/: .*$/, ''))
+    ).toEqual([
+      'body[0].body[0].actors[0].label',
+      'body[0].body[0].actors[2].id',
+      'body[0].body[0].messages[1].to',
+      'body[0].body[0].messages[2].from',
+    ]);
+  });
+
+  it.each([
+    ['an actor that is not an object', { actors: [null] }, 'actors[0]'],
+    ['an id that is not a string', { actors: [{ id: 7 }] }, 'actors[0].id'],
+    ['an empty id', { actors: [{ id: '' }] }, 'actors[0].id'],
+    [
+      'a message with no sender',
+      { messages: [{ from: undefined }] },
+      'messages[0].from',
+    ],
+  ] as const)(
+    'compares no id once a field refuses %s',
+    (_name, patch, path) => {
+      const [actor, ...actors] = shortExample.actors;
+      const [message, ...messages] = shortExample.messages;
+      const patched = (item: object, [change]: readonly unknown[] = []) =>
+        change === null ? null : { ...item, ...(change as object) };
+      const found = errors({
+        ...shortExample,
+        actors: [
+          patched(actor!, 'actors' in patch ? patch.actors : undefined),
+          ...actors,
+        ],
+        messages: [
+          patched(message!, 'messages' in patch ? patch.messages : undefined),
+          ...messages,
+        ],
+      });
+      expect(found.length).toBeGreaterThan(0);
+      for (const error of found) {
+        expect(error.startsWith(`body[0].body[0].${path}`)).toBe(true);
+      }
+    }
+  );
+
   it('joins known, distinct actors and uses every actor', () => {
     const [user, site, mail] = shortExample.actors;
     expect(

@@ -48,7 +48,6 @@ export const bareStepsExample: SlidePipelineNode = {
   ],
 };
 
-/** Spans mode: chips bracketed by who owns each run. */
 /** The most steps a pipeline takes, each with a body. */
 export const fullExample: SlidePipelineNode = {
   type: 'slidePipeline',
@@ -68,6 +67,7 @@ export const fullExample: SlidePipelineNode = {
   ],
 };
 
+/** Spans mode: chips bracketed by who owns each run. */
 export const spansExample: SlidePipelineNode = {
   type: 'slidePipeline',
   steps: [
@@ -97,7 +97,7 @@ export const spansExample: SlidePipelineNode = {
   ],
 };
 
-/** One span covering a single step. */
+/** The most spans a pipeline takes, two of them over a single step. */
 export const threeSpansExample: SlidePipelineNode = {
   type: 'slidePipeline',
   steps: [

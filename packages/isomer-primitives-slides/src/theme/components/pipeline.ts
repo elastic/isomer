@@ -6,7 +6,7 @@
  */
 
 import { font, radius, space, stroke, type } from '../base';
-import { paddingXy, px, scalePx } from '../scale';
+import { literal, paddingXy, px, scalePx } from '../scale';
 
 import { glyph } from './shared';
 
@@ -60,6 +60,9 @@ export const pipeline = {
   },
   arrow: glyph.arrow,
   dash: glyph.dash,
+  /** Around the steps a span covers, in text, Markdown, and Slack. */
+  coverOpen: literal(' ('),
+  coverClose: literal(')'),
 } as const;
 
 export const pipelineFit = { l: 940, m: 1030 } as const;

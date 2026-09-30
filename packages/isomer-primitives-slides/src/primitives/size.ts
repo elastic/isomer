@@ -10,8 +10,10 @@
 import type { ScaleToken } from '@elastic/distillate';
 import { z } from '@elastic/isomer-sdk';
 
-import { displayColumns, isWide } from '../render/mono';
+import { parseMarks } from '../render/marks';
+import { collapsedColumns, displayColumns, isWide } from '../render/mono';
 import { extraboldAdvance, monoAdvance, regularAdvance } from '../theme/base';
+import { marks } from '../theme/components/marks';
 import { scalePx } from '../theme/scale';
 import { type SlideSize, slideSizes } from '../theme/variants';
 
@@ -68,7 +70,7 @@ export const rowLoad = (items: readonly (readonly (string | undefined)[])[]) =>
   Math.max(
     0,
     ...items.map((texts) =>
-      texts.reduce((total, text) => total + displayColumns(text ?? ''), 0)
+      texts.reduce((total, text) => total + collapsedColumns(text ?? ''), 0)
     )
   ) * items.length;
 
@@ -97,27 +99,34 @@ export const emWidth = (text: string, tracking: ScaleToken): number =>
 
 /** Width in px of `text` set in the mono face at `size`. */
 export const monoWidth = (text: string, size: ScaleToken): number =>
-  displayColumns(text) * monoAdvance * scalePx(size);
+  collapsedColumns(text) * monoAdvance * scalePx(size);
 
 /** What a wrapping display line cannot break. */
 export const widestWord = (text: string, tracking: ScaleToken): number =>
   Math.max(0, ...text.split(/\s+/).map((word) => emWidth(word, tracking)));
 
-/** Lines a greedy wrap packs items `advances` px wide into, `gap` px apart, across `width`. */
+/**
+ * Lines a greedy wrap packs items `advances` px wide into, `gap` px apart, across `width`.
+ * An item wider than `breakAt` runs on across the lines it fills, as `overflow-wrap: anywhere` sets a long word.
+ */
 export const packedLines = (
   advances: readonly number[],
   gap: number,
-  width: number
+  width: number,
+  breakAt = Infinity
 ): number => {
+  const column = Math.max(1, breakAt);
   let lines = 1;
   let used = 0;
   for (const advance of advances) {
     if (used > 0 && used + gap + advance > width) {
       lines += 1;
-      used = advance;
-    } else {
-      used += (used > 0 ? gap : 0) + advance;
+      used = 0;
     }
+    const filled = advance > column ? Math.ceil(advance / column) - 1 : 0;
+    lines += filled;
+    used +=
+      (used > 0 ? gap : 0) + (filled > 0 ? advance - filled * column : advance);
   }
   return lines;
 };
@@ -136,6 +145,20 @@ export const wrappedLines = (
     width
   );
 
+/** {@link wrappedLines} in a column `width` wide, packed to {@link lineFill}, a word wider than that breaking across the lines it fills. */
+export const brokenLines = (
+  text: string,
+  fontPx: number,
+  width: number,
+  tracking: ScaleToken
+): number =>
+  packedLines(
+    words(text).map((word) => emWidth(word, tracking) * fontPx),
+    emWidth(' ', tracking) * fontPx,
+    width * lineFill,
+    width * lineFill
+  );
+
 /** {@link wrappedLines} for Inter Regular, from {@link regularAdvance}. */
 export const proseLines = (
   text: string,
@@ -147,6 +170,38 @@ export const proseLines = (
     regularAdvance * fontPx,
     width
   );
+
+const codeChipSides =
+  2 * (scalePx(marks.codePaddingX) + scalePx(marks.codeBorder));
+
+/** {@link proseLines} of text with marks in a column `width` wide, packed to {@link lineFill}: a `code` run is set in the mono face inside its chip, and a word wider than that breaks across the lines it fills. */
+export const markedLines = (
+  text: string,
+  fontPx: number,
+  width: number
+): number =>
+  packedLines(
+    parseMarks(text).flatMap(({ kind, text: run }) =>
+      words(run).map((word, index) =>
+        kind === 'code'
+          ? displayColumns(word) * monoAdvance * fontPx +
+            (index === 0 ? codeChipSides : 0)
+          : displayColumns(word) * regularAdvance * fontPx
+      )
+    ),
+    regularAdvance * fontPx,
+    width * lineFill,
+    width * lineFill
+  );
+
+/** What `code` marks' borders add to the height of `lines` lines of `text`, at most once a line. */
+export const codeGrowth = (text: string, lines: number): number =>
+  Math.min(
+    lines,
+    parseMarks(text).filter(({ kind }) => kind === 'code').length
+  ) *
+  2 *
+  scalePx(marks.codeBorder);
 
 /** Glyph estimates run a few percent short over a line, so lines pack into this share of the column. */
 export const lineFill = 0.92;

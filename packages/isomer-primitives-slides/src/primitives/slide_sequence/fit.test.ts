@@ -9,13 +9,14 @@ import { describe, expect, it } from 'vitest';
 
 import { findings, measured, nodeBox, slideOf } from '../../examples/measure';
 import { frameContentWidth } from '../../theme/components/frame';
-import { sequenceFit } from '../../theme/components/sequence';
+import { sequence, sequenceFit } from '../../theme/components/sequence';
+import { scalePx } from '../../theme/scale';
 import { layoutContext, renderedStep } from '../size.fixtures';
 import { tallestExample } from '../slide_heading/examples';
 import { paneWidths } from '../slide_split/pane_layout';
 
 import { fullExample } from './examples';
-import { sequenceLoad, sequenceStep } from './fit';
+import { sequenceLoad, sequenceStep, wrapHeight } from './fit';
 import { sequenceMaxMessages, type SlideSequenceNode } from './schema';
 
 /** The first `count` messages of {@link fullExample}, with the actors they name. */
@@ -29,6 +30,14 @@ const firstMessages = (count: number): SlideSequenceNode => {
     messages,
   };
 };
+
+const inSplit = (node: SlideSequenceNode) => ({
+  type: 'slideSplit',
+  panes: [
+    { items: [node] },
+    { items: [{ type: 'slideBulletList', items: ['One'] }] },
+  ],
+});
 
 describe('sequenceStep', () => {
   it('steps down at each budget, on both sides of it', () => {
@@ -110,13 +119,6 @@ describe('long actor and message labels', () => {
       { from: 'ledger', to: 'mail', label: 'Notify' },
     ],
   };
-  const split = {
-    type: 'slideSplit',
-    panes: [
-      { items: [node] },
-      { items: [{ type: 'slideBulletList', items: ['One'] }] },
-    ],
-  };
 
   it('counts what wrapping adds, in message rows', () => {
     expect(sequenceLoad(fullExample, 'l', frameContentWidth)).toBe(
@@ -125,20 +127,24 @@ describe('long actor and message labels', () => {
     const [pane] = paneWidths(frameContentWidth, 'even', 'gap');
     const wrapped = sequenceLoad(node, 'l', pane);
     expect(wrapped).toBeGreaterThan(node.messages.length + 1);
-    expect(sequenceLoad(node, 's', pane)).toBeLessThan(wrapped);
+    expect(wrapHeight(node, 's', pane)).toBeLessThan(
+      wrapHeight(node, 'l', pane)
+    );
   });
 
   // Lifelines, then actors, then messages, each a label and its arrow.
   it.each([
     { name: 'full width', slide: slideOf(tallestExample, node) },
-    { name: 'half a split', slide: slideOf(split) },
+    { name: 'half a split', slide: slideOf(inSplit(node)) },
   ])('wrap within their spans at $name', async ({ slide }) => {
     const [grid] = nodeBox(await measured(slide), 'slideSequence').children;
     const { length } = node.actors;
     const actors = grid!.children.slice(length, 2 * length);
     actors.slice(1).forEach((actor, index) => {
       const before = actors[index]!;
-      expect(before.x + before.width).toBeLessThanOrEqual(actor.x + 1);
+      expect(before.x + before.width).toBeLessThanOrEqual(
+        actor.x - scalePx(sequence.actor.gutter) / 2
+      );
     });
     const [message] = grid!.children.slice(2 * length);
     const [label] = message!.children;
@@ -147,5 +153,66 @@ describe('long actor and message labels', () => {
       message!.x + message!.width + 1
     );
     expect(await findings(slide)).toEqual([]);
+  });
+});
+
+describe('a label set as code, or in a word wider than its span', () => {
+  const labelled = (label: string): SlideSequenceNode => ({
+    type: 'slideSequence',
+    actors: [
+      { id: 'app', label: 'app' },
+      { id: 'api', label: 'api' },
+      { id: 'db', label: 'db' },
+    ],
+    messages: [
+      { from: 'app', to: 'api', label },
+      { from: 'api', to: 'db', label: 'Read' },
+    ],
+    size: 'l',
+  });
+  const [pane] = paneWidths(frameContentWidth, 'even', 'gap');
+  const lineHeight =
+    scalePx(sequence.labelSizes.l) * parseFloat(sequence.labelLineHeight.value);
+  // Lifelines, then actors, then messages, each a label and its arrow.
+  const drawnLines = async (node: SlideSequenceNode): Promise<number> => {
+    const [grid] = nodeBox(
+      await measured(slideOf(inSplit(node))),
+      'slideSequence'
+    ).children;
+    const [message] = grid!.children.slice(2 * node.actors.length);
+    const [label] = message!.children;
+    return Math.round(label!.height / lineHeight);
+  };
+
+  it.each([
+    { label: '`POST /api/v1/payments/authorize/card-token`', lines: 4 },
+    { label: '`authorize(card, amount)` then `capture(id)`', lines: 3 },
+    { label: 'Supercalifragilisticexpialidocious', lines: 2 },
+    {
+      label: 'Send https://example.com/orders/1234567890/receipts/latest now',
+      lines: 5,
+    },
+  ])(
+    'counts the $lines lines takumi draws of $label',
+    async ({ label, lines }) => {
+      expect(await drawnLines(labelled(label))).toBe(lines);
+      expect(wrapHeight(labelled(label), 'l', pane)).toBe(
+        (lines - 1) * lineHeight
+      );
+    }
+  );
+
+  it('measures a line break in an actor as the space it draws', () => {
+    const [first, ...rest] = labelled('Read').actors;
+    const named = (label: string) =>
+      wrapHeight(
+        { ...labelled('Read'), actors: [{ ...first!, label }, ...rest] },
+        'l',
+        pane
+      );
+    expect(named('checkout\nfrontend\nservice')).toBe(
+      named('checkout frontend service')
+    );
+    expect(named('checkout\nfrontend\nservice')).toBeGreaterThan(0);
   });
 });

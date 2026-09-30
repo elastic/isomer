@@ -25,3 +25,10 @@ export const displayColumns = (text: string, limit = Infinity): number => {
   }
   return columns;
 };
+
+/**
+ * {@link displayColumns} of `text` set where whitespace collapses: each run of spaces, tabs, and line breaks is one space.
+ * A form feed or vertical tab counts as a space of its own, which the image surface draws and a browser does not.
+ */
+export const collapsedColumns = (text: string): number =>
+  displayColumns(text.replace(/[\t\n\r ]+/g, ' ').replace(/[\f\v]/g, ' '));

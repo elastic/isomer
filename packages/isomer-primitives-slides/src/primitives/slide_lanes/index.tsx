@@ -7,11 +7,13 @@
 
 import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
-import { bold, escapeMrkdwn, type SlackBlock } from '@elastic/isomer-sdk/slack';
+import { escapeMrkdwn, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
 import {
+  hasMrkdwnDelimiter,
   richTextBreak,
   richTextSection,
+  slackBold,
   slackFields,
   slackRichText,
   slackSection,
@@ -24,7 +26,6 @@ import {
   richTextRun as run,
   stripMarks,
 } from '../../render/marks';
-import { hasMrkdwnDelimiter } from '../../render/slack_text';
 import { toneCueText } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
@@ -37,6 +38,7 @@ import { schema, type SlideLanesNode, type SlideLanesNote } from './schema';
 export type { SlideLanesLane, SlideLanesNode, SlideLanesNote } from './schema';
 
 const arrow = ` ${slideDistillery.tokens.lanes.arrow.value} `;
+const termJoiner = slideDistillery.tokens.glyph.termJoiner.value;
 
 const path = (steps: string[], join: string): string =>
   [...steps, join].map(oneLine).join(arrow);
@@ -49,11 +51,13 @@ export const text = ({ lanes, join, notes = [] }: SlideLanesNode): string =>
     lanes
       .map(
         ({ label, steps, tone }) =>
-          `${toneCueText(tone)}${shown(label)}: ${path(steps, join)}`
+          `${toneCueText(tone)}${shown(label)}${termJoiner}${path(steps, join)}`
       )
       .join('\n'),
     notes
-      .map(({ title, body }) => `${oneLine(title)}: ${plainText(body)}`)
+      .map(
+        ({ title, body }) => `${oneLine(title)}${termJoiner}${plainText(body)}`
+      )
       .join('\n'),
   ]
     .filter(Boolean)
@@ -64,14 +68,14 @@ export const markdown = ({ lanes, join, notes = [] }: SlideLanesNode) => [
     lanes.map(({ label, steps, tone }) =>
       md.paragraph(
         toneCueText(tone),
-        md.strong(`${shown(label)}:`),
-        ' ',
+        md.strong(shown(label)),
+        termJoiner,
         path(steps, join)
       )
     )
   ),
   ...notes.map(({ title, body }) =>
-    md.paragraph(md.strong(`${title}:`), ' ', ...marksMarkdown(body))
+    md.paragraph(md.strong(title), termJoiner, ...marksMarkdown(body))
   ),
 ];
 
@@ -80,8 +84,8 @@ const lanesRichText = ({ lanes, join }: SlideLanesNode): SlackBlock =>
     ...lanes.map(({ label, steps, tone }, index) =>
       richTextSection(
         ...(tone ? [run(toneCueText(tone))] : []),
-        run(`${shown(label)}:`, { bold: true }),
-        run(` ${path(steps, join)}`),
+        run(shown(label), { bold: true }),
+        run(`${termJoiner}${path(steps, join)}`),
         ...(index < lanes.length - 1 ? [richTextBreak] : [])
       )
     )
@@ -115,7 +119,7 @@ export const slack = (node: SlideLanesNode): SlackBlock[] => {
           lanes
             .map(
               ({ label, steps, tone }) =>
-                `${toneCueText(tone)}${bold(`${shown(label)}:`)} ${escapeMrkdwn(path(steps, join))}`
+                `${toneCueText(tone)}${slackBold(shown(label))}${termJoiner}${escapeMrkdwn(path(steps, join))}`
             )
             .join('\n'),
           () => lanesRichText(node)
@@ -128,7 +132,7 @@ export const slack = (node: SlideLanesNode): SlackBlock[] => {
             : slackFields(
                 notes.map(
                   ({ title, body }) =>
-                    `${bold(oneLine(title))}\n${oneLine(marksSlack(body))}`
+                    `${slackBold(title)}\n${oneLine(marksSlack(body))}`
                 ),
                 () => notesRichText(notes)
               ),

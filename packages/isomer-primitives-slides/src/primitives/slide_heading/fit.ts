@@ -8,7 +8,7 @@
 import type { ScaleToken } from '@elastic/distillate';
 
 import { stripMarks } from '../../render/marks';
-import { displayColumns } from '../../render/mono';
+import { collapsedColumns } from '../../render/mono';
 import { regularAdvance } from '../../theme/base';
 import { frame, frameBodyHeight } from '../../theme/components/frame';
 import { heading, headingFit } from '../../theme/components/heading';
@@ -48,7 +48,7 @@ const roomBelow = (
 export const referenceRoom = roomBelow(2, 2, 'l');
 
 export const headingStep = ({ title, size }: SlideHeadingNode): SlideSize =>
-  sizeForLoad(size, displayColumns(stripMarks(title)), headingFit);
+  sizeForLoad(size, collapsedColumns(stripMarks(title)), headingFit);
 
 /** Height a frame's body has left below `node`. */
 export const headingRoom = (node: SlideHeadingNode): number => {
@@ -62,7 +62,7 @@ export const headingRoom = (node: SlideHeadingNode): number => {
   );
   const ledeLines = node.lede
     ? lines(
-        displayColumns(stripMarks(node.lede)) *
+        collapsedColumns(stripMarks(node.lede)) *
           regularAdvance *
           px(heading.lede.size),
         heading.ledeMaxWidth

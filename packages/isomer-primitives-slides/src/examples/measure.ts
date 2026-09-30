@@ -21,6 +21,7 @@ import {
 import { slideDeckFrame, slidesPack } from '../pack';
 
 import { slideFonts } from './fonts';
+import { previewFooter } from './preview_slide';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -32,16 +33,7 @@ const walk = createChildNodeWalker(runtime.primitives);
 /** A frame holding `body`, with the footer every preview carries. */
 export const slideOf = (...body: object[]): Composition => ({
   type: 'view',
-  body: [
-    {
-      type: 'slideFrame',
-      brand: 'Isomer',
-      section: 'Preview',
-      sectionNumber: '01',
-      url: 'https://elastic.github.io/isomer',
-      body,
-    } as PrimitiveNode,
-  ],
+  body: [{ type: 'slideFrame', ...previewFooter, body } as PrimitiveNode],
 });
 
 /** Takumi's measure of `slide`, with node anchors on. */

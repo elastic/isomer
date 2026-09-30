@@ -11,10 +11,11 @@ import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { expectCountBounds } from '../bounds.fixtures';
 
 import { example, fullExample } from './examples';
 import { markdown as markdownContent, text } from './index';
-import { layersMaxLayers } from './schema';
+import { layersMaxChips, layersMaxLayers, schema } from './schema';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -36,6 +37,35 @@ describe('slideLayers', () => {
   // The fit test measures this, so it holds the most layers a stack takes.
   it('pins the fullest example at the cap', () => {
     expect(fullExample.layers).toHaveLength(layersMaxLayers);
+  });
+
+  it('holds three to six layers', () => {
+    const [first] = example.layers;
+    expectCountBounds(
+      schema,
+      example,
+      'layers',
+      [3, layersMaxLayers],
+      first,
+      fullExample
+    );
+  });
+
+  it('holds one to six chips in a layer', () => {
+    const [first, ...rest] = example.layers;
+    const chips = (count: number) =>
+      errorPaths({
+        ...example,
+        layers: [
+          { ...first, chips: Array.from({ length: count }, () => 'web') },
+          ...rest,
+        ],
+      });
+    expect(chips(layersMaxChips)).toEqual([]);
+    expect(chips(layersMaxChips + 1)).toEqual([
+      'body[0].body[0].layers[0].chips',
+    ]);
+    expect(chips(0)).toEqual(['body[0].body[0].layers[0].chips']);
   });
 
   it('holds three to six layers, each with body or chips', () => {

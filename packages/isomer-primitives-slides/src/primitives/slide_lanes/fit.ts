@@ -8,20 +8,17 @@
 import type { ScaleToken } from '@elastic/distillate';
 
 import type { SlideRenderContext } from '../../render/context';
-import { parseMarks, stripMarks } from '../../render/marks';
 import { lanes as theme } from '../../theme/components/lanes';
-import { marks } from '../../theme/components/marks';
 import { tone as toneCue } from '../../theme/components/shared';
 import { scalePx } from '../../theme/scale';
 import { type SlideSize, slideSizes } from '../../theme/variants';
 import { slideLayout } from '../layout';
 import {
-  emWidth,
-  lineFill,
+  brokenLines,
+  codeGrowth,
+  markedLines,
   monoWidth,
-  proseLines,
   trackWidth,
-  wrappedLines,
 } from '../size';
 
 import type { SlideLanesLane, SlideLanesNode } from './schema';
@@ -55,32 +52,22 @@ export const lanesWidth = (
   monoWidth(joinText, theme.joinSizes[step]) +
   2 * scalePx(join.paddingX[step]);
 
-/** What `code` marks' borders add to `lines` lines of `text`, at most once a line. */
-const codeGrowth = (text: string, lines: number): number =>
-  Math.min(
-    lines,
-    parseMarks(text).filter(({ kind }) => kind === 'code').length
-  ) *
-  2 *
-  scalePx(marks.codeBorder);
-
-/** The height a lane's name takes in capitals at `step`, wrapped in its column, a word wider than the column breaking across lines. */
+/** The height a lane's name takes in capitals at `step`, wrapped in its column. */
 const labelHeight = (
   { label, tone }: SlideLanesLane,
   step: SlideSize
 ): number => {
-  const text = label.toUpperCase();
-  const size = scalePx(theme.labelSizes[step]);
-  const column = Math.max(
-    1,
+  const column =
     scalePx(theme.labelColumns[step]) -
-      (tone ? scalePx(toneCue.cue.size) + scalePx(toneCue.cue.gap) : 0)
+    (tone ? scalePx(toneCue.cue.size) + scalePx(toneCue.cue.gap) : 0);
+  return (
+    brokenLines(
+      label.toUpperCase(),
+      scalePx(theme.labelSizes[step]),
+      column,
+      theme.label.tracking
+    ) * lineHeight(theme.labelSizes[step], theme.label)
   );
-  const lines = Math.max(
-    wrappedLines(text, size, column * lineFill, theme.label.tracking),
-    Math.ceil((emWidth(text, theme.label.tracking) * size) / column)
-  );
-  return lines * lineHeight(theme.labelSizes[step], theme.label);
 };
 
 /** The height the lanes and their notes take at `step` across `width`. */
@@ -99,20 +86,15 @@ export const lanesHeight = (
   if (items.length === 0) {
     return rows;
   }
-  const column =
-    trackWidth(
-      width - scalePx(theme.labelColumns[step]),
-      [1, 1],
-      notes.columnGaps[step]
-    ) * lineFill;
+  const column = trackWidth(
+    width - scalePx(theme.labelColumns[step]),
+    [1, 1],
+    notes.columnGaps[step]
+  );
   const noteHeight = ({ title, body }: { title: string; body: string }) => {
-    const lines = proseLines(
-      stripMarks(body),
-      scalePx(notes.bodySizes[step]),
-      column
-    );
+    const lines = markedLines(body, scalePx(notes.bodySizes[step]), column);
     return (
-      wrappedLines(
+      brokenLines(
         title,
         scalePx(notes.titleSizes[step]),
         column,

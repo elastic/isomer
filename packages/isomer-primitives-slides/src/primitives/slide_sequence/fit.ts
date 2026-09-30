@@ -8,19 +8,12 @@
 import type { ScaleToken } from '@elastic/distillate';
 
 import type { SlideRenderContext } from '../../render/context';
-import { stripMarks } from '../../render/marks';
 import { sequence, sequenceFit } from '../../theme/components/sequence';
 import { connector, tone as toneCue } from '../../theme/components/shared';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
 import { slideLayout } from '../layout';
-import {
-  lineFill,
-  monoWidth,
-  packedLines,
-  proseLines,
-  sizeForLoad,
-} from '../size';
+import { markedLines, monoWidth, packedLines, sizeForLoad } from '../size';
 
 import type { SlideSequenceNode } from './schema';
 
@@ -29,19 +22,17 @@ const { actor } = sequence;
 const lineHeight = (size: ScaleToken, leading: ScaleToken): number =>
   scalePx(size) * parseFloat(leading.value);
 
-/** Lines of mono `text` at `size` across `width`, a word wider than it breaking across as many as it fills. */
-const monoLines = (text: string, size: ScaleToken, width: number): number => {
-  const words = text.split(/\s+/).filter(Boolean);
-  const room = Math.max(1, width);
-  return Math.max(
-    packedLines(
-      words.map((word) => monoWidth(word, size)),
-      monoWidth(' ', size),
-      room
-    ),
-    Math.ceil(monoWidth(words.join(' '), size) / room)
+/** Lines of mono `text` at `size` across `width`. */
+const monoLines = (text: string, size: ScaleToken, width: number): number =>
+  packedLines(
+    text
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((word) => monoWidth(word, size)),
+    monoWidth(' ', size),
+    width,
+    width
   );
-};
 
 /** The height a message row takes at `step` with a one-line label. */
 const rowHeight = (step: SlideSize): number =>
@@ -51,7 +42,7 @@ const rowHeight = (step: SlideSize): number =>
   scalePx(sequence.rowGaps[step]);
 
 /** The height actor chips and message labels add at `step` across `width` by wrapping past one line. */
-const wrapHeight = (
+export const wrapHeight = (
   { actors, messages }: Pick<SlideSequenceNode, 'actors' | 'messages'>,
   step: SlideSize,
   width: number
@@ -63,6 +54,7 @@ const wrapHeight = (
         label,
         actor.sizes[step],
         column -
+          scalePx(actor.gutter) -
           2 * (scalePx(actor.paddingX) + scalePx(actor.border)) -
           (tone ? scalePx(toneCue.cue.size) + scalePx(toneCue.cue.gap) : 0)
       )
@@ -75,11 +67,7 @@ const wrapHeight = (
       apart * column -
       (apart > 1 ? scalePx(sequence.labelOffset) : 0) -
       2 * scalePx(sequence.labelInset);
-    return proseLines(
-      stripMarks(label),
-      scalePx(sequence.labelSizes[step]),
-      Math.max(1, span) * lineFill
-    );
+    return markedLines(label, scalePx(sequence.labelSizes[step]), span);
   });
   return (
     (actorLines - 1) * lineHeight(actor.sizes[step], actor.type.lineHeight) +

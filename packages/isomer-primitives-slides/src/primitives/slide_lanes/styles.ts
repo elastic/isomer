@@ -33,18 +33,19 @@ export const lanesModule = createStyleModule('lanes', ({ css }) => ({
     `
   ),
   lane: css`
-    align-items: center;
     display: flex;
   `,
-  // A name that wraps past the row's height grows it rather than running into the other lane.
-  laneSize: variants(
-    slideSizes,
-    (size) => css`
-      min-height: ${lanes.rowHeights[size]};
-    `
-  ),
+  // A name that wraps past the row's height grows its lane away from the other, so each lane's line stays where the bracket meets it.
+  laneFirst: css`
+    align-items: flex-start;
+  `,
+  laneLast: css`
+    align-items: flex-end;
+  `,
   label: css`
+    align-items: center;
     color: ${color.textSubtle};
+    display: flex;
     flex: 0 0 auto;
     ${typeRole(lanes.label)}
     text-transform: uppercase;
@@ -53,6 +54,7 @@ export const lanesModule = createStyleModule('lanes', ({ css }) => ({
     slideSizes,
     (size) => css`
       font-size: ${lanes.labelSizes[size]};
+      min-height: ${lanes.rowHeights[size]};
       width: ${lanes.labelColumns[size]};
     `
   ),
@@ -67,6 +69,12 @@ export const lanesModule = createStyleModule('lanes', ({ css }) => ({
     margin: 0;
     padding: 0;
   `,
+  stepsSize: variants(
+    slideSizes,
+    (size) => css`
+      min-height: ${lanes.rowHeights[size]};
+    `
+  ),
   // A chip and the line after it; lines share the slack equally.
   step: css`
     align-items: center;

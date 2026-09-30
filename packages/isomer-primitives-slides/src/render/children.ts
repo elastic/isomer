@@ -46,7 +46,7 @@ export const renderSlackChildren = (
   collector: SlackAssetCollector | undefined
 ): SlackBlock[] => nodes.flatMap((node) => scope.renderSlack(node, collector));
 
-/** A one-line `context` block: the chrome a container draws above its children. */
+/** The chrome a container draws above its children: a one-line `context` block, or literal rich text when `text` holds a `mrkdwn` delimiter or outgrows the block. */
 export const slackCaption = (text: string, strong = false): SlackBlock => {
   const literal = () =>
     slackRichText(

@@ -125,8 +125,14 @@ const SpansMode = ({
       {spans.map(({ from, to, tone, label, title, body }, index) => {
         const first = chipLine(from);
         const last = chipLine(to);
-        // A caption also takes the connector before its bracket, for room to wrap.
+        // A caption also takes a connector beside its bracket, for room to wrap: the one before, or at the first step the one after, unless the next span's caption starts there.
         const captionFirst = from === 0 ? first : first - 1;
+        const captionLast =
+          from === 0 &&
+          to < steps.length - 1 &&
+          !spans.some((other) => other.from === to + 1)
+            ? last + 1
+            : last;
         const toned = tonesModule.handles.tone[tone];
         const covered =
           from === to
@@ -149,7 +155,7 @@ const SpansMode = ({
                 context,
                 pipeline.caption,
                 toned,
-                ...placed(captionFirst, last)
+                ...placed(captionFirst, captionLast)
               )}>
               <strong className={cls(context, pipeline.captionLabel)}>
                 <ToneCue {...{ tone, context }} />

@@ -74,7 +74,6 @@ export const pipelineModule = createStyleModule('pipeline', ({ css }) => ({
       right: ${halfColumn(count)};
     `
   ),
-  // Positioned so it paints above the rail.
   terminal: css`
     background: ${color.bgPage};
     border: ${terminal.border} solid ${color.text};
@@ -84,7 +83,6 @@ export const pipelineModule = createStyleModule('pipeline', ({ css }) => ({
     flex: 0 0 auto;
     ${typeRole(terminal.type)}
     padding: ${terminal.padding};
-    position: relative;
     white-space: nowrap;
   `,
   list: css`
@@ -183,18 +181,22 @@ export const pipelineModule = createStyleModule('pipeline', ({ css }) => ({
     border: ${bracket.border} solid ${toneVar};
     border-radius: 0 0 ${bracket.radius} ${bracket.radius};
     border-top: none;
+    box-sizing: border-box;
     grid-row: 2;
     height: ${bracket.height};
     margin-top: ${bracket.gap};
   `,
+  // Fills its tracks without sizing them, so a caption under one chip never widens the chip.
   caption: css`
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     gap: ${caption.itemGap};
     grid-row: 3;
     margin-top: ${caption.gap};
-    min-width: 0;
+    min-width: 100%;
     padding-right: ${caption.trailing};
+    width: 0;
   `,
   captionLabel: css`
     color: ${toneVar};

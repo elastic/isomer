@@ -21,6 +21,7 @@ export type {
 } from './context';
 export {
   fitsSlack,
+  hasMrkdwnDelimiter,
   richTextBreak,
   richTextLinked,
   richTextSection,

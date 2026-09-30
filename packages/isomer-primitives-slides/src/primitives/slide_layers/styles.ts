@@ -29,6 +29,7 @@ export const layersModule = createStyleModule('layers', ({ css }) => ({
       gap: ${layers.gaps[size]};
     `
   ),
+  // No track is narrower than its widest chip or its owner, so one too wide for the band runs past it rather than under its neighbor.
   band: css`
     align-items: center;
     background: ${color.bgSurface};
@@ -36,8 +37,8 @@ export const layersModule = createStyleModule('layers', ({ css }) => ({
     border-radius: ${band.radius};
     display: grid;
     grid-template-columns:
-      ${layers.nameColumn} minmax(0, 1fr)
-      minmax(${layers.ownerColumn}, auto);
+      ${layers.nameColumn} minmax(auto, 1fr)
+      auto;
   `,
   bandSize: variants(
     slideSizes,
@@ -90,8 +91,17 @@ export const layersModule = createStyleModule('layers', ({ css }) => ({
       font-size: ${layers.chipSizes[size]};
     `
   ),
+  // Holds the owner so its track takes the owner's own width once that passes the column's.
+  ownerCell: css`
+    display: flex;
+    padding-left: ${layers.ownerGap};
+  `,
   owner: css`
-    justify-self: end;
+    align-items: center;
+    display: flex;
+    flex: 1 0 auto;
+    justify-content: flex-end;
+    min-width: ${layers.ownerColumn};
     white-space: nowrap;
   `,
 }));

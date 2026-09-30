@@ -5,29 +5,34 @@
  * 2.0.
  */
 
+import type { ScaleToken } from '@elastic/distillate';
+
 import type { SlideRenderContext } from '../../render/context';
-import { stripMarks } from '../../render/marks';
-import { frameContentWidth } from '../../theme/components/frame';
-import { layers as theme, layersFit } from '../../theme/components/layers';
+import { layers as theme } from '../../theme/components/layers';
 import { label, tone as toneCue } from '../../theme/components/shared';
 import { scalePx } from '../../theme/scale';
-import type { SlideSize } from '../../theme/variants';
+import { type SlideSize, slideSizes } from '../../theme/variants';
 import { slideLayout } from '../layout';
 import {
+  brokenLines,
+  codeGrowth,
   emWidth,
-  lineFill,
+  markedLines,
   monoWidth,
   packedLines,
-  proseLines,
-  sizeForLoad,
-  wrappedLines,
 } from '../size';
 
 import type { SlideLayer, SlideLayersNode } from './schema';
 
 const { band, chip } = theme;
 
+const lineHeight = (
+  size: ScaleToken,
+  { lineHeight: leading }: { lineHeight: ScaleToken }
+): number => scalePx(size) * parseFloat(leading.value);
+
 const ownerWidth = ({ owner, tone }: SlideLayer): number =>
+  scalePx(theme.ownerGap) +
   Math.max(
     scalePx(theme.ownerColumn),
     emWidth(owner.toUpperCase(), label.tracking) * scalePx(label.size) +
@@ -38,8 +43,8 @@ const chipWidth = (text: string, step: SlideSize): number =>
   monoWidth(text, theme.chipSizes[step]) +
   2 * (scalePx(chip.paddingX) + scalePx(chip.border));
 
-/** Lines of body text or rows of chips `layer` takes at `step` in a band `width` wide, or the lines its name wraps to when that is more. */
-const layerLines = (
+/** The height `layer`'s band takes at `step` in a stack `width` wide: its padding and border around its name, body lines, or chip rows, whichever is tallest. Unbounded where a chip outgrows its column. */
+const bandHeight = (
   layer: SlideLayer,
   step: SlideSize,
   width: number
@@ -50,42 +55,50 @@ const layerLines = (
     2 * (scalePx(band.border) + scalePx(band.paddingX[step])) -
     scalePx(theme.nameColumn) -
     ownerWidth(layer);
+  const widths = (chips ?? []).map((text) => chipWidth(text, step));
+  if (widths.some((chipped) => chipped > inner)) {
+    return Infinity;
+  }
+  const rows = packedLines(widths, scalePx(theme.chipGap), inner);
+  const lines = markedLines(body, scalePx(theme.bodySizes[step]), inner);
   const content = chips
-    ? packedLines(
-        chips.map((text) => chipWidth(text, step)),
-        scalePx(theme.chipGap),
-        inner
-      )
-    : proseLines(stripMarks(body), scalePx(theme.bodySizes[step]), inner);
-  return Math.max(
-    content,
-    wrappedLines(
+    ? rows *
+        (lineHeight(theme.chipSizes[step], chip.type) +
+          2 * (scalePx(chip.paddingY) + scalePx(chip.border))) +
+      (rows - 1) * scalePx(theme.chipGap)
+    : lines * lineHeight(theme.bodySizes[step], theme.body) +
+      codeGrowth(body, lines);
+  const named =
+    brokenLines(
       name,
       scalePx(theme.nameSizes[step]),
-      scalePx(theme.nameColumn) * lineFill,
+      scalePx(theme.nameColumn),
       theme.name.tracking
-    )
+    ) * lineHeight(theme.nameSizes[step], theme.name);
+  return (
+    2 * (scalePx(band.border) + scalePx(band.paddingY[step])) +
+    Math.max(content, named)
   );
 };
 
-/** Lines across every band at `step`. */
-export const layersLoad = (
+/** The height the stack takes at `step` across `width`. */
+export const layersHeight = (
   { layers }: Pick<SlideLayersNode, 'layers'>,
   step: SlideSize,
-  width = frameContentWidth
+  width: number
 ): number =>
-  layers.reduce((total, layer) => total + layerLines(layer, step, width), 0);
+  layers.reduce((total, layer) => total + bandHeight(layer, step, width), 0) +
+  scalePx(theme.gaps[step]) * (layers.length - 1);
 
-/** The step a layer stack draws at in `context`. */
+/** The node's own `size`, else the largest step at which the stack fits its layout's height; `s` when none does. */
 export const layersStep = (
   node: SlideLayersNode,
   context: SlideRenderContext | undefined
 ): SlideSize => {
-  const { width, crowding } = slideLayout(context);
-  return sizeForLoad(
-    node.size,
-    (step) => layersLoad(node, step, width),
-    layersFit,
-    crowding
+  const { width, height } = slideLayout(context);
+  return (
+    node.size ??
+    slideSizes.find((step) => layersHeight(node, step, width) <= height) ??
+    's'
   );
 };

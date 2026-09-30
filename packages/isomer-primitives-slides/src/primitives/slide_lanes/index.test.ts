@@ -39,19 +39,35 @@ describe('slideLanes', () => {
     expect(fourNotesExample.notes).toHaveLength(lanesMaxNotes);
   });
 
-  it('holds exactly two lanes of one to five steps', () => {
+  it('holds exactly two lanes of one to five steps, and up to four notes', () => {
     const [lane] = example.lanes;
+    const [note] = example.notes ?? [];
     const paths = (node: object) =>
       runtime.validate(compose(node)).errors.map(({ path }) => path);
-    expect(paths({ ...example, lanes: [lane] })).toContain(
-      'body[0].body[0].lanes'
-    );
-    expect(
+    const laned = (count: number) =>
+      paths({ ...example, lanes: Array.from({ length: count }, () => lane) });
+    expect(laned(2)).toEqual([]);
+    expect(laned(1)).toEqual(['body[0].body[0].lanes']);
+    expect(laned(3)).toEqual(['body[0].body[0].lanes']);
+    const stepped = (count: number) =>
       paths({
         ...example,
-        lanes: [{ ...lane, steps: Array(6).fill('Step') }, lane],
-      })
-    ).toContain('body[0].body[0].lanes[0].steps');
+        lanes: [
+          { ...lane, steps: Array.from({ length: count }, () => 'Step') },
+          lane,
+        ],
+      });
+    expect(stepped(1)).toEqual([]);
+    expect(stepped(lanesMaxSteps)).toEqual([]);
+    expect(stepped(0)).toEqual(['body[0].body[0].lanes[0].steps']);
+    expect(stepped(lanesMaxSteps + 1)).toEqual([
+      'body[0].body[0].lanes[0].steps',
+    ]);
+    const noted = (count: number) =>
+      paths({ ...example, notes: Array.from({ length: count }, () => note) });
+    expect(noted(0)).toEqual([]);
+    expect(noted(lanesMaxNotes)).toEqual([]);
+    expect(noted(lanesMaxNotes + 1)).toEqual(['body[0].body[0].notes']);
   });
 
   it('names the merge for assistive technology', () => {
@@ -70,16 +86,16 @@ describe('slideLanes', () => {
       Assisted: An agent keys the order while the customer waits, then reads it back before placing it."
     `);
     expect(markdown(fourNotesExample)).toMatchInlineSnapshot(`
-      "- ● **CARD:** Tokenize → Authorize → Capture
-      - ○ **WALLET:** Redirect → Approve → Callback → Capture
+      "- ● **CARD**: Tokenize → Authorize → Capture
+      - ○ **WALLET**: Redirect → Approve → Callback → Capture
 
-      **Card is instant:** Authorization returns in **one round trip**.
+      **Card is instant**: Authorization returns in **one round trip**.
 
-      **Wallet waits:** The customer leaves the page to approve.
+      **Wallet waits**: The customer leaves the page to approve.
 
-      **Same capture:** Both settle through one \`capture\` call.
+      **Same capture**: Both settle through one \`capture\` call.
 
-      **Same refunds:** Refunds never need to know the path."
+      **Same refunds**: Refunds never need to know the path."
     `);
   });
 
@@ -89,8 +105,8 @@ describe('slideLanes', () => {
         [
           {
             "text": {
-              "text": "● *CARD:* Tokenize → Authorize → Capture
-        ○ *WALLET:* Redirect → Approve → Callback → Capture",
+              "text": "● *CARD*: Tokenize → Authorize → Capture
+        ○ *WALLET*: Redirect → Approve → Callback → Capture",
               "type": "mrkdwn",
             },
             "type": "section",

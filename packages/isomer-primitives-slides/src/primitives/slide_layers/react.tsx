@@ -55,15 +55,17 @@ export const react = (
                 {marksReact(body ?? '', context)}
               </p>
             )}
-            <span
-              className={cls(
-                context,
-                label.label,
-                style.owner,
-                ...(tone ? [tones.tone[tone], label.toned] : [])
-              )}>
-              <ToneCue {...{ tone, context }} />
-              {owner}
+            <span className={cls(context, style.ownerCell)}>
+              <span
+                className={cls(
+                  context,
+                  label.label,
+                  style.owner,
+                  ...(tone ? [tones.tone[tone], label.toned] : [])
+                )}>
+                <ToneCue {...{ tone, context }} />
+                {owner}
+              </span>
             </span>
           </li>
         ))}

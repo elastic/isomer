@@ -67,18 +67,19 @@ export const sequenceModule = createStyleModule('sequence', ({ css }) => ({
     justify-self: center;
     width: 0;
   `,
-  // Wraps within its two tracks, so a long label never runs onto its neighbor's.
+  // Wraps within its two tracks less a gutter, padding and border included, so a long label never runs onto its neighbor's.
   actor: css`
     align-items: center;
     background: ${color.bgPage};
     border: ${actor.border} solid ${color.text};
     border-radius: ${actor.radius};
+    box-sizing: border-box;
     color: ${color.text};
     display: flex;
     ${typeRole(actor.type)}
     align-self: start;
     justify-self: center;
-    max-width: 100%;
+    max-width: calc(100% - ${actor.gutter});
     text-align: center;
   `,
   actorSize: variants(
@@ -119,6 +120,7 @@ export const sequenceModule = createStyleModule('sequence', ({ css }) => ({
   // The fill masks the lifelines a label crosses; it wraps within its message's span.
   label: css`
     background: ${color.bgPage};
+    box-sizing: border-box;
     color: ${color.text};
     line-height: ${sequence.labelLineHeight};
     max-width: 100%;

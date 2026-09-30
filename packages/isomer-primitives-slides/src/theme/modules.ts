@@ -58,6 +58,7 @@ export const tonesModule = createStyleModule('tones', ({ css }) => ({
     border-radius: 50%;
     box-sizing: border-box;
     display: inline-block;
+    flex: 0 0 auto;
     height: ${cue.size};
     margin-right: ${cue.gap};
     vertical-align: middle;

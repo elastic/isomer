@@ -23,6 +23,12 @@ const countsInBounds = (
 ): boolean =>
   steps.length <= pipelineMaxSteps && spans.length <= pipelineMaxSpans;
 
+/** Whether every span's `from` and `to` passed its own check, so a rule comparing them has indexes to read. */
+const indexed = (spans: readonly { from: number; to: number }[]): boolean =>
+  spans.every(({ from, to }) =>
+    [from, to].every((index) => Number.isSafeInteger(index) && index >= 0)
+  );
+
 const stepSchema = z
   .object({
     title: lineText().describe(
@@ -104,6 +110,7 @@ export const schema = z
     crossRefine(
       ({ steps, spans = [] }) =>
         !countsInBounds(steps, spans) ||
+        !indexed(spans) ||
         spans.every(({ from, to }) => from <= to && to < steps.length),
       {
         error: 'each span needs `from` ≤ `to` < the number of steps',
@@ -115,6 +122,7 @@ export const schema = z
     crossRefine(
       ({ steps, spans = [] }) =>
         !countsInBounds(steps, spans) ||
+        !indexed(spans) ||
         [...spans]
           .sort((a, b) => a.from - b.from)
           .every(
@@ -125,8 +133,10 @@ export const schema = z
   )
   .check(
     crossRefine(
-      ({ spans, start, end }) =>
-        !spans?.length || (start === undefined && end === undefined),
+      ({ steps, spans, start, end }) =>
+        !countsInBounds(steps, spans) ||
+        !spans?.length ||
+        (start === undefined && end === undefined),
       {
         error:
           '`start` and `end` are steps mode only; with `spans`, make them the first and last steps',
@@ -135,10 +145,14 @@ export const schema = z
     )
   )
   .check(
-    crossRefine(({ spans, size }) => !spans?.length || size === undefined, {
-      error: '`size` is steps mode only; spans-mode chips take one size',
-      path: ['size'],
-    })
+    crossRefine(
+      ({ steps, spans, size }) =>
+        !countsInBounds(steps, spans) || !spans?.length || size === undefined,
+      {
+        error: '`size` is steps mode only; spans-mode chips take one size',
+        path: ['size'],
+      }
+    )
   )
   .check(
     crossRefine(

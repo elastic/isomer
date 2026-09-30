@@ -81,6 +81,23 @@ describe('pipelineLoad', () => {
     expect(pipelineLoad(wide, 'l')).toBeLessThan(Infinity);
     expect(pipelineLoad(wide, 'l', 500)).toBe(Infinity);
   });
+
+  it('measures a line break as the space it draws, in a terminal and in a body', () => {
+    const started = (start: string) => pipelineLoad({ ...node, start }, 'l');
+    expect(started('Refund\nrequest')).toBe(started('Refund request'));
+    expect(started('Refund\nrequest')).toBeGreaterThan(
+      started('Refundrequest')
+    );
+    const bodied = (body: string) =>
+      pipelineLoad(
+        { steps: [{ title: 'Verify', body }, { title: 'Score' }] },
+        'l'
+      );
+    expect(bodied('Match\nthe\norder')).toBe(bodied('Match the order'));
+    expect(bodied('Match\nthe\norder')).toBeGreaterThan(
+      bodied('Matchtheorder')
+    );
+  });
 });
 
 describe('pipelineStep', () => {
@@ -129,6 +146,14 @@ describe('pipeline budgets fit what they allow', () => {
       drawsAt(shape(count, terminals)(1), step)
     );
 
+  // Six steps between terminals leave columns narrower than "Approve" at `l` and `m`.
+  it('measures every shape but six steps between terminals', () => {
+    expect(cases).toHaveLength(10);
+    expect(cases.some(({ count, terminals }) => count === 6 && terminals)).toBe(
+      false
+    );
+  });
+
   it.each(cases)(
     '$count steps, terminals $terminals, at $step',
     async ({ count, terminals, step }) => {
@@ -160,6 +185,26 @@ describe('pipeline budgets fit what they allow', () => {
 });
 
 describe('terminal chips', () => {
+  it('draw a line break as one space', async () => {
+    const drawn = async (start: string): Promise<number> => {
+      const [row] = nodeBox(
+        await measured(
+          slideOf(tallestExample, {
+            type: 'slidePipeline',
+            start,
+            steps: titles.slice(0, 2).map((title) => ({ title })),
+          })
+        ),
+        'slidePipeline'
+      ).children;
+      return row!.children[0]!.width;
+    };
+    expect(await drawn('Refund\nrequest')).toBe(await drawn('Refund request'));
+    expect(await drawn('Refund\nrequest')).toBeGreaterThan(
+      await drawn('Refundrequest')
+    );
+  });
+
   // Steps never shrink under their numerals, so terminals too wide for the row push it past its room.
   it('push the steps past the body rather than crushing them', async () => {
     const node: SlidePipelineNode = {

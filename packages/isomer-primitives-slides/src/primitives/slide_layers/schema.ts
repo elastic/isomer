@@ -15,6 +15,8 @@ import { slideToneSchema } from '../tone_schema';
 
 export const layersMaxLayers = 6;
 
+export const layersMaxChips = 6;
+
 const layerSchema = z
   .object({
     name: lineText().describe(
@@ -28,9 +30,9 @@ const layerSchema = z
     chips: z
       .array(lineText().describe('One short name, set as a code chip.'))
       .min(1)
-      .max(6)
+      .max(layersMaxChips)
       .describe(
-        'Short names the layer is made of, set as code chips, e.g. file formats or services. 1 to 6. Give `chips` or `body`, not both.'
+        `Short names the layer is made of, set as code chips, e.g. file formats or services. 1 to ${layersMaxChips}. Give \`chips\` or \`body\`, not both.`
       )
       .optional(),
     owner: lineText().describe(

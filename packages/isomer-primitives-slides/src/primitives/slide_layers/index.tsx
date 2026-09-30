@@ -28,12 +28,13 @@ export type { SlideLayer, SlideLayersNode } from './schema';
 
 const dash = ` ${slideDistillery.tokens.layers.dash.value} `;
 const separator = ` ${slideDistillery.tokens.layers.separator.value} `;
+const chipJoiner = slideDistillery.tokens.layers.chipJoiner.value;
 
 export const text = ({ layers }: SlideLayersNode): string =>
   layers
     .map(
       ({ name, body, chips, owner, tone }) =>
-        `${oneLine(name)}${dash}${chips ? chips.map(oneLine).join(', ') : plainText(body ?? '')}${separator}${toneCueText(tone)}${oneLine(owner).toUpperCase()}`
+        `${oneLine(name)}${dash}${chips ? chips.map(oneLine).join(chipJoiner) : plainText(body ?? '')}${separator}${toneCueText(tone)}${oneLine(owner).toUpperCase()}`
     )
     .join('\n');
 
@@ -45,7 +46,7 @@ export const markdown = ({ layers }: SlideLayersNode) =>
         dash,
         ...(chips
           ? chips.flatMap((chip, index) => [
-              ...(index > 0 ? [', '] : []),
+              ...(index > 0 ? [chipJoiner] : []),
               md.code(oneLine(chip)),
             ])
           : marksMarkdown(body ?? '')),
@@ -71,7 +72,7 @@ export const slack = ({ layers }: SlideLayersNode): SlackBlock[] => [
             run(dash),
             ...(chips
               ? chips.flatMap((chip, index) => [
-                  ...(index > 0 ? [run(', ')] : []),
+                  ...(index > 0 ? [run(chipJoiner)] : []),
                   run(chip, { code: true }),
                 ])
               : marksRichText(body ?? '')),

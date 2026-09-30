@@ -94,6 +94,30 @@ describe('lanesWidth and lanesHeight', () => {
     }
   });
 
+  it('measure a line break in a chip or the join as the space it draws', () => {
+    const [first, second] = example.lanes;
+    const width = (step: string, join: string) =>
+      lanesWidth(
+        {
+          lanes: [
+            { ...first!, steps: [step, 'Review'] },
+            { ...second!, steps: ['Call'] },
+          ],
+          join,
+        },
+        'l'
+      );
+    expect(width('Agent\nform', 'Place\norder')).toBe(
+      width('Agent form', 'Place order')
+    );
+    expect(width('Agent\nform', 'Place order')).toBeGreaterThan(
+      width('Agentform', 'Place order')
+    );
+    expect(width('Agent form', 'Place\norder')).toBeGreaterThan(
+      width('Agent form', 'Placeorder')
+    );
+  });
+
   it('grow lanes whose names wrap past their rows, so the names never meet', async () => {
     const [first, second] = unevenLanesExample.lanes;
     const node: SlideLanesNode = {
@@ -116,6 +140,35 @@ describe('lanesWidth and lanesHeight', () => {
     expect(top!.y + top!.height).toBeLessThanOrEqual(bottom!.y);
     expect(await findings(slide)).toEqual([]);
   });
+
+  it.each(slideSizes)(
+    'keep each lane’s line where the bracket meets it when names wrap, at %s',
+    async (size) => {
+      const [first, second] = unevenLanesExample.lanes;
+      const node: SlideLanesNode = {
+        ...unevenLanesExample,
+        lanes: [
+          { ...first!, label: 'Self-service checkout', tone: 'primary' },
+          { ...second!, label: 'Assisted phone ordering' },
+        ],
+        size,
+      };
+      // The row holds the lanes, then the merge, whose first box is the bracket; a lane holds its name, then its steps.
+      const [row] = nodeBox(
+        await measured(slideOf(node)),
+        'slideLanes'
+      ).children;
+      const [lanes, merge] = row!.children;
+      const [bracket] = merge!.children;
+      const [top, bottom] = lanes!.children.map(
+        ({ children: [, steps] }) => steps!.y + steps!.height / 2
+      );
+      expect(top! - lanes!.y).toBeGreaterThan(0);
+      expect(lanes!.children[0]!.height).toBeGreaterThan(2 * (top! - lanes!.y));
+      expect(bracket!.y).toBeCloseTo(top!, 0);
+      expect(bracket!.y + bracket!.height).toBeCloseTo(bottom!, 0);
+    }
+  );
 
   it('grow in height as notes wrap in a narrower layout', () => {
     expect(lanesHeight(example, 'l', pane.width)).toBeGreaterThan(

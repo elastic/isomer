@@ -10,7 +10,9 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
+import { measured, nodeBox, slideOf } from '../../examples/measure';
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { expectCountBounds } from '../bounds.fixtures';
 
 import {
   example,
@@ -19,7 +21,7 @@ import {
   threeSpansExample,
 } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
-import { pipelineMaxSpans, pipelineMaxSteps } from './schema';
+import { pipelineMaxSpans, pipelineMaxSteps, schema } from './schema';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -71,15 +73,95 @@ describe('slidePipeline', () => {
     `);
   });
 
+  it('holds two to six steps and up to three spans', () => {
+    expectCountBounds(
+      schema,
+      { type: 'slidePipeline' },
+      'steps',
+      [2, pipelineMaxSteps],
+      { title: 'Step' },
+      fullExample
+    );
+    const [span] = threeSpansExample.spans ?? [];
+    const spanned = (count: number) =>
+      errors({
+        type: 'slidePipeline',
+        steps: fullExample.steps.map(({ title }) => ({ title })),
+        spans: Array.from({ length: count }, (_, index) => ({
+          ...span,
+          from: index,
+          to: index,
+        })),
+      });
+    expect(spanned(0)).toEqual([]);
+    expect(spanned(pipelineMaxSpans)).toEqual([]);
+    expect(spanned(pipelineMaxSpans + 1)).toHaveLength(1);
+  });
+
+  it('takes a span up to the last step and refuses one past it', () => {
+    const [first] = spansExample.spans ?? [];
+    const last = spansExample.steps.length - 1;
+    const ending = (to: number) =>
+      errors({ ...spansExample, spans: [{ ...first, to }] });
+    expect(ending(last)).toEqual([]);
+    expect(ending(last + 1)).toEqual([
+      'body[0].body[0].spans: each span needs `from` ≤ `to` < the number of steps',
+    ]);
+    expect(
+      errors({ ...spansExample, spans: [{ ...first, from: 2, to: 1 }] })
+    ).toEqual([
+      'body[0].body[0].spans: each span needs `from` ≤ `to` < the number of steps',
+    ]);
+  });
+
+  it('takes a span starting right after another and refuses one starting on its last step', () => {
+    const [first, second] = spansExample.spans ?? [];
+    const starting = (from: number) =>
+      errors({
+        ...spansExample,
+        spans: [
+          { ...first, from: 0, to: 2 },
+          { ...second, from, to: 4 },
+        ],
+      });
+    expect(starting(3)).toEqual([]);
+    expect(starting(2)).toEqual([
+      'body[0].body[0].spans: spans must not overlap',
+    ]);
+  });
+
   it('runs no cross-field check once a count is over its cap', () => {
     const [span] = spansExample.spans ?? [];
     const found = errors({
       ...spansExample,
+      start: 'In',
+      size: 's',
       steps: [{ title: 'In', body: 'Held.' }, ...spansExample.steps],
       spans: Array.from({ length: pipelineMaxSpans + 1 }, () => span),
     });
     expect(found).toHaveLength(1);
     expect(found[0]).toMatch(/^body\[0\]\.body\[0\]\.spans: /);
+  });
+
+  it('draws a chip at its own width under a span that covers it alone', async () => {
+    const [span] = threeSpansExample.spans ?? [];
+    const chips = async (spans: object[]) => {
+      const [grid] = nodeBox(
+        await measured(slideOf({ ...threeSpansExample, spans })),
+        'slidePipeline'
+      ).children;
+      return grid!.children.slice(0, 2 * threeSpansExample.steps.length - 1);
+    };
+    const [alone] = await chips([
+      {
+        ...span,
+        from: 0,
+        to: 0,
+        title: 'Picked in aisle order by the night team',
+      },
+    ]);
+    const [shared] = await chips(threeSpansExample.spans ?? []);
+    expect(alone!.width).toBe(shared!.width);
   });
 
   it('renders text and markdown in steps mode', () => {
@@ -338,16 +420,16 @@ describe('slidePipeline', () => {
     expect(slack(example)[0]).toMatchObject({ type: 'context' });
   });
 
-  it.each([Number.NaN, Infinity, -Infinity])(
-    'refuses a span index of %s',
+  it.each([Number.NaN, Infinity, -Infinity, 0.5, -1])(
+    'refuses a span index of %s, and compares no span once one is refused',
     (index) => {
       const [first, second] = spansExample.spans ?? [];
-      expect(
-        errors({
-          ...spansExample,
-          spans: [{ ...first, from: index }, second],
-        }).some((error) => error.startsWith('body[0].body[0].spans[0].from:'))
-      ).toBe(true);
+      const found = errors({
+        ...spansExample,
+        spans: [{ ...first, from: index }, second],
+      });
+      expect(found).toHaveLength(1);
+      expect(found[0]).toMatch(/^body\[0\]\.body\[0\]\.spans\[0\]\.from: /);
     }
   );
 });

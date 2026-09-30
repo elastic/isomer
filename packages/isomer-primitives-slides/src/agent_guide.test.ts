@@ -63,43 +63,27 @@ describe('slides authoring schema', () => {
   });
 });
 
-describe('slides authoring schema restates each rule the JSON Schema drops', () => {
-  const schema = JSON.stringify(
-    buildAuthoringJsonSchema(slideDeckPrimitives, slidesPackAuthoring)
-  );
+// `z.toJSONSchema` drops refinements, so each flow primitive's cross-field rules are restated in its own description.
+describe('slides authoring schema restates the flow primitives’ cross-field rules', () => {
+  const { $defs = {} } = buildAuthoringJsonSchema(
+    slideDeckPrimitives,
+    slidesPackAuthoring
+  ) as { $defs?: Record<string, { description?: string }> };
 
-  // One row per refinement: the error it reports, and the words the schema states it in.
   it.each([
-    [
-      'slidePipeline',
-      'each span needs `from` ≤ `to`',
-      'from ≤ to < steps.length',
-    ],
-    ['slidePipeline', 'spans must not overlap', 'spans do not overlap'],
-    [
-      'slidePipeline',
-      '`start` and `end` are steps mode only',
-      'no start or end',
-    ],
-    ['slidePipeline', '`size` is steps mode only', 'and no size'],
-    ['slidePipeline', 'step bodies are steps mode only', 'chips with no body'],
-    ['slideSequence', 'duplicate actor id', 'Actor ids are unique'],
+    ['slidePipeline', 'from ≤ to < steps.length'],
+    ['slidePipeline', 'spans do not overlap'],
+    ['slidePipeline', 'no start or end'],
+    ['slidePipeline', 'and no size'],
+    ['slidePipeline', 'chips with no body'],
+    ['slideSequence', 'Actor ids are unique'],
     [
       'slideSequence',
-      'names unknown actor, or itself',
       'every message names two different actors by id in from and to',
     ],
-    [
-      'slideSequence',
-      'sends or receives no message',
-      'every actor sends or receives at least one message',
-    ],
-    [
-      'slideLayers',
-      'exactly one of `body` or `chips`',
-      'Each layer has exactly one of body or chips',
-    ],
-  ])('%s: %s', (_type, _error, stated) => {
-    expect(schema).toContain(stated);
+    ['slideSequence', 'every actor sends or receives at least one message'],
+    ['slideLayers', 'Each layer has exactly one of body or chips'],
+  ])('%s: %s', (type, stated) => {
+    expect($defs[type]?.description).toContain(stated);
   });
 });

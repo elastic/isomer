@@ -12,11 +12,18 @@ import { heading } from '../theme/components/heading';
 import { scalePx } from '../theme/scale';
 
 import {
+  brokenLines,
   emWidth,
+  lineFill,
+  markedLines,
+  monoWidth,
+  packedLines,
+  proseLines,
   rowLoad,
   sizeForLines,
   sizeForLoad,
   widestWord,
+  wrappedLines,
 } from './size';
 
 const steps = { l: font.size.px200, m: font.size.px128, s: font.size.px96 };
@@ -46,6 +53,78 @@ describe('rowLoad', () => {
     expect(rowLoad([['ab', 'cd'], ['abc', undefined], ['a']])).toBe(12);
     expect(rowLoad([['日本']])).toBe(4);
     expect(rowLoad([])).toBe(0);
+  });
+
+  it('counts a line break or a tab as the space it draws', () => {
+    expect(rowLoad([['a\nb\tc']])).toBe(rowLoad([['a b c']]));
+    expect(rowLoad([['a\nb\tc']])).toBe(5);
+  });
+});
+
+describe('monoWidth', () => {
+  it('measures a line break or a tab as the space it draws', () => {
+    const size = font.size.px26;
+    expect(monoWidth('a\nb\r\nc\td', size)).toBe(monoWidth('a b c d', size));
+    expect(monoWidth('a\nb', size)).toBeGreaterThan(monoWidth('ab', size));
+  });
+});
+
+describe('packedLines', () => {
+  it('sets an item wider than the line on a line of its own', () => {
+    expect(packedLines([40, 250, 40], 10, 100)).toBe(3);
+  });
+
+  it('runs an item wider than `breakAt` across the lines it fills', () => {
+    expect(packedLines([250], 10, 100, 100)).toBe(3);
+    expect(packedLines([40, 250, 40], 10, 100, 100)).toBe(4);
+    expect(packedLines([40, 250, 50], 10, 100, 100)).toBe(5);
+  });
+
+  it('breaks nothing between the line and `breakAt`', () => {
+    expect(packedLines([95, 95], 0, 92, 100)).toBe(2);
+    expect(packedLines([101], 0, 92, 100)).toBe(2);
+  });
+});
+
+describe('brokenLines', () => {
+  const tracking = font.tracking.snug;
+  const word = 'Internationalization';
+  // The column the word fills twice over, once packed to `lineFill`.
+  const column = (emWidth(word, tracking) * 40) / (2 * lineFill);
+
+  it('counts the lines a word wider than its column breaks across', () => {
+    expect(wrappedLines(word, 40, (column + 1) * lineFill, tracking)).toBe(1);
+    expect(brokenLines(word, 40, column + 1, tracking)).toBe(2);
+    expect(brokenLines(word, 40, column - 1, tracking)).toBe(3);
+  });
+
+  it('holds a word that fits on one line', () => {
+    expect(brokenLines(word, 40, 2 * column + 1, tracking)).toBe(1);
+  });
+});
+
+describe('markedLines', () => {
+  const call = 'x'.repeat(17);
+
+  it('counts prose as proseLines does', () => {
+    const text = 'Match the order, the amount, and the card on file';
+    expect(markedLines(text, 26, 300)).toBe(
+      proseLines(text, 26, 300 * lineFill)
+    );
+  });
+
+  // Seventeen mono columns fit the line; the chip's padding and border tip them over it.
+  it('sets a `code` run in the mono face, inside its chip', () => {
+    const fill = 300 * lineFill;
+    const mono = monoWidth(call, font.size.px26);
+    expect(mono).toBeLessThanOrEqual(fill);
+    expect(markedLines(call, 26, 300)).toBe(1);
+    expect(markedLines(`\`${call}\``, 26, 300)).toBe(2);
+    expect(markedLines(`\`${call.slice(1)}\``, 26, 300)).toBe(1);
+  });
+
+  it('breaks a word wider than the column across the lines it fills', () => {
+    expect(markedLines('x'.repeat(80), 26, 300)).toBe(4);
   });
 });
 

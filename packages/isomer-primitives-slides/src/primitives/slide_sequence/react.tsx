@@ -57,11 +57,11 @@ export const react = (
           sequence.rows[countKey(messages.length)],
           sequence.gapSize[step]
         )}>
-        {actors.map(({ id }, index) => (
+        {actors.map((_, index) => (
           <span
             aria-hidden
             className={cls(context, sequence.lifeline, ...span(index))}
-            key={`lifeline-${id}`}
+            key={index}
           />
         ))}
         {actors.map(({ id, label, tone }, index) => (

@@ -11,7 +11,7 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { marksReact, stripMarks } from '../../render/marks';
-import { displayColumns } from '../../render/mono';
+import { collapsedColumns } from '../../render/mono';
 import {
   statement as theme,
   statementFit,
@@ -33,7 +33,7 @@ export const react = (
   const { width, crowding } = slideLayout(context);
   const step = sizeForLoad(
     size,
-    displayColumns(stripMarks(text)) *
+    collapsedColumns(stripMarks(text)) *
       narrowing(scalePx(theme.maxWidth), width),
     statementFit,
     crowding

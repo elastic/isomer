@@ -26,6 +26,8 @@ export const sequence = {
     },
     paddingX: actorPaddingX,
     gaps: { l: space.px12, m: space.px12, s: space.px8 },
+    // Kept clear between two chips that each fill their span.
+    gutter: space.px16,
   },
   lifeline: stroke.hairline,
   // Most labels hold one line, where leading only adds height.

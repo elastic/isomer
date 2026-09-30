@@ -8,13 +8,16 @@
 import { font, radius, space, stroke } from '../base';
 import { literal, paddingXy } from '../scale';
 
+const codePaddingX = space.px6;
+
 export const marks = {
   // The chip keeps its run's font size; a smaller em would drop body copy under 24px.
   code: { family: font.family.mono },
   codeBorder: stroke.panel,
   codeRadius: radius.chipSmall,
   // No vertical padding keeps the chip in its line box; little side padding keeps punctuation close.
-  codePadding: paddingXy(literal('0'), space.px6),
+  codePadding: paddingXy(literal('0'), codePaddingX),
+  codePaddingX,
   // In bold or display text a chip outweighs its words, so code is mono alone.
   displayCode: { family: font.family.mono, weight: font.weight.medium },
   strong: { weight: font.weight.bold },

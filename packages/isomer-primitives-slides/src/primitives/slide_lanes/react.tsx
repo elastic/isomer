@@ -41,7 +41,11 @@ export const react = (
             return (
               <div
                 key={index}
-                className={cls(context, style.lane, style.laneSize[size])}>
+                className={cls(
+                  context,
+                  style.lane,
+                  index === 0 ? style.laneFirst : style.laneLast
+                )}>
                 <span
                   className={cls(
                     context,
@@ -53,7 +57,13 @@ export const react = (
                   <ToneCue {...{ tone, context }} />
                   {label}
                 </span>
-                <ol className={cls(context, style.steps, toned)}>
+                <ol
+                  className={cls(
+                    context,
+                    style.steps,
+                    style.stepsSize[size],
+                    toned
+                  )}>
                   {steps.map((step, stepIndex) => (
                     <li key={stepIndex} className={cls(context, style.step)}>
                       <span

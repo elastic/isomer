@@ -36,9 +36,10 @@ export type {
   SlidePipelineStep,
 } from './schema';
 
-const { arrow, dash } = slideDistillery.tokens.pipeline;
+const { arrow, dash, coverOpen, coverClose } = slideDistillery.tokens.pipeline;
 const joiner = ` ${arrow.value} `;
 const breaker = ` ${dash.value} `;
+const termJoiner = slideDistillery.tokens.glyph.termJoiner.value;
 
 const chain = (names: (string | undefined)[]): string =>
   names
@@ -49,14 +50,14 @@ const chain = (names: (string | undefined)[]): string =>
 const titles = (steps: SlidePipelineStep[]): string[] =>
   steps.map(({ title }) => title);
 
-/** The first and last step a span covers, or its one step. */
+/** The first and last step a span covers, or its one step, then what joins them to the span's title. */
 const covered = (
   steps: SlidePipelineStep[],
   { from, to }: SlidePipelineSpan
 ): string =>
-  chain(
+  `${coverOpen.value}${chain(
     from === to ? [steps[from]?.title] : [steps[from]?.title, steps[to]?.title]
-  );
+  )}${coverClose.value}${termJoiner}`;
 
 export const text = ({ start, end, steps, spans }: SlidePipelineNode): string =>
   [
@@ -64,7 +65,7 @@ export const text = ({ start, end, steps, spans }: SlidePipelineNode): string =>
     ...(spans?.length
       ? spans.map(
           (span) =>
-            `${toneCueText(span.tone)}${oneLine(span.label).toUpperCase()} (${covered(steps, span)}): ${oneLine(span.title)}${breaker}${plainText(span.body)}`
+            `${toneCueText(span.tone)}${oneLine(span.label).toUpperCase()}${covered(steps, span)}${oneLine(span.title)}${breaker}${plainText(span.body)}`
         )
       : steps.map(
           ({ title, body }, index) =>
@@ -80,7 +81,7 @@ export const markdown = ({ start, end, steps, spans }: SlidePipelineNode) => [
           md.paragraph(
             toneCueText(span.tone),
             md.strong(span.label.toUpperCase()),
-            ` (${covered(steps, span)}): `,
+            covered(steps, span),
             span.title,
             breaker,
             ...marksMarkdown(span.body)
@@ -117,7 +118,7 @@ export const slack = ({
               elements: [
                 run(toneCueText(span.tone)),
                 run(span.label.toUpperCase(), { bold: true }),
-                run(` (${covered(steps, span)}): `),
+                run(covered(steps, span)),
                 run(span.title),
                 run(breaker),
                 ...marksRichText(span.body),

@@ -26,8 +26,9 @@ export type {
 } from './schema';
 
 const arrow = ` ${slideDistillery.tokens.sequence.arrow.value} `;
+const termJoiner = slideDistillery.tokens.glyph.termJoiner.value;
 
-/** Each message's `from → to: ` route, by actor label and tone cue, never id, and its label. */
+/** Each message's route, by actor label and tone cue, never id, and its label. */
 const routed = ({ actors, messages }: SlideSequenceNode) => {
   const names = new Map(
     actors.map(({ id, label, tone }) => [
@@ -37,7 +38,7 @@ const routed = ({ actors, messages }: SlideSequenceNode) => {
   );
   const name = (id: string) => names.get(id) ?? oneLine(id);
   return messages.map(({ from, to, label }) => ({
-    route: `${name(from)}${arrow}${name(to)}: `,
+    route: `${name(from)}${arrow}${name(to)}${termJoiner}`,
     label,
   }));
 };
