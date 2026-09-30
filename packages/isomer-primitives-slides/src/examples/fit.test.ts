@@ -23,10 +23,12 @@ import { describe, expect, it } from 'vitest';
 import { slideDeckFrame, slidesPack } from '../pack';
 import { slidesPackAuthoring } from '../pack_authoring';
 import { layoutCheckNote } from '../primitives/authored_text';
+import type { SlideCodeNode } from '../primitives/slide_code/schema';
 import { tallestExample as tallestHeading } from '../primitives/slide_heading/examples';
 import { headingCrowding } from '../primitives/slide_heading/fit';
 import { slideDeckPrimitives } from '../registry';
-import { frameBodyCharacters } from '../theme/components/frame';
+import { codeLineMaxLength, codeMaxLines } from '../theme/components/code';
+import { frameLineCharacters } from '../theme/components/frame';
 
 import { slideFonts } from './fonts';
 import { previewSlide } from './preview_slide';
@@ -108,26 +110,22 @@ const authoringSchema = (primitive: SlidePrimitive) =>
 const describesLayoutCheck = (primitive: SlidePrimitive) =>
   JSON.stringify(authoringSchema(primitive)).includes(layoutCheckNote);
 
-/**
- * Whether the schema lets content grow past any slide: nested body nodes, an array with no `maxItems`, or a string with no cap or a wrapped field's cap.
- * A wrapped field's cap is the whole body's capacity in the smallest type, so at its cap it overflows under any heading.
- */
-const canOverflow = (
+const refName = ($ref: string) => $ref.split('/').at(-1)!;
+
+/** Nested slide nodes, an array with no `maxItems`, or a string with no `maxLength`: no most content to measure. */
+const unbounded = (
   node: JsonNode,
   defs: Record<string, JsonNode>,
   seen = new Set<string>()
 ): boolean => {
   const { $ref, type, maxItems, maxLength, items, properties } = node;
   if ($ref !== undefined) {
-    const name = $ref.split('/').at(-1)!;
-    if (name === 'bodyNode') {
-      return true;
-    }
-    if (seen.has(name)) {
-      return false;
+    const name = refName($ref);
+    if (name === 'bodyNode' || seen.has(name)) {
+      return name === 'bodyNode';
     }
     seen.add(name);
-    return canOverflow(defs[name] ?? {}, defs, seen);
+    return unbounded(defs[name] ?? {}, defs, seen);
   }
   if (type === 'array' && maxItems === undefined) {
     return true;
@@ -136,7 +134,7 @@ const canOverflow = (
     type === 'string' &&
     node.const === undefined &&
     node.enum === undefined &&
-    (maxLength === undefined || maxLength >= frameBodyCharacters)
+    maxLength === undefined
   ) {
     return true;
   }
@@ -146,26 +144,87 @@ const canOverflow = (
     ...(node.oneOf ?? []),
     ...(node.anyOf ?? []),
     ...(node.allOf ?? []),
-  ].some((child) => canOverflow(child, defs, seen));
+  ].some((child) => unbounded(child, defs, seen));
 };
 
-// A bounded primitive without `layoutCheckNote` adds its most content here.
-const worstCases: Partial<Record<string, PrimitiveNode>> = {};
+// `W` is the widest glyph the image draws; an enum's first value is its largest `size`.
+const widest = 'W';
 
-describe('a primitive whose schema allows more than the slide holds notes the layout check', () => {
+/** The most a bounded schema takes: every field present, every string and array at its cap. */
+const mostContent = (
+  node: JsonNode,
+  defs: Record<string, JsonNode>
+): unknown => {
+  const { $ref, type, maxItems, maxLength, items, properties } = node;
+  if ($ref !== undefined) {
+    return mostContent(defs[refName($ref)] ?? {}, defs);
+  }
+  if (node.const !== undefined) {
+    return node.const;
+  }
+  if (node.enum !== undefined) {
+    return node.enum[0];
+  }
+  const [variant] = node.oneOf ?? node.anyOf ?? node.allOf ?? [];
+  if (variant !== undefined) {
+    return mostContent(variant, defs);
+  }
+  if (type === 'string') {
+    return widest.repeat(maxLength ?? 1);
+  }
+  if (type === 'array') {
+    return Array.from({ length: maxItems ?? 1 }, () =>
+      mostContent(items ?? {}, defs)
+    );
+  }
+  if (type === 'object') {
+    return Object.fromEntries(
+      Object.entries(properties ?? {}).map(([key, child]) => [
+        key,
+        mostContent(child, defs),
+      ])
+    );
+  }
+  return 1;
+};
+
+// Code's line width is a cross-field cap the schema cannot state, so its most content is written out.
+const codeWorstCase: SlideCodeNode = {
+  type: 'slideCode',
+  panels: Array.from({ length: 2 }, () => ({
+    file: widest.repeat(frameLineCharacters),
+    lines: Array<string>(codeMaxLines).fill(
+      widest.repeat(codeLineMaxLength(2, true))
+    ),
+  })),
+};
+
+const worstCases: Partial<Record<string, PrimitiveNode>> = {
+  slideCode: codeWorstCase,
+};
+
+const worstCase = (primitive: SlidePrimitive): PrimitiveNode => {
+  const { $defs } = authoringSchema(primitive);
+  return (worstCases[primitive.type] ??
+    mostContent($defs[primitive.type] ?? {}, $defs)) as PrimitiveNode;
+};
+
+// #43: the note appears exactly where the theme cannot hold a primitive's most content under the tallest heading.
+describe('a primitive notes the layout check exactly when its most content can overflow', () => {
   it.each(slideDeckPrimitives.map((primitive) => ({ primitive })))(
     '$primitive.type',
     async ({ primitive }) => {
-      if (describesLayoutCheck(primitive)) {
+      const { $defs } = authoringSchema(primitive);
+      if (unbounded($defs[primitive.type] ?? {}, $defs)) {
+        expect(describesLayoutCheck(primitive)).toBe(true);
         return;
       }
-      const { $defs } = authoringSchema(primitive);
-      expect(canOverflow($defs[primitive.type] ?? {}, $defs)).toBe(false);
-      const worstCase = worstCases[primitive.type];
-      expect(worstCase).toBeDefined();
-      expect(await findings(previewSlide(worstCase!, tallestHeading))).toEqual(
-        []
-      );
+      const most = worstCase(primitive);
+      expect(
+        runtime.validate(previewSlide(most, tallestHeading)).errors
+      ).toEqual([]);
+      const found = await findings(previewSlide(most, tallestHeading));
+      expect(describesLayoutCheck(primitive)).toBe(found.length > 0);
     }
   );
 });
