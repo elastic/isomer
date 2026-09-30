@@ -22,6 +22,7 @@ import {
   plainText,
   richTextRun,
 } from '../../render/marks';
+import { toneCueText } from '../../render/tone_cue';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -33,25 +34,29 @@ export type { SlideTerritory, SlideTerritoryGroupNode } from './schema';
 
 export const text = ({ items }: SlideTerritoryGroupNode): string =>
   items
-    .map(({ title, body }) => `${oneLine(title)}: ${plainText(body)}`)
+    .map(
+      ({ title, body, tone }) =>
+        `${toneCueText(tone)}${oneLine(title)}: ${plainText(body)}`
+    )
     .join('\n');
 
 export const markdown = ({ items }: SlideTerritoryGroupNode) =>
-  items.flatMap(({ title, body }) => [
-    md.heading(2, title),
+  items.flatMap(({ title, body, tone }) => [
+    md.heading(2, `${toneCueText(tone)}${title}`),
     md.paragraph(...marksMarkdown(body)),
   ]);
 
 export const slack = ({ items }: SlideTerritoryGroupNode): SlackBlock[] => [
   slackFields(
     items.map(
-      ({ title, body }) =>
-        `${bold(oneLine(title))}\n${oneLine(marksSlack(body))}`
+      ({ title, body, tone }) =>
+        `${toneCueText(tone)}${bold(oneLine(title))}\n${oneLine(marksSlack(body))}`
     ),
     () =>
       slackRichText(
-        ...items.map(({ title, body }, index) =>
+        ...items.map(({ title, body, tone }, index) =>
           richTextSection(
+            ...(tone ? [richTextRun(toneCueText(tone))] : []),
             richTextRun(title, { bold: true }),
             richTextBreak,
             ...marksRichText(body),

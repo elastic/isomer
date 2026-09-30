@@ -7,7 +7,8 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { headingCrowding } from './fit';
+import { tallestExample } from './examples';
+import { headingCrowding, headingStep } from './fit';
 
 describe('headingCrowding', () => {
   it('stays positive and finite for a heading taller than the frame body', () => {
@@ -18,6 +19,12 @@ describe('headingCrowding', () => {
     });
     expect(Number.isFinite(crowding)).toBe(true);
     expect(crowding).toBeGreaterThan(1);
+  });
+
+  // Crowding is 1 exactly for two title lines at `l` and two lede lines, the reference load budgets are set against.
+  it('holds `tallestExample` at the reference: `l`, two title lines, two lede lines', () => {
+    expect(headingStep(tallestExample)).toBe('l');
+    expect(headingCrowding(tallestExample)).toBe(1);
   });
 
   it('is 1 or less for a short heading', () => {

@@ -233,6 +233,73 @@ const cases: LimitCase[] = [
       body: [{ type: 'slideHeading', title: 'Why' }],
     }),
   },
+  {
+    name: 'slideTitle eyebrow',
+    slot: 'context',
+    limit: SLACK_LIMITS.contextElementChars,
+    filler: 'x',
+    max: 3000,
+    node: (fill) => ({
+      type: 'slideTitle',
+      title: 'Ledger',
+      eyebrow: `Launch ${fill}`,
+    }),
+  },
+  {
+    name: 'slideTerritoryGroup toned title',
+    slot: 'fields',
+    limit: SLACK_LIMITS.sectionFieldChars,
+    filler: 'x',
+    max: 3000,
+    node: (fill) => ({
+      type: 'slideTerritoryGroup',
+      items: [
+        { title: `Ours ${fill}`, body: 'We run it', tone: 'primary' },
+        { title: 'Theirs', body: 'They run it', tone: 'accent' },
+      ],
+    }),
+  },
+  {
+    name: 'slideSplit toned label',
+    slot: 'context',
+    limit: SLACK_LIMITS.contextElementChars,
+    filler: '&',
+    max: 3000,
+    node: (fill) => ({
+      type: 'slideSplit',
+      panes: [
+        {
+          label: fill,
+          tone: 'primary',
+          items: [{ type: 'slideBulletList', items: ['One'] }],
+        },
+        { items: [{ type: 'slideBulletList', items: ['Two'] }] },
+      ],
+    }),
+  },
+  {
+    name: 'slideBulletList label',
+    slot: 'context',
+    limit: SLACK_LIMITS.contextElementChars,
+    filler: '&',
+    max: 3000,
+    node: (fill) => ({
+      type: 'slideBulletList',
+      label: fill,
+      items: ['One'],
+    }),
+  },
+  {
+    name: 'slideCode file',
+    slot: 'section',
+    limit: SLACK_LIMITS.sectionTextChars,
+    filler: 'x',
+    max: 4000,
+    node: (fill) => ({
+      type: 'slideCode',
+      panels: [{ file: `order ${fill}`, lines: ['{}'] }],
+    }),
+  },
 ];
 
 const schemas = new Map<string, (typeof slideDeckPrimitives)[number]['schema']>(
