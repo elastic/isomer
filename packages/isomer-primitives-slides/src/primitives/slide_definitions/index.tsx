@@ -7,9 +7,15 @@
 
 import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
-import { bold, type SlackBlock } from '@elastic/isomer-sdk/slack';
+import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import { richTextSection, slackFields, slackRichText } from '../../render';
+import {
+  richTextBreak,
+  richTextSection,
+  slackBold,
+  slackFields,
+  slackRichText,
+} from '../../render';
 import {
   marksMarkdown,
   marksRichText,
@@ -17,6 +23,7 @@ import {
   plainText,
   richTextRun,
 } from '../../render/marks';
+import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -26,15 +33,17 @@ import { schema, type SlideDefinitionsNode } from './schema';
 
 export type { SlideDefinition, SlideDefinitionsNode } from './schema';
 
+const termJoiner = slideDistillery.tokens.glyph.termJoiner.value;
+
 export const text = ({ items }: SlideDefinitionsNode): string =>
   items
-    .map(({ term, body }) => `${oneLine(term)}: ${plainText(body)}`)
+    .map(({ term, body }) => `${oneLine(term)}${termJoiner}${plainText(body)}`)
     .join('\n');
 
 export const markdown = ({ items }: SlideDefinitionsNode) => [
   md.list(
     items.map(({ term, body }) =>
-      md.paragraph(md.strong(term), ': ', ...marksMarkdown(body))
+      md.paragraph(md.strong(term), termJoiner, ...marksMarkdown(body))
     )
   ),
 ];
@@ -42,7 +51,7 @@ export const markdown = ({ items }: SlideDefinitionsNode) => [
 export const slack = ({ items }: SlideDefinitionsNode): SlackBlock[] => [
   slackFields(
     items.map(
-      ({ term, body }) => `${bold(oneLine(term))}\n${oneLine(marksSlack(body))}`
+      ({ term, body }) => `${slackBold(term)}\n${oneLine(marksSlack(body))}`
     ),
     () =>
       slackRichText({
@@ -51,7 +60,7 @@ export const slack = ({ items }: SlideDefinitionsNode): SlackBlock[] => [
         elements: items.map(({ term, body }) =>
           richTextSection(
             richTextRun(term, { bold: true }),
-            richTextRun(': '),
+            richTextBreak,
             ...marksRichText(body)
           )
         ),

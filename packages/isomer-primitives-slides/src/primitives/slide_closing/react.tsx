@@ -15,9 +15,9 @@ import {
   closing as theme,
   closingShares,
 } from '../../theme/components/closing';
-import { columnWidth, frameContentWidth } from '../../theme/components/frame';
+import { frameContentWidth } from '../../theme/components/frame';
 import { labelModule } from '../../theme/modules';
-import { sizeForLines } from '../size';
+import { sizeForLines, trackWidth } from '../size';
 
 import type { SlideClosingNode } from './schema';
 import { closingModule } from './styles';
@@ -33,8 +33,12 @@ export const react = (
     title,
     theme.title.tracking,
     paths.length > 0
-      ? columnWidth(closingShares, theme.columnGap)
-      : frameContentWidth,
+      ? trackWidth(
+          context?.width ?? frameContentWidth,
+          closingShares,
+          theme.columnGap
+        )
+      : (context?.width ?? frameContentWidth),
     theme.titleSizes
   );
   return (

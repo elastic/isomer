@@ -32,6 +32,8 @@ export const quote = {
   quoteClose: literal('”'),
   /** Leads the attribution in text, Markdown, and Slack. */
   dash: glyph.dash,
+  /** Between `source` and `context` on every surface. */
+  contextJoiner: literal(', '),
 } as const;
 
 /** About four lines at `l`, five at `m`. */

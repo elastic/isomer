@@ -45,7 +45,7 @@ The frame draws one footer line and nothing else: the Isomer mark, `brand`, and 
 
 The body renders first, then the footer as one line (`Isomer · 01 Primitives · elastic.github.io/isomer`), italic in Markdown with `url` as a link. Slack sends the same line as a closing `context` block.
 
-A slide opens with its own heading: `slideTitle`, `slideHeading`, `slideStatement`, `slideSection`, or `slideClosing`, each a `#` in Markdown and an `h1` in HTML, with sub-headings inside the slide, such as a `slideSplit` pane label or a `slideTerritoryGroup` owner, at `##` and `h2`. Render a slide with `heading: false` on the `text`, `markdown`, and `slack` surfaces, as on `react` and `html`, so the composition's `title` names the slide without repeating it.
+A slide opens with its own heading: `slideTitle`, `slideHeading`, `slideStatement`, `slideSection`, or `slideClosing`, each a `#` in Markdown and an `h1` in HTML; a quote slide has none, its words standing in for one, with sub-headings inside the slide, such as a `slideSplit` pane label or a `slideTerritoryGroup` owner, at `##` and `h2`. Render a slide with `heading: false` on the `text`, `markdown`, and `slack` surfaces, as on `react` and `html`, so the composition's `title` names the slide without repeating it.
 
 ## `slideDeckFrame` vs `slideFrame`
 

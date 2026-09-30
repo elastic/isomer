@@ -8,7 +8,7 @@
 import { font, space, stroke, type } from '../base';
 import { trackList } from '../scale';
 
-import { glyph } from './shared';
+import { glyph, link } from './shared';
 
 export const sectionShares = [1.2, 1] as const;
 
@@ -25,10 +25,12 @@ export const section = {
   titleGap: space.px48,
   rule: stroke.hairline,
   rowPaddingY: space.px24,
+  ordinalGap: space.px16,
   row: {
     size: font.size.px34,
     weight: font.weight.regular,
     lineHeight: font.lineHeight.list,
   },
   separator: glyph.separator,
+  linkDecoration: link.decoration,
 } as const;

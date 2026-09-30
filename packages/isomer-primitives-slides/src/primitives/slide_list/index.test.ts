@@ -11,10 +11,12 @@ import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { expectCountBounds } from '../bounds.fixtures';
 
-import { example, mixedExample } from './examples';
+import { example, fullExample, mixedExample } from './examples';
 import { markdown as markdownContent, text } from './index';
 import type { SlideListNode } from './schema';
+import { schema } from './schema';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -127,5 +129,18 @@ describe('slideList', () => {
         },
       ]
     `);
+  });
+});
+
+describe('slideList counts', () => {
+  it('holds one to six facts, as its fullest example does', () => {
+    expectCountBounds(
+      schema,
+      example,
+      'items',
+      [1, 6],
+      { body: 'One' },
+      fullExample
+    );
   });
 });

@@ -54,6 +54,7 @@ export const sectionModule = createStyleModule('section', ({ css }) => ({
   row: css`
     border-bottom: ${section.rule} solid ${color.border};
     color: ${color.text};
+    column-gap: ${section.ordinalGap};
     display: flex;
     ${typeRole(section.row)}
     padding: ${section.rowPaddingY} 0;
@@ -61,6 +62,6 @@ export const sectionModule = createStyleModule('section', ({ css }) => ({
   `,
   link: css`
     color: inherit;
-    text-decoration: none;
+    text-decoration: ${section.linkDecoration};
   `,
 }));

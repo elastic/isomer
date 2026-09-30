@@ -13,10 +13,12 @@ import { describe, expect, it } from 'vitest';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { columnWidth } from '../../theme/components/frame';
 import { section, sectionShares } from '../../theme/components/section';
+import { expectCountBounds } from '../bounds.fixtures';
 import { sizeForLines } from '../size';
 
-import { example, linkedExample } from './examples';
+import { example, linkedExample, longExample } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
+import { schema } from './schema';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -193,5 +195,37 @@ describe('slideSection', () => {
       expect(stepOf(titleOf(200), 'l')).toBe('l');
       expect(stepOf('Part', 's')).toBe('s');
     });
+  });
+});
+
+describe('slideSection counts', () => {
+  it('holds one to eight lines, as its longest example does', () => {
+    expectCountBounds(schema, example, 'contents', [1, 8], 'One', longExample);
+  });
+
+  it('holds no more hrefs than lines', () => {
+    const lines = Array(8).fill('One');
+    expect(
+      schema.safeParse({
+        ...example,
+        contents: lines,
+        hrefs: Array(8).fill('#a'),
+      }).success
+    ).toBe(true);
+    expect(
+      schema.safeParse({
+        ...example,
+        contents: lines,
+        hrefs: Array(9).fill('#a'),
+      }).success
+    ).toBe(false);
+  });
+
+  it('numbers its lines in HTML as text, Markdown, and Slack do', () => {
+    const { html } = runtime.surfaces.html.render(compose(example));
+    expect(html.replace(/<[^>]+>/g, '')).toContain(
+      '1.Refunds settle in two days'
+    );
+    expect(text(example)).toContain('1. Refunds settle in two days');
   });
 });

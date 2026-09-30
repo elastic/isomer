@@ -15,11 +15,11 @@ import { sizeField } from '../size';
 
 const { here } = slideDistillery.tokens.agenda;
 
+const sectionsMax = 8;
+
 const sectionSchema = z
   .object({
-    number: lineText().describe(
-      'Section number as it should read, e.g. `01`. One or two characters.'
-    ),
+    number: lineText().describe('Section number as it should read, e.g. `01`.'),
     title: lineText().describe(
       'Section name in two or three words, e.g. `The problem`.'
     ),
@@ -44,14 +44,16 @@ export const schema = z
     sections: z
       .array(sectionSchema)
       .min(2)
-      .max(8)
+      .max(sectionsMax)
       .describe('Every section of the talk, in order. 2 to 8.'),
     size: sizeField(),
   })
   .strict()
   .check(
     crossRefine(
-      ({ sections }) => sections.filter(({ current }) => current).length <= 1,
+      ({ sections }) =>
+        sections.length > sectionsMax ||
+        sections.filter(({ current }) => current).length <= 1,
       { error: 'at most one section can be current', path: ['sections'] }
     )
   );

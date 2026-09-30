@@ -21,6 +21,8 @@ export interface SlideRenderContext extends StyledRenderContext {
    * Absent means 1.
    */
   crowding?: number;
+  /** Pixels across the room a container gives its nodes. Absent means the frame's content width. */
+  width?: number;
   /** `false` when the frame leaves the mark out, so nothing inside draws it. */
   logo?: boolean;
 }

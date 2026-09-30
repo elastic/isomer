@@ -17,7 +17,7 @@ const targetSchema = z
       'Short identifier for the target, set in mono, e.g. `email`. One or two words.'
     ),
     body: wrappedText().describe(
-      'What the target does with the source, in one short line: under about 30 characters beside a title, where the column is narrow.'
+      'What the target does with the source, in one short line.'
     ),
     tone: slideToneSchema
       .describe(

@@ -71,6 +71,7 @@ export {
   renderSlackEnvelope,
   slackActionId,
   slackButtonStyle,
+  slackLinkUrl,
   slackOverflowElement,
   slackPlainText,
   slackSelectOption,

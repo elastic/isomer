@@ -5,5 +5,5 @@
  * 2.0.
  */
 
-/** Between a quote's `source` and its `context`, on every surface. */
-export const contextJoiner = ', ';
+/** A contents line's number as the slide and plain text print it. */
+export const ordinal = (index: number): string => `${index + 1}.`;

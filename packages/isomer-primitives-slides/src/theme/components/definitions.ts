@@ -28,3 +28,6 @@ export const definitionsSingleColumnMax = 4;
 
 /** Largest `rowLoad` each step holds. */
 export const definitionsFit = { l: 480, m: 560 } as const;
+
+/** Rows in the longer column each step holds, whatever their length. */
+export const definitionsRowFit = { l: 3, m: 4 } as const;

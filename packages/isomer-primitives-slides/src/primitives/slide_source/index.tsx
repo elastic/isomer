@@ -9,7 +9,14 @@ import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import { marksMarkdown, marksSlack, plainText } from '../../render/marks';
+import { richTextSection, slackContext, slackRichText } from '../../render';
+import {
+  marksMarkdown,
+  marksRichText,
+  marksSlack,
+  plainText,
+  richTextRun,
+} from '../../render/marks';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -28,15 +35,11 @@ export const markdown = ({ text: source }: SlideSourceNode) => [
 ];
 
 export const slack = ({ text: source }: SlideSourceNode): SlackBlock[] => [
-  {
-    type: 'context',
-    elements: [
-      {
-        type: 'mrkdwn',
-        text: `${prefix} ${oneLine(marksSlack(source))}`,
-      },
-    ],
-  },
+  slackContext(`${prefix} ${oneLine(marksSlack(source))}`, () =>
+    slackRichText(
+      richTextSection(richTextRun(`${prefix} `), ...marksRichText(source))
+    )
+  ),
 ];
 
 /** Catalog, schema, and renderers for {@link SlideSourceNode}. */

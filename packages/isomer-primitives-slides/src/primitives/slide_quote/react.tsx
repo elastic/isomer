@@ -12,16 +12,16 @@ import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { marksReact, stripMarks } from '../../render/marks';
 import { displayColumns } from '../../render/mono';
-import { quoteFit } from '../../theme/components/quote';
+import { quote as theme, quoteFit } from '../../theme/components/quote';
 import { slideDistillery } from '../../theme/distillery';
 import { layoutModule } from '../../theme/modules';
-import { sizeForLoad } from '../size';
+import { scalePx } from '../../theme/scale';
+import { narrowing, sizeForLoad } from '../size';
 
-import { contextJoiner } from './attribution';
 import type { SlideQuoteNode } from './schema';
 import { quoteModule } from './styles';
 
-const { quoteOpen, quoteClose } = slideDistillery.tokens.quote;
+const { quoteOpen, quoteClose, contextJoiner } = slideDistillery.tokens.quote;
 
 /** React renderer for {@link SlideQuoteNode}. */
 export const react = (
@@ -31,7 +31,8 @@ export const react = (
   const { handles: quote } = quoteModule;
   const step = sizeForLoad(
     size,
-    displayColumns(stripMarks(text)),
+    displayColumns(stripMarks(text)) *
+      narrowing(scalePx(theme.maxWidth), context?.width),
     quoteFit,
     context?.crowding
   );
@@ -50,7 +51,7 @@ export const react = (
           <span className={cls(context, quote.source)}>{source}</span>
           {where ? (
             <>
-              {contextJoiner}
+              {contextJoiner.value}
               <span className={cls(context, quote.context)}>{where}</span>
             </>
           ) : null}

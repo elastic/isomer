@@ -300,6 +300,26 @@ const cases: LimitCase[] = [
       panels: [{ file: `order ${fill}`, lines: ['{}'] }],
     }),
   },
+  {
+    name: 'slideSource',
+    slot: 'context',
+    limit: SLACK_LIMITS.contextElementChars,
+    filler: 'x',
+    max: 3000,
+    node: (fill) => ({ type: 'slideSource', text: `Ledger ${fill}` }),
+  },
+  {
+    name: 'slideList label',
+    slot: 'context',
+    limit: SLACK_LIMITS.contextElementChars,
+    filler: '&',
+    max: 1000,
+    node: (fill) => ({
+      type: 'slideList',
+      label: fill,
+      items: [{ body: 'One' }],
+    }),
+  },
 ];
 
 const schemas = new Map<string, (typeof slideDeckPrimitives)[number]['schema']>(
@@ -374,17 +394,41 @@ describe('Slack slots below their schema cap', () => {
     }
   );
 
-  it('keeps a fanout body past a section limit whole', () => {
-    const body = long(SLACK_LIMITS.sectionTextChars + 1);
-    const node = {
-      type: 'slideFanout',
-      source: 'order',
-      targets: [
-        { name: 'email', body },
-        { name: 'courier', body: 'Books a slot' },
-      ],
-    } as PrimitiveNode;
-    expect(schemas.get('slideFanout')?.safeParse(node).success).toBe(true);
-    expect(richText(render(node))).toContain(body);
+  const past = long(SLACK_LIMITS.sectionTextChars + 1);
+
+  it.each([
+    [
+      'a fanout body',
+      {
+        type: 'slideFanout',
+        source: 'order',
+        targets: [
+          { name: 'email', body: past },
+          { name: 'courier', body: 'Books a slot' },
+        ],
+      },
+    ],
+    [
+      'a linked section line',
+      {
+        type: 'slideSection',
+        number: '01',
+        title: 'Part',
+        contents: [past],
+        hrefs: ['https://example.com/deck/1'],
+      },
+    ],
+    [
+      'a closing link past its section',
+      {
+        type: 'slideClosing',
+        title: 'Thanks',
+        links: [{ label: 'Docs', href: 'https://example.com', text: past }],
+      },
+    ],
+  ])('keeps %s past a section limit whole in rich text', (_name, node) => {
+    const primitive = node as PrimitiveNode;
+    expect(schemas.get(primitive.type)?.safeParse(node).success).toBe(true);
+    expect(richText(render(primitive))).toContain(past);
   });
 });

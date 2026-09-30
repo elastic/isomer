@@ -13,12 +13,15 @@ import { describe, expect, it } from 'vitest';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { agendaFit } from '../../theme/components/agenda';
 import { slideDistillery } from '../../theme/distillery';
+import { expectCountBounds } from '../bounds.fixtures';
 import { sizeForLoad } from '../size';
 import { crowdingHeading, renderedStep } from '../size.fixtures';
 import { headingCrowding } from '../slide_heading/fit';
 
-import { example, outlineExample } from './examples';
+import { example, longExample, outlineExample } from './examples';
+import { agendaLines } from './fit';
 import { markdown as markdownContent, slack, text } from './index';
+import { schema } from './schema';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -198,5 +201,35 @@ describe('slideAgenda', () => {
     );
     expect(step).not.toBe('l');
     expect(renderedStep('agenda-rowSize', node, crowdingHeading)).toBe(step);
+  });
+});
+
+describe('slideAgenda counts and title lines', () => {
+  it('holds two to eight sections, as its longest example does', () => {
+    expectCountBounds(
+      schema,
+      example,
+      'sections',
+      [2, 8],
+      { number: '1', title: 'Part' },
+      longExample
+    );
+  });
+
+  it('counts a wrapped title as more than one line', () => {
+    const title =
+      'What customers told us about returns and refunds in stores and online too';
+    const node = {
+      type: 'slideAgenda' as const,
+      sections: Array.from({ length: agendaFit.l }, (_, index) => ({
+        number: String(index + 1),
+        title,
+      })),
+    };
+    expect(agendaLines(node.sections, 'l')).toBeGreaterThan(agendaFit.l);
+    expect(stepOf(node)).toBe(
+      sizeForLoad(undefined, (at) => agendaLines(node.sections, at), agendaFit)
+    );
+    expect(stepOf(node)).not.toBe('l');
   });
 });

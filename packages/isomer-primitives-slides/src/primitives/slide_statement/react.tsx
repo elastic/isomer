@@ -12,9 +12,13 @@ import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { marksReact, stripMarks } from '../../render/marks';
 import { displayColumns } from '../../render/mono';
-import { statementFit } from '../../theme/components/statement';
+import {
+  statement as theme,
+  statementFit,
+} from '../../theme/components/statement';
 import { layoutModule } from '../../theme/modules';
-import { sizeForLoad } from '../size';
+import { scalePx } from '../../theme/scale';
+import { narrowing, sizeForLoad } from '../size';
 
 import type { SlideStatementNode } from './schema';
 import { statementModule } from './styles';
@@ -27,7 +31,8 @@ export const react = (
   const { handles: statement } = statementModule;
   const step = sizeForLoad(
     size,
-    displayColumns(stripMarks(text)),
+    displayColumns(stripMarks(text)) *
+      narrowing(scalePx(theme.maxWidth), context?.width),
     statementFit,
     context?.crowding
   );

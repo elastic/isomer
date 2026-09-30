@@ -13,10 +13,12 @@ import { describe, expect, it } from 'vitest';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { closing, closingShares } from '../../theme/components/closing';
 import { columnWidth, frameContentWidth } from '../../theme/components/frame';
+import { expectCountBounds } from '../bounds.fixtures';
 import { sizeForLines } from '../size';
 
-import { example, linkOnlyExample } from './examples';
+import { example, fullExample, linkOnlyExample } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
+import { schema } from './schema';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -232,6 +234,37 @@ describe('slideClosing', () => {
     it('keeps an authored size', () => {
       expect(stepOf({ ...example, title: titleOf(200), size: 'l' })).toBe('l');
       expect(stepOf({ ...example, title: 'Next', size: 's' })).toBe('s');
+    });
+  });
+});
+
+describe('slideClosing counts', () => {
+  it('holds one to four links and one to five paths, as its fullest example does', () => {
+    expectCountBounds(
+      schema,
+      example,
+      'links',
+      [1, 4],
+      example.links[0],
+      fullExample
+    );
+    expectCountBounds(
+      schema,
+      example,
+      'paths',
+      [1, 5],
+      example.paths?.[0],
+      fullExample
+    );
+  });
+
+  it('bolds a label with edge whitespace in Slack', () => {
+    const [, links] = slack({
+      ...linkOnlyExample,
+      links: [{ label: ' Docs\n', href: 'https://example.com', text: 'docs' }],
+    });
+    expect(links).toMatchObject({
+      text: { text: '*DOCS* · <https://example.com|docs>' },
     });
   });
 });

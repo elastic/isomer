@@ -8,15 +8,17 @@
 import { sanitizeNavigationHref } from '@elastic/isomer-sdk';
 import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
-import {
-  bold,
-  escapeMrkdwn,
-  link,
-  markdownContentToSlackBlocks,
-  type SlackBlock,
-} from '@elastic/isomer-sdk/slack';
+import { escapeMrkdwn, link, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import { slackHeading, slackRichText, slackSection } from '../../render';
+import {
+  richTextBreak,
+  richTextLinked,
+  richTextSection,
+  slackBold,
+  slackHeading,
+  slackRichText,
+  slackSection,
+} from '../../render';
 import {
   marksMarkdown,
   marksRichText,
@@ -38,6 +40,7 @@ export type {
 } from './schema';
 
 const { separator } = slideDistillery.tokens.closing;
+const termJoiner = slideDistillery.tokens.glyph.termJoiner.value;
 
 const bareAddress = (href: string): string =>
   href.replace(/^(?:https?:\/\/|mailto:)/i, '').replace(/\/$/, '');
@@ -59,7 +62,10 @@ export const text = ({ title, links, paths = [] }: SlideClosingNode): string =>
       )
       .join('\n'),
     paths
-      .map(({ title: goal, body }) => `- ${oneLine(goal)}: ${plainText(body)}`)
+      .map(
+        ({ title: goal, body }) =>
+          `- ${oneLine(goal)}${termJoiner}${plainText(body)}`
+      )
       .join('\n'),
   ]
     .filter(Boolean)
@@ -81,7 +87,7 @@ export const markdown = ({ title, links, paths = [] }: SlideClosingNode) => [
     ? [
         md.list(
           paths.map(({ title: goal, body }) =>
-            md.paragraph(md.strong(goal), ': ', ...marksMarkdown(body))
+            md.paragraph(md.strong(goal), termJoiner, ...marksMarkdown(body))
           )
         ),
       ]
@@ -98,13 +104,18 @@ export const slack = ({
     links
       .map(
         ({ label, href, text: shown }) =>
-          `${bold(oneLine(label).toUpperCase())} ${separator.value} ${href ? link(href, oneLine(shown)) : escapeMrkdwn(oneLine(shown))}`
+          `${slackBold(label.toUpperCase())} ${separator.value} ${href ? link(href, oneLine(shown)) : escapeMrkdwn(oneLine(shown))}`
       )
       .join('\n'),
     () =>
       slackRichText(
-        ...markdownContentToSlackBlocks(linkParagraphs(links)).flatMap(
-          (block) => (block.type === 'rich_text' ? block.elements : [])
+        ...links.map(({ label, href, text: shown }, index) =>
+          richTextSection(
+            richTextRun(label.toUpperCase(), { bold: true }),
+            richTextRun(` ${separator.value} `),
+            ...richTextLinked([richTextRun(shown)], href),
+            ...(index < links.length - 1 ? [richTextBreak] : [])
+          )
         )
       )
   ),
@@ -120,7 +131,7 @@ export const slack = ({
                 type: 'rich_text_section',
                 elements: [
                   richTextRun(goal, { bold: true }),
-                  richTextRun(': '),
+                  richTextRun(termJoiner),
                   ...marksRichText(body),
                 ],
               })),

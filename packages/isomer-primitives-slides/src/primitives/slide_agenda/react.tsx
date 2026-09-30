@@ -15,6 +15,7 @@ import { slideDistillery } from '../../theme/distillery';
 import { labelModule, layoutModule, tonesModule } from '../../theme/modules';
 import { sizeForLoad } from '../size';
 
+import { agendaLines } from './fit';
 import type { SlideAgendaNode } from './schema';
 import { agendaModule } from './styles';
 
@@ -27,7 +28,12 @@ export const react = (
 ): ReactNode => {
   const { handles: agenda } = agendaModule;
   const { handles: label } = labelModule;
-  const step = sizeForLoad(size, sections.length, agendaFit, context?.crowding);
+  const step = sizeForLoad(
+    size,
+    (at) => agendaLines(sections, at, context?.width),
+    agendaFit,
+    context?.crowding
+  );
   const currentIndex = sections.findIndex(({ current }) => current);
   return (
     <div

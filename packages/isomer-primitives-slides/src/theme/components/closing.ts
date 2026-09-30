@@ -8,7 +8,7 @@
 import { font, space, stroke, type } from '../base';
 import { trackList } from '../scale';
 
-import { glyph } from './shared';
+import { glyph, link } from './shared';
 
 export const closingShares = [1, 1] as const;
 
@@ -31,4 +31,5 @@ export const closing = {
   pathTitle: { size: font.size.px34, weight: font.weight.bold },
   pathBody: { ...type.bodyS, lineHeight: font.lineHeight.item },
   separator: glyph.separator,
+  linkDecoration: link.decoration,
 } as const;

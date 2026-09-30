@@ -13,10 +13,12 @@ import type { SlideReactEnv } from '../../render/context';
 import { marksReact, stripMarks } from '../../render/marks';
 import {
   definitionsFit,
+  definitionsRowFit,
   definitionsSingleColumnMax,
 } from '../../theme/components/definitions';
+import { frameContentWidth } from '../../theme/components/frame';
 import { layoutModule } from '../../theme/modules';
-import { rowLoad, sizeForLoad } from '../size';
+import { narrowing, rowLoad, sizeForLoad, smallerStep } from '../size';
 
 import type { SlideDefinition, SlideDefinitionsNode } from './schema';
 import { definitionsModule } from './styles';
@@ -39,15 +41,23 @@ export const react = (
 ): ReactNode => {
   const { handles: definitions } = definitionsModule;
   const columns = toColumns(items);
-  const step = sizeForLoad(
-    size,
-    rowLoad(
-      columns.map((column) =>
-        column.flatMap(({ term, body }) => [term, stripMarks(body)])
-      )
+  const step = smallerStep(
+    sizeForLoad(
+      size,
+      rowLoad(
+        columns.map((column) =>
+          column.flatMap(({ term, body }) => [term, stripMarks(body)])
+        )
+      ) * narrowing(frameContentWidth, context?.width),
+      definitionsFit,
+      context?.crowding
     ),
-    definitionsFit,
-    context?.crowding
+    sizeForLoad(
+      size,
+      Math.max(...columns.map(({ length }) => length)),
+      definitionsRowFit,
+      context?.crowding
+    )
   );
   return (
     <div

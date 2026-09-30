@@ -16,6 +16,7 @@ import {
   plainText,
   richTextRun,
 } from '../../render/marks';
+import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -25,12 +26,16 @@ import { schema, type SlideListNode } from './schema';
 
 export type { SlideListItem, SlideListNode } from './schema';
 
+const termJoiner = slideDistillery.tokens.glyph.termJoiner.value;
+
 export const text = ({ label, items, footnote }: SlideListNode): string =>
   [
     label && oneLine(label).toUpperCase(),
     items
       .map(({ term, body }) =>
-        term ? `${oneLine(term)}: ${plainText(body)}` : plainText(body)
+        term
+          ? `${oneLine(term)}${termJoiner}${plainText(body)}`
+          : plainText(body)
       )
       .join('\n'),
     footnote ? plainText(footnote) : undefined,
@@ -43,7 +48,7 @@ export const markdown = ({ label, items, footnote }: SlideListNode) => [
   md.list(
     items.map(({ term, body }) =>
       md.paragraph(
-        ...(term ? [md.strong(term), ': '] : []),
+        ...(term ? [md.strong(term), termJoiner] : []),
         ...marksMarkdown(body)
       )
     )
@@ -67,7 +72,7 @@ export const slack = ({
           type: 'rich_text_section',
           elements: [
             ...(term
-              ? [richTextRun(term, { bold: true }), richTextRun(': ')]
+              ? [richTextRun(term, { bold: true }), richTextRun(termJoiner)]
               : []),
             ...marksRichText(body),
           ],

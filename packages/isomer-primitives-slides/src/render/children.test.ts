@@ -22,4 +22,14 @@ describe('slackCaption', () => {
       elements: [{ type: 'mrkdwn', text: '*one two*' }],
     });
   });
+
+  it.each([' Risks', 'Risks ', 'Risks\n'])(
+    'bolds %j with its edge whitespace outside the asterisks',
+    (label) => {
+      expect(slackCaption(label, true)).toEqual({
+        type: 'context',
+        elements: [{ type: 'mrkdwn', text: '*Risks*' }],
+      });
+    }
+  );
 });

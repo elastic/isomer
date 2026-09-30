@@ -9,6 +9,7 @@ import { font, radius, space, stroke, type } from '../base';
 import { paddingXy, px, scalePx } from '../scale';
 
 import { glyph } from './shared';
+import { territoryGroup } from './territory_group';
 
 const line = stroke.hairline;
 const rowGap = space.px28;
@@ -46,4 +47,6 @@ export const fanout = {
     lineHeight: font.lineHeight.item,
   },
   arrow: glyph.arrow,
+  /** A toned target is yours or another party's, as a territory owner is. */
+  toneLabel: territoryGroup.toneLabel,
 } as const;

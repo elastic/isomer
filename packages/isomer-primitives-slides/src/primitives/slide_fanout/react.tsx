@@ -10,6 +10,7 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
+import { ToneCue } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { layoutModule, tonesModule } from '../../theme/modules';
 
@@ -17,6 +18,7 @@ import type { SlideFanoutNode } from './schema';
 import { fanoutModule } from './styles';
 
 const { label: connectorLabel } = slideDistillery.tokens.connector;
+const { toneLabel: labels } = slideDistillery.tokens.fanout;
 
 /** React renderer for {@link SlideFanoutNode}. */
 export const react = (
@@ -67,6 +69,7 @@ export const react = (
                     fanout.name,
                     tone && fanout.nameToned
                   )}>
+                  <ToneCue {...{ tone, context, labels }} />
                   {name}
                 </span>{' '}
                 <span className={cls(context, fanout.body)}>{body}</span>

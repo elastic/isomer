@@ -13,14 +13,17 @@ import { describe, expect, it } from 'vitest';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import {
   definitionsFit,
+  definitionsRowFit,
   definitionsSingleColumnMax,
 } from '../../theme/components/definitions';
+import { expectCountBounds } from '../bounds.fixtures';
 import { sizeForLoad } from '../size';
 import { crowdingHeading, renderedStep } from '../size.fixtures';
 import { headingCrowding } from '../slide_heading/fit';
 
 import { example, fullExample } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
+import { schema } from './schema';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -143,5 +146,40 @@ describe('slideDefinitions', () => {
         )
       ).toBe(step);
     });
+  });
+});
+
+describe('slideDefinitions counts and rows', () => {
+  it('holds one to six terms, as its fullest example does', () => {
+    expectCountBounds(
+      schema,
+      example,
+      'items',
+      [1, 6],
+      { term: 'a', body: 'b' },
+      fullExample
+    );
+  });
+
+  it('steps down by rows as well as characters', () => {
+    const rows = (count: number) => ({
+      type: 'slideDefinitions',
+      items: Array(count).fill({ term: 'a', body: 'b' }),
+    });
+    const stepOf = (node: object) => renderedStep('definitions-rowSize', node);
+    expect(stepOf(rows(definitionsRowFit.l))).toBe('l');
+    expect(stepOf(rows(definitionsRowFit.l + 1))).toBe('m');
+    expect(stepOf(rows(definitionsRowFit.m))).toBe('m');
+    expect(stepOf(rows(definitionsSingleColumnMax + 1))).toBe('l');
+  });
+
+  it('breaks between term and body in both Slack shapes', () => {
+    const long = {
+      type: 'slideDefinitions' as const,
+      items: [{ term: 'a', body: 'x'.repeat(2000) }],
+    };
+    const [block] = slack(long);
+    expect(JSON.stringify(block)).toContain('"text":"\\n"');
+    expect(JSON.stringify(slack(example))).toContain('"*authorization*\\n');
   });
 });

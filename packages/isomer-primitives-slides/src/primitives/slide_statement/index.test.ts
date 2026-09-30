@@ -43,7 +43,7 @@ describe('slideStatement', () => {
 
   it('renders text, markdown, and Slack', () => {
     expect(text(example)).toMatchInlineSnapshot(
-      `"A refund is a promise, not a transaction."`
+      `"A REFUND IS A PROMISE, NOT A TRANSACTION."`
     );
     expect(markdown(example)).toMatchInlineSnapshot(
       `"# A refund is **a promise**, not a transaction."`
@@ -75,6 +75,18 @@ describe('slideStatement', () => {
 
   it('keeps an authored size', () => {
     expect(stepOf({ ...longExample, size: 'l' })).toBe('l');
+    expect(stepOf({ ...example, size: 's' })).toBe('s');
+  });
+
+  it('keeps its marks when Slack sets it as bold rich text', () => {
+    const [block] = slack({
+      type: 'slideStatement',
+      text: `Call \`refund()\` ${'x'.repeat(150)}`,
+    });
+    expect(block).toMatchObject({ type: 'rich_text' });
+    expect(JSON.stringify(block)).toContain(
+      '{"type":"text","text":"refund()","style":{"code":true,"bold":true}}'
+    );
   });
 
   it("scales its load by the heading's crowding", () => {

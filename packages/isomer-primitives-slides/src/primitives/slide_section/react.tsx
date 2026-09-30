@@ -11,14 +11,15 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { marksReact } from '../../render/marks';
-import { columnWidth } from '../../theme/components/frame';
+import { frameContentWidth } from '../../theme/components/frame';
 import {
   section as theme,
   sectionShares,
 } from '../../theme/components/section';
-import { sizeForLines } from '../size';
+import { sizeForLines, trackWidth } from '../size';
 
 import { lineHref } from './href';
+import { ordinal } from './ordinal';
 import type { SlideSectionNode } from './schema';
 import { sectionModule } from './styles';
 
@@ -32,7 +33,11 @@ export const react = (
     size,
     title,
     theme.title.tracking,
-    columnWidth(sectionShares, theme.columnGap),
+    trackWidth(
+      context?.width ?? frameContentWidth,
+      sectionShares,
+      theme.columnGap
+    ),
     theme.titleSizes
   );
   return (
@@ -50,12 +55,13 @@ export const react = (
           const href = lineHref(hrefs, index);
           return (
             <li key={index} className={cls(context, section.row)}>
+              <span aria-hidden>{ordinal(index)}</span>
               {href ? (
                 <a className={cls(context, section.link)} href={href}>
                   {marksReact(line, context)}
                 </a>
               ) : (
-                marksReact(line, context)
+                <span>{marksReact(line, context)}</span>
               )}
             </li>
           );

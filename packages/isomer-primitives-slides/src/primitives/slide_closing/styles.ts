@@ -59,7 +59,7 @@ export const closingModule = createStyleModule('closing', ({ css }) => ({
   link: css`
     color: ${color.primary};
     ${typeRole(closing.link)}
-    text-decoration: none;
+    text-decoration: ${closing.linkDecoration};
   `,
   paths: css`
     border-top: ${closing.rule} solid ${color.border};

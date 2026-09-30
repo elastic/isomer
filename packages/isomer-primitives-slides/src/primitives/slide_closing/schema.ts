@@ -18,7 +18,7 @@ const linkSchema = z
     ),
     href: boundedHref().describe('Where the link goes.'),
     text: lineText().describe(
-      'The link as the audience reads it: `href` without its scheme, e.g. `example.com/docs` for `https://example.com/docs`, so someone can type what they see. Keep it under about 28 characters: it is set large, and a longer one wraps.'
+      'The link as the audience reads it: `href` without its scheme, e.g. `example.com/docs` for `https://example.com/docs`, so someone can type what they see. Keep it short: it is set large.'
     ),
   })
   .strict();

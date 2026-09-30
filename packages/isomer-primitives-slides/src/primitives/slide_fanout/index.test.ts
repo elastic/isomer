@@ -12,9 +12,11 @@ import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { slideDistillery } from '../../theme/distillery';
+import { expectCountBounds } from '../bounds.fixtures';
 
-import { example, pairExample } from './examples';
+import { example, pairExample, wideExample } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
+import { schema } from './schema';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -134,5 +136,39 @@ describe('slideFanout', () => {
         },
       ]
     `);
+  });
+});
+
+describe('slideFanout counts and tones', () => {
+  it('holds two to six targets, as its widest example does', () => {
+    expectCountBounds(
+      schema,
+      example,
+      'targets',
+      [2, 6],
+      { name: 'a', body: 'b' },
+      wideExample
+    );
+  });
+
+  it('marks a toned target on every surface, not by color alone', () => {
+    const toned = {
+      ...pairExample,
+      targets: [
+        { ...pairExample.targets[0]!, tone: 'primary' as const },
+        pairExample.targets[1]!,
+      ],
+    };
+    const glyph = slideDistillery.tokens.tone.glyph.primary.value;
+    const label = slideDistillery.tokens.fanout.toneLabel.primary.value;
+    expect(text(toned)).toContain(`${glyph} changelog`);
+    expect(markdown(toned)).toContain(`${glyph} **changelog**`);
+    expect(JSON.stringify(slack(toned))).toContain(glyph);
+    expect(
+      runtime.surfaces.html.render({
+        type: 'view',
+        body: [{ type: 'slideFrame', body: [toned] } as PrimitiveNode],
+      }).html
+    ).toContain(`aria-label="${label}"`);
   });
 });

@@ -44,7 +44,10 @@ describe('slideQuote', () => {
 
   it('renders text, markdown, and Slack with a context', () => {
     expect(text(example)).toMatchInlineSnapshot(
-      `"“I stopped checking my bank app once the refund email said which day it would land.” — Priya N., Customer interview, March"`
+      `
+      "“I stopped checking my bank app once the refund email said which day it would land.”
+      — Priya N., Customer interview, March"
+    `
     );
     expect(markdown(example)).toMatchInlineSnapshot(`
       "> “I stopped checking my bank app once the refund email said **which day** it would land.”
@@ -67,7 +70,10 @@ describe('slideQuote', () => {
 
   it('leaves the context out of the attribution when there is none', () => {
     expect(text(shortExample)).toMatchInlineSnapshot(
-      `"“Ship the boring version first.” — Payments team charter"`
+      `
+      "“Ship the boring version first.”
+      — Payments team charter"
+    `
     );
   });
 

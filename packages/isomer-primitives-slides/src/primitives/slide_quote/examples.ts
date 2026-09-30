@@ -21,7 +21,7 @@ export const shortExample: SlideQuoteNode = {
   source: 'Payments team charter',
 };
 
-/** Near the most a quote holds, at the smallest step. */
+/** A long quote, set at the smallest step. */
 export const longExample: SlideQuoteNode = {
   type: 'slideQuote',
   text: 'We used to open a ticket for every refund that took longer than a week, and most weeks that was a third of them. Now the app tells the customer the day the money lands, and the only tickets left are the ones where the bank itself is late, which we can **finally** chase by name.',

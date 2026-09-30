@@ -49,8 +49,7 @@ export const slidesPackAuthoring = {
       'One or two code panels. Every highlighted line number exists in its panel.',
     slideAgenda:
       'Two to eight sections of the talk, in order. At most one section is current.',
-    slideSource:
-      'One citation line. When present, it is the last node in the frame body.',
+    slideSource: 'One citation line.',
     slideSection:
       'A section divider. When hrefs is given it has one entry per contents entry.',
   },

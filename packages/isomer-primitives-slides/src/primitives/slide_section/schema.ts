@@ -12,25 +12,26 @@ import { boundedHref, lineText } from '../authored_text';
 import { crossRefine } from '../cross_field';
 import { sizeField } from '../size';
 
+const sectionContentsMax = 8;
+
 /** Zod schema for {@link SlideSectionNode}. */
 export const schema = z
   .object({
     type: z.literal('slideSection'),
-    number: lineText().describe(
-      'Section number as it should read, e.g. `01`. One or two characters.'
-    ),
+    number: lineText().describe('Section number as it should read, e.g. `01`.'),
     title: lineText().describe(
       'Section name in two or three words, e.g. `The problem`.'
     ),
     contents: z
       .array(lineText())
       .min(1)
-      .max(8)
+      .max(sectionContentsMax)
       .describe(
-        'What the section covers: the composition `title` of each slide in it, in order. 1–8 lines, each under about 40 characters so it holds one line. `code` and `**strong**` marks are allowed.'
+        'What the section covers: the composition `title` of each slide in it, in order. 1–8 lines, each a few words. `code` and `**strong**` marks are allowed.'
       ),
     hrefs: z
       .array(boundedHref())
+      .max(sectionContentsMax)
       .describe(
         'Link for each `contents` line, in the same order and of the same length. On web surfaces each line links to its slide. Slide addresses belong to the host: use the form its guide gives, and leave this out when it gives none.'
       )

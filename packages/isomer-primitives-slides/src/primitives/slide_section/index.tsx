@@ -8,19 +8,22 @@
 import { sanitizeNavigationHref } from '@elastic/isomer-sdk';
 import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
-import {
-  markdownContentToSlackBlocks,
-  type SlackBlock,
-} from '@elastic/isomer-sdk/slack';
+import { type SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import { slackHeading } from '../../render';
-import { marksMarkdown, plainText } from '../../render/marks';
+import {
+  richTextLinked,
+  richTextSection,
+  slackHeading,
+  slackRichText,
+} from '../../render';
+import { marksMarkdown, marksRichText, plainText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
 import { lineHref } from './href';
+import { ordinal } from './ordinal';
 import { react } from './react';
 import { schema, type SlideSectionNode } from './schema';
 
@@ -34,7 +37,7 @@ const heading = ({ number, title }: SlideSectionNode): string =>
 export const text = ({ number, title, contents }: SlideSectionNode): string =>
   [
     oneLine(`${number} ${separator.value} ${title.toUpperCase()}`),
-    ...contents.map((line, index) => `${index + 1}. ${plainText(line)}`),
+    ...contents.map((line, index) => `${ordinal(index)} ${plainText(line)}`),
   ].join('\n');
 
 const contentsList = ({ contents, hrefs }: SlideSectionNode) =>
@@ -56,7 +59,15 @@ export const markdown = (node: SlideSectionNode) => [
 /** A line links in Slack only when its href is an absolute URL. */
 export const slack = (node: SlideSectionNode): SlackBlock[] => [
   slackHeading(heading(node)),
-  ...markdownContentToSlackBlocks(contentsList(node)),
+  slackRichText({
+    type: 'rich_text_list',
+    style: 'ordered',
+    elements: node.contents.map((line, index) =>
+      richTextSection(
+        ...richTextLinked(marksRichText(line), lineHref(node.hrefs, index))
+      )
+    ),
+  }),
 ];
 
 /** Catalog, schema, and renderers for {@link SlideSectionNode}. */

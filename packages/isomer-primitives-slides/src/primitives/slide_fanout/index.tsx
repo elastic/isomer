@@ -11,6 +11,7 @@ import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
 import { richTextSection, slackRichText } from '../../render';
 import { richTextRun } from '../../render/marks';
+import { toneCueText } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -22,17 +23,28 @@ import { schema, type SlideFanoutNode } from './schema';
 export type { SlideFanoutNode, SlideFanoutTarget } from './schema';
 
 const { arrow } = slideDistillery.tokens.fanout;
+const termJoiner = slideDistillery.tokens.glyph.termJoiner.value;
 
 export const text = ({ source, targets }: SlideFanoutNode): string =>
   [
     `${oneLine(source)} ${arrow.value}`,
-    ...targets.map(({ name, body }) => `  ${oneLine(name)}: ${oneLine(body)}`),
+    ...targets.map(
+      ({ name, body, tone }) =>
+        `  ${toneCueText(tone)}${oneLine(name)}${termJoiner}${oneLine(body)}`
+    ),
   ].join('\n');
 
 export const markdown = ({ source, targets }: SlideFanoutNode) => [
   md.paragraph(md.strong(source), ` ${arrow.value}`),
   md.list(
-    targets.map(({ name, body }) => md.paragraph(md.strong(name), ': ', body))
+    targets.map(({ name, body, tone }) =>
+      md.paragraph(
+        ...(tone ? [toneCueText(tone)] : []),
+        md.strong(name),
+        termJoiner,
+        body
+      )
+    )
   ),
 ];
 
@@ -45,10 +57,11 @@ export const slack = ({ source, targets }: SlideFanoutNode): SlackBlock[] => [
     {
       type: 'rich_text_list',
       style: 'bullet',
-      elements: targets.map(({ name, body }) =>
+      elements: targets.map(({ name, body, tone }) =>
         richTextSection(
+          ...(tone ? [richTextRun(toneCueText(tone))] : []),
           richTextRun(name, { bold: true }),
-          richTextRun(': '),
+          richTextRun(termJoiner),
           richTextRun(body)
         )
       ),

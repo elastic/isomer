@@ -20,7 +20,6 @@ import {
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
-import { contextJoiner } from './attribution';
 import { catalog } from './catalog';
 import { examples } from './examples';
 import { react } from './react';
@@ -28,15 +27,16 @@ import { schema, type SlideQuoteNode } from './schema';
 
 export type { SlideQuoteNode } from './schema';
 
-const { quoteOpen, quoteClose, dash } = slideDistillery.tokens.quote;
+const { quoteOpen, quoteClose, dash, contextJoiner } =
+  slideDistillery.tokens.quote;
 
 const attribution = ({ source, context }: SlideQuoteNode): string =>
   oneLine(
-    `${dash.value} ${[source, context].filter(Boolean).join(contextJoiner)}`
+    `${dash.value} ${[source, context].filter(Boolean).join(contextJoiner.value)}`
   );
 
 export const text = (node: SlideQuoteNode): string =>
-  `${quoteOpen.value}${plainText(node.text)}${quoteClose.value} ${attribution(node)}`;
+  `${quoteOpen.value}${plainText(node.text)}${quoteClose.value}\n${attribution(node)}`;
 
 export const markdown = (node: SlideQuoteNode) =>
   md.blockquote(

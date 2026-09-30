@@ -21,7 +21,9 @@ export type {
 export {
   fitsSlack,
   richTextBreak,
+  richTextLinked,
   richTextSection,
+  slackBold,
   slackContext,
   slackFields,
   slackHeading,

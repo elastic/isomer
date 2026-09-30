@@ -41,5 +41,5 @@ export const agenda = {
   separator: glyph.separator,
 } as const;
 
-/** Section counts each step holds at the frame's reference room. */
+/** Title lines each step holds at the frame's reference room: one a section, more when a title wraps. */
 export const agendaFit = { l: 4, m: 5 } as const;
