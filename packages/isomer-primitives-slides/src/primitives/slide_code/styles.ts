@@ -52,11 +52,17 @@ export const codeModule = createStyleModule('code', ({ css }) => ({
   dense: css`
     ${typeRole(code.denseText)}
   `,
+  // A blank line has no line box, so each size holds one open at its own leading.
+  regularLine: css`
+    min-height: ${code.text.lineHeight.value}em;
+  `,
+  denseLine: css`
+    min-height: ${code.denseText.lineHeight.value}em;
+  `,
   // Takumi gives `code` a generic monospace family, so the line restates it.
   line: css`
     display: flex;
     font-family: ${code.text.family};
-    min-height: ${code.text.lineHeight?.value ?? '1'}em;
     padding-right: ${code.paddingX};
     white-space: pre;
   `,

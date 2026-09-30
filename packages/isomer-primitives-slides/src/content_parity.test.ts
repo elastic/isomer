@@ -29,6 +29,8 @@ const notWords = new Set([
   'type',
   'id',
   'tone',
+  'href',
+  'hrefs',
   'url',
   'size',
   'language',
@@ -153,6 +155,29 @@ const surfaces = {
     stringLeaves(runtime.surfaces.slack.renderNode(node).blocks).join('\n'),
 };
 
+const htmlEntities: Record<string, string> = {
+  ...entities,
+  '&quot;': '"',
+  '&#x27;': "'",
+  '&#39;': "'",
+};
+
+const htmlText = (node: PrimitiveNode): string => {
+  const body = [
+    node.type === 'slideFrame'
+      ? node
+      : ({ type: 'slideFrame', body: [node] } as PrimitiveNode),
+  ];
+  return runtime.surfaces.html
+    .render({ type: 'view', body })
+    .html.replace(/<style[\s\S]*?<\/style>/g, '')
+    .replace(/<[^>]+>/g, '')
+    .replace(
+      /&(?:lt|gt|amp|quot|#x27|#39);/g,
+      (entity) => htmlEntities[entity] ?? entity
+    );
+};
+
 const missingFrom = (output: string, node: unknown): string[] => {
   const normalized = normalize(output);
   return authoredStrings(node)
@@ -174,6 +199,10 @@ describe('content parity', () => {
     for (const [surface, render] of Object.entries(surfaces)) {
       expect(missingFrom(render(node), node), surface).toEqual([]);
     }
+  });
+
+  it.each(rows)('$name draws every authored string', ({ node }) => {
+    expect(missingFrom(htmlText(node), node)).toEqual([]);
   });
 });
 

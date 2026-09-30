@@ -12,7 +12,7 @@ The runtime sees one composition at a time. A host renders them in order and ass
 
 ## Surface artifacts
 
-A slide opens with its own heading, so the example renders Markdown and text with `heading: false`: the composition `title` names the slide without repeating it.
+A slide other than a quote opens with its own heading, so the example renders Markdown and text with `heading: false`: the composition `title` names the slide without repeating it.
 
 ### Title slide
 

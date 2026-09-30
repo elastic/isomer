@@ -11,6 +11,7 @@ import { slideModules, slideStylesheet } from '../stylesheet';
 
 import { color } from './base';
 import { themeVarName } from './distillery';
+import { SLIDE_THEME } from './theme';
 import { slideTones } from './variants';
 
 const ruleFor = (css: string, readableName: string): string => {
@@ -32,6 +33,33 @@ describe('slide theme', () => {
     });
     expect(bodies.every((body) => /--[\w-]+:\s*\S/.test(body))).toBe(true);
     expect(new Set(bodies).size).toBe(bodies.length);
+  });
+
+  it('no two tones share a cue, so color is never the only difference', () => {
+    const css = slideStylesheet();
+    const { glyph, label } = SLIDE_THEME.tone;
+    const shapes = slideTones.map((tone) =>
+      ruleFor(
+        css,
+        slideModules.tones.handles.cueShape[tone].readableName
+      ).replace(/^[^{]*/, '')
+    );
+    for (const cues of [
+      shapes,
+      slideTones.map((tone) => glyph[tone].value),
+      slideTones.map((tone) => label[tone].value),
+    ]) {
+      expect(cues.every(Boolean)).toBe(true);
+      expect(new Set(cues).size).toBe(slideTones.length);
+    }
+  });
+
+  it('marks strong in display text with more than color', () => {
+    const rule = ruleFor(
+      slideStylesheet(),
+      slideModules.marks.handles.strongPrimary.readableName
+    );
+    expect(rule).toMatch(/text-decoration:\s*underline/);
   });
 
   it('sets nothing below 24px', () => {

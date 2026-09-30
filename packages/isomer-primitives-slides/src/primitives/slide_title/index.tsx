@@ -7,15 +7,25 @@
 
 import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
-import {
-  formatHeaderText,
-  italic,
-  type SlackBlock,
-} from '@elastic/isomer-sdk/slack';
+import { italic } from '@elastic/isomer-sdk/slack';
 import type { ZodType } from 'zod';
 
-import { renderSlackChildren, slackCaption } from '../../render';
-import { marksMarkdown, marksSlack, plainText } from '../../render/marks';
+import {
+  renderSlackChildren,
+  richTextSection,
+  slackCaption,
+  slackContext,
+  slackHeading,
+  slackMarksSection,
+  slackRichText,
+} from '../../render';
+import {
+  marksMarkdown,
+  marksRichText,
+  marksSlack,
+  plainText,
+  richTextRun,
+} from '../../render/marks';
 import { contentNode, definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -83,34 +93,22 @@ export const slideTitlePrimitive = definePrimitive<SlideTitleNode>({
     slack: (node, { collector, scope }) => {
       const { eyebrow, title, tagline, definition, aside } = node;
       return [
-        {
-          type: 'header',
-          text: {
-            type: 'plain_text',
-            text: formatHeaderText(oneLine(title)),
-            emoji: true,
-          },
-        },
+        slackHeading(oneLine(title)),
         ...(eyebrow ? [slackCaption(eyebrow, true)] : []),
-        ...(tagline
-          ? [
-              {
-                type: 'section',
-                text: { type: 'mrkdwn', text: oneLine(marksSlack(tagline)) },
-              } satisfies SlackBlock,
-            ]
-          : []),
+        ...(tagline ? [slackMarksSection(tagline)] : []),
         ...(definition
           ? [
-              {
-                type: 'context',
-                elements: [
-                  {
-                    type: 'mrkdwn',
-                    text: `${italic(oneLine(definition.term))} ${oneLine(marksSlack(definition.text))}`,
-                  },
-                ],
-              } satisfies SlackBlock,
+              slackContext(
+                `${italic(oneLine(definition.term))} ${oneLine(marksSlack(definition.text))}`,
+                () =>
+                  slackRichText(
+                    richTextSection(
+                      richTextRun(definition.term, { italic: true }),
+                      richTextRun(' '),
+                      ...marksRichText(definition.text)
+                    )
+                  )
+              ),
             ]
           : []),
         ...(aside ? renderSlackChildren([aside], scope, collector) : []),
