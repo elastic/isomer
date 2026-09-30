@@ -18,3 +18,15 @@ export type {
   SlideRenderContext,
   SlideRenderScope,
 } from './context';
+export {
+  fitsSlack,
+  richTextBreak,
+  richTextSection,
+  slackContext,
+  slackFields,
+  slackHeading,
+  slackMarksContext,
+  slackMarksSection,
+  slackRichText,
+  slackSection,
+} from './slack_text';

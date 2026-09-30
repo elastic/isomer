@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { slideDistillery } from '../../theme/distillery';
 
-import { checkExample, example, xExample } from './examples';
+import { checkExample, example, fullExample, xExample } from './examples';
 import { markdown as markdownContent, text } from './index';
 import { schema } from './schema';
 
@@ -37,6 +37,12 @@ describe('slideBulletList', () => {
       compose({ ...example, items: Array(7).fill('Point.') })
     );
     expect(errors.map(({ path }) => path)).toContain('body[0].body[0].items');
+    // The fit test measures `fullExample` as the most points a list holds under a heading.
+    expect(schema.safeParse(fullExample).success).toBe(true);
+    expect(
+      schema.safeParse({ ...fullExample, items: [...fullExample.items, 'x'] })
+        .success
+    ).toBe(false);
   });
 
   it('names a check or x marker for assistive technology and hides a dot', () => {

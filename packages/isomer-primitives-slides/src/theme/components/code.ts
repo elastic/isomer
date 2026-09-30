@@ -19,7 +19,12 @@ export const code = {
   paddingY: space.px28,
   paddingX: space.px36,
   text: type.mono,
-  denseText: { ...type.mono, size: font.size.px24 },
+  // Tighter leading keeps `codeMaxLines` inside the body under a heading and lede.
+  denseText: {
+    ...type.mono,
+    size: font.size.px24,
+    lineHeight: font.lineHeight.compact,
+  },
   highlightBar: stroke.bar,
   // `paddingX` less the bar, so highlighted text stays in column.
   highlightPaddingStart: px(32),

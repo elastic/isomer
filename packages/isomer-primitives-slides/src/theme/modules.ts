@@ -14,6 +14,7 @@ import { slideTones } from './variants';
 
 const { createStyleModule, tokens } = slideDistillery;
 const { color, connector, font, frame, label, marks } = tokens;
+const { cue } = tokens.tone;
 
 export const deckRootModule = createStyleModule('deckRoot', ({ css }) => ({
   root: css`
@@ -53,6 +54,24 @@ export const tonesModule = createStyleModule('tones', ({ css }) => ({
       ${toneVar.name}: ${fg};
     `;
   }),
+  cue: css`
+    border-radius: 50%;
+    box-sizing: border-box;
+    display: inline-block;
+    height: ${cue.size};
+    margin-right: ${cue.gap};
+    vertical-align: middle;
+    width: ${cue.size};
+  `,
+  cueShape: variants(slideTones, (tone) =>
+    tone === 'primary'
+      ? css`
+          background: ${toneVar};
+        `
+      : css`
+          border: ${cue.ring} solid ${toneVar};
+        `
+  ),
 }));
 
 export const labelModule = createStyleModule('label', ({ css }) => ({
@@ -114,5 +133,8 @@ export const marksModule = createStyleModule('marks', ({ css }) => ({
   strongPrimary: css`
     color: ${color.primary};
     font-weight: inherit;
+    text-decoration: underline;
+    text-decoration-thickness: ${marks.displayStrong.rule};
+    text-underline-offset: ${marks.displayStrong.offset};
   `,
 }));

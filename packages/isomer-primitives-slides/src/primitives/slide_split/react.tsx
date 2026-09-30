@@ -11,6 +11,7 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { marksReact } from '../../render/marks';
+import { ToneCue } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import {
   connectorModule,
@@ -43,6 +44,7 @@ const Pane = ({
             tone ? tonesModule.handles.tone[tone] : undefined,
             tone ? split.tonedLabel : split.plainLabel
           )}>
+          <ToneCue {...{ tone, context }} />
           {label}
         </h2>
       ) : null}

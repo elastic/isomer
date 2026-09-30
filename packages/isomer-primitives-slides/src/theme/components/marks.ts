@@ -18,4 +18,6 @@ export const marks = {
   // In bold or display text a chip outweighs its words, so code is mono alone.
   displayCode: { family: font.family.mono, weight: font.weight.medium },
   strong: { weight: font.weight.bold },
+  // Weight cannot carry strong in display text, so it is underlined as well as `primary`.
+  displayStrong: { rule: stroke.bar, offset: space.px8 },
 } as const;

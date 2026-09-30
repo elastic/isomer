@@ -30,6 +30,7 @@ const Panel = ({
 }): ReactNode => {
   const { handles: code } = codeModule;
   const marked = new Set(highlightLines);
+  const lineBox = dense ? code.denseLine : code.regularLine;
   return (
     <figure className={cls(context, code.figure)}>
       {file ? (
@@ -42,11 +43,12 @@ const Panel = ({
             {/* `panel` collapses it: the line break is in the text, never drawn. */}
             {index > 0 ? '\n' : null}
             {marked.has(index + 1) ? (
-              <code className={cls(context, code.line, code.highlight)}>
+              <code
+                className={cls(context, code.line, lineBox, code.highlight)}>
                 <mark className={cls(context, code.mark)}>{line}</mark>
               </code>
             ) : (
-              <code className={cls(context, code.line, code.plain)}>
+              <code className={cls(context, code.line, lineBox, code.plain)}>
                 {line}
               </code>
             )}

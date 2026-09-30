@@ -11,7 +11,8 @@ import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../pack';
 import { slideDeckPrimitives } from '../registry';
-import { frameBodyCharacters } from '../theme/components/frame';
+
+import { authoredTextMaxLength, lineText, wrappedText } from './authored_text';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -67,7 +68,7 @@ const cases = slideDeckPrimitives.flatMap(({ type, examples }) =>
         replaceAt(
           example,
           path,
-          'x'.repeat(frameBodyCharacters + 1)
+          'x'.repeat(authoredTextMaxLength + 1)
         ) as PrimitiveNode
       ),
     }))
@@ -75,7 +76,19 @@ const cases = slideDeckPrimitives.flatMap(({ type, examples }) =>
 );
 
 describe('authored text', () => {
-  it.each(cases)('$name refuses more than a slide can draw', ({ node }) => {
+  it.each([
+    ['lineText', lineText],
+    ['wrappedText', wrappedText],
+  ])('%s takes the input-size guard and refuses one more', (_name, field) => {
+    expect(field().safeParse('x'.repeat(authoredTextMaxLength)).success).toBe(
+      true
+    );
+    expect(
+      field().safeParse('x'.repeat(authoredTextMaxLength + 1)).success
+    ).toBe(false);
+  });
+
+  it.each(cases)('$name refuses more than the input-size guard', ({ node }) => {
     expect(runtime.validate({ type: 'view', body: [node] }).valid).toBe(false);
   });
 });
