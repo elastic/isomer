@@ -12,11 +12,17 @@ import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { agendaFit } from '../../theme/components/agenda';
+import { frameContentWidth } from '../../theme/components/frame';
 import { slideDistillery } from '../../theme/distillery';
 import { expectCountBounds } from '../bounds.fixtures';
+import { slideLayout } from '../layout';
 import { sizeForLoad } from '../size';
-import { crowdingHeading, renderedStep } from '../size.fixtures';
-import { headingCrowding } from '../slide_heading/fit';
+import {
+  crowdingBelow,
+  crowdingHeading,
+  referenceHeading,
+  renderedStep,
+} from '../size.fixtures';
 
 import { example, longExample, outlineExample } from './examples';
 import { agendaLines } from './fit';
@@ -42,10 +48,9 @@ const sections = (count: number) =>
     title: 'Part',
   }));
 
+// Load budgets are set below the reference heading, where crowding is 1.
 const stepOf = (node: object): string | undefined =>
-  /agenda-rowSize-(\w+)/.exec(
-    runtime.surfaces.html.render(compose(node)).html
-  )?.[1];
+  renderedStep('agenda-rowSize', node, referenceHeading);
 
 describe('slideAgenda', () => {
   it('holds two to eight sections, at most one current', () => {
@@ -176,7 +181,7 @@ describe('slideAgenda', () => {
     [agendaFit.l, 'l'],
     [agendaFit.m, 'm'],
     [agendaFit.m + 1, 's'],
-  ])('sets %i sections at %s under no heading', (count, step) => {
+  ])('sets %i sections at %s under the reference heading', (count, step) => {
     expect(stepOf({ type: 'slideAgenda', sections: sections(count) })).toBe(
       step
     );
@@ -191,13 +196,26 @@ describe('slideAgenda', () => {
     ).toBe('s');
   });
 
+  it('takes the whole body on a slide with no heading', () => {
+    const node = { type: 'slideAgenda', sections: sections(agendaFit.m + 1) };
+    const step = sizeForLoad(
+      undefined,
+      agendaFit.m + 1,
+      agendaFit,
+      slideLayout(undefined).crowding
+    );
+    expect(stepOf(node)).toBe('s');
+    expect(step).not.toBe('s');
+    expect(renderedStep('agenda-rowSize', node)).toBe(step);
+  });
+
   it("scales its count by the heading's crowding", () => {
     const node = { type: 'slideAgenda', sections: sections(agendaFit.l) };
     const step = sizeForLoad(
       undefined,
       agendaFit.l,
       agendaFit,
-      headingCrowding(crowdingHeading)
+      crowdingBelow(crowdingHeading)
     );
     expect(step).not.toBe('l');
     expect(renderedStep('agenda-rowSize', node, crowdingHeading)).toBe(step);
@@ -226,9 +244,15 @@ describe('slideAgenda counts and title lines', () => {
         title,
       })),
     };
-    expect(agendaLines(node.sections, 'l')).toBeGreaterThan(agendaFit.l);
+    expect(agendaLines(node.sections, 'l', frameContentWidth)).toBeGreaterThan(
+      agendaFit.l
+    );
     expect(stepOf(node)).toBe(
-      sizeForLoad(undefined, (at) => agendaLines(node.sections, at), agendaFit)
+      sizeForLoad(
+        undefined,
+        (at) => agendaLines(node.sections, at, frameContentWidth),
+        agendaFit
+      )
     );
     expect(stepOf(node)).not.toBe('l');
   });

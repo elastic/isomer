@@ -13,6 +13,7 @@ import type { SlideReactEnv } from '../../render/context';
 import { agendaFit } from '../../theme/components/agenda';
 import { slideDistillery } from '../../theme/distillery';
 import { labelModule, layoutModule, tonesModule } from '../../theme/modules';
+import { slideLayout } from '../layout';
 import { sizeForLoad } from '../size';
 
 import { agendaLines } from './fit';
@@ -28,11 +29,12 @@ export const react = (
 ): ReactNode => {
   const { handles: agenda } = agendaModule;
   const { handles: label } = labelModule;
+  const { width, crowding } = slideLayout(context);
   const step = sizeForLoad(
     size,
-    (at) => agendaLines(sections, at, context?.width),
+    (at) => agendaLines(sections, at, width),
     agendaFit,
-    context?.crowding
+    crowding
   );
   const currentIndex = sections.findIndex(({ current }) => current);
   return (

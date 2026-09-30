@@ -10,18 +10,17 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
-import { withContextFields } from '../../render/context_view';
 import { marksReact } from '../../render/marks';
 import { ToneCue } from '../../render/tone_cue';
-import { frameContentWidth } from '../../theme/components/frame';
 import { slideDistillery } from '../../theme/distillery';
 import {
   connectorModule,
   layoutModule,
   tonesModule,
 } from '../../theme/modules';
+import { slideLayout, withLayout } from '../layout';
 
-import { paneWidths } from './pane_width';
+import { paneLayouts } from './pane_layout';
 import { splitModule } from './styles';
 import type { SlideSplitNode, SlideSplitPane } from './types';
 
@@ -30,10 +29,12 @@ const { label: connectorLabel } = slideDistillery.tokens.connector;
 const Pane = ({
   pane: { label, tone, items },
   context,
+  itemContext,
   scope,
 }: {
   pane: SlideSplitPane;
   context: SlideReactEnv['context'];
+  itemContext: SlideReactEnv['context'];
   scope: SlideReactEnv['scope'];
 }): ReactNode => {
   const { handles: split } = splitModule;
@@ -53,7 +54,9 @@ const Pane = ({
       ) : null}
       <div className={cls(context, split.items)}>
         {items.map((node, index) => (
-          <Fragment key={index}>{scope.renderReact(node, context)}</Fragment>
+          <Fragment key={index}>
+            {scope.renderReact(node, itemContext)}
+          </Fragment>
         ))}
       </div>
     </div>
@@ -62,24 +65,19 @@ const Pane = ({
 
 /** React renderer for {@link SlideSplitNode}. */
 export const react = (
-  {
+  node: SlideSplitNode,
+  { context, scope }: SlideReactEnv
+): ReactNode => {
+  const {
     divider = 'gap',
     footnote,
     panes: [left, right],
     ratio = 'even',
     type,
-  }: SlideSplitNode,
-  { context, scope }: SlideReactEnv
-): ReactNode => {
+  } = node;
   const { handles: split } = splitModule;
   const { handles: connector } = connectorModule;
-  const widths = paneWidths(
-    context?.width ?? frameContentWidth,
-    ratio,
-    divider
-  );
-  const paneContext = (index: 0 | 1) =>
-    withContextFields(context, { width: widths[index] });
+  const [leftLayout, rightLayout] = paneLayouts(slideLayout(context), node);
   return (
     <div
       {...nodeAnchor(context, { type })}
@@ -91,7 +89,11 @@ export const react = (
           split.ratio[ratio],
           split.divider[divider]
         )}>
-        <Pane pane={left} context={paneContext(0)} {...{ scope }} />
+        <Pane
+          pane={left}
+          itemContext={withLayout(context, leftLayout)}
+          {...{ context, scope }}
+        />
         {divider === 'rule' ? (
           <div aria-hidden className={cls(context, split.rule)} />
         ) : divider === 'hairline' ? (
@@ -112,7 +114,11 @@ export const react = (
         ) : (
           <div aria-hidden />
         )}
-        <Pane pane={right} context={paneContext(1)} {...{ scope }} />
+        <Pane
+          pane={right}
+          itemContext={withLayout(context, rightLayout)}
+          {...{ context, scope }}
+        />
       </div>
       {footnote ? (
         <p className={cls(context, split.footnote)}>

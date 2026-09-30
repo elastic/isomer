@@ -65,6 +65,7 @@ export type {
 export { slideDeckPrimitives, slidePrimitiveTypes } from './registry';
 
 export type {
+  SlideLayout,
   SlidePackTypes,
   SlideRenderContext,
   SlideRenderScope,

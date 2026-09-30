@@ -5,18 +5,31 @@
  * 2.0.
  */
 
+import {
+  createTakumiImageBackend,
+  type LayoutBox,
+} from '@elastic/isomer-image-takumi';
+import { createIsomerRuntime } from '@elastic/isomer-runtime';
+import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
-import { frameContentWidth } from '../../theme/components/frame';
+import { slideFonts } from '../../examples/fonts';
+import { slideDeckFrame, slidesPack } from '../../pack';
+import {
+  frameBodyHeight,
+  frameContentWidth,
+} from '../../theme/components/frame';
 import { quote as quoteTheme, quoteFit } from '../../theme/components/quote';
 import { split } from '../../theme/components/split';
 import { statement, statementFit } from '../../theme/components/statement';
 import { scalePx } from '../../theme/scale';
 import { slideSplitDividers, slideSplitRatios } from '../../theme/variants';
+import { openBody, slideLayout } from '../layout';
 import { narrowing, sizeForLoad } from '../size';
 import { renderedStep } from '../size.fixtures';
 
-import { paneWidths } from './pane_width';
+import { paneLayouts, paneWidths } from './pane_layout';
+import type { SlideSplitNode } from './types';
 
 const middle = {
   gap: 0,
@@ -35,6 +48,20 @@ describe('paneWidths', () => {
     expect(
       left + right + 2 * scalePx(split.dividerGap[divider]) + middle[divider]
     ).toBeCloseTo(frameContentWidth);
+  });
+
+  it('never gives a pane more than the split has, nor less than nothing', () => {
+    for (const total of [0, 300, 700]) {
+      for (const ratio of slideSplitRatios) {
+        for (const divider of slideSplitDividers) {
+          const widths = paneWidths(total, ratio, divider);
+          for (const width of widths) {
+            expect(width).toBeGreaterThanOrEqual(0);
+          }
+          expect(widths[0] + widths[1]).toBeLessThanOrEqual(total);
+        }
+      }
+    }
   });
 
   it('gives an aside its fixed width', () => {
@@ -80,7 +107,8 @@ describe('paneWidths', () => {
     const step = sizeForLoad(
       undefined,
       text.length * narrowing(scalePx(statement.maxWidth), pane),
-      statementFit
+      statementFit,
+      slideLayout(undefined).crowding
     );
     expect(step).not.toBe('l');
     expect(renderedStep('statement-textSize', node)).toBe(step);
@@ -99,7 +127,8 @@ describe('paneWidths', () => {
     const step = sizeForLoad(
       undefined,
       quoteFit.l * narrowing(scalePx(quoteTheme.maxWidth), pane),
-      quoteFit
+      quoteFit,
+      slideLayout(undefined).crowding
     );
     expect(step).not.toBe('l');
     expect(
@@ -111,5 +140,68 @@ describe('paneWidths', () => {
         ],
       })
     ).toBe(step);
+  });
+});
+
+describe('paneLayouts', () => {
+  const runtime = createIsomerRuntime({
+    packs: [slidesPack],
+    frames: { slide: slideDeckFrame },
+  });
+  const takumi = createTakumiImageBackend({ fonts: slideFonts });
+  const runs = (box: LayoutBox): LayoutBox['runs'] => [
+    ...box.runs,
+    ...box.children.flatMap(runs),
+  ];
+  const labelLines = async (node: SlideSplitNode, words: RegExp) => {
+    const layout = await takumi.measure(
+      runtime.surfaces.svg.render({
+        type: 'view',
+        body: [{ type: 'slideFrame', body: [node] } as PrimitiveNode],
+      })
+    );
+    return new Set(
+      runs(layout)
+        .filter(({ text }) => words.test(text))
+        .map(({ y }) => Math.round(y))
+    ).size;
+  };
+  const lineHeight =
+    scalePx(split.label.size) * parseFloat(split.label.lineHeight.value);
+
+  const aside = (label: string, tone?: 'accent'): SlideSplitNode => ({
+    type: 'slideSplit',
+    ratio: 'aside',
+    panes: [
+      { items: [{ type: 'slideBulletList', items: ['One'] }] },
+      {
+        label,
+        ...(tone && { tone }),
+        items: [{ type: 'slideBulletList', items: ['One'] }],
+      },
+    ],
+  });
+  const estimatedLines = (node: SlideSplitNode) =>
+    (frameBodyHeight -
+      paneLayouts(openBody, node)[1].height -
+      scalePx(split.labelGap)) /
+    lineHeight;
+  const long = 'What the other team runs today in every region';
+
+  it.each([
+    ['one line', 'Ours', /OURS/],
+    ['a label that wraps in the aside column', long, /WHAT|REGION/],
+  ])('takes %s as many lines as takumi draws', async (_name, label, words) => {
+    const node = aside(label);
+    const lines = await labelLines(node, words);
+    expect(estimatedLines(node)).toBeCloseTo(lines);
+  });
+
+  it('never takes fewer lines than takumi draws beside a tone cue', async () => {
+    const node = aside(long, 'accent');
+    const lines = await labelLines(node, /WHAT|REGION/);
+    expect(lines).toBe(2);
+    expect(Math.round(estimatedLines(node))).toBeGreaterThanOrEqual(lines);
+    expect(Math.round(estimatedLines(node))).toBeLessThanOrEqual(lines + 1);
   });
 });

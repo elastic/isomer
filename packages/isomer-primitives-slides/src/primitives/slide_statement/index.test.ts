@@ -5,36 +5,29 @@
  * 2.0.
  */
 
-import { createIsomerRuntime } from '@elastic/isomer-runtime';
-import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
-import { slideDeckFrame, slidesPack } from '../../pack';
 import { statementFit } from '../../theme/components/statement';
+import { slideLayout } from '../layout';
 import { sizeForLoad } from '../size';
-import { crowdingHeading, renderedStep } from '../size.fixtures';
-import { headingCrowding } from '../slide_heading/fit';
+import {
+  crowdingBelow,
+  crowdingHeading,
+  referenceHeading,
+  renderedStep,
+} from '../size.fixtures';
 
 import { example, longExample } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
 import { schema } from './schema';
 
-const runtime = createIsomerRuntime({
-  packs: [slidesPack],
-  frames: { slide: slideDeckFrame },
-});
-
 const markdown = (node: Parameters<typeof markdownContent>[0]): string =>
   serializeMarkdown(markdownContent(node));
 
+// Load budgets are set below the reference heading, where crowding is 1.
 const stepOf = (node: object): string | undefined =>
-  /statement-textSize-(\w+)/.exec(
-    runtime.surfaces.html.render({
-      type: 'view',
-      body: [{ type: 'slideFrame', body: [node] } as PrimitiveNode],
-    } satisfies Composition).html
-  )?.[1];
+  renderedStep('statement-textSize', node, referenceHeading);
 
 describe('slideStatement', () => {
   it('needs a sentence', () => {
@@ -89,13 +82,29 @@ describe('slideStatement', () => {
     );
   });
 
+  it('takes the whole body on a slide with no heading', () => {
+    const node = {
+      type: 'slideStatement',
+      text: 'x'.repeat(statementFit.l + 1),
+    };
+    const step = sizeForLoad(
+      undefined,
+      statementFit.l + 1,
+      statementFit,
+      slideLayout(undefined).crowding
+    );
+    expect(stepOf(node)).toBe('m');
+    expect(step).toBe('l');
+    expect(renderedStep('statement-textSize', node)).toBe(step);
+  });
+
   it("scales its load by the heading's crowding", () => {
     const node = { type: 'slideStatement', text: 'x'.repeat(statementFit.l) };
     const step = sizeForLoad(
       undefined,
       statementFit.l,
       statementFit,
-      headingCrowding(crowdingHeading)
+      crowdingBelow(crowdingHeading)
     );
     expect(step).not.toBe('l');
     expect(renderedStep('statement-textSize', node, crowdingHeading)).toBe(

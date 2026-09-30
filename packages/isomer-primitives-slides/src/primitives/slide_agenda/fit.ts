@@ -6,7 +6,6 @@
  */
 
 import { agenda } from '../../theme/components/agenda';
-import { frameContentWidth } from '../../theme/components/frame';
 import { label } from '../../theme/components/shared';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
@@ -26,7 +25,7 @@ const trailingWidth = ({ count, current }: SlideAgendaSection): number =>
 export const agendaLines = (
   sections: readonly SlideAgendaSection[],
   step: SlideSize,
-  width = frameContentWidth
+  width: number
 ): number =>
   sections.reduce((lines, section) => {
     const titleWidth =

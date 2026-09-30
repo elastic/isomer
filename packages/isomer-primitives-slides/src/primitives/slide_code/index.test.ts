@@ -10,19 +10,28 @@ import {
   type LayoutBox,
 } from '@elastic/isomer-image-takumi';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
-import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
+import {
+  type Composition,
+  NODE_ANCHOR_ATTRIBUTE,
+  type PrimitiveNode,
+} from '@elastic/isomer-sdk';
 import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
 import { slideFonts } from '../../examples/fonts';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import {
+  code as codeTheme,
   codeDenseAfter,
   codeLineMaxLength,
   codeMaxLines,
 } from '../../theme/components/code';
+import { frameContentWidth } from '../../theme/components/frame';
 import { slideDistillery } from '../../theme/distillery';
+import { scalePx } from '../../theme/scale';
 import { authoredTextMaxLength } from '../authored_text';
+import { paneWidths } from '../slide_split/pane_layout';
+import type { SlideSplitNode } from '../slide_split/types';
 
 import {
   denseExample,
@@ -188,6 +197,75 @@ describe('slideCode line width', () => {
     expect(errorPaths(panel(['\tindented']))).toEqual([
       'body[0].body[0].panels[0].lines: indent with spaces, not tabs',
     ]);
+  });
+});
+
+describe('slideCode in a split pane', () => {
+  const [pane] = paneWidths(frameContentWidth, 'even', 'gap');
+  const line = 'x'.repeat(codeLineMaxLength(1, false, pane) + 1);
+  const inPane = (node: SlideCodeNode): SlideSplitNode => ({
+    type: 'slideSplit',
+    panes: [
+      { items: [node] },
+      { items: [{ type: 'slideBulletList', items: ['One'] }] },
+    ],
+  });
+  const density = (node: PrimitiveNode) =>
+    /code-(dense|regular)/.exec(
+      runtime.surfaces.html.render(compose(node)).html
+    )?.[1];
+
+  it('takes the dense size when a line would clip at the pane width, and only then', () => {
+    const fits = 'x'.repeat(codeLineMaxLength(1, false, pane));
+    expect(line.length).toBeLessThanOrEqual(codeLineMaxLength(1, true, pane));
+    expect(density(panel([line]))).toBe('regular');
+    expect(density(inPane(panel([fits])))).toBe('regular');
+    expect(density(inPane(panel([line])))).toBe('dense');
+  });
+
+  it('holds no characters, never fewer, in a layout narrower than its chrome', () => {
+    for (const panels of [1, 2] as const) {
+      for (const dense of [false, true]) {
+        expect(codeLineMaxLength(panels, dense, 0)).toBe(0);
+        expect(codeLineMaxLength(panels, dense, 40)).toBe(0);
+      }
+    }
+  });
+
+  it('measures each of two panels across the layout width', () => {
+    const two = codeLineMaxLength(2, false, frameContentWidth);
+    const pair = (width: string) => ({
+      type: 'slideCode' as const,
+      panels: [{ lines: [width] }, { lines: ['y'] }],
+    });
+    expect(two).toBe(codeLineMaxLength(2, false));
+    expect(codeLineMaxLength(2, false, pane)).toBeLessThan(two);
+    expect(density(pair('x'.repeat(two)))).toBe('regular');
+    expect(density(pair('x'.repeat(two + 1)))).toBe('dense');
+  });
+
+  it('draws that line inside its panel', async () => {
+    const layout = await takumi.measure(
+      runtime.surfaces.svg.render(compose(inPane(panel([line]))), {
+        anchors: true,
+      })
+    );
+    const boxes = (box: LayoutBox): LayoutBox[] => [
+      box,
+      ...box.children.flatMap(boxes),
+    ];
+    const code = boxes(layout).find(
+      ({ attributes }) => attributes?.[NODE_ANCHOR_ATTRIBUTE] === 'slideCode'
+    )!;
+    const run = boxes(code)
+      .flatMap(({ runs }) => runs)
+      .find(({ text }) => text.includes('xxx'))!;
+    const inner =
+      code.x +
+      code.width -
+      scalePx(codeTheme.border) -
+      scalePx(codeTheme.paddingX);
+    expect(run.x + run.width).toBeLessThanOrEqual(inner + 1);
   });
 });
 

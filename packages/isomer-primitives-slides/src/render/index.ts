@@ -13,6 +13,7 @@ export {
 } from './children';
 export { cls } from './cls';
 export type {
+  SlideLayout,
   SlidePackTypes,
   SlideReactEnv,
   SlideRenderContext,

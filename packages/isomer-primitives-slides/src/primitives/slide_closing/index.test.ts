@@ -12,9 +12,9 @@ import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { closing, closingShares } from '../../theme/components/closing';
-import { columnWidth, frameContentWidth } from '../../theme/components/frame';
+import { frameContentWidth } from '../../theme/components/frame';
 import { expectCountBounds } from '../bounds.fixtures';
-import { sizeForLines } from '../size';
+import { sizeForLines, trackWidth } from '../size';
 
 import { example, fullExample, linkOnlyExample } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
@@ -186,7 +186,7 @@ describe('slideClosing', () => {
       {
         name: 'beside paths',
         node: example,
-        width: columnWidth(closingShares, closing.columnGap),
+        width: trackWidth(frameContentWidth, closingShares, closing.columnGap),
       },
       {
         name: 'alone',

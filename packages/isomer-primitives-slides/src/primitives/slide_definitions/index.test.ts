@@ -18,8 +18,12 @@ import {
 } from '../../theme/components/definitions';
 import { expectCountBounds } from '../bounds.fixtures';
 import { sizeForLoad } from '../size';
-import { crowdingHeading, renderedStep } from '../size.fixtures';
-import { headingCrowding } from '../slide_heading/fit';
+import {
+  crowdingBelow,
+  crowdingHeading,
+  referenceHeading,
+  renderedStep,
+} from '../size.fixtures';
 
 import { example, fullExample } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
@@ -108,7 +112,8 @@ describe('slideDefinitions', () => {
         body: 'x'.repeat(rowCharacters - 1),
       })),
     });
-    const stepOf = (node: object) => renderedStep('definitions-rowSize', node);
+    const stepOf = (node: object) =>
+      renderedStep('definitions-rowSize', node, referenceHeading);
 
     it.each([
       [definitionsFit.l, 'l'],
@@ -135,7 +140,7 @@ describe('slideDefinitions', () => {
         undefined,
         definitionsFit.l,
         definitionsFit,
-        headingCrowding(crowdingHeading)
+        crowdingBelow(crowdingHeading)
       );
       expect(step).not.toBe('l');
       expect(
@@ -166,7 +171,8 @@ describe('slideDefinitions counts and rows', () => {
       type: 'slideDefinitions',
       items: Array(count).fill({ term: 'a', body: 'b' }),
     });
-    const stepOf = (node: object) => renderedStep('definitions-rowSize', node);
+    const stepOf = (node: object) =>
+      renderedStep('definitions-rowSize', node, referenceHeading);
     expect(stepOf(rows(definitionsRowFit.l))).toBe('l');
     expect(stepOf(rows(definitionsRowFit.l + 1))).toBe('m');
     expect(stepOf(rows(definitionsRowFit.m))).toBe('m');

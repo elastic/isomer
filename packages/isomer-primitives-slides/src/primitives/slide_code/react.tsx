@@ -10,9 +10,11 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
-import { codeDenseAfter } from '../../theme/components/code';
+import { displayColumns } from '../../render/mono';
+import { codeDenseAfter, codeLineMaxLength } from '../../theme/components/code';
 import { slideDistillery } from '../../theme/distillery';
 import { connectorModule, layoutModule } from '../../theme/modules';
+import { slideLayout } from '../layout';
 
 import type { SlideCodeNode, SlideCodePanel } from './schema';
 import { codeModule } from './styles';
@@ -67,8 +69,17 @@ export const react = (
   const { handles: code } = codeModule;
   const { handles: connector } = connectorModule;
   const [first, second] = panels;
+  const regularMax = codeLineMaxLength(
+    second ? 2 : 1,
+    false,
+    slideLayout(context).width
+  );
   // One size for both panels, so a trace reads at one scale.
-  const dense = panels.some(({ lines }) => lines.length > codeDenseAfter);
+  const dense = panels.some(
+    ({ lines }) =>
+      lines.length > codeDenseAfter ||
+      lines.some((line) => displayColumns(line, regularMax) > regularMax)
+  );
   return (
     <div
       {...nodeAnchor(context, { type })}

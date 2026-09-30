@@ -16,6 +16,7 @@ import { quote as theme, quoteFit } from '../../theme/components/quote';
 import { slideDistillery } from '../../theme/distillery';
 import { layoutModule } from '../../theme/modules';
 import { scalePx } from '../../theme/scale';
+import { slideLayout } from '../layout';
 import { narrowing, sizeForLoad } from '../size';
 
 import type { SlideQuoteNode } from './schema';
@@ -29,12 +30,13 @@ export const react = (
   { context }: SlideReactEnv
 ): ReactNode => {
   const { handles: quote } = quoteModule;
+  const { width, crowding } = slideLayout(context);
   const step = sizeForLoad(
     size,
     displayColumns(stripMarks(text)) *
-      narrowing(scalePx(theme.maxWidth), context?.width),
+      narrowing(scalePx(theme.maxWidth), width),
     quoteFit,
-    context?.crowding
+    crowding
   );
   return (
     <div

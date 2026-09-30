@@ -9,7 +9,10 @@ import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 
 import { slideDeckFrame, slidesPack } from '../pack';
+import { frameContentWidth } from '../theme/components/frame';
 
+import { slideLayout } from './layout';
+import { headingRoom } from './slide_heading/fit';
 import type { SlideHeadingNode } from './slide_heading/schema';
 
 const runtime = createIsomerRuntime({
@@ -49,3 +52,9 @@ export const crowdingHeading: SlideHeadingNode = {
     'A title so long that it wraps past two lines and onto a third line, even at the smallest step it can take',
   lede: 'A lede long enough to take two lines of the heading measure at the lede size on the canvas. A lede long enough to take two lines of the heading measure at the lede size on the canvas.',
 };
+
+/** The crowding a frame gives the nodes below `heading`. */
+export const crowdingBelow = (heading: SlideHeadingNode): number =>
+  slideLayout({
+    layout: { width: frameContentWidth, height: headingRoom(heading) },
+  }).crowding;
