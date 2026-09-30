@@ -7,7 +7,7 @@
 
 import { unresolvedBodyNodeSchema, z } from '@elastic/isomer-sdk';
 
-import { lineText, wrappedText } from '../authored_text';
+import { layoutCheckNote, lineText, wrappedText } from '../authored_text';
 import { sizeField } from '../size';
 
 const definitionSchema = z
@@ -35,7 +35,7 @@ export const schema = z
     ),
     tagline: wrappedText()
       .describe(
-        'The deck’s promise in one short sentence. `code` and `**strong**` marks are allowed.'
+        `The deck’s promise in one short sentence; a long one can run past the slide, and ${layoutCheckNote}. \`code\` and \`**strong**\` marks are allowed.`
       )
       .optional(),
     definition: definitionSchema

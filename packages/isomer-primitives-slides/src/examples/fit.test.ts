@@ -26,6 +26,7 @@ import { layoutCheckNote } from '../primitives/authored_text';
 import { tallestExample as tallestHeading } from '../primitives/slide_heading/examples';
 import { headingCrowding } from '../primitives/slide_heading/fit';
 import { slideDeckPrimitives } from '../registry';
+import { frameBodyCharacters } from '../theme/components/frame';
 
 import { slideFonts } from './fonts';
 import { previewSlide } from './preview_slide';
@@ -83,12 +84,91 @@ describe('every example fits its preview slide', () => {
   });
 });
 
-const describesLayoutCheck = (
-  primitive: (typeof slideDeckPrimitives)[number]
-) =>
-  JSON.stringify(
-    buildAuthoringJsonSchema([primitive], slidesPackAuthoring)
-  ).includes(layoutCheckNote);
+type SlidePrimitive = (typeof slideDeckPrimitives)[number];
+
+interface JsonNode {
+  $ref?: string;
+  type?: string;
+  const?: unknown;
+  enum?: unknown[];
+  maxItems?: number;
+  maxLength?: number;
+  items?: JsonNode;
+  properties?: Record<string, JsonNode>;
+  oneOf?: JsonNode[];
+  anyOf?: JsonNode[];
+  allOf?: JsonNode[];
+}
+
+const authoringSchema = (primitive: SlidePrimitive) =>
+  buildAuthoringJsonSchema([primitive], slidesPackAuthoring) as {
+    $defs: Record<string, JsonNode>;
+  };
+
+const describesLayoutCheck = (primitive: SlidePrimitive) =>
+  JSON.stringify(authoringSchema(primitive)).includes(layoutCheckNote);
+
+/**
+ * Whether the schema lets content grow past any slide: nested body nodes, an array with no `maxItems`, or a string with no cap or a wrapped field's cap.
+ * A wrapped field's cap is the whole body's capacity in the smallest type, so at its cap it overflows under any heading.
+ */
+const canOverflow = (
+  node: JsonNode,
+  defs: Record<string, JsonNode>,
+  seen = new Set<string>()
+): boolean => {
+  const { $ref, type, maxItems, maxLength, items, properties } = node;
+  if ($ref !== undefined) {
+    const name = $ref.split('/').at(-1)!;
+    if (name === 'bodyNode') {
+      return true;
+    }
+    if (seen.has(name)) {
+      return false;
+    }
+    seen.add(name);
+    return canOverflow(defs[name] ?? {}, defs, seen);
+  }
+  if (type === 'array' && maxItems === undefined) {
+    return true;
+  }
+  if (
+    type === 'string' &&
+    node.const === undefined &&
+    node.enum === undefined &&
+    (maxLength === undefined || maxLength >= frameBodyCharacters)
+  ) {
+    return true;
+  }
+  return [
+    ...(items ? [items] : []),
+    ...Object.values(properties ?? {}),
+    ...(node.oneOf ?? []),
+    ...(node.anyOf ?? []),
+    ...(node.allOf ?? []),
+  ].some((child) => canOverflow(child, defs, seen));
+};
+
+// A bounded primitive without `layoutCheckNote` adds its most content here.
+const worstCases: Partial<Record<string, PrimitiveNode>> = {};
+
+describe('a primitive whose schema allows more than the slide holds notes the layout check', () => {
+  it.each(slideDeckPrimitives.map((primitive) => ({ primitive })))(
+    '$primitive.type',
+    async ({ primitive }) => {
+      if (describesLayoutCheck(primitive)) {
+        return;
+      }
+      const { $defs } = authoringSchema(primitive);
+      expect(canOverflow($defs[primitive.type] ?? {}, $defs)).toBe(false);
+      const worstCase = worstCases[primitive.type];
+      expect(worstCase).toBeDefined();
+      expect(await findings(previewSlide(worstCase!, tallestHeading))).toEqual(
+        []
+      );
+    }
+  );
+});
 
 // A primitive whose most content can overflow the tallest heading says so in its schema, so an author knows to run the check.
 describe('under the tallest heading, every example fits or its schema notes the layout check', () => {

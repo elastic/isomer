@@ -8,7 +8,7 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
-import { wrappedText } from '../authored_text';
+import { layoutCheckNote, wrappedText } from '../authored_text';
 import { sizeField } from '../size';
 
 /** Zod schema for {@link SlideHeadingNode}. */
@@ -16,7 +16,7 @@ export const schema = z
   .object({
     type: z.literal('slideHeading'),
     title: wrappedText().describe(
-      'The slide’s claim, as a sentence. Aim for one line; two at most. `code` and `**strong**` marks are allowed; strong takes the `primary` tone.'
+      `The slide’s claim, as a sentence. Aim for one line; two at most, since a longer title pushes the body past the slide; ${layoutCheckNote}. \`code\` and \`**strong**\` marks are allowed; strong takes the \`primary\` tone.`
     ),
     lede: wrappedText()
       .describe(
