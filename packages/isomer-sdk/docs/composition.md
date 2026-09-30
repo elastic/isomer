@@ -17,9 +17,9 @@ const validate = createCompositionValidator(definitions, { sizesFromNodeHeights,
 const parse = createCompositionParser(definitions, { inputBudget });
 ```
 
-`createCompositionValidator` is the **trusted-input** path: schema first, then the semantic passes. It returns `{ valid, errors, warnings, composition }`, where `valid` turns on duplicate-id errors, the warnings are advisory (empty when there are none), and `composition` is the plain copy every check ran on, `undefined` only when [the budget](#the-input-budget) refused the input. A render draws that copy, never the value it was handed, so what it draws is what was checked.
+`createCompositionValidator` is the **trusted-input** path. It runs [the input budget](#the-input-budget) first, which refuses the input or builds a plain copy of it, then the schema on that copy, then, when the schema passes, the semantic passes on the same copy. It returns `{ valid, errors, warnings, composition }`, where `valid` turns on duplicate-id errors, the warnings are advisory (empty when there are none), and `composition` is the plain copy every check ran on, `undefined` only when [the budget](#the-input-budget) refused the input. A render draws that copy, never the value it was handed, so what it draws is what was checked.
 
-`createCompositionParser` is the **untrusted-input** path: schema only, reported rather than thrown, returning `{ valid, errors, composition? }`. It answers "is this a `Composition`", not "is this a good one": it does not run the duplicate-id pass and produces no warnings, so a composition with two nodes sharing an `id` parses as valid. A caller that wants the semantic checks runs `validate` on the parsed composition.
+`createCompositionParser` is the **untrusted-input** path: the input budget, then the schema only, reported rather than thrown, returning `{ valid, errors, composition? }`. It answers "is this a `Composition`", not "is this a good one": it does not run the duplicate-id pass and produces no warnings, so a composition with two nodes sharing an `id` parses as valid. A caller that wants the semantic checks runs `validate` on the parsed composition.
 
 ## The input budget
 
