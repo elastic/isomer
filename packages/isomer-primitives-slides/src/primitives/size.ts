@@ -157,11 +157,13 @@ export interface TextMeasure {
   readonly widest: number;
 }
 
-const measureWords = (
-  glyphs: readonly (readonly number[])[],
-  gap: number,
-  width: number
-): TextMeasure => {
+/** A word's glyph advances, and the space before it in the face of the run that space is set in. */
+interface Word {
+  readonly glyphs: readonly number[];
+  readonly gap: number;
+}
+
+const measureWords = (words: readonly Word[], width: number): TextMeasure => {
   let lines = 0;
   let used = 0;
   let widest = 0;
@@ -170,7 +172,7 @@ const measureWords = (
     lines += 1;
     used = 0;
   };
-  for (const word of glyphs) {
+  for (const { glyphs: word, gap } of words) {
     const advance = word.reduce((total, glyph) => total + glyph, 0);
     if (lines > 0 && used + gap + advance <= width) {
       used += gap + advance;
@@ -221,10 +223,12 @@ const glyphPx = (role: TypeRole): ((glyph: string) => number) => {
 
 const isCollapsible = (glyph: string) => collapsible.test(glyph);
 
-/** Each word's glyph advances across `runs`, so a word can span runs set differently. */
-const runWords = (runs: readonly StyledRun[]): number[][] => {
-  const found: number[][] = [];
+/** Each word across `runs`, so a word can span runs set differently; whitespace collapses to its first space, as CSS keeps it. */
+const runWords = (runs: readonly StyledRun[]): Word[] => {
+  const found: Word[] = [];
   let word: number[] = [];
+  let gap = 0;
+  let nextGap: number | undefined;
   for (const { text, role, inset = 0 } of runs) {
     const advance = glyphPx(role);
     const glyphs = [
@@ -238,10 +242,15 @@ const runWords = (runs: readonly StyledRun[]): number[][] => {
     glyphs.forEach((glyph, index) => {
       if (isCollapsible(glyph)) {
         if (word.length > 0) {
-          found.push(word);
+          found.push({ glyphs: word, gap });
         }
         word = [];
+        nextGap ??= advance(' ');
       } else {
+        if (word.length === 0) {
+          gap = nextGap ?? 0;
+          nextGap = undefined;
+        }
         word.push(
           advance(glyph) +
             (index === first ? inset : 0) +
@@ -250,7 +259,7 @@ const runWords = (runs: readonly StyledRun[]): number[][] => {
       }
     });
   }
-  return word.length > 0 ? [...found, word] : found;
+  return word.length > 0 ? [...found, { glyphs: word, gap }] : found;
 };
 
 const measureRuns = (
@@ -260,7 +269,6 @@ const measureRuns = (
 ): TextMeasure =>
   measureWords(
     runWords(runs),
-    glyphPx(role)(' '),
     role.whiteSpace?.value === 'nowrap' ? Infinity : width
   );
 

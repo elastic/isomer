@@ -221,6 +221,14 @@ describe('measureMarks', () => {
     );
   });
 
+  it('prices each space in the face of the run it sits in', () => {
+    const code = '`a b c d`';
+    const { widest } = measureMarks(code, role);
+    expect(widest).toBeCloseTo(measureText('a b c d', mono).widest + 2 * inset);
+    expect(measureMarks(code, role, widest).lines).toBe(1);
+    expect(measureMarks(code, role, widest - 1).lines).toBe(2);
+  });
+
   it('sets code in display text in mono without its chip, and strong in the role’s weight', () => {
     expect(
       measureMarks('`aa` **bb**', role, Infinity, 'primary').widest

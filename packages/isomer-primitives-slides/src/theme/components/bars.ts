@@ -11,10 +11,14 @@ import { literal, px } from '../scale';
 export const bars = {
   // Track width, not spacing.
   labelWidth: px(340),
+  /** The label column's most of a narrower layout's width. */
+  labelMaxShare: literal('45%'),
   rowGaps: { l: space.px28, m: space.px20, s: space.px8 },
   // Bar thickness per step, not spacing.
   barHeights: { l: px(48), m: px(40), s: px(32) },
   barRadius: radius.chipSmall,
+  /** The least a positive value's bar draws, however small its share. */
+  barMinWidth: px(6),
   /** Leaves room for the longest bar's value. */
   barMaxShare: literal('85%'),
   label: { weight: font.weight.bold, tracking: font.tracking.none },
