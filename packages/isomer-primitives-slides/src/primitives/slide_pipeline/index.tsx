@@ -64,7 +64,7 @@ export const text = ({ start, end, steps, spans }: SlidePipelineNode): string =>
     ...(spans?.length
       ? spans.map(
           (span) =>
-            `${toneCueText(span.tone)}${oneLine(span.label)} (${covered(steps, span)}): ${oneLine(span.title)}${breaker}${plainText(span.body)}`
+            `${toneCueText(span.tone)}${oneLine(span.label).toUpperCase()} (${covered(steps, span)}): ${oneLine(span.title)}${breaker}${plainText(span.body)}`
         )
       : steps.map(
           ({ title, body }, index) =>
@@ -79,7 +79,7 @@ export const markdown = ({ start, end, steps, spans }: SlidePipelineNode) => [
         spans.map((span) =>
           md.paragraph(
             toneCueText(span.tone),
-            md.strong(span.label),
+            md.strong(span.label.toUpperCase()),
             ` (${covered(steps, span)}): `,
             span.title,
             breaker,
@@ -116,7 +116,7 @@ export const slack = ({
               type: 'rich_text_section',
               elements: [
                 run(toneCueText(span.tone)),
-                run(span.label, { bold: true }),
+                run(span.label.toUpperCase(), { bold: true }),
                 run(` (${covered(steps, span)}): `),
                 run(span.title),
                 run(breaker),

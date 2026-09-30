@@ -15,10 +15,12 @@ import type { SlideSize } from '../../theme/variants';
 import { slideLayout } from '../layout';
 import {
   emWidth,
+  lineFill,
   monoWidth,
   packedLines,
   proseLines,
   sizeForLoad,
+  wrappedLines,
 } from '../size';
 
 import type { SlideLayer, SlideLayersNode } from './schema';
@@ -36,25 +38,34 @@ const chipWidth = (text: string, step: SlideSize): number =>
   monoWidth(text, theme.chipSizes[step]) +
   2 * (scalePx(chip.paddingX) + scalePx(chip.border));
 
-/** Lines of body text or rows of chips `layer` takes at `step` in a band `width` wide. */
+/** Lines of body text or rows of chips `layer` takes at `step` in a band `width` wide, or the lines its name wraps to when that is more. */
 const layerLines = (
   layer: SlideLayer,
   step: SlideSize,
   width: number
 ): number => {
-  const { body = '', chips } = layer;
+  const { name, body = '', chips } = layer;
   const inner =
     width -
     2 * (scalePx(band.border) + scalePx(band.paddingX[step])) -
     scalePx(theme.nameColumn) -
     ownerWidth(layer);
-  return chips
+  const content = chips
     ? packedLines(
         chips.map((text) => chipWidth(text, step)),
         scalePx(theme.chipGap),
         inner
       )
     : proseLines(stripMarks(body), scalePx(theme.bodySizes[step]), inner);
+  return Math.max(
+    content,
+    wrappedLines(
+      name,
+      scalePx(theme.nameSizes[step]),
+      scalePx(theme.nameColumn) * lineFill,
+      theme.name.tracking
+    )
+  );
 };
 
 /** Lines across every band at `step`. */

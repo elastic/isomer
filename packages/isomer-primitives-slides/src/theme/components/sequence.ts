@@ -10,17 +10,21 @@ import { literal, paddingXy } from '../scale';
 
 import { glyph } from './shared';
 
+const actorPaddingX = space.px24;
+const actorType = { ...type.mono, size: font.size.px28 };
+
 export const sequence = {
   actor: {
-    type: { ...type.mono, size: font.size.px28 },
-    sizes: { l: font.size.px28, m: font.size.px26, s: font.size.px24 },
+    type: actorType,
+    sizes: { l: actorType.size, m: font.size.px26, s: font.size.px24 },
     border: stroke.chip,
     radius: radius.chip,
     paddings: {
-      l: paddingXy(space.px12, space.px24),
-      m: paddingXy(space.px12, space.px24),
-      s: paddingXy(space.px8, space.px24),
+      l: paddingXy(space.px12, actorPaddingX),
+      m: paddingXy(space.px12, actorPaddingX),
+      s: paddingXy(space.px8, actorPaddingX),
     },
+    paddingX: actorPaddingX,
     gaps: { l: space.px12, m: space.px12, s: space.px8 },
   },
   lifeline: stroke.hairline,

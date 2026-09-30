@@ -11,10 +11,12 @@ import type { SlideRenderContext } from '../../render/context';
 import { parseMarks, stripMarks } from '../../render/marks';
 import { lanes as theme } from '../../theme/components/lanes';
 import { marks } from '../../theme/components/marks';
+import { tone as toneCue } from '../../theme/components/shared';
 import { scalePx } from '../../theme/scale';
 import { type SlideSize, slideSizes } from '../../theme/variants';
 import { slideLayout } from '../layout';
 import {
+  emWidth,
   lineFill,
   monoWidth,
   proseLines,
@@ -22,7 +24,7 @@ import {
   wrappedLines,
 } from '../size';
 
-import type { SlideLanesNode } from './schema';
+import type { SlideLanesLane, SlideLanesNode } from './schema';
 
 const { chip, join, notes } = theme;
 
@@ -62,14 +64,38 @@ const codeGrowth = (text: string, lines: number): number =>
   2 *
   scalePx(marks.codeBorder);
 
+/** The height a lane's name takes in capitals at `step`, wrapped in its column, a word wider than the column breaking across lines. */
+const labelHeight = (
+  { label, tone }: SlideLanesLane,
+  step: SlideSize
+): number => {
+  const text = label.toUpperCase();
+  const size = scalePx(theme.labelSizes[step]);
+  const column = Math.max(
+    1,
+    scalePx(theme.labelColumns[step]) -
+      (tone ? scalePx(toneCue.cue.size) + scalePx(toneCue.cue.gap) : 0)
+  );
+  const lines = Math.max(
+    wrappedLines(text, size, column * lineFill, theme.label.tracking),
+    Math.ceil((emWidth(text, theme.label.tracking) * size) / column)
+  );
+  return lines * lineHeight(theme.labelSizes[step], theme.label);
+};
+
 /** The height the lanes and their notes take at `step` across `width`. */
 export const lanesHeight = (
-  { notes: items = [] }: Pick<SlideLanesNode, 'notes'>,
+  { lanes, notes: items = [] }: Pick<SlideLanesNode, 'lanes' | 'notes'>,
   step: SlideSize,
   width: number
 ): number => {
   const rows =
-    2 * scalePx(theme.rowHeights[step]) + scalePx(theme.rowGaps[step]);
+    lanes.reduce(
+      (total, lane) =>
+        total +
+        Math.max(scalePx(theme.rowHeights[step]), labelHeight(lane, step)),
+      0
+    ) + scalePx(theme.rowGaps[step]);
   if (items.length === 0) {
     return rows;
   }

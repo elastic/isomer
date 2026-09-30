@@ -36,10 +36,11 @@ export const lanesModule = createStyleModule('lanes', ({ css }) => ({
     align-items: center;
     display: flex;
   `,
+  // A name that wraps past the row's height grows it rather than running into the other lane.
   laneSize: variants(
     slideSizes,
     (size) => css`
-      height: ${lanes.rowHeights[size]};
+      min-height: ${lanes.rowHeights[size]};
     `
   ),
   label: css`

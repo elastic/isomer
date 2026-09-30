@@ -14,7 +14,7 @@ import { slideDeckFrame, slidesPack } from '../../pack';
 import { slideDistillery } from '../../theme/distillery';
 
 import { example, fourNotesExample, unevenLanesExample } from './examples';
-import { markdown as markdownContent, text } from './index';
+import { markdown as markdownContent, slack, text } from './index';
 import { lanesMaxNotes, lanesMaxSteps } from './schema';
 
 const runtime = createIsomerRuntime({
@@ -63,15 +63,15 @@ describe('slideLanes', () => {
 
   it('renders text and markdown', () => {
     expect(text(example)).toMatchInlineSnapshot(`
-      "● Web: Basket → Address → Slot → Review → Place order
-      Phone: Call → Agent form → Read back → Confirm → Place order
+      "● WEB: Basket → Address → Slot → Review → Place order
+      PHONE: Call → Agent form → Read back → Confirm → Place order
 
       Self-serve: The customer picks the slot. Validation runs on every field as they type.
       Assisted: An agent keys the order while the customer waits, then reads it back before placing it."
     `);
     expect(markdown(fourNotesExample)).toMatchInlineSnapshot(`
-      "- ● **Card:** Tokenize → Authorize → Capture
-      - ○ **Wallet:** Redirect → Approve → Callback → Capture
+      "- ● **CARD:** Tokenize → Authorize → Capture
+      - ○ **WALLET:** Redirect → Approve → Callback → Capture
 
       **Card is instant:** Authorization returns in **one round trip**.
 
@@ -89,8 +89,8 @@ describe('slideLanes', () => {
         [
           {
             "text": {
-              "text": "● *Card:* Tokenize → Authorize → Capture
-        ○ *Wallet:* Redirect → Approve → Callback → Capture",
+              "text": "● *CARD:* Tokenize → Authorize → Capture
+        ○ *WALLET:* Redirect → Approve → Callback → Capture",
               "type": "mrkdwn",
             },
             "type": "section",
@@ -130,4 +130,29 @@ describe('slideLanes', () => {
         ]
       `);
   });
+
+  it.each(['*', '_', '~', '`'])(
+    'prints authored %s as literal rich text rather than mrkdwn',
+    (delimiter) => {
+      const types = (node: Parameters<typeof slack>[0]) =>
+        slack(node).map(({ type }) => type);
+      expect(types(fourNotesExample)).toEqual(['section', 'section']);
+      expect(
+        types({
+          ...fourNotesExample,
+          join: `Capture ${delimiter}now${delimiter}`,
+        })
+      ).toEqual(['rich_text', 'section']);
+      const [first, ...rest] = fourNotesExample.notes ?? [];
+      expect(
+        types({
+          ...fourNotesExample,
+          notes: [
+            { ...first!, title: `Card ${delimiter}fast${delimiter}` },
+            ...rest,
+          ],
+        })
+      ).toEqual(['section', 'rich_text']);
+    }
+  );
 });

@@ -40,7 +40,7 @@ const messageSchema = z
       'The receiving actor’s `id`, never the same as `from`.'
     ),
     label: lineText().describe(
-      'What is sent, set above the arrow on one line: a few words, e.g. "Card declined". `code` and `**strong**` marks are allowed; set a call, a path, or an error string as `code`.'
+      'What is sent, set above the arrow: a few words, e.g. "Card declined". `code` and `**strong**` marks are allowed; set a call, a path, or an error string as `code`.'
     ),
   })
   .strict();

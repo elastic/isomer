@@ -67,18 +67,18 @@ describe('slideLayers', () => {
 
   it('renders text and markdown', () => {
     expect(text(example)).toMatchInlineSnapshot(`
-      "Apps — ios, android, web · ● Client team
-      Gateway — Routes, rate-limits, and authenticates every request · ● Platform
-      Services — Orders, catalog, and delivery slots, each deployed on its own · Product teams
-      Data — postgres, redis, kafka · Data team
-      Cloud — Compute, storage, and the network under all of it · ○ Provider"
+      "Apps — ios, android, web · ● CLIENT TEAM
+      Gateway — Routes, rate-limits, and authenticates every request · ● PLATFORM
+      Services — Orders, catalog, and delivery slots, each deployed on its own · PRODUCT TEAMS
+      Data — postgres, redis, kafka · DATA TEAM
+      Cloud — Compute, storage, and the network under all of it · ○ PROVIDER"
     `);
     expect(markdown(example)).toMatchInlineSnapshot(`
-      "1. **Apps** — \`ios\`, \`android\`, \`web\` · ● _Client team_
-      2. **Gateway** — Routes, rate-limits, and authenticates every request · ● _Platform_
-      3. **Services** — Orders, catalog, and **delivery slots**, each deployed on its own · _Product teams_
-      4. **Data** — \`postgres\`, \`redis\`, \`kafka\` · _Data team_
-      5. **Cloud** — Compute, storage, and the network under all of it · ○ _Provider_"
+      "1. **Apps** — \`ios\`, \`android\`, \`web\` · ● _CLIENT TEAM_
+      2. **Gateway** — Routes, rate-limits, and authenticates every request · ● _PLATFORM_
+      3. **Services** — Orders, catalog, and **delivery slots**, each deployed on its own · _PRODUCT TEAMS_
+      4. **Data** — \`postgres\`, \`redis\`, \`kafka\` · _DATA TEAM_
+      5. **Cloud** — Compute, storage, and the network under all of it · ○ _PROVIDER_"
     `);
   });
 
@@ -144,7 +144,7 @@ describe('slideLayers', () => {
                         "style": {
                           "italic": true,
                         },
-                        "text": "Client team",
+                        "text": "CLIENT TEAM",
                         "type": "text",
                       },
                     ],
@@ -179,7 +179,7 @@ describe('slideLayers', () => {
                         "style": {
                           "italic": true,
                         },
-                        "text": "Platform",
+                        "text": "PLATFORM",
                         "type": "text",
                       },
                     ],
@@ -221,7 +221,7 @@ describe('slideLayers', () => {
                         "style": {
                           "italic": true,
                         },
-                        "text": "Product teams",
+                        "text": "PRODUCT TEAMS",
                         "type": "text",
                       },
                     ],
@@ -277,7 +277,7 @@ describe('slideLayers', () => {
                         "style": {
                           "italic": true,
                         },
-                        "text": "Data team",
+                        "text": "DATA TEAM",
                         "type": "text",
                       },
                     ],
@@ -312,7 +312,7 @@ describe('slideLayers', () => {
                         "style": {
                           "italic": true,
                         },
-                        "text": "Provider",
+                        "text": "PROVIDER",
                         "type": "text",
                       },
                     ],

@@ -49,6 +49,16 @@ describe('layersLoad', () => {
     expect(layersLoad(node, 'l')).toBe(3);
   });
 
+  it('counts the lines a name wraps to when it outgrows its column', () => {
+    const [first, ...rest] = stack(...repeat(3, oneLine)).layers;
+    expect(
+      layersLoad(
+        { layers: [{ ...first!, name: 'Identity and access' }, ...rest] },
+        'l'
+      )
+    ).toBe(4);
+  });
+
   it('grows as the band narrows', () => {
     const [half] = paneWidths(frameContentWidth, 'even', 'gap');
     const node = stack(...repeat(3, oneLine));

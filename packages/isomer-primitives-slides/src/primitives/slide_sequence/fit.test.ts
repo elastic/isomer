@@ -8,12 +8,14 @@
 import { describe, expect, it } from 'vitest';
 
 import { findings, measured, nodeBox, slideOf } from '../../examples/measure';
+import { frameContentWidth } from '../../theme/components/frame';
 import { sequenceFit } from '../../theme/components/sequence';
 import { layoutContext, renderedStep } from '../size.fixtures';
 import { tallestExample } from '../slide_heading/examples';
+import { paneWidths } from '../slide_split/pane_layout';
 
 import { fullExample } from './examples';
-import { sequenceStep } from './fit';
+import { sequenceLoad, sequenceStep } from './fit';
 import { sequenceMaxMessages, type SlideSequenceNode } from './schema';
 
 /** The first `count` messages of {@link fullExample}, with the actors they name. */
@@ -115,6 +117,16 @@ describe('long actor and message labels', () => {
       { items: [{ type: 'slideBulletList', items: ['One'] }] },
     ],
   };
+
+  it('counts what wrapping adds, in message rows', () => {
+    expect(sequenceLoad(fullExample, 'l', frameContentWidth)).toBe(
+      fullExample.messages.length
+    );
+    const [pane] = paneWidths(frameContentWidth, 'even', 'gap');
+    const wrapped = sequenceLoad(node, 'l', pane);
+    expect(wrapped).toBeGreaterThan(node.messages.length + 1);
+    expect(sequenceLoad(node, 's', pane)).toBeLessThan(wrapped);
+  });
 
   // Lifelines, then actors, then messages, each a label and its arrow.
   it.each([

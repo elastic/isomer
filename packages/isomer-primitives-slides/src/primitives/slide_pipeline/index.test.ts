@@ -18,7 +18,7 @@ import {
   spansExample,
   threeSpansExample,
 } from './examples';
-import { markdown as markdownContent, text } from './index';
+import { markdown as markdownContent, slack, text } from './index';
 import { pipelineMaxSpans, pipelineMaxSteps } from './schema';
 
 const runtime = createIsomerRuntime({
@@ -103,14 +103,14 @@ describe('slidePipeline', () => {
   it('renders text and markdown in spans mode', () => {
     expect(text(spansExample)).toMatchInlineSnapshot(`
       "Basket → Checkout → Payment intent → Card network → Bank
-      ● Our app (Basket → Payment intent): We own the basket to the intent — Every step here ships with the app and is covered by our own tests.
-      ○ Partners (Card network → Bank): Settlement is theirs — The network and the bank decide timing; we only see the result."
+      ● OUR APP (Basket → Payment intent): We own the basket to the intent — Every step here ships with the app and is covered by our own tests.
+      ○ PARTNERS (Card network → Bank): Settlement is theirs — The network and the bank decide timing; we only see the result."
     `);
     expect(markdown(spansExample)).toMatchInlineSnapshot(`
       "Basket → Checkout → Payment intent → Card network → Bank
 
-      - ● **Our app** (Basket → Payment intent): We own the basket to the intent — Every step here ships with the app and is covered by our own tests.
-      - ○ **Partners** (Card network → Bank): Settlement is theirs — The network and the bank decide timing; we only see the result."
+      - ● **OUR APP** (Basket → Payment intent): We own the basket to the intent — Every step here ships with the app and is covered by our own tests.
+      - ○ **PARTNERS** (Card network → Bank): Settlement is theirs — The network and the bank decide timing; we only see the result."
     `);
   });
 
@@ -264,7 +264,7 @@ describe('slidePipeline', () => {
                         "style": {
                           "bold": true,
                         },
-                        "text": "Our app",
+                        "text": "OUR APP",
                         "type": "text",
                       },
                       {
@@ -296,7 +296,7 @@ describe('slidePipeline', () => {
                         "style": {
                           "bold": true,
                         },
-                        "text": "Partners",
+                        "text": "PARTNERS",
                         "type": "text",
                       },
                       {
@@ -328,4 +328,26 @@ describe('slidePipeline', () => {
         ]
       `);
   });
+
+  it('prints a chain holding a mrkdwn delimiter as literal rich text', () => {
+    const [chain] = slack({
+      ...example,
+      start: 'order_id',
+    });
+    expect(chain).toMatchObject({ type: 'rich_text' });
+    expect(slack(example)[0]).toMatchObject({ type: 'context' });
+  });
+
+  it.each([Number.NaN, Infinity, -Infinity])(
+    'refuses a span index of %s',
+    (index) => {
+      const [first, second] = spansExample.spans ?? [];
+      expect(
+        errors({
+          ...spansExample,
+          spans: [{ ...first, from: index }, second],
+        }).some((error) => error.startsWith('body[0].body[0].spans[0].from:'))
+      ).toBe(true);
+    }
+  );
 });

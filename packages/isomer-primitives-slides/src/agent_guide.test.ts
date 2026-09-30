@@ -62,3 +62,44 @@ describe('slides authoring schema', () => {
     );
   });
 });
+
+describe('slides authoring schema restates each rule the JSON Schema drops', () => {
+  const schema = JSON.stringify(
+    buildAuthoringJsonSchema(slideDeckPrimitives, slidesPackAuthoring)
+  );
+
+  // One row per refinement: the error it reports, and the words the schema states it in.
+  it.each([
+    [
+      'slidePipeline',
+      'each span needs `from` ≤ `to`',
+      'from ≤ to < steps.length',
+    ],
+    ['slidePipeline', 'spans must not overlap', 'spans do not overlap'],
+    [
+      'slidePipeline',
+      '`start` and `end` are steps mode only',
+      'no start or end',
+    ],
+    ['slidePipeline', '`size` is steps mode only', 'and no size'],
+    ['slidePipeline', 'step bodies are steps mode only', 'chips with no body'],
+    ['slideSequence', 'duplicate actor id', 'Actor ids are unique'],
+    [
+      'slideSequence',
+      'names unknown actor, or itself',
+      'every message names two different actors by id in from and to',
+    ],
+    [
+      'slideSequence',
+      'sends or receives no message',
+      'every actor sends or receives at least one message',
+    ],
+    [
+      'slideLayers',
+      'exactly one of `body` or `chips`',
+      'Each layer has exactly one of body or chips',
+    ],
+  ])('%s: %s', (_type, _error, stated) => {
+    expect(schema).toContain(stated);
+  });
+});

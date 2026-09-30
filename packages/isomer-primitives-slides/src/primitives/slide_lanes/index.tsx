@@ -22,7 +22,9 @@ import {
   marksSlack,
   plainText,
   richTextRun as run,
+  stripMarks,
 } from '../../render/marks';
+import { hasMrkdwnDelimiter } from '../../render/slack_text';
 import { toneCueText } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
@@ -30,7 +32,7 @@ import { definePrimitive } from '../define';
 import { catalog } from './catalog';
 import { examples } from './examples';
 import { react } from './react';
-import { schema, type SlideLanesNode } from './schema';
+import { schema, type SlideLanesNode, type SlideLanesNote } from './schema';
 
 export type { SlideLanesLane, SlideLanesNode, SlideLanesNote } from './schema';
 
@@ -39,12 +41,15 @@ const arrow = ` ${slideDistillery.tokens.lanes.arrow.value} `;
 const path = (steps: string[], join: string): string =>
   [...steps, join].map(oneLine).join(arrow);
 
+/** A lane's name as drawn, in capitals. */
+const shown = (label: string): string => oneLine(label).toUpperCase();
+
 export const text = ({ lanes, join, notes = [] }: SlideLanesNode): string =>
   [
     lanes
       .map(
         ({ label, steps, tone }) =>
-          `${toneCueText(tone)}${oneLine(label)}: ${path(steps, join)}`
+          `${toneCueText(tone)}${shown(label)}: ${path(steps, join)}`
       )
       .join('\n'),
     notes
@@ -59,7 +64,7 @@ export const markdown = ({ lanes, join, notes = [] }: SlideLanesNode) => [
     lanes.map(({ label, steps, tone }) =>
       md.paragraph(
         toneCueText(tone),
-        md.strong(`${label}:`),
+        md.strong(`${shown(label)}:`),
         ' ',
         path(steps, join)
       )
@@ -70,52 +75,66 @@ export const markdown = ({ lanes, join, notes = [] }: SlideLanesNode) => [
   ),
 ];
 
-export const slack = ({
-  lanes,
-  join,
-  notes = [],
-}: SlideLanesNode): SlackBlock[] => [
-  slackSection(
-    lanes
-      .map(
-        ({ label, steps, tone }) =>
-          `${toneCueText(tone)}${bold(`${oneLine(label)}:`)} ${escapeMrkdwn(path(steps, join))}`
+const lanesRichText = ({ lanes, join }: SlideLanesNode): SlackBlock =>
+  slackRichText(
+    ...lanes.map(({ label, steps, tone }, index) =>
+      richTextSection(
+        ...(tone ? [run(toneCueText(tone))] : []),
+        run(`${shown(label)}:`, { bold: true }),
+        run(` ${path(steps, join)}`),
+        ...(index < lanes.length - 1 ? [richTextBreak] : [])
       )
-      .join('\n'),
-    () =>
-      slackRichText(
-        ...lanes.map(({ label, steps, tone }, index) =>
-          richTextSection(
-            ...(tone ? [run(toneCueText(tone))] : []),
-            run(`${label}:`, { bold: true }),
-            run(` ${path(steps, join)}`),
-            ...(index < lanes.length - 1 ? [richTextBreak] : [])
-          )
-        )
+    )
+  );
+
+const notesRichText = (notes: SlideLanesNote[]): SlackBlock =>
+  slackRichText(
+    ...notes.map(({ title, body }, index) =>
+      richTextSection(
+        run(title, { bold: true }),
+        richTextBreak,
+        ...marksRichText(body),
+        ...(index < notes.length - 1 ? [richTextBreak] : [])
       )
-  ),
-  ...(notes.length > 0
-    ? [
-        slackFields(
-          notes.map(
-            ({ title, body }) =>
-              `${bold(oneLine(title))}\n${oneLine(marksSlack(body))}`
-          ),
-          () =>
-            slackRichText(
-              ...notes.map(({ title, body }, index) =>
-                richTextSection(
-                  run(title, { bold: true }),
-                  richTextBreak,
-                  ...marksRichText(body),
-                  ...(index < notes.length - 1 ? [richTextBreak] : [])
-                )
-              )
+    )
+  );
+
+// `mrkdwn` would read an authored `*`, `_`, `~`, or backtick as formatting, so such text goes to literal rich text.
+export const slack = (node: SlideLanesNode): SlackBlock[] => {
+  const { lanes, join, notes = [] } = node;
+  const lanesLiteral = hasMrkdwnDelimiter(
+    [join, ...lanes.flatMap(({ label, steps }) => [label, ...steps])].join('')
+  );
+  const notesLiteral = hasMrkdwnDelimiter(
+    notes.map(({ title, body }) => title + stripMarks(body)).join('')
+  );
+  return [
+    lanesLiteral
+      ? lanesRichText(node)
+      : slackSection(
+          lanes
+            .map(
+              ({ label, steps, tone }) =>
+                `${toneCueText(tone)}${bold(`${shown(label)}:`)} ${escapeMrkdwn(path(steps, join))}`
             )
+            .join('\n'),
+          () => lanesRichText(node)
         ),
-      ]
-    : []),
-];
+    ...(notes.length === 0
+      ? []
+      : [
+          notesLiteral
+            ? notesRichText(notes)
+            : slackFields(
+                notes.map(
+                  ({ title, body }) =>
+                    `${bold(oneLine(title))}\n${oneLine(marksSlack(body))}`
+                ),
+                () => notesRichText(notes)
+              ),
+        ]),
+  ];
+};
 
 /** Catalog, schema, and renderers for {@link SlideLanesNode}. */
 export const slideLanesPrimitive = definePrimitive({

@@ -33,7 +33,7 @@ export const text = ({ layers }: SlideLayersNode): string =>
   layers
     .map(
       ({ name, body, chips, owner, tone }) =>
-        `${oneLine(name)}${dash}${chips ? chips.map(oneLine).join(', ') : plainText(body ?? '')}${separator}${toneCueText(tone)}${oneLine(owner)}`
+        `${oneLine(name)}${dash}${chips ? chips.map(oneLine).join(', ') : plainText(body ?? '')}${separator}${toneCueText(tone)}${oneLine(owner).toUpperCase()}`
     )
     .join('\n');
 
@@ -51,7 +51,7 @@ export const markdown = ({ layers }: SlideLayersNode) =>
           : marksMarkdown(body ?? '')),
         separator,
         toneCueText(tone),
-        md.emphasis(owner)
+        md.emphasis(owner.toUpperCase())
       )
     ),
     { ordered: true }
@@ -77,7 +77,7 @@ export const slack = ({ layers }: SlideLayersNode): SlackBlock[] => [
               : marksRichText(body ?? '')),
             run(separator),
             ...(tone ? [run(toneCueText(tone))] : []),
-            run(owner, { italic: true }),
+            run(owner.toUpperCase(), { italic: true }),
           ],
         })),
       },

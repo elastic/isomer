@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { findings, slideOf } from '../../examples/measure';
+import { findings, measured, nodeBox, slideOf } from '../../examples/measure';
 import { frameContentWidth } from '../../theme/components/frame';
 import { type SlideSize, slideSizes } from '../../theme/variants';
 import { openBody, withLayout } from '../layout';
@@ -92,6 +92,29 @@ describe('lanesWidth and lanesHeight', () => {
         lanesHeight(node, 'm', openBody.width)
       );
     }
+  });
+
+  it('grow lanes whose names wrap past their rows, so the names never meet', async () => {
+    const [first, second] = unevenLanesExample.lanes;
+    const node: SlideLanesNode = {
+      ...unevenLanesExample,
+      lanes: [
+        { ...first!, label: 'Self-service checkout' },
+        { ...second!, label: 'Assisted phone ordering' },
+      ],
+      size: 's',
+    };
+    expect(lanesHeight(node, 's', openBody.width)).toBeGreaterThan(
+      lanesHeight(unevenLanesExample, 's', openBody.width)
+    );
+    const slide = slideOf(tallestExample, node);
+    // The row, then its lanes, then each lane's name.
+    const [row] = nodeBox(await measured(slide), 'slideLanes').children;
+    const [top, bottom] = row!.children[0]!.children.map(
+      ({ children: [name] }) => name!
+    );
+    expect(top!.y + top!.height).toBeLessThanOrEqual(bottom!.y);
+    expect(await findings(slide)).toEqual([]);
   });
 
   it('grow in height as notes wrap in a narrower layout', () => {

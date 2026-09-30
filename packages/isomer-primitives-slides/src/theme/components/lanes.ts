@@ -12,6 +12,16 @@ import { glyph } from './shared';
 
 const rowHeights = { l: space.px88, m: space.px72, s: space.px56 } as const;
 const chipPaddingX = { l: space.px22, m: space.px18, s: space.px12 } as const;
+const labelType = {
+  ...type.label,
+  size: font.size.px26,
+  tracking: font.tracking.label,
+};
+const joinType = {
+  ...type.mono,
+  size: font.size.px30,
+  weight: font.weight.medium,
+};
 const joinPaddingX = { l: space.px32, m: space.px24, s: space.px16 } as const;
 
 export const lanes = {
@@ -20,8 +30,8 @@ export const lanes = {
   bracketColumns: { l: space.px72, m: space.px56, s: space.px32 },
   rowHeights,
   rowGaps: { l: space.px48, m: space.px32, s: space.px24 },
-  label: { ...type.label, size: font.size.px26, tracking: font.tracking.label },
-  labelSizes: { l: font.size.px26, m: font.size.px24, s: font.size.px24 },
+  label: labelType,
+  labelSizes: { l: labelType.size, m: font.size.px24, s: font.size.px24 },
   chip: {
     type: { ...type.mono, weight: font.weight.medium },
     paddings: {
@@ -48,7 +58,7 @@ export const lanes = {
     stubs: { l: space.px36, m: space.px28, s: space.px16 },
   },
   join: {
-    type: { ...type.mono, size: font.size.px30, weight: font.weight.medium },
+    type: joinType,
     paddings: {
       l: paddingXy(space.px20, joinPaddingX.l),
       m: paddingXy(space.px16, joinPaddingX.m),
@@ -57,7 +67,7 @@ export const lanes = {
     paddingX: joinPaddingX,
     radius: radius.panel,
   },
-  joinSizes: { l: font.size.px30, m: font.size.px26, s: font.size.px24 },
+  joinSizes: { l: joinType.size, m: font.size.px26, s: font.size.px24 },
   notes: {
     gaps: { l: space.px72, m: space.px48, s: space.px32 },
     columnGaps: { l: space.px96, m: space.px64, s: space.px48 },
