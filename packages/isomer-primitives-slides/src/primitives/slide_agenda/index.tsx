@@ -26,13 +26,10 @@ export type { SlideAgendaNode, SlideAgendaSection } from './schema';
 
 const { here, separator } = slideDistillery.tokens.agenda;
 
-const detail = ({ count, current }: SlideAgendaSection): string =>
-  oneLine(
-    [
-      count ? ` ${separator.value} ${count}` : '',
-      current ? ` (${here.value})` : '',
-    ].join('')
-  );
+const detail = ({ count, current }: SlideAgendaSection): string => {
+  const shown = current ? here.value.toUpperCase() : count;
+  return shown ? oneLine(` ${separator.value} ${shown}`) : '';
+};
 
 export const text = ({ sections }: SlideAgendaNode): string =>
   sections

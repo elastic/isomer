@@ -13,6 +13,7 @@ import { marksMarkdown, marksSlack, plainText } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
+import { contextJoiner } from './attribution';
 import { catalog } from './catalog';
 import { examples } from './examples';
 import { react } from './react';
@@ -23,7 +24,9 @@ export type { SlideQuoteNode } from './schema';
 const { quoteOpen, quoteClose, dash } = slideDistillery.tokens.quote;
 
 const attribution = ({ source, context }: SlideQuoteNode): string =>
-  oneLine(`${dash.value} ${[source, context].filter(Boolean).join(', ')}`);
+  oneLine(
+    `${dash.value} ${[source, context].filter(Boolean).join(contextJoiner)}`
+  );
 
 export const text = (node: SlideQuoteNode): string =>
   `${quoteOpen.value}${plainText(node.text)}${quoteClose.value} ${attribution(node)}`;

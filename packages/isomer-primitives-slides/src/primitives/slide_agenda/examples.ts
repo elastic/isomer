@@ -16,7 +16,6 @@ export const example: SlideAgendaNode = {
     {
       number: '03',
       title: 'The new returns flow',
-      count: '5 slides',
       current: true,
     },
     { number: '04', title: 'Rolling it out', count: '3 slides' },
@@ -46,7 +45,6 @@ export const longExample: SlideAgendaNode = {
     {
       number: '06',
       title: 'What we still owe',
-      count: '2 slides',
       current: true,
     },
     { number: '07', title: 'Lessons', count: '2 slides' },

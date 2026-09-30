@@ -17,6 +17,7 @@ import { slideDistillery } from '../../theme/distillery';
 import { layoutModule } from '../../theme/modules';
 import { sizeForLoad } from '../size';
 
+import { contextJoiner } from './attribution';
 import type { SlideQuoteNode } from './schema';
 import { quoteModule } from './styles';
 
@@ -49,7 +50,7 @@ export const react = (
           <span className={cls(context, quote.source)}>{source}</span>
           {where ? (
             <>
-              {' '}
+              {contextJoiner}
               <span className={cls(context, quote.context)}>{where}</span>
             </>
           ) : null}

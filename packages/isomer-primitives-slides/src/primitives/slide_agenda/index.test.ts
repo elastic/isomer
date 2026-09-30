@@ -65,18 +65,39 @@ describe('slideAgenda', () => {
     expect(html).toContain(slideDistillery.tokens.agenda.here.value);
   });
 
+  it('shows the marker in place of the current count on every surface', () => {
+    const counted = {
+      type: 'slideAgenda' as const,
+      sections: [
+        { number: '1', title: 'Before', count: '2 slides' },
+        { number: '2', title: 'Now', count: '9 slides', current: true },
+      ],
+    };
+    const here = slideDistillery.tokens.agenda.here.value;
+    const surfaces = {
+      text: text(counted),
+      markdown: markdown(counted),
+      slack: JSON.stringify(slack(counted)),
+      html: runtime.surfaces.html.render(compose(counted)).html,
+    };
+    for (const [surface, output] of Object.entries(surfaces)) {
+      expect(output, surface).not.toContain('9 slides');
+      expect(output.toLowerCase(), surface).toContain(here.toLowerCase());
+    }
+  });
+
   it('renders text, markdown, and Slack', () => {
     expect(text(example)).toMatchInlineSnapshot(`
       "01 Why returns cost us · 3 slides
       02 What customers told us · 4 slides
-      03 The new returns flow · 5 slides (You are here)
+      03 The new returns flow · YOU ARE HERE
       04 Rolling it out · 3 slides
       05 Questions · 2 slides"
     `);
     expect(markdown(example)).toMatchInlineSnapshot(`
       "- **01** Why returns cost us · 3 slides
       - **02** What customers told us · 4 slides
-      - **03** The new returns flow · 5 slides (You are here)
+      - **03** The new returns flow · YOU ARE HERE
       - **04** Rolling it out · 3 slides
       - **05** Questions · 2 slides"
     `);

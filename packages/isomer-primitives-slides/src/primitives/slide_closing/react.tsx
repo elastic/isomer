@@ -15,7 +15,7 @@ import {
   closing as theme,
   closingShares,
 } from '../../theme/components/closing';
-import { columnWidth } from '../../theme/components/frame';
+import { columnWidth, frameContentWidth } from '../../theme/components/frame';
 import { labelModule } from '../../theme/modules';
 import { sizeForLines } from '../size';
 
@@ -32,7 +32,9 @@ export const react = (
     size,
     title,
     theme.title.tracking,
-    columnWidth(closingShares, theme.columnGap),
+    paths.length > 0
+      ? columnWidth(closingShares, theme.columnGap)
+      : frameContentWidth,
     theme.titleSizes
   );
   return (

@@ -169,4 +169,14 @@ describe('slideClosing', () => {
     expect(html).not.toContain('javascript:');
     expect(html).not.toContain('<a ');
   });
+
+  it('sizes the title to the width its layout gives it', () => {
+    const stepOf = (node: object) =>
+      /closing-titleSize-(\w+)/.exec(
+        runtime.surfaces.html.render(compose(node)).html
+      )?.[1];
+    const title = 'Questions and next steps';
+    expect(stepOf({ ...linkOnlyExample, title, paths: undefined })).toBe('l');
+    expect(stepOf({ ...example, title })).toBe('s');
+  });
 });
