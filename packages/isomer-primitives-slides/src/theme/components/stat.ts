@@ -7,7 +7,7 @@
 
 import type { ScaleToken } from '@elastic/distillate';
 
-import { font, space, stroke, type } from '../base';
+import { extraboldAdvance, font, space, stroke, type } from '../base';
 import { px, scalePx } from '../scale';
 
 import { glyph } from './shared';
@@ -24,8 +24,14 @@ export const stat = {
   body: type.bodyL,
   // Measure, not spacing.
   bodyMaxWidth: px(1000),
-  // About a four-character value at `statInline`, so the band keeps its shape.
-  placeholderWidth: px(320),
+  /** Four digits at `statInline`, so the band keeps its shape. */
+  placeholderWidth: px(
+    Math.round(
+      4 *
+        (extraboldAdvance.digit + parseFloat(type.statInline.tracking.value)) *
+        scalePx(type.statInline.size)
+    )
+  ),
   placeholderHeight: lineBox(type.statInline.size, type.statInline.lineHeight),
   dash: glyph.dash,
 } as const;

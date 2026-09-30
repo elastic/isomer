@@ -5,9 +5,13 @@
  * 2.0.
  */
 
-import { bars, barsValueFormat } from '../../theme/components/bars';
+import {
+  bars,
+  barsValueFormat,
+  barsValueLocale,
+} from '../../theme/components/bars';
 
-const format = new Intl.NumberFormat('en-US', barsValueFormat);
+const format = new Intl.NumberFormat(barsValueLocale, barsValueFormat);
 const smallest = format.format(10 ** -barsValueFormat.maximumFractionDigits);
 
 /** Rounded to the theme's digits, never in exponent form; a positive value that rounds to zero prints as below the smallest step, e.g. `<0.01`. */

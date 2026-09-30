@@ -8,6 +8,7 @@
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
+import { SLACK_LIMITS } from '@elastic/isomer-sdk/slack';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
@@ -68,6 +69,18 @@ describe('slideStats', () => {
         "body[0].body[0].items[0].unit",
       ]
     `);
+  });
+
+  it.each(['value', 'unit'])('needs a visible character in a %s', (field) => {
+    const [first, ...rest] = example.items;
+    const with_ = (text: string) => ({
+      ...example,
+      items: [{ ...first!, value: '3', [field]: text }, ...rest],
+    });
+    expect(errorPaths(with_(' '))).toEqual([
+      `body[0].body[0].items[0].${field}`,
+    ]);
+    expect(errorPaths(with_(' 3 '))).toEqual([]);
   });
 
   it('renders text and markdown', () => {
@@ -190,6 +203,21 @@ describe('slideStats', () => {
       expect(statsValueSize(pendingExample, openBody.width)).toBe('l');
     });
   });
+  it('keeps the pending caption in the rich text past the field limit', () => {
+    const body = 'x'.repeat(SLACK_LIMITS.sectionFieldChars);
+    const [first, ...rest] = pendingExample.items;
+    const node: SlideStatsNode = {
+      ...pendingExample,
+      items: [{ ...first!, body }, ...rest],
+    };
+    const [block] = runtime.surfaces.slack.renderNode(node).blocks;
+    expect(block?.type).toBe('rich_text');
+    expect(JSON.stringify(block)).toContain(
+      '{"type":"text","text":"value pending","style":{"italic":true}}'
+    );
+    expect(JSON.stringify(block)).toContain(body);
+  });
+
   it('prints the pending caption on every surface', () => {
     for (const output of everySurface(pendingExample)) {
       expect(output).toContain('value pending');

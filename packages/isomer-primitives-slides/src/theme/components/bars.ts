@@ -17,7 +17,7 @@ export const bars = {
   barRadius: radius.chipSmall,
   /** Leaves room for the longest bar's value. */
   barMaxShare: literal('85%'),
-  label: { weight: font.weight.bold },
+  label: { weight: font.weight.bold, tracking: font.tracking.none },
   labelSizes: { l: font.size.px32, m: font.size.px30, s: font.size.px28 },
   valueGap: space.px24,
   value: {
@@ -39,11 +39,13 @@ export const bars = {
   },
 } as const;
 
-/** Under the `en-US` locale, on every surface. */
+/** How a bar's value prints on every surface. */
+export const barsValueLocale = 'en-US';
+
 export const barsValueFormat = {
   maximumFractionDigits: 2,
   useGrouping: false,
 } as const satisfies Intl.NumberFormatOptions;
 
-/** Two per bar, one per detail line. */
+/** Two per label line, one per detail line. */
 export const barsFit = { l: 13, m: 16 } as const;

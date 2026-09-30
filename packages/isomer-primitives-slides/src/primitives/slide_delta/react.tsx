@@ -10,7 +10,7 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv, SlideRenderContext } from '../../render/context';
-import { marksReact } from '../../render/marks';
+import { marksReact, stripMarks } from '../../render/marks';
 import { delta as theme } from '../../theme/components/delta';
 import { slideDistillery } from '../../theme/distillery';
 import {
@@ -21,35 +21,46 @@ import {
 import { scalePx } from '../../theme/scale';
 import { type SlideSize, slideSizes } from '../../theme/variants';
 import { slideLayout } from '../layout';
-import { emWidth, sizeForWidth } from '../size';
+import { emWidth } from '../size';
 
 import type { SlideDeltaNode, SlideDeltaPoint } from './schema';
 import { deltaModule } from './styles';
 
 const { connector, placeholder: pending } = slideDistillery.tokens;
 
-/** Width each value may take of `width` once the arrow, gaps, and the note's floor are set aside. */
-const valueWidth = (width: number): number =>
-  (width -
-    scalePx(theme.arrowWidth) -
-    3 * scalePx(theme.columnGap) -
-    scalePx(theme.noteMinWidth)) /
-  2;
+/** A side's width at `step`: its value, or its placeholder, and never less than its label. */
+const sideWidth = ({ label, value }: SlideDeltaPoint, step: SlideSize) =>
+  Math.max(
+    emWidth(stripMarks(label).toUpperCase(), theme.label.tracking) *
+      scalePx(theme.label.size),
+    value
+      ? emWidth(value, theme.value.tracking) * scalePx(theme.valueSizes[step])
+      : scalePx(theme.placeholderWidth)
+  );
 
-/** The one step at which both values fit across `width`, so they read as a pair. */
+const largestWithin = (
+  points: readonly SlideDeltaPoint[],
+  room: number
+): SlideSize | undefined =>
+  slideSizes.find((step) =>
+    points.every((point) => sideWidth(point, step) <= room)
+  );
+
+/** The one step at which both sides fit across `width`, beside the note's floor if any step allows, else with the note wrapped under them. */
 export const deltaValueSize = (
   { before, after, size }: SlideDeltaNode,
   width: number
-): SlideSize =>
-  [before, after].reduce<SlideSize>((worst, { value = '' }) => {
-    const step = sizeForWidth(
-      size,
-      emWidth(value, theme.value.tracking),
-      valueWidth(width),
-      theme.valueSizes
-    );
-    return slideSizes.indexOf(step) > slideSizes.indexOf(worst) ? step : worst;
-  }, 'l');
+): SlideSize => {
+  const pair = width - scalePx(theme.arrowWidth) - 2 * scalePx(theme.columnGap);
+  const beside =
+    (pair - scalePx(theme.columnGap) - scalePx(theme.noteMinWidth)) / 2;
+  return (
+    size ??
+    largestWithin([before, after], beside) ??
+    largestWithin([before, after], pair / 2) ??
+    's'
+  );
+};
 
 const Side = ({
   point: { label, value },
@@ -119,7 +130,12 @@ export const react = (
         <div
           role="img"
           aria-label={connector.label.value}
-          className={cls(context, arrow.across, delta.arrowLift[step])}>
+          className={cls(
+            context,
+            arrow.across,
+            delta.arrow,
+            delta.arrowLift[step]
+          )}>
           <div className={cls(context, arrow.railAcross)} />
           <div className={cls(context, arrow.headRight)} />
         </div>

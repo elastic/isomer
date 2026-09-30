@@ -18,6 +18,7 @@ import {
   richTextRun as run,
 } from '../../render/marks';
 import { pending } from '../../render/pending';
+import { richTextSection, slackRichText } from '../../render/slack_text';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -77,30 +78,24 @@ export const slack = ({
   change,
   body,
 }: SlideDeltaNode): SlackBlock[] => [
-  {
-    type: 'rich_text',
-    elements: [
-      {
-        type: 'rich_text_section',
-        elements: [
-          ...[before, after].flatMap(({ label, value }, index) => [
-            ...(index > 0 ? [run(arrow)] : []),
-            ...labelRuns(label).map(({ kind, text: mark }) =>
-              run(mark, {
-                bold: true,
-                ...(kind === 'code' ? { code: true } : {}),
-              })
-            ),
-            run(' '),
-            value ? run(value) : pending.richText,
-          ]),
-          run('. '),
-          ...(change ? [run(change, { bold: true }), run(': ')] : []),
-          ...marksRichText(body),
-        ],
-      },
-    ],
-  },
+  slackRichText(
+    richTextSection(
+      ...[before, after].flatMap(({ label, value }, index) => [
+        ...(index > 0 ? [run(arrow)] : []),
+        ...labelRuns(label).map(({ kind, text: mark }) =>
+          run(mark, {
+            bold: true,
+            ...(kind === 'code' ? { code: true } : {}),
+          })
+        ),
+        run(' '),
+        value ? run(value) : pending.richText,
+      ]),
+      run('. '),
+      ...(change ? [run(change, { bold: true }), run(': ')] : []),
+      ...marksRichText(body)
+    )
+  ),
 ];
 
 /** Catalog, schema, and renderers for {@link SlideDeltaNode}. */

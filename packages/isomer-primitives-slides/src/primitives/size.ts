@@ -11,7 +11,7 @@ import type { ScaleToken } from '@elastic/distillate';
 import { z } from '@elastic/isomer-sdk';
 
 import { displayColumns, isWide } from '../render/mono';
-import { extraboldAdvance, regularAdvance } from '../theme/base';
+import { extraboldAdvance, monoAdvance, regularAdvance } from '../theme/base';
 import { scalePx } from '../theme/scale';
 import { type SlideSize, slideSizes } from '../theme/variants';
 
@@ -156,6 +156,18 @@ export const proseLines = (
   packedLines(
     words(text).map((word) => displayColumns(word) * regularAdvance * fontPx),
     regularAdvance * fontPx,
+    width
+  );
+
+/** {@link wrappedLines} for the mono face, from {@link monoAdvance}. */
+export const monoLines = (
+  text: string,
+  fontPx: number,
+  width: number
+): number =>
+  packedLines(
+    words(text).map((word) => displayColumns(word) * monoAdvance * fontPx),
+    monoAdvance * fontPx,
     width
   );
 

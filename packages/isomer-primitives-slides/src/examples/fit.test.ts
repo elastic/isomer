@@ -134,11 +134,33 @@ describe('the largest steps a slide with no heading takes still fit', () => {
     },
   ]);
 
-  const densest = [
+  const statsRow = (count: number, value: string, unit?: string) => ({
+    type: 'slideStats',
+    items: Array.from({ length: count }, () => ({
+      value,
+      ...(unit ? { unit } : {}),
+      label: 'Label',
+      body: 'Body.',
+    })),
+  });
+  const figures = [
     { step: 'l', variant: 'bars-labelSize', node: barsExample },
+    { step: 'l', variant: 'stats-valueSize', node: statsRow(2, '000000') },
+    { step: 'l', variant: 'stats-valueSize', node: statsRow(3, '00', 'ms') },
+    { step: 'l', variant: 'stats-valueSize', node: statsRow(4, '00') },
+    {
+      step: 'l',
+      variant: 'delta-valueSize',
+      node: {
+        type: 'slideDelta',
+        before: { label: 'Before', value: '000' },
+        after: { label: 'After', value: '000' },
+        body: 'Body.',
+      },
+    },
   ] as const;
 
-  it.each([...steps, ...densest])(
+  it.each([...steps, ...figures])(
     '$variant at $step',
     async ({ step, variant, node }) => {
       expect(renderedStep(variant, node)).toBe(step);

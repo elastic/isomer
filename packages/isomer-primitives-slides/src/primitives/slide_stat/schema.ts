@@ -8,19 +8,19 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
-import { lineText, wrappedText } from '../authored_text';
+import { figureText, wrappedText } from '../authored_text';
 import { crossRefine } from '../cross_field';
 
 /** Zod schema for {@link SlideStatNode}. */
 export const schema = z
   .object({
     type: z.literal('slideStat'),
-    value: lineText()
+    value: figureText()
       .describe(
         'The number as it should read, e.g. `3.4` or `40%`. Omit it when the number is not known yet: the slide shows a placeholder, never an invented value.'
       )
       .optional(),
-    unit: lineText()
+    unit: figureText()
       .describe('Unit after the value, e.g. `KB` or `ms`. Requires `value`.')
       .optional(),
     body: wrappedText().describe(

@@ -15,9 +15,9 @@ import { stats as theme } from '../../theme/components/stats';
 import { slideDistillery } from '../../theme/distillery';
 import { layoutModule, placeholderModule } from '../../theme/modules';
 import { scalePx } from '../../theme/scale';
-import { type SlideSize, slideSizes } from '../../theme/variants';
+import type { SlideSize } from '../../theme/variants';
 import { slideLayout } from '../layout';
-import { emWidth, sizeForWidth } from '../size';
+import { emWidth, sizeForWidth, smallerStep } from '../size';
 
 import type { SlideStatsNode } from './schema';
 import { statsModule } from './styles';
@@ -29,7 +29,9 @@ export const statsValueSize = (
   { items, size }: SlideStatsNode,
   width: number
 ): SlideSize => {
-  const gutters = (items.length - 1) * 2 * scalePx(theme.columnPadding);
+  const gutters =
+    (items.length - 1) *
+    (2 * scalePx(theme.columnPadding) + scalePx(theme.rule));
   const column = (width - gutters) / items.length;
   return items.reduce<SlideSize>((worst, { value = '', unit }) => {
     const step = sizeForWidth(
@@ -42,7 +44,7 @@ export const statsValueSize = (
           : 0),
       theme.valueSizes
     );
-    return slideSizes.indexOf(step) > slideSizes.indexOf(worst) ? step : worst;
+    return smallerStep(worst, step);
   }, 'l');
 };
 
@@ -73,7 +75,10 @@ export const react = (
               <div className={cls(context, stats.value, stats.valueSize[step])}>
                 <span>{value}</span>
                 {unit ? (
-                  <span className={cls(context, stats.unit)}>{unit}</span>
+                  <>
+                    {' '}
+                    <span className={cls(context, stats.unit)}>{unit}</span>
+                  </>
                 ) : null}
               </div>
             ) : (

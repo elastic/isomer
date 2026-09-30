@@ -15,17 +15,17 @@ const { createStyleModule, tokens } = slideDistillery;
 const { color, delta } = tokens;
 
 export const deltaModule = createStyleModule('delta', ({ css }) => ({
+  /** The note wraps under the pair when the row cannot hold its floor. */
   root: css`
-    align-items: end;
+    align-items: flex-end;
     column-gap: ${delta.columnGap};
-    display: grid;
-    grid-template-columns: auto ${delta.arrowWidth} auto minmax(
-        ${delta.noteMinWidth},
-        1fr
-      );
+    display: flex;
+    flex-wrap: wrap;
+    row-gap: ${delta.rowGap};
   `,
   side: css`
     display: flex;
+    flex: 0 0 auto;
     flex-direction: column;
     gap: ${delta.labelGap};
   `,
@@ -61,6 +61,9 @@ export const deltaModule = createStyleModule('delta', ({ css }) => ({
       height: ${delta.placeholderHeights[size]};
     `
   ),
+  arrow: css`
+    flex: 0 0 ${delta.arrowWidth};
+  `,
   arrowLift: variants(
     slideSizes,
     (size) => css`
@@ -70,9 +73,11 @@ export const deltaModule = createStyleModule('delta', ({ css }) => ({
   note: css`
     border-left: ${delta.rule} solid ${color.border};
     display: flex;
+    flex: 1 1 0;
     flex-direction: column;
     gap: ${delta.noteGap};
     margin-bottom: ${delta.noteBottom};
+    min-width: ${delta.noteMinWidth};
     padding-left: ${delta.notePadding};
   `,
   change: css`

@@ -8,7 +8,7 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
-import { lineText, wrappedText } from '../authored_text';
+import { figureText, lineText, wrappedText } from '../authored_text';
 import { crossRefine } from '../cross_field';
 import { sizeField } from '../size';
 
@@ -17,9 +17,9 @@ const pointSchema = z
     label: lineText().describe(
       'When or where the number was taken, in one to three words, e.g. `Last spring`. Rendered uppercase, except code. `code` and `**strong**` marks are allowed.'
     ),
-    value: lineText()
+    value: figureText()
       .describe(
-        'The number as it should read, unit included, e.g. `26` or `4.2s`. Keep it to about four characters. Omit it when the number is not known yet: the slide shows a placeholder, never an invented value.'
+        'The number as it should read, unit included, e.g. `26` or `4.2s`. Omit it when the number is not known yet: the slide shows a placeholder, never an invented value.'
       )
       .optional(),
   })
@@ -34,7 +34,7 @@ export const schema = z
     type: z.literal('slideDelta'),
     before: pointSchema.describe('The starting number, on the left.'),
     after: pointSchema.describe('The number now, on the right, in primary.'),
-    change: lineText()
+    change: figureText()
       .describe(
         'The difference as it should read, e.g. `+13` or `−40%`. Leave it out when either value is missing.'
       )

@@ -65,6 +65,10 @@ describe('slideBars', () => {
         "body[0].body[0].items",
       ]
     `);
+    expect(errorPaths({ ...example, max: 412 })).toEqual([]);
+    expect(errorPaths({ ...example, max: 411.99 })).toEqual([
+      'body[0].body[0].max',
+    ]);
     expect(errorPaths({ ...example, max: 100 })).toMatchInlineSnapshot(`
       [
         "body[0].body[0].max",
@@ -76,6 +80,14 @@ describe('slideBars', () => {
         "body[0].body[0].items[0].value",
       ]
     `);
+  });
+
+  it.each([NaN, Infinity, -Infinity])('rejects a value or max of %d', (n) => {
+    const [first, second] = example.items;
+    expect(
+      errorPaths({ ...example, items: [{ ...first, value: n }, second] })
+    ).toEqual(['body[0].body[0].items[0].value']);
+    expect(errorPaths({ ...example, max: n })).toContain('body[0].body[0].max');
   });
 
   it('renders text and markdown as tables, the highlighted row bold', () => {
@@ -339,7 +351,18 @@ describe('slideBars', () => {
       expect(barsSize({ ...bars(6, 6), size: 'l' }, full)).toBe('l');
     });
 
-    it('draws the dense example, six bars each with a detail, at the smallest step', () => {
+    it('counts a wrapped label line as another bar tall', () => {
+      const labelled = (label: string): SlideBarsNode => ({
+        ...bars(5, 0),
+        items: bars(5, 0).items.map((item) => ({ ...item, label })),
+      });
+      expect(barsSize(labelled('Leeds'), full)).toBe('l');
+      expect(
+        barsSize(labelled('Customer support tickets opened'), full)
+      ).not.toBe('l');
+    });
+
+    it('draws the dense example, six bars each with a detail, at the smallest step under crowding 1', () => {
       expect(denseExample.items).toHaveLength(6);
       expect(denseExample.items.every(({ detail }) => detail)).toBe(true);
       expect(barsSize(denseExample, full)).toBe('s');
@@ -378,32 +401,25 @@ describe('slideBars', () => {
       ],
     });
     expect(blocks.filter(({ type }) => type === 'table')).toHaveLength(1);
-    const heading = (text: string) => ({
-      type: 'text',
-      text,
-      style: { bold: true },
+    const text = (value: string) => ({ type: 'text', text: value });
+    const line = (head: string, cell: string, end = true) => ({
+      type: 'rich_text_section',
+      elements: [
+        { ...text(head), style: { bold: true } },
+        text(': '),
+        text(cell),
+        ...(end ? [text('\n')] : []),
+      ],
     });
-    const cell = (label: string, value: string) => [
-      heading(barsTheme.heads.label.value),
-      { type: 'text', text: ': ' },
-      { type: 'text', text: label },
-      { type: 'text', text: '\n' },
-      heading(barsTheme.heads.value.value),
-      { type: 'text', text: ': ' },
-      { type: 'text', text: value },
-    ];
+    const { label, value } = barsTheme.heads;
     expect(blocks).toContainEqual({
       type: 'rich_text',
       elements: [
-        {
-          type: 'rich_text_section',
-          elements: [
-            ...cell(long, '2'),
-            { type: 'text', text: '\n' },
-            { type: 'text', text: '\n' },
-            ...cell('B', '1'),
-          ],
-        },
+        line(label.value, long),
+        line(value.value, '2'),
+        { type: 'rich_text_section', elements: [text('\n')] },
+        line(label.value, 'B'),
+        line(value.value, '1', false),
       ],
     });
   });

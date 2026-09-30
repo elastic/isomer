@@ -16,5 +16,9 @@ export const lineText = () => z.string().min(1).max(authoredTextMaxLength);
 /** A field that wraps. */
 export const wrappedText = () => z.string().min(1).max(authoredTextMaxLength);
 
+/** A figure as it should read; a blank one is not a figure, so leave it out for a placeholder. */
+export const figureText = () =>
+  lineText().regex(/\S/, 'needs a visible character');
+
 /** An `href`, bounded as {@link lineText} is. */
 export const boundedHref = () => navigationHref().max(authoredTextMaxLength);

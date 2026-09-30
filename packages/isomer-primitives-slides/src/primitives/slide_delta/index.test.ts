@@ -47,6 +47,13 @@ describe('slideDelta', () => {
     ),
   ];
 
+  it.each([
+    ['before.value', { ...example, before: { ...example.before, value: ' ' } }],
+    ['change', { ...example, change: ' ' }],
+  ])('needs a visible character in %s', (field, node) => {
+    expect(errorPaths(node)).toEqual([`body[0].body[0].${field}`]);
+  });
+
   it('states a change only between two values', () => {
     expect(errorPaths({ ...pendingExample, change: '+3' }))
       .toMatchInlineSnapshot(`
@@ -176,6 +183,33 @@ describe('slideDelta', () => {
 
     it('draws the wide example at the smallest step', () => {
       expect(deltaValueSize(wideExample, openBody.width)).toBe('s');
+    });
+
+    it('keeps the note beside the pair while a step fits, and wraps it under the pair past that', () => {
+      const [pane] = paneWidths(openBody.width, 'even', 'gap');
+      expect(deltaValueSize(pair('000'), openBody.width)).toBe('l');
+      expect(deltaValueSize(pair('0'), pane)).toBe('l');
+      expect(deltaValueSize(pair('00'), pane)).toBe('m');
+      expect(deltaValueSize(pair('000'), pane)).toBe('s');
+    });
+
+    it('measures a label wider than its value, and a placeholder for a missing value', () => {
+      const long = 'Before the warehouse moved';
+      expect(
+        deltaValueSize(
+          { ...pair('0'), before: { label: long, value: '0' } },
+          openBody.width
+        )
+      ).toBe(deltaValueSize(pair('0'), openBody.width));
+      expect(
+        deltaValueSize(
+          { ...pair('0'), before: { label: long.repeat(4), value: '0' } },
+          openBody.width
+        )
+      ).toBe('s');
+      expect(
+        deltaValueSize({ ...pair('0'), before: { label: 'Before' } }, 400)
+      ).toBe('s');
     });
 
     it('measures its values across a split pane and a title aside', () => {

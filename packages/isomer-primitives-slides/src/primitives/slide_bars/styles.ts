@@ -36,6 +36,7 @@ export const barsModule = createStyleModule('bars', ({ css }) => ({
   label: css`
     color: ${color.text};
     font-weight: ${bars.label.weight};
+    letter-spacing: ${bars.label.tracking};
   `,
   /** The label's line is the bar's height, so the two share a middle. */
   labelSize: variants(
@@ -93,6 +94,5 @@ export const barsModule = createStyleModule('bars', ({ css }) => ({
   detail: css`
     color: ${color.textSubtle};
     ${typeRole(bars.detail)}
-    white-space: nowrap;
   `,
 }));

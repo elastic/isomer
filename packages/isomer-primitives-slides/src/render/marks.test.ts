@@ -15,6 +15,8 @@ import {
   parseMarks,
   plainText,
   stripMarks,
+  strongMarksMarkdown,
+  strongMarksRichText,
 } from './marks';
 
 describe('marks', () => {
@@ -98,5 +100,19 @@ describe('marks', () => {
     const started = performance.now();
     expect(parseMarks(`**a${' '.repeat(100_000)}b**`)).toHaveLength(1);
     expect(performance.now() - started).toBeLessThan(1_000);
+  });
+
+  it('sets a whole text in strong, folding its own strong in and keeping code', () => {
+    const text = 'Run `make` **now** please';
+    expect(serializeMarkdown(md.paragraph(strongMarksMarkdown(text)))).toBe(
+      '**Run `make` now please**'
+    );
+    expect(strongMarksRichText(text)).toEqual([
+      { type: 'text', text: 'Run ', style: { bold: true } },
+      { type: 'text', text: 'make', style: { code: true, bold: true } },
+      { type: 'text', text: ' ', style: { bold: true } },
+      { type: 'text', text: 'now', style: { bold: true } },
+      { type: 'text', text: ' please', style: { bold: true } },
+    ]);
   });
 });

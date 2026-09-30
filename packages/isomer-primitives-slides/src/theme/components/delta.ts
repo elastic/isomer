@@ -16,6 +16,7 @@ const arrowLift = 0.38;
 
 export const delta = {
   columnGap: space.px56,
+  rowGap: space.px40,
   // Track width, not spacing.
   arrowWidth: px(200),
   arrowLifts: {

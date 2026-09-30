@@ -6,7 +6,11 @@
  */
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
-import { z } from '@elastic/isomer-sdk';
+import {
+  nonNegativeFiniteNumber,
+  positiveFiniteNumber,
+  z,
+} from '@elastic/isomer-sdk';
 
 import { lineText } from '../authored_text';
 import { crossRefine } from '../cross_field';
@@ -17,12 +21,9 @@ const itemSchema = z
     label: lineText().describe(
       'What the bar measures, in one to three words, e.g. `Leeds`. `code` and `**strong**` marks are allowed.'
     ),
-    value: z
-      .number()
-      .min(0)
-      .describe(
-        'The measured amount, zero or more. The bar’s length is drawn from it, and the number prints beside the bar.'
-      ),
+    value: nonNegativeFiniteNumber().describe(
+      'The measured amount, zero or more. The bar’s length is drawn from it, and the number prints beside the bar.'
+    ),
     detail: lineText()
       .describe(
         'One short line under the bar in mono, e.g. what the number counts. `code` and `**strong**` marks are allowed.'
@@ -53,11 +54,9 @@ export const schema = z
       .describe(
         'Bars top to bottom, usually largest first. 2 to 6, all in the same unit.'
       ),
-    max: z
-      .number()
-      .positive()
+    max: positiveFiniteNumber()
       .describe(
-        'The value a full-length bar stands for, at least the largest value. Leave it out to scale to the largest value.'
+        'The value a full-length bar stands for, a positive number at least the largest value. Leave it out to scale to the largest value.'
       )
       .optional(),
     size: sizeField(),

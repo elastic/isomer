@@ -36,7 +36,7 @@ export type { SlideStatsItem, SlideStatsNode } from './schema';
 const valueText = ({ value, unit }: SlideStatsItem): string | undefined =>
   value ? oneLine([value, unit].filter(Boolean).join(' ')) : undefined;
 
-/** `value label: body` on every surface. */
+/** `value label: body`. */
 export const text = ({ items }: SlideStatsNode): string =>
   items
     .map(

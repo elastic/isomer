@@ -23,7 +23,10 @@ import type {
   SlackButtonElement,
   SlackOptionObject,
   SlackPlainTextObject,
+  SlackRichTextBlockElement,
+  SlackRichTextText,
   SlackTableBlock,
+  SlackTableCell,
   SlackVideoBlock,
 } from './blocks';
 import { SLACK_LIMITS } from './blocks';
@@ -162,89 +165,135 @@ describe('Slack envelope transforms', () => {
     expect(blocks.some((block) => block.type === 'rich_text')).toBe(true);
   });
 
-  it('keeps every cell of a table past the aggregate budget whole and literal', () => {
+  describe('a table past the aggregate cell budget', () => {
     const half = SLACK_LIMITS.tableCellCharsPerMessage / 2;
-    const text = `*${'x'.repeat(half)}_~\``;
-    const second: SlackTableBlock = {
-      type: 'table',
-      rows: [
-        [cell('H'), cell('I')],
-        [
-          cell(text),
-          {
-            type: 'rich_text',
-            elements: [
-              {
-                type: 'rich_text_section',
-                elements: [{ type: 'text', text: 'y', style: { code: true } }],
-              },
-            ],
-          },
-        ],
-      ],
-    };
-    const { blocks } = renderSlackEnvelope(
-      { type: 'view', body: [{ type: 'a' }, { type: 'b' }] },
-      dispatcherFor([[tableBlock(half)], [second]])
-    );
-    expect(blocks.filter((block) => block.type === 'table')).toHaveLength(1);
-    expect(blocks.at(-1)).toEqual({
-      type: 'rich_text',
-      elements: [
-        {
-          type: 'rich_text_section',
-          elements: [
-            { type: 'text', text: 'H', style: { bold: true } },
-            { type: 'text', text: ': ' },
-            { type: 'text', text },
-            { type: 'text', text: '\n' },
-            { type: 'text', text: 'I', style: { bold: true } },
-            { type: 'text', text: ': ' },
-            { type: 'text', text: 'y', style: { code: true } },
-          ],
-        },
-      ],
+    const text = (value: string, style?: SlackRichTextText['style']) => ({
+      type: 'text' as const,
+      text: value,
+      ...(style ? { style } : {}),
     });
-  });
+    const bold = (value: string) => text(value, { bold: true });
+    const section = (...elements: SlackRichTextText[]) => ({
+      type: 'rich_text_section' as const,
+      elements,
+    });
+    const rich = (
+      ...elements: SlackRichTextBlockElement[]
+    ): SlackTableCell => ({ type: 'rich_text', elements });
+    const list: SlackRichTextBlockElement = {
+      type: 'rich_text_list',
+      style: 'bullet',
+      elements: [section(text('first')), section(text('second'))],
+    };
+    const quote: SlackRichTextBlockElement = {
+      type: 'rich_text_quote',
+      elements: [text('quoted')],
+    };
+    const preformatted: SlackRichTextBlockElement = {
+      type: 'rich_text_preformatted',
+      elements: [text('code')],
+    };
+    const blank = section(text('\n'));
+    // The first table spends the budget, so the second degrades.
+    const degraded = (rows: SlackTableCell[][]) =>
+      renderSlackEnvelope(
+        { type: 'view', body: [{ type: 'a' }, { type: 'b' }] },
+        dispatcherFor([
+          [tableBlock(SLACK_LIMITS.tableCellCharsPerMessage - 1)],
+          [{ type: 'table', rows }],
+        ])
+      ).blocks.at(-1);
 
-  it('keeps a styled heading and drops the separator for an empty one past the aggregate budget', () => {
-    const half = SLACK_LIMITS.tableCellCharsPerMessage / 2;
-    const code = {
-      type: 'rich_text' as const,
-      elements: [
-        {
-          type: 'rich_text_section' as const,
-          elements: [
-            { type: 'text' as const, text: 'iOS', style: { code: true } },
+    it('keeps every cell whole and literal, and a rich cell its styles', () => {
+      const long = `*${'x'.repeat(half)}_~\``;
+      expect(
+        degraded([
+          [cell('H'), cell('I')],
+          [cell(long), rich(section(text('y', { code: true })))],
+        ])
+      ).toEqual({
+        type: 'rich_text',
+        elements: [
+          section(bold('H'), text(': '), text(long), text('\n')),
+          section(bold('I'), text(': '), text('y', { code: true })),
+        ],
+      });
+    });
+
+    it('keeps a styled heading, and leaves a cell under an empty heading alone', () => {
+      expect(
+        degraded([
+          [cell(''), rich(section(text('iOS', { code: true })))],
+          [cell('Refunds'), cell('Yes')],
+        ])
+      ).toEqual({
+        type: 'rich_text',
+        elements: [
+          section(text('Refunds'), text('\n')),
+          section(
+            text('iOS', { code: true, bold: true }),
+            text(': '),
+            text('Yes')
+          ),
+        ],
+      });
+    });
+
+    it('keeps the sections, list items, quotes, and preformatted blocks of a cell', () => {
+      expect(
+        degraded([
+          [cell('A'), cell('B')],
+          [
+            rich(section(text('one')), section(text('two')), list),
+            rich(quote, preformatted),
           ],
-        },
-      ],
-    };
-    const matrix: SlackTableBlock = {
-      type: 'table',
-      rows: [
-        [cell(''), code],
-        [cell('x'.repeat(half)), cell('Yes')],
-      ],
-    };
-    const { blocks } = renderSlackEnvelope(
-      { type: 'view', body: [{ type: 'a' }, { type: 'b' }] },
-      dispatcherFor([[tableBlock(half)], [matrix]])
+        ])
+      ).toEqual({
+        type: 'rich_text',
+        elements: [
+          section(bold('A'), text(': '), text('one'), text('\n')),
+          section(text('two')),
+          list,
+          section(bold('B'), text(': ')),
+          quote,
+          preformatted,
+        ],
+      });
+    });
+
+    it.each([
+      ['a list', list],
+      ['a quote', quote],
+      ['a preformatted block', preformatted],
+    ])(
+      'parts two rows that end and start with %s by a blank line',
+      (_name, block) => {
+        expect(degraded([[cell('')], [rich(block)], [rich(block)]])).toEqual({
+          type: 'rich_text',
+          elements: [block, blank, block],
+        });
+        expect(degraded([[cell('H')], [rich(block)], [rich(block)]])).toEqual({
+          type: 'rich_text',
+          elements: [
+            section(bold('H'), text(': ')),
+            block,
+            blank,
+            section(bold('H'), text(': ')),
+            block,
+          ],
+        });
+      }
     );
-    expect(blocks.at(-1)).toEqual({
-      type: 'rich_text',
-      elements: [
-        {
-          type: 'rich_text_section',
-          elements: [
-            { type: 'text', text: 'x'.repeat(half) },
-            { type: 'text', text: '\n' },
-            { type: 'text', text: 'iOS', style: { code: true, bold: true } },
-            { type: 'text', text: ': ' },
-            { type: 'text', text: 'Yes' },
-          ],
-        },
-      ],
+
+    it('parts two rows of plain cells by a blank line', () => {
+      expect(degraded([[cell('H')], [cell('a')], [cell('b')]])).toEqual({
+        type: 'rich_text',
+        elements: [
+          section(bold('H'), text(': '), text('a'), text('\n')),
+          blank,
+          section(bold('H'), text(': '), text('b')),
+        ],
+      });
     });
   });
 
