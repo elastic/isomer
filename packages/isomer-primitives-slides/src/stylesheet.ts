@@ -9,8 +9,11 @@ import { bulletsModule } from './primitives/slide_bullet_list/styles';
 import { codeModule } from './primitives/slide_code/styles';
 import { frameModule } from './primitives/slide_frame/styles';
 import { headingModule } from './primitives/slide_heading/styles';
+import { matrixModule } from './primitives/slide_matrix/styles';
+import { quadrantModule } from './primitives/slide_quadrant/styles';
 import { splitModule } from './primitives/slide_split/styles';
 import { stackModule } from './primitives/slide_stack/styles';
+import { tableModule } from './primitives/slide_table/styles';
 import { territoryModule } from './primitives/slide_territory_group/styles';
 import { titleModule } from './primitives/slide_title/styles';
 import { slideDistillery } from './theme/distillery';
@@ -35,8 +38,11 @@ export const slideModules = {
   code: codeModule,
   frame: frameModule,
   heading: headingModule,
+  matrix: matrixModule,
+  quadrant: quadrantModule,
   split: splitModule,
   stack: stackModule,
+  table: tableModule,
   territory: territoryModule,
   title: titleModule,
 };

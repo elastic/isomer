@@ -212,6 +212,55 @@ const cases: LimitCase[] = [
       panels: [{ file: `order ${fill}`, lines: ['{}'] }],
     }),
   },
+  {
+    name: 'slideTable label',
+    slot: 'context',
+    limit: SLACK_LIMITS.contextElementChars,
+    filler: '&',
+    max: 3000,
+    node: (fill) => ({
+      type: 'slideTable',
+      label: fill,
+      columns: ['Region'],
+      rows: [['Europe']],
+    }),
+  },
+  {
+    name: 'slideQuadrant label',
+    slot: 'fields',
+    limit: SLACK_LIMITS.sectionFieldChars,
+    filler: 'x',
+    max: 3000,
+    node: (fill) => ({
+      type: 'slideQuadrant',
+      x: { low: 'Easy', high: 'Hard' },
+      y: { low: 'Minor', high: 'Major' },
+      quadrants: [
+        { label: `Wins ${fill}`, items: ['dark mode'] },
+        { label: 'Big bets', items: [] },
+        { label: 'Fill-ins', items: [] },
+        { label: 'Money pits', items: [] },
+      ],
+    }),
+  },
+  {
+    name: 'slideQuadrant axis',
+    slot: 'context',
+    limit: SLACK_LIMITS.contextElementChars,
+    filler: '&',
+    max: 3000,
+    node: (fill) => ({
+      type: 'slideQuadrant',
+      x: { low: fill, high: 'Hard' },
+      y: { low: 'Minor', high: 'Major' },
+      quadrants: [
+        { label: 'Quick wins', items: ['dark mode'] },
+        { label: 'Big bets', items: [] },
+        { label: 'Fill-ins', items: [] },
+        { label: 'Money pits', items: [] },
+      ],
+    }),
+  },
 ];
 
 const schemas = new Map<string, (typeof slideDeckPrimitives)[number]['schema']>(

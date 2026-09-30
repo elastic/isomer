@@ -69,8 +69,9 @@ Slides are read embedded at roughly half scale, so no rule sets a `font-size` un
 Length-sensitive primitives take an optional `size`: `l`, `m`, or `s`, each a set of theme tokens (`heading.titleSizes`, `title.displaySizes`), none below 24px. Left out, the renderer picks the step from the node's own text, so every surface draws the same size; the image surface cannot measure, and does not support container units, `min()`, or `clamp()`. An explicit `size` always wins.
 
 - **Load:** `slideHeading` compares its title's character count with `headingFit`, a wide East Asian glyph or an emoji counting as two (`src/render/mono.ts`).
+- **Count:** `slideMatrix` steps by its row count against `matrixFit`, and `slideQuadrant` by its fullest top cell's items plus its fullest bottom cell's against `quadrantFit`.
 - **Width:** `slideTitle` takes the largest step at which its longest word fits its column and the title holds two lines, estimated from `extraboldAdvance` glyph widths and the role's tracking.
-- **Crowding:** `slideFrame` estimates how much room its opening `slideHeading` leaves and passes `crowding` to the rest of the slide on the render context: 1 under a two-line title and a two-line lede, below 1 under a shorter heading. It is reserved for primitives below the heading that size by load, which pass it to `sizeForLoad`; none in this pack does yet.
+- **Crowding:** `slideFrame` estimates how much room its opening `slideHeading` leaves and passes `crowding` to the rest of the slide on the render context: 1 under a two-line title and a two-line lede, below 1 under a shorter heading. Primitives below the heading that size by count pass it to `sizeForLoad`: `slideMatrix` and `slideQuadrant`.
 
 Past the smallest step, nothing on a field says how much it holds. The agent guide says once that overflow is reported by the takumi layout check (`checkLayout`), and `src/examples/fit.test.ts` measures every example with takumi and fails on any `checkLayout` finding.
 
@@ -97,6 +98,7 @@ The `svg` surface's CSS goes to takumi, which lays out a subset of CSS. The pack
 - `text-wrap: pretty` is not applied, so a paragraph can end on one word. Short copy that wraps, such as a footnote or a tagline, uses `balance` instead.
 - `flex: none` is ignored, so an item meant to keep its size shrinks with its row. Write `flex: 0 0 auto`; a stylesheet test rejects `flex: none`.
 - A `calc()` nested inside another is not evaluated; the same test rejects one.
+- `display: contents` is laid out as a block, so a table's rows cannot share one grid. `slideTable` and `slideMatrix` make each row its own grid with the same tracks, and give the table elements explicit roles, since some browsers drop table semantics once `display` changes.
 - A `flex: 1` child of a column with no set height collapses to nothing. The layout `fill` role uses `flex: 1 1 auto`, and centers with auto margins, so content taller than its space runs down rather than up over the heading.
 
 ## `SlidePalette`

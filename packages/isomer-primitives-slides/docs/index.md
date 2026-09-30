@@ -48,4 +48,7 @@ runtime.surfaces.text.render(composition);
 | `slideStack` | Slide nodes stacked with controlled spacing, for a one-node slot. |
 | `slideBulletList` | Short points with a dot, check, or × marker. |
 | `slideTerritoryGroup` | Who owns what, one color-keyed column per owner. |
+| `slideTable` | A headed table of short cells, optionally in labeled groups. |
+| `slideMatrix` | Yes, partial, or no marks for each row against each column. |
+| `slideQuadrant` | Items sorted into four quadrants by two labeled axes. |
 | `slideCode` | Source in one panel, or two joined by an arrow. |

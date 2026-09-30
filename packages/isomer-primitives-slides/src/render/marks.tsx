@@ -124,6 +124,21 @@ export const marksMarkdown = (text: string): MarkdownInline[] =>
         : md.text(run)
   );
 
+/** The whole text in strong; its own strong marks fold in rather than nest. */
+export const strongMarksMarkdown = (text: string): MarkdownInline =>
+  md.strong(
+    ...parseMarks(text).map(({ kind, text: run }) =>
+      kind === 'code' ? md.code(run) : md.text(run)
+    )
+  );
+
+/** {@link marksRichText} with every run bold. */
+export const strongMarksRichText = (text: string): SlackRichTextText[] =>
+  marksRichText(text).map((run) => ({
+    ...run,
+    style: { ...run.style, bold: true },
+  }));
+
 /**
  * Strong is ink at bold weight, or underlined `primary` at the run's weight when `strong` is `'primary'`.
  * Then code is mono without its chip.

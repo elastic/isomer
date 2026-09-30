@@ -29,8 +29,17 @@ export type { SlideCodeNode, SlideCodePanel } from './primitives/slide_code';
 export { SlideFrameView } from './primitives/slide_frame';
 export type { SlideFrameNode } from './primitives/slide_frame';
 export type { SlideHeadingNode } from './primitives/slide_heading';
+export type {
+  SlideMatrixNode,
+  SlideMatrixRow,
+} from './primitives/slide_matrix';
+export type {
+  SlideQuadrant,
+  SlideQuadrantNode,
+} from './primitives/slide_quadrant';
 export type { SlideSplitNode, SlideSplitPane } from './primitives/slide_split';
 export type { SlideStackNode } from './primitives/slide_stack';
+export type { SlideTableGroup, SlideTableNode } from './primitives/slide_table';
 export type {
   SlideTerritory,
   SlideTerritoryGroupNode,
@@ -57,6 +66,7 @@ export type { SlideFontFace, SlideFrameTheme, SlidePalette } from './theme';
 export {
   slideBulletMarkers,
   slideFrameTones,
+  slideMatrixMarks,
   slideSizes,
   slideSplitDividers,
   slideSplitRatios,
@@ -66,6 +76,7 @@ export {
 export type {
   SlideBulletMarker,
   SlideFrameTone,
+  SlideMatrixMark,
   SlideSize,
   SlideSplitDivider,
   SlideSplitRatio,

@@ -32,6 +32,7 @@ const notWords = new Set([
   'url',
   'size',
   'language',
+  'marks',
   'ratio',
   'divider',
   'spacing',

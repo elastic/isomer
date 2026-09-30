@@ -27,3 +27,18 @@ export const crossRefine = <T>(
     },
     { ...params, when: always }
   );
+
+/** {@link crossRefine} for a rule that adds its own issues. */
+export const crossSuperRefine = <T>(
+  refine: (value: T, context: z.core.$RefinementCtx<T>) => void
+) =>
+  z.superRefine<T>(
+    (value, context) => {
+      try {
+        refine(value, context);
+      } catch {
+        // Unreadable input passes; the field that broke it reports the error.
+      }
+    },
+    { when: always }
+  );

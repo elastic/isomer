@@ -11,9 +11,12 @@ import { code } from './components/code';
 import { frame } from './components/frame';
 import { heading } from './components/heading';
 import { marks } from './components/marks';
+import { matrix } from './components/matrix';
+import { quadrant } from './components/quadrant';
 import { connector, glyph, label, tone } from './components/shared';
 import { split } from './components/split';
 import { stack } from './components/stack';
+import { table } from './components/table';
 import { territoryGroup } from './components/territory_group';
 import { title } from './components/title';
 
@@ -39,8 +42,11 @@ export const SLIDE_THEME = {
   bulletList,
   code,
   heading,
+  matrix,
+  quadrant,
   split,
   stack,
+  table,
   territoryGroup,
   title,
 } as const;
