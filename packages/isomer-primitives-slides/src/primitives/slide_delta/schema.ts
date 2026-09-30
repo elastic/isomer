@@ -50,7 +50,11 @@ export const schema = z
       ({ before, after, change }) =>
         change === undefined ||
         (before.value !== undefined && after.value !== undefined),
-      { error: 'change needs both values', path: ['change'] }
+      {
+        error: 'change needs both values',
+        path: ['change'],
+        rule: 'change needs both values',
+      }
     )
   );
 

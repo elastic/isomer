@@ -31,7 +31,11 @@ export const schema = z
   .check(
     crossRefine(
       ({ value, unit }) => unit === undefined || value !== undefined,
-      { error: 'unit needs a value', path: ['unit'] }
+      {
+        error: 'unit needs a value',
+        path: ['unit'],
+        rule: 'A unit needs a value',
+      }
     )
   );
 

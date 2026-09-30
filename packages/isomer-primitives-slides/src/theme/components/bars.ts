@@ -25,6 +25,7 @@ export const bars = {
     weight: font.weight.extrabold,
     tracking: font.tracking.snug,
     lineHeight: font.lineHeight.solid,
+    whiteSpace: font.whiteSpace.nowrap,
   },
   valueSizes: { l: font.size.px40, m: font.size.px36, s: font.size.px32 },
   /** Before the smallest printable step, for a positive value that rounds to zero. */

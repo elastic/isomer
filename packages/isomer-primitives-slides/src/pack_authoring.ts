@@ -7,7 +7,7 @@
 
 import type { PackAuthoringOptions, PrimitiveGroup } from '@elastic/isomer-sdk';
 
-// `z.toJSONSchema` drops `.refine` text, so cross-field rules are restated as each `$def` description.
+// `z.toJSONSchema` drops refinements; a `describe` entry may state a rule from `primitives/cross_field.ts`.
 
 /** Every primitive once, by what it draws, in the order an author usually chooses. */
 export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
@@ -42,7 +42,7 @@ export const slidesPackAuthoring = {
   groups: slidePrimitiveGroups,
   describe: {
     slideFrame:
-      'One whole slide. Its body holds the slide content top to bottom; a slideFrame never appears inside another node.',
+      'One whole slide. Its body holds the slide content top to bottom, never a slideFrame: frames never nest.',
     slideSplit:
       'Two columns. Each pane holds one to six slide nodes, never a slideFrame. A pane tone needs a pane label.',
     slideStack:

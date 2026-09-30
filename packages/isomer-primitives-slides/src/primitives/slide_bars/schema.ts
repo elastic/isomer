@@ -6,24 +6,24 @@
  */
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
-import {
-  nonNegativeFiniteNumber,
-  positiveFiniteNumber,
-  z,
-} from '@elastic/isomer-sdk';
+import { z } from '@elastic/isomer-sdk';
 
 import { lineText } from '../authored_text';
 import { crossRefine } from '../cross_field';
 import { sizeField } from '../size';
 
+// `z.number()` refuses `NaN` and both infinities.
 const itemSchema = z
   .object({
     label: lineText().describe(
       'What the bar measures, in one to three words, e.g. `Leeds`. `code` and `**strong**` marks are allowed.'
     ),
-    value: nonNegativeFiniteNumber().describe(
-      'The measured amount, zero or more. The bar’s length is drawn from it, and the number prints beside the bar.'
-    ),
+    value: z
+      .number()
+      .min(0)
+      .describe(
+        'The measured amount, zero or more. The bar’s length is drawn from it, and the number prints beside the bar.'
+      ),
     detail: lineText()
       .describe(
         'One short line under the bar in mono, e.g. what the number counts. `code` and `**strong**` marks are allowed.'
@@ -54,7 +54,9 @@ export const schema = z
       .describe(
         'Bars top to bottom, usually largest first. 2 to 6, all in the same unit.'
       ),
-    max: positiveFiniteNumber()
+    max: z
+      .number()
+      .positive()
       .describe(
         'The value a full-length bar stands for, a positive number at least the largest value. Leave it out to scale to the largest value.'
       )
@@ -67,7 +69,11 @@ export const schema = z
       ({ items }) =>
         items.length > maxBars ||
         items.filter(({ highlight }) => highlight).length <= 1,
-      { error: 'at most one item can be highlighted', path: ['items'] }
+      {
+        error: 'at most one item can be highlighted',
+        path: ['items'],
+        rule: 'At most one item is highlighted',
+      }
     )
   )
   .check(
@@ -76,7 +82,11 @@ export const schema = z
         max === undefined ||
         items.length > maxBars ||
         items.every(({ value }) => value <= max),
-      { error: 'max must be at least every value', path: ['max'] }
+      {
+        error: 'max must be at least every value',
+        path: ['max'],
+        rule: 'max, when given, is at least every value',
+      }
     )
   );
 

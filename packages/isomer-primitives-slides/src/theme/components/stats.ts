@@ -12,7 +12,7 @@ import { statPlaceholderHeights, statValueSizes } from './stat';
 export const stats = {
   rule: stroke.hairline,
   columnPadding: space.px48,
-  value: type.stat,
+  value: { ...type.stat, whiteSpace: font.whiteSpace.nowrap },
   valueSizes: statValueSizes,
   unit: type.statUnit,
   unitGap: space.px12,

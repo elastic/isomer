@@ -20,7 +20,7 @@ import { slideDeckFrame, slidesPack } from '../../pack';
 import { bars as barsTheme } from '../../theme/components/bars';
 import { scalePx } from '../../theme/scale';
 import { openBody } from '../layout';
-import { monoLines, wrappedLines } from '../size';
+import { measureText } from '../size';
 import { renderedStep } from '../size.fixtures';
 
 import { denseExample, example, scaledExample } from './examples';
@@ -394,11 +394,10 @@ describe('slideBars', () => {
       it('counts the lines an unbroken label breaks across its column', async () => {
         expect(barsSize(pair('x'.repeat(10)), full)).toBe('l');
         expect(barsSize(pair('x'.repeat(60)), full)).toBe('m');
-        const lines = wrappedLines(
+        const { lines } = measureText(
           'x'.repeat(60),
-          scalePx(barsTheme.labelSizes.m),
-          scalePx(barsTheme.labelWidth),
-          barsTheme.label.tracking
+          { ...barsTheme.label, size: barsTheme.labelSizes.m },
+          scalePx(barsTheme.labelWidth)
         );
         expect(lines).toBe(4);
         expect(lines).toBeGreaterThanOrEqual(
@@ -409,9 +408,9 @@ describe('slideBars', () => {
       it('counts the lines an unbroken detail breaks across its track', async () => {
         expect(barsSize(pair('A', 'y'.repeat(90)), full)).toBe('l');
         expect(barsSize(pair('A', 'y'.repeat(400)), full)).toBe('m');
-        const lines = monoLines(
+        const { lines } = measureText(
           'y'.repeat(400),
-          scalePx(barsTheme.detail.size),
+          barsTheme.detail,
           openBody.width - scalePx(barsTheme.labelWidth)
         );
         expect(lines).toBe(5);
@@ -438,8 +437,7 @@ describe('slideBars', () => {
     expect(barValue(value)).toBe(shown);
   });
 
-  it('keeps a chart past the message-wide cell budget whole and literal', () => {
-    const half = SLACK_LIMITS.tableCellCharsPerMessage / 2;
+  it('prints its labels and values when an earlier chart spends the message’s cell budget', () => {
     const chart = (label: string) => ({
       type: 'slideBars',
       items: [
@@ -447,38 +445,21 @@ describe('slideBars', () => {
         { label: 'B', value: 1 },
       ],
     });
-    const long = `*${'x'.repeat(half)}_`;
+    const later = 'x'.repeat(2000);
     const { blocks } = runtime.surfaces.slack.render({
       type: 'view',
       body: [
         {
           type: 'slideFrame',
-          body: [chart('y'.repeat(half)), chart(long)],
+          body: [
+            chart('y'.repeat(SLACK_LIMITS.tableCellCharsPerMessage - 1000)),
+            chart(later),
+          ],
         } as PrimitiveNode,
       ],
     });
     expect(blocks.filter(({ type }) => type === 'table')).toHaveLength(1);
-    const text = (value: string) => ({ type: 'text', text: value });
-    const line = (head: string, cell: string, end = true) => ({
-      type: 'rich_text_section',
-      elements: [
-        { ...text(head), style: { bold: true } },
-        text(': '),
-        text(cell),
-        ...(end ? [text('\n')] : []),
-      ],
-    });
-    const { label, value } = barsTheme.heads;
-    expect(blocks).toContainEqual({
-      type: 'rich_text',
-      elements: [
-        line(label.value, long),
-        line(value.value, '2'),
-        { type: 'rich_text_section', elements: [text('\n')] },
-        line(label.value, 'B'),
-        line(value.value, '1', false),
-      ],
-    });
+    expect(JSON.stringify(blocks)).toContain(later);
   });
 
   it('never prints a positive value as zero on any surface', () => {

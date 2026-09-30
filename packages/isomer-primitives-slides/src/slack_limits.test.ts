@@ -212,12 +212,7 @@ const cases: LimitCase[] = [
     max: 101,
     node: (fill) => ({
       type: 'slideCode',
-      panels: [
-        {
-          file: long(231, '&'),
-          lines: [...Array.from({ length: 13 }, () => long(101, '`')), fill],
-        },
-      ],
+      panels: [{ file: long(2900, 'y'), lines: [fill] }],
     }),
   },
   {

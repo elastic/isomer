@@ -42,7 +42,6 @@ export const statsModule = createStyleModule('stats', ({ css }) => ({
     display: flex;
     gap: ${stats.unitGap};
     ${typeRole(stats.value)}
-    white-space: nowrap;
   `,
   valueSize: variants(
     slideSizes,

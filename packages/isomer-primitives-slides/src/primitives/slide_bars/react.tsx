@@ -16,16 +16,10 @@ import { bars as theme, barsFit } from '../../theme/components/bars';
 import { tone } from '../../theme/components/shared';
 import { layoutModule } from '../../theme/modules';
 import { scalePx } from '../../theme/scale';
+import type { TypeRole } from '../../theme/type_role';
 import type { SlideSize } from '../../theme/variants';
 import { slideLayout } from '../layout';
-import {
-  emWidth,
-  monoLines,
-  sizeForLoad,
-  sizeForWidth,
-  smallerStep,
-  wrappedLines,
-} from '../size';
+import { measureText, sizeForLoad, sizeForWidth, smallerStep } from '../size';
 
 import type { SlideBarsItem, SlideBarsNode } from './schema';
 import { barsModule } from './styles';
@@ -39,6 +33,9 @@ const barsMax = ({ items, max }: SlideBarsNode): number =>
 
 const cueWidth = scalePx(tone.cue.size) + scalePx(tone.cue.gap);
 
+const lines = (marked: string, role: TypeRole, width: number): number =>
+  Math.max(1, measureText(stripMarks(marked), role, width).lines);
+
 /** Two per label line, since a label line is a bar tall, and one per detail line under the bar. */
 const rowsLoad =
   (items: readonly SlideBarsItem[], track: number) => (step: SlideSize) =>
@@ -46,15 +43,12 @@ const rowsLoad =
       (load, { label, detail, highlight }) =>
         load +
         2 *
-          wrappedLines(
-            stripMarks(label),
-            scalePx(theme.labelSizes[step]),
-            scalePx(theme.labelWidth) - (highlight ? cueWidth : 0),
-            theme.label.tracking
+          lines(
+            label,
+            { ...theme.label, size: theme.labelSizes[step] },
+            scalePx(theme.labelWidth) - (highlight ? cueWidth : 0)
           ) +
-        (detail
-          ? monoLines(stripMarks(detail), scalePx(theme.detail.size), track)
-          : 0),
+        (detail ? lines(detail, theme.detail, track) : 0),
       0
     );
 
@@ -72,7 +66,8 @@ export const barsSize = (
         worst,
         sizeForWidth(
           size,
-          emWidth(barValue(value), theme.value.tracking),
+          barValue(value),
+          theme.value,
           track * (1 - ((value / max) * maxShare) / 100) -
             scalePx(theme.valueGap),
           theme.valueSizes

@@ -21,7 +21,7 @@ import {
 import { scalePx } from '../../theme/scale';
 import { type SlideSize, slideSizes } from '../../theme/variants';
 import { slideLayout } from '../layout';
-import { emWidth } from '../size';
+import { measureText } from '../size';
 
 import type { SlideDeltaNode, SlideDeltaPoint } from './schema';
 import { deltaModule } from './styles';
@@ -31,10 +31,10 @@ const { connector, placeholder: pending } = slideDistillery.tokens;
 /** A side's width at `step`: its value, or its placeholder, and never less than its label. */
 const sideWidth = ({ label, value }: SlideDeltaPoint, step: SlideSize) =>
   Math.max(
-    emWidth(stripMarks(label).toUpperCase(), theme.label.tracking) *
-      scalePx(theme.label.size),
+    measureText(stripMarks(label), theme.label).widest,
     value
-      ? emWidth(value, theme.value.tracking) * scalePx(theme.valueSizes[step])
+      ? measureText(value, { ...theme.value, size: theme.valueSizes[step] })
+          .widest
       : scalePx(theme.placeholderWidth)
   );
 

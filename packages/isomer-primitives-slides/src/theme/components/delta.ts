@@ -26,7 +26,7 @@ export const delta = {
   },
   label: { ...type.label, tracking: font.tracking.label },
   labelGap: space.px24,
-  value: type.stat,
+  value: { ...type.stat, whiteSpace: font.whiteSpace.nowrap },
   valueSizes: statValueSizes,
   placeholderHeights: statPlaceholderHeights,
   placeholderWidth: stat.placeholderWidth,

@@ -117,7 +117,8 @@ export const slack = ({
             ...(index < links.length - 1 ? [richTextBreak] : [])
           )
         )
-      )
+      ),
+    links.flatMap(({ label, text: shown }) => [label, shown])
   ),
   ...(paths.length > 0
     ? [

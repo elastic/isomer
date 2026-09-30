@@ -32,7 +32,6 @@ export const deltaModule = createStyleModule('delta', ({ css }) => ({
   label: css`
     color: ${color.textSubtle};
     ${typeRole(delta.label)}
-    text-transform: uppercase;
   `,
   labelAfter: css`
     color: ${color.primary};
@@ -40,7 +39,6 @@ export const deltaModule = createStyleModule('delta', ({ css }) => ({
   value: css`
     color: ${color.text};
     ${typeRole(delta.value)}
-    white-space: nowrap;
   `,
   valueAfter: css`
     color: ${color.primary};

@@ -80,7 +80,6 @@ export const barsModule = createStyleModule('bars', ({ css }) => ({
     color: ${color.text};
     flex: 0 0 auto;
     ${typeRole(bars.value)}
-    white-space: nowrap;
   `,
   valueHighlighted: css`
     color: ${color.primary};

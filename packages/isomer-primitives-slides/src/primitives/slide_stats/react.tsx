@@ -17,7 +17,7 @@ import { layoutModule, placeholderModule } from '../../theme/modules';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
 import { slideLayout } from '../layout';
-import { emWidth, sizeForWidth, smallerStep } from '../size';
+import { measureText, sizeForWidth, smallerStep } from '../size';
 
 import type { SlideStatsNode } from './schema';
 import { statsModule } from './styles';
@@ -36,11 +36,11 @@ export const statsValueSize = (
   return items.reduce<SlideSize>((worst, { value = '', unit }) => {
     const step = sizeForWidth(
       size,
-      emWidth(value, theme.value.tracking),
+      value,
+      theme.value,
       column -
         (unit
-          ? emWidth(unit, theme.unit.tracking) * scalePx(theme.unit.size) +
-            scalePx(theme.unitGap)
+          ? measureText(unit, theme.unit).widest + scalePx(theme.unitGap)
           : 0),
       theme.valueSizes
     );
