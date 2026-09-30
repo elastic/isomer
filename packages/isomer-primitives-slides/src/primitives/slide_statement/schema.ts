@@ -8,20 +8,16 @@
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
 
+import { wrappedText } from '../authored_text';
 import { sizeField } from '../size';
 
 /** Zod schema for {@link SlideStatementNode}. */
 export const schema = z
   .object({
     type: z.literal('slideStatement'),
-    text: z
-      .string()
-      .min(1)
-      // Slack's header limit, so the sentence survives as the message header.
-      .max(150)
-      .describe(
-        'One sentence, the slide’s whole point, under 150 characters. Wrap the words that carry it in `**strong**`, which takes the `primary` tone. `code` and `**strong**` marks are allowed.'
-      ),
+    text: wrappedText().describe(
+      'One short sentence, the slide’s whole point. Wrap the words that carry it in `**strong**`, which takes the `primary` tone. `code` and `**strong**` marks are allowed.'
+    ),
     size: sizeField(),
   })
   .strict();

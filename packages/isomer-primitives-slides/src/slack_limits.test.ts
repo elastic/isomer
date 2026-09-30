@@ -36,6 +36,14 @@ const long = (length: number, char = 'x') => char.repeat(length);
 
 const cases: LimitCase[] = [
   {
+    name: 'slideStatement',
+    slot: 'header',
+    limit: SLACK_LIMITS.headerTextChars,
+    filler: 'x',
+    max: 400,
+    node: (fill) => ({ type: 'slideStatement', text: `Refunds ${fill}` }),
+  },
+  {
     name: 'slideHeading title',
     slot: 'header',
     limit: SLACK_LIMITS.headerTextChars,
@@ -298,18 +306,6 @@ describe('Slack slots below their schema cap', () => {
       expect(richText(render(over))).toContain(long(low + 1, row.filler));
     }
   );
-
-  it('keeps a statement at its schema cap in a header', () => {
-    const statement = long(SLACK_LIMITS.headerTextChars);
-    const node = { type: 'slideStatement', text: statement } as PrimitiveNode;
-    expect(schemas.get('slideStatement')?.safeParse(node).success).toBe(true);
-    expect(render(node)).toEqual([
-      {
-        type: 'header',
-        text: { type: 'plain_text', text: statement, emoji: true },
-      },
-    ]);
-  });
 
   it('keeps a fanout body past a section limit whole', () => {
     const body = long(SLACK_LIMITS.sectionTextChars + 1);

@@ -37,11 +37,8 @@ const stepOf = (node: object): string | undefined =>
   )?.[1];
 
 describe('slideStatement', () => {
-  it('holds one sentence of at most 150 characters', () => {
+  it('needs a sentence', () => {
     expect(schema.safeParse({ ...example, text: '' }).success).toBe(false);
-    expect(
-      schema.safeParse({ ...example, text: 'x'.repeat(151) }).success
-    ).toBe(false);
   });
 
   it('renders text, markdown, and Slack', () => {

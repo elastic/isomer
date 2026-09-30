@@ -37,11 +37,9 @@ const stepOf = (node: object): string | undefined =>
   )?.[1];
 
 describe('slideQuote', () => {
-  it('needs words and a source, and caps the words', () => {
+  it('needs words and a source', () => {
+    expect(schema.safeParse({ ...example, text: '' }).success).toBe(false);
     expect(schema.safeParse({ ...example, source: '' }).success).toBe(false);
-    expect(
-      schema.safeParse({ ...example, text: 'x'.repeat(301) }).success
-    ).toBe(false);
   });
 
   it('renders text, markdown, and Slack with a context', () => {

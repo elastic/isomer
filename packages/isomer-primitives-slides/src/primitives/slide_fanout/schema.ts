@@ -41,7 +41,7 @@ export const schema = z
       .min(2)
       .max(6)
       .describe(
-        'Where the source goes, top to bottom. Unordered: none runs before another. 2–6 targets. Type does not step down, so long bodies can run past the slide; a layout check reports it.'
+        'Where the source goes, top to bottom. Unordered: none runs before another. 2–6 targets.'
       ),
   })
   .strict();
