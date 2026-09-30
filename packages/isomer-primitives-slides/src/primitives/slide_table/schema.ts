@@ -10,6 +10,7 @@ import { z } from '@elastic/isomer-sdk';
 
 import { lineText } from '../authored_text';
 import { crossSuperRefine } from '../cross_field';
+import { sizeField } from '../size';
 
 const maxRows = 12;
 
@@ -60,6 +61,7 @@ export const schema = z
         `Rows split under labels, e.g. required and optional packages. ${maxRows} rows at most across all groups. Give either \`rows\` or \`groups\`.`
       )
       .optional(),
+    size: sizeField(),
   })
   .strict()
   .check(

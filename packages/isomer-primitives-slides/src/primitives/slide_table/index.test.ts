@@ -13,8 +13,10 @@ import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
 
-import { example, groupsExample, plainExample } from './examples';
+import { example, fullExample, groupsExample, plainExample } from './examples';
+import { tableSize } from './fit';
 import { markdown as markdownContent, text } from './index';
+import type { SlideTableNode } from './schema';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -372,5 +374,47 @@ describe('slideTable', () => {
     const over = withCell(`${at}y`);
     expect(over?.type).toBe('rich_text');
     expect(JSON.stringify(over)).toContain(`${at}y`);
+  });
+
+  describe('size', () => {
+    const [, typical = []] = example.rows ?? [];
+    const rows = (count: number, cells = typical): SlideTableNode => ({
+      ...example,
+      rows: Array.from({ length: count }, () => [...cells]),
+    });
+
+    it.each([
+      [5, 1, 'l'],
+      [6, 1, 'm'],
+      [7, 1, 's'],
+      [7, 0.8, 'l'],
+      [8, 0.8, 'm'],
+      [9, 0.8, 's'],
+    ] as const)(
+      '%i rows under crowding %d take %s',
+      (count, crowding, step) => {
+        expect(tableSize(rows(count), crowding)).toBe(step);
+      }
+    );
+
+    it('counts the lines a long cell wraps to', () => {
+      const long = [
+        'North America',
+        'Every order placed through the new checkout, refunds included',
+        '380 ms',
+        '0.1%',
+      ];
+      expect(tableSize(rows(4), 1)).toBe('l');
+      expect(tableSize(rows(4, long), 1)).toBe('s');
+    });
+
+    it('keeps an authored size', () => {
+      expect(tableSize({ ...rows(12), size: 'l' }, 1)).toBe('l');
+    });
+
+    it('draws the full example, twelve rows, at the smallest step', () => {
+      expect(fullExample.rows).toHaveLength(12);
+      expect(tableSize(fullExample, 1)).toBe('s');
+    });
   });
 });

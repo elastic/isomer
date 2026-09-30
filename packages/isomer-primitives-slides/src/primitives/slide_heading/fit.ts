@@ -42,7 +42,7 @@ const roomBelow = (height: number): number =>
   Math.max(1, bodyHeight - height - px(frame.bodyGap));
 
 /** Room below a two-line title and lede at `l`; load budgets are set against it. */
-const referenceRoom = roomBelow(headingHeight(2, 2, 'l'));
+export const referenceRoom = roomBelow(headingHeight(2, 2, 'l'));
 
 export const headingStep = ({ title, size }: SlideHeadingNode): SlideSize =>
   sizeForLoad(size, displayColumns(stripMarks(title)), headingFit);

@@ -6,7 +6,6 @@
  */
 
 import { font, radius, space, stroke, type } from '../base';
-import { paddingXy } from '../scale';
 
 export const table = {
   border: stroke.panel,
@@ -14,19 +13,20 @@ export const table = {
   divider: stroke.panel,
   labelGap: space.px20,
   head: { ...type.label, tracking: font.tracking.label },
-  headPadding: paddingXy(space.px14, space.px24),
+  headPaddingsY: { l: space.px14, m: space.px12, s: space.px8 },
   cell: {
-    size: font.size.px30,
     weight: font.weight.regular,
     lineHeight: font.lineHeight.compact,
   },
-  cellPadding: paddingXy(space.px16, space.px24),
+  cellSizes: { l: font.size.px30, m: font.size.px26, s: font.size.px24 },
+  cellPaddingsY: { l: space.px16, m: space.px12, s: space.px4 },
+  /** Cells, headings, and group labels share it, so columns line up. */
+  paddingsX: { l: space.px24, m: space.px20, s: space.px16 },
   rowHeaderWeight: font.weight.bold,
   group: { ...type.label, tracking: font.tracking.label },
-  groupPaddingTop: space.px16,
+  groupPaddingsTop: { l: space.px16, m: space.px12, s: space.px8 },
   /** Above every group after the first. */
-  groupGap: space.px40,
-  groupPaddingBottom: space.px12,
-  groupPaddingX: space.px24,
+  groupGaps: { l: space.px40, m: space.px32, s: space.px16 },
+  groupPaddingsBottom: { l: space.px12, m: space.px8, s: space.px4 },
   groupRule: stroke.hairline,
 } as const;

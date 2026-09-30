@@ -13,6 +13,7 @@ import type { SlideReactEnv } from '../../render/context';
 import { labelModule, layoutModule } from '../../theme/modules';
 import { countKey } from '../../theme/variants';
 
+import { tableSize } from './fit';
 import { type SlideTableNode, tableGroups } from './schema';
 import { tableModule } from './styles';
 
@@ -23,6 +24,7 @@ export const react = (
 ): ReactNode => {
   const { handles: table } = tableModule;
   const { columns, label, rowHeaders, type } = node;
+  const step = tableSize(node, context?.crowding);
   const groups = tableGroups(node);
   const tracks = table.columns[countKey(columns.length)];
   // Explicit roles, since some browsers drop table semantics once `display` changes.
@@ -45,7 +47,7 @@ export const react = (
               <th
                 role="columnheader"
                 scope="col"
-                className={cls(context, table.head)}
+                className={cls(context, table.head, table.headStep[step])}
                 key={index}>
                 {column}
               </th>
@@ -72,7 +74,10 @@ export const react = (
                     className={cls(
                       context,
                       table.group,
-                      groupIndex > 0 ? table.groupLater : table.groupFirst
+                      table.groupStep[step],
+                      (groupIndex > 0 ? table.groupLater : table.groupFirst)[
+                        step
+                      ]
                     )}>
                     {group}
                   </th>
@@ -95,14 +100,26 @@ export const react = (
                       <th
                         role="rowheader"
                         scope="row"
-                        className={cls(context, table.cell, table.rowHeader)}
+                        className={cls(
+                          context,
+                          table.cell,
+                          table.rowHeader,
+                          table.rowHeaderStep[step],
+                          table.cellStep[step]
+                        )}
                         key={index}>
                         {cell}
                       </th>
                     ) : (
                       <td
                         role="cell"
-                        className={cls(context, table.cell, table.value)}
+                        className={cls(
+                          context,
+                          table.cell,
+                          table.value,
+                          table.valueStep[step],
+                          table.cellStep[step]
+                        )}
                         key={index}>
                         {cell}
                       </td>

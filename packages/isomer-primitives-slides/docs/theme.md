@@ -71,6 +71,7 @@ Length-sensitive primitives take an optional `size`: `l`, `m`, or `s`, each a se
 - **Load:** `slideHeading` compares its title's character count with `headingFit`, a wide East Asian glyph or an emoji counting as two (`src/render/mono.ts`).
 - **Count:** `slideMatrix` steps by its row count against `matrixFit`, and `slideQuadrant` by its fullest top cell's items plus its fullest bottom cell's against `quadrantFit`.
 - **Width:** `slideTitle` takes the largest step at which its longest word fits its column and the title holds two lines, estimated from `extraboldAdvance` glyph widths and the role's tracking.
+- **Height:** `slideTable` takes the largest step whose estimated height fits the room below the heading: each row as tall as its longest cell wraps, at `regularAdvance` per character, against `referenceRoom` divided by `crowding` (`primitives/slide_table/fit.ts`). Cell type, padding, and group spacing step together.
 - **Crowding:** `slideFrame` estimates how much room its opening `slideHeading` leaves and passes `crowding` to the rest of the slide on the render context: 1 under a two-line title and a two-line lede, below 1 under a shorter heading. Primitives below the heading that size by count pass it to `sizeForLoad`: `slideMatrix` and `slideQuadrant`.
 
 Past the smallest step, nothing on a field says how much it holds. The agent guide says once that overflow is reported by the takumi layout check (`checkLayout`), and `src/examples/fit.test.ts` measures every example with takumi and fails on any `checkLayout` finding.

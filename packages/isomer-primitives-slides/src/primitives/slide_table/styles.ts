@@ -9,7 +9,7 @@ import { variants } from '@elastic/distillate';
 
 import { slideDistillery } from '../../theme/distillery';
 import { typeRole } from '../../theme/type_role';
-import { countKeys, countOf } from '../../theme/variants';
+import { countKeys, countOf, slideSizes } from '../../theme/variants';
 
 import { tableMaxColumns } from './schema';
 
@@ -65,38 +65,73 @@ export const tableModule = createStyleModule('table', ({ css }) => ({
     color: ${color.textSubtle};
     display: flex;
     ${typeRole(table.head)}
-    padding: ${table.headPadding};
     text-align: left;
     text-transform: uppercase;
   `,
+  headStep: variants(
+    slideSizes,
+    (size) => css`
+      padding: ${table.headPaddingsY[size]} ${table.paddingsX[size]};
+    `
+  ),
   cell: css`
     display: flex;
-    padding: ${table.cellPadding};
     text-align: left;
   `,
   value: css`
     color: ${color.textSoft};
-    ${typeRole(table.cell)}
   `,
   rowHeader: css`
     color: ${color.text};
-    ${typeRole({ ...table.cell, weight: table.rowHeaderWeight })}
   `,
+  valueStep: variants(
+    slideSizes,
+    (size) => css`
+      ${typeRole({ ...table.cell, size: table.cellSizes[size] })}
+    `
+  ),
+  rowHeaderStep: variants(
+    slideSizes,
+    (size) => css`
+      ${typeRole({
+        ...table.cell,
+        size: table.cellSizes[size],
+        weight: table.rowHeaderWeight,
+      })}
+    `
+  ),
+  cellStep: variants(
+    slideSizes,
+    (size) => css`
+      padding: ${table.cellPaddingsY[size]} ${table.paddingsX[size]};
+    `
+  ),
   group: css`
     border-bottom: ${table.groupRule} solid ${color.text};
     color: ${color.textSubtle};
     display: flex;
     ${typeRole(table.group)}
-    padding-bottom: ${table.groupPaddingBottom};
-    padding-left: ${table.groupPaddingX};
-    padding-right: ${table.groupPaddingX};
     text-align: left;
     text-transform: uppercase;
   `,
-  groupFirst: css`
-    padding-top: ${table.groupPaddingTop};
-  `,
-  groupLater: css`
-    padding-top: ${table.groupGap};
-  `,
+  groupStep: variants(
+    slideSizes,
+    (size) => css`
+      padding-bottom: ${table.groupPaddingsBottom[size]};
+      padding-left: ${table.paddingsX[size]};
+      padding-right: ${table.paddingsX[size]};
+    `
+  ),
+  groupFirst: variants(
+    slideSizes,
+    (size) => css`
+      padding-top: ${table.groupPaddingsTop[size]};
+    `
+  ),
+  groupLater: variants(
+    slideSizes,
+    (size) => css`
+      padding-top: ${table.groupGaps[size]};
+    `
+  ),
 }));
