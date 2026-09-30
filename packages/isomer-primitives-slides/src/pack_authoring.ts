@@ -18,6 +18,10 @@ export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
   { title: 'Layout', types: ['slideSplit', 'slideStack'] },
   { title: 'Text', types: ['slideBulletList'] },
   { title: 'Diagrams', types: ['slideTerritoryGroup'] },
+  {
+    title: 'Data',
+    types: ['slideStat', 'slideStats', 'slideDelta', 'slideBars'],
+  },
   { title: 'Code', types: ['slideCode'] },
 ];
 
@@ -32,6 +36,14 @@ export const slidesPackAuthoring = {
       'Nodes stacked vertically in a one-node slot, never a slideFrame.',
     slideTitle:
       'The title slide. Its aside is one slide node, never a slideFrame.',
+    slideStat:
+      'One headline number and the sentence that explains it. A unit needs a value; leave value out to show a placeholder.',
+    slideStats:
+      'Two to four comparable numbers. A unit needs a value; leave value out to show a placeholder.',
+    slideDelta:
+      'One number before and after a change. change needs both values; leave a value out to show a placeholder.',
+    slideBars:
+      'Two to six bars in one unit. At most one item is highlighted; max, when given, is at least every value.',
     slideCode:
       'One or two code panels. Every highlighted line number exists in its panel.',
   },

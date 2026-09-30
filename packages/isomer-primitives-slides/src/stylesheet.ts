@@ -5,12 +5,16 @@
  * 2.0.
  */
 
+import { barsModule } from './primitives/slide_bars/styles';
 import { bulletsModule } from './primitives/slide_bullet_list/styles';
 import { codeModule } from './primitives/slide_code/styles';
+import { deltaModule } from './primitives/slide_delta/styles';
 import { frameModule } from './primitives/slide_frame/styles';
 import { headingModule } from './primitives/slide_heading/styles';
 import { splitModule } from './primitives/slide_split/styles';
 import { stackModule } from './primitives/slide_stack/styles';
+import { statModule } from './primitives/slide_stat/styles';
+import { statsModule } from './primitives/slide_stats/styles';
 import { territoryModule } from './primitives/slide_territory_group/styles';
 import { titleModule } from './primitives/slide_title/styles';
 import { slideDistillery } from './theme/distillery';
@@ -20,6 +24,7 @@ import {
   labelModule,
   layoutModule,
   marksModule,
+  placeholderModule,
   tonesModule,
 } from './theme/modules';
 
@@ -31,12 +36,17 @@ export const slideModules = {
   label: labelModule,
   connector: connectorModule,
   marks: marksModule,
+  placeholder: placeholderModule,
+  bars: barsModule,
   bullets: bulletsModule,
   code: codeModule,
+  delta: deltaModule,
   frame: frameModule,
   heading: headingModule,
   split: splitModule,
   stack: stackModule,
+  stat: statModule,
+  stats: statsModule,
   territory: territoryModule,
   title: titleModule,
 };

@@ -48,4 +48,8 @@ runtime.surfaces.text.render(composition);
 | `slideStack` | Slide nodes stacked with controlled spacing, for a one-node slot. |
 | `slideBulletList` | Short points with a dot, check, or × marker. |
 | `slideTerritoryGroup` | Who owns what, one color-keyed column per owner. |
+| `slideStat` | One headline number beside the sentence that explains it, as a band under the body. |
+| `slideStats` | Two to four comparable numbers in ruled columns. |
+| `slideDelta` | One number before and after a change, with what the change means. |
+| `slideBars` | Comparable amounts drawn as horizontal bars, at most one highlighted. |
 | `slideCode` | Source in one panel, or two joined by an arrow. |

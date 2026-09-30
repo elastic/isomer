@@ -12,23 +12,31 @@
 // this imports their node types) is type-only and intentional. Do not break it by
 // deriving the union from the registry: that closes it at the value level (TS7022).
 
+import type { SlideBarsNode } from './primitives/slide_bars';
 import type { SlideBulletListNode } from './primitives/slide_bullet_list';
 import type { SlideCodeNode } from './primitives/slide_code';
+import type { SlideDeltaNode } from './primitives/slide_delta';
 import type { SlideFrameNode } from './primitives/slide_frame';
 import type { SlideHeadingNode } from './primitives/slide_heading';
 import type { SlideSplitNode } from './primitives/slide_split';
 import type { SlideStackNode } from './primitives/slide_stack';
+import type { SlideStatNode } from './primitives/slide_stat';
+import type { SlideStatsNode } from './primitives/slide_stats';
 import type { SlideTerritoryGroupNode } from './primitives/slide_territory_group';
 import type { SlideTitleNode } from './primitives/slide_title';
 
 /** Discriminated union of every node type this pack defines. */
 export type BodyNode =
+  | SlideBarsNode
   | SlideBulletListNode
   | SlideCodeNode
+  | SlideDeltaNode
   | SlideFrameNode
   | SlideHeadingNode
   | SlideSplitNode
   | SlideStackNode
+  | SlideStatNode
+  | SlideStatsNode
   | SlideTerritoryGroupNode
   | SlideTitleNode;
 

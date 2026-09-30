@@ -45,15 +45,21 @@ export const sizeForLoad = (
 const glyphAdvance = (glyph: string): number =>
   isWide(glyph)
     ? extraboldAdvance.fullwidth
-    : /[iljtfrI.,:;!|'’ ]/.test(glyph)
-      ? extraboldAdvance.narrow
-      : /[mwMW]/.test(glyph)
-        ? extraboldAdvance.wide
-        : /[0-9]/.test(glyph)
-          ? extraboldAdvance.digit
-          : /[A-Z]/.test(glyph)
-            ? extraboldAdvance.upper
-            : extraboldAdvance.other;
+    : glyph === '%'
+      ? extraboldAdvance.percent
+      : /[.,:;]/.test(glyph)
+        ? extraboldAdvance.punctuation
+        : /[iljtfrI!|'’ ]/.test(glyph)
+          ? extraboldAdvance.narrow
+          : /[mwMW]/.test(glyph)
+            ? extraboldAdvance.wide
+            : /[0-9]/.test(glyph)
+              ? extraboldAdvance.digit
+              : /[+−×±#$€£¥]/.test(glyph)
+                ? extraboldAdvance.sign
+                : /[A-Z]/.test(glyph)
+                  ? extraboldAdvance.upper
+                  : extraboldAdvance.other;
 
 /** Width in ems of Inter ExtraBold, with `tracking` after every glyph. */
 export const emWidth = (text: string, tracking: ScaleToken): number =>
@@ -64,6 +70,15 @@ export const emWidth = (text: string, tracking: ScaleToken): number =>
         : total + glyphAdvance(glyph) + parseFloat(tracking.value),
     0
   );
+
+/** The node's own `size`, else the largest step at which `ems` of type fits `width` pixels. */
+export const sizeForWidth = (
+  size: SlideSize | undefined,
+  ems: number,
+  width: number,
+  steps: Readonly<Record<SlideSize, ScaleToken>>
+): SlideSize =>
+  size ?? slideSizes.find((step) => ems * scalePx(steps[step]) <= width) ?? 's';
 
 /** What a wrapping display line cannot break. */
 export const widestWord = (text: string, tracking: ScaleToken): number =>

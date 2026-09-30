@@ -26,7 +26,7 @@ Every length on the spacing, type, or radius scale and every scheme-varying colo
 
 A glyph more than one primitive prints lives once, in the shared `glyph` group (`src/theme/components/shared.ts`): `arrow`, `separator`, and `dash`. A component group points at it (`code.traceArrow` and `split.arrowGlyph` are both `glyph.arrow`, `frame.separator` is `glyph.separator`) rather than typing the character again.
 
-This does not reach every literal in a module: `1fr`, `minmax(0, …)`, `50%`, and a fixed `repeat(2, …)` are CSS mechanics rather than design tokens, and stay inline.
+This does not reach every literal in a module: `1fr`, `minmax(0, …)`, `50%`, and a fixed `repeat(2, …)` are CSS mechanics rather than design tokens, and stay inline. Nor does it reach a length drawn from authored data, such as a bar's share of its track in `slideBars`, which goes in an inline `style`.
 
 [Distillate](https://elastic.github.io/distillate/) theme leaves are not color-only: a plain `string` becomes a CSS custom property with identical light/dark values; `lightDark(light, dark)` is the scheme-varying color helper; a `ScaleToken` (`cq` / `scaleToken`, wrapped here as `px` and `literal`) inlines as a literal and cannot vary across schemes or overlays. This pack uses `ScaleToken` for everything outside `color` and `inverse` because the 16:9 canvas is fixed — a host that wants different geometry replaces the frame (`docs/document.md`, `docs/theme.md`), not a token. Reach for a string leaf only when a value is meant to be host-themeable.
 

@@ -40,7 +40,7 @@ export const SLIDE_THEME = {
   font: { family: { sans, mono }, size: { px24: px(24), …, px280: px(280) }, weight, tracking, lineHeight },
   type: { display, heading, lede, body, label, mono, chrome, … },
   // Shared groups (`components/shared.ts`, `components/marks.ts`).
-  glyph: { arrow, separator, dash }, label: { … }, connector: { … }, tone: { … }, marks: { … },
+  glyph: { arrow, separator, dash }, label: { … }, connector: { … }, tone: { … }, placeholder: { … }, marks: { … },
   // One group per primitive (`components/<group>.ts`).
   frame: { … }, heading: { title: type.heading, lede: type.lede, … }, split: { … }, …
 } as const;
@@ -68,11 +68,15 @@ Slides are read embedded at roughly half scale, so no rule sets a `font-size` un
 
 Length-sensitive primitives take an optional `size`: `l`, `m`, or `s`, each a set of theme tokens (`heading.titleSizes`, `title.displaySizes`), none below 24px. Left out, the renderer picks the step from the node's own text, so every surface draws the same size; the image surface cannot measure, and does not support container units, `min()`, or `clamp()`. An explicit `size` always wins.
 
-- **Load:** `slideHeading` compares its title's character count with `headingFit`, a wide East Asian glyph or an emoji counting as two (`src/render/mono.ts`).
-- **Width:** `slideTitle` takes the largest step at which its longest word fits its column and the title holds two lines, estimated from `extraboldAdvance` glyph widths and the role's tracking.
-- **Crowding:** `slideFrame` estimates how much room its opening `slideHeading` leaves and passes `crowding` to the rest of the slide on the render context: 1 under a two-line title and a two-line lede, below 1 under a shorter heading. It is reserved for primitives below the heading that size by load, which pass it to `sizeForLoad`; none in this pack does yet.
+- **Load:** `slideHeading` compares its title's character count with `headingFit`, a wide East Asian glyph or an emoji counting as two (`src/render/mono.ts`). `slideBars` counts two per bar and one per detail line against `barsFit`.
+- **Width:** `slideTitle` takes the largest step at which its longest word fits its column and the title holds two lines, estimated from `extraboldAdvance` glyph widths and the role's tracking. `slideStats` and `slideDelta` take the largest of the shared `statValueSizes` at which every value fits its column, so values in one row share a size.
+- **Crowding:** `slideFrame` estimates how much room its opening `slideHeading` leaves and passes `crowding` to the rest of the slide on the render context: 1 under a two-line title and a two-line lede, below 1 under a shorter heading. Primitives below the heading that size by load pass it to `sizeForLoad`: `slideBars`.
 
 Past the smallest step, nothing on a field says how much it holds. The agent guide says once that overflow is reported by the takumi layout check (`checkLayout`), and `src/examples/fit.test.ts` measures every example with takumi and fails on any `checkLayout` finding.
+
+## Placeholders
+
+A number that is not measured yet is left out, never invented. `slideStat`, `slideStats`, and `slideDelta` then draw `placeholderModule`: a striped box captioned `placeholder.caption`, one line of the value's type tall, so the row keeps its shape. Text, Markdown, and Slack print the same caption.
 
 ## Tones mean something
 
