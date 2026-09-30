@@ -42,7 +42,7 @@ export const example: SlideLayersNode = {
   ],
 };
 
-/** Six, the most the slide holds. */
+/** Six layers, and six chips on one, the most the slide holds. */
 export const fullExample: SlideLayersNode = {
   type: 'slideLayers',
   layers: [
@@ -59,7 +59,7 @@ export const fullExample: SlideLayersNode = {
     },
     {
       name: 'Lobby',
-      chips: ['reception', 'café', 'mail room', 'lockers'],
+      chips: ['reception', 'café', 'mail room', 'lockers', 'gym', 'bike store'],
       owner: 'Facilities',
       tone: 'primary',
     },

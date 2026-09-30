@@ -35,8 +35,11 @@ const markdown = (node: Parameters<typeof markdownContent>[0]): string =>
 
 describe('slideLayers', () => {
   // The fit test measures this, so it holds the most layers a stack takes.
-  it('pins the fullest example at the cap', () => {
+  it('pins the fullest example at the caps', () => {
     expect(fullExample.layers).toHaveLength(layersMaxLayers);
+    expect(
+      Math.max(...fullExample.layers.map(({ chips = [] }) => chips.length))
+    ).toBe(layersMaxChips);
   });
 
   it('holds three to six layers', () => {
