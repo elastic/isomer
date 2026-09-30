@@ -6,9 +6,9 @@
  */
 
 import { color, font, radius, space, stroke, type } from '../base';
-import { paddingXy, px } from '../scale';
+import { literal, paddingXy, px } from '../scale';
 
-import { glyph } from './shared';
+import { glyph, tone } from './shared';
 
 export const graph = {
   track: space.px64,
@@ -40,9 +40,13 @@ export const graph = {
   // Measure, not spacing.
   captionMaxWidth: px(720),
   arrow: glyph.arrow,
+  /** Between relations in text, Markdown, and Slack. */
+  relationJoiner: literal(', '),
+  /** What assistive technology announces for the cue on the emphasized node. */
+  toneLabel: { ...tone.label, primary: literal('Focus') },
 } as const;
 
 export const graphMaxMain = 4;
 
 /** Node rows times the longest node's characters, plus the caption. */
-export const graphFit = { l: 250, m: 280 } as const;
+export const graphFit = { l: 150, m: 280 } as const;

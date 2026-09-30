@@ -11,9 +11,9 @@ import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
-import { treeNameMaxLength } from '../../theme/components/tree';
+import { authoredTextMaxLength } from '../authored_text';
 
-import { example, singleExample } from './examples';
+import { example, fullExample, singleExample } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
 import { schema, type SlideTreeNode } from './schema';
 
@@ -36,23 +36,25 @@ const errorPaths = (node: object) =>
 describe('slideTree', () => {
   it('holds one to eight entries', () => {
     expect(schema.safeParse({ ...example, entries: [] }).success).toBe(false);
+    // The fit test measures `fullExample` as the most entries a tree takes.
+    expect(errorPaths(fullExample)).toEqual([]);
     expect(
-      errorPaths({ ...example, entries: Array(9).fill(example.entries[0]) })
+      errorPaths({
+        ...fullExample,
+        entries: [...fullExample.entries, example.entries[0]],
+      })
     ).toContain('body[0].body[0].entries');
   });
 
-  it('holds a name to the columns its track fits, a wide glyph counting as two', () => {
+  it('caps a name only at the shared input-size guard', () => {
     const entry = (name: string) => ({
       ...singleExample,
       entries: [{ name, body: 'Note.' }],
     });
-    expect(errorPaths(entry('x'.repeat(treeNameMaxLength)))).toEqual([]);
-    expect(errorPaths(entry('x'.repeat(treeNameMaxLength + 1)))).toContain(
+    expect(errorPaths(entry('x'.repeat(authoredTextMaxLength)))).toEqual([]);
+    expect(errorPaths(entry('x'.repeat(authoredTextMaxLength + 1)))).toContain(
       'body[0].body[0].entries[0].name'
     );
-    expect(
-      errorPaths(entry('漢'.repeat(Math.floor(treeNameMaxLength / 2) + 1)))
-    ).toContain('body[0].body[0].entries[0].name');
   });
 
   it('draws connectors in text and fences them in markdown', () => {

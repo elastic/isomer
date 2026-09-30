@@ -39,7 +39,8 @@ export const glyph = {
   dash: literal('—'),
 } as const;
 
-/** Marks the current item or column in text, Markdown, and Slack. */
-export const current = {
-  mark: literal('now'),
+/** What assistive technology announces for the cue on the current item or column. */
+export const currentToneLabel = {
+  ...tone.label,
+  primary: literal('Current'),
 } as const;

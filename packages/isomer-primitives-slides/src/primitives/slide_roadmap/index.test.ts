@@ -11,8 +11,11 @@ import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { frameContentWidth } from '../../theme/components/frame';
+import { roadmapFit } from '../../theme/components/roadmap';
 
-import { example, twoColumnsExample } from './examples';
+import { example, fullExample, twoColumnsExample } from './examples';
+import { roadmapLoad, roadmapStep } from './fit';
 import { markdown as markdownContent, slack, text } from './index';
 import { schema, type SlideRoadmapNode } from './schema';
 
@@ -32,6 +35,12 @@ const markdown = (node: SlideRoadmapNode): string =>
 describe('slideRoadmap', () => {
   it('holds two to four columns of one to four items', () => {
     const [column] = example.columns;
+    // The fit test measures `fullExample` as the most columns and items a roadmap takes.
+    expect(fullExample.columns).toHaveLength(4);
+    expect(fullExample.columns.every(({ items }) => items.length === 4)).toBe(
+      true
+    );
+    expect(schema.safeParse(fullExample).success).toBe(true);
     expect(schema.safeParse({ ...example, columns: [column] }).success).toBe(
       false
     );
@@ -63,33 +72,44 @@ describe('slideRoadmap', () => {
     ]);
   });
 
-  it('marks the current column for assistive technology', () => {
+  it('skips the current rule once columns are over their cap', () => {
+    const [column] = example.columns;
+    const columns = Array(10_000).fill({ ...column, current: true });
+    expect(
+      schema
+        .safeParse({ ...example, columns })
+        .error?.issues.map(({ path }) => path)
+    ).toEqual([['columns']]);
+  });
+
+  it('marks the current column for assistive technology and with a cue', () => {
     const { html } = runtime.surfaces.html.render(compose(example));
     expect(html.match(/aria-current="step"/g)).toHaveLength(1);
+    expect(html.match(/role="img" aria-label="Current"/g)).toHaveLength(1);
   });
 
   it('renders text and markdown with the current column marked', () => {
     expect(text(twoColumnsExample)).toMatchInlineSnapshot(`
-      "THIS HALF · Committed
+      "This half · COMMITTED
       - Faster payouts: Merchants are paid the next business day
       - Dispute inbox: Every chargeback in one queue
 
-      NEXT HALF · Exploring
+      Next half · EXPLORING
       - Instant payouts: Paid within minutes, for a small fee"
     `);
     expect(markdown(example)).toMatchInlineSnapshot(`
-      "## Now · Shipped (now)
+      "## ● Now · SHIPPED
 
       - **Saved baskets**: Reorder last week’s shop in one tap
       - **Card on file**: Checkout without retyping a card
 
-      ## Next · In build
+      ## Next · IN BUILD
 
       - **Substitutions**: Approve a swap from a message
       - **Delivery slots**: Pick a one-hour window
       - **Receipts**: Itemized, in the app and by \`email\`
 
-      ## Later · Proposed
+      ## Later · PROPOSED
 
       - **Shared lists**: One basket for the whole household
       - **Price alerts**: A nudge when a staple goes on sale
@@ -109,7 +129,7 @@ describe('slideRoadmap', () => {
                   "style": {
                     "bold": true,
                   },
-                  "text": "This half · Committed",
+                  "text": "This half · COMMITTED",
                   "type": "text",
                 },
               ],
@@ -172,7 +192,7 @@ describe('slideRoadmap', () => {
                   "style": {
                     "bold": true,
                   },
-                  "text": "Next half · Exploring",
+                  "text": "Next half · EXPLORING",
                   "type": "text",
                 },
               ],
@@ -216,5 +236,36 @@ describe('slideRoadmap', () => {
         },
       ]
     `);
+  });
+
+  const twoColumns = (load: number): SlideRoadmapNode => ({
+    type: 'slideRoadmap',
+    columns: ['A', 'B'].map((title) => ({
+      title,
+      status: 'S',
+      items: [{ title: 'I', body: 'x'.repeat(Math.ceil(load / 2) - 3) }],
+    })),
+  });
+
+  it('loads the longest column times the column count', () => {
+    expect(roadmapLoad(twoColumns(400))).toBe(400);
+  });
+
+  it('steps down at each budget, under crowding, and in a narrower box, unless sized', () => {
+    const edge = (load: number) => roadmapStep(twoColumns(load), undefined);
+    expect(edge(roadmapFit.l)).toBe('l');
+    expect(edge(roadmapFit.l + 2)).toBe('m');
+    expect(edge(roadmapFit.m)).toBe('m');
+    expect(edge(roadmapFit.m + 2)).toBe('s');
+    expect(roadmapStep(twoColumns(roadmapFit.l), { crowding: 1.1 })).toBe('m');
+    expect(
+      roadmapStep(twoColumns(roadmapFit.l), { width: frameContentWidth * 0.95 })
+    ).toBe('m');
+    expect(
+      roadmapStep(
+        { ...twoColumns(roadmapFit.m + 2), size: 'l' },
+        { crowding: 3 }
+      )
+    ).toBe('l');
   });
 });

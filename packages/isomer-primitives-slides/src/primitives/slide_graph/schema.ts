@@ -17,17 +17,20 @@ export const slideGraphPlacements = ['above', 'below'] as const;
 
 export const slideGraphShape = `slideGraph supports one left-to-right main row of 2–${graphMaxMain} nodes (the nodes without \`placement\`, in order, joined by edges [main[i], main[i + 1]]), plus at most one \`above\` and one \`below\` node, each joined to one main-row node by a single edge`;
 
+const maxNodes = graphMaxMain + slideGraphPlacements.length;
+const maxEdges = graphMaxMain - 1 + slideGraphPlacements.length;
+
 const nodeSchema = z
   .object({
     id: lineText().describe('A unique id that `edges` refer to, e.g. "cart".'),
     term: lineText().describe('The concept’s name: one or two words.'),
     body: wrappedText().describe(
-      'A short sentence defining the term, about six words, so the node stays two lines tall. `code` and `**strong**` marks are allowed.'
+      'A short sentence defining the term, about six words. `code` and `**strong**` marks are allowed.'
     ),
     emphasis: z
       .boolean()
       .describe(
-        'Draws the node with a bar-weight primary border and term to mark the concept the slide centers on. Use on one node at most. Defaults to false.'
+        'Marks the concept the slide centers on: a bar-weight border and a dot before the term, in primary. Use on one node at most. Defaults to false.'
       )
       .optional(),
     placement: z
@@ -46,9 +49,9 @@ export const schema = z
     nodes: z
       .array(nodeSchema)
       .min(2)
-      .max(graphMaxMain + slideGraphPlacements.length)
+      .max(maxNodes)
       .describe(
-        `2–${graphMaxMain + slideGraphPlacements.length} named concepts. Nodes without \`placement\` form the main row, left to right in array order (2–${graphMaxMain} of them). Add at most one \`placement: "above"\` and one \`placement: "below"\` node. Type steps down with the load, but long bodies or a long caption can still run past the slide at \`s\`; a layout check reports it.`
+        `2–${maxNodes} named concepts. Nodes without \`placement\` form the main row, left to right in array order (2–${graphMaxMain} of them). Add at most one \`placement: "above"\` and one \`placement: "below"\` node.`
       ),
     edges: z
       .array(
@@ -60,7 +63,7 @@ export const schema = z
           .describe('`[from, to]` node ids; the arrow points at `to`.')
       )
       .min(1)
-      .max(graphMaxMain - 1 + slideGraphPlacements.length)
+      .max(maxEdges)
       .describe(
         'Arrows between nodes. Include exactly [main[i], main[i + 1]] for each neighboring pair in the main row, plus one edge per above or below node to the main-row node it sits over or under, in either direction. No other edges are drawn, so none are allowed.'
       ),
@@ -74,6 +77,9 @@ export const schema = z
   .strict()
   .check(
     crossSuperRefine(({ nodes, edges }, ctx) => {
+      if (nodes.length > maxNodes || edges.length > maxEdges) {
+        return;
+      }
       const fail = (message: string, path: PropertyKey[]) =>
         ctx.addIssue({
           code: 'custom',

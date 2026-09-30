@@ -10,38 +10,36 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
-import { marksReact, stripMarks } from '../../render/marks';
-import { timelineFit } from '../../theme/components/timeline';
+import { marksReact } from '../../render/marks';
+import { ToneCue } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { labelModule, layoutModule, tonesModule } from '../../theme/modules';
 import { countKey } from '../../theme/variants';
-import { rowLoad, sizeForLoad } from '../size';
 
-import { timelineHeadingLineCount } from './fit';
+import { timelineHeadingLineCount, timelineStep } from './fit';
 import type { SlideTimelineNode } from './schema';
 import { timelineModule } from './styles';
 
-const { quoteOpen, quoteClose } = slideDistillery.tokens.timeline;
+const {
+  quoteOpen,
+  quoteClose,
+  toneLabel: labels,
+} = slideDistillery.tokens.timeline;
 
 /** React renderer for {@link SlideTimelineNode}. */
 export const react = (
-  { type, items, size }: SlideTimelineNode,
+  node: SlideTimelineNode,
   { context }: SlideReactEnv
 ): ReactNode => {
+  const { type, items } = node;
   const { handles: timeline } = timelineModule;
   const { handles: label } = labelModule;
-  const step = sizeForLoad(
-    size,
-    rowLoad(
-      items.map(({ heading, body }) => [stripMarks(heading), stripMarks(body)])
-    ),
-    timelineFit,
-    context?.crowding
-  );
+  const step = timelineStep(node, context);
   const headingLines = countKey(
     timelineHeadingLineCount(
       items.map(({ heading }) => heading),
-      step
+      step,
+      context?.width
     )
   );
   return (
@@ -81,6 +79,10 @@ export const react = (
                     current ? label.toned : undefined,
                     current ? tonesModule.handles.tone.primary : undefined
                   )}>
+                  <ToneCue
+                    tone={current ? 'primary' : undefined}
+                    {...{ context, labels }}
+                  />
                   {channel}
                 </span>
                 <p

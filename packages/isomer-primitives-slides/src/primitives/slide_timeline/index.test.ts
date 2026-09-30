@@ -11,9 +11,16 @@ import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { frameContentWidth } from '../../theme/components/frame';
+import { timelineFit } from '../../theme/components/timeline';
 
-import { example, threeItemsExample } from './examples';
-import { timelineHeadingLineCount, timelineHeadingLines } from './fit';
+import { example, fiveItemsExample, threeItemsExample } from './examples';
+import {
+  timelineHeadingLineCount,
+  timelineHeadingLines,
+  timelineLoad,
+  timelineStep,
+} from './fit';
 import { markdown as markdownContent, slack, text } from './index';
 import { schema, type SlideTimelineNode } from './schema';
 
@@ -36,6 +43,14 @@ describe('slideTimeline', () => {
     expect(schema.safeParse({ ...example, items: [item, item] }).success).toBe(
       false
     );
+    // The fit test measures `fiveItemsExample` as the most items a timeline takes.
+    expect(schema.safeParse(fiveItemsExample).success).toBe(true);
+    expect(
+      schema.safeParse({
+        ...fiveItemsExample,
+        items: [...fiveItemsExample.items, item],
+      }).success
+    ).toBe(false);
     expect(
       schema.safeParse({ ...example, items: Array(6).fill(item) }).success
     ).toBe(false);
@@ -58,6 +73,16 @@ describe('slideTimeline', () => {
     ]);
   });
 
+  it('skips the current rule once items are over their cap', () => {
+    const [item] = example.items;
+    const items = Array(10_000).fill({ ...item, current: true });
+    expect(
+      schema
+        .safeParse({ ...example, items })
+        .error?.issues.map(({ path }) => path)
+    ).toEqual([['items']]);
+  });
+
   it('sizes every heading to the tallest, up to the lines the row can match', () => {
     expect(timelineHeadingLineCount(['Short.', 'Short.', 'Short.'], 'l')).toBe(
       1
@@ -67,23 +92,24 @@ describe('slideTimeline', () => {
     ).toBe(timelineHeadingLines.length);
   });
 
-  it('marks the current item for assistive technology', () => {
+  it('marks the current item for assistive technology and with a cue', () => {
     const { html } = runtime.surfaces.html.render(compose(example));
     expect(html.match(/aria-current="step"/g)).toHaveLength(1);
+    expect(html.match(/role="img" aria-label="Current"/g)).toHaveLength(1);
   });
 
   it('renders text and markdown with the current item marked', () => {
     expect(text(example)).toMatchInlineSnapshot(`
-      "2019 · Phone. “Can I order by calling the store?” Staff took orders by hand and keyed them in after close.
-      2021 · Web. “Let me build a basket online.” The site worked, but substitutions still needed a phone call.
-      2023 · App. “Tell me when my driver is close.” Live tracking shipped; the substitution flow stayed on the web.
-      2025 · Chat (now). “Just swap the oat milk if it is out.” Customers now approve substitutions in a message, not a form."
+      "2019 · PHONE. “Can I order by calling the store?” Staff took orders by hand and keyed them in after close.
+      2021 · WEB. “Let me build a basket online.” The site worked, but substitutions still needed a phone call.
+      2023 · APP. “Tell me when my driver is close.” Live tracking shipped; the substitution flow stayed on the web.
+      ● 2025 · CHAT. “Just swap the oat milk if it is out.” Customers now approve substitutions in a message, not a form."
     `);
     expect(markdown(example)).toMatchInlineSnapshot(`
-      "- **2019 · Phone.** “Can I order by calling the store?” Staff took orders by hand and keyed them in after close.
-      - **2021 · Web.** “Let me build a basket online.” The site worked, but substitutions still needed a phone call.
-      - **2023 · App.** “Tell me when my driver is close.” Live tracking shipped; the substitution flow stayed **on the web**.
-      - **2025 · Chat (now).** “Just swap the oat milk if it is out.” Customers now approve substitutions in a message, not a form."
+      "- **2019 · PHONE.** “Can I order by calling the store?” Staff took orders by hand and keyed them in after close.
+      - **2021 · WEB.** “Let me build a basket online.” The site worked, but substitutions still needed a phone call.
+      - **2023 · APP.** “Tell me when my driver is close.” Live tracking shipped; the substitution flow stayed **on the web**.
+      - **● 2025 · CHAT.** “Just swap the oat milk if it is out.” Customers now approve substitutions in a message, not a form."
     `);
   });
 
@@ -100,7 +126,7 @@ describe('slideTimeline', () => {
                       "style": {
                         "bold": true,
                       },
-                      "text": "Q1 · Pilot.",
+                      "text": "Q1 · PILOT.",
                       "type": "text",
                     },
                     {
@@ -128,7 +154,7 @@ describe('slideTimeline', () => {
                       "style": {
                         "bold": true,
                       },
-                      "text": "Q2 · Region.",
+                      "text": "Q2 · REGION.",
                       "type": "text",
                     },
                     {
@@ -156,7 +182,7 @@ describe('slideTimeline', () => {
                       "style": {
                         "bold": true,
                       },
-                      "text": "Q3 · National.",
+                      "text": "Q3 · NATIONAL.",
                       "type": "text",
                     },
                     {
@@ -198,5 +224,38 @@ describe('slideTimeline', () => {
         },
       ]
     `);
+  });
+
+  const fourItems = (load: number): SlideTimelineNode => ({
+    ...example,
+    items: example.items.map((item) => ({
+      ...item,
+      heading: 'x'.repeat(Math.ceil(load / 4) - 1),
+      body: 'y',
+    })),
+  });
+
+  it('loads the longest item times the item count', () => {
+    expect(timelineLoad(fourItems(400))).toBe(400);
+  });
+
+  it('steps down at each budget, under crowding, and in a narrower box, unless sized', () => {
+    const edge = (load: number) => timelineStep(fourItems(load), undefined);
+    expect(edge(timelineFit.l)).toBe('l');
+    expect(edge(timelineFit.l + 4)).toBe('m');
+    expect(edge(timelineFit.m)).toBe('m');
+    expect(edge(timelineFit.m + 4)).toBe('s');
+    expect(timelineStep(fourItems(timelineFit.l), { crowding: 1.1 })).toBe('m');
+    expect(
+      timelineStep(fourItems(timelineFit.l), {
+        width: frameContentWidth * 0.95,
+      })
+    ).toBe('m');
+    expect(
+      timelineStep(
+        { ...fourItems(timelineFit.m + 4), size: 'l' },
+        { crowding: 3 }
+      )
+    ).toBe('l');
   });
 });

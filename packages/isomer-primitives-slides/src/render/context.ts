@@ -21,6 +21,8 @@ export interface SlideRenderContext extends StyledRenderContext {
    * Absent means 1.
    */
   crowding?: number;
+  /** Width in px of the box the node fills, such as a split pane; absent means the frame's content width. */
+  width?: number;
   /** `false` when the frame leaves the mark out, so nothing inside draws it. */
   logo?: boolean;
 }

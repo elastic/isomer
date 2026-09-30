@@ -10,6 +10,7 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
+import { withContextFields } from '../../render/context_view';
 import { LogoMark } from '../../render/logo';
 import { marksReact } from '../../render/marks';
 import { columnWidth, frameContentWidth } from '../../theme/components/frame';
@@ -70,7 +71,12 @@ export const react = (
       </div>
       {aside ? (
         <div className={cls(context, styles.aside)}>
-          {scope.renderReact(aside, context)}
+          {scope.renderReact(
+            aside,
+            withContextFields(context, {
+              width: columnWidth(titleShares, theme.columnGap, 1),
+            })
+          )}
         </div>
       ) : null}
     </div>

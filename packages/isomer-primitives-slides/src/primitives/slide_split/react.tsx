@@ -10,19 +10,41 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
+import { withContextFields } from '../../render/context_view';
 import { marksReact } from '../../render/marks';
 import { ToneCue } from '../../render/tone_cue';
+import { frameContentWidth } from '../../theme/components/frame';
+import { split as theme, splitPaneWidths } from '../../theme/components/split';
 import { slideDistillery } from '../../theme/distillery';
 import {
   connectorModule,
   layoutModule,
   tonesModule,
 } from '../../theme/modules';
+import { scalePx } from '../../theme/scale';
+import { crowdingAfter } from '../slide_heading/fit';
 
 import { splitModule } from './styles';
 import type { SlideSplitNode, SlideSplitPane } from './types';
 
 const { label: connectorLabel } = slideDistillery.tokens.connector;
+
+const labelHeight =
+  scalePx(theme.label.size) * parseFloat(theme.label.lineHeight.value) +
+  scalePx(theme.labelGap);
+
+/** The context a pane's nodes size against: its width, and the room its label takes. */
+const paneContext = (
+  context: SlideReactEnv['context'],
+  { label }: SlideSplitPane,
+  width: number
+): SlideReactEnv['context'] =>
+  withContextFields(context, {
+    width,
+    crowding: label
+      ? crowdingAfter(context?.crowding, labelHeight)
+      : context?.crowding,
+  });
 
 const Pane = ({
   pane: { label, tone, items },
@@ -70,6 +92,11 @@ export const react = (
 ): ReactNode => {
   const { handles: split } = splitModule;
   const { handles: connector } = connectorModule;
+  const [leftWidth, rightWidth] = splitPaneWidths(
+    ratio,
+    divider,
+    context?.width ?? frameContentWidth
+  );
   return (
     <div
       {...nodeAnchor(context, { type })}
@@ -81,7 +108,11 @@ export const react = (
           split.ratio[ratio],
           split.divider[divider]
         )}>
-        <Pane pane={left} {...{ context, scope }} />
+        <Pane
+          pane={left}
+          context={paneContext(context, left, leftWidth)}
+          {...{ scope }}
+        />
         {divider === 'rule' ? (
           <div aria-hidden className={cls(context, split.rule)} />
         ) : divider === 'hairline' ? (
@@ -102,7 +133,11 @@ export const react = (
         ) : (
           <div aria-hidden />
         )}
-        <Pane pane={right} {...{ context, scope }} />
+        <Pane
+          pane={right}
+          context={paneContext(context, right, rightWidth)}
+          {...{ scope }}
+        />
       </div>
       {footnote ? (
         <p className={cls(context, split.footnote)}>

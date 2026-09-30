@@ -32,7 +32,7 @@ export const singleExample: SlideTreeNode = {
   ],
 };
 
-/** Eight entries, the most a slide holds. */
+/** Eight entries, the most the schema takes. */
 export const fullExample: SlideTreeNode = {
   type: 'slideTree',
   root: 'release/',

@@ -7,7 +7,7 @@
 
 import { font, space, stroke } from '../base';
 
-import { current, glyph } from './shared';
+import { currentToneLabel, glyph } from './shared';
 
 export const roadmap = {
   rule: stroke.hairline,
@@ -42,8 +42,8 @@ export const roadmap = {
   },
   itemBodySizes: { l: font.size.px26, m: font.size.px24, s: font.size.px24 },
   separator: glyph.separator,
-  currentMark: current.mark,
+  toneLabel: currentToneLabel,
 } as const;
 
 /** The longest column's characters times the column count. */
-export const roadmapFit = { l: 440, m: 540 } as const;
+export const roadmapFit = { l: 440, m: 500 } as const;

@@ -9,19 +9,21 @@ import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
+import { slackCaption } from '../../render';
 import {
   marksMarkdown,
   marksRichText,
   plainText,
   richTextRun,
 } from '../../render/marks';
+import { toneCueText } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
 import { react } from './react';
-import { schema, type SlideGraphNode } from './schema';
+import { schema, type SlideGraphNode, type SlideGraphTerm } from './schema';
 
 export type {
   SlideGraphNode,
@@ -29,22 +31,31 @@ export type {
   SlideGraphTerm,
 } from './schema';
 
-const { arrow } = slideDistillery.tokens.graph;
+const { arrow, relationJoiner } = slideDistillery.tokens.graph;
 
-const relations = ({ nodes, edges }: SlideGraphNode): string[] => {
+const cue = ({ emphasis }: SlideGraphTerm): string =>
+  toneCueText(emphasis ? 'primary' : undefined);
+
+const relations = ({ nodes, edges }: SlideGraphNode): string => {
   const terms = new Map(nodes.map(({ id, term }) => [id, term]));
-  return edges.map(([from, to]) =>
-    oneLine(`${terms.get(from) ?? from} ${arrow.value} ${terms.get(to) ?? to}`)
-  );
+  return edges
+    .map(([from, to]) =>
+      oneLine(
+        `${terms.get(from) ?? from} ${arrow.value} ${terms.get(to) ?? to}`
+      )
+    )
+    .join(relationJoiner.value);
 };
 
 export const text = (node: SlideGraphNode): string =>
   [
     node.caption && plainText(node.caption),
     node.nodes
-      .map(({ term, body }) => `${oneLine(term)}: ${plainText(body)}`)
+      .map(
+        (term) => `${cue(term)}${oneLine(term.term)}: ${plainText(term.body)}`
+      )
       .join('\n'),
-    relations(node).join('\n'),
+    relations(node),
   ]
     .filter(Boolean)
     .join('\n\n');
@@ -52,11 +63,16 @@ export const text = (node: SlideGraphNode): string =>
 export const markdown = (node: SlideGraphNode) => [
   ...(node.caption ? [md.paragraph(...marksMarkdown(node.caption))] : []),
   md.list(
-    node.nodes.map(({ term, body }) =>
-      md.paragraph(md.strong(`${term}:`), ' ', ...marksMarkdown(body))
+    node.nodes.map((term) =>
+      md.paragraph(
+        ...(term.emphasis ? [cue(term)] : []),
+        md.strong(`${term.term}:`),
+        ' ',
+        ...marksMarkdown(term.body)
+      )
     )
   ),
-  md.paragraph(relations(node).join(', ')),
+  md.paragraph(relations(node)),
 ];
 
 export const slack = (node: SlideGraphNode): SlackBlock[] => [
@@ -74,21 +90,19 @@ export const slack = (node: SlideGraphNode): SlackBlock[] => [
       {
         type: 'rich_text_list',
         style: 'bullet',
-        elements: node.nodes.map(({ term, body }) => ({
+        elements: node.nodes.map((term) => ({
           type: 'rich_text_section',
           elements: [
-            richTextRun(`${term}:`, { bold: true }),
+            ...(term.emphasis ? [richTextRun(cue(term))] : []),
+            richTextRun(`${term.term}:`, { bold: true }),
             richTextRun(' '),
-            ...marksRichText(body),
+            ...marksRichText(term.body),
           ],
         })),
       },
     ],
   },
-  {
-    type: 'context',
-    elements: [{ type: 'plain_text', text: relations(node).join(', ') }],
-  },
+  slackCaption(relations(node)),
 ];
 
 /** Catalog, schema, and renderers for {@link SlideGraphNode}. */

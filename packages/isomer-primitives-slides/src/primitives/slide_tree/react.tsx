@@ -40,7 +40,7 @@ export const react = (
                     <span aria-hidden className={cls(context, tree.railLast)} />
                   ) : null}
                   <span aria-hidden className={cls(context, tree.tick)} />
-                  <span>{name}</span>
+                  <span className={cls(context, tree.nameText)}>{name}</span>
                 </span>
                 <span className={cls(context, tree.body)}>{body}</span>
               </li>

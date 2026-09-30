@@ -17,6 +17,7 @@ import {
   strongMarksMarkdown,
   strongMarksRichText,
 } from '../../render/marks';
+import { toneCueText } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -35,21 +36,18 @@ export type {
   SlideRoadmapNode,
 } from './schema';
 
-const { separator, currentMark } = slideDistillery.tokens.roadmap;
+const { separator } = slideDistillery.tokens.roadmap;
 
-const horizon = (
-  { status, current }: SlideRoadmapColumn,
-  title: string
-): string =>
+const horizon = ({ title, status, current }: SlideRoadmapColumn): string =>
   oneLine(
-    `${title} ${separator.value} ${status}${current ? ` (${currentMark.value})` : ''}`
+    `${toneCueText(current ? 'primary' : undefined)}${title} ${separator.value} ${status.toUpperCase()}`
   );
 
 export const text = ({ columns }: SlideRoadmapNode): string =>
   columns
     .map((column) =>
       [
-        horizon(column, column.title.toUpperCase()),
+        horizon(column),
         ...column.items.map(
           ({ title, body }) => `- ${plainText(title)}: ${plainText(body)}`
         ),
@@ -59,7 +57,7 @@ export const text = ({ columns }: SlideRoadmapNode): string =>
 
 export const markdown = ({ columns }: SlideRoadmapNode) =>
   columns.flatMap((column) => [
-    md.heading(2, horizon(column, column.title)),
+    md.heading(2, horizon(column)),
     md.list(
       column.items.map(({ title, body }) =>
         md.paragraph(strongMarksMarkdown(title), ': ', ...marksMarkdown(body))
@@ -73,7 +71,7 @@ export const slack = ({ columns }: SlideRoadmapNode): SlackBlock[] =>
     elements: [
       {
         type: 'rich_text_section',
-        elements: [richTextRun(horizon(column, column.title), { bold: true })],
+        elements: [richTextRun(horizon(column), { bold: true })],
       },
       {
         type: 'rich_text_list',

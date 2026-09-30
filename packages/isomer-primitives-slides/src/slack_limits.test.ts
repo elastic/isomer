@@ -202,6 +202,21 @@ const cases: LimitCase[] = [
     }),
   },
   {
+    name: 'slideGraph relations',
+    slot: 'context',
+    limit: SLACK_LIMITS.contextElementChars,
+    filler: '&',
+    max: 3000,
+    node: (fill) => ({
+      type: 'slideGraph',
+      nodes: [
+        { id: 'a', term: fill, body: 'One' },
+        { id: 'b', term: 'Two', body: 'Two' },
+      ],
+      edges: [['a', 'b']],
+    }),
+  },
+  {
     name: 'slideCode file',
     slot: 'section',
     limit: SLACK_LIMITS.sectionTextChars,

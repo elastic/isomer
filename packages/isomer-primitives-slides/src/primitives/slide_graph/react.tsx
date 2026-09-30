@@ -11,14 +11,13 @@ import { oneLine } from '@elastic/isomer-sdk/author';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv, SlideRenderContext } from '../../render/context';
-import { marksReact, stripMarks } from '../../render/marks';
-import { displayColumns } from '../../render/mono';
-import { graphFit } from '../../theme/components/graph';
+import { marksReact } from '../../render/marks';
+import { ToneCue } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { connectorModule, layoutModule } from '../../theme/modules';
 import { countKey, type SlideSize } from '../../theme/variants';
-import { sizeForLoad } from '../size';
 
+import { graphStep } from './fit';
 import { type GraphBranch, graphLayout } from './layout';
 import type { SlideGraphNode, SlideGraphTerm } from './schema';
 import { graphModule, type graphRows } from './styles';
@@ -26,6 +25,7 @@ import { graphModule, type graphRows } from './styles';
 const { handles: graph } = graphModule;
 const { handles: connector } = connectorModule;
 const { label: leadsTo } = slideDistillery.tokens.connector;
+const { toneLabel: labels } = slideDistillery.tokens.graph;
 
 type Row = (typeof graphRows)[number];
 type Context = SlideRenderContext | undefined;
@@ -69,6 +69,10 @@ const Term = ({
         graph.termSize[step],
         emphasis ? graph.termEmphasis : graph.termPlain
       )}>
+      <ToneCue
+        tone={emphasis ? 'primary' : undefined}
+        {...{ context, labels }}
+      />
       {term}
     </p>
     <p className={cls(context, graph.body, graph.bodySize[step])}>
@@ -169,21 +173,9 @@ export const react = (
   node: SlideGraphNode,
   { context }: SlideReactEnv
 ): ReactNode => {
-  const { type, caption, size } = node;
+  const { type, caption } = node;
   const { main, above, below } = graphLayout(node);
-  const rows = [main, above, below].filter((row) => row !== undefined).length;
-  const longest = Math.max(
-    ...node.nodes.map(
-      ({ term, body }) =>
-        displayColumns(term) + displayColumns(stripMarks(body))
-    )
-  );
-  const step = sizeForLoad(
-    size,
-    rows * longest + (caption ? displayColumns(stripMarks(caption)) : 0),
-    graphFit,
-    context?.crowding
-  );
+  const step = graphStep(node, context);
   return (
     <div
       {...nodeAnchor(context, { type })}

@@ -5,10 +5,15 @@
  * 2.0.
  */
 
-import { font, monoAdvance, space, stroke, type } from '../base';
+import { font, space, stroke, type } from '../base';
 import { literal, paddingXy, px, scalePx } from '../scale';
 
 const rowPaddingY = space.px12;
+const name = type.mono;
+// Middle of a name's first line, so a wrapped name keeps its tick level with the note.
+const tickTop = px(
+  (scalePx(name.size) * parseFloat(name.lineHeight.value)) / 2
+);
 
 export const tree = {
   root: { ...type.mono, size: font.size.px30, weight: font.weight.medium },
@@ -18,23 +23,20 @@ export const tree = {
   columnGap: space.px16,
   rowPaddingY,
   rowPadding: paddingXy(rowPaddingY, literal('0')),
-  name: type.mono,
+  name,
   body: type.bodyS,
   /** Connectors are borders: Roboto Mono has no box-drawing glyphs. */
   connector: stroke.hairline,
   // Rail under the root's first character.
   railInset: px(8),
   tickWidth: space.px16,
+  tickTop,
+  /** A `└` rail runs from the row's top edge to the tick. */
+  railLastHeight: px(scalePx(rowPaddingY) + scalePx(tickTop)),
   nameIndent: space.px32,
-  /** Text and Markdown only. */
+  /** Text, Markdown, and Slack only. */
   glyph: {
     branch: literal('├─'),
     last: literal('└─'),
   },
 } as const;
-
-/** Columns a name holds before it reaches its note. */
-export const treeNameMaxLength = Math.floor(
-  (scalePx(tree.nameWidth) - scalePx(tree.nameIndent)) /
-    (monoAdvance * scalePx(tree.name.size))
-);

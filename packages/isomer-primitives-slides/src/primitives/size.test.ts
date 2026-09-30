@@ -8,11 +8,19 @@
 import { describe, expect, it } from 'vitest';
 
 import { font } from '../theme/base';
+import { frameContentWidth } from '../theme/components/frame';
 import { heading } from '../theme/components/heading';
+import { split, splitPaneWidths } from '../theme/components/split';
 import { scalePx } from '../theme/scale';
 
-import { emWidth, sizeForLines, sizeForLoad, widestWord } from './size';
-import { headingCrowding } from './slide_heading/fit';
+import {
+  emWidth,
+  sizeForLines,
+  sizeForLoad,
+  sizeForWidthLoad,
+  widestWord,
+} from './size';
+import { crowdingAfter, headingCrowding } from './slide_heading/fit';
 
 const steps = { l: font.size.px200, m: font.size.px128, s: font.size.px96 };
 
@@ -33,6 +41,52 @@ describe('sizeForLoad', () => {
   it('keeps an explicit size', () => {
     expect(sizeForLoad('s', 1, budget)).toBe('s');
     expect(sizeForLoad('l', 1000, budget, 3)).toBe('l');
+  });
+});
+
+describe('sizeForWidthLoad', () => {
+  const budget = { l: 100, m: 200 };
+  const half = { width: frameContentWidth / 2 };
+
+  it('reads a box as wide as the frame as sizeForLoad does', () => {
+    expect(sizeForWidthLoad(undefined, 100, budget, undefined)).toBe('l');
+    expect(sizeForWidthLoad(undefined, 101, budget, undefined)).toBe('m');
+    expect(sizeForWidthLoad(undefined, 200, budget, { crowding: 1 })).toBe('m');
+    expect(sizeForWidthLoad(undefined, 201, budget, { crowding: 1 })).toBe('s');
+  });
+
+  it('weighs the load by how much narrower the box is, less its gutters', () => {
+    expect(sizeForWidthLoad(undefined, 50, budget, half)).toBe('l');
+    expect(sizeForWidthLoad(undefined, 51, budget, half)).toBe('m');
+    expect(sizeForWidthLoad(undefined, 50, budget, half, 64)).toBe('m');
+  });
+
+  it('scales by crowding as well as width, and keeps an explicit size', () => {
+    expect(
+      sizeForWidthLoad(undefined, 50, budget, { ...half, crowding: 0.5 })
+    ).toBe('l');
+    expect(sizeForWidthLoad(undefined, 60, budget, { crowding: 2 })).toBe('m');
+    expect(sizeForWidthLoad('l', 1000, budget, { ...half, crowding: 3 })).toBe(
+      'l'
+    );
+  });
+});
+
+describe('splitPaneWidths', () => {
+  it('splits what the divider leaves by the ratio, or keeps a fixed column', () => {
+    const gap = scalePx(split.dividerGap.gap);
+    expect(splitPaneWidths('even', 'gap', frameContentWidth)).toEqual([
+      (frameContentWidth - 2 * gap) / 2,
+      (frameContentWidth - 2 * gap) / 2,
+    ]);
+    const [left, right] = splitPaneWidths('aside', 'rule', frameContentWidth);
+    expect(right).toBe(scalePx(split.ratio.aside.right));
+    expect(left).toBe(
+      frameContentWidth -
+        2 * scalePx(split.dividerGap.rule) -
+        scalePx(split.ruleWidth) -
+        right
+    );
   });
 });
 
@@ -87,5 +141,12 @@ describe('heading crowding', () => {
         lede: `${sentence} ${sentence}`,
       })
     ).toBeGreaterThan(1);
+  });
+
+  it('grows as the room below it shrinks', () => {
+    expect(crowdingAfter(undefined, 0)).toBe(1);
+    expect(crowdingAfter(1, 100)).toBeGreaterThan(1);
+    expect(crowdingAfter(0.8, 100)).toBeGreaterThan(0.8);
+    expect(Number.isFinite(crowdingAfter(1, 1e6))).toBe(true);
   });
 });

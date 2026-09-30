@@ -29,11 +29,13 @@ const itemSchema = z
     current: z
       .boolean()
       .describe(
-        'Marks the item the story has arrived at: a ringed dot, drawn in primary. At most one item. Defaults to false.'
+        'Marks the item the story has arrived at: a ringed dot and a dot before its channel, in primary. At most one item. Defaults to false.'
       )
       .optional(),
   })
   .strict();
+
+const maxItems = 5;
 
 export type SlideTimelineItem = z.infer<typeof itemSchema>;
 
@@ -44,16 +46,18 @@ export const schema = z
     items: z
       .array(itemSchema)
       .min(3)
-      .max(5)
+      .max(maxItems)
       .describe(
-        '3–5 points in chronological order, left to right. Mark the latest or most relevant one current. Type steps down with the load, but a long label, heading, or body can still run past its column at `s`; a layout check reports it.'
+        '3–5 points in chronological order, left to right. Mark the latest or most relevant one current.'
       ),
     size: sizeField(),
   })
   .strict()
   .check(
     crossRefine(
-      ({ items }) => items.filter(({ current }) => current).length <= 1,
+      ({ items }) =>
+        items.length > maxItems ||
+        items.filter(({ current }) => current).length <= 1,
       { error: 'at most one item can be current', path: ['items'] }
     )
   );

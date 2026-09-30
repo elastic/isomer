@@ -8,7 +8,7 @@
 import { color, font, space, stroke, type } from '../base';
 import { literal, px, scalePx } from '../scale';
 
-import { current, glyph } from './shared';
+import { currentToneLabel, glyph } from './shared';
 
 const labelSize = font.size.px72;
 // Dot geometry, not spacing.
@@ -50,8 +50,8 @@ export const timeline = {
   quoteOpen: literal('“'),
   quoteClose: literal('”'),
   separator: glyph.separator,
-  currentMark: current.mark,
+  toneLabel: currentToneLabel,
 } as const;
 
 /** The longest item's characters times the item count. */
-export const timelineFit = { l: 500, m: 620 } as const;
+export const timelineFit = { l: 500, m: 560 } as const;

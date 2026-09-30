@@ -10,33 +10,26 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
-import { marksReact, stripMarks } from '../../render/marks';
-import { roadmapFit } from '../../theme/components/roadmap';
+import { marksReact } from '../../render/marks';
+import { ToneCue } from '../../render/tone_cue';
+import { slideDistillery } from '../../theme/distillery';
 import { labelModule, layoutModule, tonesModule } from '../../theme/modules';
-import { rowLoad, sizeForLoad } from '../size';
 
+import { roadmapStep } from './fit';
 import type { SlideRoadmapNode } from './schema';
 import { roadmapModule } from './styles';
 
+const { toneLabel: labels } = slideDistillery.tokens.roadmap;
+
 /** React renderer for {@link SlideRoadmapNode}. */
 export const react = (
-  { type, columns, size }: SlideRoadmapNode,
+  node: SlideRoadmapNode,
   { context }: SlideReactEnv
 ): ReactNode => {
+  const { type, columns } = node;
   const { handles: roadmap } = roadmapModule;
   const { handles: label } = labelModule;
-  const step = sizeForLoad(
-    size,
-    rowLoad(
-      columns.map(({ title, status, items }) => [
-        title,
-        status,
-        ...items.flatMap((item) => [item.title, item.body].map(stripMarks)),
-      ])
-    ),
-    roadmapFit,
-    context?.crowding
-  );
+  const step = roadmapStep(node, context);
   return (
     <div
       {...nodeAnchor(context, { type })}
@@ -69,6 +62,10 @@ export const react = (
                 current ? label.toned : undefined,
                 current ? tonesModule.handles.tone.primary : undefined
               )}>
+              <ToneCue
+                tone={current ? 'primary' : undefined}
+                {...{ context, labels }}
+              />
               {status}
             </span>
             <ul

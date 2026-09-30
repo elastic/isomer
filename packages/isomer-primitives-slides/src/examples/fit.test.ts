@@ -12,6 +12,7 @@ import {
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import {
   checkLayout,
+  type Composition,
   createChildNodeWalker,
   NODE_ANCHOR_ATTRIBUTE,
   type PrimitiveNode,
@@ -19,6 +20,10 @@ import {
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../pack';
+import {
+  example as headingExample,
+  tallestExample,
+} from '../primitives/slide_heading/examples';
 import { slideDeckPrimitives } from '../registry';
 
 import { slideFonts } from './fonts';
@@ -71,5 +76,74 @@ describe('every example fits its preview slide', () => {
     );
     expect(checkLayout(layout, slide.body, walk, 'svg')).toEqual([]);
     expect(pastBody(layout)).toEqual([]);
+  });
+});
+
+const fits = async (slide: Composition): Promise<boolean> => {
+  const layout = await takumi.measure(
+    runtime.surfaces.svg.render(slide, { anchors: true })
+  );
+  return (
+    checkLayout(layout, slide.body, walk, 'svg').length === 0 &&
+    pastBody(layout).length === 0
+  );
+};
+
+const inFrame = (body: PrimitiveNode[]): Composition => ({
+  type: 'view',
+  body: [{ type: 'slideFrame', body } as PrimitiveNode],
+});
+
+const placements: [string, (node: PrimitiveNode) => Composition][] = [
+  ['under the tallest heading', (node) => inFrame([tallestExample, node])],
+  [
+    'as a title aside',
+    (node) =>
+      inFrame([
+        { type: 'slideTitle', title: 'Isomer', aside: node } as PrimitiveNode,
+      ]),
+  ],
+  [
+    'in a split pane',
+    (node) =>
+      inFrame([
+        headingExample,
+        {
+          type: 'slideSplit',
+          panes: [
+            { label: 'Pane', items: [node] },
+            { items: [{ type: 'slideBulletList', items: ['One', 'Two'] }] },
+          ],
+        } as PrimitiveNode,
+      ]),
+  ],
+];
+
+// Sized by `sizeForWidthLoad`, which reads the heading's crowding and the pane's width.
+const widthLoaded = new Set(['slideGraph', 'slideRoadmap', 'slideTimeline']);
+
+interface SizedCase {
+  name: string;
+  node: PrimitiveNode;
+  place: (node: PrimitiveNode) => Composition;
+}
+
+const sized: SizedCase[] = slideDeckPrimitives
+  .filter(({ type }) => widthLoaded.has(type))
+  .flatMap(({ type, examples }) =>
+    examples.flatMap((example, index) =>
+      placements.map(([where, place]) => ({
+        name: `${type} #${index} ${where}`,
+        node: example,
+        place,
+      }))
+    )
+  );
+
+describe('a picked size fits wherever the smallest does', () => {
+  it.each(sized)('$name', async ({ node, place }) => {
+    if (await fits(place({ ...node, size: 's' } as PrimitiveNode))) {
+      expect(await fits(place(node))).toBe(true);
+    }
   });
 });

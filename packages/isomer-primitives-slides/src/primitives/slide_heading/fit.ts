@@ -44,6 +44,13 @@ const roomBelow = (height: number): number =>
 /** Room below a two-line title and lede at `l`; load budgets are set against it. */
 const referenceRoom = roomBelow(headingHeight(2, 2, 'l'));
 
+/** {@link SlideRenderContext.crowding} once `taken` px more of the room below the heading is spoken for. */
+export const crowdingAfter = (
+  crowding: number | undefined,
+  taken: number
+): number =>
+  referenceRoom / Math.max(1, referenceRoom / (crowding ?? 1) - taken);
+
 export const headingStep = ({ title, size }: SlideHeadingNode): SlideSize =>
   sizeForLoad(size, displayColumns(stripMarks(title)), headingFit);
 

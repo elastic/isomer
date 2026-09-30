@@ -10,8 +10,10 @@
 import type { ScaleToken } from '@elastic/distillate';
 import { z } from '@elastic/isomer-sdk';
 
+import type { SlideRenderContext } from '../render/context';
 import { displayColumns, isWide } from '../render/mono';
 import { extraboldAdvance } from '../theme/base';
+import { frameContentWidth } from '../theme/components/frame';
 import { scalePx } from '../theme/scale';
 import { type SlideSize, slideSizes } from '../theme/variants';
 
@@ -40,6 +42,24 @@ export const sizeForLoad = (
 ): SlideSize => {
   const scaled = load * crowding;
   return size ?? (scaled <= budget.l ? 'l' : scaled <= budget.m ? 'm' : 's');
+};
+
+/** {@link sizeForLoad} for text set in columns across the node's box, so a narrower box weighs it heavier; `gutters` is the px between columns. */
+export const sizeForWidthLoad = (
+  size: SlideSize | undefined,
+  load: number,
+  budget: LoadBudget,
+  context: SlideRenderContext | undefined,
+  gutters = 0
+): SlideSize => {
+  const text = (width: number) => Math.max(1, width - gutters);
+  return sizeForLoad(
+    size,
+    (load * text(frameContentWidth)) /
+      text(context?.width ?? frameContentWidth),
+    budget,
+    context?.crowding
+  );
 };
 
 /** The longest item's characters times the item count. */

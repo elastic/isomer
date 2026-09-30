@@ -34,7 +34,7 @@ const columnSchema = z
     current: z
       .boolean()
       .describe(
-        'Marks the column the audience is in now with a bar above it, its title and status in primary. At most one column. Defaults to false.'
+        'Marks the column the audience is in now: a bar above it and a dot before its status, in primary. At most one column. Defaults to false.'
       )
       .optional(),
     items: z
@@ -44,6 +44,8 @@ const columnSchema = z
       .describe('The work in this horizon, top to bottom. 1 to 4.'),
   })
   .strict();
+
+const maxColumns = 4;
 
 export type SlideRoadmapItem = z.infer<typeof itemSchema>;
 
@@ -56,16 +58,18 @@ export const schema = z
     columns: z
       .array(columnSchema)
       .min(2)
-      .max(4)
+      .max(maxColumns)
       .describe(
-        'Horizons in order, left to right, nearest first. 2 to 4. Mark the one happening now current. Type steps down with the load, but long items can still run past the slide at `s`; a layout check reports it.'
+        'Horizons in order, left to right, nearest first. 2 to 4. Mark the one happening now current.'
       ),
     size: sizeField(),
   })
   .strict()
   .check(
     crossRefine(
-      ({ columns }) => columns.filter(({ current }) => current).length <= 1,
+      ({ columns }) =>
+        columns.length > maxColumns ||
+        columns.filter(({ current }) => current).length <= 1,
       { error: 'at most one column can be current', path: ['columns'] }
     )
   );

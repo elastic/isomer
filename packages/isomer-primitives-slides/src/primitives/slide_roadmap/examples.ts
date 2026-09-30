@@ -70,7 +70,7 @@ export const twoColumnsExample: SlideRoadmapNode = {
   ],
 };
 
-/** Four full horizons, the heaviest load a roadmap holds. */
+/** Four horizons of four items, the most the schema takes. */
 export const fullExample: SlideRoadmapNode = {
   type: 'slideRoadmap',
   columns: [

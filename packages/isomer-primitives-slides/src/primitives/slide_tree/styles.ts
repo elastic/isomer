@@ -51,12 +51,13 @@ export const treeModule = createStyleModule('tree', ({ css }) => ({
     min-width: 0;
     padding-left: ${tree.nameIndent};
     position: relative;
-    white-space: nowrap;
   `,
-  /** A `└` rail: the row's top edge to the tick. */
+  nameText: css`
+    min-width: 0;
+  `,
   railLast: css`
     border-left: ${tree.connector} solid ${color.line};
-    bottom: 50%;
+    height: ${tree.railLastHeight};
     left: ${tree.railInset};
     position: absolute;
     top: -${tree.rowPaddingY};
@@ -65,7 +66,7 @@ export const treeModule = createStyleModule('tree', ({ css }) => ({
     border-top: ${tree.connector} solid ${color.line};
     left: ${tree.railInset};
     position: absolute;
-    top: 50%;
+    top: ${tree.tickTop};
     width: ${tree.tickWidth};
   `,
   body: css`
