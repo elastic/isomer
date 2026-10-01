@@ -37,7 +37,7 @@ interface FrameHeader {
 }
 ```
 
-The body is **withheld**, not merely undeclared. The runtime names these three fields into a fresh value per render, because narrowing the type alone would leave `body` reachable and spreading the composition would carry through whatever else the caller's value holds. A frame that could read the nodes could branch on a pack's node types, which is exactly the knowledge this split keeps out of it.
+The body is **withheld** from `wrap`, not merely undeclared. The runtime names these three fields into a fresh value per render, because narrowing the type alone would leave `body` reachable and spreading the composition would carry through whatever else the caller's value holds. A `wrap` that could read the nodes could branch on a pack's node types when it draws the surround. `estimateHeight` and `validateBody` do receive the nodes, since a document's size and its rules about a body depend on them.
 
 `wrap` takes the rendered body as an **array** rather than one `ReactNode`, so a frame that draws no surround can return its single root element — image layout starts from one element, and a fragment is not one.
 

@@ -38,7 +38,7 @@ The budget guards the validator and the parser, not the schemas. `getComposition
 | Pass                | Produces | Fires when                                                                                               |
 | ------------------- | -------- | -------------------------------------------------------------------------------------------------------- |
 | Duplicate node ids  | errors   | two nodes share an `id`                                                                                  |
-| Empty surfaces      | warnings | a node renders nothing on a surface it claims                                                            |
+| Empty surfaces      | warnings | the whole body renders nothing on a surface, checked per surface                                         |
 | Missing `svgHeight` | warnings | a node renders to `svg` but declares no `metrics.svgHeight`, **only** when `sizesFromNodeHeights` is set |
 
 That last gate is a runtime fact, not a per-node one: any frame that sums node heights makes the metric load-bearing, and a runtime whose frames are all fixed-size would otherwise collect warnings for a value nothing reads. A warning per node per slide is how a warning channel gets ignored.
