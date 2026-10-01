@@ -24,17 +24,21 @@ export const annotatedRenderModule = createStyleModule(
       gap: ${annotatedRender.gap};
       grid-template-columns: ${annotatedRender.columns};
     `,
+    // Inset by a pin's overhang, so a pin on the panel's edge stays inside the figure.
     figure: css`
+      box-sizing: border-box;
       display: flex;
       flex-direction: column;
       gap: ${render.captionGap};
       justify-self: center;
       margin: 0;
       min-width: 0;
+      padding: 0 ${pin.overhang};
       width: 100%;
     `,
     // Holds the panel alone, at its width, so pins place against the slide and not the caption.
     stage: css`
+      margin: ${pin.overhang} 0;
       position: relative;
     `,
     fit: css`

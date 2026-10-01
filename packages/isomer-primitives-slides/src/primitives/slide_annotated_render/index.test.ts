@@ -90,16 +90,17 @@ describe('slideAnnotatedRender', () => {
     `);
   });
 
-  it('draws the slide as wide as its column, or as tall as the room under its caption', () => {
-    const column = trackWidth(
-      openBody.width,
-      annotatedRenderShares,
-      annotatedRender.gap
-    );
+  it('draws the slide as wide as its column, or as tall as the room under its caption, less a pin on each side', () => {
+    const inset = 2 * scalePx(annotatedRender.pin.overhang);
+    const column =
+      trackWidth(openBody.width, annotatedRenderShares, annotatedRender.gap) -
+      inset;
     const { render: embedded } = placeholderExample;
+    const caption = captionHeight(headline(embedded), column);
+    expect(caption % 1).not.toBe(0);
     expect(annotatedScale(embedded, openBody)).toBeCloseTo(column / slideWidth);
     expect(annotatedScale(embedded, { ...openBody, height: 400 })).toBeCloseTo(
-      (400 - captionHeight(headline(embedded), column)) / slideHeight
+      (400 - inset - Math.ceil(caption)) / slideHeight
     );
   });
 
@@ -115,10 +116,10 @@ describe('slideAnnotatedRender', () => {
   it('steps the legend down as its layout shortens', () => {
     const at = (height: number) =>
       legendStep(placeholderExample.pins, { ...openBody, height });
-    expect([759.5, 760].map(at)).toEqual(['m', 'l']);
-    expect([615.5, 616].map(at)).toEqual(['s', 'm']);
-    expect(legendStep(node.pins, openBody)).toBe('l');
-    expect(legendStep(node.pins, { ...openBody, height: 254.5 })).toBe('m');
+    expect([769.5, 770].map(at)).toEqual(['m', 'l']);
+    expect([625.5, 626].map(at)).toEqual(['s', 'm']);
+    expect(legendStep(node.pins, { ...openBody, height: 258 })).toBe('l');
+    expect(legendStep(node.pins, { ...openBody, height: 257.5 })).toBe('m');
   });
 
   it('charges each legend line holding a code chip its padding and border', () => {

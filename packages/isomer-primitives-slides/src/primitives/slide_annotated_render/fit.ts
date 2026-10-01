@@ -16,7 +16,7 @@ import { scalePx } from '../../theme/scale';
 import type { TypeRole } from '../../theme/type_role';
 import { type SlideSize, slideSizes } from '../../theme/variants';
 import { lineBox, marksHeight, measureText, trackWidth } from '../size';
-import { scaleUnderCaption } from '../slide_render/fit';
+import { captionHeight, embeddedScale } from '../slide_render/fit';
 import { headline } from '../slide_render/output';
 import type { SlideRenderNode } from '../slide_render/types';
 
@@ -25,16 +25,25 @@ import type { SlideAnnotatedRenderPin } from './schema';
 const column = (width: number, index: 0 | 1) =>
   trackWidth(width, annotatedRenderShares, annotatedRender.gap, index);
 
-/** The scale `render` draws its slide at in the first column of `layout`. */
+const { legend, pin } = annotatedRender;
+
+// takumi draws a text block at its line boxes' height rounded up to a whole pixel.
+const drawn = Math.ceil;
+
+/** The scale `render` draws its slide at in the first column of `layout`, inset on every side by a pin's overhang. */
 export const annotatedScale = (
   render: SlideRenderNode,
   { width, height }: SlideLayout
-): number =>
-  scaleUnderCaption(headline(render), { width: column(width, 0), height });
+): number => {
+  const inset = 2 * scalePx(pin.overhang);
+  const inner = column(width, 0) - inset;
+  return embeddedScale({
+    width: inner,
+    height: height - inset - drawn(captionHeight(headline(render), inner)),
+  });
+};
 
-const { legend } = annotatedRender;
-
-/** Height of the legend at `step` in the second column of `width`, its titles and text wrapped across it. */
+/** Height of the legend at `step` in the second column of `width`, its titles and text wrapped across it as drawn. */
 export const legendHeight = (
   pins: readonly SlideAnnotatedRenderPin[],
   step: SlideSize,
@@ -48,14 +57,16 @@ export const legendHeight = (
   const title = { ...legend.title, size: sizes.title };
   const body = { ...legend.body, size: sizes.body };
   const lines = (text: string, role: TypeRole & { lineHeight: ScaleToken }) =>
-    Math.max(1, measureText(text, role, textWidth).lines) * lineBox(role);
+    drawn(
+      Math.max(1, measureText(text, role, textWidth).lines) * lineBox(role)
+    );
   return pins.reduce(
     (height, { title: name, body: text }) =>
       height +
       2 * scalePx(padding) +
       lines(name, title) +
       scalePx(legend.textGap) +
-      marksHeight(text, body, textWidth) +
+      drawn(marksHeight(text, body, textWidth)) +
       scalePx(legend.rule),
     scalePx(legend.rule)
   );

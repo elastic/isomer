@@ -12,6 +12,10 @@ import { describe, expect, it } from 'vitest';
 import { slideLayout } from '../primitives/layout';
 import { referenceHeading, renderedStep } from '../primitives/size.fixtures';
 import { longExample as agendaExample } from '../primitives/slide_agenda/examples';
+import {
+  example as annotatedExample,
+  placeholderExample as annotatedPlaceholderExample,
+} from '../primitives/slide_annotated_render/examples';
 import { denseExample as barsExample } from '../primitives/slide_bars/examples';
 import { wideExample as columnsExample } from '../primitives/slide_columns/examples';
 import { fullExample as definitionsExample } from '../primitives/slide_definitions/examples';
@@ -406,6 +410,15 @@ describe('a window sizes the nodes below its heading to the room left', () => {
         ],
       };
       expect(await findings(slide)).toEqual([]);
+    }
+  );
+});
+
+describe('an annotated render fits its legend beside it under the tallest heading', () => {
+  it.each([annotatedExample, annotatedPlaceholderExample])(
+    '$pins.length pins',
+    async (node) => {
+      expect(await findings(inFrame([tallestExample, node]))).toEqual([]);
     }
   );
 });
