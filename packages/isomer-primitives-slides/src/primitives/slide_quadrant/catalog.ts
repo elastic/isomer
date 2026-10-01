@@ -21,6 +21,7 @@ export const catalog = {
   avoidWhen: [
     'The options differ on one quality only; use slideBars.',
     'Each option has several attributes to compare side by side; use slideTable.',
+    'The options fall into groups without two axes behind them; use slideColumns.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

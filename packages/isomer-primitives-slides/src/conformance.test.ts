@@ -127,6 +127,12 @@ const harness: PrimitiveConformanceHarness = {
         aside: conformanceForeignNode,
       } as unknown as PrimitiveNode;
     }
+    if (container.type === 'slideAnnotatedRender') {
+      return {
+        ...container,
+        render: conformanceForeignNode,
+      } as unknown as PrimitiveNode;
+    }
     if (container.type === 'slideStack') {
       return {
         ...container,

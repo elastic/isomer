@@ -24,6 +24,7 @@ export const catalog = {
     'Each item has several attributes, not one number; use slideTable.',
     'The numbers are one measure before and after a change; use slideDelta.',
     'There are more than four values, or their relative size is the point; use slideBars.',
+    'The columns are options described in words, not numbers; use slideColumns.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

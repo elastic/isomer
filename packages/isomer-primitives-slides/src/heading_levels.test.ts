@@ -47,12 +47,17 @@ const markdownLevels = (markdown: string): number[] =>
     })
   );
 
-const rows = slideDeckPrimitives.flatMap(({ type, examples }) =>
-  examples.map((example, index) => ({
-    name: `${type}#${index}`,
-    composition: onSlide(example as PrimitiveNode),
-  }))
-);
+// Each drawn tile repeats the embedded slide's outline, which Markdown quotes once.
+const repeatsOutline = new Set(['slideRenderGrid']);
+
+const rows = slideDeckPrimitives
+  .filter(({ type }) => !repeatsOutline.has(type))
+  .flatMap(({ type, examples }) =>
+    examples.map((example, index) => ({
+      name: `${type}#${index}`,
+      composition: onSlide(example as PrimitiveNode),
+    }))
+  );
 
 describe('heading levels', () => {
   it.each(rows)(

@@ -7,10 +7,12 @@
 
 import { color, font, inverse, radius, space, stroke, type } from './base';
 import { agenda } from './components/agenda';
+import { annotatedRender } from './components/annotated_render';
 import { bars } from './components/bars';
 import { bulletList } from './components/bullet_list';
 import { closing } from './components/closing';
 import { code } from './components/code';
+import { columns } from './components/columns';
 import { command } from './components/command';
 import { definitions } from './components/definitions';
 import { delta } from './components/delta';
@@ -27,6 +29,8 @@ import { matrix } from './components/matrix';
 import { pipeline } from './components/pipeline';
 import { quadrant } from './components/quadrant';
 import { quote } from './components/quote';
+import { render } from './components/render';
+import { renderGrid } from './components/render_grid';
 import { roadmap } from './components/roadmap';
 import { section } from './components/section';
 import { sequence } from './components/sequence';
@@ -50,6 +54,7 @@ import { timeline } from './components/timeline';
 import { title } from './components/title';
 import { transcript } from './components/transcript';
 import { tree } from './components/tree';
+import { window } from './components/window';
 
 /**
  * Every value the pack renders, in one tree. `lightDark` leaves become
@@ -72,10 +77,12 @@ export const SLIDE_THEME = {
   placeholder,
   marks,
   agenda,
+  annotatedRender,
   bars,
   bulletList,
   closing,
   code,
+  columns,
   command,
   definitions,
   delta,
@@ -91,6 +98,8 @@ export const SLIDE_THEME = {
   pipeline,
   quadrant,
   quote,
+  render,
+  renderGrid,
   roadmap,
   section,
   sequence,
@@ -106,6 +115,7 @@ export const SLIDE_THEME = {
   title,
   transcript,
   tree,
+  window,
 } as const;
 
 export type SlideColorName = keyof typeof color;

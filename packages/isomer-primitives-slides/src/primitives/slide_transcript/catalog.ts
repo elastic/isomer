@@ -20,6 +20,7 @@ export const catalog = {
   ],
   avoidWhen: [
     'Only one side speaks, as a snippet or an output; use slideCode.',
+    'The point is where the conversation happens, such as a chat app or a channel; wrap it in a slideWindow.',
     'The exchange needs more than four turns; split it across two slides, each with its own slideTranscript.',
   ],
   example,

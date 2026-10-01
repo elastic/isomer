@@ -41,6 +41,8 @@ const notWords = new Set([
   'divider',
   'spacing',
   'marker',
+  'chrome',
+  'surface',
   'edges',
   'placement',
   'op',
@@ -48,6 +50,27 @@ const notWords = new Set([
   'format',
   'highlightPrefix',
 ]);
+
+/** Embedded bodies print as another surface's output, so only the render's own words are checked. */
+const embedding = new Set(['slideRender', 'slideRenderGrid']);
+
+const withoutEmbedded = (value: unknown): unknown => {
+  if (Array.isArray(value)) {
+    return value.map(withoutEmbedded);
+  }
+  if (typeof value !== 'object' || value === null) {
+    return value;
+  }
+  const { type } = value as { type?: unknown };
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(
+        ([key]) =>
+          !(key === 'body' && typeof type === 'string' && embedding.has(type))
+      )
+      .map(([key, entry]) => [key, withoutEmbedded(entry)])
+  );
+};
 
 /** Fields whose line breaks are meant, or that no degraded surface prints. */
 const keptAsAuthored = new Set([
@@ -207,7 +230,7 @@ const htmlText = (node: PrimitiveNode): string => {
 
 const missingFrom = (output: string, node: unknown): string[] => {
   const normalized = normalize(output);
-  return authoredStrings(node)
+  return authoredStrings(withoutEmbedded(node))
     .flatMap((text) => text.split('\n'))
     .filter(
       (word) => word.trim() && !normalized.includes(normalize(stripMarks(word)))
@@ -338,7 +361,7 @@ const appendAt = (
 const literals = ' &lt; <b> & &amp;lt; a ` b * c ** d';
 
 const literalRows = rows.flatMap(({ name, node }) =>
-  wordPaths(node).map((path) => ({
+  wordPaths(withoutEmbedded(node)).map((path) => ({
     name: `${name} ${path.join('.')}`,
     node: appendAt(node, path, literals) as PrimitiveNode,
   }))
@@ -363,8 +386,31 @@ const mrkdwnCases = {
   entity: ' &amp;',
 };
 
+const outputSurfaces = new Set(['markdown', 'text', 'slack']);
+
+// A body shown as another surface's output prints that surface's escaped source, and a grid always draws one.
+const withoutOutputBodies = (value: unknown): unknown => {
+  if (Array.isArray(value)) {
+    return value.map(withoutOutputBodies);
+  }
+  if (typeof value !== 'object' || value === null) {
+    return value;
+  }
+  const { type, surface } = value as { type?: unknown; surface?: unknown };
+  const printsOutput =
+    type === 'slideRenderGrid' ||
+    (type === 'slideRender' &&
+      typeof surface === 'string' &&
+      outputSurfaces.has(surface));
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => !(key === 'body' && printsOutput))
+      .map(([key, entry]) => [key, withoutOutputBodies(entry)])
+  );
+};
+
 const mrkdwnRows = rows.flatMap(({ name, node }) =>
-  wordPaths(node).flatMap((path) =>
+  wordPaths(withoutOutputBodies(node)).flatMap((path) =>
     Object.entries(mrkdwnCases).map(([kind, tail]) => ({
       name: `${name} ${path.join('.')}`,
       kind,

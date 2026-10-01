@@ -202,6 +202,34 @@ describe('buildJsxShim', () => {
     }
   });
 
+  it('rejects children on a type that has no field to fill from them', () => {
+    try {
+      toComposition(
+        createElement(
+          Composition,
+          null,
+          createElement(Note, { body: 'Leaf' }, createElement(Note))
+        )
+      );
+      expect.unreachable();
+    } catch (error) {
+      expect(error).toMatchObject({
+        name: 'IsomerError',
+        code: 'UNEXPECTED_CHILDREN',
+        message: '<Note> takes no JSX children; set its fields through props.',
+      });
+    }
+    expect(
+      toComposition(
+        createElement(
+          Composition,
+          null,
+          createElement(Note, { body: 'Leaf' }, null, false)
+        )
+      ).body
+    ).toEqual([{ type: 'note', body: 'Leaf' }]);
+  });
+
   it('fills a branded child field and types the child component from the schema', () => {
     const {
       Composition: Root,

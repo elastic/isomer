@@ -21,6 +21,7 @@ export const catalog = {
   avoidWhen: [
     'The code is a back-and-forth between a person, a model, and a program; use slideTranscript.',
     'The snippet needs more than sixteen lines; cut it down, or name the files with slideTree.',
+    'The output belongs to a place, like a terminal or a Slack channel; put it in a slideWindow.',
     'The point is what a change did to the code, lines added and removed; use slideDiff.',
     'The snippet is one shell command for the audience to run; use slideCommand.',
   ],

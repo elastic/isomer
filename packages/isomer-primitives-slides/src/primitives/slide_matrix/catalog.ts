@@ -21,6 +21,7 @@ export const catalog = {
   ],
   avoidWhen: [
     'The cells hold numbers or short phrases rather than yes, partly, or no; use slideTable.',
+    'Each option needs a sentence about it rather than a mark per capability; use slideColumns.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

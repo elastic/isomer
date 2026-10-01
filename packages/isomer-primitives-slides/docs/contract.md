@@ -28,7 +28,7 @@ Everything else stays at the SDK default. A new pack declares its own `PackTypes
 
 The pack declares no `surfaces`. `svg` is not declarable — every pack reaches it through its `react` renderers.
 
-Every primitive has a native `slack` renderer, and `src/registry.test.ts` fails when one does not. The containers (`slideFrame`, `slideSplit`, `slideStack`, and `slideTitle` for its aside) render each child through `scope.renderSlack`, so the dispatcher decides per child: a foreign node without a `slack` renderer falls back through its Markdown alone. A container without a `slack` renderer would send its whole subtree through the Markdown fallback, and a native renderer below it would never run.
+Every primitive has a native `slack` renderer, and `src/registry.test.ts` fails when one does not. The containers (`slideFrame`, `slideSplit`, `slideStack`, `slideWindow`, `slideTitle` for its aside, and `slideAnnotatedRender` for its render) render each child through `scope.renderSlack`, so the dispatcher decides per child: a foreign node without a `slack` renderer falls back through its Markdown alone. A container without a `slack` renderer would send its whole subtree through the Markdown fallback, and a native renderer below it would never run.
 
 ## The registry
 

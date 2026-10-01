@@ -22,6 +22,7 @@ export const catalog = {
   avoidWhen: [
     'The nodes belong one above the other; list them in the slideFrame body.',
     'You are mapping who owns which areas across several teams; use slideTerritoryGroup.',
+    'There are three or more parallel items; use slideColumns.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

@@ -27,7 +27,7 @@ import { statementFit } from '../theme/components/statement';
 import { title, titleShares } from '../theme/components/title';
 import { scalePx } from '../theme/scale';
 
-import { openBody, slideLayout, withLayout } from './layout';
+import { frameBodyLayout, openBody, slideLayout, withLayout } from './layout';
 import { lineBox, trackWidth } from './size';
 import { referenceHeading } from './size.fixtures';
 import { example as agendaExample } from './slide_agenda/examples';
@@ -361,4 +361,29 @@ describe('auto-sizing primitives read the layout they are given', () => {
       );
     }
   );
+});
+
+describe('frameBodyLayout', () => {
+  const heading = { type: 'slideHeading', title: 'Lead' };
+  const rest = { type: 'slideStatement', text: 'Rest' };
+  const below = frameBodyLayout([heading, rest], 1);
+
+  it('charges a leading heading only on the surface that draws it', () => {
+    expect(below.height).toBeLessThan(openBody.height);
+    expect(
+      frameBodyLayout([{ ...heading, surfaces: ['text'] }, rest], 1)
+    ).toEqual(openBody);
+    expect(
+      frameBodyLayout([{ ...heading, surfaces: ['svg'] }, rest], 1, 'svg')
+    ).toEqual(below);
+    expect(
+      frameBodyLayout([{ ...heading, surfaces: ['react'] }, rest], 1, 'svg')
+    ).toEqual(openBody);
+  });
+
+  it('leads with the first node the surface draws', () => {
+    const body = [{ ...rest, surfaces: ['text'] }, heading, rest];
+    expect(frameBodyLayout(body, 1)).toEqual(openBody);
+    expect(frameBodyLayout(body, 2)).toEqual(below);
+  });
 });

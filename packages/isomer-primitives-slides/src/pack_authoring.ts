@@ -27,10 +27,19 @@ export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
       'slideSource',
     ],
   },
-  { title: 'Layout', types: ['slideSplit', 'slideStack'] },
+  {
+    title: 'Layout',
+    types: ['slideSplit', 'slideStack', 'slideWindow'],
+  },
   {
     title: 'Text',
-    types: ['slideList', 'slideBulletList', 'slideDefinitions', 'slideRoadmap'],
+    types: [
+      'slideList',
+      'slideBulletList',
+      'slideDefinitions',
+      'slideColumns',
+      'slideRoadmap',
+    ],
   },
   {
     title: 'Diagrams',
@@ -62,6 +71,10 @@ export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
     title: 'Code',
     types: ['slideCode', 'slideDiff', 'slideCommand', 'slideTranscript'],
   },
+  {
+    title: 'Renders',
+    types: ['slideRender', 'slideRenderGrid', 'slideAnnotatedRender'],
+  },
 ];
 
 export const slidesPackAuthoring = {
@@ -75,6 +88,16 @@ export const slidesPackAuthoring = {
       'Nodes stacked vertically in a one-node slot, never a slideFrame.',
     slideTitle:
       'The title slide. Its aside is one slide node, never a slideFrame.',
+    slideWindow:
+      'One app window. Its body holds slide nodes, never a slideFrame or another slideWindow.',
+    slideColumns:
+      'Two to four columns. `highlight`, when set, is an index into `items`.',
+    slideRender:
+      'One render. Needs a `slide` reference or a `body`; the body holds whole slides but never another render.',
+    slideRenderGrid:
+      'One body on two to six surfaces, each surface once. The body never holds another render.',
+    slideAnnotatedRender:
+      'One slideRender with one to six pins. The render needs a `slide` reference or a `body`, and its body never holds another render.',
     slidePipeline:
       'Steps on one rail. Without spans: numbered steps with bodies, optional start and end chips. With spans: steps are chips with no body, no start or end, and no size, and each span brackets steps from..to by index (from ≤ to < steps.length); spans do not overlap.',
     slideSequence:

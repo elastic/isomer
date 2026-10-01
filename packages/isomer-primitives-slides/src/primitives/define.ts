@@ -19,6 +19,9 @@ import type { ZodObject, ZodType } from 'zod';
 import type { SlidePackTypes } from '../render/context';
 
 import { statedRefine } from './cross_field';
+import { recordDefinition } from './pack_walk';
+
+const defineSlidePrimitive = definePrimitiveFor<SlidePackTypes>();
 
 /** {@link CorePrimitiveDefinition} bound to this pack's types. */
 export type PrimitiveDefinition<
@@ -32,7 +35,11 @@ export type PrimitiveDefinition<
  * Leave `TNode` and `TSchema` inferred so the schema's field brands survive.
  * Pass `TNode` only for a `schemaFor` container whose node type is not `z.infer`.
  */
-export const definePrimitive = definePrimitiveFor<SlidePackTypes>();
+export const definePrimitive: typeof defineSlidePrimitive = (definition) => {
+  const primitive = defineSlidePrimitive(definition);
+  recordDefinition(primitive);
+  return primitive;
+};
 
 const isFrame = (node: unknown): boolean =>
   typeof node === 'object' &&

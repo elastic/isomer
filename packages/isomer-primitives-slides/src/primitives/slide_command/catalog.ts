@@ -20,6 +20,7 @@ export const catalog = {
   ],
   avoidWhen: [
     'The command spans several lines, or you are showing source rather than something to run; use slideCode.',
+    'You are showing what the terminal printed, not what to type; put the output in a slideWindow with terminal chrome.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

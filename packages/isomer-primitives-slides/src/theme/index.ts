@@ -16,6 +16,7 @@ export {
   slideDiffOps,
   slideFrameTones,
   slideMatrixMarks,
+  slideRenderSurfaces,
   slideSizes,
   slideSplitDividers,
   slideSplitRatios,
@@ -23,12 +24,14 @@ export {
   slideTones,
   slideTranscriptFormats,
   slideTranscriptRoles,
+  slideWindowChromes,
 } from './variants';
 export type {
   SlideBulletMarker,
   SlideDiffOp,
   SlideFrameTone,
   SlideMatrixMark,
+  SlideRenderSurface,
   SlideSize,
   SlideSplitDivider,
   SlideSplitRatio,
@@ -36,4 +39,5 @@ export type {
   SlideTone,
   SlideTranscriptFormat,
   SlideTranscriptRole,
+  SlideWindowChrome,
 } from './variants';

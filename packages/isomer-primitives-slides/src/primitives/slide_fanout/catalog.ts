@@ -23,6 +23,7 @@ export const catalog = {
     'Several things connect to each other, not just to one source; use slideGraph.',
     'The destinations split by who owns them and ownership is the point; use slideTerritoryGroup.',
     'The points share no source; use slideBulletList.',
+    'The targets need more than a line each; use slideColumns.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;
