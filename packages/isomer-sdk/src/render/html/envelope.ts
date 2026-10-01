@@ -89,8 +89,12 @@ export interface HTMLRenderOptions {
   enhancements?: readonly string[];
   /** `true` renders node anchors whether or not an enhancement asks for them, e.g. for tests. `false` cannot turn off anchors an enhancement needs. */
   anchors?: boolean;
-  /** Opaque to the sdk; forwarded to {@link HTMLStyleAdapter} with the rest of the options. */
-  adapterOptions?: Record<string, unknown>;
+  /**
+   * Resolves `light-dark(…)` in the stylesheet to one scheme's value. A browser
+   * resolves it itself; an image is one static frame, so the `svg` surface sets
+   * it.
+   */
+  scheme?: 'light' | 'dark';
 }
 
 /**

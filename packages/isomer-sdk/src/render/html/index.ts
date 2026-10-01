@@ -10,7 +10,6 @@ export {
   type DistillateThemeVar,
   DISTILLATE_STYLE_COLLECTOR,
   createDistillateHtmlStyleAdapter,
-  flattenSchemeOption,
 } from './distillate_style_adapter';
 export {
   type EnhancementDefinition,

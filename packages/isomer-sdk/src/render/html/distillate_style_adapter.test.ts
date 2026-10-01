@@ -93,9 +93,7 @@ describe('createDistillateHtmlStyleAdapter', () => {
     adapter.renderStyles(collector, {});
     expect(overrides).toBeUndefined();
 
-    adapter.renderStyles(collector, {
-      adapterOptions: { flattenScheme: 'dark' },
-    });
+    adapter.renderStyles(collector, { scheme: 'dark' });
     expect(overrides).toEqual({ 'color.text': '#eee' });
   });
 });

@@ -18,7 +18,6 @@ export {
   DISTILLATE_STYLE_COLLECTOR,
   createDistillateHtmlStyleAdapter,
   enhancementScript,
-  flattenSchemeOption,
   renderHTMLWithDispatcher,
   rendersAnchors,
   resolveEnhancements,
