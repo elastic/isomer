@@ -10,7 +10,6 @@ export {
   type ReactContentDispatcher,
   type ReactContentOptions,
   type ReactTreeDispatcher,
-  PrimitiveDispatcherContext,
   renderCompositionContent,
   useReactPrimitiveDispatcher,
   wrapCompositionContent,

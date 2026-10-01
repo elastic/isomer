@@ -11,7 +11,6 @@ export {
   type ReactContentOptions,
   type ReactTreeDispatcher,
   applyEnhancements,
-  PrimitiveDispatcherContext,
   renderCompositionContent,
   useReactPrimitiveDispatcher,
   wrapCompositionContent,

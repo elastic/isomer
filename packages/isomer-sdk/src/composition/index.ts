@@ -14,7 +14,6 @@ export {
   BODY_NODE_SURFACES,
   createChildNodeWalker,
   isVisibleOnSurface,
-  rendersOnSurface,
   someBodyNode,
 } from './body_node_base';
 export { type Composition } from './composition';

@@ -54,9 +54,9 @@ type DispatcherContextScope = {
   [DISPATCHER_CONTEXT]?: Context<ReactTreeDispatcher | null>;
 };
 
-export const PrimitiveDispatcherContext = ((
-  globalThis as DispatcherContextScope
-)[DISPATCHER_CONTEXT] ??= createContext<ReactTreeDispatcher | null>(null));
+const PrimitiveDispatcherContext = ((globalThis as DispatcherContextScope)[
+  DISPATCHER_CONTEXT
+] ??= createContext<ReactTreeDispatcher | null>(null));
 
 /** The dispatcher rendering the enclosing tree, or `null` outside one. */
 export const useReactPrimitiveDispatcher = (): ReactTreeDispatcher | null =>

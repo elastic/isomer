@@ -167,10 +167,6 @@ export type JsxShim<
   TPrimitives extends readonly { type: string }[] = readonly { type: string }[],
 > = {
   Composition: AuthorComponent<CompositionAuthorProps<TNode>, 'view'>;
-  /** Components for types outside the primitive list. They are rejected as body nodes. */
-  component: <TProps extends object = Record<string, unknown>>(
-    type: string
-  ) => AuthorComponent<TProps, string>;
   /** Throws when the root is not the `Composition` element, or when a child is not a registered primitive. */
   toComposition: (
     element: ReactElement<CompositionAuthorProps<TNode>>
@@ -217,9 +213,6 @@ export const buildJsxShim = <
 
   return {
     Composition: view,
-    component: <TProps extends object = Record<string, unknown>>(
-      type: string
-    ) => defineAuthorComponent<TProps, string>(type),
     toComposition: (element) => toAuthorComposition<TNode>(element, env),
     ...Object.fromEntries(
       primitives.map((primitive) => [
@@ -693,7 +686,7 @@ export const itemsFromChildren = <TItem>(
   });
 
 /** The primitive type {@link authorType} brands onto `element`'s component. */
-export const getAuthorType = (element: ReactElement<unknown>): string => {
+const getAuthorType = (element: ReactElement<unknown>): string => {
   const component = element.type as Partial<AuthorComponent<unknown, string>>;
   const type = component[authorType];
   if (!type) {

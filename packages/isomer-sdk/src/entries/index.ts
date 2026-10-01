@@ -31,7 +31,6 @@ export {
   IsomerError,
   isVisibleOnSurface,
   mapCompositionNodes,
-  rendersOnSurface,
   someBodyNode,
 } from '../composition';
 export {

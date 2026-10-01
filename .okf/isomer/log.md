@@ -6,6 +6,7 @@
 
 ## 2026-10-01
 
+- **Shim and dispatch internals leave the entries**: `rendersOnSurface` (now requiring its walker), the raw `PrimitiveDispatcherContext` (read it with `useReactPrimitiveDispatcher`), `defineAuthorComponent`, `authorType`, `getAuthorType`, `JsxShim.component`, and `formatHeaderText` are no longer exported; the slides pack checks a header with `clampSlackText` against `SLACK_LIMITS.headerTextChars`.
 - **One name per type**: `BodyNodeSurface` is `SurfaceName`, defined once beside `BODY_NODE_SURFACES`; the `BodyNode` alias of `PrimitiveNode` and the unused `SvgRenderThemeBase` are removed; the composition schema's `theme` is `renderThemeSchema`.
 - **A pack's theme is a type argument**: `themeBound` and `PrimitivePackInput.theme` are removed; a pack names the palette its frames must supply as `definePrimitivePack<T>(input)`, and `PrimitivePackInput` is no longer generic. The slides pack calls `definePrimitivePack<SlideFrameTheme>`.
 - **Dead Zod helpers are gone**: the root entry no longer exports `enumOf`, whose `message` the central enum wording always replaced, `finiteNumber`, `nonNegativeFiniteNumber`, and `positiveFiniteNumber`, which Zod 4's `z.number()` makes redundant, or `optionalString`, which allowed `''` but not `undefined`. `z` and `requiredString` remain.

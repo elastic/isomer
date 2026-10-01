@@ -60,7 +60,6 @@ export {
   codeBlock,
   createSlackAssetCollector,
   escapeMrkdwn,
-  formatHeaderText,
   gfmToSlackBlocks,
   gfmToSlackMrkdwn,
   isSlackReachableImageUrl,

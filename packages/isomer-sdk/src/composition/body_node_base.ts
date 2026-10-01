@@ -164,7 +164,7 @@ export const isVisibleOnSurface = (
 export const rendersOnSurface = (
   node: unknown,
   surface: SurfaceName,
-  walk: ChildNodeWalker = () => []
+  walk: ChildNodeWalker
 ): boolean => {
   if (!isVisibleOnSurface(node, surface)) {
     return false;
