@@ -7,7 +7,7 @@ The word names the _definition_, never the instance. An instance in a compositio
 ## A complete primitive
 
 ```tsx
-import { type PrimitiveNode, definePrimitive, optionalString, requiredString, z } from '@elastic/isomer-sdk';
+import { type PrimitiveNode, definePrimitive, requiredString, z } from '@elastic/isomer-sdk';
 import { md } from '@elastic/isomer-sdk/markdown';
 import { type SlackBlock } from '@elastic/isomer-sdk/slack';
 
@@ -15,7 +15,7 @@ export const kpiSchema = z.object({
   type: z.literal('kpi'),
   label: requiredString(),
   value: requiredString(),
-  delta: optionalString().optional(),
+  delta: z.string().optional(),
 });
 
 export type KpiNode = z.infer<typeof kpiSchema> & PrimitiveNode;

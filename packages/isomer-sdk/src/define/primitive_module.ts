@@ -22,7 +22,7 @@ import type { MarkdownContent } from './markdown_content';
 import type { SlackAssetCollector } from './slack_assets';
 import type { SlackBlock } from './slack_blocks';
 import { formatZodIssues } from './zod_format';
-import { enumOf, requiredString } from './zod_helpers';
+import { requiredString } from './zod_helpers';
 
 export type { PrimitiveNode };
 
@@ -480,7 +480,7 @@ export const bodyNodeIdSchema = requiredString('must be a non-empty string');
 
 /** The `surfaces` allowlist on a node. Absent means every surface; empty is rejected. */
 export const bodyNodeSurfacesSchema = z
-  .array(enumOf(BODY_NODE_SURFACES as [BodyNodeSurface, ...BodyNodeSurface[]]))
+  .array(z.enum(BODY_NODE_SURFACES as [BodyNodeSurface, ...BodyNodeSurface[]]))
   .min(1, { error: 'must contain at least one surface' });
 
 /**

@@ -82,7 +82,7 @@ Types: `ValidationError`, `ValidationResult`, `CheckedValidationResult` (`Valida
 
 Value types: `DisplayValue`, `StructuredValue`, `StructuredValueFormat`, `NamedColor`, `NamedColorPalette`, `RenderTheme` (`'light' | 'dark' | 'auto'`).
 
-Zod helpers so a pack states constraints the same way everywhere: `z`, `enumOf`, `requiredString`, `optionalString`, `finiteNumber`, `nonNegativeFiniteNumber`, `positiveFiniteNumber`.
+Zod helpers so a pack states constraints the same way everywhere: `z` and `requiredString`. Zod 4's `z.number()` already rejects `NaN` and both infinities, and an enum's error is worded centrally.
 
 ## `./html`
 
