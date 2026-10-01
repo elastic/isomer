@@ -57,10 +57,11 @@ import { graph } from '../theme/components/graph';
 import { matrixFit } from '../theme/components/matrix';
 import { quadrantFit } from '../theme/components/quadrant';
 import { quoteFit } from '../theme/components/quote';
+import { renderGrid } from '../theme/components/render_grid';
 import { statementFit } from '../theme/components/statement';
 import { scalePx } from '../theme/scale';
 
-import { findings, measured } from './measure';
+import { findings, measured, nodeBox } from './measure';
 import { previewSlide } from './preview_slide';
 
 const cases = slideDeckPrimitives.flatMap(({ type, examples }) =>
@@ -421,4 +422,43 @@ describe('an annotated render fits its legend beside it under the tallest headin
       expect(await findings(inFrame([tallestExample, node]))).toEqual([]);
     }
   );
+});
+
+describe('six render tiles in half a split', () => {
+  const longCaptions = {
+    ...gridExample,
+    tiles: gridExample.tiles.map((tile) => ({
+      ...tile,
+      caption:
+        'A caption long enough to wrap onto a second and maybe a third line in a narrow pane',
+    })),
+  };
+
+  it.each([
+    ['alone', [paneOf(gridExample)]],
+    ['under a heading', [headingExample, paneOf(gridExample)]],
+    ['under the tallest heading', [tallestExample, paneOf(gridExample)]],
+    ['alone, with long captions', [paneOf(longCaptions)]],
+  ] as const)('fit %s', async (_, body) => {
+    expect(await findings(inFrame([...body]))).toEqual([]);
+  });
+
+  it('report the overflow when their heads alone outgrow the room under the tallest heading', async () => {
+    const slide = inFrame([tallestExample, paneOf(longCaptions)]);
+    expect(await findings(slide)).toEqual([
+      {
+        kind: 'overflow',
+        path: 'body[0].body[1].panes[0].items[0]',
+        type: 'slideRenderGrid',
+        by: expect.any(Number) as number,
+      },
+    ]);
+    const grid = nodeBox(await measured(slide), 'slideRenderGrid');
+    const rowHeads = [grid.children.slice(0, 3), grid.children.slice(3)].map(
+      (row) => Math.max(...row.map(({ children: [head] }) => head!.height))
+    );
+    expect(
+      rowHeads[0]! + rowHeads[1]! + scalePx(renderGrid.gap)
+    ).toBeGreaterThan(grid.height);
+  });
 });

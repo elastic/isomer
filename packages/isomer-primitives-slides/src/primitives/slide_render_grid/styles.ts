@@ -43,6 +43,12 @@ export const renderGridModule = createStyleModule('renderGrid', ({ css }) => ({
     gap: ${renderGrid.headGap};
     min-width: 0;
   `,
+  /** The caption on its own lines under the name. */
+  headStacked: css`
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0;
+  `,
   name: css`
     color: ${color.text};
     flex: 0 0 auto;
@@ -62,6 +68,7 @@ export const renderGridModule = createStyleModule('renderGrid', ({ css }) => ({
     `;
   }),
   outputScale: css`
+    height: calc(100% / ${renderGrid.outputScale});
     transform: scale(${renderGrid.outputScale});
     transform-origin: 0 0;
     width: calc(100% / ${renderGrid.outputScale});

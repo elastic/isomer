@@ -6,7 +6,7 @@
  */
 
 import { font, space, type } from '../base';
-import { literal } from '../scale';
+import { literal, px } from '../scale';
 
 import { render } from './render';
 
@@ -35,6 +35,8 @@ export const renderGrid = {
   gap: space.px40,
   cellGap: space.px14,
   headGap: space.px16,
+  /** Narrower than this beside its surface name, a caption takes its own line under it. */
+  captionMinWidth: px(160),
   name: {
     family: font.family.mono,
     size: font.size.px30,
