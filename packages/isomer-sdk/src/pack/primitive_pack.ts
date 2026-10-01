@@ -198,6 +198,14 @@ export const definePrimitivePack = <TTheme = unknown>(
   assertUniqueEnhancementIds(input.id, input.enhancements ?? []);
   const types = new Set(input.primitives.map((definition) => definition.type));
   assertGroupedOnce(input.id, input.authoring?.groups ?? [], types);
+  for (const type of input.slackAssetTypes ?? []) {
+    if (!types.has(type)) {
+      throw new IsomerError(
+        'UNKNOWN_PRIMITIVE_TYPE',
+        `primitive pack "${input.id}": slackAssetTypes names primitive type "${type}", which the pack does not register`
+      );
+    }
+  }
   const styleCollector =
     input.styleCollector ?? input.styleAdapter?.styleCollector;
 

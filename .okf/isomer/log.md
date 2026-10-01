@@ -6,6 +6,7 @@
 
 ## 2026-10-01
 
+- **Packs reject a repeated id and an unregistered Slack asset type**: `composePacks` throws the new `DUPLICATE_PACK_ID` for a repeated pack `id`, and `definePrimitivePack` throws `UNKNOWN_PRIMITIVE_TYPE` for a `slackAssetTypes` entry it does not register.
 - **HTML raw sinks and the React context are hardened**: inline CSS has `</style` written `<\/style`, and inline JS has `</script` written `<\/script` and `<!--` written `\x3C!--`, which keep their values in strings and regular expressions, and the measurement counts the escaped text; minify leaves `script`, `style`, and `textarea` whitespace alone, closing tags with whitespace included; `PrimitiveDispatcherContext` lives on `globalThis` under `Symbol.for('isomer.react.dispatcher')` so dual ESM/CJS copies share it.
 - **The React wrapper reads the composition's theme**: `wrapCompositionContent` defaults `theme` to `composition.theme`, so the React surface's `wrapper` sets the same `data-theme` the `html` surface does.
 - **The pack prompt builder passes every field through**: `createAuthoringPromptBuilder` dropped a caller's `catalog`, `groups`, `heading`, and `intro`, so `catalog: 'index'` printed the full catalog; it now spreads every defined field over the pack's defaults. Both pack authoring factories have tests.

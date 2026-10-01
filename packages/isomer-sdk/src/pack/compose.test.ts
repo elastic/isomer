@@ -54,6 +54,23 @@ const pack = (
   });
 
 describe('composePacks', () => {
+  it('rejects two packs with one id', () => {
+    expect(() =>
+      composePacks([pack('notes', ['note']), pack('notes', ['memo'])])
+    ).toThrow(
+      expect.objectContaining({
+        name: 'IsomerError',
+        code: 'DUPLICATE_PACK_ID',
+      })
+    );
+  });
+
+  it('rejects a slack asset type the pack does not register', () => {
+    expect(() =>
+      pack('charts', ['chart'], { slackAssetTypes: ['graph'] })
+    ).toThrow(expect.objectContaining({ code: 'UNKNOWN_PRIMITIVE_TYPE' }));
+  });
+
   it('returns a frozen inventory to hold', () => {
     const composed = composePacks([pack('notes', ['note'])]);
     expect(Object.isFrozen(composed)).toBe(true);
