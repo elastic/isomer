@@ -22,11 +22,11 @@ import {
   type PrimitiveNode,
   type PrimitivePack,
   type PrimitiveRenderContext,
-  runEnhancementScript,
   type StyleHandle,
   unresolvedBodyNodeSchema,
 } from '@elastic/isomer-sdk';
 import { md } from '@elastic/isomer-sdk/markdown';
+import { runEnhancementScript } from '@elastic/isomer-sdk/react';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { z } from 'zod';

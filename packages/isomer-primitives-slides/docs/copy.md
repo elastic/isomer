@@ -18,7 +18,7 @@ Request `slideCopy` when rendering the HTML surface, then run the render's scrip
 
 ```ts
 import { SLIDE_COPY } from '@elastic/isomer-primitives-slides';
-import { runEnhancementScript } from '@elastic/isomer-sdk';
+import { runEnhancementScript } from '@elastic/isomer-sdk/react';
 
 const { html, css, js } = runtime.surfaces.html.render(composition, {
   enhancements: [SLIDE_COPY],

@@ -6,6 +6,7 @@
 
 ## 2026-10-01
 
+- **DOM-typed helpers move to `./react`**: `runEnhancementScript`, `findNodeElementPairs`, and `measureDom` are exported from `@elastic/isomer-sdk/react`, beside the React surface that runs in a browser, instead of the root. `checkLayout` and the `Layout*` types stay on the root. The runtime's React surface and the slides builds import them from `./react`.
 - **Shim and dispatch internals leave the entries**: `rendersOnSurface` (now requiring its walker), the raw `PrimitiveDispatcherContext` (read it with `useReactPrimitiveDispatcher`), `defineAuthorComponent`, `authorType`, `getAuthorType`, `JsxShim.component`, and `formatHeaderText` are no longer exported; the slides pack checks a header with `clampSlackText` against `SLACK_LIMITS.headerTextChars`.
 - **One name per type**: `BodyNodeSurface` is `SurfaceName`, defined once beside `BODY_NODE_SURFACES`; the `BodyNode` alias of `PrimitiveNode` and the unused `SvgRenderThemeBase` are removed; the composition schema's `theme` is `renderThemeSchema`.
 - **A pack's theme is a type argument**: `themeBound` and `PrimitivePackInput.theme` are removed; a pack names the palette its frames must supply as `definePrimitivePack<T>(input)`, and `PrimitivePackInput` is no longer generic. The slides pack calls `definePrimitivePack<SlideFrameTheme>`.

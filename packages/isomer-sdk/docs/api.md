@@ -45,9 +45,7 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | `layoutRoom`, `LAYOUT_ROOM_ATTRIBUTE` | Props a renderer spreads on an element inside its node, such as a frame's body, so `checkLayout` measures the nodes nested in it against that element; rendered when `nodeAnchor` would be |
 | `withNodeAnchors` | A view of a context with anchors on, as an enhancement declaring `anchors: true` turns them on |
 | `withoutAnchors` | A context under which nothing renders an anchor, for content that is not one of a node's `children` |
-| `findNodeElementPairs` | Each `react`-visible node of a body, in pre-order, with its anchored element under a DOM root |
 | `findNodeElements` | The same as a map from node to element, for a body that reuses no node object |
-| `measureDom` | The `LayoutBox` tree a browser laid an element out as, for `checkLayout` |
 | `checkLayout` | Where a measured render's nodes run past their room or onto a sibling, as `LayoutFinding`s over a `LayoutBox` tree of `LayoutRect`s |
 | `BODY_NODE_SURFACES` | `['react','svg','text','markdown','slack']` |
 
@@ -77,7 +75,7 @@ Types: `ValidationError`, `ValidationResult`, `CheckedValidationResult` (`Valida
 
 `displayValueSchema`, `structuredValueSchema`, `namedColorSchema`, `renderThemeSchema`, `formatDisplayValue` (with `FormatDisplayValueOptions`), `isStructuredValue`, `rawDisplayValue`, `STRUCTURED_VALUE_FORMATS`, `ALL_NAMED_COLORS`, `ISOMER_ERROR_CODES`, plus `formatCompactNumber`. `PayloadMeasurement` is the byte breakdown on `HTMLRenderResult.measurement`.
 
-`runEnhancementScript` takes a `scripts: 'host'` render's `js` and the `.isomer` section the host inserted, and runs the one against the other. `scopeScript` wraps one script body in its own function, for anything that joins bodies, such as a runtime combining several packs' `getScriptText`. Both live here rather than on `./html` because neither needs the server renderer. See [Enhancements](rendering.md#enhancements).
+`scopeScript` wraps one script body in its own function, for anything that joins bodies, such as a runtime combining several packs' `getScriptText`. It lives here rather than on `./html` because it needs no server renderer. See [Enhancements](rendering.md#enhancements).
 
 Value types: `DisplayValue`, `StructuredValue`, `StructuredValueFormat`, `NamedColor`, `NamedColorPalette`, `RenderTheme` (`'light' | 'dark' | 'auto'`).
 
@@ -90,6 +88,8 @@ Zod helpers so a pack states constraints the same way everywhere: `z` and `requi
 ## `./react`
 
 `useReactPrimitiveDispatcher`, `renderCompositionContent`, `wrapCompositionContent` (the `.isomer[.framed][.fluid]` `section` the `html` surface's wrapper also emits, for a React-only host; `CompositionWrapperOptions` carries `framed`, `fluid`, `theme`, `defaultAriaLabel`), `applyEnhancements` (the enhancement definitions that apply to a body, and a view of the render context carrying their ids as `enhancements`, with `anchors` on when one asks), and the dispatcher/context types used by React renderers: `ReactContentDispatcher`, `ReactContentOptions`, `ReactTreeDispatcher`.
+
+The browser-side helpers, which type against the DOM and so stay off the root entry: `runEnhancementScript` takes a `scripts: 'host'` render's `js` and the `.isomer` section the host inserted, and runs the one against the other; `findNodeElementPairs` lists each `react`-visible node of a body, in pre-order, with its anchored element under a DOM root; `measureDom` returns the `LayoutBox` tree a browser laid an element out as, for `checkLayout`.
 
 ## `./text`, `./markdown`, `./slack`
 
