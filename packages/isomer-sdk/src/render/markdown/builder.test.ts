@@ -20,8 +20,7 @@ import {
 import { gfmToSlackBlocks } from '../slack/format';
 
 import {
-  boldLabelPrefix,
-  boldSectionLabel,
+  defaultMarkdownFromText,
   markdownFromString,
   md,
   serializeMarkdown,
@@ -425,12 +424,15 @@ describe('md', () => {
 });
 
 describe('label helpers', () => {
-  it('escapes the label they bold', () => {
-    expect(boldSectionLabel('a*b')).toBe('**A\\*B**');
-    expect(boldLabelPrefix('2*3: six', '2*3')).toBe('**2\\*3**: six');
+  it('bolds and escapes a GFM line’s label prefix, leaving the rest as written', () => {
+    const render = defaultMarkdownFromText((text: string) => text, {
+      label: () => '2*3',
+    });
+    expect(render('2*3: *six*')).toBe('**2\\*3**: *six*');
+    expect(render('x: *y*')).toBe('x: *y*');
   });
 
-  it('build the same labels as content, escaping the text too', () => {
+  it('build labels as content, escaping the text too', () => {
     expect(
       serializeMarkdown([
         md.boldSectionLabel('a*b'),

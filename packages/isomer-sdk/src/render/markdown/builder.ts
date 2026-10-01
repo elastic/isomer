@@ -254,7 +254,7 @@ export const md = {
   /** Authored Markdown source, after {@link sanitizeMarkdownSource}. */
   authored: (source: string): MarkdownBlock =>
     verbatim(sanitizeMarkdownSource(source)),
-  /** Plain `text` with a leading `label:` in strong, as {@link boldLabelPrefix} does for GFM. */
+  /** Plain `text` with a leading `label:` in strong. */
   boldLabelPrefix: (
     text: string,
     label: string | undefined
@@ -328,36 +328,10 @@ export const serializeMarkdown = (content: MarkdownContent): string =>
   );
 
 /**
- * Bolds a leading `Label:` prefix, leaving the rest of the line untouched.
- *
- * Lets a primitive whose text renderer already emits `Label: summary` reuse
- * that line on the markdown surface and still scan alongside bolder
- * neighbours. A no-op when `label` is absent or the text does not lead with it.
- */
-export const boldLabelPrefix = (
-  text: string,
-  label: string | undefined
-): string => {
-  if (!label) {
-    return text;
-  }
-  return text.startsWith(`${label}:`)
-    ? `${serializeMarkdown(md.paragraph(md.strong(label)))}${text.slice(label.length)}`
-    : text;
-};
-
-/**
- * Bolds and uppercases a section label so it reads as a heading-equivalent atop
- * list-shaped markdown blocks (stat groups, description lists, badge groups).
- */
-export const boldSectionLabel = (label: string): string =>
-  serializeMarkdown(md.boldSectionLabel(label));
-
-/**
  * A markdown renderer for a primitive whose text output is already valid GFM.
  *
- * Pass `options.label` to lift the node's label into bold via
- * {@link boldLabelPrefix}.
+ * Pass `options.label` to bold a leading `label:` prefix, leaving the rest of
+ * the line as written.
  */
 export const defaultMarkdownFromText =
   <TNode>(
@@ -368,5 +342,8 @@ export const defaultMarkdownFromText =
   ): ((node: TNode) => string) =>
   (node) => {
     const text = renderText(node);
-    return options.label ? boldLabelPrefix(text, options.label(node)) : text;
+    const label = options.label?.(node);
+    return label && text.startsWith(`${label}:`)
+      ? `${serializeMarkdown(md.paragraph(md.strong(label)))}${text.slice(label.length)}`
+      : text;
   };

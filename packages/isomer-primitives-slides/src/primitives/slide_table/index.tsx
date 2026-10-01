@@ -41,9 +41,9 @@ export const text = (node: SlideTableNode): string => {
 export const markdown = (node: SlideTableNode) => {
   const { label, rowHeaders } = node;
   return [
-    ...(label ? [md.boldSectionLabel(label.toUpperCase())] : []),
+    ...(label ? [md.boldSectionLabel(label)] : []),
     ...tableGroups(node).flatMap(({ label: group, rows }) => [
-      ...(group ? [md.boldSectionLabel(group.toUpperCase())] : []),
+      ...(group ? [md.boldSectionLabel(group)] : []),
       md.table(
         heads(node),
         rows.map((row) =>
