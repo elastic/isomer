@@ -5,11 +5,17 @@
  * 2.0.
  */
 
-/** A render target a node can be shown on or hidden from. */
-export type BodyNodeSurface = 'react' | 'svg' | 'text' | 'markdown' | 'slack';
+/**
+ * The five surfaces a node renders on or is hidden from.
+ *
+ * Spelled out rather than derived as `keyof SurfaceMap<…>`: the keys never vary
+ * with the pack types, and TypeScript can fail to prove a `keyof` over one
+ * instantiation transfers to another, silently widening to `any`.
+ */
+export type SurfaceName = 'react' | 'svg' | 'text' | 'markdown' | 'slack';
 
-/** Every {@link BodyNodeSurface}, for callers that iterate them. */
-export const BODY_NODE_SURFACES: readonly BodyNodeSurface[] = [
+/** Every {@link SurfaceName}, for callers that iterate them. */
+export const BODY_NODE_SURFACES: readonly SurfaceName[] = [
   'react',
   'svg',
   'text',
@@ -22,7 +28,7 @@ export interface BodyNodeBase {
   /** Unique within a composition, which `validate` enforces and `parse` does not. */
   id?: string;
   /** Surfaces this node appears on. Absent means every surface. */
-  surfaces?: BodyNodeSurface[];
+  surfaces?: SurfaceName[];
 }
 
 /**
@@ -116,7 +122,7 @@ export const childNodePath = (parent: string, child: string): string =>
  */
 export const someBodyNode = (
   nodes: readonly unknown[],
-  surface: BodyNodeSurface,
+  surface: SurfaceName,
   predicate: (node: unknown) => boolean,
   walk: ChildNodeWalker
 ): boolean =>
@@ -138,7 +144,7 @@ export const someBodyNode = (
 /** Whether `node`'s own `surfaces` hint admits `surface`, ignoring its children. */
 export const isVisibleOnSurface = (
   node: unknown,
-  surface: BodyNodeSurface
+  surface: SurfaceName
 ): boolean => {
   if (!node || typeof node !== 'object') {
     return false;
@@ -157,7 +163,7 @@ export const isVisibleOnSurface = (
  */
 export const rendersOnSurface = (
   node: unknown,
-  surface: BodyNodeSurface,
+  surface: SurfaceName,
   walk: ChildNodeWalker = () => []
 ): boolean => {
   if (!isVisibleOnSurface(node, surface)) {

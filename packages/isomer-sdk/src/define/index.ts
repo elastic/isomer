@@ -43,8 +43,6 @@ export {
   type StyledRenderContext,
   type StyleHandle,
   type SurfaceMap,
-  type SurfaceName,
-  type SvgRenderThemeBase,
   type ThemeTokenPath,
   type WithNodeFields,
   bodyNodeIdSchema,

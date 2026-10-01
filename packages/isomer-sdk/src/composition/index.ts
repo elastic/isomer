@@ -8,9 +8,9 @@
 export { type ActionEventRef } from './action_event';
 export {
   type BodyNodeBase,
-  type BodyNodeSurface,
   type ChildNodeRef,
   type ChildNodeWalker,
+  type SurfaceName,
   BODY_NODE_SURFACES,
   createChildNodeWalker,
   isVisibleOnSurface,
@@ -26,7 +26,7 @@ export {
   type RenderTheme,
   ALL_NAMED_COLORS,
 } from './named_color';
-export { type BodyNode, type PrimitiveNode } from './node';
+export { type PrimitiveNode } from './node';
 export { nameText, oneLine, quoteText } from './one_line';
 export {
   type DisplayValue,

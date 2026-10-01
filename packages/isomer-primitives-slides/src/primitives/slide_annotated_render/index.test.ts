@@ -8,10 +8,10 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import {
-  type BodyNodeSurface,
   type Composition,
   NODE_ANCHOR_ATTRIBUTE,
   type PrimitiveNode,
+  type SurfaceName,
   withNodeAnchors,
 } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
@@ -134,7 +134,7 @@ describe('slideAnnotatedRender', () => {
   });
 
   describe('with its render hidden from a surface', () => {
-    const hiddenOn = (...surfaces: BodyNodeSurface[]) => ({
+    const hiddenOn = (...surfaces: SurfaceName[]) => ({
       ...node,
       render: { ...node.render, surfaces },
     });

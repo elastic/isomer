@@ -7,7 +7,10 @@
 
 import { cloneElement, isValidElement, type ReactNode } from 'react';
 
-import { isVisibleOnSurface } from '../composition/body_node_base';
+import {
+  isVisibleOnSurface,
+  type SurfaceName,
+} from '../composition/body_node_base';
 import { IsomerError } from '../composition/error';
 import type { ValidationError } from '../composition/validation_error';
 import type { MarkdownContent } from '../define/markdown_content';
@@ -21,7 +24,6 @@ import {
   type Renderer,
   type RenderScope,
   type SurfaceMap,
-  type SurfaceName,
 } from '../define/primitive_module';
 import { createNodeIssueFormatter } from '../validate/node_issues';
 

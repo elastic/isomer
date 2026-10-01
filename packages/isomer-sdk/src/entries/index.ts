@@ -7,9 +7,7 @@
 
 export {
   type ActionEventRef,
-  type BodyNode,
   type BodyNodeBase,
-  type BodyNodeSurface,
   type ChildNodeRef,
   type ChildNodeWalker,
   type Composition,
@@ -21,6 +19,7 @@ export {
   type RenderTheme,
   type StructuredValue,
   type StructuredValueFormat,
+  type SurfaceName,
   type ValidationError,
   ALL_NAMED_COLORS,
   BODY_NODE_SURFACES,
@@ -62,8 +61,6 @@ export {
   type StyledRenderContext,
   type StyleHandle,
   type SurfaceMap,
-  type SurfaceName,
-  type SvgRenderThemeBase,
   type ThemePair,
   type ThemeTokenPath,
   type WithNodeFields,
