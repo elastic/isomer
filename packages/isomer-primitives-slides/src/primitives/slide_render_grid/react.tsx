@@ -13,7 +13,13 @@ import type { SlideReactEnv } from '../../render/context';
 import { slideLayout } from '../layout';
 import { RenderPanel } from '../slide_render/panel';
 
-import { fillsCell, shapeFor, tileScale } from './fit';
+import {
+  captionBeside,
+  cellWidth,
+  fillsCell,
+  shapeFor,
+  tileScale,
+} from './fit';
 import { renderGridModule } from './styles';
 import type { SlideRenderGridNode } from './types';
 
@@ -25,14 +31,21 @@ export const react = (
   const { type, tiles } = node;
   const { handles: grid } = renderGridModule;
   const shape = shapeFor(tiles.length);
-  const scale = tileScale(node, slideLayout(context));
+  const layout = slideLayout(context);
+  const scale = tileScale(node, layout);
+  const cell = cellWidth(node, layout);
   return (
     <div
       {...nodeAnchor(context, { type })}
       className={cls(context, grid.root, grid.shape[shape])}>
       {tiles.map(({ surface, caption }) => (
         <figure className={cls(context, grid.cell)} key={surface}>
-          <figcaption className={cls(context, grid.head)}>
+          <figcaption
+            className={cls(
+              context,
+              grid.head,
+              captionBeside(surface, cell) ? undefined : grid.headStacked
+            )}>
             <span className={cls(context, grid.name)}>{surface}</span>
             <span className={cls(context, grid.caption)}>{caption}</span>
           </figcaption>

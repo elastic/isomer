@@ -71,11 +71,14 @@ export const renderModule = createStyleModule('render', ({ css }) => ({
     flex-direction: column;
     ${typeRole(render.output)}
     left: 0;
+    overflow: hidden;
     padding: ${render.outputPadding};
     position: absolute;
     top: 0;
   `,
+  /** The panel's size, so output past it is clipped by its own box. */
   outputScale: css`
+    height: 100%;
     width: 100%;
   `,
   line: css`

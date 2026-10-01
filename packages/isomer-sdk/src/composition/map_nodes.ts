@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { createChildNodeWalker } from './body_node_base';
+import { type ChildNodeRef, createChildNodeWalker } from './body_node_base';
 import type { Composition } from './composition';
 import { IsomerError } from './error';
 import type { PrimitiveNode } from './node';
@@ -49,6 +49,14 @@ const withValueAt = (
   return { ...record, [field]: array };
 };
 
+/** A node being mapped: its children, how many are done, and its copy so far. */
+interface Frame {
+  node: PrimitiveNode;
+  children: ChildNodeRef[];
+  next: number;
+  result: PrimitiveNode;
+}
+
 /**
  * Rebuilds `composition`'s body with `fn` applied to every node, including
  * nested children of every container `definitions` describes.
@@ -58,6 +66,7 @@ const withValueAt = (
  * every pack in the composition, as {@link createChildNodeWalker} requires.
  * A child path is the dotted `field` / `field[index]` form the SDK documents
  * (`items[0].node`); any other shape throws `UNSUPPORTED_CHILD_PATH`.
+ * Walked without recursion, so depth is bounded by memory, not the call stack; a node nested in itself throws `CYCLIC_COMPOSITION`.
  */
 export const mapCompositionNodes = <
   TNode extends PrimitiveNode = PrimitiveNode,
@@ -67,19 +76,44 @@ export const mapCompositionNodes = <
   fn: (node: PrimitiveNode) => PrimitiveNode
 ): Composition<TNode> => {
   const walk = createChildNodeWalker(definitions);
-  const mapNode = (node: PrimitiveNode): PrimitiveNode =>
-    fn(
-      walk(node).reduce<PrimitiveNode>(
-        (parent, { node: child, path }) =>
-          withValueAt(
-            parent,
-            path.split('.'),
-            mapNode(child as PrimitiveNode),
-            path
-          ) as PrimitiveNode,
-        node
-      )
-    );
+  const mapNode = (root: PrimitiveNode): PrimitiveNode => {
+    const open = new Set<PrimitiveNode>();
+    const stack: Frame[] = [];
+    const enter = (node: PrimitiveNode) => {
+      if (open.has(node)) {
+        throw new IsomerError(
+          'CYCLIC_COMPOSITION',
+          'mapCompositionNodes: a node is nested in itself'
+        );
+      }
+      open.add(node);
+      stack.push({ node, children: walk(node), next: 0, result: node });
+    };
+    enter(root);
+    for (;;) {
+      const frame = stack[stack.length - 1]!;
+      const child = frame.children[frame.next];
+      if (child) {
+        enter(child.node as PrimitiveNode);
+        continue;
+      }
+      stack.pop();
+      open.delete(frame.node);
+      const mapped = fn(frame.result);
+      const parent = stack[stack.length - 1];
+      if (!parent) {
+        return mapped;
+      }
+      const { path } = parent.children[parent.next]!;
+      parent.result = withValueAt(
+        parent.result,
+        path.split('.'),
+        mapped,
+        path
+      ) as PrimitiveNode;
+      parent.next += 1;
+    }
+  };
   return {
     ...composition,
     body: composition.body.map((node) => mapNode(node) as TNode),

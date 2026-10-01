@@ -17,7 +17,7 @@ sources:
 
 # Definition
 
-Test helpers for packs and renderers. May import any pipeline stage. Node-only: `assertPackRegistrationComplete` reads a primitives directory and fails when a subdirectory is absent from the registry. The body-node union stays hand-written; a type assertion in the pack's tests is what relates the two lists.[^barrel][^registration]
+Test helpers for packs and renderers. May import any pipeline stage. Node-only: `assertPackRegistrationComplete` reads a primitives directory and fails when a subdirectory is absent from the registry. The body-node union stays hand-written; a type assertion in the pack's tests is what relates the two lists. `runPrimitiveInventoryConformance` checks each `catalog.example` against the default input budget before reading it, so a deep one fails as an assertion rather than overflowing the stack.[^barrel][^registration]
 
 Related: [packs](/sdk/concepts/packs.md), [pipeline](/sdk/concepts/pipeline.md), [root](/sdk/entry-points/root.md).
 

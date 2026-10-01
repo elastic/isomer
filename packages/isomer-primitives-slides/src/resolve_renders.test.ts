@@ -148,6 +148,58 @@ describe('resolveSlideRenders', () => {
     });
   });
 
+  describe('under a raised depth budget', () => {
+    const depth = 20_000;
+    const inputBudget = {
+      depth: 3 * depth,
+      values: 10 * depth,
+      characters: 100 * depth,
+    };
+    const chain = (leaf: object): Composition => {
+      let node = leaf;
+      for (let level = 0; level < depth; level += 1) {
+        node = { type: 'slideStack', items: [node] };
+      }
+      return frame(node);
+    };
+    const leafOf = (composition: Composition) => {
+      let [node] = bodyOf(composition) as { items?: object[] }[];
+      let levels = 0;
+      while (node?.items) {
+        [node] = node.items as { items?: object[] }[];
+        levels += 1;
+      }
+      return { node, levels };
+    };
+    const target = { slug: 'target', composition: frame(heading) };
+
+    it.each(['throw', 'leave'] as const)(
+      'fills a reference at the foot of a budget-valid chain with onUnresolved %s',
+      (onUnresolved) => {
+        const [, host] = resolveSlideRenders(
+          [target, { slug: 'host', composition: chain(renderOf('target')) }],
+          { inputBudget, onUnresolved }
+        );
+        expect(leafOf(host!)).toEqual({
+          node: { ...renderOf('target'), body: target.composition.body },
+          levels: depth,
+        });
+      }
+    );
+
+    it('throws on, or leaves, an unknown slug at the foot of the chain', () => {
+      const slides = [{ slug: 'host', composition: chain(renderOf('gone')) }];
+      expect(() => resolveSlideRenders(slides, { inputBudget })).toThrow(
+        'resolveSlideRenders: slide "host" renders unknown slide "gone"'
+      );
+      const [host] = resolveSlideRenders(slides, {
+        inputBudget,
+        onUnresolved: 'leave',
+      });
+      expect(leafOf(host!)).toEqual({ node: renderOf('gone'), levels: depth });
+    });
+  });
+
   it('refuses a slide that is not plain data', () => {
     const slides = [
       { slug: 'a', composition: frame({ ...heading, title: () => 'Late' }) },

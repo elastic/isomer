@@ -19,6 +19,9 @@ import {
 import type { SlideContentNode } from '../body_node';
 import { bulletListBuild } from '../primitives/slide_bullet_list/build';
 import { listBuild } from '../primitives/slide_list/build';
+import { pipelineBuild } from '../primitives/slide_pipeline/build';
+import { sequenceBuild } from '../primitives/slide_sequence/build';
+import { timelineBuild } from '../primitives/slide_timeline/build';
 import { transcriptBuild } from '../primitives/slide_transcript/build';
 import { slideDeckPrimitives } from '../registry';
 
@@ -30,6 +33,9 @@ export const SLIDE_BUILDS = 'slideBuilds';
 const buildsByType = {
   slideBulletList: bulletListBuild,
   slideList: listBuild,
+  slidePipeline: pipelineBuild,
+  slideSequence: sequenceBuild,
+  slideTimeline: timelineBuild,
   slideTranscript: transcriptBuild,
 } satisfies Partial<Record<SlideContentNode['type'], SlideBuild<never>>>;
 

@@ -8,6 +8,9 @@ A build reveals a slide one part per click. Order comes from the slide's structu
 | --- | --- |
 | `slideBulletList` | an item |
 | `slideList` | a row |
+| `slidePipeline` | a step; the rail and the `start` chip show from the first click, the `end` chip comes with the last step, and in spans mode a span's bracket and caption with the step it ends on |
+| `slideSequence` | a message; the actors and their lifelines show from the first click |
+| `slideTimeline` | an item; the rail shows from the first click |
 | `slideTranscript` | a turn |
 
 A slide embedded with `slideRender`, `slideRenderGrid`, or `slideAnnotatedRender` is a picture of a finished slide and never builds. Hidden parts keep their layout box (`visibility: hidden`), so nothing moves when one appears.

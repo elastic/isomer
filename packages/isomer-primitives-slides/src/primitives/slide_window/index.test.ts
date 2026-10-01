@@ -7,11 +7,18 @@
 
 import { createElement } from 'react';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
-import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
+import {
+  type Composition,
+  createPrimitiveDispatcher,
+  type PrimitiveNode,
+  type ValidationError,
+} from '@elastic/isomer-sdk';
+import { runPrimitiveInventoryConformance } from '@elastic/isomer-sdk/testing';
 import { describe, expect, it } from 'vitest';
 
 import { slideJsx } from '../../jsx';
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { slideDeckPrimitives } from '../../registry';
 
 import { example, terminalExample } from './examples';
 import { slideWindowPrimitive } from './index';
@@ -53,6 +60,49 @@ describe('slideWindow schema', () => {
     expect(errorsOf({ ...example, body: [] })).toContainEqual(
       expect.stringMatching(/^body\[0\]\.body\[0\]\.body/)
     );
+  });
+
+  describe('a window chain deeper than the call stack', () => {
+    let deep: object = { type: 'slideHeading', title: 'Inside' };
+    for (let level = 0; level < 100_000; level += 1) {
+      deep = { ...example, body: [deep] };
+    }
+
+    it('is refused by its own schema, without parsing the chain', () => {
+      const errors: ValidationError[] = [];
+      createPrimitiveDispatcher(slideDeckPrimitives).validate(
+        deep as PrimitiveNode,
+        'body[0]',
+        errors
+      );
+      expect(errors.map(({ path, message }) => `${path}: ${message}`)).toEqual([
+        'body[0].body: a window cannot hold another window',
+      ]);
+    });
+
+    it('is refused by the input budget in parse and validate', () => {
+      for (const { errors } of [
+        runtime.parse(compose(deep)),
+        runtime.validate(compose(deep)),
+      ]) {
+        expect(errors).toMatchObject([{ code: 'INPUT_OVER_BUDGET' }]);
+      }
+    });
+
+    it('is refused as a catalog example by inventory conformance', () => {
+      expect(() =>
+        runPrimitiveInventoryConformance(
+          slideDeckPrimitives.map((definition) =>
+            definition.type === 'slideWindow'
+              ? {
+                  ...definition,
+                  catalog: { ...definition.catalog, example: deep },
+                }
+              : definition
+          )
+        )
+      ).toThrow('slideWindow catalog.example must be within the input budget');
+    });
   });
 
   it('walks its body', () => {
