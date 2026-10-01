@@ -2762,6 +2762,24 @@ describe('the input budget', () => {
     }
   });
 
+  it('refuses over-budget input at every validating surface’s renderNode', () => {
+    const { html, text, markdown, slack, svg } =
+      drawingRuntime(notePrimitive).surfaces;
+    const [node] = composition.body;
+    if (node === undefined) {
+      throw new Error('expected a node');
+    }
+    for (const render of [
+      () => html.renderNode(node),
+      () => text.renderNode(node, { onValidationError: 'collect' }),
+      () => markdown.renderNode(node, { onValidationError: 'collect' }),
+      () => slack.renderNode(node, { onValidationError: 'collect' }),
+      () => svg.renderNode(node, { onValidationError: 'collect' }),
+    ]) {
+      expect(render).toThrow(expect.objectContaining(refused));
+    }
+  });
+
   it('refuses over-budget view input before the view runs', async () => {
     let built = false;
     const runtime = createIsomerRuntime({
@@ -2869,6 +2887,44 @@ describe('the checked composition', () => {
     );
     expect(output).not.toContain('UNSAFE');
     expect(pages.map(({ reads }) => reads())).toEqual([1, 1]);
+  });
+
+  it('renders what validation checked on every validating surface’s renderNode, reading the node once', () => {
+    const { html, text, markdown, slack, svg } =
+      drawingRuntime(notePrimitive).surfaces;
+    const renders: ((node: PrimitiveNode) => string)[] = [
+      (node) => html.renderNode(node).html,
+      (node) => text.renderNode(node),
+      (node) => markdown.renderNode(node),
+      (node) => JSON.stringify(slack.renderNode(node)),
+      (node) => renderToStaticMarkup(svg.renderNode(node).element),
+    ];
+    for (const render of renders) {
+      const {
+        composition: {
+          body: [node],
+        },
+        reads,
+      } = shifty();
+      if (node === undefined) {
+        throw new Error('expected a node');
+      }
+      const output = render(node);
+      expect(output).toContain('safe');
+      expect(output).not.toContain('UNSAFE');
+      expect(reads()).toBe(1);
+    }
+  });
+
+  it('throws on an invalid node by default and renders it with collect', () => {
+    const { text } = drawingRuntime(notePrimitive).surfaces;
+    const invalid = { type: 'note' } as unknown as NoteNode;
+    expect(() => text.renderNode(invalid)).toThrow(
+      expect.objectContaining({ name: 'CompositionValidationError' })
+    );
+    expect(() =>
+      text.renderNode(invalid, { onValidationError: 'collect' })
+    ).not.toThrow();
   });
 
   it('returns the copy from validate and from a view request', async () => {

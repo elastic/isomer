@@ -18,11 +18,18 @@ import {
   type TextEnvelopeOptions,
 } from '@elastic/isomer-sdk/text';
 
+import { checkNode } from './check_node';
+
 /** {@link TextEnvelopeOptions} plus the surface's validation posture. */
 export interface TextRenderOptions extends TextEnvelopeOptions {
   /** Defaults to `'throw'`: a string has nowhere to carry findings. `'collect'` renders anyway. */
   onValidationError?: ValidationErrorMode;
 }
+
+export type TextRenderNodeOptions = Pick<
+  TextRenderOptions,
+  'onValidationError'
+>;
 
 /** Renders a composition or node to plain text. */
 export interface TextSurface {
@@ -31,7 +38,7 @@ export interface TextSurface {
   /** Renders a full composition to plain text. */
   render(composition: Composition, options?: TextRenderOptions): string;
   /** Renders a single primitive node to plain text. */
-  renderNode(node: PrimitiveNode): string;
+  renderNode(node: PrimitiveNode, options?: TextRenderNodeOptions): string;
 }
 
 /** Creates the `text` {@link RuntimeSurfaces} entry. */
@@ -47,5 +54,8 @@ export const createTextSurface = (
     );
     return renderTextEnvelope(checked, dispatcher, options);
   },
-  renderNode: (node) => dispatcher.renderText(node),
+  renderNode: (node, options = {}) =>
+    dispatcher.renderText(
+      checkNode(validate, node, options.onValidationError ?? 'throw').node
+    ),
 });

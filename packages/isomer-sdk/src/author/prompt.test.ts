@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { buildAuthoringPrompt, formatPrimitiveEntry, oneLine } from './prompt';
+import { buildAuthoringPrompt, formatPrimitiveEntry } from './prompt';
 
 const context = {
   guide: 'Guide',
@@ -285,17 +285,5 @@ describe('formatPrimitiveEntry', () => {
     expect(
       formatPrimitiveEntry({ ...quoteless, example: { text: 'a\u2028b' } })
     ).toContain('  - Example: `{"text":"a\\u2028b"}`');
-  });
-});
-
-describe('oneLine', () => {
-  it('collapses each run of line terminators and its surrounding whitespace', () => {
-    expect(oneLine('a \r\n\n  b\u2028c\u2029 d')).toBe('a b c d');
-  });
-
-  it('runs in linear time on a long whitespace run', () => {
-    const started = performance.now();
-    expect(oneLine(`a${' '.repeat(100_000)}b`)).toHaveLength(100_002);
-    expect(performance.now() - started).toBeLessThan(1_000);
   });
 });

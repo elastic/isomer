@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { oneLine } from '../composition/one_line';
 import type { PrimitiveCatalogEntry } from '../define/primitive_module';
 import type { PrimitiveGroup } from '../pack/primitive_pack';
 
@@ -106,12 +107,6 @@ const withoutMeta = (value: unknown): unknown => {
   delete rest.meta;
   return rest;
 };
-
-const LINE_TERMINATOR_RE = /[\r\n\u2028\u2029]/;
-
-/** `text` on one line: each run of line terminators, with the whitespace around it, becomes one space. */
-export const oneLine = (text: string): string =>
-  text.replace(/\s+/g, (run) => (LINE_TERMINATOR_RE.test(run) ? ' ' : run));
 
 /** `text` as a Markdown code span, fenced longer than any backtick run inside it. */
 const codeSpan = (text: string): string => {

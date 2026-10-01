@@ -47,10 +47,10 @@ Each exposes `render` and `renderNode`, plus a `validating` field stating its po
 | --- | --- | --- | --- | --- |
 | `react` | `ReactNode` | `ReactNode` | `false` | `ReactRenderNodeOptions`: `context`, `wrapper`, `enhancements` |
 | `html` | `HTMLRenderResult` | `HTMLRenderResult` | `true` | `HTMLRenderOptions` |
-| `text` | `string` | `string` | `true` | nothing |
-| `markdown` | `string` | `string` | `true` | nothing |
-| `slack` | `SlackRenderResult` | `SlackRenderResult` | `true` | `SlackRenderNodeOptions`: `text`, `collectAssets`, `assetPrefix` |
-| `svg` | `SvgRenderResult` | `SvgRenderResult` | `true` | `SvgRenderNodeOptions`: `frame`, `theme`, `anchors` |
+| `text` | `string` | `string` | `true` | `TextRenderNodeOptions`: `onValidationError` |
+| `markdown` | `string` | `string` | `true` | `MarkdownRenderNodeOptions`: `onValidationError` |
+| `slack` | `SlackRenderResult` | `SlackRenderResult` | `true` | `SlackRenderNodeOptions`: `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
+| `svg` | `SvgRenderResult` | `SvgRenderResult` | `true` | `SvgRenderNodeOptions`: `frame`, `theme`, `anchors`, `onValidationError` |
 
 Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SvgSurface`; `RuntimeSurfaces` is the record of all six. `render` takes its surface's options type below. `SvgRenderResult` is `{ element, css, width, height }`. The `svg` surface additionally exposes `resolveViewport(composition, options?): { width, height }`, which takes `frame`, `width`, and `height`, and `renderPages(compositions, options?)`, which lays several compositions out as one document and returns `SvgPagesResult`, `{ pages, css, width, height }`: one root per composition against one stylesheet, every page the tallest estimate unless `height` is given, and the first composition's `theme` unless `theme` is given.
 
@@ -62,12 +62,14 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | `ReactRenderNodeOptions` | `ReactRenderOptions` without `heading` |
 | `HTMLRenderOptions` | `theme`, `minify`, `fluid`, `framed`, `heading`, `css: 'inline' \| 'separate'`, `scripts: 'embedded' \| 'host'`, `enhancements: string[]`, `anchors: boolean` (node anchors; `true` for tests), `onValidationError` |
 | `TextRenderOptions` | `heading`, `onValidationError` |
+| `TextRenderNodeOptions` | `onValidationError` |
 | `MarkdownRenderOptions` | `heading`, `onValidationError` |
+| `MarkdownRenderNodeOptions` | `onValidationError` |
 | `SlackRenderOptions` | `heading`, `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
-| `SlackRenderNodeOptions` | `SlackRenderOptions` without `heading` or `onValidationError` |
+| `SlackRenderNodeOptions` | `SlackRenderOptions` without `heading` |
 | `SvgRenderOptions` | `frame`, `width`, `height`, `theme`, `anchors: boolean` (node anchors, e.g. for `checkLayout`), `onValidationError` |
 
-`onValidationError` is `'collect' | 'throw'`. `html` defaults to `'collect'` and reports on `validationErrors`; `text`, `markdown`, `slack`, and `svg` default to `'throw'`. Input [refused before parsing](../../isomer-sdk/docs/composition.md#the-input-budget) throws on every surface in either mode.
+`onValidationError` is `'collect' | 'throw'`. `html` defaults to `'collect'` and reports on `validationErrors`; `text`, `markdown`, `slack`, and `svg` default to `'throw'`. Each validating surface's `renderNode` validates the node as a one-node view and takes the same default as its `render`. Input [refused before parsing](../../isomer-sdk/docs/composition.md#the-input-budget) throws on every surface in either mode.
 
 ### Result types
 
@@ -79,6 +81,14 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | `CheckedValidationResult` | `ValidationResult` plus `composition`, the plain copy validation checked, which validating surfaces render; `undefined` only when refused before parsing |
 | `ParsedComposition` | `{ valid, errors, composition? }` |
 
+Three results carry a `composition`, each with its own rule:
+
+| Result | `composition` |
+| --- | --- |
+| `ParsedComposition` | The parsed document, present only when `valid` |
+| `CheckedValidationResult` | The checked copy, present even when `valid` is `false`; `undefined` only when the input budget refused the input |
+| `ViewResponse` | The checked copy, or the built value, unchecked, when the input budget refused it; always present |
+
 ## View registry
 
 | Member | Type |
@@ -88,7 +98,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | `get(id)` | `RegisteredViewSummary \| undefined` |
 | `request(id, context, input?)` | `Promise<ViewResponse>` — `{ view, composition, validation }` |
 
-`RegisteredView` is `{ id, title, description, answers, input?, build }`, where `build({ context, input })` returns the composition. `DefineViewOptions` is the same with `description` optional. `RegisteredViewSummary` is `{ id, title, description, answers, inputSchema? }`. `ViewBuildArgs` is `build`'s argument, `ViewInput` is the input shape a view's Zod schema infers, and `ViewResponse` is what `request` resolves to.
+`RegisteredView` is `{ id, title, description, answers, input?, build }`, where `build({ context, input })` returns the composition. `DefineViewOptions` is the same with `description` optional. `RegisteredViewSummary` is `{ id, title, description, answers, inputSchema? }`. `ViewBuildArgs` is `build`'s argument, `ViewInput` is `Record<string, unknown>`, `build`'s input type unless a Zod `input` schema infers one, and `ViewResponse` is what `request` resolves to.
 
 ## Types exported from this package
 
@@ -98,17 +108,17 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | Authoring | `RuntimeAuthoringContext`, `PrimitiveDescriptions`, `HostCapabilities`, `JsonSchema` |
 | View registry | `ViewRegistry`, `RegisteredView`, `RegisteredViewSummary`, `DefineViewOptions`, `ViewBuildArgs`, `ViewInput`, `ViewResponse`, `RegisteredViewInputError` |
 | Surfaces | `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SvgSurface` |
-| Options | `ReactRenderOptions`, `ReactRenderNodeOptions`, `ReactRenderArgs`, `HTMLRenderOptions`, `HTMLStyleAdapter`, `TextRenderOptions`, `MarkdownRenderOptions`, `SlackRenderOptions`, `SlackRenderNodeOptions`, `SvgRenderOptions`, `SvgRenderNodeOptions` |
+| Options | `ReactRenderOptions`, `ReactRenderNodeOptions`, `ReactRenderArgs`, `HTMLRenderOptions`, `HTMLStyleAdapter`, `TextRenderOptions`, `TextRenderNodeOptions`, `MarkdownRenderOptions`, `MarkdownRenderNodeOptions`, `SlackRenderOptions`, `SlackRenderNodeOptions`, `SvgRenderOptions`, `SvgRenderNodeOptions` |
 | Results | `HTMLRenderResult`, `SlackRenderResult`, `SvgRenderResult` |
-| Errors | `IsomerError`, `IsomerErrorCode`, `ISOMER_ERROR_CODES` |
+| Errors | `IsomerError`, `IsomerErrorCode`, `ISOMER_ERROR_CODES`, `CompositionValidationError` |
 
 `src/api_reference.test.ts` fails when a name exported from `src/index.ts` is missing from this page.
 
-`IsomerError` is a deliberate pass-through of the SDK catch contract: a host catching a runtime construction failure should not need a second dependency just to name `code`.
+`IsomerError` and `CompositionValidationError` are deliberate pass-throughs of the SDK catch contract: a host catching a runtime construction failure or a validating surface's refusal should not need a second dependency just to name `code`. Neither is identified by `instanceof`: `IsomerError` by `name` and `code`, `CompositionValidationError` by `name`, `code`, and `errors`.
 
 ## Import from the SDK
 
-`PrimitiveNode`, `Composition`, `CheckedValidationResult`, `ValidationResult`, `ValidationWarning`, `warningsForSurface`, `definePrimitive`, `describeCapabilities`, `PrimitivePack`, `Frame`, `CompositionValidationError`.
+`PrimitiveNode`, `Composition`, `CheckedValidationResult`, `ValidationResult`, `ValidationWarning`, `warningsForSurface`, `definePrimitive`, `describeCapabilities`, `PrimitivePack`, `Frame`.
 
 ## Errors
 
@@ -116,7 +126,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | --- | --- | --- |
 | `IsomerError` | `createIsomerRuntime`, `viewRegistry.register`, an unknown view id, `getAuthoringContext().schemaFor` or `describePrimitives` on an unknown type (`UNKNOWN_PRIMITIVE_TYPE`), or the `svg` surface, including `renderPages` on an empty list (`EMPTY_PAGES`) | `code` and a message naming the offender |
 | `RegisteredViewInputError` | `viewRegistry.request`, on input refused before parsing or invalid against the view's schema | `code` (`VIEW_INPUT_INVALID`), `viewId`, `errors` (`{ path, message, nodeType?, code? }` each) |
-| `CompositionValidationError` | `text`, `markdown`, `slack`, and `svg` by default; `html` with `onValidationError: 'throw'`; every validating surface on input refused before parsing | `code` (`COMPOSITION_INVALID`), `errors` |
+| `CompositionValidationError` | `render` and `renderNode` on `text`, `markdown`, `slack`, and `svg` by default; on `html` with `onValidationError: 'throw'`; on every validating surface on input refused before parsing | `code` (`COMPOSITION_INVALID`), `errors` |
 
 ## Where the code is
 

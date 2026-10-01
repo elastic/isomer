@@ -346,10 +346,13 @@ describe('slideBars', () => {
   it('keeps the Slack table whole at the cell budget, and one past it prints as rich text sections within Slack’s section limit', () => {
     const [first, ...rest] = scaledExample.items;
     const withLabel = (label: string) =>
-      runtime.surfaces.slack.renderNode({
-        ...scaledExample,
-        items: [{ ...first!, label }, ...rest],
-      } as PrimitiveNode).blocks[0];
+      runtime.surfaces.slack.renderNode(
+        {
+          ...scaledExample,
+          items: [{ ...first!, label }, ...rest],
+        } as PrimitiveNode,
+        { onValidationError: 'collect' }
+      ).blocks[0];
     const cells = (block: SlackBlock | undefined): number =>
       block?.type === 'table'
         ? block.rows

@@ -5,13 +5,7 @@
  * 2.0.
  */
 
-export {
-  boldLabelPrefix,
-  boldSectionLabel,
-  defaultMarkdownFromText,
-  md,
-  serializeMarkdown,
-} from './builder';
+export { defaultMarkdownFromText, md, serializeMarkdown } from './builder';
 
 export {
   type MarkdownEnvelopeDispatcher,

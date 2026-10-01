@@ -5,12 +5,12 @@
  * 2.0.
  */
 
-import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
 import { slackCaption } from '../../render';
 import { richTextRun as run } from '../../render/marks';
+import { oneLine } from '../../render/one_line';
 import { slackTable, textTable } from '../../render/table';
 import { definePrimitive } from '../define';
 
@@ -41,9 +41,9 @@ export const text = (node: SlideTableNode): string => {
 export const markdown = (node: SlideTableNode) => {
   const { label, rowHeaders } = node;
   return [
-    ...(label ? [md.boldSectionLabel(label.toUpperCase())] : []),
+    ...(label ? [md.boldSectionLabel(label)] : []),
     ...tableGroups(node).flatMap(({ label: group, rows }) => [
-      ...(group ? [md.boldSectionLabel(group.toUpperCase())] : []),
+      ...(group ? [md.boldSectionLabel(group)] : []),
       md.table(
         heads(node),
         rows.map((row) =>

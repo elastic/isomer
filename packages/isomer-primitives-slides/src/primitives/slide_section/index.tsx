@@ -6,7 +6,6 @@
  */
 
 import { sanitizeNavigationHref } from '@elastic/isomer-sdk';
-import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
 import { type SlackBlock } from '@elastic/isomer-sdk/slack';
 
@@ -17,6 +16,7 @@ import {
   slackRichText,
 } from '../../render';
 import { marksMarkdown, marksRichText, plainText } from '../../render/marks';
+import { oneLine } from '../../render/one_line';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 

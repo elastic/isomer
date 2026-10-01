@@ -100,13 +100,13 @@ Zod helpers so a pack states constraints the same way everywhere: `z`, `enumOf`,
 
 `./text` — `renderTextEnvelope` with `TextEnvelopeOptions`, and `TextEnvelopeDispatcher`. Text formatting is pack-owned; the SDK ships no house style.
 
-`./markdown` — `renderMarkdownEnvelope` with `MarkdownEnvelopeOptions`, `MarkdownEnvelopeDispatcher`, the `md` builder with `MarkdownBlock`, `MarkdownInline`, `MarkdownInlineInput`, and `MarkdownContent`, `serializeMarkdown`, `boldLabelPrefix`, `boldSectionLabel`, `defaultMarkdownFromText`, and the URL-policed formatters `markdownLink`, `markdownImage`, `markdownLinkWrap`, `sanitizeMarkdownSource`.
+`./markdown` — `renderMarkdownEnvelope` with `MarkdownEnvelopeOptions`, `MarkdownEnvelopeDispatcher`, the `md` builder with `MarkdownBlock`, `MarkdownInline`, `MarkdownInlineInput`, and `MarkdownContent`, `serializeMarkdown`, `defaultMarkdownFromText`, and the URL-policed formatters `markdownLink`, `markdownImage`, `markdownLinkWrap`, `sanitizeMarkdownSource`.
 
 `./slack` — `renderSlackEnvelope` with `SlackEnvelopeOptions` and `SlackEnvelopeResult`, `SlackEnvelopeDispatcher`, `SLACK_LIMITS`, `createSlackAssetCollector` (`{ prefix? }`), `SlackAssetCollector`, `SlackAssetRequest`, `SlackFileReference`, `isSlackReachableImageUrl`.
 
 Block Kit types: `SlackBlock` and its variants `SlackHeaderBlock` (`SlackHeaderLevel`), `SlackSectionBlock` (`SlackSectionAccessory`), `SlackContextBlock`, `SlackDividerBlock`, `SlackImageBlock`, `SlackVideoBlock`, `SlackActionsBlock` (`SlackActionElement`), `SlackTableBlock` (`SlackTableCell`, `SlackTableColumnSetting`, `SlackRawTextElement`), `SlackRichTextBlock` (`SlackRichTextBlockElement`, `SlackRichTextSection`, `SlackRichTextList`, `SlackRichTextPreformatted`, `SlackRichTextQuote`, `SlackRichTextInline`, `SlackRichTextText`, `SlackRichTextLink`, `SlackRichTextTag`, `SlackRichTextStyle`, `SlackTagColor`); text objects `SlackTextObject`, `SlackPlainTextObject`, `SlackMrkdwnTextObject`; elements `SlackButtonElement`, `SlackImageElement`, `SlackStaticSelectElement`, `SlackMultiStaticSelectElement`, `SlackOverflowElement`, `SlackRadioButtonsElement`, `SlackCheckboxesElement`, `SlackOptionObject`, `SlackOptionGroup`.
 
-mrkdwn formatters: `escapeMrkdwn`, `bold`, `italic`, `strike`, `code`, `codeBlock`, `link`, `slackLinkUrl` (the URL `link` would link, or `null`), `clampSlackText`, `formatHeaderText`, `joinMrkdwn`, `gfmToSlackMrkdwn`, `gfmToSlackBlocks`, and `markdownContentToSlackBlocks` for content built with `md`. `splitRichTextElement` splits a rich-text section, quote, or preformatted element past `sectionTextChars` into adjacent ones of its type without losing text. Element constructors, each clamped to the Slack budget: `slackPlainText`, `slackActionId`, `slackSelectOption` (`SlackSelectOptionInput`), `slackStaticSelect`, `slackOverflowElement` (`SlackOverflowOptionInput`), `slackUrlButton`, `slackButtonStyle`.
+mrkdwn formatters: `escapeMrkdwn`, `bold`, `italic`, `strike`, `code`, `codeBlock`, `link`, `slackLinkUrl` (the URL `link` would link, or `null`), `clampSlackText`, `formatHeaderText`, `joinMrkdwn`, `gfmToSlackMrkdwn`, `gfmToSlackBlocks`, and `markdownContentToSlackBlocks` for content built with `md`. Element constructors, each clamped to the Slack budget: `slackPlainText`, `slackActionId`, `slackSelectOption` (`SlackSelectOptionInput`), `slackStaticSelect`, `slackOverflowElement` (`SlackOverflowOptionInput`), `slackUrlButton`, `slackButtonStyle`.
 
 ## `./author`
 
@@ -114,7 +114,7 @@ JSX: `fromChildren`, `fromTextChildren`, `AuthoredChildBrand`, `AuthoredTextBran
 
 Object builders: `defineNodeBuilder` (a `NodeBuilder` taking a `BuilderInput`, the node without `type`), `buildObjectBuilders` (a `BuilderMap`, one builder per primitive typed from its schema).
 
-Agent prompts: `buildAuthoringPrompt` (`AuthoringPromptContext`), `createAuthoringPromptBuilder`, `createAgentAuthoringContextFactory` (`AgentAuthoringContextOptions`, `AgentAuthoringContextDefaults`), `formatPrimitiveEntry` (one full catalog bullet), `oneLine` (text a host echoes into a prompt, on one line), `AUTHORING_PROFILE_IDS` (`AuthoringProfileId`), `AuthoringViewSummary`. `WithNodeFields` is on the root entry, next to `definePrimitive`.
+Agent prompts: `buildAuthoringPrompt` (`AuthoringPromptContext`), `createAuthoringPromptBuilder`, `createAgentAuthoringContextFactory` (`AgentAuthoringContextOptions`, `AgentAuthoringContextDefaults`), `formatPrimitiveEntry` (one full catalog bullet), `AUTHORING_PROFILE_IDS` (`AuthoringProfileId`), `AuthoringViewSummary`. `WithNodeFields` is on the root entry, next to `definePrimitive`.
 
 ## `./testing`
 

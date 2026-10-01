@@ -7,11 +7,11 @@
 
 import { Fragment, type ReactNode } from 'react';
 import { nodeAnchor } from '@elastic/isomer-sdk';
-import { oneLine } from '@elastic/isomer-sdk/author';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv, SlideRenderContext } from '../../render/context';
 import { marksReact } from '../../render/marks';
+import { oneLine } from '../../render/one_line';
 import { ToneCue } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { connectorModule, layoutModule } from '../../theme/modules';

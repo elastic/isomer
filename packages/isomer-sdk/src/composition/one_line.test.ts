@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { nameText, quoteText } from './one_line';
+import { nameText, oneLine, quoteText } from './one_line';
 
 const LINE_TERMINATOR = /[\n\r\u2028\u2029]/;
 
@@ -46,5 +46,21 @@ describe('nameText', () => {
   it('quotes any other name on one line', () => {
     expect(nameText('my kpi')).toBe('"my kpi"');
     expect(nameText('a\u2028b')).toBe('"a\\u2028b"');
+  });
+});
+
+describe('oneLine', () => {
+  it('collapses each run of line terminators and its surrounding whitespace', () => {
+    expect(oneLine('a \r\n\n  b\u2028c\u2029 d')).toBe('a b c d');
+  });
+
+  it('keeps whitespace with no line terminator in it', () => {
+    expect(oneLine('a  b\tc')).toBe('a  b\tc');
+  });
+
+  it('runs in linear time on a long whitespace run', () => {
+    const started = performance.now();
+    expect(oneLine(`a${' '.repeat(100_000)}b`)).toHaveLength(100_002);
+    expect(performance.now() - started).toBeLessThan(1_000);
   });
 });

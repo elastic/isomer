@@ -6,7 +6,6 @@
  */
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
-import { oneLine } from '@elastic/isomer-sdk/author';
 import type { MarkdownContent } from '@elastic/isomer-sdk/markdown';
 import {
   escapeMrkdwn,
@@ -16,6 +15,7 @@ import {
 
 import type { SlideRenderScope } from './context';
 import { richTextRun } from './marks';
+import { oneLine } from './one_line';
 import {
   richTextSection,
   slackBold,

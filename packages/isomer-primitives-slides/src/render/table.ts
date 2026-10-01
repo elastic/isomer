@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-import { oneLine } from '@elastic/isomer-sdk/author';
 import type {
   SlackBlock,
   SlackRichTextText,
@@ -14,6 +13,7 @@ import type {
 
 import { richTextRun } from './marks';
 import { displayColumns } from './mono';
+import { oneLine } from './one_line';
 
 /** A row of cells, or a heading on its own line. */
 export type TextTableLine = readonly string[] | string;

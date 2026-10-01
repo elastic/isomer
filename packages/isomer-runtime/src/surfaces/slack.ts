@@ -19,17 +19,16 @@ import {
   type SlackEnvelopeResult,
 } from '@elastic/isomer-sdk/slack';
 
+import { checkNode } from './check_node';
+
 /** {@link SlackEnvelopeOptions} plus the surface's validation posture. */
 export interface SlackRenderOptions extends SlackEnvelopeOptions {
   /** Defaults to `'throw'`: a payload about to be posted carries no findings. `'collect'` renders anyway. */
   onValidationError?: ValidationErrorMode;
 }
 
-/** Options for {@link SlackSurface.renderNode}: {@link SlackRenderOptions} without validation, which a lone node skips, or a heading, which it lacks. */
-export type SlackRenderNodeOptions = Omit<
-  SlackRenderOptions,
-  'heading' | 'onValidationError'
->;
+/** Options for {@link SlackSurface.renderNode}: {@link SlackRenderOptions} without a heading, which a lone node lacks. */
+export type SlackRenderNodeOptions = Omit<SlackRenderOptions, 'heading'>;
 
 export type SlackRenderResult = SlackEnvelopeResult;
 
@@ -67,5 +66,10 @@ export const createSlackSurface = (
     return renderSlackEnvelope(checked, dispatcher, options);
   },
   renderNode: (node, options = {}) =>
-    renderSlackEnvelope({ type: 'view', body: [node] }, dispatcher, options),
+    renderSlackEnvelope(
+      checkNode(validate, node, options.onValidationError ?? 'throw')
+        .composition,
+      dispatcher,
+      options
+    ),
 });
