@@ -20,4 +20,4 @@ coverage/
 .idea
 .vscode
 .cursor
-.claude/settings.local.json
+.claude/
