@@ -122,7 +122,7 @@ export interface CompositionWrapperOptions {
   framed?: boolean;
   /** Adds the `fluid` class. */
   fluid?: boolean;
-  /** Sets `data-theme`; `auto` (the default) sets nothing so the page's scheme applies. */
+  /** Sets `data-theme`; defaults to the composition's `theme`, and `auto` sets nothing so the page's scheme applies. */
   theme?: RenderTheme;
   /** Used only when the composition has neither `meta.ariaLabel` nor a `title`. Defaults to `'View'`. */
   defaultAriaLabel?: string;
@@ -138,7 +138,7 @@ export const wrapCompositionContent = <TNode extends PrimitiveNode>(
   {
     framed = true,
     fluid = false,
-    theme = 'auto',
+    theme = composition.theme ?? 'auto',
     defaultAriaLabel = 'View',
   }: CompositionWrapperOptions = {}
 ): ReactElement =>

@@ -46,6 +46,13 @@ describe('wrapCompositionContent', () => {
     expect(render(composition, { theme: 'auto' })).not.toContain('data-theme');
   });
 
+  it("defaults to the composition's theme, as the html surface does", () => {
+    const dark: Composition = { ...composition, theme: 'dark' };
+    expect(render(dark)).toContain('data-theme="dark"');
+    expect(render(dark, { theme: 'light' })).toContain('data-theme="light"');
+    expect(render(dark, { theme: 'auto' })).not.toContain('data-theme');
+  });
+
   it('prefers meta.ariaLabel, then the title, then the default label', () => {
     expect(
       render({ ...composition, meta: { ariaLabel: 'Cart health' } })
