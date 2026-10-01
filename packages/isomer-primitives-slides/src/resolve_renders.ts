@@ -6,6 +6,7 @@
  */
 
 import {
+  type AnyPrimitiveDefinition,
   checkInputBudget,
   type Composition,
   createChildNodeWalker,
@@ -29,7 +30,7 @@ export interface ResolveSlideRendersOptions {
   /** `throw` (the default) rejects a reference it cannot fill; `leave` keeps its placeholder. */
   onUnresolved?: 'throw' | 'leave';
   /** Every primitive the deck uses, so references and renders inside another pack's containers are found; defaults to this pack's. */
-  primitives?: Parameters<typeof mapCompositionNodes>[1];
+  primitives?: readonly AnyPrimitiveDefinition[];
   /** Limits each slide is checked against before it is read; pass the runtime's `inputBudget` when it overrides one. */
   inputBudget?: InputBudget;
 }

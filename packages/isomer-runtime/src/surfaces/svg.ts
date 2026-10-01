@@ -31,6 +31,8 @@ import {
 
 import type { RuntimePackTypes } from '../pack_types';
 
+import { checkNode } from './check_node';
+
 export interface SvgRenderOptions {
   /** Which of the runtime's frames this render uses; defaults to its `defaultFrame`. */
   frame?: string;
@@ -54,7 +56,7 @@ export interface SvgRenderOptions {
  */
 export type SvgRenderNodeOptions = Pick<
   SvgRenderOptions,
-  'frame' | 'theme' | 'anchors'
+  'frame' | 'theme' | 'anchors' | 'onValidationError'
 >;
 
 /**
@@ -338,8 +340,12 @@ export const createSvgSurface = <TRenderContext = unknown>(
       return viewportFor(frame, [composition], options);
     },
     renderNode: (node, options = {}) => {
+      const { composition, node: checked } = checkNode(
+        validate,
+        node,
+        options.onValidationError ?? 'throw'
+      );
       const { frame } = frameFor(options.frame);
-      const composition: Composition = { type: 'view', body: [node] };
       const theme = frame.resolveTheme(options.theme);
       const { elements, css } = withStyles(
         [
@@ -347,7 +353,7 @@ export const createSvgSurface = <TRenderContext = unknown>(
             composition,
             build: (context) =>
               frame.renderNode(
-                node,
+                checked,
                 frameDispatcherFor(context, theme, options.anchors)
               ),
           },

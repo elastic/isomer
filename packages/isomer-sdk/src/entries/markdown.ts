@@ -15,8 +15,6 @@ export {
 export {
   type MarkdownEnvelopeDispatcher,
   type MarkdownEnvelopeOptions,
-  boldLabelPrefix,
-  boldSectionLabel,
   defaultMarkdownFromText,
   markdownImage,
   markdownLink,

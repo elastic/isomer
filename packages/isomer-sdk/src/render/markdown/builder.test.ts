@@ -11,6 +11,7 @@ import { gfmFromMarkdown } from 'mdast-util-gfm';
 import { gfm } from 'micromark-extension-gfm';
 import { describe, expect, it } from 'vitest';
 
+import { oneLine } from '../../composition/one_line';
 import {
   type MarkdownBlock,
   type MarkdownContent,
@@ -19,8 +20,7 @@ import {
 import { gfmToSlackBlocks } from '../slack/format';
 
 import {
-  boldLabelPrefix,
-  boldSectionLabel,
+  defaultMarkdownFromText,
   markdownFromString,
   md,
   serializeMarkdown,
@@ -110,7 +110,7 @@ describe('md', () => {
       const holder = descendants(root)
         .filter(({ type }) => type === container)
         .at(-1);
-      const expected = input.replace(/\r\n|[\n\r\u2028\u2029]/g, ' ');
+      const expected = oneLine(input);
       expect(holder && textOf(holder)).toBe(text?.(expected) ?? expected);
 
       const live = descendants(root).filter(
@@ -337,6 +337,12 @@ describe('md', () => {
     expect(cells).toEqual(['a|b', 'c', '1', '2']);
   });
 
+  it('prints a whitespace run holding a line terminator as one space, in text and code', () => {
+    expect(serializeMarkdown(md.paragraph('a \r\n  b'))).toBe('a b');
+    expect(serializeMarkdown(md.paragraph(md.code('a \n\n b')))).toBe('`a b`');
+    expect(serializeMarkdown(md.paragraph('a  b'))).toBe('a  b');
+  });
+
   it('breaks a paragraph line with a backslash, prints a space elsewhere, and drops an edge break', () => {
     expect(serializeMarkdown(md.paragraph('a', md.break(), 'b'))).toBe(
       'a\\\nb'
@@ -418,12 +424,15 @@ describe('md', () => {
 });
 
 describe('label helpers', () => {
-  it('escapes the label they bold', () => {
-    expect(boldSectionLabel('a*b')).toBe('**A\\*B**');
-    expect(boldLabelPrefix('2*3: six', '2*3')).toBe('**2\\*3**: six');
+  it('bolds and escapes a GFM line’s label prefix, leaving the rest as written', () => {
+    const render = defaultMarkdownFromText((text: string) => text, {
+      label: () => '2*3',
+    });
+    expect(render('2*3: *six*')).toBe('**2\\*3**: *six*');
+    expect(render('x: *y*')).toBe('x: *y*');
   });
 
-  it('build the same labels as content, escaping the text too', () => {
+  it('build labels as content, escaping the text too', () => {
     expect(
       serializeMarkdown([
         md.boldSectionLabel('a*b'),

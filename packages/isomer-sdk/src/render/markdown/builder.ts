@@ -26,6 +26,7 @@ import {
   toMarkdown,
 } from 'mdast-util-to-markdown';
 
+import { oneLine } from '../../composition/one_line';
 import {
   type MarkdownBlock,
   type MarkdownContent,
@@ -41,15 +42,11 @@ import {
 
 import { sanitizeMarkdownSource } from './format';
 
-const LINE_TERMINATORS_RE = /\r\n|[\n\r\u2028\u2029]/g;
 // A fence-info string only allows word-ish tokens; anything else would
 // terminate the fence early or inject markdown.
 const FENCE_INFO_RE = /^[\w+#.-]+$/;
 /** The node type of Markdown printed as written. */
 export const VERBATIM_TYPE = 'isomerVerbatim';
-
-const oneLine = (value: string): string =>
-  value.replace(LINE_TERMINATORS_RE, ' ');
 
 const inline = (node: PhrasingContent): MarkdownInline =>
   Object.assign(node, { [markdownContent]: 'inline' as const });
@@ -257,7 +254,7 @@ export const md = {
   /** Authored Markdown source, after {@link sanitizeMarkdownSource}. */
   authored: (source: string): MarkdownBlock =>
     verbatim(sanitizeMarkdownSource(source)),
-  /** Plain `text` with a leading `label:` in strong, as {@link boldLabelPrefix} does for GFM. */
+  /** Plain `text` with a leading `label:` in strong. */
   boldLabelPrefix: (
     text: string,
     label: string | undefined
@@ -331,36 +328,10 @@ export const serializeMarkdown = (content: MarkdownContent): string =>
   );
 
 /**
- * Bolds a leading `Label:` prefix, leaving the rest of the line untouched.
- *
- * Lets a primitive whose text renderer already emits `Label: summary` reuse
- * that line on the markdown surface and still scan alongside bolder
- * neighbours. A no-op when `label` is absent or the text does not lead with it.
- */
-export const boldLabelPrefix = (
-  text: string,
-  label: string | undefined
-): string => {
-  if (!label) {
-    return text;
-  }
-  return text.startsWith(`${label}:`)
-    ? `${serializeMarkdown(md.paragraph(md.strong(label)))}${text.slice(label.length)}`
-    : text;
-};
-
-/**
- * Bolds and uppercases a section label so it reads as a heading-equivalent atop
- * list-shaped markdown blocks (stat groups, description lists, badge groups).
- */
-export const boldSectionLabel = (label: string): string =>
-  serializeMarkdown(md.boldSectionLabel(label));
-
-/**
  * A markdown renderer for a primitive whose text output is already valid GFM.
  *
- * Pass `options.label` to lift the node's label into bold via
- * {@link boldLabelPrefix}.
+ * Pass `options.label` to bold a leading `label:` prefix, leaving the rest of
+ * the line as written.
  */
 export const defaultMarkdownFromText =
   <TNode>(
@@ -371,5 +342,8 @@ export const defaultMarkdownFromText =
   ): ((node: TNode) => string) =>
   (node) => {
     const text = renderText(node);
-    return options.label ? boldLabelPrefix(text, options.label(node)) : text;
+    const label = options.label?.(node);
+    return label && text.startsWith(`${label}:`)
+      ? `${serializeMarkdown(md.paragraph(md.strong(label)))}${text.slice(label.length)}`
+      : text;
   };

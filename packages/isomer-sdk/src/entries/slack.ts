@@ -76,6 +76,5 @@ export {
   slackSelectOption,
   slackStaticSelect,
   slackUrlButton,
-  splitRichTextElement,
   strike,
 } from '../render/slack';

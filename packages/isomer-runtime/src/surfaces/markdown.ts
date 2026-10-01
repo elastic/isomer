@@ -18,11 +18,18 @@ import {
   renderMarkdownEnvelope,
 } from '@elastic/isomer-sdk/markdown';
 
+import { checkNode } from './check_node';
+
 /** {@link MarkdownEnvelopeOptions} plus the surface's validation posture. */
 export interface MarkdownRenderOptions extends MarkdownEnvelopeOptions {
   /** Defaults to `'throw'`: a string has nowhere to carry findings. `'collect'` renders anyway. */
   onValidationError?: ValidationErrorMode;
 }
+
+export type MarkdownRenderNodeOptions = Pick<
+  MarkdownRenderOptions,
+  'onValidationError'
+>;
 
 /** Renders a composition or node to Markdown. */
 export interface MarkdownSurface {
@@ -31,7 +38,7 @@ export interface MarkdownSurface {
   /** Renders a full composition to Markdown. */
   render(composition: Composition, options?: MarkdownRenderOptions): string;
   /** Renders a single primitive node to Markdown. */
-  renderNode(node: PrimitiveNode): string;
+  renderNode(node: PrimitiveNode, options?: MarkdownRenderNodeOptions): string;
 }
 
 /** Creates the `markdown` {@link RuntimeSurfaces} entry. */
@@ -47,5 +54,8 @@ export const createMarkdownSurface = (
     );
     return renderMarkdownEnvelope(checked, dispatcher, options);
   },
-  renderNode: (node) => dispatcher.renderMarkdown(node),
+  renderNode: (node, options = {}) =>
+    dispatcher.renderMarkdown(
+      checkNode(validate, node, options.onValidationError ?? 'throw').node
+    ),
 });

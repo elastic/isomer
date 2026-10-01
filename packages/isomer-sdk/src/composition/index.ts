@@ -27,7 +27,7 @@ export {
   ALL_NAMED_COLORS,
 } from './named_color';
 export { type BodyNode, type PrimitiveNode } from './node';
-export { nameText, quoteText } from './one_line';
+export { nameText, oneLine, quoteText } from './one_line';
 export {
   type DisplayValue,
   type StructuredValue,

@@ -19,6 +19,9 @@ import { slideDeckFrame, slidesPack } from './pack';
 import { slideDeckPrimitives } from './registry';
 import { stripMarks } from './render/marks';
 
+/** Renders nodes validation rejects, which these tests feed renderers on purpose. */
+const collect = { onValidationError: 'collect' } as const;
+
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
   frames: { slide: slideDeckFrame },
@@ -198,11 +201,14 @@ const normalize = (text: string) =>
   text.replace(/\s+/g, ' ').trim().toLowerCase();
 
 const surfaces = {
-  text: (node: PrimitiveNode) => runtime.surfaces.text.renderNode(node),
+  text: (node: PrimitiveNode) =>
+    runtime.surfaces.text.renderNode(node, collect),
   markdown: (node: PrimitiveNode) =>
-    readMarkdown(runtime.surfaces.markdown.renderNode(node)),
+    readMarkdown(runtime.surfaces.markdown.renderNode(node, collect)),
   slack: (node: PrimitiveNode) =>
-    stringLeaves(runtime.surfaces.slack.renderNode(node).blocks).join('\n'),
+    stringLeaves(runtime.surfaces.slack.renderNode(node, collect).blocks).join(
+      '\n'
+    ),
 };
 
 const htmlEntities: Record<string, string> = {

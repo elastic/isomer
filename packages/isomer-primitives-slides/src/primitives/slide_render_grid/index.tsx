@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
 import { bold, escapeMrkdwn, SLACK_LIMITS } from '@elastic/isomer-sdk/slack';
 import type { ZodType } from 'zod';
@@ -17,6 +16,7 @@ import {
   slackRichText,
 } from '../../render';
 import { richTextRun } from '../../render/marks';
+import { oneLine } from '../../render/one_line';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 import {
