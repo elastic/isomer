@@ -21,3 +21,6 @@ coverage/
 .vscode
 .cursor
 .claude/settings.local.json
+
+# Rendered by `pnpm docs:gallery` for the docs build
+/packages/isomer-primitives-slides/docs/gallery/images/

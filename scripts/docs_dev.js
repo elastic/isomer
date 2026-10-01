@@ -29,6 +29,12 @@ if (probe.error?.code === 'ENOENT') {
   process.exit(1);
 }
 
+// The gallery's images are not committed; render them once before serving.
+const gallery = spawnSync('pnpm', ['docs:gallery'], { stdio: 'inherit' });
+if (gallery.status !== 0) {
+  process.exit(gallery.status ?? 1);
+}
+
 assemblePackageDocs();
 
 let timer;

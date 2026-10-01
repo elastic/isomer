@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-01
+
+- **Slides gallery**: The slides pack's docs gain a gallery: a page per primitive listing its catalog purpose, `useWhen`, and `avoidWhen`, then each of its examples in a tab set of light and dark PNGs (drawn in `previewSlide`), Markdown, text, Slack Block Kit JSON with a Block Kit Builder link, and the node itself, with tabs synced across the page. `packages/isomer-primitives-slides/src/examples/gallery.test.ts` writes the pages with `toMatchFileSnapshot`, so a stale page fails under `CI`, and renders every PNG into the gitignored gallery `images` folder beside its pages; the new `pnpm docs:gallery` runs it, and `docs:build`, `docs:dev`, and both docs workflows run it before assembling. Files it did not generate are removed locally and fail under `CI`, and it fails until every page is listed in `packages/isomer-primitives-slides/docs/toc.yml`. markdownlint skips the generated pages, as it does `src/examples/output`. The deck test's artifact comparison moves to `packages/isomer-primitives-slides/src/examples/artifact.ts`.
+
 ## 2026-09-30
 
 - **Slides fits charge code chips by the line**: `measureMarks` returns `codeLines`, how many of the lines it lays out hold a `code` chip, so a code run wrapped across lines counts each line it touches and runs sharing a line count once. `marksHeight(text, role, width?)` is marked text's height, each of those lines grown by the chip's `codePaddingY` and border, and replaces `codeGrowth`, which counted runs rather than lines. `slideLanes` notes and `slideLayers` bodies take their height from it, and `slideSequence` now charges its labels' chips too; its budget counts whole message rows, so at a budget's edge one code label is enough to take the next step down. `marks.codePaddingY` names the chip's vertical padding.

@@ -9,6 +9,9 @@ sources:
   - id: docs
     resource: https://github.com/elastic/isomer/blob/main/packages/isomer-primitives-slides/docs/primitives.md
     title: Authoring a primitive
+  - id: gallery
+    resource: https://github.com/elastic/isomer/blob/main/packages/isomer-primitives-slides/docs/gallery/index.md
+    title: Gallery
 ---
 
 # Steps
@@ -21,7 +24,9 @@ sources:
 6. Add an example at the most items, lines, or panels the schema takes, in representative copy, so the fit test measures the most structure; it does not prove every schema-valid string fits. Cap authored strings with `lineText()` or `wrappedText()`, whose `authoredTextMaxLength` is an input-size guard, and leave overflow to the layout check.[^docs]
 7. To size to the room, read `slideLayout(context)` (`width`, `height`, and the derived `crowding`); a container gives its children theirs with `withLayout(context, { width, height })` after taking out what it draws around them, and spreads `layoutRoom(context)` on the element that holds them, as the frame body and split panes do, so `checkLayout` measures them against it. Measure text with `measureText(text, role, width)` against the role its styles use at the step tried, with `text-transform` and `white-space` on the role, and marked text with `measureMarks`, which sets each run in the face `marksReact` draws it in and counts the lines holding a `code` chip; take marked text's height from `marksHeight`, which grows each of those lines by the chip's padding and border.[^docs]
 8. Write a refinement through `src/primitives/cross_field.ts` with the `rule` a kept description states it in; `z.toJSONSchema` drops refinements, and `src/stated_rules.test.ts` checks every one.[^docs]
+9. Regenerate the gallery pages with `pnpm docs:gallery -u`, list the new page under `gallery` in `packages/isomer-primitives-slides/docs/toc.yml`, and look over the rendered images, which are not committed.[^gallery]
 
 Related: [one source](/slides/concepts/one-source.md), [no svg renderer](/slides/concepts/no-svg-renderer.md).
 
 [^docs]: Authoring a primitive
+[^gallery]: Gallery
