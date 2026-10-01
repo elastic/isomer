@@ -178,6 +178,21 @@ describe('slideColumns size', () => {
       columnsHeadHeight(node.items, 'l', { ...full, width: full.width / 3 })
     );
   });
+
+  it('measures a title with the mark characters it draws', () => {
+    const heights = (title: string) =>
+      Array.from({ length: 400 }, (_, index) =>
+        columnsHeadHeight(
+          [
+            { title, body: 'x' },
+            { title: 'B', body: 'x' },
+          ],
+          'l',
+          { ...full, width: 400 + index * 2 }
+        )
+      );
+    expect(heights('**Rollout plan**')).not.toEqual(heights('Rollout plan'));
+  });
 });
 
 describe('slideColumns output', () => {

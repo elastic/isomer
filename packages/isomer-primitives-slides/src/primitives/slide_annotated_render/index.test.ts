@@ -15,6 +15,7 @@ import {
   annotatedRenderShares,
 } from '../../theme/components/annotated_render';
 import { frame } from '../../theme/components/frame';
+import { marks } from '../../theme/components/marks';
 import { scalePx } from '../../theme/scale';
 import { openBody } from '../layout';
 import { trackWidth } from '../size';
@@ -24,7 +25,7 @@ import { captionHeight } from '../slide_render/fit';
 import { headline } from '../slide_render/output';
 
 import { example, placeholderExample } from './examples';
-import { annotatedScale, legendStep } from './fit';
+import { annotatedScale, legendHeight, legendStep } from './fit';
 import { slideAnnotatedRenderPrimitive } from './index';
 
 const runtime = createIsomerRuntime({
@@ -118,6 +119,25 @@ describe('slideAnnotatedRender', () => {
     expect([615.5, 616].map(at)).toEqual(['s', 'm']);
     expect(legendStep(node.pins, openBody)).toBe('l');
     expect(legendStep(node.pins, { ...openBody, height: 254.5 })).toBe('m');
+  });
+
+  it('charges each legend line holding a code chip its padding and border', () => {
+    const coded = placeholderExample.pins.map((pin) => ({
+      ...pin,
+      body: 'Calls `refund(id)` on click.',
+    }));
+    const plain = coded.map((pin) => ({
+      ...pin,
+      body: 'Calls refund on click.',
+    }));
+    const codeRise =
+      2 * (scalePx(marks.codePaddingY) + scalePx(marks.codeBorder));
+    const step = legendStep(coded, openBody);
+    expect(legendStep(plain, openBody)).toBe(step);
+    expect(
+      legendHeight(coded, step, openBody.width) -
+        legendHeight(plain, step, openBody.width)
+    ).toBe(coded.length * codeRise);
   });
 
   it('places pins against the drawn slide when height limits its scale', () => {

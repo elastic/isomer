@@ -8,7 +8,6 @@
 import type { ScaleToken } from '@elastic/distillate';
 
 import type { SlideLayout } from '../../render/context';
-import { stripMarks } from '../../render/marks';
 import {
   annotatedRender,
   annotatedRenderShares,
@@ -16,7 +15,7 @@ import {
 import { scalePx } from '../../theme/scale';
 import type { TypeRole } from '../../theme/type_role';
 import { type SlideSize, slideSizes } from '../../theme/variants';
-import { lineBox, measureText, trackWidth } from '../size';
+import { lineBox, marksHeight, measureText, trackWidth } from '../size';
 import { scaleUnderCaption } from '../slide_render/fit';
 import { headline } from '../slide_render/output';
 import type { SlideRenderNode } from '../slide_render/types';
@@ -35,11 +34,16 @@ export const annotatedScale = (
 
 const { legend } = annotatedRender;
 
-const legendHeight = (
+/** Height of the legend at `step` in the second column of `width`, its titles and text wrapped across it. */
+export const legendHeight = (
   pins: readonly SlideAnnotatedRenderPin[],
   step: SlideSize,
-  textWidth: number
+  width: number
 ): number => {
+  const textWidth = Math.max(
+    0,
+    column(width, 1) - scalePx(legend.marker) - scalePx(legend.columnGap)
+  );
   const { padding, ...sizes } = legend.steps[step];
   const title = { ...legend.title, size: sizes.title };
   const body = { ...legend.body, size: sizes.body };
@@ -51,23 +55,15 @@ const legendHeight = (
       2 * scalePx(padding) +
       lines(name, title) +
       scalePx(legend.textGap) +
-      lines(stripMarks(text), body) +
+      marksHeight(text, body, textWidth) +
       scalePx(legend.rule),
     scalePx(legend.rule)
   );
 };
 
-/** The largest legend step whose rows fit the height of `layout`, their titles and text wrapped across its second column. */
+/** The largest legend step whose {@link legendHeight} fits the height of `layout`. */
 export const legendStep = (
   pins: readonly SlideAnnotatedRenderPin[],
   { width, height }: SlideLayout
-): SlideSize => {
-  const textWidth = Math.max(
-    0,
-    column(width, 1) - scalePx(legend.marker) - scalePx(legend.columnGap)
-  );
-  return (
-    slideSizes.find((step) => legendHeight(pins, step, textWidth) <= height) ??
-    's'
-  );
-};
+): SlideSize =>
+  slideSizes.find((step) => legendHeight(pins, step, width) <= height) ?? 's';

@@ -17,20 +17,10 @@ export const EMBEDDING_TYPES: ReadonlySet<string> = new Set([
   'slideRenderGrid',
 ]);
 
-/** How deep {@link findInTree} descends through arrays and objects before it refuses. */
-export const TREE_WALK_MAX_DEPTH = 64;
-
-/** How many values {@link findInTree} examines, children of any type included, before it refuses. */
-export const TREE_WALK_MAX_VALUES = 10_000;
-
 type TreePath = (string | number)[];
 
-/** What {@link findInTree} found: a path, nothing, or a limit it stopped at. */
-export type TreeSearch =
-  | { kind: 'found'; path: TreePath }
-  | { kind: 'none' }
-  | { kind: 'tooDeep' }
-  | { kind: 'tooLarge' };
+/** What {@link findInTree} found: a path or nothing. */
+export type TreeSearch = { kind: 'found'; path: TreePath } | { kind: 'none' };
 
 interface Frame {
   value: object;
@@ -42,29 +32,25 @@ interface Frame {
 }
 
 /**
- * The first record under `root`, pre-order, that `match` accepts, walked without recursion one child at a time. `skip` leaves out a record's key; past {@link TREE_WALK_MAX_DEPTH} levels or {@link TREE_WALK_MAX_VALUES} values the walk refuses.
+ * The first record under `root`, pre-order, that `match` accepts, walked without recursion one child at a time and each object once. `skip` leaves out a record's key.
+ *
+ * It sets no budget of its own: the runtime runs `checkInputBudget` before any schema, and a primitive's own `schema` does not parse its body recursively.
  */
 export const findInTree = (
   root: unknown,
   match: (record: Record<string, unknown>) => boolean,
   skip: (record: Record<string, unknown>, key: string) => boolean = () => false
 ): TreeSearch => {
-  let examined = 0;
   const frames: Frame[] = [];
+  const seen = new Set<object>();
   const enter = (
     value: unknown,
     key: string | number
   ): TreeSearch | undefined => {
-    examined += 1;
-    if (examined > TREE_WALK_MAX_VALUES) {
-      return { kind: 'tooLarge' };
-    }
-    if (typeof value !== 'object' || value === null) {
+    if (typeof value !== 'object' || value === null || seen.has(value)) {
       return undefined;
     }
-    if (frames.length > TREE_WALK_MAX_DEPTH) {
-      return { kind: 'tooDeep' };
-    }
+    seen.add(value);
     const array = Array.isArray(value);
     if (!array && match(value as Record<string, unknown>)) {
       return {
@@ -114,17 +100,6 @@ export const findNestedRender = (value: unknown): TreeSearch =>
     ({ type }) => typeof type === 'string' && EMBEDDING_TYPES.has(type)
   );
 
-/** The walk budget, as a body's description states it. */
-export const treeLimitRule = `It nests at most ${TREE_WALK_MAX_DEPTH} levels deep and holds at most ${TREE_WALK_MAX_VALUES} values.`;
-
-/** Why a {@link TreeSearch} stopped short, as a validation message; `undefined` when it did not. */
-export const treeLimitMessage = (search: TreeSearch): string | undefined =>
-  search.kind === 'tooDeep'
-    ? `nests deeper than ${TREE_WALK_MAX_DEPTH} levels`
-    : search.kind === 'tooLarge'
-      ? `holds more than ${TREE_WALK_MAX_VALUES} values`
-      : undefined;
-
 const isFrame = (node: unknown): boolean =>
   typeof node === 'object' &&
   node !== null &&
@@ -159,13 +134,7 @@ export const embeddedBody = (bodyNodeSchema: ZodType<unknown>, lead: string) =>
             });
           }
           const search = findNestedRender(body);
-          const limit = treeLimitMessage(search);
-          if (limit) {
-            ctx.addIssue({
-              code: 'custom',
-              message: `an embedded body cannot be checked: it ${limit}`,
-            });
-          } else if (search.kind === 'found') {
+          if (search.kind === 'found') {
             ctx.addIssue({
               code: 'custom',
               message: 'an embedded body cannot hold another render',
@@ -173,9 +142,7 @@ export const embeddedBody = (bodyNodeSchema: ZodType<unknown>, lead: string) =>
             });
           }
         },
-        [frameRule, nestedRule, treeLimitRule]
+        [frameRule, nestedRule]
       )
     )
-    .describe(
-      `${lead} ${frameRule} Its ids are its own. ${nestedRule} ${treeLimitRule}`
-    );
+    .describe(`${lead} ${frameRule} Its ids are its own. ${nestedRule}`);

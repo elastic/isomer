@@ -6,16 +6,15 @@
  */
 
 import {
+  checkInputBudget,
   type Composition,
+  type InputBudget,
+  type InputBudgetCheck,
   mapCompositionNodes,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
 
-import {
-  findInTree,
-  findNestedRender,
-  treeLimitMessage,
-} from './primitives/slide_render/embedded';
+import { findNestedRender } from './primitives/slide_render/embedded';
 import type { SlideRenderNode } from './primitives/slide_render/types';
 import { slideDeckPrimitives } from './registry';
 
@@ -30,6 +29,8 @@ export interface ResolveSlideRendersOptions {
   onUnresolved?: 'throw' | 'leave';
   /** Every primitive the deck uses, so references inside another pack's containers are found; defaults to this pack's. */
   primitives?: Parameters<typeof mapCompositionNodes>[1];
+  /** Limits each slide is checked against before it is read; pass the runtime's `inputBudget` when it overrides one. */
+  inputBudget?: InputBudget;
 }
 
 const isUnresolved = (
@@ -44,13 +45,14 @@ const quote = (text: string) => JSON.stringify(text);
 /**
  * Fills every `slideRender` that names a `slide` but has no `body` with that slide's body, anywhere in the deck.
  *
- * A slide deeper or larger than {@link findInTree} checks is refused, or with `leave` returned unchanged. An unknown slug, a slide rendering itself, and a slide rendering one that holds a render of its own (which covers any cycle) cannot be filled. A slug naming two slides throws whatever `onUnresolved` says.
+ * Each slide is read once, through {@link checkInputBudget}, and the deck is built from its plain copies. A slide the budget refuses throws, or with `leave` is returned unchanged. A reference to an unknown slug, to its own slide, to a slide the budget refuses, or to a slide that holds a render of its own (which covers any cycle) cannot be filled. A slug naming two slides always throws.
  */
 export const resolveSlideRenders = (
   slides: readonly NamedSlide[],
   {
     onUnresolved = 'throw',
     primitives = slideDeckPrimitives,
+    inputBudget,
   }: ResolveSlideRendersOptions = {}
 ): Composition[] => {
   const fail = (node: PrimitiveNode, message: string): PrimitiveNode => {
@@ -68,17 +70,27 @@ export const resolveSlideRenders = (
     }
     bySlug.set(slide.slug, slide);
   }
-  return slides.map(({ slug, composition }) => {
-    const limit = treeLimitMessage(findInTree(composition.body, () => false));
-    if (limit) {
+  const checks = new Map<string, InputBudgetCheck>();
+  const checked = ({ slug, composition }: NamedSlide): InputBudgetCheck => {
+    let check = checks.get(slug);
+    if (!check) {
+      check = checkInputBudget(composition, inputBudget);
+      checks.set(slug, check);
+    }
+    return check;
+  };
+  return slides.map((slide) => {
+    const { slug, composition } = slide;
+    const own = checked(slide);
+    if (!own.valid) {
       if (onUnresolved === 'leave') {
         return composition;
       }
       throw new Error(
-        `resolveSlideRenders: slide ${quote(slug)} cannot be checked: it ${limit}`
+        `resolveSlideRenders: slide ${quote(slug)} cannot be checked: ${own.error.message}`
       );
     }
-    return mapCompositionNodes(composition, primitives, (node) => {
+    return mapCompositionNodes(own.value as Composition, primitives, (node) => {
       if (!isUnresolved(node)) {
         return node;
       }
@@ -92,21 +104,21 @@ export const resolveSlideRenders = (
       if (target.slug === slug) {
         return fail(node, `slide ${quote(slug)} renders itself`);
       }
-      const search = findNestedRender(target.composition.body);
-      const targetLimit = treeLimitMessage(search);
-      if (targetLimit) {
+      const targetCheck = checked(target);
+      if (!targetCheck.valid) {
         return fail(
           node,
-          `slide ${quote(slug)} renders slide ${quote(target.slug)}, which cannot be checked: it ${targetLimit}`
+          `slide ${quote(slug)} renders slide ${quote(target.slug)}, which cannot be checked: ${targetCheck.error.message}`
         );
       }
-      if (search.kind === 'found') {
+      const { body } = targetCheck.value as Composition;
+      if (findNestedRender(body).kind === 'found') {
         return fail(
           node,
           `slide ${quote(slug)} renders slide ${quote(target.slug)}, which holds a render of its own`
         );
       }
-      return { ...node, body: target.composition.body };
+      return { ...node, body };
     });
   });
 };

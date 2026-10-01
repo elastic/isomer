@@ -5,10 +5,14 @@
  * 2.0.
  */
 
-import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
+import {
+  checkInputBudget,
+  type Composition,
+  MAX_INPUT_DEPTH,
+  type PrimitiveNode,
+} from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
-import { TREE_WALK_MAX_DEPTH } from './primitives/slide_render/embedded';
 import { slideDeckPrimitives } from './registry';
 import { type NamedSlide, resolveSlideRenders } from './resolve_renders';
 
@@ -46,7 +50,7 @@ describe('resolveSlideRenders', () => {
       ...renderOf('target'),
       body: target.composition.body,
     });
-    expect((annotated!.render as { body: unknown }).body).toBe(
+    expect((annotated!.render as { body: unknown }).body).toEqual(
       target.composition.body
     );
   });
@@ -75,7 +79,7 @@ describe('resolveSlideRenders', () => {
     expect(bodyOf(slide!)[0]).toEqual(renderOf('b'));
   });
 
-  it('throws on a slug naming two slides, whatever onUnresolved says', () => {
+  it('always throws on a slug naming two slides', () => {
     expect(() =>
       resolveSlideRenders(
         [
@@ -87,7 +91,7 @@ describe('resolveSlideRenders', () => {
     ).toThrow('slug "a" names more than one slide');
   });
 
-  it('returns a slide too deep to check as it is when leaving, and throws otherwise', () => {
+  it('returns a slide the input budget refuses as it is when leaving, and throws otherwise', () => {
     let deep: object = heading;
     for (let level = 0; level < 100_000; level += 1) {
       deep = { type: 'slideStack', items: [deep] };
@@ -100,7 +104,56 @@ describe('resolveSlideRenders', () => {
     expect(bodyOf(host!)[0]).toEqual(renderOf('deep'));
     expect(left).toBe(slides[1]!.composition);
     expect(() => resolveSlideRenders(slides.slice(1))).toThrow(
-      `slide "deep" cannot be checked: it nests deeper than ${TREE_WALK_MAX_DEPTH} levels`
+      `slide "deep" cannot be checked: input nests deeper than ${MAX_INPUT_DEPTH} levels`
+    );
+    expect(() => resolveSlideRenders(slides)).toThrow(
+      `slide "host" renders slide "deep", which cannot be checked: input nests deeper than ${MAX_INPUT_DEPTH} levels`
+    );
+  });
+
+  it('fills from a slide at the input budget’s depth and refuses one a level past it', () => {
+    /** `count` slideStacks around `inner`: two levels each, under four of the composition's. */
+    const chain = (count: number, inner: object): Composition => {
+      let node = inner;
+      for (let level = 0; level < count; level += 1) {
+        node = { type: 'slideStack', items: [node] };
+      }
+      return frame(node);
+    };
+    const atLimit = chain(29, { type: 'slideBulletList', items: ['Last'] });
+    const pastLimit = chain(30, heading);
+    expect(checkInputBudget(atLimit).valid).toBe(true);
+    expect(checkInputBudget(pastLimit)).toMatchObject({
+      valid: false,
+      error: { code: 'INPUT_OVER_BUDGET' },
+    });
+    const deck = (composition: Composition) => [
+      { slug: 'host', composition: frame(renderOf('target')) },
+      { slug: 'target', composition },
+    ];
+    const [host] = resolveSlideRenders(deck(atLimit));
+    expect(bodyOf(host!)[0]).toEqual({
+      ...renderOf('target'),
+      body: atLimit.body,
+    });
+    expect(() => resolveSlideRenders(deck(pastLimit))).toThrow(
+      `slide "host" renders slide "target", which cannot be checked: input nests deeper than ${MAX_INPUT_DEPTH} levels`
+    );
+    const [raised] = resolveSlideRenders(deck(pastLimit), {
+      inputBudget: { depth: MAX_INPUT_DEPTH + 1 },
+    });
+    expect(bodyOf(raised!)[0]).toEqual({
+      ...renderOf('target'),
+      body: pastLimit.body,
+    });
+  });
+
+  it('refuses a slide that is not plain data', () => {
+    const slides = [
+      { slug: 'a', composition: frame({ ...heading, title: () => 'Late' }) },
+    ];
+    expect(() => resolveSlideRenders(slides)).toThrow(
+      'slide "a" cannot be checked: input holds a function, which is not plain data'
     );
   });
 

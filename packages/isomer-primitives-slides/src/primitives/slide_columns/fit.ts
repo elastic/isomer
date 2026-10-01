@@ -39,7 +39,7 @@ export const columnsStep = (
     slideSizes.find((step) =>
       items.every(
         ({ title }) =>
-          widestWord(stripMarks(title), columns.title.tracking) *
+          widestWord(title, columns.title.tracking) *
             scalePx(columns.titleSizes[step]) <=
           inner
       )
@@ -47,7 +47,7 @@ export const columnsStep = (
   const load =
     (rowLoad(
       items.map(({ title, tags = [], body }) => [
-        stripMarks(title),
+        title,
         ...tags,
         stripMarks(body),
       ])
@@ -113,10 +113,8 @@ export const columnsHeadHeight = (
   return Math.max(
     ...items.map(({ title: text, tags = [] }) => {
       const titleHeight =
-        Math.max(
-          1,
-          measureText(stripMarks(text), title, inner * lineFill).lines
-        ) * lineBox(title);
+        Math.max(1, measureText(text, title, inner * lineFill).lines) *
+        lineBox(title);
       return tags.length === 0
         ? titleHeight
         : titleHeight + scalePx(columns.gap) + tagsHeight(tags, inner);

@@ -48,6 +48,7 @@ export const annotatedRenderModule = createStyleModule(
       background: ${color.primary};
       border: ${pin.ring} solid ${color.bgPage};
       border-radius: 50%;
+      box-sizing: border-box;
       color: ${color.onPrimary};
       display: flex;
       font-size: ${pin.numeral.size};

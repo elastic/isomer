@@ -28,13 +28,14 @@ import {
 const element = runtime.surfaces.react.render(composition, {
   enhancements: [slideBuildsEnhancement],
 });
+const clicks = slideBuilds(composition, runtime.primitives);
 // After the render commits into `root`:
 showSlideBuild(root, composition, step, runtime.primitives);
 ```
 
 On the `html` surface, request it by id instead: `runtime.surfaces.html.render(composition, { enhancements: [SLIDE_BUILDS] })`. A React host collects the pack's CSS with a Distillate live collection, as [embedding](../../isomer-runtime/docs/embedding.md) shows.
 
-`slideBuilds(composition)` is the number of clicks the slide takes. `showSlideBuild(root, composition, step)` shows the first `step` parts and hides the rest; call it again with a lower step to go back. It first shows anything an earlier call hid, so it is safe after React reuses elements across slides. A node whose parts it cannot find stays whole.
+`slideBuilds(composition, primitives)` is the number of clicks the slide takes. `showSlideBuild(root, composition, step, primitives)` shows the first `step` parts and hides the rest; call it again with a lower step to go back. It first shows anything an earlier call hid, so it is safe after React reuses elements across slides. A node whose parts it cannot find stays whole. Both walk only this pack's primitives unless given `primitives`, which misses a buildable node inside another pack's container. Pass the full inventory, such as `runtime.primitives`, to both: given different inventories, the count can stop before the parts `showSlideBuild` hides are shown.
 
 The enhancement adds only [node anchors](../../isomer-sdk/docs/rendering.md#node-anchors), which is how `showSlideBuild` finds each node through `findNodeElementPairs`. It ships no script. A render without the enhancement, or with no ordered primitive, carries no anchors.
 

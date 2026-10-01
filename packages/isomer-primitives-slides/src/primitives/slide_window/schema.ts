@@ -11,14 +11,7 @@ import type { ZodType } from 'zod';
 import { slideWindowChromes } from '../../theme/variants';
 import { lineText } from '../authored_text';
 import { crossRefine } from '../cross_field';
-import {
-  EMBEDDING_TYPES,
-  findInTree,
-  TREE_WALK_MAX_DEPTH,
-  TREE_WALK_MAX_VALUES,
-  treeLimitMessage,
-  treeLimitRule,
-} from '../slide_render/embedded';
+import { EMBEDDING_TYPES, findInTree } from '../slide_render/embedded';
 
 // A window inside an embedded slide sits in another slide, so embedded bodies are skipped.
 const findWindow = (body: unknown) =>
@@ -46,7 +39,7 @@ export const buildSchema = (nodeSchema: ZodType<unknown>) =>
         .array(nodeSchema)
         .min(1)
         .describe(
-          `Slide nodes shown inside the window, top to bottom, e.g. a slideCode or slideBulletList. At least one; never another slideWindow. ${treeLimitRule}`
+          'Slide nodes shown inside the window, top to bottom, e.g. a slideCode or slideBulletList. At least one; never another slideWindow.'
         ),
     })
     .strict()
@@ -55,13 +48,6 @@ export const buildSchema = (nodeSchema: ZodType<unknown>) =>
         error: 'a window cannot hold another window',
         path: ['body'],
         rule: 'At least one; never another slideWindow.',
-      })
-    )
-    .check(
-      crossRefine(({ body }) => !treeLimitMessage(findWindow(body)), {
-        error: `a window body cannot be checked past ${TREE_WALK_MAX_DEPTH} levels or ${TREE_WALK_MAX_VALUES} values`,
-        path: ['body'],
-        rule: treeLimitRule,
       })
     );
 
