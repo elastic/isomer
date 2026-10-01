@@ -33,6 +33,11 @@ export const INPUT_REFUSAL_CODES: ReadonlySet<string | undefined> = new Set([
   ISOMER_ERROR_CODES.INPUT_OVER_BUDGET,
 ]);
 
+/** Whether `error` is a refusal before parsing, which no validation mode collects. */
+export const isInputRefusal = ({
+  code,
+}: Pick<ValidationError, 'code'>): boolean => INPUT_REFUSAL_CODES.has(code);
+
 /** A plain copy of the input to parse in its place, or why there is none. */
 export type InputBudgetCheck =
   { valid: true; value: unknown } | { valid: false; error: ValidationError };

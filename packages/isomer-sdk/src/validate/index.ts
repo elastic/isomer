@@ -25,6 +25,7 @@ export {
   MAX_INPUT_DEPTH,
   MAX_INPUT_VALUES,
   checkInputBudget,
+  isInputRefusal,
 } from './input_budget';
 export {
   type CompositionJsonSchemaOptions,

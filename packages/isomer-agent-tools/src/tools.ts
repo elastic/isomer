@@ -8,6 +8,7 @@
 import {
   type Composition,
   formatValidationError,
+  isInputRefusal,
   ISOMER_ERROR_CODES,
   type RenderTheme,
   type ValidationError,
@@ -51,11 +52,6 @@ const tool = <TInput extends ZodObject>(
     }
   },
 });
-
-const INPUT_REFUSAL_CODES: ReadonlySet<string | undefined> = new Set([
-  ISOMER_ERROR_CODES.INPUT_NOT_PLAIN_DATA,
-  ISOMER_ERROR_CODES.INPUT_OVER_BUDGET,
-]);
 
 const VALIDATION_ERROR_CODES: Readonly<Record<string, string>> = {
   CompositionValidationError: ISOMER_ERROR_CODES.COMPOSITION_INVALID,
@@ -252,9 +248,7 @@ export const createIsomerTools = <THostContext = unknown>(
           findings,
           composition = built,
         } = check(built);
-        const refused = findings.some(({ code }) =>
-          INPUT_REFUSAL_CODES.has(code)
-        );
+        const refused = findings.some(isInputRefusal);
         return jsonResult({
           ...(refused ? {} : { composition }),
           valid,

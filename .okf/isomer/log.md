@@ -6,6 +6,7 @@
 
 ## 2026-10-01
 
+- **`isInputRefusal` and `CompositionMeta` are exported**: `isInputRefusal(error)` says whether a finding is a `checkInputBudget` refusal, which no validation mode collects, and agent-tools uses it instead of copying the refusal codes; `CompositionMeta` names the type of `Composition.meta`.
 - **One enhancement resolver for both surfaces**: the `html` surface and `applyEnhancements` resolve through one function that keeps the first applying definition of each id, so a duplicate id's script is emitted once; `applyEnhancements` takes optional `requested` ids. `resolveEnhancements` and `enhancementScript` leave `./html`.
 - **`mapCompositionNodes` takes a walker**: its second argument is a `ChildNodeWalker`, as for `someBodyNode`, instead of the definitions it built one from; the slides pack passes the walker it already holds.
 - **A typed `scheme` replaces the adapter option bag**: `HTMLRenderOptions.scheme` (`'light' | 'dark'`) asks a style adapter to resolve `light-dark(…)` to one scheme, replacing `adapterOptions` and the `flattenSchemeOption` key; the runtime's `svg` surface sets it.
