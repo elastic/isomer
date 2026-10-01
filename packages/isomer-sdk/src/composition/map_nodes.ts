@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { type ChildNodeRef, createChildNodeWalker } from './body_node_base';
+import type { ChildNodeRef, ChildNodeWalker } from './body_node_base';
 import type { Composition } from './composition';
 import { IsomerError } from './error';
 import type { PrimitiveNode } from './node';
@@ -59,11 +59,11 @@ interface Frame {
 
 /**
  * Rebuilds `composition`'s body with `fn` applied to every node, including
- * nested children of every container `definitions` describes.
+ * the nested children `walk` yields.
  *
  * Post-order: a container reaches `fn` after its children have been mapped,
- * so `fn` sees the finished replacements in place. `definitions` must span
- * every pack in the composition, as {@link createChildNodeWalker} requires.
+ * so `fn` sees the finished replacements in place. Build `walk` with
+ * `createChildNodeWalker` over every pack in the composition.
  * A child path is the dotted `field` / `field[index]` form the SDK documents
  * (`items[0].node`); any other shape throws `UNSUPPORTED_CHILD_PATH`.
  * Walked without recursion, so depth is bounded by memory, not the call stack; a node nested in itself throws `CYCLIC_COMPOSITION`.
@@ -72,10 +72,9 @@ export const mapCompositionNodes = <
   TNode extends PrimitiveNode = PrimitiveNode,
 >(
   composition: Composition<TNode>,
-  definitions: Parameters<typeof createChildNodeWalker>[0],
+  walk: ChildNodeWalker,
   fn: (node: PrimitiveNode) => PrimitiveNode
 ): Composition<TNode> => {
-  const walk = createChildNodeWalker(definitions);
   const mapNode = (root: PrimitiveNode): PrimitiveNode => {
     const open = new Set<PrimitiveNode>();
     const stack: Frame[] = [];

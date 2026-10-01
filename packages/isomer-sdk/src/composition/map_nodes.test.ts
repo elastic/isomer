@@ -15,7 +15,10 @@ import {
   type StackNode,
 } from '../testing/sdk.fixtures';
 
+import { createChildNodeWalker } from './body_node_base';
 import { mapCompositionNodes } from './map_nodes';
+
+const walk = createChildNodeWalker(fixtureDefinitions);
 
 const composition = (body: FixtureNode[]): Composition<FixtureNode> => ({
   type: 'view',
@@ -38,7 +41,7 @@ describe('mapCompositionNodes', () => {
         { type: 'note', body: 'a' },
         { type: 'note', body: 'b' },
       ]),
-      fixtureDefinitions,
+      walk,
       shoutNotes
     );
 
@@ -51,7 +54,7 @@ describe('mapCompositionNodes', () => {
   it('rewrites a container child in place at its declared path', () => {
     const result = mapCompositionNodes(
       composition([{ type: 'stack', items: [{ type: 'note', body: 'a' }] }]),
-      fixtureDefinitions,
+      walk,
       shoutNotes
     );
 
@@ -64,7 +67,7 @@ describe('mapCompositionNodes', () => {
     const seen: string[] = [];
     mapCompositionNodes(
       composition([{ type: 'stack', items: [{ type: 'note', body: 'a' }] }]),
-      fixtureDefinitions,
+      walk,
       (node) => {
         seen.push(node.type);
         return node;
@@ -77,7 +80,7 @@ describe('mapCompositionNodes', () => {
   it('leaves the rest of the composition untouched', () => {
     const result = mapCompositionNodes(
       composition([{ type: 'note', body: 'a' }]),
-      fixtureDefinitions,
+      walk,
       (node) => node
     );
 
@@ -109,7 +112,7 @@ describe('mapCompositionNodes', () => {
 
     const result = mapCompositionNodes(
       composition([wrapped]),
-      containers,
+      createChildNodeWalker(containers),
       (node) => (node.type === 'note' ? { ...node, body: 'b' } : node)
     );
 
@@ -124,7 +127,7 @@ describe('mapCompositionNodes', () => {
     const stack: FixtureNode = { type: 'stack', items: [note] };
     const result = mapCompositionNodes(
       composition([note, stack]),
-      fixtureDefinitions,
+      walk,
       (node) => node
     );
 
@@ -139,7 +142,7 @@ describe('mapCompositionNodes', () => {
     const seen: PrimitiveNode[] = [];
     mapCompositionNodes(
       composition([note, { type: 'stack', items: [note, note] }]),
-      fixtureDefinitions,
+      walk,
       (node) => {
         seen.push(node);
         return node;
@@ -156,14 +159,10 @@ describe('mapCompositionNodes', () => {
       deepest = { type: 'stack', items: [deepest] };
     }
     const order: string[] = [];
-    const result = mapCompositionNodes(
-      composition([deepest]),
-      fixtureDefinitions,
-      (node) => {
-        order.push(node.type);
-        return shoutNotes(node);
-      }
-    );
+    const result = mapCompositionNodes(composition([deepest]), walk, (node) => {
+      order.push(node.type);
+      return shoutNotes(node);
+    });
 
     let node = result.body[0] as FixtureNode;
     let levels = 0;
@@ -182,7 +181,7 @@ describe('mapCompositionNodes', () => {
     stack.items.push(stack);
 
     expect(() =>
-      mapCompositionNodes(composition([stack]), fixtureDefinitions, (n) => n)
+      mapCompositionNodes(composition([stack]), walk, (n) => n)
     ).toThrow(
       expect.objectContaining({
         name: 'IsomerError',
@@ -206,7 +205,7 @@ describe('mapCompositionNodes', () => {
     expect(() =>
       mapCompositionNodes(
         composition([{ type: 'stack', items: [{ type: 'note', body: 'a' }] }]),
-        containers,
+        createChildNodeWalker(containers),
         (node) => node
       )
     ).toThrow(/cannot rewrite child at path "items\["a"\]"/);

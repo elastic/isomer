@@ -38,7 +38,7 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | --- | --- |
 | `createPrimitiveDispatcher` | Builds a `PrimitiveDispatcher` from a definition list; `PrimitiveDispatcherOptions` carries its `label` |
 | `createChildNodeWalker` | Builds a `ChildNodeWalker`, which yields a `ChildNodeRef` (`{ node, path }`) per nested node across a heterogeneous inventory |
-| `mapCompositionNodes` | Rebuilds a composition's body with `fn` applied to every node, nested children included, without recursion; a node nested in itself throws `CYCLIC_COMPOSITION` |
+| `mapCompositionNodes` | `(composition, walk, fn)`: rebuilds a composition's body with `fn` applied to every node and every child `walk` yields, without recursion; a node nested in itself throws `CYCLIC_COMPOSITION` |
 | `someBodyNode` | Predicate over a body, following children |
 | `isVisibleOnSurface` | Surface-visibility check from a node's own `surfaces` hint |
 | `nodeAnchor`, `NODE_ANCHOR_ATTRIBUTE` | Props a `react` renderer spreads on its root so its element can be found; empty unless the HTML surface, or outside it `context.anchors`, turns anchors on |
