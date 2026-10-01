@@ -29,7 +29,7 @@ An enhancement's optional `script` is a function body with `root`, the render's 
 
 `styleCollector` names the collector shape `collectStyles` hooks mutate. `definePrimitivePack` derives it from `styleAdapter.styleCollector` unless the pack sets it. Distillate-backed packs use the string `DISTILLATE_STYLE_COLLECTOR` (`'distillate'`). The SDK does not depend on `@elastic/distillate`.
 
-`theme: themeBound<T>()` is a phantom so the pack infers `PrimitivePack<T>`. Bare `PrimitivePack` is `PrimitivePack<unknown>`, which asks nothing of a frame; `AnyPrimitivePack` (`PrimitivePack<never>`) is the runtime's storage form.
+`definePrimitivePack<T>(input)` returns `PrimitivePack<T>`, whose phantom `__theme` carries the palette its frames must supply. Bare `PrimitivePack` is `PrimitivePack<unknown>`, which asks nothing of a frame; `AnyPrimitivePack` (`PrimitivePack<never>`) is the runtime's storage form.
 
 The registry array and the body-node union are both hand-written. `assertPackRegistrationComplete` fails when a primitives subdirectory is absent from the registry. A directory missing from both lists leaves them agreeing, so it compiles and every other test passes. Deriving the union from the registry does not compile (`TS7022` through the container primitives). `buildJsxShim` and `buildObjectBuilders` already derive the authoring fronts from the registry value.[^registration]
 

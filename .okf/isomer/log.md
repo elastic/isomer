@@ -6,6 +6,7 @@
 
 ## 2026-10-01
 
+- **A pack's theme is a type argument**: `themeBound` and `PrimitivePackInput.theme` are removed; a pack names the palette its frames must supply as `definePrimitivePack<T>(input)`, and `PrimitivePackInput` is no longer generic. The slides pack calls `definePrimitivePack<SlideFrameTheme>`.
 - **Dead Zod helpers are gone**: the root entry no longer exports `enumOf`, whose `message` the central enum wording always replaced, `finiteNumber`, `nonNegativeFiniteNumber`, and `positiveFiniteNumber`, which Zod 4's `z.number()` makes redundant, or `optionalString`, which allowed `''` but not `undefined`. `z` and `requiredString` remain.
 - **Docs match the code on frames, warnings, and overflow**: only `wrap` has the body withheld (`estimateHeight` and `validateBody` read the nodes); the empty-surface warning is per surface over the whole body; `ReactContextArg` is the dispatcher's context argument tuple; and the slides agent guide no longer tells the model a layout check reports overflow, since no surface runs one.
 - **Compact numbers reach billions and honor precision**: `formatCompactNumber(value, unit?, precision?)` adds `b` and `t` tiers, promotes a value that rounds up to the next tier, and takes the decimals to keep; a `compact` structured value passes its `precision`.

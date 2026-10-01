@@ -21,8 +21,7 @@ What each entry point exports, and which ones cost you a dependency.
 | --- | --- |
 | `definePrimitive` | Builds a `PrimitiveDefinition`; adds `id` and `surfaces` to its schema and closes it to unknown keys |
 | `definePrimitiveFor` | `definePrimitive` bound to one pack's `PackTypes` |
-| `definePrimitivePack` | Builds a `PrimitivePack`; infers `TTheme` from `themeBound` |
-| `themeBound` | Inference carrier so a pack declares its palette at the definition |
+| `definePrimitivePack` | Builds a `PrimitivePack`; its type argument `TTheme` is the palette its frames must supply |
 | `composePacks` | Flattens packs into one frozen inventory; rejects cross-pack duplicates |
 | `extendPrimitivePack` | Adds primitives to a pack, keeping its declared surfaces |
 | `bindFrame` | Erases a `Frame<TTheme>` into a `BoundFrame` |
@@ -31,7 +30,7 @@ What each entry point exports, and which ones cost you a dependency.
 
 Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `PrimitiveSchema` (a `ZodObject`), `PrimitiveCatalogEntry`, `PrimitiveMetrics`, `PrimitiveChildRef`, `PrimitiveRenderContext`, `StyledRenderContext`, `PrimitiveStyleCollector`, `PrimitiveStyleCollectionContext`, `PackTypes`, `DefaultPackTypes`, `Renderer` (`(node, env)` — `env` is `SurfaceMap<T>[S]['env']`), `Renderers`, `RenderScope`, `ReactContextArg` (the dispatcher's optional-or-required context argument tuple for `renderReact`), `SurfaceMap`, `SurfaceName`, `OptionalSurface`, `PrimitivePack`, `AnyPrimitivePack`, `PrimitivePackInput`, `PackStyleAdapter`, `PackAuthoringOptions`, `PrimitiveGroup`, `ComposedPacks`, `Frame`, `FrameBody`, `BoundFrame`, `FrameDispatcher`, `FrameHeader`, `FrameComposition`, `FrameViewport`, `ThemePair`, `EnhancementDefinition`, `HostCapabilities`, `StyleHandle`, `ThemeTokenPath`, `SvgRenderThemeBase`, `Composition`, `BodyNode` (the same type as `PrimitiveNode`, kept for hosts that name body nodes), `BodyNodeBase`, `BodyNodeSurface`, `ActionEventRef`, `IsomerError`, `IsomerErrorCode`.
 
-`react` and `svg` renderers receive `env.theme`: the frame's resolved palette (`T['theme']`) when reached through the `svg` surface, `undefined` outside one. A pack whose `svg` renderers read tokens still declares `theme: themeBound<TTheme>()` on its pack input. `PrimitivePackInput.authoring` (a `PackAuthoringOptions`) is this pack's own contribution — `describe` and `omitProperties` — to the runtime's merged authoring schema, plus `groups` for an index catalog.
+`react` and `svg` renderers receive `env.theme`: the frame's resolved palette (`T['theme']`) when reached through the `svg` surface, `undefined` outside one. A pack whose `svg` renderers read tokens still declares them as `definePrimitivePack<TTheme>`'s type argument. `PrimitivePackInput.authoring` (a `PackAuthoringOptions`) is this pack's own contribution — `describe` and `omitProperties` — to the runtime's merged authoring schema, plus `groups` for an index catalog.
 
 ## Root entry — dispatch
 

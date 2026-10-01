@@ -91,7 +91,6 @@ export {
   extendPrimitivePack,
   runEnhancementScript,
   scopeScript,
-  themeBound,
 } from '../pack';
 export {
   type FormatDisplayValueOptions,

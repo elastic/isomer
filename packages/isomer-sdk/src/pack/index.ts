@@ -21,5 +21,4 @@ export {
   type PrimitivePackInput,
   definePrimitivePack,
   extendPrimitivePack,
-  themeBound,
 } from './primitive_pack';
