@@ -1,5 +1,5 @@
 ---
-navigation_title: What is Isomer?
+navigation_title: Isomer
 description: Portable UI runtime that turns one typed Composition into React, HTML, SVG, PNG, Slack Block Kit, Markdown, and plain text.
 ---
 
