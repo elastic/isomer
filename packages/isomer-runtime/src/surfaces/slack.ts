@@ -27,7 +27,7 @@ export interface SlackRenderOptions extends SlackEnvelopeOptions {
   onValidationError?: ValidationErrorMode;
 }
 
-/** Options for {@link SlackSurface.renderNode}: {@link SlackRenderOptions} without validation, which a lone node skips, or a heading, which it lacks. */
+/** Options for {@link SlackSurface.renderNode}: {@link SlackRenderOptions} without a heading, which a lone node lacks. */
 export type SlackRenderNodeOptions = Omit<SlackRenderOptions, 'heading'>;
 
 export type SlackRenderResult = SlackEnvelopeResult;

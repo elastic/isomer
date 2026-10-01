@@ -114,7 +114,7 @@ Three results carry a `composition`, each with its own rule:
 
 `src/api_reference.test.ts` fails when a name exported from `src/index.ts` is missing from this page.
 
-`IsomerError` and `CompositionValidationError` are deliberate pass-throughs of the SDK catch contract: a host catching a runtime construction failure or a validating surface's refusal should not need a second dependency just to name `code`. Both are still identified by `name` and `code`, never `instanceof`.
+`IsomerError` and `CompositionValidationError` are deliberate pass-throughs of the SDK catch contract: a host catching a runtime construction failure or a validating surface's refusal should not need a second dependency just to name `code`. Neither is identified by `instanceof`: `IsomerError` by `name` and `code`, `CompositionValidationError` by `name`, `code`, and `errors`.
 
 ## Import from the SDK
 
