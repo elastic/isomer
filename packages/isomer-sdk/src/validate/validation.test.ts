@@ -15,8 +15,10 @@ import {
 } from '../define/primitive_module';
 
 import {
+  compositionToRender,
   createCompositionParser,
   createCompositionValidator,
+  enforceValidationMode,
 } from './validation';
 
 const renderers = {
@@ -298,5 +300,106 @@ describe('unknown node keys', () => {
     });
     expect(result.valid).toBe(true);
     expect(result.composition?.body[0]).toEqual({ type: 'loose', extra: 1 });
+  });
+});
+
+describe('the input budget', () => {
+  const deep = (depth: number) => {
+    let node: unknown = { type: 'kpi', label: 'a' };
+    for (let level = 0; level < depth; level += 1) {
+      node = { type: 'holder', items: [node] };
+    }
+    return { type: 'view', body: [node] };
+  };
+  const refusal = {
+    valid: false,
+    errors: [
+      {
+        path: '',
+        message: 'input nests deeper than 64 levels',
+        code: 'INPUT_OVER_BUDGET',
+      },
+    ],
+  };
+
+  it('refuses a 100,000-deep body before the schema recurses', () => {
+    expect(parse(deep(100_000))).toEqual(refusal);
+    expect(validate(deep(100_000) as never)).toEqual({
+      ...refusal,
+      warnings: [],
+    });
+  });
+
+  it('refuses a container inherited past the walk', () => {
+    const [node] = deep(100_000).body;
+    const smuggled = { type: 'view', body: [Object.create(node as object)] };
+    expect(parse(smuggled).errors[0]?.code).toBe('INPUT_NOT_PLAIN_DATA');
+  });
+
+  it('parses the checked copy, never the input', () => {
+    const node = { type: 'loose', extra: { a: 1 } };
+    const { composition } = parse({ type: 'view', body: [node] });
+    const [parsed] = (composition?.body ?? []) as (typeof node)[];
+    expect(parsed).toEqual(node);
+    expect(parsed?.extra).not.toBe(node.extra);
+    const [deepNode] = deep(100_000).body;
+    const shifty = new Proxy(
+      { type: 'holder', items: [] as unknown[] },
+      {
+        get: (target, key) =>
+          key === 'items' ? [deepNode] : target[key as 'type'],
+      }
+    );
+    expect(parse({ type: 'view', body: [shifty] }).valid).toBe(true);
+  });
+
+  it('returns the checked copy, which compositionToRender hands a render', () => {
+    const input = { type: 'view', body: [{ type: 'loose', extra: { a: 1 } }] };
+    const result = validate(input as never);
+    expect(result.composition).toEqual(input);
+    expect(result.composition).not.toBe(input);
+    expect(result.composition?.body[0]).not.toBe(input.body[0]);
+    expect(compositionToRender(result)).toBe(result.composition);
+    const invalid = validate({
+      type: 'view',
+      body: [{ type: 'kpi' }],
+    } as never);
+    expect(invalid.composition).toEqual({
+      type: 'view',
+      body: [{ type: 'kpi' }],
+    });
+    expect(compositionToRender(invalid, 'collect')).toBe(invalid.composition);
+    const refused = validate(deep(100) as never);
+    expect(refused.composition).toBeUndefined();
+    expect(() => compositionToRender(refused, 'collect')).toThrow(
+      expect.objectContaining({ name: 'CompositionValidationError' })
+    );
+  });
+
+  it('takes a host override', () => {
+    const budget = { inputBudget: { depth: 4 } };
+    expect(parse(deep(1)).valid).toBe(true);
+    expect(createCompositionParser(definitions, budget)(deep(1)).valid).toBe(
+      false
+    );
+    expect(
+      createCompositionValidator(definitions, budget)(deep(1) as never).valid
+    ).toBe(false);
+  });
+
+  it('throws an over-budget result even when collecting', () => {
+    const result = validate(deep(100) as never);
+    expect(() => enforceValidationMode(result, 'collect')).toThrow(
+      expect.objectContaining({
+        name: 'CompositionValidationError',
+        code: 'COMPOSITION_INVALID',
+        errors: result.errors,
+      })
+    );
+    const invalid = validate({
+      type: 'view',
+      body: [{ type: 'kpi' }],
+    } as never);
+    expect(() => enforceValidationMode(invalid, 'collect')).not.toThrow();
   });
 });

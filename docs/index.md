@@ -55,7 +55,7 @@ A model owns the composition. The runtime hands it `getAuthoringContext()`: a JS
 
 ### Inside a render
 
-1. **Validate.** The schema is a discriminated union over every primitive the runtime holds, rebuilt per vocabulary so a container's child slot references the same union. Semantic passes follow: duplicate node ids, empty surfaces, missing image heights when a frame measures nodes. Errors are `{ path, message }`, worded for a model to act on.
+1. **Validate.** The schema is a discriminated union over every primitive the runtime holds, rebuilt per vocabulary so a container's child slot references the same union. Semantic passes follow: duplicate node ids, empty surfaces, missing image heights when a frame measures nodes. Errors are `{ path, message, nodeType?, code? }`, worded for a model to act on; `code` marks input refused before parsing.
 2. **Dispatch.** One dispatcher keyed by node type routes each node to its primitive's renderer for the requested surface, running the primitive's `sanitize` hook first. A node hidden from a surface, or a primitive with no Slack renderer, degrades rather than disappears.
 3. **Envelope.** Each surface wraps the body: a heading and a `section.isomer` for HTML and React, an `h1` for Markdown, an uppercase title for text, a `header` block for Slack, a frame for images.
 4. **Styles.** A pack contributes CSS through a style adapter. The HTML and image surfaces render once to collect the class names a composition actually uses, then emit only that stylesheet, so a page or a rasterizer never carries the whole pack's CSS.
@@ -69,16 +69,17 @@ A model owns the composition. The runtime hands it `getAuthoringContext()`: a JS
 | [`@elastic/isomer-primitives-slides`](slides/index.md) | The reference pack, and the one to copy: slide-deck primitives, a theme with one authoring source per rendered value, a fixed 16:9 frame, and committed output for an example deck. |
 | [`@elastic/isomer-image-takumi`](image-takumi/index.md) | Turns the `svg` surface's element and stylesheet into PNG, SVG, or PDF bytes with Takumi. Declares the input shape structurally, so it depends on no Isomer package. |
 | [`@elastic/isomer-evals`](evals/index.md) | A harness a pack author runs against their own runtime: how often a model's compositions parse, validate, recover on retry, pick the right primitives, and answer the question. Runs with no credentials on a replayed corpus. |
+| [`@elastic/isomer-agent-tools`](agent-tools/index.md) | Turns any runtime into transport-neutral agent tools, resources, and a prompt: authoring guide, primitive lookups, validate, render, and registered views. The host brings the transport: MCP, the AI SDK, or its own framework. Not on npm yet. |
 
-Every package except the reference pack publishes together at one version. A host installs the SDK and the runtime. The reference pack is there to copy from or to render slide decks with, the rasterizer is added by a host that draws images, and the eval harness is something a pack author runs against their own runtime.
+Every package except the reference pack and the agent tools publishes together at one version. A host installs the SDK and the runtime. The reference pack is there to copy from or to render slide decks with, the rasterizer is added by a host that draws images, and the eval harness is something a pack author runs against their own runtime. The agent tools stay in the repository until their API settles.
 
 **Peers.** The SDK and the runtime need `react` and `zod`. The runtime also needs `react-dom`, because its single entry constructs the HTML surface and that surface renders through `react-dom/server`; the SDK marks `react-dom` optional and confines it to its `./html` entry.
 
 ## What a consumer can rely on
 
 - **Every composition degrades.** Three renderers are mandatory per primitive, so a composition authored for a page always has a text and a Markdown form, and Slack falls back through Markdown when a primitive has no Block Kit renderer.
-- **Validation has one posture per surface.** `html` renders and reports findings on `validationErrors`, because a partial document is still worth showing. `text`, `markdown`, `slack`, and `svg` throw `CompositionValidationError` on invalid input by default, because a string, a message about to be posted, or an image has nowhere to carry findings. `react` never validates; it is the interactive target where a partial render beats an exception. `onValidationError` flips any of them.
-- **Untrusted input is parsed, trusted input is validated.** `parse` is the schema alone, for model output. `validate` adds the semantic passes, for compositions code built. Node schemas are closed to unknown keys, and a wrong type reports as a wrong type, not a missing field.
+- **Validation has one posture per surface.** `html` renders and reports findings on `validationErrors`, because a partial document is still worth showing. `text`, `markdown`, `slack`, and `svg` throw `CompositionValidationError` on invalid input by default, because a string, a message about to be posted, or an image has nowhere to carry findings. `react` never validates; it is the interactive target where a partial render beats an exception. `onValidationError` flips any of them, except for input refused before parsing, which throws on every validating surface.
+- **Untrusted input is parsed, trusted input is validated.** Both first refuse input over the input budget or not plain data and copy what passes. `parse` then runs the schema alone on that copy, for model output. `validate` adds the semantic passes and returns the copy, which is what a validating surface renders, for compositions code built. Node schemas are closed to unknown keys, and a wrong type reports as a wrong type, not a missing field.
 - **One URL policy.** Every URL-bearing field goes through the same two sanitizers, one for navigation links and one for assets, on every surface including Markdown link destinations and Slack.
 - **Errors are matched by name and code, never `instanceof`.** `IsomerError` carries a code that names the condition; construction-time refusals name the offending pack, primitive, or frame.
 - **Types track configuration.** A runtime built without frames has `surfaces.svg: undefined` at the type level; a pack that needs a palette says so in its type and cannot be handed a frame that lacks it.
@@ -96,7 +97,7 @@ Every package except the reference pack publishes together at one version. A hos
 | --- | --- |
 | Render compositions in a host | The runtime's [quick start](runtime/quick-start.md), then [Surfaces](runtime/surfaces.md) and [View registry](runtime/view-registry.md) |
 | Write primitives, a theme, or a frame | The SDK's [quick start](sdk/quick-start.md) and [Primitives](sdk/primitives.md), then the slides pack's [Authoring a primitive](slides/primitives.md) and [Theme](slides/theme.md) |
-| Wire up an agent | The runtime's [Authoring context](runtime/authoring-context.md) and the SDK's [Authoring](sdk/authoring.md) |
+| Wire up an agent | The runtime's [Authoring context](runtime/authoring-context.md) and the SDK's [Authoring](sdk/authoring.md), or [Agent tools](agent-tools/index.md) for a ready-made tool set |
 | Turn images into PNG | [Takumi image backend](image-takumi/index.md) |
 | Measure a model against your pack | [Evals](evals/index.md), including how to read the numbers |
 | Contribute or release | [CONTRIBUTING.md](https://github.com/elastic/isomer/blob/main/CONTRIBUTING.md), [RELEASING.md](https://github.com/elastic/isomer/blob/main/RELEASING.md), and [AGENTS.md](https://github.com/elastic/isomer/blob/main/AGENTS.md) for the invariants |

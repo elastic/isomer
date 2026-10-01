@@ -44,6 +44,8 @@ import type { SlideTableNode } from './schema';
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
   frames: { slide: slideDeckFrame },
+  // Room for the 100,000-row bounds checks.
+  inputBudget: { values: 1_000_000, characters: 10_000_000 },
 });
 
 const compose = (node: object): Composition => ({

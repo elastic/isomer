@@ -11,15 +11,20 @@ import { describe, expect, it } from 'vitest';
 
 import { slideFonts } from '../examples/fonts';
 import { font, type } from '../theme/base';
+import { frameContentWidth } from '../theme/components/frame';
+import { graph } from '../theme/components/graph';
 import { heading } from '../theme/components/heading';
 import { marks } from '../theme/components/marks';
+import { label } from '../theme/components/shared';
 import { split } from '../theme/components/split';
+import { timeline } from '../theme/components/timeline';
 import { scalePx } from '../theme/scale';
 import { type TypeRole, typeRole } from '../theme/type_role';
 
 import {
   emWidth,
   lineBox,
+  marksHeight,
   measureMarks,
   measureText,
   monoLines,
@@ -27,7 +32,11 @@ import {
   rowLoad,
   sizeForLines,
   sizeForLoad,
+  sizeForMarkedWords,
   sizeForWidth,
+  sizeForWidthLoad,
+  sizeForWords,
+  styledText,
   widestWord,
   wrappedLines,
 } from './size';
@@ -51,6 +60,36 @@ describe('sizeForLoad', () => {
   it('keeps an explicit size', () => {
     expect(sizeForLoad('s', 1, budget)).toBe('s');
     expect(sizeForLoad('l', 1000, budget, 3)).toBe('l');
+  });
+});
+
+describe('sizeForWidthLoad', () => {
+  const budget = { l: 100, m: 200 };
+  const at = (width: number, crowding = 1) => ({ width, crowding });
+  const half = (frameContentWidth - 64) / 2 + 64;
+
+  it('reads a layout as wide as the frame as sizeForLoad does', () => {
+    expect(
+      sizeForWidthLoad(undefined, 100, budget, at(frameContentWidth))
+    ).toBe('l');
+    expect(
+      sizeForWidthLoad(undefined, 101, budget, at(frameContentWidth))
+    ).toBe('m');
+    expect(
+      sizeForWidthLoad(undefined, 100, budget, at(frameContentWidth, 2))
+    ).toBe('m');
+  });
+
+  it('weighs the load by how much narrower the layout is, less its gutters', () => {
+    expect(sizeForWidthLoad(undefined, 50, budget, at(half), 64)).toBe('l');
+    expect(sizeForWidthLoad(undefined, 51, budget, at(half), 64)).toBe('m');
+    expect(sizeForWidthLoad(undefined, 51, budget, at(half))).toBe('l');
+  });
+
+  it('takes `s` when the gutters leave no width, and keeps an explicit size', () => {
+    expect(sizeForWidthLoad(undefined, 1, budget, at(64), 64)).toBe('s');
+    expect(sizeForWidthLoad(undefined, 1, budget, at(0))).toBe('s');
+    expect(sizeForWidthLoad('l', 1000, budget, at(0, 3))).toBe('l');
   });
 });
 
@@ -78,6 +117,92 @@ describe('sizeForLines', () => {
     expect(widestWord(`iiiiiiiiii ${wide}`, tracking)).toBe(
       emWidth(wide, tracking)
     );
+  });
+});
+
+describe('sizeForWords', () => {
+  const role = { ...type.body, size: steps.l };
+  const at = (text: string, step: 'l' | 'm') =>
+    measureText(text, { ...role, size: steps[step] }).widest;
+
+  it('takes the largest step at which no word is wider than the width', () => {
+    const text = 'iii WWWW';
+    expect(sizeForWords(text, role, steps, at('WWWW', 'l'))).toBe('l');
+    expect(sizeForWords(text, role, steps, at('WWWW', 'l') - 1)).toBe('m');
+    expect(sizeForWords(text, role, steps, at('WWWW', 'm') - 1)).toBe('s');
+  });
+
+  it('holds the whole text to the width under `nowrap`', () => {
+    const nowrap = { ...role, whiteSpace: font.whiteSpace.nowrap };
+    const width = at('Quarter', 'l') + 1;
+    expect(sizeForWords('First Quarter', role, steps, width)).toBe('l');
+    expect(sizeForWords('First Quarter', nowrap, steps, width)).toBe('s');
+  });
+});
+
+describe('sizeForMarkedWords', () => {
+  const role = { ...type.body, size: steps.l };
+  const inset = scalePx(marks.codeInset) + scalePx(marks.codeBorder);
+  const plainAt = (text: string, step: 'l' | 'm') =>
+    measureText(text, { ...role, size: steps[step] }).widest;
+  const codeAt = (text: string, step: 'l' | 'm') =>
+    measureText(text, { ...role, ...marks.code, size: steps[step] }).widest +
+    2 * inset;
+
+  it('measures a `code` word in mono between its chip’s sides', () => {
+    const width = codeAt('capture', 'l');
+    expect(plainAt('capture', 'l')).toBeLessThan(width - 1);
+    expect(sizeForWords('go capture', role, steps, width - 1)).toBe('l');
+    expect(sizeForMarkedWords('go `capture`', role, steps, width, 'ink')).toBe(
+      'l'
+    );
+    expect(
+      sizeForMarkedWords('go `capture`', role, steps, width - 1, 'ink')
+    ).toBe('m');
+    expect(
+      sizeForMarkedWords(
+        'go `capture`',
+        role,
+        steps,
+        codeAt('capture', 'm') - 1
+      )
+    ).toBe('s');
+  });
+
+  it('sets `code` in display text in mono without its chip', () => {
+    const width = measureText('capture', {
+      ...role,
+      ...marks.displayCode,
+    }).widest;
+    expect(sizeForMarkedWords('`capture`', role, steps, width, 'primary')).toBe(
+      'l'
+    );
+    expect(
+      sizeForMarkedWords('`capture`', role, steps, width - 1, 'primary')
+    ).toBe('m');
+    expect(width).toBeLessThan(codeAt('capture', 'l') - 1);
+  });
+
+  it('measures a word across runs whole, and strong in bold', () => {
+    const width = measureMarks('**cap**`ture`', role).widest;
+    expect(sizeForMarkedWords('**cap**`ture`', role, steps, width)).toBe('l');
+    expect(sizeForMarkedWords('**cap**`ture`', role, steps, width - 1)).toBe(
+      'm'
+    );
+  });
+
+  it('holds the whole text to the width under `nowrap`', () => {
+    const nowrap = { ...role, whiteSpace: font.whiteSpace.nowrap };
+    const width = codeAt('b', 'l') + 1;
+    expect(sizeForMarkedWords('a `b`', role, steps, width)).toBe('l');
+    expect(sizeForMarkedWords('a `b`', nowrap, steps, width)).toBe('s');
+  });
+});
+
+describe('styledText', () => {
+  it('sets text in its role’s transform, as every surface prints it', () => {
+    expect(styledText('Straße', label)).toBe('STRASSE');
+    expect(styledText('Straße', type.body)).toBe('Straße');
   });
 });
 
@@ -221,6 +346,14 @@ describe('measureMarks', () => {
     );
   });
 
+  it('prices each space in the face of the run it sits in', () => {
+    const code = '`a b c d`';
+    const { widest } = measureMarks(code, role);
+    expect(widest).toBeCloseTo(measureText('a b c d', mono).widest + 2 * inset);
+    expect(measureMarks(code, role, widest).lines).toBe(1);
+    expect(measureMarks(code, role, widest - 1).lines).toBe(2);
+  });
+
   it('sets code in display text in mono without its chip, and strong in the role’s weight', () => {
     expect(
       measureMarks('`aa` **bb**', role, Infinity, 'primary').widest
@@ -236,6 +369,101 @@ describe('measureMarks', () => {
     expect(measureMarks('**bb**', regular).widest).toBe(
       measureText('bb', { ...regular, ...marks.strong }).widest
     );
+  });
+
+  describe('in body copy', () => {
+    const body = { ...type.body, size: font.size.px26 };
+    const bodyMono = { ...body, ...marks.code };
+    const strong = { ...body, ...marks.strong };
+    const lines = (text: string, width: number) =>
+      measureMarks(text, body, width).lines;
+
+    // Seventeen mono columns fit the line; the chip's padding and border tip them over it.
+    it('sets a `code` run between its chip’s sides', () => {
+      const call = 'x'.repeat(17);
+      const width = 276;
+      expect(measureText(call, bodyMono).widest).toBeLessThanOrEqual(width);
+      expect(lines(call, width)).toBe(1);
+      expect(lines(`\`${call}\``, width)).toBe(2);
+      expect(lines(`\`${call.slice(1)}\``, width)).toBe(1);
+    });
+
+    it('wraps a `strong` run in the bold face', () => {
+      const text = 'mmmm mmmm';
+      const fits = measureText(text, body).widest;
+      expect(measureText(text, strong).widest).toBeGreaterThan(fits);
+      expect(lines(text, fits)).toBe(1);
+      expect(lines(`**${text}**`, fits)).toBe(2);
+    });
+
+    describe('counts the lines holding a `code` chip', () => {
+      const chip = measureMarks('`aaaa`', body).widest;
+
+      it('every line a code run wrapped across touches', () => {
+        expect(measureMarks('`aaaa aaaa aaaa`', body, chip)).toMatchObject({
+          lines: 3,
+          codeLines: 3,
+        });
+      });
+
+      it('every line a code word broken between glyphs lands on', () => {
+        const { lines, codeLines } = measureMarks(
+          `\`${'a'.repeat(40)}\``,
+          body,
+          chip
+        );
+        expect(lines).toBeGreaterThan(1);
+        expect(codeLines).toBe(lines);
+      });
+
+      it('once for runs that share a line', () => {
+        expect(measureMarks('`aa` and `bb`', body)).toMatchObject({
+          lines: 1,
+          codeLines: 1,
+        });
+      });
+
+      it('none for a line without code', () => {
+        const width = measureText('plain words', body).widest;
+        expect(measureMarks('plain words `aa`', body, width)).toMatchObject({
+          lines: 2,
+          codeLines: 1,
+        });
+        expect(measureMarks('plain words', body)).toMatchObject({
+          lines: 1,
+          codeLines: 0,
+        });
+      });
+
+      it('none in display text, which draws no chip', () => {
+        expect(
+          measureMarks('`aa` and `bb`', body, Infinity, 'primary').codeLines
+        ).toBe(0);
+      });
+    });
+
+    it('grows each line holding a chip by the chip’s padding and border', () => {
+      const text = 'plain words `aa`';
+      const width = measureText('plain words', body).widest;
+      expect(marksHeight(text, body, width)).toBe(
+        2 * lineBox(body) +
+          2 * (scalePx(marks.codePaddingY) + scalePx(marks.codeBorder))
+      );
+      expect(marksHeight('plain words', body, width)).toBe(lineBox(body));
+    });
+
+    it('splits runs at a space or line separator between them', () => {
+      const joined =
+        measureText('abcd', body).widest + measureText('efgh', strong).widest;
+      expect(lines('abcd**efgh**', joined)).toBe(1);
+      expect(lines('abcd **efgh**', joined)).toBe(2);
+      const chipped =
+        measureText('ab', bodyMono).widest +
+        2 * inset +
+        measureText('.', body).widest;
+      expect(lines('`ab`.', chipped)).toBe(1);
+      expect(lines('`ab`\u2028.', chipped)).toBe(2);
+    });
   });
 });
 
@@ -277,6 +505,14 @@ describe('measureText against takumi', () => {
     ],
     ['collapsed line breaks', 'alpha\n\n\nbeta      gamma', type.body, 1000],
     ['mono', 'const total = sum(lines);', type.mono, 1000],
+    ['a timeline label', 'First Quarter', timeline.label, 1000],
+    ['a timeline channel or roadmap status', 'Straße', label, 1000],
+    [
+      'a graph caption',
+      'Checkout reads the cart and writes the ledger before settlement.',
+      graph.caption,
+      400,
+    ],
     [
       'a no-wrap phrase',
       'a long phrase',

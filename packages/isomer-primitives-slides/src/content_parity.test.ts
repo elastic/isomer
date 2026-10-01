@@ -28,6 +28,8 @@ const runtime = createIsomerRuntime({
 const notWords = new Set([
   'type',
   'id',
+  'from',
+  'to',
   'tone',
   'href',
   'hrefs',
@@ -41,6 +43,8 @@ const notWords = new Set([
   'marker',
   'chrome',
   'surface',
+  'edges',
+  'placement',
   'op',
   'role',
   'format',

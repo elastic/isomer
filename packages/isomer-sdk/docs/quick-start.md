@@ -133,7 +133,7 @@ Slack gives three blocks — a header for the title, then one section per node. 
 
 ```ts
 runtime.validate(composition);
-// { valid: true, errors: [], warnings: [] }
+// { valid: true, errors: [], warnings: [], composition: <its checked copy> }
 ```
 
 Quiet, and correctly so: `kpi` declares no `metrics.svgHeight`, but this runtime has no frame that would measure nodes, so nothing reads that metric. Register a measuring frame and validation starts saying so; see [`sizesFromNodeHeights`](frame.md#sizesfromnodeheights). Warnings are surface-scoped, so a text or Slack host filters them out with `warningsForSurface(result, surface)`. Errors are a different matter:

@@ -58,3 +58,9 @@ export const glyph = {
   /** Between a term and what is said of it, in text, Markdown, and Slack. */
   termJoiner: literal(': '),
 } as const;
+
+/** What assistive technology announces for the cue on the current item or column. */
+export const currentToneLabel = {
+  ...tone.label,
+  primary: literal('Current'),
+} as const;

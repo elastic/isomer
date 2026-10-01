@@ -77,6 +77,31 @@ describe('slide theme', () => {
     expect(css.match(/calc\([^()]*\(/g)).toBeNull();
   });
 
+  // takumi measures `width` and `height` to the border; a browser does only under `box-sizing: border-box`.
+  it('no rule sizes a padded or bordered box without `box-sizing: border-box`', () => {
+    const sized =
+      /(?:^|;)\s*(?:max-|min-)?(?:width|height)\s*:\s*(?!auto|0\s*(?:;|$))/;
+    const boxed =
+      /(?:^|;)\s*(?:padding|border)(?:-(?:top|right|bottom|left))?\s*:\s*(?!none|0\s*(?:;|$))/;
+    const borderBox = /box-sizing\s*:\s*border-box/;
+    const both = [...slideStylesheet().matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+      .map(([, selector = '', body = '']) => ({ selector, body }))
+      .filter(({ body }) => sized.test(body) && boxed.test(body));
+    const { readableName } = slideModules.sequence.handles.actor;
+    expect(both.map(({ selector }) => selector)).toContain(`.${readableName}`);
+    expect(
+      both
+        .filter(({ body }) => !borderBox.test(body))
+        .map(({ selector }) => selector)
+    ).toEqual([]);
+  });
+
+  it('a tone cue never shrinks in a flex row', () => {
+    expect(
+      ruleFor(slideStylesheet(), slideModules.tones.handles.cue.readableName)
+    ).toMatch(/flex:\s*0 0 auto/);
+  });
+
   it('an inverse frame redeclares the page palette', () => {
     const inverse = slideModules.frame.handles.tone.inverse;
     expect(inverse).toBeDefined();

@@ -11,8 +11,8 @@ import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { slideDeckFrame, slidesPack } from '../pack';
 import { frameContentWidth } from '../theme/components/frame';
 
-import { slideLayout } from './layout';
-import { headingRoom } from './slide_heading/fit';
+import { slideLayout, withLayout } from './layout';
+import { headingRoom, referenceRoom } from './slide_heading/fit';
 import type { SlideHeadingNode } from './slide_heading/schema';
 
 const runtime = createIsomerRuntime({
@@ -58,3 +58,16 @@ export const crowdingBelow = (heading: SlideHeadingNode): number =>
   slideLayout({
     layout: { width: frameContentWidth, height: headingRoom(heading) },
   }).crowding;
+
+/** A context whose layout has `crowding` across `width`; the defaults are the frame body below {@link referenceHeading}. */
+export const layoutContext = ({
+  crowding = 1,
+  width = frameContentWidth,
+}: { crowding?: number; width?: number } = {}) =>
+  withLayout(undefined, { width, height: referenceRoom / crowding });
+
+/** `length` columns of four-letter words, so a load test measures load and not a word too wide for its column. */
+export const shortWords = (length: number): string =>
+  Array.from({ length }, (_, index) =>
+    index % 5 === 4 && index < length - 1 ? ' ' : 'x'
+  ).join('');

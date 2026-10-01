@@ -56,8 +56,16 @@ runtime.surfaces.text.render(composition);
 | `slideList` | Short facts, each optionally keyed by a term, with a caption and a footnote. |
 | `slideBulletList` | Short points with a dot, check, or × marker. |
 | `slideDefinitions` | Terms and their meanings as a ruled glossary. |
+| `slideRoadmap` | Planned work in ruled columns by horizon, at most one current. |
 | `slideFanout` | One source branching to several unordered targets. |
+| `slidePipeline` | Ordered steps along one path, or chips bracketed by who owns each run. |
+| `slideSequence` | Messages between three to five actors, top to bottom in time order. |
+| `slideLanes` | Two parallel paths converging on one join step. |
+| `slideLayers` | An ordered stack of layers, each with an owner. |
 | `slideTerritoryGroup` | Who owns what, one color-keyed column per owner. |
+| `slideGraph` | Named terms in a main chain, with at most one node above and one below. |
+| `slideTimeline` | Dated points on a rail, read left to right, at most one current. |
+| `slideTree` | A folder and its entries, each with a one-line note. |
 | `slideStat` | One headline number beside the sentence that explains it, as a band under the body. |
 | `slideStats` | Two to four comparable numbers in ruled columns. |
 | `slideDelta` | One number before and after a change, with what the change means. |

@@ -21,6 +21,7 @@ export const catalog = {
   avoidWhen: [
     'Each point belongs to a term, date, or identifier; use slideList.',
     'The points are terms the audience must learn; use slideDefinitions.',
+    'The order matters, as steps; use slidePipeline.',
     'The points split by who owns them; use slideTerritoryGroup.',
     'The points are source code or commands; use slideCode.',
   ],

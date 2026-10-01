@@ -59,6 +59,7 @@ export const tonesModule = createStyleModule('tones', ({ css }) => ({
     border-radius: 50%;
     box-sizing: border-box;
     display: inline-block;
+    flex: 0 0 auto;
     height: ${cue.size};
     margin-right: ${cue.gap};
     vertical-align: middle;
@@ -95,11 +96,39 @@ export const connectorModule = createStyleModule('connector', ({ css }) => ({
     display: flex;
     min-width: 0;
   `,
+  down: css`
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  `,
   railAcross: css`
     background: ${color.line};
     flex: 1;
     height: ${connector.rail};
     min-width: 0;
+  `,
+  railDown: css`
+    background: ${color.line};
+    flex: 1;
+    min-height: 0;
+    width: ${connector.rail};
+  `,
+  headDown: css`
+    border-left: ${connector.headHalf} solid transparent;
+    border-right: ${connector.headHalf} solid transparent;
+    border-top: ${connector.headLength} solid ${color.line};
+    flex: 0 0 auto;
+    height: 0;
+    width: 0;
+  `,
+  headUp: css`
+    border-bottom: ${connector.headLength} solid ${color.line};
+    border-left: ${connector.headHalf} solid transparent;
+    border-right: ${connector.headHalf} solid transparent;
+    flex: 0 0 auto;
+    height: 0;
+    width: 0;
   `,
   headRight: css`
     border-bottom: ${connector.headHalf} solid transparent;
@@ -109,8 +138,20 @@ export const connectorModule = createStyleModule('connector', ({ css }) => ({
     height: 0;
     width: 0;
   `,
+  headLeft: css`
+    border-bottom: ${connector.headHalf} solid transparent;
+    border-right: ${connector.headLength} solid ${color.line};
+    border-top: ${connector.headHalf} solid transparent;
+    flex: 0 0 auto;
+    height: 0;
+    width: 0;
+  `,
   primary: css`
     ${themeVarName('color/line')}: ${color.primary};
+  `,
+  /** Draws the connector in the enclosing {@link toneVar}. */
+  toned: css`
+    ${themeVarName('color/line')}: ${toneVar};
   `,
 }));
 

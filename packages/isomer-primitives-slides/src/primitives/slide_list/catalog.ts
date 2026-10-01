@@ -22,6 +22,7 @@ export const catalog = {
   avoidWhen: [
     'The terms are new vocabulary the audience must learn; use slideDefinitions.',
     'Each item has several attributes to compare; use slideTable.',
+    'The items are files and folders; use slideTree.',
     'The points are the slide’s main content and want a marker each; use slideBulletList.',
     'The items are parallel options to weigh; use slideColumns.',
   ],

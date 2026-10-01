@@ -19,15 +19,21 @@ import { delta } from './components/delta';
 import { diff } from './components/diff';
 import { fanout } from './components/fanout';
 import { frame } from './components/frame';
+import { graph } from './components/graph';
 import { heading } from './components/heading';
+import { lanes } from './components/lanes';
+import { layers } from './components/layers';
 import { list } from './components/list';
 import { marks } from './components/marks';
 import { matrix } from './components/matrix';
+import { pipeline } from './components/pipeline';
 import { quadrant } from './components/quadrant';
 import { quote } from './components/quote';
 import { render } from './components/render';
 import { renderGrid } from './components/render_grid';
+import { roadmap } from './components/roadmap';
 import { section } from './components/section';
+import { sequence } from './components/sequence';
 import {
   connector,
   glyph,
@@ -44,8 +50,10 @@ import { statement } from './components/statement';
 import { stats } from './components/stats';
 import { table } from './components/table';
 import { territoryGroup } from './components/territory_group';
+import { timeline } from './components/timeline';
 import { title } from './components/title';
 import { transcript } from './components/transcript';
+import { tree } from './components/tree';
 import { window } from './components/window';
 
 /**
@@ -81,14 +89,20 @@ export const SLIDE_THEME = {
   diff,
   fanout,
   frame,
+  graph,
   heading,
+  lanes,
+  layers,
   list,
   matrix,
+  pipeline,
   quadrant,
   quote,
   render,
   renderGrid,
+  roadmap,
   section,
+  sequence,
   source,
   split,
   stack,
@@ -97,8 +111,10 @@ export const SLIDE_THEME = {
   stats,
   table,
   territoryGroup,
+  timeline,
   title,
   transcript,
+  tree,
   window,
 } as const;
 

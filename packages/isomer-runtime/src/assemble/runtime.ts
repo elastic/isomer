@@ -11,6 +11,7 @@ import {
   type AuthoringJsonSchemaOptions,
   bindFrame,
   type BoundFrame,
+  type CheckedValidationResult,
   composePacks,
   type Composition,
   createCompositionParser,
@@ -19,13 +20,13 @@ import {
   describeCapabilities,
   type Frame,
   getCompositionSchemaForDefinitions,
+  type InputBudget,
   IsomerError,
   type ParsedComposition,
   type PrimitiveNode,
   type PrimitivePack,
   type PrimitiveRenderContext,
   type PrimitiveStyleCollector,
-  type ValidationResult,
 } from '@elastic/isomer-sdk';
 import type { ZodObject } from 'zod';
 
@@ -120,6 +121,8 @@ export interface IsomerRuntimeOptions<
   defaultAriaLabel?: string;
   /** Options for the authoring JSON Schema `getAuthoringContext` returns. */
   authoring?: AuthoringJsonSchemaOptions;
+  /** Limits `checkInputBudget` applies in `parse`, `validate`, view input, and every surface but `react`, which does not validate. */
+  inputBudget?: InputBudget;
 }
 
 /**
@@ -162,8 +165,8 @@ export interface IsomerRuntime<
   getAuthoringContext(): RuntimeAuthoringContext;
   /** Reports the primitive types and render formats this runtime supports. */
   getCapabilities(): HostCapabilities;
-  /** Validates a composition against this runtime's primitives. */
-  validate(composition: Composition): ValidationResult;
+  /** Validates a composition against this runtime's primitives; `composition` on the result is the copy it checked. */
+  validate(composition: Composition): CheckedValidationResult;
   /** Parses and validates an unknown value as a `Composition`. */
   parse(value: unknown): ParsedComposition;
   /**
@@ -233,14 +236,18 @@ export const createIsomerRuntime: CreateIsomerRuntime = (<
     label: 'runtime',
     isSlackAssetType: (type) => slackAssetTypes.has(type),
   });
+  const { inputBudget } = options;
+  const budget = inputBudget === undefined ? {} : { inputBudget };
   const validate = createCompositionValidator(definitions, {
+    ...budget,
     sizesFromNodeHeights: Object.values(frames).some(
       (frame) => frame.sizesFromNodeHeights
     ),
   });
-  const parse = createCompositionParser(definitions);
+  const parse = createCompositionParser(definitions, budget);
   const viewRegistry = createViewRegistry<THostContext, PrimitiveNode>(
-    validate
+    validate,
+    budget
   );
   options.views?.forEach(viewRegistry.register);
   const getAuthoringContext = createRuntimeAuthoringContextFactory(

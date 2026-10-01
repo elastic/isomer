@@ -63,12 +63,28 @@ export type {
 } from './primitives/slide_fanout';
 export { SlideFrameView } from './primitives/slide_frame';
 export type { SlideFrameNode } from './primitives/slide_frame';
+export type {
+  SlideGraphNode,
+  SlideGraphPlacement,
+  SlideGraphTerm,
+} from './primitives/slide_graph';
 export type { SlideHeadingNode } from './primitives/slide_heading';
+export type {
+  SlideLanesLane,
+  SlideLanesNode,
+  SlideLanesNote,
+} from './primitives/slide_lanes';
+export type { SlideLayer, SlideLayersNode } from './primitives/slide_layers';
 export type { SlideListItem, SlideListNode } from './primitives/slide_list';
 export type {
   SlideMatrixNode,
   SlideMatrixRow,
 } from './primitives/slide_matrix';
+export type {
+  SlidePipelineNode,
+  SlidePipelineSpan,
+  SlidePipelineStep,
+} from './primitives/slide_pipeline';
 export type {
   SlideQuadrant,
   SlideQuadrantNode,
@@ -79,7 +95,17 @@ export type {
   SlideRenderGridNode,
   SlideRenderGridTile,
 } from './primitives/slide_render_grid';
+export type {
+  SlideRoadmapColumn,
+  SlideRoadmapItem,
+  SlideRoadmapNode,
+} from './primitives/slide_roadmap';
 export type { SlideSectionNode } from './primitives/slide_section';
+export type {
+  SlideSequenceActor,
+  SlideSequenceMessage,
+  SlideSequenceNode,
+} from './primitives/slide_sequence';
 export type { SlideSourceNode } from './primitives/slide_source';
 export type { SlideSplitNode, SlideSplitPane } from './primitives/slide_split';
 export type { SlideStackNode } from './primitives/slide_stack';
@@ -92,6 +118,10 @@ export type {
   SlideTerritoryGroupNode,
 } from './primitives/slide_territory_group';
 export type {
+  SlideTimelineItem,
+  SlideTimelineNode,
+} from './primitives/slide_timeline';
+export type {
   SlideTitleDefinition,
   SlideTitleNode,
 } from './primitives/slide_title';
@@ -99,6 +129,7 @@ export type {
   SlideTranscriptNode,
   SlideTranscriptTurn,
 } from './primitives/slide_transcript';
+export type { SlideTreeEntry, SlideTreeNode } from './primitives/slide_tree';
 export type { SlideWindowNode } from './primitives/slide_window';
 
 export { slideDeckPrimitives, slidePrimitiveTypes } from './registry';

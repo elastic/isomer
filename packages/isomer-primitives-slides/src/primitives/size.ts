@@ -18,6 +18,7 @@ import {
   monoAdvance,
   regularAdvance,
 } from '../theme/base';
+import { frameContentWidth } from '../theme/components/frame';
 import { marks } from '../theme/components/marks';
 import { px, scalePx } from '../theme/scale';
 import type { TypeRole } from '../theme/type_role';
@@ -58,6 +59,21 @@ export const smallerStep = (a: SlideSize, b: SlideSize): SlideSize =>
 /** How many times over `measure` exceeds the room across; 1 when it fits. A room under a pixel counts as one, so the ratio stays finite. */
 export const narrowing = (measure: number, width = Infinity): number =>
   Math.max(1, measure / Math.max(1, width));
+
+/** {@link sizeForLoad} for columns set across a layout from `slideLayout`, `gutters` px between them in all, so a narrower layout weighs the load heavier. */
+export const sizeForWidthLoad = (
+  size: SlideSize | undefined,
+  load: number,
+  budget: LoadBudget,
+  { width, crowding }: { readonly width: number; readonly crowding: number },
+  gutters = 0
+): SlideSize =>
+  sizeForLoad(
+    size,
+    load * narrowing(frameContentWidth - gutters, width - gutters),
+    budget,
+    crowding
+  );
 
 /** Width of track `index` when `total` pixels split into `shares` fr tracks with `gap` between; 0 when the gaps leave none. */
 export const trackWidth = (
@@ -157,38 +173,65 @@ export interface TextMeasure {
   readonly widest: number;
 }
 
-const measureWords = (
-  glyphs: readonly (readonly number[])[],
-  gap: number,
-  width: number
-): TextMeasure => {
+/** {@link TextMeasure} of marked text, with how many of its lines hold a `code` chip. */
+export interface MarksMeasure extends TextMeasure {
+  readonly codeLines: number;
+}
+
+interface Glyph {
+  readonly advance: number;
+  readonly chip: boolean;
+}
+
+/** A word's glyphs, and the space before it in the face of the run that space is set in. */
+interface Word {
+  readonly glyphs: readonly Glyph[];
+  readonly gap: number;
+}
+
+const measureWords = (words: readonly Word[], width: number): MarksMeasure => {
   let lines = 0;
   let used = 0;
   let widest = 0;
+  let codeLines = 0;
+  let chipped = false;
   const startLine = () => {
     widest = Math.max(widest, used);
+    codeLines += chipped ? 1 : 0;
+    chipped = false;
     lines += 1;
     used = 0;
   };
-  for (const word of glyphs) {
-    const advance = word.reduce((total, glyph) => total + glyph, 0);
+  for (const { glyphs, gap } of words) {
+    const advance = glyphs.reduce(
+      (total, { advance: glyph }) => total + glyph,
+      0
+    );
+    const holdsChip = glyphs.some(({ chip }) => chip);
     if (lines > 0 && used + gap + advance <= width) {
       used += gap + advance;
+      chipped ||= holdsChip;
     } else if (advance <= width) {
       startLine();
       used = advance;
+      chipped = holdsChip;
     } else {
       // Breaks at the space before it first, then between glyphs, one glyph a line at least.
       startLine();
-      for (const glyph of word) {
+      for (const { advance: glyph, chip } of glyphs) {
         if (used > 0 && used + glyph > width) {
           startLine();
         }
         used += glyph;
+        chipped ||= chip;
       }
     }
   }
-  return { lines, widest: Math.max(widest, used) };
+  return {
+    lines,
+    widest: Math.max(widest, used),
+    codeLines: codeLines + (chipped ? 1 : 0),
+  };
 };
 
 const displayAdvance = (glyph: string): number =>
@@ -202,11 +245,15 @@ const faceOf = ({ family, weight }: TypeRole): ((glyph: string) => number) =>
       ? displayAdvance
       : (glyph) => displayColumns(glyph) * regularAdvance;
 
-/** Text set in one role; `inset` pixels pad both its ends, as a code chip's padding and border do. */
+/** `text` as `role` transforms it. */
+export const styledText = (text: string, { transform }: TypeRole): string =>
+  transform?.value === 'uppercase' ? text.toUpperCase() : text;
+
+/** Text set in one role; a `chip` is a `code` chip, whose padding and border pad both its ends. */
 interface StyledRun {
   readonly text: string;
   readonly role: TypeRole;
-  readonly inset?: number;
+  readonly chip?: boolean;
 }
 
 const glyphPx = (role: TypeRole): ((glyph: string) => number) => {
@@ -221,15 +268,18 @@ const glyphPx = (role: TypeRole): ((glyph: string) => number) => {
 
 const isCollapsible = (glyph: string) => collapsible.test(glyph);
 
-/** Each word's glyph advances across `runs`, so a word can span runs set differently. */
-const runWords = (runs: readonly StyledRun[]): number[][] => {
-  const found: number[][] = [];
-  let word: number[] = [];
-  for (const { text, role, inset = 0 } of runs) {
+/** Each word across `runs`, so a word can span runs set differently; whitespace collapses to its first space, as CSS keeps it. */
+const runWords = (runs: readonly StyledRun[]): Word[] => {
+  const found: Word[] = [];
+  let word: Glyph[] = [];
+  let gap = 0;
+  let nextGap: number | undefined;
+  for (const { text, role, chip = false } of runs) {
     const advance = glyphPx(role);
-    const glyphs = [
-      ...(role.transform?.value === 'uppercase' ? text.toUpperCase() : text),
-    ];
+    const inset = chip
+      ? scalePx(marks.codeInset) + scalePx(marks.codeBorder)
+      : 0;
+    const glyphs = [...styledText(text, role)];
     const first = glyphs.findIndex((glyph) => !isCollapsible(glyph));
     const last =
       glyphs.length -
@@ -238,29 +288,35 @@ const runWords = (runs: readonly StyledRun[]): number[][] => {
     glyphs.forEach((glyph, index) => {
       if (isCollapsible(glyph)) {
         if (word.length > 0) {
-          found.push(word);
+          found.push({ glyphs: word, gap });
         }
         word = [];
+        nextGap ??= advance(' ');
       } else {
-        word.push(
-          advance(glyph) +
+        if (word.length === 0) {
+          gap = nextGap ?? 0;
+          nextGap = undefined;
+        }
+        word.push({
+          advance:
+            advance(glyph) +
             (index === first ? inset : 0) +
-            (index === last ? inset : 0)
-        );
+            (index === last ? inset : 0),
+          chip,
+        });
       }
     });
   }
-  return word.length > 0 ? [...found, word] : found;
+  return word.length > 0 ? [...found, { glyphs: word, gap }] : found;
 };
 
 const measureRuns = (
   runs: readonly StyledRun[],
   role: TypeRole,
   width: number
-): TextMeasure =>
+): MarksMeasure =>
   measureWords(
     runWords(runs),
-    glyphPx(role)(' '),
     role.whiteSpace?.value === 'nowrap' ? Infinity : width
   );
 
@@ -272,7 +328,37 @@ export const measureText = (
   text: string,
   role: TypeRole,
   width = Infinity
-): TextMeasure => measureRuns([{ text, role }], role, width);
+): TextMeasure => {
+  const { lines, widest } = measureRuns([{ text, role }], role, width);
+  return { lines, widest };
+};
+
+/** `text`'s runs, each in the face `marksReact` draws it in for `strong`. */
+const markRuns = (
+  text: string,
+  role: TypeRole,
+  strong: 'ink' | 'primary'
+): StyledRun[] =>
+  parseMarks(text).map(({ kind, text: run }): StyledRun => {
+    if (kind === 'text') {
+      return { text: run, role };
+    }
+    if (strong === 'primary') {
+      return kind === 'code'
+        ? {
+            text: run,
+            role: { ...role, ...marks.displayCode },
+          }
+        : { text: run, role };
+    }
+    return kind === 'code'
+      ? {
+          text: run,
+          role: { ...role, ...marks.code },
+          chip: true,
+        }
+      : { text: run, role: { ...role, ...marks.strong } };
+  });
 
 /** {@link measureText} for text with marks, each run in the face `marksReact` draws it in for `strong`. */
 export const measureMarks = (
@@ -280,31 +366,7 @@ export const measureMarks = (
   role: TypeRole,
   width = Infinity,
   strong: 'ink' | 'primary' = 'ink'
-): TextMeasure =>
-  measureRuns(
-    parseMarks(text).map(({ kind, text: run }): StyledRun => {
-      if (kind === 'text') {
-        return { text: run, role };
-      }
-      if (strong === 'primary') {
-        return kind === 'code'
-          ? {
-              text: run,
-              role: { ...role, ...marks.displayCode },
-            }
-          : { text: run, role };
-      }
-      return kind === 'code'
-        ? {
-            text: run,
-            role: { ...role, ...marks.code },
-            inset: scalePx(marks.codeInset) + scalePx(marks.codeBorder),
-          }
-        : { text: run, role: { ...role, ...marks.strong } };
-    }),
-    role,
-    width
-  );
+): MarksMeasure => measureRuns(markRuns(text, role, strong), role, width);
 
 /** Lines `text` in Inter ExtraBold at `fontPx` takes across `width`, from {@link measureText}. */
 export const wrappedLines = (
@@ -340,6 +402,19 @@ export const monoLines = (
     measureText(text, { family: font.family.mono, size: px(fontPx) }, width)
       .lines
   );
+
+/** Height in pixels of `text` with marks set in `role` across `width`, each line holding a `code` chip grown by the chip's padding and border. */
+export const marksHeight = (
+  text: string,
+  role: TypeRole & { lineHeight: ScaleToken },
+  width = Infinity
+): number => {
+  const { lines, codeLines } = measureMarks(text, role, width);
+  return (
+    lines * lineBox(role) +
+    codeLines * 2 * (scalePx(marks.codePaddingY) + scalePx(marks.codeBorder))
+  );
+};
 
 /** The node's own `size`, else the largest step at which `text`, set in `role` at the step's size, fits `width` pixels on one line. */
 export const sizeForWidth = (
@@ -380,3 +455,41 @@ export const sizeForLines = (
     );
   }) ??
   's';
+
+const sizeForRuns = (
+  runs: (role: TypeRole) => readonly StyledRun[],
+  role: TypeRole,
+  sizes: Readonly<Record<SlideSize, ScaleToken>>,
+  width: number
+): SlideSize =>
+  slideSizes.find((step) => {
+    const at = { ...role, size: sizes[step] };
+    const widest =
+      at.whiteSpace?.value === 'nowrap'
+        ? measureRuns(runs(at), at, Infinity).widest
+        : Math.max(
+            0,
+            ...runWords(runs(at)).map(({ glyphs }) =>
+              glyphs.reduce((total, { advance }) => total + advance, 0)
+            )
+          );
+    return widest <= width;
+  }) ?? 's';
+
+/** The largest step at which `role`, sized from `sizes`, sets no word of `text` wider than `width`; under `nowrap`, the whole text. */
+export const sizeForWords = (
+  text: string,
+  role: TypeRole,
+  sizes: Readonly<Record<SlideSize, ScaleToken>>,
+  width: number
+): SlideSize => sizeForRuns((at) => [{ text, role: at }], role, sizes, width);
+
+/** {@link sizeForWords} for text with marks, each run in the face `marksReact` draws it in for `strong`, a `code` chip's sides on its word. */
+export const sizeForMarkedWords = (
+  text: string,
+  role: TypeRole,
+  sizes: Readonly<Record<SlideSize, ScaleToken>>,
+  width: number,
+  strong: 'ink' | 'primary' = 'ink'
+): SlideSize =>
+  sizeForRuns((at) => markRuns(text, at, strong), role, sizes, width);

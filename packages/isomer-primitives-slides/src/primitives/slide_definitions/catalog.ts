@@ -23,6 +23,7 @@ export const catalog = {
     'Each item has several attributes to compare; use slideTable.',
     'The items split by who owns them; use slideTerritoryGroup.',
     'The items are parallel options with tags; use slideColumns.',
+    'The terms connect to each other and the links matter; use slideGraph.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

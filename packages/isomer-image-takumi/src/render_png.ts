@@ -17,6 +17,40 @@ export interface PngValidationResult {
   errors: readonly unknown[];
 }
 
+/** What `runtime.validate` returns: findings, and the copy they describe, `undefined` only for refused input. */
+export type PngCheckedValidationResult = PngValidationResult & {
+  composition: unknown;
+};
+
+/**
+ * Splits a {@link PngCheckedValidationResult} into the copy to draw and the findings to report.
+ *
+ * Throws rather than draw the caller's value: shaped as the SDK's
+ * `CompositionValidationError` when the runtime refused the input, and a plain
+ * `Error` when the runtime returned no copy at all.
+ */
+export const checkedForDrawing = (
+  caller: string,
+  { composition, ...validation }: PngCheckedValidationResult
+): { checked: unknown; validation: PngValidationResult } => {
+  if (composition !== undefined) {
+    return { checked: composition, validation };
+  }
+  if (validation.valid) {
+    throw new Error(
+      `${caller}: runtime.validate returned no checked composition to draw`
+    );
+  }
+  throw Object.assign(
+    new Error(`${caller}: the runtime refused the composition before parsing`),
+    {
+      name: 'CompositionValidationError',
+      code: 'COMPOSITION_INVALID',
+      errors: validation.errors,
+    }
+  );
+};
+
 /**
  * The `svg` surface's per-render options, mirroring the runtime's
  * `SvgRenderOptions` so a caller gets completion without importing it.
@@ -39,7 +73,7 @@ export interface PngSvgOptions {
  * runtime built with `frames` carries `SvgSurface` there and satisfies this.
  */
 export interface PngRuntime {
-  validate(composition: unknown): PngValidationResult;
+  validate(composition: unknown): PngCheckedValidationResult;
   surfaces: {
     svg: {
       render(
@@ -66,9 +100,11 @@ export interface RenderPngResult {
 /**
  * Validates, renders, and rasterizes a composition in one call.
  *
- * The composition is always rendered, even when invalid: `validation` is how
- * a caller finds out, rather than a thrown error. Validation runs twice, once
- * here and once inside `render`, which discards its own result.
+ * The composition is rendered even when invalid: `validation` is how a caller
+ * finds out, rather than a thrown error. What is drawn is the copy validation
+ * checked, and input refused before parsing, which has none, throws
+ * `CompositionValidationError`. Validation runs twice, once here and once inside `render`, which
+ * discards its own result.
  */
 export const renderPng = async (
   runtime: PngRuntime,
@@ -76,8 +112,11 @@ export const renderPng = async (
   backend: TakumiImageBackend,
   { svg, ...options }: RenderPngOptions = {}
 ): Promise<RenderPngResult> => {
-  const validation = runtime.validate(composition);
-  const rendered = runtime.surfaces.svg.render(composition, {
+  const { checked, validation } = checkedForDrawing(
+    'renderPng',
+    runtime.validate(composition)
+  );
+  const rendered = runtime.surfaces.svg.render(checked, {
     ...svg,
     onValidationError: 'collect',
   });

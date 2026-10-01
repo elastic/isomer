@@ -122,6 +122,15 @@ describe('slideHeading step', () => {
     expect(stepOf({ ...titled(10), size: 's' })).toBe('s');
   });
 
+  it('counts a line break as the space it draws', () => {
+    expect(
+      stepOf({
+        type: 'slideHeading',
+        title: `${'x'.repeat(headingFit.l - 1)}\nx`,
+      })
+    ).toBe('m');
+  });
+
   it('counts a wide glyph as two characters, as it is about twice as wide', () => {
     const wide = (count: number) => ({
       type: 'slideHeading',

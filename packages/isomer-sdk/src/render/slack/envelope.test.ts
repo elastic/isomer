@@ -34,7 +34,11 @@ import type {
   SlackVideoBlock,
 } from './blocks';
 import { SLACK_LIMITS } from './blocks';
-import { renderSlackEnvelope, type SlackEnvelopeDispatcher } from './envelope';
+import {
+  renderSlackEnvelope,
+  type SlackEnvelopeDispatcher,
+  splitRichTextElement,
+} from './envelope';
 
 interface SlackPackTypes extends DefaultPackTypes {
   slackBlock: SlackBlock;
@@ -895,5 +899,44 @@ describe('Slack envelope transforms', () => {
         expect.objectContaining({ slack_file: { ref: 'charts-0' } }),
       ])
     );
+  });
+});
+
+describe('splitRichTextElement', () => {
+  const max = SLACK_LIMITS.sectionTextChars;
+  const sectionOf = (text: string): SlackRichTextSection => ({
+    type: 'rich_text_section',
+    elements: [{ type: 'text', text }],
+  });
+  const textOf = (element: SlackRichTextBlockElement): string =>
+    element.type === 'rich_text_list'
+      ? ''
+      : element.elements
+          .map((inline) => ('text' in inline ? (inline.text ?? '') : ''))
+          .join('');
+
+  it('returns an element within the limit as is', () => {
+    const element = sectionOf('x'.repeat(max));
+    expect(splitRichTextElement(element)).toEqual([element]);
+  });
+
+  it('splits a section past the limit into adjacent sections', () => {
+    const text = 'x'.repeat(max + 1);
+    const parts = splitRichTextElement(sectionOf(text));
+    expect(parts.map(({ type }) => type)).toEqual([
+      'rich_text_section',
+      'rich_text_section',
+    ]);
+    expect(parts.every((part) => textOf(part).length <= max)).toBe(true);
+    expect(parts.map(textOf).join('')).toBe(text);
+  });
+
+  it('returns a list as is', () => {
+    const list: SlackRichTextList = {
+      type: 'rich_text_list',
+      style: 'bullet',
+      elements: [sectionOf('x'.repeat(max + 1))],
+    };
+    expect(splitRichTextElement(list)).toEqual([list]);
   });
 });
