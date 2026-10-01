@@ -400,10 +400,13 @@ describe('slideTable', () => {
   it('keeps the Slack table whole at the cell budget, and splits its rich text fallback one past it', () => {
     const [[, ...rest] = [], ...rows] = plainExample.rows ?? [];
     const withCell = (cell: string) =>
-      runtime.surfaces.slack.renderNode({
-        ...plainExample,
-        rows: [[cell, ...rest], ...rows],
-      } as PrimitiveNode).blocks;
+      runtime.surfaces.slack.renderNode(
+        {
+          ...plainExample,
+          rows: [[cell, ...rest], ...rows],
+        } as PrimitiveNode,
+        { onValidationError: 'collect' }
+      ).blocks;
     const at = 'x'.repeat(
       SLACK_LIMITS.tableCellCharsPerMessage - tableChars(withCell('')[0])
     );

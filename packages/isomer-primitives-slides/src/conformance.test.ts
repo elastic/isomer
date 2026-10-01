@@ -65,6 +65,9 @@ const conformanceForeignPack = definePrimitivePack({
   ],
 });
 
+/** Renders nodes validation rejects, which these tests feed renderers on purpose. */
+const collect = { onValidationError: 'collect' } as const;
+
 const runtime = createIsomerRuntime({
   packs: [slidesPack, conformanceForeignPack],
   frames: { slide: slideDeckFrame },
@@ -103,10 +106,11 @@ const harness: PrimitiveConformanceHarness = {
   collectStyles: (node) => {
     runtime.surfaces.react.render({ type: 'view', body: [node] });
   },
-  renderText: (node) => runtime.surfaces.text.renderNode(node),
-  renderMarkdown: (node) => runtime.surfaces.markdown.renderNode(node),
-  renderSlack: (node) => runtime.surfaces.slack.renderNode(node).blocks,
-  renderSvg: (node) => runtime.surfaces.svg.renderNode(node).element,
+  renderText: (node) => runtime.surfaces.text.renderNode(node, collect),
+  renderMarkdown: (node) => runtime.surfaces.markdown.renderNode(node, collect),
+  renderSlack: (node) =>
+    runtime.surfaces.slack.renderNode(node, collect).blocks,
+  renderSvg: (node) => runtime.surfaces.svg.renderNode(node, collect).element,
   estimateSvgHeight: () => 0,
   nestForeignChild: (container) => {
     if (container.type === 'slideSplit') {

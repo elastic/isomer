@@ -143,7 +143,11 @@ describe('slideSection', () => {
   });
 
   it('sets a line whose href is unsafe as plain text', () => {
-    expect(runtime.surfaces.markdown.renderNode(unsafe)).toMatchInlineSnapshot(`
+    expect(
+      runtime.surfaces.markdown.renderNode(unsafe, {
+        onValidationError: 'collect',
+      })
+    ).toMatchInlineSnapshot(`
       "# 04 · The incident
 
       1. [Checkout failed for 41 minutes](#slide-12)

@@ -38,6 +38,7 @@ export type {
   HtmlSurface,
 } from './surfaces/html';
 export type {
+  MarkdownRenderNodeOptions,
   MarkdownRenderOptions,
   MarkdownSurface,
 } from './surfaces/markdown';
@@ -60,7 +61,11 @@ export type {
   SvgRenderResult,
   SvgSurface,
 } from './surfaces/svg';
-export type { TextRenderOptions, TextSurface } from './surfaces/text';
+export type {
+  TextRenderNodeOptions,
+  TextRenderOptions,
+  TextSurface,
+} from './surfaces/text';
 export {
   type IsomerErrorCode,
   ISOMER_ERROR_CODES,

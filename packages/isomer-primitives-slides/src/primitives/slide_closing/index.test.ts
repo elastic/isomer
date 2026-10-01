@@ -165,7 +165,11 @@ describe('slideClosing', () => {
   });
 
   it('sets a link whose href is unsafe as plain text', () => {
-    expect(runtime.surfaces.markdown.renderNode(unsafe)).toMatchInlineSnapshot(`
+    expect(
+      runtime.surfaces.markdown.renderNode(unsafe, {
+        onValidationError: 'collect',
+      })
+    ).toMatchInlineSnapshot(`
       "# Thank you
 
       **CHAT** · chat"
