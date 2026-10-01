@@ -6,11 +6,11 @@ What each entry point exports, and which ones cost you a dependency.
 
 | Entry | Loads | Reach for it when |
 | --- | --- | --- |
-| `.` | zod and React runtimes | Defining primitives, packs, frames; validating |
+| `.` | zod, React, and the GFM parser and serializer (`mdast-util-*`, `micromark-extension-gfm`) | Defining primitives, packs, frames; validating |
 | `./html` | `react-dom/server` | Rendering HTML, writing a style adapter |
-| `./text` | zod only | Text envelopes |
-| `./markdown` | zod only | Markdown envelopes and formatting |
-| `./slack` | zod only | Block Kit types, limits, asset collection |
+| `./text` | nothing | Text envelopes |
+| `./markdown` | zod and the GFM parser and serializer | Markdown envelopes and formatting |
+| `./slack` | zod and the GFM parser and serializer | Block Kit types, limits, asset collection |
 | `./react` | react | React content helpers and dispatcher context |
 | `./author` | React | JSX/builder front ends, agent prompts |
 | `./testing` | Node assert | Pack conformance harness |
