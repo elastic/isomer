@@ -55,10 +55,25 @@ describe('sanitizeNavigationHref', () => {
     ['entity-encoded colon', 'javascript&colon;alert(1)'],
     ['decimal entity colon', 'javascript&#58;alert(1)'],
     ['hex entity colon', 'javascript&#x3a;alert(1)'],
+    ['named tab entity', 'java&Tab;script:alert(1)'],
+    ['decimal tab entity', 'java&#9;script:alert(1)'],
+    ['named newline entity', 'java&NewLine;script:alert(1)'],
+    ['colon reference without a semicolon', 'javascript&#58alert(1)'],
+    [
+      'hex reference without a semicolon',
+      'javascript&#x3A//x.test/%0aalert(1)',
+    ],
+    ['encoded protocol-relative', '&#47;&#47;evil.example.com'],
+    ['named solidus', '&sol;&sol;evil.example.com'],
+    ['encoded angle bracket', 'https://x.test/&lt;script>'],
   ])('normalizes before the scheme check: %s', (_label, href) => {
     // Each of these reaches a browser or markdown consumer as `javascript:`,
     // so treating it as a relative path would be a live sink.
     expect(sanitizeNavigationHref(href)).toBeNull();
+  });
+
+  it('decodes references once, so an escaped reference stays text', () => {
+    expect(sanitizeNavigationHref('/a?b=1&amp;#58;c')).toBe('/a?b=1&amp;#58;c');
   });
 
   it('strips surrounding whitespace from an otherwise valid href', () => {

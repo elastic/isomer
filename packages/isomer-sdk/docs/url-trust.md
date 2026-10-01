@@ -26,9 +26,9 @@ Neither layer alone is enough: validation can be skipped by a host that renders 
 The check runs against a normalized string, because two decoders sit between the composition and a rendered sink:
 
 - **Browsers strip ASCII control characters** when parsing URLs — tab, newline, and carriage return anywhere, other controls at the edges — so `jav\tascript:` reaches the DOM as `javascript:`.
-- **Markdown link destinations decode character entities** in some consumers, so `javascript&colon;` becomes `javascript:`.
+- **HTML attributes and Markdown link destinations decode character references**, so `javascript&colon;`, `java&#9;script:`, and `&#47;&#47;host` become `javascript:`, `javascript:`, and `//host`.
 
-Both are undone before the scheme is examined. Unencoded `<` or `>` is rejected outright rather than stripped: those must be percent-encoded in a URL, so their presence means the value is malformed or a parser-confusion attempt — an unterminated `<dest` would otherwise read as a relative path.
+Both are undone before the scheme is examined, references first so a decoded tab is stripped too. Every numeric reference is decoded, with or without its trailing `;`, as are the named `&colon;`, `&Tab;`, `&NewLine;`, `&sol;`, `&lt;`, and `&gt;`. Decoding runs once, as a renderer's does, so `&amp;#58;` stays text. Unencoded `<` or `>` is rejected outright rather than stripped: those must be percent-encoded in a URL, so their presence means the value is malformed or a parser-confusion attempt — an unterminated `<dest` would otherwise read as a relative path.
 
 Protocol-relative forms are rejected including the backslash variants browsers fold into `/`, since `//host` and `\\host` resolve onto a foreign host rather than naming a relative path.
 

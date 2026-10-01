@@ -10,13 +10,41 @@ import { requiredString } from '../define/zod_helpers';
 // The one URL trust policy every URL-bearing field goes through, as a Zod
 // refinement and again as render-time sanitization. See `docs/url-trust.md`.
 
-// Strips the control characters browsers drop when parsing a URL and decodes
-// entity-encoded colons, so an obfuscated scheme is checked as a sink sees it.
+const NAMED_REFERENCES: Readonly<Record<string, string>> = {
+  colon: ':',
+  gt: '>',
+  lt: '<',
+  newline: '\n',
+  sol: '/',
+  tab: '\t',
+};
+
+// Numeric references, which browsers decode without a trailing `;`, and the
+// named ones that spell a scheme, path, or tag character.
+const CHARACTER_REFERENCE_RE =
+  /&(?:#x([0-9a-f]+);?|#([0-9]+);?|(colon|gt|lt|newline|sol|tab);)/gi;
+
+const decodeReference = (
+  match: string,
+  hex: string | undefined,
+  decimal: string | undefined,
+  name: string | undefined
+): string => {
+  if (name) return NAMED_REFERENCES[name.toLowerCase()] ?? match;
+  const codePoint = Number.parseInt(hex ?? decimal ?? '', hex ? 16 : 10);
+  return codePoint > 0 && codePoint <= 0x10ffff
+    ? String.fromCodePoint(codePoint)
+    : '\ufffd';
+};
+
+// Decodes character references once, then strips the control characters
+// browsers drop when parsing a URL, so an obfuscated scheme is checked as a
+// sink sees it.
 const normalizeUrl = (value: string): string =>
   value
+    .replace(CHARACTER_REFERENCE_RE, decodeReference)
     // eslint-disable-next-line no-control-regex -- stripping control characters is the point.
     .replace(/[\u0000-\u001f\u007f]/g, '')
-    .replace(/&(?:colon|#0*58|#x0*3a);/gi, ':')
     .trim();
 
 // `<` and `>` must be percent-encoded in a URL, so their unencoded presence
