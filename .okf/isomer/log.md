@@ -2,7 +2,7 @@
 
 ## 2026-10-01
 
-- **SDK internal helpers are private**: The SDK no longer exports `enforceValidationMode`, `resolveVocabulary`, `formatPath`, `formatZodIssue`, `anchorValue`, `childNodePath`, and `byteLength` from its root, `slackPlainText` from `./slack`, `flattenChildren` from `./author`, or `examplesFromDefinitions` and `primitiveConformanceCases` from `./testing`; each stays in its module for the SDK's own use. `./html` no longer re-exports `renderCompositionContent` and `useReactPrimitiveDispatcher`, which `./react` exports. `compositionToRender` is the public throw-or-collect switch, and `formatZodIssues` stays public.
+- **SDK internal helpers are private**: The SDK no longer exports `enforceValidationMode`, `resolveVocabulary`, `formatPath`, `formatZodIssue`, `anchorValue`, `childNodePath`, and `byteLength` from its root, `slackPlainText` from `./slack`, `flattenChildren` from `./author`, or `examplesFromDefinitions` and `primitiveConformanceCases` from `./testing`; each stays in its module for the SDK's own use. `./html` no longer re-exports `renderCompositionContent` and `useReactPrimitiveDispatcher`, which `./react` exports. `ResolvedVocabulary` and `buildCompositionJsonSchema`'s `composition` option go with `resolveVocabulary`. `compositionToRender` is the public throw-or-collect switch, and `formatZodIssues` stays public.
 
 ## 2026-09-30
 

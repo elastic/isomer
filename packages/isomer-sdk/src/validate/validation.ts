@@ -106,7 +106,7 @@ export const enforceValidationMode = (
   }
 };
 
-/** {@link enforceValidationMode}, then the composition `result` checked, which is what a render draws; a result without one throws as a refusal does. */
+/** The composition `result` checked, which is what a render draws. Throws {@link CompositionValidationError} when `mode` is `'throw'` and `result` is invalid, or in any mode when {@link checkInputBudget} refused the input. */
 export const compositionToRender = <TNode extends PrimitiveNode>(
   result: CheckedValidationResult<TNode>,
   mode?: ValidationErrorMode

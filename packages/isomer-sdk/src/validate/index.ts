@@ -12,7 +12,6 @@ export {
 } from './authoring_schema';
 export {
   type CompositionSchemaOptions,
-  type ResolvedVocabulary,
   buildBodyNodeSchemaFromDefinitions,
   buildCompositionSchema,
   buildCompositionSchemaFromDefinitions,

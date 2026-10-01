@@ -132,7 +132,6 @@ export {
   type InputBudget,
   type InputBudgetCheck,
   type ParsedComposition,
-  type ResolvedVocabulary,
   type ValidationErrorMode,
   type ValidationResult,
   type ValidationWarning,

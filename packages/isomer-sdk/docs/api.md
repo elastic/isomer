@@ -70,7 +70,7 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | `authoringSchemaSubset` | The `$defs` some types reach in an authoring schema, with the body-node union stubbed |
 | `formatZodIssues` | Zod issues as `ValidationError`s |
 
-Types: `ValidationError`, `ValidationResult`, `CheckedValidationResult` (`ValidationResult` plus `composition`), `CheckedComposition`, `ValidationWarning`, `ValidationErrorMode`, `CompositionValidatorOptions`, `InputBudget`, `InputBudgetCheck`, `ParsedComposition` (`{ valid, errors, composition? }`), `ResolvedVocabulary`, `CompositionSchemaOptions`, `CompositionJsonSchemaOptions`, `AuthoringJsonSchemaOptions`, `IsomerErrorCode`.
+Types: `ValidationError`, `ValidationResult`, `CheckedValidationResult` (`ValidationResult` plus `composition`), `CheckedComposition`, `ValidationWarning`, `ValidationErrorMode`, `CompositionValidatorOptions`, `InputBudget`, `InputBudgetCheck`, `ParsedComposition` (`{ valid, errors, composition? }`), `CompositionSchemaOptions`, `CompositionJsonSchemaOptions`, `AuthoringJsonSchemaOptions`, `IsomerErrorCode`.
 
 ## Root entry — values, URLs, helpers
 
