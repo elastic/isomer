@@ -6,6 +6,7 @@
 
 ## 2026-10-01
 
+- **The pack prompt builder passes every field through**: `createAuthoringPromptBuilder` dropped a caller's `catalog`, `groups`, `heading`, and `intro`, so `catalog: 'index'` printed the full catalog; it now spreads every defined field over the pack's defaults. Both pack authoring factories have tests.
 - **Authoring brands survive wrappers and refuse reuse**: `fromChildren` and `fromTextChildren` brands are read through `.optional()`, `.nullable()`, `.default()`, and `.readonly()` at runtime and in the shim's types, so the child component is still generated. Branding one schema instance two ways throws an `IsomerError` with the new code `AUTHORED_SCHEMA_REUSED` instead of a raw `TypeError`.
 - **`definePrimitive` reserves `id` and `surfaces`**: a primitive schema, or a container's `schemaFor` result, declaring either throws an `IsomerError` with the new code `RESERVED_NODE_FIELD` rather than being silently overwritten.
 - **Slack option values are cut, not elided**: `slackSelectOption` cuts an over-long `value` to Slack's documented 150 characters (it clamped at 75) with no `…`, never through a surrogate pair, since the value is an identifier the host reads back.

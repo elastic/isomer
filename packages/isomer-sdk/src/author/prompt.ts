@@ -291,14 +291,11 @@ export const createAuthoringPromptBuilder =
   (
     profile: AuthoringProfileId,
     context: Partial<AuthoringPromptContext> = {}
-  ): string => {
-    const resolvedViews = context.views ?? defaults.views;
-    return buildAuthoringPrompt(profile, {
-      guide: context.guide ?? defaults.guide,
-      rules: context.rules ?? defaults.rules,
-      schema: context.schema ?? defaults.schema,
-      primitives: context.primitives ?? defaults.primitives,
-      examples: context.examples ?? [],
-      ...(resolvedViews === undefined ? {} : { views: resolvedViews }),
+  ): string =>
+    buildAuthoringPrompt(profile, {
+      ...defaults,
+      examples: [],
+      ...Object.fromEntries(
+        Object.entries(context).filter(([, value]) => value !== undefined)
+      ),
     });
-  };
