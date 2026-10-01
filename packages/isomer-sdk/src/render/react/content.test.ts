@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { createElement } from 'react';
+import { type Context, createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
@@ -13,6 +13,9 @@ import type { Composition } from '../../composition/composition';
 
 import {
   type CompositionWrapperOptions,
+  type ReactTreeDispatcher,
+  renderCompositionContent,
+  useReactPrimitiveDispatcher,
   wrapCompositionContent,
 } from './content';
 
@@ -71,5 +74,51 @@ describe('wrapCompositionContent', () => {
     expect(render(composition, { framed: false, fluid: true })).toContain(
       'class="isomer fluid"'
     );
+  });
+});
+
+describe('useReactPrimitiveDispatcher', () => {
+  it('reads the dispatcher a composition render publishes, and null outside one', () => {
+    const seen: unknown[] = [];
+    const Probe = () => {
+      seen.push(useReactPrimitiveDispatcher());
+      return null;
+    };
+    renderToStaticMarkup(createElement(Probe));
+    const dispatcher = {
+      renderReact: () => createElement(Probe),
+      renderText: () => '',
+    };
+    renderToStaticMarkup(
+      createElement(() =>
+        renderCompositionContent(
+          composition,
+          dispatcher,
+          {},
+          { heading: false }
+        )
+      )
+    );
+    expect(seen).toEqual([null, dispatcher]);
+  });
+
+  it('reads a dispatcher published on the globalThis context, as a second SDK copy would', () => {
+    const shared = (globalThis as Record<symbol, unknown>)[
+      Symbol.for('isomer.react.dispatcher')
+    ] as Context<ReactTreeDispatcher | null>;
+    const dispatcher: ReactTreeDispatcher = { renderReact: () => null };
+    let seen: unknown;
+    const Probe = () => {
+      seen = useReactPrimitiveDispatcher();
+      return null;
+    };
+    renderToStaticMarkup(
+      createElement(
+        shared.Provider,
+        { value: dispatcher },
+        createElement(Probe)
+      )
+    );
+    expect(seen).toBe(dispatcher);
   });
 });

@@ -412,6 +412,11 @@ interface RenderedHtmlViewProps<TNode extends PrimitiveNode> {
   body: string;
 }
 
+// `</script`, `</style`, and `<!--` are the only sequences that end or change
+// a raw-text element; `<\/` and `<\!--` read the same in CSS and JS strings.
+const rawTextSafe = (text: string): string =>
+  text.replace(/<(?=\/(?:script|style)|!--)/gi, '<\\');
+
 const RenderedHtmlView = <TNode extends PrimitiveNode>({
   composition,
   theme,
@@ -429,7 +434,7 @@ const RenderedHtmlView = <TNode extends PrimitiveNode>({
       styleText
         ? createElement('style', {
             key: 'style',
-            dangerouslySetInnerHTML: { __html: styleText },
+            dangerouslySetInnerHTML: { __html: rawTextSafe(styleText) },
           })
         : null,
       createElement('div', {
@@ -440,7 +445,7 @@ const RenderedHtmlView = <TNode extends PrimitiveNode>({
         ? createElement('script', {
             key: 'script',
             [EMBEDDED_SCRIPT_ATTRIBUTE]: '',
-            dangerouslySetInnerHTML: { __html: scriptText },
+            dangerouslySetInnerHTML: { __html: rawTextSafe(scriptText) },
           })
         : null
     ),
@@ -448,28 +453,16 @@ const RenderedHtmlView = <TNode extends PrimitiveNode>({
     { framed, fluid, theme, defaultAriaLabel }
   );
 
-// `<pre>` content is whitespace-significant, so those blocks are left untouched
-// and only the markup around them is collapsed.
-const PRE_BLOCK = /<pre[\s>][\s\S]*?<\/pre>/g;
+// Whitespace inside `pre`, `script`, `style`, and `textarea` is content, so
+// those elements match whole and pass through. Elsewhere only whitespace
+// spanning a line break is collapsed: a single space between inline elements
+// (`<b>a</b> <i>b</i>`) is authored content.
+const MINIFY_RE =
+  /<(pre|script|style|textarea)[\s>][\s\S]*?<\/\1>|(?<=>)\s+(?=<)/gi;
 
-// Only whitespace spanning a line break is collapsed: a single space between
-// inline elements (`<b>a</b> <i>b</i>`) is authored content.
-const TAG_GAP = />(\s*)</g;
-
-const collapseTagGaps = (html: string): string =>
-  html.replace(TAG_GAP, (gap, space: string) =>
-    space.includes('\n') ? '><' : gap
-  );
-
-const minifyHtml = (value: string): string => {
-  let result = '';
-  let cursor = 0;
-  for (const match of value.matchAll(PRE_BLOCK)) {
-    const start = match.index;
-    result += collapseTagGaps(value.slice(cursor, start));
-    result += match[0];
-    cursor = start + match[0].length;
-  }
-  result += collapseTagGaps(value.slice(cursor));
-  return result.trim();
-};
+const minifyHtml = (value: string): string =>
+  value
+    .replace(MINIFY_RE, (match, element: string | undefined) =>
+      element || !match.includes('\n') ? match : ''
+    )
+    .trim();

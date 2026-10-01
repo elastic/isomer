@@ -6,6 +6,7 @@
 
 ## 2026-10-01
 
+- **HTML raw sinks and the React context are hardened**: inline CSS has `</style` written `<\/style`, and inline JS has `</script` written `<\/script` and `<!--` written `\x3C!--`, which keep their values in strings and regular expressions, and the measurement counts the escaped text; minify leaves `script`, `style`, and `textarea` whitespace alone, closing tags with whitespace included; `PrimitiveDispatcherContext` lives on `globalThis` under `Symbol.for('isomer.react.dispatcher')` so dual ESM/CJS copies share it.
 - **The React wrapper reads the composition's theme**: `wrapCompositionContent` defaults `theme` to `composition.theme`, so the React surface's `wrapper` sets the same `data-theme` the `html` surface does.
 - **The pack prompt builder passes every field through**: `createAuthoringPromptBuilder` dropped a caller's `catalog`, `groups`, `heading`, and `intro`, so `catalog: 'index'` printed the full catalog; it now spreads every defined field over the pack's defaults. Both pack authoring factories have tests.
 - **Authoring brands survive wrappers and refuse reuse**: `fromChildren` and `fromTextChildren` brands are read through `.optional()`, `.nullable()`, `.default()`, and `.readonly()` at runtime and in the shim's types, so the child component is still generated. Branding one schema instance two ways throws an `IsomerError` with the new code `AUTHORED_SCHEMA_REUSED` instead of a raw `TypeError`.

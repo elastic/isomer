@@ -6,6 +6,7 @@
  */
 
 import {
+  type Context,
   createContext,
   createElement,
   Fragment,
@@ -45,8 +46,17 @@ export type ReactTreeDispatcher = {
   renderReact: (node: PrimitiveNode, context?: object) => ReactNode;
 };
 
-export const PrimitiveDispatcherContext =
-  createContext<ReactTreeDispatcher | null>(null);
+// On `globalThis` under a `Symbol.for` key, so an ESM and a CommonJS copy of
+// the SDK publish and read one context.
+const DISPATCHER_CONTEXT = Symbol.for('isomer.react.dispatcher');
+
+type DispatcherContextScope = {
+  [DISPATCHER_CONTEXT]?: Context<ReactTreeDispatcher | null>;
+};
+
+export const PrimitiveDispatcherContext = ((
+  globalThis as DispatcherContextScope
+)[DISPATCHER_CONTEXT] ??= createContext<ReactTreeDispatcher | null>(null));
 
 /** The dispatcher rendering the enclosing tree, or `null` outside one. */
 export const useReactPrimitiveDispatcher = (): ReactTreeDispatcher | null =>

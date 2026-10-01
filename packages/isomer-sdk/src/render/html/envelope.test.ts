@@ -5,6 +5,8 @@
  * 2.0.
  */
 
+import { Script } from 'node:vm';
+
 import { createElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
@@ -314,6 +316,60 @@ describe('renderHTMLWithDispatcher', () => {
       '<p>a</p><p>b</p><b>a</b> <i>b</i><pre>x\n  <span>y</span></pre>'
     );
     expect(render(view(authored), { minify: false }).html).toContain(authored);
+  });
+
+  it('keeps inline style and script text from closing its element', () => {
+    const hostile: typeof adapter = {
+      ...adapter,
+      renderStyles: () => '.a{content:"</style><img src=x onerror=alert(1)>"}',
+      getScriptText: () => 'const s = "</script><img src=x>"; // <!--',
+    };
+    const { html, css, js } = render(
+      view('<p>x</p>'),
+      {},
+      { styleAdapter: hostile }
+    );
+    expect(html.match(/<\/style/gi)).toHaveLength(1);
+    expect(html.match(/<\/script/gi)).toHaveLength(1);
+    expect(html).not.toContain('<!--');
+    expect(css).toContain('</style>');
+    expect(
+      render(view('<p>x</p>'), { scripts: 'host' }, { styleAdapter: hostile })
+        .js
+    ).toContain('</script>');
+    void js;
+  });
+
+  it('leaves other less-than sequences in a script as written', () => {
+    const source = "x.replace(/</g, '&lt;'); y = '</div>';";
+    const { html } = render(
+      view('<p>x</p>'),
+      {},
+      { styleAdapter: { ...adapter, getScriptText: () => source } }
+    );
+    const script = embeddedScriptOf(html);
+    expect(script).toContain(source);
+    expect(() => new Script(script)).not.toThrow();
+  });
+
+  it('leaves whitespace inside script, style, and textarea alone', () => {
+    const authored = '<textarea>a\n  b</textarea>\n<p>c</p>';
+    expect(render(view(authored)).html).toContain(
+      '<textarea>a\n  b</textarea><p>c</p>'
+    );
+    const scripted = render(
+      view('<p>x</p>'),
+      {},
+      {
+        styleAdapter: {
+          ...adapter,
+          renderStyles: () => '.a{}\n  <b>',
+          getScriptText: () => 'a = "x>\n  <y";',
+        },
+      }
+    ).html;
+    expect(scripted).toContain('.a{}\n  <b>');
+    expect(scripted).toContain('a = "x>\n  <y";');
   });
 
   it('collapses a long whitespace run between tags in linear time', () => {
