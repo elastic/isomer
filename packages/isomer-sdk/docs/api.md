@@ -39,7 +39,7 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | --- | --- |
 | `createPrimitiveDispatcher` | Builds a `PrimitiveDispatcher` from a definition list; `PrimitiveDispatcherOptions` carries its `label` |
 | `createChildNodeWalker` | Builds a `ChildNodeWalker`, which yields a `ChildNodeRef` (`{ node, path }`) per nested node across a heterogeneous inventory |
-| `mapCompositionNodes` | Rebuilds a composition's body with `fn` applied to every node, nested children included |
+| `mapCompositionNodes` | Rebuilds a composition's body with `fn` applied to every node, nested children included, without recursion; a node nested in itself throws `CYCLIC_COMPOSITION` |
 | `childNodePath` | Joins a parent path with a child's own fragment |
 | `someBodyNode` | Predicate over a body, following children |
 | `isVisibleOnSurface`, `rendersOnSurface` | Surface-visibility checks |
