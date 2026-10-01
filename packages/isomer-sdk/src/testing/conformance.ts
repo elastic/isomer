@@ -29,6 +29,7 @@ import {
 } from '../render/anchors';
 import type { HTMLRenderResult } from '../render/html/envelope';
 import type { SlackBlock } from '../render/slack/blocks';
+import { checkInputBudget } from '../validate/input_budget';
 import type { ValidationResult } from '../validate/validation';
 
 /**
@@ -189,7 +190,8 @@ export const primitiveConformanceRows = (
 /**
  * Asserts the inventory itself holds up: the pack has examples, every
  * definition contributes one, each example's `type` matches its definition,
- * and `catalog.example` parses or matches a published example.
+ * and `catalog.example` is within the input budget and parses or matches a
+ * published example.
  */
 export const runPrimitiveInventoryConformance = (
   definitions: readonly AnyPrimitiveDefinition[]
@@ -201,9 +203,17 @@ export const runPrimitiveInventoryConformance = (
       definition.examples.length > 0,
       `${definition.type} primitive must expose at least one example`
     );
-    const catalogExample = definition.catalog.example;
+    const checked = checkInputBudget(definition.catalog.example);
+    if (!checked.valid) {
+      assert.fail(
+        `${definition.type} catalog.example must be within the input budget: ${checked.error.message}`
+      );
+    }
+    const catalogExample = checked.value;
     const matchesPublished = definition.examples.some(
-      (node) => JSON.stringify(node) === JSON.stringify(catalogExample)
+      (node) =>
+        checkInputBudget(node).valid &&
+        JSON.stringify(node) === JSON.stringify(catalogExample)
     );
     if (matchesPublished) {
       continue;

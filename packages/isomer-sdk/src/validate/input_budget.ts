@@ -19,7 +19,7 @@ export const MAX_INPUT_CHARACTERS = 1_000_000;
 
 /** Overrides for the limits {@link checkInputBudget} enforces; an omitted one keeps its default. */
 export interface InputBudget {
-  /** Defaults to {@link MAX_INPUT_DEPTH}. */
+  /** Defaults to {@link MAX_INPUT_DEPTH}. Zod parses what passes recursively, so a few hundred nested containers can exhaust the call stack. */
   depth?: number;
   /** Defaults to {@link MAX_INPUT_VALUES}. */
   values?: number;
