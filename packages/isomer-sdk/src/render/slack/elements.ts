@@ -17,7 +17,13 @@ import {
 } from './blocks';
 import { clampSlackText, slackLinkUrl } from './format';
 
-const OPTION_VALUE_CHARS = 75;
+const OPTION_VALUE_CHARS = 150;
+
+// An opaque value is cut, never elided, and never through a surrogate pair.
+const cutValue = (value: string): string => {
+  const cut = value.slice(0, OPTION_VALUE_CHARS);
+  return /[\ud800-\udbff]$/.test(cut) ? cut.slice(0, -1) : cut;
+};
 
 /** `plain_text` object with emoji substitution on, clamped to `max`. */
 export const slackPlainText = (
@@ -39,7 +45,7 @@ export const slackActionId = (kind: string, seed: string): string =>
 /** Option for {@link slackSelectOption}; `value` is what interactions send. */
 export interface SlackSelectOptionInput {
   label: string;
-  /** Clamped to 75 characters, so a longer value reaches the interaction payload truncated. */
+  /** Cut to Slack's 150 characters with no ellipsis, so a longer value reaches the interaction payload truncated. */
   value: string;
   description?: string | undefined;
 }
@@ -50,7 +56,7 @@ export const slackSelectOption = (
 ): SlackOptionObject => {
   const option: SlackOptionObject = {
     text: slackPlainText(input.label),
-    value: clampSlackText(input.value, OPTION_VALUE_CHARS),
+    value: cutValue(input.value),
   };
   if (input.description) {
     option.description = slackPlainText(
