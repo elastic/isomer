@@ -257,8 +257,12 @@ export const createPrimitiveDispatcher = <
       }
       const assets = isSlackAssetCollector(collector) ? collector : undefined;
       if (assets && isSlackAssetType?.(node.type)) {
-        const altText = renderOn('text', node, {}) ?? node.type;
-        const ref = assets.allocate(node, altText);
+        const safeNode = sanitizeNode(getDefinition(node), node);
+        if (safeNode === null) {
+          return [];
+        }
+        const altText = renderOn('text', safeNode, {}) || node.type;
+        const ref = assets.allocate(safeNode, altText);
         const block = {
           type: 'image',
           alt_text: altText,

@@ -371,3 +371,61 @@ describe('RenderScope', () => {
     ).toBe('none');
   });
 });
+
+describe('slack asset swap', () => {
+  interface PicNode {
+    type: 'pic';
+    src: string;
+  }
+  const pic = (
+    sanitize: (node: PicNode) => PicNode | null,
+    text: () => string
+  ) =>
+    createPrimitiveDispatcher<PicNode>(
+      [
+        definePrimitive<PicNode>({
+          type: 'pic',
+          catalog: {
+            type: 'pic',
+            purpose: '',
+            useWhen: [],
+            avoidWhen: [],
+            example: { type: 'pic', src: '/a.png' },
+          },
+          examples: [{ type: 'pic', src: '/a.png' }],
+          schema: z.object({ type: z.literal('pic'), src: z.string() }),
+          sanitize,
+          renderers: { react: () => null, text, markdown: () => '' },
+        }),
+      ],
+      { isSlackAssetType: () => true }
+    );
+
+  it('allocates the sanitized node', () => {
+    const collector = createSlackAssetCollector();
+    pic(
+      (node) => ({ ...node, src: '#' }),
+      () => 'alt'
+    ).renderSlack({ type: 'pic', src: 'javascript:x' }, collector);
+    expect(collector.requests[0]?.node).toEqual({ type: 'pic', src: '#' });
+  });
+
+  it('allocates nothing for a node its sanitizer drops', () => {
+    const collector = createSlackAssetCollector();
+    expect(
+      pic(
+        () => null,
+        () => 'alt'
+      ).renderSlack({ type: 'pic', src: 'x' }, collector)
+    ).toEqual([]);
+    expect(collector.requests).toEqual([]);
+  });
+
+  it('falls back to the type for an empty alt text', () => {
+    const [block] = pic(
+      (node) => node,
+      () => ''
+    ).renderSlack({ type: 'pic', src: 'x' }, createSlackAssetCollector());
+    expect(block).toMatchObject({ alt_text: 'pic' });
+  });
+});
