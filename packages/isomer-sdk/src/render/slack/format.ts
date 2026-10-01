@@ -194,6 +194,90 @@ export const clampSlackText = (value: string, max: number): string => {
   return max <= 1 ? head : `${head.trimEnd()}…`;
 };
 
+// A fence marker, a `<…>` link or mention, and an entity are each cut whole.
+const MRKDWN_TOKEN_RE = /```|<[^<>\n]*>|&(?:amp|lt|gt);/g;
+const INLINE_MARKS = new Set(['*', '_', '~', '`']);
+const OPENER_BEFORE_RE = /[\s\p{P}]/u;
+
+// The atoms of `value` until they pass `limit` characters.
+const mrkdwnAtoms = (value: string, limit: number): string[] => {
+  const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+  const atoms: string[] = [];
+  let length = 0;
+  const push = (atom: string): boolean => {
+    atoms.push(atom);
+    length += atom.length;
+    return length > limit;
+  };
+  const pushText = (text: string): boolean => {
+    for (const { segment } of segmenter.segment(text)) {
+      if (push(segment)) return true;
+    }
+    return false;
+  };
+  let cursor = 0;
+  for (const { 0: token, index } of value.matchAll(MRKDWN_TOKEN_RE)) {
+    if (pushText(value.slice(cursor, index)) || push(token)) return atoms;
+    cursor = index + token.length;
+  }
+  pushText(value.slice(cursor));
+  return atoms;
+};
+
+// What closes the fence and inline marks still open at the end of `atoms`.
+const openMarkClosers = (atoms: readonly string[]): string => {
+  let fenced = false;
+  const open: string[] = [];
+  atoms.forEach((atom, index) => {
+    if (atom === '```') {
+      fenced = !fenced;
+      return;
+    }
+    if (fenced || !INLINE_MARKS.has(atom)) return;
+    if (open.includes('`') && atom !== '`') return;
+    const before = atoms[index - 1];
+    const after = atoms[index + 1];
+    const at = open.lastIndexOf(atom);
+    if (at !== -1) {
+      // Slack does not nest a mark inside itself, so this can only close.
+      if (before !== undefined && !/\s/.test(before)) open.length = at;
+    } else if (
+      after !== undefined &&
+      !/\s/.test(after) &&
+      (before === undefined || OPENER_BEFORE_RE.test(before))
+    ) {
+      open.push(atom);
+    }
+  });
+  return `${open.reverse().join('')}${fenced ? '\n```' : ''}`;
+};
+
+/**
+ * {@link clampSlackText} for `mrkdwn`: never cuts inside a `<…>` link or an
+ * entity, and closes a fence or inline mark the cut lands in.
+ */
+export const clampMrkdwn = (value: string, max: number): string => {
+  if (value.length <= max || max <= 1) {
+    return clampSlackText(value, max);
+  }
+  const atoms = mrkdwnAtoms(value, max);
+  for (let budget = max - 1; budget > 0;) {
+    let length = 0;
+    let end = 0;
+    while (end < atoms.length && length + atoms[end]!.length <= budget) {
+      length += atoms[end]!.length;
+      end += 1;
+    }
+    const kept = atoms.slice(0, end);
+    const clamped = `${kept.join('').trimEnd()}…${openMarkClosers(kept)}`;
+    if (clamped.length <= max) {
+      return clamped;
+    }
+    budget -= clamped.length - max;
+  }
+  return '…';
+};
+
 /**
  * Collapses whitespace and clamps to `SLACK_LIMITS.headerTextChars`. Header
  * text is `plain_text`, so no markdown survives — do not pre-format it.
@@ -215,7 +299,7 @@ export const joinMrkdwn = (
   const filtered = lines.filter(
     (line): line is string => line !== undefined && line.length > 0
   );
-  return clampSlackText(filtered.join('\n'), budget);
+  return clampMrkdwn(filtered.join('\n'), budget);
 };
 
 // ---------------------------------------------------------------------------
@@ -896,7 +980,7 @@ export const gfmToSlackBlocks = (gfm: string): SlackBlock[] => {
     if (prose.length === 0) {
       return;
     }
-    const text = clampSlackText(
+    const text = clampMrkdwn(
       gfmToSlackMrkdwn(prose.join('\n')),
       SLACK_LIMITS.sectionTextChars
     );

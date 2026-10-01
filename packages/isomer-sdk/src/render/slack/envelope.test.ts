@@ -898,6 +898,159 @@ describe('Slack envelope transforms', () => {
   });
 });
 
+describe('Slack envelope count limits', () => {
+  const mrkdwn = (text: string) => ({ type: 'mrkdwn' as const, text });
+  const render = (blocks: SlackBlock[]) =>
+    renderSlackEnvelope(
+      { type: 'view', body: [{ type: 'n' }] },
+      dispatcherFor([blocks])
+    ).blocks;
+
+  it('splits a context past its element limit', () => {
+    const elements = Array.from({ length: 12 }, (_, i) => mrkdwn(`c${i}`));
+    const blocks = render([{ type: 'context', block_id: 'ctx', elements }]);
+    expect(
+      blocks.map((b) => b.type === 'context' && b.elements.length)
+    ).toEqual([10, 2]);
+    expect(blocks.map((b) => b.block_id)).toEqual(['ctx', undefined]);
+  });
+
+  it('splits section fields past the field limit, text staying on the first', () => {
+    const fields = Array.from({ length: 12 }, (_, i) => mrkdwn(`f${i}`));
+    const blocks = render([
+      { type: 'section', text: mrkdwn('T'), fields },
+    ]).filter((b) => b.type === 'section' && b.fields);
+    expect(
+      blocks.map(
+        (b) => b.type === 'section' && [b.text?.text, b.fields?.length]
+      )
+    ).toEqual([
+      ['T', 10],
+      [undefined, 2],
+    ]);
+  });
+
+  it('splits actions past the button limit', () => {
+    const elements = Array.from({ length: 30 }, (_, i) => button(`b${i}`));
+    const blocks = render([{ type: 'actions', elements }]).filter(
+      (b) => b.type === 'actions'
+    );
+    expect(
+      blocks.map((b) => b.type === 'actions' && b.elements.length)
+    ).toEqual([25, 5]);
+  });
+
+  it('caps the options of a menu', () => {
+    const options = Array.from({ length: 7 }, (_, i) => ({
+      ...option(`o${i}`),
+      value: `v${i}`,
+    }));
+    const [block] = render([
+      {
+        type: 'actions',
+        elements: [{ type: 'overflow', action_id: 'a', options }],
+      },
+    ]).filter((b) => b.type === 'actions');
+    expect(
+      block?.type === 'actions' &&
+        block.elements[0]?.type === 'overflow' &&
+        block.elements[0].options
+    ).toHaveLength(SLACK_LIMITS.optionsPerOverflow);
+  });
+
+  it('caps radio buttons and checkboxes at the choice limit', () => {
+    const options = Array.from({ length: 12 }, (_, i) => ({
+      ...option(`o${i}`),
+      value: `v${i}`,
+    }));
+    const [block] = render([
+      {
+        type: 'actions',
+        elements: [
+          {
+            type: 'checkboxes',
+            action_id: 'c',
+            options,
+            initial_options: [options[11]!],
+          },
+        ],
+      },
+    ]).filter((b) => b.type === 'actions');
+    const [element] = block?.type === 'actions' ? block.elements : [];
+    expect(
+      element?.type === 'checkboxes' && [
+        element.options.length,
+        element.initial_options,
+      ]
+    ).toEqual([SLACK_LIMITS.optionsPerChoice, []]);
+  });
+
+  it('drops an image whose URL is past the URL limit', () => {
+    const image_url = `https://x.test/${'a'.repeat(SLACK_LIMITS.imageUrlChars)}`;
+    const blocks = render([{ type: 'image', image_url, alt_text: 'chart' }]);
+    expect(blocks).toEqual([{ type: 'context', elements: [mrkdwn('chart')] }]);
+  });
+});
+
+describe('Slack envelope mrkdwn clamping', () => {
+  const clamped = (text: string): string => {
+    const [block] = renderSlackEnvelope(
+      { type: 'view', body: [{ type: 'n' }] },
+      dispatcherFor([[section(text)]])
+    ).blocks;
+    return block?.type === 'section' ? (block.text?.text ?? '') : '';
+  };
+  const max = SLACK_LIMITS.sectionTextChars;
+
+  it('cuts before a link rather than inside it', () => {
+    const text = `${'a'.repeat(max - 10)} <https://x.test/long/path|label> tail`;
+    expect(clamped(text)).toBe(`${'a'.repeat(max - 10)}…`);
+  });
+
+  it('cuts before an entity rather than inside it', () => {
+    const text = `${'a'.repeat(max - 3)}&amp;&amp;`;
+    expect(clamped(text)).toBe(`${'a'.repeat(max - 3)}…`);
+  });
+
+  it('closes a fence the cut lands in', () => {
+    const output = clamped(`intro\n\`\`\`\n${'c'.repeat(max)}\n\`\`\``);
+    expect(output).toHaveLength(max);
+    expect(output.endsWith('…\n```')).toBe(true);
+  });
+
+  it('closes bold the cut lands in', () => {
+    const output = clamped(`*${'b '.repeat(max)}*`);
+    expect(output.length).toBeLessThanOrEqual(max);
+    expect(output.endsWith('…*')).toBe(true);
+  });
+
+  it('does not treat an intraword underscore as an opener', () => {
+    const output = clamped(`snake_case ${'w'.repeat(max)}`);
+    expect(output.endsWith('…')).toBe(true);
+  });
+});
+
+describe('Slack envelope fallback text', () => {
+  it('escapes the default text render as mrkdwn', () => {
+    const { text } = renderSlackEnvelope(
+      { type: 'view', title: 'A <b> & c', body: [] },
+      dispatcherFor([])
+    );
+    expect(text).toBe('A &lt;B&gt; &amp; C');
+  });
+
+  it('passes a host-supplied text through as mrkdwn', () => {
+    const { text } = renderSlackEnvelope(
+      { type: 'view', body: [] },
+      dispatcherFor([]),
+      {
+        text: '*bold* <https://x.test|x>',
+      }
+    );
+    expect(text).toBe('*bold* <https://x.test|x>');
+  });
+});
+
 describe('pack-authored rich text', () => {
   const max = SLACK_LIMITS.sectionTextChars;
   const sectionOf = (text: string): SlackRichTextSection => ({

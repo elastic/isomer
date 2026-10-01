@@ -74,6 +74,8 @@ export const SLACK_LIMITS = {
   optionsPerSelect: 100,
   /** Options per overflow menu (Slack caps overflow at 5). */
   optionsPerOverflow: 5,
+  /** Options per radio button group or checkboxes element. */
+  optionsPerChoice: 10,
   /** Max indent level for `rich_text_list`. */
   richTextListMaxIndent: 8,
   /**
