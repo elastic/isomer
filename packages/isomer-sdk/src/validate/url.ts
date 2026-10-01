@@ -102,28 +102,61 @@ export const sanitizeParsedAssetUrl = (url: string): string | null => {
  */
 export const BLOCKED_HREF = '#';
 
+/** What {@link navigationHref} accepts, for a field description to state. */
+export const NAVIGATION_HREF_RULE =
+  'an https, http, or mailto URL, or a relative path';
+
+/** What {@link assetUrl} accepts, for a field description to state. */
+export const ASSET_URL_RULE =
+  'an https, http, or data:image URL, or a relative path';
+
 /** Validation message for {@link navigationHref}. */
-export const NAVIGATION_HREF_MESSAGE =
-  'must be an https, http, or mailto URL, or a relative path';
+export const NAVIGATION_HREF_MESSAGE = `must be ${NAVIGATION_HREF_RULE}`;
 
 /** Validation message for {@link assetUrl}. */
-export const ASSET_URL_MESSAGE =
-  'must be an https, http, or data:image URL, or a relative path';
+export const ASSET_URL_MESSAGE = `must be ${ASSET_URL_RULE}`;
+
+/** Options for {@link navigationHref} and {@link assetUrl}. */
+export interface UrlSchemaOptions {
+  /** Longest accepted value, in characters. */
+  max?: number;
+}
+
+const urlSchema = (
+  passes: (value: string) => boolean,
+  rule: string,
+  message: string,
+  { max }: UrlSchemaOptions
+) =>
+  (max === undefined ? requiredString() : requiredString().max(max))
+    .refine(passes, { error: message })
+    .describe(`${rule[0]!.toUpperCase()}${rule.slice(1)}.`);
 
 /**
  * Zod schema for an `href`-like field: the validation layer of the two-layer
  * policy, paired with {@link sanitizeNavigationHref} at render time.
+ *
+ * Its description states the rule, since a refinement's message does not
+ * reach the authoring JSON Schema. A field that describes itself should end
+ * with {@link NAVIGATION_HREF_RULE} so the model still reads it.
  */
-export const navigationHref = () =>
-  requiredString().refine((value) => sanitizeNavigationHref(value) !== null, {
-    error: NAVIGATION_HREF_MESSAGE,
-  });
+export const navigationHref = (options: UrlSchemaOptions = {}) =>
+  urlSchema(
+    (value) => sanitizeNavigationHref(value) !== null,
+    NAVIGATION_HREF_RULE,
+    NAVIGATION_HREF_MESSAGE,
+    options
+  );
 
 /**
  * Zod schema for a `src`-like field, paired with {@link sanitizeAssetUrl} at
- * render time.
+ * render time. Describes itself as {@link navigationHref} does, with
+ * {@link ASSET_URL_RULE}.
  */
-export const assetUrl = () =>
-  requiredString().refine((value) => sanitizeAssetUrl(value) !== null, {
-    error: ASSET_URL_MESSAGE,
-  });
+export const assetUrl = (options: UrlSchemaOptions = {}) =>
+  urlSchema(
+    (value) => sanitizeAssetUrl(value) !== null,
+    ASSET_URL_RULE,
+    ASSET_URL_MESSAGE,
+    options
+  );

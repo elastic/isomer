@@ -6,6 +6,7 @@
 
 ## 2026-10-01
 
+- **URL schemas state their rule and take a length**: `navigationHref` and `assetUrl` take `UrlSchemaOptions` (`max`) and describe themselves with their rule, since a refinement's message never reaches the authoring JSON Schema; `NAVIGATION_HREF_RULE` and `ASSET_URL_RULE` are exported for a field's own description to end with, and the messages are built from them. `requiredString` gives its message only to a missing or non-string value, so a length check chained on it, such as `max`, reports `must be at most N characters` rather than `is required`.
 - **`isInputRefusal` and `CompositionMeta` are exported**: `isInputRefusal(error)` says whether a finding is a `checkInputBudget` refusal, which no validation mode collects, and agent-tools uses it instead of copying the refusal codes; `CompositionMeta` names the type of `Composition.meta`.
 - **One enhancement resolver for both surfaces**: the `html` surface and `applyEnhancements` resolve through one function that keeps the first applying definition of each id, so a duplicate id's script is emitted once; `applyEnhancements` takes optional `requested` ids. `resolveEnhancements` and `enhancementScript` leave `./html`.
 - **`mapCompositionNodes` takes a walker**: its second argument is a `ChildNodeWalker`, as for `someBodyNode`, instead of the definitions it built one from; the slides pack passes the walker it already holds.

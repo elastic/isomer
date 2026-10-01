@@ -6,12 +6,14 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 
 import {
   ASSET_URL_MESSAGE,
   assetUrl,
   BLOCKED_HREF,
   NAVIGATION_HREF_MESSAGE,
+  NAVIGATION_HREF_RULE,
   navigationHref,
   sanitizeAssetUrl,
   sanitizeNavigationHref,
@@ -149,6 +151,26 @@ describe('zod refinements', () => {
     expect(assetUrl().safeParse('data:image/png;base64,AAA').success).toBe(
       true
     );
+  });
+
+  it('states its rule in a description the JSON Schema keeps', () => {
+    expect(z.toJSONSchema(navigationHref())).toMatchObject({
+      description: 'An https, http, or mailto URL, or a relative path.',
+    });
+    expect(z.toJSONSchema(assetUrl()).description).toBe(
+      'An https, http, or data:image URL, or a relative path.'
+    );
+    expect(NAVIGATION_HREF_MESSAGE).toBe(`must be ${NAVIGATION_HREF_RULE}`);
+  });
+
+  it('bounds the length when given a max', () => {
+    expect(navigationHref({ max: 8 }).safeParse('/a/b/c/d/e').success).toBe(
+      false
+    );
+    expect(navigationHref({ max: 8 }).safeParse('/a/b').success).toBe(true);
+    expect(z.toJSONSchema(assetUrl({ max: 8 }))).toMatchObject({
+      maxLength: 8,
+    });
   });
 
   it('rejects obfuscated forms at validation time, not just render time', () => {

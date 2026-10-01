@@ -33,9 +33,12 @@ export {
 } from './json_schema';
 export { type IssueRoot, createNodeIssueFormatter } from './node_issues';
 export {
+  type UrlSchemaOptions,
   ASSET_URL_MESSAGE,
+  ASSET_URL_RULE,
   BLOCKED_HREF,
   NAVIGATION_HREF_MESSAGE,
+  NAVIGATION_HREF_RULE,
   assetUrl,
   navigationHref,
   sanitizeAssetUrl,

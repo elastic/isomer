@@ -72,7 +72,7 @@ Types: `ValidationError`, `ValidationResult`, `CheckedValidationResult` (`Valida
 
 ## Root entry — values, URLs, helpers
 
-`assetUrl`, `navigationHref`, `sanitizeAssetUrl`, `sanitizeNavigationHref`, `ASSET_URL_MESSAGE`, `NAVIGATION_HREF_MESSAGE`, `BLOCKED_HREF` — see [URL trust](url-trust.md).
+`assetUrl` and `navigationHref` (each taking `UrlSchemaOptions`, an optional `max` length), `sanitizeAssetUrl`, `sanitizeNavigationHref`, `ASSET_URL_RULE`, `NAVIGATION_HREF_RULE`, `ASSET_URL_MESSAGE`, `NAVIGATION_HREF_MESSAGE`, `BLOCKED_HREF` — see [URL trust](url-trust.md).
 
 `displayValueSchema`, `structuredValueSchema`, `namedColorSchema`, `renderThemeSchema`, `formatDisplayValue` (with `FormatDisplayValueOptions`), `isStructuredValue`, `rawDisplayValue`, `STRUCTURED_VALUE_FORMATS`, `ALL_NAMED_COLORS`, `ISOMER_ERROR_CODES`, plus `formatCompactNumber`. `PayloadMeasurement` is the byte breakdown on `HTMLRenderResult.measurement`.
 
