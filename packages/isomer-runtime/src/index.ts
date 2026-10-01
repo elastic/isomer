@@ -69,5 +69,6 @@ export type {
 export {
   type IsomerErrorCode,
   ISOMER_ERROR_CODES,
+  CompositionValidationError,
   IsomerError,
 } from '@elastic/isomer-sdk';

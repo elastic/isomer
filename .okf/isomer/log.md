@@ -2,6 +2,7 @@
 
 ## 2026-10-01
 
+- **Runtime re-exports `CompositionValidationError`**: The runtime root re-exports `CompositionValidationError` beside `IsomerError`, since its validating surfaces throw it. The runtime API page gives `ViewInput` as `Record<string, unknown>` and sets out when `ParsedComposition`, `CheckedValidationResult`, and `ViewResponse` carry a `composition`.
 - **Markdown label helpers are builder-only**: `./markdown` no longer exports the string `boldLabelPrefix` and `boldSectionLabel`; `md.boldLabelPrefix` and `md.boldSectionLabel` remain, and `defaultMarkdownFromText` bolds its label prefix as before.
 - **`oneLine` is private**: `oneLine` is no longer exported from `/author`. The SDK keeps one implementation, which the authoring prompt and the `md` builder share: each whitespace run holding a line terminator becomes one space, so `md` text, code, and image alt text no longer keep the whitespace around a line break. The slides pack and agent tools keep local copies.
 - **The Slack envelope splits every `rich_text` block**: `renderSlackEnvelope` splits each section, quote, or preformatted element past `sectionTextChars` in any `rich_text` block a renderer returns, not only in a degraded table, so a pack's own rich text is postable. `splitRichTextElement` is no longer exported from `./slack`, and the slides pack's `slackRichText` is a plain constructor.

@@ -81,6 +81,14 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | `CheckedValidationResult` | `ValidationResult` plus `composition`, the plain copy validation checked, which validating surfaces render; `undefined` only when refused before parsing |
 | `ParsedComposition` | `{ valid, errors, composition? }` |
 
+Three results carry a `composition`, each with its own rule:
+
+| Result | `composition` |
+| --- | --- |
+| `ParsedComposition` | The parsed document, present only when `valid` |
+| `CheckedValidationResult` | The checked copy, present even when `valid` is `false`; `undefined` only when the input budget refused the input |
+| `ViewResponse` | The checked copy, or the built value, unchecked, when the input budget refused it; always present |
+
 ## View registry
 
 | Member | Type |
@@ -90,7 +98,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | `get(id)` | `RegisteredViewSummary \| undefined` |
 | `request(id, context, input?)` | `Promise<ViewResponse>` — `{ view, composition, validation }` |
 
-`RegisteredView` is `{ id, title, description, answers, input?, build }`, where `build({ context, input })` returns the composition. `DefineViewOptions` is the same with `description` optional. `RegisteredViewSummary` is `{ id, title, description, answers, inputSchema? }`. `ViewBuildArgs` is `build`'s argument, `ViewInput` is the input shape a view's Zod schema infers, and `ViewResponse` is what `request` resolves to.
+`RegisteredView` is `{ id, title, description, answers, input?, build }`, where `build({ context, input })` returns the composition. `DefineViewOptions` is the same with `description` optional. `RegisteredViewSummary` is `{ id, title, description, answers, inputSchema? }`. `ViewBuildArgs` is `build`'s argument, `ViewInput` is `Record<string, unknown>`, `build`'s input type unless a Zod `input` schema infers one, and `ViewResponse` is what `request` resolves to.
 
 ## Types exported from this package
 
@@ -102,15 +110,15 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | Surfaces | `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SvgSurface` |
 | Options | `ReactRenderOptions`, `ReactRenderNodeOptions`, `ReactRenderArgs`, `HTMLRenderOptions`, `HTMLStyleAdapter`, `TextRenderOptions`, `TextRenderNodeOptions`, `MarkdownRenderOptions`, `MarkdownRenderNodeOptions`, `SlackRenderOptions`, `SlackRenderNodeOptions`, `SvgRenderOptions`, `SvgRenderNodeOptions` |
 | Results | `HTMLRenderResult`, `SlackRenderResult`, `SvgRenderResult` |
-| Errors | `IsomerError`, `IsomerErrorCode`, `ISOMER_ERROR_CODES` |
+| Errors | `IsomerError`, `IsomerErrorCode`, `ISOMER_ERROR_CODES`, `CompositionValidationError` |
 
 `src/api_reference.test.ts` fails when a name exported from `src/index.ts` is missing from this page.
 
-`IsomerError` is a deliberate pass-through of the SDK catch contract: a host catching a runtime construction failure should not need a second dependency just to name `code`.
+`IsomerError` and `CompositionValidationError` are deliberate pass-throughs of the SDK catch contract: a host catching a runtime construction failure or a validating surface's refusal should not need a second dependency just to name `code`. Both are still identified by `name` and `code`, never `instanceof`.
 
 ## Import from the SDK
 
-`PrimitiveNode`, `Composition`, `CheckedValidationResult`, `ValidationResult`, `ValidationWarning`, `warningsForSurface`, `definePrimitive`, `describeCapabilities`, `PrimitivePack`, `Frame`, `CompositionValidationError`.
+`PrimitiveNode`, `Composition`, `CheckedValidationResult`, `ValidationResult`, `ValidationWarning`, `warningsForSurface`, `definePrimitive`, `describeCapabilities`, `PrimitivePack`, `Frame`.
 
 ## Errors
 

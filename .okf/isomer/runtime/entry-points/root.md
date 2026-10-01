@@ -14,7 +14,7 @@ sources:
 
 # Definition
 
-One entry point. Notable symbols: `createIsomerRuntime`, `defineView`. Surface option and result types are re-exported from here, including `SvgPagesResult`.[^barrel]
+One entry point. Notable symbols: `createIsomerRuntime`, `defineView`. Surface option and result types are re-exported from here, including `SvgPagesResult`. `IsomerError` and `CompositionValidationError` pass through from the SDK, so a host names a thrown error's `code` without a second import.[^barrel]
 
 Related: [runtime](/runtime/concepts/runtime.md), [public contract](/runtime/reference/public-contract.md).
 
