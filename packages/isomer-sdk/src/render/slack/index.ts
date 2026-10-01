@@ -70,7 +70,6 @@ export {
   type SlackEnvelopeOptions,
   type SlackEnvelopeResult,
   renderSlackEnvelope,
-  splitRichTextElement,
 } from './envelope';
 
 export {

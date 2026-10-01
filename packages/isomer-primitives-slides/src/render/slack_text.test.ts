@@ -6,6 +6,7 @@
  */
 
 import {
+  renderSlackEnvelope,
   SLACK_LIMITS,
   type SlackBlock,
   slackLinkUrl,
@@ -76,8 +77,18 @@ describe('rich text fallbacks past a section', () => {
       ? ''
       : element.elements.map(inlineText).join('');
 
-  const elementsOf = (block: SlackBlock): SlackRichTextBlockElement[] =>
-    block.type === 'rich_text' ? block.elements : [];
+  /** The block's elements once the Slack envelope has fitted it. */
+  const elementsOf = (block: SlackBlock): SlackRichTextBlockElement[] => {
+    const [fitted] = renderSlackEnvelope(
+      { type: 'view', body: [{ type: 'node' }] },
+      {
+        renderText: () => '',
+        renderMarkdown: () => '',
+        renderSlack: () => [block],
+      }
+    ).blocks;
+    return fitted?.type === 'rich_text' ? fitted.elements : [];
+  };
 
   // Plain text holds a `_`, which `mrkdwn` would read as italics, so each helper falls back.
   const plain = (length: number) => `_${x(length - 1)}`;

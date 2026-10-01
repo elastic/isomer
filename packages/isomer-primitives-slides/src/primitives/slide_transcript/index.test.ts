@@ -61,18 +61,17 @@ describe('slideTranscript in Slack past a section', () => {
   it.each(['rich_text_section', 'rich_text_preformatted'] as const)(
     'splits a turn past a section into adjacent %s elements',
     (type) => {
-      expect(
-        slack({
-          type: 'slideTranscript',
-          turns: [
-            {
-              role: 'user',
-              format: type === 'rich_text_section' ? 'prose' : 'code',
-              text: past,
-            },
-          ],
-        })
-      ).toEqual([
+      const node: SlideTranscriptNode = {
+        type: 'slideTranscript',
+        turns: [
+          {
+            role: 'user',
+            format: type === 'rich_text_section' ? 'prose' : 'code',
+            text: past,
+          },
+        ],
+      };
+      expect(runtime.surfaces.slack.renderNode(node).blocks).toEqual([
         {
           type: 'rich_text',
           elements: [

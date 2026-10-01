@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-// Slack clamps `header`, `section`, field, and `context` text, so authored text that outgrows them falls back to `rich_text`, split into elements within `sectionTextChars`.
+// Slack clamps `header`, `section`, field, and `context` text, so authored text that outgrows them falls back to `rich_text`, which the envelope splits into elements within `sectionTextChars`.
 
 import { oneLine } from '@elastic/isomer-sdk/author';
 import {
@@ -20,7 +20,6 @@ import {
   type SlackRichTextInline,
   type SlackRichTextSection,
   type SlackRichTextText,
-  splitRichTextElement,
 } from '@elastic/isomer-sdk/slack';
 
 import { marksRichText, marksSlack, parseMarks, richTextRun } from './marks';
@@ -56,13 +55,9 @@ export const mrkdwnKeeps = (sources: readonly MrkdwnSource[]): boolean =>
 export const fitsSlack = (text: string, limit: number): boolean =>
   clampSlackText(text, limit) === text;
 
-/** A `rich_text` block, each element past `sectionTextChars` split by {@link splitRichTextElement}. */
 export const slackRichText = (
   ...elements: SlackRichTextBlockElement[]
-): SlackBlock => ({
-  type: 'rich_text',
-  elements: elements.flatMap(splitRichTextElement),
-});
+): SlackBlock => ({ type: 'rich_text', elements });
 
 export const richTextSection = (
   ...elements: SlackRichTextInline[]

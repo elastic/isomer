@@ -86,7 +86,8 @@ export interface SlackEnvelopeResult {
  *
  * Degradation for a node with no `slack` renderer is the dispatcher's, which
  * has to own it to reach a child nested inside a container. The result is
- * fitted to Slack's limits — Slack-limited text is clamped, tables past a table
+ * fitted to Slack's limits — Slack-limited text is clamped, `rich_text`
+ * elements past a section's limit are split, tables past a table
  * limit or the message's cell budget become rich text, spacers and then whole
  * blocks are dropped — so the output is always postable. `assets` stays empty
  * unless `collectAssets` is set.
@@ -228,6 +229,11 @@ const clampBlockText = (block: SlackBlock): SlackBlock => {
               ? clampAlt(block.accessory)
               : clampControl(block.accessory),
         }),
+      };
+    case 'rich_text':
+      return {
+        ...block,
+        elements: block.elements.flatMap(splitRichTextElement),
       };
     case 'context':
       return {
@@ -510,7 +516,7 @@ const textUnits = (text: string, max: number): string[] =>
  * A section, quote, or preformatted element past `sectionTextChars` as adjacent ones of its type, with nothing added between them; a list comes back as is.
  * A link or tag no longer than that stays whole; anything longer splits at grapheme boundaries into inlines of its own type, a link's label (or URL) across links to the same URL.
  */
-export const splitRichTextElement = (
+const splitRichTextElement = (
   element: SlackRichTextBlockElement
 ): SlackRichTextBlockElement[] => {
   const max = SLACK_LIMITS.sectionTextChars;

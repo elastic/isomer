@@ -2,6 +2,7 @@
 
 ## 2026-10-01
 
+- **The Slack envelope splits every `rich_text` block**: `renderSlackEnvelope` splits each section, quote, or preformatted element past `sectionTextChars` in any `rich_text` block a renderer returns, not only in a degraded table, so a pack's own rich text is postable. `splitRichTextElement` is no longer exported from `./slack`, and the slides pack's `slackRichText` is a plain constructor.
 - **`renderNode` validates like `render`**: `text`, `markdown`, `slack`, and `svg` validate a node passed to `renderNode` as the sole node of a view, under the runtime's input budget, and render the checked copy, as `html` already did. Each takes `onValidationError` with its `render` default: `TextRenderNodeOptions` and `MarkdownRenderNodeOptions` are new, `SlackRenderNodeOptions` keeps it, and `SvgRenderNodeOptions` adds it.
 
 ## 2026-09-30
