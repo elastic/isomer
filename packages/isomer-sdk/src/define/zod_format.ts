@@ -133,7 +133,14 @@ const isMissingRequired = (issue: core.$ZodIssue): boolean => {
   return input === undefined;
 };
 
-/** {@link formatZodIssue} over an issue list, in order. */
+/**
+ * Zod issues as {@link ValidationError}s, in order, each path under `basePath`.
+ *
+ * Missing required fields, enum issues, and unknown keys are worded centrally,
+ * so a schema's own messages state only the predicate. Parse with
+ * `{ reportInput: true }`: Zod 4 omits `input` from an issue otherwise, and a
+ * wrong type would then read as a missing field.
+ */
 export const formatZodIssues = (
   issues: ReadonlyArray<core.$ZodIssue>,
   basePath = ''

@@ -13,8 +13,6 @@ export {
   type PrimitiveConformanceSlackResult,
   type PrimitiveConformanceSvgResult,
   CONFORMANCE_FOREIGN_MARKER,
-  examplesFromDefinitions,
-  primitiveConformanceCases,
   primitiveConformanceRows,
   runPrimitiveInventoryConformance,
 } from './conformance';

@@ -10,7 +10,7 @@
 import {
   authoringSchemaSubset,
   buildAuthoringJsonSchema,
-  resolveVocabulary,
+  unresolvedBodyNodeSchema,
   z,
 } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
@@ -31,7 +31,13 @@ interface ZodInternals {
 const isZod = (value: unknown): value is ZodInternals =>
   typeof value === 'object' && value !== null && '_zod' in value;
 
-const { members } = resolveVocabulary(slideDeckPrimitives);
+/** Each primitive's schema with its child slots unresolved, so the walk stops at nested primitives. */
+const members = new Map(
+  slideDeckPrimitives.map(({ type, schema, schemaFor }) => [
+    type,
+    schemaFor ? schemaFor(unresolvedBodyNodeSchema) : schema,
+  ])
+);
 const memberSchemas = new Set<unknown>(members.values());
 
 /** Every custom check reachable from `root`, stopping at other primitives, which are checked on their own. */

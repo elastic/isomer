@@ -8,7 +8,6 @@
 export {
   LAYOUT_ROOM_ATTRIBUTE,
   NODE_ANCHOR_ATTRIBUTE,
-  anchorValue,
   findNodeElementPairs,
   findNodeElements,
   layoutRoom,
@@ -30,7 +29,7 @@ export {
   checkLayout,
 } from './layout_check';
 export { measureDom } from './measure_dom';
-export { type PayloadMeasurement, byteLength } from './payload';
+export { type PayloadMeasurement } from './payload';
 export {
   type PrimitiveDispatcher,
   type PrimitiveDispatcherOptions,

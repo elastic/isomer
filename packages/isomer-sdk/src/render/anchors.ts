@@ -13,7 +13,7 @@ import {
 
 import { contextWith, isObjectLike } from './context_view';
 
-/** The attribute {@link nodeAnchor} sets to a node's {@link anchorValue}. */
+/** The attribute {@link nodeAnchor} sets to a node's type, escaped so HTML parsing leaves it unchanged. */
 export const NODE_ANCHOR_ATTRIBUTE = 'data-isomer-node';
 
 /**

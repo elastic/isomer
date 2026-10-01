@@ -26,6 +26,4 @@ export {
 export {
   type ReactContentDispatcher,
   type ReactContentOptions,
-  renderCompositionContent,
-  useReactPrimitiveDispatcher,
 } from '../render/react';

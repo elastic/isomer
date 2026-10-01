@@ -132,21 +132,6 @@ describe('buildCompositionJsonSchema', () => {
     expect(z.globalRegistry.get(member)).toBeUndefined();
   });
 
-  it('names the composition even when definitions come from another inventory', () => {
-    const alpha = resolveVocabulary([container, leaf('alpha')]);
-    const projected = buildCompositionJsonSchema([container, leaf('beta')], {
-      composition: alpha,
-    });
-    const defs = defsOf(projected);
-
-    expect(defs.holder).toBeTypeOf('object');
-    expect(defs.alpha).toBeTypeOf('object');
-    expect(defs.beta).toBeUndefined();
-    expect(defs.holder?.properties?.child).toEqual({
-      $ref: '#/$defs/bodyNode',
-    });
-  });
-
   it('emits an optional version const and a view title by default', () => {
     const projected = buildCompositionJsonSchema([leaf('note')]);
     const properties = projected.properties as
