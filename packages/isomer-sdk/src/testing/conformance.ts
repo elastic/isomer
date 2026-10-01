@@ -210,11 +210,13 @@ export const runPrimitiveInventoryConformance = (
       );
     }
     const catalogExample = checked.value;
-    const matchesPublished = definition.examples.some(
-      (node) =>
-        checkInputBudget(node).valid &&
-        JSON.stringify(node) === JSON.stringify(catalogExample)
-    );
+    const matchesPublished = definition.examples.some((node) => {
+      const published = checkInputBudget(node);
+      return (
+        published.valid &&
+        JSON.stringify(published.value) === JSON.stringify(catalogExample)
+      );
+    });
     if (matchesPublished) {
       continue;
     }

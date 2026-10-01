@@ -59,6 +59,41 @@ describe('primitive conformance suite', () => {
       ])
     ).toThrow(/catalog.example/);
   });
+
+  it('compares a published example through its checked copy', () => {
+    const published = new Proxy(
+      { type: 'note', body: 'Hello' },
+      {
+        get: (target, key): unknown => {
+          if (key === 'body') {
+            throw new Error('read past the checked copy');
+          }
+          return Reflect.get(target, key);
+        },
+      }
+    );
+    expect(() =>
+      runPrimitiveInventoryConformance([
+        definePrimitive({
+          type: 'note',
+          catalog: {
+            type: 'note',
+            purpose: '',
+            useWhen: [],
+            avoidWhen: [],
+            example: { type: 'note', body: 'Hello' },
+          },
+          examples: [published],
+          schema: z.object({ type: z.literal('note'), body: z.string() }),
+          renderers: {
+            react: () => null,
+            text: () => '',
+            markdown: () => '',
+          },
+        }),
+      ])
+    ).not.toThrow();
+  });
 });
 
 describe('direct schema calls on a chain deeper than the call stack', () => {
