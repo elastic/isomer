@@ -11,12 +11,7 @@ export {
   DISTILLATE_STYLE_COLLECTOR,
   createDistillateHtmlStyleAdapter,
 } from './distillate_style_adapter';
-export {
-  type EnhancementDefinition,
-  enhancementScript,
-  rendersAnchors,
-  resolveEnhancements,
-} from './enhancements';
+export { type EnhancementDefinition, rendersAnchors } from './enhancements';
 export {
   type HTMLDispatcherRenderOptions,
   type HTMLEnhancementScope,

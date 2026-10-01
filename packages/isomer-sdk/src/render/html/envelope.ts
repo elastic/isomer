@@ -30,6 +30,7 @@ import type {
 } from '../../define/primitive_module';
 import {
   EMBEDDED_SCRIPT_ATTRIBUTE,
+  resolveEnhancements,
   scopeScript,
 } from '../../pack/enhancements';
 import {
@@ -52,7 +53,6 @@ import {
   embedScript,
   type EnhancementDefinition,
   enhancementScript,
-  resolveEnhancements,
 } from './enhancements';
 
 /** Knobs for the HTML surface. Every field defaults, so `{}` is valid. */
@@ -305,17 +305,17 @@ export const renderHTMLWithDispatcher = <
     walk: createChildNodeWalker(dispatcher.definitions),
     definitions: enhancementDefinitions,
   };
-  const enhancements = resolveEnhancements(
+  const applied = resolveEnhancements(
     composition.body,
-    options.enhancements,
     enhancementScope.walk,
-    enhancementDefinitions
+    enhancementDefinitions,
+    options.enhancements ?? []
+  );
+  const enhancements: ReadonlySet<string> = new Set(
+    applied.map(({ id }) => id)
   );
   const anchors =
-    options.anchors === true ||
-    enhancementDefinitions.some(
-      ({ id, anchors: needed }) => needed === true && enhancements.has(id)
-    );
+    options.anchors === true || applied.some(({ anchors }) => anchors);
   const enhanced = (context: TContext): TContext =>
     contextWith(context, 'enhancements', enhancements);
 
@@ -358,7 +358,7 @@ export const renderHTMLWithDispatcher = <
     styleAdapter?.getScriptText?.(composition, options, enhancementScope) ?? '';
   const js = [
     ...[scriptText, adapterScriptText].filter(Boolean).map(scopeScript),
-    enhancementScript(enhancements, enhancementDefinitions),
+    enhancementScript(applied),
   ]
     .filter(Boolean)
     .join('\n');

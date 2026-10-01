@@ -6,6 +6,7 @@
 
 ## 2026-10-01
 
+- **One enhancement resolver for both surfaces**: the `html` surface and `applyEnhancements` resolve through one function that keeps the first applying definition of each id, so a duplicate id's script is emitted once; `applyEnhancements` takes optional `requested` ids. `resolveEnhancements` and `enhancementScript` leave `./html`.
 - **`mapCompositionNodes` takes a walker**: its second argument is a `ChildNodeWalker`, as for `someBodyNode`, instead of the definitions it built one from; the slides pack passes the walker it already holds.
 - **A typed `scheme` replaces the adapter option bag**: `HTMLRenderOptions.scheme` (`'light' | 'dark'`) asks a style adapter to resolve `light-dark(…)` to one scheme, replacing `adapterOptions` and the `flattenSchemeOption` key; the runtime's `svg` surface sets it.
 - **DOM-typed helpers move to `./react`**: `runEnhancementScript`, `findNodeElementPairs`, and `measureDom` are exported from `@elastic/isomer-sdk/react`, beside the React surface that runs in a browser, instead of the root. `checkLayout` and the `Layout*` types stay on the root. The runtime's React surface and the slides builds import them from `./react`.
