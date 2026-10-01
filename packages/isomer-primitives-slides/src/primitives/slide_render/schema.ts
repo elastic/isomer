@@ -37,7 +37,11 @@ export const buildSchema = (bodyNodeSchema: ZodType<unknown>) =>
     .strict()
     .check(
       crossRefine(
-        ({ slide, body }) => slide !== undefined || body !== undefined,
+        (node) =>
+          typeof node !== 'object' ||
+          node === null ||
+          node.slide !== undefined ||
+          node.body !== undefined,
         {
           error: 'needs a `slide` reference or a `body`',
           path: ['body'],

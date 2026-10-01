@@ -50,7 +50,9 @@ export const slideRenderGridPrimitive = definePrimitive<SlideRenderGridNode>({
           .map(({ surface, caption }) => `${surface}${join}${oneLine(caption)}`)
           .join('\n'),
         embeddedText(body, 'react', scope),
-      ].join('\n\n'),
+      ]
+        .filter(Boolean)
+        .join('\n\n'),
     markdown: ({ body, tiles }, { scope }) => [
       md.list(
         tiles.map(({ surface, caption }) =>

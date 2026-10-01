@@ -71,7 +71,10 @@ export const schema = z
   .check(
     crossRefine(
       ({ items, highlight }) =>
-        highlight === undefined || highlight < items.length,
+        highlight === undefined ||
+        !Number.isInteger(highlight) ||
+        !Array.isArray(items) ||
+        highlight < items.length,
       {
         error: 'must be an index into `items`',
         path: ['highlight'],

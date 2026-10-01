@@ -13,7 +13,7 @@ import { slideDeckFrame, slidesPack } from '../../pack';
 import { openBody } from '../layout';
 import { referenceRoom } from '../slide_heading/fit';
 
-import { pairExample } from './examples';
+import { example, pairExample } from './examples';
 import { fillsCell, shapeFor, tileScale } from './fit';
 import { schema } from './schema';
 
@@ -85,6 +85,25 @@ describe('slideRenderGrid', () => {
     );
   });
 
+  it('takes at most six tiles and needs a body', () => {
+    const [tile] = example.tiles;
+    expect(schema.safeParse(example).success).toBe(true);
+    expect(
+      schema.safeParse({ ...example, tiles: [...example.tiles, tile] }).error
+        ?.issues
+    ).toContainEqual(expect.objectContaining({ code: 'too_big' }));
+    expect(schema.safeParse({ ...example, body: [] }).success).toBe(false);
+  });
+
+  it('reports a surface that is not one once, not as a repeat', () => {
+    const unknown = { surface: 'pdf', caption: 'Print' };
+    expect(
+      schema
+        .safeParse({ ...pairExample, tiles: [unknown, unknown] })
+        .error?.issues.map(({ path }) => path.join('.'))
+    ).toEqual(['tiles.0.surface', 'tiles.1.surface']);
+  });
+
   it('lists its tiles, then quotes the drawn slide once', () => {
     expect(runtime.surfaces.markdown.renderNode(pairExample as PrimitiveNode))
       .toMatchInlineSnapshot(`
@@ -97,5 +116,15 @@ describe('slideRenderGrid', () => {
       >
       > _Basket · 02 Operations_"
     `);
+  });
+
+  it('ends at its tiles on text when text shows nothing of the slide', () => {
+    const node = {
+      ...pairExample,
+      body: [{ type: 'slideStatement', text: 'Drawn only', surfaces: ['svg'] }],
+    };
+    expect(runtime.surfaces.text.renderNode(node as PrimitiveNode)).toBe(
+      'react · Inside the ops dashboard\ntext · Driver SMS'
+    );
   });
 });

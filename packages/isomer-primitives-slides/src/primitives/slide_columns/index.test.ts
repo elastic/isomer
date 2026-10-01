@@ -81,6 +81,26 @@ describe('slideColumns schema', () => {
       true
     );
   });
+
+  it('takes one to six tags on a column', () => {
+    const tagged = (count: number) =>
+      schema.safeParse({
+        ...plainExample,
+        items: plainExample.items.map((item) => ({
+          ...item,
+          tags: Array.from({ length: count }, (_, index) => `t${index}`),
+        })),
+      }).success;
+    expect([0, 1, 6, 7].map(tagged)).toEqual([false, true, true, false]);
+  });
+
+  it('reports only its own error for a highlight that is not a number', () => {
+    expect(
+      schema
+        .safeParse({ ...plainExample, highlight: NaN })
+        .error?.issues.map(({ path }) => path.join('.'))
+    ).toEqual(['highlight']);
+  });
 });
 
 describe('slideColumns size', () => {
@@ -275,6 +295,22 @@ describe('slideColumns output', () => {
         },
       ]
     `);
+  });
+
+  it('bolds a title in Slack without the spaces around it', () => {
+    const [section] = slack({
+      type: 'slideColumns',
+      items: [
+        { title: ' Canary ', body: 'First.' },
+        { title: 'Rolling ', body: 'Second.' },
+      ],
+      highlight: 0,
+    });
+    expect(
+      (section as { fields: { text: string }[] }).fields.map(
+        ({ text: field }) => field.split('\n')[0]
+      )
+    ).toEqual([`*Canary* · ${highlightLabel.value}`, '*Rolling*']);
   });
 
   // A field is `*A*`, a line break, then the body.

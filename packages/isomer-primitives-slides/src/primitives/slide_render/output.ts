@@ -129,7 +129,10 @@ export const outputLines = (
       ? slackLines(renderSlackChildren(body, scope, undefined))
       : (surface === 'text'
           ? renderTextChildren(body, scope)
-          : body.map((node) => scope.renderMarkdown(node)).join('\n\n')
+          : body
+              .map((node) => scope.renderMarkdown(node))
+              .filter(Boolean)
+              .join('\n\n')
         ).split(LINE_TERMINATORS)
   );
 

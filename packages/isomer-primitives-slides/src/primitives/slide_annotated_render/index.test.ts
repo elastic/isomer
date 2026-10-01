@@ -5,8 +5,15 @@
  * 2.0.
  */
 
+import { renderToStaticMarkup } from 'react-dom/server';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
-import type { PrimitiveNode } from '@elastic/isomer-sdk';
+import {
+  type BodyNodeSurface,
+  type Composition,
+  NODE_ANCHOR_ATTRIBUTE,
+  type PrimitiveNode,
+  withNodeAnchors,
+} from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
@@ -46,6 +53,16 @@ describe('slideAnnotatedRender', () => {
     expect(placeholderExample.pins).toHaveLength(6);
   });
 
+  it('takes one to six pins', () => {
+    const [pin] = placeholderExample.pins;
+    const pinned = (count: number) =>
+      slideAnnotatedRenderPrimitive.schema.safeParse({
+        ...node,
+        pins: Array(count).fill(pin),
+      }).success;
+    expect([0, 1, 6, 7].map(pinned)).toEqual([false, true, true, false]);
+  });
+
   it('takes pin positions from 0 to 100, never NaN or infinite', () => {
     const at = (x: number) =>
       slideAnnotatedRenderPrimitive.schema.safeParse({
@@ -58,10 +75,36 @@ describe('slideAnnotatedRender', () => {
     );
   });
 
+  it('reports a render that is not an object once', () => {
+    expect(
+      slideAnnotatedRenderPrimitive.schema
+        .safeParse({ ...node, render: 'shot' })
+        .error?.issues.map(({ path }) => path.join('.'))
+    ).toEqual(['render']);
+  });
+
   it('walks its render as its one child', () => {
     expect(slideAnnotatedRenderPrimitive.children?.(node)).toEqual([
       { node: node.render, path: 'render' },
     ]);
+  });
+
+  it('takes `id` and `surfaces` on its render, as on any node', () => {
+    const render = { ...node.render, id: 'shot', surfaces: ['svg'] };
+    const view = (annotated: object): Composition => ({
+      type: 'view',
+      body: [annotated as PrimitiveNode],
+    });
+    expect(
+      slideAnnotatedRenderPrimitive.schema.safeParse({ ...node, render })
+        .success
+    ).toBe(true);
+    expect(runtime.validate(view({ ...node, render })).errors).toEqual([]);
+    expect(
+      runtime
+        .validate(view({ ...node, id: 'shot', render }))
+        .errors.map(({ path }) => path)
+    ).toEqual(['body[0].render.id']);
   });
 
   it('numbers the legend on every surface', () => {
@@ -88,6 +131,68 @@ describe('slideAnnotatedRender', () => {
         "type": "section",
       }
     `);
+  });
+
+  describe('with its render hidden from a surface', () => {
+    const hiddenOn = (...surfaces: BodyNodeSurface[]) => ({
+      ...node,
+      render: { ...node.render, surfaces },
+    });
+    const renderAnchors = (annotated: object) => {
+      const sibling = { type: 'slideRender', slide: 'other', surface: 'text' };
+      const composition: Composition = {
+        type: 'view',
+        body: [
+          {
+            type: 'slideFrame',
+            body: [annotated, sibling],
+          } as PrimitiveNode,
+        ],
+      };
+      const markup = renderToStaticMarkup(
+        runtime.surfaces.react.render(composition, {
+          context: withNodeAnchors({}),
+        })
+      );
+      return {
+        markup,
+        anchors:
+          markup.split(`${NODE_ANCHOR_ATTRIBUTE}="slideRender"`).length - 1,
+      };
+    };
+
+    it('draws only the legend on react, with one anchor per drawn render', () => {
+      const shown = renderAnchors(node);
+      expect(shown.anchors).toBe(2);
+      expect(shown.markup).toContain(headline(node.render));
+      const hidden = renderAnchors(hiddenOn('text'));
+      expect(hidden.anchors).toBe(1);
+      expect(hidden.markup).not.toContain(headline(node.render));
+      expect(hidden.markup).toContain('Filters by store and date.');
+    });
+
+    it('starts text and Markdown at the legend', () => {
+      expect(runtime.surfaces.text.renderNode(hiddenOn('react'))).toBe(
+        '1. Search — Filters by store and date.\n2. Export — Downloads the rows as CSV.'
+      );
+      expect(runtime.surfaces.markdown.renderNode(hiddenOn('react'))).toBe(
+        '1. **Search** — Filters by store and date.\n2. **Export** — Downloads the rows as CSV.'
+      );
+    });
+  });
+
+  it('bolds a pin title in Slack without the spaces around it', () => {
+    const spaced = {
+      ...node,
+      pins: [{ ...node.pins[0]!, title: ' Search ' }],
+    };
+    expect(runtime.surfaces.slack.renderNode(spaced).blocks.at(-1)).toEqual({
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: '1. *Search* — Filters by store and date.',
+      },
+    });
   });
 
   it('draws the slide as wide as its column, or as tall as the room under its caption, less a pin on each side', () => {

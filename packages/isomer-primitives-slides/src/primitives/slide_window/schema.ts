@@ -11,16 +11,12 @@ import type { ZodType } from 'zod';
 import { slideWindowChromes } from '../../theme/variants';
 import { lineText } from '../authored_text';
 import { crossRefine } from '../cross_field';
-import { EMBEDDING_TYPES, findInTree } from '../slide_render/embedded';
+import { packWalk } from '../pack_walk';
+import { findNode } from '../slide_render/embedded';
 
-// A window inside an embedded slide sits in another slide, so embedded bodies are skipped.
+// An embedded slide is not a child slot, so a window in one is not nested here.
 const findWindow = (body: unknown) =>
-  findInTree(
-    body,
-    ({ type }) => type === 'slideWindow',
-    ({ type }, key) =>
-      key === 'body' && typeof type === 'string' && EMBEDDING_TYPES.has(type)
-  );
+  findNode(body, packWalk, ({ type }) => type === 'slideWindow');
 
 /** Shared by `schema` and `schemaFor`. */
 export const buildSchema = (nodeSchema: ZodType<unknown>) =>

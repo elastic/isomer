@@ -321,6 +321,49 @@ describe('slideRender blank lines', () => {
   });
 });
 
+describe('slideRender embedded visibility', () => {
+  const statement = (text: string, surfaces: string[]) => ({
+    type: 'slideStatement',
+    text,
+    surfaces,
+  });
+  const drawn = (surface: string) =>
+    runtime.surfaces.html.render(
+      compose({
+        type: 'slideRender',
+        surface,
+        body: [
+          statement('Drawn on images', ['svg']),
+          statement('Drawn on pages', ['react']),
+        ],
+      })
+    ).html;
+
+  it('draws the top-level nodes the panel’s surface shows', () => {
+    expect(drawn('svg')).toContain('Drawn on images');
+    expect(drawn('svg')).not.toContain('Drawn on pages');
+    expect(drawn('html')).toContain('Drawn on pages');
+    expect(drawn('html')).not.toContain('Drawn on images');
+  });
+
+  it('leaves no gap in a Markdown panel for a node Markdown hides', () => {
+    const node = {
+      type: 'slideRender',
+      surface: 'markdown',
+      body: [
+        heading,
+        statement('Only in text', ['text']),
+        { type: 'slideBulletList', items: ['After'] },
+      ],
+    };
+    const { html } = runtime.surfaces.html.render(compose(node));
+    const lines = [
+      ...html.matchAll(/class="[^"]*render-line[^"]*">([^<]*)</g),
+    ].map(([, line]) => line);
+    expect(lines).toEqual(['# Embedded', '', '- After']);
+  });
+});
+
 describe('slideRender JSX', () => {
   it('takes its body as a prop of elements', () => {
     const {

@@ -7,12 +7,7 @@
 
 import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
-import {
-  bold,
-  code,
-  escapeMrkdwn,
-  type SlackBlock,
-} from '@elastic/isomer-sdk/slack';
+import { code, escapeMrkdwn, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
 import {
   marksMarkdown,
@@ -24,6 +19,7 @@ import {
 import {
   richTextBreak,
   richTextSection,
+  slackBold,
   slackContext,
   slackFields,
   slackRichText,
@@ -123,8 +119,8 @@ export const slack = (node: SlideColumnsNode): SlackBlock[] => {
   const fields = items.map(({ title, tags = [], body }, index) =>
     [
       index === highlight
-        ? `${bold(oneLine(title))}${join}${escapeMrkdwn(highlightLabel.value)}`
-        : bold(oneLine(title)),
+        ? `${slackBold(title)}${join}${escapeMrkdwn(highlightLabel.value)}`
+        : slackBold(title),
       tags.map((tag) => code(oneLine(tag))).join(join),
       oneLine(marksSlack(body)),
     ]

@@ -5,11 +5,11 @@
  * 2.0.
  */
 
-import { unresolvedBodyNodeSchema, z } from '@elastic/isomer-sdk';
+import { z } from '@elastic/isomer-sdk';
 import type { ZodType } from 'zod';
 
 import { lineText, wrappedText } from '../authored_text';
-import { buildSchema as buildRenderSchema } from '../slide_render/schema';
+import { slideRenderPrimitive } from '../slide_render';
 
 const pinSchema = z
   .object({
@@ -36,12 +36,14 @@ const pinSchema = z
 
 export type SlideAnnotatedRenderPin = z.infer<typeof pinSchema>;
 
-/** Shared by `schema` and `schemaFor`. */
-export const buildSchema = (bodyNodeSchema: ZodType<unknown>) =>
+/** Shared by `schema` and `schemaFor`; `render` is a node, so it takes `id` and `surfaces` like any other. */
+export const buildSchema = <TRender extends ZodType<unknown>>(
+  render: TRender
+) =>
   z
     .object({
       type: z.literal('slideAnnotatedRender'),
-      render: buildRenderSchema(bodyNodeSchema).describe(
+      render: render.describe(
         'The slideRender to annotate, usually on the `svg` surface. It fills the wider column; its caption sits above it.'
       ),
       pins: z
@@ -55,4 +57,4 @@ export const buildSchema = (bodyNodeSchema: ZodType<unknown>) =>
     .strict();
 
 /** Zod schema for {@link SlideAnnotatedRenderNode}. */
-export const schema = buildSchema(unresolvedBodyNodeSchema);
+export const schema = buildSchema(slideRenderPrimitive.schema);

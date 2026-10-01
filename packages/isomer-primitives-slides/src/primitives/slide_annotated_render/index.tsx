@@ -7,7 +7,7 @@
 
 import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
-import { bold, type SlackBlock } from '@elastic/isomer-sdk/slack';
+import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 import type { ZodType } from 'zod';
 
 import {
@@ -19,11 +19,13 @@ import {
 } from '../../render/marks';
 import {
   richTextSection,
+  slackBold,
   slackRichText,
   slackSection,
 } from '../../render/slack_text';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
+import { slideRenderPrimitive } from '../slide_render';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
@@ -57,7 +59,7 @@ export const slideAnnotatedRenderPrimitive =
     examples,
     schema,
     schemaFor: (bodyNodeSchema: ZodType<unknown>) =>
-      buildSchema(bodyNodeSchema),
+      buildSchema(slideRenderPrimitive.schemaFor!(bodyNodeSchema)),
     renderers: {
       react,
       text: ({ render, pins }, { scope }) =>
@@ -69,7 +71,9 @@ export const slideAnnotatedRenderPrimitive =
                 `${index + 1}. ${oneLine(title)}${dash}${plainText(body)}`
             )
             .join('\n'),
-        ].join('\n\n'),
+        ]
+          .filter(Boolean)
+          .join('\n\n'),
       markdown: ({ render, pins }, { scope }) => [
         scope.renderMarkdownContent(render),
         md.list(
@@ -85,7 +89,7 @@ export const slideAnnotatedRenderPrimitive =
           pins
             .map(
               ({ title, body }, index) =>
-                `${index + 1}. ${bold(oneLine(title))}${dash}${oneLine(marksSlack(body))}`
+                `${index + 1}. ${slackBold(title)}${dash}${oneLine(marksSlack(body))}`
             )
             .join('\n'),
           () => richLegend(pins),

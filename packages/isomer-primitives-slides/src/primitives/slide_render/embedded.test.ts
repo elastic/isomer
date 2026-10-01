@@ -8,14 +8,21 @@
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import {
   type Composition,
+  createChildNodeWalker,
+  definePrimitive,
+  definePrimitivePack,
   MAX_INPUT_DEPTH,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
+import { slideDeckPrimitives } from '../../registry';
 
-import { findInTree, findNestedRender } from './embedded';
+import { findNestedRender, findNode } from './embedded';
+
+const slideWalk = createChildNodeWalker(slideDeckPrimitives);
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -41,8 +48,8 @@ const errorsOf = (node: object) =>
     .validate(compose(node))
     .errors.map(({ code, message }) => ({ code, message }));
 
-describe('findInTree', () => {
-  it('returns the first match in reading order, with its path', () => {
+describe('findNestedRender', () => {
+  it('returns the first render in reading order, with its path', () => {
     const body = [
       { type: 'slideStack', items: [{ type: 'slideRender', surface: 'svg' }] },
       { type: 'slideRender', surface: 'text' },
@@ -53,24 +60,158 @@ describe('findInTree', () => {
     });
   });
 
+  it('follows child slots, not fields that hold data', () => {
+    const data = { type: 'chart', config: { type: 'slideRender' } };
+    expect(findNestedRender([data])).toEqual({ kind: 'none' });
+    expect(
+      findNestedRender([
+        { type: 'slideHeading', title: 'Data', extra: { type: 'slideRender' } },
+      ])
+    ).toEqual({ kind: 'none' });
+    expect(
+      findNestedRender([
+        {
+          type: 'slideSplit',
+          panes: [{ items: [data] }, { items: [{ type: 'slideRenderGrid' }] }],
+        },
+      ])
+    ).toEqual({ kind: 'found', path: [0, 'panes', 1, 'items', 0] });
+  });
+
+  it('reads another pack’s container only through a walker that knows it', () => {
+    const box = {
+      type: 'box',
+      children: ({ items }: { items: unknown[] }) =>
+        items.map((node, index) => ({ node, path: `items[${index}]` })),
+    };
+    const body = [{ type: 'box', items: [{ type: 'slideRender' }] }];
+    expect(findNestedRender(body)).toEqual({ kind: 'none' });
+    expect(
+      findNestedRender(
+        body,
+        createChildNodeWalker([...slideDeckPrimitives, box])
+      )
+    ).toEqual({ kind: 'found', path: [0, 'items', 0] });
+  });
+
+  it('treats a node its definition cannot read as a leaf and keeps walking', () => {
+    expect(
+      findNestedRender([
+        { type: 'slideStack', items: 'not nodes' },
+        { type: 'slideStack', items: [{ type: 'slideRender' }] },
+      ])
+    ).toEqual({ kind: 'found', path: [1, 'items', 0] });
+  });
+
   it('walks a deep slideStack chain without exhausting the stack', () => {
     expect(findNestedRender([stackChain(100_000)])).toEqual({ kind: 'none' });
   });
 
-  it('visits a shared or cyclic value once', () => {
+  it('visits a shared or cyclic node once', () => {
     const cyclic: Record<string, unknown> = { type: 'slideStack' };
     cyclic.items = [cyclic, cyclic];
     expect(findNestedRender([cyclic])).toEqual({ kind: 'none' });
-    let shared: unknown = {};
+    let shared: Record<string, unknown> = { type: 'slideHeading' };
     for (let level = 0; level < 64; level += 1) {
-      shared = [shared, shared];
+      shared = { type: 'slideStack', items: [shared, shared] };
     }
     let visits = 0;
-    findInTree(shared, () => {
+    findNode([shared], slideWalk, () => {
       visits += 1;
       return false;
     });
-    expect(visits).toBe(1);
+    expect(visits).toBe(65);
+  });
+});
+
+describe('embedded and window bodies holding foreign data', () => {
+  interface ChartNode extends PrimitiveNode {
+    type: 'chart';
+    config: Record<string, unknown>;
+  }
+  const chartPrimitive = definePrimitive<ChartNode>({
+    type: 'chart',
+    catalog: {
+      type: 'chart',
+      purpose: 'A foreign node whose data looks like a node.',
+      useWhen: ['A test needs one.'],
+      avoidWhen: ['Anything else.'],
+      example: { type: 'chart', config: {} },
+    },
+    examples: [{ type: 'chart', config: {} }],
+    schema: z.object({ type: z.literal('chart'), config: z.looseObject({}) }),
+    renderers: {
+      react: () => null,
+      text: () => 'chart',
+      markdown: () => 'chart',
+    },
+  });
+  const composed = createIsomerRuntime({
+    packs: [
+      slidesPack,
+      definePrimitivePack({ id: 'charts', primitives: [chartPrimitive] }),
+    ],
+    frames: { slide: slideDeckFrame },
+  });
+  const errors = (node: object) =>
+    composed.validate(compose(node)).errors.map(({ message }) => message);
+  const chart = (config: object) => ({ type: 'chart', config });
+
+  it.each([
+    [
+      'render',
+      (body: object[]) => ({ type: 'slideRender', surface: 'svg', body }),
+    ],
+    [
+      'window',
+      (body: object[]) => ({
+        type: 'slideWindow',
+        chrome: 'chat',
+        title: 'Chat',
+        body,
+      }),
+    ],
+  ])('a %s accepts a node-shaped value in a foreign node’s data', (_, node) => {
+    expect(
+      errors(
+        node([chart({ type: 'slideRender' }), chart({ type: 'slideWindow' })])
+      )
+    ).toEqual([]);
+  });
+
+  it('still rejects a render or window in this pack’s child slots', () => {
+    expect(
+      errors({
+        type: 'slideRender',
+        surface: 'svg',
+        body: [
+          {
+            type: 'slideStack',
+            items: [{ type: 'slideRender', surface: 'svg', slide: 'a' }],
+          },
+        ],
+      })
+    ).toEqual(['an embedded body cannot hold another render']);
+    expect(
+      errors({
+        type: 'slideWindow',
+        chrome: 'chat',
+        title: 'Chat',
+        body: [
+          {
+            type: 'slideStack',
+            items: [
+              {
+                type: 'slideWindow',
+                chrome: 'chat',
+                title: 'In',
+                body: [chart({})],
+              },
+            ],
+          },
+        ],
+      })
+    ).toEqual(['a window cannot hold another window']);
   });
 });
 

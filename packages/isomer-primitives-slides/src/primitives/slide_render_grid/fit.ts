@@ -29,24 +29,25 @@ export const shapeFor = (count: number): RenderGridShape =>
 export const fillsCell = (shape: RenderGridShape): boolean =>
   scalePx(renderGrid.shape[shape].rows) > 1;
 
-/** The tallest tile head: its surface name, and its caption wrapped beside the name across `cell`. */
-const headHeight = (
+/** The tallest tile head: its surface name, and its caption wrapped beside the name across `cell`, each line after the first, which shares the name's baseline, a caption line box below. */
+export const headHeight = (
   tiles: SlideRenderGridNode['tiles'],
   cell: number
 ): number =>
   Math.max(
     ...tiles.map(({ surface, caption }) => {
       const name = measureText(surface, renderGrid.name).widest;
+      const lines = Math.max(
+        1,
+        measureText(
+          caption,
+          renderGrid.caption,
+          Math.max(1, cell - name - scalePx(renderGrid.headGap))
+        ).lines
+      );
       return Math.max(
-        lineBox(renderGrid.name),
-        Math.max(
-          1,
-          measureText(
-            caption,
-            renderGrid.caption,
-            Math.max(1, cell - name - scalePx(renderGrid.headGap))
-          ).lines
-        ) * lineBox(renderGrid.caption)
+        lineBox(renderGrid.name) + (lines - 1) * lineBox(renderGrid.caption),
+        lines * lineBox(renderGrid.caption)
       );
     })
   );

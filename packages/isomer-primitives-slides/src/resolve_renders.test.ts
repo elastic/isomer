@@ -181,4 +181,34 @@ describe('resolveSlideRenders', () => {
       )
     ).toEqual({ ...renderOf('target'), body: slides[0]!.composition.body });
   });
+
+  it('reads a render only in a child slot of the primitives it is given', () => {
+    const box = {
+      type: 'box',
+      children: ({ items }: { items: PrimitiveNode[] }) =>
+        items.map((node, index) => ({ node, path: `items[${index}]` })),
+    };
+    const fills = (target: object, primitives?: readonly object[]) => {
+      const [, host] = resolveSlideRenders(
+        [
+          { slug: 'target', composition: frame(target) },
+          { slug: 'host', composition: frame(renderOf('target')) },
+        ],
+        primitives
+          ? { primitives: primitives as typeof slideDeckPrimitives }
+          : {}
+      );
+      return 'body' in bodyOf(host!)[0]!;
+    };
+    const chart = { type: 'chart', config: { type: 'slideRender' } };
+    const boxed = {
+      type: 'box',
+      items: [{ type: 'slideRender', surface: 'svg', body: [heading] }],
+    };
+    expect(fills(chart)).toBe(true);
+    expect(fills(boxed)).toBe(true);
+    expect(() => fills(boxed, [...slideDeckPrimitives, box])).toThrow(
+      'which holds a render of its own'
+    );
+  });
 });

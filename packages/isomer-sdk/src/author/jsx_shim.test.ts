@@ -216,8 +216,7 @@ describe('buildJsxShim', () => {
       expect(error).toMatchObject({
         name: 'IsomerError',
         code: 'UNEXPECTED_CHILDREN',
-        message:
-          '<Note> takes no JSX children; pass nodes through the prop that holds them.',
+        message: '<Note> takes no JSX children; set its fields through props.',
       });
     }
     expect(

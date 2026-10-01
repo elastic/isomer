@@ -8,6 +8,7 @@
 import {
   checkInputBudget,
   type Composition,
+  createChildNodeWalker,
   type InputBudget,
   type InputBudgetCheck,
   mapCompositionNodes,
@@ -27,7 +28,7 @@ export interface NamedSlide {
 export interface ResolveSlideRendersOptions {
   /** `throw` (the default) rejects a reference it cannot fill; `leave` keeps its placeholder. */
   onUnresolved?: 'throw' | 'leave';
-  /** Every primitive the deck uses, so references inside another pack's containers are found; defaults to this pack's. */
+  /** Every primitive the deck uses, so references and renders inside another pack's containers are found; defaults to this pack's. */
   primitives?: Parameters<typeof mapCompositionNodes>[1];
   /** Limits each slide is checked against before it is read; pass the runtime's `inputBudget` when it overrides one. */
   inputBudget?: InputBudget;
@@ -45,7 +46,7 @@ const quote = (text: string) => JSON.stringify(text);
 /**
  * Fills every `slideRender` that names a `slide` but has no `body` with that slide's body, anywhere in the deck.
  *
- * Each slide is read once, through {@link checkInputBudget}, and the deck is built from its plain copies. A slide the budget refuses throws, or with `leave` is returned unchanged. A reference to an unknown slug, to its own slide, to a slide the budget refuses, or to a slide that holds a render of its own (which covers any cycle) cannot be filled. A slug naming two slides always throws.
+ * Each slide is read once, through {@link checkInputBudget}, and the deck is built from its plain copies. A slide the budget refuses throws, or with `leave` is returned unchanged. A reference to an unknown slug, to its own slide, to a slide the budget refuses, or to a slide that holds a render of its own in a child slot of `primitives` (which covers any cycle those slots can form) cannot be filled. A slug naming two slides always throws.
  */
 export const resolveSlideRenders = (
   slides: readonly NamedSlide[],
@@ -70,6 +71,7 @@ export const resolveSlideRenders = (
     }
     bySlug.set(slide.slug, slide);
   }
+  const walk = createChildNodeWalker(primitives);
   const checks = new Map<string, InputBudgetCheck>();
   const checked = ({ slug, composition }: NamedSlide): InputBudgetCheck => {
     let check = checks.get(slug);
@@ -112,7 +114,7 @@ export const resolveSlideRenders = (
         );
       }
       const { body } = targetCheck.value as Composition;
-      if (findNestedRender(body).kind === 'found') {
+      if (findNestedRender(body, walk).kind === 'found') {
         return fail(
           node,
           `slide ${quote(slug)} renders slide ${quote(target.slug)}, which holds a render of its own`

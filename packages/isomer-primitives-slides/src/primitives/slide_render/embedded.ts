@@ -5,10 +5,15 @@
  * 2.0.
  */
 
-import { z } from '@elastic/isomer-sdk';
+import {
+  type ChildNodeRef,
+  type ChildNodeWalker,
+  z,
+} from '@elastic/isomer-sdk';
 import type { ZodType } from 'zod';
 
 import { crossSuperRefine } from '../cross_field';
+import { packWalk } from '../pack_walk';
 
 /** Primitive types that hold an embedded body. */
 export const EMBEDDING_TYPES: ReadonlySet<string> = new Set([
@@ -19,84 +24,97 @@ export const EMBEDDING_TYPES: ReadonlySet<string> = new Set([
 
 type TreePath = (string | number)[];
 
-/** What {@link findInTree} found: a path or nothing. */
+/** What {@link findNode} found: a path or nothing. */
 export type TreeSearch = { kind: 'found'; path: TreePath } | { kind: 'none' };
 
-interface Frame {
-  value: object;
-  /** Own keys of a record; `undefined` for an array, which is read by index. */
-  keys: readonly string[] | undefined;
-  next: number;
-  /** This value's key in its parent. */
-  key: string | number;
-}
+/** One dotted step of a child path: `field` or `field[index]`. */
+const PATH_STEP = /^([^.[\]]+)(?:\[(\d+)\])?$/;
 
-/**
- * The first record under `root`, pre-order, that `match` accepts, walked without recursion one child at a time and each object once. `skip` leaves out a record's key.
- *
- * It sets no budget of its own: the runtime runs `checkInputBudget` before any schema, and a primitive's own `schema` does not parse its body recursively.
- */
-export const findInTree = (
-  root: unknown,
-  match: (record: Record<string, unknown>) => boolean,
-  skip: (record: Record<string, unknown>, key: string) => boolean = () => false
-): TreeSearch => {
-  const frames: Frame[] = [];
-  const seen = new Set<object>();
-  const enter = (
-    value: unknown,
-    key: string | number
-  ): TreeSearch | undefined => {
-    if (typeof value !== 'object' || value === null || seen.has(value)) {
-      return undefined;
+const pathSteps = (path: string): TreePath =>
+  path.split('.').flatMap((step) => {
+    const match = PATH_STEP.exec(step);
+    if (!match) {
+      return [step];
     }
-    seen.add(value);
-    const array = Array.isArray(value);
-    if (!array && match(value as Record<string, unknown>)) {
-      return {
-        kind: 'found',
-        path: [
-          ...frames.slice(1).map((frame) => frame.key),
-          ...(frames.length > 0 ? [key] : []),
-        ],
-      };
-    }
-    frames.push({
-      value,
-      keys: array ? undefined : Object.keys(value),
-      next: 0,
-      key,
-    });
-    return undefined;
-  };
-  let result = enter(root, '');
-  while (!result && frames.length > 0) {
-    const frame = frames[frames.length - 1]!;
-    const { value, keys } = frame;
-    const length = keys ? keys.length : (value as unknown[]).length;
-    if (frame.next >= length) {
-      frames.pop();
-      continue;
-    }
-    const at = frame.next;
-    frame.next += 1;
-    if (keys) {
-      const record = value as Record<string, unknown>;
-      const key = keys[at]!;
-      if (!skip(record, key)) {
-        result = enter(record[key], key);
-      }
-    } else {
-      result = enter((value as unknown[])[at], at);
-    }
+    const [, field, index] = match;
+    return index === undefined ? [field!] : [field!, Number(index)];
+  });
+
+const childrenOf = (node: object, walk: ChildNodeWalker): ChildNodeRef[] => {
+  try {
+    return walk(node);
+  } catch {
+    // A node its definition cannot read is a leaf; its own schema reports it.
+    return [];
   }
-  return result ?? { kind: 'none' };
 };
 
-/** The first {@link EMBEDDING_TYPES} node anywhere inside `value`. */
-export const findNestedRender = (value: unknown): TreeSearch =>
-  findInTree(
-    value,
+/**
+ * The first node of `body` or below it, pre-order through the child slots `walk` declares, that `match` accepts, with its path from `body`.
+ * Walked without recursion, each node object once. Other fields are data: a node type `walk` does not know is a leaf.
+ */
+export const findNode = (
+  body: unknown,
+  walk: ChildNodeWalker,
+  match: (node: { type?: unknown }) => boolean
+): TreeSearch => {
+  interface Entry {
+    node: unknown;
+    steps: TreePath;
+    parent: Entry | undefined;
+  }
+  const stack: Entry[] = [];
+  const pushAll = (entries: readonly Entry[]) => {
+    for (let at = entries.length - 1; at >= 0; at -= 1) {
+      stack.push(entries[at]!);
+    }
+  };
+  const pathOf = (entry: Entry): TreePath => {
+    const parts: TreePath[] = [];
+    for (let at: Entry | undefined = entry; at; at = at.parent) {
+      parts.push(at.steps);
+    }
+    return parts.reverse().flat();
+  };
+  pushAll(
+    Array.isArray(body)
+      ? (body as unknown[]).map((node, index) => ({
+          node,
+          steps: [index],
+          parent: undefined,
+        }))
+      : []
+  );
+  const seen = new Set<object>();
+  for (let entry = stack.pop(); entry; entry = stack.pop()) {
+    const { node } = entry;
+    if (typeof node !== 'object' || node === null || seen.has(node)) {
+      continue;
+    }
+    seen.add(node);
+    if (match(node)) {
+      return { kind: 'found', path: pathOf(entry) };
+    }
+    const parent = entry;
+    pushAll(
+      childrenOf(node, walk).map((child) => ({
+        node: child.node,
+        steps: pathSteps(child.path),
+        parent,
+      }))
+    );
+  }
+  return { kind: 'none' };
+};
+
+/** The first {@link EMBEDDING_TYPES} node in `body`, through `walk`'s child slots. */
+export const findNestedRender = (
+  body: unknown,
+  walk: ChildNodeWalker = packWalk
+): TreeSearch =>
+  findNode(
+    body,
+    walk,
     ({ type }) => typeof type === 'string' && EMBEDDING_TYPES.has(type)
   );
 

@@ -43,8 +43,14 @@ export const buildSchema = (bodyNodeSchema: ZodType<unknown>) =>
     .strict()
     .check(
       crossRefine(
-        ({ tiles }) =>
-          new Set(tiles.map(({ surface }) => surface)).size === tiles.length,
+        ({ tiles }) => {
+          const surfaces = tiles.flatMap(({ surface }) =>
+            (slideRenderSurfaces as readonly string[]).includes(surface)
+              ? [surface]
+              : []
+          );
+          return new Set(surfaces).size === surfaces.length;
+        },
         {
           error: 'each surface may appear once',
           path: ['tiles'],

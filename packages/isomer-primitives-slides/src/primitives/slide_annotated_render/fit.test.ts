@@ -101,3 +101,18 @@ describe('pins on the panel edge stay in the room', () => {
     }
   });
 });
+
+describe('a legend alone stays in the room', () => {
+  it.each([
+    ['alone', alone],
+    ['under the tallest heading', belowTallest],
+  ])('%s', async (_, { place }) => {
+    const render = {
+      ...placeholderExample.render,
+      surfaces: ['text' as const],
+    };
+    expect(await findings(place({ ...placeholderExample, render }))).toEqual(
+      []
+    );
+  });
+});

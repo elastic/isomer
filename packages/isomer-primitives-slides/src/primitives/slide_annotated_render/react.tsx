@@ -6,7 +6,7 @@
  */
 
 import type { ReactNode } from 'react';
-import { nodeAnchor } from '@elastic/isomer-sdk';
+import { isVisibleOnSurface, nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
@@ -22,7 +22,7 @@ import { annotatedScale, legendStep } from './fit';
 import { annotatedRenderModule } from './styles';
 import type { SlideAnnotatedRenderNode } from './types';
 
-/** React renderer for {@link SlideAnnotatedRenderNode}; it draws its `render` child itself, so pins sit on the panel. */
+/** React renderer for {@link SlideAnnotatedRenderNode}; it draws its `render` child itself, so pins sit on the panel, and a `render` hidden from `react` leaves the legend alone. */
 export const react = (
   { type, render: node, pins }: SlideAnnotatedRenderNode,
   { context, scope }: SlideReactEnv
@@ -38,31 +38,33 @@ export const react = (
       {...nodeAnchor(context, { type })}
       className={cls(context, layoutModule.handles.fill)}>
       <div className={cls(context, annotated.grid)}>
-        <figure
-          {...nodeAnchor(context, { type: node.type })}
-          className={cls(context, annotated.figure)}>
-          <figcaption className={cls(context, render.caption)}>
-            {headline(node)}
-          </figcaption>
-          <div
-            className={cls(context, annotated.stage)}
-            style={{ width: `${scaledWidth(scale)}px` }}>
-            <RenderPanel
-              size={annotated.fit}
-              outputScale={render.outputScale}
-              {...{ node, surface, scope, context, scale }}
-            />
-            {pins.map(({ x, y }, index) => (
-              <span
-                aria-hidden
-                className={cls(context, annotated.pin)}
-                key={index}
-                style={{ left: `${x}%`, top: `${y}%` }}>
-                {index + 1}
-              </span>
-            ))}
-          </div>
-        </figure>
+        {isVisibleOnSurface(node, 'react') ? (
+          <figure
+            {...nodeAnchor(context, { type: node.type })}
+            className={cls(context, annotated.figure)}>
+            <figcaption className={cls(context, render.caption)}>
+              {headline(node)}
+            </figcaption>
+            <div
+              className={cls(context, annotated.stage)}
+              style={{ width: `${scaledWidth(scale)}px` }}>
+              <RenderPanel
+                size={annotated.fit}
+                outputScale={render.outputScale}
+                {...{ node, surface, scope, context, scale }}
+              />
+              {pins.map(({ x, y }, index) => (
+                <span
+                  aria-hidden
+                  className={cls(context, annotated.pin)}
+                  key={index}
+                  style={{ left: `${x}%`, top: `${y}%` }}>
+                  {index + 1}
+                </span>
+              ))}
+            </div>
+          </figure>
+        ) : null}
         <ol className={cls(context, annotated.legend)}>
           {pins.map(({ title, body }, index) => (
             <li

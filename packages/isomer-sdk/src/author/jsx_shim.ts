@@ -364,7 +364,7 @@ const bodyNodeFromElement = <TNode extends PrimitiveNode>(
     } else if (slots.length === 0 && flattenChildren(rawChildren).length > 0) {
       throw new IsomerError(
         'UNEXPECTED_CHILDREN',
-        `<${capitalize(type)}> takes no JSX children; pass nodes through the prop that holds them.`
+        `<${capitalize(type)}> takes no JSX children; set its fields through props.`
       );
     }
   }
