@@ -46,7 +46,7 @@ Child-only components (`Badge`, `Stat`, `ListItem`, …) are not composition bod
 
 When a schema has no brand, the walk still fills a unique child-array field (`body`, `items`, …) from nested body nodes, and a unique single-node field from the first child. A container with more than one such field takes those props explicitly.
 
-`flattenChildren`, `textFromChildren`, `withoutChildren`, `requireAuthorElement`, and `itemsFromChildren` remain for hosts that unwrap children themselves. `textFromChildren` collapses whitespace by default; pass `{ collapseWhitespace: false }` when indentation and newlines are significant.
+`textFromChildren`, `withoutChildren`, `requireAuthorElement`, and `itemsFromChildren` remain for hosts that unwrap children themselves. `textFromChildren` collapses whitespace by default; pass `{ collapseWhitespace: false }` when indentation and newlines are significant.
 
 ## Object builders
 

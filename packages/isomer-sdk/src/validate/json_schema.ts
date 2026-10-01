@@ -11,7 +11,6 @@ import type { AnyPrimitiveDefinition } from '../define/primitive_module';
 
 import {
   buildCompositionSchema,
-  type ResolvedVocabulary,
   resolveVocabulary,
 } from './composition_schema';
 
@@ -25,16 +24,6 @@ export interface CompositionJsonSchemaOptions {
   title?: string;
   /** Reaches the model too, so write it as guidance rather than as a type note. */
   description?: string;
-  /**
-   * A composition to project, when the caller already holds one and wants the
-   * same instances named here.
-   *
-   * The whole composition rather than just its union: the id registry is keyed
-   * on identity and a container's member is built by `schemaFor`, so a bare
-   * union would let one composition's schema be projected while another's
-   * members were registered, silently losing a container's `$def`.
-   */
-  composition?: ResolvedVocabulary;
   /**
    * Extra schemas to name in `$defs`, for types a pack references by `$ref`.
    * Each `id` becomes the `$defs` key, so it must be unique.
@@ -55,10 +44,9 @@ export const buildCompositionJsonSchema = (
   definitions: readonly AnyPrimitiveDefinition[],
   options: CompositionJsonSchemaOptions = {}
 ): JsonSchema => {
-  // Members from the composition, not `definitions` or `definition.schema`:
-  // the two inventories can disagree, a container's member is built by
+  // Members, not `definition.schema`: a container's member is built by
   // `schemaFor`, and the registry is keyed on identity.
-  const composed = options.composition ?? resolveVocabulary(definitions);
+  const composed = resolveVocabulary(definitions);
   const { bodyNodeSchema, members } = composed;
   const compositionSchema = buildCompositionSchema({ bodyNodeSchema });
 

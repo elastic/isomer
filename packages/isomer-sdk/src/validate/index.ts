@@ -12,13 +12,11 @@ export {
 } from './authoring_schema';
 export {
   type CompositionSchemaOptions,
-  type ResolvedVocabulary,
   buildBodyNodeSchemaFromDefinitions,
   buildCompositionSchema,
   buildCompositionSchemaFromDefinitions,
   getCompositionSchemaForDefinitions,
   metaSchema,
-  resolveVocabulary,
 } from './composition_schema';
 export {
   type InputBudget,
@@ -54,7 +52,6 @@ export {
   CompositionValidationError,
   createCompositionParser,
   createCompositionValidator,
-  enforceValidationMode,
   warningsForSurface,
 } from './validation';
 export {

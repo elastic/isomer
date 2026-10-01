@@ -12,7 +12,6 @@ export {
   type ChildNodeRef,
   type ChildNodeWalker,
   BODY_NODE_SURFACES,
-  childNodePath,
   createChildNodeWalker,
   isVisibleOnSurface,
   rendersOnSurface,
