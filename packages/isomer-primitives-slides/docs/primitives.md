@@ -20,6 +20,8 @@ A primitive holds no values of its own. Everything it renders lives in its group
 
 Each primitive's `catalog.ts` and `examples.ts` ship in `dist` beside its renderers, because the authoring prompt and the conformance harness read them from the built package. What `tsconfig.build.json` excludes is `src/examples/**`: the worked deck and its snapshot output, which are type-checked but never published.
 
+Every example also appears in the [Gallery](gallery/index.md), on every surface in both schemes. `src/examples/gallery.test.ts` writes it: the pages are committed and checked in CI, and the images are rendered by `pnpm docs:gallery` when the docs are built. The test fails until a new primitive's page is listed under `gallery` in `docs/toc.yml`.
+
 ## Before you add a value: one source per rendered value
 
 Every length on the spacing, type, or radius scale and every scheme-varying color has exactly one authoring source, and that source is always `SLIDE_THEME`. The scales live in `src/theme/base.ts`: spacing from `space` (keyed by pixel value on the fixed canvas, `space.px48`), type from the `type` roles or `font.size` / `font.weight` / `font.tracking` / `font.lineHeight`, corners from `radius`, strokes from `stroke`, and scheme-varying color from `color` and `inverse`. Each primitive then has its own group in `src/theme/components/` that composes those into the values its module reads. A raw `px(...)` belongs there only when the value genuinely has no place on a scale, and it says why. Do not type a literal into a `styles.ts` or a renderer that the theme could name — `bulletList.crossGlyph` is a theme value because a marker is a value, not a decoration.

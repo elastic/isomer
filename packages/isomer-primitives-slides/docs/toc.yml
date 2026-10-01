@@ -13,3 +13,41 @@ toc:
   - file: styling.md
   - file: copy.md
   - file: example.md
+  - folder: gallery
+    children:
+      - file: index.md
+      - file: slide-agenda.md
+      - file: slide-bars.md
+      - file: slide-bullet-list.md
+      - file: slide-closing.md
+      - file: slide-code.md
+      - file: slide-command.md
+      - file: slide-definitions.md
+      - file: slide-delta.md
+      - file: slide-diff.md
+      - file: slide-fanout.md
+      - file: slide-frame.md
+      - file: slide-graph.md
+      - file: slide-heading.md
+      - file: slide-lanes.md
+      - file: slide-layers.md
+      - file: slide-list.md
+      - file: slide-matrix.md
+      - file: slide-pipeline.md
+      - file: slide-quadrant.md
+      - file: slide-quote.md
+      - file: slide-roadmap.md
+      - file: slide-section.md
+      - file: slide-sequence.md
+      - file: slide-source.md
+      - file: slide-split.md
+      - file: slide-stack.md
+      - file: slide-stat.md
+      - file: slide-statement.md
+      - file: slide-stats.md
+      - file: slide-table.md
+      - file: slide-territory-group.md
+      - file: slide-timeline.md
+      - file: slide-title.md
+      - file: slide-transcript.md
+      - file: slide-tree.md

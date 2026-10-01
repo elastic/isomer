@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -15,6 +14,7 @@ import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../pack';
 
+import { expectArtifact } from './artifact';
 import { deck, titleSlide } from './deck';
 import { slideFonts } from './fonts';
 
@@ -26,19 +26,6 @@ const runtime = createIsomerRuntime({
 });
 
 const takumi = createTakumiImageBackend({ fonts: slideFonts });
-
-// `toMatchFileSnapshot` is text-only. Bytes are compared in CI only, since a takumi or font bump changes every artifact; locally the file is rewritten and `git diff` is the review step.
-const expectArtifact = (name: string, bytes: Buffer) => {
-  const artifact = join(outputDir, name);
-  if (!process.env.CI) {
-    writeFileSync(artifact, bytes);
-    return;
-  }
-  if (!existsSync(artifact)) {
-    throw new Error(`missing artifact ${name}; run vitest locally to write it`);
-  }
-  expect(bytes.equals(readFileSync(artifact))).toBe(true);
-};
 
 describe('example deck', () => {
   it('validates every slide', () => {
@@ -59,7 +46,7 @@ describe('example deck', () => {
 
   it('title slide: png', async () => {
     expectArtifact(
-      'title-slide.png',
+      join(outputDir, 'title-slide.png'),
       await takumi.png(runtime.surfaces.svg.render(titleSlide))
     );
   });
@@ -71,6 +58,6 @@ describe('example deck', () => {
     });
     expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
     expect(pdf.toString('latin1')).toMatch(/\/Count 2\b/);
-    expectArtifact('deck.pdf', pdf);
+    expectArtifact(join(outputDir, 'deck.pdf'), pdf);
   });
 });

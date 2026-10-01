@@ -9,5 +9,6 @@
     ".okf/**",
     "**/THIRD_PARTY_LICENSES.md",
     "**/src/examples/**/output/**",
+    "packages/isomer-primitives-slides/docs/gallery/**",
   ],
 }

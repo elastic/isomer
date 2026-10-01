@@ -19,6 +19,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v6.0.6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Render gallery images
+        run: pnpm docs:gallery
       - name: Assemble package docs
         run: node scripts/assemble_package_docs.js
       - name: Build documentation
