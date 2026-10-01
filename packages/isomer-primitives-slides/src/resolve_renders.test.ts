@@ -6,6 +6,7 @@
  */
 
 import {
+  type AnyPrimitiveDefinition,
   checkInputBudget,
   type Composition,
   MAX_INPUT_DEPTH,
@@ -27,6 +28,13 @@ const renderOf = (slide: string) => ({
   slide,
   surface: 'svg',
 });
+
+/** Another pack's container; `resolveSlideRenders` reads only its child slot. */
+const box = {
+  type: 'box',
+  children: ({ items }: { items: PrimitiveNode[] }) =>
+    items.map((node, index) => ({ node, path: `items[${index}]` })),
+} as unknown as AnyPrimitiveDefinition;
 
 const bodyOf = ({ body }: Composition) =>
   (body[0] as unknown as { body: Record<string, unknown>[] }).body;
@@ -210,11 +218,6 @@ describe('resolveSlideRenders', () => {
   });
 
   it('fills a reference inside another pack’s container when given its primitives', () => {
-    const box = {
-      type: 'box',
-      children: ({ items }: { items: PrimitiveNode[] }) =>
-        items.map((node, index) => ({ node, path: `items[${index}]` })),
-    };
     const slides = [
       { slug: 'target', composition: frame(heading) },
       {
@@ -235,20 +238,16 @@ describe('resolveSlideRenders', () => {
   });
 
   it('reads a render only in a child slot of the primitives it is given', () => {
-    const box = {
-      type: 'box',
-      children: ({ items }: { items: PrimitiveNode[] }) =>
-        items.map((node, index) => ({ node, path: `items[${index}]` })),
-    };
-    const fills = (target: object, primitives?: readonly object[]) => {
+    const fills = (
+      target: object,
+      primitives?: readonly AnyPrimitiveDefinition[]
+    ) => {
       const [, host] = resolveSlideRenders(
         [
           { slug: 'target', composition: frame(target) },
           { slug: 'host', composition: frame(renderOf('target')) },
         ],
-        primitives
-          ? { primitives: primitives as typeof slideDeckPrimitives }
-          : {}
+        primitives ? { primitives } : {}
       );
       return 'body' in bodyOf(host!)[0]!;
     };
