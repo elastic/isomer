@@ -6,10 +6,15 @@
  */
 
 import { describe, expect, expectTypeOf, it } from 'vitest';
+import { z } from 'zod';
 
 import type { PrimitivePack } from '../pack/primitive_pack';
 
-import type { DefaultPackTypes, SurfaceMap } from './primitive_module';
+import {
+  type DefaultPackTypes,
+  definePrimitive,
+  type SurfaceMap,
+} from './primitive_module';
 import type { SlackBlock } from './slack_blocks';
 
 interface WideTheme {
@@ -47,5 +52,53 @@ describe('SurfaceMap slack payload', () => {
     expectTypeOf<SurfaceMap<DividerPack>['slack']['output']>().toEqualTypeOf<
       { type: 'divider' } | readonly { type: 'divider' }[]
     >();
+  });
+});
+
+const primitiveWith = (schema: z.ZodObject) =>
+  definePrimitive({
+    type: 'probe',
+    catalog: {
+      type: 'probe',
+      purpose: '',
+      useWhen: [],
+      avoidWhen: [],
+      example: { type: 'probe' },
+    },
+    examples: [{ type: 'probe' }],
+    schema,
+    renderers: { react: () => null, text: () => '', markdown: () => '' },
+  });
+
+describe('definePrimitive node fields', () => {
+  it('adds an optional id and surfaces to a closed schema', () => {
+    const { schema } = primitiveWith(z.object({ type: z.literal('probe') }));
+    expect(
+      schema.safeParse({ type: 'probe', id: 'a', surfaces: ['text'] }).success
+    ).toBe(true);
+    expect(schema.safeParse({ type: 'probe', extra: 1 }).success).toBe(false);
+  });
+
+  it('keeps a loose schema loose', () => {
+    const { schema } = primitiveWith(
+      z.looseObject({ type: z.literal('probe') })
+    );
+    expect(schema.safeParse({ type: 'probe', extra: 1 }).success).toBe(true);
+  });
+
+  it('accepts the schema of a primitive it already defined', () => {
+    const { schema } = primitiveWith(z.object({ type: z.literal('probe') }));
+    expect(() => primitiveWith(schema)).not.toThrow();
+  });
+
+  it.each(['id', 'surfaces'])('rejects a schema declaring %s', (field) => {
+    expect(() =>
+      primitiveWith(z.object({ type: z.literal('probe'), [field]: z.number() }))
+    ).toThrow(
+      expect.objectContaining({
+        name: 'IsomerError',
+        code: 'RESERVED_NODE_FIELD',
+      })
+    );
   });
 });

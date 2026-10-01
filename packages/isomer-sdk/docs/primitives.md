@@ -68,7 +68,7 @@ The schema is the declaration: the node type is `z.infer` of it, the typed `exam
 | `metrics`       | no        | `svgHeight`, so a measuring frame can size itself.                   |
 | `collectStyles` | no        | Contributes CSS through the pack's style adapter.                    |
 
-`definePrimitive` extends the schema with two optional fields, `id` so any node can be addressed and `surfaces` so an author can hide a node from a surface, and closes it to unknown keys, so a hallucinated field is a validation error rather than a silent strip. A schema built with `z.looseObject` keeps its catchall. The extension keeps the concrete schema type, including brands. A container's `schemaFor` gets the same treatment, or a node would be legal standalone and rejected inside a composition.
+`definePrimitive` extends the schema with two optional fields, `id` so any node can be addressed and `surfaces` so an author can hide a node from a surface, and closes it to unknown keys, so a hallucinated field is a validation error rather than a silent strip. A schema that declares `id` or `surfaces` itself throws an `IsomerError` with code `RESERVED_NODE_FIELD`. A schema built with `z.looseObject` keeps its catchall. The extension keeps the concrete schema type, including brands. A container's `schemaFor` gets the same treatment, or a node would be legal standalone and rejected inside a composition.
 
 ## Renderers, and which ones you owe
 

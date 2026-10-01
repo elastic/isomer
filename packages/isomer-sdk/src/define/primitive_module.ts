@@ -14,6 +14,7 @@ import {
   type BodyNodeSurface,
   type ChildNodeRef,
 } from '../composition/body_node_base';
+import { ISOMER_ERROR_CODES, IsomerError } from '../composition/error';
 import type { PrimitiveNode } from '../composition/node';
 import type { ValidationError } from '../composition/validation_error';
 
@@ -560,13 +561,26 @@ export type WithNodeFields<TSchema extends PrimitiveSchema> =
       >
     : PrimitiveSchema;
 
+const NODE_FIELDS = {
+  id: bodyNodeIdSchema.optional(),
+  surfaces: bodyNodeSurfacesSchema.optional(),
+};
+
 const withNodeFields = <TSchema extends PrimitiveSchema>(
   schema: TSchema
 ): WithNodeFields<TSchema> => {
-  const extended = schema.extend({
-    id: bodyNodeIdSchema.optional(),
-    surfaces: bodyNodeSurfacesSchema.optional(),
-  });
+  // A schema `definePrimitive` already extended holds these same instances.
+  const reserved = Object.entries(NODE_FIELDS).find(
+    ([field, fieldSchema]) =>
+      Object.hasOwn(schema.shape, field) && schema.shape[field] !== fieldSchema
+  )?.[0];
+  if (reserved) {
+    throw new IsomerError(
+      ISOMER_ERROR_CODES.RESERVED_NODE_FIELD,
+      `definePrimitive: a primitive schema cannot declare \`${reserved}\`; every body node has it.`
+    );
+  }
+  const extended = schema.extend(NODE_FIELDS);
   return (
     schema.def.catchall === undefined ? extended.strict() : extended
   ) as WithNodeFields<TSchema>;
