@@ -8,7 +8,6 @@
 // What an embedded body looks like on each surface: a drawn slide is quoted, so its headings stay out of the outer outline, and a surface's output is shown as the lines the panel prints.
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
-import { oneLine } from '@elastic/isomer-sdk/author';
 import { type MarkdownContent, md } from '@elastic/isomer-sdk/markdown';
 import type {
   SlackAssetCollector,
@@ -22,6 +21,7 @@ import {
 } from '../../render/children';
 import type { SlideRenderScope } from '../../render/context';
 import { richTextRun } from '../../render/marks';
+import { oneLine } from '../../render/one_line';
 import {
   richTextSection,
   slackBold,

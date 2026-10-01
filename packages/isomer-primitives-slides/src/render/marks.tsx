@@ -8,7 +8,6 @@
 // Inline `code` and `**strong**` marks, parsed once and drawn per surface.
 
 import type { ReactNode } from 'react';
-import { oneLine } from '@elastic/isomer-sdk/author';
 import { type MarkdownInline, md } from '@elastic/isomer-sdk/markdown';
 import {
   code,
@@ -20,6 +19,7 @@ import { marksModule } from '../theme/modules';
 
 import { cls } from './cls';
 import type { SlideRenderContext } from './context';
+import { oneLine } from './one_line';
 
 export interface MarkRun {
   kind: 'text' | 'code' | 'strong';

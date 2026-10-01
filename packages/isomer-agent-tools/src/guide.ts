@@ -8,7 +8,6 @@
 import {
   buildAuthoringPrompt,
   formatPrimitiveEntry,
-  oneLine,
 } from '@elastic/isomer-sdk/author';
 
 import { ISOMER_TOOL_NAMES } from './names';
@@ -17,6 +16,9 @@ import type { IsomerGuideOptions, IsomerToolsRuntime } from './types';
 const DEFAULT_GUIDE = `Answer with a single composition built only from the primitives below. Prefer one primitive that says the whole thing over several that each say part of it. When \`${ISOMER_TOOL_NAMES.listViews}\` is offered, prefer a registered view that answers the question over composing one. Call \`${ISOMER_TOOL_NAMES.validate}\` before rendering and repair every error it reports.`;
 
 const LOOKUP = `## Before you write\n\nCall \`${ISOMER_TOOL_NAMES.describePrimitives}\` with every type you plan to use, the containers you nest in included, for each one's full entry and JSON Schema. A validation error names the primitive it lands in, so look that one up when you repair it.`;
+
+const oneLine = (text: string): string =>
+  text.replace(/\s+/g, (run) => (/[\r\n\u2028\u2029]/.test(run) ? ' ' : run));
 
 /** The authoring overview for `runtime`: guide, rules, registered views, and a one-line index of the primitives by group. */
 export const buildIsomerAuthoringGuide = ({

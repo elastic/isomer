@@ -5,6 +5,12 @@
  * 2.0.
  */
 
+const LINE_TERMINATOR_RE = /[\r\n\u2028\u2029]/;
+
+/** `text` on one line: each run of whitespace holding a line terminator becomes one space, and other whitespace stays as is. */
+export const oneLine = (text: string): string =>
+  text.replace(/\s+/g, (run) => (LINE_TERMINATOR_RE.test(run) ? ' ' : run));
+
 /** `text` as a JSON string on one line: `JSON.stringify` leaves U+2028 and U+2029 raw. */
 export const quoteText = (text: string): string =>
   JSON.stringify(text)

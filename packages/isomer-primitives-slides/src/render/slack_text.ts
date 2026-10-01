@@ -7,7 +7,6 @@
 
 // Slack clamps `header`, `section`, field, and `context` text, so authored text that outgrows them falls back to `rich_text`, which the envelope splits into elements within `sectionTextChars`.
 
-import { oneLine } from '@elastic/isomer-sdk/author';
 import {
   clampSlackText,
   codeBlock,
@@ -23,6 +22,7 @@ import {
 } from '@elastic/isomer-sdk/slack';
 
 import { marksRichText, marksSlack, parseMarks, richTextRun } from './marks';
+import { oneLine } from './one_line';
 
 /** Whether `text` holds a character `mrkdwn` reads as formatting and {@link escapeMrkdwn} leaves as is. */
 export const hasMrkdwnDelimiter = (text: string): boolean =>

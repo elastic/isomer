@@ -11,6 +11,7 @@ import { gfmFromMarkdown } from 'mdast-util-gfm';
 import { gfm } from 'micromark-extension-gfm';
 import { describe, expect, it } from 'vitest';
 
+import { oneLine } from '../../composition/one_line';
 import {
   type MarkdownBlock,
   type MarkdownContent,
@@ -110,7 +111,7 @@ describe('md', () => {
       const holder = descendants(root)
         .filter(({ type }) => type === container)
         .at(-1);
-      const expected = input.replace(/\r\n|[\n\r\u2028\u2029]/g, ' ');
+      const expected = oneLine(input);
       expect(holder && textOf(holder)).toBe(text?.(expected) ?? expected);
 
       const live = descendants(root).filter(
@@ -335,6 +336,12 @@ describe('md', () => {
       .filter(({ type }) => type === 'tableCell')
       .map(textOf);
     expect(cells).toEqual(['a|b', 'c', '1', '2']);
+  });
+
+  it('prints a whitespace run holding a line terminator as one space, in text and code', () => {
+    expect(serializeMarkdown(md.paragraph('a \r\n  b'))).toBe('a b');
+    expect(serializeMarkdown(md.paragraph(md.code('a \n\n b')))).toBe('`a b`');
+    expect(serializeMarkdown(md.paragraph('a  b'))).toBe('a  b');
   });
 
   it('breaks a paragraph line with a backslash, prints a space elsewhere, and drops an edge break', () => {

@@ -5,12 +5,12 @@
  * 2.0.
  */
 
-import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
 import { slackCaption } from '../../render';
 import { richTextRun as run } from '../../render/marks';
+import { oneLine } from '../../render/one_line';
 import { slackTable, textTable } from '../../render/table';
 import { definePrimitive } from '../define';
 

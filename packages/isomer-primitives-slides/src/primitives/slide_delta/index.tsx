@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
@@ -17,6 +16,7 @@ import {
   plainText,
   richTextRun as run,
 } from '../../render/marks';
+import { oneLine } from '../../render/one_line';
 import { pending } from '../../render/pending';
 import { richTextSection, slackRichText } from '../../render/slack_text';
 import { slideDistillery } from '../../theme/distillery';

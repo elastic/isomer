@@ -26,6 +26,7 @@ import {
   toMarkdown,
 } from 'mdast-util-to-markdown';
 
+import { oneLine } from '../../composition/one_line';
 import {
   type MarkdownBlock,
   type MarkdownContent,
@@ -41,15 +42,11 @@ import {
 
 import { sanitizeMarkdownSource } from './format';
 
-const LINE_TERMINATORS_RE = /\r\n|[\n\r\u2028\u2029]/g;
 // A fence-info string only allows word-ish tokens; anything else would
 // terminate the fence early or inject markdown.
 const FENCE_INFO_RE = /^[\w+#.-]+$/;
 /** The node type of Markdown printed as written. */
 export const VERBATIM_TYPE = 'isomerVerbatim';
-
-const oneLine = (value: string): string =>
-  value.replace(LINE_TERMINATORS_RE, ' ');
 
 const inline = (node: PhrasingContent): MarkdownInline =>
   Object.assign(node, { [markdownContent]: 'inline' as const });

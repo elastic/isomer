@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-import { oneLine } from '@elastic/isomer-sdk/author';
 import { md } from '@elastic/isomer-sdk/markdown';
 import { escapeMrkdwn, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
@@ -17,6 +16,7 @@ import {
   plainText,
   richTextRun,
 } from '../../render/marks';
+import { oneLine } from '../../render/one_line';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
