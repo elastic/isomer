@@ -1,0 +1,112 @@
+# Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+# or more contributor license agreements. Licensed under the Elastic License
+# 2.0; you may not use this file except in compliance with the Elastic License
+# 2.0.
+
+name: docs-preview
+
+# Builds each same-repository PR's docs under <repo>/pull/<n> and syncs them
+# to the docs-v3 preview bucket, served at https://docs-v3-preview.elastic.dev.
+# docs-preview-cleanup.yml removes the preview when the PR closes. The OIDC
+# role aws-auth assumes is derived from the repository name, so it can write
+# only this repository's preview prefix.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy docs preview
+    # Off until the role elastic-docs-v3-preview-<sha256(repo)[:40]> exists
+    # in account 197730964718 and trusts this repository; then set the
+    # DOCS_PREVIEW_ENABLED repository variable to "true". Fork PRs get no
+    # OIDC credential, so they skip.
+    if: >
+      vars.DOCS_PREVIEW_ENABLED == 'true' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Resolve preview path prefix
+        id: prefix
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: echo "value=${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+      - name: Create deployment
+        id: deployment
+        uses: actions/github-script@v9
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        with:
+          result-encoding: string
+          script: |
+            const { owner, repo } = context.repo
+            const deployment = await github.rest.repos.createDeployment({
+              owner,
+              repo,
+              environment: 'docs-preview',
+              task: `docs-preview-${process.env.PR_NUMBER}`,
+              ref: context.payload.pull_request.head.sha,
+              auto_merge: false,
+              transient_environment: true,
+              required_contexts: [],
+            })
+            await github.rest.repos.createDeploymentStatus({
+              owner,
+              repo,
+              deployment_id: deployment.data.id,
+              state: 'in_progress',
+              log_url: `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`,
+            })
+            return deployment.data.id
+      - name: Assemble package docs
+        run: node scripts/assemble_package_docs.js
+      - name: Build documentation
+        uses: elastic/docs-builder@main
+        with:
+          prefix: ${{ steps.prefix.outputs.value }}
+      - uses: elastic/docs-builder/.github/actions/aws-auth@main
+      - name: Upload to S3
+        id: upload
+        env:
+          AWS_RETRY_MODE: standard
+          AWS_MAX_ATTEMPTS: 6
+          PATH_PREFIX: ${{ steps.prefix.outputs.value }}
+        run: |
+          aws s3 sync .artifacts/docs/html \
+            "s3://elastic-docs-v3-website-preview/${PATH_PREFIX}" \
+            --delete --no-follow-symlinks
+          aws cloudfront create-invalidation \
+            --distribution-id EKT7LT5PM8RKS \
+            --paths "/${PATH_PREFIX}" "/${PATH_PREFIX}/*"
+      - name: Update deployment status
+        if: always() && steps.deployment.outputs.result
+        uses: actions/github-script@v9
+        env:
+          DEPLOYMENT_ID: ${{ steps.deployment.outputs.result }}
+          PATH_PREFIX: ${{ steps.prefix.outputs.value }}
+          UPLOAD_OUTCOME: ${{ steps.upload.outcome }}
+        with:
+          script: |
+            const { owner, repo } = context.repo
+            await github.rest.repos.createDeploymentStatus({
+              owner,
+              repo,
+              deployment_id: Number(process.env.DEPLOYMENT_ID),
+              state: process.env.UPLOAD_OUTCOME === 'success' ? 'success' : 'failure',
+              environment_url: `https://docs-v3-preview.elastic.dev/${process.env.PATH_PREFIX}/`,
+              log_url: `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`,
+            })

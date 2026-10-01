@@ -18,6 +18,9 @@ sources:
   - id: ci
     resource: https://github.com/elastic/isomer/blob/main/.github/workflows/ci.yml
     title: docs-builder CI job
+  - id: preview
+    resource: https://github.com/elastic/isomer/blob/main/.github/workflows/docs-preview.yml
+    title: Docs previews
   - id: pack-contents
     resource: https://github.com/elastic/isomer/blob/main/scripts/check_pack_contents.js
     title: Pack contents smoke
@@ -31,6 +34,7 @@ sources:
 4. Link across packages with a GitHub URL. A relative link to another package is absent from the tarball and fails `pnpm check:pack-contents`.[^pack-contents]
 5. Preview with `pnpm docs:dev` (copies package docs, then `docs-builder serve` at http://localhost:3000). The builder refuses symlinks, so the copies are real directories. Do not commit them.[^assemble][^dev]
 6. CI builds the set with `elastic/docs-builder@main`.[^ci]
+7. A pull request from a branch in this repository is previewed at `https://docs-v3-preview.elastic.dev/elastic/isomer/pull/<n>/` and removed when it closes, once the `DOCS_PREVIEW_ENABLED` repository variable is `true`. That waits on the docs-v3 preview IAM role for this repository.[^preview]
 
 The assembler product id is not registered yet; this repo's docs-builder job is an isolated build.
 
@@ -43,5 +47,7 @@ Related: [maintain OKF](/workspace/playbooks/maintain-okf.md), [workspace](/work
 [^dev]: Local docs serve
 
 [^ci]: docs-builder CI job
+
+[^preview]: Docs previews
 
 [^pack-contents]: Pack contents smoke
