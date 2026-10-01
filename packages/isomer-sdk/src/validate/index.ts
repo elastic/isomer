@@ -18,7 +18,6 @@ export {
   buildCompositionSchemaFromDefinitions,
   getCompositionSchemaForDefinitions,
   metaSchema,
-  resolveVocabulary,
 } from './composition_schema';
 export {
   type InputBudget,
@@ -54,7 +53,6 @@ export {
   CompositionValidationError,
   createCompositionParser,
   createCompositionValidator,
-  enforceValidationMode,
   warningsForSurface,
 } from './validation';
 export {

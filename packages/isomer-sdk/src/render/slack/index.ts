@@ -60,7 +60,6 @@ export {
   slackActionId,
   slackButtonStyle,
   slackOverflowElement,
-  slackPlainText,
   slackSelectOption,
   slackStaticSelect,
   slackUrlButton,

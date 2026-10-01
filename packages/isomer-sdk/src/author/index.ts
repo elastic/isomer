@@ -26,7 +26,6 @@ export {
   type JsxShim,
   type PrimitiveComponentMap,
   buildJsxShim,
-  flattenChildren,
   getAuthorType,
   itemsFromChildren,
   requireAuthorElement,

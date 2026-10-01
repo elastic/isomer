@@ -100,12 +100,7 @@ export {
   type SlackTextObject,
   type SlackVideoBlock,
 } from './slack_blocks';
-export {
-  declaredFieldsNote,
-  formatPath,
-  formatZodIssue,
-  formatZodIssues,
-} from './zod_format';
+export { declaredFieldsNote, formatZodIssues } from './zod_format';
 export {
   enumOf,
   finiteNumber,

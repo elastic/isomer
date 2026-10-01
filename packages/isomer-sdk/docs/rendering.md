@@ -95,7 +95,7 @@ An enhancement the host drives itself, rather than one that ships behavior in th
 
 ## Node anchors
 
-Runtime code that acts on a rendered node, such as a host stepping through a slide's parts, finds its element through a node anchor. A `react` renderer spreads `nodeAnchor(context, node)` on its root element, which sets `data-isomer-node` to the node's type, escaped so HTML parsing leaves it unchanged (`anchorValue(type)`; a plain identifier is unchanged):
+Runtime code that acts on a rendered node, such as a host stepping through a slide's parts, finds its element through a node anchor. A `react` renderer spreads `nodeAnchor(context, node)` on its root element, which sets `data-isomer-node` to the node's type, escaped so HTML parsing leaves it unchanged (a plain identifier is unchanged):
 
 ```tsx
 react: (node, { context }) => <ol {...nodeAnchor(context, node)}>…</ol>,

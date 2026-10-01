@@ -40,7 +40,6 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | `createPrimitiveDispatcher` | Builds a `PrimitiveDispatcher` from a definition list; `PrimitiveDispatcherOptions` carries its `label` |
 | `createChildNodeWalker` | Builds a `ChildNodeWalker`, which yields a `ChildNodeRef` (`{ node, path }`) per nested node across a heterogeneous inventory |
 | `mapCompositionNodes` | Rebuilds a composition's body with `fn` applied to every node, nested children included, without recursion; a node nested in itself throws `CYCLIC_COMPOSITION` |
-| `childNodePath` | Joins a parent path with a child's own fragment |
 | `someBodyNode` | Predicate over a body, following children |
 | `isVisibleOnSurface`, `rendersOnSurface` | Surface-visibility checks |
 | `nodeAnchor`, `NODE_ANCHOR_ATTRIBUTE` | Props a `react` renderer spreads on its root so its element can be found; empty unless the HTML surface, or outside it `context.anchors`, turns anchors on |
@@ -49,7 +48,6 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | `withoutAnchors` | A context under which nothing renders an anchor, for content that is not one of a node's `children` |
 | `findNodeElementPairs` | Each `react`-visible node of a body, in pre-order, with its anchored element under a DOM root |
 | `findNodeElements` | The same as a map from node to element, for a body that reuses no node object |
-| `anchorValue` | A node type as its anchor carries it, escaped so HTML parsing leaves it unchanged |
 | `measureDom` | The `LayoutBox` tree a browser laid an element out as, for `checkLayout` |
 | `checkLayout` | Where a measured render's nodes run past their room or onto a sibling, as `LayoutFinding`s over a `LayoutBox` tree of `LayoutRect`s |
 | `BODY_NODE_SURFACES` | `['react','svg','text','markdown','slack']` |
@@ -61,18 +59,16 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | `createCompositionValidator` | Trusted-input validator: the input budget, the schema, then semantic passes; returns `{ valid, errors, warnings, composition }`, where `composition` is the checked copy |
 | `createCompositionParser` | Untrusted-input parser: the input budget, then the schema only |
 | `checkInputBudget` | A plain copy of the input to parse in its place (`InputBudgetCheck`), or the refusal for input past `MAX_INPUT_DEPTH`, `MAX_INPUT_VALUES`, or `MAX_INPUT_CHARACTERS` (`INPUT_OVER_BUDGET`) or not plain data (`INPUT_NOT_PLAIN_DATA`); the validator and parser run it first |
-| `enforceValidationMode` | Throws `CompositionValidationError` on `'throw'`, or in any mode on input refused by `checkInputBudget` |
-| `compositionToRender` | `enforceValidationMode`, then the validator's checked copy, which a validating render draws in place of its input |
+| `compositionToRender` | The validator's checked copy, which a validating render draws in place of its input; throws `CompositionValidationError` on `'throw'`, or in any mode on input refused by `checkInputBudget` |
 | `IsomerError` | Construction and authoring failures, identified by `name` and `code`. Codes name the condition, not the throwing module. |
 | `CompositionValidationError` | Invalid composition, identified by `name`, `code` (`COMPOSITION_INVALID`), and `errors` |
 | `formatValidationError` | A `ValidationError` as one `<path> (in <nodeType>) <message>` string |
 | `warningsForSurface` | Narrows warnings to one surface |
-| `resolveVocabulary` | Builds a union whose containers reference it |
 | `getCompositionSchemaForDefinitions` | Memoized schema, keyed on array identity |
 | `buildCompositionJsonSchema` | Draft-2020-12 projection for hosts that validate outside TypeScript |
 | `buildAuthoringJsonSchema` | Agent-facing projection: named shared defs, inlined scalars, no `id`/`surfaces` |
 | `authoringSchemaSubset` | The `$defs` some types reach in an authoring schema, with the body-node union stubbed |
-| `formatZodIssue`, `formatZodIssues`, `formatPath` | Zod issues as `ValidationError`s |
+| `formatZodIssues` | Zod issues as `ValidationError`s |
 
 Types: `ValidationError`, `ValidationResult`, `CheckedValidationResult` (`ValidationResult` plus `composition`), `CheckedComposition`, `ValidationWarning`, `ValidationErrorMode`, `CompositionValidatorOptions`, `InputBudget`, `InputBudgetCheck`, `ParsedComposition` (`{ valid, errors, composition? }`), `ResolvedVocabulary`, `CompositionSchemaOptions`, `CompositionJsonSchemaOptions`, `AuthoringJsonSchemaOptions`, `IsomerErrorCode`.
 
@@ -80,7 +76,7 @@ Types: `ValidationError`, `ValidationResult`, `CheckedValidationResult` (`Valida
 
 `assetUrl`, `navigationHref`, `sanitizeAssetUrl`, `sanitizeNavigationHref`, `ASSET_URL_MESSAGE`, `NAVIGATION_HREF_MESSAGE`, `BLOCKED_HREF` — see [URL trust](url-trust.md).
 
-`displayValueSchema`, `structuredValueSchema`, `namedColorSchema`, `renderThemeSchema`, `formatDisplayValue` (with `FormatDisplayValueOptions`), `isStructuredValue`, `rawDisplayValue`, `STRUCTURED_VALUE_FORMATS`, `ALL_NAMED_COLORS`, `ISOMER_ERROR_CODES`, plus `formatCompactNumber` and `byteLength` (which measures into a `PayloadMeasurement`).
+`displayValueSchema`, `structuredValueSchema`, `namedColorSchema`, `renderThemeSchema`, `formatDisplayValue` (with `FormatDisplayValueOptions`), `isStructuredValue`, `rawDisplayValue`, `STRUCTURED_VALUE_FORMATS`, `ALL_NAMED_COLORS`, `ISOMER_ERROR_CODES`, plus `formatCompactNumber`. `PayloadMeasurement` is the byte breakdown on `HTMLRenderResult.measurement`.
 
 `runEnhancementScript` takes a `scripts: 'host'` render's `js` and the `.isomer` section the host inserted, and runs the one against the other. `scopeScript` wraps one script body in its own function, for anything that joins bodies, such as a runtime combining several packs' `getScriptText`. Both live here rather than on `./html` because neither needs the server renderer. See [Enhancements](rendering.md#enhancements).
 
@@ -90,7 +86,7 @@ Zod helpers so a pack states constraints the same way everywhere: `z`, `enumOf`,
 
 ## `./html`
 
-`renderHTMLWithDispatcher`, `renderCompositionContent`, `useReactPrimitiveDispatcher`, `createDistillateHtmlStyleAdapter`, and the types a style adapter is written against: `HTMLStyleAdapter`, `DistillateHtmlEngine`, `DistillateThemeVar`, `HTMLRenderOptions`, `HTMLRenderResult`, `HTMLRenderDispatcher`, `HTMLDispatcherRenderOptions`, `HTMLEnhancementScope`, `EnhancementDefinition`, `ReactContentDispatcher`, `ReactContentOptions`. `HTMLRenderOptions.enhancements` is a list of enhancement ids; `resolveEnhancements` intersects it with what the body contains and `enhancementScript` concatenates the survivors' scripts, each in its own function scope, and `rendersAnchors` says whether a render carries node anchors. `HTMLRenderOptions.anchors` turns anchors on directly, for tests. `DISTILLATE_STYLE_COLLECTOR` is the `styleCollector` tag the Distillate adapter publishes, and `flattenSchemeOption` reduces a Distillate light/dark scheme option to one value.
+`renderHTMLWithDispatcher`, `createDistillateHtmlStyleAdapter`, and the types a style adapter is written against: `HTMLStyleAdapter`, `DistillateHtmlEngine`, `DistillateThemeVar`, `HTMLRenderOptions`, `HTMLRenderResult`, `HTMLRenderDispatcher`, `HTMLDispatcherRenderOptions`, `HTMLEnhancementScope`, `EnhancementDefinition`, `ReactContentDispatcher`, `ReactContentOptions`. `HTMLRenderOptions.enhancements` is a list of enhancement ids; `resolveEnhancements` intersects it with what the body contains and `enhancementScript` concatenates the survivors' scripts, each in its own function scope, and `rendersAnchors` says whether a render carries node anchors. `HTMLRenderOptions.anchors` turns anchors on directly, for tests. `DISTILLATE_STYLE_COLLECTOR` is the `styleCollector` tag the Distillate adapter publishes, and `flattenSchemeOption` reduces a Distillate light/dark scheme option to one value.
 
 ## `./react`
 
@@ -106,11 +102,11 @@ Zod helpers so a pack states constraints the same way everywhere: `z`, `enumOf`,
 
 Block Kit types: `SlackBlock` and its variants `SlackHeaderBlock` (`SlackHeaderLevel`), `SlackSectionBlock` (`SlackSectionAccessory`), `SlackContextBlock`, `SlackDividerBlock`, `SlackImageBlock`, `SlackVideoBlock`, `SlackActionsBlock` (`SlackActionElement`), `SlackTableBlock` (`SlackTableCell`, `SlackTableColumnSetting`, `SlackRawTextElement`), `SlackRichTextBlock` (`SlackRichTextBlockElement`, `SlackRichTextSection`, `SlackRichTextList`, `SlackRichTextPreformatted`, `SlackRichTextQuote`, `SlackRichTextInline`, `SlackRichTextText`, `SlackRichTextLink`, `SlackRichTextTag`, `SlackRichTextStyle`, `SlackTagColor`); text objects `SlackTextObject`, `SlackPlainTextObject`, `SlackMrkdwnTextObject`; elements `SlackButtonElement`, `SlackImageElement`, `SlackStaticSelectElement`, `SlackMultiStaticSelectElement`, `SlackOverflowElement`, `SlackRadioButtonsElement`, `SlackCheckboxesElement`, `SlackOptionObject`, `SlackOptionGroup`.
 
-mrkdwn formatters: `escapeMrkdwn`, `bold`, `italic`, `strike`, `code`, `codeBlock`, `link`, `slackLinkUrl` (the URL `link` would link, or `null`), `clampSlackText`, `formatHeaderText`, `joinMrkdwn`, `gfmToSlackMrkdwn`, `gfmToSlackBlocks`, and `markdownContentToSlackBlocks` for content built with `md`. `splitRichTextElement` splits a rich-text section, quote, or preformatted element past `sectionTextChars` into adjacent ones of its type without losing text. Element constructors, each clamped to the Slack budget: `slackPlainText`, `slackActionId`, `slackSelectOption` (`SlackSelectOptionInput`), `slackStaticSelect`, `slackOverflowElement` (`SlackOverflowOptionInput`), `slackUrlButton`, `slackButtonStyle`.
+mrkdwn formatters: `escapeMrkdwn`, `bold`, `italic`, `strike`, `code`, `codeBlock`, `link`, `slackLinkUrl` (the URL `link` would link, or `null`), `clampSlackText`, `formatHeaderText`, `joinMrkdwn`, `gfmToSlackMrkdwn`, `gfmToSlackBlocks`, and `markdownContentToSlackBlocks` for content built with `md`. `splitRichTextElement` splits a rich-text section, quote, or preformatted element past `sectionTextChars` into adjacent ones of its type without losing text. Element constructors, each clamped to the Slack budget: `slackActionId`, `slackSelectOption` (`SlackSelectOptionInput`), `slackStaticSelect`, `slackOverflowElement` (`SlackOverflowOptionInput`), `slackUrlButton`, `slackButtonStyle`.
 
 ## `./author`
 
-JSX: `fromChildren`, `fromTextChildren`, `AuthoredChildBrand`, `AuthoredTextBrand`, `AuthorChildContext`, `defineAuthorComponent`, `AuthorComponent`, `authorType`, `getAuthorType`, `buildJsxShim`, `JsxShim`, `PrimitiveComponentMap`, `CompositionAuthorProps`, `AuthorComposition`, `flattenChildren`, `textFromChildren`, `withoutChildren`, `itemsFromChildren`, `requireAuthorElement`.
+JSX: `fromChildren`, `fromTextChildren`, `AuthoredChildBrand`, `AuthoredTextBrand`, `AuthorChildContext`, `defineAuthorComponent`, `AuthorComponent`, `authorType`, `getAuthorType`, `buildJsxShim`, `JsxShim`, `PrimitiveComponentMap`, `CompositionAuthorProps`, `AuthorComposition`, `textFromChildren`, `withoutChildren`, `itemsFromChildren`, `requireAuthorElement`.
 
 Object builders: `defineNodeBuilder` (a `NodeBuilder` taking a `BuilderInput`, the node without `type`), `buildObjectBuilders` (a `BuilderMap`, one builder per primitive typed from its schema).
 
@@ -118,7 +114,7 @@ Agent prompts: `buildAuthoringPrompt` (`AuthoringPromptContext`), `createAuthori
 
 ## `./testing`
 
-`runPrimitiveInventoryConformance` checks the inventory itself: every definition has an example, each example's `type` matches, and `catalog.example` parses or matches a published example. `examplesFromDefinitions` flattens definitions to one `PrimitiveConformanceExample` per example; `primitiveConformanceCases` is the list of `PrimitiveConformanceCase`s; `primitiveConformanceRows` crosses the two for `it.each`. `CONFORMANCE_FOREIGN_MARKER` is the string a container's `nestForeignChild` case checks for. `assertPackRegistrationComplete` (`PackRegistrationOptions`) separately checks that every directory under a pack's `src/primitives/` is registered.
+`runPrimitiveInventoryConformance` checks the inventory itself: every definition has an example, each example's `type` matches, and `catalog.example` parses or matches a published example. `primitiveConformanceRows` crosses every definition's examples (`PrimitiveConformanceExample`) with the cases (`PrimitiveConformanceCase`) for `it.each`. `CONFORMANCE_FOREIGN_MARKER` is the string a container's `nestForeignChild` case checks for. `assertPackRegistrationComplete` (`PackRegistrationOptions`) separately checks that every directory under a pack's `src/primitives/` is registered.
 
 ### The harness contract
 
