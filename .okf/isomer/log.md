@@ -6,6 +6,7 @@
 
 ## 2026-10-01
 
+- **Authoring brands survive wrappers and refuse reuse**: `fromChildren` and `fromTextChildren` brands are read through `.optional()`, `.nullable()`, `.default()`, and `.readonly()` at runtime and in the shim's types, so the child component is still generated. Branding one schema instance two ways throws an `IsomerError` with the new code `AUTHORED_SCHEMA_REUSED` instead of a raw `TypeError`.
 - **`definePrimitive` reserves `id` and `surfaces`**: a primitive schema, or a container's `schemaFor` result, declaring either throws an `IsomerError` with the new code `RESERVED_NODE_FIELD` rather than being silently overwritten.
 - **Slack option values are cut, not elided**: `slackSelectOption` cuts an over-long `value` to Slack's documented 150 characters (it clamped at 75) with no `…`, never through a surrogate pair, since the value is an identifier the host reads back.
 - **The Slack asset swap sanitizes first**: a Slack asset type's node goes through its `sanitize` hook before `allocate`, a node the hook drops allocates nothing, and an empty text render falls back to the node type for `alt_text`.

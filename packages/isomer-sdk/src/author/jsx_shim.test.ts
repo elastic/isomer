@@ -502,3 +502,68 @@ describe('textFromChildren', () => {
     }
   });
 });
+
+describe('fromChildren through wrappers', () => {
+  it.each([
+    ['optional', <T extends z.ZodType>(s: T) => s.optional()],
+    ['nullable', <T extends z.ZodType>(s: T) => s.nullable()],
+    ['default', <T extends z.ZodType>(s: T) => s.default([] as never)],
+  ])('generates the child component past %s', (_name, wrap) => {
+    const {
+      Composition: Root,
+      Group,
+      Item,
+      toComposition: convert,
+    } = buildJsxShim([
+      brandedGroup(
+        wrap(fromChildren('item', z.array(z.object({ label: z.string() }))))
+      ),
+    ]);
+    expect(Item).toBeDefined();
+    const spec = convert(
+      createElement(
+        Root,
+        null,
+        createElement(Group, null, createElement(Item, { label: 'A' }))
+      )
+    );
+    expect(spec.body).toEqual([{ type: 'group', items: [{ label: 'A' }] }]);
+  });
+
+  it('fills a text field past optional', () => {
+    const {
+      Composition: Root,
+      Group,
+      toComposition: convert,
+    } = buildJsxShim([
+      {
+        type: 'group' as const,
+        schema: z.object({
+          type: z.literal('group'),
+          title: fromTextChildren(z.string()).optional(),
+        }),
+      },
+    ]);
+    expect(
+      convert(createElement(Root, null, createElement(Group, null, 'Open')))
+        .body
+    ).toEqual([{ type: 'group', title: 'Open' }]);
+  });
+
+  it('refuses to brand one schema instance as two child types', () => {
+    const shared = z.array(z.object({ label: z.string() }));
+    fromChildren('item', shared);
+    expect(() => fromChildren('entry', shared)).toThrow(
+      expect.objectContaining({
+        name: 'IsomerError',
+        code: 'AUTHORED_SCHEMA_REUSED',
+      })
+    );
+  });
+
+  it('allows branding one instance twice the same way', () => {
+    const shared = z.array(z.object({ label: z.string() }));
+    fromChildren('item', shared);
+    expect(() => fromChildren('item', shared)).not.toThrow();
+  });
+});
