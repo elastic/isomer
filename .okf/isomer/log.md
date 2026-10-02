@@ -1,7 +1,13 @@
 # Directory Update Log
 
+## 2026-10-02
+
+- Authored Markdown uses its GFM parse tree to sanitize nested destinations and raw HTML. Parsed URLs are checked without another reference decode, and excessive nesting falls back to inert text.
+
 ## 2026-10-01
 
+- **The Markdown envelope prints its title and subtitle as text**: `renderMarkdownEnvelope` builds them with `md.heading` and `md.emphasis`, so a line break, `*`, `_`, `#`, or link syntax in either stays text, as on the text and Slack envelopes.
+- **URL normalization decodes character references before stripping controls**: `sanitizeNavigationHref` and `sanitizeAssetUrl` decode every numeric reference, with or without its `;`, and `&colon;`, `&Tab;`, `&NewLine;`, `&sol;`, `&bsol;`, `&lt;`, and `&gt;`, once, before the control-character strip, so `java&Tab;script:`, `javascript&#58alert(1)`, and `&#47;&#47;host` are blocked. A passing URL comes back as authored, trimmed and with control characters stripped, so a consumer that decodes it decodes what was checked; the Markdown link formatters percent-encode `\` in a destination.
 - **SDK internal helpers are private**: The SDK no longer exports `enforceValidationMode`, `resolveVocabulary`, `formatPath`, `formatZodIssue`, `anchorValue`, `childNodePath`, and `byteLength` from its root, `slackPlainText` from `./slack`, `flattenChildren` from `./author`, or `examplesFromDefinitions` and `primitiveConformanceCases` from `./testing`; each stays in its module for the SDK's own use. `./html` no longer re-exports `renderCompositionContent` and `useReactPrimitiveDispatcher`, which `./react` exports. `ResolvedVocabulary` and `buildCompositionJsonSchema`'s `composition` option go with `resolveVocabulary`. `compositionToRender` is the public throw-or-collect switch, and `formatZodIssues` stays public.
 - **Runtime re-exports `CompositionValidationError`**: The runtime root re-exports `CompositionValidationError` beside `IsomerError`, since its validating surfaces throw it. The runtime API page gives `ViewInput` as `Record<string, unknown>` and sets out when `ParsedComposition`, `CheckedValidationResult`, and `ViewResponse` carry a `composition`.
 - **Markdown label helpers are builder-only**: `./markdown` no longer exports the string `boldLabelPrefix` and `boldSectionLabel`; `md.boldLabelPrefix` and `md.boldSectionLabel` remain, and `defaultMarkdownFromText` bolds its label prefix as before.
@@ -72,3 +78,7 @@
 
 - **Creation**: Initial Isomer OKF v0.2 bundle covering the workspace, `@elastic/isomer-sdk`, `@elastic/isomer-runtime`, `@elastic/isomer-primitives-slides`, `@elastic/isomer-image-takumi`, and `@elastic/isomer-evals`.
 - **License artifacts**: The generated runtime inventory now includes declared Takumi platform dependencies and fails when their notice or license text is unavailable.
+
+- 2026-10-02: Markdown parsing has length and syntax budgets, including closing-delimiter runs, to bound adversarial parser work.
+
+- 2026-10-02: Markdown reference images use the asset policy, preserving multiline data images while checking shared link uses independently.

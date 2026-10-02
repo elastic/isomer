@@ -14,8 +14,12 @@ sources:
 
 # Definition
 
-Every URL-bearing field is checked against one policy. Renderers do not invent a second allow-list. The policy lives in `validate/` so untrusted parse and trusted validate share it.[^docs]
+Every URL-bearing field is checked against one policy. Renderers do not invent a second allow-list. The policy lives in `validate/` so untrusted parse and trusted validate share it. A URL is checked after decoding its character references once (every numeric one, with or without `;`, and `&colon;`, `&Tab;`, `&NewLine;`, `&sol;`, `&bsol;`, `&lt;`, `&gt;`), then stripping control characters; a passing URL comes back as authored, trimmed and with control characters stripped, so a consumer that decodes it decodes what was checked.[^docs]
+
+Authored Markdown checks GFM-parsed destinations without decoding references again; source beyond the documented length and syntax budgets degrades to inert text.
 
 Related: [composition](/sdk/concepts/composition.md), [rendering](/sdk/concepts/rendering.md).
 
 [^docs]: URL trust
+
+Reference destinations are checked per usage with the navigation policy for links and the asset policy for images. Data-image definitions remain valid for image references, including multiline definitions.[^docs]

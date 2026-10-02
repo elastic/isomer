@@ -9,10 +9,17 @@
 // rich text clients rather than a narrow host, so it does not share the text
 // surface's measuring and wrapping.
 
+import type { Definition, Nodes, Parents } from 'mdast';
+import { fromMarkdown } from 'mdast-util-from-markdown';
+import { gfmFromMarkdown } from 'mdast-util-gfm';
+import { gfm } from 'micromark-extension-gfm';
+
 import {
   BLOCKED_HREF,
   sanitizeAssetUrl,
   sanitizeNavigationHref,
+  sanitizeParsedAssetUrl,
+  sanitizeParsedNavigationHref,
 } from '../../validate/url';
 
 // Escapes label characters that could close a `[...]` early and smuggle in a
@@ -24,7 +31,7 @@ const escapeLinkLabel = (label: string): string =>
 // early or read as a link title. `encodeURIComponent` leaves `(` and `)`
 // unescaped by spec, so those two are mapped by hand.
 const escapeLinkDestination = (href: string): string =>
-  href.replace(/[()\s]/g, (char) => {
+  href.replace(/[()\s\\]/g, (char) => {
     if (char === '(') return '%28';
     if (char === ')') return '%29';
     return encodeURIComponent(char);
@@ -60,115 +67,177 @@ export const markdownLinkWrap = (inner: string, href: string): string =>
     sanitizeNavigationHref(href) ?? BLOCKED_HREF
   )})`;
 
-// Inline link/image: `[label](dest)` / `![alt](dest)`, with the destination
-// either angle-wrapped (`<dest>`) or bare. The bare form allows one level of
-// balanced parens so a destination like `javascript:alert(1)` is captured whole
-// rather than truncated at the inner `)`, and the optional title is matched
-// separately so `[x](dest "title")` does not swallow the closing paren.
-const INLINE_LINK_RE =
-  /(!?)\[([^\]]*)\]\(\s*(?!\s)(?:<([^<>]*)>|((?:[^\s()]|\([^()]*\))*))\s*(?!\s)("[^"]*"|'[^']*')?\s*\)/g;
-const AUTOLINK_RE = /<([a-z][a-z0-9+.-]*:[^<>\s]*)>/gi;
-// Link reference definition: `[label]: destination "optional title"` at the
-// start of a line (up to three leading spaces per CommonMark).
-const REFERENCE_DEF_RE =
-  /^( {0,3}\[[^\]]+\]:[ \t]*)(\S+)([ \t]+(?:"[^"]*"|'[^']*'|\([^)]*\)))?[ \t]*$/gm;
-// Neutralizes raw HTML by escaping the opening `<` of anything tag-shaped: a
-// `/`-or-letter start, and a `>` somewhere ahead (a `<` with no closing `>` is
-// not a tag, so prose like `p95 <y` is left alone). Matching only the `<`
-// position — rather than the whole tag — means a `<` nested inside an
-// attribute value (`<iframe src="…<script>">`) is escaped too. The two
-// negative lookaheads preserve URL autolinks (`<https://x>`, a colon follows
-// the scheme) and email autolinks (`<sre@example.test>`); they key on shape,
-// not safety, so de-bracketing an unsafe autolink stays the autolink pass's job.
-const RAW_HTML_START_RE =
-  /<(?!\/?[a-z][a-z0-9+.-]*:)(?![^\s<>@]+@[^\s<>@]+>)(?=\/?[a-zA-Z!?])/gi;
+const escapeParsedDestination = (href: string): string =>
+  escapeLinkDestination(href.replace(/&/g, '&amp;'));
 
-// Code spans and fenced blocks are never interpreted as links or HTML, so no
-// pass may touch them: rewriting there would mangle inert sample text, and an
-// entity like `&lt;` inside a code span renders literally rather than as `<`.
-// `String.split` with a capturing group puts the delimiters at odd indices.
-const CODE_SEGMENT_RE = /(```[\s\S]*?```|``[\s\S]*?``|`[^`\n]*`)/g;
+let parseOptions: Parameters<typeof fromMarkdown>[1] | undefined;
 
-// A destination may be wrapped in angle brackets (`[x](<dest>)`), which the
-// URL policy would otherwise read as a relative path beginning with `<`.
-const unwrapDestination = (dest: string): string => {
-  const trimmed = dest.trim();
-  return trimmed.startsWith('<') && trimmed.endsWith('>')
-    ? trimmed.slice(1, -1).trim()
-    : trimmed;
+// Each pass can expose a new sink (an escaped HTML block reveals the Markdown
+// inside it; a blocked link's label may close an outer `](`), so passes repeat
+// until the source is stable.
+const MAX_PASSES = 16;
+
+const escapeTitle = (title: string): string =>
+  `"${title.replace(/["\\]/g, '\\$&')}"`;
+
+const offsets = (node: Nodes): [number, number] | undefined => {
+  const start = node.position?.start.offset;
+  const end = node.position?.end.offset;
+  return start === undefined || end === undefined ? undefined : [start, end];
 };
 
-/**
- * Rewrites unsafe destinations out of authored markdown before it reaches a
- * markdown consumer. The `text` primitive's markdown surface emits authored
- * source, so without this a composition could carry `[label](javascript:...)`
- * to any GFM renderer. Three sink classes are covered:
- *
- * - **Inline links and images** — a blocked link degrades to its label, a
- *   blocked image to its alt text, matching the React path's behavior.
- * - **Link reference definitions** — the destination is rewritten to
- *   {@link BLOCKED_HREF} rather than correlating definitions to usages, so
- *   every usage form (`[text][ref]`, `[ref][]`, `[ref]`) becomes a dead link
- *   with its label intact. Two consequences worth knowing: a definition shared
- *   by an image usage yields a broken image rather than degrading to alt text,
- *   and CommonMark's "destination on the following line" form is not matched
- *   (it does not occur in generated output).
- * - **Raw HTML** — every tag-shaped construct is neutralized by escaping its
- *   `<`, rather than denylisting `<a>`/`<img>`/`<script>`, which would leave
- *   the class open. Nothing in the primitive catalog emits raw HTML in a
- *   markdown body, and agent-authored prose has no reason to.
- *
- * Code spans and fenced blocks are exempt: rewriting there would mangle inert
- * sample text.
- */
-export const sanitizeMarkdownSource = (markdown: string): string =>
-  markdown
-    .split(CODE_SEGMENT_RE)
-    .map((segment, index) =>
-      // Odd indices are the captured code delimiters — passed through verbatim.
-      index % 2 === 1
-        ? segment
-        : escapeRawHtml(sanitizeMarkdownSegment(segment))
-    )
-    .join('');
+const sanitizePass = (source: string): string => {
+  parseOptions ??= {
+    extensions: [gfm()],
+    mdastExtensions: [gfmFromMarkdown()],
+  };
+  const root = fromMarkdown(source, parseOptions);
+  const definitions = new Map<string, Definition>();
+  const pending: Nodes[] = [...root.children].reverse();
+  while (pending.length) {
+    const node = pending.pop()!;
+    if (node.type === 'definition' && !definitions.has(node.identifier)) {
+      definitions.set(node.identifier, node);
+    }
+    if ('children' in node) pending.push(...[...node.children].reverse());
+  }
 
-const escapeRawHtml = (text: string): string => {
-  const lastClose = text.lastIndexOf('>');
-  return text.replace(RAW_HTML_START_RE, (open, offset: number) =>
-    offset < lastClose ? '&lt;' : open
-  );
+  const slice = (node: Nodes): string => {
+    const range = offsets(node);
+    return range ? source.slice(...range) : '';
+  };
+
+  const emitChildren = (
+    start: number,
+    end: number,
+    children: readonly Nodes[]
+  ): string => {
+    let out = '';
+    let cursor = start;
+    for (const child of children) {
+      const range = offsets(child);
+      if (!range) continue;
+      out += source.slice(cursor, range[0]) + emit(child);
+      cursor = range[1];
+    }
+    return out + source.slice(cursor, end);
+  };
+
+  const emitLabel = (node: Parents): string => {
+    const first = node.children[0];
+    const last = node.children[node.children.length - 1];
+    const from = first && offsets(first);
+    const to = last && offsets(last);
+    return from && to ? emitChildren(from[0], to[1], node.children) : '';
+  };
+
+  const rewrite = (node: Nodes): string | undefined => {
+    switch (node.type) {
+      case 'html':
+        return slice(node).replace(/</g, '&lt;');
+      case 'definition': {
+        const safe =
+          sanitizeParsedNavigationHref(node.url) ??
+          sanitizeParsedAssetUrl(node.url);
+        if (safe === node.url) return undefined;
+        const title = node.title ? ` ${escapeTitle(node.title)}` : '';
+        return `[${node.label ?? node.identifier}]: ${
+          safe === null ? BLOCKED_HREF : escapeParsedDestination(safe)
+        }${title}`;
+      }
+      case 'imageReference': {
+        const definition = definitions.get(node.identifier);
+        return definition && sanitizeParsedAssetUrl(definition.url) === null
+          ? escapeLinkLabel(node.alt ?? '')
+          : undefined;
+      }
+      case 'linkReference': {
+        const definition = definitions.get(node.identifier);
+        return definition &&
+          sanitizeParsedNavigationHref(definition.url) === null &&
+          sanitizeParsedAssetUrl(definition.url) !== null
+          ? emitLabel(node)
+          : undefined;
+      }
+      case 'image': {
+        const safe = sanitizeParsedAssetUrl(node.url);
+        if (safe === null) return escapeLinkLabel(node.alt ?? '');
+        if (safe === node.url) return undefined;
+        const title = node.title ? ` ${escapeTitle(node.title)}` : '';
+        return `![${escapeLinkLabel(node.alt ?? '')}](${escapeParsedDestination(
+          safe
+        )}${title})`;
+      }
+      case 'link': {
+        const raw = slice(node);
+        const safe = sanitizeParsedNavigationHref(node.url);
+        if (raw.startsWith('<')) {
+          return safe === null ? raw.slice(1, -1) : undefined;
+        }
+        // A GFM literal (`www.x.com`) is http(s) or mailto by construction.
+        if (!raw.startsWith('[')) return undefined;
+        if (safe === null) return emitLabel(node);
+        if (safe === node.url) return undefined;
+        const title = node.title ? ` ${escapeTitle(node.title)}` : '';
+        return `[${emitLabel(node)}](${escapeParsedDestination(safe)}${title})`;
+      }
+      default:
+        return undefined;
+    }
+  };
+
+  const emit = (node: Nodes): string => {
+    const replaced = rewrite(node);
+    if (replaced !== undefined) return replaced;
+    const range = offsets(node);
+    if (!range) return '';
+    return 'children' in node
+      ? emitChildren(range[0], range[1], node.children)
+      : source.slice(...range);
+  };
+
+  return emitChildren(0, source.length, root.children);
 };
 
-const sanitizeMarkdownSegment = (segment: string): string =>
-  segment
-    .replace(
-      INLINE_LINK_RE,
-      (
-        _match,
-        bang: string,
-        label: string,
-        angleDest: string | undefined,
-        bareDest: string | undefined,
-        title: string | undefined
-      ) => {
-        const target = unwrapDestination(angleDest ?? bareDest ?? '');
-        const safe = bang
-          ? sanitizeAssetUrl(target)
-          : sanitizeNavigationHref(target);
-        // Re-emit from the sanitized destination so the normalized form (not
-        // the authored one) is what reaches the consumer.
-        return safe
-          ? `${bang}[${label}](${safe}${title ? ` ${title}` : ''})`
-          : label;
-      }
-    )
-    .replace(AUTOLINK_RE, (match, target: string) =>
-      sanitizeNavigationHref(target) ? match : target
-    )
-    .replace(
-      REFERENCE_DEF_RE,
-      (_match, prefix: string, dest: string, title: string | undefined) => {
-        const safe = sanitizeNavigationHref(unwrapDestination(dest));
-        return `${prefix}${safe ?? BLOCKED_HREF}${title ?? ''}`;
-      }
-    );
+/** Sanitizes GFM destinations and HTML; excessive syntax or length degrades to inert text. */
+export const sanitizeMarkdownSource = (markdown: string): string => {
+  if (exceedsParseBudget(markdown)) return inert(markdown);
+  let current = markdown;
+  try {
+    for (let pass = 0; pass < MAX_PASSES; pass++) {
+      const next = sanitizePass(current);
+      if (next === current) return current;
+      current = next;
+    }
+  } catch (error) {
+    // The parser recurses per nesting level, so inline nesting deep enough
+    // to exhaust the stack lands here.
+    if (!(error instanceof RangeError)) throw error;
+  }
+  return inert(current);
+};
+
+// No link, image, definition, or tag can survive without `[` or `<`.
+const inert = (markdown: string): string =>
+  markdown.replace(/[[\]\\]/g, '\\$&').replace(/</g, '&lt;');
+
+// GFM parsing is superlinear for some delimiter runs, even without nesting.
+const LINE_PREFIX_RE = /^(?:[ \t>]|[-*+](?=[ \t])|\d{1,9}[.)](?=[ \t]))+/gm;
+const MAX_LINE_PREFIX = 256;
+const INLINE_DELIMITER_RE =
+  /[[\]*`~<>|\\]|(?<![\p{L}\p{N}])_|_(?![\p{L}\p{N}])/gu;
+const MAX_INLINE_DELIMITERS = 2048;
+
+const MAX_PARSE_LENGTH = 16_384;
+
+const exceedsParseBudget = (markdown: string): boolean => {
+  if (markdown.length > MAX_PARSE_LENGTH) return true;
+  for (const [prefix] of markdown.matchAll(LINE_PREFIX_RE)) {
+    if (prefix.length > MAX_LINE_PREFIX) return true;
+  }
+  let delimiters = 0;
+  for (const _ of markdown.matchAll(INLINE_DELIMITER_RE)) {
+    if (++delimiters > MAX_INLINE_DELIMITERS) return true;
+  }
+  return false;
+};

@@ -29,18 +29,20 @@ describe('renderMarkdownEnvelope', () => {
     ).toBe('# Checkout\n\n_last 15m_');
   });
 
-  it('applies the URL policy to an authored title and subtitle', () => {
+  it('prints the title and subtitle as text', () => {
     const rendered = renderMarkdownEnvelope(
       {
         type: 'view',
-        title: '[Checkout](javascript:alert(1))',
-        subtitle: 'See <javascript:alert(2)>',
+        title: 'Q3\n# results *bold* [x](javascript:alert(1))',
+        subtitle: 'snake_case_name\nline',
         body: [],
       },
       dispatcher
     );
-    expect(rendered).toBe('# Checkout\n\n_See javascript:alert(2)_');
-    expect(rendered).not.toMatch(/\]\(\s*javascript:|<javascript:/i);
+    expect(rendered).toBe(
+      String.raw`# Q3 # results \*bold\* \[x]\(javascript:alert(1))` +
+        '\n\n_snake_case_name line_'
+    );
   });
 
   it('leaves out the title and subtitle when heading is false', () => {
