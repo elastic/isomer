@@ -158,9 +158,9 @@ export type PrimitiveComponentMap<
 };
 
 /**
- * A pack's JSX authoring front: the root `Composition` element, a factory for
- * extension components, one PascalCase component per primitive, and the
- * conversion back to plain data.
+ * A pack's JSX authoring front: the root `Composition` element, one
+ * PascalCase component per primitive and per branded child, and the conversion
+ * back to plain data.
  */
 export type JsxShim<
   TNode extends PrimitiveNode = PrimitiveNode,
@@ -190,7 +190,7 @@ export const buildJsxShim = <
 >(
   primitives: TPrimitives = [] as unknown as TPrimitives
 ): JsxShim<TNode, TPrimitives> => {
-  const extensionTypes = new Set(primitives.map((primitive) => primitive.type));
+  const primitiveTypes = new Set(primitives.map((primitive) => primitive.type));
   const childSlotsByType = new Map(
     primitives.map((primitive) => [
       primitive.type,
@@ -208,7 +208,7 @@ export const buildJsxShim = <
   const env: ParseEnv = {
     authoredByType,
     childSlotsByType,
-    extensionTypes,
+    primitiveTypes,
   };
 
   return {
@@ -237,7 +237,7 @@ interface ChildSlot {
 interface ParseEnv {
   authoredByType: ReadonlyMap<string, AuthoredSpec>;
   childSlotsByType: ReadonlyMap<string, readonly ChildSlot[]>;
-  extensionTypes: ReadonlySet<string>;
+  primitiveTypes: ReadonlySet<string>;
 }
 
 const collectAuthored = (
@@ -339,7 +339,7 @@ const bodyNodeFromElement = <TNode extends PrimitiveNode>(
 ): TNode => {
   const element = requireAuthorElement<{ children?: ReactNode }>(node);
   const type = getAuthorType(element);
-  if (!env.extensionTypes.has(type)) {
+  if (!env.primitiveTypes.has(type)) {
     throw new IsomerError(
       'INVALID_BODY_NODE',
       `"${type}" cannot be used as a composition body node.`
