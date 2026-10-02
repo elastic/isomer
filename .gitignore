@@ -12,10 +12,6 @@ coverage/
 .artifacts
 *.tsbuildinfo
 
-# docs-builder copies of package docs (created by pnpm docs:assemble)
-/docs/*/
-!/docs/reference/
-
 # IDE
 .idea
 .vscode
