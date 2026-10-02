@@ -28,7 +28,7 @@ export interface InputBudget {
 }
 
 /** The codes {@link checkInputBudget} refuses with. */
-export const INPUT_REFUSAL_CODES: ReadonlySet<string | undefined> = new Set([
+const INPUT_REFUSAL_CODES: ReadonlySet<string | undefined> = new Set([
   ISOMER_ERROR_CODES.INPUT_NOT_PLAIN_DATA,
   ISOMER_ERROR_CODES.INPUT_OVER_BUDGET,
 ]);

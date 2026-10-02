@@ -30,7 +30,6 @@ export interface Composition<TNode extends PrimitiveNode = PrimitiveNode> {
   theme?: RenderTheme;
   /** At least one node, which the schema enforces via `.min(1)`. */
   body: TNode[];
-  /** Context a host may surface beside the render. */
   meta?: CompositionMeta;
 }
 

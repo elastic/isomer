@@ -14,6 +14,12 @@ import { z } from 'zod';
  * it as a predicate (`must be a hex color`), not a sentence.
  */
 export const requiredString = (message = 'is required') =>
-  z.string({ error: () => message }).min(1, { error: message });
+  z
+    // Only a missing or non-string value takes `message`; a check chained on
+    // later, such as `.max()`, keeps its own wording.
+    .string({
+      error: (issue) => (issue.code === 'invalid_type' ? message : undefined),
+    })
+    .min(1, { error: message });
 
 export { z };

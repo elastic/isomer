@@ -62,7 +62,7 @@ sanitize: (node) => {
 },
 ```
 
-A refinement's message never reaches the authoring JSON Schema, so each schema describes itself with its rule, `An https, http, or mailto URL, or a relative path.` A field that sets its own description replaces that one, so end it with `NAVIGATION_HREF_RULE` or `ASSET_URL_RULE`, as above. `max` bounds the length.
+A refinement's message never reaches the authoring JSON Schema, so each schema describes itself with its rule: `navigationHref()` as `An https, http, or mailto URL, or a relative path.` and `assetUrl()` as `An https, http, or data:image URL, or a relative path.` A field that sets its own description replaces that one, so end it with `NAVIGATION_HREF_RULE` or `ASSET_URL_RULE`, as above. `max` bounds the length.
 
 Returning `null` from `sanitize` drops the node entirely, which is the right answer when the unsafe field was the whole point of it. A blocked `href` becomes `BLOCKED_HREF` instead, so the thumbnail still renders without a destination.
 
