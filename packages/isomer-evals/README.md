@@ -12,11 +12,22 @@ import { formatReport, runEvals } from '@elastic/isomer-evals';
 const report = await runEvals({
   runtime,
   corpus,
-  generate: async ({ prompt }) => callYourModel(prompt),
+  generate: async ({ prompt, evalCase, previousErrors }) =>
+    callYourModel(
+      [
+        prompt,
+        `## Request\n${evalCase.prompt}`,
+        ...(previousErrors
+          ? [`## Previous errors\n${previousErrors.join('\n')}`]
+          : []),
+      ].join('\n\n')
+    ),
 });
 
 console.log(formatReport(report));
 ```
+
+`prompt` contains shared authoring instructions. The callback adds the case request and any errors from the first attempt.
 
 Stateless: no corpus, no goldens, no credentials, no model client, no environment reads, no writes. Three of the four scoring axes need no model at all, so a pack can run them in CI with a replayed `generate` and nothing configured.
 
