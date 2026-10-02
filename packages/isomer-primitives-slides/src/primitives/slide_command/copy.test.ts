@@ -16,12 +16,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { slideDistillery } from '../../theme/distillery';
 
-import {
-  COPY_BUTTON_ATTRIBUTE,
-  copyScriptBody,
-  SLIDE_COPY,
-  slideCopyEnhancement,
-} from './copy';
+import { COPY_BUTTON_ATTRIBUTE, copyScriptBody, SLIDE_COPY } from './copy';
 import { example, highlightExample } from './examples';
 
 const runtime = createIsomerRuntime({
@@ -130,7 +125,7 @@ describe('slideCopy on the react surface', () => {
       root.render(
         runtime.surfaces.react.render(composition, {
           wrapper: true,
-          enhancements: [slideCopyEnhancement],
+          enhancements: [SLIDE_COPY],
         })
       );
     });

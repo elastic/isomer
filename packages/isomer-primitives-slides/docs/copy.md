@@ -8,7 +8,7 @@
 | --- | --- |
 | `slideCommand` | A Copy button at the end of its panel, copying the `code` element's text |
 
-No renderer draws the button. The enhancement's script adds it wherever the script runs: the HTML surface with `SLIDE_COPY` requested, or the React surface given `slideCopyEnhancement` and a wrapper. The image, text, Markdown, and Slack surfaces never show one. The script adds nothing without `navigator.clipboard`, and never adds a second button to a panel that has one. The button is a native `<button type="button">` whose text is its label, so it takes focus and responds to Enter and Space; its accessible name is the label followed by the command, so several buttons on one slide are told apart.
+No renderer draws the button. The enhancement's script adds it wherever the script runs: the HTML surface with `SLIDE_COPY` requested, or the React surface with `SLIDE_COPY` requested and a wrapper. The image, text, Markdown, and Slack surfaces never show one. The script adds nothing without `navigator.clipboard`, and never adds a second button to a panel that has one. The button is a native `<button type="button">` whose text is its label, so it takes focus and responds to Enter and Space; its accessible name is the label followed by the command, so several buttons on one slide are told apart.
 
 The panel's stylesheet styles the button by `COPY_BUTTON_ATTRIBUTE` (`data-slide-copy`), because a script-made element carries no class names. The label and the button's lengths come from the theme's `command.copy` group, and the command's line length already leaves room for the button.
 
@@ -30,14 +30,14 @@ runEnhancementScript(js, section);
 
 A composition with no `slideCommand` ships no script, and the enhancement adds [node anchors](../../isomer-sdk/docs/rendering.md#node-anchors) only when it applies, which is how the script finds each command. With `scripts: 'embedded'` the script runs from a `<script>` tag instead; [Who runs the script](../../isomer-sdk/docs/rendering.md#who-runs-the-script) covers which hosts can use that.
 
-A React host passes the definition instead of the id:
+A React host passes the same id, with a wrapper for the script to run against:
 
 ```tsx
-import { slideCopyEnhancement } from '@elastic/isomer-primitives-slides';
+import { SLIDE_COPY } from '@elastic/isomer-primitives-slides';
 
 runtime.surfaces.react.render(composition, {
   wrapper: true,
-  enhancements: [slideCopyEnhancement],
+  enhancements: [SLIDE_COPY],
 });
 ```
 

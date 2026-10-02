@@ -4,12 +4,14 @@ A working host: one composition rendered to every surface, then a registered vie
 
 ## 1. Add the dependencies
 
-A runtime needs this package, the SDK, a pack, `zod`, `react`, and `react-dom`. The last two are required even for a text- or Slack-only host: `createIsomerRuntime` always builds the `react` and `html` surfaces, and `html` loads `react-dom/server`.
+A runtime needs this package, the SDK, a pack, `zod`, `react`, and `react-dom`. The last two are required even for a text- or Slack-only host: `createIsomerRuntime` always builds the `react` and `html` surfaces, and `html` loads `react-dom/server`. `@elastic/isomer-image-takumi` is only for the PNG in step 4.
+
+The reference pack is not published to npm. It is an exemplar to copy: take [`packages/isomer-primitives-slides`](https://github.com/elastic/isomer/tree/main/packages/isomer-primitives-slides) into your workspace, or run these steps inside this repository, where it resolves as `@elastic/isomer-primitives-slides`.
 
 ```jsonc
 {
   "dependencies": {
-    "@elastic/isomer-primitives-slides": "^0.1.0",
+    "@elastic/isomer-image-takumi": "^0.1.0",
     "@elastic/isomer-runtime": "^0.1.0",
     "@elastic/isomer-sdk": "^0.1.0",
     "react": "^18.3.1",

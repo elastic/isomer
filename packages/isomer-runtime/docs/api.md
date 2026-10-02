@@ -14,7 +14,7 @@ Everything `@elastic/isomer-runtime` exports from its single entry point, plus w
 | Field | Type | Notes |
 | --- | --- | --- |
 | `packs` | `readonly PrimitivePack<TTheme>[]` | Required. At least one; additive within one theme bound. |
-| `frames` | `FrameMap<TTheme>` | Optional. Omit and `surfaces.svg` is `undefined`. |
+| `frames` | `FrameMap<TTheme>` | Optional. Omit and `surfaces.svg` is `undefined`; an empty map throws `EMPTY_FRAMES`. |
 | `defaultFrame` | `string` | Required when `frames` has more than one entry. |
 | `views` | `readonly RegisteredView[]` | Pre-registered on the runtime's view registry. |
 | `rendererOverrides` | `RuntimeRendererOverrides` | Keyed by primitive `type`, then by surface. |
@@ -52,13 +52,13 @@ Each exposes `render` and `renderNode`, plus a `validating` field stating its po
 | `slack` | `SlackRenderResult` | `SlackRenderResult` | `true` | `SlackRenderNodeOptions`: `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
 | `svg` | `SvgRenderResult` | `SvgRenderResult` | `true` | `SvgRenderNodeOptions`: `frame`, `theme`, `anchors`, `onValidationError` |
 
-Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SvgSurface`; `RuntimeSurfaces` is the record of all six. `render` takes its surface's options type below. `SvgRenderResult` is `{ element, css, width, height }`. The `svg` surface additionally exposes `resolveViewport(composition, options?): { width, height }`, which takes `frame`, `width`, and `height`, and `renderPages(compositions, options?)`, which lays several compositions out as one document and returns `SvgPagesResult`, `{ pages, css, width, height }`: one root per composition against one stylesheet, every page the tallest estimate unless `height` is given, and the first composition's `theme` unless `theme` is given.
+Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SvgSurface`; `RuntimeSurfaces` is the record of all six. `render` takes its surface's options type below. `SvgRenderResult` is `{ element, css, width, height }`. The `svg` surface additionally exposes `renderPages(compositions, options?)`, which lays several compositions out as one document and returns `SvgPagesResult`, `{ pages, css, width, height }`: one root per composition against one stylesheet, every page the tallest estimate unless `height` is given, and the first composition's `theme` unless `theme` is given.
 
 ### Options types
 
 | Type | Fields |
 | --- | --- |
-| `ReactRenderOptions` | `context`, `heading`, `wrapper: boolean \| CompositionWrapperOptions`, `enhancements: readonly EnhancementDefinition[]`; `ReactRenderArgs` is the tuple form, optional only when `context` is |
+| `ReactRenderOptions` | `context`, `heading`, `wrapper: boolean \| CompositionWrapperOptions`, `enhancements: readonly string[]` (ids, resolved against the packs' enhancements as on `html`); `ReactRenderArgs` is the tuple form, optional only when `context` is |
 | `ReactRenderNodeOptions` | `ReactRenderOptions` without `heading` |
 | `HTMLRenderOptions` | `theme`, `minify`, `fluid`, `framed`, `heading`, `css: 'inline' \| 'separate'`, `scripts: 'embedded' \| 'host'`, `enhancements: string[]`, `anchors: boolean` (node anchors; `true` for tests), `onValidationError` |
 | `TextRenderOptions` | `heading`, `onValidationError` |
@@ -104,7 +104,7 @@ Three results carry a `composition`, each with its own rule:
 
 | Concern | Names |
 | --- | --- |
-| Runtime | `CreateIsomerRuntime`, `IsomerRuntime`, `IsomerRuntimeOptions`, `RuntimeSurfaces`, `FrameMap`, `RuntimeRendererOverrides`, `RuntimePackTypes` |
+| Runtime | `CreateIsomerRuntime`, `IsomerRuntime`, `IsomerRuntimeOptions`, `RuntimeSurfaces`, `FrameMap`, `RuntimeRendererOverrides` |
 | Authoring | `RuntimeAuthoringContext`, `PrimitiveDescriptions`, `HostCapabilities`, `JsonSchema` |
 | View registry | `ViewRegistry`, `RegisteredView`, `RegisteredViewSummary`, `DefineViewOptions`, `ViewBuildArgs`, `ViewInput`, `ViewResponse`, `RegisteredViewInputError` |
 | Surfaces | `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SvgSurface` |

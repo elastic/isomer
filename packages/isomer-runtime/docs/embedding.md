@@ -48,7 +48,7 @@ Both halves matter and they are not the same mechanism. The shadow boundary stop
 
 ## Rendering React into the shadow root
 
-A React host can skip the HTML string and render the React surface into the shadow root itself, so the tree stays live. The CSS then comes from the Distillate distillery the pack's styles were authored with, rather than from the `html` surface: `liveCollection` records the styles that one render resolves, and `createDomSink` keeps a `<style>` in the shadow root current as it grows. Pass the pack's enhancement definitions as `enhancements`, the same ones its `html` render resolves by id.
+A React host can skip the HTML string and render the React surface into the shadow root itself, so the tree stays live. The CSS then comes from the Distillate distillery the pack's styles were authored with, rather than from the `html` surface: `liveCollection` records the styles that one render resolves, and `createDomSink` keeps a `<style>` in the shadow root current as it grows. Pass enhancement ids as `enhancements`, as on the `html` surface.
 
 ```tsx
 import { createDomSink } from '@elastic/distillate';
@@ -65,7 +65,7 @@ const Slide = ({ composition, shadow }: { composition: Composition; shadow: Shad
       runtime.surfaces.react.render(composition, {
         context: { resolveClassName: live.resolveClassName },
         wrapper: true,
-        enhancements: pack.enhancements,
+        enhancements: pack.enhancements.map(({ id }) => id),
       }),
     [composition, live]
   );

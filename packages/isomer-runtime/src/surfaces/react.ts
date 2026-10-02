@@ -47,13 +47,14 @@ export type ReactRenderOptions<TRenderContext = PrimitiveRenderContext> = {
    */
   wrapper?: boolean | CompositionWrapperOptions;
   /**
-   * Enhancements to render with, as the `html` surface does: those that apply
-   * reach every renderer as `context.enhancements`, turn node anchors on when
-   * one asks, and run their `script` against the `wrapper` section once it
-   * mounts. A new composition or node object mounts a fresh section, so keep
-   * it stable across re-renders. A `script` needs `wrapper`.
+   * Ids of the packs' enhancements to render with, as on the `html` surface:
+   * those that apply reach every renderer as `context.enhancements`, turn node
+   * anchors on when one asks, and run their `script` against the `wrapper`
+   * section once it mounts. An id no pack registers is ignored. A new
+   * composition or node object mounts a fresh section, so keep it stable
+   * across re-renders. A `script` needs `wrapper`.
    */
-  enhancements?: readonly EnhancementDefinition[];
+  enhancements?: readonly string[];
 } & (Record<string, never> extends TRenderContext
   ? { context?: TRenderContext }
   : { context: TRenderContext });
@@ -119,6 +120,9 @@ const scriptedKey = (source: object, js: string): string => {
 /** Sections whose scripts have run, so StrictMode's second effect pass skips them. */
 const ran = new WeakSet<Element>();
 
+/** Sources already warned about a script with no `wrapper`, so a re-render does not repeat it. */
+const warned = new WeakSet<object>();
+
 /** `section` with `js` run against its element once it mounts. The remount key sits on `section`, leaving sibling identity to the host. */
 const ScriptedSection = ({
   section,
@@ -144,6 +148,7 @@ const ScriptedSection = ({
 /**
  * Creates the `react` {@link RuntimeSurfaces} entry.
  *
+ * @param enhancementDefinitions What `enhancements` ids resolve against.
  * @param defaultAriaLabel The `wrapper` fallback when the composition has
  * neither `meta.ariaLabel` nor a `title`; a `wrapper` object may override it.
  */
@@ -152,6 +157,7 @@ export const createReactSurface = <TRenderContext = PrimitiveRenderContext>(
     PrimitiveNode,
     RuntimePackTypes<TRenderContext>
   >,
+  enhancementDefinitions: readonly EnhancementDefinition[] = [],
   defaultAriaLabel = 'View'
 ): ReactSurface<TRenderContext> => {
   const walk = createChildNodeWalker(dispatcher.definitions);
@@ -167,7 +173,13 @@ export const createReactSurface = <TRenderContext = PrimitiveRenderContext>(
     // `ReactRenderOptions` allows exactly when `{}` is a complete context.
     const hostContext = options?.context ?? ({} as TRenderContext);
     const { context, applied } = enhancements
-      ? applyEnhancements(hostContext, composition.body, walk, enhancements)
+      ? applyEnhancements(
+          hostContext,
+          composition.body,
+          walk,
+          enhancementDefinitions,
+          enhancements
+        )
       : { context: hostContext, applied: [] };
     const js = applied
       .flatMap(({ script }) => (script ? [scopeScript(script)] : []))
@@ -176,7 +188,8 @@ export const createReactSurface = <TRenderContext = PrimitiveRenderContext>(
       heading,
     });
     if (!wrapper) {
-      if (js) {
+      if (js && !warned.has(source)) {
+        warned.add(source);
         console.warn(
           'isomer: enhancement scripts run against the wrapper section; render with `wrapper` to run them'
         );
