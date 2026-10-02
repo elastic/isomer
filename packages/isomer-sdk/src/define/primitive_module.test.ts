@@ -129,6 +129,7 @@ describe('definePrimitive node fields', () => {
     ['strict', (s: z.ZodObject) => s.strict()],
     ['describe', (s: z.ZodObject) => s.describe('probe')],
     ['partial', (s: z.ZodObject) => s.partial()],
+    ['partial twice', (s: z.ZodObject) => s.partial().partial()],
     ['pick', (s: z.ZodObject) => s.pick({ type: true, id: true })],
     ['omit', (s: z.ZodObject) => s.omit({ surfaces: true })],
   ])('accepts a schema derived from a defined one with %s', (_name, derive) => {

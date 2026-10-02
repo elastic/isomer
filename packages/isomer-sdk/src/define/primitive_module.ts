@@ -574,15 +574,17 @@ const NODE_FIELDS = {
   surfaces: nodeField(bodyNodeSurfacesSchema.optional()),
 };
 
-// `.partial()` wraps each field in one more optional.
 const isNodeField = (schema: unknown): boolean => {
-  const inner = (schema as { def?: { type?: string; innerType?: unknown } })
-    .def;
-  return (
-    Object.hasOwn(schema as object, NODE_FIELD) ||
-    (inner?.type === 'optional' &&
-      Object.hasOwn(inner.innerType as object, NODE_FIELD))
-  );
+  let current = schema;
+  while (current && typeof current === 'object') {
+    if (Object.hasOwn(current, NODE_FIELD)) return true;
+    const { def } = current as {
+      def?: { type?: string; innerType?: unknown };
+    };
+    if (def?.type !== 'optional') return false;
+    current = def.innerType;
+  }
+  return false;
 };
 
 const withNodeFields = <TSchema extends PrimitiveSchema>(

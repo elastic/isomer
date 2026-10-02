@@ -88,3 +88,4 @@
 - 2026-10-02: Markdown parsing has length and syntax budgets, including closing-delimiter runs, to bound adversarial parser work.
 
 - 2026-10-02: Markdown reference images use the asset policy, preserving multiline data images while checking shared link uses independently.
+- 2026-10-02: Reserved node-field provenance survives repeated optional wrapping when a defined primitive schema is derived.
