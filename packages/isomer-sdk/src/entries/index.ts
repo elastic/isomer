@@ -7,9 +7,7 @@
 
 export {
   type ActionEventRef,
-  type BodyNode,
   type BodyNodeBase,
-  type BodyNodeSurface,
   type ChildNodeRef,
   type ChildNodeWalker,
   type Composition,
@@ -21,6 +19,7 @@ export {
   type RenderTheme,
   type StructuredValue,
   type StructuredValueFormat,
+  type SurfaceName,
   type ValidationError,
   ALL_NAMED_COLORS,
   BODY_NODE_SURFACES,
@@ -32,7 +31,6 @@ export {
   IsomerError,
   isVisibleOnSurface,
   mapCompositionNodes,
-  rendersOnSurface,
   someBodyNode,
 } from '../composition';
 export {
@@ -62,20 +60,13 @@ export {
   type StyledRenderContext,
   type StyleHandle,
   type SurfaceMap,
-  type SurfaceName,
-  type SvgRenderThemeBase,
   type ThemePair,
   type ThemeTokenPath,
   type WithNodeFields,
   bindFrame,
   definePrimitive,
   definePrimitiveFor,
-  enumOf,
-  finiteNumber,
   formatZodIssues,
-  nonNegativeFiniteNumber,
-  optionalString,
-  positiveFiniteNumber,
   requiredString,
   unresolvedBodyNodeSchema,
   z,
@@ -96,7 +87,6 @@ export {
   extendPrimitivePack,
   runEnhancementScript,
   scopeScript,
-  themeBound,
 } from '../pack';
 export {
   type FormatDisplayValueOptions,

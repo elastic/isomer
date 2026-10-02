@@ -14,7 +14,6 @@ import {
   definePrimitivePack,
   type Frame,
   type PrimitivePackInput,
-  themeBound,
   type ThemePair,
 } from '@elastic/isomer-sdk';
 import { createDistillateHtmlStyleAdapter } from '@elastic/isomer-sdk/html';
@@ -73,10 +72,9 @@ const packInput = {
   id: 'slides',
   primitives: slideDeckPrimitives,
   styleAdapter,
-  theme: themeBound<SlideFrameTheme>(),
   authoring: slidesPackAuthoring,
   enhancements: [slideBuildsEnhancement, slideCopyEnhancement],
-} satisfies PrimitivePackInput<SlideFrameTheme>;
+} satisfies PrimitivePackInput;
 
 /** This pack, ready to pass to `createIsomerRuntime`. */
-export const slidesPack = definePrimitivePack(packInput);
+export const slidesPack = definePrimitivePack<SlideFrameTheme>(packInput);

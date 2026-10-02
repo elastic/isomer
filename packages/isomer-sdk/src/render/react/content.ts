@@ -54,9 +54,9 @@ type DispatcherContextScope = {
   [DISPATCHER_CONTEXT]?: Context<ReactTreeDispatcher | null>;
 };
 
-export const PrimitiveDispatcherContext = ((
-  globalThis as DispatcherContextScope
-)[DISPATCHER_CONTEXT] ??= createContext<ReactTreeDispatcher | null>(null));
+const PrimitiveDispatcherContext = ((globalThis as DispatcherContextScope)[
+  DISPATCHER_CONTEXT
+] ??= createContext<ReactTreeDispatcher | null>(null));
 
 /** The dispatcher rendering the enclosing tree, or `null` outside one. */
 export const useReactPrimitiveDispatcher = (): ReactTreeDispatcher | null =>
@@ -66,9 +66,8 @@ export const useReactPrimitiveDispatcher = (): ReactTreeDispatcher | null =>
  * A composition's heading and body as React nodes, without the surrounding
  * document or wrapper element.
  *
- * `dispatcher` is published on {@link PrimitiveDispatcherContext} so a
- * primitive that renders children can reach it — see
- * {@link ReactTreeDispatcher}.
+ * `dispatcher` is published so a primitive that renders children can reach it
+ * with {@link useReactPrimitiveDispatcher} — see {@link ReactTreeDispatcher}.
  */
 export const renderCompositionContent = <
   TNode extends PrimitiveNode,

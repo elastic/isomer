@@ -11,8 +11,8 @@ import { z, type ZodObject, type ZodType } from 'zod';
 import type { ActionEventRef } from '../composition/action_event';
 import {
   BODY_NODE_SURFACES,
-  type BodyNodeSurface,
   type ChildNodeRef,
+  type SurfaceName,
 } from '../composition/body_node_base';
 import { ISOMER_ERROR_CODES, IsomerError } from '../composition/error';
 import type { PrimitiveNode } from '../composition/node';
@@ -21,8 +21,8 @@ import type { ValidationError } from '../composition/validation_error';
 import type { MarkdownContent } from './markdown_content';
 import type { SlackAssetCollector } from './slack_assets';
 import type { SlackBlock } from './slack_blocks';
-import { formatZodIssues } from './zod_format';
-import { enumOf, requiredString } from './zod_helpers';
+import { formatZodIssues, oneOf } from './zod_format';
+import { requiredString } from './zod_helpers';
 
 export type { PrimitiveNode };
 
@@ -112,22 +112,6 @@ export interface PrimitiveStyleCollectionContext {
 
 /** A pack's collected styles, opaque to the SDK. */
 export type PrimitiveStyleCollector = object;
-
-/**
- * The minimum a pack's SVG theme is expected to carry. It is a floor to widen
- * from, not the type the dispatcher passes — that is each pack's own
- * `TTheme`. Nothing in the SDK constructs one.
- *
- * Read by a {@link Frame} drawing its own surround, not by primitives: nodes
- * reach the `svg` surface through their `react` renderers and the pack's
- * stylesheet.
- */
-export interface SvgRenderThemeBase {
-  /** CSS color for body text. */
-  text: string;
-  /** CSS color for the drawing surface behind the node. */
-  background: string;
-}
 
 /**
  * The types a pack binds once and writes every primitive against: the palette
@@ -223,15 +207,6 @@ export interface SurfaceMap<T extends PackTypes = DefaultPackTypes> {
     output: T['slackBlock'] | readonly T['slackBlock'][];
   };
 }
-
-/**
- * The five surfaces, as a closed literal union.
- *
- * Spelled out rather than derived as `keyof SurfaceMap<…>`: the keys never vary
- * with the pack types, and TypeScript can fail to prove a `keyof` over one
- * instantiation transfers to another, silently widening to `any`.
- */
-export type SurfaceName = 'react' | 'svg' | 'text' | 'markdown' | 'slack';
 
 /**
  * The dispatcher a renderer is given so a container can recurse into a child
@@ -422,10 +397,10 @@ export interface PrimitiveDefinition<
   children?: (node: TNode) => readonly PrimitiveChildRef[];
   /**
    * True when this node produces surface output of its own, not only via
-   * {@link PrimitiveDefinition.children}. `rendersOnSurface` treats a
-   * non-empty `children` result as the complete source of rendered content
-   * unless this returns true, so a hybrid container that still owns string
-   * fields keeps rendering when every nested node is hidden from the surface.
+   * {@link PrimitiveDefinition.children}. A non-empty `children` result is
+   * otherwise the complete source of rendered content, so a hybrid container
+   * that still owns string fields returns true to keep rendering when every
+   * nested node is hidden from the surface.
    */
   hasOwnContent?: (node: TNode) => boolean;
   /** Contributes this node's CSS by mutating `styles`, once per node per render. */
@@ -480,7 +455,11 @@ export const bodyNodeIdSchema = requiredString('must be a non-empty string');
 
 /** The `surfaces` allowlist on a node. Absent means every surface; empty is rejected. */
 export const bodyNodeSurfacesSchema = z
-  .array(enumOf(BODY_NODE_SURFACES as [BodyNodeSurface, ...BodyNodeSurface[]]))
+  .array(
+    z.enum(BODY_NODE_SURFACES as [SurfaceName, ...SurfaceName[]], {
+      error: () => oneOf(BODY_NODE_SURFACES),
+    })
+  )
   .min(1, { error: 'must contain at least one surface' });
 
 /**

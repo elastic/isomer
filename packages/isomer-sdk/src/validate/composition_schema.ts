@@ -10,6 +10,8 @@ import { z, type ZodObject, type ZodType } from 'zod';
 import { IsomerError } from '../composition/error';
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
 
+import { renderThemeSchema } from './value_schemas';
+
 /** `Composition.meta`: provenance and freshness, every field optional. */
 export const metaSchema = z.object({
   source: z.string().optional(),
@@ -58,7 +60,7 @@ export const buildCompositionSchema = ({
       version: z.literal(1).optional(),
       title: z.string().optional(),
       subtitle: z.string().optional(),
-      theme: z.enum(['auto', 'light', 'dark']).optional(),
+      theme: renderThemeSchema.optional(),
       body: z
         .array(bodyNodeSchema)
         .min(1, { error: 'must contain at least one node' }),

@@ -19,7 +19,7 @@ Packs are built by `definePrimitivePack` in the SDK, not here — see [the pack 
 | `slackAssetTypes` | Which node types are pictures, so Slack uploads them instead of approximating them |
 | `styleAdapter` | Optional. Its HTML CSS, combined with every other pack's |
 | `styleCollector` | Optional. The collector shape its `collectStyles` hooks expect |
-| `theme` | The palette its `svg` renderers require, via `themeBound<T>()` |
+| `TTheme` | The palette its `svg` renderers require, as `definePrimitivePack<T>`'s type argument |
 
 The last facts are declared by the pack because they are facts about a vocabulary, and a host composing packs it did not write cannot be expected to know them. The runtime unions `slackAssetTypes` and `enhancements` across packs.
 

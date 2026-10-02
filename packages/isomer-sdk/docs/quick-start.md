@@ -7,18 +7,13 @@ A primitive and a pack from scratch, rendering on four of the six surfaces.
 A primitive is a node type plus everything needed to validate and draw it. Start with the schema; the TypeScript shape is derived from it, so the two cannot drift.
 
 ```ts
-import {
-  type PrimitiveNode,
-  optionalString,
-  requiredString,
-  z,
-} from '@elastic/isomer-sdk';
+import { type PrimitiveNode, requiredString, z } from '@elastic/isomer-sdk';
 
 export const kpiSchema = z.object({
   type: z.literal('kpi'),
   label: requiredString(),
   value: requiredString(),
-  delta: optionalString().optional(),
+  delta: z.string().optional(),
 });
 
 export type KpiNode = z.infer<typeof kpiSchema> & PrimitiveNode;

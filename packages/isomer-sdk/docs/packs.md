@@ -25,7 +25,6 @@ This page is the pack **contract**. Composing packs into a runtime is the [runti
 | `slackAssetTypes` | Which of the pack's node types are pictures rather than text.                  |
 | `styleAdapter`    | Optional. This pack's HTML CSS, combined with the other packs'.                |
 | `styleCollector`  | Optional. Derived from `styleAdapter.styleCollector` unless overridden.        |
-| `theme`           | Optional. `themeBound<T>()` so the pack infers `PrimitivePack<T>`.             |
 | `authoring`       | Optional. `describe`, `omitProperties`, and index `groups` for agents.         |
 
 What comes back adds `types`, a set for duplicate detection across packs, and normalizes the two optional fields. `styleCollector` is read from `styleAdapter.styleCollector` when the pack does not set it; set it only for a pack whose hooks collect into a shape its adapter does not create.
@@ -85,13 +84,12 @@ A runtime composing several packs merges every pack's `authoring` into one optio
 
 ## The theme a pack requires
 
-A pack's nodes are drawn inside a frame, and `PrimitivePack<TTheme>` is where the pack states the palette that frame must supply. `definePrimitivePack` infers `TTheme` from `theme`. Omit it and the pack is `PrimitivePack<unknown>`, which is also what bare `PrimitivePack` means: requires nothing, fits any runtime. A pack that needs a frame to carry tokens passes the bound at the definition:
+A pack's nodes are drawn inside a frame, and `PrimitivePack<TTheme>` is where the pack states the palette that frame must supply. `TTheme` is `definePrimitivePack`'s type argument. Omit it and the pack is `PrimitivePack<unknown>`, which is also what bare `PrimitivePack` means: requires nothing, fits any runtime. A pack that needs a frame to carry tokens names the bound at the definition:
 
 ```ts
-export const elasticPack = definePrimitivePack({
+export const elasticPack = definePrimitivePack<SvgRenderTheme>({
   id: 'elastic',
   primitives: […],
-  theme: themeBound<SvgRenderTheme>(),
 });
 ```
 

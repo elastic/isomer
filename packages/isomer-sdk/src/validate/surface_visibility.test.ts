@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
-import type { BodyNodeSurface } from '../composition/body_node_base';
+import type { SurfaceName } from '../composition/body_node_base';
 import { definePrimitive } from '../define/primitive_module';
 import { createPrimitiveDispatcher } from '../render/primitive_dispatch';
 import type { CaptionNode, NoteNode, StackNode } from '../testing/sdk.fixtures';
@@ -147,7 +147,7 @@ describe('per-surface visibility hints', () => {
           {
             type: 'note',
             body: 'A',
-            surfaces: ['html'] as unknown as BodyNodeSurface[],
+            surfaces: ['html'] as unknown as SurfaceName[],
           },
         ])
       ).valid

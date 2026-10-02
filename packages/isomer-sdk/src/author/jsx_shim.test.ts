@@ -12,6 +12,7 @@ import { z } from 'zod';
 import type { PrimitiveNode } from '../define/primitive_module';
 
 import { fromChildren, fromTextChildren } from './authored_fields';
+import { defineAuthorComponent } from './jsx';
 import { buildJsxShim, textFromChildren } from './jsx_shim';
 
 const primitives = [
@@ -47,7 +48,7 @@ const primitives = [
   },
 ] as const;
 
-const { Composition, Frame, Note, Split, Stack, component, toComposition } =
+const { Composition, Frame, Note, Split, Stack, toComposition } =
   buildJsxShim(primitives);
 
 describe('buildJsxShim', () => {
@@ -189,7 +190,7 @@ describe('buildJsxShim', () => {
   });
 
   it('rejects an unregistered type as a body node', () => {
-    const Extra = component('extra');
+    const Extra = defineAuthorComponent('extra');
 
     try {
       toComposition(createElement(Composition, null, createElement(Extra)));

@@ -24,7 +24,6 @@ import {
   type PrimitiveRenderContext,
   runEnhancementScript,
   type StyleHandle,
-  themeBound,
   unresolvedBodyNodeSchema,
 } from '@elastic/isomer-sdk';
 import { md } from '@elastic/isomer-sdk/markdown';
@@ -237,14 +236,13 @@ const packOf = (
     primitives,
   });
 
-/** A pack whose primitives all draw SVG. `themeBound<string>()` matches {@link testFrame}. */
+/** A pack whose primitives all draw SVG, needing the `string` palette {@link testFrame} supplies. */
 const svgPackOf = (
   ...primitives: readonly AnyPrimitiveDefinition[]
 ): PrimitivePack<string> =>
-  definePrimitivePack({
+  definePrimitivePack<string>({
     id: 'test.drawing',
     primitives,
-    theme: themeBound<string>(),
   });
 
 /** Stands in for the slide frame: a fixed frame that never measures a node. */

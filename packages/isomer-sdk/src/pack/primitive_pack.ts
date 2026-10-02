@@ -57,7 +57,7 @@ export type PackStyleAdapter = {
 };
 
 /** What a pack author passes to {@link definePrimitivePack}. */
-export interface PrimitivePackInput<TTheme = unknown> {
+export interface PrimitivePackInput {
   /** Stable identifier, used in capability reports and error messages. */
   id: string;
   /**
@@ -103,12 +103,6 @@ export interface PrimitivePackInput<TTheme = unknown> {
    */
   styleCollector?: string;
   /**
-   * The palette a frame must supply for this pack's nodes to be drawn on the
-   * `svg` surface. Pass `themeBound<T>()` so {@link definePrimitivePack} infers
-   * `PrimitivePack<T>`. Omit it to stay at `PrimitivePack<unknown>`.
-   */
-  theme?: (theme: TTheme) => void;
-  /**
    * This pack's own contribution to the runtime's authoring JSON Schema.
    *
    * Merged across every composed pack, so a host does not hand-merge each
@@ -117,16 +111,6 @@ export interface PrimitivePackInput<TTheme = unknown> {
    */
   authoring?: PackAuthoringOptions;
 }
-
-/**
- * Inference carrier for {@link PrimitivePackInput.theme}.
- *
- * `definePrimitivePack({ …, theme: themeBound<CoreTokens>() })` returns
- * `PrimitivePack<CoreTokens>`.
- */
-export const themeBound =
-  <T>(): ((theme: T) => void) =>
-  () => {};
 
 /**
  * A pack as the runtime sees it.
@@ -138,7 +122,8 @@ export const themeBound =
  * inventory has no single node type to be generic over.
  *
  * The bound is declared, not derived: nothing checks it against what the
- * renderers actually read. State it at the definition with {@link themeBound}.
+ * renderers actually read. State it at the definition as
+ * `definePrimitivePack<T>(input)`.
  * Bare `PrimitivePack` requires nothing and fits any runtime; a slot that must
  * hold packs of every palette is typed {@link AnyPrimitivePack}.
  */
@@ -181,12 +166,12 @@ export type AnyPrimitivePack = PrimitivePack<never>;
 /**
  * Builds a {@link PrimitivePack}.
  *
- * Infers `TTheme` from {@link PrimitivePackInput.theme}. Omitting `theme`
- * returns `PrimitivePack<unknown>` — requires nothing. A pack whose `svg`
- * renderers read tokens passes `theme: themeBound<CoreTokens>()`.
+ * `TTheme` is the palette a frame must supply for this pack's nodes to be drawn
+ * on the `svg` surface: `definePrimitivePack<CoreTokens>(input)`. Omitted, it is
+ * `unknown`, which requires nothing.
  */
 export const definePrimitivePack = <TTheme = unknown>(
-  input: PrimitivePackInput<TTheme>
+  input: PrimitivePackInput
 ): PrimitivePack<TTheme> => {
   if (input.primitives.length === 0) {
     throw new IsomerError(

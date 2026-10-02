@@ -20,9 +20,9 @@ export const definePrimitive = definePrimitiveFor<SlidePackTypes>();
 
 Everything else stays at the SDK default. A new pack declares its own `PackTypes` the same way.
 
-## `themeBound<SlideFrameTheme>()`
+## `definePrimitivePack<SlideFrameTheme>`
 
-`src/pack.ts` passes `theme: themeBound<SlideFrameTheme>()` and `styleAdapter: createDistillateHtmlStyleAdapter(slideDistillery)` to `definePrimitivePack`. The theme is the **declared** lower bound — what any runtime holding this pack must supply to its frames. The style adapter is this pack's CSS, which a runtime combines with every other pack's, and which the `svg` surface emits alongside the tree. Do not annotate the export as `PrimitivePack<SlideFrameTheme>`; derive it.
+`src/pack.ts` calls `definePrimitivePack<SlideFrameTheme>` with `styleAdapter: createDistillateHtmlStyleAdapter(slideDistillery)`. The theme is the **declared** lower bound — what any runtime holding this pack must supply to its frames. The style adapter is this pack's CSS, which a runtime combines with every other pack's, and which the `svg` surface emits alongside the tree. The bound is stated once, as the type argument.
 
 ## Surface declaration
 
