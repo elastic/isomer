@@ -12,9 +12,9 @@ import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import {
   type Composition,
   createChildNodeWalker,
-  findNodeElementPairs,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
+import { findNodeElementPairs } from '@elastic/isomer-sdk/react';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 

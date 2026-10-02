@@ -93,7 +93,7 @@ export const resolveSlideRenders = (
         `resolveSlideRenders: slide ${quote(slug)} cannot be checked: ${own.error.message}`
       );
     }
-    return mapCompositionNodes(own.value as Composition, primitives, (node) => {
+    return mapCompositionNodes(own.value as Composition, walk, (node) => {
       if (!isUnresolved(node)) {
         return node;
       }

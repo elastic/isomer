@@ -11,10 +11,10 @@ import {
   type Composition,
   createChildNodeWalker,
   type EnhancementDefinition,
-  findNodeElementPairs,
   isVisibleOnSurface,
   someBodyNode,
 } from '@elastic/isomer-sdk';
+import { findNodeElementPairs } from '@elastic/isomer-sdk/react';
 
 import type { SlideContentNode } from '../body_node';
 import { bulletListBuild } from '../primitives/slide_bullet_list/build';

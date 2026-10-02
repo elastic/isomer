@@ -30,6 +30,7 @@ import type {
 } from '../../define/primitive_module';
 import {
   EMBEDDED_SCRIPT_ATTRIBUTE,
+  resolveEnhancements,
   scopeScript,
 } from '../../pack/enhancements';
 import {
@@ -52,7 +53,6 @@ import {
   embedScript,
   type EnhancementDefinition,
   enhancementScript,
-  resolveEnhancements,
 } from './enhancements';
 
 /** Knobs for the HTML surface. Every field defaults, so `{}` is valid. */
@@ -89,8 +89,12 @@ export interface HTMLRenderOptions {
   enhancements?: readonly string[];
   /** `true` renders node anchors whether or not an enhancement asks for them, e.g. for tests. `false` cannot turn off anchors an enhancement needs. */
   anchors?: boolean;
-  /** Opaque to the sdk; forwarded to {@link HTMLStyleAdapter} with the rest of the options. */
-  adapterOptions?: Record<string, unknown>;
+  /**
+   * Resolves `light-dark(…)` in the stylesheet to one scheme's value. A browser
+   * resolves it itself; an image is one static frame, so the `svg` surface sets
+   * it.
+   */
+  scheme?: 'light' | 'dark';
 }
 
 /**
@@ -301,17 +305,17 @@ export const renderHTMLWithDispatcher = <
     walk: createChildNodeWalker(dispatcher.definitions),
     definitions: enhancementDefinitions,
   };
-  const enhancements = resolveEnhancements(
+  const applied = resolveEnhancements(
     composition.body,
-    options.enhancements,
     enhancementScope.walk,
-    enhancementDefinitions
+    enhancementDefinitions,
+    options.enhancements ?? []
+  );
+  const enhancements: ReadonlySet<string> = new Set(
+    applied.map(({ id }) => id)
   );
   const anchors =
-    options.anchors === true ||
-    enhancementDefinitions.some(
-      ({ id, anchors: needed }) => needed === true && enhancements.has(id)
-    );
+    options.anchors === true || applied.some(({ anchors }) => anchors);
   const enhanced = (context: TContext): TContext =>
     contextWith(context, 'enhancements', enhancements);
 
@@ -354,7 +358,7 @@ export const renderHTMLWithDispatcher = <
     styleAdapter?.getScriptText?.(composition, options, enhancementScope) ?? '';
   const js = [
     ...[scriptText, adapterScriptText].filter(Boolean).map(scopeScript),
-    enhancementScript(enhancements, enhancementDefinitions),
+    enhancementScript(applied),
   ]
     .filter(Boolean)
     .join('\n');

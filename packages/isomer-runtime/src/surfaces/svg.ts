@@ -24,7 +24,6 @@ import {
   withNodeAnchors,
 } from '@elastic/isomer-sdk';
 import {
-  flattenSchemeOption,
   type HTMLRenderOptions,
   type HTMLStyleAdapter,
 } from '@elastic/isomer-sdk/html';
@@ -236,7 +235,7 @@ export const createSvgSurface = <TRenderContext = unknown>(
     }
     const requested: HTMLRenderOptions = {
       theme: scheme,
-      adapterOptions: { [flattenSchemeOption]: scheme },
+      scheme,
     };
     const options =
       styleAdapter.resolveOptions?.(first.composition, requested) ?? requested;

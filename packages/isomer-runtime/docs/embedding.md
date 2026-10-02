@@ -16,7 +16,7 @@ Class-name collisions are the usual worry, and the style adapters minify class n
 A shadow root solves both directions at once, and the `html` surface already returns the pieces it needs. Ask for the CSS separately rather than inlined, and attach it to the shadow root instead of the document. Ask for the enhancement script to be run by the host, too: an embedded `<script>` never runs inside a shadow root.
 
 ```ts
-import { runEnhancementScript } from '@elastic/isomer-sdk';
+import { runEnhancementScript } from '@elastic/isomer-sdk/react';
 
 const { html, css, js } = runtime.surfaces.html.render(composition, {
   css: 'separate',

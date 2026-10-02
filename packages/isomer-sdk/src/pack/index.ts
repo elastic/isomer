@@ -7,11 +7,7 @@
 
 export { type HostCapabilities, describeCapabilities } from './capabilities';
 export { type ComposedPacks, composePacks } from './compose';
-export {
-  type EnhancementDefinition,
-  runEnhancementScript,
-  scopeScript,
-} from './enhancements';
+export { type EnhancementDefinition, scopeScript } from './enhancements';
 export {
   type AnyPrimitivePack,
   type PackAuthoringOptions,

@@ -38,16 +38,14 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | --- | --- |
 | `createPrimitiveDispatcher` | Builds a `PrimitiveDispatcher` from a definition list; `PrimitiveDispatcherOptions` carries its `label` |
 | `createChildNodeWalker` | Builds a `ChildNodeWalker`, which yields a `ChildNodeRef` (`{ node, path }`) per nested node across a heterogeneous inventory |
-| `mapCompositionNodes` | Rebuilds a composition's body with `fn` applied to every node, nested children included, without recursion; a node nested in itself throws `CYCLIC_COMPOSITION` |
+| `mapCompositionNodes` | `(composition, walk, fn)`: rebuilds a composition's body with `fn` applied to every node and every child `walk` yields, without recursion; a node nested in itself throws `CYCLIC_COMPOSITION` |
 | `someBodyNode` | Predicate over a body, following children |
 | `isVisibleOnSurface` | Surface-visibility check from a node's own `surfaces` hint |
 | `nodeAnchor`, `NODE_ANCHOR_ATTRIBUTE` | Props a `react` renderer spreads on its root so its element can be found; empty unless the HTML surface, or outside it `context.anchors`, turns anchors on |
 | `layoutRoom`, `LAYOUT_ROOM_ATTRIBUTE` | Props a renderer spreads on an element inside its node, such as a frame's body, so `checkLayout` measures the nodes nested in it against that element; rendered when `nodeAnchor` would be |
 | `withNodeAnchors` | A view of a context with anchors on, as an enhancement declaring `anchors: true` turns them on |
 | `withoutAnchors` | A context under which nothing renders an anchor, for content that is not one of a node's `children` |
-| `findNodeElementPairs` | Each `react`-visible node of a body, in pre-order, with its anchored element under a DOM root |
-| `findNodeElements` | The same as a map from node to element, for a body that reuses no node object |
-| `measureDom` | The `LayoutBox` tree a browser laid an element out as, for `checkLayout` |
+| `findNodeElements` | Each `react`-visible node of a body mapped to its anchored element under a DOM root, for a body that reuses no node object; `./react`'s `findNodeElementPairs` lists each occurrence |
 | `checkLayout` | Where a measured render's nodes run past their room or onto a sibling, as `LayoutFinding`s over a `LayoutBox` tree of `LayoutRect`s |
 | `BODY_NODE_SURFACES` | `['react','svg','text','markdown','slack']` |
 
@@ -77,7 +75,7 @@ Types: `ValidationError`, `ValidationResult`, `CheckedValidationResult` (`Valida
 
 `displayValueSchema`, `structuredValueSchema`, `namedColorSchema`, `renderThemeSchema`, `formatDisplayValue` (with `FormatDisplayValueOptions`), `isStructuredValue`, `rawDisplayValue`, `STRUCTURED_VALUE_FORMATS`, `ALL_NAMED_COLORS`, `ISOMER_ERROR_CODES`, plus `formatCompactNumber`. `PayloadMeasurement` is the byte breakdown on `HTMLRenderResult.measurement`.
 
-`runEnhancementScript` takes a `scripts: 'host'` render's `js` and the `.isomer` section the host inserted, and runs the one against the other. `scopeScript` wraps one script body in its own function, for anything that joins bodies, such as a runtime combining several packs' `getScriptText`. Both live here rather than on `./html` because neither needs the server renderer. See [Enhancements](rendering.md#enhancements).
+`scopeScript` wraps one script body in its own function, for anything that joins bodies, such as a runtime combining several packs' `getScriptText`. It lives here rather than on `./html` because it needs no server renderer. See [Enhancements](rendering.md#enhancements).
 
 Value types: `DisplayValue`, `StructuredValue`, `StructuredValueFormat`, `NamedColor`, `NamedColorPalette`, `RenderTheme` (`'light' | 'dark' | 'auto'`).
 
@@ -85,11 +83,13 @@ Zod helpers so a pack states constraints the same way everywhere: `z` and `requi
 
 ## `./html`
 
-`renderHTMLWithDispatcher`, `createDistillateHtmlStyleAdapter`, and the types a style adapter is written against: `HTMLStyleAdapter`, `DistillateHtmlEngine`, `DistillateThemeVar`, `HTMLRenderOptions`, `HTMLRenderResult`, `HTMLRenderDispatcher`, `HTMLDispatcherRenderOptions`, `HTMLEnhancementScope`, `EnhancementDefinition`, `ReactContentDispatcher`, `ReactContentOptions`. `HTMLRenderOptions.enhancements` is a list of enhancement ids; `resolveEnhancements` intersects it with what the body contains and `enhancementScript` concatenates the survivors' scripts, each in its own function scope, and `rendersAnchors` says whether a render carries node anchors. `HTMLRenderOptions.anchors` turns anchors on directly, for tests. `DISTILLATE_STYLE_COLLECTOR` is the `styleCollector` tag the Distillate adapter publishes, and `flattenSchemeOption` reduces a Distillate light/dark scheme option to one value.
+`renderHTMLWithDispatcher`, `createDistillateHtmlStyleAdapter`, and the types a style adapter is written against: `HTMLStyleAdapter`, `DistillateHtmlEngine`, `DistillateThemeVar`, `HTMLRenderOptions`, `HTMLRenderResult`, `HTMLRenderDispatcher`, `HTMLDispatcherRenderOptions`, `HTMLEnhancementScope`, `EnhancementDefinition`, `ReactContentDispatcher`, `ReactContentOptions`. `HTMLRenderOptions.enhancements` is a list of enhancement ids; the render keeps the first definition of each that applies to the body and emits its script once, in its own function scope, and `rendersAnchors` says whether a render carries node anchors. `HTMLRenderOptions.anchors` turns anchors on directly, for tests. `DISTILLATE_STYLE_COLLECTOR` is the `styleCollector` tag the Distillate adapter publishes. `HTMLRenderOptions.scheme` resolves the stylesheet's `light-dark(…)` to one scheme, as the `svg` surface asks for.
 
 ## `./react`
 
-`useReactPrimitiveDispatcher`, `renderCompositionContent`, `wrapCompositionContent` (the `.isomer[.framed][.fluid]` `section` the `html` surface's wrapper also emits, for a React-only host; `CompositionWrapperOptions` carries `framed`, `fluid`, `theme`, `defaultAriaLabel`), `applyEnhancements` (the enhancement definitions that apply to a body, and a view of the render context carrying their ids as `enhancements`, with `anchors` on when one asks), and the dispatcher/context types used by React renderers: `ReactContentDispatcher`, `ReactContentOptions`, `ReactTreeDispatcher`.
+`useReactPrimitiveDispatcher`, `renderCompositionContent`, `wrapCompositionContent` (the `.isomer[.framed][.fluid]` `section` the `html` surface's wrapper also emits, for a React-only host; `CompositionWrapperOptions` carries `framed`, `fluid`, `theme`, `defaultAriaLabel`), `applyEnhancements` (the enhancement definitions that apply to a body, the first of each id and limited to `requested` ids when given, as the `html` surface resolves them, and a view of the render context carrying their ids as `enhancements`, with `anchors` on when one asks), and the dispatcher/context types used by React renderers: `ReactContentDispatcher`, `ReactContentOptions`, `ReactTreeDispatcher`.
+
+The browser-side helpers, exported here rather than from the root entry: `runEnhancementScript` takes a `scripts: 'host'` render's `js` and the `.isomer` section the host inserted, and runs the one against the other; `findNodeElementPairs` lists each `react`-visible node of a body, in pre-order, with its anchored element under a DOM root; `measureDom` returns the `LayoutBox` tree a browser laid an element out as, for `checkLayout`.
 
 ## `./text`, `./markdown`, `./slack`
 

@@ -17,11 +17,8 @@ export {
   type HTMLStyleAdapter,
   DISTILLATE_STYLE_COLLECTOR,
   createDistillateHtmlStyleAdapter,
-  enhancementScript,
-  flattenSchemeOption,
   renderHTMLWithDispatcher,
   rendersAnchors,
-  resolveEnhancements,
 } from '../render/html';
 export {
   type ReactContentDispatcher,
