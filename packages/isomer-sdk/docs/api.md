@@ -7,7 +7,7 @@ What each entry point exports, and which ones cost you a dependency.
 | Entry | Loads | Reach for it when |
 | --- | --- | --- |
 | `.` | zod, React, and the GFM serializer (`mdast-util-to-markdown`, `mdast-util-gfm`) | Defining primitives, packs, frames; validating |
-| `./html` | `react-dom/server` | Rendering HTML, writing a style adapter |
+| `./html` | `react-dom/server`, JavaScript parser | Rendering HTML, writing a style adapter |
 | `./text` | nothing | Text envelopes |
 | `./markdown` | zod and the GFM serializer | Markdown envelopes and formatting |
 | `./slack` | zod and the GFM serializer | Block Kit types, limits, asset collection |
@@ -29,7 +29,7 @@ What each entry point exports, and which ones cost you a dependency.
 | `describeCapabilities` | Reports primitives, formats, and enhancements for a set of packs |
 | `unresolvedBodyNodeSchema` | The child slot in a container's standalone schema |
 
-Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `PrimitiveSchema` (a `ZodObject`), `PrimitiveCatalogEntry`, `PrimitiveMetrics`, `PrimitiveChildRef`, `PrimitiveRenderContext`, `StyledRenderContext`, `PrimitiveStyleCollector`, `PrimitiveStyleCollectionContext`, `PackTypes`, `DefaultPackTypes`, `Renderer` (`(node, env)` — `env` is `SurfaceMap<T>[S]['env']`), `Renderers`, `RenderScope`, `ReactContextArg` (the context parameter a `react` renderer receives), `SurfaceMap`, `SurfaceName`, `OptionalSurface`, `PrimitivePack`, `AnyPrimitivePack`, `PrimitivePackInput`, `PackStyleAdapter`, `PackAuthoringOptions`, `PrimitiveGroup`, `ComposedPacks`, `Frame`, `FrameBody`, `BoundFrame`, `FrameDispatcher`, `FrameHeader`, `FrameComposition`, `FrameViewport`, `ThemePair`, `EnhancementDefinition`, `HostCapabilities`, `StyleHandle`, `ThemeTokenPath`, `SvgRenderThemeBase`, `Composition`, `BodyNode` (the same type as `PrimitiveNode`, kept for hosts that name body nodes), `BodyNodeBase`, `BodyNodeSurface`, `ActionEventRef`, `IsomerError`, `IsomerErrorCode`.
+Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `PrimitiveSchema` (a `ZodObject`), `PrimitiveCatalogEntry`, `PrimitiveMetrics`, `PrimitiveChildRef`, `PrimitiveRenderContext`, `StyledRenderContext`, `PrimitiveStyleCollector`, `PrimitiveStyleCollectionContext`, `PackTypes`, `DefaultPackTypes`, `Renderer` (`(node, env)` — `env` is `SurfaceMap<T>[S]['env']`), `Renderers`, `RenderScope`, `ReactContextArg` (the dispatcher's optional-or-required context argument tuple for `renderReact`), `SurfaceMap`, `SurfaceName`, `OptionalSurface`, `PrimitivePack`, `AnyPrimitivePack`, `PrimitivePackInput`, `PackStyleAdapter`, `PackAuthoringOptions`, `PrimitiveGroup`, `ComposedPacks`, `Frame`, `FrameBody`, `BoundFrame`, `FrameDispatcher`, `FrameHeader`, `FrameComposition`, `FrameViewport`, `ThemePair`, `EnhancementDefinition`, `HostCapabilities`, `StyleHandle`, `ThemeTokenPath`, `SvgRenderThemeBase`, `Composition`, `BodyNode` (the same type as `PrimitiveNode`, kept for hosts that name body nodes), `BodyNodeBase`, `BodyNodeSurface`, `ActionEventRef`, `IsomerError`, `IsomerErrorCode`.
 
 `react` and `svg` renderers receive `env.theme`: the frame's resolved palette (`T['theme']`) when reached through the `svg` surface, `undefined` outside one. A pack whose `svg` renderers read tokens still declares `theme: themeBound<TTheme>()` on its pack input. `PrimitivePackInput.authoring` (a `PackAuthoringOptions`) is this pack's own contribution — `describe` and `omitProperties` — to the runtime's merged authoring schema, plus `groups` for an index catalog.
 

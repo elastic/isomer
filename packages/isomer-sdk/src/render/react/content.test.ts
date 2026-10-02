@@ -7,12 +7,14 @@
 
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { Composition } from '../../composition/composition';
 
 import {
   type CompositionWrapperOptions,
+  renderCompositionContent,
+  useReactPrimitiveDispatcher,
   wrapCompositionContent,
 } from './content';
 
@@ -46,6 +48,13 @@ describe('wrapCompositionContent', () => {
     expect(render(composition, { theme: 'auto' })).not.toContain('data-theme');
   });
 
+  it("defaults to the composition's theme, as the html surface does", () => {
+    const dark: Composition = { ...composition, theme: 'dark' };
+    expect(render(dark)).toContain('data-theme="dark"');
+    expect(render(dark, { theme: 'light' })).toContain('data-theme="light"');
+    expect(render(dark, { theme: 'auto' })).not.toContain('data-theme');
+  });
+
   it('prefers meta.ariaLabel, then the title, then the default label', () => {
     expect(
       render({ ...composition, meta: { ariaLabel: 'Cart health' } })
@@ -64,5 +73,56 @@ describe('wrapCompositionContent', () => {
     expect(render(composition, { framed: false, fluid: true })).toContain(
       'class="isomer fluid"'
     );
+  });
+});
+
+describe('useReactPrimitiveDispatcher', () => {
+  it('reads the dispatcher a composition render publishes, and null outside one', () => {
+    const seen: unknown[] = [];
+    const Probe = () => {
+      seen.push(useReactPrimitiveDispatcher());
+      return null;
+    };
+    renderToStaticMarkup(createElement(Probe));
+    const dispatcher = {
+      renderReact: () => createElement(Probe),
+      renderText: () => '',
+    };
+    renderToStaticMarkup(
+      createElement(() =>
+        renderCompositionContent(
+          composition,
+          dispatcher,
+          {},
+          { heading: false }
+        )
+      )
+    );
+    expect(seen).toEqual([null, dispatcher]);
+  });
+
+  it('shares one dispatcher context with a second copy of the module', async () => {
+    vi.resetModules();
+    const second = await import('./content');
+    const dispatcher = {
+      renderReact: () => createElement(Probe),
+      renderText: () => '',
+    };
+    let seen: unknown;
+    const Probe = () => {
+      seen = second.useReactPrimitiveDispatcher();
+      return null;
+    };
+    renderToStaticMarkup(
+      createElement(() =>
+        renderCompositionContent(
+          composition,
+          dispatcher,
+          {},
+          { heading: false }
+        )
+      )
+    );
+    expect(seen).toBe(dispatcher);
   });
 });

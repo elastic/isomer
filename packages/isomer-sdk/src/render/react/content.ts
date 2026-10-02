@@ -6,6 +6,7 @@
  */
 
 import {
+  type Context,
   createContext,
   createElement,
   Fragment,
@@ -45,8 +46,17 @@ export type ReactTreeDispatcher = {
   renderReact: (node: PrimitiveNode, context?: object) => ReactNode;
 };
 
-export const PrimitiveDispatcherContext =
-  createContext<ReactTreeDispatcher | null>(null);
+// On `globalThis` under a `Symbol.for` key, so an ESM and a CommonJS copy of
+// the SDK publish and read one context.
+const DISPATCHER_CONTEXT = Symbol.for('isomer.react.dispatcher');
+
+type DispatcherContextScope = {
+  [DISPATCHER_CONTEXT]?: Context<ReactTreeDispatcher | null>;
+};
+
+export const PrimitiveDispatcherContext = ((
+  globalThis as DispatcherContextScope
+)[DISPATCHER_CONTEXT] ??= createContext<ReactTreeDispatcher | null>(null));
 
 /** The dispatcher rendering the enclosing tree, or `null` outside one. */
 export const useReactPrimitiveDispatcher = (): ReactTreeDispatcher | null =>
@@ -122,7 +132,7 @@ export interface CompositionWrapperOptions {
   framed?: boolean;
   /** Adds the `fluid` class. */
   fluid?: boolean;
-  /** Sets `data-theme`; `auto` (the default) sets nothing so the page's scheme applies. */
+  /** Sets `data-theme`; defaults to the composition's `theme`, and `auto` sets nothing so the page's scheme applies. */
   theme?: RenderTheme;
   /** Used only when the composition has neither `meta.ariaLabel` nor a `title`. Defaults to `'View'`. */
   defaultAriaLabel?: string;
@@ -138,7 +148,7 @@ export const wrapCompositionContent = <TNode extends PrimitiveNode>(
   {
     framed = true,
     fluid = false,
-    theme = 'auto',
+    theme = composition.theme ?? 'auto',
     defaultAriaLabel = 'View',
   }: CompositionWrapperOptions = {}
 ): ReactElement =>

@@ -6,6 +6,11 @@
 
 ## 2026-10-01
 
+- **Docs match the code on frames, warnings, and overflow**: only `wrap` has the body withheld (`estimateHeight` and `validateBody` read the nodes); the empty-surface warning is per surface over the whole body; `ReactContextArg` is the dispatcher's context argument tuple; and the slides agent guide no longer tells the model a layout check reports overflow, since no surface runs one.
+- **Compact numbers reach billions and honor precision**: `formatCompactNumber(value, unit?, precision?)` adds `b` and `t` tiers, promotes a value that rounds up to the next tier, and takes the decimals to keep; a `compact` structured value passes its `precision`.
+- **Packs reject a repeated id and an unregistered Slack asset type**: `composePacks` throws the new `DUPLICATE_PACK_ID` for a repeated pack `id`, and `definePrimitivePack` throws `UNKNOWN_PRIMITIVE_TYPE` for a `slackAssetTypes` entry it does not register.
+- **HTML raw sinks and the React context are hardened**: inline CSS has `</style` written `<\/style`, and inline JS has `</script` written `<\/script` and `<!--` written `\x3C!--`, which keep their values in strings and regular expressions, and the measurement counts the escaped text; minify leaves `script`, `style`, and `textarea` whitespace alone, closing tags with whitespace included; `PrimitiveDispatcherContext` lives on `globalThis` under `Symbol.for('isomer.react.dispatcher')` so dual ESM/CJS copies share it.
+- **The React wrapper reads the composition's theme**: `wrapCompositionContent` defaults `theme` to `composition.theme`, so the React surface's `wrapper` sets the same `data-theme` the `html` surface does.
 - **The pack prompt builder passes every field through**: `createAuthoringPromptBuilder` dropped a caller's `catalog`, `groups`, `heading`, and `intro`, so `catalog: 'index'` printed the full catalog; it now spreads every defined field over the pack's defaults. Both pack authoring factories have tests.
 - **Authoring brands survive wrappers and refuse reuse**: `fromChildren` and `fromTextChildren` brands are read through `.optional()`, `.nullable()`, `.default()`, and `.readonly()` at runtime and in the shim's types, so the child component is still generated. Branding one schema instance two ways throws an `IsomerError` with the new code `AUTHORED_SCHEMA_REUSED` instead of a raw `TypeError`.
 - **`definePrimitive` reserves `id` and `surfaces`**: a primitive schema, or a container's `schemaFor` result, declaring either throws an `IsomerError` with the new code `RESERVED_NODE_FIELD` rather than being silently overwritten.
@@ -89,3 +94,5 @@
 
 - 2026-10-02: Markdown reference images use the asset policy, preserving multiline data images while checking shared link uses independently.
 - 2026-10-02: Reserved node-field provenance survives repeated optional wrapping when a defined primitive schema is derived.
+
+- 2026-10-02: Inline JavaScript preserves tagged-template values and site identity and accepts legacy HTML-style comments without eval.
