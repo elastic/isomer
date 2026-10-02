@@ -17,7 +17,7 @@ sources:
 
 # Definition
 
-`definePrimitive` is the primitive contract: a `type`, a catalog entry, examples, a zod schema, and renderers. The schema is the declaration; the node type is `z.infer` unless the primitive declares `schemaFor`, which hand-writes its type because it holds the body-node union. Leave the type arguments inferred so field brands survive. The catalog `example` is what the prompt inlines. `examples` is the conformance set and stays off the prompt. React, text, and markdown are required. `svg` is not a renderer a primitive writes — the image surface reuses `react`. Slack may be declared; otherwise the dispatcher converts markdown to Block Kit.[^docs][^define]
+`definePrimitive` is the primitive contract: a `type`, a catalog entry, examples, a zod schema, and renderers. The schema is the declaration; the node type is `z.infer` unless the primitive declares `schemaFor`, which hand-writes its type because it holds the body-node union. `definePrimitive` adds optional `id` and `surfaces` to the schema; a schema that declares either itself throws `RESERVED_NODE_FIELD`. Leave the type arguments inferred so field brands survive. The catalog `example` is what the prompt inlines. `examples` is the conformance set and stays off the prompt. React, text, and markdown are required. `svg` is not a renderer a primitive writes — the image surface reuses `react`. Slack may be declared; otherwise the dispatcher converts markdown to Block Kit.[^docs][^define]
 
 Optional hooks include `collectStyles` for HTML CSS and metrics for layout. A primitive holds no theme literals of its own; those belong to the pack's theme.
 
