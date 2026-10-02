@@ -80,3 +80,5 @@
 - **License artifacts**: The generated runtime inventory now includes declared Takumi platform dependencies and fails when their notice or license text is unavailable.
 
 - 2026-10-02: Markdown parsing has length and syntax budgets, including closing-delimiter runs, to bound adversarial parser work.
+
+- 2026-10-02: Markdown reference images use the asset policy, preserving multiline data images while checking shared link uses independently.

@@ -151,6 +151,53 @@ describe('sanitizeMarkdownSource', () => {
     });
   });
 
+  describe('reference destination policies', () => {
+    it.each(['![chart][asset]', '![asset][]', '![asset]'])(
+      'preserves a multiline data-image reference in %s',
+      (usage) => {
+        const source = `${usage}\n\n[asset]:\n  data:image/png;base64,aGVsbG8= "Chart"`;
+        expect(sanitizeMarkdownSource(source)).toBe(source);
+        expect(sanitizeMarkdownSource(sanitizeMarkdownSource(source))).toBe(
+          source
+        );
+      }
+    );
+
+    it('applies each policy to a definition shared by a link and an image', () => {
+      const data = 'data:image/png;base64,aGVsbG8=';
+      expect(
+        sanitizeMarkdownSource(
+          `[open][asset] ![chart][asset]\n\n[asset]: ${data}`
+        )
+      ).toBe(`open ![chart][asset]\n\n[asset]: ${data}`);
+      expect(
+        sanitizeMarkdownSource(
+          '[email][asset] ![chart][asset]\n\n[asset]: mailto:a@example.com'
+        )
+      ).toBe('[email][asset] chart\n\n[asset]: mailto:a@example.com');
+    });
+
+    it('keeps safe HTTP references shared by links and images unchanged', () => {
+      const source =
+        '[open][asset] ![chart][asset]\n\n[asset]: https://example.com/chart.png';
+      expect(sanitizeMarkdownSource(source)).toBe(source);
+    });
+
+    it('resolves case-insensitive references to the first definition', () => {
+      const source =
+        '![chart][ASSET]\n\n[asset]: data:image/png;base64,aGVsbG8=\n[Asset]: mailto:a@example.com';
+      expect(sanitizeMarkdownSource(source)).toBe(source);
+    });
+
+    it('degrades a blocked reference image to escaped alt text', () => {
+      expect(
+        sanitizeMarkdownSource(
+          '![a\\[b\\]][asset]\n\n[asset]: javascript:alert(1)'
+        )
+      ).toBe('a\\[b\\]\n\n[asset]: #');
+    });
+  });
+
   describe('degradation shape', () => {
     it('collapses a blocked inline link to its label', () => {
       expect(sanitizeMarkdownSource('[click me](javascript:alert(1))')).toBe(

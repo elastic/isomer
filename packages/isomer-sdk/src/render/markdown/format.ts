@@ -9,7 +9,7 @@
 // rich text clients rather than a narrow host, so it does not share the text
 // surface's measuring and wrapping.
 
-import type { Nodes, Parents } from 'mdast';
+import type { Definition, Nodes, Parents } from 'mdast';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { gfmFromMarkdown } from 'mdast-util-gfm';
 import { gfm } from 'micromark-extension-gfm';
@@ -87,6 +87,21 @@ const offsets = (node: Nodes): [number, number] | undefined => {
 };
 
 const sanitizePass = (source: string): string => {
+  parseOptions ??= {
+    extensions: [gfm()],
+    mdastExtensions: [gfmFromMarkdown()],
+  };
+  const root = fromMarkdown(source, parseOptions);
+  const definitions = new Map<string, Definition>();
+  const pending: Nodes[] = [...root.children].reverse();
+  while (pending.length) {
+    const node = pending.pop()!;
+    if (node.type === 'definition' && !definitions.has(node.identifier)) {
+      definitions.set(node.identifier, node);
+    }
+    if ('children' in node) pending.push(...[...node.children].reverse());
+  }
+
   const slice = (node: Nodes): string => {
     const range = offsets(node);
     return range ? source.slice(...range) : '';
@@ -121,12 +136,28 @@ const sanitizePass = (source: string): string => {
       case 'html':
         return slice(node).replace(/</g, '&lt;');
       case 'definition': {
-        const safe = sanitizeParsedNavigationHref(node.url);
+        const safe =
+          sanitizeParsedNavigationHref(node.url) ??
+          sanitizeParsedAssetUrl(node.url);
         if (safe === node.url) return undefined;
         const title = node.title ? ` ${escapeTitle(node.title)}` : '';
         return `[${node.label ?? node.identifier}]: ${
           safe === null ? BLOCKED_HREF : escapeParsedDestination(safe)
         }${title}`;
+      }
+      case 'imageReference': {
+        const definition = definitions.get(node.identifier);
+        return definition && sanitizeParsedAssetUrl(definition.url) === null
+          ? escapeLinkLabel(node.alt ?? '')
+          : undefined;
+      }
+      case 'linkReference': {
+        const definition = definitions.get(node.identifier);
+        return definition &&
+          sanitizeParsedNavigationHref(definition.url) === null &&
+          sanitizeParsedAssetUrl(definition.url) !== null
+          ? emitLabel(node)
+          : undefined;
       }
       case 'image': {
         const safe = sanitizeParsedAssetUrl(node.url);
@@ -165,11 +196,6 @@ const sanitizePass = (source: string): string => {
       : source.slice(...range);
   };
 
-  parseOptions ??= {
-    extensions: [gfm()],
-    mdastExtensions: [gfmFromMarkdown()],
-  };
-  const root = fromMarkdown(source, parseOptions);
   return emitChildren(0, source.length, root.children);
 };
 

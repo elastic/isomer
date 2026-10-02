@@ -21,3 +21,5 @@ Authored Markdown checks GFM-parsed destinations without decoding references aga
 Related: [composition](/sdk/concepts/composition.md), [rendering](/sdk/concepts/rendering.md).
 
 [^docs]: URL trust
+
+Reference destinations are checked per usage with the navigation policy for links and the asset policy for images. Data-image definitions remain valid for image references, including multiline definitions.[^docs]
