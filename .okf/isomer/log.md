@@ -2,6 +2,7 @@
 
 ## 2026-10-02
 
+- **Evals package is private**: `@elastic/isomer-evals` sets `"private": true` and leaves the release set; no published package depends on it. The package pages, release docs, and public contract no longer describe an npm install.
 - **Runtime root inventory drops `RuntimePackTypes`**: the entry-point page listed it among the root types. The barrel does not export it.
 - **Evals retain reports for invalid model output**: malformed container child hooks no longer abort payload scoring, and only validated attempts reach selection and answerability scoring. Real-runtime regressions cover malformed containers, duplicate IDs, retries, and excessive nesting. Model-call examples send each case request and retry errors alongside shared authoring instructions.
 - **npm publication follows the release channel**: the workspace publisher passes the semantic-release channel to `pnpm publish --tag`, with `latest` only for the default channel and `release-` prefixed to maintenance ranges, keeping alpha, beta, and maintenance releases off the stable tag.

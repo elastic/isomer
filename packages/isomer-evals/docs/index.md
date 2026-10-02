@@ -154,8 +154,6 @@ Types: `EvalCase`, `EvalCaseResult`, `EvalReport`, `EvalRuntime`, `RunEvalsOptio
 
 ## Package facts
 
-```sh
-npm install --save-dev @elastic/isomer-evals
-```
+This package is private and not published to npm; it runs from this repository.
 
-It depends on `@elastic/isomer-sdk` at its own version, and `react` and `zod` are required peers, because the SDK's root and `./author` entries load them; a pack's runtime brings both already. One entry point, published as ESM and CommonJS. The runtime is a development dependency of this package alone, for the structural-contract test; nothing under `src/` imports it.
+It depends on `@elastic/isomer-sdk` at its own version, and `react` and `zod` are required peers, because the SDK's root and `./author` entries load them; a pack's runtime brings both already. One entry point, built as ESM and CommonJS. The runtime is a development dependency of this package alone, for the structural-contract test; nothing under `src/` imports it.

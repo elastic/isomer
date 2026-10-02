@@ -16,7 +16,7 @@ The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, a
 
 ## Release posture
 
-Every package under `packages/` without `"private": true` publishes, at one version, through the release workflow: `@elastic/isomer-sdk` and `@elastic/isomer-runtime` are what a host installs, takumi is a host-side rasterizer, and evals is a harness a pack author runs against their own runtime. The slides pack is an exemplar to copy and stays private; agent-tools is private until its API settles. A published package never lists a private one in `dependencies` or `peerDependencies`, which `scripts/check_pack_consumer.js` enforces. Do not raise publication, registry access, or dependency licensing as a constraint when planning work in this repository.
+Every package under `packages/` without `"private": true` publishes, at one version, through the release workflow: `@elastic/isomer-sdk` and `@elastic/isomer-runtime` are what a host installs, and takumi is a host-side rasterizer. The slides pack is an exemplar to copy and stays private; evals is a harness run from this repository and stays private; agent-tools is private until its API settles. A published package never lists a private one in `dependencies` or `peerDependencies`, which `scripts/check_pack_consumer.js` enforces. Do not raise publication, registry access, or dependency licensing as a constraint when planning work in this repository.
 
 ## Where work happens
 
