@@ -65,6 +65,7 @@ describe('sanitizeNavigationHref', () => {
     ],
     ['encoded protocol-relative', '&#47;&#47;evil.example.com'],
     ['named solidus', '&sol;&sol;evil.example.com'],
+    ['named reverse solidus', '&bsol;&bsol;evil.example.com'],
     ['encoded angle bracket', 'https://x.test/&lt;script>'],
   ])('normalizes before the scheme check: %s', (_label, href) => {
     // Each of these reaches a browser or markdown consumer as `javascript:`,
@@ -104,6 +105,10 @@ describe('sanitizeAssetUrl', () => {
     ['javascript', 'javascript:alert(1)'],
     ['mailto', 'mailto:a@example.com'],
     ['protocol-relative', '//evil.example.com/a.png'],
+    ['encoded protocol-relative', '&#47;&#47;evil.example.com/a.png'],
+    ['named solidus', '&sol;&sol;evil.example.com/a.png'],
+    ['named reverse solidus', '&bsol;&bsol;evil.example.com/a.png'],
+    ['entity-encoded scheme', 'java&Tab;script&colon;alert(1)'],
   ])('rejects %s', (_label, url) => {
     expect(sanitizeAssetUrl(url)).toBeNull();
   });

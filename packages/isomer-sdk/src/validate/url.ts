@@ -11,6 +11,7 @@ import { requiredString } from '../define/zod_helpers';
 // refinement and again as render-time sanitization. See `docs/url-trust.md`.
 
 const NAMED_REFERENCES: Readonly<Record<string, string>> = {
+  bsol: '\\',
   colon: ':',
   gt: '>',
   lt: '<',
@@ -22,7 +23,7 @@ const NAMED_REFERENCES: Readonly<Record<string, string>> = {
 // Numeric references, which browsers decode without a trailing `;`, and the
 // named ones that spell a scheme, path, or tag character.
 const CHARACTER_REFERENCE_RE =
-  /&(?:#x([0-9a-f]+);?|#([0-9]+);?|(colon|gt|lt|newline|sol|tab);)/gi;
+  /&(?:#x([0-9a-f]+);?|#([0-9]+);?|(bsol|colon|gt|lt|newline|sol|tab);)/gi;
 
 const decodeReference = (
   match: string,

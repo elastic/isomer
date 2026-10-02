@@ -179,14 +179,46 @@ const sanitizePass = (source: string): string => {
  *   {@link BLOCKED_HREF}, so every usage of it is a dead link with its label.
  * - **Raw HTML** — every `<` in an HTML node is escaped, rather than
  *   denylisting tags.
+ *
+ * Source nested too deeply to parse safely is escaped whole instead.
  */
 export const sanitizeMarkdownSource = (markdown: string): string => {
+  if (nestsTooDeeply(markdown)) return inert(markdown);
   let current = markdown;
-  for (let pass = 0; pass < MAX_PASSES; pass++) {
-    const next = sanitizePass(current);
-    if (next === current) return current;
-    current = next;
+  try {
+    for (let pass = 0; pass < MAX_PASSES; pass++) {
+      const next = sanitizePass(current);
+      if (next === current) return current;
+      current = next;
+    }
+  } catch (error) {
+    // The parser recurses per nesting level, so inline nesting deep enough
+    // to exhaust the stack lands here.
+    if (!(error instanceof RangeError)) throw error;
   }
-  // No link, image, definition, or tag can survive without `[` or `<`.
-  return current.replace(/[[\]\\]/g, '\\$&').replace(/</g, '&lt;');
+  return inert(current);
+};
+
+// No link, image, definition, or tag can survive without `[` or `<`.
+const inert = (markdown: string): string =>
+  markdown.replace(/[[\]\\]/g, '\\$&').replace(/</g, '&lt;');
+
+// The parser's cost grows faster than linearly in nesting, both of block
+// containers (indentation, `>`, and list markers opening a line) and of
+// emphasis and links, so source past either bound is not parsed.
+const LINE_PREFIX_RE = /^(?:[ \t>]|[-*+](?=[ \t])|\d{1,9}[.)](?=[ \t]))+/gm;
+const MAX_LINE_PREFIX = 256;
+// An intraword `_` cannot open or close emphasis, so it is not counted.
+const INLINE_DELIMITER_RE = /[*[]|(?<![\p{L}\p{N}])_|_(?![\p{L}\p{N}])/gu;
+const MAX_INLINE_DELIMITERS = 2048;
+
+const nestsTooDeeply = (markdown: string): boolean => {
+  for (const [prefix] of markdown.matchAll(LINE_PREFIX_RE)) {
+    if (prefix.length > MAX_LINE_PREFIX) return true;
+  }
+  let delimiters = 0;
+  for (const _ of markdown.matchAll(INLINE_DELIMITER_RE)) {
+    if (++delimiters > MAX_INLINE_DELIMITERS) return true;
+  }
+  return false;
 };

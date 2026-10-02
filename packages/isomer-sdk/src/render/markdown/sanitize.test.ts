@@ -197,9 +197,42 @@ describe('sanitizeMarkdownSource', () => {
     });
   });
 
+  it.each([
+    ['nested blockquotes', `${'>'.repeat(20_000)} `],
+    ['nested list items', '- '.repeat(20_000)],
+    [
+      'indented list lines',
+      '- a\n  - b\n    - c\n'.repeat(1) + `${' '.repeat(300)}- d\n`,
+    ],
+    ['nested emphasis', `${'*'.repeat(20_000)}x${'*'.repeat(20_000)} `],
+    ['spread emphasis', `${'*a '.repeat(5_000)}${'a* '.repeat(5_000)}`],
+    ['nested link labels', `${'['.repeat(5_000)}x${'](y)'.repeat(5_000)} `],
+  ])(
+    'degrades nesting too deep to parse to inert text: %s',
+    (_name, prefix) => {
+      // Escaped brackets cannot open a link, so the destination is inert text.
+      const source = `${prefix}[x](javascript:alert(1))`;
+      expect(sanitizeMarkdownSource(source)).toBe(
+        source.replace(/[[\]\\]/g, '\\$&').replace(/</g, '&lt;')
+      );
+    }
+  );
+
+  it('keeps prose with many intraword underscores parseable', () => {
+    const prose = 'snake_case_name '.repeat(3_000);
+    expect(sanitizeMarkdownSource(`${prose}[x](javascript:alert(1))`)).toBe(
+      `${prose}x`
+    );
+  });
+
   it('runs in linear time on long whitespace and unclosed tags', () => {
     const started = performance.now();
     for (const input of [
+      `${'*a '.repeat(500)}${'a* '.repeat(500)}`,
+      `${'['.repeat(500)}x${'](y)'.repeat(500)}`,
+      Array.from({ length: 128 }, (_, i) => `${' '.repeat(i * 2)}- x`).join(
+        '\n'
+      ),
       `[a](${' '.repeat(50_000)}x`,
       `[a](x${' '.repeat(50_000)}y`,
       '<a'.repeat(50_000),
