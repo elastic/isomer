@@ -22,7 +22,7 @@ export interface HostCapabilities<TEnhancement extends string = string> {
   primitives: string[];
   /** Render formats reachable, e.g. `html`, `slack`, `png`. */
   formats: string[];
-  /** Progressive enhancements a pack's HTML style adapter can apply, by id. */
+  /** Progressive enhancements the packs declare, by id, which an HTML or React render may request. */
   enhancements?: Partial<Record<TEnhancement, boolean>>;
 }
 

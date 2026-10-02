@@ -30,7 +30,9 @@ export interface AuthoringViewSummary {
   id: string;
   title: string;
   description?: string;
+  /** Natural-language queries the view answers, printed so the model can route by them. */
   answers: readonly string[];
+  /** JSON Schema for the view's input, printed inline when present. */
   inputSchema?: JsonSchema;
 }
 

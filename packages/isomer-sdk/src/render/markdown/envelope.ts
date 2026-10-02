@@ -15,6 +15,7 @@ import { md, serializeMarkdown } from './builder';
 export interface MarkdownEnvelopeDispatcher<
   TNode extends PrimitiveNode,
 > extends TextEnvelopeDispatcher<TNode> {
+  /** Returns the empty string for a node with nothing to show; the envelope drops it rather than emitting a blank block. */
   renderMarkdown(node: TNode): string;
 }
 

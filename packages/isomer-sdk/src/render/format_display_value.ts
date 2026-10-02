@@ -12,6 +12,7 @@ import type {
 
 import { formatCompactNumber } from './format_number';
 
+/** Options for {@link formatDisplayValue}. */
 export interface FormatDisplayValueOptions {
   /** Reference instant for `relativeTime`; defaults to the render time. */
   now?: Date;

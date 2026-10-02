@@ -43,8 +43,11 @@ const MRKDWN_ESCAPES: Record<string, string> = {
 export const escapeMrkdwn = (value: string): string =>
   value.replace(/[&<>]/g, (match) => MRKDWN_ESCAPES[match] ?? match);
 
+/** `text` escaped and wrapped in mrkdwn bold markers. */
 export const bold = (text: string): string => `*${escapeMrkdwn(text)}*`;
+/** `text` escaped and wrapped in mrkdwn italic markers. */
 export const italic = (text: string): string => `_${escapeMrkdwn(text)}_`;
+/** `text` escaped and wrapped in mrkdwn strikethrough markers. */
 export const strike = (text: string): string => `~${escapeMrkdwn(text)}~`;
 
 /**
@@ -140,8 +143,9 @@ const isMailtoUrl = (url: string): boolean => {
 };
 
 /**
- * `href` when it passes {@link sanitizeNavigationHref} as an absolute URL,
- * `null` otherwise. Slack has no page to resolve a relative URL against.
+ * `href` when {@link sanitizeNavigationHref} passes it and it is an `http:` or
+ * `https:` URL with a host, or a `mailto:` of well-formed mailboxes; `null`
+ * otherwise. Slack has no page to resolve a relative URL against.
  */
 export const slackLinkUrl = (href: string): string | null => {
   const url = sanitizeNavigationHref(href);
@@ -910,7 +914,11 @@ const pipeTableToTableBlock = (lines: readonly string[]): SlackTableBlock => {
  * Translates GFM into structural Block Kit: prose runs as `section`, fenced
  * code as `rich_text_preformatted`, pipe tables as a native `table` block.
  *
- * The markdown fallback for any primitive without a dedicated `slack` renderer.
+ * The markdown fallback for a primitive without a `slack` renderer whose
+ * markdown is a string; builder content goes through
+ * `markdownContentToSlackBlocks`. Preferred over {@link gfmToSlackMrkdwn},
+ * which collapses code and tables into
+ * a section-level fence that Slack and pixel-faithful previews render poorly.
  */
 export const gfmToSlackBlocks = (gfm: string): SlackBlock[] => {
   const lines = gfm.split('\n');

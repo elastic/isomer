@@ -68,7 +68,7 @@ export interface SlackEnvelopeOptions {
   text?: string;
   /** Whether to collect image upload requests alongside the blocks. */
   collectAssets?: boolean;
-  /** Prefix for allocated asset refs. Distinct prefixes keep merged inventories unique. */
+  /** Prefix for allocated asset refs; defaults to `asset`. Distinct prefixes keep merged inventories unique. */
   assetPrefix?: string;
 }
 

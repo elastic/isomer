@@ -59,10 +59,9 @@ export type ThemeTokenPath = string;
  * The sdk's own render context, and {@link DefaultPackTypes.context}.
  *
  * A pack with real theme tokens or a richer style-handle type declares its
- * own context in its {@link PackTypes}. Both fields are contravariant in
- * those types, so a narrowed context is not assignable to this one; the bag
- * is what lets a pack narrow without re-declaring everything that mentions a
- * context.
+ * own context in its {@link PackTypes}; {@link StyledRenderContext} is the
+ * sdk's own extension. The bag is what lets a pack narrow without
+ * re-declaring everything that mentions a context.
  */
 export interface PrimitiveRenderContext {
   /**
@@ -218,7 +217,9 @@ export interface SurfaceMap<T extends PackTypes = DefaultPackTypes> {
  */
 export interface RenderScope<T extends PackTypes = DefaultPackTypes> {
   readonly definitions: readonly AnyPrimitiveDefinition[];
+  /** Throws for an unknown node type; a missing primitive is a bug, not a degradation. */
   getDefinition(node: PrimitiveNode): AnyPrimitiveDefinition;
+  /** `undefined` when the node is hidden from `surface`, `sanitize` drops it, or its primitive declares no renderer for `surface`. */
   renderOn<S extends SurfaceName>(
     surface: S,
     node: PrimitiveNode,
@@ -234,11 +235,14 @@ export interface RenderScope<T extends PackTypes = DefaultPackTypes> {
   renderMarkdown(node: PrimitiveNode): string;
   /** A child as content, for a container building with `md`; a string result is printed as written. */
   renderMarkdownContent(node: PrimitiveNode): MarkdownContent;
+  /** Empty when the node is hidden from `slack`, `sanitize` drops it, or its renderer returns nothing; a node with no `slack` renderer degrades through its markdown. */
   renderSlack(
     node: PrimitiveNode,
     collector?: T['slackCollector']
   ): readonly T['slackBlock'][];
+  /** `0` when the node is hidden from `svg` or its primitive declares no `metrics.svgHeight`. */
   estimateSvgHeight(node: PrimitiveNode): number;
+  /** Appends schema failures under `path` to `errors`, each naming `node`'s type. */
   validate(node: PrimitiveNode, path: string, errors: ValidationError[]): void;
 }
 

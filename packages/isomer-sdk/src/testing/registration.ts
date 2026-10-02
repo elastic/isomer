@@ -66,16 +66,16 @@ const subdirectoriesOf = (root: string, ignore: readonly string[]): string[] =>
     .sort();
 
 /**
- * Fails when a primitive directory is missing from the pack's registry.
+ * Fails when the primitives directory and the pack's registry disagree: a
+ * subdirectory with no entry file or no exported definition, a defined type
+ * nothing registers, or a registered type no directory defines. Each problem
+ * line carries its fix.
  *
- * A pack keeps two hand-written lists — the registry array and the body-node
- * union — and nothing in the type system relates either to the directory they
- * describe. A primitive absent from *both* lists leaves them agreeing with each
+ * A pack keeps two hand-written lists, the registry array and the body-node
+ * union, and nothing in the type system relates either to the directory they
+ * describe. A primitive absent from both lists leaves them agreeing with each
  * other, so it compiles and every other test passes while the primitive is
- * silently unreachable. This is the check that notices.
- *
- * Deliberately a check rather than a generator: the registry stays hand-written
- * and readable, and the failure message carries the fix.
+ * unreachable. This is the check that notices.
  *
  * @example
  * ```ts

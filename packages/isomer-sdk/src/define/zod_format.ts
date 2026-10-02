@@ -100,6 +100,7 @@ export const declaredFieldsNote = ({ shape }: ZodObject): string => {
     : `its fields are ${declared.map(nameText).join(', ')}`;
 };
 
+/** `must be one of: a, b`, each string option spelled as {@link nameText} spells it. */
 export const oneOf = (options: readonly unknown[]): string =>
   `must be one of: ${options
     .map((option) =>

@@ -179,7 +179,7 @@ export type JsxShim<
  *
  * Branded schema fields ({@link fromChildren}, {@link fromTextChildren}) fill
  * from JSX children, and each child type becomes a component. A primitive with
- * no brand still fills its unique child-array field from
+ * no brand still fills its one child slot, array or single node, from
  * {@link PrimitiveDefinition.children}.
  */
 export const buildJsxShim = <

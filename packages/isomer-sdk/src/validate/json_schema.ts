@@ -20,7 +20,7 @@ type JsonSchema = Record<string, unknown>;
 export interface CompositionJsonSchemaOptions {
   /** Base URI for the emitted schema, which `$ref`s resolve against. */
   $id?: string;
-  /** Reaches the model, so it keeps the word "view". Defaults to `'view'`. */
+  /** Reaches the model, so it keeps the word "view". Defaults to `'View'`. */
   title?: string;
   /** Reaches the model too, so write it as guidance rather than as a type note. */
   description?: string;
