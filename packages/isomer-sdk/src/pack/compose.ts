@@ -31,11 +31,9 @@ export interface ComposedPacks {
 export const composePacks = (
   packs: readonly AnyPrimitivePack[]
 ): ComposedPacks => {
-  const idOwners = new Map<string, string[]>();
   const typeOwners = new Map<string, string[]>();
   const enhancementOwners = new Map<string, string[]>();
-  for (const [index, pack] of packs.entries()) {
-    idOwners.set(pack.id, [...(idOwners.get(pack.id) ?? []), `#${index}`]);
+  for (const pack of packs) {
     for (const { type } of pack.primitives) {
       typeOwners.set(type, [...(typeOwners.get(type) ?? []), pack.id]);
     }
@@ -46,7 +44,19 @@ export const composePacks = (
       ]);
     }
   }
-  assertUnique('DUPLICATE_PACK_ID', 'pack id', idOwners);
+  const repeated = [
+    ...new Set(
+      packs
+        .map(({ id }) => id)
+        .filter((id, index, ids) => ids.indexOf(id) !== index)
+    ),
+  ];
+  if (repeated.length > 0) {
+    throw new IsomerError(
+      'DUPLICATE_PACK_ID',
+      `composePacks: ${repeated.map((id) => `"${id}"`).join(', ')} names more than one pack; pack ids must be unique`
+    );
+  }
   assertUnique('DUPLICATE_PRIMITIVE_TYPE', 'primitive type', typeOwners);
   assertUnique('DUPLICATE_ENHANCEMENT', 'enhancement', enhancementOwners);
 
@@ -62,8 +72,7 @@ export const composePacks = (
 };
 
 const assertUnique = (
-  code:
-    'DUPLICATE_ENHANCEMENT' | 'DUPLICATE_PACK_ID' | 'DUPLICATE_PRIMITIVE_TYPE',
+  code: 'DUPLICATE_ENHANCEMENT' | 'DUPLICATE_PRIMITIVE_TYPE',
   noun: string,
   owners: ReadonlyMap<string, readonly string[]>
 ): void => {

@@ -324,7 +324,7 @@ describe('renderHTMLWithDispatcher', () => {
       renderStyles: () => '.a{content:"</style><img src=x onerror=alert(1)>"}',
       getScriptText: () => 'const s = "</script><img src=x>"; // <!--',
     };
-    const { html, css, js } = render(
+    const { html, css } = render(
       view('<p>x</p>'),
       {},
       { styleAdapter: hostile }
@@ -337,7 +337,6 @@ describe('renderHTMLWithDispatcher', () => {
       render(view('<p>x</p>'), { scripts: 'host' }, { styleAdapter: hostile })
         .js
     ).toContain('</script>');
-    void js;
   });
 
   it('leaves other less-than sequences in a script as written', () => {
@@ -355,7 +354,8 @@ describe('renderHTMLWithDispatcher', () => {
   it('keeps an escaped script compiling to the same values', () => {
     const source = [
       "globalThis.out = [/<!--/u.test('<!--'), /<\\/script>/u.source,",
-      "'</script>', `</SCRIPT>`, '<!-- x -->'];",
+      "'</script>', `</SCRIPT>`, '<!-- x -->', '\\<!--', /\\<!--/.test('<!--'),",
+      "'\\\\<!--'];",
     ].join(' ');
     const { html } = render(
       view('<p>x</p>'),
@@ -437,5 +437,12 @@ describe('renderHTMLWithDispatcher', () => {
     const started = performance.now();
     render(view(`<p>${'\n '.repeat(50_000)}x</p>`));
     expect(performance.now() - started).toBeLessThan(1_000);
+  });
+
+  it('minifies unclosed raw-text openers in linear time', () => {
+    const started = performance.now();
+    const { html } = render(view(`<p>a</p>\n${'<textarea '.repeat(20_000)}`));
+    expect(performance.now() - started).toBeLessThan(1_000);
+    expect(html).toContain('<p>a</p><textarea');
   });
 });

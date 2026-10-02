@@ -31,7 +31,11 @@ export interface StructuredValue {
   raw: number | string;
   /** How to render `raw`. Absent passes a string through and gives a number default formatting. */
   format?: StructuredValueFormat;
-  /** Fraction digits for numeric formats. Omitted trims to at most two. */
+  /**
+   * Fraction digits for numeric formats. `number`, `percent`, and `currency`
+   * pad to it; omitted, `number` and `percent` keep at most two and `currency`
+   * two. `compact` and `bytes` drop trailing zeros and keep one when omitted.
+   */
   precision?: number;
   /** ISO 4217 code for `currency`; defaults to USD. */
   currency?: string;

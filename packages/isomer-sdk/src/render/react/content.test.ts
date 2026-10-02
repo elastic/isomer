@@ -5,15 +5,14 @@
  * 2.0.
  */
 
-import { type Context, createElement } from 'react';
+import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { Composition } from '../../composition/composition';
 
 import {
   type CompositionWrapperOptions,
-  type ReactTreeDispatcher,
   renderCompositionContent,
   useReactPrimitiveDispatcher,
   wrapCompositionContent,
@@ -102,21 +101,26 @@ describe('useReactPrimitiveDispatcher', () => {
     expect(seen).toEqual([null, dispatcher]);
   });
 
-  it('reads a dispatcher published on the globalThis context, as a second SDK copy would', () => {
-    const shared = (globalThis as Record<symbol, unknown>)[
-      Symbol.for('isomer.react.dispatcher')
-    ] as Context<ReactTreeDispatcher | null>;
-    const dispatcher: ReactTreeDispatcher = { renderReact: () => null };
+  it('shares one dispatcher context with a second copy of the module', async () => {
+    vi.resetModules();
+    const second = await import('./content');
+    const dispatcher = {
+      renderReact: () => createElement(Probe),
+      renderText: () => '',
+    };
     let seen: unknown;
     const Probe = () => {
-      seen = useReactPrimitiveDispatcher();
+      seen = second.useReactPrimitiveDispatcher();
       return null;
     };
     renderToStaticMarkup(
-      createElement(
-        shared.Provider,
-        { value: dispatcher },
-        createElement(Probe)
+      createElement(() =>
+        renderCompositionContent(
+          composition,
+          dispatcher,
+          {},
+          { heading: false }
+        )
       )
     );
     expect(seen).toBe(dispatcher);

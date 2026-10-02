@@ -26,6 +26,12 @@ describe('formatCompactNumber', () => {
   it('promotes a value that rounds up to the next tier', () => {
     expect(formatCompactNumber(999_950)).toBe('1m');
     expect(formatCompactNumber(999.96)).toBe('1k');
+    expect(formatCompactNumber(-999_950)).toBe('-1m');
+  });
+
+  it('keeps a value that rounds below the next tier', () => {
+    expect(formatCompactNumber(999_949)).toBe('999.9k');
+    expect(formatCompactNumber(999_950, '', 2)).toBe('999.95k');
   });
 
   it('appends a unit, joining % without a space', () => {

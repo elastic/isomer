@@ -421,7 +421,19 @@ const embedCss = (css: string): string => css.replace(/<\/(?=style)/gi, '<\\/');
 // regular expressions, `u` flag included; a `String.raw` value or an HTML-like
 // comment holding either sequence is the cost.
 const embedJs = (js: string): string =>
-  js.replace(/<\/(?=script)/gi, '<\\/').replace(/<!--/g, '\\x3C!--');
+  js
+    .replace(/<\/(?=script)/gi, '<\\/')
+    .replace(/<!--/g, (_match, at: number, source: string) =>
+      // After an odd backslash run, that backslash escapes the `<`, so it is
+      // dropped for `\x3C` to stand in its place.
+      escapedBy(source, at) ? 'x3C!--' : '\\x3C!--'
+    );
+
+const escapedBy = (source: string, at: number): boolean => {
+  let slashes = 0;
+  while (source[at - slashes - 1] === '\\') slashes += 1;
+  return slashes % 2 === 1;
+};
 
 const RenderedHtmlView = <TNode extends PrimitiveNode>({
   composition,
@@ -464,7 +476,7 @@ const RenderedHtmlView = <TNode extends PrimitiveNode>({
 // spanning a line break is collapsed: a single space between inline elements
 // (`<b>a</b> <i>b</i>`) is authored content.
 const MINIFY_RE =
-  /<(pre|script|style|textarea)[\s>][\s\S]*?<\/\1\s*>|(?<=>)\s+(?=<)/gi;
+  /<(pre|script|style|textarea)[\s>][\s\S]*?(?:<\/\1\s*>|$)|(?<=>)\s+(?=<)/gi;
 
 const minifyHtml = (value: string): string =>
   value

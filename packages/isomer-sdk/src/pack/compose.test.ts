@@ -61,6 +61,8 @@ describe('composePacks', () => {
       expect.objectContaining({
         name: 'IsomerError',
         code: 'DUPLICATE_PACK_ID',
+        message:
+          'composePacks: "notes" names more than one pack; pack ids must be unique',
       })
     );
   });
