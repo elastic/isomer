@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { bodyNodeSurfacesSchema } from '../define/primitive_module';
+import { formatDisplayValue } from '../render/format_display_value';
 
 import {
   namedColorSchema,
@@ -44,5 +45,24 @@ describe('closed enum schemas', () => {
       structuredValueSchema.safeParse({ raw: 1, format: 'x' }).error?.issues[0]
         ?.message
     ).toMatch(/^must be one of: number/);
+  });
+});
+
+describe('structuredValueSchema currency', () => {
+  it('rejects a currency code Intl.NumberFormat would throw on', () => {
+    expect(
+      structuredValueSchema.safeParse({
+        raw: 5,
+        format: 'currency',
+        currency: 'dollars',
+      }).error?.issues[0]?.message
+    ).toBe('must be a three-letter currency code');
+  });
+
+  it('formats a valid currency code', () => {
+    const value = { raw: 5, format: 'currency', currency: 'eur' } as const;
+
+    expect(structuredValueSchema.safeParse(value).success).toBe(true);
+    expect(formatDisplayValue(value)).toBe('€5.00');
   });
 });

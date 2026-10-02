@@ -925,8 +925,6 @@ const pipeTableToTableBlock = (lines: readonly string[]): SlackTableBlock => {
  * code as `rich_text_preformatted`, pipe tables as a native `table` block.
  *
  * The markdown fallback for any primitive without a dedicated `slack` renderer.
- * Preferred over {@link gfmToSlackMrkdwn}, which collapses code and tables into
- * a section-level fence that Slack and pixel-faithful previews render poorly.
  */
 export const gfmToSlackBlocks = (gfm: string): SlackBlock[] => {
   const lines = gfm.split('\n');

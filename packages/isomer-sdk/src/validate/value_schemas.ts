@@ -47,7 +47,12 @@ export const structuredValueSchema = z.object({
     .min(0, { error: 'must be an integer between 0 and 6' })
     .max(6, { error: 'must be an integer between 0 and 6' })
     .optional(),
-  currency: z.string({ error: () => 'must be a string' }).optional(),
+  currency: z
+    .string({ error: () => 'must be a three-letter currency code' })
+    .regex(/^[A-Za-z]{3}$/, {
+      error: 'must be a three-letter currency code',
+    })
+    .optional(),
 });
 
 /** Value-bearing fields accept preformatted prose or a structured value. */

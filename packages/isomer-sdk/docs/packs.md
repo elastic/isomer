@@ -35,7 +35,7 @@ What comes back adds `types`, a set for duplicate detection across packs, and no
 
 There is nothing to declare for `svg`. Every pack reaches the image surface through its `react` renderers, and whether a runtime _has_ that surface depends on a frame, which is a host input rather than a pack's to promise.
 
-`extendPrimitivePack(pack, primitives)` adds primitives and keeps the declared surfaces. A type the pack already owns throws `DUPLICATE_PRIMITIVE_TYPE`, as a repeated type in `definePrimitivePack` does; `composePacks` reports the cross-pack case, and a pack `id` two packs share throws `DUPLICATE_PACK_ID`. A `slackAssetTypes` entry the pack does not register throws `UNKNOWN_PRIMITIVE_TYPE`, as an unknown type in `authoring.groups` does.
+A repeated type in `definePrimitivePack` throws `DUPLICATE_PRIMITIVE_TYPE`; `composePacks` reports the cross-pack case, and a pack `id` two packs share throws `DUPLICATE_PACK_ID`. A `slackAssetTypes` entry the pack does not register throws `UNKNOWN_PRIMITIVE_TYPE`, as an unknown type in `authoring.groups` does.
 
 ## `slackAssetTypes`
 
@@ -64,7 +64,7 @@ The script is a function body with `root`, the render's `.isomer` section, in sc
 
 The script must address markup through `data-*` attributes, never class names: class names are minified per render, so a selector written against one is a contract nothing checks. An event meant for the host sets `composed: true` as well as `bubbles: true`; `bubbles` alone stops at a shadow boundary.
 
-An enhancement the host drives, rather than one that runs in the page, omits `script`. One that finds nodes with `findNodeElements` declares `anchors: true`, so a render that resolves it carries [node anchors](rendering.md#node-anchors).
+An enhancement the host drives, rather than one that runs in the page, omits `script`. One that finds nodes with `findNodeElementPairs` declares `anchors: true`, so a render that resolves it carries [node anchors](rendering.md#node-anchors).
 
 ## `authoring`
 
@@ -137,7 +137,7 @@ Tuple-wrap both sides so neither distributes over the union. Between the two che
 
 **`AnyPrimitivePack` is `PrimitivePack<never>`.** `never` is assignable to every requirement, so it accepts every pack.
 
-**Registration is a check, not a generator.** The registry stays hand-written and readable, there is no config file or build step to learn, and the authoring fronts need no generation either: `buildJsxShim` and `buildObjectBuilders` derive the JSX and builder APIs from the registry array at runtime. Deriving the union from the registry in _source_ does not compile, since container primitives import the content-node alias and inferring the registry's type closes that cycle (`TS7022`).
+**Registration is a check, not a generator.** The registry stays hand-written and readable, there is no config file or build step to learn, and the authoring fronts need no generation either: `buildJsxShim` derives the JSX API from the registry array at runtime. Deriving the union from the registry in _source_ does not compile, since container primitives import the content-node alias and inferring the registry's type closes that cycle (`TS7022`).
 
 ## Next
 

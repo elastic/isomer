@@ -81,7 +81,7 @@ slack?(node, { collector, scope }): unknown | readonly unknown[]
 
 There is no `svg` renderer. The `svg` surface dispatches to `react`: an image backend lays out the pack's DOM tree and stylesheet, so a second tree authored for the image would be the same layout stated twice. Targeting images therefore costs a primitive nothing.
 
-A `markdown` renderer returns content built with `md` from `./markdown`, or a string. `md` escapes each value where it lands, so authored `*`, `|`, or a leading `#` stays text, and its links and images apply the [URL policy](url-trust.md). A string is printed as written, so it must already be safe Markdown; `md.authored` holds authored Markdown source after `sanitizeMarkdownSource`. `md.blockquote` quotes blocks, embedded child content included, `md.break()` breaks a paragraph's line with a backslash and prints as a space inside a heading, strong, emphasis, link label, or table cell, and one at the start or end of any of these is dropped, and a `md.table` cell takes one inline run or an array of them. `md.boldLabelPrefix` bolds a leading `label:`, and `md.boldSectionLabel` sets a label uppercased in strong as its own paragraph.
+A `markdown` renderer returns content built with `md` from `./markdown`, or a string. `md` escapes each value where it lands, so authored `*`, `|`, or a leading `#` stays text, and its links and images apply the [URL policy](url-trust.md). A string is printed as written, so it must already be safe Markdown; `md.authored` holds authored Markdown source, sanitized. `md.blockquote` quotes blocks, embedded child content included, `md.break()` breaks a paragraph's line with a backslash and prints as a space inside a heading, strong, emphasis, link label, or table cell, and one at the start or end of any of these is dropped, and a `md.table` cell takes one inline run or an array of them.
 
 `slack` is the one optional renderer, and it degrades: with none the dispatcher converts the mandatory markdown to Block Kit, so a missing renderer costs fidelity and nothing else.
 
@@ -156,7 +156,7 @@ Each primitive then names only `TNode`, and `createPrimitiveDispatcher<TNode, Sl
 
 ## Why it is shaped this way
 
-**Type arguments stay inferred.** TypeScript has no partial inference, so naming `TNode` explicitly (`definePrimitive<KpiNode>({ … })`) resets `TSchema` to its default, and `buildJsxShim` and `buildObjectBuilders` then type that primitive's props loosely. Type the `examples` array with the schema-derived node type and let inference do the rest. Pass `TNode` explicitly only for a `schemaFor` container, whose node type is hand-written anyway.
+**Type arguments stay inferred.** TypeScript has no partial inference, so naming `TNode` explicitly (`definePrimitive<KpiNode>({ … })`) resets `TSchema` to its default, and `buildJsxShim` then types that primitive's props loosely. Type the `examples` array with the schema-derived node type and let inference do the rest. Pass `TNode` explicitly only for a `schemaFor` container, whose node type is hand-written anyway.
 
 **The schema must be a `ZodObject`**, not a union or an intersection. The composition builds a `z.discriminatedUnion('type', …)` over every primitive, and typing the field as `ZodObject` turns "this cannot be a union" into a compile error at the definition rather than a runtime failure at the first `.extend()`.
 

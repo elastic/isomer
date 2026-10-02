@@ -8,7 +8,7 @@
 import { md } from '@elastic/isomer-sdk/markdown';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import { slackCaption, slackMarksContext } from '../../render';
+import { markdownCaption, slackCaption, slackMarksContext } from '../../render';
 import {
   marksMarkdown,
   marksRichText,
@@ -44,7 +44,7 @@ export const text = ({ label, items, footnote }: SlideListNode): string =>
     .join('\n\n');
 
 export const markdown = ({ label, items, footnote }: SlideListNode) => [
-  ...(label ? [md.boldSectionLabel(label)] : []),
+  ...(label ? [markdownCaption(label)] : []),
   md.list(
     items.map(({ term, body }) =>
       md.paragraph(

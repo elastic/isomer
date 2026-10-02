@@ -26,7 +26,6 @@ import type { CheckedComposition } from '../validate/validation';
 import {
   anchorValue,
   findNodeElementPairs,
-  findNodeElements,
   NODE_ANCHOR_ATTRIBUTE,
   nodeAnchor,
   withAnchors,
@@ -610,9 +609,7 @@ describe('findNodeElementPairs', () => {
       { node: leaf, element: undefined },
     ]);
   });
-});
 
-describe('findNodeElements', () => {
   it('skips a node hidden from react, with its children', () => {
     const hidden = {
       type: 'box',
@@ -621,17 +618,9 @@ describe('findNodeElements', () => {
     };
     const shown = { type: 'leaf', text: 'y' };
     const { root, elements } = stubRoot(['leaf']);
-    const found = findNodeElements(root, [hidden, shown], walk);
-    expect(found.get(shown)).toBe(elements[0]);
-    expect(found.size).toBe(1);
-  });
-
-  it('keeps the last occurrence of a reused node object', () => {
-    const leaf = { type: 'leaf', text: 'twice' };
-    const { root, elements } = stubRoot(['leaf', 'leaf']);
-    const found = findNodeElements(root, [leaf, leaf], walk);
-    expect(found.get(leaf)).toBe(elements[1]);
-    expect(found.size).toBe(1);
+    expect(findNodeElementPairs(root, [hidden, shown], walk)).toEqual([
+      { node: shown, element: elements[0] },
+    ]);
   });
 
   it('pairs nested same-type nodes by pre-order and document order', () => {
@@ -643,23 +632,28 @@ describe('findNodeElements', () => {
       'leaf',
       'leaf',
     ]);
-    const found = findNodeElements(root, composition.body, walk);
     const [first, second] = composition.body as BoxNode[];
     const inner = second!.items[0] as BoxNode;
-    expect(found.get(first)).toBe(elements[0]);
-    expect(found.get(second)).toBe(elements[2]);
-    expect(found.get(inner)).toBe(elements[3]);
-    expect(found.get(inner.items[0])).toBe(elements[4]);
-    expect(found.get(second!.items[1])).toBe(elements[5]);
+    expect(findNodeElementPairs(root, composition.body, walk)).toEqual([
+      { node: first, element: elements[0] },
+      { node: first!.items[0], element: elements[1] },
+      { node: second, element: elements[2] },
+      { node: inner, element: elements[3] },
+      { node: inner.items[0], element: elements[4] },
+      { node: second!.items[1], element: elements[5] },
+    ]);
   });
 
-  it('leaves out a type whose counts disagree', () => {
+  it('pairs nothing of a type whose counts disagree', () => {
     const { root } = stubRoot(['box', 'leaf', 'box', 'box', 'leaf']);
-    const found = findNodeElements(root, composition.body, walk);
-    expect(found.size).toBe(3);
-    expect(
-      [...found.keys()].every((node) => (node as BoxNode).type === 'box')
-    ).toBe(true);
+    const paired = findNodeElementPairs(root, composition.body, walk).filter(
+      ({ element }) => element !== undefined
+    );
+    expect(paired.map(({ node }) => (node as BoxNode).type)).toEqual([
+      'box',
+      'box',
+      'box',
+    ]);
   });
 });
 
@@ -698,8 +692,8 @@ describe('a type with selector and HTML syntax in it', () => {
     const node = { type: oddType, text: 'odd' };
     const { root, elements } = stubRoot([oddType]);
     expect(
-      findNodeElements(root, [node], createChildNodeWalker([odd])).get(node)
-    ).toBe(elements[0]);
+      findNodeElementPairs(root, [node], createChildNodeWalker([odd]))
+    ).toEqual([{ node, element: elements[0] }]);
   });
 
   it('is counted after HTML escaping by the conformance case', () => {

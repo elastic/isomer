@@ -16,7 +16,6 @@ import {
   type PrimitivePackInput,
   type ThemePair,
 } from '@elastic/isomer-sdk';
-import { createDistillateHtmlStyleAdapter } from '@elastic/isomer-sdk/html';
 
 import { slideBuildsEnhancement } from './builds';
 import { slidesPackAuthoring } from './pack_authoring';
@@ -25,6 +24,7 @@ import { slideDeckPrimitives } from './registry';
 import { slideDistillery } from './theme/distillery';
 import { type SlideFrameTheme, slidePaletteForMode } from './theme/palette';
 import { scalePx } from './theme/scale';
+import { createDistillateStyleAdapter } from './theme/style_adapter';
 import { SLIDE_THEME } from './theme/theme';
 
 /** Pixel width of {@link slideDeckFrame}. */
@@ -66,7 +66,7 @@ export const slideDeckFrame: Frame<SlideFrameTheme> = {
   wrap: (_header, body, _viewport) => body[0],
 };
 
-const styleAdapter = createDistillateHtmlStyleAdapter(slideDistillery);
+const styleAdapter = createDistillateStyleAdapter(slideDistillery);
 
 const packInput = {
   id: 'slides',

@@ -8,23 +8,9 @@
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { describe, expect, it } from 'vitest';
 
-import { markdownImage, markdownLink, markdownLinkWrap } from './format';
+import { md, serializeMarkdown } from './builder';
 
-describe('markdownLink', () => {
-  it('escapes ] and \\ in the label', () => {
-    expect(markdownLink('a] b\\c', 'https://example.com')).toBe(
-      '[a\\] b\\\\c](https://example.com)'
-    );
-  });
-
-  it('percent-encodes parens and whitespace in the destination', () => {
-    expect(markdownLink('x', 'https://example.com/(a b)')).toBe(
-      '[x](https://example.com/%28a%20b%29)'
-    );
-  });
-});
-
-describe('link formatters read back by a Markdown parser', () => {
+describe('md links and images read back by a Markdown parser', () => {
   const destinations = (markdown: string): string[] => {
     const found: string[] = [];
     const walk = (node: {
@@ -32,8 +18,12 @@ describe('link formatters read back by a Markdown parser', () => {
       url?: string;
       children?: unknown[];
     }) => {
-      if (node.url !== undefined) found.push(node.url);
-      for (const child of node.children ?? []) walk(child as typeof node);
+      if (node.url !== undefined) {
+        found.push(node.url);
+      }
+      for (const child of node.children ?? []) {
+        walk(child as typeof node);
+      }
     };
     walk(fromMarkdown(markdown));
     return found;
@@ -44,14 +34,24 @@ describe('link formatters read back by a Markdown parser', () => {
     ['a reference to a colon reference', 'javascript&#38;#58;alert(1)'],
     ['references to slashes', '&#38;#47;&#38;#47;evil.example'],
   ])('never yields a live destination from %s', (_name, href) => {
-    for (const markdown of [
-      markdownLink('x', href),
-      markdownImage('x', href),
-      markdownLinkWrap('x', href),
-    ]) {
-      for (const url of destinations(markdown)) {
+    for (const content of [md.link('x', href), md.image('x', href)]) {
+      for (const url of destinations(
+        serializeMarkdown(md.paragraph(content))
+      )) {
         expect(url).not.toMatch(/^\s*(?:javascript:|\/\/)/i);
       }
     }
+  });
+
+  it('keeps a label and destination intact through brackets, parens, and spaces', () => {
+    const markdown = serializeMarkdown(
+      md.paragraph(md.link('a] b\\c', 'https://example.com/(a b)'))
+    );
+
+    expect(destinations(markdown)).toEqual(['https://example.com/(a b)']);
+    const text = (node: { value?: string; children?: unknown[] }): string =>
+      (node.value ?? '') +
+      (node.children ?? []).map((child) => text(child as typeof node)).join('');
+    expect(text(fromMarkdown(markdown))).toBe('a] b\\c');
   });
 });

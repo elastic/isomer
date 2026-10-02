@@ -37,7 +37,7 @@ export interface StructuredValue {
    * two. `compact` and `bytes` drop trailing zeros and keep one when omitted.
    */
   precision?: number;
-  /** ISO 4217 code for `currency`; defaults to USD. */
+  /** Three-letter currency code for `currency`; defaults to USD. */
   currency?: string;
 }
 

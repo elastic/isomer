@@ -12,13 +12,6 @@ export {
   fromChildren,
   fromTextChildren,
 } from './authored_fields';
-export {
-  type BuilderInput,
-  type BuilderMap,
-  type NodeBuilder,
-  buildObjectBuilders,
-  defineNodeBuilder,
-} from './builders';
 export { type AuthorComponent } from './jsx';
 export {
   type AuthorComposition,
@@ -26,20 +19,13 @@ export {
   type JsxShim,
   type PrimitiveComponentMap,
   buildJsxShim,
-  itemsFromChildren,
-  requireAuthorElement,
   textFromChildren,
-  withoutChildren,
 } from './jsx_shim';
 export {
-  type AgentAuthoringContextDefaults,
-  type AgentAuthoringContextOptions,
   type AuthoringProfileId,
   type AuthoringPromptContext,
   type AuthoringViewSummary,
   AUTHORING_PROFILE_IDS,
   buildAuthoringPrompt,
-  createAgentAuthoringContextFactory,
-  createAuthoringPromptBuilder,
   formatPrimitiveEntry,
 } from './prompt';

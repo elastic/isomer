@@ -15,12 +15,7 @@ export {
 export {
   type MarkdownEnvelopeDispatcher,
   type MarkdownEnvelopeOptions,
-  defaultMarkdownFromText,
-  markdownImage,
-  markdownLink,
-  markdownLinkWrap,
   md,
   renderMarkdownEnvelope,
-  sanitizeMarkdownSource,
   serializeMarkdown,
 } from '../render/markdown';

@@ -2,6 +2,9 @@
 
 ## 2026-10-02
 
+- **The SDK API narrows before its first publish**: the Distillate HTML style adapter moves into the slides pack as `createDistillateStyleAdapter`, with readable class names only, so `./html` loses `createDistillateHtmlStyleAdapter`, `DistillateHtmlEngine`, `DistillateThemeVar`, and `DISTILLATE_STYLE_COLLECTOR`. The root loses `extendPrimitivePack`, `findNodeElements` (use `findNodeElementPairs` from `./react`), and `formatCompactNumber`. `./markdown` loses `defaultMarkdownFromText`, `markdownLink`, `markdownImage`, `markdownLinkWrap`, `sanitizeMarkdownSource`, `md.boldLabelPrefix`, and `md.boldSectionLabel`; the slides pack's `markdownCaption` replaces the last. `./slack` loses its element constructors and `gfmToSlackMrkdwn`. `./react` loses `useReactPrimitiveDispatcher`, `ReactTreeDispatcher`, and the dispatcher context. `./author` loses the object builders, `createAuthoringPromptBuilder`, `createAgentAuthoringContextFactory`, their option types, `itemsFromChildren`, `withoutChildren`, and `requireAuthorElement`.
+- **`currency` must be a three-letter code**: `structuredValueSchema` rejects a `currency` that is not three letters, which used to pass validation and throw a `RangeError` when formatted.
+- **Brand keys share one prefix**: every `Symbol.for` key is `elastic.isomer.*`, including the node-field and anchor brands, which used `isomer.*`.
 - Authored Markdown uses its GFM parse tree to sanitize nested destinations and raw HTML. Parsed URLs are checked without another reference decode, and excessive nesting falls back to inert text.
 
 ## 2026-10-01
