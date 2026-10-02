@@ -199,8 +199,10 @@ const MRKDWN_TOKEN_RE = /```|<[^<>\n]*>|&(?:amp|lt|gt);/g;
 const INLINE_MARKS = new Set(['*', '_', '~', '`']);
 const OPENER_BEFORE_RE = /[\s\p{P}]/u;
 
-// The atoms of `value` until they pass `limit` characters.
-const mrkdwnAtoms = (value: string, limit: number): string[] => {
+// The atoms of `value` until they pass `limit` characters. Only a window
+// twice the limit is scanned, which still holds any token short enough to keep.
+const mrkdwnAtoms = (input: string, limit: number): string[] => {
+  const value = input.slice(0, limit * 2);
   const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
   const atoms: string[] = [];
   let length = 0;
@@ -224,8 +226,9 @@ const mrkdwnAtoms = (value: string, limit: number): string[] => {
   return atoms;
 };
 
-// What closes the fence and inline marks still open at the end of `atoms`.
-const openMarkClosers = (atoms: readonly string[]): string => {
+// What closes the fence and inline marks still open at the end of `atoms`;
+// `next` is the atom after them, which decides whether a final mark opens.
+const openMarkClosers = (atoms: readonly string[], next?: string): string => {
   let fenced = false;
   const open: string[] = [];
   atoms.forEach((atom, index) => {
@@ -236,7 +239,7 @@ const openMarkClosers = (atoms: readonly string[]): string => {
     if (fenced || !INLINE_MARKS.has(atom)) return;
     if (open.includes('`') && atom !== '`') return;
     const before = atoms[index - 1];
-    const after = atoms[index + 1];
+    const after = index + 1 < atoms.length ? atoms[index + 1] : next;
     const at = open.lastIndexOf(atom);
     if (at !== -1) {
       // Slack does not nest a mark inside itself, so this can only close.
@@ -249,7 +252,8 @@ const openMarkClosers = (atoms: readonly string[]): string => {
       open.push(atom);
     }
   });
-  return `${open.reverse().join('')}${fenced ? '\n```' : ''}`;
+  // Marks cannot open inside a fence, so an open fence is the innermost.
+  return `${fenced ? '\n```' : ''}${open.reverse().join('')}`;
 };
 
 /**
@@ -268,8 +272,14 @@ export const clampMrkdwn = (value: string, max: number): string => {
       length += atoms[end]!.length;
       end += 1;
     }
-    const kept = atoms.slice(0, end);
-    const clamped = `${kept.join('').trimEnd()}…${openMarkClosers(kept)}`;
+    let kept = atoms.slice(0, end);
+    // A bare `<` opens a link or mention too long to see whole; cut before it.
+    const opener = kept.lastIndexOf('<');
+    if (opener !== -1) kept = kept.slice(0, opener);
+    const clamped = `${kept.join('').trimEnd()}…${openMarkClosers(
+      kept,
+      atoms[kept.length]
+    )}`;
     if (clamped.length <= max) {
       return clamped;
     }

@@ -990,6 +990,83 @@ describe('Slack envelope count limits', () => {
     const blocks = render([{ type: 'image', image_url, alt_text: 'chart' }]);
     expect(blocks).toEqual([{ type: 'context', elements: [mrkdwn('chart')] }]);
   });
+
+  it('keeps the alt text of a section accessory past the URL limit', () => {
+    const image_url = `https://x.test/${'a'.repeat(SLACK_LIMITS.imageUrlChars)}`;
+    const blocks = render([
+      {
+        type: 'section',
+        text: mrkdwn('T'),
+        accessory: { type: 'image', image_url, alt_text: 'chart' },
+      },
+    ]);
+    expect(blocks).toEqual([
+      { type: 'section', text: mrkdwn('T') },
+      { type: 'context', elements: [mrkdwn('chart')] },
+    ]);
+  });
+
+  it('caps option groups and the options in each', () => {
+    const group = (g: number) => ({
+      label: plain(`g${g}`),
+      options: Array.from({ length: 101 }, (_, i) => ({
+        ...option(`o${i}`),
+        value: `g${g}o${i}`,
+      })),
+    });
+    const [block] = render([
+      {
+        type: 'actions',
+        elements: [
+          {
+            type: 'static_select',
+            action_id: 's',
+            option_groups: Array.from({ length: 101 }, (_, g) => group(g)),
+          },
+        ],
+      },
+    ]).filter((b) => b.type === 'actions');
+    const [select] = block?.type === 'actions' ? block.elements : [];
+    const groups =
+      select?.type === 'static_select' ? (select.option_groups ?? []) : [];
+    expect(groups).toHaveLength(SLACK_LIMITS.optionGroupsPerSelect);
+    expect(groups.every(({ options }) => options.length === 100)).toBe(true);
+  });
+
+  it('replaces an initial option with the emitted option of its value', () => {
+    const emitted = { ...option('Shown'), value: 'v1' };
+    const [block] = render([
+      {
+        type: 'actions',
+        elements: [
+          {
+            type: 'static_select',
+            action_id: 's',
+            option_groups: [{ label: plain('g'), options: [emitted] }],
+            initial_option: { ...option('Different'), value: 'v1' },
+          },
+        ],
+      },
+    ]).filter((b) => b.type === 'actions');
+    const [select] = block?.type === 'actions' ? block.elements : [];
+    expect(select?.type === 'static_select' && select.initial_option).toEqual(
+      emitted
+    );
+  });
+
+  it('splits one actions block into consecutive blocks with no dividers between them', () => {
+    const elements = Array.from({ length: 626 }, (_, i) => button(`b${i}`));
+    const blocks = render([section('lead'), { type: 'actions', elements }]);
+    const actions = blocks.filter((b) => b.type === 'actions');
+    expect(actions).toHaveLength(26);
+    expect(blocks.filter((b) => b.type === 'divider')).toHaveLength(1);
+    expect(
+      actions.reduce(
+        (sum, b) => sum + (b.type === 'actions' ? b.elements.length : 0),
+        0
+      )
+    ).toBe(626);
+  });
 });
 
 describe('Slack envelope mrkdwn clamping', () => {

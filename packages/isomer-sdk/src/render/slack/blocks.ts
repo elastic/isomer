@@ -76,6 +76,8 @@ export const SLACK_LIMITS = {
   optionsPerOverflow: 5,
   /** Options per radio button group or checkboxes element. */
   optionsPerChoice: 10,
+  /** Option groups per select, each holding up to `optionsPerSelect` options. */
+  optionGroupsPerSelect: 100,
   /** Max indent level for `rich_text_list`. */
   richTextListMaxIndent: 8,
   /**

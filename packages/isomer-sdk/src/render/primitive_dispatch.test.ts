@@ -410,6 +410,17 @@ describe('slack asset swap', () => {
     expect(collector.requests[0]?.node).toEqual({ type: 'pic', src: '#' });
   });
 
+  it('runs the sanitizer once, rendering alt text from the node it allocates', () => {
+    const collector = createSlackAssetCollector();
+    let calls = 0;
+    pic(
+      (node) => ({ ...node, src: `${node.src}#${++calls}` }),
+      () => 'alt'
+    ).renderSlack({ type: 'pic', src: 'x' }, collector);
+    expect(calls).toBe(1);
+    expect(collector.requests[0]?.node).toEqual({ type: 'pic', src: 'x#1' });
+  });
+
   it('allocates nothing for a node its sanitizer drops', () => {
     const collector = createSlackAssetCollector();
     expect(

@@ -119,9 +119,10 @@ export const renderSlackEnvelope = <TNode extends PrimitiveNode>(
     blocks.push(...dispatcher.renderSlack(node, collector).flatMap(fitBlock));
   }
 
+  // Split after the rhythm, so the fragments of one block read as one.
   const rhythm = applySectionRhythm(
     coalesceFieldSections(enforceTableLimits(blocks))
-  );
+  ).flatMap(splitBlockCounts);
   const budgeted = enforceBlockBudget(rhythm);
   // Only ask the host to upload assets whose placeholder block survived the
   // budget; blocks elided by `enforceBlockBudget` are never posted, so
@@ -205,24 +206,37 @@ const clampControl = (element: SlackActionElement): SlackActionElement => {
     );
   }
   if ('option_groups' in menu && menu.option_groups) {
-    menu.option_groups = menu.option_groups.map((group) => ({
-      ...group,
-      label: clampText(group.label, SLACK_LIMITS.optionGroupLabelChars),
-      options: group.options.map(clampOption),
-    }));
+    menu.option_groups = menu.option_groups
+      .slice(0, SLACK_LIMITS.optionGroupsPerSelect)
+      .map((group) => ({
+        ...group,
+        label: clampText(group.label, SLACK_LIMITS.optionGroupLabelChars),
+        options: group.options.slice(0, maxOptions).map(clampOption),
+      }));
   }
-  const kept = new Set(menu.options?.map(({ value }) => value));
-  const isKept = ({ value }: SlackOptionObject): boolean =>
-    !menu.options || kept.has(value);
+  // Slack requires an initial option to equal one it emits, so each is
+  // replaced by the emitted option of the same value, or dropped.
+  const emitted = new Map(
+    [
+      ...(menu.options ?? []),
+      ...(('option_groups' in menu && menu.option_groups) || []).flatMap(
+        ({ options }) => options
+      ),
+    ].map((option) => [option.value, option])
+  );
   if ('initial_option' in menu && menu.initial_option) {
-    if (isKept(menu.initial_option)) {
-      menu.initial_option = clampOption(menu.initial_option);
+    const match = emitted.get(menu.initial_option.value);
+    if (match) {
+      menu.initial_option = match;
     } else {
       delete menu.initial_option;
     }
   }
   if ('initial_options' in menu && menu.initial_options) {
-    menu.initial_options = menu.initial_options.filter(isKept).map(clampOption);
+    menu.initial_options = menu.initial_options.flatMap(({ value }) => {
+      const match = emitted.get(value);
+      return match ? [match] : [];
+    });
   }
   return menu;
 };
@@ -287,8 +301,10 @@ const fitImageUrls = (block: SlackBlock): SlackBlock[] => {
       if (block.accessory?.type !== 'image' || fitsImageUrl(block.accessory)) {
         return [block];
       }
-      const { accessory: _dropped, ...rest } = block;
-      return [rest];
+      const { accessory, ...rest } = block;
+      return accessory.alt_text
+        ? [rest, contextBlock([escapeMrkdwn(accessory.alt_text)])]
+        : [rest];
     }
     default:
       return [block];
@@ -296,7 +312,7 @@ const fitImageUrls = (block: SlackBlock): SlackBlock[] => {
 };
 
 const fitBlock = (block: SlackBlock): SlackBlock[] =>
-  fitImageUrls(block).map(clampBlockText).flatMap(splitBlockCounts);
+  fitImageUrls(block).map(clampBlockText);
 
 // Pack renderers build their own blocks, and one overlong text makes Slack
 // reject the whole message.
