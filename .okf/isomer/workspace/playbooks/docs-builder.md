@@ -34,7 +34,7 @@ sources:
 4. Link across packages with a GitHub URL. A relative link to another package is absent from the tarball and fails `pnpm check:pack-contents`.[^pack-contents]
 5. Preview with `pnpm docs:dev` (copies package docs, then `docs-builder serve` at http://localhost:3000). The builder refuses symlinks, so the copies are real directories. Do not commit them.[^assemble][^dev]
 6. CI builds the set with `elastic/docs-builder@main`.[^ci]
-7. `codex-preview.yml` builds a per-PR preview, and `codex-preview-deploy.yml` deploys it from the default branch to Elastic Internal Docs (Codex), alongside the GitHub Pages deploy in `docs.yml`, which it never replaces. This keeps PR code from receiving deployment or OIDC credentials. The build inlines `elastic/docs-actions` so `assemble_package_docs.js` can run first; its file path is bound to a token policy in `elastic/catalog-info`, so do not rename it.[^codex-preview]
+7. `docs.yml` keeps publishing GitHub Pages on `main`. `codex-preview.yml` updates the Elastic Internal Docs link index on `main`, which publishes the live Codex site, and deploys a Codex preview for same-repository pull requests. It inlines rather than calls `elastic/docs-actions`' reusable workflow so `assemble_package_docs.js` can run before the build; the reusable workflow has no hook for that step. The `codex-preview.yml` and `codex-preview-cleanup.yml` paths are bound to token policies, so do not rename either.[^codex-preview]
 
 The assembler product id is not registered yet; this repo's docs-builder job is an isolated build.
 
