@@ -26,6 +26,7 @@ export interface MarkdownRenderOptions extends MarkdownEnvelopeOptions {
   onValidationError?: ValidationErrorMode;
 }
 
+/** Options for {@link MarkdownSurface.renderNode}: a lone node has no heading to draw. */
 export type MarkdownRenderNodeOptions = Pick<
   MarkdownRenderOptions,
   'onValidationError'

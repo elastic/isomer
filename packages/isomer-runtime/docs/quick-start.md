@@ -6,8 +6,6 @@ A working host: one composition rendered to every surface, then a registered vie
 
 A runtime needs this package, the SDK, a pack, `zod`, `react`, and `react-dom`. The last two are required even for a text- or Slack-only host: `createIsomerRuntime` always builds the `react` and `html` surfaces, and `html` loads `react-dom/server`. `@elastic/isomer-image-takumi` is only for the PNG in step 4.
 
-The reference pack is not published to npm. It is an exemplar to copy: take [`packages/isomer-primitives-slides`](https://github.com/elastic/isomer/tree/main/packages/isomer-primitives-slides) into your workspace, or run these steps inside this repository, where it resolves as `@elastic/isomer-primitives-slides`.
-
 ```jsonc
 {
   "dependencies": {
@@ -20,6 +18,8 @@ The reference pack is not published to npm. It is an exemplar to copy: take [`pa
   }
 }
 ```
+
+The pack is the host's own. The reference pack this page imports as `@elastic/isomer-primitives-slides` is not published to npm: it lives in [the repository](https://github.com/elastic/isomer/tree/main/packages/isomer-primitives-slides) as the pack to copy, so a host copies it into its own codebase, or writes a pack with the SDK's [`definePrimitivePack`](../../isomer-sdk/docs/packs.md), and imports it under whatever name it gives it.
 
 ## 2. Compose a runtime
 
@@ -148,12 +148,11 @@ Because the runtime holds a frame, the `svg` surface exists. It stops at a React
 ```ts
 import { createTakumiImageBackend } from '@elastic/isomer-image-takumi';
 
-const { element, css, width, height } = runtime.surfaces.svg.render(composition, {
-  theme: 'light',
-});
+const rendered = runtime.surfaces.svg.render(composition, { theme: 'light' });
+// { element, css, width, height }
 
 const takumi = createTakumiImageBackend({ fonts });
-const png = await takumi.png(runtime.surfaces.svg.render(composition));
+const png = await takumi.png(rendered);
 ```
 
 `fonts` is the host's to register, and the pack's [font notes](../../isomer-primitives-slides/docs/styling.md#fonts-on-the-image-surface) say which families and weights. The result is the PNG at the top of the repository README. See [Frame](frame.md) for how a render picks a frame and its geometry.

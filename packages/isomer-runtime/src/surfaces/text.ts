@@ -26,6 +26,7 @@ export interface TextRenderOptions extends TextEnvelopeOptions {
   onValidationError?: ValidationErrorMode;
 }
 
+/** Options for {@link TextSurface.renderNode}: a lone node has no heading to draw. */
 export type TextRenderNodeOptions = Pick<
   TextRenderOptions,
   'onValidationError'

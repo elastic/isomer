@@ -2,12 +2,18 @@
 
 ## 2026-10-02
 
+- **Runtime docs reviewed for the first npm publish**: the runtime quick start says the private reference pack lives in the repository and is copied or replaced by the host's own; the README, overview, and OKF public contract describe the published manifest (the SDK pinned at the runtime's version, ESM and CommonJS, Node 22.13.0) instead of the workspace protocol; the runtime and API pages name the `IsomerError` code beside every construction refusal, including `DUPLICATE_PACK_ID` and `EMPTY_FRAMES`, and the `html` surface's `scheme` option; the OKF runtime concepts carry the full option list, the error codes, the frame rules, and every value export; and runtime JSDoc says `parse` skips the semantic passes, documents `viewRegistry`, `surfaces`, and the surface option and result aliases, and counts the other five surfaces.
 - **`rendersAnchors` and `joinMrkdwn` leave the SDK**: `./html` no longer exports `rendersAnchors`, and `./slack` no longer exports `joinMrkdwn`.
 - **The runtime's API is trimmed and made consistent before first publish**: the React surface takes `enhancements` as ids resolved against the packs' enhancements, as `html` does, instead of `EnhancementDefinition`s, and warns once per composition when a script has no `wrapper`; `svg.resolveViewport` is removed, since every `svg` render result carries `width` and `height` and it alone skipped validation and the input budget; `RuntimePackTypes` leaves the root entry, since no exported signature names it; an empty `frames` map throws the new `EMPTY_FRAMES` rather than typing an absent `svg` surface as present, and `defaultFrame` without `frames` throws `UNKNOWN_FRAME`. The runtime quick-start no longer lists the private reference pack as an npm dependency, and the typing examples use a placeholder pack.
 - **The SDK API narrows before its first publish**: the Distillate HTML style adapter moves into the slides pack as `createDistillateStyleAdapter`, with readable class names only, so `./html` loses `createDistillateHtmlStyleAdapter`, `DistillateHtmlEngine`, `DistillateThemeVar`, and `DISTILLATE_STYLE_COLLECTOR`. The root loses `extendPrimitivePack`, `findNodeElements` (use `findNodeElementPairs` from `./react`), and `formatCompactNumber`. `./markdown` loses `defaultMarkdownFromText`, `markdownLink`, `markdownImage`, `markdownLinkWrap`, `sanitizeMarkdownSource`, `md.boldLabelPrefix`, and `md.boldSectionLabel`; the slides pack's `markdownCaption` replaces the last. `./slack` loses its element constructors and `gfmToSlackMrkdwn`. `./react` loses `useReactPrimitiveDispatcher`, `ReactTreeDispatcher`, and the dispatcher context. `./author` loses the object builders, `createAuthoringPromptBuilder`, `createAgentAuthoringContextFactory`, their option types, `itemsFromChildren`, `withoutChildren`, and `requireAuthorElement`.
 - **`currency` must be a three-letter code**: `structuredValueSchema` rejects a `currency` that is not three letters, which used to pass validation and throw a `RangeError` when formatted.
 - **Brand keys share one prefix**: every `Symbol.for` key is `elastic.isomer.*`, including the node-field and anchor brands, which used `isomer.*`.
 - Authored Markdown uses its GFM parse tree to sanitize nested destinations and raw HTML. Parsed URLs are checked without another reference decode, and excessive nesting falls back to inert text.
+- Markdown parsing has length and syntax budgets, including closing-delimiter runs, to bound adversarial parser work.
+- Markdown reference images use the asset policy, preserving multiline data images while checking shared link uses independently.
+- Reserved node-field provenance survives repeated optional wrapping when a defined primitive schema is derived.
+- Inline JavaScript preserves tagged-template values and site identity and accepts legacy HTML-style comments without eval.
+- Composition mapping documents that the supplied child-node walker covers every represented pack.
 
 ## 2026-10-01
 
@@ -105,12 +111,3 @@
 
 - **Creation**: Initial Isomer OKF v0.2 bundle covering the workspace, `@elastic/isomer-sdk`, `@elastic/isomer-runtime`, `@elastic/isomer-primitives-slides`, `@elastic/isomer-image-takumi`, and `@elastic/isomer-evals`.
 - **License artifacts**: The generated runtime inventory now includes declared Takumi platform dependencies and fails when their notice or license text is unavailable.
-
-- 2026-10-02: Markdown parsing has length and syntax budgets, including closing-delimiter runs, to bound adversarial parser work.
-
-- 2026-10-02: Markdown reference images use the asset policy, preserving multiline data images while checking shared link uses independently.
-- 2026-10-02: Reserved node-field provenance survives repeated optional wrapping when a defined primitive schema is derived.
-
-- 2026-10-02: Inline JavaScript preserves tagged-template values and site identity and accepts legacy HTML-style comments without eval.
-
-- 2026-10-02: Composition mapping documents that the supplied child-node walker covers every represented pack.

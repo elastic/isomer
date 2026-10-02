@@ -115,13 +115,17 @@ export interface IsomerRuntimeOptions<
     TRenderContext
   >;
   /**
-   * Fallback `aria-label` when the composition has neither `meta.ariaLabel`
-   * nor a `title`. Defaults to `'View'`.
+   * Fallback `aria-label` for the `html` wrapper, and the `react` one when
+   * `wrapper` is set, when the composition has neither `meta.ariaLabel` nor a
+   * `title`. Defaults to `'View'`.
    */
   defaultAriaLabel?: string;
   /** Options for the authoring JSON Schema `getAuthoringContext` returns. */
   authoring?: AuthoringJsonSchemaOptions;
-  /** Limits `checkInputBudget` applies in `parse`, `validate`, view input, and every surface but `react`, which does not validate. */
+  /**
+   * Limits `checkInputBudget` applies in `parse`, `validate`, view input, and
+   * every surface but `react`, which does not validate. Defaults to the SDK's.
+   */
   inputBudget?: InputBudget;
 }
 
@@ -144,7 +148,11 @@ export interface RuntimeSurfaces<
   svg: TSvg;
 }
 
-/** A primitive-pack-agnostic runtime: dispatcher, view registry, and render surfaces. */
+/**
+ * What {@link createIsomerRuntime} returns: the composed packs, one validator
+ * and parser over their inventory, a view registry, one render surface per
+ * format, and the authoring material an agent is handed.
+ */
 export interface IsomerRuntime<
   THostContext = unknown,
   TRenderContext = PrimitiveRenderContext,
@@ -159,15 +167,24 @@ export interface IsomerRuntime<
   readonly packs: readonly PrimitivePack<TTheme>[];
   /** Every pack's definitions, flattened — the dispatcher's inventory. */
   readonly primitives: readonly AnyPrimitiveDefinition[];
+  /** Product-owned views, requested by id; the `views` option pre-registers. */
   readonly viewRegistry: ViewRegistry<THostContext, PrimitiveNode>;
+  /** One render surface per output format; `svg` is `undefined` without `frames`. */
   readonly surfaces: RuntimeSurfaces<TRenderContext, TSvg>;
   /** Builds fresh authoring material (schema, catalog, views) for this runtime. */
   getAuthoringContext(): RuntimeAuthoringContext;
   /** Reports the primitive types and render formats this runtime supports. */
   getCapabilities(): HostCapabilities;
-  /** Validates a composition against this runtime's primitives; `composition` on the result is the copy it checked. */
+  /**
+   * Validates a composition against this runtime's primitives: the input
+   * budget, the schema, then the semantic passes. `composition` on the result
+   * is the plain copy it checked, which every validating surface renders.
+   */
   validate(composition: Composition): CheckedValidationResult;
-  /** Parses and validates an unknown value as a `Composition`. */
+  /**
+   * Parses an unknown value as a `Composition`: the input budget and the
+   * schema, not the semantic passes `validate` runs.
+   */
   parse(value: unknown): ParsedComposition;
   /**
    * This runtime's `Composition` schema — the same instance `validate`/`parse`

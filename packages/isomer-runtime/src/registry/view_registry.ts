@@ -20,7 +20,9 @@ import {
 } from '@elastic/isomer-sdk';
 import { z, type ZodType } from 'zod';
 
+/** A JSON Schema document, as the authoring schema and a view's `inputSchema` are projected. */
 export type JsonSchema = Record<string, unknown>;
+/** The record a host passes to {@link ViewRegistry.request}, and `build`'s input when the view declares no schema. */
 export type ViewInput = Record<string, unknown>;
 
 /**

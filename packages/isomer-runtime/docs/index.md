@@ -41,4 +41,8 @@ Reach for this package when a host has to render the same answer to more than on
 
 ## Package facts
 
-Source lives under `assemble/`, `registry/`, and `surfaces/`. `@elastic/isomer-sdk` is a workspace dependency. `zod`, `react`, and `react-dom` (`>=18 <20`) are peers — required, because the root entry always constructs the `react` and `html` surfaces, and `html` loads `react-dom/server`. No Node built-ins, so the package runs in a browser, on a server, or in an edge function; on Node it needs 22.13.0 or later, like the SDK. One entry point.
+```sh
+npm install @elastic/isomer-runtime @elastic/isomer-sdk react react-dom zod
+```
+
+`@elastic/isomer-sdk` is a dependency pinned to the same version, so the two install together. `zod`, `react`, and `react-dom` (`>=18 <20`) are peers — required, because the root entry always constructs the `react` and `html` surfaces, and `html` loads `react-dom/server`. One entry point, published as ESM and CommonJS. No Node built-ins, so the package runs in a browser, on a server, or in an edge function; on Node it needs 22.13.0 or later, like the SDK. Source lives under `assemble/`, `registry/`, and `surfaces/`.

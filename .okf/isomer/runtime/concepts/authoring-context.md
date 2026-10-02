@@ -22,7 +22,7 @@ sources:
 
 `getAuthoringContext()` returns `{ schema, primitives, groups, views, schemaFor, describePrimitives }`. `schema` is [`buildAuthoringJsonSchema`](/sdk/concepts/composition.md): named shared defs, inlined scalars, no `id` or `surfaces`. `primitives` is one catalog entry per primitive, including its `example`. `views` is read on every call, because a host may register views after boot; each summary is projected once at `register`, so the read is cheap. Extra compositions belong on the prompt; catalog examples live on `primitives`. Schema and catalog are cached for the runtime's lifetime. `groups` is every pack's primitive groups in pack order, for an index catalog. `describePrimitives(types)` returns those types' catalog entries and the `$defs` of `schema` they reach, so an agent reads an index and looks up only what it picks; like `schemaFor`, it throws `UNKNOWN_PRIMITIVE_TYPE` for an unregistered type.[^authoring][^docs][^authoring-schema]
 
-Pass `authoring` on `createIsomerRuntime` to name pack-owned `$defs`, attach refine descriptions, or hide a legacy alias. `parse` still validates with `buildCompositionJsonSchema`. Pack prose comes from the SDK [authoring](/sdk/concepts/authoring.md) helpers.
+Pass `authoring` on `createIsomerRuntime` to name pack-owned `$defs`, attach refine descriptions, or hide a legacy alias. Every composed pack's own `authoring` (`describe`, `omitProperties`) is merged in first, so the runtime option wins on conflict. `parse` still validates with `buildCompositionJsonSchema`. Pack prose comes from the SDK [authoring](/sdk/concepts/authoring.md) helpers.
 
 Related: [SDK authoring](/sdk/concepts/authoring.md), [view registry](/runtime/concepts/view-registry.md), [scoring](/evals/concepts/scoring.md).
 
