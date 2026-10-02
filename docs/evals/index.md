@@ -17,14 +17,25 @@ The package holds no corpus, no goldens, no credentials, and no model client. It
 import { formatReport, runEvals } from '@elastic/isomer-evals';
 
 const report = await runEvals({
-  runtime,                        // your pack's assembled runtime
-  corpus,                         // your prompts, with optional goldens
-  generate: async ({ prompt }) => callYourModel(prompt),
-  concurrency: 4,                 // cases in flight at once; defaults to 1
+  runtime, // your pack's assembled runtime
+  corpus, // your prompts, with optional goldens
+  generate: async ({ prompt, evalCase, previousErrors }) =>
+    callYourModel(
+      [
+        prompt,
+        `## Request\n${evalCase.prompt}`,
+        ...(previousErrors
+          ? [`## Previous errors\n${previousErrors.join('\n')}`]
+          : []),
+      ].join('\n\n')
+    ),
+  concurrency: 4, // cases in flight at once; defaults to 1
 });
 
 console.log(formatReport(report));
 ```
+
+`prompt` contains shared authoring instructions, not the case request or retry feedback. Send `evalCase.prompt` on every attempt and `previousErrors` when present.
 
 `generate` is the only way a model is ever reached. Pass one that replays recorded output and the run is deterministic — which is how this belongs in CI.
 
@@ -72,11 +83,11 @@ Answering a three-stat question with one `statGroup` should score differently fr
 | `parsed` | Cases whose first attempt was JSON at all, once any code fence is stripped. | Higher |
 | `valid` | Cases whose first attempt parsed against the schema and passed validation. | Higher |
 | `validAfterRetry` | Cumulative: `valid` plus cases whose retry, handed the first attempt's errors, validated. Never below `valid`. | Higher; a wide gap over `valid` is an error-copy finding, not a model finding |
-| `meanSelectionF1` | Mean multiset F1 of `body[].type` against the golden, over cases that have one. `1` is the same primitives in the same counts. | Higher |
+| `meanSelectionF1` | Mean multiset F1 of `body[].type` against the golden, over validated cases that have one. `1` is the same primitives in the same counts. | Higher |
 | `sizeVsGolden` | Per case: sanitized bytes over the golden's bytes, so `1` is the golden's size. | Closer to `1`; well above is verbosity, well below is a thinner answer than the golden |
-| `answerability` | Judge verdicts over the `text` rendering, counted as `yes` / `partial` / `no`. Present only when a `judge` was supplied. | More `yes`, fewer `no` |
+| `answerability` | Judge verdicts over the `text` rendering, counted as `yes` / `partial` / `no`. Present when a `judge` scored at least one validated case. | More `yes`, fewer `no` |
 
-Per case, `payload.rawBytes` is the model's output as sent and `payload.sanitizedBytes` is what survived parsing; the gap is invented properties the schema dropped. `payload.unknownTypes` lists node types the catalog does not have — any entry is either a catalog gap or the model reaching past it.
+Per case, `payload.rawBytes` is the model's output as sent and `payload.sanitizedBytes` is what survived parsing; the gap is invented properties the schema dropped. `payload.unknownTypes` lists node types the catalog does not have — any entry is either a catalog gap or the model reaching past it. Payload scores describe the first attempt, including when a retry succeeds. If a malformed container makes its child hook throw, its descendants cannot be inspected; scoring continues with the other branches, so an empty `unknownTypes` list does not prove the payload is valid.
 
 ### Thresholds
 
@@ -112,7 +123,7 @@ const corpus = [
 ];
 ```
 
-A case without a `golden` still scores validity, payload, and answerability — only selection needs one.
+A case without a `golden` still scores validity, payload, and answerability — only selection needs one. Selection and answerability run only when the first attempt or retry validates; a case that remains invalid still reports validity and payload scores.
 
 ## Scoring functions on their own
 

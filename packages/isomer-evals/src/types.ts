@@ -34,7 +34,7 @@ export interface EvalCase {
 /** One attempt at a case. `attempt` is 0 for the first try, 1 for the retry after validation errors. */
 export interface GenerateRequest {
   evalCase: EvalCase;
-  /** The authoring prompt to send, already assembled from the runtime's context. */
+  /** Shared authoring instructions; send with `evalCase.prompt` and any `previousErrors`. */
   prompt: string;
   attempt: number;
   /** What the previous attempt got wrong, a parse failure or validation errors; present only when `attempt > 0`. */
@@ -76,7 +76,7 @@ export interface ValidityScore {
   validAfterRetry: boolean;
   /** The first attempt's failures: its parse error, or its validation errors; empty when it validated. */
   errors: readonly string[];
-  /** The parsed composition the other scores read, including when validation failed: the retry's if it parsed after a failed first attempt, otherwise the first attempt's. */
+  /** The composition from the attempt that validated: the first attempt's when it did, otherwise the retry's. Absent when neither did. */
   composition?: Composition | undefined;
 }
 
@@ -112,10 +112,10 @@ export interface AnswerabilityScore {
 export interface EvalCaseResult {
   caseId: string;
   validity: ValidityScore;
-  /** Absent without a golden, or without a parsed composition. */
+  /** Absent without a golden, or without a validated composition. */
   selection?: PrimitiveSelectionScore | undefined;
   payload: PayloadScore;
-  /** Absent without a judge, or without a parsed composition. */
+  /** Absent without a judge, or without a validated composition. */
   answerability?: AnswerabilityScore | undefined;
 }
 
@@ -130,7 +130,7 @@ export interface EvalReport {
     valid: number;
     /** Cases that validated on the first attempt or the retry; never below `valid`. */
     validAfterRetry: number;
-    /** Mean F1 across cases that had a golden. */
+    /** Mean F1 across validated cases that had a golden. */
     meanSelectionF1?: number | undefined;
     /** Count by verdict, when a judge was supplied. */
     answerability?: Record<AnswerabilityVerdict, number> | undefined;

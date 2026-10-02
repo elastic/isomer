@@ -181,6 +181,11 @@ export const prepare = (_pluginConfig, context) => {
 /** Publishes every workspace package that is not `private`. */
 export const publish = (_pluginConfig, context) => {
   const { logger, nextRelease } = context;
+  const channel = nextRelease.channel ?? 'latest';
+  // npm rejects maintenance branch names such as `1.x` as semver ranges.
+  const tag = /^\d+(?:\.(?:\d+|x))?\.x$/.test(channel)
+    ? `release-${channel}`
+    : channel;
   const names = workspacePackages()
     .filter(({ manifest }) => manifest.private !== true)
     .map(({ manifest }) => manifest.name);
@@ -193,6 +198,8 @@ export const publish = (_pluginConfig, context) => {
       'publish',
       '--access',
       'public',
+      '--tag',
+      tag,
       '--no-git-checks',
     ],
     { stdio: 'inherit', cwd: repoRoot }

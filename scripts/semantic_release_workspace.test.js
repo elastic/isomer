@@ -5,19 +5,61 @@
  * 2.0.
  */
 
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   BUILD_INPUTS,
   BUILD_SLICES,
   partitionCommits,
+  publish,
   publishedFolders,
   shipsChange,
 } from './semantic_release_workspace.js';
 import { repoRoot, workspacePackages } from './workspace_packages.js';
+
+vi.mock('node:child_process', () => ({ execFileSync: vi.fn() }));
+
+afterEach(() => vi.clearAllMocks());
+
+describe('publish', () => {
+  it.each([
+    [undefined, 'latest'],
+    [null, 'latest'],
+    ['alpha', 'alpha'],
+    ['beta', 'beta'],
+    ['1.x', 'release-1.x'],
+    ['1.2.x', 'release-1.2.x'],
+    ['1.x.x', 'release-1.x.x'],
+  ])('publishes channel %s with npm tag %s', (channel, tag) => {
+    publish(
+      {},
+      {
+        logger: { log() {} },
+        nextRelease: { version: '0.1.0', channel },
+      }
+    );
+    expect(execFileSync).toHaveBeenCalledExactlyOnceWith(
+      'pnpm',
+      [
+        '-r',
+        ...workspacePackages()
+          .filter(({ manifest }) => manifest.private !== true)
+          .flatMap(({ manifest }) => ['--filter', manifest.name]),
+        'publish',
+        '--access',
+        'public',
+        '--tag',
+        tag,
+        '--no-git-checks',
+      ],
+      { stdio: 'inherit', cwd: repoRoot }
+    );
+  });
+});
 
 const FOLDERS = ['isomer-runtime', 'isomer-sdk'];
 
