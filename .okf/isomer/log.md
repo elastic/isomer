@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-02
+
+- Authored Markdown uses its GFM parse tree to sanitize nested destinations and raw HTML. Parsed URLs are checked without another reference decode, and excessive nesting falls back to inert text.
+
 ## 2026-10-01
 
 - **The Markdown envelope prints its title and subtitle as text**: `renderMarkdownEnvelope` builds them with `md.heading` and `md.emphasis`, so a line break, `*`, `_`, `#`, or link syntax in either stays text, as on the text and Slack envelopes.

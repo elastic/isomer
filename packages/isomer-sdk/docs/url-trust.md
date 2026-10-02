@@ -32,6 +32,8 @@ Both are undone before the scheme is examined, references first so a decoded tab
 
 Protocol-relative forms are rejected including the backslash variants browsers fold into `/`, since `//host` and `\\host` resolve onto a foreign host rather than naming a relative path.
 
+Authored Markdown is parsed as GFM. Its already-decoded destinations are checked without another reference decode; nested labels and HTML blocks receive the same policy. Excessive nesting degrades to inert text.
+
 ## Using it in a primitive
 
 ```ts

@@ -107,12 +107,12 @@
     }
   },
   "dependencies": {
+    "mdast-util-from-markdown": "^2.0.3",
     "mdast-util-gfm": "^3.1.0",
-    "mdast-util-to-markdown": "^2.1.2"
+    "mdast-util-to-markdown": "^2.1.2",
+    "micromark-extension-gfm": "^3.0.0"
   },
   "devDependencies": {
-    "@types/mdast": "^4.0.4",
-    "mdast-util-from-markdown": "^2.0.3",
-    "micromark-extension-gfm": "^3.0.0"
+    "@types/mdast": "^4.0.4"
   }
 }

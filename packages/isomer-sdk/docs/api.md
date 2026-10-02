@@ -104,6 +104,8 @@ Block Kit types: `SlackBlock` and its variants `SlackHeaderBlock` (`SlackHeaderL
 
 mrkdwn formatters: `escapeMrkdwn`, `bold`, `italic`, `strike`, `code`, `codeBlock`, `link`, `slackLinkUrl` (the URL `link` would link, or `null`), `clampSlackText`, `formatHeaderText`, `joinMrkdwn`, `gfmToSlackMrkdwn`, `gfmToSlackBlocks`, and `markdownContentToSlackBlocks` for content built with `md`. `splitRichTextElement` splits a rich-text section, quote, or preformatted element past `sectionTextChars` into adjacent ones of its type without losing text. Element constructors, each clamped to the Slack budget: `slackActionId`, `slackSelectOption` (`SlackSelectOptionInput`), `slackStaticSelect`, `slackOverflowElement` (`SlackOverflowOptionInput`), `slackUrlButton`, `slackButtonStyle`.
 
+The root, `./markdown`, and `./slack` load the GFM parser for authored Markdown sanitization.
+
 ## `./author`
 
 JSX: `fromChildren`, `fromTextChildren`, `AuthoredChildBrand`, `AuthoredTextBrand`, `AuthorChildContext`, `defineAuthorComponent`, `AuthorComponent`, `authorType`, `getAuthorType`, `buildJsxShim`, `JsxShim`, `PrimitiveComponentMap`, `CompositionAuthorProps`, `AuthorComposition`, `textFromChildren`, `withoutChildren`, `itemsFromChildren`, `requireAuthorElement`.

@@ -39,6 +39,8 @@ export {
   navigationHref,
   sanitizeAssetUrl,
   sanitizeNavigationHref,
+  sanitizeParsedAssetUrl,
+  sanitizeParsedNavigationHref,
 } from './url';
 export {
   type CheckedComposition,

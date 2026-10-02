@@ -84,6 +84,18 @@ export const sanitizeNavigationHref = (href: string): string | null =>
 export const sanitizeAssetUrl = (url: string): string | null =>
   passes(decisionForm(url), ASSET_SCHEME_RE) ? stripControls(url) : null;
 
+/** Checks a Markdown parser's decoded destination without decoding it again. */
+export const sanitizeParsedNavigationHref = (href: string): string | null => {
+  const normalized = stripControls(href);
+  return passes(normalized, NAVIGATION_SCHEME_RE) ? normalized : null;
+};
+
+/** Checks a Markdown parser's decoded image destination. */
+export const sanitizeParsedAssetUrl = (url: string): string | null => {
+  const normalized = stripControls(url);
+  return passes(normalized, ASSET_SCHEME_RE) ? normalized : null;
+};
+
 /**
  * Render-time replacement for a navigation href that failed the policy: an
  * inert same-document link, so the label stays visible without a destination.
