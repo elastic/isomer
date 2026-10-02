@@ -223,7 +223,10 @@ export const createIsomerRuntime: CreateIsomerRuntime = (<
   const styleAdapter = resolveStyleAdapter(options.packs, options.styleAdapter);
   assertRuntimePacks(options.packs, styleAdapter);
   const frames = bindFrames(options.frames);
-  const defaultFrame = resolveDefaultFrame(frames, options.defaultFrame);
+  const defaultFrame = resolveDefaultFrame(
+    options.frames && frames,
+    options.defaultFrame
+  );
   const packs = applyRendererOverrides(
     options.packs,
     options.rendererOverrides
@@ -258,7 +261,7 @@ export const createIsomerRuntime: CreateIsomerRuntime = (<
   );
   const defaultAriaLabel = options.defaultAriaLabel ?? 'View';
   const surfaces: RuntimeSurfaces<TRenderContext> = {
-    react: createReactSurface(dispatcher, defaultAriaLabel),
+    react: createReactSurface(dispatcher, enhancements, defaultAriaLabel),
     html: createHtmlSurface(
       dispatcher,
       validate,
@@ -363,13 +366,29 @@ const frameAt = (
  * Picks the frame a render uses when it names none.
  *
  * Defaulted rather than required for the one-frame case. Returns `undefined`
- * when there is no frame at all, which is what leaves the `svg` surface off.
+ * only when `frames` was omitted, which is what leaves the `svg` surface off;
+ * an empty map throws, since the overloads type it as present.
  */
 const resolveDefaultFrame = (
-  frames: Readonly<Record<string, BoundFrame>>,
+  frames: Readonly<Record<string, BoundFrame>> | undefined,
   requested: string | undefined
 ): string | undefined => {
+  if (frames === undefined) {
+    if (requested !== undefined) {
+      throw new IsomerError(
+        'UNKNOWN_FRAME',
+        `runtime: defaultFrame "${requested}" was given but no frames were supplied`
+      );
+    }
+    return undefined;
+  }
   const names = Object.keys(frames);
+  if (names.length === 0) {
+    throw new IsomerError(
+      'EMPTY_FRAMES',
+      'runtime: frames is empty; omit it to build a runtime without the svg surface'
+    );
+  }
   if (requested !== undefined) {
     if (frameAt(frames, requested) === undefined) {
       throw new IsomerError(

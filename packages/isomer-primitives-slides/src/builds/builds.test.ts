@@ -28,12 +28,7 @@ import {
   fiveItemsExample,
   threeItemsExample,
 } from '../primitives/slide_timeline/examples';
-import {
-  showSlideBuild,
-  SLIDE_BUILDS,
-  slideBuilds,
-  slideBuildsEnhancement,
-} from '.';
+import { showSlideBuild, SLIDE_BUILDS, slideBuilds } from '.';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -188,7 +183,7 @@ describe('slide builds', () => {
     act(() =>
       root.render(
         runtime.surfaces.react.render(composition, {
-          enhancements: [slideBuildsEnhancement],
+          enhancements: [SLIDE_BUILDS],
         })
       )
     );
@@ -231,7 +226,7 @@ const mountReact = (composition: Composition) => {
   act(() =>
     root.render(
       runtime.surfaces.react.render(composition, {
-        enhancements: [slideBuildsEnhancement],
+        enhancements: [SLIDE_BUILDS],
       })
     )
   );

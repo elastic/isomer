@@ -112,19 +112,10 @@ export interface SvgSurface {
     options?: SvgRenderOptions
   ): SvgPagesResult;
   /**
-   * The width and height {@link SvgSurface.render} would use for this
-   * composition. Rasterizing consumers need the viewport the element was laid
-   * out for.
-   *
-   * Throws rather than returning a validation result when the named frame is
-   * not one this runtime holds. Unlike {@link SvgSurface.render} it does not
-   * validate first, and a rasterizing host naturally calls it first.
+   * Renders a single primitive node with no surround. The result's `width` is
+   * the frame's `defaultWidth` and its `height` the frame's estimate for a
+   * one-node body.
    */
-  resolveViewport(
-    composition: Composition,
-    options?: Pick<SvgRenderOptions, 'frame' | 'width' | 'height'>
-  ): { width: number; height: number };
-  /** Renders a single primitive node with no surround. */
   renderNode(
     node: PrimitiveNode,
     options?: SvgRenderNodeOptions
@@ -333,10 +324,6 @@ export const createSvgSurface = <TRenderContext = unknown>(
         options,
         (index) => `page ${index + 1}`
       );
-    },
-    resolveViewport: (composition, options = {}) => {
-      const { frame } = frameFor(options.frame);
-      return viewportFor(frame, [composition], options);
     },
     renderNode: (node, options = {}) => {
       const { composition, node: checked } = checkNode(

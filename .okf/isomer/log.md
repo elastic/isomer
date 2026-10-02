@@ -2,6 +2,7 @@
 
 ## 2026-10-02
 
+- **The runtime's API is trimmed and made consistent before first publish**: the React surface takes `enhancements` as ids resolved against the packs' enhancements, as `html` does, instead of `EnhancementDefinition`s, and warns once per composition when a script has no `wrapper`; `svg.resolveViewport` is removed, since every `svg` render result carries `width` and `height` and it alone skipped validation and the input budget; `RuntimePackTypes` leaves the root entry, since no exported signature names it; an empty `frames` map throws the new `EMPTY_FRAMES` rather than typing an absent `svg` surface as present, and `defaultFrame` without `frames` throws `UNKNOWN_FRAME`. The runtime quick-start no longer lists the private reference pack as an npm dependency, and the typing examples use a placeholder pack.
 - Authored Markdown uses its GFM parse tree to sanitize nested destinations and raw HTML. Parsed URLs are checked without another reference decode, and excessive nesting falls back to inert text.
 
 ## 2026-10-01

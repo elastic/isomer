@@ -17,7 +17,6 @@ export {
   type RuntimeSurfaces,
   createIsomerRuntime,
 } from './assemble';
-export type { RuntimePackTypes } from './pack_types';
 export {
   type DefineViewOptions,
   type JsonSchema,
