@@ -63,16 +63,21 @@ jobs:
           git fetch origin --tags --force
           new_tag="$(git describe --tags --abbrev=0 --match 'v[0-9]*' HEAD 2>/dev/null || true)"
 
-          if [ -z "$new_tag" ] || [ "$new_tag" = "$PREVIOUS_TAG" ]; then
-            echo "No new release published; skipping PR labeling."
+          if [ -z "$new_tag" ]; then
+            echo "No release tag found; skipping PR labeling."
             exit 0
           fi
 
           gh label create released --color 6f42c1 \
             --description "Included in a published release" --force
 
-          if [ -n "$PREVIOUS_TAG" ]; then
-            range="$PREVIOUS_TAG..$new_tag"
+          if [ "$new_tag" = "$PREVIOUS_TAG" ]; then
+            previous_tag="$(git describe --tags --abbrev=0 --match 'v[0-9]*' "$new_tag^" 2>/dev/null || true)"
+          else
+            previous_tag="$PREVIOUS_TAG"
+          fi
+          if [ -n "$previous_tag" ]; then
+            range="$previous_tag..$new_tag"
           else
             range="$new_tag"
           fi
