@@ -39,9 +39,15 @@ describe('slackActionId', () => {
 });
 
 describe('slackSelectOption', () => {
-  it('clamps the value to 75 characters and includes a description only when given', () => {
-    const option = slackSelectOption({ label: 'L', value: 'v'.repeat(80) });
-    expect(option.value).toHaveLength(75);
+  it('cuts the value to 150 characters and includes a description only when given', () => {
+    const option = slackSelectOption({ label: 'L', value: 'v'.repeat(160) });
+    expect(option.value).toBe('v'.repeat(150));
+    expect(
+      slackSelectOption({ label: 'L', value: `${'v'.repeat(149)}😀` }).value
+    ).toBe('v'.repeat(149));
+    expect(
+      slackSelectOption({ label: 'L', value: `${'v'.repeat(149)}😀a` }).value
+    ).toBe('v'.repeat(149));
     expect(option.description).toBeUndefined();
     expect(
       slackSelectOption({ label: 'L', value: 'v', description: 'd' })

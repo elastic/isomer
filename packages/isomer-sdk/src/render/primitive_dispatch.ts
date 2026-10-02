@@ -191,15 +191,22 @@ export const createPrimitiveDispatcher = <
       return undefined;
     }
     const definition = getDefinition(node);
-    const renderer = definition.renderers[RENDERER_FOR_SURFACE[surface]] as
-      Renderer<TNode, S, T> | undefined;
-    if (!renderer) {
-      return undefined;
-    }
     const safeNode = sanitizeNode(definition, node);
     return safeNode === null
       ? undefined
-      : renderer(safeNode, { ...extras, scope: scope() });
+      : renderSanitized(surface, definition, safeNode, extras);
+  };
+
+  // `renderOn` for a node its sanitizer has already run on.
+  const renderSanitized = <S extends SurfaceName>(
+    surface: S,
+    definition: AnyPrimitiveDefinition,
+    safeNode: TNode,
+    extras: Omit<SurfaceMap<T>[S]['env'], 'scope'>
+  ): SurfaceMap<T>[S]['output'] | undefined => {
+    const renderer = definition.renderers[RENDERER_FOR_SURFACE[surface]] as
+      Renderer<TNode, S, T> | undefined;
+    return renderer?.(safeNode, { ...extras, scope: scope() });
   };
 
   const renderMarkdown = (node: TNode): string => {
@@ -257,8 +264,16 @@ export const createPrimitiveDispatcher = <
       }
       const assets = isSlackAssetCollector(collector) ? collector : undefined;
       if (assets && isSlackAssetType?.(node.type)) {
-        const altText = renderOn('text', node, {}) ?? node.type;
-        const ref = assets.allocate(node, altText);
+        const definition = getDefinition(node);
+        const safeNode = sanitizeNode(definition, node);
+        if (safeNode === null) {
+          return [];
+        }
+        const altText =
+          (isVisibleOnSurface(safeNode, 'text') &&
+            renderSanitized('text', definition, safeNode, {})) ||
+          node.type;
+        const ref = assets.allocate(safeNode, altText);
         const block = {
           type: 'image',
           alt_text: altText,

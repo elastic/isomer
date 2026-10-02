@@ -194,6 +194,53 @@ export const clampSlackText = (value: string, max: number): string => {
   return max <= 1 ? head : `${head.trimEnd()}…`;
 };
 
+// A `<…>` link or mention and an entity, each matched where it starts.
+const LINK_TOKEN_RE = /<[^<>\n]*>/y;
+const ENTITY_TOKEN_RE = /&(?:amp|lt|gt);/y;
+
+// The end of the token `re` matches at `index`, or `undefined`.
+const tokenEnd = (
+  value: string,
+  re: RegExp,
+  index: number
+): number | undefined => {
+  re.lastIndex = index;
+  return re.test(value) ? re.lastIndex : undefined;
+};
+
+/**
+ * {@link clampSlackText} for `mrkdwn`: never cuts inside a `<…>` link or
+ * mention or an entity. Formatting marks are left as they fall; Slack prints an
+ * unclosed one as written.
+ */
+export const clampMrkdwn = (value: string, max: number): string => {
+  const clamped = clampSlackText(value, max);
+  if (clamped === value || max <= 1) {
+    return clamped;
+  }
+  // Entity first: a link holds no `<` of its own, so stepping back to its
+  // start cannot land inside an entity, while the reverse could.
+  let cut = clamped.length - 1;
+  const entity = value.lastIndexOf('&', cut - 1);
+  if (entity !== -1 && (tokenEnd(value, ENTITY_TOKEN_RE, entity) ?? 0) > cut) {
+    cut = entity;
+  }
+  const link = value.lastIndexOf('<', cut - 1);
+  if (link !== -1 && (tokenEnd(value, LINK_TOKEN_RE, link) ?? 0) > cut) {
+    cut = link;
+  }
+  return `${value.slice(0, cut).trimEnd()}…`;
+};
+
+/**
+ * `value` cut to `max` UTF-16 code units, never through a surrogate pair. For
+ * opaque values a host reads back, which an ellipsis would change.
+ */
+export const cutSlackValue = (value: string, max: number): string => {
+  const cut = value.slice(0, max);
+  return /[\ud800-\udbff]$/.test(cut) ? cut.slice(0, -1) : cut;
+};
+
 /**
  * Collapses whitespace and clamps to `SLACK_LIMITS.headerTextChars`. Header
  * text is `plain_text`, so no markdown survives — do not pre-format it.
@@ -215,7 +262,7 @@ export const joinMrkdwn = (
   const filtered = lines.filter(
     (line): line is string => line !== undefined && line.length > 0
   );
-  return clampSlackText(filtered.join('\n'), budget);
+  return clampMrkdwn(filtered.join('\n'), budget);
 };
 
 // ---------------------------------------------------------------------------
@@ -896,7 +943,7 @@ export const gfmToSlackBlocks = (gfm: string): SlackBlock[] => {
     if (prose.length === 0) {
       return;
     }
-    const text = clampSlackText(
+    const text = clampMrkdwn(
       gfmToSlackMrkdwn(prose.join('\n')),
       SLACK_LIMITS.sectionTextChars
     );
