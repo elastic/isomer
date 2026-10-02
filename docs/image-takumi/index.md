@@ -5,7 +5,11 @@ description: Renders the svg surface's element and stylesheet to PNG, SVG, or PD
 
 # Takumi image backend
 
-`@elastic/isomer-image-takumi` rasterizes the `svg` surface's output with [takumi](https://takumi.kane.tw). PNG, SVG, or PDF out; nothing else.
+`@elastic/isomer-image-takumi` rasterizes the `svg` surface's output with [takumi](https://takumi.kane.tw): PNG, SVG, or PDF out, and a measured layout for the SDK's `checkLayout`.
+
+```sh
+npm install @elastic/isomer-image-takumi react react-dom
+```
 
 ```ts
 import { createTakumiImageBackend } from '@elastic/isomer-image-takumi';
@@ -20,6 +24,8 @@ const pdf = await takumi.pdf(runtime.surfaces.svg.renderPages(deck));
 The `svg` surface returns `{ element, css, width, height }` — the same React tree the DOM gets, paired with the pack's stylesheet and the viewport it was measured for. This package serializes that tree, hands it to takumi's `fromHtml`, and lays it out. No primitive writes an image renderer, and this package holds no opinion about compositions.
 
 `ImageInput` is declared structurally rather than imported, so this package depends on no isomer package — `react` and `react-dom` are its only peers. `SvgRenderResult` from `@elastic/isomer-runtime` satisfies it, and `SvgPagesResult`, what the surface's `renderPages` returns, satisfies `PdfInput` the same way.
+
+`createTakumiImageBackend({ fonts, cacheMaxBytes })` builds one takumi renderer. `fonts` is covered [below](#fonts); `cacheMaxBytes` caps takumi's resource cache, and `0` disables it. `png(input, { devicePixelRatio })` raises fidelity, sharper text and gradients, at the same output size: the PNG stays `input.width` by `input.height` whatever the ratio. `svg` is vector, so it takes no raster options.
 
 ## Measuring a layout
 
@@ -41,7 +47,7 @@ const { png, validation } = await renderPng(runtime, composition, takumi, {
 });
 ```
 
-The composition is rendered even when invalid — `validation` is how a caller finds out, rather than a thrown error — unless it was refused before parsing, which throws `CompositionValidationError`. What is drawn is the `composition` the validation result carries, the copy it checked, so `validation` describes the image; a runtime whose `validate` returns no such copy is refused with an error rather than drawing the input. `runtime` and `composition` are declared structurally, the same way `ImageInput` is.
+The composition is rendered even when invalid — `validation` is how a caller finds out, rather than a thrown error — unless it was refused before parsing, which throws an error identified as the SDK's `CompositionValidationError` by `name`, `code`, and `errors`. What is drawn is the `composition` the validation result carries, the copy it checked, so `validation` describes the image; a runtime whose `validate` returns no such copy is refused with an error rather than drawing the input. `runtime` and `composition` are declared structurally, the same way `ImageInput` is.
 
 ## Rendering a PDF
 
@@ -57,7 +63,7 @@ Each page is wrapped in a fixed-size block that ends the page, so a frame that r
 
 Two differences from `png` matter. A glyph no registered font covers rejects the render by default, naming the code point, where `png` draws takumi's built-in face; `uncoveredText: 'placeholder'` or `'blank'` relaxes that, and the better fix is registering a face that covers what the theme draws, including anything it draws through CSS `content:`. And the PDF engine fetches nothing: a remote `img` source draws blank unless its bytes are passed in `images` as `[{ src, data }]`, while a `data:` URI needs no entry. Takumi's PDF output also rejects `filter: blur()`, `drop-shadow()`, and `backdrop-filter`.
 
-`renderPdf(runtime, deck, backend, options?)` is `renderPng`'s counterpart: it validates every composition, calls `renderPages` on the copies validation checked with `onValidationError: 'collect'`, and returns `{ pdf, pageCount, width, height, validations }`, one validation per composition. As with `renderPng`, input refused before parsing throws. An empty deck throws the runtime's `EMPTY_PAGES`.
+`renderPdf(runtime, deck, backend, options?)` is `renderPng`'s counterpart: it validates every composition, calls `renderPages` on the copies validation checked with `onValidationError: 'collect'`, and returns `{ pdf, pageCount, width, height, validations }`, one validation per composition. As with `renderPng`, input refused before parsing throws. An empty deck throws the runtime's `EMPTY_PAGES` before the backend sees it; `pdf` itself throws on an empty `pages` list.
 
 ## Fonts
 
@@ -79,6 +85,28 @@ The raster is byte-stable for the same input, same process, same platform — `b
 
 A PDF is byte-stable on the same terms once `metadata.creationDate` is fixed; left unset, takumi stamps the render time and no two renders match. The deck example commits `deck.pdf` beside its PNGs under the same CI-only comparison.
 
+## API
+
+| Export | What it is |
+| --- | --- |
+| `createTakumiImageBackend` | `(options?: TakumiImageBackendOptions) => TakumiBackend`; `fonts` and `cacheMaxBytes` |
+| `renderPng` | `(runtime, composition, backend, options?) => Promise<RenderPngResult>`, `{ png, width, height, validation }` |
+| `renderPdf` | `(runtime, deck, backend, options?) => Promise<RenderPdfResult>`, `{ pdf, pageCount, width, height, validations }` |
+
+| Type | Shape |
+| --- | --- |
+| `ImageInput`, `PdfInput` | The `svg` surface's `render` and `renderPages` results, declared structurally |
+| `TakumiImageBackend`, `TakumiMeasuringBackend`, `TakumiPdfBackend`, `TakumiBackend` | `{ png, svg }`, plus `measure`, `{ pdf }`, and all three |
+| `TakumiImageBackendOptions`, `TakumiRenderOptions` | `{ fonts?, cacheMaxBytes? }` and `{ devicePixelRatio? }` |
+| `TakumiPdfOptions`, `TakumiPdfMetadata` | The document options above, and `metadata`'s fields |
+| `LayoutBox` | What `measure` returns, one per laid-out element |
+| `PngRuntime`, `PdfRuntime` | The slice of a runtime `renderPng` and `renderPdf` need: `validate` and the `svg` surface |
+| `PngSvgOptions`, `RenderPngOptions`, `RenderPdfOptions` | The forwarded `svg` options, and each helper's options |
+| `RenderPngResult`, `RenderPdfResult`, `PngValidationResult`, `PngCheckedValidationResult` | The helpers' results and the validation shapes they carry |
+| `Font`, `FontDetails`, `FontLoader`, `ImagesInput` | Re-exported from `@takumi-rs/core` and `takumi-pdf`, so a host types `fonts` and `images` without a second import |
+
+`src/api_reference.test.ts` fails when a name exported from `src/index.ts` is missing from this page.
+
 ## Status
 
-Published with the other workspace packages at one version. It is a host-side rasterizer: the runtime stays free of native dependencies, and a host that draws images adds this package. `@takumi-rs/core` is a native binary, loaded when the package is imported; `takumi-pdf` is WebAssembly, imported on the first PDF, so a host that never asks for one never loads it.
+Published with the other workspace packages at one version, as ESM and CommonJS from one entry point. It is a host-side rasterizer: the runtime stays free of native dependencies, and a host that draws images adds this package. `@takumi-rs/core` is a native binary, loaded when the package is imported, with a prebuilt binary per platform as its own optional dependencies; `takumi-pdf` is WebAssembly, imported on the first PDF, so a host that never asks for one never loads it.

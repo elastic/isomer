@@ -46,17 +46,21 @@ Eight subpaths, split by what a consumer is willing to load:
 
 | Entry | Pulls in | Typical consumer |
 | --- | --- | --- |
-| `.` | zod and React runtimes | everyone — contracts, schema, validation, dispatch |
-| `./html` | React and `react-dom/server` | the HTML surface, a pack's HTML entry |
-| `./text` | nothing beyond zod | text envelopes and formatting |
-| `./markdown` | nothing beyond zod | markdown envelopes and formatting |
-| `./slack` | nothing beyond zod | Block Kit types, limits, asset collection |
-| `./react` | react | React content helpers and dispatcher context |
+| `.` | zod, React, and the GFM parser and serializer | everyone — contracts, schema, validation, dispatch |
+| `./html` | React, `react-dom/server`, and a JavaScript parser | the HTML surface, a pack's HTML entry |
+| `./text` | nothing | text envelopes |
+| `./markdown` | zod and the GFM parser and serializer | markdown envelopes and formatting |
+| `./slack` | zod and the GFM parser and serializer | Block Kit types, limits, asset collection |
+| `./react` | React | React content helpers and dispatcher context |
 | `./author` | React | JSX front end, agent prompts |
-| `./testing` | Node assert | pack conformance harness |
+| `./testing` | Node built-ins | pack conformance harness |
 
-A Slack bot or an MCP server can use the surface-specific subpaths without loading a DOM renderer or the TypeScript compiler. Root consumers load React because the dispatcher owns the mandatory React renderer and the SVG path that reuses it.
+A Slack bot or an MCP server can use the surface-specific subpaths without loading a DOM renderer. Root consumers load React because the dispatcher owns the mandatory React renderer and the SVG path that reuses it.
 
 ## Package facts
 
-`zod` and `react` are required peers. `react-dom` is optional and needed by `./html`. Only `./testing` touches Node built-ins. On Node it needs 22.13.0 or later, the first 22.x release whose `require()` loads an ES module without a warning. The SDK must not import the runtime.
+```sh
+npm install @elastic/isomer-sdk react zod
+```
+
+`zod` and `react` are required peers. `react-dom` is optional and needed by `./html`. The GFM parser and serializer (`mdast-util-from-markdown`, `mdast-util-to-markdown`, `mdast-util-gfm`, `micromark-extension-gfm`) and `acorn` are ordinary dependencies, installed with the package. It ships as ESM and CommonJS, with `typesVersions` so a `Node10` resolver finds each subpath's types. Only `./testing` touches Node built-ins. On Node it needs 22.13.0 or later, the first 22.x release whose `require()` loads an ES module without a warning. The SDK must not import the runtime.
