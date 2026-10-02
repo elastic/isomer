@@ -243,6 +243,9 @@ importers:
 
   packages/isomer-sdk:
     dependencies:
+      acorn:
+        specifier: ^8.18.0
+        version: 8.18.0
       mdast-util-from-markdown:
         specifier: ^2.0.3
         version: 2.0.3

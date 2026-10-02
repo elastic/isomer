@@ -42,3 +42,5 @@ Related: [dispatch](/sdk/concepts/dispatch.md), [packs](/sdk/concepts/packs.md),
 [^envelope]: HTML envelope
 
 [^anchors]: Node anchors
+
+Inline JavaScript embedding preserves tagged-template raw and cooked values and per-site identity, and converts legacy HTML-style comments to line comments without requiring eval.[^docs]

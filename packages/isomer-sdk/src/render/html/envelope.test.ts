@@ -374,6 +374,39 @@ describe('renderHTMLWithDispatcher', () => {
     );
   });
 
+  it('preserves raw tagged templates, receivers, site identity and HTML comments', () => {
+    const source = [
+      '<!-- legacy script comment',
+      'globalThis.out = [];',
+      'const receiver = {tag(parts, value) {',
+      'globalThis.out.push([this === receiver, parts[0], parts.raw[0], value, Object.isFrozen(parts), Object.isFrozen(parts.raw)]);',
+      'globalThis.same = !globalThis.previous || globalThis.previous === parts;',
+      'globalThis.previous = parts; return value; }};',
+      'for (let i = 0; i < 2; i++) receiver.tag`</script><!--${String.raw`</SCRIPT><!--`}`;',
+      'globalThis.out.push(String.raw`\\<!--`);',
+      '--> legacy closing comment',
+    ].join('\n');
+    const { html } = render(
+      view('<p>x</p>'),
+      {},
+      {
+        styleAdapter: { ...adapter, getScriptText: () => source },
+      }
+    );
+    const script = embeddedScriptOf(html);
+    expect(script).not.toMatch(/<\/script|<!--/i);
+    const run = (code: string) => {
+      const context: { out?: unknown; same?: boolean } = {};
+      new Script(code).runInNewContext({
+        globalThis: context,
+        document: { currentScript: { parentElement: {} } },
+      });
+      return [context.out, context.same];
+    };
+    expect(run(script)).toEqual(run(source));
+    expect(run(script)[1]).toBe(true);
+  });
+
   it('escapes only a closing style tag in inline CSS', () => {
     const css = '<!-- .a{content:"</STYLE>"} -->';
     const { html } = render(

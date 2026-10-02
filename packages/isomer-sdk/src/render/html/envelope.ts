@@ -7,6 +7,11 @@
 
 import { createElement, Fragment, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import {
+  type Comment as JavaScriptComment,
+  type Node as JavaScriptNode,
+  parse,
+} from 'acorn';
 
 import {
   type ChildNodeWalker,
@@ -416,18 +421,101 @@ interface RenderedHtmlViewProps<TNode extends PrimitiveNode> {
 // holding it keeps its value.
 const embedCss = (css: string): string => css.replace(/<\/(?=style)/gi, '<\\/');
 
-// `</script` ends a `<script>`, and `<!--` lets a later `<script` keep it
-// open. `\/` and `\x3C` keep their meaning in strings, template literals, and
-// regular expressions, `u` flag included; a `String.raw` value or an HTML-like
-// comment holding either sequence is the cost.
-const embedJs = (js: string): string =>
-  js
+interface ScriptNode extends JavaScriptNode {
+  tag: ScriptNode;
+  quasi: ScriptNode;
+  quasis: ScriptNode[];
+  expressions: ScriptNode[];
+  value: { raw: string; cooked: string | null };
+  name?: string;
+}
+
+// Tagged templates observe raw spelling and reuse the same frozen object per site.
+const embedJs = (js: string): string => {
+  if (!/<\/script|<!--/i.test(js)) return js;
+  const comments: JavaScriptComment[] = [];
+  const tree = parse(js, { ecmaVersion: 'latest', onComment: comments });
+  const sites: ScriptNode[] = [];
+  const identifiers = new Set<string>();
+  const pending: JavaScriptNode[] = [tree];
+  while (pending.length) {
+    const node = pending.pop()! as ScriptNode;
+    if (node.type === 'Identifier' && node.name) identifiers.add(node.name);
+    if (
+      node.type === 'TaggedTemplateExpression' &&
+      node.quasi.quasis.some(({ value: { raw } }) =>
+        /<\/script|<!--/i.test(raw)
+      )
+    )
+      sites.push(node);
+    for (const value of Object.values(node)) {
+      for (const child of Array.isArray(value) ? value : [value]) {
+        if (
+          child &&
+          typeof child === 'object' &&
+          'type' in child &&
+          'start' in child
+        ) {
+          pending.push(child as JavaScriptNode);
+        }
+      }
+    }
+  }
+  sites.sort((a, b) => a.start - b.start);
+  let prefix = '__isomerTemplate';
+  while ([...identifiers].some((name) => name.startsWith(prefix)))
+    prefix += '_';
+  const literal = (value: string | null): string =>
+    value === null ? 'void 0' : JSON.stringify(value).replace(/</g, '\\u003c');
+  const rewrite = (start: number, end: number): string => {
+    let cursor = start;
+    let result = '';
+    const edits = [
+      ...sites.map((site, index) => ({
+        ...site,
+        index,
+        comment: undefined as string | undefined,
+      })),
+      ...comments
+        .filter(({ start }) => /^(?:<!--|-->)/.test(js.slice(start, start + 4)))
+        .map((comment) => ({ ...comment, index: -1, comment: comment.value })),
+    ].sort((a, b) => a.start - b.start);
+    for (const edit of edits) {
+      if (edit.start < cursor || edit.end > end) continue;
+      result += js.slice(cursor, edit.start);
+      if (edit.comment !== undefined) {
+        result += `//${edit.comment}`;
+      } else {
+        const site = sites[edit.index]!;
+        const {
+          tag,
+          quasi: { quasis, expressions },
+        } = site;
+        const cooked = quasis
+          .map(({ value }) => literal(value.cooked))
+          .join(',');
+        const raw = quasis.map(({ value }) => literal(value.raw)).join(',');
+        const cache = `${prefix}${edit.index}`;
+        const template = `${cache} ??= ${prefix}Freeze(${prefix}Define([${cooked}], 'raw', {value:${prefix}Freeze([${raw}])}))`;
+        const args = expressions.map((expression) =>
+          rewrite(expression.start, expression.end)
+        );
+        result += `(${rewrite(tag.start, tag.end)})(${template}${args.map((arg) => `,(${arg})`).join('')})`;
+      }
+      cursor = edit.end;
+    }
+    return result + js.slice(cursor, end);
+  };
+  const rewritten = rewrite(0, js.length);
+  const scoped = sites.length
+    ? `(function(){const ${prefix}Freeze=Object.freeze,${prefix}Define=Object.defineProperty;let ${sites.map((_site, index) => `${prefix}${index}`).join(',')};\n${rewritten}\n})();`
+    : rewritten;
+  return scoped
     .replace(/<\/(?=script)/gi, '<\\/')
     .replace(/<!--/g, (_match, at: number, source: string) =>
-      // After an odd backslash run, that backslash escapes the `<`, so it is
-      // dropped for `\x3C` to stand in its place.
       escapedBy(source, at) ? 'x3C!--' : '\\x3C!--'
     );
+};
 
 const escapedBy = (source: string, at: number): boolean => {
   let slashes = 0;

@@ -94,3 +94,5 @@
 
 - 2026-10-02: Markdown reference images use the asset policy, preserving multiline data images while checking shared link uses independently.
 - 2026-10-02: Reserved node-field provenance survives repeated optional wrapping when a defined primitive schema is derived.
+
+- 2026-10-02: Inline JavaScript preserves tagged-template values and site identity and accepts legacy HTML-style comments without eval.
