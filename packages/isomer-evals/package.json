@@ -1,6 +1,7 @@
 {
   "name": "@elastic/isomer-evals",
   "version": "0.0.0-development",
+  "private": true,
   "description": "Eval harness for Isomer primitive packs: scores whether a model produces valid, well-chosen Compositions from a pack's authoring context.",
   "license": "Elastic-2.0",
   "author": "Elastic",

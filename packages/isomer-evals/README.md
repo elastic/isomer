@@ -1,10 +1,8 @@
 # `@elastic/isomer-evals`
 
-Scores whether a model produces valid, well-chosen compositions from a primitive pack's authoring context. Conformance asks "does this primitive render?"; this asks "does an agent reach for the right one?" A pack author runs it against their own runtime.
+Scores whether a model produces valid, well-chosen compositions from a primitive pack's authoring context. Conformance asks "does this primitive render?"; this asks "does an agent reach for the right one?" It runs against a runtime from this repository.
 
-```sh
-npm install --save-dev @elastic/isomer-evals
-```
+This package is private and not published to npm; it runs from this repository.
 
 It depends on `@elastic/isomer-sdk` at its own version and needs the peers `react` and `zod`, which the runtime under test already brings.
 

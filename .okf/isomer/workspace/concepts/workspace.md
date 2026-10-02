@@ -22,7 +22,7 @@ sources:
 
 Isomer is a pnpm workspace. Packages live under `packages/` and resolve each other with `workspace:*` plus TypeScript project references. There is no cross-package `paths` mapping between them.[^package][^agents]
 
-Every package under `packages/` without `private: true` publishes at one version: `@elastic/isomer-sdk` and `@elastic/isomer-runtime` are what a host installs, `@elastic/isomer-image-takumi` rasterizes the `svg` surface, and `@elastic/isomer-evals` scores agent output against a pack's authoring context. `@elastic/isomer-primitives-slides`, the reference pack, and `@elastic/isomer-agent-tools`, which hands a runtime to an agent as tools, are private. Nothing has been published or pushed.[^readme]
+Every package under `packages/` without `private: true` publishes at one version: `@elastic/isomer-sdk` and `@elastic/isomer-runtime` are what a host installs, and `@elastic/isomer-image-takumi` rasterizes the `svg` surface. `@elastic/isomer-primitives-slides`, the reference pack, `@elastic/isomer-evals`, which scores agent output against a pack's authoring context, and `@elastic/isomer-agent-tools`, which hands a runtime to an agent as tools, are private. Nothing has been published or pushed.[^readme]
 
 Hosts own data, authorization, routing, and side effects. Isomer owns the view contract, primitive catalog, validation, and rendering.
 
