@@ -561,21 +561,36 @@ export type WithNodeFields<TSchema extends PrimitiveSchema> =
       >
     : PrimitiveSchema;
 
+// Marks the field schemas `definePrimitive` adds. A schema derived from a
+// defined one shares them by reference, and `Symbol.for` matches across ESM and
+// CommonJS copies of the SDK.
+const NODE_FIELD = Symbol.for('isomer.define.nodeField');
+
+const nodeField = <T extends ZodType>(schema: T): T =>
+  Object.defineProperty(schema, NODE_FIELD, { value: true });
+
 const NODE_FIELDS = {
-  id: bodyNodeIdSchema.optional(),
-  surfaces: bodyNodeSurfacesSchema.optional(),
+  id: nodeField(bodyNodeIdSchema.optional()),
+  surfaces: nodeField(bodyNodeSurfacesSchema.optional()),
 };
 
-// Marks a schema `definePrimitive` produced, so redefining from it is
-// recognized across ESM and CommonJS copies of the SDK.
-const WITH_NODE_FIELDS = Symbol.for('isomer.define.withNodeFields');
+// `.partial()` wraps each field in one more optional.
+const isNodeField = (schema: unknown): boolean => {
+  const inner = (schema as { def?: { type?: string; innerType?: unknown } })
+    .def;
+  return (
+    Object.hasOwn(schema as object, NODE_FIELD) ||
+    (inner?.type === 'optional' &&
+      Object.hasOwn(inner.innerType as object, NODE_FIELD))
+  );
+};
 
 const withNodeFields = <TSchema extends PrimitiveSchema>(
   schema: TSchema
 ): WithNodeFields<TSchema> => {
-  const extendedBefore = Object.hasOwn(schema, WITH_NODE_FIELDS);
   const reserved = Object.keys(NODE_FIELDS).find(
-    (field) => !extendedBefore && Object.hasOwn(schema.shape, field)
+    (field) =>
+      Object.hasOwn(schema.shape, field) && !isNodeField(schema.shape[field])
   );
   if (reserved) {
     throw new IsomerError(
@@ -584,8 +599,7 @@ const withNodeFields = <TSchema extends PrimitiveSchema>(
     );
   }
   const extended = schema.extend(NODE_FIELDS);
-  const result =
-    schema.def.catchall === undefined ? extended.strict() : extended;
-  Object.defineProperty(result, WITH_NODE_FIELDS, { value: true });
-  return result as WithNodeFields<TSchema>;
+  return (
+    schema.def.catchall === undefined ? extended.strict() : extended
+  ) as WithNodeFields<TSchema>;
 };

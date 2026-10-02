@@ -562,6 +562,64 @@ describe('fromChildren through wrappers', () => {
     );
   });
 
+  it('treats text children as optional when an inner layer is', () => {
+    const {
+      Composition: Root,
+      Group,
+      toComposition: convert,
+    } = buildJsxShim([
+      {
+        type: 'group' as const,
+        schema: z.object({
+          type: z.literal('group'),
+          title: fromTextChildren(z.string().optional().nullable()),
+        }),
+      },
+    ]);
+    expect(
+      convert(createElement(Root, null, createElement(Group))).body
+    ).toEqual([{ type: 'group' }]);
+  });
+
+  it('reads the items of a nullable or readonly child array', () => {
+    const items = () => z.array(z.object({ label: z.string() }));
+    expect(() =>
+      buildJsxShim([
+        brandedGroup(fromChildren('item', items())),
+        {
+          type: 'other' as const,
+          schema: z.object({
+            type: z.literal('other'),
+            items: fromChildren('item', items().nullable()),
+          }),
+        },
+      ])
+    ).not.toThrow();
+    expect(() =>
+      buildJsxShim([
+        brandedGroup(fromChildren('item', items().readonly())),
+        {
+          type: 'other' as const,
+          schema: z.object({
+            type: z.literal('other'),
+            items: fromChildren(
+              'item',
+              z.array(z.object({ count: z.number() })).readonly()
+            ),
+          }),
+        },
+      ])
+    ).toThrow(expect.objectContaining({ code: 'DUPLICATE_AUTHORED_CHILD' }));
+  });
+
+  it('names the function that rebranded a schema', () => {
+    const shared = z.string();
+    fromTextChildren(shared);
+    expect(() =>
+      fromTextChildren(shared, { collapseWhitespace: false })
+    ).toThrow(/^fromTextChildren:/);
+  });
+
   it('treats text children as optional when any wrapper layer is', () => {
     const {
       Composition: Root,

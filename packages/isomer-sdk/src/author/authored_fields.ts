@@ -80,6 +80,7 @@ const BRANDS = [
 // Applies a complete branding. Branding an instance again is allowed only with
 // the same configuration, absent options included, since both fields share it.
 const brand = (
+  caller: 'fromChildren' | 'fromTextChildren',
   schema: object,
   config: Partial<Record<(typeof BRANDS)[number], unknown>>
 ): void => {
@@ -88,7 +89,7 @@ const brand = (
     if (BRANDS.every((key) => record[key] === config[key])) return;
     throw new IsomerError(
       ISOMER_ERROR_CODES.AUTHORED_SCHEMA_REUSED,
-      'fromChildren: this schema instance is already branded another way; pass each field its own schema.'
+      `${caller}: this schema instance is already branded another way; pass each field its own schema.`
     );
   }
   for (const key of BRANDS) {
@@ -147,7 +148,7 @@ export function fromChildren(
     toItem?: (this: void, props: never, context: AuthorChildContext) => unknown;
   }
 ): ZodType {
-  brand(schema, {
+  brand('fromChildren', schema, {
     [authoredChild]: childType,
     [authoredTextField]: options?.text,
     [authoredToItem]: options?.toItem,
@@ -164,7 +165,7 @@ export const fromTextChildren = <TSchema extends ZodType>(
   schema: TSchema,
   options?: { collapseWhitespace?: boolean }
 ): TSchema & AuthoredTextBrand => {
-  brand(schema, {
+  brand('fromTextChildren', schema, {
     [authoredText]: true,
     [authoredCollapse]:
       options?.collapseWhitespace === false ? false : undefined,
@@ -220,21 +221,24 @@ const brandHolder = (schema: ZodType, key: symbol): ZodType | undefined => {
 };
 
 // Whether any layer from `schema` down to `holder` accepts `undefined`.
-const optionalThrough = (schema: ZodType, holder: ZodType): boolean => {
+// Whether any wrapper layer of `schema` accepts `undefined`.
+const optionalThrough = (schema: ZodType): boolean => {
   for (
     let current: ZodType | undefined = schema;
     current;
     current = innerSchema(current)
   ) {
     if (isOptionalSchema(current)) return true;
-    if (current === holder) return false;
   }
   return false;
 };
 
-const unwrap = (schema: ZodType): ZodType => {
-  const candidate = schema as ZodType & { unwrap?: () => ZodType };
-  return typeof candidate.unwrap === 'function' ? candidate.unwrap() : schema;
+const unwrapAll = (schema: ZodType): ZodType => {
+  let current = schema;
+  for (let inner = innerSchema(current); inner; inner = innerSchema(current)) {
+    current = inner;
+  }
+  return current;
 };
 
 /** `undefined` is a valid value, so children may be omitted. */
@@ -262,17 +266,15 @@ const schemaSignature = (
   if (type === 'array' && 'element' in schema) {
     return `[${schemaSignature((schema as { element: ZodType }).element, seen)}]`;
   }
-  if (
-    (type === 'optional' || type === 'nullable' || type === 'default') &&
-    'unwrap' in schema
-  ) {
-    return `${type}(${schemaSignature(unwrap(schema), seen)})`;
+  const inner = innerSchema(schema);
+  if (inner) {
+    return `${type}(${schemaSignature(inner, seen)})`;
   }
   return type;
 };
 
 const arrayElement = (schema: ZodType): ZodType => {
-  const inner = isOptionalSchema(schema) ? unwrap(schema) : schema;
+  const inner = unwrapAll(schema);
   if (zodDefType(inner) === 'array' && 'element' in inner) {
     return (inner as { element: ZodType }).element;
   }
@@ -298,7 +300,7 @@ const readChild = (
     field,
     childType,
     itemSchema: arrayElement(holder),
-    optional: optionalThrough(schema, holder),
+    optional: optionalThrough(schema),
     signature: schemaSignature(arrayElement(holder)),
   };
   if (typeof textField === 'string') {
@@ -325,7 +327,7 @@ const readText = (
     field,
     collapseWhitespace:
       (holder as { [authoredCollapse]?: unknown })[authoredCollapse] !== false,
-    optional: optionalThrough(schema, holder),
+    optional: optionalThrough(schema),
   };
 };
 

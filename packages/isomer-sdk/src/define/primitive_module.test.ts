@@ -110,19 +110,37 @@ describe('definePrimitive node fields', () => {
   });
 
   it('accepts a schema another copy of the SDK defined', () => {
+    const mark = <T extends z.ZodType>(schema: T): T =>
+      Object.defineProperty(schema, Symbol.for('isomer.define.nodeField'), {
+        value: true,
+      });
     const fromOtherCopy = z
       .object({
         type: z.literal('probe'),
-        id: z.string().optional(),
-        surfaces: z.array(z.string()).optional(),
+        id: mark(z.string().optional()),
+        surfaces: mark(z.array(z.string()).optional()),
       })
       .strict();
-    Object.defineProperty(
-      fromOtherCopy,
-      Symbol.for('isomer.define.withNodeFields'),
-      { value: true }
-    );
     expect(() => primitiveWith(fromOtherCopy)).not.toThrow();
+  });
+
+  it.each([
+    ['extend', (s: z.ZodObject) => s.extend({ extra: z.string() })],
+    ['strict', (s: z.ZodObject) => s.strict()],
+    ['describe', (s: z.ZodObject) => s.describe('probe')],
+    ['partial', (s: z.ZodObject) => s.partial()],
+    ['pick', (s: z.ZodObject) => s.pick({ type: true, id: true })],
+    ['omit', (s: z.ZodObject) => s.omit({ surfaces: true })],
+  ])('accepts a schema derived from a defined one with %s', (_name, derive) => {
+    const { schema } = primitiveWith(z.object({ type: z.literal('probe') }));
+    expect(() => primitiveWith(derive(schema))).not.toThrow();
+  });
+
+  it('rejects a derived schema that redeclares a node field', () => {
+    const { schema } = primitiveWith(z.object({ type: z.literal('probe') }));
+    expect(() => primitiveWith(schema.extend({ id: z.number() }))).toThrow(
+      expect.objectContaining({ code: 'RESERVED_NODE_FIELD' })
+    );
   });
 
   it('accepts the schema of a primitive it already defined', () => {
