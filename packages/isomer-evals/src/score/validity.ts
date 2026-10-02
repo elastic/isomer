@@ -91,7 +91,7 @@ export const scoreValidity = (
       valid: false,
       validAfterRetry: retried?.valid ?? false,
       errors: [attempt.error],
-      composition: retried?.composition,
+      composition: retried?.valid ? retried.composition : undefined,
     };
   }
 
@@ -111,6 +111,6 @@ export const scoreValidity = (
     valid: false,
     validAfterRetry: retried?.valid ?? false,
     errors: first.errors,
-    composition: retried?.composition ?? first.composition,
+    composition: retried?.valid ? retried.composition : undefined,
   };
 };

@@ -14,31 +14,32 @@ import type { CheckedAttempt } from './validity';
 const bytes = (value: unknown): number =>
   Buffer.byteLength(JSON.stringify(value) ?? '', 'utf8');
 
-/**
- * Collects `type` from actual node positions only — the root and its `body`,
- * walked through each container's own `children` hook — rather than every
- * `type` string anywhere in the value. A primitive's own data can carry a
- * `type` field with no relation to the node vocabulary (chart data shaped
- * like `{ type: 'bar' }`), and that is not an invented primitive.
- */
+/** Collects node types through pack child hooks; data fields named `type` are not nodes. */
 const collectTypes = (
   nodes: readonly unknown[],
   walk: ReturnType<typeof createChildNodeWalker>,
   found: Set<string>
 ): void => {
-  for (const node of nodes) {
-    if (!node || typeof node !== 'object') {
+  const pending = [...nodes];
+  const seen = new WeakSet<object>();
+  while (pending.length > 0) {
+    const node = pending.pop();
+    if (!node || typeof node !== 'object' || seen.has(node)) {
       continue;
     }
+    seen.add(node);
     const { type } = node as { type?: unknown };
     if (typeof type === 'string') {
       found.add(type);
     }
-    collectTypes(
-      walk(node).map((ref) => ref.node),
-      walk,
-      found
-    );
+    try {
+      for (const { node: child } of walk(node)) {
+        pending.push(child);
+      }
+    } catch {
+      // Child hooks require schema-valid nodes; malformed branches have no known child positions.
+      continue;
+    }
   }
 };
 
