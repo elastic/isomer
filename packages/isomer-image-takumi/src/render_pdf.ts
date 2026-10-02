@@ -35,6 +35,7 @@ export interface RenderPdfOptions extends TakumiPdfOptions {
   svg?: PngSvgOptions;
 }
 
+/** What {@link renderPdf} resolves to: the bytes, the page count and size, and one finding set per composition. */
 export interface RenderPdfResult {
   pdf: Buffer;
   pageCount: number;

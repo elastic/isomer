@@ -62,7 +62,7 @@ export interface PngSvgOptions {
   width?: number;
   /** Overrides the frame's estimated height. */
   height?: number;
-  /** Theme mode; falls back to the composition's own `theme`. */
+  /** Theme mode; falls back to the composition's own `theme`. `auto` resolves light. */
   theme?: 'light' | 'dark' | 'auto';
 }
 
@@ -90,6 +90,7 @@ export interface RenderPngOptions extends TakumiRenderOptions {
   svg?: PngSvgOptions;
 }
 
+/** What {@link renderPng} resolves to: the bytes, their size, and the findings on the composition drawn. */
 export interface RenderPngResult {
   png: Buffer;
   width: number;

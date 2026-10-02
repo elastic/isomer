@@ -30,6 +30,7 @@ export interface SlackRenderOptions extends SlackEnvelopeOptions {
 /** Options for {@link SlackSurface.renderNode}: {@link SlackRenderOptions} without a heading, which a lone node lacks. */
 export type SlackRenderNodeOptions = Omit<SlackRenderOptions, 'heading'>;
 
+/** What `render` and `renderNode` return: fallback `text`, `blocks` fitted to Slack's limits, and the `assets` the host uploads first. */
 export type SlackRenderResult = SlackEnvelopeResult;
 
 /** Renders a composition or node to Slack Block Kit blocks. */

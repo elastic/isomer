@@ -4,6 +4,10 @@ The assembly layer of Isomer. It takes primitive packs and frames as values and 
 
 It renders nothing itself. Primitives, renderers, and themes come from packs; the composition schema, dispatcher, and envelopes come from `@elastic/isomer-sdk`; data, authorization, and delivery stay with the host.
 
+```sh
+npm install @elastic/isomer-runtime @elastic/isomer-sdk react react-dom zod
+```
+
 ```ts
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 
@@ -19,7 +23,7 @@ runtime.surfaces.html.render(composition, { theme: 'auto', fluid: true });
 runtime.surfaces.slack.render(composition, { collectAssets: true });
 ```
 
-`packs` is required. `@elastic/isomer-sdk` is a workspace dependency. `zod`, `react`, and `react-dom` (`>=18 <20`) are peers — required, because the root entry always constructs the `react` and `html` surfaces, and `html` loads `react-dom/server`. No Node built-ins, one entry point.
+`packs` is required. `@elastic/isomer-sdk` is a dependency pinned to the same version, so the two install together. `zod`, `react`, and `react-dom` (`>=18 <20`) are peers — required, because the root entry always constructs the `react` and `html` surfaces, and `html` loads `react-dom/server`. One entry point, ESM and CommonJS, no Node built-ins; on Node it needs 22.13.0 or later.
 
 ## Docs
 

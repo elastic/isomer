@@ -57,9 +57,9 @@ import {
 
 /** Knobs for the HTML surface. Every field defaults, so `{}` is valid. */
 export interface HTMLRenderOptions {
-  /** Overrides {@link Composition.theme}. Defaults to `auto`. */
+  /** Overrides {@link Composition.theme}; `auto` when neither is set. */
   theme?: RenderTheme;
-  /** Collapses whitespace between tags, leaving `<pre>` content intact. Defaults to `true`. */
+  /** Drops whitespace between tags that spans a line break, leaving `<pre>`, `<script>`, `<style>`, and `<textarea>` content intact. Defaults to `true`. */
   minify?: boolean;
   /** Adds the `fluid` wrapper class and reaches the pack as {@link PrimitiveStyleCollectionContext.fluid}; the adapter decides what it changes. */
   fluid?: boolean;
@@ -83,7 +83,7 @@ export interface HTMLRenderOptions {
    * section)` after inserting it.
    */
   scripts?: 'embedded' | 'host';
-  /** Defaults to collecting into {@link HTMLRenderResult.validationErrors}; `'throw'` raises instead. */
+  /** Defaults to collecting into {@link HTMLRenderResult.validationErrors}; `'throw'` raises instead. Input the budget refused raises in either mode. */
   onValidationError?: ValidationErrorMode;
   /** Opt-in by {@link EnhancementDefinition.id}. One whose content gate does not match the body is dropped. */
   enhancements?: readonly string[];
@@ -110,8 +110,10 @@ export interface HTMLRenderResult {
   html: string;
   css: string;
   /**
-   * The enhancement script as a function body over `root`, or `''`. Runs only
-   * through `runEnhancementScript`, never as a `<script>` of its own.
+   * The enhancement script as a function body over `root`, or `''`. Under
+   * `scripts: 'embedded'` the `<script>` in `html` wraps the same body; under
+   * `'host'` the host runs it with `runEnhancementScript`. It is never a
+   * complete script on its own.
    */
   js: string;
   body: string;

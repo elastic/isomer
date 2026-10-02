@@ -49,12 +49,13 @@ export interface PrimitiveDispatcher<
   readonly definitions: readonly AnyPrimitiveDefinition[];
   /** Throws for an unknown node type; a missing primitive is a bug, not a degradation. */
   getDefinition(node: TNode): AnyPrimitiveDefinition;
-  /** `undefined` when the primitive declares no renderer for `surface`. */
+  /** `undefined` when the node is hidden from `surface`, `sanitize` drops it, or the primitive declares no renderer for `surface`. */
   renderOn<S extends SurfaceName>(
     surface: S,
     node: TNode,
     extras: Omit<SurfaceMap<T>[S]['env'], 'scope'>
   ): SurfaceMap<T>[S]['output'] | undefined;
+  /** The node's `react` renderer, or `undefined` when it is hidden or has none. `context` may be omitted only when `{}` is a complete context for the pack. */
   renderReact(
     node: TNode,
     ...context: ReactContextArg<T['context']>
@@ -77,14 +78,17 @@ export interface PrimitiveDispatcher<
     theme: T['theme'] | undefined,
     key: string
   ): ReactNode;
+  /** `''` when the node is hidden from `text` or its primitive declares no `text` renderer. */
   renderText(node: TNode): string;
   /** Builder content is serialized per node. */
   renderMarkdown(node: TNode): string;
   /** A string result comes back as content printed as written. */
   renderMarkdownContent(node: TNode): MarkdownContent;
   /**
-   * Empty only when the node is hidden from `slack` or `sanitize` drops it. A
-   * node with no `slack` renderer degrades through its markdown.
+   * Empty when the node is hidden from `slack`, `sanitize` drops it, or its
+   * renderer returns nothing. A node with no `slack` renderer degrades through
+   * its markdown; one `isSlackAssetType` names becomes an `image` block when
+   * `collector` can allocate.
    */
   renderSlack(
     node: TNode,

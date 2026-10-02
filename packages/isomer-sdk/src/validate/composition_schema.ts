@@ -39,7 +39,9 @@ export const metaSchema = z.object({
     .optional(),
 });
 
+/** Options for the `Composition` envelope schema a body-node union is wrapped in. */
 export interface CompositionSchemaOptions {
+  /** The union the envelope's `body` array holds, as {@link resolveVocabulary} builds it. */
   bodyNodeSchema: ZodType<unknown>;
 }
 

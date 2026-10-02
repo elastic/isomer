@@ -57,7 +57,7 @@ The result carries the viewport the element was laid out for, so a rasterizing h
 
 ## A runtime is homogeneous in its theme
 
-`IsomerRuntimeOptions.frames` is `FrameMap<TTheme>`, and a pack declares the palette its frames must supply through a phantom marker on `PrimitivePack<TTheme>`. `TTheme` is inferred from the packs first, so a mismatch is reported against `frames` and never names the pack that set the bound — pairing charts with a slide frame reads as `Frame<SlideSvgTheme>` is not assignable to `Frame<SvgRenderTheme>`.
+`IsomerRuntimeOptions.frames` is `FrameMap<TTheme>`, and a pack declares the palette its frames must supply through a phantom marker on `PrimitivePack<TTheme>`. `TTheme` is inferred from the packs first, so a mismatch is reported against `frames` and never names the pack that set the bound — pairing charts with a slide frame reads as `Frame<SlideFrameTheme>` is not assignable to `Frame<SvgRenderTheme>`.
 
 A pack that genuinely reads no theme stays at `PrimitivePack<unknown>`, which bare `PrimitivePack` also means. A pack that needs a frame to carry tokens names them as the type argument, `definePrimitivePack<CoreTokens>(input)`. The runtime's own storage slots are `AnyPrimitivePack`.
 

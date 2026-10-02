@@ -12,13 +12,13 @@ runtime.surfaces.slack.render(composition, { collectAssets: true });
 | Surface | `render` returns | Validates | Options |
 | --- | --- | --- | --- |
 | `react` | `ReactNode` | no | `context` (required only if the pack narrows it), `heading`, `wrapper`, `enhancements` (ids) |
-| `html` | `HTMLRenderResult` | yes | `theme`, `fluid`, `framed`, `heading`, `css`, `scripts`, `minify`, `enhancements` (ids), `anchors`, `onValidationError` |
+| `html` | `HTMLRenderResult` | yes | `theme`, `scheme`, `fluid`, `framed`, `heading`, `css`, `scripts`, `minify`, `enhancements` (ids), `anchors`, `onValidationError` |
 | `text` | `string` | yes | `heading`, `onValidationError` |
 | `markdown` | `string` | yes | `heading`, `onValidationError` |
 | `slack` | `{ text, blocks, assets }` | yes | `heading`, `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
 | `svg` | `SvgRenderResult` | yes | `frame`, `width`, `height`, `theme`, `anchors`, `onValidationError` |
 
-`HTMLRenderResult` is `{ html, css, js, body, measurement, validationErrors }`. [Embedding](embedding.md) covers getting that markup, stylesheet, and script onto a page a host already controls, including when to render with `scripts: 'host'`. The `svg` entry is `undefined` unless the runtime was given [frames](frame.md), and the factory's return type tracks which.
+`HTMLRenderResult` is `{ html, css, js, body, measurement, validationErrors }`. `scheme` resolves the stylesheet's `light-dark(…)` values to one scheme; a browser resolves them itself, so an `html` host rarely sets it, and the `svg` surface sets it for its own render. [Embedding](embedding.md) covers getting that markup, stylesheet, and script onto a page a host already controls, including when to render with `scripts: 'host'`. The `svg` entry is `undefined` unless the runtime was given [frames](frame.md), and the factory's return type tracks which.
 
 All six are synchronous.
 

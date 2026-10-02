@@ -6,5 +6,5 @@ Directory: `sdk/reference/`
 
 | Title | Type | Description |
 |-------|------|-------------|
-| [Public contract](public-contract.md) | Reference | Source-available Elastic-2.0. react and zod are required peers. react-dom is ... |
+| [Public contract](public-contract.md) | Reference | Elastic-2.0, published as @elastic/isomer-sdk. react and zod are required pee... |
 

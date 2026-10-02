@@ -71,6 +71,7 @@ export interface CompositionMeta {
    * host can mark it incomplete rather than presenting it as whole.
    */
   partialFailure?: {
+    /** True when some of the data behind the composition was lost before it rendered. */
     degraded?: boolean;
     /** Human-readable cause, safe to show a user. */
     reason?: string;

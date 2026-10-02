@@ -38,7 +38,7 @@ const DEFAULT_EXTRA_DEFS: readonly { schema: ZodType; id: string }[] = [
 export interface AuthoringJsonSchemaOptions extends CompositionJsonSchemaOptions {
   /** `$def` id to `description`. Survives `z.toJSONSchema` dropping `.refine` text. */
   describe?: Readonly<Record<string, string>>;
-  /** `$defId.property` paths to drop, e.g. `'xyChart.stacked'`. */
+  /** `$defId.property` paths to drop, e.g. `'kpi.delta'`. */
   omitProperties?: readonly string[];
 }
 

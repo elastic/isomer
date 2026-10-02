@@ -173,22 +173,32 @@ export const fromTextChildren = <TSchema extends ZodType>(
   return schema as TSchema & AuthoredTextBrand;
 };
 
+/** One {@link fromChildren} field as the shim reads it. */
 export interface AuthoredChildField {
   field: string;
   childType: string;
+  /** Field leftover text children fill. */
   textField?: string;
+  /** Replaces the default prop copy. */
   toItem?: (props: object, context: AuthorChildContext) => unknown;
+  /** The array element schema, or the field schema itself when it is not an array. */
   itemSchema: ZodType;
+  /** Whether the field accepts `undefined`, so children may be omitted. */
   optional: boolean;
+  /** Structural fingerprint of `itemSchema`; every field branding one child type must share it. */
   signature: string;
 }
 
+/** One {@link fromTextChildren} field as the shim reads it. */
 export interface AuthoredTextField {
   field: string;
+  /** `true` unless the brand was given `collapseWhitespace: false`. */
   collapseWhitespace: boolean;
+  /** Whether the field accepts `undefined`, so text children may be omitted. */
   optional: boolean;
 }
 
+/** The branded fields found on one object schema. */
 export interface AuthoredSpec {
   children: AuthoredChildField[];
   text: AuthoredTextField[];
@@ -220,7 +230,6 @@ const brandHolder = (schema: ZodType, key: symbol): ZodType | undefined => {
   return current;
 };
 
-// Whether any layer from `schema` down to `holder` accepts `undefined`.
 // Whether any wrapper layer of `schema` accepts `undefined`.
 const optionalThrough = (schema: ZodType): boolean => {
   for (

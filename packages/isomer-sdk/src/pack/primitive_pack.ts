@@ -47,6 +47,7 @@ export interface PrimitiveGroup {
 export type PackStyleAdapter = {
   /** See {@link PrimitivePackInput.styleCollector}. */
   styleCollector?: string;
+  /** The hooks of `HTMLStyleAdapter` from `./html`, erased: a fresh collector per render, the context renderers receive, and the stylesheet the collector produced. */
   createCollector: (...args: never[]) => object;
   createRenderContext: (...args: never[]) => unknown;
   renderStyles: (...args: never[]) => string;
@@ -92,7 +93,10 @@ export interface PrimitivePackInput {
    */
   slackAssetTypes?: readonly string[];
   /**
-   * Default HTML style adapter for this pack. A runtime that omits `styleAdapter` uses this when exactly one loaded pack declares one. Pass `styleAdapter` on the runtime to override or to choose among several.
+   * Default HTML style adapter for this pack. A runtime that omits
+   * `styleAdapter` runs the packs' own adapters, combined when more than one
+   * pack declares one and each answers `ownsHandle`. Pass `styleAdapter` on
+   * the runtime to replace them all.
    */
   styleAdapter?: PackStyleAdapter;
   /**
@@ -115,8 +119,9 @@ export interface PrimitivePackInput {
 /**
  * A pack as the runtime sees it.
  *
- * `TTheme` is the palette this pack's `svg` renderers require — a *lower bound*
- * on whatever theme the runtime holding it supplies. It is carried by
+ * `TTheme` is the palette this pack's `react` renderers read as `env.theme`
+ * when drawn through the `svg` surface — a *lower bound* on whatever theme
+ * the runtime holding it supplies. It is carried by
  * {@link PrimitivePack.__theme} rather than by any real field, because
  * `primitives` is erased to `AnyPrimitiveDefinition[]` and a heterogeneous
  * inventory has no single node type to be generic over.

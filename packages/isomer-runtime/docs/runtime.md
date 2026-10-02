@@ -67,22 +67,25 @@ runtime.surfaces.react.render(composition, { context: { resolveClassName } });
 
 ## What it refuses, and when
 
-Composition errors throw from `createIsomerRuntime` at host startup, with the offending name in the message. A host boots or it does not; nothing waits for the first unlucky render.
+Composition errors throw from `createIsomerRuntime` at host startup as `IsomerError`, with the offending name in the message and the rule's `code` on the error. A host boots or it does not; nothing waits for the first unlucky render.
 
-| Rule | Message |
-| --- | --- |
-| At least one pack | `at least one primitive pack is required` |
-| No node type owned by two packs | `primitive type "table" registered by "components" and "charts"` |
-| No enhancement id owned by two packs | `enhancement "tableSort" registered by "components" and "charts"` |
-| An override names a registered type | `renderer override targets unregistered primitive type "…"` |
-| An override names a real surface key | `renderer override for "table" targets unknown surface "…"` |
-| `defaultFrame` is one the runtime holds | `defaultFrame "…" is not one of the supplied frames (…)` |
-| Two or more frames name a default | `2 frames supplied (…), so defaultFrame is required` |
-| A CSS-bearing pack has a `styleAdapter` | `pack "…" primitive "…" declares collectStyles but no styleAdapter was supplied` |
-| Every pack `styleAdapter` can route its own handles | `packs … each declare a styleAdapter, but … declares no ownsHandle` |
-| Every CSS-bearing pack's `styleCollector` matches its adapter's | `pack "…" primitive "…" collects styles into a "…" collector, but … creates a "…" one` |
+| Rule | `code` | Message |
+| --- | --- | --- |
+| At least one pack | `EMPTY_PACKS` | `at least one primitive pack is required` |
+| `frames`, when given, is non-empty | `EMPTY_FRAMES` | `frames is empty; omit it to build a runtime without the svg surface` |
+| `defaultFrame` is given only with `frames` | `UNKNOWN_FRAME` | `defaultFrame "…" was given but no frames were supplied` |
+| No two packs share an `id` | `DUPLICATE_PACK_ID` | `"components" names more than one pack; pack ids must be unique` |
+| No node type owned by two packs | `DUPLICATE_PRIMITIVE_TYPE` | `primitive type "table" registered by "components" and "charts"` |
+| No enhancement id owned by two packs | `DUPLICATE_ENHANCEMENT` | `enhancement "tableSort" registered by "components" and "charts"` |
+| An override names a registered type | `UNKNOWN_PRIMITIVE_TYPE` | `renderer override targets unregistered primitive type "…"` |
+| An override names a real surface key | `UNKNOWN_SURFACE` | `renderer override for "table" targets unknown surface "…"` |
+| `defaultFrame` is one the runtime holds | `UNKNOWN_FRAME` | `defaultFrame "…" is not one of the supplied frames (…)` |
+| Two or more frames name a default | `AMBIGUOUS_FRAME` | `2 frames supplied (…), so defaultFrame is required` |
+| A CSS-bearing pack has a `styleAdapter` | `MISSING_STYLE_ADAPTER` | `pack "…" primitive "…" declares collectStyles but no styleAdapter was supplied` |
+| Every pack `styleAdapter` can route its own handles | `AMBIGUOUS_STYLE_ADAPTER` | `packs … each declare a styleAdapter, but … declares no ownsHandle` |
+| Every CSS-bearing pack's `styleCollector` matches its adapter's | `INCOMPATIBLE_STYLE_COLLECTOR` | `pack "…" primitive "…" collects styles into a "…" collector, but … creates a "…" one` |
 
-Duplicate types and enhancement ids are the SDK's `composePacks` rule, and it names every offender rather than failing on the first, so a bad three-pack composition reports all three at once.
+Duplicate pack ids, node types, and enhancement ids are the SDK's `composePacks` rules. The type and enhancement checks name every offender rather than failing on the first, so a bad three-pack composition reports all three at once.
 
 ## Construction order
 

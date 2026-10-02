@@ -50,7 +50,7 @@ export interface FrameViewport<TTheme> {
 export interface FrameDispatcher<TNode extends PrimitiveNode = PrimitiveNode> {
   /** Draws one node on the `svg` surface. `key` must be unique among its siblings. */
   renderSvg(node: TNode, key: string): ReactNode;
-  /** The node's height in pixels, or `0` when its primitive declares no `metrics.svgHeight`. */
+  /** The node's height in pixels; `0` when it is hidden from `svg` or its primitive declares no `metrics.svgHeight`. */
   estimateSvgHeight(node: TNode): number;
 }
 

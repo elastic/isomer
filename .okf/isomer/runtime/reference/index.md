@@ -6,5 +6,5 @@ Directory: `runtime/reference/`
 
 | Title | Type | Description |
 |-------|------|-------------|
-| [Public contract](public-contract.md) | Reference | Workspace dependency on the sdk, required peers, one entry, no Node built-ins. |
+| [Public contract](public-contract.md) | Reference | The sdk pinned at the same version, required peers, one dual-format entry, No... |
 

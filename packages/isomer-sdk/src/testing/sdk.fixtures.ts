@@ -209,12 +209,6 @@ export const fixtureDefinitions = fixturePack.primitives;
 // Conformance subject
 // ---------------------------------------------------------------------------
 
-/**
- * `primitiveConformanceCases` asserts a positive `svg` height for every
- * example, so every primitive in its subject must declare `metrics.svgHeight`.
- * `fixturePack` cannot: its `caption` exists precisely to be the gap case
- * other tests need.
- */
 export interface TileNode {
   type: 'tile';
   body: string;
@@ -277,6 +271,11 @@ const tileGroupPrimitive = definePrimitive<TileGroupNode>({
   },
 });
 
+/**
+ * The conformance subject: every primitive declares `metrics.svgHeight`, which
+ * the height case asserts on when a harness opts in. `fixturePack` cannot
+ * serve, since its `caption` is the missing-metric case other tests need.
+ */
 export const conformancePack = definePrimitivePack({
   id: 'sdk.conformance',
   surfaces: ['slack'],

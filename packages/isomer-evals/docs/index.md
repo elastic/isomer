@@ -39,6 +39,22 @@ console.log(formatReport(report));
 
 `generate` is the only way a model is ever reached. Pass one that replays recorded output and the run is deterministic — which is how this belongs in CI.
 
+`runtime` is an `EvalRuntime`, the slice of a runtime the harness reads (`primitives`, `getAuthoringContext`, `validate`, `parse`, and the `text` surface), declared structurally so a pack can pass a stub; a runtime from `createIsomerRuntime` satisfies it, which `run.test.ts` proves against the runtime's own type.
+
+### Options
+
+| Option | Default | Decides |
+| --- | --- | --- |
+| `generate` | required | The model call. `attempt` is `0` first and `1` on the retry, when `previousErrors` carries the first attempt's parse error or validation errors. |
+| `judge` | none | The answerability call; omitted, the axis is skipped. |
+| `profile` | `'general'` | The SDK authoring profile the prompt is built for. |
+| `retryOnInvalid` | `true` | Whether a first attempt that did not parse or validate is tried once more. |
+| `guide` | a one-sentence guide | The prose the authoring prompt opens with. |
+| `rules` | none | The prompt's rules section. |
+| `concurrency` | `1` | Cases in flight at once; `generate` and `judge` still decide their own rate limits. |
+
+The prompt is one `buildAuthoringPrompt` call over the runtime's authoring context, with no host examples: each catalog entry already shows its own shape.
+
 ## The four axes
 
 | Axis | Needs a model | Measures |
@@ -119,4 +135,27 @@ import { scorePrimitiveSelection } from '@elastic/isomer-evals';
 expect(scorePrimitiveSelection(generated, golden).missing).toEqual([]);
 ```
 
-`checkAttempt(runtime, parseGenerated(raw))` parses the attempt's value against the runtime's schema and then validates the result, once per attempt — `runEvals` reads that one check for the retry decision, `scoreValidity`, and `scorePayload`. A value that parses but fails a semantic rule (duplicate ids, for instance) therefore never reads as a good composition.
+`checkAttempt(runtime, parseGenerated(raw))` parses the attempt's value against the runtime's schema and then validates the result, once per attempt — `runEvals` reads that one check for the retry decision, `scoreValidity`, and `scorePayload`. A value that parses but fails a semantic rule (duplicate ids, for instance) therefore never reads as a good composition. `scorePayload` reads the first attempt only, so a retry changes `validity` and not `payload`.
+
+## API
+
+| Export | What it is |
+| --- | --- |
+| `runEvals` | `(options: RunEvalsOptions) => Promise<EvalReport>` |
+| `formatReport` | `(report: EvalReport) => string`; returned, never printed |
+| `scoreValidity` | `(attempt: CheckedAttempt, retry?: CheckedAttempt) => ValidityScore`; pure |
+| `scorePrimitiveSelection` | `(generated: Composition, golden: Composition) => PrimitiveSelectionScore`; pure |
+| `scorePayload` | `(runtime, attempt: CheckedAttempt, knownTypes, golden?) => PayloadScore` |
+| `scoreAnswerability` | `(runtime, judge, evalCase, composition) => Promise<AnswerabilityScore>` |
+| `parseGenerated`, `stripCodeFence` | Model output to a `ParsedAttempt`: the JSON parsed once, after any code fence is removed |
+| `checkComposition`, `checkAttempt` | A value, or a `ParsedAttempt`, parsed and validated once, as a `CheckedComposition` or `CheckedAttempt` |
+
+Types: `EvalCase`, `EvalCaseResult`, `EvalReport`, `EvalRuntime`, `RunEvalsOptions`, `Generate`, `GenerateRequest`, `Judge`, `JudgeRequest`, `AnswerabilityVerdict`, and the four score shapes `ValidityScore`, `PrimitiveSelectionScore`, `PayloadScore`, `AnswerabilityScore`. `src/api_reference.test.ts` fails when a name exported from `src/index.ts` is missing from this page.
+
+## Package facts
+
+```sh
+npm install --save-dev @elastic/isomer-evals
+```
+
+It depends on `@elastic/isomer-sdk` at its own version, and `react` and `zod` are required peers, because the SDK's root and `./author` entries load them; a pack's runtime brings both already. One entry point, published as ESM and CommonJS. The runtime is a development dependency of this package alone, for the structural-contract test; nothing under `src/` imports it.

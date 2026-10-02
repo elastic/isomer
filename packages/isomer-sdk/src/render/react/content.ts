@@ -25,11 +25,12 @@ export interface ReactContentDispatcher<
   renderReact(node: TNode, context?: TContext): ReactNode;
 }
 
+/** Options for {@link renderCompositionContent}. */
 export interface ReactContentOptions {
   /**
    * Renders the composition's title and subtitle as the leading `h2` / `p.sub`.
-   * Pass `false` when the host already shows the title itself; the title still
-   * backs the wrapper's `aria-label`.
+   * Defaults to `true`. Pass `false` when the host already shows the title
+   * itself; the title still backs the wrapper's `aria-label`.
    */
   heading?: boolean;
 }

@@ -28,6 +28,8 @@ HTML returns `{ html, css, js, body, measurement, validationErrors }`. Every scr
 
 Node anchors let runtime code find a node's element. A `react` renderer spreads `nodeAnchor(context, node)` on its root, which sets `data-isomer-node` to the node's escaped type. During an HTML render the surface decides whether anchors render, holding the decision in a render-scoped slot rather than writing to the adapter's context: on when a resolved enhancement declares `anchors: true` or a test passes `anchors: true`. Outside one, on the React and `svg` surfaces, `context.anchors` decides, which `withNodeAnchors(context)` sets on a view of the context. `withoutAnchors(context)` returns a view of the context, not a copy, that turns anchors off for content that is not a node's `children`. `findNodeElementPairs` pairs nodes and elements by type and order, per occurrence, so a node object used twice pairs twice. An enhancement the host drives has no `script`. `checkLayout(layout, body, walk, surface)` pairs a measured `LayoutBox` tree with nodes by the same rule and returns advisory `LayoutFinding`s: `overflow` past the nearest anchored ancestor's box, or an element inside it marked with `layoutRoom(context)` (`data-isomer-room`), or the canvas at the top level, and `overlap` between siblings under one such room, with nothing inside a scaled box checked. `measureDom(root)` builds that tree from a browser's DOM. `runEnhancementScript`, `findNodeElementPairs`, and `measureDom` run in a browser, so they come from `./react` rather than the root entry.[^docs][^anchors]
 
+Inline text cannot close its own element: CSS has `</style` escaped, and inline JavaScript is parsed so that `</script` and `<!--` are escaped while strings, regular expressions, and tagged-template raw and cooked values and per-site identity are preserved, with legacy HTML-style comments turned into line comments; none of it needs `eval`.[^docs]
+
 URL-bearing fields go through one trust policy. See [URL trust](/sdk/concepts/url-trust.md).
 
 Related: [dispatch](/sdk/concepts/dispatch.md), [packs](/sdk/concepts/packs.md), [style adapters](/runtime/concepts/style-adapters.md).
@@ -38,5 +40,3 @@ Related: [dispatch](/sdk/concepts/dispatch.md), [packs](/sdk/concepts/packs.md),
 [^envelope]: HTML envelope
 
 [^anchors]: Node anchors
-
-Inline JavaScript embedding preserves tagged-template raw and cooked values and per-site identity, and converts legacy HTML-style comments to line comments without requiring eval.[^docs]

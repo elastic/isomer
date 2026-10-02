@@ -30,7 +30,7 @@ const scaleOf = (
 
 /**
  * The {@link LayoutBox} tree a browser laid `root` out as, measured from
- * `root`'s top left, for {@link checkLayout}. An HTML element's `scale` is its
+ * `root`'s top left, for `checkLayout`. An HTML element's `scale` is its
  * drawn size over its layout size, so a rotated one reads as scaled; an SVG
  * element has no layout size and is never scaled. jsdom does no layout, so
  * every box it measures is empty.

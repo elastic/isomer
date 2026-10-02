@@ -60,7 +60,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | --- | --- |
 | `ReactRenderOptions` | `context`, `heading`, `wrapper: boolean \| CompositionWrapperOptions`, `enhancements: readonly string[]` (ids, resolved against the packs' enhancements as on `html`); `ReactRenderArgs` is the tuple form, optional only when `context` is |
 | `ReactRenderNodeOptions` | `ReactRenderOptions` without `heading` |
-| `HTMLRenderOptions` | `theme`, `minify`, `fluid`, `framed`, `heading`, `css: 'inline' \| 'separate'`, `scripts: 'embedded' \| 'host'`, `enhancements: string[]`, `anchors: boolean` (node anchors; `true` for tests), `onValidationError` |
+| `HTMLRenderOptions` | `theme`, `scheme: 'light' \| 'dark'` (resolves `light-dark(…)` in the stylesheet; the `svg` surface sets it), `minify`, `fluid`, `framed`, `heading`, `css: 'inline' \| 'separate'`, `scripts: 'embedded' \| 'host'`, `enhancements: string[]`, `anchors: boolean` (node anchors; `true` for tests), `onValidationError` |
 | `TextRenderOptions` | `heading`, `onValidationError` |
 | `TextRenderNodeOptions` | `onValidationError` |
 | `MarkdownRenderOptions` | `heading`, `onValidationError` |
@@ -124,7 +124,7 @@ Three results carry a `composition`, each with its own rule:
 
 | Thrown | By | Carries |
 | --- | --- | --- |
-| `IsomerError` | `createIsomerRuntime`, `viewRegistry.register`, an unknown view id, `getAuthoringContext().schemaFor` or `describePrimitives` on an unknown type (`UNKNOWN_PRIMITIVE_TYPE`), or the `svg` surface, including `renderPages` on an empty list (`EMPTY_PAGES`) | `code` and a message naming the offender |
+| `IsomerError` | `createIsomerRuntime` (`EMPTY_PACKS`, `DUPLICATE_PACK_ID`, `DUPLICATE_PRIMITIVE_TYPE`, `DUPLICATE_ENHANCEMENT`, `UNKNOWN_PRIMITIVE_TYPE`, `UNKNOWN_SURFACE`, `EMPTY_FRAMES`, `UNKNOWN_FRAME`, `AMBIGUOUS_FRAME`, `MISSING_STYLE_ADAPTER`, `AMBIGUOUS_STYLE_ADAPTER`, `INCOMPATIBLE_STYLE_COLLECTOR`; see [Runtime](runtime.md#what-it-refuses-and-when)), `viewRegistry.register` on a repeated id (`DUPLICATE_VIEW`), `viewRegistry.request` on an unknown id (`UNKNOWN_VIEW`), `getAuthoringContext().schemaFor` or `describePrimitives` on an unknown type (`UNKNOWN_PRIMITIVE_TYPE`), or the `svg` surface on an unknown frame name (`UNKNOWN_FRAME`), a body the frame rejects (`INVALID_FRAME_BODY`), or `renderPages` on an empty list (`EMPTY_PAGES`) | `code` and a message naming the offender |
 | `RegisteredViewInputError` | `viewRegistry.request`, on input refused before parsing or invalid against the view's schema | `code` (`VIEW_INPUT_INVALID`), `viewId`, `errors` (`{ path, message, nodeType?, code? }` each) |
 | `CompositionValidationError` | `render` and `renderNode` on `text`, `markdown`, `slack`, and `svg` by default; on `html` with `onValidationError: 'throw'`; on every validating surface on input refused before parsing | `code` (`COMPOSITION_INVALID`), `errors` |
 

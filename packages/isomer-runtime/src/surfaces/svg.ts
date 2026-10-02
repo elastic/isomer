@@ -32,6 +32,7 @@ import type { RuntimePackTypes } from '../pack_types';
 
 import { checkNode } from './check_node';
 
+/** Options for {@link SvgSurface.render} and {@link SvgSurface.renderPages}. */
 export interface SvgRenderOptions {
   /** Which of the runtime's frames this render uses; defaults to its `defaultFrame`. */
   frame?: string;
@@ -137,7 +138,7 @@ const schemeFor = (mode: RenderTheme | undefined): 'light' | 'dark' =>
 /**
  * Creates the `svg` {@link RuntimeSurfaces} entry.
  *
- * Built only when a host supplies a frame: unlike the other four surfaces, SVG
+ * Built only when a host supplies a frame: unlike the other five surfaces, SVG
  * cannot fall back to a generic envelope, because a frame is a whole-document
  * decision.
  */

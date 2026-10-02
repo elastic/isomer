@@ -49,7 +49,8 @@ const collectTypes = (
  * `rawBytes` measures the text as the model sent it; `sanitizedBytes` measures
  * the composition the schema kept. The gap is the model inventing properties
  * the schema drops — wasted tokens that also signal the catalog under-describes
- * the shape it wanted.
+ * the shape it wanted. Reads the first attempt only; a retry does not change
+ * this score.
  */
 export const scorePayload = (
   runtime: EvalRuntime,

@@ -16,9 +16,10 @@ sources:
 
 # Steps
 
-1. Render with `runtime.surfaces.svg.render(composition)`.
-2. Construct `createTakumiImageBackend({ fonts })` with the faces the pack's theme names.
-3. Call `.png(...)` or `.svg(...)`.[^docs][^backend]
+1. Install `@elastic/isomer-image-takumi` with the peers `react` and `react-dom`.
+2. Render with `runtime.surfaces.svg.render(composition)`.
+3. Construct `createTakumiImageBackend({ fonts })` with the faces the pack's theme names.
+4. Call `.png(...)`, with `devicePixelRatio` for a sharper raster at the same size, or `.svg(...)`; or `renderPng(runtime, composition, backend)` for the bytes beside the validation findings.[^docs][^backend]
 
 Related: [raster](/image-takumi/concepts/raster.md), [fonts](/image-takumi/concepts/fonts.md).
 

@@ -26,7 +26,7 @@ export interface SlackPlainTextObject {
 export interface SlackMrkdwnTextObject {
   type: 'mrkdwn';
   text: string;
-  /** When false, Slack does not auto-link channels/users. Defaults to true. */
+  /** When true, Slack skips auto-linking URLs, channels, and users. Defaults to false. */
   verbatim?: boolean;
 }
 

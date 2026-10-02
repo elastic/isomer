@@ -33,9 +33,12 @@ export const parseGenerated = (raw: string): ParsedAttempt => {
   }
 };
 
+/** What {@link checkComposition} returns: the parse-then-validate verdict, and the parsed composition when there was one. */
 export interface CheckedComposition {
   valid: boolean;
+  /** Formatted parse errors, or validation errors; empty when valid. */
   errors: readonly string[];
+  /** Present whenever the value parsed, even when validation then failed. */
   composition?: Composition | undefined;
 }
 

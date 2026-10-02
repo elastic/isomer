@@ -146,10 +146,9 @@ const bodyRoots = (value: unknown): IssueRoot[] => {
  * Builds the trusted-input validator: {@link checkInputBudget}, then the schema and the semantic passes on its copy, which the result carries.
  *
  * `definitions` is memoized on array identity, so a caller that rebuilds the
- * array per call (`createCompositionValidator(packs.flatMap(…))`) gets a fresh
- * 42-member discriminated union each time. Hold the array `composePacks`
- * returns and reuse it across the validator, the parser, and the authoring
- * context.
+ * array per call (`createCompositionValidator(packs.flatMap(…))`) resolves a
+ * fresh discriminated union each time. Hold the array `composePacks` returns
+ * and reuse it across the validator, the parser, and the authoring context.
  */
 export const createCompositionValidator = <
   TNode extends PrimitiveNode = PrimitiveNode,
@@ -264,8 +263,8 @@ const collectEmptySurfaceWarnings = (
  *
  * Whether a runtime consults the metric at all is the caller's to decide; see
  * {@link CompositionValidatorOptions.sizesFromNodeHeights}. A fixed-size frame
- * never does, and reporting nine warnings per composition for a value nothing
- * reads is how a warning channel gets ignored.
+ * never does, and warning about a value nothing reads is how a warning channel
+ * gets ignored.
  */
 const collectMissingSvgHeightWarnings = (
   body: readonly unknown[],
