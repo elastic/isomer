@@ -1,0 +1,88 @@
+# Embedding a composition in a host page
+
+Rendering a composition to HTML is [the `html` surface](surfaces.md). Getting that HTML onto a page a host already controls is a separate problem, and this page covers the one part of it Isomer has an opinion about: **CSS isolation**.
+
+## The problem
+
+A pack's stylesheet and the host page's stylesheet meet in the same document, and neither was written with the other in mind. Two things can go wrong:
+
+- **The page styles the composition.** A host reset (`* { box-sizing }`, a global `button` rule, a `line-height` on `body`) reaches into markup the pack laid out precisely.
+- **The composition styles the page.** The pack's rules escape the subtree they were written for.
+
+Class-name collisions are the usual worry, and the style adapters minify class names per render, which reduces but does not remove the risk. Neither problem is solved by naming discipline alone: a host rule matching an element selector does not care what the class is called.
+
+## The recipe
+
+A shadow root solves both directions at once, and the `html` surface already returns the pieces it needs. Ask for the CSS separately rather than inlined, and attach it to the shadow root instead of the document. Ask for the enhancement script to be run by the host, too: an embedded `<script>` never runs inside a shadow root.
+
+```ts
+import { runEnhancementScript } from '@elastic/isomer-sdk/react';
+
+const { html, css, js } = runtime.surfaces.html.render(composition, {
+  css: 'separate',
+  scripts: 'host',
+});
+
+const shadow = host.attachShadow({ mode: 'open' });
+const style = document.createElement('style');
+// `all: initial` is the half that stops host CSS reaching in; the shadow
+// boundary alone only stops the composition's rules escaping outward.
+style.textContent = `:host { all: initial; display: block; }\n${css}`;
+shadow.append(style);
+
+const view = document.createElement('div');
+view.innerHTML = html;
+shadow.append(view);
+
+const section = view.querySelector('.isomer');
+if (section) {
+  runEnhancementScript(js, section);
+}
+```
+
+`runEnhancementScript` binds the script to the section it is given, which is what an embedded script cannot find inside a shadow tree. It compiles with `new Function`, so a strict Content-Security-Policy must allow `'unsafe-eval'`; a host that cannot should render into light DOM with the default `scripts: 'embedded'`.
+
+Both halves matter and they are not the same mechanism. The shadow boundary stops the composition's rules from escaping. `:host { all: initial }` stops the page's inherited and element-selector rules from reaching in. Use one without the other and you have solved one direction.
+
+`display: block` is restated because `all: initial` resets `display` to `inline`, which is almost never what a rendered composition wants.
+
+## Rendering React into the shadow root
+
+A React host can skip the HTML string and render the React surface into the shadow root itself, so the tree stays live. The CSS then comes from the Distillate distillery the pack's styles were authored with, rather than from the `html` surface: `liveCollection` records the styles that one render resolves, and `createDomSink` keeps a `<style>` in the shadow root current as it grows. Pass enhancement ids as `enhancements`, as on the `html` surface.
+
+```tsx
+import { createDomSink } from '@elastic/distillate';
+import type { Composition } from '@elastic/isomer-sdk';
+import { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
+
+const Slide = ({ composition, shadow }: { composition: Composition; shadow: ShadowRoot }) => {
+  const [live] = useState(() =>
+    distillery.liveCollection({ sink: createDomSink({ document, parent: shadow }) })
+  );
+  const tree = useMemo(
+    () =>
+      runtime.surfaces.react.render(composition, {
+        context: { resolveClassName: live.resolveClassName },
+        wrapper: true,
+        enhancements: pack.enhancements.map(({ id }) => id),
+      }),
+    [composition, live]
+  );
+  return createPortal(tree, shadow);
+};
+```
+
+Each applied enhancement's `script` runs against the wrapper section once it mounts, so there is no `runEnhancementScript` call to make. A new composition object mounts a fresh section, so keep the object stable across re-renders. An enhancement the host drives itself, such as one that reveals a node's parts step by step, declares `anchors: true` and no `script`: after the render commits, `findNodeElementPairs(section, composition.body, createChildNodeWalker(runtime.primitives))` pairs each node occurrence with its element. Pass `render: { scheme }` to `liveCollection` for a fixed color scheme, and restate `:host { all: initial; display: block; }` as above.
+
+## When not to bother
+
+Isolation costs something. Inside a shadow root the composition no longer inherits the host's font stack or color scheme, so one that is *meant* to look like part of the surrounding page needs those passed in deliberately — through the render `theme` option, or as custom properties set on the host element, which do cross the boundary.
+
+If the host page is yours and its CSS is disciplined, render into an ordinary element with `css: 'inline'` and skip all of this. The default `scripts: 'embedded'` works there only if the page parses the HTML; a host that inserts it with `innerHTML` still uses `scripts: 'host'`.
+
+## Why this is a recipe and not an API
+
+It is about twenty lines, it is entirely host DOM code, and the shape of it depends on decisions Isomer does not make — where the element lives, when it is torn down, how the framework around it wants to own that node. Isomer stops at `{ html, css, js }` for the same reason the `svg` surface stops at `{ element, css }` rather than returning PNG bytes: the boundary is what keeps the package isomorphic.
+
+If a host hits a case this recipe does not cover, that is worth reporting — it would be evidence for a real mount helper rather than a doc.

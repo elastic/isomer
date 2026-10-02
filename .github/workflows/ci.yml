@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Assemble package docs
-        run: node scripts/assemble_package_docs.js
+      - name: Check assembled package docs are committed
+        run: node scripts/assemble_package_docs.js --check
       - name: Build documentation
         uses: elastic/docs-builder@main
