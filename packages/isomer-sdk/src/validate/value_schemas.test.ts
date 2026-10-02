@@ -49,17 +49,17 @@ describe('closed enum schemas', () => {
 });
 
 describe('structuredValueSchema currency', () => {
-  it('rejects a code Intl.NumberFormat would throw on', () => {
+  it('rejects a currency code Intl.NumberFormat would throw on', () => {
     expect(
       structuredValueSchema.safeParse({
         raw: 5,
         format: 'currency',
         currency: 'dollars',
       }).error?.issues[0]?.message
-    ).toBe('must be a three-letter ISO 4217 code');
+    ).toBe('must be a three-letter currency code');
   });
 
-  it('formats every code it accepts', () => {
+  it('formats a valid currency code', () => {
     const value = { raw: 5, format: 'currency', currency: 'eur' } as const;
 
     expect(structuredValueSchema.safeParse(value).success).toBe(true);

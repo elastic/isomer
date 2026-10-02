@@ -48,9 +48,9 @@ export const structuredValueSchema = z.object({
     .max(6, { error: 'must be an integer between 0 and 6' })
     .optional(),
   currency: z
-    .string({ error: () => 'must be a three-letter ISO 4217 code' })
+    .string({ error: () => 'must be a three-letter currency code' })
     .regex(/^[A-Za-z]{3}$/, {
-      error: 'must be a three-letter ISO 4217 code',
+      error: 'must be a three-letter currency code',
     })
     .optional(),
 });
