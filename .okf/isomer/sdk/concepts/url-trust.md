@@ -14,7 +14,7 @@ sources:
 
 # Definition
 
-Every URL-bearing field is checked against one policy. Renderers do not invent a second allow-list. The policy lives in `validate/` so untrusted parse and trusted validate share it. A URL is checked after decoding its character references once (every numeric one, with or without `;`, and `&colon;`, `&Tab;`, `&NewLine;`, `&sol;`, `&bsol;`, `&lt;`, `&gt;`), then stripping control characters.[^docs]
+Every URL-bearing field is checked against one policy. Renderers do not invent a second allow-list. The policy lives in `validate/` so untrusted parse and trusted validate share it. A URL is checked after decoding its character references once (every numeric one, with or without `;`, and `&colon;`, `&Tab;`, `&NewLine;`, `&sol;`, `&bsol;`, `&lt;`, `&gt;`), then stripping control characters; a passing URL comes back as authored, trimmed and with control characters stripped, so a consumer that decodes it decodes what was checked.[^docs]
 
 Related: [composition](/sdk/concepts/composition.md), [rendering](/sdk/concepts/rendering.md).
 

@@ -17,7 +17,7 @@ Everything else is rejected: non-image `data:` URIs, `blob:`, protocol-relative 
 
 **A Zod refinement**, so an agent-composed composition fails validation with a message it can act on. `assetUrl()` and `navigationHref()` build the schemas; `ASSET_URL_MESSAGE` and `NAVIGATION_HREF_MESSAGE` are the copy.
 
-**Render-time sanitization**, so a renderer invoked with a node that never passed the validator still cannot emit an unsafe URL. `sanitizeAssetUrl` and `sanitizeNavigationHref` return the normalized URL or `null`, and a primitive's [`sanitize` hook](primitives.md) runs before every render on every surface. A navigation href that fails is replaced with `BLOCKED_HREF` (`'#'`), an inert same-document link, so the label stays visible without a destination.
+**Render-time sanitization**, so a renderer invoked with a node that never passed the validator still cannot emit an unsafe URL. `sanitizeAssetUrl` and `sanitizeNavigationHref` return the URL or `null`, and a primitive's [`sanitize` hook](primitives.md) runs before every render on every surface. A navigation href that fails is replaced with `BLOCKED_HREF` (`'#'`), an inert same-document link, so the label stays visible without a destination.
 
 Neither layer alone is enough: validation can be skipped by a host that renders a node directly, and sanitization gives an agent nothing to learn from.
 
@@ -28,7 +28,7 @@ The check runs against a normalized string, because two decoders sit between the
 - **Browsers strip ASCII control characters** when parsing URLs — tab, newline, and carriage return anywhere, other controls at the edges — so `jav\tascript:` reaches the DOM as `javascript:`.
 - **HTML attributes and Markdown link destinations decode character references**, so `javascript&colon;`, `java&#9;script:`, and `&#47;&#47;host` become `javascript:`, `javascript:`, and `//host`.
 
-Both are undone before the scheme is examined, references first so a decoded tab is stripped too. Every numeric reference is decoded, with or without its trailing `;`, as are the named `&colon;`, `&Tab;`, `&NewLine;`, `&sol;`, `&bsol;`, `&lt;`, and `&gt;`. Decoding runs once, as a renderer's does, so `&amp;#58;` stays text. Unencoded `<` or `>` is rejected outright rather than stripped: those must be percent-encoded in a URL, so their presence means the value is malformed or a parser-confusion attempt — an unterminated `<dest` would otherwise read as a relative path.
+Both are undone before the scheme is examined, references first so a decoded tab is stripped too. Every numeric reference is decoded, with or without its trailing `;`, as are the named `&colon;`, `&Tab;`, `&NewLine;`, `&sol;`, `&bsol;`, `&lt;`, and `&gt;`. The check decodes once. A passing URL comes back as authored, trimmed and with control characters stripped, so a consumer that decodes it once sees exactly what was checked; returning a decoded copy would let a second decode turn `javascript&#38;#58;` into `javascript:`. Unencoded `<` or `>` is rejected outright rather than stripped: those must be percent-encoded in a URL, so their presence means the value is malformed or a parser-confusion attempt — an unterminated `<dest` would otherwise read as a relative path.
 
 Protocol-relative forms are rejected including the backslash variants browsers fold into `/`, since `//host` and `\\host` resolve onto a foreign host rather than naming a relative path.
 

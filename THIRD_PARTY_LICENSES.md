@@ -44,13 +44,6 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `mdast-util-to-string` | 4.0.0 | MIT | `node_modules/.pnpm/mdast-util-to-string@4.0.0/node_modules/mdast-util-to-string` |  |
 | `micromark` | 4.0.2 | MIT | `node_modules/.pnpm/micromark@4.0.2/node_modules/micromark` |  |
 | `micromark-core-commonmark` | 2.0.3 | MIT | `node_modules/.pnpm/micromark-core-commonmark@2.0.3/node_modules/micromark-core-commonmark` |  |
-| `micromark-extension-gfm` | 3.0.0 | MIT | `node_modules/.pnpm/micromark-extension-gfm@3.0.0/node_modules/micromark-extension-gfm` |  |
-| `micromark-extension-gfm-autolink-literal` | 2.1.0 | MIT | `node_modules/.pnpm/micromark-extension-gfm-autolink-literal@2.1.0/node_modules/micromark-extension-gfm-autolink-literal` |  |
-| `micromark-extension-gfm-footnote` | 2.1.0 | MIT | `node_modules/.pnpm/micromark-extension-gfm-footnote@2.1.0/node_modules/micromark-extension-gfm-footnote` |  |
-| `micromark-extension-gfm-strikethrough` | 2.1.0 | MIT | `node_modules/.pnpm/micromark-extension-gfm-strikethrough@2.1.0/node_modules/micromark-extension-gfm-strikethrough` |  |
-| `micromark-extension-gfm-table` | 2.1.1 | MIT | `node_modules/.pnpm/micromark-extension-gfm-table@2.1.1/node_modules/micromark-extension-gfm-table` |  |
-| `micromark-extension-gfm-tagfilter` | 2.0.0 | MIT | `node_modules/.pnpm/micromark-extension-gfm-tagfilter@2.0.0/node_modules/micromark-extension-gfm-tagfilter` |  |
-| `micromark-extension-gfm-task-list-item` | 2.1.0 | MIT | `node_modules/.pnpm/micromark-extension-gfm-task-list-item@2.1.0/node_modules/micromark-extension-gfm-task-list-item` |  |
 | `micromark-factory-destination` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-factory-destination@2.0.1/node_modules/micromark-factory-destination` |  |
 | `micromark-factory-label` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-factory-label@2.0.1/node_modules/micromark-factory-label` |  |
 | `micromark-factory-space` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-factory-space@2.0.1/node_modules/micromark-factory-space` |  |

@@ -38,15 +38,17 @@ const decodeReference = (
     : '\ufffd';
 };
 
-// Decodes character references once, then strips the control characters
-// browsers drop when parsing a URL, so an obfuscated scheme is checked as a
-// sink sees it.
-const normalizeUrl = (value: string): string =>
-  value
-    .replace(CHARACTER_REFERENCE_RE, decodeReference)
-    // eslint-disable-next-line no-control-regex -- stripping control characters is the point.
-    .replace(/[\u0000-\u001f\u007f]/g, '')
-    .trim();
+// The control characters browsers drop when parsing a URL.
+const stripControls = (value: string): string =>
+  // eslint-disable-next-line no-control-regex -- stripping control characters is the point.
+  value.replace(/[\u0000-\u001f\u007f]/g, '').trim();
+
+// The URL as a sink sees it: references decoded once, then controls stripped,
+// so an obfuscated scheme is checked as it would act. Only the decision reads
+// it; the policy returns the authored value, since a consumer that decodes
+// again must decode what was checked, not a decoded copy.
+const decisionForm = (value: string): string =>
+  stripControls(value.replace(CHARACTER_REFERENCE_RE, decodeReference));
 
 // `<` and `>` must be percent-encoded in a URL, so their unencoded presence
 // means the value is malformed or a parser-confusion attempt (an unterminated
@@ -59,43 +61,28 @@ const ASSET_SCHEME_RE = /^(?:https?:|data:image\/)/i;
 // current protocol onto a foreign host, so they are not relative paths.
 const PROTOCOL_RELATIVE_RE = /^[/\\][/\\]/;
 
-/**
- * Returns the normalized URL when it satisfies the navigation policy
- * (`https:` / `http:` / `mailto:` / relative path), `null` otherwise.
- */
-export const sanitizeNavigationHref = (href: string): string | null => {
-  const normalized = normalizeUrl(href);
-  if (
-    !normalized ||
-    PROTOCOL_RELATIVE_RE.test(normalized) ||
-    HAS_ANGLE_BRACKET_RE.test(normalized)
-  ) {
-    return null;
-  }
-  if (HAS_SCHEME_RE.test(normalized)) {
-    return NAVIGATION_SCHEME_RE.test(normalized) ? normalized : null;
-  }
-  return normalized;
-};
+// Whether a URL in decision form passes, given which schemes are allowed.
+const passes = (decided: string, schemes: RegExp): boolean =>
+  decided !== '' &&
+  !PROTOCOL_RELATIVE_RE.test(decided) &&
+  !HAS_ANGLE_BRACKET_RE.test(decided) &&
+  (!HAS_SCHEME_RE.test(decided) || schemes.test(decided));
 
 /**
- * Returns the normalized URL when it satisfies the asset policy (`https:` /
- * `http:` / relative path / `data:image/*`), `null` otherwise.
+ * Returns the URL, trimmed and with control characters stripped, when it
+ * satisfies the navigation policy (`https:` / `http:` / `mailto:` / relative
+ * path), `null` otherwise.
  */
-export const sanitizeAssetUrl = (url: string): string | null => {
-  const normalized = normalizeUrl(url);
-  if (
-    !normalized ||
-    PROTOCOL_RELATIVE_RE.test(normalized) ||
-    HAS_ANGLE_BRACKET_RE.test(normalized)
-  ) {
-    return null;
-  }
-  if (HAS_SCHEME_RE.test(normalized)) {
-    return ASSET_SCHEME_RE.test(normalized) ? normalized : null;
-  }
-  return normalized;
-};
+export const sanitizeNavigationHref = (href: string): string | null =>
+  passes(decisionForm(href), NAVIGATION_SCHEME_RE) ? stripControls(href) : null;
+
+/**
+ * Returns the URL, trimmed and with control characters stripped, when it
+ * satisfies the asset policy (`https:` / `http:` / relative path /
+ * `data:image/*`), `null` otherwise.
+ */
+export const sanitizeAssetUrl = (url: string): string | null =>
+  passes(decisionForm(url), ASSET_SCHEME_RE) ? stripControls(url) : null;
 
 /**
  * Render-time replacement for a navigation href that failed the policy: an

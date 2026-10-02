@@ -73,8 +73,14 @@ describe('sanitizeNavigationHref', () => {
     expect(sanitizeNavigationHref(href)).toBeNull();
   });
 
-  it('decodes references once, so an escaped reference stays text', () => {
-    expect(sanitizeNavigationHref('/a?b=1&amp;#58;c')).toBe('/a?b=1&amp;#58;c');
+  it('returns the authored value, with references left for the consumer to decode', () => {
+    expect(sanitizeNavigationHref('javascript&#38;#58;alert(1)')).toBe(
+      'javascript&#38;#58;alert(1)'
+    );
+    expect(sanitizeNavigationHref('/path&#35hash')).toBe('/path&#35hash');
+    expect(sanitizeNavigationHref(` /a${String.fromCharCode(9)}b `)).toBe(
+      '/ab'
+    );
   });
 
   it('strips surrounding whitespace from an otherwise valid href', () => {
