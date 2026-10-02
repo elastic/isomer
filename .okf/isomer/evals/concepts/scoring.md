@@ -19,7 +19,7 @@ sources:
 
 `runEvals` scores a corpus against a pack's [authoring context](/runtime/concepts/authoring-context.md). The runtime, corpus, goldens, `generate`, and `judge` are arguments. The package reads nothing from the environment and writes nothing to disk.[^run][^docs]
 
-Validity, primitive selection, and payload need no model. Answerability calls `judge` and is skipped when `judge` is omitted. A failed attempt is handed its validation errors and tried once more; the gap between `valid` and `validAfterRetry` is the validator's error copy. Selection compares `body[].type` as a multiset. A case without a golden still scores validity, payload, and answerability.
+Validity, primitive selection, and payload need no model. Answerability calls `judge` and is skipped when `judge` is omitted. A first attempt that did not parse or validate is handed its parse error or validation errors as `previousErrors` and tried once more, unless `retryOnInvalid` is `false`; the gap between `valid` and `validAfterRetry` is the validator's error copy. Selection compares `body[].type` as a multiset. A case without a golden still scores validity, payload, and answerability. `profile` (default `general`), `guide`, and `rules` shape the one `buildAuthoringPrompt` call every case shares, and `concurrency` (default 1) is how many cases run at once.
 
 `scoreValidity`, `scorePrimitiveSelection`, `scorePayload`, and `scoreAnswerability` are exported on their own. The first two are pure; `scorePayload` and `scoreAnswerability` call the runtime they are handed. `checkAttempt` is where each attempt is parsed and validated, once.
 

@@ -6,6 +6,8 @@ Scores whether a model produces valid, well-chosen compositions from a primitive
 npm install --save-dev @elastic/isomer-evals
 ```
 
+It depends on `@elastic/isomer-sdk` at its own version and needs the peers `react` and `zod`, which the runtime under test already brings.
+
 ```ts
 import { formatReport, runEvals } from '@elastic/isomer-evals';
 

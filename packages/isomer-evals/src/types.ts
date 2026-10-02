@@ -53,6 +53,7 @@ export type Generate = (request: GenerateRequest) => Promise<string>;
 /** Whether the rendered text still answers the prompt. */
 export type AnswerabilityVerdict = 'yes' | 'partial' | 'no';
 
+/** What `judge` is asked about: the case and the `text` rendering of what the model produced. */
 export interface JudgeRequest {
   evalCase: EvalCase;
   /** The generated composition rendered through the `text` surface. */
@@ -62,6 +63,7 @@ export interface JudgeRequest {
 /** The caller's judge call. Optional: omit it and answerability is skipped. */
 export type Judge = (request: JudgeRequest) => Promise<AnswerabilityVerdict>;
 
+/** The validity axis for one case: did the output parse, validate, and validate after a retry. */
 export interface ValidityScore {
   /** Whether the raw output parsed as JSON at all. */
   parsed: boolean;
@@ -72,11 +74,13 @@ export interface ValidityScore {
    * first attempt's own errors) validates. Not "the retry alone passed".
    */
   validAfterRetry: boolean;
+  /** The first attempt's failures: its parse error, or its validation errors; empty when it validated. */
   errors: readonly string[];
   /** The composition that validated, from whichever attempt reached one. */
   composition?: Composition | undefined;
 }
 
+/** Multiset precision, recall, and F1 of the generated body's top-level node types against the golden's. */
 export interface PrimitiveSelectionScore {
   precision: number;
   recall: number;
@@ -87,10 +91,11 @@ export interface PrimitiveSelectionScore {
   missing: readonly string[];
 }
 
+/** How much of the first attempt survived parsing, and whether it reached past the catalog. */
 export interface PayloadScore {
   /** UTF-8 bytes of the model output as sent, before any code fence is stripped. */
   rawBytes: number;
-  /** Bytes after parsing, which drops unknown properties. */
+  /** Bytes after parsing, which drops unknown properties; `0` when the first attempt did not parse. */
   sanitizedBytes: number;
   /** Sanitized size relative to the golden's; absent without a golden. */
   sizeVsGolden?: number | undefined;
@@ -98,6 +103,7 @@ export interface PayloadScore {
   unknownTypes: readonly string[];
 }
 
+/** The judge's verdict on the `text` rendering. */
 export interface AnswerabilityScore {
   verdict: AnswerabilityVerdict;
 }
@@ -106,17 +112,23 @@ export interface AnswerabilityScore {
 export interface EvalCaseResult {
   caseId: string;
   validity: ValidityScore;
+  /** Absent without a golden, or without a composition that validated. */
   selection?: PrimitiveSelectionScore | undefined;
   payload: PayloadScore;
+  /** Absent without a judge, or without a composition that validated. */
   answerability?: AnswerabilityScore | undefined;
 }
 
+/** What {@link RunEvalsOptions} produces: every case's scores and the counts {@link formatReport} prints. */
 export interface EvalReport {
   results: readonly EvalCaseResult[];
   totals: {
     cases: number;
+    /** Cases whose first attempt parsed as JSON. */
     parsed: number;
+    /** Cases whose first attempt validated. */
     valid: number;
+    /** Cases that validated on the first attempt or the retry; never below `valid`. */
     validAfterRetry: number;
     /** Mean F1 across cases that had a golden. */
     meanSelectionF1?: number | undefined;
@@ -125,11 +137,15 @@ export interface EvalReport {
   };
 }
 
+/** Options for `runEvals`. */
 export interface RunEvalsOptions {
   /** The pack's assembled runtime. Supplies the authoring context, validation, and text rendering. */
   runtime: EvalRuntime;
+  /** The cases to score, each run once, plus one retry when allowed. */
   corpus: readonly EvalCase[];
+  /** The model call; see {@link Generate}. */
   generate: Generate;
+  /** The answerability judge; omitted, that axis is skipped. */
   judge?: Judge | undefined;
   /** Authoring profile the prompt is built for. Defaults to `'general'`. */
   profile?: AuthoringProfileId | undefined;
