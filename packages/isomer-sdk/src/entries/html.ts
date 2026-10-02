@@ -14,7 +14,6 @@ export {
   type HTMLRenderResult,
   type HTMLStyleAdapter,
   renderHTMLWithDispatcher,
-  rendersAnchors,
 } from '../render/html';
 export {
   type ReactContentDispatcher,

@@ -70,7 +70,6 @@ export {
   gfmToSlackBlocks,
   isAbsoluteHttpUrl,
   italic,
-  joinMrkdwn,
   link,
   slackLinkUrl,
   strike,

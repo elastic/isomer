@@ -5,11 +5,8 @@
  * 2.0.
  */
 
-import type { ChildNodeWalker } from '../../composition/body_node_base';
-import type { PrimitiveNode } from '../../composition/node';
 import {
   type EnhancementDefinition,
-  resolveEnhancements,
   scopeScript,
 } from '../../pack/enhancements';
 
@@ -37,22 +34,3 @@ export const embedScript = (body: string): string =>
     body,
     '})(document.currentScript && document.currentScript.parentElement);',
   ].join('\n');
-
-/**
- * Whether a render emits node anchors: asked for with `anchors: true`, or
- * declared by a requested enhancement that applies to `body`. `anchors: false`
- * cannot turn off anchors an enhancement needs.
- */
-export const rendersAnchors = (
-  body: readonly PrimitiveNode[],
-  {
-    anchors,
-    enhancements,
-  }: { anchors?: boolean; enhancements?: readonly string[] },
-  walk: ChildNodeWalker,
-  definitions: readonly EnhancementDefinition[]
-): boolean =>
-  anchors === true ||
-  resolveEnhancements(body, walk, definitions, enhancements ?? []).some(
-    (definition) => definition.anchors
-  );

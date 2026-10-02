@@ -20,7 +20,6 @@ import {
   gfmToSlackBlocks,
   gfmToSlackMrkdwn,
   italic,
-  joinMrkdwn,
   link,
   slackLinkUrl,
   strike,
@@ -183,11 +182,6 @@ describe('clamping', () => {
     expect(formatHeaderText('  a \n\t b  ')).toBe('a b');
     const long = 'x'.repeat(SLACK_LIMITS.headerTextChars + 10);
     expect(formatHeaderText(long)).toHaveLength(SLACK_LIMITS.headerTextChars);
-  });
-
-  it('joins lines, dropping empties, within the section budget', () => {
-    expect(joinMrkdwn(['a', undefined, '', 'b'])).toBe('a\nb');
-    expect(joinMrkdwn(['abcdef', 'ghi'], 4)).toBe('abc…');
   });
 });
 

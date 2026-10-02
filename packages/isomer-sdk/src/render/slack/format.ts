@@ -251,20 +251,6 @@ export const formatHeaderText = (value: string): string =>
     SLACK_LIMITS.headerTextChars
   );
 
-/**
- * Joins mrkdwn lines into one section body, dropping empties and clamping to
- * `budget`. A single `\n` between lines reads as one paragraph in Slack's UI.
- */
-export const joinMrkdwn = (
-  lines: ReadonlyArray<string | undefined>,
-  budget: number = SLACK_LIMITS.sectionTextChars
-): string => {
-  const filtered = lines.filter(
-    (line): line is string => line !== undefined && line.length > 0
-  );
-  return clampMrkdwn(filtered.join('\n'), budget);
-};
-
 // ---------------------------------------------------------------------------
 // GitHub-flavored markdown -> Slack mrkdwn translation.
 //

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-export { type EnhancementDefinition, rendersAnchors } from './enhancements';
+export { type EnhancementDefinition } from './enhancements';
 export {
   type HTMLDispatcherRenderOptions,
   type HTMLEnhancementScope,
