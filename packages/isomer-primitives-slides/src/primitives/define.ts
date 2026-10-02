@@ -18,6 +18,11 @@ import type { ZodObject, ZodType } from 'zod';
 
 import type { SlidePackTypes } from '../render/context';
 
+import { statedRefine } from './cross_field';
+import { recordDefinition } from './pack_walk';
+
+const defineSlidePrimitive = definePrimitiveFor<SlidePackTypes>();
+
 /** {@link CorePrimitiveDefinition} bound to this pack's types. */
 export type PrimitiveDefinition<
   TNode extends PrimitiveNode,
@@ -30,16 +35,31 @@ export type PrimitiveDefinition<
  * Leave `TNode` and `TSchema` inferred so the schema's field brands survive.
  * Pass `TNode` only for a `schemaFor` container whose node type is not `z.infer`.
  */
-export const definePrimitive = definePrimitiveFor<SlidePackTypes>();
+export const definePrimitive: typeof defineSlidePrimitive = (definition) => {
+  const primitive = defineSlidePrimitive(definition);
+  recordDefinition(primitive);
+  return primitive;
+};
 
-/**
- * A container's child slot for `schemaFor`: the runtime's body-node union in
- * place of `unresolvedBodyNodeSchema`, described the way `field` already is.
- */
+const isFrame = (node: unknown): boolean =>
+  typeof node === 'object' &&
+  node !== null &&
+  (node as { type?: unknown }).type === 'slideFrame';
+
+/** The runtime's body-node union minus `slideFrame`, which never nests. */
+export const contentNode = (bodyNodeSchema: ZodType<unknown>) =>
+  bodyNodeSchema.check(
+    statedRefine((node) => !isFrame(node), {
+      error: 'a slideFrame cannot sit inside another node; frames never nest',
+      rule: 'never a slideFrame',
+    })
+  );
+
+/** {@link contentNode}s in place of `unresolvedBodyNodeSchema`, described as `field` is. */
 export const bodyNodes = (
   bodyNodeSchema: ZodType<unknown>,
   { description }: { description?: string }
 ) => {
-  const slot = z.array(bodyNodeSchema).min(1);
+  const slot = z.array(contentNode(bodyNodeSchema)).min(1);
   return description === undefined ? slot : slot.describe(description);
 };

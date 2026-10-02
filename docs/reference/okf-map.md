@@ -7,14 +7,17 @@ description: Generated map of the Isomer OKF concept graph.
 
 Generated from `.okf/isomer` by `pnpm okf:map`. Do not edit by hand.
 
-- Concepts: 54
-- Links: 131
+- Concepts: 58
+- Links: 145
 - Isolated concepts: 0
 
 ## Graph
 
 ```mermaid
 flowchart LR
+    agent_tools_concepts_agent_tools["Agent tools"]:::concept
+    agent_tools_entry_points_root["Root"]:::entrypoint
+    agent_tools_reference_public_contract["Public contract"]:::reference
     evals_concepts_scoring["Scoring"]:::concept
     evals_entry_points_root["Root"]:::entrypoint
     evals_playbooks_score_a_corpus["Score a corpus"]:::playbook
@@ -24,6 +27,7 @@ flowchart LR
     image_takumi_concepts_raster["Raster"]:::concept
     image_takumi_entry_points_root["Root"]:::entrypoint
     image_takumi_playbooks_rasterize_svg["Rasterize svg"]:::playbook
+    image_takumi_playbooks_render_pdf["Render pdf"]:::playbook
     image_takumi_reference_public_contract["Public contract"]:::reference
     runtime_concepts_authoring_context["Authoring context"]:::concept
     runtime_concepts_frame["Frame"]:::concept
@@ -69,6 +73,14 @@ flowchart LR
     workspace_playbooks_publish["Publish"]:::playbook
     workspace_playbooks_verify["Verify"]:::playbook
     workspace_reference_conventions["Conventions"]:::reference
+    agent_tools_concepts_agent_tools --> agent_tools_entry_points_root
+    agent_tools_concepts_agent_tools --> agent_tools_reference_public_contract
+    agent_tools_concepts_agent_tools --> runtime_concepts_authoring_context
+    agent_tools_concepts_agent_tools --> sdk_concepts_authoring
+    agent_tools_entry_points_root --> agent_tools_concepts_agent_tools
+    agent_tools_entry_points_root --> agent_tools_reference_public_contract
+    agent_tools_reference_public_contract --> agent_tools_concepts_agent_tools
+    agent_tools_reference_public_contract --> agent_tools_entry_points_root
     evals_concepts_scoring --> evals_entry_points_root
     evals_concepts_scoring --> evals_playbooks_score_a_corpus
     evals_concepts_scoring --> evals_reference_public_contract
@@ -86,11 +98,15 @@ flowchart LR
     image_takumi_concepts_fonts --> image_takumi_concepts_raster
     image_takumi_concepts_raster --> image_takumi_concepts_fonts
     image_takumi_concepts_raster --> image_takumi_playbooks_rasterize_svg
+    image_takumi_concepts_raster --> image_takumi_playbooks_render_pdf
     image_takumi_concepts_raster --> runtime_concepts_surfaces
     image_takumi_entry_points_root --> image_takumi_concepts_raster
     image_takumi_entry_points_root --> image_takumi_reference_public_contract
     image_takumi_playbooks_rasterize_svg --> image_takumi_concepts_fonts
     image_takumi_playbooks_rasterize_svg --> image_takumi_concepts_raster
+    image_takumi_playbooks_render_pdf --> image_takumi_concepts_fonts
+    image_takumi_playbooks_render_pdf --> image_takumi_concepts_raster
+    image_takumi_playbooks_render_pdf --> image_takumi_playbooks_rasterize_svg
     image_takumi_reference_public_contract --> image_takumi_concepts_raster
     image_takumi_reference_public_contract --> image_takumi_entry_points_root
     runtime_concepts_authoring_context --> evals_concepts_scoring
@@ -153,6 +169,7 @@ flowchart LR
     sdk_entry_points_root --> sdk_concepts_pipeline
     sdk_entry_points_root --> sdk_entry_points_author
     sdk_entry_points_root --> sdk_entry_points_html
+    sdk_entry_points_root --> sdk_entry_points_react
     sdk_entry_points_root --> sdk_entry_points_testing
     sdk_entry_points_slack --> sdk_concepts_packs
     sdk_entry_points_slack --> sdk_concepts_rendering
@@ -185,6 +202,7 @@ flowchart LR
     slides_playbooks_author_a_primitive --> slides_concepts_one_source
     slides_reference_public_contract --> slides_concepts_distillate
     slides_reference_public_contract --> slides_concepts_pack
+    workspace_concepts_workspace --> agent_tools_concepts_agent_tools
     workspace_concepts_workspace --> evals_concepts_scoring
     workspace_concepts_workspace --> workspace_playbooks_docs_builder
     workspace_concepts_workspace --> workspace_playbooks_publish
@@ -208,6 +226,9 @@ flowchart LR
 
 ## Concepts
 
+- Agent tools (Concept): `agent-tools/concepts/agent-tools`
+- Root (Entry Point): `agent-tools/entry-points/root`
+- Public contract (Reference): `agent-tools/reference/public-contract`
 - Scoring (Concept): `evals/concepts/scoring`
 - Root (Entry Point): `evals/entry-points/root`
 - Score a corpus (Playbook): `evals/playbooks/score-a-corpus`
@@ -217,6 +238,7 @@ flowchart LR
 - Raster (Concept): `image-takumi/concepts/raster`
 - Root (Entry Point): `image-takumi/entry-points/root`
 - Rasterize svg (Playbook): `image-takumi/playbooks/rasterize-svg`
+- Render pdf (Playbook): `image-takumi/playbooks/render-pdf`
 - Public contract (Reference): `image-takumi/reference/public-contract`
 - Authoring context (Concept): `runtime/concepts/authoring-context`
 - Frame (Concept): `runtime/concepts/frame`

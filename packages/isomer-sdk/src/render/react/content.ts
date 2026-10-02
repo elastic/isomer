@@ -6,11 +6,10 @@
  */
 
 import {
-  createContext,
   createElement,
   Fragment,
+  type ReactElement,
   type ReactNode,
-  useContext,
 } from 'react';
 
 import type { Composition } from '../../composition';
@@ -36,28 +35,8 @@ export interface ReactContentOptions {
 }
 
 /**
- * Dispatcher that created this React tree. Nested primitive components read it
- * because React invokes those children after the parent renderer has returned.
- * `context` is untyped: each pack narrows `PrimitiveRenderContext`.
- */
-export type ReactTreeDispatcher = {
-  renderReact: (node: PrimitiveNode, context?: object) => ReactNode;
-};
-
-export const PrimitiveDispatcherContext =
-  createContext<ReactTreeDispatcher | null>(null);
-
-/** The dispatcher rendering the enclosing tree, or `null` outside one. */
-export const useReactPrimitiveDispatcher = (): ReactTreeDispatcher | null =>
-  useContext(PrimitiveDispatcherContext);
-
-/**
  * A composition's heading and body as React nodes, without the surrounding
  * document or wrapper element.
- *
- * `dispatcher` is published on {@link PrimitiveDispatcherContext} so a
- * primitive that renders children can reach it — see
- * {@link ReactTreeDispatcher}.
  */
 export const renderCompositionContent = <
   TNode extends PrimitiveNode,
@@ -69,34 +48,28 @@ export const renderCompositionContent = <
   { heading = true }: ReactContentOptions = {}
 ): ReactNode =>
   createElement(
-    PrimitiveDispatcherContext.Provider,
-    {
-      value: dispatcher as ReactTreeDispatcher,
-    },
-    createElement(
-      Fragment,
-      null,
-      ...[
-        heading && composition.title
-          ? createElement('h2', { key: 'title' }, composition.title)
-          : null,
-        heading && composition.subtitle
-          ? createElement(
-              'p',
-              { key: 'subtitle', className: 'sub' },
-              composition.subtitle
-            )
-          : null,
-        ...composition.body.map((node, index) =>
-          createElement(RenderedCompositionNode<TNode, TContext>, {
-            key: `body-${index}`,
-            node,
-            context,
-            dispatcher,
-          })
-        ),
-      ].filter(Boolean)
-    )
+    Fragment,
+    null,
+    ...[
+      heading && composition.title
+        ? createElement('h2', { key: 'title' }, composition.title)
+        : null,
+      heading && composition.subtitle
+        ? createElement(
+            'p',
+            { key: 'subtitle', className: 'sub' },
+            composition.subtitle
+          )
+        : null,
+      ...composition.body.map((node, index) =>
+        createElement(RenderedCompositionNode<TNode, TContext>, {
+          key: `body-${index}`,
+          node,
+          context,
+          dispatcher,
+        })
+      ),
+    ].filter(Boolean)
   );
 
 interface RenderedCompositionNodeProps<
@@ -121,7 +94,7 @@ export interface CompositionWrapperOptions {
   framed?: boolean;
   /** Adds the `fluid` class. */
   fluid?: boolean;
-  /** Sets `data-theme`; `auto` (the default) sets nothing so the page's scheme applies. */
+  /** Sets `data-theme`; defaults to the composition's `theme`, and `auto` sets nothing so the page's scheme applies. */
   theme?: RenderTheme;
   /** Used only when the composition has neither `meta.ariaLabel` nor a `title`. Defaults to `'View'`. */
   defaultAriaLabel?: string;
@@ -137,10 +110,10 @@ export const wrapCompositionContent = <TNode extends PrimitiveNode>(
   {
     framed = true,
     fluid = false,
-    theme = 'auto',
+    theme = composition.theme ?? 'auto',
     defaultAriaLabel = 'View',
   }: CompositionWrapperOptions = {}
-): ReactNode =>
+): ReactElement =>
   createElement(
     'section',
     {

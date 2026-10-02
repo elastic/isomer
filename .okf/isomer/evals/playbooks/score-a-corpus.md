@@ -17,7 +17,7 @@ sources:
 # Steps
 
 1. Assemble the pack's runtime and build an `EvalCase` list. A `golden` is optional and required only for primitive selection.
-2. Call `runEvals({ runtime, corpus, generate })`. `generate` is the only path to a model; a replay function makes the run deterministic.
+2. Call `runEvals({ runtime, corpus, generate })`. `generate` sends the shared `prompt`, the case request (`evalCase.prompt`), and any `previousErrors` to the model; a replay function makes the run deterministic.
 3. Omit `judge` to skip answerability. Pass `judge` when the `text` surface's rendering should be checked against the prompt.
 4. Print with `formatReport`, or call one `score*` function when the corpus is unnecessary.[^docs][^run]
 

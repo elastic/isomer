@@ -9,7 +9,7 @@ import type { Composition } from '../../composition/composition';
 import type { PrimitiveNode } from '../../define/primitive_module';
 import type { TextEnvelopeDispatcher } from '../text/envelope';
 
-import { sanitizeMarkdownSource } from './format';
+import { md, serializeMarkdown } from './builder';
 
 /** Adds GFM to {@link TextEnvelopeDispatcher}. */
 export interface MarkdownEnvelopeDispatcher<
@@ -18,22 +18,30 @@ export interface MarkdownEnvelopeDispatcher<
   renderMarkdown(node: TNode): string;
 }
 
+/** Options for {@link renderMarkdownEnvelope}. */
+export interface MarkdownEnvelopeOptions {
+  /** Renders the composition's title and subtitle. Defaults to `true`. Pass `false` when the host already shows the title, or the body opens with its own. */
+  heading?: boolean;
+}
+
 /**
  * The composition as GFM: title as `h1`, subtitle italicized, then every node
- * that rendered anything. The title and subtitle go through
- * {@link sanitizeMarkdownSource}, the same URL policy a pack applies to its
- * own authored markdown.
+ * that rendered anything. The title and subtitle are text, escaped by
+ * {@link serializeMarkdown}.
  */
 export const renderMarkdownEnvelope = <TNode extends PrimitiveNode>(
   composition: Composition<TNode>,
-  dispatcher: MarkdownEnvelopeDispatcher<TNode>
+  dispatcher: MarkdownEnvelopeDispatcher<TNode>,
+  { heading = true }: MarkdownEnvelopeOptions = {}
 ): string => {
   const blocks: string[] = [];
-  if (composition.title) {
-    blocks.push(`# ${sanitizeMarkdownSource(composition.title)}`);
+  if (heading && composition.title) {
+    blocks.push(serializeMarkdown(md.heading(1, composition.title)));
   }
-  if (composition.subtitle) {
-    blocks.push(`_${sanitizeMarkdownSource(composition.subtitle)}_`);
+  if (heading && composition.subtitle) {
+    blocks.push(
+      serializeMarkdown(md.paragraph(md.emphasis(composition.subtitle)))
+    );
   }
   for (const node of composition.body) {
     const rendered = dispatcher.renderMarkdown(node);

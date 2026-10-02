@@ -7,9 +7,11 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { isSlackReachableImageUrl } from './assets';
 import { SLACK_LIMITS } from './blocks';
 import {
   bold,
+  clampMrkdwn,
   clampSlackText,
   code,
   codeBlock,
@@ -18,8 +20,8 @@ import {
   gfmToSlackBlocks,
   gfmToSlackMrkdwn,
   italic,
-  joinMrkdwn,
   link,
+  slackLinkUrl,
   strike,
 } from './format';
 
@@ -39,6 +41,10 @@ describe('mrkdwn helpers', () => {
     expect(codeBlock('x\n```\ny')).toBe('```\nx\n``‍`\ny\n```');
   });
 
+  it('percent-encodes a pipe so it cannot end the link URL', () => {
+    expect(link('https://a.b/a|b', 'x')).toBe('<https://a.b/a%7Cb|x>');
+  });
+
   it('builds links and degrades a blocked destination to text', () => {
     expect(link('https://example.com/?a=1&b=2', 'Docs & more')).toBe(
       '<https://example.com/?a=1&amp;b=2|Docs &amp; more>'
@@ -46,6 +52,114 @@ describe('mrkdwn helpers', () => {
     expect(link('https://example.com')).toBe('<https://example.com>');
     expect(link('javascript:alert(1)', 'Click')).toBe('Click');
     expect(link('javascript:alert(1)')).toBe('javascript:alert(1)');
+    expect(link('mailto:a@b.c', 'Mail')).toBe('<mailto:a@b.c|Mail>');
+  });
+});
+
+// Each entry either names no absolute destination or is one `URL` repairs.
+const UNLINKABLE = [
+  'javascript:alert(1)',
+  '#',
+  '/path',
+  './a',
+  '//host/a',
+  'https:/a',
+  'https://',
+  'http://?q=1',
+  'https:///path',
+  'http://\\host',
+  'https://a.b\\@evil.com/path',
+  'https://a.b/p q',
+  'http://@/',
+  'https://:80',
+  'http://user:pw@',
+  'http://./',
+  'https://..',
+  'http://a..b/',
+  'https://a.b../',
+  'https://.a.b/',
+  'https://bücher.de/',
+  'https://a.b:443/',
+  'mailto:',
+  'mailto:?subject=x',
+  'mailto:/',
+  'mailto://host/a',
+  'mailto:/user@example.com',
+  'mailto://user@example.com',
+  'mailto:abc@#frag',
+  'mailto:a@',
+  'mailto:@b',
+  'mailto:%zz',
+  'mailto:a@b..c',
+  'mailto:a b@c.d',
+  'mailto:a%2Fb@c.d',
+  'mailto:a@b\\c',
+  'mailto:,a@b.c',
+  'mailto:a@b.c,',
+  'mailto:abc',
+  'https://a.b/%zz',
+  'https://a.b/?q=%',
+  'https://a.b/#%4',
+  'mailto:a@b.c?subject=%zz',
+  'https://de.wikipedia.org/wiki/Bücher',
+  'mailto:a@b.c?subject=hello world',
+  'mailto:a@b.c?subject="x"',
+  'mailto:a@b.c?subject=<x>',
+  'mailto:a@b.c?subject=\u0085',
+  'mailto:a@b.c?subject=ü',
+  'mailto:a@b.c#f g',
+  'mailto:a@b:c',
+  'mailto:a@b.c%3Fbad',
+  'mailto:a@b@c.d',
+  'mailto:a@b/c.d',
+  'mailto:a@b%2Fc.d',
+  'mailto:a@b%20c.d',
+  'mailto:a@-b.c',
+  'mailto:"a b"@c.d',
+  'mailto:.a@b.c',
+  'http://a_b.c/',
+];
+
+const LINKABLE = [
+  'https://a.b',
+  'HTTPS://A.B/p',
+  'http://a.b?q=1',
+  'https://a.b/p?q=1#f',
+  'https://a.b:8080/p',
+  'https://u@a.b/',
+  'https://xn--bcher-kva.de/',
+  'https://example.com./',
+  'http://example.com.:8080/p',
+  'https://de.wikipedia.org/wiki/B%C3%BCcher',
+  'mailto:a@b.c?subject=hello%20world&body=%22x%22',
+  'http://[::1]:3000/',
+  'mailto:a@b.c',
+  'mailto:a%40b.c',
+  'mailto:a@b.c,d@e.f?subject=x',
+  'mailto:a@b.c#f',
+  'https://a.b/%25/%2F?q=%2f#%41',
+  'mailto:a@b.c?subject=100%25',
+  "mailto:a.b+c_d'e@xn--bcher-kva.de.",
+  'http://127.0.0.1:8080/',
+];
+
+describe('slackLinkUrl', () => {
+  it.each(UNLINKABLE)('prints the label of a link to %s', (href) => {
+    expect(slackLinkUrl(href)).toBeNull();
+    expect(link(href, 'x')).toBe('x');
+    expect(isSlackReachableImageUrl(href)).toBe(false);
+  });
+
+  it.each(LINKABLE)('links %s as written', (href) => {
+    expect(slackLinkUrl(href)).toBe(href);
+    expect(link(href, 'x')).toBe(`<${escapeMrkdwn(href)}|x>`);
+    expect(isSlackReachableImageUrl(href)).toBe(/^https:/i.test(href));
+  });
+
+  it('prints the label of a GFM link or image Slack cannot resolve', () => {
+    expect(gfmToSlackMrkdwn('[x](/p) ![alt](mailto:/) [y](https://a.b)')).toBe(
+      'x alt <https://a.b|y>'
+    );
   });
 });
 
@@ -56,15 +170,78 @@ describe('clamping', () => {
     expect(clampSlackText('hello world', 1)).toBe('h');
   });
 
+  it('clamps at a grapheme boundary, never splitting a surrogate pair or emoji sequence', () => {
+    expect(clampSlackText(`a${'😀'.repeat(75)}`, 75)).toBe(
+      `a${'😀'.repeat(36)}…`
+    );
+    expect(clampSlackText('ab👨‍👩‍👧cd', 6)).toBe('ab…');
+    expect(clampSlackText('😀😀', 1)).toBe('');
+  });
+
   it('collapses whitespace in header text and clamps to the header budget', () => {
     expect(formatHeaderText('  a \n\t b  ')).toBe('a b');
     const long = 'x'.repeat(SLACK_LIMITS.headerTextChars + 10);
     expect(formatHeaderText(long)).toHaveLength(SLACK_LIMITS.headerTextChars);
   });
+});
 
-  it('joins lines, dropping empties, within the section budget', () => {
-    expect(joinMrkdwn(['a', undefined, '', 'b'])).toBe('a\nb');
-    expect(joinMrkdwn(['abcdef', 'ghi'], 4)).toBe('abc…');
+describe('clampMrkdwn', () => {
+  const pad = (n: number) => 'a'.repeat(n);
+
+  it('returns text within the limit untouched', () => {
+    expect(clampMrkdwn('*bold* <https://x.test|x>', 40)).toBe(
+      '*bold* <https://x.test|x>'
+    );
+  });
+
+  it('cuts before a link or mention the cut lands in', () => {
+    expect(clampMrkdwn(`${pad(10)} <https://x.test/path|label> b`, 20)).toBe(
+      `${pad(10)}…`
+    );
+    expect(clampMrkdwn(`${pad(10)} <@U123ABC> b`, 18)).toBe(`${pad(10)}…`);
+    expect(
+      clampMrkdwn(`${pad(10)} <https://x.test/${'p'.repeat(200)}|label>`, 20)
+    ).toBe(`${pad(10)}…`);
+  });
+
+  it('keeps a link that ends at the cut', () => {
+    const value = `${pad(5)} <https://x.test|x> ${'b'.repeat(40)}`;
+    expect(clampMrkdwn(value, 27)).toBe(`${pad(5)} <https://x.test|x> b…`);
+  });
+
+  it('cuts through a bare less-than that opens no link', () => {
+    const code = '`a<b` ';
+    const output = clampMrkdwn(`${code}${'word '.repeat(700)}`, 3_000);
+    expect(output.length).toBe(3_000);
+    expect(output.startsWith(code)).toBe(true);
+    expect(clampMrkdwn(`a<b\n> ${'c'.repeat(30)}`, 20).length).toBe(20);
+  });
+
+  it('cuts before an entity the cut lands in', () => {
+    expect(clampMrkdwn(`${pad(8)}&amp;&lt;&gt;`, 11)).toBe(`${pad(8)}…`);
+    expect(clampMrkdwn(`${pad(8)}&amp;&lt;&gt;`, 14)).toBe(`${pad(8)}&amp;…`);
+  });
+
+  it('never cuts inside an entity in a link label', () => {
+    const value = `${pad(4)} <https://x.test|a &amp; b> tail`;
+    expect(clampMrkdwn(value, 26)).toBe(`${pad(4)}…`);
+  });
+
+  it('leaves formatting marks as they fall', () => {
+    expect(clampMrkdwn(`x *${'word '.repeat(10)}*`, 20)).toBe(
+      `x *${'word '.repeat(3)}w…`
+    );
+  });
+
+  it('keeps a grapheme whole', () => {
+    expect(clampMrkdwn(`${pad(8)}😀😀`, 10)).toBe(`${pad(8)}…`);
+  });
+
+  it('clamps a long input in time bounded by the limit', () => {
+    const started = performance.now();
+    clampMrkdwn('a'.repeat(1_000_000), 3_000);
+    clampMrkdwn(`<${'a'.repeat(1_000_000)}`, 3_000);
+    expect(performance.now() - started).toBeLessThan(200);
   });
 });
 
@@ -73,6 +250,23 @@ describe('gfmToSlackMrkdwn', () => {
     expect(
       gfmToSlackMrkdwn('**bold** and _it_ and `a<b` [L](https://x.y)')
     ).toBe('*bold* and _it_ and `a<b` <https://x.y|L>');
+  });
+
+  it('reads single-asterisk emphasis as italics', () => {
+    expect(gfmToSlackMrkdwn('a*b*c and *d e* but not * f * or \\*g*')).toBe(
+      'a_b_c and _d e_ but not * f * or *g*'
+    );
+  });
+
+  it('applies GFM flanking and escape parity to emphasis', () => {
+    expect(gfmToSlackMrkdwn('a*.*b and *(x)*')).toBe('a*.*b and _(x)_');
+    // An escaped backslash leaves the `*` after it free to open.
+    expect(gfmToSlackMrkdwn('\\\\*x* and \\\\\\*y*')).toBe('\\_x_ and \\*y*');
+    expect(gfmToSlackMrkdwn('(_x_) and a_b_')).toBe('(_x_) and a_b_');
+    // A delimiter that can neither open nor close is text between the pair.
+    expect(gfmToSlackMrkdwn('*a * b*')).toBe('_a * b_');
+    // An emoji is one symbol, not two surrogates.
+    expect(gfmToSlackMrkdwn('a*😀*b and *😀*')).toBe('a*😀*b and _😀_');
   });
 
   it('bolds ATX headings', () => {
@@ -91,6 +285,38 @@ describe('gfmToSlackMrkdwn', () => {
     );
   });
 
+  it('keeps a decoded or embedded fence from closing a code block early', () => {
+    expect(
+      gfmToSlackMrkdwn('| &#96;&#96;&#96; | \\`\\`\\` |\n| --- | --- |')
+    ).toBe('```\n| ``\u200d` | ``\u200d` |\n| --- | --- |\n```');
+    expect(gfmToSlackMrkdwn('```\na ``` b\n```')).toBe(
+      '```\na ``\u200d` b\n```'
+    );
+  });
+
+  it('keeps a decoded pipe inside the link URL', () => {
+    expect(gfmToSlackMrkdwn('[x](https://a.b/a\\|b)')).toBe(
+      '<https://a.b/a%7Cb|x>'
+    );
+  });
+
+  it('pairs backtick runs of equal length into code spans', () => {
+    expect(gfmToSlackMrkdwn('``a`b\\*`` and ` c `')).toBe(
+      '`a\u02CBb\\*` and `c`'
+    );
+    // Backslashes are literal inside a code span, so `\\`` there still closes it.
+    expect(gfmToSlackMrkdwn('`a\\*b\\`')).toBe('`a\\*b\\`');
+    expect(gfmToSlackMrkdwn('# `a\\*b\\`')).toBe('*`a\\*b\\`*');
+    // An escaped backtick is text, and the run after it opens its own span.
+    expect(gfmToSlackMrkdwn('\\``a` ``b`')).toBe('``a` ``b`');
+  });
+
+  it('decodes fenced table cells as the table block does', () => {
+    expect(
+      gfmToSlackMrkdwn('| a \\| b | &#x20;c |\n| --- | --- |\n| 1\\* | 2 |')
+    ).toBe('```\n| a | b |  c |\n| --- | --- |\n| 1* | 2 |\n```');
+  });
+
   it('keeps the blockquote prefix and translates its body', () => {
     expect(gfmToSlackMrkdwn('> **note** & more')).toBe('> *note* &amp; more');
   });
@@ -101,6 +327,96 @@ describe('gfmToSlackMrkdwn', () => {
 
   it('does not treat an underscore inside a word as italics', () => {
     expect(gfmToSlackMrkdwn('snake_case_name')).toBe('snake_case_name');
+  });
+
+  it('resolves backslash escapes to their literal characters', () => {
+    expect(gfmToSlackMrkdwn('1\\. 2\\*3 \\[a\\] \\<b\\> C:\\dir')).toBe(
+      '1. 2*3 [a] &lt;b&gt; C:\\dir'
+    );
+  });
+
+  it('never reads an escaped delimiter as formatting', () => {
+    expect(
+      gfmToSlackMrkdwn('\\*\\*x\\*\\* \\_y\\_ \\`z\\` \\[l](https://a.b)')
+    ).toBe('**x** _y_ `z` [l](https://a.b)');
+  });
+
+  it('resolves escapes inside emphasis, links, and headings', () => {
+    expect(gfmToSlackMrkdwn('**a\\_b** _c\\*d_ [x\\]y](<https://a.b/c>)')).toBe(
+      '*a_b* _c*d_ <https://a.b/c|x]y>'
+    );
+    expect(gfmToSlackMrkdwn('# \\#1 &#x26; co')).toBe('*#1 &amp; co*');
+  });
+
+  it('keeps backslashes inside code spans in headings and emphasis', () => {
+    expect(gfmToSlackMrkdwn('# use `x\\*y`')).toBe('*use `x\\*y`*');
+    expect(gfmToSlackMrkdwn('**`a\\.b`**')).toBe('*`a\\.b`*');
+  });
+
+  it('reads an escaped closing delimiter as text', () => {
+    expect(
+      gfmToSlackMrkdwn('[x](https://a.b/a\\)b) [y](https://a.b/(c))')
+    ).toBe('<https://a.b/a)b|x> <https://a.b/(c)|y>');
+    expect(gfmToSlackMrkdwn('# title \\#')).toBe('*title #*');
+    expect(gfmToSlackMrkdwn('# title #')).toBe('*title*');
+  });
+
+  it('decodes a control-character reference to U+FFFD, as micromark does', () => {
+    expect(gfmToSlackMrkdwn('a&#x80;b&#127;c&#9;d')).toBe('a\uFFFDb\uFFFDc\td');
+  });
+
+  it('translates adversarial lines in linear time', () => {
+    const size = 50_000;
+    // Every run a new length, so no closer search can be shared.
+    const distinctFences = Array.from({ length: 1_500 }, (_, i) =>
+      '`'.repeat(i + 1)
+    ).join(' ');
+    const inputs = [
+      '`'.repeat(size),
+      Array.from({ length: size / 4 }, (_, i) => '`'.repeat((i % 7) + 1)).join(
+        ' '
+      ),
+      '\\*'.repeat(size),
+      `*${'\\*'.repeat(size)}`,
+      '*a '.repeat(size / 3),
+      '\\_'.repeat(size),
+      'a*.'.repeat(size / 3),
+      `*${'a * '.repeat(size / 4)}`,
+      '[`a` '.repeat(size / 5),
+      '**`x` '.repeat(size / 6),
+      `[${'`](x) '.repeat(size / 6)}`,
+      `\\${'\\\\*'.repeat(size / 3)}`,
+      '\\``'.repeat(size / 3),
+      '['.repeat(size),
+      '[a](x'.repeat(size / 5),
+      `# a${' '.repeat(size)}x`,
+      `| ${'`'.repeat(size)} | b |\n| - | - |`,
+      `${'| - '.repeat(size / 4)}x`,
+      `| a |\n| -${' '.repeat(size)}x|`,
+      `# ${distinctFences}`,
+      `| ${distinctFences} | b |\n| - | - |`,
+    ];
+    const started = performance.now();
+    for (const input of inputs) {
+      gfmToSlackMrkdwn(input);
+      gfmToSlackBlocks(input);
+    }
+    expect(performance.now() - started).toBeLessThan(2_000);
+  });
+
+  it('applies the URL policy to the decoded destination', () => {
+    expect(gfmToSlackMrkdwn('[x](&#106;avascript:alert%281%29)')).toBe('x');
+    expect(gfmToSlackMrkdwn('[x](<javascript:alert%281%29>)')).toBe('x');
+    // `&amp;` decodes to a literal `&`, so this is a relative path, not a scheme.
+    expect(
+      gfmToSlackMrkdwn('[x](&amp;#106;avascript:alert%281%29)')
+    ).not.toMatch(/<javascript:/);
+  });
+
+  it('decodes numeric character references and keeps an escaped one literal', () => {
+    expect(gfmToSlackMrkdwn('&#x20;a &#42; &#0; \\&#x20;')).toBe(
+      ' a * \uFFFD &amp;#x20;'
+    );
   });
 });
 
@@ -167,6 +483,111 @@ describe('gfmToSlackBlocks', () => {
       throw new Error('expected a section block');
     }
     expect(section.text?.text).toHaveLength(SLACK_LIMITS.sectionTextChars);
+  });
+
+  it('splits table rows on unescaped pipes and resolves escapes in cells', () => {
+    const [table] = gfmToSlackBlocks(
+      '| a \\| b | &#x20;c |\n| - | - |\n| 1\\* | \\_2 |'
+    );
+    if (table?.type !== 'table') {
+      throw new Error('expected a table block');
+    }
+    expect(table.rows).toEqual([
+      [
+        { type: 'raw_text', text: 'a | b' },
+        { type: 'raw_text', text: ' c' },
+      ],
+      [
+        { type: 'raw_text', text: '1*' },
+        { type: 'raw_text', text: '_2' },
+      ],
+    ]);
+  });
+
+  it('splits on a pipe after an even run of backslashes', () => {
+    const [table] = gfmToSlackBlocks('| a \\\\| b |\n| - | - |');
+    if (table?.type !== 'table') {
+      throw new Error('expected a table block');
+    }
+    expect(table.rows).toEqual([
+      [
+        { type: 'raw_text', text: 'a \\' },
+        { type: 'raw_text', text: 'b' },
+      ],
+    ]);
+  });
+
+  it('keeps backslashes inside code spans in table cells except before a pipe', () => {
+    const [table] = gfmToSlackBlocks('| `a\\.b` | `a\\|b` |\n| - | - |');
+    if (table?.type !== 'table') {
+      throw new Error('expected a table block');
+    }
+    expect(table.rows).toEqual([
+      [
+        { type: 'raw_text', text: 'a\\.b' },
+        { type: 'raw_text', text: 'a|b' },
+      ],
+    ]);
+  });
+
+  it('prints a formatted cell or link label as its text, and an image as a link', () => {
+    const [table] = gfmToSlackBlocks('| **b** _i_ `c` |\n| - |');
+    expect(table).toMatchObject({ rows: [[{ text: 'b i c' }]] });
+    expect(
+      gfmToSlackMrkdwn(
+        '[**x** _y_ `z`](https://a.b) ![alt](https://a.b/i.png) ![d](data:image/png;base64,AA)'
+      )
+    ).toBe('<https://a.b|x y z> <https://a.b/i.png|alt> d');
+  });
+
+  it('closes a fence only on spaces and tabs after the backticks', () => {
+    expect(gfmToSlackBlocks('```\ncode\n```\u00a0\nstill code\n```')).toEqual([
+      expect.objectContaining({
+        elements: [
+          expect.objectContaining({
+            elements: [{ type: 'text', text: 'code\n```\u00a0\nstill code' }],
+          }),
+        ],
+      }),
+    ]);
+  });
+
+  it('opens a fence only as GFM does, and closes one on a CRLF line', () => {
+    for (const notFence of ['    ```\nprose', '```js`x\nprose']) {
+      expect(gfmToSlackBlocks(notFence)).toEqual([
+        expect.objectContaining({ type: 'section' }),
+      ]);
+      expect(gfmToSlackMrkdwn(notFence)).not.toMatch(/^```\n/);
+    }
+    expect(gfmToSlackBlocks('```\r\ncode\r\n```\r\nafter')).toEqual([
+      expect.objectContaining({ type: 'rich_text' }),
+      expect.objectContaining({ type: 'section' }),
+    ]);
+    expect(gfmToSlackMrkdwn('```\r\ncode\r\n```\r\nafter')).toMatch(
+      /^```\ncode\r\n```\nafter/
+    );
+  });
+
+  it('reads a single-column table and closes a fence only on one as long', () => {
+    expect(gfmToSlackBlocks('| a |\n| - |\n| 1 |')).toEqual([
+      expect.objectContaining({
+        type: 'table',
+        rows: [
+          [{ type: 'raw_text', text: 'a' }],
+          [{ type: 'raw_text', text: '1' }],
+        ],
+      }),
+    ]);
+    expect(gfmToSlackBlocks('````\n```\ninner\n````\nafter')).toEqual([
+      expect.objectContaining({
+        elements: [
+          expect.objectContaining({
+            elements: [{ type: 'text', text: '```\ninner' }],
+          }),
+        ],
+      }),
+      { type: 'section', text: { type: 'mrkdwn', text: 'after' } },
+    ]);
   });
 
   it('drops whitespace-only prose runs', () => {

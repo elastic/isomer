@@ -8,7 +8,6 @@ Packages a consumer installs with these libraries. Their license texts are folde
 
 | Package | Version | SPDX | Path | Optional dependencies |
 | --- | --- | --- | --- | --- |
-| `@elastic/distillate` | 0.1.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+distillate@0.1.0/node_modules/@elastic/distillate` |  |
 | `@takumi-rs/core` | 2.14.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+core@2.14.0_csstype@3.2.3_react@18.3.1/node_modules/@takumi-rs/core` | `@takumi-rs/core-darwin-arm64`, `@takumi-rs/core-darwin-x64`, `@takumi-rs/core-linux-arm64-gnu`, `@takumi-rs/core-linux-arm64-musl`, `@takumi-rs/core-linux-x64-gnu`, `@takumi-rs/core-linux-x64-musl`, `@takumi-rs/core-win32-arm64-msvc`, `@takumi-rs/core-win32-x64-msvc` |
 | `@takumi-rs/core-darwin-arm64` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
 | `@takumi-rs/core-darwin-x64` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
@@ -19,7 +18,66 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `@takumi-rs/core-win32-arm64-msvc` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
 | `@takumi-rs/core-win32-x64-msvc` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
 | `@takumi-rs/helpers` | 2.14.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+helpers@2.14.0_react@18.3.1/node_modules/@takumi-rs/helpers` |  |
-| `stylis` | 4.4.0 | MIT | `node_modules/.pnpm/stylis@4.4.0/node_modules/stylis` |  |
+| `@types/debug` | 4.1.13 | MIT | `node_modules/.pnpm/@types+debug@4.1.13/node_modules/@types/debug` |  |
+| `@types/mdast` | 4.0.4 | MIT | `node_modules/.pnpm/@types+mdast@4.0.4/node_modules/@types/mdast` |  |
+| `@types/ms` | 2.1.0 | MIT | `node_modules/.pnpm/@types+ms@2.1.0/node_modules/@types/ms` |  |
+| `@types/unist` | 3.0.3 | MIT | `node_modules/.pnpm/@types+unist@3.0.3/node_modules/@types/unist` |  |
+| `acorn` | 8.18.0 | MIT | `node_modules/.pnpm/acorn@8.18.0/node_modules/acorn` |  |
+| `ccount` | 2.0.1 | MIT | `node_modules/.pnpm/ccount@2.0.1/node_modules/ccount` |  |
+| `character-entities` | 2.0.2 | MIT | `node_modules/.pnpm/character-entities@2.0.2/node_modules/character-entities` |  |
+| `debug` | 4.4.3 | MIT | `node_modules/.pnpm/debug@4.4.3/node_modules/debug` |  |
+| `decode-named-character-reference` | 1.3.0 | MIT | `node_modules/.pnpm/decode-named-character-reference@1.3.0/node_modules/decode-named-character-reference` |  |
+| `dequal` | 2.0.3 | MIT | `node_modules/.pnpm/dequal@2.0.3/node_modules/dequal` |  |
+| `devlop` | 1.1.0 | MIT | `node_modules/.pnpm/devlop@1.1.0/node_modules/devlop` |  |
+| `escape-string-regexp` | 5.0.0 | MIT | `node_modules/.pnpm/escape-string-regexp@5.0.0/node_modules/escape-string-regexp` |  |
+| `longest-streak` | 3.1.0 | MIT | `node_modules/.pnpm/longest-streak@3.1.0/node_modules/longest-streak` |  |
+| `markdown-table` | 3.0.4 | MIT | `node_modules/.pnpm/markdown-table@3.0.4/node_modules/markdown-table` |  |
+| `mdast-util-find-and-replace` | 3.0.2 | MIT | `node_modules/.pnpm/mdast-util-find-and-replace@3.0.2/node_modules/mdast-util-find-and-replace` |  |
+| `mdast-util-from-markdown` | 2.0.3 | MIT | `node_modules/.pnpm/mdast-util-from-markdown@2.0.3/node_modules/mdast-util-from-markdown` |  |
+| `mdast-util-gfm` | 3.1.0 | MIT | `node_modules/.pnpm/mdast-util-gfm@3.1.0/node_modules/mdast-util-gfm` |  |
+| `mdast-util-gfm-autolink-literal` | 2.0.1 | MIT | `node_modules/.pnpm/mdast-util-gfm-autolink-literal@2.0.1/node_modules/mdast-util-gfm-autolink-literal` |  |
+| `mdast-util-gfm-footnote` | 2.1.0 | MIT | `node_modules/.pnpm/mdast-util-gfm-footnote@2.1.0/node_modules/mdast-util-gfm-footnote` |  |
+| `mdast-util-gfm-strikethrough` | 2.0.1 | MIT | `node_modules/.pnpm/mdast-util-gfm-strikethrough@2.0.1/node_modules/mdast-util-gfm-strikethrough` |  |
+| `mdast-util-gfm-table` | 2.0.0 | MIT | `node_modules/.pnpm/mdast-util-gfm-table@2.0.0/node_modules/mdast-util-gfm-table` |  |
+| `mdast-util-gfm-task-list-item` | 2.0.0 | MIT | `node_modules/.pnpm/mdast-util-gfm-task-list-item@2.0.0/node_modules/mdast-util-gfm-task-list-item` |  |
+| `mdast-util-phrasing` | 4.1.0 | MIT | `node_modules/.pnpm/mdast-util-phrasing@4.1.0/node_modules/mdast-util-phrasing` |  |
+| `mdast-util-to-markdown` | 2.1.3 | MIT | `node_modules/.pnpm/mdast-util-to-markdown@2.1.3/node_modules/mdast-util-to-markdown` |  |
+| `mdast-util-to-string` | 4.0.0 | MIT | `node_modules/.pnpm/mdast-util-to-string@4.0.0/node_modules/mdast-util-to-string` |  |
+| `micromark` | 4.0.2 | MIT | `node_modules/.pnpm/micromark@4.0.2/node_modules/micromark` |  |
+| `micromark-core-commonmark` | 2.0.3 | MIT | `node_modules/.pnpm/micromark-core-commonmark@2.0.3/node_modules/micromark-core-commonmark` |  |
+| `micromark-extension-gfm` | 3.0.0 | MIT | `node_modules/.pnpm/micromark-extension-gfm@3.0.0/node_modules/micromark-extension-gfm` |  |
+| `micromark-extension-gfm-autolink-literal` | 2.1.0 | MIT | `node_modules/.pnpm/micromark-extension-gfm-autolink-literal@2.1.0/node_modules/micromark-extension-gfm-autolink-literal` |  |
+| `micromark-extension-gfm-footnote` | 2.1.0 | MIT | `node_modules/.pnpm/micromark-extension-gfm-footnote@2.1.0/node_modules/micromark-extension-gfm-footnote` |  |
+| `micromark-extension-gfm-strikethrough` | 2.1.0 | MIT | `node_modules/.pnpm/micromark-extension-gfm-strikethrough@2.1.0/node_modules/micromark-extension-gfm-strikethrough` |  |
+| `micromark-extension-gfm-table` | 2.1.1 | MIT | `node_modules/.pnpm/micromark-extension-gfm-table@2.1.1/node_modules/micromark-extension-gfm-table` |  |
+| `micromark-extension-gfm-tagfilter` | 2.0.0 | MIT | `node_modules/.pnpm/micromark-extension-gfm-tagfilter@2.0.0/node_modules/micromark-extension-gfm-tagfilter` |  |
+| `micromark-extension-gfm-task-list-item` | 2.1.0 | MIT | `node_modules/.pnpm/micromark-extension-gfm-task-list-item@2.1.0/node_modules/micromark-extension-gfm-task-list-item` |  |
+| `micromark-factory-destination` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-factory-destination@2.0.1/node_modules/micromark-factory-destination` |  |
+| `micromark-factory-label` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-factory-label@2.0.1/node_modules/micromark-factory-label` |  |
+| `micromark-factory-space` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-factory-space@2.0.1/node_modules/micromark-factory-space` |  |
+| `micromark-factory-title` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-factory-title@2.0.1/node_modules/micromark-factory-title` |  |
+| `micromark-factory-whitespace` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-factory-whitespace@2.0.1/node_modules/micromark-factory-whitespace` |  |
+| `micromark-util-character` | 2.1.1 | MIT | `node_modules/.pnpm/micromark-util-character@2.1.1/node_modules/micromark-util-character` |  |
+| `micromark-util-chunked` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-chunked@2.0.1/node_modules/micromark-util-chunked` |  |
+| `micromark-util-classify-character` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-classify-character@2.0.1/node_modules/micromark-util-classify-character` |  |
+| `micromark-util-combine-extensions` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-combine-extensions@2.0.1/node_modules/micromark-util-combine-extensions` |  |
+| `micromark-util-decode-numeric-character-reference` | 2.0.2 | MIT | `node_modules/.pnpm/micromark-util-decode-numeric-character-reference@2.0.2/node_modules/micromark-util-decode-numeric-character-reference` |  |
+| `micromark-util-decode-string` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-decode-string@2.0.1/node_modules/micromark-util-decode-string` |  |
+| `micromark-util-encode` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-encode@2.0.1/node_modules/micromark-util-encode` |  |
+| `micromark-util-html-tag-name` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-html-tag-name@2.0.1/node_modules/micromark-util-html-tag-name` |  |
+| `micromark-util-normalize-identifier` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-normalize-identifier@2.0.1/node_modules/micromark-util-normalize-identifier` |  |
+| `micromark-util-resolve-all` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-resolve-all@2.0.1/node_modules/micromark-util-resolve-all` |  |
+| `micromark-util-sanitize-uri` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-sanitize-uri@2.0.1/node_modules/micromark-util-sanitize-uri` |  |
+| `micromark-util-subtokenize` | 2.1.0 | MIT | `node_modules/.pnpm/micromark-util-subtokenize@2.1.0/node_modules/micromark-util-subtokenize` |  |
+| `micromark-util-symbol` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-symbol@2.0.1/node_modules/micromark-util-symbol` |  |
+| `micromark-util-types` | 2.0.2 | MIT | `node_modules/.pnpm/micromark-util-types@2.0.2/node_modules/micromark-util-types` |  |
+| `ms` | 2.1.3 | MIT | `node_modules/.pnpm/ms@2.1.3/node_modules/ms` |  |
+| `takumi-pdf` | 0.15.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/takumi-pdf@0.15.0_react@18.3.1/node_modules/takumi-pdf` |  |
+| `unist-util-is` | 6.0.1 | MIT | `node_modules/.pnpm/unist-util-is@6.0.1/node_modules/unist-util-is` |  |
+| `unist-util-stringify-position` | 4.0.0 | MIT | `node_modules/.pnpm/unist-util-stringify-position@4.0.0/node_modules/unist-util-stringify-position` |  |
+| `unist-util-visit` | 5.1.0 | MIT | `node_modules/.pnpm/unist-util-visit@5.1.0/node_modules/unist-util-visit` |  |
+| `unist-util-visit-parents` | 6.0.2 | MIT | `node_modules/.pnpm/unist-util-visit-parents@6.0.2/node_modules/unist-util-visit-parents` |  |
+| `zwitch` | 2.0.4 | MIT | `node_modules/.pnpm/zwitch@2.0.4/node_modules/zwitch` |  |
 
 ## Source and build
 
@@ -55,6 +113,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@commitlint/to-lines` | 19.8.1 | MIT | `node_modules/.pnpm/@commitlint+to-lines@19.8.1/node_modules/@commitlint/to-lines` |  |
 | `@commitlint/top-level` | 19.8.1 | MIT | `node_modules/.pnpm/@commitlint+top-level@19.8.1/node_modules/@commitlint/top-level` |  |
 | `@commitlint/types` | 19.8.1 | MIT | `node_modules/.pnpm/@commitlint+types@19.8.1/node_modules/@commitlint/types` |  |
+| `@elastic/distillate` | 0.2.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+distillate@0.2.0/node_modules/@elastic/distillate` |  |
 | `@eslint-community/eslint-utils` | 4.10.1 | MIT | `node_modules/.pnpm/@eslint-community+eslint-utils@4.10.1_eslint@9.39.5_jiti@2.6.1_/node_modules/@eslint-community/eslint-utils` |  |
 | `@eslint-community/regexpp` | 4.12.2 | MIT | `node_modules/.pnpm/@eslint-community+regexpp@4.12.2/node_modules/@eslint-community/regexpp` |  |
 | `@eslint/config-array` | 0.21.2 | Apache-2.0 | `node_modules/.pnpm/@eslint+config-array@0.21.2/node_modules/@eslint/config-array` |  |
@@ -147,6 +206,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@sindresorhus/is` | 4.6.0 | MIT | `node_modules/.pnpm/@sindresorhus+is@4.6.0/node_modules/@sindresorhus/is` |  |
 | `@sindresorhus/merge-streams` | 4.0.0 | MIT | `node_modules/.pnpm/@sindresorhus+merge-streams@4.0.0/node_modules/@sindresorhus/merge-streams` |  |
 | `@standard-schema/spec` | 1.1.0 | MIT | `node_modules/.pnpm/@standard-schema+spec@1.1.0/node_modules/@standard-schema/spec` |  |
+| `@tootallnate/once` | 2.0.1 | MIT | `node_modules/.pnpm/@tootallnate+once@2.0.1/node_modules/@tootallnate/once` |  |
 | `@tufjs/canonical-json` | 2.0.0 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/@tufjs/canonical-json` |  |
 | `@tufjs/models` | 4.1.0 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/@tufjs/models` |  |
 | `@types/chai` | 5.2.3 | MIT | `node_modules/.pnpm/@types+chai@5.2.3/node_modules/@types/chai` |  |
@@ -156,6 +216,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@types/estree` | 1.0.9 | MIT | `node_modules/.pnpm/@types+estree@1.0.9/node_modules/@types/estree` |  |
 | `@types/json-schema` | 7.0.15 | MIT | `node_modules/.pnpm/@types+json-schema@7.0.15/node_modules/@types/json-schema` |  |
 | `@types/katex` | 0.16.8 | MIT | `node_modules/.pnpm/@types+katex@0.16.8/node_modules/@types/katex` |  |
+| `@types/mdast` | 4.0.4 | MIT | `node_modules/.pnpm/@types+mdast@4.0.4/node_modules/@types/mdast` |  |
 | `@types/ms` | 2.1.0 | MIT | `node_modules/.pnpm/@types+ms@2.1.0/node_modules/@types/ms` |  |
 | `@types/node` | 22.20.2 | MIT | `node_modules/.pnpm/@types+node@22.20.2/node_modules/@types/node` |  |
 | `@types/normalize-package-data` | 2.4.4 | MIT | `node_modules/.pnpm/@types+normalize-package-data@2.4.4/node_modules/@types/normalize-package-data` |  |
@@ -163,6 +224,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@types/react` | 18.3.31 | MIT | `node_modules/.pnpm/@types+react@18.3.31/node_modules/@types/react` |  |
 | `@types/react-dom` | 18.3.7 | MIT | `node_modules/.pnpm/@types+react-dom@18.3.7_@types+react@18.3.31/node_modules/@types/react-dom` |  |
 | `@types/unist` | 2.0.11 | MIT | `node_modules/.pnpm/@types+unist@2.0.11/node_modules/@types/unist` |  |
+| `@types/unist` | 3.0.3 | MIT | `node_modules/.pnpm/@types+unist@3.0.3/node_modules/@types/unist` |  |
 | `@typescript-eslint/eslint-plugin` | 8.70.0 | MIT | `node_modules/.pnpm/@typescript-eslint+eslint-plugin@8.70.0_@typescript-eslint+parser@8.70.0_eslint@9.39.5__6275fc40e814d6e52430554ca2625ac6/node_modules/@typescript-eslint/eslint-plugin` |  |
 | `@typescript-eslint/parser` | 8.70.0 | MIT | `node_modules/.pnpm/@typescript-eslint+parser@8.70.0_eslint@9.39.5_jiti@2.6.1__typescript@5.9.3/node_modules/@typescript-eslint/parser` |  |
 | `@typescript-eslint/project-service` | 8.70.0 | MIT | `node_modules/.pnpm/@typescript-eslint+project-service@8.70.0_typescript@5.9.3/node_modules/@typescript-eslint/project-service` |  |
@@ -181,9 +243,13 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@vitest/snapshot` | 4.1.11 | MIT | `node_modules/.pnpm/@vitest+snapshot@4.1.11/node_modules/@vitest/snapshot` |  |
 | `@vitest/spy` | 4.1.11 | MIT | `node_modules/.pnpm/@vitest+spy@4.1.11/node_modules/@vitest/spy` |  |
 | `@vitest/utils` | 4.1.11 | MIT | `node_modules/.pnpm/@vitest+utils@4.1.11/node_modules/@vitest/utils` |  |
+| `abab` | 2.0.6 | BSD-3-Clause | `node_modules/.pnpm/abab@2.0.6/node_modules/abab` |  |
 | `abbrev` | 4.0.0 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/abbrev` |  |
 | `acorn` | 8.18.0 | MIT | `node_modules/.pnpm/acorn@8.18.0/node_modules/acorn` |  |
+| `acorn-globals` | 7.0.1 | MIT | `node_modules/.pnpm/acorn-globals@7.0.1/node_modules/acorn-globals` |  |
 | `acorn-jsx` | 5.3.2 | MIT | `node_modules/.pnpm/acorn-jsx@5.3.2_acorn@8.18.0/node_modules/acorn-jsx` |  |
+| `acorn-walk` | 8.3.5 | MIT | `node_modules/.pnpm/acorn-walk@8.3.5/node_modules/acorn-walk` |  |
+| `agent-base` | 6.0.2 | MIT | `node_modules/.pnpm/agent-base@6.0.2/node_modules/agent-base` |  |
 | `agent-base` | 7.1.4 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/agent-base` |  |
 | `agent-base` | 9.0.0 | MIT | `node_modules/.pnpm/agent-base@9.0.0/node_modules/agent-base` |  |
 | `aggregate-error` | 5.0.0 | MIT | `node_modules/.pnpm/aggregate-error@5.0.0/node_modules/aggregate-error` |  |
@@ -205,6 +271,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `array-union` | 2.1.0 | MIT | `node_modules/.pnpm/array-union@2.1.0/node_modules/array-union` |  |
 | `assertion-error` | 2.0.1 | MIT | `node_modules/.pnpm/assertion-error@2.0.1/node_modules/assertion-error` |  |
 | `ast-v8-to-istanbul` | 1.0.6 | MIT | `node_modules/.pnpm/ast-v8-to-istanbul@1.0.6/node_modules/ast-v8-to-istanbul` |  |
+| `asynckit` | 0.4.0 | MIT | `node_modules/.pnpm/asynckit@0.4.0/node_modules/asynckit` |  |
 | `balanced-match` | 1.0.2 | MIT | `node_modules/.pnpm/balanced-match@1.0.2/node_modules/balanced-match` |  |
 | `balanced-match` | 4.0.4 | MIT | `node_modules/.pnpm/balanced-match@4.0.4/node_modules/balanced-match` |  |
 | `balanced-match` | 4.0.4 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/balanced-match` |  |
@@ -218,7 +285,9 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `brace-expansion` | 5.0.9 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/brace-expansion` |  |
 | `braces` | 3.0.3 | MIT | `node_modules/.pnpm/braces@3.0.3/node_modules/braces` |  |
 | `cacache` | 20.0.4 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/cacache` |  |
+| `call-bind-apply-helpers` | 1.0.2 | MIT | `node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers` |  |
 | `callsites` | 3.1.0 | MIT | `node_modules/.pnpm/callsites@3.1.0/node_modules/callsites` |  |
+| `ccount` | 2.0.1 | MIT | `node_modules/.pnpm/ccount@2.0.1/node_modules/ccount` |  |
 | `chai` | 6.2.2 | MIT | `node_modules/.pnpm/chai@6.2.2/node_modules/chai` |  |
 | `chalk` | 2.4.2 | MIT | `node_modules/.pnpm/chalk@2.4.2/node_modules/chalk` |  |
 | `chalk` | 4.1.2 | MIT | `node_modules/.pnpm/chalk@4.1.2/node_modules/chalk` |  |
@@ -246,6 +315,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `color-name` | 1.1.3 | MIT | `node_modules/.pnpm/color-name@1.1.3/node_modules/color-name` |  |
 | `color-name` | 1.1.4 | MIT | `node_modules/.pnpm/color-name@1.1.4/node_modules/color-name` |  |
 | `colorette` | 2.0.20 | MIT | `node_modules/.pnpm/colorette@2.0.20/node_modules/colorette` |  |
+| `combined-stream` | 1.0.8 | MIT | `node_modules/.pnpm/combined-stream@1.0.8/node_modules/combined-stream` |  |
 | `commander` | 14.0.3 | MIT | `node_modules/.pnpm/commander@14.0.3/node_modules/commander` |  |
 | `commander` | 8.3.0 | MIT | `node_modules/.pnpm/commander@8.3.0/node_modules/commander` |  |
 | `commander` | 9.5.0 | MIT | `node_modules/.pnpm/commander@9.5.0/node_modules/commander` |  |
@@ -269,34 +339,48 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `cross-spawn` | 7.0.6 | MIT | `node_modules/.pnpm/cross-spawn@7.0.6/node_modules/cross-spawn` |  |
 | `crypto-random-string` | 4.0.0 | MIT | `node_modules/.pnpm/crypto-random-string@4.0.0/node_modules/crypto-random-string` |  |
 | `cssesc` | 3.0.0 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/cssesc` |  |
+| `cssom` | 0.3.8 | MIT | `node_modules/.pnpm/cssom@0.3.8/node_modules/cssom` |  |
+| `cssom` | 0.5.0 | MIT | `node_modules/.pnpm/cssom@0.5.0/node_modules/cssom` |  |
+| `cssstyle` | 2.3.0 | MIT | `node_modules/.pnpm/cssstyle@2.3.0/node_modules/cssstyle` |  |
 | `csstype` | 3.2.3 | MIT | `node_modules/.pnpm/csstype@3.2.3/node_modules/csstype` |  |
 | `dargs` | 8.1.0 | MIT | `node_modules/.pnpm/dargs@8.1.0/node_modules/dargs` |  |
+| `data-urls` | 3.0.2 | MIT | `node_modules/.pnpm/data-urls@3.0.2/node_modules/data-urls` |  |
 | `debug` | 4.4.3 | MIT | `node_modules/.pnpm/debug@4.4.3/node_modules/debug` |  |
 | `debug` | 4.4.3 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/debug` |  |
+| `decimal.js` | 10.6.0 | MIT | `node_modules/.pnpm/decimal.js@10.6.0/node_modules/decimal.js` |  |
 | `decode-named-character-reference` | 1.3.0 | MIT | `node_modules/.pnpm/decode-named-character-reference@1.3.0/node_modules/decode-named-character-reference` |  |
 | `deep-extend` | 0.6.0 | MIT | `node_modules/.pnpm/deep-extend@0.6.0/node_modules/deep-extend` |  |
 | `deep-is` | 0.1.4 | MIT | `node_modules/.pnpm/deep-is@0.1.4/node_modules/deep-is` |  |
+| `delayed-stream` | 1.0.0 | MIT | `node_modules/.pnpm/delayed-stream@1.0.0/node_modules/delayed-stream` |  |
 | `dequal` | 2.0.3 | MIT | `node_modules/.pnpm/dequal@2.0.3/node_modules/dequal` |  |
 | `detect-libc` | 2.1.2 | Apache-2.0 | `node_modules/.pnpm/detect-libc@2.1.2/node_modules/detect-libc` |  |
 | `devlop` | 1.1.0 | MIT | `node_modules/.pnpm/devlop@1.1.0/node_modules/devlop` |  |
 | `diff` | 8.0.4 | BSD-3-Clause | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/diff` |  |
 | `dir-glob` | 3.0.1 | MIT | `node_modules/.pnpm/dir-glob@3.0.1/node_modules/dir-glob` |  |
+| `domexception` | 4.0.0 | MIT | `node_modules/.pnpm/domexception@4.0.0/node_modules/domexception` |  |
 | `dot-prop` | 5.3.0 | MIT | `node_modules/.pnpm/dot-prop@5.3.0/node_modules/dot-prop` |  |
+| `dunder-proto` | 1.0.1 | MIT | `node_modules/.pnpm/dunder-proto@1.0.1/node_modules/dunder-proto` |  |
 | `duplexer2` | 0.1.4 | BSD-3-Clause | `node_modules/.pnpm/duplexer2@0.1.4/node_modules/duplexer2` |  |
 | `emoji-regex` | 10.6.0 | MIT | `node_modules/.pnpm/emoji-regex@10.6.0/node_modules/emoji-regex` |  |
 | `emoji-regex` | 8.0.0 | MIT | `node_modules/.pnpm/emoji-regex@8.0.0/node_modules/emoji-regex` |  |
 | `emojilib` | 2.4.0 | MIT | `node_modules/.pnpm/emojilib@2.4.0/node_modules/emojilib` |  |
 | `entities` | 4.5.0 | BSD-2-Clause | `node_modules/.pnpm/entities@4.5.0/node_modules/entities` |  |
+| `entities` | 6.0.1 | BSD-2-Clause | `node_modules/.pnpm/entities@6.0.1/node_modules/entities` |  |
 | `env-ci` | 11.2.0 | MIT | `node_modules/.pnpm/env-ci@11.2.0/node_modules/env-ci` |  |
 | `env-paths` | 2.2.1 | MIT | `node_modules/.pnpm/env-paths@2.2.1/node_modules/env-paths` |  |
 | `env-paths` | 2.2.1 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/env-paths` |  |
 | `environment` | 1.1.0 | MIT | `node_modules/.pnpm/environment@1.1.0/node_modules/environment` |  |
 | `error-ex` | 1.3.4 | MIT | `node_modules/.pnpm/error-ex@1.3.4/node_modules/error-ex` |  |
+| `es-define-property` | 1.0.1 | MIT | `node_modules/.pnpm/es-define-property@1.0.1/node_modules/es-define-property` |  |
+| `es-errors` | 1.3.0 | MIT | `node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors` |  |
 | `es-module-lexer` | 2.3.2 | MIT | `node_modules/.pnpm/es-module-lexer@2.3.2/node_modules/es-module-lexer` |  |
+| `es-object-atoms` | 1.1.2 | MIT | `node_modules/.pnpm/es-object-atoms@1.1.2/node_modules/es-object-atoms` |  |
+| `es-set-tostringtag` | 2.1.0 | MIT | `node_modules/.pnpm/es-set-tostringtag@2.1.0/node_modules/es-set-tostringtag` |  |
 | `escalade` | 3.2.0 | MIT | `node_modules/.pnpm/escalade@3.2.0/node_modules/escalade` |  |
 | `escape-string-regexp` | 1.0.5 | MIT | `node_modules/.pnpm/escape-string-regexp@1.0.5/node_modules/escape-string-regexp` |  |
 | `escape-string-regexp` | 4.0.0 | MIT | `node_modules/.pnpm/escape-string-regexp@4.0.0/node_modules/escape-string-regexp` |  |
 | `escape-string-regexp` | 5.0.0 | MIT | `node_modules/.pnpm/escape-string-regexp@5.0.0/node_modules/escape-string-regexp` |  |
+| `escodegen` | 2.1.0 | BSD-2-Clause | `node_modules/.pnpm/escodegen@2.1.0/node_modules/escodegen` | `source-map` |
 | `eslint` | 9.39.5 | MIT | `node_modules/.pnpm/eslint@9.39.5_jiti@2.6.1/node_modules/eslint` |  |
 | `eslint-config-prettier` | 10.1.8 | MIT | `node_modules/.pnpm/eslint-config-prettier@10.1.8_eslint@9.39.5_jiti@2.6.1_/node_modules/eslint-config-prettier` |  |
 | `eslint-plugin-license-header` | 0.9.0 | MIT | `node_modules/.pnpm/eslint-plugin-license-header@0.9.0_eslint@9.39.5_jiti@2.6.1_/node_modules/eslint-plugin-license-header` |  |
@@ -308,6 +392,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `eslint-visitor-keys` | 4.2.1 | Apache-2.0 | `node_modules/.pnpm/eslint-visitor-keys@4.2.1/node_modules/eslint-visitor-keys` |  |
 | `eslint-visitor-keys` | 5.0.1 | Apache-2.0 | `node_modules/.pnpm/eslint-visitor-keys@5.0.1/node_modules/eslint-visitor-keys` |  |
 | `espree` | 10.4.0 | BSD-2-Clause | `node_modules/.pnpm/espree@10.4.0/node_modules/espree` |  |
+| `esprima` | 4.0.1 | BSD-2-Clause | `node_modules/.pnpm/esprima@4.0.1/node_modules/esprima` |  |
 | `esquery` | 1.7.0 | BSD-3-Clause | `node_modules/.pnpm/esquery@1.7.0/node_modules/esquery` |  |
 | `esrecurse` | 4.3.0 | BSD-2-Clause | `node_modules/.pnpm/esrecurse@4.3.0/node_modules/esrecurse` |  |
 | `estraverse` | 5.3.0 | BSD-2-Clause | `node_modules/.pnpm/estraverse@5.3.0/node_modules/estraverse` |  |
@@ -339,11 +424,15 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `find-versions` | 6.0.0 | MIT | `node_modules/.pnpm/find-versions@6.0.0/node_modules/find-versions` |  |
 | `flat-cache` | 4.0.1 | MIT | `node_modules/.pnpm/flat-cache@4.0.1/node_modules/flat-cache` |  |
 | `flatted` | 3.4.4 | ISC | `node_modules/.pnpm/flatted@3.4.4/node_modules/flatted` |  |
+| `form-data` | 4.0.6 | MIT | `node_modules/.pnpm/form-data@4.0.6/node_modules/form-data` |  |
 | `fs-extra` | 11.4.0 | MIT | `node_modules/.pnpm/fs-extra@11.4.0/node_modules/fs-extra` |  |
 | `fs-minipass` | 3.0.3 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/fs-minipass` |  |
+| `function-bind` | 1.1.2 | MIT | `node_modules/.pnpm/function-bind@1.1.2/node_modules/function-bind` |  |
 | `function-timeout` | 1.0.2 | MIT | `node_modules/.pnpm/function-timeout@1.0.2/node_modules/function-timeout` |  |
 | `get-caller-file` | 2.0.5 | ISC | `node_modules/.pnpm/get-caller-file@2.0.5/node_modules/get-caller-file` |  |
 | `get-east-asian-width` | 1.6.0 | MIT | `node_modules/.pnpm/get-east-asian-width@1.6.0/node_modules/get-east-asian-width` |  |
+| `get-intrinsic` | 1.3.0 | MIT | `node_modules/.pnpm/get-intrinsic@1.3.0/node_modules/get-intrinsic` |  |
+| `get-proto` | 1.0.1 | MIT | `node_modules/.pnpm/get-proto@1.0.1/node_modules/get-proto` |  |
 | `get-stream` | 6.0.1 | MIT | `node_modules/.pnpm/get-stream@6.0.1/node_modules/get-stream` |  |
 | `get-stream` | 8.0.1 | MIT | `node_modules/.pnpm/get-stream@8.0.1/node_modules/get-stream` |  |
 | `get-stream` | 9.0.1 | MIT | `node_modules/.pnpm/get-stream@9.0.1/node_modules/get-stream` |  |
@@ -358,26 +447,34 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `globals` | 17.12.0 | MIT | `node_modules/.pnpm/globals@17.12.0/node_modules/globals` |  |
 | `globby` | 11.1.0 | MIT | `node_modules/.pnpm/globby@11.1.0/node_modules/globby` |  |
 | `globby` | 16.2.2 | MIT | `node_modules/.pnpm/globby@16.2.2/node_modules/globby` |  |
+| `gopd` | 1.2.0 | MIT | `node_modules/.pnpm/gopd@1.2.0/node_modules/gopd` |  |
 | `graceful-fs` | 4.2.10 | ISC | `node_modules/.pnpm/graceful-fs@4.2.10/node_modules/graceful-fs` |  |
 | `graceful-fs` | 4.2.11 | ISC | `node_modules/.pnpm/graceful-fs@4.2.11/node_modules/graceful-fs` |  |
 | `graceful-fs` | 4.2.11 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/graceful-fs` |  |
 | `handlebars` | 4.7.9 | MIT | `node_modules/.pnpm/handlebars@4.7.9/node_modules/handlebars` | `uglify-js` |
 | `has-flag` | 3.0.0 | MIT | `node_modules/.pnpm/has-flag@3.0.0/node_modules/has-flag` |  |
 | `has-flag` | 4.0.0 | MIT | `node_modules/.pnpm/has-flag@4.0.0/node_modules/has-flag` |  |
+| `has-symbols` | 1.1.0 | MIT | `node_modules/.pnpm/has-symbols@1.1.0/node_modules/has-symbols` |  |
+| `has-tostringtag` | 1.0.2 | MIT | `node_modules/.pnpm/has-tostringtag@1.0.2/node_modules/has-tostringtag` |  |
+| `hasown` | 2.0.4 | MIT | `node_modules/.pnpm/hasown@2.0.4/node_modules/hasown` |  |
 | `highlight.js` | 10.7.3 | BSD-3-Clause | `node_modules/.pnpm/highlight.js@10.7.3/node_modules/highlight.js` |  |
 | `hook-std` | 4.0.0 | MIT | `node_modules/.pnpm/hook-std@4.0.0/node_modules/hook-std` |  |
 | `hosted-git-info` | 7.0.2 | ISC | `node_modules/.pnpm/hosted-git-info@7.0.2/node_modules/hosted-git-info` |  |
 | `hosted-git-info` | 9.0.3 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/hosted-git-info` |  |
 | `hosted-git-info` | 9.0.3 | ISC | `node_modules/.pnpm/hosted-git-info@9.0.3/node_modules/hosted-git-info` |  |
+| `html-encoding-sniffer` | 3.0.0 | MIT | `node_modules/.pnpm/html-encoding-sniffer@3.0.0/node_modules/html-encoding-sniffer` |  |
 | `html-escaper` | 2.0.2 | MIT | `node_modules/.pnpm/html-escaper@2.0.2/node_modules/html-escaper` |  |
 | `http-cache-semantics` | 4.2.0 | BSD-2-Clause | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/http-cache-semantics` |  |
+| `http-proxy-agent` | 5.0.0 | MIT | `node_modules/.pnpm/http-proxy-agent@5.0.0/node_modules/http-proxy-agent` |  |
 | `http-proxy-agent` | 7.0.2 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/http-proxy-agent` |  |
 | `http-proxy-agent` | 9.1.0 | MIT | `node_modules/.pnpm/http-proxy-agent@9.1.0/node_modules/http-proxy-agent` |  |
+| `https-proxy-agent` | 5.0.1 | MIT | `node_modules/.pnpm/https-proxy-agent@5.0.1/node_modules/https-proxy-agent` |  |
 | `https-proxy-agent` | 7.0.6 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/https-proxy-agent` |  |
 | `https-proxy-agent` | 9.1.0 | MIT | `node_modules/.pnpm/https-proxy-agent@9.1.0/node_modules/https-proxy-agent` |  |
 | `human-signals` | 5.0.0 | Apache-2.0 | `node_modules/.pnpm/human-signals@5.0.0/node_modules/human-signals` |  |
 | `human-signals` | 8.0.1 | Apache-2.0 | `node_modules/.pnpm/human-signals@8.0.1/node_modules/human-signals` |  |
 | `husky` | 9.1.7 | MIT | `node_modules/.pnpm/husky@9.1.7/node_modules/husky` |  |
+| `iconv-lite` | 0.6.3 | MIT | `node_modules/.pnpm/iconv-lite@0.6.3/node_modules/iconv-lite` |  |
 | `iconv-lite` | 0.7.2 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/iconv-lite` |  |
 | `ignore` | 5.3.2 | MIT | `node_modules/.pnpm/ignore@5.3.2/node_modules/ignore` |  |
 | `ignore` | 7.0.9 | MIT | `node_modules/.pnpm/ignore@7.0.9/node_modules/ignore` |  |
@@ -409,6 +506,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `is-obj` | 2.0.0 | MIT | `node_modules/.pnpm/is-obj@2.0.0/node_modules/is-obj` |  |
 | `is-path-inside` | 4.0.0 | MIT | `node_modules/.pnpm/is-path-inside@4.0.0/node_modules/is-path-inside` |  |
 | `is-plain-obj` | 4.1.0 | MIT | `node_modules/.pnpm/is-plain-obj@4.1.0/node_modules/is-plain-obj` |  |
+| `is-potential-custom-element-name` | 1.0.1 | MIT | `node_modules/.pnpm/is-potential-custom-element-name@1.0.1/node_modules/is-potential-custom-element-name` |  |
 | `is-stream` | 3.0.0 | MIT | `node_modules/.pnpm/is-stream@3.0.0/node_modules/is-stream` |  |
 | `is-stream` | 4.0.1 | MIT | `node_modules/.pnpm/is-stream@4.0.1/node_modules/is-stream` |  |
 | `is-text-path` | 2.0.0 | MIT | `node_modules/.pnpm/is-text-path@2.0.0/node_modules/is-text-path` |  |
@@ -426,6 +524,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `js-tokens` | 4.0.0 | MIT | `node_modules/.pnpm/js-tokens@4.0.0/node_modules/js-tokens` |  |
 | `js-yaml` | 4.3.2 | MIT | `node_modules/.pnpm/js-yaml@4.3.2/node_modules/js-yaml` |  |
 | `js-yaml` | 5.2.2 | MIT | `node_modules/.pnpm/js-yaml@5.2.2/node_modules/js-yaml` |  |
+| `jsdom` | 20.0.1 | MIT | `node_modules/.pnpm/jsdom@20.0.1/node_modules/jsdom` |  |
 | `json-buffer` | 3.0.1 | MIT | `node_modules/.pnpm/json-buffer@3.0.1/node_modules/json-buffer` |  |
 | `json-parse-better-errors` | 1.0.2 | MIT | `node_modules/.pnpm/json-parse-better-errors@1.0.2/node_modules/json-parse-better-errors` |  |
 | `json-parse-even-better-errors` | 2.3.1 | MIT | `node_modules/.pnpm/json-parse-even-better-errors@2.3.1/node_modules/json-parse-even-better-errors` |  |
@@ -491,6 +590,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `lodash.uniqby` | 4.7.0 | MIT | `node_modules/.pnpm/lodash.uniqby@4.7.0/node_modules/lodash.uniqby` |  |
 | `lodash.upperfirst` | 4.3.1 | MIT | `node_modules/.pnpm/lodash.upperfirst@4.3.1/node_modules/lodash.upperfirst` |  |
 | `log-update` | 6.1.0 | MIT | `node_modules/.pnpm/log-update@6.1.0/node_modules/log-update` |  |
+| `longest-streak` | 3.1.0 | MIT | `node_modules/.pnpm/longest-streak@3.1.0/node_modules/longest-streak` |  |
 | `loose-envify` | 1.4.0 | MIT | `node_modules/.pnpm/loose-envify@1.4.0/node_modules/loose-envify` |  |
 | `lru-cache` | 10.4.3 | ISC | `node_modules/.pnpm/lru-cache@10.4.3/node_modules/lru-cache` |  |
 | `lru-cache` | 11.5.1 | BlueOak-1.0.0 | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/lru-cache` |  |
@@ -501,11 +601,24 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `make-dir` | 4.0.0 | MIT | `node_modules/.pnpm/make-dir@4.0.0/node_modules/make-dir` |  |
 | `make-fetch-happen` | 15.0.6 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/make-fetch-happen` |  |
 | `markdown-it` | 14.3.0 | MIT | `node_modules/.pnpm/markdown-it@14.3.0/node_modules/markdown-it` |  |
+| `markdown-table` | 3.0.4 | MIT | `node_modules/.pnpm/markdown-table@3.0.4/node_modules/markdown-table` |  |
 | `markdownlint` | 0.41.1 | MIT | `node_modules/.pnpm/markdownlint@0.41.1/node_modules/markdownlint` |  |
 | `markdownlint-cli2` | 0.23.2 | MIT | `node_modules/.pnpm/markdownlint-cli2@0.23.2/node_modules/markdownlint-cli2` |  |
 | `markdownlint-cli2-formatter-default` | 0.0.6 | MIT | `node_modules/.pnpm/markdownlint-cli2-formatter-default@0.0.6_markdownlint-cli2@0.23.2/node_modules/markdownlint-cli2-formatter-default` |  |
 | `marked` | 15.0.12 | MIT | `node_modules/.pnpm/marked@15.0.12/node_modules/marked` |  |
 | `marked-terminal` | 7.3.0 | MIT | `node_modules/.pnpm/marked-terminal@7.3.0_marked@15.0.12/node_modules/marked-terminal` |  |
+| `math-intrinsics` | 1.1.0 | MIT | `node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics` |  |
+| `mdast-util-find-and-replace` | 3.0.2 | MIT | `node_modules/.pnpm/mdast-util-find-and-replace@3.0.2/node_modules/mdast-util-find-and-replace` |  |
+| `mdast-util-from-markdown` | 2.0.3 | MIT | `node_modules/.pnpm/mdast-util-from-markdown@2.0.3/node_modules/mdast-util-from-markdown` |  |
+| `mdast-util-gfm` | 3.1.0 | MIT | `node_modules/.pnpm/mdast-util-gfm@3.1.0/node_modules/mdast-util-gfm` |  |
+| `mdast-util-gfm-autolink-literal` | 2.0.1 | MIT | `node_modules/.pnpm/mdast-util-gfm-autolink-literal@2.0.1/node_modules/mdast-util-gfm-autolink-literal` |  |
+| `mdast-util-gfm-footnote` | 2.1.0 | MIT | `node_modules/.pnpm/mdast-util-gfm-footnote@2.1.0/node_modules/mdast-util-gfm-footnote` |  |
+| `mdast-util-gfm-strikethrough` | 2.0.1 | MIT | `node_modules/.pnpm/mdast-util-gfm-strikethrough@2.0.1/node_modules/mdast-util-gfm-strikethrough` |  |
+| `mdast-util-gfm-table` | 2.0.0 | MIT | `node_modules/.pnpm/mdast-util-gfm-table@2.0.0/node_modules/mdast-util-gfm-table` |  |
+| `mdast-util-gfm-task-list-item` | 2.0.0 | MIT | `node_modules/.pnpm/mdast-util-gfm-task-list-item@2.0.0/node_modules/mdast-util-gfm-task-list-item` |  |
+| `mdast-util-phrasing` | 4.1.0 | MIT | `node_modules/.pnpm/mdast-util-phrasing@4.1.0/node_modules/mdast-util-phrasing` |  |
+| `mdast-util-to-markdown` | 2.1.3 | MIT | `node_modules/.pnpm/mdast-util-to-markdown@2.1.3/node_modules/mdast-util-to-markdown` |  |
+| `mdast-util-to-string` | 4.0.0 | MIT | `node_modules/.pnpm/mdast-util-to-string@4.0.0/node_modules/mdast-util-to-string` |  |
 | `mdurl` | 2.1.0 | MIT | `node_modules/.pnpm/mdurl@2.1.0/node_modules/mdurl` |  |
 | `meow` | 12.1.1 | MIT | `node_modules/.pnpm/meow@12.1.1/node_modules/meow` |  |
 | `meow` | 13.2.0 | MIT | `node_modules/.pnpm/meow@13.2.0/node_modules/meow` |  |
@@ -514,9 +627,13 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `micromark` | 4.0.2 | MIT | `node_modules/.pnpm/micromark@4.0.2/node_modules/micromark` |  |
 | `micromark-core-commonmark` | 2.0.3 | MIT | `node_modules/.pnpm/micromark-core-commonmark@2.0.3/node_modules/micromark-core-commonmark` |  |
 | `micromark-extension-directive` | 4.0.0 | MIT | `node_modules/.pnpm/micromark-extension-directive@4.0.0/node_modules/micromark-extension-directive` |  |
+| `micromark-extension-gfm` | 3.0.0 | MIT | `node_modules/.pnpm/micromark-extension-gfm@3.0.0/node_modules/micromark-extension-gfm` |  |
 | `micromark-extension-gfm-autolink-literal` | 2.1.0 | MIT | `node_modules/.pnpm/micromark-extension-gfm-autolink-literal@2.1.0/node_modules/micromark-extension-gfm-autolink-literal` |  |
 | `micromark-extension-gfm-footnote` | 2.1.0 | MIT | `node_modules/.pnpm/micromark-extension-gfm-footnote@2.1.0/node_modules/micromark-extension-gfm-footnote` |  |
+| `micromark-extension-gfm-strikethrough` | 2.1.0 | MIT | `node_modules/.pnpm/micromark-extension-gfm-strikethrough@2.1.0/node_modules/micromark-extension-gfm-strikethrough` |  |
 | `micromark-extension-gfm-table` | 2.1.1 | MIT | `node_modules/.pnpm/micromark-extension-gfm-table@2.1.1/node_modules/micromark-extension-gfm-table` |  |
+| `micromark-extension-gfm-tagfilter` | 2.0.0 | MIT | `node_modules/.pnpm/micromark-extension-gfm-tagfilter@2.0.0/node_modules/micromark-extension-gfm-tagfilter` |  |
+| `micromark-extension-gfm-task-list-item` | 2.1.0 | MIT | `node_modules/.pnpm/micromark-extension-gfm-task-list-item@2.1.0/node_modules/micromark-extension-gfm-task-list-item` |  |
 | `micromark-extension-math` | 3.1.0 | MIT | `node_modules/.pnpm/micromark-extension-math@3.1.0/node_modules/micromark-extension-math` |  |
 | `micromark-factory-destination` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-factory-destination@2.0.1/node_modules/micromark-factory-destination` |  |
 | `micromark-factory-label` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-factory-label@2.0.1/node_modules/micromark-factory-label` |  |
@@ -528,6 +645,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `micromark-util-classify-character` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-classify-character@2.0.1/node_modules/micromark-util-classify-character` |  |
 | `micromark-util-combine-extensions` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-combine-extensions@2.0.1/node_modules/micromark-util-combine-extensions` |  |
 | `micromark-util-decode-numeric-character-reference` | 2.0.2 | MIT | `node_modules/.pnpm/micromark-util-decode-numeric-character-reference@2.0.2/node_modules/micromark-util-decode-numeric-character-reference` |  |
+| `micromark-util-decode-string` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-decode-string@2.0.1/node_modules/micromark-util-decode-string` |  |
 | `micromark-util-encode` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-encode@2.0.1/node_modules/micromark-util-encode` |  |
 | `micromark-util-html-tag-name` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-html-tag-name@2.0.1/node_modules/micromark-util-html-tag-name` |  |
 | `micromark-util-normalize-identifier` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-normalize-identifier@2.0.1/node_modules/micromark-util-normalize-identifier` |  |
@@ -538,6 +656,8 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `micromark-util-types` | 2.0.2 | MIT | `node_modules/.pnpm/micromark-util-types@2.0.2/node_modules/micromark-util-types` |  |
 | `micromatch` | 4.0.8 | MIT | `node_modules/.pnpm/micromatch@4.0.8/node_modules/micromatch` |  |
 | `mime` | 4.1.0 | MIT | `node_modules/.pnpm/mime@4.1.0/node_modules/mime` |  |
+| `mime-db` | 1.52.0 | MIT | `node_modules/.pnpm/mime-db@1.52.0/node_modules/mime-db` |  |
+| `mime-types` | 2.1.35 | MIT | `node_modules/.pnpm/mime-types@2.1.35/node_modules/mime-types` |  |
 | `mimic-fn` | 4.0.0 | MIT | `node_modules/.pnpm/mimic-fn@4.0.0/node_modules/mimic-fn` |  |
 | `mimic-function` | 5.0.1 | MIT | `node_modules/.pnpm/mimic-function@5.0.1/node_modules/mimic-function` |  |
 | `minimatch` | 10.2.5 | BlueOak-1.0.0 | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/minimatch` |  |
@@ -583,6 +703,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `npm-run-path` | 5.3.0 | MIT | `node_modules/.pnpm/npm-run-path@5.3.0/node_modules/npm-run-path` |  |
 | `npm-run-path` | 6.0.0 | MIT | `node_modules/.pnpm/npm-run-path@6.0.0/node_modules/npm-run-path` |  |
 | `npm-user-validate` | 4.0.0 | BSD-2-Clause | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/npm-user-validate` |  |
+| `nwsapi` | 2.2.28 | MIT | `node_modules/.pnpm/nwsapi@2.2.28/node_modules/nwsapi` |  |
 | `object-assign` | 4.1.1 | MIT | `node_modules/.pnpm/object-assign@4.1.1/node_modules/object-assign` |  |
 | `obug` | 2.2.1 | MIT | `node_modules/.pnpm/obug@2.2.1/node_modules/obug` |  |
 | `onetime` | 6.0.0 | MIT | `node_modules/.pnpm/onetime@6.0.0/node_modules/onetime` |  |
@@ -612,6 +733,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `parse-ms` | 4.0.0 | MIT | `node_modules/.pnpm/parse-ms@4.0.0/node_modules/parse-ms` |  |
 | `parse5` | 5.1.1 | MIT | `node_modules/.pnpm/parse5@5.1.1/node_modules/parse5` |  |
 | `parse5` | 6.0.1 | MIT | `node_modules/.pnpm/parse5@6.0.1/node_modules/parse5` |  |
+| `parse5` | 7.3.0 | MIT | `node_modules/.pnpm/parse5@7.3.0/node_modules/parse5` |  |
 | `parse5-htmlparser2-tree-adapter` | 6.0.1 | MIT | `node_modules/.pnpm/parse5-htmlparser2-tree-adapter@6.0.1/node_modules/parse5-htmlparser2-tree-adapter` |  |
 | `path-exists` | 3.0.0 | MIT | `node_modules/.pnpm/path-exists@3.0.0/node_modules/path-exists` |  |
 | `path-exists` | 4.0.0 | MIT | `node_modules/.pnpm/path-exists@4.0.0/node_modules/path-exists` |  |
@@ -642,9 +764,11 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `promzard` | 3.0.1 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/promzard` |  |
 | `proto-list` | 1.2.4 | ISC | `node_modules/.pnpm/proto-list@1.2.4/node_modules/proto-list` |  |
 | `proxy-agent-negotiate` | 1.1.0 | MIT | `node_modules/.pnpm/proxy-agent-negotiate@1.1.0/node_modules/proxy-agent-negotiate` |  |
+| `psl` | 1.15.0 | MIT | `node_modules/.pnpm/psl@1.15.0/node_modules/psl` |  |
 | `punycode` | 2.3.1 | MIT | `node_modules/.pnpm/punycode@2.3.1/node_modules/punycode` |  |
 | `punycode.js` | 2.3.1 | MIT | `node_modules/.pnpm/punycode.js@2.3.1/node_modules/punycode.js` |  |
 | `qrcode-terminal` | 0.12.0 | Apache 2.0 | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/qrcode-terminal` |  |
+| `querystringify` | 2.2.0 | MIT | `node_modules/.pnpm/querystringify@2.2.0/node_modules/querystringify` |  |
 | `queue-lit` | 1.5.2 | MIT | `node_modules/.pnpm/queue-lit@1.5.2/node_modules/queue-lit` |  |
 | `queue-microtask` | 1.2.3 | MIT | `node_modules/.pnpm/queue-microtask@1.2.3/node_modules/queue-microtask` |  |
 | `rc` | 1.2.8 | (BSD-2-Clause OR MIT OR Apache-2.0) | `node_modules/.pnpm/rc@1.2.8/node_modules/rc` |  |
@@ -662,6 +786,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `require-directory` | 2.1.1 | MIT | `node_modules/.pnpm/require-directory@2.1.1/node_modules/require-directory` |  |
 | `require-from-string` | 2.0.2 | MIT | `node_modules/.pnpm/require-from-string@2.0.2/node_modules/require-from-string` |  |
 | `requireindex` | 1.2.0 | MIT | `node_modules/.pnpm/requireindex@1.2.0/node_modules/requireindex` |  |
+| `requires-port` | 1.0.0 | MIT | `node_modules/.pnpm/requires-port@1.0.0/node_modules/requires-port` |  |
 | `resolve-from` | 4.0.0 | MIT | `node_modules/.pnpm/resolve-from@4.0.0/node_modules/resolve-from` |  |
 | `resolve-from` | 5.0.0 | MIT | `node_modules/.pnpm/resolve-from@5.0.0/node_modules/resolve-from` |  |
 | `resolve-pkg-maps` | 1.0.0 | MIT | `node_modules/.pnpm/resolve-pkg-maps@1.0.0/node_modules/resolve-pkg-maps` |  |
@@ -671,7 +796,9 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `rolldown` | 1.2.8 | MIT | `node_modules/.pnpm/rolldown@1.2.8/node_modules/rolldown` | `@rolldown/binding-android-arm-eabi`, `@rolldown/binding-android-arm64`, `@rolldown/binding-darwin-arm64`, `@rolldown/binding-darwin-x64`, `@rolldown/binding-freebsd-x64`, `@rolldown/binding-linux-arm-gnueabihf`, `@rolldown/binding-linux-arm64-gnu`, `@rolldown/binding-linux-arm64-musl`, `@rolldown/binding-linux-ppc64-gnu`, `@rolldown/binding-linux-s390x-gnu`, `@rolldown/binding-linux-x64-gnu`, `@rolldown/binding-linux-x64-musl`, `@rolldown/binding-openharmony-arm64`, `@rolldown/binding-win32-arm64-msvc`, `@rolldown/binding-win32-x64-msvc` |
 | `run-parallel` | 1.2.0 | MIT | `node_modules/.pnpm/run-parallel@1.2.0/node_modules/run-parallel` |  |
 | `safe-buffer` | 5.1.2 | MIT | `node_modules/.pnpm/safe-buffer@5.1.2/node_modules/safe-buffer` |  |
+| `safer-buffer` | 2.1.2 | MIT | `node_modules/.pnpm/safer-buffer@2.1.2/node_modules/safer-buffer` |  |
 | `safer-buffer` | 2.1.2 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/safer-buffer` |  |
+| `saxes` | 6.0.0 | ISC | `node_modules/.pnpm/saxes@6.0.0/node_modules/saxes` |  |
 | `scheduler` | 0.23.2 | MIT | `node_modules/.pnpm/scheduler@0.23.2/node_modules/scheduler` |  |
 | `semantic-release` | 25.0.9 | MIT | `node_modules/.pnpm/semantic-release@25.0.9_typescript@5.9.3/node_modules/semantic-release` |  |
 | `semver` | 7.8.5 | ISC | `node_modules/.pnpm/semver@7.8.5/node_modules/semver` |  |
@@ -697,12 +824,12 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `source-map-js` | 1.2.1 | BSD-3-Clause | `node_modules/.pnpm/source-map-js@1.2.1/node_modules/source-map-js` |  |
 | `spawn-error-forwarder` | 1.0.0 | MIT | `node_modules/.pnpm/spawn-error-forwarder@1.0.0/node_modules/spawn-error-forwarder` |  |
 | `spdx-correct` | 3.2.0 | Apache-2.0 | `node_modules/.pnpm/spdx-correct@3.2.0/node_modules/spdx-correct` |  |
-| `spdx-exceptions` | 2.5.0 | CC-BY-3.0 | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/spdx-exceptions` |  |
 | `spdx-exceptions` | 2.5.0 | CC-BY-3.0 | `node_modules/.pnpm/spdx-exceptions@2.5.0/node_modules/spdx-exceptions` |  |
+| `spdx-exceptions` | 2.5.0 | CC-BY-3.0 | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/spdx-exceptions` |  |
 | `spdx-expression-parse` | 3.0.1 | MIT | `node_modules/.pnpm/spdx-expression-parse@3.0.1/node_modules/spdx-expression-parse` |  |
 | `spdx-expression-parse` | 4.0.0 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/spdx-expression-parse` |  |
-| `spdx-license-ids` | 3.0.23 | CC0-1.0 | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/spdx-license-ids` |  |
 | `spdx-license-ids` | 3.0.23 | CC0-1.0 | `node_modules/.pnpm/spdx-license-ids@3.0.23/node_modules/spdx-license-ids` |  |
+| `spdx-license-ids` | 3.0.23 | CC0-1.0 | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/spdx-license-ids` |  |
 | `split2` | 1.0.0 | ISC | `node_modules/.pnpm/split2@1.0.0/node_modules/split2` |  |
 | `split2` | 4.2.0 | ISC | `node_modules/.pnpm/split2@4.2.0/node_modules/split2` |  |
 | `ssri` | 13.0.1 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/ssri` |  |
@@ -722,11 +849,13 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `strip-final-newline` | 4.0.0 | MIT | `node_modules/.pnpm/strip-final-newline@4.0.0/node_modules/strip-final-newline` |  |
 | `strip-json-comments` | 2.0.1 | MIT | `node_modules/.pnpm/strip-json-comments@2.0.1/node_modules/strip-json-comments` |  |
 | `strip-json-comments` | 3.1.1 | MIT | `node_modules/.pnpm/strip-json-comments@3.1.1/node_modules/strip-json-comments` |  |
+| `stylis` | 4.4.0 | MIT | `node_modules/.pnpm/stylis@4.4.0/node_modules/stylis` |  |
 | `super-regex` | 1.1.0 | MIT | `node_modules/.pnpm/super-regex@1.1.0/node_modules/super-regex` |  |
 | `supports-color` | 10.2.2 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/supports-color` |  |
 | `supports-color` | 5.5.0 | MIT | `node_modules/.pnpm/supports-color@5.5.0/node_modules/supports-color` |  |
 | `supports-color` | 7.2.0 | MIT | `node_modules/.pnpm/supports-color@7.2.0/node_modules/supports-color` |  |
 | `supports-hyperlinks` | 3.2.0 | MIT | `node_modules/.pnpm/supports-hyperlinks@3.2.0/node_modules/supports-hyperlinks` |  |
+| `symbol-tree` | 3.2.4 | MIT | `node_modules/.pnpm/symbol-tree@3.2.4/node_modules/symbol-tree` |  |
 | `synckit` | 0.11.13 | MIT | `node_modules/.pnpm/synckit@0.11.13/node_modules/synckit` |  |
 | `tagged-tag` | 1.0.0 | MIT | `node_modules/.pnpm/tagged-tag@1.0.0/node_modules/tagged-tag` |  |
 | `tar` | 7.5.22 | BlueOak-1.0.0 | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/tar` |  |
@@ -746,6 +875,8 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `tinyglobby` | 0.2.17 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/tinyglobby` |  |
 | `tinyrainbow` | 3.1.1 | MIT | `node_modules/.pnpm/tinyrainbow@3.1.1/node_modules/tinyrainbow` |  |
 | `to-regex-range` | 5.0.1 | MIT | `node_modules/.pnpm/to-regex-range@5.0.1/node_modules/to-regex-range` |  |
+| `tough-cookie` | 4.1.4 | BSD-3-Clause | `node_modules/.pnpm/tough-cookie@4.1.4/node_modules/tough-cookie` |  |
+| `tr46` | 3.0.0 | MIT | `node_modules/.pnpm/tr46@3.0.0/node_modules/tr46` |  |
 | `traverse` | 0.6.8 | MIT | `node_modules/.pnpm/traverse@0.6.8/node_modules/traverse` |  |
 | `treeverse` | 3.0.0 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/treeverse` |  |
 | `ts-api-utils` | 2.5.0 | MIT | `node_modules/.pnpm/ts-api-utils@2.5.0_typescript@5.9.3/node_modules/ts-api-utils` |  |
@@ -770,18 +901,29 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `unicorn-magic` | 0.3.0 | MIT | `node_modules/.pnpm/unicorn-magic@0.3.0/node_modules/unicorn-magic` |  |
 | `unicorn-magic` | 0.4.0 | MIT | `node_modules/.pnpm/unicorn-magic@0.4.0/node_modules/unicorn-magic` |  |
 | `unique-string` | 3.0.0 | MIT | `node_modules/.pnpm/unique-string@3.0.0/node_modules/unique-string` |  |
+| `unist-util-is` | 6.0.1 | MIT | `node_modules/.pnpm/unist-util-is@6.0.1/node_modules/unist-util-is` |  |
+| `unist-util-stringify-position` | 4.0.0 | MIT | `node_modules/.pnpm/unist-util-stringify-position@4.0.0/node_modules/unist-util-stringify-position` |  |
+| `unist-util-visit` | 5.1.0 | MIT | `node_modules/.pnpm/unist-util-visit@5.1.0/node_modules/unist-util-visit` |  |
+| `unist-util-visit-parents` | 6.0.2 | MIT | `node_modules/.pnpm/unist-util-visit-parents@6.0.2/node_modules/unist-util-visit-parents` |  |
 | `universal-user-agent` | 7.0.3 | ISC | `node_modules/.pnpm/universal-user-agent@7.0.3/node_modules/universal-user-agent` |  |
+| `universalify` | 0.2.0 | MIT | `node_modules/.pnpm/universalify@0.2.0/node_modules/universalify` |  |
 | `universalify` | 2.0.1 | MIT | `node_modules/.pnpm/universalify@2.0.1/node_modules/universalify` |  |
 | `uri-js` | 4.4.1 | BSD-2-Clause | `node_modules/.pnpm/uri-js@4.4.1/node_modules/uri-js` |  |
 | `url-join` | 5.0.0 | MIT | `node_modules/.pnpm/url-join@5.0.0/node_modules/url-join` |  |
+| `url-parse` | 1.5.10 | MIT | `node_modules/.pnpm/url-parse@1.5.10/node_modules/url-parse` |  |
 | `util-deprecate` | 1.0.2 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/util-deprecate` |  |
 | `util-deprecate` | 1.0.2 | MIT | `node_modules/.pnpm/util-deprecate@1.0.2/node_modules/util-deprecate` |  |
 | `validate-npm-package-license` | 3.0.4 | Apache-2.0 | `node_modules/.pnpm/validate-npm-package-license@3.0.4/node_modules/validate-npm-package-license` |  |
 | `validate-npm-package-name` | 7.0.2 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/validate-npm-package-name` |  |
 | `vite` | 8.3.0 | MIT | `node_modules/.pnpm/vite@8.3.0_@types+node@22.20.2_jiti@2.6.1_yaml@2.9.1/node_modules/vite` | `fsevents` |
-| `vitest` | 4.1.11 | MIT | `node_modules/.pnpm/vitest@4.1.11_@types+node@22.20.2_@vitest+coverage-v8@4.1.11_vite@8.3.0_@types+node@22.20.2_jiti@2.6.1_yaml@2.9.1_/node_modules/vitest` |  |
+| `vitest` | 4.1.11 | MIT | `node_modules/.pnpm/vitest@4.1.11_@types+node@22.20.2_@vitest+coverage-v8@4.1.11_jsdom@20.0.1_vite@8.3.0_@t_003ecde1d9a612ab4822dbf2e2d2a063/node_modules/vitest` |  |
+| `w3c-xmlserializer` | 3.0.0 | MIT | `node_modules/.pnpm/w3c-xmlserializer@3.0.0/node_modules/w3c-xmlserializer` |  |
 | `walk-up-path` | 4.0.0 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/walk-up-path` |  |
 | `web-worker` | 1.5.0 | Apache-2.0 | `node_modules/.pnpm/web-worker@1.5.0/node_modules/web-worker` |  |
+| `webidl-conversions` | 7.0.0 | BSD-2-Clause | `node_modules/.pnpm/webidl-conversions@7.0.0/node_modules/webidl-conversions` |  |
+| `whatwg-encoding` | 2.0.0 | MIT | `node_modules/.pnpm/whatwg-encoding@2.0.0/node_modules/whatwg-encoding` |  |
+| `whatwg-mimetype` | 3.0.0 | MIT | `node_modules/.pnpm/whatwg-mimetype@3.0.0/node_modules/whatwg-mimetype` |  |
+| `whatwg-url` | 11.0.0 | MIT | `node_modules/.pnpm/whatwg-url@11.0.0/node_modules/whatwg-url` |  |
 | `which` | 2.0.2 | ISC | `node_modules/.pnpm/which@2.0.2/node_modules/which` |  |
 | `which` | 6.0.1 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/which` |  |
 | `why-is-node-running` | 2.3.0 | MIT | `node_modules/.pnpm/why-is-node-running@2.3.0/node_modules/why-is-node-running` |  |
@@ -790,6 +932,9 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `wrap-ansi` | 7.0.0 | MIT | `node_modules/.pnpm/wrap-ansi@7.0.0/node_modules/wrap-ansi` |  |
 | `wrap-ansi` | 9.0.2 | MIT | `node_modules/.pnpm/wrap-ansi@9.0.2/node_modules/wrap-ansi` |  |
 | `write-file-atomic` | 7.0.1 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/write-file-atomic` |  |
+| `ws` | 8.22.0 | MIT | `node_modules/.pnpm/ws@8.22.0/node_modules/ws` |  |
+| `xml-name-validator` | 4.0.0 | Apache-2.0 | `node_modules/.pnpm/xml-name-validator@4.0.0/node_modules/xml-name-validator` |  |
+| `xmlchars` | 2.2.0 | MIT | `node_modules/.pnpm/xmlchars@2.2.0/node_modules/xmlchars` |  |
 | `xtend` | 4.0.2 | MIT | `node_modules/.pnpm/xtend@4.0.2/node_modules/xtend` |  |
 | `y18n` | 5.0.8 | ISC | `node_modules/.pnpm/y18n@5.0.8/node_modules/y18n` |  |
 | `yallist` | 4.0.0 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/minipass-pipeline/node_modules/yallist` |  |
@@ -805,6 +950,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `yocto-queue` | 1.2.2 | MIT | `node_modules/.pnpm/yocto-queue@1.2.2/node_modules/yocto-queue` |  |
 | `yoctocolors` | 2.2.0 | MIT | `node_modules/.pnpm/yoctocolors@2.2.0/node_modules/yoctocolors` |  |
 | `zod` | 4.6.5 | MIT | `node_modules/.pnpm/zod@4.6.5/node_modules/zod` |  |
+| `zwitch` | 2.0.4 | MIT | `node_modules/.pnpm/zwitch@2.0.4/node_modules/zwitch` |  |
 
 ## Optional dependencies
 

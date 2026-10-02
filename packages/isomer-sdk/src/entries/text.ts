@@ -7,5 +7,6 @@
 
 export {
   type TextEnvelopeDispatcher,
+  type TextEnvelopeOptions,
   renderTextEnvelope,
 } from '../render/text';

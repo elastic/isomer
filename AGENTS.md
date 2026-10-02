@@ -8,13 +8,15 @@ The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, a
 
 `packages/isomer-primitives-slides` is the in-repo reference pack. Its `src/registry.ts` and `src/body_node.ts` are hand-maintained the same way, and `src/registry.test.ts` fails when they drift. Its docs live in `packages/isomer-primitives-slides/docs/`. Primitive packs for Kibana iterate in that repo.
 
-`packages/isomer-image-takumi` rasterizes the `svg` surface's output to PNG or SVG. It depends on no isomer package — it declares the surface's result shape structurally.
+`packages/isomer-image-takumi` renders the `svg` surface's output to PNG, SVG, or PDF. It depends on no isomer package — it declares the surface's result shape structurally.
 
 `packages/isomer-evals` scores whether a model produces valid, well-chosen compositions from a pack's authoring context. It depends on the SDK's public API alone and runs with no credentials.
 
+`packages/isomer-agent-tools` turns any runtime into transport-neutral agent tools, resources, and a `compose` prompt. It declares the runtime structurally and depends on the SDK alone; hosts bring the transport, and it must never reach `@modelcontextprotocol/sdk`, which `scripts/check_module_graph.js` enforces.
+
 ## Release posture
 
-Every package under `packages/` publishes, at one version, through the release workflow; none is `private`. `@elastic/isomer-sdk` and `@elastic/isomer-runtime` are what a host installs, slides is the reference pack, takumi is a host-side rasterizer, and evals is a harness a pack author runs against their own runtime. Do not raise publication, registry access, or dependency licensing as a constraint when planning work in this repository.
+Every package under `packages/` without `"private": true` publishes, at one version, through the release workflow: `@elastic/isomer-sdk` and `@elastic/isomer-runtime` are what a host installs, takumi is a host-side rasterizer, and evals is a harness a pack author runs against their own runtime. The slides pack is an exemplar to copy and stays private; agent-tools is private until its API settles. A published package never lists a private one in `dependencies` or `peerDependencies`, which `scripts/check_pack_consumer.js` enforces. Do not raise publication, registry access, or dependency licensing as a constraint when planning work in this repository.
 
 ## Where work happens
 
@@ -41,7 +43,7 @@ That is the complete local gate. If a check fails in a way that looks unrelated 
 - No cross-package tsconfig `paths`. Internal resolution is `workspace:*` plus TypeScript project references. The one `paths` entry in the repo redirects an *external* package's subpath types for the CommonJS pass, whose `Node10` resolution cannot read an `exports` map; it is not a route between workspace packages.
 - Do not invent a bundler for the library build. `tsc` plus `tsc-alias` is the toolchain, with a second `tsc` pass for CommonJS.
 - After adding or changing a dependency, run `pnpm licenses:report` and include the updated `THIRD_PARTY_LICENSES.md` and `NOTICE.txt`.
-- Narrative docs live in each package's `docs/`. Root `docs/` is the docs-builder assembler (landing page and OKF map); do not author package pages there. Preview with `pnpm docs:dev`; CI copies then builds.
+- Narrative docs live in each package's `docs/`. Root `docs/` is the docs-builder assembler (landing page and OKF map); do not author package pages there. Its package folders are committed copies, because Elastic Internal Docs (Codex) clones and builds `docs/` as committed: run `pnpm docs:assemble` and commit the result whenever package docs change, and CI fails with `pnpm docs:check` when they drift. Preview with `pnpm docs:dev`.
 - When public API, docs, examples, or behavior change, update `.okf/isomer`, run `pnpm okf:check` and `pnpm okf:index`, and record meaningful changes in `.okf/isomer/log.md`.
 - `.okf/**` is excluded from markdown and Prettier formatting because `okf index` owns generated index formatting.
 - Keep comments short. Do not narrate decisions that git history already records.

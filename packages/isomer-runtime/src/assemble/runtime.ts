@@ -11,6 +11,7 @@ import {
   type AuthoringJsonSchemaOptions,
   bindFrame,
   type BoundFrame,
+  type CheckedValidationResult,
   composePacks,
   type Composition,
   createCompositionParser,
@@ -19,13 +20,13 @@ import {
   describeCapabilities,
   type Frame,
   getCompositionSchemaForDefinitions,
+  type InputBudget,
   IsomerError,
   type ParsedComposition,
   type PrimitiveNode,
   type PrimitivePack,
   type PrimitiveRenderContext,
   type PrimitiveStyleCollector,
-  type ValidationResult,
 } from '@elastic/isomer-sdk';
 import type { ZodObject } from 'zod';
 
@@ -120,6 +121,8 @@ export interface IsomerRuntimeOptions<
   defaultAriaLabel?: string;
   /** Options for the authoring JSON Schema `getAuthoringContext` returns. */
   authoring?: AuthoringJsonSchemaOptions;
+  /** Limits `checkInputBudget` applies in `parse`, `validate`, view input, and every surface but `react`, which does not validate. */
+  inputBudget?: InputBudget;
 }
 
 /**
@@ -162,8 +165,8 @@ export interface IsomerRuntime<
   getAuthoringContext(): RuntimeAuthoringContext;
   /** Reports the primitive types and render formats this runtime supports. */
   getCapabilities(): HostCapabilities;
-  /** Validates a composition against this runtime's primitives. */
-  validate(composition: Composition): ValidationResult;
+  /** Validates a composition against this runtime's primitives; `composition` on the result is the copy it checked. */
+  validate(composition: Composition): CheckedValidationResult;
   /** Parses and validates an unknown value as a `Composition`. */
   parse(value: unknown): ParsedComposition;
   /**
@@ -220,7 +223,10 @@ export const createIsomerRuntime: CreateIsomerRuntime = (<
   const styleAdapter = resolveStyleAdapter(options.packs, options.styleAdapter);
   assertRuntimePacks(options.packs, styleAdapter);
   const frames = bindFrames(options.frames);
-  const defaultFrame = resolveDefaultFrame(frames, options.defaultFrame);
+  const defaultFrame = resolveDefaultFrame(
+    options.frames && frames,
+    options.defaultFrame
+  );
   const packs = applyRendererOverrides(
     options.packs,
     options.rendererOverrides
@@ -233,14 +239,18 @@ export const createIsomerRuntime: CreateIsomerRuntime = (<
     label: 'runtime',
     isSlackAssetType: (type) => slackAssetTypes.has(type),
   });
+  const { inputBudget } = options;
+  const budget = inputBudget === undefined ? {} : { inputBudget };
   const validate = createCompositionValidator(definitions, {
+    ...budget,
     sizesFromNodeHeights: Object.values(frames).some(
       (frame) => frame.sizesFromNodeHeights
     ),
   });
-  const parse = createCompositionParser(definitions);
+  const parse = createCompositionParser(definitions, budget);
   const viewRegistry = createViewRegistry<THostContext, PrimitiveNode>(
-    validate
+    validate,
+    budget
   );
   options.views?.forEach(viewRegistry.register);
   const getAuthoringContext = createRuntimeAuthoringContextFactory(
@@ -251,7 +261,7 @@ export const createIsomerRuntime: CreateIsomerRuntime = (<
   );
   const defaultAriaLabel = options.defaultAriaLabel ?? 'View';
   const surfaces: RuntimeSurfaces<TRenderContext> = {
-    react: createReactSurface(dispatcher, defaultAriaLabel),
+    react: createReactSurface(dispatcher, enhancements, defaultAriaLabel),
     html: createHtmlSurface(
       dispatcher,
       validate,
@@ -356,13 +366,29 @@ const frameAt = (
  * Picks the frame a render uses when it names none.
  *
  * Defaulted rather than required for the one-frame case. Returns `undefined`
- * when there is no frame at all, which is what leaves the `svg` surface off.
+ * only when `frames` was omitted, which is what leaves the `svg` surface off;
+ * an empty map throws, since the overloads type it as present.
  */
 const resolveDefaultFrame = (
-  frames: Readonly<Record<string, BoundFrame>>,
+  frames: Readonly<Record<string, BoundFrame>> | undefined,
   requested: string | undefined
 ): string | undefined => {
+  if (frames === undefined) {
+    if (requested !== undefined) {
+      throw new IsomerError(
+        'UNKNOWN_FRAME',
+        `runtime: defaultFrame "${requested}" was given but no frames were supplied`
+      );
+    }
+    return undefined;
+  }
   const names = Object.keys(frames);
+  if (names.length === 0) {
+    throw new IsomerError(
+      'EMPTY_FRAMES',
+      'runtime: frames is empty; omit it to build a runtime without the svg surface'
+    );
+  }
   if (requested !== undefined) {
     if (frameAt(frames, requested) === undefined) {
       throw new IsomerError(

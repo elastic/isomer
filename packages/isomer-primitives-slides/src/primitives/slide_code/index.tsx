@@ -5,6 +5,12 @@
  * 2.0.
  */
 
+import { md } from '@elastic/isomer-sdk/markdown';
+import type { SlackBlock } from '@elastic/isomer-sdk/slack';
+
+import { slackCodePanel } from '../../render';
+import { oneLine } from '../../render/one_line';
+import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -12,37 +18,36 @@ import { examples } from './examples';
 import { react } from './react';
 import { schema, type SlideCodeNode } from './schema';
 
-export type { SlideCodeNode } from './schema';
+export type { SlideCodeNode, SlideCodePanel } from './schema';
 
-/** Text renderer for {@link SlideCodeNode}. */
-export const text = (node: SlideCodeNode) =>
-  [node.label, node.code].filter(Boolean).join('\n');
+const traceArrow = slideDistillery.tokens.code.traceArrow.value;
 
-// A fence-info string only allows word-ish tokens; anything else would
-// terminate the fence early or inject markdown.
-const fenceInfoLanguage = (language: string | undefined): string =>
-  language && /^[\w+#.-]+$/.test(language) ? language : 'text';
+export const text = ({ panels }: SlideCodeNode): string =>
+  panels
+    .map(({ file, lines }) =>
+      [...(file ? [oneLine(file)] : []), ...lines].join('\n')
+    )
+    .join(`\n\n${traceArrow}\n\n`);
 
-// The fence must be longer than any backtick run in the body, or the body
-// closes it early.
-const fenceFor = (code: string): string => {
-  const longestRun = Math.max(
-    2,
-    ...(code.match(/`+/g) ?? []).map((run) => run.length)
-  );
-  return '`'.repeat(longestRun + 1);
-};
+export const markdown = ({ panels }: SlideCodeNode) =>
+  panels.flatMap(({ file, language, lines }, index) => [
+    ...(index > 0 ? [md.paragraph(traceArrow)] : []),
+    ...(file ? [md.paragraph(md.strong(file))] : []),
+    md.codeBlock(lines.join('\n'), language),
+  ]);
 
-/** Markdown renderer for {@link SlideCodeNode}. */
-export const markdown = (node: SlideCodeNode) => {
-  const fence = fenceFor(node.code);
-  return [
-    node.label ? `### ${node.label}` : '',
-    `${fence}${fenceInfoLanguage(node.language)}\n${node.code}\n${fence}`,
-  ]
-    .filter(Boolean)
-    .join('\n\n');
-};
+export const slack = ({ panels }: SlideCodeNode): SlackBlock[] =>
+  panels.flatMap(({ file, lines }, index) => [
+    ...(index > 0
+      ? [
+          {
+            type: 'section',
+            text: { type: 'mrkdwn', text: traceArrow },
+          } satisfies SlackBlock,
+        ]
+      : []),
+    slackCodePanel(lines.join('\n'), file),
+  ]);
 
 /** Catalog, schema, and renderers for {@link SlideCodeNode}. */
 export const slideCodePrimitive = definePrimitive({
@@ -54,5 +59,6 @@ export const slideCodePrimitive = definePrimitive({
     react,
     text,
     markdown,
+    slack,
   },
 });

@@ -7,21 +7,28 @@
 
 import {
   BODY_NODE_SURFACES,
-  type BodyNodeSurface,
   childNodePath,
   createChildNodeWalker,
   isVisibleOnSurface,
   rendersOnSurface,
+  type SurfaceName,
 } from '../composition/body_node_base';
 import type { Composition } from '../composition/composition';
+import type { PrimitiveNode } from '../composition/node';
+import { quoteText } from '../composition/one_line';
 import {
   CompositionValidationError,
   type ValidationError,
 } from '../composition/validation_error';
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
-import { formatZodIssues } from '../define/zod_format';
 
 import { getCompositionSchemaForDefinitions } from './composition_schema';
+import {
+  checkInputBudget,
+  type InputBudget,
+  isInputRefusal,
+} from './input_budget';
+import { createNodeIssueFormatter, type IssueRoot } from './node_issues';
 
 /**
  * A non-fatal validation finding, scoped to the surface it concerns.
@@ -34,7 +41,7 @@ import { getCompositionSchemaForDefinitions } from './composition_schema';
  */
 export interface ValidationWarning {
   /** The render target this finding concerns, never the composition as a whole. */
-  surface: BodyNodeSurface;
+  surface: SurfaceName;
   /**
    * Path of the offending node within the composition, absent for
    * whole-composition findings.
@@ -59,10 +66,24 @@ export interface ValidationResult {
   warnings: ValidationWarning[];
 }
 
+const checkedComposition = Symbol.for('elastic.isomer.checked_composition');
+
+/** The copy {@link createCompositionValidator} checked, which a validating render draws in place of the caller's value. The brand is type-only. */
+export type CheckedComposition<TNode extends PrimitiveNode = PrimitiveNode> =
+  Composition<TNode> & { readonly [checkedComposition]: true };
+
+/** A {@link ValidationResult} with the composition it describes. */
+export interface CheckedValidationResult<
+  TNode extends PrimitiveNode = PrimitiveNode,
+> extends ValidationResult {
+  /** Undefined only when {@link checkInputBudget} refused the input. */
+  composition: CheckedComposition<TNode> | undefined;
+}
+
 /** Narrows a result's warnings to the surface a caller is about to render. */
 export const warningsForSurface = (
   result: ValidationResult,
-  surface: BodyNodeSurface
+  surface: SurfaceName
 ): ValidationWarning[] =>
   result.warnings.filter((warning) => warning.surface === surface);
 
@@ -71,14 +92,30 @@ export type ValidationErrorMode = 'collect' | 'throw';
 
 export { CompositionValidationError };
 
-/** Raises {@link CompositionValidationError} when `mode` is `throw` and `result` is invalid. */
+/** Raises {@link CompositionValidationError} when `mode` is `throw` and `result` is invalid, or in any mode when {@link checkInputBudget} refused the input, which nothing can render. */
 export const enforceValidationMode = (
   result: ValidationResult,
   mode?: ValidationErrorMode
 ): void => {
-  if (mode === 'throw' && !result.valid) {
+  if (
+    !result.valid &&
+    (mode === 'throw' || result.errors.some(isInputRefusal))
+  ) {
     throw new CompositionValidationError(result.errors);
   }
+};
+
+/** The composition `result` checked, which is what a render draws. Throws {@link CompositionValidationError} when `mode` is `'throw'` and `result` is invalid, or in any mode when {@link checkInputBudget} refused the input. */
+export const compositionToRender = <TNode extends PrimitiveNode>(
+  result: CheckedValidationResult<TNode>,
+  mode?: ValidationErrorMode
+): CheckedComposition<TNode> => {
+  enforceValidationMode(result, mode);
+  const { composition } = result;
+  if (composition === undefined) {
+    throw new CompositionValidationError(result.errors);
+  }
+  return composition;
 };
 
 /** Runtime facts the semantic passes need beyond the primitive inventory. */
@@ -93,10 +130,20 @@ export interface CompositionValidatorOptions {
    * runtime with no frame at all reports nothing about a value nothing reads.
    */
   sizesFromNodeHeights?: boolean;
+  /** Limits checked before the schema runs; see {@link checkInputBudget}. */
+  inputBudget?: InputBudget;
 }
 
+/** The body's nodes, as {@link IssueRoot}s for a node issue formatter. */
+const bodyRoots = (value: unknown): IssueRoot[] => {
+  const { body } = (value ?? {}) as { body?: unknown };
+  return Array.isArray(body)
+    ? body.map((node, index) => [node, `body[${index}]`] as const)
+    : [];
+};
+
 /**
- * Builds the trusted-input validator: schema, then the semantic passes.
+ * Builds the trusted-input validator: {@link checkInputBudget}, then the schema and the semantic passes on its copy, which the result carries.
  *
  * `definitions` is memoized on array identity, so a caller that rebuilds the
  * array per call (`createCompositionValidator(packs.flatMap(…))`) gets a fresh
@@ -104,28 +151,48 @@ export interface CompositionValidatorOptions {
  * returns and reuse it across the validator, the parser, and the authoring
  * context.
  */
-export const createCompositionValidator = (
+export const createCompositionValidator = <
+  TNode extends PrimitiveNode = PrimitiveNode,
+>(
   definitions: readonly AnyPrimitiveDefinition[],
   options: CompositionValidatorOptions = {}
-): ((composition: Composition) => ValidationResult) => {
+): ((composition: Composition<TNode>) => CheckedValidationResult<TNode>) => {
   const schema = getCompositionSchemaForDefinitions(definitions);
   const walk = createChildNodeWalker(definitions);
+  const formatIssues = createNodeIssueFormatter(definitions);
   return (composition) => {
-    const result = schema.safeParse(composition, { reportInput: true });
+    const checked = checkInputBudget(composition, options.inputBudget);
+    if (!checked.valid) {
+      return {
+        valid: false,
+        errors: [checked.error],
+        warnings: [],
+        composition: undefined,
+      };
+    }
+    const plain = checked.value as CheckedComposition<TNode>;
+    const result = schema.safeParse(plain, { reportInput: true });
     if (result.success) {
-      const idErrors = collectDuplicateNodeIdErrors(composition.body, walk);
+      const { body } = plain;
+      const idErrors = collectDuplicateNodeIdErrors(body, walk);
       const warnings = [
-        ...collectEmptySurfaceWarnings(composition.body, walk),
+        ...collectEmptySurfaceWarnings(body, walk),
         ...(options.sizesFromNodeHeights
-          ? collectMissingSvgHeightWarnings(composition.body, definitions, walk)
+          ? collectMissingSvgHeightWarnings(body, definitions, walk)
           : []),
       ];
-      return { valid: idErrors.length === 0, errors: idErrors, warnings };
+      return {
+        valid: idErrors.length === 0,
+        errors: idErrors,
+        warnings,
+        composition: plain,
+      };
     }
     return {
       valid: false,
-      errors: formatZodIssues(result.error.issues),
+      errors: formatIssues(bodyRoots(plain), result.error.issues),
       warnings: [],
+      composition: plain,
     };
   };
 };
@@ -141,7 +208,7 @@ export interface ParsedComposition {
 }
 
 /**
- * Builds the untrusted-input parser: schema only, reported rather than thrown.
+ * Builds the untrusted-input parser: {@link checkInputBudget}, then the schema only on its copy, reported rather than thrown.
  *
  * Deliberately narrower than {@link createCompositionValidator}. This answers
  * "is this a `Composition`", not "is this a good one" — it does not run the
@@ -152,11 +219,17 @@ export interface ParsedComposition {
  * Shares {@link createCompositionValidator}'s memoization identity requirement.
  */
 export const createCompositionParser = (
-  definitions: readonly AnyPrimitiveDefinition[]
+  definitions: readonly AnyPrimitiveDefinition[],
+  { inputBudget }: Pick<CompositionValidatorOptions, 'inputBudget'> = {}
 ): ((value: unknown) => ParsedComposition) => {
   const schema = getCompositionSchemaForDefinitions(definitions);
+  const formatIssues = createNodeIssueFormatter(definitions);
   return (value) => {
-    const result = schema.safeParse(value, { reportInput: true });
+    const checked = checkInputBudget(value, inputBudget);
+    if (!checked.valid) {
+      return { valid: false, errors: [checked.error] };
+    }
+    const result = schema.safeParse(checked.value, { reportInput: true });
     if (result.success) {
       return {
         valid: true,
@@ -164,7 +237,10 @@ export const createCompositionParser = (
         composition: result.data as unknown as Composition,
       };
     }
-    return { valid: false, errors: formatZodIssues(result.error.issues) };
+    return {
+      valid: false,
+      errors: formatIssues(bodyRoots(checked.value), result.error.issues),
+    };
   };
 };
 
@@ -214,7 +290,7 @@ const collectMissingSvgHeightWarnings = (
       warnings.push({
         surface: 'svg',
         path,
-        message: `${path} type "${type}" declares no svgHeight metric and will be measured as 0, sizing the frame short`,
+        message: `${path} type ${quoteText(type)} declares no svgHeight metric and will be measured as 0, sizing the frame short`,
       });
     }
     walk(node).forEach(({ node: child, path: field }) => {
@@ -243,13 +319,14 @@ const collectDuplicateNodeIdErrors = (
     if (!node || typeof node !== 'object') {
       return;
     }
-    const { id } = node as { id?: unknown };
+    const { id, type } = node as { id?: unknown; type?: unknown };
     if (typeof id === 'string') {
       const first = seen.get(id);
       if (first) {
         errors.push({
           path: `${path}.id`,
-          message: `duplicates id "${id}" first used at ${first}`,
+          message: `duplicates id ${quoteText(id)} first used at ${first}`,
+          ...(typeof type === 'string' ? { nodeType: type } : {}),
         });
       } else {
         seen.set(id, path);

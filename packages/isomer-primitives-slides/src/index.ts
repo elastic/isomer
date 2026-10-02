@@ -5,7 +5,23 @@
  * 2.0.
  */
 
+export {
+  buildSlidesAuthoringPrompt,
+  slidesAuthoringGuide,
+  slidesAuthoringRules,
+} from './agent_guide';
+
 export type { SlideContentNode } from './body_node';
+
+export {
+  type SlideBuild,
+  SLIDE_BUILDS,
+  showSlideBuild,
+  slideBuilds,
+  slideBuildsEnhancement,
+} from './builds';
+
+export { slideJsx } from './jsx';
 
 export {
   SLIDE_HEIGHT,
@@ -14,50 +30,156 @@ export {
   slidesPack,
   slideThemes,
 } from './pack';
+export { slidePrimitiveGroups } from './pack_authoring';
 
+export type {
+  SlideAgendaNode,
+  SlideAgendaSection,
+} from './primitives/slide_agenda';
+export type {
+  SlideAnnotatedRenderNode,
+  SlideAnnotatedRenderPin,
+} from './primitives/slide_annotated_render';
+export type { SlideBarsItem, SlideBarsNode } from './primitives/slide_bars';
 export type { SlideBulletListNode } from './primitives/slide_bullet_list';
 export type {
-  SlideCard,
-  SlideCardGroupNode,
-} from './primitives/slide_card_group';
-export type { SlideCodeNode } from './primitives/slide_code';
-export type { SlideFlowNode } from './primitives/slide_flow';
+  SlideClosingLink,
+  SlideClosingNode,
+  SlideClosingPath,
+} from './primitives/slide_closing';
+export type { SlideCodeNode, SlideCodePanel } from './primitives/slide_code';
+export type { SlideColumn, SlideColumnsNode } from './primitives/slide_columns';
+export { SLIDE_COPY, slideCopyEnhancement } from './primitives/slide_command';
+export type { SlideCommandNode } from './primitives/slide_command';
+export type {
+  SlideDefinition,
+  SlideDefinitionsNode,
+} from './primitives/slide_definitions';
+export type { SlideDeltaNode, SlideDeltaPoint } from './primitives/slide_delta';
+export type { SlideDiffLine, SlideDiffNode } from './primitives/slide_diff';
+export type {
+  SlideFanoutNode,
+  SlideFanoutTarget,
+} from './primitives/slide_fanout';
 export { SlideFrameView } from './primitives/slide_frame';
 export type { SlideFrameNode } from './primitives/slide_frame';
-export type { SlideSplitNode } from './primitives/slide_split';
+export type {
+  SlideGraphNode,
+  SlideGraphPlacement,
+  SlideGraphTerm,
+} from './primitives/slide_graph';
+export type { SlideHeadingNode } from './primitives/slide_heading';
+export type {
+  SlideLanesLane,
+  SlideLanesNode,
+  SlideLanesNote,
+} from './primitives/slide_lanes';
+export type { SlideLayer, SlideLayersNode } from './primitives/slide_layers';
+export type { SlideListItem, SlideListNode } from './primitives/slide_list';
+export type {
+  SlideMatrixNode,
+  SlideMatrixRow,
+} from './primitives/slide_matrix';
+export type {
+  SlidePipelineNode,
+  SlidePipelineSpan,
+  SlidePipelineStep,
+} from './primitives/slide_pipeline';
+export type {
+  SlideQuadrant,
+  SlideQuadrantNode,
+} from './primitives/slide_quadrant';
+export type { SlideQuoteNode } from './primitives/slide_quote';
+export type { SlideRenderNode } from './primitives/slide_render';
+export type {
+  SlideRenderGridNode,
+  SlideRenderGridTile,
+} from './primitives/slide_render_grid';
+export type {
+  SlideRoadmapColumn,
+  SlideRoadmapItem,
+  SlideRoadmapNode,
+} from './primitives/slide_roadmap';
+export type { SlideSectionNode } from './primitives/slide_section';
+export type {
+  SlideSequenceActor,
+  SlideSequenceMessage,
+  SlideSequenceNode,
+} from './primitives/slide_sequence';
+export type { SlideSourceNode } from './primitives/slide_source';
+export type { SlideSplitNode, SlideSplitPane } from './primitives/slide_split';
 export type { SlideStackNode } from './primitives/slide_stack';
+export type { SlideStatNode } from './primitives/slide_stat';
+export type { SlideStatementNode } from './primitives/slide_statement';
+export type { SlideStatsItem, SlideStatsNode } from './primitives/slide_stats';
+export type { SlideTableGroup, SlideTableNode } from './primitives/slide_table';
 export type {
   SlideTerritory,
   SlideTerritoryGroupNode,
 } from './primitives/slide_territory_group';
 export type {
-  SlideLedeLink,
-  SlideLedePart,
+  SlideTimelineItem,
+  SlideTimelineNode,
+} from './primitives/slide_timeline';
+export type {
+  SlideTitleDefinition,
   SlideTitleNode,
 } from './primitives/slide_title';
+export type {
+  SlideTranscriptNode,
+  SlideTranscriptTurn,
+} from './primitives/slide_transcript';
+export type { SlideTreeEntry, SlideTreeNode } from './primitives/slide_tree';
+export type { SlideWindowNode } from './primitives/slide_window';
 
 export { slideDeckPrimitives, slidePrimitiveTypes } from './registry';
 
 export type {
+  SlideLayout,
   SlidePackTypes,
   SlideRenderContext,
   SlideRenderScope,
 } from './render';
 
+export {
+  type NamedSlide,
+  type ResolveSlideRendersOptions,
+  resolveSlideRenders,
+} from './resolve_renders';
+
 export { StandaloneSlideNode } from './standalone';
 
-export { slidePaletteForMode, slideStylesheet } from './theme';
-export type { SlideFrameTheme, SlidePalette } from './theme';
+export { slideStylesheet } from './stylesheet';
+
+export { slideFontFaces, slidePaletteForMode } from './theme';
+export type { SlideFontFace, SlideFrameTheme, SlidePalette } from './theme';
 export {
   slideBulletMarkers,
-  slideCardColumnCounts,
-  slideCardColumns,
-  slideCardColumnsKey,
-  slideCardGroupStyles,
-  slideFrameLayouts,
+  slideDiffOps,
+  slideFrameTones,
+  slideMatrixMarks,
+  slideRenderSurfaces,
+  slideSizes,
+  slideSplitDividers,
   slideSplitRatios,
   slideStackSpacings,
-  slideTitleSizes,
   slideTones,
+  slideTranscriptFormats,
+  slideTranscriptRoles,
+  slideWindowChromes,
 } from './theme';
-export type { SlideTone } from './theme';
+export type {
+  SlideBulletMarker,
+  SlideDiffOp,
+  SlideFrameTone,
+  SlideMatrixMark,
+  SlideRenderSurface,
+  SlideSize,
+  SlideSplitDivider,
+  SlideSplitRatio,
+  SlideStackSpacing,
+  SlideTone,
+  SlideTranscriptFormat,
+  SlideTranscriptRole,
+  SlideWindowChrome,
+} from './theme';

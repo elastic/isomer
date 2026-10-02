@@ -1,0 +1,17 @@
+# Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+# or more contributor license agreements. Licensed under the Elastic License
+# 2.0; you may not use this file except in compliance with the Elastic License
+# 2.0.
+
+toc:
+  - file: index.md
+  - file: quick-start.md
+  - file: runtime.md
+  - file: packs.md
+  - file: frame.md
+  - file: surfaces.md
+  - file: embedding.md
+  - file: view-registry.md
+  - file: authoring-context.md
+  - file: renderer-overrides.md
+  - file: api.md

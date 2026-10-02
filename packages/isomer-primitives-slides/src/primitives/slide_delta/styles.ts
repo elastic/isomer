@@ -1,0 +1,92 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+import { variants } from '@elastic/distillate';
+
+import { slideDistillery } from '../../theme/distillery';
+import { typeRole } from '../../theme/type_role';
+import { slideSizes } from '../../theme/variants';
+
+const { createStyleModule, tokens } = slideDistillery;
+const { color, delta } = tokens;
+
+export const deltaModule = createStyleModule('delta', ({ css }) => ({
+  /** The note wraps under the pair when the row cannot hold its floor. */
+  root: css`
+    align-items: flex-end;
+    column-gap: ${delta.columnGap};
+    display: flex;
+    flex-wrap: wrap;
+    row-gap: ${delta.rowGap};
+  `,
+  side: css`
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    gap: ${delta.labelGap};
+  `,
+  label: css`
+    color: ${color.textSubtle};
+    ${typeRole(delta.label)}
+  `,
+  labelAfter: css`
+    color: ${color.primary};
+  `,
+  value: css`
+    color: ${color.text};
+    ${typeRole(delta.value)}
+  `,
+  valueAfter: css`
+    color: ${color.primary};
+  `,
+  valueSize: variants(
+    slideSizes,
+    (size) => css`
+      font-size: ${delta.valueSizes[size]};
+    `
+  ),
+  placeholder: css`
+    flex: 0 0 auto;
+    width: ${delta.placeholderWidth};
+  `,
+  placeholderHeight: variants(
+    slideSizes,
+    (size) => css`
+      height: ${delta.placeholderHeights[size]};
+    `
+  ),
+  arrow: css`
+    flex: 0 0 ${delta.arrowWidth};
+  `,
+  arrowLift: variants(
+    slideSizes,
+    (size) => css`
+      margin-bottom: ${delta.arrowLifts[size]};
+    `
+  ),
+  note: css`
+    border-left: ${delta.rule} solid ${color.border};
+    box-sizing: border-box;
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    gap: ${delta.noteGap};
+    margin-bottom: ${delta.noteBottom};
+    min-width: ${delta.noteMinWidth};
+    padding-left: ${delta.notePadding};
+  `,
+  change: css`
+    color: ${color.text};
+    ${typeRole(delta.change)}
+  `,
+  body: css`
+    color: ${color.textSoft};
+    ${typeRole(delta.body)}
+    margin: 0;
+    text-wrap: pretty;
+  `,
+}));

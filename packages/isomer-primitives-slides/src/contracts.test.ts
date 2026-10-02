@@ -5,9 +5,15 @@
  * 2.0.
  */
 
-import type { ImageInput, PngRuntime } from '@elastic/isomer-image-takumi';
+import type {
+  ImageInput,
+  PdfInput,
+  PdfRuntime,
+  PngRuntime,
+} from '@elastic/isomer-image-takumi';
 import {
   createIsomerRuntime,
+  type SvgPagesResult,
   type SvgRenderResult,
 } from '@elastic/isomer-runtime';
 import { describe, expectTypeOf, it } from 'vitest';
@@ -28,5 +34,13 @@ describe('takumi structural contracts', () => {
 
   it('SvgRenderResult satisfies ImageInput', () => {
     expectTypeOf<SvgRenderResult>().toMatchTypeOf<ImageInput>();
+  });
+
+  it('a runtime built with frames satisfies PdfRuntime', () => {
+    expectTypeOf(runtime).toMatchTypeOf<PdfRuntime>();
+  });
+
+  it('SvgPagesResult satisfies PdfInput', () => {
+    expectTypeOf<SvgPagesResult>().toMatchTypeOf<PdfInput>();
   });
 });

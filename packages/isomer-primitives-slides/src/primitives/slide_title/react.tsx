@@ -5,63 +5,78 @@
  * 2.0.
  */
 
-import { Fragment, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
-import { slideModules } from '../../theme/modules';
+import { LogoMark } from '../../render/logo';
+import { marksReact } from '../../render/marks';
+import { title as theme, titleShares } from '../../theme/components/title';
+import { slideLayout, withLayout } from '../layout';
+import { sizeForLines, trackWidth } from '../size';
 
-import type { SlideTitleNode } from './schema';
-
-const renderLedeReact = (lede: SlideTitleNode['lede']): ReactNode => {
-  if (!lede) {
-    return null;
-  }
-  if (typeof lede === 'string') {
-    return <p>{lede}</p>;
-  }
-  return (
-    <p>
-      {lede.map((part, index) => {
-        if (typeof part === 'string') {
-          return <Fragment key={index}>{part}</Fragment>;
-        }
-        // `sanitize` already ran and drops an unsafe href to plain text, so
-        // a `part` reaching here always carries a safe `href`.
-        return (
-          <a
-            key={index}
-            href={part.href}
-            target={part.openInNewTab ? '_blank' : undefined}
-            rel={part.openInNewTab ? 'noopener noreferrer' : undefined}>
-            {part.text}
-          </a>
-        );
-      })}
-    </p>
-  );
-};
+import { titleModule } from './styles';
+import type { SlideTitleNode } from './types';
 
 /** React renderer for {@link SlideTitleNode}. */
 export const react = (
-  node: SlideTitleNode,
-  { context }: SlideReactEnv
+  { type, eyebrow, title, tagline, definition, aside, size }: SlideTitleNode,
+  { context, scope }: SlideReactEnv
 ): ReactNode => {
-  const { handles: title } = slideModules.title;
-  const { handles: tones } = slideModules.tones;
+  const { handles: styles } = titleModule;
+  const { width, height } = slideLayout(context);
+  const column = (index: 0 | 1) =>
+    trackWidth(width, titleShares, theme.columnGap, index);
   return (
     <div
-      className={cls(
-        context,
-        title.root,
-        title.size[node.size ?? 'standard'],
-        tones.tone[node.tone ?? 'primary']
-      )}>
-      {node.eyebrow ? (
-        <div className={cls(context, title.eyebrow)}>{node.eyebrow}</div>
+      {...nodeAnchor(context, { type })}
+      className={cls(context, styles.root, aside ? undefined : styles.single)}>
+      <div className={cls(context, styles.lead)}>
+        {context?.logo === false ? null : (
+          <LogoMark className={cls(context, styles.logo)} />
+        )}
+        {eyebrow ? (
+          <p className={cls(context, styles.eyebrow)}>{eyebrow}</p>
+        ) : null}
+        <h1
+          className={cls(
+            context,
+            styles.title,
+            styles.titleSize[
+              sizeForLines(
+                size,
+                title,
+                theme.display.tracking,
+                aside ? column(0) : width,
+                theme.displaySizes
+              )
+            ]
+          )}>
+          {title}
+        </h1>
+        {tagline ? (
+          <p className={cls(context, styles.tagline)}>
+            {marksReact(tagline, context, 'primary')}
+          </p>
+        ) : null}
+        {definition ? (
+          <p className={cls(context, styles.definition)}>
+            <dfn className={cls(context, styles.term)}>{definition.term}</dfn>
+            <span className={cls(context, styles.definitionText)}>
+              {marksReact(definition.text, context)}
+            </span>
+          </p>
+        ) : null}
+      </div>
+      {aside ? (
+        <div className={cls(context, styles.aside)}>
+          {scope.renderReact(
+            aside,
+            withLayout(context, { width: column(1), height })
+          )}
+        </div>
       ) : null}
-      <h2>{node.title}</h2>
-      {renderLedeReact(node.lede)}
     </div>
   );
 };

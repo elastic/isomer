@@ -5,18 +5,7 @@
  * 2.0.
  */
 
-export {
-  type DistillateHtmlEngine,
-  type DistillateThemeVar,
-  DISTILLATE_STYLE_COLLECTOR,
-  createDistillateHtmlStyleAdapter,
-  flattenSchemeOption,
-} from './distillate_style_adapter';
-export {
-  type EnhancementDefinition,
-  enhancementScript,
-  resolveEnhancements,
-} from './enhancements';
+export { type EnhancementDefinition } from './enhancements';
 export {
   type HTMLDispatcherRenderOptions,
   type HTMLEnhancementScope,

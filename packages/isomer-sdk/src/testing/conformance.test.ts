@@ -8,12 +8,18 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
-import { definePrimitive } from '../define/primitive_module';
+import type { ValidationError } from '../composition/validation_error';
+import {
+  definePrimitive,
+  validateWithSchema,
+} from '../define/primitive_module';
+import { createPrimitiveDispatcher } from '../render/primitive_dispatch';
 
 import {
   primitiveConformanceCases,
   runPrimitiveInventoryConformance,
 } from './conformance';
+import { fixtureDefinitions, type FixtureNode } from './sdk.fixtures';
 
 describe('primitive conformance suite', () => {
   // This package owns the primitive contract but ships no vocabulary, so the
@@ -52,5 +58,73 @@ describe('primitive conformance suite', () => {
         }),
       ])
     ).toThrow(/catalog.example/);
+  });
+
+  it('compares a published example through its checked copy', () => {
+    const published = new Proxy(
+      { type: 'note', body: 'Hello' },
+      {
+        get: (target, key): unknown => {
+          if (key === 'body') {
+            throw new Error('read past the checked copy');
+          }
+          return Reflect.get(target, key);
+        },
+      }
+    );
+    expect(() =>
+      runPrimitiveInventoryConformance([
+        definePrimitive({
+          type: 'note',
+          catalog: {
+            type: 'note',
+            purpose: '',
+            useWhen: [],
+            avoidWhen: [],
+            example: { type: 'note', body: 'Hello' },
+          },
+          examples: [published],
+          schema: z.object({ type: z.literal('note'), body: z.string() }),
+          renderers: {
+            react: () => null,
+            text: () => '',
+            markdown: () => '',
+          },
+        }),
+      ])
+    ).not.toThrow();
+  });
+});
+
+describe('direct schema calls on a chain deeper than the call stack', () => {
+  let deep: FixtureNode = { type: 'note', body: 'a' };
+  for (let level = 0; level < 100_000; level += 1) {
+    deep = { type: 'stack', items: [deep] };
+  }
+  const stack = fixtureDefinitions.find(({ type }) => type === 'stack')!;
+
+  it('parses one level through a primitive’s own schema', () => {
+    const errors: ValidationError[] = [];
+    validateWithSchema(stack.schema, deep, 'body[0]', errors);
+    createPrimitiveDispatcher(fixtureDefinitions).validate(
+      deep,
+      'body[0]',
+      errors
+    );
+    expect(errors).toEqual([]);
+  });
+
+  it('refuses a catalog.example past the input budget before reading it', () => {
+    expect(() =>
+      runPrimitiveInventoryConformance(
+        fixtureDefinitions.map((definition) =>
+          definition === stack
+            ? { ...stack, catalog: { ...stack.catalog, example: deep } }
+            : definition
+        )
+      )
+    ).toThrow(
+      'stack catalog.example must be within the input budget: input nests deeper than 64 levels'
+    );
   });
 });

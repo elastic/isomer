@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: [22, 24]
+        node: ['22.13.0', 22, 24]
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v6.0.6
@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Assemble package docs
-        run: node scripts/assemble_package_docs.js
+      - name: Check assembled package docs are committed
+        run: node scripts/assemble_package_docs.js --check
       - name: Build documentation
         uses: elastic/docs-builder@main

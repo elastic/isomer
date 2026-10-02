@@ -14,7 +14,7 @@ sources:
 
 # Definition
 
-A frame is the document an `svg` render is drawn inside. Vocabulary and document are independent: packs are additive, frames are exclusive. The host names the frame (`slide`, `card`) when constructing the runtime. A render that wants this document asks for `{ frame: 'slide' }`.[^docs]
+A frame is the document an `svg` render is drawn inside. Vocabulary and document are independent: packs are additive, frames are exclusive. The host names the frame (`slide`, `card`) when constructing the runtime. A render that wants this document asks for `{ frame: 'slide' }`. Omitting `frames` leaves `surfaces.svg` `undefined`; an empty `frames` map throws `EMPTY_FRAMES`.[^docs]
 
 Related: [surfaces](/runtime/concepts/surfaces.md), [runtime](/runtime/concepts/runtime.md), [slide document](/slides/concepts/document.md).
 

@@ -70,10 +70,22 @@ export const SLACK_LIMITS = {
   fallbackTextChars: 4000,
   /** `plain_text` option labels (selects, radio, checkboxes, overflow). */
   optionTextChars: 75,
-  /** Options per select/radio/checkbox element. */
+  /** Options per select, or per option group of one. */
   optionsPerSelect: 100,
   /** Options per overflow menu (Slack caps overflow at 5). */
   optionsPerOverflow: 5,
+  /** Options per radio button group or checkboxes element. */
+  optionsPerChoice: 10,
+  /** Option groups per select, each holding up to `optionsPerSelect` options. */
+  optionGroupsPerSelect: 100,
+  /** An option's `value`, which interactions send back. */
+  optionValueChars: 150,
+  /** A button's `value`. */
+  buttonValueChars: 2000,
+  /** A button's or overflow option's `url`. */
+  urlChars: 3000,
+  /** An interactive element's `action_id`. */
+  actionIdChars: 255,
   /** Max indent level for `rich_text_list`. */
   richTextListMaxIndent: 8,
   /**
@@ -91,4 +103,18 @@ export const SLACK_LIMITS = {
   imageUrlChars: 3000,
   /** `image`/image-element `alt_text` max length. */
   imageAltTextChars: 2000,
+  /** `image` block `title`. */
+  imageTitleChars: 2000,
+  /** `video` block `title`; Slack requires fewer than 200. */
+  videoTitleChars: 199,
+  /** `video` block `description`; Slack requires fewer than 200. */
+  videoDescriptionChars: 199,
+  /** `video` block `author_name`; Slack requires fewer than 50. */
+  videoAuthorNameChars: 49,
+  /** `button` element `text`. */
+  buttonTextChars: 75,
+  /** Select `placeholder`. */
+  placeholderChars: 150,
+  /** `option_groups[].label`. */
+  optionGroupLabelChars: 75,
 } as const;

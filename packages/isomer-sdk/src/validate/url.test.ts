@@ -6,12 +6,17 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
+
+import { formatZodIssues } from '../define/zod_format';
 
 import {
   ASSET_URL_MESSAGE,
+  ASSET_URL_RULE,
   assetUrl,
   BLOCKED_HREF,
   NAVIGATION_HREF_MESSAGE,
+  NAVIGATION_HREF_RULE,
   navigationHref,
   sanitizeAssetUrl,
   sanitizeNavigationHref,
@@ -55,10 +60,32 @@ describe('sanitizeNavigationHref', () => {
     ['entity-encoded colon', 'javascript&colon;alert(1)'],
     ['decimal entity colon', 'javascript&#58;alert(1)'],
     ['hex entity colon', 'javascript&#x3a;alert(1)'],
+    ['named tab entity', 'java&Tab;script:alert(1)'],
+    ['decimal tab entity', 'java&#9;script:alert(1)'],
+    ['named newline entity', 'java&NewLine;script:alert(1)'],
+    ['colon reference without a semicolon', 'javascript&#58alert(1)'],
+    [
+      'hex reference without a semicolon',
+      'javascript&#x3A//x.test/%0aalert(1)',
+    ],
+    ['encoded protocol-relative', '&#47;&#47;evil.example.com'],
+    ['named solidus', '&sol;&sol;evil.example.com'],
+    ['named reverse solidus', '&bsol;&bsol;evil.example.com'],
+    ['encoded angle bracket', 'https://x.test/&lt;script>'],
   ])('normalizes before the scheme check: %s', (_label, href) => {
     // Each of these reaches a browser or markdown consumer as `javascript:`,
     // so treating it as a relative path would be a live sink.
     expect(sanitizeNavigationHref(href)).toBeNull();
+  });
+
+  it('returns the authored value, with references left for the consumer to decode', () => {
+    expect(sanitizeNavigationHref('javascript&#38;#58;alert(1)')).toBe(
+      'javascript&#38;#58;alert(1)'
+    );
+    expect(sanitizeNavigationHref('/path&#35hash')).toBe('/path&#35hash');
+    expect(sanitizeNavigationHref(` /a${String.fromCharCode(9)}b `)).toBe(
+      '/ab'
+    );
   });
 
   it('strips surrounding whitespace from an otherwise valid href', () => {
@@ -89,6 +116,10 @@ describe('sanitizeAssetUrl', () => {
     ['javascript', 'javascript:alert(1)'],
     ['mailto', 'mailto:a@example.com'],
     ['protocol-relative', '//evil.example.com/a.png'],
+    ['encoded protocol-relative', '&#47;&#47;evil.example.com/a.png'],
+    ['named solidus', '&sol;&sol;evil.example.com/a.png'],
+    ['named reverse solidus', '&bsol;&bsol;evil.example.com/a.png'],
+    ['entity-encoded scheme', 'java&Tab;script&colon;alert(1)'],
   ])('rejects %s', (_label, url) => {
     expect(sanitizeAssetUrl(url)).toBeNull();
   });
@@ -124,6 +155,36 @@ describe('zod refinements', () => {
       true
     );
   });
+
+  it('states its rule in a description the JSON Schema keeps', () => {
+    expect(z.toJSONSchema(navigationHref())).toMatchObject({
+      description: 'An https, http, or mailto URL, or a relative path.',
+    });
+    expect(z.toJSONSchema(assetUrl()).description).toBe(
+      'An https, http, or data:image URL, or a relative path.'
+    );
+    expect(NAVIGATION_HREF_MESSAGE).toBe(`must be ${NAVIGATION_HREF_RULE}`);
+    expect(ASSET_URL_MESSAGE).toBe(`must be ${ASSET_URL_RULE}`);
+  });
+
+  it.each([
+    ['navigationHref', navigationHref],
+    ['assetUrl', assetUrl],
+  ])(
+    '%s takes exactly max characters and reports one more as too long',
+    (_name, schema) => {
+      expect(schema({ max: 8 }).safeParse('/abcdefg').success).toBe(true);
+      const result = schema({ max: 8 }).safeParse('/abcdefgh', {
+        reportInput: true,
+      });
+      expect(formatZodIssues(result.error?.issues ?? [])).toEqual([
+        { path: '', message: 'must be at most 8 characters' },
+      ]);
+      expect(z.toJSONSchema(schema({ max: 8 }))).toMatchObject({
+        maxLength: 8,
+      });
+    }
+  );
 
   it('rejects obfuscated forms at validation time, not just render time', () => {
     expect(

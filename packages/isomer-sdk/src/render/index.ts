@@ -6,13 +6,26 @@
  */
 
 export {
+  LAYOUT_ROOM_ATTRIBUTE,
+  NODE_ANCHOR_ATTRIBUTE,
+  layoutRoom,
+  nodeAnchor,
+  withNodeAnchors,
+  withoutAnchors,
+} from './anchors';
+export {
   type FormatDisplayValueOptions,
   formatDisplayValue,
   isStructuredValue,
   rawDisplayValue,
 } from './format_display_value';
-export { formatCompactNumber } from './format_number';
-export { type PayloadMeasurement, byteLength } from './payload';
+export {
+  type LayoutBox,
+  type LayoutFinding,
+  type LayoutRect,
+  checkLayout,
+} from './layout_check';
+export { type PayloadMeasurement } from './payload';
 export {
   type PrimitiveDispatcher,
   type PrimitiveDispatcherOptions,

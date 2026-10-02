@@ -5,8 +5,9 @@
  * 2.0.
  */
 
-import type { core } from 'zod';
+import type { core, ZodObject } from 'zod';
 
+import { nameText } from '../composition/one_line';
 import type { ValidationError } from '../composition/validation_error';
 
 /**
@@ -51,20 +52,20 @@ export const formatZodIssue = (
   }
 
   if (issue.code === 'invalid_value' && Array.isArray(issue.values)) {
-    return { path, message: `must be one of: ${issue.values.join(', ')}` };
+    return { path, message: oneOf(issue.values) };
   }
 
   if (issue.code === 'unrecognized_keys') {
     return {
       path,
-      message: `has unrecognized key(s): ${issue.keys.join(', ')}`,
+      message: `has unrecognized key(s): ${issue.keys.map(nameText).join(', ')}`,
     };
   }
 
   if (issue.code === 'invalid_union') {
     const { options } = issue as { options?: unknown };
     if (Array.isArray(options)) {
-      return { path, message: `must be one of: ${options.join(', ')}` };
+      return { path, message: oneOf(options) };
     }
   }
 
@@ -85,6 +86,26 @@ export const formatZodIssue = (
 
   return { path, message: issue.message };
 };
+
+/** Fields every node takes, which {@link declaredFieldsNote} leaves out. */
+const COMMON_NODE_FIELDS = new Set(['type', 'id', 'surfaces']);
+
+/** What an unknown-key error on a node of `schema` adds: the fields that node declares. */
+export const declaredFieldsNote = ({ shape }: ZodObject): string => {
+  const declared = Object.keys(shape).filter(
+    (key) => !COMMON_NODE_FIELDS.has(key)
+  );
+  return declared.length === 0
+    ? 'it declares no fields'
+    : `its fields are ${declared.map(nameText).join(', ')}`;
+};
+
+export const oneOf = (options: readonly unknown[]): string =>
+  `must be one of: ${options
+    .map((option) =>
+      typeof option === 'string' ? nameText(option) : String(option)
+    )
+    .join(', ')}`;
 
 const sizeMessage = (
   bound: 'at least' | 'at most',
@@ -112,7 +133,14 @@ const isMissingRequired = (issue: core.$ZodIssue): boolean => {
   return input === undefined;
 };
 
-/** {@link formatZodIssue} over an issue list, in order. */
+/**
+ * Zod issues as {@link ValidationError}s, in order, each path under `basePath`.
+ *
+ * Missing required fields, enum issues, and unknown keys are worded centrally,
+ * so a schema's own messages state only the predicate. Parse with
+ * `{ reportInput: true }`: Zod 4 omits `input` from an issue otherwise, and a
+ * wrong type would then read as a missing field.
+ */
 export const formatZodIssues = (
   issues: ReadonlyArray<core.$ZodIssue>,
   basePath = ''

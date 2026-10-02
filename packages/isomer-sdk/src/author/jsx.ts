@@ -21,7 +21,7 @@ export const authorType = Symbol.for('elastic.isomer.author_type');
 export interface AuthorComponent<TProps, TType extends string> {
   (props: TProps): null;
   readonly [authorType]: TType;
-  /** Set to `type` by {@link defineAuthorComponent}; a pack does not need to supply it. */
+  /** Set to `type` by the shim. */
   displayName?: string;
 }
 

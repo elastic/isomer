@@ -12,46 +12,40 @@ export const example: SlideTerritoryGroupNode = {
   type: 'slideTerritoryGroup',
   items: [
     {
-      title: 'Host territory',
-      body: 'Query, auth, action handlers, telemetry.',
-      tone: 'pink',
+      title: 'Payments team',
+      body: 'Card capture, fraud checks, and **the ledger write**.',
+      tone: 'primary',
     },
     {
-      title: 'Pack territory',
-      body: 'Schema, primitives, renderers, validation.',
-      tone: 'primary',
+      title: 'Card network',
+      body: 'Authorization, chargebacks, and settlement timing.',
+      tone: 'accent',
     },
   ],
 };
 
-/** The remaining tones, plus an item that takes the default. */
-export const tonesExample: SlideTerritoryGroupNode = {
+/** Four owners, the most a row holds, one with no tone. */
+export const fullExample: SlideTerritoryGroupNode = {
   type: 'slideTerritoryGroup',
   items: [
+    { title: 'Storefront', body: 'Catalog, search, and the cart.' },
     {
-      title: 'Stable',
-      body: 'Composition contract and wire names.',
-      tone: 'teal',
+      title: 'Fulfillment',
+      body: 'Picking, packing, and handoff.',
+      tone: 'primary',
     },
     {
-      title: 'Ready',
-      body: 'Every surface renders every example.',
-      tone: 'success',
+      title: 'Couriers',
+      body: 'The drive and proof of delivery.',
+      tone: 'accent',
     },
     {
-      title: 'Watch',
-      body: 'Snapshots change with a font bump.',
-      tone: 'warning',
+      title: 'Stores',
+      body: 'Stock counts and substitutions.',
+      tone: 'accent',
     },
-    { title: 'Blocked', body: 'A frame that nests a frame.', tone: 'danger' },
-    {
-      title: 'Deferred',
-      body: 'Sequencing belongs to the host.',
-      tone: 'subtle',
-    },
-    { title: 'Default', body: 'No tone falls back to primary.' },
   ],
 };
 
 /** Conformance examples for {@link SlideTerritoryGroupNode}. */
-export const examples: SlideTerritoryGroupNode[] = [example, tonesExample];
+export const examples: SlideTerritoryGroupNode[] = [example, fullExample];

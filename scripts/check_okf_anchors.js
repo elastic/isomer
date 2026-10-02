@@ -13,7 +13,7 @@ import { repoRoot as root } from './workspace_packages.js';
 const bundle = '.okf/isomer';
 
 const LOCAL_PATH =
-  /`((?:packages|docs|scripts|\.github|\.okf)\/[^`\s]*|(?:AGENTS|README|CONTRIBUTING|LICENSE|NOTICE|THIRD_PARTY_LICENSES)\.md|LICENSE\.txt|NOTICE\.txt|package\.json)`/g;
+  /`((?:packages|examples|docs|scripts|\.github|\.okf)\/[^`\s]*|(?:AGENTS|README|CONTRIBUTING|LICENSE|NOTICE|THIRD_PARTY_LICENSES)\.md|LICENSE\.txt|NOTICE\.txt|package\.json)`/g;
 const RESOURCE = /^\s*(?:-\s+)?resource:\s+(\S+)\s*$/gm;
 const GITHUB_RESOURCE =
   /^https:\/\/github\.com\/elastic\/isomer\/blob\/main\/(.+)$/;
@@ -30,7 +30,9 @@ const cleanPath = (path) =>
  * @param {string} resource
  */
 const localResourcePath = (resource) => {
-  if (/^(?:packages|docs|scripts|\.github|\.okf)\/.+$/.test(resource)) {
+  if (
+    /^(?:packages|examples|docs|scripts|\.github|\.okf)\/.+$/.test(resource)
+  ) {
     return cleanPath(resource);
   }
 

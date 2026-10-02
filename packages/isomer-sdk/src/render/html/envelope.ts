@@ -7,6 +7,11 @@
 
 import { createElement, Fragment, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import {
+  type Comment as JavaScriptComment,
+  type Node as JavaScriptNode,
+  parse,
+} from 'acorn';
 
 import {
   type ChildNodeWalker,
@@ -25,14 +30,18 @@ import type {
 } from '../../define/primitive_module';
 import {
   EMBEDDED_SCRIPT_ATTRIBUTE,
+  resolveEnhancements,
   scopeScript,
 } from '../../pack/enhancements';
 import {
+  type CheckedValidationResult,
+  compositionToRender,
   createCompositionValidator,
   enforceValidationMode,
   type ValidationErrorMode,
-  type ValidationResult,
 } from '../../validate/validation';
+import { withAnchors } from '../anchors';
+import { contextWith } from '../context_view';
 import { byteLength, type PayloadMeasurement } from '../payload';
 import {
   type ReactContentDispatcher,
@@ -40,7 +49,11 @@ import {
   wrapCompositionContent,
 } from '../react/content';
 
-import { embedScript, type EnhancementDefinition } from './enhancements';
+import {
+  embedScript,
+  type EnhancementDefinition,
+  enhancementScript,
+} from './enhancements';
 
 /** Knobs for the HTML surface. Every field defaults, so `{}` is valid. */
 export interface HTMLRenderOptions {
@@ -74,8 +87,14 @@ export interface HTMLRenderOptions {
   onValidationError?: ValidationErrorMode;
   /** Opt-in by {@link EnhancementDefinition.id}. One whose content gate does not match the body is dropped. */
   enhancements?: readonly string[];
-  /** Opaque to the sdk; forwarded to {@link HTMLStyleAdapter} with the rest of the options. */
-  adapterOptions?: Record<string, unknown>;
+  /** `true` renders node anchors whether or not an enhancement asks for them, e.g. for tests. `false` cannot turn off anchors an enhancement needs. */
+  anchors?: boolean;
+  /**
+   * Resolves `light-dark(…)` in the stylesheet to one scheme's value. A browser
+   * resolves it itself; an image is one static frame, so the `svg` surface sets
+   * it.
+   */
+  scheme?: 'light' | 'dark';
 }
 
 /**
@@ -184,8 +203,9 @@ export interface HTMLStyleAdapter<
   /**
    * Builds the render context handed to every `react` renderer. Called once
    * per pass, so an adapter that behaves differently while collecting returns
-   * a different context then. Must be complete: the sdk does not fill fields
-   * in, because `TContext` is the pack's own type.
+   * a different context then. Must be complete, because `TContext` is the
+   * pack's own type. The sdk never writes to it: whether renderers anchor
+   * is the surface's decision, whatever the context's `anchors` says.
    */
   createRenderContext(
     collector: TCollector,
@@ -221,8 +241,10 @@ export interface HTMLDispatcherRenderOptions<
   TContext = StyledRenderContext,
 > {
   dispatcher: HTMLRenderDispatcher<TNode, TCollector, TContext>;
-  /** Runs once before rendering; {@link HTMLRenderOptions.onValidationError} decides what becomes of its errors. Defaults to `createCompositionValidator(dispatcher.definitions)`. */
-  validate?: (composition: Composition<TNode>) => ValidationResult;
+  /** Runs once before rendering, which draws the composition it returns; {@link HTMLRenderOptions.onValidationError} decides what becomes of its errors. Defaults to `createCompositionValidator(dispatcher.definitions)`. */
+  validate?: (
+    composition: Composition<TNode>
+  ) => CheckedValidationResult<TNode>;
   options?: HTMLRenderOptions;
   /** Used only when the composition has neither `meta.ariaLabel` nor a `title`. Defaults to `'View'`. */
   defaultAriaLabel?: string;
@@ -235,8 +257,9 @@ export interface HTMLDispatcherRenderOptions<
   scriptText?: string;
   /**
    * Progressive enhancements declared by the packs this render was composed
-   * from. The adapter content-gates them against the body via
-   * {@link HTMLEnhancementScope.walk}.
+   * from. The render resolves {@link HTMLRenderOptions.enhancements} against
+   * them once, hands every renderer the set as `context.enhancements`, and
+   * emits each resolved one's script.
    */
   enhancementDefinitions?: readonly EnhancementDefinition[];
 }
@@ -254,10 +277,10 @@ export const renderHTMLWithDispatcher = <
   TCollector extends PrimitiveStyleCollector = PrimitiveStyleCollector,
   TContext = StyledRenderContext,
 >(
-  composition: Composition<TNode>,
+  input: Composition<TNode>,
   {
     dispatcher,
-    validate = createCompositionValidator(dispatcher.definitions),
+    validate = createCompositionValidator<TNode>(dispatcher.definitions),
     options: rawOptions = {},
     defaultAriaLabel = 'View',
     styleAdapter,
@@ -265,11 +288,12 @@ export const renderHTMLWithDispatcher = <
     enhancementDefinitions = [],
   }: HTMLDispatcherRenderOptions<TNode, TCollector, TContext>
 ): HTMLRenderResult => {
+  const validation = validate(input);
+  const composition = compositionToRender(validation);
   // Resolved before the validation mode is read, so an adapter can derive
   // `onValidationError`.
   const options =
     styleAdapter?.resolveOptions?.(composition, rawOptions) ?? rawOptions;
-  const validation = validate(composition);
   enforceValidationMode(validation, options.onValidationError);
   const framed = options.framed ?? true;
   const heading = options.heading ?? true;
@@ -281,6 +305,19 @@ export const renderHTMLWithDispatcher = <
     walk: createChildNodeWalker(dispatcher.definitions),
     definitions: enhancementDefinitions,
   };
+  const applied = resolveEnhancements(
+    composition.body,
+    enhancementScope.walk,
+    enhancementDefinitions,
+    options.enhancements ?? []
+  );
+  const enhancements: ReadonlySet<string> = new Set(
+    applied.map(({ id }) => id)
+  );
+  const anchors =
+    options.anchors === true || applied.some(({ anchors }) => anchors);
+  const enhanced = (context: TContext): TContext =>
+    contextWith(context, 'enhancements', enhancements);
 
   if (styleState) {
     styleAdapter?.collectWrapperStyles?.(styleState, options);
@@ -292,59 +329,71 @@ export const renderHTMLWithDispatcher = <
       options,
       enhancementScope
     );
-    const collectionContext = styleAdapter?.createRenderContext(
-      styleState,
-      options
-    ) as TContext;
-    renderToStaticMarkup(
-      createElement(() =>
-        renderCompositionContent(composition, dispatcher, collectionContext, {
-          heading,
-        })
+    const collectionContext = enhanced(
+      styleAdapter?.createRenderContext(styleState, options) as TContext
+    );
+    withAnchors(anchors, () =>
+      renderToStaticMarkup(
+        createElement(() =>
+          renderCompositionContent(composition, dispatcher, collectionContext, {
+            heading,
+          })
+        )
       )
     );
     styleAdapter?.collectAfterRender?.(composition, styleState, options);
   }
 
-  const renderContext: TContext =
+  const renderContext = enhanced(
     styleState && styleAdapter
       ? styleAdapter.createRenderContext(styleState, options)
       : // No adapter means no class names and no css vars to resolve.
-        ({} as TContext);
+        ({} as TContext)
+  );
   const cssText =
     styleState && styleAdapter
       ? styleAdapter.renderStyles(styleState, options)
       : '';
   const adapterScriptText =
     styleAdapter?.getScriptText?.(composition, options, enhancementScope) ?? '';
-  const js = [scriptText, adapterScriptText]
+  const js = [
+    ...[scriptText, adapterScriptText].filter(Boolean).map(scopeScript),
+    enhancementScript(applied),
+  ]
     .filter(Boolean)
-    .map(scopeScript)
     .join('\n');
   const embeddedScript =
     js && scriptsMode === 'embedded' ? embedScript(js) : '';
-  const body = renderToStaticMarkup(
-    createElement(() =>
-      renderCompositionContent(composition, dispatcher, renderContext, {
-        heading,
-      })
+  const body = withAnchors(anchors, () =>
+    renderToStaticMarkup(
+      createElement(() =>
+        renderCompositionContent(composition, dispatcher, renderContext, {
+          heading,
+        })
+      )
     )
   );
+  const inlineCss = cssMode === 'inline' ? embedCss(cssText) : '';
+  const inlineJs = embeddedScript ? embedJs(embeddedScript) : '';
   const raw = renderToStaticMarkup(
     createElement(RenderedHtmlView<TNode>, {
       composition,
       theme,
       fluid: Boolean(options.fluid),
       framed,
-      styleText: cssMode === 'inline' ? cssText : undefined,
-      scriptText: embeddedScript || undefined,
+      styleText: inlineCss || undefined,
+      scriptText: inlineJs || undefined,
       defaultAriaLabel,
       body,
     })
   );
   const html = options.minify === false ? raw : minifyHtml(raw);
 
-  const jsBytes = byteLength(embeddedScript || js);
+  // Inline payloads are measured as emitted, escapes included.
+  const inlineCssBytes = byteLength(inlineCss);
+  const inlineJsBytes = byteLength(inlineJs);
+  const separateCssBytes = cssMode === 'inline' ? 0 : byteLength(cssText);
+  const separateJsBytes = embeddedScript ? 0 : byteLength(js);
 
   return {
     html,
@@ -352,16 +401,10 @@ export const renderHTMLWithDispatcher = <
     js,
     body,
     measurement: {
-      html:
-        byteLength(html) -
-        (cssMode === 'inline' ? byteLength(cssText) : 0) -
-        (embeddedScript ? jsBytes : 0),
-      css: byteLength(cssText),
-      js: jsBytes,
-      total:
-        byteLength(html) +
-        (cssMode === 'inline' ? 0 : byteLength(cssText)) +
-        (embeddedScript ? 0 : jsBytes),
+      html: byteLength(html) - inlineCssBytes - inlineJsBytes,
+      css: inlineCssBytes + separateCssBytes,
+      js: inlineJsBytes + separateJsBytes,
+      total: byteLength(html) + separateCssBytes + separateJsBytes,
     },
     validationErrors: validation.errors,
   };
@@ -377,6 +420,112 @@ interface RenderedHtmlViewProps<TNode extends PrimitiveNode> {
   defaultAriaLabel: string;
   body: string;
 }
+
+// Only `</style` ends a `<style>`. `\/` is a CSS escape for `/`, so a string
+// holding it keeps its value.
+const embedCss = (css: string): string => css.replace(/<\/(?=style)/gi, '<\\/');
+
+interface ScriptNode extends JavaScriptNode {
+  tag: ScriptNode;
+  quasi: ScriptNode;
+  quasis: ScriptNode[];
+  expressions: ScriptNode[];
+  value: { raw: string; cooked: string | null };
+  name?: string;
+}
+
+// Tagged templates observe raw spelling and reuse the same frozen object per site.
+const embedJs = (js: string): string => {
+  if (!/<\/script|<!--/i.test(js)) return js;
+  const comments: JavaScriptComment[] = [];
+  const tree = parse(js, { ecmaVersion: 'latest', onComment: comments });
+  const sites: ScriptNode[] = [];
+  const identifiers = new Set<string>();
+  const pending: JavaScriptNode[] = [tree];
+  while (pending.length) {
+    const node = pending.pop()! as ScriptNode;
+    if (node.type === 'Identifier' && node.name) identifiers.add(node.name);
+    if (
+      node.type === 'TaggedTemplateExpression' &&
+      node.quasi.quasis.some(({ value: { raw } }) =>
+        /<\/script|<!--/i.test(raw)
+      )
+    )
+      sites.push(node);
+    for (const value of Object.values(node)) {
+      for (const child of Array.isArray(value) ? value : [value]) {
+        if (
+          child &&
+          typeof child === 'object' &&
+          'type' in child &&
+          'start' in child
+        ) {
+          pending.push(child as JavaScriptNode);
+        }
+      }
+    }
+  }
+  sites.sort((a, b) => a.start - b.start);
+  let prefix = '__isomerTemplate';
+  while ([...identifiers].some((name) => name.startsWith(prefix)))
+    prefix += '_';
+  const literal = (value: string | null): string =>
+    value === null ? 'void 0' : JSON.stringify(value).replace(/</g, '\\u003c');
+  const rewrite = (start: number, end: number): string => {
+    let cursor = start;
+    let result = '';
+    const edits = [
+      ...sites.map((site, index) => ({
+        ...site,
+        index,
+        comment: undefined as string | undefined,
+      })),
+      ...comments
+        .filter(({ start }) => /^(?:<!--|-->)/.test(js.slice(start, start + 4)))
+        .map((comment) => ({ ...comment, index: -1, comment: comment.value })),
+    ].sort((a, b) => a.start - b.start);
+    for (const edit of edits) {
+      if (edit.start < cursor || edit.end > end) continue;
+      result += js.slice(cursor, edit.start);
+      if (edit.comment !== undefined) {
+        result += `//${edit.comment}`;
+      } else {
+        const site = sites[edit.index]!;
+        const {
+          tag,
+          quasi: { quasis, expressions },
+        } = site;
+        const cooked = quasis
+          .map(({ value }) => literal(value.cooked))
+          .join(',');
+        const raw = quasis.map(({ value }) => literal(value.raw)).join(',');
+        const cache = `${prefix}${edit.index}`;
+        const template = `${cache} ??= ${prefix}Freeze(${prefix}Define([${cooked}], 'raw', {value:${prefix}Freeze([${raw}])}))`;
+        const args = expressions.map((expression) =>
+          rewrite(expression.start, expression.end)
+        );
+        result += `(${rewrite(tag.start, tag.end)})(${template}${args.map((arg) => `,(${arg})`).join('')})`;
+      }
+      cursor = edit.end;
+    }
+    return result + js.slice(cursor, end);
+  };
+  const rewritten = rewrite(0, js.length);
+  const scoped = sites.length
+    ? `(function(){const ${prefix}Freeze=Object.freeze,${prefix}Define=Object.defineProperty;let ${sites.map((_site, index) => `${prefix}${index}`).join(',')};\n${rewritten}\n})();`
+    : rewritten;
+  return scoped
+    .replace(/<\/(?=script)/gi, '<\\/')
+    .replace(/<!--/g, (_match, at: number, source: string) =>
+      escapedBy(source, at) ? 'x3C!--' : '\\x3C!--'
+    );
+};
+
+const escapedBy = (source: string, at: number): boolean => {
+  let slashes = 0;
+  while (source[at - slashes - 1] === '\\') slashes += 1;
+  return slashes % 2 === 1;
+};
 
 const RenderedHtmlView = <TNode extends PrimitiveNode>({
   composition,
@@ -414,23 +563,16 @@ const RenderedHtmlView = <TNode extends PrimitiveNode>({
     { framed, fluid, theme, defaultAriaLabel }
   );
 
-// `<pre>` content is whitespace-significant, so those blocks are left untouched
-// and only the markup around them is collapsed.
-const PRE_BLOCK = /<pre[\s>][\s\S]*?<\/pre>/g;
+// Whitespace inside `pre`, `script`, `style`, and `textarea` is content, so
+// those elements match whole and pass through. Elsewhere only whitespace
+// spanning a line break is collapsed: a single space between inline elements
+// (`<b>a</b> <i>b</i>`) is authored content.
+const MINIFY_RE =
+  /<(pre|script|style|textarea)[\s>][\s\S]*?(?:<\/\1\s*>|$)|(?<=>)\s+(?=<)/gi;
 
-// Only whitespace spanning a line break is collapsed: a single space between
-// inline elements (`<b>a</b> <i>b</i>`) is authored content.
-const TAG_GAP_WITH_NEWLINE = />\s*\n\s*</g;
-
-const minifyHtml = (value: string): string => {
-  let result = '';
-  let cursor = 0;
-  for (const match of value.matchAll(PRE_BLOCK)) {
-    const start = match.index;
-    result += value.slice(cursor, start).replace(TAG_GAP_WITH_NEWLINE, '><');
-    result += match[0];
-    cursor = start + match[0].length;
-  }
-  result += value.slice(cursor).replace(TAG_GAP_WITH_NEWLINE, '><');
-  return result.trim();
-};
+const minifyHtml = (value: string): string =>
+  value
+    .replace(MINIFY_RE, (match, element: string | undefined) =>
+      element || !match.includes('\n') ? match : ''
+    )
+    .trim();

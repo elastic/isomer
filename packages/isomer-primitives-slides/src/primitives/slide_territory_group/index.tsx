@@ -5,6 +5,24 @@
  * 2.0.
  */
 
+import { md } from '@elastic/isomer-sdk/markdown';
+import { bold, type SlackBlock } from '@elastic/isomer-sdk/slack';
+
+import {
+  richTextBreak,
+  richTextSection,
+  slackFields,
+  slackRichText,
+} from '../../render';
+import {
+  marksMarkdown,
+  marksRichText,
+  marksSlack,
+  plainText,
+  richTextRun,
+} from '../../render/marks';
+import { oneLine } from '../../render/one_line';
+import { toneCueText } from '../../render/tone_cue';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
@@ -14,11 +32,41 @@ import { schema, type SlideTerritoryGroupNode } from './schema';
 
 export type { SlideTerritory, SlideTerritoryGroupNode } from './schema';
 
-const text = (node: SlideTerritoryGroupNode) =>
-  node.items.map((item) => `${item.title}: ${item.body}`).join('\n');
+export const text = ({ items }: SlideTerritoryGroupNode): string =>
+  items
+    .map(
+      ({ title, body, tone }) =>
+        `${toneCueText(tone)}${oneLine(title)}: ${plainText(body)}`
+    )
+    .join('\n');
 
-const markdown = (node: SlideTerritoryGroupNode) =>
-  node.items.map((item) => `### ${item.title}\n\n${item.body}`).join('\n\n');
+export const markdown = ({ items }: SlideTerritoryGroupNode) =>
+  items.flatMap(({ title, body, tone }) => [
+    md.heading(2, `${toneCueText(tone)}${title}`),
+    md.paragraph(...marksMarkdown(body)),
+  ]);
+
+export const slack = ({ items }: SlideTerritoryGroupNode): SlackBlock[] => [
+  slackFields(
+    items.map(
+      ({ title, body, tone }) =>
+        `${toneCueText(tone)}${bold(oneLine(title))}\n${oneLine(marksSlack(body))}`
+    ),
+    () =>
+      slackRichText(
+        ...items.map(({ title, body, tone }, index) =>
+          richTextSection(
+            ...(tone ? [richTextRun(toneCueText(tone))] : []),
+            richTextRun(title, { bold: true }),
+            richTextBreak,
+            ...marksRichText(body),
+            ...(index < items.length - 1 ? [richTextBreak] : [])
+          )
+        )
+      ),
+    items.flatMap(({ title, body }) => [title, { marks: body }])
+  ),
+];
 
 /** Catalog, schema, and renderers for {@link SlideTerritoryGroupNode}. */
 export const slideTerritoryGroupPrimitive = definePrimitive({
@@ -30,5 +78,6 @@ export const slideTerritoryGroupPrimitive = definePrimitive({
     react,
     text,
     markdown,
+    slack,
   },
 });

@@ -9,9 +9,7 @@ export {
   type CompositionWrapperOptions,
   type ReactContentDispatcher,
   type ReactContentOptions,
-  type ReactTreeDispatcher,
-  PrimitiveDispatcherContext,
   renderCompositionContent,
-  useReactPrimitiveDispatcher,
   wrapCompositionContent,
 } from './content';
+export { applyEnhancements } from './enhancements';

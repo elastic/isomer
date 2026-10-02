@@ -11,12 +11,12 @@ export {
   type HostCapabilities,
   type IsomerRuntime,
   type IsomerRuntimeOptions,
+  type PrimitiveDescriptions,
   type RuntimeAuthoringContext,
   type RuntimeRendererOverrides,
   type RuntimeSurfaces,
   createIsomerRuntime,
 } from './assemble';
-export type { RuntimePackTypes } from './pack_types';
 export {
   type DefineViewOptions,
   type JsonSchema,
@@ -37,6 +37,7 @@ export type {
   HtmlSurface,
 } from './surfaces/html';
 export type {
+  MarkdownRenderNodeOptions,
   MarkdownRenderOptions,
   MarkdownSurface,
 } from './surfaces/markdown';
@@ -53,14 +54,20 @@ export type {
   SlackSurface,
 } from './surfaces/slack';
 export type {
+  SvgPagesResult,
   SvgRenderNodeOptions,
   SvgRenderOptions,
   SvgRenderResult,
   SvgSurface,
 } from './surfaces/svg';
-export type { TextRenderOptions, TextSurface } from './surfaces/text';
+export type {
+  TextRenderNodeOptions,
+  TextRenderOptions,
+  TextSurface,
+} from './surfaces/text';
 export {
   type IsomerErrorCode,
   ISOMER_ERROR_CODES,
+  CompositionValidationError,
   IsomerError,
 } from '@elastic/isomer-sdk';

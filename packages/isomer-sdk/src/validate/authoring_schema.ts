@@ -47,6 +47,9 @@ const isJsonObject = (value: unknown): value is Record<string, unknown> =>
 
 const cloneJson = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
+const ownDef = (defs: Record<string, unknown>, id: string): unknown =>
+  Object.hasOwn(defs, id) ? defs[id] : undefined;
+
 const parseDefRef = (ref: unknown): string | undefined => {
   if (typeof ref !== 'string' || !ref.startsWith(DEF_PREFIX)) {
     return undefined;
@@ -83,11 +86,12 @@ const mapJson = (
   if (!isJsonObject(node)) {
     return node;
   }
-  const next: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(visit(node))) {
-    next[key] = mapJson(value, visit);
-  }
-  return next;
+  return Object.fromEntries(
+    Object.entries(visit(node)).map(([key, value]) => [
+      key,
+      mapJson(value, visit),
+    ])
+  );
 };
 
 const rewriteDefRefs = (
@@ -126,11 +130,8 @@ const isBareScalarDef = (def: unknown): def is Record<string, unknown> => {
   if (typeof type !== 'string' || !SCALAR_TYPES.has(type)) {
     return false;
   }
-  return !(
-    'enum' in def ||
-    'const' in def ||
-    '$ref' in def ||
-    'properties' in def
+  return !['enum', 'const', '$ref', 'properties'].some((key) =>
+    Object.hasOwn(def, key)
   );
 };
 
@@ -184,7 +185,7 @@ const omitListedProperties = (
     }
     const defId = path.slice(0, dot);
     const property = path.slice(dot + 1);
-    const def = defs[defId];
+    const def = ownDef(defs, defId);
     if (!isJsonObject(def) || !isJsonObject(def.properties)) {
       continue;
     }
@@ -201,7 +202,7 @@ const applyDescriptions = (
 ): void => {
   const defs = defsOf(schema);
   for (const [id, description] of Object.entries(describe)) {
-    const def = defs[id];
+    const def = ownDef(defs, id);
     if (isJsonObject(def)) {
       def.description = description;
     }
@@ -276,7 +277,7 @@ const pruneUnreferencedDefs = (schema: JsonSchema): JsonSchema => {
         return;
       }
       referenced.add(id);
-      visit(defs[id]);
+      visit(ownDef(defs, id));
     });
   };
   const root: JsonSchema = { ...schema };
@@ -284,13 +285,12 @@ const pruneUnreferencedDefs = (schema: JsonSchema): JsonSchema => {
   visit(root);
   referenced.add(BODY_NODE_ID);
   visit(defs[BODY_NODE_ID]);
-  const kept: Record<string, unknown> = {};
-  for (const [id, def] of Object.entries(defs)) {
-    if (referenced.has(id)) {
-      kept[id] = def;
-    }
-  }
-  return withDefs(schema, kept);
+  return withDefs(
+    schema,
+    Object.fromEntries(
+      Object.entries(defs).filter(([id]) => referenced.has(id))
+    )
+  );
 };
 
 const mergeExtraDefs = (
@@ -344,4 +344,43 @@ export const buildAuthoringJsonSchema = (
     ...(describe === undefined ? {} : { describe }),
     ...(omitProperties === undefined ? {} : { omitProperties }),
   });
+};
+
+const BODY_NODE_STUB = {
+  description:
+    'Any primitive in the catalog, as its own object with its `type`.',
+};
+
+/**
+ * The `$defs` that `types` reach in a schema from {@link buildAuthoringJsonSchema},
+ * keyed as `schema` keys them, with the body-node union stubbed so a container
+ * does not pull in every primitive.
+ */
+export const authoringSchemaSubset = (
+  schema: JsonSchema,
+  types: readonly string[]
+): { $defs: Record<string, unknown> } => {
+  const defs = defsOf(schema);
+  // A `Map`, so an id such as `constructor` is never an inherited key.
+  const kept = new Map<string, unknown>();
+  const visit = (id: string): void => {
+    if (kept.has(id) || !Object.hasOwn(defs, id)) {
+      return;
+    }
+    if (id === BODY_NODE_ID) {
+      kept.set(id, BODY_NODE_STUB);
+      return;
+    }
+    kept.set(id, defs[id]);
+    walkJson(defs[id], (value) => {
+      const ref = parseDefRef(value.$ref);
+      if (ref !== undefined) {
+        visit(ref);
+      }
+    });
+  };
+  for (const type of types) {
+    visit(type);
+  }
+  return { $defs: Object.fromEntries(kept) };
 };

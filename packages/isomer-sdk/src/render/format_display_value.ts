@@ -45,7 +45,9 @@ export const formatDisplayValue = (
   const { raw, format, precision, currency } = value;
   switch (format) {
     case 'compact':
-      return typeof raw === 'number' ? formatCompactNumber(raw) : String(raw);
+      return typeof raw === 'number'
+        ? formatCompactNumber(raw, '', precision)
+        : String(raw);
     case 'percent':
       return typeof raw === 'number'
         ? intlNumber(raw, precision, { style: 'percent' })

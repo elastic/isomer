@@ -6,12 +6,12 @@
  */
 
 import type {
+  CheckedValidationResult,
   Composition,
   PrimitiveNode,
   ValidationErrorMode,
-  ValidationResult,
 } from '@elastic/isomer-sdk';
-import { enforceValidationMode } from '@elastic/isomer-sdk';
+import { compositionToRender } from '@elastic/isomer-sdk';
 import {
   renderSlackEnvelope,
   type SlackEnvelopeDispatcher,
@@ -19,23 +19,22 @@ import {
   type SlackEnvelopeResult,
 } from '@elastic/isomer-sdk/slack';
 
+import { checkNode } from './check_node';
+
 /** {@link SlackEnvelopeOptions} plus the surface's validation posture. */
 export interface SlackRenderOptions extends SlackEnvelopeOptions {
   /** Defaults to `'throw'`: a payload about to be posted carries no findings. `'collect'` renders anyway. */
   onValidationError?: ValidationErrorMode;
 }
 
-/** Options for {@link SlackSurface.renderNode}: {@link SlackRenderOptions} without validation, which a lone node skips. */
-export type SlackRenderNodeOptions = Omit<
-  SlackRenderOptions,
-  'onValidationError'
->;
+/** Options for {@link SlackSurface.renderNode}: {@link SlackRenderOptions} without a heading, which a lone node lacks. */
+export type SlackRenderNodeOptions = Omit<SlackRenderOptions, 'heading'>;
 
 export type SlackRenderResult = SlackEnvelopeResult;
 
 /** Renders a composition or node to Slack Block Kit blocks. */
 export interface SlackSurface {
-  /** Always `true`: this surface validates the composition before rendering. */
+  /** Always `true`: this surface validates the composition and renders the copy it checked, never the caller's value. */
   readonly validating: true;
   /** Renders a full composition to a Slack message (blocks, fallback text, assets). */
   render(
@@ -56,16 +55,21 @@ export interface SlackSurface {
 /** Creates the `slack` {@link RuntimeSurfaces} entry. */
 export const createSlackSurface = (
   dispatcher: SlackEnvelopeDispatcher<PrimitiveNode>,
-  validate: (composition: Composition) => ValidationResult
+  validate: (composition: Composition) => CheckedValidationResult
 ): SlackSurface => ({
   validating: true,
   render: (composition, options = {}) => {
-    enforceValidationMode(
+    const checked = compositionToRender(
       validate(composition),
       options.onValidationError ?? 'throw'
     );
-    return renderSlackEnvelope(composition, dispatcher, options);
+    return renderSlackEnvelope(checked, dispatcher, options);
   },
   renderNode: (node, options = {}) =>
-    renderSlackEnvelope({ type: 'view', body: [node] }, dispatcher, options),
+    renderSlackEnvelope(
+      checkNode(validate, node, options.onValidationError ?? 'throw')
+        .composition,
+      dispatcher,
+      options
+    ),
 });

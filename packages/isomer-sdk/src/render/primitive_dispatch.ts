@@ -7,9 +7,13 @@
 
 import { cloneElement, isValidElement, type ReactNode } from 'react';
 
-import { isVisibleOnSurface } from '../composition/body_node_base';
+import {
+  isVisibleOnSurface,
+  type SurfaceName,
+} from '../composition/body_node_base';
 import { IsomerError } from '../composition/error';
 import type { ValidationError } from '../composition/validation_error';
+import type { MarkdownContent } from '../define/markdown_content';
 import {
   type AnyPrimitiveDefinition,
   type DefaultPackTypes,
@@ -20,13 +24,14 @@ import {
   type Renderer,
   type RenderScope,
   type SurfaceMap,
-  type SurfaceName,
-  validateWithSchema,
 } from '../define/primitive_module';
+import { createNodeIssueFormatter } from '../validate/node_issues';
 
+import { markdownFromString, serializeMarkdown } from './markdown/builder';
 import type { SlackAssetCollector } from './slack/assets';
 import type { SlackBlock, SlackImageBlock } from './slack/blocks';
 import { gfmToSlackBlocks } from './slack/format';
+import { markdownContentToSlackBlocks } from './slack/markdown_content';
 
 /**
  * Renders a node on any surface by looking its `type` up in one flattened
@@ -73,7 +78,10 @@ export interface PrimitiveDispatcher<
     key: string
   ): ReactNode;
   renderText(node: TNode): string;
+  /** Builder content is serialized per node. */
   renderMarkdown(node: TNode): string;
+  /** A string result comes back as content printed as written. */
+  renderMarkdownContent(node: TNode): MarkdownContent;
   /**
    * Empty only when the node is hidden from `slack` or `sanitize` drops it. A
    * node with no `slack` renderer degrades through its markdown.
@@ -84,7 +92,10 @@ export interface PrimitiveDispatcher<
   ): readonly T['slackBlock'][];
   /** `0` when the node is hidden from `svg` or its primitive declares no `metrics.svgHeight`. */
   estimateSvgHeight(node: TNode): number;
-  /** Appends schema failures under `path` to `errors`. */
+  /**
+   * Appends schema failures under `path` to `errors`, each naming `node`'s
+   * type, and an unknown key on `node` listing the fields it declares.
+   */
   validate(node: TNode, path: string, errors: ValidationError[]): void;
 }
 
@@ -133,6 +144,7 @@ export const createPrimitiveDispatcher = <
   options: PrimitiveDispatcherOptions = {}
 ): PrimitiveDispatcher<TNode, T> => {
   const { isSlackAssetType } = options;
+  const formatIssues = createNodeIssueFormatter(definitions);
   const byType = new Map<string, AnyPrimitiveDefinition>();
   for (const definition of definitions) {
     const existing = byType.get(definition.type);
@@ -181,19 +193,37 @@ export const createPrimitiveDispatcher = <
       return undefined;
     }
     const definition = getDefinition(node);
-    const renderer = definition.renderers[RENDERER_FOR_SURFACE[surface]] as
-      Renderer<TNode, S, T> | undefined;
-    if (!renderer) {
-      return undefined;
-    }
     const safeNode = sanitizeNode(definition, node);
     return safeNode === null
       ? undefined
-      : renderer(safeNode, { ...extras, scope: scope() });
+      : renderSanitized(surface, definition, safeNode, extras);
   };
 
-  const renderMarkdown = (node: TNode): string =>
-    renderOn('markdown', node, {}) ?? '';
+  // `renderOn` for a node its sanitizer has already run on.
+  const renderSanitized = <S extends SurfaceName>(
+    surface: S,
+    definition: AnyPrimitiveDefinition,
+    safeNode: TNode,
+    extras: Omit<SurfaceMap<T>[S]['env'], 'scope'>
+  ): SurfaceMap<T>[S]['output'] | undefined => {
+    const renderer = definition.renderers[RENDERER_FOR_SURFACE[surface]] as
+      Renderer<TNode, S, T> | undefined;
+    return renderer?.(safeNode, { ...extras, scope: scope() });
+  };
+
+  const renderMarkdown = (node: TNode): string => {
+    const rendered = renderOn('markdown', node, {}) ?? '';
+    return typeof rendered === 'string'
+      ? rendered
+      : serializeMarkdown(rendered);
+  };
+
+  const renderMarkdownContent = (node: TNode): MarkdownContent => {
+    const rendered = renderOn('markdown', node, {}) ?? '';
+    return typeof rendered === 'string'
+      ? markdownFromString(rendered)
+      : rendered;
+  };
 
   self = {
     definitions,
@@ -229,14 +259,23 @@ export const createPrimitiveDispatcher = <
     },
     renderText: (node) => renderOn('text', node, {}) ?? '',
     renderMarkdown,
+    renderMarkdownContent,
     renderSlack: (node, collector) => {
       if (!isVisibleOnSurface(node, 'slack')) {
         return [];
       }
       const assets = isSlackAssetCollector(collector) ? collector : undefined;
       if (assets && isSlackAssetType?.(node.type)) {
-        const altText = renderOn('text', node, {}) ?? node.type;
-        const ref = assets.allocate(node, altText);
+        const definition = getDefinition(node);
+        const safeNode = sanitizeNode(definition, node);
+        if (safeNode === null) {
+          return [];
+        }
+        const altText =
+          (isVisibleOnSurface(safeNode, 'text') &&
+            renderSanitized('text', definition, safeNode, {})) ||
+          node.type;
+        const ref = assets.allocate(safeNode, altText);
         const block = {
           type: 'image',
           alt_text: altText,
@@ -251,8 +290,11 @@ export const createPrimitiveDispatcher = <
         // Degrading here rather than in the envelope is what reaches nested
         // children: a container's `slack` renderer recurses through this
         // method, and the envelope only ever sees the container's own output.
+        const markdown = renderOn('markdown', node, {}) ?? '';
         return asSlackPayload<T['slackBlock']>(
-          gfmToSlackBlocks(renderMarkdown(node))
+          typeof markdown === 'string'
+            ? gfmToSlackBlocks(markdown)
+            : markdownContentToSlackBlocks(markdown)
         );
       }
       const safeNode = sanitizeNode(definition, node);
@@ -274,7 +316,12 @@ export const createPrimitiveDispatcher = <
       return svgHeight?.(node) ?? 0;
     },
     validate: (node, path, errors) => {
-      validateWithSchema(getDefinition(node).schema, node, path, errors);
+      const result = getDefinition(node).schema.safeParse(node, {
+        reportInput: true,
+      });
+      if (!result.success) {
+        errors.push(...formatIssues([[node, path]], result.error.issues, path));
+      }
     },
   };
   return self;

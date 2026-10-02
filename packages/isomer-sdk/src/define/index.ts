@@ -17,6 +17,12 @@ export {
   bindFrame,
 } from './frame';
 export {
+  type MarkdownBlock,
+  type MarkdownContent,
+  type MarkdownInline,
+  type MarkdownInlineInput,
+} from './markdown_content';
+export {
   type AnyPrimitiveDefinition,
   type DefaultPackTypes,
   type OptionalSurface,
@@ -37,8 +43,6 @@ export {
   type StyledRenderContext,
   type StyleHandle,
   type SurfaceMap,
-  type SurfaceName,
-  type SvgRenderThemeBase,
   type ThemeTokenPath,
   type WithNodeFields,
   bodyNodeIdSchema,
@@ -94,13 +98,5 @@ export {
   type SlackTextObject,
   type SlackVideoBlock,
 } from './slack_blocks';
-export { formatPath, formatZodIssue, formatZodIssues } from './zod_format';
-export {
-  enumOf,
-  finiteNumber,
-  nonNegativeFiniteNumber,
-  optionalString,
-  positiveFiniteNumber,
-  requiredString,
-  z,
-} from './zod_helpers';
+export { declaredFieldsNote, formatZodIssues } from './zod_format';
+export { requiredString, z } from './zod_helpers';

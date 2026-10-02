@@ -9,7 +9,7 @@ import { createElement } from 'react';
 import type { SvgRenderOptions } from '@elastic/isomer-runtime';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { createTakumiImageBackend } from './backend';
+import { createTakumiImageBackend, type TakumiImageBackend } from './backend';
 import type {
   PngRuntime,
   PngSvgOptions,
@@ -21,7 +21,7 @@ const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 
 /** Stands in for `IsomerRuntime`: validates by a simple rule, renders a fixed box. */
 const runtimeReturning = (validation: PngValidationResult): PngRuntime => ({
-  validate: () => validation,
+  validate: (composition) => ({ ...validation, composition }),
   surfaces: {
     svg: {
       render: (_composition, options) => {
@@ -40,6 +40,20 @@ const runtimeReturning = (validation: PngValidationResult): PngRuntime => ({
 describe('renderPng', () => {
   it('accepts the runtime svg surface options without importing them', () => {
     expectTypeOf<SvgRenderOptions>().toExtend<PngSvgOptions>();
+  });
+
+  it('takes a custom backend with only png and svg', async () => {
+    const takumi = createTakumiImageBackend();
+    const backend: TakumiImageBackend = {
+      png: (input, options) => takumi.png(input, options),
+      svg: (input) => takumi.svg(input),
+    };
+    const result = await renderPng(
+      runtimeReturning({ valid: true, errors: [] }),
+      { type: 'view' },
+      backend
+    );
+    expect(result.png.subarray(0, 4).equals(PNG_MAGIC)).toBe(true);
   });
 
   it('renders even an invalid composition and reports why', async () => {
@@ -73,10 +87,78 @@ describe('renderPng', () => {
     expect(result.validation).toEqual({ valid: true, errors: [] });
   });
 
+  it('draws the copy validation checked and reports the result without it', async () => {
+    const drawn: unknown[] = [];
+    const checked = { type: 'view', title: 'checked' };
+    const runtime: PngRuntime = {
+      validate: () => ({ valid: true, errors: [], composition: checked }),
+      surfaces: {
+        svg: {
+          render: (composition) => {
+            drawn.push(composition);
+            return {
+              element: createElement('div', null, 'Ag'),
+              css: '',
+              width: 64,
+              height: 32,
+            };
+          },
+        },
+      },
+    };
+
+    const result = await renderPng(
+      runtime,
+      { type: 'view', title: 'input' },
+      createTakumiImageBackend()
+    );
+
+    expect(drawn).toEqual([checked]);
+    expect(result.validation).toEqual({ valid: true, errors: [] });
+  });
+
+  it('throws rather than draw the input when the runtime returns no copy', async () => {
+    const drawn: unknown[] = [];
+    const runtimeWith = (validation: PngValidationResult): PngRuntime => ({
+      validate: () => ({ ...validation, composition: undefined }),
+      surfaces: {
+        svg: {
+          render: (composition) => {
+            drawn.push(composition);
+            return { element: null, css: '', width: 1, height: 1 };
+          },
+        },
+      },
+    });
+    const errors = [{ path: '', message: 'input nests deeper than 64 levels' }];
+
+    await expect(
+      renderPng(
+        runtimeWith({ valid: false, errors }),
+        { type: 'view' },
+        createTakumiImageBackend()
+      )
+    ).rejects.toMatchObject({
+      name: 'CompositionValidationError',
+      code: 'COMPOSITION_INVALID',
+      errors,
+    });
+    await expect(
+      renderPng(
+        runtimeWith({ valid: true, errors: [] }),
+        { type: 'view' },
+        createTakumiImageBackend()
+      )
+    ).rejects.toThrow(
+      'renderPng: runtime.validate returned no checked composition'
+    );
+    expect(drawn).toEqual([]);
+  });
+
   it('forwards svg and raster options to the render and the backend', async () => {
     let seenSvgOptions: unknown;
     const runtime: PngRuntime = {
-      validate: () => ({ valid: true, errors: [] }),
+      validate: (composition) => ({ valid: true, errors: [], composition }),
       surfaces: {
         svg: {
           render: (_composition, options) => {

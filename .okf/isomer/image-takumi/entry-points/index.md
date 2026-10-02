@@ -6,5 +6,5 @@ Directory: `image-takumi/entry-points/`
 
 | Title | Type | Description |
 |-------|------|-------------|
-| [Root](root.md) | Entry Point | @elastic/isomer-image-takumi createTakumiImageBackend. |
+| [Root](root.md) | Entry Point | @elastic/isomer-image-takumi createTakumiImageBackend, renderPng, and renderPdf. |
 

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { z, type ZodType } from 'zod';
 
 import type {
@@ -17,7 +17,10 @@ import {
   unresolvedBodyNodeSchema,
 } from '../define/primitive_module';
 
-import { buildAuthoringJsonSchema } from './authoring_schema';
+import {
+  authoringSchemaSubset,
+  buildAuthoringJsonSchema,
+} from './authoring_schema';
 import { resolveVocabulary } from './composition_schema';
 import { buildCompositionJsonSchema } from './json_schema';
 import { namedColorSchema } from './value_schemas';
@@ -127,21 +130,6 @@ describe('buildCompositionJsonSchema', () => {
     });
 
     expect(z.globalRegistry.get(member)).toBeUndefined();
-  });
-
-  it('names the composition even when definitions come from another inventory', () => {
-    const alpha = resolveVocabulary([container, leaf('alpha')]);
-    const projected = buildCompositionJsonSchema([container, leaf('beta')], {
-      composition: alpha,
-    });
-    const defs = defsOf(projected);
-
-    expect(defs.holder).toBeTypeOf('object');
-    expect(defs.alpha).toBeTypeOf('object');
-    expect(defs.beta).toBeUndefined();
-    expect(defs.holder?.properties?.child).toEqual({
-      $ref: '#/$defs/bodyNode',
-    });
   });
 
   it('emits an optional version const and a view title by default', () => {
@@ -269,5 +257,134 @@ describe('buildAuthoringJsonSchema', () => {
     };
     expect(metric.properties?.id).toBeDefined();
     expect(metric.properties?.surfaces).toBeDefined();
+  });
+});
+
+describe('buildAuthoringJsonSchema own keys', () => {
+  const primitiveOf = (
+    type: string,
+    shape: Record<string, ZodType>
+  ): AnyPrimitiveDefinition =>
+    define({
+      type,
+      catalog: { type, purpose: '', useWhen: [], avoidWhen: [], example: {} },
+      examples: [],
+      schema: z.object({ type: z.literal(type), ...shape }),
+      renderers,
+    });
+
+  const withInherited = (key: string, value: unknown, run: () => void) => {
+    Object.defineProperty(Object.prototype, key, {
+      configurable: true,
+      value,
+      writable: true,
+    });
+    try {
+      run();
+    } finally {
+      delete (Object.prototype as Record<string, unknown>)[key];
+    }
+  };
+
+  const scalar = z.string().min(1);
+
+  afterEach(() => {
+    delete (Object.prototype as { description?: unknown }).description;
+  });
+
+  it('describes only a def the schema holds, never Object.prototype', () => {
+    buildAuthoringJsonSchema([leaf('alpha')], {
+      describe: JSON.parse('{"__proto__": "x"}') as Record<string, string>,
+    });
+
+    expect(({} as { description?: unknown }).description).toBeUndefined();
+  });
+
+  it('keeps an own __proto__ property through the rewrite passes', () => {
+    const shape: Record<string, ZodType> = { a: scalar, b: scalar };
+    Object.defineProperty(shape, '__proto__', {
+      configurable: true,
+      enumerable: true,
+      value: z.string(),
+      writable: true,
+    });
+    const { odd } = collectDefs(
+      buildAuthoringJsonSchema([primitiveOf('odd', shape)])
+    ) as { odd: { properties: Record<string, unknown>; required: string[] } };
+
+    expect(odd.required).toContain('__proto__');
+    expect(Object.hasOwn(odd.properties, '__proto__')).toBe(true);
+  });
+
+  it('keeps a def whose id is __proto__', () => {
+    const $defs = collectDefs(buildAuthoringJsonSchema([leaf('__proto__')]));
+
+    expect(Object.hasOwn($defs, '__proto__')).toBe(true);
+  });
+
+  it('inlines a bare scalar def whatever Object.prototype holds', () => {
+    withInherited('const', 'x', () => {
+      const { pair } = collectDefs(
+        buildAuthoringJsonSchema([
+          primitiveOf('pair', { a: scalar, b: scalar }),
+        ])
+      ) as { pair: { properties: Record<string, unknown> } };
+
+      expect(pair.properties.a).toEqual({ type: 'string', minLength: 1 });
+    });
+  });
+
+  it('never omits a property from an inherited def', () => {
+    const inherited = { properties: { x: {} }, required: ['x'] };
+    withInherited('inherited', inherited, () => {
+      buildAuthoringJsonSchema([leaf('alpha')], {
+        omitProperties: ['inherited.x'],
+      });
+    });
+
+    expect(inherited).toEqual({ properties: { x: {} }, required: ['x'] });
+  });
+});
+
+describe('authoringSchemaSubset', () => {
+  const badge = define({
+    type: 'badge',
+    catalog: {
+      type: 'badge',
+      purpose: '',
+      useWhen: [],
+      avoidWhen: [],
+      example: {},
+    },
+    examples: [],
+    schema: z.object({ type: z.literal('badge'), tone: namedColorSchema }),
+    renderers,
+  });
+  const schema = buildAuthoringJsonSchema([container, badge, leaf('alpha')]);
+
+  const refsIn = (value: unknown): string[] =>
+    [...JSON.stringify(value).matchAll(/"#\/\$defs\/([^"]+)"/g)].map(
+      ([, id]) => id ?? ''
+    );
+
+  it('keeps the defs a type reaches and nothing else', () => {
+    const { $defs } = authoringSchemaSubset(schema, ['badge']);
+
+    expect(Object.keys($defs).sort()).toEqual(['badge', 'tone']);
+    expect($defs.badge).toEqual(defsOf(schema).badge);
+  });
+
+  it('stubs the body-node union rather than every primitive', () => {
+    const { $defs } = authoringSchemaSubset(schema, ['holder']);
+
+    expect(Object.keys($defs).sort()).toEqual(['bodyNode', 'holder']);
+    expect(refsIn($defs.bodyNode)).toEqual([]);
+    for (const id of refsIn($defs)) {
+      expect(Object.hasOwn($defs, id)).toBe(true);
+    }
+  });
+
+  it('never reads an inherited key as a def', () => {
+    expect(authoringSchemaSubset(schema, ['constructor']).$defs).toEqual({});
   });
 });

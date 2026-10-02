@@ -55,19 +55,35 @@ type NoKeys = Record<never, never>;
 type ShapeOf<T> = T extends { shape: infer Shape } ? Shape : NoKeys;
 
 /** A primitive's schema type, or `never` when it declares none. */
-export type SchemaOf<P> = P extends { schema: infer S }
+type SchemaOf<P> = P extends { schema: infer S }
   ? S extends ZodObject
     ? S
     : never
   : never;
 
 /** A bare `ZodObject` has a string index; a real shape does not. */
-export type LooseSchema<TSchema> = string extends keyof ShapeOf<TSchema>
+type LooseSchema<TSchema> = string extends keyof ShapeOf<TSchema>
   ? true
   : false;
 
+// The schema a brand is read from: `F`, or one an optional, nullable, default,
+// or readonly wrapper holds.
+type Branded<F> = F extends
+  AuthoredChildBrand<string, unknown> | AuthoredTextBrand
+  ? F
+  : F extends {
+        _zod: {
+          def: {
+            type: 'optional' | 'nullable' | 'default' | 'readonly';
+            innerType: infer Inner;
+          };
+        };
+      }
+    ? Branded<Inner>
+    : F;
+
 type AuthoredNames<TSchema> = {
-  [K in keyof ShapeOf<TSchema>]: ShapeOf<TSchema>[K] extends
+  [K in keyof ShapeOf<TSchema>]: Branded<ShapeOf<TSchema>[K]> extends
     AuthoredChildBrand<string, unknown> | AuthoredTextBrand
     ? K
     : never;
@@ -112,7 +128,9 @@ type ChildComponentsOf<TSchema> =
     ? NoKeys
     : UnionToIntersection<
         {
-          [K in keyof ShapeOf<TSchema>]: ChildEntry<ShapeOf<TSchema>[K]>;
+          [K in keyof ShapeOf<TSchema>]: ChildEntry<
+            Branded<ShapeOf<TSchema>[K]>
+          >;
         }[keyof ShapeOf<TSchema>]
       >;
 
@@ -140,19 +158,15 @@ export type PrimitiveComponentMap<
 };
 
 /**
- * A pack's JSX authoring front: the root `Composition` element, a factory for
- * extension components, one PascalCase component per primitive, and the
- * conversion back to plain data.
+ * A pack's JSX authoring front: the root `Composition` element, one
+ * PascalCase component per primitive and per branded child, and the conversion
+ * back to plain data.
  */
 export type JsxShim<
   TNode extends PrimitiveNode = PrimitiveNode,
   TPrimitives extends readonly { type: string }[] = readonly { type: string }[],
 > = {
   Composition: AuthorComponent<CompositionAuthorProps<TNode>, 'view'>;
-  /** Components for types outside the primitive list. They are rejected as body nodes. */
-  component: <TProps extends object = Record<string, unknown>>(
-    type: string
-  ) => AuthorComponent<TProps, string>;
   /** Throws when the root is not the `Composition` element, or when a child is not a registered primitive. */
   toComposition: (
     element: ReactElement<CompositionAuthorProps<TNode>>
@@ -176,7 +190,7 @@ export const buildJsxShim = <
 >(
   primitives: TPrimitives = [] as unknown as TPrimitives
 ): JsxShim<TNode, TPrimitives> => {
-  const extensionTypes = new Set(primitives.map((primitive) => primitive.type));
+  const primitiveTypes = new Set(primitives.map((primitive) => primitive.type));
   const childSlotsByType = new Map(
     primitives.map((primitive) => [
       primitive.type,
@@ -184,20 +198,21 @@ export const buildJsxShim = <
     ])
   );
   const { authoredByType, childComponents } = collectAuthored(primitives);
+  assertUniqueComponentNames([
+    ...primitives.map(({ type }) => type),
+    ...childComponents.keys(),
+  ]);
   const view = defineAuthorComponent<CompositionAuthorProps<TNode>, 'view'>(
     'view'
   );
   const env: ParseEnv = {
     authoredByType,
     childSlotsByType,
-    extensionTypes,
+    primitiveTypes,
   };
 
   return {
     Composition: view,
-    component: <TProps extends object = Record<string, unknown>>(
-      type: string
-    ) => defineAuthorComponent<TProps, string>(type),
     toComposition: (element) => toAuthorComposition<TNode>(element, env),
     ...Object.fromEntries(
       primitives.map((primitive) => [
@@ -222,7 +237,7 @@ interface ChildSlot {
 interface ParseEnv {
   authoredByType: ReadonlyMap<string, AuthoredSpec>;
   childSlotsByType: ReadonlyMap<string, readonly ChildSlot[]>;
-  extensionTypes: ReadonlySet<string>;
+  primitiveTypes: ReadonlySet<string>;
 }
 
 const collectAuthored = (
@@ -264,6 +279,22 @@ const collectAuthored = (
   return { authoredByType, childComponents };
 };
 
+/** Throws when two types, or a type and the root `Composition`, capitalize to one component name. */
+const assertUniqueComponentNames = (types: readonly string[]): void => {
+  const typeByName = new Map([['Composition', 'view']]);
+  for (const type of types) {
+    const name = capitalize(type);
+    const earlier = typeByName.get(name);
+    if (earlier !== undefined && earlier !== type) {
+      throw new IsomerError(
+        'DUPLICATE_PRIMITIVE_TYPE',
+        `buildJsxShim: "${earlier}" and "${type}" both become the component ${name}`
+      );
+    }
+    typeByName.set(name, type);
+  }
+};
+
 const isZodType = (schema: unknown): schema is ZodType =>
   typeof schema === 'object' && schema !== null && '_zod' in schema;
 
@@ -283,6 +314,9 @@ const toAuthorComposition = <TNode extends PrimitiveNode>(
     body: resolvedBody,
   };
 
+  if (props.version !== undefined) {
+    spec.version = props.version;
+  }
   if (props.title !== undefined) {
     spec.title = props.title;
   }
@@ -305,7 +339,7 @@ const bodyNodeFromElement = <TNode extends PrimitiveNode>(
 ): TNode => {
   const element = requireAuthorElement<{ children?: ReactNode }>(node);
   const type = getAuthorType(element);
-  if (!env.extensionTypes.has(type)) {
+  if (!env.primitiveTypes.has(type)) {
     throw new IsomerError(
       'INVALID_BODY_NODE',
       `"${type}" cannot be used as a composition body node.`
@@ -338,6 +372,11 @@ const bodyNodeFromElement = <TNode extends PrimitiveNode>(
     ) {
       const nested = flattenChildren(rawChildren).map(parseChild);
       converted[unique.field] = unique.array ? nested : nested[0];
+    } else if (slots.length === 0 && flattenChildren(rawChildren).length > 0) {
+      throw new IsomerError(
+        'UNEXPECTED_CHILDREN',
+        `<${capitalize(type)}> takes no JSX children; set its fields through props.`
+      );
     }
   }
 
@@ -596,16 +635,14 @@ export const textFromChildren = (
 };
 
 /** An element's props without `children` and without `undefined` entries. */
-export const withoutChildren = <TProps>(
-  element: ReactElement<unknown>
-): TProps => {
+const withoutChildren = <TProps>(element: ReactElement<unknown>): TProps => {
   const props = { ...(element.props as TProps & { children?: ReactNode }) };
   delete props.children;
   return omitUndefined(props);
 };
 
 /** Narrows `element` to an authoring element, asserting `type` when given. */
-export const requireAuthorElement = <TProps>(
+const requireAuthorElement = <TProps>(
   element: ReactNode,
   type?: string
 ): ReactElement<TProps & { children?: ReactNode }> => {
@@ -620,34 +657,8 @@ export const requireAuthorElement = <TProps>(
   return element as ReactElement<TProps & { children?: ReactNode }>;
 };
 
-/**
- * The props of each child, requiring every one of them to be `childType`.
- * `options.text` copies leftover text children onto that field when it is absent.
- */
-export const itemsFromChildren = <TItem>(
-  children: ReactNode,
-  childType: string,
-  options?: { text?: string }
-): TItem[] =>
-  flattenChildren(children).map((child) => {
-    const nested = requireAuthorElement<TItem & { children?: ReactNode }>(
-      child,
-      childType
-    );
-    const props = withoutChildren<TItem>(nested);
-    const { text } = options ?? {};
-    if (
-      text === undefined ||
-      nested.props.children === undefined ||
-      (props as Record<string, unknown>)[text] !== undefined
-    ) {
-      return props;
-    }
-    return { ...props, [text]: textFromChildren(nested.props.children) };
-  });
-
 /** The primitive type {@link authorType} brands onto `element`'s component. */
-export const getAuthorType = (element: ReactElement<unknown>): string => {
+const getAuthorType = (element: ReactElement<unknown>): string => {
   const component = element.type as Partial<AuthorComponent<unknown, string>>;
   const type = component[authorType];
   if (!type) {

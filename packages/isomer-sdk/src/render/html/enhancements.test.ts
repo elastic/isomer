@@ -11,13 +11,12 @@ import {
   createChildNodeWalker,
   someBodyNode,
 } from '../../composition/body_node_base';
-import { runEnhancementScript } from '../../pack/enhancements';
-
 import {
-  type EnhancementDefinition,
-  enhancementScript,
   resolveEnhancements,
-} from './enhancements';
+  runEnhancementScript,
+} from '../../pack/enhancements';
+
+import { type EnhancementDefinition, enhancementScript } from './enhancements';
 
 const sortableTable = {
   type: 'table',
@@ -64,50 +63,81 @@ describe('resolveEnhancements', () => {
     const requested = ['tableSort'];
 
     expect(
-      resolveEnhancements(body, requested, nestWalker, [tableSort]).has(
-        'tableSort'
+      resolveEnhancements(body, nestWalker, [tableSort], requested)
+    ).toEqual([tableSort]);
+    expect(
+      resolveEnhancements(
+        body,
+        createChildNodeWalker([]),
+        [tableSort],
+        requested
       )
-    ).toBe(true);
-
-    expect(
-      resolveEnhancements(body, requested, createChildNodeWalker([]), [
-        tableSort,
-      ]).has('tableSort')
-    ).toBe(false);
+    ).toEqual([]);
   });
 
-  it('ships no id when the host did not request it, even if content matches', () => {
+  it('ships no id the host did not request, even if content matches', () => {
     expect(
-      resolveEnhancements([sortableTable], undefined, nestWalker, [tableSort])
-        .size
-    ).toBe(0);
+      resolveEnhancements([sortableTable], nestWalker, [tableSort], [])
+    ).toEqual([]);
   });
 
-  it('ignores an id no pack declares and resolves each declared id once', () => {
-    const resolved = resolveEnhancements(
-      [sortableTable],
-      ['unknown', 'tableSort', 'tableSort'],
-      nestWalker,
-      [tableSort]
-    );
-    expect([...resolved]).toEqual(['tableSort']);
+  it('applies every definition when no ids are requested, as React passes them', () => {
+    expect(
+      resolveEnhancements([sortableTable], nestWalker, [tableSort])
+    ).toEqual([tableSort]);
+  });
+
+  it('keeps the first applying definition of an id when an earlier one does not apply', () => {
+    const idle: EnhancementDefinition = {
+      ...tableSort,
+      appliesTo: () => false,
+    };
+    expect(
+      resolveEnhancements(
+        [sortableTable],
+        nestWalker,
+        [idle, tableSort],
+        ['tableSort']
+      )
+    ).toEqual([tableSort]);
+  });
+
+  it('ignores an id no pack declares and keeps the first definition of each id', () => {
+    const shadow: EnhancementDefinition = {
+      ...tableSort,
+      script: '/* again */',
+    };
+    expect(
+      resolveEnhancements(
+        [sortableTable],
+        nestWalker,
+        [tableSort, shadow],
+        ['unknown', 'tableSort', 'tableSort']
+      )
+    ).toEqual([tableSort]);
   });
 });
 
 describe('enhancementScript', () => {
-  it('emits requested scripts in definition order, each in its own scope', () => {
+  it('emits each applied script in order, in its own scope', () => {
     const second: EnhancementDefinition = {
       id: 'clipboard',
       appliesTo: () => true,
       script: '/* clipboard */',
     };
-    expect(
-      enhancementScript(new Set(['clipboard', 'tableSort']), [
-        tableSort,
-        second,
-      ])
-    ).toBe(
+    expect(enhancementScript([tableSort, second])).toBe(
       '(() => {\n/* tableSort */\n})();\n(() => {\n/* clipboard */\n})();'
+    );
+  });
+
+  it('skips a resolved enhancement that has no script', () => {
+    const hostDriven: EnhancementDefinition = {
+      id: 'builds',
+      appliesTo: () => true,
+      anchors: true,
+    };
+    expect(enhancementScript([hostDriven, tableSort])).toBe(
+      '(() => {\n/* tableSort */\n})();'
     );
   });
 
@@ -120,10 +150,7 @@ describe('enhancementScript', () => {
     const root = { seen: [] as string[], querySelector: () => null };
 
     runEnhancementScript(
-      enhancementScript(new Set(['first', 'second']), [
-        flag('first'),
-        flag('second'),
-      ]),
+      enhancementScript([flag('first'), flag('second')]),
       root as unknown as Element
     );
 

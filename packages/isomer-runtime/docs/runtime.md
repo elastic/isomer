@@ -24,6 +24,7 @@ Build one per process, at module scope. It is a plain object with no lifecycle a
 | `styleAdapter` | at most one | The HTML surface's CSS and class-name strategy. Defaults to the packs' own adapters, combined. Required when any pack declares `collectStyles` and no pack (or this option) supplies an adapter. |
 | `defaultAriaLabel` | one string | Fallback `aria-label` when the composition has neither `meta.ariaLabel` nor a `title`. Defaults to `'View'`. |
 | `authoring` | optional | Options for the authoring JSON Schema `getAuthoringContext` returns. |
+| `inputBudget` | optional | Limits `checkInputBudget` applies in `parse`, `validate`, the `html`, `text`, `markdown`, `slack`, and `svg` surfaces, and `viewRegistry.request` input; `react` does not validate, so it is not checked. Defaults to the SDK's; see [the input budget](../../isomer-sdk/docs/composition.md#the-input-budget). |
 
 A runtime is homogeneous in its theme. `TTheme` resolves from the packs — each declares the palette its `svg` renderers read — and every frame in the map must supply it, so a mismatch is a compile error rather than a render-time failure. Packs wanting different palettes belong in different runtimes; see [Frame](frame.md).
 
@@ -35,19 +36,14 @@ A `collectStyles` hook mutates whatever collector the serving adapter created, a
 
 ## Typing the render context
 
-The factory has three type parameters: `THostContext` is what a view's `build` receives, `TRenderContext` is what a pack's `react` renderers receive, and `TTheme` is the palette. `TTheme` is inferred from `packs`. `TRenderContext` is inferred from `styleAdapter` alone, so a host that supplies none gets the SDK's `PrimitiveRenderContext` even when a pack narrows its context, as the slides pack does with `SlideRenderContext`. `react.render`'s `context` is then typed too wide to carry the pack's fields. Naming all three parameters positionally fixes the binding:
+The factory has three type parameters: `THostContext` is what a view's `build` receives, `TRenderContext` is what a pack's `react` renderers receive, and `TTheme` is the palette. `TTheme` is inferred from `packs`. `TRenderContext` is inferred from `styleAdapter` alone, so a host that supplies none gets the SDK's `PrimitiveRenderContext` even when a pack narrows its context, as a `chartsPack` whose renderers read a `ChartsRenderContext` would. `react.render`'s `context` is then typed too wide to carry the pack's fields. Naming all three parameters positionally fixes the binding:
 
 ```ts
-import {
-  type SlideFrameTheme,
-  type SlideRenderContext,
-  slideDeckFrame,
-  slidesPack,
-} from '@elastic/isomer-primitives-slides';
+import { type ChartsRenderContext, type ChartsTheme, cardFrame, chartsPack } from './charts';
 
-const runtime = createIsomerRuntime<unknown, SlideRenderContext, SlideFrameTheme>({
-  packs: [slidesPack],
-  frames: { slide: slideDeckFrame },
+const runtime = createIsomerRuntime<unknown, ChartsRenderContext, ChartsTheme>({
+  packs: [chartsPack],
+  frames: { card: cardFrame },
 });
 
 runtime.surfaces.react.render(composition, { context: { resolveClassName } });
@@ -63,7 +59,7 @@ runtime.surfaces.react.render(composition, { context: { resolveClassName } });
 | `primitives` | Every pack's definitions, flattened — the dispatcher's inventory |
 | `surfaces` | `{ react, html, text, markdown, slack, svg }` — `svg` is `undefined` without `frames`, and typed present with them |
 | `viewRegistry` | Register, list, get, and request registered views |
-| `validate(composition)` | Schema plus semantic passes; returns errors and warnings |
+| `validate(composition)` | The input budget, the schema, then the semantic passes, all on one plain copy; returns errors, warnings, and that copy |
 | `parse(value)` | Schema only, for untrusted input; returns a composition or errors |
 | `getAuthoringContext()` | Authoring schema, catalog, and live view summaries for an agent |
 | `getCapabilities()` | The primitive types, formats, and enhancements this host supports |

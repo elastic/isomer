@@ -1,0 +1,118 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+import type { ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
+
+import { cls } from '../../render/cls';
+import type { SlideReactEnv } from '../../render/context';
+import { marksReact } from '../../render/marks';
+import { ToneCue } from '../../render/tone_cue';
+import { slideDistillery } from '../../theme/distillery';
+import { labelModule, layoutModule, tonesModule } from '../../theme/modules';
+import { countKey } from '../../theme/variants';
+
+import { timelineHeadingLineCount, timelineStep } from './fit';
+import type { SlideTimelineNode } from './schema';
+import { timelineModule } from './styles';
+
+const {
+  quoteOpen,
+  quoteClose,
+  toneLabel: labels,
+} = slideDistillery.tokens.timeline;
+
+/** React renderer for {@link SlideTimelineNode}. */
+export const react = (
+  node: SlideTimelineNode,
+  { context }: SlideReactEnv
+): ReactNode => {
+  const { type, items } = node;
+  const { handles: timeline } = timelineModule;
+  const { handles: label } = labelModule;
+  const step = timelineStep(node, context);
+  const headingLines = countKey(
+    timelineHeadingLineCount(
+      items.map(({ heading }) => heading),
+      step,
+      context
+    )
+  );
+  return (
+    <div
+      {...nodeAnchor(context, { type })}
+      className={cls(context, layoutModule.handles.fill)}>
+      <div className={cls(context, timeline.row)}>
+        <div
+          aria-hidden
+          className={cls(context, timeline.rail, timeline.railTop[step])}
+        />
+        <ol className={cls(context, timeline.list)}>
+          {items.map(
+            ({ label: when, channel, heading, body, current }, index) => (
+              <li
+                key={index}
+                aria-current={current ? 'step' : undefined}
+                className={cls(context, timeline.item)}>
+                <span
+                  className={cls(
+                    context,
+                    timeline.label,
+                    timeline.labelSize[step],
+                    current ? timeline.labelCurrent : timeline.labelPast
+                  )}>
+                  {when}
+                </span>{' '}
+                <span
+                  aria-hidden
+                  className={cls(
+                    context,
+                    timeline.dot,
+                    current ? timeline.dotCurrent : timeline.dotPast
+                  )}
+                />
+                <span
+                  className={cls(
+                    context,
+                    label.label,
+                    timeline.channel,
+                    current ? label.toned : undefined,
+                    current ? tonesModule.handles.tone.primary : undefined
+                  )}>
+                  <ToneCue
+                    tone={current ? 'primary' : undefined}
+                    {...{ context, labels }}
+                  />
+                  {channel}
+                </span>
+                <p
+                  className={cls(
+                    context,
+                    timeline.heading,
+                    timeline.headingSize[step],
+                    timeline.headingLines[headingLines]
+                  )}>
+                  {quoteOpen.value}
+                  {marksReact(heading, context, 'primary')}
+                  {quoteClose.value}
+                </p>
+                <p
+                  className={cls(
+                    context,
+                    timeline.body,
+                    timeline.bodySize[step]
+                  )}>
+                  {marksReact(body, context)}
+                </p>
+              </li>
+            )
+          )}
+        </ol>
+      </div>
+    </div>
+  );
+};

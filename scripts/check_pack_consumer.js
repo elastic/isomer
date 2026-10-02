@@ -19,11 +19,35 @@ import { dirname, join, resolve } from 'node:path';
 
 import { repoRoot, workspacePackages } from './workspace_packages.js';
 
+const workspace = workspacePackages();
+const privateNames = new Set(
+  workspace
+    .filter(({ manifest }) => manifest.private === true)
+    .map(({ manifest }) => manifest.name)
+);
+
 // Every package that publishes: the packed tarball of each must import with
 // only its declared dependencies and required peers beside it.
-const packageNames = workspacePackages()
-  .filter(({ manifest }) => manifest.private !== true)
-  .map(({ manifest }) => manifest.name);
+const publishing = workspace.filter(
+  ({ manifest }) => manifest.private !== true
+);
+const packageNames = publishing.map(({ manifest }) => manifest.name);
+
+// A published package cannot reach one that never publishes.
+const privateReferences = publishing.flatMap(({ manifest }) =>
+  ['dependencies', 'peerDependencies', 'optionalDependencies'].flatMap(
+    (field) =>
+      Object.keys(manifest[field] ?? {})
+        .filter((name) => privateNames.has(name))
+        .map((name) => `${manifest.name} ${field} lists private ${name}`)
+  )
+);
+if (privateReferences.length > 0) {
+  for (const reference of privateReferences) {
+    console.error(reference);
+  }
+  process.exit(1);
+}
 const tempDir = mkdtempSync(join(tmpdir(), 'isomer-pack-consumer-'));
 
 const linkDirectory = (target, path) => {
@@ -53,6 +77,11 @@ const packPackage = (packageName) => {
   return { dir, manifest, sourceDir };
 };
 
+// Fails an import on any process warning, such as the `ExperimentalWarning`
+// Node 22.12 prints when `require()` loads an ES module.
+const failOnWarning =
+  "process.on('warning', (warning) => { console.error(warning); process.exitCode = 1; });";
+
 /** Where pnpm installed `dependency` for the workspace package, or `undefined`. */
 const installedDependency = (pkg, dependency) =>
   [
@@ -65,6 +94,9 @@ try {
     packageNames.map((packageName) => [packageName, packPackage(packageName)])
   );
 
+  // Every packed package gets its dependencies before any is imported, since
+  // one package's import loads another's packed copy.
+  const requiredPeersOf = new Map();
   for (const [packageName, pkg] of packages) {
     const dependencies = Object.keys(pkg.manifest.dependencies ?? {});
     const requiredPeers = Object.keys(
@@ -108,18 +140,27 @@ try {
         }
       }
     }
+    requiredPeersOf.set(packageName, requiredPeers);
+  }
 
+  for (const [packageName, pkg] of packages) {
+    const requiredPeers = requiredPeersOf.get(packageName);
     const consumerDir = join(tempDir, 'consumers', packageName);
     linkDirectory(pkg.dir, join(consumerDir, 'node_modules', packageName));
     execFileSync(
       process.execPath,
-      ['--input-type=module', '--eval', `await import('${packageName}')`],
+      [
+        '--input-type=module',
+        '--eval',
+        `${failOnWarning} await import('${packageName}')`,
+      ],
       { cwd: consumerDir, stdio: 'inherit' }
     );
-    execFileSync(process.execPath, ['--eval', `require('${packageName}')`], {
-      cwd: consumerDir,
-      stdio: 'inherit',
-    });
+    execFileSync(
+      process.execPath,
+      ['--eval', `${failOnWarning} require('${packageName}')`],
+      { cwd: consumerDir, stdio: 'inherit' }
+    );
 
     console.log(
       `${packageName}: packed root imports passed with required peers (${requiredPeers.join(', ')}).`

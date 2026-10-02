@@ -34,7 +34,7 @@ export interface EvalCase {
 /** One attempt at a case. `attempt` is 0 for the first try, 1 for the retry after validation errors. */
 export interface GenerateRequest {
   evalCase: EvalCase;
-  /** The authoring prompt to send, already assembled from the runtime's context. */
+  /** Shared authoring instructions; send with `evalCase.prompt` and any `previousErrors`. */
   prompt: string;
   attempt: number;
   /** What the previous attempt got wrong, a parse failure or validation errors; present only when `attempt > 0`. */
@@ -118,7 +118,7 @@ export interface EvalReport {
     parsed: number;
     valid: number;
     validAfterRetry: number;
-    /** Mean F1 across cases that had a golden. */
+    /** Mean F1 across validated cases that had a golden. */
     meanSelectionF1?: number | undefined;
     /** Count by verdict, when a judge was supplied. */
     answerability?: Record<AnswerabilityVerdict, number> | undefined;

@@ -6,12 +6,12 @@
  */
 
 import type {
+  CheckedValidationResult,
   Composition,
   PrimitiveDispatcher,
   PrimitiveNode,
   PrimitiveRenderContext,
   PrimitiveStyleCollector,
-  ValidationResult,
 } from '@elastic/isomer-sdk';
 import {
   type EnhancementDefinition,
@@ -27,7 +27,7 @@ export type { HTMLRenderOptions, HTMLRenderResult, HTMLStyleAdapter };
 
 /** Renders a composition or node to an HTML document/fragment string. */
 export interface HtmlSurface {
-  /** Always `true`: this surface validates the composition before rendering. */
+  /** Always `true`: this surface validates the composition and renders the copy it checked, never the caller's value. */
   readonly validating: true;
   /** Renders a full composition to an HTML document/fragment. */
   render(
@@ -52,7 +52,7 @@ export const createHtmlSurface = <TRenderContext = PrimitiveRenderContext>(
     PrimitiveNode,
     RuntimePackTypes<TRenderContext>
   >,
-  validate: (composition: Composition) => ValidationResult,
+  validate: (composition: Composition) => CheckedValidationResult,
   styleAdapter:
     | HTMLStyleAdapter<PrimitiveNode, PrimitiveStyleCollector, TRenderContext>
     | undefined,

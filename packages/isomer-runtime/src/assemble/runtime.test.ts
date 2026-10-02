@@ -18,13 +18,16 @@ import {
   definePrimitive,
   definePrimitivePack,
   type Frame,
+  nodeAnchor,
   type PrimitiveNode,
   type PrimitivePack,
-  runEnhancementScript,
+  type PrimitiveRenderContext,
   type StyleHandle,
-  themeBound,
   unresolvedBodyNodeSchema,
 } from '@elastic/isomer-sdk';
+import type { HTMLRenderOptions } from '@elastic/isomer-sdk/html';
+import { md } from '@elastic/isomer-sdk/markdown';
+import { runEnhancementScript } from '@elastic/isomer-sdk/react';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { z } from 'zod';
@@ -234,14 +237,13 @@ const packOf = (
     primitives,
   });
 
-/** A pack whose primitives all draw SVG. `themeBound<string>()` matches {@link testFrame}. */
+/** A pack whose primitives all draw SVG, needing the `string` palette {@link testFrame} supplies. */
 const svgPackOf = (
   ...primitives: readonly AnyPrimitiveDefinition[]
 ): PrimitivePack<string> =>
-  definePrimitivePack({
+  definePrimitivePack<string>({
     id: 'test.drawing',
     primitives,
-    theme: themeBound<string>(),
   });
 
 /** Stands in for the slide frame: a fixed frame that never measures a node. */
@@ -325,6 +327,29 @@ describe('createIsomerRuntime', () => {
         },
       },
     ]);
+  });
+
+  it('leaves out the title and subtitle on text, markdown, and slack when heading is false', () => {
+    const runtime = createIsomerRuntime({ packs: [packOf(notePrimitive)] });
+    const spec = {
+      ...view('Runtime owned'),
+      title: 'Checkout',
+      subtitle: 'last 15m',
+    };
+
+    expect(runtime.surfaces.text.render(spec, { heading: false })).toBe(
+      'Runtime owned'
+    );
+    expect(runtime.surfaces.markdown.render(spec, { heading: false })).toBe(
+      'Runtime owned'
+    );
+    expect(runtime.surfaces.slack.render(spec, { heading: false })).toEqual({
+      text: 'Runtime owned',
+      blocks: [
+        { type: 'section', text: { type: 'mrkdwn', text: 'Runtime owned' } },
+      ],
+      assets: [],
+    });
   });
 
   it('exposes the same schema validate/parse use internally, memoized', () => {
@@ -446,6 +471,53 @@ describe('createIsomerRuntime', () => {
     });
 
     expect(runtime.surfaces.text.render(view('ok'))).toBe('override:ok');
+  });
+
+  it('applies a markdown override built with md to markdown and the Slack fallback', () => {
+    const fallbackNote = definePrimitive<NoteNode>({
+      type: 'note',
+      catalog: {
+        type: 'note',
+        purpose: 'Render a note through the markdown fallback.',
+        useWhen: [],
+        avoidWhen: [],
+        example: { type: 'note', text: 'Hello' },
+      },
+      examples: [{ type: 'note', text: 'Hello' }],
+      schema: z.object({ type: z.literal('note'), text: z.string().min(1) }),
+      renderers: {
+        react: () => null,
+        text: (node) => node.text,
+        markdown: (node) => node.text,
+      },
+    });
+    const runtime = createIsomerRuntime({
+      packs: [packOf(fallbackNote)],
+      rendererOverrides: {
+        note: {
+          markdown: (node: NoteNode) =>
+            md.paragraph(md.strong(node.text), ' *literal*'),
+        },
+      },
+    });
+
+    expect(
+      runtime.surfaces.markdown.render(view('a*b'), { heading: false })
+    ).toBe('**a\\*b** \\*literal\\*');
+    expect(
+      runtime.surfaces.slack.render(view('a*b'), { heading: false }).blocks
+    ).toContainEqual({
+      type: 'rich_text',
+      elements: [
+        {
+          type: 'rich_text_section',
+          elements: [
+            { type: 'text', text: 'a*b', style: { bold: true } },
+            { type: 'text', text: ' *literal*' },
+          ],
+        },
+      ],
+    });
   });
 
   // `react` serves the `svg` surface, so one override reaches both.
@@ -571,6 +643,49 @@ describe('createIsomerRuntime', () => {
     expect(() => runtime.getAuthoringContext().schemaFor(['missing'])).toThrow(
       /unknown primitive type.*"missing"/
     );
+  });
+
+  it("collects every pack's groups in pack order", () => {
+    const runtime = createIsomerRuntime({
+      packs: [
+        definePrimitivePack({
+          id: 'test.a',
+          primitives: [notePrimitive],
+          authoring: { groups: [{ title: 'Text', types: ['note'] }] },
+        }),
+        definePrimitivePack({
+          id: 'test.b',
+          primitives: [holderPrimitive],
+          authoring: { groups: [{ title: 'Layout', types: ['holder'] }] },
+        }),
+      ],
+    });
+    expect(runtime.getAuthoringContext().groups).toEqual([
+      { title: 'Text', types: ['note'] },
+      { title: 'Layout', types: ['holder'] },
+    ]);
+  });
+
+  it('describes requested primitives with the defs they reach', () => {
+    const runtime = createIsomerRuntime({
+      packs: [packOf(holderPrimitive, notePrimitive, boldPrimitive)],
+    });
+    const { primitives, schema } = runtime
+      .getAuthoringContext()
+      .describePrimitives(['holder', 'holder']);
+
+    expect(primitives.map(({ type }) => type)).toEqual(['holder']);
+    expect(Object.keys(schema.$defs as object).sort()).toEqual([
+      'bodyNode',
+      'holder',
+    ]);
+  });
+
+  it('throws for an unknown type passed to describePrimitives', () => {
+    const runtime = createIsomerRuntime({ packs: [packOf(notePrimitive)] });
+    expect(() =>
+      runtime.getAuthoringContext().describePrimitives(['missing'])
+    ).toThrow(/describePrimitives: unknown primitive type.*"missing"/);
   });
 
   it('aggregates registered views into the authoring context', () => {
@@ -1007,6 +1122,219 @@ describe('createIsomerRuntime', () => {
       expect(result.css).toBe('.one.root{}.two.root{}');
     });
 
+    it('reads a key a part owns before one a later part only inherits, as a spread did', () => {
+      class Inherits {
+        label(): string {
+          return 'method';
+        }
+      }
+      const adapterWith = (prefix: string, context: () => object) => ({
+        ownsHandle: (handle: StyleHandle) => handle.key.startsWith(prefix),
+        createCollector: () => ({}),
+        createRenderContext: context,
+        renderStyles: () => '',
+      });
+      const runtime = createIsomerRuntime({
+        packs: styledPacks(
+          adapterWith('one.', () => ({ label: 'first' })),
+          adapterWith('two.', () => new Inherits())
+        ),
+        rendererOverrides: {
+          note: {
+            react: (node, { context }) =>
+              createElement(
+                'span',
+                { 'data-label': String((context as { label: unknown }).label) },
+                (node as NoteNode).text
+              ),
+          },
+        },
+      });
+
+      expect(runtime.surfaces.html.render(view('ok')).body).toContain(
+        'data-label="first"'
+      );
+    });
+
+    it('keeps a callable part context’s members and class names', () => {
+      const callable = (prefix: string) =>
+        Object.assign(() => prefix, {
+          brand: `${prefix}brand`,
+          resolveClassName: (...handles: StyleHandle[]) =>
+            handles.map(({ key }) => key).join(' '),
+        });
+      const adapterWith = (prefix: string) => ({
+        ownsHandle: (handle: StyleHandle) => handle.key.startsWith(prefix),
+        createCollector: () => ({}),
+        createRenderContext: () => callable(prefix),
+        renderStyles: () => '',
+      });
+      const runtime = createIsomerRuntime({
+        packs: styledPacks(adapterWith('one.'), adapterWith('two.')),
+        rendererOverrides: {
+          note: {
+            react: (node, { context }) => {
+              const part = context as ReturnType<typeof callable>;
+              return createElement(
+                'span',
+                {
+                  className: part.resolveClassName(
+                    { key: 'one.root' } as StyleHandle,
+                    { key: 'two.root' } as StyleHandle
+                  ),
+                  'data-brand': part.brand,
+                },
+                (node as NoteNode).text
+              );
+            },
+          },
+        },
+      });
+
+      const { body } = runtime.surfaces.html.render(view('ok'));
+      expect(body).toContain('class="one.root two.root"');
+      expect(body).toContain('data-brand="two.brand"');
+    });
+
+    it('reads a key a part holds enumerably before one another part hides, as a spread did', () => {
+      const adapterWith = (prefix: string, context: () => object) => ({
+        ownsHandle: (handle: StyleHandle) => handle.key.startsWith(prefix),
+        createCollector: () => ({}),
+        createRenderContext: context,
+        renderStyles: () => '',
+      });
+      const runtime = createIsomerRuntime({
+        packs: styledPacks(
+          adapterWith('one.', () => ({ label: 'first' })),
+          adapterWith('two.', () =>
+            Object.defineProperty({}, 'label', {
+              value: 'hidden',
+              enumerable: false,
+            })
+          )
+        ),
+        rendererOverrides: {
+          note: {
+            react: (node, { context }) =>
+              createElement(
+                'span',
+                { 'data-label': String((context as { label: unknown }).label) },
+                (node as NoteNode).text
+              ),
+          },
+        },
+      });
+
+      expect(runtime.surfaces.html.render(view('ok')).body).toContain(
+        'data-label="first"'
+      );
+    });
+
+    it('reads each part’s resolveClassName once per call', () => {
+      const counts = { reads: 0, calls: 0 };
+      const counted = {
+        get resolveClassName() {
+          counts.reads += 1;
+          return (...handles: StyleHandle[]) => {
+            counts.calls += 1;
+            return handles.map(({ key }) => key).join(' ');
+          };
+        },
+      };
+      const runtime = createIsomerRuntime({
+        packs: styledPacks(
+          {
+            ownsHandle: (handle: StyleHandle) => handle.key.startsWith('one.'),
+            createCollector: () => ({}),
+            createRenderContext: () => counted,
+            renderStyles: () => '',
+          },
+          scopedAdapter('two.')
+        ),
+        rendererOverrides: {
+          note: {
+            react: (node, { context }) =>
+              createElement(
+                'span',
+                {
+                  className: (
+                    context as {
+                      resolveClassName: (...handles: StyleHandle[]) => string;
+                    }
+                  ).resolveClassName({ key: 'one.root' } as StyleHandle),
+                },
+                (node as NoteNode).text
+              ),
+          },
+        },
+      });
+
+      expect(runtime.surfaces.html.render(view('ok')).body).toContain(
+        'class="one.root"'
+      );
+      expect(counts.calls).toBeGreaterThan(0);
+      expect(counts.reads).toBe(counts.calls);
+    });
+
+    it('keeps each part’s class-instance context working: methods, private state and own fields', () => {
+      class PartContext {
+        readonly #keys: string[];
+        readonly #label: string;
+        readonly brand: string;
+
+        constructor(keys: string[], label: string) {
+          this.#keys = keys;
+          this.#label = label;
+          this.brand = `${label}-brand`;
+        }
+
+        resolveClassName(...handles: StyleHandle[]): string {
+          this.#keys.push(...handles.map(({ key }) => key));
+          return handles.map(({ key }) => key).join(' ');
+        }
+
+        label(): string {
+          return this.#label;
+        }
+      }
+      const instanceAdapter = (prefix: string) => ({
+        ownsHandle: (handle: StyleHandle) => handle.key.startsWith(prefix),
+        createCollector: () => ({ keys: [] as string[] }),
+        createRenderContext: (collector: { keys: string[] }) =>
+          new PartContext(collector.keys, prefix),
+        renderStyles: (collector: { keys: string[] }) =>
+          collector.keys.map((key) => `.${key}{}`).join(''),
+      });
+      const runtime = createIsomerRuntime({
+        packs: styledPacks(instanceAdapter('one.'), instanceAdapter('two.')),
+        rendererOverrides: {
+          note: {
+            react: (node, { context }) => {
+              const part = context as PartContext;
+              return createElement(
+                'span',
+                {
+                  className: part.resolveClassName(
+                    { key: 'one.root', readableName: 'one-root' },
+                    { key: 'two.root', readableName: 'two-root' }
+                  ),
+                  'data-label': part.label(),
+                  'data-brand': part.brand,
+                },
+                (node as NoteNode).text
+              );
+            },
+          },
+        },
+      });
+
+      const result = runtime.surfaces.html.render(view('ok'));
+      expect(result.body).toContain('class="one.root two.root"');
+      expect(result.body).toContain('data-label="two."');
+      expect(result.body).toContain('data-brand="two.-brand"');
+      expect(result.css).toBe('.one.root{}.two.root{}');
+    });
+
     it('scopes each pack adapter script, so two can declare the same const', () => {
       const scripted = (prefix: string) => ({
         ...scopedAdapter(`${prefix}.`),
@@ -1308,6 +1636,7 @@ describe('createIsomerRuntime', () => {
     expect(errors).toContainEqual({
       path: 'body[1].items[0].id',
       message: 'duplicates id "dup" first used at body[0]',
+      nodeType: 'note',
     });
   });
 
@@ -1379,6 +1708,28 @@ describe('createIsomerRuntime', () => {
     expect(runtime.getCapabilities().formats).not.toContain('svg');
   });
 
+  it("asks the style adapter for the render's scheme", () => {
+    const schemes: unknown[] = [];
+    const runtime = createIsomerRuntime({
+      packs: [svgPackOf(notePrimitive)],
+      frames: { card: testFrame },
+      styleAdapter: {
+        createCollector: () => ({}),
+        createRenderContext: () => ({}),
+        renderStyles: (_collector: object, { scheme }: HTMLRenderOptions) => {
+          schemes.push(scheme);
+          return '';
+        },
+      },
+    });
+
+    runtime.surfaces.svg.render(view('Dark'), { theme: 'dark' });
+    runtime.surfaces.svg.render(view('Light'), { theme: 'light' });
+    runtime.surfaces.svg.render(view('Auto'));
+
+    expect(schemes).toEqual(['dark', 'light', 'light']);
+  });
+
   it('renders a view and a single node through the runtime frame', () => {
     const runtime = drawingRuntime(notePrimitive);
 
@@ -1407,14 +1758,37 @@ describe('createIsomerRuntime', () => {
     expect(renderToStaticMarkup(node.element)).toContain('Bare');
   });
 
+  it('renders node anchors on the svg surface only when asked', () => {
+    const anchoredNote = definePrimitive<NoteNode>({
+      ...notePrimitive,
+      renderers: {
+        ...notePrimitive.renderers,
+        react: (node, { context }) =>
+          createElement('span', nodeAnchor(context, node), node.text),
+      },
+    });
+    const { svg } = drawingRuntime(anchoredNote).surfaces;
+    const note = { type: 'note', text: 'Anchored' } as NoteNode;
+    const markupOf = ({ element }: { element: ReactNode }) =>
+      renderToStaticMarkup(element);
+
+    expect(markupOf(svg.render(view('Anchored')))).not.toContain(
+      'data-isomer-node'
+    );
+    expect(markupOf(svg.render(view('Anchored'), { anchors: true }))).toContain(
+      'data-isomer-node="note"'
+    );
+    expect(markupOf(svg.renderNode(note))).not.toContain('data-isomer-node');
+    expect(markupOf(svg.renderNode(note, { anchors: true }))).toContain(
+      'data-isomer-node="note"'
+    );
+  });
+
   it('honours width and height overrides on the svg surface', () => {
     const runtime = drawingRuntime(notePrimitive);
     const spec = view('Sized');
 
-    expect(
-      runtime.surfaces.svg.resolveViewport(spec, { width: 800, height: 120 })
-    ).toEqual({ width: 800, height: 120 });
-    expect(runtime.surfaces.svg.resolveViewport(spec, { width: 800 })).toEqual({
+    expect(runtime.surfaces.svg.render(spec, { width: 800 })).toMatchObject({
       width: 800,
       height: 40,
     });
@@ -1474,6 +1848,113 @@ describe('createIsomerRuntime', () => {
     ).toBe('.isomer{}.fluid{}.after{}');
   });
 
+  it('renders pages against one stylesheet collected across every composition', () => {
+    const styleAdapter = {
+      createCollector: () => ({ rules: [] as string[] }),
+      collectWrapperStyles: (collector: { rules: string[] }) => {
+        collector.rules.push('.isomer{}');
+      },
+      collectViewStyles: (
+        composition: Composition,
+        _dispatcher: unknown,
+        collector: { rules: string[] }
+      ) => {
+        collector.rules.push(`.${(composition.body[0] as NoteNode).text}{}`);
+      },
+      createRenderContext: () => ({}),
+      renderStyles: (collector: { rules: string[] }) =>
+        collector.rules.join(''),
+    };
+    const runtime = createIsomerRuntime({
+      packs: [svgPackOf(notePrimitive)],
+      frames: { card: testFrame },
+      styleAdapter,
+    });
+    const two = view('two');
+    two.body.push({ type: 'note', text: 'more' });
+
+    const rendered = runtime.surfaces.svg.renderPages([view('one'), two], {
+      theme: 'dark',
+    });
+    const [first, second] = rendered.pages as ReactElement<{
+      width: number;
+      height: number;
+      theme: string;
+    }>[];
+
+    expect(rendered.css).toBe('.isomer{}.one{}.two{}');
+    // Every page takes the tallest estimate: two notes at 40 each.
+    expect(rendered).toMatchObject({ width: 600, height: 80 });
+    expect(first?.props).toMatchObject({
+      width: 600,
+      height: 80,
+      theme: 'dark-theme',
+    });
+    expect(renderToStaticMarkup(second)).toContain('more');
+  });
+
+  it("draws every page in the first composition's theme", () => {
+    const runtime = drawingRuntime(notePrimitive);
+
+    const { pages } = runtime.surfaces.svg.renderPages([
+      { ...view('a'), theme: 'dark' },
+      { ...view('b'), theme: 'light' },
+    ]);
+
+    for (const page of pages as ReactElement<{ theme: string }>[]) {
+      expect(page.props.theme).toBe('dark-theme');
+    }
+  });
+
+  it('renders one page the way render does', () => {
+    const runtime = drawingRuntime(notePrimitive);
+
+    const single = runtime.surfaces.svg.render(view('same'));
+    const paged = runtime.surfaces.svg.renderPages([view('same')]);
+
+    expect(paged).toMatchObject({
+      css: single.css,
+      width: single.width,
+      height: single.height,
+    });
+    expect(renderToStaticMarkup(paged.pages[0])).toBe(
+      renderToStaticMarkup(single.element)
+    );
+  });
+
+  it('refuses an empty page list', () => {
+    const runtime = drawingRuntime(notePrimitive);
+
+    try {
+      runtime.surfaces.svg.renderPages([]);
+      expect.unreachable();
+    } catch (error) {
+      expect(error).toMatchObject({
+        name: 'IsomerError',
+        code: 'EMPTY_PAGES',
+      });
+    }
+  });
+
+  it("names the page a frame's own rule rejects", () => {
+    const runtime = createIsomerRuntime({
+      packs: [svgPackOf(notePrimitive)],
+      frames: {
+        single: {
+          ...testFrame,
+          validateBody: (body) =>
+            body.length === 1 ? [] : ['needs exactly one node'],
+        },
+      },
+    });
+    const two = view('two');
+    two.body.push({ type: 'note', text: 'more' });
+
+    expect(() => runtime.surfaces.svg?.renderPages([view('one'), two])).toThrow(
+      /frame "single" cannot draw page 2: needs exactly one node/
+    );
+  });
+
   it("hands a primitive the frame's resolved theme as env.theme", () => {
     interface SwatchNode extends PrimitiveNode {
       type: 'swatch';
@@ -1528,10 +2009,10 @@ describe('createIsomerRuntime', () => {
       ],
     };
 
-    expect(runtime.surfaces.svg?.resolveViewport(mixed).width).toBe(600);
-    expect(
-      runtime.surfaces.svg?.resolveViewport(mixed, { frame: 'wide' }).width
-    ).toBe(1920);
+    expect(runtime.surfaces.svg?.render(mixed).width).toBe(600);
+    expect(runtime.surfaces.svg?.render(mixed, { frame: 'wide' }).width).toBe(
+      1920
+    );
   });
 
   it('rejects a frame name inherited from Object.prototype', () => {
@@ -1570,10 +2051,27 @@ describe('createIsomerRuntime', () => {
       frames: { '': testFrame },
     });
 
-    expect(runtime.surfaces.svg?.resolveViewport(view('Framed')).width).toBe(
-      600
-    );
+    expect(runtime.surfaces.svg?.render(view('Framed')).width).toBe(600);
     expect(runtime.getCapabilities().formats).toContain('svg');
+  });
+
+  it('rejects an empty frames map rather than typing an absent svg surface as present', () => {
+    expect(() =>
+      createIsomerRuntime({ packs: [svgPackOf(notePrimitive)], frames: {} })
+    ).toThrow(
+      expect.objectContaining({ name: 'IsomerError', code: 'EMPTY_FRAMES' })
+    );
+  });
+
+  it('rejects defaultFrame when no frames are supplied', () => {
+    expect(() =>
+      createIsomerRuntime({
+        packs: [svgPackOf(notePrimitive)],
+        defaultFrame: 'card',
+      })
+    ).toThrow(
+      expect.objectContaining({ name: 'IsomerError', code: 'UNKNOWN_FRAME' })
+    );
   });
 
   it('rejects a render naming a frame it does not hold', () => {
@@ -1719,7 +2217,7 @@ describe('createIsomerRuntime', () => {
 
     // 600 from `testFrame.defaultWidth`, 40 from its per-node estimate: a
     // replaced frame is drawn within a viewport the frame still sizes.
-    expect(runtime.surfaces.svg?.resolveViewport(view('framed'))).toEqual({
+    expect(runtime.surfaces.svg?.render(view('framed'))).toMatchObject({
       width: 600,
       height: 40,
     });
@@ -1735,6 +2233,85 @@ describe('createIsomerRuntime', () => {
         primitives: [notePrimitive, boldPrimitive],
       })
     ).not.toThrow();
+  });
+
+  describe('enhancements across packs', () => {
+    const hasType =
+      (type: string) =>
+      (body: readonly PrimitiveNode[]): boolean =>
+        body.some((node) => node.type === type);
+    const enhancedPacks = () => [
+      definePrimitivePack({
+        id: 'a',
+        surfaces: [],
+        primitives: [notePrimitive],
+        enhancements: [
+          { id: 'noteCopy', appliesTo: hasType('note'), script: 'root.a = 1;' },
+        ],
+      }),
+      definePrimitivePack({
+        id: 'b',
+        surfaces: [],
+        primitives: [boldPrimitive],
+        enhancements: [
+          { id: 'boldSort', appliesTo: hasType('bold'), script: 'root.b = 1;' },
+        ],
+      }),
+    ];
+    const seen = (context: unknown) =>
+      [...((context as PrimitiveRenderContext).enhancements ?? [])]
+        .sort()
+        .join(',');
+    const runtimeOf = () =>
+      createIsomerRuntime({
+        packs: enhancedPacks(),
+        rendererOverrides: {
+          note: {
+            react: (node, { context }) =>
+              createElement(
+                'span',
+                { 'data-seen': seen(context) },
+                (node as NoteNode).text
+              ),
+          },
+          bold: {
+            react: (node, { context }) =>
+              createElement(
+                'strong',
+                { 'data-seen': seen(context) },
+                (node as BoldNode).text
+              ),
+          },
+        },
+      });
+    const requested = { enhancements: ['noteCopy', 'boldSort', 'absent'] };
+
+    it('hands every pack’s renderers the resolved set and emits each script once', () => {
+      const { body, js } = runtimeOf().surfaces.html.render(
+        {
+          type: 'view',
+          body: [
+            { type: 'note', text: 'n' } as NoteNode,
+            { type: 'bold', text: 'b' } as BoldNode,
+          ],
+        },
+        { ...requested, scripts: 'host' }
+      );
+      expect(body).toContain('<span data-seen="boldSort,noteCopy">');
+      expect(body).toContain('<strong data-seen="boldSort,noteCopy">');
+      expect(js.split('root.a = 1;')).toHaveLength(2);
+      expect(js.split('root.b = 1;')).toHaveLength(2);
+    });
+
+    it('leaves out an enhancement the body has nothing for, and its script', () => {
+      const { body, js } = runtimeOf().surfaces.html.render(
+        { type: 'view', body: [{ type: 'note', text: 'n' } as NoteNode] },
+        { ...requested, scripts: 'host' }
+      );
+      expect(body).toContain('<span data-seen="noteCopy">');
+      expect(js).toContain('root.a = 1;');
+      expect(js).not.toContain('root.b = 1;');
+    });
   });
 
   it('rejects the same enhancement id owned by two packs', () => {
@@ -1981,7 +2558,9 @@ describe('createIsomerRuntime', () => {
       body: [{ type: 'note' }],
     }).errors;
 
-    expect(errors).toEqual([{ path: 'body[0].text', message: 'is required' }]);
+    expect(errors).toEqual([
+      { path: 'body[0].text', message: 'is required', nodeType: 'note' },
+    ]);
   });
 
   it('composes a drawing pack with a pack that renders no svg', () => {
@@ -2175,3 +2754,256 @@ const primitiveNamed = (type: string) =>
       markdown: () => type,
     },
   });
+
+describe('the input budget', () => {
+  const deep = (): unknown => {
+    let value: unknown = [];
+    for (let level = 0; level < 100_000; level += 1) {
+      value = [value];
+    }
+    return value;
+  };
+  const composition = {
+    type: 'view',
+    body: [{ type: 'note', text: deep() }],
+  } as unknown as Composition;
+  const overBudget = {
+    path: '',
+    message: 'input nests deeper than 64 levels',
+    code: 'INPUT_OVER_BUDGET',
+  };
+  const refused = {
+    name: 'CompositionValidationError',
+    code: 'COMPOSITION_INVALID',
+    errors: [overBudget],
+  };
+
+  it('refuses over-budget input at parse, validate, and every validating surface', () => {
+    const runtime = drawingRuntime(notePrimitive);
+    const { html, text, markdown, slack, svg } = runtime.surfaces;
+    expect(runtime.parse(composition)).toEqual({
+      valid: false,
+      errors: [overBudget],
+    });
+    expect(runtime.validate(composition).errors).toEqual([overBudget]);
+    for (const render of [
+      () => html.render(composition),
+      () => text.render(composition, { onValidationError: 'collect' }),
+      () => markdown.render(composition, { onValidationError: 'collect' }),
+      () => slack.render(composition, { onValidationError: 'collect' }),
+      () => svg.render(composition, { onValidationError: 'collect' }),
+    ]) {
+      expect(render).toThrow(expect.objectContaining(refused));
+    }
+  });
+
+  it('refuses over-budget input at every validating surface’s renderNode', () => {
+    const { html, text, markdown, slack, svg } =
+      drawingRuntime(notePrimitive).surfaces;
+    const [node] = composition.body;
+    if (node === undefined) {
+      throw new Error('expected a node');
+    }
+    for (const render of [
+      () => html.renderNode(node),
+      () => text.renderNode(node, { onValidationError: 'collect' }),
+      () => markdown.renderNode(node, { onValidationError: 'collect' }),
+      () => slack.renderNode(node, { onValidationError: 'collect' }),
+      () => svg.renderNode(node, { onValidationError: 'collect' }),
+    ]) {
+      expect(render).toThrow(expect.objectContaining(refused));
+    }
+  });
+
+  it('refuses over-budget view input before the view runs', async () => {
+    let built = false;
+    const runtime = createIsomerRuntime({
+      packs: [packOf(notePrimitive)],
+      views: [
+        defineView({
+          id: 'test.any',
+          title: 'Any',
+          answers: [],
+          build: () => {
+            built = true;
+            return view('x');
+          },
+        }),
+      ],
+    });
+    await expect(
+      runtime.viewRegistry.request('test.any', undefined, { deep: deep() })
+    ).rejects.toMatchObject({
+      name: 'RegisteredViewInputError',
+      code: 'VIEW_INPUT_INVALID',
+      errors: [overBudget],
+    });
+    expect(built).toBe(false);
+  });
+
+  it('hands a view the checked copy of its input', async () => {
+    let received: unknown;
+    const runtime = createIsomerRuntime({
+      packs: [packOf(notePrimitive)],
+      views: [
+        defineView({
+          id: 'test.copy',
+          title: 'Copy',
+          answers: [],
+          build: ({ input }) => {
+            received = input;
+            return view('x');
+          },
+        }),
+      ],
+    });
+    const input = { list: Object.assign([1], { extra: 2 }) };
+    await runtime.viewRegistry.request('test.copy', undefined, input);
+    expect(received).toEqual({ list: [1] });
+    expect(received).not.toBe(input);
+  });
+
+  it('takes the host’s limits', () => {
+    const runtime = createIsomerRuntime({
+      packs: [packOf(notePrimitive)],
+      inputBudget: { characters: 3 },
+    });
+    expect(runtime.parse(view('four')).errors).toEqual([
+      { ...overBudget, message: 'input holds more than 3 characters' },
+    ]);
+  });
+});
+
+describe('the checked composition', () => {
+  /** A note whose `text` reads `safe` once, through either trap, and `UNSAFE` after. */
+  const shifty = () => {
+    let reads = 0;
+    const text = () => (reads++ === 0 ? 'safe' : 'UNSAFE');
+    const node = new Proxy<NoteNode>(
+      { type: 'note', text: 'safe' },
+      {
+        get: (target, key, receiver): unknown =>
+          key === 'text' ? text() : Reflect.get(target, key, receiver),
+        getOwnPropertyDescriptor: (target, key) => {
+          const descriptor = Reflect.getOwnPropertyDescriptor(target, key);
+          return key === 'text' && descriptor
+            ? { ...descriptor, value: text() }
+            : descriptor;
+        },
+      }
+    );
+    const composition: Composition = { type: 'view', body: [node] };
+    return { composition, reads: () => reads };
+  };
+
+  it('renders what validation checked on every validating surface, reading the input once', () => {
+    const { html, text, markdown, slack, svg } =
+      drawingRuntime(notePrimitive).surfaces;
+    const renders: ((composition: Composition) => string)[] = [
+      (composition) => html.render(composition).html,
+      (composition) => text.render(composition),
+      (composition) => markdown.render(composition),
+      (composition) => JSON.stringify(slack.render(composition)),
+      (composition) => renderToStaticMarkup(svg.render(composition).element),
+    ];
+    for (const render of renders) {
+      const { composition, reads } = shifty();
+      const output = render(composition);
+      expect(output).toContain('safe');
+      expect(output).not.toContain('UNSAFE');
+      expect(reads()).toBe(1);
+    }
+    const pages = [shifty(), shifty()];
+    const document = svg.renderPages(
+      pages.map(({ composition }) => composition)
+    );
+    const output = renderToStaticMarkup(
+      createElement(Fragment, null, ...document.pages)
+    );
+    expect(output).not.toContain('UNSAFE');
+    expect(pages.map(({ reads }) => reads())).toEqual([1, 1]);
+  });
+
+  it('renders what validation checked on every validating surface’s renderNode, reading the node once', () => {
+    const { html, text, markdown, slack, svg } =
+      drawingRuntime(notePrimitive).surfaces;
+    const renders: ((node: PrimitiveNode) => string)[] = [
+      (node) => html.renderNode(node).html,
+      (node) => text.renderNode(node),
+      (node) => markdown.renderNode(node),
+      (node) => JSON.stringify(slack.renderNode(node)),
+      (node) => renderToStaticMarkup(svg.renderNode(node).element),
+    ];
+    for (const render of renders) {
+      const {
+        composition: {
+          body: [node],
+        },
+        reads,
+      } = shifty();
+      if (node === undefined) {
+        throw new Error('expected a node');
+      }
+      const output = render(node);
+      expect(output).toContain('safe');
+      expect(output).not.toContain('UNSAFE');
+      expect(reads()).toBe(1);
+    }
+  });
+
+  it('throws on an invalid node by default and renders it with collect', () => {
+    const { text } = drawingRuntime(notePrimitive).surfaces;
+    const invalid = { type: 'note' } as unknown as NoteNode;
+    expect(() => text.renderNode(invalid)).toThrow(
+      expect.objectContaining({ name: 'CompositionValidationError' })
+    );
+    expect(() =>
+      text.renderNode(invalid, { onValidationError: 'collect' })
+    ).not.toThrow();
+  });
+
+  it('returns the copy from validate and from a view request', async () => {
+    const runtime = createIsomerRuntime({
+      packs: [packOf(notePrimitive)],
+      views: [
+        defineView({
+          id: 'test.shifty',
+          title: 'Shifty',
+          answers: [],
+          build: () => shifty().composition,
+        }),
+      ],
+    });
+    expect(runtime.validate(shifty().composition).composition).toEqual(
+      view('safe')
+    );
+    const { composition } = await runtime.viewRegistry.request(
+      'test.shifty',
+      undefined
+    );
+    expect(composition).toEqual(view('safe'));
+    expect(runtime.surfaces.text.render(composition)).toBe('safe');
+  });
+
+  it('leaves plain input as it was, drawn from a copy', async () => {
+    const built = view('plain');
+    const runtime = createIsomerRuntime({
+      packs: [packOf(notePrimitive)],
+      views: [
+        defineView({
+          id: 'test.plain',
+          title: 'Plain',
+          answers: [],
+          build: () => built,
+        }),
+      ],
+    });
+    const { composition, validation } = await runtime.viewRegistry.request(
+      'test.plain',
+      undefined
+    );
+    expect(composition).toEqual(built);
+    expect(composition).not.toBe(built);
+    expect(validation).toEqual({ valid: true, errors: [], warnings: [] });
+  });
+});

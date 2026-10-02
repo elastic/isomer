@@ -41,7 +41,7 @@ interface OverridableRenderers {
   markdown(
     node: PrimitiveNode,
     env: ErasedSurfaceMap['markdown']['env']
-  ): string;
+  ): ErasedSurfaceMap['markdown']['output'];
   slack(
     node: PrimitiveNode,
     env: ErasedSurfaceMap['slack']['env']

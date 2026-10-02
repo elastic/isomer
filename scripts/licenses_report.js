@@ -7,6 +7,7 @@
 
 import {
   existsSync,
+  readdirSync,
   readFileSync,
   realpathSync,
   rmSync,
@@ -33,12 +34,8 @@ const LICENSE_BASENAMES = [
 ];
 
 const NOTICE_BASENAMES = ['NOTICE', 'NOTICE.txt', 'NOTICE.md'];
-const TAKUMI_LICENSE_PATH = join(
-  repoRoot,
-  'third_party_licenses',
-  'takumi-2.14.0-MIT.txt'
-);
-const takumiLicense = readFileSync(TAKUMI_LICENSE_PATH, 'utf-8').trim();
+const curatedLicense = (file) =>
+  readFileSync(join(repoRoot, 'third_party_licenses', file), 'utf-8').trim();
 const TAKUMI_PACKAGE_NAMES = [
   '@takumi-rs/core',
   '@takumi-rs/helpers',
@@ -51,7 +48,19 @@ const TAKUMI_PACKAGE_NAMES = [
   '@takumi-rs/core-win32-arm64-msvc',
   '@takumi-rs/core-win32-x64-msvc',
 ];
-const TAKUMI_PACKAGES = new Set(TAKUMI_PACKAGE_NAMES);
+/** Packages whose tarballs ship no license file, with the text their pinned version publishes. */
+const CURATED_LICENSES = [
+  {
+    names: TAKUMI_PACKAGE_NAMES,
+    version: '2.14.0',
+    text: curatedLicense('takumi-2.14.0-MIT.txt'),
+  },
+  {
+    names: ['takumi-pdf'],
+    version: '0.15.0',
+    text: curatedLicense('takumi-pdf-0.15.0-MIT.txt'),
+  },
+];
 
 const readPackage = (dir) =>
   JSON.parse(readFileSync(join(dir, 'package.json'), 'utf-8'));
@@ -72,12 +81,10 @@ const licenseOf = (pkg) => {
   return 'UNKNOWN';
 };
 
-const curatedLicenseText = (pkg) => {
-  if (pkg.version === '2.14.0' && TAKUMI_PACKAGES.has(pkg.name)) {
-    return takumiLicense;
-  }
-  return undefined;
-};
+const curatedLicenseText = (pkg) =>
+  CURATED_LICENSES.find(
+    ({ names, version }) => version === pkg.version && names.includes(pkg.name)
+  )?.text;
 
 const licenseTextOf = (pkg, dir) => {
   const licenseText = readFirstExisting(dir, LICENSE_BASENAMES);
@@ -93,11 +100,15 @@ const exactVersion = (range) =>
     ? range
     : undefined;
 
+// Case-insensitive: packages ship `license` as often as `LICENSE`.
 const readFirstExisting = (dir, names) => {
+  const entries = existsSync(dir) ? readdirSync(dir) : [];
   for (const name of names) {
-    const candidate = join(dir, name);
-    if (existsSync(candidate)) {
-      return readFileSync(candidate, 'utf-8').trim();
+    const match = entries.find(
+      (entry) => entry.toLowerCase() === name.toLowerCase()
+    );
+    if (match !== undefined) {
+      return readFileSync(join(dir, match), 'utf-8').trim();
     }
   }
   return undefined;
@@ -128,9 +139,14 @@ const findInNodeModules = (name, fromDir) => {
 
 const resolvePackageDir = (name, fromDir) => {
   try {
-    return dirname(
-      require.resolve(`${name}/package.json`, { paths: [fromDir] })
+    // A wildcard `exports` entry can map `./package.json` to a nested manifest, so the match is checked by name.
+    const match = packageDirIfNamed(
+      dirname(require.resolve(`${name}/package.json`, { paths: [fromDir] })),
+      name
     );
+    if (match !== undefined) {
+      return match;
+    }
   } catch {
     // Some packages hide `package.json` behind `exports`.
   }

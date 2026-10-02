@@ -16,17 +16,16 @@ This page is the pack **contract**. Composing packs into a runtime is the [runti
 
 ## What you declare
 
-| Field             | Effect                                                                      |
-| ----------------- | --------------------------------------------------------------------------- |
-| `id`              | Names the pack in capability reports and error messages.                    |
-| `surfaces`        | The optional surfaces (only `slack`) every primitive here implements.       |
-| `primitives`      | The definitions. At least one, with unique types, or construction throws.   |
-| `enhancements`    | Progressive enhancements this vocabulary supports, by id.                   |
-| `slackAssetTypes` | Which node types are pictures rather than text.                             |
-| `styleAdapter`    | Optional. This pack's HTML CSS, combined with the other packs'.             |
-| `styleCollector`  | Optional. Derived from `styleAdapter.styleCollector` unless overridden.     |
-| `theme`           | Optional. `themeBound<T>()` so the pack infers `PrimitivePack<T>`.          |
-| `authoring`       | Optional. This pack's `describe` and `omitProperties` for the agent schema. |
+| Field             | Effect                                                                         |
+| ----------------- | ------------------------------------------------------------------------------ |
+| `id`              | Names the pack in capability reports and errors. Unique across composed packs. |
+| `surfaces`        | The optional surfaces (only `slack`) every primitive here implements.          |
+| `primitives`      | The definitions. At least one, with unique types, or construction throws.      |
+| `enhancements`    | Progressive enhancements this vocabulary supports, by id.                      |
+| `slackAssetTypes` | Which of the pack's node types are pictures rather than text.                  |
+| `styleAdapter`    | Optional. This pack's HTML CSS, combined with the other packs'.                |
+| `styleCollector`  | Optional. Derived from `styleAdapter.styleCollector` unless overridden.        |
+| `authoring`       | Optional. `describe`, `omitProperties`, and index `groups` for agents.         |
 
 What comes back adds `types`, a set for duplicate detection across packs, and normalizes the two optional fields. `styleCollector` is read from `styleAdapter.styleCollector` when the pack does not set it; set it only for a pack whose hooks collect into a shape its adapter does not create.
 
@@ -36,7 +35,7 @@ What comes back adds `types`, a set for duplicate detection across packs, and no
 
 There is nothing to declare for `svg`. Every pack reaches the image surface through its `react` renderers, and whether a runtime _has_ that surface depends on a frame, which is a host input rather than a pack's to promise.
 
-`extendPrimitivePack(pack, primitives)` adds primitives and keeps the declared surfaces. A type the pack already owns throws `DUPLICATE_PRIMITIVE_TYPE`, as a repeated type in `definePrimitivePack` does; `composePacks` reports the cross-pack case.
+A repeated type in `definePrimitivePack` throws `DUPLICATE_PRIMITIVE_TYPE`; `composePacks` reports the cross-pack case, and a pack `id` two packs share throws `DUPLICATE_PACK_ID`. A `slackAssetTypes` entry the pack does not register throws `UNKNOWN_PRIMITIVE_TYPE`, as an unknown type in `authoring.groups` does.
 
 ## `slackAssetTypes`
 
@@ -46,7 +45,7 @@ It is declared here because it is a fact about the vocabulary. A host composing 
 
 ## `enhancements`
 
-Progressive enhancements the HTML surface may apply, each an id, a content gate, and a script:
+Progressive enhancements the HTML surface may apply, each an id, a content gate, and usually a script:
 
 ```ts
 enhancements: [
@@ -65,6 +64,8 @@ The script is a function body with `root`, the render's `.isomer` section, in sc
 
 The script must address markup through `data-*` attributes, never class names: class names are minified per render, so a selector written against one is a contract nothing checks. An event meant for the host sets `composed: true` as well as `bubbles: true`; `bubbles` alone stops at a shadow boundary.
 
+An enhancement the host drives, rather than one that runs in the page, omits `script`. One that finds nodes with `findNodeElementPairs` declares `anchors: true`, so a render that resolves it carries [node anchors](rendering.md#node-anchors).
+
 ## `authoring`
 
 A pack's own contribution to the runtime's authoring JSON Schema: `describe` ($def id to description) and `omitProperties` ($defId.property paths to drop), scoped to this pack's own primitives:
@@ -79,15 +80,16 @@ definePrimitivePack({
 
 A runtime composing several packs merges every pack's `authoring` into one options object before building the schema, so no host hand-merges each pack's `describe`/`omitProperties` itself. The runtime's own `authoring` option is applied last and wins on conflict.
 
+`groups` titles sets of this pack's primitive types for an [index catalog](authoring.md#an-index-then-lookups), in the order they are listed. A group naming a type the pack does not register, or a type in two groups, throws at `definePrimitivePack`; a type in no group is listed under "Other".
+
 ## The theme a pack requires
 
-A pack's nodes are drawn inside a frame, and `PrimitivePack<TTheme>` is where the pack states the palette that frame must supply. `definePrimitivePack` infers `TTheme` from `theme`. Omit it and the pack is `PrimitivePack<unknown>`, which is also what bare `PrimitivePack` means: requires nothing, fits any runtime. A pack that needs a frame to carry tokens passes the bound at the definition:
+A pack's nodes are drawn inside a frame, and `PrimitivePack<TTheme>` is where the pack states the palette that frame must supply. `TTheme` is `definePrimitivePack`'s type argument. Omit it and the pack is `PrimitivePack<unknown>`, which is also what bare `PrimitivePack` means: requires nothing, fits any runtime. A pack that needs a frame to carry tokens names the bound at the definition:
 
 ```ts
-export const elasticPack = definePrimitivePack({
+export const elasticPack = definePrimitivePack<SvgRenderTheme>({
   id: 'elastic',
   primitives: […],
-  theme: themeBound<SvgRenderTheme>(),
 });
 ```
 
@@ -135,7 +137,7 @@ Tuple-wrap both sides so neither distributes over the union. Between the two che
 
 **`AnyPrimitivePack` is `PrimitivePack<never>`.** `never` is assignable to every requirement, so it accepts every pack.
 
-**Registration is a check, not a generator.** The registry stays hand-written and readable, there is no config file or build step to learn, and the authoring fronts need no generation either: `buildJsxShim` and `buildObjectBuilders` derive the JSX and builder APIs from the registry array at runtime. Deriving the union from the registry in _source_ does not compile, since container primitives import the content-node alias and inferring the registry's type closes that cycle (`TS7022`).
+**Registration is a check, not a generator.** The registry stays hand-written and readable, there is no config file or build step to learn, and the authoring fronts need no generation either: `buildJsxShim` derives the JSX API from the registry array at runtime. Deriving the union from the registry in _source_ does not compile, since container primitives import the content-node alias and inferring the registry's type closes that cycle (`TS7022`).
 
 ## Next
 

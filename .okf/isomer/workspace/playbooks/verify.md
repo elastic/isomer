@@ -31,9 +31,9 @@ sources:
 
 `pnpm verify` is typecheck, lint, tests, the dual ESM/CJS build, export parity, export and declaration smokes, pack contents, the module-graph walk, the packed root-import check, and the license report.[^package]
 
-Pack contents checks required legal and docs files, declared `files` entries, export targets, fixture leakage, and relative documentation links inside the tarball. The packed-consumer check imports `@elastic/isomer-sdk` and `@elastic/isomer-runtime` from the packed tarball, ESM and CJS, with required peers installed. The module-graph walk fails when `react-dom` or `react-dom/server` is reachable from `.`, `./text`, `./markdown`, `./slack`, or `./author`.[^pack-contents][^pack-consumer][^module-graph]
+Pack contents checks required legal and docs files, declared `files` entries, export targets, fixture leakage, and relative documentation links inside the tarball. The packed-consumer check imports every published package from its packed tarball, ESM and CJS, with required peers installed, and fails on any process warning, such as the `ExperimentalWarning` Node 22.12 prints when `require()` loads an ES module. The module-graph walk fails when `react-dom` or `react-dom/server` is reachable from `.`, `./text`, `./markdown`, `./slack`, or `./author`.[^pack-contents][^pack-consumer][^module-graph]
 
-CI runs `pnpm verify`, then docs-builder in a second job.[^ci]
+CI runs `pnpm verify` on Node 22.13.0, the `engines` floor of the SDK, runtime, and evals, and on the latest 22 and 24, then docs-builder in a second job.[^ci]
 
 Related: [workspace](/workspace/concepts/workspace.md), [docs-builder](/workspace/playbooks/docs-builder.md).
 

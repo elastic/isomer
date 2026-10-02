@@ -7,41 +7,57 @@
 
 export {
   type AuthoringJsonSchemaOptions,
+  authoringSchemaSubset,
   buildAuthoringJsonSchema,
 } from './authoring_schema';
 export {
   type CompositionSchemaOptions,
-  type ResolvedVocabulary,
   buildBodyNodeSchemaFromDefinitions,
   buildCompositionSchema,
   buildCompositionSchemaFromDefinitions,
   getCompositionSchemaForDefinitions,
   metaSchema,
-  resolveVocabulary,
 } from './composition_schema';
+export {
+  type InputBudget,
+  type InputBudgetCheck,
+  MAX_INPUT_CHARACTERS,
+  MAX_INPUT_DEPTH,
+  MAX_INPUT_VALUES,
+  checkInputBudget,
+  isInputRefusal,
+} from './input_budget';
 export {
   type CompositionJsonSchemaOptions,
   buildCompositionJsonSchema,
 } from './json_schema';
+export { type IssueRoot, createNodeIssueFormatter } from './node_issues';
 export {
+  type UrlSchemaOptions,
   ASSET_URL_MESSAGE,
+  ASSET_URL_RULE,
   BLOCKED_HREF,
   NAVIGATION_HREF_MESSAGE,
+  NAVIGATION_HREF_RULE,
   assetUrl,
   navigationHref,
   sanitizeAssetUrl,
   sanitizeNavigationHref,
+  sanitizeParsedAssetUrl,
+  sanitizeParsedNavigationHref,
 } from './url';
 export {
+  type CheckedComposition,
+  type CheckedValidationResult,
   type CompositionValidatorOptions,
   type ParsedComposition,
   type ValidationErrorMode,
   type ValidationResult,
   type ValidationWarning,
+  compositionToRender,
   CompositionValidationError,
   createCompositionParser,
   createCompositionValidator,
-  enforceValidationMode,
   warningsForSurface,
 } from './validation';
 export {

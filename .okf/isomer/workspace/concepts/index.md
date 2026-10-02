@@ -6,5 +6,5 @@ Directory: `workspace/concepts/`
 
 | Title | Type | Description |
 |-------|------|-------------|
-| [Workspace](workspace.md) | Concept | pnpm workspace that hosts the SDK, runtime, image backend, slides pack, and e... |
+| [Workspace](workspace.md) | Concept | pnpm workspace that hosts the SDK, runtime, image backend, slides pack, eval ... |
 

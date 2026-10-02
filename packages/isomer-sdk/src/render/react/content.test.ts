@@ -13,6 +13,7 @@ import type { Composition } from '../../composition/composition';
 
 import {
   type CompositionWrapperOptions,
+  renderCompositionContent,
   wrapCompositionContent,
 } from './content';
 
@@ -46,6 +47,13 @@ describe('wrapCompositionContent', () => {
     expect(render(composition, { theme: 'auto' })).not.toContain('data-theme');
   });
 
+  it("defaults to the composition's theme, as the html surface does", () => {
+    const dark: Composition = { ...composition, theme: 'dark' };
+    expect(render(dark)).toContain('data-theme="dark"');
+    expect(render(dark, { theme: 'light' })).toContain('data-theme="light"');
+    expect(render(dark, { theme: 'auto' })).not.toContain('data-theme');
+  });
+
   it('prefers meta.ariaLabel, then the title, then the default label', () => {
     expect(
       render({ ...composition, meta: { ariaLabel: 'Cart health' } })
@@ -64,5 +72,32 @@ describe('wrapCompositionContent', () => {
     expect(render(composition, { framed: false, fluid: true })).toContain(
       'class="isomer fluid"'
     );
+  });
+});
+describe('renderCompositionContent', () => {
+  const dispatcher = {
+    renderReact: (node: { type: string }) =>
+      createElement('p', null, node.type),
+  };
+  const content = (heading?: boolean) =>
+    renderToStaticMarkup(
+      createElement(() =>
+        renderCompositionContent(
+          { ...composition, subtitle: 'Today' },
+          dispatcher,
+          {},
+          heading === undefined ? {} : { heading }
+        )
+      )
+    );
+
+  it('renders the heading, then each body node through the dispatcher', () => {
+    expect(content()).toBe(
+      '<h2>Checkout</h2><p class="sub">Today</p><p>note</p>'
+    );
+  });
+
+  it('leaves out the heading when asked', () => {
+    expect(content(false)).toBe('<p>note</p>');
   });
 });

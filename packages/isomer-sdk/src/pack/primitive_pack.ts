@@ -31,6 +31,14 @@ export interface PackAuthoringOptions {
   describe?: Readonly<Record<string, string>>;
   /** `$defId.property` paths to drop, from this pack's own primitives. */
   omitProperties?: readonly string[];
+  /** Headings an index catalog sorts this pack's primitives under, in order. */
+  groups?: readonly PrimitiveGroup[];
+}
+
+/** A titled set of primitive types, listed together in an index catalog. */
+export interface PrimitiveGroup {
+  title: string;
+  types: readonly string[];
 }
 
 /**
@@ -49,7 +57,7 @@ export type PackStyleAdapter = {
 };
 
 /** What a pack author passes to {@link definePrimitivePack}. */
-export interface PrimitivePackInput<TTheme = unknown> {
+export interface PrimitivePackInput {
   /** Stable identifier, used in capability reports and error messages. */
   id: string;
   /**
@@ -89,17 +97,11 @@ export interface PrimitivePackInput<TTheme = unknown> {
   styleAdapter?: PackStyleAdapter;
   /**
    * Names the collector shape this pack's `collectStyles` hooks mutate, so a
-   * runtime can reject a pack paired with an adapter of a different tag
-   * (`'distillate'` for `createDistillateHtmlStyleAdapter`). Defaults to
-   * `styleAdapter.styleCollector`; a pack with neither opts out of the check.
+   * runtime can reject a pack paired with an adapter of a different tag.
+   * Defaults to `styleAdapter.styleCollector`; a pack with neither opts out of
+   * the check.
    */
   styleCollector?: string;
-  /**
-   * The palette a frame must supply for this pack's nodes to be drawn on the
-   * `svg` surface. Pass `themeBound<T>()` so {@link definePrimitivePack} infers
-   * `PrimitivePack<T>`. Omit it to stay at `PrimitivePack<unknown>`.
-   */
-  theme?: (theme: TTheme) => void;
   /**
    * This pack's own contribution to the runtime's authoring JSON Schema.
    *
@@ -111,16 +113,6 @@ export interface PrimitivePackInput<TTheme = unknown> {
 }
 
 /**
- * Inference carrier for {@link PrimitivePackInput.theme}.
- *
- * `definePrimitivePack({ …, theme: themeBound<CoreTokens>() })` returns
- * `PrimitivePack<CoreTokens>`.
- */
-export const themeBound =
-  <T>(): ((theme: T) => void) =>
-  () => {};
-
-/**
  * A pack as the runtime sees it.
  *
  * `TTheme` is the palette this pack's `svg` renderers require — a *lower bound*
@@ -130,7 +122,8 @@ export const themeBound =
  * inventory has no single node type to be generic over.
  *
  * The bound is declared, not derived: nothing checks it against what the
- * renderers actually read. State it at the definition with {@link themeBound}.
+ * renderers actually read. State it at the definition as
+ * `definePrimitivePack<T>(input)`.
  * Bare `PrimitivePack` requires nothing and fits any runtime; a slot that must
  * hold packs of every palette is typed {@link AnyPrimitivePack}.
  */
@@ -173,12 +166,12 @@ export type AnyPrimitivePack = PrimitivePack<never>;
 /**
  * Builds a {@link PrimitivePack}.
  *
- * Infers `TTheme` from {@link PrimitivePackInput.theme}. Omitting `theme`
- * returns `PrimitivePack<unknown>` — requires nothing. A pack whose `svg`
- * renderers read tokens passes `theme: themeBound<CoreTokens>()`.
+ * `TTheme` is the palette a frame must supply for this pack's nodes to be drawn
+ * on the `svg` surface: `definePrimitivePack<CoreTokens>(input)`. Omitted, it is
+ * `unknown`, which requires nothing.
  */
 export const definePrimitivePack = <TTheme = unknown>(
-  input: PrimitivePackInput<TTheme>
+  input: PrimitivePackInput
 ): PrimitivePack<TTheme> => {
   if (input.primitives.length === 0) {
     throw new IsomerError(
@@ -188,6 +181,16 @@ export const definePrimitivePack = <TTheme = unknown>(
   }
   assertUniquePrimitiveTypes(input.id, input.primitives);
   assertUniqueEnhancementIds(input.id, input.enhancements ?? []);
+  const types = new Set(input.primitives.map((definition) => definition.type));
+  assertGroupedOnce(input.id, input.authoring?.groups ?? [], types);
+  for (const type of input.slackAssetTypes ?? []) {
+    if (!types.has(type)) {
+      throw new IsomerError(
+        'UNKNOWN_PRIMITIVE_TYPE',
+        `primitive pack "${input.id}": slackAssetTypes names primitive type "${type}", which the pack does not register`
+      );
+    }
+  }
   const styleCollector =
     input.styleCollector ?? input.styleAdapter?.styleCollector;
 
@@ -195,7 +198,7 @@ export const definePrimitivePack = <TTheme = unknown>(
     id: input.id,
     surfaces: input.surfaces ?? [],
     primitives: input.primitives,
-    types: new Set(input.primitives.map((definition) => definition.type)),
+    types,
     enhancements: input.enhancements ?? [],
     slackAssetTypes: new Set(input.slackAssetTypes ?? []),
     ...(input.styleAdapter !== undefined
@@ -206,13 +209,12 @@ export const definePrimitivePack = <TTheme = unknown>(
   };
 };
 
-/** Throws if `primitives` repeats a type or reuses one in `owned`. */
+/** Throws if `primitives` repeats a type. */
 const assertUniquePrimitiveTypes = (
   id: string,
-  primitives: readonly AnyPrimitiveDefinition[],
-  owned: ReadonlySet<string> = new Set()
+  primitives: readonly AnyPrimitiveDefinition[]
 ): void => {
-  const seen = new Set(owned);
+  const seen = new Set<string>();
   for (const { type } of primitives) {
     if (seen.has(type)) {
       throw new IsomerError(
@@ -221,6 +223,32 @@ const assertUniquePrimitiveTypes = (
       );
     }
     seen.add(type);
+  }
+};
+
+/** Throws if a group names a type outside `types`, or two groups share a type. */
+const assertGroupedOnce = (
+  id: string,
+  groups: readonly PrimitiveGroup[],
+  types: ReadonlySet<string>
+): void => {
+  const grouped = new Set<string>();
+  for (const { title, types: members } of groups) {
+    for (const type of members) {
+      if (!types.has(type)) {
+        throw new IsomerError(
+          'UNKNOWN_PRIMITIVE_TYPE',
+          `primitive pack "${id}": group "${title}" names primitive type "${type}", which the pack does not register`
+        );
+      }
+      if (grouped.has(type)) {
+        throw new IsomerError(
+          'DUPLICATE_PRIMITIVE_TYPE',
+          `primitive pack "${id}": primitive type "${type}" is in two groups`
+        );
+      }
+      grouped.add(type);
+    }
   }
 };
 
@@ -239,29 +267,4 @@ const assertUniqueEnhancementIds = (
     }
     seen.add(definition.id);
   }
-};
-
-/**
- * Returns `pack` with extra primitives added, keeping its declared surfaces.
- * Throws on a type the pack already owns.
- *
- * This is how a host extends a published pack with its own primitive. Build the
- * extra definitions with the pack's own `definePrimitive`.
- */
-export const extendPrimitivePack = <TTheme>(
-  pack: PrimitivePack<TTheme>,
-  primitives: readonly AnyPrimitiveDefinition[]
-): PrimitivePack<TTheme> => {
-  assertUniquePrimitiveTypes(pack.id, primitives, pack.types);
-  const styleCollector =
-    pack.styleCollector ?? pack.styleAdapter?.styleCollector;
-  return {
-    ...pack,
-    primitives: [...pack.primitives, ...primitives],
-    types: new Set([
-      ...pack.types,
-      ...primitives.map((definition) => definition.type),
-    ]),
-    ...(styleCollector !== undefined ? { styleCollector } : {}),
-  };
 };

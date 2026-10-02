@@ -13,6 +13,7 @@ export {
   createHtmlSurface,
 } from './html';
 export {
+  type MarkdownRenderNodeOptions,
   type MarkdownRenderOptions,
   type MarkdownSurface,
   createMarkdownSurface,
@@ -34,6 +35,7 @@ export {
 } from './slack';
 export {
   type NamedFrame,
+  type SvgPagesResult,
   type SvgRenderNodeOptions,
   type SvgRenderOptions,
   type SvgRenderResult,
@@ -41,6 +43,7 @@ export {
   createSvgSurface,
 } from './svg';
 export {
+  type TextRenderNodeOptions,
   type TextRenderOptions,
   type TextSurface,
   createTextSurface,

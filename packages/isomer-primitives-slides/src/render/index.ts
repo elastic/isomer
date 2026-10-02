@@ -5,11 +5,37 @@
  * 2.0.
  */
 
-export { renderChildren } from './children';
+export {
+  markdownCaption,
+  renderMarkdownChildren,
+  renderSlackChildren,
+  renderTextChildren,
+  slackCaption,
+} from './children';
 export { cls } from './cls';
 export type {
+  SlideLayout,
   SlidePackTypes,
   SlideReactEnv,
   SlideRenderContext,
   SlideRenderScope,
 } from './context';
+export {
+  type MrkdwnSource,
+  alteredInCodeBlock,
+  fitsSlack,
+  hasMrkdwnDelimiter,
+  mrkdwnKeeps,
+  richTextBreak,
+  richTextLinked,
+  richTextSection,
+  slackBold,
+  slackCodePanel,
+  slackContext,
+  slackFields,
+  slackHeading,
+  slackMarksContext,
+  slackMarksSection,
+  slackRichText,
+  slackSection,
+} from './slack_text';

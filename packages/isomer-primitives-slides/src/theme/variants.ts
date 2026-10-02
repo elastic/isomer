@@ -5,81 +5,85 @@
  * 2.0.
  */
 
-/** Accent tokens a slide primitive can apply. */
-export const slideTones = [
-  'primary',
-  'pink',
-  'teal',
-  'success',
-  'warning',
-  'danger',
-  'subtle',
-] as const;
+/** `primary` is yours or in focus; `accent` is the host or another party. */
+export const slideTones = ['primary', 'accent'] as const;
 
-/** One of {@link slideTones}. */
 export type SlideTone = (typeof slideTones)[number];
 
-/** Layout variants for {@link SlideFrameNode.layout}. */
-export const slideFrameLayouts = ['title', 'content'] as const;
+/** Largest first. */
+export const slideSizes = ['l', 'm', 's'] as const;
 
-/** Headline scale for {@link SlideTitleNode.size}. */
-export const slideTitleSizes = [
-  'jumbo',
-  'hero',
-  'standard',
-  'compact',
+export type SlideSize = (typeof slideSizes)[number];
+
+/** `inverse` is for title, section, and closing slides. */
+export const slideFrameTones = ['page', 'inverse'] as const;
+
+export type SlideFrameTone = (typeof slideFrameTones)[number];
+
+export const slideSplitRatios = [
+  'even',
+  'wideLeft',
+  'narrowLeft',
+  'aside',
 ] as const;
 
-/** Column-width variants for {@link SlideSplitNode.ratio}. */
-export const slideSplitRatios = ['even', 'wideLeft', 'wideRight'] as const;
-
-/** Vertical gaps for {@link SlideStackNode.spacing}. */
-export const slideStackSpacings = ['tight', 'normal', 'loose'] as const;
-
-/** Glyphs for {@link SlideBulletListNode.marker}. */
-export const slideBulletMarkers = ['dot', 'check', 'x'] as const;
-
-/** Visual treatments for {@link SlideCardGroupNode.style}. */
-export const slideCardGroupStyles = ['standard', 'feature'] as const;
-
-/** Column counts for {@link SlideCardGroupNode.columns}. */
-export const slideCardColumnCounts = [1, 2, 3, 4, 5, 6] as const;
-
-/** One of {@link slideCardColumnCounts}. */
-export type SlideCardColumnCount = (typeof slideCardColumnCounts)[number];
-
-/** {@link slideCardColumnCounts} as the CSS-identifier keys `variants()` requires. */
-export const slideCardColumns = [
-  'cols1',
-  'cols2',
-  'cols3',
-  'cols4',
-  'cols5',
-  'cols6',
-] as const satisfies ReadonlyArray<`cols${SlideCardColumnCount}`>;
-
-/** The {@link slideCardColumns} key for a column count. */
-export const slideCardColumnsKey = (
-  count: SlideCardColumnCount
-): SlideCardColumns => `cols${count}`;
-
-/** One of {@link slideFrameLayouts}. */
-export type SlideFrameLayout = (typeof slideFrameLayouts)[number];
-
-/** One of {@link slideTitleSizes}. */
-export type SlideTitleSize = (typeof slideTitleSizes)[number];
-
-/** One of {@link slideSplitRatios}. */
 export type SlideSplitRatio = (typeof slideSplitRatios)[number];
 
-/** One of {@link slideStackSpacings}. */
+export const slideSplitDividers = ['gap', 'rule', 'hairline', 'arrow'] as const;
+
+export type SlideSplitDivider = (typeof slideSplitDividers)[number];
+
+export const slideStackSpacings = ['tight', 'normal', 'loose'] as const;
+
 export type SlideStackSpacing = (typeof slideStackSpacings)[number];
 
-/** One of {@link slideBulletMarkers}. */
+export const slideMatrixMarks = ['full', 'partial', 'none'] as const;
+
+export type SlideMatrixMark = (typeof slideMatrixMarks)[number];
+
+export const slideBulletMarkers = ['dot', 'check', 'x'] as const;
+
 export type SlideBulletMarker = (typeof slideBulletMarkers)[number];
 
-/** One of {@link slideCardGroupStyles}. */
-export type SlideCardGroupStyle = (typeof slideCardGroupStyles)[number];
+// Variant keys must start with a letter.
+export const countKey = (n: number): string => `n${n}`;
 
-/** One of {@link slideCardColumns}. */
-export type SlideCardColumns = (typeof slideCardColumns)[number];
+export const countOf = (key: string): number => Number(key.slice(1));
+
+/** {@link countKey}s from `from` to `to`, inclusive. */
+export const countKeys = (from: number, to: number): string[] =>
+  Array.from({ length: to - from + 1 }, (_, index) => countKey(from + index));
+
+export const slideDiffOps = ['add', 'remove'] as const;
+
+export type SlideDiffOp = (typeof slideDiffOps)[number];
+
+export const slideTranscriptRoles = ['user', 'model', 'host'] as const;
+
+export type SlideTranscriptRole = (typeof slideTranscriptRoles)[number];
+
+export const slideTranscriptFormats = ['prose', 'code'] as const;
+
+export type SlideTranscriptFormat = (typeof slideTranscriptFormats)[number];
+
+/** Only the title bar changes; `slack` reads the title as a channel. */
+export const slideWindowChromes = [
+  'browser',
+  'terminal',
+  'slack',
+  'chat',
+] as const;
+
+export type SlideWindowChrome = (typeof slideWindowChromes)[number];
+
+/** The first three draw the slide; the rest print their output. */
+export const slideRenderSurfaces = [
+  'react',
+  'html',
+  'svg',
+  'markdown',
+  'text',
+  'slack',
+] as const;
+
+export type SlideRenderSurface = (typeof slideRenderSurfaces)[number];

@@ -6,27 +6,25 @@
  */
 
 import { Fragment, type ReactNode } from 'react';
+import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
-import { slideModules } from '../../theme/modules';
 
+import { stackModule } from './styles';
 import type { SlideStackNode } from './types';
 
 /** React renderer for {@link SlideStackNode}. */
 export const react = (
-  node: SlideStackNode,
+  { type, items, spacing = 'normal' }: SlideStackNode,
   { context, scope }: SlideReactEnv
 ): ReactNode => {
-  const { handles: stack } = slideModules.stack;
+  const { handles: stack } = stackModule;
   return (
     <div
-      className={cls(
-        context,
-        stack.root,
-        stack.spacing[node.spacing ?? 'normal']
-      )}>
-      {node.items.map((child, index) => (
+      {...nodeAnchor(context, { type })}
+      className={cls(context, stack.root, stack.spacing[spacing])}>
+      {items.map((child, index) => (
         <Fragment key={index}>{scope.renderReact(child, context)}</Fragment>
       ))}
     </div>

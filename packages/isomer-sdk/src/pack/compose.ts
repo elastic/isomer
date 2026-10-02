@@ -44,6 +44,19 @@ export const composePacks = (
       ]);
     }
   }
+  const repeated = [
+    ...new Set(
+      packs
+        .map(({ id }) => id)
+        .filter((id, index, ids) => ids.indexOf(id) !== index)
+    ),
+  ];
+  if (repeated.length > 0) {
+    throw new IsomerError(
+      'DUPLICATE_PACK_ID',
+      `composePacks: ${repeated.map((id) => `"${id}"`).join(', ')} names more than one pack; pack ids must be unique`
+    );
+  }
   assertUnique('DUPLICATE_PRIMITIVE_TYPE', 'primitive type', typeOwners);
   assertUnique('DUPLICATE_ENHANCEMENT', 'enhancement', enhancementOwners);
 

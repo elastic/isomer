@@ -11,24 +11,28 @@ runtime.surfaces.slack.render(composition, { collectAssets: true });
 
 | Surface | `render` returns | Validates | Options |
 | --- | --- | --- | --- |
-| `react` | `ReactNode` | no | `context` (required only if the pack narrows it), `heading`, `wrapper` |
-| `html` | `HTMLRenderResult` | yes | `theme`, `fluid`, `framed`, `heading`, `css`, `scripts`, `minify`, `enhancements` (ids), `onValidationError` |
-| `text` | `string` | yes | `onValidationError` |
-| `markdown` | `string` | yes | `onValidationError` |
-| `slack` | `{ text, blocks, assets }` | yes | `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
-| `svg` | `SvgRenderResult` | yes | `frame`, `width`, `height`, `theme`, `onValidationError` |
+| `react` | `ReactNode` | no | `context` (required only if the pack narrows it), `heading`, `wrapper`, `enhancements` (ids) |
+| `html` | `HTMLRenderResult` | yes | `theme`, `fluid`, `framed`, `heading`, `css`, `scripts`, `minify`, `enhancements` (ids), `anchors`, `onValidationError` |
+| `text` | `string` | yes | `heading`, `onValidationError` |
+| `markdown` | `string` | yes | `heading`, `onValidationError` |
+| `slack` | `{ text, blocks, assets }` | yes | `heading`, `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
+| `svg` | `SvgRenderResult` | yes | `frame`, `width`, `height`, `theme`, `anchors`, `onValidationError` |
 
 `HTMLRenderResult` is `{ html, css, js, body, measurement, validationErrors }`. [Embedding](embedding.md) covers getting that markup, stylesheet, and script onto a page a host already controls, including when to render with `scripts: 'host'`. The `svg` entry is `undefined` unless the runtime was given [frames](frame.md), and the factory's return type tracks which.
 
 All six are synchronous.
 
+`heading` defaults to `true` wherever it appears: the composition's title and subtitle open the output, as an `h2` and `p.sub` on `react` and `html`, an `h1` and italic line in Markdown, an uppercased line in text, and a `header` and `context` block in Slack. Pass `false` when the host already shows the title, or the body opens with its own heading, as a slide does. Slack then leaves them out of its fallback `text` too, and `html` still uses the title for the wrapper's `aria-label`.
+
 ## Validation posture
 
 Whether a surface validates is a declared field on its type — `readonly validating: true` or `false` — so a host can reason about it without reading implementations.
 
-The HTML surface reports: the render proceeds and the findings come back as `validationErrors` on the result, because a partial document is still worth showing. The other four validating surfaces throw `CompositionValidationError` by default, because a string, a Slack payload, or an image has no place to carry findings and would otherwise go out as if it were sound. `onValidationError` flips either posture: `'throw'` on HTML, `'collect'` on the rest to validate and render anyway.
+The HTML surface reports: the render proceeds and the findings come back as `validationErrors` on the result, because a partial document is still worth showing. The other four validating surfaces throw `CompositionValidationError` by default, because a string, a Slack payload, or an image has no place to carry findings and would otherwise go out as if it were sound. `onValidationError` flips either posture: `'throw'` on HTML, `'collect'` on the rest to validate and render anyway. One finding it cannot flip: input refused before parsing, over its [input budget](../../isomer-sdk/docs/composition.md#the-input-budget) or not plain data, throws on every validating surface, since nothing can render it.
 
-React is the exception, deliberately. It is the interactive target, where a partial render beats a thrown error and a host would rather show the parts of a composition that are well-formed. `surfaces.react.render` will render a composition that `runtime.validate` rejects. A host that wants the other behaviour validates first.
+A validating surface renders the plain copy its validation checked, never the value it was handed, so a getter or `Proxy` cannot pass validation with one value and render another. `renderNode` holds to the same contract: it validates the node as the sole node of a view, under the same input budget, takes `onValidationError` with the surface's `render` default, and renders the checked copy.
+
+React is the exception, deliberately. It is the interactive target, where a partial render beats a thrown error and a host would rather show the parts of a composition that are well-formed. `surfaces.react.render` will render a composition that `runtime.validate` rejects. It renders the value it is given, reading it as it draws. A host that wants the other behaviour validates first and renders the result's `composition`.
 
 ## React returns content, not a document
 
@@ -44,16 +48,18 @@ runtime.surfaces.react.render(composition, {
 
 Omit `wrapper` and the surface returns bare content.
 
-`renderNode` takes `ReactRenderNodeOptions`, which is `ReactRenderOptions` without `heading`: a lone node has no composition title to draw. `heading` still controls it on `render`.
+Pass `enhancements` to render with a pack's enhancements, by id, exactly as on the `html` surface: ids resolve against the enhancements the runtime's packs register, and an id none registers is ignored. Those whose `appliesTo` finds something in the body reach every renderer as `context.enhancements`, and turn node anchors on when one declares `anchors: true`. Each one's `script` runs once against the `wrapper` section when it mounts, and a new composition or node object mounts a fresh section, so a script never runs twice on the same elements. A script needs `wrapper`; without one the surface warns once for that composition and runs nothing. An enhancement the host drives, with no `script`, needs no wrapper: the host finds the parts it acts on with `findNodeElementPairs` after the render commits.
+
+`renderNode` takes `ReactRenderNodeOptions`, which is `ReactRenderOptions` without `heading`: a lone node has no composition title to draw. `heading` still controls it on `render`. Slack's `SlackRenderNodeOptions` omits `heading` for the same reason.
 
 The options argument, and `context` inside it, is optional only when omitting it is sound. The SDK's own render context has no required field, so `{}` is a complete value and both may be left off; a pack that narrows the context with something mandatory makes them required for that binding rather than letting the surface fabricate a value missing fields its renderers will read.
 
-`context` is typed by the runtime's `TRenderContext`, which is inferred from `styleAdapter` alone. A host that supplies no adapter and loads a pack that narrows its context, such as the slides pack's `SlideRenderContext`, gets the SDK's `PrimitiveRenderContext` by inference, and a narrowed field in `context` is then an excess property. Name all three type parameters positionally to type it:
+`context` is typed by the runtime's `TRenderContext`, which is inferred from `styleAdapter` alone. A host that supplies no adapter and loads a pack that narrows its context, here a `chartsPack` whose renderers read a `ChartsRenderContext`, gets the SDK's `PrimitiveRenderContext` by inference, and a narrowed field in `context` is then an excess property. Name all three type parameters positionally to type it:
 
 ```ts
-const runtime = createIsomerRuntime<unknown, SlideRenderContext, SlideFrameTheme>({
-  packs: [slidesPack],
-  frames: { slide: slideDeckFrame },
+const runtime = createIsomerRuntime<unknown, ChartsRenderContext, ChartsTheme>({
+  packs: [chartsPack],
+  frames: { card: cardFrame },
 });
 
 runtime.surfaces.react.render(composition, { context: { resolveClassName } });
@@ -65,7 +71,7 @@ The React surface imports `@elastic/isomer-sdk/react`, not `./html`, so that mod
 
 ## Slack renders a node as a message
 
-`slack.renderNode` returns the same `{ text, blocks, assets }` as `render`, fitted to Slack's limits, and takes the same options minus `onValidationError`. A picture node degrades to markdown unless `collectAssets` is set, exactly as it does in a composition, so a host that can upload passes the option on both paths:
+`slack.renderNode` returns the same `{ text, blocks, assets }` as `render`, fitted to Slack's limits, and takes the same options minus `heading`. A picture node degrades to markdown unless `collectAssets` is set, exactly as it does in a composition, so a host that can upload passes the option on both paths:
 
 ```ts
 const { blocks, assets } = runtime.surfaces.slack.renderNode(chart, {
@@ -80,12 +86,14 @@ The `svg` surface returns `{ element, css, width, height }`, not SVG bytes. Rast
 Both halves are needed together. `element` is the same React tree the DOM gets, carrying class names; `css` is the packs' stylesheet, which an image backend is handed the way a browser is handed a `<style>`. Its `light-dark(…)` values are already resolved to the render's scheme, because an image is one static frame with no color scheme to resolve them against.
 
 ```ts
-const svg = runtime.surfaces.svg;
-const { width, height } = svg.resolveViewport(composition);
-const { element, css } = svg.render(composition, { theme: 'light' });
+const { element, css, width, height } = runtime.surfaces.svg.render(composition, { theme: 'light' });
 ```
 
-`renderNode` on this surface takes only `frame` and `theme`. Geometry is absent deliberately: a node drawn with no surround has nothing for a width or height to size.
+`anchors: true` renders node anchors into `element`, so a measured layout of it can be handed to the SDK's `checkLayout`.
+
+`renderPages(compositions, options?)` lays several compositions out as one document, `{ pages, css, width, height }`: one root per composition against one stylesheet. A paged output such as a PDF needs that, and per-composition `render` calls cannot give it, because each collects only the CSS its own composition uses. Every page is the same size, the tallest estimate unless `height` is given, and the first composition's `theme` decides the palette unless `theme` is given. An empty list throws `EMPTY_PAGES`, and a body the frame rejects names its page, counted from 1.
+
+`renderNode` on this surface takes only `frame`, `theme`, `anchors`, and `onValidationError`. Geometry is absent deliberately: a node drawn with no surround has nothing for a width or height to size. The result still reports one, the frame's `defaultWidth` and its estimate for a one-node body, so a rasterizer has a viewport to lay the node out in.
 
 ## Warnings are per surface
 

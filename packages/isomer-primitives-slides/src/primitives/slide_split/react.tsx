@@ -6,32 +6,125 @@
  */
 
 import { Fragment, type ReactNode } from 'react';
+import { layoutRoom, nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
-import { slideModules } from '../../theme/modules';
+import { marksReact } from '../../render/marks';
+import { ToneCue } from '../../render/tone_cue';
+import { slideDistillery } from '../../theme/distillery';
+import {
+  connectorModule,
+  layoutModule,
+  tonesModule,
+} from '../../theme/modules';
+import { slideLayout, withLayout } from '../layout';
 
-import type { SlideSplitNode } from './types';
+import { paneLayouts } from './pane_layout';
+import { splitModule } from './styles';
+import type { SlideSplitNode, SlideSplitPane } from './types';
+
+const { label: connectorLabel } = slideDistillery.tokens.connector;
+
+const Pane = ({
+  pane: { label, tone, items },
+  context,
+  itemContext,
+  scope,
+}: {
+  pane: SlideSplitPane;
+  context: SlideReactEnv['context'];
+  itemContext: SlideReactEnv['context'];
+  scope: SlideReactEnv['scope'];
+}): ReactNode => {
+  const { handles: split } = splitModule;
+  return (
+    <div {...layoutRoom(context)} className={cls(context, split.column)}>
+      {label ? (
+        <h2
+          className={cls(
+            context,
+            split.label,
+            tone ? tonesModule.handles.tone[tone] : undefined,
+            tone ? split.tonedLabel : split.plainLabel
+          )}>
+          <ToneCue {...{ tone, context }} />
+          {label}
+        </h2>
+      ) : null}
+      <div className={cls(context, split.items)}>
+        {items.map((node, index) => (
+          <Fragment key={index}>
+            {scope.renderReact(node, itemContext)}
+          </Fragment>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 /** React renderer for {@link SlideSplitNode}. */
 export const react = (
   node: SlideSplitNode,
   { context, scope }: SlideReactEnv
 ): ReactNode => {
-  const { handles: split } = slideModules.split;
+  const {
+    divider = 'gap',
+    footnote,
+    panes: [left, right],
+    ratio = 'even',
+    type,
+  } = node;
+  const { handles: split } = splitModule;
+  const { handles: connector } = connectorModule;
+  const [leftLayout, rightLayout] = paneLayouts(slideLayout(context), node);
   return (
     <div
-      className={cls(context, split.root, split.ratio[node.ratio ?? 'even'])}>
-      <div className={cls(context, split.col)}>
-        {node.left.map((child, index) => (
-          <Fragment key={index}>{scope.renderReact(child, context)}</Fragment>
-        ))}
+      {...nodeAnchor(context, { type })}
+      className={cls(context, layoutModule.handles.fill)}>
+      <div
+        className={cls(
+          context,
+          split.grid,
+          split.ratio[ratio],
+          split.divider[divider]
+        )}>
+        <Pane
+          pane={left}
+          itemContext={withLayout(context, leftLayout)}
+          {...{ context, scope }}
+        />
+        {divider === 'rule' ? (
+          <div aria-hidden className={cls(context, split.rule)} />
+        ) : divider === 'hairline' ? (
+          <div aria-hidden className={cls(context, split.hairline)} />
+        ) : divider === 'arrow' ? (
+          <div
+            role="img"
+            aria-label={connectorLabel.value}
+            className={cls(
+              context,
+              split.arrow,
+              connector.across,
+              connector.primary
+            )}>
+            <div className={cls(context, connector.railAcross)} />
+            <div className={cls(context, connector.headRight)} />
+          </div>
+        ) : (
+          <div aria-hidden />
+        )}
+        <Pane
+          pane={right}
+          itemContext={withLayout(context, rightLayout)}
+          {...{ context, scope }}
+        />
       </div>
-      <div className={cls(context, split.col)}>
-        {node.right.map((child, index) => (
-          <Fragment key={index}>{scope.renderReact(child, context)}</Fragment>
-        ))}
-      </div>
+      {footnote ? (
+        <p className={cls(context, split.footnote)}>
+          {marksReact(footnote, context)}
+        </p>
+      ) : null}
     </div>
   );
 };

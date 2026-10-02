@@ -9,8 +9,8 @@ import type { ReactNode } from 'react';
 
 import type { SlideContentNode } from './body_node';
 import { slidePackDispatcher } from './dispatch';
+import { slideModules, slideStylesheet } from './stylesheet';
 import { isomerDeckRoot } from './theme/distillery';
-import { slideModules, slideStylesheet } from './theme/modules';
 
 /** Renders a single content node outside a `slideFrame`, inlining the stylesheet. */
 export const StandaloneSlideNode = ({
@@ -26,11 +26,9 @@ export const StandaloneSlideNode = ({
   return (
     <div className={`${isomerDeckRoot} ${dr.handles.root.readableName}`}>
       <style dangerouslySetInnerHTML={{ __html: slideStylesheet() }} />
-      <section className={handles.slide.readableName}>
-        <div
-          className={`${handles.frame.readableName} ${handles.frameStandalone.readableName}`}>
-          {slidePackDispatcher.renderReact(node)}
-        </div>
+      <section
+        className={`${handles.slide.readableName} ${handles.standalone.readableName}`}>
+        {slidePackDispatcher.renderReact(node)}
       </section>
     </div>
   );

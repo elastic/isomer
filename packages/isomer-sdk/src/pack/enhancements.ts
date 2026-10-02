@@ -31,7 +31,8 @@ export interface EnhancementDefinition {
   /**
    * A function body with `root: Element`, the render's `.isomer` section, in
    * scope. It runs in its own function, so a top-level `const` or `return`
-   * cannot reach another enhancement.
+   * cannot reach another enhancement. Absent when the host drives the
+   * enhancement itself.
    *
    * It must not look for its root through `document.currentScript`, which is
    * `null` inside a shadow root. It must address markup through `data-*`
@@ -40,8 +41,36 @@ export interface EnhancementDefinition {
    * meant for the host sets `composed: true` as well as `bubbles: true`, or it
    * stops at a shadow boundary.
    */
-  script: string;
+  script?: string;
+  /** Renders node anchors when resolved, for an enhancement that finds nodes with `findNodeElementPairs`. */
+  anchors?: true;
 }
+
+/**
+ * The `definitions` that apply to `body`, the first of each id, limited to
+ * `requested` ids when given. The HTML and React surfaces both resolve through
+ * it, so the two cannot disagree on which enhancements a render carries.
+ */
+export const resolveEnhancements = (
+  body: readonly PrimitiveNode[],
+  walk: ChildNodeWalker,
+  definitions: readonly EnhancementDefinition[],
+  requested?: readonly string[]
+): EnhancementDefinition[] => {
+  const wanted = requested && new Set(requested);
+  const ids = new Set<string>();
+  return definitions.filter((definition) => {
+    if (
+      ids.has(definition.id) ||
+      (wanted && !wanted.has(definition.id)) ||
+      !definition.appliesTo(body, walk)
+    ) {
+      return false;
+    }
+    ids.add(definition.id);
+    return true;
+  });
+};
 
 /**
  * Wraps one script body in its own function, so its `const`s and a top-level

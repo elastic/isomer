@@ -6,13 +6,16 @@
  */
 
 export {
+  type MarkdownBlock,
+  type MarkdownContent,
+  type MarkdownInline,
+  type MarkdownInlineInput,
+} from '../define';
+
+export {
   type MarkdownEnvelopeDispatcher,
-  boldLabelPrefix,
-  boldSectionLabel,
-  defaultMarkdownFromText,
-  markdownImage,
-  markdownLink,
-  markdownLinkWrap,
+  type MarkdownEnvelopeOptions,
+  md,
   renderMarkdownEnvelope,
-  sanitizeMarkdownSource,
+  serializeMarkdown,
 } from '../render/markdown';

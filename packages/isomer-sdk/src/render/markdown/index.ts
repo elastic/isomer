@@ -5,17 +5,10 @@
  * 2.0.
  */
 
-export {
-  type MarkdownEnvelopeDispatcher,
-  renderMarkdownEnvelope,
-} from './envelope';
+export { md, serializeMarkdown } from './builder';
 
 export {
-  boldLabelPrefix,
-  boldSectionLabel,
-  defaultMarkdownFromText,
-  markdownImage,
-  markdownLink,
-  markdownLinkWrap,
-  sanitizeMarkdownSource,
-} from './format';
+  type MarkdownEnvelopeDispatcher,
+  type MarkdownEnvelopeOptions,
+  renderMarkdownEnvelope,
+} from './envelope';

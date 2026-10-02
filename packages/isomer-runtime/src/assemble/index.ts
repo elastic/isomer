@@ -7,6 +7,7 @@
 
 export {
   type HostCapabilities,
+  type PrimitiveDescriptions,
   type RuntimeAuthoringContext,
 } from './authoring';
 export { type RuntimeRendererOverrides } from './overrides';

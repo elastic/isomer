@@ -10,23 +10,42 @@ import type { SlideBulletListNode } from './schema';
 /** Canonical {@link SlideBulletListNode} example. */
 export const example: SlideBulletListNode = {
   type: 'slideBulletList',
-  items: ['Same spec feeds every renderer.', 'Markdown stays useful.'],
+  items: [
+    'Refunds post to the original card within **two days**.',
+    'Store credit is instant and never expires.',
+    'Returns by mail need no receipt.',
+  ],
 };
 
 /** `check` marker with a label. */
 export const checkExample: SlideBulletListNode = {
   type: 'slideBulletList',
-  label: 'Shipped',
+  label: 'In the spring release',
   marker: 'check',
-  items: ['Validation before render.', 'One stylesheet for html and svg.'],
+  items: ['Saved carts across devices.', 'Apple Pay at checkout.'],
 };
 
 /** `x` marker with a label. */
 export const xExample: SlideBulletListNode = {
   type: 'slideBulletList',
-  label: 'Out of scope',
+  label: 'Not this quarter',
   marker: 'x',
-  items: ['Routing between slides.', 'Data fetching.'],
+  items: ['Same-day delivery outside the metro area.', 'Gift wrapping.'],
+};
+
+/** Six points, the most a list holds, under a label. */
+export const fullExample: SlideBulletListNode = {
+  type: 'slideBulletList',
+  label: 'Checkout, this quarter',
+  marker: 'check',
+  items: [
+    'Saved carts across devices.',
+    'Apple Pay at checkout.',
+    'Refunds post within **two days**.',
+    'One courier for the whole basket.',
+    'Receipts by email and in the app.',
+    'Store credit that never expires.',
+  ],
 };
 
 /** Conformance examples for {@link SlideBulletListNode}. */
@@ -34,4 +53,5 @@ export const examples: SlideBulletListNode[] = [
   example,
   checkExample,
   xExample,
+  fullExample,
 ];
