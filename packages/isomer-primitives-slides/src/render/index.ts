@@ -6,6 +6,7 @@
  */
 
 export {
+  markdownCaption,
   renderMarkdownChildren,
   renderSlackChildren,
   renderTextChildren,

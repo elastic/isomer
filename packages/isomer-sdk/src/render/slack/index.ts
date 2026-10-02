@@ -55,16 +55,6 @@ export {
   SLACK_LIMITS,
 } from './blocks';
 export {
-  type SlackOverflowOptionInput,
-  type SlackSelectOptionInput,
-  slackActionId,
-  slackButtonStyle,
-  slackOverflowElement,
-  slackSelectOption,
-  slackStaticSelect,
-  slackUrlButton,
-} from './elements';
-export {
   type SlackEnvelopeDispatcher,
   type SlackEnvelopeOptions,
   type SlackEnvelopeResult,
@@ -78,7 +68,6 @@ export {
   codeBlock,
   escapeMrkdwn,
   gfmToSlackBlocks,
-  gfmToSlackMrkdwn,
   isAbsoluteHttpUrl,
   italic,
   joinMrkdwn,

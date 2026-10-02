@@ -8,7 +8,6 @@
 export {
   LAYOUT_ROOM_ATTRIBUTE,
   NODE_ANCHOR_ATTRIBUTE,
-  findNodeElements,
   layoutRoom,
   nodeAnchor,
   withNodeAnchors,
@@ -20,7 +19,6 @@ export {
   isStructuredValue,
   rawDisplayValue,
 } from './format_display_value';
-export { formatCompactNumber } from './format_number';
 export {
   type LayoutBox,
   type LayoutFinding,

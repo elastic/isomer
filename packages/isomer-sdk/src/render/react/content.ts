@@ -6,13 +6,10 @@
  */
 
 import {
-  type Context,
-  createContext,
   createElement,
   Fragment,
   type ReactElement,
   type ReactNode,
-  useContext,
 } from 'react';
 
 import type { Composition } from '../../composition';
@@ -38,36 +35,8 @@ export interface ReactContentOptions {
 }
 
 /**
- * Dispatcher that created this React tree. Nested primitive components read it
- * because React invokes those children after the parent renderer has returned.
- * `context` is untyped: each pack narrows `PrimitiveRenderContext`.
- */
-export type ReactTreeDispatcher = {
-  renderReact: (node: PrimitiveNode, context?: object) => ReactNode;
-};
-
-// On `globalThis` under a `Symbol.for` key, so an ESM and a CommonJS copy of
-// the SDK publish and read one context.
-const DISPATCHER_CONTEXT = Symbol.for('isomer.react.dispatcher');
-
-type DispatcherContextScope = {
-  [DISPATCHER_CONTEXT]?: Context<ReactTreeDispatcher | null>;
-};
-
-const PrimitiveDispatcherContext = ((globalThis as DispatcherContextScope)[
-  DISPATCHER_CONTEXT
-] ??= createContext<ReactTreeDispatcher | null>(null));
-
-/** The dispatcher rendering the enclosing tree, or `null` outside one. */
-export const useReactPrimitiveDispatcher = (): ReactTreeDispatcher | null =>
-  useContext(PrimitiveDispatcherContext);
-
-/**
  * A composition's heading and body as React nodes, without the surrounding
  * document or wrapper element.
- *
- * `dispatcher` is published so a primitive that renders children can reach it
- * with {@link useReactPrimitiveDispatcher} — see {@link ReactTreeDispatcher}.
  */
 export const renderCompositionContent = <
   TNode extends PrimitiveNode,
@@ -79,34 +48,28 @@ export const renderCompositionContent = <
   { heading = true }: ReactContentOptions = {}
 ): ReactNode =>
   createElement(
-    PrimitiveDispatcherContext.Provider,
-    {
-      value: dispatcher as ReactTreeDispatcher,
-    },
-    createElement(
-      Fragment,
-      null,
-      ...[
-        heading && composition.title
-          ? createElement('h2', { key: 'title' }, composition.title)
-          : null,
-        heading && composition.subtitle
-          ? createElement(
-              'p',
-              { key: 'subtitle', className: 'sub' },
-              composition.subtitle
-            )
-          : null,
-        ...composition.body.map((node, index) =>
-          createElement(RenderedCompositionNode<TNode, TContext>, {
-            key: `body-${index}`,
-            node,
-            context,
-            dispatcher,
-          })
-        ),
-      ].filter(Boolean)
-    )
+    Fragment,
+    null,
+    ...[
+      heading && composition.title
+        ? createElement('h2', { key: 'title' }, composition.title)
+        : null,
+      heading && composition.subtitle
+        ? createElement(
+            'p',
+            { key: 'subtitle', className: 'sub' },
+            composition.subtitle
+          )
+        : null,
+      ...composition.body.map((node, index) =>
+        createElement(RenderedCompositionNode<TNode, TContext>, {
+          key: `body-${index}`,
+          node,
+          context,
+          dispatcher,
+        })
+      ),
+    ].filter(Boolean)
   );
 
 interface RenderedCompositionNodeProps<

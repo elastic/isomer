@@ -55,14 +55,14 @@ type NoKeys = Record<never, never>;
 type ShapeOf<T> = T extends { shape: infer Shape } ? Shape : NoKeys;
 
 /** A primitive's schema type, or `never` when it declares none. */
-export type SchemaOf<P> = P extends { schema: infer S }
+type SchemaOf<P> = P extends { schema: infer S }
   ? S extends ZodObject
     ? S
     : never
   : never;
 
 /** A bare `ZodObject` has a string index; a real shape does not. */
-export type LooseSchema<TSchema> = string extends keyof ShapeOf<TSchema>
+type LooseSchema<TSchema> = string extends keyof ShapeOf<TSchema>
   ? true
   : false;
 
@@ -635,16 +635,14 @@ export const textFromChildren = (
 };
 
 /** An element's props without `children` and without `undefined` entries. */
-export const withoutChildren = <TProps>(
-  element: ReactElement<unknown>
-): TProps => {
+const withoutChildren = <TProps>(element: ReactElement<unknown>): TProps => {
   const props = { ...(element.props as TProps & { children?: ReactNode }) };
   delete props.children;
   return omitUndefined(props);
 };
 
 /** Narrows `element` to an authoring element, asserting `type` when given. */
-export const requireAuthorElement = <TProps>(
+const requireAuthorElement = <TProps>(
   element: ReactNode,
   type?: string
 ): ReactElement<TProps & { children?: ReactNode }> => {
@@ -658,32 +656,6 @@ export const requireAuthorElement = <TProps>(
   }
   return element as ReactElement<TProps & { children?: ReactNode }>;
 };
-
-/**
- * The props of each child, requiring every one of them to be `childType`.
- * `options.text` copies leftover text children onto that field when it is absent.
- */
-export const itemsFromChildren = <TItem>(
-  children: ReactNode,
-  childType: string,
-  options?: { text?: string }
-): TItem[] =>
-  flattenChildren(children).map((child) => {
-    const nested = requireAuthorElement<TItem & { children?: ReactNode }>(
-      child,
-      childType
-    );
-    const props = withoutChildren<TItem>(nested);
-    const { text } = options ?? {};
-    if (
-      text === undefined ||
-      nested.props.children === undefined ||
-      (props as Record<string, unknown>)[text] !== undefined
-    ) {
-      return props;
-    }
-    return { ...props, [text]: textFromChildren(nested.props.children) };
-  });
 
 /** The primitive type {@link authorType} brands onto `element`'s component. */
 const getAuthorType = (element: ReactElement<unknown>): string => {

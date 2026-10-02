@@ -392,7 +392,7 @@ export interface PrimitiveDefinition<
   sanitize?: (node: TNode) => TNode | null;
   /**
    * Nested nodes, for containers, in the order the `react` renderer draws
-   * them; `findNodeElements` relies on it. Absent means a leaf.
+   * them; `findNodeElementPairs` relies on it. Absent means a leaf.
    */
   children?: (node: TNode) => readonly PrimitiveChildRef[];
   /**
@@ -543,7 +543,7 @@ export type WithNodeFields<TSchema extends PrimitiveSchema> =
 // Marks the field schemas `definePrimitive` adds. A schema derived from a
 // defined one shares them by reference, and `Symbol.for` matches across ESM and
 // CommonJS copies of the SDK.
-const NODE_FIELD = Symbol.for('isomer.define.nodeField');
+const NODE_FIELD = Symbol.for('elastic.isomer.node_field');
 
 const nodeField = <T extends ZodType>(schema: T): T =>
   Object.defineProperty(schema, NODE_FIELD, { value: true });

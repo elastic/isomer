@@ -1,7 +1,7 @@
 ---
 type: Entry Point
 title: HTML
-description: '@elastic/isomer-sdk/html HTML renderer and Distillate style adapter.'
+description: '@elastic/isomer-sdk/html HTML renderer and style-adapter contract.'
 resource: https://github.com/elastic/isomer/blob/main/packages/isomer-sdk/src/entries/html.ts
 tags: [isomer, sdk, api, html]
 status: stable
@@ -14,7 +14,7 @@ sources:
 
 # Definition
 
-HTML rendering and `createDistillateHtmlStyleAdapter`. Loading this entry is what pulls `react-dom/server`.[^barrel]
+HTML rendering and the `HTMLStyleAdapter` contract. Loading this entry is what pulls `react-dom/server`.[^barrel]
 
 Related: [rendering](/sdk/concepts/rendering.md), [root](/sdk/entry-points/root.md).
 

@@ -6,8 +6,6 @@
  */
 
 export {
-  type DistillateHtmlEngine,
-  type DistillateThemeVar,
   type EnhancementDefinition,
   type HTMLDispatcherRenderOptions,
   type HTMLEnhancementScope,
@@ -15,8 +13,6 @@ export {
   type HTMLRenderOptions,
   type HTMLRenderResult,
   type HTMLStyleAdapter,
-  DISTILLATE_STYLE_COLLECTOR,
-  createDistillateHtmlStyleAdapter,
   renderHTMLWithDispatcher,
   rendersAnchors,
 } from '../render/html';

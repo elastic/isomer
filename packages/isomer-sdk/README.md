@@ -48,7 +48,7 @@ The [SDK docs](https://elastic.github.io/isomer/sdk/) have the [quick start](htt
 | `./markdown` | Markdown envelopes and formatting |
 | `./slack` | Block Kit types, limits, asset collection |
 | `./react` | React content helpers and dispatcher context |
-| `./author` | JSX/builder front ends, agent prompts |
+| `./author` | JSX front end, agent prompts |
 | `./testing` | Pack conformance harness |
 
 `zod` and `react` are required peers. `react-dom` is optional and needed only by `./html`. Full reference: [API reference](https://elastic.github.io/isomer/sdk/api#entry-points).

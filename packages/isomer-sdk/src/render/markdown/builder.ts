@@ -254,17 +254,6 @@ export const md = {
   /** Authored Markdown source, after {@link sanitizeMarkdownSource}. */
   authored: (source: string): MarkdownBlock =>
     verbatim(sanitizeMarkdownSource(source)),
-  /** Plain `text` with a leading `label:` in strong. */
-  boldLabelPrefix: (
-    text: string,
-    label: string | undefined
-  ): MarkdownInline[] =>
-    label && text.startsWith(`${label}:`)
-      ? [md.strong(label), md.text(text.slice(label.length))]
-      : [md.text(text)],
-  /** `label` uppercased in strong, as its own paragraph. */
-  boldSectionLabel: (label: string): MarkdownBlock =>
-    md.paragraph(md.strong(label.toUpperCase())),
 };
 
 /** A renderer's string output as content, printed as written. */
@@ -326,24 +315,3 @@ export const serializeMarkdown = (content: MarkdownContent): string =>
     /\n$/,
     ''
   );
-
-/**
- * A markdown renderer for a primitive whose text output is already valid GFM.
- *
- * Pass `options.label` to bold a leading `label:` prefix, leaving the rest of
- * the line as written.
- */
-export const defaultMarkdownFromText =
-  <TNode>(
-    renderText: (node: TNode) => string,
-    options: {
-      label?: (node: TNode) => string | undefined;
-    } = {}
-  ): ((node: TNode) => string) =>
-  (node) => {
-    const text = renderText(node);
-    const label = options.label?.(node);
-    return label && text.startsWith(`${label}:`)
-      ? `${serializeMarkdown(md.paragraph(md.strong(label)))}${text.slice(label.length)}`
-      : text;
-  };

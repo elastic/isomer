@@ -14,11 +14,7 @@ import {
 } from '../define/primitive_module';
 
 import type { EnhancementDefinition } from './enhancements';
-import {
-  definePrimitivePack,
-  extendPrimitivePack,
-  type PrimitivePack,
-} from './primitive_pack';
+import { definePrimitivePack, type PrimitivePack } from './primitive_pack';
 
 const renderers = {
   react: () => null,
@@ -201,56 +197,6 @@ describe('definePrimitivePack', () => {
       'primitive pack "grouped": primitive type "note" is in two groups'
     );
     expect(caught(define)).toMatchObject({ code: 'DUPLICATE_PRIMITIVE_TYPE' });
-  });
-});
-
-describe('extendPrimitivePack', () => {
-  it('adds primitives and keeps the declared surfaces', () => {
-    const pack = definePrimitivePack({
-      id: 'notes',
-      surfaces: ['slack'],
-      primitives: [leaf('note')],
-    });
-    const extended = extendPrimitivePack(pack, [leaf('aside')]);
-    expect([...extended.types]).toEqual(['note', 'aside']);
-    expect(extended.surfaces).toEqual(['slack']);
-  });
-
-  it('rejects a type the pack already owns or that repeats in the addition', () => {
-    const pack = definePrimitivePack({
-      id: 'notes',
-      primitives: [leaf('note')],
-    });
-    expect(() => extendPrimitivePack(pack, [leaf('note')])).toThrow(
-      'primitive pack "notes": primitive type "note" registered twice'
-    );
-    try {
-      extendPrimitivePack(pack, [leaf('aside'), leaf('aside')]);
-      expect.unreachable();
-    } catch (error) {
-      expect(error).toMatchObject({
-        name: 'IsomerError',
-        code: 'DUPLICATE_PRIMITIVE_TYPE',
-        message:
-          'primitive pack "notes": primitive type "aside" registered twice',
-      });
-    }
-  });
-
-  it('keeps the styleCollector derived from the style adapter', () => {
-    const pack = definePrimitivePack({
-      id: 'styled',
-      primitives: [leaf('note')],
-      styleAdapter: {
-        styleCollector: 'distillate',
-        createCollector: () => ({}),
-        createRenderContext: () => ({}),
-        renderStyles: () => '',
-      },
-    });
-    expect(extendPrimitivePack(pack, [leaf('aside')]).styleCollector).toBe(
-      'distillate'
-    );
   });
 });
 

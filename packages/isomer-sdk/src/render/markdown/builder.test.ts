@@ -19,12 +19,7 @@ import {
 } from '../../define/markdown_content';
 import { gfmToSlackBlocks } from '../slack/format';
 
-import {
-  defaultMarkdownFromText,
-  markdownFromString,
-  md,
-  serializeMarkdown,
-} from './builder';
+import { markdownFromString, md, serializeMarkdown } from './builder';
 import { SAFE_INPUTS } from './safe_inputs.fixtures';
 
 const parse = (markdown: string): Root =>
@@ -420,25 +415,5 @@ describe('md', () => {
       type: 'rich_text',
       elements: [{ elements: [{ text: '```\ninner' }] }],
     });
-  });
-});
-
-describe('label helpers', () => {
-  it('bolds and escapes a GFM line’s label prefix, leaving the rest as written', () => {
-    const render = defaultMarkdownFromText((text: string) => text, {
-      label: () => '2*3',
-    });
-    expect(render('2*3: *six*')).toBe('**2\\*3**: *six*');
-    expect(render('x: *y*')).toBe('x: *y*');
-  });
-
-  it('build labels as content, escaping the text too', () => {
-    expect(
-      serializeMarkdown([
-        md.boldSectionLabel('a*b'),
-        md.paragraph(...md.boldLabelPrefix('2*3: six*', '2*3')),
-        md.paragraph(...md.boldLabelPrefix('x: *y*', 'z')),
-      ])
-    ).toBe('**A\\*B**\n\n**2\\*3**: six\\*\n\nx: \\*y\\*');
   });
 });

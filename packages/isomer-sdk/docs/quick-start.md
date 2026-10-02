@@ -61,7 +61,7 @@ export const kpi = definePrimitive({
 });
 ```
 
-`definePrimitive`'s type arguments stay inferred: the typed `examples` fix the node type, and the schema type flows through to the JSX shim and the object builders. Naming `TNode` explicitly turns that off; see [Primitives](primitives.md#why-it-is-shaped-this-way).
+`definePrimitive`'s type arguments stay inferred: the typed `examples` fix the node type, and the schema type flows through to the JSX shim. Naming `TNode` explicitly turns that off; see [Primitives](primitives.md#why-it-is-shaped-this-way).
 
 `react`, `text`, and `markdown` are mandatory — those three are what make "every composition degrades" true. `slack` is optional per primitive even when the pack declares the surface, because the dispatcher falls back through markdown. There is no `svg` renderer to write: the image surface dispatches to `react`; see [Packs](packs.md).
 

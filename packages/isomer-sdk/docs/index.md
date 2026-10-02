@@ -37,7 +37,7 @@ Pack authors, mostly. If you are writing primitives, a theme, or a frame, this i
 | [Rendering](rendering.md) | The envelopes, the HTML renderer, style adapters, enhancements |
 | [Frame](frame.md) | The document contract an `svg` render is drawn inside |
 | [URL trust](url-trust.md) | The one policy every URL-bearing field goes through |
-| [Authoring](authoring.md) | JSX, object builders, and agent prompt assembly |
+| [Authoring](authoring.md) | JSX and agent prompt assembly |
 | [API reference](api.md) | Every entry point and what it exports |
 
 ## Entry points
@@ -52,7 +52,7 @@ Eight subpaths, split by what a consumer is willing to load:
 | `./markdown` | nothing beyond zod | markdown envelopes and formatting |
 | `./slack` | nothing beyond zod | Block Kit types, limits, asset collection |
 | `./react` | react | React content helpers and dispatcher context |
-| `./author` | React | JSX/builders front ends, agent prompts |
+| `./author` | React | JSX front end, agent prompts |
 | `./testing` | Node assert | pack conformance harness |
 
 A Slack bot or an MCP server can use the surface-specific subpaths without loading a DOM renderer or the TypeScript compiler. Root consumers load React because the dispatcher owns the mandatory React renderer and the SVG path that reuses it.
