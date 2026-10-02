@@ -1,0 +1,201 @@
+# Quick start
+
+A working host: one composition rendered to every surface, then a registered view and an agent-authored composition. The vocabulary comes from the reference pack, `@elastic/isomer-primitives-slides`, so the steps reach a stylesheet, a frame, the `svg` surface, and a PNG. A host with its own pack swaps the import and changes nothing else.
+
+## 1. Add the dependencies
+
+A runtime needs this package, the SDK, a pack, `zod`, `react`, and `react-dom`. The last two are required even for a text- or Slack-only host: `createIsomerRuntime` always builds the `react` and `html` surfaces, and `html` loads `react-dom/server`. `@elastic/isomer-image-takumi` is only for the PNG in step 4.
+
+The reference pack is not published to npm. It is an exemplar to copy: take [`packages/isomer-primitives-slides`](https://github.com/elastic/isomer/tree/main/packages/isomer-primitives-slides) into your workspace, or run these steps inside this repository, where it resolves as `@elastic/isomer-primitives-slides`.
+
+```jsonc
+{
+  "dependencies": {
+    "@elastic/isomer-image-takumi": "^0.1.0",
+    "@elastic/isomer-runtime": "^0.1.0",
+    "@elastic/isomer-sdk": "^0.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^4.4.1"
+  }
+}
+```
+
+## 2. Compose a runtime
+
+Build it once, at module scope. A runtime is a singleton for the process, not a per-request object. `packs` is required; `frames` is required only if you want the `svg` surface, and `slide` is the name this host chooses for the pack's frame.
+
+```ts
+import { createIsomerRuntime } from '@elastic/isomer-runtime';
+import { slideDeckFrame, slidesPack } from '@elastic/isomer-primitives-slides';
+
+export const runtime = createIsomerRuntime({
+  packs: [slidesPack],
+  frames: { slide: slideDeckFrame },
+});
+```
+
+The pack ships its own style adapter, so the runtime has CSS without being told. A host composing CSS-bearing packs that declare no adapter supplies `styleAdapter`; see [Runtime](runtime.md).
+
+## 3. Write a composition
+
+A `Composition` says what the answer is, not how it looks. The wire discriminator stays `type: 'view'`. This one is the reference pack's title slide.
+
+```ts
+import { type Composition } from '@elastic/isomer-sdk';
+
+const composition: Composition = {
+  type: 'view',
+  title: 'Isomer',
+  body: [
+    {
+      type: 'slideFrame',
+      tone: 'inverse',
+      brand: 'Isomer',
+      url: 'https://elastic.github.io/isomer',
+      body: [
+        {
+          type: 'slideTitle',
+          eyebrow: 'Reference pack',
+          title: 'Isomer',
+          tagline: 'One composition, **every surface**.',
+          aside: {
+            type: 'slideBulletList',
+            marker: 'check',
+            items: [
+              'React and HTML',
+              'Markdown and plain text',
+              'Slack Block Kit',
+              'SVG and PNG',
+            ],
+          },
+        },
+      ],
+    },
+  ],
+};
+
+runtime.validate(composition); // { valid: true, errors: [], warnings: [], composition: <its checked copy> }
+```
+
+## 4. Render it
+
+Each surface takes the same composition. A slide opens with its own heading, so every surface that draws the composition's `title` is passed `heading: false` rather than repeat it.
+
+```ts
+runtime.surfaces.text.render(composition, { heading: false });
+runtime.surfaces.markdown.render(composition, { heading: false });
+
+const { html, css, validationErrors } = runtime.surfaces.html.render(composition, {
+  heading: false,
+  theme: 'auto',
+});
+
+const { text, blocks, assets } = runtime.surfaces.slack.render(composition, {
+  collectAssets: true,
+  heading: false,
+});
+```
+
+The `text` surface gives:
+
+```text
+REFERENCE PACK
+Isomer
+One composition, every surface.
+
+✓ React and HTML
+✓ Markdown and plain text
+✓ Slack Block Kit
+✓ SVG and PNG
+
+Isomer · elastic.github.io/isomer
+```
+
+The `markdown` surface gives:
+
+```markdown
+# Isomer
+
+_Reference pack_
+
+One composition, **every surface**.
+
+- ✓ React and HTML
+- ✓ Markdown and plain text
+- ✓ Slack Block Kit
+- ✓ SVG and PNG
+
+_Isomer · [elastic.github.io/isomer](https://elastic.github.io/isomer)_
+```
+
+Slack gives a `header` block, the eyebrow and footer as `context` blocks, the tagline as a `section`, and the list as a native `rich_text` list, all from the pack's own Slack renderers. HTML gives `<section class="isomer framed" role="group" aria-label="Isomer">…</section>` with a `<style>` holding only the rules this slide uses.
+
+Each surface has one validation posture. `html` renders and reports findings on `validationErrors`, because a partial document is still worth showing. `text`, `markdown`, `slack`, and `svg` throw `CompositionValidationError` on an invalid composition by default, because a string, a message, or an image has nowhere to carry findings. `react` never validates. `onValidationError` flips any of them, except that input over the SDK's [input budget](../sdk/composition.md#the-input-budget) or not plain data throws on every validating surface; see [Surfaces](surfaces.md).
+
+React returns bare content by default; `wrapper` adds the same `section` the HTML surface emits, and the stylesheet stays the host's:
+
+```tsx
+runtime.surfaces.react.render(composition, {
+  context: { onEvent: handleEvent },
+  heading: false,
+  wrapper: true,
+});
+```
+
+Because the runtime holds a frame, the `svg` surface exists. It stops at a React element and a stylesheet; rasterizing is a host-side step:
+
+```ts
+import { createTakumiImageBackend } from '@elastic/isomer-image-takumi';
+
+const { element, css, width, height } = runtime.surfaces.svg.render(composition, {
+  theme: 'light',
+});
+
+const takumi = createTakumiImageBackend({ fonts });
+const png = await takumi.png(runtime.surfaces.svg.render(composition));
+```
+
+`fonts` is the host's to register, and the pack's [font notes](../slides/styling.md#fonts-on-the-image-surface) say which families and weights. The result is the PNG at the top of the repository README. See [Frame](frame.md) for how a render picks a frame and its geometry.
+
+## 5. Register a view
+
+A registered view gives a composition a stable id, a typed input, and a builder that fetches.
+
+```ts
+import { defineView } from '@elastic/isomer-runtime';
+import { z } from '@elastic/isomer-sdk';
+
+runtime.viewRegistry.register(
+  defineView({
+    id: 'deck.title',
+    title: 'Title slide',
+    answers: ['Show the title slide', 'Open the deck'],
+    input: z.object({ brand: z.string().default('Isomer') }),
+    build: async ({ context, input }) => buildTitleSlide(await loadDeck(context), input.brand),
+  })
+);
+
+const { view, composition, validation } = await runtime.viewRegistry.request(
+  'deck.title',
+  hostContext,
+  { brand: 'Isomer' }
+);
+```
+
+## 6. Let an agent compose one
+
+```ts
+import { formatValidationError } from '@elastic/isomer-sdk';
+
+const { schema, primitives, views } = runtime.getAuthoringContext();
+// Hand these to the model, then validate what comes back.
+
+const parsed = runtime.parse(JSON.parse(modelOutput));
+if (!parsed.valid) return retryWith(parsed.errors.map(formatValidationError));
+render(parsed.composition!);
+```
+
+## Next
+
+[Runtime](runtime.md) for the options you skipped, [Surfaces](surfaces.md) for what each render target guarantees, [View registry](view-registry.md) for the trusted path, and [Authoring context](authoring-context.md) for the agent one.

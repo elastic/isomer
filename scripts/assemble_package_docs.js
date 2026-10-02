@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { spawnSync } from 'node:child_process';
 import {
   cpSync,
   existsSync,
@@ -79,6 +80,31 @@ const invokedDirectly =
   process.argv[1] !== undefined &&
   resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
+/**
+ * Codex clones the repository and builds `docs/` as committed, so the copies
+ * are committed too. `--check` fails when they drift from `packages/*\/docs`.
+ */
+const checkAssembledDocs = () => {
+  const git = (...args) =>
+    spawnSync('git', args, { cwd: repoRoot, encoding: 'utf8' }).stdout.trim();
+  const drift = [
+    git('diff', '--name-status', '--', 'docs'),
+    git('ls-files', '--others', '--exclude-standard', '--', 'docs'),
+  ]
+    .filter(Boolean)
+    .join('\n');
+  if (drift !== '') {
+    console.error(
+      'docs/ is out of date with packages/*/docs. Run `pnpm docs:assemble` and commit the result:\n' +
+        drift
+    );
+    process.exit(1);
+  }
+};
+
 if (invokedDirectly) {
   assemblePackageDocs();
+  if (process.argv.includes('--check')) {
+    checkAssembledDocs();
+  }
 }
