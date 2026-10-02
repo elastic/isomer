@@ -82,7 +82,7 @@ Zod helpers so a pack states constraints the same way everywhere: `z` and `requi
 
 ## `./html`
 
-`renderHTMLWithDispatcher` and the types a style adapter is written against: `HTMLStyleAdapter`, `HTMLRenderOptions`, `HTMLRenderResult`, `HTMLRenderDispatcher`, `HTMLDispatcherRenderOptions`, `HTMLEnhancementScope`, `EnhancementDefinition`, `ReactContentDispatcher`, `ReactContentOptions`. `HTMLRenderOptions.enhancements` is a list of enhancement ids; the render keeps the first definition of each that applies to the body and emits its script once, in its own function scope, and `rendersAnchors` says whether a render carries node anchors. `HTMLRenderOptions.anchors` turns anchors on directly, for tests. `HTMLRenderOptions.scheme` resolves the stylesheet's `light-dark(…)` to one scheme, as the `svg` surface asks for.
+`renderHTMLWithDispatcher` and the types a style adapter is written against: `HTMLStyleAdapter`, `HTMLRenderOptions`, `HTMLRenderResult`, `HTMLRenderDispatcher`, `HTMLDispatcherRenderOptions`, `HTMLEnhancementScope`, `EnhancementDefinition`, `ReactContentDispatcher`, `ReactContentOptions`. `HTMLRenderOptions.enhancements` is a list of enhancement ids; the render keeps the first definition of each that applies to the body and emits its script once, in its own function scope. `HTMLRenderOptions.anchors` turns anchors on directly, for tests. `HTMLRenderOptions.scheme` resolves the stylesheet's `light-dark(…)` to one scheme, as the `svg` surface asks for.
 
 ## `./react`
 
@@ -100,7 +100,7 @@ The browser-side helpers, exported here rather than from the root entry: `runEnh
 
 Block Kit types: `SlackBlock` and its variants `SlackHeaderBlock` (`SlackHeaderLevel`), `SlackSectionBlock` (`SlackSectionAccessory`), `SlackContextBlock`, `SlackDividerBlock`, `SlackImageBlock`, `SlackVideoBlock`, `SlackActionsBlock` (`SlackActionElement`), `SlackTableBlock` (`SlackTableCell`, `SlackTableColumnSetting`, `SlackRawTextElement`), `SlackRichTextBlock` (`SlackRichTextBlockElement`, `SlackRichTextSection`, `SlackRichTextList`, `SlackRichTextPreformatted`, `SlackRichTextQuote`, `SlackRichTextInline`, `SlackRichTextText`, `SlackRichTextLink`, `SlackRichTextTag`, `SlackRichTextStyle`, `SlackTagColor`); text objects `SlackTextObject`, `SlackPlainTextObject`, `SlackMrkdwnTextObject`; elements `SlackButtonElement`, `SlackImageElement`, `SlackStaticSelectElement`, `SlackMultiStaticSelectElement`, `SlackOverflowElement`, `SlackRadioButtonsElement`, `SlackCheckboxesElement`, `SlackOptionObject`, `SlackOptionGroup`.
 
-mrkdwn formatters: `escapeMrkdwn`, `bold`, `italic`, `strike`, `code`, `codeBlock`, `link`, `slackLinkUrl` (the URL `link` would link, or `null`), `clampSlackText`, `joinMrkdwn`, `gfmToSlackBlocks`, and `markdownContentToSlackBlocks` for content built with `md`.
+mrkdwn formatters: `escapeMrkdwn`, `bold`, `italic`, `strike`, `code`, `codeBlock`, `link`, `slackLinkUrl` (the URL `link` would link, or `null`), `clampSlackText`, `gfmToSlackBlocks`, and `markdownContentToSlackBlocks` for content built with `md`.
 
 The root, `./markdown`, and `./slack` load the GFM parser for authored Markdown sanitization.
 

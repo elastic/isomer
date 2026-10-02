@@ -16,11 +16,7 @@ import {
   runEnhancementScript,
 } from '../../pack/enhancements';
 
-import {
-  type EnhancementDefinition,
-  enhancementScript,
-  rendersAnchors,
-} from './enhancements';
+import { type EnhancementDefinition, enhancementScript } from './enhancements';
 
 const sortableTable = {
   type: 'table',
@@ -159,48 +155,5 @@ describe('enhancementScript', () => {
     );
 
     expect(root.seen).toEqual(['first', 'second']);
-  });
-});
-
-describe('rendersAnchors', () => {
-  const anchored: EnhancementDefinition = {
-    id: 'builds',
-    appliesTo: () => true,
-    anchors: true,
-  };
-  const inapplicable: EnhancementDefinition = {
-    ...anchored,
-    id: 'never',
-    appliesTo: () => false,
-  };
-  const body = [sortableTable];
-
-  it('is on when asked, or when a requested enhancement that applies declares anchors', () => {
-    expect(rendersAnchors(body, { anchors: true }, nestWalker, [])).toBe(true);
-    expect(
-      rendersAnchors(body, { enhancements: ['builds'] }, nestWalker, [anchored])
-    ).toBe(true);
-  });
-
-  it('is off otherwise, and `anchors: false` cannot turn off what an enhancement needs', () => {
-    expect(rendersAnchors(body, {}, nestWalker, [anchored])).toBe(false);
-    expect(
-      rendersAnchors(body, { enhancements: ['never'] }, nestWalker, [
-        inapplicable,
-      ])
-    ).toBe(false);
-    expect(
-      rendersAnchors(body, { enhancements: ['tableSort'] }, nestWalker, [
-        tableSort,
-      ])
-    ).toBe(false);
-    expect(
-      rendersAnchors(
-        body,
-        { anchors: false, enhancements: ['builds'] },
-        nestWalker,
-        [anchored]
-      )
-    ).toBe(true);
   });
 });

@@ -61,7 +61,6 @@ export {
   gfmToSlackBlocks,
   isSlackReachableImageUrl,
   italic,
-  joinMrkdwn,
   link,
   markdownContentToSlackBlocks,
   renderSlackEnvelope,
