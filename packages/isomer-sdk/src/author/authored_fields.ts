@@ -69,15 +69,36 @@ type ChildProps<TItem, TText extends string | undefined> = [TText] extends [
       }
   : TItem & { children?: ReactNode };
 
-const tag = (schema: object, key: symbol, value: unknown): void => {
-  if (Object.hasOwn(schema, key)) {
-    if ((schema as Record<symbol, unknown>)[key] === value) return;
+const BRANDS = [
+  authoredChild,
+  authoredTextField,
+  authoredToItem,
+  authoredText,
+  authoredCollapse,
+] as const;
+
+// Applies a complete branding. Branding an instance again is allowed only with
+// the same configuration, absent options included, since both fields share it.
+const brand = (
+  schema: object,
+  config: Partial<Record<(typeof BRANDS)[number], unknown>>
+): void => {
+  const record = schema as Record<symbol, unknown>;
+  if (BRANDS.some((key) => Object.hasOwn(schema, key))) {
+    if (BRANDS.every((key) => record[key] === config[key])) return;
     throw new IsomerError(
       ISOMER_ERROR_CODES.AUTHORED_SCHEMA_REUSED,
       'fromChildren: this schema instance is already branded another way; pass each field its own schema.'
     );
   }
-  Object.defineProperty(schema, key, { value, enumerable: false });
+  for (const key of BRANDS) {
+    if (config[key] !== undefined) {
+      Object.defineProperty(schema, key, {
+        value: config[key],
+        enumerable: false,
+      });
+    }
+  }
 };
 
 /**
@@ -126,13 +147,11 @@ export function fromChildren(
     toItem?: (this: void, props: never, context: AuthorChildContext) => unknown;
   }
 ): ZodType {
-  tag(schema, authoredChild, childType);
-  if (options?.text !== undefined) {
-    tag(schema, authoredTextField, options.text);
-  }
-  if (options?.toItem) {
-    tag(schema, authoredToItem, options.toItem);
-  }
+  brand(schema, {
+    [authoredChild]: childType,
+    [authoredTextField]: options?.text,
+    [authoredToItem]: options?.toItem,
+  });
   return schema;
 }
 
@@ -145,10 +164,11 @@ export const fromTextChildren = <TSchema extends ZodType>(
   schema: TSchema,
   options?: { collapseWhitespace?: boolean }
 ): TSchema & AuthoredTextBrand => {
-  tag(schema, authoredText, true);
-  if (options?.collapseWhitespace === false) {
-    tag(schema, authoredCollapse, false);
-  }
+  brand(schema, {
+    [authoredText]: true,
+    [authoredCollapse]:
+      options?.collapseWhitespace === false ? false : undefined,
+  });
   return schema as TSchema & AuthoredTextBrand;
 };
 
@@ -191,12 +211,25 @@ const innerSchema = (schema: ZodType): ZodType | undefined => {
 };
 
 // The schema holding `brand`: `schema` or one it wraps.
-const brandHolder = (schema: ZodType, brand: symbol): ZodType | undefined => {
+const brandHolder = (schema: ZodType, key: symbol): ZodType | undefined => {
   let current: ZodType | undefined = schema;
-  while (current && !Object.hasOwn(current, brand)) {
+  while (current && !Object.hasOwn(current, key)) {
     current = innerSchema(current);
   }
   return current;
+};
+
+// Whether any layer from `schema` down to `holder` accepts `undefined`.
+const optionalThrough = (schema: ZodType, holder: ZodType): boolean => {
+  for (
+    let current: ZodType | undefined = schema;
+    current;
+    current = innerSchema(current)
+  ) {
+    if (isOptionalSchema(current)) return true;
+    if (current === holder) return false;
+  }
+  return false;
 };
 
 const unwrap = (schema: ZodType): ZodType => {
@@ -265,7 +298,7 @@ const readChild = (
     field,
     childType,
     itemSchema: arrayElement(holder),
-    optional: isOptionalSchema(schema) || isOptionalSchema(holder),
+    optional: optionalThrough(schema, holder),
     signature: schemaSignature(arrayElement(holder)),
   };
   if (typeof textField === 'string') {
@@ -292,7 +325,7 @@ const readText = (
     field,
     collapseWhitespace:
       (holder as { [authoredCollapse]?: unknown })[authoredCollapse] !== false,
-    optional: isOptionalSchema(schema) || isOptionalSchema(holder),
+    optional: optionalThrough(schema, holder),
   };
 };
 

@@ -86,6 +86,45 @@ describe('definePrimitive node fields', () => {
     expect(schema.safeParse({ type: 'probe', extra: 1 }).success).toBe(true);
   });
 
+  it('rejects id or surfaces in a container schemaFor result', () => {
+    for (const field of ['id', 'surfaces']) {
+      const container = definePrimitive({
+        type: 'probe',
+        catalog: {
+          type: 'probe',
+          purpose: '',
+          useWhen: [],
+          avoidWhen: [],
+          example: { type: 'probe' },
+        },
+        examples: [{ type: 'probe' }],
+        schema: z.object({ type: z.literal('probe') }),
+        schemaFor: () =>
+          z.object({ type: z.literal('probe'), [field]: z.number() }),
+        renderers: { react: () => null, text: () => '', markdown: () => '' },
+      });
+      expect(() => container.schemaFor?.(z.object({}))).toThrow(
+        expect.objectContaining({ code: 'RESERVED_NODE_FIELD' })
+      );
+    }
+  });
+
+  it('accepts a schema another copy of the SDK defined', () => {
+    const fromOtherCopy = z
+      .object({
+        type: z.literal('probe'),
+        id: z.string().optional(),
+        surfaces: z.array(z.string()).optional(),
+      })
+      .strict();
+    Object.defineProperty(
+      fromOtherCopy,
+      Symbol.for('isomer.define.withNodeFields'),
+      { value: true }
+    );
+    expect(() => primitiveWith(fromOtherCopy)).not.toThrow();
+  });
+
   it('accepts the schema of a primitive it already defined', () => {
     const { schema } = primitiveWith(z.object({ type: z.literal('probe') }));
     expect(() => primitiveWith(schema)).not.toThrow();

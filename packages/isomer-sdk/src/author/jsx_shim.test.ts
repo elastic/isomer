@@ -508,6 +508,7 @@ describe('fromChildren through wrappers', () => {
     ['optional', <T extends z.ZodType>(s: T) => s.optional()],
     ['nullable', <T extends z.ZodType>(s: T) => s.nullable()],
     ['default', <T extends z.ZodType>(s: T) => s.default([] as never)],
+    ['readonly', <T extends z.ZodType>(s: T) => s.readonly()],
   ])('generates the child component past %s', (_name, wrap) => {
     const {
       Composition: Root,
@@ -558,6 +559,43 @@ describe('fromChildren through wrappers', () => {
         name: 'IsomerError',
         code: 'AUTHORED_SCHEMA_REUSED',
       })
+    );
+  });
+
+  it('treats text children as optional when any wrapper layer is', () => {
+    const {
+      Composition: Root,
+      Group,
+      toComposition: convert,
+    } = buildJsxShim([
+      {
+        type: 'group' as const,
+        schema: z.object({
+          type: z.literal('group'),
+          title: fromTextChildren(z.string()).optional().nullable(),
+        }),
+      },
+    ]);
+    expect(
+      convert(createElement(Root, null, createElement(Group))).body
+    ).toEqual([{ type: 'group' }]);
+  });
+
+  it.each([
+    [
+      'a different toItem',
+      (s: z.ZodType) => fromChildren('item', s, { toItem: () => ({}) }),
+    ],
+    [
+      'an added text field',
+      (s: z.ZodType) => fromChildren('item', s, { text: 'label' }),
+    ],
+    ['a text brand', (s: z.ZodType) => fromTextChildren(s)],
+  ])('refuses to rebrand one instance with %s', (_name, rebrand) => {
+    const shared = z.array(z.object({ label: z.string() }));
+    fromChildren('item', shared, { toItem: () => ({}) });
+    expect(() => rebrand(shared)).toThrow(
+      expect.objectContaining({ code: 'AUTHORED_SCHEMA_REUSED' })
     );
   });
 

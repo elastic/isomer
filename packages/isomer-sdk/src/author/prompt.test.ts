@@ -311,15 +311,35 @@ describe('pack authoring defaults', () => {
   });
 
   it('passes the catalog form, groups, heading, and intro through', () => {
-    const build = createAuthoringPromptBuilder(defaults);
+    const chart = {
+      type: 'chart',
+      purpose: 'Plot a series.',
+      useWhen: [],
+      avoidWhen: [],
+      example: { type: 'chart' },
+    };
+    const build = createAuthoringPromptBuilder({
+      ...defaults,
+      primitives: [chart],
+    });
     const options = {
       catalog: 'index',
+      groups: [{ title: 'Charts and plots', types: ['chart'] }],
       heading: '# Deck authoring',
       intro: 'Build a deck.',
     } as const;
-    expect(build('general', options)).toBe(
-      buildAuthoringPrompt('general', { ...defaults, examples: [], ...options })
+    const prompt = build('general', options);
+    expect(prompt).toBe(
+      buildAuthoringPrompt('general', {
+        ...defaults,
+        primitives: [chart],
+        examples: [],
+        ...options,
+      })
     );
+    expect(prompt).toContain('Charts and plots');
+    expect(prompt).toContain('# Deck authoring');
+    expect(prompt).toContain('Build a deck.');
   });
 
   it('builds a context from the defaults with the caller examples and views', () => {

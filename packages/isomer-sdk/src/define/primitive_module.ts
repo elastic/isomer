@@ -566,14 +566,17 @@ const NODE_FIELDS = {
   surfaces: bodyNodeSurfacesSchema.optional(),
 };
 
+// Marks a schema `definePrimitive` produced, so redefining from it is
+// recognized across ESM and CommonJS copies of the SDK.
+const WITH_NODE_FIELDS = Symbol.for('isomer.define.withNodeFields');
+
 const withNodeFields = <TSchema extends PrimitiveSchema>(
   schema: TSchema
 ): WithNodeFields<TSchema> => {
-  // A schema `definePrimitive` already extended holds these same instances.
-  const reserved = Object.entries(NODE_FIELDS).find(
-    ([field, fieldSchema]) =>
-      Object.hasOwn(schema.shape, field) && schema.shape[field] !== fieldSchema
-  )?.[0];
+  const extendedBefore = Object.hasOwn(schema, WITH_NODE_FIELDS);
+  const reserved = Object.keys(NODE_FIELDS).find(
+    (field) => !extendedBefore && Object.hasOwn(schema.shape, field)
+  );
   if (reserved) {
     throw new IsomerError(
       ISOMER_ERROR_CODES.RESERVED_NODE_FIELD,
@@ -581,7 +584,8 @@ const withNodeFields = <TSchema extends PrimitiveSchema>(
     );
   }
   const extended = schema.extend(NODE_FIELDS);
-  return (
-    schema.def.catchall === undefined ? extended.strict() : extended
-  ) as WithNodeFields<TSchema>;
+  const result =
+    schema.def.catchall === undefined ? extended.strict() : extended;
+  Object.defineProperty(result, WITH_NODE_FIELDS, { value: true });
+  return result as WithNodeFields<TSchema>;
 };
