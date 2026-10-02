@@ -25,8 +25,8 @@ import type { AnyPrimitiveDefinition } from '../define/primitive_module';
 import { getCompositionSchemaForDefinitions } from './composition_schema';
 import {
   checkInputBudget,
-  INPUT_REFUSAL_CODES,
   type InputBudget,
+  isInputRefusal,
 } from './input_budget';
 import { createNodeIssueFormatter, type IssueRoot } from './node_issues';
 
@@ -99,8 +99,7 @@ export const enforceValidationMode = (
 ): void => {
   if (
     !result.valid &&
-    (mode === 'throw' ||
-      result.errors.some(({ code }) => INPUT_REFUSAL_CODES.has(code)))
+    (mode === 'throw' || result.errors.some(isInputRefusal))
   ) {
     throw new CompositionValidationError(result.errors);
   }

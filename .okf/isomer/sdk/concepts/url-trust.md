@@ -14,7 +14,7 @@ sources:
 
 # Definition
 
-Every URL-bearing field is checked against one policy. Renderers do not invent a second allow-list. The policy lives in `validate/` so untrusted parse and trusted validate share it. A URL is checked after decoding its character references once (every numeric one, with or without `;`, and `&colon;`, `&Tab;`, `&NewLine;`, `&sol;`, `&bsol;`, `&lt;`, `&gt;`), then stripping control characters; a passing URL comes back as authored, trimmed and with control characters stripped, so a consumer that decodes it decodes what was checked.[^docs]
+Every URL-bearing field is checked against one policy. Renderers do not invent a second allow-list. The policy lives in `validate/` so untrusted parse and trusted validate share it. A URL is checked after decoding its character references once (every numeric one, with or without `;`, and `&colon;`, `&Tab;`, `&NewLine;`, `&sol;`, `&bsol;`, `&lt;`, `&gt;`), then stripping control characters; a passing URL comes back as authored, trimmed and with control characters stripped, so a consumer that decodes it decodes what was checked. `navigationHref()` and `assetUrl()` describe themselves with their rule, since a refinement's message never reaches the authoring JSON Schema; a field with its own description ends it with `NAVIGATION_HREF_RULE` or `ASSET_URL_RULE`, and `{ max }` bounds the length.[^docs]
 
 Authored Markdown checks GFM-parsed destinations without decoding references again; source beyond the documented length and syntax budgets degrades to inert text.
 

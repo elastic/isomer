@@ -6,12 +6,17 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
+
+import { formatZodIssues } from '../define/zod_format';
 
 import {
   ASSET_URL_MESSAGE,
+  ASSET_URL_RULE,
   assetUrl,
   BLOCKED_HREF,
   NAVIGATION_HREF_MESSAGE,
+  NAVIGATION_HREF_RULE,
   navigationHref,
   sanitizeAssetUrl,
   sanitizeNavigationHref,
@@ -150,6 +155,36 @@ describe('zod refinements', () => {
       true
     );
   });
+
+  it('states its rule in a description the JSON Schema keeps', () => {
+    expect(z.toJSONSchema(navigationHref())).toMatchObject({
+      description: 'An https, http, or mailto URL, or a relative path.',
+    });
+    expect(z.toJSONSchema(assetUrl()).description).toBe(
+      'An https, http, or data:image URL, or a relative path.'
+    );
+    expect(NAVIGATION_HREF_MESSAGE).toBe(`must be ${NAVIGATION_HREF_RULE}`);
+    expect(ASSET_URL_MESSAGE).toBe(`must be ${ASSET_URL_RULE}`);
+  });
+
+  it.each([
+    ['navigationHref', navigationHref],
+    ['assetUrl', assetUrl],
+  ])(
+    '%s takes exactly max characters and reports one more as too long',
+    (_name, schema) => {
+      expect(schema({ max: 8 }).safeParse('/abcdefg').success).toBe(true);
+      const result = schema({ max: 8 }).safeParse('/abcdefgh', {
+        reportInput: true,
+      });
+      expect(formatZodIssues(result.error?.issues ?? [])).toEqual([
+        { path: '', message: 'must be at most 8 characters' },
+      ]);
+      expect(z.toJSONSchema(schema({ max: 8 }))).toMatchObject({
+        maxLength: 8,
+      });
+    }
+  );
 
   it('rejects obfuscated forms at validation time, not just render time', () => {
     expect(

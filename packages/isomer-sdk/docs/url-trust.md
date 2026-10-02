@@ -37,20 +37,34 @@ Authored Markdown is parsed as GFM. Its already-decoded destinations are checked
 ## Using it in a primitive
 
 ```ts
-import { assetUrl, navigationHref, sanitizeAssetUrl } from '@elastic/isomer-sdk';
+import {
+  assetUrl,
+  BLOCKED_HREF,
+  NAVIGATION_HREF_RULE,
+  navigationHref,
+  sanitizeAssetUrl,
+  sanitizeNavigationHref,
+} from '@elastic/isomer-sdk';
 
 schema: z.object({
   type: z.literal('thumbnail'),
   src: assetUrl(),
-  href: navigationHref().optional(),
+  href: navigationHref({ max: 2048 })
+    .describe(`Where the thumbnail links: ${NAVIGATION_HREF_RULE}.`)
+    .optional(),
 }),
 sanitize: (node) => {
   const src = sanitizeAssetUrl(node.src);
-  return src ? { ...node, src } : null;
+  if (!src) return null;
+  return node.href === undefined
+    ? { ...node, src }
+    : { ...node, src, href: sanitizeNavigationHref(node.href) ?? BLOCKED_HREF };
 },
 ```
 
-Returning `null` from `sanitize` drops the node entirely, which is the right answer when the unsafe field was the whole point of it.
+A refinement's message never reaches the authoring JSON Schema, so each schema describes itself with its rule: `navigationHref()` as `An https, http, or mailto URL, or a relative path.` and `assetUrl()` as `An https, http, or data:image URL, or a relative path.` A field that sets its own description replaces that one, so end it with `NAVIGATION_HREF_RULE` or `ASSET_URL_RULE`, as above. `max` bounds the length.
+
+Returning `null` from `sanitize` drops the node entirely, which is the right answer when the unsafe field was the whole point of it. A blocked `href` becomes `BLOCKED_HREF` instead, so the thumbnail still renders without a destination.
 
 ## Next
 
