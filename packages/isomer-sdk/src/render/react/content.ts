@@ -66,9 +66,8 @@ export const useReactPrimitiveDispatcher = (): ReactTreeDispatcher | null =>
  * A composition's heading and body as React nodes, without the surrounding
  * document or wrapper element.
  *
- * `dispatcher` is published on {@link PrimitiveDispatcherContext} so a
- * primitive that renders children can reach it — see
- * {@link ReactTreeDispatcher}.
+ * `dispatcher` is published so a primitive that renders children can reach it
+ * with {@link useReactPrimitiveDispatcher} — see {@link ReactTreeDispatcher}.
  */
 export const renderCompositionContent = <
   TNode extends PrimitiveNode,

@@ -100,7 +100,7 @@ export const declaredFieldsNote = ({ shape }: ZodObject): string => {
     : `its fields are ${declared.map(nameText).join(', ')}`;
 };
 
-const oneOf = (options: readonly unknown[]): string =>
+export const oneOf = (options: readonly unknown[]): string =>
   `must be one of: ${options
     .map((option) =>
       typeof option === 'string' ? nameText(option) : String(option)

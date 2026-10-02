@@ -21,7 +21,7 @@ import type { ValidationError } from '../composition/validation_error';
 import type { MarkdownContent } from './markdown_content';
 import type { SlackAssetCollector } from './slack_assets';
 import type { SlackBlock } from './slack_blocks';
-import { formatZodIssues } from './zod_format';
+import { formatZodIssues, oneOf } from './zod_format';
 import { requiredString } from './zod_helpers';
 
 export type { PrimitiveNode };
@@ -397,10 +397,10 @@ export interface PrimitiveDefinition<
   children?: (node: TNode) => readonly PrimitiveChildRef[];
   /**
    * True when this node produces surface output of its own, not only via
-   * {@link PrimitiveDefinition.children}. `rendersOnSurface` treats a
-   * non-empty `children` result as the complete source of rendered content
-   * unless this returns true, so a hybrid container that still owns string
-   * fields keeps rendering when every nested node is hidden from the surface.
+   * {@link PrimitiveDefinition.children}. A non-empty `children` result is
+   * otherwise the complete source of rendered content, so a hybrid container
+   * that still owns string fields returns true to keep rendering when every
+   * nested node is hidden from the surface.
    */
   hasOwnContent?: (node: TNode) => boolean;
   /** Contributes this node's CSS by mutating `styles`, once per node per render. */
@@ -455,7 +455,11 @@ export const bodyNodeIdSchema = requiredString('must be a non-empty string');
 
 /** The `surfaces` allowlist on a node. Absent means every surface; empty is rejected. */
 export const bodyNodeSurfacesSchema = z
-  .array(z.enum(BODY_NODE_SURFACES as [SurfaceName, ...SurfaceName[]]))
+  .array(
+    z.enum(BODY_NODE_SURFACES as [SurfaceName, ...SurfaceName[]], {
+      error: () => oneOf(BODY_NODE_SURFACES),
+    })
+  )
   .min(1, { error: 'must contain at least one surface' });
 
 /**

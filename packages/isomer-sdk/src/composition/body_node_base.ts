@@ -45,9 +45,9 @@ export interface ChildNodeRef {
 
 /**
  * Walks nested nodes and, for a hybrid container, reports whether the parent
- * still produces output of its own. {@link rendersOnSurface} treats a
- * non-empty `children` result as the complete source of rendered content
- * unless {@link ChildNodeWalker.hasOwnContent} is true for that node.
+ * still produces output of its own. A non-empty `children` result is the
+ * complete source of rendered content unless
+ * {@link ChildNodeWalker.hasOwnContent} is true for that node.
  */
 export type ChildNodeWalker = ((node: unknown) => ChildNodeRef[]) & {
   hasOwnContent?(node: unknown): boolean;
