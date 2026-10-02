@@ -23,7 +23,7 @@ sources:
 
 # Definition
 
-A pack is a vocabulary as a value: `id`, `primitives`, optional `surfaces`, `enhancements`, `slackAssetTypes`, `styleAdapter`, `styleCollector`, and `theme`. `definePrimitivePack` builds one and checks it. Node types must be unique within a pack; `definePrimitivePack` and `extendPrimitivePack` throw `DUPLICATE_PRIMITIVE_TYPE` on a repeat, and `composePacks` reports the cross-pack case. `definePrimitivePack` also throws `UNKNOWN_PRIMITIVE_TYPE` for a `slackAssetTypes` entry the pack does not register, and `composePacks` throws `DUPLICATE_PACK_ID` for two packs sharing an `id`.[^docs][^pack]
+A pack is a vocabulary as a value: `id`, `primitives`, optional `surfaces`, `enhancements`, `slackAssetTypes`, `styleAdapter`, and `styleCollector`. `definePrimitivePack` builds one and checks it; its type argument is the palette the pack's frames must supply. Node types must be unique within a pack; `definePrimitivePack` and `extendPrimitivePack` throw `DUPLICATE_PRIMITIVE_TYPE` on a repeat, and `composePacks` reports the cross-pack case. `definePrimitivePack` also throws `UNKNOWN_PRIMITIVE_TYPE` for a `slackAssetTypes` entry the pack does not register, and `composePacks` throws `DUPLICATE_PACK_ID` for two packs sharing an `id`.[^docs][^pack]
 
 An enhancement's optional `script` is a function body with `root`, the render's `.isomer` section, in scope. It addresses markup through `data-*` attributes, never uses `document.currentScript`, and dispatches host events with `bubbles: true` and `composed: true`. An enhancement the host drives has no `script`, and one that finds nodes declares `anchors: true`. See [rendering](/sdk/concepts/rendering.md) for who runs it.[^docs][^enhancements]
 
