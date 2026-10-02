@@ -17,15 +17,14 @@ That table keeps its text, markdown, and Slack renderers. Only React changed —
 
 ## What can be overridden
 
-Four renderer keys: `react`, `text`, `markdown`, `slack`. There is no `svg` key, because that surface has no renderer of its own. The signatures are the ones the runtime holds, with the node union heterogeneous and theme and context erased. `env` and `output` are derived from the SDK's `SurfaceMap` over `RuntimePackTypes<unknown>` so the bags cannot drift; `RuntimeRendererOverrides` is the exported map type:
+Four renderer keys: `react`, `text`, `markdown`, `slack`. There is no `svg` key, because that surface has no renderer of its own. The signatures are the ones the runtime holds, with the node union heterogeneous and theme and context erased. `env` and `output` are derived from the SDK's `SurfaceMap`, so the bags cannot drift. `RuntimeRendererOverrides` is the exported map type; index it to type an override written apart from the call:
 
 ```ts
-type Erased = SurfaceMap<RuntimePackTypes<unknown>>;
+import type { RuntimeRendererOverrides } from '@elastic/isomer-runtime';
 
-react(node: PrimitiveNode, env: Erased['react']['env']): ReactNode;
-text(node: PrimitiveNode, env: Erased['text']['env']): string;
-markdown(node: PrimitiveNode, env: Erased['markdown']['env']): string;
-slack(node: PrimitiveNode, env: Erased['slack']['env']): Erased['slack']['output'];
+type ReactOverride = NonNullable<RuntimeRendererOverrides[string]['react']>;
+
+const tableReact: ReactOverride = (node, { context }) => <HostTable node={node} context={context} />;
 ```
 
 They are declared method-style, which makes their parameters bivariant, so a host may write an override against its own node type — `(node: TableNode) => …` — rather than widening to `PrimitiveNode` and narrowing again inside.

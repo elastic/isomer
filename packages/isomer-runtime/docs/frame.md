@@ -28,7 +28,7 @@ noImages.surfaces.svg; // undefined
 noImages.getCapabilities().formats; // ['react','html','text','markdown','slack']
 ```
 
-With exactly one frame, that frame is the default and `defaultFrame` is optional. With two or more, `defaultFrame` is required, and naming one the runtime does not hold is an error that lists the names it does.
+An empty `frames` map throws `EMPTY_FRAMES` rather than building a runtime typed as having an `svg` surface it lacks; omit the option instead. With exactly one frame, that frame is the default and `defaultFrame` is optional. With two or more, `defaultFrame` is required, and naming one the runtime does not hold is an error that lists the names it does.
 
 ## What a frame owns
 
@@ -48,12 +48,10 @@ The body itself is dispatched generically, and the frame is handed the compositi
 ## Rendering with one
 
 ```ts
-const svg = runtime.surfaces.svg;
-const viewport = svg.resolveViewport(composition); // { width, height }
-const { element, css } = svg.render(composition, { theme: 'light' });
+const { element, css, width, height } = runtime.surfaces.svg.render(composition, { theme: 'light' });
 ```
 
-`resolveViewport` exists because a rasterizing host needs the viewport before it needs the element. Since it is usually called first, an unknown frame name throws there rather than being reported — that is the message such a host meets.
+The result carries the viewport the element was laid out for, so a rasterizing host reads `width` and `height` from it. An unknown frame name throws.
 
 `render` validates, resolves the frame, checks the frame's own body rule, resolves geometry, then hands the frame and the dispatcher to `BoundFrame.render`. The body-rule check throws rather than returning a result: `render` already validated, so this is the backstop for a composition that arrived another way, or one validated under a different frame than it is now drawn in.
 

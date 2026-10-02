@@ -36,19 +36,14 @@ A `collectStyles` hook mutates whatever collector the serving adapter created, a
 
 ## Typing the render context
 
-The factory has three type parameters: `THostContext` is what a view's `build` receives, `TRenderContext` is what a pack's `react` renderers receive, and `TTheme` is the palette. `TTheme` is inferred from `packs`. `TRenderContext` is inferred from `styleAdapter` alone, so a host that supplies none gets the SDK's `PrimitiveRenderContext` even when a pack narrows its context, as the slides pack does with `SlideRenderContext`. `react.render`'s `context` is then typed too wide to carry the pack's fields. Naming all three parameters positionally fixes the binding:
+The factory has three type parameters: `THostContext` is what a view's `build` receives, `TRenderContext` is what a pack's `react` renderers receive, and `TTheme` is the palette. `TTheme` is inferred from `packs`. `TRenderContext` is inferred from `styleAdapter` alone, so a host that supplies none gets the SDK's `PrimitiveRenderContext` even when a pack narrows its context, as a `chartsPack` whose renderers read a `ChartsRenderContext` would. `react.render`'s `context` is then typed too wide to carry the pack's fields. Naming all three parameters positionally fixes the binding:
 
 ```ts
-import {
-  type SlideFrameTheme,
-  type SlideRenderContext,
-  slideDeckFrame,
-  slidesPack,
-} from '@elastic/isomer-primitives-slides';
+import { type ChartsRenderContext, type ChartsTheme, cardFrame, chartsPack } from './charts';
 
-const runtime = createIsomerRuntime<unknown, SlideRenderContext, SlideFrameTheme>({
-  packs: [slidesPack],
-  frames: { slide: slideDeckFrame },
+const runtime = createIsomerRuntime<unknown, ChartsRenderContext, ChartsTheme>({
+  packs: [chartsPack],
+  frames: { card: cardFrame },
 });
 
 runtime.surfaces.react.render(composition, { context: { resolveClassName } });

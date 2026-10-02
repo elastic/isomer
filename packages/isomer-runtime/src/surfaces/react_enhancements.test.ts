@@ -58,19 +58,6 @@ const stepPrimitive = definePrimitive<StepNode>({
   },
 });
 
-const runtime = createIsomerRuntime({
-  packs: [
-    definePrimitivePack({
-      id: 'test',
-      surfaces: [],
-      primitives: [stepPrimitive],
-    }),
-  ],
-});
-
-const step: StepNode = { type: 'step', text: 'twice' };
-const composition: Composition = { type: 'view', body: [step, step] };
-
 /** Counts its runs on the root and records how many anchors it found. */
 const counted: EnhancementDefinition = {
   id: 'counted',
@@ -81,6 +68,20 @@ const counted: EnhancementDefinition = {
     `root.dataset.anchors = String(root.querySelectorAll('[${NODE_ANCHOR_ATTRIBUTE}]').length);`,
   ].join('\n'),
 };
+
+const runtime = createIsomerRuntime({
+  packs: [
+    definePrimitivePack({
+      id: 'test',
+      surfaces: [],
+      primitives: [stepPrimitive],
+      enhancements: [counted],
+    }),
+  ],
+});
+
+const step: StepNode = { type: 'step', text: 'twice' };
+const composition: Composition = { type: 'view', body: [step, step] };
 
 let container: HTMLElement;
 let root: Root | undefined;
@@ -113,7 +114,7 @@ describe('react surface enhancements', () => {
     const section = mount(
       runtime.surfaces.react.render(composition, {
         wrapper: true,
-        enhancements: [counted],
+        enhancements: ['counted'],
       })
     ).querySelector('section')!;
     expect(section.dataset.runs).toBe('1');
@@ -127,7 +128,7 @@ describe('react surface enhancements', () => {
     const section = mount(
       runtime.surfaces.react.render(composition, {
         wrapper: true,
-        enhancements: [counted],
+        enhancements: ['counted'],
       })
     ).querySelector('section')!;
     const pairs = findNodeElementPairs(
@@ -148,7 +149,7 @@ describe('react surface enhancements', () => {
         null,
         runtime.surfaces.react.render(target, {
           wrapper: true,
-          enhancements: [counted],
+          enhancements: ['counted'],
         })
       );
     const section = mount(render(composition)).querySelector('section')!;
@@ -165,7 +166,7 @@ describe('react surface enhancements', () => {
     const render = () =>
       runtime.surfaces.react.renderNode(step, {
         wrapper: true,
-        enhancements: [counted],
+        enhancements: ['counted'],
       });
     const section = mount(render()).querySelector('section')!;
     act(() => root!.render(render()));
@@ -177,7 +178,7 @@ describe('react surface enhancements', () => {
     const render = (target: Composition) =>
       runtime.surfaces.react.render(target, {
         wrapper: true,
-        enhancements: [counted],
+        enhancements: ['counted'],
       });
     const [first, second] = mount(
       createElement('div', null, render(composition), render(composition))
@@ -204,7 +205,7 @@ describe('react surface enhancements', () => {
     const section = mount(
       runtime.surfaces.react.render(
         { type: 'view', body: [] },
-        { wrapper: true, enhancements: [counted] }
+        { wrapper: true, enhancements: ['counted'] }
       )
     ).querySelector('section')!;
     expect(section.dataset.runs).toBeUndefined();
@@ -218,11 +219,25 @@ describe('react surface enhancements', () => {
     expect(section.dataset.runs).toBeUndefined();
   });
 
-  it('warns and runs nothing without a wrapper', () => {
+  it('ignores an id no pack registers', () => {
+    const section = mount(
+      runtime.surfaces.react.render(composition, {
+        wrapper: true,
+        enhancements: ['absent'],
+      })
+    ).querySelector('section')!;
+    expect(section.dataset.runs).toBeUndefined();
+    expect(section.querySelector(`[${NODE_ANCHOR_ATTRIBUTE}]`)).toBeNull();
+  });
+
+  it('warns once per composition and runs nothing without a wrapper', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const host = mount(
-      runtime.surfaces.react.render(composition, { enhancements: [counted] })
-    );
+    const target: Composition = { ...composition };
+    const render = () =>
+      runtime.surfaces.react.render(target, { enhancements: ['counted'] });
+    const host = mount(render());
+    act(() => root!.render(render()));
+    expect(warn).toHaveBeenCalledTimes(1);
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('`wrapper`'));
     expect(host.dataset.runs).toBeUndefined();
     expect(host.querySelectorAll(`[${NODE_ANCHOR_ATTRIBUTE}]`)).toHaveLength(2);

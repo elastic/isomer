@@ -1788,10 +1788,7 @@ describe('createIsomerRuntime', () => {
     const runtime = drawingRuntime(notePrimitive);
     const spec = view('Sized');
 
-    expect(
-      runtime.surfaces.svg.resolveViewport(spec, { width: 800, height: 120 })
-    ).toEqual({ width: 800, height: 120 });
-    expect(runtime.surfaces.svg.resolveViewport(spec, { width: 800 })).toEqual({
+    expect(runtime.surfaces.svg.render(spec, { width: 800 })).toMatchObject({
       width: 800,
       height: 40,
     });
@@ -2012,10 +2009,10 @@ describe('createIsomerRuntime', () => {
       ],
     };
 
-    expect(runtime.surfaces.svg?.resolveViewport(mixed).width).toBe(600);
-    expect(
-      runtime.surfaces.svg?.resolveViewport(mixed, { frame: 'wide' }).width
-    ).toBe(1920);
+    expect(runtime.surfaces.svg?.render(mixed).width).toBe(600);
+    expect(runtime.surfaces.svg?.render(mixed, { frame: 'wide' }).width).toBe(
+      1920
+    );
   });
 
   it('rejects a frame name inherited from Object.prototype', () => {
@@ -2054,10 +2051,27 @@ describe('createIsomerRuntime', () => {
       frames: { '': testFrame },
     });
 
-    expect(runtime.surfaces.svg?.resolveViewport(view('Framed')).width).toBe(
-      600
-    );
+    expect(runtime.surfaces.svg?.render(view('Framed')).width).toBe(600);
     expect(runtime.getCapabilities().formats).toContain('svg');
+  });
+
+  it('rejects an empty frames map rather than typing an absent svg surface as present', () => {
+    expect(() =>
+      createIsomerRuntime({ packs: [svgPackOf(notePrimitive)], frames: {} })
+    ).toThrow(
+      expect.objectContaining({ name: 'IsomerError', code: 'EMPTY_FRAMES' })
+    );
+  });
+
+  it('rejects defaultFrame when no frames are supplied', () => {
+    expect(() =>
+      createIsomerRuntime({
+        packs: [svgPackOf(notePrimitive)],
+        defaultFrame: 'card',
+      })
+    ).toThrow(
+      expect.objectContaining({ name: 'IsomerError', code: 'UNKNOWN_FRAME' })
+    );
   });
 
   it('rejects a render naming a frame it does not hold', () => {
@@ -2203,7 +2217,7 @@ describe('createIsomerRuntime', () => {
 
     // 600 from `testFrame.defaultWidth`, 40 from its per-node estimate: a
     // replaced frame is drawn within a viewport the frame still sizes.
-    expect(runtime.surfaces.svg?.resolveViewport(view('framed'))).toEqual({
+    expect(runtime.surfaces.svg?.render(view('framed'))).toMatchObject({
       width: 600,
       height: 40,
     });

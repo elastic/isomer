@@ -11,7 +11,7 @@ runtime.surfaces.slack.render(composition, { collectAssets: true });
 
 | Surface | `render` returns | Validates | Options |
 | --- | --- | --- | --- |
-| `react` | `ReactNode` | no | `context` (required only if the pack narrows it), `heading`, `wrapper`, `enhancements` (definitions) |
+| `react` | `ReactNode` | no | `context` (required only if the pack narrows it), `heading`, `wrapper`, `enhancements` (ids) |
 | `html` | `HTMLRenderResult` | yes | `theme`, `fluid`, `framed`, `heading`, `css`, `scripts`, `minify`, `enhancements` (ids), `anchors`, `onValidationError` |
 | `text` | `string` | yes | `heading`, `onValidationError` |
 | `markdown` | `string` | yes | `heading`, `onValidationError` |
@@ -48,18 +48,18 @@ runtime.surfaces.react.render(composition, {
 
 Omit `wrapper` and the surface returns bare content.
 
-Pass `enhancements` to render with a pack's enhancements, as the `html` surface does. The React surface takes the `EnhancementDefinition`s themselves, where `html` takes ids: those whose `appliesTo` finds something in the body reach every renderer as `context.enhancements`, and turn node anchors on when one declares `anchors: true`. Each one's `script` runs once against the `wrapper` section when it mounts, and a new composition or node object mounts a fresh section, so a script never runs twice on the same elements. A script needs `wrapper`; without one the surface warns and runs nothing. An enhancement the host drives, with no `script`, needs no wrapper: the host finds the parts it acts on with `findNodeElementPairs` after the render commits.
+Pass `enhancements` to render with a pack's enhancements, by id, exactly as on the `html` surface: ids resolve against the enhancements the runtime's packs register, and an id none registers is ignored. Those whose `appliesTo` finds something in the body reach every renderer as `context.enhancements`, and turn node anchors on when one declares `anchors: true`. Each one's `script` runs once against the `wrapper` section when it mounts, and a new composition or node object mounts a fresh section, so a script never runs twice on the same elements. A script needs `wrapper`; without one the surface warns once for that composition and runs nothing. An enhancement the host drives, with no `script`, needs no wrapper: the host finds the parts it acts on with `findNodeElementPairs` after the render commits.
 
 `renderNode` takes `ReactRenderNodeOptions`, which is `ReactRenderOptions` without `heading`: a lone node has no composition title to draw. `heading` still controls it on `render`. Slack's `SlackRenderNodeOptions` omits `heading` for the same reason.
 
 The options argument, and `context` inside it, is optional only when omitting it is sound. The SDK's own render context has no required field, so `{}` is a complete value and both may be left off; a pack that narrows the context with something mandatory makes them required for that binding rather than letting the surface fabricate a value missing fields its renderers will read.
 
-`context` is typed by the runtime's `TRenderContext`, which is inferred from `styleAdapter` alone. A host that supplies no adapter and loads a pack that narrows its context, such as the slides pack's `SlideRenderContext`, gets the SDK's `PrimitiveRenderContext` by inference, and a narrowed field in `context` is then an excess property. Name all three type parameters positionally to type it:
+`context` is typed by the runtime's `TRenderContext`, which is inferred from `styleAdapter` alone. A host that supplies no adapter and loads a pack that narrows its context, here a `chartsPack` whose renderers read a `ChartsRenderContext`, gets the SDK's `PrimitiveRenderContext` by inference, and a narrowed field in `context` is then an excess property. Name all three type parameters positionally to type it:
 
 ```ts
-const runtime = createIsomerRuntime<unknown, SlideRenderContext, SlideFrameTheme>({
-  packs: [slidesPack],
-  frames: { slide: slideDeckFrame },
+const runtime = createIsomerRuntime<unknown, ChartsRenderContext, ChartsTheme>({
+  packs: [chartsPack],
+  frames: { card: cardFrame },
 });
 
 runtime.surfaces.react.render(composition, { context: { resolveClassName } });
@@ -86,16 +86,14 @@ The `svg` surface returns `{ element, css, width, height }`, not SVG bytes. Rast
 Both halves are needed together. `element` is the same React tree the DOM gets, carrying class names; `css` is the packs' stylesheet, which an image backend is handed the way a browser is handed a `<style>`. Its `light-dark(…)` values are already resolved to the render's scheme, because an image is one static frame with no color scheme to resolve them against.
 
 ```ts
-const svg = runtime.surfaces.svg;
-const { width, height } = svg.resolveViewport(composition);
-const { element, css } = svg.render(composition, { theme: 'light' });
+const { element, css, width, height } = runtime.surfaces.svg.render(composition, { theme: 'light' });
 ```
 
 `anchors: true` renders node anchors into `element`, so a measured layout of it can be handed to the SDK's `checkLayout`.
 
 `renderPages(compositions, options?)` lays several compositions out as one document, `{ pages, css, width, height }`: one root per composition against one stylesheet. A paged output such as a PDF needs that, and per-composition `render` calls cannot give it, because each collects only the CSS its own composition uses. Every page is the same size, the tallest estimate unless `height` is given, and the first composition's `theme` decides the palette unless `theme` is given. An empty list throws `EMPTY_PAGES`, and a body the frame rejects names its page, counted from 1.
 
-`renderNode` on this surface takes only `frame`, `theme`, `anchors`, and `onValidationError`. Geometry is absent deliberately: a node drawn with no surround has nothing for a width or height to size.
+`renderNode` on this surface takes only `frame`, `theme`, `anchors`, and `onValidationError`. Geometry is absent deliberately: a node drawn with no surround has nothing for a width or height to size. The result still reports one, the frame's `defaultWidth` and its estimate for a one-node body, so a rasterizer has a viewport to lay the node out in.
 
 ## Warnings are per surface
 
