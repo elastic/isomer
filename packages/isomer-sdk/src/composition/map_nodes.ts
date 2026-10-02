@@ -63,7 +63,7 @@ interface Frame {
  *
  * Post-order: a container reaches `fn` after its children have been mapped,
  * so `fn` sees the finished replacements in place. Build `walk` with
- * `createChildNodeWalker` over every pack in the composition.
+ * {@link createChildNodeWalker} over every pack in the composition.
  * A child path is the dotted `field` / `field[index]` form the SDK documents
  * (`items[0].node`); any other shape throws `UNSUPPORTED_CHILD_PATH`.
  * Walked without recursion, so depth is bounded by memory, not the call stack; a node nested in itself throws `CYCLIC_COMPOSITION`.

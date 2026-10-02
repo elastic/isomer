@@ -105,6 +105,63 @@ const render = (
     ...extra,
   });
 
+describe('renderHTMLWithDispatcher enhancements', () => {
+  interface ProbeNode extends PrimitiveNode {
+    type: 'probe';
+  }
+  const probe = definePrimitive<ProbeNode>({
+    type: 'probe',
+    catalog: {
+      type: 'probe',
+      purpose: 'probe',
+      useWhen: [],
+      avoidWhen: [],
+      example: { type: 'probe' },
+    },
+    examples: [{ type: 'probe' }],
+    schema: z.object({ type: z.literal('probe') }),
+    renderers: {
+      react: (_node, { context }) =>
+        createElement(
+          'i',
+          null,
+          [
+            ...((context as { enhancements?: Set<string> }).enhancements ?? []),
+          ].join(',') || 'none'
+        ),
+      text: () => '',
+      markdown: () => '',
+    },
+  });
+  const sorter = {
+    id: 'sort',
+    appliesTo: () => true,
+    script: 'sorted()',
+  };
+  const renderProbe = (options: HTMLRenderOptions) =>
+    renderHTMLWithDispatcher<ProbeNode>(
+      { type: 'view', body: [{ type: 'probe' }] },
+      {
+        dispatcher: createPrimitiveDispatcher<ProbeNode>([probe]),
+        validate: valid,
+        options,
+        enhancementDefinitions: [sorter],
+      }
+    );
+
+  it('applies none when the host requests none, even if one applies', () => {
+    const { html, js } = renderProbe({});
+    expect(js).toBe('');
+    expect(html).toContain('<i>none</i>');
+  });
+
+  it('applies a requested one that applies', () => {
+    const { html, js } = renderProbe({ enhancements: ['sort'] });
+    expect(js).toContain('sorted()');
+    expect(html).toContain('<i>sort</i>');
+  });
+});
+
 describe('renderHTMLWithDispatcher', () => {
   it('wraps the body in a div inside the section, with a heading by default', () => {
     const { html, body, css } = render(view('<p>x</p>'));

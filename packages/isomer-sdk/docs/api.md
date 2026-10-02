@@ -45,7 +45,7 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | `layoutRoom`, `LAYOUT_ROOM_ATTRIBUTE` | Props a renderer spreads on an element inside its node, such as a frame's body, so `checkLayout` measures the nodes nested in it against that element; rendered when `nodeAnchor` would be |
 | `withNodeAnchors` | A view of a context with anchors on, as an enhancement declaring `anchors: true` turns them on |
 | `withoutAnchors` | A context under which nothing renders an anchor, for content that is not one of a node's `children` |
-| `findNodeElements` | The same as a map from node to element, for a body that reuses no node object |
+| `findNodeElements` | Each `react`-visible node of a body mapped to its anchored element under a DOM root, for a body that reuses no node object; `./react`'s `findNodeElementPairs` lists each occurrence |
 | `checkLayout` | Where a measured render's nodes run past their room or onto a sibling, as `LayoutFinding`s over a `LayoutBox` tree of `LayoutRect`s |
 | `BODY_NODE_SURFACES` | `['react','svg','text','markdown','slack']` |
 
@@ -89,7 +89,7 @@ Zod helpers so a pack states constraints the same way everywhere: `z` and `requi
 
 `useReactPrimitiveDispatcher`, `renderCompositionContent`, `wrapCompositionContent` (the `.isomer[.framed][.fluid]` `section` the `html` surface's wrapper also emits, for a React-only host; `CompositionWrapperOptions` carries `framed`, `fluid`, `theme`, `defaultAriaLabel`), `applyEnhancements` (the enhancement definitions that apply to a body, the first of each id and limited to `requested` ids when given, as the `html` surface resolves them, and a view of the render context carrying their ids as `enhancements`, with `anchors` on when one asks), and the dispatcher/context types used by React renderers: `ReactContentDispatcher`, `ReactContentOptions`, `ReactTreeDispatcher`.
 
-The browser-side helpers, which type against the DOM and so stay off the root entry: `runEnhancementScript` takes a `scripts: 'host'` render's `js` and the `.isomer` section the host inserted, and runs the one against the other; `findNodeElementPairs` lists each `react`-visible node of a body, in pre-order, with its anchored element under a DOM root; `measureDom` returns the `LayoutBox` tree a browser laid an element out as, for `checkLayout`.
+The browser-side helpers, exported here rather than from the root entry: `runEnhancementScript` takes a `scripts: 'host'` render's `js` and the `.isomer` section the host inserted, and runs the one against the other; `findNodeElementPairs` lists each `react`-visible node of a body, in pre-order, with its anchored element under a DOM root; `measureDom` returns the `LayoutBox` tree a browser laid an element out as, for `checkLayout`.
 
 ## `./text`, `./markdown`, `./slack`
 

@@ -91,6 +91,21 @@ describe('resolveEnhancements', () => {
     ).toEqual([tableSort]);
   });
 
+  it('keeps the first applying definition of an id when an earlier one does not apply', () => {
+    const idle: EnhancementDefinition = {
+      ...tableSort,
+      appliesTo: () => false,
+    };
+    expect(
+      resolveEnhancements(
+        [sortableTable],
+        nestWalker,
+        [idle, tableSort],
+        ['tableSort']
+      )
+    ).toEqual([tableSort]);
+  });
+
   it('ignores an id no pack declares and keeps the first definition of each id', () => {
     const shadow: EnhancementDefinition = {
       ...tableSort,

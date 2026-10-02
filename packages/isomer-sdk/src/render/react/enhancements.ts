@@ -16,9 +16,10 @@ import { contextWith } from '../context_view';
 
 /**
  * The `definitions` that apply to `body`, the first of each id and limited to
- * `requested` ids when given, and `context` for a React render of it: carrying their ids as `context.enhancements`, with
- * `context.anchors` on when one declares `anchors: true`. `context` is viewed,
- * not copied, as the HTML surface does.
+ * `requested` ids when given, and `context` for a React render of it: carrying
+ * their ids as `context.enhancements`, with `context.anchors` on when one
+ * declares `anchors: true`. `context` is viewed, not copied, as the HTML
+ * surface does.
  */
 export const applyEnhancements = <TContext>(
   context: TContext,

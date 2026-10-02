@@ -25,7 +25,7 @@ export interface DistillateHtmlEngine<TCollector> {
     resolver?: undefined,
     options?: { themeValueOverrides?: Record<string, string> }
   ) => string;
-  /** Theme-tree path to its per-scheme values, for `HTMLRenderOptions.scheme`. */
+  /** Theme-tree path to its per-scheme values, for {@link HTMLRenderOptions.scheme}. */
   environment: { themeVars: Readonly<Record<string, DistillateThemeVar>> };
   /** Distillate's per-distillery `StyleRegistry`, which answers {@link HTMLStyleAdapter.ownsHandle}. */
   registry: { module: (name: string) => unknown };
