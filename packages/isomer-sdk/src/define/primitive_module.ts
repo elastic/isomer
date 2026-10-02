@@ -14,6 +14,7 @@ import {
   type BodyNodeSurface,
   type ChildNodeRef,
 } from '../composition/body_node_base';
+import { ISOMER_ERROR_CODES, IsomerError } from '../composition/error';
 import type { PrimitiveNode } from '../composition/node';
 import type { ValidationError } from '../composition/validation_error';
 
@@ -560,13 +561,46 @@ export type WithNodeFields<TSchema extends PrimitiveSchema> =
       >
     : PrimitiveSchema;
 
+// Marks the field schemas `definePrimitive` adds. A schema derived from a
+// defined one shares them by reference, and `Symbol.for` matches across ESM and
+// CommonJS copies of the SDK.
+const NODE_FIELD = Symbol.for('isomer.define.nodeField');
+
+const nodeField = <T extends ZodType>(schema: T): T =>
+  Object.defineProperty(schema, NODE_FIELD, { value: true });
+
+const NODE_FIELDS = {
+  id: nodeField(bodyNodeIdSchema.optional()),
+  surfaces: nodeField(bodyNodeSurfacesSchema.optional()),
+};
+
+const isNodeField = (schema: unknown): boolean => {
+  let current = schema;
+  while (current && typeof current === 'object') {
+    if (Object.hasOwn(current, NODE_FIELD)) return true;
+    const { def } = current as {
+      def?: { type?: string; innerType?: unknown };
+    };
+    if (def?.type !== 'optional') return false;
+    current = def.innerType;
+  }
+  return false;
+};
+
 const withNodeFields = <TSchema extends PrimitiveSchema>(
   schema: TSchema
 ): WithNodeFields<TSchema> => {
-  const extended = schema.extend({
-    id: bodyNodeIdSchema.optional(),
-    surfaces: bodyNodeSurfacesSchema.optional(),
-  });
+  const reserved = Object.keys(NODE_FIELDS).find(
+    (field) =>
+      Object.hasOwn(schema.shape, field) && !isNodeField(schema.shape[field])
+  );
+  if (reserved) {
+    throw new IsomerError(
+      ISOMER_ERROR_CODES.RESERVED_NODE_FIELD,
+      `definePrimitive: a primitive schema cannot declare \`${reserved}\`; every body node has it.`
+    );
+  }
+  const extended = schema.extend(NODE_FIELDS);
   return (
     schema.def.catchall === undefined ? extended.strict() : extended
   ) as WithNodeFields<TSchema>;

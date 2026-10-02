@@ -66,8 +66,24 @@ export type LooseSchema<TSchema> = string extends keyof ShapeOf<TSchema>
   ? true
   : false;
 
+// The schema a brand is read from: `F`, or one an optional, nullable, default,
+// or readonly wrapper holds.
+type Branded<F> = F extends
+  AuthoredChildBrand<string, unknown> | AuthoredTextBrand
+  ? F
+  : F extends {
+        _zod: {
+          def: {
+            type: 'optional' | 'nullable' | 'default' | 'readonly';
+            innerType: infer Inner;
+          };
+        };
+      }
+    ? Branded<Inner>
+    : F;
+
 type AuthoredNames<TSchema> = {
-  [K in keyof ShapeOf<TSchema>]: ShapeOf<TSchema>[K] extends
+  [K in keyof ShapeOf<TSchema>]: Branded<ShapeOf<TSchema>[K]> extends
     AuthoredChildBrand<string, unknown> | AuthoredTextBrand
     ? K
     : never;
@@ -112,7 +128,9 @@ type ChildComponentsOf<TSchema> =
     ? NoKeys
     : UnionToIntersection<
         {
-          [K in keyof ShapeOf<TSchema>]: ChildEntry<ShapeOf<TSchema>[K]>;
+          [K in keyof ShapeOf<TSchema>]: ChildEntry<
+            Branded<ShapeOf<TSchema>[K]>
+          >;
         }[keyof ShapeOf<TSchema>]
       >;
 

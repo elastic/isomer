@@ -7,7 +7,12 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { buildAuthoringPrompt, formatPrimitiveEntry } from './prompt';
+import {
+  buildAuthoringPrompt,
+  createAgentAuthoringContextFactory,
+  createAuthoringPromptBuilder,
+  formatPrimitiveEntry,
+} from './prompt';
 
 const context = {
   guide: 'Guide',
@@ -285,5 +290,66 @@ describe('formatPrimitiveEntry', () => {
     expect(
       formatPrimitiveEntry({ ...quoteless, example: { text: 'a\u2028b' } })
     ).toContain('  - Example: `{"text":"a\\u2028b"}`');
+  });
+});
+
+describe('pack authoring defaults', () => {
+  const defaults = {
+    guide: 'Pack guide.',
+    rules: 'Pack rules.',
+    schema: { type: 'object' },
+    primitives: context.primitives,
+  };
+
+  it('builds a prompt from the defaults, letting the caller override each field', () => {
+    const build = createAuthoringPromptBuilder(defaults);
+    expect(build('general', {})).toBe(
+      buildAuthoringPrompt('general', { ...defaults, examples: [] })
+    );
+    expect(build('general', { guide: 'Host guide.' })).toContain('Host guide.');
+    expect(build('general', { guide: 'Host guide.' })).toContain('Pack rules.');
+  });
+
+  it('passes the catalog form, groups, heading, and intro through', () => {
+    const chart = {
+      type: 'chart',
+      purpose: 'Plot a series.',
+      useWhen: [],
+      avoidWhen: [],
+      example: { type: 'chart' },
+    };
+    const build = createAuthoringPromptBuilder({
+      ...defaults,
+      primitives: [chart],
+    });
+    const options = {
+      catalog: 'index',
+      groups: [{ title: 'Charts and plots', types: ['chart'] }],
+      heading: '# Deck authoring',
+      intro: 'Build a deck.',
+    } as const;
+    const prompt = build('general', options);
+    expect(prompt).toBe(
+      buildAuthoringPrompt('general', {
+        ...defaults,
+        primitives: [chart],
+        examples: [],
+        ...options,
+      })
+    );
+    expect(prompt).toContain('Charts and plots');
+    expect(prompt).toContain('# Deck authoring');
+    expect(prompt).toContain('Build a deck.');
+  });
+
+  it('builds a context from the defaults with the caller examples and views', () => {
+    const views = [{ id: 'v', title: 'View', answers: [] }];
+    const make = createAgentAuthoringContextFactory(defaults);
+    expect(make()).toEqual({ ...defaults, examples: [] });
+    expect(make({ examples: [1], views })).toEqual({
+      ...defaults,
+      examples: [1],
+      views,
+    });
   });
 });

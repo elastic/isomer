@@ -6,6 +6,9 @@
 
 ## 2026-10-01
 
+- **The pack prompt builder passes every field through**: `createAuthoringPromptBuilder` dropped a caller's `catalog`, `groups`, `heading`, and `intro`, so `catalog: 'index'` printed the full catalog; it now spreads every defined field over the pack's defaults. Both pack authoring factories have tests.
+- **Authoring brands survive wrappers and refuse reuse**: `fromChildren` and `fromTextChildren` brands are read through `.optional()`, `.nullable()`, `.default()`, and `.readonly()` at runtime and in the shim's types, so the child component is still generated. Branding one schema instance two ways throws an `IsomerError` with the new code `AUTHORED_SCHEMA_REUSED` instead of a raw `TypeError`.
+- **`definePrimitive` reserves `id` and `surfaces`**: a primitive schema, or a container's `schemaFor` result, declaring either throws an `IsomerError` with the new code `RESERVED_NODE_FIELD` rather than being silently overwritten.
 - **Slack option values are cut, not elided**: `slackSelectOption` cuts an over-long `value` to Slack's documented 150 characters (it clamped at 75) with no `…`, never through a surrogate pair, since the value is an identifier the host reads back.
 - **The Slack asset swap sanitizes first**: a Slack asset type's node goes through its `sanitize` hook before `allocate`, a node the hook drops allocates nothing, and an empty text render falls back to the node type for `alt_text`.
 - **The Slack envelope fits counts, image URLs, and `mrkdwn` cuts**: a `context` past `contextElements`, `actions` past `buttonsPerActions`, or section past `fieldsPerSection` splits into blocks of its type, the first keeping its `block_id`; menus keep `optionsPerSelect`, `optionsPerChoice` (radio buttons and checkboxes, the new 10-option limit), or `optionsPerOverflow` options, a grouped select its first `optionGroupsPerSelect` groups, and an initial option becomes the emitted option of its value; option values, button values, and `action_id`s are cut to the new `optionValueChars`, `buttonValueChars`, and `actionIdChars`, and a `url` past `urlChars` is dropped; an image past `imageUrlChars` leaves its alt text. A `mrkdwn` clamp never cuts inside a `<…>` link or mention or an entity, and the default fallback `text` is escaped as `mrkdwn`.
@@ -85,3 +88,4 @@
 - 2026-10-02: Markdown parsing has length and syntax budgets, including closing-delimiter runs, to bound adversarial parser work.
 
 - 2026-10-02: Markdown reference images use the asset policy, preserving multiline data images while checking shared link uses independently.
+- 2026-10-02: Reserved node-field provenance survives repeated optional wrapping when a defined primitive schema is derived.

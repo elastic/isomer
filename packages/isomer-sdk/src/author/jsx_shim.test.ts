@@ -502,3 +502,164 @@ describe('textFromChildren', () => {
     }
   });
 });
+
+describe('fromChildren through wrappers', () => {
+  it.each([
+    ['optional', <T extends z.ZodType>(s: T) => s.optional()],
+    ['nullable', <T extends z.ZodType>(s: T) => s.nullable()],
+    ['default', <T extends z.ZodType>(s: T) => s.default([] as never)],
+    ['readonly', <T extends z.ZodType>(s: T) => s.readonly()],
+  ])('generates the child component past %s', (_name, wrap) => {
+    const {
+      Composition: Root,
+      Group,
+      Item,
+      toComposition: convert,
+    } = buildJsxShim([
+      brandedGroup(
+        wrap(fromChildren('item', z.array(z.object({ label: z.string() }))))
+      ),
+    ]);
+    expect(Item).toBeDefined();
+    const spec = convert(
+      createElement(
+        Root,
+        null,
+        createElement(Group, null, createElement(Item, { label: 'A' }))
+      )
+    );
+    expect(spec.body).toEqual([{ type: 'group', items: [{ label: 'A' }] }]);
+  });
+
+  it('fills a text field past optional', () => {
+    const {
+      Composition: Root,
+      Group,
+      toComposition: convert,
+    } = buildJsxShim([
+      {
+        type: 'group' as const,
+        schema: z.object({
+          type: z.literal('group'),
+          title: fromTextChildren(z.string()).optional(),
+        }),
+      },
+    ]);
+    expect(
+      convert(createElement(Root, null, createElement(Group, null, 'Open')))
+        .body
+    ).toEqual([{ type: 'group', title: 'Open' }]);
+  });
+
+  it('refuses to brand one schema instance as two child types', () => {
+    const shared = z.array(z.object({ label: z.string() }));
+    fromChildren('item', shared);
+    expect(() => fromChildren('entry', shared)).toThrow(
+      expect.objectContaining({
+        name: 'IsomerError',
+        code: 'AUTHORED_SCHEMA_REUSED',
+      })
+    );
+  });
+
+  it('treats text children as optional when an inner layer is', () => {
+    const {
+      Composition: Root,
+      Group,
+      toComposition: convert,
+    } = buildJsxShim([
+      {
+        type: 'group' as const,
+        schema: z.object({
+          type: z.literal('group'),
+          title: fromTextChildren(z.string().optional().nullable()),
+        }),
+      },
+    ]);
+    expect(
+      convert(createElement(Root, null, createElement(Group))).body
+    ).toEqual([{ type: 'group' }]);
+  });
+
+  it('reads the items of a nullable or readonly child array', () => {
+    const items = () => z.array(z.object({ label: z.string() }));
+    expect(() =>
+      buildJsxShim([
+        brandedGroup(fromChildren('item', items())),
+        {
+          type: 'other' as const,
+          schema: z.object({
+            type: z.literal('other'),
+            items: fromChildren('item', items().nullable()),
+          }),
+        },
+      ])
+    ).not.toThrow();
+    expect(() =>
+      buildJsxShim([
+        brandedGroup(fromChildren('item', items().readonly())),
+        {
+          type: 'other' as const,
+          schema: z.object({
+            type: z.literal('other'),
+            items: fromChildren(
+              'item',
+              z.array(z.object({ count: z.number() })).readonly()
+            ),
+          }),
+        },
+      ])
+    ).toThrow(expect.objectContaining({ code: 'DUPLICATE_AUTHORED_CHILD' }));
+  });
+
+  it('names the function that rebranded a schema', () => {
+    const shared = z.string();
+    fromTextChildren(shared);
+    expect(() =>
+      fromTextChildren(shared, { collapseWhitespace: false })
+    ).toThrow(/^fromTextChildren:/);
+  });
+
+  it('treats text children as optional when any wrapper layer is', () => {
+    const {
+      Composition: Root,
+      Group,
+      toComposition: convert,
+    } = buildJsxShim([
+      {
+        type: 'group' as const,
+        schema: z.object({
+          type: z.literal('group'),
+          title: fromTextChildren(z.string()).optional().nullable(),
+        }),
+      },
+    ]);
+    expect(
+      convert(createElement(Root, null, createElement(Group))).body
+    ).toEqual([{ type: 'group' }]);
+  });
+
+  it.each([
+    [
+      'a different toItem',
+      (s: z.ZodType) => fromChildren('item', s, { toItem: () => ({}) }),
+    ],
+    [
+      'an added text field',
+      (s: z.ZodType) => fromChildren('item', s, { text: 'label' }),
+    ],
+    ['a text brand', (s: z.ZodType) => fromTextChildren(s)],
+  ])('refuses to rebrand one instance with %s', (_name, rebrand) => {
+    const shared = z.array(z.object({ label: z.string() }));
+    fromChildren('item', shared, { toItem: () => ({}) });
+    expect(() => rebrand(shared)).toThrow(
+      expect.objectContaining({ code: 'AUTHORED_SCHEMA_REUSED' })
+    );
+  });
+
+  it('allows branding one instance twice the same way', () => {
+    const shared = z.array(z.object({ label: z.string() }));
+    fromChildren('item', shared);
+    expect(() => fromChildren('item', shared)).not.toThrow();
+  });
+});
