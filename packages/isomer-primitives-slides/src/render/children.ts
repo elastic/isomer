@@ -6,7 +6,11 @@
  */
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
-import type { MarkdownContent } from '@elastic/isomer-sdk/markdown';
+import {
+  type MarkdownBlock,
+  type MarkdownContent,
+  md,
+} from '@elastic/isomer-sdk/markdown';
 import {
   escapeMrkdwn,
   type SlackAssetCollector,
@@ -37,6 +41,10 @@ export const renderMarkdownChildren = (
   nodes: readonly PrimitiveNode[],
   scope: Pick<SlideRenderScope, 'renderMarkdownContent'>
 ): MarkdownContent => nodes.map((node) => scope.renderMarkdownContent(node));
+
+/** A container's label, uppercased in strong as its own paragraph. */
+export const markdownCaption = (label: string): MarkdownBlock =>
+  md.paragraph(md.strong(label.toUpperCase()));
 
 /** Each child through `scope`, so a native renderer below is reached. */
 export const renderSlackChildren = (

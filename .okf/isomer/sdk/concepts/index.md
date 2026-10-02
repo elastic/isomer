@@ -6,7 +6,7 @@ Directory: `sdk/concepts/`
 
 | Title | Type | Description |
 |-------|------|-------------|
-| [Authoring](authoring.md) | Concept | JSX, object builders, and agent prompt assembly. Structural context comes fro... |
+| [Authoring](authoring.md) | Concept | JSX and agent prompt assembly. Structural context comes from the runtime. |
 | [Composition](composition.md) | Concept | The typed JSON document Isomer validates and renders. Discriminator stays typ... |
 | [Dispatch](dispatch.md) | Concept | createPrimitiveDispatcher routes a node to its renderer by type. |
 | [Packs](packs.md) | Concept | definePrimitivePack builds a vocabulary value. styleCollector is derived from... |

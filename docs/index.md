@@ -64,7 +64,7 @@ A model owns the composition. The runtime hands it `getAuthoringContext()`: a JS
 
 | Package | Role |
 | --- | --- |
-| [`@elastic/isomer-sdk`](sdk/index.md) | The contracts everything else is written against: `definePrimitive`, `definePrimitivePack`, the composition schema, validator and parser, the dispatcher, per-surface envelopes, URL trust, the JSX and object-builder authoring fronts, the agent prompt builder, and a conformance harness for packs. Subpath entries keep `react-dom` off everything but HTML rendering, so a Slack bot never loads it. |
+| [`@elastic/isomer-sdk`](sdk/index.md) | The contracts everything else is written against: `definePrimitive`, `definePrimitivePack`, the composition schema, validator and parser, the dispatcher, per-surface envelopes, URL trust, the JSX authoring front, the agent prompt builder, and a conformance harness for packs. Subpath entries keep `react-dom` off everything but HTML rendering, so a Slack bot never loads it. |
 | [`@elastic/isomer-runtime`](runtime/index.md) | Assembles packs and frames into a runtime: validate, parse, the surfaces, the view registry, renderer overrides, and the authoring context. One entry point, no Node built-ins, runs in a browser, a server, or an edge function. |
 | [`@elastic/isomer-primitives-slides`](slides/index.md) | The reference pack, and the one to copy: slide-deck primitives, a theme with one authoring source per rendered value, a fixed 16:9 frame, and committed output for an example deck. |
 | [`@elastic/isomer-image-takumi`](image-takumi/index.md) | Turns the `svg` surface's element and stylesheet into PNG, SVG, or PDF bytes with Takumi. Declares the input shape structurally, so it depends on no Isomer package. |

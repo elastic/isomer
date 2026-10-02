@@ -6,8 +6,8 @@ Directory: `sdk/entry-points/`
 
 | Title | Type | Description |
 |-------|------|-------------|
-| [Author](author.md) | Entry Point | @elastic/isomer-sdk/author schema brands, JSX shim, and prompt builders. |
-| [HTML](html.md) | Entry Point | @elastic/isomer-sdk/html HTML renderer and Distillate style adapter. |
+| [Author](author.md) | Entry Point | @elastic/isomer-sdk/author schema brands, JSX shim, and authoring prompt. |
+| [HTML](html.md) | Entry Point | @elastic/isomer-sdk/html HTML renderer and style-adapter contract. |
 | [Markdown](markdown.md) | Entry Point | @elastic/isomer-sdk/markdown markdown renderer. |
 | [React](react.md) | Entry Point | @elastic/isomer-sdk/react React renderer helpers. |
 | [Root](root.md) | Entry Point | @elastic/isomer-sdk composition types, define helpers, validation, dispatch, ... |

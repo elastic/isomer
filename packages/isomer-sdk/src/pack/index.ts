@@ -16,5 +16,4 @@ export {
   type PrimitivePack,
   type PrimitivePackInput,
   definePrimitivePack,
-  extendPrimitivePack,
 } from './primitive_pack';

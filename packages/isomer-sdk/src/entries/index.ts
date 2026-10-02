@@ -85,7 +85,6 @@ export {
   composePacks,
   definePrimitivePack,
   describeCapabilities,
-  extendPrimitivePack,
   scopeScript,
 } from '../pack';
 export {
@@ -100,8 +99,6 @@ export {
   NODE_ANCHOR_ATTRIBUTE,
   checkLayout,
   createPrimitiveDispatcher,
-  findNodeElements,
-  formatCompactNumber,
   formatDisplayValue,
   isStructuredValue,
   layoutRoom,

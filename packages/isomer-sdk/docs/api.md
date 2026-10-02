@@ -12,7 +12,7 @@ What each entry point exports, and which ones cost you a dependency.
 | `./markdown` | zod and the GFM serializer | Markdown envelopes and formatting |
 | `./slack` | zod and the GFM serializer | Block Kit types, limits, asset collection |
 | `./react` | react | React content helpers and dispatcher context |
-| `./author` | React | JSX/builder front ends, agent prompts |
+| `./author` | React | JSX front end, agent prompts |
 | `./testing` | Node assert | Pack conformance harness |
 
 ## Root entry — contracts
@@ -23,7 +23,6 @@ What each entry point exports, and which ones cost you a dependency.
 | `definePrimitiveFor` | `definePrimitive` bound to one pack's `PackTypes` |
 | `definePrimitivePack` | Builds a `PrimitivePack`; its type argument `TTheme` is the palette its frames must supply |
 | `composePacks` | Flattens packs into one frozen inventory; rejects cross-pack duplicates |
-| `extendPrimitivePack` | Adds primitives to a pack, keeping its declared surfaces |
 | `bindFrame` | Erases a `Frame<TTheme>` into a `BoundFrame` |
 | `describeCapabilities` | Reports primitives, formats, and enhancements for a set of packs |
 | `unresolvedBodyNodeSchema` | The child slot in a container's standalone schema |
@@ -45,7 +44,6 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `Primit
 | `layoutRoom`, `LAYOUT_ROOM_ATTRIBUTE` | Props a renderer spreads on an element inside its node, such as a frame's body, so `checkLayout` measures the nodes nested in it against that element; rendered when `nodeAnchor` would be |
 | `withNodeAnchors` | A view of a context with anchors on, as an enhancement declaring `anchors: true` turns them on |
 | `withoutAnchors` | A context under which nothing renders an anchor, for content that is not one of a node's `children` |
-| `findNodeElements` | Each `react`-visible node of a body mapped to its anchored element under a DOM root, for a body that reuses no node object; `./react`'s `findNodeElementPairs` lists each occurrence |
 | `checkLayout` | Where a measured render's nodes run past their room or onto a sibling, as `LayoutFinding`s over a `LayoutBox` tree of `LayoutRect`s |
 | `BODY_NODE_SURFACES` | `['react','svg','text','markdown','slack']` |
 
@@ -74,7 +72,7 @@ Types: `ValidationError`, `ValidationResult`, `CheckedValidationResult` (`Valida
 
 `assetUrl` and `navigationHref` (each taking `UrlSchemaOptions`, an optional `max` length), `sanitizeAssetUrl`, `sanitizeNavigationHref`, `ASSET_URL_RULE`, `NAVIGATION_HREF_RULE`, `ASSET_URL_MESSAGE`, `NAVIGATION_HREF_MESSAGE`, `BLOCKED_HREF` — see [URL trust](url-trust.md).
 
-`displayValueSchema`, `structuredValueSchema`, `namedColorSchema`, `renderThemeSchema`, `formatDisplayValue` (with `FormatDisplayValueOptions`), `isStructuredValue`, `rawDisplayValue`, `STRUCTURED_VALUE_FORMATS`, `ALL_NAMED_COLORS`, `ISOMER_ERROR_CODES`, plus `formatCompactNumber`. `PayloadMeasurement` is the byte breakdown on `HTMLRenderResult.measurement`.
+`displayValueSchema`, `structuredValueSchema`, `namedColorSchema`, `renderThemeSchema`, `formatDisplayValue` (with `FormatDisplayValueOptions`), `isStructuredValue`, `rawDisplayValue`, `STRUCTURED_VALUE_FORMATS`, `ALL_NAMED_COLORS`, `ISOMER_ERROR_CODES`. `PayloadMeasurement` is the byte breakdown on `HTMLRenderResult.measurement`.
 
 `scopeScript` wraps one script body in its own function, for anything that joins bodies, such as a runtime combining several packs' `getScriptText`. It lives here rather than on `./html` because it needs no server renderer. See [Enhancements](rendering.md#enhancements).
 
@@ -84,11 +82,11 @@ Zod helpers so a pack states constraints the same way everywhere: `z` and `requi
 
 ## `./html`
 
-`renderHTMLWithDispatcher`, `createDistillateHtmlStyleAdapter`, and the types a style adapter is written against: `HTMLStyleAdapter`, `DistillateHtmlEngine`, `DistillateThemeVar`, `HTMLRenderOptions`, `HTMLRenderResult`, `HTMLRenderDispatcher`, `HTMLDispatcherRenderOptions`, `HTMLEnhancementScope`, `EnhancementDefinition`, `ReactContentDispatcher`, `ReactContentOptions`. `HTMLRenderOptions.enhancements` is a list of enhancement ids; the render keeps the first definition of each that applies to the body and emits its script once, in its own function scope, and `rendersAnchors` says whether a render carries node anchors. `HTMLRenderOptions.anchors` turns anchors on directly, for tests. `DISTILLATE_STYLE_COLLECTOR` is the `styleCollector` tag the Distillate adapter publishes. `HTMLRenderOptions.scheme` resolves the stylesheet's `light-dark(…)` to one scheme, as the `svg` surface asks for.
+`renderHTMLWithDispatcher` and the types a style adapter is written against: `HTMLStyleAdapter`, `HTMLRenderOptions`, `HTMLRenderResult`, `HTMLRenderDispatcher`, `HTMLDispatcherRenderOptions`, `HTMLEnhancementScope`, `EnhancementDefinition`, `ReactContentDispatcher`, `ReactContentOptions`. `HTMLRenderOptions.enhancements` is a list of enhancement ids; the render keeps the first definition of each that applies to the body and emits its script once, in its own function scope, and `rendersAnchors` says whether a render carries node anchors. `HTMLRenderOptions.anchors` turns anchors on directly, for tests. `HTMLRenderOptions.scheme` resolves the stylesheet's `light-dark(…)` to one scheme, as the `svg` surface asks for.
 
 ## `./react`
 
-`useReactPrimitiveDispatcher`, `renderCompositionContent`, `wrapCompositionContent` (the `.isomer[.framed][.fluid]` `section` the `html` surface's wrapper also emits, for a React-only host; `CompositionWrapperOptions` carries `framed`, `fluid`, `theme`, `defaultAriaLabel`), `applyEnhancements` (the enhancement definitions that apply to a body, the first of each id and limited to `requested` ids when given, as the `html` surface resolves them, and a view of the render context carrying their ids as `enhancements`, with `anchors` on when one asks), and the dispatcher/context types used by React renderers: `ReactContentDispatcher`, `ReactContentOptions`, `ReactTreeDispatcher`.
+`renderCompositionContent`, `wrapCompositionContent` (the `.isomer[.framed][.fluid]` `section` the `html` surface's wrapper also emits, for a React-only host; `CompositionWrapperOptions` carries `framed`, `fluid`, `theme`, `defaultAriaLabel`), `applyEnhancements` (the enhancement definitions that apply to a body, the first of each id and limited to `requested` ids when given, as the `html` surface resolves them, and a view of the render context carrying their ids as `enhancements`, with `anchors` on when one asks), and the dispatcher/context types used by React renderers: `ReactContentDispatcher`, `ReactContentOptions`.
 
 The browser-side helpers, exported here rather than from the root entry: `runEnhancementScript` takes a `scripts: 'host'` render's `js` and the `.isomer` section the host inserted, and runs the one against the other; `findNodeElementPairs` lists each `react`-visible node of a body, in pre-order, with its anchored element under a DOM root; `measureDom` returns the `LayoutBox` tree a browser laid an element out as, for `checkLayout`.
 
@@ -96,23 +94,21 @@ The browser-side helpers, exported here rather than from the root entry: `runEnh
 
 `./text` — `renderTextEnvelope` with `TextEnvelopeOptions`, and `TextEnvelopeDispatcher`. Text formatting is pack-owned; the SDK ships no house style.
 
-`./markdown` — `renderMarkdownEnvelope` with `MarkdownEnvelopeOptions`, `MarkdownEnvelopeDispatcher`, the `md` builder with `MarkdownBlock`, `MarkdownInline`, `MarkdownInlineInput`, and `MarkdownContent`, `serializeMarkdown`, `defaultMarkdownFromText`, and the URL-policed formatters `markdownLink`, `markdownImage`, `markdownLinkWrap`, `sanitizeMarkdownSource`.
+`./markdown` — `renderMarkdownEnvelope` with `MarkdownEnvelopeOptions`, `MarkdownEnvelopeDispatcher`, the `md` builder with `MarkdownBlock`, `MarkdownInline`, `MarkdownInlineInput`, and `MarkdownContent`, and `serializeMarkdown`.
 
 `./slack` — `renderSlackEnvelope` with `SlackEnvelopeOptions` and `SlackEnvelopeResult`, `SlackEnvelopeDispatcher`, `SLACK_LIMITS`, `createSlackAssetCollector` (`{ prefix? }`), `SlackAssetCollector`, `SlackAssetRequest`, `SlackFileReference`, `isSlackReachableImageUrl`.
 
 Block Kit types: `SlackBlock` and its variants `SlackHeaderBlock` (`SlackHeaderLevel`), `SlackSectionBlock` (`SlackSectionAccessory`), `SlackContextBlock`, `SlackDividerBlock`, `SlackImageBlock`, `SlackVideoBlock`, `SlackActionsBlock` (`SlackActionElement`), `SlackTableBlock` (`SlackTableCell`, `SlackTableColumnSetting`, `SlackRawTextElement`), `SlackRichTextBlock` (`SlackRichTextBlockElement`, `SlackRichTextSection`, `SlackRichTextList`, `SlackRichTextPreformatted`, `SlackRichTextQuote`, `SlackRichTextInline`, `SlackRichTextText`, `SlackRichTextLink`, `SlackRichTextTag`, `SlackRichTextStyle`, `SlackTagColor`); text objects `SlackTextObject`, `SlackPlainTextObject`, `SlackMrkdwnTextObject`; elements `SlackButtonElement`, `SlackImageElement`, `SlackStaticSelectElement`, `SlackMultiStaticSelectElement`, `SlackOverflowElement`, `SlackRadioButtonsElement`, `SlackCheckboxesElement`, `SlackOptionObject`, `SlackOptionGroup`.
 
-mrkdwn formatters: `escapeMrkdwn`, `bold`, `italic`, `strike`, `code`, `codeBlock`, `link`, `slackLinkUrl` (the URL `link` would link, or `null`), `clampSlackText`, `joinMrkdwn`, `gfmToSlackMrkdwn`, `gfmToSlackBlocks`, and `markdownContentToSlackBlocks` for content built with `md`. `splitRichTextElement` splits a rich-text section, quote, or preformatted element past `sectionTextChars` into adjacent ones of its type without losing text. Element constructors, each clamped to the Slack budget: `slackActionId`, `slackSelectOption` (`SlackSelectOptionInput`), `slackStaticSelect`, `slackOverflowElement` (`SlackOverflowOptionInput`), `slackUrlButton`, `slackButtonStyle`.
+mrkdwn formatters: `escapeMrkdwn`, `bold`, `italic`, `strike`, `code`, `codeBlock`, `link`, `slackLinkUrl` (the URL `link` would link, or `null`), `clampSlackText`, `joinMrkdwn`, `gfmToSlackBlocks`, and `markdownContentToSlackBlocks` for content built with `md`.
 
 The root, `./markdown`, and `./slack` load the GFM parser for authored Markdown sanitization.
 
 ## `./author`
 
-JSX: `fromChildren`, `fromTextChildren`, `AuthoredChildBrand`, `AuthoredTextBrand`, `AuthorChildContext`, `AuthorComponent`, `buildJsxShim`, `JsxShim`, `PrimitiveComponentMap`, `CompositionAuthorProps`, `AuthorComposition`, `textFromChildren`, `withoutChildren`, `itemsFromChildren`, `requireAuthorElement`.
+JSX: `fromChildren`, `fromTextChildren`, `AuthoredChildBrand`, `AuthoredTextBrand`, `AuthorChildContext`, `AuthorComponent`, `buildJsxShim`, `JsxShim`, `PrimitiveComponentMap`, `CompositionAuthorProps`, `AuthorComposition`, `textFromChildren`.
 
-Object builders: `defineNodeBuilder` (a `NodeBuilder` taking a `BuilderInput`, the node without `type`), `buildObjectBuilders` (a `BuilderMap`, one builder per primitive typed from its schema).
-
-Agent prompts: `buildAuthoringPrompt` (`AuthoringPromptContext`), `createAuthoringPromptBuilder`, `createAgentAuthoringContextFactory` (`AgentAuthoringContextOptions`, `AgentAuthoringContextDefaults`), `formatPrimitiveEntry` (one full catalog bullet), `AUTHORING_PROFILE_IDS` (`AuthoringProfileId`), `AuthoringViewSummary`. `WithNodeFields` is on the root entry, next to `definePrimitive`.
+Agent prompts: `buildAuthoringPrompt` (`AuthoringPromptContext`), `formatPrimitiveEntry` (one full catalog bullet), `AUTHORING_PROFILE_IDS` (`AuthoringProfileId`), `AuthoringViewSummary`. `WithNodeFields` is on the root entry, next to `definePrimitive`.
 
 ## `./testing`
 
@@ -168,7 +164,6 @@ Stage barrels and entry barrels are both hand-maintained, because the selection 
 | JSON Schema projection | `src/validate/json_schema.ts`, `src/validate/authoring_schema.ts` |
 | URL policy | `src/validate/url.ts` |
 | HTML renderer and style-adapter contract | `src/render/html/envelope.ts` |
-| Distillate HTML style adapter | `src/render/html/distillate_style_adapter.ts` |
 | Envelopes | `src/render/<surface>/envelope.ts` |
 | Enhancements | `src/render/html/enhancements.ts` |
 | Authoring front ends | `src/author/` |

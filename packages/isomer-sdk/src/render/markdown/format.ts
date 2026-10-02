@@ -5,9 +5,7 @@
  * 2.0.
  */
 
-// Shared helpers for a pack's markdown renderers. The markdown surface targets
-// rich text clients rather than a narrow host, so it does not share the text
-// surface's measuring and wrapping.
+// Authored Markdown source made safe to print, for `md.authored`.
 
 import type { Definition, Nodes, Parents } from 'mdast';
 import { fromMarkdown } from 'mdast-util-from-markdown';
@@ -16,8 +14,6 @@ import { gfm } from 'micromark-extension-gfm';
 
 import {
   BLOCKED_HREF,
-  sanitizeAssetUrl,
-  sanitizeNavigationHref,
   sanitizeParsedAssetUrl,
   sanitizeParsedNavigationHref,
 } from '../../validate/url';
@@ -36,36 +32,6 @@ const escapeLinkDestination = (href: string): string =>
     if (char === ')') return '%29';
     return encodeURIComponent(char);
   });
-
-/**
- * Inline markdown link with the navigation URL policy applied — the render
- * layer of the two-layer defense in `src/validate/url.ts`. A blocked
- * destination becomes {@link BLOCKED_HREF}, keeping the label as a dead link.
- */
-export const markdownLink = (label: string, href: string): string =>
-  `[${escapeLinkLabel(label)}](${escapeLinkDestination(
-    sanitizeNavigationHref(href) ?? BLOCKED_HREF
-  )})`;
-
-/**
- * Inline markdown image with the asset URL policy applied. A blocked source
- * degrades to the bare alt text.
- */
-export const markdownImage = (alt: string, src: string): string => {
-  const safeSrc = sanitizeAssetUrl(src);
-  return safeSrc
-    ? `![${escapeLinkLabel(alt)}](${escapeLinkDestination(safeSrc)})`
-    : alt;
-};
-
-/**
- * Wraps already-rendered inline markdown (a {@link markdownImage}, say) in a
- * link without re-escaping the inner markdown.
- */
-export const markdownLinkWrap = (inner: string, href: string): string =>
-  `[${inner}](${escapeLinkDestination(
-    sanitizeNavigationHref(href) ?? BLOCKED_HREF
-  )})`;
 
 const escapeParsedDestination = (href: string): string =>
   escapeLinkDestination(href.replace(/&/g, '&amp;'));

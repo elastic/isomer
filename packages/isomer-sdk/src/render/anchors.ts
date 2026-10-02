@@ -25,13 +25,13 @@ export const anchorValue = (type: string): string =>
   type.replace(/[^\w-]/gu, (char) => `%${char.codePointAt(0)!.toString(16)};`);
 
 /** Marks a context whose subtree renders no anchors; see {@link withoutAnchors}. */
-const NO_ANCHORS = Symbol.for('isomer.anchors.off');
+const NO_ANCHORS = Symbol.for('elastic.isomer.anchors_off');
 
 /**
  * Where an HTML render keeps its anchor decision while it runs. On `globalThis`
  * under a `Symbol.for` key, so an ESM and a CommonJS copy of the SDK share it.
  */
-const ACTIVE = Symbol.for('isomer.anchors.active');
+const ACTIVE = Symbol.for('elastic.isomer.anchors_active');
 
 type AnchorScope = { [ACTIVE]?: boolean };
 
@@ -94,7 +94,7 @@ const anchorsOn = (context: unknown): boolean => {
 
 /**
  * Props a `react` renderer spreads on its root element so runtime code can find
- * the node with {@link findNodeElements}. Inside an HTML surface render the
+ * the node with {@link findNodeElementPairs}. Inside an HTML surface render the
  * surface decides; elsewhere, on the React and `svg` surfaces, `context.anchors`
  * does. Always empty under {@link withoutAnchors}.
  */
@@ -217,15 +217,3 @@ export const findNodeElementPairs = (
   );
   return nodes.map((node, index) => ({ node, element: elements[index] }));
 };
-
-/** {@link findNodeElementPairs} as a map from node to element, for a body with no node object reused. */
-export const findNodeElements = (
-  root: ParentNode,
-  body: readonly unknown[],
-  walk: ChildNodeWalker
-): Map<unknown, Element> =>
-  new Map(
-    findNodeElementPairs(root, body, walk).flatMap(({ node, element }) =>
-      element === undefined ? [] : [[node, element] as const]
-    )
-  );

@@ -29,7 +29,7 @@ Parse URLs with `URL` and check the protocol and hostname. Don't match them with
 
 ## Options and context plumbing
 
-- A field added to an options, context, or defaults type must pass through every builder, factory, and `*Defaults` type that rebuilds that object, e.g. `createAuthoringPromptBuilder`. A builder that drops it fails silently.
+- A field added to an options, context, or defaults type must pass through every builder, factory, and `*Defaults` type that rebuilds that object. A builder that drops it fails silently.
 - Render contexts may be class instances. Augment them without spreading, because `{...context}` drops the prototype and private state.
 - A value a resolver derives from the composition, such as `framed`, `fluid`, or `theme`, must reach both the collected CSS and the wrapper the host renders.
 - Collectors and hooks must not repeat side effects when their output is read twice.

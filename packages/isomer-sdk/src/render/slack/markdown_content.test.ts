@@ -431,8 +431,8 @@ describe('markdownContentToSlackBlocks', () => {
     expect(
       outline(
         markdownContentToSlackBlocks([
-          md.boldSectionLabel('label'),
-          md.paragraph(...md.boldLabelPrefix('Key: value', 'Key')),
+          md.paragraph(md.strong('LABEL')),
+          md.paragraph(md.strong('Key'), ': value'),
           md.table(
             ['h', 'i'],
             [

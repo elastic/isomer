@@ -8,7 +8,7 @@
 import { md } from '@elastic/isomer-sdk/markdown';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import { slackCaption } from '../../render';
+import { markdownCaption, slackCaption } from '../../render';
 import { richTextRun as run } from '../../render/marks';
 import { oneLine } from '../../render/one_line';
 import { slackTable, textTable } from '../../render/table';
@@ -41,9 +41,9 @@ export const text = (node: SlideTableNode): string => {
 export const markdown = (node: SlideTableNode) => {
   const { label, rowHeaders } = node;
   return [
-    ...(label ? [md.boldSectionLabel(label)] : []),
+    ...(label ? [markdownCaption(label)] : []),
     ...tableGroups(node).flatMap(({ label: group, rows }) => [
-      ...(group ? [md.boldSectionLabel(group)] : []),
+      ...(group ? [markdownCaption(group)] : []),
       md.table(
         heads(node),
         rows.map((row) =>

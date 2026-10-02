@@ -97,9 +97,9 @@ export interface PrimitivePackInput {
   styleAdapter?: PackStyleAdapter;
   /**
    * Names the collector shape this pack's `collectStyles` hooks mutate, so a
-   * runtime can reject a pack paired with an adapter of a different tag
-   * (`'distillate'` for `createDistillateHtmlStyleAdapter`). Defaults to
-   * `styleAdapter.styleCollector`; a pack with neither opts out of the check.
+   * runtime can reject a pack paired with an adapter of a different tag.
+   * Defaults to `styleAdapter.styleCollector`; a pack with neither opts out of
+   * the check.
    */
   styleCollector?: string;
   /**
@@ -209,13 +209,12 @@ export const definePrimitivePack = <TTheme = unknown>(
   };
 };
 
-/** Throws if `primitives` repeats a type or reuses one in `owned`. */
+/** Throws if `primitives` repeats a type. */
 const assertUniquePrimitiveTypes = (
   id: string,
-  primitives: readonly AnyPrimitiveDefinition[],
-  owned: ReadonlySet<string> = new Set()
+  primitives: readonly AnyPrimitiveDefinition[]
 ): void => {
-  const seen = new Set(owned);
+  const seen = new Set<string>();
   for (const { type } of primitives) {
     if (seen.has(type)) {
       throw new IsomerError(
@@ -268,29 +267,4 @@ const assertUniqueEnhancementIds = (
     }
     seen.add(definition.id);
   }
-};
-
-/**
- * Returns `pack` with extra primitives added, keeping its declared surfaces.
- * Throws on a type the pack already owns.
- *
- * This is how a host extends a published pack with its own primitive. Build the
- * extra definitions with the pack's own `definePrimitive`.
- */
-export const extendPrimitivePack = <TTheme>(
-  pack: PrimitivePack<TTheme>,
-  primitives: readonly AnyPrimitiveDefinition[]
-): PrimitivePack<TTheme> => {
-  assertUniquePrimitiveTypes(pack.id, primitives, pack.types);
-  const styleCollector =
-    pack.styleCollector ?? pack.styleAdapter?.styleCollector;
-  return {
-    ...pack,
-    primitives: [...pack.primitives, ...primitives],
-    types: new Set([
-      ...pack.types,
-      ...primitives.map((definition) => definition.type),
-    ]),
-    ...(styleCollector !== undefined ? { styleCollector } : {}),
-  };
 };

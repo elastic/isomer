@@ -48,7 +48,7 @@ text: (node, { scope }) =>
   node.items.map((item) => scope.renderText(item)).join('\n');
 ```
 
-The dispatcher's own methods (`renderText(node)`, `renderSlack(node, collector?)`, …) stay positional. React containers that defer children into components still have a second route from `@elastic/isomer-sdk/react` — `useReactPrimitiveDispatcher()` reads the dispatcher from context, because React invokes those children after the parent renderer has returned.
+The dispatcher's own methods (`renderText(node)`, `renderSlack(node, collector?)`, …) stay positional. A React container that defers children into a component passes that component `scope`, since React invokes it after the parent renderer has returned.
 
 ## Slack: two behaviours the other surfaces do not have
 

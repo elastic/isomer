@@ -46,7 +46,7 @@ The same routing applies to `collectStyles`: an adapter's walk fires the hooks o
 
 Routing needs `ownsHandle` on each adapter. Combining two where one cannot answer throws, naming the pack that should declare it. A pack is also CSS-bearing when any of its primitives declare `collectStyles`; construction throws if such a pack has no adapter at all, naming both the pack and the primitive.
 
-A CSS-bearing pack should also declare `styleCollector`, naming the collector shape its hooks mutate — `DISTILLATE_STYLE_COLLECTOR` for a Distillate-backed pack. Adapters publish the same tag, and construction throws when they disagree. Without it the mismatch surfaces as a corrupted collector at render instead.
+A CSS-bearing pack should also declare `styleCollector`, naming the collector shape its hooks mutate — the slides pack's Distillate adapter publishes `'distillate'`. Adapters publish the same tag, and construction throws when they disagree. Without it the mismatch surfaces as a corrupted collector at render instead.
 
 A host that wants a CSS-bearing pack on text or Slack only supplies a no-op adapter, which replaces every pack's; see [Surfaces](surfaces.md).
 

@@ -7,14 +7,13 @@
 
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import type { Composition } from '../../composition/composition';
 
 import {
   type CompositionWrapperOptions,
   renderCompositionContent,
-  useReactPrimitiveDispatcher,
   wrapCompositionContent,
 } from './content';
 
@@ -75,54 +74,30 @@ describe('wrapCompositionContent', () => {
     );
   });
 });
-
-describe('useReactPrimitiveDispatcher', () => {
-  it('reads the dispatcher a composition render publishes, and null outside one', () => {
-    const seen: unknown[] = [];
-    const Probe = () => {
-      seen.push(useReactPrimitiveDispatcher());
-      return null;
-    };
-    renderToStaticMarkup(createElement(Probe));
-    const dispatcher = {
-      renderReact: () => createElement(Probe),
-      renderText: () => '',
-    };
+describe('renderCompositionContent', () => {
+  const dispatcher = {
+    renderReact: (node: { type: string }) =>
+      createElement('p', null, node.type),
+  };
+  const content = (heading?: boolean) =>
     renderToStaticMarkup(
       createElement(() =>
         renderCompositionContent(
-          composition,
+          { ...composition, subtitle: 'Today' },
           dispatcher,
           {},
-          { heading: false }
+          heading === undefined ? {} : { heading }
         )
       )
     );
-    expect(seen).toEqual([null, dispatcher]);
+
+  it('renders the heading, then each body node through the dispatcher', () => {
+    expect(content()).toBe(
+      '<h2>Checkout</h2><p class="sub">Today</p><p>note</p>'
+    );
   });
 
-  it('shares one dispatcher context with a second copy of the module', async () => {
-    vi.resetModules();
-    const second = await import('./content');
-    const dispatcher = {
-      renderReact: () => createElement(Probe),
-      renderText: () => '',
-    };
-    let seen: unknown;
-    const Probe = () => {
-      seen = second.useReactPrimitiveDispatcher();
-      return null;
-    };
-    renderToStaticMarkup(
-      createElement(() =>
-        renderCompositionContent(
-          composition,
-          dispatcher,
-          {},
-          { heading: false }
-        )
-      )
-    );
-    expect(seen).toBe(dispatcher);
+  it('leaves out the heading when asked', () => {
+    expect(content(false)).toBe('<p>note</p>');
   });
 });

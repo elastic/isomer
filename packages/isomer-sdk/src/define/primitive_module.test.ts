@@ -111,7 +111,7 @@ describe('definePrimitive node fields', () => {
 
   it('accepts a schema another copy of the SDK defined', () => {
     const mark = <T extends z.ZodType>(schema: T): T =>
-      Object.defineProperty(schema, Symbol.for('isomer.define.nodeField'), {
+      Object.defineProperty(schema, Symbol.for('elastic.isomer.node_field'), {
         value: true,
       });
     const fromOtherCopy = z

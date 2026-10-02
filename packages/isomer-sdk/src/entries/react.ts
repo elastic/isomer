@@ -12,9 +12,7 @@ export {
   type CompositionWrapperOptions,
   type ReactContentDispatcher,
   type ReactContentOptions,
-  type ReactTreeDispatcher,
   applyEnhancements,
   renderCompositionContent,
-  useReactPrimitiveDispatcher,
   wrapCompositionContent,
 } from '../render/react';
