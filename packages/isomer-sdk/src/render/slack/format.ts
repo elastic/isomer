@@ -194,98 +194,51 @@ export const clampSlackText = (value: string, max: number): string => {
   return max <= 1 ? head : `${head.trimEnd()}…`;
 };
 
-// A fence marker, a `<…>` link or mention, and an entity are each cut whole.
-const MRKDWN_TOKEN_RE = /```|<[^<>\n]*>|&(?:amp|lt|gt);/g;
-const INLINE_MARKS = new Set(['*', '_', '~', '`']);
-const OPENER_BEFORE_RE = /[\s\p{P}]/u;
+// A `<…>` link or mention and an entity, each matched where it starts.
+const LINK_TOKEN_RE = /<[^<>\n]*>/y;
+const ENTITY_TOKEN_RE = /&(?:amp|lt|gt);/y;
 
-// The atoms of `value` until they pass `limit` characters. Only a window
-// twice the limit is scanned, which still holds any token short enough to keep.
-const mrkdwnAtoms = (input: string, limit: number): string[] => {
-  const value = input.slice(0, limit * 2);
-  const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
-  const atoms: string[] = [];
-  let length = 0;
-  const push = (atom: string): boolean => {
-    atoms.push(atom);
-    length += atom.length;
-    return length > limit;
-  };
-  const pushText = (text: string): boolean => {
-    for (const { segment } of segmenter.segment(text)) {
-      if (push(segment)) return true;
-    }
-    return false;
-  };
-  let cursor = 0;
-  for (const { 0: token, index } of value.matchAll(MRKDWN_TOKEN_RE)) {
-    if (pushText(value.slice(cursor, index)) || push(token)) return atoms;
-    cursor = index + token.length;
-  }
-  pushText(value.slice(cursor));
-  return atoms;
-};
-
-// What closes the fence and inline marks still open at the end of `atoms`;
-// `next` is the atom after them, which decides whether a final mark opens.
-const openMarkClosers = (atoms: readonly string[], next?: string): string => {
-  let fenced = false;
-  const open: string[] = [];
-  atoms.forEach((atom, index) => {
-    if (atom === '```') {
-      fenced = !fenced;
-      return;
-    }
-    if (fenced || !INLINE_MARKS.has(atom)) return;
-    if (open.includes('`') && atom !== '`') return;
-    const before = atoms[index - 1];
-    const after = index + 1 < atoms.length ? atoms[index + 1] : next;
-    const at = open.lastIndexOf(atom);
-    if (at !== -1) {
-      // Slack does not nest a mark inside itself, so this can only close.
-      if (before !== undefined && !/\s/.test(before)) open.length = at;
-    } else if (
-      after !== undefined &&
-      !/\s/.test(after) &&
-      (before === undefined || OPENER_BEFORE_RE.test(before))
-    ) {
-      open.push(atom);
-    }
-  });
-  // Marks cannot open inside a fence, so an open fence is the innermost.
-  return `${fenced ? '\n```' : ''}${open.reverse().join('')}`;
+// The end of the token `re` matches at `index`, or `undefined`.
+const tokenEnd = (
+  value: string,
+  re: RegExp,
+  index: number
+): number | undefined => {
+  re.lastIndex = index;
+  return re.test(value) ? re.lastIndex : undefined;
 };
 
 /**
- * {@link clampSlackText} for `mrkdwn`: never cuts inside a `<…>` link or an
- * entity, and closes a fence or inline mark the cut lands in.
+ * {@link clampSlackText} for `mrkdwn`: never cuts inside a `<…>` link or
+ * mention or an entity. Formatting marks are left as they fall; Slack prints an
+ * unclosed one as written.
  */
 export const clampMrkdwn = (value: string, max: number): string => {
-  if (value.length <= max || max <= 1) {
-    return clampSlackText(value, max);
+  const clamped = clampSlackText(value, max);
+  if (clamped === value || max <= 1) {
+    return clamped;
   }
-  const atoms = mrkdwnAtoms(value, max);
-  for (let budget = max - 1; budget > 0;) {
-    let length = 0;
-    let end = 0;
-    while (end < atoms.length && length + atoms[end]!.length <= budget) {
-      length += atoms[end]!.length;
-      end += 1;
-    }
-    let kept = atoms.slice(0, end);
-    // A bare `<` opens a link or mention too long to see whole; cut before it.
-    const opener = kept.lastIndexOf('<');
-    if (opener !== -1) kept = kept.slice(0, opener);
-    const clamped = `${kept.join('').trimEnd()}…${openMarkClosers(
-      kept,
-      atoms[kept.length]
-    )}`;
-    if (clamped.length <= max) {
-      return clamped;
-    }
-    budget -= clamped.length - max;
+  // Entity first: a link holds no `<` of its own, so stepping back to its
+  // start cannot land inside an entity, while the reverse could.
+  let cut = clamped.length - 1;
+  const entity = value.lastIndexOf('&', cut - 1);
+  if (entity !== -1 && (tokenEnd(value, ENTITY_TOKEN_RE, entity) ?? 0) > cut) {
+    cut = entity;
   }
-  return '…';
+  const link = value.lastIndexOf('<', cut - 1);
+  if (link !== -1 && (tokenEnd(value, LINK_TOKEN_RE, link) ?? 0) > cut) {
+    cut = link;
+  }
+  return `${value.slice(0, cut).trimEnd()}…`;
+};
+
+/**
+ * `value` cut to `max` UTF-16 code units, never through a surrogate pair. For
+ * opaque values a host reads back, which an ellipsis would change.
+ */
+export const cutSlackValue = (value: string, max: number): string => {
+  const cut = value.slice(0, max);
+  return /[\ud800-\udbff]$/.test(cut) ? cut.slice(0, -1) : cut;
 };
 
 /**

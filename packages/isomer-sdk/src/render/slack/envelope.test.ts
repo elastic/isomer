@@ -982,13 +982,131 @@ describe('Slack envelope count limits', () => {
         element.options.length,
         element.initial_options,
       ]
-    ).toEqual([SLACK_LIMITS.optionsPerChoice, []]);
+    ).toEqual([SLACK_LIMITS.optionsPerChoice, undefined]);
   });
 
   it('drops an image whose URL is past the URL limit', () => {
     const image_url = `https://x.test/${'a'.repeat(SLACK_LIMITS.imageUrlChars)}`;
     const blocks = render([{ type: 'image', image_url, alt_text: 'chart' }]);
     expect(blocks).toEqual([{ type: 'context', elements: [mrkdwn('chart')] }]);
+  });
+
+  it('keeps every block exactly at its limits', () => {
+    const image_url = `https://x.test/${'a'.repeat(SLACK_LIMITS.imageUrlChars - 15)}`;
+    expect(image_url).toHaveLength(SLACK_LIMITS.imageUrlChars);
+    const options = (n: number) =>
+      Array.from({ length: n }, (_, i) => ({
+        ...option(`o${i}`),
+        value: `v${i}`,
+      }));
+    const input: SlackBlock[] = [
+      { type: 'image', image_url, alt_text: 'chart' },
+      {
+        type: 'context',
+        elements: Array.from({ length: SLACK_LIMITS.contextElements }, (_, i) =>
+          mrkdwn(`c${i}`)
+        ),
+      },
+      {
+        type: 'section',
+        fields: Array.from({ length: SLACK_LIMITS.fieldsPerSection }, (_, i) =>
+          mrkdwn(`f${i}`)
+        ),
+      },
+      {
+        type: 'actions',
+        elements: [
+          ...Array.from(
+            { length: SLACK_LIMITS.buttonsPerActions - 2 },
+            (_, i) => button(`b${i}`)
+          ),
+          {
+            type: 'overflow',
+            action_id: 'o',
+            options: options(SLACK_LIMITS.optionsPerOverflow),
+          },
+          {
+            type: 'checkboxes',
+            action_id: 'c',
+            options: options(SLACK_LIMITS.optionsPerChoice),
+          },
+        ],
+      },
+    ];
+    const output = render(input).filter(
+      (block) =>
+        block.type !== 'divider' && !(block.type === 'section' && block.text)
+    );
+    expect(output).toEqual(input);
+  });
+
+  it('degrades a context image element past the URL limit to its alt text, or drops it', () => {
+    const image_url = `https://x.test/${'a'.repeat(SLACK_LIMITS.imageUrlChars)}`;
+    expect(
+      render([
+        {
+          type: 'context',
+          elements: [
+            { type: 'image', image_url, alt_text: 'chart' },
+            { type: 'image', image_url, alt_text: '' },
+            mrkdwn('note'),
+          ],
+        },
+      ])
+    ).toEqual([
+      { type: 'context', elements: [mrkdwn('chart'), mrkdwn('note')] },
+    ]);
+    expect(
+      render([
+        {
+          type: 'context',
+          elements: [{ type: 'image', image_url, alt_text: '' }],
+        },
+      ])
+    ).toEqual([]);
+  });
+
+  it('cuts option values and action ids, and drops a URL past its limit', () => {
+    const long = (n: number) => 'v'.repeat(n + 1);
+    const [block] = render([
+      {
+        type: 'actions',
+        elements: [
+          {
+            type: 'button',
+            text: plain('Go'),
+            action_id: long(SLACK_LIMITS.actionIdChars),
+            value: long(SLACK_LIMITS.buttonValueChars),
+            url: `https://x.test/${long(SLACK_LIMITS.urlChars)}`,
+          },
+          {
+            type: 'static_select',
+            action_id: 's',
+            options: [
+              { ...option('A'), value: long(SLACK_LIMITS.optionValueChars) },
+            ],
+            initial_option: {
+              ...option('A'),
+              value: long(SLACK_LIMITS.optionValueChars),
+            },
+          },
+        ],
+      },
+    ]).filter((b) => b.type === 'actions');
+    const [go, select] = block?.type === 'actions' ? block.elements : [];
+    expect(go).toEqual({
+      type: 'button',
+      text: plain('Go'),
+      action_id: 'v'.repeat(SLACK_LIMITS.actionIdChars),
+      value: 'v'.repeat(SLACK_LIMITS.buttonValueChars),
+    });
+    const value = 'v'.repeat(SLACK_LIMITS.optionValueChars);
+    expect(select?.type === 'static_select' && select.options?.[0]?.value).toBe(
+      value
+    );
+    expect(
+      select?.type === 'static_select' && select.initial_option?.value
+    ).toBe(value);
   });
 
   it('keeps the alt text of a section accessory past the URL limit', () => {
@@ -1089,16 +1207,10 @@ describe('Slack envelope mrkdwn clamping', () => {
     expect(clamped(text)).toBe(`${'a'.repeat(max - 3)}…`);
   });
 
-  it('closes a fence the cut lands in', () => {
-    const output = clamped(`intro\n\`\`\`\n${'c'.repeat(max)}\n\`\`\``);
-    expect(output).toHaveLength(max);
-    expect(output.endsWith('…\n```')).toBe(true);
-  });
-
-  it('closes bold the cut lands in', () => {
+  it('leaves formatting marks as they fall', () => {
     const output = clamped(`*${'b '.repeat(max)}*`);
     expect(output.length).toBeLessThanOrEqual(max);
-    expect(output.endsWith('…*')).toBe(true);
+    expect(output.endsWith(' b…')).toBe(true);
   });
 
   it('does not treat an intraword underscore as an opener', () => {

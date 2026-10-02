@@ -200,59 +200,53 @@ describe('clampMrkdwn', () => {
     );
   });
 
-  it('cuts before a link or mention rather than inside it', () => {
+  it('cuts before a link or mention the cut lands in', () => {
     expect(clampMrkdwn(`${pad(10)} <https://x.test/path|label> b`, 20)).toBe(
       `${pad(10)}…`
     );
     expect(clampMrkdwn(`${pad(10)} <@U123ABC> b`, 18)).toBe(`${pad(10)}…`);
+    expect(
+      clampMrkdwn(`${pad(10)} <https://x.test/${'p'.repeat(200)}|label>`, 20)
+    ).toBe(`${pad(10)}…`);
   });
 
-  it('cuts before a link longer than the scanned window', () => {
-    const output = clampMrkdwn(
-      `${pad(10)} <https://x.test/${'p'.repeat(200)}|label>`,
-      20
-    );
-    expect(output).toBe(`${pad(10)}…`);
+  it('keeps a link that ends at the cut', () => {
+    const value = `${pad(5)} <https://x.test|x> ${'b'.repeat(40)}`;
+    expect(clampMrkdwn(value, 27)).toBe(`${pad(5)} <https://x.test|x> b…`);
   });
 
-  it('cuts before an entity rather than inside it', () => {
+  it('cuts through a bare less-than that opens no link', () => {
+    const code = '`a<b` ';
+    const output = clampMrkdwn(`${code}${'word '.repeat(700)}`, 3_000);
+    expect(output.length).toBe(3_000);
+    expect(output.startsWith(code)).toBe(true);
+    expect(clampMrkdwn(`a<b\n> ${'c'.repeat(30)}`, 20).length).toBe(20);
+  });
+
+  it('cuts before an entity the cut lands in', () => {
     expect(clampMrkdwn(`${pad(8)}&amp;&lt;&gt;`, 11)).toBe(`${pad(8)}…`);
+    expect(clampMrkdwn(`${pad(8)}&amp;&lt;&gt;`, 14)).toBe(`${pad(8)}&amp;…`);
   });
 
-  it.each([
-    ['bold', '*'],
-    ['italic', '_'],
-    ['strike', '~'],
-    ['code', '`'],
-  ])('closes %s the cut lands in', (_name, mark) => {
-    expect(clampMrkdwn(`x ${mark}${'word '.repeat(10)}`, 20)).toBe(
-      `x ${mark}${'word '.repeat(2)}word…${mark}`
+  it('never cuts inside an entity in a link label', () => {
+    const value = `${pad(4)} <https://x.test|a &amp; b> tail`;
+    expect(clampMrkdwn(value, 26)).toBe(`${pad(4)}…`);
+  });
+
+  it('leaves formatting marks as they fall', () => {
+    expect(clampMrkdwn(`x *${'word '.repeat(10)}*`, 20)).toBe(
+      `x *${'word '.repeat(3)}w…`
     );
   });
 
-  it('closes a fence before the marks opened outside it', () => {
-    const output = clampMrkdwn(`*b \`\`\`\n${'c'.repeat(40)}\n\`\`\`*`, 20);
-    expect(output.endsWith('…\n```*')).toBe(true);
-    expect(output.length).toBeLessThanOrEqual(20);
-  });
-
-  it('treats a mark at the cut as an opener only when what follows opens it', () => {
-    const output = clampMrkdwn(`${pad(17)} *😀tail`, 20);
-    expect(output.split('*').length % 2).toBe(1);
-  });
-
-  it.each([
-    ['an intraword underscore', `snake_case ${'w'.repeat(30)}`],
-    ['a mark before a carriage return', `x *\r${'w'.repeat(30)}`],
-    ['a mark before a line separator', `x *\u2028${'w'.repeat(30)}`],
-    ['a mark before a paragraph separator', `x *\u2029${'w'.repeat(30)}`],
-  ])('does not close %s', (_name, value) => {
-    expect(clampMrkdwn(value, 20).endsWith('…')).toBe(true);
+  it('keeps a grapheme whole', () => {
+    expect(clampMrkdwn(`${pad(8)}😀😀`, 10)).toBe(`${pad(8)}…`);
   });
 
   it('clamps a long input in time bounded by the limit', () => {
     const started = performance.now();
     clampMrkdwn('a'.repeat(1_000_000), 3_000);
+    clampMrkdwn(`<${'a'.repeat(1_000_000)}`, 3_000);
     expect(performance.now() - started).toBeLessThan(200);
   });
 });

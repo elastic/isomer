@@ -35,6 +35,7 @@ import {
 import {
   clampMrkdwn,
   clampSlackText,
+  cutSlackValue,
   escapeMrkdwn,
   formatHeaderText,
   italic,
@@ -172,24 +173,52 @@ const clampAlt = <TImage extends { alt_text: string }>(
         ),
       };
 
-const clampOption = (option: SlackOptionObject): SlackOptionObject => ({
-  ...option,
-  text: clampText(option.text, SLACK_LIMITS.optionTextChars),
-  ...(option.description && {
-    description: clampText(option.description, SLACK_LIMITS.optionTextChars),
-  }),
-});
-
-// `initial_option(s)` go through the same `clampOption` as `options`, since
-// Slack rejects an initial option that matches none of them.
-const clampControl = (element: SlackActionElement): SlackActionElement => {
-  if (element.type === 'button') {
-    return {
-      ...element,
-      text: clampText(element.text, SLACK_LIMITS.buttonTextChars),
-    };
+// A cut URL would point somewhere else, so one past the limit is dropped.
+const withoutLongUrl = <T extends { url?: string }>(element: T): T => {
+  if (
+    element.url === undefined ||
+    element.url.length <= SLACK_LIMITS.urlChars
+  ) {
+    return element;
   }
-  const menu = { ...element };
+  const { url: _dropped, ...rest } = element;
+  return rest as T;
+};
+
+const optionValue = (value: string): string =>
+  cutSlackValue(value, SLACK_LIMITS.optionValueChars);
+
+const clampOption = (option: SlackOptionObject): SlackOptionObject =>
+  withoutLongUrl({
+    ...option,
+    text: clampText(option.text, SLACK_LIMITS.optionTextChars),
+    value: optionValue(option.value),
+    ...(option.description && {
+      description: clampText(option.description, SLACK_LIMITS.optionTextChars),
+    }),
+  });
+
+const clampControl = (element: SlackActionElement): SlackActionElement => {
+  const actionId =
+    element.action_id === undefined
+      ? {}
+      : {
+          action_id: cutSlackValue(
+            element.action_id,
+            SLACK_LIMITS.actionIdChars
+          ),
+        };
+  if (element.type === 'button') {
+    return withoutLongUrl({
+      ...element,
+      ...actionId,
+      text: clampText(element.text, SLACK_LIMITS.buttonTextChars),
+      ...(element.value !== undefined && {
+        value: cutSlackValue(element.value, SLACK_LIMITS.buttonValueChars),
+      }),
+    });
+  }
+  const menu = { ...element, ...actionId };
   const maxOptions =
     menu.type === 'overflow'
       ? SLACK_LIMITS.optionsPerOverflow
@@ -225,7 +254,7 @@ const clampControl = (element: SlackActionElement): SlackActionElement => {
     ].map((option) => [option.value, option])
   );
   if ('initial_option' in menu && menu.initial_option) {
-    const match = emitted.get(menu.initial_option.value);
+    const match = emitted.get(optionValue(menu.initial_option.value));
     if (match) {
       menu.initial_option = match;
     } else {
@@ -233,10 +262,15 @@ const clampControl = (element: SlackActionElement): SlackActionElement => {
     }
   }
   if ('initial_options' in menu && menu.initial_options) {
-    menu.initial_options = menu.initial_options.flatMap(({ value }) => {
-      const match = emitted.get(value);
+    const matches = menu.initial_options.flatMap(({ value }) => {
+      const match = emitted.get(optionValue(value));
       return match ? [match] : [];
     });
+    if (matches.length > 0) {
+      menu.initial_options = matches;
+    } else {
+      delete menu.initial_options;
+    }
   }
   return menu;
 };
@@ -290,10 +324,12 @@ const fitImageUrls = (block: SlackBlock): SlackBlock[] => {
       return [
         {
           ...block,
-          elements: block.elements.map((element) =>
+          elements: block.elements.flatMap((element) =>
             element.type !== 'image' || fitsImageUrl(element)
-              ? element
-              : { type: 'mrkdwn', text: escapeMrkdwn(element.alt_text) }
+              ? [element]
+              : element.alt_text
+                ? [{ type: 'mrkdwn', text: escapeMrkdwn(element.alt_text) }]
+                : []
           ),
         },
       ];
