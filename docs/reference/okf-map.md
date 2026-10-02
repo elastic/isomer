@@ -8,7 +8,7 @@ description: Generated map of the Isomer OKF concept graph.
 Generated from `.okf/isomer` by `pnpm okf:map`. Do not edit by hand.
 
 - Concepts: 58
-- Links: 144
+- Links: 145
 - Isolated concepts: 0
 
 ## Graph
@@ -169,6 +169,7 @@ flowchart LR
     sdk_entry_points_root --> sdk_concepts_pipeline
     sdk_entry_points_root --> sdk_entry_points_author
     sdk_entry_points_root --> sdk_entry_points_html
+    sdk_entry_points_root --> sdk_entry_points_react
     sdk_entry_points_root --> sdk_entry_points_testing
     sdk_entry_points_slack --> sdk_concepts_packs
     sdk_entry_points_slack --> sdk_concepts_rendering

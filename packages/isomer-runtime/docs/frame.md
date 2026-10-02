@@ -61,7 +61,7 @@ const { element, css } = svg.render(composition, { theme: 'light' });
 
 `IsomerRuntimeOptions.frames` is `FrameMap<TTheme>`, and a pack declares the palette its frames must supply through a phantom marker on `PrimitivePack<TTheme>`. `TTheme` is inferred from the packs first, so a mismatch is reported against `frames` and never names the pack that set the bound — pairing charts with a slide frame reads as `Frame<SlideSvgTheme>` is not assignable to `Frame<SvgRenderTheme>`.
 
-A pack that genuinely reads no theme omits `theme` and stays at `PrimitivePack<unknown>`, which bare `PrimitivePack` also means. A pack that needs a frame to carry tokens passes `theme: themeBound<CoreTokens>()`. The runtime's own storage slots are `AnyPrimitivePack`.
+A pack that genuinely reads no theme stays at `PrimitivePack<unknown>`, which bare `PrimitivePack` also means. A pack that needs a frame to carry tokens names them as the type argument, `definePrimitivePack<CoreTokens>(input)`. The runtime's own storage slots are `AnyPrimitivePack`.
 
 Packs wanting different palettes belong in different runtimes. A composition is routed to the runtime that owns its node types before anything else happens to it.
 

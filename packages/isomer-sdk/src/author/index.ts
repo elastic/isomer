@@ -19,14 +19,13 @@ export {
   buildObjectBuilders,
   defineNodeBuilder,
 } from './builders';
-export { type AuthorComponent, authorType, defineAuthorComponent } from './jsx';
+export { type AuthorComponent } from './jsx';
 export {
   type AuthorComposition,
   type CompositionAuthorProps,
   type JsxShim,
   type PrimitiveComponentMap,
   buildJsxShim,
-  getAuthorType,
   itemsFromChildren,
   requireAuthorElement,
   textFromChildren,

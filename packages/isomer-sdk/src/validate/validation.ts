@@ -7,11 +7,11 @@
 
 import {
   BODY_NODE_SURFACES,
-  type BodyNodeSurface,
   childNodePath,
   createChildNodeWalker,
   isVisibleOnSurface,
   rendersOnSurface,
+  type SurfaceName,
 } from '../composition/body_node_base';
 import type { Composition } from '../composition/composition';
 import type { PrimitiveNode } from '../composition/node';
@@ -25,8 +25,8 @@ import type { AnyPrimitiveDefinition } from '../define/primitive_module';
 import { getCompositionSchemaForDefinitions } from './composition_schema';
 import {
   checkInputBudget,
-  INPUT_REFUSAL_CODES,
   type InputBudget,
+  isInputRefusal,
 } from './input_budget';
 import { createNodeIssueFormatter, type IssueRoot } from './node_issues';
 
@@ -41,7 +41,7 @@ import { createNodeIssueFormatter, type IssueRoot } from './node_issues';
  */
 export interface ValidationWarning {
   /** The render target this finding concerns, never the composition as a whole. */
-  surface: BodyNodeSurface;
+  surface: SurfaceName;
   /**
    * Path of the offending node within the composition, absent for
    * whole-composition findings.
@@ -83,7 +83,7 @@ export interface CheckedValidationResult<
 /** Narrows a result's warnings to the surface a caller is about to render. */
 export const warningsForSurface = (
   result: ValidationResult,
-  surface: BodyNodeSurface
+  surface: SurfaceName
 ): ValidationWarning[] =>
   result.warnings.filter((warning) => warning.surface === surface);
 
@@ -99,8 +99,7 @@ export const enforceValidationMode = (
 ): void => {
   if (
     !result.valid &&
-    (mode === 'throw' ||
-      result.errors.some(({ code }) => INPUT_REFUSAL_CODES.has(code)))
+    (mode === 'throw' || result.errors.some(isInputRefusal))
   ) {
     throw new CompositionValidationError(result.errors);
   }

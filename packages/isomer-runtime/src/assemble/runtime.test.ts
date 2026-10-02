@@ -22,12 +22,12 @@ import {
   type PrimitiveNode,
   type PrimitivePack,
   type PrimitiveRenderContext,
-  runEnhancementScript,
   type StyleHandle,
-  themeBound,
   unresolvedBodyNodeSchema,
 } from '@elastic/isomer-sdk';
+import type { HTMLRenderOptions } from '@elastic/isomer-sdk/html';
 import { md } from '@elastic/isomer-sdk/markdown';
+import { runEnhancementScript } from '@elastic/isomer-sdk/react';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { z } from 'zod';
@@ -237,14 +237,13 @@ const packOf = (
     primitives,
   });
 
-/** A pack whose primitives all draw SVG. `themeBound<string>()` matches {@link testFrame}. */
+/** A pack whose primitives all draw SVG, needing the `string` palette {@link testFrame} supplies. */
 const svgPackOf = (
   ...primitives: readonly AnyPrimitiveDefinition[]
 ): PrimitivePack<string> =>
-  definePrimitivePack({
+  definePrimitivePack<string>({
     id: 'test.drawing',
     primitives,
-    theme: themeBound<string>(),
   });
 
 /** Stands in for the slide frame: a fixed frame that never measures a node. */
@@ -1707,6 +1706,28 @@ describe('createIsomerRuntime', () => {
     expectTypeOf(runtime.surfaces.svg).toEqualTypeOf<undefined>();
     expect(runtime.surfaces.svg).toBeUndefined();
     expect(runtime.getCapabilities().formats).not.toContain('svg');
+  });
+
+  it("asks the style adapter for the render's scheme", () => {
+    const schemes: unknown[] = [];
+    const runtime = createIsomerRuntime({
+      packs: [svgPackOf(notePrimitive)],
+      frames: { card: testFrame },
+      styleAdapter: {
+        createCollector: () => ({}),
+        createRenderContext: () => ({}),
+        renderStyles: (_collector: object, { scheme }: HTMLRenderOptions) => {
+          schemes.push(scheme);
+          return '';
+        },
+      },
+    });
+
+    runtime.surfaces.svg.render(view('Dark'), { theme: 'dark' });
+    runtime.surfaces.svg.render(view('Light'), { theme: 'light' });
+    runtime.surfaces.svg.render(view('Auto'));
+
+    expect(schemes).toEqual(['dark', 'light', 'light']);
   });
 
   it('renders a view and a single node through the runtime frame', () => {

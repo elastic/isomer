@@ -7,7 +7,7 @@
 
 import { z, type ZodType } from 'zod';
 
-import type { BodyNodeSurface } from '../composition/body_node_base';
+import type { SurfaceName } from '../composition/body_node_base';
 import {
   type DefaultPackTypes,
   definePrimitiveFor,
@@ -27,35 +27,35 @@ export interface NoteNode {
   type: 'note';
   body: string;
   id?: string;
-  surfaces?: BodyNodeSurface[];
+  surfaces?: SurfaceName[];
 }
 
 export interface ChartNode {
   type: 'chart';
   label: string;
   id?: string;
-  surfaces?: BodyNodeSurface[];
+  surfaces?: SurfaceName[];
 }
 
 export interface CaptionNode {
   type: 'caption';
   body: string;
   id?: string;
-  surfaces?: BodyNodeSurface[];
+  surfaces?: SurfaceName[];
 }
 
 export interface StackNode {
   type: 'stack';
   items: FixtureNode[];
   id?: string;
-  surfaces?: BodyNodeSurface[];
+  surfaces?: SurfaceName[];
 }
 
 export interface GroupNode {
   type: 'group';
   items: FixtureNode[];
   id?: string;
-  surfaces?: BodyNodeSurface[];
+  surfaces?: SurfaceName[];
 }
 
 export type FixtureNode =
@@ -219,14 +219,14 @@ export interface TileNode {
   type: 'tile';
   body: string;
   id?: string;
-  surfaces?: BodyNodeSurface[];
+  surfaces?: SurfaceName[];
 }
 
 export interface TileGroupNode {
   type: 'tileGroup';
   items: TileNode[];
   id?: string;
-  surfaces?: BodyNodeSurface[];
+  surfaces?: SurfaceName[];
 }
 
 const tilePrimitive = definePrimitive<TileNode>({

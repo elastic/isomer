@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 import {
   checkInputBudget,
   type InputBudget,
+  isInputRefusal,
   MAX_INPUT_CHARACTERS,
   MAX_INPUT_DEPTH,
   MAX_INPUT_VALUES,
@@ -229,5 +230,14 @@ describe('the plain copy', () => {
       { get: () => nested(100_000) }
     );
     expect(copyOf({ node: shifty })).toEqual({ node: { items: [] } });
+  });
+});
+
+describe('isInputRefusal', () => {
+  it('is true for each code checkInputBudget refuses with, and no other', () => {
+    expect(isInputRefusal({ code: 'INPUT_OVER_BUDGET' })).toBe(true);
+    expect(isInputRefusal({ code: 'INPUT_NOT_PLAIN_DATA' })).toBe(true);
+    expect(isInputRefusal({ code: 'COMPOSITION_INVALID' })).toBe(false);
+    expect(isInputRefusal({})).toBe(false);
   });
 });

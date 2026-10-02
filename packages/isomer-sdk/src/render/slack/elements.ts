@@ -15,9 +15,7 @@ import {
   type SlackPlainTextObject,
   type SlackStaticSelectElement,
 } from './blocks';
-import { clampSlackText, slackLinkUrl } from './format';
-
-const OPTION_VALUE_CHARS = 75;
+import { clampSlackText, cutSlackValue, slackLinkUrl } from './format';
 
 /** `plain_text` object with emoji substitution on, clamped to `max`. */
 export const slackPlainText = (
@@ -39,7 +37,7 @@ export const slackActionId = (kind: string, seed: string): string =>
 /** Option for {@link slackSelectOption}; `value` is what interactions send. */
 export interface SlackSelectOptionInput {
   label: string;
-  /** Clamped to 75 characters, so a longer value reaches the interaction payload truncated. */
+  /** Cut to Slack's 150 characters with no ellipsis, so a longer value reaches the interaction payload truncated. */
   value: string;
   description?: string | undefined;
 }
@@ -50,7 +48,7 @@ export const slackSelectOption = (
 ): SlackOptionObject => {
   const option: SlackOptionObject = {
     text: slackPlainText(input.label),
-    value: clampSlackText(input.value, OPTION_VALUE_CHARS),
+    value: cutSlackValue(input.value, SLACK_LIMITS.optionValueChars),
   };
   if (input.description) {
     option.description = slackPlainText(

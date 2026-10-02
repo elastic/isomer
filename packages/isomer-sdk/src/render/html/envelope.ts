@@ -7,6 +7,11 @@
 
 import { createElement, Fragment, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import {
+  type Comment as JavaScriptComment,
+  type Node as JavaScriptNode,
+  parse,
+} from 'acorn';
 
 import {
   type ChildNodeWalker,
@@ -25,6 +30,7 @@ import type {
 } from '../../define/primitive_module';
 import {
   EMBEDDED_SCRIPT_ATTRIBUTE,
+  resolveEnhancements,
   scopeScript,
 } from '../../pack/enhancements';
 import {
@@ -47,7 +53,6 @@ import {
   embedScript,
   type EnhancementDefinition,
   enhancementScript,
-  resolveEnhancements,
 } from './enhancements';
 
 /** Knobs for the HTML surface. Every field defaults, so `{}` is valid. */
@@ -84,8 +89,12 @@ export interface HTMLRenderOptions {
   enhancements?: readonly string[];
   /** `true` renders node anchors whether or not an enhancement asks for them, e.g. for tests. `false` cannot turn off anchors an enhancement needs. */
   anchors?: boolean;
-  /** Opaque to the sdk; forwarded to {@link HTMLStyleAdapter} with the rest of the options. */
-  adapterOptions?: Record<string, unknown>;
+  /**
+   * Resolves `light-dark(…)` in the stylesheet to one scheme's value. A browser
+   * resolves it itself; an image is one static frame, so the `svg` surface sets
+   * it.
+   */
+  scheme?: 'light' | 'dark';
 }
 
 /**
@@ -296,17 +305,17 @@ export const renderHTMLWithDispatcher = <
     walk: createChildNodeWalker(dispatcher.definitions),
     definitions: enhancementDefinitions,
   };
-  const enhancements = resolveEnhancements(
+  const applied = resolveEnhancements(
     composition.body,
-    options.enhancements,
     enhancementScope.walk,
-    enhancementDefinitions
+    enhancementDefinitions,
+    options.enhancements ?? []
+  );
+  const enhancements: ReadonlySet<string> = new Set(
+    applied.map(({ id }) => id)
   );
   const anchors =
-    options.anchors === true ||
-    enhancementDefinitions.some(
-      ({ id, anchors: needed }) => needed === true && enhancements.has(id)
-    );
+    options.anchors === true || applied.some(({ anchors }) => anchors);
   const enhanced = (context: TContext): TContext =>
     contextWith(context, 'enhancements', enhancements);
 
@@ -349,7 +358,7 @@ export const renderHTMLWithDispatcher = <
     styleAdapter?.getScriptText?.(composition, options, enhancementScope) ?? '';
   const js = [
     ...[scriptText, adapterScriptText].filter(Boolean).map(scopeScript),
-    enhancementScript(enhancements, enhancementDefinitions),
+    enhancementScript(applied),
   ]
     .filter(Boolean)
     .join('\n');
@@ -364,21 +373,27 @@ export const renderHTMLWithDispatcher = <
       )
     )
   );
+  const inlineCss = cssMode === 'inline' ? embedCss(cssText) : '';
+  const inlineJs = embeddedScript ? embedJs(embeddedScript) : '';
   const raw = renderToStaticMarkup(
     createElement(RenderedHtmlView<TNode>, {
       composition,
       theme,
       fluid: Boolean(options.fluid),
       framed,
-      styleText: cssMode === 'inline' ? cssText : undefined,
-      scriptText: embeddedScript || undefined,
+      styleText: inlineCss || undefined,
+      scriptText: inlineJs || undefined,
       defaultAriaLabel,
       body,
     })
   );
   const html = options.minify === false ? raw : minifyHtml(raw);
 
-  const jsBytes = byteLength(embeddedScript || js);
+  // Inline payloads are measured as emitted, escapes included.
+  const inlineCssBytes = byteLength(inlineCss);
+  const inlineJsBytes = byteLength(inlineJs);
+  const separateCssBytes = cssMode === 'inline' ? 0 : byteLength(cssText);
+  const separateJsBytes = embeddedScript ? 0 : byteLength(js);
 
   return {
     html,
@@ -386,16 +401,10 @@ export const renderHTMLWithDispatcher = <
     js,
     body,
     measurement: {
-      html:
-        byteLength(html) -
-        (cssMode === 'inline' ? byteLength(cssText) : 0) -
-        (embeddedScript ? jsBytes : 0),
-      css: byteLength(cssText),
-      js: jsBytes,
-      total:
-        byteLength(html) +
-        (cssMode === 'inline' ? 0 : byteLength(cssText)) +
-        (embeddedScript ? 0 : jsBytes),
+      html: byteLength(html) - inlineCssBytes - inlineJsBytes,
+      css: inlineCssBytes + separateCssBytes,
+      js: inlineJsBytes + separateJsBytes,
+      total: byteLength(html) + separateCssBytes + separateJsBytes,
     },
     validationErrors: validation.errors,
   };
@@ -411,6 +420,112 @@ interface RenderedHtmlViewProps<TNode extends PrimitiveNode> {
   defaultAriaLabel: string;
   body: string;
 }
+
+// Only `</style` ends a `<style>`. `\/` is a CSS escape for `/`, so a string
+// holding it keeps its value.
+const embedCss = (css: string): string => css.replace(/<\/(?=style)/gi, '<\\/');
+
+interface ScriptNode extends JavaScriptNode {
+  tag: ScriptNode;
+  quasi: ScriptNode;
+  quasis: ScriptNode[];
+  expressions: ScriptNode[];
+  value: { raw: string; cooked: string | null };
+  name?: string;
+}
+
+// Tagged templates observe raw spelling and reuse the same frozen object per site.
+const embedJs = (js: string): string => {
+  if (!/<\/script|<!--/i.test(js)) return js;
+  const comments: JavaScriptComment[] = [];
+  const tree = parse(js, { ecmaVersion: 'latest', onComment: comments });
+  const sites: ScriptNode[] = [];
+  const identifiers = new Set<string>();
+  const pending: JavaScriptNode[] = [tree];
+  while (pending.length) {
+    const node = pending.pop()! as ScriptNode;
+    if (node.type === 'Identifier' && node.name) identifiers.add(node.name);
+    if (
+      node.type === 'TaggedTemplateExpression' &&
+      node.quasi.quasis.some(({ value: { raw } }) =>
+        /<\/script|<!--/i.test(raw)
+      )
+    )
+      sites.push(node);
+    for (const value of Object.values(node)) {
+      for (const child of Array.isArray(value) ? value : [value]) {
+        if (
+          child &&
+          typeof child === 'object' &&
+          'type' in child &&
+          'start' in child
+        ) {
+          pending.push(child as JavaScriptNode);
+        }
+      }
+    }
+  }
+  sites.sort((a, b) => a.start - b.start);
+  let prefix = '__isomerTemplate';
+  while ([...identifiers].some((name) => name.startsWith(prefix)))
+    prefix += '_';
+  const literal = (value: string | null): string =>
+    value === null ? 'void 0' : JSON.stringify(value).replace(/</g, '\\u003c');
+  const rewrite = (start: number, end: number): string => {
+    let cursor = start;
+    let result = '';
+    const edits = [
+      ...sites.map((site, index) => ({
+        ...site,
+        index,
+        comment: undefined as string | undefined,
+      })),
+      ...comments
+        .filter(({ start }) => /^(?:<!--|-->)/.test(js.slice(start, start + 4)))
+        .map((comment) => ({ ...comment, index: -1, comment: comment.value })),
+    ].sort((a, b) => a.start - b.start);
+    for (const edit of edits) {
+      if (edit.start < cursor || edit.end > end) continue;
+      result += js.slice(cursor, edit.start);
+      if (edit.comment !== undefined) {
+        result += `//${edit.comment}`;
+      } else {
+        const site = sites[edit.index]!;
+        const {
+          tag,
+          quasi: { quasis, expressions },
+        } = site;
+        const cooked = quasis
+          .map(({ value }) => literal(value.cooked))
+          .join(',');
+        const raw = quasis.map(({ value }) => literal(value.raw)).join(',');
+        const cache = `${prefix}${edit.index}`;
+        const template = `${cache} ??= ${prefix}Freeze(${prefix}Define([${cooked}], 'raw', {value:${prefix}Freeze([${raw}])}))`;
+        const args = expressions.map((expression) =>
+          rewrite(expression.start, expression.end)
+        );
+        result += `(${rewrite(tag.start, tag.end)})(${template}${args.map((arg) => `,(${arg})`).join('')})`;
+      }
+      cursor = edit.end;
+    }
+    return result + js.slice(cursor, end);
+  };
+  const rewritten = rewrite(0, js.length);
+  const scoped = sites.length
+    ? `(function(){const ${prefix}Freeze=Object.freeze,${prefix}Define=Object.defineProperty;let ${sites.map((_site, index) => `${prefix}${index}`).join(',')};\n${rewritten}\n})();`
+    : rewritten;
+  return scoped
+    .replace(/<\/(?=script)/gi, '<\\/')
+    .replace(/<!--/g, (_match, at: number, source: string) =>
+      escapedBy(source, at) ? 'x3C!--' : '\\x3C!--'
+    );
+};
+
+const escapedBy = (source: string, at: number): boolean => {
+  let slashes = 0;
+  while (source[at - slashes - 1] === '\\') slashes += 1;
+  return slashes % 2 === 1;
+};
 
 const RenderedHtmlView = <TNode extends PrimitiveNode>({
   composition,
@@ -448,28 +563,16 @@ const RenderedHtmlView = <TNode extends PrimitiveNode>({
     { framed, fluid, theme, defaultAriaLabel }
   );
 
-// `<pre>` content is whitespace-significant, so those blocks are left untouched
-// and only the markup around them is collapsed.
-const PRE_BLOCK = /<pre[\s>][\s\S]*?<\/pre>/g;
+// Whitespace inside `pre`, `script`, `style`, and `textarea` is content, so
+// those elements match whole and pass through. Elsewhere only whitespace
+// spanning a line break is collapsed: a single space between inline elements
+// (`<b>a</b> <i>b</i>`) is authored content.
+const MINIFY_RE =
+  /<(pre|script|style|textarea)[\s>][\s\S]*?(?:<\/\1\s*>|$)|(?<=>)\s+(?=<)/gi;
 
-// Only whitespace spanning a line break is collapsed: a single space between
-// inline elements (`<b>a</b> <i>b</i>`) is authored content.
-const TAG_GAP = />(\s*)</g;
-
-const collapseTagGaps = (html: string): string =>
-  html.replace(TAG_GAP, (gap, space: string) =>
-    space.includes('\n') ? '><' : gap
-  );
-
-const minifyHtml = (value: string): string => {
-  let result = '';
-  let cursor = 0;
-  for (const match of value.matchAll(PRE_BLOCK)) {
-    const start = match.index;
-    result += collapseTagGaps(value.slice(cursor, start));
-    result += match[0];
-    cursor = start + match[0].length;
-  }
-  result += collapseTagGaps(value.slice(cursor));
-  return result.trim();
-};
+const minifyHtml = (value: string): string =>
+  value
+    .replace(MINIFY_RE, (match, element: string | undefined) =>
+      element || !match.includes('\n') ? match : ''
+    )
+    .trim();

@@ -33,7 +33,9 @@ import {
   type SlackTextObject,
 } from './blocks';
 import {
+  clampMrkdwn,
   clampSlackText,
+  cutSlackValue,
   escapeMrkdwn,
   formatHeaderText,
   italic,
@@ -62,7 +64,7 @@ export interface SlackEnvelopeDispatcher<
 export interface SlackEnvelopeOptions {
   /** Renders the composition's title and subtitle, in the blocks and the fallback `text`. Defaults to `true`. Pass `false` when the host already shows the title, or the body opens with its own. */
   heading?: boolean;
-  /** Fallback `text` summary shown in notifications and previews; defaults to the text render. */
+  /** Fallback `text` summary shown in notifications and previews, as `mrkdwn`; defaults to the text render, escaped. */
   text?: string;
   /** Whether to collect image upload requests alongside the blocks. */
   collectAssets?: boolean;
@@ -86,10 +88,10 @@ export interface SlackEnvelopeResult {
  *
  * Degradation for a node with no `slack` renderer is the dispatcher's, which
  * has to own it to reach a child nested inside a container. The result is
- * fitted to Slack's limits — Slack-limited text is clamped, `rich_text`
- * elements past a section's limit are split, tables past a table
- * limit or the message's cell budget become rich text, spacers and then whole
- * blocks are dropped — so the output is always postable. `assets` stays empty
+ * fitted to Slack's limits — text is clamped, blocks past a count limit and
+ * `rich_text` elements past a section's limit split, tables past a table limit
+ * or the message's cell budget become rich text, spacers and then whole blocks
+ * are dropped — so the output is always postable. `assets` stays empty
  * unless `collectAssets` is set.
  */
 export const renderSlackEnvelope = <TNode extends PrimitiveNode>(
@@ -115,12 +117,13 @@ export const renderSlackEnvelope = <TNode extends PrimitiveNode>(
     blocks.push(contextBlock([escapeMrkdwn(composition.subtitle)]));
   }
   for (const node of composition.body) {
-    blocks.push(...dispatcher.renderSlack(node, collector).map(clampBlockText));
+    blocks.push(...dispatcher.renderSlack(node, collector).flatMap(fitBlock));
   }
 
+  // Split after the rhythm, so the fragments of one block read as one.
   const rhythm = applySectionRhythm(
     coalesceFieldSections(enforceTableLimits(blocks))
-  );
+  ).flatMap(splitBlockCounts);
   const budgeted = enforceBlockBudget(rhythm);
   // Only ask the host to upload assets whose placeholder block survived the
   // budget; blocks elided by `enforceBlockBudget` are never posted, so
@@ -128,8 +131,9 @@ export const renderSlackEnvelope = <TNode extends PrimitiveNode>(
   const keptRefs = collectSlackFileRefs(budgeted);
 
   return {
-    text: clampSlackText(
-      options.text ?? renderTextEnvelope(composition, dispatcher, { heading }),
+    text: clampMrkdwn(
+      options.text ??
+        escapeMrkdwn(renderTextEnvelope(composition, dispatcher, { heading })),
       SLACK_LIMITS.fallbackTextChars
     ),
     blocks: budgeted,
@@ -145,7 +149,16 @@ const clampText = <TText extends SlackTextObject>(
 ): TText =>
   text.text.length <= max
     ? text
-    : { ...text, text: clampSlackText(text.text, max) };
+    : {
+        ...text,
+        text: (text.type === 'mrkdwn' ? clampMrkdwn : clampSlackText)(
+          text.text,
+          max
+        ),
+      };
+
+const fitsImageUrl = ({ image_url }: { image_url?: string }): boolean =>
+  image_url === undefined || image_url.length <= SLACK_LIMITS.imageUrlChars;
 
 const clampAlt = <TImage extends { alt_text: string }>(
   image: TImage
@@ -160,26 +173,60 @@ const clampAlt = <TImage extends { alt_text: string }>(
         ),
       };
 
-const clampOption = (option: SlackOptionObject): SlackOptionObject => ({
-  ...option,
-  text: clampText(option.text, SLACK_LIMITS.optionTextChars),
-  ...(option.description && {
-    description: clampText(option.description, SLACK_LIMITS.optionTextChars),
-  }),
-});
-
-// `initial_option(s)` go through the same `clampOption` as `options`, since
-// Slack rejects an initial option that matches none of them.
-const clampControl = (element: SlackActionElement): SlackActionElement => {
-  if (element.type === 'button') {
-    return {
-      ...element,
-      text: clampText(element.text, SLACK_LIMITS.buttonTextChars),
-    };
+// A cut URL would point somewhere else, so one past the limit is dropped.
+const withoutLongUrl = <T extends { url?: string }>(element: T): T => {
+  if (
+    element.url === undefined ||
+    element.url.length <= SLACK_LIMITS.urlChars
+  ) {
+    return element;
   }
-  const menu = { ...element };
+  const { url: _dropped, ...rest } = element;
+  return rest as T;
+};
+
+const optionValue = (value: string): string =>
+  cutSlackValue(value, SLACK_LIMITS.optionValueChars);
+
+const clampOption = (option: SlackOptionObject): SlackOptionObject =>
+  withoutLongUrl({
+    ...option,
+    text: clampText(option.text, SLACK_LIMITS.optionTextChars),
+    value: optionValue(option.value),
+    ...(option.description && {
+      description: clampText(option.description, SLACK_LIMITS.optionTextChars),
+    }),
+  });
+
+const clampControl = (element: SlackActionElement): SlackActionElement => {
+  const actionId =
+    element.action_id === undefined
+      ? {}
+      : {
+          action_id: cutSlackValue(
+            element.action_id,
+            SLACK_LIMITS.actionIdChars
+          ),
+        };
+  if (element.type === 'button') {
+    return withoutLongUrl({
+      ...element,
+      ...actionId,
+      text: clampText(element.text, SLACK_LIMITS.buttonTextChars),
+      ...(element.value !== undefined && {
+        value: cutSlackValue(element.value, SLACK_LIMITS.buttonValueChars),
+      }),
+    });
+  }
+  const menu = { ...element, ...actionId };
+  const maxOptions =
+    menu.type === 'overflow'
+      ? SLACK_LIMITS.optionsPerOverflow
+      : menu.type === 'radio_buttons' || menu.type === 'checkboxes'
+        ? SLACK_LIMITS.optionsPerChoice
+        : SLACK_LIMITS.optionsPerSelect;
   if (menu.options) {
-    menu.options = menu.options.map(clampOption);
+    menu.options = menu.options.slice(0, maxOptions).map(clampOption);
   }
   if ('placeholder' in menu && menu.placeholder) {
     menu.placeholder = clampText(
@@ -188,20 +235,120 @@ const clampControl = (element: SlackActionElement): SlackActionElement => {
     );
   }
   if ('option_groups' in menu && menu.option_groups) {
-    menu.option_groups = menu.option_groups.map((group) => ({
-      ...group,
-      label: clampText(group.label, SLACK_LIMITS.optionGroupLabelChars),
-      options: group.options.map(clampOption),
-    }));
+    menu.option_groups = menu.option_groups
+      .slice(0, SLACK_LIMITS.optionGroupsPerSelect)
+      .map((group) => ({
+        ...group,
+        label: clampText(group.label, SLACK_LIMITS.optionGroupLabelChars),
+        options: group.options.slice(0, maxOptions).map(clampOption),
+      }));
   }
+  // Slack requires an initial option to equal one it emits, so each is
+  // replaced by the emitted option of the same value, or dropped.
+  const emitted = new Map(
+    [
+      ...(menu.options ?? []),
+      ...(('option_groups' in menu && menu.option_groups) || []).flatMap(
+        ({ options }) => options
+      ),
+    ].map((option) => [option.value, option])
+  );
   if ('initial_option' in menu && menu.initial_option) {
-    menu.initial_option = clampOption(menu.initial_option);
+    const match = emitted.get(optionValue(menu.initial_option.value));
+    if (match) {
+      menu.initial_option = match;
+    } else {
+      delete menu.initial_option;
+    }
   }
   if ('initial_options' in menu && menu.initial_options) {
-    menu.initial_options = menu.initial_options.map(clampOption);
+    const matches = menu.initial_options.flatMap(({ value }) => {
+      const match = emitted.get(optionValue(value));
+      return match ? [match] : [];
+    });
+    if (matches.length > 0) {
+      menu.initial_options = matches;
+    } else {
+      delete menu.initial_options;
+    }
   }
   return menu;
 };
+
+const chunks = <T>(items: readonly T[], size: number): T[][] =>
+  Array.from({ length: Math.ceil(items.length / size) }, (_, index) =>
+    items.slice(index * size, (index + 1) * size)
+  );
+
+// Splits a block past a count limit into blocks of its type. Only the first
+// keeps a `block_id`, which Slack requires to be unique.
+const splitBlockCounts = (block: SlackBlock): SlackBlock[] => {
+  switch (block.type) {
+    case 'context':
+      return chunks(block.elements, SLACK_LIMITS.contextElements).map(
+        (elements, index) =>
+          index === 0 ? { ...block, elements } : { type: 'context', elements }
+      );
+    case 'actions':
+      return chunks(block.elements, SLACK_LIMITS.buttonsPerActions).map(
+        (elements, index) =>
+          index === 0 ? { ...block, elements } : { type: 'actions', elements }
+      );
+    case 'section': {
+      if (
+        !block.fields ||
+        block.fields.length <= SLACK_LIMITS.fieldsPerSection
+      ) {
+        return [block];
+      }
+      return chunks(block.fields, SLACK_LIMITS.fieldsPerSection).map(
+        (fields, index) =>
+          index === 0 ? { ...block, fields } : { type: 'section', fields }
+      );
+    }
+    default:
+      return [block];
+  }
+};
+
+// An image whose URL Slack would reject leaves its alt text.
+const fitImageUrls = (block: SlackBlock): SlackBlock[] => {
+  switch (block.type) {
+    case 'image':
+      return fitsImageUrl(block)
+        ? [block]
+        : block.alt_text
+          ? [contextBlock([escapeMrkdwn(block.alt_text)])]
+          : [];
+    case 'context':
+      return [
+        {
+          ...block,
+          elements: block.elements.flatMap((element) =>
+            element.type !== 'image' || fitsImageUrl(element)
+              ? [element]
+              : element.alt_text
+                ? [{ type: 'mrkdwn', text: escapeMrkdwn(element.alt_text) }]
+                : []
+          ),
+        },
+      ];
+    case 'section': {
+      if (block.accessory?.type !== 'image' || fitsImageUrl(block.accessory)) {
+        return [block];
+      }
+      const { accessory, ...rest } = block;
+      return accessory.alt_text
+        ? [rest, contextBlock([escapeMrkdwn(accessory.alt_text)])]
+        : [rest];
+    }
+    default:
+      return [block];
+  }
+};
+
+const fitBlock = (block: SlackBlock): SlackBlock[] =>
+  fitImageUrls(block).map(clampBlockText);
 
 // Pack renderers build their own blocks, and one overlong text makes Slack
 // reject the whole message.
@@ -302,7 +449,7 @@ const contextBlock = (lines: ReadonlyArray<string>): SlackContextBlock => ({
     .filter((line): line is string => line !== undefined && line.length > 0)
     .map((text) => ({
       type: 'mrkdwn',
-      text: clampSlackText(text, SLACK_LIMITS.contextElementChars),
+      text: clampMrkdwn(text, SLACK_LIMITS.contextElementChars),
     })),
 });
 

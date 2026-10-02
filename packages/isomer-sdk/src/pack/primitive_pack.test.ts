@@ -18,7 +18,6 @@ import {
   definePrimitivePack,
   extendPrimitivePack,
   type PrimitivePack,
-  themeBound,
 } from './primitive_pack';
 
 const renderers = {
@@ -255,13 +254,12 @@ describe('extendPrimitivePack', () => {
   });
 });
 
-describe('themeBound', () => {
-  it('infers PrimitivePack<TTheme> from the theme carrier', () => {
-    const pack = definePrimitivePack({
+describe('definePrimitivePack theme', () => {
+  it('returns PrimitivePack<TTheme> for an explicit palette', () => {
+    const pack = definePrimitivePack<{ ink: string }>({
       id: 'charts',
       surfaces: [],
       primitives: [leaf('note')],
-      theme: themeBound<{ ink: string }>(),
     });
     expectTypeOf(pack).toEqualTypeOf<PrimitivePack<{ ink: string }>>();
   });

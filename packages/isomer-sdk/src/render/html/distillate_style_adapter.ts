@@ -7,7 +7,7 @@
 
 import type { PrimitiveNode, StyleHandle } from '../../define/primitive_module';
 
-import type { HTMLRenderOptions, HTMLStyleAdapter } from './envelope';
+import type { HTMLStyleAdapter } from './envelope';
 
 /** One theme custom property, with both schemes it folds into `light-dark(...)`. */
 export interface DistillateThemeVar {
@@ -25,27 +25,11 @@ export interface DistillateHtmlEngine<TCollector> {
     resolver?: undefined,
     options?: { themeValueOverrides?: Record<string, string> }
   ) => string;
-  /** Theme-tree path to its per-scheme values, for {@link flattenSchemeOption}. */
+  /** Theme-tree path to its per-scheme values, for {@link HTMLRenderOptions.scheme}. */
   environment: { themeVars: Readonly<Record<string, DistillateThemeVar>> };
   /** Distillate's per-distillery `StyleRegistry`, which answers {@link HTMLStyleAdapter.ownsHandle}. */
   registry: { module: (name: string) => unknown };
 }
-
-/**
- * Adapter option asking for `light-dark(…)` to be resolved to one scheme's
- * literal, set by the `svg` surface.
- *
- * A browser resolves the function itself, so the HTML surface leaves it alone;
- * an image is one static frame and image backends do not evaluate it.
- */
-export const flattenSchemeOption = 'flattenScheme';
-
-const schemeFrom = (
-  options: HTMLRenderOptions
-): 'light' | 'dark' | undefined => {
-  const requested = options.adapterOptions?.[flattenSchemeOption];
-  return requested === 'light' || requested === 'dark' ? requested : undefined;
-};
 
 /** The {@link HTMLStyleAdapter.styleCollector} tag a Distillate-backed pack declares. */
 export const DISTILLATE_STYLE_COLLECTOR = 'distillate';
@@ -67,8 +51,7 @@ export const createDistillateHtmlStyleAdapter = <
       return handles.map(({ readableName }) => readableName).join(' ');
     },
   }),
-  renderStyles: (collector, options) => {
-    const scheme = schemeFrom(options);
+  renderStyles: (collector, { scheme }) => {
     if (!scheme) {
       return distillery.renderStyles(collector);
     }

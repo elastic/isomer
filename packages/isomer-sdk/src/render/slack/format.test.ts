@@ -11,6 +11,7 @@ import { isSlackReachableImageUrl } from './assets';
 import { SLACK_LIMITS } from './blocks';
 import {
   bold,
+  clampMrkdwn,
   clampSlackText,
   code,
   codeBlock,
@@ -187,6 +188,66 @@ describe('clamping', () => {
   it('joins lines, dropping empties, within the section budget', () => {
     expect(joinMrkdwn(['a', undefined, '', 'b'])).toBe('a\nb');
     expect(joinMrkdwn(['abcdef', 'ghi'], 4)).toBe('abc…');
+  });
+});
+
+describe('clampMrkdwn', () => {
+  const pad = (n: number) => 'a'.repeat(n);
+
+  it('returns text within the limit untouched', () => {
+    expect(clampMrkdwn('*bold* <https://x.test|x>', 40)).toBe(
+      '*bold* <https://x.test|x>'
+    );
+  });
+
+  it('cuts before a link or mention the cut lands in', () => {
+    expect(clampMrkdwn(`${pad(10)} <https://x.test/path|label> b`, 20)).toBe(
+      `${pad(10)}…`
+    );
+    expect(clampMrkdwn(`${pad(10)} <@U123ABC> b`, 18)).toBe(`${pad(10)}…`);
+    expect(
+      clampMrkdwn(`${pad(10)} <https://x.test/${'p'.repeat(200)}|label>`, 20)
+    ).toBe(`${pad(10)}…`);
+  });
+
+  it('keeps a link that ends at the cut', () => {
+    const value = `${pad(5)} <https://x.test|x> ${'b'.repeat(40)}`;
+    expect(clampMrkdwn(value, 27)).toBe(`${pad(5)} <https://x.test|x> b…`);
+  });
+
+  it('cuts through a bare less-than that opens no link', () => {
+    const code = '`a<b` ';
+    const output = clampMrkdwn(`${code}${'word '.repeat(700)}`, 3_000);
+    expect(output.length).toBe(3_000);
+    expect(output.startsWith(code)).toBe(true);
+    expect(clampMrkdwn(`a<b\n> ${'c'.repeat(30)}`, 20).length).toBe(20);
+  });
+
+  it('cuts before an entity the cut lands in', () => {
+    expect(clampMrkdwn(`${pad(8)}&amp;&lt;&gt;`, 11)).toBe(`${pad(8)}…`);
+    expect(clampMrkdwn(`${pad(8)}&amp;&lt;&gt;`, 14)).toBe(`${pad(8)}&amp;…`);
+  });
+
+  it('never cuts inside an entity in a link label', () => {
+    const value = `${pad(4)} <https://x.test|a &amp; b> tail`;
+    expect(clampMrkdwn(value, 26)).toBe(`${pad(4)}…`);
+  });
+
+  it('leaves formatting marks as they fall', () => {
+    expect(clampMrkdwn(`x *${'word '.repeat(10)}*`, 20)).toBe(
+      `x *${'word '.repeat(3)}w…`
+    );
+  });
+
+  it('keeps a grapheme whole', () => {
+    expect(clampMrkdwn(`${pad(8)}😀😀`, 10)).toBe(`${pad(8)}…`);
+  });
+
+  it('clamps a long input in time bounded by the limit', () => {
+    const started = performance.now();
+    clampMrkdwn('a'.repeat(1_000_000), 3_000);
+    clampMrkdwn(`<${'a'.repeat(1_000_000)}`, 3_000);
+    expect(performance.now() - started).toBeLessThan(200);
   });
 });
 

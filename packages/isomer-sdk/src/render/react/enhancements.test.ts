@@ -41,6 +41,23 @@ describe('applyEnhancements', () => {
     );
   });
 
+  it('limits the applied definitions, ids, and anchors to requested ids', () => {
+    const wanted = definition('wanted');
+    const node = { type: 'leaf' };
+    const { context, applied } = applyEnhancements(
+      {},
+      body,
+      walk,
+      [wanted, definition('anchored', { anchors: true })],
+      ['wanted']
+    );
+    expect(applied).toEqual([wanted]);
+    expect((context as { enhancements: Set<string> }).enhancements).toEqual(
+      new Set(['wanted'])
+    );
+    expect(nodeAnchor(context, node)).toEqual({});
+  });
+
   it('turns anchors on only when an applied definition asks', () => {
     const node = { type: 'leaf' };
     const off = applyEnhancements({}, body, walk, [definition('a')]);

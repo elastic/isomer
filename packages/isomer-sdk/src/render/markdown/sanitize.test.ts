@@ -29,6 +29,34 @@ const expectNoLiveSink = (output: string): void => {
 };
 
 describe('sanitizeMarkdownSource', () => {
+  it.each([
+    '[x](/a?x=&amp;#47;)',
+    '![x](/a?x=&amp;#47;)',
+    '[x][ref]\n\n[ref]: /a?x=&amp;#47;',
+    '[x](/a?x=&#38;colon;)',
+  ])('preserves references decoded once in %s', (source) => {
+    expect(sanitizeMarkdownSource(source)).toBe(source);
+    expect(sanitizeMarkdownSource(sanitizeMarkdownSource(source))).toBe(source);
+  });
+
+  it('preserves a decoded reference while repairing another part of a link', () => {
+    const source = '[![x](javascript:x)](/a?x=&amp;#47;)';
+    expect(sanitizeMarkdownSource(source)).toBe('[x](/a?x=&amp;#47;)');
+  });
+
+  it.each([']'.repeat(40_000), ']'.repeat(16_000), 'a'.repeat(20_000)])(
+    'bounds parser work for adversarial or oversized source',
+    (prefix) => {
+      const start = performance.now();
+      const result = sanitizeMarkdownSource(`${prefix}[x](javascript:alert)`);
+      expect(result).toContain('\\[x\\]');
+      expect(performance.now() - start).toBeLessThan(250);
+    }
+  );
+
+  it('handles a deeply nested blockquote without throwing', () => {
+    expect(() => sanitizeMarkdownSource('> '.repeat(4000) + 'x')).not.toThrow();
+  });
   describe('blocks unsafe destinations', () => {
     it.each([
       ['inline link', '[open](javascript:alert(1))'],
@@ -54,6 +82,15 @@ describe('sanitizeMarkdownSource', () => {
       ['protocol-relative link', '[x](//evil.example.test)'],
       ['obfuscated scheme', '[x](jav\tascript:alert(1))'],
       ['entity-encoded colon', '[x](javascript&colon;alert(1))'],
+      ['bracket in label', '[a [b] c](javascript:alert(1))'],
+      ['image in label', '[![alt](https://x.test/i.png)](javascript:alert(1))'],
+      ['escaped bracket in label', String.raw`[a\] b](javascript:alert(1))`],
+      ['code span in label', '[`x`](javascript:alert(1))'],
+      ['blocked link in blocked label', '[[x](javascript:y)](javascript:z)'],
+      ['blocked image in safe label', '[![a](javascript:x)](https://ok.test)'],
+      ['link inside an html block', '<div>\n[x](javascript:alert(1))\n</div>'],
+      ['link in a table cell', '| a |\n| - |\n| [x](javascript:alert(1)) |'],
+      ['entity-encoded tab', '[x](java&Tab;script:alert(1))'],
     ])('%s', (_name, markdown) => {
       expectNoLiveSink(sanitizeMarkdownSource(markdown));
     });
@@ -114,6 +151,53 @@ describe('sanitizeMarkdownSource', () => {
     });
   });
 
+  describe('reference destination policies', () => {
+    it.each(['![chart][asset]', '![asset][]', '![asset]'])(
+      'preserves a multiline data-image reference in %s',
+      (usage) => {
+        const source = `${usage}\n\n[asset]:\n  data:image/png;base64,aGVsbG8= "Chart"`;
+        expect(sanitizeMarkdownSource(source)).toBe(source);
+        expect(sanitizeMarkdownSource(sanitizeMarkdownSource(source))).toBe(
+          source
+        );
+      }
+    );
+
+    it('applies each policy to a definition shared by a link and an image', () => {
+      const data = 'data:image/png;base64,aGVsbG8=';
+      expect(
+        sanitizeMarkdownSource(
+          `[open][asset] ![chart][asset]\n\n[asset]: ${data}`
+        )
+      ).toBe(`open ![chart][asset]\n\n[asset]: ${data}`);
+      expect(
+        sanitizeMarkdownSource(
+          '[email][asset] ![chart][asset]\n\n[asset]: mailto:a@example.com'
+        )
+      ).toBe('[email][asset] chart\n\n[asset]: mailto:a@example.com');
+    });
+
+    it('keeps safe HTTP references shared by links and images unchanged', () => {
+      const source =
+        '[open][asset] ![chart][asset]\n\n[asset]: https://example.com/chart.png';
+      expect(sanitizeMarkdownSource(source)).toBe(source);
+    });
+
+    it('resolves case-insensitive references to the first definition', () => {
+      const source =
+        '![chart][ASSET]\n\n[asset]: data:image/png;base64,aGVsbG8=\n[Asset]: mailto:a@example.com';
+      expect(sanitizeMarkdownSource(source)).toBe(source);
+    });
+
+    it('degrades a blocked reference image to escaped alt text', () => {
+      expect(
+        sanitizeMarkdownSource(
+          '![a\\[b\\]][asset]\n\n[asset]: javascript:alert(1)'
+        )
+      ).toBe('a\\[b\\]\n\n[asset]: #');
+    });
+  });
+
   describe('degradation shape', () => {
     it('collapses a blocked inline link to its label', () => {
       expect(sanitizeMarkdownSource('[click me](javascript:alert(1))')).toBe(
@@ -133,6 +217,21 @@ describe('sanitizeMarkdownSource', () => {
       ).toBe('See [x].\n\n[x]: #');
     });
 
+    it('keeps a blocked label whole, brackets and code included', () => {
+      expect(sanitizeMarkdownSource('[a [b] c](javascript:alert(1))')).toBe(
+        'a [b] c'
+      );
+      expect(sanitizeMarkdownSource('[`x` *y*](javascript:alert(1))')).toBe(
+        '`x` *y*'
+      );
+    });
+
+    it('sanitizes inside a safe label and keeps the destination', () => {
+      expect(
+        sanitizeMarkdownSource('[![a](javascript:x) b](https://ok.test)')
+      ).toBe('[a b](https://ok.test)');
+    });
+
     it('drops the brackets from a blocked autolink', () => {
       expect(sanitizeMarkdownSource('see <javascript:alert(1)> here')).toBe(
         'see javascript:alert(1) here'
@@ -140,13 +239,7 @@ describe('sanitizeMarkdownSource', () => {
     });
   });
 
-  describe('raw-HTML lookaheads', () => {
-    // The raw-HTML pass escapes anything tag-shaped, with two negative
-    // lookaheads that spare autolinks. Those lookaheads key on shape (a
-    // scheme-colon or an `@`), not on safety, so an *unsafe* autolink is
-    // spared here too — it is the autolink pass that de-brackets it. The two
-    // passes are therefore independent, and these cases pin both halves so a
-    // change to either lookahead has to face them.
+  describe('raw HTML and autolinks', () => {
     it('spares a safe url autolink', () => {
       expect(sanitizeMarkdownSource('see <https://x.test/a> here')).toBe(
         'see <https://x.test/a> here'
@@ -179,9 +272,42 @@ describe('sanitizeMarkdownSource', () => {
     });
   });
 
+  it.each([
+    ['nested blockquotes', `${'>'.repeat(20_000)} `],
+    ['nested list items', '- '.repeat(20_000)],
+    [
+      'indented list lines',
+      '- a\n  - b\n    - c\n'.repeat(1) + `${' '.repeat(300)}- d\n`,
+    ],
+    ['nested emphasis', `${'*'.repeat(20_000)}x${'*'.repeat(20_000)} `],
+    ['spread emphasis', `${'*a '.repeat(5_000)}${'a* '.repeat(5_000)}`],
+    ['nested link labels', `${'['.repeat(5_000)}x${'](y)'.repeat(5_000)} `],
+  ])(
+    'degrades nesting too deep to parse to inert text: %s',
+    (_name, prefix) => {
+      // Escaped brackets cannot open a link, so the destination is inert text.
+      const source = `${prefix}[x](javascript:alert(1))`;
+      expect(sanitizeMarkdownSource(source)).toBe(
+        source.replace(/[[\]\\]/g, '\\$&').replace(/</g, '&lt;')
+      );
+    }
+  );
+
+  it('keeps prose with many intraword underscores parseable', () => {
+    const prose = 'snake_case_name '.repeat(1_000);
+    expect(sanitizeMarkdownSource(`${prose}[x](javascript:alert(1))`)).toBe(
+      `${prose}x`
+    );
+  });
+
   it('runs in linear time on long whitespace and unclosed tags', () => {
     const started = performance.now();
     for (const input of [
+      `${'*a '.repeat(500)}${'a* '.repeat(500)}`,
+      `${'['.repeat(500)}x${'](y)'.repeat(500)}`,
+      Array.from({ length: 128 }, (_, i) => `${' '.repeat(i * 2)}- x`).join(
+        '\n'
+      ),
       `[a](${' '.repeat(50_000)}x`,
       `[a](x${' '.repeat(50_000)}y`,
       '<a'.repeat(50_000),

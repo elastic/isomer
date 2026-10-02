@@ -898,6 +898,348 @@ describe('Slack envelope transforms', () => {
   });
 });
 
+describe('Slack envelope count limits', () => {
+  const mrkdwn = (text: string) => ({ type: 'mrkdwn' as const, text });
+  const render = (blocks: SlackBlock[]) =>
+    renderSlackEnvelope(
+      { type: 'view', body: [{ type: 'n' }] },
+      dispatcherFor([blocks])
+    ).blocks;
+
+  it('splits a context past its element limit', () => {
+    const elements = Array.from({ length: 12 }, (_, i) => mrkdwn(`c${i}`));
+    const blocks = render([{ type: 'context', block_id: 'ctx', elements }]);
+    expect(
+      blocks.map((b) => b.type === 'context' && b.elements.length)
+    ).toEqual([10, 2]);
+    expect(blocks.map((b) => b.block_id)).toEqual(['ctx', undefined]);
+  });
+
+  it('splits section fields past the field limit, text staying on the first', () => {
+    const fields = Array.from({ length: 12 }, (_, i) => mrkdwn(`f${i}`));
+    const blocks = render([
+      { type: 'section', text: mrkdwn('T'), fields },
+    ]).filter((b) => b.type === 'section' && b.fields);
+    expect(
+      blocks.map(
+        (b) => b.type === 'section' && [b.text?.text, b.fields?.length]
+      )
+    ).toEqual([
+      ['T', 10],
+      [undefined, 2],
+    ]);
+  });
+
+  it('splits actions past the button limit', () => {
+    const elements = Array.from({ length: 30 }, (_, i) => button(`b${i}`));
+    const blocks = render([{ type: 'actions', elements }]).filter(
+      (b) => b.type === 'actions'
+    );
+    expect(
+      blocks.map((b) => b.type === 'actions' && b.elements.length)
+    ).toEqual([25, 5]);
+  });
+
+  it('caps the options of a menu', () => {
+    const options = Array.from({ length: 7 }, (_, i) => ({
+      ...option(`o${i}`),
+      value: `v${i}`,
+    }));
+    const [block] = render([
+      {
+        type: 'actions',
+        elements: [{ type: 'overflow', action_id: 'a', options }],
+      },
+    ]).filter((b) => b.type === 'actions');
+    expect(
+      block?.type === 'actions' &&
+        block.elements[0]?.type === 'overflow' &&
+        block.elements[0].options
+    ).toHaveLength(SLACK_LIMITS.optionsPerOverflow);
+  });
+
+  it('caps radio buttons and checkboxes at the choice limit', () => {
+    const options = Array.from({ length: 12 }, (_, i) => ({
+      ...option(`o${i}`),
+      value: `v${i}`,
+    }));
+    const [block] = render([
+      {
+        type: 'actions',
+        elements: [
+          {
+            type: 'checkboxes',
+            action_id: 'c',
+            options,
+            initial_options: [options[11]!],
+          },
+        ],
+      },
+    ]).filter((b) => b.type === 'actions');
+    const [element] = block?.type === 'actions' ? block.elements : [];
+    expect(
+      element?.type === 'checkboxes' && [
+        element.options.length,
+        element.initial_options,
+      ]
+    ).toEqual([SLACK_LIMITS.optionsPerChoice, undefined]);
+  });
+
+  it('drops an image whose URL is past the URL limit', () => {
+    const image_url = `https://x.test/${'a'.repeat(SLACK_LIMITS.imageUrlChars)}`;
+    const blocks = render([{ type: 'image', image_url, alt_text: 'chart' }]);
+    expect(blocks).toEqual([{ type: 'context', elements: [mrkdwn('chart')] }]);
+  });
+
+  it('keeps every block exactly at its limits', () => {
+    const image_url = `https://x.test/${'a'.repeat(SLACK_LIMITS.imageUrlChars - 15)}`;
+    expect(image_url).toHaveLength(SLACK_LIMITS.imageUrlChars);
+    const options = (n: number) =>
+      Array.from({ length: n }, (_, i) => ({
+        ...option(`o${i}`),
+        value: `v${i}`,
+      }));
+    const input: SlackBlock[] = [
+      { type: 'image', image_url, alt_text: 'chart' },
+      {
+        type: 'context',
+        elements: Array.from({ length: SLACK_LIMITS.contextElements }, (_, i) =>
+          mrkdwn(`c${i}`)
+        ),
+      },
+      {
+        type: 'section',
+        fields: Array.from({ length: SLACK_LIMITS.fieldsPerSection }, (_, i) =>
+          mrkdwn(`f${i}`)
+        ),
+      },
+      {
+        type: 'actions',
+        elements: [
+          ...Array.from(
+            { length: SLACK_LIMITS.buttonsPerActions - 2 },
+            (_, i) => button(`b${i}`)
+          ),
+          {
+            type: 'overflow',
+            action_id: 'o',
+            options: options(SLACK_LIMITS.optionsPerOverflow),
+          },
+          {
+            type: 'checkboxes',
+            action_id: 'c',
+            options: options(SLACK_LIMITS.optionsPerChoice),
+          },
+        ],
+      },
+    ];
+    const output = render(input).filter(
+      (block) =>
+        block.type !== 'divider' && !(block.type === 'section' && block.text)
+    );
+    expect(output).toEqual(input);
+  });
+
+  it('degrades a context image element past the URL limit to its alt text, or drops it', () => {
+    const image_url = `https://x.test/${'a'.repeat(SLACK_LIMITS.imageUrlChars)}`;
+    expect(
+      render([
+        {
+          type: 'context',
+          elements: [
+            { type: 'image', image_url, alt_text: 'chart' },
+            { type: 'image', image_url, alt_text: '' },
+            mrkdwn('note'),
+          ],
+        },
+      ])
+    ).toEqual([
+      { type: 'context', elements: [mrkdwn('chart'), mrkdwn('note')] },
+    ]);
+    expect(
+      render([
+        {
+          type: 'context',
+          elements: [{ type: 'image', image_url, alt_text: '' }],
+        },
+      ])
+    ).toEqual([]);
+  });
+
+  it('cuts option values and action ids, and drops a URL past its limit', () => {
+    const long = (n: number) => 'v'.repeat(n + 1);
+    const [block] = render([
+      {
+        type: 'actions',
+        elements: [
+          {
+            type: 'button',
+            text: plain('Go'),
+            action_id: long(SLACK_LIMITS.actionIdChars),
+            value: long(SLACK_LIMITS.buttonValueChars),
+            url: `https://x.test/${long(SLACK_LIMITS.urlChars)}`,
+          },
+          {
+            type: 'static_select',
+            action_id: 's',
+            options: [
+              { ...option('A'), value: long(SLACK_LIMITS.optionValueChars) },
+            ],
+            initial_option: {
+              ...option('A'),
+              value: long(SLACK_LIMITS.optionValueChars),
+            },
+          },
+        ],
+      },
+    ]).filter((b) => b.type === 'actions');
+    const [go, select] = block?.type === 'actions' ? block.elements : [];
+    expect(go).toEqual({
+      type: 'button',
+      text: plain('Go'),
+      action_id: 'v'.repeat(SLACK_LIMITS.actionIdChars),
+      value: 'v'.repeat(SLACK_LIMITS.buttonValueChars),
+    });
+    const value = 'v'.repeat(SLACK_LIMITS.optionValueChars);
+    expect(select?.type === 'static_select' && select.options?.[0]?.value).toBe(
+      value
+    );
+    expect(
+      select?.type === 'static_select' && select.initial_option?.value
+    ).toBe(value);
+  });
+
+  it('keeps the alt text of a section accessory past the URL limit', () => {
+    const image_url = `https://x.test/${'a'.repeat(SLACK_LIMITS.imageUrlChars)}`;
+    const blocks = render([
+      {
+        type: 'section',
+        text: mrkdwn('T'),
+        accessory: { type: 'image', image_url, alt_text: 'chart' },
+      },
+    ]);
+    expect(blocks).toEqual([
+      { type: 'section', text: mrkdwn('T') },
+      { type: 'context', elements: [mrkdwn('chart')] },
+    ]);
+  });
+
+  it('caps option groups and the options in each', () => {
+    const group = (g: number) => ({
+      label: plain(`g${g}`),
+      options: Array.from({ length: 101 }, (_, i) => ({
+        ...option(`o${i}`),
+        value: `g${g}o${i}`,
+      })),
+    });
+    const [block] = render([
+      {
+        type: 'actions',
+        elements: [
+          {
+            type: 'static_select',
+            action_id: 's',
+            option_groups: Array.from({ length: 101 }, (_, g) => group(g)),
+          },
+        ],
+      },
+    ]).filter((b) => b.type === 'actions');
+    const [select] = block?.type === 'actions' ? block.elements : [];
+    const groups =
+      select?.type === 'static_select' ? (select.option_groups ?? []) : [];
+    expect(groups).toHaveLength(SLACK_LIMITS.optionGroupsPerSelect);
+    expect(groups.every(({ options }) => options.length === 100)).toBe(true);
+  });
+
+  it('replaces an initial option with the emitted option of its value', () => {
+    const emitted = { ...option('Shown'), value: 'v1' };
+    const [block] = render([
+      {
+        type: 'actions',
+        elements: [
+          {
+            type: 'static_select',
+            action_id: 's',
+            option_groups: [{ label: plain('g'), options: [emitted] }],
+            initial_option: { ...option('Different'), value: 'v1' },
+          },
+        ],
+      },
+    ]).filter((b) => b.type === 'actions');
+    const [select] = block?.type === 'actions' ? block.elements : [];
+    expect(select?.type === 'static_select' && select.initial_option).toEqual(
+      emitted
+    );
+  });
+
+  it('splits one actions block into consecutive blocks with no dividers between them', () => {
+    const elements = Array.from({ length: 626 }, (_, i) => button(`b${i}`));
+    const blocks = render([section('lead'), { type: 'actions', elements }]);
+    const actions = blocks.filter((b) => b.type === 'actions');
+    expect(actions).toHaveLength(26);
+    expect(blocks.filter((b) => b.type === 'divider')).toHaveLength(1);
+    expect(
+      actions.reduce(
+        (sum, b) => sum + (b.type === 'actions' ? b.elements.length : 0),
+        0
+      )
+    ).toBe(626);
+  });
+});
+
+describe('Slack envelope mrkdwn clamping', () => {
+  const clamped = (text: string): string => {
+    const [block] = renderSlackEnvelope(
+      { type: 'view', body: [{ type: 'n' }] },
+      dispatcherFor([[section(text)]])
+    ).blocks;
+    return block?.type === 'section' ? (block.text?.text ?? '') : '';
+  };
+  const max = SLACK_LIMITS.sectionTextChars;
+
+  it('cuts before a link rather than inside it', () => {
+    const text = `${'a'.repeat(max - 10)} <https://x.test/long/path|label> tail`;
+    expect(clamped(text)).toBe(`${'a'.repeat(max - 10)}…`);
+  });
+
+  it('cuts before an entity rather than inside it', () => {
+    const text = `${'a'.repeat(max - 3)}&amp;&amp;`;
+    expect(clamped(text)).toBe(`${'a'.repeat(max - 3)}…`);
+  });
+
+  it('leaves formatting marks as they fall', () => {
+    const output = clamped(`*${'b '.repeat(max)}*`);
+    expect(output.length).toBeLessThanOrEqual(max);
+    expect(output.endsWith(' b…')).toBe(true);
+  });
+
+  it('does not treat an intraword underscore as an opener', () => {
+    const output = clamped(`snake_case ${'w'.repeat(max)}`);
+    expect(output.endsWith('…')).toBe(true);
+  });
+});
+
+describe('Slack envelope fallback text', () => {
+  it('escapes the default text render as mrkdwn', () => {
+    const { text } = renderSlackEnvelope(
+      { type: 'view', title: 'A <b> & c', body: [] },
+      dispatcherFor([])
+    );
+    expect(text).toBe('A &lt;B&gt; &amp; C');
+  });
+
+  it('passes a host-supplied text through as mrkdwn', () => {
+    const { text } = renderSlackEnvelope(
+      { type: 'view', body: [] },
+      dispatcherFor([]),
+      {
+        text: '*bold* <https://x.test|x>',
+      }
+    );
+    expect(text).toBe('*bold* <https://x.test|x>');
+  });
+});
+
 describe('pack-authored rich text', () => {
   const max = SLACK_LIMITS.sectionTextChars;
   const sectionOf = (text: string): SlackRichTextSection => ({

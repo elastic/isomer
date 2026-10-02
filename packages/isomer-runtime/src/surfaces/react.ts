@@ -22,13 +22,13 @@ import {
   type PrimitiveNode,
   type PrimitiveRenderContext,
   type ReactContextArg,
-  runEnhancementScript,
   scopeScript,
 } from '@elastic/isomer-sdk';
 import {
   applyEnhancements,
   type CompositionWrapperOptions,
   renderCompositionContent,
+  runEnhancementScript,
   wrapCompositionContent,
 } from '@elastic/isomer-sdk/react';
 

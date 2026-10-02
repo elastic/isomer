@@ -12,7 +12,7 @@ The in-repo reference primitive pack for Isomer. Slide-deck primitives, every su
 | Page | What it covers |
 | --- | --- |
 | [Authoring a primitive](primitives.md) | Colocated renderers and why the split exists |
-| [Pack contract](contract.md) | `definePrimitive`, `themeBound`, the surface declaration |
+| [Pack contract](contract.md) | `definePrimitive`, the pack's theme bound, the surface declaration |
 | [Document](document.md) | Geometry, `validateBody`, `wrap` |
 | [Theme](theme.md) | The one-field bound and how palette selection works |
 | [Styling](styling.md) | Distillate collection, the pack's own adapter, and the React surface |

@@ -28,6 +28,15 @@ describe('formatDisplayValue', () => {
       '2.5m'
     );
     expect(formatDisplayValue({ raw: 640, format: 'compact' })).toBe('640');
+    expect(formatDisplayValue({ raw: 1_500_000_000, format: 'compact' })).toBe(
+      '1.5b'
+    );
+  });
+
+  it('applies precision to compact values', () => {
+    expect(
+      formatDisplayValue({ raw: 18_234, format: 'compact', precision: 2 })
+    ).toBe('18.23k');
   });
 
   it('formats percents from fractions', () => {

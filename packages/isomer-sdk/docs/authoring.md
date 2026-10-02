@@ -20,9 +20,9 @@ toComposition(
 );
 ```
 
-Nothing renders. `defineAuthorComponent(type)` returns a component that always returns `null` and carries its node type on a symbol key — `Symbol.for('elastic.isomer.author_type')` — so the element tree is read as data rather than executed. `buildJsxShim(primitives)` builds a pack's whole front end from its primitive list: a `Composition` component, a PascalCase component per primitive (`slideFrame` → `SlideFrame`), a PascalCase component per branded child (`slideTerritory` → `SlideTerritory`), a `component(type)` factory, and `toComposition`, which walks the tree and converts each element into a node. The root element's `version`, `title`, `subtitle`, `theme`, and `meta` become the composition's own fields. Pass the registry tuple (`as const`) so those components stay typed. A `PrimitivePack` erases its primitives to `AnyPrimitiveDefinition[]`.
+Nothing renders. Each authoring component returns `null` and carries its node type on a symbol key — `Symbol.for('elastic.isomer.author_type')` — so the element tree is read as data rather than executed. `buildJsxShim(primitives)` builds a pack's whole front end from its primitive list: a `Composition` component, a PascalCase component per primitive (`slideFrame` → `SlideFrame`), a PascalCase component per branded child (`slideTerritory` → `SlideTerritory`), and `toComposition`, which walks the tree and converts each element into a node. The root element's `version`, `title`, `subtitle`, `theme`, and `meta` become the composition's own fields. Pass the registry tuple (`as const`) so those components stay typed. A `PrimitivePack` erases its primitives to `AnyPrimitiveDefinition[]`.
 
-Child elements and text children are declared on the schema field, not in a parser. `fromChildren(childType, schema, options?)` and `fromTextChildren(schema, options?)` are identity wrappers. `z.infer` still reads the underlying schema; the shim reads the brand. `.describe()` clones, so describe the inner schema before wrapping it.
+Child elements and text children are declared on the schema field, not in a parser. `fromChildren(childType, schema, options?)` and `fromTextChildren(schema, options?)` are identity wrappers. `z.infer` still reads the underlying schema; the shim reads the brand. The brand is read through `.optional()`, `.nullable()`, `.default()`, and `.readonly()`, so `fromChildren('item', items).optional()` still yields an `Item` component. Any other method, `.describe()` included, clones without the brand, so call it on the inner schema before wrapping. The field is optional when any of those layers is. Branding one schema instance again with a different configuration (another child type, `text` field, or `toItem`, one added or left out, or a text brand) throws an `IsomerError` with code `AUTHORED_SCHEMA_REUSED`; give each field its own schema.
 
 ```ts
 items: fromChildren('badge', z.array(badgeItemSchema).min(1).max(12).describe('Badges.')),
@@ -42,7 +42,7 @@ Array-shaped authoring props accept either the array or JSX children:
 </BadgeGroup>
 ```
 
-Child-only components (`Badge`, `Stat`, `ListItem`, …) are not composition body nodes. Placing one directly under `<Composition>` throws `"badge" cannot be used as a composition body node.` Passing neither the array nor children yields `[]`, which the validator rejects via the schema `.min(1)`.
+Child-only components (`Badge`, `Stat`, `ListItem`, …) are not composition body nodes. Placing one directly under `<Composition>` throws `"badge" cannot be used as a composition body node.` Passing neither the array nor children leaves the field out, which the validator rejects as required unless the field is optional.
 
 When a schema has no brand, the walk still fills a unique child-array field (`body`, `items`, …) from nested body nodes, and a unique single-node field from the first child. A container with more than one such field takes those props explicitly.
 
@@ -74,6 +74,8 @@ interface AuthoringPromptContext {
   groups?: readonly PrimitiveGroup[]; // headings for the index
   examples: readonly unknown[]; // extra host-supplied compositions, not catalog copies
   views?: readonly AuthoringViewSummary[]; // registered views the model can request by id
+  heading?: string; // defaults to '# View authoring'
+  intro?: string; // replaces the profile's own framing sentence
 }
 ```
 

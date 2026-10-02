@@ -5,13 +5,15 @@
  * 2.0.
  */
 
+export { runEnhancementScript } from '../pack/enhancements';
+export { findNodeElementPairs } from '../render/anchors';
+export { measureDom } from '../render/measure_dom';
 export {
   type CompositionWrapperOptions,
   type ReactContentDispatcher,
   type ReactContentOptions,
   type ReactTreeDispatcher,
   applyEnhancements,
-  PrimitiveDispatcherContext,
   renderCompositionContent,
   useReactPrimitiveDispatcher,
   wrapCompositionContent,

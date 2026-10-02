@@ -30,47 +30,49 @@ export interface Composition<TNode extends PrimitiveNode = PrimitiveNode> {
   theme?: RenderTheme;
   /** At least one node, which the schema enforces via `.min(1)`. */
   body: TNode[];
-  /**
-   * Context a host may surface beside the render.
-   *
-   * Advisory and pass-through throughout: nothing here changes what the body
-   * renders to, and the SDK reads none of it. Timestamps are plain strings by
-   * convention ISO 8601, which the schema does not enforce — a host that parses
-   * one should tolerate anything.
-   */
-  meta?: {
-    /** Origin of the composition itself, e.g. the agent or feature that composed it. */
+  meta?: CompositionMeta;
+}
+
+/**
+ * Context a host may surface beside the render.
+ *
+ * Advisory and pass-through throughout: nothing here changes what the body
+ * renders to, and the SDK reads none of it. Timestamps are plain strings by
+ * convention ISO 8601, which the schema does not enforce — a host that parses
+ * one should tolerate anything.
+ */
+export interface CompositionMeta {
+  /** Origin of the composition itself, e.g. the agent or feature that composed it. */
+  source?: string;
+  /** When the composition was produced. */
+  generatedAt?: string;
+  /** Overrides the accessible name a surface derives from `title`. */
+  ariaLabel?: string;
+  /** Where the underlying data came from, as opposed to who composed it. */
+  provenance?: {
+    /** Data origin, e.g. an index or dataset name. */
     source?: string;
-    /** When the composition was produced. */
-    generatedAt?: string;
-    /** Overrides the accessible name a surface derives from `title`. */
-    ariaLabel?: string;
-    /** Where the underlying data came from, as opposed to who composed it. */
-    provenance?: {
-      /** Data origin, e.g. an index or dataset name. */
-      source?: string;
-      /** The query that produced the data, for a host that offers "show me how". */
-      query?: string;
-      /** Service or connector that answered the query. */
-      provider?: string;
-    };
-    /** How current the data is, for a host that shows an as-of or staleness badge. */
-    freshness?: {
-      /** When the data was current, which may precede `generatedAt`. */
-      asOf?: string;
-      /** Asserted by the producer rather than derived, so a host should prefer it to comparing `asOf`. */
-      stale?: boolean;
-      /** How long `asOf` stays current. Not range-checked. */
-      ttlSeconds?: number;
-    };
-    /**
-     * Set when the composition rendered anyway despite losing some data, so a
-     * host can mark it incomplete rather than presenting it as whole.
-     */
-    partialFailure?: {
-      degraded?: boolean;
-      /** Human-readable cause, safe to show a user. */
-      reason?: string;
-    };
+    /** The query that produced the data, for a host that offers "show me how". */
+    query?: string;
+    /** Service or connector that answered the query. */
+    provider?: string;
+  };
+  /** How current the data is, for a host that shows an as-of or staleness badge. */
+  freshness?: {
+    /** When the data was current, which may precede `generatedAt`. */
+    asOf?: string;
+    /** Asserted by the producer rather than derived, so a host should prefer it to comparing `asOf`. */
+    stale?: boolean;
+    /** How long `asOf` stays current. Not range-checked. */
+    ttlSeconds?: number;
+  };
+  /**
+   * Set when the composition rendered anyway despite losing some data, so a
+   * host can mark it incomplete rather than presenting it as whole.
+   */
+  partialFailure?: {
+    degraded?: boolean;
+    /** Human-readable cause, safe to show a user. */
+    reason?: string;
   };
 }

@@ -7,7 +7,7 @@ The word names the _definition_, never the instance. An instance in a compositio
 ## A complete primitive
 
 ```tsx
-import { type PrimitiveNode, definePrimitive, optionalString, requiredString, z } from '@elastic/isomer-sdk';
+import { type PrimitiveNode, definePrimitive, requiredString, z } from '@elastic/isomer-sdk';
 import { md } from '@elastic/isomer-sdk/markdown';
 import { type SlackBlock } from '@elastic/isomer-sdk/slack';
 
@@ -15,7 +15,7 @@ export const kpiSchema = z.object({
   type: z.literal('kpi'),
   label: requiredString(),
   value: requiredString(),
-  delta: optionalString().optional(),
+  delta: z.string().optional(),
 });
 
 export type KpiNode = z.infer<typeof kpiSchema> & PrimitiveNode;
@@ -68,7 +68,7 @@ The schema is the declaration: the node type is `z.infer` of it, the typed `exam
 | `metrics`       | no        | `svgHeight`, so a measuring frame can size itself.                   |
 | `collectStyles` | no        | Contributes CSS through the pack's style adapter.                    |
 
-`definePrimitive` extends the schema with two optional fields, `id` so any node can be addressed and `surfaces` so an author can hide a node from a surface, and closes it to unknown keys, so a hallucinated field is a validation error rather than a silent strip. A schema built with `z.looseObject` keeps its catchall. The extension keeps the concrete schema type, including brands. A container's `schemaFor` gets the same treatment, or a node would be legal standalone and rejected inside a composition.
+`definePrimitive` extends the schema with two optional fields, `id` so any node can be addressed and `surfaces` so an author can hide a node from a surface, and closes it to unknown keys, so a hallucinated field is a validation error rather than a silent strip. A schema that declares `id` or `surfaces` itself throws an `IsomerError` with code `RESERVED_NODE_FIELD`. A schema built with `z.looseObject` keeps its catchall. The extension keeps the concrete schema type, including brands. A container's `schemaFor` gets the same treatment, or a node would be legal standalone and rejected inside a composition.
 
 ## Renderers, and which ones you owe
 

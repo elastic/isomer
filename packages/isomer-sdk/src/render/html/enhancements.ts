@@ -9,38 +9,17 @@ import type { ChildNodeWalker } from '../../composition/body_node_base';
 import type { PrimitiveNode } from '../../composition/node';
 import {
   type EnhancementDefinition,
+  resolveEnhancements,
   scopeScript,
 } from '../../pack/enhancements';
 
 export type { EnhancementDefinition };
 
-/** The requested enhancements the composition actually has content for. */
-export const resolveEnhancements = (
-  body: readonly PrimitiveNode[],
-  requested: readonly string[] | undefined,
-  walk: ChildNodeWalker,
-  definitions: readonly EnhancementDefinition[]
-): ReadonlySet<string> => {
-  const wanted = new Set(requested ?? []);
-  return new Set(
-    definitions
-      .filter(({ id }) => wanted.has(id))
-      .filter((definition) => definition.appliesTo(body, walk))
-      .map(({ id }) => id)
-  );
-};
-
-/**
- * The script for a resolved enhancement set, deduplicated by id and emitted in
- * definition order so two enhancements cannot fight over ordering. Each
- * {@link EnhancementDefinition.script} gets its own function scope.
- */
+/** The scripts of `applied`, in order, each in its own function scope. */
 export const enhancementScript = (
-  enhancements: ReadonlySet<string>,
-  definitions: readonly EnhancementDefinition[]
+  applied: readonly EnhancementDefinition[]
 ): string =>
-  definitions
-    .filter((definition) => enhancements.has(definition.id))
+  applied
     .flatMap(({ script }) => (script ? [scopeScript(script)] : []))
     .join('\n');
 
@@ -74,9 +53,6 @@ export const rendersAnchors = (
   definitions: readonly EnhancementDefinition[]
 ): boolean =>
   anchors === true ||
-  resolveEnhancements(
-    body,
-    enhancements,
-    walk,
-    definitions.filter((definition) => definition.anchors)
-  ).size > 0;
+  resolveEnhancements(body, walk, definitions, enhancements ?? []).some(
+    (definition) => definition.anchors
+  );

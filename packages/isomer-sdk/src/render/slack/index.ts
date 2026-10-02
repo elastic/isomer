@@ -77,7 +77,6 @@ export {
   code,
   codeBlock,
   escapeMrkdwn,
-  formatHeaderText,
   gfmToSlackBlocks,
   gfmToSlackMrkdwn,
   isAbsoluteHttpUrl,

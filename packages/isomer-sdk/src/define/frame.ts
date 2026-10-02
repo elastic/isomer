@@ -55,11 +55,10 @@ export interface FrameDispatcher<TNode extends PrimitiveNode = PrimitiveNode> {
 }
 
 /**
- * What a frame is told about the composition it draws around.
+ * What {@link Frame.wrap} is told about the composition it draws around.
  *
  * The body is withheld, and {@link bindFrame} copies only these fields into a
- * fresh value: a frame that could read the nodes could branch on a pack's node
- * types, which is the knowledge this split keeps out of it.
+ * fresh value, so the surround cannot branch on a pack's node types.
  */
 export interface FrameHeader {
   title?: string | undefined;

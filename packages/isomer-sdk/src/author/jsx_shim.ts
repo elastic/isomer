@@ -66,8 +66,24 @@ export type LooseSchema<TSchema> = string extends keyof ShapeOf<TSchema>
   ? true
   : false;
 
+// The schema a brand is read from: `F`, or one an optional, nullable, default,
+// or readonly wrapper holds.
+type Branded<F> = F extends
+  AuthoredChildBrand<string, unknown> | AuthoredTextBrand
+  ? F
+  : F extends {
+        _zod: {
+          def: {
+            type: 'optional' | 'nullable' | 'default' | 'readonly';
+            innerType: infer Inner;
+          };
+        };
+      }
+    ? Branded<Inner>
+    : F;
+
 type AuthoredNames<TSchema> = {
-  [K in keyof ShapeOf<TSchema>]: ShapeOf<TSchema>[K] extends
+  [K in keyof ShapeOf<TSchema>]: Branded<ShapeOf<TSchema>[K]> extends
     AuthoredChildBrand<string, unknown> | AuthoredTextBrand
     ? K
     : never;
@@ -112,7 +128,9 @@ type ChildComponentsOf<TSchema> =
     ? NoKeys
     : UnionToIntersection<
         {
-          [K in keyof ShapeOf<TSchema>]: ChildEntry<ShapeOf<TSchema>[K]>;
+          [K in keyof ShapeOf<TSchema>]: ChildEntry<
+            Branded<ShapeOf<TSchema>[K]>
+          >;
         }[keyof ShapeOf<TSchema>]
       >;
 
@@ -140,19 +158,15 @@ export type PrimitiveComponentMap<
 };
 
 /**
- * A pack's JSX authoring front: the root `Composition` element, a factory for
- * extension components, one PascalCase component per primitive, and the
- * conversion back to plain data.
+ * A pack's JSX authoring front: the root `Composition` element, one
+ * PascalCase component per primitive and per branded child, and the conversion
+ * back to plain data.
  */
 export type JsxShim<
   TNode extends PrimitiveNode = PrimitiveNode,
   TPrimitives extends readonly { type: string }[] = readonly { type: string }[],
 > = {
   Composition: AuthorComponent<CompositionAuthorProps<TNode>, 'view'>;
-  /** Components for types outside the primitive list. They are rejected as body nodes. */
-  component: <TProps extends object = Record<string, unknown>>(
-    type: string
-  ) => AuthorComponent<TProps, string>;
   /** Throws when the root is not the `Composition` element, or when a child is not a registered primitive. */
   toComposition: (
     element: ReactElement<CompositionAuthorProps<TNode>>
@@ -176,7 +190,7 @@ export const buildJsxShim = <
 >(
   primitives: TPrimitives = [] as unknown as TPrimitives
 ): JsxShim<TNode, TPrimitives> => {
-  const extensionTypes = new Set(primitives.map((primitive) => primitive.type));
+  const primitiveTypes = new Set(primitives.map((primitive) => primitive.type));
   const childSlotsByType = new Map(
     primitives.map((primitive) => [
       primitive.type,
@@ -194,14 +208,11 @@ export const buildJsxShim = <
   const env: ParseEnv = {
     authoredByType,
     childSlotsByType,
-    extensionTypes,
+    primitiveTypes,
   };
 
   return {
     Composition: view,
-    component: <TProps extends object = Record<string, unknown>>(
-      type: string
-    ) => defineAuthorComponent<TProps, string>(type),
     toComposition: (element) => toAuthorComposition<TNode>(element, env),
     ...Object.fromEntries(
       primitives.map((primitive) => [
@@ -226,7 +237,7 @@ interface ChildSlot {
 interface ParseEnv {
   authoredByType: ReadonlyMap<string, AuthoredSpec>;
   childSlotsByType: ReadonlyMap<string, readonly ChildSlot[]>;
-  extensionTypes: ReadonlySet<string>;
+  primitiveTypes: ReadonlySet<string>;
 }
 
 const collectAuthored = (
@@ -328,7 +339,7 @@ const bodyNodeFromElement = <TNode extends PrimitiveNode>(
 ): TNode => {
   const element = requireAuthorElement<{ children?: ReactNode }>(node);
   const type = getAuthorType(element);
-  if (!env.extensionTypes.has(type)) {
+  if (!env.primitiveTypes.has(type)) {
     throw new IsomerError(
       'INVALID_BODY_NODE',
       `"${type}" cannot be used as a composition body node.`
@@ -675,7 +686,7 @@ export const itemsFromChildren = <TItem>(
   });
 
 /** The primitive type {@link authorType} brands onto `element`'s component. */
-export const getAuthorType = (element: ReactElement<unknown>): string => {
+const getAuthorType = (element: ReactElement<unknown>): string => {
   const component = element.type as Partial<AuthorComponent<unknown, string>>;
   const type = component[authorType];
   if (!type) {

@@ -43,8 +43,6 @@ export {
   type StyledRenderContext,
   type StyleHandle,
   type SurfaceMap,
-  type SurfaceName,
-  type SvgRenderThemeBase,
   type ThemeTokenPath,
   type WithNodeFields,
   bodyNodeIdSchema,
@@ -101,12 +99,4 @@ export {
   type SlackVideoBlock,
 } from './slack_blocks';
 export { declaredFieldsNote, formatZodIssues } from './zod_format';
-export {
-  enumOf,
-  finiteNumber,
-  nonNegativeFiniteNumber,
-  optionalString,
-  positiveFiniteNumber,
-  requiredString,
-  z,
-} from './zod_helpers';
+export { requiredString, z } from './zod_helpers';

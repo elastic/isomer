@@ -11,7 +11,6 @@ import {
   clampSlackText,
   codeBlock,
   escapeMrkdwn,
-  formatHeaderText,
   SLACK_LIMITS,
   type SlackBlock,
   slackLinkUrl,
@@ -94,7 +93,7 @@ export const slackHeading = (
   runs: readonly SlackRichTextText[] = [richTextRun(text)]
 ): SlackBlock => {
   const normalized = text.replace(/\s+/g, ' ').trim();
-  return formatHeaderText(normalized) === normalized
+  return clampSlackText(normalized, SLACK_LIMITS.headerTextChars) === normalized
     ? {
         type: 'header',
         text: { type: 'plain_text', text: normalized, emoji: true },

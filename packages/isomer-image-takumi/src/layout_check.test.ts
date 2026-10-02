@@ -16,7 +16,6 @@ import {
   type LayoutBox as SdkLayoutBox,
   nodeAnchor,
   type PrimitiveNode,
-  themeBound,
 } from '@elastic/isomer-sdk';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { z } from 'zod';
@@ -64,10 +63,9 @@ const row: Frame<string> = {
 
 const runtime = createIsomerRuntime({
   packs: [
-    definePrimitivePack({
+    definePrimitivePack<string>({
       id: 'test.blocks',
       primitives: [block],
-      theme: themeBound<string>(),
     }),
   ],
   frames: { row },

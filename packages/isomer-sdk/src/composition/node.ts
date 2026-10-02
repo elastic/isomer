@@ -16,6 +16,3 @@ import type { BodyNodeBase } from './body_node_base';
 export interface PrimitiveNode extends BodyNodeBase {
   type: string;
 }
-
-/** The same type as {@link PrimitiveNode}, kept for hosts that name body nodes. */
-export type BodyNode = PrimitiveNode;

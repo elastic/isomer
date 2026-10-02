@@ -15,11 +15,11 @@ import {
   definePrimitive,
   definePrimitivePack,
   type EnhancementDefinition,
-  findNodeElementPairs,
   NODE_ANCHOR_ATTRIBUTE,
   nodeAnchor,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
+import { findNodeElementPairs } from '@elastic/isomer-sdk/react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
