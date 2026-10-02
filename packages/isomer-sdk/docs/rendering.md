@@ -87,6 +87,8 @@ Every script, whether an enhancement's, the adapter's `getScriptText`, or the ca
 
 `'embedded'` only works where the browser parses the HTML with the page. It never runs inside a shadow root or anywhere the host inserts `html` itself: `innerHTML` and React never execute a `<script>`, and one that a loader did execute would find `document.currentScript` `null` in a shadow tree. Those hosts use `'host'`. `result.js` is the same body in both modes and runs only through `runEnhancementScript`, never as a `<script>` of its own.
 
+Inline text cannot close its element. In CSS, `</style` is written `<\/style`, a CSS escape that keeps a string's value. In JS, `</script` is written `<\/script` and `<!--` as `\x3C!--`, both of which keep their value in strings, template literals, and regular expressions; a `String.raw` value or an HTML-like comment holding either is the cost. `css: 'separate'` and `scripts: 'host'` return the text unchanged, and the measurement counts inline text as emitted.
+
 The mismatches that can be detected are reported. An embedded script that runs without a root warns. `runEnhancementScript` throws `ENHANCEMENT_ROOT_MISSING` when it is given no section, and warns when the section also carries an embedded script, which in light DOM would run every enhancement twice. An embedded script inserted with `innerHTML` never runs at all, so nothing can report it.
 
 `runEnhancementScript` compiles with `new Function`, so a strict Content-Security-Policy must allow `'unsafe-eval'`. A host that cannot should render with `'embedded'` into light DOM.

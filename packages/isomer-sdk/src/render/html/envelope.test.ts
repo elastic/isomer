@@ -352,6 +352,67 @@ describe('renderHTMLWithDispatcher', () => {
     expect(() => new Script(script)).not.toThrow();
   });
 
+  it('keeps an escaped script compiling to the same values', () => {
+    const source = [
+      "globalThis.out = [/<!--/u.test('<!--'), /<\\/script>/u.source,",
+      "'</script>', `</SCRIPT>`, '<!-- x -->'];",
+    ].join(' ');
+    const { html } = render(
+      view('<p>x</p>'),
+      {},
+      { styleAdapter: { ...adapter, getScriptText: () => source } }
+    );
+    const script = embeddedScriptOf(html);
+    expect(script).not.toMatch(/<\/script|<!--/i);
+    const run = (code: string) => {
+      const context: { out?: unknown } = {};
+      new Script(code).runInNewContext({ globalThis: context });
+      return context.out;
+    };
+    expect(run(source)).toEqual(
+      run(script.slice(script.indexOf('globalThis.out')).split('\n')[0]!)
+    );
+  });
+
+  it('escapes only a closing style tag in inline CSS', () => {
+    const css = '<!-- .a{content:"</STYLE>"} -->';
+    const { html } = render(
+      view('<p>x</p>'),
+      {},
+      { styleAdapter: { ...adapter, renderStyles: () => css } }
+    );
+    expect(html).toContain(
+      String.raw`<style><!-- .a{content:"<\/STYLE>"} --></style>`
+    );
+  });
+
+  it('measures inline CSS and JS as emitted, escapes included', () => {
+    const { html, measurement } = render(
+      view('<p>x</p>'),
+      {},
+      {
+        styleAdapter: {
+          ...adapter,
+          renderStyles: () => '.a{content:"</style>"}',
+          getScriptText: () => "s = '</script>';",
+        },
+      }
+    );
+    const css = /<style>([\s\S]*)<\/style>/.exec(html)?.[1] ?? '';
+    expect(measurement.css).toBe(byteLength(css));
+    expect(measurement.js).toBe(byteLength(embeddedScriptOf(html)));
+    expect(measurement.html + measurement.css + measurement.js).toBe(
+      byteLength(html)
+    );
+  });
+
+  it('protects a raw-text element whose closing tag holds whitespace', () => {
+    const authored = '<textarea>a>\n <b</textarea >\n<p>c</p>';
+    expect(render(view(authored)).html).toContain(
+      '<textarea>a>\n <b</textarea ><p>c</p>'
+    );
+  });
+
   it('leaves whitespace inside script, style, and textarea alone', () => {
     const authored = '<textarea>a\n  b</textarea>\n<p>c</p>';
     expect(render(view(authored)).html).toContain(

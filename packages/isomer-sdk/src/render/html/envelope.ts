@@ -364,21 +364,27 @@ export const renderHTMLWithDispatcher = <
       )
     )
   );
+  const inlineCss = cssMode === 'inline' ? embedCss(cssText) : '';
+  const inlineJs = embeddedScript ? embedJs(embeddedScript) : '';
   const raw = renderToStaticMarkup(
     createElement(RenderedHtmlView<TNode>, {
       composition,
       theme,
       fluid: Boolean(options.fluid),
       framed,
-      styleText: cssMode === 'inline' ? cssText : undefined,
-      scriptText: embeddedScript || undefined,
+      styleText: inlineCss || undefined,
+      scriptText: inlineJs || undefined,
       defaultAriaLabel,
       body,
     })
   );
   const html = options.minify === false ? raw : minifyHtml(raw);
 
-  const jsBytes = byteLength(embeddedScript || js);
+  // Inline payloads are measured as emitted, escapes included.
+  const inlineCssBytes = byteLength(inlineCss);
+  const inlineJsBytes = byteLength(inlineJs);
+  const separateCssBytes = cssMode === 'inline' ? 0 : byteLength(cssText);
+  const separateJsBytes = embeddedScript ? 0 : byteLength(js);
 
   return {
     html,
@@ -386,16 +392,10 @@ export const renderHTMLWithDispatcher = <
     js,
     body,
     measurement: {
-      html:
-        byteLength(html) -
-        (cssMode === 'inline' ? byteLength(cssText) : 0) -
-        (embeddedScript ? jsBytes : 0),
-      css: byteLength(cssText),
-      js: jsBytes,
-      total:
-        byteLength(html) +
-        (cssMode === 'inline' ? 0 : byteLength(cssText)) +
-        (embeddedScript ? 0 : jsBytes),
+      html: byteLength(html) - inlineCssBytes - inlineJsBytes,
+      css: inlineCssBytes + separateCssBytes,
+      js: inlineJsBytes + separateJsBytes,
+      total: byteLength(html) + separateCssBytes + separateJsBytes,
     },
     validationErrors: validation.errors,
   };
@@ -412,10 +412,16 @@ interface RenderedHtmlViewProps<TNode extends PrimitiveNode> {
   body: string;
 }
 
-// `</script`, `</style`, and `<!--` are the only sequences that end or change
-// a raw-text element; `<\/` and `<\!--` read the same in CSS and JS strings.
-const rawTextSafe = (text: string): string =>
-  text.replace(/<(?=\/(?:script|style)|!--)/gi, '<\\');
+// Only `</style` ends a `<style>`. `\/` is a CSS escape for `/`, so a string
+// holding it keeps its value.
+const embedCss = (css: string): string => css.replace(/<\/(?=style)/gi, '<\\/');
+
+// `</script` ends a `<script>`, and `<!--` lets a later `<script` keep it
+// open. `\/` and `\x3C` keep their meaning in strings, template literals, and
+// regular expressions, `u` flag included; a `String.raw` value or an HTML-like
+// comment holding either sequence is the cost.
+const embedJs = (js: string): string =>
+  js.replace(/<\/(?=script)/gi, '<\\/').replace(/<!--/g, '\\x3C!--');
 
 const RenderedHtmlView = <TNode extends PrimitiveNode>({
   composition,
@@ -434,7 +440,7 @@ const RenderedHtmlView = <TNode extends PrimitiveNode>({
       styleText
         ? createElement('style', {
             key: 'style',
-            dangerouslySetInnerHTML: { __html: rawTextSafe(styleText) },
+            dangerouslySetInnerHTML: { __html: styleText },
           })
         : null,
       createElement('div', {
@@ -445,7 +451,7 @@ const RenderedHtmlView = <TNode extends PrimitiveNode>({
         ? createElement('script', {
             key: 'script',
             [EMBEDDED_SCRIPT_ATTRIBUTE]: '',
-            dangerouslySetInnerHTML: { __html: rawTextSafe(scriptText) },
+            dangerouslySetInnerHTML: { __html: scriptText },
           })
         : null
     ),
@@ -458,7 +464,7 @@ const RenderedHtmlView = <TNode extends PrimitiveNode>({
 // spanning a line break is collapsed: a single space between inline elements
 // (`<b>a</b> <i>b</i>`) is authored content.
 const MINIFY_RE =
-  /<(pre|script|style|textarea)[\s>][\s\S]*?<\/\1>|(?<=>)\s+(?=<)/gi;
+  /<(pre|script|style|textarea)[\s>][\s\S]*?<\/\1\s*>|(?<=>)\s+(?=<)/gi;
 
 const minifyHtml = (value: string): string =>
   value
