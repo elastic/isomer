@@ -1,7 +1,7 @@
 ---
 type: Playbook
 title: Docs-builder
-description: Package docs stay in packages/*/docs. Root docs/ is the assembler; CI copies them at build time.
+description: Package docs stay in packages/*/docs. Root docs/ is the assembler and holds committed copies that Codex builds as is.
 tags: [isomer, workspace, docs]
 status: stable
 stale_after: 2027-03-18
@@ -32,7 +32,7 @@ sources:
 2. Keep a `toc.yml` next to those pages.
 3. List the package from `docs/docset.yml` (`toc: sdk`, and so on). The current set is runtime, sdk, slides, image-takumi, evals, and reference.[^docset]
 4. Link across packages with a GitHub URL. A relative link to another package is absent from the tarball and fails `pnpm check:pack-contents`.[^pack-contents]
-5. Preview with `pnpm docs:dev` (copies package docs, then `docs-builder serve` at http://localhost:3000). The builder refuses symlinks, so the copies are real directories. Do not commit them.[^assemble][^dev]
+5. Run `pnpm docs:assemble` and commit the copies it writes under `docs/`. Elastic Internal Docs (Codex) clones this repository and builds `docs/` as committed, with no assembly step, so missing copies break the shared internal build. The builder refuses symlinks, so the copies are real directories. `pnpm docs:check` fails CI when they drift. Preview with `pnpm docs:dev` (copies package docs, then `docs-builder serve` at http://localhost:3000).[^assemble][^dev]
 6. CI builds the set with `elastic/docs-builder@main`.[^ci]
 7. `docs.yml` keeps publishing GitHub Pages on `main`. `codex-preview.yml` updates the Elastic Internal Docs link index on `main`, which publishes the live Codex site, and deploys a Codex preview for same-repository pull requests. It inlines rather than calls `elastic/docs-actions`' reusable workflow so `assemble_package_docs.js` can run before the build; the reusable workflow has no hook for that step. The `codex-preview.yml` and `codex-preview-cleanup.yml` paths are bound to token policies, so do not rename either.[^codex-preview]
 
