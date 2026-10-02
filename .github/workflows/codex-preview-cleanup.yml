@@ -10,10 +10,51 @@ on:
     types:
       - closed
 
+permissions:
+  contents: none
+
 jobs:
   preview:
-    uses: elastic/docs-actions/.github/workflows/codex-preview-cleanup.yml@v1
+    concurrency:
+      group: codex-preview-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     permissions:
-      contents: none
-      id-token: write
       deployments: write
+      id-token: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: elastic/docs-actions/aws/auth@v1
+        with:
+          aws_role_name_prefix: codex-eng-preview-
+      - name: Delete preview objects
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          aws s3 rm "s3://elastic-codex-website-internal/_preview/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" --recursive
+          aws cloudfront create-invalidation \
+            --distribution-id E1BSBYLPE05D2R \
+            --paths "/_preview/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" "/_preview/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}/*"
+      - name: Delete deployment records
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const deployments = await github.rest.repos.listDeployments({
+              owner,
+              repo,
+              environment: 'codex-preview',
+              task: `codex-preview-${context.issue.number}`,
+            });
+            for (const deployment of deployments.data) {
+              await github.rest.repos.createDeploymentStatus({
+                deployment_id: deployment.id,
+                owner,
+                repo,
+                state: 'inactive',
+              });
+              await github.rest.repos.deleteDeployment({
+                deployment_id: deployment.id,
+                owner,
+                repo,
+              });
+            }
