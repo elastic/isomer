@@ -2,8 +2,10 @@
 
 The in-repo reference primitive pack for Isomer, and the one to copy: slide-deck primitives that render on every surface, a theme with one authoring source per rendered value, a fixed 16:9 frame, and committed output for an example deck.
 
+It is not published to npm. Copy this folder into your own codebase and install what it needs from the registry:
+
 ```sh
-npm install @elastic/isomer-primitives-slides @elastic/isomer-runtime @elastic/isomer-sdk react react-dom zod
+npm install @elastic/isomer-runtime @elastic/isomer-sdk react react-dom zod
 ```
 
 ```ts
