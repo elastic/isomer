@@ -7,7 +7,7 @@ What each entry point exports, and which ones cost you a dependency.
 | Entry | Loads | Reach for it when |
 | --- | --- | --- |
 | `.` | zod, React, and the GFM serializer (`mdast-util-to-markdown`, `mdast-util-gfm`) | Defining primitives, packs, frames; validating |
-| `./html` | `react-dom/server` | Rendering HTML, writing a style adapter |
+| `./html` | `react-dom/server`, JavaScript parser | Rendering HTML, writing a style adapter |
 | `./text` | nothing | Text envelopes |
 | `./markdown` | zod and the GFM serializer | Markdown envelopes and formatting |
 | `./slack` | zod and the GFM serializer | Block Kit types, limits, asset collection |
