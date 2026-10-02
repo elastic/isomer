@@ -6,5 +6,5 @@ Directory: `image-takumi/reference/`
 
 | Title | Type | Description |
 |-------|------|-------------|
-| [Public contract](public-contract.md) | Reference | Published, no isomer dependencies, takumi core and helpers pinned at 2.14.0 a... |
+| [Public contract](public-contract.md) | Reference | Published, dual-format, no isomer dependencies, takumi core and helpers pinne... |
 

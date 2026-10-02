@@ -29,7 +29,9 @@ import type {
 export interface ImageInput {
   /** A single root, as image layout requires: one element, string, or number, never an array or fragment. */
   element: ReactNode;
+  /** The stylesheet the tree is laid out against, `light-dark(…)` already resolved. */
   css: string;
+  /** The viewport, in CSS pixels; the output is this size. */
   width: number;
   height: number;
 }
@@ -40,8 +42,11 @@ export interface ImageInput {
  * `SvgPagesResult` satisfies it.
  */
 export interface PdfInput {
+  /** One root per page, in order. */
   pages: readonly ReactNode[];
+  /** One stylesheet collected across every page. */
   css: string;
+  /** Every page's size, in CSS pixels. */
   width: number;
   height: number;
 }
@@ -149,7 +154,7 @@ export interface TakumiPdfBackend {
   /**
    * Renders one page per entry in `pages`, each the input's size with no
    * margin, so a frame fills its page. Vector output with selectable text and
-   * the registered fonts subset and embedded.
+   * the registered fonts subset and embedded. Throws on an empty `pages` list.
    */
   pdf(input: PdfInput, options?: TakumiPdfOptions): Promise<Buffer>;
 }
@@ -271,6 +276,11 @@ const once = <T>(create: () => Promise<T>): (() => Promise<T>) => {
   };
 };
 
+/**
+ * Builds a {@link TakumiBackend} over one takumi renderer. `fonts` are
+ * registered once, in order, before the first render; the PDF engine is
+ * imported and created on the first `pdf`, and registers them again.
+ */
 export const createTakumiImageBackend = ({
   fonts = [],
   cacheMaxBytes,
