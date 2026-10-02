@@ -32,7 +32,7 @@ Both are undone before the scheme is examined, references first so a decoded tab
 
 Protocol-relative forms are rejected including the backslash variants browsers fold into `/`, since `//host` and `\\host` resolve onto a foreign host rather than naming a relative path.
 
-Authored Markdown is parsed as GFM. Its already-decoded destinations are checked without another reference decode; nested labels and HTML blocks receive the same policy. Excessive nesting degrades to inert text.
+Authored Markdown is parsed as GFM. Its already-decoded destinations are checked without another reference decode; nested labels and HTML blocks receive the same policy. Source beyond 16,384 UTF-16 code units, 2,048 syntax delimiters, or 256 characters of container prefix degrades to inert text rather than entering the parser.
 
 ## Using it in a primitive
 

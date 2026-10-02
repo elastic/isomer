@@ -173,9 +173,9 @@ const sanitizePass = (source: string): string => {
   return emitChildren(0, source.length, root.children);
 };
 
-/** Sanitizes GFM destinations and HTML; excessive nesting degrades to inert text. */
+/** Sanitizes GFM destinations and HTML; excessive syntax or length degrades to inert text. */
 export const sanitizeMarkdownSource = (markdown: string): string => {
-  if (nestsTooDeeply(markdown)) return inert(markdown);
+  if (exceedsParseBudget(markdown)) return inert(markdown);
   let current = markdown;
   try {
     for (let pass = 0; pass < MAX_PASSES; pass++) {
@@ -195,16 +195,17 @@ export const sanitizeMarkdownSource = (markdown: string): string => {
 const inert = (markdown: string): string =>
   markdown.replace(/[[\]\\]/g, '\\$&').replace(/</g, '&lt;');
 
-// The parser's cost grows faster than linearly in nesting, both of block
-// containers (indentation, `>`, and list markers opening a line) and of
-// emphasis and links, so source past either bound is not parsed.
+// GFM parsing is superlinear for some delimiter runs, even without nesting.
 const LINE_PREFIX_RE = /^(?:[ \t>]|[-*+](?=[ \t])|\d{1,9}[.)](?=[ \t]))+/gm;
 const MAX_LINE_PREFIX = 256;
-// An intraword `_` cannot open or close emphasis, so it is not counted.
-const INLINE_DELIMITER_RE = /[*[]|(?<![\p{L}\p{N}])_|_(?![\p{L}\p{N}])/gu;
+const INLINE_DELIMITER_RE =
+  /[[\]*`~<>|\\]|(?<![\p{L}\p{N}])_|_(?![\p{L}\p{N}])/gu;
 const MAX_INLINE_DELIMITERS = 2048;
 
-const nestsTooDeeply = (markdown: string): boolean => {
+const MAX_PARSE_LENGTH = 16_384;
+
+const exceedsParseBudget = (markdown: string): boolean => {
+  if (markdown.length > MAX_PARSE_LENGTH) return true;
   for (const [prefix] of markdown.matchAll(LINE_PREFIX_RE)) {
     if (prefix.length > MAX_LINE_PREFIX) return true;
   }

@@ -44,6 +44,16 @@ describe('sanitizeMarkdownSource', () => {
     expect(sanitizeMarkdownSource(source)).toBe('[x](/a?x=&amp;#47;)');
   });
 
+  it.each([']'.repeat(40_000), ']'.repeat(16_000), 'a'.repeat(20_000)])(
+    'bounds parser work for adversarial or oversized source',
+    (prefix) => {
+      const start = performance.now();
+      const result = sanitizeMarkdownSource(`${prefix}[x](javascript:alert)`);
+      expect(result).toContain('\\[x\\]');
+      expect(performance.now() - start).toBeLessThan(250);
+    }
+  );
+
   it('handles a deeply nested blockquote without throwing', () => {
     expect(() => sanitizeMarkdownSource('> '.repeat(4000) + 'x')).not.toThrow();
   });
@@ -237,7 +247,7 @@ describe('sanitizeMarkdownSource', () => {
   );
 
   it('keeps prose with many intraword underscores parseable', () => {
-    const prose = 'snake_case_name '.repeat(3_000);
+    const prose = 'snake_case_name '.repeat(1_000);
     expect(sanitizeMarkdownSource(`${prose}[x](javascript:alert(1))`)).toBe(
       `${prose}x`
     );
