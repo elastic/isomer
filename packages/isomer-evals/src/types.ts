@@ -76,7 +76,7 @@ export interface ValidityScore {
   validAfterRetry: boolean;
   /** The first attempt's failures: its parse error, or its validation errors; empty when it validated. */
   errors: readonly string[];
-  /** The composition that validated, from whichever attempt reached one. */
+  /** The parsed composition the other scores read, including when validation failed: the retry's if it parsed after a failed first attempt, otherwise the first attempt's. */
   composition?: Composition | undefined;
 }
 
@@ -112,10 +112,10 @@ export interface AnswerabilityScore {
 export interface EvalCaseResult {
   caseId: string;
   validity: ValidityScore;
-  /** Absent without a golden, or without a composition that validated. */
+  /** Absent without a golden, or without a parsed composition. */
   selection?: PrimitiveSelectionScore | undefined;
   payload: PayloadScore;
-  /** Absent without a judge, or without a composition that validated. */
+  /** Absent without a judge, or without a parsed composition. */
   answerability?: AnswerabilityScore | undefined;
 }
 
