@@ -9,14 +9,14 @@
 // filesystem, which no rendering path may do.
 
 import { readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
 
 /** What {@link assertPackRegistrationComplete} needs to compare a pack against its directory. */
 export interface PackRegistrationOptions {
-  /** Directory whose subdirectories are one primitive each. A `URL` is resolved with `fileURLToPath`. */
+  /** Directory whose subdirectories are one primitive each. A relative path resolves against the working directory; a `URL` is resolved with `fileURLToPath`. */
   primitivesDir: URL | string;
   /** The pack's registry array, as passed to `definePrimitivePack`. */
   registered: readonly AnyPrimitiveDefinition[];
@@ -96,10 +96,11 @@ export const assertPackRegistrationComplete = async ({
   registered,
   ignore = [],
 }: PackRegistrationOptions): Promise<void> => {
-  const root =
+  const root = resolve(
     typeof primitivesDir === 'string'
       ? primitivesDir
-      : fileURLToPath(primitivesDir);
+      : fileURLToPath(primitivesDir)
+  );
   const registeredTypes = new Set(registered.map(({ type }) => type));
   const problems: string[] = [];
   const foundTypes = new Set<string>();

@@ -16,7 +16,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 
 import { repoRoot, workspacePackages } from './workspace_packages.js';
 
@@ -178,7 +178,7 @@ try {
     join(primitivesDir, 'demo', 'index.ts'),
     "exports.demoPrimitive = { type: 'demo', catalog: {}, schema: {}, renderers: {} };\n"
   );
-  const registrationCall = `assertPackRegistrationComplete({ primitivesDir: ${JSON.stringify(primitivesDir)}, registered: [{ type: 'demo' }] })`;
+  const registrationCall = `assertPackRegistrationComplete({ primitivesDir: ${JSON.stringify(relative(sdkConsumerDir, primitivesDir))}, registered: [{ type: 'demo' }] })`;
   // Node strips TypeScript by default only from 22.18.
   const stripTypes = process.features.typescript
     ? []
