@@ -59,6 +59,12 @@ const entryFileIn = (dir: string): string | undefined => {
   return undefined;
 };
 
+// The CommonJS build compiles `import()` to `require()`, which rejects `file:` URLs.
+const loadEntry = async (entry: string): Promise<Record<string, unknown>> =>
+  (await import(
+    typeof require === 'function' ? entry : pathToFileURL(entry).href
+  )) as Record<string, unknown>;
+
 const subdirectoriesOf = (root: string, ignore: readonly string[]): string[] =>
   readdirSync(root, { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && !ignore.includes(entry.name))
@@ -107,10 +113,7 @@ export const assertPackRegistrationComplete = async ({
       continue;
     }
 
-    const module = (await import(pathToFileURL(entry).href)) as Record<
-      string,
-      unknown
-    >;
+    const module = await loadEntry(entry);
     const exported = Object.entries(module).filter(([, value]) =>
       isPrimitiveDefinition(value)
     ) as Array<[string, AnyPrimitiveDefinition]>;

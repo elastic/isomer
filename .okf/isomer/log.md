@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-06
+
+- **`assertPackRegistrationComplete` loads under CommonJS**: the CommonJS build compiles the entry `import()` to `require()`, which rejected the `file:` URL it was given, so the check failed under Jest. It now imports a path when `require` exists and the `file:` URL otherwise, and `check:pack-consumer` runs it from the packed `./testing` entry under both `import` and `require`.
+
 ## 2026-10-02
 
 - **Evals package is private**: `@elastic/isomer-evals` sets `"private": true` and leaves the release set; no published package depends on it. The package pages, release docs, and public contract no longer describe an npm install.
