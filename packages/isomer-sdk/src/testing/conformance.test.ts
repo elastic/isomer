@@ -11,15 +11,23 @@ import { z } from 'zod';
 import type { ValidationError } from '../composition/validation_error';
 import {
   definePrimitive,
+  type PrimitiveDefinition,
   validateWithSchema,
 } from '../define/primitive_module';
 import { createPrimitiveDispatcher } from '../render/primitive_dispatch';
 
 import {
+  examplesFromDefinitions,
   primitiveConformanceCases,
+  type PrimitiveConformanceHarness,
   runPrimitiveInventoryConformance,
 } from './conformance';
 import { fixtureDefinitions, type FixtureNode } from './sdk.fixtures';
+
+interface NoteNode {
+  type: 'note';
+  body: string;
+}
 
 describe('primitive conformance suite', () => {
   // This package owns the primitive contract but ships no vocabulary, so the
@@ -58,6 +66,71 @@ describe('primitive conformance suite', () => {
         }),
       ])
     ).toThrow(/catalog.example/);
+  });
+
+  const noteWith = (examples: PrimitiveDefinition<NoteNode>['examples']) =>
+    definePrimitive({
+      type: 'note',
+      catalog: {
+        type: 'note',
+        purpose: '',
+        useWhen: [],
+        avoidWhen: [],
+        example: { type: 'note', body: 'Hello' },
+      },
+      examples,
+      schema: z.object({ type: z.literal('note'), body: z.string() }),
+      renderers: {
+        react: () => null,
+        text: () => '',
+        markdown: () => '',
+      },
+    });
+
+  it('matches catalog.example against a named example', () => {
+    expect(() =>
+      runPrimitiveInventoryConformance([
+        noteWith([{ name: 'Greeting', node: { type: 'note', body: 'Hello' } }]),
+      ])
+    ).not.toThrow();
+  });
+
+  it('rejects two examples with one name', () => {
+    expect(() =>
+      runPrimitiveInventoryConformance([
+        noteWith([
+          { name: 'Greeting', node: { type: 'note', body: 'Hello' } },
+          { name: 'Greeting', node: { type: 'note', body: 'Hi' } },
+        ]),
+      ])
+    ).toThrow('note has two examples named "Greeting"');
+  });
+
+  it('rejects a blank example name', () => {
+    expect(() =>
+      runPrimitiveInventoryConformance([
+        noteWith([{ name: ' ', node: { type: 'note', body: 'Hello' } }]),
+      ])
+    ).toThrow('note example names must be non-empty');
+  });
+
+  it('names a failing example by its name', () => {
+    const definition = noteWith([
+      { type: 'note', body: 'Hello' },
+      { name: 'Greeting', node: { type: 'note', body: 'Hi' } },
+    ]);
+    const rows = examplesFromDefinitions([definition]);
+    expect(rows.map(({ exampleName }) => exampleName)).toEqual([
+      undefined,
+      'Greeting',
+    ]);
+    const [validates] = primitiveConformanceCases;
+    const harness = {
+      validateNode: () => [{ path: '', message: 'is wrong' }],
+    } as unknown as PrimitiveConformanceHarness;
+    expect(() => validates!.run(rows[1]!, harness)).toThrow(
+      'Failing example: `note` definition, examples[1] ("Greeting").'
+    );
   });
 
   it('compares a published example through its checked copy', () => {

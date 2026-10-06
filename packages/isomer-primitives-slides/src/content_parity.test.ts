@@ -8,7 +8,7 @@
 // Degraded surfaces carry every word the image draws.
 
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
-import type { PrimitiveNode } from '@elastic/isomer-sdk';
+import { exampleNodes, type PrimitiveNode } from '@elastic/isomer-sdk';
 import type { Nodes } from 'mdast';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { gfmFromMarkdown } from 'mdast-util-gfm';
@@ -244,7 +244,7 @@ const missingFrom = (output: string, node: unknown): string[] => {
 };
 
 const rows = slideDeckPrimitives.flatMap(({ type, examples }) =>
-  examples.map((example, index) => ({
+  exampleNodes({ examples }).map((example, index) => ({
     name: `${type}#${index}`,
     node: example,
   }))
