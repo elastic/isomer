@@ -58,6 +58,8 @@ Child-only components (`Badge`, `Stat`, `ListItem`, …) are not composition bod
 
 When a schema has no brand, the walk still fills a unique child-array field (`body`, `items`, …) from nested body nodes, and a unique single-node field from the first child. A container with more than one such field takes those props explicitly.
 
+A host that edits or displays a node in its JSX form, such as a composition editor, reads the same brands the shim does with `readAuthoredSpec(schema)`. It returns the schema's top-level branded fields: `children`, each with its `field`, `childType`, `textField`, whether it is an `array`, and its `itemSchema`, whose own brands `readAuthoredSpec` reads in turn; and `text`, each with its `field` and `collapseWhitespace`. A field is `optional` when children may be left out.
+
 `textFromChildren` remains for hosts that unwrap text children themselves. `textFromChildren` collapses whitespace by default; pass `{ collapseWhitespace: false }` when indentation and newlines are significant.
 
 ## Agent prompts
