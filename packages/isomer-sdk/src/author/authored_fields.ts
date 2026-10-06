@@ -59,15 +59,51 @@ type zOutput<TSchema> = TSchema extends { _zod: { output: infer Output } }
   ? Output
   : never;
 
-/** `TText` is optional on the child props because leftover text fills it. */
-type ChildProps<TItem, TText extends string | undefined> = [TText] extends [
-  string,
+type WrapperOf<TInner> = {
+  _zod: {
+    def: {
+      type: 'optional' | 'nullable' | 'default' | 'readonly';
+      innerType: TInner;
+    };
+  };
+};
+
+type Unwrapped<TSchema> =
+  TSchema extends WrapperOf<infer Inner> ? Unwrapped<Inner> : TSchema;
+
+/** Whether `F`, or a wrapper layer of it, carries a {@link fromChildren} brand. */
+type IsChildBranded<F> =
+  F extends AuthoredChildBrand<string, unknown>
+    ? true
+    : F extends WrapperOf<infer Inner>
+      ? IsChildBranded<Inner>
+      : false;
+
+type ItemSchema<TSchema> =
+  Unwrapped<TSchema> extends { element: infer Element }
+    ? Element
+    : Unwrapped<TSchema>;
+
+/** Item fields a nested {@link fromChildren} brand fills from child elements. */
+type ChildBrandedKeys<TItemSchema> = TItemSchema extends {
+  shape: infer Shape;
+}
+  ? string extends keyof Shape
+    ? never
+    : {
+        [K in keyof Shape]: IsChildBranded<Shape[K]> extends true ? K : never;
+      }[keyof Shape]
+  : never;
+
+/** `TOptional` is optional on the child props because text or child elements fill it. */
+type ChildProps<TItem, TOptional extends PropertyKey> = [TOptional] extends [
+  never,
 ]
-  ? Omit<TItem, TText> &
-      Partial<Pick<TItem, Extract<TText, keyof TItem>>> & {
+  ? TItem & { children?: ReactNode }
+  : Omit<TItem, TOptional> &
+      Partial<Pick<TItem, Extract<TOptional, keyof TItem>>> & {
         children?: ReactNode;
-      }
-  : TItem & { children?: ReactNode };
+      };
 
 const BRANDS = [
   authoredChild,
@@ -118,7 +154,10 @@ export function fromChildren<
   childType: TName,
   schema: TSchema
 ): TSchema &
-  AuthoredChildBrand<TName, ChildProps<ArrayItem<TSchema>, undefined>>;
+  AuthoredChildBrand<
+    TName,
+    ChildProps<ArrayItem<TSchema>, ChildBrandedKeys<ItemSchema<TSchema>>>
+  >;
 export function fromChildren<
   const TName extends string,
   TSchema extends ZodType,
@@ -127,7 +166,14 @@ export function fromChildren<
   childType: TName,
   schema: TSchema,
   options: { text: TText }
-): TSchema & AuthoredChildBrand<TName, ChildProps<ArrayItem<TSchema>, TText>>;
+): TSchema &
+  AuthoredChildBrand<
+    TName,
+    ChildProps<
+      ArrayItem<TSchema>,
+      TText | ChildBrandedKeys<ItemSchema<TSchema>>
+    >
+  >;
 export function fromChildren<
   const TName extends string,
   TSchema extends ZodType,
@@ -183,6 +229,8 @@ export interface AuthoredChildField {
   toItem?: (props: object, context: AuthorChildContext) => unknown;
   /** The array element schema, or the field schema itself when it is not an array. */
   itemSchema: ZodType;
+  /** Whether the field holds an array of items rather than one item. */
+  array: boolean;
   /** Whether the field accepts `undefined`, so children may be omitted. */
   optional: boolean;
   /** Structural fingerprint of `itemSchema`; every field branding one child type must share it. */
@@ -282,12 +330,11 @@ const schemaSignature = (
   return type;
 };
 
-const arrayElement = (schema: ZodType): ZodType => {
+const arrayElement = (schema: ZodType): ZodType | undefined => {
   const inner = unwrapAll(schema);
-  if (zodDefType(inner) === 'array' && 'element' in inner) {
-    return (inner as { element: ZodType }).element;
-  }
-  return inner;
+  return zodDefType(inner) === 'array' && 'element' in inner
+    ? (inner as { element: ZodType }).element
+    : undefined;
 };
 
 const readChild = (
@@ -305,12 +352,15 @@ const readChild = (
     authoredTextField
   ];
   const toItem = (holder as { [authoredToItem]?: unknown })[authoredToItem];
+  const element = arrayElement(holder);
+  const itemSchema = element ?? unwrapAll(holder);
   const child: AuthoredChildField = {
     field,
     childType,
-    itemSchema: arrayElement(holder),
+    itemSchema,
+    array: element !== undefined,
     optional: optionalThrough(schema),
-    signature: schemaSignature(arrayElement(holder)),
+    signature: schemaSignature(itemSchema),
   };
   if (typeof textField === 'string') {
     child.textField = textField;
@@ -340,7 +390,10 @@ const readText = (
   };
 };
 
-/** Top-level branded fields on an object schema. Nested brands stay on the item schema. */
+/**
+ * The branded fields on an object schema, top level only: read a child's own
+ * brands from its {@link AuthoredChildField.itemSchema}.
+ */
 export const readAuthoredSpec = (schema: ZodType): AuthoredSpec => {
   if (zodDefType(schema) !== 'object' || !('shape' in schema)) {
     return { children: [], text: [] };
