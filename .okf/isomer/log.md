@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-06
+
+- **Primitive examples can be named**: an entry of `PrimitiveDefinition.examples` is a node or a `PrimitiveExample` (`{ name, description?, node }`), so a host listing examples can label them. `exampleNodes` and `primitiveExamples` read either form and keep every node type across a union of definitions; `ExampleNode` unwraps an entry's node type for a pack's registration assertion. Inventory conformance rejects blank or repeated names within a primitive, and a failing case's hint prints the name beside the index.
+
 ## 2026-10-02
 
 - **Evals package is private**: `@elastic/isomer-evals` sets `"private": true` and leaves the release set; no published package depends on it. The package pages, release docs, and public contract no longer describe an npm install.

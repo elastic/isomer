@@ -8,6 +8,7 @@
 import {
   bindFrame,
   createPrimitiveDispatcher,
+  exampleNodes,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
@@ -41,7 +42,7 @@ describe('slide pack contract', () => {
   it('gives every primitive at least one example that validates', () => {
     for (const primitive of slideDeckPrimitives) {
       expect(primitive.examples.length, primitive.type).toBeGreaterThan(0);
-      for (const [index, example] of primitive.examples.entries()) {
+      for (const [index, example] of exampleNodes(primitive).entries()) {
         const result = primitive.schema.safeParse(example);
         expect(result.success, `${primitive.type}:${index}`).toBe(true);
       }
@@ -50,7 +51,7 @@ describe('slide pack contract', () => {
 
   it('renders every example to non-empty text and markdown', () => {
     for (const primitive of slideDeckPrimitives) {
-      for (const [index, example] of primitive.examples.entries()) {
+      for (const [index, example] of exampleNodes(primitive).entries()) {
         const label = `${primitive.type}:${index}`;
         const node = example as PrimitiveNode;
         expect(dispatcher.renderText(node).trim(), label).not.toBe('');
@@ -66,9 +67,9 @@ describe('slide frame', () => {
     height: SLIDE_HEIGHT,
     mode: undefined,
   };
-  const slideFrameExample = slideDeckPrimitives.find(
-    (definition) => definition.type === 'slideFrame'
-  )!.examples[0]! as PrimitiveNode;
+  const slideFrameExample = exampleNodes(
+    slideDeckPrimitives.find((definition) => definition.type === 'slideFrame')!
+  )[0]! as PrimitiveNode;
   const dispatcher = {
     renderSvg: (node: PrimitiveNode) => `<${node.type}>`,
     estimateSvgHeight: () => 0,
@@ -89,9 +90,11 @@ describe('slide frame', () => {
   });
 
   it('reports a bare content node as the root', () => {
-    const content = slideDeckPrimitives.find(
-      (definition) => definition.type === 'slideTitle'
-    )!.examples[0]! as PrimitiveNode;
+    const content = exampleNodes(
+      slideDeckPrimitives.find(
+        (definition) => definition.type === 'slideTitle'
+      )!
+    )[0]! as PrimitiveNode;
     expect(slideDeckFrame.validateBody?.([content])).toEqual([
       expect.stringMatching(/needs a "slideFrame" root, got "slideTitle"/),
     ]);
