@@ -179,9 +179,14 @@ try {
     "exports.demoPrimitive = { type: 'demo', catalog: {}, schema: {}, renderers: {} };\n"
   );
   const registrationCall = `assertPackRegistrationComplete({ primitivesDir: ${JSON.stringify(primitivesDir)}, registered: [{ type: 'demo' }] })`;
+  // Node strips TypeScript by default only from 22.18.
+  const stripTypes = process.features.typescript
+    ? []
+    : ['--experimental-strip-types'];
   execFileSync(
     process.execPath,
     [
+      ...stripTypes,
       '--input-type=module',
       '--eval',
       `const { assertPackRegistrationComplete } = await import('${sdkName}/testing'); await ${registrationCall};`,
@@ -191,6 +196,7 @@ try {
   execFileSync(
     process.execPath,
     [
+      ...stripTypes,
       '--eval',
       `const { assertPackRegistrationComplete } = require('${sdkName}/testing'); ${registrationCall}.catch((error) => { console.error(error); process.exit(1); });`,
     ],
