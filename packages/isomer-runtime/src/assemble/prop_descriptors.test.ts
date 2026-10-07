@@ -50,6 +50,19 @@ const schema = {
         cyclic: { $ref: '#/$defs/loop' },
         dangling: { $ref: '#/$defs/missing' },
         any: {},
+        refNull: {
+          anyOf: [
+            { type: 'string', enum: ['a', 'b'] },
+            { $ref: '#/$defs/__schema9' },
+          ],
+        },
+        refNullMixed: {
+          anyOf: [
+            { $ref: '#/$defs/__schema9' },
+            { type: 'string' },
+            { type: 'number' },
+          ],
+        },
         nestedNullable: {
           anyOf: [
             { anyOf: [{ type: 'string', enum: ['a'] }, { type: 'null' }] },
@@ -81,6 +94,7 @@ const schema = {
       },
       required: ['type', 'title'],
     },
+    __schema9: { type: 'null' },
     plain: { type: 'string' },
     alias: { $ref: '#/$defs/card' },
   },
@@ -205,6 +219,18 @@ describe('describeProps', () => {
       kind: 'array',
     });
     expect(prop('nullableMixed')).toMatchObject({
+      type: 'string | number | null',
+      kind: 'other',
+    });
+  });
+
+  it('treats a ref to a null def as null', () => {
+    expect(prop('refNull')).toMatchObject({
+      type: 'a | b | null',
+      kind: 'enum',
+      values: ['a', 'b'],
+    });
+    expect(prop('refNullMixed')).toMatchObject({
       type: 'string | number | null',
       kind: 'other',
     });

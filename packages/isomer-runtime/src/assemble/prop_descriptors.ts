@@ -51,10 +51,30 @@ const withDescription = (shape: Shape, description?: string): Shape =>
 const isLiteral = (value: unknown): value is string | number | boolean =>
   ['string', 'number', 'boolean'].includes(typeof value);
 
+const followRefs = (defs: Node, node: unknown): Node | undefined => {
+  const seen = new Set<string>();
+  let current = node;
+  while (isNode(current)) {
+    const id = refId(current);
+    if (id === undefined) {
+      return current;
+    }
+    if (seen.has(id) || !Object.hasOwn(defs, id)) {
+      return undefined;
+    }
+    seen.add(id);
+    current = defs[id];
+  }
+  return undefined;
+};
+
 const isNullSchema = (node: unknown): boolean =>
   isNode(node) &&
   (node.type === 'null' ||
     (Object.hasOwn(node, 'const') && node.const === null));
+
+const isNullVariant = (defs: Node, variant: unknown): boolean =>
+  isNullSchema(followRefs(defs, variant));
 
 const orNull = (shape: Shape, nullable: boolean): Shape =>
   nullable ? { ...shape, nullable } : shape;
@@ -100,14 +120,15 @@ const describeUnion = (
   seen: ReadonlySet<string>
 ): Shape => {
   const parts = variants
-    .filter((variant) => !isNullSchema(variant))
+    .filter((variant) => !isNullVariant(defs, variant))
     .map((variant): Shape =>
       isNode(variant)
         ? describeSchema(defs, variant, seen)
         : { type: 'unknown', kind: 'other' }
     );
   const nullable =
-    variants.some(isNullSchema) || parts.some((part) => part.nullable);
+    variants.some((variant) => isNullVariant(defs, variant)) ||
+    parts.some((part) => part.nullable);
   const [only] = parts;
   if (only === undefined) {
     return { type: 'null', kind: 'other' };
@@ -183,23 +204,6 @@ const describeSchema = (
     }
   })();
   return withDescription(shape, description);
-};
-
-const followRefs = (defs: Node, node: unknown): Node | undefined => {
-  const seen = new Set<string>();
-  let current = node;
-  while (isNode(current)) {
-    const id = refId(current);
-    if (id === undefined) {
-      return current;
-    }
-    if (seen.has(id) || !Object.hasOwn(defs, id)) {
-      return undefined;
-    }
-    seen.add(id);
-    current = defs[id];
-  }
-  return undefined;
 };
 
 /** A {@link PropDescriptor} list per type, read from `schema`'s `$defs`; empty for a type with no object properties. */
