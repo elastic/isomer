@@ -93,6 +93,7 @@ export interface RenderPngOptions extends TakumiRenderOptions {
 /** What {@link renderPng} resolves to: the bytes, their size, and the findings on the composition drawn. */
 export interface RenderPngResult {
   png: Buffer;
+  /** The viewport, in CSS pixels; the raster is this times `scale`, rounded. */
   width: number;
   height: number;
   validation: PngValidationResult;

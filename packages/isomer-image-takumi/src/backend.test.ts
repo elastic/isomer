@@ -35,6 +35,7 @@ const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 describe('createTakumiImageBackend', () => {
   it('rasterizes the tree at the input viewport', async () => {
     expectTypeOf<TakumiRenderOptions>().toEqualTypeOf<{
+      scale?: number;
       devicePixelRatio?: number;
     }>();
 
@@ -74,7 +75,7 @@ describe('createTakumiImageBackend', () => {
     expect(withStyleEndTag.equals(expected)).toBe(true);
   });
 
-  it('raises fidelity without changing output dimensions', async () => {
+  it('zooms at devicePixelRatio without changing output dimensions', async () => {
     const backend = createTakumiImageBackend();
     const base = await backend.png(input('.box { background: #ff0000; }'));
     const higherDpr = await backend.png(
@@ -85,6 +86,83 @@ describe('createTakumiImageBackend', () => {
     expect(higherDpr.readUInt32BE(16)).toBe(64);
     expect(higherDpr.readUInt32BE(20)).toBe(32);
     expect(higherDpr.equals(base)).toBe(false);
+  });
+
+  describe('scale', () => {
+    const css = '.box { width: 40px; background: #ff0000; }';
+
+    it('multiplies the raster and keeps the layout', async () => {
+      const backend = createTakumiImageBackend();
+      const scaled = await backend.png(input(css), { scale: 2 });
+      const doubledViewport = await backend.png(
+        { ...input(css), width: 128, height: 64 },
+        { devicePixelRatio: 2 }
+      );
+
+      expect(scaled.readUInt32BE(16)).toBe(128);
+      expect(scaled.readUInt32BE(20)).toBe(64);
+      expect(scaled.equals(doubledViewport)).toBe(true);
+    });
+
+    it('leaves the bytes unchanged at 1', async () => {
+      const backend = createTakumiImageBackend();
+      const base = await backend.png(input(css));
+      const unscaled = await backend.png(input(css), { scale: 1 });
+
+      expect(unscaled.equals(base)).toBe(true);
+    });
+
+    it.each([
+      [63, 31, 95, 47],
+      // Rounding the width to 5 makes its ratio 5/3, which must not stretch the height.
+      [3, 100, 5, 150],
+    ])(
+      'rounds %d × %d at 1.5 to %d × %d',
+      async (width, height, rasterWidth, rasterHeight) => {
+        const png = await createTakumiImageBackend().png(
+          { ...input(css), width, height },
+          { scale: 1.5 }
+        );
+
+        expect(png.readUInt32BE(16)).toBe(rasterWidth);
+        expect(png.readUInt32BE(20)).toBe(rasterHeight);
+      }
+    );
+
+    it('lays a rounded raster out at the input width exactly', async () => {
+      const backend = createTakumiImageBackend();
+      const odd = { ...input(css), width: 63, height: 31 };
+      const scaled = await backend.png(odd, { scale: 1.5 });
+      const exact = await backend.png(
+        { ...odd, width: 95, height: 47 },
+        { devicePixelRatio: 95 / 63 }
+      );
+
+      expect(scaled.equals(exact)).toBe(true);
+    });
+
+    it('composes with devicePixelRatio', async () => {
+      const backend = createTakumiImageBackend();
+      const both = await backend.png(input(css), {
+        scale: 2,
+        devicePixelRatio: 2,
+      });
+      const doubledViewport = await backend.png(
+        { ...input(css), width: 128, height: 64 },
+        { devicePixelRatio: 4 }
+      );
+
+      expect(both.equals(doubledViewport)).toBe(true);
+    });
+
+    it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY])(
+      'rejects %s',
+      async (scale) => {
+        await expect(
+          createTakumiImageBackend().png(input(css), { scale })
+        ).rejects.toThrow(RangeError);
+      }
+    );
   });
 
   it('accepts cacheMaxBytes and still renders correctly across repeats', async () => {

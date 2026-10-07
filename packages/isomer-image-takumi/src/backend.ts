@@ -69,9 +69,16 @@ export interface TakumiImageBackendOptions {
 /** Per-render overrides. Geometry comes from the input, not from here. */
 export interface TakumiRenderOptions {
   /**
-   * Raises rendering fidelity (sharper text and gradients) at a fixed output
-   * size — the PNG stays sized to `input.width` / `input.height` regardless
-   * of this value; it does not produce a larger raster.
+   * Raster pixels per CSS pixel: the PNG is `input.width * scale` by
+   * `input.height * scale`, rounded, laid out at the input's width. `2` gives
+   * a 2x raster. Defaults to `1`.
+   */
+  scale?: number;
+  /**
+   * Takumi's zoom at a fixed canvas: the tree is laid out at
+   * `input.width / devicePixelRatio` CSS pixels and magnified to fill the
+   * canvas, so above `1` the PNG keeps its size and shows less of the frame.
+   * For a larger raster, use {@link TakumiRenderOptions.scale}.
    */
   devicePixelRatio?: number;
 }
@@ -247,6 +254,23 @@ const withStylesheet = (css: string, markup: string) =>
 const toTakumiSource = ({ html, css }: ImageInput) =>
   fromHtml(withStylesheet(css, html));
 
+/**
+ * The canvas for `scale`, each side rounded to whole pixels. `rasterScale`
+ * comes from the rounded width, so the layout keeps the input's width exactly,
+ * and its height to within a raster pixel.
+ */
+const toRaster = ({ width, height }: ImageInput, scale: number) => {
+  if (scale === 1 || width <= 0) {
+    return { width, height, rasterScale: 1 };
+  }
+  const rasterWidth = Math.max(1, Math.round(width * scale));
+  return {
+    width: rasterWidth,
+    height: Math.max(1, Math.round(height * scale)),
+    rasterScale: rasterWidth / width,
+  };
+};
+
 /** Inline, so no pack class name can collide with it. */
 const PAGE_STYLE = 'overflow:hidden;break-after:page;break-inside:avoid';
 
@@ -317,17 +341,23 @@ export const createTakumiImageBackend = ({
 
   return {
     formats: TAKUMI_FORMATS,
-    png: async (input, options = {}) => {
+    png: async (input, { scale = 1, devicePixelRatio } = {}) => {
+      if (!Number.isFinite(scale) || scale <= 0) {
+        throw new RangeError(
+          `png: scale must be a positive finite number, got ${scale}`
+        );
+      }
       await ready();
       const { node, css } = toTakumiSource(input);
+      const { width, height, rasterScale } = toRaster(input, scale);
       const renderOptions: RenderOptions = {
-        width: input.width,
-        height: input.height,
+        width,
+        height,
         format: 'png',
         css,
       };
-      if (options.devicePixelRatio !== undefined) {
-        renderOptions.devicePixelRatio = options.devicePixelRatio;
+      if (devicePixelRatio !== undefined || rasterScale !== 1) {
+        renderOptions.devicePixelRatio = (devicePixelRatio ?? 1) * rasterScale;
       }
       return renderer.render(node, renderOptions);
     },

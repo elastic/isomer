@@ -173,14 +173,19 @@ describe('renderPng', () => {
       },
     };
 
-    await renderPng(runtime, { type: 'view' }, createTakumiImageBackend(), {
-      snapshot: { frame: 'card' },
-      devicePixelRatio: 2,
-    });
+    const result = await renderPng(
+      runtime,
+      { type: 'view' },
+      createTakumiImageBackend(),
+      { snapshot: { frame: 'card' }, scale: 2 }
+    );
 
     expect(seenSnapshotOptions).toMatchObject({
       frame: 'card',
       onValidationError: 'collect',
     });
+    expect(result.png.readUInt32BE(16)).toBe(128);
+    expect(result.png.readUInt32BE(20)).toBe(64);
+    expect(result).toMatchObject({ width: 64, height: 32 });
   });
 });
