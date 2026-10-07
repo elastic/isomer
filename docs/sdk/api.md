@@ -108,7 +108,7 @@ The root, `./markdown`, and `./slack` load the GFM parser for authored Markdown 
 
 ## `./author`
 
-JSX: `fromChildren`, `fromTextChildren`, `AuthoredChildBrand`, `AuthoredTextBrand`, `AuthorChildContext`, `AuthorComponent`, `buildJsxShim`, `JsxShim`, `PrimitiveComponentMap`, `CompositionAuthorProps`, `AuthorComposition`, `textFromChildren`.
+JSX: `fromChildren`, `fromTextChildren`, `AuthoredChildBrand`, `AuthoredToItemBrand` (on a `toItem` field, whose item brands the shim leaves alone), `AuthoredTextBrand`, `AuthorChildContext`, `readAuthoredSpec` (a schema's branded fields as an `AuthoredSpec` of `AuthoredChildField`s and `AuthoredTextField`s), `AuthorComponent`, `buildJsxShim`, `JsxShim`, `PrimitiveComponentMap`, `CompositionAuthorProps`, `AuthorComposition`, `textFromChildren`.
 
 Agent prompts: `buildAuthoringPrompt` (`AuthoringPromptContext`), `formatPrimitiveEntry` (one full catalog bullet), `AUTHORING_PROFILE_IDS` (`AuthoringProfileId`), `AuthoringViewSummary`. `WithNodeFields` is on the root entry, next to `definePrimitive`.
 
