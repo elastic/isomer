@@ -58,7 +58,7 @@ const notePrimitive = definePrimitive<NoteNode>({
   renderers: {
     react: (node) => createElement('span', null, node.text),
     text: (node) => node.text,
-    markdown: (node) => node.text,
+    markdown: (node) => md.paragraph(node.text),
     slack: (node): SlackBlock => ({
       type: 'section',
       text: {
@@ -116,7 +116,7 @@ const wrapPrimitive = definePrimitive<WrapNode>({
       ),
     text: (node, { scope }) =>
       node.items.map((item) => scope.renderText(item)).join(','),
-    markdown: (node) => `wrap(${node.items.length})`,
+    markdown: (node) => md.paragraph(`wrap(${node.items.length})`),
   },
 });
 
@@ -146,7 +146,7 @@ const holderPrimitive = definePrimitive<HolderNode>({
   renderers: {
     react: () => createElement('div'),
     text: () => 'holder',
-    markdown: () => 'holder',
+    markdown: () => md.paragraph('holder'),
   },
 });
 
@@ -172,7 +172,7 @@ const boldPrimitive = definePrimitive<BoldNode>({
   renderers: {
     react: (node) => createElement('strong', null, node.text),
     text: (node) => node.text,
-    markdown: (node) => node.text,
+    markdown: (node) => md.paragraph(node.text),
   },
 });
 
@@ -199,7 +199,7 @@ const plainPrimitive = definePrimitive<PlainNode>({
   renderers: {
     react: (node) => createElement('span', null, node.text),
     text: (node) => node.text,
-    markdown: (node) => node.text,
+    markdown: (node) => md.paragraph(node.text),
   },
 });
 
@@ -487,7 +487,7 @@ describe('createIsomerRuntime', () => {
       renderers: {
         react: () => null,
         text: (node) => node.text,
-        markdown: (node) => node.text,
+        markdown: (node) => md.paragraph(node.text),
       },
     });
     const runtime = createIsomerRuntime({
@@ -1736,7 +1736,7 @@ describe('createIsomerRuntime', () => {
       renderers: {
         react: () => null,
         text: () => 'box',
-        markdown: () => 'box',
+        markdown: () => md.paragraph('box'),
       },
     });
     const runtime = drawingRuntime(boxPrimitive, boldPrimitive);
@@ -1783,7 +1783,7 @@ describe('createIsomerRuntime', () => {
       renderers: {
         react: (node) => createElement('strong', null, node.text),
         text: (node) => node.text,
-        markdown: (node) => node.text,
+        markdown: (node) => md.paragraph(node.text),
       },
     });
     const runtime = drawingRuntime(boldPrimitive, tallPrimitive);
@@ -2085,7 +2085,7 @@ describe('createIsomerRuntime', () => {
       renderers: {
         react: (_node, { theme }) => createElement('span', null, String(theme)),
         text: () => '',
-        markdown: () => '',
+        markdown: () => [],
       },
     });
     const runtime = drawingRuntime(swatchPrimitive);
@@ -2863,7 +2863,7 @@ const primitiveNamed = (type: string) =>
     renderers: {
       react: () => null,
       text: () => type,
-      markdown: () => type,
+      markdown: () => md.paragraph(type),
     },
   });
 

@@ -41,7 +41,7 @@ const note = definePrimitive({
     { name: 'Short', node: { type: 'note' as const, body: 'Hi' } },
   ],
   schema: noteSchema,
-  renderers: { react: () => null, text: () => '', markdown: () => '' },
+  renderers: { react: () => null, text: () => '', markdown: () => [] },
 });
 
 describe('primitive examples', () => {
@@ -75,7 +75,7 @@ describe('primitive examples', () => {
       catalog: { ...note.catalog, type: 'chart' },
       examples: [{ type: 'chart' as const, series: 1 }],
       schema: z.object({ type: z.literal('chart'), series: z.number() }),
-      renderers: { react: () => null, text: () => '', markdown: () => '' },
+      renderers: { react: () => null, text: () => '', markdown: () => [] },
     });
     const registry = [note, chart];
     expectTypeOf(

@@ -37,6 +37,7 @@ import {
   type HTMLRenderOptions,
   renderHTMLWithDispatcher,
 } from './html/envelope';
+import { md } from './markdown/builder';
 import { createPrimitiveDispatcher } from './primitive_dispatch';
 
 interface LeafNode extends PrimitiveNode {
@@ -69,7 +70,7 @@ const leaf = definePrimitive<LeafNode>({
     react: (node, { context }) =>
       createElement('p', nodeAnchor(context, node), node.text),
     text: (node) => node.text,
-    markdown: (node) => node.text,
+    markdown: (node) => md.paragraph(node.text),
   },
 });
 
@@ -88,7 +89,7 @@ const box = definePrimitive<BoxNode>({
         node.items.map((item) => scope.renderReact(item, context))
       ),
     text: () => 'box',
-    markdown: () => 'box',
+    markdown: () => md.paragraph('box'),
   },
 });
 
@@ -172,7 +173,7 @@ const describing = definePrimitive<LeafNode>({
         (context as InstanceContext).describe()
       ),
     text: (node) => node.text,
-    markdown: (node) => node.text,
+    markdown: (node) => md.paragraph(node.text),
   },
 });
 
@@ -320,7 +321,7 @@ describe('withoutAnchors', () => {
             scope.renderReact(node.extra, withoutAnchors(context))
           ),
         text: () => 'host',
-        markdown: () => 'host',
+        markdown: () => md.paragraph('host'),
       },
     });
     const { body } = renderHTMLWithDispatcher(
@@ -674,7 +675,7 @@ const odd = definePrimitive<OddNode>({
     react: (node, { context }) =>
       createElement('p', nodeAnchor(context, node), node.text),
     text: (node) => node.text,
-    markdown: (node) => node.text,
+    markdown: (node) => md.paragraph(node.text),
   },
 });
 

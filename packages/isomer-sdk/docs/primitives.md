@@ -86,13 +86,13 @@ A name is non-empty and unique within its primitive, which inventory conformance
 ```ts
 react(node, { context, scope }): ReactNode      // always
 text(node, { scope }): string                   // always
-markdown(node, { scope }): string | MarkdownContent  // always
+markdown(node, { scope }): MarkdownContent  // always
 slack?(node, { collector, scope }): unknown | readonly unknown[]
 ```
 
 There is no `svg` renderer. The `svg` surface dispatches to `react`: an image backend lays out the pack's DOM tree and stylesheet, so a second tree authored for the image would be the same layout stated twice. Targeting images therefore costs a primitive nothing.
 
-A `markdown` renderer returns content built with `md` from `./markdown`, or a string. `md` escapes each value where it lands, so authored `*`, `|`, or a leading `#` stays text, and its links and images apply the [URL policy](url-trust.md). A string is printed as written, so it must already be safe Markdown; `md.authored` holds authored Markdown source, sanitized. `md.blockquote` quotes blocks, embedded child content included, `md.break()` breaks a paragraph's line with a backslash and prints as a space inside a heading, strong, emphasis, link label, or table cell, and one at the start or end of any of these is dropped, and a `md.table` cell takes one inline run or an array of them.
+A `markdown` renderer returns content built with `md` from `./markdown`. `md` escapes each value where it lands, so authored `*`, `|`, or a leading `#` stays text, and its links and images apply the [URL policy](url-trust.md). Markdown a pack already has, such as authored source, goes through `md.authored`, which sanitizes it and drops it when it is only whitespace. `md.blockquote` quotes blocks, embedded child content included, `md.break()` breaks a paragraph's line with a backslash and prints as a space inside a heading, strong, emphasis, link label, or table cell, and one at the start or end of any of these is dropped, and a `md.table` cell takes one inline run or an array of them.
 
 `slack` is the one optional renderer, and it degrades: with none the dispatcher converts the mandatory markdown to Block Kit, so a missing renderer costs fidelity and nothing else.
 

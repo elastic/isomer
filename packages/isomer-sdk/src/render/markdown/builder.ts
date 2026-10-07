@@ -40,7 +40,7 @@ import {
   sanitizeNavigationHref,
 } from '../../validate/url';
 
-import { sanitizeMarkdownSource } from './format';
+import { sanitizeAuthoredSource } from './format';
 
 // A fence-info string only allows word-ish tokens; anything else would
 // terminate the fence early or inject markdown.
@@ -128,11 +128,14 @@ const isListStart = (
   start + Math.max(count - 1, 0) <= MAX_LIST_NUMBER;
 
 // Printed as written, for Markdown that is already safe. Trailing whitespace
-// would add blank lines between blocks.
-const verbatim = (markdown: string): MarkdownBlock =>
+// would add blank lines between blocks. `source` is the authored text when
+// sanitizing degraded it to inert text, whose escapes only Markdown resolves;
+// surfaces that print literal text read it instead.
+const verbatim = (markdown: string, source?: string): MarkdownBlock =>
   block({
     type: VERBATIM_TYPE,
     value: markdown.trimEnd(),
+    ...(source === undefined ? {} : { source }),
   } as unknown as RootContent);
 
 // An empty wrapper prints its markers alone: `****` reads as a thematic break.
@@ -251,14 +254,15 @@ export const md = {
           : null,
       value,
     }),
-  /** Authored Markdown source, after {@link sanitizeMarkdownSource}. */
-  authored: (source: string): MarkdownBlock =>
-    verbatim(sanitizeMarkdownSource(source)),
+  /** Authored Markdown source, after {@link sanitizeAuthoredSource}; whitespace-only source is dropped. */
+  authored: (source: string): MarkdownContent => {
+    if (source.trim() === '') {
+      return [];
+    }
+    const { markdown, inert } = sanitizeAuthoredSource(source);
+    return verbatim(markdown, inert ? source : undefined);
+  },
 };
-
-/** A renderer's string output as content, printed as written. */
-export const markdownFromString = (markdown: string): MarkdownContent =>
-  markdown.trim() === '' ? [] : verbatim(markdown);
 
 const asText: Handle = (
   node: { value?: string; alt?: string | null },

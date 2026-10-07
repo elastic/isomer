@@ -67,7 +67,7 @@ const primitiveWith = (schema: z.ZodObject) =>
     },
     examples: [{ type: 'probe' }],
     schema,
-    renderers: { react: () => null, text: () => '', markdown: () => '' },
+    renderers: { react: () => null, text: () => '', markdown: () => [] },
   });
 
 describe('definePrimitive node fields', () => {
@@ -101,7 +101,7 @@ describe('definePrimitive node fields', () => {
         schema: z.object({ type: z.literal('probe') }),
         schemaFor: () =>
           z.object({ type: z.literal('probe'), [field]: z.number() }),
-        renderers: { react: () => null, text: () => '', markdown: () => '' },
+        renderers: { react: () => null, text: () => '', markdown: () => [] },
       });
       expect(() => container.schemaFor?.(z.object({}))).toThrow(
         expect.objectContaining({ code: 'RESERVED_NODE_FIELD' })

@@ -439,25 +439,32 @@ const withReferences = (blocks: readonly RootContent[]): RootContent[] => {
   return blocks.map(resolve) as RootContent[];
 };
 
+const lines = (text: string): string => text.replace(/\r\n?/g, '\n');
+
+const literalParagraphs = (text: string): RootContent[] =>
+  lines(text)
+    .split(/\n[ \t]*\n/)
+    .filter((paragraph) => paragraph.trim() !== '')
+    .map((paragraph) => ({
+      type: 'paragraph',
+      children: [{ type: 'text', value: paragraph.trim() }],
+    }));
+
 // Source past the parse budget prints as its literal paragraphs.
 const gfmBlocks = (gfm: string): RootContent[] => {
-  const source = gfm.replace(/\r\n?/g, '\n');
-  const parsed = parseGfmBlocks(source) as RootContent[] | null;
-  return parsed === null
-    ? source
-        .split(/\n[ \t]*\n/)
-        .filter((paragraph) => paragraph.trim() !== '')
-        .map((paragraph) => ({
-          type: 'paragraph',
-          children: [{ type: 'text', value: paragraph.trim() }],
-        }))
-    : withReferences(parsed);
+  const parsed = parseGfmBlocks(lines(gfm)) as RootContent[] | null;
+  return parsed === null ? literalParagraphs(gfm) : withReferences(parsed);
 };
 
-// Markdown printed as written is read as the GFM it holds.
+// Markdown printed as written is read as the GFM it holds; authored source
+// that sanitizing left inert is never parsed.
 const expanded = (node: Nodes): Nodes[] => {
   if ((node.type as string) === VERBATIM_TYPE) {
-    return gfmBlocks((node as unknown as { value: string }).value);
+    const { value, source } = node as unknown as {
+      value: string;
+      source?: string;
+    };
+    return source === undefined ? gfmBlocks(value) : literalParagraphs(source);
   }
   return 'children' in node
     ? [{ ...node, children: node.children.flatMap(expanded) } as Nodes]
@@ -510,8 +517,8 @@ const toSlackBlocks = (nodes: readonly RootContent[]): SlackBlock[] => {
  * Builder content as Block Kit: paragraphs, headings, lists, quotes, and code
  * as `rich_text`, tables as `table` blocks, and thematic breaks as `divider`
  * blocks. A quote is one level, and inside a list item its blocks are the
- * item's. A run of rich-text blocks shares one `rich_text` block. Markdown
- * printed as written is read as GFM, as {@link gfmToSlackBlocks} reads it.
+ * item's. A run of rich-text blocks shares one `rich_text` block. Source from
+ * `md.authored` is parsed as GFM and translated the same way.
  */
 export const markdownContentToSlackBlocks = (
   content: MarkdownContent

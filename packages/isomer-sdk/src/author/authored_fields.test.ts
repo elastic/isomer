@@ -57,7 +57,7 @@ const defined = definePrimitive({
   renderers: {
     react: () => null,
     text: () => '',
-    markdown: () => '',
+    markdown: () => [],
   },
 });
 

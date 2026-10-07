@@ -74,7 +74,4 @@ export {
   strike,
 } from './format';
 
-export {
-  gfmToSlackBlocks,
-  markdownContentToSlackBlocks,
-} from './markdown_content';
+export { markdownContentToSlackBlocks } from './markdown_content';

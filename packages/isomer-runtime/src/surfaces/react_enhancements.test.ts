@@ -19,6 +19,7 @@ import {
   nodeAnchor,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
+import { md } from '@elastic/isomer-sdk/markdown';
 import { findNodeElementPairs } from '@elastic/isomer-sdk/react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
@@ -54,7 +55,7 @@ const stepPrimitive = definePrimitive<StepNode>({
       );
     },
     text: (node) => node.text,
-    markdown: (node) => node.text,
+    markdown: (node) => md.paragraph(node.text),
   },
 });
 

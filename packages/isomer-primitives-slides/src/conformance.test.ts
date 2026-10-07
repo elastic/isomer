@@ -15,6 +15,7 @@ import {
   definePrimitivePack,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
+import { md } from '@elastic/isomer-sdk/markdown';
 import {
   CONFORMANCE_FOREIGN_MARKER,
   type PrimitiveConformanceHarness,
@@ -59,7 +60,7 @@ const conformanceForeignPack = definePrimitivePack({
       renderers: {
         react: (node) => node.text,
         text: (node) => node.text,
-        markdown: (node) => node.text,
+        markdown: (node) => md.paragraph(node.text),
       },
     }),
   ],

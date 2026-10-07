@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { markdownFromString, md } from '../markdown/builder';
+import { md, serializeMarkdown } from '../markdown/builder';
 import { SAFE_INPUTS } from '../markdown/safe_inputs.fixtures';
 
 import {
@@ -362,7 +362,7 @@ describe('markdownContentToSlackBlocks', () => {
       outline(
         markdownContentToSlackBlocks(
           md.blockquote(
-            markdownFromString('**e**\n\nf\n\n```\n*g*\n```'),
+            md.authored('**e**\n\nf\n\n```\n*g*\n```'),
             md.list([[md.paragraph('h'), md.table(['i'], [])]])
           )
         )
@@ -386,10 +386,7 @@ describe('markdownContentToSlackBlocks', () => {
               md.table(['h'], []),
             ],
           ]),
-          md.list([
-            md.paragraph('c', md.break(), 'd'),
-            markdownFromString('x'),
-          ]),
+          md.list([md.paragraph('c', md.break(), 'd'), md.authored('x')]),
         ])
       )
     ).toEqual(['list: a\nb\nq', 'table: h', 'list: c\nd / x']);
@@ -405,7 +402,7 @@ describe('markdownContentToSlackBlocks', () => {
             md.link('b', 'https://b.c')
           ),
           md.list([[md.paragraph(md.link('c', './c'))]]),
-          markdownFromString('[d](/d) [e](https://e.f)')
+          md.authored('[d](/d) [e](https://e.f)')
         ),
         md.list([
           [
@@ -687,7 +684,7 @@ describe('markdownContentToSlackBlocks', () => {
       outline(
         markdownContentToSlackBlocks([
           md.paragraph('built'),
-          md.list([markdownFromString('**legacy**'), 'x']),
+          md.list([md.authored('**legacy**'), 'x']),
           md.authored('_authored_'),
         ])
       )
@@ -821,6 +818,27 @@ describe('gfmToSlackBlocks', () => {
     const [first, second] = outline(blocks);
     expect(first).toMatch(/^section: \*\*x\*\* \*\*x\*\*/);
     expect(second).toBe('section: _y_');
+  });
+
+  it('prints authored source past the parse budget as the string path did', () => {
+    const source = `<tag> [label] \\ ${'x '.repeat(9_000)}\n\nend <b>`;
+    const authored = md.authored(source);
+    expect(serializeMarkdown(authored)).toMatch(/^&lt;tag> \\\[label\\\] \\\\/);
+    expect(markdownContentToSlackBlocks(authored)).toEqual(
+      gfmToSlackBlocks(source)
+    );
+    const [first, second] = outline(markdownContentToSlackBlocks(authored));
+    expect(first).toMatch(/^section: <tag> \[label\] \\ x/);
+    expect(second).toBe('section: end <b>');
+  });
+
+  it('never parses inert authored source, even once CRLF shrinks it under budget', () => {
+    const source = `[label](https://example.test)\r\n\r\n${`${'x'.repeat(50)}\r\n`.repeat(320)}`;
+    expect(source.replace(/\r\n/g, '\n').length).toBeLessThan(16_384);
+    const authored = md.authored(source);
+    expect(serializeMarkdown(authored)).toMatch(/^\\\[label\\\]\(/);
+    const [first] = outline(markdownContentToSlackBlocks(authored));
+    expect(first).toBe('section: [label](https://example.test)\n');
   });
 
   it('translates adversarial source in bounded time', () => {
