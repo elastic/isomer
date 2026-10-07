@@ -38,12 +38,21 @@ import {
 } from './blocks';
 import { clampSlackText, slackLinkUrl } from './format';
 
+const footnoteLabel = ({
+  identifier,
+  label,
+}: Pick<FootnoteDefinition, 'identifier' | 'label'>): string =>
+  `[^${label ?? identifier}]`;
+
 const plainText = (node: Nodes): string => {
   if ('value' in node) {
     return node.value;
   }
   if (node.type === 'image') {
     return node.alt ?? '';
+  }
+  if (node.type === 'footnoteReference') {
+    return footnoteLabel(node);
   }
   return 'children' in node ? node.children.map(plainText).join('') : '';
 };
@@ -60,12 +69,6 @@ const textElement = (
     ? []
     : [{ type: 'text', text, ...(withStyle ? { style: withStyle } : {}) }];
 };
-
-const footnoteLabel = ({
-  identifier,
-  label,
-}: Pick<FootnoteDefinition, 'identifier' | 'label'>): string =>
-  `[^${label ?? identifier}]`;
 
 // One link element per styled run of the label, so its formatting survives;
 // an empty label is a bare link. A URL Slack cannot link leaves the label.
@@ -108,8 +111,6 @@ const inline = (
         return linkRuns(node.url, textElement(node.alt ?? '', style), style);
       case 'break':
         return textElement('\n', style);
-      case 'footnoteReference':
-        return textElement(footnoteLabel(node), style);
       default:
         return textElement(plainText(node), style);
     }
@@ -184,7 +185,7 @@ const unquoted = (node: RootContent): RootContent[] =>
 // nested list follows at the next indent; any other block, such as a table,
 // follows on its own; what the item holds after either follows unbulleted,
 // since a Slack list item cannot resume; and the list resumes at its next
-// number.
+// number. A task item's first line leads with its box.
 const listPieces = (list: List, indent: number): Piece[] => {
   const style = list.ordered ? 'ordered' : 'bullet';
   const out: Piece[] = [];
@@ -209,6 +210,10 @@ const listPieces = (list: List, indent: number): Piece[] => {
   for (const item of list.children) {
     let runs: SlackRichTextInline[] = [];
     let numbered = false;
+    let box =
+      typeof item.checked === 'boolean'
+        ? textElement(item.checked ? '☑ ' : '☐ ', {})
+        : [];
     const emit = (): void => {
       const sections = section(runs);
       runs = [];
@@ -229,9 +234,10 @@ const listPieces = (list: List, indent: number): Piece[] => {
     ) as ListItem['children']) {
       if (ITEM_LINES.has(child.type)) {
         runs.push(
-          ...(runs.length > 0 ? textElement('\n', {}) : []),
+          ...(runs.length > 0 ? textElement('\n', {}) : box),
           ...childInline(child)
         );
+        box = [];
         continue;
       }
       const pieces =

@@ -762,6 +762,27 @@ describe('gfmToSlackBlocks', () => {
     );
   });
 
+  it('labels a footnote in a plain table cell', () => {
+    expect(outline(gfmToSlackBlocks('| x[^1] |\n| - |\n\n[^1]: n'))).toEqual([
+      'table: x[^1]',
+      'section: [^1]: n',
+    ]);
+  });
+
+  it('leads a task item with its box', () => {
+    expect(
+      outline(gfmToSlackBlocks('- [x] done\n- [ ] todo\n\n  more\n- plain'))
+    ).toEqual(['list: ☑ done / ☐ todo\nmore / plain']);
+  });
+
+  it('gives no number to an item holding only a table', () => {
+    const blocks = gfmToSlackBlocks('1. a\n2. | t |\n   | - |\n3. c');
+    expect(outline(blocks)).toEqual(['list: a', 'table: t', 'list: c']);
+    expect(blocks[2]).toMatchObject({
+      elements: [{ type: 'rich_text_list', style: 'ordered', offset: 1 }],
+    });
+  });
+
   it('nests a list indented by a tab', () => {
     const [block] = gfmToSlackBlocks('- a\n\n\t- b');
     expect(block).toMatchObject({
