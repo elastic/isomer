@@ -1740,10 +1740,12 @@ describe('createIsomerRuntime', () => {
       },
     });
     const runtime = drawingRuntime(boxPrimitive, boldPrimitive);
+    const box = { type: 'box' as const };
+    const bold = { type: 'bold' as const, text: 'short' };
     const rendered = runtime.surfaces.svg.render(
       {
         type: 'view',
-        body: [{ type: 'box' }, { type: 'bold', text: 'short' }],
+        body: [box, bold],
       },
       { onValidationError: 'collect' }
     );
