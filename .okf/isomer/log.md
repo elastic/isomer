@@ -3,6 +3,8 @@
 ## 2026-10-06
 
 - **`assertPackRegistrationComplete` loads under CommonJS**: the CommonJS build compiles the entry `import()` to `require()`, which rejected the `file:` URL it was given, so the check failed under Jest. It now imports a path when `require` exists and the `file:` URL otherwise, and `check:pack-consumer` runs it from the packed `./testing` entry under both `import` and `require`.
+- **JSX authoring reads nested brands, and hosts can read them too**: a child's item schema may brand its own fields with `fromChildren`, and the shim builds their components and fills them, so `<Stat value="42">Tests<Delta tone="success">+12</Delta></Stat>` authors `delta` as one item and `label` from the text beside it. A non-array branded field takes one element, at the top level too, and a second throws `UNEXPECTED_CHILDREN`; a branded item field is optional on its child's props. `./author` exports `readAuthoredSpec` with `AuthoredSpec`, `AuthoredChildField` (now carrying `array`), and `AuthoredTextField`, so a host editor no longer reads the `Symbol.for` brand keys itself. A `toItem` field carries `AuthoredToItemBrand`, and the shim adds no components for its item's own brands, at runtime or in its type.
+- **Primitive examples can be named**: an entry of `PrimitiveDefinition.examples` is a node or a `PrimitiveExample` (`{ name, description?, node }`), so a host listing examples can label them. `exampleNodes` and `primitiveExamples` read either form and keep every node type across a union of definitions; `ExampleNode` unwraps an entry's node type for a pack's registration assertion. Inventory conformance rejects blank or repeated names within a primitive, and a failing case's hint prints the name beside the index.
 
 ## 2026-10-02
 

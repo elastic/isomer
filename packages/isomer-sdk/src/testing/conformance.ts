@@ -17,6 +17,7 @@ import assert from 'node:assert/strict';
 import type { ChildNodeWalker } from '../composition/body_node_base';
 import type { Composition } from '../composition/composition';
 import type { ValidationError } from '../composition/validation_error';
+import { exampleNodes, primitiveExamples } from '../define/primitive_example';
 import type {
   AnyPrimitiveDefinition,
   PrimitiveNode,
@@ -46,6 +47,8 @@ export interface PrimitiveConformanceExample {
   readonly type: string;
   /** Index into {@link AnyPrimitiveDefinition.examples}, and half of the preview hint a failure prints. */
   readonly exampleIndex: number;
+  /** The example's `name`, absent for a bare node. */
+  readonly exampleName?: string;
   readonly node: PrimitiveNode;
 }
 
@@ -168,10 +171,11 @@ export const examplesFromDefinitions = (
   definitions: readonly AnyPrimitiveDefinition[]
 ): readonly PrimitiveConformanceExample[] =>
   definitions.flatMap((definition) =>
-    definition.examples.map((node, exampleIndex) => ({
+    primitiveExamples(definition).map(({ name, node }, exampleIndex) => ({
       definition,
       type: definition.type,
       exampleIndex,
+      ...(name === undefined ? {} : { exampleName: name }),
       node,
     }))
   );
@@ -189,8 +193,9 @@ export const primitiveConformanceRows = (
 
 /**
  * Asserts the inventory itself holds up: the pack has examples, every
- * definition contributes one, each example's `type` matches its definition,
- * and `catalog.example` is within the input budget and parses or matches a
+ * definition contributes one, example names are non-empty and unique within
+ * their definition, each example's `type` matches its definition, and
+ * `catalog.example` is within the input budget and parses or matches a
  * published example.
  */
 export const runPrimitiveInventoryConformance = (
@@ -203,6 +208,21 @@ export const runPrimitiveInventoryConformance = (
       definition.examples.length > 0,
       `${definition.type} primitive must expose at least one example`
     );
+    const names = new Set<string>();
+    for (const { name } of primitiveExamples(definition)) {
+      if (name === undefined) {
+        continue;
+      }
+      assert.ok(
+        name.trim().length > 0,
+        `${definition.type} example names must be non-empty`
+      );
+      assert.ok(
+        !names.has(name),
+        `${definition.type} has two examples named ${JSON.stringify(name)}`
+      );
+      names.add(name);
+    }
     const checked = checkInputBudget(definition.catalog.example);
     if (!checked.valid) {
       assert.fail(
@@ -210,7 +230,7 @@ export const runPrimitiveInventoryConformance = (
       );
     }
     const catalogExample = checked.value;
-    const matchesPublished = definition.examples.some((node) => {
+    const matchesPublished = exampleNodes(definition).some((node) => {
       const published = checkInputBudget(node);
       return (
         published.valid &&
@@ -231,8 +251,13 @@ export const runPrimitiveInventoryConformance = (
   }
 };
 
-const previewHint = (type: string, exampleIndex: number): string =>
-  `Failing example: \`${type}\` definition, examples[${exampleIndex}].`;
+const previewHint = ({
+  type,
+  exampleIndex,
+  exampleName,
+}: PrimitiveConformanceExample): string =>
+  `Failing example: \`${type}\` definition, examples[${exampleIndex}]` +
+  `${exampleName === undefined ? '' : ` (${JSON.stringify(exampleName)})`}.`;
 
 const renderedClassNames = (html: string): string[] => {
   const classNames = new Set<string>();
@@ -268,8 +293,9 @@ const cssHasClassSelector = (css: string, className: string): boolean =>
 export const primitiveConformanceCases: readonly PrimitiveConformanceCase[] = [
   {
     name: 'validates as a primitive node and inside a composition',
-    run: ({ type, exampleIndex, node }, harness) => {
-      const hint = previewHint(type, exampleIndex);
+    run: (example, harness) => {
+      const { node } = example;
+      const hint = previewHint(example);
       const primitiveErrors = [...harness.validateNode(node)];
       assert.deepEqual(primitiveErrors, [], hint);
       const result = harness.validateComposition(harness.wrapComposition(node));
@@ -383,11 +409,11 @@ export const primitiveConformanceCases: readonly PrimitiveConformanceCase[] = [
   },
   {
     name: 'renders a node anchor on every node when asked',
-    run: ({ type, exampleIndex, node }, harness) => {
+    run: (example, harness) => {
       if (!harness.renderHTML || !harness.anchorWalk) {
         return;
       }
-      const composition = harness.wrapComposition(node);
+      const composition = harness.wrapComposition(example.node);
       const { body } = harness.renderHTML(composition, { anchors: true });
       const expected = anchoredNodes(
         composition.body,
@@ -399,7 +425,7 @@ export const primitiveConformanceCases: readonly PrimitiveConformanceCase[] = [
       assert.deepEqual(
         renderedAnchors(body),
         expected,
-        `Expected one anchor per node, in walker order. ${previewHint(type, exampleIndex)}`
+        `Expected one anchor per node, in walker order. ${previewHint(example)}`
       );
     },
   },
@@ -417,10 +443,11 @@ export const primitiveConformanceCases: readonly PrimitiveConformanceCase[] = [
   },
   {
     name: 'reaches every rendered readable class in compact CSS collection',
-    run: ({ type, exampleIndex, node }, harness) => {
+    run: (example, harness) => {
       if (!harness.renderHTML) {
         return;
       }
+      const { type, exampleIndex, node } = example;
       const result = harness.renderHTML(harness.wrapComposition(node), {
         css: 'separate',
         names: 'readable',
@@ -431,7 +458,7 @@ export const primitiveConformanceCases: readonly PrimitiveConformanceCase[] = [
       const hint =
         `Missing CSS for ${type} example #${exampleIndex}: ` +
         `${missing.join(', ') || '(none)'}. ` +
-        previewHint(type, exampleIndex);
+        previewHint(example);
       assert.deepEqual(missing, [], hint);
     },
   },
