@@ -133,7 +133,8 @@ export interface IsomerRuntimeOptions<
  * One namespace per output format; each exposes `render` and `renderNode`
  * uniformly. `TSvg` is `SvgSurface` when the runtime was built with `frames`
  * and `undefined` when it was not; a runtime whose options are not statically
- * known carries the union.
+ * known carries the union. Every key but `html` is a `SurfaceName`; `html`
+ * wraps the `react` output in a document and no node targets it.
  */
 export interface RuntimeSurfaces<
   TRenderContext = PrimitiveRenderContext,

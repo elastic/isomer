@@ -12,6 +12,7 @@ export {
   type ChildNodeWalker,
   type SurfaceName,
   BODY_NODE_SURFACES,
+  SURFACE_NAMES,
   createChildNodeWalker,
   isVisibleOnSurface,
   someBodyNode,

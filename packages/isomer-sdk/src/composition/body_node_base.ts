@@ -6,22 +6,24 @@
  */
 
 /**
- * The five surfaces a node renders on or is hidden from.
+ * Every surface a node renders on or is hidden from, in render order.
  *
- * Spelled out rather than derived as `keyof SurfaceMap<…>`: the keys never vary
- * with the pack types, and TypeScript can fail to prove a `keyof` over one
- * instantiation transfers to another, silently widening to `any`.
+ * `html` is not here: the runtime's `html` surface wraps `react` output in a
+ * document, and no node targets it.
  */
-export type SurfaceName = 'react' | 'svg' | 'text' | 'markdown' | 'slack';
-
-/** Every {@link SurfaceName}, for callers that iterate them. */
-export const BODY_NODE_SURFACES: readonly SurfaceName[] = [
+export const SURFACE_NAMES = [
   'react',
   'svg',
   'text',
   'markdown',
   'slack',
-];
+] as const;
+
+/** One of the {@link SURFACE_NAMES}. */
+export type SurfaceName = (typeof SURFACE_NAMES)[number];
+
+/** @deprecated Use {@link SURFACE_NAMES}. */
+export const BODY_NODE_SURFACES: readonly SurfaceName[] = SURFACE_NAMES;
 
 /** The two fields every primitive node carries, whatever its pack. */
 export interface BodyNodeBase {
