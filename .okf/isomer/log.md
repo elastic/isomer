@@ -2,6 +2,7 @@
 
 ## 2026-10-06
 
+- **A missing `svgHeight` is reported by the `svg` surface**: `Frame.sizesFromNodeHeights` and `CompositionValidatorOptions.sizesFromNodeHeights` are gone. `validate` covers duplicate ids and empty surfaces. An `svg` render whose frame calls `estimateSvgHeight` returns `warnings` (`SvgHeightWarning`, `{ path, message }`) for each node visible on `svg` that declares no `metrics.svgHeight`; a frame that returns a constant, and a render that passes `height`, leave the list empty. `renderPages` prefixes those paths with `pages[n].`.
 - **Primitive examples can be named**: an entry of `PrimitiveDefinition.examples` is a node or a `PrimitiveExample` (`{ name, description?, node }`), so a host listing examples can label them. `exampleNodes` and `primitiveExamples` read either form and keep every node type across a union of definitions; `ExampleNode` unwraps an entry's node type for a pack's registration assertion. Inventory conformance rejects blank or repeated names within a primitive, and a failing case's hint prints the name beside the index.
 
 ## 2026-10-02

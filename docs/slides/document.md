@@ -4,7 +4,7 @@
 
 ## Geometry
 
-Width 1920 × height 1080 (fixed; `sizesFromNodeHeights: false`). The primitives inside the frame declare no `metrics.svgHeight` because the frame provides the canvas, and `slideFrame` reports the canvas height; the missing-`svgHeight` warning is silent for this pack.
+Width 1920 × height 1080. `estimateHeight` returns that height and never reads a node, so an `svg` render of this frame reports no missing-`svgHeight` warning. The primitives inside the frame declare no `metrics.svgHeight` because the frame provides the canvas, and `slideFrame` reports the canvas height.
 
 ## `validateBody`
 

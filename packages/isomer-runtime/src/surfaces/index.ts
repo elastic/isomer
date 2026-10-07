@@ -35,6 +35,7 @@ export {
 } from './slack';
 export {
   type NamedFrame,
+  type SvgHeightWarning,
   type SvgPagesResult,
   type SvgRenderNodeOptions,
   type SvgRenderOptions,
