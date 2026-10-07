@@ -1709,6 +1709,59 @@ describe('createIsomerRuntime', () => {
     ]);
   });
 
+  it('keeps collecting height warnings when a container cannot be walked', () => {
+    // `children` reads `items` with no guard.
+    const boxPrimitive = definePrimitive<{
+      type: 'box';
+      items: readonly { type: string }[];
+    }>({
+      type: 'box',
+      catalog: {
+        type: 'box',
+        purpose: 'Hold children that a bad payload cannot list.',
+        useWhen: ['A container callback assumes a valid shape.'],
+        avoidWhen: ['The node is only a leaf.'],
+        example: { type: 'box', items: [] },
+      },
+      examples: [{ type: 'box', items: [] }],
+      schema: z.object({
+        type: z.literal('box'),
+        items: z.array(z.object({ type: z.string() })),
+      }),
+      children: (node) =>
+        node.items.map((item, index) => ({
+          node: item,
+          path: `items[${index}]`,
+        })),
+      renderers: {
+        react: () => null,
+        text: () => 'box',
+        markdown: () => 'box',
+      },
+    });
+    const runtime = drawingRuntime(boxPrimitive, boldPrimitive);
+    const rendered = runtime.surfaces.svg.render(
+      {
+        type: 'view',
+        body: [{ type: 'box' }, { type: 'bold', text: 'short' }],
+      },
+      { onValidationError: 'collect' }
+    );
+
+    expect(rendered.warnings).toEqual([
+      {
+        path: 'body[0]',
+        message:
+          'body[0] type "box" declares no svgHeight metric and will be measured as 0, sizing the frame short',
+      },
+      {
+        path: 'body[1]',
+        message:
+          'body[1] type "bold" declares no svgHeight metric and will be measured as 0, sizing the frame short',
+      },
+    ]);
+  });
+
   it('prefixes height warnings per page, and skips a node that declares a height', () => {
     const tallPrimitive = definePrimitive<{ type: 'tall'; text: string }>({
       type: 'tall',

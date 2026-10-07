@@ -58,7 +58,14 @@ export const collectSvgHeightWarnings = (
         message: `${full} type ${quoteType(type)} declares no svgHeight metric and will be measured as 0, sizing the frame short`,
       });
     }
-    walk(node).forEach(({ node: child, path: field }) => {
+    // Schema-invalid input can throw from `children`. Collect mode still renders.
+    let children: ReturnType<typeof walk>;
+    try {
+      children = walk(node);
+    } catch {
+      return;
+    }
+    children.forEach(({ node: child, path: field }) => {
       visit(child, `${path}.${field}`);
     });
   };
