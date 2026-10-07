@@ -793,6 +793,67 @@ describe('buildAuthoringDeclarations', () => {
     }
   );
 
+  it.each(['default', 'prefault', 'catch'] as const)(
+    'does not execute %s callbacks in shared custom props',
+    (wrapper) => {
+      let calls = 0;
+      const propsSchema = z.strictObject({
+        role: z.literal('viewer'),
+        count: z
+          .number()
+          [wrapper](() => ++calls)
+          .describe('Item count.'),
+      });
+      const defs = ['firstParent', 'secondParent'].map((type) =>
+        definePrimitive<PrimitiveNode>({
+          type,
+          catalog: entry(type),
+          examples: [],
+          schema: z.strictObject({
+            type: z.literal(type),
+            items: fromChildren(
+              'sharedItem',
+              z.array(z.object({ label: z.string() })),
+              {
+                propsSchema,
+                toItem: () => ({ label: 'ok' }),
+              }
+            ),
+          }),
+          renderers,
+        })
+      );
+      const schema = buildAuthoringJsonSchema(defs);
+      expect(() => buildJsxShim(defs)).not.toThrow();
+      const declarations = buildAuthoringDeclarations(schema, defs, {
+        jsx: true,
+      });
+      const count = wrapper === 'catch' ? ' count={1}' : '';
+      expect(
+        diagnostics({
+          '/virtual/isomer.d.ts': declarations,
+          '/virtual/use.tsx': `<FirstParent><SharedItem role="viewer"${count} /></FirstParent>; <SecondParent><SharedItem role="viewer"${count} /></SecondParent>;`,
+        })
+      ).toEqual([]);
+      expect(
+        diagnostics({
+          '/virtual/isomer.d.ts': declarations,
+          '/virtual/use.tsx':
+            '<FirstParent><SharedItem role="viewer" count="bad" /></FirstParent>;',
+        })
+      ).toHaveLength(1);
+      expect(declarations).toContain('Item count.');
+      expect(calls).toBe(0);
+      expect(
+        propsSchema.parse({
+          role: 'viewer',
+          count: wrapper === 'catch' ? 'bad' : undefined,
+        })
+      ).toEqual({ role: 'viewer', count: 1 });
+      expect(calls).toBe(1);
+    }
+  );
+
   it('preserves discriminated unions in custom input props', () => {
     const propsSchema = z.discriminatedUnion('kind', [
       z.strictObject({ kind: z.literal('text'), text: z.string() }),

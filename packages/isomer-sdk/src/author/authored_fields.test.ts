@@ -267,4 +267,45 @@ describe('authored child schema signatures', () => {
       expect(signature(first, custom)).toBe(signature(second, custom));
     }
   });
+
+  it.each(['default', 'prefault', 'catch'] as const)(
+    'does not execute %s callbacks while comparing input schemas',
+    (wrapper) => {
+      let calls = 0;
+      const schema = z.object({
+        value: z.string()[wrapper](() => `value-${++calls}`),
+      });
+      for (const custom of [false, true]) {
+        expect(signature(schema, custom)).toBe(signature(schema, custom));
+      }
+      expect(calls).toBe(0);
+      expect(
+        schema.parse({ value: wrapper === 'catch' ? 42 : undefined })
+      ).toEqual({ value: 'value-1' });
+      expect(calls).toBe(1);
+    }
+  );
+
+  it('does not execute nested or recursive fallback callbacks', () => {
+    const fail = () => {
+      throw new Error('fallback executed');
+    };
+    const tree = z.object({
+      value: z.string().default(fail),
+      get next(): z.ZodOptional<ZodType> {
+        return tree.optional();
+      },
+    });
+    const schema = z
+      .object({
+        tuple: z.tuple([z.string().prefault(fail), z.number().catch(fail)]),
+        choices: z.union([z.string().default(fail), z.number().catch(fail)]),
+        record: z.record(z.string(), z.string().default(fail)),
+        tree,
+      })
+      .catchall(z.string().catch(fail));
+    for (const custom of [false, true]) {
+      expect(() => signature(schema, custom)).not.toThrow();
+    }
+  });
 });

@@ -2,6 +2,8 @@
 
 ## 2026-10-07
 
+- **Callback-free authoring input schemas**: Compare child schemas and declare custom props from input copies that omit executable default and fallback values while preserving optional fields, references, and descriptions. Validation retains the original schemas.
+
 - **Shared child schema compatibility and development JSX**: Compare child input schemas through canonical JSON Schema projections and generate both automatic JSX runtime companions.
 
 - **Editor declaration contract**: Scope editor declarations to ambient modules, share JSX discovery with the shim, expose explicit custom child props schemas, and preserve optional tuples and recursive dictionaries. Document structural checking limits and body-array validation.

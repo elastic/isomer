@@ -10,6 +10,7 @@ import { z } from 'zod';
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
 
 import { readAuthoredSpec } from './authored_fields';
+import { prepareAuthoringInput } from './authoring_input';
 import { capitalize, createAuthoringModel } from './authoring_model';
 import {
   ANONYMOUS_DEF,
@@ -133,7 +134,11 @@ export const buildAuthoringDeclarations = (
   const customProps = new Map<string, string>();
   for (const [type, { field }] of model?.children ?? []) {
     if (!field.propsSchema) continue;
-    const projected = z.toJSONSchema(field.propsSchema, {
+    const { schema: input, metadata } = prepareAuthoringInput(
+      field.propsSchema
+    );
+    const projected = z.toJSONSchema(input, {
+      metadata,
       io: 'input',
       target: 'draft-2020-12',
       cycles: 'ref',

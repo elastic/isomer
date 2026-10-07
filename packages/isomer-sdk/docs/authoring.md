@@ -80,7 +80,7 @@ const items = fromChildren('card', z.array(z.object({ label: z.string() })), {
 });
 ```
 
-The callback and child component props infer from `propsSchema` in input mode, and the declaration projects the same schema and allows JSX children for the callback to read. This metadata does not change the callback or add runtime validation; it must describe the callback's actual props. Without it, custom child props remain loose. Ordinary child props still come from their item schemas and authored fields.
+The callback and child component props infer from `propsSchema` in input mode, and the declaration projects the same schema and allows JSX children for the callback to read. This metadata does not change the callback or add runtime validation; it must describe the callback's actual props. Without it, custom child props remain loose. Ordinary child props still come from their item schemas and authored fields. Input-schema comparison and custom prop declarations omit default and fallback values without executing `.default()`, `.prefault()`, or `.catch()` callbacks; validation keeps the original schemas.
 
 `authoringBodySchema(schema)` is the matching JSON Schema for a body array, with only reachable `$defs`. Hosts accepting a single node must wrap it in an array before validation.
 

@@ -11,6 +11,8 @@ import { z, type ZodType } from 'zod';
 import { ISOMER_ERROR_CODES, IsomerError } from '../composition/error';
 import type { PrimitiveNode } from '../define/primitive_module';
 
+import { prepareAuthoringInput } from './authoring_input';
+
 /**
  * Child-element type a schema field is filled from.
  *
@@ -353,7 +355,8 @@ const UNORDERED_SCHEMA_ARRAYS = new Set([
 ]);
 
 const schemaSignature = (schema: ZodType): string => {
-  const projected = z.toJSONSchema(schema, {
+  const { schema: input } = prepareAuthoringInput(schema);
+  const projected = z.toJSONSchema(input, {
     io: 'input',
     target: 'draft-2020-12',
     cycles: 'ref',

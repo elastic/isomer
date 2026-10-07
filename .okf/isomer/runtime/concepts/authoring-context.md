@@ -26,7 +26,7 @@ sources:
 
 Pass `authoring` on `createIsomerRuntime` to name pack-owned `$defs`, attach refine descriptions, or hide a legacy alias. Every composed pack's own `authoring` (`describe`, `omitProperties`) is merged in first, so the runtime option wins on conflict. `parse` still validates with `buildCompositionJsonSchema`. Pack prose comes from the SDK [authoring](/sdk/concepts/authoring.md) helpers.
 
-Editor declarations use a host-selected `moduleName` and share the shim's authoring model. Custom `toItem` children can supply `propsSchema` for input-prop checking; shared child names reject incompatible input schemas. Automatic JSX supports production and development runtime declarations. JSX catchalls constrain extra keys; raw node index signatures remain a structural approximation, and body validation uses the JSON Schema.
+Editor declarations use a host-selected `moduleName` and share the shim's authoring model. Custom `toItem` children can supply `propsSchema` for input-prop checking; shared child names reject incompatible input schemas without executing default or fallback callbacks. Automatic JSX supports production and development runtime declarations. JSX catchalls constrain extra keys; raw node index signatures remain a structural approximation, and body validation uses the JSON Schema.
 
 Related: [SDK authoring](/sdk/concepts/authoring.md), [view registry](/runtime/concepts/view-registry.md), [scoring](/evals/concepts/scoring.md).
 
