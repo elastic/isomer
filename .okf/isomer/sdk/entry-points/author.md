@@ -18,6 +18,6 @@ sources:
 
 Related: [authoring](/sdk/concepts/authoring.md), [authoring context](/runtime/concepts/authoring-context.md).
 
-Editor declarations use a host-selected `moduleName` and share the shim's authoring model. Custom `toItem` children can supply `propsSchema` for input-prop checking. JSX catchalls constrain extra keys; raw node index signatures remain a structural approximation, and body validation uses the JSON Schema.
+Editor declarations use a host-selected `moduleName` and share the shim's authoring model. Custom `toItem` children can supply `propsSchema` for input-prop checking; shared child names reject incompatible input schemas. Automatic JSX supports production and development runtime declarations. JSX catchalls constrain extra keys; raw node index signatures remain a structural approximation, and body validation uses the JSON Schema.
 
 [^barrel]: Author barrel

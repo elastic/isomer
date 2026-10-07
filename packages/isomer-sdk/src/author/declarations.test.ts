@@ -752,6 +752,47 @@ describe('buildAuthoringDeclarations', () => {
     ).toHaveLength(1);
   });
 
+  it.each([
+    [
+      z.object({ kind: z.literal('first') }),
+      z.object({ kind: z.literal('second') }),
+    ],
+    [z.union([z.string(), z.number()]), z.union([z.string(), z.boolean()])],
+  ])(
+    'rejects incompatible custom props on a shared child component',
+    (first, second) => {
+      const defs = [first, second].map((propsSchema, index) => {
+        const type = `parent${index}`;
+        return definePrimitive<PrimitiveNode>({
+          type,
+          catalog: entry(type),
+          examples: [],
+          schema: z.object({
+            type: z.literal(type),
+            items: fromChildren(
+              'sharedItem',
+              z.array(z.object({ label: z.string() })),
+              {
+                propsSchema,
+                toItem: () => ({ label: 'ok' }),
+              }
+            ),
+          }),
+          renderers,
+        });
+      });
+      const schema = buildAuthoringJsonSchema(defs);
+      for (const build of [
+        () => buildJsxShim(defs),
+        () => buildAuthoringDeclarations(schema, defs, { jsx: true }),
+      ]) {
+        expect(build).toThrow(
+          expect.objectContaining({ code: 'DUPLICATE_AUTHORED_CHILD' })
+        );
+      }
+    }
+  );
+
   it('preserves discriminated unions in custom input props', () => {
     const propsSchema = z.discriminatedUnion('kind', [
       z.strictObject({ kind: z.literal('text'), text: z.string() }),
@@ -821,26 +862,44 @@ describe('buildAuthoringDeclarations', () => {
     ).toEqual([]);
   });
 
-  it('works with React types and the automatic JSX runtime', () => {
-    const declarations = buildAuthoringDeclarations(schema, definitions, {
-      jsx: true,
-    });
-    expect(
-      diagnostics(
-        {
-          '/virtual/isomer.d.ts': declarations,
-          '/virtual/use.tsx':
-            '<Composition><Callout>Hello</Callout><Note text="ok" /></Composition>;',
-        },
-        {
-          types: ['react'],
-          jsx: ts.JsxEmit.ReactJSX,
-          jsxImportSource: '@elastic/isomer-authoring',
-          moduleResolution: ts.ModuleResolutionKind.Node10,
-        }
-      )
-    ).toEqual([]);
-  });
+  it.each([ts.JsxEmit.ReactJSX, ts.JsxEmit.ReactJSXDev])(
+    'works with React types and automatic JSX mode %s',
+    (jsx) => {
+      const declarations = buildAuthoringDeclarations(schema, definitions, {
+        jsx: true,
+      });
+      expect(
+        diagnostics(
+          {
+            '/virtual/isomer.d.ts': declarations,
+            '/virtual/use.tsx':
+              '<Composition><Callout>Hello</Callout><Note text="ok" /></Composition>;',
+          },
+          {
+            types: ['react'],
+            jsx,
+            jsxImportSource: '@elastic/isomer-authoring',
+            moduleResolution: ts.ModuleResolutionKind.Node10,
+          }
+        )
+      ).toEqual([]);
+      expect(
+        diagnostics(
+          {
+            '/virtual/isomer.d.ts': declarations,
+            '/virtual/use.tsx':
+              '<Composition><Note text={42} /></Composition>;',
+          },
+          {
+            types: ['react'],
+            jsx,
+            jsxImportSource: '@elastic/isomer-authoring',
+            moduleResolution: ts.ModuleResolutionKind.Node10,
+          }
+        )
+      ).toHaveLength(1);
+    }
+  );
 
   it('declares an empty catalog as never', () => {
     const declarations = buildAuthoringDeclarations(

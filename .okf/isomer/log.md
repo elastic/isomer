@@ -2,6 +2,8 @@
 
 ## 2026-10-07
 
+- **Shared child schema compatibility and development JSX**: Compare child input schemas through canonical JSON Schema projections and generate both automatic JSX runtime companions.
+
 - **Editor declaration contract**: Scope editor declarations to ambient modules, share JSX discovery with the shim, expose explicit custom child props schemas, and preserve optional tuples and recursive dictionaries. Document structural checking limits and body-array validation.
 
 - **The authoring context carries editor declarations and a body schema**: `getAuthoringContext()` returns `declarations`, `.d.ts` source for the registered primitives as an ambient module (a `<Type>Node` per primitive with its catalog text as JSDoc, `BodyNode`, and a type per other named def), and `bodySchema`, the `body` of `schema` with the `$defs` it reaches. `authoring: { jsx: true }` adds the props types and components `buildJsxShim` builds. `./author` exports `buildAuthoringDeclarations` and `authoringBodySchema`, so a host editor no longer prints JSON Schema to TypeScript itself.

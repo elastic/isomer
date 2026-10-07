@@ -364,7 +364,7 @@ export const buildAuthoringDeclarations = (
   }
   chunks.push(...printer.promoted().map((alias) => `${alias}\n`));
   const runtimeModule = jsx
-    ? `\ndeclare module ${JSON.stringify(`${moduleName}/jsx-runtime`)} {\n  import { authorJsx } from ${JSON.stringify(moduleName)};\n  export import JSX = authorJsx.JSX;\n  export function jsx(type: unknown, props: unknown, key?: string): JSX.Element;\n  export function jsxs(type: unknown, props: unknown, key?: string): JSX.Element;\n}\n`
+    ? `\ndeclare module ${JSON.stringify(`${moduleName}/jsx-runtime`)} {\n  import { authorJsx } from ${JSON.stringify(moduleName)};\n  export import JSX = authorJsx.JSX;\n  export function jsx(type: unknown, props: unknown, key?: string): JSX.Element;\n  export function jsxs(type: unknown, props: unknown, key?: string): JSX.Element;\n}\n\ndeclare module ${JSON.stringify(`${moduleName}/jsx-dev-runtime`)} {\n  import { authorJsx } from ${JSON.stringify(moduleName)};\n  export import JSX = authorJsx.JSX;\n  export function jsxDEV(type: unknown, props: unknown, key?: string, isStaticChildren?: boolean, source?: unknown, self?: unknown): JSX.Element;\n}\n`
     : '';
   return `declare module ${JSON.stringify(moduleName)} {\n${chunks
     .join('\n')

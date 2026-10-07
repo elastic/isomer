@@ -6,7 +6,7 @@
  */
 
 import type { ReactNode } from 'react';
-import type { ZodType } from 'zod';
+import { z, type ZodType } from 'zod';
 
 import { ISOMER_ERROR_CODES, IsomerError } from '../composition/error';
 import type { PrimitiveNode } from '../define/primitive_module';
@@ -272,7 +272,7 @@ export interface AuthoredChildField {
   array: boolean;
   /** Whether the field accepts `undefined`, so children may be omitted. */
   optional: boolean;
-  /** Structural fingerprint of `itemSchema`; every field branding one child type must share it. */
+  /** Structural input-schema fingerprint shared by fields branding one child type. */
   signature: string;
 }
 
@@ -343,30 +343,58 @@ const isOptionalSchema = (schema: ZodType): boolean => {
   return type === 'optional' || type === 'default';
 };
 
-const schemaSignature = (
-  schema: ZodType,
-  seen: Set<object> = new Set()
-): string => {
-  if (seen.has(schema)) {
-    return 'cycle';
-  }
-  seen.add(schema);
-  const type = zodDefType(schema) ?? '?';
-  if (type === 'object' && 'shape' in schema) {
-    const shape = schema.shape as Record<string, ZodType>;
-    const fields = Object.keys(shape)
-      .sort()
-      .map((key) => `${key}:${schemaSignature(shape[key] as ZodType, seen)}`);
-    return `{${fields.join(',')}}`;
-  }
-  if (type === 'array' && 'element' in schema) {
-    return `[${schemaSignature((schema as { element: ZodType }).element, seen)}]`;
-  }
-  const inner = innerSchema(schema);
-  if (inner) {
-    return `${type}(${schemaSignature(inner, seen)})`;
-  }
-  return type;
+const UNORDERED_SCHEMA_ARRAYS = new Set([
+  'allOf',
+  'anyOf',
+  'enum',
+  'oneOf',
+  'required',
+  'type',
+]);
+
+const schemaSignature = (schema: ZodType): string => {
+  const projected = z.toJSONSchema(schema, {
+    io: 'input',
+    target: 'draft-2020-12',
+    cycles: 'ref',
+    reused: 'inline',
+    unrepresentable: 'any',
+    metadata: z.registry(),
+  });
+  const active = new Map<object, number>();
+  const canonical = (value: unknown, key = ''): string => {
+    if (Array.isArray(value)) {
+      const members = value.map((member) => canonical(member));
+      if (UNORDERED_SCHEMA_ARRAYS.has(key)) members.sort();
+      return `[${members.join(',')}]`;
+    }
+    if (typeof value !== 'object' || value === null) {
+      return JSON.stringify(value) ?? 'undefined';
+    }
+    const cycle = active.get(value);
+    if (cycle !== undefined) return `cycle:${cycle}`;
+    const object = value as Record<string, unknown>;
+    const ref = object.$ref;
+    const target =
+      ref === '#'
+        ? projected
+        : typeof ref === 'string' && ref.startsWith('#/$defs/')
+          ? projected.$defs?.[ref.slice('#/$defs/'.length)]
+          : undefined;
+    if (target && Object.keys(object).length === 1) return canonical(target);
+    active.set(value, active.size);
+    const result = `{${Object.entries(object)
+      .filter(([key]) => value !== projected || key !== '$defs')
+      .sort(([first], [second]) => first.localeCompare(second))
+      .map(
+        ([key, member]) =>
+          `${JSON.stringify(key)}:${canonical(key === '$ref' && target ? target : member, key)}`
+      )
+      .join(',')}}`;
+    active.delete(value);
+    return result;
+  };
+  return canonical(projected);
 };
 
 const arrayElement = (schema: ZodType): ZodType | undefined => {

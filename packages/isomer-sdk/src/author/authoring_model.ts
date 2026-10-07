@@ -43,7 +43,7 @@ export const createAuthoringModel = (
       if (prior && prior.field.signature !== field.signature) {
         throw new IsomerError(
           'DUPLICATE_AUTHORED_CHILD',
-          `Child type "${field.childType}" is branded with two different item shapes.`
+          `Child type "${field.childType}" is branded with incompatible item or props input schemas.`
         );
       }
       const nextPath = [...path, field];

@@ -169,3 +169,102 @@ describe('custom child input schemas', () => {
     ).toThrow(expect.objectContaining({ code: 'AUTHORED_SCHEMA_REUSED' }));
   });
 });
+
+describe('authored child schema signatures', () => {
+  const signature = (schema: ZodType, custom: boolean) =>
+    readAuthoredSpec(
+      z.object({
+        items: custom
+          ? fromChildren('item', z.array(z.object({ label: z.string() })), {
+              propsSchema: schema,
+              toItem: () => ({ label: 'ok' }),
+            })
+          : fromChildren('item', z.array(schema)),
+      })
+    ).children[0]?.signature;
+
+  it.each([
+    ['literals', z.literal('first'), z.literal('second')],
+    ['enums', z.enum(['first', 'second']), z.enum(['first', 'third'])],
+    [
+      'unions',
+      z.union([z.string(), z.number()]),
+      z.union([z.string(), z.boolean()]),
+    ],
+    [
+      'tuples',
+      z.tuple([z.string(), z.number()]),
+      z.tuple([z.number(), z.string()]),
+    ],
+    [
+      'records',
+      z.record(z.string(), z.string()),
+      z.record(z.string(), z.number()),
+    ],
+    [
+      'catchalls',
+      z.object({}).catchall(z.string()),
+      z.object({}).catchall(z.number()),
+    ],
+  ])(
+    'distinguishes %s in both item and custom props schemas',
+    (_label, first, second) => {
+      for (const custom of [false, true]) {
+        expect(signature(first as ZodType, custom)).not.toBe(
+          signature(second as ZodType, custom)
+        );
+      }
+    }
+  );
+
+  it('ignores schema sharing, property order, and documentation', () => {
+    const shared = z.string();
+    const first = z
+      .object({ first: shared, second: shared })
+      .describe('First.');
+    const second = z
+      .object({ second: z.string(), first: z.string() })
+      .describe('Second.');
+    for (const custom of [false, true]) {
+      expect(signature(first, custom)).toBe(signature(second, custom));
+    }
+  });
+
+  it('matches separately allocated recursive schemas', () => {
+    const tree = () => {
+      const schema = z.object({
+        label: z.string(),
+        get children(): z.ZodOptional<z.ZodArray<ZodType>> {
+          return z.array(schema).optional();
+        },
+      });
+      return schema;
+    };
+    for (const custom of [false, true]) {
+      expect(signature(tree(), custom)).toBe(signature(tree(), custom));
+    }
+  });
+
+  it('ignores generated reference names when recursive properties are reordered', () => {
+    const tree = (value: ZodType) => {
+      const schema = z.object({
+        value,
+        get next(): z.ZodOptional<ZodType> {
+          return schema.optional();
+        },
+      });
+      return schema;
+    };
+    const first = z.object({
+      first: tree(z.string()),
+      second: tree(z.number()),
+    });
+    const second = z.object({
+      second: tree(z.number()),
+      first: tree(z.string()),
+    });
+    for (const custom of [false, true]) {
+      expect(signature(first, custom)).toBe(signature(second, custom));
+    }
+  });
+});
