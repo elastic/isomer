@@ -23,7 +23,7 @@ import {
 import { fromChildren, fromTextChildren } from './authored_fields';
 import { buildAuthoringDeclarations } from './declarations';
 
-const renderers = { react: () => null, text: () => '', markdown: () => '' };
+const renderers = { react: () => null, text: () => '', markdown: () => [] };
 
 const entry = (
   type: string,
