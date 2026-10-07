@@ -122,7 +122,6 @@ export default tseslint.config(
           caughtErrorsIgnorePattern: '^_',
         },
       ],
-      curly: ['error', 'all'],
     },
   },
   {
@@ -318,5 +317,11 @@ export default tseslint.config(
   {
     files: ['**/*.{js,cjs,ts,tsx}'],
     ...prettierRecommended,
+  },
+  {
+    files: ['**/*.{js,cjs,ts,tsx}'],
+    rules: {
+      curly: ['error', 'all'],
+    },
   }
 );

@@ -31,7 +31,9 @@ const decodeReference = (
   decimal: string | undefined,
   name: string | undefined
 ): string => {
-  if (name) return NAMED_REFERENCES[name.toLowerCase()] ?? match;
+  if (name) {
+    return NAMED_REFERENCES[name.toLowerCase()] ?? match;
+  }
   const codePoint = Number.parseInt(hex ?? decimal ?? '', hex ? 16 : 10);
   return codePoint > 0 && codePoint <= 0x10ffff
     ? String.fromCodePoint(codePoint)

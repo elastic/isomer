@@ -140,7 +140,9 @@ const brand = (
 ): void => {
   const record = schema as Record<symbol, unknown>;
   if (BRANDS.some((key) => Object.hasOwn(schema, key))) {
-    if (BRANDS.every((key) => record[key] === config[key])) return;
+    if (BRANDS.every((key) => record[key] === config[key])) {
+      return;
+    }
     throw new IsomerError(
       ISOMER_ERROR_CODES.AUTHORED_SCHEMA_REUSED,
       `${caller}: this schema instance is already branded another way; pass each field its own schema.`
@@ -326,7 +328,9 @@ const optionalThrough = (schema: ZodType): boolean => {
     current;
     current = innerSchema(current)
   ) {
-    if (isOptionalSchema(current)) return true;
+    if (isOptionalSchema(current)) {
+      return true;
+    }
   }
   return false;
 };
@@ -368,14 +372,18 @@ const schemaSignature = (schema: ZodType): string => {
   const canonical = (value: unknown, key = ''): string => {
     if (Array.isArray(value)) {
       const members = value.map((member) => canonical(member));
-      if (UNORDERED_SCHEMA_ARRAYS.has(key)) members.sort();
+      if (UNORDERED_SCHEMA_ARRAYS.has(key)) {
+        members.sort();
+      }
       return `[${members.join(',')}]`;
     }
     if (typeof value !== 'object' || value === null) {
       return JSON.stringify(value) ?? 'undefined';
     }
     const cycle = active.get(value);
-    if (cycle !== undefined) return `cycle:${cycle}`;
+    if (cycle !== undefined) {
+      return `cycle:${cycle}`;
+    }
     const object = value as Record<string, unknown>;
     const ref = object.$ref;
     const target =
@@ -384,7 +392,9 @@ const schemaSignature = (schema: ZodType): string => {
         : typeof ref === 'string' && ref.startsWith('#/$defs/')
           ? projected.$defs?.[ref.slice('#/$defs/'.length)]
           : undefined;
-    if (target && Object.keys(object).length === 1) return canonical(target);
+    if (target && Object.keys(object).length === 1) {
+      return canonical(target);
+    }
     active.set(value, active.size);
     const result = `{${Object.entries(object)
       .filter(([key]) => value !== projected || key !== '$defs')
@@ -435,7 +445,9 @@ const readChild = (
     optional: optionalThrough(schema),
     signature: `${schemaSignature(itemSchema)}|${typeof textField === 'string' ? textField : ''}|${propsSchema ? schemaSignature(propsSchema) : ''}`,
   };
-  if (propsSchema) child.propsSchema = propsSchema;
+  if (propsSchema) {
+    child.propsSchema = propsSchema;
+  }
   if (typeof textField === 'string') {
     child.textField = textField;
   }

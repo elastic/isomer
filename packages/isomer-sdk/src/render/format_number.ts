@@ -37,7 +37,9 @@ export const formatCompactNumber = (
 ): string => {
   const abs = Math.abs(value);
   let index = TIERS.findIndex(({ size }) => abs >= size);
-  if (index === -1) index = TIERS.length - 1;
+  if (index === -1) {
+    index = TIERS.length - 1;
+  }
   // A value that rounds up to the tier's next power, `999.96k`, reads as `1m`.
   if (
     index > 0 &&

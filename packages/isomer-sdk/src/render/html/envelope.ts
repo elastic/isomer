@@ -438,7 +438,9 @@ interface ScriptNode extends JavaScriptNode {
 
 // Tagged templates observe raw spelling and reuse the same frozen object per site.
 const embedJs = (js: string): string => {
-  if (!/<\/script|<!--/i.test(js)) return js;
+  if (!/<\/script|<!--/i.test(js)) {
+    return js;
+  }
   const comments: JavaScriptComment[] = [];
   const tree = parse(js, { ecmaVersion: 'latest', onComment: comments });
   const sites: ScriptNode[] = [];
@@ -446,14 +448,17 @@ const embedJs = (js: string): string => {
   const pending: JavaScriptNode[] = [tree];
   while (pending.length) {
     const node = pending.pop()! as ScriptNode;
-    if (node.type === 'Identifier' && node.name) identifiers.add(node.name);
+    if (node.type === 'Identifier' && node.name) {
+      identifiers.add(node.name);
+    }
     if (
       node.type === 'TaggedTemplateExpression' &&
       node.quasi.quasis.some(({ value: { raw } }) =>
         /<\/script|<!--/i.test(raw)
       )
-    )
+    ) {
       sites.push(node);
+    }
     for (const value of Object.values(node)) {
       for (const child of Array.isArray(value) ? value : [value]) {
         if (
@@ -469,8 +474,9 @@ const embedJs = (js: string): string => {
   }
   sites.sort((a, b) => a.start - b.start);
   let prefix = '__isomerTemplate';
-  while ([...identifiers].some((name) => name.startsWith(prefix)))
+  while ([...identifiers].some((name) => name.startsWith(prefix))) {
     prefix += '_';
+  }
   const literal = (value: string | null): string =>
     value === null ? 'void 0' : JSON.stringify(value).replace(/</g, '\\u003c');
   const rewrite = (start: number, end: number): string => {
@@ -487,7 +493,9 @@ const embedJs = (js: string): string => {
         .map((comment) => ({ ...comment, index: -1, comment: comment.value })),
     ].sort((a, b) => a.start - b.start);
     for (const edit of edits) {
-      if (edit.start < cursor || edit.end > end) continue;
+      if (edit.start < cursor || edit.end > end) {
+        continue;
+      }
       result += js.slice(cursor, edit.start);
       if (edit.comment !== undefined) {
         result += `//${edit.comment}`;
@@ -525,7 +533,9 @@ const embedJs = (js: string): string => {
 
 const escapedBy = (source: string, at: number): boolean => {
   let slashes = 0;
-  while (source[at - slashes - 1] === '\\') slashes += 1;
+  while (source[at - slashes - 1] === '\\') {
+    slashes += 1;
+  }
   return slashes % 2 === 1;
 };
 

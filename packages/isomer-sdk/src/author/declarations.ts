@@ -133,7 +133,9 @@ export const buildAuthoringDeclarations = (
   const model = jsx ? createAuthoringModel(definitions) : undefined;
   const customProps = new Map<string, string>();
   for (const [type, { field }] of model?.children ?? []) {
-    if (!field.propsSchema) continue;
+    if (!field.propsSchema) {
+      continue;
+    }
     const { schema: input, metadata } = prepareAuthoringInput(
       field.propsSchema
     );
@@ -149,8 +151,12 @@ export const buildAuthoringDeclarations = (
     const prefix = `__authorProps${customProps.size}_`;
     const id = `${prefix}Root`;
     const rewrite = (value: unknown): unknown => {
-      if (Array.isArray(value)) return value.map(rewrite);
-      if (!isJsonObject(value)) return value;
+      if (Array.isArray(value)) {
+        return value.map(rewrite);
+      }
+      if (!isJsonObject(value)) {
+        return value;
+      }
       return Object.fromEntries(
         Object.entries(value).map(([key, member]) => [
           key,
@@ -164,8 +170,9 @@ export const buildAuthoringDeclarations = (
         ])
       );
     };
-    for (const [id, node] of Object.entries(localDefs))
+    for (const [id, node] of Object.entries(localDefs)) {
       defs[`${prefix}${id}`] = rewrite(node);
+    }
     const { $defs: _defs, $schema: _schema, ...node } = projected;
     defs[id] = rewrite(node);
     customProps.set(type, id);
@@ -224,7 +231,9 @@ export const buildAuthoringDeclarations = (
   };
 
   const declareJsx = (): string[] => {
-    if (!model) return [];
+    if (!model) {
+      return [];
+    }
     const out = [JSX_PRELUDE, AUTHOR_CHILDREN];
     const bindings: string[] = [];
     const declared = new Set<string>();
@@ -236,7 +245,9 @@ export const buildAuthoringDeclarations = (
       omit: ReadonlySet<string> = new Set(),
       docs: readonly string[] = []
     ): void => {
-      if (declared.has(component)) return;
+      if (declared.has(component)) {
+        return;
+      }
       declared.add(component);
       const propsName =
         component === 'Composition'
@@ -273,8 +284,9 @@ export const buildAuthoringDeclarations = (
         ? `<${inputName} extends ${propsName}>(props: ${inputName} & { [${keyName} in keyof ${inputName} as ${keyName} extends keyof ${propsName} | 'key' ? never : ${keyName}]: ${extraType} }) => null`
         : `(props: ${propsName}) => null`;
       bindings.push(`  ${JSON.stringify(component)}: ${signature};`);
-      if (IDENTIFIER.test(component))
+      if (IDENTIFIER.test(component)) {
         out.push(`${jsDoc(docs, '')}const ${component}: ${signature};\n`);
+      }
     };
     declareComponent(
       'Composition',
@@ -313,8 +325,9 @@ export const buildAuthoringDeclarations = (
         node = step.array ? resolveNode(defs, property?.items) : property;
       }
       const customId = customProps.get(type);
-      if (field.toItem)
+      if (field.toItem) {
         node = customId ? resolveNode(defs, ownDef(defs, customId)) : undefined;
+      }
       const nested = field.toItem
         ? []
         : readAuthoredSpec(field.itemSchema).children;

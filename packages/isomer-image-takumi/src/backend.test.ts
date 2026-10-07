@@ -38,7 +38,9 @@ const paeth = (left: number, up: number, upLeft: number) => {
   const [toLeft, toUp, toUpLeft] = [left, up, upLeft].map((value) =>
     Math.abs(estimate - value)
   ) as [number, number, number];
-  if (toLeft <= toUp && toLeft <= toUpLeft) return left;
+  if (toLeft <= toUp && toLeft <= toUpLeft) {
+    return left;
+  }
   return toUp <= toUpLeft ? up : upLeft;
 };
 
