@@ -50,9 +50,18 @@ const degradingDispatcher = (
       : {}),
   });
 
-const mrkdwnOf = (blocks: readonly SlackBlock[]): string =>
+const richTextOf = (value: object): string =>
+  'text' in value && typeof value.text === 'string'
+    ? value.text
+    : 'elements' in value && Array.isArray(value.elements)
+      ? value.elements.map(richTextOf).join('')
+      : '';
+
+const textOf = (blocks: readonly SlackBlock[]): string =>
   blocks
-    .map((block) => (block.type === 'section' ? (block.text?.text ?? '') : ''))
+    .map((block) =>
+      block.type === 'section' ? (block.text?.text ?? '') : richTextOf(block)
+    )
     .join('\n');
 
 const section = (text: string): SlackBlock => ({
@@ -794,7 +803,7 @@ describe('Slack envelope transforms', () => {
       },
       degradingDispatcher()
     );
-    expect(mrkdwnOf(blocks)).toContain('Aside');
+    expect(textOf(blocks)).toContain('Aside');
   });
 
   it('degrades a non-renderable child inside a container that renders its siblings', () => {
@@ -816,7 +825,7 @@ describe('Slack envelope transforms', () => {
       },
       degradingDispatcher()
     );
-    const text = mrkdwnOf(blocks);
+    const text = textOf(blocks);
     expect(text).toContain('Rendered');
     expect(text).toContain('Degraded');
   });
@@ -835,7 +844,7 @@ describe('Slack envelope transforms', () => {
       },
       degradingDispatcher()
     );
-    expect(mrkdwnOf(blocks)).not.toContain('Hidden');
+    expect(textOf(blocks)).not.toContain('Hidden');
   });
 
   it('does not inject markdown when a slack renderer legitimately renders nothing', () => {
@@ -856,7 +865,7 @@ describe('Slack envelope transforms', () => {
       },
       degradingDispatcher()
     );
-    expect(mrkdwnOf(blocks)).not.toContain('HiddenFromSlack');
+    expect(textOf(blocks)).not.toContain('HiddenFromSlack');
   });
 
   it('degrades a node with no slack renderer through its markdown', () => {
@@ -867,7 +876,7 @@ describe('Slack envelope transforms', () => {
       },
       degradingDispatcher()
     );
-    expect(mrkdwnOf(blocks)).toContain('Aside');
+    expect(textOf(blocks)).toContain('Aside');
   });
 
   it('clamps the alt text it records for an upload, not just the block', () => {

@@ -16,7 +16,10 @@ import {
   type SlackRichTextBlockElement,
   type SlackRichTextInline,
 } from './blocks';
-import { markdownContentToSlackBlocks } from './markdown_content';
+import {
+  gfmToSlackBlocks,
+  markdownContentToSlackBlocks,
+} from './markdown_content';
 
 const runs = (inlines: readonly SlackRichTextInline[]): string =>
   inlines
@@ -365,14 +368,14 @@ describe('markdownContentToSlackBlocks', () => {
         )
       )
     ).toEqual([
-      'section: > *e*\n\n> f',
+      'quote: [bold:e]\nf',
       'preformatted|: *g*',
-      'section: > - h',
+      'list|: h',
       'table: i',
     ]);
   });
 
-  it('hands the string path a break as a line ending and a quote as its blocks', () => {
+  it('lifts a table out of a list item and resumes the list after it', () => {
     expect(
       outline(
         markdownContentToSlackBlocks([
@@ -389,11 +392,7 @@ describe('markdownContentToSlackBlocks', () => {
           ]),
         ])
       )
-    ).toEqual([
-      'section: - a\n  b\n\n  q',
-      'table: h',
-      'section: - c\n  d\n- x',
-    ]);
+    ).toEqual(['list: a\nb\nq', 'table: h', 'list: c\nd / x']);
   });
 
   it('links only an absolute URL in quotes, list items, and multi-run cells', () => {
@@ -422,7 +421,7 @@ describe('markdownContentToSlackBlocks', () => {
         ([, url, mrkdwn]) => url ?? mrkdwn
       )
     ).toEqual(['https://b.c', 'https://e.f', 'https://y.z']);
-    for (const label of ['"a"', '"c"', 'd ', '"g"', '"x"']) {
+    for (const label of ['"a"', '"c"', '"d"', '"g"', '"x"']) {
       expect(payload).toContain(label);
     }
   });
@@ -551,14 +550,14 @@ describe('markdownContentToSlackBlocks', () => {
     expect(block).not.toMatchObject({ elements: [{}, { offset: 1 }] });
   });
 
-  it('sends a list holding a table through the string path whole', () => {
-    const blocks = markdownContentToSlackBlocks(
-      md.list([[md.table(['A', 'B'], [['1', '2']])]])
-    );
-    expect(blocks.some((block) => block.type === 'rich_text')).toBe(false);
-    const text = JSON.stringify(blocks);
-    expect(text).toContain('A | B');
-    expect(text).toContain('1 | 2');
+  it('prints a list item holding only a table as the table', () => {
+    expect(
+      outline(
+        markdownContentToSlackBlocks(
+          md.list([[md.table(['A', 'B'], [['1', '2']])]])
+        )
+      )
+    ).toEqual(['table: A | B / 1 | 2']);
   });
 
   it('prints nothing for a table with no columns and drops a row with no cells', () => {
@@ -683,25 +682,164 @@ describe('markdownContentToSlackBlocks', () => {
     });
   });
 
-  it('sends Markdown printed as written, and a block holding it, through the string path', () => {
+  it('reads Markdown printed as written, and a block holding it, as GFM', () => {
     expect(
-      markdownContentToSlackBlocks([
-        md.paragraph('built'),
-        md.list([markdownFromString('**legacy**'), 'x']),
-        md.authored('_authored_'),
-      ])
+      outline(
+        markdownContentToSlackBlocks([
+          md.paragraph('built'),
+          md.list([markdownFromString('**legacy**'), 'x']),
+          md.authored('_authored_'),
+        ])
+      )
     ).toEqual([
-      {
-        type: 'rich_text',
-        elements: [
-          {
-            type: 'rich_text_section',
-            elements: [{ type: 'text', text: 'built' }],
-          },
-        ],
-      },
-      { type: 'section', text: { type: 'mrkdwn', text: '- *legacy*\n- x' } },
-      { type: 'section', text: { type: 'mrkdwn', text: '_authored_' } },
+      'section: built',
+      'list: [bold:legacy] / x',
+      'section: [italic:authored]',
     ]);
+  });
+});
+
+describe('gfmToSlackBlocks', () => {
+  it.each<[string, string, string[]]>([
+    [
+      'nests strong in emphasis',
+      '***a** b*',
+      ['section: [italic,bold:a][italic: b]'],
+    ],
+    [
+      'nests emphasis of one delimiter',
+      '*a *b* c*',
+      ['section: [italic:a ][italic:b][italic: c]'],
+    ],
+    [
+      'keeps an intraword underscore',
+      'snake_case_name',
+      ['section: snake_case_name'],
+    ],
+    ['reads a tilde fence', '~~~\n*x*\n~~~', ['preformatted: *x*']],
+    ['reads indented code', '    *x*', ['preformatted: *x*']],
+    ['continues a quote lazily', '> a\nb', ['quote: a\nb']],
+    [
+      'keeps a backslash before a heading',
+      'a\\\n# h',
+      ['section: a\\\n', 'section: [bold:h]'],
+    ],
+    [
+      'keeps a backslash before a list',
+      'a\\\n- b',
+      ['section: a\\', 'list: b'],
+    ],
+    [
+      'keeps a backslash before a fence',
+      'a\\\n```\nc\n```',
+      ['section: a\\', 'preformatted: c'],
+    ],
+    [
+      'reads a quote and a fence in list items',
+      '- a\n  > q\n- b\n  ```\n  c\n  ```',
+      ['list: a\nq / b\n[code:c]'],
+    ],
+    [
+      'resolves escapes and references',
+      '\\*a\\* &#42; &amp;',
+      ['section: *a* * &'],
+    ],
+    [
+      'prints a thematic break as a divider',
+      'a\n\n---\n\nb',
+      ['section: a', 'divider', 'section: b'],
+    ],
+    ['prints raw HTML as text', '<div>x</div>', ['section: <div>x</div>']],
+    [
+      'labels a footnote',
+      'x[^1]\n\n[^1]: note',
+      ['section: x[^1]\n', 'section: [^1]: note'],
+    ],
+  ])('%s', (_name, gfm, expected) => {
+    expect(outline(gfmToSlackBlocks(gfm))).toEqual(expected);
+    expect(gfmToSlackBlocks(gfm.replaceAll('\n', '\r\n'))).toEqual(
+      gfmToSlackBlocks(gfm)
+    );
+  });
+
+  it('labels a footnote in a plain table cell', () => {
+    expect(outline(gfmToSlackBlocks('| x[^1] |\n| - |\n\n[^1]: n'))).toEqual([
+      'table: x[^1]',
+      'section: [^1]: n',
+    ]);
+  });
+
+  it('leads a task item with its box', () => {
+    expect(
+      outline(gfmToSlackBlocks('- [x] done\n- [ ] todo\n\n  more\n- plain'))
+    ).toEqual(['list: ☑ done / ☐ todo\nmore / plain']);
+  });
+
+  it('gives no number to an item holding only a table', () => {
+    const blocks = gfmToSlackBlocks('1. a\n2. | t |\n   | - |\n3. c');
+    expect(outline(blocks)).toEqual(['list: a', 'table: t', 'list: c']);
+    expect(blocks[2]).toMatchObject({
+      elements: [{ type: 'rich_text_list', style: 'ordered', offset: 1 }],
+    });
+  });
+
+  it('nests a list indented by a tab', () => {
+    const [block] = gfmToSlackBlocks('- a\n\n\t- b');
+    expect(block).toMatchObject({
+      elements: [
+        { type: 'rich_text_list' },
+        { type: 'rich_text_list', indent: 1 },
+      ],
+    });
+  });
+
+  it('resolves link and image references to their first definition', () => {
+    const payload = JSON.stringify(
+      gfmToSlackBlocks(
+        '[a][r] ![i][r]\n\n[r]: https://a.b/i.png\n[r]: https://c.d'
+      )
+    );
+    expect(
+      [...payload.matchAll(/"url":"([^"]*)"/g)].map(([, url]) => url)
+    ).toEqual(['https://a.b/i.png', 'https://a.b/i.png']);
+    expect(payload).not.toContain('https://c.d');
+  });
+
+  it('links only an absolute URL, after decoding its destination', () => {
+    const payload = JSON.stringify(
+      gfmToSlackBlocks(
+        '[x](javascript:alert(1)) [y](&#106;avascript:x) [z](/p) [w](https://a.b/a\\|b)'
+      )
+    );
+    expect(
+      [...payload.matchAll(/"url":"([^"]*)"/g)].map(([, url]) => url)
+    ).toEqual(['https://a.b/a|b']);
+  });
+
+  it('prints source past the parse budget as literal paragraphs', () => {
+    const blocks = gfmToSlackBlocks(`${'**x** '.repeat(4_000)}\n\n_y_`);
+    const [first, second] = outline(blocks);
+    expect(first).toMatch(/^section: \*\*x\*\* \*\*x\*\*/);
+    expect(second).toBe('section: _y_');
+  });
+
+  it('translates adversarial source in bounded time', () => {
+    const inputs = [
+      '*a '.repeat(2_000),
+      '['.repeat(16_000),
+      '`'.repeat(16_000),
+      `${'> '.repeat(120)}x`,
+      `${'- '.repeat(120)}x`,
+      '| a |\n| - |\n'.repeat(1_000),
+    ];
+    const started = performance.now();
+    for (const input of inputs) {
+      gfmToSlackBlocks(input);
+    }
+    expect(performance.now() - started).toBeLessThan(2_000);
+  });
+
+  it('drops whitespace-only source', () => {
+    expect(gfmToSlackBlocks('\n\n  \n')).toEqual([]);
   });
 });

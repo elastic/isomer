@@ -17,10 +17,16 @@ import {
   type MarkdownContent,
   markdownContent,
 } from '../../define/markdown_content';
-import { gfmToSlackBlocks } from '../slack/format';
+import {
+  gfmToSlackBlocks,
+  markdownContentToSlackBlocks,
+} from '../slack/markdown_content';
 
 import { markdownFromString, md, serializeMarkdown } from './builder';
 import { SAFE_INPUTS } from './safe_inputs.fixtures';
+
+const viaString = (content: MarkdownContent) =>
+  gfmToSlackBlocks(serializeMarkdown(content));
 
 const parse = (markdown: string): Root =>
   fromMarkdown(markdown, {
@@ -153,61 +159,54 @@ describe('md', () => {
   });
 
   it('reaches Slack intact when a wrapper holds code containing its delimiter', () => {
-    const markdown = serializeMarkdown(
-      md.paragraph(
-        md.strong(md.code('a**b')),
-        ' ',
-        md.emphasis(md.code('c_d')),
-        ' ',
-        md.link(md.code('e]f'), 'https://a.b')
-      )
+    const content = md.paragraph(
+      md.strong(md.code('a**b')),
+      ' ',
+      md.emphasis(md.code('c_d')),
+      ' ',
+      md.link(md.code('e]f'), 'https://a.b')
     );
-    expect(gfmToSlackBlocks(markdown)).toEqual([
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: '*`a**b`* _`c_d`_ <https://a.b|e]f>',
-        },
-      },
-    ]);
+    expect(viaString(content)).toEqual(markdownContentToSlackBlocks(content));
+    expect(JSON.stringify(viaString(content))).toContain('"text":"a**b"');
   });
 
   it('reaches Slack as a bare link for an empty link label or image alt', () => {
-    const markdown = serializeMarkdown(
-      md.paragraph(
-        md.link('', 'https://a.b'),
-        ' ',
-        md.image('', 'https://a.b/i.png')
-      )
+    const content = md.paragraph(
+      md.link('', 'https://a.b'),
+      ' ',
+      md.image('', 'https://a.b/i.png')
     );
-    expect(gfmToSlackBlocks(markdown)).toEqual([
+    expect(viaString(content)).toEqual([
       {
-        type: 'section',
-        text: { type: 'mrkdwn', text: '<https://a.b> <https://a.b/i.png>' },
+        type: 'rich_text',
+        elements: [
+          {
+            type: 'rich_text_section',
+            elements: [
+              { type: 'link', url: 'https://a.b' },
+              { type: 'text', text: ' ' },
+              { type: 'link', url: 'https://a.b/i.png' },
+            ],
+          },
+        ],
       },
     ]);
   });
 
   it('prints nested strong and emphasis unambiguously, and Slack nests them', () => {
-    const markdown = serializeMarkdown(
-      md.paragraph(
-        md.strong(md.emphasis('x')),
-        ' ',
-        md.strong('a ', md.emphasis('b'), ' c'),
-        ' ',
-        md.emphasis('d ', md.strong('e')),
-        ' ',
-        md.emphasis(md.strong('f'))
-      )
+    const content = md.paragraph(
+      md.strong(md.emphasis('x')),
+      ' ',
+      md.strong('a ', md.emphasis('b'), ' c'),
+      ' ',
+      md.emphasis('d ', md.strong('e')),
+      ' ',
+      md.emphasis(md.strong('f'))
     );
-    expect(markdown).toBe('**_x_** **a _b_ c** _d **e**_ _**f**_');
-    expect(gfmToSlackBlocks(markdown)).toEqual([
-      {
-        type: 'section',
-        text: { type: 'mrkdwn', text: '*_x_* *a _b_ c* _d *e*_ _*f*_' },
-      },
-    ]);
+    expect(serializeMarkdown(content)).toBe(
+      '**_x_** **a _b_ c** _d **e**_ _**f**_'
+    );
+    expect(viaString(content)).toEqual(markdownContentToSlackBlocks(content));
   });
 
   it('applies the URL policy to links and images', () => {
@@ -396,16 +395,22 @@ describe('md', () => {
   });
 
   it('reaches Slack with no literal escapes, links and tables intact', () => {
-    const blocks = gfmToSlackBlocks(
-      serializeMarkdown([
-        md.paragraph('2*3 # [not] ', md.link('x_y', 'https://a.b/c|d')),
-        md.table(['a|b'], [['1.']]),
-        md.codeBlock('```\ninner'),
-      ])
-    );
-    expect(blocks[0]).toEqual({
-      type: 'section',
-      text: { type: 'mrkdwn', text: '2*3 # [not] <https://a.b/c%7Cd|x_y>' },
+    const content = [
+      md.paragraph('2*3 # [not] ', md.link('x_y', 'https://a.b/c|d')),
+      md.table(['a|b'], [['1.']]),
+      md.codeBlock('```\ninner'),
+    ];
+    const blocks = viaString(content);
+    expect(blocks).toEqual(markdownContentToSlackBlocks(content));
+    expect(blocks[0]).toMatchObject({
+      elements: [
+        {
+          elements: [
+            { text: '2*3 # [not] ' },
+            { type: 'link', text: 'x_y', url: 'https://a.b/c|d' },
+          ],
+        },
+      ],
     });
     expect(blocks[1]).toMatchObject({
       type: 'table',

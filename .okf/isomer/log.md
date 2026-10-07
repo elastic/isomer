@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-07
+
+- **Slack fallback parses string results**: `gfmToSlackBlocks` parses GFM with the parser `md.authored` already loads on the root and `./slack` entries, then translates the tree as `markdownContentToSlackBlocks` does, so a string result reaches Slack as `rich_text`, `table`, and `divider` blocks with CommonMark's delimiter runs, lazy continuation, tilde and indented code, tab indentation, and LF or CRLF line endings, where it used to be mrkdwn `section`s read a line at a time. Markdown printed as written inside builder content is parsed where it sits, and a table in a list item follows the item instead of sending the list through a string path. References resolve to their first definition, footnotes print their label, in table cells too, task items lead with `☑` or `☐`, raw HTML prints as text, and source past the parse budget prints as literal paragraphs. The line translator is removed.
+
 ## 2026-10-06
 
 - **`assertPackRegistrationComplete` loads under CommonJS**: the CommonJS build compiles the entry `import()` to `require()`, which rejected the `file:` URL it was given, so the check failed under Jest. It now imports a path when `require` exists and the `file:` URL otherwise, and `check:pack-consumer` runs it from the packed `./testing` entry under both `import` and `require`.

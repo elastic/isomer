@@ -5,9 +5,10 @@
  * 2.0.
  */
 
-// Authored Markdown source made safe to print, for `md.authored`.
+// Authored Markdown source made safe to print, for `md.authored`, and the GFM
+// parse it shares with the Slack fallback.
 
-import type { Definition, Nodes, Parents } from 'mdast';
+import type { Definition, Nodes, Parents, Root } from 'mdast';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { gfmFromMarkdown } from 'mdast-util-gfm';
 import { gfm } from 'micromark-extension-gfm';
@@ -38,6 +39,26 @@ const escapeParsedDestination = (href: string): string =>
 
 let parseOptions: Parameters<typeof fromMarkdown>[1] | undefined;
 
+const parse = (source: string): Root =>
+  fromMarkdown(
+    source,
+    (parseOptions ??= {
+      extensions: [gfm()],
+      mdastExtensions: [gfmFromMarkdown()],
+    })
+  );
+
+/** `markdown` as flat GFM mdast blocks, typed `unknown` so no declaration names mdast; `null` past the parse budget or the parser's recursion depth. */
+export const parseGfmBlocks = (markdown: string): readonly unknown[] | null => {
+  if (exceedsParseBudget(markdown)) return null;
+  try {
+    return parse(markdown).children;
+  } catch (error) {
+    if (!(error instanceof RangeError)) throw error;
+    return null;
+  }
+};
+
 // Each pass can expose a new sink (an escaped HTML block reveals the Markdown
 // inside it; a blocked link's label may close an outer `](`), so passes repeat
 // until the source is stable.
@@ -53,11 +74,7 @@ const offsets = (node: Nodes): [number, number] | undefined => {
 };
 
 const sanitizePass = (source: string): string => {
-  parseOptions ??= {
-    extensions: [gfm()],
-    mdastExtensions: [gfmFromMarkdown()],
-  };
-  const root = fromMarkdown(source, parseOptions);
+  const root = parse(source);
   const definitions = new Map<string, Definition>();
   const pending: Nodes[] = [...root.children].reverse();
   while (pending.length) {
