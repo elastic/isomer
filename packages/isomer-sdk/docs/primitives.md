@@ -143,7 +143,7 @@ Runs before every render, on every surface, and may return `null` to drop the no
 
 ## `metrics.svgHeight`
 
-Optional, and nothing ties it to the `svg` surface, so a node can render to `svg`, contribute `0` to a frame's height estimate, and leave a summing frame short. Validation reports it, but only when some frame in the runtime actually measures nodes, since a fixed-size document reads nothing from it.
+Optional. The height estimate is `0` when it is missing, so a frame that sums node heights sizes short. The runtime's `svg` surface reports each such node when the frame that render uses calls `estimateSvgHeight`. A frame that returns a constant reads nothing from it, and `validate` reports nothing about it.
 
 ## Pack types
 

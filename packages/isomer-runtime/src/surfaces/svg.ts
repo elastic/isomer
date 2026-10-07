@@ -31,6 +31,9 @@ import {
 import type { RuntimePackTypes } from '../pack_types';
 
 import { checkNode } from './check_node';
+import { collectSvgHeightWarnings, type SvgHeightWarning } from './svg_height';
+
+export type { SvgHeightWarning };
 
 /** Options for {@link SvgSurface.render} and {@link SvgSurface.renderPages}. */
 export interface SvgRenderOptions {
@@ -73,6 +76,11 @@ export interface SvgRenderResult {
   css: string;
   width: number;
   height: number;
+  /**
+   * Nodes this render measured as 0. Empty when `estimateHeight` never calls
+   * `estimateSvgHeight`, or when `height` is given.
+   */
+  warnings: readonly SvgHeightWarning[];
 }
 
 /** Several compositions laid out against one stylesheet, one page each, as a paged document needs. */
@@ -85,6 +93,11 @@ export interface SvgPagesResult {
   width: number;
   /** Every page's height. */
   height: number;
+  /**
+   * Nodes measured as 0, paths prefixed `pages[n].`. Empty when `height` is
+   * given, or when `estimateHeight` never calls `estimateSvgHeight`.
+   */
+  warnings: readonly SvgHeightWarning[];
 }
 
 /**
@@ -103,7 +116,8 @@ export interface SvgSurface {
    * Renders several compositions under one frame with one stylesheet, one
    * page each. Every page is the same size, the tallest estimate unless
    * `height` is given, and the first composition's `theme` decides the palette
-   * unless `theme` is given.
+   * unless `theme` is given. `warnings` names nodes that estimate measured as
+   * 0, under `pages[n].`.
    *
    * Throws `EMPTY_PAGES` for an empty list, and validates each composition in
    * order as {@link SvgSurface.render} does.
@@ -173,27 +187,56 @@ export const createSvgSurface = <TRenderContext = unknown>(
     }
   };
 
-  /** For `estimateHeight`, which measures nodes rather than drawing them. */
-  const measuringOnly: FrameDispatcher = {
-    renderSvg: () => null,
-    estimateSvgHeight: (node) => dispatcher.estimateSvgHeight(node),
+  /** Height from `estimateHeight`, and warnings when that call reads `estimateSvgHeight`. */
+  const measuredHeight = (
+    frame: BoundFrame,
+    composition: Composition,
+    prefix: string
+  ): { height: number; warnings: readonly SvgHeightWarning[] } => {
+    let consulted = false;
+    const height = frame.estimateHeight(composition, {
+      renderSvg: () => null,
+      estimateSvgHeight: (node) => {
+        consulted = true;
+        return dispatcher.estimateSvgHeight(node);
+      },
+    });
+    return {
+      height,
+      warnings: consulted
+        ? collectSvgHeightWarnings(
+            dispatcher.definitions,
+            composition.body,
+            prefix
+          )
+        : [],
+    };
   };
 
-  /** One viewport for every composition: the tallest estimate, unless overridden. */
+  /** The tallest estimate, unless `height` is given, which leaves `warnings` empty. */
   const viewportFor = (
     frame: BoundFrame,
     compositions: readonly Composition[],
-    options: Pick<SvgRenderOptions, 'width' | 'height'>
-  ): { width: number; height: number } => ({
-    width: options.width ?? frame.defaultWidth,
-    height:
-      options.height ??
-      Math.max(
-        ...compositions.map((composition) =>
-          frame.estimateHeight(composition, measuringOnly)
-        )
-      ),
-  });
+    options: Pick<SvgRenderOptions, 'width' | 'height'>,
+    pagePaths: boolean
+  ): {
+    width: number;
+    height: number;
+    warnings: readonly SvgHeightWarning[];
+  } => {
+    const width = options.width ?? frame.defaultWidth;
+    if (options.height !== undefined) {
+      return { width, height: options.height, warnings: [] };
+    }
+    const measured = compositions.map((composition, index) =>
+      measuredHeight(frame, composition, pagePaths ? `pages[${index}]` : '')
+    );
+    return {
+      width,
+      height: Math.max(...measured.map(({ height }) => height)),
+      warnings: measured.flatMap(({ warnings }) => warnings),
+    };
+  };
 
   const frameDispatcherFor = (
     context: TRenderContext,
@@ -269,7 +312,8 @@ export const createSvgSurface = <TRenderContext = unknown>(
   const renderDocument = (
     [head, ...tail]: readonly [Composition, ...Composition[]],
     options: SvgRenderOptions,
-    subject: (index: number) => string
+    subject: (index: number) => string,
+    pagePaths: boolean
   ): SvgPagesResult => {
     const check = (composition: Composition): CheckedComposition =>
       compositionToRender(
@@ -283,7 +327,12 @@ export const createSvgSurface = <TRenderContext = unknown>(
     compositions.forEach((composition, index) => {
       assertBody(named, composition, subject(index));
     });
-    const viewport = viewportFor(named.frame, compositions, options);
+    const { warnings, ...size } = viewportFor(
+      named.frame,
+      compositions,
+      options,
+      pagePaths
+    );
     const mode = options.theme ?? first.theme;
     const theme = named.frame.resolveTheme(mode);
     const page = (composition: CheckedComposition): StyledPage => ({
@@ -291,7 +340,7 @@ export const createSvgSurface = <TRenderContext = unknown>(
       build: (context) =>
         named.frame.render(
           composition,
-          { ...viewport, mode },
+          { ...size, mode },
           frameDispatcherFor(context, theme, options.anchors)
         ),
     });
@@ -299,7 +348,7 @@ export const createSvgSurface = <TRenderContext = unknown>(
       [page(first), ...rest.map(page)],
       schemeFor(mode)
     );
-    return { ...viewport, pages: elements, css };
+    return { ...size, warnings, pages: elements, css };
   };
 
   return {
@@ -308,7 +357,8 @@ export const createSvgSurface = <TRenderContext = unknown>(
       const { pages, ...viewport } = renderDocument(
         [composition],
         options,
-        () => 'this composition'
+        () => 'this composition',
+        false
       );
       return { ...viewport, element: pages[0] };
     },
@@ -323,7 +373,8 @@ export const createSvgSurface = <TRenderContext = unknown>(
       return renderDocument(
         [first, ...rest],
         options,
-        (index) => `page ${index + 1}`
+        (index) => `page ${index + 1}`,
+        true
       );
     },
     renderNode: (node, options = {}) => {
@@ -334,6 +385,7 @@ export const createSvgSurface = <TRenderContext = unknown>(
       );
       const { frame } = frameFor(options.frame);
       const theme = frame.resolveTheme(options.theme);
+      const { height, warnings } = measuredHeight(frame, composition, '');
       const { elements, css } = withStyles(
         [
           {
@@ -349,7 +401,8 @@ export const createSvgSurface = <TRenderContext = unknown>(
       );
       return {
         width: frame.defaultWidth,
-        height: frame.estimateHeight(composition, measuringOnly),
+        height,
+        warnings,
         element: elements[0],
         css,
       };

@@ -97,16 +97,6 @@ export interface Frame<TTheme> {
   /** Width used when the caller passes none. */
   defaultWidth: number;
   /**
-   * Whether {@link Frame.estimateHeight} sums per-node heights, and so
-   * under-sizes the frame for a node whose primitive declares no
-   * `metrics.svgHeight` — `dispatcher.estimateSvgHeight` returns `0` for those.
-   *
-   * Defaults to `true`, because the gap is silent and a frame that measures
-   * nodes is the normal case. A fixed-size frame sets `false` once and stops
-   * the missing `svgHeight` warning reporting a metric nothing reads.
-   */
-  sizesFromNodeHeights?: boolean;
-  /**
    * Palette per mode. Frame and palette vary independently — a branded card is
    * this geometry with a host's colors — so a host overrides one by spreading
    * this value rather than rebuilding anything.
@@ -114,8 +104,9 @@ export interface Frame<TTheme> {
   theme: ThemePair<TTheme>;
   /**
    * Height for this body when the caller passes none, in the geometry this
-   * document defines. See {@link Frame.sizesFromNodeHeights} for what it may
-   * assume of the nodes.
+   * document defines. Calling {@link FrameDispatcher.estimateSvgHeight} is
+   * what makes a missing `metrics.svgHeight` size the frame short: that
+   * method returns `0` for a node whose primitive declares none.
    */
   estimateHeight(
     composition: FrameComposition,
@@ -163,8 +154,6 @@ export interface Frame<TTheme> {
  */
 export interface BoundFrame {
   readonly defaultWidth: number;
-  /** See {@link Frame.sizesFromNodeHeights}; defaulted at binding. */
-  readonly sizesFromNodeHeights: boolean;
   /** See {@link Frame.estimateHeight}. */
   estimateHeight(
     composition: FrameComposition,
@@ -198,7 +187,6 @@ export const bindFrame = <TTheme>(frame: Frame<TTheme>): BoundFrame => {
     mode === 'dark' ? frame.theme.dark : frame.theme.light;
   return {
     defaultWidth: frame.defaultWidth,
-    sizesFromNodeHeights: frame.sizesFromNodeHeights ?? true,
     estimateHeight: (composition, dispatcher) =>
       frame.estimateHeight(composition, dispatcher),
     validateBody: (body) => frame.validateBody?.(body) ?? [],
