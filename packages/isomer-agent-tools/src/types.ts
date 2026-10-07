@@ -23,7 +23,11 @@ import type { output, ZodObject } from 'zod';
 /** One block of a tool's answer. */
 export type IsomerToolContent =
   | { type: 'text'; text: string }
-  | { type: 'image'; data: string; mimeType: 'image/png' };
+  | { type: 'image'; data: string; mimeType: `image/${string}` }
+  | {
+      type: 'resource';
+      resource: { uri: string; mimeType: string; blob: string };
+    };
 
 /** A tool's answer, shaped like an MCP `CallToolResult`. `isError` marks a call the model cannot use as-is. */
 export interface IsomerToolResult {
@@ -59,8 +63,8 @@ export interface IsomerPrompt<TArgs extends ZodObject = ZodObject> {
   build(args: output<TArgs>): string;
 }
 
-/** The surfaces `isomer_render` can target. */
-export type IsomerToolSurface = 'text' | 'markdown' | 'html' | 'slack' | 'png';
+/** The formats `isomer_render` takes from the runtime's own surfaces. */
+export type IsomerToolsRuntimeFormat = 'text' | 'markdown' | 'html' | 'slack';
 
 /** The part of `IsomerRuntime` the tools use. An `IsomerRuntime` satisfies it. */
 export interface IsomerToolsRuntime<THostContext = unknown> {
@@ -111,11 +115,19 @@ export interface IsomerToolsFrame {
   validateBody?(body: readonly PrimitiveNode[]): readonly string[];
 }
 
-/** Rasterizes a validated composition to PNG bytes. */
-export type IsomerToolsImage = (
-  composition: Composition,
-  options: { theme?: RenderTheme }
-) => Promise<Uint8Array>;
+/**
+ * A format the host renders itself, such as a rasterizer's PNG. An `image/*` type answers as an
+ * image block; any other answers as text when `render` resolves to a string, else as an embedded
+ * resource.
+ */
+export interface IsomerToolsFormat {
+  mimeType: string;
+  /** Receives the copy validation checked. */
+  render(
+    composition: Composition,
+    options: { theme?: RenderTheme }
+  ): Promise<Uint8Array | string>;
+}
 
 /** Options for {@link createIsomerTools}, less `hostContext`. */
 export interface IsomerToolsBaseOptions<THostContext = unknown> {
@@ -130,9 +142,9 @@ export interface IsomerToolsBaseOptions<THostContext = unknown> {
   profile?: AuthoringProfileId | undefined;
   /** Checked against every composition's body alongside runtime validation. */
   frame?: IsomerToolsFrame | undefined;
-  /** Adds the `png` surface. */
-  image?: IsomerToolsImage | undefined;
-  /** Whether `isomer_render` draws the title and subtitle on every surface but `png`. Defaults to `true`. */
+  /** Formats `isomer_render` offers beside the runtime's, by name; a name in {@link IsomerToolsRuntimeFormat} throws `DUPLICATE_FORMAT`. */
+  formats?: Readonly<Record<string, IsomerToolsFormat>> | undefined;
+  /** Whether `isomer_render` draws the title and subtitle in the runtime's formats. Defaults to `true`. */
   heading?: boolean | undefined;
 }
 

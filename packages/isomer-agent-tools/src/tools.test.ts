@@ -32,6 +32,7 @@ import { createIsomerTools } from './tools';
 import type {
   IsomerTool,
   IsomerToolResult,
+  IsomerToolsFormat,
   IsomerToolsFrame,
   IsomerToolsRuntime,
 } from './types';
@@ -279,27 +280,27 @@ describe('createIsomerTools', () => {
   });
 
   describe('isomer_render', () => {
-    const surfaces = ['text', 'markdown', 'html', 'slack'];
+    const formats = ['text', 'markdown', 'html', 'slack'];
 
-    it.each(surfaces)('renders %s', async (surface) => {
+    it.each(formats)('renders %s', async (format) => {
       const result = await call(tools, ISOMER_TOOL_NAMES.render, {
         composition: oneSlide,
-        surface,
+        format,
       });
       expect(result.isError).toBeUndefined();
       expect(textOf(result)).not.toBe('');
     });
 
-    it.each(surfaces)(
+    it.each(formats)(
       'leaves the title out of %s when heading is false',
-      async (surface) => {
+      async (format) => {
         const titled = { ...oneSlide, title: 'Envelope title' };
         // HTML keeps the title as the wrapper's `aria-label`.
         const shown = async (list: readonly IsomerTool[]) =>
           textOf(
             await call(list, ISOMER_TOOL_NAMES.render, {
               composition: titled,
-              surface,
+              format,
             })
           ).replace(/aria-label="[^"]*"/g, '');
         expect(await shown(tools)).toMatch(/envelope title/i);
@@ -312,7 +313,7 @@ describe('createIsomerTools', () => {
     it('returns the errors of an invalid composition as a failed call', async () => {
       const result = await call(tools, ISOMER_TOOL_NAMES.render, {
         composition: { type: 'view', body: [slide, slide] },
-        surface: 'text',
+        format: 'text',
       });
       expect(result.isError).toBe(true);
       expect(jsonOf(result)).toMatchObject({
@@ -330,7 +331,7 @@ describe('createIsomerTools', () => {
         const html = textOf(
           await call(tools, ISOMER_TOOL_NAMES.render, {
             composition: { ...oneSlide, theme: 'dark' },
-            surface: 'html',
+            format: 'html',
             ...(theme === undefined ? {} : { theme }),
           })
         );
@@ -355,73 +356,155 @@ describe('createIsomerTools', () => {
       async (_label, composition, reason) => {
         const result = await call(tools, ISOMER_TOOL_NAMES.render, {
           composition,
-          surface: 'text',
+          format: 'text',
         });
         expect(result.isError).toBe(true);
         expect(jsonOf(result)).toEqual({ valid: false, errors: [reason] });
       }
     );
 
-    it('rasterizes the copy the runtime validated', async () => {
+    const decode = (data: string) =>
+      Uint8Array.from(atob(data), (char) => char.charCodeAt(0));
+
+    const png = (
+      render: IsomerToolsFormat['render'] = () =>
+        Promise.resolve(new Uint8Array())
+    ): IsomerToolsFormat => ({ mimeType: 'image/png', render });
+
+    it('renders a host format from the copy the runtime validated', async () => {
       const { validate, validated } = recordValidate();
-      const image = vi.fn((_composition: Composition) =>
+      const render = vi.fn((_composition: Composition) =>
         Promise.resolve(new Uint8Array())
       );
       await call(
-        createIsomerTools({ runtime: { ...runtime, validate }, image }),
+        createIsomerTools({
+          runtime: { ...runtime, validate },
+          formats: { png: png(render) },
+        }),
         ISOMER_TOOL_NAMES.render,
-        { composition: oneSlide, surface: 'png' }
+        { composition: oneSlide, format: 'png' }
       );
       expect(validated).toHaveLength(1);
-      expect(image.mock.calls[0]?.[0]).toBe(validated[0]);
+      expect(render.mock.calls[0]?.[0]).toBe(validated[0]);
     });
 
-    it('offers png only with an image function', () => {
-      const acceptsPng = (list: readonly IsomerTool[]) =>
-        list
-          .find(({ name }) => name === ISOMER_TOOL_NAMES.render)!
-          .inputSchema.safeParse({ composition: oneSlide, surface: 'png' })
-          .success;
-      expect(acceptsPng(tools)).toBe(false);
-      expect(
-        acceptsPng(
-          createIsomerTools({
-            runtime,
-            image: () => Promise.resolve(new Uint8Array()),
-          })
-        )
-      ).toBe(true);
+    it('offers the runtime formats, then each host format', () => {
+      const renderTool = (list: readonly IsomerTool[]) =>
+        list.find(({ name }) => name === ISOMER_TOOL_NAMES.render)!;
+      const accepts = (list: readonly IsomerTool[], format: string) =>
+        renderTool(list).inputSchema.safeParse({
+          composition: oneSlide,
+          format,
+        }).success;
+      const withFormats = createIsomerTools({
+        runtime,
+        formats: { png: png(), pdf: { ...png(), mimeType: 'application/pdf' } },
+      });
+      expect(accepts(tools, 'png')).toBe(false);
+      expect(accepts(withFormats, 'png')).toBe(true);
+      expect(accepts(withFormats, 'pdf')).toBe(true);
+      expect(renderTool(withFormats).description).toContain(
+        '`text`, `markdown`, `html`, `slack`, `png`, `pdf`'
+      );
     });
 
-    it('returns png bytes as base64 image content, past one chunk', async () => {
+    it('refuses a host format named like a runtime format', () => {
+      try {
+        createIsomerTools({ runtime, formats: { html: png(), png: png() } });
+        expect.unreachable();
+      } catch (error) {
+        expect(error).toMatchObject({
+          name: 'IsomerError',
+          code: 'DUPLICATE_FORMAT',
+        });
+        expect((error as Error).message).toMatch(/^Host formats "html" shadow/);
+      }
+    });
+
+    it('returns image bytes as base64 image content, past one chunk', async () => {
       const bytes = Uint8Array.from({ length: 0x8000 * 2 + 3 }, (_, i) => i);
-      const image = vi.fn(() => Promise.resolve(bytes));
+      const render = vi.fn(() => Promise.resolve(bytes));
       const result = await call(
-        createIsomerTools({ runtime, image }),
+        createIsomerTools({ runtime, formats: { png: png(render) } }),
         ISOMER_TOOL_NAMES.render,
-        { composition: oneSlide, surface: 'png', theme: 'dark' }
+        { composition: oneSlide, format: 'png', theme: 'dark' }
       );
       const [block] = result.content;
       expect(block).toMatchObject({ type: 'image', mimeType: 'image/png' });
-      const decoded = Uint8Array.from(
-        atob(block?.type === 'image' ? block.data : ''),
-        (char) => char.charCodeAt(0)
-      );
-      expect(decoded).toEqual(bytes);
-      expect(image).toHaveBeenCalledWith(
+      expect(decode(block?.type === 'image' ? block.data : '')).toEqual(bytes);
+      expect(render).toHaveBeenCalledWith(
         expect.objectContaining({ type: 'view' }),
         { theme: 'dark' }
       );
     });
 
-    it('returns a rejecting rasterizer as a failed call', async () => {
+    it('returns image markup as image content', async () => {
+      const svg = '<svg xmlns="http://www.w3.org/2000/svg"/>';
       const result = await call(
         createIsomerTools({
           runtime,
-          image: () => Promise.reject(new Error('rasterizer is down')),
+          formats: {
+            svg: {
+              mimeType: 'image/svg+xml',
+              render: () => Promise.resolve(svg),
+            },
+          },
         }),
         ISOMER_TOOL_NAMES.render,
-        { composition: oneSlide, surface: 'png' }
+        { composition: oneSlide, format: 'svg' }
+      );
+      const [block] = result.content;
+      expect(block).toMatchObject({ type: 'image', mimeType: 'image/svg+xml' });
+      expect(
+        new TextDecoder().decode(
+          decode(block?.type === 'image' ? block.data : '')
+        )
+      ).toBe(svg);
+    });
+
+    it('returns other bytes as an embedded resource and other strings as text', async () => {
+      const bytes = Uint8Array.of(37, 80, 68, 70);
+      const list = createIsomerTools({
+        runtime,
+        formats: {
+          pdf: {
+            mimeType: 'application/pdf',
+            render: () => Promise.resolve(bytes),
+          },
+          csv: { mimeType: 'text/csv', render: () => Promise.resolve('a,b') },
+        },
+      });
+      const pdf = await call(list, ISOMER_TOOL_NAMES.render, {
+        composition: oneSlide,
+        format: 'pdf',
+      });
+      expect(pdf.content).toEqual([
+        {
+          type: 'resource',
+          resource: {
+            uri: 'isomer://render/pdf',
+            mimeType: 'application/pdf',
+            blob: btoa('%PDF'),
+          },
+        },
+      ]);
+      const csv = await call(list, ISOMER_TOOL_NAMES.render, {
+        composition: oneSlide,
+        format: 'csv',
+      });
+      expect(csv).toEqual({ content: [{ type: 'text', text: 'a,b' }] });
+    });
+
+    it('returns a rejecting host format as a failed call', async () => {
+      const result = await call(
+        createIsomerTools({
+          runtime,
+          formats: {
+            png: png(() => Promise.reject(new Error('rasterizer is down'))),
+          },
+        }),
+        ISOMER_TOOL_NAMES.render,
+        { composition: oneSlide, format: 'png' }
       );
       expect(result).toEqual({
         content: [{ type: 'text', text: 'rasterizer is down' }],
@@ -675,7 +758,7 @@ describe('a throwing runtime', () => {
     [
       ISOMER_TOOL_NAMES.render,
       'parse',
-      { composition: oneSlide, surface: 'text' },
+      { composition: oneSlide, format: 'text' },
     ],
   ] as const)('%s resolves to a failed call', async (name, method, args) => {
     const tools = createIsomerTools({
