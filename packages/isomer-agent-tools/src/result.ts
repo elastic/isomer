@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { IsomerToolResult } from './types';
+import type { IsomerToolResult, IsomerToolsFormat } from './types';
 
 export const textResult = (text: string, isError = false): IsomerToolResult =>
   isError
@@ -26,9 +26,44 @@ export const jsonResult = (
   return textResult(text ?? 'null', isError);
 };
 
-export const imageResult = (bytes: Uint8Array): IsomerToolResult => ({
-  content: [{ type: 'image', data: toBase64(bytes), mimeType: 'image/png' }],
+export const imageResult = (
+  bytes: Uint8Array,
+  mimeType: `image/${string}` = 'image/png'
+): IsomerToolResult => ({
+  content: [{ type: 'image', data: toBase64(bytes), mimeType }],
 });
+
+const isImageType = (mimeType: string): mimeType is `image/${string}` =>
+  mimeType.startsWith('image/');
+
+/** A host format's output, as {@link IsomerToolsFormat} describes. */
+export const formatResult = (
+  name: string,
+  { mimeType }: IsomerToolsFormat,
+  output: Uint8Array | string
+): IsomerToolResult => {
+  if (isImageType(mimeType)) {
+    return imageResult(
+      typeof output === 'string' ? new TextEncoder().encode(output) : output,
+      mimeType
+    );
+  }
+  if (typeof output === 'string') {
+    return textResult(output);
+  }
+  return {
+    content: [
+      {
+        type: 'resource',
+        resource: {
+          uri: `isomer://render/${encodeURIComponent(name)}`,
+          mimeType,
+          blob: toBase64(output),
+        },
+      },
+    ],
+  };
+};
 
 /** The message of any thrown value; never throws itself. */
 export const errorMessage = (error: unknown): string => {

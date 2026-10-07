@@ -4,7 +4,7 @@
 
 ## Geometry
 
-Width 1920 × height 1080. `estimateHeight` returns that height and never reads a node, so an `svg` render of this frame reports no missing-`svgHeight` warning. The primitives inside the frame declare no `metrics.svgHeight` because the frame provides the canvas, and `slideFrame` reports the canvas height.
+Width 1920 × height 1080. `estimateHeight` returns that height and never reads a node, so a `snapshot` render of this frame reports no missing-`snapshotHeight` warning. The primitives inside the frame declare no `metrics.snapshotHeight` because the frame provides the canvas, and `slideFrame` reports the canvas height.
 
 ## `validateBody`
 
@@ -12,14 +12,14 @@ Width 1920 × height 1080. `estimateHeight` returns that height and never reads 
 validateBody: (body) => {
   const [slide, ...rest] = body;
   if (!slide || rest.length > 0)
-    return [`an svg render needs exactly one "slideFrame" node, got ${body.length} nodes; …`];
+    return [`a snapshot render needs exactly one "slideFrame" node, got ${body.length} nodes; …`];
   if (slide.type !== 'slideFrame')
-    return [`an svg render needs a "slideFrame" root, got "${slide.type}"; …`];
+    return [`a snapshot render needs a "slideFrame" root, got "${slide.type}"; …`];
   return [];
 },
 ```
 
-Called by the SVG surface before drawing. `runtime.validate` does not call it — it is frame-agnostic; the check runs only on the frame a render names.
+Called by the `snapshot` surface before drawing. `runtime.validate` does not call it — it is frame-agnostic; the check runs only on the frame a render names.
 
 ## `wrap`
 

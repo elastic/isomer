@@ -29,7 +29,7 @@ describe('closed enum schemas', () => {
       'bodyNodeSurfacesSchema',
       bodyNodeSurfacesSchema,
       ['x'],
-      /^must be one of: react, svg/,
+      /^must be one of: react, snapshot/,
     ],
   ])(
     '%s names the accepted values in its own message',

@@ -80,7 +80,7 @@ export type SlideWindowChrome = (typeof slideWindowChromes)[number];
 export const slideRenderSurfaces = [
   'react',
   'html',
-  'svg',
+  'snapshot',
   'markdown',
   'text',
   'slack',

@@ -11,8 +11,8 @@ import {
   isVisibleOnSurface,
 } from '@elastic/isomer-sdk';
 
-/** A node this `svg` render measured as 0 because its primitive declares no `metrics.svgHeight`. */
-export interface SvgHeightWarning {
+/** A node this `snapshot` render measured as 0 because its primitive declares no `metrics.snapshotHeight`. */
+export interface SnapshotHeightWarning {
   /** Path of the node within the composition, or `pages[n].…` on `renderPages`. */
   path: string;
   /** Safe to show a user. */
@@ -26,28 +26,28 @@ const quoteType = (type: string): string =>
     .replace(/\u2029/g, '\\u2029');
 
 /**
- * Nodes in `body` that are visible on `svg` and declare no `metrics.svgHeight`.
+ * Nodes in `body` that are visible on `snapshot` and declare no `metrics.snapshotHeight`.
  *
  * `prefix` is prepended to each path (`pages[0]` on a paged render, empty for
- * one composition). A node hidden from `svg` is skipped with its children.
+ * one composition). A node hidden from `snapshot` is skipped with its children.
  */
-export const collectSvgHeightWarnings = (
+export const collectSnapshotHeightWarnings = (
   definitions: readonly AnyPrimitiveDefinition[],
   body: readonly unknown[],
   prefix: string
-): readonly SvgHeightWarning[] => {
+): readonly SnapshotHeightWarning[] => {
   const unmeasured = new Set(
     definitions
-      .filter((definition) => !definition.metrics?.svgHeight)
+      .filter((definition) => !definition.metrics?.snapshotHeight)
       .map((definition) => definition.type)
   );
   if (unmeasured.size === 0) {
     return [];
   }
   const walk = createChildNodeWalker(definitions);
-  const warnings: SvgHeightWarning[] = [];
+  const warnings: SnapshotHeightWarning[] = [];
   const visit = (node: unknown, path: string): void => {
-    if (!isVisibleOnSurface(node, 'svg')) {
+    if (!isVisibleOnSurface(node, 'snapshot')) {
       return;
     }
     const { type } = node as { type?: unknown };
@@ -55,7 +55,7 @@ export const collectSvgHeightWarnings = (
       const full = prefix === '' ? path : `${prefix}.${path}`;
       warnings.push({
         path: full,
-        message: `${full} type ${quoteType(type)} declares no svgHeight metric and will be measured as 0, sizing the frame short`,
+        message: `${full} type ${quoteType(type)} declares no snapshotHeight metric and will be measured as 0, sizing the frame short`,
       });
     }
     // Schema-invalid input can throw from `children`. Collect mode still renders.

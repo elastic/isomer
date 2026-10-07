@@ -505,7 +505,7 @@ describe('slideTable', () => {
     ];
     const drawn = async (node: SlideTableNode) => {
       const layout = await takumi.measure(
-        runtime.surfaces.svg.render(compose(node))
+        runtime.surfaces.snapshot.render(compose(node))
       );
       return find(layout, ({ attributes }) => attributes?.role === 'table');
     };

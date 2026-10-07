@@ -28,7 +28,7 @@ export const buildSchema = (bodyNodeSchema: ZodType<unknown>) =>
       surface: z
         .enum(slideRenderSurfaces)
         .describe(
-          '`react`, `html`, or `svg` draws the slide scaled into a 16:9 panel; `markdown`, `text`, or `slack` shows that surface’s output in a mono panel.'
+          '`react`, `html`, or `snapshot` draws the slide scaled into a 16:9 panel; `markdown`, `text`, or `slack` shows that surface’s output in a mono panel.'
         ),
       caption: lineText()
         .describe('One line above the panel saying what the render shows.')

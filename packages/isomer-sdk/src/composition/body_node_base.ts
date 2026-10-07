@@ -13,7 +13,7 @@
  */
 export const SURFACE_NAMES = [
   'react',
-  'svg',
+  'snapshot',
   'text',
   'markdown',
   'slack',

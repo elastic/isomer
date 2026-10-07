@@ -46,7 +46,7 @@ const frame: Frame<{ ink: string }> = {
   theme: { light: { ink: '#000' }, dark: { ink: '#fff' } },
   estimateHeight: (composition, frameDispatcher) =>
     composition.body.reduce(
-      (total, node) => total + frameDispatcher.estimateSvgHeight(node),
+      (total, node) => total + frameDispatcher.estimateSnapshotHeight(node),
       16
     ),
   wrap: (header, body, viewport) =>
@@ -64,10 +64,11 @@ const frame: Frame<{ ink: string }> = {
 
 const bound = bindFrame(frame);
 
-/** Binds the render context the `svg` surface would otherwise supply. */
+/** Binds the render context the `snapshot` surface would otherwise supply. */
 const frameDispatcher: FrameDispatcher = {
-  renderSvg: (node, key) => dispatcher.renderSvg(node, {}, undefined, key),
-  estimateSvgHeight: (node) => dispatcher.estimateSvgHeight(node),
+  renderSnapshot: (node, key) =>
+    dispatcher.renderSnapshot(node, {}, undefined, key),
+  estimateSnapshotHeight: (node) => dispatcher.estimateSnapshotHeight(node),
 };
 
 const varRefs = (css: string): string[] => [
@@ -92,8 +93,9 @@ const harness: PrimitiveConformanceHarness = {
   renderText: (node) => dispatcher.renderText(node),
   renderMarkdown: (node) => dispatcher.renderMarkdown(node),
   renderSlack: (node) => dispatcher.renderSlack(node),
-  renderSvg: (node, key) => dispatcher.renderSvg(node, {}, undefined, key),
-  estimateSvgHeight: (node) => dispatcher.estimateSvgHeight(node),
+  renderSnapshot: (node, key) =>
+    dispatcher.renderSnapshot(node, {}, undefined, key),
+  estimateSnapshotHeight: (node) => dispatcher.estimateSnapshotHeight(node),
   nestForeignChild: (container) =>
     ({
       ...container,
@@ -113,7 +115,7 @@ const harness: PrimitiveConformanceHarness = {
     renderMarkdownEnvelope(composition, dispatcher),
   renderSlackComposition: (composition) =>
     renderSlackEnvelope(composition, dispatcher),
-  renderSVGComposition: (composition) => {
+  renderSnapshotComposition: (composition) => {
     const validation = validate(composition);
     const height = bound.estimateHeight(composition, frameDispatcher);
     const node: ReactNode = bound.render(
@@ -121,11 +123,11 @@ const harness: PrimitiveConformanceHarness = {
       { width: bound.defaultWidth, height, mode: undefined },
       frameDispatcher
     );
-    const svg = renderToStaticMarkup(node);
+    const html = renderToStaticMarkup(node);
     return Promise.resolve({
       validationErrors: validation.errors,
-      svg,
-      measurement: { total: Buffer.byteLength(svg, 'utf8') },
+      html,
+      measurement: { total: Buffer.byteLength(html, 'utf8') },
     });
   },
 };

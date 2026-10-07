@@ -14,8 +14,8 @@ sources:
 
 # Definition
 
-React renderer helpers. The image surface reuses these renderers; primitives do not write a separate `svg` renderer. `applyEnhancements` resolves enhancement definitions against a body for a React render, as the `html` surface does: it returns the ones that apply, first of each id and limited to `requested` ids when given, and a view of the context carrying their ids as `enhancements`, with `anchors` on when one declares `anchors: true`. It also holds the browser-side helpers `runEnhancementScript`, `findNodeElementPairs`, and `measureDom`.[^barrel]
+React renderer helpers. The `snapshot` surface reuses these renderers; primitives do not write a separate `snapshot` renderer. `applyEnhancements` resolves enhancement definitions against a body for a React render, as the `html` surface does: it returns the ones that apply, first of each id and limited to `requested` ids when given, and a view of the context carrying their ids as `enhancements`, with `anchors` on when one declares `anchors: true`. It also holds the browser-side helpers `runEnhancementScript`, `findNodeElementPairs`, and `measureDom`.[^barrel]
 
-Related: [rendering](/sdk/concepts/rendering.md), [no svg renderer](/slides/concepts/no-svg-renderer.md).
+Related: [rendering](/sdk/concepts/rendering.md), [no snapshot renderer](/slides/concepts/no-snapshot-renderer.md).
 
 [^barrel]: React entry

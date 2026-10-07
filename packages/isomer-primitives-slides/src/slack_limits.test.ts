@@ -419,7 +419,7 @@ const cases: LimitCase[] = [
     node: (fill) => ({
       type: 'slideRender',
       slide: 'next',
-      surface: 'svg',
+      surface: 'snapshot',
       caption: `Shown ${fill}`,
     }),
   },
@@ -433,7 +433,7 @@ const cases: LimitCase[] = [
       type: 'slideRenderGrid',
       body: [{ type: 'slideBulletList', items: ['One'] }],
       tiles: [
-        { surface: 'svg', caption: `For ${fill}` },
+        { surface: 'snapshot', caption: `For ${fill}` },
         { surface: 'text', caption: 'SMS' },
       ],
     }),
@@ -464,7 +464,7 @@ const cases: LimitCase[] = [
     max: 4000,
     node: (fill) => ({
       type: 'slideAnnotatedRender',
-      render: { type: 'slideRender', slide: 'next', surface: 'svg' },
+      render: { type: 'slideRender', slide: 'next', surface: 'snapshot' },
       pins: [{ x: 10, y: 10, title: 'Claim', body: `So ${fill}` }],
     }),
   },

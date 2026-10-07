@@ -20,7 +20,7 @@ sources:
 2. Import packs built with `definePrimitivePack`. The reference pack is not published: copy it from the repository, or write your own.
 3. Call `createIsomerRuntime({ packs })` once, at module scope. Add `frames` when image output needs a document, and `defaultFrame` past one frame. Pass `authoring` when the agent schema needs named `$defs`, refine descriptions, or a hidden legacy alias.
 4. `runtime.parse(value)` on untrusted input; `runtime.validate(composition)` on trusted.
-5. Render with `runtime.surfaces.<name>.render(composition)`; `svg` is `undefined` without `frames`.[^docs][^runtime]
+5. Render with `runtime.surfaces.<name>.render(composition)`; `snapshot` is `undefined` without `frames`.[^docs][^runtime]
 
 Related: [runtime](/runtime/concepts/runtime.md), [define a pack](/sdk/playbooks/define-a-pack.md).
 

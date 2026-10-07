@@ -239,7 +239,7 @@ describe('RenderScope recursion', () => {
     expect(md).toContain('foreign-md-node');
   });
 
-  it('a foreign note nested in slideStack renders on svg', () => {
+  it('a foreign note nested in slideStack renders on snapshot', () => {
     const composition = {
       type: 'view' as const,
       body: [
@@ -259,7 +259,7 @@ describe('RenderScope recursion', () => {
         },
       ],
     };
-    const { element } = composedRuntime.surfaces.svg.render(composition);
+    const { element } = composedRuntime.surfaces.snapshot.render(composition);
     expect(renderToStaticMarkup(element)).toContain('foreign-svg');
   });
 });

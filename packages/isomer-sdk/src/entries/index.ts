@@ -83,6 +83,7 @@ export {
 } from '../define';
 export {
   type AnyPrimitivePack,
+  type CapabilitySources,
   type ComposedPacks,
   type EnhancementDefinition,
   type HostCapabilities,

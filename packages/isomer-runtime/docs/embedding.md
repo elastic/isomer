@@ -83,6 +83,6 @@ If the host page is yours and its CSS is disciplined, render into an ordinary el
 
 ## Why this is a recipe and not an API
 
-It is about twenty lines, it is entirely host DOM code, and the shape of it depends on decisions Isomer does not make — where the element lives, when it is torn down, how the framework around it wants to own that node. Isomer stops at `{ html, css, js }` for the same reason the `svg` surface stops at `{ element, css }` rather than returning PNG bytes: the boundary is what keeps the package isomorphic.
+It is about twenty lines, it is entirely host DOM code, and the shape of it depends on decisions Isomer does not make — where the element lives, when it is torn down, how the framework around it wants to own that node. Isomer stops at `{ html, css, js }` for the same reason the `snapshot` surface stops at `{ element, css }` rather than returning PNG bytes: the boundary is what keeps the package isomorphic.
 
 If a host hits a case this recipe does not cover, that is worth reporting — it would be evidence for a real mount helper rather than a doc.

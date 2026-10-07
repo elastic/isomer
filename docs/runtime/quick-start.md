@@ -1,6 +1,6 @@
 # Quick start
 
-A working host: one composition rendered to every surface, then a registered view and an agent-authored composition. The vocabulary comes from the reference pack, `@elastic/isomer-primitives-slides`, so the steps reach a stylesheet, a frame, the `svg` surface, and a PNG. A host with its own pack swaps the import and changes nothing else.
+A working host: one composition rendered to every surface, then a registered view and an agent-authored composition. The vocabulary comes from the reference pack, `@elastic/isomer-primitives-slides`, so the steps reach a stylesheet, a frame, the `snapshot` surface, and a PNG. A host with its own pack swaps the import and changes nothing else.
 
 ## 1. Add the dependencies
 
@@ -23,7 +23,7 @@ The pack is the host's own. The reference pack this page imports as `@elastic/is
 
 ## 2. Compose a runtime
 
-Build it once, at module scope. A runtime is a singleton for the process, not a per-request object. `packs` is required; `frames` is required only if you want the `svg` surface, and `slide` is the name this host chooses for the pack's frame.
+Build it once, at module scope. A runtime is a singleton for the process, not a per-request object. `packs` is required; `frames` is required only if you want the `snapshot` surface, and `slide` is the name this host chooses for the pack's frame.
 
 ```ts
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
@@ -131,7 +131,7 @@ _Isomer · [elastic.github.io/isomer](https://elastic.github.io/isomer)_
 
 Slack gives a `header` block, the eyebrow and footer as `context` blocks, the tagline as a `section`, and the list as a native `rich_text` list, all from the pack's own Slack renderers. HTML gives `<section class="isomer framed" role="group" aria-label="Isomer">…</section>` with a `<style>` holding only the rules this slide uses.
 
-Each surface has one validation posture. `html` renders and reports findings on `validationErrors`, because a partial document is still worth showing. `text`, `markdown`, `slack`, and `svg` throw `CompositionValidationError` on an invalid composition by default, because a string, a message, or an image has nowhere to carry findings. `react` never validates. `onValidationError` flips any of them, except that input over the SDK's [input budget](../sdk/composition.md#the-input-budget) or not plain data throws on every validating surface; see [Surfaces](surfaces.md).
+Each surface has one validation posture. `html` renders and reports findings on `validationErrors`, because a partial document is still worth showing. `text`, `markdown`, `slack`, and `snapshot` throw `CompositionValidationError` on an invalid composition by default, because a string, a message, or an image has nowhere to carry findings. `react` never validates. `onValidationError` flips any of them, except that input over the SDK's [input budget](../sdk/composition.md#the-input-budget) or not plain data throws on every validating surface; see [Surfaces](surfaces.md).
 
 React returns bare content by default; `wrapper` adds the same `section` the HTML surface emits, and the stylesheet stays the host's:
 
@@ -143,19 +143,19 @@ runtime.surfaces.react.render(composition, {
 });
 ```
 
-Because the runtime holds a frame, the `svg` surface exists. It stops at a React element and a stylesheet; rasterizing is a host-side step:
+Because the runtime holds a frame, the `snapshot` surface exists. It stops at a React element, its markup, and a stylesheet; rasterizing is a host-side step:
 
 ```ts
 import { createTakumiImageBackend } from '@elastic/isomer-image-takumi';
 
-const rendered = runtime.surfaces.svg.render(composition, { theme: 'light' });
-// { element, css, width, height }
+const rendered = runtime.surfaces.snapshot.render(composition, { theme: 'light' });
+// { element, html, css, width, height, warnings }
 
 const takumi = createTakumiImageBackend({ fonts });
 const png = await takumi.png(rendered);
 ```
 
-`fonts` is the host's to register, and the pack's [font notes](../slides/styling.md#fonts-on-the-image-surface) say which families and weights. The result is the PNG at the top of the repository README. See [Frame](frame.md) for how a render picks a frame and its geometry.
+`fonts` is the host's to register, and the pack's [font notes](../slides/styling.md#fonts-on-the-snapshot-surface) say which families and weights. The result is the PNG at the top of the repository README. See [Frame](frame.md) for how a render picks a frame and its geometry.
 
 ## 5. Register a view
 

@@ -8,7 +8,7 @@ export interface SlideFrameTheme {
 }
 ```
 
-`SlideFrameTheme` is the minimum this pack places on a frame. One field means any richer host palette satisfies it structurally. Primitives read none of it — they reach the `svg` surface through their `react` renderers and this pack's stylesheet — so it exists for a frame drawing its own surround.
+`SlideFrameTheme` is the minimum this pack places on a frame. One field means any richer host palette satisfies it structurally. Primitives read none of it — they reach the `snapshot` surface through their `react` renderers and this pack's stylesheet — so it exists for a frame drawing its own surround.
 
 ## Palette resolution
 
@@ -66,7 +66,7 @@ Slides are read embedded at roughly half scale, so no rule sets a `font-size` un
 
 ## Size steps
 
-Length-sensitive primitives take an optional `size`: `l`, `m`, or `s`, each a set of theme tokens (`heading.titleSizes`, `title.displaySizes`), none below 24px. Left out, the renderer picks the step from the node's own text, so every surface draws the same size; the image surface cannot measure, and does not support container units, `min()`, or `clamp()`. An explicit `size` always wins.
+Length-sensitive primitives take an optional `size`: `l`, `m`, or `s`, each a set of theme tokens (`heading.titleSizes`, `title.displaySizes`), none below 24px. Left out, the renderer picks the step from the node's own text, so every surface draws the same size; the `snapshot` surface cannot measure, and does not support container units, `min()`, or `clamp()`. An explicit `size` always wins.
 
 - **Load:** `slideHeading`, `slideStatement`, and `slideQuote` compare their text's character count with `headingFit`, `statementFit`, and `quoteFit`, a wide East Asian glyph or an emoji counting as two (`src/render/mono.ts`). `slideDefinitions` compares `rowLoad`, its longest column's characters times the column count, with `definitionsFit`, and its longer column's rows with `definitionsRowFit`, and takes the smaller step; past `definitionsSingleColumnMax` terms it splits into two columns. `slideBars` counts two per label line, wrapped at its label column, and one per detail line, wrapped across its track, against `barsFit`, and takes no larger step than the one at which each value fits beside its bar across the layout's width. Its label column is `labelWidth`, or `labelMaxShare` of a layout too narrow for it; where a value still would not fit beside its bar at `barMaxShare`, every bar scales down together, and a positive bar draws at least `barMinWidth`. `slidePipeline` compares `rowLoad`, its longest step's characters times the step count, with `pipelineFit`, scaled by how many times over its step columns, after any `start` and `end` chips, fall short of the frame body, and skips a step at which a title's widest word outgrows its column. In a narrower layout than their measure, such as a `slideSplit` pane, statement, quote, and definitions scale their load by how many times over it falls short (`narrowing`). `slideTimeline` and `slideRoadmap` compare `rowLoad` over their items or columns, a channel or status counted uppercase as it prints (`styledText`), with `timelineFit` and `roadmapFit`, and `slideGraph` its node rows times the longest node, plus the caption, with `graphFit`; `sizeForWidthLoad` scales each by how many times its layout's width falls short of the frame's content width, less the gutters between its columns.
 - **Count:** `slideAgenda` counts its title lines, one a section and more where a title wraps across its layout's width, against `agendaFit`. `slideSequence` counts its messages, plus the message rows its actor chips and labels add where they wrap at each step's size across their spans, against `sequenceFit`; each run of a label is measured in the face it renders in, a `code` run between its chip's sides, and each line holding a chip adds its padding and border (`marksHeight`). `slideMatrix` steps by its row count against `matrixFit`, and `slideQuadrant` by its fullest top cell's items plus its fullest bottom cell's against `quadrantFit`, scaled by `narrowing` in a layout narrower than a frame body.
@@ -92,9 +92,9 @@ A module's rules reach the stylesheet sorted by name, and a variant that overrid
 
 `slideFrame`'s `tone: 'inverse'` gives the title slide the dark background. The frame redeclares every `color` token for its subtree from the `inverse` group, so a primitive reads the same tokens on either tone and never branches on it; a stylesheet test fails when a `color` token has no inverse. Light-mode inverse is the dark page palette. In dark mode the inverse background is lifted above the page (`#12213A` over `#07101F`) so those slides still stand apart.
 
-## What the image surface draws
+## What the snapshot surface draws
 
-The `svg` surface's CSS goes to takumi, which lays out a subset of CSS. The pack relies on custom properties (including redeclaring them in a subtree), grid with `minmax(0, …)` tracks, border-drawn triangles, `text-wrap: balance`, and baseline alignment, all of which it renders. These limits shape the modules:
+The `snapshot` surface's CSS goes to takumi, which lays out a subset of CSS. The pack relies on custom properties (including redeclaring them in a subtree), grid with `minmax(0, …)` tracks, border-drawn triangles, `text-wrap: balance`, and baseline alignment, all of which it renders. These limits shape the modules:
 
 - A block element with padding and a border around text renders taller than its content. Chips and markers are `display: flex`.
 - `@container` queries, `min()`, `clamp()`, and `:has()` do not apply, and `cqi` resolves against the canvas, not the container. Type that must fit is sized by [size steps](#size-steps) instead.
@@ -108,8 +108,8 @@ The `svg` surface's CSS goes to takumi, which lays out a subset of CSS. The pack
 
 ## `SlidePalette`
 
-Named colors per mode, derived from the `lightDark` pairs in `SLIDE_THEME.color`. CSS interpolates `slideDistillery.tokens.color`; `slidePaletteForMode` resolves the same group to literals through `slideDistillery.resolveValues(scheme).color`, which is what a frame reads and what the `svg` surface flattens `light-dark(…)` into.
+Named colors per mode, derived from the `lightDark` pairs in `SLIDE_THEME.color`. CSS interpolates `slideDistillery.tokens.color`; `slidePaletteForMode` resolves the same group to literals through `slideDistillery.resolveValues(scheme).color`, which is what a frame reads and what the `snapshot` surface flattens `light-dark(…)` into.
 
 ## Fonts
 
-`font.family.sans` is `'Inter, system-ui, sans-serif'` for the slide body and `font.family.mono` is `'Roboto Mono', ui-monospace, monospace` for code. Code needing the raw string reads `.value`. The image surface needs Inter 400–800, Inter 400 italic (the title slide's definition line), and Roboto Mono 400–700 registered with the backend; `slideFontFaces` lists them.
+`font.family.sans` is `'Inter, system-ui, sans-serif'` for the slide body and `font.family.mono` is `'Roboto Mono', ui-monospace, monospace` for code. Code needing the raw string reads `.value`. The `snapshot` surface needs Inter 400–800, Inter 400 italic (the title slide's definition line), and Roboto Mono 400–700 registered with the backend; `slideFontFaces` lists them.

@@ -27,7 +27,7 @@ describe('slideRenderGrid layout', () => {
   const grid = (count: number, caption = 'SMS') => ({
     type: 'slideRenderGrid' as const,
     body: pairExample.body,
-    tiles: (['svg', 'text', 'markdown', 'slack', 'html', 'react'] as const)
+    tiles: (['snapshot', 'text', 'markdown', 'slack', 'html', 'react'] as const)
       .slice(0, count)
       .map((surface) => ({ surface, caption })),
   });
@@ -121,7 +121,9 @@ describe('slideRenderGrid', () => {
   it('ends at its tiles on text when text shows nothing of the slide', () => {
     const node = {
       ...pairExample,
-      body: [{ type: 'slideStatement', text: 'Drawn only', surfaces: ['svg'] }],
+      body: [
+        { type: 'slideStatement', text: 'Drawn only', surfaces: ['snapshot'] },
+      ],
     };
     expect(runtime.surfaces.text.renderNode(node as PrimitiveNode)).toBe(
       'react · Inside the ops dashboard\ntext · Driver SMS'

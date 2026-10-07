@@ -246,7 +246,7 @@ describe('slideCode in a split pane', () => {
 
   it('draws that line inside its panel', async () => {
     const layout = await takumi.measure(
-      runtime.surfaces.svg.render(compose(inPane(panel([line]))), {
+      runtime.surfaces.snapshot.render(compose(inPane(panel([line]))), {
         anchors: true,
       })
     );
@@ -367,7 +367,7 @@ describe('slideCode output', () => {
     expect(html).not.toContain('\u00a0');
     const yOf = async (lines: string[]) => {
       const box = await takumi.measure(
-        runtime.surfaces.svg.render(compose(panel(lines)))
+        runtime.surfaces.snapshot.render(compose(panel(lines)))
       );
       const runs = (node: LayoutBox): LayoutBox['runs'] => [
         ...node.runs,

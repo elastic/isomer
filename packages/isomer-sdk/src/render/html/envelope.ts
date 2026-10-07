@@ -91,7 +91,7 @@ export interface HTMLRenderOptions {
   anchors?: boolean;
   /**
    * Resolves `light-dark(…)` in the stylesheet to one scheme's value. A browser
-   * resolves it itself; an image is one static frame, so the `svg` surface sets
+   * resolves it itself; an image is one static frame, so the `snapshot` surface sets
    * it.
    */
   scheme?: 'light' | 'dark';
@@ -180,8 +180,8 @@ export interface HTMLStyleAdapter<
   ): HTMLRenderOptions;
   /**
    * The `.isomer` / `.isomer.framed` / `.isomer.fluid` rules around a rendered composition.
-   * Named for the wrapper rather than the frame, which the sdk reserves for a
-   * pack's svg document surround.
+   * Named for the wrapper rather than the frame, which the sdk reserves for the
+   * document a snapshot is drawn inside.
    */
   collectWrapperStyles?(
     collector: TCollector,

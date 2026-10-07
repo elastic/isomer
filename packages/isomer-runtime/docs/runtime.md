@@ -17,16 +17,17 @@ Build one per process, at module scope. It is a plain object with no lifecycle a
 | Option | Cardinality | Decides |
 | --- | --- | --- |
 | `packs` | one or more | The vocabulary — which node types exist. **Additive**: packs compose. |
-| `frames` | a named map | Which documents the `svg` surface can draw. **Exclusive**: one per render. |
+| `frames` | a named map | Which documents the `snapshot` surface can draw. **Exclusive**: one per render. |
 | `defaultFrame` | one name | The frame a render that names none gets. Required past one frame. |
+| `formats` | any number | Formats the host ships beyond the runtime's own, reported by `getCapabilities`: a rasterizer's list, such as a takumi backend's `formats`. |
 | `views` | any number | Views pre-registered on the runtime's view registry. |
 | `rendererOverrides` | per type, per surface | One renderer replaced without forking a pack. |
 | `styleAdapter` | at most one | The HTML surface's CSS and class-name strategy. Defaults to the packs' own adapters, combined. Required when any pack declares `collectStyles` and no pack (or this option) supplies an adapter. |
 | `defaultAriaLabel` | one string | Fallback `aria-label` when the composition has neither `meta.ariaLabel` nor a `title`. Defaults to `'View'`. |
 | `authoring` | optional | Options for the authoring schema and declarations `getAuthoringContext` returns: the SDK's `AuthoringJsonSchemaOptions` plus `jsx`. |
-| `inputBudget` | optional | Limits `checkInputBudget` applies in `parse`, `validate`, the `html`, `text`, `markdown`, `slack`, and `svg` surfaces, and `viewRegistry.request` input; `react` does not validate, so it is not checked. Defaults to the SDK's; see [the input budget](../../isomer-sdk/docs/composition.md#the-input-budget). |
+| `inputBudget` | optional | Limits `checkInputBudget` applies in `parse`, `validate`, the `html`, `text`, `markdown`, `slack`, and `snapshot` surfaces, and `viewRegistry.request` input; `react` does not validate, so it is not checked. Defaults to the SDK's; see [the input budget](../../isomer-sdk/docs/composition.md#the-input-budget). |
 
-A runtime is homogeneous in its theme. `TTheme` resolves from the packs — each declares the palette its `svg` renderers read — and every frame in the map must supply it, so a mismatch is a compile error rather than a render-time failure. Packs wanting different palettes belong in different runtimes; see [Frame](frame.md).
+A runtime is homogeneous in its theme. `TTheme` resolves from the packs — each declares the palette its `snapshot` renderers read — and every frame in the map must supply it, so a mismatch is a compile error rather than a render-time failure. Packs wanting different palettes belong in different runtimes; see [Frame](frame.md).
 
 `styleAdapter` is the runtime's only CSS seam, and a host normally omits it. A pack ships its own adapter, and the runtime combines the adapters of every pack it loads — each handle is routed to the adapter that owns it, and each pack's `collectStyles` hooks run only against its own pack's adapter, so loading two styled packs yields both stylesheets rather than a choice or a merge. `styleAdapter` replaces all of them at once, which is how a host supplies a no-op for a pack whose CSS it does not want; see [Surfaces](surfaces.md).
 
@@ -57,12 +58,12 @@ runtime.surfaces.react.render(composition, { context: { resolveClassName } });
 | --- | --- |
 | `packs` | The packs supplied, with renderer overrides applied |
 | `primitives` | Every pack's definitions, flattened — the dispatcher's inventory |
-| `surfaces` | `{ react, html, text, markdown, slack, svg }` — `svg` is `undefined` without `frames`, and typed present with them |
+| `surfaces` | `{ react, html, text, markdown, slack, snapshot }` — `snapshot` is `undefined` without `frames`, and typed present with them |
 | `viewRegistry` | Register, list, get, and request registered views |
 | `validate(composition)` | The input budget, the schema, then the semantic passes, all on one plain copy; returns errors, warnings, and that copy |
 | `parse(value)` | Schema only, for untrusted input; returns a composition or errors |
 | `getAuthoringContext()` | Authoring schema, catalog, and live view summaries for an agent |
-| `getCapabilities()` | The primitive types, formats, per-primitive format support, and enhancements this host supports |
+| `getCapabilities()` | The primitive types, surfaces, formats, per-primitive surface support, and enhancements this host supports |
 | `getCompositionSchema()` | The same schema `validate` / `parse` use internally |
 
 ## What it refuses, and when
@@ -72,7 +73,7 @@ Composition errors throw from `createIsomerRuntime` at host startup as `IsomerEr
 | Rule | `code` | Message |
 | --- | --- | --- |
 | At least one pack | `EMPTY_PACKS` | `at least one primitive pack is required` |
-| `frames`, when given, is non-empty | `EMPTY_FRAMES` | `frames is empty; omit it to build a runtime without the svg surface` |
+| `frames`, when given, is non-empty | `EMPTY_FRAMES` | `frames is empty; omit it to build a runtime without the snapshot surface` |
 | `defaultFrame` is given only with `frames` | `UNKNOWN_FRAME` | `defaultFrame "…" was given but no frames were supplied` |
 | No two packs share an `id` | `DUPLICATE_PACK_ID` | `"components" names more than one pack; pack ids must be unique` |
 | No node type owned by two packs | `DUPLICATE_PRIMITIVE_TYPE` | `primitive type "table" registered by "components" and "charts"` |
@@ -95,7 +96,7 @@ The runtime's own admission runs first, against the packs exactly as the host pa
 
 The overridden packs then go through the SDK's `composePacks`, which rejects duplicate node types and enhancement ids and returns the one flattened inventory every consumer shares. The SDK's validator and parser memoize on that array's identity, so the dispatcher, the validator, the parser, the authoring context, and every surface see the same overridden definitions and no consumer recomposes the discriminated union.
 
-One runtime-wide fact is gathered as a union across packs while this happens: which node types are pictures rather than text, so Slack uploads a chart instead of approximating it in markdown. A missing `metrics.svgHeight` is not one of these. The `svg` surface reports it for the frame a render measures with.
+One runtime-wide fact is gathered as a union across packs while this happens: which node types are pictures rather than text, so Slack uploads a chart instead of approximating it in markdown. A missing `metrics.snapshotHeight` is not one of these. The `snapshot` surface reports it for the frame a render measures with.
 
 ## Next
 

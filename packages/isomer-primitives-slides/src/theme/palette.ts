@@ -16,7 +16,7 @@ import type { SlideColorName } from './theme';
  * requirement and any host theme that satisfies it works. Keep this minimal —
  * every field added is a constraint on every host that renders slides.
  *
- * Primitives read none of it: they reach the `svg` surface through their
+ * Primitives read none of it: they reach the `snapshot` surface through their
  * `react` renderers and this pack's stylesheet.
  */
 export interface SlideFrameTheme {

@@ -12,7 +12,7 @@ Each primitive lives in its own directory under `src/primitives/<type>/`. Folder
 | `icon.ts`       | The host-facing glyph, exported as `icon` and built with `slideIcon` ([Icons](#icons)).                                                                                        |
 | `examples.ts`   | `example` plus `examples`, used by the conformance harness and the authoring prompt.                                                                                           |
 | `styles.ts`     | The primitive's Distillate module, reading only `slideDistillery.tokens`. `src/stylesheet.ts` collects every module.                                                           |
-| `react.tsx`     | The React renderer, exported as `react`. It serves the `svg` surface too.                                                                                                      |
+| `react.tsx`     | The React renderer, exported as `react`. It serves the `snapshot` surface too.                                                                                                 |
 | `index.tsx`     | `definePrimitive`, renderer wiring, and the `text`, `markdown`, and `slack` renderers.                                                                                         |
 | `index.test.ts` | Schema rejections and every surface's output for the primitive.                                                                                                                |
 | `fit.ts`        | Only for a length-sensitive primitive: the estimate that picks its size step ([Size steps](theme.md#size-steps)).                                                              |
@@ -46,7 +46,7 @@ Every primitive has a `catalog.name` and an `icon`, unique across the pack, and 
 
 ## Drawing inside an `svg`
 
-The image surface renders this pack's React tree against this pack's stylesheet, so a primitive styles itself with Distillate handles and needs no second renderer. That holds everywhere **except inside an inline `<svg>`**, which is the one place the stylesheet does not reach.
+The `snapshot` surface renders this pack's React tree against this pack's stylesheet, so a primitive styles itself with Distillate handles and needs no second renderer. That holds everywhere **except inside an inline `<svg>`**, which is the one place the stylesheet does not reach.
 
 An image backend does not lay out SVG children as part of the document. It lifts the element out, hands the markup to an SVG parser as a standalone sub-document, and composites the result — so a `<rect>` in there is no longer a node the stylesheet can match, and the document's custom properties are not in scope for it. A class that works perfectly in HTML paints nothing, and the shape rasterizes black.
 
@@ -101,9 +101,9 @@ Leave both type arguments inferred. Passing `TNode` alone widens the schema and 
 
 An authored string is `lineText()` or `wrappedText()` from `src/primitives/authored_text.ts`, never a bare `z.string()`. Both cap its length at `authoredTextMaxLength` (10,000 characters), an input-size guard against far too much text rather than a layout limit, so validation refuses it before any renderer parses marks or estimates a size. Whether text fits is the layout check's job, not the schema's.
 
-There is no `svg` renderer, and adding one is the mistake this pack exists to rule out. The image surface lays out the `react` tree against the pack's stylesheet, so a second hand-authored tree is a second thing to keep in sync and a second thing to get wrong. [Drawing inside an `svg`](#drawing-inside-an-svg) covers the one place that equivalence stops.
+There is no `snapshot` renderer, and adding one is the mistake this pack exists to rule out. The `snapshot` surface lays out the `react` tree against the pack's stylesheet, so a second hand-authored tree is a second thing to keep in sync and a second thing to get wrong. [Drawing inside an `svg`](#drawing-inside-an-svg) covers the one place that equivalence stops.
 
-The image surface measures `width`, `height`, and their `min-` and `max-` forms to the border. A rule that sets one on a padded or bordered box declares `box-sizing: border-box`, so a browser draws the same box; `src/theme/modules.test.ts` fails when a rule sets both without it.
+The `snapshot` surface measures `width`, `height`, and their `min-` and `max-` forms to the border. A rule that sets one on a padded or bordered box declares `box-sizing: border-box`, so a browser draws the same box; `src/theme/modules.test.ts` fails when a rule sets both without it.
 
 `checkLayout` reports a box that runs past its room. It does not see two boxes of one node overlap, or text run past its own box. So text that must stay on one line is a `display: flex` box with `white-space: nowrap`, in a track or flex item that cannot shrink under it: too long, it pushes its node past the room, where it is reported. An `auto` grid track takes its item's width only while the item has no `min-width` of its own.
 
@@ -180,7 +180,7 @@ renderers: {
 - `children` exposes nested nodes to the duplicate-id checker, the empty-surface checker, and node anchors. An embedded slide is not a child: the renders validate their `body` through `schemaFor`, declare no `children` for it, and draw it under `withoutAnchors`, so anchors and builds pair only the host slide's nodes.
 - `src/render/children.ts` dispatches each child through the render scope, so a foreign node inside a container renders rather than disappearing. `renderMarkdownChildren` embeds each child's builder content through `scope.renderMarkdownContent`. Without a container `slack` renderer, the dispatcher sends the container's Markdown to Block Kit and every child goes with it, including one that has a native `slack` renderer.
 
-A container that also draws chrome of its own sets two more. `hasOwnContent: () => true` keeps it on a surface when every child is hidden there, and `metrics.svgHeight` reports its drawn height to a frame that sums node heights. `slideFrame` sets both because it owns the 16:9 canvas. `slideSplit` has its own content only when a pane has a label or the split has a footnote; `slideStack` draws nothing and sets neither.
+A container that also draws chrome of its own sets two more. `hasOwnContent: () => true` keeps it on a surface when every child is hidden there, and `metrics.snapshotHeight` reports its drawn height to a frame that sums node heights. `slideFrame` sets both because it owns the 16:9 canvas. `slideSplit` has its own content only when a pane has a label or the split has a footnote; `slideStack` draws nothing and sets neither.
 
 ## Writing catalog copy
 

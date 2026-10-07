@@ -9,8 +9,8 @@ import type { PdfInput, TakumiPdfBackend, TakumiPdfOptions } from './backend';
 import {
   checkedForDrawing,
   type PngCheckedValidationResult,
-  type PngSvgOptions,
   type PngValidationResult,
+  type SnapshotOptions,
 } from './render_png';
 
 /**
@@ -20,10 +20,10 @@ import {
 export interface PdfRuntime {
   validate(composition: unknown): PngCheckedValidationResult;
   surfaces: {
-    svg: {
+    snapshot: {
       renderPages(
         compositions: readonly unknown[],
-        options?: PngSvgOptions & { onValidationError?: 'collect' | 'throw' }
+        options?: SnapshotOptions & { onValidationError?: 'collect' | 'throw' }
       ): PdfInput;
     };
   };
@@ -31,8 +31,8 @@ export interface PdfRuntime {
 
 /** Options for {@link renderPdf}. */
 export interface RenderPdfOptions extends TakumiPdfOptions {
-  /** Forwarded to `runtime.surfaces.svg.renderPages`, so every page shares one frame. */
-  svg?: PngSvgOptions;
+  /** Forwarded to `runtime.surfaces.snapshot.renderPages`, so every page shares one frame. */
+  snapshot?: SnapshotOptions;
 }
 
 /** What {@link renderPdf} resolves to: the bytes, the page count and size, and one finding set per composition. */
@@ -59,16 +59,16 @@ export const renderPdf = async (
   runtime: PdfRuntime,
   deck: readonly unknown[],
   backend: TakumiPdfBackend,
-  { svg, ...options }: RenderPdfOptions = {}
+  { snapshot, ...options }: RenderPdfOptions = {}
 ): Promise<RenderPdfResult> => {
   const pages = deck.map((composition) =>
     checkedForDrawing('renderPdf', runtime.validate(composition))
   );
   const validations = pages.map(({ validation }) => validation);
-  const rendered = runtime.surfaces.svg.renderPages(
+  const rendered = runtime.surfaces.snapshot.renderPages(
     pages.map(({ checked }) => checked),
     {
-      ...svg,
+      ...snapshot,
       onValidationError: 'collect',
     }
   );

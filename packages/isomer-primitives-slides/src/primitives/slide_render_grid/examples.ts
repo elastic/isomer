@@ -16,7 +16,7 @@ export const example: SlideRenderGridNode = {
   tiles: [
     { surface: 'react', caption: 'Inside the ops dashboard' },
     { surface: 'html', caption: 'The weekly email' },
-    { surface: 'svg', caption: 'A PNG for the board pack' },
+    { surface: 'snapshot', caption: 'A PNG for the board pack' },
     { surface: 'slack', caption: 'The ops channel' },
     { surface: 'markdown', caption: 'The runbook wiki' },
     { surface: 'text', caption: 'Driver SMS' },
@@ -28,7 +28,7 @@ export const fourExample: SlideRenderGridNode = {
   type: 'slideRenderGrid',
   body: deliverySlide,
   tiles: [
-    { surface: 'svg', caption: 'A PNG for the board pack' },
+    { surface: 'snapshot', caption: 'A PNG for the board pack' },
     { surface: 'markdown', caption: 'The runbook wiki' },
     { surface: 'text', caption: 'Driver SMS' },
     { surface: 'slack', caption: 'The ops channel' },
@@ -40,7 +40,7 @@ export const rowExample: SlideRenderGridNode = {
   type: 'slideRenderGrid',
   body: deliverySlide,
   tiles: [
-    { surface: 'svg', caption: 'A PNG for the board pack' },
+    { surface: 'snapshot', caption: 'A PNG for the board pack' },
     { surface: 'slack', caption: 'The ops channel' },
     { surface: 'text', caption: 'Driver SMS' },
   ],

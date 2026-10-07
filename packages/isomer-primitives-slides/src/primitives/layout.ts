@@ -46,7 +46,7 @@ export const withLayout = (
   });
 
 /** A surface that draws nodes; a container's nested nodes follow `react` on both. */
-type DrawnSurface = 'react' | 'svg';
+type DrawnSurface = 'react' | 'snapshot';
 
 type LaidOutNode = { type: string; surfaces?: readonly string[] };
 

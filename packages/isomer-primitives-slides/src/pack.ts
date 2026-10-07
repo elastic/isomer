@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-// This pack as a value, and the slide frame a svg render of it is drawn into.
+// This pack as a value, and the slide frame a snapshot render of it is drawn into.
 // The frame draws nothing: a slide spec is a single `slideFrame`, and that
 // primitive already owns the fixed 16:9 presentation frame, so the body is
 // dispatched edge-to-edge. What is left is geometry and the one-slide-per-spec rule.
@@ -50,12 +50,12 @@ export const slideDeckFrame: Frame<SlideFrameTheme> = {
     const [slide, ...rest] = body;
     if (!slide || rest.length > 0) {
       return [
-        `an svg render needs exactly one "${SLIDE_FRAME_TYPE}" node, got ${body.length} nodes; render one slide per spec`,
+        `a snapshot render needs exactly one "${SLIDE_FRAME_TYPE}" node, got ${body.length} nodes; render one slide per spec`,
       ];
     }
     if (slide.type !== SLIDE_FRAME_TYPE) {
       return [
-        `an svg render needs a "${SLIDE_FRAME_TYPE}" root, got "${slide.type}"; wrap slide content in a frame`,
+        `a snapshot render needs a "${SLIDE_FRAME_TYPE}" root, got "${slide.type}"; wrap slide content in a frame`,
       ];
     }
     return [];

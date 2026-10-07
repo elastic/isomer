@@ -6,6 +6,7 @@
  */
 
 export {
+  type CapabilitySources,
   type HostCapabilities,
   type SurfaceSupport,
   describeCapabilities,

@@ -71,7 +71,7 @@ describe('slide theme', () => {
   });
 
   // takumi ignores `flex: none` and does not evaluate a nested `calc`.
-  it('writes flex and calc in forms the image surface lays out', () => {
+  it('writes flex and calc in forms the `snapshot` surface lays out', () => {
     const css = slideStylesheet();
     expect(css.match(/flex:\s*none/g)).toBeNull();
     expect(css.match(/calc\([^()]*\(/g)).toBeNull();

@@ -110,6 +110,6 @@ export const slideFramePrimitive = definePrimitive<SlideFrameNode>({
     return rest;
   },
   metrics: {
-    svgHeight: () => scalePx(SLIDE_THEME.frame.height),
+    snapshotHeight: () => scalePx(SLIDE_THEME.frame.height),
   },
 });

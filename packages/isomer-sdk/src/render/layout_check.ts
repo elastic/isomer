@@ -142,7 +142,7 @@ export const checkLayout = (
   layout: LayoutBox,
   body: readonly unknown[],
   walk: ChildNodeWalker,
-  surface: 'react' | 'svg'
+  surface: 'react' | 'snapshot'
 ): LayoutFinding[] => {
   const nodes = anchoredNodePaths(body, walk, surface);
   const anchored = anchoredBoxes(layout);

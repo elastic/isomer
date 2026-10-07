@@ -277,7 +277,7 @@ describe('slideDelta', () => {
       /** The second value and the note's body, as drawn. */
       const drawn = async (node: SlideDeltaNode) => {
         const all = runs(
-          await takumi.measure(runtime.surfaces.svg.render(compose(node)))
+          await takumi.measure(runtime.surfaces.snapshot.render(compose(node)))
         );
         const run = (text: string | undefined) =>
           all.find((candidate) => candidate.text.trim() === text)!;

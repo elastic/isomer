@@ -42,8 +42,8 @@ export const example: SlideAnnotatedRenderNode = {
     type: 'slideRender',
     slide: 'checkout-results',
     body: checkoutSlide,
-    surface: 'svg',
-    caption: 'The checkout results slide, from the svg surface',
+    surface: 'snapshot',
+    caption: 'The checkout results slide, from the snapshot surface',
   },
   pins: [
     {
@@ -70,7 +70,7 @@ export const example: SlideAnnotatedRenderNode = {
 /** A reference the host has not filled in: pins on the placeholder, and the legend at its densest. */
 export const placeholderExample: SlideAnnotatedRenderNode = {
   type: 'slideAnnotatedRender',
-  render: { type: 'slideRender', slide: 'orders-admin', surface: 'svg' },
+  render: { type: 'slideRender', slide: 'orders-admin', surface: 'snapshot' },
   pins: [
     { x: 20, y: 16, title: 'Search', body: 'Filters by store and date.' },
     { x: 78, y: 16, title: 'Export', body: 'Downloads the rows as CSV.' },

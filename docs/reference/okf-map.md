@@ -26,7 +26,7 @@ flowchart LR
     image_takumi_concepts_fonts["Fonts"]:::concept
     image_takumi_concepts_raster["Raster"]:::concept
     image_takumi_entry_points_root["Root"]:::entrypoint
-    image_takumi_playbooks_rasterize_svg["Rasterize svg"]:::playbook
+    image_takumi_playbooks_rasterize_a_snapshot["Rasterize a snapshot"]:::playbook
     image_takumi_playbooks_render_pdf["Render pdf"]:::playbook
     image_takumi_reference_public_contract["Public contract"]:::reference
     runtime_concepts_authoring_context["Authoring context"]:::concept
@@ -60,7 +60,7 @@ flowchart LR
     sdk_reference_public_contract["Public contract"]:::reference
     slides_concepts_distillate["Distillate"]:::concept
     slides_concepts_document["Document"]:::concept
-    slides_concepts_no_svg_renderer["No svg renderer"]:::concept
+    slides_concepts_no_snapshot_renderer["No snapshot renderer"]:::concept
     slides_concepts_one_source["One source per rendered value"]:::concept
     slides_concepts_pack["Pack"]:::concept
     slides_concepts_theme["Theme"]:::concept
@@ -97,16 +97,16 @@ flowchart LR
     image_takumi_concepts_fonts --> image_takumi_concepts_determinism
     image_takumi_concepts_fonts --> image_takumi_concepts_raster
     image_takumi_concepts_raster --> image_takumi_concepts_fonts
-    image_takumi_concepts_raster --> image_takumi_playbooks_rasterize_svg
+    image_takumi_concepts_raster --> image_takumi_playbooks_rasterize_a_snapshot
     image_takumi_concepts_raster --> image_takumi_playbooks_render_pdf
     image_takumi_concepts_raster --> runtime_concepts_surfaces
     image_takumi_entry_points_root --> image_takumi_concepts_raster
     image_takumi_entry_points_root --> image_takumi_reference_public_contract
-    image_takumi_playbooks_rasterize_svg --> image_takumi_concepts_fonts
-    image_takumi_playbooks_rasterize_svg --> image_takumi_concepts_raster
+    image_takumi_playbooks_rasterize_a_snapshot --> image_takumi_concepts_fonts
+    image_takumi_playbooks_rasterize_a_snapshot --> image_takumi_concepts_raster
     image_takumi_playbooks_render_pdf --> image_takumi_concepts_fonts
     image_takumi_playbooks_render_pdf --> image_takumi_concepts_raster
-    image_takumi_playbooks_render_pdf --> image_takumi_playbooks_rasterize_svg
+    image_takumi_playbooks_render_pdf --> image_takumi_playbooks_rasterize_a_snapshot
     image_takumi_reference_public_contract --> image_takumi_concepts_raster
     image_takumi_reference_public_contract --> image_takumi_entry_points_root
     runtime_concepts_authoring_context --> evals_concepts_scoring
@@ -165,7 +165,7 @@ flowchart LR
     sdk_entry_points_markdown --> sdk_concepts_rendering
     sdk_entry_points_markdown --> sdk_entry_points_slack
     sdk_entry_points_react --> sdk_concepts_rendering
-    sdk_entry_points_react --> slides_concepts_no_svg_renderer
+    sdk_entry_points_react --> slides_concepts_no_snapshot_renderer
     sdk_entry_points_root --> sdk_concepts_pipeline
     sdk_entry_points_root --> sdk_entry_points_author
     sdk_entry_points_root --> sdk_entry_points_html
@@ -187,8 +187,8 @@ flowchart LR
     slides_concepts_distillate --> slides_concepts_pack
     slides_concepts_document --> runtime_concepts_frame
     slides_concepts_document --> slides_concepts_pack
-    slides_concepts_no_svg_renderer --> image_takumi_concepts_raster
-    slides_concepts_no_svg_renderer --> runtime_concepts_surfaces
+    slides_concepts_no_snapshot_renderer --> image_takumi_concepts_raster
+    slides_concepts_no_snapshot_renderer --> runtime_concepts_surfaces
     slides_concepts_one_source --> slides_concepts_theme
     slides_concepts_one_source --> workspace_reference_conventions
     slides_concepts_pack --> slides_concepts_document
@@ -198,7 +198,7 @@ flowchart LR
     slides_concepts_theme --> slides_concepts_one_source
     slides_entry_points_root --> slides_concepts_pack
     slides_entry_points_root --> slides_reference_public_contract
-    slides_playbooks_author_a_primitive --> slides_concepts_no_svg_renderer
+    slides_playbooks_author_a_primitive --> slides_concepts_no_snapshot_renderer
     slides_playbooks_author_a_primitive --> slides_concepts_one_source
     slides_reference_public_contract --> slides_concepts_distillate
     slides_reference_public_contract --> slides_concepts_pack
@@ -237,7 +237,7 @@ flowchart LR
 - Fonts (Concept): `image-takumi/concepts/fonts`
 - Raster (Concept): `image-takumi/concepts/raster`
 - Root (Entry Point): `image-takumi/entry-points/root`
-- Rasterize svg (Playbook): `image-takumi/playbooks/rasterize-svg`
+- Rasterize a snapshot (Playbook): `image-takumi/playbooks/rasterize-a-snapshot`
 - Render pdf (Playbook): `image-takumi/playbooks/render-pdf`
 - Public contract (Reference): `image-takumi/reference/public-contract`
 - Authoring context (Concept): `runtime/concepts/authoring-context`
@@ -271,7 +271,7 @@ flowchart LR
 - Public contract (Reference): `sdk/reference/public-contract`
 - Distillate (Concept): `slides/concepts/distillate`
 - Document (Concept): `slides/concepts/document`
-- No svg renderer (Concept): `slides/concepts/no-svg-renderer`
+- No snapshot renderer (Concept): `slides/concepts/no-snapshot-renderer`
 - One source per rendered value (Concept): `slides/concepts/one-source`
 - Pack (Concept): `slides/concepts/pack`
 - Theme (Concept): `slides/concepts/theme`

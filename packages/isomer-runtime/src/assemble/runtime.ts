@@ -40,14 +40,14 @@ import {
   createMarkdownSurface,
   createReactSurface,
   createSlackSurface,
-  createSvgSurface,
+  createSnapshotSurface,
   createTextSurface,
   type HTMLStyleAdapter,
   type HtmlSurface,
   type MarkdownSurface,
   type ReactSurface,
   type SlackSurface,
-  type SvgSurface,
+  type SnapshotSurface,
   type TextSurface,
 } from '../surfaces';
 
@@ -87,13 +87,18 @@ export interface IsomerRuntimeOptions<
    */
   packs: readonly PrimitivePack<TTheme>[];
   /**
-   * The documents the `svg` surface can draw, keyed by the name a render asks
-   * for. Omit it and `surfaces.svg` is `undefined`. `TTheme` is inferred from
+   * The documents the `snapshot` surface can draw, keyed by the name a render asks
+   * for. Omit it and `surfaces.snapshot` is `undefined`. `TTheme` is inferred from
    * `packs` first, so a palette mismatch is reported against this field.
    */
   frames?: FrameMap<TTheme>;
   /** Frame used when a render names none; defaults to the sole entry. */
   defaultFrame?: string;
+  /**
+   * Formats the host ships beyond the runtime's own, reported by
+   * `getCapabilities`: a rasterizer's, e.g. a takumi backend's `formats`.
+   */
+  formats?: readonly string[];
   /** Views to pre-register on the runtime's view registry. */
   views?: readonly RegisteredView<THostContext, unknown, PrimitiveNode>[];
   /** Per-primitive-type renderer replacements. */
@@ -131,22 +136,22 @@ export interface IsomerRuntimeOptions<
 
 /**
  * One namespace per output format; each exposes `render` and `renderNode`
- * uniformly. `TSvg` is `SvgSurface` when the runtime was built with `frames`
+ * uniformly. `TSnapshot` is `SnapshotSurface` when the runtime was built with `frames`
  * and `undefined` when it was not; a runtime whose options are not statically
  * known carries the union. Every key but `html` is a `SurfaceName`; `html`
  * wraps the `react` output in a document and no node targets it.
  */
 export interface RuntimeSurfaces<
   TRenderContext = PrimitiveRenderContext,
-  TSvg extends SvgSurface | undefined = SvgSurface | undefined,
+  TSnapshot extends SnapshotSurface | undefined = SnapshotSurface | undefined,
 > {
   react: ReactSurface<TRenderContext>;
   html: HtmlSurface;
   text: TextSurface;
   markdown: MarkdownSurface;
   slack: SlackSurface;
-  /** The image surface, or `undefined` when the host supplied no frame. */
-  svg: TSvg;
+  /** A fixed-size render inside a frame, or `undefined` when the host supplied no frame. */
+  snapshot: TSnapshot;
 }
 
 /**
@@ -158,7 +163,7 @@ export interface IsomerRuntime<
   THostContext = unknown,
   TRenderContext = PrimitiveRenderContext,
   TTheme = never,
-  TSvg extends SvgSurface | undefined = SvgSurface | undefined,
+  TSnapshot extends SnapshotSurface | undefined = SnapshotSurface | undefined,
 > {
   /**
    * The packs this runtime was built from, with renderer overrides applied.
@@ -170,11 +175,11 @@ export interface IsomerRuntime<
   readonly primitives: readonly AnyPrimitiveDefinition[];
   /** Product-owned views, requested by id; the `views` option pre-registers. */
   readonly viewRegistry: ViewRegistry<THostContext, PrimitiveNode>;
-  /** One render surface per output format; `svg` is `undefined` without `frames`. */
-  readonly surfaces: RuntimeSurfaces<TRenderContext, TSvg>;
+  /** One render surface per output format; `snapshot` is `undefined` without `frames`. */
+  readonly surfaces: RuntimeSurfaces<TRenderContext, TSnapshot>;
   /** Builds fresh authoring material (schema, declarations, catalog, views) for this runtime. */
   getAuthoringContext(): RuntimeAuthoringContext;
-  /** Reports the primitive types and render formats this runtime supports. */
+  /** Reports the primitive types, surfaces, and formats this runtime supports. */
   getCapabilities(): HostCapabilities;
   /**
    * Validates a composition against this runtime's primitives: the input
@@ -197,8 +202,8 @@ export interface IsomerRuntime<
 /**
  * Builds an {@link IsomerRuntime} from primitive packs: a dispatcher,
  * composition validator/parser, view registry, and one render surface per
- * format. Passing `frames` is what makes `surfaces.svg` present, and the
- * signature says so: with `frames` it is `SvgSurface`, without it is
+ * format. Passing `frames` is what makes `surfaces.snapshot` present, and the
+ * signature says so: with `frames` it is `SnapshotSurface`, without it is
  * `undefined`, and a call whose options are not a literal gets the union.
  */
 export interface CreateIsomerRuntime {
@@ -210,7 +215,7 @@ export interface CreateIsomerRuntime {
     options: IsomerRuntimeOptions<THostContext, TRenderContext, TTheme> & {
       frames: FrameMap<TTheme>;
     }
-  ): IsomerRuntime<THostContext, TRenderContext, TTheme, SvgSurface>;
+  ): IsomerRuntime<THostContext, TRenderContext, TTheme, SnapshotSurface>;
   <
     THostContext = unknown,
     TRenderContext = PrimitiveRenderContext,
@@ -230,7 +235,7 @@ export interface CreateIsomerRuntime {
 }
 
 // One implementation serves every overload; the cast is what lets the
-// `frames` overload promise a present `svg`.
+// `frames` overload promise a present `snapshot`.
 export const createIsomerRuntime: CreateIsomerRuntime = (<
   THostContext,
   TRenderContext,
@@ -285,10 +290,10 @@ export const createIsomerRuntime: CreateIsomerRuntime = (<
     text: createTextSurface(dispatcher, validate),
     markdown: createMarkdownSurface(dispatcher, validate),
     slack: createSlackSurface(dispatcher, validate),
-    svg:
+    snapshot:
       defaultFrame === undefined
         ? undefined
-        : createSvgSurface(
+        : createSnapshotSurface(
             dispatcher,
             validate,
             (name) => {
@@ -308,9 +313,12 @@ export const createIsomerRuntime: CreateIsomerRuntime = (<
             styleAdapter
           ),
   };
-  const formats = Object.entries(surfaces)
-    .filter(([, surface]) => surface !== undefined)
-    .map(([name]) => name);
+  const sources = {
+    surfaces: Object.entries(surfaces)
+      .filter(([, surface]) => surface !== undefined)
+      .map(([name]) => name),
+    formats: options.formats ?? [],
+  };
 
   return {
     packs,
@@ -318,7 +326,7 @@ export const createIsomerRuntime: CreateIsomerRuntime = (<
     viewRegistry,
     surfaces,
     getAuthoringContext,
-    getCapabilities: () => describeCapabilities(packs, formats),
+    getCapabilities: () => describeCapabilities(packs, sources),
     validate,
     parse,
     getCompositionSchema: () => getCompositionSchemaForDefinitions(definitions),
@@ -379,7 +387,7 @@ const frameAt = (
  * Picks the frame a render uses when it names none.
  *
  * Defaulted rather than required for the one-frame case. Returns `undefined`
- * only when `frames` was omitted, which is what leaves the `svg` surface off;
+ * only when `frames` was omitted, which is what leaves the `snapshot` surface off;
  * an empty map throws, since the overloads type it as present.
  */
 const resolveDefaultFrame = (
@@ -399,7 +407,7 @@ const resolveDefaultFrame = (
   if (names.length === 0) {
     throw new IsomerError(
       'EMPTY_FRAMES',
-      'runtime: frames is empty; omit it to build a runtime without the svg surface'
+      'runtime: frames is empty; omit it to build a runtime without the snapshot surface'
     );
   }
   if (requested !== undefined) {

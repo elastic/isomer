@@ -7,7 +7,7 @@
 
 import { SLIDE_THEME } from './theme';
 
-/** One face the image surface needs registered to draw this pack as designed. */
+/** One face the `snapshot` surface needs registered to draw this pack as designed. */
 export interface SlideFontFace {
   family: string;
   weight: number;

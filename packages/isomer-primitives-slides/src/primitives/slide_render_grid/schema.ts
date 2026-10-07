@@ -26,7 +26,7 @@ export const buildSchema = (bodyNodeSchema: ZodType<unknown>) =>
               surface: z
                 .enum(slideRenderSurfaces)
                 .describe(
-                  'The surface this tile renders on, shown as its name. `react`, `html`, and `svg` draw the slide; `markdown`, `text`, and `slack` show their output.'
+                  'The surface this tile renders on, shown as its name. `react`, `html`, and `snapshot` draw the slide; `markdown`, `text`, and `slack` show their output.'
                 ),
               caption: lineText().describe(
                 'A few words on what this surface is for, e.g. "Terminals and SMS".'

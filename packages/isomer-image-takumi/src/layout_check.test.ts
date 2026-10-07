@@ -83,11 +83,14 @@ describe('checkLayout over a takumi measure', () => {
       { type: 'block', width: 300 },
     ];
     const layout = await createTakumiImageBackend().measure(
-      runtime.surfaces.svg.render({ type: 'view', body }, { anchors: true })
+      runtime.surfaces.snapshot.render(
+        { type: 'view', body },
+        { anchors: true }
+      )
     );
 
     expect(
-      checkLayout(layout, body, createChildNodeWalker([block]), 'svg')
+      checkLayout(layout, body, createChildNodeWalker([block]), 'snapshot')
     ).toEqual([{ kind: 'overflow', path: 'body[1]', type: 'block', by: 150 }]);
   });
 });

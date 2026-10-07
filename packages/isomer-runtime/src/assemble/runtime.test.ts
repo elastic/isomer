@@ -182,7 +182,7 @@ interface PlainNode extends PrimitiveNode {
   text: string;
 }
 
-// A primitive from a pack that does not target images: no `svg` renderer.
+// A primitive from a pack that does not target images: no `snapshot` renderer.
 const plainPrimitive = definePrimitive<PlainNode>({
   type: 'plain',
   catalog: {
@@ -213,7 +213,7 @@ const testFrame: Frame<string> = {
   // none, so it contributes 0).
   estimateHeight: (spec, dispatcher) =>
     spec.body.reduce(
-      (sum, node) => sum + dispatcher.estimateSvgHeight(node) + 40,
+      (sum, node) => sum + dispatcher.estimateSnapshotHeight(node) + 40,
       0
     ),
   wrap: (_spec, body, viewport) =>
@@ -238,8 +238,8 @@ const packOf = (
     primitives,
   });
 
-/** A pack whose primitives all draw SVG, needing the `string` palette {@link testFrame} supplies. */
-const svgPackOf = (
+/** A pack whose primitives all draw on the snapshot surface, needing the `string` palette {@link testFrame} supplies. */
+const snapshotPackOf = (
   ...primitives: readonly AnyPrimitiveDefinition[]
 ): PrimitivePack<string> =>
   definePrimitivePack<string>({
@@ -254,7 +254,7 @@ const fixedFrame: Frame<string> = {
 };
 
 /**
- * A runtime that draws, since only a frame gives it an `svg` surface.
+ * A runtime that draws, since only a frame gives it a `snapshot` surface.
  *
  * Return type inferred rather than written as
  * `ReturnType<typeof createIsomerRuntime>`: that instantiates the type
@@ -263,7 +263,7 @@ const fixedFrame: Frame<string> = {
  */
 const drawingRuntime = (...primitives: readonly AnyPrimitiveDefinition[]) =>
   createIsomerRuntime({
-    packs: [svgPackOf(...primitives)],
+    packs: [snapshotPackOf(...primitives)],
     frames: { card: testFrame },
   });
 
@@ -520,10 +520,10 @@ describe('createIsomerRuntime', () => {
     });
   });
 
-  // `react` serves the `svg` surface, so one override reaches both.
+  // `react` serves the `snapshot` surface, so one override reaches both.
   it('accepts a react override that narrows the node type', () => {
     const runtime = createIsomerRuntime({
-      packs: [svgPackOf(notePrimitive)],
+      packs: [snapshotPackOf(notePrimitive)],
       frames: { card: testFrame },
       rendererOverrides: {
         note: {
@@ -533,9 +533,9 @@ describe('createIsomerRuntime', () => {
       },
     });
 
-    expectTypeOf(runtime.surfaces.svg).not.toEqualTypeOf<undefined>();
+    expectTypeOf(runtime.surfaces.snapshot).not.toEqualTypeOf<undefined>();
     expect(
-      renderToStaticMarkup(runtime.surfaces.svg.render(view('ok')).element)
+      renderToStaticMarkup(runtime.surfaces.snapshot.render(view('ok')).element)
     ).toContain('svg:ok');
   });
 
@@ -784,6 +784,7 @@ describe('createIsomerRuntime', () => {
 
     expect(runtime.getCapabilities()).toEqual({
       primitives: ['note'],
+      surfaces: ['react', 'html', 'text', 'markdown', 'slack'],
       formats: ['react', 'html', 'text', 'markdown', 'slack'],
       support: {
         note: {
@@ -841,14 +842,14 @@ describe('createIsomerRuntime', () => {
     expect(runtime.getCapabilities().support.wrap?.slack).toBe('native');
   });
 
-  it('reports svg support only when the runtime has a frame', () => {
+  it('reports snapshot support only when the runtime has a frame', () => {
     expect(
       createIsomerRuntime({ packs: [packOf(notePrimitive)] }).getCapabilities()
         .support.note
-    ).not.toHaveProperty('svg');
+    ).not.toHaveProperty('snapshot');
     expect(
       drawingRuntime(notePrimitive).getCapabilities().support.note
-    ).toEqual(expect.objectContaining({ svg: 'native' }));
+    ).toEqual(expect.objectContaining({ snapshot: 'native' }));
   });
 
   it('lists authoring primitives in definition order', () => {
@@ -1725,14 +1726,14 @@ describe('createIsomerRuntime', () => {
     });
   });
 
-  it('accepts a primitive with no svg renderer', () => {
+  it('accepts a primitive with no snapshot renderer', () => {
     const runtime = createIsomerRuntime({ packs: [packOf(plainPrimitive)] });
     const spec = {
       type: 'view' as const,
       body: [{ type: 'plain' as const, text: 'no image' }],
     };
 
-    // `svg` is optional in the contract, so the pack is valid and every
+    // `snapshot` is optional in the contract, so the pack is valid and every
     // mandatory surface still renders.
     expect(runtime.validate(spec)).toMatchObject({ valid: true, errors: [] });
     expect(runtime.surfaces.text.render(spec)).toBe('no image');
@@ -1767,11 +1768,11 @@ describe('createIsomerRuntime', () => {
   });
 
   it('reports a missing height from the frame a render measures with', () => {
-    // `bold` declares no `metrics.svgHeight`, so the measuring frame sizes it
+    // `bold` declares no `metrics.snapshotHeight`, so the measuring frame sizes it
     // as 0. `validate` stays quiet: the same composition can be drawn into the
     // fixed frame, which never reads the metric.
     const runtime = createIsomerRuntime({
-      packs: [svgPackOf(boldPrimitive)],
+      packs: [snapshotPackOf(boldPrimitive)],
       frames: { card: testFrame, slide: fixedFrame },
       defaultFrame: 'slide',
     });
@@ -1783,28 +1784,29 @@ describe('createIsomerRuntime', () => {
     const missing = {
       path: 'body[0]',
       message:
-        'body[0] type "bold" declares no svgHeight metric and will be measured as 0, sizing the frame short',
+        'body[0] type "bold" declares no snapshotHeight metric and will be measured as 0, sizing the frame short',
     };
 
     expect(
       runtime.validate(spec).warnings?.map((warning) => warning.message)
     ).not.toEqual(
-      expect.arrayContaining([expect.stringContaining('svgHeight')])
+      expect.arrayContaining([expect.stringContaining('snapshotHeight')])
     );
-    expect(runtime.surfaces.svg.render(spec).warnings).toEqual([]);
+    expect(runtime.surfaces.snapshot.render(spec).warnings).toEqual([]);
     expect(
-      runtime.surfaces.svg.render(spec, { frame: 'card' }).warnings
+      runtime.surfaces.snapshot.render(spec, { frame: 'card' }).warnings
     ).toEqual([missing]);
     expect(
-      runtime.surfaces.svg.render(spec, { frame: 'card', height: 10 }).warnings
+      runtime.surfaces.snapshot.render(spec, { frame: 'card', height: 10 })
+        .warnings
     ).toEqual([]);
-    expect(runtime.surfaces.svg.renderNode(bold).warnings).toEqual([]);
+    expect(runtime.surfaces.snapshot.renderNode(bold).warnings).toEqual([]);
     expect(
-      runtime.surfaces.svg.renderNode(bold, { frame: 'card' }).warnings
+      runtime.surfaces.snapshot.renderNode(bold, { frame: 'card' }).warnings
     ).toEqual([missing]);
   });
 
-  it('warns for a nested unmeasured node, and skips one hidden from svg', () => {
+  it('warns for a nested unmeasured node, and skips one hidden from snapshot', () => {
     const runtime = drawingRuntime(boldPrimitive, wrapPrimitive);
     const hidden = {
       type: 'bold',
@@ -1813,7 +1815,7 @@ describe('createIsomerRuntime', () => {
     } as BoldNode;
 
     expect(
-      runtime.surfaces.svg.render({
+      runtime.surfaces.snapshot.render({
         type: 'view',
         body: [
           {
@@ -1826,12 +1828,12 @@ describe('createIsomerRuntime', () => {
       {
         path: 'body[0]',
         message:
-          'body[0] type "wrap" declares no svgHeight metric and will be measured as 0, sizing the frame short',
+          'body[0] type "wrap" declares no snapshotHeight metric and will be measured as 0, sizing the frame short',
       },
       {
         path: 'body[0].items[0]',
         message:
-          'body[0].items[0] type "bold" declares no svgHeight metric and will be measured as 0, sizing the frame short',
+          'body[0].items[0] type "bold" declares no snapshotHeight metric and will be measured as 0, sizing the frame short',
       },
     ]);
   });
@@ -1869,7 +1871,7 @@ describe('createIsomerRuntime', () => {
     const runtime = drawingRuntime(boxPrimitive, boldPrimitive);
     const box = { type: 'box' as const };
     const bold = { type: 'bold' as const, text: 'short' };
-    const rendered = runtime.surfaces.svg.render(
+    const rendered = runtime.surfaces.snapshot.render(
       {
         type: 'view',
         body: [box, bold],
@@ -1881,12 +1883,12 @@ describe('createIsomerRuntime', () => {
       {
         path: 'body[0]',
         message:
-          'body[0] type "box" declares no svgHeight metric and will be measured as 0, sizing the frame short',
+          'body[0] type "box" declares no snapshotHeight metric and will be measured as 0, sizing the frame short',
       },
       {
         path: 'body[1]',
         message:
-          'body[1] type "bold" declares no svgHeight metric and will be measured as 0, sizing the frame short',
+          'body[1] type "bold" declares no snapshotHeight metric and will be measured as 0, sizing the frame short',
       },
     ]);
   });
@@ -1906,7 +1908,7 @@ describe('createIsomerRuntime', () => {
         type: z.literal('tall'),
         text: z.string().min(1),
       }),
-      metrics: { svgHeight: () => 24 },
+      metrics: { snapshotHeight: () => 24 },
       renderers: {
         react: (node) => createElement('strong', null, node.text),
         text: (node) => node.text,
@@ -1918,10 +1920,10 @@ describe('createIsomerRuntime', () => {
     const tall = { type: 'tall' as const, text: 'fits' };
 
     expect(
-      runtime.surfaces.svg.render({ type: 'view', body: [tall] }).warnings
+      runtime.surfaces.snapshot.render({ type: 'view', body: [tall] }).warnings
     ).toEqual([]);
     expect(
-      runtime.surfaces.svg.renderPages([
+      runtime.surfaces.snapshot.renderPages([
         { type: 'view', body: [bold] },
         { type: 'view', body: [tall, bold] },
       ]).warnings
@@ -1929,28 +1931,28 @@ describe('createIsomerRuntime', () => {
       {
         path: 'pages[0].body[0]',
         message:
-          'pages[0].body[0] type "bold" declares no svgHeight metric and will be measured as 0, sizing the frame short',
+          'pages[0].body[0] type "bold" declares no snapshotHeight metric and will be measured as 0, sizing the frame short',
       },
       {
         path: 'pages[1].body[1]',
         message:
-          'pages[1].body[1] type "bold" declares no svgHeight metric and will be measured as 0, sizing the frame short',
+          'pages[1].body[1] type "bold" declares no snapshotHeight metric and will be measured as 0, sizing the frame short',
       },
     ]);
   });
 
-  it('has no svg surface, and reports no svg format, without a frame', () => {
+  it('has no snapshot surface, and reports none, without a frame', () => {
     const runtime = createIsomerRuntime({ packs: [packOf(notePrimitive)] });
 
-    expectTypeOf(runtime.surfaces.svg).toEqualTypeOf<undefined>();
-    expect(runtime.surfaces.svg).toBeUndefined();
-    expect(runtime.getCapabilities().formats).not.toContain('svg');
+    expectTypeOf(runtime.surfaces.snapshot).toEqualTypeOf<undefined>();
+    expect(runtime.surfaces.snapshot).toBeUndefined();
+    expect(runtime.getCapabilities().surfaces).not.toContain('snapshot');
   });
 
   it("asks the style adapter for the render's scheme", () => {
     const schemes: unknown[] = [];
     const runtime = createIsomerRuntime({
-      packs: [svgPackOf(notePrimitive)],
+      packs: [snapshotPackOf(notePrimitive)],
       frames: { card: testFrame },
       styleAdapter: {
         createCollector: () => ({}),
@@ -1962,9 +1964,9 @@ describe('createIsomerRuntime', () => {
       },
     });
 
-    runtime.surfaces.svg.render(view('Dark'), { theme: 'dark' });
-    runtime.surfaces.svg.render(view('Light'), { theme: 'light' });
-    runtime.surfaces.svg.render(view('Auto'));
+    runtime.surfaces.snapshot.render(view('Dark'), { theme: 'dark' });
+    runtime.surfaces.snapshot.render(view('Light'), { theme: 'light' });
+    runtime.surfaces.snapshot.render(view('Auto'));
 
     expect(schemes).toEqual(['dark', 'light', 'light']);
   });
@@ -1972,7 +1974,7 @@ describe('createIsomerRuntime', () => {
   it('renders a view and a single node through the runtime frame', () => {
     const runtime = drawingRuntime(notePrimitive);
 
-    const rendered = runtime.surfaces.svg.render(view('Framed'), {
+    const rendered = runtime.surfaces.snapshot.render(view('Framed'), {
       theme: 'dark',
     });
     const element = rendered.element as ReactElement<{
@@ -1990,14 +1992,14 @@ describe('createIsomerRuntime', () => {
     expect(element.props.theme).toBe('dark-theme');
     expect(renderToStaticMarkup(element)).toContain('Framed');
 
-    const node = runtime.surfaces.svg.renderNode({
+    const node = runtime.surfaces.snapshot.renderNode({
       type: 'note',
       text: 'Bare',
     } as NoteNode);
     expect(renderToStaticMarkup(node.element)).toContain('Bare');
   });
 
-  it('renders node anchors on the svg surface only when asked', () => {
+  it('renders node anchors on the snapshot surface only when asked', () => {
     const anchoredNote = definePrimitive<NoteNode>({
       ...notePrimitive,
       renderers: {
@@ -2006,33 +2008,37 @@ describe('createIsomerRuntime', () => {
           createElement('span', nodeAnchor(context, node), node.text),
       },
     });
-    const { svg } = drawingRuntime(anchoredNote).surfaces;
+    const { snapshot } = drawingRuntime(anchoredNote).surfaces;
     const note = { type: 'note', text: 'Anchored' } as NoteNode;
     const markupOf = ({ element }: { element: ReactNode }) =>
       renderToStaticMarkup(element);
 
-    expect(markupOf(svg.render(view('Anchored')))).not.toContain(
+    expect(markupOf(snapshot.render(view('Anchored')))).not.toContain(
       'data-isomer-node'
     );
-    expect(markupOf(svg.render(view('Anchored'), { anchors: true }))).toContain(
-      'data-isomer-node="note"'
+    expect(
+      markupOf(snapshot.render(view('Anchored'), { anchors: true }))
+    ).toContain('data-isomer-node="note"');
+    expect(markupOf(snapshot.renderNode(note))).not.toContain(
+      'data-isomer-node'
     );
-    expect(markupOf(svg.renderNode(note))).not.toContain('data-isomer-node');
-    expect(markupOf(svg.renderNode(note, { anchors: true }))).toContain(
+    expect(markupOf(snapshot.renderNode(note, { anchors: true }))).toContain(
       'data-isomer-node="note"'
     );
   });
 
-  it('honours width and height overrides on the svg surface', () => {
+  it('honours width and height overrides on the snapshot surface', () => {
     const runtime = drawingRuntime(notePrimitive);
     const spec = view('Sized');
 
-    expect(runtime.surfaces.svg.render(spec, { width: 800 })).toMatchObject({
+    expect(
+      runtime.surfaces.snapshot.render(spec, { width: 800 })
+    ).toMatchObject({
       width: 800,
       height: 40,
     });
 
-    const rendered = runtime.surfaces.svg.render(spec, {
+    const rendered = runtime.surfaces.snapshot.render(spec, {
       width: 800,
       height: 120,
     });
@@ -2044,7 +2050,7 @@ describe('createIsomerRuntime', () => {
     expect(element.props).toMatchObject({ width: 800, height: 120 });
   });
 
-  it('emits rules a style adapter discovers while the svg surface renders', () => {
+  it('emits rules a style adapter discovers while the snapshot surface renders', () => {
     const styleAdapter = {
       createCollector: () => ({ rules: [] as string[] }),
       resolveOptions: (
@@ -2073,17 +2079,19 @@ describe('createIsomerRuntime', () => {
         collector.rules.join(''),
     };
     const runtime = createIsomerRuntime({
-      packs: [svgPackOf(notePrimitive)],
+      packs: [snapshotPackOf(notePrimitive)],
       frames: { card: testFrame },
       styleAdapter,
     });
 
-    expect(runtime.surfaces.svg.render(view('Styled')).css).toBe(
+    expect(runtime.surfaces.snapshot.render(view('Styled')).css).toBe(
       '.isomer{}.fluid{}.after{}'
     );
     expect(
-      runtime.surfaces.svg.renderNode({ type: 'note', text: 'n' } as NoteNode)
-        .css
+      runtime.surfaces.snapshot.renderNode({
+        type: 'note',
+        text: 'n',
+      } as NoteNode).css
     ).toBe('.isomer{}.fluid{}.after{}');
   });
 
@@ -2105,21 +2113,24 @@ describe('createIsomerRuntime', () => {
         collector.rules.join(''),
     };
     const runtime = createIsomerRuntime({
-      packs: [svgPackOf(notePrimitive)],
+      packs: [snapshotPackOf(notePrimitive)],
       frames: { card: testFrame },
       styleAdapter,
     });
     const two = view('two');
     two.body.push({ type: 'note', text: 'more' });
 
-    const rendered = runtime.surfaces.svg.renderPages([view('one'), two], {
+    const rendered = runtime.surfaces.snapshot.renderPages([view('one'), two], {
       theme: 'dark',
     });
-    const [first, second] = rendered.pages as ReactElement<{
-      width: number;
-      height: number;
-      theme: string;
-    }>[];
+    const [first, second] = rendered.pages.map(
+      ({ element }) =>
+        element as ReactElement<{
+          width: number;
+          height: number;
+          theme: string;
+        }>
+    );
 
     expect(rendered.css).toBe('.isomer{}.one{}.two{}');
     // Every page takes the tallest estimate: two notes at 40 each.
@@ -2130,59 +2141,97 @@ describe('createIsomerRuntime', () => {
       theme: 'dark-theme',
     });
     expect(renderToStaticMarkup(second)).toContain('more');
+    expect(rendered.pages[1]?.html).toBe(renderToStaticMarkup(second));
   });
 
   it("draws every page in the first composition's theme", () => {
     const runtime = drawingRuntime(notePrimitive);
 
-    const { pages } = runtime.surfaces.svg.renderPages([
+    const { pages } = runtime.surfaces.snapshot.renderPages([
       { ...view('a'), theme: 'dark' },
       { ...view('b'), theme: 'light' },
     ]);
 
-    for (const page of pages as ReactElement<{ theme: string }>[]) {
-      expect(page.props.theme).toBe('dark-theme');
+    for (const { element } of pages) {
+      expect((element as ReactElement<{ theme: string }>).props.theme).toBe(
+        'dark-theme'
+      );
     }
   });
 
   it('renders one page the way render does', () => {
     const runtime = drawingRuntime(notePrimitive);
 
-    const single = runtime.surfaces.svg.render(view('same'));
-    const paged = runtime.surfaces.svg.renderPages([view('same')]);
+    const single = runtime.surfaces.snapshot.render(view('same'));
+    const paged = runtime.surfaces.snapshot.renderPages([view('same')]);
 
     expect(paged).toMatchObject({
       css: single.css,
       width: single.width,
       height: single.height,
     });
-    expect(renderToStaticMarkup(paged.pages[0])).toBe(
-      renderToStaticMarkup(single.element)
-    );
+    expect(paged.pages[0]?.html).toBe(single.html);
   });
 
-  it('reports exactly the surfaces it built as formats', () => {
+  it('pairs every snapshot with the static markup of its own tree', () => {
+    const { snapshot } = drawingRuntime(notePrimitive).surfaces;
+
+    const rendered = snapshot.render(view('markup'));
+    const node = snapshot.renderNode({
+      type: 'note',
+      text: 'alone',
+    } as NoteNode);
+
+    expect(rendered.html).toBe(renderToStaticMarkup(rendered.element));
+    expect(rendered.html).toContain('markup');
+    expect(node.html).toBe(renderToStaticMarkup(node.element));
+    expect(node.html).toContain('alone');
+  });
+
+  it('reports exactly the surfaces it built, and every one but snapshot as a format', () => {
     const withFrames = drawingRuntime(notePrimitive);
     const withoutFrames = createIsomerRuntime({
       packs: [packOf(notePrimitive)],
     });
 
-    expect(withFrames.getCapabilities().formats).toEqual(
+    expect(withFrames.getCapabilities().surfaces).toEqual(
       Object.keys(withFrames.surfaces)
     );
-    expect(withoutFrames.getCapabilities().formats).toEqual(
-      Object.keys(withoutFrames.surfaces).filter((name) => name !== 'svg')
+    expect(withoutFrames.getCapabilities().surfaces).toEqual(
+      Object.keys(withoutFrames.surfaces).filter((name) => name !== 'snapshot')
     );
-    expect(withFrames.getCapabilities().formats).toEqual(
+    expect(withFrames.getCapabilities().surfaces).toEqual(
       expect.arrayContaining([...SURFACE_NAMES])
     );
+    expect(withFrames.getCapabilities().formats).toEqual(
+      Object.keys(withFrames.surfaces).filter((name) => name !== 'snapshot')
+    );
+  });
+
+  it('reports the formats a host registers alongside its own', () => {
+    const runtime = createIsomerRuntime({
+      packs: [snapshotPackOf(notePrimitive)],
+      frames: { card: testFrame },
+      formats: ['png', 'svg', 'pdf'],
+    });
+
+    expect(runtime.getCapabilities().formats).toEqual([
+      'react',
+      'html',
+      'text',
+      'markdown',
+      'slack',
+      'png',
+      'svg',
+      'pdf',
+    ]);
   });
 
   it('refuses an empty page list', () => {
     const runtime = drawingRuntime(notePrimitive);
 
     try {
-      runtime.surfaces.svg.renderPages([]);
+      runtime.surfaces.snapshot.renderPages([]);
       expect.unreachable();
     } catch (error) {
       expect(error).toMatchObject({
@@ -2194,7 +2243,7 @@ describe('createIsomerRuntime', () => {
 
   it("names the page a frame's own rule rejects", () => {
     const runtime = createIsomerRuntime({
-      packs: [svgPackOf(notePrimitive)],
+      packs: [snapshotPackOf(notePrimitive)],
       frames: {
         single: {
           ...testFrame,
@@ -2206,9 +2255,9 @@ describe('createIsomerRuntime', () => {
     const two = view('two');
     two.body.push({ type: 'note', text: 'more' });
 
-    expect(() => runtime.surfaces.svg?.renderPages([view('one'), two])).toThrow(
-      /frame "single" cannot draw page 2: needs exactly one node/
-    );
+    expect(() =>
+      runtime.surfaces.snapshot?.renderPages([view('one'), two])
+    ).toThrow(/frame "single" cannot draw page 2: needs exactly one node/);
   });
 
   it("hands a primitive the frame's resolved theme as env.theme", () => {
@@ -2234,13 +2283,13 @@ describe('createIsomerRuntime', () => {
     });
     const runtime = drawingRuntime(swatchPrimitive);
 
-    const dark = runtime.surfaces.svg.renderNode(
+    const dark = runtime.surfaces.snapshot.renderNode(
       { type: 'swatch' },
       { theme: 'dark' }
     );
     expect(renderToStaticMarkup(dark.element)).toContain('dark-theme');
 
-    const light = runtime.surfaces.svg.renderNode({
+    const light = runtime.surfaces.snapshot.renderNode({
       type: 'swatch',
     });
     expect(renderToStaticMarkup(light.element)).toContain('light-theme');
@@ -2250,7 +2299,7 @@ describe('createIsomerRuntime', () => {
     // The inversion, stated as a test: vocabulary composes, frame is chosen.
     // The same body renders at either width, and neither pack has an opinion.
     const runtime = createIsomerRuntime({
-      packs: [svgPackOf(notePrimitive, boldPrimitive)],
+      packs: [snapshotPackOf(notePrimitive, boldPrimitive)],
       frames: {
         card: testFrame,
         wide: { ...testFrame, defaultWidth: 1920 },
@@ -2265,10 +2314,10 @@ describe('createIsomerRuntime', () => {
       ],
     };
 
-    expect(runtime.surfaces.svg?.render(mixed).width).toBe(600);
-    expect(runtime.surfaces.svg?.render(mixed, { frame: 'wide' }).width).toBe(
-      1920
-    );
+    expect(runtime.surfaces.snapshot?.render(mixed).width).toBe(600);
+    expect(
+      runtime.surfaces.snapshot?.render(mixed, { frame: 'wide' }).width
+    ).toBe(1920);
   });
 
   it('rejects a frame name inherited from Object.prototype', () => {
@@ -2277,7 +2326,7 @@ describe('createIsomerRuntime', () => {
     // something unrelated.
     expect(() =>
       createIsomerRuntime({
-        packs: [svgPackOf(notePrimitive)],
+        packs: [snapshotPackOf(notePrimitive)],
         frames: { card: testFrame },
         defaultFrame: 'constructor',
       })
@@ -2285,35 +2334,38 @@ describe('createIsomerRuntime', () => {
 
     const runtime = drawingRuntime(notePrimitive);
     expect(() =>
-      runtime.surfaces.svg?.render(view('Framed'), { frame: 'toString' })
+      runtime.surfaces.snapshot?.render(view('Framed'), { frame: 'toString' })
     ).toThrow(/no frame named "toString"/);
   });
 
   it('requires defaultFrame when more than one frame is supplied', () => {
     expect(() =>
       createIsomerRuntime({
-        packs: [svgPackOf(notePrimitive)],
+        packs: [snapshotPackOf(notePrimitive)],
         frames: { card: testFrame, slide: fixedFrame },
       })
     ).toThrow(/defaultFrame is required/);
   });
 
-  it('builds the svg surface for a frame named by the empty string', () => {
+  it('builds the snapshot surface for a frame named by the empty string', () => {
     // Degenerate but legal: `''` is a record key like any other, and a
     // truthiness check on the resolved default would drop the surface here
     // while every other part of the configuration reported itself as valid.
     const runtime = createIsomerRuntime({
-      packs: [svgPackOf(notePrimitive)],
+      packs: [snapshotPackOf(notePrimitive)],
       frames: { '': testFrame },
     });
 
-    expect(runtime.surfaces.svg?.render(view('Framed')).width).toBe(600);
-    expect(runtime.getCapabilities().formats).toContain('svg');
+    expect(runtime.surfaces.snapshot?.render(view('Framed')).width).toBe(600);
+    expect(runtime.getCapabilities().surfaces).toContain('snapshot');
   });
 
-  it('rejects an empty frames map rather than typing an absent svg surface as present', () => {
+  it('rejects an empty frames map rather than typing an absent snapshot surface as present', () => {
     expect(() =>
-      createIsomerRuntime({ packs: [svgPackOf(notePrimitive)], frames: {} })
+      createIsomerRuntime({
+        packs: [snapshotPackOf(notePrimitive)],
+        frames: {},
+      })
     ).toThrow(
       expect.objectContaining({ name: 'IsomerError', code: 'EMPTY_FRAMES' })
     );
@@ -2322,7 +2374,7 @@ describe('createIsomerRuntime', () => {
   it('rejects defaultFrame when no frames are supplied', () => {
     expect(() =>
       createIsomerRuntime({
-        packs: [svgPackOf(notePrimitive)],
+        packs: [snapshotPackOf(notePrimitive)],
         defaultFrame: 'card',
       })
     ).toThrow(
@@ -2334,13 +2386,13 @@ describe('createIsomerRuntime', () => {
     const runtime = drawingRuntime(notePrimitive);
 
     expect(() =>
-      runtime.surfaces.svg?.render(view('Framed'), { frame: 'nope' })
+      runtime.surfaces.snapshot?.render(view('Framed'), { frame: 'nope' })
     ).toThrow(/no frame named "nope"/);
   });
 
   it("refuses a body the frame's own rule rejects", () => {
     const runtime = createIsomerRuntime({
-      packs: [svgPackOf(notePrimitive)],
+      packs: [snapshotPackOf(notePrimitive)],
       frames: {
         single: {
           ...testFrame,
@@ -2351,7 +2403,7 @@ describe('createIsomerRuntime', () => {
     });
 
     expect(() =>
-      runtime.surfaces.svg?.render({
+      runtime.surfaces.snapshot?.render({
         type: 'view',
         body: [
           { type: 'note', text: 'one' } as NoteNode,
@@ -2369,7 +2421,7 @@ describe('createIsomerRuntime', () => {
       validateBody: () => ['rejected'],
     };
     const runtime = createIsomerRuntime({
-      packs: [svgPackOf(notePrimitive)],
+      packs: [snapshotPackOf(notePrimitive)],
       frames: { card: rejecting, slide: rejecting },
       defaultFrame: 'card',
     });
@@ -2378,11 +2430,11 @@ describe('createIsomerRuntime', () => {
       body: [{ type: 'note', text: 'one' } as NoteNode],
     };
 
-    expect(() => runtime.surfaces.svg?.render(composition)).toThrow(
+    expect(() => runtime.surfaces.snapshot?.render(composition)).toThrow(
       /frame "card" cannot draw this composition: rejected/
     );
     expect(() =>
-      runtime.surfaces.svg?.render(composition, { frame: 'slide' })
+      runtime.surfaces.snapshot?.render(composition, { frame: 'slide' })
     ).toThrow(/frame "slide" cannot draw this composition: rejected/);
   });
 
@@ -2390,7 +2442,7 @@ describe('createIsomerRuntime', () => {
     // Branding is a spread now rather than an override mechanism: frame is an
     // ordinary value the host owns, so there is nothing to reopen.
     const runtime = createIsomerRuntime({
-      packs: [svgPackOf(notePrimitive)],
+      packs: [snapshotPackOf(notePrimitive)],
       frames: {
         card: {
           ...testFrame,
@@ -2399,7 +2451,7 @@ describe('createIsomerRuntime', () => {
       },
     });
 
-    const rendered = runtime.surfaces.svg.render(view('themed'))
+    const rendered = runtime.surfaces.snapshot.render(view('themed'))
       .element as ReactElement<{ theme: string }>;
     expect(rendered.props.theme).toBe('brand-light');
   });
@@ -2409,7 +2461,7 @@ describe('createIsomerRuntime', () => {
     // runtime's dispatcher either way, so a host frame cannot change what a
     // spec contains.
     const runtime = createIsomerRuntime({
-      packs: [svgPackOf(notePrimitive)],
+      packs: [snapshotPackOf(notePrimitive)],
       frames: {
         card: {
           ...testFrame,
@@ -2423,7 +2475,7 @@ describe('createIsomerRuntime', () => {
       },
     });
 
-    const rendered = runtime.surfaces.svg.render(view('framed'))
+    const rendered = runtime.surfaces.snapshot.render(view('framed'))
       .element as ReactElement<{ title?: string; theme: string }>;
 
     expect(rendered.type).toBe('host-frame');
@@ -2439,7 +2491,7 @@ describe('createIsomerRuntime', () => {
     // built field by field rather than spread.
     let seen: object | undefined;
     const runtime = createIsomerRuntime({
-      packs: [svgPackOf(notePrimitive)],
+      packs: [snapshotPackOf(notePrimitive)],
       frames: {
         card: {
           ...testFrame,
@@ -2451,7 +2503,7 @@ describe('createIsomerRuntime', () => {
       },
     });
 
-    runtime.surfaces.svg?.render({
+    runtime.surfaces.snapshot?.render({
       ...view('framed'),
       title: 'Quarterly',
     });
@@ -2462,7 +2514,7 @@ describe('createIsomerRuntime', () => {
 
   it('keeps geometry with the frame a host reframes', () => {
     const runtime = createIsomerRuntime({
-      packs: [svgPackOf(notePrimitive)],
+      packs: [snapshotPackOf(notePrimitive)],
       frames: {
         card: {
           ...testFrame,
@@ -2473,7 +2525,7 @@ describe('createIsomerRuntime', () => {
 
     // 600 from `testFrame.defaultWidth`, 40 from its per-node estimate: a
     // replaced frame is drawn within a viewport the frame still sizes.
-    expect(runtime.surfaces.svg?.render(view('framed'))).toMatchObject({
+    expect(runtime.surfaces.snapshot?.render(view('framed'))).toMatchObject({
       width: 600,
       height: 40,
     });
@@ -2599,7 +2651,7 @@ describe('createIsomerRuntime', () => {
   it('rejects the same primitive type owned by two packs', () => {
     expect(() =>
       createIsomerRuntime({
-        packs: [packOf(notePrimitive), svgPackOf(notePrimitive)],
+        packs: [packOf(notePrimitive), snapshotPackOf(notePrimitive)],
       })
     ).toThrow('primitive type "note" registered by "test" and "test.drawing"');
   });
@@ -2629,7 +2681,7 @@ describe('createIsomerRuntime', () => {
 
     expect(runtime.validate(mixed)).toMatchObject({ valid: true });
     const markup = renderToStaticMarkup(
-      runtime.surfaces.svg.render(mixed).element
+      runtime.surfaces.snapshot.render(mixed).element
     );
     expect(markup).toContain('from one pack');
     expect(markup).toContain('from another');
@@ -2819,11 +2871,11 @@ describe('createIsomerRuntime', () => {
     ]);
   });
 
-  it('composes a drawing pack with a pack that renders no svg', () => {
+  it('composes a drawing pack with a pack that renders no snapshot', () => {
     // The validator still warns per node that the frameless pack's nodes will
     // be absent from an image, but the spec itself is fine.
     const runtime = createIsomerRuntime({
-      packs: [svgPackOf(notePrimitive), packOf(plainPrimitive)],
+      packs: [snapshotPackOf(notePrimitive), packOf(plainPrimitive)],
       frames: { card: testFrame },
     });
 
@@ -2838,17 +2890,17 @@ describe('createIsomerRuntime', () => {
     ).toMatchObject({ valid: true });
   });
 
-  it('reports svg as a format once the host supplies a frame', () => {
+  it('reports snapshot as a surface once the host supplies a frame', () => {
     const runtime = drawingRuntime(notePrimitive);
 
-    expect(runtime.getCapabilities().formats).toContain('svg');
+    expect(runtime.getCapabilities().surfaces).toContain('snapshot');
   });
 
-  it('enforces validation on the svg surface', () => {
+  it('enforces validation on the snapshot surface', () => {
     const runtime = drawingRuntime(notePrimitive);
 
     expect(() =>
-      runtime.surfaces.svg?.render(
+      runtime.surfaces.snapshot?.render(
         { type: 'view', body: [{ type: 'note', text: '' } as NoteNode] },
         { onValidationError: 'throw' }
       )
@@ -2883,9 +2935,9 @@ describe('createIsomerRuntime', () => {
     expect(thrown(() => runtime.surfaces.slack.render(invalid))).toMatchObject(
       invalidComposition
     );
-    expect(thrown(() => runtime.surfaces.svg?.render(invalid))).toMatchObject(
-      invalidComposition
-    );
+    expect(
+      thrown(() => runtime.surfaces.snapshot?.render(invalid))
+    ).toMatchObject(invalidComposition);
     expect(runtime.surfaces.html.render(invalid).validationErrors).not.toEqual(
       []
     );
@@ -2983,7 +3035,7 @@ describe('createIsomerRuntime', () => {
     };
     // @ts-expect-error Frame<number> does not satisfy PrimitivePack<string>.
     createIsomerRuntime({
-      packs: [svgPackOf(notePrimitive)],
+      packs: [snapshotPackOf(notePrimitive)],
       frames: { card: numberFrame },
     });
   });
@@ -3036,7 +3088,7 @@ describe('the input budget', () => {
 
   it('refuses over-budget input at parse, validate, and every validating surface', () => {
     const runtime = drawingRuntime(notePrimitive);
-    const { html, text, markdown, slack, svg } = runtime.surfaces;
+    const { html, text, markdown, slack, snapshot } = runtime.surfaces;
     expect(runtime.parse(composition)).toEqual({
       valid: false,
       errors: [overBudget],
@@ -3047,14 +3099,14 @@ describe('the input budget', () => {
       () => text.render(composition, { onValidationError: 'collect' }),
       () => markdown.render(composition, { onValidationError: 'collect' }),
       () => slack.render(composition, { onValidationError: 'collect' }),
-      () => svg.render(composition, { onValidationError: 'collect' }),
+      () => snapshot.render(composition, { onValidationError: 'collect' }),
     ]) {
       expect(render).toThrow(expect.objectContaining(refused));
     }
   });
 
   it('refuses over-budget input at every validating surface’s renderNode', () => {
-    const { html, text, markdown, slack, svg } =
+    const { html, text, markdown, slack, snapshot } =
       drawingRuntime(notePrimitive).surfaces;
     const [node] = composition.body;
     if (node === undefined) {
@@ -3065,7 +3117,7 @@ describe('the input budget', () => {
       () => text.renderNode(node, { onValidationError: 'collect' }),
       () => markdown.renderNode(node, { onValidationError: 'collect' }),
       () => slack.renderNode(node, { onValidationError: 'collect' }),
-      () => svg.renderNode(node, { onValidationError: 'collect' }),
+      () => snapshot.renderNode(node, { onValidationError: 'collect' }),
     ]) {
       expect(render).toThrow(expect.objectContaining(refused));
     }
@@ -3153,14 +3205,15 @@ describe('the checked composition', () => {
   };
 
   it('renders what validation checked on every validating surface, reading the input once', () => {
-    const { html, text, markdown, slack, svg } =
+    const { html, text, markdown, slack, snapshot } =
       drawingRuntime(notePrimitive).surfaces;
     const renders: ((composition: Composition) => string)[] = [
       (composition) => html.render(composition).html,
       (composition) => text.render(composition),
       (composition) => markdown.render(composition),
       (composition) => JSON.stringify(slack.render(composition)),
-      (composition) => renderToStaticMarkup(svg.render(composition).element),
+      (composition) =>
+        renderToStaticMarkup(snapshot.render(composition).element),
     ];
     for (const render of renders) {
       const { composition, reads } = shifty();
@@ -3170,25 +3223,23 @@ describe('the checked composition', () => {
       expect(reads()).toBe(1);
     }
     const pages = [shifty(), shifty()];
-    const document = svg.renderPages(
+    const document = snapshot.renderPages(
       pages.map(({ composition }) => composition)
     );
-    const output = renderToStaticMarkup(
-      createElement(Fragment, null, ...document.pages)
-    );
+    const output = document.pages.map(({ html }) => html).join('');
     expect(output).not.toContain('UNSAFE');
     expect(pages.map(({ reads }) => reads())).toEqual([1, 1]);
   });
 
   it('renders what validation checked on every validating surface’s renderNode, reading the node once', () => {
-    const { html, text, markdown, slack, svg } =
+    const { html, text, markdown, slack, snapshot } =
       drawingRuntime(notePrimitive).surfaces;
     const renders: ((node: PrimitiveNode) => string)[] = [
       (node) => html.renderNode(node).html,
       (node) => text.renderNode(node),
       (node) => markdown.renderNode(node),
       (node) => JSON.stringify(slack.renderNode(node)),
-      (node) => renderToStaticMarkup(svg.renderNode(node).element),
+      (node) => renderToStaticMarkup(snapshot.renderNode(node).element),
     ];
     for (const render of renders) {
       const {

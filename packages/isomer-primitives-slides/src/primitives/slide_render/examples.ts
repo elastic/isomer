@@ -26,21 +26,21 @@ export const deliverySlide: readonly BodyNode[] = [
   },
 ];
 
-/** Canonical {@link SlideRenderNode} example: another slide as the image surface draws it. */
+/** Canonical {@link SlideRenderNode} example: another slide as the `snapshot` surface draws it. */
 export const example: SlideRenderNode = {
   type: 'slideRender',
   slide: 'delivery-times',
   body: deliverySlide,
-  surface: 'svg',
-  caption: 'The delivery slide, from the svg surface',
+  surface: 'snapshot',
+  caption: 'The delivery slide, from the snapshot surface',
 };
 
 /** A reference the host has not filled in yet: a placeholder. */
 export const placeholderExample: SlideRenderNode = {
   type: 'slideRender',
   slide: 'weekly-summary',
-  surface: 'svg',
-  caption: 'The weekly summary, from the svg surface',
+  surface: 'snapshot',
+  caption: 'The weekly summary, from the snapshot surface',
 };
 
 export const markdownExample: SlideRenderNode = {

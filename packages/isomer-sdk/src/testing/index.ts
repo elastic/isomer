@@ -11,7 +11,7 @@ export {
   type PrimitiveConformanceHarness,
   type PrimitiveConformanceHtmlOptions,
   type PrimitiveConformanceSlackResult,
-  type PrimitiveConformanceSvgResult,
+  type PrimitiveConformanceSnapshotResult,
   CONFORMANCE_FOREIGN_MARKER,
   primitiveConformanceRows,
   runPrimitiveInventoryConformance,

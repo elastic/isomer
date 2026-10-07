@@ -23,9 +23,9 @@ A product answers the same question in more than one place: a page, a Slack mess
 
 The reference pack's title slide is one composition. These are its committed outputs, written by the same test on every run.
 
-The `svg` surface, rasterized to PNG:
+The `snapshot` surface, rasterized to PNG:
 
-![The reference pack's title slide, rendered to PNG through the svg surface](packages/isomer-primitives-slides/src/examples/output/title-slide.png)
+![The reference pack's title slide, rendered to PNG through the snapshot surface](packages/isomer-primitives-slides/src/examples/output/title-slide.png)
 
 The `markdown` surface:
 
@@ -114,7 +114,7 @@ runtime.surfaces.html.render(composition).html;
 runtime.getAuthoringContext(); // { schema, primitives, views, … } for an agent
 ```
 
-Slack gets its blocks through the Markdown fallback, because the pack wrote no Slack renderer. Supply a frame and the `svg` surface appears, ready for a rasterizer. The `html` surface reports validation findings on its result; `text`, `markdown`, `slack`, and `svg` throw on an invalid composition by default; `react` never validates.
+Slack gets its blocks through the Markdown fallback, because the pack wrote no Slack renderer. Supply a frame and the `snapshot` surface appears, ready for a rasterizer. The `html` surface reports validation findings on its result; `text`, `markdown`, `slack`, and `snapshot` throw on an invalid composition by default; `react` never validates.
 
 ## Which package
 
@@ -123,7 +123,7 @@ Slack gets its blocks through the Markdown fallback, because the pack wrote no S
 | Render compositions in a host: a Kibana plugin, a Slack bot, an MCP server | [`@elastic/isomer-runtime`](packages/isomer-runtime/README.md), then its [quick start](packages/isomer-runtime/docs/quick-start.md) |
 | Write primitives, a theme, or a frame | [`@elastic/isomer-sdk`](packages/isomer-sdk/README.md), then its [quick start](packages/isomer-sdk/docs/quick-start.md) |
 | Copy a working pack | [`@elastic/isomer-primitives-slides`](packages/isomer-primitives-slides/README.md), the in-repo reference pack |
-| Turn the `svg` surface into PNG | [`@elastic/isomer-image-takumi`](packages/isomer-image-takumi/README.md) |
+| Turn the `snapshot` surface into PNG, SVG, or PDF | [`@elastic/isomer-image-takumi`](packages/isomer-image-takumi/README.md) |
 | Score what a model composes from your pack | [`@elastic/isomer-evals`](packages/isomer-evals/README.md) |
 | Hand a runtime to an agent as tools | [`@elastic/isomer-agent-tools`](packages/isomer-agent-tools/README.md) |
 

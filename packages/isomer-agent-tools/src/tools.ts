@@ -10,6 +10,7 @@ import {
   formatValidationError,
   isInputRefusal,
   ISOMER_ERROR_CODES,
+  IsomerError,
   type RenderTheme,
   type ValidationError,
 } from '@elastic/isomer-sdk';
@@ -18,15 +19,23 @@ import { z, type ZodObject } from 'zod';
 import { checkComposition } from './check';
 import { buildIsomerAuthoringGuide, buildPrimitiveDescriptions } from './guide';
 import { ISOMER_TOOL_NAMES } from './names';
-import { errorMessage, imageResult, jsonResult, textResult } from './result';
+import { errorMessage, formatResult, jsonResult, textResult } from './result';
 import type {
   IsomerTool,
   IsomerToolResult,
   IsomerToolsOptions,
-  IsomerToolSurface,
+  IsomerToolsRuntimeFormat,
 } from './types';
 
-const TEXT_SURFACES = ['text', 'markdown', 'html', 'slack'] as const;
+const RUNTIME_FORMATS = [
+  'text',
+  'markdown',
+  'html',
+  'slack',
+] as const satisfies readonly IsomerToolsRuntimeFormat[];
+
+const isRuntimeFormat = (name: string): name is IsomerToolsRuntimeFormat =>
+  (RUNTIME_FORMATS as readonly string[]).includes(name);
 
 const MAX_DESCRIBED_TYPES = 12;
 
@@ -92,24 +101,44 @@ const viewErrorResult = (error: unknown): IsomerToolResult =>
       )
     : textResult(errorMessage(error), true);
 
-/** The agent tools for `runtime`, whose handlers never reject. The view tools are included only when the registry lists a view at creation. */
+/** The agent tools for `runtime`, whose handlers never reject. The view tools are included only when the registry lists a view at creation. Throws `DUPLICATE_FORMAT` when a host format takes a runtime format's name. */
 export const createIsomerTools = <THostContext = unknown>(
   options: IsomerToolsOptions<THostContext>
 ): IsomerTool[] => {
-  const { runtime, frame, image, hostContext, heading = true } = options;
-  const surfaces: readonly IsomerToolSurface[] = image
-    ? [...TEXT_SURFACES, 'png']
-    : TEXT_SURFACES;
+  const { runtime, frame, formats = {}, hostContext, heading = true } = options;
+  const hostFormats = Object.keys(formats);
+  const shadowed = hostFormats.filter(isRuntimeFormat);
+  if (shadowed.length > 0) {
+    throw new IsomerError(
+      ISOMER_ERROR_CODES.DUPLICATE_FORMAT,
+      `Host formats ${shadowed.map((name) => `"${name}"`).join(', ')} shadow the runtime's own; rename them.`
+    );
+  }
+  const formatNames = [...RUNTIME_FORMATS, ...hostFormats] as [
+    string,
+    ...string[],
+  ];
 
   const check = (value: unknown) => checkComposition(runtime, frame, value);
 
   const render = async (
     composition: Composition,
-    surface: IsomerToolSurface,
+    format: string,
     theme: RenderTheme | undefined
   ): Promise<IsomerToolResult> => {
     const themed = theme === undefined ? {} : { theme };
-    switch (surface) {
+    if (!isRuntimeFormat(format)) {
+      const hostFormat = formats[format];
+      if (hostFormat === undefined) {
+        return textResult(`The ${format} format is not available.`, true);
+      }
+      return formatResult(
+        format,
+        hostFormat,
+        await hostFormat.render(composition, themed)
+      );
+    }
+    switch (format) {
       case 'text':
         return textResult(
           runtime.surfaces.text.render(composition, { heading })
@@ -130,11 +159,6 @@ export const createIsomerTools = <THostContext = unknown>(
         return jsonResult(
           runtime.surfaces.slack.render(composition, { heading })
         );
-      case 'png':
-        if (!image) {
-          return textResult('The png surface is not available.', true);
-        }
-        return imageResult(await image(composition, themed));
     }
   };
 
@@ -189,23 +213,23 @@ export const createIsomerTools = <THostContext = unknown>(
   const renderTool = tool({
     name: ISOMER_TOOL_NAMES.render,
     title: 'Render a composition',
-    description: `Validates a composition and renders it to one surface: ${surfaces.map((surface) => `\`${surface}\``).join(', ')}. An invalid composition returns its errors instead.`,
+    description: `Validates a composition and renders it to one format: ${formatNames.map((name) => `\`${name}\``).join(', ')}. An invalid composition returns its errors instead.`,
     inputSchema: z.object({
       composition: compositionInput,
-      surface: z.enum(surfaces).describe('The output format.'),
+      format: z.enum(formatNames).describe('The output format.'),
       theme: z
         .enum(['auto', 'light', 'dark'])
         .optional()
         .describe('Color scheme; defaults to the composition’s own `theme`.'),
     }),
-    handler: ({ composition, surface, theme }) => {
+    handler: ({ composition, format, theme }) => {
       const checked = check(composition);
       if (!checked.valid || checked.composition === undefined) {
         return Promise.resolve(
           jsonResult({ valid: false, errors: checked.errors }, true)
         );
       }
-      return render(checked.composition, surface, theme);
+      return render(checked.composition, format, theme);
     },
   });
 

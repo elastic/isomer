@@ -1,7 +1,7 @@
 ---
 type: Playbook
 title: Author a primitive
-description: Colocate renderers, read values from the theme, skip a second svg tree.
+description: Colocate renderers, read values from the theme, skip a second snapshot tree.
 tags: [isomer, slides, playbook]
 status: stable
 stale_after: 2027-03-18
@@ -23,6 +23,6 @@ sources:
 8. Write a refinement through `src/primitives/cross_field.ts` with the `rule` a kept description states it in; `z.toJSONSchema` drops refinements, and `src/stated_rules.test.ts` checks every one.[^docs]
 9. Give the catalog a host-facing `name` and add `icon.ts` built with `slideIcon(hue, draw)` from `src/theme/icon_hues.ts`, in the hue of the primitive's group, with `accent` on the one emphasised element; `pack_contract.test.ts` requires both, unique across the pack, and runs `assertPackIconsValid`.[^docs]
 
-Related: [one source](/slides/concepts/one-source.md), [no svg renderer](/slides/concepts/no-svg-renderer.md).
+Related: [one source](/slides/concepts/one-source.md), [no snapshot renderer](/slides/concepts/no-snapshot-renderer.md).
 
 [^docs]: Authoring a primitive

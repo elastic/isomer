@@ -17,7 +17,7 @@ flowchart LR
     Runtime --> Authoring[Authoring context<br/>agent path]
     Registry --> Composition[Composition]
     Authoring --> Composition
-    Composition --> Surfaces[react · html · text<br/>markdown · slack · svg]
+    Composition --> Surfaces[react · html · text<br/>markdown · slack · snapshot]
 ```
 
 ## When you need it

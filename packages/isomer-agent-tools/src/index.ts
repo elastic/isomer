@@ -24,9 +24,9 @@ export type {
   IsomerToolContent,
   IsomerToolResult,
   IsomerToolsBaseOptions,
+  IsomerToolsFormat,
   IsomerToolsFrame,
-  IsomerToolsImage,
   IsomerToolsOptions,
   IsomerToolsRuntime,
-  IsomerToolSurface,
+  IsomerToolsRuntimeFormat,
 } from './types';

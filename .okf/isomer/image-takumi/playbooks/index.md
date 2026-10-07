@@ -6,6 +6,6 @@ Directory: `image-takumi/playbooks/`
 
 | Title | Type | Description |
 |-------|------|-------------|
-| [Rasterize svg](rasterize-svg.md) | Playbook | Hand the svg surface result to createTakumiImageBackend. |
-| [Render pdf](render-pdf.md) | Playbook | Hand the svg surface's renderPages result to createTakumiImageBackend's pdf. |
+| [Rasterize a snapshot](rasterize-a-snapshot.md) | Playbook | Hand the snapshot surface result to createTakumiImageBackend. |
+| [Render pdf](render-pdf.md) | Playbook | Hand the snapshot surface's renderPages result to createTakumiImageBackend's ... |
 

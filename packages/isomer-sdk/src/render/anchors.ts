@@ -95,7 +95,7 @@ const anchorsOn = (context: unknown): boolean => {
 /**
  * Props a `react` renderer spreads on its root element so runtime code can find
  * the node with {@link findNodeElementPairs}. Inside an HTML surface render the
- * surface decides; elsewhere, on the React and `svg` surfaces, `context.anchors`
+ * surface decides; elsewhere, on the React and `snapshot` surfaces, `context.anchors`
  * does. Always empty under {@link withoutAnchors}.
  */
 export const nodeAnchor = (
@@ -125,7 +125,7 @@ export const layoutRoom = (
 export const anchoredNodePaths = (
   body: readonly unknown[],
   walk: ChildNodeWalker,
-  surface: 'react' | 'svg' = 'react'
+  surface: 'react' | 'snapshot' = 'react'
 ): { node: unknown; path: string }[] => {
   const visit = (
     node: unknown,

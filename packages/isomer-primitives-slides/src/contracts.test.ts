@@ -13,8 +13,8 @@ import type {
 } from '@elastic/isomer-image-takumi';
 import {
   createIsomerRuntime,
-  type SvgPagesResult,
-  type SvgRenderResult,
+  type SnapshotPagesResult,
+  type SnapshotRenderResult,
 } from '@elastic/isomer-runtime';
 import { describe, expectTypeOf, it } from 'vitest';
 
@@ -32,15 +32,15 @@ describe('takumi structural contracts', () => {
     expectTypeOf(runtime).toMatchTypeOf<PngRuntime>();
   });
 
-  it('SvgRenderResult satisfies ImageInput', () => {
-    expectTypeOf<SvgRenderResult>().toMatchTypeOf<ImageInput>();
+  it('SnapshotRenderResult satisfies ImageInput', () => {
+    expectTypeOf<SnapshotRenderResult>().toMatchTypeOf<ImageInput>();
   });
 
   it('a runtime built with frames satisfies PdfRuntime', () => {
     expectTypeOf(runtime).toMatchTypeOf<PdfRuntime>();
   });
 
-  it('SvgPagesResult satisfies PdfInput', () => {
-    expectTypeOf<SvgPagesResult>().toMatchTypeOf<PdfInput>();
+  it('SnapshotPagesResult satisfies PdfInput', () => {
+    expectTypeOf<SnapshotPagesResult>().toMatchTypeOf<PdfInput>();
   });
 });

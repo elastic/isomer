@@ -44,7 +44,7 @@ export const buildSchema = <TRender extends ZodType<unknown>>(
     .object({
       type: z.literal('slideAnnotatedRender'),
       render: render.describe(
-        'The slideRender to annotate, usually on the `svg` surface. It fills the wider column; its caption sits above it.'
+        'The slideRender to annotate, usually on the `snapshot` surface. It fills the wider column; its caption sits above it.'
       ),
       pins: z
         .array(pinSchema)

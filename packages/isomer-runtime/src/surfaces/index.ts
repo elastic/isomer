@@ -35,14 +35,15 @@ export {
 } from './slack';
 export {
   type NamedFrame,
-  type SvgHeightWarning,
-  type SvgPagesResult,
-  type SvgRenderNodeOptions,
-  type SvgRenderOptions,
-  type SvgRenderResult,
-  type SvgSurface,
-  createSvgSurface,
-} from './svg';
+  type SnapshotHeightWarning,
+  type SnapshotPage,
+  type SnapshotPagesResult,
+  type SnapshotRenderNodeOptions,
+  type SnapshotRenderOptions,
+  type SnapshotRenderResult,
+  type SnapshotSurface,
+  createSnapshotSurface,
+} from './snapshot';
 export {
   type TextRenderNodeOptions,
   type TextRenderOptions,

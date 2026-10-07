@@ -18,7 +18,7 @@ export interface SlackAssetRequest<
 > {
   /** Placeholder the render emits, which the host replaces with Slack's file id. */
   ref: string;
-  /** The node to draw as an image, to be rendered on the `svg` surface. */
+  /** The node to draw as an image, to be rendered on the `snapshot` surface. */
   node: TNode;
   /** Accessible description, required because Slack rejects an image block without one. */
   altText: string;

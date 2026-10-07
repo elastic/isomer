@@ -22,11 +22,11 @@ Everything else stays at the SDK default. A new pack declares its own `PackTypes
 
 ## `definePrimitivePack<SlideFrameTheme>`
 
-`src/pack.ts` calls `definePrimitivePack<SlideFrameTheme>` with `styleAdapter: createDistillateStyleAdapter(slideDistillery)`. The theme is the **declared** lower bound — what any runtime holding this pack must supply to its frames. The style adapter is this pack's CSS, which a runtime combines with every other pack's, and which the `svg` surface emits alongside the tree. The bound is stated once, as the type argument.
+`src/pack.ts` calls `definePrimitivePack<SlideFrameTheme>` with `styleAdapter: createDistillateStyleAdapter(slideDistillery)`. The theme is the **declared** lower bound — what any runtime holding this pack must supply to its frames. The style adapter is this pack's CSS, which a runtime combines with every other pack's, and which the `snapshot` surface emits alongside the tree. The bound is stated once, as the type argument.
 
 ## Surface declaration
 
-The pack declares no `surfaces`. `svg` is not declarable — every pack reaches it through its `react` renderers.
+The pack declares no `surfaces`. `snapshot` is not declarable — every pack reaches it through its `react` renderers.
 
 Every primitive has a native `slack` renderer, and `src/registry.test.ts` fails when one does not. The containers (`slideFrame`, `slideSplit`, `slideStack`, `slideWindow`, `slideTitle` for its aside, and `slideAnnotatedRender` for its render) render each child through `scope.renderSlack`, so the dispatcher decides per child: a foreign node without a `slack` renderer falls back through its Markdown alone. A container without a `slack` renderer would send its whole subtree through the Markdown fallback, and a native renderer below it would never run.
 

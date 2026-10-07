@@ -31,12 +31,15 @@ import {
 import type { RuntimePackTypes } from '../pack_types';
 
 import { checkNode } from './check_node';
-import { collectSvgHeightWarnings, type SvgHeightWarning } from './svg_height';
+import {
+  collectSnapshotHeightWarnings,
+  type SnapshotHeightWarning,
+} from './snapshot_height';
 
-export type { SvgHeightWarning };
+export type { SnapshotHeightWarning };
 
-/** Options for {@link SvgSurface.render} and {@link SvgSurface.renderPages}. */
-export interface SvgRenderOptions {
+/** Options for {@link SnapshotSurface.render} and {@link SnapshotSurface.renderPages}. */
+export interface SnapshotRenderOptions {
   /** Which of the runtime's frames this render uses; defaults to its `defaultFrame`. */
   frame?: string;
   /** Overrides the frame's `defaultWidth`. */
@@ -52,41 +55,47 @@ export interface SvgRenderOptions {
 }
 
 /**
- * Options for {@link SvgSurface.renderNode}.
+ * Options for {@link SnapshotSurface.renderNode}.
  *
  * Geometry is absent deliberately: one node is drawn with no surround, so there
  * is nothing for a width or a height to size.
  */
-export type SvgRenderNodeOptions = Pick<
-  SvgRenderOptions,
+export type SnapshotRenderNodeOptions = Pick<
+  SnapshotRenderOptions,
   'frame' | 'theme' | 'anchors' | 'onValidationError'
 >;
 
-/**
- * A tree and the stylesheet it is laid out against.
- *
- * Both halves are needed together: the elements carry class names, and an
- * image backend is given `css` the way a browser is given a `<style>`. A
- * backend that takes only a tree can carry the stylesheet in one.
- */
-export interface SvgRenderResult {
-  /** The frame's output — a single root element, as image layout requires. */
+/** One drawn page, as a React tree and as the static markup of that same tree. */
+export interface SnapshotPage {
+  /** A single root element, as image layout requires. */
   element: ReactNode;
+  /** `element` rendered to static markup, for a backend that takes HTML. */
+  html: string;
+}
+
+/**
+ * A page and the stylesheet it is laid out against.
+ *
+ * Both are needed together: the page carries class names, and a rasterizer is
+ * given `css` the way a browser is given a `<style>`. Everything but `element`
+ * is plain data, so a host can cache it or rasterize it in another process.
+ */
+export interface SnapshotRenderResult extends SnapshotPage {
   /** The pack's CSS, with `light-dark(…)` already resolved to this render's scheme. */
   css: string;
   width: number;
   height: number;
   /**
    * Nodes this render measured as 0. Empty when `estimateHeight` never calls
-   * `estimateSvgHeight`, or when `height` is given.
+   * `estimateSnapshotHeight`, or when `height` is given.
    */
-  warnings: readonly SvgHeightWarning[];
+  warnings: readonly SnapshotHeightWarning[];
 }
 
 /** Several compositions laid out against one stylesheet, one page each, as a paged document needs. */
-export interface SvgPagesResult {
-  /** One root element per composition, in order. */
-  pages: readonly ReactNode[];
+export interface SnapshotPagesResult {
+  /** One page per composition, in order. */
+  pages: readonly SnapshotPage[];
   /** The pack's CSS for every page, with `light-dark(…)` resolved to the document's scheme. */
   css: string;
   /** Every page's width. */
@@ -95,23 +104,27 @@ export interface SvgPagesResult {
   height: number;
   /**
    * Nodes measured as 0, paths prefixed `pages[n].`. Empty when `height` is
-   * given, or when `estimateHeight` never calls `estimateSvgHeight`.
+   * given, or when `estimateHeight` never calls `estimateSnapshotHeight`.
    */
-  warnings: readonly SvgHeightWarning[];
+  warnings: readonly SnapshotHeightWarning[];
 }
 
 /**
- * Renders a composition or node to an image backend's input: the same React
- * tree the DOM gets, paired with the pack's stylesheet.
+ * Renders a composition or node once, inside a frame, at a fixed size and one
+ * color scheme: the same React tree the DOM gets, its markup, and the pack's
+ * stylesheet.
  *
- * `svg` is a render surface; projecting it to SVG, PNG, or PDF is a separate
- * capability a host opts into.
+ * Rasterizing a snapshot to PNG, SVG, or PDF is a separate capability a host
+ * opts into.
  */
-export interface SvgSurface {
+export interface SnapshotSurface {
   /** Always `true`: this surface validates the composition and renders the copy it checked, never the caller's value. */
   readonly validating: true;
   /** Renders a full composition inside the chosen frame. */
-  render(composition: Composition, options?: SvgRenderOptions): SvgRenderResult;
+  render(
+    composition: Composition,
+    options?: SnapshotRenderOptions
+  ): SnapshotRenderResult;
   /**
    * Renders several compositions under one frame with one stylesheet, one
    * page each. Every page is the same size, the tallest estimate unless
@@ -120,12 +133,12 @@ export interface SvgSurface {
    * 0, under `pages[n].`.
    *
    * Throws `EMPTY_PAGES` for an empty list, and validates each composition in
-   * order as {@link SvgSurface.render} does.
+   * order as {@link SnapshotSurface.render} does.
    */
   renderPages(
     compositions: readonly Composition[],
-    options?: SvgRenderOptions
-  ): SvgPagesResult;
+    options?: SnapshotRenderOptions
+  ): SnapshotPagesResult;
   /**
    * Renders a single primitive node with no surround. The result's `width` is
    * the frame's `defaultWidth` and its `height` the frame's estimate for a
@@ -133,8 +146,8 @@ export interface SvgSurface {
    */
   renderNode(
     node: PrimitiveNode,
-    options?: SvgRenderNodeOptions
-  ): SvgRenderResult;
+    options?: SnapshotRenderNodeOptions
+  ): SnapshotRenderResult;
 }
 
 /**
@@ -150,13 +163,13 @@ const schemeFor = (mode: RenderTheme | undefined): 'light' | 'dark' =>
   mode === 'dark' ? 'dark' : 'light';
 
 /**
- * Creates the `svg` {@link RuntimeSurfaces} entry.
+ * Creates the `snapshot` {@link RuntimeSurfaces} entry.
  *
- * Built only when a host supplies a frame: unlike the other five surfaces, SVG
- * cannot fall back to a generic envelope, because a frame is a whole-document
- * decision.
+ * Built only when a host supplies a frame: unlike the other five surfaces, a
+ * snapshot cannot fall back to a generic envelope, because a frame is a
+ * whole-document decision.
  */
-export const createSvgSurface = <TRenderContext = unknown>(
+export const createSnapshotSurface = <TRenderContext = unknown>(
   dispatcher: PrimitiveDispatcher<
     PrimitiveNode,
     RuntimePackTypes<TRenderContext>
@@ -166,7 +179,7 @@ export const createSvgSurface = <TRenderContext = unknown>(
   styleAdapter:
     | HTMLStyleAdapter<PrimitiveNode, PrimitiveStyleCollector, TRenderContext>
     | undefined
-): SvgSurface => {
+): SnapshotSurface => {
   /** A composition and how to draw it once a render context exists. */
   interface StyledPage {
     composition: Composition;
@@ -187,24 +200,24 @@ export const createSvgSurface = <TRenderContext = unknown>(
     }
   };
 
-  /** Height from `estimateHeight`, and warnings when that call reads `estimateSvgHeight`. */
+  /** Height from `estimateHeight`, and warnings when that call reads `estimateSnapshotHeight`. */
   const measuredHeight = (
     frame: BoundFrame,
     composition: Composition,
     prefix: string
-  ): { height: number; warnings: readonly SvgHeightWarning[] } => {
+  ): { height: number; warnings: readonly SnapshotHeightWarning[] } => {
     let consulted = false;
     const height = frame.estimateHeight(composition, {
-      renderSvg: () => null,
-      estimateSvgHeight: (node) => {
+      renderSnapshot: () => null,
+      estimateSnapshotHeight: (node) => {
         consulted = true;
-        return dispatcher.estimateSvgHeight(node);
+        return dispatcher.estimateSnapshotHeight(node);
       },
     });
     return {
       height,
       warnings: consulted
-        ? collectSvgHeightWarnings(
+        ? collectSnapshotHeightWarnings(
             dispatcher.definitions,
             composition.body,
             prefix
@@ -217,12 +230,12 @@ export const createSvgSurface = <TRenderContext = unknown>(
   const viewportFor = (
     frame: BoundFrame,
     compositions: readonly Composition[],
-    options: Pick<SvgRenderOptions, 'width' | 'height'>,
+    options: Pick<SnapshotRenderOptions, 'width' | 'height'>,
     pagePaths: boolean
   ): {
     width: number;
     height: number;
-    warnings: readonly SvgHeightWarning[];
+    warnings: readonly SnapshotHeightWarning[];
   } => {
     const width = options.width ?? frame.defaultWidth;
     if (options.height !== undefined) {
@@ -245,8 +258,9 @@ export const createSvgSurface = <TRenderContext = unknown>(
   ): FrameDispatcher => {
     const drawn = anchors === true ? withNodeAnchors(context) : context;
     return {
-      renderSvg: (node, key) => dispatcher.renderSvg(node, drawn, theme, key),
-      estimateSvgHeight: (node) => dispatcher.estimateSvgHeight(node),
+      renderSnapshot: (node, key) =>
+        dispatcher.renderSnapshot(node, drawn, theme, key),
+      estimateSnapshotHeight: (node) => dispatcher.estimateSnapshotHeight(node),
     };
   };
 
@@ -260,13 +274,15 @@ export const createSvgSurface = <TRenderContext = unknown>(
   const withStyles = (
     [first, ...rest]: readonly [StyledPage, ...StyledPage[]],
     scheme: 'light' | 'dark'
-  ): { elements: ReactNode[]; css: string } => {
+  ): { pages: SnapshotPage[]; css: string } => {
     const pages = [first, ...rest];
+    const drawn = (context: TRenderContext): SnapshotPage[] =>
+      pages.map(({ build }) => {
+        const element = build(context);
+        return { element, html: renderToStaticMarkup(element) };
+      });
     if (!styleAdapter) {
-      return {
-        elements: pages.map(({ build }) => build({} as TRenderContext)),
-        css: '',
-      };
+      return { pages: drawn({} as TRenderContext), css: '' };
     }
     const requested: HTMLRenderOptions = {
       theme: scheme,
@@ -303,7 +319,7 @@ export const createSvgSurface = <TRenderContext = unknown>(
     }
     const context = styleAdapter.createRenderContext(collector, options);
     return {
-      elements: pages.map(({ build }) => build(context)),
+      pages: drawn(context),
       css: styleAdapter.renderStyles(collector, options),
     };
   };
@@ -311,10 +327,10 @@ export const createSvgSurface = <TRenderContext = unknown>(
   /** `subject` names a page in the frame's rejection, e.g. `page 2`. */
   const renderDocument = (
     [head, ...tail]: readonly [Composition, ...Composition[]],
-    options: SvgRenderOptions,
+    options: SnapshotRenderOptions,
     subject: (index: number) => string,
     pagePaths: boolean
-  ): SvgPagesResult => {
+  ): SnapshotPagesResult => {
     const check = (composition: Composition): CheckedComposition =>
       compositionToRender(
         validate(composition),
@@ -344,23 +360,26 @@ export const createSvgSurface = <TRenderContext = unknown>(
           frameDispatcherFor(context, theme, options.anchors)
         ),
     });
-    const { elements, css } = withStyles(
+    const { pages, css } = withStyles(
       [page(first), ...rest.map(page)],
       schemeFor(mode)
     );
-    return { ...size, warnings, pages: elements, css };
+    return { ...size, warnings, pages, css };
   };
 
   return {
     validating: true,
     render: (composition, options = {}) => {
-      const { pages, ...viewport } = renderDocument(
+      const {
+        pages: [page],
+        ...viewport
+      } = renderDocument(
         [composition],
         options,
         () => 'this composition',
         false
       );
-      return { ...viewport, element: pages[0] };
+      return { ...viewport, ...page! };
     },
     renderPages: (compositions, options = {}) => {
       const [first, ...rest] = compositions;
@@ -386,7 +405,10 @@ export const createSvgSurface = <TRenderContext = unknown>(
       const { frame } = frameFor(options.frame);
       const theme = frame.resolveTheme(options.theme);
       const { height, warnings } = measuredHeight(frame, composition, '');
-      const { elements, css } = withStyles(
+      const {
+        pages: [page],
+        css,
+      } = withStyles(
         [
           {
             composition,
@@ -403,7 +425,7 @@ export const createSvgSurface = <TRenderContext = unknown>(
         width: frame.defaultWidth,
         height,
         warnings,
-        element: elements[0],
+        ...page!,
         css,
       };
     },

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-// The frame an `svg` render is drawn inside, and the geometry that sizes it.
+// The frame a `snapshot` render is drawn inside, and the geometry that sizes it.
 // Frame is a runtime input, not a pack asset: vocabulary is additive, the
 // document is exclusive.
 
@@ -48,10 +48,10 @@ export interface FrameViewport<TTheme> {
  * written against a narrowed node union while the runtime holds the erased form.
  */
 export interface FrameDispatcher<TNode extends PrimitiveNode = PrimitiveNode> {
-  /** Draws one node on the `svg` surface. `key` must be unique among its siblings. */
-  renderSvg(node: TNode, key: string): ReactNode;
-  /** The node's height in pixels; `0` when it is hidden from `svg` or its primitive declares no `metrics.svgHeight`. */
-  estimateSvgHeight(node: TNode): number;
+  /** Draws one node on the `snapshot` surface. `key` must be unique among its siblings. */
+  renderSnapshot(node: TNode, key: string): ReactNode;
+  /** The node's height in pixels; `0` when it is hidden from `snapshot` or its primitive declares no `metrics.snapshotHeight`. */
+  estimateSnapshotHeight(node: TNode): number;
 }
 
 /**
@@ -82,7 +82,7 @@ export interface FrameComposition extends FrameHeader {
 export type FrameBody = readonly ReactNode[];
 
 /**
- * A document an `svg` render can produce: its geometry, the surround it draws
+ * A document a `snapshot` render can produce: its geometry, the surround it draws
  * around the body, and whatever it requires of a composition it is asked to
  * draw.
  *
@@ -104,8 +104,8 @@ export interface Frame<TTheme> {
   theme: ThemePair<TTheme>;
   /**
    * Height for this body when the caller passes none, in the geometry this
-   * document defines. Calling {@link FrameDispatcher.estimateSvgHeight} is
-   * what makes a missing `metrics.svgHeight` size the frame short: that
+   * document defines. Calling {@link FrameDispatcher.estimateSnapshotHeight} is
+   * what makes a missing `metrics.snapshotHeight` size the frame short: that
    * method returns `0` for a node whose primitive declares none.
    */
   estimateHeight(
@@ -119,7 +119,7 @@ export interface Frame<TTheme> {
    * Returned rather than thrown so a caller can decide what to do with it, but
    * note where it is *not* checked: composition validation is frame-agnostic,
    * and has to be, because the same composition can be valid in one frame and
-   * not another. Only the `svg` surface consults this, on the frame a render
+   * not another. Only the `snapshot` surface consults this, on the frame a render
    * actually names, and raises before drawing. A host that wants the answer
    * earlier asks the frame directly.
    */
@@ -197,11 +197,12 @@ export const bindFrame = <TTheme>(frame: Frame<TTheme>): BoundFrame => {
       return frame.wrap(
         { title, subtitle, theme: mode },
         composition.body.map((node, index) =>
-          dispatcher.renderSvg(node, `body-${index}`)
+          dispatcher.renderSnapshot(node, `body-${index}`)
         ),
         { ...viewport, theme }
       );
     },
-    renderNode: (node, dispatcher) => dispatcher.renderSvg(node, node.type),
+    renderNode: (node, dispatcher) =>
+      dispatcher.renderSnapshot(node, node.type),
   };
 };

@@ -317,9 +317,12 @@ describe('slideDiff sizing', () => {
     const takumi = createTakumiImageBackend({ fonts: slideFonts });
     const clips = 'x'.repeat(diffLineMaxLength(false, pane) + 1);
     const layout = await takumi.measure(
-      runtime.surfaces.svg.render(compose(inPane(diffOf([{ text: clips }]))), {
-        anchors: true,
-      })
+      runtime.surfaces.snapshot.render(
+        compose(inPane(diffOf([{ text: clips }]))),
+        {
+          anchors: true,
+        }
+      )
     );
     const boxes = (box: LayoutBox): LayoutBox[] => [
       box,
@@ -364,7 +367,7 @@ describe('slideDiff at its bounds', () => {
         'order.json · after the refund'
       );
       const layout = await takumi.measure(
-        runtime.surfaces.svg.render(previewSlide(node), { anchors: true })
+        runtime.surfaces.snapshot.render(previewSlide(node), { anchors: true })
       );
       const body = anchored(layout, 'slideFrame').children[0]!.children[0]!;
       const root = anchored(layout, 'slideDiff');

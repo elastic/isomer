@@ -6,6 +6,7 @@
  */
 
 import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { createTakumiImageBackend } from '@elastic/isomer-image-takumi';
 import { describe, expect, it } from 'vitest';
 
@@ -473,10 +474,12 @@ describe('measureText against takumi', () => {
   /** The drawn box of `text` set in `role`, shrink-wrapped inside `width`. */
   const drawn = async (text: string, role: TypeRole, width: number) => {
     const box = await takumi.measure({
-      element: createElement(
-        'div',
-        { className: 'room' },
-        createElement('div', { className: 'text' }, text)
+      html: renderToStaticMarkup(
+        createElement(
+          'div',
+          { className: 'room' },
+          createElement('div', { className: 'text' }, text)
+        )
       ),
       css: `.room { align-items: flex-start; display: flex; flex-direction: column; font-family: Inter; overflow-wrap: anywhere; width: ${width}px; } .text { ${typeRole(role)} max-width: 100%; }`,
       width: 1920,

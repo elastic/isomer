@@ -30,7 +30,7 @@ export const deckRootModule = createStyleModule('deckRoot', ({ css }) => ({
 export const layoutModule = createStyleModule('layout', ({ css }) => ({
   /**
    * Auto margins, not `justify-content: center`, so content taller than the room runs down past the footer, not up over the heading.
-   * The `auto` basis keeps it content-sized in an unsized column, which the image surface otherwise collapses.
+   * The `auto` basis keeps it content-sized in an unsized column, which the `snapshot` surface otherwise collapses.
    */
   fill: css`
     display: flex;

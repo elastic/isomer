@@ -43,7 +43,7 @@ const kpi = definePrimitive({
 export const metricsPack = definePrimitivePack({ id: 'metrics', primitives: [kpi] });
 ```
 
-`react`, `text`, and `markdown` are mandatory, which is what makes every composition degrade. `slack` is optional and falls back through Markdown. There is no `svg` renderer: the image surface reuses `react`. Hand the pack to `createIsomerRuntime` from `@elastic/isomer-runtime` and every surface renders it.
+`react`, `text`, and `markdown` are mandatory, which is what makes every composition degrade. `slack` is optional and falls back through Markdown. There is no `snapshot` renderer: the `snapshot` surface reuses `react`. Hand the pack to `createIsomerRuntime` from `@elastic/isomer-runtime` and every surface renders it.
 
 ## Docs
 

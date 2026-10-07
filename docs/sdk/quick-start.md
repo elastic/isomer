@@ -63,7 +63,7 @@ export const kpi = definePrimitive({
 
 `definePrimitive`'s type arguments stay inferred: the typed `examples` fix the node type, and the schema type flows through to the JSX shim. Naming `TNode` explicitly turns that off; see [Primitives](primitives.md#why-it-is-shaped-this-way).
 
-`react`, `text`, and `markdown` are mandatory — those three are what make "every composition degrades" true. `slack` is optional per primitive even when the pack declares the surface, because the dispatcher falls back through markdown. There is no `svg` renderer to write: the image surface dispatches to `react`; see [Packs](packs.md).
+`react`, `text`, and `markdown` are mandatory — those three are what make "every composition degrades" true. `slack` is optional per primitive even when the pack declares the surface, because the dispatcher falls back through markdown. There is no `snapshot` renderer to write: the `snapshot` surface dispatches to `react`; see [Packs](packs.md).
 
 ## 3. Declare the pack
 
@@ -131,7 +131,7 @@ runtime.validate(composition);
 // { valid: true, errors: [], warnings: [], composition: <its checked copy> }
 ```
 
-Quiet, and correctly so. `kpi` declares no `metrics.svgHeight`, and `validate` reports nothing about that metric: a missing height is the `svg` surface's finding, on the frame a render measures with. See [a missing `svgHeight`](frame.md#a-missing-svgheight). Warnings `validate` does return are surface-scoped, so a text or Slack host filters them with `warningsForSurface(result, surface)`. Errors are a different matter:
+Quiet, and correctly so. `kpi` declares no `metrics.snapshotHeight`, and `validate` reports nothing about that metric: a missing height is the `snapshot` surface's finding, on the frame a render measures with. See [a missing `snapshotHeight`](frame.md#a-missing-snapshotheight). Warnings `validate` does return are surface-scoped, so a text or Slack host filters them with `warningsForSurface(result, surface)`. Errors are a different matter:
 
 ```ts
 runtime.parse({ type: 'view', body: [{ type: 'kpi', label: 'x' }] });
