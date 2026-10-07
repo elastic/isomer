@@ -26,7 +26,7 @@ const heading = { type: 'slideHeading', title: 'Target' };
 const renderOf = (slide: string) => ({
   type: 'slideRender',
   slide,
-  surface: 'svg',
+  surface: 'snapshot',
 });
 
 /** Another pack's container; `resolveSlideRenders` reads only its child slot. */
@@ -254,7 +254,7 @@ describe('resolveSlideRenders', () => {
     const chart = { type: 'chart', config: { type: 'slideRender' } };
     const boxed = {
       type: 'box',
-      items: [{ type: 'slideRender', surface: 'svg', body: [heading] }],
+      items: [{ type: 'slideRender', surface: 'snapshot', body: [heading] }],
     };
     expect(fills(chart)).toBe(true);
     expect(fills(boxed)).toBe(true);

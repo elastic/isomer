@@ -62,11 +62,12 @@ export interface PrimitiveConformanceHtmlOptions {
   readonly anchors?: boolean;
 }
 
-/** The subset of a host's SVG render result the cases assert on. */
-export interface PrimitiveConformanceSvgResult {
+/** The subset of a host's `snapshot` render result the cases assert on. */
+export interface PrimitiveConformanceSnapshotResult {
   /** Must be empty for every published example. */
   readonly validationErrors: readonly ValidationError[];
-  readonly svg: string;
+  /** The frame's markup, stylesheet included or not. */
+  readonly html: string;
   /** `total` is the rendered byte size, and must be positive. */
   readonly measurement: { readonly total: number };
 }
@@ -108,13 +109,13 @@ export interface PrimitiveConformanceHarness {
   renderMarkdown(node: PrimitiveNode): string;
   /** Must return at least one block, each an object with a string `type`. */
   renderSlack(node: PrimitiveNode): readonly SlackBlock[];
-  /** `key` is unique per example and only has to survive into the React tree. Must not throw. Omit for a pack with no `svg` path. */
-  renderSvg?(node: PrimitiveNode, key: string): unknown;
-  /** Must be finite and greater than zero, so a frame can lay the node out unrendered. Omit for a pack with no `svg` path. */
-  estimateSvgHeight?(node: PrimitiveNode): number;
+  /** `key` is unique per example and only has to survive into the React tree. Must not throw. Omit for a pack with no `snapshot` path. */
+  renderSnapshot?(node: PrimitiveNode, key: string): unknown;
+  /** Must be finite and greater than zero, so a frame can lay the node out unrendered. Omit for a pack with no `snapshot` path. */
+  estimateSnapshotHeight?(node: PrimitiveNode): number;
   /**
    * Set `false` for a pack whose frame is a fixed size, so its primitives are
-   * not required to report a positive `metrics.svgHeight`. Skips the
+   * not required to report a positive `metrics.snapshotHeight`. Skips the
    * positive-finite height assertion.
    */
   sizesFromNodeHeights?: boolean;
@@ -151,10 +152,10 @@ export interface PrimitiveConformanceHarness {
   renderSlackComposition(
     composition: Composition
   ): PrimitiveConformanceSlackResult;
-  /** Must resolve to complete `<svg>`/`</svg>` markup with no validation errors. Omit for a pack with no frame. */
-  renderSVGComposition?(
+  /** Must resolve to non-empty markup with no validation errors. Omit for a pack with no frame. */
+  renderSnapshotComposition?(
     composition: Composition
-  ): Promise<PrimitiveConformanceSvgResult>;
+  ): Promise<PrimitiveConformanceSnapshotResult>;
 }
 
 /** One assertion, run once per example. */
@@ -366,26 +367,26 @@ export const primitiveConformanceCases: readonly PrimitiveConformanceCase[] = [
     },
   },
   {
-    name: 'renders through SVG primitive dispatch without throwing',
+    name: 'renders through snapshot primitive dispatch without throwing',
     run: ({ type, exampleIndex, node }, harness) => {
-      if (!harness.renderSvg) {
+      if (!harness.renderSnapshot) {
         return;
       }
       assert.doesNotThrow(() =>
-        harness.renderSvg?.(node, `conformance-${type}-${exampleIndex}`)
+        harness.renderSnapshot?.(node, `conformance-${type}-${exampleIndex}`)
       );
     },
   },
   {
-    name: 'reports a positive finite SVG height estimate',
+    name: 'reports a positive finite snapshot height estimate',
     run: ({ node }, harness) => {
       if (
         harness.sizesFromNodeHeights === false ||
-        !harness.estimateSvgHeight
+        !harness.estimateSnapshotHeight
       ) {
         return;
       }
-      const height = harness.estimateSvgHeight(node);
+      const height = harness.estimateSnapshotHeight(node);
       assert.equal(Number.isFinite(height), true);
       assert.ok(height > 0);
     },
@@ -503,17 +504,16 @@ export const primitiveConformanceCases: readonly PrimitiveConformanceCase[] = [
     },
   },
   {
-    name: 'renders through renderSVG wrapped in a minimal composition',
+    name: 'renders a snapshot wrapped in a minimal composition',
     run: async ({ node }, harness) => {
-      if (!harness.renderSVGComposition) {
+      if (!harness.renderSnapshotComposition) {
         return;
       }
-      const result = await harness.renderSVGComposition(
+      const result = await harness.renderSnapshotComposition(
         harness.wrapComposition(node)
       );
       assert.deepEqual(result.validationErrors, []);
-      assert.ok(result.svg.includes('<svg'));
-      assert.ok(result.svg.includes('</svg>'));
+      assert.ok(result.html.trim().length > 0);
       assert.ok(result.measurement.total > 0);
     },
   },

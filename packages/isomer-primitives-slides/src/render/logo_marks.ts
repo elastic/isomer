@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-/** Paths and fills from `docs/logo.svg`. Brand-fixed; the image surface cannot load the file. */
+/** Paths and fills from `docs/logo.svg`. Brand-fixed; the `snapshot` surface cannot load the file. */
 export const ISOMER_LOGO_PATHS: ReadonlyArray<{ d: string; fill: string }> = [
   {
     d: 'M16 31C19.3137 31 22 28.3137 22 25C22 21.6863 19.3137 19 16 19C12.6863 19 10 21.6863 10 25C10 28.3137 12.6863 31 16 31Z',

@@ -66,12 +66,12 @@ export interface PrimitiveDispatcher<
     context: PrimitiveStyleCollectionContext
   ): void;
   /**
-   * The node's `react` renderer, gated on `svg` visibility and keyed for a
+   * The node's `react` renderer, gated on `snapshot` visibility and keyed for a
    * frame's sibling list. `key` must be unique among those siblings.
    * `theme` is the frame's resolved palette for this render, or `undefined`
    * outside a frame.
    */
-  renderSvg(
+  renderSnapshot(
     node: TNode,
     context: T['context'],
     theme: T['theme'] | undefined,
@@ -93,8 +93,8 @@ export interface PrimitiveDispatcher<
     node: TNode,
     collector?: T['slackCollector']
   ): readonly T['slackBlock'][];
-  /** `0` when the node is hidden from `svg` or its primitive declares no `metrics.svgHeight`. */
-  estimateSvgHeight(node: TNode): number;
+  /** `0` when the node is hidden from `snapshot` or its primitive declares no `metrics.snapshotHeight`. */
+  estimateSnapshotHeight(node: TNode): number;
   /**
    * Appends schema failures under `path` to `errors`, each naming `node`'s
    * type, and an unknown key on `node` listing the fields it declares.
@@ -105,13 +105,13 @@ export interface PrimitiveDispatcher<
 /**
  * Which of a definition's renderers each surface dispatches to.
  *
- * `svg` maps to `react`: an image backend lays out the pack's DOM tree and
+ * `snapshot` maps to `react`: a rasterizer lays out the pack's DOM tree and
  * stylesheet, so the two surfaces differ only in visibility and in what
  * surrounds them.
  */
 const RENDERER_FOR_SURFACE = {
   react: 'react',
-  svg: 'react',
+  snapshot: 'react',
   text: 'text',
   markdown: 'markdown',
   slack: 'slack',
@@ -243,8 +243,8 @@ export const createPrimitiveDispatcher = <
         | undefined;
       collectStyles?.(node, { styles, context });
     },
-    renderSvg: (node, context, theme, key) => {
-      const rendered = renderOn('svg', node, { context, theme });
+    renderSnapshot: (node, context, theme, key) => {
+      const rendered = renderOn('snapshot', node, { context, theme });
       // The frame hands these to React as an array; a `key` has to sit on the
       // element itself, since wrapping in a Fragment would hide the single
       // root an image backend lays out from.
@@ -299,13 +299,13 @@ export const createPrimitiveDispatcher = <
       });
       return isReadonlyArray(rendered) ? rendered : [rendered];
     },
-    estimateSvgHeight: (node) => {
-      if (!isVisibleOnSurface(node, 'svg')) {
+    estimateSnapshotHeight: (node) => {
+      if (!isVisibleOnSurface(node, 'snapshot')) {
         return 0;
       }
-      const svgHeight = getDefinition(node).metrics?.svgHeight as
+      const snapshotHeight = getDefinition(node).metrics?.snapshotHeight as
         ((node: TNode) => number) | undefined;
-      return svgHeight?.(node) ?? 0;
+      return snapshotHeight?.(node) ?? 0;
     },
     validate: (node, path, errors) => {
       const result = getDefinition(node).schema.safeParse(node, {

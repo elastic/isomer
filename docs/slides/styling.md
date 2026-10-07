@@ -61,7 +61,7 @@ const node: SlideCodeNode = {
 
 This is a React convenience wrapper, not a surface — it applies `slideStylesheet()` via `dangerouslySetInnerHTML`. The HTML surface does not use it.
 
-## Fonts on the image surface
+## Fonts on the snapshot surface
 
 A browser resolves `Inter` and `Roboto Mono` from the page; an image backend resolves nothing it was not handed, and an unregistered family falls back to the backend's built-in face. So a host rasterizing this pack registers both families itself.
 

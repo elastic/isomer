@@ -74,7 +74,7 @@ const notePrimitive = definePrimitive<NoteNode>({
   catalog: catalog('note', { type: 'note', body: 'Hello' }),
   examples: [{ type: 'note', body: 'Hello' }],
   schema: z.object({ type: z.literal('note'), body: z.string() }),
-  metrics: { svgHeight: () => 16 },
+  metrics: { snapshotHeight: () => 16 },
   renderers: {
     react: (node) => node.body,
     text: (node) => node.body,
@@ -91,7 +91,7 @@ const chartPrimitive = definePrimitive<ChartNode>({
   catalog: catalog('chart', { type: 'chart', label: 'Series' }),
   examples: [{ type: 'chart', label: 'Series' }],
   schema: z.object({ type: z.literal('chart'), label: z.string() }),
-  metrics: { svgHeight: () => 64 },
+  metrics: { snapshotHeight: () => 64 },
   renderers: {
     react: (node) => node.label,
     text: (node) => node.label,
@@ -132,7 +132,7 @@ const stackPrimitive = definePrimitive<StackNode>({
       node: item,
       path: `items[${index}]`,
     })),
-  metrics: { svgHeight: () => 32 },
+  metrics: { snapshotHeight: () => 32 },
   renderers: {
     react: (node, { context, scope }) =>
       node.items.map((item) => scope.renderReact(item, context)),
@@ -167,7 +167,7 @@ const groupPrimitive = definePrimitive<GroupNode>({
       node: item,
       path: `items[${index}]`,
     })),
-  metrics: { svgHeight: () => 32 },
+  metrics: { snapshotHeight: () => 32 },
   renderers: {
     react: (node, { context, scope }) =>
       node.items.map((item) => scope.renderReact(item, context)),
@@ -223,7 +223,7 @@ const tilePrimitive = definePrimitive<TileNode>({
   catalog: catalog('tile', { type: 'tile', body: 'Tile' }),
   examples: [{ type: 'tile', body: 'Tile' }],
   schema: z.object({ type: z.literal('tile'), body: z.string() }),
-  metrics: { svgHeight: () => 24 },
+  metrics: { snapshotHeight: () => 24 },
   renderers: {
     react: (node) => node.body,
     text: (node) => node.body,
@@ -253,7 +253,7 @@ const tileGroupPrimitive = definePrimitive<TileGroupNode>({
     }),
   children: (node) =>
     node.items.map((item, index) => ({ node: item, path: `items[${index}]` })),
-  metrics: { svgHeight: () => 48 },
+  metrics: { snapshotHeight: () => 48 },
   renderers: {
     react: (node, { context, scope }) =>
       node.items.map((item) => scope.renderReact(item, context)),
@@ -267,7 +267,7 @@ const tileGroupPrimitive = definePrimitive<TileGroupNode>({
 });
 
 /**
- * The conformance subject: every primitive declares `metrics.svgHeight`, which
+ * The conformance subject: every primitive declares `metrics.snapshotHeight`, which
  * the height case asserts on when a harness opts in. `fixturePack` cannot
  * serve, since its `caption` is the missing-metric case other tests need.
  */

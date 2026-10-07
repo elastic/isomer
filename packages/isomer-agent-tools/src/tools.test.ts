@@ -726,9 +726,10 @@ describe('checkComposition', () => {
           errors: [],
           warnings: [
             {
-              surface: 'svg',
+              surface: 'snapshot',
               path: 'body[0]',
-              message: 'body[0] type "slideFrame" declares no svgHeight metric',
+              message:
+                'body[0] type "slideFrame" declares no snapshotHeight metric',
             },
             {
               surface: 'slack',
@@ -743,7 +744,7 @@ describe('checkComposition', () => {
       oneSlide
     );
     expect(warnings).toEqual([
-      'svg: body[0] type "slideFrame" declares no svgHeight metric',
+      'snapshot: body[0] type "slideFrame" declares no snapshotHeight metric',
       'slack: body[0].body[1] draws nothing',
       'text: is empty',
     ]);

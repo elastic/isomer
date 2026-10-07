@@ -94,14 +94,16 @@ The runtime supplies the structural half. Most hosts send more, because a vocabu
 
 ```ts
 runtime.getCapabilities();
-// { primitives: […], formats: ['react','html','text','markdown','slack','svg'],
+// { primitives: […],
+//   surfaces: ['react','html','text','markdown','slack','snapshot'],
+//   formats: ['react','html','text','markdown','slack','png','svg','pdf'],
 //   support: { kpi: { react: 'native', …, slack: 'native' }, sparkline: { react: 'native', …, slack: 'fallback' } },
 //   enhancements: { tableSort: true, clipboard: true } }  // request them with `enhancements: ['tableSort']`
 ```
 
-`formats` reports the surfaces that were actually built — a runtime with no [frame](frame.md) truthfully omits `svg`.
+`surfaces` reports the surfaces that were actually built — a runtime with no [frame](frame.md) truthfully omits `snapshot`. `formats` is what the host can ship: every surface but `snapshot`, then whatever the host registered with `createIsomerRuntime({ formats })`, here a takumi backend's `png`, `svg`, and `pdf`. An agent deciding what its output becomes reads `formats`; see [Surfaces and formats](surfaces.md#surfaces-and-formats).
 
-`support` says how each of those formats renders each primitive. `slack` is `native` when the primitive has its own `slack` renderer, from its definition or a renderer override, and `fallback` when the dispatcher converts its markdown to Block Kit instead; a pack's `surfaces` declaration does not change it. Every other format is `native`, since it renders from the `react`, `text`, or `markdown` renderer every primitive must have.
+`support` says how each of those surfaces renders each primitive. `slack` is `native` when the primitive has its own `slack` renderer, from its definition or a renderer override, and `fallback` when the dispatcher converts its markdown to Block Kit instead; a pack's `surfaces` declaration does not change it. Every other surface is `native`, since it renders from the `react`, `text`, or `markdown` renderer every primitive must have.
 
 ## Next
 

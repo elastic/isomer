@@ -110,8 +110,8 @@ describe('slide frame', () => {
     slideDeckPrimitives.find((definition) => definition.type === 'slideFrame')!
   )[0]! as PrimitiveNode;
   const dispatcher = {
-    renderSvg: (node: PrimitiveNode) => `<${node.type}>`,
-    estimateSvgHeight: () => 0,
+    renderSnapshot: (node: PrimitiveNode) => `<${node.type}>`,
+    estimateSnapshotHeight: () => 0,
   };
   const bound = bindFrame(slideDeckFrame);
 

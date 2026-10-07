@@ -57,13 +57,14 @@ export type {
   SlackSurface,
 } from './surfaces/slack';
 export type {
-  SvgHeightWarning,
-  SvgPagesResult,
-  SvgRenderNodeOptions,
-  SvgRenderOptions,
-  SvgRenderResult,
-  SvgSurface,
-} from './surfaces/svg';
+  SnapshotHeightWarning,
+  SnapshotPage,
+  SnapshotPagesResult,
+  SnapshotRenderNodeOptions,
+  SnapshotRenderOptions,
+  SnapshotRenderResult,
+  SnapshotSurface,
+} from './surfaces/snapshot';
 export type {
   TextRenderNodeOptions,
   TextRenderOptions,

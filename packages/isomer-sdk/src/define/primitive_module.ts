@@ -79,7 +79,7 @@ export interface PrimitiveRenderContext {
    * still answer the question on its own. See `docs/rendering.md`.
    */
   enhancements?: ReadonlySet<string>;
-  /** Turns on `nodeAnchor` outside an HTML surface render, on the React and `svg` surfaces; inside one, the surface decides. */
+  /** Turns on `nodeAnchor` outside an HTML surface render, on the React and `snapshot` surfaces; inside one, the surface decides. */
   anchors?: boolean;
   /** Raises an interaction for the host to route. Absent means render non-interactively. */
   onEvent?: (event: ActionEventRef) => void;
@@ -163,9 +163,9 @@ export interface SurfaceMap<T extends PackTypes = DefaultPackTypes> {
       scope: RenderScope<T>;
       /**
        * The frame's resolved palette, when this render is reached through the
-       * `svg` surface. A bare `react`/`html` render has no {@link Frame} to
+       * `snapshot` surface. A bare `react`/`html` render has no {@link Frame} to
        * resolve one from, so it is absent there — a pack that needs a
-       * literal color outside `svg` still goes through `context`.
+       * literal color outside `snapshot` still goes through `context`.
        */
       theme?: T['theme'];
     };
@@ -175,9 +175,9 @@ export interface SurfaceMap<T extends PackTypes = DefaultPackTypes> {
    * Identical to `react`, and served by the same renderer: an image backend
    * lays out the pack's DOM tree and stylesheet rather than a second tree
    * authored for it. The surface stays separate so a node can be hidden from
-   * images alone, and so a {@link Frame} has something to draw inside.
+   * snapshots alone, and so a {@link Frame} has something to draw inside.
    */
-  svg: {
+  snapshot: {
     env: {
       context: T['context'];
       scope: RenderScope<T>;
@@ -245,8 +245,8 @@ export interface RenderScope<T extends PackTypes = DefaultPackTypes> {
     node: PrimitiveNode,
     collector?: T['slackCollector']
   ): readonly T['slackBlock'][];
-  /** `0` when the node is hidden from `svg` or its primitive declares no `metrics.svgHeight`. */
-  estimateSvgHeight(node: PrimitiveNode): number;
+  /** `0` when the node is hidden from `snapshot` or its primitive declares no `metrics.snapshotHeight`. */
+  estimateSnapshotHeight(node: PrimitiveNode): number;
   /** Appends schema failures under `path` to `errors`, each naming `node`'s type. */
   validate(node: PrimitiveNode, path: string, errors: ValidationError[]): void;
 }
@@ -269,7 +269,7 @@ export type Renderer<
  *
  * Only `slack`, and even that stays optional per primitive: the dispatcher
  * converts the mandatory markdown to Block Kit, so a missing Slack renderer
- * degrades rather than disappearing. `svg` is not here because no primitive
+ * degrades rather than disappearing. `snapshot` is not here because no primitive
  * implements it — the surface reuses `react`.
  */
 export const OPTIONAL_SURFACES = [
@@ -283,7 +283,7 @@ export type OptionalSurface = (typeof OPTIONAL_SURFACES)[number];
  * One renderer per surface a primitive implements.
  *
  * `react`, `text`, and `markdown` are always required: those three are what
- * make "every composition degrades" true. `react` serves the `svg` surface
+ * make "every composition degrades" true. `react` serves the `snapshot` surface
  * too, so targeting images costs a primitive nothing.
  *
  * `slack` is declared method-style deliberately: method parameters are checked
@@ -326,12 +326,12 @@ export interface Renderers<
 /**
  * Measurements a frame can ask of a node before drawing it.
  *
- * `svgHeight` is optional. The height estimate is `0` when it is missing, so
+ * `snapshotHeight` is optional. The height estimate is `0` when it is missing, so
  * a frame that sums node heights sizes short.
  */
 export interface PrimitiveMetrics<TNode extends PrimitiveNode> {
   /** The node's drawn height in pixels at the frame's width. */
-  svgHeight?: (node: TNode) => number;
+  snapshotHeight?: (node: TNode) => number;
 }
 
 /**
@@ -399,7 +399,7 @@ export interface PrimitiveDefinition<
    * exactly one union.
    */
   schemaFor?: (bodyNodeSchema: ZodType<unknown>) => PrimitiveSchema;
-  /** One function per surface; `react` serves `svg` as well. */
+  /** One function per surface; `react` serves `snapshot` as well. */
   renderers: Renderers<TNode, T>;
   /** Sizing a frame can ask for before drawing. Absent means it cannot be measured. */
   metrics?: PrimitiveMetrics<TNode>;
@@ -450,7 +450,7 @@ export interface AnyPrimitiveDefinition {
   renderers: Record<'react' | 'text' | 'markdown', unknown> &
     Partial<Record<'slack', unknown>>;
   metrics?: {
-    svgHeight?: unknown;
+    snapshotHeight?: unknown;
   };
   sanitize?: unknown;
   children?: unknown;

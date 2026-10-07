@@ -19,7 +19,7 @@ Packs are built by `definePrimitivePack` in the SDK, not here — see [the pack 
 | `slackAssetTypes` | Which node types are pictures, so Slack uploads them instead of approximating them |
 | `styleAdapter` | Optional. Its HTML CSS, combined with every other pack's |
 | `styleCollector` | Optional. The collector shape its `collectStyles` hooks expect |
-| `TTheme` | The palette its `svg` renderers require, as `definePrimitivePack<T>`'s type argument |
+| `TTheme` | The palette its `snapshot` renderers require, as `definePrimitivePack<T>`'s type argument |
 
 The last facts are declared by the pack because they are facts about a vocabulary, and a host composing packs it did not write cannot be expected to know them. The runtime unions `slackAssetTypes` and `enhancements` across packs.
 
@@ -30,7 +30,7 @@ Two rules, both enforced when the runtime is built:
 - No node type may be registered by two packs. The dispatcher is keyed on `type` and nothing else, so a duplicate makes dispatch ambiguous.
 - No enhancement id may be registered by two packs, for the same reason one level up — the HTML surface flattens enhancements runtime-wide.
 
-Everything else composes silently, with one bound to respect: a pack declares the palette its `svg` renderers read, and every pack in a runtime — plus every frame in its map — has to agree on it. A pack that declares `svg` and one that does not can still sit together; nodes from the second simply produce a validation warning if you try to draw them. Packs whose renderers want _different_ palettes belong in different runtimes, which is what [Frame](frame.md) covers.
+Everything else composes silently, with one bound to respect: a pack declares the palette its `snapshot` renderers read, and every pack in a runtime — plus every frame in its map — has to agree on it. A pack that declares `snapshot` and one that does not can still sit together; nodes from the second simply produce a validation warning if you try to draw them. Packs whose renderers want _different_ palettes belong in different runtimes, which is what [Frame](frame.md) covers.
 
 ## Why packs are additive
 

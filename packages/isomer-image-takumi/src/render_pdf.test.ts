@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-import { createElement } from 'react';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -22,13 +21,13 @@ const runtimeReturning = (
 ): PdfRuntime => ({
   validate: (composition) => ({ ...validation(composition), composition }),
   surfaces: {
-    svg: {
+    snapshot: {
       renderPages: (compositions, options) => {
         seen(options);
         return {
-          pages: compositions.map((_composition, index) =>
-            createElement('div', { className: 'box' }, `Page ${index}`)
-          ),
+          pages: compositions.map((_composition, index) => ({
+            html: `<div class="box">Page ${index}</div>`,
+          })),
           css: '.box { background: #ff0000; }',
           width: 64,
           height: 32,
@@ -67,11 +66,11 @@ describe('renderPdf', () => {
         composition: { copy: composition },
       }),
       surfaces: {
-        svg: {
+        snapshot: {
           renderPages: (compositions) => {
             drawn = compositions;
             return {
-              pages: compositions.map(() => createElement('div', null, 'Ag')),
+              pages: compositions.map(() => ({ html: '<div>Ag</div>' })),
               css: '',
               width: 64,
               height: 32,
@@ -102,7 +101,7 @@ describe('renderPdf', () => {
           : composition,
       }),
       surfaces: {
-        svg: {
+        snapshot: {
           renderPages: () => {
             drawn = true;
             return { pages: [], css: '', width: 1, height: 1 };
@@ -144,8 +143,8 @@ describe('renderPdf', () => {
     ]);
   });
 
-  it('forwards svg options and collects rather than throws', async () => {
-    let seenSvgOptions: unknown;
+  it('forwards snapshot options and collects rather than throws', async () => {
+    let seenSnapshotOptions: unknown;
     let seenInput: PdfInput | undefined;
     const backend: TakumiPdfBackend = {
       pdf: (input) => {
@@ -156,14 +155,14 @@ describe('renderPdf', () => {
 
     await renderPdf(
       runtimeReturning(valid, (options) => {
-        seenSvgOptions = options;
+        seenSnapshotOptions = options;
       }),
       [{ type: 'view' }],
       backend,
-      { svg: { frame: 'card' }, metadata: { title: 'Deck' } }
+      { snapshot: { frame: 'card' }, metadata: { title: 'Deck' } }
     );
 
-    expect(seenSvgOptions).toMatchObject({
+    expect(seenSnapshotOptions).toMatchObject({
       frame: 'card',
       onValidationError: 'collect',
     });

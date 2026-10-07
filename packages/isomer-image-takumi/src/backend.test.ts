@@ -8,7 +8,8 @@
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 
-import { createElement } from 'react';
+import { createElement, type ReactElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import {
@@ -23,7 +24,7 @@ import {
 const require = createRequire(import.meta.url);
 
 const input = (css: string): ImageInput => ({
-  element: createElement('div', { className: 'box' }, 'Ag'),
+  html: '<div class="box">Ag</div>',
   css,
   width: 64,
   height: 32,
@@ -105,9 +106,9 @@ describe('createTakumiImageBackend', () => {
   });
 
   describe('measure', () => {
-    const measure = (element: ImageInput['element'], css: string) =>
+    const measure = (element: ReactElement, css: string) =>
       createTakumiImageBackend().measure({
-        element,
+        html: renderToStaticMarkup(element),
         css,
         width: 200,
         height: 100,
@@ -115,12 +116,7 @@ describe('createTakumiImageBackend', () => {
 
     it('nests boxes inside a root the size of the png canvas', async () => {
       const twoBoxes: ImageInput = {
-        element: createElement(
-          'div',
-          { className: 'outer' },
-          createElement('div', { className: 'inner' }, 'Ag'),
-          createElement('div', { className: 'inner' }, 'Ag')
-        ),
+        html: '<div class="outer"><div class="inner">Ag</div><div class="inner">Ag</div></div>',
         css: '.outer { width: 64px; height: 32px; padding: 4px 6px; box-sizing: border-box; display: flex; gap: 2px } .inner { width: 20px; height: 10px }',
         width: 64,
         height: 32,
@@ -334,9 +330,11 @@ describe('createTakumiImageBackend', () => {
       texts: readonly string[],
       css = '.box { background: #ff0000; }'
     ): PdfInput => ({
-      pages: texts.map((text) =>
-        createElement('div', { className: 'box' }, text)
-      ),
+      pages: texts.map((text) => ({
+        html: renderToStaticMarkup(
+          createElement('div', { className: 'box' }, text)
+        ),
+      })),
       css,
       width: 64,
       height: 32,
@@ -429,7 +427,7 @@ describe('createTakumiImageBackend', () => {
       const src = 'https://example.invalid/logo.png';
       const withImage: PdfInput = {
         ...pages(['']),
-        pages: [createElement('img', { src, width: 16, height: 16 })],
+        pages: [{ html: `<img src="${src}" width="16" height="16"/>` }],
       };
       const backend = createTakumiImageBackend();
       const blank = await backend.pdf(withImage, stable);

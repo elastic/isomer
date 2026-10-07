@@ -121,7 +121,7 @@ export interface PrimitivePackInput {
  * A pack as the runtime sees it.
  *
  * `TTheme` is the palette this pack's `react` renderers read as `env.theme`
- * when drawn through the `svg` surface — a *lower bound* on whatever theme
+ * when drawn through the `snapshot` surface — a *lower bound* on whatever theme
  * the runtime holding it supplies. It is carried by
  * {@link PrimitivePack.__theme} rather than by any real field, because
  * `primitives` is erased to `AnyPrimitiveDefinition[]` and a heterogeneous
@@ -179,7 +179,7 @@ export type AnyPrimitivePack = PrimitivePack<never>;
  * Builds a {@link PrimitivePack}.
  *
  * `TTheme` is the palette a frame must supply for this pack's nodes to be drawn
- * on the `svg` surface: `definePrimitivePack<CoreTokens>(input)`. Omitted, it is
+ * on the `snapshot` surface: `definePrimitivePack<CoreTokens>(input)`. Omitted, it is
  * `unknown`, which requires nothing.
  */
 export const definePrimitivePack = <TTheme = unknown>(

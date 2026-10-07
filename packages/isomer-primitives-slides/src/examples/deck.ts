@@ -77,7 +77,7 @@ export const splitSlide: Composition = {
                       lines: [
                         'runtime.surfaces.markdown.render(slide);',
                         'runtime.surfaces.slack.render(slide);',
-                        'runtime.surfaces.svg.render(slide);',
+                        'runtime.surfaces.snapshot.render(slide);',
                       ],
                     },
                   ],

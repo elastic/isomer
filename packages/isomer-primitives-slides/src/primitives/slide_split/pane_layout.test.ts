@@ -157,7 +157,7 @@ describe('paneLayouts', () => {
   ];
   const labelLines = async (node: SlideSplitNode, words: RegExp) => {
     const layout = await takumi.measure(
-      runtime.surfaces.svg.render({
+      runtime.surfaces.snapshot.render({
         type: 'view',
         body: [{ type: 'slideFrame', body: [node] } as PrimitiveNode],
       })

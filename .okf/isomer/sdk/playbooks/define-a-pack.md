@@ -22,7 +22,7 @@ sources:
 1. Collect primitives with `definePrimitive`.
 2. Call `definePrimitivePack` with a stable `id` and at least one primitive.
 3. If any primitive has `collectStyles`, declare `styleAdapter`; `styleCollector` is derived from it unless overridden.
-4. If svg renderers read a palette, name it: `definePrimitivePack<T>(input)`. Never publish a bare `PrimitivePack`.
+4. If the pack's react renderers read a frame's palette, name it: `definePrimitivePack<T>(input)`. Never publish a bare `PrimitivePack`.
 5. In tests, call `assertPackRegistrationComplete` on the primitives directory, and assert the registry array and the body-node union agree. Keep that assertion in a test file so it stays outside the build graph.[^docs][^pack][^registration]
 
 Related: [packs](/sdk/concepts/packs.md), [runtime packs](/runtime/concepts/packs.md).

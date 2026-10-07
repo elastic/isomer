@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-// Picks a type step from the node's own text so every surface draws the same size: the image surface cannot measure or use container units, `min()`, or `clamp()`.
+// Picks a type step from the node's own text so every surface draws the same size: the `snapshot` surface cannot measure or use container units, `min()`, or `clamp()`.
 
 import type { ScaleToken } from '@elastic/distillate';
 import { z } from '@elastic/isomer-sdk';

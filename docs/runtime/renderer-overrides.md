@@ -13,11 +13,11 @@ createIsomerRuntime({
 
 Pass `context` along as it is. It may be a class instance, and spreading it into props or a new object drops its prototype and private state.
 
-That table keeps its text, markdown, and Slack renderers. Only React changed — and because the `svg` surface dispatches to `react`, the image picks the override up too.
+That table keeps its text, markdown, and Slack renderers. Only React changed — and because the `snapshot` surface dispatches to `react`, the image picks the override up too.
 
 ## What can be overridden
 
-Four renderer keys: `react`, `text`, `markdown`, `slack`. There is no `svg` key, because that surface has no renderer of its own. The signatures are the ones the runtime holds, with the node union heterogeneous and theme and context erased. `env` and `output` are derived from the SDK's `SurfaceMap`, so the bags cannot drift. `RuntimeRendererOverrides` is the exported map type; index it to type an override written apart from the call:
+Four renderer keys: `react`, `text`, `markdown`, `slack`. There is no `snapshot` key, because that surface has no renderer of its own. The signatures are the ones the runtime holds, with the node union heterogeneous and theme and context erased. `env` and `output` are derived from the SDK's `SurfaceMap`, so the bags cannot drift. `RuntimeRendererOverrides` is the exported map type; index it to type an override written apart from the call:
 
 ```ts
 import type { RuntimeRendererOverrides } from '@elastic/isomer-runtime';

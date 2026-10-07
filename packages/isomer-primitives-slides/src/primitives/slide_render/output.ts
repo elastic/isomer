@@ -39,13 +39,13 @@ const LINE_TERMINATORS = /\r\n|[\n\r\u2028\u2029]/;
 
 export type OutputSurface = Exclude<
   SlideRenderSurface,
-  'react' | 'html' | 'svg'
+  'react' | 'html' | 'snapshot'
 >;
 
 export const isDrawn = (
   surface: SlideRenderSurface
-): surface is 'react' | 'html' | 'svg' =>
-  surface === 'react' || surface === 'html' || surface === 'svg';
+): surface is 'react' | 'html' | 'snapshot' =>
+  surface === 'react' || surface === 'html' || surface === 'snapshot';
 
 /** The slide reference, if any, then the surface. */
 export const renderLabel = ({

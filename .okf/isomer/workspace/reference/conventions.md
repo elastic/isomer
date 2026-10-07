@@ -29,7 +29,7 @@ sources:
 - After adding or changing a dependency, run `pnpm licenses:report` and include the updated `THIRD_PARTY_LICENSES.md` and `NOTICE.txt`. Declared runtime optional dependencies need complete license material even when they are not installed on the current platform.
 - Narrative docs live in each package's `docs/`. Root `docs/` is the docs-builder assembler; do not author package pages there.
 - A pack holds no rendered value of its own: every number, length, ratio, and glyph it draws has one authoring source in its theme.
-- There is no per-primitive `svg` renderer. The image surface dispatches to `react` and is handed the pack's stylesheet.
+- There is no per-primitive `snapshot` renderer. The `snapshot` surface dispatches to `react` and is handed the pack's stylesheet.
 - The pack stylesheet does not reach inside an inline `<svg>`. Anything drawn there needs a literal `fill` / `stroke` alongside its class.[^agents]
 
 Related: [verify](/workspace/playbooks/verify.md), [maintain OKF](/workspace/playbooks/maintain-okf.md).

@@ -66,7 +66,7 @@ The schema is the declaration: the node type is `z.infer` of it, the typed `exam
 | `sanitize`      | no        | Last-chance repair or rejection, run before every render.                                            |
 | `children`      | container | Nested nodes, each with the field path it lives under.                                               |
 | `hasOwnContent` | hybrid    | Whether the parent still renders when every child is hidden.                                         |
-| `metrics`       | no        | `svgHeight`, so a measuring frame can size itself.                                                   |
+| `metrics`       | no        | `snapshotHeight`, so a measuring frame can size itself.                                              |
 | `collectStyles` | no        | Contributes CSS through the pack's style adapter.                                                    |
 
 An entry of `examples` is a node, or a `PrimitiveExample` that names one so a host listing examples, such as a Storybook or a docs page, can label it:
@@ -91,7 +91,7 @@ markdown(node, { scope }): MarkdownContent  // always
 slack?(node, { collector, scope }): unknown | readonly unknown[]
 ```
 
-There is no `svg` renderer. The `svg` surface dispatches to `react`: an image backend lays out the pack's DOM tree and stylesheet, so a second tree authored for the image would be the same layout stated twice. Targeting images therefore costs a primitive nothing.
+There is no `snapshot` renderer. The `snapshot` surface dispatches to `react`: an image backend lays out the pack's DOM tree and stylesheet, so a second tree authored for the image would be the same layout stated twice. Targeting images therefore costs a primitive nothing.
 
 A `markdown` renderer returns content built with `md` from `./markdown`. `md` escapes each value where it lands, so authored `*`, `|`, or a leading `#` stays text, and its links and images apply the [URL policy](url-trust.md). Markdown a pack already has, such as authored source, goes through `md.authored`, which sanitizes it and drops it when it is only whitespace. `md.blockquote` quotes blocks, embedded child content included, `md.break()` breaks a paragraph's line with a backslash and prints as a space inside a heading, strong, emphasis, link label, or table cell, and one at the start or end of any of these is dropped, and a `md.table` cell takes one inline run or an array of them.
 
@@ -142,9 +142,9 @@ A container that instead pattern-matches `item.node.type` against its own pack's
 
 Runs before every render, on every surface, and may return `null` to drop the node. It is the render-time half of the [URL trust policy](url-trust.md): the Zod refinement gives an agent a useful validation error, and `sanitize` means a renderer invoked with an unvalidated node still never emits an unsafe URL.
 
-## `metrics.svgHeight`
+## `metrics.snapshotHeight`
 
-Optional. The height estimate is `0` when it is missing, so a frame that sums node heights sizes short. The runtime's `svg` surface reports each such node when the frame that render uses calls `estimateSvgHeight`. A frame that returns a constant reads nothing from it, and `validate` reports nothing about it.
+Optional. The height estimate is `0` when it is missing, so a frame that sums node heights sizes short. The runtime's `snapshot` surface reports each such node when the frame that render uses calls `estimateSnapshotHeight`. A frame that returns a constant reads nothing from it, and `validate` reports nothing about it.
 
 ## Names and icons
 
@@ -197,7 +197,7 @@ Each primitive then names only `TNode`, and `createPrimitiveDispatcher<TNode, Sl
 
 **`slack` is declared method-style** because method parameters are checked bivariantly, and that is what lets a pack narrow the collector's node type.
 
-**`svg` stays a separate surface** even though it shares a renderer, for two reasons: a node can be hidden from images alone with `surfaces: ['react']`, and a [Frame](frame.md) needs a document to draw the body inside.
+**`snapshot` stays a separate surface** even though it shares a renderer, for two reasons: a node can be hidden from snapshots alone with `surfaces: ['react']`, and a [Frame](frame.md) needs a document to draw the body inside.
 
 ## Next
 

@@ -52,7 +52,10 @@ const errorsOf = (node: object) =>
 describe('findNestedRender', () => {
   it('returns the first render in reading order, with its path', () => {
     const body = [
-      { type: 'slideStack', items: [{ type: 'slideRender', surface: 'svg' }] },
+      {
+        type: 'slideStack',
+        items: [{ type: 'slideRender', surface: 'snapshot' }],
+      },
       { type: 'slideRender', surface: 'text' },
     ];
     expect(findNestedRender(body)).toEqual({
@@ -161,7 +164,7 @@ describe('embedded and window bodies holding foreign data', () => {
   it.each([
     [
       'render',
-      (body: object[]) => ({ type: 'slideRender', surface: 'svg', body }),
+      (body: object[]) => ({ type: 'slideRender', surface: 'snapshot', body }),
     ],
     [
       'window',
@@ -184,11 +187,11 @@ describe('embedded and window bodies holding foreign data', () => {
     expect(
       errors({
         type: 'slideRender',
-        surface: 'svg',
+        surface: 'snapshot',
         body: [
           {
             type: 'slideStack',
-            items: [{ type: 'slideRender', surface: 'svg', slide: 'a' }],
+            items: [{ type: 'slideRender', surface: 'snapshot', slide: 'a' }],
           },
         ],
       })
@@ -223,7 +226,7 @@ describe('embedded and window bodies past the input budget', () => {
   };
   const render = (count: number) => ({
     type: 'slideRender',
-    surface: 'svg',
+    surface: 'snapshot',
     body: [stackChain(count)],
   });
   const window = (count: number) => ({

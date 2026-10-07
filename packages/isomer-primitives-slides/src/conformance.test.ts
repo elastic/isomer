@@ -7,7 +7,6 @@
 
 import assert from 'node:assert/strict';
 
-import { renderToStaticMarkup } from 'react-dom/server';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import {
   createChildNodeWalker,
@@ -79,7 +78,7 @@ const varRefs = (css: string): string[] => [
 ];
 
 // `slideFrame` is required as the root of every slide composition. Wrap
-// non-frame nodes in one so renderSVGComposition can draw a valid slide.
+// non-frame nodes in one so renderSnapshotComposition can draw a valid slide.
 const wrapInFrame = (node: PrimitiveNode): PrimitiveNode =>
   node.type === 'slideFrame'
     ? node
@@ -111,8 +110,9 @@ const harness: PrimitiveConformanceHarness = {
   renderMarkdown: (node) => runtime.surfaces.markdown.renderNode(node, collect),
   renderSlack: (node) =>
     runtime.surfaces.slack.renderNode(node, collect).blocks,
-  renderSvg: (node) => runtime.surfaces.svg.renderNode(node, collect).element,
-  estimateSvgHeight: () => 0,
+  renderSnapshot: (node) =>
+    runtime.surfaces.snapshot.renderNode(node, collect).element,
+  estimateSnapshotHeight: () => 0,
   nestForeignChild: (container) => {
     if (container.type === 'slideSplit') {
       const { panes } = container as unknown as {
@@ -172,14 +172,14 @@ const harness: PrimitiveConformanceHarness = {
       text: result.text,
     };
   },
-  renderSVGComposition: (composition) => {
+  renderSnapshotComposition: (composition) => {
     const validation = runtime.validate(composition);
-    const { element, css } = runtime.surfaces.svg.render(composition);
-    const svg = `<style>${css}</style>${renderToStaticMarkup(element)}`;
+    const { html: markup, css } = runtime.surfaces.snapshot.render(composition);
+    const html = `<style>${css}</style>${markup}`;
     return Promise.resolve({
       validationErrors: validation.errors,
-      svg,
-      measurement: { total: Buffer.byteLength(svg, 'utf8') },
+      html,
+      measurement: { total: Buffer.byteLength(html, 'utf8') },
     });
   },
 };

@@ -22,7 +22,7 @@ type ErasedSurfaceMap = SurfaceMap<RuntimePackTypes<unknown>>;
 /**
  * Surfaces a renderer override may target.
  *
- * No `svg`: that surface dispatches to the `react` renderer, so overriding
+ * No `snapshot`: that surface dispatches to the `react` renderer, so overriding
  * `react` already changes both.
  */
 const OVERRIDABLE_SURFACES = ['react', 'text', 'markdown', 'slack'] as const;

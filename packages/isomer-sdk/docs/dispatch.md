@@ -13,19 +13,19 @@ Duplicate types throw at construction, with the label in front of the message so
 
 ## What it exposes
 
-| Method                                 | Returns                                                                         |
-| -------------------------------------- | ------------------------------------------------------------------------------- |
-| `renderOn(surface, node, extras)`      | The surface's output, or `undefined` when the node is hidden or has no renderer |
-| `renderReact(node, context?)`          | `ReactNode`                                                                     |
-| `renderSvg(node, context, theme, key)` | `ReactNode` — the `react` renderer, gated on `svg` visibility and keyed         |
-| `renderText(node)`                     | `string` — empty when nothing rendered                                          |
-| `renderMarkdown(node)`                 | `string` — `md` content serialized; empty when nothing rendered                 |
-| `renderMarkdownContent(node)`          | `MarkdownContent` — the child's content, empty when it is hidden                |
-| `renderSlack(node, collector?)`        | `readonly T['slackBlock'][]` — `SlackBlock` unless the pack binds it            |
-| `collectStyles(node, styles, context)` | nothing; the collector is mutated                                               |
-| `estimateSvgHeight(node)`              | `number` — `0` when hidden or unmeasured                                        |
-| `validate(node, path, errors)`         | nothing; errors are appended                                                    |
-| `definitions`, `getDefinition(node)`   | the inventory, and one entry — `getDefinition` throws on an unknown type        |
+| Method                                      | Returns                                                                         |
+| ------------------------------------------- | ------------------------------------------------------------------------------- |
+| `renderOn(surface, node, extras)`           | The surface's output, or `undefined` when the node is hidden or has no renderer |
+| `renderReact(node, context?)`               | `ReactNode`                                                                     |
+| `renderSnapshot(node, context, theme, key)` | `ReactNode` — the `react` renderer, gated on `snapshot` visibility and keyed    |
+| `renderText(node)`                          | `string` — empty when nothing rendered                                          |
+| `renderMarkdown(node)`                      | `string` — `md` content serialized; empty when nothing rendered                 |
+| `renderMarkdownContent(node)`               | `MarkdownContent` — the child's content, empty when it is hidden                |
+| `renderSlack(node, collector?)`             | `readonly T['slackBlock'][]` — `SlackBlock` unless the pack binds it            |
+| `collectStyles(node, styles, context)`      | nothing; the collector is mutated                                               |
+| `estimateSnapshotHeight(node)`              | `number` — `0` when hidden or unmeasured                                        |
+| `validate(node, path, errors)`              | nothing; errors are appended                                                    |
+| `definitions`, `getDefinition(node)`        | the inventory, and one entry — `getDefinition` throws on an unknown type        |
 
 ## What every render goes through
 
@@ -33,11 +33,11 @@ Duplicate types throw at construction, with the label in front of the message so
 
 **Surface visibility.** A node may carry `surfaces: ['text', 'markdown']`, and anything outside that list returns `undefined` — deliberately absent, not empty. This is how an author hides a decorative node from text or a text-only note from an image.
 
-**Renderer presence.** No renderer for this surface, `undefined` again. For `text` and `markdown` the wrappers coerce that to `''`; for `svg` the absence is what validation warns about.
+**Renderer presence.** No renderer for this surface, `undefined` again. For `text` and `markdown` the wrappers coerce that to `''`; for `snapshot` the absence is what validation warns about.
 
 **`sanitize`.** The definition's hook runs on the node, and may return `null` to drop it. Because it sits here rather than in each renderer, a renderer invoked with an unvalidated node still cannot emit an unsafe URL.
 
-`renderSvg`'s `theme` reaches the renderer as `env.theme`: the frame's resolved palette for this render, supplied by `BoundFrame.resolveTheme`. `renderReact`/the `react` surface pass no theme — a bare React render has no `Frame` to resolve one from — so `env.theme` is `undefined` there. A container recursing into a child on the `svg` surface forwards it explicitly through `scope.renderOn('svg', child, { context, theme })`; `scope.renderReact` does not carry it.
+`renderSnapshot`'s `theme` reaches the renderer as `env.theme`: the frame's resolved palette for this render, supplied by `BoundFrame.resolveTheme`. `renderReact`/the `react` surface pass no theme — a bare React render has no `Frame` to resolve one from — so `env.theme` is `undefined` there. A container recursing into a child on the `snapshot` surface forwards it explicitly through `scope.renderOn('snapshot', child, { context, theme })`; `scope.renderReact` does not carry it.
 
 ## RenderScope
 
@@ -66,4 +66,4 @@ The collector is opt-in, so default output stays safe for a caller that cannot u
 
 ## Next
 
-[Rendering](rendering.md) for the envelopes wrapped around these calls · [Primitives](primitives.md) for what the renderers are · [Frame](frame.md) for the `svg` walk
+[Rendering](rendering.md) for the envelopes wrapped around these calls · [Primitives](primitives.md) for what the renderers are · [Frame](frame.md) for the `snapshot` walk

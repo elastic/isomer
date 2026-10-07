@@ -2,6 +2,8 @@
 
 ## 2026-10-07
 
+- **The `svg` surface is `snapshot`, and capabilities separate surfaces from formats** (breaking, [#150](https://github.com/elastic/isomer/issues/150)): `surfaces.svg` is `surfaces.snapshot`, `SURFACE_NAMES` and a node's `surfaces` field take `'snapshot'`, and every `Svg*` name, `metrics.svgHeight`, `estimateSvgHeight`, and `renderSvg` follows (`SnapshotSurface`, `metrics.snapshotHeight`, `estimateSnapshotHeight`). A snapshot render returns `{ element, html, css, width, height, warnings }`, `html` being `element`'s static markup, and `renderPages` returns `SnapshotPage` (`{ element, html }`) pages. `HostCapabilities` gains `surfaces`; `formats` is every surface but `snapshot` plus what the host passes to `createIsomerRuntime({ formats })`; `support` is keyed by surface. `describeCapabilities(packs, { surfaces, formats? })` takes a `CapabilitySources`. Takumi's `ImageInput` and `PdfInput` take `html`, so it drops its `react` and `react-dom` peers, and `TakumiBackend.formats` is `TAKUMI_FORMATS`. `renderPng` and `renderPdf` take `snapshot` options. The conformance harness's `renderSVGComposition` is `renderSnapshotComposition`, resolving to `{ validationErrors, html, measurement }`. OKF pages `rasterize-svg` and `no-svg-renderer` are `rasterize-a-snapshot` and `no-snapshot-renderer`.
+
 - **Callback-free authoring input schemas**: Compare child schemas and declare custom props from input copies that omit executable default and fallback values while preserving optional fields, references, and descriptions. Validation retains the original schemas.
 
 - **Shared child schema compatibility and development JSX**: Compare child input schemas through canonical JSON Schema projections and generate both automatic JSX runtime companions.

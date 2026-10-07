@@ -1,6 +1,6 @@
 # Packs
 
-A pack is a vocabulary as a value: an id, a set of primitives, the optional surfaces every one of them implements, the palette its `svg` renderers require, and two facts about the vocabulary that only its author can state. `definePrimitivePack` builds one and checks it.
+A pack is a vocabulary as a value: an id, a set of primitives, the optional surfaces every one of them implements, the palette its `snapshot` renderers require, and two facts about the vocabulary that only its author can state. `definePrimitivePack` builds one and checks it.
 
 ```ts
 import { definePrimitivePack } from '@elastic/isomer-sdk';
@@ -35,7 +35,7 @@ What comes back adds `types`, a set for duplicate detection across packs, and `i
 
 `slack` is the only member, and it stays optional per primitive: the dispatcher converts the mandatory markdown to Block Kit, so declaring it says what the pack aims at rather than imposing a requirement. Omit the field entirely for a pack that renders Slack through that fallback.
 
-There is nothing to declare for `svg`. Every pack reaches the image surface through its `react` renderers, and whether a runtime _has_ that surface depends on a frame, which is a host input rather than a pack's to promise.
+There is nothing to declare for `snapshot`. Every pack reaches the `snapshot` surface through its `react` renderers, and whether a runtime _has_ that surface depends on a frame, which is a host input rather than a pack's to promise.
 
 A repeated type in `definePrimitivePack` throws `DUPLICATE_PRIMITIVE_TYPE`; `composePacks` reports the cross-pack case, and a pack `id` two packs share throws `DUPLICATE_PACK_ID`. A `slackAssetTypes` entry the pack does not register throws `UNKNOWN_PRIMITIVE_TYPE`, as an unknown type in `authoring.groups` does.
 
@@ -89,7 +89,7 @@ A runtime composing several packs merges every pack's `authoring` into one optio
 A pack's nodes are drawn inside a frame, and `PrimitivePack<TTheme>` is where the pack states the palette that frame must supply. `TTheme` is `definePrimitivePack`'s type argument. Omit it and the pack is `PrimitivePack<unknown>`, which is also what bare `PrimitivePack` means: requires nothing, fits any runtime. A pack that needs a frame to carry tokens names the bound at the definition:
 
 ```ts
-export const elasticPack = definePrimitivePack<SvgRenderTheme>({
+export const elasticPack = definePrimitivePack<SnapshotTheme>({
   id: 'elastic',
   primitives: […],
 });

@@ -24,15 +24,15 @@ What each entry point exports, and which ones cost you a dependency.
 | `definePrimitivePack` | Builds a `PrimitivePack`; its type argument `TTheme` is the palette its frames must supply |
 | `composePacks` | Flattens packs into one frozen inventory; rejects cross-pack duplicates |
 | `bindFrame` | Erases a `Frame<TTheme>` into a `BoundFrame` |
-| `describeCapabilities` | Reports primitives, formats, per-primitive support for each format, and enhancements for a set of packs |
+| `describeCapabilities` | `(packs, { surfaces, formats? })`: reports primitives, the surfaces given, the formats they reach (every surface but `snapshot`, then `formats`), per-primitive support on each surface, and enhancements |
 | `unresolvedBodyNodeSchema` | The child slot in a container's standalone schema |
 | `exampleNodes` | A definition's example nodes, named or bare |
 | `primitiveExamples` | A definition's examples as `NormalizedPrimitiveExample`s, `{ name?, description?, node }` |
 | `ICON_VARS` | The CSS variables a `PrimitiveIcon` paints with: `--isomer-icon-accent`, `-bg`, `-fg`, `-muted` |
 
-Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveExample` (a named entry of `examples`), `ExampleNode` (the node type an entry holds), `PrimitiveIcon` (a definition's host-facing `{ svg }` glyph), `PrimitiveNode`, `PrimitiveSchema` (a `ZodObject`), `PrimitiveCatalogEntry`, `PrimitiveMetrics`, `PrimitiveChildRef`, `PrimitiveRenderContext`, `StyledRenderContext`, `PrimitiveStyleCollector`, `PrimitiveStyleCollectionContext`, `PackTypes`, `DefaultPackTypes`, `Renderer` (`(node, env)` — `env` is `SurfaceMap<T>[S]['env']`), `Renderers`, `RenderScope`, `ReactContextArg` (the dispatcher's optional-or-required context argument tuple for `renderReact`), `SurfaceMap`, `SurfaceName`, `OptionalSurface`, `PrimitivePack`, `AnyPrimitivePack`, `PrimitivePackInput`, `PackStyleAdapter`, `PackAuthoringOptions`, `PrimitiveGroup`, `ComposedPacks`, `Frame`, `FrameBody`, `BoundFrame`, `FrameDispatcher`, `FrameHeader`, `FrameComposition`, `FrameViewport`, `ThemePair`, `EnhancementDefinition`, `HostCapabilities`, `SurfaceSupport`, `StyleHandle`, `ThemeTokenPath`, `Composition`, `CompositionMeta` (its advisory `meta`), `BodyNodeBase`, `ActionEventRef`, `IsomerError`, `IsomerErrorCode`.
+Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveExample` (a named entry of `examples`), `ExampleNode` (the node type an entry holds), `PrimitiveIcon` (a definition's host-facing `{ svg }` glyph), `PrimitiveNode`, `PrimitiveSchema` (a `ZodObject`), `PrimitiveCatalogEntry`, `PrimitiveMetrics`, `PrimitiveChildRef`, `PrimitiveRenderContext`, `StyledRenderContext`, `PrimitiveStyleCollector`, `PrimitiveStyleCollectionContext`, `PackTypes`, `DefaultPackTypes`, `Renderer` (`(node, env)` — `env` is `SurfaceMap<T>[S]['env']`), `Renderers`, `RenderScope`, `ReactContextArg` (the dispatcher's optional-or-required context argument tuple for `renderReact`), `SurfaceMap`, `SurfaceName`, `OptionalSurface`, `PrimitivePack`, `AnyPrimitivePack`, `PrimitivePackInput`, `PackStyleAdapter`, `PackAuthoringOptions`, `PrimitiveGroup`, `ComposedPacks`, `Frame`, `FrameBody`, `BoundFrame`, `FrameDispatcher`, `FrameHeader`, `FrameComposition`, `FrameViewport`, `ThemePair`, `EnhancementDefinition`, `HostCapabilities`, `CapabilitySources` (what `describeCapabilities` reports beyond the packs), `SurfaceSupport`, `StyleHandle`, `ThemeTokenPath`, `Composition`, `CompositionMeta` (its advisory `meta`), `BodyNodeBase`, `ActionEventRef`, `IsomerError`, `IsomerErrorCode`.
 
-`react` and `svg` renderers receive `env.theme`: the frame's resolved palette (`T['theme']`) when reached through the `svg` surface, `undefined` outside one. A pack whose `svg` renderers read tokens still declares them as `definePrimitivePack<TTheme>`'s type argument. `PrimitivePackInput.authoring` (a `PackAuthoringOptions`) is this pack's own contribution — `describe` and `omitProperties` — to the runtime's merged authoring schema, plus `groups` for an index catalog.
+`react` and `snapshot` renderers receive `env.theme`: the frame's resolved palette (`T['theme']`) when reached through the `snapshot` surface, `undefined` outside one. A pack whose `snapshot` renderers read tokens still declares them as `definePrimitivePack<TTheme>`'s type argument. `PrimitivePackInput.authoring` (a `PackAuthoringOptions`) is this pack's own contribution — `describe` and `omitProperties` — to the runtime's merged authoring schema, plus `groups` for an index catalog.
 
 ## Root entry — dispatch
 
@@ -48,7 +48,7 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveExample` (a na
 | `withNodeAnchors` | A view of a context with anchors on, as an enhancement declaring `anchors: true` turns them on |
 | `withoutAnchors` | A context under which nothing renders an anchor, for content that is not one of a node's `children` |
 | `checkLayout` | Where a measured render's nodes run past their room or onto a sibling, as `LayoutFinding`s over a `LayoutBox` tree of `LayoutRect`s |
-| `SURFACE_NAMES` | `['react','svg','text','markdown','slack']`, as const; `SurfaceName` is derived from it. The runtime's `html` surface wraps `react` in a document and is not a name here |
+| `SURFACE_NAMES` | `['react','snapshot','text','markdown','slack']`, as const; `SurfaceName` is derived from it. The runtime's `html` surface wraps `react` in a document and is not a name here |
 | `OPTIONAL_SURFACES` | `['slack']`, as const; the surfaces a pack may declare beyond the mandatory three. `OptionalSurface` is derived from it |
 | `BODY_NODE_SURFACES` | Deprecated alias of `SURFACE_NAMES` |
 
@@ -87,7 +87,7 @@ Zod helpers so a pack states constraints the same way everywhere: `z` and `requi
 
 ## `./html`
 
-`renderHTMLWithDispatcher` and the types a style adapter is written against: `HTMLStyleAdapter`, `HTMLRenderOptions`, `HTMLRenderResult`, `HTMLRenderDispatcher`, `HTMLDispatcherRenderOptions`, `HTMLEnhancementScope`, `EnhancementDefinition`, `ReactContentDispatcher`, `ReactContentOptions`. `HTMLRenderOptions.enhancements` is a list of enhancement ids; the render keeps the first definition of each that applies to the body and emits its script once, in its own function scope. `HTMLRenderOptions.anchors` turns anchors on directly, for tests. `HTMLRenderOptions.scheme` resolves the stylesheet's `light-dark(…)` to one scheme, as the `svg` surface asks for.
+`renderHTMLWithDispatcher` and the types a style adapter is written against: `HTMLStyleAdapter`, `HTMLRenderOptions`, `HTMLRenderResult`, `HTMLRenderDispatcher`, `HTMLDispatcherRenderOptions`, `HTMLEnhancementScope`, `EnhancementDefinition`, `ReactContentDispatcher`, `ReactContentOptions`. `HTMLRenderOptions.enhancements` is a list of enhancement ids; the render keeps the first definition of each that applies to the body and emits its script once, in its own function scope. `HTMLRenderOptions.anchors` turns anchors on directly, for tests. `HTMLRenderOptions.scheme` resolves the stylesheet's `light-dark(…)` to one scheme, as the `snapshot` surface asks for.
 
 ## `./react`
 
@@ -134,14 +134,14 @@ A pack supplies a `PrimitiveConformanceHarness` closing over its own dispatcher,
 | `renderSlack` | yes | At least one block; the markdown fallback counts |
 | `renderTextComposition`, `renderMarkdownComposition` | yes | Whole-composition envelopes, title included |
 | `renderSlackComposition` | yes | A `PrimitiveConformanceSlackResult` led by a `plain_text` header block |
-| `renderSvg`, `estimateSvgHeight` | no | Skipped when absent. `sizesFromNodeHeights: false` skips the height case for a fixed-size frame |
+| `renderSnapshot`, `estimateSnapshotHeight` | no | Skipped when absent. `sizesFromNodeHeights: false` skips the height case for a fixed-size frame |
 | `renderHTML` | no | Honors `PrimitiveConformanceHtmlOptions` (`css`, `names`, `anchors`); skipped when absent |
 | `anchorWalk` | no | The child walker over every definition rendered with; set it once every `react` renderer spreads `nodeAnchor`, to turn on the anchor case |
 | `assertVarRefsHaveDeclarations` | no | Throws for a `var(--x)` with no declaration; skipped when it or `renderHTML` is absent |
-| `renderSVGComposition` | no | Resolves to a `PrimitiveConformanceSvgResult` with complete `<svg>` markup; skipped when absent |
+| `renderSnapshotComposition` | no | Resolves to a `PrimitiveConformanceSnapshotResult` with non-empty `html`; skipped when absent |
 | `nestForeignChild` | no | Returns the container with a child from a pack it does not own; skipped when absent |
 
-The cases, one per example: the node validates alone and inside a composition; `react`, `text`, `markdown`, and `slack` render non-empty output; style collection does not throw; a container recurses through `scope` for a foreign child (its text and markdown must contain `CONFORMANCE_FOREIGN_MARKER`); `svg` dispatch does not throw and the height estimate is positive and finite; `renderHTML` wraps the body in a `<section>` with no validation errors and no script bytes; it renders no node anchors unless asked, and, with `anchorWalk` set, one anchor per node when asked; every `var(--x)` the CSS references is declared; every readable class in the markup has a selector in the CSS; the text and markdown envelopes carry the fixture title; the Slack envelope leads with a header block; and the SVG composition renders complete markup.
+The cases, one per example: the node validates alone and inside a composition; `react`, `text`, `markdown`, and `slack` render non-empty output; style collection does not throw; a container recurses through `scope` for a foreign child (its text and markdown must contain `CONFORMANCE_FOREIGN_MARKER`); `snapshot` dispatch does not throw and the height estimate is positive and finite; `renderHTML` wraps the body in a `<section>` with no validation errors and no script bytes; it renders no node anchors unless asked, and, with `anchorWalk` set, one anchor per node when asked; every `var(--x)` the CSS references is declared; every readable class in the markup has a selector in the CSS; the text and markdown envelopes carry the fixture title; the Slack envelope leads with a header block; and the SVG composition renders complete markup.
 
 ## Where the code is
 

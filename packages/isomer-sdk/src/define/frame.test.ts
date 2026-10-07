@@ -18,8 +18,9 @@ interface Theme {
 }
 
 const dispatcher: FrameDispatcher = {
-  renderSvg: (node, key) => ({ node: node.type, key }) as unknown as ReactNode,
-  estimateSvgHeight: () => 10,
+  renderSnapshot: (node, key) =>
+    ({ node: node.type, key }) as unknown as ReactNode,
+  estimateSnapshotHeight: () => 10,
 };
 
 const frame = bindFrame<Theme>({

@@ -38,11 +38,11 @@ export const slideOf = (...body: object[]): Composition => ({
 
 /** Takumi's measure of `slide`, with node anchors on. */
 export const measured = (slide: Composition): Promise<LayoutBox> =>
-  takumi.measure(runtime.surfaces.svg.render(slide, { anchors: true }));
+  takumi.measure(runtime.surfaces.snapshot.render(slide, { anchors: true }));
 
 /** What `checkLayout` finds in takumi's measure of `slide`. */
 export const findings = async (slide: Composition) =>
-  checkLayout(await measured(slide), slide.body, walk, 'svg');
+  checkLayout(await measured(slide), slide.body, walk, 'snapshot');
 
 const anchored = (box: LayoutBox, type: string): LayoutBox | undefined =>
   box.attributes?.[NODE_ANCHOR_ATTRIBUTE] === type

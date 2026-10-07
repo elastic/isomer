@@ -39,7 +39,7 @@ interface PanelProps {
 /**
  * An embedded body on one surface: drawn surfaces show the slide at full size scaled by `scale`, the rest print their output. With no body, a placeholder names the reference.
  *
- * An embedded slide lays out as it would alone, on a fresh full-slide layout, whatever the host slide around it sets; only the drawn result is scaled. Its top-level nodes show as `surface` shows them, so an `svg` panel follows each node's `svg` visibility.
+ * An embedded slide lays out as it would alone, on a fresh full-slide layout, whatever the host slide around it sets; only the drawn result is scaled. Its top-level nodes show as `surface` shows them, so a `snapshot` panel follows each node's `snapshot` visibility.
  */
 export const RenderPanel = ({
   node: { slide, body },
@@ -66,7 +66,7 @@ export const RenderPanel = ({
   }
   const [first] = body;
   const bare = body.length !== 1 || first?.type !== 'slideFrame';
-  const drawnOn = surface === 'svg' ? 'svg' : 'react';
+  const drawnOn = surface === 'snapshot' ? 'snapshot' : 'react';
   const embedded = withContextFields(withoutAnchors(context), {
     layout: undefined,
     logo: undefined,

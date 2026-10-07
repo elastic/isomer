@@ -1,7 +1,7 @@
 {
   "name": "@elastic/isomer-image-takumi",
   "version": "0.0.0-development",
-  "description": "Takumi image backend for Isomer: rasterizes the svg surface's output to PNG, SVG, or PDF.",
+  "description": "Takumi image backend for Isomer: rasterizes the snapshot surface's output to PNG, SVG, or PDF.",
   "license": "Elastic-2.0",
   "author": "Elastic",
   "repository": {
@@ -34,10 +34,6 @@
     "@takumi-rs/core": "2.14.0",
     "@takumi-rs/helpers": "2.14.0",
     "takumi-pdf": "0.15.0"
-  },
-  "peerDependencies": {
-    "react": ">=18 <20",
-    "react-dom": ">=18 <20"
   },
   "devDependencies": {
     "@fontsource/inter": "^5.3.0",

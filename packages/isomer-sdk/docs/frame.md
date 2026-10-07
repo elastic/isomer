@@ -1,6 +1,6 @@
 # Frame
 
-A frame is a document: the picture-frame an `svg` render sits inside, the geometry that sizes it, the palette it draws with, and whatever it requires of a body it is asked to draw. The SDK owns the type; a theme package or a pack supplies instances; a host passes them to the runtime and names one per render.
+A frame is a document: the picture-frame a `snapshot` render sits inside, the geometry that sizes it, the palette it draws with, and whatever it requires of a body it is asked to draw. The SDK owns the type; a theme package or a pack supplies instances; a host passes them to the runtime and names one per render.
 
 `Frame` is the picture-frame sense, not browser chrome. The hook that surrounds an already-rendered body is `wrap`, not `render`.
 
@@ -53,22 +53,22 @@ interface FrameViewport<TTheme> {
 
 An image has no media queries, so it must commit to one palette; `bindFrame` resolves `light`/`dark` per render and `auto` resolves light. The type is named for the viewport rather than the frame because `wrap` draws *a* frame within it.
 
-`BoundFrame.resolveTheme(mode)` resolves the same palette, erased to `unknown`. The `svg` surface calls it once per render and hands the result to `renderSvg` as `theme`, which reaches a primitive's `react` renderer as `env.theme` — see [Dispatch](dispatch.md).
+`BoundFrame.resolveTheme(mode)` resolves the same palette, erased to `unknown`. The `snapshot` surface calls it once per render and hands the result to `renderSnapshot` as `theme`, which reaches a primitive's `react` renderer as `env.theme` — see [Dispatch](dispatch.md).
 
 ## `bindFrame`, and the theme bound around it
 
 `bindFrame` resolves a frame's palette per render and returns a `BoundFrame` — `defaultWidth`, `estimateHeight`, `validateBody`, `render`, and `renderNode` — with no `TTheme` left in any signature. The erasure is a closure rather than a type parameter because the runtime dispatches every node through one inventory keyed by node type, and that inventory has no single theme to name.
 
-What makes the erasure safe is that a runtime is **homogeneous** in its theme. A pack declares what its `svg` renderers read through a phantom marker on `PrimitivePack<TTheme>` — so the palette is checked where the real type is still known, and only the resolved result is stored.
+What makes the erasure safe is that a runtime is **homogeneous** in its theme. A pack declares what its `snapshot` renderers read through a phantom marker on `PrimitivePack<TTheme>` — so the palette is checked where the real type is still known, and only the resolved result is stored.
 
 ## `validateBody`
 
-What this document requires of a body — the slide document's exactly-one-`slideFrame` rule is the example. It returns messages rather than throwing, and note where it is *not* consulted: `runtime.validate` is frame-agnostic and has to be, because the same composition can be valid in one frame and not another. Only the `svg` surface checks it, on the frame a render actually names.
+What this document requires of a body — the slide document's exactly-one-`slideFrame` rule is the example. It returns messages rather than throwing, and note where it is *not* consulted: `runtime.validate` is frame-agnostic and has to be, because the same composition can be valid in one frame and not another. Only the `snapshot` surface checks it, on the frame a render actually names.
 
-## A missing `svgHeight`
+## A missing `snapshotHeight`
 
-`estimateSvgHeight` returns `0` for a node whose primitive declares no `metrics.svgHeight`, so a frame whose `estimateHeight` calls it sizes short for that node. A frame that returns a constant never reads the metric. `validate` reports nothing about the gap: the frame is chosen per render, and one composition can be drawn into a measuring frame and a fixed one. The runtime's `svg` surface reports it on the result of the render that measured the nodes.
+`estimateSnapshotHeight` returns `0` for a node whose primitive declares no `metrics.snapshotHeight`, so a frame whose `estimateHeight` calls it sizes short for that node. A frame that returns a constant never reads the metric. `validate` reports nothing about the gap: the frame is chosen per render, and one composition can be drawn into a measuring frame and a fixed one. The runtime's `snapshot` surface reports it on the result of the render that measured the nodes.
 
 ## Next
 
-[Dispatch](dispatch.md) for `renderSvg` and `estimateSvgHeight`
+[Dispatch](dispatch.md) for `renderSnapshot` and `estimateSnapshotHeight`

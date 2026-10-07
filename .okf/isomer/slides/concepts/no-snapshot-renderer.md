@@ -1,9 +1,9 @@
 ---
 type: Concept
-title: No svg renderer
-description: The image surface dispatches to react. Inline svg needs literal fill and stroke.
+title: No snapshot renderer
+description: The `snapshot` surface dispatches to react. Inline svg needs literal fill and stroke.
 resource: https://github.com/elastic/isomer/blob/main/AGENTS.md
-tags: [isomer, slides, svg]
+tags: [isomer, slides, snapshot]
 status: stable
 stale_after: 2027-03-18
 sources:
@@ -17,7 +17,7 @@ sources:
 
 # Definition
 
-There is no per-primitive `svg` renderer. The image surface dispatches to `react` and is handed the pack's stylesheet. Do not reintroduce a second tree authored for image layout.
+There is no per-primitive `snapshot` renderer. The `snapshot` surface dispatches to `react` and is handed the pack's stylesheet. Do not reintroduce a second tree authored for image layout.
 
 The pack stylesheet does not reach inside an inline `<svg>`. Anything drawn there needs a literal `fill` / `stroke` alongside its class.[^agents][^docs]
 

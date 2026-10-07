@@ -40,13 +40,13 @@ The budget guards the validator and the parser, not the schemas. `getComposition
 | Duplicate node ids | errors   | two nodes share an `id`                                           |
 | Empty surfaces     | warnings | the whole body renders nothing on a surface, checked per surface  |
 
-The runtime's `svg` surface reports a missing `metrics.svgHeight`, for the frame that render measures with. See [Frame](frame.md#a-missing-svgheight).
+The runtime's `snapshot` surface reports a missing `metrics.snapshotHeight`, for the frame that render measures with. See [Frame](frame.md#a-missing-snapshotheight).
 
 Every warning names the surface it applies to, so a caller narrows before showing:
 
 ```ts
 import { warningsForSurface } from '@elastic/isomer-sdk';
-warningsForSurface(result, 'svg');
+warningsForSurface(result, 'snapshot');
 ```
 
 ## Error messages

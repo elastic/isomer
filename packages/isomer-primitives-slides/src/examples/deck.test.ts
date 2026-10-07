@@ -60,12 +60,12 @@ describe('example deck', () => {
   it('title slide: png', async () => {
     expectArtifact(
       'title-slide.png',
-      await takumi.png(runtime.surfaces.svg.render(titleSlide))
+      await takumi.png(runtime.surfaces.snapshot.render(titleSlide))
     );
   });
 
   it('deck: pdf', async () => {
-    const pdf = await takumi.pdf(runtime.surfaces.svg.renderPages(deck), {
+    const pdf = await takumi.pdf(runtime.surfaces.snapshot.renderPages(deck), {
       // Fixed, so the committed bytes do not carry the render time.
       metadata: { title: 'Isomer', creationDate: '2026-01-01T00:00:00' },
     });

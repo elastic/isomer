@@ -183,7 +183,7 @@ describe('slideCommand sizing', () => {
     const takumi = createTakumiImageBackend({ fonts: slideFonts });
     const command = 'x'.repeat(most('s', pane));
     const layout = await takumi.measure(
-      runtime.surfaces.svg.render(compose(inPane(commandOf(command))), {
+      runtime.surfaces.snapshot.render(compose(inPane(commandOf(command))), {
         anchors: true,
       })
     );
@@ -289,7 +289,7 @@ describe('slideCommand at its bound', () => {
     'draws the longest %s command within the room left for the Copy chip',
     async (_name, command) => {
       const layout = await takumi.measure(
-        runtime.surfaces.svg.render(previewSlide(commandOf(command)), {
+        runtime.surfaces.snapshot.render(previewSlide(commandOf(command)), {
           anchors: true,
         })
       );
@@ -334,8 +334,8 @@ describe('slideCopy', () => {
     expect(html).not.toContain('<script');
   });
 
-  it('never draws the button on the svg surface', () => {
-    const { element } = runtime.surfaces.svg.render(compose(example));
+  it('never draws the button on the snapshot surface', () => {
+    const { element } = runtime.surfaces.snapshot.render(compose(example));
     expect(renderToStaticMarkup(element)).not.toContain('<button');
   });
 });

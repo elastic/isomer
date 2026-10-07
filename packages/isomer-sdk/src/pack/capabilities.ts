@@ -25,32 +25,42 @@ export type SurfaceSupport = 'native' | 'fallback';
 export interface HostCapabilities<TEnhancement extends string = string> {
   /** Primitive `type` values that can be dispatched. */
   primitives: string[];
-  /** Render formats reachable, e.g. `html`, `slack`, `png`. */
+  /** Surfaces that render, e.g. `html`, `slack`, `snapshot`. */
+  surfaces: string[];
+  /** Formats the host can ship, e.g. `html`, `slack`, `png`. Never `snapshot`, which only a rasterizer turns into a format. */
   formats: string[];
   /**
-   * How each of `formats` renders each primitive, keyed by `type` then format.
+   * How each of `surfaces` renders each primitive, keyed by `type` then surface.
    * `slack` is `fallback` for a primitive with no `slack` renderer; every other
-   * format renders from `react`, `text`, or `markdown`, which are required.
+   * surface renders from `react`, `text`, or `markdown`, which are required.
    */
   support: Record<string, Record<string, SurfaceSupport>>;
   /** Progressive enhancements the packs declare, by id, which an HTML or React render may request. */
   enhancements?: Partial<Record<TEnhancement, boolean>>;
 }
 
+/** What {@link describeCapabilities} reports beyond the packs themselves. */
+export interface CapabilitySources {
+  /** The surfaces the caller built; `snapshot` exists only when a host supplied a frame. */
+  surfaces: readonly string[];
+  /** Formats produced outside the surfaces, such as a rasterizer's `png`. */
+  formats?: readonly string[];
+}
+
+/** The one surface whose output is not itself a shippable format. */
+const SNAPSHOT = 'snapshot';
+
 /**
- * Reports the primitive types and render formats a set of packs supports.
+ * Reports the primitive types, surfaces, and formats a set of packs supports.
  *
- * `formats` is passed rather than derived because only the caller knows which
- * surfaces exist: a runtime passes the surfaces it built, and a pack passes
- * what it can produce through its own entry points — a `png` reachable only
- * behind a host image binding is something no runtime can infer. `svg` in
- * particular depends on a frame, which is a runtime input and not a pack's to
- * report.
- * @param formats Candidate formats this caller can reach.
+ * `surfaces` is passed rather than derived because only the caller knows which
+ * exist. Every surface but `snapshot` is also a format; `formats` adds the ones
+ * no surface produces on its own, so a `png` is reported only when a host
+ * registers the rasterizer that writes it.
  */
 export const describeCapabilities = (
   packs: readonly AnyPrimitivePack[],
-  formats: readonly string[]
+  { surfaces, formats = [] }: CapabilitySources
 ): HostCapabilities => {
   const enhancementIds = packs.flatMap((pack) =>
     pack.enhancements.map((definition) => definition.id)
@@ -58,12 +68,15 @@ export const describeCapabilities = (
   const definitions = packs.flatMap((pack) => pack.primitives);
   return {
     primitives: definitions.map(({ type }) => type),
-    formats: [...formats],
+    surfaces: [...surfaces],
+    formats: [...new Set([...surfaces, ...formats])].filter(
+      (format) => format !== SNAPSHOT
+    ),
     support: Object.fromEntries(
       definitions.map((definition) => [
         definition.type,
         Object.fromEntries(
-          formats.map((format) => [format, supportOn(definition, format)])
+          surfaces.map((surface) => [surface, supportOn(definition, surface)])
         ),
       ])
     ),
@@ -79,6 +92,6 @@ export const describeCapabilities = (
 
 const supportOn = (
   { renderers }: AnyPrimitiveDefinition,
-  format: string
+  surface: string
 ): SurfaceSupport =>
-  format === 'slack' && renderers.slack === undefined ? 'fallback' : 'native';
+  surface === 'slack' && renderers.slack === undefined ? 'fallback' : 'native';

@@ -83,7 +83,7 @@ describe('per-surface visibility hints', () => {
   it('warns when every node opts out of a surface', () => {
     const result = validate(
       view([
-        { type: 'note', body: 'A', surfaces: ['react', 'svg'] },
+        { type: 'note', body: 'A', surfaces: ['react', 'snapshot'] },
         { type: 'note', body: 'B', surfaces: ['react'] },
       ])
     );
@@ -107,7 +107,7 @@ describe('per-surface visibility hints', () => {
   it('narrows warnings to the surface a caller is about to render', () => {
     const result = validate(
       view([
-        { type: 'note', body: 'A', surfaces: ['react', 'svg'] },
+        { type: 'note', body: 'A', surfaces: ['react', 'snapshot'] },
         { type: 'note', body: 'B', surfaces: ['react'] },
       ])
     );

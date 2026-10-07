@@ -102,7 +102,7 @@ export const stroke = {
 
 /**
  * Inter ExtraBold glyph widths in ems, by class, before tracking; a figure's classes take their widest glyph.
- * Sizes display text before render, which the image surface cannot measure.
+ * Sizes display text before render, which the `snapshot` surface cannot measure.
  */
 export const extraboldAdvance = {
   narrow: 0.3,

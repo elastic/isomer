@@ -47,7 +47,7 @@ describe('createDistillateStyleAdapter', () => {
     ).toBe(false);
   });
 
-  // The `svg` surface asks for one scheme: an image backend evaluates no `light-dark(...)`.
+  // The `snapshot` surface asks for one scheme: an image backend evaluates no `light-dark(...)`.
   it('resolves theme values to the requested scheme', () => {
     const { dark } = slideDistillery.environment.themeVars['color/text']!;
 

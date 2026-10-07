@@ -6,7 +6,7 @@ Everything `@elastic/isomer-runtime` exports from its single entry point, plus w
 
 | Export | Signature |
 | --- | --- |
-| `createIsomerRuntime` | `(options: IsomerRuntimeOptions<THostContext, TRenderContext, TTheme>) => IsomerRuntime<THostContext, TRenderContext, TTheme>` — with `frames`, the result's `surfaces.svg` is `SvgSurface`; without, `undefined` |
+| `createIsomerRuntime` | `(options: IsomerRuntimeOptions<THostContext, TRenderContext, TTheme>) => IsomerRuntime<THostContext, TRenderContext, TTheme>` — with `frames`, the result's `surfaces.snapshot` is `SnapshotSurface`; without, `undefined` |
 | `defineView` | `(options: DefineViewOptions<THostContext, TInput, TNode>) => RegisteredView<…>` — defaults `description`; a Zod `input` types `build` |
 
 ## `IsomerRuntimeOptions`
@@ -14,16 +14,17 @@ Everything `@elastic/isomer-runtime` exports from its single entry point, plus w
 | Field | Type | Notes |
 | --- | --- | --- |
 | `packs` | `readonly PrimitivePack<TTheme>[]` | Required. At least one; additive within one theme bound. |
-| `frames` | `FrameMap<TTheme>` | Optional. Omit and `surfaces.svg` is `undefined`; an empty map throws `EMPTY_FRAMES`. |
+| `frames` | `FrameMap<TTheme>` | Optional. Omit and `surfaces.snapshot` is `undefined`; an empty map throws `EMPTY_FRAMES`. |
 | `defaultFrame` | `string` | Required when `frames` has more than one entry. |
+| `formats` | `readonly string[]` | Formats the host ships beyond the runtime's own, reported by `getCapabilities().formats`; a rasterizer's list, e.g. a takumi backend's `formats`. |
 | `views` | `readonly RegisteredView[]` | Pre-registered on the runtime's view registry. |
 | `rendererOverrides` | `RuntimeRendererOverrides` | Keyed by primitive `type`, then by surface. |
 | `styleAdapter` | `HTMLStyleAdapter<…>` | Replaces every pack's adapter. Defaults to the packs' own, combined. Required when any pack declares `collectStyles` and no adapter is otherwise available. |
 | `defaultAriaLabel` | `string` | Fallback `aria-label` for `html` and for `react` with `wrapper`. Defaults to `'View'`. |
 | `authoring` | `RuntimeAuthoringOptions` | Options for the authoring schema and declarations `getAuthoringContext` returns. |
-| `inputBudget` | `InputBudget` | Limits `checkInputBudget` applies in `parse`, `validate`, the `html`, `text`, `markdown`, `slack`, and `svg` surfaces, and `viewRegistry.request` input; `react` does not validate, so it is not checked. |
+| `inputBudget` | `InputBudget` | Limits `checkInputBudget` applies in `parse`, `validate`, the `html`, `text`, `markdown`, `slack`, and `snapshot` surfaces, and `viewRegistry.request` input; `react` does not validate, so it is not checked. |
 
-`CreateIsomerRuntime` is the factory's overloaded signature: `frames` present types `surfaces.svg` as `SvgSurface`, `frames` absent types it `undefined`, and options not statically known get the union. `TRenderContext` is inferred from `styleAdapter` alone; a host that supplies none and loads a pack that narrows its context names all three type parameters positionally, as [Runtime](runtime.md#typing-the-render-context) shows.
+`CreateIsomerRuntime` is the factory's overloaded signature: `frames` present types `surfaces.snapshot` as `SnapshotSurface`, `frames` absent types it `undefined`, and options not statically known get the union. `TRenderContext` is inferred from `styleAdapter` alone; a host that supplies none and loads a pack that narrows its context names all three type parameters positionally, as [Runtime](runtime.md#typing-the-render-context) shows.
 
 ## `IsomerRuntime`
 
@@ -31,7 +32,7 @@ Everything `@elastic/isomer-runtime` exports from its single entry point, plus w
 | --- | --- |
 | `packs` | `readonly PrimitivePack<TTheme>[]` — post-override |
 | `primitives` | `readonly AnyPrimitiveDefinition[]` |
-| `surfaces` | `RuntimeSurfaces<TRenderContext, TSvg>` |
+| `surfaces` | `RuntimeSurfaces<TRenderContext, TSnapshot>` |
 | `viewRegistry` | `ViewRegistry<THostContext, PrimitiveNode>` |
 | `getAuthoringContext()` | `RuntimeAuthoringContext` |
 | `getCapabilities()` | `HostCapabilities` |
@@ -50,9 +51,9 @@ Each exposes `render` and `renderNode`, plus a `validating` field stating its po
 | `text` | `string` | `string` | `true` | `TextRenderNodeOptions`: `onValidationError` |
 | `markdown` | `string` | `string` | `true` | `MarkdownRenderNodeOptions`: `onValidationError` |
 | `slack` | `SlackRenderResult` | `SlackRenderResult` | `true` | `SlackRenderNodeOptions`: `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
-| `svg` | `SvgRenderResult` | `SvgRenderResult` | `true` | `SvgRenderNodeOptions`: `frame`, `theme`, `anchors`, `onValidationError` |
+| `snapshot` | `SnapshotRenderResult` | `SnapshotRenderResult` | `true` | `SnapshotRenderNodeOptions`: `frame`, `theme`, `anchors`, `onValidationError` |
 
-Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SvgSurface`; `RuntimeSurfaces` is the record of all six. `render` takes its surface's options type below. `SvgRenderResult` is `{ element, css, width, height, warnings }`. `warnings` is a `SvgHeightWarning[]` (`{ path, message }`): nodes this render measured as 0 because they declare no `metrics.svgHeight`, empty when the frame never calls `estimateSvgHeight` or when `height` is given. The `svg` surface additionally exposes `renderPages(compositions, options?)`, which lays several compositions out as one document and returns `SvgPagesResult`, `{ pages, css, width, height, warnings }`: one root per composition against one stylesheet, every page the tallest estimate unless `height` is given, and the first composition's `theme` unless `theme` is given. Paged `warnings` prefix each path with `pages[n].`.
+Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SnapshotSurface`; `RuntimeSurfaces` is the record of all six. `render` takes its surface's options type below. `SnapshotRenderResult` is a `SnapshotPage`, `{ element, html }`, plus `{ css, width, height, warnings }`: `html` is `element`'s static markup, rendered in the same call. `warnings` is a `SnapshotHeightWarning[]` (`{ path, message }`): nodes this render measured as 0 because they declare no `metrics.snapshotHeight`, empty when the frame never calls `estimateSnapshotHeight` or when `height` is given. The `snapshot` surface additionally exposes `renderPages(compositions, options?)`, which lays several compositions out as one document and returns `SnapshotPagesResult`, `{ pages, css, width, height, warnings }`: one `SnapshotPage` per composition against one stylesheet, every page the tallest estimate unless `height` is given, and the first composition's `theme` unless `theme` is given. Paged `warnings` prefix each path with `pages[n].`.
 
 ### Options types
 
@@ -60,16 +61,16 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | --- | --- |
 | `ReactRenderOptions` | `context`, `heading`, `wrapper: boolean \| CompositionWrapperOptions`, `enhancements: readonly string[]` (ids, resolved against the packs' enhancements as on `html`); `ReactRenderArgs` is the tuple form, optional only when `context` is |
 | `ReactRenderNodeOptions` | `ReactRenderOptions` without `heading` |
-| `HTMLRenderOptions` | `theme`, `scheme: 'light' \| 'dark'` (resolves `light-dark(…)` in the stylesheet; the `svg` surface sets it), `minify`, `fluid`, `framed`, `heading`, `css: 'inline' \| 'separate'`, `scripts: 'embedded' \| 'host'`, `enhancements: string[]`, `anchors: boolean` (node anchors; `true` for tests), `onValidationError` |
+| `HTMLRenderOptions` | `theme`, `scheme: 'light' \| 'dark'` (resolves `light-dark(…)` in the stylesheet; the `snapshot` surface sets it), `minify`, `fluid`, `framed`, `heading`, `css: 'inline' \| 'separate'`, `scripts: 'embedded' \| 'host'`, `enhancements: string[]`, `anchors: boolean` (node anchors; `true` for tests), `onValidationError` |
 | `TextRenderOptions` | `heading`, `onValidationError` |
 | `TextRenderNodeOptions` | `onValidationError` |
 | `MarkdownRenderOptions` | `heading`, `onValidationError` |
 | `MarkdownRenderNodeOptions` | `onValidationError` |
 | `SlackRenderOptions` | `heading`, `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
 | `SlackRenderNodeOptions` | `SlackRenderOptions` without `heading` |
-| `SvgRenderOptions` | `frame`, `width`, `height`, `theme`, `anchors: boolean` (node anchors, e.g. for `checkLayout`), `onValidationError` |
+| `SnapshotRenderOptions` | `frame`, `width`, `height`, `theme`, `anchors: boolean` (node anchors, e.g. for `checkLayout`), `onValidationError` |
 
-`onValidationError` is `'collect' | 'throw'`. `html` defaults to `'collect'` and reports on `validationErrors`; `text`, `markdown`, `slack`, and `svg` default to `'throw'`. Each validating surface's `renderNode` validates the node as a one-node view and takes the same default as its `render`. Input [refused before parsing](../sdk/composition.md#the-input-budget) throws on every surface in either mode.
+`onValidationError` is `'collect' | 'throw'`. `html` defaults to `'collect'` and reports on `validationErrors`; `text`, `markdown`, `slack`, and `snapshot` default to `'throw'`. Each validating surface's `renderNode` validates the node as a one-node view and takes the same default as its `render`. Input [refused before parsing](../sdk/composition.md#the-input-budget) throws on every surface in either mode.
 
 ### Result types
 
@@ -107,9 +108,9 @@ Three results carry a `composition`, each with its own rule:
 | Runtime | `CreateIsomerRuntime`, `IsomerRuntime`, `IsomerRuntimeOptions`, `RuntimeSurfaces`, `FrameMap`, `RuntimeRendererOverrides` |
 | Authoring | `RuntimeAuthoringContext`, `RuntimeAuthoringOptions`, `PrimitiveDescriptions`, `PropDescriptor`, `HostCapabilities`, `SurfaceSupport`, `JsonSchema` |
 | View registry | `ViewRegistry`, `RegisteredView`, `RegisteredViewSummary`, `DefineViewOptions`, `ViewBuildArgs`, `ViewInput`, `ViewResponse`, `RegisteredViewInputError` |
-| Surfaces | `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SvgSurface` |
-| Options | `ReactRenderOptions`, `ReactRenderNodeOptions`, `ReactRenderArgs`, `HTMLRenderOptions`, `HTMLStyleAdapter`, `TextRenderOptions`, `TextRenderNodeOptions`, `MarkdownRenderOptions`, `MarkdownRenderNodeOptions`, `SlackRenderOptions`, `SlackRenderNodeOptions`, `SvgRenderOptions`, `SvgRenderNodeOptions` |
-| Results | `HTMLRenderResult`, `SlackRenderResult`, `SvgRenderResult`, `SvgPagesResult`, `SvgHeightWarning` |
+| Surfaces | `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SnapshotSurface` |
+| Options | `ReactRenderOptions`, `ReactRenderNodeOptions`, `ReactRenderArgs`, `HTMLRenderOptions`, `HTMLStyleAdapter`, `TextRenderOptions`, `TextRenderNodeOptions`, `MarkdownRenderOptions`, `MarkdownRenderNodeOptions`, `SlackRenderOptions`, `SlackRenderNodeOptions`, `SnapshotRenderOptions`, `SnapshotRenderNodeOptions` |
+| Results | `HTMLRenderResult`, `SlackRenderResult`, `SnapshotPage`, `SnapshotRenderResult`, `SnapshotPagesResult`, `SnapshotHeightWarning` |
 | Errors | `IsomerError`, `IsomerErrorCode`, `ISOMER_ERROR_CODES`, `CompositionValidationError` |
 
 `src/api_reference.test.ts` fails when a name exported from `src/index.ts` is missing from this page.
@@ -124,9 +125,9 @@ Three results carry a `composition`, each with its own rule:
 
 | Thrown | By | Carries |
 | --- | --- | --- |
-| `IsomerError` | `createIsomerRuntime` (`EMPTY_PACKS`, `DUPLICATE_PACK_ID`, `DUPLICATE_PRIMITIVE_TYPE`, `DUPLICATE_ENHANCEMENT`, `UNKNOWN_PRIMITIVE_TYPE`, `UNKNOWN_SURFACE`, `EMPTY_FRAMES`, `UNKNOWN_FRAME`, `AMBIGUOUS_FRAME`, `MISSING_STYLE_ADAPTER`, `AMBIGUOUS_STYLE_ADAPTER`, `INCOMPATIBLE_STYLE_COLLECTOR`; see [Runtime](runtime.md#what-it-refuses-and-when)), `viewRegistry.register` on a repeated id (`DUPLICATE_VIEW`), `viewRegistry.request` on an unknown id (`UNKNOWN_VIEW`), `getAuthoringContext().schemaFor` or `describePrimitives` on an unknown type (`UNKNOWN_PRIMITIVE_TYPE`), or the `svg` surface on an unknown frame name (`UNKNOWN_FRAME`), a body the frame rejects (`INVALID_FRAME_BODY`), or `renderPages` on an empty list (`EMPTY_PAGES`) | `code` and a message naming the offender |
+| `IsomerError` | `createIsomerRuntime` (`EMPTY_PACKS`, `DUPLICATE_PACK_ID`, `DUPLICATE_PRIMITIVE_TYPE`, `DUPLICATE_ENHANCEMENT`, `UNKNOWN_PRIMITIVE_TYPE`, `UNKNOWN_SURFACE`, `EMPTY_FRAMES`, `UNKNOWN_FRAME`, `AMBIGUOUS_FRAME`, `MISSING_STYLE_ADAPTER`, `AMBIGUOUS_STYLE_ADAPTER`, `INCOMPATIBLE_STYLE_COLLECTOR`; see [Runtime](runtime.md#what-it-refuses-and-when)), `viewRegistry.register` on a repeated id (`DUPLICATE_VIEW`), `viewRegistry.request` on an unknown id (`UNKNOWN_VIEW`), `getAuthoringContext().schemaFor` or `describePrimitives` on an unknown type (`UNKNOWN_PRIMITIVE_TYPE`), or the `snapshot` surface on an unknown frame name (`UNKNOWN_FRAME`), a body the frame rejects (`INVALID_FRAME_BODY`), or `renderPages` on an empty list (`EMPTY_PAGES`) | `code` and a message naming the offender |
 | `RegisteredViewInputError` | `viewRegistry.request`, on input refused before parsing or invalid against the view's schema | `code` (`VIEW_INPUT_INVALID`), `viewId`, `errors` (`{ path, message, nodeType?, code? }` each) |
-| `CompositionValidationError` | `render` and `renderNode` on `text`, `markdown`, `slack`, and `svg` by default; on `html` with `onValidationError: 'throw'`; on every validating surface on input refused before parsing | `code` (`COMPOSITION_INVALID`), `errors` |
+| `CompositionValidationError` | `render` and `renderNode` on `text`, `markdown`, `slack`, and `snapshot` by default; on `html` with `onValidationError: 'throw'`; on every validating surface on input refused before parsing | `code` (`COMPOSITION_INVALID`), `errors` |
 
 ## Where the code is
 

@@ -62,7 +62,7 @@ const errorsOf = (node: object) =>
 
 describe('slideRender schema', () => {
   it('needs a slide reference or a body', () => {
-    expect(errorsOf({ type: 'slideRender', surface: 'svg' })).toEqual([
+    expect(errorsOf({ type: 'slideRender', surface: 'snapshot' })).toEqual([
       'body[0].body[1].body: needs a `slide` reference or a `body`',
     ]);
     expect(errorsOf(placeholderExample)).toEqual([]);
@@ -92,12 +92,12 @@ describe('slideRender schema', () => {
     (type) => {
       const withBody = (body: object[]) =>
         type === 'slideRender'
-          ? { type, surface: 'svg', body }
+          ? { type, surface: 'snapshot', body }
           : {
               type,
               body,
               tiles: [
-                { surface: 'svg', caption: 'A' },
+                { surface: 'snapshot', caption: 'A' },
                 { surface: 'text', caption: 'B' },
               ],
             };
@@ -124,13 +124,13 @@ describe('slideRender schema', () => {
   it('keeps embedded ids its own', () => {
     const heading = { type: 'slideHeading', id: 'same', title: 'Twice' };
     expect(
-      errorsOf({ type: 'slideRender', surface: 'svg', body: [heading] })
+      errorsOf({ type: 'slideRender', surface: 'snapshot', body: [heading] })
     ).toEqual([]);
     expect(
       runtime.validate(
         compose(heading, {
           type: 'slideRender',
-          surface: 'svg',
+          surface: 'snapshot',
           body: [heading],
         })
       ).errors
@@ -142,7 +142,7 @@ describe('slideRender layout', () => {
   it('draws the slide no larger than its cap, its layout’s width, or the room under its caption', () => {
     const short = {
       type: 'slideRender',
-      surface: 'svg',
+      surface: 'snapshot',
       slide: 'next',
     } as const;
     expect(renderScale(short, openBody)).toBe(
@@ -162,7 +162,11 @@ describe('slideRender layout', () => {
       'The delivery slide '.repeat(16).trim(),
       'delivery-times-'.repeat(20),
     ]) {
-      const node = { type: 'slideRender', surface: 'svg', caption } as const;
+      const node = {
+        type: 'slideRender',
+        surface: 'snapshot',
+        caption,
+      } as const;
       const scale = renderScale(node, room);
       expect(
         scale * 1080 + captionHeight(headline(node), room.width)
@@ -173,7 +177,7 @@ describe('slideRender layout', () => {
   it('leaves room for a caption that wraps', () => {
     const short = {
       type: 'slideRender',
-      surface: 'svg',
+      surface: 'snapshot',
       slide: 'next',
     } as const;
     const long = { ...short, caption: 'The delivery slide, '.repeat(6) };
@@ -199,7 +203,7 @@ describe('slideRender layout', () => {
         ],
       });
     const embedded = (body: object[]) =>
-      inPane({ type: 'slideRender', surface: 'svg', body });
+      inPane({ type: 'slideRender', surface: 'snapshot', body });
     expect(alone).toBe('l');
     expect(inPane(statement)).not.toBe(alone);
     expect(embedded([statement])).toBe(alone);
@@ -243,7 +247,7 @@ describe('slideRender output', () => {
   it('quotes a drawn slide and prints another surface’s output', () => {
     expect(runtime.surfaces.markdown.renderNode(example))
       .toMatchInlineSnapshot(`
-      "_The delivery slide, from the svg surface · delivery-times · svg_
+      "_The delivery slide, from the snapshot surface · delivery-times · snapshot_
 
       > # Orders now arrive in under 30 minutes
       >
@@ -264,7 +268,7 @@ describe('slideRender output', () => {
         \`\`\`"
       `);
     expect(runtime.surfaces.text.renderNode(placeholderExample)).toBe(
-      'The weekly summary, from the svg surface · weekly-summary · svg'
+      'The weekly summary, from the snapshot surface · weekly-summary · snapshot'
     );
   });
 
@@ -281,7 +285,7 @@ describe('slideRender output', () => {
     const title = 'Ship *a* <b>';
     const node = {
       type: 'slideRender',
-      surface: 'svg',
+      surface: 'snapshot',
       body: [{ ...heading, title }],
     };
     expect(runtime.surfaces.slack.renderNode(node).blocks).toContainEqual({
@@ -333,15 +337,15 @@ describe('slideRender embedded visibility', () => {
         type: 'slideRender',
         surface,
         body: [
-          statement('Drawn on images', ['svg']),
+          statement('Drawn on images', ['snapshot']),
           statement('Drawn on pages', ['react']),
         ],
       })
     ).html;
 
   it('draws the top-level nodes the panel’s surface shows', () => {
-    expect(drawn('svg')).toContain('Drawn on images');
-    expect(drawn('svg')).not.toContain('Drawn on pages');
+    expect(drawn('snapshot')).toContain('Drawn on images');
+    expect(drawn('snapshot')).not.toContain('Drawn on pages');
     expect(drawn('html')).toContain('Drawn on pages');
     expect(drawn('html')).not.toContain('Drawn on images');
   });
@@ -377,14 +381,14 @@ describe('slideRender JSX', () => {
         View,
         null,
         createElement(SlideRender, {
-          surface: 'svg',
+          surface: 'snapshot',
           body: [createElement(SlideHeading, { title: 'Embedded' })],
         })
       )
     );
     expect(composition.body[0]).toEqual({
       type: 'slideRender',
-      surface: 'svg',
+      surface: 'snapshot',
       body: [{ type: 'slideHeading', title: 'Embedded' }],
     });
   });
@@ -400,7 +404,7 @@ describe('slideRender JSX', () => {
             null,
             createElement(
               slideJsx[name],
-              { surface: 'svg', tiles: [] },
+              { surface: 'snapshot', tiles: [] },
               createElement(SlideHeading, { title: 'Embedded' })
             )
           )

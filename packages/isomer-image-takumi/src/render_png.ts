@@ -52,10 +52,10 @@ export const checkedForDrawing = (
 };
 
 /**
- * The `svg` surface's per-render options, mirroring the runtime's
- * `SvgRenderOptions` so a caller gets completion without importing it.
+ * The `snapshot` surface's per-render options, mirroring the runtime's
+ * `SnapshotRenderOptions` so a caller gets completion without importing it.
  */
-export interface PngSvgOptions {
+export interface SnapshotOptions {
   /** Which of the runtime's frames this render uses; defaults to its `defaultFrame`. */
   frame?: string;
   /** Overrides the frame's `defaultWidth`. */
@@ -68,17 +68,17 @@ export interface PngSvgOptions {
 
 /**
  * The slice of `IsomerRuntime` this helper needs, declared structurally like
- * {@link ImageInput} so this package depends on no isomer package. `surfaces.svg`
- * is required where the runtime's generic form has `SvgSurface | undefined`; a
- * runtime built with `frames` carries `SvgSurface` there and satisfies this.
+ * {@link ImageInput} so this package depends on no isomer package. `surfaces.snapshot`
+ * is required where the runtime's generic form has `SnapshotSurface | undefined`; a
+ * runtime built with `frames` carries `SnapshotSurface` there and satisfies this.
  */
 export interface PngRuntime {
   validate(composition: unknown): PngCheckedValidationResult;
   surfaces: {
-    svg: {
+    snapshot: {
       render(
         composition: unknown,
-        options?: PngSvgOptions & { onValidationError?: 'collect' | 'throw' }
+        options?: SnapshotOptions & { onValidationError?: 'collect' | 'throw' }
       ): ImageInput;
     };
   };
@@ -86,8 +86,8 @@ export interface PngRuntime {
 
 /** Options for {@link renderPng}. */
 export interface RenderPngOptions extends TakumiRenderOptions {
-  /** Forwarded to `runtime.surfaces.svg.render`. */
-  svg?: PngSvgOptions;
+  /** Forwarded to `runtime.surfaces.snapshot.render`. */
+  snapshot?: SnapshotOptions;
 }
 
 /** What {@link renderPng} resolves to: the bytes, their size, and the findings on the composition drawn. */
@@ -111,14 +111,14 @@ export const renderPng = async (
   runtime: PngRuntime,
   composition: unknown,
   backend: TakumiImageBackend,
-  { svg, ...options }: RenderPngOptions = {}
+  { snapshot, ...options }: RenderPngOptions = {}
 ): Promise<RenderPngResult> => {
   const { checked, validation } = checkedForDrawing(
     'renderPng',
     runtime.validate(composition)
   );
-  const rendered = runtime.surfaces.svg.render(checked, {
-    ...svg,
+  const rendered = runtime.surfaces.snapshot.render(checked, {
+    ...snapshot,
     onValidationError: 'collect',
   });
   const png = await backend.png(rendered, options);

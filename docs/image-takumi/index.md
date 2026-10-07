@@ -1,49 +1,52 @@
 ---
 navigation_title: Takumi image backend
-description: Renders the svg surface's element and stylesheet to PNG, SVG, or PDF bytes with Takumi.
+description: Renders the snapshot surface's markup and stylesheet to PNG, SVG, or PDF bytes with Takumi.
 ---
 
 # Takumi image backend
 
-`@elastic/isomer-image-takumi` rasterizes the `svg` surface's output with [takumi](https://takumi.kane.tw): PNG, SVG, or PDF out, and a measured layout for the SDK's `checkLayout`.
+`@elastic/isomer-image-takumi` rasterizes the `snapshot` surface's output with [takumi](https://takumi.kane.tw): PNG, SVG, or PDF out, and a measured layout for the SDK's `checkLayout`.
 
 ```sh
-npm install @elastic/isomer-image-takumi react react-dom
+npm install @elastic/isomer-image-takumi
 ```
 
 ```ts
 import { createTakumiImageBackend } from '@elastic/isomer-image-takumi';
 
 const takumi = createTakumiImageBackend({ fonts });
-const png = await takumi.png(runtime.surfaces.svg.render(composition));
-const pdf = await takumi.pdf(runtime.surfaces.svg.renderPages(deck));
+const runtime = createIsomerRuntime({ packs, frames, formats: takumi.formats });
+const png = await takumi.png(runtime.surfaces.snapshot.render(composition));
+const pdf = await takumi.pdf(runtime.surfaces.snapshot.renderPages(deck));
 ```
 
 ## What it is
 
-The `svg` surface returns `{ element, css, width, height }` — the same React tree the DOM gets, paired with the pack's stylesheet and the viewport it was measured for. This package serializes that tree, hands it to takumi's `fromHtml`, and lays it out. No primitive writes an image renderer, and this package holds no opinion about compositions.
+The `snapshot` surface returns `{ element, html, css, width, height }`: the same React tree the DOM gets, that tree's static markup, the pack's stylesheet, and the viewport it was measured for. This package reads `html`, hands it and the stylesheet to takumi's `fromHtml`, and lays it out. No primitive writes an image renderer, and this package holds no opinion about compositions.
 
-`ImageInput` is declared structurally rather than imported, so this package depends on no isomer package — `react` and `react-dom` are its only peers. `SvgRenderResult` from `@elastic/isomer-runtime` satisfies it, and `SvgPagesResult`, what the surface's `renderPages` returns, satisfies `PdfInput` the same way.
+`ImageInput`, `{ html, css, width, height }`, is declared structurally rather than imported, so this package depends on no isomer package and on no React. `SnapshotRenderResult` from `@elastic/isomer-runtime` satisfies it, and `SnapshotPagesResult`, what the surface's `renderPages` returns, satisfies `PdfInput` the same way. Because the input is plain data, a host can render a snapshot in one process and rasterize it in another.
 
 `createTakumiImageBackend({ fonts, cacheMaxBytes })` builds one takumi renderer. `fonts` is covered [below](#fonts); `cacheMaxBytes` caps takumi's resource cache, and `0` disables it. `png(input, { devicePixelRatio })` raises fidelity, sharper text and gradients, at the same output size: the PNG stays `input.width` by `input.height` whatever the ratio. `svg` is vector, so it takes no raster options.
+
+`formats` on the backend is `TAKUMI_FORMATS`, `['png', 'svg', 'pdf']`: one entry per method that writes a format. Pass it to `createIsomerRuntime({ formats })` and the runtime's `getCapabilities().formats` reports what this backend adds, rather than a list typed by hand.
 
 ## Measuring a layout
 
 `createTakumiImageBackend` returns a `TakumiBackend`: a `TakumiMeasuringBackend`, whose `measure(input)` lays the input out exactly as `png` would and returns a `LayoutBox` tree: each element's canvas `x`, `y`, `width`, and `height`, its `scaleX` and `scaleY`, its text `runs`, its `attributes`, and its `children`. `scale` is whichever axis scale is further from 1, so any other value means the box is scaled. A host reads the tree to find content past its area without a browser.
 
-`attributes` holds everything but `class`, `id`, and `style`, so a node anchor (`data-isomer-node`) comes back on the box its element laid out. Render with the `svg` surface's `anchors: true` and the tree can go straight to the SDK's `checkLayout`, which reports nodes past their room or on a sibling. Takumi folds inline content into its parent's text runs, so where a parent's laid-out children do not line up one to one with its elements, none of those children carry attributes rather than the wrong ones.
+`attributes` holds everything but `class`, `id`, and `style`, so a node anchor (`data-isomer-node`) comes back on the box its element laid out. Render with the `snapshot` surface's `anchors: true` and the tree can go straight to the SDK's `checkLayout`, which reports nodes past their room or on a sibling. Takumi folds inline content into its parent's text runs, so where a parent's laid-out children do not line up one to one with its elements, none of those children carry attributes rather than the wrong ones.
 
 `TakumiImageBackend`, the `{ png, svg }` contract `renderPng` takes, does not include `measure` or `pdf`, so a custom raster backend need not implement them; `TakumiMeasuringBackend` adds only `measure`, and `TakumiPdfBackend`, what `renderPdf` takes, is `{ pdf }` alone. `TakumiBackend` is all three.
 
 ## Rendering a whole runtime call in one step
 
-`renderPng(runtime, composition, backend, options?)` bundles validation, the `svg` surface, and rasterization, returning `{ png, width, height, validation }`. It exists because the `svg` surface discards its own validation findings and knows nothing about image backends, so a host that wants the findings next to the bytes would otherwise validate, render, and rasterize in three calls of its own.
+`renderPng(runtime, composition, backend, options?)` bundles validation, the `snapshot` surface, and rasterization, returning `{ png, width, height, validation }`. It exists because the `snapshot` surface discards its own validation findings and knows nothing about image backends, so a host that wants the findings next to the bytes would otherwise validate, render, and rasterize in three calls of its own.
 
 ```ts
 import { renderPng } from '@elastic/isomer-image-takumi';
 
 const { png, validation } = await renderPng(runtime, composition, takumi, {
-  svg: { frame: 'card' },
+  snapshot: { frame: 'card' },
 });
 ```
 
@@ -51,10 +54,10 @@ The composition is rendered even when invalid — `validation` is how a caller f
 
 ## Rendering a PDF
 
-`pdf(input, options?)` writes one page per entry in `input.pages`, each `input.width` by `input.height` CSS pixels (a PDF point is 0.75 of one) with no margin, so a frame fills its page. The output is vector: text stays selectable, and the registered fonts are subset and embedded. Every page shares one stylesheet, which is why the input is the `svg` surface's `renderPages` result rather than a list of `render` results: each `render` collects only the CSS its own composition uses, and `renderPages` collects across the whole deck.
+`pdf(input, options?)` writes one page per entry in `input.pages`, each `input.width` by `input.height` CSS pixels (a PDF point is 0.75 of one) with no margin, so a frame fills its page. The output is vector: text stays selectable, and the registered fonts are subset and embedded. Every page shares one stylesheet, which is why the input is the `snapshot` surface's `renderPages` result rather than a list of `render` results: each `render` collects only the CSS its own composition uses, and `renderPages` collects across the whole deck.
 
 ```ts
-const pdf = await takumi.pdf(runtime.surfaces.svg.renderPages(deck), {
+const pdf = await takumi.pdf(runtime.surfaces.snapshot.renderPages(deck), {
   metadata: { title: 'Quarterly review', creationDate: '2026-01-01' },
 });
 ```
@@ -90,18 +93,19 @@ A PDF is byte-stable on the same terms once `metadata.creationDate` is fixed; le
 | Export | What it is |
 | --- | --- |
 | `createTakumiImageBackend` | `(options?: TakumiImageBackendOptions) => TakumiBackend`; `fonts` and `cacheMaxBytes` |
+| `TAKUMI_FORMATS` | `['png', 'svg', 'pdf']`, as const: what a `TakumiBackend` writes, and its `formats` |
 | `renderPng` | `(runtime, composition, backend, options?) => Promise<RenderPngResult>`, `{ png, width, height, validation }` |
 | `renderPdf` | `(runtime, deck, backend, options?) => Promise<RenderPdfResult>`, `{ pdf, pageCount, width, height, validations }` |
 
 | Type | Shape |
 | --- | --- |
-| `ImageInput`, `PdfInput` | The `svg` surface's `render` and `renderPages` results, declared structurally |
-| `TakumiImageBackend`, `TakumiMeasuringBackend`, `TakumiPdfBackend`, `TakumiBackend` | `{ png, svg }`, plus `measure`, `{ pdf }`, and all three |
+| `ImageInput`, `PdfInput` | The parts of the `snapshot` surface's `render` and `renderPages` results this package reads, declared structurally: `{ html, css, width, height }`, and `pages` of `{ html }` |
+| `TakumiImageBackend`, `TakumiMeasuringBackend`, `TakumiPdfBackend`, `TakumiBackend` | `{ png, svg }`, plus `measure`, `{ pdf }`, and all three with `formats` |
 | `TakumiImageBackendOptions`, `TakumiRenderOptions` | `{ fonts?, cacheMaxBytes? }` and `{ devicePixelRatio? }` |
 | `TakumiPdfOptions`, `TakumiPdfMetadata` | The document options above, and `metadata`'s fields |
 | `LayoutBox` | What `measure` returns, one per laid-out element |
-| `PngRuntime`, `PdfRuntime` | The slice of a runtime `renderPng` and `renderPdf` need: `validate` and the `svg` surface |
-| `PngSvgOptions`, `RenderPngOptions`, `RenderPdfOptions` | The forwarded `svg` options, and each helper's options |
+| `PngRuntime`, `PdfRuntime` | The slice of a runtime `renderPng` and `renderPdf` need: `validate` and the `snapshot` surface |
+| `SnapshotOptions`, `RenderPngOptions`, `RenderPdfOptions` | The forwarded `snapshot` options, and each helper's options |
 | `RenderPngResult`, `RenderPdfResult`, `PngValidationResult`, `PngCheckedValidationResult` | The helpers' results and the validation shapes they carry |
 | `Font`, `FontDetails`, `FontLoader`, `ImagesInput` | Re-exported from `@takumi-rs/core` and `takumi-pdf`, so a host types `fonts` and `images` without a second import |
 

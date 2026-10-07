@@ -17,6 +17,7 @@ export {
   type TakumiPdfMetadata,
   type TakumiPdfOptions,
   type TakumiRenderOptions,
+  TAKUMI_FORMATS,
   createTakumiImageBackend,
 } from './backend';
 export {
@@ -28,10 +29,10 @@ export {
 export {
   type PngCheckedValidationResult,
   type PngRuntime,
-  type PngSvgOptions,
   type PngValidationResult,
   type RenderPngOptions,
   type RenderPngResult,
+  type SnapshotOptions,
   renderPng,
 } from './render_png';
 export type { Font, FontDetails, FontLoader } from '@takumi-rs/core';

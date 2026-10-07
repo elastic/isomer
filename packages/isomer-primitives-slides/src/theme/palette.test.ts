@@ -41,7 +41,7 @@ describe('palette values agree with distillate tokens', () => {
   });
 
   // Sizes and fonts are ScaleToken leaves: they inline their literal instead of
-  // becoming custom properties, which is what lets the SVG surface read them.
+  // becoming custom properties, which is what lets the `snapshot` surface read them.
   it('emits no custom property for non-color theme groups', () => {
     const css = slideStylesheet();
     expect(css).not.toContain('--slide-space-');
@@ -50,7 +50,7 @@ describe('palette values agree with distillate tokens', () => {
     expect(css).not.toContain('--slide-type-');
   });
 
-  it('SVG palettes pick Distillate resolveValues for the matching scheme', () => {
+  it('Snapshot palettes pick Distillate resolveValues for the matching scheme', () => {
     expect(slidePaletteForMode('light')).toMatchObject(
       slideDistillery.resolveValues('light').color
     );

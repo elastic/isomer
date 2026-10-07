@@ -35,7 +35,7 @@ Pack authors, mostly. If you are writing primitives, a theme, or a frame, this i
 | [Composition and validation](composition.md) | `Composition`, schema composition, validate vs parse, JSON Schema |
 | [Dispatch](dispatch.md) | How a node reaches its renderer, and what happens when one is missing |
 | [Rendering](rendering.md) | The envelopes, the HTML renderer, style adapters, enhancements |
-| [Frame](frame.md) | The document contract an `svg` render is drawn inside |
+| [Frame](frame.md) | The document contract a `snapshot` render is drawn inside |
 | [URL trust](url-trust.md) | The one policy every URL-bearing field goes through |
 | [Authoring](authoring.md) | JSX and agent prompt assembly |
 | [API reference](api.md) | Every entry point and what it exports |
@@ -55,7 +55,7 @@ Eight subpaths, split by what a consumer is willing to load:
 | `./author` | React | JSX front end, agent prompts |
 | `./testing` | Node built-ins | pack conformance harness |
 
-A Slack bot or an MCP server can use the surface-specific subpaths without loading a DOM renderer. Root consumers load React because the dispatcher owns the mandatory React renderer and the SVG path that reuses it.
+A Slack bot or an MCP server can use the surface-specific subpaths without loading a DOM renderer. Root consumers load React because the dispatcher owns the mandatory React renderer and the `snapshot` path that reuses it.
 
 ## Package facts
 

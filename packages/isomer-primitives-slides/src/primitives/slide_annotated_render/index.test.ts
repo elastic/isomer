@@ -90,7 +90,7 @@ describe('slideAnnotatedRender', () => {
   });
 
   it('takes `id` and `surfaces` on its render, as on any node', () => {
-    const render = { ...node.render, id: 'shot', surfaces: ['svg'] };
+    const render = { ...node.render, id: 'shot', surfaces: ['snapshot'] };
     const view = (annotated: object): Composition => ({
       type: 'view',
       body: [annotated as PrimitiveNode],
@@ -109,13 +109,13 @@ describe('slideAnnotatedRender', () => {
 
   it('numbers the legend on every surface', () => {
     expect(runtime.surfaces.text.renderNode(node)).toMatchInlineSnapshot(`
-      "orders-admin · svg
+      "orders-admin · snapshot
 
       1. Search — Filters by store and date.
       2. Export — Downloads the rows as CSV."
     `);
     expect(runtime.surfaces.markdown.renderNode(node)).toMatchInlineSnapshot(`
-      "_orders-admin · svg_
+      "_orders-admin · snapshot_
 
       1. **Search** — Filters by store and date.
       2. **Export** — Downloads the rows as CSV."

@@ -5,15 +5,14 @@
  * 2.0.
  */
 
-import { createElement } from 'react';
-import type { SvgRenderOptions } from '@elastic/isomer-runtime';
+import type { SnapshotRenderOptions } from '@elastic/isomer-runtime';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { createTakumiImageBackend, type TakumiImageBackend } from './backend';
 import type {
   PngRuntime,
-  PngSvgOptions,
   PngValidationResult,
+  SnapshotOptions,
 } from './render_png';
 import { renderPng } from './render_png';
 
@@ -23,11 +22,11 @@ const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 const runtimeReturning = (validation: PngValidationResult): PngRuntime => ({
   validate: (composition) => ({ ...validation, composition }),
   surfaces: {
-    svg: {
+    snapshot: {
       render: (_composition, options) => {
         expect(options).toMatchObject({ onValidationError: 'collect' });
         return {
-          element: createElement('div', { className: 'box' }, 'Ag'),
+          html: '<div class="box">Ag</div>',
           css: '.box { background: #ff0000; }',
           width: 64,
           height: 32,
@@ -38,8 +37,8 @@ const runtimeReturning = (validation: PngValidationResult): PngRuntime => ({
 });
 
 describe('renderPng', () => {
-  it('accepts the runtime svg surface options without importing them', () => {
-    expectTypeOf<SvgRenderOptions>().toExtend<PngSvgOptions>();
+  it('accepts the runtime snapshot surface options without importing them', () => {
+    expectTypeOf<SnapshotRenderOptions>().toExtend<SnapshotOptions>();
   });
 
   it('takes a custom backend with only png and svg', async () => {
@@ -93,11 +92,11 @@ describe('renderPng', () => {
     const runtime: PngRuntime = {
       validate: () => ({ valid: true, errors: [], composition: checked }),
       surfaces: {
-        svg: {
+        snapshot: {
           render: (composition) => {
             drawn.push(composition);
             return {
-              element: createElement('div', null, 'Ag'),
+              html: '<div>Ag</div>',
               css: '',
               width: 64,
               height: 32,
@@ -122,10 +121,10 @@ describe('renderPng', () => {
     const runtimeWith = (validation: PngValidationResult): PngRuntime => ({
       validate: () => ({ ...validation, composition: undefined }),
       surfaces: {
-        svg: {
+        snapshot: {
           render: (composition) => {
             drawn.push(composition);
-            return { element: null, css: '', width: 1, height: 1 };
+            return { html: '', css: '', width: 1, height: 1 };
           },
         },
       },
@@ -155,16 +154,16 @@ describe('renderPng', () => {
     expect(drawn).toEqual([]);
   });
 
-  it('forwards svg and raster options to the render and the backend', async () => {
-    let seenSvgOptions: unknown;
+  it('forwards snapshot and raster options to the render and the backend', async () => {
+    let seenSnapshotOptions: unknown;
     const runtime: PngRuntime = {
       validate: (composition) => ({ valid: true, errors: [], composition }),
       surfaces: {
-        svg: {
+        snapshot: {
           render: (_composition, options) => {
-            seenSvgOptions = options;
+            seenSnapshotOptions = options;
             return {
-              element: createElement('div', { className: 'box' }, 'Ag'),
+              html: '<div class="box">Ag</div>',
               css: '.box { background: #ff0000; }',
               width: 64,
               height: 32,
@@ -175,11 +174,11 @@ describe('renderPng', () => {
     };
 
     await renderPng(runtime, { type: 'view' }, createTakumiImageBackend(), {
-      svg: { frame: 'card' },
+      snapshot: { frame: 'card' },
       devicePixelRatio: 2,
     });
 
-    expect(seenSvgOptions).toMatchObject({
+    expect(seenSnapshotOptions).toMatchObject({
       frame: 'card',
       onValidationError: 'collect',
     });

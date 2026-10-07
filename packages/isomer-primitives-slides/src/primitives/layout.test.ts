@@ -374,10 +374,18 @@ describe('frameBodyLayout', () => {
       frameBodyLayout([{ ...heading, surfaces: ['text'] }, rest], 1)
     ).toEqual(openBody);
     expect(
-      frameBodyLayout([{ ...heading, surfaces: ['svg'] }, rest], 1, 'svg')
+      frameBodyLayout(
+        [{ ...heading, surfaces: ['snapshot'] }, rest],
+        1,
+        'snapshot'
+      )
     ).toEqual(below);
     expect(
-      frameBodyLayout([{ ...heading, surfaces: ['react'] }, rest], 1, 'svg')
+      frameBodyLayout(
+        [{ ...heading, surfaces: ['react'] }, rest],
+        1,
+        'snapshot'
+      )
     ).toEqual(openBody);
   });
 

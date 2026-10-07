@@ -297,7 +297,7 @@ describe('slideBars', () => {
     const drawn = async (slide: Composition): Promise<LayoutBox> =>
       boxes(
         await takumi.measure(
-          runtime.surfaces.svg.render(slide, { anchors: true })
+          runtime.surfaces.snapshot.render(slide, { anchors: true })
         )
       ).find(
         ({ attributes }) => attributes?.[NODE_ANCHOR_ATTRIBUTE] === 'slideBars'
@@ -468,7 +468,7 @@ describe('slideBars', () => {
       /** Lines takumi draws each item's run of `letter`s across. */
       const drawnLines = async (node: SlideBarsNode, letter: string) => {
         const drawn = runs(
-          await takumi.measure(runtime.surfaces.svg.render(compose(node)))
+          await takumi.measure(runtime.surfaces.snapshot.render(compose(node)))
         ).filter(({ text }) => text.startsWith(letter));
         return new Set(drawn.map(({ y }) => Math.round(y))).size / 2;
       };

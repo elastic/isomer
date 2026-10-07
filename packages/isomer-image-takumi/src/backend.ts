@@ -5,8 +5,6 @@
  * 2.0.
  */
 
-import type { ReactNode } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
 import {
   type FontLoader,
   type MeasuredNode,
@@ -20,16 +18,16 @@ import type {
 } from 'takumi-pdf';
 
 /**
- * What the `svg` surface returns: a React tree and the stylesheet it is laid
- * out against, plus the viewport it was measured for.
+ * The part of a `snapshot` surface result this backend reads: the markup, the
+ * stylesheet it is laid out against, and the viewport it was measured for.
  *
  * Declared structurally rather than imported from `@elastic/isomer-runtime`,
- * so this backend depends on no isomer package. `SvgRenderResult` satisfies it.
+ * so this backend depends on no isomer package. `SnapshotRenderResult` satisfies it.
  */
 export interface ImageInput {
-  /** A single root, as image layout requires: one element, string, or number, never an array or fragment. */
-  element: ReactNode;
-  /** The stylesheet the tree is laid out against, `light-dark(…)` already resolved. */
+  /** Static markup with a single root, as image layout requires. */
+  html: string;
+  /** The stylesheet the markup is laid out against, `light-dark(…)` already resolved. */
   css: string;
   /** The viewport, in CSS pixels; the output is this size. */
   width: number;
@@ -37,13 +35,13 @@ export interface ImageInput {
 }
 
 /**
- * What the `svg` surface's `renderPages` returns: one root per page, all laid
- * out against one stylesheet at one size. Structural like {@link ImageInput};
- * `SvgPagesResult` satisfies it.
+ * The part of a `snapshot` surface's `renderPages` result this backend reads:
+ * one page's markup each, all laid out against one stylesheet at one size.
+ * Structural like {@link ImageInput}; `SnapshotPagesResult` satisfies it.
  */
 export interface PdfInput {
-  /** One root per page, in order. */
-  pages: readonly ReactNode[];
+  /** One page per entry, in order, each static markup with a single root. */
+  pages: readonly { html: string }[];
   /** One stylesheet collected across every page. */
   css: string;
   /** Every page's size, in CSS pixels. */
@@ -136,7 +134,7 @@ export interface LayoutBox {
 }
 
 /**
- * Rasterizes the `svg` surface's output.
+ * Rasterizes the `snapshot` surface's output.
  *
  * Both methods are one call over takumi: the tree is serialized, `fromHtml`
  * turns it into a takumi node tree and lifts the stylesheet out, and takumi
@@ -149,7 +147,7 @@ export interface TakumiImageBackend {
   svg(input: ImageInput): Promise<string>;
 }
 
-/** Writes the `svg` surface's pages as a PDF, one page each. */
+/** Writes the `snapshot` surface's pages as a PDF, one page each. */
 export interface TakumiPdfBackend {
   /**
    * Renders one page per entry in `pages`, each the input's size with no
@@ -165,9 +163,15 @@ export interface TakumiMeasuringBackend extends TakumiImageBackend {
   measure(input: ImageInput): Promise<LayoutBox>;
 }
 
+/** The formats a {@link TakumiBackend} writes, for `createIsomerRuntime({ formats })`. */
+export const TAKUMI_FORMATS = ['png', 'svg', 'pdf'] as const;
+
 /** Everything {@link createTakumiImageBackend} returns: raster, measure, and PDF. */
 export interface TakumiBackend
-  extends TakumiMeasuringBackend, TakumiPdfBackend {}
+  extends TakumiMeasuringBackend, TakumiPdfBackend {
+  /** {@link TAKUMI_FORMATS}: one entry per method that writes a format. */
+  readonly formats: typeof TAKUMI_FORMATS;
+}
 
 type Matrix = MeasuredNode['transform'];
 
@@ -240,8 +244,8 @@ const escapeStyleEndTags = (css: string) =>
 const withStylesheet = (css: string, markup: string) =>
   `<style>${escapeStyleEndTags(css)}</style>${markup}`;
 
-const toTakumiSource = ({ element, css }: ImageInput) =>
-  fromHtml(withStylesheet(css, renderToStaticMarkup(element)));
+const toTakumiSource = ({ html, css }: ImageInput) =>
+  fromHtml(withStylesheet(css, html));
 
 /** Inline, so no pack class name can collide with it. */
 const PAGE_STYLE = 'overflow:hidden;break-after:page;break-inside:avoid';
@@ -253,8 +257,8 @@ const toPagedSource = ({ pages, css, width, height }: PdfInput) => {
   }
   const markup = pages
     .map(
-      (page) =>
-        `<div style="width:${width}px;height:${height}px;${PAGE_STYLE}">${renderToStaticMarkup(page)}</div>`
+      ({ html }) =>
+        `<div style="width:${width}px;height:${height}px;${PAGE_STYLE}">${html}</div>`
     )
     .join('');
   return {
@@ -312,6 +316,7 @@ export const createTakumiImageBackend = ({
   });
 
   return {
+    formats: TAKUMI_FORMATS,
     png: async (input, options = {}) => {
       await ready();
       const { node, css } = toTakumiSource(input);

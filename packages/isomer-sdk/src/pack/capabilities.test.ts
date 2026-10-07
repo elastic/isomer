@@ -31,18 +31,31 @@ const leaf = (type: string, withSlack: boolean) =>
   });
 
 describe('describeCapabilities', () => {
-  it('reports per-primitive support for each format the caller names', () => {
-    const pack = definePrimitivePack({
-      id: 'mixed',
-      surfaces: ['slack'],
-      primitives: [leaf('card', true), leaf('memo', false)],
+  const pack = definePrimitivePack({
+    id: 'mixed',
+    surfaces: ['slack'],
+    primitives: [leaf('card', true), leaf('memo', false)],
+  });
+
+  it('reports per-primitive support for each surface the caller names', () => {
+    expect(
+      describeCapabilities([pack], {
+        surfaces: ['markdown', 'slack', 'snapshot'],
+        formats: ['png'],
+      }).support
+    ).toEqual({
+      card: { markdown: 'native', slack: 'native', snapshot: 'native' },
+      memo: { markdown: 'native', slack: 'fallback', snapshot: 'native' },
+    });
+  });
+
+  it('reports every surface but snapshot as a format, then the added ones once', () => {
+    const { surfaces, formats } = describeCapabilities([pack], {
+      surfaces: ['markdown', 'slack', 'snapshot'],
+      formats: ['png', 'svg', 'slack', 'snapshot'],
     });
 
-    expect(
-      describeCapabilities([pack], ['markdown', 'slack', 'png']).support
-    ).toEqual({
-      card: { markdown: 'native', slack: 'native', png: 'native' },
-      memo: { markdown: 'native', slack: 'fallback', png: 'native' },
-    });
+    expect(surfaces).toEqual(['markdown', 'slack', 'snapshot']);
+    expect(formats).toEqual(['markdown', 'slack', 'png', 'svg']);
   });
 });

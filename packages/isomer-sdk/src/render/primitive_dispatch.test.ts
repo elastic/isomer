@@ -344,7 +344,7 @@ describe('RenderScope', () => {
     );
   });
 
-  it('threads the frame theme through renderSvg as env.theme', () => {
+  it('threads the frame theme through renderSnapshot as env.theme', () => {
     interface SwatchNode {
       type: 'swatch';
     }
@@ -371,10 +371,15 @@ describe('RenderScope', () => {
     >([swatch]);
 
     expect(
-      swatchDispatcher.renderSvg({ type: 'swatch' }, {}, { ink: '#fff' }, 'k')
+      swatchDispatcher.renderSnapshot(
+        { type: 'swatch' },
+        {},
+        { ink: '#fff' },
+        'k'
+      )
     ).toBe('#fff');
     expect(
-      swatchDispatcher.renderSvg({ type: 'swatch' }, {}, undefined, 'k')
+      swatchDispatcher.renderSnapshot({ type: 'swatch' }, {}, undefined, 'k')
     ).toBe('none');
   });
 });

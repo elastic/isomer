@@ -18,7 +18,7 @@ import {
 describe('surface name lists', () => {
   it('derives the types from the lists', () => {
     expectTypeOf<SurfaceName>().toEqualTypeOf<
-      'react' | 'svg' | 'text' | 'markdown' | 'slack'
+      'react' | 'snapshot' | 'text' | 'markdown' | 'slack'
     >();
     expectTypeOf<OptionalSurface>().toEqualTypeOf<'slack'>();
   });
