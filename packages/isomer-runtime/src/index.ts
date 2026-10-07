@@ -14,6 +14,7 @@ export {
   type PrimitiveDescriptions,
   type PropDescriptor,
   type RuntimeAuthoringContext,
+  type RuntimeAuthoringOptions,
   type RuntimeRendererOverrides,
   type RuntimeSurfaces,
   type SurfaceSupport,

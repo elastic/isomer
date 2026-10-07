@@ -384,3 +384,19 @@ export const authoringSchemaSubset = (
   }
   return { $defs: Object.fromEntries(kept) };
 };
+
+/**
+ * The `body` of a schema from {@link buildAuthoringJsonSchema} as a schema of
+ * its own, for an editor that validates body nodes rather than a whole
+ * composition. Carries the `$defs` the body reaches.
+ */
+export const authoringBodySchema = (schema: JsonSchema): JsonSchema => {
+  const { properties, $schema } = schema;
+  const body = isJsonObject(properties) ? properties.body : undefined;
+  return pruneUnreferencedDefs({
+    ...(typeof $schema === 'string' ? { $schema } : {}),
+    title: 'Body',
+    ...(isJsonObject(body) ? body : { type: 'array' }),
+    $defs: defsOf(schema),
+  });
+};

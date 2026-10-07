@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+export { authoringBodySchema } from '../validate';
 export {
   type AuthorChildContext,
   type AuthoredChildBrand,
@@ -17,6 +18,10 @@ export {
   fromTextChildren,
   readAuthoredSpec,
 } from './authored_fields';
+export {
+  type AuthoringDeclarationsOptions,
+  buildAuthoringDeclarations,
+} from './declarations';
 export { type AuthorComponent } from './jsx';
 export {
   type AuthorComposition,

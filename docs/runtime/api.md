@@ -20,7 +20,7 @@ Everything `@elastic/isomer-runtime` exports from its single entry point, plus w
 | `rendererOverrides` | `RuntimeRendererOverrides` | Keyed by primitive `type`, then by surface. |
 | `styleAdapter` | `HTMLStyleAdapter<…>` | Replaces every pack's adapter. Defaults to the packs' own, combined. Required when any pack declares `collectStyles` and no adapter is otherwise available. |
 | `defaultAriaLabel` | `string` | Fallback `aria-label` for `html` and for `react` with `wrapper`. Defaults to `'View'`. |
-| `authoring` | `AuthoringJsonSchemaOptions` | Options for the authoring JSON Schema `getAuthoringContext` returns. |
+| `authoring` | `RuntimeAuthoringOptions` | Options for the authoring schema and declarations `getAuthoringContext` returns. |
 | `inputBudget` | `InputBudget` | Limits `checkInputBudget` applies in `parse`, `validate`, the `html`, `text`, `markdown`, `slack`, and `svg` surfaces, and `viewRegistry.request` input; `react` does not validate, so it is not checked. |
 
 `CreateIsomerRuntime` is the factory's overloaded signature: `frames` present types `surfaces.svg` as `SvgSurface`, `frames` absent types it `undefined`, and options not statically known get the union. `TRenderContext` is inferred from `styleAdapter` alone; a host that supplies none and loads a pack that narrows its context names all three type parameters positionally, as [Runtime](runtime.md#typing-the-render-context) shows.
@@ -105,7 +105,7 @@ Three results carry a `composition`, each with its own rule:
 | Concern | Names |
 | --- | --- |
 | Runtime | `CreateIsomerRuntime`, `IsomerRuntime`, `IsomerRuntimeOptions`, `RuntimeSurfaces`, `FrameMap`, `RuntimeRendererOverrides` |
-| Authoring | `RuntimeAuthoringContext`, `PrimitiveDescriptions`, `PropDescriptor`, `HostCapabilities`, `SurfaceSupport`, `JsonSchema` |
+| Authoring | `RuntimeAuthoringContext`, `RuntimeAuthoringOptions`, `PrimitiveDescriptions`, `PropDescriptor`, `HostCapabilities`, `SurfaceSupport`, `JsonSchema` |
 | View registry | `ViewRegistry`, `RegisteredView`, `RegisteredViewSummary`, `DefineViewOptions`, `ViewBuildArgs`, `ViewInput`, `ViewResponse`, `RegisteredViewInputError` |
 | Surfaces | `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SvgSurface` |
 | Options | `ReactRenderOptions`, `ReactRenderNodeOptions`, `ReactRenderArgs`, `HTMLRenderOptions`, `HTMLStyleAdapter`, `TextRenderOptions`, `TextRenderNodeOptions`, `MarkdownRenderOptions`, `MarkdownRenderNodeOptions`, `SlackRenderOptions`, `SlackRenderNodeOptions`, `SvgRenderOptions`, `SvgRenderNodeOptions` |

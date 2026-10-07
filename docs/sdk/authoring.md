@@ -22,14 +22,14 @@ toComposition(
 
 Nothing renders. Each authoring component returns `null` and carries its node type on a symbol key — `Symbol.for('elastic.isomer.author_type')` — so the element tree is read as data rather than executed. `buildJsxShim(primitives)` builds a pack's whole front end from its primitive list: a `Composition` component, a PascalCase component per primitive (`slideFrame` → `SlideFrame`), a PascalCase component per branded child (`slideTerritory` → `SlideTerritory`), and `toComposition`, which walks the tree and converts each element into a node. The root element's `version`, `title`, `subtitle`, `theme`, and `meta` become the composition's own fields. Pass the registry tuple (`as const`) so those components stay typed. A `PrimitivePack` erases its primitives to `AnyPrimitiveDefinition[]`.
 
-Child elements and text children are declared on the schema field, not in a parser. `fromChildren(childType, schema, options?)` and `fromTextChildren(schema, options?)` are identity wrappers. `z.infer` still reads the underlying schema; the shim reads the brand. The brand is read through `.optional()`, `.nullable()`, `.default()`, and `.readonly()`, so `fromChildren('item', items).optional()` still yields an `Item` component. Any other method, `.describe()` included, clones without the brand, so call it on the inner schema before wrapping. The field is optional when any of those layers is. Branding one schema instance again with a different configuration (another child type, `text` field, or `toItem`, one added or left out, or a text brand) throws an `IsomerError` with code `AUTHORED_SCHEMA_REUSED`; give each field its own schema.
+Child elements and text children are declared on the schema field, not in a parser. `fromChildren(childType, schema, options?)` and `fromTextChildren(schema, options?)` are identity wrappers. `z.infer` still reads the underlying schema; the shim reads the brand. The brand is read through `.optional()`, `.nullable()`, `.default()`, and `.readonly()`, so `fromChildren('item', items).optional()` still yields an `Item` component. Any other method, `.describe()` included, clones without the brand, so call it on the inner schema before wrapping. The field is optional when any of those layers is. Branding one schema instance again with a different configuration (another child type, `text` field, `toItem`, or `propsSchema`, one added or left out, or a text brand) throws an `IsomerError` with code `AUTHORED_SCHEMA_REUSED`; give each field its own schema.
 
 ```ts
 items: fromChildren('badge', z.array(badgeItemSchema).min(1).max(12).describe('Badges.')),
 body: fromTextChildren(z.string().min(1).describe('Callout copy.')),
 ```
 
-`options.text` copies leftover text onto that field of each child. `options.toItem` replaces the default prop copy when one element becomes a different record; declare it method-style so its props annotation is the child component's props. `fromTextChildren` collapses whitespace unless `{ collapseWhitespace: false }`. An explicit prop wins over children. Required text that is missing throws `IsomerError` with code `MISSING_AUTHORED_TEXT`. Children on a primitive with no branded field and no child slot throw `UNEXPECTED_CHILDREN` rather than being dropped. Two primitives that brand the same child type with different item shapes throw `DUPLICATE_AUTHORED_CHILD` when the shim is built. Two types that capitalize to the same component name, such as `slideStat` and `SlideStat`, or a type named `composition`, throw `DUPLICATE_PRIMITIVE_TYPE`.
+`options.text` copies leftover text onto that field of each child. `options.toItem` replaces the default prop copy when one element becomes a different record; declare it method-style so its props annotation is the child component's props. `fromTextChildren` collapses whitespace unless `{ collapseWhitespace: false }`. An explicit prop wins over children. Required text that is missing throws `IsomerError` with code `MISSING_AUTHORED_TEXT`. Children on a primitive with no branded field and no child slot throw `UNEXPECTED_CHILDREN` rather than being dropped. Two primitives that brand the same child type with different item or custom input props schemas throw `DUPLICATE_AUTHORED_CHILD` when the shim is built. Two types that capitalize to the same component name, such as `slideStat` and `SlideStat`, or a type named `composition`, throw `DUPLICATE_PRIMITIVE_TYPE`.
 
 A primitive that declares `schemaFor` also hand-writes its node type and passes `toItem` when the child record holds the body-node union. Every other primitive's schema is its only declaration: the node type is `z.infer`.
 
@@ -61,6 +61,28 @@ When a schema has no brand, the walk still fills a unique child-array field (`bo
 A host that edits or displays a node in its JSX form, such as a composition editor, reads the same brands the shim does with `readAuthoredSpec(schema)`. It returns the schema's top-level branded fields: `children`, each with its `field`, `childType`, `textField`, whether it is an `array`, and its `itemSchema`, whose own brands `readAuthoredSpec` reads in turn; and `text`, each with its `field` and `collapseWhitespace`. A field is `optional` when children may be left out.
 
 `textFromChildren` remains for hosts that unwrap text children themselves. `textFromChildren` collapses whitespace by default; pass `{ collapseWhitespace: false }` when indentation and newlines are significant.
+
+### Declarations for an editor
+
+`buildAuthoringDeclarations(schema, definitions, options?)` prints the schema from `buildAuthoringJsonSchema` as an ambient TypeScript module. It contains `<Type>Node` types with catalog guidance and prop descriptions, and a `BodyNode` union. `{ jsx: true }` adds the components and props types from the same authoring model `buildJsxShim` uses. Set `moduleName` to choose the module identity; the default is `@elastic/isomer-authoring`. Load the text as an editor extra lib and import its exports. The runtime's [authoring context](../runtime/authoring-context.md#editor-declarations) describes editor integration and the limits of structural checking.
+
+`components` exposes every shim component under its actual key, including non-identifier keys. Named component exports include valid identifiers such as `Image` and `Record`, isolated from global library names. Each runtime in one editor needs a distinct module identity.
+
+A `toItem` callback's annotated props cannot be recovered from its output schema. Supply `options.propsSchema` to describe those input props at runtime, excluding JSX children:
+
+```ts
+const cardProps = z.strictObject({ title: z.string() });
+const items = fromChildren('card', z.array(z.object({ label: z.string() })), {
+  propsSchema: cardProps,
+  toItem(props) {
+    return { label: props.title };
+  },
+});
+```
+
+The callback and child component props infer from `propsSchema` in input mode, and the declaration projects the same schema and allows JSX children for the callback to read. This metadata does not change the callback or add runtime validation; it must describe the callback's actual props. Without it, custom child props remain loose. Ordinary child props still come from their item schemas and authored fields. Input-schema comparison and custom prop declarations omit default and fallback values without executing `.default()`, `.prefault()`, or `.catch()` callbacks; validation keeps the original schemas.
+
+`authoringBodySchema(schema)` is the matching JSON Schema for a body array, with only reachable `$defs`. Hosts accepting a single node must wrap it in an array before validation.
 
 ## Agent prompts
 

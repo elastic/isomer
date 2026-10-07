@@ -27,6 +27,11 @@ import {
   type ItemSchema,
   readAuthoredSpec,
 } from './authored_fields';
+import {
+  capitalize,
+  type ChildSlot,
+  createAuthoringModel,
+} from './authoring_model';
 import { type AuthorComponent, authorType, defineAuthorComponent } from './jsx';
 
 /** A {@link Composition} whose `body` is the pack's own authoring node type. */
@@ -201,17 +206,11 @@ export const buildJsxShim = <
   primitives: TPrimitives = [] as unknown as TPrimitives
 ): JsxShim<TNode, TPrimitives> => {
   const primitiveTypes = new Set(primitives.map((primitive) => primitive.type));
-  const childSlotsByType = new Map(
-    primitives.map((primitive) => [
-      primitive.type,
-      inferChildSlots('children' in primitive ? primitive.children : undefined),
-    ])
+  const { authoredByType, children, childSlotsByType } =
+    createAuthoringModel(primitives);
+  const childComponents = new Map(
+    [...children.keys()].map((type) => [type, defineAuthorComponent(type)])
   );
-  const { authoredByType, childComponents } = collectAuthored(primitives);
-  assertUniqueComponentNames([
-    ...primitives.map(({ type }) => type),
-    ...childComponents.keys(),
-  ]);
   const view = defineAuthorComponent<CompositionAuthorProps<TNode>, 'view'>(
     'view'
   );
@@ -239,83 +238,11 @@ export const buildJsxShim = <
   } as JsxShim<TNode, TPrimitives>;
 };
 
-interface ChildSlot {
-  array: boolean;
-  field: string;
-}
-
 interface ParseEnv {
   authoredByType: ReadonlyMap<string, AuthoredSpec>;
   childSlotsByType: ReadonlyMap<string, readonly ChildSlot[]>;
   primitiveTypes: ReadonlySet<string>;
 }
-
-const collectAuthored = (
-  primitives: readonly { type: string; schema?: unknown }[]
-): {
-  authoredByType: Map<string, AuthoredSpec>;
-  childComponents: Map<string, AuthorComponent<unknown, string>>;
-} => {
-  const authoredByType = new Map<string, AuthoredSpec>();
-  const signatures = new Map<string, string>();
-  const childComponents = new Map<string, AuthorComponent<unknown, string>>();
-  const visited = new Set<ZodType>();
-  const collectChildren = (fields: readonly AuthoredChildField[]): void => {
-    for (const field of fields) {
-      const prior = signatures.get(field.childType);
-      if (prior !== undefined && prior !== field.signature) {
-        throw new IsomerError(
-          'DUPLICATE_AUTHORED_CHILD',
-          `Child type "${field.childType}" is branded with two different item shapes.`
-        );
-      }
-      signatures.set(field.childType, field.signature);
-      if (!childComponents.has(field.childType)) {
-        childComponents.set(
-          field.childType,
-          defineAuthorComponent(field.childType)
-        );
-      }
-      if (field.toItem || visited.has(field.itemSchema)) {
-        continue;
-      }
-      visited.add(field.itemSchema);
-      collectChildren(readAuthoredSpec(field.itemSchema).children);
-    }
-  };
-  for (const primitive of primitives) {
-    const schema = primitive.schema;
-    if (!isZodType(schema)) {
-      continue;
-    }
-    const spec = readAuthoredSpec(schema);
-    if (spec.children.length === 0 && spec.text.length === 0) {
-      continue;
-    }
-    authoredByType.set(primitive.type, spec);
-    collectChildren(spec.children);
-  }
-  return { authoredByType, childComponents };
-};
-
-/** Throws when two types, or a type and the root `Composition`, capitalize to one component name. */
-const assertUniqueComponentNames = (types: readonly string[]): void => {
-  const typeByName = new Map([['Composition', 'view']]);
-  for (const type of types) {
-    const name = capitalize(type);
-    const earlier = typeByName.get(name);
-    if (earlier !== undefined && earlier !== type) {
-      throw new IsomerError(
-        'DUPLICATE_PRIMITIVE_TYPE',
-        `buildJsxShim: "${earlier}" and "${type}" both become the component ${name}`
-      );
-    }
-    typeByName.set(name, type);
-  }
-};
-
-const isZodType = (schema: unknown): schema is ZodType =>
-  typeof schema === 'object' && schema !== null && '_zod' in schema;
 
 const toAuthorComposition = <TNode extends PrimitiveNode>(
   element: ReactElement<CompositionAuthorProps<TNode>>,
@@ -572,61 +499,6 @@ const isAuthorElement = (value: unknown): value is ReactElement => {
   const component = value.type as Partial<AuthorComponent<unknown, string>>;
   return typeof component[authorType] === 'string';
 };
-
-/**
- * Reads {@link PrimitiveDefinition.children} against a probe node so JSX can
- * fill the same fields a tree walk would visit. Paths like `body[0]` are array
- * slots; a bare `header` is a single nested node.
- */
-const inferChildSlots = (children: unknown): readonly ChildSlot[] => {
-  if (typeof children !== 'function') {
-    return [];
-  }
-  const probeNode: PrimitiveNode = { type: '__probe__' };
-  const node = new Proxy(
-    {},
-    {
-      get(_target, prop) {
-        if (prop === 'type') {
-          return probeNode.type;
-        }
-        return [probeNode];
-      },
-    }
-  );
-  try {
-    const refs = (children as (value: unknown) => unknown)(node);
-    if (!Array.isArray(refs)) {
-      return [];
-    }
-    const byField = new Map<string, boolean>();
-    for (const ref of refs) {
-      if (!isChildRef(ref)) {
-        continue;
-      }
-      const field = /^[A-Za-z_]\w*/.exec(ref.path)?.[0];
-      if (!field) {
-        continue;
-      }
-      byField.set(
-        field,
-        byField.get(field) === true || /\[\d+\]/.test(ref.path)
-      );
-    }
-    return [...byField.entries()].map(([field, array]) => ({ array, field }));
-  } catch {
-    return [];
-  }
-};
-
-const isChildRef = (value: unknown): value is { path: string } =>
-  typeof value === 'object' &&
-  value !== null &&
-  'path' in value &&
-  typeof value.path === 'string';
-
-const capitalize = (value: string): string =>
-  `${value.slice(0, 1).toUpperCase()}${value.slice(1)}`;
 
 /** React children as a flat array, with fragments inlined. */
 export const flattenChildren = (children: ReactNode): ReactNode[] =>

@@ -575,6 +575,43 @@ describe('createIsomerRuntime', () => {
     expect(context.schema.title).toBe('View');
   });
 
+  it('hands an editor declarations and a body schema for the registered primitives', () => {
+    const runtime = createIsomerRuntime({
+      packs: [packOf(holderPrimitive, notePrimitive)],
+    });
+    const { declarations, bodySchema } = runtime.getAuthoringContext();
+
+    expect(declarations).toContain('interface NoteNode {');
+    expect(declarations).toContain(' * Render a compact note.');
+    expect(declarations).toContain('type BodyNode =');
+    expect(declarations).not.toContain('const');
+    expect(bodySchema).toMatchObject({
+      type: 'array',
+      items: { $ref: '#/$defs/bodyNode' },
+    });
+  });
+
+  it('declares the JSX components only when asked', () => {
+    const jsx = createIsomerRuntime({
+      packs: [packOf(notePrimitive)],
+      authoring: { jsx: true },
+    }).getAuthoringContext();
+
+    expect(jsx.declarations).toContain(
+      'const Note: (props: NoteProps) => null;'
+    );
+    expect(jsx.schema.title).toBe('View');
+  });
+
+  it('forwards the editor module identity', () => {
+    const context = createIsomerRuntime({
+      packs: [packOf(notePrimitive)],
+      authoring: { jsx: true, moduleName: 'isomer:notes' },
+    }).getAuthoringContext();
+    expect(context.declarations).toContain('declare module "isomer:notes" {');
+    expect(context.schema.title).toBe('View');
+  });
+
   it('names a schemaFor container in the authoring JSON Schema', () => {
     const runtime = createIsomerRuntime({
       packs: [packOf(holderPrimitive, notePrimitive)],
