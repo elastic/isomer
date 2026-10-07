@@ -7,6 +7,7 @@
 
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import { inflateSync } from 'node:zlib';
 
 import { createElement, type ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -31,6 +32,66 @@ const input = (css: string): ImageInput => ({
 });
 
 const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
+
+const paeth = (left: number, up: number, upLeft: number) => {
+  const estimate = left + up - upLeft;
+  const [toLeft, toUp, toUpLeft] = [left, up, upLeft].map((value) =>
+    Math.abs(estimate - value)
+  ) as [number, number, number];
+  if (toLeft <= toUp && toLeft <= toUpLeft) return left;
+  return toUp <= toUpLeft ? up : upLeft;
+};
+
+/** Decodes the PNGs takumi writes: 8-bit, non-interlaced, RGB or RGBA. */
+const decodePng = (png: Buffer) => {
+  const width = png.readUInt32BE(16);
+  const height = png.readUInt32BE(20);
+  const channels = png.readUInt8(25) === 6 ? 4 : 3;
+  const data: Buffer[] = [];
+  for (let offset = 8; offset < png.length;) {
+    const length = png.readUInt32BE(offset);
+    if (png.toString('latin1', offset + 4, offset + 8) === 'IDAT') {
+      data.push(png.subarray(offset + 8, offset + 8 + length));
+    }
+    offset += length + 12;
+  }
+  const filtered = inflateSync(Buffer.concat(data));
+  const stride = width * channels;
+  const pixels = Buffer.alloc(height * stride);
+  for (let y = 0; y < height; y++) {
+    const filter = filtered.readUInt8(y * (stride + 1));
+    for (let x = 0; x < stride; x++) {
+      const left =
+        x >= channels ? pixels.readUInt8(y * stride + x - channels) : 0;
+      const up = y > 0 ? pixels.readUInt8((y - 1) * stride + x) : 0;
+      const upLeft =
+        x >= channels && y > 0
+          ? pixels.readUInt8((y - 1) * stride + x - channels)
+          : 0;
+      const predicted = [
+        0,
+        left,
+        up,
+        (left + up) >> 1,
+        paeth(left, up, upLeft),
+      ][filter];
+      pixels.writeUInt8(
+        (filtered.readUInt8(y * (stride + 1) + 1 + x) + (predicted ?? 0)) &
+          0xff,
+        y * stride + x
+      );
+    }
+  }
+  const pixel = (x: number, y: number) => {
+    const at = (y * width + x) * channels;
+    return {
+      r: pixels.readUInt8(at),
+      g: pixels.readUInt8(at + 1),
+      b: pixels.readUInt8(at + 2),
+    };
+  };
+  return { width, height, pixels, pixel };
+};
 
 describe('createTakumiImageBackend', () => {
   it('rasterizes the tree at the input viewport', async () => {
@@ -101,7 +162,35 @@ describe('createTakumiImageBackend', () => {
 
       expect(scaled.readUInt32BE(16)).toBe(128);
       expect(scaled.readUInt32BE(20)).toBe(64);
-      expect(scaled.equals(doubledViewport)).toBe(true);
+      expect(decodePng(scaled).pixels).toEqual(
+        decodePng(doubledViewport).pixels
+      );
+    });
+
+    describe.each([
+      ['fixed in CSS pixels', (w: number, h: number) => `${w}px;height:${h}px`],
+      ['sized to the viewport', () => '100%;height:100%'],
+    ])('keeps a root %s whole', (_, size) => {
+      it.each([
+        [64, 32, 2],
+        [63, 31, 1.5],
+        [3, 100, 1.5],
+        [101, 2000, 1.5],
+      ])('at %d × %d, scale %d', async (width, height, scale) => {
+        const edges: ImageInput = {
+          html: `<div class="root" style="width:${size(width, height)}"><div class="bottom"></div><div class="right"></div></div>`,
+          css: '.root { position: relative; background: #ff0000 } .bottom, .right { position: absolute; right: 0; bottom: 0; background: #0000ff } .bottom { left: 0; height: 1px } .right { top: 0; width: 1px }',
+          width,
+          height,
+        };
+        const png = decodePng(
+          await createTakumiImageBackend().png(edges, { scale })
+        );
+        const isBlue = ({ r, b }: { r: number; b: number }) => b > r;
+
+        expect(isBlue(png.pixel(0, png.height - 1))).toBe(true);
+        expect(isBlue(png.pixel(png.width - 1, 0))).toBe(true);
+      });
     });
 
     it('leaves the bytes unchanged at 1', async () => {
@@ -114,7 +203,6 @@ describe('createTakumiImageBackend', () => {
 
     it.each([
       [63, 31, 95, 47],
-      // Rounding the width to 5 makes its ratio 5/3, which must not stretch the height.
       [3, 100, 5, 150],
     ])(
       'rounds %d × %d at 1.5 to %d × %d',
@@ -129,18 +217,6 @@ describe('createTakumiImageBackend', () => {
       }
     );
 
-    it('lays a rounded raster out at the input width exactly', async () => {
-      const backend = createTakumiImageBackend();
-      const odd = { ...input(css), width: 63, height: 31 };
-      const scaled = await backend.png(odd, { scale: 1.5 });
-      const exact = await backend.png(
-        { ...odd, width: 95, height: 47 },
-        { devicePixelRatio: 95 / 63 }
-      );
-
-      expect(scaled.equals(exact)).toBe(true);
-    });
-
     it('composes with devicePixelRatio', async () => {
       const backend = createTakumiImageBackend();
       const both = await backend.png(input(css), {
@@ -152,7 +228,7 @@ describe('createTakumiImageBackend', () => {
         { devicePixelRatio: 4 }
       );
 
-      expect(both.equals(doubledViewport)).toBe(true);
+      expect(decodePng(both).pixels).toEqual(decodePng(doubledViewport).pixels);
     });
 
     it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY])(
