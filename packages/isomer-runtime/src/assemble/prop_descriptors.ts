@@ -26,6 +26,8 @@ interface Shape {
   kind: PropDescriptor['kind'];
   values?: readonly string[];
   description?: string;
+  /** The schema also accepts `null`; kept apart from `type` so a merge cannot drop it. */
+  nullable?: boolean;
 }
 
 const DEF_PREFIX = '#/$defs/';
@@ -55,7 +57,10 @@ const isNullSchema = (node: unknown): boolean =>
     (Object.hasOwn(node, 'const') && node.const === null));
 
 const orNull = (shape: Shape, nullable: boolean): Shape =>
-  nullable ? { ...shape, type: `${shape.type} | null` } : shape;
+  nullable ? { ...shape, nullable } : shape;
+
+const displayType = ({ type, nullable }: Shape): string =>
+  nullable ? `${type} | null` : type;
 
 const enumOf = (values: readonly string[]): Shape => ({
   type: values.join(' | '),
@@ -94,7 +99,6 @@ const describeUnion = (
   variants: readonly unknown[],
   seen: ReadonlySet<string>
 ): Shape => {
-  const nullable = variants.some(isNullSchema);
   const parts = variants
     .filter((variant) => !isNullSchema(variant))
     .map((variant): Shape =>
@@ -102,6 +106,8 @@ const describeUnion = (
         ? describeSchema(defs, variant, seen)
         : { type: 'unknown', kind: 'other' }
     );
+  const nullable =
+    variants.some(isNullSchema) || parts.some((part) => part.nullable);
   const [only] = parts;
   if (only === undefined) {
     return { type: 'null', kind: 'other' };
@@ -161,7 +167,7 @@ const describeSchema = (
         return { type: 'null', kind: 'other' };
       case 'array': {
         const item = isNode(node.items)
-          ? describeSchema(defs, node.items, seen).type
+          ? displayType(describeSchema(defs, node.items, seen))
           : 'unknown';
         return {
           type: `${item.includes(' | ') ? `(${item})` : item}[]`,
@@ -217,16 +223,12 @@ export const describeProps = (
           if (!isNode(value)) {
             return [];
           }
-          const {
-            type: display,
-            kind,
-            values,
-            description,
-          } = describeSchema(defs, value, new Set());
+          const shape = describeSchema(defs, value, new Set());
+          const { kind, values, description } = shape;
           return [
             {
               name,
-              type: display,
+              type: displayType(shape),
               kind,
               ...(values === undefined ? {} : { values }),
               required: required.has(name),

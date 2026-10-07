@@ -50,6 +50,22 @@ const schema = {
         cyclic: { $ref: '#/$defs/loop' },
         dangling: { $ref: '#/$defs/missing' },
         any: {},
+        nestedNullable: {
+          anyOf: [
+            { anyOf: [{ type: 'string', enum: ['a'] }, { type: 'null' }] },
+            { type: 'string', enum: ['b'] },
+          ],
+        },
+        nullableItems: {
+          type: 'array',
+          items: { anyOf: [{ type: 'string' }, { type: 'null' }] },
+        },
+        nullableMixed: {
+          anyOf: [
+            { anyOf: [{ type: 'string' }, { type: 'null' }] },
+            { type: 'number' },
+          ],
+        },
         nullMember: { type: 'string', enum: ['null', 'none'] },
         nullableEnum: {
           anyOf: [
@@ -175,6 +191,22 @@ describe('describeProps', () => {
       type: 'null | x',
       kind: 'enum',
       values: ['null', 'x'],
+    });
+  });
+
+  it('keeps `null` from a nested union, an array item, or a mixed union', () => {
+    expect(prop('nestedNullable')).toMatchObject({
+      type: 'a | b | null',
+      kind: 'enum',
+      values: ['a', 'b'],
+    });
+    expect(prop('nullableItems')).toMatchObject({
+      type: '(string | null)[]',
+      kind: 'array',
+    });
+    expect(prop('nullableMixed')).toMatchObject({
+      type: 'string | number | null',
+      kind: 'other',
     });
   });
 
