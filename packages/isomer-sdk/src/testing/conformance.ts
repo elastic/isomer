@@ -113,8 +113,9 @@ export interface PrimitiveConformanceHarness {
   /** Must be finite and greater than zero, so a frame can lay the node out unrendered. Omit for a pack with no `svg` path. */
   estimateSvgHeight?(node: PrimitiveNode): number;
   /**
-   * Set `false` for packs whose frame is fixed-size (`sizesFromNodeHeights: false`).
-   * Skips the positive-finite height assertion, which no fixed-frame pack can satisfy.
+   * Set `false` for a pack whose frame is a fixed size, so its primitives are
+   * not required to report a positive `metrics.svgHeight`. Skips the
+   * positive-finite height assertion.
    */
   sizesFromNodeHeights?: boolean;
   /**

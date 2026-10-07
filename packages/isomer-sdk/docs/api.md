@@ -129,7 +129,7 @@ A pack supplies a `PrimitiveConformanceHarness` closing over its own dispatcher,
 | `renderSlack` | yes | At least one block; the markdown fallback counts |
 | `renderTextComposition`, `renderMarkdownComposition` | yes | Whole-composition envelopes, title included |
 | `renderSlackComposition` | yes | A `PrimitiveConformanceSlackResult` led by a `plain_text` header block |
-| `renderSvg`, `estimateSvgHeight` | no | Skipped when absent; `sizesFromNodeHeights: false` also skips the height case |
+| `renderSvg`, `estimateSvgHeight` | no | Skipped when absent. `sizesFromNodeHeights: false` skips the height case for a fixed-size frame |
 | `renderHTML` | no | Honors `PrimitiveConformanceHtmlOptions` (`css`, `names`, `anchors`); skipped when absent |
 | `anchorWalk` | no | The child walker over every definition rendered with; set it once every `react` renderer spreads `nodeAnchor`, to turn on the anchor case |
 | `assertVarRefsHaveDeclarations` | no | Throws for a `var(--x)` with no declaration; skipped when it or `renderHTML` is absent |

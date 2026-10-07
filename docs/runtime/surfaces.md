@@ -81,23 +81,23 @@ const { blocks, assets } = runtime.surfaces.slack.renderNode(chart, {
 
 ## SVG stops at an element and a stylesheet
 
-The `svg` surface returns `{ element, css, width, height }`, not SVG bytes. Rasterization is a separate capability a host opts into, and stopping at that boundary is what keeps this package isomorphic.
+The `svg` surface returns `{ element, css, width, height, warnings }`, not SVG bytes. Rasterization is a separate capability a host opts into, and stopping at that boundary is what keeps this package isomorphic.
 
 Both halves are needed together. `element` is the same React tree the DOM gets, carrying class names; `css` is the packs' stylesheet, which an image backend is handed the way a browser is handed a `<style>`. Its `light-dark(…)` values are already resolved to the render's scheme, because an image is one static frame with no color scheme to resolve them against.
 
 ```ts
-const { element, css, width, height } = runtime.surfaces.svg.render(composition, { theme: 'light' });
+const { element, css, width, height, warnings } = runtime.surfaces.svg.render(composition, { theme: 'light' });
 ```
 
 `anchors: true` renders node anchors into `element`, so a measured layout of it can be handed to the SDK's `checkLayout`.
 
-`renderPages(compositions, options?)` lays several compositions out as one document, `{ pages, css, width, height }`: one root per composition against one stylesheet. A paged output such as a PDF needs that, and per-composition `render` calls cannot give it, because each collects only the CSS its own composition uses. Every page is the same size, the tallest estimate unless `height` is given, and the first composition's `theme` decides the palette unless `theme` is given. An empty list throws `EMPTY_PAGES`, and a body the frame rejects names its page, counted from 1.
+`renderPages(compositions, options?)` lays several compositions out as one document, `{ pages, css, width, height, warnings }`: one root per composition against one stylesheet. A paged output such as a PDF needs that, and per-composition `render` calls cannot give it, because each collects only the CSS its own composition uses. Every page is the same size, the tallest estimate unless `height` is given, and the first composition's `theme` decides the palette unless `theme` is given. An empty list throws `EMPTY_PAGES`, and a body the frame rejects names its page, counted from 1. `warnings` on a paged result prefix each path with `pages[n].`.
 
 `renderNode` on this surface takes only `frame`, `theme`, `anchors`, and `onValidationError`. Geometry is absent deliberately: a node drawn with no surround has nothing for a width or height to size. The result still reports one, the frame's `defaultWidth` and its estimate for a one-node body, so a rasterizer has a viewport to lay the node out in.
 
 ## Warnings are per surface
 
-`validate` returns warnings alongside errors, and each warning names the surface it applies to. A missing `metrics.svgHeight` matters to an image host and is noise to a terminal one, so narrow before showing:
+`validate` returns warnings alongside errors, and each warning names the surface it applies to. An empty surface matters to the host about to render it and is noise to the others, so narrow before showing:
 
 ```ts
 import { warningsForSurface } from '@elastic/isomer-sdk';
@@ -105,6 +105,17 @@ import { warningsForSurface } from '@elastic/isomer-sdk';
 const result = runtime.validate(composition);
 const relevant = warningsForSurface(result, 'svg');
 ```
+
+## A missing `svgHeight`
+
+A node whose primitive declares no `metrics.svgHeight` measures as 0, and a frame that sums those heights sizes short. The finding is on the `svg` result, for the frame that render uses, so it carries `path` and `message` and no `surface`:
+
+```ts
+const { warnings } = runtime.surfaces.svg.render(composition, { frame: 'card' });
+// [{ path: 'body[0]', message: 'body[0] type "kpi" declares no svgHeight metric and will be measured as 0, sizing the frame short' }]
+```
+
+`warnings` is empty when that frame's `estimateHeight` never calls `estimateSvgHeight`, and when the caller passes `height`, which is the height the render uses. `validate` reports nothing about the metric, so a runtime that also holds a fixed frame stays quiet on that frame's renders and on every other surface.
 
 ## CSS: one adapter, or a deliberate no-op
 

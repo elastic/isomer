@@ -131,7 +131,7 @@ runtime.validate(composition);
 // { valid: true, errors: [], warnings: [], composition: <its checked copy> }
 ```
 
-Quiet, and correctly so: `kpi` declares no `metrics.svgHeight`, but this runtime has no frame that would measure nodes, so nothing reads that metric. Register a measuring frame and validation starts saying so; see [`sizesFromNodeHeights`](frame.md#sizesfromnodeheights). Warnings are surface-scoped, so a text or Slack host filters them out with `warningsForSurface(result, surface)`. Errors are a different matter:
+Quiet, and correctly so. `kpi` declares no `metrics.svgHeight`, and `validate` reports nothing about that metric: a missing height is the `svg` surface's finding, on the frame a render measures with. See [a missing `svgHeight`](frame.md#a-missing-svgheight). Warnings `validate` does return are surface-scoped, so a text or Slack host filters them with `warningsForSurface(result, surface)`. Errors are a different matter:
 
 ```ts
 runtime.parse({ type: 'view', body: [{ type: 'kpi', label: 'x' }] });
