@@ -17,6 +17,10 @@ export {
   fromTextChildren,
   readAuthoredSpec,
 } from './authored_fields';
+export {
+  type AuthoringDeclarationsOptions,
+  buildAuthoringDeclarations,
+} from './declarations';
 export { type AuthorComponent } from './jsx';
 export {
   type AuthorComposition,

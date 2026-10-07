@@ -9,6 +9,8 @@ const { schema, primitives, views } = runtime.getAuthoringContext();
 | Field | What it is | Freshness |
 | --- | --- | --- |
 | `schema` | Authoring JSON Schema for a `Composition` built from this runtime's primitives | cached |
+| `bodySchema` | The `body` of `schema` as a schema of its own, with the `$defs` it reaches, for an editor that validates body nodes | cached |
+| `declarations` | `.d.ts` source for the registered primitives; see [Editor declarations](#editor-declarations) | cached |
 | `primitives` | One catalog entry per primitive: purpose, `useWhen`, `avoidWhen`, `example` | cached |
 | `views` | Registered-view summaries, each with its input JSON Schema, read from this runtime's own `viewRegistry` — the `views` option to `createIsomerRuntime` or `runtime.viewRegistry.register`, never a separately constructed registry | live |
 | `groups` | Every pack's primitive groups, in pack order, for an index catalog | cached |
@@ -24,6 +26,18 @@ A runtime with many primitives can hand an agent an [index](../../isomer-sdk/doc
 A host that documents props (a docs site, Storybook controls, a props table) reads `describePrimitives(types).props` instead of walking `$defs`, `$ref`, `anyOf`, and `enum` itself. `props[type]` lists one `PropDescriptor` per property in schema order: `name`, a display `type` (`string`, `tone`, `primary | warning`, `string[]`), a `kind` (`string`, `number`, `boolean`, `enum`, `array`, `object`, or `other`), `values` when `kind` is `enum`, `required`, and `description`. A property that refers to a named def displays the def's name and still reports the kind and `values` it resolves to; a discriminator such as `type` is a one-value `enum`; a union that is not all enum values is `other`. `values` holds string choices only: a nullable prop shows `| null` in its `type` but not in `values`, and a number or boolean choice is shown as written in `type` (`1 | 2`) with kind `number` or `boolean`.
 
 Pass `authoring` on `createIsomerRuntime` to name pack-owned `$defs` (`actionItem`, `badgeItem`), attach refine descriptions, or hide a legacy alias. The validator schema `parse` uses is unchanged. A pack can contribute its own `describe`/`omitProperties` too, via `authoring` on its `PrimitivePackInput` — see [Packs](../../isomer-sdk/docs/packs.md#authoring) — and the runtime merges every composed pack's contribution with this option, which wins on conflict.
+
+## Editor declarations
+
+An editor that type-checks bodies, such as Monaco or a language server, wants TypeScript rather than JSON Schema. `declarations` prints the authoring `schema` as one ambient script, so a host loads it as a single extra lib (`monaco.languages.typescript.typescriptDefaults.addExtraLib(declarations, 'isomer.d.ts')`) and validates JSON bodies against `bodySchema`:
+
+- `<Type>Node` per primitive (`slideStats` becomes `SlideStatsNode`), with its catalog `purpose`, `useWhen`, and `avoidWhen` as JSDoc and each prop's description as its own.
+- `BodyNode`, the union of those, which every container's child slot references.
+- A type per other named `$def` (`RenderTheme`, and any def a pack names through `authoring`). Anonymous defs are inlined.
+
+The text is a script, not a module, so its names are globals; a host that loads two runtimes' declarations in one editor gets a clash. Type names that collide are numbered (`NoteNode2`).
+
+Set `authoring: { jsx: true }` when authors write JSX through `buildJsxShim`. The declarations then add `JSX.ElementChildrenAttribute` and a minimal `JSX.Element` if no other lib supplies them, `AuthorChildren`, `CompositionProps`, and per primitive and branded child a `<Component>Props` and `declare const <Component>: (props: <Component>Props) => null`. Props follow the shim: a branded field, or a container's one child slot, is optional on the props because children fill it, and a `toItem` child takes loose props because its record is built by hand. The runtime cannot see whether a host builds a shim, which is why the option is opt-in.
 
 ## Taking the answer back
 

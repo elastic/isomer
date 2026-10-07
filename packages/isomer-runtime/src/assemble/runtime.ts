@@ -8,7 +8,6 @@
 import {
   type AnyPrimitiveDefinition,
   type AnyPrimitivePack,
-  type AuthoringJsonSchemaOptions,
   bindFrame,
   type BoundFrame,
   type CheckedValidationResult,
@@ -56,6 +55,7 @@ import {
   createRuntimeAuthoringContextFactory,
   type HostCapabilities,
   type RuntimeAuthoringContext,
+  type RuntimeAuthoringOptions,
 } from './authoring';
 import {
   applyRendererOverrides,
@@ -120,8 +120,8 @@ export interface IsomerRuntimeOptions<
    * `title`. Defaults to `'View'`.
    */
   defaultAriaLabel?: string;
-  /** Options for the authoring JSON Schema `getAuthoringContext` returns. */
-  authoring?: AuthoringJsonSchemaOptions;
+  /** Options for the authoring schema and declarations `getAuthoringContext` returns. */
+  authoring?: RuntimeAuthoringOptions;
   /**
    * Limits `checkInputBudget` applies in `parse`, `validate`, view input, and
    * every surface but `react`, which does not validate. Defaults to the SDK's.
@@ -172,7 +172,7 @@ export interface IsomerRuntime<
   readonly viewRegistry: ViewRegistry<THostContext, PrimitiveNode>;
   /** One render surface per output format; `svg` is `undefined` without `frames`. */
   readonly surfaces: RuntimeSurfaces<TRenderContext, TSvg>;
-  /** Builds fresh authoring material (schema, catalog, views) for this runtime. */
+  /** Builds fresh authoring material (schema, declarations, catalog, views) for this runtime. */
   getAuthoringContext(): RuntimeAuthoringContext;
   /** Reports the primitive types and render formats this runtime supports. */
   getCapabilities(): HostCapabilities;

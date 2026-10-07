@@ -239,7 +239,7 @@ export const buildJsxShim = <
   } as JsxShim<TNode, TPrimitives>;
 };
 
-interface ChildSlot {
+export interface ChildSlot {
   array: boolean;
   field: string;
 }
@@ -578,7 +578,7 @@ const isAuthorElement = (value: unknown): value is ReactElement => {
  * fill the same fields a tree walk would visit. Paths like `body[0]` are array
  * slots; a bare `header` is a single nested node.
  */
-const inferChildSlots = (children: unknown): readonly ChildSlot[] => {
+export const inferChildSlots = (children: unknown): readonly ChildSlot[] => {
   if (typeof children !== 'function') {
     return [];
   }
@@ -625,7 +625,7 @@ const isChildRef = (value: unknown): value is { path: string } =>
   'path' in value &&
   typeof value.path === 'string';
 
-const capitalize = (value: string): string =>
+export const capitalize = (value: string): string =>
   `${value.slice(0, 1).toUpperCase()}${value.slice(1)}`;
 
 /** React children as a flat array, with fragments inlined. */

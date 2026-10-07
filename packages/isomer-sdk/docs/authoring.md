@@ -62,6 +62,10 @@ A host that edits or displays a node in its JSX form, such as a composition edit
 
 `textFromChildren` remains for hosts that unwrap text children themselves. `textFromChildren` collapses whitespace by default; pass `{ collapseWhitespace: false }` when indentation and newlines are significant.
 
+### Declarations for an editor
+
+`buildAuthoringDeclarations(schema, definitions, options?)` prints an authoring schema as `.d.ts` source for an editor that type-checks bodies. It takes the schema from `buildAuthoringJsonSchema` and the definitions that produced it, and returns one ambient script with a `<Type>Node` interface per primitive, its catalog text as JSDoc, and a `BodyNode` union. With `{ jsx: true }` it adds the props types and components `buildJsxShim` builds, read from the same brands `readAuthoredSpec` returns. `authoringBodySchema(schema)`, on the root entry, is the matching JSON Schema for a body array. The runtime's [authoring context](../../isomer-runtime/docs/authoring-context.md#editor-declarations) returns both, so a host rarely calls them directly.
+
 ## Agent prompts
 
 The other kind of author is a model, and what it needs is not a component tree but a prompt. `buildAuthoringPrompt(profile, context)` assembles one from parts:

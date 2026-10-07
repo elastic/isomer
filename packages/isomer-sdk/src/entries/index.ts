@@ -138,6 +138,7 @@ export {
   NAVIGATION_HREF_MESSAGE,
   NAVIGATION_HREF_RULE,
   assetUrl,
+  authoringBodySchema,
   authoringSchemaSubset,
   buildAuthoringJsonSchema,
   buildCompositionJsonSchema,

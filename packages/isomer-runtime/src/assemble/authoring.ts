@@ -8,6 +8,7 @@
 import {
   type AnyPrimitiveDefinition,
   type AnyPrimitivePack,
+  authoringBodySchema,
   type AuthoringJsonSchemaOptions,
   authoringSchemaSubset,
   buildAuthoringJsonSchema,
@@ -17,12 +18,19 @@ import {
   type PrimitiveGroup,
   type SurfaceSupport,
 } from '@elastic/isomer-sdk';
+import { buildAuthoringDeclarations } from '@elastic/isomer-sdk/author';
 
 import type { JsonSchema, RegisteredViewSummary } from '../registry';
 
 import { describeProps, type PropDescriptor } from './prop_descriptors';
 
 export type { HostCapabilities, SurfaceSupport };
+
+/** Options for the authoring material `getAuthoringContext` returns. */
+export interface RuntimeAuthoringOptions extends AuthoringJsonSchemaOptions {
+  /** Declare the `buildJsxShim` components in {@link RuntimeAuthoringContext.declarations}. Defaults to `false`. */
+  jsx?: boolean;
+}
 
 /**
  * Everything a host hands an agent so it can answer a question with a view:
@@ -36,6 +44,14 @@ export type { HostCapabilities, SurfaceSupport };
 export interface RuntimeAuthoringContext {
   /** Authoring JSON Schema for a `Composition` built from this runtime's primitives. */
   schema: JsonSchema;
+  /** The `body` of {@link RuntimeAuthoringContext.schema} on its own, for an editor that validates body nodes. */
+  bodySchema: JsonSchema;
+  /**
+   * `.d.ts` source for the registered primitives, as one ambient script: a `<Type>Node`
+   * per primitive with its catalog text as JSDoc, and the `BodyNode` union. See
+   * {@link RuntimeAuthoringOptions.jsx} for the JSX components.
+   */
+  declarations: string;
   /** Catalog entries describing each available primitive, including one `example`. */
   primitives: PrimitiveCatalogEntry[];
   /** Every pack's primitive groups, in pack order, for an index catalog. */
@@ -113,10 +129,14 @@ export const createRuntimeAuthoringContextFactory = (
   definitions: readonly AnyPrimitiveDefinition[],
   listViews: () => RegisteredViewSummary[],
   packs: readonly AnyPrimitivePack[],
-  runtimeAuthoring: AuthoringJsonSchemaOptions = {}
+  { jsx, ...runtimeAuthoring }: RuntimeAuthoringOptions = {}
 ): (() => RuntimeAuthoringContext) => {
   const options = mergePackAuthoring(packs, runtimeAuthoring);
   const schema = buildAuthoringJsonSchema(definitions, options);
+  const bodySchema = authoringBodySchema(schema);
+  const declarations = buildAuthoringDeclarations(schema, definitions, {
+    ...(jsx === undefined ? {} : { jsx }),
+  });
   const primitives = definitions.map((definition) => definition.catalog);
   const definitionsByType = new Map(
     definitions.map((definition) => [definition.type, definition])
@@ -160,6 +180,8 @@ export const createRuntimeAuthoringContextFactory = (
 
   return () => ({
     schema,
+    bodySchema,
+    declarations,
     primitives,
     groups,
     views: listViews(),
