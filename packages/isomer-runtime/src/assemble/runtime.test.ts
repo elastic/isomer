@@ -680,6 +680,32 @@ describe('createIsomerRuntime', () => {
     ]);
   });
 
+  it('describes the props of each requested type', () => {
+    const runtime = createIsomerRuntime({
+      packs: [packOf(holderPrimitive, notePrimitive)],
+    });
+    const { props } = runtime
+      .getAuthoringContext()
+      .describePrimitives(['note', 'holder', 'note']);
+
+    expect(Object.keys(props)).toEqual(['note', 'holder']);
+    expect(props.note).toEqual([
+      {
+        name: 'type',
+        type: 'note',
+        kind: 'enum',
+        values: ['note'],
+        required: true,
+      },
+      { name: 'text', type: 'string', kind: 'string', required: true },
+    ]);
+    expect(props.holder?.find(({ name }) => name === 'child')).toMatchObject({
+      type: 'bodyNode',
+      kind: 'other',
+      required: true,
+    });
+  });
+
   it('throws for an unknown type passed to describePrimitives', () => {
     const runtime = createIsomerRuntime({ packs: [packOf(notePrimitive)] });
     expect(() =>

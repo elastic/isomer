@@ -11,6 +11,7 @@ export {
   type RuntimeAuthoringContext,
 } from './authoring';
 export { type RuntimeRendererOverrides } from './overrides';
+export { type PropDescriptor } from './prop_descriptors';
 export {
   type CreateIsomerRuntime,
   type FrameMap,

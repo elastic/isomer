@@ -2,6 +2,7 @@
 
 ## 2026-10-07
 
+- **`describePrimitives` returns structured props**: `describePrimitives(types).props` maps each requested type to a `PropDescriptor` list (`name`, display `type`, `kind`, `values` for an enum, `required`, `description`), so a docs site or props table no longer walks `$defs`, `$ref`, `anyOf`, and `enum` itself. A named def displays by name with the kind and values it resolves to, a discriminator is a one-value enum, and a union that is not all enum values is `other`. `PropDescriptor` is exported from the runtime root.
 - **Slack fallback parses string results**: `gfmToSlackBlocks` parses GFM with the parser `md.authored` already loads on the root and `./slack` entries, then translates the tree as `markdownContentToSlackBlocks` does, so a string result reaches Slack as `rich_text`, `table`, and `divider` blocks with CommonMark's delimiter runs, lazy continuation, tilde and indented code, tab indentation, and LF or CRLF line endings, where it used to be mrkdwn `section`s read a line at a time. Markdown printed as written inside builder content is parsed where it sits, and a table in a list item follows the item instead of sending the list through a string path. References resolve to their first definition, footnotes print their label, in table cells too, task items lead with `☑` or `☐`, raw HTML prints as text, and source past the parse budget prints as literal paragraphs. The line translator is removed.
 
 ## 2026-10-06

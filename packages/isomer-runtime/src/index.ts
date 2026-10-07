@@ -12,6 +12,7 @@ export {
   type IsomerRuntime,
   type IsomerRuntimeOptions,
   type PrimitiveDescriptions,
+  type PropDescriptor,
   type RuntimeAuthoringContext,
   type RuntimeRendererOverrides,
   type RuntimeSurfaces,
