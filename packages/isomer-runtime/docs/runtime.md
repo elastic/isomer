@@ -95,7 +95,7 @@ The runtime's own admission runs first, against the packs exactly as the host pa
 
 The overridden packs then go through the SDK's `composePacks`, which rejects duplicate node types and enhancement ids and returns the one flattened inventory every consumer shares. The SDK's validator and parser memoize on that array's identity, so the dispatcher, the validator, the parser, the authoring context, and every surface see the same overridden definitions and no consumer recomposes the discriminated union.
 
-Two runtime-wide facts are gathered as unions across packs while this happens: which node types are pictures rather than text (so Slack uploads a chart instead of approximating it in markdown), and whether any frame sizes itself by summing node heights (which is what makes a missing `metrics.svgHeight` worth warning about).
+One runtime-wide fact is gathered as a union across packs while this happens: which node types are pictures rather than text, so Slack uploads a chart instead of approximating it in markdown. A missing `metrics.svgHeight` is not one of these. The `svg` surface reports it for the frame a render measures with.
 
 ## Next
 

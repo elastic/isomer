@@ -43,9 +43,8 @@ export const slideThemes: ThemePair<SlideFrameTheme> = {
 /** Fixed 16:9 canvas: exactly one `slideFrame` per composition. Register as `frame.slide`. */
 export const slideDeckFrame: Frame<SlideFrameTheme> = {
   defaultWidth: SLIDE_WIDTH,
-  // A slide is a fixed frame; node heights never enter the calculation.
-  sizesFromNodeHeights: false,
   theme: slideThemes,
+  // The canvas is the frame. Node heights never enter the calculation.
   estimateHeight: () => SLIDE_HEIGHT,
   validateBody: (body) => {
     const [slide, ...rest] = body;

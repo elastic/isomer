@@ -23,6 +23,8 @@ import {
   type AuthoredChildField,
   type AuthoredSpec,
   type AuthoredTextBrand,
+  type AuthoredToItemBrand,
+  type ItemSchema,
   readAuthoredSpec,
 } from './authored_fields';
 import { type AuthorComponent, authorType, defineAuthorComponent } from './jsx';
@@ -104,7 +106,7 @@ type AuthorPropsFor<P> = [SchemaOf<P>] extends [never]
   ? Record<string, unknown> & { children?: ReactNode }
   : AuthorPropsForSchema<SchemaOf<P>>;
 
-type ChildEntry<F> = 0 extends 1 & F
+type ChildEntry<F, TDepth extends unknown[]> = 0 extends 1 & F
   ? NoKeys
   : F extends AuthoredChildBrand<infer Name, infer Props>
     ? [Name] extends [string]
@@ -113,7 +115,9 @@ type ChildEntry<F> = 0 extends 1 & F
             Props & { children?: ReactNode },
             Name
           >;
-        }
+        } & (F extends AuthoredToItemBrand
+          ? NoKeys
+          : ChildComponentsOf<ItemSchema<F>, [...TDepth, unknown]>)
       : NoKeys
     : NoKeys;
 
@@ -123,13 +127,19 @@ type UnionToIntersection<T> = (
   ? R
   : never;
 
-type ChildComponentsOf<TSchema> =
-  LooseSchema<TSchema> extends true
+/** Child components branded on `TSchema`, then on each child's item schema, five levels deep. */
+type ChildComponentsOf<
+  TSchema,
+  TDepth extends unknown[] = [],
+> = TDepth['length'] extends 5
+  ? NoKeys
+  : LooseSchema<TSchema> extends true
     ? NoKeys
     : UnionToIntersection<
         {
           [K in keyof ShapeOf<TSchema>]: ChildEntry<
-            Branded<ShapeOf<TSchema>[K]>
+            Branded<ShapeOf<TSchema>[K]>,
+            TDepth
           >;
         }[keyof ShapeOf<TSchema>]
       >;
@@ -249,17 +259,9 @@ const collectAuthored = (
   const authoredByType = new Map<string, AuthoredSpec>();
   const signatures = new Map<string, string>();
   const childComponents = new Map<string, AuthorComponent<unknown, string>>();
-  for (const primitive of primitives) {
-    const schema = primitive.schema;
-    if (!isZodType(schema)) {
-      continue;
-    }
-    const spec = readAuthoredSpec(schema);
-    if (spec.children.length === 0 && spec.text.length === 0) {
-      continue;
-    }
-    authoredByType.set(primitive.type, spec);
-    for (const field of spec.children) {
+  const visited = new Set<ZodType>();
+  const collectChildren = (fields: readonly AuthoredChildField[]): void => {
+    for (const field of fields) {
       const prior = signatures.get(field.childType);
       if (prior !== undefined && prior !== field.signature) {
         throw new IsomerError(
@@ -274,7 +276,24 @@ const collectAuthored = (
           defineAuthorComponent(field.childType)
         );
       }
+      if (field.toItem || visited.has(field.itemSchema)) {
+        continue;
+      }
+      visited.add(field.itemSchema);
+      collectChildren(readAuthoredSpec(field.itemSchema).children);
     }
+  };
+  for (const primitive of primitives) {
+    const schema = primitive.schema;
+    if (!isZodType(schema)) {
+      continue;
+    }
+    const spec = readAuthoredSpec(schema);
+    if (spec.children.length === 0 && spec.text.length === 0) {
+      continue;
+    }
+    authoredByType.set(primitive.type, spec);
+    collectChildren(spec.children);
   }
   return { authoredByType, childComponents };
 };
@@ -393,7 +412,11 @@ const fillAuthoredFields = (
     if (converted[field.field] !== undefined || rawChildren === undefined) {
       continue;
     }
-    converted[field.field] = itemsFromBrand(rawChildren, field, env);
+    converted[field.field] = valueFromBrand(
+      flattenChildren(rawChildren),
+      field,
+      env
+    );
   }
   for (const field of authored.text) {
     if (converted[field.field] !== undefined) {
@@ -420,7 +443,7 @@ const valueFromChildField = (
   env: ParseEnv
 ): unknown => {
   if (isJsxNodes(value)) {
-    return itemsFromBrand(value, field, env);
+    return valueFromBrand(flattenChildren(value), field, env);
   }
   return value;
 };
@@ -438,12 +461,24 @@ const isJsxNodes = (value: unknown): value is ReactNode => {
   );
 };
 
-const itemsFromBrand = (
-  children: ReactNode,
+/** The field's array of items, or its one item; throws on a second element for a single-item field. */
+const valueFromBrand = (
+  elements: readonly ReactNode[],
   field: AuthoredChildField,
   env: ParseEnv
-): unknown[] =>
-  flattenChildren(children).map((child) => itemFromElement(child, field, env));
+): unknown => {
+  const items = elements.map((child) => itemFromElement(child, field, env));
+  if (field.array) {
+    return items;
+  }
+  if (items.length > 1) {
+    throw new IsomerError(
+      'UNEXPECTED_CHILDREN',
+      `"${field.field}" takes one <${capitalize(field.childType)}>, not ${items.length}.`
+    );
+  }
+  return items[0];
+};
 
 const itemFromElement = (
   child: ReactNode,
@@ -461,48 +496,41 @@ const itemFromElement = (
     });
   }
   const props = withoutChildren<Record<string, unknown>>(element);
-  const nestedChildren = element.props.children;
+  const nested = flattenChildren(element.props.children);
+  const elements = nested.filter(isAuthorElement);
+  const text = nested.filter((child) => !isAuthorElement(child));
   if (
     field.textField !== undefined &&
     props[field.textField] === undefined &&
-    nestedChildren !== undefined &&
-    !hasAuthorElement(nestedChildren)
+    text.length > 0
   ) {
-    props[field.textField] = textFromChildren(nestedChildren);
+    props[field.textField] = textFromChildren(text);
   }
-  fillNestedBrands(field.itemSchema, props, nestedChildren, env);
+  fillNestedBrands(field.itemSchema, props, elements, env);
   return props;
 };
 
 const fillNestedBrands = (
   itemSchema: ZodType,
   props: Record<string, unknown>,
-  children: ReactNode,
+  elements: readonly ReactElement[],
   env: ParseEnv
 ): void => {
-  if (children === undefined) {
+  if (elements.length === 0) {
     return;
   }
-  const spec = readAuthoredSpec(itemSchema);
-  for (const field of spec.children) {
+  for (const field of readAuthoredSpec(itemSchema).children) {
     if (props[field.field] !== undefined) {
       continue;
     }
-    const matching = flattenChildren(children).filter(
-      (child) =>
-        isAuthorElement(child) && getAuthorType(child) === field.childType
+    const matching = elements.filter(
+      (child) => getAuthorType(child) === field.childType
     );
-    if (matching.length === 0) {
-      continue;
+    if (matching.length > 0) {
+      props[field.field] = valueFromBrand(matching, field, env);
     }
-    props[field.field] = matching.map((child) =>
-      itemFromElement(child, field, env)
-    );
   }
 };
-
-const hasAuthorElement = (children: ReactNode): boolean =>
-  flattenChildren(children).some((child) => isAuthorElement(child));
 
 const convertPropValue = <TNode extends PrimitiveNode>(
   value: unknown,

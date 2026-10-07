@@ -9,14 +9,14 @@
 // filesystem, which no rendering path may do.
 
 import { readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
 
 /** What {@link assertPackRegistrationComplete} needs to compare a pack against its directory. */
 export interface PackRegistrationOptions {
-  /** Directory whose subdirectories are one primitive each. A `URL` is resolved with `fileURLToPath`. */
+  /** Directory whose subdirectories are one primitive each. A relative path resolves against the working directory; a `URL` is resolved with `fileURLToPath`. */
   primitivesDir: URL | string;
   /** The pack's registry array, as passed to `definePrimitivePack`. */
   registered: readonly AnyPrimitiveDefinition[];
@@ -59,6 +59,12 @@ const entryFileIn = (dir: string): string | undefined => {
   return undefined;
 };
 
+// The CommonJS build compiles `import()` to `require()`, which rejects `file:` URLs.
+const loadEntry = async (entry: string): Promise<Record<string, unknown>> =>
+  (await import(
+    typeof require === 'function' ? entry : pathToFileURL(entry).href
+  )) as Record<string, unknown>;
+
 const subdirectoriesOf = (root: string, ignore: readonly string[]): string[] =>
   readdirSync(root, { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && !ignore.includes(entry.name))
@@ -90,10 +96,11 @@ export const assertPackRegistrationComplete = async ({
   registered,
   ignore = [],
 }: PackRegistrationOptions): Promise<void> => {
-  const root =
+  const root = resolve(
     typeof primitivesDir === 'string'
       ? primitivesDir
-      : fileURLToPath(primitivesDir);
+      : fileURLToPath(primitivesDir)
+  );
   const registeredTypes = new Set(registered.map(({ type }) => type));
   const problems: string[] = [];
   const foundTypes = new Set<string>();
@@ -107,10 +114,7 @@ export const assertPackRegistrationComplete = async ({
       continue;
     }
 
-    const module = (await import(pathToFileURL(entry).href)) as Record<
-      string,
-      unknown
-    >;
+    const module = await loadEntry(entry);
     const exported = Object.entries(module).filter(([, value]) =>
       isPrimitiveDefinition(value)
     ) as Array<[string, AnyPrimitiveDefinition]>;

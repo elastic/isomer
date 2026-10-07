@@ -23,6 +23,13 @@ export {
   type MarkdownInlineInput,
 } from './markdown_content';
 export {
+  type ExampleNode,
+  type NormalizedPrimitiveExample,
+  type PrimitiveExample,
+  exampleNodes,
+  primitiveExamples,
+} from './primitive_example';
+export {
   type AnyPrimitiveDefinition,
   type DefaultPackTypes,
   type OptionalSurface,
