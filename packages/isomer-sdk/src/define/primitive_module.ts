@@ -10,8 +10,8 @@ import { z, type ZodObject, type ZodType } from 'zod';
 
 import type { ActionEventRef } from '../composition/action_event';
 import {
-  BODY_NODE_SURFACES,
   type ChildNodeRef,
+  SURFACE_NAMES,
   type SurfaceName,
 } from '../composition/body_node_base';
 import { ISOMER_ERROR_CODES, IsomerError } from '../composition/error';
@@ -268,7 +268,12 @@ export type Renderer<
  * degrades rather than disappearing. `svg` is not here because no primitive
  * implements it — the surface reuses `react`.
  */
-export type OptionalSurface = Extract<SurfaceName, 'slack'>;
+export const OPTIONAL_SURFACES = [
+  'slack',
+] as const satisfies readonly SurfaceName[];
+
+/** One of the {@link OPTIONAL_SURFACES}. */
+export type OptionalSurface = (typeof OPTIONAL_SURFACES)[number];
 
 /**
  * One renderer per surface a primitive implements.
@@ -465,8 +470,8 @@ export const bodyNodeIdSchema = requiredString('must be a non-empty string');
 /** The `surfaces` allowlist on a node. Absent means every surface; empty is rejected. */
 export const bodyNodeSurfacesSchema = z
   .array(
-    z.enum(BODY_NODE_SURFACES as [SurfaceName, ...SurfaceName[]], {
-      error: () => oneOf(BODY_NODE_SURFACES),
+    z.enum(SURFACE_NAMES, {
+      error: () => oneOf(SURFACE_NAMES),
     })
   )
   .min(1, { error: 'must contain at least one surface' });

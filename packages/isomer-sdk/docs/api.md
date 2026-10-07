@@ -47,7 +47,9 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveExample` (a na
 | `withNodeAnchors` | A view of a context with anchors on, as an enhancement declaring `anchors: true` turns them on |
 | `withoutAnchors` | A context under which nothing renders an anchor, for content that is not one of a node's `children` |
 | `checkLayout` | Where a measured render's nodes run past their room or onto a sibling, as `LayoutFinding`s over a `LayoutBox` tree of `LayoutRect`s |
-| `BODY_NODE_SURFACES` | `['react','svg','text','markdown','slack']` |
+| `SURFACE_NAMES` | `['react','svg','text','markdown','slack']`, as const; `SurfaceName` is derived from it. The runtime's `html` surface wraps `react` in a document and is not a name here |
+| `OPTIONAL_SURFACES` | `['slack']`, as const; the surfaces a pack may declare beyond the mandatory three. `OptionalSurface` is derived from it |
+| `BODY_NODE_SURFACES` | Deprecated alias of `SURFACE_NAMES` |
 
 ## Root entry — composition and validation
 

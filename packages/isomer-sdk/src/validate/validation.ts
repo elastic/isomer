@@ -6,10 +6,10 @@
  */
 
 import {
-  BODY_NODE_SURFACES,
   childNodePath,
   createChildNodeWalker,
   rendersOnSurface,
+  SURFACE_NAMES,
   type SurfaceName,
 } from '../composition/body_node_base';
 import type { Composition } from '../composition/composition';
@@ -232,7 +232,7 @@ const collectEmptySurfaceWarnings = (
   body: readonly unknown[],
   walk: ReturnType<typeof createChildNodeWalker>
 ): ValidationWarning[] =>
-  BODY_NODE_SURFACES.filter(
+  SURFACE_NAMES.filter(
     (surface) => !body.some((node) => rendersOnSurface(node, surface, walk))
   ).map((surface) => ({
     surface,

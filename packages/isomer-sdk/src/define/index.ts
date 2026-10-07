@@ -52,6 +52,7 @@ export {
   type SurfaceMap,
   type ThemeTokenPath,
   type WithNodeFields,
+  OPTIONAL_SURFACES,
   bodyNodeIdSchema,
   bodyNodeSurfacesSchema,
   definePrimitive,
