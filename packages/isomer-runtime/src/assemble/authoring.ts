@@ -15,13 +15,14 @@ import {
   IsomerError,
   type PrimitiveCatalogEntry,
   type PrimitiveGroup,
+  type SurfaceSupport,
 } from '@elastic/isomer-sdk';
 
 import type { JsonSchema, RegisteredViewSummary } from '../registry';
 
 import { describeProps, type PropDescriptor } from './prop_descriptors';
 
-export type { HostCapabilities };
+export type { HostCapabilities, SurfaceSupport };
 
 /**
  * Everything a host hands an agent so it can answer a question with a view:

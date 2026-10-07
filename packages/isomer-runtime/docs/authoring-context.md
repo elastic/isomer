@@ -56,10 +56,13 @@ The runtime supplies the structural half. Most hosts send more, because a vocabu
 ```ts
 runtime.getCapabilities();
 // { primitives: […], formats: ['react','html','text','markdown','slack','svg'],
+//   support: { kpi: { react: 'native', …, slack: 'native' }, sparkline: { react: 'native', …, slack: 'fallback' } },
 //   enhancements: { tableSort: true, clipboard: true } }  // request them with `enhancements: ['tableSort']`
 ```
 
 `formats` reports the surfaces that were actually built — a runtime with no [frame](frame.md) truthfully omits `svg`.
+
+`support` says how each of those formats renders each primitive. `slack` is `native` when the primitive has its own `slack` renderer, from its definition or a renderer override, and `fallback` when the dispatcher converts its markdown to Block Kit instead; a pack's `surfaces` declaration does not change it. Every other format is `native`, since it renders from the `react`, `text`, or `markdown` renderer every primitive must have.
 
 ## Next
 

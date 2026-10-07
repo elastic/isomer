@@ -16,6 +16,7 @@ export {
   type RuntimeAuthoringContext,
   type RuntimeRendererOverrides,
   type RuntimeSurfaces,
+  type SurfaceSupport,
   createIsomerRuntime,
 } from './assemble';
 export {

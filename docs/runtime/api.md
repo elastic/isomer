@@ -105,7 +105,7 @@ Three results carry a `composition`, each with its own rule:
 | Concern | Names |
 | --- | --- |
 | Runtime | `CreateIsomerRuntime`, `IsomerRuntime`, `IsomerRuntimeOptions`, `RuntimeSurfaces`, `FrameMap`, `RuntimeRendererOverrides` |
-| Authoring | `RuntimeAuthoringContext`, `PrimitiveDescriptions`, `PropDescriptor`, `HostCapabilities`, `JsonSchema` |
+| Authoring | `RuntimeAuthoringContext`, `PrimitiveDescriptions`, `PropDescriptor`, `HostCapabilities`, `SurfaceSupport`, `JsonSchema` |
 | View registry | `ViewRegistry`, `RegisteredView`, `RegisteredViewSummary`, `DefineViewOptions`, `ViewBuildArgs`, `ViewInput`, `ViewResponse`, `RegisteredViewInputError` |
 | Surfaces | `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SvgSurface` |
 | Options | `ReactRenderOptions`, `ReactRenderNodeOptions`, `ReactRenderArgs`, `HTMLRenderOptions`, `HTMLStyleAdapter`, `TextRenderOptions`, `TextRenderNodeOptions`, `MarkdownRenderOptions`, `MarkdownRenderNodeOptions`, `SlackRenderOptions`, `SlackRenderNodeOptions`, `SvgRenderOptions`, `SvgRenderNodeOptions` |

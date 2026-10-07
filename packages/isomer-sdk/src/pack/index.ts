@@ -5,7 +5,11 @@
  * 2.0.
  */
 
-export { type HostCapabilities, describeCapabilities } from './capabilities';
+export {
+  type HostCapabilities,
+  type SurfaceSupport,
+  describeCapabilities,
+} from './capabilities';
 export { type ComposedPacks, composePacks } from './compose';
 export { type EnhancementDefinition, scopeScript } from './enhancements';
 export {
