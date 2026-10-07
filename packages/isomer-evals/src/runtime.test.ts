@@ -12,6 +12,7 @@ import {
   unresolvedBodyNodeSchema,
   z,
 } from '@elastic/isomer-sdk';
+import { md } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it, vi } from 'vitest';
 
 import { runEvals } from './run';
@@ -32,7 +33,7 @@ const note = definePrimitive({
   renderers: {
     react: () => null,
     text: ({ text }) => text,
-    markdown: ({ text }) => text,
+    markdown: ({ text }) => md.paragraph(text),
   },
 });
 
@@ -52,7 +53,7 @@ const group = definePrimitive({
   examples: [{ type: 'group', items: [] }],
   children: ({ items }) =>
     items.map((node, index) => ({ node, path: `items[${index}]` })),
-  renderers: { react: () => null, text: () => '', markdown: () => '' },
+  renderers: { react: () => null, text: () => '', markdown: () => [] },
 });
 
 const runtime = createIsomerRuntime({

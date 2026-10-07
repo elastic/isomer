@@ -203,7 +203,7 @@ const taggedNote = (tag: string) =>
     renderers: {
       react: (node) => node.body,
       text: (node) => `${tag}:${node.body}`,
-      markdown: (node) => node.body,
+      markdown: (node) => md.paragraph(node.body),
     },
   });
 
@@ -222,7 +222,7 @@ const taggedStack = definePrimitive<TaggedStack>({
     react: () => null,
     text: (node, { scope }) =>
       node.items.map((item) => scope.renderText(item)).join('|'),
-    markdown: () => '',
+    markdown: () => [],
   },
 });
 
@@ -240,7 +240,7 @@ describe('RenderScope', () => {
     ).toBe('a:hello');
   });
 
-  it('embeds a child as content, printing a string result as written', () => {
+  it('embeds a child as content, printing authored source as written', () => {
     const catalog = {
       purpose: '',
       useWhen: [],
@@ -270,16 +270,23 @@ describe('RenderScope', () => {
         markdown: (node) => md.paragraph(node.body),
       },
     });
+    const authoredNote = definePrimitive<TaggedNote>({
+      ...builtNote,
+      renderers: {
+        ...builtNote.renderers,
+        markdown: (node) => md.authored(node.body),
+      },
+    });
     const items = [
       { type: 'note' as const, body: 'line1\nline2' },
       { type: 'note' as const, body: '*b*' },
     ];
 
-    const withStrings = createPrimitiveDispatcher<TaggedStack | TaggedNote>([
+    const withAuthored = createPrimitiveDispatcher<TaggedStack | TaggedNote>([
       listStack,
-      taggedNote('a'),
+      authoredNote,
     ]);
-    expect(withStrings.renderMarkdown({ type: 'stack', items })).toBe(
+    expect(withAuthored.renderMarkdown({ type: 'stack', items })).toBe(
       '- line1\n  line2\n- *b*'
     );
 
@@ -318,7 +325,7 @@ describe('RenderScope', () => {
           nested = inner.renderText({ type: 'note', body: 'child' });
           return `outer:${node.body}`;
         },
-        markdown: (node) => node.body,
+        markdown: (node) => md.paragraph(node.body),
       },
     });
     const outer = createPrimitiveDispatcher<TaggedStack | TaggedNote>([
@@ -355,7 +362,7 @@ describe('RenderScope', () => {
       renderers: {
         react: (_node, { theme }) => theme?.ink ?? 'none',
         text: () => '',
-        markdown: () => '',
+        markdown: () => [],
       },
     });
     const swatchDispatcher = createPrimitiveDispatcher<
@@ -395,7 +402,7 @@ describe('slack asset swap', () => {
           examples: [{ type: 'pic', src: '/a.png' }],
           schema: z.object({ type: z.literal('pic'), src: z.string() }),
           sanitize,
-          renderers: { react: () => null, text, markdown: () => '' },
+          renderers: { react: () => null, text, markdown: () => [] },
         }),
       ],
       { isSlackAssetType: () => true }

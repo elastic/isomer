@@ -61,7 +61,7 @@ describe('primitive conformance suite', () => {
           renderers: {
             react: () => null,
             text: () => '',
-            markdown: () => '',
+            markdown: () => [],
           },
         }),
       ])
@@ -83,7 +83,7 @@ describe('primitive conformance suite', () => {
       renderers: {
         react: () => null,
         text: () => '',
-        markdown: () => '',
+        markdown: () => [],
       },
     });
 
@@ -161,7 +161,7 @@ describe('primitive conformance suite', () => {
           renderers: {
             react: () => null,
             text: () => '',
-            markdown: () => '',
+            markdown: () => [],
           },
         }),
       ])

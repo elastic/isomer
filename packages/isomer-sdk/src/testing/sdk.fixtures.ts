@@ -14,6 +14,7 @@ import {
   unresolvedBodyNodeSchema,
 } from '../define/primitive_module';
 import { definePrimitivePack } from '../pack/primitive_pack';
+import { md } from '../render/markdown/builder';
 
 const catalog = (type: string, example: object) => ({
   type,
@@ -77,7 +78,7 @@ const notePrimitive = definePrimitive<NoteNode>({
   renderers: {
     react: (node) => node.body,
     text: (node) => node.body,
-    markdown: (node) => node.body,
+    markdown: (node) => md.paragraph(node.body),
     slack: (node) => ({
       type: 'section',
       text: { type: 'mrkdwn', text: node.body },
@@ -94,7 +95,7 @@ const chartPrimitive = definePrimitive<ChartNode>({
   renderers: {
     react: (node) => node.label,
     text: (node) => node.label,
-    markdown: (node) => node.label,
+    markdown: (node) => md.paragraph(node.label),
   },
 });
 
@@ -106,7 +107,7 @@ const captionPrimitive = definePrimitive<CaptionNode>({
   renderers: {
     react: (node) => node.body,
     text: (node) => node.body,
-    markdown: (node) => node.body,
+    markdown: (node) => md.paragraph(node.body),
   },
 });
 
@@ -141,10 +142,7 @@ const stackPrimitive = definePrimitive<StackNode>({
         .filter((text) => text.length > 0)
         .join('\n'),
     markdown: (node, { scope }) =>
-      node.items
-        .map((item) => scope.renderMarkdown(item))
-        .filter((text) => text.length > 0)
-        .join('\n\n'),
+      node.items.map((item) => scope.renderMarkdownContent(item)),
   },
 });
 
@@ -179,10 +177,7 @@ const groupPrimitive = definePrimitive<GroupNode>({
         .filter((text) => text.length > 0)
         .join('\n'),
     markdown: (node, { scope }) =>
-      node.items
-        .map((item) => scope.renderMarkdown(item))
-        .filter((text) => text.length > 0)
-        .join('\n\n'),
+      node.items.map((item) => scope.renderMarkdownContent(item)),
     // Recurses like a real container, so a child with no `slack` renderer has
     // to degrade inside this call or not at all.
     slack: (node, { collector, scope }) =>
@@ -232,7 +227,7 @@ const tilePrimitive = definePrimitive<TileNode>({
   renderers: {
     react: (node) => node.body,
     text: (node) => node.body,
-    markdown: (node) => node.body,
+    markdown: (node) => md.paragraph(node.body),
     slack: (node) => ({
       type: 'section',
       text: { type: 'mrkdwn', text: node.body },
@@ -265,7 +260,7 @@ const tileGroupPrimitive = definePrimitive<TileGroupNode>({
     text: (node, { scope }) =>
       node.items.map((item) => scope.renderText(item)).join('\n'),
     markdown: (node, { scope }) =>
-      node.items.map((item) => scope.renderMarkdown(item)).join('\n\n'),
+      node.items.map((item) => scope.renderMarkdownContent(item)),
     slack: (node, { collector, scope }) =>
       node.items.flatMap((item) => [...scope.renderSlack(item, collector)]),
   },

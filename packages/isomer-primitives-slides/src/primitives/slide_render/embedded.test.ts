@@ -14,6 +14,7 @@ import {
   MAX_INPUT_DEPTH,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
+import { md } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
@@ -143,7 +144,7 @@ describe('embedded and window bodies holding foreign data', () => {
     renderers: {
       react: () => null,
       text: () => 'chart',
-      markdown: () => 'chart',
+      markdown: () => md.paragraph('chart'),
     },
   });
   const composed = createIsomerRuntime({

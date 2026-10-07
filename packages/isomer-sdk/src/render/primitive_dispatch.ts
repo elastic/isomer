@@ -27,13 +27,10 @@ import {
 } from '../define/primitive_module';
 import { createNodeIssueFormatter } from '../validate/node_issues';
 
-import { markdownFromString, serializeMarkdown } from './markdown/builder';
+import { serializeMarkdown } from './markdown/builder';
 import type { SlackAssetCollector } from './slack/assets';
 import type { SlackBlock, SlackImageBlock } from './slack/blocks';
-import {
-  gfmToSlackBlocks,
-  markdownContentToSlackBlocks,
-} from './slack/markdown_content';
+import { markdownContentToSlackBlocks } from './slack/markdown_content';
 
 /**
  * Renders a node on any surface by looking its `type` up in one flattened
@@ -82,9 +79,9 @@ export interface PrimitiveDispatcher<
   ): ReactNode;
   /** `''` when the node is hidden from `text` or its primitive declares no `text` renderer. */
   renderText(node: TNode): string;
-  /** Builder content is serialized per node. */
+  /** The node's content serialized as GFM. */
   renderMarkdown(node: TNode): string;
-  /** A string result comes back as content printed as written. */
+  /** Empty when the node is hidden from `markdown`. */
   renderMarkdownContent(node: TNode): MarkdownContent;
   /**
    * Empty when the node is hidden from `slack`, `sanitize` drops it, or its
@@ -217,19 +214,11 @@ export const createPrimitiveDispatcher = <
     return renderer?.(safeNode, { ...extras, scope: scope() });
   };
 
-  const renderMarkdown = (node: TNode): string => {
-    const rendered = renderOn('markdown', node, {}) ?? '';
-    return typeof rendered === 'string'
-      ? rendered
-      : serializeMarkdown(rendered);
-  };
+  const renderMarkdownContent = (node: TNode): MarkdownContent =>
+    renderOn('markdown', node, {}) ?? [];
 
-  const renderMarkdownContent = (node: TNode): MarkdownContent => {
-    const rendered = renderOn('markdown', node, {}) ?? '';
-    return typeof rendered === 'string'
-      ? markdownFromString(rendered)
-      : rendered;
-  };
+  const renderMarkdown = (node: TNode): string =>
+    serializeMarkdown(renderMarkdownContent(node));
 
   self = {
     definitions,
@@ -296,11 +285,8 @@ export const createPrimitiveDispatcher = <
         // Degrading here rather than in the envelope is what reaches nested
         // children: a container's `slack` renderer recurses through this
         // method, and the envelope only ever sees the container's own output.
-        const markdown = renderOn('markdown', node, {}) ?? '';
         return asSlackPayload<T['slackBlock']>(
-          typeof markdown === 'string'
-            ? gfmToSlackBlocks(markdown)
-            : markdownContentToSlackBlocks(markdown)
+          markdownContentToSlackBlocks(renderMarkdownContent(node))
         );
       }
       const safeNode = sanitizeNode(definition, node);

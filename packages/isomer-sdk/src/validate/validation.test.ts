@@ -24,7 +24,7 @@ import {
 const renderers = {
   react: () => null,
   text: () => '',
-  markdown: () => '',
+  markdown: () => [],
 };
 
 const kpi = definePrimitive({

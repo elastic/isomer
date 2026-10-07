@@ -28,7 +28,7 @@ import { namedColorSchema } from './value_schemas';
 const renderers = {
   react: () => null,
   text: () => '',
-  markdown: () => '',
+  markdown: () => [],
 };
 
 const define = definePrimitive<PrimitiveNode>;

@@ -38,7 +38,7 @@ import type { ValidationResult } from '../validate/validation';
  * hands a container must render text/markdown containing this string, or the
  * cross-pack nesting case cannot tell a dropped child from an empty one.
  */
-export const CONFORMANCE_FOREIGN_MARKER = '__isomer_conformance_foreign__';
+export const CONFORMANCE_FOREIGN_MARKER = 'isomerConformanceForeign';
 
 /** One example node, paired with the definition that published it. */
 export interface PrimitiveConformanceExample {

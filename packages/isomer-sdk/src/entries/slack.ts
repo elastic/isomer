@@ -58,7 +58,6 @@ export {
   codeBlock,
   createSlackAssetCollector,
   escapeMrkdwn,
-  gfmToSlackBlocks,
   isSlackReachableImageUrl,
   italic,
   link,
