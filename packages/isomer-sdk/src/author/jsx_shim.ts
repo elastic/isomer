@@ -23,6 +23,8 @@ import {
   type AuthoredChildField,
   type AuthoredSpec,
   type AuthoredTextBrand,
+  type AuthoredToItemBrand,
+  type ItemSchema,
   readAuthoredSpec,
 } from './authored_fields';
 import { type AuthorComponent, authorType, defineAuthorComponent } from './jsx';
@@ -104,9 +106,6 @@ type AuthorPropsFor<P> = [SchemaOf<P>] extends [never]
   ? Record<string, unknown> & { children?: ReactNode }
   : AuthorPropsForSchema<SchemaOf<P>>;
 
-/** A branded field's item schema: its array element, or the schema itself. */
-type ItemSchemaOf<F> = F extends { element: infer Element } ? Element : F;
-
 type ChildEntry<F, TDepth extends unknown[]> = 0 extends 1 & F
   ? NoKeys
   : F extends AuthoredChildBrand<infer Name, infer Props>
@@ -116,7 +115,9 @@ type ChildEntry<F, TDepth extends unknown[]> = 0 extends 1 & F
             Props & { children?: ReactNode },
             Name
           >;
-        } & ChildComponentsOf<ItemSchemaOf<F>, [...TDepth, unknown]>
+        } & (F extends AuthoredToItemBrand
+          ? NoKeys
+          : ChildComponentsOf<ItemSchema<F>, [...TDepth, unknown]>)
       : NoKeys
     : NoKeys;
 

@@ -24,7 +24,8 @@ export const authoredProps = Symbol.for('elastic.isomer.authored_props');
 /** Set when a field is filled from text children. */
 export const authoredText = Symbol.for('elastic.isomer.authored_text');
 
-const authoredToItem = Symbol.for('elastic.isomer.authored_to_item');
+/** Holds a {@link fromChildren} brand's `toItem`. */
+export const authoredToItem = Symbol.for('elastic.isomer.authored_to_item');
 const authoredTextField = Symbol.for('elastic.isomer.authored_text_field');
 const authoredCollapse = Symbol.for('elastic.isomer.authored_collapse');
 
@@ -37,6 +38,14 @@ const authoredCollapse = Symbol.for('elastic.isomer.authored_collapse');
 export interface AuthoredChildBrand<TName extends string, TProps> {
   readonly [authoredChild]: TName;
   readonly [authoredProps]: TProps;
+}
+
+/** A child field whose `toItem` builds each item, so the shim fills none of the item's own brands. */
+export interface AuthoredToItemBrand {
+  readonly [authoredToItem]: (
+    props: never,
+    context: AuthorChildContext
+  ) => unknown;
 }
 
 /** A field filled from text children. */
@@ -79,7 +88,8 @@ type IsChildBranded<F> =
       ? IsChildBranded<Inner>
       : false;
 
-type ItemSchema<TSchema> =
+/** A branded field's item schema: the array element through any wrapper, or the unwrapped schema. */
+export type ItemSchema<TSchema> =
   Unwrapped<TSchema> extends { element: infer Element }
     ? Element
     : Unwrapped<TSchema>;
@@ -185,7 +195,7 @@ export function fromChildren<
     text?: string;
     toItem(props: TProps, context: AuthorChildContext): unknown;
   }
-): TSchema & AuthoredChildBrand<TName, TProps>;
+): TSchema & AuthoredChildBrand<TName, TProps> & AuthoredToItemBrand;
 export function fromChildren(
   childType: string,
   schema: ZodType,

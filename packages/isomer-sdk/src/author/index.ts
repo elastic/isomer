@@ -12,6 +12,7 @@ export {
   type AuthoredSpec,
   type AuthoredTextBrand,
   type AuthoredTextField,
+  type AuthoredToItemBrand,
   fromChildren,
   fromTextChildren,
   readAuthoredSpec,

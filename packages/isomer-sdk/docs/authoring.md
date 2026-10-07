@@ -42,7 +42,7 @@ Array-shaped authoring props accept either the array or JSX children:
 </BadgeGroup>
 ```
 
-A child's item schema can brand fields of its own, and those become components too. With `stats: fromChildren('stat', z.array(statSchema), { text: 'label' })` and `delta: fromChildren('delta', deltaSchema, { text: 'label' }).optional()` inside `statSchema`:
+A child's item schema can brand fields of its own, and those become components too, unless the child field passes `toItem`, which builds each item itself. With `stats: fromChildren('stat', z.array(statSchema), { text: 'label' })` and `delta: fromChildren('delta', deltaSchema, { text: 'label' }).optional()` inside `statSchema`:
 
 ```tsx
 <Stats>

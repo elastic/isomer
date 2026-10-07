@@ -516,6 +516,55 @@ describe('nested brands', () => {
     expectTypeOf(shim.Stat).not.toBeNever();
   });
 
+  it('finds nested components through a wrapped array brand', () => {
+    const delta = z.object({ label: z.string() });
+    const stat = z.object({
+      label: z.string(),
+      delta: fromChildren('delta', delta, { text: 'label' }).optional(),
+    });
+    const shim = buildJsxShim([
+      {
+        type: 'stats' as const,
+        schema: z.object({
+          type: z.literal('stats'),
+          stats: fromChildren('stat', z.array(stat).optional(), {
+            text: 'label',
+          }),
+        }),
+      },
+    ]);
+
+    expect(shim.Delta).toBeDefined();
+    expectTypeOf(shim.Delta).not.toBeNever();
+  });
+
+  it('types no nested components under a toItem brand, as it builds none', () => {
+    const delta = z.object({ label: z.string() });
+    const stat = z.object({
+      label: z.string(),
+      delta: fromChildren('delta', delta).optional(),
+    });
+    const shim = buildJsxShim([
+      {
+        type: 'stats' as const,
+        schema: z.object({
+          type: z.literal('stats'),
+          stats: fromChildren('stat', z.array(stat), {
+            toItem(props: { label: string }) {
+              return props;
+            },
+          }),
+        }),
+      },
+    ]);
+
+    expect(shim.Stat).toBeDefined();
+    expect('Delta' in shim).toBe(false);
+    expectTypeOf<
+      'Delta' extends keyof typeof shim ? true : false
+    >().toEqualTypeOf<false>();
+  });
+
   it('lets a required nested field come from child elements', () => {
     const delta = z.object({ label: z.string(), tone: z.string() });
     const stat = z.object({
