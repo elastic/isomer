@@ -49,34 +49,74 @@ const withDescription = (shape: Shape, description?: string): Shape =>
 const isLiteral = (value: unknown): value is string | number | boolean =>
   ['string', 'number', 'boolean'].includes(typeof value);
 
+const isNullSchema = (node: unknown): boolean =>
+  isNode(node) &&
+  (node.type === 'null' ||
+    (Object.hasOwn(node, 'const') && node.const === null));
+
+const orNull = (shape: Shape, nullable: boolean): Shape =>
+  nullable ? { ...shape, type: `${shape.type} | null` } : shape;
+
 const enumOf = (values: readonly string[]): Shape => ({
   type: values.join(' | '),
   kind: 'enum',
   values,
 });
 
+// Only string literals are an `enum`: `values` is strings, so a number or boolean choice is shown as written.
+const literalsOf = (values: readonly unknown[]): Shape => {
+  const nullable = values.includes(null);
+  const literals = values.filter(isLiteral);
+  if (literals.length === 0) {
+    return { type: nullable ? 'null' : 'unknown', kind: 'other' };
+  }
+  const strings = literals.filter((value) => typeof value === 'string');
+  if (strings.length === literals.length) {
+    return orNull(enumOf(strings), nullable);
+  }
+  const type = literals.map((value) => JSON.stringify(value)).join(' | ');
+  const kinds = new Set(literals.map((value) => typeof value));
+  const [only] = kinds;
+  return orNull(
+    {
+      type,
+      kind:
+        kinds.size === 1 && (only === 'number' || only === 'boolean')
+          ? only
+          : 'other',
+    },
+    nullable
+  );
+};
+
 const describeUnion = (
   defs: Node,
   variants: readonly unknown[],
   seen: ReadonlySet<string>
 ): Shape => {
-  const parts = variants.map((variant): Shape =>
-    isNode(variant)
-      ? describeSchema(defs, variant, seen)
-      : { type: 'unknown', kind: 'other' }
+  const nullable = variants.some(isNullSchema);
+  const parts = variants
+    .filter((variant) => !isNullSchema(variant))
+    .map((variant): Shape =>
+      isNode(variant)
+        ? describeSchema(defs, variant, seen)
+        : { type: 'unknown', kind: 'other' }
+    );
+  const [only] = parts;
+  if (only === undefined) {
+    return { type: 'null', kind: 'other' };
+  }
+  if (parts.length === 1) {
+    return orNull(only, nullable);
+  }
+  if (parts.every(({ kind }) => kind === 'enum')) {
+    const values = [...new Set(parts.flatMap(({ values = [] }) => values))];
+    return orNull(enumOf(values), nullable);
+  }
+  return orNull(
+    { type: parts.map(({ type }) => type).join(' | '), kind: 'other' },
+    nullable
   );
-  const present = parts.filter(({ type }) => type !== 'null');
-  const [only] = present;
-  if (present.length === 1 && only !== undefined) {
-    return parts.length === present.length
-      ? only
-      : { ...only, type: `${only.type} | null` };
-  }
-  if (present.length > 1 && present.every(({ kind }) => kind === 'enum')) {
-    const values = [...new Set(present.flatMap(({ values = [] }) => values))];
-    return enumOf(values);
-  }
-  return { type: parts.map(({ type }) => type).join(' | '), kind: 'other' };
 };
 
 const describeSchema = (
@@ -101,10 +141,10 @@ const describeSchema = (
   const description = ownDescription(node);
   const shape = ((): Shape => {
     if (Array.isArray(node.enum)) {
-      return enumOf(node.enum.filter(isLiteral).map(String));
+      return literalsOf(node.enum);
     }
-    if (isLiteral(node.const)) {
-      return enumOf([String(node.const)]);
+    if (Object.hasOwn(node, 'const')) {
+      return literalsOf([node.const]);
     }
     const variants = Array.isArray(node.anyOf) ? node.anyOf : node.oneOf;
     if (Array.isArray(variants)) {

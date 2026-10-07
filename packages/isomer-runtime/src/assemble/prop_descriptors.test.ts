@@ -50,6 +50,18 @@ const schema = {
         cyclic: { $ref: '#/$defs/loop' },
         dangling: { $ref: '#/$defs/missing' },
         any: {},
+        nullMember: { type: 'string', enum: ['null', 'none'] },
+        nullableEnum: {
+          anyOf: [
+            { type: 'string', enum: ['a', 'b'] },
+            { type: 'string', enum: ['c'] },
+            { type: 'null' },
+          ],
+        },
+        nullEnumValue: { anyOf: [{ const: 'null' }, { const: 'x' }] },
+        numbers: { enum: [1, 2] },
+        flagOn: { const: true },
+        mixedLiterals: { enum: ['a', 1] },
       },
       required: ['type', 'title'],
     },
@@ -151,5 +163,38 @@ describe('describeProps', () => {
     expect(result.plain).toEqual([]);
     expect(result.loop).toEqual([]);
     expect(result.nope).toEqual([]);
+  });
+
+  it('keeps `null` apart from a string value named "null"', () => {
+    expect(prop('nullMember')).toMatchObject({
+      type: 'null | none',
+      kind: 'enum',
+      values: ['null', 'none'],
+    });
+    expect(prop('nullEnumValue')).toMatchObject({
+      type: 'null | x',
+      kind: 'enum',
+      values: ['null', 'x'],
+    });
+  });
+
+  it('marks a nullable enum union in its type', () => {
+    expect(prop('nullableEnum')).toMatchObject({
+      type: 'a | b | c | null',
+      kind: 'enum',
+      values: ['a', 'b', 'c'],
+    });
+  });
+
+  it('shows number and boolean literals as written instead of as string values', () => {
+    expect(prop('numbers')).toEqual(
+      expect.objectContaining({ type: '1 | 2', kind: 'number' })
+    );
+    expect(prop('numbers')).not.toHaveProperty('values');
+    expect(prop('flagOn')).toMatchObject({ type: 'true', kind: 'boolean' });
+    expect(prop('mixedLiterals')).toMatchObject({
+      type: '"a" | 1',
+      kind: 'other',
+    });
   });
 });
