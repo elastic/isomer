@@ -5,13 +5,17 @@
  * 2.0.
  */
 
-import { createElement, Fragment } from 'react';
-import { describe, expect, it } from 'vitest';
+import { createElement, Fragment, type ReactNode } from 'react';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 import { z } from 'zod';
 
 import type { PrimitiveNode } from '../define/primitive_module';
 
-import { fromChildren, fromTextChildren } from './authored_fields';
+import {
+  fromChildren,
+  fromTextChildren,
+  readAuthoredSpec,
+} from './authored_fields';
 import { defineAuthorComponent } from './jsx';
 import { buildJsxShim, textFromChildren } from './jsx_shim';
 
@@ -474,6 +478,271 @@ describe('recursive fromChildren', () => {
         type: 'list',
         items: [{ content: 'Parent', children: [{ content: 'Child' }] }],
       },
+    ]);
+  });
+});
+
+describe('nested brands', () => {
+  const statsPrimitive = () => {
+    const deltaSchema = z.object({
+      label: z.string(),
+      tone: z.enum(['success', 'danger']),
+    });
+    const statSchema = z.object({
+      label: z.string(),
+      value: z.string(),
+      delta: fromChildren('delta', deltaSchema, { text: 'label' }).optional(),
+    });
+    return {
+      type: 'stats' as const,
+      schema: z.object({
+        type: z.literal('stats'),
+        stats: fromChildren('stat', z.array(statSchema), { text: 'label' }),
+      }),
+    };
+  };
+
+  it('types a nested child component from its item schema', () => {
+    const shim = buildJsxShim([statsPrimitive()]);
+
+    expect(shim.Delta).toBeDefined();
+    type DeltaProps = Parameters<typeof shim.Delta>[0];
+    expectTypeOf(shim.Delta).not.toBeNever();
+    expectTypeOf<{ tone: 'success' }>().toExtend<DeltaProps>();
+    expectTypeOf<{ label: string }>().not.toExtend<DeltaProps>();
+    expectTypeOf<DeltaProps['children']>().toEqualTypeOf<
+      ReactNode | undefined
+    >();
+    expectTypeOf(shim.Stat).not.toBeNever();
+  });
+
+  it('finds nested components through a wrapped array brand', () => {
+    const delta = z.object({ label: z.string() });
+    const stat = z.object({
+      label: z.string(),
+      delta: fromChildren('delta', delta, { text: 'label' }).optional(),
+    });
+    const shim = buildJsxShim([
+      {
+        type: 'stats' as const,
+        schema: z.object({
+          type: z.literal('stats'),
+          stats: fromChildren('stat', z.array(stat).optional(), {
+            text: 'label',
+          }),
+        }),
+      },
+    ]);
+
+    expect(shim.Delta).toBeDefined();
+    expectTypeOf(shim.Delta).not.toBeNever();
+  });
+
+  it('types no nested components under a toItem brand, as it builds none', () => {
+    const delta = z.object({ label: z.string() });
+    const stat = z.object({
+      label: z.string(),
+      delta: fromChildren('delta', delta).optional(),
+    });
+    const shim = buildJsxShim([
+      {
+        type: 'stats' as const,
+        schema: z.object({
+          type: z.literal('stats'),
+          stats: fromChildren('stat', z.array(stat), {
+            toItem(props: { label: string }) {
+              return props;
+            },
+          }),
+        }),
+      },
+    ]);
+
+    expect(shim.Stat).toBeDefined();
+    expect('Delta' in shim).toBe(false);
+    expectTypeOf<
+      'Delta' extends keyof typeof shim ? true : false
+    >().toEqualTypeOf<false>();
+  });
+
+  it('keeps the toItem brand when options with text are held in a variable', () => {
+    const delta = z.object({ label: z.string() });
+    const stat = z.object({
+      label: z.string(),
+      delta: fromChildren('delta', delta).optional(),
+    });
+    const options = {
+      text: 'label' as const,
+      toItem(props: { label: string }) {
+        return props;
+      },
+    };
+    const shim = buildJsxShim([
+      {
+        type: 'stats' as const,
+        schema: z.object({
+          type: z.literal('stats'),
+          stats: fromChildren('stat', z.array(stat), options),
+        }),
+      },
+    ]);
+
+    expect('Delta' in shim).toBe(false);
+    expectTypeOf<
+      'Delta' extends keyof typeof shim ? true : false
+    >().toEqualTypeOf<false>();
+  });
+
+  it('lets a required nested field come from child elements', () => {
+    const delta = z.object({ label: z.string(), tone: z.string() });
+    const stat = z.object({
+      label: z.string(),
+      value: z.string(),
+      delta: fromChildren('delta', delta, { text: 'label' }),
+    });
+    const shim = buildJsxShim([
+      {
+        type: 'stats' as const,
+        schema: z.object({
+          type: z.literal('stats'),
+          stats: fromChildren('stat', z.array(stat), { text: 'label' }),
+        }),
+      },
+    ]);
+    type StatProps = Parameters<typeof shim.Stat>[0];
+
+    expect(shim.Stat).toBeDefined();
+    expectTypeOf<{ value: string }>().toExtend<StatProps>();
+    expectTypeOf<{ label: string }>().not.toExtend<StatProps>();
+  });
+
+  it('fills a single nested item and its owner text from mixed children', () => {
+    const {
+      Composition: Root,
+      Delta,
+      Stat,
+      Stats,
+      toComposition: convert,
+    } = buildJsxShim([statsPrimitive()]);
+
+    expect(
+      convert(
+        createElement(
+          Root,
+          null,
+          createElement(
+            Stats,
+            null,
+            createElement(
+              Stat,
+              { value: '42' },
+              'Tests',
+              createElement(Delta, { tone: 'success' }, '+12 since yesterday')
+            ),
+            createElement(Stat, { value: '3' }, 'Flaky')
+          )
+        )
+      ).body
+    ).toEqual([
+      {
+        type: 'stats',
+        stats: [
+          {
+            label: 'Tests',
+            value: '42',
+            delta: { label: '+12 since yesterday', tone: 'success' },
+          },
+          { label: 'Flaky', value: '3' },
+        ],
+      },
+    ]);
+  });
+
+  it('throws on a second element for a single-item field', () => {
+    const {
+      Composition: Root,
+      Delta,
+      Stat,
+      Stats,
+      toComposition: convert,
+    } = buildJsxShim([statsPrimitive()]);
+
+    expect(() =>
+      convert(
+        createElement(
+          Root,
+          null,
+          createElement(
+            Stats,
+            null,
+            createElement(
+              Stat,
+              { value: '42' },
+              'Tests',
+              createElement(Delta, { tone: 'success' }, '+12'),
+              createElement(Delta, { tone: 'danger' }, '-3')
+            )
+          )
+        )
+      )
+    ).toThrow(
+      expect.objectContaining({
+        name: 'IsomerError',
+        code: 'UNEXPECTED_CHILDREN',
+        message: '"delta" takes one <Delta>, not 2.',
+      })
+    );
+  });
+
+  it('fills a top-level single-item field with one item', () => {
+    const {
+      Composition: Root,
+      Callout,
+      Icon,
+      toComposition: convert,
+    } = buildJsxShim([
+      {
+        type: 'callout' as const,
+        schema: z.object({
+          type: z.literal('callout'),
+          icon: fromChildren('icon', z.object({ name: z.string() })),
+        }),
+      },
+    ]);
+
+    expect(
+      convert(
+        createElement(
+          Root,
+          null,
+          createElement(Callout, null, createElement(Icon, { name: 'bell' }))
+        )
+      ).body
+    ).toEqual([{ type: 'callout', icon: { name: 'bell' } }]);
+  });
+});
+
+describe('readAuthoredSpec', () => {
+  it('reads a child field as one item or an array, and its own brands from itemSchema', () => {
+    const delta = fromChildren('delta', z.object({ label: z.string() }));
+    const stat = z.object({ label: z.string(), delta: delta.optional() });
+    const spec = readAuthoredSpec(
+      z.object({
+        stats: fromChildren('stat', z.array(stat), { text: 'label' }),
+        title: fromTextChildren(z.string()).optional(),
+      })
+    );
+
+    expect(spec.children).toMatchObject([
+      { field: 'stats', childType: 'stat', array: true, textField: 'label' },
+    ]);
+    expect(spec.text).toEqual([
+      { field: 'title', collapseWhitespace: true, optional: true },
+    ]);
+    expect(
+      readAuthoredSpec(spec.children[0]!.itemSchema).children
+    ).toMatchObject([
+      { field: 'delta', childType: 'delta', array: false, optional: true },
     ]);
   });
 });

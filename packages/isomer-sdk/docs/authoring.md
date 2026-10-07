@@ -42,9 +42,23 @@ Array-shaped authoring props accept either the array or JSX children:
 </BadgeGroup>
 ```
 
+A child's item schema can brand fields of its own, and those become components too, unless the child field passes `toItem`, which builds each item itself. With `stats: fromChildren('stat', z.array(statSchema), { text: 'label' })` and `delta: fromChildren('delta', deltaSchema, { text: 'label' }).optional()` inside `statSchema`:
+
+```tsx
+<Stats>
+  <Stat value="42">
+    Tests<Delta tone="success">+12 since yesterday</Delta>
+  </Stat>
+</Stats>
+```
+
+authors `{ label: 'Tests', value: '42', delta: { label: '+12 since yesterday', tone: 'success' } }`. A field whose schema is not an array takes one element, and a second throws `UNEXPECTED_CHILDREN`. An item's `text` field reads the text children beside its elements, and a branded item field is optional on the child's props, since its elements fill it.
+
 Child-only components (`Badge`, `Stat`, `ListItem`, …) are not composition body nodes. Placing one directly under `<Composition>` throws `"badge" cannot be used as a composition body node.` Passing neither the array nor children leaves the field out, which the validator rejects as required unless the field is optional.
 
 When a schema has no brand, the walk still fills a unique child-array field (`body`, `items`, …) from nested body nodes, and a unique single-node field from the first child. A container with more than one such field takes those props explicitly.
+
+A host that edits or displays a node in its JSX form, such as a composition editor, reads the same brands the shim does with `readAuthoredSpec(schema)`. It returns the schema's top-level branded fields: `children`, each with its `field`, `childType`, `textField`, whether it is an `array`, and its `itemSchema`, whose own brands `readAuthoredSpec` reads in turn; and `text`, each with its `field` and `collapseWhitespace`. A field is `optional` when children may be left out.
 
 `textFromChildren` remains for hosts that unwrap text children themselves. `textFromChildren` collapses whitespace by default; pass `{ collapseWhitespace: false }` when indentation and newlines are significant.
 
