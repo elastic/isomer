@@ -23,6 +23,7 @@ import { definePrimitive } from '../define';
 import { catalog } from './catalog';
 import { examples } from './examples';
 import { lineHref } from './href';
+import { icon } from './icon';
 import { ordinal } from './ordinal';
 import { react } from './react';
 import { schema, type SlideSectionNode } from './schema';
@@ -74,6 +75,7 @@ export const slack = (node: SlideSectionNode): SlackBlock[] => [
 export const slideSectionPrimitive = definePrimitive({
   type: 'slideSection',
   catalog,
+  icon,
   examples,
   schema,
   renderers: {

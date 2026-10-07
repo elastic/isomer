@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideDeltaNode}. */
 export const catalog = {
   type: 'slideDelta',
+  name: 'Delta',
   purpose:
     'Show how far one number moved between two points, and what that change means.',
   useWhen: [

@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideCommandNode}. */
 export const catalog = {
   type: 'slideCommand',
+  name: 'Command',
   purpose:
     'Give the audience one shell command they can type or copy and run themselves.',
   useWhen: [

@@ -23,6 +23,7 @@ import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideBarsNode } from './schema';
 import { barValue } from './value';
@@ -90,6 +91,7 @@ export const slack = (node: SlideBarsNode): SlackBlock[] => {
 export const slideBarsPrimitive = definePrimitive({
   type: 'slideBars',
   catalog,
+  icon,
   examples,
   schema,
   renderers: {

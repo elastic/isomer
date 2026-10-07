@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideBarsNode}. */
 export const catalog = {
   type: 'slideBars',
+  name: 'Bars',
   purpose:
     'Let the audience compare the size of several amounts of the same kind, and see which one stands out.',
   useWhen: [

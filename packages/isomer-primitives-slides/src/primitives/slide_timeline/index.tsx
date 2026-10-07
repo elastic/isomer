@@ -22,6 +22,7 @@ import { styledText } from '../size';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { react } from './react';
 import {
   schema,
@@ -88,6 +89,7 @@ export const slack = ({ items }: SlideTimelineNode): SlackBlock[] => [
 export const slideTimelinePrimitive = definePrimitive({
   type: 'slideTimeline',
   catalog,
+  icon,
   examples,
   schema,
   renderers: {

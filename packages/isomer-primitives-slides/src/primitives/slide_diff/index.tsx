@@ -15,6 +15,7 @@ import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideDiffLine, type SlideDiffNode } from './schema';
 
@@ -42,6 +43,7 @@ export const slack = ({ file, lines }: SlideDiffNode): SlackBlock[] => [
 export const slideDiffPrimitive = definePrimitive({
   type: 'slideDiff',
   catalog,
+  icon,
   examples,
   schema,
   renderers: {

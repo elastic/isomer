@@ -24,6 +24,7 @@ import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideDeltaNode } from './schema';
 
@@ -102,6 +103,7 @@ export const slack = ({
 export const slideDeltaPrimitive = definePrimitive({
   type: 'slideDelta',
   catalog,
+  icon,
   examples,
   schema,
   renderers: {

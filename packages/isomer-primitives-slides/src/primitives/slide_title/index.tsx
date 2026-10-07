@@ -30,6 +30,7 @@ import { contentNode, definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { react } from './react';
 import { schema } from './schema';
 import type { SlideTitleNode } from './types';
@@ -72,6 +73,7 @@ const ownMarkdown = ({
 export const slideTitlePrimitive = definePrimitive<SlideTitleNode>({
   type: 'slideTitle',
   catalog,
+  icon,
   examples,
   schema,
   schemaFor: (bodyNodeSchema: ZodType<unknown>) =>

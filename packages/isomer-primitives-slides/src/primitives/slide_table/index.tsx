@@ -16,6 +16,7 @@ import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideTableNode, tableGroups } from './schema';
 
@@ -79,6 +80,7 @@ export const slack = (node: SlideTableNode): SlackBlock[] => {
 export const slideTablePrimitive = definePrimitive({
   type: 'slideTable',
   catalog,
+  icon,
   examples,
   schema,
   renderers: {

@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideSequenceNode}. */
 export const catalog = {
   type: 'slideSequence',
+  name: 'Sequence',
   purpose:
     'Show who says what to whom, in order, so the audience can follow a conversation between systems or people step by step.',
   useWhen: [

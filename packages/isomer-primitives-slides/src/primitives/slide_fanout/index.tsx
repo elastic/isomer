@@ -17,6 +17,7 @@ import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideFanoutNode } from './schema';
 
@@ -73,6 +74,7 @@ export const slack = ({ source, targets }: SlideFanoutNode): SlackBlock[] => [
 export const slideFanoutPrimitive = definePrimitive({
   type: 'slideFanout',
   catalog,
+  icon,
   examples,
   schema,
   renderers: {

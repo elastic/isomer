@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideStatementNode}. */
 export const catalog = {
   type: 'slideStatement',
+  name: 'Statement',
   purpose:
     'Land one claim the audience should remember, set large on a slide of its own.',
   useWhen: [

@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideLayersNode}. */
 export const catalog = {
   type: 'slideLayers',
+  name: 'Layers',
   purpose:
     'Show how a system stacks, layer on layer, and who owns each layer, so the audience knows where a concern lives.',
   useWhen: [

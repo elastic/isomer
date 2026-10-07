@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideColumnsNode}. */
 export const catalog = {
   type: 'slideColumns',
+  name: 'Columns',
   purpose:
     'Lay two to four parallel options side by side so the audience can weigh them against each other.',
   useWhen: [

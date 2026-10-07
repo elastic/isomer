@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideQuoteNode}. */
 export const catalog = {
   type: 'slideQuote',
+  name: 'Quote',
   purpose:
     'Let a customer, a colleague, or a document make the point in their own words, with the source named.',
   useWhen: [

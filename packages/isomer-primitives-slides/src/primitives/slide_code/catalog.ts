@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideCodeNode}. */
 export const catalog = {
   type: 'slideCode',
+  name: 'Code',
   purpose:
     'Show the reader real source, with the lines that matter marked, or trace one value from the file that sets it to the file that reads it.',
   useWhen: [

@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideStatsNode}. */
 export const catalog = {
   type: 'slideStats',
+  name: 'Stats',
   purpose:
     'Let the audience compare two to four numbers at a glance, each with a label and one line of context.',
   useWhen: [

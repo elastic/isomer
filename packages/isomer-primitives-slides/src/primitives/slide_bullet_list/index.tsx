@@ -17,6 +17,7 @@ import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideBulletListNode } from './schema';
 
@@ -90,6 +91,7 @@ export const slack = ({
 export const slideBulletListPrimitive = definePrimitive({
   type: 'slideBulletList',
   catalog,
+  icon,
   examples,
   schema,
   renderers: {

@@ -23,6 +23,7 @@ import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { turnLines } from './lines';
 import { react } from './react';
 import {
@@ -87,6 +88,7 @@ export const slack = ({ label, turns }: SlideTranscriptNode): SlackBlock[] => [
 export const slideTranscriptPrimitive = definePrimitive({
   type: 'slideTranscript',
   catalog,
+  icon,
   examples,
   schema,
   renderers: {

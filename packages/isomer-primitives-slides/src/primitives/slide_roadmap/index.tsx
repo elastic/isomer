@@ -24,6 +24,7 @@ import { styledText } from '../size';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { react } from './react';
 import {
   schema,
@@ -100,6 +101,7 @@ export const slack = ({ columns }: SlideRoadmapNode): SlackBlock[] =>
 export const slideRoadmapPrimitive = definePrimitive({
   type: 'slideRoadmap',
   catalog,
+  icon,
   examples,
   schema,
   renderers: {

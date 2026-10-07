@@ -62,9 +62,30 @@ describe('slide pack contract', () => {
   });
 });
 
-describe('slide pack icons', () => {
+describe('slide pack names and icons', () => {
+  it('gives every primitive a unique name', () => {
+    const names = slideDeckPrimitives.map(
+      ({ type, catalog: { name } }) => name?.trim() || `<${type} has no name>`
+    );
+    expect(names.filter((name) => name.startsWith('<'))).toEqual([]);
+    expect(new Set(names).size).toBe(names.length);
+  });
+
+  it('gives every primitive an icon', () => {
+    expect(
+      slidePrimitiveTypes.filter(
+        (type) => !Object.hasOwn(slidesPack.icons, type)
+      )
+    ).toEqual([]);
+  });
+
   it('declares icons that pass the icon rules', () => {
     expect(() => assertPackIconsValid(slidesPack)).not.toThrow();
+  });
+
+  it('draws every icon differently', () => {
+    const svgs = Object.values(slidesPack.icons).map(({ svg }) => svg);
+    expect(new Set(svgs).size).toBe(svgs.length);
   });
 
   it('exposes slideStat through pack.icons', () => {

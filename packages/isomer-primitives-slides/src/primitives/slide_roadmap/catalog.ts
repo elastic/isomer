@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideRoadmapNode}. */
 export const catalog = {
   type: 'slideRoadmap',
+  name: 'Roadmap',
   purpose:
     'Show what is done, what comes next, and what comes after, so the audience knows where the work stands.',
   useWhen: [

@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideRenderGridNode}. */
 export const catalog = {
   type: 'slideRenderGrid',
+  name: 'Render grid',
   purpose:
     'Prove one slide works everywhere by showing it as several surfaces render it, side by side.',
   useWhen: [

@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideAgendaNode}. */
 export const catalog = {
   type: 'slideAgenda',
+  name: 'Agenda',
   purpose:
     'Show the audience every part of the talk and which one they are in, so they know how far along it is.',
   useWhen: [

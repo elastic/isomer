@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideDiffNode}. */
 export const catalog = {
   type: 'slideDiff',
+  name: 'Diff',
   purpose:
     'Show the reader exactly what a change did to a piece of source: which lines it added, which it removed, and what stayed.',
   useWhen: [

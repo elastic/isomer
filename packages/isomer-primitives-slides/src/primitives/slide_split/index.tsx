@@ -23,6 +23,7 @@ import { contentNode, definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { react } from './react';
 import { buildSchema, panesField, schema } from './schema';
 import type { SlideSplitNode } from './types';
@@ -38,6 +39,7 @@ export const slideSplitPrimitive = definePrimitive<
 >({
   type: 'slideSplit',
   catalog,
+  icon,
   examples,
   schema,
   schemaFor: (bodyNodeSchema: ZodType<unknown>) =>

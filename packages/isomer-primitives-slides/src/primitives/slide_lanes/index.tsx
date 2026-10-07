@@ -30,6 +30,7 @@ import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideLanesNode, type SlideLanesNote } from './schema';
 
@@ -133,6 +134,7 @@ export const slack = (node: SlideLanesNode): SlackBlock[] => {
 export const slideLanesPrimitive = definePrimitive({
   type: 'slideLanes',
   catalog,
+  icon,
   examples,
   schema,
   renderers: {

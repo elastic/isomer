@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideGraphNode}. */
 export const catalog = {
   type: 'slideGraph',
+  name: 'Graph',
   purpose:
     'Define a small vocabulary and show how its terms relate, so the audience can hold the whole model at once.',
   useWhen: [

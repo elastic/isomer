@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideWindowNode}. */
 export const catalog = {
   type: 'slideWindow',
+  name: 'Window',
   purpose:
     'Show the reader where something appears, such as a terminal, a browser tab, a chat, or a Slack channel, by framing slide content in that app’s title bar.',
   useWhen: [

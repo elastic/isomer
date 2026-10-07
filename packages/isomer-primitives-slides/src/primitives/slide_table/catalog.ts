@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideTableNode}. */
 export const catalog = {
   type: 'slideTable',
+  name: 'Table',
   purpose:
     'Let the reader compare several items across the same attributes, reading across a row or down a column.',
   useWhen: [

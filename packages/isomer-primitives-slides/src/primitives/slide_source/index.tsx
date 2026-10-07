@@ -21,6 +21,7 @@ import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { prefix } from './prefix';
 import { react } from './react';
 import { schema, type SlideSourceNode } from './schema';
@@ -49,6 +50,7 @@ export const slack = ({ text: source }: SlideSourceNode): SlackBlock[] => [
 export const slideSourcePrimitive = definePrimitive({
   type: 'slideSource',
   catalog,
+  icon,
   examples,
   schema,
   renderers: {
