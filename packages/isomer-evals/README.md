@@ -1,4 +1,14 @@
-# `@elastic/isomer-evals`
+<!-- markdownlint-disable MD033 -->
+<p align="center">
+  <img src="https://raw.githubusercontent.com/elastic/isomer/main/docs/logo.svg" alt="Isomer" width="96" height="96">
+</p>
+<h1 align="center">@elastic/isomer-evals</h1>
+<p align="center"><strong>isomer</strong> <i>n.</i> — one formula, many forms; the same composition rendered to every surface.</p>
+<p align="center">
+  <a href="https://github.com/elastic/isomer/actions/workflows/ci.yml"><img src="https://github.com/elastic/isomer/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/elastic/isomer/blob/main/LICENSE.txt"><img src="https://img.shields.io/badge/License-Elastic%202.0-blue.svg" alt="License: Elastic License 2.0"></a>
+</p>
+<!-- markdownlint-enable MD033 -->
 
 Scores whether a model produces valid, well-chosen compositions from a primitive pack's authoring context. Conformance asks "does this primitive render?"; this asks "does an agent reach for the right one?" It runs against a runtime from this repository.
 
