@@ -152,20 +152,28 @@ describe('createTakumiImageBackend', () => {
   describe('scale', () => {
     const css = '.box { width: 40px; background: #ff0000; }';
 
-    it('multiplies the raster and keeps the layout', async () => {
-      const backend = createTakumiImageBackend();
-      const scaled = await backend.png(input(css), { scale: 2 });
-      const doubledViewport = await backend.png(
-        { ...input(css), width: 128, height: 64 },
-        { devicePixelRatio: 2 }
-      );
+    it.each([
+      ['a plain stylesheet', css],
+      ['universal padding', `* { padding: 4px } ${css}`],
+      ['compounding em', `* { font-size: 1.5em } ${css}`],
+      ['structural selectors', `:first-child { margin-left: 6px } ${css}`],
+    ])(
+      'multiplies the raster and keeps the layout under %s',
+      async (_, sheet) => {
+        const backend = createTakumiImageBackend();
+        const scaled = await backend.png(input(sheet), { scale: 2 });
+        const doubledViewport = await backend.png(
+          { ...input(sheet), width: 128, height: 64 },
+          { devicePixelRatio: 2 }
+        );
 
-      expect(scaled.readUInt32BE(16)).toBe(128);
-      expect(scaled.readUInt32BE(20)).toBe(64);
-      expect(decodePng(scaled).pixels).toEqual(
-        decodePng(doubledViewport).pixels
-      );
-    });
+        expect(scaled.readUInt32BE(16)).toBe(128);
+        expect(scaled.readUInt32BE(20)).toBe(64);
+        expect(decodePng(scaled).pixels).toEqual(
+          decodePng(doubledViewport).pixels
+        );
+      }
+    );
 
     describe.each([
       ['fixed in CSS pixels', (w: number, h: number) => `${w}px;height:${h}px`],
