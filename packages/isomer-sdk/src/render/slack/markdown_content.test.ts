@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { markdownFromString, md } from '../markdown/builder';
+import { md } from '../markdown/builder';
 import { SAFE_INPUTS } from '../markdown/safe_inputs.fixtures';
 
 import {
@@ -362,7 +362,7 @@ describe('markdownContentToSlackBlocks', () => {
       outline(
         markdownContentToSlackBlocks(
           md.blockquote(
-            markdownFromString('**e**\n\nf\n\n```\n*g*\n```'),
+            md.authored('**e**\n\nf\n\n```\n*g*\n```'),
             md.list([[md.paragraph('h'), md.table(['i'], [])]])
           )
         )
@@ -386,10 +386,7 @@ describe('markdownContentToSlackBlocks', () => {
               md.table(['h'], []),
             ],
           ]),
-          md.list([
-            md.paragraph('c', md.break(), 'd'),
-            markdownFromString('x'),
-          ]),
+          md.list([md.paragraph('c', md.break(), 'd'), md.authored('x')]),
         ])
       )
     ).toEqual(['list: a\nb\nq', 'table: h', 'list: c\nd / x']);
@@ -405,7 +402,7 @@ describe('markdownContentToSlackBlocks', () => {
             md.link('b', 'https://b.c')
           ),
           md.list([[md.paragraph(md.link('c', './c'))]]),
-          markdownFromString('[d](/d) [e](https://e.f)')
+          md.authored('[d](/d) [e](https://e.f)')
         ),
         md.list([
           [
@@ -687,7 +684,7 @@ describe('markdownContentToSlackBlocks', () => {
       outline(
         markdownContentToSlackBlocks([
           md.paragraph('built'),
-          md.list([markdownFromString('**legacy**'), 'x']),
+          md.list([md.authored('**legacy**'), 'x']),
           md.authored('_authored_'),
         ])
       )

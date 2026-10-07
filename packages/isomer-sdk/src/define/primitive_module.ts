@@ -188,12 +188,12 @@ export interface SurfaceMap<T extends PackTypes = DefaultPackTypes> {
     };
     output: string;
   };
-  /** A string is printed as written; content from `md` is escaped where it lands. */
+  /** Content built with `md`, escaped where it lands; authored Markdown source goes through `md.authored`. */
   markdown: {
     env: {
       scope: RenderScope<T>;
     };
-    output: string | MarkdownContent;
+    output: MarkdownContent;
   };
   /**
    * Returns one payload or several, so a primitive need not wrap a single
@@ -234,7 +234,7 @@ export interface RenderScope<T extends PackTypes = DefaultPackTypes> {
   ): void;
   renderText(node: PrimitiveNode): string;
   renderMarkdown(node: PrimitiveNode): string;
-  /** A child as content, for a container building with `md`; a string result is printed as written. */
+  /** A child as content, for a container building with `md`. */
   renderMarkdownContent(node: PrimitiveNode): MarkdownContent;
   /** Empty when the node is hidden from `slack`, `sanitize` drops it, or its renderer returns nothing; a node with no `slack` renderer degrades through its markdown. */
   renderSlack(
@@ -304,7 +304,7 @@ export interface Renderers<
     env: {
       scope: RenderScope<T>;
     }
-  ): string | MarkdownContent;
+  ): MarkdownContent;
   slack?(
     node: TNode,
     env: {

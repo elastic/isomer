@@ -22,7 +22,7 @@ import {
   markdownContentToSlackBlocks,
 } from '../slack/markdown_content';
 
-import { markdownFromString, md, serializeMarkdown } from './builder';
+import { md, serializeMarkdown } from './builder';
 import { SAFE_INPUTS } from './safe_inputs.fixtures';
 
 const viaString = (content: MarkdownContent) =>
@@ -275,19 +275,19 @@ describe('md', () => {
     expect(serializeMarkdown([md.authored('a\n\n\n'), md.paragraph('b')])).toBe(
       'a\n\nb'
     );
-    expect(serializeMarkdown(markdownFromString('x\r\n\n  '))).toBe('x');
-    expect(serializeMarkdown(markdownFromString('\n \n'))).toBe('');
+    expect(serializeMarkdown(md.authored('x\r\n\n  '))).toBe('x');
+    expect(serializeMarkdown(md.authored('\n \n'))).toBe('');
   });
 
   it('builds tight lists and indents a nested multi-line string', () => {
     expect(serializeMarkdown(md.list(['one', 'two']))).toBe('- one\n- two');
-    expect(
-      serializeMarkdown(md.list([markdownFromString('line1\nline2'), 'b']))
-    ).toBe('- line1\n  line2\n- b');
+    expect(serializeMarkdown(md.list([md.authored('line1\nline2'), 'b']))).toBe(
+      '- line1\n  line2\n- b'
+    );
     expect(
       serializeMarkdown(md.list(['a', 'b'], { ordered: true, start: 3 }))
     ).toBe('3. a\n4. b');
-    expect(serializeMarkdown(markdownFromString(''))).toBe('');
+    expect(serializeMarkdown(md.authored(''))).toBe('');
   });
 
   it('ignores a list start GFM would not read as a list number', () => {
@@ -362,10 +362,10 @@ describe('md', () => {
       md.blockquote(
         md.paragraph('# a'),
         md.list(['b']),
-        markdownFromString('c\n\nd'),
+        md.authored('c\n\nd'),
         md.blockquote(md.paragraph('> e'))
       ),
-      md.blockquote(markdownFromString('')),
+      md.blockquote(md.authored('')),
     ]);
     expect(markdown).toBe('> \\# a\n>\n> - b\n>\n> c\n>\n> d\n>\n> > \\> e');
     const [quote] = parse(markdown).children;

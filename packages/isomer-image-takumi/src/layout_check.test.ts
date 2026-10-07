@@ -17,6 +17,7 @@ import {
   nodeAnchor,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
+import { md } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { z } from 'zod';
 
@@ -45,7 +46,7 @@ const block = definePrimitive<BlockNode>({
         style: { width: node.width, height: 20, flexShrink: 0 },
       }),
     text: () => 'block',
-    markdown: () => 'block',
+    markdown: () => md.paragraph('block'),
   },
 });
 

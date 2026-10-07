@@ -19,6 +19,7 @@ import {
   type PrimitiveStyleCollector,
 } from '../../define/primitive_module';
 import type { CheckedComposition } from '../../validate/validation';
+import { md } from '../markdown/builder';
 import { byteLength } from '../payload';
 import { createPrimitiveDispatcher } from '../primitive_dispatch';
 
@@ -48,7 +49,7 @@ const raw = definePrimitive<RawNode>({
     react: (node) =>
       createElement('div', { dangerouslySetInnerHTML: { __html: node.html } }),
     text: (node) => node.html,
-    markdown: (node) => node.html,
+    markdown: (node) => md.paragraph(node.html),
   },
 });
 
@@ -130,7 +131,7 @@ describe('renderHTMLWithDispatcher enhancements', () => {
           ].join(',') || 'none'
         ),
       text: () => '',
-      markdown: () => '',
+      markdown: () => [],
     },
   });
   const sorter = {

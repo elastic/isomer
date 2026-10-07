@@ -21,7 +21,7 @@ const definition = (type: string): AnyPrimitiveDefinition =>
     catalog: { type, purpose: 'p', useWhen: [], avoidWhen: [], example: {} },
     examples: [],
     schema: {},
-    renderers: { react: () => null, text: () => '', markdown: () => '' },
+    renderers: { react: () => null, text: () => '', markdown: () => [] },
   }) as unknown as AnyPrimitiveDefinition;
 
 let root: string;
@@ -38,7 +38,7 @@ const writePrimitive = (folder: string, type: string, exportName: string) => {
       catalog: { type: ${JSON.stringify(type)}, purpose: 'p', useWhen: [], avoidWhen: [], example: {} },
       examples: [],
       schema: {},
-      renderers: { react: () => null, text: () => '', markdown: () => '' },
+      renderers: { react: () => null, text: () => '', markdown: () => [] },
     };\n`
   );
 };

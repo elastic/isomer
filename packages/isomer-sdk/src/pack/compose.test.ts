@@ -20,7 +20,7 @@ import { definePrimitivePack } from './primitive_pack';
 const renderers = {
   react: () => null,
   text: () => '',
-  markdown: () => '',
+  markdown: () => [],
 };
 
 const leaf = (type: string) =>

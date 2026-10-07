@@ -30,7 +30,7 @@ import {
 const renderers = {
   react: () => null,
   text: () => '',
-  markdown: () => '',
+  markdown: () => [],
 };
 
 // `TNode` explicitly, because `examples: []` gives inference nothing to work

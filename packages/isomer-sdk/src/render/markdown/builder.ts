@@ -251,14 +251,10 @@ export const md = {
           : null,
       value,
     }),
-  /** Authored Markdown source, after {@link sanitizeMarkdownSource}. */
-  authored: (source: string): MarkdownBlock =>
-    verbatim(sanitizeMarkdownSource(source)),
+  /** Authored Markdown source, after {@link sanitizeMarkdownSource}; whitespace-only source is dropped. */
+  authored: (source: string): MarkdownContent =>
+    source.trim() === '' ? [] : verbatim(sanitizeMarkdownSource(source)),
 };
-
-/** A renderer's string output as content, printed as written. */
-export const markdownFromString = (markdown: string): MarkdownContent =>
-  markdown.trim() === '' ? [] : verbatim(markdown);
 
 const asText: Handle = (
   node: { value?: string; alt?: string | null },

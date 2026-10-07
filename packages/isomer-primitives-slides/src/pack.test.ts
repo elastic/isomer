@@ -17,6 +17,7 @@ import {
   definePrimitivePack,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
+import { md } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
@@ -59,7 +60,7 @@ const notePrimitive = definePrimitive<NoteNode>({
   renderers: {
     react: (node) => createElement('span', null, node.text),
     text: (node) => node.text,
-    markdown: (node) => node.text,
+    markdown: (node) => md.paragraph(node.text),
   },
 });
 
