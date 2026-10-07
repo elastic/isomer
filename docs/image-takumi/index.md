@@ -26,7 +26,7 @@ The `snapshot` surface returns `{ element, html, css, width, height }`: the same
 
 `ImageInput`, `{ html, css, width, height }`, is declared structurally rather than imported, so this package depends on no isomer package and on no React. `SnapshotRenderResult` from `@elastic/isomer-runtime` satisfies it, and `SnapshotPagesResult`, what the surface's `renderPages` returns, satisfies `PdfInput` the same way. Because the input is plain data, a host can render a snapshot in one process and rasterize it in another.
 
-`createTakumiImageBackend({ fonts, cacheMaxBytes })` builds one takumi renderer. `fonts` is covered [below](#fonts); `cacheMaxBytes` caps takumi's resource cache, and `0` disables it. `png(input, { devicePixelRatio })` raises fidelity, sharper text and gradients, at the same output size: the PNG stays `input.width` by `input.height` whatever the ratio. `svg` is vector, so it takes no raster options.
+`createTakumiImageBackend({ fonts, cacheMaxBytes })` builds one takumi renderer. `fonts` is covered [below](#fonts); `cacheMaxBytes` caps takumi's resource cache, and `0` disables it. `png(input, { scale })` renders a denser raster of the same layout: `scale: 2` gives a PNG of `input.width * 2` by `input.height * 2` pixels, rounded, for a 2x display. Takumi takes one ratio for both axes, so the ratio stays `scale` and the canvas absorbs the rounding: a layout fixed in CSS pixels, as a frame's is, lays out exactly as at 1x, with under half a raster pixel trimmed or padded at the right and bottom edges, while content sized to the viewport sees one within half a raster pixel of the input's. Whole products, such as any `scale: 2`, are exact. `devicePixelRatio` is takumi's zoom at a fixed canvas instead: the PNG stays `input.width` by `input.height`, laid out at `input.width / devicePixelRatio` CSS pixels and magnified, so above 1 it shows less of the frame. The two multiply. `svg` and `measure` are in CSS pixels, so they take no raster options.
 
 `formats` on the backend is `TAKUMI_FORMATS`, `['png', 'svg', 'pdf']`: one entry per method that writes a format. Pass it to `createIsomerRuntime({ formats })` and the runtime's `getCapabilities().formats` reports what this backend adds, rather than a list typed by hand.
 
@@ -40,7 +40,7 @@ The `snapshot` surface returns `{ element, html, css, width, height }`: the same
 
 ## Rendering a whole runtime call in one step
 
-`renderPng(runtime, composition, backend, options?)` bundles validation, the `snapshot` surface, and rasterization, returning `{ png, width, height, validation }`. It exists because the `snapshot` surface discards its own validation findings and knows nothing about image backends, so a host that wants the findings next to the bytes would otherwise validate, render, and rasterize in three calls of its own.
+`renderPng(runtime, composition, backend, options?)` bundles validation, the `snapshot` surface, and rasterization, returning `{ png, width, height, validation }`. It forwards `scale` and `devicePixelRatio` to `png`; `width` and `height` are the viewport in CSS pixels, not the raster's. It exists because the `snapshot` surface discards its own validation findings and knows nothing about image backends, so a host that wants the findings next to the bytes would otherwise validate, render, and rasterize in three calls of its own.
 
 ```ts
 import { renderPng } from '@elastic/isomer-image-takumi';
@@ -101,7 +101,7 @@ A PDF is byte-stable on the same terms once `metadata.creationDate` is fixed; le
 | --- | --- |
 | `ImageInput`, `PdfInput` | The parts of the `snapshot` surface's `render` and `renderPages` results this package reads, declared structurally: `{ html, css, width, height }`, and `pages` of `{ html }` |
 | `TakumiImageBackend`, `TakumiMeasuringBackend`, `TakumiPdfBackend`, `TakumiBackend` | `{ png, svg }`, plus `measure`, `{ pdf }`, and all three with `formats` |
-| `TakumiImageBackendOptions`, `TakumiRenderOptions` | `{ fonts?, cacheMaxBytes? }` and `{ devicePixelRatio? }` |
+| `TakumiImageBackendOptions`, `TakumiRenderOptions` | `{ fonts?, cacheMaxBytes? }` and `{ scale?, devicePixelRatio? }` |
 | `TakumiPdfOptions`, `TakumiPdfMetadata` | The document options above, and `metadata`'s fields |
 | `LayoutBox` | What `measure` returns, one per laid-out element |
 | `PngRuntime`, `PdfRuntime` | The slice of a runtime `renderPng` and `renderPdf` need: `validate` and the `snapshot` surface |

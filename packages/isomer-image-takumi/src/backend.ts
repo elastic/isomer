@@ -69,9 +69,17 @@ export interface TakumiImageBackendOptions {
 /** Per-render overrides. Geometry comes from the input, not from here. */
 export interface TakumiRenderOptions {
   /**
-   * Raises rendering fidelity (sharper text and gradients) at a fixed output
-   * size — the PNG stays sized to `input.width` / `input.height` regardless
-   * of this value; it does not produce a larger raster.
+   * Raster pixels per CSS pixel: the PNG is `input.width * scale` by
+   * `input.height * scale`, rounded. A layout fixed in CSS pixels is
+   * unchanged; rounding moves the viewport by under half a raster pixel. `2`
+   * gives a 2x raster. Defaults to `1`.
+   */
+  scale?: number;
+  /**
+   * Takumi's zoom at a fixed canvas: the tree is laid out at
+   * `input.width / devicePixelRatio` CSS pixels and magnified to fill the
+   * canvas, so above `1` the PNG keeps its size and shows less of the frame.
+   * For a larger raster, use {@link TakumiRenderOptions.scale}.
    */
   devicePixelRatio?: number;
 }
@@ -247,6 +255,13 @@ const withStylesheet = (css: string, markup: string) =>
 const toTakumiSource = ({ html, css }: ImageInput) =>
   fromHtml(withStylesheet(css, html));
 
+/**
+ * One side of a scaled canvas, in whole pixels. Takumi takes one ratio for
+ * both axes, so the ratio stays `scale` and the canvas absorbs the rounding.
+ */
+const toRasterSide = (side: number, scale: number) =>
+  scale === 1 ? side : Math.max(1, Math.round(side * scale));
+
 /** Inline, so no pack class name can collide with it. */
 const PAGE_STYLE = 'overflow:hidden;break-after:page;break-inside:avoid';
 
@@ -317,17 +332,22 @@ export const createTakumiImageBackend = ({
 
   return {
     formats: TAKUMI_FORMATS,
-    png: async (input, options = {}) => {
+    png: async (input, { scale = 1, devicePixelRatio } = {}) => {
+      if (!Number.isFinite(scale) || scale <= 0) {
+        throw new RangeError(
+          `png: scale must be a positive finite number, got ${scale}`
+        );
+      }
       await ready();
       const { node, css } = toTakumiSource(input);
       const renderOptions: RenderOptions = {
-        width: input.width,
-        height: input.height,
+        width: toRasterSide(input.width, scale),
+        height: toRasterSide(input.height, scale),
         format: 'png',
         css,
       };
-      if (options.devicePixelRatio !== undefined) {
-        renderOptions.devicePixelRatio = options.devicePixelRatio;
+      if (devicePixelRatio !== undefined || scale !== 1) {
+        renderOptions.devicePixelRatio = (devicePixelRatio ?? 1) * scale;
       }
       return renderer.render(node, renderOptions);
     },
