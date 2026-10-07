@@ -20,6 +20,7 @@ import type { ValidationError } from '../composition/validation_error';
 
 import type { MarkdownContent } from './markdown_content';
 import type { PrimitiveExample } from './primitive_example';
+import type { PrimitiveIcon } from './primitive_icon';
 import type { SlackAssetCollector } from './slack_assets';
 import type { SlackBlock } from './slack_blocks';
 import { formatZodIssues, oneOf } from './zod_format';
@@ -31,10 +32,13 @@ export type { PrimitiveNode };
  * A primitive's entry in the catalog the authoring prompt is built from.
  *
  * Written for the model rather than for a developer: `useWhen` and `avoidWhen`
- * are what steer it away from reaching for the wrong primitive.
+ * are what steer it away from reaching for the wrong primitive. `name` is the
+ * one host-facing field, and the prompt never prints it.
  */
 export interface PrimitiveCatalogEntry {
   type: string;
+  /** Short name a host shows for the primitive, e.g. `Stat group`. Absent means the host derives one from `type`. */
+  name?: string;
   /** One line on what the primitive is for, in the model's voice. */
   purpose: string;
   /** Situations that call for this primitive. Phrase each as a user intent, not a shape. */
@@ -371,6 +375,8 @@ export interface PrimitiveDefinition<
   type: TNode['type'];
   /** How the authoring prompt describes this primitive to the model. */
   catalog: PrimitiveCatalogEntry;
+  /** Host-facing glyph, never shown to the model. Absent means the host supplies its own. */
+  icon?: PrimitiveIcon;
   /**
    * Driven by the conformance harness, bare or named; read them with
    * `exampleNodes` or `primitiveExamples`. The catalog `example` is what the
@@ -437,6 +443,7 @@ export interface PrimitiveDefinition<
 export interface AnyPrimitiveDefinition {
   type: string;
   catalog: PrimitiveCatalogEntry;
+  icon?: PrimitiveIcon;
   examples: readonly (PrimitiveNode | PrimitiveExample)[];
   schema: PrimitiveSchema;
   schemaFor?: (bodyNodeSchema: ZodType<unknown>) => PrimitiveSchema;

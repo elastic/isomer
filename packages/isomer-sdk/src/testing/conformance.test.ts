@@ -114,6 +114,24 @@ describe('primitive conformance suite', () => {
     ).toThrow('note example names must be non-empty');
   });
 
+  it('rejects a blank catalog.name', () => {
+    const definition = noteWith([{ type: 'note', body: 'Hello' }]);
+    expect(() =>
+      runPrimitiveInventoryConformance([
+        { ...definition, catalog: { ...definition.catalog, name: ' ' } },
+      ])
+    ).toThrow('note catalog.name must be non-empty when present');
+  });
+
+  it('accepts a catalog.name', () => {
+    const definition = noteWith([{ type: 'note', body: 'Hello' }]);
+    expect(() =>
+      runPrimitiveInventoryConformance([
+        { ...definition, catalog: { ...definition.catalog, name: 'Note' } },
+      ])
+    ).not.toThrow();
+  });
+
   it('names a failing example by its name', () => {
     const definition = noteWith([
       { type: 'note', body: 'Hello' },

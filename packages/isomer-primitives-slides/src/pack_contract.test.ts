@@ -11,9 +11,10 @@ import {
   exampleNodes,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
+import { assertPackIconsValid } from '@elastic/isomer-sdk/testing';
 import { describe, expect, it } from 'vitest';
 
-import { SLIDE_HEIGHT, SLIDE_WIDTH, slideDeckFrame } from './pack';
+import { SLIDE_HEIGHT, SLIDE_WIDTH, slideDeckFrame, slidesPack } from './pack';
 import { slideDeckPrimitives, slidePrimitiveTypes } from './registry';
 
 // Use a dispatcher for renders that require scope (containers thread it).
@@ -58,6 +59,22 @@ describe('slide pack contract', () => {
         expect(dispatcher.renderMarkdown(node).trim(), label).not.toBe('');
       }
     }
+  });
+});
+
+describe('slide pack icons', () => {
+  it('declares icons that pass the icon rules', () => {
+    expect(() => assertPackIconsValid(slidesPack)).not.toThrow();
+  });
+
+  it('exposes slideStat through pack.icons', () => {
+    expect(slidesPack.icons['slideStat']?.svg).toBe(
+      '<svg viewBox="0 0 16 16" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+        '<rect width="16" height="16" rx="3" fill="var(--isomer-icon-bg, #ebeefd)"/>' +
+        '<rect x="3" y="3" width="3" height="10" rx=".5" fill="var(--isomer-icon-accent, #3d5ad8)"/>' +
+        '<rect x="8" y="7" width="3" height="6" rx=".5" fill="var(--isomer-icon-muted, #b8c2f4)"/>' +
+        '</svg>'
+    );
   });
 });
 

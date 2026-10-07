@@ -6,6 +6,7 @@
  */
 
 import { IsomerError } from '../composition/error';
+import type { PrimitiveIcon } from '../define/primitive_icon';
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
 
 import type { EnhancementDefinition } from './enhancements';
@@ -20,6 +21,8 @@ import type { AnyPrimitivePack } from './primitive_pack';
 export interface ComposedPacks {
   readonly definitions: readonly AnyPrimitiveDefinition[];
   readonly enhancements: readonly EnhancementDefinition[];
+  /** Every pack's `icons`, merged into one frozen null-prototype dictionary. */
+  readonly icons: Readonly<Record<string, PrimitiveIcon>>;
   readonly slackAssetTypes: ReadonlySet<string>;
 }
 
@@ -65,10 +68,24 @@ export const composePacks = (
     enhancements: Object.freeze(
       packs.flatMap((pack) => [...pack.enhancements])
     ),
+    icons: mergeIcons(packs),
     slackAssetTypes: new Set(
       packs.flatMap((pack) => [...pack.slackAssetTypes])
     ),
   });
+};
+
+/** Null-prototype, so a type such as `__proto__` is an ordinary key. */
+const mergeIcons = (
+  packs: readonly AnyPrimitivePack[]
+): Readonly<Record<string, PrimitiveIcon>> => {
+  const icons = Object.create(null) as Record<string, PrimitiveIcon>;
+  for (const pack of packs) {
+    for (const type of Object.keys(pack.icons)) {
+      icons[type] = pack.icons[type]!;
+    }
+  }
+  return Object.freeze(icons);
 };
 
 const assertUnique = (

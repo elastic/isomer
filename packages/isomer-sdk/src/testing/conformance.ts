@@ -194,8 +194,8 @@ export const primitiveConformanceRows = (
 
 /**
  * Asserts the inventory itself holds up: the pack has examples, every
- * definition contributes one, example names are non-empty and unique within
- * their definition, each example's `type` matches its definition, and
+ * definition contributes one, `catalog.name` and example names are non-empty,
+ * example names are unique within their definition, each example's `type` matches its definition, and
  * `catalog.example` is within the input budget and parses or matches a
  * published example.
  */
@@ -208,6 +208,11 @@ export const runPrimitiveInventoryConformance = (
     assert.ok(
       definition.examples.length > 0,
       `${definition.type} primitive must expose at least one example`
+    );
+    const { name: catalogName } = definition.catalog;
+    assert.ok(
+      catalogName === undefined || catalogName.trim().length > 0,
+      `${definition.type} catalog.name must be non-empty when present`
     );
     const names = new Set<string>();
     for (const { name } of primitiveExamples(definition)) {

@@ -13,6 +13,7 @@ import type { PrimitivePack } from '../pack/primitive_pack';
 import {
   type DefaultPackTypes,
   definePrimitive,
+  definePrimitiveFor,
   type SurfaceMap,
 } from './primitive_module';
 import type { SlackBlock } from './slack_blocks';
@@ -158,5 +159,41 @@ describe('definePrimitive node fields', () => {
         code: 'RESERVED_NODE_FIELD',
       })
     );
+  });
+});
+
+describe('definePrimitive icon', () => {
+  const icon = {
+    svg: '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="3" fill="currentColor"/></svg>',
+  };
+  const base = {
+    type: 'probe',
+    catalog: {
+      type: 'probe',
+      name: 'Probe',
+      purpose: '',
+      useWhen: [],
+      avoidWhen: [],
+      example: { type: 'probe' },
+    },
+    examples: [{ type: 'probe' }],
+    schema: z.object({ type: z.literal('probe') }),
+    renderers: { react: () => null, text: () => '', markdown: () => [] },
+  };
+
+  it('keeps icon and catalog.name', () => {
+    const defined = definePrimitive({ ...base, icon });
+    expect(defined.icon).toBe(icon);
+    expect(defined.catalog.name).toBe('Probe');
+  });
+
+  it('keeps icon through definePrimitiveFor', () => {
+    expect(definePrimitiveFor<DefaultPackTypes>()({ ...base, icon }).icon).toBe(
+      icon
+    );
+  });
+
+  it('adds no icon key when none is declared', () => {
+    expect(Object.hasOwn(definePrimitive(base), 'icon')).toBe(false);
   });
 });

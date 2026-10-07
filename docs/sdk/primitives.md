@@ -54,19 +54,20 @@ The schema is the declaration: the node type is `z.infer` of it, the typed `exam
 
 ## The definition
 
-| Field           | Required  | What it is                                                           |
-| --------------- | --------- | -------------------------------------------------------------------- |
-| `type`          | yes       | The discriminator. Unique across every pack in a runtime.            |
-| `schema`        | yes       | A Zod **object** schema for this node on its own.                    |
-| `catalog`       | yes       | Agent-facing copy: `purpose`, `useWhen`, `avoidWhen`, `example`.     |
-| `examples`      | yes       | Conformance nodes, bare or named; prompt shows `catalog.example`.    |
-| `renderers`     | yes       | `react`, `text`, `markdown` always; `slack` optionally.              |
-| `schemaFor`     | container | The same schema, bound to the composition's body-node union.         |
-| `sanitize`      | no        | Last-chance repair or rejection, run before every render.            |
-| `children`      | container | Nested nodes, each with the field path it lives under.               |
-| `hasOwnContent` | hybrid    | Whether the parent still renders when every child is hidden.         |
-| `metrics`       | no        | `svgHeight`, so a measuring frame can size itself.                   |
-| `collectStyles` | no        | Contributes CSS through the pack's style adapter.                    |
+| Field           | Required  | What it is                                                                                           |
+| --------------- | --------- | ---------------------------------------------------------------------------------------------------- |
+| `type`          | yes       | The discriminator. Unique across every pack in a runtime.                                            |
+| `schema`        | yes       | A Zod **object** schema for this node on its own.                                                    |
+| `catalog`       | yes       | Agent-facing copy: `purpose`, `useWhen`, `avoidWhen`, `example`; and an optional host-facing `name`. |
+| `icon`          | no        | A host-facing 16×16 SVG glyph; see [Names and icons](#names-and-icons).                              |
+| `examples`      | yes       | Conformance nodes, bare or named; prompt shows `catalog.example`.                                    |
+| `renderers`     | yes       | `react`, `text`, `markdown` always; `slack` optionally.                                              |
+| `schemaFor`     | container | The same schema, bound to the composition's body-node union.                                         |
+| `sanitize`      | no        | Last-chance repair or rejection, run before every render.                                            |
+| `children`      | container | Nested nodes, each with the field path it lives under.                                               |
+| `hasOwnContent` | hybrid    | Whether the parent still renders when every child is hidden.                                         |
+| `metrics`       | no        | `svgHeight`, so a measuring frame can size itself.                                                   |
+| `collectStyles` | no        | Contributes CSS through the pack's style adapter.                                                    |
 
 An entry of `examples` is a node, or a `PrimitiveExample` that names one so a host listing examples, such as a Storybook or a docs page, can label it:
 
@@ -144,6 +145,26 @@ Runs before every render, on every surface, and may return `null` to drop the no
 ## `metrics.svgHeight`
 
 Optional. The height estimate is `0` when it is missing, so a frame that sums node heights sizes short. The runtime's `svg` surface reports each such node when the frame that render uses calls `estimateSvgHeight`. A frame that returns a constant reads nothing from it, and `validate` reports nothing about it.
+
+## Names and icons
+
+A host listing primitives, in a nav, a docs gallery, or an example picker, shows a name and a glyph beside each one. Neither reaches the model.
+
+`catalog.name` is the name, such as `Stat group`. It is the one host-facing field in `catalog`: the authoring prompt never prints it, so a model is not invited to write it as a `type`. Absent, the host derives a name from `type`. Inventory conformance rejects a blank one.
+
+`icon` is `{ svg }`, a static string a host inlines as markup without a renderer, and `pack.icons` maps each type to it. Absent, the host supplies its own glyph, such as a monogram. Because a host inserts the string as markup, its rules are an allowlist, which `assertPackIconsValid` from `./testing` enforces:
+
+- One `<svg>` root with `viewBox="0 0 16 16"`, no `width` or `height`, and an optional `xmlns`.
+- Elements: `svg`, `g`, `path`, `rect`, `circle`, `ellipse`, `line`, `polyline`, `polygon`. No text, script, style, image, `use`, or `foreignObject`.
+- Attributes: geometry (`d`, `x`, `y`, `cx`, `cy`, `r`, `rx`, `ry`, `x1`…`y2`, `points`, `width` and `height` on `rect`), `transform`, and paint (`fill`, `stroke`, `stroke-width`, `stroke-linecap`, `stroke-linejoin`, `opacity`, `fill-opacity`, `stroke-opacity`, `fill-rule`, `clip-rule`). No `style`, `class`, `href`, or event handlers. Values are quoted and hold no entities.
+- Every `fill` and `stroke` is `none`, `currentColor`, or one of the four `ICON_VARS`, optionally with a `currentColor` or `#rgb` / `#rrggbb` fallback: `var(--isomer-icon-accent, #3d5ad8)`.
+- No comments, declarations, CDATA, text, or anything after `</svg>`.
+
+The four slots are `accent` for the one emphasised element, `muted` for bodies, `fg` for lines, and `bg` for a tile behind the glyph, if the icon draws one.
+
+A fallback is the author's choice. A hex fallback is the icon's default look when the host sets nothing; it is one look for every mode. A `currentColor` fallback inherits the host's text colour instead. A host restyles icons by setting the variables, across the page or scoped to one type, as Kibana does for its illustrations ([kibana#221938](https://github.com/elastic/kibana/issues/221938)): one SVG, with the colours supplied per theme and mode.
+
+An icon is exempt from the rule that a pack holds no rendered value of its own: its geometry and fallbacks are host-facing defaults the pack never draws.
 
 ## Pack types
 

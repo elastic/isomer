@@ -42,6 +42,25 @@ describe('buildAuthoringPrompt', () => {
     expect(prompt).not.toContain('\n  "type"');
   });
 
+  it.each(['full', 'index'] as const)(
+    'leaves catalog.name out of the %s catalog',
+    (catalog) => {
+      const entry = {
+        type: 'statGroup',
+        purpose: 'Several stats.',
+        useWhen: ['Numbers side by side.'],
+        avoidWhen: [],
+        example: { type: 'statGroup' },
+      };
+      const prompt = (
+        primitives: readonly (typeof entry & { name?: string })[]
+      ) => buildAuthoringPrompt('general', { ...context, catalog, primitives });
+      const named = prompt([{ ...entry, name: 'Stat group' }]);
+      expect(named).toBe(prompt([entry]));
+      expect(named).not.toContain('Stat group');
+    }
+  );
+
   it('renders each catalog example under its bullet', () => {
     const prompt = buildAuthoringPrompt('general', {
       ...context,
