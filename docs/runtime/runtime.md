@@ -62,7 +62,7 @@ runtime.surfaces.react.render(composition, { context: { resolveClassName } });
 | `validate(composition)` | The input budget, the schema, then the semantic passes, all on one plain copy; returns errors, warnings, and that copy |
 | `parse(value)` | Schema only, for untrusted input; returns a composition or errors |
 | `getAuthoringContext()` | Authoring schema, catalog, and live view summaries for an agent |
-| `getCapabilities()` | The primitive types, formats, and enhancements this host supports |
+| `getCapabilities()` | The primitive types, formats, per-primitive format support, and enhancements this host supports |
 | `getCompositionSchema()` | The same schema `validate` / `parse` use internally |
 
 ## What it refuses, and when

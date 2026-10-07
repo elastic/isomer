@@ -10,7 +10,12 @@
 // Lives in the sdk so both the assembly layer and a pack import it from the
 // same place; a pack must not have to depend on the assembly layer for it.
 
+import type { AnyPrimitiveDefinition } from '../define/primitive_module';
+
 import type { AnyPrimitivePack } from './primitive_pack';
+
+/** `native` renders through the primitive's own renderer, `fallback` through another surface's (Slack via markdown). */
+export type SurfaceSupport = 'native' | 'fallback';
 
 /**
  * What a runtime or a pack supports. Enhancement ids are open strings: each
@@ -22,6 +27,12 @@ export interface HostCapabilities<TEnhancement extends string = string> {
   primitives: string[];
   /** Render formats reachable, e.g. `html`, `slack`, `png`. */
   formats: string[];
+  /**
+   * How each of `formats` renders each primitive, keyed by `type` then format.
+   * `slack` is `fallback` for a primitive with no `slack` renderer; every other
+   * format renders from `react`, `text`, or `markdown`, which are required.
+   */
+  support: Record<string, Record<string, SurfaceSupport>>;
   /** Progressive enhancements the packs declare, by id, which an HTML or React render may request. */
   enhancements?: Partial<Record<TEnhancement, boolean>>;
 }
@@ -44,11 +55,18 @@ export const describeCapabilities = (
   const enhancementIds = packs.flatMap((pack) =>
     pack.enhancements.map((definition) => definition.id)
   );
+  const definitions = packs.flatMap((pack) => pack.primitives);
   return {
-    primitives: packs.flatMap((pack) =>
-      pack.primitives.map((definition) => definition.type)
-    ),
+    primitives: definitions.map(({ type }) => type),
     formats: [...formats],
+    support: Object.fromEntries(
+      definitions.map((definition) => [
+        definition.type,
+        Object.fromEntries(
+          formats.map((format) => [format, supportOn(definition, format)])
+        ),
+      ])
+    ),
     ...(enhancementIds.length > 0
       ? {
           enhancements: Object.fromEntries(
@@ -58,3 +76,9 @@ export const describeCapabilities = (
       : {}),
   };
 };
+
+const supportOn = (
+  { renderers }: AnyPrimitiveDefinition,
+  format: string
+): SurfaceSupport =>
+  format === 'slack' && renderers.slack === undefined ? 'fallback' : 'native';

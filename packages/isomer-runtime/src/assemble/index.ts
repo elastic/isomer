@@ -9,6 +9,7 @@ export {
   type HostCapabilities,
   type PrimitiveDescriptions,
   type RuntimeAuthoringContext,
+  type SurfaceSupport,
 } from './authoring';
 export { type RuntimeRendererOverrides } from './overrides';
 export {
