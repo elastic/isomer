@@ -439,30 +439,32 @@ const withReferences = (blocks: readonly RootContent[]): RootContent[] => {
   return blocks.map(resolve) as RootContent[];
 };
 
+const lines = (text: string): string => text.replace(/\r\n?/g, '\n');
+
+const literalParagraphs = (text: string): RootContent[] =>
+  lines(text)
+    .split(/\n[ \t]*\n/)
+    .filter((paragraph) => paragraph.trim() !== '')
+    .map((paragraph) => ({
+      type: 'paragraph',
+      children: [{ type: 'text', value: paragraph.trim() }],
+    }));
+
 // Source past the parse budget prints as its literal paragraphs.
 const gfmBlocks = (gfm: string): RootContent[] => {
-  const source = gfm.replace(/\r\n?/g, '\n');
-  const parsed = parseGfmBlocks(source) as RootContent[] | null;
-  return parsed === null
-    ? source
-        .split(/\n[ \t]*\n/)
-        .filter((paragraph) => paragraph.trim() !== '')
-        .map((paragraph) => ({
-          type: 'paragraph',
-          children: [{ type: 'text', value: paragraph.trim() }],
-        }))
-    : withReferences(parsed);
+  const parsed = parseGfmBlocks(lines(gfm)) as RootContent[] | null;
+  return parsed === null ? literalParagraphs(gfm) : withReferences(parsed);
 };
 
-// Markdown printed as written is read as the GFM it holds, or as the authored
-// source when sanitizing left only inert text.
+// Markdown printed as written is read as the GFM it holds; authored source
+// that sanitizing left inert is never parsed.
 const expanded = (node: Nodes): Nodes[] => {
   if ((node.type as string) === VERBATIM_TYPE) {
     const { value, source } = node as unknown as {
       value: string;
       source?: string;
     };
-    return gfmBlocks(source ?? value);
+    return source === undefined ? gfmBlocks(value) : literalParagraphs(source);
   }
   return 'children' in node
     ? [{ ...node, children: node.children.flatMap(expanded) } as Nodes]

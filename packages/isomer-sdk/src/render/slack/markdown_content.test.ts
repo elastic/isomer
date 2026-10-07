@@ -832,6 +832,15 @@ describe('gfmToSlackBlocks', () => {
     expect(second).toBe('section: end <b>');
   });
 
+  it('never parses inert authored source, even once CRLF shrinks it under budget', () => {
+    const source = `[label](https://example.test)\r\n\r\n${`${'x'.repeat(50)}\r\n`.repeat(320)}`;
+    expect(source.replace(/\r\n/g, '\n').length).toBeLessThan(16_384);
+    const authored = md.authored(source);
+    expect(serializeMarkdown(authored)).toMatch(/^\\\[label\\\]\(/);
+    const [first] = outline(markdownContentToSlackBlocks(authored));
+    expect(first).toBe('section: [label](https://example.test)\n');
+  });
+
   it('translates adversarial source in bounded time', () => {
     const inputs = [
       '*a '.repeat(2_000),
