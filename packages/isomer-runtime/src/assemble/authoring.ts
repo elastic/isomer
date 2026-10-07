@@ -20,6 +20,8 @@ import {
 
 import type { JsonSchema, RegisteredViewSummary } from '../registry';
 
+import { describeProps, type PropDescriptor } from './prop_descriptors';
+
 export type { HostCapabilities, SurfaceSupport };
 
 /**
@@ -67,6 +69,8 @@ export interface PrimitiveDescriptions {
   primitives: PrimitiveCatalogEntry[];
   /** `{ $defs }` only: the defs the types reach, keyed as in the full schema, with the body-node union stubbed. */
   schema: JsonSchema;
+  /** Each requested type's properties, flattened from the full schema for a props table. */
+  props: Readonly<Record<string, readonly PropDescriptor[]>>;
 }
 
 /**
@@ -150,6 +154,7 @@ export const createRuntimeAuthoringContextFactory = (
         (type) => definitionsByType.get(type)?.catalog ?? []
       ),
       schema: authoringSchemaSubset(schema, wanted),
+      props: describeProps(schema, wanted),
     };
   };
 
