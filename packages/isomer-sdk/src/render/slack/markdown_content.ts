@@ -5,26 +5,26 @@
  * 2.0.
  */
 
-// Builder content to Block Kit, read from the tree rather than re-parsed from
-// Markdown. Rich text carries formatting as style flags beside literal text,
-// so nothing is escaped and nesting survives exactly.
+// Markdown to Block Kit, read from the tree rather than re-parsed line by
+// line. Rich text carries formatting as style flags beside literal text, so
+// nothing is escaped and nesting survives exactly.
 
 import type {
   Blockquote,
+  Definition,
+  FootnoteDefinition,
   List,
   ListItem,
   Nodes,
+  Paragraph,
   PhrasingContent,
   RootContent,
   Table,
 } from 'mdast';
 
 import type { MarkdownContent } from '../../define/markdown_content';
-import {
-  markdownBlocks,
-  serializeMarkdown,
-  VERBATIM_TYPE,
-} from '../markdown/builder';
+import { markdownBlocks, VERBATIM_TYPE } from '../markdown/builder';
+import { parseGfmBlocks } from '../markdown/format';
 
 import {
   SLACK_LIMITS,
@@ -36,7 +36,7 @@ import {
   type SlackTableBlock,
   type SlackTableCell,
 } from './blocks';
-import { clampSlackText, gfmToSlackBlocks, slackLinkUrl } from './format';
+import { clampSlackText, slackLinkUrl } from './format';
 
 const plainText = (node: Nodes): string => {
   if ('value' in node) {
@@ -60,6 +60,12 @@ const textElement = (
     ? []
     : [{ type: 'text', text, ...(withStyle ? { style: withStyle } : {}) }];
 };
+
+const footnoteLabel = ({
+  identifier,
+  label,
+}: Pick<FootnoteDefinition, 'identifier' | 'label'>): string =>
+  `[^${label ?? identifier}]`;
 
 // One link element per styled run of the label, so its formatting survives;
 // an empty label is a bare link. A URL Slack cannot link leaves the label.
@@ -102,6 +108,8 @@ const inline = (
         return linkRuns(node.url, textElement(node.alt ?? '', style), style);
       case 'break':
         return textElement('\n', style);
+      case 'footnoteReference':
+        return textElement(footnoteLabel(node), style);
       default:
         return textElement(plainText(node), style);
     }
@@ -110,8 +118,8 @@ const inline = (
 const inlineText = (element: SlackRichTextInline): string =>
   element.type === 'link' ? (element.text ?? element.url) : element.text;
 
-// The envelope leaves rich text alone, so a section keeps to the budget the
-// string path gives a section's text.
+// The envelope leaves rich text alone, so a section keeps to the budget of a
+// `section` block's text.
 const clampInline = (
   elements: readonly SlackRichTextInline[],
   budget: number = SLACK_LIMITS.sectionTextChars
@@ -142,6 +150,19 @@ const section = (elements: SlackRichTextInline[]): SlackRichTextSection[] => {
     : [{ type: 'rich_text_section', elements: clamped }];
 };
 
+type Piece = SlackRichTextBlockElement | SlackBlock;
+
+const isElement = (piece: Piece): piece is SlackRichTextBlockElement =>
+  piece.type.startsWith('rich_text_');
+
+// Blocks a rich-text list item holds as lines of its text.
+const ITEM_LINES: ReadonlySet<string> = new Set([
+  'paragraph',
+  'heading',
+  'code',
+  'html',
+]);
+
 const childInline = (
   child: ListItem['children'][number]
 ): SlackRichTextInline[] =>
@@ -155,20 +176,18 @@ const childInline = (
         child.type === 'code' ? { code: true } : {}
       );
 
-// An item's children are read in order. Its paragraphs share one bullet; a
-// nested list follows at the next indent; what the item holds after a nested
-// list follows unbulleted, since a Slack list item cannot resume; and the
-// outer list resumes at its next number.
 // A quote holds its blocks at one level.
 const unquoted = (node: RootContent): RootContent[] =>
   node.type === 'blockquote' ? node.children.flatMap(unquoted) : [node];
 
-const listElements = (
-  list: List,
-  indent: number
-): SlackRichTextBlockElement[] => {
+// An item's children are read in order. Its lines of text share one bullet; a
+// nested list follows at the next indent; any other block, such as a table,
+// follows on its own; what the item holds after either follows unbulleted,
+// since a Slack list item cannot resume; and the list resumes at its next
+// number.
+const listPieces = (list: List, indent: number): Piece[] => {
   const style = list.ordered ? 'ordered' : 'bullet';
-  const out: SlackRichTextBlockElement[] = [];
+  const out: Piece[] = [];
   let current: SlackRichTextSection[] = [];
   let number = list.start ?? 1;
   let offset = number - 1;
@@ -208,51 +227,30 @@ const listElements = (
     for (const child of item.children.flatMap(
       unquoted
     ) as ListItem['children']) {
-      if (child.type === 'list') {
-        emit();
-        flush();
-        out.push(
-          ...listElements(
-            child,
-            Math.min(indent + 1, SLACK_LIMITS.richTextListMaxIndent)
-          )
-        );
-      } else {
+      if (ITEM_LINES.has(child.type)) {
         runs.push(
           ...(runs.length > 0 ? textElement('\n', {}) : []),
           ...childInline(child)
         );
+        continue;
+      }
+      const pieces =
+        child.type === 'list'
+          ? listPieces(
+              child,
+              Math.min(indent + 1, SLACK_LIMITS.richTextListMaxIndent)
+            )
+          : blockPieces(child);
+      if (pieces.length > 0) {
+        emit();
+        flush();
+        out.push(...pieces);
       }
     }
     emit();
   }
   flush();
   return out;
-};
-
-const richTextElements = (node: RootContent): SlackRichTextBlockElement[] => {
-  switch (node.type) {
-    case 'paragraph':
-      return section(inline(node.children));
-    case 'heading':
-      return section(inline(node.children, { bold: true }));
-    case 'list':
-      return listElements(node, 0);
-    case 'code':
-      return node.value === ''
-        ? []
-        : [
-            {
-              type: 'rich_text_preformatted',
-              elements: textElement(
-                clampSlackText(node.value, SLACK_LIMITS.sectionTextChars),
-                {}
-              ),
-            },
-          ];
-    default:
-      return [];
-  }
 };
 
 const tableCell = (cell: PhrasingContent[]): SlackTableCell => {
@@ -294,53 +292,24 @@ const tableBlock = (table: Table): SlackTableBlock[] => {
   ];
 };
 
-const containsVerbatim = (node: Nodes): boolean =>
-  (node.type as string) === VERBATIM_TYPE ||
-  ('children' in node && node.children.some(containsVerbatim));
-
-const LIST_ITEM_CONTENT: ReadonlySet<string> = new Set([
-  'paragraph',
-  'heading',
-  'code',
-  'list',
-]);
-
-// A rich-text list item holds lines of text, so a list holding any other
-// block, such as a table, goes through the string translator whole.
-const fitsRichTextList = (list: List): boolean =>
-  list.children.every((item) =>
-    item.children
-      .flatMap(unquoted)
-      .every(
-        (child) =>
-          LIST_ITEM_CONTENT.has(child.type) &&
-          (child.type !== 'list' || fitsRichTextList(child))
-      )
+// A footnote's label leads its first paragraph.
+const footnotePieces = ({
+  children,
+  ...footnote
+}: FootnoteDefinition): Piece[] => {
+  const [first, ...rest] = children;
+  const label: PhrasingContent = {
+    type: 'text',
+    value: `${footnoteLabel(footnote)}: `,
+  };
+  const lead: Paragraph = {
+    type: 'paragraph',
+    children: [label, ...(first?.type === 'paragraph' ? first.children : [])],
+  };
+  return [lead, ...(first?.type === 'paragraph' ? rest : children)].flatMap(
+    blockPieces
   );
-
-// The string translator reads a line at a time, so a hard break reaches it as
-// a line ending and a quote as its blocks.
-const forStringPath = (node: Nodes): Nodes[] => {
-  if (node.type === 'break') {
-    return [{ type: 'text', value: '\n' }];
-  }
-  if (node.type === 'blockquote') {
-    return node.children.flatMap(forStringPath);
-  }
-  return 'children' in node
-    ? [{ ...node, children: node.children.flatMap(forStringPath) } as Nodes]
-    : [node];
 };
-
-const viaStringPath = (node: RootContent): SlackBlock[] =>
-  gfmToSlackBlocks(
-    serializeMarkdown(forStringPath(node) as unknown as MarkdownContent)
-  );
-
-type Piece = SlackRichTextBlockElement | SlackBlock;
-
-const isElement = (piece: Piece): piece is SlackRichTextBlockElement =>
-  piece.type.startsWith('rich_text_');
 
 const borderedElement = (
   element: SlackRichTextBlockElement
@@ -356,48 +325,10 @@ const borderedElement = (
   }
 };
 
-// What a quote holds besides text keeps a quote's border; a table has none.
-const bordered = (piece: Piece): Piece => {
-  if (isElement(piece)) {
-    return borderedElement(piece);
-  }
-  switch (piece.type) {
-    case 'rich_text':
-      return { ...piece, elements: piece.elements.map(borderedElement) };
-    case 'section':
-      return piece.text?.type === 'mrkdwn'
-        ? {
-            ...piece,
-            text: {
-              ...piece.text,
-              text: piece.text.text.replace(/^(?=.*\S)/gm, '> '),
-            },
-          }
-        : piece;
-    default:
-      return piece;
-  }
-};
-
-const blockPieces = (node: RootContent): Piece[] => {
-  if (node.type === 'blockquote') {
-    return quotePieces(node);
-  }
-  if (
-    containsVerbatim(node) ||
-    (node.type === 'list' && !fitsRichTextList(node))
-  ) {
-    return viaStringPath(node);
-  }
-  if (node.type === 'table') {
-    return tableBlock(node);
-  }
-  const translated = richTextElements(node);
-  return translated.length === 0 &&
-    !['paragraph', 'heading', 'code'].includes(node.type)
-    ? viaStringPath(node)
-    : translated;
-};
+// What a quote holds besides text keeps a quote's border; a table or divider
+// has none.
+const bordered = (piece: Piece): Piece =>
+  isElement(piece) ? borderedElement(piece) : piece;
 
 // A quote is one level, nested quotes spread into it: its text as
 // `rich_text_quote`, and any other block it holds with a border.
@@ -419,24 +350,115 @@ const quotePieces = (quote: Blockquote): Piece[] => {
         ...line
       );
     } else {
-      flush();
-      out.push(...blockPieces(child).map(bordered));
+      const pieces = blockPieces(child);
+      if (pieces.length > 0) {
+        flush();
+        out.push(...pieces.map(bordered));
+      }
     }
   }
   flush();
   return out;
 };
 
-/**
- * Builder content as Block Kit: paragraphs, headings, lists, quotes, and code
- * as `rich_text`, tables as `table` blocks. A quote is one level, and inside a
- * list item its blocks are the item's. A run of rich-text blocks shares one
- * `rich_text` block. Markdown printed as written, any block holding it, and a
- * list holding a table go through {@link gfmToSlackBlocks}.
- */
-export const markdownContentToSlackBlocks = (
-  content: MarkdownContent
-): SlackBlock[] => {
+const blockPieces = (node: RootContent): Piece[] => {
+  switch (node.type) {
+    case 'paragraph':
+    case 'html':
+      return section(childInline(node));
+    case 'heading':
+      return section(inline(node.children, { bold: true }));
+    case 'code':
+      return node.value === ''
+        ? []
+        : [
+            {
+              type: 'rich_text_preformatted',
+              elements: textElement(
+                clampSlackText(node.value, SLACK_LIMITS.sectionTextChars),
+                {}
+              ),
+            },
+          ];
+    case 'list':
+      return listPieces(node, 0);
+    case 'blockquote':
+      return quotePieces(node);
+    case 'table':
+      return tableBlock(node);
+    case 'thematicBreak':
+      return [{ type: 'divider' }];
+    case 'footnoteDefinition':
+      return footnotePieces(node);
+    default:
+      return [];
+  }
+};
+
+// Each reference resolved to its document's first definition.
+const withReferences = (blocks: readonly RootContent[]): RootContent[] => {
+  const definitions = new Map<string, Definition>();
+  const collect = (node: Nodes): void => {
+    if (node.type === 'definition' && !definitions.has(node.identifier)) {
+      definitions.set(node.identifier, node);
+    }
+    if ('children' in node) {
+      node.children.forEach(collect);
+    }
+  };
+  blocks.forEach(collect);
+  if (definitions.size === 0) {
+    return [...blocks];
+  }
+  const resolve = (node: Nodes): Nodes => {
+    switch (node.type) {
+      case 'linkReference':
+        return {
+          type: 'link',
+          url: definitions.get(node.identifier)?.url ?? '',
+          children: node.children.map(resolve) as PhrasingContent[],
+        };
+      case 'imageReference':
+        return {
+          type: 'image',
+          url: definitions.get(node.identifier)?.url ?? '',
+          alt: node.alt ?? null,
+        };
+      default:
+        return 'children' in node
+          ? ({ ...node, children: node.children.map(resolve) } as Nodes)
+          : node;
+    }
+  };
+  return blocks.map(resolve) as RootContent[];
+};
+
+// Source past the parse budget prints as its literal paragraphs.
+const gfmBlocks = (gfm: string): RootContent[] => {
+  const source = gfm.replace(/\r\n?/g, '\n');
+  const parsed = parseGfmBlocks(source) as RootContent[] | null;
+  return parsed === null
+    ? source
+        .split(/\n[ \t]*\n/)
+        .filter((paragraph) => paragraph.trim() !== '')
+        .map((paragraph) => ({
+          type: 'paragraph',
+          children: [{ type: 'text', value: paragraph.trim() }],
+        }))
+    : withReferences(parsed);
+};
+
+// Markdown printed as written is read as the GFM it holds.
+const expanded = (node: Nodes): Nodes[] => {
+  if ((node.type as string) === VERBATIM_TYPE) {
+    return gfmBlocks((node as unknown as { value: string }).value);
+  }
+  return 'children' in node
+    ? [{ ...node, children: node.children.flatMap(expanded) } as Nodes]
+    : [node];
+};
+
+const toSlackBlocks = (nodes: readonly RootContent[]): SlackBlock[] => {
   const blocks: SlackBlock[] = [];
   let elements: SlackRichTextBlockElement[] = [];
   const flush = (): void => {
@@ -464,7 +486,7 @@ export const markdownContentToSlackBlocks = (
     }
     elements = [];
   };
-  for (const node of markdownBlocks(content) as RootContent[]) {
+  for (const node of nodes) {
     for (const piece of blockPieces(node)) {
       if (isElement(piece)) {
         elements.push(piece);
@@ -477,3 +499,27 @@ export const markdownContentToSlackBlocks = (
   flush();
   return blocks;
 };
+
+/**
+ * Builder content as Block Kit: paragraphs, headings, lists, quotes, and code
+ * as `rich_text`, tables as `table` blocks, and thematic breaks as `divider`
+ * blocks. A quote is one level, and inside a list item its blocks are the
+ * item's. A run of rich-text blocks shares one `rich_text` block. Markdown
+ * printed as written is read as GFM, as {@link gfmToSlackBlocks} reads it.
+ */
+export const markdownContentToSlackBlocks = (
+  content: MarkdownContent
+): SlackBlock[] =>
+  toSlackBlocks(
+    (markdownBlocks(content) as RootContent[]).flatMap(
+      expanded
+    ) as RootContent[]
+  );
+
+/**
+ * GFM as Block Kit, parsed as CommonMark with GFM and translated as
+ * {@link markdownContentToSlackBlocks} translates builder content. Source past
+ * the parse budget that `md.authored` applies prints as literal paragraphs.
+ */
+export const gfmToSlackBlocks = (gfm: string): SlackBlock[] =>
+  toSlackBlocks(gfmBlocks(gfm));

@@ -12,7 +12,7 @@ import type { ValidationError } from '../composition/validation_error';
 import { definePrimitive } from '../define/primitive_module';
 import { md } from '../render/markdown/builder';
 import { createSlackAssetCollector } from '../render/slack/assets';
-import { gfmToSlackBlocks } from '../render/slack/format';
+import { gfmToSlackBlocks } from '../render/slack/markdown_content';
 import type {
   CaptionNode,
   ChartNode,

@@ -67,7 +67,6 @@ export {
   code,
   codeBlock,
   escapeMrkdwn,
-  gfmToSlackBlocks,
   isAbsoluteHttpUrl,
   italic,
   link,
@@ -75,4 +74,7 @@ export {
   strike,
 } from './format';
 
-export { markdownContentToSlackBlocks } from './markdown_content';
+export {
+  gfmToSlackBlocks,
+  markdownContentToSlackBlocks,
+} from './markdown_content';

@@ -14,7 +14,7 @@ sources:
 
 # Definition
 
-Slack Block Kit rendering and payload types. Reach Slack types through this entry, not `define/slack_*`.[^barrel] `markdownContentToSlackBlocks` translates content built with `md` to `rich_text` and `table` blocks from its tree, a quote as `rich_text_quote`; `gfmToSlackBlocks` translates a GFM string. `SlackRichTextList` takes `offset` for an ordered list that starts past 1. `renderSlackEnvelope` splits each `rich_text` section, quote, or preformatted element past `sectionTextChars` into adjacent ones of its type without losing text, whether a renderer built it or a degraded table did.[^barrel]
+Slack Block Kit rendering and payload types. Reach Slack types through this entry, not `define/slack_*`.[^barrel] `markdownContentToSlackBlocks` translates content built with `md` to `rich_text` and `table` blocks from its tree, a quote as `rich_text_quote`; `gfmToSlackBlocks` parses a GFM string and translates its tree the same way. `SlackRichTextList` takes `offset` for an ordered list that starts past 1. `renderSlackEnvelope` splits each `rich_text` section, quote, or preformatted element past `sectionTextChars` into adjacent ones of its type without losing text, whether a renderer built it or a degraded table did.[^barrel]
 
 Related: [rendering](/sdk/concepts/rendering.md), [packs](/sdk/concepts/packs.md).
 

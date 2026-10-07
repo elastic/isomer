@@ -30,8 +30,10 @@ import { createNodeIssueFormatter } from '../validate/node_issues';
 import { markdownFromString, serializeMarkdown } from './markdown/builder';
 import type { SlackAssetCollector } from './slack/assets';
 import type { SlackBlock, SlackImageBlock } from './slack/blocks';
-import { gfmToSlackBlocks } from './slack/format';
-import { markdownContentToSlackBlocks } from './slack/markdown_content';
+import {
+  gfmToSlackBlocks,
+  markdownContentToSlackBlocks,
+} from './slack/markdown_content';
 
 /**
  * Renders a node on any surface by looking its `type` up in one flattened
