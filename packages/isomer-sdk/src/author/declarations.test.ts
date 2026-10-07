@@ -117,6 +117,11 @@ const stack: AnyPrimitiveDefinition = definePrimitive<StackNode>({
 const definitions = [note, badges, callout, stack];
 const schema = buildAuthoringJsonSchema(definitions);
 
+const libSourceFiles = new Map<string, ts.SourceFile | undefined>();
+
+// Type-checking against `@types/react` outlasts Vitest's default under a loaded CI runner.
+const reactTypesTimeout = 30_000;
+
 const diagnostics = (
   files: Record<string, string>,
   compilerOptions: ts.CompilerOptions = {}
@@ -151,10 +156,19 @@ const diagnostics = (
   const base = ts.createCompilerHost(options);
   const host: ts.CompilerHost = {
     ...base,
-    getSourceFile: (name, languageVersion, ...rest) =>
-      files[name] === undefined
-        ? base.getSourceFile(name, languageVersion, ...rest)
-        : ts.createSourceFile(name, files[name], languageVersion),
+    getSourceFile: (name, languageVersion, ...rest) => {
+      if (files[name] !== undefined) {
+        return ts.createSourceFile(name, files[name], languageVersion);
+      }
+      const key = `${name}:${JSON.stringify(languageVersion)}`;
+      if (!libSourceFiles.has(key)) {
+        libSourceFiles.set(
+          key,
+          base.getSourceFile(name, languageVersion, ...rest)
+        );
+      }
+      return libSourceFiles.get(key);
+    },
     fileExists: (name) => files[name] !== undefined || base.fileExists(name),
     readFile: (name) => files[name] ?? base.readFile(name),
   };
@@ -902,26 +916,30 @@ describe('buildAuthoringDeclarations', () => {
     ).toHaveLength(1);
   });
 
-  it('leaves the host React JSX namespace unchanged', () => {
-    const declarations = buildAuthoringDeclarations(schema, definitions, {
-      jsx: true,
-    });
-    expect(
-      diagnostics(
-        {
-          '/virtual/isomer.d.ts': declarations,
-          '/virtual/use.tsx':
-            'const hostElement: JSX.Element = React.createElement("div"); <Composition><Callout>Hello</Callout></Composition>;',
-        },
-        {
-          types: ['react'],
-          allowUmdGlobalAccess: true,
-          moduleResolution: ts.ModuleResolutionKind.Node10,
-          jsxFactory: 'React.createElement',
-        }
-      )
-    ).toEqual([]);
-  });
+  it(
+    'leaves the host React JSX namespace unchanged',
+    () => {
+      const declarations = buildAuthoringDeclarations(schema, definitions, {
+        jsx: true,
+      });
+      expect(
+        diagnostics(
+          {
+            '/virtual/isomer.d.ts': declarations,
+            '/virtual/use.tsx':
+              'const hostElement: JSX.Element = React.createElement("div"); <Composition><Callout>Hello</Callout></Composition>;',
+          },
+          {
+            types: ['react'],
+            allowUmdGlobalAccess: true,
+            moduleResolution: ts.ModuleResolutionKind.Node10,
+            jsxFactory: 'React.createElement',
+          }
+        )
+      ).toEqual([]);
+    },
+    reactTypesTimeout
+  );
 
   it.each([ts.JsxEmit.ReactJSX, ts.JsxEmit.ReactJSXDev])(
     'works with React types and automatic JSX mode %s',
@@ -959,7 +977,8 @@ describe('buildAuthoringDeclarations', () => {
           }
         )
       ).toHaveLength(1);
-    }
+    },
+    reactTypesTimeout
   );
 
   it('declares an empty catalog as never', () => {
