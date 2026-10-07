@@ -182,14 +182,18 @@ const sanitizePass = (source: string): string => {
   return emitChildren(0, source.length, root.children);
 };
 
-/** Sanitizes GFM destinations and HTML; excessive syntax or length degrades to inert text. */
-export const sanitizeMarkdownSource = (markdown: string): string => {
-  if (exceedsParseBudget(markdown)) return inert(markdown);
+/** {@link sanitizeMarkdownSource}'s result, and whether it degraded to inert text. */
+export const sanitizeAuthoredSource = (
+  markdown: string
+): { markdown: string; inert: boolean } => {
+  if (exceedsParseBudget(markdown)) {
+    return { markdown: inert(markdown), inert: true };
+  }
   let current = markdown;
   try {
     for (let pass = 0; pass < MAX_PASSES; pass++) {
       const next = sanitizePass(current);
-      if (next === current) return current;
+      if (next === current) return { markdown: current, inert: false };
       current = next;
     }
   } catch (error) {
@@ -197,8 +201,12 @@ export const sanitizeMarkdownSource = (markdown: string): string => {
     // to exhaust the stack lands here.
     if (!(error instanceof RangeError)) throw error;
   }
-  return inert(current);
+  return { markdown: inert(current), inert: true };
 };
+
+/** Sanitizes GFM destinations and HTML; excessive syntax or length degrades to inert text. */
+export const sanitizeMarkdownSource = (markdown: string): string =>
+  sanitizeAuthoredSource(markdown).markdown;
 
 // No link, image, definition, or tag can survive without `[` or `<`.
 const inert = (markdown: string): string =>

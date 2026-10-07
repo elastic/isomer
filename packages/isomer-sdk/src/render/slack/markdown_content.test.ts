@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { md } from '../markdown/builder';
+import { md, serializeMarkdown } from '../markdown/builder';
 import { SAFE_INPUTS } from '../markdown/safe_inputs.fixtures';
 
 import {
@@ -818,6 +818,18 @@ describe('gfmToSlackBlocks', () => {
     const [first, second] = outline(blocks);
     expect(first).toMatch(/^section: \*\*x\*\* \*\*x\*\*/);
     expect(second).toBe('section: _y_');
+  });
+
+  it('prints authored source past the parse budget as the string path did', () => {
+    const source = `<tag> [label] \\ ${'x '.repeat(9_000)}\n\nend <b>`;
+    const authored = md.authored(source);
+    expect(serializeMarkdown(authored)).toMatch(/^&lt;tag> \\\[label\\\] \\\\/);
+    expect(markdownContentToSlackBlocks(authored)).toEqual(
+      gfmToSlackBlocks(source)
+    );
+    const [first, second] = outline(markdownContentToSlackBlocks(authored));
+    expect(first).toMatch(/^section: <tag> \[label\] \\ x/);
+    expect(second).toBe('section: end <b>');
   });
 
   it('translates adversarial source in bounded time', () => {

@@ -454,10 +454,15 @@ const gfmBlocks = (gfm: string): RootContent[] => {
     : withReferences(parsed);
 };
 
-// Markdown printed as written is read as the GFM it holds.
+// Markdown printed as written is read as the GFM it holds, or as the authored
+// source when sanitizing left only inert text.
 const expanded = (node: Nodes): Nodes[] => {
   if ((node.type as string) === VERBATIM_TYPE) {
-    return gfmBlocks((node as unknown as { value: string }).value);
+    const { value, source } = node as unknown as {
+      value: string;
+      source?: string;
+    };
+    return gfmBlocks(source ?? value);
   }
   return 'children' in node
     ? [{ ...node, children: node.children.flatMap(expanded) } as Nodes]
