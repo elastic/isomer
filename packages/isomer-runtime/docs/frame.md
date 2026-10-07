@@ -35,15 +35,14 @@ An empty `frames` map throws `EMPTY_FRAMES` rather than building a runtime typed
 | Responsibility | Effect |
 | --- | --- |
 | `defaultWidth` | The width a render uses unless the caller passes one |
-| `estimateHeight` | The height a render uses unless the caller passes one |
-| `sizesFromNodeHeights` | Whether a missing `metrics.svgHeight` on a primitive is worth warning about |
+| `estimateHeight` | The height a render uses unless the caller passes one. Calling `estimateSvgHeight` is what reads `metrics.svgHeight` |
 | `theme` | A palette per mode; an image has no media queries, so it commits to one |
 | `validateBody` | What this document requires of a body — the slide rule of exactly one `slideFrame` |
 | `wrap` | The surround drawn around the dispatched body |
 
 The body itself is dispatched generically, and the frame is handed the composition's title, subtitle, and theme with the body nodes withheld — a frame that could read the nodes could branch on a pack's node types, which is exactly the knowledge this split keeps out of it.
 
-`sizesFromNodeHeights` is unioned across every frame the runtime holds. Any one frame that measures nodes makes the metric load-bearing; a runtime whose frames are all fixed-size stays quiet about a value nothing reads.
+A missing `metrics.svgHeight` is reported by the `svg` surface, on the render whose `estimateHeight` calls `estimateSvgHeight`. A frame that returns a constant leaves that list empty. `validate` covers duplicate ids and empty surfaces, so a runtime holding a measuring frame and a fixed one warns only for the render that measured. See [Surfaces](surfaces.md#a-missing-svgheight).
 
 ## Rendering with one
 

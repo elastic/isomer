@@ -52,7 +52,7 @@ Each exposes `render` and `renderNode`, plus a `validating` field stating its po
 | `slack` | `SlackRenderResult` | `SlackRenderResult` | `true` | `SlackRenderNodeOptions`: `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
 | `svg` | `SvgRenderResult` | `SvgRenderResult` | `true` | `SvgRenderNodeOptions`: `frame`, `theme`, `anchors`, `onValidationError` |
 
-Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SvgSurface`; `RuntimeSurfaces` is the record of all six. `render` takes its surface's options type below. `SvgRenderResult` is `{ element, css, width, height }`. The `svg` surface additionally exposes `renderPages(compositions, options?)`, which lays several compositions out as one document and returns `SvgPagesResult`, `{ pages, css, width, height }`: one root per composition against one stylesheet, every page the tallest estimate unless `height` is given, and the first composition's `theme` unless `theme` is given.
+Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SvgSurface`; `RuntimeSurfaces` is the record of all six. `render` takes its surface's options type below. `SvgRenderResult` is `{ element, css, width, height, warnings }`. `warnings` is a `SvgHeightWarning[]` (`{ path, message }`): nodes this render measured as 0 because they declare no `metrics.svgHeight`, empty when the frame never calls `estimateSvgHeight` or when `height` is given. The `svg` surface additionally exposes `renderPages(compositions, options?)`, which lays several compositions out as one document and returns `SvgPagesResult`, `{ pages, css, width, height, warnings }`: one root per composition against one stylesheet, every page the tallest estimate unless `height` is given, and the first composition's `theme` unless `theme` is given. Paged `warnings` prefix each path with `pages[n].`.
 
 ### Options types
 
@@ -109,7 +109,7 @@ Three results carry a `composition`, each with its own rule:
 | View registry | `ViewRegistry`, `RegisteredView`, `RegisteredViewSummary`, `DefineViewOptions`, `ViewBuildArgs`, `ViewInput`, `ViewResponse`, `RegisteredViewInputError` |
 | Surfaces | `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SvgSurface` |
 | Options | `ReactRenderOptions`, `ReactRenderNodeOptions`, `ReactRenderArgs`, `HTMLRenderOptions`, `HTMLStyleAdapter`, `TextRenderOptions`, `TextRenderNodeOptions`, `MarkdownRenderOptions`, `MarkdownRenderNodeOptions`, `SlackRenderOptions`, `SlackRenderNodeOptions`, `SvgRenderOptions`, `SvgRenderNodeOptions` |
-| Results | `HTMLRenderResult`, `SlackRenderResult`, `SvgRenderResult` |
+| Results | `HTMLRenderResult`, `SlackRenderResult`, `SvgRenderResult`, `SvgPagesResult`, `SvgHeightWarning` |
 | Errors | `IsomerError`, `IsomerErrorCode`, `ISOMER_ERROR_CODES`, `CompositionValidationError` |
 
 `src/api_reference.test.ts` fails when a name exported from `src/index.ts` is missing from this page.

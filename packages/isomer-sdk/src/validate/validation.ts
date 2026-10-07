@@ -9,7 +9,6 @@ import {
   BODY_NODE_SURFACES,
   childNodePath,
   createChildNodeWalker,
-  isVisibleOnSurface,
   rendersOnSurface,
   type SurfaceName,
 } from '../composition/body_node_base';
@@ -118,18 +117,8 @@ export const compositionToRender = <TNode extends PrimitiveNode>(
   return composition;
 };
 
-/** Runtime facts the semantic passes need beyond the primitive inventory. */
+/** Options for {@link createCompositionValidator}. */
 export interface CompositionValidatorOptions {
-  /**
-   * Whether any frame the runtime can draw with sizes itself from node heights,
-   * which is what makes a missing `metrics.svgHeight` matter.
-   *
-   * A runtime-wide question rather than a per-node one, because a frame is a
-   * runtime input: any node can be drawn under any frame, so the metric is
-   * load-bearing as soon as one frame consults it. Defaults to `false`, so a
-   * runtime with no frame at all reports nothing about a value nothing reads.
-   */
-  sizesFromNodeHeights?: boolean;
   /** Limits checked before the schema runs; see {@link checkInputBudget}. */
   inputBudget?: InputBudget;
 }
@@ -174,12 +163,7 @@ export const createCompositionValidator = <
     if (result.success) {
       const { body } = plain;
       const idErrors = collectDuplicateNodeIdErrors(body, walk);
-      const warnings = [
-        ...collectEmptySurfaceWarnings(body, walk),
-        ...(options.sizesFromNodeHeights
-          ? collectMissingSvgHeightWarnings(body, definitions, walk)
-          : []),
-      ];
+      const warnings = collectEmptySurfaceWarnings(body, walk);
       return {
         valid: idErrors.length === 0,
         errors: idErrors,
@@ -254,51 +238,6 @@ const collectEmptySurfaceWarnings = (
     surface,
     message: `composition renders no nodes on surface "${surface}"`,
   }));
-
-/**
- * Warns for each node that renders to `svg` but declares no `svgHeight`.
- *
- * `metrics.svgHeight` is optional, so `dispatcher.estimateSvgHeight` returns
- * `0` for such a node and a frame that sums node heights sizes short.
- *
- * Whether a runtime consults the metric at all is the caller's to decide; see
- * {@link CompositionValidatorOptions.sizesFromNodeHeights}. A fixed-size frame
- * never does, and warning about a value nothing reads is how a warning channel
- * gets ignored.
- */
-const collectMissingSvgHeightWarnings = (
-  body: readonly unknown[],
-  definitions: readonly AnyPrimitiveDefinition[],
-  walk: ReturnType<typeof createChildNodeWalker>
-): ValidationWarning[] => {
-  const unmeasured = new Set(
-    definitions
-      .filter((definition) => !definition.metrics?.svgHeight)
-      .map((definition) => definition.type)
-  );
-  if (unmeasured.size === 0) {
-    return [];
-  }
-  const warnings: ValidationWarning[] = [];
-  const visit = (node: unknown, path: string): void => {
-    if (!node || typeof node !== 'object' || !isVisibleOnSurface(node, 'svg')) {
-      return;
-    }
-    const { type } = node as { type?: unknown };
-    if (typeof type === 'string' && unmeasured.has(type)) {
-      warnings.push({
-        surface: 'svg',
-        path,
-        message: `${path} type ${quoteText(type)} declares no svgHeight metric and will be measured as 0, sizing the frame short`,
-      });
-    }
-    walk(node).forEach(({ node: child, path: field }) => {
-      visit(child, childNodePath(path, field));
-    });
-  };
-  body.forEach((node, index) => visit(node, `body[${index}]`));
-  return warnings;
-};
 
 /**
  * Errors for each node whose `id` repeats one already seen, naming the first

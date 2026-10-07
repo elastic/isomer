@@ -7,7 +7,6 @@ A frame is a document: the picture-frame an `svg` render sits inside, the geomet
 ```ts
 interface Frame<TTheme> {
   defaultWidth: number;
-  sizesFromNodeHeights?: boolean; // default true
   theme: { light: TTheme; dark: TTheme };
   estimateHeight(composition, dispatcher): number;
   validateBody?(body): readonly string[];
@@ -58,7 +57,7 @@ An image has no media queries, so it must commit to one palette; `bindFrame` res
 
 ## `bindFrame`, and the theme bound around it
 
-`bindFrame` resolves a frame's palette per render and returns a `BoundFrame` — `defaultWidth`, a defaulted `sizesFromNodeHeights`, `estimateHeight`, `validateBody`, `render`, and `renderNode` — with no `TTheme` left in any signature. The erasure is a closure rather than a type parameter because the runtime dispatches every node through one inventory keyed by node type, and that inventory has no single theme to name.
+`bindFrame` resolves a frame's palette per render and returns a `BoundFrame` — `defaultWidth`, `estimateHeight`, `validateBody`, `render`, and `renderNode` — with no `TTheme` left in any signature. The erasure is a closure rather than a type parameter because the runtime dispatches every node through one inventory keyed by node type, and that inventory has no single theme to name.
 
 What makes the erasure safe is that a runtime is **homogeneous** in its theme. A pack declares what its `svg` renderers read through a phantom marker on `PrimitivePack<TTheme>` — so the palette is checked where the real type is still known, and only the resolved result is stored.
 
@@ -66,20 +65,9 @@ What makes the erasure safe is that a runtime is **homogeneous** in its theme. A
 
 What this document requires of a body — the slide document's exactly-one-`slideFrame` rule is the example. It returns messages rather than throwing, and note where it is *not* consulted: `runtime.validate` is frame-agnostic and has to be, because the same composition can be valid in one frame and not another. Only the `svg` surface checks it, on the frame a render actually names.
 
-## `sizesFromNodeHeights`
+## A missing `svgHeight`
 
-Whether `estimateHeight` sums per-node heights, and therefore whether a primitive with no `metrics.svgHeight` under-sizes the frame. Defaults to `true`, because the gap is silent and measuring frames is the normal case; a fixed-size document sets `false` once and stops validation reporting a metric nothing reads.
-
-With a measuring frame registered, the [quick start](quick-start.md)'s `kpi` pack, which declares no `metrics.svgHeight`, validates as:
-
-```ts
-runtime.validate(composition);
-// valid: true, and two warnings, both with surface 'svg':
-//   body[0] type "kpi" declares no svgHeight metric and will be measured as 0, sizing the frame short
-//   body[1] type "kpi" declares no svgHeight metric and will be measured as 0, sizing the frame short
-```
-
-The same call reports nothing when the runtime has no frame, or only frames with `sizesFromNodeHeights: false`.
+`estimateSvgHeight` returns `0` for a node whose primitive declares no `metrics.svgHeight`, so a frame whose `estimateHeight` calls it sizes short for that node. A frame that returns a constant never reads the metric. `validate` reports nothing about the gap: the frame is chosen per render, and one composition can be drawn into a measuring frame and a fixed one. The runtime's `svg` surface reports it on the result of the render that measured the nodes.
 
 ## Next
 

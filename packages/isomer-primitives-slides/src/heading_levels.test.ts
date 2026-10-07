@@ -6,7 +6,11 @@
  */
 
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
-import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
+import {
+  type Composition,
+  exampleNodes,
+  type PrimitiveNode,
+} from '@elastic/isomer-sdk';
 import type { Nodes } from 'mdast';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { gfmFromMarkdown } from 'mdast-util-gfm';
@@ -53,7 +57,7 @@ const repeatsOutline = new Set(['slideRenderGrid']);
 const rows = slideDeckPrimitives
   .filter(({ type }) => !repeatsOutline.has(type))
   .flatMap(({ type, examples }) =>
-    examples.map((example, index) => ({
+    exampleNodes({ examples }).map((example, index) => ({
       name: `${type}#${index}`,
       composition: onSlide(example as PrimitiveNode),
     }))

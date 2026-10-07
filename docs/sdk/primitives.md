@@ -59,7 +59,7 @@ The schema is the declaration: the node type is `z.infer` of it, the typed `exam
 | `type`          | yes       | The discriminator. Unique across every pack in a runtime.            |
 | `schema`        | yes       | A Zod **object** schema for this node on its own.                    |
 | `catalog`       | yes       | Agent-facing copy: `purpose`, `useWhen`, `avoidWhen`, `example`.     |
-| `examples`      | yes       | Conformance nodes; the catalog `example` is what the prompt shows.   |
+| `examples`      | yes       | Conformance nodes, bare or named; prompt shows `catalog.example`.    |
 | `renderers`     | yes       | `react`, `text`, `markdown` always; `slack` optionally.              |
 | `schemaFor`     | container | The same schema, bound to the composition's body-node union.         |
 | `sanitize`      | no        | Last-chance repair or rejection, run before every render.            |
@@ -67,6 +67,17 @@ The schema is the declaration: the node type is `z.infer` of it, the typed `exam
 | `hasOwnContent` | hybrid    | Whether the parent still renders when every child is hidden.         |
 | `metrics`       | no        | `svgHeight`, so a measuring frame can size itself.                   |
 | `collectStyles` | no        | Contributes CSS through the pack's style adapter.                    |
+
+An entry of `examples` is a node, or a `PrimitiveExample` that names one so a host listing examples, such as a Storybook or a docs page, can label it:
+
+```ts
+examples: [
+  example,
+  { name: 'Warning tone', description: 'A rising error rate.', node: warningExample },
+],
+```
+
+A name is non-empty and unique within its primitive, which inventory conformance checks, and a failing conformance case prints it beside the index. Read examples through `exampleNodes(definition)` for the nodes alone or `primitiveExamples(definition)` for `{ name?, description?, node }` each, rather than `definition.examples` directly; both keep every node type across a union of definitions.
 
 `definePrimitive` extends the schema with two optional fields, `id` so any node can be addressed and `surfaces` so an author can hide a node from a surface, and closes it to unknown keys, so a hallucinated field is a validation error rather than a silent strip. A schema that declares `id` or `surfaces` itself throws an `IsomerError` with code `RESERVED_NODE_FIELD`. A schema built with `z.looseObject` keeps its catchall. The extension keeps the concrete schema type, including brands. A container's `schemaFor` gets the same treatment, or a node would be legal standalone and rejected inside a composition.
 
@@ -132,7 +143,7 @@ Runs before every render, on every surface, and may return `null` to drop the no
 
 ## `metrics.svgHeight`
 
-Optional, and nothing ties it to the `svg` surface, so a node can render to `svg`, contribute `0` to a frame's height estimate, and leave a summing frame short. Validation reports it, but only when some frame in the runtime actually measures nodes, since a fixed-size document reads nothing from it.
+Optional. The height estimate is `0` when it is missing, so a frame that sums node heights sizes short. The runtime's `svg` surface reports each such node when the frame that render uses calls `estimateSvgHeight`. A frame that returns a constant reads nothing from it, and `validate` reports nothing about it.
 
 ## Pack types
 

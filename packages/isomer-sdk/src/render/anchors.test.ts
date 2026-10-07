@@ -11,6 +11,7 @@ import { z } from 'zod';
 
 import { createChildNodeWalker } from '../composition/body_node_base';
 import type { Composition } from '../composition/composition';
+import { exampleNodes } from '../define/primitive_example';
 import {
   definePrimitive,
   type PrimitiveNode,
@@ -721,7 +722,7 @@ describe('a type with selector and HTML syntax in it', () => {
           definition: odd,
           type: oddType,
           exampleIndex: 0,
-          node: odd.examples[0]!,
+          node: exampleNodes(odd)[0]!,
         },
         harness
       )

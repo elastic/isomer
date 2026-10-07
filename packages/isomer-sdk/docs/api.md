@@ -26,8 +26,10 @@ What each entry point exports, and which ones cost you a dependency.
 | `bindFrame` | Erases a `Frame<TTheme>` into a `BoundFrame` |
 | `describeCapabilities` | Reports primitives, formats, and enhancements for a set of packs |
 | `unresolvedBodyNodeSchema` | The child slot in a container's standalone schema |
+| `exampleNodes` | A definition's example nodes, named or bare |
+| `primitiveExamples` | A definition's examples as `NormalizedPrimitiveExample`s, `{ name?, description?, node }` |
 
-Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveNode`, `PrimitiveSchema` (a `ZodObject`), `PrimitiveCatalogEntry`, `PrimitiveMetrics`, `PrimitiveChildRef`, `PrimitiveRenderContext`, `StyledRenderContext`, `PrimitiveStyleCollector`, `PrimitiveStyleCollectionContext`, `PackTypes`, `DefaultPackTypes`, `Renderer` (`(node, env)` — `env` is `SurfaceMap<T>[S]['env']`), `Renderers`, `RenderScope`, `ReactContextArg` (the dispatcher's optional-or-required context argument tuple for `renderReact`), `SurfaceMap`, `SurfaceName`, `OptionalSurface`, `PrimitivePack`, `AnyPrimitivePack`, `PrimitivePackInput`, `PackStyleAdapter`, `PackAuthoringOptions`, `PrimitiveGroup`, `ComposedPacks`, `Frame`, `FrameBody`, `BoundFrame`, `FrameDispatcher`, `FrameHeader`, `FrameComposition`, `FrameViewport`, `ThemePair`, `EnhancementDefinition`, `HostCapabilities`, `StyleHandle`, `ThemeTokenPath`, `Composition`, `CompositionMeta` (its advisory `meta`), `BodyNodeBase`, `ActionEventRef`, `IsomerError`, `IsomerErrorCode`.
+Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveExample` (a named entry of `examples`), `ExampleNode` (the node type an entry holds), `PrimitiveNode`, `PrimitiveSchema` (a `ZodObject`), `PrimitiveCatalogEntry`, `PrimitiveMetrics`, `PrimitiveChildRef`, `PrimitiveRenderContext`, `StyledRenderContext`, `PrimitiveStyleCollector`, `PrimitiveStyleCollectionContext`, `PackTypes`, `DefaultPackTypes`, `Renderer` (`(node, env)` — `env` is `SurfaceMap<T>[S]['env']`), `Renderers`, `RenderScope`, `ReactContextArg` (the dispatcher's optional-or-required context argument tuple for `renderReact`), `SurfaceMap`, `SurfaceName`, `OptionalSurface`, `PrimitivePack`, `AnyPrimitivePack`, `PrimitivePackInput`, `PackStyleAdapter`, `PackAuthoringOptions`, `PrimitiveGroup`, `ComposedPacks`, `Frame`, `FrameBody`, `BoundFrame`, `FrameDispatcher`, `FrameHeader`, `FrameComposition`, `FrameViewport`, `ThemePair`, `EnhancementDefinition`, `HostCapabilities`, `StyleHandle`, `ThemeTokenPath`, `Composition`, `CompositionMeta` (its advisory `meta`), `BodyNodeBase`, `ActionEventRef`, `IsomerError`, `IsomerErrorCode`.
 
 `react` and `svg` renderers receive `env.theme`: the frame's resolved palette (`T['theme']`) when reached through the `svg` surface, `undefined` outside one. A pack whose `svg` renderers read tokens still declares them as `definePrimitivePack<TTheme>`'s type argument. `PrimitivePackInput.authoring` (a `PackAuthoringOptions`) is this pack's own contribution — `describe` and `omitProperties` — to the runtime's merged authoring schema, plus `groups` for an index catalog.
 
@@ -106,13 +108,13 @@ The root, `./markdown`, and `./slack` load the GFM parser for authored Markdown 
 
 ## `./author`
 
-JSX: `fromChildren`, `fromTextChildren`, `AuthoredChildBrand`, `AuthoredTextBrand`, `AuthorChildContext`, `AuthorComponent`, `buildJsxShim`, `JsxShim`, `PrimitiveComponentMap`, `CompositionAuthorProps`, `AuthorComposition`, `textFromChildren`.
+JSX: `fromChildren`, `fromTextChildren`, `AuthoredChildBrand`, `AuthoredToItemBrand` (on a `toItem` field, whose item brands the shim leaves alone), `AuthoredTextBrand`, `AuthorChildContext`, `readAuthoredSpec` (a schema's branded fields as an `AuthoredSpec` of `AuthoredChildField`s and `AuthoredTextField`s), `AuthorComponent`, `buildJsxShim`, `JsxShim`, `PrimitiveComponentMap`, `CompositionAuthorProps`, `AuthorComposition`, `textFromChildren`.
 
 Agent prompts: `buildAuthoringPrompt` (`AuthoringPromptContext`), `formatPrimitiveEntry` (one full catalog bullet), `AUTHORING_PROFILE_IDS` (`AuthoringProfileId`), `AuthoringViewSummary`. `WithNodeFields` is on the root entry, next to `definePrimitive`.
 
 ## `./testing`
 
-`runPrimitiveInventoryConformance` checks the inventory itself: every definition has an example, each example's `type` matches, and `catalog.example` parses or matches a published example. `primitiveConformanceRows` crosses every definition's examples (`PrimitiveConformanceExample`) with the cases (`PrimitiveConformanceCase`) for `it.each`. `CONFORMANCE_FOREIGN_MARKER` is the string a container's `nestForeignChild` case checks for. `assertPackRegistrationComplete` (`PackRegistrationOptions`) separately checks that every directory under a pack's `src/primitives/` is registered.
+`runPrimitiveInventoryConformance` checks the inventory itself: every definition has an example, example names are non-empty and unique within a definition, each example's `type` matches, and `catalog.example` parses or matches a published example. `primitiveConformanceRows` crosses every definition's examples (`PrimitiveConformanceExample`, whose `exampleName` is set for a named one) with the cases (`PrimitiveConformanceCase`) for `it.each`. `CONFORMANCE_FOREIGN_MARKER` is the string a container's `nestForeignChild` case checks for. `assertPackRegistrationComplete` (`PackRegistrationOptions`) separately checks that every directory under a pack's `src/primitives/` is registered.
 
 ### The harness contract
 
@@ -127,7 +129,7 @@ A pack supplies a `PrimitiveConformanceHarness` closing over its own dispatcher,
 | `renderSlack` | yes | At least one block; the markdown fallback counts |
 | `renderTextComposition`, `renderMarkdownComposition` | yes | Whole-composition envelopes, title included |
 | `renderSlackComposition` | yes | A `PrimitiveConformanceSlackResult` led by a `plain_text` header block |
-| `renderSvg`, `estimateSvgHeight` | no | Skipped when absent; `sizesFromNodeHeights: false` also skips the height case |
+| `renderSvg`, `estimateSvgHeight` | no | Skipped when absent. `sizesFromNodeHeights: false` skips the height case for a fixed-size frame |
 | `renderHTML` | no | Honors `PrimitiveConformanceHtmlOptions` (`css`, `names`, `anchors`); skipped when absent |
 | `anchorWalk` | no | The child walker over every definition rendered with; set it once every `react` renderer spreads `nodeAnchor`, to turn on the anchor case |
 | `assertVarRefsHaveDeclarations` | no | Throws for a `var(--x)` with no declaration; skipped when it or `renderHTML` is absent |

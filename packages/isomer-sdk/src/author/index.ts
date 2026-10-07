@@ -8,9 +8,14 @@
 export {
   type AuthorChildContext,
   type AuthoredChildBrand,
+  type AuthoredChildField,
+  type AuthoredSpec,
   type AuthoredTextBrand,
+  type AuthoredTextField,
+  type AuthoredToItemBrand,
   fromChildren,
   fromTextChildren,
+  readAuthoredSpec,
 } from './authored_fields';
 export { type AuthorComponent } from './jsx';
 export {

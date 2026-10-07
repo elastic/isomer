@@ -6,10 +6,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { z } from 'zod';
 
 import type { SurfaceName } from '../composition/body_node_base';
-import { definePrimitive } from '../define/primitive_module';
 import { createPrimitiveDispatcher } from '../render/primitive_dispatch';
 import type { CaptionNode, NoteNode, StackNode } from '../testing/sdk.fixtures';
 import { fixtureDefinitions } from '../testing/sdk.fixtures';
@@ -152,51 +150,5 @@ describe('per-surface visibility hints', () => {
         ])
       ).valid
     ).toBe(false);
-  });
-});
-
-describe('missing svgHeight warnings', () => {
-  // Gated on `sizesFromNodeHeights`, and needs a primitive with an `svg`
-  // renderer but no `metrics.svgHeight` — a shape the conformance fixture pack
-  // deliberately cannot have, since every example there must report a height.
-  const unmeasured = definePrimitive<{ type: 'unmeasured' }>({
-    type: 'unmeasured',
-    catalog: {
-      type: 'unmeasured',
-      purpose: 'unmeasured',
-      useWhen: [],
-      avoidWhen: [],
-      example: { type: 'unmeasured' },
-    },
-    examples: [{ type: 'unmeasured' }],
-    schema: z.object({ type: z.literal('unmeasured') }),
-    renderers: {
-      react: () => null,
-      text: () => 'u',
-      markdown: () => 'u',
-    },
-  });
-
-  const definitions = [unmeasured];
-
-  it('warns when a sizing frame meets a node with no svgHeight', () => {
-    const validate = createCompositionValidator(definitions, {
-      sizesFromNodeHeights: true,
-    });
-    const result = validate({ type: 'view', body: [{ type: 'unmeasured' }] });
-    expect(result.valid).toBe(true);
-    expect(
-      result.warnings?.filter((warning) => warning.surface === 'svg')
-    ).not.toEqual([]);
-  });
-
-  it('stays silent when no frame sizes itself from node heights', () => {
-    const validate = createCompositionValidator(definitions, {
-      sizesFromNodeHeights: false,
-    });
-    const result = validate({ type: 'view', body: [{ type: 'unmeasured' }] });
-    expect(
-      (result.warnings ?? []).filter((warning) => warning.surface === 'svg')
-    ).toEqual([]);
   });
 });

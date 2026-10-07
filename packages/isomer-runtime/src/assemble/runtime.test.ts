@@ -249,7 +249,6 @@ const svgPackOf = (
 /** Stands in for the slide frame: a fixed frame that never measures a node. */
 const fixedFrame: Frame<string> = {
   ...testFrame,
-  sizesFromNodeHeights: false,
   estimateHeight: () => 1080,
 };
 
@@ -1640,64 +1639,177 @@ describe('createIsomerRuntime', () => {
     });
   });
 
-  it('warns when a node renders to svg but declares no height metric', () => {
-    // `bold` declares no `metrics.svgHeight`, so the dispatcher measures it as
-    // 0 and this frame sizes the document short.
-    const runtime = drawingRuntime(boldPrimitive);
-
-    expect(
-      runtime.validate({
-        type: 'view',
-        body: [{ type: 'bold', text: 'short' } as BoldNode],
-      }).warnings
-    ).toContainEqual({
-      surface: 'svg',
+  it('reports a missing height from the frame a render measures with', () => {
+    // `bold` declares no `metrics.svgHeight`, so the measuring frame sizes it
+    // as 0. `validate` stays quiet: the same composition can be drawn into the
+    // fixed frame, which never reads the metric.
+    const runtime = createIsomerRuntime({
+      packs: [svgPackOf(boldPrimitive)],
+      frames: { card: testFrame, slide: fixedFrame },
+      defaultFrame: 'slide',
+    });
+    const bold = { type: 'bold' as const, text: 'short' };
+    const spec = {
+      type: 'view' as const,
+      body: [bold],
+    };
+    const missing = {
       path: 'body[0]',
       message:
         'body[0] type "bold" declares no svgHeight metric and will be measured as 0, sizing the frame short',
-    });
-  });
+    };
 
-  it('warns for a nested node with no height metric, using the container-derived path', () => {
-    const runtime = drawingRuntime(boldPrimitive, wrapPrimitive);
-
-    const warnings = runtime.validate({
-      type: 'view',
-      body: [
-        {
-          type: 'wrap',
-          items: [{ type: 'bold', text: 'short' }],
-        } as WrapNode,
-      ],
-    }).warnings;
-
-    // Same guard as the missing-renderer case above, for the height warning.
-    expect(warnings).toContainEqual({
-      surface: 'svg',
-      path: 'body[0].items[0]',
-      message:
-        'body[0].items[0] type "bold" declares no svgHeight metric and will be measured as 0, sizing the frame short',
-    });
-  });
-
-  it('stays quiet about height metrics when no frame measures nodes', () => {
-    // The slide case: a fixed 1920x1080 frame never consults the metric, so
-    // demanding it would report nine warnings per spec for a value nothing
-    // reads — which is how a warning channel gets tuned out.
-    const runtime = createIsomerRuntime({
-      packs: [svgPackOf(boldPrimitive)],
-      frames: { slide: fixedFrame },
-    });
-
-    const warnings =
-      runtime.validate({
-        type: 'view',
-        body: [{ type: 'bold', text: 'short' } as BoldNode],
-      }).warnings ?? [];
-
-    expect(warnings.map((warning) => warning.message)).not.toContainEqual(
-      expect.stringContaining('svgHeight')
+    expect(
+      runtime.validate(spec).warnings?.map((warning) => warning.message)
+    ).not.toEqual(
+      expect.arrayContaining([expect.stringContaining('svgHeight')])
     );
+    expect(runtime.surfaces.svg.render(spec).warnings).toEqual([]);
+    expect(
+      runtime.surfaces.svg.render(spec, { frame: 'card' }).warnings
+    ).toEqual([missing]);
+    expect(
+      runtime.surfaces.svg.render(spec, { frame: 'card', height: 10 }).warnings
+    ).toEqual([]);
+    expect(runtime.surfaces.svg.renderNode(bold).warnings).toEqual([]);
+    expect(
+      runtime.surfaces.svg.renderNode(bold, { frame: 'card' }).warnings
+    ).toEqual([missing]);
+  });
+
+  it('warns for a nested unmeasured node, and skips one hidden from svg', () => {
+    const runtime = drawingRuntime(boldPrimitive, wrapPrimitive);
+    const hidden = {
+      type: 'bold',
+      text: 'quiet',
+      surfaces: ['text'],
+    } as BoldNode;
+
+    expect(
+      runtime.surfaces.svg.render({
+        type: 'view',
+        body: [
+          {
+            type: 'wrap',
+            items: [{ type: 'bold', text: 'short' }, hidden],
+          } as WrapNode,
+        ],
+      }).warnings
+    ).toEqual([
+      {
+        path: 'body[0]',
+        message:
+          'body[0] type "wrap" declares no svgHeight metric and will be measured as 0, sizing the frame short',
+      },
+      {
+        path: 'body[0].items[0]',
+        message:
+          'body[0].items[0] type "bold" declares no svgHeight metric and will be measured as 0, sizing the frame short',
+      },
+    ]);
+  });
+
+  it('keeps collecting height warnings when a container cannot be walked', () => {
+    // `children` reads `items` with no guard.
+    const boxPrimitive = definePrimitive<{
+      type: 'box';
+      items: readonly { type: string }[];
+    }>({
+      type: 'box',
+      catalog: {
+        type: 'box',
+        purpose: 'Hold children that a bad payload cannot list.',
+        useWhen: ['A container callback assumes a valid shape.'],
+        avoidWhen: ['The node is only a leaf.'],
+        example: { type: 'box', items: [] },
+      },
+      examples: [{ type: 'box', items: [] }],
+      schema: z.object({
+        type: z.literal('box'),
+        items: z.array(z.object({ type: z.string() })),
+      }),
+      children: (node) =>
+        node.items.map((item, index) => ({
+          node: item,
+          path: `items[${index}]`,
+        })),
+      renderers: {
+        react: () => null,
+        text: () => 'box',
+        markdown: () => 'box',
+      },
+    });
+    const runtime = drawingRuntime(boxPrimitive, boldPrimitive);
+    const box = { type: 'box' as const };
+    const bold = { type: 'bold' as const, text: 'short' };
+    const rendered = runtime.surfaces.svg.render(
+      {
+        type: 'view',
+        body: [box, bold],
+      },
+      { onValidationError: 'collect' }
+    );
+
+    expect(rendered.warnings).toEqual([
+      {
+        path: 'body[0]',
+        message:
+          'body[0] type "box" declares no svgHeight metric and will be measured as 0, sizing the frame short',
+      },
+      {
+        path: 'body[1]',
+        message:
+          'body[1] type "bold" declares no svgHeight metric and will be measured as 0, sizing the frame short',
+      },
+    ]);
+  });
+
+  it('prefixes height warnings per page, and skips a node that declares a height', () => {
+    const tallPrimitive = definePrimitive<{ type: 'tall'; text: string }>({
+      type: 'tall',
+      catalog: {
+        type: 'tall',
+        purpose: 'Render text with a declared height.',
+        useWhen: ['A frame sums node heights.'],
+        avoidWhen: ['The frame is a fixed size.'],
+        example: { type: 'tall', text: 'fits' },
+      },
+      examples: [{ type: 'tall', text: 'fits' }],
+      schema: z.object({
+        type: z.literal('tall'),
+        text: z.string().min(1),
+      }),
+      metrics: { svgHeight: () => 24 },
+      renderers: {
+        react: (node) => createElement('strong', null, node.text),
+        text: (node) => node.text,
+        markdown: (node) => node.text,
+      },
+    });
+    const runtime = drawingRuntime(boldPrimitive, tallPrimitive);
+    const bold = { type: 'bold' as const, text: 'short' };
+    const tall = { type: 'tall' as const, text: 'fits' };
+
+    expect(
+      runtime.surfaces.svg.render({ type: 'view', body: [tall] }).warnings
+    ).toEqual([]);
+    expect(
+      runtime.surfaces.svg.renderPages([
+        { type: 'view', body: [bold] },
+        { type: 'view', body: [tall, bold] },
+      ]).warnings
+    ).toEqual([
+      {
+        path: 'pages[0].body[0]',
+        message:
+          'pages[0].body[0] type "bold" declares no svgHeight metric and will be measured as 0, sizing the frame short',
+      },
+      {
+        path: 'pages[1].body[1]',
+        message:
+          'pages[1].body[1] type "bold" declares no svgHeight metric and will be measured as 0, sizing the frame short',
+      },
+    ]);
   });
 
   it('has no svg surface, and reports no svg format, without a frame', () => {
