@@ -27,6 +27,8 @@ This page is the pack **contract**. Composing packs into a runtime is the [runti
 | `styleCollector`  | Optional. Derived from `styleAdapter.styleCollector` unless overridden.        |
 | `authoring`       | Optional. `describe`, `omitProperties`, and index `groups` for agents.         |
 
+`surfaces` is advisory: dispatch and `describeCapabilities` follow each primitive's own `renderers.slack`, so a primitive without one renders, and reports, Slack as a markdown fallback.
+
 What comes back adds `types`, a set for duplicate detection across packs, and normalizes the two optional fields. `styleCollector` is read from `styleAdapter.styleCollector` when the pack does not set it; set it only for a pack whose hooks collect into a shape its adapter does not create.
 
 ## `surfaces` reports an intent

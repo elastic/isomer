@@ -721,7 +721,70 @@ describe('createIsomerRuntime', () => {
     expect(runtime.getCapabilities()).toEqual({
       primitives: ['note'],
       formats: ['react', 'html', 'text', 'markdown', 'slack'],
+      support: {
+        note: {
+          react: 'native',
+          html: 'native',
+          text: 'native',
+          markdown: 'native',
+          slack: 'native',
+        },
+      },
     });
+  });
+
+  it('reports slack as fallback for a primitive without a slack renderer, whatever its pack declares', () => {
+    const runtime = createIsomerRuntime({
+      packs: [
+        definePrimitivePack({
+          id: 'declares-slack',
+          surfaces: ['slack'],
+          primitives: [notePrimitive, wrapPrimitive],
+        }),
+      ],
+    });
+
+    const { support } = runtime.getCapabilities();
+    expect(support.note?.slack).toBe('native');
+    expect(support.wrap?.slack).toBe('fallback');
+    expect(support.wrap?.markdown).toBe('native');
+    expect(
+      runtime.surfaces.slack.renderNode({ type: 'wrap', items: [] } as WrapNode)
+        .blocks
+    ).toEqual([
+      {
+        type: 'rich_text',
+        elements: [
+          {
+            type: 'rich_text_section',
+            elements: [{ type: 'text', text: 'wrap(0)' }],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('reports slack as native once a renderer override supplies one', () => {
+    const runtime = createIsomerRuntime({
+      packs: [packOf(wrapPrimitive)],
+      rendererOverrides: {
+        wrap: {
+          slack: (): SlackBlock => ({ type: 'divider' }),
+        },
+      },
+    });
+
+    expect(runtime.getCapabilities().support.wrap?.slack).toBe('native');
+  });
+
+  it('reports svg support only when the runtime has a frame', () => {
+    expect(
+      createIsomerRuntime({ packs: [packOf(notePrimitive)] }).getCapabilities()
+        .support.note
+    ).not.toHaveProperty('svg');
+    expect(
+      drawingRuntime(notePrimitive).getCapabilities().support.note
+    ).toEqual(expect.objectContaining({ svg: 'native' }));
   });
 
   it('lists authoring primitives in definition order', () => {

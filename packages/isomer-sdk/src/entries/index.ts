@@ -87,6 +87,7 @@ export {
   type PrimitiveGroup,
   type PrimitivePack,
   type PrimitivePackInput,
+  type SurfaceSupport,
   composePacks,
   definePrimitivePack,
   describeCapabilities,
