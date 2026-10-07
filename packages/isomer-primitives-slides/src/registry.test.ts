@@ -9,6 +9,7 @@
 // build graph forces them to agree; `body_node.ts` says why the union cannot be
 // derived. A test file sits outside that cycle, so it can relate the two.
 
+import type { ExampleNode } from '@elastic/isomer-sdk';
 import { assertPackRegistrationComplete } from '@elastic/isomer-sdk/testing';
 import { describe, expect, it } from 'vitest';
 
@@ -16,8 +17,10 @@ import type { BodyNode } from './body_node';
 import { slidePrimitiveGroups } from './pack_authoring';
 import { slideDeckPrimitives, slidePrimitiveTypes } from './registry';
 
-/** Every node type reachable from the registry, via `examples: readonly TNode[]`. */
-type Registered = (typeof slideDeckPrimitives)[number]['examples'][number];
+/** Every node type reachable from the registry, via each definition's `examples`. */
+type Registered = ExampleNode<
+  (typeof slideDeckPrimitives)[number]['examples'][number]
+>;
 
 // Tuple-wrapped so neither side distributes over the union.
 type Assert<T extends true> = T;

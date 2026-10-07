@@ -6,7 +6,11 @@
  */
 
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
-import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
+import {
+  type Composition,
+  exampleNodes,
+  type PrimitiveNode,
+} from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 import type { ZodType } from 'zod';
 
@@ -156,7 +160,7 @@ describe('inline marks in field descriptions', () => {
     '$type says so on every field that draws marks',
     ({ schema, examples }) => {
       const missing = new Set<string>();
-      for (const example of examples) {
+      for (const example of exampleNodes({ examples })) {
         const paths = stringsIn(example);
         drawnMarks(example, paths).forEach(({ html }, index) => {
           const path = paths[index]!;
@@ -173,7 +177,7 @@ describe('inline marks in field descriptions', () => {
     '$type draws marks on every field that says it does',
     ({ schema, examples }) => {
       const unrendered = new Set<string>();
-      for (const example of examples) {
+      for (const example of exampleNodes({ examples })) {
         const paths = stringsIn(example).filter((path) => says(schema, path));
         drawnMarks(example, paths).forEach(({ html, markdown }, index) => {
           const field = fieldName(paths[index]!);

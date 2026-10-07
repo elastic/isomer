@@ -123,13 +123,13 @@ It reports the folder, the export to import, and the reminder to extend the unio
 Pair it with a type-level assertion that the two lists agree, which belongs in a test file because a test is outside the build graph:
 
 ```ts
-type Registered = (typeof myPackPrimitives)[number]['examples'][number];
+type Registered = ExampleNode<(typeof myPackPrimitives)[number]['examples'][number]>;
 type Assert<T extends true> = T;
 type _A = Assert<[Registered] extends [BodyNode] ? true : false>;
 type _B = Assert<[BodyNode] extends [Registered] ? true : false>;
 ```
 
-Tuple-wrap both sides so neither distributes over the union. Between the two checks, a primitive cannot be half-registered: the directory check catches what is absent from both lists, the type assertion catches what is in one but not the other.
+`ExampleNode` unwraps a named example to its node. Tuple-wrap both sides so neither distributes over the union. Between the two checks, a primitive cannot be half-registered: the directory check catches what is absent from both lists, the type assertion catches what is in one but not the other.
 
 ## Why it is shaped this way
 

@@ -6,7 +6,11 @@
  */
 
 import type { LayoutBox } from '@elastic/isomer-image-takumi';
-import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
+import {
+  type Composition,
+  exampleNodes,
+  type PrimitiveNode,
+} from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideLayout } from '../primitives/layout';
@@ -65,7 +69,7 @@ import { findings, measured, nodeBox } from './measure';
 import { previewSlide } from './preview_slide';
 
 const cases = slideDeckPrimitives.flatMap(({ type, examples }) =>
-  examples.map((example, index) => ({
+  exampleNodes({ examples }).map((example, index) => ({
     name: `${type} #${index}`,
     slide: previewSlide(example as PrimitiveNode),
   }))
@@ -281,7 +285,7 @@ interface SizedCase {
 const sized: SizedCase[] = slideDeckPrimitives
   .filter(({ type }) => widthLoaded.has(type))
   .flatMap(({ type, examples }) =>
-    examples.flatMap((example, index) =>
+    exampleNodes({ examples }).flatMap((example, index) =>
       placements.map(([where, place]) => ({
         name: `${type} #${index} ${where}`,
         node: example,

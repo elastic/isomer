@@ -19,6 +19,7 @@ import type { PrimitiveNode } from '../composition/node';
 import type { ValidationError } from '../composition/validation_error';
 
 import type { MarkdownContent } from './markdown_content';
+import type { PrimitiveExample } from './primitive_example';
 import type { SlackAssetCollector } from './slack_assets';
 import type { SlackBlock } from './slack_blocks';
 import { formatZodIssues, oneOf } from './zod_format';
@@ -316,8 +317,8 @@ export interface Renderers<
 /**
  * Measurements a frame can ask of a node before drawing it.
  *
- * `svgHeight` is optional, so a frame that sums node heights sizes short when
- * it is missing — the missing `svgHeight` validation warning reports the gap.
+ * `svgHeight` is optional. The height estimate is `0` when it is missing, so
+ * a frame that sums node heights sizes short.
  */
 export interface PrimitiveMetrics<TNode extends PrimitiveNode> {
   /** The node's drawn height in pixels at the frame's width. */
@@ -365,8 +366,12 @@ export interface PrimitiveDefinition<
   type: TNode['type'];
   /** How the authoring prompt describes this primitive to the model. */
   catalog: PrimitiveCatalogEntry;
-  /** Driven by the conformance harness. The catalog `example` is what the prompt shows. */
-  examples: readonly TNode[];
+  /**
+   * Driven by the conformance harness, bare or named; read them with
+   * `exampleNodes` or `primitiveExamples`. The catalog `example` is what the
+   * prompt shows.
+   */
+  examples: readonly (TNode | PrimitiveExample<TNode>)[];
   /**
    * This primitive on its own. A container declares
    * {@link PrimitiveDefinition.schemaFor} as well, and uses
@@ -427,7 +432,7 @@ export interface PrimitiveDefinition<
 export interface AnyPrimitiveDefinition {
   type: string;
   catalog: PrimitiveCatalogEntry;
-  examples: readonly PrimitiveNode[];
+  examples: readonly (PrimitiveNode | PrimitiveExample)[];
   schema: PrimitiveSchema;
   schemaFor?: (bodyNodeSchema: ZodType<unknown>) => PrimitiveSchema;
   renderers: Record<'react' | 'text' | 'markdown', unknown> &

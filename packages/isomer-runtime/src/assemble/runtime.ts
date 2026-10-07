@@ -258,12 +258,7 @@ export const createIsomerRuntime: CreateIsomerRuntime = (<
   });
   const { inputBudget } = options;
   const budget = inputBudget === undefined ? {} : { inputBudget };
-  const validate = createCompositionValidator(definitions, {
-    ...budget,
-    sizesFromNodeHeights: Object.values(frames).some(
-      (frame) => frame.sizesFromNodeHeights
-    ),
-  });
+  const validate = createCompositionValidator(definitions, budget);
   const parse = createCompositionParser(definitions, budget);
   const viewRegistry = createViewRegistry<THostContext, PrimitiveNode>(
     validate,

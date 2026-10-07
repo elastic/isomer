@@ -13,7 +13,7 @@ A `Composition` is the resolved JSON document that travels: a title, an optional
 Two functions, deliberately different in scope.
 
 ```ts
-const validate = createCompositionValidator(definitions, { sizesFromNodeHeights, inputBudget });
+const validate = createCompositionValidator(definitions, { inputBudget });
 const parse = createCompositionParser(definitions, { inputBudget });
 ```
 
@@ -35,13 +35,12 @@ The budget guards the validator and the parser, not the schemas. `getComposition
 
 ## The semantic passes
 
-| Pass                | Produces | Fires when                                                                                               |
-| ------------------- | -------- | -------------------------------------------------------------------------------------------------------- |
-| Duplicate node ids  | errors   | two nodes share an `id`                                                                                  |
-| Empty surfaces      | warnings | the whole body renders nothing on a surface, checked per surface                                         |
-| Missing `svgHeight` | warnings | a node renders to `svg` but declares no `metrics.svgHeight`, **only** when `sizesFromNodeHeights` is set |
+| Pass               | Produces | Fires when                                                        |
+| ------------------ | -------- | ----------------------------------------------------------------- |
+| Duplicate node ids | errors   | two nodes share an `id`                                           |
+| Empty surfaces     | warnings | the whole body renders nothing on a surface, checked per surface  |
 
-That last gate is a runtime fact, not a per-node one: any frame that sums node heights makes the metric load-bearing, and a runtime whose frames are all fixed-size would otherwise collect warnings for a value nothing reads. A warning per node per slide is how a warning channel gets ignored.
+The runtime's `svg` surface reports a missing `metrics.svgHeight`, for the frame that render measures with. See [Frame](frame.md#a-missing-svgheight).
 
 Every warning names the surface it applies to, so a caller narrows before showing:
 

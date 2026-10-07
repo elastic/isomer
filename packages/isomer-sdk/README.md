@@ -1,4 +1,15 @@
-# `@elastic/isomer-sdk`
+<!-- markdownlint-disable MD033 -->
+<p align="center">
+  <img src="https://raw.githubusercontent.com/elastic/isomer/main/docs/logo.svg" alt="Isomer" width="96" height="96">
+</p>
+<h1 align="center">@elastic/isomer-sdk</h1>
+<p align="center"><strong>isomer</strong> <i>n.</i> — one formula, many forms; the same composition rendered to every surface.</p>
+<p align="center">
+  <a href="https://www.npmjs.com/package/@elastic/isomer-sdk"><img src="https://img.shields.io/npm/v/@elastic/isomer-sdk.svg" alt="npm version"></a>
+  <a href="https://github.com/elastic/isomer/actions/workflows/ci.yml"><img src="https://github.com/elastic/isomer/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/elastic/isomer/blob/main/LICENSE.txt"><img src="https://img.shields.io/badge/License-Elastic%202.0-blue.svg" alt="License: Elastic License 2.0"></a>
+</p>
+<!-- markdownlint-enable MD033 -->
 
 The contracts every other Isomer package is written against: what a primitive is, what a pack is, the `Composition` schema, the validator and parser, the dispatcher, the envelopes for text, Markdown, Slack, and HTML, the URL trust policy, the authoring front ends, and the pack conformance harness. `@elastic/isomer-runtime` assembles packs into complete render surfaces; hosts own data, authorization, routing, and side effects.
 
