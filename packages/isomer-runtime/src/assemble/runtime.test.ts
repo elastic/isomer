@@ -23,6 +23,7 @@ import {
   type PrimitivePack,
   type PrimitiveRenderContext,
   type StyleHandle,
+  SURFACE_NAMES,
   unresolvedBodyNodeSchema,
 } from '@elastic/isomer-sdk';
 import type { HTMLRenderOptions } from '@elastic/isomer-sdk/html';
@@ -2094,6 +2095,23 @@ describe('createIsomerRuntime', () => {
     });
     expect(renderToStaticMarkup(paged.pages[0])).toBe(
       renderToStaticMarkup(single.element)
+    );
+  });
+
+  it('reports exactly the surfaces it built as formats', () => {
+    const withFrames = drawingRuntime(notePrimitive);
+    const withoutFrames = createIsomerRuntime({
+      packs: [packOf(notePrimitive)],
+    });
+
+    expect(withFrames.getCapabilities().formats).toEqual(
+      Object.keys(withFrames.surfaces)
+    );
+    expect(withoutFrames.getCapabilities().formats).toEqual(
+      Object.keys(withoutFrames.surfaces).filter((name) => name !== 'svg')
+    );
+    expect(withFrames.getCapabilities().formats).toEqual(
+      expect.arrayContaining([...SURFACE_NAMES])
     );
   });
 
