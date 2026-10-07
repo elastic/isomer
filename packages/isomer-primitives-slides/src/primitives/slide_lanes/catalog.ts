@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideLanesNode}. */
 export const catalog = {
   type: 'slideLanes',
+  name: 'Lanes',
   purpose:
     'Contrast two different routes to the same destination, so the audience sees where they differ and where they meet.',
   useWhen: [

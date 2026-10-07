@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideRenderNode}. */
 export const catalog = {
   type: 'slideRender',
+  name: 'Render',
   purpose:
     'Show the audience real output: another slide, or a few slide nodes, exactly as one surface renders it.',
   useWhen: [

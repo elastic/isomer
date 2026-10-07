@@ -29,6 +29,8 @@ An enhancement's optional `script` is a function body with `root`, the render's 
 
 `styleCollector` names the collector shape `collectStyles` hooks mutate. `definePrimitivePack` derives it from `styleAdapter.styleCollector` unless the pack sets it. The SDK ships no adapter for any CSS engine and does not depend on `@elastic/distillate`.
 
+A pack exposes `icons`, each primitive's `icon` by type for the primitives that declare one, and `composePacks` merges them across packs. Both are frozen null-prototype dictionaries, so a type named `__proto__` is an ordinary key and an absent type such as `constructor` reads `undefined`.[^pack]
+
 `definePrimitivePack<T>(input)` returns `PrimitivePack<T>`, whose phantom `__theme` carries the palette its frames must supply. Bare `PrimitivePack` is `PrimitivePack<unknown>`, which asks nothing of a frame; `AnyPrimitivePack` (`PrimitivePack<never>`) is the runtime's storage form.
 
 The registry array and the body-node union are both hand-written. `assertPackRegistrationComplete` fails when a primitives subdirectory is absent from the registry. A directory missing from both lists leaves them agreeing, so it compiles and every other test passes. Deriving the union from the registry does not compile (`TS7022` through the container primitives). `buildJsxShim` already derives the JSX front from the registry value.[^registration]

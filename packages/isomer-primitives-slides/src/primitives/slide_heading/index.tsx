@@ -19,6 +19,7 @@ import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideHeadingNode } from './schema';
 
@@ -43,6 +44,7 @@ export const slack = ({ title, lede }: SlideHeadingNode): SlackBlock[] => [
 export const slideHeadingPrimitive = definePrimitive({
   type: 'slideHeading',
   catalog,
+  icon,
   examples,
   schema,
   renderers: {

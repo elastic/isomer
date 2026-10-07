@@ -15,6 +15,7 @@ import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideCommandNode } from './schema';
 
@@ -41,6 +42,7 @@ export const slack = ({ label, command }: SlideCommandNode): SlackBlock[] => [
 export const slideCommandPrimitive = definePrimitive({
   type: 'slideCommand',
   catalog,
+  icon,
   examples,
   schema,
   renderers: {

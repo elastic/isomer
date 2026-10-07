@@ -18,6 +18,7 @@ import { contentNode, definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { react } from './react';
 import { buildSchema, schema } from './schema';
 import { windowTitle } from './title';
@@ -29,6 +30,7 @@ export type { SlideWindowNode } from './types';
 export const slideWindowPrimitive = definePrimitive<SlideWindowNode>({
   type: 'slideWindow',
   catalog,
+  icon,
   examples,
   schema,
   schemaFor: (bodyNodeSchema: ZodType<unknown>) =>

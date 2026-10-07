@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideAnnotatedRenderNode}. */
 export const catalog = {
   type: 'slideAnnotatedRender',
+  name: 'Annotated render',
   purpose:
     'Walk the audience through the parts of a real render, with numbered pins on it and a legend that says what each part does.',
   useWhen: [

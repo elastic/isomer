@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideFanoutNode}. */
 export const catalog = {
   type: 'slideFanout',
+  name: 'Fan-out',
   purpose:
     'Show one thing going to several destinations at once, and what each one does with it.',
   useWhen: [

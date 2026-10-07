@@ -23,6 +23,7 @@ import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideMatrixNode } from './schema';
 
@@ -80,6 +81,7 @@ export const slack = (node: SlideMatrixNode): SlackBlock[] => [
 export const slideMatrixPrimitive = definePrimitive({
   type: 'slideMatrix',
   catalog,
+  icon,
   examples,
   schema,
   renderers: {

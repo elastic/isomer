@@ -7,13 +7,15 @@
 
 import {
   bindFrame,
+  composePacks,
   createPrimitiveDispatcher,
   exampleNodes,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
+import { assertPackIconsValid } from '@elastic/isomer-sdk/testing';
 import { describe, expect, it } from 'vitest';
 
-import { SLIDE_HEIGHT, SLIDE_WIDTH, slideDeckFrame } from './pack';
+import { SLIDE_HEIGHT, SLIDE_WIDTH, slideDeckFrame, slidesPack } from './pack';
 import { slideDeckPrimitives, slidePrimitiveTypes } from './registry';
 
 // Use a dispatcher for renders that require scope (containers thread it).
@@ -58,6 +60,43 @@ describe('slide pack contract', () => {
         expect(dispatcher.renderMarkdown(node).trim(), label).not.toBe('');
       }
     }
+  });
+});
+
+describe('slide pack names and icons', () => {
+  const { icons } = composePacks([slidesPack]);
+
+  it('gives every primitive a unique name', () => {
+    const names = slideDeckPrimitives.map(
+      ({ type, catalog: { name } }) => name?.trim() || `<${type} has no name>`
+    );
+    expect(names.filter((name) => name.startsWith('<'))).toEqual([]);
+    expect(new Set(names).size).toBe(names.length);
+  });
+
+  it('gives every primitive an icon', () => {
+    expect(
+      slidePrimitiveTypes.filter((type) => !Object.hasOwn(icons, type))
+    ).toEqual([]);
+  });
+
+  it('declares icons that pass the icon rules', () => {
+    expect(() => assertPackIconsValid(slidesPack)).not.toThrow();
+  });
+
+  it('draws every icon differently', () => {
+    const svgs = Object.values(icons).map(({ svg }) => svg);
+    expect(new Set(svgs).size).toBe(svgs.length);
+  });
+
+  it('exposes slideStat through the composed icons', () => {
+    expect(icons['slideStat']?.svg).toBe(
+      '<svg viewBox="0 0 16 16" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+        '<rect width="16" height="16" rx="3" fill="var(--isomer-icon-bg, #ebeefd)"/>' +
+        '<rect x="3" y="3" width="3" height="10" rx=".5" fill="var(--isomer-icon-accent, #3d5ad8)"/>' +
+        '<rect x="8" y="7" width="3" height="6" rx=".5" fill="var(--isomer-icon-muted, #b8c2f4)"/>' +
+        '</svg>'
+    );
   });
 });
 

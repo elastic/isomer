@@ -10,6 +10,7 @@
 // and nothing about a pack decides how a composition is framed.
 
 import { IsomerError } from '../composition/error';
+import type { PrimitiveIcon } from '../define/primitive_icon';
 import type {
   AnyPrimitiveDefinition,
   OptionalSurface,
@@ -141,6 +142,12 @@ export interface PrimitivePack<TTheme = unknown> {
   readonly primitives: readonly AnyPrimitiveDefinition[];
   /** Node types this pack owns, for duplicate detection across packs. */
   readonly types: ReadonlySet<string>;
+  /**
+   * Each primitive's `icon` by type, for the primitives that declare one, so a host listing them need not walk `primitives`.
+   *
+   * A frozen null-prototype dictionary: an absent type reads `undefined`, even `constructor`. Absent on a pack built by an SDK that predates icons; {@link iconsByType} derives it from `primitives`.
+   */
+  readonly icons?: Readonly<Record<string, PrimitiveIcon>>;
   /** See {@link PrimitivePackInput.enhancements}. */
   readonly enhancements: readonly EnhancementDefinition[];
   /** See {@link PrimitivePackInput.slackAssetTypes}. */
@@ -204,6 +211,7 @@ export const definePrimitivePack = <TTheme = unknown>(
     surfaces: input.surfaces ?? [],
     primitives: input.primitives,
     types,
+    icons: iconsByType(input.primitives),
     enhancements: input.enhancements ?? [],
     slackAssetTypes: new Set(input.slackAssetTypes ?? []),
     ...(input.styleAdapter !== undefined
@@ -212,6 +220,19 @@ export const definePrimitivePack = <TTheme = unknown>(
     ...(styleCollector !== undefined ? { styleCollector } : {}),
     ...(input.authoring !== undefined ? { authoring: input.authoring } : {}),
   };
+};
+
+/** Each definition's `icon` by type, null-prototype so a type such as `__proto__` is an ordinary key. */
+export const iconsByType = (
+  primitives: readonly AnyPrimitiveDefinition[]
+): Readonly<Record<string, PrimitiveIcon>> => {
+  const icons = Object.create(null) as Record<string, PrimitiveIcon>;
+  for (const { type, icon } of primitives) {
+    if (icon !== undefined) {
+      icons[type] = icon;
+    }
+  }
+  return Object.freeze(icons);
 };
 
 /** Throws if `primitives` repeats a type. */

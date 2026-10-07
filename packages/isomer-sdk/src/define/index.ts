@@ -29,6 +29,7 @@ export {
   exampleNodes,
   primitiveExamples,
 } from './primitive_example';
+export { type PrimitiveIcon, ICON_VARS } from './primitive_icon';
 export {
   type AnyPrimitiveDefinition,
   type DefaultPackTypes,

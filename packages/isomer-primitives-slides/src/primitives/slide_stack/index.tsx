@@ -16,6 +16,7 @@ import { bodyNodes, definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { react } from './react';
 import { schema } from './schema';
 import type { SlideStackNode } from './types';
@@ -26,6 +27,7 @@ export type { SlideStackNode } from './types';
 export const slideStackPrimitive = definePrimitive<SlideStackNode>({
   type: 'slideStack',
   catalog,
+  icon,
   examples,
   schema,
   schemaFor: (bodyNodeSchema: ZodType<unknown>) =>

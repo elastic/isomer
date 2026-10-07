@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideStackNode}. */
 export const catalog = {
   type: 'slideStack',
+  name: 'Stack',
   purpose:
     'Keep several nodes together as one block, one above the next, where a slot takes a single node.',
   useWhen: [

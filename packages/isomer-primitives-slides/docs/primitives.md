@@ -4,17 +4,18 @@ Each primitive lives in its own directory under `src/primitives/<type>/`. Folder
 
 ## File layout
 
-| File | What it holds |
-| --- | --- |
-| `schema.ts` | The declaration. The Zod schema, and `export type Node = z.infer<typeof schema> & PrimitiveNode`. Field notes live on `.describe()`, which also reaches the agent JSON Schema. |
-| `types.ts` | Only when the primitive declares `schemaFor`. Those nodes hold the body-node union, so the type stays a hand-written interface. |
-| `catalog.ts` | Agent-facing copy: `purpose`, `useWhen`, `avoidWhen`, one `example`. |
-| `examples.ts` | `example` plus `examples`, used by the conformance harness and the authoring prompt. |
-| `styles.ts` | The primitive's Distillate module, reading only `slideDistillery.tokens`. `src/stylesheet.ts` collects every module. |
-| `react.tsx` | The React renderer, exported as `react`. It serves the `svg` surface too. |
-| `index.tsx` | `definePrimitive`, renderer wiring, and the `text`, `markdown`, and `slack` renderers. |
-| `index.test.ts` | Schema rejections and every surface's output for the primitive. |
-| `fit.ts` | Only for a length-sensitive primitive: the estimate that picks its size step ([Size steps](theme.md#size-steps)). |
+| File            | What it holds                                                                                                                                                                  |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `schema.ts`     | The declaration. The Zod schema, and `export type Node = z.infer<typeof schema> & PrimitiveNode`. Field notes live on `.describe()`, which also reaches the agent JSON Schema. |
+| `types.ts`      | Only when the primitive declares `schemaFor`. Those nodes hold the body-node union, so the type stays a hand-written interface.                                                |
+| `catalog.ts`    | Agent-facing copy: `purpose`, `useWhen`, `avoidWhen`, one `example`; and the host-facing `name`, which the prompt does not print.                                              |
+| `icon.ts`       | The host-facing glyph, exported as `icon` and built with `slideIcon` ([Icons](#icons)).                                                                                        |
+| `examples.ts`   | `example` plus `examples`, used by the conformance harness and the authoring prompt.                                                                                           |
+| `styles.ts`     | The primitive's Distillate module, reading only `slideDistillery.tokens`. `src/stylesheet.ts` collects every module.                                                           |
+| `react.tsx`     | The React renderer, exported as `react`. It serves the `svg` surface too.                                                                                                      |
+| `index.tsx`     | `definePrimitive`, renderer wiring, and the `text`, `markdown`, and `slack` renderers.                                                                                         |
+| `index.test.ts` | Schema rejections and every surface's output for the primitive.                                                                                                                |
+| `fit.ts`        | Only for a length-sensitive primitive: the estimate that picks its size step ([Size steps](theme.md#size-steps)).                                                              |
 
 A primitive holds no values of its own. Everything it renders lives in its group under `SLIDE_THEME` (`src/theme/components/<group>.ts`, assembled by `src/theme/theme.ts`), which its `styles.ts` reads.
 
@@ -31,6 +32,17 @@ This does not reach every literal in a module: `1fr`, `minmax(0, …)`, `50%`, a
 [Distillate](https://elastic.github.io/distillate/) theme leaves are not color-only: a plain `string` becomes a CSS custom property with identical light/dark values; `lightDark(light, dark)` is the scheme-varying color helper; a `ScaleToken` (`cq` / `scaleToken`, wrapped here as `px` and `literal`) inlines as a literal and cannot vary across schemes or overlays. This pack uses `ScaleToken` for everything outside `color` and `inverse` because the 16:9 canvas is fixed — a host that wants different geometry replaces the frame (`docs/document.md`, `docs/theme.md`), not a token. Reach for a string leaf only when a value is meant to be host-themeable.
 
 A CSS module that branches on an enum field uses `variants(domain, factory)` with the domain array already in `src/theme/variants.ts`. Do not add a private `switch`. One that branches on a count or a grid line builds its domain with `countKeys` and reads a key with `countKey`, since a variant key must start with a letter.
+
+## Icons
+
+Every primitive has a `catalog.name` and an `icon`, unique across the pack, and `pack_contract.test.ts` fails without them. The SDK's [Names and icons](../../isomer-sdk/docs/primitives.md#names-and-icons) has the rules an icon must pass and why its values are exempt from the rule above.
+
+`slideIcon(hue, draw)` from `src/theme/icon_hues.ts` builds each one, and that file is the one source for every fallback colour. It draws a `bg` tile and sets the strokes on the root, so `draw` returns only the glyph's shapes. Keep the set reading as one family:
+
+- Draw inside `2..14`, with the pack's `1.5` round strokes and `rx=".5"` on filled blocks.
+- Paint the one emphasised element `accent`, bodies `muted`, and lines `fg`.
+- Take the hue of the primitive's group: indigo for numbers and data, blue for structure, teal for flow, violet for code and rendered output, yellow for words, green for lists.
+- Draw text as short strokes; an icon cannot hold `<text>`.
 
 ## Drawing inside an `svg`
 
@@ -73,7 +85,9 @@ export const slideHeadingPrimitive = definePrimitive({
   renderers: {
     react,
     text: ({ title, lede }) =>
-      [plainText(title).toUpperCase(), lede && plainText(lede)].filter(Boolean).join('\n'),
+      [plainText(title).toUpperCase(), lede && plainText(lede)]
+        .filter(Boolean)
+        .join('\n'),
     markdown: ({ title, lede }) => [
       md.heading(1, ...marksMarkdown(title)),
       ...(lede ? [md.paragraph(...marksMarkdown(lede))] : []),

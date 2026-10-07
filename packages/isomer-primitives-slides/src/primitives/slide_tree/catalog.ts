@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideTreeNode}. */
 export const catalog = {
   type: 'slideTree',
+  name: 'Tree',
   purpose:
     'Show what is inside a folder and what each file is for, so the audience can find their way around it.',
   useWhen: [

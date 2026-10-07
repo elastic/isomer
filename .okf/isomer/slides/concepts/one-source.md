@@ -19,6 +19,8 @@ sources:
 
 A pack holds no rendered value of its own. Before adding a number, length, ratio, or glyph, put it in the theme and read it from there. Duplicating a literal in a renderer is a bug, not a shortcut.[^docs][^agents]
 
+Icons are exempt: their geometry and fallback colours are host-facing defaults the pack never draws. Every fallback colour still has one source, `src/theme/icon_hues.ts`.[^docs]
+
 Related: [theme](/slides/concepts/theme.md), [conventions](/workspace/reference/conventions.md).
 
 [^docs]: Authoring a primitive

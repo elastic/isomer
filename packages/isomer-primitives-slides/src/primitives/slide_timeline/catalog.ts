@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideTimelineNode}. */
 export const catalog = {
   type: 'slideTimeline',
+  name: 'Timeline',
   purpose:
     'Show how a need or situation changed over dated points, leading up to the one that matters now.',
   useWhen: [

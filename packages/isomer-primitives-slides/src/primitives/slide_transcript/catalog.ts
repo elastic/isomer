@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideTranscriptNode}. */
 export const catalog = {
   type: 'slideTranscript',
+  name: 'Transcript',
   purpose:
     'Let the reader follow a short exchange between a person, a model, and the program hosting it, turn by turn.',
   useWhen: [

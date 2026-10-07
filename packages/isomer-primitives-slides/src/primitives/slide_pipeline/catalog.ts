@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlidePipelineNode}. */
 export const catalog = {
   type: 'slidePipeline',
+  name: 'Pipeline',
   purpose:
     'Walk the audience through the ordered steps of one process, from what goes in to what comes out.',
   useWhen: [

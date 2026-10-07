@@ -29,6 +29,7 @@ import { slideRenderPrimitive } from '../slide_render';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { react } from './react';
 import { buildSchema, schema, type SlideAnnotatedRenderPin } from './schema';
 import type { SlideAnnotatedRenderNode } from './types';
@@ -56,6 +57,7 @@ export const slideAnnotatedRenderPrimitive =
   definePrimitive<SlideAnnotatedRenderNode>({
     type: 'slideAnnotatedRender',
     catalog,
+    icon,
     examples,
     schema,
     schemaFor: (bodyNodeSchema: ZodType<unknown>) =>

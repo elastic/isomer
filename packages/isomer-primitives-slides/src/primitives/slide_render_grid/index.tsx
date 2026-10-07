@@ -27,6 +27,7 @@ import {
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { react } from './react';
 import { buildSchema, schema } from './schema';
 import type { SlideRenderGridNode } from './types';
@@ -39,6 +40,7 @@ const join = ` ${slideDistillery.tokens.render.separator.value} `;
 export const slideRenderGridPrimitive = definePrimitive<SlideRenderGridNode>({
   type: 'slideRenderGrid',
   catalog,
+  icon,
   examples,
   schema,
   schemaFor: (bodyNodeSchema: ZodType<unknown>) => buildSchema(bodyNodeSchema),

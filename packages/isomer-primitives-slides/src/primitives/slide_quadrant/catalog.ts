@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideQuadrantNode}. */
 export const catalog = {
   type: 'slideQuadrant',
+  name: 'Quadrant',
   purpose:
     'Sort a handful of things by two qualities at once, so the audience sees which group each one falls in.',
   useWhen: [

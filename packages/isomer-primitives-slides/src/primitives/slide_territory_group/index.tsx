@@ -27,6 +27,7 @@ import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideTerritoryGroupNode } from './schema';
 
@@ -72,6 +73,7 @@ export const slack = ({ items }: SlideTerritoryGroupNode): SlackBlock[] => [
 export const slideTerritoryGroupPrimitive = definePrimitive({
   type: 'slideTerritoryGroup',
   catalog,
+  icon,
   examples,
   schema,
   renderers: {

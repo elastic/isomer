@@ -16,6 +16,7 @@ export {
   primitiveConformanceRows,
   runPrimitiveInventoryConformance,
 } from './conformance';
+export { assertPackIconsValid } from './icon';
 export {
   type PackRegistrationOptions,
   assertPackRegistrationComplete,

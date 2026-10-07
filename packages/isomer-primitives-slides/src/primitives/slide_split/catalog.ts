@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideSplitNode}. */
 export const catalog = {
   type: 'slideSplit',
+  name: 'Split',
   purpose:
     'Set two things side by side so the reader compares them: two owners, a before and after, or an input and what it becomes.',
   useWhen: [

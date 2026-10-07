@@ -9,6 +9,7 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import { z } from 'zod';
 
 import {
+  type AnyPrimitiveDefinition,
   definePrimitive,
   type PrimitiveNode,
 } from '../define/primitive_module';
@@ -217,5 +218,42 @@ describe('definePrimitivePack theme', () => {
       primitives: [leaf('note')],
     });
     expectTypeOf(pack).toEqualTypeOf<PrimitivePack<unknown>>();
+  });
+});
+
+describe('definePrimitivePack icons', () => {
+  const icon = (type: string) => ({
+    svg: `<svg viewBox="0 0 16 16" data-type="${type}"></svg>`,
+  });
+  const withIcon = (type: string) => ({ ...leaf(type), icon: icon(type) });
+  const iconsOf = (primitives: AnyPrimitiveDefinition[]) => {
+    const { icons } = definePrimitivePack({ id: 'p', primitives });
+    if (icons === undefined) {
+      throw new Error('definePrimitivePack set no icons');
+    }
+    return icons;
+  };
+
+  it('maps only the primitives that declare an icon', () => {
+    const icons = iconsOf([withIcon('note'), leaf('memo')]);
+    expect(Object.keys(icons)).toEqual(['note']);
+    expect(icons['note']).toEqual(icon('note'));
+  });
+
+  it('is an empty frozen null-prototype dictionary when none declares one', () => {
+    const icons = iconsOf([leaf('memo')]);
+    expect(Object.keys(icons)).toEqual([]);
+    expect(Object.isFrozen(icons)).toBe(true);
+    expect(Object.getPrototypeOf(icons)).toBeNull();
+  });
+
+  it('treats prototype keys as ordinary types', () => {
+    const icons = iconsOf([withIcon('__proto__')]);
+    expect(Object.keys(icons)).toEqual(['__proto__']);
+    expect(Object.getPrototypeOf(icons)).toBeNull();
+    expect(icons['__proto__']).toEqual(icon('__proto__'));
+    const lookup = (type: string) => icons[type];
+    expect(lookup('constructor')).toBeUndefined();
+    expect(lookup('toString')).toBeUndefined();
   });
 });

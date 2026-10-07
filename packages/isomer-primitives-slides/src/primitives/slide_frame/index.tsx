@@ -22,6 +22,7 @@ import { bodyNodes, definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { react } from './react';
 import { schema } from './schema';
 import type { SlideFrameNode } from './types';
@@ -68,6 +69,7 @@ const footerMarkdown = (node: SlideFrameNode) => {
 export const slideFramePrimitive = definePrimitive<SlideFrameNode>({
   type: 'slideFrame',
   catalog,
+  icon,
   examples,
   schema,
   schemaFor: (bodyNodeSchema: ZodType<unknown>) =>

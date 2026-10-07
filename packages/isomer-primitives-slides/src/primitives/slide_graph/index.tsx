@@ -22,6 +22,7 @@ import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideGraphNode, type SlideGraphTerm } from './schema';
 
@@ -111,6 +112,7 @@ export const slack = (node: SlideGraphNode): SlackBlock[] => [
 export const slideGraphPrimitive = definePrimitive({
   type: 'slideGraph',
   catalog,
+  icon,
   examples,
   schema,
   renderers: {

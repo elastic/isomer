@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideTerritoryGroupNode}. */
 export const catalog = {
   type: 'slideTerritoryGroup',
+  name: 'Territory group',
   purpose:
     'Show who owns what, so the audience knows which side is responsible for each part.',
   useWhen: [

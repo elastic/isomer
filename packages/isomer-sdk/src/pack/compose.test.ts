@@ -125,3 +125,46 @@ describe('composePacks', () => {
     ).toThrow('enhancement "sort" registered by "a" and "b"');
   });
 });
+
+describe('composePacks icons', () => {
+  const icon = (type: string) => ({
+    svg: `<svg viewBox="0 0 16 16" data-type="${type}"></svg>`,
+  });
+  const iconPack = (id: string, types: string[]) =>
+    definePrimitivePack({
+      id,
+      primitives: types.map((type) => ({ ...leaf(type), icon: icon(type) })),
+    });
+
+  it("merges every pack's icons into one frozen null-prototype dictionary", () => {
+    const { icons } = composePacks([
+      iconPack('a', ['note']),
+      pack('b', ['memo']),
+      iconPack('c', ['chart']),
+    ]);
+    expect(Object.keys(icons)).toEqual(['note', 'chart']);
+    expect(icons['chart']).toEqual(icon('chart'));
+    expect(Object.isFrozen(icons)).toBe(true);
+    expect(Object.getPrototypeOf(icons)).toBeNull();
+  });
+
+  it('treats prototype keys as ordinary types', () => {
+    const { icons } = composePacks([
+      iconPack('a', ['__proto__']),
+      iconPack('b', ['note']),
+    ]);
+    expect(Object.keys(icons)).toEqual(['__proto__', 'note']);
+    expect(Object.getPrototypeOf(icons)).toBeNull();
+    expect(icons['__proto__']).toEqual(icon('__proto__'));
+    const lookup = (type: string) => icons[type];
+    expect(lookup('constructor')).toBeUndefined();
+    expect(lookup('toString')).toBeUndefined();
+  });
+
+  it('derives icons for a pack built before packs carried an icons map', () => {
+    const { icons: _omitted, ...legacy } = iconPack('a', ['note']);
+    const { icons } = composePacks([legacy, pack('b', ['memo'])]);
+    expect(Object.keys(icons)).toEqual(['note']);
+    expect(icons['note']).toEqual(icon('note'));
+  });
+});

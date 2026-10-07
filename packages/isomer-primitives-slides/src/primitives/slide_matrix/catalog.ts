@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideMatrixNode}. */
 export const catalog = {
   type: 'slideMatrix',
+  name: 'Matrix',
   purpose:
     'Let the audience see at a glance which options support which capabilities, and where support is only partial.',
   useWhen: [

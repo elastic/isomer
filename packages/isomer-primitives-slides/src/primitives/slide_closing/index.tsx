@@ -30,6 +30,7 @@ import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideClosingLink, type SlideClosingNode } from './schema';
 
@@ -147,6 +148,7 @@ export const slack = ({
 export const slideClosingPrimitive = definePrimitive({
   type: 'slideClosing',
   catalog,
+  icon,
   examples,
   schema,
   renderers: {

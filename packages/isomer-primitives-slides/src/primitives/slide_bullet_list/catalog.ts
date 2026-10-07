@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideBulletListNode}. */
 export const catalog = {
   type: 'slideBulletList',
+  name: 'Bullet list',
   purpose:
     'Give the audience a few short, unordered points, marked as neutral, done, or left out.',
   useWhen: [

@@ -24,6 +24,7 @@ import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { react } from './react';
 import { quadrantPlaces, schema, type SlideQuadrantNode } from './schema';
 
@@ -108,6 +109,7 @@ export const slack = (node: SlideQuadrantNode): SlackBlock[] => {
 export const slideQuadrantPrimitive = definePrimitive({
   type: 'slideQuadrant',
   catalog,
+  icon,
   examples,
   schema,
   renderers: {

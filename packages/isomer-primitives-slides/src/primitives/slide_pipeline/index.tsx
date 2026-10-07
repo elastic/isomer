@@ -22,6 +22,7 @@ import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import { react } from './react';
 import {
   schema,
@@ -144,6 +145,7 @@ export const slack = ({
 export const slidePipelinePrimitive = definePrimitive({
   type: 'slidePipeline',
   catalog,
+  icon,
   examples,
   schema,
   renderers: {

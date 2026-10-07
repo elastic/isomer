@@ -12,6 +12,7 @@ import { example } from './examples';
 /** Agent-facing catalog entry for {@link SlideSourceNode}. */
 export const catalog = {
   type: 'slideSource',
+  name: 'Source',
   purpose:
     'Tell the audience where the numbers or claims on a slide come from, without taking attention from them.',
   useWhen: [

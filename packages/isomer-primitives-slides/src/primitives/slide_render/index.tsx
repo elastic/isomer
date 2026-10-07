@@ -13,6 +13,7 @@ import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
+import { icon } from './icon';
 import {
   embeddedMarkdown,
   embeddedSlack,
@@ -29,6 +30,7 @@ export type { SlideRenderNode } from './types';
 export const slideRenderPrimitive = definePrimitive<SlideRenderNode>({
   type: 'slideRender',
   catalog,
+  icon,
   examples,
   schema,
   schemaFor: (bodyNodeSchema: ZodType<unknown>) => buildSchema(bodyNodeSchema),
