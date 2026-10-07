@@ -175,7 +175,7 @@ export function fromChildren<
 >(
   childType: TName,
   schema: TSchema,
-  options: { text: TText }
+  options: { text: TText; toItem?: never }
 ): TSchema &
   AuthoredChildBrand<
     TName,

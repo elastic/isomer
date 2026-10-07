@@ -565,6 +565,34 @@ describe('nested brands', () => {
     >().toEqualTypeOf<false>();
   });
 
+  it('keeps the toItem brand when options with text are held in a variable', () => {
+    const delta = z.object({ label: z.string() });
+    const stat = z.object({
+      label: z.string(),
+      delta: fromChildren('delta', delta).optional(),
+    });
+    const options = {
+      text: 'label' as const,
+      toItem(props: { label: string }) {
+        return props;
+      },
+    };
+    const shim = buildJsxShim([
+      {
+        type: 'stats' as const,
+        schema: z.object({
+          type: z.literal('stats'),
+          stats: fromChildren('stat', z.array(stat), options),
+        }),
+      },
+    ]);
+
+    expect('Delta' in shim).toBe(false);
+    expectTypeOf<
+      'Delta' extends keyof typeof shim ? true : false
+    >().toEqualTypeOf<false>();
+  });
+
   it('lets a required nested field come from child elements', () => {
     const delta = z.object({ label: z.string(), tone: z.string() });
     const stat = z.object({
