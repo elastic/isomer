@@ -145,9 +145,9 @@ export interface PrimitivePack<TTheme = unknown> {
   /**
    * Each primitive's `icon` by type, for the primitives that declare one, so a host listing them need not walk `primitives`.
    *
-   * A frozen null-prototype dictionary: an absent type reads `undefined`, even `constructor`.
+   * A frozen null-prototype dictionary: an absent type reads `undefined`, even `constructor`. Absent on a pack built by an SDK that predates icons; {@link iconsByType} derives it from `primitives`.
    */
-  readonly icons: Readonly<Record<string, PrimitiveIcon>>;
+  readonly icons?: Readonly<Record<string, PrimitiveIcon>>;
   /** See {@link PrimitivePackInput.enhancements}. */
   readonly enhancements: readonly EnhancementDefinition[];
   /** See {@link PrimitivePackInput.slackAssetTypes}. */
@@ -222,8 +222,8 @@ export const definePrimitivePack = <TTheme = unknown>(
   };
 };
 
-/** Null-prototype, so a type such as `__proto__` is an ordinary key. */
-const iconsByType = (
+/** Each definition's `icon` by type, null-prototype so a type such as `__proto__` is an ordinary key. */
+export const iconsByType = (
   primitives: readonly AnyPrimitiveDefinition[]
 ): Readonly<Record<string, PrimitiveIcon>> => {
   const icons = Object.create(null) as Record<string, PrimitiveIcon>;

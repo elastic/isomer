@@ -29,7 +29,7 @@ This page is the pack **contract**. Composing packs into a runtime is the [runti
 
 `surfaces` is advisory: dispatch and `describeCapabilities` follow each primitive's own `renderers.slack`, so a primitive without one renders, and reports, Slack as a markdown fallback.
 
-What comes back adds `types`, a set for duplicate detection across packs, and `icons`, each primitive's [icon](primitives.md#names-and-icons) by type for the primitives that declare one, so a host listing them need not walk `primitives`. `composePacks` merges every pack's `icons` into one. Both are frozen null-prototype dictionaries, so an absent type, even `constructor`, reads `undefined`. It also normalizes the two optional fields. `styleCollector` is read from `styleAdapter.styleCollector` when the pack does not set it; set it only for a pack whose hooks collect into a shape its adapter does not create.
+What comes back adds `types`, a set for duplicate detection across packs, and `icons`, each primitive's [icon](primitives.md#names-and-icons) by type for the primitives that declare one, so a host listing them need not walk `primitives`. `composePacks` builds one such map from every pack's definitions, so a pack built by an SDK without `icons` composes too. Both are frozen null-prototype dictionaries, so an absent type, even `constructor`, reads `undefined`. It also normalizes the two optional fields. `styleCollector` is read from `styleAdapter.styleCollector` when the pack does not set it; set it only for a pack whose hooks collect into a shape its adapter does not create.
 
 ## `surfaces` reports an intent
 

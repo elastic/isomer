@@ -160,4 +160,11 @@ describe('composePacks icons', () => {
     expect(lookup('constructor')).toBeUndefined();
     expect(lookup('toString')).toBeUndefined();
   });
+
+  it('derives icons for a pack built before packs carried an icons map', () => {
+    const { icons: _omitted, ...legacy } = iconPack('a', ['note']);
+    const { icons } = composePacks([legacy, pack('b', ['memo'])]);
+    expect(Object.keys(icons)).toEqual(['note']);
+    expect(icons['note']).toEqual(icon('note'));
+  });
 });

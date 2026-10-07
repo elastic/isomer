@@ -159,6 +159,7 @@ A host listing primitives, in a nav, a docs gallery, or an example picker, shows
 - Attributes: geometry (`d`, `x`, `y`, `cx`, `cy`, `r`, `rx`, `ry`, `x1`…`y2`, `points`, `width` and `height` on `rect`), `transform`, and paint (`fill`, `stroke`, `stroke-width`, `stroke-linecap`, `stroke-linejoin`, `opacity`, `fill-opacity`, `stroke-opacity`, `fill-rule`, `clip-rule`). No `style`, `class`, `href`, or event handlers. Values are quoted and hold no entities.
 - Every `fill` and `stroke` is `none`, `currentColor`, or one of the four `ICON_VARS`, optionally with a `currentColor` or `#rgb` / `#rrggbb` fallback: `var(--isomer-icon-accent, #3d5ad8)`.
 - No comments, declarations, CDATA, text, or anything after `</svg>`.
+- Separators are HTML whitespace (space, tab, line feed, form feed, carriage return), never NBSP or another Unicode space, which an HTML parser reads as part of a name or as text.
 
 The four slots are `accent` for the one emphasised element, `muted` for bodies, `fg` for lines, and `bg` for a tile behind the glyph, if the icon draws one.
 

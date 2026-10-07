@@ -7,6 +7,7 @@
 
 import {
   bindFrame,
+  composePacks,
   createPrimitiveDispatcher,
   exampleNodes,
   type PrimitiveNode,
@@ -63,6 +64,8 @@ describe('slide pack contract', () => {
 });
 
 describe('slide pack names and icons', () => {
+  const { icons } = composePacks([slidesPack]);
+
   it('gives every primitive a unique name', () => {
     const names = slideDeckPrimitives.map(
       ({ type, catalog: { name } }) => name?.trim() || `<${type} has no name>`
@@ -73,9 +76,7 @@ describe('slide pack names and icons', () => {
 
   it('gives every primitive an icon', () => {
     expect(
-      slidePrimitiveTypes.filter(
-        (type) => !Object.hasOwn(slidesPack.icons, type)
-      )
+      slidePrimitiveTypes.filter((type) => !Object.hasOwn(icons, type))
     ).toEqual([]);
   });
 
@@ -84,12 +85,12 @@ describe('slide pack names and icons', () => {
   });
 
   it('draws every icon differently', () => {
-    const svgs = Object.values(slidesPack.icons).map(({ svg }) => svg);
+    const svgs = Object.values(icons).map(({ svg }) => svg);
     expect(new Set(svgs).size).toBe(svgs.length);
   });
 
-  it('exposes slideStat through pack.icons', () => {
-    expect(slidesPack.icons['slideStat']?.svg).toBe(
+  it('exposes slideStat through the composed icons', () => {
+    expect(icons['slideStat']?.svg).toBe(
       '<svg viewBox="0 0 16 16" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
         '<rect width="16" height="16" rx="3" fill="var(--isomer-icon-bg, #ebeefd)"/>' +
         '<rect x="3" y="3" width="3" height="10" rx=".5" fill="var(--isomer-icon-accent, #3d5ad8)"/>' +

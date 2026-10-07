@@ -5,12 +5,41 @@
  * 2.0.
  */
 
+import { type DefaultTreeAdapterMap, html, parseFragment } from 'parse5';
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
+
+import { definePrimitive } from '../define/primitive_module';
 
 import { assertPackIconsValid } from './icon';
 
 const check = (svg: string) => () =>
-  assertPackIconsValid({ icons: { slideStat: { svg } } });
+  assertPackIconsValid({ primitives: [], icons: { slideStat: { svg } } });
+
+const passes = (svg: string): boolean => {
+  try {
+    check(svg)();
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/** What an HTML parser builds from `svg`, as host-side inlining would see it; blank text is dropped. */
+const parsedTree = (svg: string): string => {
+  const render = (node: DefaultTreeAdapterMap['childNode']): string => {
+    if (!('tagName' in node)) {
+      return 'value' in node && /^[\t\n\f\r ]*$/.test(node.value)
+        ? ''
+        : node.nodeName;
+    }
+    const { tagName, namespaceURI, attrs, childNodes } = node;
+    const attributes = attrs.map(({ name, value }) => ` ${name}="${value}"`);
+    const prefix = namespaceURI === html.NS.SVG ? '' : 'html:';
+    return `<${prefix}${tagName}${attributes.join('')}>${childNodes.map(render).join('')}</>`;
+  };
+  return parseFragment(svg).childNodes.map(render).join('');
+};
 
 const wrap = (body: string, root = 'viewBox="0 0 16 16"') =>
   `<svg ${root}>${body}</svg>`;
@@ -49,7 +78,29 @@ describe('assertPackIconsValid', () => {
   });
 
   it('passes a pack with no icons', () => {
-    expect(() => assertPackIconsValid({ icons: {} })).not.toThrow();
+    expect(() =>
+      assertPackIconsValid({ primitives: [], icons: {} })
+    ).not.toThrow();
+  });
+
+  it('reads icons from definitions when the pack has no icons map', () => {
+    const primitive = definePrimitive({
+      type: 'probe',
+      catalog: {
+        type: 'probe',
+        purpose: '',
+        useWhen: [],
+        avoidWhen: [],
+        example: { type: 'probe' },
+      },
+      examples: [{ type: 'probe' }],
+      schema: z.object({ type: z.literal('probe') }),
+      renderers: { react: () => null, text: () => '', markdown: () => [] },
+      icon: { svg: wrap('<text/>') },
+    });
+    expect(() => assertPackIconsValid({ primitives: [primitive] })).toThrow(
+      'probe icon: <text> is not an allowed element'
+    );
   });
 
   it.each([
@@ -194,6 +245,61 @@ describe('assertPackIconsValid', () => {
       'width is not an allowed attribute on <circle>',
     ],
     ['a non-svg root', '<g></g>', 'root is <g>, not <svg>'],
+    [
+      'an inherited element name',
+      wrap('<constructor/>'),
+      '<constructor> is not an allowed element',
+    ],
+    [
+      'an inherited element name with an attribute',
+      wrap('<hasOwnProperty x="1"/>'),
+      '<hasOwnProperty> is not an allowed element',
+    ],
+    [
+      'toString with an attribute',
+      wrap('<toString d="M0 0"/>'),
+      '<toString> is not an allowed element',
+    ],
+    [
+      'an inherited attribute name',
+      wrap('<rect constructor="1"/>'),
+      'constructor is not an allowed attribute on <rect>',
+    ],
+    [
+      'NBSP after the root tag name',
+      '<svg\u00a0viewBox="0 0 16 16"></svg>',
+      'malformed opening tag',
+    ],
+    [
+      'NBSP after a child tag name',
+      wrap('<rect\u00a0x="1"/>'),
+      'malformed opening tag',
+    ],
+    [
+      'NBSP between attributes',
+      wrap('<rect x="1"\u00a0y="1"/>'),
+      '\u00a0y is not an allowed attribute on <rect>',
+    ],
+    [
+      'an ideographic space in a closing tag',
+      '<svg viewBox="0 0 16 16"></svg\u3000>',
+      'malformed closing tag',
+    ],
+    [
+      'NBSP text between elements',
+      wrap('\u00a0'),
+      'text content "\u00a0" is not allowed',
+    ],
+    [
+      'NBSP inside path data',
+      wrap('<path d="M2\u00a08h12"/>'),
+      'd="M2\u00a08h12" is not an allowed value',
+    ],
+    [
+      'NBSP inside a paint fallback',
+      wrap('<rect fill="var(--isomer-icon-fg,\u00a0#fff)"/>'),
+      'fill="var(--isomer-icon-fg,\u00a0#fff)" is not none',
+    ],
   ])('rejects %s', (_name, svg, problem) => {
     expect(check(svg)).toThrow(`slideStat icon: ${problem}`);
   });
@@ -201,6 +307,7 @@ describe('assertPackIconsValid', () => {
   it('reports every problem across icons in one error', () => {
     expect(() =>
       assertPackIconsValid({
+        primitives: [],
         icons: {
           a: { svg: wrap('<rect fill="#f00" style="x"/>') },
           b: { svg: wrap('<text/>') },
@@ -214,5 +321,43 @@ describe('assertPackIconsValid', () => {
         '- b icon: <text> is not an allowed element',
       ].join('\n')
     );
+  });
+
+  describe('agrees with an HTML parser', () => {
+    const corpus = [
+      wrap('<rect x="1" y="1" width="4" height="4"/>'),
+      wrap('\t\n\f\r <path\td="M2 8h12"\nstroke="currentColor"\f/>\r'),
+      `<svg\fviewBox="0 0 16 16"\r></svg\n>`,
+      wrap('<g transform="translate(1\t1)"><circle cx="8" cy="8" r="2"/></g>'),
+      '<svg\u00a0viewBox="0 0 16 16"></svg>',
+      '<svg\u2003viewBox="0 0 16 16"></svg>',
+      '<svg\u3000viewBox="0 0 16 16"></svg>',
+      '<svg\ufeffviewBox="0 0 16 16"></svg>',
+      '<svg\u000bviewBox="0 0 16 16"></svg>',
+      wrap('<rect\u00a0x="1"/>'),
+      wrap('<rect x="1"\u2028y="1"/>'),
+      wrap('\u00a0'),
+      '<svg viewBox="0 0 16 16"></svg\u00a0>',
+    ];
+
+    it.each(corpus.map((svg) => [JSON.stringify(svg), svg]))(
+      'accepts %s only if a parser builds one SVG root and no text',
+      (_name, svg) => {
+        const tree = parsedTree(svg);
+        const accepted = passes(svg);
+        if (accepted) {
+          expect(tree).toMatch(/^<svg viewBox="0 0 16 16">.*<\/>$/);
+          expect(tree).not.toMatch(/#text|html:/);
+        }
+      }
+    );
+
+    it('accepts every markup-whitespace spelling in the corpus', () => {
+      expect(corpus.slice(0, 4).filter((svg) => !passes(svg))).toEqual([]);
+    });
+
+    it('rejects every non-markup separator in the corpus', () => {
+      expect(corpus.slice(4).filter(passes)).toEqual([]);
+    });
   });
 });

@@ -7,51 +7,64 @@
 
 // Hosts insert an icon's `svg` as markup, so every rule here is an allowlist.
 
-import type { PrimitivePack } from '../pack/primitive_pack';
+import { iconsByType, type PrimitivePack } from '../pack/primitive_pack';
 
-const NUMBER = /^[-+0-9.eE,\s]*$/;
-const PATH_DATA = /^[-+0-9.eE,\sMmLlHhVvCcSsQqTtAaZz]*$/;
+// HTML's markup whitespace, never `\s`: a parser reads NBSP and other Unicode separators as part of a name or as text.
+const NUMBER = /^[-+0-9.eE,\t\n\f\r ]*$/;
+const PATH_DATA = /^[-+0-9.eE,\t\n\f\r MmLlHhVvCcSsQqTtAaZz]*$/;
 const TRANSFORM =
-  /^(?:\s*(?:matrix|translate|scale|rotate|skewX|skewY)\s*\([-+0-9.eE,\s]*\)\s*,?)*\s*$/;
+  /^(?:[\t\n\f\r ]*(?:matrix|translate|scale|rotate|skewX|skewY)[\t\n\f\r ]*\([-+0-9.eE,\t\n\f\r ]*\)[\t\n\f\r ]*,?)*[\t\n\f\r ]*$/;
 const PAINT =
-  /^(?:none|currentColor|var\(--isomer-icon-(?:accent|bg|fg|muted)(?:\s*,\s*(?:currentColor|#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6}))?\))$/;
+  /^(?:none|currentColor|var\(--isomer-icon-(?:accent|bg|fg|muted)(?:[\t\n\f\r ]*,[\t\n\f\r ]*(?:currentColor|#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6}))?\))$/;
 const PAINT_RULE = 'is not none, currentColor, or var(--isomer-icon-*)';
+
+const NAME = /[A-Za-z][\w:.-]*/y;
+const ATTRIBUTE_NAME = /[^\t\n\f\r "'<>/=]+/y;
+const WHITESPACE = /[\t\n\f\r ]*/y;
+const BLANK = /^[\t\n\f\r ]*$/;
+const NAME_END = /[\t\n\f\r />]/;
+
+const trimMarkup = (text: string): string =>
+  text.replace(/^[\t\n\f\r ]+|[\t\n\f\r ]+$/g, '');
+
+const isNumber = (value: string): boolean => NUMBER.test(value);
 
 const keyword =
   (...words: string[]) =>
   (value: string): boolean =>
     words.includes(value);
 
-const ATTRIBUTE_RULES: Readonly<Record<string, (value: string) => boolean>> = {
-  cx: (value) => NUMBER.test(value),
-  cy: (value) => NUMBER.test(value),
-  d: (value) => PATH_DATA.test(value),
-  fill: (value) => PAINT.test(value),
-  'fill-opacity': (value) => NUMBER.test(value),
-  'fill-rule': keyword('nonzero', 'evenodd'),
-  'clip-rule': keyword('nonzero', 'evenodd'),
-  height: (value) => NUMBER.test(value),
-  opacity: (value) => NUMBER.test(value),
-  points: (value) => NUMBER.test(value),
-  r: (value) => NUMBER.test(value),
-  rx: (value) => NUMBER.test(value),
-  ry: (value) => NUMBER.test(value),
-  stroke: (value) => PAINT.test(value),
-  'stroke-linecap': keyword('butt', 'round', 'square'),
-  'stroke-linejoin': keyword('miter', 'round', 'bevel'),
-  'stroke-opacity': (value) => NUMBER.test(value),
-  'stroke-width': (value) => NUMBER.test(value),
-  transform: (value) => TRANSFORM.test(value),
-  viewBox: keyword('0 0 16 16'),
-  width: (value) => NUMBER.test(value),
-  x: (value) => NUMBER.test(value),
-  x1: (value) => NUMBER.test(value),
-  x2: (value) => NUMBER.test(value),
-  xmlns: keyword('http://www.w3.org/2000/svg'),
-  y: (value) => NUMBER.test(value),
-  y1: (value) => NUMBER.test(value),
-  y2: (value) => NUMBER.test(value),
-};
+const ATTRIBUTE_RULES: ReadonlyMap<string, (value: string) => boolean> =
+  new Map([
+    ['clip-rule', keyword('nonzero', 'evenodd')],
+    ['cx', isNumber],
+    ['cy', isNumber],
+    ['d', (value) => PATH_DATA.test(value)],
+    ['fill', (value) => PAINT.test(value)],
+    ['fill-opacity', isNumber],
+    ['fill-rule', keyword('nonzero', 'evenodd')],
+    ['height', isNumber],
+    ['opacity', isNumber],
+    ['points', isNumber],
+    ['r', isNumber],
+    ['rx', isNumber],
+    ['ry', isNumber],
+    ['stroke', (value) => PAINT.test(value)],
+    ['stroke-linecap', keyword('butt', 'round', 'square')],
+    ['stroke-linejoin', keyword('miter', 'round', 'bevel')],
+    ['stroke-opacity', isNumber],
+    ['stroke-width', isNumber],
+    ['transform', (value) => TRANSFORM.test(value)],
+    ['viewBox', keyword('0 0 16 16')],
+    ['width', isNumber],
+    ['x', isNumber],
+    ['x1', isNumber],
+    ['x2', isNumber],
+    ['xmlns', keyword('http://www.w3.org/2000/svg')],
+    ['y', isNumber],
+    ['y1', isNumber],
+    ['y2', isNumber],
+  ]);
 
 const PRESENTATION = [
   'clip-rule',
@@ -67,21 +80,17 @@ const PRESENTATION = [
   'transform',
 ];
 
-const ELEMENT_ATTRIBUTES: Readonly<Record<string, ReadonlySet<string>>> = {
-  svg: new Set(['viewBox', 'xmlns', ...PRESENTATION]),
-  g: new Set(PRESENTATION),
-  path: new Set(['d', ...PRESENTATION]),
-  rect: new Set(['x', 'y', 'width', 'height', 'rx', 'ry', ...PRESENTATION]),
-  circle: new Set(['cx', 'cy', 'r', ...PRESENTATION]),
-  ellipse: new Set(['cx', 'cy', 'rx', 'ry', ...PRESENTATION]),
-  line: new Set(['x1', 'y1', 'x2', 'y2', ...PRESENTATION]),
-  polyline: new Set(['points', ...PRESENTATION]),
-  polygon: new Set(['points', ...PRESENTATION]),
-};
-
-const NAME = /[A-Za-z][\w:.-]*/y;
-const ATTRIBUTE_NAME = /[^\s"'<>/=]+/y;
-const WHITESPACE = /\s*/y;
+const ELEMENT_ATTRIBUTES: ReadonlyMap<string, ReadonlySet<string>> = new Map([
+  ['svg', new Set(['viewBox', 'xmlns', ...PRESENTATION])],
+  ['g', new Set(PRESENTATION)],
+  ['path', new Set(['d', ...PRESENTATION])],
+  ['rect', new Set(['x', 'y', 'width', 'height', 'rx', 'ry', ...PRESENTATION])],
+  ['circle', new Set(['cx', 'cy', 'r', ...PRESENTATION])],
+  ['ellipse', new Set(['cx', 'cy', 'rx', 'ry', ...PRESENTATION])],
+  ['line', new Set(['x1', 'y1', 'x2', 'y2', ...PRESENTATION])],
+  ['polyline', new Set(['points', ...PRESENTATION])],
+  ['polygon', new Set(['points', ...PRESENTATION])],
+]);
 
 /** Every way `svg` breaks the icon rules, as one line each; empty when it passes. */
 const iconProblems = (svg: string): string[] => {
@@ -101,7 +110,7 @@ const iconProblems = (svg: string): string[] => {
     element: string,
     attributes: ReadonlyMap<string, string>
   ): void => {
-    const allowed = ELEMENT_ATTRIBUTES[element];
+    const allowed = ELEMENT_ATTRIBUTES.get(element);
     if (!allowed) {
       problems.push(`<${element}> is not an allowed element`);
       return;
@@ -111,7 +120,7 @@ const iconProblems = (svg: string): string[] => {
         problems.push(`${name} is not an allowed attribute on <${element}>`);
       } else if (value.includes('&')) {
         problems.push(`${name}="${value}" contains an entity`);
-      } else if (!ATTRIBUTE_RULES[name]!(value)) {
+      } else if (!ATTRIBUTE_RULES.get(name)!(value)) {
         problems.push(
           name === 'fill' || name === 'stroke'
             ? `${name}="${value}" ${PAINT_RULE}`
@@ -125,11 +134,11 @@ const iconProblems = (svg: string): string[] => {
     if (svg[index] !== '<') {
       const end = svg.indexOf('<', index);
       const text = svg.slice(index, end === -1 ? undefined : end);
-      if (text.trim() !== '') {
+      if (!BLANK.test(text)) {
         problems.push(
           open.length > 0
-            ? `text content "${text.trim()}" is not allowed`
-            : `unexpected "${text.trim()}" outside <svg>`
+            ? `text content "${trimMarkup(text)}" is not allowed`
+            : `unexpected "${trimMarkup(text)}" outside <svg>`
         );
         return problems;
       }
@@ -165,7 +174,7 @@ const iconProblems = (svg: string): string[] => {
 
     index += 1;
     const element = match(NAME);
-    if (element === '') {
+    if (element === '' || !NAME_END.test(svg[index] ?? '>')) {
       problems.push('malformed opening tag');
       return problems;
     }
@@ -259,9 +268,11 @@ const iconProblems = (svg: string): string[] => {
  */
 export const assertPackIconsValid = ({
   icons,
-}: Pick<PrimitivePack, 'icons'>): void => {
-  const problems = Object.keys(icons).flatMap((type) =>
-    iconProblems(icons[type]!.svg).map((problem) => `${type} icon: ${problem}`)
+  primitives,
+}: Pick<PrimitivePack, 'icons' | 'primitives'>): void => {
+  const byType = icons ?? iconsByType(primitives);
+  const problems = Object.keys(byType).flatMap((type) =>
+    iconProblems(byType[type]!.svg).map((problem) => `${type} icon: ${problem}`)
   );
   if (problems.length > 0) {
     throw new Error(

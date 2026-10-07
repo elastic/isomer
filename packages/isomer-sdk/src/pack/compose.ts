@@ -10,7 +10,7 @@ import type { PrimitiveIcon } from '../define/primitive_icon';
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
 
 import type { EnhancementDefinition } from './enhancements';
-import type { AnyPrimitivePack } from './primitive_pack';
+import { type AnyPrimitivePack, iconsByType } from './primitive_pack';
 
 /**
  * One flattened inventory owned by {@link composePacks}.
@@ -21,7 +21,7 @@ import type { AnyPrimitivePack } from './primitive_pack';
 export interface ComposedPacks {
   readonly definitions: readonly AnyPrimitiveDefinition[];
   readonly enhancements: readonly EnhancementDefinition[];
-  /** Every pack's `icons`, merged into one frozen null-prototype dictionary. */
+  /** Every definition's `icon` by type, in one frozen null-prototype dictionary. */
   readonly icons: Readonly<Record<string, PrimitiveIcon>>;
   readonly slackAssetTypes: ReadonlySet<string>;
 }
@@ -63,29 +63,17 @@ export const composePacks = (
   assertUnique('DUPLICATE_PRIMITIVE_TYPE', 'primitive type', typeOwners);
   assertUnique('DUPLICATE_ENHANCEMENT', 'enhancement', enhancementOwners);
 
+  const definitions = packs.flatMap((pack) => [...pack.primitives]);
   return Object.freeze({
-    definitions: Object.freeze(packs.flatMap((pack) => [...pack.primitives])),
+    definitions: Object.freeze(definitions),
     enhancements: Object.freeze(
       packs.flatMap((pack) => [...pack.enhancements])
     ),
-    icons: mergeIcons(packs),
+    icons: iconsByType(definitions),
     slackAssetTypes: new Set(
       packs.flatMap((pack) => [...pack.slackAssetTypes])
     ),
   });
-};
-
-/** Null-prototype, so a type such as `__proto__` is an ordinary key. */
-const mergeIcons = (
-  packs: readonly AnyPrimitivePack[]
-): Readonly<Record<string, PrimitiveIcon>> => {
-  const icons = Object.create(null) as Record<string, PrimitiveIcon>;
-  for (const pack of packs) {
-    for (const type of Object.keys(pack.icons)) {
-      icons[type] = pack.icons[type]!;
-    }
-  }
-  return Object.freeze(icons);
 };
 
 const assertUnique = (
