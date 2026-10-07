@@ -87,6 +87,9 @@ export const buildSchema = <TPanes extends ZodType>(panes: TPanes) =>
     })
     .strict();
 
+const { label, tone } = paneSchema(unresolvedBodyNodeSchema).shape;
+const panePropsSchema = z.strictObject({ label, tone });
+
 type SlideSplitPaneProps = Omit<SlideSplitPane, 'items'> & {
   children?: ReactNode;
 };
@@ -94,6 +97,7 @@ type SlideSplitPaneProps = Omit<SlideSplitPane, 'items'> & {
 /** Zod schema for {@link SlideSplitNode}. */
 export const schema = buildSchema(
   fromChildren('slideSplitPane', panesField(unresolvedBodyNodeSchema), {
+    propsSchema: panePropsSchema,
     toItem: (
       { children, ...pane }: SlideSplitPaneProps,
       { parseChildren }: AuthorChildContext

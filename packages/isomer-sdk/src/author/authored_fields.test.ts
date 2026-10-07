@@ -15,6 +15,7 @@ import {
   authoredChild,
   type AuthoredChildBrand,
   fromChildren,
+  readAuthoredSpec,
 } from './authored_fields';
 
 type Assert<T extends true> = T;
@@ -130,5 +131,41 @@ describe('fromChildren', () => {
     expectTypeOf<HandOptional & { type: 'badge' }>().toMatchTypeOf<
       z.infer<typeof optionalSchema>
     >();
+  });
+});
+
+describe('custom child input schemas', () => {
+  it('infers the callback and phantom child props from the input schema', () => {
+    const propsSchema = z.strictObject({
+      title: z.string(),
+      count: z.number().default(1),
+    });
+    const items = fromChildren(
+      'schemaCard',
+      z.array(z.object({ label: z.string() })),
+      {
+        propsSchema,
+        toItem(props) {
+          expectTypeOf(props.title).toEqualTypeOf<string>();
+          expectTypeOf(props.count).toEqualTypeOf<number | undefined>();
+          return { label: props.title };
+        },
+      }
+    );
+    type Props =
+      typeof items extends AuthoredChildBrand<'schemaCard', infer Input>
+        ? Input
+        : never;
+    expectTypeOf<Props>().toEqualTypeOf<
+      z.input<typeof propsSchema> & { children?: ReactNode }
+    >();
+    const object = z.object({ items });
+    expect(readAuthoredSpec(object).children[0]?.propsSchema).toBe(propsSchema);
+    expect(() =>
+      fromChildren('schemaCard', items, {
+        propsSchema: z.strictObject({ title: z.number() }),
+        toItem: ({ title }) => ({ label: String(title) }),
+      })
+    ).toThrow(expect.objectContaining({ code: 'AUTHORED_SCHEMA_REUSED' }));
   });
 });

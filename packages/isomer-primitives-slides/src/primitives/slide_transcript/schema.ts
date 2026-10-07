@@ -72,6 +72,10 @@ export const schema = z
         .describe('Turns in the order they happened. 1 to 4.'),
       {
         text: 'text',
+        propsSchema: z.strictObject({
+          ...turnSchema.shape,
+          text: turnSchema.shape.text.optional(),
+        }),
         // Keeps the line breaks the default copy would collapse.
         toItem: ({ children, ...turn }: SlideTurnProps) => ({
           ...turn,

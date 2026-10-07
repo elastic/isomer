@@ -28,6 +28,7 @@ export const authoredText = Symbol.for('elastic.isomer.authored_text');
 export const authoredToItem = Symbol.for('elastic.isomer.authored_to_item');
 const authoredTextField = Symbol.for('elastic.isomer.authored_text_field');
 const authoredCollapse = Symbol.for('elastic.isomer.authored_collapse');
+const authoredPropsSchema = Symbol.for('elastic.isomer.authored_props_schema');
 
 /**
  * A field filled from child elements of `TName`.
@@ -63,6 +64,10 @@ type ArrayItem<TSchema extends ZodType> =
   NonNullable<zOutput<TSchema>> extends readonly (infer Item)[]
     ? Item
     : NonNullable<zOutput<TSchema>>;
+
+type zInput<TSchema> = TSchema extends { _zod: { input: infer Input } }
+  ? Input
+  : never;
 
 type zOutput<TSchema> = TSchema extends { _zod: { output: infer Output } }
   ? Output
@@ -121,6 +126,7 @@ const BRANDS = [
   authoredToItem,
   authoredText,
   authoredCollapse,
+  authoredPropsSchema,
 ] as const;
 
 // Applies a complete branding. Branding an instance again is allowed only with
@@ -187,6 +193,24 @@ export function fromChildren<
 export function fromChildren<
   const TName extends string,
   TSchema extends ZodType,
+  TPropsSchema extends ZodType,
+>(
+  childType: TName,
+  schema: TSchema,
+  options: {
+    text?: string;
+    propsSchema: TPropsSchema;
+    toItem(
+      props: zInput<TPropsSchema> & { children?: ReactNode },
+      context: AuthorChildContext
+    ): unknown;
+  }
+): TSchema &
+  AuthoredChildBrand<TName, zInput<TPropsSchema> & { children?: ReactNode }> &
+  AuthoredToItemBrand;
+export function fromChildren<
+  const TName extends string,
+  TSchema extends ZodType,
   TProps,
 >(
   childType: TName,
@@ -194,6 +218,7 @@ export function fromChildren<
   options: {
     text?: string;
     toItem(props: TProps, context: AuthorChildContext): unknown;
+    propsSchema?: never;
   }
 ): TSchema & AuthoredChildBrand<TName, TProps> & AuthoredToItemBrand;
 export function fromChildren(
@@ -202,12 +227,14 @@ export function fromChildren(
   options?: {
     text?: string;
     toItem?: (this: void, props: never, context: AuthorChildContext) => unknown;
+    propsSchema?: ZodType;
   }
 ): ZodType {
   brand('fromChildren', schema, {
     [authoredChild]: childType,
     [authoredTextField]: options?.text,
     [authoredToItem]: options?.toItem,
+    [authoredPropsSchema]: options?.propsSchema,
   });
   return schema;
 }
@@ -239,6 +266,8 @@ export interface AuthoredChildField {
   toItem?: (props: object, context: AuthorChildContext) => unknown;
   /** The array element schema, or the field schema itself when it is not an array. */
   itemSchema: ZodType;
+  /** Input props for a custom `toItem`, excluding JSX children. */
+  propsSchema?: ZodType;
   /** Whether the field holds an array of items rather than one item. */
   array: boolean;
   /** Whether the field accepts `undefined`, so children may be omitted. */
@@ -362,6 +391,9 @@ const readChild = (
     authoredTextField
   ];
   const toItem = (holder as { [authoredToItem]?: unknown })[authoredToItem];
+  const propsSchema = (holder as { [authoredPropsSchema]?: ZodType })[
+    authoredPropsSchema
+  ];
   const element = arrayElement(holder);
   const itemSchema = element ?? unwrapAll(holder);
   const child: AuthoredChildField = {
@@ -370,8 +402,9 @@ const readChild = (
     itemSchema,
     array: element !== undefined,
     optional: optionalThrough(schema),
-    signature: schemaSignature(itemSchema),
+    signature: `${schemaSignature(itemSchema)}|${typeof textField === 'string' ? textField : ''}|${propsSchema ? schemaSignature(propsSchema) : ''}`,
   };
+  if (propsSchema) child.propsSchema = propsSchema;
   if (typeof textField === 'string') {
     child.textField = textField;
   }

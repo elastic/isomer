@@ -18,6 +18,8 @@ const STRUCTURAL_KEYS = [
   'enum',
   'properties',
   'additionalProperties',
+  'patternProperties',
+  'propertyNames',
   'items',
   'prefixItems',
   'oneOf',
@@ -102,6 +104,7 @@ interface Printed {
 const atom = (text: string): Printed => ({ text, kind: 'atom' });
 
 const union = (members: readonly Printed[]): Printed => {
+  if (members.some(({ text }) => text === 'unknown')) return atom('unknown');
   const unique = new Map(members.map((member) => [member.text, member]));
   const [only] = [...unique.values()];
   if (unique.size === 0) {
@@ -115,6 +118,7 @@ const union = (members: readonly Printed[]): Printed => {
 const intersection = (members: readonly Printed[]): Printed => {
   const unique = new Map(members.map((member) => [member.text, member]));
   const [only] = [...unique.values()];
+  if (!only) return atom('unknown');
   if (unique.size === 1 && only) {
     return only;
   }
@@ -302,9 +306,13 @@ export const createTypePrinter = ({
   ): Printed => {
     const { prefixItems, items } = node;
     if (Array.isArray(prefixItems)) {
-      const elements = prefixItems.map(
-        (item) => printNode(item, depth, active).text
-      );
+      const required = typeof node.minItems === 'number' ? node.minItems : 0;
+      const elements = prefixItems.map((item, index) => {
+        const printed = printNode(item, depth, active);
+        return index < required
+          ? printed.text
+          : `${printed.kind === 'atom' ? printed.text : `(${printed.text})`}?`;
+      });
       if (items !== undefined && items !== false) {
         elements.push(`...${arrayOf(printNode(items, depth, active)).text}`);
       }
@@ -320,22 +328,41 @@ export const createTypePrinter = ({
     depth: number,
     active: ReadonlySet<string>
   ): Printed => {
-    const hasProperties =
-      isJsonObject(node.properties) && Object.keys(node.properties).length > 0;
-    const extra = node.additionalProperties;
-    if (!hasProperties) {
-      if (extra === false) {
-        return atom('Record<string, never>');
-      }
-      return isJsonObject(extra) && Object.keys(extra).length > 0
-        ? atom(`Record<string, ${printNode(extra, depth, active).text}>`)
-        : atom('Record<string, unknown>');
-    }
+    const properties = isJsonObject(node.properties) ? node.properties : {};
     const lines = printMembers(node, depth, active, {});
+    const extra = node.additionalProperties;
+    const patterns = isJsonObject(node.patternProperties)
+      ? Object.values(node.patternProperties)
+      : [];
+    const open = extra !== false;
+    const values = [
+      ...patterns.map((schema) => printNode(schema, depth, active)),
+    ];
+    if (open)
+      values.push(
+        extra === undefined || extra === true
+          ? atom('unknown')
+          : printNode(extra, depth, active)
+      );
     const index =
-      extra === undefined || extra === false
-        ? ''
-        : `${INDENT.repeat(depth + 1)}[key: string]: unknown;\n`;
+      values.length === 0
+        ? Object.keys(properties).length === 0
+          ? `${INDENT.repeat(depth + 1)}[key: string]: never;\n`
+          : ''
+        : `${INDENT.repeat(depth + 1)}[key: string]: ${
+            union([
+              ...values,
+              ...Object.values(properties).map((schema) =>
+                printNode(schema, depth, active)
+              ),
+              ...(Object.keys(properties).some(
+                (key) =>
+                  !Array.isArray(node.required) || !node.required.includes(key)
+              )
+                ? [atom('undefined')]
+                : []),
+            ]).text
+          };\n`;
     return atom(`{\n${lines}${index}${INDENT.repeat(depth)}}`);
   };
 

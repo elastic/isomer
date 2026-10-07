@@ -17,10 +17,26 @@ const { declarations } = createIsomerRuntime({
 }).getAuthoringContext();
 
 const diagnostics = (files: Record<string, string>): string[] => {
+  const moduleText =
+    declarations
+      .slice(declarations.indexOf('declare module'))
+      .split('\n}\n')[0] ?? '';
+  const names = [
+    ...moduleText.matchAll(/^ {2}(?:interface|type|const|function) (\w+)/gm),
+  ].map((match) => match[1]);
+  files = Object.fromEntries(
+    Object.entries(files).map(([name, text]) => [
+      name,
+      name.endsWith('.tsx')
+        ? `import { ${names.join(', ')} } from '@elastic/isomer-authoring';\n${text}`
+        : text,
+    ])
+  );
   const options: ts.CompilerOptions = {
     strict: true,
     noEmit: true,
     jsx: ts.JsxEmit.Preserve,
+    jsxFactory: 'authorJsx',
     target: ts.ScriptTarget.ES2022,
     types: [],
   };
@@ -45,7 +61,7 @@ describe('the slides pack authoring declarations', () => {
   it('declare every primitive as a node type, with its catalog text as JSDoc', () => {
     expect(declarations).toContain('interface SlideStatsNode {');
     expect(declarations).toContain('Use when:');
-    expect(declarations).toContain('type BodyNode =\n  | SlideAgendaNode');
+    expect(declarations).toContain('type BodyNode =\n    | SlideAgendaNode');
   });
 
   it('compile on their own', () => {
@@ -75,6 +91,16 @@ describe('the slides pack authoring declarations', () => {
         '/virtual/use.tsx': use,
       })
     ).toEqual([]);
+  });
+
+  it('rejects invalid custom child props', () => {
+    expect(
+      diagnostics({
+        '/virtual/isomer.d.ts': declarations,
+        '/virtual/use.tsx':
+          '<SlideTranscript><SlideTurn role={42}>hello</SlideTurn></SlideTranscript>;',
+      })
+    ).toHaveLength(1);
   });
 
   it('reject a node no slide primitive declares', () => {

@@ -106,6 +106,7 @@ describe('createTypePrinter', () => {
       print({
         type: 'array',
         prefixItems: [{ type: 'string' }, { type: 'number' }],
+        minItems: 2,
         items: { type: 'boolean' },
       })
     ).toBe('[string, number, ...boolean[]]');
@@ -143,12 +144,12 @@ describe('createTypePrinter', () => {
     const { print } = printer();
 
     expect(print({ type: 'object', additionalProperties: false })).toBe(
-      'Record<string, never>'
+      '{\n  [key: string]: never;\n}'
     );
-    expect(print({ type: 'object' })).toBe('Record<string, unknown>');
+    expect(print({ type: 'object' })).toBe('{\n  [key: string]: unknown;\n}');
     expect(
       print({ type: 'object', additionalProperties: { type: 'number' } })
-    ).toBe('Record<string, number>');
+    ).toBe('{\n  [key: string]: number;\n}');
     expect(
       print({
         type: 'object',
@@ -195,7 +196,7 @@ describe('createTypePrinter', () => {
         type: 'object',
         properties: { a: { type: 'string' } },
       })
-    ).toBe('Base & {\n  a?: string;\n}');
+    ).toBe('Base & {\n  a?: string;\n  [key: string]: unknown;\n}');
   });
 
   it('falls back to unknown for what it cannot express', () => {

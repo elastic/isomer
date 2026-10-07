@@ -29,15 +29,40 @@ Pass `authoring` on `createIsomerRuntime` to name pack-owned `$defs` (`actionIte
 
 ## Editor declarations
 
-An editor that type-checks bodies, such as Monaco or a language server, wants TypeScript rather than JSON Schema. `declarations` prints the authoring `schema` as one ambient script, so a host loads it as a single extra lib (`monaco.languages.typescript.typescriptDefaults.addExtraLib(declarations, 'isomer.d.ts')`) and validates JSON bodies against `bodySchema`:
+`declarations` contains an ambient module with `<Type>Node` types, the `BodyNode` union, and each primitive's catalog guidance and prop descriptions as JSDoc. Load it as a Monaco extra lib, then import the names into the editor model:
 
-- `<Type>Node` per primitive (`slideStats` becomes `SlideStatsNode`), with its catalog `purpose`, `useWhen`, and `avoidWhen` as JSDoc and each prop's description as its own.
-- `BodyNode`, the union of those, which every container's child slot references.
-- A type per other named `$def` (`RenderTheme`, and any def a pack names through `authoring`). Anonymous defs are inlined.
+```ts
+const runtime = createIsomerRuntime({
+  packs: [pack],
+  authoring: { jsx: true, moduleName: 'isomer:editor' },
+});
+const { declarations, bodySchema } = runtime.getAuthoringContext();
+monaco.languages.typescript.typescriptDefaults.addExtraLib(
+  declarations,
+  'isomer.d.ts'
+);
+```
 
-The text is a script, not a module, so its names are globals; a host that loads two runtimes' declarations in one editor gets a clash. Type names that collide, with each other or with a built-in such as `Record`, are numbered (`NoteNode2`, `Record2`). A component whose name is not an identifier (`code-block`) or is already a DOM or ES global (`Image`) is not declared, since a script cannot redeclare it; its node type still is.
+For classic JSX, configure the editor with `jsx: Preserve` and `jsxFactory: 'authorJsx'`. The editor's TypeScript source can then use:
 
-Set `authoring: { jsx: true }` when authors write JSX through `buildJsxShim`. The declarations then add `JSX.ElementChildrenAttribute` and a minimal `JSX.Element` if no other lib supplies them, `AuthorChildren`, `CompositionProps`, and per primitive and branded child a `<Component>Props` and `declare const <Component>: (props: <Component>Props) => null`. Props follow the shim: a branded field, or a container's one child slot, is optional on the props because children fill it, and a `toItem` child takes loose props because its record is built by hand. The runtime cannot see whether a host builds a shim, which is why the option is opt-in.
+```tsx
+import { authorJsx, Composition, Note, type BodyNode } from 'isomer:editor';
+
+const node: BodyNode = { type: 'note', text: 'Hello' };
+const view = (
+  <Composition>
+    <Note text="Hello" />
+  </Composition>
+);
+```
+
+The default module identity is `@elastic/isomer-authoring`. Use a distinct `moduleName` for each runtime loaded in one TypeScript service. Imports belong to the editor's type-checking environment; a host that executes author snippets must bind the imported components to its `buildJsxShim` result and `authorJsx` to React's `createElement`. The companion JSX runtime is a type declaration; execution uses the host's React JSX transform and runtime. A host can add those imports in an editor-only wrapper when its snippet syntax has no imports.
+
+With `jsx: true`, the module exports the root `Composition`, primitive and branded-child components, and their props types. It also exports `components`, keyed exactly like the shim. Non-identifier keys are available through that object: `const { 'Code-block': CodeBlock } = components`. Names such as `Image` and `Record` are local to the module and remain available with DOM or ES libraries. Generated type names are numbered only when names within the module collide.
+
+The shim and declarations share component discovery, collision checks, child traversal, and slot inference. Authored fields can be supplied as props or filled by children. The JSX namespace is scoped to `authorJsx`, so it does not augment the host's global or React JSX types. For automatic JSX, use `jsxImportSource: moduleName`; the generated companion module at `<moduleName>/jsx-runtime` supplies the namespace. Children accept editor elements and structural React elements and reject ordinary objects. A custom `toItem` child uses its `propsSchema` when supplied; without it the declaration accepts loose props because the callback's TypeScript annotation is unavailable at runtime. See [Custom child props](../sdk/authoring.md#declarations-for-an-editor).
+
+Type declarations provide structural checking, not full schema validation. JSX calls check schema-constrained extra props. Plain node types widen an index signature with the named properties' types because TypeScript cannot express separate value constraints for known keys and every other string key. Refinements, formats, and value bounds remain schema checks. `bodySchema` validates an array of body nodes; a host that also accepts a single node must wrap it in an array before using that schema.
 
 ## Taking the answer back
 

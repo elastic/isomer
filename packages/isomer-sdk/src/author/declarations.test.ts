@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { createElement } from 'react';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import { z, type ZodType } from 'zod';
@@ -22,6 +23,8 @@ import {
 
 import { fromChildren, fromTextChildren } from './authored_fields';
 import { buildAuthoringDeclarations } from './declarations';
+import { defineAuthorComponent } from './jsx';
+import { buildJsxShim } from './jsx_shim';
 
 const renderers = { react: () => null, text: () => '', markdown: () => [] };
 
@@ -114,13 +117,36 @@ const stack: AnyPrimitiveDefinition = definePrimitive<StackNode>({
 const definitions = [note, badges, callout, stack];
 const schema = buildAuthoringJsonSchema(definitions);
 
-const diagnostics = (files: Record<string, string>): string[] => {
+const diagnostics = (
+  files: Record<string, string>,
+  compilerOptions: ts.CompilerOptions = {}
+): string[] => {
+  const declarationText = files['/virtual/isomer.d.ts'] ?? '';
+  const moduleText = declarationText.slice(
+    declarationText.indexOf('declare module')
+  );
+  const names = [
+    ...moduleText.matchAll(/^ {2}(?:interface|type|const|function) (\w+)/gm),
+  ].map((match) => match[1]);
+  files = Object.fromEntries(
+    Object.entries(files).map(([name, text]) => [
+      name,
+      declarationText && name.endsWith('.tsx')
+        ? `import { ${names.join(', ')} } from '@elastic/isomer-authoring';\n${text}`
+        : text,
+    ])
+  );
   const options: ts.CompilerOptions = {
     strict: true,
     noEmit: true,
     jsx: ts.JsxEmit.Preserve,
+    ...(compilerOptions.jsx === ts.JsxEmit.ReactJSX ||
+    compilerOptions.jsx === ts.JsxEmit.ReactJSXDev
+      ? {}
+      : { jsxFactory: 'authorJsx' }),
     target: ts.ScriptTarget.ES2022,
     types: [],
+    ...compilerOptions,
   };
   const base = ts.createCompilerHost(options);
   const host: ts.CompilerHost = {
@@ -150,7 +176,7 @@ describe('buildAuthoringDeclarations', () => {
     expect(declarations).toContain(
       ' * - The text needs a heading; use `section`.'
     );
-    expect(declarations).toContain('/** What to say. */\n  text: string;');
+    expect(declarations).toContain('/** What to say. */\n    text: string;');
     expect(declarations).toContain('tone?: "info" | "warn";');
   });
 
@@ -158,7 +184,7 @@ describe('buildAuthoringDeclarations', () => {
     const declarations = buildAuthoringDeclarations(schema, definitions);
 
     expect(declarations).toContain(
-      'type BodyNode =\n  | NoteNode\n  | BadgesNode\n  | CalloutNode\n  | StackNode;'
+      'type BodyNode =\n    | NoteNode\n    | BadgesNode\n    | CalloutNode\n    | StackNode;'
     );
     expect(declarations).toContain('items: BodyNode[];');
   });
@@ -166,17 +192,19 @@ describe('buildAuthoringDeclarations', () => {
   it('declares nothing JSX-shaped unless asked', () => {
     const declarations = buildAuthoringDeclarations(schema, definitions);
 
-    expect(declarations).not.toContain('declare const');
+    expect(declarations).not.toContain('const');
     expect(declarations).not.toContain('JSX');
   });
 
-  it('is a script, not a module, so an editor can load it as one lib', () => {
+  it('isolates declarations in an ambient module an editor can load as one lib', () => {
     for (const jsx of [false, true]) {
       const declarations = buildAuthoringDeclarations(schema, definitions, {
         jsx,
       });
 
-      expect(declarations).not.toMatch(/^(import|export) /m);
+      expect(declarations).toContain(
+        'declare module "@elastic/isomer-authoring" {'
+      );
     }
   });
 
@@ -186,15 +214,11 @@ describe('buildAuthoringDeclarations', () => {
     });
 
     expect(declarations).toContain(
-      'declare const Composition: (props: CompositionProps) => null;'
+      'const Composition: (props: CompositionProps) => null;'
     );
-    expect(declarations).toContain(
-      'declare const Note: (props: NoteProps) => null;'
-    );
-    expect(declarations).toContain(
-      'declare const Badge: (props: BadgeProps) => null;'
-    );
-    expect(declarations).toMatch(/interface BadgesProps \{\n {2}items\?: \{/);
+    expect(declarations).toContain('const Note: (props: NoteProps) => null;');
+    expect(declarations).toContain('const Badge: (props: BadgeProps) => null;');
+    expect(declarations).toMatch(/interface BadgesProps \{\n {4}items\?: \{/);
     expect(declarations).toMatch(
       /interface CalloutProps \{[^]*?body\?: string;/
     );
@@ -286,17 +310,18 @@ describe('buildAuthoringDeclarations', () => {
       { jsx: true }
     );
 
-    expect(declarations).toContain('interface Record2 {');
+    expect(declarations).toContain('interface Record {');
     expect(declarations).toContain('interface ImageNode {');
-    expect(declarations).not.toContain('declare const Image:');
+    expect(declarations).toContain('const Image:');
     expect(
       diagnostics({
         '/virtual/isomer.d.ts': declarations,
+        '/virtual/use.tsx': '<Image meta={{a: "x"}} />;',
       })
     ).toEqual([]);
   });
 
-  it('skips a component whose name is not an identifier', () => {
+  it('exposes non-identifier components through the components object', () => {
     const codeBlock = definePrimitive<PrimitiveNode>({
       type: 'code-block',
       catalog: entry('code-block'),
@@ -313,7 +338,7 @@ describe('buildAuthoringDeclarations', () => {
     );
 
     expect(declarations).toContain('interface CodeBlockNode {');
-    expect(declarations).not.toContain('declare const Code-block');
+    expect(declarations).toContain('"Code-block":');
     expect(diagnostics({ '/virtual/isomer.d.ts': declarations })).toEqual([]);
   });
 
@@ -362,7 +387,7 @@ describe('buildAuthoringDeclarations', () => {
     );
 
     expect(declarations).toMatch(
-      /interface RowProps \{\n {2}type: "a" \| "b";/
+      /interface RowProps \{\n {4}type: "a" \| "b";/
     );
     expect(
       diagnostics({
@@ -400,8 +425,421 @@ describe('buildAuthoringDeclarations', () => {
       { jsx: true }
     );
 
-    expect(declarations).toContain('declare const Card:');
-    expect(declarations).not.toContain('declare const Tag:');
+    expect(declarations).toContain('const Card:');
+    expect(declarations).not.toContain('const Tag:');
+  });
+
+  it('supports colliding ES and DOM component names with both editor library configurations', () => {
+    const defs = [
+      'image',
+      'record',
+      'history',
+      'inputEvent',
+      'eventTarget',
+    ].map((type) =>
+      definePrimitive<PrimitiveNode>({
+        type,
+        catalog: entry(type),
+        examples: [],
+        schema: z.strictObject({ type: z.literal(type) }),
+        renderers,
+      })
+    );
+    const shim = buildJsxShim(defs);
+    const declarations = buildAuthoringDeclarations(
+      buildAuthoringJsonSchema(defs),
+      defs,
+      { jsx: true }
+    );
+    const use =
+      '<Composition><Image /><Record /><History /><InputEvent /><EventTarget /></Composition>;';
+    for (const lib of [
+      ['lib.es2020.d.ts'],
+      ['lib.es2022.d.ts', 'lib.dom.d.ts'],
+    ]) {
+      expect(
+        diagnostics(
+          { '/virtual/isomer.d.ts': declarations, '/virtual/use.tsx': use },
+          { lib }
+        )
+      ).toEqual([]);
+    }
+    expect(Object.keys(shim)).toEqual(
+      expect.arrayContaining([
+        'Image',
+        'Record',
+        'History',
+        'InputEvent',
+        'EventTarget',
+      ])
+    );
+  });
+
+  it('loads two runtimes through distinct module identities', () => {
+    const first = buildAuthoringDeclarations(schema, definitions, {
+      jsx: true,
+      moduleName: 'isomer:first',
+    });
+    const second = buildAuthoringDeclarations(schema, definitions, {
+      jsx: true,
+      moduleName: 'isomer:second',
+    });
+    expect(
+      diagnostics({
+        '/virtual/first.d.ts': first,
+        '/virtual/second.d.ts': second,
+        '/virtual/use.tsx': `
+      import { authorJsx, Note as FirstNote } from 'isomer:first';
+      import { Note as SecondNote } from 'isomer:second';
+      <FirstNote text="first" />;
+      <SecondNote text="second" />;
+    `,
+      })
+    ).toEqual([]);
+  });
+
+  it('lets authors bind non-identifier shim keys to local JSX names', () => {
+    const definition = definePrimitive<PrimitiveNode>({
+      type: 'code-block',
+      catalog: entry('code-block'),
+      examples: [],
+      schema: z.strictObject({
+        type: z.literal('code-block'),
+        text: z.string(),
+      }),
+      renderers,
+    });
+    const defs = [definition];
+    const declarations = buildAuthoringDeclarations(
+      buildAuthoringJsonSchema(defs),
+      defs,
+      { jsx: true }
+    );
+    expect(
+      diagnostics({
+        '/virtual/isomer.d.ts': declarations,
+        '/virtual/use.tsx': `const {'Code-block': CodeBlock} = components; <CodeBlock text="hi" />;`,
+      })
+    ).toEqual([]);
+    expect(Object.hasOwn(buildJsxShim(defs), 'Code-block')).toBe(true);
+  });
+
+  it('checks catchall values without constraining differently typed named props', () => {
+    const definition = definePrimitive<PrimitiveNode>({
+      type: 'metrics',
+      catalog: entry('metrics'),
+      examples: [],
+      schema: z
+        .object({ type: z.literal('metrics'), label: z.string() })
+        .catchall(z.number()),
+      renderers,
+    });
+    const defs = [definition];
+    const declarations = buildAuthoringDeclarations(
+      buildAuthoringJsonSchema(defs),
+      defs,
+      { jsx: true }
+    );
+    expect(
+      diagnostics({
+        '/virtual/isomer.d.ts': declarations,
+        '/virtual/use.tsx': '<Metrics label="load" key="metric" extra={1} />;',
+      })
+    ).toEqual([]);
+    expect(
+      diagnostics({
+        '/virtual/isomer.d.ts': declarations,
+        '/virtual/use.tsx': '<Metrics label="load" extra="bad" />;',
+      })
+    ).toHaveLength(1);
+    expect(
+      definition.schema.safeParse({
+        type: 'metrics',
+        label: 'load',
+        extra: 'bad',
+      }).success
+    ).toBe(false);
+  });
+
+  it('accepts optional trailing tuple entries and rejects their wrong value type', () => {
+    const definition = definePrimitive<PrimitiveNode>({
+      type: 'point',
+      catalog: entry('point'),
+      examples: [],
+      schema: z.strictObject({
+        type: z.literal('point'),
+        coordinates: z.tuple([z.string(), z.number().optional()]),
+      }),
+      renderers,
+    });
+    const defs = [definition];
+    const declarations = buildAuthoringDeclarations(
+      buildAuthoringJsonSchema(defs),
+      defs,
+      { jsx: true }
+    );
+    expect(
+      definition.schema.safeParse({ type: 'point', coordinates: ['x'] }).success
+    ).toBe(true);
+    expect(
+      diagnostics({
+        '/virtual/isomer.d.ts': declarations,
+        '/virtual/use.tsx':
+          '<Point coordinates={["x"]} />; <Point coordinates={["x",1]} />;',
+      })
+    ).toEqual([]);
+    expect(
+      diagnostics({
+        '/virtual/isomer.d.ts': declarations,
+        '/virtual/use.tsx': '<Point coordinates={["x","bad"]} />;',
+      })
+    ).toHaveLength(1);
+  });
+
+  it('compiles a recursive dictionary and preserves its leaf type', () => {
+    const tree: z.ZodType<string | { [key: string]: unknown }> = z.lazy(() =>
+      z.union([z.string(), z.record(z.string(), tree)])
+    );
+    const definition = definePrimitive<PrimitiveNode>({
+      type: 'tree',
+      catalog: entry('tree'),
+      examples: [],
+      schema: z.strictObject({ type: z.literal('tree'), value: tree }),
+      renderers,
+    });
+    const defs = [definition];
+    const declarations = buildAuthoringDeclarations(
+      buildAuthoringJsonSchema(defs, {
+        extraDefs: [{ id: 'dictionary', schema: tree }],
+      }),
+      defs,
+      { jsx: true }
+    );
+    expect(
+      diagnostics({
+        '/virtual/isomer.d.ts': declarations,
+        '/virtual/use.tsx': '<Tree value={{branch:{leaf:"value"}}} />;',
+      })
+    ).toEqual([]);
+    expect(
+      diagnostics({
+        '/virtual/isomer.d.ts': declarations,
+        '/virtual/use.tsx': '<Tree value={{branch:42}} />;',
+      })
+    ).toHaveLength(1);
+  });
+
+  it('rejects ordinary objects as children in an editor without React types', () => {
+    const declarations = buildAuthoringDeclarations(schema, definitions, {
+      jsx: true,
+    });
+    expect(
+      diagnostics({
+        '/virtual/isomer.d.ts': declarations,
+        '/virtual/use.tsx': '<Callout>{{bad:true}}</Callout>;',
+      })
+    ).toHaveLength(1);
+    const shim = buildJsxShim(definitions);
+    expect(() =>
+      shim.toComposition(
+        createElement(
+          shim.Composition,
+          {},
+          createElement(
+            defineAuthorComponent<Record<string, unknown>, 'callout'>(
+              'callout'
+            ),
+            {},
+            { bad: true } as never
+          )
+        )
+      )
+    ).toThrow();
+  });
+
+  it('replaces an authored field named children with one JSX children prop', () => {
+    const definition = definePrimitive<PrimitiveNode>({
+      type: 'nest',
+      catalog: entry('nest'),
+      examples: [],
+      schema: z.strictObject({
+        type: z.literal('nest'),
+        children: fromChildren(
+          'nestedItem',
+          z.array(z.strictObject({ label: z.string() }))
+        ),
+      }),
+      renderers,
+    });
+    const defs = [definition];
+    const declarations = buildAuthoringDeclarations(
+      buildAuthoringJsonSchema(defs),
+      defs,
+      { jsx: true }
+    );
+    expect(
+      diagnostics({
+        '/virtual/isomer.d.ts': declarations,
+        '/virtual/use.tsx': '<Nest><NestedItem label="one" /></Nest>;',
+      })
+    ).toEqual([]);
+    const shim = buildJsxShim(defs);
+    expect(
+      shim.toComposition(
+        createElement(
+          shim.Composition,
+          {},
+          createElement(
+            defineAuthorComponent<Record<string, unknown>, 'nest'>('nest'),
+            {},
+            createElement(
+              defineAuthorComponent<Record<string, unknown>, 'nestedItem'>(
+                'nestedItem'
+              ),
+              { label: 'one' }
+            )
+          )
+        )
+      )
+    ).toMatchObject({ body: [{ type: 'nest', children: [{ label: 'one' }] }] });
+  });
+
+  it('checks explicit input props for toItem and retains reference-based custom props', () => {
+    const metadata = z.strictObject({ count: z.number() });
+    const input = z.strictObject({
+      title: z.string(),
+      meta: metadata,
+      backup: metadata.optional(),
+    });
+    const definition = definePrimitive<PrimitiveNode>({
+      type: 'cardsInput',
+      catalog: entry('cardsInput'),
+      examples: [],
+      schema: z.strictObject({
+        type: z.literal('cardsInput'),
+        items: fromChildren(
+          'cardInput',
+          z.array(z.strictObject({ label: z.string() })),
+          {
+            propsSchema: input,
+            toItem(props: { title: string; meta: { count: number } }) {
+              return { label: props.title };
+            },
+          }
+        ),
+      }),
+      renderers,
+    });
+    const defs = [definition];
+    const declarations = buildAuthoringDeclarations(
+      buildAuthoringJsonSchema(defs),
+      defs,
+      { jsx: true }
+    );
+    expect(
+      diagnostics({
+        '/virtual/isomer.d.ts': declarations,
+        '/virtual/use.tsx':
+          '<CardsInput><CardInput title="ok" meta={{count:1}} /></CardsInput>;',
+      })
+    ).toEqual([]);
+    expect(
+      diagnostics({
+        '/virtual/isomer.d.ts': declarations,
+        '/virtual/use.tsx':
+          '<CardsInput><CardInput title={42} meta={{count:1}} /></CardsInput>;',
+      })
+    ).toHaveLength(1);
+  });
+
+  it('preserves discriminated unions in custom input props', () => {
+    const propsSchema = z.discriminatedUnion('kind', [
+      z.strictObject({ kind: z.literal('text'), text: z.string() }),
+      z.strictObject({ kind: z.literal('count'), count: z.number() }),
+    ]);
+    const definition = definePrimitive<PrimitiveNode>({
+      type: 'choices',
+      catalog: entry('choices'),
+      examples: [],
+      schema: z.strictObject({
+        type: z.literal('choices'),
+        items: fromChildren(
+          'choice',
+          z.array(z.strictObject({ label: z.string() })),
+          {
+            propsSchema,
+            toItem(props) {
+              return {
+                label: props.kind === 'text' ? props.text : String(props.count),
+              };
+            },
+          }
+        ),
+      }),
+      renderers,
+    });
+    const defs = [definition];
+    const declarations = buildAuthoringDeclarations(
+      buildAuthoringJsonSchema(defs),
+      defs,
+      { jsx: true }
+    );
+    expect(
+      diagnostics({
+        '/virtual/isomer.d.ts': declarations,
+        '/virtual/use.tsx':
+          '<Choices><Choice kind="text" text="ok" /><Choice kind="count" count={1} /></Choices>;',
+      })
+    ).toEqual([]);
+    expect(
+      diagnostics({
+        '/virtual/isomer.d.ts': declarations,
+        '/virtual/use.tsx':
+          '<Choices><Choice kind="count" count="bad" /></Choices>;',
+      })
+    ).toHaveLength(1);
+  });
+
+  it('leaves the host React JSX namespace unchanged', () => {
+    const declarations = buildAuthoringDeclarations(schema, definitions, {
+      jsx: true,
+    });
+    expect(
+      diagnostics(
+        {
+          '/virtual/isomer.d.ts': declarations,
+          '/virtual/use.tsx':
+            'const hostElement: JSX.Element = React.createElement("div"); <Composition><Callout>Hello</Callout></Composition>;',
+        },
+        {
+          types: ['react'],
+          allowUmdGlobalAccess: true,
+          moduleResolution: ts.ModuleResolutionKind.Node10,
+          jsxFactory: 'React.createElement',
+        }
+      )
+    ).toEqual([]);
+  });
+
+  it('works with React types and the automatic JSX runtime', () => {
+    const declarations = buildAuthoringDeclarations(schema, definitions, {
+      jsx: true,
+    });
+    expect(
+      diagnostics(
+        {
+          '/virtual/isomer.d.ts': declarations,
+          '/virtual/use.tsx':
+            '<Composition><Callout>Hello</Callout><Note text="ok" /></Composition>;',
+        },
+        {
+          types: ['react'],
+          jsx: ts.JsxEmit.ReactJSX,
+          jsxImportSource: '@elastic/isomer-authoring',
+          moduleResolution: ts.ModuleResolutionKind.Node10,
+        }
+      )
+    ).toEqual([]);
   });
 
   it('declares an empty catalog as never', () => {

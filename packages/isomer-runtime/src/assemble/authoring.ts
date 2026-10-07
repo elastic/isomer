@@ -19,6 +19,7 @@ import {
 } from '@elastic/isomer-sdk';
 import {
   authoringBodySchema,
+  type AuthoringDeclarationsOptions,
   buildAuthoringDeclarations,
 } from '@elastic/isomer-sdk/author';
 
@@ -29,10 +30,8 @@ import { describeProps, type PropDescriptor } from './prop_descriptors';
 export type { HostCapabilities, SurfaceSupport };
 
 /** Options for the authoring material `getAuthoringContext` returns. */
-export interface RuntimeAuthoringOptions extends AuthoringJsonSchemaOptions {
-  /** Declare the `buildJsxShim` components in {@link RuntimeAuthoringContext.declarations}. Defaults to `false`. */
-  jsx?: boolean;
-}
+export interface RuntimeAuthoringOptions
+  extends AuthoringJsonSchemaOptions, AuthoringDeclarationsOptions {}
 
 /**
  * Everything a host hands an agent so it can answer a question with a view:
@@ -49,7 +48,7 @@ export interface RuntimeAuthoringContext {
   /** The `body` of {@link RuntimeAuthoringContext.schema} on its own, for an editor that validates body nodes. */
   bodySchema: JsonSchema;
   /**
-   * `.d.ts` source for the registered primitives, as one ambient script: a `<Type>Node`
+   * `.d.ts` source for the registered primitives, as an ambient module: a `<Type>Node`
    * per primitive with its catalog text as JSDoc, and the `BodyNode` union. See
    * {@link RuntimeAuthoringOptions.jsx} for the JSX components.
    */
@@ -131,13 +130,14 @@ export const createRuntimeAuthoringContextFactory = (
   definitions: readonly AnyPrimitiveDefinition[],
   listViews: () => RegisteredViewSummary[],
   packs: readonly AnyPrimitivePack[],
-  { jsx, ...runtimeAuthoring }: RuntimeAuthoringOptions = {}
+  { jsx, moduleName, ...runtimeAuthoring }: RuntimeAuthoringOptions = {}
 ): (() => RuntimeAuthoringContext) => {
   const options = mergePackAuthoring(packs, runtimeAuthoring);
   const schema = buildAuthoringJsonSchema(definitions, options);
   const bodySchema = authoringBodySchema(schema);
   const declarations = buildAuthoringDeclarations(schema, definitions, {
     ...(jsx === undefined ? {} : { jsx }),
+    ...(moduleName === undefined ? {} : { moduleName }),
   });
   const primitives = definitions.map((definition) => definition.catalog);
   const definitionsByType = new Map(
