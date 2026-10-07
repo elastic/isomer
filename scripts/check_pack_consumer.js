@@ -13,9 +13,10 @@ import {
   readFileSync,
   rmSync,
   symlinkSync,
+  writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 
 import { repoRoot, workspacePackages } from './workspace_packages.js';
 
@@ -166,6 +167,44 @@ try {
       `${packageName}: packed root imports passed with required peers (${requiredPeers.join(', ')}).`
     );
   }
+
+  // `assertPackRegistrationComplete` loads files by itself, so each module
+  // system's build must load a primitive directory.
+  const sdkName = '@elastic/isomer-sdk';
+  const sdkConsumerDir = join(tempDir, 'consumers', sdkName);
+  const primitivesDir = join(tempDir, 'registration', 'primitives');
+  mkdirSync(join(primitivesDir, 'demo'), { recursive: true });
+  writeFileSync(
+    join(primitivesDir, 'demo', 'index.ts'),
+    "exports.demoPrimitive = { type: 'demo', catalog: {}, schema: {}, renderers: {} };\n"
+  );
+  const registrationCall = `assertPackRegistrationComplete({ primitivesDir: ${JSON.stringify(relative(sdkConsumerDir, primitivesDir))}, registered: [{ type: 'demo' }] })`;
+  // Node strips TypeScript by default only from 22.18.
+  const stripTypes = process.features.typescript
+    ? []
+    : ['--experimental-strip-types'];
+  execFileSync(
+    process.execPath,
+    [
+      ...stripTypes,
+      '--input-type=module',
+      '--eval',
+      `const { assertPackRegistrationComplete } = await import('${sdkName}/testing'); await ${registrationCall};`,
+    ],
+    { cwd: sdkConsumerDir, stdio: 'inherit' }
+  );
+  execFileSync(
+    process.execPath,
+    [
+      ...stripTypes,
+      '--eval',
+      `const { assertPackRegistrationComplete } = require('${sdkName}/testing'); ${registrationCall}.catch((error) => { console.error(error); process.exit(1); });`,
+    ],
+    { cwd: sdkConsumerDir, stdio: 'inherit' }
+  );
+  console.log(
+    `${sdkName}: packed assertPackRegistrationComplete loaded primitives through import and require.`
+  );
 } finally {
   rmSync(tempDir, { force: true, recursive: true });
 }
