@@ -35,7 +35,7 @@ An editor that type-checks bodies, such as Monaco or a language server, wants Ty
 - `BodyNode`, the union of those, which every container's child slot references.
 - A type per other named `$def` (`RenderTheme`, and any def a pack names through `authoring`). Anonymous defs are inlined.
 
-The text is a script, not a module, so its names are globals; a host that loads two runtimes' declarations in one editor gets a clash. Type names that collide are numbered (`NoteNode2`).
+The text is a script, not a module, so its names are globals; a host that loads two runtimes' declarations in one editor gets a clash. Type names that collide, with each other or with a built-in such as `Record`, are numbered (`NoteNode2`, `Record2`). A component whose name is not an identifier (`code-block`) or is already a DOM or ES global (`Image`) is not declared, since a script cannot redeclare it; its node type still is.
 
 Set `authoring: { jsx: true }` when authors write JSX through `buildJsxShim`. The declarations then add `JSX.ElementChildrenAttribute` and a minimal `JSX.Element` if no other lib supplies them, `AuthorChildren`, `CompositionProps`, and per primitive and branded child a `<Component>Props` and `declare const <Component>: (props: <Component>Props) => null`. Props follow the shim: a branded field, or a container's one child slot, is optional on the props because children fill it, and a `toItem` child takes loose props because its record is built by hand. The runtime cannot see whether a host builds a shim, which is why the option is opt-in.
 

@@ -267,6 +267,143 @@ describe('buildAuthoringDeclarations', () => {
     expect(diagnostics({ '/virtual/isomer.d.ts': declarations })).toEqual([]);
   });
 
+  it('does not redeclare a global with a type or a component', () => {
+    const record = z.object({ a: z.string() });
+    const image = definePrimitive<PrimitiveNode>({
+      type: 'image',
+      catalog: entry('image'),
+      examples: [],
+      schema: z.object({ type: z.literal('image'), meta: record }),
+      renderers,
+    });
+    const defs = [image];
+
+    const declarations = buildAuthoringDeclarations(
+      buildAuthoringJsonSchema(defs, {
+        extraDefs: [{ schema: record, id: 'record' }],
+      }),
+      defs,
+      { jsx: true }
+    );
+
+    expect(declarations).toContain('interface Record2 {');
+    expect(declarations).toContain('interface ImageNode {');
+    expect(declarations).not.toContain('declare const Image:');
+    expect(
+      diagnostics({
+        '/virtual/isomer.d.ts': declarations,
+      })
+    ).toEqual([]);
+  });
+
+  it('skips a component whose name is not an identifier', () => {
+    const codeBlock = definePrimitive<PrimitiveNode>({
+      type: 'code-block',
+      catalog: entry('code-block'),
+      examples: [],
+      schema: z.object({ type: z.literal('code-block') }),
+      renderers,
+    });
+    const defs = [codeBlock];
+
+    const declarations = buildAuthoringDeclarations(
+      buildAuthoringJsonSchema(defs),
+      defs,
+      { jsx: true }
+    );
+
+    expect(declarations).toContain('interface CodeBlockNode {');
+    expect(declarations).not.toContain('declare const Code-block');
+    expect(diagnostics({ '/virtual/isomer.d.ts': declarations })).toEqual([]);
+  });
+
+  it('accepts the extra props a loose schema accepts', () => {
+    const loose = definePrimitive<PrimitiveNode>({
+      type: 'loose',
+      catalog: entry('loose'),
+      examples: [],
+      schema: z.looseObject({ type: z.literal('loose'), a: z.string() }),
+      renderers,
+    });
+    const defs = [loose];
+    const declarations = buildAuthoringDeclarations(
+      buildAuthoringJsonSchema(defs),
+      defs,
+      { jsx: true }
+    );
+
+    expect(
+      diagnostics({
+        '/virtual/isomer.d.ts': declarations,
+        '/virtual/use.tsx': '<Loose a="x" extra={1} />;',
+      })
+    ).toEqual([]);
+  });
+
+  it('keeps a data field named type on a child item', () => {
+    const rows = definePrimitive<PrimitiveNode>({
+      type: 'rows',
+      catalog: entry('rows'),
+      examples: [],
+      schema: z.object({
+        type: z.literal('rows'),
+        items: fromChildren(
+          'row',
+          z.array(z.object({ type: z.enum(['a', 'b']) }))
+        ),
+      }),
+      renderers,
+    });
+    const defs = [rows];
+    const declarations = buildAuthoringDeclarations(
+      buildAuthoringJsonSchema(defs),
+      defs,
+      { jsx: true }
+    );
+
+    expect(declarations).toMatch(
+      /interface RowProps \{\n {2}type: "a" \| "b";/
+    );
+    expect(
+      diagnostics({
+        '/virtual/isomer.d.ts': declarations,
+        '/virtual/use.tsx': '<Rows><Row type="a" /></Rows>;',
+      })
+    ).toEqual([]);
+  });
+
+  it('declares no components beneath a toItem child', () => {
+    const tag = z.object({ name: z.string() });
+    const card = z.object({
+      title: z.string(),
+      tags: fromChildren('tag', z.array(tag)),
+    });
+    const cards = definePrimitive<PrimitiveNode>({
+      type: 'cards',
+      catalog: entry('cards'),
+      examples: [],
+      schema: z.object({
+        type: z.literal('cards'),
+        items: fromChildren('card', z.array(card), {
+          toItem(props: { title: string }) {
+            return props;
+          },
+        }),
+      }),
+      renderers,
+    });
+    const defs = [cards];
+
+    const declarations = buildAuthoringDeclarations(
+      buildAuthoringJsonSchema(defs),
+      defs,
+      { jsx: true }
+    );
+
+    expect(declarations).toContain('declare const Card:');
+    expect(declarations).not.toContain('declare const Tag:');
+  });
+
   it('declares an empty catalog as never', () => {
     const declarations = buildAuthoringDeclarations(
       { $defs: { bodyNode: { oneOf: [] } } },

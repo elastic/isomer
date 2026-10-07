@@ -90,6 +90,15 @@ describe('createTypePrinter', () => {
     ).toBe('(string | number)[]');
   });
 
+  it('keeps the parentheses of a union that deduplication reduces to one', () => {
+    const { print } = printer();
+    const inner = { oneOf: [{ type: 'string' }, { type: 'number' }] };
+
+    expect(print({ type: 'array', items: { oneOf: [inner, inner] } })).toBe(
+      '(string | number)[]'
+    );
+  });
+
   it('prints tuples and untyped arrays', () => {
     const { print } = printer();
 

@@ -12,6 +12,7 @@ import { capitalize, inferChildSlots } from './jsx_shim';
 import {
   ANONYMOUS_DEF,
   createTypePrinter,
+  IDENTIFIER,
   isJsonObject,
   jsDoc,
   type JsonObject,
@@ -28,7 +29,84 @@ export interface AuthoringDeclarationsOptions {
   jsx?: boolean;
 }
 
-const RESERVED_NAMES = ['AuthorChildren', 'CompositionProps', 'JSX'];
+/** Globals a declaration would redeclare: the ES, TypeScript, and DOM names a primitive or `$def` plausibly shares. */
+const GLOBAL_NAMES: readonly string[] = [
+  'Animation',
+  'Array',
+  'ArrayBuffer',
+  'Attr',
+  'Audio',
+  'Awaited',
+  'BigInt',
+  'Blob',
+  'Boolean',
+  'Capitalize',
+  'Comment',
+  'Date',
+  'Document',
+  'Element',
+  'Error',
+  'Event',
+  'Exclude',
+  'Extract',
+  'File',
+  'Function',
+  'Headers',
+  'Image',
+  'Infinity',
+  'InstanceType',
+  'Intl',
+  'JSON',
+  'Lowercase',
+  'Map',
+  'Math',
+  'NaN',
+  'Node',
+  'NonNullable',
+  'Notification',
+  'Number',
+  'Object',
+  'Omit',
+  'Option',
+  'Parameters',
+  'Partial',
+  'Pick',
+  'Promise',
+  'Proxy',
+  'Range',
+  'Readonly',
+  'ReadonlyArray',
+  'Record',
+  'Reflect',
+  'RegExp',
+  'Request',
+  'Required',
+  'Response',
+  'ReturnType',
+  'Selection',
+  'Set',
+  'String',
+  'Symbol',
+  'Text',
+  'URL',
+  'Uncapitalize',
+  'Uppercase',
+  'WeakMap',
+  'WeakSet',
+  'Window',
+];
+
+const RESERVED_NAMES = [
+  'AuthorChildren',
+  'CompositionProps',
+  'JSX',
+  ...GLOBAL_NAMES,
+];
+const GLOBALS = new Set(GLOBAL_NAMES);
+
+/** A component name a script can declare without redeclaring a global. */
+const isDeclarableComponent = (name: string): boolean =>
+  IDENTIFIER.test(name) && !GLOBALS.has(name);
 const MAX_CHILD_DEPTH = 5;
 
 const JSX_PRELUDE = `declare namespace JSX {
@@ -194,14 +272,22 @@ export const buildAuthoringDeclarations = (
       name: string,
       node: JsonObject | undefined,
       optional: ReadonlySet<string>,
-      takesChildren: boolean
-    ): string =>
-      node && isJsonObject(node.properties)
-        ? `interface ${name} {\n${printer.members(node, 0, {
-            omit: new Set(['type']),
-            optional,
-          })}${takesChildren ? '  children?: AuthorChildren;\n' : ''}}\n`
-        : LOOSE_PROPS(name);
+      takesChildren: boolean,
+      omit: ReadonlySet<string> = new Set()
+    ): string => {
+      if (!node || !isJsonObject(node.properties)) {
+        return LOOSE_PROPS(name);
+      }
+      const open =
+        node.additionalProperties === undefined ||
+        node.additionalProperties === false
+          ? ''
+          : '  [prop: string]: unknown;\n';
+      return `interface ${name} {\n${printer.members(node, 0, {
+        omit,
+        optional,
+      })}${open}${takesChildren ? '  children?: AuthorChildren;\n' : ''}}\n`;
+    };
 
     const declareChild = (
       field: AuthoredChildField,
@@ -217,28 +303,32 @@ export const buildAuthoringDeclarations = (
         return;
       }
       declaredChildren.add(field.childType);
-      components.add(component);
-      const propsName = claim(`${component}Props`);
       const property = resolveNode(defs, propertyNode);
       const item = field.toItem
         ? undefined
         : field.array
           ? resolveNode(defs, property?.items)
           : property;
-      const nested = readAuthoredSpec(field.itemSchema).children;
+      const nested = field.toItem
+        ? []
+        : readAuthoredSpec(field.itemSchema).children;
       const optional = new Set([
         ...nested.map(({ field: name }) => name),
         ...(field.textField === undefined ? [] : [field.textField]),
       ]);
-      out.push(
-        propsInterface(
-          propsName,
-          item,
-          optional,
-          nested.length > 0 || field.textField !== undefined
-        ),
-        `declare const ${component}: (props: ${propsName}) => null;\n`
-      );
+      if (isDeclarableComponent(component)) {
+        components.add(component);
+        const propsName = claim(`${component}Props`);
+        out.push(
+          propsInterface(
+            propsName,
+            item,
+            optional,
+            nested.length > 0 || field.textField !== undefined
+          ),
+          `declare const ${component}: (props: ${propsName}) => null;\n`
+        );
+      }
       const properties =
         item && isJsonObject(item.properties) ? item.properties : {};
       for (const child of nested) {
@@ -260,7 +350,6 @@ export const buildAuthoringDeclarations = (
       if (components.has(component)) {
         continue;
       }
-      components.add(component);
       const node = resolveNode(defs, ownDef(defs, definition.type));
       const spec = readAuthoredSpec(definition.schema);
       const slots = inferChildSlots(definition.children);
@@ -271,11 +360,20 @@ export const buildAuthoringDeclarations = (
           : slots.length === 1 && slot
             ? [slot.field]
             : [];
-      const propsName = claim(`${component}Props`);
-      out.push(
-        propsInterface(propsName, node, new Set(filled), filled.length > 0),
-        `declare const ${component}: (props: ${propsName}) => null;\n`
-      );
+      if (isDeclarableComponent(component)) {
+        components.add(component);
+        const propsName = claim(`${component}Props`);
+        out.push(
+          propsInterface(
+            propsName,
+            node,
+            new Set(filled),
+            filled.length > 0,
+            new Set(['type'])
+          ),
+          `declare const ${component}: (props: ${propsName}) => null;\n`
+        );
+      }
       const properties =
         node && isJsonObject(node.properties) ? node.properties : {};
       for (const field of spec.children) {

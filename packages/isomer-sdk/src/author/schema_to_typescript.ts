@@ -25,8 +25,9 @@ const STRUCTURAL_KEYS = [
   'allOf',
 ] as const;
 
-const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
 const INDENT = '  ';
+
+export const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
 
 export const isJsonObject = (value: unknown): value is JsonObject =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -101,14 +102,14 @@ interface Printed {
 const atom = (text: string): Printed => ({ text, kind: 'atom' });
 
 const union = (members: readonly Printed[]): Printed => {
-  const unique = [...new Set(members.map(({ text }) => text))];
-  if (unique.length === 0) {
+  const unique = new Map(members.map((member) => [member.text, member]));
+  const [only] = [...unique.values()];
+  if (unique.size === 0) {
     return atom('never');
   }
-  const [only] = unique;
-  return unique.length === 1 && only !== undefined
-    ? atom(only)
-    : { text: unique.join(' | '), kind: 'union' };
+  return unique.size === 1 && only
+    ? only
+    : { text: [...unique.keys()].join(' | '), kind: 'union' };
 };
 
 const intersection = (members: readonly Printed[]): Printed => {

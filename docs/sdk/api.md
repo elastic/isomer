@@ -68,7 +68,6 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveExample` (a na
 | `buildCompositionJsonSchema` | Draft-2020-12 projection for hosts that validate outside TypeScript |
 | `buildAuthoringJsonSchema` | Agent-facing projection: named shared defs, inlined scalars, no `id`/`surfaces` |
 | `authoringSchemaSubset` | The `$defs` some types reach in an authoring schema, with the body-node union stubbed |
-| `authoringBodySchema` | An authoring schema's `body` as a schema of its own, carrying the `$defs` it reaches |
 | `formatZodIssues` | Zod issues as `ValidationError`s |
 
 Types: `ValidationError`, `ValidationResult`, `CheckedValidationResult` (`ValidationResult` plus `composition`), `CheckedComposition`, `ValidationWarning`, `ValidationErrorMode`, `CompositionValidatorOptions`, `InputBudget`, `InputBudgetCheck`, `ParsedComposition` (`{ valid, errors, composition? }`), `CompositionSchemaOptions`, `CompositionJsonSchemaOptions`, `AuthoringJsonSchemaOptions`, `IsomerErrorCode`.
@@ -113,7 +112,7 @@ The root, `./markdown`, and `./slack` load the GFM parser for authored Markdown 
 
 JSX: `fromChildren`, `fromTextChildren`, `AuthoredChildBrand`, `AuthoredToItemBrand` (on a `toItem` field, whose item brands the shim leaves alone), `AuthoredTextBrand`, `AuthorChildContext`, `readAuthoredSpec` (a schema's branded fields as an `AuthoredSpec` of `AuthoredChildField`s and `AuthoredTextField`s), `AuthorComponent`, `buildJsxShim`, `JsxShim`, `PrimitiveComponentMap`, `CompositionAuthorProps`, `AuthorComposition`, `textFromChildren`.
 
-Editor declarations: `buildAuthoringDeclarations` (`AuthoringDeclarationsOptions`), `.d.ts` source for an authoring schema's primitives and, with `jsx`, their JSX components.
+Editor declarations: `buildAuthoringDeclarations` (`AuthoringDeclarationsOptions`), `.d.ts` source for an authoring schema's primitives and, with `jsx`, their JSX components; `authoringBodySchema`, an authoring schema's `body` as a schema of its own, carrying the `$defs` it reaches.
 
 Agent prompts: `buildAuthoringPrompt` (`AuthoringPromptContext`), `formatPrimitiveEntry` (one full catalog bullet), `AUTHORING_PROFILE_IDS` (`AuthoringProfileId`), `AuthoringViewSummary`. `WithNodeFields` is on the root entry, next to `definePrimitive`.
 

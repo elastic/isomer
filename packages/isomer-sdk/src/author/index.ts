@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+export { authoringBodySchema } from '../validate';
 export {
   type AuthorChildContext,
   type AuthoredChildBrand,

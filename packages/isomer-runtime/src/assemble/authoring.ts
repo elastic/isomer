@@ -8,7 +8,6 @@
 import {
   type AnyPrimitiveDefinition,
   type AnyPrimitivePack,
-  authoringBodySchema,
   type AuthoringJsonSchemaOptions,
   authoringSchemaSubset,
   buildAuthoringJsonSchema,
@@ -18,7 +17,10 @@ import {
   type PrimitiveGroup,
   type SurfaceSupport,
 } from '@elastic/isomer-sdk';
-import { buildAuthoringDeclarations } from '@elastic/isomer-sdk/author';
+import {
+  authoringBodySchema,
+  buildAuthoringDeclarations,
+} from '@elastic/isomer-sdk/author';
 
 import type { JsonSchema, RegisteredViewSummary } from '../registry';
 
