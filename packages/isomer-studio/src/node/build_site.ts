@@ -52,7 +52,7 @@ export const prerenderPngs = async (
       for (const theme of THEMES) {
         try {
           const composition = composeExample(compose, [node], theme);
-          const key = await compositionKey(composition);
+          const key = compositionKey(composition);
           if (manifest.entries[key]) {
             continue;
           }

@@ -46,17 +46,17 @@ const urlOf = (input: Parameters<typeof fetch>[0]): string =>
 const respond = (body: BodyInit, type: string) =>
   new Response(body, { headers: { 'content-type': type } });
 
-const serveManifest = async () => {
+const serveManifest = () => {
   const manifest: PngManifest = {
     version: 1,
     entries: {
-      [await compositionKey(light)]: {
+      [compositionKey(light)]: {
         file: 'light.png',
         primitive: 'callout',
         example: 'Example 1',
         theme: 'light',
       },
-      [await compositionKey(dark)]: {
+      [compositionKey(dark)]: {
         file: 'dark.png',
         primitive: 'callout',
         example: 'Example 1',
@@ -89,7 +89,7 @@ describe('staticHost', () => {
   });
 
   it('looks each composition up in the manifest next to the page', async () => {
-    const fetchMock = await serveManifest();
+    const fetchMock = serveManifest();
     const { rasterizePng } = staticHost({ runtime });
     const { signal } = new AbortController();
 
@@ -106,8 +106,19 @@ describe('staticHost', () => {
     ]);
   });
 
+  it('finds a PNG on an origin without crypto.subtle', async () => {
+    serveManifest();
+    vi.stubGlobal('crypto', {});
+    const { rasterizePng } = staticHost({ runtime });
+    const { signal } = new AbortController();
+
+    expect((await rasterizePng?.(light, { signal }))?.size).toBe(
+      'light.png'.length
+    );
+  });
+
   it('shows why an edited composition has no PNG', async () => {
-    await serveManifest();
+    serveManifest();
     const { rasterizePng } = staticHost({ runtime });
     const composition = composeExample(undefined, [edited], 'light');
     if (!rasterizePng) {

@@ -7,6 +7,8 @@
 
 import type { Composition } from '@elastic/isomer-sdk';
 
+import { sha256Hex } from './sha256';
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
@@ -29,14 +31,5 @@ export const canonicalJson = (value: unknown): string => {
 };
 
 /** The SHA-256 of `composition`'s canonical JSON, as hex; the same in Node and the browser. */
-export const compositionKey = async (
-  composition: Composition
-): Promise<string> => {
-  const digest = await globalThis.crypto.subtle.digest(
-    'SHA-256',
-    new TextEncoder().encode(canonicalJson(composition))
-  );
-  return Array.from(new Uint8Array(digest), (byte) =>
-    byte.toString(16).padStart(2, '0')
-  ).join('');
-};
+export const compositionKey = (composition: Composition): string =>
+  sha256Hex(new TextEncoder().encode(canonicalJson(composition)));

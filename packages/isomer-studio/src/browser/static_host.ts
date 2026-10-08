@@ -53,11 +53,8 @@ const manifestRasterizer = (): RasterizePng => {
       .catch(() => EMPTY_MANIFEST));
 
   return async (composition, { signal }) => {
-    const [{ entries }, key] = await Promise.all([
-      loadManifest(),
-      compositionKey(composition),
-    ]);
-    const entry = entries[key];
+    const { entries } = await loadManifest();
+    const entry = entries[compositionKey(composition)];
     if (!entry) {
       throw new PngUnavailableError();
     }

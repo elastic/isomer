@@ -40,30 +40,26 @@ describe('canonicalJson', () => {
 });
 
 describe('compositionKey', () => {
-  it('is the hex SHA-256 of the canonical JSON', async () => {
-    expect(await compositionKey(composition)).toBe(
+  it('is the hex SHA-256 of the canonical JSON', () => {
+    expect(compositionKey(composition)).toBe(
       createHash('sha256').update(canonicalJson(composition)).digest('hex')
     );
   });
 
-  it('ignores key order', async () => {
+  it('ignores key order', () => {
     const reordered: Composition = {
       body: [reorderedCallout],
       theme: 'light',
       type: 'view',
     };
-    expect(await compositionKey(reordered)).toBe(
-      await compositionKey(composition)
-    );
+    expect(compositionKey(reordered)).toBe(compositionKey(composition));
   });
 
-  it('changes with a prop or the theme', async () => {
-    const key = await compositionKey(composition);
-    expect(
-      await compositionKey({ ...composition, body: [editedCallout] })
-    ).not.toBe(key);
-    expect(await compositionKey({ ...composition, theme: 'dark' })).not.toBe(
+  it('changes with a prop or the theme', () => {
+    const key = compositionKey(composition);
+    expect(compositionKey({ ...composition, body: [editedCallout] })).not.toBe(
       key
     );
+    expect(compositionKey({ ...composition, theme: 'dark' })).not.toBe(key);
   });
 });
