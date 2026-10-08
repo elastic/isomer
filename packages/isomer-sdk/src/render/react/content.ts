@@ -95,7 +95,7 @@ export interface CompositionWrapperOptions {
   framed?: boolean;
   /** Adds the `fluid` class. */
   fluid?: boolean;
-  /** Sets `data-theme`; defaults to the composition's `theme`, and `auto` sets nothing so the page's scheme applies. */
+  /** Sets `data-theme` and `color-scheme`, which `light-dark()` resolves against; defaults to the composition's `theme`, and `auto` sets nothing so the page's scheme applies. */
   theme?: RenderTheme;
   /** Used only when the composition has neither `meta.ariaLabel` nor a `title`. Defaults to `'View'`. */
   defaultAriaLabel?: string;
@@ -124,7 +124,9 @@ export const wrapCompositionContent = <TNode extends PrimitiveNode>(
       role: 'group',
       'aria-label':
         composition.meta?.ariaLabel ?? composition.title ?? defaultAriaLabel,
-      ...(theme === 'auto' ? {} : { 'data-theme': theme }),
+      ...(theme === 'auto'
+        ? {}
+        : { 'data-theme': theme, style: { colorScheme: theme } }),
     },
     content
   );

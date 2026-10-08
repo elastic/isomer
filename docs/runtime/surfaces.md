@@ -36,7 +36,7 @@ React is the exception, deliberately. It is the interactive target, where a part
 
 ## React returns content, not a document
 
-The React surface emits an `h2` and a `p.sub` for the composition's title and subtitle, then the body nodes, inside a dispatcher context provider. The wrapper element, the `aria-label`, the `data-theme` attribute, and the stylesheet belong to the host — by default. Pass `wrapper` and `render`/`renderNode` wrap the content in the same `.isomer[.framed][.fluid]` `section` the `html` surface emits, with the same `aria-label` fallback and `data-theme`, instead of every React-only host reimplementing those class names:
+The React surface emits an `h2` and a `p.sub` for the composition's title and subtitle, then the body nodes, inside a dispatcher context provider. The wrapper element, the `aria-label`, the `data-theme` attribute, and the stylesheet belong to the host — by default. Pass `wrapper` and `render`/`renderNode` wrap the content in the same `.isomer[.framed][.fluid]` `section` the `html` surface emits, with the same `aria-label` fallback and `data-theme`, instead of every React-only host reimplementing those class names. An explicit `light` or `dark` theme also sets `color-scheme` on that `section`, so the pack's `light-dark()` colors follow the composition rather than the page; `auto` sets neither:
 
 ```ts
 runtime.surfaces.react.render(composition, { wrapper: true });

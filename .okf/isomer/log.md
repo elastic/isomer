@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-08
+
+- **The theme wrapper sets `color-scheme`**: `wrapCompositionContent` puts `color-scheme` beside `data-theme` for an explicit `light` or `dark` theme, so the `html` section and the `react` `wrapper` resolve `light-dark(…)` against the composition instead of the host page. `auto` still sets neither.
+
 ## 2026-10-07
 
 - **Takumi `png` renders at a scale**: `TakumiRenderOptions.scale` (default `1`) rasterizes at `input.width * scale` by `input.height * scale` pixels, rounded, with takumi's `devicePixelRatio` multiplied by `scale`, so a layout fixed in CSS pixels is unchanged and rounding moves the viewport by under half a raster pixel; `renderPng` forwards it, and its `width` and `height` are documented as CSS pixels. A `scale` that is not positive and finite rejects with a `RangeError`. `devicePixelRatio` is unchanged, and its docs now say what takumi does with it: a zoom at a fixed canvas that lays out at `input.width / devicePixelRatio`, not a fidelity knob. ([#152](https://github.com/elastic/isomer/issues/152))

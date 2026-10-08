@@ -40,11 +40,13 @@ describe('wrapCompositionContent', () => {
     );
   });
 
-  it('sets data-theme for an explicit theme', () => {
+  it('sets data-theme and color-scheme for an explicit theme', () => {
     expect(render(composition, { theme: 'dark' })).toContain(
-      'data-theme="dark"'
+      'data-theme="dark" style="color-scheme:dark"'
     );
-    expect(render(composition, { theme: 'auto' })).not.toContain('data-theme');
+    const auto = render(composition, { theme: 'auto' });
+    expect(auto).not.toContain('data-theme');
+    expect(auto).not.toContain('color-scheme');
   });
 
   it("defaults to the composition's theme, as the html surface does", () => {
