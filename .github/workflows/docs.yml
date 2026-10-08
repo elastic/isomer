@@ -19,16 +19,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v6.0.6
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
       - name: Assemble package docs
         run: node scripts/assemble_package_docs.js
       - name: Build documentation
         uses: elastic/docs-builder@main
         with:
           prefix: isomer
+      # The Studio's docs build to studio/; the runnable app gets its own path beside them. The
+      # site is assembled in a fresh directory because the docs builder may leave its output root-owned.
+      - name: Assemble the site with the slides Studio
+        run: |
+          mkdir -p .artifacts/site
+          cp -R .artifacts/docs/html/. .artifacts/site/
+          pnpm exec isomer-studio build \
+            --config packages/isomer-primitives-slides/isomer-studio.config.ts \
+            --out .artifacts/site/studio-app \
+            --base /isomer/studio-app/
       - uses: actions/upload-artifact@v4
         with:
           name: site
-          path: .artifacts/docs/html
+          path: .artifacts/site
 
   deploy:
     name: Deploy GitHub Pages
