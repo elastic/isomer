@@ -257,6 +257,24 @@ describe('IsomerStudio', () => {
     expect(screen.getByText(/must be one of/)).toBeInTheDocument();
   });
 
+  it('carries an edit still being parsed into the format switched to', async () => {
+    const transformJsx = () => Promise.reject(new Error('Not compiled.'));
+    render(<IsomerStudio {...{ runtime, transformJsx }} />);
+    await findEditor();
+    fireEvent.click(screen.getByRole('button', { name: 'JSON' }));
+
+    fireEvent.change(await findEditor(), {
+      target: { value: JSON.stringify({ type: 'callout', body: 'Edited.' }) },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'JSX' }));
+
+    await waitFor(async () =>
+      expect(await findEditor()).toHaveValue(
+        '<Composition>\n  <Callout>Edited.</Callout>\n</Composition>'
+      )
+    );
+  });
+
   it('reports a body the host composer rejects as a parse error', async () => {
     const compose: StudioCompose = (nodes, options) => {
       if (nodes.some((node) => 'body' in node && node.body === 'Boom.')) {

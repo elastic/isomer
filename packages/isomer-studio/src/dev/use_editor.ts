@@ -87,12 +87,52 @@ export const useEditor = (initial: PrimitiveNode): EditorState => {
     [print]
   );
 
+  const parseSource = useCallback(
+    async (text: string, as: EditorFormat): Promise<PrimitiveNode[]> => {
+      const parsed =
+        as === 'jsx' && transformJsx
+          ? await compileCompositionJsx(text, shim, transformJsx)
+          : parseBodyJson(text);
+      compose(parsed);
+      return parsed;
+    },
+    [compose, shim, transformJsx]
+  );
+
+  const parse = useCallback(
+    async (
+      token: number,
+      text: string,
+      onParsed: (parsed: PrimitiveNode[]) => void
+    ) => {
+      try {
+        const parsed = await parseSource(text, format);
+        if (token === pending.current) {
+          onParsed(parsed);
+        }
+      } catch (error) {
+        if (token === pending.current) {
+          setParseError(error instanceof Error ? error.message : String(error));
+          setParsing(false);
+        }
+      }
+    },
+    [format, parseSource]
+  );
+
   const setFormat = useCallback(
     (next: EditorFormat) => {
-      setFormatState(next);
-      reset(nodes, next);
+      const switchTo = (body: PrimitiveNode[]) => {
+        setFormatState(next);
+        reset(body, next);
+      };
+      if (!isParsing) {
+        switchTo(nodes);
+        return;
+      }
+      void parse(++pending.current, source, switchTo);
     },
-    [nodes, reset]
+    [isParsing, nodes, parse, reset, source]
   );
 
   const setNodes = useCallback(
@@ -106,35 +146,18 @@ export const useEditor = (initial: PrimitiveNode): EditorState => {
       setParsing(true);
       const token = ++pending.current;
 
-      const parse = async () => {
+      setTimeout(() => {
         if (token !== pending.current) {
           return;
         }
-        try {
-          const parsed =
-            format === 'jsx' && transformJsx
-              ? await compileCompositionJsx(next, shim, transformJsx)
-              : parseBodyJson(next);
-          compose(parsed);
-          if (token === pending.current) {
-            setNodesState(parsed);
-            setParseError(undefined);
-          }
-        } catch (error) {
-          if (token === pending.current) {
-            setParseError(
-              error instanceof Error ? error.message : String(error)
-            );
-          }
-        } finally {
-          if (token === pending.current) {
-            setParsing(false);
-          }
-        }
-      };
-      setTimeout(() => void parse(), PARSE_DELAY);
+        void parse(token, next, (parsed) => {
+          setNodesState(parsed);
+          setParseError(undefined);
+          setParsing(false);
+        });
+      }, PARSE_DELAY);
     },
-    [compose, format, shim, transformJsx]
+    [parse]
   );
 
   const composition = useMemo(() => compose(nodes), [compose, nodes]);
