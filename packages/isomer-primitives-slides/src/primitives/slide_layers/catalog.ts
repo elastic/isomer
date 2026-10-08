@@ -13,6 +13,8 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideLayers',
   name: 'Layers',
+  description:
+    'Three to six layers, top to bottom. Each layer has exactly one of body or chips.',
   purpose:
     'Show how a system stacks, layer on layer, and who owns each layer, so the audience knows where a concern lives.',
   useWhen: [

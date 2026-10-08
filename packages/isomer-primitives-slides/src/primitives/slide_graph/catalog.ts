@@ -8,11 +8,13 @@
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
 import { example } from './examples';
+import { slideGraphShape } from './schema';
 
 /** Agent-facing catalog entry for {@link SlideGraphNode}. */
 export const catalog = {
   type: 'slideGraph',
   name: 'Graph',
+  description: `Terms joined by arrows. ${slideGraphShape}. Node ids are unique. Every edge names a node id. No edge repeats. At most one node is emphasized.`,
   purpose:
     'Define a small vocabulary and show how its terms relate, so the audience can hold the whole model at once.',
   useWhen: [

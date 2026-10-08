@@ -13,6 +13,8 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideMatrix',
   name: 'Matrix',
+  description:
+    'Yes, partial, or no marks for one to eight rows against two to six columns. Every row has exactly one mark per column; highlight, when given, is an index into columns.',
   purpose:
     'Let the audience see at a glance which options support which capabilities, and where support is only partial.',
   useWhen: [

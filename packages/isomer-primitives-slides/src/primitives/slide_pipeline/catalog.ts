@@ -13,6 +13,8 @@ import { example } from './examples';
 export const catalog = {
   type: 'slidePipeline',
   name: 'Pipeline',
+  description:
+    'Steps on one rail. Without spans: numbered steps with bodies, optional start and end chips. With spans: steps are chips with no body, no start or end, and no size, and each span brackets steps from..to by index (from ≤ to < steps.length); spans do not overlap.',
   purpose:
     'Walk the audience through the ordered steps of one process, from what goes in to what comes out.',
   useWhen: [

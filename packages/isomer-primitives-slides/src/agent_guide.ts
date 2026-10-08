@@ -12,7 +12,6 @@ import {
   buildAuthoringPrompt,
 } from '@elastic/isomer-sdk/author';
 
-import { slidesPackAuthoring } from './pack_authoring';
 import { slideDeckPrimitives } from './registry';
 
 /** In the model's voice. */
@@ -54,10 +53,7 @@ export const buildSlidesAuthoringPrompt = (
   profile: AuthoringProfileId = 'compose-from-primitives',
   context: Partial<AuthoringPromptContext> = {}
 ): string => {
-  packSchema ??= buildAuthoringJsonSchema(
-    slideDeckPrimitives,
-    slidesPackAuthoring
-  );
+  packSchema ??= buildAuthoringJsonSchema(slideDeckPrimitives);
   return buildAuthoringPrompt(profile, {
     heading: '# Slide authoring',
     intro: slideAuthoringIntro,

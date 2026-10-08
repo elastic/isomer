@@ -13,6 +13,8 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideAnnotatedRender',
   name: 'Annotated render',
+  description:
+    'One slideRender with one to six pins. The render needs a `slide` reference or a `body`, and its body never holds another render.',
   purpose:
     'Walk the audience through the parts of a real render, with numbered pins on it and a legend that says what each part does.',
   useWhen: [

@@ -13,6 +13,8 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideStack',
   name: 'Stack',
+  description:
+    'Nodes stacked vertically in a one-node slot, never a slideFrame.',
   purpose:
     'Keep several nodes together as one block, one above the next, where a slot takes a single node.',
   useWhen: [

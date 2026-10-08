@@ -13,6 +13,8 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideStats',
   name: 'Stats',
+  description:
+    'Two to four comparable numbers. A unit needs a value; leave value out to show a placeholder.',
   purpose:
     'Let the audience compare two to four numbers at a glance, each with a label and one line of context.',
   useWhen: [

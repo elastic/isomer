@@ -39,6 +39,13 @@ export interface PrimitiveCatalogEntry {
   type: string;
   /** Short name a host shows for the primitive, e.g. `Stat group`. Absent means the host derives one from `type`. */
   name?: string;
+  /**
+   * Description of this primitive's `$def` in the authoring JSON Schema.
+   *
+   * `z.toJSONSchema` drops refinements, so a cross-field rule is restated here.
+   * {@link definePrimitive} copies `schema.description` when this is omitted.
+   */
+  description?: string;
   /** One line on what the primitive is for, in the model's voice. */
   purpose: string;
   /** Situations that call for this primitive. Phrase each as a user intent, not a shape. */
@@ -513,10 +520,15 @@ export const definePrimitive = <
 >(
   definition: PrimitiveDefinition<TNode, T, TSchema>
 ): PrimitiveDefinition<TNode, T, WithNodeFields<TSchema>> => {
-  const { schemaFor } = definition;
+  const { schemaFor, schema, catalog } = definition;
+  const described =
+    catalog.description === undefined ? schema.description : undefined;
   return {
     ...definition,
-    schema: withNodeFields(definition.schema),
+    ...(described === undefined
+      ? {}
+      : { catalog: { ...catalog, description: described } }),
+    schema: withNodeFields(schema),
     // Both forms get the node fields, or a container would accept `id` and
     // `surfaces` standalone and reject them inside a composition.
     ...(schemaFor

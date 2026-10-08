@@ -13,6 +13,8 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideWindow',
   name: 'Window',
+  description:
+    'One app window. Its body holds slide nodes, never a slideFrame or another slideWindow.',
   purpose:
     'Show the reader where something appears, such as a terminal, a browser tab, a chat, or a Slack channel, by framing slide content in that app’s title bar.',
   useWhen: [

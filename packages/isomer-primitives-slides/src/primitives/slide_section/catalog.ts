@@ -13,6 +13,8 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideSection',
   name: 'Section',
+  description:
+    'A section divider. When hrefs is given it has one entry per contents entry.',
   purpose:
     'Tell the audience a new part of the deck is starting, and what it will cover.',
   useWhen: [

@@ -57,18 +57,31 @@ export const buildCompositionJsonSchema = (
   // registration is recorded: a schema named twice (an `extraDefs` entry that
   // is also a member) must restore its original entry, not the first id.
   const previous = new Map<ZodType, unknown>();
-  const registerId = (schema: ZodType, id: string): void => {
+  const registerId = (
+    schema: ZodType,
+    id: string,
+    description?: string
+  ): void => {
     if (!previous.has(schema)) {
       previous.set(schema, z.globalRegistry.get(schema));
     }
-    z.globalRegistry.add(schema, { ...z.globalRegistry.get(schema), id });
+    const current = z.globalRegistry.get(schema);
+    z.globalRegistry.add(schema, {
+      ...current,
+      id,
+      ...(description === undefined ? {} : { description }),
+    });
   };
   registerId(bodyNodeSchema, 'bodyNode');
   for (const extra of options.extraDefs ?? []) {
     registerId(extra.schema, extra.id);
   }
+  // `schemaFor` returns a new schema, so the description is taken from the catalog.
+  const described = new Map(
+    definitions.map(({ type, catalog }) => [type, catalog.description])
+  );
   for (const [type, schema] of members) {
-    registerId(schema, type);
+    registerId(schema, type, described.get(type));
   }
   try {
     return {

@@ -2,6 +2,7 @@
 
 ## 2026-10-08
 
+- **A primitive's catalog supplies its authoring `$def` description**: `catalog.description`, or the root schema's `.describe()` when that is omitted, is the primitive's `$def` description in the authoring JSON Schema. `describe` still names shared defs and overrides a catalog description.
 - **The theme wrapper sets `color-scheme`**: `wrapCompositionContent` puts `color-scheme` beside `data-theme` for an explicit `light` or `dark` theme, so the `html` section and the `react` `wrapper` resolve `light-dark(…)` against the composition instead of the host page. `auto` still sets neither.
 
 ## 2026-10-07

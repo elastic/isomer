@@ -13,6 +13,7 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideTimeline',
   name: 'Timeline',
+  description: 'Three to five dated points. At most one item is current.',
   purpose:
     'Show how a need or situation changed over dated points, leading up to the one that matters now.',
   useWhen: [

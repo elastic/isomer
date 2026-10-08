@@ -13,6 +13,8 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideDelta',
   name: 'Delta',
+  description:
+    'One number before and after a change. change needs both values; leave a value out to show a placeholder.',
   purpose:
     'Show how far one number moved between two points, and what that change means.',
   useWhen: [

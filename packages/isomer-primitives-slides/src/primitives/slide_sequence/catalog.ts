@@ -13,6 +13,8 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideSequence',
   name: 'Sequence',
+  description:
+    'Two to ten messages between three to five actors. Actor ids are unique; every message names two different actors by id in from and to; every actor sends or receives at least one message.',
   purpose:
     'Show who says what to whom, in order, so the audience can follow a conversation between systems or people step by step.',
   useWhen: [

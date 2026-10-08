@@ -58,7 +58,7 @@ The schema is the declaration: the node type is `z.infer` of it, the typed `exam
 | --------------- | --------- | ---------------------------------------------------------------------------------------------------- |
 | `type`          | yes       | The discriminator. Unique across every pack in a runtime.                                            |
 | `schema`        | yes       | A Zod **object** schema for this node on its own.                                                    |
-| `catalog`       | yes       | Agent-facing copy: `purpose`, `useWhen`, `avoidWhen`, `example`; and an optional host-facing `name`. |
+| `catalog`       | yes       | `purpose`, `useWhen`, `avoidWhen`, `example`; optional `name`, `description`.                        |
 | `icon`          | no        | A host-facing 16×16 SVG glyph; see [Names and icons](#names-and-icons).                              |
 | `examples`      | yes       | Conformance nodes, bare or named; prompt shows `catalog.example`.                                    |
 | `renderers`     | yes       | `react`, `text`, `markdown` always; `slack` optionally.                                              |
@@ -150,7 +150,7 @@ Optional. The height estimate is `0` when it is missing, so a frame that sums no
 
 A host listing primitives, in a nav, a docs gallery, or an example picker, shows a name and a glyph beside each one. Neither reaches the model.
 
-`catalog.name` is the name, such as `Stat group`. It is the one host-facing field in `catalog`: the authoring prompt never prints it, so a model is not invited to write it as a `type`. Absent, the host derives a name from `type`. Inventory conformance rejects a blank one.
+`catalog.name` is the name, such as `Stat group`. It is the one host-facing field in `catalog`: the authoring prompt never prints it, so a model is not invited to write it as a `type`. Absent, the host derives a name from `type`. Inventory conformance rejects a blank one. `catalog.description` is the `$def` description in the authoring JSON Schema.
 
 `icon` is `{ svg }`, a static string a host inlines as markup without a renderer, and `pack.icons` maps each type to it. Absent, the host supplies its own glyph, such as a monogram. Because a host inserts the string as markup, its rules are an allowlist, which `assertPackIconsValid` from `./testing` enforces:
 

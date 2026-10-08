@@ -13,6 +13,8 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideAgenda',
   name: 'Agenda',
+  description:
+    'Two to eight sections of the talk, in order. At most one section is current.',
   purpose:
     'Show the audience every part of the talk and which one they are in, so they know how far along it is.',
   useWhen: [

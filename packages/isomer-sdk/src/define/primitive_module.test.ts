@@ -197,3 +197,49 @@ describe('definePrimitive icon', () => {
     expect(Object.hasOwn(definePrimitive(base), 'icon')).toBe(false);
   });
 });
+
+describe('definePrimitive description', () => {
+  const base = {
+    type: 'probe',
+    catalog: {
+      type: 'probe',
+      purpose: '',
+      useWhen: [],
+      avoidWhen: [],
+      example: { type: 'probe' },
+    },
+    examples: [{ type: 'probe' }],
+    renderers: { react: () => null, text: () => '', markdown: () => [] },
+  };
+
+  it('copies a root schema description onto the catalog', () => {
+    const defined = definePrimitive({
+      ...base,
+      schema: z
+        .object({ type: z.literal('probe') })
+        .describe('From the schema.'),
+    });
+    expect(defined.catalog.description).toBe('From the schema.');
+  });
+
+  it('keeps a catalog description over the schema one', () => {
+    const catalog = { ...base.catalog, description: 'From the catalog.' };
+    const defined = definePrimitive({
+      ...base,
+      catalog,
+      schema: z
+        .object({ type: z.literal('probe') })
+        .describe('From the schema.'),
+    });
+    expect(defined.catalog).toBe(catalog);
+  });
+
+  it('adds no catalog description when none is declared', () => {
+    const defined = definePrimitive({
+      ...base,
+      schema: z.object({ type: z.literal('probe') }),
+    });
+    expect(defined.catalog).toBe(base.catalog);
+    expect(Object.hasOwn(defined.catalog, 'description')).toBe(false);
+  });
+});

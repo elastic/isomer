@@ -13,6 +13,7 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideRoadmap',
   name: 'Roadmap',
+  description: 'Two to four horizons. At most one column is current.',
   purpose:
     'Show what is done, what comes next, and what comes after, so the audience knows where the work stands.',
   useWhen: [

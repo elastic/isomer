@@ -13,6 +13,8 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideDiff',
   name: 'Diff',
+  description:
+    'One snippet with changed lines marked. Each entry in lines is one line of source, with no newline.',
   purpose:
     'Show the reader exactly what a change did to a piece of source: which lines it added, which it removed, and what stayed.',
   useWhen: [
