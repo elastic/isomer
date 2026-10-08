@@ -41,10 +41,15 @@ export const useClosedNavGroups = (): {
 
   const setOpen = useCallback((title: string, isOpen: boolean) => {
     setClosed((current) => {
-      if (current.has(title) !== isOpen) return current;
+      if (current.has(title) !== isOpen) {
+        return current;
+      }
       const next = new Set(current);
-      if (isOpen) next.delete(title);
-      else next.add(title);
+      if (isOpen) {
+        next.delete(title);
+      } else {
+        next.add(title);
+      }
       return next;
     });
   }, []);
