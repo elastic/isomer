@@ -20,6 +20,14 @@ const MAX_LINE = 80;
 const INDENT = '  ';
 const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
 const UNSAFE_TEXT = /[{}<>&]/;
+const UNSAFE_ATTRIBUTE = /["\\\n\r&]/;
+
+const printKey = (key: string): string => {
+  if (key === '__proto__') {
+    return '["__proto__"]';
+  }
+  return IDENTIFIER.test(key) ? key : JSON.stringify(key);
+};
 
 /** The authoring component name for a primitive or child `type`, as `buildJsxShim` derives it. */
 export const componentName = (type: string): string =>
@@ -39,10 +47,7 @@ export const printValue = (value: unknown, indent = ''): string => {
     ? value.map((item) => printValue(item, inner))
     : Object.entries(value)
         .filter(([, item]) => item !== undefined)
-        .map(
-          ([key, item]) =>
-            `${IDENTIFIER.test(key) ? key : JSON.stringify(key)}: ${printValue(item, inner)}`
-        );
+        .map(([key, item]) => `${printKey(key)}: ${printValue(item, inner)}`);
   const [open, close] = Array.isArray(value) ? ['[', ']'] : ['{ ', ' }'];
 
   if (!parts.length) {
@@ -63,7 +68,7 @@ const printAttribute = (
   value: unknown,
   indent: string
 ): string =>
-  typeof value === 'string' && !/["\\\n]/.test(value)
+  typeof value === 'string' && !UNSAFE_ATTRIBUTE.test(value)
     ? `${name}="${value}"`
     : `${name}={${printValue(value, indent)}}`;
 
@@ -74,11 +79,12 @@ const printText = (
 ): string | undefined => {
   if (
     !text ||
-    (collapseWhitespace && (/\s{2,}|[\n\t]/.test(text) || text.trim() !== text))
+    text.trim() !== text ||
+    (collapseWhitespace && /\s{2,}|[^\S ]/.test(text))
   ) {
     return undefined;
   }
-  return UNSAFE_TEXT.test(text) || text.trim() !== text || text.includes('\n')
+  return UNSAFE_TEXT.test(text) || text.includes('\n')
     ? `{${JSON.stringify(text)}}`
     : text;
 };

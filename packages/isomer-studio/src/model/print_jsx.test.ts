@@ -7,8 +7,12 @@
 
 /** @vitest-environment node */
 
+import type { DefaultPackTypes, PrimitiveNode } from '@elastic/isomer-sdk';
+import { definePrimitive } from '@elastic/isomer-sdk';
+import { fromTextChildren } from '@elastic/isomer-sdk/author';
 import { transform } from 'esbuild';
 import { runInNewContext } from 'vm';
+import { z } from 'zod';
 
 import type { CalloutNode, StatGroupNode } from '../fixtures/components_pack';
 import { componentsPrimitives } from '../fixtures/components_pack';
@@ -58,6 +62,16 @@ describe('printValue', () => {
   it('quotes keys that are not identifiers', () => {
     expect(printValue({ 'data-x': 1 })).toBe('{ "data-x": 1 }');
   });
+
+  it('keeps an own __proto__ key as data', () => {
+    const value: unknown = JSON.parse('{"__proto__": { "x": 1 }}');
+    const printed = printValue(value);
+    const context: Record<string, unknown> = {};
+    runInNewContext(`result = ${printed}`, context);
+
+    expect(printed).toBe('{ ["__proto__"]: { x: 1 } }');
+    expect(JSON.stringify(context.result)).toBe(JSON.stringify(value));
+  });
 });
 
 describe('printNodeJsx', () => {
@@ -89,7 +103,7 @@ describe.each([
   ['props only', propsOnly],
   ['with the authored spec', undefined],
 ])('JSX round trip, %s', (_mode, readSpec) => {
-  it.each(examples)('%s', async (_name, node) => {
+  const roundTrip = async (node: PrimitiveNode) => {
     const source = printCompositionJsx(
       [node],
       schemaFor,
@@ -97,6 +111,55 @@ describe.each([
     );
     await expect(
       compileCompositionJsx(source, shim, transformJsx, { evaluate })
+    ).resolves.toEqual([node]);
+  };
+
+  it.each(examples)('%s', async (_name, node) => {
+    await roundTrip(node);
+  });
+
+  it.each([
+    ['an entity sequence', 'Tom &amp; Jerry'],
+    ['a carriage return', 'line one\rline two'],
+    ['surrounding whitespace', '  padded  '],
+  ])('keeps text with %s', async (_case, body) => {
+    const node: CalloutNode = { type: 'callout', body };
+    await roundTrip(node);
+  });
+});
+
+describe('JSX round trip, whitespace-preserving text', () => {
+  const snippetSchema = z.object({
+    type: z.literal('snippet'),
+    code: fromTextChildren(z.string(), { collapseWhitespace: false }),
+  });
+  type SnippetNode = z.infer<typeof snippetSchema>;
+
+  const snippet = definePrimitive<
+    SnippetNode,
+    DefaultPackTypes,
+    typeof snippetSchema
+  >({
+    type: 'snippet',
+    catalog: {
+      type: 'snippet',
+      purpose: '',
+      useWhen: [],
+      avoidWhen: [],
+      example: {},
+    },
+    examples: [],
+    schema: snippetSchema,
+    renderers: { react: () => null, text: () => '', markdown: () => [] },
+  });
+
+  it.each(['  indented', 'trailing  ', 'a\r\nb'])('keeps %j', async (code) => {
+    const node: SnippetNode = { type: 'snippet', code };
+    const source = printCompositionJsx([node], () => snippet.schema);
+    await expect(
+      compileCompositionJsx(source, createShim([snippet]), transformJsx, {
+        evaluate,
+      })
     ).resolves.toEqual([node]);
   });
 });
