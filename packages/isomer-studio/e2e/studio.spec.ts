@@ -7,7 +7,7 @@
 
 import type { ChildProcess } from 'node:child_process';
 import { spawn } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -53,11 +53,13 @@ const runCli = (args: readonly string[]): Promise<string> =>
     );
   });
 
-const startDev = (): Promise<{ url: string; child: ChildProcess }> =>
+const startDev = (
+  config = CONFIG
+): Promise<{ url: string; child: ChildProcess }> =>
   new Promise((resolvePromise, reject) => {
     const child = spawn(
       process.execPath,
-      [CLI, 'dev', '--port', '0', '--config', CONFIG],
+      [CLI, 'dev', '--port', '0', '--config', config],
       {
         stdio: ['ignore', 'pipe', 'pipe'],
       }
@@ -284,5 +286,85 @@ test.describe('dev server', () => {
     await expectPngLoaded(page);
 
     expect(problems).toEqual([]);
+  });
+});
+
+test.describe('dev server reload', () => {
+  test.skip(
+    SKIP_DEV || Boolean(process.env.STUDIO_CONFIG),
+    'needs the repository fixture pack'
+  );
+
+  // Under the package's `node_modules`, so the config resolves React and the runtime, and loads as CommonJS.
+  let dir: string;
+  let dev: { url: string; child: ChildProcess };
+
+  const writeOptions = (title: string, framed: boolean) =>
+    writeFileSync(
+      join(dir, 'options.ts'),
+      `export const title = ${JSON.stringify(title)};\nexport const framed = ${framed};\n`
+    );
+
+  test.beforeAll(async () => {
+    const cache = join(packageDir, 'node_modules/.cache');
+    mkdirSync(cache, { recursive: true });
+    dir = mkdtempSync(join(cache, 'isomer-studio-reload-'));
+    writeOptions('Before reload', false);
+    writeFileSync(
+      join(dir, 'isomer-studio.config.ts'),
+      [
+        "import { createElement } from 'react';",
+        "import { createIsomerRuntime } from '@elastic/isomer-runtime';",
+        `import { componentsPack } from ${JSON.stringify(join(packageDir, 'src/fixtures/components_pack'))};`,
+        "import { framed, title } from './options';",
+        '',
+        'const card = {',
+        '  defaultWidth: 320,',
+        '  theme: { light: undefined, dark: undefined },',
+        '  estimateHeight: () => 100,',
+        "  wrap: (_header: unknown, body: unknown) => createElement('div', null, body),",
+        '};',
+        '',
+        'export default {',
+        '  title,',
+        '  runtime: createIsomerRuntime({',
+        '    packs: [componentsPack],',
+        '    ...(framed ? { frames: { card } } : {}),',
+        '  }),',
+        '};',
+        '',
+      ].join('\n')
+    );
+    dev = await startDev(join(dir, 'isomer-studio.config.ts'));
+  });
+
+  test.afterAll(() => {
+    dev.child.removeAllListeners('close');
+    dev.child.kill('SIGTERM');
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  test('reloads the page and the server-side config when a pack module changes', async ({
+    page,
+  }) => {
+    const composition = {
+      type: 'view',
+      body: [{ type: 'callout', body: 'Reloaded.' }],
+      theme: 'light',
+    };
+    const postPng = () =>
+      page.request.post(`${dev.url}png`, { data: composition });
+
+    await page.goto(dev.url);
+    await expect(page).toHaveTitle('Before reload');
+    expect((await postPng()).status()).toBe(404);
+
+    writeOptions('After reload', true);
+
+    await expect(page).toHaveTitle('After reload', { timeout: 60_000 });
+    await expect(page.getByText('After reload').first()).toBeVisible();
+    const png = await postPng();
+    expect(png.status(), await png.text()).toBe(200);
+    expect(png.headers()['content-type']).toBe('image/png');
   });
 });
