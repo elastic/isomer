@@ -97,7 +97,7 @@ An [index catalog](authoring.md#an-index-then-lookups) lists a pack's primitives
 
 A pack can pass `groups` itself instead, a list of `{ title, types }`. It cannot also pass `groupOrder` or have primitives that declare `catalog.group`. A group naming a type the pack does not register, or a type in two groups, throws at `definePrimitivePack`. `INVALID_PACK_GROUPS` covers the rest: `groups` beside `catalog.group` or `groupOrder`, and a `groupOrder` that omits, repeats, or invents a heading.
 
-The headings a primitive may name are the pack's `PackTypes.groups`. A literal union makes `catalog.group` required and a member of that union, so a primitive cannot pick a heading the pack did not declare. `string`, the default, leaves the field optional. Derive the union from the `groupOrder` array, `(typeof ORDER)[number]` for an `as const` list, so the two stay one list.
+The headings a primitive may name are the pack's `PackTypes.groups`. A literal union makes `catalog.group` required and a member of that union, so a primitive cannot pick a heading the pack did not declare. `string`, the default, leaves the field optional, as does a bag that omits `groups`. Derive the union from the `groupOrder` array, `(typeof ORDER)[number]` for an `as const` list, so the two stay one list.
 
 ## The theme a pack requires
 

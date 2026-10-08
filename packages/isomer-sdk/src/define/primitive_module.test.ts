@@ -218,6 +218,21 @@ describe('catalog group', () => {
     >();
   });
 
+  it('accepts a type bag that does not declare groups', () => {
+    const defineBare = definePrimitiveFor<Omit<DefaultPackTypes, 'groups'>>();
+    const defined = defineBare({
+      ...shelf,
+      catalog: {
+        type: 'probe',
+        purpose: '',
+        useWhen: [],
+        avoidWhen: [],
+        example: { type: 'probe' },
+      },
+    });
+    expectTypeOf(defined.catalog.group).toEqualTypeOf<string | undefined>();
+  });
+
   it('requires a heading the pack names', () => {
     expectTypeOf<
       PrimitiveCatalogEntry<'Metrics' | 'Notes'>['group']

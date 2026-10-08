@@ -165,10 +165,17 @@ export interface PackTypes {
   /**
    * Index headings `catalog.group` may name.
    *
-   * `string` leaves the field optional. A literal union makes it required.
+   * `string` or absent leaves the field optional. A literal union makes it required.
    */
-  groups: string;
+  groups?: string;
 }
+
+/** {@link PackTypes.groups}, or `string` for a bag that does not declare it. */
+type PackGroups<T extends PackTypes> = T extends {
+  groups: infer TGroup extends string;
+}
+  ? TGroup
+  : string;
 
 /** {@link PackTypes} as the sdk itself binds them, and the default everywhere. */
 export interface DefaultPackTypes extends PackTypes {
@@ -406,7 +413,7 @@ export interface PrimitiveDefinition<
   /** The node's discriminant, and the key this primitive occupies in an inventory. */
   type: TNode['type'];
   /** How the authoring prompt describes this primitive to the model. */
-  catalog: PrimitiveCatalogEntry<T['groups']>;
+  catalog: PrimitiveCatalogEntry<PackGroups<T>>;
   /** Host-facing glyph, never shown to the model. Absent means the host supplies its own. */
   icon?: PrimitiveIcon;
   /**

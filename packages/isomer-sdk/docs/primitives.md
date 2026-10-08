@@ -150,7 +150,7 @@ Optional. The height estimate is `0` when it is missing, so a frame that sums no
 
 A host listing primitives, in a nav, a docs gallery, or an example picker, shows a name and a glyph beside each one. Neither reaches the model.
 
-`catalog.name` is the name, such as `Stat group`. The authoring prompt never prints it, so a model is not invited to write it as a `type`. Absent, the host derives a name from `type`. Inventory conformance rejects a blank one. `catalog.group` is the index heading. When the pack's `PackTypes.groups` is a literal union, the field is required and has to be one of those headings; `string`, the default, leaves it optional. `catalog.description` is the `$def` description in the authoring JSON Schema.
+`catalog.name` is the name, such as `Stat group`. The authoring prompt never prints it, so a model is not invited to write it as a `type`. Absent, the host derives a name from `type`. Inventory conformance rejects a blank one. `catalog.group` is the index heading. When the pack's `PackTypes.groups` is a literal union, the field is required and has to be one of those headings; `string`, the default, leaves it optional, as does a bag that omits `groups`. `catalog.description` is the `$def` description in the authoring JSON Schema.
 
 `icon` is `{ svg }`, a static string a host inlines as markup without a renderer, and `pack.icons` maps each type to it. Absent, the host supplies its own glyph, such as a monogram. Because a host inserts the string as markup, its rules are an allowlist, which `assertPackIconsValid` from `./testing` enforces:
 
