@@ -138,6 +138,29 @@ export default config;
     }
   );
 
+  it.each([
+    ['an ES module', 'module'],
+    ['a CommonJS', 'commonjs'],
+  ])(
+    'reloads a module the config imports in %s project',
+    async (_kind, type) => {
+      write('package.json', JSON.stringify({ name: 'consumer', type }));
+      write('tsconfig.json', JSON.stringify({ compilerOptions: {} }));
+      write('src/title.ts', "export const title = 'Before';\n");
+      const configPath = write(
+        'isomer-studio.config.ts',
+        `import { title } from './src/title';
+
+export default { title, runtime: { surfaces: {} } };
+`
+      );
+
+      expect((await loadStudioConfig(configPath)).title).toBe('Before');
+      write('src/title.ts', "export const title = 'After';\n");
+      expect((await loadStudioConfig(configPath)).title).toBe('After');
+    }
+  );
+
   it('imports a JavaScript config with no loader, unwrapping a CommonJS default', async () => {
     const configPath = write(
       'isomer-studio.config.cjs',
