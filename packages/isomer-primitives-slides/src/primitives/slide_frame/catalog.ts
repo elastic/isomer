@@ -13,6 +13,8 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideFrame',
   name: 'Slide',
+  description:
+    'One whole slide. Its body holds the slide content top to bottom, never a slideFrame: frames never nest.',
   purpose:
     'Hold one 16:9 slide: its content top to bottom and a footer naming the deck, the section, and its address.',
   useWhen: [

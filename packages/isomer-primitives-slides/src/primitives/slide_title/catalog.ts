@@ -13,6 +13,8 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideTitle',
   name: 'Title',
+  description:
+    'The title slide. Its aside is one slide node, never a slideFrame.',
   purpose:
     'Introduce the deck’s subject by name, with its promise and, optionally, a diagram of what it does.',
   useWhen: [

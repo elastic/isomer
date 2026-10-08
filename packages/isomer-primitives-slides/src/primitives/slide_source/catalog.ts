@@ -13,6 +13,7 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideSource',
   name: 'Source',
+  description: 'One citation line.',
   purpose:
     'Tell the audience where the numbers or claims on a slide come from, without taking attention from them.',
   useWhen: [

@@ -13,6 +13,8 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideCommand',
   name: 'Command',
+  description:
+    'One shell command on a single line, without the prompt. highlightPrefix, when given, starts command.',
   purpose:
     'Give the audience one shell command they can type or copy and run themselves.',
   useWhen: [

@@ -13,6 +13,8 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideBars',
   name: 'Bars',
+  description:
+    'Two to six bars in one unit. At most one item is highlighted; max, when given, is at least every value.',
   purpose:
     'Let the audience compare the size of several amounts of the same kind, and see which one stands out.',
   useWhen: [

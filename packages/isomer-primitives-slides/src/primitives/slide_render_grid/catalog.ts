@@ -13,6 +13,8 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideRenderGrid',
   name: 'Render grid',
+  description:
+    'One body on two to six surfaces, each surface once. The body never holds another render.',
   purpose:
     'Prove one slide works everywhere by showing it as several surfaces render it, side by side.',
   useWhen: [

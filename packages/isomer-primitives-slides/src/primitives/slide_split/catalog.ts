@@ -13,6 +13,8 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideSplit',
   name: 'Split',
+  description:
+    'Two columns. Each pane holds one to six slide nodes, never a slideFrame. A pane tone needs a pane label.',
   purpose:
     'Set two things side by side so the reader compares them: two owners, a before and after, or an input and what it becomes.',
   useWhen: [

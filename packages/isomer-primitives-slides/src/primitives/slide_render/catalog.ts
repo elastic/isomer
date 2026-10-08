@@ -13,6 +13,8 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideRender',
   name: 'Render',
+  description:
+    'One render. Needs a `slide` reference or a `body`; the body holds whole slides but never another render.',
   purpose:
     'Show the audience real output: another slide, or a few slide nodes, exactly as one surface renders it.',
   useWhen: [

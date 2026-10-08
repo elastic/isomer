@@ -13,6 +13,8 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideCode',
   name: 'Code',
+  description:
+    'One or two code panels. Every highlighted line number exists in its panel.',
   purpose:
     'Show the reader real source, with the lines that matter marked, or trace one value from the file that sets it to the file that reads it.',
   useWhen: [

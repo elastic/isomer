@@ -191,7 +191,7 @@ A container that also draws chrome of its own sets two more. `hasOwnContent: () 
 - Every `avoidWhen` entry names the primitive to use instead, by `type` ("The points split by who owns them; use slideTerritoryGroup."). Name only registered primitives: `src/agent_guide.test.ts` fails when the prompt, schema descriptions and examples included, names a type the pack does not register.
 - `example` uses neutral subject matter. A model copies the example's register, so an example about Isomer produces slides about Isomer.
 - Write a cross-field constraint as `.check(crossRefine(…))` from `src/primitives/cross_field.ts`, not a bare `.refine`: Zod skips a bare one once any field fails, so an author would fix one error only to meet the next. Because it runs after a size bound fails, have it pass without reading a field whose count or length is already over its cap. A check that adds its own issues is `crossSuperRefine(refine, rules)`, and a rule on one field alone is `statedRefine`.
-- `z.toJSONSchema` drops every refinement, so each of these takes a `rule` (`rules` for `crossSuperRefine`): the sentence, word for word, that a description the authoring schema keeps states it in, on the field it constrains or in the primitive's `describe` entry in `src/pack_authoring.ts`. A shared rule is a constant both use, as `hrefRule` is for `boundedHref()`. `src/stated_rules.test.ts` walks every primitive's schema, fails on a custom check made any other way, and fails when a rule is missing from that primitive's authoring schema.
+- `z.toJSONSchema` drops every refinement, so each of these takes a `rule` (`rules` for `crossSuperRefine`): the sentence, word for word, that a description the authoring schema keeps states it in, on the field it constrains or in the catalog's `description`. A shared rule is a constant both use, as `hrefRule` is for `boundedHref()`. `src/stated_rules.test.ts` walks every primitive's schema, fails on a custom check made any other way, and fails when a rule is missing from that primitive's authoring schema.
 
 ## Tests
 
@@ -211,10 +211,10 @@ The tests that rasterize need `@elastic/isomer-image-takumi` and `@fontsource/*`
 
 A new primitive has six stops, all hand-maintained:
 
-1. Its folder, `src/primitives/<type>/`.
+1. Its folder, `src/primitives/<type>/`. On the catalog, set `description` when a cross-field rule needs restating; it is the authoring `$def` description.
 2. `src/registry.ts`: the import and its place in `slideDeckPrimitives`, alphabetically.
 3. `src/body_node.ts`: its node type in the `BodyNode` union, in the same order.
-4. `src/pack_authoring.ts`: its group in `slidePrimitiveGroups`, and a `describe` entry restating any cross-field rule.
+4. `src/pack_authoring.ts`: its group in `slidePrimitiveGroups`.
 5. `src/stylesheet.ts`: its Distillate module in `slideModules`.
 6. `src/theme/theme.ts`: its theme group from `src/theme/components/<group>.ts` in `SLIDE_THEME`.
 

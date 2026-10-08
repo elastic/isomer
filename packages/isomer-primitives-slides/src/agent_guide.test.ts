@@ -9,7 +9,6 @@ import { buildAuthoringJsonSchema } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { buildSlidesAuthoringPrompt } from './agent_guide';
-import { slidesPackAuthoring } from './pack_authoring';
 import { slideDeckPrimitives, slidePrimitiveTypes } from './registry';
 
 describe('slides authoring prompt', () => {
@@ -51,10 +50,7 @@ describe('slides authoring prompt', () => {
 
 describe('slides authoring schema', () => {
   it('resolves every `$ref` to a def it holds', () => {
-    const schema = buildAuthoringJsonSchema(
-      slideDeckPrimitives,
-      slidesPackAuthoring
-    );
+    const schema = buildAuthoringJsonSchema(slideDeckPrimitives);
     const { $defs } = schema as { $defs: Record<string, unknown> };
     const refs = [...JSON.stringify(schema).matchAll(/"#\/\$defs\/([^"]+)"/g)];
     expect(refs.map(([, id]) => id).filter((id) => !(id! in $defs))).toEqual(

@@ -13,6 +13,8 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideTable',
   name: 'Table',
+  description:
+    'A grid of short cells. Give either rows or groups, not both; every row has exactly one cell per column; twelve rows at most across all groups.',
   purpose:
     'Let the reader compare several items across the same attributes, reading across a row or down a column.',
   useWhen: [

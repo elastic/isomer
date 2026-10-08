@@ -13,6 +13,8 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideColumns',
   name: 'Columns',
+  description:
+    'Two to four columns. `highlight`, when set, is an index into `items`.',
   purpose:
     'Lay two to four parallel options side by side so the audience can weigh them against each other.',
   useWhen: [

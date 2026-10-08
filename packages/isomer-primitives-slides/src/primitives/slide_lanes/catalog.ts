@@ -13,6 +13,7 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideLanes',
   name: 'Lanes',
+  description: 'Exactly two lanes that converge on join.',
   purpose:
     'Contrast two different routes to the same destination, so the audience sees where they differ and where they meet.',
   useWhen: [

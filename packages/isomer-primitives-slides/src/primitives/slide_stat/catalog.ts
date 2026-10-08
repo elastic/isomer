@@ -13,6 +13,8 @@ import { example } from './examples';
 export const catalog = {
   type: 'slideStat',
   name: 'Stat',
+  description:
+    'One headline number and the sentence that explains it. A unit needs a value; leave value out to show a placeholder.',
   purpose:
     'Land one number that proves the slide, with the sentence that says what it means.',
   useWhen: [

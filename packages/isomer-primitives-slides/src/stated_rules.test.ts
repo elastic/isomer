@@ -15,7 +15,6 @@ import {
 } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
-import { slidesPackAuthoring } from './pack_authoring';
 import { crossSuperRefine, rulesOf } from './primitives/cross_field';
 import { slideDeckPrimitives } from './registry';
 
@@ -91,10 +90,7 @@ const descriptions = (value: unknown): string[] => {
   );
 };
 
-const authoring = buildAuthoringJsonSchema(
-  slideDeckPrimitives,
-  slidesPackAuthoring
-);
+const authoring = buildAuthoringJsonSchema(slideDeckPrimitives);
 
 const rows = [...members].map(([type, schema]) => ({
   type,
