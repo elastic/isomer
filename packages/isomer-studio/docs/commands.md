@@ -44,7 +44,7 @@ Writes the Studio as a static site.
 
 | Option | Default | What it does |
 | --- | --- | --- |
-| `--out <dir>` | `dist/studio` | Where the site goes. A previous build there is replaced; any other non-empty directory is refused. |
+| `--out <dir>` | `dist/studio` | Where the site goes. A previous build there, marked by its `.isomer-studio-build` file, is replaced; any other non-empty directory is refused. |
 | `--base <path>` | `./` | The URL path the site is served from. A trailing slash is added. |
 
 Every URL in the site resolves against `--base`, so the same build works at a domain's root or under a sub-path. Routes live in the URL's hash, so the host needs no rewrites. A `./` base works when the site is opened from any single directory, such as an unzipped CI artifact behind a static server.

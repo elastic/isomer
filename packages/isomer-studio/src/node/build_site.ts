@@ -80,18 +80,23 @@ export const prerenderPngs = async (
   return { manifest, failures };
 };
 
+/** Written into every build, so a later build only clears a directory a Studio build made. */
+export const BUILD_MARKER = '.isomer-studio-build';
+
 /** Clears `out` for a new build, refusing a non-empty directory that is not a previous build. */
-const prepareOut = (out: string): void => {
+export const prepareOut = (out: string): void => {
   if (
     existsSync(out) &&
     readdirSync(out).length > 0 &&
-    !existsSync(join(out, 'index.html'))
+    !existsSync(join(out, BUILD_MARKER))
   ) {
     throw new Error(
       `${out} is not empty and holds no Studio build; pick another --out.`
     );
   }
   rmSync(out, { force: true, recursive: true });
+  mkdirSync(out, { recursive: true });
+  writeFileSync(join(out, BUILD_MARKER), '');
 };
 
 export interface BuildSiteOptions {

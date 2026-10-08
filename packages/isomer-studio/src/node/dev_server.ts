@@ -66,6 +66,20 @@ const sendText = (response: ServerResponse, status: number, text: string) => {
   response.end(text);
 };
 
+const LOOPBACK_HOSTNAMES = new Set(['127.0.0.1', 'localhost', '[::1]']);
+
+/** Whether a `Host` header names the loopback listener, which a DNS-rebinding page's own hostname does not. */
+export const isLoopbackHost = (host: string | undefined): boolean => {
+  if (host === undefined) {
+    return false;
+  }
+  try {
+    return LOOPBACK_HOSTNAMES.has(new URL(`http://${host}`).hostname);
+  } catch {
+    return false;
+  }
+};
+
 /** Shape only: the snapshot surface validates the rest and draws what it can. */
 const isComposition = (value: unknown): value is Composition =>
   typeof value === 'object' &&
@@ -103,7 +117,16 @@ export const startDevServer = async ({
   let markFirstBuild = () => {};
   const firstBuild = new Promise<void>((resolve) => (markFirstBuild = resolve));
 
+  if (loader === 'none') {
+    log(
+      'PNGs render with the config as loaded now: Node caches a plain import(), so restart dev to pick up config or pack changes.'
+    );
+  }
+
   const reloadConfig = async () => {
+    if (loader === 'none') {
+      return;
+    }
     try {
       config = await loadStudioConfig(configPath, { loader });
       rasterize = createRasterizer(config.runtime);
@@ -213,6 +236,10 @@ export const startDevServer = async ({
   };
 
   const serve = (request: IncomingMessage, response: ServerResponse) => {
+    if (!isLoopbackHost(request.headers.host)) {
+      sendText(response, 403, 'Forbidden host');
+      return;
+    }
     const { pathname } = new URL(request.url ?? '/', `http://${HOST}`);
     if (request.method === 'POST' && pathname === '/transform') {
       void transformJsx(request, response);

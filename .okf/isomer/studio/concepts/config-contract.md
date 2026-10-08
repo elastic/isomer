@@ -31,7 +31,7 @@ The header and the page title are `Isomer Studio` unless `title` replaces them; 
 
 Surfaces come from `runtime.surfaces`: without a `snapshot` surface there are no Snapshot or PNG previews, no prerendered PNGs, and `check` skips those checks.
 
-In Node the config loads through `tsx`'s `tsImport` with the nearest `tsconfig.json`, also passed as `TSX_TSCONFIG_PATH` so CommonJS projects compile JSX the same way; `--loader none` uses a plain `import()`. Before loading, the Studio compares the React the config resolves with the one beside the `@elastic/isomer-runtime` it resolves, and throws naming both when they differ. `react-dom/server` comes from the config's React through `createRequire`. In the browser bundle, an esbuild plugin re-resolves `react`, `react-dom` and their subpaths from the config's directory, keeping each package's `browser` mapping.[^loader]
+In Node the config loads through `tsx`'s `tsImport` with the nearest `tsconfig.json`, also passed as `TSX_TSCONFIG_PATH` so CommonJS projects compile JSX the same way; `--loader none` uses a plain `import()`, which Node caches, so `dev` rebuilds the browser bundle on edits but keeps the Node config it started with. Before loading, the Studio compares the React the config resolves with the one beside the `@elastic/isomer-runtime` it resolves, and throws naming both when they differ. `react-dom/server` comes from the config's React through `createRequire`. In the browser bundle, an esbuild plugin re-resolves `react`, `react-dom` and their subpaths from the config's directory, keeping each package's `browser` mapping.[^loader]
 
 Related: [static PNGs](/studio/concepts/static-png.md), [root and CLI](/studio/entry-points/root.md).
 

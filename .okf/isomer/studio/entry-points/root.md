@@ -19,7 +19,7 @@ sources:
 
 The root entry exports `defineStudioConfig`, an identity function that types a config, `adoptStylesheet`, which parses a pack stylesheet once per document and adopts it onto a preview shadow root, and the types `StudioConfig`, `StudioCompose`, `StudioRuntime` and `StudioTheme`. It is ESM only. The Studio's React components are internal; there is no public React API.[^barrel]
 
-The `isomer-studio` binary takes `dev` (`--port`, default 5179, `0` for a free port; `--open`), `build` (`--out`, default `dist/studio`; `--base`, default `./`, given a trailing slash) and `check` (`--report`, `--format json|junit`, `--png`, `--surfaces`). Every command takes `--config` (default `isomer-studio.config.ts`, `.tsx` or `.js` in `--cwd`), `--cwd` (resolves `--config`, `--out` and `--report`) and `--loader tsx|none`. It exits 0, 1 on a failure, or 2 on bad usage with the usage text.[^args]
+The `isomer-studio` binary takes `dev` (`--port`, default 5179, `0` for a free port; `--open`), `build` (`--out`, default `dist/studio`; `--base`, default `./`, given a trailing slash) and `check` (`--report`, `--format json|junit`, `--png`, `--surfaces`). Every command takes `--config` (default `isomer-studio.config.ts`, `.tsx` or `.js` in `--cwd`), `--cwd` (resolves `--config`, `--out` and `--report`) and `--loader tsx|none`. It exits 0, 1 on a failure, or 2 on bad usage with the usage text.[^args] `build` replaces a non-empty `--out` only when a previous build's `.isomer-studio-build` marker is there, and the dev server answers only requests whose `Host` is loopback.
 
 Related: [config contract](/studio/concepts/config-contract.md), [public contract](/studio/reference/public-contract.md).
 
