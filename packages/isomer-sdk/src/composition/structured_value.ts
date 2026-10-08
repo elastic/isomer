@@ -30,15 +30,15 @@ export interface StructuredValue {
   /** Unformatted, in base units — a `percent` of `0.42` renders as 42%. */
   raw: number | string;
   /** How to render `raw`. Absent passes a string through and gives a number default formatting. */
-  format?: StructuredValueFormat;
+  format?: StructuredValueFormat | undefined;
   /**
    * Fraction digits for numeric formats. `number`, `percent`, and `currency`
    * pad to it; omitted, `number` and `percent` keep at most two and `currency`
    * two. `compact` and `bytes` drop trailing zeros and keep one when omitted.
    */
-  precision?: number;
+  precision?: number | undefined;
   /** Three-letter currency code for `currency`; defaults to USD. */
-  currency?: string;
+  currency?: string | undefined;
 }
 
 /** A value-bearing field: preformatted prose, or a {@link StructuredValue} to format. */

@@ -5,12 +5,14 @@
  * 2.0.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
+import type { DisplayValue } from '../composition/structured_value';
 import { bodyNodeSurfacesSchema } from '../define/primitive_module';
 import { formatDisplayValue } from '../render/format_display_value';
 
 import {
+  displayValueSchema,
   namedColorSchema,
   renderThemeSchema,
   structuredValueSchema,
@@ -64,5 +66,14 @@ describe('structuredValueSchema currency', () => {
 
     expect(structuredValueSchema.safeParse(value).success).toBe(true);
     expect(formatDisplayValue(value)).toBe('€5.00');
+  });
+});
+
+describe('displayValueSchema output', () => {
+  it('is a DisplayValue under exactOptionalPropertyTypes', () => {
+    const value = displayValueSchema.parse({ raw: 0.42, format: 'percent' });
+
+    expectTypeOf(value).toExtend<DisplayValue>();
+    expect(formatDisplayValue(value)).toBe('42%');
   });
 });
