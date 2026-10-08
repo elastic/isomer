@@ -47,9 +47,12 @@ export const createAuthoringModel = (
         );
       }
       const nextPath = [...path, field];
-      if (!prior)
+      if (!prior) {
         children.set(field.childType, { field, primitiveType, path: nextPath });
-      if (field.toItem || visited.has(field.itemSchema)) continue;
+      }
+      if (field.toItem || visited.has(field.itemSchema)) {
+        continue;
+      }
       visited.add(field.itemSchema);
       collectChildren(
         readAuthoredSpec(field.itemSchema).children,
@@ -59,9 +62,13 @@ export const createAuthoringModel = (
     }
   };
   for (const { type, schema } of primitives) {
-    if (!isZodType(schema)) continue;
+    if (!isZodType(schema)) {
+      continue;
+    }
     const spec = readAuthoredSpec(schema);
-    if (spec.children.length === 0 && spec.text.length === 0) continue;
+    if (spec.children.length === 0 && spec.text.length === 0) {
+      continue;
+    }
     authoredByType.set(type, spec);
     collectChildren(spec.children, type, []);
   }

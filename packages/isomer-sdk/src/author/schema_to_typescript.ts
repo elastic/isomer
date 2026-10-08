@@ -104,7 +104,9 @@ interface Printed {
 const atom = (text: string): Printed => ({ text, kind: 'atom' });
 
 const union = (members: readonly Printed[]): Printed => {
-  if (members.some(({ text }) => text === 'unknown')) return atom('unknown');
+  if (members.some(({ text }) => text === 'unknown')) {
+    return atom('unknown');
+  }
   const unique = new Map(members.map((member) => [member.text, member]));
   const [only] = [...unique.values()];
   if (unique.size === 0) {
@@ -118,7 +120,9 @@ const union = (members: readonly Printed[]): Printed => {
 const intersection = (members: readonly Printed[]): Printed => {
   const unique = new Map(members.map((member) => [member.text, member]));
   const [only] = [...unique.values()];
-  if (!only) return atom('unknown');
+  if (!only) {
+    return atom('unknown');
+  }
   if (unique.size === 1 && only) {
     return only;
   }
@@ -338,12 +342,13 @@ export const createTypePrinter = ({
     const values = [
       ...patterns.map((schema) => printNode(schema, depth, active)),
     ];
-    if (open)
+    if (open) {
       values.push(
         extra === undefined || extra === true
           ? atom('unknown')
           : printNode(extra, depth, active)
       );
+    }
     const index =
       values.length === 0
         ? Object.keys(properties).length === 0

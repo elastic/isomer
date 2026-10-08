@@ -577,11 +577,15 @@ const NODE_FIELDS = {
 const isNodeField = (schema: unknown): boolean => {
   let current = schema;
   while (current && typeof current === 'object') {
-    if (Object.hasOwn(current, NODE_FIELD)) return true;
+    if (Object.hasOwn(current, NODE_FIELD)) {
+      return true;
+    }
     const { def } = current as {
       def?: { type?: string; innerType?: unknown };
     };
-    if (def?.type !== 'optional') return false;
+    if (def?.type !== 'optional') {
+      return false;
+    }
     current = def.innerType;
   }
   return false;

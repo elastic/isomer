@@ -29,8 +29,12 @@ const escapeLinkLabel = (label: string): string =>
 // unescaped by spec, so those two are mapped by hand.
 const escapeLinkDestination = (href: string): string =>
   href.replace(/[()\s\\]/g, (char) => {
-    if (char === '(') return '%28';
-    if (char === ')') return '%29';
+    if (char === '(') {
+      return '%28';
+    }
+    if (char === ')') {
+      return '%29';
+    }
     return encodeURIComponent(char);
   });
 
@@ -50,11 +54,15 @@ const parse = (source: string): Root =>
 
 /** `markdown` as flat GFM mdast blocks, typed `unknown` so no declaration names mdast; `null` past the parse budget or the parser's recursion depth. */
 export const parseGfmBlocks = (markdown: string): readonly unknown[] | null => {
-  if (exceedsParseBudget(markdown)) return null;
+  if (exceedsParseBudget(markdown)) {
+    return null;
+  }
   try {
     return parse(markdown).children;
   } catch (error) {
-    if (!(error instanceof RangeError)) throw error;
+    if (!(error instanceof RangeError)) {
+      throw error;
+    }
     return null;
   }
 };
@@ -82,7 +90,9 @@ const sanitizePass = (source: string): string => {
     if (node.type === 'definition' && !definitions.has(node.identifier)) {
       definitions.set(node.identifier, node);
     }
-    if ('children' in node) pending.push(...[...node.children].reverse());
+    if ('children' in node) {
+      pending.push(...[...node.children].reverse());
+    }
   }
 
   const slice = (node: Nodes): string => {
@@ -99,7 +109,9 @@ const sanitizePass = (source: string): string => {
     let cursor = start;
     for (const child of children) {
       const range = offsets(child);
-      if (!range) continue;
+      if (!range) {
+        continue;
+      }
       out += source.slice(cursor, range[0]) + emit(child);
       cursor = range[1];
     }
@@ -122,7 +134,9 @@ const sanitizePass = (source: string): string => {
         const safe =
           sanitizeParsedNavigationHref(node.url) ??
           sanitizeParsedAssetUrl(node.url);
-        if (safe === node.url) return undefined;
+        if (safe === node.url) {
+          return undefined;
+        }
         const title = node.title ? ` ${escapeTitle(node.title)}` : '';
         return `[${node.label ?? node.identifier}]: ${
           safe === null ? BLOCKED_HREF : escapeParsedDestination(safe)
@@ -144,8 +158,12 @@ const sanitizePass = (source: string): string => {
       }
       case 'image': {
         const safe = sanitizeParsedAssetUrl(node.url);
-        if (safe === null) return escapeLinkLabel(node.alt ?? '');
-        if (safe === node.url) return undefined;
+        if (safe === null) {
+          return escapeLinkLabel(node.alt ?? '');
+        }
+        if (safe === node.url) {
+          return undefined;
+        }
         const title = node.title ? ` ${escapeTitle(node.title)}` : '';
         return `![${escapeLinkLabel(node.alt ?? '')}](${escapeParsedDestination(
           safe
@@ -158,9 +176,15 @@ const sanitizePass = (source: string): string => {
           return safe === null ? raw.slice(1, -1) : undefined;
         }
         // A GFM literal (`www.x.com`) is http(s) or mailto by construction.
-        if (!raw.startsWith('[')) return undefined;
-        if (safe === null) return emitLabel(node);
-        if (safe === node.url) return undefined;
+        if (!raw.startsWith('[')) {
+          return undefined;
+        }
+        if (safe === null) {
+          return emitLabel(node);
+        }
+        if (safe === node.url) {
+          return undefined;
+        }
         const title = node.title ? ` ${escapeTitle(node.title)}` : '';
         return `[${emitLabel(node)}](${escapeParsedDestination(safe)}${title})`;
       }
@@ -171,9 +195,13 @@ const sanitizePass = (source: string): string => {
 
   const emit = (node: Nodes): string => {
     const replaced = rewrite(node);
-    if (replaced !== undefined) return replaced;
+    if (replaced !== undefined) {
+      return replaced;
+    }
     const range = offsets(node);
-    if (!range) return '';
+    if (!range) {
+      return '';
+    }
     return 'children' in node
       ? emitChildren(range[0], range[1], node.children)
       : source.slice(...range);
@@ -193,13 +221,17 @@ export const sanitizeAuthoredSource = (
   try {
     for (let pass = 0; pass < MAX_PASSES; pass++) {
       const next = sanitizePass(current);
-      if (next === current) return { markdown: current, inert: false };
+      if (next === current) {
+        return { markdown: current, inert: false };
+      }
       current = next;
     }
   } catch (error) {
     // The parser recurses per nesting level, so inline nesting deep enough
     // to exhaust the stack lands here.
-    if (!(error instanceof RangeError)) throw error;
+    if (!(error instanceof RangeError)) {
+      throw error;
+    }
   }
   return { markdown: inert(current), inert: true };
 };
@@ -222,13 +254,19 @@ const MAX_INLINE_DELIMITERS = 2048;
 const MAX_PARSE_LENGTH = 16_384;
 
 const exceedsParseBudget = (markdown: string): boolean => {
-  if (markdown.length > MAX_PARSE_LENGTH) return true;
+  if (markdown.length > MAX_PARSE_LENGTH) {
+    return true;
+  }
   for (const [prefix] of markdown.matchAll(LINE_PREFIX_RE)) {
-    if (prefix.length > MAX_LINE_PREFIX) return true;
+    if (prefix.length > MAX_LINE_PREFIX) {
+      return true;
+    }
   }
   let delimiters = 0;
   for (const _ of markdown.matchAll(INLINE_DELIMITER_RE)) {
-    if (++delimiters > MAX_INLINE_DELIMITERS) return true;
+    if (++delimiters > MAX_INLINE_DELIMITERS) {
+      return true;
+    }
   }
   return false;
 };
