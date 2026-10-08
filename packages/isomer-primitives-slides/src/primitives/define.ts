@@ -35,7 +35,12 @@ export type PrimitiveDefinition<
  * Leave `TNode` and `TSchema` inferred so the schema's field brands survive.
  * Pass `TNode` only for a `schemaFor` container whose node type is not `z.infer`.
  */
-export const definePrimitive: typeof defineSlidePrimitive = (definition) => {
+export const definePrimitive = <
+  TNode extends PrimitiveNode,
+  TSchema extends ZodObject = ZodObject,
+>(
+  definition: PrimitiveDefinition<TNode, TSchema>
+) => {
   const primitive = defineSlidePrimitive(definition);
   recordDefinition(primitive);
   return primitive;

@@ -7,12 +7,15 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
+import type { SlideGroup } from '../../groups';
+
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideTableNode}. */
 export const catalog = {
   type: 'slideTable',
   name: 'Table',
+  group: 'Data',
   description:
     'A grid of short cells. Give either rows or groups, not both; every row has exactly one cell per column; twelve rows at most across all groups.',
   purpose:
@@ -28,4 +31,4 @@ export const catalog = {
     'There are more than twelve rows; split them across two slides, each with its own slideTable.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry;
+} satisfies PrimitiveCatalogEntry<SlideGroup>;

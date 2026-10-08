@@ -12,6 +12,7 @@ import type {
   SurfaceMap,
 } from '@elastic/isomer-sdk';
 
+import type { SlideGroup } from '../groups';
 import type { SlideFrameTheme } from '../theme/palette';
 
 /** The box a container gives the nodes it renders, in pixels, after what it draws around them. */
@@ -32,6 +33,7 @@ export interface SlideRenderContext extends StyledRenderContext {
 export interface SlidePackTypes extends DefaultPackTypes {
   theme: SlideFrameTheme;
   context: SlideRenderContext;
+  groups: SlideGroup;
 }
 
 /** {@link RenderScope} bound to this pack's types. */

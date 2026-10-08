@@ -7,12 +7,15 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
+import type { SlideGroup } from '../../groups';
+
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideAgendaNode}. */
 export const catalog = {
   type: 'slideAgenda',
   name: 'Agenda',
+  group: 'Slide structure',
   description:
     'Two to eight sections of the talk, in order. At most one section is current.',
   purpose:
@@ -26,4 +29,4 @@ export const catalog = {
     'The rows are dated events or stages of work; use slideTimeline or slideRoadmap.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry;
+} satisfies PrimitiveCatalogEntry<SlideGroup>;

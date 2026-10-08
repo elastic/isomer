@@ -7,12 +7,15 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
+import type { SlideGroup } from '../../groups';
+
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideTranscriptNode}. */
 export const catalog = {
   type: 'slideTranscript',
   name: 'Transcript',
+  group: 'Code',
   purpose:
     'Let the reader follow a short exchange between a person, a model, and the program hosting it, turn by turn.',
   useWhen: [
@@ -25,4 +28,4 @@ export const catalog = {
     'The exchange needs more than four turns; split it across two slides, each with its own slideTranscript.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry;
+} satisfies PrimitiveCatalogEntry<SlideGroup>;

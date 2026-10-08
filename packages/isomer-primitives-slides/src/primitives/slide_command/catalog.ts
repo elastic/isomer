@@ -7,12 +7,15 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
+import type { SlideGroup } from '../../groups';
+
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideCommandNode}. */
 export const catalog = {
   type: 'slideCommand',
   name: 'Command',
+  group: 'Code',
   description:
     'One shell command on a single line, without the prompt. highlightPrefix, when given, starts command.',
   purpose:
@@ -26,4 +29,4 @@ export const catalog = {
     'You are showing what the terminal printed, not what to type; put the output in a slideWindow with terminal chrome.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry;
+} satisfies PrimitiveCatalogEntry<SlideGroup>;

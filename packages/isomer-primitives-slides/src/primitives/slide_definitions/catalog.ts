@@ -7,12 +7,15 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
+import type { SlideGroup } from '../../groups';
+
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideDefinitionsNode}. */
 export const catalog = {
   type: 'slideDefinitions',
   name: 'Definitions',
+  group: 'Text',
   purpose:
     'Teach the audience a few terms they need before the rest of the talk makes sense.',
   useWhen: [
@@ -27,4 +30,4 @@ export const catalog = {
     'The terms connect to each other and the links matter; use slideGraph.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry;
+} satisfies PrimitiveCatalogEntry<SlideGroup>;

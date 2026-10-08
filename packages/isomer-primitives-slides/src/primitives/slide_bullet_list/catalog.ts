@@ -7,12 +7,15 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
+import type { SlideGroup } from '../../groups';
+
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideBulletListNode}. */
 export const catalog = {
   type: 'slideBulletList',
   name: 'Bullet list',
+  group: 'Text',
   purpose:
     'Give the audience a few short, unordered points, marked as neutral, done, or left out.',
   useWhen: [
@@ -27,4 +30,4 @@ export const catalog = {
     'The points are source code or commands; use slideCode.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry;
+} satisfies PrimitiveCatalogEntry<SlideGroup>;
