@@ -70,13 +70,23 @@ An enhancement the host drives, rather than one that runs in the page, omits `sc
 
 ## `authoring`
 
-A pack's own contribution to the runtime's authoring JSON Schema: `describe` ($def id to description) and `omitProperties` ($defId.property paths to drop), scoped to this pack's own primitives:
+A pack's own contribution to the runtime's authoring JSON Schema. A primitive's `catalog.description` — or the root schema's `.describe()`, which `definePrimitive` copies onto the catalog when `description` is omitted — is the `$def` description. `describe` ($def id to description) still names shared defs such as `tone`, and overrides a catalog description on conflict. `omitProperties` lists `$defId.property` paths to drop, scoped to this pack's own primitives:
 
 ```ts
+definePrimitive({
+  type: 'kpi',
+  catalog: {
+    type: 'kpi',
+    description: 'A single measured value.',
+    // …
+  },
+  // …
+});
+
 definePrimitivePack({
   id: 'metrics',
   primitives: […],
-  authoring: { describe: { kpi: 'A single measured value.' } },
+  authoring: { describe: { tone: 'How strongly to read the value.' } },
 });
 ```
 

@@ -224,6 +224,75 @@ describe('buildAuthoringJsonSchema', () => {
     expect(metric.properties?.value).toBeDefined();
   });
 
+  it('copies a primitive description onto its def, including a schemaFor clone', () => {
+    const note = define({
+      type: 'note',
+      catalog: {
+        type: 'note',
+        description: 'A single measured value.',
+        purpose: '',
+        useWhen: [],
+        avoidWhen: [],
+        example: {},
+      },
+      examples: [],
+      schema: z.object({ type: z.literal('note') }),
+      renderers,
+    });
+    const holder = define({
+      type: 'holder',
+      catalog: {
+        type: 'holder',
+        description: 'Holds one child.',
+        purpose: '',
+        useWhen: [],
+        avoidWhen: [],
+        example: {},
+      },
+      examples: [],
+      schema: z.object({
+        type: z.literal('holder'),
+        child: unresolvedBodyNodeSchema,
+      }),
+      schemaFor: (bodyNodeSchema: ZodType<unknown>) =>
+        z.object({ type: z.literal('holder'), child: bodyNodeSchema }),
+      renderers,
+    });
+    const projected = buildAuthoringJsonSchema([note, holder, leaf('alpha')]);
+    const defs = collectDefs(projected);
+
+    expect((defs.note as { description?: string }).description).toBe(
+      'A single measured value.'
+    );
+    expect((defs.holder as { description?: string }).description).toBe(
+      'Holds one child.'
+    );
+  });
+
+  it('lets describe override a primitive description', () => {
+    const note = define({
+      type: 'note',
+      catalog: {
+        type: 'note',
+        description: 'From the catalog.',
+        purpose: '',
+        useWhen: [],
+        avoidWhen: [],
+        example: {},
+      },
+      examples: [],
+      schema: z.object({ type: z.literal('note') }),
+      renderers,
+    });
+    const projected = buildAuthoringJsonSchema([note], {
+      describe: { note: 'From the options.' },
+    });
+
+    expect(
+      (collectDefs(projected).note as { description?: string }).description
+    ).toBe('From the options.');
+  });
+
   it('describes named defs and omits listed properties', () => {
     const projected = buildAuthoringJsonSchema([metricPrimitive], {
       describe: { tone: 'must be one of the named tones' },
