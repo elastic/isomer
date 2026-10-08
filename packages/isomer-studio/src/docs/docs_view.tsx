@@ -8,7 +8,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   EuiButtonEmpty,
-  EuiCard,
   EuiFlexGrid,
   EuiFlexGroup,
   EuiFlexItem,
@@ -31,7 +30,6 @@ const SECTIONS = [
   { id: 'examples', title: 'Examples' },
   { id: 'guidance', title: 'Guidance' },
   { id: 'props', title: 'Props' },
-  { id: 'seen', title: 'Seen in' },
 ] as const;
 
 type SectionId = (typeof SECTIONS)[number]['id'];
@@ -197,7 +195,7 @@ export const DocsView = ({
 }: DocsViewProps) => {
   const { euiTheme } = useEuiTheme();
   const {
-    docs: { primitives, views },
+    docs: { primitives },
   } = useStudio();
   const [active, setActive] = useActiveSection(page);
   const doc = primitives.find(({ type }) => type === page);
@@ -268,34 +266,6 @@ export const DocsView = ({
 
         <Section id="props">
           <PropsTable {...{ props }} />
-        </Section>
-
-        <Section id="seen">
-          {views.length ? (
-            <EuiFlexGrid columns={3} gutterSize="m">
-              {views.map(({ id, title, description, answers }) => (
-                <EuiCard
-                  key={id}
-                  title={title}
-                  titleSize="xs"
-                  description={description}
-                  textAlign="left"
-                  paddingSize="m"
-                  footer={
-                    answers.length ? (
-                      <EuiText size="xs" color="subdued">
-                        Answers “{answers[0]}”
-                      </EuiText>
-                    ) : null
-                  }
-                />
-              ))}
-            </EuiFlexGrid>
-          ) : (
-            <EuiText size="s" color="subdued">
-              <p>This runtime registers no views.</p>
-            </EuiText>
-          )}
         </Section>
       </div>
 
