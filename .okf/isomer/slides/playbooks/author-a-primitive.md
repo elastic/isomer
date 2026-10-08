@@ -13,7 +13,7 @@ sources:
 
 # Steps
 
-1. Add the primitive under `src/primitives/<type>/` with its schema as the declaration. On the catalog, set `description` when a cross-field rule needs restating. Then register it in `src/registry.ts`, `src/body_node.ts`, `src/pack_authoring.ts`, `src/stylesheet.ts`, and `src/theme/theme.ts`. Brand child fields with `fromChildren` or `fromTextChildren`. Hand-write `types.ts` only for a `schemaFor` container.
+1. Add the primitive under `src/primitives/<type>/` with its schema as the declaration. On the catalog, set `group` to a `SlideGroup` (the headings in `src/groups.ts`, bound as `SlidePackTypes.groups`), and `description` when a cross-field rule needs restating. A heading outside that union fails to compile. Then register it in `src/registry.ts`, `src/body_node.ts`, `src/stylesheet.ts`, and `src/theme/theme.ts`. Brand child fields with `fromChildren` or `fromTextChildren`. Hand-write `types.ts` only for a `schemaFor` container.
 2. Put every drawn value in the theme first.
 3. Implement `react`, `text`, `markdown`, and `slack`. `markdown` returns `md` builder content, never a string. Build Slack `header`, `section`, field, and `context` blocks through `src/render/slack_text.ts`, which falls back to `rich_text` rather than clamp, split by `slackRichText` into elements within a section's limit, and pass it the authored text each `mrkdwn` string carries, so text Slack would format goes as literal rich text; send code through `slackCodePanel`. Reuse `react` for image layout, and spread `nodeAnchor` on its root.
 4. If you draw inside an inline `<svg>`, set literal `fill` / `stroke` alongside the class.

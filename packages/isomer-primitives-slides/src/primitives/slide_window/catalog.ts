@@ -7,12 +7,15 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
+import type { SlideGroup } from '../../groups';
+
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideWindowNode}. */
 export const catalog = {
   type: 'slideWindow',
   name: 'Window',
+  group: 'Layout',
   description:
     'One app window. Its body holds slide nodes, never a slideFrame or another slideWindow.',
   purpose:
@@ -28,4 +31,4 @@ export const catalog = {
     'A terminal would only hold one command for the audience to run, not its output; use slideCommand.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry;
+} satisfies PrimitiveCatalogEntry<SlideGroup>;

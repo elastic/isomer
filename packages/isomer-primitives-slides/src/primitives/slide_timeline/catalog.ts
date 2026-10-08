@@ -7,12 +7,15 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
+import type { SlideGroup } from '../../groups';
+
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideTimelineNode}. */
 export const catalog = {
   type: 'slideTimeline',
   name: 'Timeline',
+  group: 'Diagrams',
   description: 'Three to five dated points. At most one item is current.',
   purpose:
     'Show how a need or situation changed over dated points, leading up to the one that matters now.',
@@ -25,4 +28,4 @@ export const catalog = {
     'The items have no order and no dates; use slideBulletList.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry;
+} satisfies PrimitiveCatalogEntry<SlideGroup>;

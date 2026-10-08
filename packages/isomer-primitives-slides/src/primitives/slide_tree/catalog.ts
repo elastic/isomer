@@ -7,12 +7,15 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
+import type { SlideGroup } from '../../groups';
+
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideTreeNode}. */
 export const catalog = {
   type: 'slideTree',
   name: 'Tree',
+  group: 'Diagrams',
   purpose:
     'Show what is inside a folder and what each file is for, so the audience can find their way around it.',
   useWhen: [
@@ -25,4 +28,4 @@ export const catalog = {
     'The point is the code inside a file; use slideCode.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry;
+} satisfies PrimitiveCatalogEntry<SlideGroup>;

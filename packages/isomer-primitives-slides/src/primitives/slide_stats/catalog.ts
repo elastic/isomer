@@ -7,12 +7,15 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
+import type { SlideGroup } from '../../groups';
+
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideStatsNode}. */
 export const catalog = {
   type: 'slideStats',
   name: 'Stats',
+  group: 'Data',
   description:
     'Two to four comparable numbers. A unit needs a value; leave value out to show a placeholder.',
   purpose:
@@ -30,4 +33,4 @@ export const catalog = {
     'The columns are options described in words, not numbers; use slideColumns.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry;
+} satisfies PrimitiveCatalogEntry<SlideGroup>;

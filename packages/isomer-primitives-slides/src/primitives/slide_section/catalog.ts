@@ -7,12 +7,15 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
+import type { SlideGroup } from '../../groups';
+
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideSectionNode}. */
 export const catalog = {
   type: 'slideSection',
   name: 'Section',
+  group: 'Slide structure',
   description:
     'A section divider. When hrefs is given it has one entry per contents entry.',
   purpose:
@@ -28,4 +31,4 @@ export const catalog = {
     'The audience should see where this part sits among every section of the talk; use slideAgenda.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry;
+} satisfies PrimitiveCatalogEntry<SlideGroup>;

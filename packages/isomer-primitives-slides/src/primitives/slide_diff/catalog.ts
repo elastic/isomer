@@ -7,12 +7,15 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
+import type { SlideGroup } from '../../groups';
+
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideDiffNode}. */
 export const catalog = {
   type: 'slideDiff',
   name: 'Diff',
+  group: 'Code',
   description:
     'One snippet with changed lines marked. Each entry in lines is one line of source, with no newline.',
   purpose:
@@ -26,4 +29,4 @@ export const catalog = {
     'You are comparing two ideas or approaches rather than two versions of one file; use slideSplit.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry;
+} satisfies PrimitiveCatalogEntry<SlideGroup>;

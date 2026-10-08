@@ -25,7 +25,7 @@ This page is the pack **contract**. Composing packs into a runtime is the [runti
 | `slackAssetTypes` | Which of the pack's node types are pictures rather than text.                  |
 | `styleAdapter`    | Optional. This pack's HTML CSS, combined with the other packs'.                |
 | `styleCollector`  | Optional. Derived from `styleAdapter.styleCollector` unless overridden.        |
-| `authoring`       | Optional. `describe`, `omitProperties`, and index `groups` for agents.         |
+| `authoring`       | Optional. `describe`, `omitProperties`, and index `groups` or `groupOrder`.    |
 
 `surfaces` is advisory: dispatch and `describeCapabilities` follow each primitive's own `renderers.slack`, so a primitive without one renders, and reports, Slack as a markdown fallback.
 
@@ -78,6 +78,7 @@ definePrimitive({
   catalog: {
     type: 'kpi',
     description: 'A single measured value.',
+    group: 'Metrics',
     // …
   },
   // …
@@ -86,13 +87,17 @@ definePrimitive({
 definePrimitivePack({
   id: 'metrics',
   primitives: […],
-  authoring: { describe: { tone: 'How strongly to read the value.' } },
+  authoring: { groupOrder: ['Metrics'] },
 });
 ```
 
 A runtime composing several packs merges every pack's `authoring` into one options object before building the schema, so no host hand-merges each pack's `describe`/`omitProperties` itself. The runtime's own `authoring` option is applied last and wins on conflict.
 
-`groups` titles sets of this pack's primitive types for an [index catalog](authoring.md#an-index-then-lookups), in the order they are listed. A group naming a type the pack does not register, or a type in two groups, throws at `definePrimitivePack`; a type in no group is listed under "Other".
+An [index catalog](authoring.md#an-index-then-lookups) lists a pack's primitives under headings. Each primitive names its heading as `catalog.group`, and `definePrimitivePack` collects them into `authoring.groups`, headings in the order they first appear. `groupOrder` sets that order instead: it lists every heading exactly once and is not stored on the pack. A type with no `group` is listed under "Other".
+
+A pack can pass `groups` itself instead, a list of `{ title, types }`. It cannot also pass `groupOrder` or have primitives that declare `catalog.group`. A group naming a type the pack does not register, or a type in two groups, throws at `definePrimitivePack`. `INVALID_PACK_GROUPS` covers the rest: `groups` beside `catalog.group` or `groupOrder`, and a `groupOrder` that omits, repeats, or invents a heading.
+
+The headings a primitive may name are the pack's `PackTypes.groups`. A literal union makes `catalog.group` required and a member of that union, so a primitive cannot pick a heading the pack did not declare. `string`, the default, leaves the field optional, as does a bag that omits `groups`. Derive the union from the `groupOrder` array, `(typeof ORDER)[number]` for an `as const` list, so the two stay one list.
 
 ## The theme a pack requires
 

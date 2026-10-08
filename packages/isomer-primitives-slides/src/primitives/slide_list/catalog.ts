@@ -7,12 +7,15 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
+import type { SlideGroup } from '../../groups';
+
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideListNode}. */
 export const catalog = {
   type: 'slideList',
   name: 'List',
+  group: 'Text',
   purpose:
     'Give the audience a handful of short facts to scan, each optionally keyed by a short term.',
   useWhen: [
@@ -28,4 +31,4 @@ export const catalog = {
     'The items are parallel options to weigh; use slideColumns.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry;
+} satisfies PrimitiveCatalogEntry<SlideGroup>;

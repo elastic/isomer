@@ -7,12 +7,15 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
+import type { SlideGroup } from '../../groups';
+
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideClosingNode}. */
 export const catalog = {
   type: 'slideClosing',
   name: 'Closing',
+  group: 'Slide structure',
   purpose:
     'Send the audience away knowing where to go next: a few addresses, and what to read first for each goal.',
   useWhen: [
@@ -25,4 +28,4 @@ export const catalog = {
     'The slide makes a claim mid-deck; use slideHeading in a page frame.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry;
+} satisfies PrimitiveCatalogEntry<SlideGroup>;

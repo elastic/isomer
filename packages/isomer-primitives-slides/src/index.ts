@@ -27,10 +27,10 @@ export {
   SLIDE_HEIGHT,
   SLIDE_WIDTH,
   slideDeckFrame,
+  slidePrimitiveGroups,
   slidesPack,
   slideThemes,
 } from './pack';
-export { slidePrimitiveGroups } from './pack_authoring';
 
 export type {
   SlideAgendaNode,

@@ -7,12 +7,15 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
+import type { SlideGroup } from '../../groups';
+
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideCodeNode}. */
 export const catalog = {
   type: 'slideCode',
   name: 'Code',
+  group: 'Code',
   description:
     'One or two code panels. Every highlighted line number exists in its panel.',
   purpose:
@@ -29,4 +32,4 @@ export const catalog = {
     'The snippet is one shell command for the audience to run; use slideCommand.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry;
+} satisfies PrimitiveCatalogEntry<SlideGroup>;

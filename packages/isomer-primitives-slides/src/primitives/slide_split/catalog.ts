@@ -7,12 +7,15 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
+import type { SlideGroup } from '../../groups';
+
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideSplitNode}. */
 export const catalog = {
   type: 'slideSplit',
   name: 'Split',
+  group: 'Layout',
   description:
     'Two columns. Each pane holds one to six slide nodes, never a slideFrame. A pane tone needs a pane label.',
   purpose:
@@ -28,4 +31,4 @@ export const catalog = {
     'There are three or more parallel items; use slideColumns.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry;
+} satisfies PrimitiveCatalogEntry<SlideGroup>;

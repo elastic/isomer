@@ -7,12 +7,15 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
+import type { SlideGroup } from '../../groups';
+
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideStatementNode}. */
 export const catalog = {
   type: 'slideStatement',
   name: 'Statement',
+  group: 'Slide structure',
   purpose:
     'Land one claim the audience should remember, set large on a slide of its own.',
   useWhen: [
@@ -24,4 +27,4 @@ export const catalog = {
     'The sentence is someone else’s words; use slideQuote.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry;
+} satisfies PrimitiveCatalogEntry<SlideGroup>;

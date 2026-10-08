@@ -32,8 +32,14 @@ export interface PackAuthoringOptions {
   describe?: Readonly<Record<string, string>>;
   /** `$defId.property` paths to drop, from this pack's own primitives. */
   omitProperties?: readonly string[];
-  /** Headings an index catalog sorts this pack's primitives under, in order. */
+  /**
+   * Headings an index catalog sorts this pack's primitives under, in order.
+   *
+   * Omit to derive them from each {@link AnyPrimitiveDefinition.catalog}'s `group`.
+   */
   groups?: readonly PrimitiveGroup[];
+  /** Every heading a `catalog.group` names, each once, in index order. Not stored on the pack. */
+  groupOrder?: readonly string[];
 }
 
 /** A titled set of primitive types, listed together in an index catalog. */
@@ -194,7 +200,12 @@ export const definePrimitivePack = <TTheme = unknown>(
   assertUniquePrimitiveTypes(input.id, input.primitives);
   assertUniqueEnhancementIds(input.id, input.enhancements ?? []);
   const types = new Set(input.primitives.map((definition) => definition.type));
-  assertGroupedOnce(input.id, input.authoring?.groups ?? [], types);
+  const authoring = resolveAuthoring(
+    input.id,
+    input.primitives,
+    input.authoring
+  );
+  assertGroupedOnce(input.id, authoring?.groups ?? [], types);
   for (const type of input.slackAssetTypes ?? []) {
     if (!types.has(type)) {
       throw new IsomerError(
@@ -218,8 +229,67 @@ export const definePrimitivePack = <TTheme = unknown>(
       ? { styleAdapter: input.styleAdapter }
       : {}),
     ...(styleCollector !== undefined ? { styleCollector } : {}),
-    ...(input.authoring !== undefined ? { authoring: input.authoring } : {}),
+    ...(authoring !== undefined ? { authoring } : {}),
   };
+};
+
+/** `groups` as passed, or derived from each primitive's `catalog.group`. */
+const resolveAuthoring = (
+  id: string,
+  primitives: readonly AnyPrimitiveDefinition[],
+  authoring: PackAuthoringOptions = {}
+): PackAuthoringOptions | undefined => {
+  const { groupOrder, ...rest } = authoring;
+  const declared = declaredGroups(primitives);
+  if (
+    rest.groups !== undefined &&
+    (groupOrder !== undefined || declared.size > 0)
+  ) {
+    throw new IsomerError(
+      'INVALID_PACK_GROUPS',
+      `primitive pack "${id}": pass groups, or catalog.group with an optional groupOrder, not both`
+    );
+  }
+  const groups = rest.groups ?? orderGroups(id, declared, groupOrder);
+  const next = { ...rest, ...(groups.length > 0 ? { groups } : {}) };
+  return Object.keys(next).length > 0 ? next : undefined;
+};
+
+/** Each `catalog.group` to its types, both in definition order. */
+const declaredGroups = (
+  primitives: readonly AnyPrimitiveDefinition[]
+): Map<string, string[]> => {
+  const members = new Map<string, string[]>();
+  for (const {
+    type,
+    catalog: { group },
+  } of primitives) {
+    if (group !== undefined) {
+      members.set(group, [...(members.get(group) ?? []), type]);
+    }
+  }
+  return members;
+};
+
+/** `declared` in `groupOrder`, which must list each heading exactly once, or in definition order. */
+const orderGroups = (
+  id: string,
+  declared: ReadonlyMap<string, readonly string[]>,
+  groupOrder: readonly string[] = [...declared.keys()]
+): PrimitiveGroup[] => {
+  const listed = new Set(groupOrder);
+  const unlisted = [...declared.keys()].filter((title) => !listed.has(title));
+  const empty = groupOrder.filter((title) => !declared.has(title));
+  if (listed.size !== groupOrder.length || unlisted.length + empty.length > 0) {
+    throw new IsomerError(
+      'INVALID_PACK_GROUPS',
+      `primitive pack "${id}": groupOrder must list each catalog.group once (unlisted: ${unlisted.join(', ') || 'none'}; without a primitive: ${empty.join(', ') || 'none'})`
+    );
+  }
+  return groupOrder.map((title) => ({
+    title,
+    types: declared.get(title) ?? [],
+  }));
 };
 
 /** Each definition's `icon` by type, null-prototype so a type such as `__proto__` is an ordinary key. */

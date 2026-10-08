@@ -7,12 +7,15 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
+import type { SlideGroup } from '../../groups';
+
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideStackNode}. */
 export const catalog = {
   type: 'slideStack',
   name: 'Stack',
+  group: 'Layout',
   description:
     'Nodes stacked vertically in a one-node slot, never a slideFrame.',
   purpose:
@@ -26,4 +29,4 @@ export const catalog = {
     'The two blocks belong side by side; use slideSplit.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry;
+} satisfies PrimitiveCatalogEntry<SlideGroup>;

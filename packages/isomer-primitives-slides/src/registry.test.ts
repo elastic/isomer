@@ -14,7 +14,8 @@ import { assertPackRegistrationComplete } from '@elastic/isomer-sdk/testing';
 import { describe, expect, it } from 'vitest';
 
 import type { BodyNode } from './body_node';
-import { slidePrimitiveGroups } from './pack_authoring';
+import { SLIDE_GROUP_ORDER } from './groups';
+import { slidePrimitiveGroups } from './pack';
 import { slideDeckPrimitives, slidePrimitiveTypes } from './registry';
 
 /** Every node type reachable from the registry, via each definition's `examples`. */
@@ -44,6 +45,9 @@ describe('registry', () => {
   it('indexes every registered type in exactly one group', () => {
     const grouped = slidePrimitiveGroups.flatMap(({ types }) => types);
     expect([...grouped].sort()).toEqual([...slidePrimitiveTypes].sort());
+    expect(slidePrimitiveGroups.map(({ title }) => title)).toEqual([
+      ...SLIDE_GROUP_ORDER,
+    ]);
   });
 
   it('gives every primitive a slack renderer', () => {

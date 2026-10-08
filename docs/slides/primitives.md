@@ -209,14 +209,13 @@ The tests that rasterize need `@elastic/isomer-image-takumi` and `@fontsource/*`
 
 ## Registering the primitive
 
-A new primitive has six stops, all hand-maintained:
+A new primitive has five stops, all hand-maintained:
 
-1. Its folder, `src/primitives/<type>/`. On the catalog, set `description` when a cross-field rule needs restating; it is the authoring `$def` description.
+1. Its folder, `src/primitives/<type>/`. On the catalog, set `group` to a `SlideGroup` (`SlidePackTypes.groups`, the headings in `src/groups.ts`), and `description` when a cross-field rule needs restating. A heading outside that union fails to compile. `slidePrimitiveGroups` and the authoring `$def` description are derived from those.
 2. `src/registry.ts`: the import and its place in `slideDeckPrimitives`, alphabetically.
 3. `src/body_node.ts`: its node type in the `BodyNode` union, in the same order.
-4. `src/pack_authoring.ts`: its group in `slidePrimitiveGroups`.
-5. `src/stylesheet.ts`: its Distillate module in `slideModules`.
-6. `src/theme/theme.ts`: its theme group from `src/theme/components/<group>.ts` in `SLIDE_THEME`.
+4. `src/stylesheet.ts`: its Distillate module in `slideModules`.
+5. `src/theme/theme.ts`: its theme group from `src/theme/components/<group>.ts` in `SLIDE_THEME`.
 
 ```ts
 import { myNewPrimitive } from './primitives/my_new_type';
@@ -227,7 +226,7 @@ export const slideDeckPrimitives = [
 ] as const;
 ```
 
-The registry and the union cannot be collapsed into one — the container `types.ts` files import `SlideContentNode`, so deriving the union from the registry closes that cycle at the value level (`TS7022`). `src/registry.test.ts` guards the first four stops: a type-level assertion that the two lists agree in both directions, `assertPackRegistrationComplete`, which reads `src/primitives/` and fails when a directory is in neither list, a check that every registered type is in exactly one group, and a check that every primitive has a `slack` renderer. Forgetting one fails the build with the lines to add.
+The registry and the union cannot be collapsed into one — the container `types.ts` files import `SlideContentNode`, so deriving the union from the registry closes that cycle at the value level (`TS7022`). `src/registry.test.ts` guards the registry, the union, and the directory: a type-level assertion that the two lists agree in both directions, `assertPackRegistrationComplete`, which reads `src/primitives/` and fails when a directory is in neither list, a check that every registered type is in exactly one derived group under `src/groups.ts`, and a check that every primitive has a `slack` renderer. Forgetting one fails the build with the lines to add.
 
 ## Authoring with JSX
 

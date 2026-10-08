@@ -32,10 +32,16 @@ export type { PrimitiveNode };
  * A primitive's entry in the catalog the authoring prompt is built from.
  *
  * Written for the model rather than for a developer: `useWhen` and `avoidWhen`
- * are what steer it away from reaching for the wrong primitive. `name` is the
- * one host-facing field, and the prompt never prints it.
+ * are what steer it away from reaching for the wrong primitive. `name` is
+ * host-facing and the prompt never prints it.
+ *
+ * `TGroup` is the pack's {@link PackTypes.groups}. `string` leaves `group`
+ * optional; a literal union makes it required and a member of that union.
  */
-export interface PrimitiveCatalogEntry {
+export type PrimitiveCatalogEntry<TGroup extends string = string> =
+  PrimitiveCatalogFields & CatalogGroup<TGroup>;
+
+interface PrimitiveCatalogFields {
   type: string;
   /** Short name a host shows for the primitive, e.g. `Stat group`. Absent means the host derives one from `type`. */
   name?: string;
@@ -55,6 +61,16 @@ export interface PrimitiveCatalogEntry {
   /** A node literal the authoring prompt inlines under this primitive. */
   example: unknown;
 }
+
+type CatalogGroup<TGroup extends string> = string extends TGroup
+  ? {
+      /** Index-catalog heading. Shared headings form one group. */
+      group?: string;
+    }
+  : {
+      /** Index-catalog heading. One of the pack's {@link PackTypes.groups}. */
+      group: TGroup;
+    };
 
 /** A style a renderer asks for by name, resolved to a class by the host's adapter. */
 export interface StyleHandle {
@@ -127,7 +143,8 @@ export type PrimitiveStyleCollector = object;
 /**
  * The types a pack binds once and writes every primitive against: the palette
  * its frames supply, the context its `react` renderers receive, the collector
- * its `collectStyles` hooks mutate, and the Slack payload and collector types.
+ * its `collectStyles` hooks mutate, the Slack payload and collector types, and
+ * the index headings `catalog.group` may name.
  *
  * Extend {@link DefaultPackTypes} and narrow only what the pack needs:
  *
@@ -135,6 +152,7 @@ export type PrimitiveStyleCollector = object;
  * interface SlidesPackTypes extends DefaultPackTypes {
  *   theme: SlideTheme;
  *   context: SlideRenderContext;
+ *   groups: 'Text' | 'Data';
  * }
  * ```
  */
@@ -144,7 +162,20 @@ export interface PackTypes {
   collector: PrimitiveStyleCollector;
   slackBlock: unknown;
   slackCollector: unknown;
+  /**
+   * Index headings `catalog.group` may name.
+   *
+   * `string` or absent leaves the field optional. A literal union makes it required.
+   */
+  groups?: string;
 }
+
+/** {@link PackTypes.groups}, or `string` for a bag that does not declare it. */
+type PackGroups<T extends PackTypes> = T extends {
+  groups: infer TGroup extends string;
+}
+  ? TGroup
+  : string;
 
 /** {@link PackTypes} as the sdk itself binds them, and the default everywhere. */
 export interface DefaultPackTypes extends PackTypes {
@@ -153,6 +184,7 @@ export interface DefaultPackTypes extends PackTypes {
   collector: PrimitiveStyleCollector;
   slackBlock: SlackBlock;
   slackCollector: SlackAssetCollector;
+  groups: string;
 }
 
 /**
@@ -381,7 +413,7 @@ export interface PrimitiveDefinition<
   /** The node's discriminant, and the key this primitive occupies in an inventory. */
   type: TNode['type'];
   /** How the authoring prompt describes this primitive to the model. */
-  catalog: PrimitiveCatalogEntry;
+  catalog: PrimitiveCatalogEntry<PackGroups<T>>;
   /** Host-facing glyph, never shown to the model. Absent means the host supplies its own. */
   icon?: PrimitiveIcon;
   /**

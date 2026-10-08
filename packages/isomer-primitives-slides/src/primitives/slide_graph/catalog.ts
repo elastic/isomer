@@ -7,6 +7,8 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
+import type { SlideGroup } from '../../groups';
+
 import { example } from './examples';
 import { slideGraphShape } from './schema';
 
@@ -14,6 +16,7 @@ import { slideGraphShape } from './schema';
 export const catalog = {
   type: 'slideGraph',
   name: 'Graph',
+  group: 'Diagrams',
   description: `Terms joined by arrows. ${slideGraphShape}. Node ids are unique. Every edge names a node id. No edge repeats. At most one node is emphasized.`,
   purpose:
     'Define a small vocabulary and show how its terms relate, so the audience can hold the whole model at once.',
@@ -27,4 +30,4 @@ export const catalog = {
     'The points are dated events in order; use slideTimeline.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry;
+} satisfies PrimitiveCatalogEntry<SlideGroup>;

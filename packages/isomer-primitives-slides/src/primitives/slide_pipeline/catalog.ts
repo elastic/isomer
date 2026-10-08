@@ -7,12 +7,15 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
+import type { SlideGroup } from '../../groups';
+
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlidePipelineNode}. */
 export const catalog = {
   type: 'slidePipeline',
   name: 'Pipeline',
+  group: 'Diagrams',
   description:
     'Steps on one rail. Without spans: numbered steps with bodies, optional start and end chips. With spans: steps are chips with no body, no start or end, and no size, and each span brackets steps from..to by index (from ≤ to < steps.length); spans do not overlap.',
   purpose:
@@ -28,4 +31,4 @@ export const catalog = {
     'The items have no order; use slideBulletList.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry;
+} satisfies PrimitiveCatalogEntry<SlideGroup>;

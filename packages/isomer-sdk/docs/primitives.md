@@ -58,7 +58,7 @@ The schema is the declaration: the node type is `z.infer` of it, the typed `exam
 | --------------- | --------- | ---------------------------------------------------------------------------------------------------- |
 | `type`          | yes       | The discriminator. Unique across every pack in a runtime.                                            |
 | `schema`        | yes       | A Zod **object** schema for this node on its own.                                                    |
-| `catalog`       | yes       | `purpose`, `useWhen`, `avoidWhen`, `example`; optional `name`, `description`.                        |
+| `catalog`       | yes       | `purpose`, `useWhen`, `avoidWhen`, `example`; optional `name`, `group`, `description`.               |
 | `icon`          | no        | A host-facing 16×16 SVG glyph; see [Names and icons](#names-and-icons).                              |
 | `examples`      | yes       | Conformance nodes, bare or named; prompt shows `catalog.example`.                                    |
 | `renderers`     | yes       | `react`, `text`, `markdown` always; `slack` optionally.                                              |
@@ -150,7 +150,7 @@ Optional. The height estimate is `0` when it is missing, so a frame that sums no
 
 A host listing primitives, in a nav, a docs gallery, or an example picker, shows a name and a glyph beside each one. Neither reaches the model.
 
-`catalog.name` is the name, such as `Stat group`. It is the one host-facing field in `catalog`: the authoring prompt never prints it, so a model is not invited to write it as a `type`. Absent, the host derives a name from `type`. Inventory conformance rejects a blank one. `catalog.description` is the `$def` description in the authoring JSON Schema.
+`catalog.name` is the name, such as `Stat group`. The authoring prompt never prints it, so a model is not invited to write it as a `type`. Absent, the host derives a name from `type`. Inventory conformance rejects a blank one. `catalog.group` is the index heading. When the pack's `PackTypes.groups` is a literal union, the field is required and has to be one of those headings; `string`, the default, leaves it optional, as does a bag that omits `groups`. `catalog.description` is the `$def` description in the authoring JSON Schema.
 
 `icon` is `{ svg }`, a static string a host inlines as markup without a renderer, and `pack.icons` maps each type to it. Absent, the host supplies its own glyph, such as a monogram. Because a host inserts the string as markup, its rules are an allowlist, which `assertPackIconsValid` from `./testing` enforces:
 
@@ -169,13 +169,14 @@ An icon is exempt from the rule that a pack holds no rendered value of its own: 
 
 ## Pack types
 
-Every contract here is generic in one bag, `PackTypes`: the palette a frame supplies (`theme`), the context `react` renderers receive (`context`), the collector `collectStyles` mutates (`collector`), and the Slack payload and collector types. `DefaultPackTypes` is the sdk's own binding, `PrimitiveRenderContext` and everything else `unknown`, and the default everywhere. A pack narrows what it needs once and binds `definePrimitive` to it:
+Every contract here is generic in one bag, `PackTypes`: the palette a frame supplies (`theme`), the context `react` renderers receive (`context`), the collector `collectStyles` mutates (`collector`), the Slack payload and collector types, and `groups`, the index headings `catalog.group` may name. `DefaultPackTypes` is the sdk's own binding: `groups` is `string`, so the field stays optional, `context` is `PrimitiveRenderContext`, and everything else is `unknown`. A pack narrows what it needs once and binds `definePrimitive` to it:
 
 ```ts
 interface SlidesPackTypes extends DefaultPackTypes {
   theme: SlideTheme;
   context: SlideRenderContext;
   slackBlock: SlackBlock;
+  groups: 'Text' | 'Data';
 }
 
 export const definePrimitive = definePrimitiveFor<SlidesPackTypes>();
