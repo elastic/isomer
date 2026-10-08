@@ -8,6 +8,7 @@
     "tsBuildInfoFile": "tsconfig.build.tsbuildinfo",
     "inlineSources": true
   },
+  "include": ["src"],
   "exclude": ["**/*.test.ts", "**/*.fixtures.ts", "src/examples/**"],
   "references": [{ "path": "../isomer-sdk/tsconfig.build.json" }],
   "tsc-alias": {

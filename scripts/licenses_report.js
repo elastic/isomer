@@ -28,6 +28,8 @@ const LICENSE_BASENAMES = [
   'LICENSE',
   'LICENSE.md',
   'LICENSE.txt',
+  'LICENSE-MIT',
+  'LICENSE-MIT.txt',
   'LICENCE',
   'LICENCE.md',
   'COPYING',
@@ -48,6 +50,34 @@ const TAKUMI_PACKAGE_NAMES = [
   '@takumi-rs/core-win32-arm64-msvc',
   '@takumi-rs/core-win32-x64-msvc',
 ];
+const ESBUILD_PLATFORM_PACKAGE_NAMES = [
+  'aix-ppc64',
+  'android-arm',
+  'android-arm64',
+  'android-x64',
+  'darwin-arm64',
+  'darwin-x64',
+  'freebsd-arm64',
+  'freebsd-x64',
+  'linux-arm',
+  'linux-arm64',
+  'linux-ia32',
+  'linux-loong64',
+  'linux-mips64el',
+  'linux-ppc64',
+  'linux-riscv64',
+  'linux-s390x',
+  'linux-x64',
+  'netbsd-arm64',
+  'netbsd-x64',
+  'openbsd-arm64',
+  'openbsd-x64',
+  'openharmony-arm64',
+  'sunos-x64',
+  'win32-arm64',
+  'win32-ia32',
+  'win32-x64',
+].map((platform) => `@esbuild/${platform}`);
 /** Packages whose tarballs ship no license file, with the text their pinned version publishes. */
 const CURATED_LICENSES = [
   {
@@ -59,6 +89,31 @@ const CURATED_LICENSES = [
     names: ['takumi-pdf'],
     version: '0.15.0',
     text: curatedLicense('takumi-pdf-0.15.0-MIT.txt'),
+  },
+  {
+    names: ESBUILD_PLATFORM_PACKAGE_NAMES,
+    version: '0.28.2',
+    text: curatedLicense('esbuild-0.28.2-MIT.txt'),
+  },
+  {
+    names: ['inline-style-parser'],
+    version: '0.1.1',
+    text: curatedLicense('inline-style-parser-0.1.1-MIT.txt'),
+  },
+  {
+    names: ['react-remove-scroll-bar'],
+    version: '2.3.8',
+    text: curatedLicense('react-remove-scroll-bar-2.3.8-MIT.txt'),
+  },
+  {
+    names: ['rehype-stringify'],
+    version: '8.0.0',
+    text: curatedLicense('rehype-stringify-8.0.0-MIT.txt'),
+  },
+  {
+    names: ['@elastic/datemath'],
+    version: '5.0.3',
+    text: curatedLicense('elastic-datemath-5.0.3-Apache-2.0.txt'),
   },
 ];
 

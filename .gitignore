@@ -11,6 +11,8 @@ coverage/
 .pnpm-store
 .artifacts
 *.tsbuildinfo
+test-results/
+playwright-report/
 
 # IDE
 .idea

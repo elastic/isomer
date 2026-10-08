@@ -19,12 +19,13 @@
   },
   "scripts": {
     "preinstall": "npx only-allow pnpm",
-    "build": "pnpm build:clean && pnpm build:esm && pnpm build:specifiers && pnpm build:cjs && pnpm build:cjs-manifest",
+    "build": "pnpm build:clean && pnpm build:esm && pnpm build:specifiers && pnpm build:cjs && pnpm build:cjs-manifest && pnpm build:assets",
     "build:clean": "rm -rf packages/*/dist packages/*/tsconfig.build.tsbuildinfo",
     "build:esm": "tsc --build tsconfig.workspace.json",
     "build:specifiers": "node scripts/rewrite_specifiers.js",
     "build:cjs": "node scripts/build_cjs.js",
     "build:cjs-manifest": "node scripts/write_cjs_manifest.js",
+    "build:assets": "pnpm -r --if-present run build:assets",
     "typecheck": "tsc --build tsconfig.workspace.json --pretty && pnpm -r typecheck && tsc -p tsconfig.json --noEmit",
     "lint": "pnpm lint:es && pnpm lint:md",
     "lint:es": "eslint .",
@@ -32,10 +33,12 @@
     "lint:md": "markdownlint-cli2",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:browser": "node scripts/test_browser.js",
     "check:exports": "node scripts/check_exports.js",
     "check:declarations": "node scripts/check_declarations.js",
     "check:export-parity": "node scripts/check_export_parity.js",
     "check:pack-consumer": "node scripts/check_pack_consumer.js",
+    "check:studio-consumer": "node scripts/check_studio_consumer.js",
     "check:module-graph": "node scripts/check_module_graph.js",
     "check:pack-contents": "node scripts/check_pack_contents.js",
     "licenses:report": "node scripts/licenses_report.js",
@@ -46,7 +49,7 @@
     "okf:check": "okf validate .okf/isomer && node scripts/check_okf_anchors.js && node scripts/write_okf_map.js --check",
     "okf:index": "okf index .okf/isomer && pnpm okf:map",
     "okf:map": "node scripts/write_okf_map.js",
-    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm check:export-parity && pnpm check:exports && pnpm check:declarations && pnpm check:pack-contents && pnpm check:module-graph && pnpm check:pack-consumer && pnpm licenses:report --check",
+    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm check:export-parity && pnpm check:exports && pnpm check:declarations && pnpm check:pack-contents && pnpm check:module-graph && pnpm check:pack-consumer && pnpm test:browser && pnpm check:studio-consumer && pnpm licenses:report --check",
     "semantic-release": "node scripts/run_semantic_release.js",
     "prepare": "husky"
   },
@@ -59,7 +62,9 @@
     "@elastic/isomer-primitives-slides": "workspace:*",
     "@elastic/isomer-runtime": "workspace:*",
     "@elastic/isomer-sdk": "workspace:*",
+    "@elastic/isomer-studio": "workspace:*",
     "@eslint/js": "^9.25.1",
+    "@playwright/test": "1.64.0",
     "@semantic-release/commit-analyzer": "^13.0.1",
     "@semantic-release/release-notes-generator": "^14.1.1",
     "@types/node": "^22.15.3",
@@ -89,6 +94,7 @@
   },
   "pnpm": {
     "overrides": {
+      "nwsapi": "2.2.2",
       "smol-toml": "1.7.1"
     },
     "onlyBuiltDependencies": [
