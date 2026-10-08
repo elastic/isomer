@@ -7,8 +7,8 @@ description: Generated map of the Isomer OKF concept graph.
 
 Generated from `.okf/isomer` by `pnpm okf:map`. Do not edit by hand.
 
-- Concepts: 58
-- Links: 145
+- Concepts: 63
+- Links: 152
 - Isolated concepts: 0
 
 ## Graph
@@ -67,6 +67,11 @@ flowchart LR
     slides_entry_points_root["Root"]:::entrypoint
     slides_playbooks_author_a_primitive["Author a primitive"]:::playbook
     slides_reference_public_contract["Public contract"]:::reference
+    studio_concepts_config_contract["Config contract"]:::concept
+    studio_concepts_static_png["Static PNGs"]:::concept
+    studio_entry_points_root["Root and CLI"]:::entrypoint
+    studio_playbooks_run_in_ci["Run the Studio in CI"]:::playbook
+    studio_reference_public_contract["Public contract"]:::reference
     workspace_concepts_workspace["Workspace"]:::concept
     workspace_playbooks_docs_builder["Docs-builder"]:::playbook
     workspace_playbooks_maintain_okf["Maintain OKF"]:::playbook
@@ -202,6 +207,13 @@ flowchart LR
     slides_playbooks_author_a_primitive --> slides_concepts_one_source
     slides_reference_public_contract --> slides_concepts_distillate
     slides_reference_public_contract --> slides_concepts_pack
+    studio_concepts_config_contract --> studio_concepts_static_png
+    studio_concepts_config_contract --> studio_entry_points_root
+    studio_concepts_static_png --> studio_concepts_config_contract
+    studio_entry_points_root --> studio_concepts_config_contract
+    studio_entry_points_root --> studio_reference_public_contract
+    studio_playbooks_run_in_ci --> studio_entry_points_root
+    studio_reference_public_contract --> studio_entry_points_root
     workspace_concepts_workspace --> agent_tools_concepts_agent_tools
     workspace_concepts_workspace --> evals_concepts_scoring
     workspace_concepts_workspace --> workspace_playbooks_docs_builder
@@ -278,6 +290,11 @@ flowchart LR
 - Root (Entry Point): `slides/entry-points/root`
 - Author a primitive (Playbook): `slides/playbooks/author-a-primitive`
 - Public contract (Reference): `slides/reference/public-contract`
+- Config contract (Concept): `studio/concepts/config-contract`
+- Static PNGs (Concept): `studio/concepts/static-png`
+- Root and CLI (Entry Point): `studio/entry-points/root`
+- Run the Studio in CI (Playbook): `studio/playbooks/run-in-ci`
+- Public contract (Reference): `studio/reference/public-contract`
 - Workspace (Concept): `workspace/concepts/workspace`
 - Docs-builder (Playbook): `workspace/playbooks/docs-builder`
 - Maintain OKF (Playbook): `workspace/playbooks/maintain-okf`
