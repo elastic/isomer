@@ -37,11 +37,15 @@ const OPENERS: Readonly<Partial<Record<NodeJS.Platform, string>>> = {
   win32: 'explorer',
 };
 
-const openBrowser = (url: string) => {
-  spawn(OPENERS[process.platform] ?? 'xdg-open', [url], {
-    detached: true,
-    stdio: 'ignore',
-  }).unref();
+/** Opens `url` in the default browser, reporting a missing or failing opener to `onError`. */
+export const openBrowser = (
+  url: string,
+  onError: (error: Error) => void,
+  command = OPENERS[process.platform] ?? 'xdg-open'
+): void => {
+  const opener = spawn(command, [url], { detached: true, stdio: 'ignore' });
+  opener.on('error', onError);
+  opener.unref();
 };
 
 const runCommand = async (
@@ -62,7 +66,9 @@ const runCommand = async (
       });
       stdout(`Isomer Studio: ${server.url}\n`);
       if (args.open) {
-        openBrowser(server.url);
+        openBrowser(server.url, ({ message }) =>
+          stderr(`Could not open a browser: ${message}\n`)
+        );
       }
       io.onDevServer?.(server);
       return 0;
