@@ -115,6 +115,7 @@ export const useEditor = (initial: PrimitiveNode): EditorState => {
             format === 'jsx' && transformJsx
               ? await compileCompositionJsx(next, shim, transformJsx)
               : parseBodyJson(next);
+          compose(parsed);
           if (token === pending.current) {
             setNodesState(parsed);
             setParseError(undefined);
@@ -133,7 +134,7 @@ export const useEditor = (initial: PrimitiveNode): EditorState => {
       };
       setTimeout(() => void parse(), PARSE_DELAY);
     },
-    [format, shim, transformJsx]
+    [compose, format, shim, transformJsx]
   );
 
   const composition = useMemo(() => compose(nodes), [compose, nodes]);

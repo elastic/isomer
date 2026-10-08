@@ -17,10 +17,12 @@ import {
   within,
 } from '@testing-library/react';
 
+import type { StudioCompose } from './config';
 import {
   componentsPack,
   componentsPrimitives,
 } from './fixtures/components_pack';
+import { defaultCompose } from './model/compose_example';
 import { IsomerStudio } from './studio';
 import type { RasterizePng } from './types';
 
@@ -253,6 +255,26 @@ describe('IsomerStudio', () => {
       expect(screen.getByText(/^Invalid/)).toBeInTheDocument()
     );
     expect(screen.getByText(/must be one of/)).toBeInTheDocument();
+  });
+
+  it('reports a body the host composer rejects as a parse error', async () => {
+    const compose: StudioCompose = (nodes, options) => {
+      if (nodes.some((node) => 'body' in node && node.body === 'Boom.')) {
+        throw new Error('The composer refused this body.');
+      }
+      return defaultCompose(nodes, options);
+    };
+    render(<IsomerStudio {...{ runtime, compose }} />);
+    const editor = await findEditor();
+
+    fireEvent.change(editor, {
+      target: { value: JSON.stringify({ type: 'callout', body: 'Boom.' }) },
+    });
+    expect(await screen.findByText('JSON error')).toBeInTheDocument();
+    expect(
+      screen.getByText(/The composer refused this body\./)
+    ).toBeInTheDocument();
+    expect(editor).toBeInTheDocument();
   });
 
   describe('PNG preview', () => {
