@@ -84,7 +84,7 @@ const printText = (
   ) {
     return undefined;
   }
-  return UNSAFE_TEXT.test(text) || text.includes('\n')
+  return UNSAFE_TEXT.test(text) || /[^\S ]/.test(text)
     ? `{${JSON.stringify(text)}}`
     : text;
 };
@@ -127,18 +127,44 @@ interface PrintContext {
   readSpec: AuthoredSpecReader;
 }
 
+/**
+ * The shim hands a primitive's JSX children to every child and text field its props leave unset,
+ * and an item's element children to every unset field of their child type.
+ */
+type ChildrenLevel = 'node' | 'item';
+
 const printObject = (
   name: string,
   fields: ReadonlyArray<[string, unknown]>,
   spec: AuthoredSpec | undefined,
   textField: { field: string; collapseWhitespace: boolean } | undefined,
   indent: string,
-  context: PrintContext
+  context: PrintContext,
+  level: ChildrenLevel
 ): string => {
   const inner = indent + INDENT;
   const attributes: Array<[string, unknown]> = [];
   const children: string[] = [];
   let textChild: string | undefined;
+
+  const isSet = new Set(
+    fields.flatMap(([key, value]) => (value === undefined ? [] : [key]))
+  );
+  const rivals: ReadonlyArray<{ field: string; childType?: string }> = [
+    ...(spec?.children ?? []),
+    ...(level === 'node' ? (spec?.text ?? []) : []),
+  ];
+  let claimed = false;
+  const mayTakeChildren = (key: string, childType?: string): boolean =>
+    level === 'node'
+      ? !claimed &&
+        rivals.every(({ field }) => field === key || isSet.has(field))
+      : rivals.every(
+          (rival) =>
+            rival.field === key ||
+            rival.childType !== childType ||
+            isSet.has(rival.field)
+        );
 
   fields.forEach(([key, value]) => {
     if (value === undefined) {
@@ -148,10 +174,11 @@ const printObject = (
     if (
       textField?.field === key &&
       typeof value === 'string' &&
-      textChild === undefined
+      mayTakeChildren(key)
     ) {
       textChild = printText(value, textField.collapseWhitespace);
       if (textChild !== undefined) {
+        claimed = true;
         return;
       }
     }
@@ -162,8 +189,10 @@ const printObject = (
       childField &&
       !childField.toItem &&
       items.length &&
-      items.every(isRecord)
+      items.every(isRecord) &&
+      mayTakeChildren(key, childField.childType)
     ) {
+      claimed = true;
       items.forEach((item) =>
         children.push(
           printObject(
@@ -174,7 +203,8 @@ const printObject = (
               ? { field: childField.textField, collapseWhitespace: true }
               : undefined,
             inner,
-            context
+            context,
+            'item'
           )
         )
       );
@@ -209,7 +239,8 @@ export const printNodeJsx = (
     spec,
     text,
     '',
-    { readSpec }
+    { readSpec },
+    'node'
   );
 };
 

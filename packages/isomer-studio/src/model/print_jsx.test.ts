@@ -9,7 +9,7 @@
 
 import type { DefaultPackTypes, PrimitiveNode } from '@elastic/isomer-sdk';
 import { definePrimitive } from '@elastic/isomer-sdk';
-import { fromTextChildren } from '@elastic/isomer-sdk/author';
+import { fromChildren, fromTextChildren } from '@elastic/isomer-sdk/author';
 import { transform } from 'esbuild';
 import { runInNewContext } from 'vm';
 import { z } from 'zod';
@@ -153,13 +153,89 @@ describe('JSX round trip, whitespace-preserving text', () => {
     renderers: { react: () => null, text: () => '', markdown: () => [] },
   });
 
-  it.each(['  indented', 'trailing  ', 'a\r\nb'])('keeps %j', async (code) => {
-    const node: SnippetNode = { type: 'snippet', code };
-    const source = printCompositionJsx([node], () => snippet.schema);
+  it.each(['  indented', 'trailing  ', 'a\r\nb', 'a\tb', 'a\rb'])(
+    'keeps %j',
+    async (code) => {
+      const node: SnippetNode = { type: 'snippet', code };
+      const source = printCompositionJsx([node], () => snippet.schema);
+      await expect(
+        compileCompositionJsx(source, createShim([snippet]), transformJsx, {
+          evaluate,
+        })
+      ).resolves.toEqual([node]);
+    }
+  );
+
+  it('prints tabs and carriage returns as expression literals', () => {
+    const node: SnippetNode = { type: 'snippet', code: 'a\tb\rc' };
+    expect(printNodeJsx(node, () => snippet.schema)).toBe(
+      '<Snippet>{"a\\tb\\rc"}</Snippet>'
+    );
+  });
+});
+
+describe('JSX round trip, several child fields', () => {
+  const entrySchema = z.object({ label: z.string() });
+  const boardSchema = z.object({
+    type: z.literal('board'),
+    title: fromTextChildren(z.string().optional()),
+    rows: fromChildren('row', z.array(entrySchema).optional()),
+    notes: fromChildren('note', z.array(entrySchema).optional()),
+  });
+  type BoardNode = z.infer<typeof boardSchema>;
+
+  const board = definePrimitive<
+    BoardNode,
+    DefaultPackTypes,
+    typeof boardSchema
+  >({
+    type: 'board',
+    catalog: {
+      type: 'board',
+      purpose: '',
+      useWhen: [],
+      avoidWhen: [],
+      example: {},
+    },
+    examples: [],
+    schema: boardSchema,
+    renderers: { react: () => null, text: () => '', markdown: () => [] },
+  });
+
+  it.each<[string, BoardNode]>([
+    [
+      'every field set',
+      {
+        type: 'board',
+        title: 'Plan',
+        rows: [{ label: 'One' }],
+        notes: [{ label: 'Two' }],
+      },
+    ],
+    [
+      'two child fields',
+      { type: 'board', rows: [{ label: 'One' }], notes: [{ label: 'Two' }] },
+    ],
+    ['one child field', { type: 'board', rows: [{ label: 'One' }] }],
+    ['text alone', { type: 'board', title: 'Plan' }],
+  ])('round-trips %s', async (_case, node) => {
+    const source = printCompositionJsx([node], () => board.schema);
     await expect(
-      compileCompositionJsx(source, createShim([snippet]), transformJsx, {
+      compileCompositionJsx(source, createShim([board]), transformJsx, {
         evaluate,
       })
     ).resolves.toEqual([node]);
+  });
+
+  it('puts one field in children when the others are set as props', () => {
+    const node: BoardNode = {
+      type: 'board',
+      title: 'Plan',
+      rows: [{ label: 'One' }],
+      notes: [{ label: 'Two' }],
+    };
+    expect(printNodeJsx(node, () => board.schema)).toBe(
+      '<Board rows={[{ label: "One" }]} notes={[{ label: "Two" }]}>Plan</Board>'
+    );
   });
 });
