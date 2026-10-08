@@ -14,6 +14,7 @@ import {
   type DefaultPackTypes,
   definePrimitive,
   definePrimitiveFor,
+  type PrimitiveCatalogEntry,
   type SurfaceMap,
 } from './primitive_module';
 import type { SlackBlock } from './slack_blocks';
@@ -195,6 +196,76 @@ describe('definePrimitive icon', () => {
 
   it('adds no icon key when none is declared', () => {
     expect(Object.hasOwn(definePrimitive(base), 'icon')).toBe(false);
+  });
+});
+
+describe('catalog group', () => {
+  interface ShelfPack extends DefaultPackTypes {
+    groups: 'Metrics' | 'Notes';
+  }
+
+  const defineShelf = definePrimitiveFor<ShelfPack>();
+  const shelf = {
+    type: 'probe' as const,
+    examples: [{ type: 'probe' as const }],
+    schema: z.object({ type: z.literal('probe') }),
+    renderers: { react: () => null, text: () => '', markdown: () => [] },
+  };
+
+  it('leaves group optional when the pack does not close it', () => {
+    expectTypeOf<PrimitiveCatalogEntry['group']>().toEqualTypeOf<
+      string | undefined
+    >();
+  });
+
+  it('requires a heading the pack names', () => {
+    expectTypeOf<
+      PrimitiveCatalogEntry<'Metrics' | 'Notes'>['group']
+    >().toEqualTypeOf<'Metrics' | 'Notes'>();
+  });
+
+  it('accepts a heading the pack names', () => {
+    const defined = defineShelf({
+      ...shelf,
+      catalog: {
+        type: 'probe',
+        group: 'Metrics',
+        purpose: '',
+        useWhen: [],
+        avoidWhen: [],
+        example: { type: 'probe' },
+      },
+    });
+    expect(defined.catalog.group).toBe('Metrics');
+  });
+
+  it('rejects a heading the pack does not name', () => {
+    defineShelf({
+      ...shelf,
+      catalog: {
+        type: 'probe',
+        // @ts-expect-error a heading the pack does not name
+        group: 'Other',
+        purpose: '',
+        useWhen: [],
+        avoidWhen: [],
+        example: { type: 'probe' },
+      },
+    });
+  });
+
+  it('rejects a catalog that names no heading', () => {
+    defineShelf({
+      ...shelf,
+      // @ts-expect-error a closed pack requires catalog.group
+      catalog: {
+        type: 'probe',
+        purpose: '',
+        useWhen: [],
+        avoidWhen: [],
+        example: { type: 'probe' },
+      },
+    });
   });
 });
 
