@@ -17,9 +17,13 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { createIsomerRuntime } from '@elastic/isomer-runtime';
+import type { StyledRenderContext } from '@elastic/isomer-sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { BUILD_MARKER, prepareOut } from './build_site';
+import { componentsPack } from '../fixtures/components_pack';
+
+import { BUILD_MARKER, prepareOut, prerenderPngs } from './build_site';
 
 let out: string;
 
@@ -57,5 +61,40 @@ describe('prepareOut', () => {
     prepareOut(fresh);
 
     expect(existsSync(join(fresh, BUILD_MARKER))).toBe(true);
+  });
+});
+
+describe('prerenderPngs', () => {
+  it('reports an example the composer rejects and prerenders the rest', async () => {
+    const runtime = createIsomerRuntime<unknown, StyledRenderContext>({
+      packs: [componentsPack],
+    });
+    const { manifest, failures } = await prerenderPngs(
+      {
+        runtime,
+        compose: (nodes, { theme }) => {
+          if (nodes.some(({ type }) => type === 'callout')) {
+            throw new Error('No callouts here.');
+          }
+          return { type: 'view', body: [...nodes], theme };
+        },
+      },
+      () => Promise.resolve(Buffer.from('png')),
+      out
+    );
+
+    expect(failures.length).toBeGreaterThan(0);
+    expect(
+      failures.every(
+        (failure) =>
+          failure.startsWith('callout › ') &&
+          failure.endsWith(': No callouts here.')
+      )
+    ).toBe(true);
+    const primitives = new Set(
+      Object.values(manifest.entries).map(({ primitive }) => primitive)
+    );
+    expect(primitives.has('callout')).toBe(false);
+    expect(primitives.has('divider')).toBe(true);
   });
 });

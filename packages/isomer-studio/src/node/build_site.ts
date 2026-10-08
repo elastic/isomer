@@ -50,12 +50,12 @@ export const prerenderPngs = async (
   for (const definition of runtime.primitives) {
     for (const { name: example, node } of readExamples(definition)) {
       for (const theme of THEMES) {
-        const composition = composeExample(compose, [node], theme);
-        const key = await compositionKey(composition);
-        if (manifest.entries[key]) {
-          continue;
-        }
         try {
+          const composition = composeExample(compose, [node], theme);
+          const key = await compositionKey(composition);
+          if (manifest.entries[key]) {
+            continue;
+          }
           const file = `${key}.png`;
           writeFileSync(join(dir, file), await rasterize(composition));
           manifest.entries[key] = {

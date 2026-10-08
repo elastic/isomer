@@ -65,7 +65,7 @@ Every URL in the site resolves against `--base`, so the same build works at a do
 A static site has no server, so two things work differently from `dev`:
 
 - **JSX** compiles in the browser with `esbuild-wasm`, fetched the first time the editor needs it.
-- **PNGs** are prerendered. `build` composes every example in both themes with the config's `compose`, rasterizes each one, and names the file by the SHA-256 of the composition's canonical JSON. The page computes the same key and fetches the file. An edited composition has no file, so the PNG preview says "PNG previews of edited compositions need `isomer-studio dev`." An example that fails to rasterize is reported and left out; the build still succeeds.
+- **PNGs** are prerendered. `build` composes every example in both themes with the config's `compose`, rasterizes each one, and names the file by the SHA-256 of the composition's canonical JSON. The page computes the same key and fetches the file. An edited composition has no file, so the PNG preview says "PNG previews of edited compositions need `isomer-studio dev`." An example that fails to compose or rasterize is reported and left out; the build still succeeds.
 
 ## `check`
 
@@ -85,7 +85,7 @@ Validates and renders every example of every primitive, composed with the config
 For each primitive and example, `check` runs:
 
 - **`icon`:** the primitive has an icon, from the pack's `icons` or its definition, and it passes `assertPackIconsValid`.
-- **`props`:** the composition validates against the runtime. When it doesn't, every surface for that example is skipped.
+- **`props`:** `compose` returns a composition that validates against the runtime. When it throws or the composition is invalid, every surface for that example is skipped.
 - **One check per surface:** the surface renders without throwing. React renders through `react-dom/server` from the config's React. Slack output is also held to `SLACK_LIMITS` from `@elastic/isomer-sdk/slack`. A surface the primitive has no native renderer for is skipped, not failed.
 - **`png`,** with `--png`: the composition rasterizes.
 

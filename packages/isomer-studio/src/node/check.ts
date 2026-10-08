@@ -168,13 +168,6 @@ export const checkStudio = async (
       });
 
       for (const { name: example, node } of readExamples(definition)) {
-        const composition = composeExample(compose, [node], theme);
-        const validation = runtime.validate(composition);
-        const props = fromProblems(
-          validation.errors.map(formatValidationError)
-        );
-        results.push({ primitive, example, check: 'props', ...props });
-
         const skipAll = (message: string) =>
           [...surfaces, ...(rasterizePng ? (['png'] as const) : [])].forEach(
             (check) =>
@@ -186,6 +179,27 @@ export const checkStudio = async (
                 message,
               })
           );
+
+        let composition: Composition;
+        try {
+          composition = composeExample(compose, [node], theme);
+        } catch (error) {
+          results.push({
+            primitive,
+            example,
+            check: 'props',
+            status: 'failed',
+            message: `\`compose\` threw: ${describeError(error)}`,
+          });
+          skipAll('The example could not be composed.');
+          continue;
+        }
+
+        const validation = runtime.validate(composition);
+        const props = fromProblems(
+          validation.errors.map(formatValidationError)
+        );
+        results.push({ primitive, example, check: 'props', ...props });
         if (props.status === 'failed') {
           skipAll('The composition is invalid.');
           continue;

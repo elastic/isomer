@@ -22,7 +22,7 @@ sources:
 
 `compositionKey(composition)` is the hex SHA-256, through `crypto.subtle`, of JSON with sorted keys, no whitespace and `undefined` properties dropped, so Node and the browser agree and key order does not matter. The theme is part of the composition, so light and dark differ.[^key]
 
-`build` composes every example in both themes, rasterizes each through the runtime's `snapshot` surface and takumi at scale 2, and writes `png/<key>.png` plus `png/manifest.json` (`{ version: 1, entries }`, each entry `{ file, primitive, example, theme }`). An example that fails to rasterize is reported and left out.[^manifest]
+`build` composes every example in both themes, rasterizes each through the runtime's `snapshot` surface and takumi at scale 2, and writes `png/<key>.png` plus `png/manifest.json` (`{ version: 1, entries }`, each entry `{ file, primitive, example, theme }`). An example that fails to compose or rasterize is reported and left out.[^manifest]
 
 In a static site, `rasterizePng` computes the key and fetches the file; a miss rejects with `PngUnavailableError`, identified by `name`, which the PNG panel shows as "PNG previews of edited compositions need `isomer-studio dev`." JSX compiles with `esbuild-wasm`, loaded on first use from `assets/esbuild.wasm` against the page's `<base href>`.[^host]
 

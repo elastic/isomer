@@ -172,6 +172,39 @@ describe('checkStudio', () => {
     expect(failed).toBe(4);
   });
 
+  it('fails an example the composer rejects and checks the rest', async () => {
+    const { results } = await checkStudio(
+      {
+        runtime: runtimeOf([componentsPack]),
+        compose: (nodes, { theme }) => {
+          if (nodes.some(({ type }) => type === 'callout')) {
+            throw new Error('No callouts here.');
+          }
+          return { type: 'view', body: [...nodes], theme };
+        },
+      },
+      { renderToString, surfaces: ['html'] }
+    );
+
+    const callouts = find(results, { primitive: 'callout', check: 'props' });
+    expect(callouts.length).toBeGreaterThan(0);
+    expect(
+      callouts.every(
+        ({ status, message }) =>
+          status === 'failed' &&
+          message === '`compose` threw: No callouts here.'
+      )
+    ).toBe(true);
+    expect(
+      find(results, { primitive: 'callout', check: 'html' }).map(
+        ({ example, status }) => ({ example, status })
+      )
+    ).toEqual(callouts.map(({ example }) => ({ example, status: 'skipped' })));
+    expect(
+      find(results, { primitive: 'divider', check: 'html', status: 'passed' })
+    ).not.toHaveLength(0);
+  });
+
   it('fails the png check when the snapshot surface refuses a composition, as for a slide without its frame', async () => {
     const refusal =
       'a snapshot render needs a "slideFrame" root, got "callout"; wrap slide content in a frame';
