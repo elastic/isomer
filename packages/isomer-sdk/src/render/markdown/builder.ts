@@ -309,6 +309,16 @@ const OPTIONS: Options = {
   handlers: handlers as Options['handlers'],
 };
 
+/** A parsed mdast node as GFM, unsanitized, so `md.authored` can sanitize it as it sanitizes source. */
+export const printParsed = (
+  node: unknown,
+  markers: Pick<Options, 'bullet' | 'bulletOrdered'> = {}
+): string =>
+  toMarkdown(
+    { type: 'root', children: [node as RootContent] },
+    { ...OPTIONS, ...markers, handlers: {} }
+  ).replace(/\n$/, '');
+
 /** `content` as flat mdast blocks, typed `unknown` so no declaration names mdast. */
 export const markdownBlocks = (content: MarkdownContent): readonly unknown[] =>
   rootContent(content);

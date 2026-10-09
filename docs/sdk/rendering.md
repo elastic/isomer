@@ -149,10 +149,11 @@ splitAuthoredMarkdown('Here is the note: <render_attachment id="a1" /> Anything 
 // markdown 'Here is the note:', element { id: 'a1' }, markdown 'Anything else?'
 ```
 
-- A tag inside a code span or fenced block, or escaped with `\`, stays text. Names match case-insensitively and whole: `render` does not match `<render_attachment>`.
-- A tag that stands directly in a top-level paragraph splits it in place, unless the text after it would open another block (a list marker, `#`, `>`, a fence, a table pipe, a definition) or the text before it would end on a setext underline.
-- A tag inside a list, table, quote, heading, or emphasis is removed from that block, and its element follows the whole top-level block, so a list keeps its numbering and a table its rows. A tag alone on its line takes the line with it.
-- A reference definition is copied to every `markdown` segment that uses it.
+- Only a tag in text or raw HTML is cut. One in a code span or fenced block, a link destination or title, an image, or a link or footnote definition, or one escaped with `\`, stays text. Names match case-insensitively and whole: `render` does not match `<render_attachment>`.
+- A tag directly in a top-level paragraph splits it in place.
+- A tag inside a list, table, quote, heading, or emphasis is removed from that block, and its element follows the whole top-level block, so a list keeps its numbering and a table its rows.
+- A block that held a tag is rebuilt from its parse, so what the tag leaves behind keeps its structure: emphasis left empty, a list item left empty, and a paragraph left empty are dropped, and split text that would open another block is escaped. A rebuilt block prints in the serializer's style (`_` emphasis, `**` strong); a block without a tag keeps its source as written.
+- A link or footnote definition, top-level or nested, is copied to every `markdown` segment that uses it, as are the definitions a carried footnote uses.
 - Whitespace-only `markdown` segments are dropped. With no tag in the source, the result is one segment built by `md.authored`.
 - Past the parse budget, or at the parser's recursion limit, the source is cut at each tag and every piece degrades to inert text, as `md.authored` degrades.
 

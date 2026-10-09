@@ -5,11 +5,11 @@
  * 2.0.
  */
 
-import type { Nodes, RootContent } from 'mdast';
+import type { Html, Nodes, Parents, RootContent, Text } from 'mdast';
 
 import type { MarkdownContent } from '../../define/markdown_content';
 
-import { md, verbatim } from './builder';
+import { md, printParsed, verbatim } from './builder';
 import { inert, parseGfmBlocks } from './format';
 
 /** A piece of authored Markdown, or one of the host's elements cut out of it. */
@@ -40,11 +40,14 @@ interface Tag {
   attributes: Record<string, string>;
 }
 
-interface PlacedTag extends Tag {
-  /** The tag sits in a top-level paragraph, outside any inline container. */
-  direct: boolean;
+interface Hit extends Tag {
+  /** From the top-level block down to the text or HTML node holding the tag. */
+  path: Nodes[];
+  valueStart: number;
+  valueEnd: number;
 }
 
+type Leaf = Text | Html;
 type Range = [number, number];
 
 // A tag body holds no `<`, so a scan from one `<` stops at the next and an
@@ -168,6 +171,95 @@ const childContaining = <T extends Nodes>(
   return undefined;
 };
 
+const isLeaf = (node: Nodes | undefined): node is Leaf =>
+  node?.type === 'text' || node?.type === 'html';
+
+const isDefinition = (node: Nodes): boolean =>
+  node.type === 'definition' || node.type === 'footnoteDefinition';
+
+// Only text and raw HTML hold a tag: one in code, a link destination or
+// title, an image, or a definition stays as written.
+const locate = (
+  blocks: readonly RootContent[],
+  range: Range
+): Nodes[] | undefined => {
+  const path: Nodes[] = [];
+  let children: readonly Nodes[] = blocks;
+  for (;;) {
+    const child = childContaining<Nodes>(children, range);
+    if (!child) {
+      break;
+    }
+    path.push(child);
+    if (!('children' in child)) {
+      break;
+    }
+    children = child.children;
+  }
+  return isLeaf(path[path.length - 1]) && !path.some(isDefinition)
+    ? path
+    : undefined;
+};
+
+const addTo = <K, V>(groups: Map<K, V[]>, key: K, value: V) => {
+  const group = groups.get(key);
+  if (group) {
+    group.push(value);
+  } else {
+    groups.set(key, [value]);
+  }
+};
+
+const indexesOf = (text: string, search: string): number[] => {
+  const found: number[] = [];
+  for (
+    let index = text.indexOf(search);
+    index !== -1;
+    index = text.indexOf(search, index + search.length)
+  ) {
+    found.push(index);
+  }
+  return found;
+};
+
+// A leaf's value drops escapes, entities, and container prefixes, so each tag
+// is matched to the same occurrence of its text in the value. A leaf whose
+// occurrences disagree in number keeps its tags as text.
+const placeInValue = (
+  source: string,
+  leaf: Leaf,
+  tags: readonly (Tag & { path: Nodes[] })[]
+): Hit[] => {
+  const [leafStart, leafEnd] = offsets(leaf)!;
+  const slice = source.slice(leafStart, leafEnd);
+  const byText = new Map<string, (Tag & { path: Nodes[] })[]>();
+  for (const tag of tags) {
+    const text = source.slice(tag.start, tag.end);
+    addTo(byText, text, tag);
+  }
+  return [...byText].flatMap(([text, group]) => {
+    const inSource = indexesOf(slice, text);
+    const inValue = indexesOf(leaf.value, text);
+    if (inSource.length !== inValue.length) {
+      return [];
+    }
+    return group.flatMap((tag): Hit[] => {
+      const occurrence = inSource.indexOf(tag.start - leafStart);
+      const valueStart = inValue[occurrence];
+      return valueStart === undefined
+        ? []
+        : [{ ...tag, valueStart, valueEnd: valueStart + text.length }];
+    });
+  });
+};
+
+// Whitespace on one side of a removed tag goes with it, so no run doubles.
+const cut = (value: string, start: number, end: number): string => {
+  const before = value.slice(0, start);
+  const after = value.slice(end);
+  return before + (/\s$/.test(before) ? after.trimStart() : after);
+};
+
 const PHRASING_PARENTS = new Set([
   'delete',
   'emphasis',
@@ -179,179 +271,267 @@ const PHRASING_PARENTS = new Set([
   'tableCell',
 ]);
 
-// `undefined` when the range straddles sibling blocks, which no tag can.
-const locate = (
-  blocks: readonly RootContent[],
-  range: Range
-): { block: RootContent; direct: boolean } | undefined => {
-  const block = childContaining(blocks, range);
-  if (!block) {
-    return undefined;
+const KEPT_WHEN_EMPTY = new Set(['root', 'table', 'tableCell', 'tableRow']);
+
+const trimEdges = (children: Nodes[]): Nodes[] => {
+  const trimmed = [...children];
+  const isBlank = (node: Nodes | undefined) =>
+    node?.type === 'break' ||
+    (node?.type === 'text' && node.value.trim() === '');
+  while (isBlank(trimmed[0])) {
+    trimmed.shift();
   }
-  let node: Nodes = block;
-  let parent: Nodes | undefined;
-  while ('children' in node) {
-    const child: Nodes | undefined = childContaining<Nodes>(
-      node.children,
-      range
-    );
-    if (!child) {
-      break;
-    }
-    parent = node;
-    node = child;
+  while (isBlank(trimmed[trimmed.length - 1])) {
+    trimmed.pop();
   }
-  if ('children' in node && !PHRASING_PARENTS.has(node.type)) {
-    return undefined;
+  const first = trimmed[0];
+  if (first?.type === 'text') {
+    trimmed[0] = { ...first, value: first.value.trimStart() };
   }
-  const container = 'children' in node ? node : parent;
-  return { block, direct: block.type === 'paragraph' && container === block };
+  const last = trimmed[trimmed.length - 1];
+  if (last?.type === 'text') {
+    trimmed[trimmed.length - 1] = { ...last, value: last.value.trimEnd() };
+  }
+  return trimmed;
 };
 
-const collect = (
-  blocks: readonly RootContent[]
-): { code: Range[]; references: number[] } => {
-  const code: Range[] = [];
-  const references: number[] = [];
-  const pending: Nodes[] = [...blocks].reverse();
+// Drops what a removed tag emptied, along the paths it was removed from: an
+// empty strong would print as a thematic break, and an empty list item would
+// leave a marker that reads as a setext underline.
+const prune = (node: Nodes, touched: ReadonlySet<Nodes>): Nodes | undefined => {
+  if (node.type === 'text') {
+    return node.value === '' ? undefined : node;
+  }
+  if (node.type === 'html') {
+    return node.value.trim() === '' ? undefined : node;
+  }
+  if (!('children' in node) || !touched.has(node)) {
+    return node;
+  }
+  const kept = (node.children as Nodes[]).flatMap((child) => {
+    const pruned = prune(child, touched);
+    return pruned ? [pruned] : [];
+  });
+  const children = PHRASING_PARENTS.has(node.type) ? trimEdges(kept) : kept;
+  node.children = children as Parents['children'];
+  return children.length === 0 && !KEPT_WHEN_EMPTY.has(node.type)
+    ? undefined
+    : node;
+};
+
+type Piece = { node: Nodes } | { tag: Tag };
+
+/**
+ * `block` without its tags, as printable nodes and the elements they follow.
+ * A tag directly in a top-level paragraph splits it in place; any other is
+ * removed and its element follows the block.
+ */
+const rebuild = (block: RootContent, hits: readonly Hit[]): Piece[] => {
+  const touched = new Set<Nodes>(hits.flatMap(({ path }) => path.slice(0, -1)));
+  const isDirect = ({ path }: Hit) =>
+    block.type === 'paragraph' && path.length === 2;
+  const byLeaf = new Map<Leaf, Hit[]>();
+  for (const hit of hits) {
+    const leaf = hit.path[hit.path.length - 1] as Leaf;
+    addTo(byLeaf, leaf, hit);
+  }
+  for (const [leaf, leafHits] of byLeaf) {
+    if (!leafHits.some(isDirect)) {
+      for (const { valueStart, valueEnd } of [...leafHits].sort(
+        (a, b) => b.valueStart - a.valueStart
+      )) {
+        leaf.value = cut(leaf.value, valueStart, valueEnd);
+      }
+    }
+  }
+  const nested = hits.filter((hit) => !isDirect(hit));
+
+  if (block.type !== 'paragraph' || nested.length === hits.length) {
+    const pruned = prune(block, touched);
+    return [
+      ...(pruned ? [{ node: pruned }] : []),
+      ...nested.map((tag) => ({ tag })),
+    ];
+  }
+
+  const splits: Hit[] = [];
+  const groups: Nodes[][] = [[]];
+  for (const child of block.children) {
+    const leafHits = byLeaf.get(child as Leaf);
+    if (!leafHits?.some(isDirect)) {
+      groups[groups.length - 1]!.push(child);
+      continue;
+    }
+    const leaf = child as Leaf;
+    let from = 0;
+    for (const hit of [...leafHits].sort(
+      (a, b) => a.valueStart - b.valueStart
+    )) {
+      groups[groups.length - 1]!.push({
+        ...leaf,
+        value: leaf.value.slice(from, hit.valueStart),
+      });
+      splits.push(hit);
+      groups.push([]);
+      from = hit.valueEnd;
+    }
+    groups[groups.length - 1]!.push({ ...leaf, value: leaf.value.slice(from) });
+  }
+  return groups.flatMap((children, index): Piece[] => {
+    const paragraph = { ...block, children } as Nodes;
+    const pruned = prune(paragraph, new Set([...touched, paragraph]));
+    const from = index === 0 ? -1 : splits[index - 1]!.start;
+    const to = splits[index]?.start ?? Infinity;
+    const split = splits[index];
+    return [
+      ...(pruned ? [{ node: pruned }] : []),
+      ...nested
+        .filter(({ start }) => start > from && start < to)
+        .map((tag) => ({ tag })),
+      ...(split ? [{ tag: split }] : []),
+    ];
+  });
+};
+
+interface Usage {
+  links: Set<string>;
+  footnotes: Set<string>;
+  definedLinks: Set<string>;
+  definedFootnotes: Set<string>;
+}
+
+const newUsage = (): Usage => ({
+  links: new Set(),
+  footnotes: new Set(),
+  definedLinks: new Set(),
+  definedFootnotes: new Set(),
+});
+
+const walk = (root: Nodes, visit: (node: Nodes) => void) => {
+  const pending: Nodes[] = [root];
   while (pending.length) {
     const node = pending.pop()!;
-    const range = offsets(node);
-    if (node.type === 'code' || node.type === 'inlineCode') {
-      if (range) {
-        code.push(range);
-      }
-    } else {
-      if (
-        range &&
-        (node.type === 'linkReference' || node.type === 'imageReference')
-      ) {
-        references.push(range[0]);
-      }
-      if ('children' in node) {
-        pending.push(...[...node.children].reverse());
-      }
+    visit(node);
+    if ('children' in node) {
+      pending.push(...(node.children as Nodes[]));
     }
   }
-  return { code, references };
 };
 
-// Text after a split starts a paragraph of its own, so it must not open
-// another block; text before it must not end on a setext underline.
-const OPENS_BLOCK_RE = /(?:[-+*>#=_|~`]|\d{1,9}[.)]|\[[^\]\n]*\]:)/y;
-const ENDS_ON_UNDERLINE_RE = /(?:^|\n)[ \t]*(?:[-=*_][ \t]*)+$/;
-const WHITESPACE_RE = /\s/;
-const WORD_RE = /[\p{L}\p{N}]/u;
-const LINE_PREFIX_RE = /^[ \t>]*$/;
+const use = (root: Nodes, usage: Usage) =>
+  walk(root, (node) => {
+    if (node.type === 'linkReference' || node.type === 'imageReference') {
+      usage.links.add(node.identifier);
+    } else if (node.type === 'footnoteReference') {
+      usage.footnotes.add(node.identifier);
+    } else if (node.type === 'definition') {
+      usage.definedLinks.add(node.identifier);
+    } else if (node.type === 'footnoteDefinition') {
+      usage.definedFootnotes.add(node.identifier);
+    }
+  });
+
+const markersOf = (
+  source: string,
+  block: RootContent
+): Parameters<typeof printParsed>[1] => {
+  const start = offsets(block)?.[0];
+  if (block.type !== 'list' || start === undefined) {
+    return {};
+  }
+  const marker = /^(?:([-*+])|\d{1,9}([.)]))/.exec(
+    source.slice(start, start + 11)
+  );
+  const [, bullet, bulletOrdered] = marker ?? [];
+  return block.ordered
+    ? bulletOrdered === '.' || bulletOrdered === ')'
+      ? { bulletOrdered }
+      : {}
+    : bullet === '-' || bullet === '*' || bullet === '+'
+      ? { bullet }
+      : {};
+};
 
 const splitParsed = (
   source: string,
   blocks: readonly RootContent[],
-  tags: readonly Tag[],
-  pattern: RegExp
+  tags: readonly Tag[]
 ): AuthoredMarkdownSegment[] => {
-  const { code, references } = collect(blocks);
-  const placed = new Map<RootContent, PlacedTag[]>();
-  let codeIndex = 0;
+  const byLeaf = new Map<Leaf, (Tag & { path: Nodes[] })[]>();
   for (const tag of tags) {
-    while (code[codeIndex] && code[codeIndex]![1] <= tag.start) {
-      codeIndex += 1;
-    }
-    if (code[codeIndex] && code[codeIndex]![0] < tag.end) {
-      continue;
-    }
-    const location = locate(blocks, [tag.start, tag.end]);
-    if (location) {
-      const { block, direct } = location;
-      placed.set(block, [...(placed.get(block) ?? []), { ...tag, direct }]);
+    const path = locate(blocks, [tag.start, tag.end]);
+    if (path) {
+      const leaf = path[path.length - 1] as Leaf;
+      addTo(byLeaf, leaf, { ...tag, path });
     }
   }
+  const byBlock = new Map<Nodes, Hit[]>();
+  for (const [leaf, leafTags] of byLeaf) {
+    for (const hit of placeInValue(source, leaf, leafTags)) {
+      const [block] = hit.path;
+      addTo(byBlock, block!, hit);
+    }
+  }
+  if (byBlock.size === 0) {
+    return markdown(source);
+  }
 
-  const definitions = blocks
-    .filter((block) => block.type === 'definition')
-    .flatMap((block) => {
-      const range = offsets(block);
-      return range ? [source.slice(...range)] : [];
-    })
-    .join('\n');
+  // A top-level definition is carried as written; a nested one is printed
+  // without the container prefixes its source lines carry.
+  const definitions = new Map<string, string>();
+  const footnotes = new Map<string, { node: Nodes; text: string }>();
+  for (const block of blocks) {
+    const written = (node: Nodes) =>
+      node === block ? source.slice(...offsets(node)!) : printParsed(node);
+    walk(block, (node) => {
+      if (node.type === 'definition' && !definitions.has(node.identifier)) {
+        definitions.set(node.identifier, written(node));
+      } else if (
+        node.type === 'footnoteDefinition' &&
+        !footnotes.has(node.identifier)
+      ) {
+        footnotes.set(node.identifier, { node, text: written(node) });
+      }
+    });
+  }
 
   const segments: AuthoredMarkdownSegment[] = [];
   let text = '';
-  let cursor = 0;
-  let referenceIndex = 0;
-  let referenced = false;
-  let afterSplit = false;
+  let lastEnd: number | undefined;
+  let usage = newUsage();
 
-  const take = (end: number) => {
-    if (end <= cursor) {
-      return;
-    }
-    text += source.slice(cursor, end);
-    while (references[referenceIndex] !== undefined) {
-      const start = references[referenceIndex]!;
-      if (start >= end) {
-        break;
-      }
-      referenced ||= start >= cursor;
-      referenceIndex += 1;
-    }
-    cursor = end;
+  const append = (piece: string, node: Nodes, range?: Range) => {
+    const gap =
+      range && lastEnd !== undefined ? source.slice(lastEnd, range[0]) : '\n\n';
+    text = text === '' ? piece : `${text}${gap}${piece}`;
+    lastEnd = range?.[1];
+    use(node, usage);
   };
-  const skip = (end: number) => {
-    cursor = Math.max(cursor, end);
-  };
+
+  // A reference resolves only within its own segment, so each takes a copy
+  // of the definitions it uses, and of those its footnotes use in turn.
   const flush = () => {
-    const piece = (
-      afterSplit ? text.trimStart() : text.replace(/^(?:[ \t]*\n)+/, '')
-    ).trimEnd();
-    if (piece !== '') {
-      segments.push(
-        ...markdown(
-          referenced && definitions ? `${piece}\n\n${definitions}` : piece
-        )
-      );
+    if (text.trim() !== '') {
+      const carried: string[] = [];
+      for (const identifier of usage.footnotes) {
+        const footnote = footnotes.get(identifier);
+        if (footnote && !usage.definedFootnotes.has(identifier)) {
+          usage.definedFootnotes.add(identifier);
+          carried.push(footnote.text);
+          use(footnote.node, usage);
+        }
+      }
+      for (const identifier of usage.links) {
+        const definition = definitions.get(identifier);
+        if (definition && !usage.definedLinks.has(identifier)) {
+          carried.push(definition);
+        }
+      }
+      segments.push(...markdown([text, ...carried].join('\n\n')));
     }
     text = '';
-    referenced = false;
-    afterSplit = false;
-  };
-
-  const canSplit = (before: string, after: number, end: number): boolean => {
-    let start = after;
-    while (start < end && WHITESPACE_RE.test(source[start]!)) {
-      start += 1;
-    }
-    OPENS_BLOCK_RE.lastIndex = start;
-    return (
-      (start === end || !OPENS_BLOCK_RE.test(source)) &&
-      !ENDS_ON_UNDERLINE_RE.test(before.trimEnd())
-    );
-  };
-
-  // A tag alone on its line takes the line with it, so no blank line splits
-  // the block around it; otherwise it takes the space before it.
-  const removal = (tag: Tag, [start, end]: Range): Range => {
-    const lineStart = Math.max(
-      source.lastIndexOf('\n', tag.start - 1) + 1,
-      start
-    );
-    const next = source.indexOf('\n', tag.end);
-    const lineEnd = next === -1 || next > end ? end : next;
-    if (
-      LINE_PREFIX_RE.test(source.slice(lineStart, lineEnd).replace(pattern, ''))
-    ) {
-      if (lineEnd < end) {
-        return [lineStart, lineEnd + 1];
-      }
-      return [lineStart > start ? lineStart - 1 : lineStart, lineEnd];
-    }
-    let from = tag.start;
-    if (tag.end >= lineEnd || !WORD_RE.test(source[tag.end]!)) {
-      while (from > lineStart && /[ \t]/.test(source[from - 1]!)) {
-        from -= 1;
-      }
-    }
-    return [from, tag.end];
+    lastEnd = undefined;
+    usage = newUsage();
   };
 
   for (const block of blocks) {
@@ -359,38 +539,24 @@ const splitParsed = (
     if (!range) {
       continue;
     }
-    if (block.type === 'definition') {
-      take(range[0]);
-      skip(range[1]);
+    if (isDefinition(block)) {
+      lastEnd = undefined;
       continue;
     }
-    const pending: PlacedTag[] = [];
-    let pieceStart = range[0];
-    for (const tag of placed.get(block) ?? []) {
-      if (
-        tag.direct &&
-        canSplit(source.slice(pieceStart, tag.start), tag.end, range[1])
-      ) {
-        take(tag.start);
-        skip(tag.end);
+    const hits = byBlock.get(block);
+    if (!hits) {
+      append(source.slice(...range), block, range);
+      continue;
+    }
+    for (const piece of rebuild(block, hits)) {
+      if ('tag' in piece) {
         flush();
-        segments.push(...pending.splice(0).map(element), element(tag));
-        afterSplit = true;
-        pieceStart = tag.end;
+        segments.push(element(piece.tag));
       } else {
-        const [from, to] = removal(tag, range);
-        take(from);
-        skip(to);
-        pending.push(tag);
+        append(printParsed(piece.node, markersOf(source, block)), piece.node);
       }
     }
-    if (pending.length) {
-      take(range[1]);
-      flush();
-      segments.push(...pending.map(element));
-    }
   }
-  take(source.length);
   flush();
   return segments;
 };
@@ -398,12 +564,12 @@ const splitParsed = (
 /**
  * Splits authored Markdown at the host's own elements, such as
  * `<render_attachment id="…" />`, so the host can replace each with content
- * of its own. The source is parsed once, so a tag inside code stays text and
- * no list, table, quote, or emphasis around a tag is cut. A tag that cannot
- * stand where it is without breaking the block around it is lifted out of
- * that block and follows it. Each `markdown` segment is sanitized as
- * `md.authored` sanitizes; past the parse budget the source is cut at each
- * tag and every piece degrades to inert text.
+ * of its own. The source is parsed once, and only a tag in text or raw HTML
+ * is cut: one in code, a link destination or title, an image, or a definition
+ * stays text. A block that held a tag is rebuilt from its parse, so no list,
+ * table, quote, or emphasis around the tag breaks. Each `markdown` segment is
+ * sanitized as `md.authored` sanitizes; past the parse budget the source is
+ * cut at each tag and every piece degrades to inert text.
  *
  * @example
  * splitAuthoredMarkdown(message, { elements: ['render_attachment'] })
@@ -416,13 +582,10 @@ export const splitAuthoredMarkdown = (
   if (names.length === 0) {
     return markdown(source);
   }
-  const pattern = tagPattern(names);
-  const tags = findTags(source, pattern, names);
+  const tags = findTags(source, tagPattern(names), names);
   if (tags.length === 0) {
     return markdown(source);
   }
   const blocks = parseGfmBlocks(source) as readonly RootContent[] | null;
-  return blocks
-    ? splitParsed(source, blocks, tags, pattern)
-    : cutLinearly(source, tags);
+  return blocks ? splitParsed(source, blocks, tags) : cutLinearly(source, tags);
 };

@@ -146,6 +146,10 @@ describe('splitAuthoredMarkdown', () => {
     expect(
       split(`[x](javascript:alert(1)) ${tag('a')} <img src=x onerror=y>`)
     ).toEqual(['x', { id: 'a' }, '&lt;img src=x onerror=y>']);
+    expect(split(`<div>\n${tag('a')}\n</div>`)).toEqual([
+      '&lt;div>\n&lt;/div>',
+      { id: 'a' },
+    ]);
   });
 
   it('carries reference definitions to every segment that uses them', () => {
@@ -162,9 +166,78 @@ describe('splitAuthoredMarkdown', () => {
     ]);
   });
 
-  it('lifts a tag whose remainder would open another block', () => {
-    expect(split(`a ${tag('x')}\n2. b`)).toEqual(['a\n2. b', { id: 'x' }]);
-    expect(split(`a\n--- ${tag('x')}`)).toEqual(['a\n---', { id: 'x' }]);
+  it('escapes split text that would otherwise open another block', () => {
+    expect(split(`a ${tag('x')}\n2. b`)).toEqual(['a', { id: 'x' }, '2\\. b']);
+    expect(split(`a\n--- ${tag('x')}`)).toEqual(['a\n\\---', { id: 'x' }]);
+  });
+
+  it('keeps emphasis that loses its only content or an edge to a tag', () => {
+    expect(split(`a **${tag('x')} b**`)).toEqual(['a **b**', { id: 'x' }]);
+    expect(split(`a _b ${tag('x')}_ c`)).toEqual(['a _b_ c', { id: 'x' }]);
+    expect(split(`**${tag('x')}**`)).toEqual([{ id: 'x' }]);
+    expect(split(`a\n\n_${tag('x')}_\n\nb`)).toEqual(['a', { id: 'x' }, 'b']);
+  });
+
+  it('drops a list item that held only a tag', () => {
+    expect(split(`- a\n  - ${tag('x')}`)).toEqual(['- a', { id: 'x' }]);
+    expect(split(`* a\n* ${tag('x')}\n\n- b`)).toEqual([
+      '* a',
+      { id: 'x' },
+      '- b',
+    ]);
+  });
+
+  it('keeps a tag in link or image metadata as written', () => {
+    const bare = `<${TAG} />`;
+    for (const source of [
+      `![a](https://elastic.co/x "${bare}")`,
+      `[a](https://elastic.co/x "${bare}")`,
+      `[a](https://elastic.co/x '${tag('x')}')`,
+      `![${tag('x')}](https://elastic.co/x)`,
+      `[a][r]\n\n[r]: https://elastic.co "${bare}"`,
+    ]) {
+      expect(split(source)).toEqual([serializeMarkdown(md.authored(source))]);
+    }
+  });
+
+  it('cuts a tag from a link label', () => {
+    expect(split(`[see ${tag('x')}](https://elastic.co)`)).toEqual([
+      '[see](https://elastic.co)',
+      { id: 'x' },
+    ]);
+  });
+
+  it('carries a definition nested in a later block', () => {
+    expect(
+      split(`See [d].\n\n${tag('x')}\n\n> [d]: https://elastic.co`)
+    ).toEqual([
+      'See [d].\n\n[d]: https://elastic.co',
+      { id: 'x' },
+      '> [d]: https://elastic.co',
+    ]);
+  });
+
+  it('carries footnote definitions, and the references inside them', () => {
+    expect(
+      split(
+        `Note[^1].\n\n${tag('x')}\n\nAgain[^1].\n\n[^1]: See [d].\n\n[d]: https://elastic.co`
+      )
+    ).toEqual([
+      'Note[^1].\n\n[^1]: See [d].\n\n[d]: https://elastic.co',
+      { id: 'x' },
+      'Again[^1].\n\n[^1]: See [d].\n\n[d]: https://elastic.co',
+    ]);
+  });
+
+  it('leaves a tag in a footnote definition as written', () => {
+    expect(split(`a[^1]\n\n[^1]: ${tag('x')}`)).toEqual([
+      `a[^1]\n\n[^1]: ${tag('x')}`,
+    ]);
+  });
+
+  it('keeps tags as text where an entity-encoded copy makes them ambiguous', () => {
+    const source = `&lt;${TAG} id="x" /> ${tag('x')}`;
+    expect(split(source)).toEqual([source]);
   });
 
   it('keeps an indented code block after a lifted tag', () => {
