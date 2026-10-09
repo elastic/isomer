@@ -291,9 +291,12 @@ const firstOf = <T extends Definition | FootnoteDefinition>(
   return first;
 };
 
-// A footnote no reference in its segment cites renders nothing, so a
-// top-level one is dropped rather than left as a segment of its own.
-const withCitedFootnotes = (run: readonly Nodes[]): Nodes[] => {
+// A footnote no reference in its segment cites renders nothing, nor does a
+// later definition of one, so a top-level one is dropped rather than printed.
+const withCitedFootnotes = (
+  run: readonly Nodes[],
+  footnotes: ReadonlyMap<string, FootnoteDefinition>
+): Nodes[] => {
   const cited = new Set<string>();
   const kept = new Set<Nodes>();
   const cite = (root: Nodes) =>
@@ -310,7 +313,8 @@ const withCitedFootnotes = (run: readonly Nodes[]): Nodes[] => {
       if (
         node.type === 'footnoteDefinition' &&
         !kept.has(node) &&
-        cited.has(node.identifier)
+        cited.has(node.identifier) &&
+        footnotes.get(node.identifier) === node
       ) {
         kept.add(node);
         cite(node);
@@ -410,7 +414,7 @@ const splitParsed = (
   const segments: AuthoredMarkdownSegment[] = [];
   let run: Nodes[] = [];
   const flush = () => {
-    const kept = withCitedFootnotes(run);
+    const kept = withCitedFootnotes(run, footnotes);
     if (kept.length > 0) {
       segments.push(...markdown(print(kept)));
     }

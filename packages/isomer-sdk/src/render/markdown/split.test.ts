@@ -398,6 +398,15 @@ describe('splitAuthoredMarkdown', () => {
     ).toEqual([{ id: 'x' }, '- a\n  - [d]: https://second.example']);
   });
 
+  it('prints only the first definition of a footnote', () => {
+    expect(
+      split(`${tag('x')}\n\nSee[^n]\n\n[^n]: first\n\n[^n]: second`)
+    ).toEqual([{ id: 'x' }, 'See[^n]\n\n[^n]: first']);
+    expect(
+      split(`[^n]: first\n\n${tag('x')}\n\nSee[^n]\n\n[^n]: second`)
+    ).toEqual([{ id: 'x' }, 'See\\[^n]']);
+  });
+
   it('prints a footnote cited before its definition segment as text', () => {
     expect(
       split(
