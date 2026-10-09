@@ -80,7 +80,10 @@ describe('splitAuthoredMarkdown', () => {
   });
 
   it('keeps a quote and a heading whole', () => {
-    expect(split(`> a\n> ${tag('x')}\n> b`)).toEqual(['> a\n> b', { id: 'x' }]);
+    expect(split(`> a\n> ${tag('x')}\n> b`)).toEqual([
+      '> a\n>\n> b',
+      { id: 'x' },
+    ]);
     expect(split(`## Chart ${tag('x')}\n\nBody`)).toEqual([
       '## Chart',
       { id: 'x' },
@@ -146,9 +149,11 @@ describe('splitAuthoredMarkdown', () => {
     expect(
       split(`[x](javascript:alert(1)) ${tag('a')} <img src=x onerror=y>`)
     ).toEqual(['x', { id: 'a' }, '&lt;img src=x onerror=y>']);
+  });
+
+  it('leaves a tag inside a raw HTML block as text', () => {
     expect(split(`<div>\n${tag('a')}\n</div>`)).toEqual([
-      '&lt;div>\n&lt;/div>',
-      { id: 'a' },
+      `&lt;div>\n&lt;${TAG} id="a" />\n&lt;/div>`,
     ]);
   });
 
@@ -264,9 +269,63 @@ describe('splitAuthoredMarkdown', () => {
     ]);
   });
 
-  it('keeps tags as text where an entity-encoded copy makes them ambiguous', () => {
-    const source = `&lt;${TAG} id="x" /> ${tag('x')}`;
-    expect(split(source)).toEqual([source]);
+  it('reads an entity-encoded tag as text', () => {
+    expect(split(`&lt;${TAG} id="x" /> ${tag('x')}`)).toEqual([
+      `\\<${TAG} id="x" />`,
+      { id: 'x' },
+    ]);
+  });
+
+  it('reads `<` and `>` inside a quoted attribute value', () => {
+    expect(split(`a <${TAG} id="x" note="1 < 2" /> b`)).toEqual([
+      'a',
+      { id: 'x', note: '1 < 2' },
+      'b',
+    ]);
+  });
+
+  it('reads an entity in an attribute value as written', () => {
+    const [, segment] = splitAuthoredMarkdown(`a <${TAG} id="x&amp;y" />`, {
+      elements: [TAG],
+    });
+    expect(segment).toEqual({
+      type: 'element',
+      name: TAG,
+      attributes: { id: 'x&amp;y' },
+    });
+  });
+
+  it('splits before text that follows a tag alone on its line', () => {
+    expect(split(`${tag('x')}\nfollowing text`)).toEqual([
+      { id: 'x' },
+      'following text',
+    ]);
+    expect(split(`Here:\n${tag('x')}\nMore`)).toEqual([
+      'Here:',
+      { id: 'x' },
+      'More',
+    ]);
+  });
+
+  it('keeps nested elements in document order', () => {
+    expect(split(`- a ${tag('1')} b ${tag('2')} a ${tag('3')}`)).toEqual([
+      '- a b a',
+      { id: '1' },
+      { id: '2' },
+      { id: '3' },
+    ]);
+  });
+
+  it('carries the first of duplicate nested definitions', () => {
+    expect(
+      split(
+        `See [d].\n\n${tag('x')}\n\n> [d]: https://first.example\n\n> [d]: https://second.example`
+      )
+    ).toEqual([
+      'See [d].\n\n[d]: https://first.example',
+      { id: 'x' },
+      '> [d]: https://first.example\n\n> [d]: https://second.example',
+    ]);
   });
 
   it('keeps an indented code block after a lifted tag', () => {

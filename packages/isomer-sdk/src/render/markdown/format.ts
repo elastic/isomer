@@ -52,13 +52,35 @@ const parse = (source: string): Root =>
     })
   );
 
+type ParseOptions = NonNullable<Parameters<typeof fromMarkdown>[1]>;
+
 /** `markdown` as flat GFM mdast blocks, typed `unknown` so no declaration names mdast; `null` past the parse budget or the parser's recursion depth. */
-export const parseGfmBlocks = (markdown: string): readonly unknown[] | null => {
+export const parseGfmBlocks = (
+  markdown: string,
+  extensions?: { micromark: unknown; mdast: unknown }
+): readonly unknown[] | null => {
   if (exceedsParseBudget(markdown)) {
     return null;
   }
   try {
-    return parse(markdown).children;
+    return (
+      extensions
+        ? fromMarkdown(markdown, {
+            extensions: [
+              extensions.micromark as NonNullable<
+                ParseOptions['extensions']
+              >[number],
+              gfm(),
+            ],
+            mdastExtensions: [
+              extensions.mdast as NonNullable<
+                ParseOptions['mdastExtensions']
+              >[number],
+              gfmFromMarkdown(),
+            ],
+          })
+        : parse(markdown)
+    ).children;
   } catch (error) {
     if (!(error instanceof RangeError)) {
       throw error;

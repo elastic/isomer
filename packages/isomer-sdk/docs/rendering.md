@@ -149,7 +149,8 @@ splitAuthoredMarkdown('Here is the note: <render_attachment id="a1" /> Anything 
 // markdown 'Here is the note:', element { id: 'a1' }, markdown 'Anything else?'
 ```
 
-- Only a tag in text or raw HTML is cut. One in a code span or fenced block, a link destination or title, an image, or a link or footnote definition, or one escaped with `\`, stays text. Names match case-insensitively and whole: `render` does not match `<render_attachment>`.
+- The parser reads each listed tag as a node of its own, with the grammar of a CommonMark raw HTML tag on one line, so the parse alone decides where one is. A tag in a code span or block, a raw HTML block, a link destination or title, an image's alt text, or a footnote definition, or one escaped with `\` or written with entities, stays text. Names match case-insensitively and whole: `render` does not match `<render_attachment>`.
+- A tag alone on its line is a block of its own, interrupting a paragraph as `<div>` does, so the text after it starts a new segment.
 - A tag directly in a top-level paragraph splits it in place.
 - A tag inside a list, table, quote, heading, or emphasis is removed from that block, and its element follows the whole top-level block, so a list keeps its numbering and a table its rows.
 - A block that held a tag is rebuilt from its parse, so what the tag leaves behind keeps its structure: emphasis left empty, a list item left empty, and a paragraph left empty are dropped, and split text that would open another block is escaped. A rebuilt block prints in the serializer's style (`_` emphasis, `**` strong); a block without a tag keeps its source as written.
