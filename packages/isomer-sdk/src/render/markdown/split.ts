@@ -10,7 +10,7 @@ import type { Nodes, RootContent } from 'mdast';
 import type { MarkdownContent } from '../../define/markdown_content';
 
 import { md, printParsed, verbatim } from './builder';
-import { inert, parseGfmBlocks } from './format';
+import { exceedsParseBudget, inert, parseGfmBlocks } from './format';
 import {
   HOST_ELEMENT_TYPE,
   hostElementExtensions,
@@ -209,13 +209,14 @@ const trimEdges = (children: Nodes[]): Nodes[] => {
 };
 
 // Removes every descendant `removes` matches, appending each to `removed` in
-// document order, and drops what that empties: an empty strong would print as
-// a thematic break, and an empty list item as a marker that can read as a
-// setext underline. Returns `undefined` when nothing is left.
+// document order, and drops what that empties unless `keepEmptied`: an empty
+// strong would print as a thematic break, and an empty list item as a marker
+// that can read as a setext underline. Returns `undefined` when nothing is left.
 const strip = (
   node: Nodes,
   removes: (node: Nodes) => boolean,
-  removed: Nodes[] = []
+  removed: Nodes[] = [],
+  keepEmptied = false
 ): Nodes | undefined => {
   if (!('children' in node) || !contains(node, removes)) {
     return node;
@@ -225,13 +226,15 @@ const strip = (
       removed.push(child);
       return [];
     }
-    const stripped = strip(child, removes, removed);
+    const stripped = strip(child, removes, removed, keepEmptied);
     return stripped ? [stripped] : [];
   });
   const children = PHRASING_PARENTS.has(node.type)
     ? trimEdges(joinText(kept))
     : kept;
-  return children.length === 0 && !KEPT_WHEN_EMPTY.has(node.type)
+  return children.length === 0 &&
+    !keepEmptied &&
+    !KEPT_WHEN_EMPTY.has(node.type)
     ? undefined
     : ({ ...node, children } as Nodes);
 };
@@ -320,15 +323,18 @@ const splitParsed = (
   // once they would add more than the source's length, so they never more
   // than double the parsing each segment's `md.authored` does.
   let carryBudget = source.length;
-  const carry = (definition: Nodes): boolean => {
+  const size = (definition: Nodes) => {
     const [start, end] = offsets(definition) ?? [0, 0];
-    if (end - start > carryBudget) {
+    return end - start;
+  };
+  const carry = (definition: Nodes): boolean => {
+    if (size(definition) > carryBudget) {
       return false;
     }
-    carryBudget -= end - start;
+    carryBudget -= size(definition);
     return true;
   };
-  const withDefinitions = (nodes: readonly Nodes[]): Nodes[] => {
+  const carriedFor = (nodes: readonly Nodes[]): Nodes[] => {
     const present = new Set<Nodes>();
     const used = new Set<string>();
     const scan = (root: Nodes) =>
@@ -342,22 +348,40 @@ const splitParsed = (
       });
     nodes.forEach(scan);
     const carried: Nodes[] = [];
-    for (const key of used) {
+    const take = (key: string) => {
       const definition = definitions.get(key);
       if (definition && !present.has(definition) && carry(definition)) {
         present.add(definition);
         carried.push(definition);
         scan(definition);
       }
+    };
+    // Footnotes first, since one can hold a link definition it brings along.
+    for (const key of used) {
+      if (key.startsWith('^')) {
+        take(key);
+      }
     }
-    return [...nodes, ...carried];
+    for (const key of used) {
+      if (!key.startsWith('^')) {
+        take(key);
+      }
+    }
+    return carried;
   };
 
   const segments: AuthoredMarkdownSegment[] = [];
   let run: Nodes[] = [];
   const flush = () => {
     if (run.length > 0) {
-      segments.push(...markdown(printParsed(withDefinitions(run))));
+      // A segment `md.authored` would degrade with its copies goes without them.
+      const carried = carriedFor(run);
+      let printed = printParsed([...run, ...carried]);
+      if (carried.length > 0 && exceedsParseBudget(printed)) {
+        carryBudget += carried.reduce((total, node) => total + size(node), 0);
+        printed = printParsed(run);
+      }
+      segments.push(...markdown(printed));
     }
     run = [];
   };
@@ -369,7 +393,7 @@ const splitParsed = (
     }
     // A top-level definition prints nothing in place; it is carried where used.
     const cleaned =
-      definitionKey(block) === undefined && strip(block, isDuplicate);
+      definitionKey(block) === undefined && strip(block, isDuplicate, [], true);
     for (const piece of cleaned ? rebuild(cleaned as RootContent) : []) {
       if ('element' in piece) {
         flush();

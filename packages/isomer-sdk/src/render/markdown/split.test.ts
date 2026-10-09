@@ -316,7 +316,7 @@ describe('splitAuthoredMarkdown', () => {
     ).toEqual([
       '> [d]: https://first.example',
       { id: 'x' },
-      'See [d].\n\n[d]: https://first.example',
+      'See [d].\n\n>\n\n[d]: https://first.example',
     ]);
   });
 
@@ -327,7 +327,7 @@ describe('splitAuthoredMarkdown', () => {
       )
     ).toEqual([
       { id: 'x' },
-      'Ref [^n] [d]\n\n[^n]: see [d]\n\n    [d]: https://first.example',
+      'Ref [^n] [d]\n\n>\n\n[^n]: see [d]\n\n    [d]: https://first.example',
     ]);
   });
 
@@ -339,8 +339,34 @@ describe('splitAuthoredMarkdown', () => {
     ).toEqual([
       '> [d]: https://first.example',
       { id: 'x' },
-      'See [d]\n\n- a\n  continued\n\n[d]: https://first.example',
+      'See [d]\n\n- a\n  continued\n\n>\n\n[d]: https://first.example',
     ]);
+  });
+
+  it('carries a footnote before the link definitions it holds', () => {
+    const url = `https://elastic.co/${'a'.repeat(200)}`;
+    expect(
+      split(`[^n]: note\n\n    [d]: ${url}\n\n${tag('x')}\n\nSee [d] [^n]`)
+    ).toEqual([{ id: 'x' }, `See [d] [^n]\n\n[^n]: note\n\n    [d]: ${url}`]);
+  });
+
+  it('keeps escaped text within the parse budget', () => {
+    const body = 'a * b '.repeat(1500);
+    const [first] = splitAuthoredMarkdown(
+      `[x](https://elastic.co) ${body}\n\n${tag('x')}`,
+      { elements: [TAG] }
+    );
+    expect(
+      first?.type === 'markdown' && serializeMarkdown(first.content)
+    ).toMatch(/^\[x\]\(https:\/\/elastic\.co\) a \\\* b/);
+  });
+
+  it('keeps a list item a dropped duplicate definition empties', () => {
+    expect(
+      split(
+        `[d]: https://first.example\n\n${tag('x')}\n\n1. a\n2. [d]: https://second.example\n3. c`
+      )
+    ).toEqual([{ id: 'x' }, '1. a\n2.\n3. c']);
   });
 
   it('keeps an opening code block out of a carried footnote', () => {
@@ -351,7 +377,7 @@ describe('splitAuthoredMarkdown', () => {
     ).toEqual([
       '> [^n]: first',
       { id: 'x' },
-      '```\ncode\n```\n\n[^n] ref\n\n[^n]: first',
+      '```\ncode\n```\n\n[^n] ref\n\n>\n\n[^n]: first',
     ]);
   });
 
@@ -384,7 +410,7 @@ describe('splitAuthoredMarkdown', () => {
     ).toEqual([
       'See [d].\n\n[d]: https://first.example',
       { id: 'x' },
-      '> [d]: https://first.example',
+      '> [d]: https://first.example\n\n>',
     ]);
   });
 
