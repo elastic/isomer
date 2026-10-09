@@ -12,3 +12,9 @@ export {
   type MarkdownEnvelopeOptions,
   renderMarkdownEnvelope,
 } from './envelope';
+
+export {
+  type AuthoredMarkdownSegment,
+  type SplitAuthoredMarkdownOptions,
+  splitAuthoredMarkdown,
+} from './split';

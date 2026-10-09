@@ -131,7 +131,7 @@ const isListStart = (
 // would add blank lines between blocks. `source` is the authored text when
 // sanitizing degraded it to inert text, whose escapes only Markdown resolves;
 // surfaces that print literal text read it instead.
-const verbatim = (markdown: string, source?: string): MarkdownBlock =>
+export const verbatim = (markdown: string, source?: string): MarkdownBlock =>
   block({
     type: VERBATIM_TYPE,
     value: markdown.trimEnd(),

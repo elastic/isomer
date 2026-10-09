@@ -241,7 +241,7 @@ export const sanitizeMarkdownSource = (markdown: string): string =>
   sanitizeAuthoredSource(markdown).markdown;
 
 // No link, image, definition, or tag can survive without `[` or `<`.
-const inert = (markdown: string): string =>
+export const inert = (markdown: string): string =>
   markdown.replace(/[[\]\\]/g, '\\$&').replace(/</g, '&lt;');
 
 // GFM parsing is superlinear for some delimiter runs, even without nesting.

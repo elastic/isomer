@@ -138,6 +138,26 @@ Findings are advice, not validation errors, and no surface runs the check: an ov
 
 `./markdown` publishes the `md` builder and `serializeMarkdown`, both printed through one GFM serializer that escapes each value where it lands; `./slack` the mrkdwn escaping and clamping. The structured-value formatters live on the root entry, since every surface needs them. `./text` publishes no formatters: line width, trend glyphs, and threshold copy are editorial choices a pack makes, not contract.
 
+## Splitting authored Markdown at host elements
+
+A host that lets a model embed its own elements in Markdown, such as `<render_attachment id="…" />`, replaces each with content of its own. `splitAuthoredMarkdown(source, { elements })` parses the source once, within the parse budget `md.authored` uses, and returns it in order as `markdown` segments (`content`, sanitized as `md.authored` sanitizes, and the `source` it was built from) and `element` segments (`name`, and `attributes` as written, keyed by lower-cased name).
+
+```ts
+splitAuthoredMarkdown('Here is the note: <render_attachment id="a1" /> Anything else?', {
+  elements: ['render_attachment'],
+});
+// markdown 'Here is the note:', element { id: 'a1' }, markdown 'Anything else?'
+```
+
+- A tag inside a code span or fenced block, or escaped with `\`, stays text. Names match case-insensitively and whole: `render` does not match `<render_attachment>`.
+- A tag that stands directly in a top-level paragraph splits it in place, unless the text after it would open another block (a list marker, `#`, `>`, a fence, a table pipe, a definition) or the text before it would end on a setext underline.
+- A tag inside a list, table, quote, heading, or emphasis is removed from that block, and its element follows the whole top-level block, so a list keeps its numbering and a table its rows. A tag alone on its line takes the line with it.
+- A reference definition is copied to every `markdown` segment that uses it.
+- Whitespace-only `markdown` segments are dropped. With no tag in the source, the result is one segment built by `md.authored`.
+- Past the parse budget, or at the parser's recursion limit, the source is cut at each tag and every piece degrades to inert text, as `md.authored` degrades.
+
+`md.authored(segment.source)` rebuilds a parsed segment's `content`, so a host whose composition nodes hold strings can store `source` instead.
+
 ## Next
 
 [Dispatch](dispatch.md) · [Frame](frame.md)
