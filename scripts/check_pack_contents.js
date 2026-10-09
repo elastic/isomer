@@ -10,6 +10,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, posix } from 'node:path';
 
+import { missingPackedFiles } from './packed_files.js';
 import { workspacePackages } from './workspace_packages.js';
 
 const npmCache = mkdtempSync(join(tmpdir(), 'isomer-pack-contents-'));
@@ -98,6 +99,10 @@ for (const pkg of workspacePackages()) {
   );
 
   const missingRequired = REQUIRED_FILES.filter((file) => !entrySet.has(file));
+  const missingPacked = missingPackedFiles(
+    entries,
+    pkg.manifest.isomer?.packedFiles
+  );
   const forbidden = entries.filter((entry) =>
     FORBIDDEN_FILES.some((pattern) => pattern.test(entry))
   );
@@ -131,6 +136,11 @@ for (const pkg of workspacePackages()) {
       : []),
     ...(missingRequired.length > 0
       ? [`missing required files: ${missingRequired.join(', ')}`]
+      : []),
+    ...(missingPacked.length > 0
+      ? [
+          `missing packed files: ${missingPacked.join(', ')} (run \`pnpm build\`)`,
+        ]
       : []),
     ...(missingExports.length > 0
       ? [`missing export targets: ${missingExports.join(', ')}`]

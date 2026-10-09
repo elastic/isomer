@@ -1,0 +1,89 @@
+{
+  "name": "@elastic/isomer-studio",
+  "version": "0.0.0-development",
+  "description": "Isomer Studio: a gallery, docs, JSX editor, and every-surface preview for any Isomer pack, run as a dev server, a static site, or a headless CI check.",
+  "license": "Elastic-2.0",
+  "author": "Elastic",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elastic/isomer.git",
+    "directory": "packages/isomer-studio"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "isomer": {
+    "esmOnly": true,
+    "packedFiles": [
+      "dist/app/index.html",
+      "dist/app/assets/app.css",
+      "dist/app/assets/codicon-*.ttf",
+      "dist/app/assets/editor.worker.js",
+      "dist/app/assets/ts.worker.js",
+      "dist/app/assets/json.worker.js",
+      "dist/app/assets/slack.css",
+      "dist/app/assets/esbuild.wasm"
+    ]
+  },
+  "bin": {
+    "isomer-studio": "./bin/isomer-studio.js"
+  },
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "bin",
+    "dist",
+    "docs",
+    "README.md",
+    "LICENSE.txt",
+    "NOTICE.txt",
+    "THIRD_PARTY_LICENSES.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build:assets": "node build/build_app_assets.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@elastic/datemath": "5.0.3",
+    "@elastic/eui": "123.0.0",
+    "@elastic/eui-theme-borealis": "8.1.0",
+    "@elastic/isomer-image-takumi": "workspace:*",
+    "@emotion/css": "11.13.5",
+    "@emotion/react": "11.14.0",
+    "esbuild": "0.28.2",
+    "esbuild-wasm": "0.28.2",
+    "moment": "2.31.0",
+    "monaco-editor": "0.44.0",
+    "prettier": "3.9.6",
+    "slack-blocks-to-jsx": "1.1.2",
+    "tsx": "4.23.15"
+  },
+  "peerDependencies": {
+    "@elastic/isomer-runtime": "workspace:^",
+    "@elastic/isomer-sdk": "workspace:^",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "zod": "^4.4.1"
+  },
+  "devDependencies": {
+    "@elastic/isomer-runtime": "workspace:*",
+    "@elastic/isomer-sdk": "workspace:*",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.2",
+    "@types/react": "^18.2.14",
+    "@types/react-dom": "^18.2.6",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

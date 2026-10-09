@@ -22,7 +22,8 @@ export const previewFooter = {
 /** A frame as it is; anything else in one, under a heading and lede or alone on the tone its kind takes. */
 export const previewSlide = (node: PrimitiveNode): Composition => ({
   type: 'view',
-  title: node.type,
+  // A `title` is drawn as a heading on every surface, outside the frame.
+  meta: { ariaLabel: node.type },
   body: [
     node.type === 'slideFrame'
       ? node

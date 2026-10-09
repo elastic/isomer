@@ -16,9 +16,11 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { workspacePackages } from './workspace_packages.js';
+import { isEsmOnly, workspacePackages } from './workspace_packages.js';
 
-for (const pkg of workspacePackages()) {
+for (const pkg of workspacePackages().filter(
+  ({ manifest }) => !isEsmOnly(manifest)
+)) {
   const cjsDir = join(pkg.dir, 'dist/cjs');
   mkdirSync(cjsDir, { recursive: true });
   writeFileSync(

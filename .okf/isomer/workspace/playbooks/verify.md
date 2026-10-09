@@ -21,17 +21,22 @@ sources:
   - id: pack-contents
     resource: https://github.com/elastic/isomer/blob/main/scripts/check_pack_contents.js
     title: Pack contents smoke
+  - id: studio-consumer
+    resource: https://github.com/elastic/isomer/blob/main/scripts/check_studio_consumer.js
+    title: Studio consumer check
 ---
 
 # Steps
 
-1. `corepack enable` and `pnpm install`.
+1. `corepack enable`, `pnpm install`, and once, `pnpm exec playwright install chromium` (`--with-deps` on Linux).
 2. Run `pnpm verify`.[^package]
 3. If a check fails in a way that looks unrelated to the change, say so rather than papering over it.
 
-`pnpm verify` is typecheck, lint, tests, the dual ESM/CJS build, export parity, export and declaration smokes, pack contents, the module-graph walk, the packed root-import check, and the license report.[^package]
+`pnpm verify` is typecheck, lint, tests, the dual ESM/CJS build, export parity, export and declaration smokes, pack contents, the module-graph walk, the packed root-import check, the Studio's browser test, the Studio consumer check, and the license report.[^package]
 
 Pack contents checks required legal and docs files, declared `files` entries, export targets, fixture leakage, and relative documentation links inside the tarball. The packed-consumer check imports every published package from its packed tarball, ESM and CJS, with required peers installed, and fails on any process warning, such as the `ExperimentalWarning` Node 22.12 prints when `require()` loads an ES module. The module-graph walk fails when `react-dom` or `react-dom/server` is reachable from `.`, `./text`, `./markdown`, `./slack`, or `./author`.[^pack-contents][^pack-consumer][^module-graph]
+
+`pnpm test:browser` drives the Studio's `dev` server and a static build of the slides config in Chromium, and fails with the install command when Chromium is missing. The Studio consumer check packs the Studio, SDK, runtime, and takumi, installs them with npm in a temporary directory without `NODE_PATH`, typechecks a consumer's own pack and config with `skipLibCheck` off, requires `check --png` to pass and a broken example to exit 1, then runs the same browser test against that install's `build --base /sub/` and `dev`.[^studio-consumer]
 
 CI runs `pnpm verify` on Node 22.13.0, the `engines` floor of the SDK, runtime, and evals, and on the latest 22 and 24, then docs-builder in a second job.[^ci]
 
@@ -46,3 +51,5 @@ Related: [workspace](/workspace/concepts/workspace.md), [docs-builder](/workspac
 [^pack-consumer]: Packed consumer check
 
 [^pack-contents]: Pack contents smoke
+
+[^studio-consumer]: Studio consumer check

@@ -31,10 +31,21 @@ jobs:
           cache: pnpm
       - id: install
         run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/playwright-chromium
 
       - name: Verify
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: pnpm verify
+
+      # `verify` has built every package; the site artifact is a downloadable preview of the PR.
+      - name: Check and build the slides Studio
+        if: ${{ !cancelled() && matrix.node == 24 && steps.install.outcome == 'success' }}
+        uses: ./.github/actions/isomer-studio
+        with:
+          config: packages/isomer-primitives-slides/isomer-studio.config.ts
+          out: .artifacts/studio
+          report: .artifacts/studio-report.xml
+          artifact-name: slides-studio
 
   docs:
     name: docs-builder
