@@ -153,7 +153,7 @@ splitAuthoredMarkdown('Here is the note: <render_attachment id="a1" /> Anything 
 - A tag directly in a top-level paragraph splits it in place.
 - A tag inside a list, table, quote, heading, or emphasis is removed from that block, and its element follows the whole top-level block, so a list keeps its numbering and a table its rows.
 - A block that held a tag is rebuilt from its parse, so what the tag leaves behind keeps its structure: emphasis left empty, a list item left empty, and a paragraph left empty are dropped, and split text that would open another block is escaped. A rebuilt block prints in the serializer's style (`_` emphasis, `**` strong); a block without a tag keeps its source as written.
-- A link or footnote definition, top-level or nested, is copied to every `markdown` segment that uses it, as are the definitions a carried footnote uses.
+- A link or footnote definition, top-level or nested, is copied to every `markdown` segment that uses it, as are the definitions a carried footnote uses. Copies stop once they would add more than the source's own length, so a large definition shared by many segments cannot multiply the parsing; a reference past that point prints as written.
 - Whitespace-only `markdown` segments are dropped. With no tag in the source, the result is one segment built by `md.authored`.
 - Past the parse budget, or at the parser's recursion limit, the source is cut at each tag and every piece degrades to inert text, as `md.authored` degrades.
 

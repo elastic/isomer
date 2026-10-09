@@ -235,6 +235,35 @@ describe('splitAuthoredMarkdown', () => {
     ]);
   });
 
+  it('keeps an indented code block after a paragraph split', () => {
+    expect(split(`a ${tag('x')}\n\n    code`)).toEqual([
+      'a',
+      { id: 'x' },
+      '    code',
+    ]);
+  });
+
+  it('keeps inline formatting after a tag in place', () => {
+    expect(split(`Before ${tag('x')} **After**`)).toEqual([
+      'Before',
+      { id: 'x' },
+      '**After**',
+    ]);
+    expect(
+      split(`Before ${tag('x')} _after_ [link](https://elastic.co)`)
+    ).toEqual(['Before', { id: 'x' }, '_after_ [link](https://elastic.co)']);
+  });
+
+  it('carries a definition nested in a list', () => {
+    expect(
+      split(`See [d].\n\n${tag('x')}\n\n- item\n\n  [d]: https://elastic.co`)
+    ).toEqual([
+      'See [d].\n\n[d]: https://elastic.co',
+      { id: 'x' },
+      '- item\n\n  [d]: https://elastic.co',
+    ]);
+  });
+
   it('keeps tags as text where an entity-encoded copy makes them ambiguous', () => {
     const source = `&lt;${TAG} id="x" /> ${tag('x')}`;
     expect(split(source)).toEqual([source]);
@@ -316,6 +345,26 @@ describe('splitAuthoredMarkdown', () => {
     ])('%s at the input budget', (_name, source) => {
       expect(source.length).toBeLessThanOrEqual(16_384);
       expect(timed(source)).toBeLessThan(500);
+    });
+
+    it('caps the definitions it copies at the length of the source', () => {
+      const source = `${`x[^1] ${tag('x')} `.repeat(250)}\n\n[^1]: ${'word '.repeat(1_500)}`;
+      expect(source.length).toBeLessThanOrEqual(16_384);
+      const started = performance.now();
+      const segments = splitAuthoredMarkdown(source, { elements: [TAG] });
+      expect(performance.now() - started).toBeLessThan(500);
+      const copied = segments.filter(
+        (segment) =>
+          segment.type === 'markdown' && segment.source.includes('[^1]:')
+      );
+      expect(copied.length).toBeGreaterThan(0);
+      expect(
+        copied.reduce(
+          (total, segment) =>
+            total + (segment.type === 'markdown' ? segment.source.length : 0),
+          0
+        )
+      ).toBeLessThan(2 * source.length);
     });
 
     it.each([

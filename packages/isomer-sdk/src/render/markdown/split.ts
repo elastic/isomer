@@ -510,12 +510,26 @@ const splitParsed = (
 
   // A reference resolves only within its own segment, so each takes a copy
   // of the definitions it uses, and of those its footnotes use in turn.
+  // Copies stop once they would add more than the source's length, so they
+  // never more than double the parsing each segment's `md.authored` does.
+  let carryBudget = source.length;
+  const carry = (copy: string): boolean => {
+    if (copy.length > carryBudget) {
+      return false;
+    }
+    carryBudget -= copy.length;
+    return true;
+  };
   const flush = () => {
     if (text.trim() !== '') {
       const carried: string[] = [];
       for (const identifier of usage.footnotes) {
         const footnote = footnotes.get(identifier);
-        if (footnote && !usage.definedFootnotes.has(identifier)) {
+        if (
+          footnote &&
+          !usage.definedFootnotes.has(identifier) &&
+          carry(footnote.text)
+        ) {
           usage.definedFootnotes.add(identifier);
           carried.push(footnote.text);
           use(footnote.node, usage);
@@ -523,7 +537,11 @@ const splitParsed = (
       }
       for (const identifier of usage.links) {
         const definition = definitions.get(identifier);
-        if (definition && !usage.definedLinks.has(identifier)) {
+        if (
+          definition &&
+          !usage.definedLinks.has(identifier) &&
+          carry(definition)
+        ) {
           carried.push(definition);
         }
       }
