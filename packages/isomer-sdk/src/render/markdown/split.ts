@@ -282,8 +282,8 @@ interface Usage {
   footnotes: Set<string>;
   definedLinks: Set<string>;
   definedFootnotes: Set<string>;
-  /** Identifiers, footnotes prefixed `^`, with a later duplicate in the segment that a carried copy must precede. */
-  shadowed: Set<string>;
+  /** Where the segment's text first holds a later duplicate of an identifier, footnotes prefixed `^`. */
+  shadowed: Map<string, number>;
 }
 
 const newUsage = (): Usage => ({
@@ -291,11 +291,22 @@ const newUsage = (): Usage => ({
   footnotes: new Set(),
   definedLinks: new Set(),
   definedFootnotes: new Set(),
-  shadowed: new Set(),
+  shadowed: new Map(),
 });
 
-// `winners` holds the definition of each identifier the whole parse uses.
-const use = (root: Nodes, usage: Usage, winners: ReadonlySet<Nodes>) =>
+// `winners` holds the definition of each identifier the whole parse uses;
+// `at` is where `root` starts in the segment's text.
+const use = (
+  root: Nodes,
+  usage: Usage,
+  winners: ReadonlySet<Nodes>,
+  at?: number
+) => {
+  const shadow = (key: string) => {
+    if (at !== undefined && !usage.shadowed.has(key)) {
+      usage.shadowed.set(key, at);
+    }
+  };
   walk(root, (node) => {
     if (node.type === 'linkReference' || node.type === 'imageReference') {
       usage.links.add(node.identifier);
@@ -305,16 +316,17 @@ const use = (root: Nodes, usage: Usage, winners: ReadonlySet<Nodes>) =>
       if (winners.has(node)) {
         usage.definedLinks.add(node.identifier);
       } else {
-        usage.shadowed.add(node.identifier);
+        shadow(node.identifier);
       }
     } else if (node.type === 'footnoteDefinition') {
       if (winners.has(node)) {
         usage.definedFootnotes.add(node.identifier);
       } else {
-        usage.shadowed.add(`^${node.identifier}`);
+        shadow(`^${node.identifier}`);
       }
     }
   });
+};
 
 const markersOf = (
   source: string,
@@ -374,9 +386,10 @@ const splitParsed = (
   const append = (piece: string, node: Nodes, range?: Range) => {
     const gap =
       range && lastEnd !== undefined ? source.slice(lastEnd, range[0]) : '\n\n';
+    const at = text === '' ? 0 : text.length + gap.length;
     text = text === '' ? piece : `${text}${gap}${piece}`;
     lastEnd = range?.[1];
-    use(node, usage, winners);
+    use(node, usage, winners, at);
   };
 
   // A reference resolves only within its own segment, so each takes a copy
@@ -393,10 +406,18 @@ const splitParsed = (
   };
   const flush = () => {
     if (text.trim() !== '') {
-      const leading: string[] = [];
+      // A copy that must win goes just before the duplicate it precedes,
+      // which a container holds, so no indented line follows it to absorb.
+      const ahead = new Map<number, string[]>();
       const carried: string[] = [];
-      const place = (key: string, copy: string) =>
-        (usage.shadowed.has(key) ? leading : carried).push(copy);
+      const place = (key: string, copy: string) => {
+        const at = usage.shadowed.get(key);
+        if (at === undefined) {
+          carried.push(copy);
+        } else {
+          ahead.set(at, [...(ahead.get(at) ?? []), copy]);
+        }
+      };
       for (const identifier of usage.footnotes) {
         const footnote = footnotes.get(identifier);
         if (
@@ -419,7 +440,12 @@ const splitParsed = (
           place(identifier, definition);
         }
       }
-      segments.push(...markdown([...leading, text, ...carried].join('\n\n')));
+      for (const at of [...ahead.keys()].sort((a, b) => b - a)) {
+        const before = text.slice(0, at);
+        const blank = before === '' || /\n[ \t]*\n[ \t]*$/.test(before);
+        text = `${before}${blank ? '' : '\n\n'}${ahead.get(at)!.join('\n\n')}\n\n${text.slice(at)}`;
+      }
+      segments.push(...markdown([text, ...carried].join('\n\n')));
     }
     text = '';
     lastEnd = undefined;

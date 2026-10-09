@@ -316,7 +316,19 @@ describe('splitAuthoredMarkdown', () => {
     ).toEqual([
       '> [d]: https://first.example',
       { id: 'x' },
-      '[d]: https://first.example\n\nSee [d].\n\n> [d]: https://second.example',
+      'See [d].\n\n[d]: https://first.example\n\n> [d]: https://second.example',
+    ]);
+  });
+
+  it('keeps an opening indented code block out of a carried footnote', () => {
+    expect(
+      split(
+        `> [^n]: first\n\n${tag('x')}\n\n    code\n\n[^n] ref\n\n> [^n]: second`
+      )
+    ).toEqual([
+      '> [^n]: first',
+      { id: 'x' },
+      '    code\n\n[^n] ref\n\n[^n]: first\n\n> [^n]: second',
     ]);
   });
 
