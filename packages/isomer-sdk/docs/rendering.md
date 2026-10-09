@@ -138,6 +138,29 @@ Findings are advice, not validation errors, and no surface runs the check: an ov
 
 `./markdown` publishes the `md` builder and `serializeMarkdown`, both printed through one GFM serializer that escapes each value where it lands; `./slack` the mrkdwn escaping and clamping. The structured-value formatters live on the root entry, since every surface needs them. `./text` publishes no formatters: line width, trend glyphs, and threshold copy are editorial choices a pack makes, not contract.
 
+## Splitting authored Markdown at host elements
+
+A host that lets a model embed its own elements in Markdown, such as `<render_attachment id="…" />`, replaces each with content of its own. `splitAuthoredMarkdown(source, { elements })` parses the source once, within the parse budget `md.authored` uses, and returns it in order as `markdown` segments (`content`, sanitized as `md.authored` sanitizes, and the `source` it was built from) and `element` segments (`name`, and `attributes` as written, keyed by lower-cased name).
+
+```ts
+splitAuthoredMarkdown('Here is the note: <render_attachment id="a1" /> Anything else?', {
+  elements: ['render_attachment'],
+});
+// markdown 'Here is the note:', element { id: 'a1' }, markdown 'Anything else?'
+```
+
+- The parser reads each listed tag as a node of its own, with the grammar of a CommonMark raw HTML tag on one line, so the parse alone decides where one is. A tag in a code span or block, a raw HTML block, a link destination or title, an image's alt text, or a footnote definition, or one escaped with `\` or written with entities, stays text. Names match case-insensitively and whole: `render` does not match `<render_attachment>`. Attribute values are read as the parser reads them, so an unquoted value keeps a trailing `/` (`path=/api/>` is `/api/`), as it does in HTML.
+- A tag alone on its line is a block of its own, interrupting a paragraph as `<div>` does, so the text after it starts a new segment.
+- A tag directly in a top-level paragraph splits it in place.
+- A tag inside a list, table, quote, heading, or emphasis is removed from that block, and its element follows the whole top-level block, so a list keeps its numbering and a table its rows.
+- A block that held a tag is rebuilt from its parse, so what the tag leaves behind keeps its structure: emphasis left empty, a list item left empty, and a paragraph left empty are dropped, and split text that would open another block is escaped. Each segment is printed from the parse tree by the GFM serializer, so it means what the source meant but is written in the serializer's style (`_` emphasis, `-` bullets, fenced code).
+- Each `markdown` segment is a document of its own. A link or image reference whose definition is in another segment is printed inline (`[docs][d]` becomes `[docs](https://…)`); definitions stay where they were written. Inlining stops once it would add more than the source's own length in total, and is skipped for a segment it would push past the parse budget; those references print as their text.
+- Footnotes are not copied between segments. A footnote reference whose definition is in another segment prints as its literal label (`[^1]`), and a top-level footnote definition its segment does not cite is dropped, since it would render nothing.
+- Whitespace-only `markdown` segments are dropped. With no tag in the source, the result is one segment built by `md.authored`.
+- Past the parse budget, or at the parser's recursion limit, the source is cut at each tag and every piece degrades to inert text, as `md.authored` degrades.
+
+`md.authored(segment.source)` rebuilds a parsed segment's `content`, so a host whose composition nodes hold strings can store `source` instead.
+
 ## Next
 
 [Dispatch](dispatch.md) · [Frame](frame.md)

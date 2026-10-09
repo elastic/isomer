@@ -131,7 +131,7 @@ const isListStart = (
 // would add blank lines between blocks. `source` is the authored text when
 // sanitizing degraded it to inert text, whose escapes only Markdown resolves;
 // surfaces that print literal text read it instead.
-const verbatim = (markdown: string, source?: string): MarkdownBlock =>
+export const verbatim = (markdown: string, source?: string): MarkdownBlock =>
   block({
     type: VERBATIM_TYPE,
     value: markdown.trimEnd(),
@@ -308,6 +308,13 @@ const OPTIONS: Options = {
   extensions: [gfmToMarkdown({ tablePipeAlign: false })],
   handlers: handlers as Options['handlers'],
 };
+
+/** Parsed mdast blocks as GFM, unsanitized, so `md.authored` can sanitize them as it sanitizes source. */
+export const printParsed = (nodes: readonly unknown[]): string =>
+  toMarkdown(
+    { type: 'root', children: nodes as RootContent[] },
+    { ...OPTIONS, handlers: {} }
+  ).replace(/\n$/, '');
 
 /** `content` as flat mdast blocks, typed `unknown` so no declaration names mdast. */
 export const markdownBlocks = (content: MarkdownContent): readonly unknown[] =>

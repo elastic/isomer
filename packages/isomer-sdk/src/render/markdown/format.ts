@@ -52,13 +52,35 @@ const parse = (source: string): Root =>
     })
   );
 
+type ParseOptions = NonNullable<Parameters<typeof fromMarkdown>[1]>;
+
 /** `markdown` as flat GFM mdast blocks, typed `unknown` so no declaration names mdast; `null` past the parse budget or the parser's recursion depth. */
-export const parseGfmBlocks = (markdown: string): readonly unknown[] | null => {
+export const parseGfmBlocks = (
+  markdown: string,
+  extensions?: { micromark: unknown; mdast: unknown }
+): readonly unknown[] | null => {
   if (exceedsParseBudget(markdown)) {
     return null;
   }
   try {
-    return parse(markdown).children;
+    return (
+      extensions
+        ? fromMarkdown(markdown, {
+            extensions: [
+              extensions.micromark as NonNullable<
+                ParseOptions['extensions']
+              >[number],
+              gfm(),
+            ],
+            mdastExtensions: [
+              extensions.mdast as NonNullable<
+                ParseOptions['mdastExtensions']
+              >[number],
+              gfmFromMarkdown(),
+            ],
+          })
+        : parse(markdown)
+    ).children;
   } catch (error) {
     if (!(error instanceof RangeError)) {
       throw error;
@@ -241,19 +263,20 @@ export const sanitizeMarkdownSource = (markdown: string): string =>
   sanitizeAuthoredSource(markdown).markdown;
 
 // No link, image, definition, or tag can survive without `[` or `<`.
-const inert = (markdown: string): string =>
+export const inert = (markdown: string): string =>
   markdown.replace(/[[\]\\]/g, '\\$&').replace(/</g, '&lt;');
 
 // GFM parsing is superlinear for some delimiter runs, even without nesting.
 const LINE_PREFIX_RE = /^(?:[ \t>]|[-*+](?=[ \t])|\d{1,9}[.)](?=[ \t]))+/gm;
 const MAX_LINE_PREFIX = 256;
+// An escaped punctuation character opens nothing, so `\*` counts as one.
 const INLINE_DELIMITER_RE =
-  /[[\]*`~<>|\\]|(?<![\p{L}\p{N}])_|_(?![\p{L}\p{N}])/gu;
+  /\\[!-/:-@[-`{-~]|[[\]*`~<>|\\]|(?<![\p{L}\p{N}])_|_(?![\p{L}\p{N}])/gu;
 const MAX_INLINE_DELIMITERS = 2048;
 
 const MAX_PARSE_LENGTH = 16_384;
 
-const exceedsParseBudget = (markdown: string): boolean => {
+export const exceedsParseBudget = (markdown: string): boolean => {
   if (markdown.length > MAX_PARSE_LENGTH) {
     return true;
   }
