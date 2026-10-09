@@ -76,7 +76,7 @@
     "husky": "^9.1.7",
     "jsdom": "20.0.1",
     "lint-staged": "^16.1.2",
-    "markdownlint-cli2": "^0.23.2",
+    "markdownlint-cli2": "^0.23.3",
     "prettier": "^3.5.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -89,7 +89,8 @@
   },
   "pnpm": {
     "overrides": {
-      "smol-toml": "1.7.1"
+      "katex": "^0.18.2",
+      "smol-toml": "^1.9.1"
     },
     "onlyBuiltDependencies": [
       "esbuild"
