@@ -157,17 +157,25 @@ describe('splitAuthoredMarkdown', () => {
     ]);
   });
 
-  it('carries reference definitions to every segment that uses them', () => {
+  it('resolves references in every segment', () => {
     expect(
       split(
         `See [docs][d].\n\n${tag('x')}\n\nAgain [d].\n\n${tag('y')}\n\nNone.\n\n[d]: https://elastic.co`
       )
     ).toEqual([
-      'See [docs][d].\n\n[d]: https://elastic.co',
+      'See [docs](https://elastic.co).',
       { id: 'x' },
-      'Again [d].\n\n[d]: https://elastic.co',
+      'Again [d](https://elastic.co).',
       { id: 'y' },
       'None.',
+    ]);
+  });
+
+  it('prints a reference past the inlining budget as its text', () => {
+    const url = `https://elastic.co/${'a'.repeat(1000)}`;
+    expect(split(`[d]: ${url}\n\n${tag('x')}\n\n[a][d] [b][d]`)).toEqual([
+      { id: 'x' },
+      `[a](${url}) b`,
     ]);
   });
 
@@ -212,25 +220,25 @@ describe('splitAuthoredMarkdown', () => {
     ]);
   });
 
-  it('carries a definition nested in a later block', () => {
+  it('resolves a reference to a definition nested in a later block', () => {
     expect(
       split(`See [d].\n\n${tag('x')}\n\n> [d]: https://elastic.co`)
     ).toEqual([
-      'See [d].\n\n[d]: https://elastic.co',
+      'See [d](https://elastic.co).',
       { id: 'x' },
       '> [d]: https://elastic.co',
     ]);
   });
 
-  it('carries footnote definitions, and the references inside them', () => {
+  it('carries footnote definitions, resolving the references inside them', () => {
     expect(
       split(
         `Note[^1].\n\n${tag('x')}\n\nAgain[^1].\n\n[^1]: See [d].\n\n[d]: https://elastic.co`
       )
     ).toEqual([
-      'Note[^1].\n\n[^1]: See [d].\n\n[d]: https://elastic.co',
+      'Note[^1].\n\n[^1]: See [d](https://elastic.co).',
       { id: 'x' },
-      'Again[^1].\n\n[^1]: See [d].\n\n[d]: https://elastic.co',
+      'Again[^1].\n\n[^1]: See [d](https://elastic.co).',
     ]);
   });
 
@@ -259,11 +267,11 @@ describe('splitAuthoredMarkdown', () => {
     ).toEqual(['Before', { id: 'x' }, '_after_ [link](https://elastic.co)']);
   });
 
-  it('carries a definition nested in a list', () => {
+  it('resolves a reference to a definition nested in a list', () => {
     expect(
       split(`See [d].\n\n${tag('x')}\n\n- item\n\n  [d]: https://elastic.co`)
     ).toEqual([
-      'See [d].\n\n[d]: https://elastic.co',
+      'See [d](https://elastic.co).',
       { id: 'x' },
       '- item\n\n  [d]: https://elastic.co',
     ]);
@@ -308,7 +316,7 @@ describe('splitAuthoredMarkdown', () => {
     ]);
   });
 
-  it('drops a later duplicate definition, so a carried one wins', () => {
+  it('resolves a reference to the first of duplicate definitions', () => {
     expect(
       split(
         `> [d]: https://first.example\n\n${tag('x')}\n\nSee [d].\n\n> [d]: https://second.example`
@@ -316,22 +324,33 @@ describe('splitAuthoredMarkdown', () => {
     ).toEqual([
       '> [d]: https://first.example',
       { id: 'x' },
-      'See [d].\n\n>\n\n[d]: https://first.example',
+      'See [d](https://first.example).\n\n> [d]: https://second.example',
     ]);
   });
 
-  it('resolves a definition carried inside a footnote as the source does', () => {
+  it('resolves a definition inside a carried footnote as the source does', () => {
     expect(
       split(
         `[^n]: see [d]\n\n    [d]: https://first.example\n\n${tag('x')}\n\nRef [^n] [d]\n\n> [d]: https://second.example`
       )
     ).toEqual([
       { id: 'x' },
-      'Ref [^n] [d]\n\n>\n\n[^n]: see [d]\n\n    [d]: https://first.example',
+      'Ref [^n] [d](https://first.example)\n\n> [d]: https://second.example\n\n[^n]: see [d](https://first.example)\n\n    [d]: https://first.example',
     ]);
   });
 
-  it('keeps an indented list a list when a definition is carried', () => {
+  it('resolves a link to its first definition when a carried footnote holds a duplicate', () => {
+    expect(
+      split(
+        `[d]: https://first.example\n\n[^n]: note\n\n    [d]: https://second.example\n\n${tag('x')}\n\nSee [d] [^n]`
+      )
+    ).toEqual([
+      { id: 'x' },
+      'See [d](https://first.example) [^n]\n\n[^n]: note\n\n    [d]: https://second.example',
+    ]);
+  });
+
+  it('keeps an indented list a list', () => {
     expect(
       split(
         `> [d]: https://first.example\n\n${tag('x')}\n\nSee [d]\n\n   - a\n     continued\n\n> [d]: https://second.example`
@@ -339,15 +358,8 @@ describe('splitAuthoredMarkdown', () => {
     ).toEqual([
       '> [d]: https://first.example',
       { id: 'x' },
-      'See [d]\n\n- a\n  continued\n\n>\n\n[d]: https://first.example',
+      'See [d](https://first.example)\n\n- a\n  continued\n\n> [d]: https://second.example',
     ]);
-  });
-
-  it('carries a footnote before the link definitions it holds', () => {
-    const url = `https://elastic.co/${'a'.repeat(200)}`;
-    expect(
-      split(`[^n]: note\n\n    [d]: ${url}\n\n${tag('x')}\n\nSee [d] [^n]`)
-    ).toEqual([{ id: 'x' }, `See [d] [^n]\n\n[^n]: note\n\n    [d]: ${url}`]);
   });
 
   it('keeps escaped text within the parse budget', () => {
@@ -361,12 +373,17 @@ describe('splitAuthoredMarkdown', () => {
     ).toMatch(/^\[x\]\(https:\/\/elastic\.co\) a \\\* b/);
   });
 
-  it('keeps a list item a dropped duplicate definition empties', () => {
+  it('keeps a list item that holds only a definition', () => {
     expect(
       split(
         `[d]: https://first.example\n\n${tag('x')}\n\n1. a\n2. [d]: https://second.example\n3. c`
       )
-    ).toEqual([{ id: 'x' }, '1. a\n2.\n3. c']);
+    ).toEqual([{ id: 'x' }, '1. a\n2. [d]: https://second.example\n3. c']);
+    expect(
+      split(
+        `[d]: https://first.example\n\n${tag('x')}\n\n- a\n  - [d]: https://second.example`
+      )
+    ).toEqual([{ id: 'x' }, '- a\n  - [d]: https://second.example']);
   });
 
   it('keeps an opening code block out of a carried footnote', () => {
@@ -377,7 +394,7 @@ describe('splitAuthoredMarkdown', () => {
     ).toEqual([
       '> [^n]: first',
       { id: 'x' },
-      '```\ncode\n```\n\n[^n] ref\n\n>\n\n[^n]: first',
+      '```\ncode\n```\n\n[^n] ref\n\n> [^n-1]: second\n\n[^n]: first',
     ]);
   });
 
@@ -402,15 +419,15 @@ describe('splitAuthoredMarkdown', () => {
     ]);
   });
 
-  it('carries the first of duplicate nested definitions', () => {
+  it('resolves a reference to the first of duplicate nested definitions', () => {
     expect(
       split(
         `See [d].\n\n${tag('x')}\n\n> [d]: https://first.example\n\n> [d]: https://second.example`
       )
     ).toEqual([
-      'See [d].\n\n[d]: https://first.example',
+      'See [d](https://first.example).',
       { id: 'x' },
-      '> [d]: https://first.example\n\n>',
+      '> [d]: https://first.example\n\n> [d]: https://second.example',
     ]);
   });
 
