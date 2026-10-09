@@ -15,7 +15,6 @@ import {
   HOST_ELEMENT_TYPE,
   hostElementExtensions,
   type HostElementNode,
-  parseAttributes,
 } from './host_elements';
 
 /** A piece of authored Markdown, or one of the host's elements cut out of it. */
@@ -50,6 +49,20 @@ const element = ({ name, attributes }: Element): AuthoredMarkdownSegment => ({
   name,
   attributes,
 });
+
+const ATTRIBUTE_RE =
+  /([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'<>`=]+)))?/g;
+
+const parseAttributes = (body: string): Record<string, string> => {
+  const attributes = Object.create(null) as Record<string, string>;
+  for (const [, key, double, single, bare] of body.matchAll(ATTRIBUTE_RE)) {
+    const lower = key!.toLowerCase();
+    if (!(lower in attributes)) {
+      attributes[lower] = double ?? single ?? bare ?? '';
+    }
+  }
+  return attributes;
+};
 
 const markdown = (source: string): AuthoredMarkdownSegment[] =>
   source.trim() === ''
@@ -89,7 +102,7 @@ const cutLinearly = (
     segments.push(
       element({
         name: canonical.get(name!.toLowerCase())!,
-        attributes: parseAttributes(body!.replace(/\/$/, '')),
+        attributes: parseAttributes(body!.replace(/(^|[\s"'])\/$/, '$1')),
       })
     );
     cursor = index + whole.length;
@@ -269,6 +282,8 @@ interface Usage {
   footnotes: Set<string>;
   definedLinks: Set<string>;
   definedFootnotes: Set<string>;
+  /** Identifiers, footnotes prefixed `^`, with a later duplicate in the segment that a carried copy must precede. */
+  shadowed: Set<string>;
 }
 
 const newUsage = (): Usage => ({
@@ -276,18 +291,28 @@ const newUsage = (): Usage => ({
   footnotes: new Set(),
   definedLinks: new Set(),
   definedFootnotes: new Set(),
+  shadowed: new Set(),
 });
 
-const use = (root: Nodes, usage: Usage) =>
+// `winners` holds the definition of each identifier the whole parse uses.
+const use = (root: Nodes, usage: Usage, winners: ReadonlySet<Nodes>) =>
   walk(root, (node) => {
     if (node.type === 'linkReference' || node.type === 'imageReference') {
       usage.links.add(node.identifier);
     } else if (node.type === 'footnoteReference') {
       usage.footnotes.add(node.identifier);
     } else if (node.type === 'definition') {
-      usage.definedLinks.add(node.identifier);
+      if (winners.has(node)) {
+        usage.definedLinks.add(node.identifier);
+      } else {
+        usage.shadowed.add(node.identifier);
+      }
     } else if (node.type === 'footnoteDefinition') {
-      usage.definedFootnotes.add(node.identifier);
+      if (winners.has(node)) {
+        usage.definedFootnotes.add(node.identifier);
+      } else {
+        usage.shadowed.add(`^${node.identifier}`);
+      }
     }
   });
 
@@ -323,17 +348,20 @@ const splitParsed = (
   // identifier wins, as it does in the parse.
   const definitions = new Map<string, string>();
   const footnotes = new Map<string, { node: Nodes; text: string }>();
+  const winners = new Set<Nodes>();
   for (const block of blocks) {
     const written = (node: Nodes) =>
       node === block ? source.slice(...offsets(node)!) : printParsed(node);
     walk(block, (node) => {
       if (node.type === 'definition' && !definitions.has(node.identifier)) {
         definitions.set(node.identifier, written(node));
+        winners.add(node);
       } else if (
         node.type === 'footnoteDefinition' &&
         !footnotes.has(node.identifier)
       ) {
         footnotes.set(node.identifier, { node, text: written(node) });
+        winners.add(node);
       }
     });
   }
@@ -348,7 +376,7 @@ const splitParsed = (
       range && lastEnd !== undefined ? source.slice(lastEnd, range[0]) : '\n\n';
     text = text === '' ? piece : `${text}${gap}${piece}`;
     lastEnd = range?.[1];
-    use(node, usage);
+    use(node, usage, winners);
   };
 
   // A reference resolves only within its own segment, so each takes a copy
@@ -365,7 +393,10 @@ const splitParsed = (
   };
   const flush = () => {
     if (text.trim() !== '') {
+      const leading: string[] = [];
       const carried: string[] = [];
+      const place = (key: string, copy: string) =>
+        (usage.shadowed.has(key) ? leading : carried).push(copy);
       for (const identifier of usage.footnotes) {
         const footnote = footnotes.get(identifier);
         if (
@@ -374,8 +405,8 @@ const splitParsed = (
           carry(footnote.text)
         ) {
           usage.definedFootnotes.add(identifier);
-          carried.push(footnote.text);
-          use(footnote.node, usage);
+          place(`^${identifier}`, footnote.text);
+          use(footnote.node, usage, winners);
         }
       }
       for (const identifier of usage.links) {
@@ -385,10 +416,10 @@ const splitParsed = (
           !usage.definedLinks.has(identifier) &&
           carry(definition)
         ) {
-          carried.push(definition);
+          place(identifier, definition);
         }
       }
-      segments.push(...markdown([text, ...carried].join('\n\n')));
+      segments.push(...markdown([...leading, text, ...carried].join('\n\n')));
     }
     text = '';
     lastEnd = undefined;

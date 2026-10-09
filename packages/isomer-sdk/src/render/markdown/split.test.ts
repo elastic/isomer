@@ -295,6 +295,31 @@ describe('splitAuthoredMarkdown', () => {
     });
   });
 
+  it('keeps a trailing `/` in an unquoted value, as HTML reads it', () => {
+    expect(split(`a <${TAG} path=/api/> b`)).toEqual([
+      'a',
+      { path: '/api/' },
+      'b',
+    ]);
+    expect(split(`a <${TAG} path=/api/ /> b`)).toEqual([
+      'a',
+      { path: '/api/' },
+      'b',
+    ]);
+  });
+
+  it('carries a definition ahead of a later duplicate in the segment', () => {
+    expect(
+      split(
+        `> [d]: https://first.example\n\n${tag('x')}\n\nSee [d].\n\n> [d]: https://second.example`
+      )
+    ).toEqual([
+      '> [d]: https://first.example',
+      { id: 'x' },
+      '[d]: https://first.example\n\nSee [d].\n\n> [d]: https://second.example',
+    ]);
+  });
+
   it('splits before text that follows a tag alone on its line', () => {
     expect(split(`${tag('x')}\nfollowing text`)).toEqual([
       { id: 'x' },

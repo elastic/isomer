@@ -40,6 +40,10 @@ export interface HostElementNode {
 const INLINE = 'isomerHostElement' as TokenType;
 const BLOCK = 'isomerHostElementBlock' as TokenType;
 const BLOCK_TAG = 'isomerHostElementBlockTag' as TokenType;
+const NAME = 'isomerHostElementName' as TokenType;
+const ATTRIBUTE_NAME = 'isomerHostElementAttributeName' as TokenType;
+const ATTRIBUTE_VALUE = 'isomerHostElementAttributeValue' as TokenType;
+const MARKER = 'isomerHostElementMarker' as TokenType;
 
 const isSpace = (code: Code): boolean =>
   code === -2 || code === -1 || code === 32;
@@ -67,51 +71,88 @@ const tagTokenizer =
     let name = '';
     let marker: Code = null;
 
-    const close: State = (code) => {
-      effects.consume(code);
-      effects.exit(type);
-      return ok;
+    // Once a child token has closed, every character needs a token of its own.
+    const token =
+      (tokenType: TokenType, next: State): State =>
+      (code) => {
+        effects.enter(tokenType);
+        effects.consume(code);
+        return (after) => {
+          effects.exit(tokenType);
+          return next(after);
+        };
+      };
+    const spaces = (next: State): State => {
+      const run: State = (code) => {
+        if (isSpace(code)) {
+          effects.consume(code);
+          return run;
+        }
+        effects.exit('whitespace');
+        return next(code);
+      };
+      return (code) => {
+        effects.enter('whitespace');
+        effects.consume(code);
+        return run;
+      };
     };
-    const selfClose: State = (code) => (code === 62 ? close(code) : nok(code));
+
+    const done: State = (code) => {
+      effects.exit(type);
+      return ok(code);
+    };
+    const selfClose: State = (code) =>
+      code === 62 ? token(MARKER, done)(code) : nok(code);
     const boundary: State = (code) => {
       if (code === 62) {
-        return close(code);
+        return token(MARKER, done)(code);
       }
       if (code === 47) {
-        effects.consume(code);
-        return selfClose;
+        return token(MARKER, selfClose)(code);
       }
-      if (isSpace(code)) {
-        effects.consume(code);
-        return beforeAttribute;
-      }
-      return nok(code);
+      return isSpace(code) ? spaces(beforeAttribute)(code) : nok(code);
     };
     const quoted: State = (code) => {
       if (code === null || isLineEnding(code)) {
         return nok(code);
       }
+      if (code === marker) {
+        effects.exit(ATTRIBUTE_VALUE);
+        return token(MARKER, boundary)(code);
+      }
       effects.consume(code);
-      return code === marker ? boundary : quoted;
+      return quoted;
+    };
+    const quotedStart: State = (code) => {
+      if (code === marker) {
+        return token(MARKER, boundary)(code);
+      }
+      if (code === null || isLineEnding(code)) {
+        return nok(code);
+      }
+      effects.enter(ATTRIBUTE_VALUE);
+      effects.consume(code);
+      return quoted;
     };
     const unquoted: State = (code) => {
       if (isUnquotedChar(code)) {
         effects.consume(code);
         return unquoted;
       }
+      effects.exit(ATTRIBUTE_VALUE);
       return boundary(code);
     };
     const beforeValue: State = (code) => {
       if (isSpace(code)) {
-        effects.consume(code);
-        return beforeValue;
+        return spaces(beforeValue)(code);
       }
       if (code === 34 || code === 39) {
         marker = code;
-        effects.consume(code);
-        return quoted;
+        return token(MARKER, quotedStart)(code);
       }
       if (isUnquotedChar(code)) {
+        effects.enter(ATTRIBUTE_VALUE);
         effects.consume(code);
         return unquoted;
       }
@@ -119,35 +160,32 @@ const tagTokenizer =
     };
     const afterAttributeName: State = (code) => {
       if (isSpace(code)) {
-        effects.consume(code);
-        return afterAttributeName;
+        return spaces(afterAttributeName)(code);
       }
-      if (code === 61) {
-        effects.consume(code);
-        return beforeValue;
-      }
-      return beforeAttribute(code);
+      return code === 61
+        ? token(MARKER, beforeValue)(code)
+        : beforeAttribute(code);
     };
     const attributeName: State = (code) => {
       if (isAttributeNameChar(code)) {
         effects.consume(code);
         return attributeName;
       }
+      effects.exit(ATTRIBUTE_NAME);
       return afterAttributeName(code);
     };
     const beforeAttribute: State = (code) => {
       if (isSpace(code)) {
-        effects.consume(code);
-        return beforeAttribute;
+        return spaces(beforeAttribute)(code);
       }
       if (code === 47) {
-        effects.consume(code);
-        return selfClose;
+        return token(MARKER, selfClose)(code);
       }
       if (code === 62) {
-        return close(code);
+        return token(MARKER, done)(code);
       }
       if (isAttributeNameChar(code)) {
+        effects.enter(ATTRIBUTE_NAME);
         effects.consume(code);
         return attributeName;
       }
@@ -159,15 +197,25 @@ const tagTokenizer =
         effects.consume(code);
         return tagName;
       }
+      effects.exit(NAME);
       return names.has(name) ? boundary(code) : nok(code);
+    };
+    const open: State = (code) => {
+      effects.exit(MARKER);
+      if (!isNameChar(code)) {
+        return nok(code);
+      }
+      effects.enter(NAME);
+      return tagName(code);
     };
     return (code) => {
       if (code !== 60) {
         return nok(code);
       }
       effects.enter(type);
+      effects.enter(MARKER);
       effects.consume(code);
-      return tagName;
+      return open;
     };
   };
 
@@ -211,35 +259,6 @@ const blockTokenizer = (tag: Construct): Tokenizer =>
     };
   };
 
-const ATTRIBUTE_RE =
-  /([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'<>`=]+)))?/g;
-
-/** A tag's attributes as written, keyed by lower-cased name; the first of a name wins. */
-export const parseAttributes = (body: string): Record<string, string> => {
-  const attributes = Object.create(null) as Record<string, string>;
-  for (const [, key, double, single, bare] of body.matchAll(ATTRIBUTE_RE)) {
-    const lower = key!.toLowerCase();
-    if (!(lower in attributes)) {
-      attributes[lower] = double ?? single ?? bare ?? '';
-    }
-  }
-  return attributes;
-};
-
-const parseTag = (
-  raw: string,
-  canonical: ReadonlyMap<string, string>
-): Omit<HostElementNode, 'type'> => {
-  const [, name = ''] = /^<([^\s/>]+)/.exec(raw) ?? [];
-  return {
-    name: canonical.get(name.toLowerCase()) ?? name,
-    attributes: parseAttributes(
-      raw.slice(1 + name.length).replace(/\/?>$/, '')
-    ),
-    value: raw,
-  };
-};
-
 /** Parser extensions that read each of `names` as a {@link HostElementNode}, typed `unknown` so no declaration names micromark or mdast. */
 export const hostElementExtensions = (
   names: readonly string[]
@@ -263,22 +282,49 @@ export const hostElementExtensions = (
     flow: { 60: block },
   };
 
+  // Parsing is synchronous, so one tag's attributes are read at a time.
+  let pending: string | undefined;
+  const current = (context: CompileContext) =>
+    context.stack[context.stack.length - 1] as unknown as HostElementNode;
   const enter = function (this: CompileContext, token: Token) {
+    pending = undefined;
     this.enter(
-      { type: HOST_ELEMENT_TYPE, name: '', attributes: {}, value: '' } as never,
+      {
+        type: HOST_ELEMENT_TYPE,
+        name: '',
+        attributes: Object.create(null) as Record<string, string>,
+        value: '',
+      } as never,
       token
     );
   };
   const exit = function (this: CompileContext, token: Token) {
-    const node = this.stack[
-      this.stack.length - 1
-    ] as unknown as HostElementNode;
-    Object.assign(node, parseTag(this.sliceSerialize(token).trim(), canonical));
+    current(this).value = this.sliceSerialize(token).trim();
     this.exit(token);
   };
   const mdast: Extension = {
     enter: { [INLINE]: enter, [BLOCK]: enter },
-    exit: { [INLINE]: exit, [BLOCK]: exit },
+    exit: {
+      [INLINE]: exit,
+      [BLOCK]: exit,
+      [NAME]: function (this: CompileContext, token: Token) {
+        const name = this.sliceSerialize(token);
+        current(this).name = canonical.get(name.toLowerCase()) ?? name;
+      },
+      [ATTRIBUTE_NAME]: function (this: CompileContext, token: Token) {
+        const { attributes } = current(this);
+        const key = this.sliceSerialize(token).toLowerCase();
+        pending = key in attributes ? undefined : key;
+        if (pending !== undefined) {
+          attributes[pending] = '';
+        }
+      },
+      [ATTRIBUTE_VALUE]: function (this: CompileContext, token: Token) {
+        if (pending !== undefined) {
+          current(this).attributes[pending] = this.sliceSerialize(token);
+        }
+      },
+    },
   };
   return { micromark, mdast };
 };
