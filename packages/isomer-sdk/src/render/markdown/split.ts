@@ -45,7 +45,6 @@ export interface SplitAuthoredMarkdownOptions {
 }
 
 type Element = Pick<HostElementNode, 'name' | 'attributes'>;
-type Range = [number, number];
 
 const escapeName = (name: string): string =>
   name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -117,12 +116,6 @@ const cutLinearly = (
   return segments;
 };
 
-const offsets = (node: Nodes): Range | undefined => {
-  const start = node.position?.start.offset;
-  const end = node.position?.end.offset;
-  return start === undefined || end === undefined ? undefined : [start, end];
-};
-
 const isHost = (node: Nodes): boolean =>
   (node.type as string) === HOST_ELEMENT_TYPE;
 
@@ -149,9 +142,9 @@ const contains = (root: Nodes, predicate: (node: Nodes) => boolean) => {
   return found;
 };
 
-// A footnote is carried to every segment that cites it, so a tag inside one
-// stays text there.
-const keepInDefinitions = (blocks: readonly RootContent[]) => {
+// A footnote prints at the end of its segment, away from where it is cited,
+// so a tag inside one stays text.
+const keepInFootnotes = (blocks: readonly RootContent[]) => {
   for (const block of blocks) {
     walk(block, (node) => {
       if (node.type === 'footnoteDefinition') {
@@ -283,156 +276,143 @@ const rebuild = (block: RootContent): Piece[] => {
   return pieces;
 };
 
-const isDefinition = (node: Nodes): boolean =>
-  node.type === 'definition' || node.type === 'footnoteDefinition';
-
-const firstOf = <T extends Nodes>(
+const firstOf = <T extends Definition | FootnoteDefinition>(
   blocks: readonly Nodes[],
   type: T['type']
 ): Map<string, T> => {
   const first = new Map<string, T>();
   for (const block of blocks) {
     walk(block, (node) => {
-      if (node.type === type) {
-        const { identifier } = node as T & { identifier: string };
-        if (!first.has(identifier)) {
-          first.set(identifier, node as T);
-        }
+      if (node.type === type && !first.has((node as T).identifier)) {
+        first.set((node as T).identifier, node as T);
       }
     });
   }
   return first;
 };
 
-// Each reference becomes the link or image its first definition makes it, so
-// no segment needs a definition. Inlined destinations stop once they would
-// add more than `budget`; a reference past that prints as its text.
-const resolveReferences = (
-  blocks: readonly RootContent[],
-  budget: number
-): RootContent[] => {
-  const definitions = firstOf<Definition>(blocks, 'definition');
-  let remaining = budget;
-  const resolve = (node: Nodes): Nodes[] => {
-    if (node.type === 'linkReference' || node.type === 'imageReference') {
-      const definition = definitions.get(node.identifier);
-      const { url = '', title = null } = definition ?? {};
-      const cost = definition ? url.length + (title?.length ?? 0) : Infinity;
-      const inline = cost <= remaining;
-      if (inline) {
-        remaining -= cost;
-      }
-      if (node.type === 'imageReference') {
-        const { alt = null, position } = node;
-        return [
-          inline
-            ? { type: 'image', url, title, alt, position }
-            : { type: 'text', value: alt ?? '', position },
-        ];
-      }
-      const children = node.children.flatMap(resolve) as PhrasingContent[];
-      return inline
-        ? [{ type: 'link', url, title, children, position: node.position }]
-        : children;
-    }
-    return 'children' in node
-      ? [{ ...node, children: node.children.flatMap(resolve) } as Nodes]
-      : [node];
-  };
-  return blocks.flatMap(resolve) as RootContent[];
-};
-
-// A later footnote definition of an identifier would win within a segment
-// the first is copied into, so it takes an identifier nothing cites, and
-// prints nothing, as it did.
-const retireDuplicateFootnotes = (blocks: readonly RootContent[]) => {
-  const taken = new Set<string>();
-  const duplicates: FootnoteDefinition[] = [];
-  for (const block of blocks) {
-    walk(block, (node) => {
-      if (node.type === 'footnoteDefinition') {
-        if (taken.has(node.identifier)) {
-          duplicates.push(node);
-        }
-        taken.add(node.identifier);
+// A footnote no reference in its segment cites renders nothing, so a
+// top-level one is dropped rather than left as a segment of its own.
+const withCitedFootnotes = (run: readonly Nodes[]): Nodes[] => {
+  const cited = new Set<string>();
+  const kept = new Set<Nodes>();
+  const cite = (root: Nodes) =>
+    walk(root, (node) => {
+      if (node.type === 'footnoteReference') {
+        cited.add(node.identifier);
       }
     });
+  run.filter((node) => node.type !== 'footnoteDefinition').forEach(cite);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const node of run) {
+      if (
+        node.type === 'footnoteDefinition' &&
+        !kept.has(node) &&
+        cited.has(node.identifier)
+      ) {
+        kept.add(node);
+        cite(node);
+        grew = true;
+      }
+    }
   }
-  let count = 0;
-  for (const node of duplicates) {
-    let identifier: string;
-    do {
-      identifier = `${node.identifier}-${++count}`;
-    } while (taken.has(identifier));
-    taken.add(identifier);
-    Object.assign(node, { identifier, label: identifier });
-  }
+  return run.filter(
+    (node) => node.type !== 'footnoteDefinition' || kept.has(node)
+  );
 };
 
 const splitParsed = (
   source: string,
-  parsed: readonly RootContent[]
+  blocks: readonly RootContent[]
 ): AuthoredMarkdownSegment[] | null => {
-  keepInDefinitions(parsed);
-  if (!parsed.some((block) => contains(block, isHost))) {
+  keepInFootnotes(blocks);
+  if (!blocks.some((block) => contains(block, isHost))) {
     return null;
   }
-  const blocks = resolveReferences(parsed, source.length);
-  retireDuplicateFootnotes(blocks);
+  const definitions = firstOf<Definition>(blocks, 'definition');
   const footnotes = firstOf<FootnoteDefinition>(blocks, 'footnoteDefinition');
-  const winners = new Set<Nodes>(footnotes.values());
 
-  // A footnote resolves only within its own segment, so each takes the
-  // definitions it cites, and those they cite in turn. Copies stop once they
-  // would add more than the source's length, so they never more than double
-  // the parsing each segment's `md.authored` does.
-  let carryBudget = source.length;
-  const carry = (definition: Nodes): boolean => {
-    const [start, end] = offsets(definition) ?? [0, 0];
-    if (end - start > carryBudget) {
-      return false;
-    }
-    carryBudget -= end - start;
-    return true;
-  };
-  const carriedFor = (nodes: readonly Nodes[]): Nodes[] => {
+  // Each segment is a document of its own. A link reference whose definition
+  // is in another segment is inlined; one past `inlineBudget`, or in a segment
+  // inlining would push past the parse budget, prints as its text, as does a
+  // footnote reference whose definition is elsewhere. Inlining is charged when
+  // tried, so it never adds more than the source's length in total.
+  let inlineBudget = source.length;
+  const print = (run: readonly Nodes[]): string => {
     const present = new Set<Nodes>();
-    const cited = new Set<string>();
-    const scan = (root: Nodes) =>
-      walk(root, (node) => {
-        if (node.type === 'footnoteReference') {
-          cited.add(node.identifier);
-        } else if (winners.has(node)) {
-          present.add(node);
+    for (const node of run) {
+      walk(node, (inner) => {
+        present.add(inner);
+      });
+    }
+    const local = (identifier: string) => {
+      const definition = definitions.get(identifier);
+      return definition && present.has(definition) ? undefined : definition;
+    };
+    let cost = 0;
+    for (const node of run) {
+      walk(node, (inner) => {
+        if (inner.type === 'linkReference' || inner.type === 'imageReference') {
+          const { url = '', title } = local(inner.identifier) ?? {};
+          cost += url.length + (title?.length ?? 0);
         }
       });
-    nodes.forEach(scan);
-    const carried: Nodes[] = [];
-    for (const identifier of cited) {
-      const definition = footnotes.get(identifier);
-      if (definition && !present.has(definition) && carry(definition)) {
-        present.add(definition);
-        carried.push(definition);
-        scan(definition);
-      }
     }
-    return carried;
+    const resolve =
+      (inline: boolean) =>
+      (node: Nodes): Nodes[] => {
+        if (node.type === 'footnoteReference') {
+          const definition = footnotes.get(node.identifier);
+          return definition && present.has(definition)
+            ? [node]
+            : [{ type: 'text', value: `[^${node.label ?? node.identifier}]` }];
+        }
+        if (node.type === 'linkReference' || node.type === 'imageReference') {
+          const definition = local(node.identifier);
+          const children =
+            node.type === 'linkReference'
+              ? (node.children.flatMap(resolve(inline)) as PhrasingContent[])
+              : [];
+          if (!definition) {
+            return [{ ...node, children } as Nodes];
+          }
+          const { url, title } = definition;
+          if (node.type === 'imageReference') {
+            return [
+              inline
+                ? { type: 'image', url, title, alt: node.alt }
+                : { type: 'text', value: node.alt ?? '' },
+            ];
+          }
+          return inline ? [{ type: 'link', url, title, children }] : children;
+        }
+        return 'children' in node
+          ? [
+              {
+                ...node,
+                children: node.children.flatMap(resolve(inline)),
+              } as Nodes,
+            ]
+          : [node];
+      };
+    const printWith = (inline: boolean) =>
+      printParsed(run.flatMap(resolve(inline)));
+    if (cost === 0 || cost > inlineBudget) {
+      return printWith(false);
+    }
+    inlineBudget -= cost;
+    const inlined = printWith(true);
+    return exceedsParseBudget(inlined) ? printWith(false) : inlined;
   };
 
   const segments: AuthoredMarkdownSegment[] = [];
   let run: Nodes[] = [];
   const flush = () => {
-    if (run.length > 0) {
-      // A segment `md.authored` would degrade with its copies goes without them.
-      const carried = carriedFor(run);
-      const printed = printParsed([...run, ...carried]);
-      segments.push(
-        ...markdown(
-          carried.length > 0 && exceedsParseBudget(printed)
-            ? printParsed(run)
-            : printed
-        )
-      );
+    const kept = withCitedFootnotes(run);
+    if (kept.length > 0) {
+      segments.push(...markdown(print(kept)));
     }
     run = [];
   };
@@ -440,8 +420,8 @@ const splitParsed = (
     if (isHost(block)) {
       flush();
       segments.push(element(asHost(block)));
-    } else if (!isDefinition(block)) {
-      // A top-level footnote definition is copied where cited instead.
+    } else if (block.type !== 'definition') {
+      // A top-level link definition prints nothing; references to it inline.
       for (const piece of rebuild(block)) {
         if ('element' in piece) {
           flush();

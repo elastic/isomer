@@ -171,11 +171,11 @@ describe('splitAuthoredMarkdown', () => {
     ]);
   });
 
-  it('prints a reference past the inlining budget as its text', () => {
+  it('prints references as text when inlining them would pass the cap', () => {
     const url = `https://elastic.co/${'a'.repeat(1000)}`;
     expect(split(`[d]: ${url}\n\n${tag('x')}\n\n[a][d] [b][d]`)).toEqual([
       { id: 'x' },
-      `[a](${url}) b`,
+      'a b',
     ]);
   });
 
@@ -230,13 +230,28 @@ describe('splitAuthoredMarkdown', () => {
     ]);
   });
 
-  it('carries footnote definitions, resolving the references inside them', () => {
+  it('skips inlining that would push a segment past the parse budget', () => {
+    const url = `https://elastic.co/${'a'.repeat(4000)}`;
+    const body = 'x '.repeat(4500);
+    const [, segment] = splitAuthoredMarkdown(
+      `[d]: ${url}\n\n${tag('x')}\n\n${body}[a][d] [b][d] **kept**`,
+      { elements: [TAG] }
+    );
+    expect(segment?.type === 'markdown' && segment.source).toBe(
+      `${body.trimEnd()} a b **kept**`
+    );
+    expect(
+      segment?.type === 'markdown' && serializeMarkdown(segment.content)
+    ).toMatch(/\*\*kept\*\*$/);
+  });
+
+  it('keeps a footnote only in the segment that holds its definition', () => {
     expect(
       split(
         `Note[^1].\n\n${tag('x')}\n\nAgain[^1].\n\n[^1]: See [d].\n\n[d]: https://elastic.co`
       )
     ).toEqual([
-      'Note[^1].\n\n[^1]: See [d](https://elastic.co).',
+      'Note\\[^1].',
       { id: 'x' },
       'Again[^1].\n\n[^1]: See [d](https://elastic.co).',
     ]);
@@ -328,26 +343,23 @@ describe('splitAuthoredMarkdown', () => {
     ]);
   });
 
-  it('resolves a definition inside a carried footnote as the source does', () => {
+  it('drops a top-level footnote definition its segment does not cite', () => {
     expect(
       split(
         `[^n]: see [d]\n\n    [d]: https://first.example\n\n${tag('x')}\n\nRef [^n] [d]\n\n> [d]: https://second.example`
       )
     ).toEqual([
       { id: 'x' },
-      'Ref [^n] [d](https://first.example)\n\n> [d]: https://second.example\n\n[^n]: see [d](https://first.example)\n\n    [d]: https://first.example',
+      'Ref \\[^n] [d](https://first.example)\n\n> [d]: https://second.example',
     ]);
   });
 
-  it('resolves a link to its first definition when a carried footnote holds a duplicate', () => {
+  it('resolves a link to its first definition when another segment holds a duplicate', () => {
     expect(
       split(
         `[d]: https://first.example\n\n[^n]: note\n\n    [d]: https://second.example\n\n${tag('x')}\n\nSee [d] [^n]`
       )
-    ).toEqual([
-      { id: 'x' },
-      'See [d](https://first.example) [^n]\n\n[^n]: note\n\n    [d]: https://second.example',
-    ]);
+    ).toEqual([{ id: 'x' }, 'See [d](https://first.example) \\[^n]']);
   });
 
   it('keeps an indented list a list', () => {
@@ -386,7 +398,7 @@ describe('splitAuthoredMarkdown', () => {
     ).toEqual([{ id: 'x' }, '- a\n  - [d]: https://second.example']);
   });
 
-  it('keeps an opening code block out of a carried footnote', () => {
+  it('prints a footnote cited before its definition segment as text', () => {
     expect(
       split(
         `> [^n]: first\n\n${tag('x')}\n\n    code\n\n[^n] ref\n\n> [^n]: second`
@@ -394,7 +406,7 @@ describe('splitAuthoredMarkdown', () => {
     ).toEqual([
       '> [^n]: first',
       { id: 'x' },
-      '```\ncode\n```\n\n[^n] ref\n\n> [^n-1]: second\n\n[^n]: first',
+      '```\ncode\n```\n\n\\[^n] ref\n\n> [^n]: second',
     ]);
   });
 
@@ -509,19 +521,14 @@ describe('splitAuthoredMarkdown', () => {
       expect(timed(source)).toBeLessThan(500);
     });
 
-    it('caps the definitions it copies at the length of the source', () => {
-      const source = `${`x[^1] ${tag('x')} `.repeat(250)}\n\n[^1]: ${'word '.repeat(1_500)}`;
+    it('caps what inlining adds at the length of the source', () => {
+      const source = `${`x[a][d] ${tag('x')} `.repeat(250)}\n\n[d]: https://elastic.co/${'a'.repeat(7_000)}`;
       expect(source.length).toBeLessThanOrEqual(16_384);
       const started = performance.now();
       const segments = splitAuthoredMarkdown(source, { elements: [TAG] });
       expect(performance.now() - started).toBeLessThan(500);
-      const copied = segments.filter(
-        (segment) =>
-          segment.type === 'markdown' && segment.source.includes('[^1]:')
-      );
-      expect(copied.length).toBeGreaterThan(0);
       expect(
-        copied.reduce(
+        segments.reduce(
           (total, segment) =>
             total + (segment.type === 'markdown' ? segment.source.length : 0),
           0
