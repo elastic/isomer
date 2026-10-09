@@ -186,7 +186,7 @@ describe('splitAuthoredMarkdown', () => {
   it('drops a list item that held only a tag', () => {
     expect(split(`- a\n  - ${tag('x')}`)).toEqual(['- a', { id: 'x' }]);
     expect(split(`* a\n* ${tag('x')}\n\n- b`)).toEqual([
-      '* a',
+      '- a',
       { id: 'x' },
       '- b',
     ]);
@@ -244,7 +244,7 @@ describe('splitAuthoredMarkdown', () => {
     expect(split(`a ${tag('x')}\n\n    code`)).toEqual([
       'a',
       { id: 'x' },
-      '    code',
+      '```\ncode\n```',
     ]);
   });
 
@@ -308,7 +308,7 @@ describe('splitAuthoredMarkdown', () => {
     ]);
   });
 
-  it('carries a definition ahead of a later duplicate in the segment', () => {
+  it('drops a later duplicate definition, so a carried one wins', () => {
     expect(
       split(
         `> [d]: https://first.example\n\n${tag('x')}\n\nSee [d].\n\n> [d]: https://second.example`
@@ -316,11 +316,34 @@ describe('splitAuthoredMarkdown', () => {
     ).toEqual([
       '> [d]: https://first.example',
       { id: 'x' },
-      'See [d].\n\n[d]: https://first.example\n\n> [d]: https://second.example',
+      'See [d].\n\n[d]: https://first.example',
     ]);
   });
 
-  it('keeps an opening indented code block out of a carried footnote', () => {
+  it('resolves a definition carried inside a footnote as the source does', () => {
+    expect(
+      split(
+        `[^n]: see [d]\n\n    [d]: https://first.example\n\n${tag('x')}\n\nRef [^n] [d]\n\n> [d]: https://second.example`
+      )
+    ).toEqual([
+      { id: 'x' },
+      'Ref [^n] [d]\n\n[^n]: see [d]\n\n    [d]: https://first.example',
+    ]);
+  });
+
+  it('keeps an indented list a list when a definition is carried', () => {
+    expect(
+      split(
+        `> [d]: https://first.example\n\n${tag('x')}\n\nSee [d]\n\n   - a\n     continued\n\n> [d]: https://second.example`
+      )
+    ).toEqual([
+      '> [d]: https://first.example',
+      { id: 'x' },
+      'See [d]\n\n- a\n  continued\n\n[d]: https://first.example',
+    ]);
+  });
+
+  it('keeps an opening code block out of a carried footnote', () => {
     expect(
       split(
         `> [^n]: first\n\n${tag('x')}\n\n    code\n\n[^n] ref\n\n> [^n]: second`
@@ -328,7 +351,7 @@ describe('splitAuthoredMarkdown', () => {
     ).toEqual([
       '> [^n]: first',
       { id: 'x' },
-      '    code\n\n[^n] ref\n\n[^n]: first\n\n> [^n]: second',
+      '```\ncode\n```\n\n[^n] ref\n\n[^n]: first',
     ]);
   });
 
@@ -361,7 +384,7 @@ describe('splitAuthoredMarkdown', () => {
     ).toEqual([
       'See [d].\n\n[d]: https://first.example',
       { id: 'x' },
-      '> [d]: https://first.example\n\n> [d]: https://second.example',
+      '> [d]: https://first.example',
     ]);
   });
 
@@ -369,7 +392,7 @@ describe('splitAuthoredMarkdown', () => {
     expect(split(`## a ${tag('x')}\n\n    code`)).toEqual([
       '## a',
       { id: 'x' },
-      '    code',
+      '```\ncode\n```',
     ]);
   });
 

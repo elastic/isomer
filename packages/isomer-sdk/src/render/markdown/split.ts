@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { Nodes, Parents, RootContent } from 'mdast';
+import type { Nodes, RootContent } from 'mdast';
 
 import type { MarkdownContent } from '../../define/markdown_content';
 
@@ -123,9 +123,6 @@ const isHost = (node: Nodes): boolean =>
 const asHost = (node: Nodes): HostElementNode =>
   node as unknown as HostElementNode;
 
-const isDefinition = (node: Nodes): boolean =>
-  node.type === 'definition' || node.type === 'footnoteDefinition';
-
 // Depth-first in document order.
 const walk = (root: Nodes, visit: (node: Nodes) => void) => {
   const pending: Nodes[] = [root];
@@ -211,20 +208,24 @@ const trimEdges = (children: Nodes[]): Nodes[] => {
   return trimmed;
 };
 
-// Removes every host element under `node`, appending each to `found` in
+// Removes every descendant `removes` matches, appending each to `removed` in
 // document order, and drops what that empties: an empty strong would print as
 // a thematic break, and an empty list item as a marker that can read as a
 // setext underline. Returns `undefined` when nothing is left.
-const strip = (node: Nodes, found: Element[]): Nodes | undefined => {
-  if (!('children' in node) || !contains(node, isHost)) {
+const strip = (
+  node: Nodes,
+  removes: (node: Nodes) => boolean,
+  removed: Nodes[] = []
+): Nodes | undefined => {
+  if (!('children' in node) || !contains(node, removes)) {
     return node;
   }
   const kept = (node.children as Nodes[]).flatMap((child) => {
-    if (isHost(child)) {
-      found.push(asHost(child));
+    if (removes(child)) {
+      removed.push(child);
       return [];
     }
-    const stripped = strip(child, found);
+    const stripped = strip(child, removes, removed);
     return stripped ? [stripped] : [];
   });
   const children = PHRASING_PARENTS.has(node.type)
@@ -237,32 +238,31 @@ const strip = (node: Nodes, found: Element[]): Nodes | undefined => {
 
 type Piece = { node: Nodes } | { element: Element };
 
+const withoutHosts = (node: Nodes): Piece[] => {
+  const found: Nodes[] = [];
+  const stripped = strip(node, isHost, found);
+  return [
+    ...(stripped ? [{ node: stripped }] : []),
+    ...found.map((host) => ({ element: asHost(host) })),
+  ];
+};
+
 /**
- * `block` without its host elements, as printable nodes and the elements in
- * order. A host element directly in a top-level paragraph splits it in place;
- * any other follows the block it was removed from.
+ * `block` without its host elements, as nodes and elements in order. A host
+ * element directly in a top-level paragraph splits it in place; any other
+ * follows the block it was removed from.
  */
 const rebuild = (block: RootContent): Piece[] => {
   if (block.type !== 'paragraph' || !block.children.some(isHost)) {
-    const found: Element[] = [];
-    const stripped = strip(block, found);
-    return [
-      ...(stripped ? [{ node: stripped }] : []),
-      ...found.map((host) => ({ element: host })),
-    ];
+    return withoutHosts(block);
   }
   const pieces: Piece[] = [];
   let run: Nodes[] = [];
   const flushRun = () => {
-    const found: Element[] = [];
-    const stripped = strip({ ...block, children: run } as Nodes, found);
-    const children =
-      stripped &&
-      trimEdges(joinText((stripped as Parents).children as Nodes[]));
-    if (children?.length) {
-      pieces.push({ node: { ...block, children } as Nodes });
+    const children = trimEdges(run);
+    if (children.length > 0) {
+      pieces.push(...withoutHosts({ ...block, children } as Nodes));
     }
-    pieces.push(...found.map((host) => ({ element: host })));
     run = [];
   };
   for (const child of block.children) {
@@ -277,74 +277,19 @@ const rebuild = (block: RootContent): Piece[] => {
   return pieces;
 };
 
-interface Usage {
-  links: Set<string>;
-  footnotes: Set<string>;
-  definedLinks: Set<string>;
-  definedFootnotes: Set<string>;
-  /** Where the segment's text first holds a later duplicate of an identifier, footnotes prefixed `^`. */
-  shadowed: Map<string, number>;
-}
+const definitionKey = (node: Nodes): string | undefined =>
+  node.type === 'definition'
+    ? node.identifier
+    : node.type === 'footnoteDefinition'
+      ? `^${node.identifier}`
+      : undefined;
 
-const newUsage = (): Usage => ({
-  links: new Set(),
-  footnotes: new Set(),
-  definedLinks: new Set(),
-  definedFootnotes: new Set(),
-  shadowed: new Map(),
-});
-
-// `winners` holds the definition of each identifier the whole parse uses;
-// `at` is where `root` starts in the segment's text.
-const use = (
-  root: Nodes,
-  usage: Usage,
-  winners: ReadonlySet<Nodes>,
-  at?: number
-) => {
-  const shadow = (key: string) => {
-    if (at !== undefined && !usage.shadowed.has(key)) {
-      usage.shadowed.set(key, at);
-    }
-  };
-  walk(root, (node) => {
-    if (node.type === 'linkReference' || node.type === 'imageReference') {
-      usage.links.add(node.identifier);
-    } else if (node.type === 'footnoteReference') {
-      usage.footnotes.add(node.identifier);
-    } else if (node.type === 'definition') {
-      if (winners.has(node)) {
-        usage.definedLinks.add(node.identifier);
-      } else {
-        shadow(node.identifier);
-      }
-    } else if (node.type === 'footnoteDefinition') {
-      if (winners.has(node)) {
-        usage.definedFootnotes.add(node.identifier);
-      } else {
-        shadow(`^${node.identifier}`);
-      }
-    }
-  });
-};
-
-const markersOf = (
-  source: string,
-  block: RootContent
-): Parameters<typeof printParsed>[1] => {
-  const start = offsets(block)?.[0];
-  if (block.type !== 'list' || start === undefined) {
-    return {};
-  }
-  const [, bullet, bulletOrdered] =
-    /^(?:([-*+])|\d{1,9}([.)]))/.exec(source.slice(start, start + 11)) ?? [];
-  if (block.ordered) {
-    return bulletOrdered === '.' || bulletOrdered === ')'
-      ? { bulletOrdered }
-      : {};
-  }
-  return bullet === '-' || bullet === '*' || bullet === '+' ? { bullet } : {};
-};
+const referenceKey = (node: Nodes): string | undefined =>
+  node.type === 'linkReference' || node.type === 'imageReference'
+    ? node.identifier
+    : node.type === 'footnoteReference'
+      ? `^${node.identifier}`
+      : undefined;
 
 const splitParsed = (
   source: string,
@@ -355,123 +300,82 @@ const splitParsed = (
     return null;
   }
 
-  // A top-level definition is carried as written; a nested one is printed
-  // without the container prefixes its source lines carry. The first of an
-  // identifier wins, as it does in the parse.
-  const definitions = new Map<string, string>();
-  const footnotes = new Map<string, { node: Nodes; text: string }>();
-  const winners = new Set<Nodes>();
+  // The first definition of an identifier is the one the parse uses. Later
+  // ones are dropped, so no segment can hold one that shadows a copy.
+  const definitions = new Map<string, Nodes>();
   for (const block of blocks) {
-    const written = (node: Nodes) =>
-      node === block ? source.slice(...offsets(node)!) : printParsed(node);
     walk(block, (node) => {
-      if (node.type === 'definition' && !definitions.has(node.identifier)) {
-        definitions.set(node.identifier, written(node));
-        winners.add(node);
-      } else if (
-        node.type === 'footnoteDefinition' &&
-        !footnotes.has(node.identifier)
-      ) {
-        footnotes.set(node.identifier, { node, text: written(node) });
-        winners.add(node);
+      const key = definitionKey(node);
+      if (key !== undefined && !definitions.has(key)) {
+        definitions.set(key, node);
       }
     });
   }
+  const winners = new Set(definitions.values());
+  const isDuplicate = (node: Nodes) =>
+    definitionKey(node) !== undefined && !winners.has(node);
 
-  const segments: AuthoredMarkdownSegment[] = [];
-  let text = '';
-  let lastEnd: number | undefined;
-  let usage = newUsage();
-
-  const append = (piece: string, node: Nodes, range?: Range) => {
-    const gap =
-      range && lastEnd !== undefined ? source.slice(lastEnd, range[0]) : '\n\n';
-    const at = text === '' ? 0 : text.length + gap.length;
-    text = text === '' ? piece : `${text}${gap}${piece}`;
-    lastEnd = range?.[1];
-    use(node, usage, winners, at);
-  };
-
-  // A reference resolves only within its own segment, so each takes a copy
-  // of the definitions it uses, and of those its footnotes use in turn.
-  // Copies stop once they would add more than the source's length, so they
-  // never more than double the parsing each segment's `md.authored` does.
+  // A reference resolves only within its own segment, so each takes the
+  // definitions it uses, and those its footnotes use in turn. Copies stop
+  // once they would add more than the source's length, so they never more
+  // than double the parsing each segment's `md.authored` does.
   let carryBudget = source.length;
-  const carry = (copy: string): boolean => {
-    if (copy.length > carryBudget) {
+  const carry = (definition: Nodes): boolean => {
+    const [start, end] = offsets(definition) ?? [0, 0];
+    if (end - start > carryBudget) {
       return false;
     }
-    carryBudget -= copy.length;
+    carryBudget -= end - start;
     return true;
   };
-  const flush = () => {
-    if (text.trim() !== '') {
-      // A copy that must win goes just before the duplicate it precedes,
-      // which a container holds, so no indented line follows it to absorb.
-      const ahead = new Map<number, string[]>();
-      const carried: string[] = [];
-      const place = (key: string, copy: string) => {
-        const at = usage.shadowed.get(key);
-        if (at === undefined) {
-          carried.push(copy);
-        } else {
-          ahead.set(at, [...(ahead.get(at) ?? []), copy]);
+  const withDefinitions = (nodes: readonly Nodes[]): Nodes[] => {
+    const present = new Set<Nodes>();
+    const used = new Set<string>();
+    const scan = (root: Nodes) =>
+      walk(root, (node) => {
+        const key = referenceKey(node);
+        if (key !== undefined) {
+          used.add(key);
+        } else if (winners.has(node)) {
+          present.add(node);
         }
-      };
-      for (const identifier of usage.footnotes) {
-        const footnote = footnotes.get(identifier);
-        if (
-          footnote &&
-          !usage.definedFootnotes.has(identifier) &&
-          carry(footnote.text)
-        ) {
-          usage.definedFootnotes.add(identifier);
-          place(`^${identifier}`, footnote.text);
-          use(footnote.node, usage, winners);
-        }
+      });
+    nodes.forEach(scan);
+    const carried: Nodes[] = [];
+    for (const key of used) {
+      const definition = definitions.get(key);
+      if (definition && !present.has(definition) && carry(definition)) {
+        present.add(definition);
+        carried.push(definition);
+        scan(definition);
       }
-      for (const identifier of usage.links) {
-        const definition = definitions.get(identifier);
-        if (
-          definition &&
-          !usage.definedLinks.has(identifier) &&
-          carry(definition)
-        ) {
-          place(identifier, definition);
-        }
-      }
-      for (const at of [...ahead.keys()].sort((a, b) => b - a)) {
-        const before = text.slice(0, at);
-        const blank = before === '' || /\n[ \t]*\n[ \t]*$/.test(before);
-        text = `${before}${blank ? '' : '\n\n'}${ahead.get(at)!.join('\n\n')}\n\n${text.slice(at)}`;
-      }
-      segments.push(...markdown([text, ...carried].join('\n\n')));
     }
-    text = '';
-    lastEnd = undefined;
-    usage = newUsage();
+    return [...nodes, ...carried];
   };
 
-  for (const block of blocks) {
-    const range = offsets(block);
-    if (!range) {
-      continue;
+  const segments: AuthoredMarkdownSegment[] = [];
+  let run: Nodes[] = [];
+  const flush = () => {
+    if (run.length > 0) {
+      segments.push(...markdown(printParsed(withDefinitions(run))));
     }
-    if (isDefinition(block)) {
-      lastEnd = undefined;
-    } else if (isHost(block)) {
+    run = [];
+  };
+  for (const block of blocks) {
+    if (isHost(block)) {
       flush();
       segments.push(element(asHost(block)));
-    } else if (!contains(block, isHost)) {
-      append(source.slice(...range), block, range);
-    } else {
-      for (const piece of rebuild(block)) {
-        if ('element' in piece) {
-          flush();
-          segments.push(element(piece.element));
-        } else {
-          append(printParsed(piece.node, markersOf(source, block)), piece.node);
-        }
+      continue;
+    }
+    // A top-level definition prints nothing in place; it is carried where used.
+    const cleaned =
+      definitionKey(block) === undefined && strip(block, isDuplicate);
+    for (const piece of cleaned ? rebuild(cleaned as RootContent) : []) {
+      if ('element' in piece) {
+        flush();
+        segments.push(element(piece.element));
+      } else {
+        run.push(piece.node);
       }
     }
   }
