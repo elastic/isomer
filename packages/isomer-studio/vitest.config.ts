@@ -28,5 +28,7 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['src/**/*.test.{ts,tsx}'],
     setupFiles: ['./src/test_setup.ts'],
+    // Tests that mount the whole Studio with EUI under jsdom take seconds, more on CI runners.
+    testTimeout: 30_000,
   },
 });
