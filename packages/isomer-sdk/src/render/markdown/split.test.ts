@@ -95,6 +95,38 @@ describe('splitAuthoredMarkdown', () => {
     ]);
   });
 
+  it('keeps delimiters around a tag reading as they did', () => {
+    // The closing `**` follows punctuation and precedes a letter, so it
+    // closes nothing: the stars are literal, as CommonMark reads them.
+    expect(printed(`**before${TAG}**after`)).toEqual([
+      '\\*\\*before',
+      { render_attachment: { id: 'x' } },
+      '\\*\\*after',
+    ]);
+    expect(printed(`**before${TAG}** after`)).toEqual([
+      '**before** after',
+      { render_attachment: { id: 'x' } },
+    ]);
+  });
+
+  it('keeps a reference label holding a tag matched to its definition', () => {
+    expect(
+      printed(`![chart ${TAG}]\n\n[chart ${TAG}]: https://elastic.co/chart.png`)
+    ).toEqual([
+      `[chart ${TAG}]: https://elastic.co/chart.png\n\n![chart \\${TAG}][chart ${TAG}]`,
+    ]);
+    // In a link label the tag is a tag, as in an inline link's label, and
+    // the label still names the definition however it is spelled.
+    expect(
+      printed(
+        `[chart ${TAG}]\n\n[CHART  <render_attachment  id="x" />]: https://elastic.co/chart.png`
+      )
+    ).toEqual([
+      `[CHART  ${TAG}]: https://elastic.co/chart.png\n\n[chart][chart ${TAG}]`,
+      { render_attachment: { id: 'x' } },
+    ]);
+  });
+
   it('keeps a table whole', () => {
     expect(printed(`| a | b |\n| - | - |\n| before ${TAG} | after |`)).toEqual([
       '| a | b |\n| - | - |\n| before | after |',
@@ -384,6 +416,19 @@ describe('splitAuthoredMarkdown', () => {
       const started = performance.now();
       split(padded);
       expect(performance.now() - started).toBeLessThan(500);
+    });
+
+    it('cuts source nested too deep to print quickly into inert pieces', () => {
+      const source = `${'*a '.repeat(100)}${TAG}${' a*'.repeat(100)}`;
+      const started = performance.now();
+      const segments = split(source);
+      expect(performance.now() - started).toBeLessThan(200);
+      expect(segments.map((segment) => segment.type)).toEqual([
+        'markdown',
+        'element',
+        'markdown',
+      ]);
+      expect(sourceOf(segments[0])).toMatch(/^\*a \*a /);
     });
 
     it('stays linear far past the budget', () => {

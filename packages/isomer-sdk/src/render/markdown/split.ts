@@ -6,8 +6,8 @@
  */
 
 // Splits authored Markdown at a host's own tags without a second grammar:
-// each tag becomes a sentinel word, the stock GFM parser parses the whole
-// source once, and where the sentinel lands says what the tag is. In a `text`
+// each tag becomes a sentinel, the stock GFM parser parses the whole source
+// once, and where the sentinel lands says what the tag is. In a `text`
 // node it is a tag; anywhere else (a code span or block, an image's alt, a
 // link destination or title, raw HTML) it is literal and the tag text goes
 // back. Blocks that held a tag are then printed from the tree.
@@ -41,27 +41,52 @@ export interface SplitAuthoredMarkdownOptions {
   readonly elements: readonly string[];
 }
 
-// Private-use characters have no Markdown meaning, so a sentinel parses as a
-// word wherever the tag was written. Any already in the source, literal or
-// as a character reference (the only other way text can decode to one), are
-// replaced first, so the parsed text holds sentinels only where tags were.
-const SENTINEL_RE = /\uE000(\d+)\uE001/g;
+// A sentinel keeps the tag's own `<` and `>` as its edges, so emphasis and
+// other delimiters around it read exactly as they did around the tag, and
+// holds private-use characters between them, which no Markdown construct
+// reads, so it parses as text wherever the tag was written. Any already in
+// the source, literal or as a character reference (the only other way text
+// can decode to one), are replaced first, so the parsed text holds sentinels
+// only where tags were.
+const SENTINEL_RE = /<\uE000(\d+)\uE001>/g;
+// In a link destination the parser strips the angle brackets.
+const SENTINEL_ANYWHERE_RE = /<?\uE000(\d+)\uE001>?/g;
 const RESERVED_RE = /[\uE000\uE001]|&#(?:[xX]0*[eE]00[01]|0*5734[45]);/g;
-const sentinel = (index: number): string => `\uE000${index}\uE001`;
+const sentinel = (index: number): string => `<\uE000${index}\uE001>`;
 const withoutReserved = (source: string): string =>
   source.replace(RESERVED_RE, (match) =>
     match.length === 1 ? '\uFFFD' : '&#xFFFD;'
   );
 
+// Tags that read the same get the same sentinel, so a reference label that
+// holds one still matches its definition, as the parser matches labels.
+const labelKey = (tag: HostTag): string =>
+  tag.raw.toLowerCase().replace(/\s+/g, ' ');
+
 const substitute = (source: string, tags: readonly HostTag[]): string => {
+  const first = new Map<string, number>();
   let out = '';
   let cursor = 0;
   tags.forEach((tag, index) => {
-    out += source.slice(cursor, tag.index) + sentinel(index);
+    const key = labelKey(tag);
+    if (!first.has(key)) {
+      first.set(key, index);
+    }
+    out += source.slice(cursor, tag.index) + sentinel(first.get(key)!);
     cursor = tag.index + tag.raw.length;
   });
   return out + source.slice(cursor);
 };
+
+// The GFM serializer's cost grows steeply with nesting depth, while the
+// parse budget bounds breadth, not depth. Nothing authored nests this deep.
+const MAX_DEPTH = 64;
+
+const exceedsDepth = (nodes: readonly Nodes[], depth = 1): boolean =>
+  depth > MAX_DEPTH ||
+  nodes.some(
+    (node) => 'children' in node && exceedsDepth(node.children, depth + 1)
+  );
 
 // The tag's node in the tree, until it is cut out again.
 const HOST = 'isomerHostElement';
@@ -121,7 +146,7 @@ const resolve = (
   for (const [key, value] of Object.entries(restored)) {
     if (typeof value === 'string') {
       restored[key] = value.replace(
-        SENTINEL_RE,
+        SENTINEL_ANYWHERE_RE,
         (_, index: string) => tags[Number(index)]!.raw
       );
     }
@@ -374,5 +399,7 @@ export const splitAuthoredMarkdown = (
   }
   const blocks = parseGfmBlocks(substitute(cleaned, tags)) as
     readonly RootContent[] | null;
-  return blocks ? splitBlocks(blocks, tags) : cutLinearly(cleaned, tags);
+  return blocks && !exceedsDepth(blocks)
+    ? splitBlocks(blocks, tags)
+    : cutLinearly(cleaned, tags);
 };

@@ -149,7 +149,7 @@ splitAuthoredMarkdown('Here is the note: <render_attachment id="a1" /> Anything 
 // markdown 'Here is the note:', element { id: 'a1' }, markdown 'Anything else?'
 ```
 
-Each tag is found by the grammar of a CommonMark raw HTML open tag on one line, with `_` allowed in the name, and swapped for a placeholder word before the parse, so the parser's own grammar decides what the tag is. A placeholder in text is a tag. One anywhere else is not: in a code span or block, a raw HTML block or comment, a link destination or title, an image's alt text, or a footnote definition, or escaped with `\` or written with entities, the tag stays text.
+Each tag is found by the grammar of a CommonMark raw HTML open tag on one line, with `_` allowed in the name, and swapped for a placeholder before the parse, so the parser's own grammar decides what the tag is. The placeholder keeps the tag's `<` and `>` as its edges, so emphasis around a tag reads as it did, and tags that read the same share one placeholder, so a reference label holding a tag still matches its definition. A placeholder in text is a tag. One anywhere else is not: in a code span or block, a raw HTML block or comment, a link destination or title, an image's alt text, or a footnote definition, or escaped with `\` or written with entities, the tag stays text.
 
 - A tag directly in a top-level paragraph splits the paragraph in place, so a tag alone on its line splits the text around it.
 - A tag inside a list, table, quote, heading, link label, or emphasis is removed from that block, and its element follows the whole top-level block, so a list keeps its numbering and a table its rows.
@@ -157,7 +157,7 @@ Each tag is found by the grammar of a CommonMark raw HTML open tag on one line, 
 - Each `markdown` segment is a document of its own. A link or image reference whose definition is in another segment has that definition copied ahead of it, the first definition of the label winning as it did in the source. Footnote definitions stay where they were written, so a footnote cited from another segment prints as its label.
 - Names match case-insensitively and whole, and the element carries the name as listed. Attribute names are lower-cased, the first of a repeated name wins, a bare attribute is `''`, and values are as written: entities are not decoded, and an unquoted value keeps a trailing `/` (`path=/api/>` is `/api/`), as in HTML.
 - Whitespace-only `markdown` segments are dropped. With no tag in the source, the result is one segment built by `md.authored` from the source as written. The private-use characters U+E000 and U+E001 are reserved for the placeholders: in the source, literal or as a character reference, they become U+FFFD.
-- Past the parse budget, or at the parser's recursion limit, the source is cut at each tag and every piece degrades to inert text, as `md.authored` degrades; with no parse to say otherwise, a tag inside code is cut there too.
+- Past the parse budget, at the parser's recursion limit, or with blocks nested more than 64 levels deep, the source is cut at each tag and every piece degrades to inert text, as `md.authored` degrades; with no parse to say otherwise, a tag inside code is cut there too.
 
 `md.authored(segment.source)` rebuilds a parsed segment's `content`, so a host whose composition nodes hold strings can store `source` instead.
 
