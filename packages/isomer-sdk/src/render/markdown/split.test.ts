@@ -62,6 +62,26 @@ describe('splitAuthoredMarkdown', () => {
     expect(printed(`**${TAG}**`)).toEqual([{ render_attachment: { id: 'x' } }]);
   });
 
+  it('keeps one space between words a tag separated, and none it did not', () => {
+    expect(printed(`**before${TAG} after**`)).toEqual([
+      '**before after**',
+      { render_attachment: { id: 'x' } },
+    ]);
+    expect(printed(`- a${TAG}b`)).toEqual([
+      '- ab',
+      { render_attachment: { id: 'x' } },
+    ]);
+  });
+
+  it('drops a hard break left at the edge of a split', () => {
+    expect(printed(`Before  \n${TAG}  \nAfter\\\n${TAG}`)).toEqual([
+      'Before',
+      { render_attachment: { id: 'x' } },
+      'After',
+      { render_attachment: { id: 'x' } },
+    ]);
+  });
+
   it('keeps a table whole', () => {
     expect(printed(`| a | b |\n| - | - |\n| before ${TAG} | after |`)).toEqual([
       '| a | b |\n| - | - |\n| before | after |',
@@ -323,6 +343,13 @@ describe('splitAuthoredMarkdown', () => {
     it('replaces sentinel characters already in the source', () => {
       expect(printed(`a0b ${TAG}`)).toEqual([
         'a�0�b',
+        { render_attachment: { id: 'x' } },
+      ]);
+      // A character reference would decode to one in text, so it goes too.
+      expect(
+        printed(`&#xE000;0&#xE001; &#57344;9&#x0e001; \`&#xe000;\` ${TAG}`)
+      ).toEqual([
+        '\uFFFD0\uFFFD \uFFFD9\uFFFD `&#xFFFD;`',
         { render_attachment: { id: 'x' } },
       ]);
     });

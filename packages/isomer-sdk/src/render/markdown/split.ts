@@ -42,10 +42,16 @@ export interface SplitAuthoredMarkdownOptions {
 }
 
 // Private-use characters have no Markdown meaning, so a sentinel parses as a
-// word wherever the tag was written. Any already in the source are replaced
-// first, so the parsed text holds sentinels only where tags were.
+// word wherever the tag was written. Any already in the source, literal or
+// as a character reference (the only other way text can decode to one), are
+// replaced first, so the parsed text holds sentinels only where tags were.
 const SENTINEL_RE = /\uE000(\d+)\uE001/g;
+const RESERVED_RE = /[\uE000\uE001]|&#(?:[xX]0*[eE]00[01]|0*5734[45]);/g;
 const sentinel = (index: number): string => `\uE000${index}\uE001`;
+const withoutReserved = (source: string): string =>
+  source.replace(RESERVED_RE, (match) =>
+    match.length === 1 ? '\uFFFD' : '&#xFFFD;'
+  );
 
 const substitute = (source: string, tags: readonly HostTag[]): string => {
   let out = '';
@@ -160,21 +166,33 @@ const DROPPED_WHEN_EMPTY = new Set([
   'strong',
 ]);
 
-// Text either side of a removed tag joins with one space at most, and the
-// run's edges are trimmed so nothing prints as `&#x20;`.
+// Text either side of a removed tag joins, with one space if either side
+// had one. The run's edges are trimmed, and a hard break left at an edge is
+// dropped as `md.paragraph` drops it, since it would print as a bare `\\`.
 const tidyPhrasing = (children: Nodes[]): Nodes[] => {
   const joined: Nodes[] = [];
   for (const child of children) {
     const previous = joined[joined.length - 1];
     if (previous?.type === 'text' && child.type === 'text') {
+      const left = previous.value.replace(/\s+$/, '');
+      const right = child.value.replace(/^\s+/, '');
+      const spaced = left !== previous.value || right !== child.value;
       joined[joined.length - 1] = {
         type: 'text',
-        value:
-          previous.value.replace(/\s+$/, ' ') + child.value.replace(/^\s+/, ''),
+        value: left + (spaced ? ' ' : '') + right,
       };
     } else {
       joined.push(child);
     }
+  }
+  const isEdge = (node: Nodes | undefined): boolean =>
+    node?.type === 'break' ||
+    (node?.type === 'text' && node.value.trim() === '');
+  while (isEdge(joined[0])) {
+    joined.shift();
+  }
+  while (isEdge(joined[joined.length - 1])) {
+    joined.pop();
   }
   const first = joined[0];
   if (first?.type === 'text') {
@@ -184,7 +202,7 @@ const tidyPhrasing = (children: Nodes[]): Nodes[] => {
   if (last?.type === 'text') {
     joined[joined.length - 1] = { ...last, value: last.value.trimEnd() };
   }
-  return joined.filter((child) => child.type !== 'text' || child.value !== '');
+  return joined;
 };
 
 // `node` without its host nodes, which are appended to `found` in document
@@ -338,7 +356,7 @@ export const splitAuthoredMarkdown = (
   source: string,
   { elements }: SplitAuthoredMarkdownOptions
 ): AuthoredMarkdownSegment[] => {
-  const cleaned = source.replace(/[\uE000\uE001]/g, '\uFFFD');
+  const cleaned = withoutReserved(source);
   const tags = findHostTags(cleaned, elements);
   if (tags.length === 0) {
     return markdown(source);
