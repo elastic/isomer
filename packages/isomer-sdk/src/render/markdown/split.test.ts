@@ -115,15 +115,24 @@ describe('splitAuthoredMarkdown', () => {
     ).toEqual([
       `[chart ${TAG}]: https://elastic.co/chart.png\n\n![chart \\${TAG}][chart ${TAG}]`,
     ]);
-    // In a link label the tag is a tag, as in an inline link's label, and
-    // the label still names the definition however it is spelled.
+    // In a link label the tag is a tag, as in an inline link's label.
+    expect(
+      printed(`[chart ${TAG}]\n\n[CHART ${TAG}]: https://elastic.co/chart.png`)
+    ).toEqual([
+      `[CHART ${TAG}]: https://elastic.co/chart.png\n\n[chart][chart ${TAG}]`,
+      { render_attachment: { id: 'x' } },
+    ]);
+  });
+
+  it('keeps each tag its own attributes and spelling', () => {
     expect(
       printed(
-        `[chart ${TAG}]\n\n[CHART  <render_attachment  id="x" />]: https://elastic.co/chart.png`
+        `<render_attachment id="A" /> <render_attachment id="a" /> \`<render_attachment  id="a" />\``
       )
     ).toEqual([
-      `[CHART  ${TAG}]: https://elastic.co/chart.png\n\n[chart][chart ${TAG}]`,
-      { render_attachment: { id: 'x' } },
+      { render_attachment: { id: 'A' } },
+      { render_attachment: { id: 'a' } },
+      '`<render_attachment  id="a" />`',
     ]);
   });
 

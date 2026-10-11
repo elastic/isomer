@@ -58,21 +58,18 @@ const withoutReserved = (source: string): string =>
     match.length === 1 ? '\uFFFD' : '&#xFFFD;'
   );
 
-// Tags that read the same get the same sentinel, so a reference label that
-// holds one still matches its definition, as the parser matches labels.
-const labelKey = (tag: HostTag): string =>
-  tag.raw.toLowerCase().replace(/\s+/g, ' ');
-
+// Tags written identically get the same sentinel, so a reference label that
+// holds one still matches a definition that holds the same. Sharing by
+// exact text keeps each tag's attributes and spelling its own.
 const substitute = (source: string, tags: readonly HostTag[]): string => {
   const first = new Map<string, number>();
   let out = '';
   let cursor = 0;
   tags.forEach((tag, index) => {
-    const key = labelKey(tag);
-    if (!first.has(key)) {
-      first.set(key, index);
+    if (!first.has(tag.raw)) {
+      first.set(tag.raw, index);
     }
-    out += source.slice(cursor, tag.index) + sentinel(first.get(key)!);
+    out += source.slice(cursor, tag.index) + sentinel(first.get(tag.raw)!);
     cursor = tag.index + tag.raw.length;
   });
   return out + source.slice(cursor);
