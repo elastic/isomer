@@ -6,9 +6,14 @@
  */
 
 export { md, serializeMarkdown } from './builder';
-
 export {
   type MarkdownEnvelopeDispatcher,
   type MarkdownEnvelopeOptions,
   renderMarkdownEnvelope,
 } from './envelope';
+
+export {
+  type AuthoredMarkdownSegment,
+  type SplitAuthoredMarkdownOptions,
+  splitAuthoredMarkdown,
+} from './split';

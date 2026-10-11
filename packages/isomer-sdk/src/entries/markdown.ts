@@ -13,9 +13,12 @@ export {
 } from '../define';
 
 export {
+  type AuthoredMarkdownSegment,
   type MarkdownEnvelopeDispatcher,
   type MarkdownEnvelopeOptions,
+  type SplitAuthoredMarkdownOptions,
   md,
   renderMarkdownEnvelope,
   serializeMarkdown,
+  splitAuthoredMarkdown,
 } from '../render/markdown';

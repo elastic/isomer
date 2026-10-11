@@ -99,7 +99,7 @@ The browser-side helpers, exported here rather than from the root entry: `runEnh
 
 `./text` — `renderTextEnvelope` with `TextEnvelopeOptions`, and `TextEnvelopeDispatcher`. Text formatting is pack-owned; the SDK ships no house style.
 
-`./markdown` — `renderMarkdownEnvelope` with `MarkdownEnvelopeOptions`, `MarkdownEnvelopeDispatcher`, the `md` builder with `MarkdownBlock`, `MarkdownInline`, `MarkdownInlineInput`, and `MarkdownContent`, and `serializeMarkdown`.
+`./markdown` — `renderMarkdownEnvelope` with `MarkdownEnvelopeOptions`, `MarkdownEnvelopeDispatcher`, the `md` builder with `MarkdownBlock`, `MarkdownInline`, `MarkdownInlineInput`, and `MarkdownContent`, `serializeMarkdown`, and `splitAuthoredMarkdown` with `SplitAuthoredMarkdownOptions` and `AuthoredMarkdownSegment`, which splits authored Markdown at a host's own elements ([Splitting authored Markdown](rendering.md#splitting-authored-markdown-at-host-elements)).
 
 `./slack` — `renderSlackEnvelope` with `SlackEnvelopeOptions` and `SlackEnvelopeResult`, `SlackEnvelopeDispatcher`, `SLACK_LIMITS`, `createSlackAssetCollector` (`{ prefix? }`), `SlackAssetCollector`, `SlackAssetRequest`, `SlackFileReference`, `isSlackReachableImageUrl`.
 

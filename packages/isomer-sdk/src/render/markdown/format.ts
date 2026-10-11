@@ -241,14 +241,15 @@ export const sanitizeMarkdownSource = (markdown: string): string =>
   sanitizeAuthoredSource(markdown).markdown;
 
 // No link, image, definition, or tag can survive without `[` or `<`.
-const inert = (markdown: string): string =>
+export const inert = (markdown: string): string =>
   markdown.replace(/[[\]\\]/g, '\\$&').replace(/</g, '&lt;');
 
 // GFM parsing is superlinear for some delimiter runs, even without nesting.
 const LINE_PREFIX_RE = /^(?:[ \t>]|[-*+](?=[ \t])|\d{1,9}[.)](?=[ \t]))+/gm;
 const MAX_LINE_PREFIX = 256;
+// An escaped punctuation character opens nothing, so `\*` counts as one.
 const INLINE_DELIMITER_RE =
-  /[[\]*`~<>|\\]|(?<![\p{L}\p{N}])_|_(?![\p{L}\p{N}])/gu;
+  /\\[!-/:-@[-`{-~]|[[\]*`~<>|\\]|(?<![\p{L}\p{N}])_|_(?![\p{L}\p{N}])/gu;
 const MAX_INLINE_DELIMITERS = 2048;
 
 const MAX_PARSE_LENGTH = 16_384;
