@@ -82,6 +82,19 @@ describe('splitAuthoredMarkdown', () => {
     ]);
   });
 
+  it('leaves phrasing a tag was not removed from as written', () => {
+    expect(
+      printed(`[first\\\n](https://elastic.co) second\n\n- a ${TAG}`)
+    ).toEqual([
+      '[first\\\n](https://elastic.co) second\n\n- a',
+      { render_attachment: { id: 'x' } },
+    ]);
+    expect(printed(`- [ x ](https://elastic.co) ${TAG}`)).toEqual([
+      '- [ x ](https://elastic.co)',
+      { render_attachment: { id: 'x' } },
+    ]);
+  });
+
   it('keeps a table whole', () => {
     expect(printed(`| a | b |\n| - | - |\n| before ${TAG} | after |`)).toEqual([
       '| a | b |\n| - | - |\n| before | after |',

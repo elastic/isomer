@@ -206,7 +206,8 @@ const tidyPhrasing = (children: Nodes[]): Nodes[] => {
 };
 
 // `node` without its host nodes, which are appended to `found` in document
-// order; `[]` when nothing is left of it.
+// order; `[]` when nothing is left of it. Only a node a tag was removed
+// from is tidied, so phrasing elsewhere in the block stays as written.
 const strip = (node: Nodes, found: HostTag[]): Nodes[] => {
   if (isHost(node)) {
     found.push(hostTag(node));
@@ -215,7 +216,11 @@ const strip = (node: Nodes, found: HostTag[]): Nodes[] => {
   if (!('children' in node)) {
     return [node];
   }
+  const before = found.length;
   const stripped = node.children.flatMap((child) => strip(child, found));
+  if (found.length === before) {
+    return [node];
+  }
   const children = PHRASING_PARENTS.has(node.type)
     ? tidyPhrasing(stripped)
     : stripped;
@@ -297,17 +302,23 @@ const splitBlocks = (
     }
     // A tag directly in a top-level paragraph splits it in place.
     let piece: Nodes[] = [];
+    const pushPiece = (): void => {
+      const children = tidyPhrasing(piece);
+      if (children.length > 0) {
+        push({ ...block, children } as Nodes);
+      }
+      piece = [];
+    };
     for (const child of block.children) {
       if (isHost(child)) {
-        push({ ...block, children: piece } as Nodes);
+        pushPiece();
         flush();
         segments.push(element(hostTag(child)));
-        piece = [];
       } else {
         piece.push(child);
       }
     }
-    push({ ...block, children: piece } as Nodes);
+    pushPiece();
   }
   flush();
   return segments;
