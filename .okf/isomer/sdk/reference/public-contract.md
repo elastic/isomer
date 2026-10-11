@@ -28,3 +28,7 @@ Related: [pipeline](/sdk/concepts/pipeline.md), [root](/sdk/entry-points/root.md
 [^package]: Package metadata and exports
 
 [^agents]: Agent instructions
+
+## Authored host elements
+
+`./markdown` exports `AuthoredElement`, `AuthoredMarkdownDocument`, `AuthoredMarkdownOptions`, `parseAuthoredMarkdown`, and `renderAuthoredMarkdown`. The opaque document retains complete-document context; callbacks receive safe content and readable text or immutable marker attributes. No AST types or source fragments cross this boundary. `htmlparser2` owns tag/attribute grammar; micromark owns Markdown eligibility. Existing parse limits and bounded failed scans degrade to inert content with linear extraction.

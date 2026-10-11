@@ -187,3 +187,21 @@ runtime.getCapabilities().formats;
 ## Next
 
 [Frame](frame.md) · [Runtime](runtime.md) · [API reference](api.md)
+
+## Authored replies with attachments
+
+`runtime.surfaces.slack.renderAuthoredMarkdown(source, options)` preserves one authored document while resolving host markers to existing compositions through the runtime's registered packs.
+
+```ts
+const payload = runtime.surfaces.slack.renderAuthoredMarkdown(reply, {
+  elements: ['render_attachment'],
+  resolveElement: ({ attributes }) => resolveAttachment(attributes.id),
+  onElementError: (error, element) => logMappingError(error, element),
+});
+```
+
+`resolveElement` returns a `Composition`, or `null`/`undefined` to omit an unavailable attachment. Each composition is validated and dispatched using the runtime's checked copy; its title, subtitle, and body appear after the marker's containing block. Invalid or throwing mappings are omitted and recorded in `elementErrors`; surrounding content continues. `onElementError` is an optional host diagnostic hook.
+
+`SlackAuthoredMarkdownOptions` combines configured element names and callbacks with Slack envelope options except `heading`; attachment headings are always included. `SlackAuthoredMarkdownResult` carries the existing `text`, `blocks`, and assets plus `inert` and `elementErrors: readonly AuthoredElementError[]` (`{ element, message }`). The default notification text contains readable document text, resolved link destinations, and attachment text, with normal Slack escaping and length limits. Primitive overrides, capabilities, asset collection, and Slack's message/block budgets still apply.
+
+Runtime input budgets apply before host callbacks, to parsed attributes, aggregate attachment expansion, and rendered fallback text. A budget refusal fails the render rather than omitting arbitrary content. See the SDK's [authored document contract](../../isomer-sdk/docs/rendering.md#authored-documents-with-host-elements) for parse-budget fallback and its protection limits. Ordinary composition rendering and `md.authored` retain their existing behavior.

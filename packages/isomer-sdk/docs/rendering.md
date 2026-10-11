@@ -141,3 +141,15 @@ Findings are advice, not validation errors, and no surface runs the check: an ov
 ## Next
 
 [Dispatch](dispatch.md) · [Frame](frame.md)
+
+## Authored documents with host elements
+
+`parseAuthoredMarkdown(source, { elements: ['render_attachment'] })`, from `@elastic/isomer-sdk/markdown`, parses one complete authored document. `renderAuthoredMarkdown(document, { markdown, element })` visits safe `MarkdownContent` views and `AuthoredElement` values in order. The Markdown callback also receives readable fallback text. The opaque `AuthoredMarkdownDocument` is frozen, reusable within the process, and not a serializable composition prop; no third-party AST types appear in the public contract.
+
+A standalone marker stays in place. Markers inside a paragraph, list, table, quote, heading, or emphasis follow the complete containing top-level block. Document-wide link and image references resolve once, with first definitions winning; footnotes keep their original document identifiers and definitions. No independent Markdown strings are printed and reparsed between attachments.
+
+The Markdown parser owns eligibility. Fenced and indented code, inline code, escapes, image alt text, link destinations and titles, raw HTML blocks, and footnote definitions keep markers literal. HTML is literal text and destinations use the same URL policy as `md.authored`. Configured tag and attribute names match without case sensitivity. `htmlparser2@10.0.0` reads bare and self-closing tags and quoted/unquoted attributes; duplicate attributes keep the first value, entities retain their spelling, closing and incomplete tags are literal, and tags spanning lines are unsupported. This deliberately improves quoted `>` handling over regex extraction.
+
+The existing 16,384-character and syntax budgets bound GFM parsing. Failed marker scans have an aggregate work limit; repeated references exceeding the SDK's one-million-character representation limit degrade the entire document. Budget exhaustion or parser `RangeError` returns `inert: true`: a linear library-backed scan extracts configured markers and keeps surrounding Markdown inert, without another GFM parse. This degraded path may consume markers shown in code or HTML and does not preserve normal Markdown formatting. Whitespace-only Markdown views are omitted.
+
+For composition dispatch and Slack output, use the runtime's [authored Slack integration](../../isomer-runtime/docs/surfaces.md#authored-replies-with-attachments).

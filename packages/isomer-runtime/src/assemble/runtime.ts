@@ -289,7 +289,7 @@ export const createIsomerRuntime: CreateIsomerRuntime = (<
     ),
     text: createTextSurface(dispatcher, validate),
     markdown: createMarkdownSurface(dispatcher, validate),
-    slack: createSlackSurface(dispatcher, validate),
+    slack: createSlackSurface(dispatcher, validate, inputBudget),
     snapshot:
       defaultFrame === undefined
         ? undefined

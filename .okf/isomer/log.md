@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-10
+
+- **Authored replies preserve Markdown around host attachments** ([#156](https://github.com/elastic/isomer/issues/156)): the SDK's additive document API parses once with library-backed host grammar, retains whole-block placement and document references, and degrades to inert text with bounded extraction. The runtime's Slack integration validates host compositions and includes attachments in blocks and fallback text. Packed ESM/CommonJS interoperability and the actual Agent Builder server path exercise the unpublished integration; stable publication and Kibana adoption remain separate review gates.
+
 ## 2026-10-08
 
 - **A pack's groups come from each primitive's `catalog.group`**: `PackTypes.groups` is the headings a primitive may name. `string`, the default, or a bag without `groups`, leaves `catalog.group` optional. A literal union makes it required and a member of that union, so a primitive cannot name a heading the pack did not declare. Omit `groups` and `definePrimitivePack` derives them from each primitive's `catalog.group`, in definition order. `groupOrder` lists every heading exactly once, in order, and is not stored. An explicit `groups` list beside `groupOrder` or a `catalog.group`, or a `groupOrder` that omits, repeats, or invents a heading, throws `IsomerError` `INVALID_PACK_GROUPS`, a new SDK code.

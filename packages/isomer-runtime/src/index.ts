@@ -51,6 +51,9 @@ export type {
   ReactSurface,
 } from './surfaces/react';
 export type {
+  AuthoredElementError,
+  SlackAuthoredMarkdownOptions,
+  SlackAuthoredMarkdownResult,
   SlackRenderNodeOptions,
   SlackRenderOptions,
   SlackRenderResult,

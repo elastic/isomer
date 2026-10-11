@@ -18,6 +18,7 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 
+import { checkAgentBuilderConsumer } from './check_agent_builder_consumer.js';
 import { repoRoot, workspacePackages } from './workspace_packages.js';
 
 const workspace = workspacePackages();
@@ -75,7 +76,7 @@ const packPackage = (packageName) => {
 
   const dir = join(extractDir, 'package');
   const manifest = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf-8'));
-  return { dir, manifest, sourceDir };
+  return { dir, manifest, sourceDir, filename };
 };
 
 // Fails an import on any process warning, such as the `ExperimentalWarning`
@@ -168,10 +169,71 @@ try {
     );
   }
 
+  const consumerFlag = process.argv.indexOf('--agent-builder');
+  if (consumerFlag !== -1) {
+    const checkout = process.argv[consumerFlag + 1];
+    if (!checkout) {
+      throw new Error('--agent-builder requires a patched Kibana checkout.');
+    }
+    await checkAgentBuilderConsumer(
+      resolve(checkout),
+      packages,
+      tempDir,
+      linkDirectory
+    );
+  }
+
   // `assertPackRegistrationComplete` loads files by itself, so each module
   // system's build must load a primitive directory.
   const sdkName = '@elastic/isomer-sdk';
   const sdkConsumerDir = join(tempDir, 'consumers', sdkName);
+  linkDirectory(
+    packages.get('@elastic/isomer-runtime').dir,
+    join(sdkConsumerDir, 'node_modules', '@elastic/isomer-runtime')
+  );
+  const authoredProbe = `
+    const { strict: assert } = require('node:assert');
+    const { createRequire } = require('node:module');
+    const { definePrimitive, definePrimitivePack, z } = require('${sdkName}');
+    const { createIsomerRuntime } = require('@elastic/isomer-runtime');
+    const markdown = require('${sdkName}/markdown');
+    const esm = await import('${sdkName}/markdown');
+    const source = '1. [docs] <render_attachment id=x />\\n2. next\\n\\n[docs]: https://elastic.co';
+    for (const [parser, renderer] of [[markdown, esm], [esm, markdown]]) {
+      const document = parser.parseAuthoredMarkdown(source, { elements: ['render_attachment'] });
+      const output = renderer.renderAuthoredMarkdown(document, { markdown: (_content, text) => text, element: () => 'attachment' });
+      assert.equal(output.length, 2);
+      assert.ok(output[0].includes('https://elastic.co'));
+      assert.equal(output[1], 'attachment');
+      assert.ok(Object.isFrozen(document));
+    }
+    const note = definePrimitive({ type: 'note', schema: z.object({ type: z.literal('note'), text: z.string() }), catalog: { type: 'note', purpose: 'note', useWhen: [], avoidWhen: [], example: { type: 'note', text: 'content' } }, examples: [{ type: 'note', text: 'content' }], renderers: { react: () => null, text: ({ text }) => text, markdown: ({ text }) => markdown.md.paragraph(text) } });
+    const runtime = createIsomerRuntime({ packs: [definePrimitivePack({ id: 'demo', primitives: [note] })] });
+    const options = { elements: ['render_attachment'], resolveElement: () => ({ type: 'view', body: [{ type: 'note', text: 'attachment content' }] }) };
+    const payload = runtime.surfaces.slack.renderAuthoredMarkdown(source, options);
+    assert.equal(payload.blocks[0].elements[0].style, 'ordered');
+    assert.equal(payload.blocks[0].elements[0].elements.length, 2);
+    assert.ok(payload.text.includes('attachment content'));
+    assert.ok(!payload.text.includes('&#x'));
+    assert.equal(runtime.surfaces.slack.renderAuthoredMarkdown('[x]'.repeat(1100) + '<render_attachment id=x />', options).inert, true);
+  `;
+  for (const esm of [false, true]) {
+    const script = esm
+      ? `import { createRequire } from 'node:module'; const require = createRequire(import.meta.url); ${authoredProbe.replace("const { createRequire } = require('node:module');", '')}`
+      : `(async () => { ${authoredProbe} })().catch((error) => { console.error(error); process.exitCode = 1; });`;
+    execFileSync(
+      process.execPath,
+      [
+        ...(esm ? ['--input-type=module'] : []),
+        '--eval',
+        `${failOnWarning} ${script}`,
+      ],
+      { cwd: sdkConsumerDir, stdio: 'inherit' }
+    );
+  }
+  console.log(
+    `${sdkName}: packed authored documents and runtime Slack passed, including ESM/CommonJS document interoperability.`
+  );
   const primitivesDir = join(tempDir, 'registration', 'primitives');
   mkdirSync(join(primitivesDir, 'demo'), { recursive: true });
   writeFileSync(

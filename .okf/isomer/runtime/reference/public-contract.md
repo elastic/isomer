@@ -27,3 +27,7 @@ Related: [root](/runtime/entry-points/root.md), [SDK public contract](/sdk/refer
 [^package]: Package metadata
 
 [^release]: Workspace release plugin
+
+## Authored Slack documents
+
+`SlackSurface.renderAuthoredMarkdown(source, SlackAuthoredMarkdownOptions)` parses complete authored input in the SDK and resolves markers through host callbacks. The runtime validates every composition and dispatches the checked copy through its packs. `SlackAuthoredMarkdownResult` adds `inert` and `elementErrors` (`AuthoredElementError`) to the normal envelope. Invalid mappings are isolated; input, aggregate expansion, fallback text, assets, and Slack output budgets remain enforced.

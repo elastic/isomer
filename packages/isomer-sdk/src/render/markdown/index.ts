@@ -5,6 +5,13 @@
  * 2.0.
  */
 
+export {
+  type AuthoredElement,
+  type AuthoredMarkdownDocument,
+  type AuthoredMarkdownOptions,
+  parseAuthoredMarkdown,
+  renderAuthoredMarkdown,
+} from './authored';
 export { md, serializeMarkdown } from './builder';
 
 export {

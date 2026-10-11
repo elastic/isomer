@@ -21,3 +21,5 @@ Markdown rendering. Slack falls back to this when a primitive has no Slack rende
 Related: [rendering](/sdk/concepts/rendering.md), [slack](/sdk/entry-points/slack.md).
 
 [^barrel]: Markdown entry
+
+`parseAuthoredMarkdown` returns a frozen `AuthoredMarkdownDocument` from complete authored input and `AuthoredMarkdownOptions` configured names. `renderAuthoredMarkdown` visits safe `MarkdownContent` views with readable fallback text and immutable `AuthoredElement` values. References retain document scope; nested markers follow their whole top-level block. Over-budget input uses linear library-backed extraction with inert Markdown and reduced context protection.[^barrel]

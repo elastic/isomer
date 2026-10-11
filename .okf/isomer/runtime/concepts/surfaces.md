@@ -35,3 +35,7 @@ Related: [runtime](/runtime/concepts/runtime.md), [frame](/runtime/concepts/fram
 [^snapshot]: snapshot surface
 
 [^embedding]: Embedding a view
+
+## Authored replies
+
+The Slack surface accepts complete authored replies with configured host markers through `renderAuthoredMarkdown`. Markdown retains document reference scope and containing-block placement. Hosts keep their attachment mappings and version selection; the runtime validates and dispatches returned compositions, including their headings and fallback text. The opaque parsed document stays outside serializable compositions.

@@ -29,7 +29,14 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `decode-named-character-reference` | 1.3.0 | MIT | `node_modules/.pnpm/decode-named-character-reference@1.3.0/node_modules/decode-named-character-reference` |  |
 | `dequal` | 2.0.3 | MIT | `node_modules/.pnpm/dequal@2.0.3/node_modules/dequal` |  |
 | `devlop` | 1.1.0 | MIT | `node_modules/.pnpm/devlop@1.1.0/node_modules/devlop` |  |
+| `dom-serializer` | 2.0.0 | MIT | `node_modules/.pnpm/dom-serializer@2.0.0/node_modules/dom-serializer` |  |
+| `domelementtype` | 2.3.0 | BSD-2-Clause | `node_modules/.pnpm/domelementtype@2.3.0/node_modules/domelementtype` |  |
+| `domhandler` | 5.0.3 | BSD-2-Clause | `node_modules/.pnpm/domhandler@5.0.3/node_modules/domhandler` |  |
+| `domutils` | 3.2.2 | BSD-2-Clause | `node_modules/.pnpm/domutils@3.2.2/node_modules/domutils` |  |
+| `entities` | 4.5.0 | BSD-2-Clause | `node_modules/.pnpm/entities@4.5.0/node_modules/entities` |  |
+| `entities` | 6.0.1 | BSD-2-Clause | `node_modules/.pnpm/entities@6.0.1/node_modules/entities` |  |
 | `escape-string-regexp` | 5.0.0 | MIT | `node_modules/.pnpm/escape-string-regexp@5.0.0/node_modules/escape-string-regexp` |  |
+| `htmlparser2` | 10.0.0 | MIT | `node_modules/.pnpm/htmlparser2@10.0.0/node_modules/htmlparser2` |  |
 | `longest-streak` | 3.1.0 | MIT | `node_modules/.pnpm/longest-streak@3.1.0/node_modules/longest-streak` |  |
 | `markdown-table` | 3.0.4 | MIT | `node_modules/.pnpm/markdown-table@3.0.4/node_modules/markdown-table` |  |
 | `mdast-util-find-and-replace` | 3.0.2 | MIT | `node_modules/.pnpm/mdast-util-find-and-replace@3.0.2/node_modules/mdast-util-find-and-replace` |  |

@@ -8,6 +8,7 @@
 import type {
   CheckedValidationResult,
   Composition,
+  InputBudget,
   PrimitiveNode,
   ValidationErrorMode,
 } from '@elastic/isomer-sdk';
@@ -19,7 +20,18 @@ import {
   type SlackEnvelopeResult,
 } from '@elastic/isomer-sdk/slack';
 
+import {
+  renderSlackAuthoredMarkdown,
+  type SlackAuthoredMarkdownOptions,
+  type SlackAuthoredMarkdownResult,
+} from './authored_slack';
 import { checkNode } from './check_node';
+
+export type {
+  AuthoredElementError,
+  SlackAuthoredMarkdownOptions,
+  SlackAuthoredMarkdownResult,
+} from './authored_slack';
 
 /** {@link SlackEnvelopeOptions} plus the surface's validation posture. */
 export interface SlackRenderOptions extends SlackEnvelopeOptions {
@@ -37,6 +49,11 @@ export type SlackRenderResult = SlackEnvelopeResult;
 export interface SlackSurface {
   /** Always `true`: this surface validates the composition and renders the copy it checked, never the caller's value. */
   readonly validating: true;
+  /** Parses a complete authored reply and dispatches validated host compositions through this runtime. */
+  renderAuthoredMarkdown(
+    source: string,
+    options: SlackAuthoredMarkdownOptions
+  ): SlackAuthoredMarkdownResult;
   /** Renders a full composition to a Slack message (blocks, fallback text, assets). */
   render(
     composition: Composition,
@@ -56,9 +73,18 @@ export interface SlackSurface {
 /** Creates the `slack` {@link RuntimeSurfaces} entry. */
 export const createSlackSurface = (
   dispatcher: SlackEnvelopeDispatcher<PrimitiveNode>,
-  validate: (composition: Composition) => CheckedValidationResult
+  validate: (composition: Composition) => CheckedValidationResult,
+  inputBudget: InputBudget = {}
 ): SlackSurface => ({
   validating: true,
+  renderAuthoredMarkdown: (source, options) =>
+    renderSlackAuthoredMarkdown(
+      source,
+      options,
+      dispatcher,
+      validate,
+      inputBudget
+    ),
   render: (composition, options = {}) => {
     const checked = compositionToRender(
       validate(composition),

@@ -13,9 +13,14 @@ export {
 } from '../define';
 
 export {
+  type AuthoredElement,
+  type AuthoredMarkdownDocument,
+  type AuthoredMarkdownOptions,
   type MarkdownEnvelopeDispatcher,
   type MarkdownEnvelopeOptions,
   md,
+  parseAuthoredMarkdown,
+  renderAuthoredMarkdown,
   renderMarkdownEnvelope,
   serializeMarkdown,
 } from '../render/markdown';

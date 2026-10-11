@@ -175,3 +175,7 @@ Stage barrels and entry barrels are both hand-maintained, because the selection 
 | Enhancements | `src/render/html/enhancements.ts` |
 | Authoring front ends | `src/author/` |
 | Entry barrels | `src/entries/` |
+
+### Authored documents
+
+`./markdown` additionally exports `parseAuthoredMarkdown` (source and options → `AuthoredMarkdownDocument`) and `renderAuthoredMarkdown` (document and renderers → `T[]`). `AuthoredMarkdownOptions` has `elements: readonly string[]`; `AuthoredElement` has `name` and immutable `attributes`. The document exposes `inert` and its ordered `elements`, while its representation stays private. Renderers are `markdown(content: MarkdownContent, text: string): T` and `element(element: AuthoredElement): T`. See [authored documents](rendering.md#authored-documents-with-host-elements) for placement, protected contexts, tag compatibility, and degraded output.

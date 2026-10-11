@@ -253,7 +253,7 @@ const MAX_INLINE_DELIMITERS = 2048;
 
 const MAX_PARSE_LENGTH = 16_384;
 
-const exceedsParseBudget = (markdown: string): boolean => {
+export const exceedsParseBudget = (markdown: string): boolean => {
   if (markdown.length > MAX_PARSE_LENGTH) {
     return true;
   }

@@ -1,0 +1,592 @@
+diff --git a/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/composition.test.ts b/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/composition.test.ts
+index 916aa66326b7..d5f1378ff050 100644
+--- a/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/composition.test.ts
++++ b/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/composition.test.ts
+@@ -13,7 +13,8 @@ import type {
+ import type { AttachmentTypeDefinition } from '@kbn/agent-builder-server/attachments';
+ import { loggerMock } from '@kbn/logging-mocks';
+ import type { AttachmentServiceStart } from '../attachments';
+-import { buildComposition } from './composition';
++import { prepareMessage } from './composition';
++import { slackSurface } from './slack';
+ 
+ type ToSurfaceComposition = NonNullable<AttachmentTypeDefinition['toSurfaceComposition']>;
+ 
+@@ -50,133 +51,130 @@ const compose = (
+     toSurfaceComposition = echoAttachment,
+   }: ComposeOptions = {}
+ ) =>
+-  buildComposition({
+-    round: {
+-      input: { message: 'hello', attachment_refs: attachmentRefs },
+-      response: { message },
+-    } as ConversationRound,
+-    attachments,
+-    attachmentsService: {
+-      getTypeDefinition: (type: string) => (type === 'text' ? { toSurfaceComposition } : undefined),
+-    } as unknown as AttachmentServiceStart,
+-    logger: loggerMock.create(),
+-  });
+-
+-/** The texts of the composition's nodes. */
+-const build = (message: string, options?: ComposeOptions) =>
+-  compose(message, options).body.map((node) => ('text' in node ? node.text : node));
+-
+-describe('buildComposition', () => {
+-  it('converts markdown into a markdown node', () => {
+-    expect(build('There are **3** alerts.')).toEqual(['There are **3** alerts.']);
+-  });
+-
+-  it('replaces tags with what their toSurfaceComposition returns, in place', () => {
+-    const message = [
+-      'Here is the note:',
+-      '<render_attachment id="a1" version="1" />',
+-      'Inline: <render_attachment id="a1"/> done',
+-    ].join('\n\n');
+-
+-    expect(build(message)).toEqual(['Here is the note:', '[a1 v1]', 'Inline:', '[a1 v2]', 'done']);
++  slackSurface.render(
++    prepareMessage({
++      round: {
++        input: { message: 'hello', attachment_refs: attachmentRefs },
++        response: { message },
++      } as ConversationRound,
++      attachments,
++      attachmentsService: {
++        getTypeDefinition: (type: string) =>
++          type === 'text' ? { toSurfaceComposition } : undefined,
++      } as unknown as AttachmentServiceStart,
++      logger: loggerMock.create(),
++    })
++  );
++
++const build = (message: string, options?: ComposeOptions) => compose(message, options)?.text.trim();
++
++describe('prepareMessage through the Slack runtime', () => {
++  it('renders Markdown formatting', () => {
++    const payload = compose('There are **3** alerts.');
++    expect(payload?.text).toBe('There are 3 alerts.');
++    expect(JSON.stringify(payload?.blocks)).toContain('"bold":true');
++  });
++
++  it('places standalone attachments in order and inline attachments after their paragraph', () => {
++    expect(
++      build(
++        'Here is the note:\n\n<render_attachment id="a1" version="1" />\n\nInline: <render_attachment id="a1"/> done'
++      )
++    ).toBe('Here is the note:\n\n[a1 v1]\n\nInline:  done\n\n[a1 v2]');
+   });
+ 
+-  it('shows the title and subtitle of the attachment composition as a heading', () => {
++  it('preserves attachment titles and subtitles', () => {
+     const toSurfaceComposition: ToSurfaceComposition = () => ({
+       type: 'view',
+       title: 'Note',
+       subtitle: 'v1',
+       body: [{ type: 'markdown', text: 'Content' }],
+     });
+-
+-    expect(build('<render_attachment id="a1" />', { toSurfaceComposition })).toEqual([
+-      '**Note**\n_v1_',
+-      'Content',
+-    ]);
+-  });
+-
+-  it('uses the latest version of tags without a version', () => {
+-    expect(build('<render_attachment id="a1" />')).toEqual(['[a1 v2]']);
+-  });
+-
+-  it('uses the latest version even when the round sent an older one', () => {
+-    expect(
+-      build('<render_attachment id="a1" />', {
+-        attachmentRefs: [{ attachment_id: 'a1', version: 1 }],
+-      })
+-    ).toEqual(['[a1 v2]']);
+-  });
+-
+-  it('ignores versions that are not positive integers', () => {
+-    expect(build('<render_attachment id="a1" version="latest" />')).toEqual(['[a1 v2]']);
+-    expect(build('<render_attachment id="a1" version="0" />')).toEqual(['[a1 v2]']);
+-  });
+-
+-  it('does not take the id from a longer attribute name', () => {
+-    expect(build('<render_attachment field-id="x" id="a1" />')).toEqual(['[a1 v2]']);
++    expect(build('<render_attachment id="a1" />', { toSurfaceComposition })).toContain('Note\nv1');
++    expect(build('<render_attachment id="a1" />', { toSurfaceComposition })).toContain('Content');
++  });
++
++  it('uses explicit positive integer versions or the latest version, ignoring old input references', () => {
++    expect(build('<render_attachment id="a1" version="1" />')).toBe('[a1 v1]');
++    for (const version of ['', ' version="latest"', ' version="0"']) {
++      expect(
++        build(`<render_attachment id="a1"${version} />`, {
++          attachmentRefs: [{ attachment_id: 'a1', version: 1 }],
++        })
++      ).toBe('[a1 v2]');
++    }
+   });
+ 
+-  it('keeps the indentation of an indented code block after a tag', () => {
+-    expect(build('<render_attachment id="a1" />\n\n    const a = 1;\n    const b = 2;')).toEqual([
+-      '[a1 v2]',
+-      '    const a = 1;\n    const b = 2;',
+-    ]);
++  it('matches the complete id attribute name', () => {
++    expect(build('<render_attachment field-id="x" id="a1" />')).toBe('[a1 v2]');
+   });
+ 
+-  it('keeps the indentation of an indented code block that starts the message', () => {
+-    expect(build('    const a = 1;\n\n<render_attachment id="a1" />')).toEqual([
+-      '    const a = 1;',
+-      '[a1 v2]',
+-    ]);
++  it.each([
++    '<render_attachment id="a1" />\n\n    const a = 1;\n    const b = 2;',
++    '    const a = 1;\n\n<render_attachment id="a1" />',
++  ])('keeps indented code around attachments', (message) => {
++    const payload = compose(message);
++    expect(JSON.stringify(payload?.blocks)).toContain('rich_text_preformatted');
++    expect(payload?.text).toContain('const a = 1;');
++    expect(payload?.text).toContain('[a1 v2]');
+   });
+ 
+-  it('drops tags without an id', () => {
+-    expect(build('Hello <render_attachment version="1" />')).toEqual(['Hello']);
++  it('drops markers without an id', () => {
++    expect(build('Hello <render_attachment version="1" />')).toBe('Hello');
+   });
+ 
+-  it('leaves out types without a toSurfaceComposition', () => {
++  it('isolates missing attachments, versions and unmapped types', () => {
++    expect(build('Here: <render_attachment id="a1" />', { attachments: [] })).toBe('Here:');
++    expect(build('Here: <render_attachment id="a1" version="9" />')).toBe('Here:');
+     expect(
+       build('Here: <render_attachment id="a1" />', {
+         attachments: [createAttachment({ type: 'case' })],
+       })
+-    ).toEqual(['Here:']);
+-  });
+-
+-  it('leaves out missing attachments and versions', () => {
+-    expect(build('Here: <render_attachment id="a1" />', { attachments: [] })).toEqual(['Here:']);
+-    expect(build('Here: <render_attachment id="a1" version="9" />')).toEqual(['Here:']);
++    ).toBe('Here:');
+   });
+ 
+-  it('leaves out attachments whose toSurfaceComposition fails', () => {
+-    const toSurfaceComposition: ToSurfaceComposition = () => {
+-      throw new Error('boom');
+-    };
+-
+-    expect(build('Here: <render_attachment id="a1" />', { toSurfaceComposition })).toEqual([
+-      'Here:',
+-    ]);
+-  });
+-
+-  it('leaves out attachments whose toSurfaceComposition returns an invalid composition', () => {
+-    const missingText = (() => ({
++  it('isolates throwing and invalid mappings', () => {
++    const invalid = (() => ({
+       type: 'view',
+       body: [{ type: 'markdown' }],
+     })) as unknown as ToSurfaceComposition;
+-
+     const unknownType = (() => ({
+       type: 'view',
+       body: [{ type: 'chart', text: 'Chart' }],
+     })) as unknown as ToSurfaceComposition;
+-
+-    for (const toSurfaceComposition of [missingText, unknownType]) {
+-      expect(build('Here: <render_attachment id="a1" /> Done', { toSurfaceComposition })).toEqual([
+-        'Here:',
+-        'Done',
+-      ]);
++    const fails: ToSurfaceComposition = () => {
++      throw new Error('boom');
++    };
++    for (const toSurfaceComposition of [invalid, unknownType, fails]) {
++      expect(build('Here: <render_attachment id="a1" /> Done', { toSurfaceComposition })).toBe(
++        'Here:  Done'
++      );
+     }
+   });
+ 
+-  it('returns no nodes for an empty message', () => {
+-    expect(build(' \n<render_attachment />\n ')).toEqual([]);
++  it('preserves a complete numbered list and document-wide links', () => {
++    const payload = compose(
++      '1. [docs] <render_attachment id="a1" />\n2. next\n\n[docs]: https://elastic.co'
++    );
++    expect(payload?.blocks[0]).toMatchObject({
++      type: 'rich_text',
++      elements: [{ type: 'rich_text_list', style: 'ordered', elements: [{}, {}] }],
++    });
++    expect(JSON.stringify(payload)).toContain('https://elastic.co');
++    expect(payload?.text).toContain('[a1 v2]');
++  });
++
++  it.each([
++    '`<render_attachment id="a1" />`',
++    '```\n<render_attachment id="a1" />\n```',
++    '    <render_attachment id="a1" />',
++  ])('preserves attachment markers in code', (message) => {
++    const payload = compose(message);
++    expect(JSON.stringify(payload)).toContain('render_attachment');
++    expect(payload?.text).not.toContain('[a1 v2]');
++  });
++
++  it('renders nothing for an empty message with an unresolved marker', () => {
++    expect(compose(' \n<render_attachment />\n ')).toBeUndefined();
+   });
+ });
+diff --git a/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/composition.ts b/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/composition.ts
+index bf952ccc7a17..c5802a7515cd 100644
+--- a/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/composition.ts
++++ b/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/composition.ts
+@@ -6,6 +6,7 @@
+  */
+ 
+ import { formatValidationError } from '@elastic/isomer-sdk';
++import type { SlackAuthoredMarkdownOptions } from '@elastic/isomer-runtime';
+ import type { ConversationRound } from '@kbn/agent-builder-common';
+ import {
+   getLatestVersion,
+@@ -13,93 +14,22 @@ import {
+   type VersionedAttachment,
+ } from '@kbn/agent-builder-common/attachments';
+ import {
+-  getCustomElementAttribute,
+   renderAttachmentElement,
+-  splitCustomElements,
+   type RenderAttachmentElementAttributes,
+ } from '@kbn/agent-builder-common/tools/custom_rendering';
+-import type {
+-  SurfaceComposition,
+-  SurfaceNode,
+-  MarkdownNode,
+-} from '@kbn/agent-builder-server/attachments';
++import type { SurfaceComposition } from '@kbn/agent-builder-server/attachments';
+ import type { Logger } from '@kbn/logging';
+ import type { AttachmentServiceStart } from '../attachments';
+ import { isomerRuntime } from './pack';
+ 
+ const { tagName, attributes } = renderAttachmentElement;
+ 
+-/**
+- * A `<render_attachment>` tag of the response message, with its attributes as written. Its
+- * version is validated when the attachment is resolved.
+- */
+ interface AttachmentNode extends RenderAttachmentElementAttributes {
+   type: 'attachment';
+   attachmentId: string;
+ }
+ 
+-/** The response message split into its markdown and its attachment tags, in order. */
+-type MessageNode = SurfaceNode | AttachmentNode;
+-
+-const toAttachmentNode = (tag: string): AttachmentNode | undefined => {
+-  const attachmentId = getCustomElementAttribute(tag, attributes.attachmentId);
+-  if (!attachmentId) {
+-    return;
+-  }
+-
+-  return {
+-    type: 'attachment',
+-    attachmentId,
+-    version: getCustomElementAttribute(tag, attributes.version),
+-  };
+-};
+-
+-/**
+- * Splits a message into nodes: its markdown becomes `markdown` nodes, and each
+- * `<render_attachment>` tag becomes an `attachment` node at the same position. Tags without an
+- * id are dropped.
+- *
+- * For example, `Here is the note: <render_attachment id="a1" /> Anything else?` splits into:
+- *
+- * ```ts
+- * [
+- *   { type: 'markdown', text: 'Here is the note:' },
+- *   { type: 'attachment', attachmentId: 'a1' },
+- *   { type: 'markdown', text: 'Anything else?' },
+- * ]
+- * ```
+- */
+-const toMessageNodes = (message: string): MessageNode[] =>
+-  splitCustomElements(message, tagName).flatMap((segment, index): MessageNode[] => {
+-    if (segment.type === 'text') {
+-      // Text after a tag on the same line drops the space that separates it from the tag. The
+-      // first line otherwise keeps its indentation, which an indented code block needs.
+-      const text = index > 0 ? segment.text.replace(/^[ \t]+/, '') : segment.text;
+-
+-      return [{ type: 'markdown', text: text.replace(/^\s*\n/, '').trimEnd() }];
+-    }
+-
+-    const node = toAttachmentNode(segment.tag);
+-    return node ? [node] : [];
+-  });
+-
+-/**
+- * Keeps the `title` and `subtitle` of an attachment's composition, which would otherwise be lost
+- * when its body is spliced into the message: they become a `markdown` node, with the title in bold
+- * and the subtitle in italics, placed before the body. Returns nothing when the mapping sets
+- * neither, so it's `toSurfaceComposition` that decides whether an attachment has a heading.
+- */
+-const toHeadingNode = ({ title, subtitle }: SurfaceComposition): MarkdownNode[] => {
+-  const heading = [title && `**${title}**`, subtitle && `_${subtitle}_`].filter(Boolean).join('\n');
+-  return heading ? [{ type: 'markdown', text: heading }] : [];
+-};
+-
+-/**
+- * Replaces an attachment node with what its type's `toSurfaceComposition` returns. Attachments
+- * that are missing or have no `toSurfaceComposition` are expected, and left out quietly. A
+- * `toSurfaceComposition` that fails or returns an invalid composition is a bug in its mapping, so
+- * it's left out with a warning, and the rest of the message still renders.
+- */
++/** Missing mappings are omitted; failed mappings are logged without discarding the reply. */
+ const resolveAttachmentNode = (
+   node: AttachmentNode,
+   {
+@@ -112,12 +42,12 @@ const resolveAttachmentNode = (
+     attachmentsService: AttachmentServiceStart;
+     logger: Logger;
+   }
+-): SurfaceNode[] => {
++): SurfaceComposition | undefined => {
+   const attachment = attachments.find(({ id }) => id === node.attachmentId);
+ 
+   if (!attachment) {
+     logger.debug(`Leaving out attachment "${node.attachmentId}": it is not in the conversation`);
+-    return [];
++    return undefined;
+   }
+ 
+   const explicitVersion = Number(node.version);
+@@ -130,7 +60,7 @@ const resolveAttachmentNode = (
+ 
+   if (!attachmentVersion) {
+     logger.debug(`Leaving out attachment "${attachment.id}": version ${node.version} not found`);
+-    return [];
++    return undefined;
+   }
+ 
+   const toSurfaceComposition = attachmentsService.getTypeDefinition(
+@@ -142,7 +72,7 @@ const resolveAttachmentNode = (
+       `Leaving out attachment "${attachment.id}": type "${attachment.type}" has no toSurfaceComposition`
+     );
+ 
+-    return [];
++    return undefined;
+   }
+ 
+   try {
+@@ -160,44 +90,53 @@ const resolveAttachmentNode = (
+         `Leaving out attachment "${attachment.id}": its toSurfaceComposition returned an invalid composition: ${reasons}`
+       );
+ 
+-      return [];
++      return undefined;
+     }
+ 
+-    return [...toHeadingNode(composition), ...composition.body];
++    return composition;
+   } catch (error) {
+     logger.warn(
+       `Leaving out attachment "${attachment.id}": its toSurfaceComposition failed: ${error.message}`
+     );
+ 
+-    return [];
++    return undefined;
+   }
+ };
+ 
+-/**
+- * Builds the Isomer composition of a response message: its markdown becomes `markdown` nodes,
+- * and each `<render_attachment>` tag is replaced, in place, by what its type's
+- * `toSurfaceComposition` returns.
+- */
+-export const buildComposition = ({
++export interface PreparedMessage {
++  source: string;
++  options: Pick<SlackAuthoredMarkdownOptions, 'elements' | 'resolveElement' | 'onElementError'>;
++}
++
++/** Retains the complete reply and resolves attachments through their existing mappings. */
++export const prepareMessage = ({
+   round: { response },
+   attachments,
+   attachmentsService,
+   logger,
+ }: {
+   round: ConversationRound;
+-  /** The conversation's attachments, as carried by `round_complete`. */
+   attachments: VersionedAttachment[];
+   attachmentsService: AttachmentServiceStart;
+   logger: Logger;
+-}): SurfaceComposition => ({
+-  type: 'view',
+-  body: toMessageNodes(response.message).flatMap((node): SurfaceNode[] =>
+-    node.type === 'attachment'
+-      ? resolveAttachmentNode(node, {
++}): PreparedMessage => ({
++  source: response.message,
++  options: {
++    elements: [tagName],
++    resolveElement: ({ attributes: values }) => {
++      const attachmentId = values[attributes.attachmentId];
++      if (!attachmentId) return undefined;
++      return resolveAttachmentNode(
++        { type: 'attachment', attachmentId, version: values[attributes.version] },
++        {
+           attachments,
+           attachmentsService,
+           logger,
+-        })
+-      : [node]
+-  ),
++        }
++      );
++    },
++    onElementError: (error, { attributes: values }) => {
++      logger.warn(`Leaving out attachment "${values[attributes.attachmentId]}": ${String(error)}`);
++    },
++  },
+ });
+diff --git a/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/slack.test.ts b/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/slack.test.ts
+index 74a9a48a6334..b872a835565c 100644
+--- a/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/slack.test.ts
++++ b/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/slack.test.ts
+@@ -9,12 +9,12 @@ import { slackSurface } from './slack';
+ 
+ describe('slackSurface', () => {
+   it('renders the composition as Block Kit', () => {
+-    const composition = {
+-      type: 'view' as const,
+-      body: [{ type: 'markdown' as const, text: 'There are **3** [alerts](https://example.com).' }],
++    const message = {
++      source: 'There are **3** [alerts](https://example.com).',
++      options: { elements: ['render_attachment'], resolveElement: () => undefined },
+     };
+ 
+-    expect(slackSurface.render(composition)).toEqual({
++    expect(slackSurface.render(message)).toEqual({
+       text: expect.any(String),
+       blocks: [
+         {
+diff --git a/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/slack.ts b/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/slack.ts
+index 33d24e8f787e..6c23c829235d 100644
+--- a/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/slack.ts
++++ b/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/slack.ts
+@@ -12,9 +12,9 @@ import type { SurfaceRenderer } from './types';
+ /** Renders the response message as Block Kit, for Slack. */
+ export const slackSurface: SurfaceRenderer = {
+   id: ConversationOriginType.Slack,
+-  render: (composition) => {
+-    const { text, blocks } = isomerRuntime.surfaces.slack.render(composition, { heading: false });
++  render: ({ source, options }) => {
++    const { text, blocks } = isomerRuntime.surfaces.slack.renderAuthoredMarkdown(source, options);
+ 
+-    return { text, blocks };
++    return blocks.length > 0 || text.trim() !== '' ? { text, blocks } : undefined;
+   },
+ };
+diff --git a/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/surfaces_service.test.ts b/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/surfaces_service.test.ts
+index f16b205b7a7c..ea5bb8e92756 100644
+--- a/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/surfaces_service.test.ts
++++ b/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/surfaces_service.test.ts
+@@ -5,7 +5,6 @@
+  * 2.0.
+  */
+ 
+-import * as isomerSlack from '@elastic/isomer-sdk/slack';
+ import {
+   ChatEventType,
+   ConversationOriginType,
+@@ -16,11 +15,7 @@ import type { VersionedAttachment } from '@kbn/agent-builder-common/attachments'
+ import { loggerMock } from '@kbn/logging-mocks';
+ import type { AttachmentServiceStart } from '../attachments';
+ import { SurfacesServiceImpl } from './surfaces_service';
+-
+-jest.mock('@elastic/isomer-sdk/slack', () => ({
+-  ...jest.requireActual('@elastic/isomer-sdk/slack'),
+-  renderSlackEnvelope: jest.fn(jest.requireActual('@elastic/isomer-sdk/slack').renderSlackEnvelope),
+-}));
++import { isomerRuntime } from './pack';
+ 
+ const esqlAttachment: VersionedAttachment = {
+   id: 'a1',
+@@ -111,9 +106,11 @@ describe('renderPayload', () => {
+   });
+ 
+   it('renders nothing when rendering fails', () => {
+-    jest.mocked(isomerSlack.renderSlackEnvelope).mockImplementationOnce(() => {
+-      throw new Error('boom');
+-    });
++    jest
++      .spyOn(isomerRuntime.surfaces.slack, 'renderAuthoredMarkdown')
++      .mockImplementationOnce(() => {
++        throw new Error('boom');
++      });
+ 
+     expect(renderPayload(createRoundCompleteEvent('Hello'))).toBeUndefined();
+   });
+diff --git a/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/surfaces_service.ts b/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/surfaces_service.ts
+index a068ef896da5..4f5180aa64f0 100644
+--- a/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/surfaces_service.ts
++++ b/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/surfaces_service.ts
+@@ -12,16 +12,12 @@ import type {
+ } from '@kbn/agent-builder-common';
+ import type { Logger } from '@kbn/logging';
+ import type { AttachmentServiceStart } from '../attachments';
+-import { buildComposition } from './composition';
++import { prepareMessage } from './composition';
+ import { slackSurface } from './slack';
+ import type { SurfaceRenderer } from './types';
+ 
+ export interface SurfacesService {
+-  /**
+-   * Renders the response message for the surface the round came from: the message becomes an
+-   * Isomer composition, and the surface's renderer renders it. Returns nothing when the origin
+-   * has no surface, nothing in the message can be rendered, or rendering fails.
+-   */
++  /** Renders the complete reply and attachments; unsupported origins and failed rendering have no payload. */
+   renderPayload(
+     event: RoundCompleteEvent,
+     options: { originType?: ConversationOriginType }
+@@ -58,14 +54,14 @@ export class SurfacesServiceImpl implements SurfacesService {
+     }
+ 
+     try {
+-      const composition = buildComposition({
++      const message = prepareMessage({
+         round,
+         attachments,
+         attachmentsService: this.attachmentsService,
+         logger: this.logger,
+       });
+ 
+-      return composition.body.length > 0 ? renderer.render(composition) : undefined;
++      return renderer.render(message);
+     } catch (error) {
+       this.logger.error(`Failed to render the ${renderer.id} surface payload: ${error.message}`);
+ 
+diff --git a/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/types.ts b/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/types.ts
+index 5ad7fdf27f56..ef4157fabf49 100644
+--- a/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/types.ts
++++ b/x-pack/platform/plugins/shared/agent_builder/server/services/surfaces/types.ts
+@@ -6,12 +6,12 @@
+  */
+ 
+ import type { ConversationOriginType, SurfacePayload } from '@kbn/agent-builder-common';
+-import type { SurfaceComposition } from '@kbn/agent-builder-server/attachments';
++import type { PreparedMessage } from './composition';
+ 
+ /** Renders the response message for the surface rounds from one origin type came from. */
+ export interface SurfaceRenderer {
+   /** Origin type whose rounds this surface renders. */
+   id: ConversationOriginType;
+-  /** Renders the message's composition, with its attachments resolved, for the surface. */
+-  render: (composition: SurfaceComposition) => SurfacePayload;
++  /** Renders the complete reply and host-resolved attachments for the surface. */
++  render: (message: PreparedMessage) => SurfacePayload | undefined;
+ }

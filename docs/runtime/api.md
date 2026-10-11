@@ -143,3 +143,7 @@ Three results carry a `composition`, each with its own rule:
 | Coverage of this page against the entry point | `src/api_reference.test.ts` |
 | Composition and render behaviour | `src/assemble/runtime.test.ts` |
 | Registry behaviour | `src/registry/view_registry.test.ts` |
+
+### Authored Slack documents
+
+`SlackSurface.renderAuthoredMarkdown(source, options)` accepts `SlackAuthoredMarkdownOptions` (`elements`, `resolveElement`, optional `onElementError`, and Slack envelope options except `heading`). It returns `SlackAuthoredMarkdownResult`, adding `inert` and `elementErrors` to the normal Slack envelope result. `AuthoredElementError` contains the immutable element and its diagnostic `message`. See [authored replies with attachments](surfaces.md#authored-replies-with-attachments).

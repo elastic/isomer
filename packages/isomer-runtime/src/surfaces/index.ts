@@ -27,6 +27,9 @@ export {
   createReactSurface,
 } from './react';
 export {
+  type AuthoredElementError,
+  type SlackAuthoredMarkdownOptions,
+  type SlackAuthoredMarkdownResult,
   type SlackRenderNodeOptions,
   type SlackRenderOptions,
   type SlackRenderResult,
