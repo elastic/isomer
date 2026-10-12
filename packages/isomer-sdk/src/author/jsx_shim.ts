@@ -96,22 +96,24 @@ type AuthoredNames<TSchema> = {
     : never;
 }[keyof ShapeOf<TSchema>];
 
-type RequiredKey<T> = {
-  [K in keyof T]-?: Record<string, never> extends Pick<T, K> ? never : K;
-}[keyof T];
+type SlotValue<V> =
+  NonNullable<V> extends readonly (infer Item)[] ? Item : NonNullable<V>;
 
-/** A required node, or an array of them. `type` itself is the discriminator. */
-type NodeSlotKey<T> = {
-  [K in RequiredKey<T>]: K extends 'type'
+/**
+ * A field holding body nodes, or an array of them: its `type` is wide or one of
+ * the pack's `TTypes`, so a discriminated config object does not count.
+ */
+type NodeSlotKey<T, TTypes extends string> = {
+  [K in keyof T]-?: K extends 'type'
     ? never
-    : NonNullable<T[K]> extends readonly (infer Item)[]
-      ? Item extends { type: string }
+    : SlotValue<T[K]> extends { type: infer Type extends string }
+      ? string extends Type
         ? K
-        : never
-      : NonNullable<T[K]> extends { type: string }
-        ? K
-        : never;
-}[RequiredKey<T>];
+        : [Type] extends [TTypes]
+          ? K
+          : never
+      : never;
+}[keyof T];
 
 type IsUnion<T, U = T> = [T] extends [never]
   ? false
@@ -129,30 +131,30 @@ type Only<T> = [T] extends [never]
     : T;
 
 /**
- * The one required node field JSX children fill, branded or not. Several
- * required node fields stay required props.
+ * The one unbranded node field JSX children fill. With several, each stays a
+ * prop, as at runtime.
  */
-type PassthroughSlot<TSchema extends ZodObject> = Only<
-  NodeSlotKey<z.infer<TSchema>>
+type PassthroughSlot<TSchema extends ZodObject, TTypes extends string> = Only<
+  Exclude<NodeSlotKey<z.infer<TSchema>, TTypes>, AuthoredNames<TSchema>>
 >;
 
-type FilledNames<TSchema extends ZodObject> =
-  AuthoredNames<TSchema> | PassthroughSlot<TSchema>;
+type FilledNames<TSchema extends ZodObject, TTypes extends string> =
+  AuthoredNames<TSchema> | PassthroughSlot<TSchema, TTypes>;
 
-type AuthorPropsForSchema<TSchema extends ZodObject> =
+type AuthorPropsForSchema<TSchema extends ZodObject, TTypes extends string> =
   LooseSchema<TSchema> extends true
     ? Record<string, unknown> & { children?: ReactNode }
-    : Omit<z.infer<TSchema>, 'type' | FilledNames<TSchema>> &
+    : Omit<z.infer<TSchema>, 'type' | FilledNames<TSchema, TTypes>> &
         Partial<
           Pick<
             z.infer<TSchema>,
-            Extract<FilledNames<TSchema>, keyof z.infer<TSchema>>
+            Extract<FilledNames<TSchema, TTypes>, keyof z.infer<TSchema>>
           >
         > & { children?: ReactNode };
 
-type AuthorPropsFor<P> = [SchemaOf<P>] extends [never]
+type AuthorPropsFor<P, TTypes extends string> = [SchemaOf<P>] extends [never]
   ? Record<string, unknown> & { children?: ReactNode }
-  : AuthorPropsForSchema<SchemaOf<P>>;
+  : AuthorPropsForSchema<SchemaOf<P>, TTypes>;
 
 type ChildEntry<F, TDepth extends unknown[]> = 0 extends 1 & F
   ? NoKeys
@@ -212,7 +214,10 @@ export type PrimitiveComponentMap<
 > = {
   [
     P in TPrimitives[number] as Capitalize<LiteralType<P['type'] & string>>
-  ]: AuthorComponent<AuthorPropsFor<P>, P['type'] & string>;
+  ]: AuthorComponent<
+    AuthorPropsFor<P, LiteralType<TPrimitives[number]['type'] & string>>,
+    P['type'] & string
+  >;
 };
 
 /**
@@ -239,8 +244,7 @@ export type JsxShim<
  * from JSX children, and each child type becomes a component. Several branded
  * fields share one children list, and each takes the elements of its type.
  * Elements of a registered primitive that match none of them fill the one
- * child slot from {@link PrimitiveDefinition.children}, when that slot is not
- * itself branded. A primitive with no brand still fills that slot, array or
+ * unbranded child slot from {@link PrimitiveDefinition.children}. A primitive with no brand still fills that slot, array or
  * single node, from its children. That field is optional on the component's
  * props.
  */
@@ -400,11 +404,8 @@ const fillAuthoredFields = (
     (field) => converted[field.field] === undefined
   );
   const brandedFields = new Set(authored.children.map((field) => field.field));
-  const [unique] = slots;
-  const slot =
-    slots.length === 1 && unique && !brandedFields.has(unique.field)
-      ? unique
-      : undefined;
+  const unbranded = slots.filter(({ field }) => !brandedFields.has(field));
+  const slot = unbranded.length === 1 ? unbranded[0] : undefined;
   const slotOpen = slot !== undefined && converted[slot.field] === undefined;
   if (
     rawChildren === undefined ||
@@ -430,6 +431,9 @@ const fillAuthoredFields = (
       (child) => getAuthorType(child) === field.childType
     );
     if (matching.length === 0) {
+      if (flat.length === 0 && field.array && !field.optional) {
+        converted[field.field] = [];
+      }
       continue;
     }
     for (const child of matching) {
@@ -458,10 +462,13 @@ const fillAuthoredFields = (
     converted[slot.field] = slot.array ? nested : nested[0];
   } else if (leftover.length > 0) {
     const childType = getAuthorType(leftover[0]!);
-    if (unsetChildren.length === 1 && !slotOpen) {
+    const [empty, ...moreEmpty] = unsetChildren.filter(
+      ({ field }) => converted[field] === undefined
+    );
+    if (empty && moreEmpty.length === 0 && !slotOpen) {
       throw new IsomerError(
         'AUTHOR_TYPE_MISMATCH',
-        `Expected <${unsetChildren[0]!.childType}> but received <${childType}>.`
+        `Expected <${empty.childType}> but received <${childType}>.`
       );
     }
     throw new IsomerError(

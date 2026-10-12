@@ -469,6 +469,135 @@ describe('buildJsxShim', () => {
     ).toThrow(expect.objectContaining({ code: 'AUTHOR_TYPE_MISMATCH' }));
   });
 
+  it('rejects a stray element beside a filled branded field', () => {
+    const schema = z.object({
+      type: z.literal('closing'),
+      links: fromChildren('link', z.array(z.object({ label: z.string() }))),
+    });
+    const {
+      Closing,
+      Composition: Root,
+      Link,
+      Note,
+      toComposition: convert,
+    } = buildJsxShim([
+      { type: 'note' as const },
+      { type: 'closing' as const, schema },
+    ]);
+
+    expect(() =>
+      convert(
+        createElement(
+          Root,
+          null,
+          createElement(
+            Closing,
+            null,
+            createElement(Link, { label: 'Docs' }),
+            createElement(Note, { body: 'Nope' })
+          )
+        )
+      )
+    ).toThrow(expect.objectContaining({ code: 'UNEXPECTED_CHILDREN' }));
+  });
+
+  it('keeps an explicitly empty children list as an empty array', () => {
+    const schema = z.object({
+      type: z.literal('closing'),
+      links: fromChildren('link', z.array(z.object({ label: z.string() }))),
+    });
+    const {
+      Closing,
+      Composition: Root,
+      toComposition: convert,
+    } = buildJsxShim([{ type: 'closing' as const, schema }]);
+
+    expect(
+      convert(createElement(Root, null, createElement(Closing, null, []))).body
+    ).toEqual([{ type: 'closing', links: [] }]);
+  });
+
+  it('fills the one unbranded slot when children() also visits a branded field', () => {
+    const node = z.object({ type: z.string() });
+    const schema = z.object({
+      type: z.literal('frame'),
+      lead: fromChildren('lead', node).optional(),
+      body: z.array(node),
+    });
+    const frame = {
+      type: 'frame' as const,
+      schema,
+      children: (value: { lead?: PrimitiveNode; body: PrimitiveNode[] }) => [
+        ...(value.lead ? [{ node: value.lead, path: 'lead' }] : []),
+        ...value.body.map((item, index) => ({
+          node: item,
+          path: `body[${index}]`,
+        })),
+      ],
+    };
+    const {
+      Composition: Root,
+      Frame,
+      Lead,
+      Note,
+      toComposition: convert,
+    } = buildJsxShim([{ type: 'note' as const }, frame]);
+
+    expect(
+      convert(
+        createElement(
+          Root,
+          null,
+          createElement(
+            Frame,
+            null,
+            createElement(Lead, { type: 'note' }),
+            createElement(Note, { body: 'Hello' })
+          )
+        )
+      ).body
+    ).toEqual([
+      {
+        type: 'frame',
+        lead: { type: 'note' },
+        body: [{ type: 'note', body: 'Hello' }],
+      },
+    ]);
+  });
+
+  it('makes only a lone unbranded node field optional on props', () => {
+    const node = z.object({ type: z.string() });
+    const shim = buildJsxShim([
+      {
+        type: 'pair' as const,
+        schema: z.object({
+          type: z.literal('pair'),
+          left: node,
+          right: node.optional(),
+        }),
+      },
+      {
+        type: 'chart' as const,
+        schema: z.object({
+          type: z.literal('chart'),
+          curve: z.object({ type: z.literal('linear') }),
+        }),
+      },
+      {
+        type: 'panel' as const,
+        schema: z.object({ type: z.literal('panel'), body: z.array(node) }),
+      },
+    ]);
+    expect(shim.Pair).toBeDefined();
+    type PairProps = Parameters<typeof shim.Pair>[0];
+    type ChartProps = Parameters<typeof shim.Chart>[0];
+    type PanelProps = Parameters<typeof shim.Panel>[0];
+
+    expectTypeOf<{ children: ReactNode }>().not.toExtend<PairProps>();
+    expectTypeOf<{ children: ReactNode }>().not.toExtend<ChartProps>();
+    expectTypeOf<{ children: ReactNode }>().toExtend<PanelProps>();
+  });
+
   it('throws when required text children are missing', () => {
     const schema = z.object({
       type: z.literal('code'),
