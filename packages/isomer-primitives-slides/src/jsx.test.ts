@@ -116,6 +116,34 @@ describe('slideJsx', () => {
     expect(runtime.validate(composition).errors).toEqual([]);
   });
 
+  it.each([
+    ['no', []],
+    ['two', [bullets, code]],
+  ])('rejects a TitleAside with %s slide nodes', (_count, nodes) => {
+    expect(() =>
+      toComposition(
+        createElement(
+          Composition,
+          null,
+          createElement(
+            SlideFrame,
+            null,
+            createElement(
+              TitleSlide,
+              { title: 'Crate' },
+              createElement(TitleAside, null, ...nodes)
+            )
+          )
+        )
+      )
+    ).toThrow(
+      expect.objectContaining({
+        code: 'UNEXPECTED_CHILDREN',
+        message: '<TitleAside> takes one slide node.',
+      })
+    );
+  });
+
   it('fills slide-structure layouts from children', () => {
     const composition = toComposition(
       createElement(
