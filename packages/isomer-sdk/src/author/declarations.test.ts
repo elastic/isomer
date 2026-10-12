@@ -241,6 +241,47 @@ describe('buildAuthoringDeclarations', () => {
     );
   });
 
+  it('declares the one unbranded slot optional beside a branded node field', () => {
+    const frame = definePrimitive<PrimitiveNode>({
+      type: 'frame',
+      catalog: entry('frame'),
+      examples: [],
+      schema: z.object({
+        type: z.literal('frame'),
+        lead: fromChildren('lead', unresolvedBodyNodeSchema).optional(),
+        body: z.array(unresolvedBodyNodeSchema).min(1),
+      }),
+      children: (node) => {
+        const { lead, body } = node as PrimitiveNode & {
+          lead?: PrimitiveNode;
+          body: PrimitiveNode[];
+        };
+        return [
+          ...(lead ? [{ node: lead, path: 'lead' }] : []),
+          ...body.map((item, index) => ({
+            node: item,
+            path: `body[${index}]`,
+          })),
+        ];
+      },
+      renderers,
+    });
+    const withFrame = [note, frame];
+    const declarations = buildAuthoringDeclarations(
+      buildAuthoringJsonSchema(withFrame),
+      withFrame,
+      { jsx: true }
+    );
+
+    expect(declarations).toMatch(/interface FrameProps \{[^]*?\n {4}body\?: /);
+    expect(
+      diagnostics({
+        '/virtual/isomer.d.ts': declarations,
+        '/virtual/use.tsx': `const view = <Frame><Note text="Hi" /></Frame>;`,
+      })
+    ).toEqual([]);
+  });
+
   it('type-checks JSX written the way the shim reads it', () => {
     const declarations = buildAuthoringDeclarations(schema, definitions, {
       jsx: true,

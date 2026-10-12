@@ -543,6 +543,9 @@ describe('buildJsxShim', () => {
       toComposition: convert,
     } = buildJsxShim([{ type: 'note' as const }, frame]);
 
+    expectTypeOf<{ children: ReactNode }>().toExtend<
+      Parameters<typeof Frame>[0]
+    >();
     expect(
       convert(
         createElement(
