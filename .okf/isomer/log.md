@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-12
+
+- **A prompt without the schema states the view envelope**: `buildAuthoringPrompt` follows the intro, the profile's or a host's `intro`, with `A view is {"type":"view","body":[…]}`… whenever `schema` is not inlined, which is the router profile and an index prompt such as agent-tools' guide. Without it, a model handed the slides pack's index sent its first draft as a bare `slideFrame` in 57% of agent-loop eval runs; with it, none did, and mean input tokens per run fell 23%. ([#163](https://github.com/elastic/isomer/issues/163))
+
 ## 2026-10-11
 
 - **A pack declares its groups; a primitive names none**: `catalog.group`, `PackTypes.groups`, and `PackAuthoringOptions.groupOrder` are removed, unreleased since the 2026-10-08 entry. `authoring.groups` is a pack's only source of index headings, and the slides pack lists its groups in `src/pack_authoring.ts` again. The index lists ungrouped types under "Uncategorized", exported as `UNCATEGORIZED_GROUP_TITLE`, in place of "Other". `definePrimitivePack` throws `INVALID_PACK_GROUPS` for a group with that title or a title used twice in one pack. ([#163](https://github.com/elastic/isomer/issues/163))

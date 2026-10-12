@@ -34,6 +34,21 @@ describe('buildAuthoringPrompt', () => {
     expect(prompt).toContain('Custom intro.');
   });
 
+  it('states the view envelope only when the schema is not inlined', () => {
+    const envelope = 'A view is `{"type":"view","body":[…]}`';
+    const { schema: _schema, ...withoutSchema } = context;
+    expect(buildAuthoringPrompt('general', context)).not.toContain(envelope);
+    expect(
+      buildAuthoringPrompt('compose-from-primitives', withoutSchema)
+    ).toContain(envelope);
+    expect(buildAuthoringPrompt('registered-view-router', context)).toContain(
+      envelope
+    );
+    expect(
+      buildAuthoringPrompt('general', { ...withoutSchema, intro: 'Custom.' })
+    ).toContain(`Custom. ${envelope}`);
+  });
+
   it('minifies the JSON Schema', () => {
     const prompt = buildAuthoringPrompt('general', context);
     expect(prompt).toContain(

@@ -111,7 +111,7 @@ Three profiles, because the job differs:
 | `registered-view-router`  | Prefer an existing view matched on its `answers`; compose only as fallback |
 | `compose-from-primitives` | Build a composition from the catalog, checked against the schema           |
 
-`general` and `compose-from-primitives` inline the JSON Schema. The router profile does not: it requests a view by id and never composes a node. Each catalog bullet carries its `example` as compact JSON. `examples` is an extra host-supplied composition, capped at one, with `meta` stripped. The showcase arrays on `definition.examples` stay off the prompt; the conformance harness still reads them.
+`general` and `compose-from-primitives` inline the JSON Schema. The router profile does not: it requests a view by id and never composes a node. A prompt without the schema follows its intro, the profile's or yours, with the root shape, `{"type":"view","body":[…]}`, because nothing else in it shows a primitive goes inside a view rather than standing as one. Each catalog bullet carries its `example` as compact JSON. `examples` is an extra host-supplied composition, capped at one, with `meta` stripped. The showcase arrays on `definition.examples` stay off the prompt; the conformance harness still reads them.
 
 ### An index, then lookups
 
