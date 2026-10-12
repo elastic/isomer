@@ -129,13 +129,13 @@ A field filled from JSX children is branded on the schema. `fromChildren` and `f
 
 ```ts
 items: fromChildren(
-  'slideTerritory',
+  'territory',
   z.array(territorySchema).min(1).max(4).describe('Owners, left to right, in equal columns. 1 to 4.'),
   { text: 'body' }
 ),
 ```
 
-`slideJsx` then includes `SlideTerritory`, typed from the array element. `text: 'body'` copies leftover text children onto that field. An explicit `items` prop wins over children. Placing `<SlideTerritory>` directly under `<Composition>` throws, because it is not a body node.
+`slideJsx` then includes `Territory`, typed from the array element. `text: 'body'` copies leftover text children onto that field. An explicit `items` prop wins over children. Placing `<Territory>` directly under `<Composition>` throws, because it is not a body node.
 
 A string field uses `fromTextChildren` the same way, with `collapseWhitespace: false` when newlines matter.
 
@@ -390,6 +390,58 @@ A number's sentence is its text, and the figures are attributes. A bar's label i
   <Bar value={12} highlight>Checkout</Bar>
   <Bar value={4} detail="p95">Search</Bar>
 </SlideBars>
+```
+
+A diagram's parts are children of their kind. Two kinds share one children list, and each element goes to its own field: a pipeline's `PipelineStep` and `PipelineSpan`, a sequence's `SequenceActor` and `SequenceMessage`, and a lanes diagram's `Lane` and `LanesNote`. Ids, edges, indexes, and short lists of chips or steps stay attributes:
+
+```tsx
+<SlideFanout source="Order">
+  <FanoutTarget name="Ledger">Holds the money.</FanoutTarget>
+  <FanoutTarget name="Email" tone="accent">Tells the customer.</FanoutTarget>
+</SlideFanout>
+
+<SlideGraph edges={[['cart', 'ledger']]}>
+  <GraphNode id="cart" term="Cart">What the customer picked.</GraphNode>
+  <GraphNode id="ledger" term="Ledger">Where the money is held.</GraphNode>
+</SlideGraph>
+
+<SlideLanes join="Checkout">
+  <Lane label="Card" steps={['Authorize', 'Capture']} />
+  <Lane label="Wallet" tone="accent" steps={['Redirect']} />
+  <LanesNote title="Card">Two steps, no redirect.</LanesNote>
+</SlideLanes>
+
+<SlideLayers>
+  <Layer name="Storefront" owner="Web">What people see.</Layer>
+  <Layer name="Orders API" owner="Platform">Takes and checks orders.</Layer>
+  <Layer name="Ledger" owner="Payments" chips={['holds', 'refunds']} />
+</SlideLayers>
+
+<SlidePipeline>
+  <PipelineStep title="Hold" />
+  <PipelineStep title="Settle" />
+  <PipelineSpan from={0} to={1} tone="primary" label="Ours" title="Ledger">We own both steps.</PipelineSpan>
+</SlidePipeline>
+
+<SlideSequence>
+  <SequenceActor id="app">App</SequenceActor>
+  <SequenceActor id="api">Orders API</SequenceActor>
+  <SequenceActor id="bank">Bank</SequenceActor>
+  <SequenceMessage from="app" to="api">Pay</SequenceMessage>
+  <SequenceMessage from="api" to="bank">Charge</SequenceMessage>
+</SlideSequence>
+
+<SlideTerritoryGroup>
+  <Territory title="Host" tone="accent">Owns routing.</Territory>
+</SlideTerritoryGroup>
+
+<SlideTimeline>
+  <TimelineItem label="09:00" channel="Pager" heading="Checkout paged">On call answered.</TimelineItem>
+</SlideTimeline>
+
+<SlideTree root="checkout/">
+  <TreeEntry name="refund.ts">Issues refunds.</TreeEntry>
+</SlideTree>
 ```
 
 `toComposition` walks the tree back into the plain `Composition` value every surface renders from — JSX is authoring sugar, not a second representation.

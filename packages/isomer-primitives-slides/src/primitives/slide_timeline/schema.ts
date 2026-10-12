@@ -7,6 +7,7 @@
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
+import { fromChildren } from '@elastic/isomer-sdk/author';
 
 import { lineText, wrappedText } from '../authored_text';
 import { crossRefine } from '../cross_field';
@@ -43,13 +44,17 @@ export type SlideTimelineItem = z.infer<typeof itemSchema>;
 export const schema = z
   .object({
     type: z.literal('slideTimeline'),
-    items: z
-      .array(itemSchema)
-      .min(3)
-      .max(maxItems)
-      .describe(
-        '3–5 points in chronological order, left to right. Mark the latest or most relevant one current.'
-      ),
+    items: fromChildren(
+      'timelineItem',
+      z
+        .array(itemSchema)
+        .min(3)
+        .max(maxItems)
+        .describe(
+          '3–5 points in chronological order, left to right. Mark the latest or most relevant one current.'
+        ),
+      { text: 'body' }
+    ),
     size: sizeField(),
   })
   .strict()

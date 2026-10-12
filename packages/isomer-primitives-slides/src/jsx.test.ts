@@ -15,6 +15,25 @@ import { slidePrimitiveTypes } from './registry';
 
 const {
   AgendaSection,
+  FanoutTarget,
+  GraphNode,
+  Lane,
+  LanesNote,
+  Layer,
+  PipelineSpan,
+  PipelineStep,
+  SequenceActor,
+  SequenceMessage,
+  SlideFanout,
+  SlideGraph,
+  SlideLanes,
+  SlideLayers,
+  SlidePipeline,
+  SlideSequence,
+  SlideTimeline,
+  SlideTree,
+  TimelineItem,
+  TreeEntry,
   Bar,
   BulletItem,
   SlideBars,
@@ -603,6 +622,197 @@ describe('slideJsx', () => {
         { label: 'Checkout', value: 12, highlight: true },
         { label: 'Search', value: 4, detail: 'p95' },
       ],
+    });
+  });
+
+  it('fills diagram primitives from children', () => {
+    expect(
+      bodyOf(
+        createElement(
+          SlideFanout,
+          { source: 'Order' },
+          createElement(FanoutTarget, { name: 'Ledger' }, 'Holds the money.'),
+          createElement(
+            FanoutTarget,
+            { name: 'Email', tone: 'accent' },
+            'Tells the customer.'
+          )
+        )
+      )
+    ).toEqual({
+      type: 'slideFanout',
+      source: 'Order',
+      targets: [
+        { name: 'Ledger', body: 'Holds the money.' },
+        { name: 'Email', tone: 'accent', body: 'Tells the customer.' },
+      ],
+    });
+
+    expect(
+      bodyOf(
+        createElement(
+          SlideGraph,
+          { edges: [['cart', 'ledger']] },
+          createElement(GraphNode, { id: 'cart', term: 'Cart' }, 'Items.'),
+          createElement(GraphNode, { id: 'ledger', term: 'Ledger' }, 'Money.')
+        )
+      )
+    ).toEqual({
+      type: 'slideGraph',
+      edges: [['cart', 'ledger']],
+      nodes: [
+        { id: 'cart', term: 'Cart', body: 'Items.' },
+        { id: 'ledger', term: 'Ledger', body: 'Money.' },
+      ],
+    });
+
+    expect(
+      bodyOf(
+        createElement(
+          SlideLanes,
+          { join: 'Checkout' },
+          createElement(Lane, { label: 'Card', steps: ['Authorize'] }),
+          createElement(Lane, { label: 'Wallet', steps: ['Redirect'] }),
+          createElement(LanesNote, { title: 'Card' }, 'One step.')
+        )
+      )
+    ).toEqual({
+      type: 'slideLanes',
+      join: 'Checkout',
+      lanes: [
+        { label: 'Card', steps: ['Authorize'] },
+        { label: 'Wallet', steps: ['Redirect'] },
+      ],
+      notes: [{ title: 'Card', body: 'One step.' }],
+    });
+
+    expect(
+      bodyOf(
+        createElement(
+          SlideLayers,
+          null,
+          createElement(
+            Layer,
+            { name: 'UI', owner: 'Web' },
+            'What people see.'
+          ),
+          createElement(
+            Layer,
+            { name: 'API', owner: 'Platform' },
+            'Takes orders.'
+          ),
+          createElement(Layer, {
+            name: 'Ledger',
+            owner: 'Payments',
+            chips: ['holds'],
+          })
+        )
+      )
+    ).toEqual({
+      type: 'slideLayers',
+      layers: [
+        { name: 'UI', owner: 'Web', body: 'What people see.' },
+        { name: 'API', owner: 'Platform', body: 'Takes orders.' },
+        { name: 'Ledger', owner: 'Payments', chips: ['holds'] },
+      ],
+    });
+
+    expect(
+      bodyOf(
+        createElement(
+          SlidePipeline,
+          null,
+          createElement(PipelineStep, { title: 'Hold' }),
+          createElement(PipelineStep, { title: 'Settle' }),
+          createElement(
+            PipelineSpan,
+            { from: 0, to: 1, tone: 'primary', label: 'Ours', title: 'Ledger' },
+            'We own both steps.'
+          )
+        )
+      )
+    ).toEqual({
+      type: 'slidePipeline',
+      steps: [{ title: 'Hold' }, { title: 'Settle' }],
+      spans: [
+        {
+          from: 0,
+          to: 1,
+          tone: 'primary',
+          label: 'Ours',
+          title: 'Ledger',
+          body: 'We own both steps.',
+        },
+      ],
+    });
+
+    expect(
+      bodyOf(
+        createElement(
+          SlideSequence,
+          null,
+          createElement(SequenceActor, { id: 'app' }, 'App'),
+          createElement(SequenceActor, { id: 'api' }, 'API'),
+          createElement(SequenceActor, { id: 'bank' }, 'Bank'),
+          createElement(SequenceMessage, { from: 'app', to: 'api' }, 'Pay'),
+          createElement(SequenceMessage, { from: 'api', to: 'bank' }, 'Charge')
+        )
+      )
+    ).toEqual({
+      type: 'slideSequence',
+      actors: [
+        { id: 'app', label: 'App' },
+        { id: 'api', label: 'API' },
+        { id: 'bank', label: 'Bank' },
+      ],
+      messages: [
+        { from: 'app', to: 'api', label: 'Pay' },
+        { from: 'api', to: 'bank', label: 'Charge' },
+      ],
+    });
+
+    const item = (label: string) =>
+      createElement(
+        TimelineItem,
+        { label, channel: 'Pager', heading: `${label} paged` },
+        'On call answered.'
+      );
+    expect(
+      bodyOf(
+        createElement(
+          SlideTimeline,
+          null,
+          item('09:00'),
+          item('09:05'),
+          item('09:41')
+        )
+      )
+    ).toMatchObject({
+      type: 'slideTimeline',
+      items: [
+        {
+          label: '09:00',
+          channel: 'Pager',
+          heading: '09:00 paged',
+          body: 'On call answered.',
+        },
+        { label: '09:05' },
+        { label: '09:41' },
+      ],
+    });
+
+    expect(
+      bodyOf(
+        createElement(
+          SlideTree,
+          { root: 'checkout/' },
+          createElement(TreeEntry, { name: 'refund.ts' }, 'Issues refunds.')
+        )
+      )
+    ).toEqual({
+      type: 'slideTree',
+      root: 'checkout/',
+      entries: [{ name: 'refund.ts', body: 'Issues refunds.' }],
     });
   });
 
