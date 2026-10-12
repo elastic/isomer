@@ -37,7 +37,12 @@ describe('sourceLines', () => {
     expect(sourceLines('curl')).toEqual(['curl']);
   });
 
-  it('reads Windows line breaks as line breaks', () => {
-    expect(sourceLines('a\r\nb')).toEqual(['a', 'b']);
+  it.each([
+    ['CRLF', '\r\n'],
+    ['CR', '\r'],
+    ['U+2028', '\u2028'],
+    ['U+2029', '\u2029'],
+  ])('reads %s as a line break', (_name, br) => {
+    expect(sourceLines(`${br}  a${br}  b${br}`)).toEqual(['a', 'b']);
   });
 });

@@ -9,6 +9,8 @@ import type { ReactNode } from 'react';
 import { Children } from 'react';
 import { IsomerError } from '@elastic/isomer-sdk';
 
+import { splitLines } from '../render/marks';
+
 /** Text children exactly as written, leading indentation included. */
 export const rawText = (children: ReactNode): string =>
   Children.toArray(children)
@@ -29,10 +31,13 @@ export const rawText = (children: ReactNode): string =>
  * dropped, and so is the indentation every line shares.
  */
 export const sourceLines = (children: ReactNode): string[] => {
-  const lines = rawText(children)
-    .replace(/^\r?\n/, '')
-    .replace(/\r?\n[ ]*$/, '')
-    .split(/\r?\n/);
+  const all = splitLines(rawText(children));
+  const start = all.length > 1 && all[0] === '' ? 1 : 0;
+  const end =
+    all.length - start > 1 && /^ *$/.test(all[all.length - 1]!)
+      ? all.length - 1
+      : all.length;
+  const lines = all.slice(start, end);
   const indents = lines
     .filter((line) => line.trim() !== '')
     .map((line) => line.length - line.trimStart().length);

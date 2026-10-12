@@ -437,6 +437,8 @@ A diagram's parts are children of their kind. Two kinds share one children list,
 
 <SlideTimeline>
   <TimelineItem label="09:00" channel="Pager" heading="Checkout paged">On call answered.</TimelineItem>
+  <TimelineItem label="09:12" channel="Slack" heading="Cause found">A bad deploy.</TimelineItem>
+  <TimelineItem label="09:41" channel="Deploy" heading="Rolled back">Orders flowed again.</TimelineItem>
 </SlideTimeline>
 
 <SlideTree root="checkout/">
