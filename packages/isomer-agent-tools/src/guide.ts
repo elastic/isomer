@@ -55,6 +55,6 @@ export const buildPrimitiveDescriptions = ({
   return [
     `## Primitives\n\n${primitives.map(formatPrimitiveEntry).join('\n')}`,
     '## JSON Schema\n\nEach primitive is `$defs.<type>`. `bodyNode` stands for any primitive in the index.',
-    `\`\`\`json\n${JSON.stringify(schema, null, 2)}\n\`\`\``,
+    `\`\`\`json\n${JSON.stringify(schema)}\n\`\`\``,
   ].join('\n\n');
 };

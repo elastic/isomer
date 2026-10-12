@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-11
+
+- **Agent tools print JSON Schema compact**: `isomer_describe_primitives` and the `isomer://composition-schema` resource print the schema without indentation, the same content in about two thirds of the bytes (the slides pack's resource drops from 87 KB to 59 KB). The resource's description says it is large and sends a model to the guide's index and `isomer_describe_primitives`. A payload budget test holds the slides pack's `tools/list` under 3,000 bytes, the guide under 6,600, and each one-type describe under 5,000. ([#163](https://github.com/elastic/isomer/issues/163))
+
 ## 2026-10-08
 
 - **A pack's groups come from each primitive's `catalog.group`**: `PackTypes.groups` is the headings a primitive may name. `string`, the default, or a bag without `groups`, leaves `catalog.group` optional. A literal union makes it required and a member of that union, so a primitive cannot name a heading the pack did not declare. Omit `groups` and `definePrimitivePack` derives them from each primitive's `catalog.group`, in definition order. `groupOrder` lists every heading exactly once, in order, and is not stored. An explicit `groups` list beside `groupOrder` or a `catalog.group`, or a `groupOrder` that omits, repeats, or invents a heading, throws `IsomerError` `INVALID_PACK_GROUPS`, a new SDK code.

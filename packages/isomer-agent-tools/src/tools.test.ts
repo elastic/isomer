@@ -161,6 +161,12 @@ describe('createIsomerTools', () => {
       expect(text).toContain('- `slideStack` — ');
       expect(text).toContain('Use when:');
       const json = /```json\n([\s\S]*)\n```/.exec(text)?.[1] ?? '{}';
+      expect(json).not.toContain('\n');
+      expect(JSON.parse(json)).toEqual(
+        runtime
+          .getAuthoringContext()
+          .describePrimitives(['slideFrame', 'slideStack']).schema
+      );
       const { $defs } = JSON.parse(json) as { $defs: Record<string, unknown> };
       expect(Object.keys($defs)).toEqual(
         expect.arrayContaining(['slideFrame', 'slideStack', 'bodyNode'])
@@ -740,6 +746,41 @@ describe('createIsomerTools', () => {
       expect(textOf(result)).toContain('missing');
     });
   });
+});
+
+// Ceilings sit about 10% above the slides pack's sizes; raise one only on purpose.
+describe('payload budget', () => {
+  const tools = createIsomerTools({
+    runtime: createIsomerRuntime({ packs: [slidesPack] }),
+  });
+  const bytes = (text: string) => Buffer.byteLength(text);
+
+  it('keeps tools/list under 3,000 bytes', () => {
+    const list = tools.map(({ name, title, description, inputSchema }) => ({
+      name,
+      title,
+      description,
+      inputSchema: z.toJSONSchema(inputSchema),
+    }));
+    expect(bytes(JSON.stringify(list))).toBeLessThan(3_000);
+  });
+
+  it('keeps the authoring guide under 6,600 bytes', async () => {
+    const guide = textOf(await call(tools, ISOMER_TOOL_NAMES.authoringGuide));
+    expect(bytes(guide)).toBeLessThan(6_600);
+  });
+
+  it.each(slideDeckPrimitives.map(({ type }) => type))(
+    'keeps a describe of %s under 5,000 bytes',
+    async (type) => {
+      const text = textOf(
+        await call(tools, ISOMER_TOOL_NAMES.describePrimitives, {
+          types: [type],
+        })
+      );
+      expect(bytes(text)).toBeLessThan(5_000);
+    }
+  );
 });
 
 describe('a throwing runtime', () => {
