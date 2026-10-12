@@ -7,15 +7,12 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
-import type { SlideGroup } from '../../groups';
-
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideDeltaNode}. */
 export const catalog = {
   type: 'slideDelta',
   name: 'Delta',
-  group: 'Data',
   description:
     'One number before and after a change. change needs both values; leave a value out to show a placeholder.',
   purpose:
@@ -30,4 +27,4 @@ export const catalog = {
     'There is one number and no before; use slideStat.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry<SlideGroup>;
+} satisfies PrimitiveCatalogEntry;

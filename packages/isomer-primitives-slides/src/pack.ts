@@ -13,13 +13,12 @@
 import {
   definePrimitivePack,
   type Frame,
-  type PrimitiveGroup,
   type PrimitivePackInput,
   type ThemePair,
 } from '@elastic/isomer-sdk';
 
 import { slideBuildsEnhancement } from './builds';
-import { SLIDE_GROUP_ORDER } from './groups';
+import { slidesPackAuthoring } from './pack_authoring';
 import { slideCopyEnhancement } from './primitives/slide_command';
 import { slideDeckPrimitives } from './registry';
 import { slideDistillery } from './theme/distillery';
@@ -72,13 +71,9 @@ const packInput = {
   id: 'slides',
   primitives: slideDeckPrimitives,
   styleAdapter,
-  authoring: { groupOrder: SLIDE_GROUP_ORDER },
+  authoring: slidesPackAuthoring,
   enhancements: [slideBuildsEnhancement, slideCopyEnhancement],
 } satisfies PrimitivePackInput;
 
 /** This pack, ready to pass to `createIsomerRuntime`. */
 export const slidesPack = definePrimitivePack<SlideFrameTheme>(packInput);
-
-/** Derived from each primitive's `group`, headings in {@link SLIDE_GROUP_ORDER}. */
-export const slidePrimitiveGroups: readonly PrimitiveGroup[] =
-  slidesPack.authoring?.groups ?? [];

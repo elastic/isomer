@@ -2,6 +2,7 @@
 
 ## 2026-10-11
 
+- **A pack declares its groups; a primitive names none**: `catalog.group`, `PackTypes.groups`, and `PackAuthoringOptions.groupOrder` are removed, unreleased since the 2026-10-08 entry. `authoring.groups` is a pack's only source of index headings, and the slides pack lists its groups in `src/pack_authoring.ts` again. The index lists ungrouped types under "Uncategorized", exported as `UNCATEGORIZED_GROUP_TITLE`, in place of "Other". `definePrimitivePack` throws `INVALID_PACK_GROUPS` for a group with that title or a title used twice in one pack. ([#163](https://github.com/elastic/isomer/issues/163))
 - **Agent tools print JSON Schema compact**: `isomer_describe_primitives` and the `isomer://composition-schema` resource print the schema without indentation, the same content in about two thirds of the bytes (the slides pack's resource drops from 87 KB to 59 KB). The resource's description says it is large and sends a model to the guide's index and `isomer_describe_primitives`. A payload budget test holds the slides pack's `tools/list` under 3,000 bytes, the guide under 6,600, and each one-type describe under 5,000. ([#163](https://github.com/elastic/isomer/issues/163))
 
 ## 2026-10-08

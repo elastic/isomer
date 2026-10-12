@@ -7,15 +7,12 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
-import type { SlideGroup } from '../../groups';
-
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideRoadmapNode}. */
 export const catalog = {
   type: 'slideRoadmap',
   name: 'Roadmap',
-  group: 'Text',
   description: 'Two to four horizons. At most one column is current.',
   purpose:
     'Show what is done, what comes next, and what comes after, so the audience knows where the work stands.',
@@ -28,4 +25,4 @@ export const catalog = {
     'The columns split work by who owns it, not by when; use slideTerritoryGroup.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry<SlideGroup>;
+} satisfies PrimitiveCatalogEntry;

@@ -7,15 +7,12 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
-import type { SlideGroup } from '../../groups';
-
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideFrameNode}. */
 export const catalog = {
   type: 'slideFrame',
   name: 'Slide',
-  group: 'Slide structure',
   description:
     'One whole slide. Its body holds the slide content top to bottom, never a slideFrame: frames never nest.',
   purpose:
@@ -29,4 +26,4 @@ export const catalog = {
     'Content inside a slide needs grouping; frames never nest, so use slideSplit or slideStack.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry<SlideGroup>;
+} satisfies PrimitiveCatalogEntry;
