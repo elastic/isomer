@@ -99,7 +99,7 @@ describe('the slides pack authoring declarations', () => {
       diagnostics({
         '/virtual/isomer.d.ts': declarations,
         '/virtual/use.tsx':
-          '<SlideTranscript><SlideTurn role={42}>hello</SlideTurn></SlideTranscript>;',
+          '<SlideTranscript><TranscriptTurn role={42}>hello</TranscriptTurn></SlideTranscript>;',
       })
     ).toHaveLength(1);
   });

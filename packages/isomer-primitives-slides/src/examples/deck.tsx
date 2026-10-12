@@ -13,6 +13,7 @@ import { slideJsx } from '../jsx';
 
 const {
   BulletItem,
+  CodePanel,
   Composition,
   SlideBulletList,
   SlideCode,
@@ -60,19 +61,15 @@ export const splitSlide: SlideComposition = toComposition(
       </SlideHeading>
       <SlideSplitLayout ratio="wideLeft" divider="arrow">
         <SplitPane>
-          <SlideCode
-            panels={[
-              {
-                file: 'slide.ts',
-                language: 'ts',
-                lines: [
-                  'runtime.surfaces.markdown.render(slide);',
-                  'runtime.surfaces.slack.render(slide);',
-                  'runtime.surfaces.snapshot.render(slide);',
-                ],
-              },
-            ]}
-          />
+          <SlideCode>
+            <CodePanel file="slide.ts" language="ts">
+              {`
+                runtime.surfaces.markdown.render(slide);
+                runtime.surfaces.slack.render(slide);
+                runtime.surfaces.snapshot.render(slide);
+              `}
+            </CodePanel>
+          </SlideCode>
         </SplitPane>
         <SplitPane label="Surfaces" tone="primary">
           <SlideBulletList>

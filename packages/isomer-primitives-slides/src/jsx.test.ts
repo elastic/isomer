@@ -17,7 +17,11 @@ const {
   AgendaSection,
   BulletItem,
   ClosingLink,
+  CodePanel,
   Definition,
+  DiffLine,
+  SlideCommand,
+  SlideDiff,
   ListItem,
   RoadmapColumn,
   RoadmapItem,
@@ -446,6 +450,83 @@ describe('slideJsx', () => {
           status: 'In design',
           items: [{ title: 'Splits', body: 'Pay two stores.' }],
         },
+      ],
+    });
+  });
+
+  it('fills code primitives from children', () => {
+    expect(
+      bodyOf(
+        createElement(
+          SlideCommand,
+          { label: 'Install' },
+          'npm  install @elastic/isomer-runtime'
+        )
+      )
+    ).toEqual({
+      type: 'slideCommand',
+      label: 'Install',
+      command: 'npm  install @elastic/isomer-runtime',
+    });
+
+    expect(
+      bodyOf(
+        createElement(
+          SlideCode,
+          null,
+          createElement(
+            CodePanel,
+            { file: 'refund.ts', highlightLines: [2] },
+            `
+              const refund = async (id) => {
+                await ledger.hold(id);
+
+                return ledger.settle(id);
+              };
+            `
+          ),
+          createElement(CodePanel, { lines: ['ledger.settle(id);'] })
+        )
+      )
+    ).toEqual({
+      type: 'slideCode',
+      panels: [
+        {
+          file: 'refund.ts',
+          highlightLines: [2],
+          lines: [
+            'const refund = async (id) => {',
+            '  await ledger.hold(id);',
+            '',
+            '  return ledger.settle(id);',
+            '};',
+          ],
+        },
+        { lines: ['ledger.settle(id);'] },
+      ],
+    });
+
+    expect(
+      bodyOf(
+        createElement(
+          SlideDiff,
+          { file: 'refund.ts' },
+          createElement(DiffLine, null, 'const refund = (id) => {'),
+          createElement(DiffLine, { op: 'remove' }, '  return settle(id);'),
+          createElement(DiffLine, { op: 'add' }, '  return ledger.settle(id);'),
+          createElement(DiffLine),
+          createElement(DiffLine, { text: '};' })
+        )
+      )
+    ).toEqual({
+      type: 'slideDiff',
+      file: 'refund.ts',
+      lines: [
+        { text: 'const refund = (id) => {' },
+        { op: 'remove', text: '  return settle(id);' },
+        { op: 'add', text: '  return ledger.settle(id);' },
+        { text: '' },
+        { text: '};' },
       ],
     });
   });

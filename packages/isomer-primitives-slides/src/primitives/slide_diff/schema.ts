@@ -7,6 +7,7 @@
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
+import { fromChildren } from '@elastic/isomer-sdk/author';
 
 import { hasLineTerminator } from '../../render/marks';
 import { displayColumns } from '../../render/mono';
@@ -15,6 +16,7 @@ import { diffLineMaxLength, diffMaxLines } from '../../theme/components/diff';
 import { slideDiffOps } from '../../theme/variants';
 import { authoredTextMaxLength, lineText } from '../authored_text';
 import { crossRefine } from '../cross_field';
+import { rawText } from '../source_text';
 
 const lineSchema = z
   .object({
@@ -60,13 +62,26 @@ export const schema = z
         'Language of the source, e.g. `ts`. The slide shows no syntax colors, and markdown fences the lines as `diff`.'
       )
       .optional(),
-    lines: z
-      .array(lineSchema)
-      .min(1)
-      .max(diffMaxLines)
-      .describe(
-        `The changed lines with a little unchanged context around them, in file order. 1 to ${diffMaxLines}; ${codeDenseAfter} or fewer stay at the larger size. A line holds ${diffLineMaxLength(false)} columns (${diffLineMaxLength(true)} past ${codeDenseAfter} lines), a wide glyph such as CJK or an emoji counting as two; a narrower column holds fewer, and a longer line is clipped.`
-      ),
+    lines: fromChildren(
+      'diffLine',
+      z
+        .array(lineSchema)
+        .min(1)
+        .max(diffMaxLines)
+        .describe(
+          `The changed lines with a little unchanged context around them, in file order. 1 to ${diffMaxLines}; ${codeDenseAfter} or fewer stay at the larger size. A line holds ${diffLineMaxLength(false)} columns (${diffLineMaxLength(true)} past ${codeDenseAfter} lines), a wide glyph such as CJK or an emoji counting as two; a narrower column holds fewer, and a longer line is clipped.`
+        ),
+      {
+        propsSchema: z.strictObject({
+          ...lineSchema.shape,
+          text: lineSchema.shape.text.optional(),
+        }),
+        toItem: ({ children, ...line }) => ({
+          ...line,
+          text: line.text ?? rawText(children),
+        }),
+      }
+    ),
   })
   .strict()
   .check(
