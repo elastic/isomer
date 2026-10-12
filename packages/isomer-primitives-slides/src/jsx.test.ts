@@ -15,7 +15,13 @@ import { slidePrimitiveTypes } from './registry';
 
 const {
   AgendaSection,
+  Bar,
   BulletItem,
+  SlideBars,
+  SlideDelta,
+  SlideStat,
+  SlideStats,
+  Stat,
   ClosingLink,
   CodePanel,
   Definition,
@@ -527,6 +533,75 @@ describe('slideJsx', () => {
         { op: 'add', text: '  return ledger.settle(id);' },
         { text: '' },
         { text: '};' },
+      ],
+    });
+  });
+
+  it('fills data primitives from children', () => {
+    expect(
+      bodyOf(
+        createElement(
+          SlideStat,
+          { value: '2', unit: 'days' },
+          'Refunds settle **three days** sooner.'
+        )
+      )
+    ).toEqual({
+      type: 'slideStat',
+      value: '2',
+      unit: 'days',
+      body: 'Refunds settle **three days** sooner.',
+    });
+
+    expect(
+      bodyOf(
+        createElement(
+          SlideDelta,
+          {
+            before: { label: 'Before', value: '5 days' },
+            after: { label: 'After', value: '2 days' },
+          },
+          'The ledger writes first.'
+        )
+      )
+    ).toEqual({
+      type: 'slideDelta',
+      before: { label: 'Before', value: '5 days' },
+      after: { label: 'After', value: '2 days' },
+      body: 'The ledger writes first.',
+    });
+
+    expect(
+      bodyOf(
+        createElement(
+          SlideStats,
+          null,
+          createElement(Stat, { value: '41', label: 'Minutes' }, 'Down.'),
+          createElement(Stat, { value: '0', label: 'Lost' }, 'Orders kept.')
+        )
+      )
+    ).toEqual({
+      type: 'slideStats',
+      items: [
+        { value: '41', label: 'Minutes', body: 'Down.' },
+        { value: '0', label: 'Lost', body: 'Orders kept.' },
+      ],
+    });
+
+    expect(
+      bodyOf(
+        createElement(
+          SlideBars,
+          null,
+          createElement(Bar, { value: 12, highlight: true }, 'Checkout'),
+          createElement(Bar, { value: 4, detail: 'p95' }, 'Search')
+        )
+      )
+    ).toEqual({
+      type: 'slideBars',
+      items: [
+        { label: 'Checkout', value: 12, highlight: true },
+        { label: 'Search', value: 4, detail: 'p95' },
       ],
     });
   });

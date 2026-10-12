@@ -372,6 +372,26 @@ Code keeps its whitespace. A command is its text. A `CodePanel`'s text is its `l
 </SlideTranscript>
 ```
 
+A number's sentence is its text, and the figures are attributes. A bar's label is its text. A table, a matrix, and a quadrant keep their grids as props: a row is a list of cells, and an element per cell would be longer than the array it replaces.
+
+```tsx
+<SlideStat value="2" unit="days">Refunds settle **three days** sooner.</SlideStat>
+
+<SlideDelta before={{ label: 'Before', value: '5 days' }} after={{ label: 'After', value: '2 days' }}>
+  The ledger writes first.
+</SlideDelta>
+
+<SlideStats>
+  <Stat value="41" label="Minutes">Checkout was down.</Stat>
+  <Stat value="0" label="Lost">Every order was kept.</Stat>
+</SlideStats>
+
+<SlideBars>
+  <Bar value={12} highlight>Checkout</Bar>
+  <Bar value={4} detail="p95">Search</Bar>
+</SlideBars>
+```
+
 `toComposition` walks the tree back into the plain `Composition` value every surface renders from — JSX is authoring sugar, not a second representation.
 
 ## React hosts

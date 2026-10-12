@@ -7,6 +7,7 @@
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
+import { fromTextChildren } from '@elastic/isomer-sdk/author';
 
 import {
   figureRule,
@@ -44,8 +45,10 @@ export const schema = z
         `The difference as it should read, e.g. \`+13\` or \`−40%\`. Leave it out when either value is missing. ${figureRule}.`
       )
       .optional(),
-    body: wrappedText().describe(
-      'One sentence on what changed and why it matters. `code` and `**strong**` marks are allowed.'
+    body: fromTextChildren(
+      wrappedText().describe(
+        'One sentence on what changed and why it matters. `code` and `**strong**` marks are allowed.'
+      )
     ),
     size: sizeField(),
   })
