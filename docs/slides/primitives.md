@@ -444,6 +444,20 @@ A diagram's parts are children of their kind. Two kinds share one children list,
 </SlideTree>
 ```
 
+An annotated render takes its `SlideRender` and its `RenderPin` children side by side; a pin's sentence is its text. A render grid takes `RenderTile` children, each captioned by its text. The slide a render embeds stays its `body` prop, because it is drawn, not walked:
+
+```tsx
+<SlideAnnotatedRender>
+  <SlideRender slide="checkout" surface="snapshot" />
+  <RenderPin x={20} y={30} title="Heading">The claim, in one line.</RenderPin>
+</SlideAnnotatedRender>
+
+<SlideRenderGrid body={[{ type: 'slideHeading', title: 'Refunds settle in two days' }]}>
+  <RenderTile surface="react">Hosts</RenderTile>
+  <RenderTile surface="slack">Channels</RenderTile>
+</SlideRenderGrid>
+```
+
 `toComposition` walks the tree back into the plain `Composition` value every surface renders from — JSX is authoring sugar, not a second representation.
 
 ## React hosts

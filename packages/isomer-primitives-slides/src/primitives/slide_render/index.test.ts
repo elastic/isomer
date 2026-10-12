@@ -393,23 +393,47 @@ describe('slideRender JSX', () => {
     });
   });
 
-  it.each(['SlideRender', 'SlideRenderGrid'] as const)(
-    'refuses embedded slides passed to <%s> as children',
-    (name) => {
-      const { Composition: View, SlideHeading, toComposition } = slideJsx;
-      expect(() =>
-        toComposition(
+  it('refuses embedded slides passed to <SlideRender> as children', () => {
+    const {
+      Composition: View,
+      SlideHeading,
+      SlideRender,
+      toComposition,
+    } = slideJsx;
+    expect(() =>
+      toComposition(
+        createElement(
+          View,
+          null,
           createElement(
-            View,
-            null,
-            createElement(
-              slideJsx[name],
-              { surface: 'snapshot', tiles: [] },
-              createElement(SlideHeading, { title: 'Embedded' })
-            )
+            SlideRender,
+            { surface: 'snapshot' },
+            createElement(SlideHeading, { title: 'Embedded' })
           )
         )
-      ).toThrow(`<${name}> takes no JSX children`);
-    }
-  );
+      )
+    ).toThrow('<SlideRender> takes no JSX children');
+  });
+
+  it('refuses embedded slides passed to <SlideRenderGrid> as children', () => {
+    const {
+      Composition: View,
+      SlideHeading,
+      SlideRenderGrid,
+      toComposition,
+    } = slideJsx;
+    expect(() =>
+      toComposition(
+        createElement(
+          View,
+          null,
+          createElement(
+            SlideRenderGrid,
+            { body: [{ type: 'slideHeading', title: 'Embedded' }] },
+            createElement(SlideHeading, { title: 'Embedded' })
+          )
+        )
+      )
+    ).toThrow('Expected <renderTile> but received <slideHeading>.');
+  });
 });

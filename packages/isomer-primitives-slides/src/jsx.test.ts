@@ -15,6 +15,11 @@ import { slidePrimitiveTypes } from './registry';
 
 const {
   AgendaSection,
+  RenderPin,
+  RenderTile,
+  SlideAnnotatedRender,
+  SlideRender,
+  SlideRenderGrid,
   FanoutTarget,
   GraphNode,
   Lane,
@@ -813,6 +818,46 @@ describe('slideJsx', () => {
       type: 'slideTree',
       root: 'checkout/',
       entries: [{ name: 'refund.ts', body: 'Issues refunds.' }],
+    });
+  });
+
+  it('fills render primitives from children', () => {
+    const embedded = [{ type: 'slideHeading', title: 'Embedded' }];
+    expect(
+      bodyOf(
+        createElement(
+          SlideAnnotatedRender,
+          null,
+          createElement(SlideRender, { surface: 'snapshot', body: embedded }),
+          createElement(
+            RenderPin,
+            { x: 20, y: 30, title: 'Heading' },
+            'The claim.'
+          )
+        )
+      )
+    ).toEqual({
+      type: 'slideAnnotatedRender',
+      render: { type: 'slideRender', surface: 'snapshot', body: embedded },
+      pins: [{ x: 20, y: 30, title: 'Heading', body: 'The claim.' }],
+    });
+
+    expect(
+      bodyOf(
+        createElement(
+          SlideRenderGrid,
+          { body: embedded },
+          createElement(RenderTile, { surface: 'react' }, 'Hosts'),
+          createElement(RenderTile, { surface: 'slack' }, 'Channels')
+        )
+      )
+    ).toEqual({
+      type: 'slideRenderGrid',
+      body: embedded,
+      tiles: [
+        { surface: 'react', caption: 'Hosts' },
+        { surface: 'slack', caption: 'Channels' },
+      ],
     });
   });
 

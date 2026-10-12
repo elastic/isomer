@@ -27,7 +27,10 @@ import type { SlideRenderNode } from './types';
 export type { SlideRenderNode } from './types';
 
 /** Catalog, schema, and renderers for {@link SlideRenderNode}. */
-export const slideRenderPrimitive = definePrimitive<SlideRenderNode>({
+export const slideRenderPrimitive = definePrimitive<
+  SlideRenderNode,
+  typeof schema
+>({
   type: 'slideRender',
   catalog,
   icon,

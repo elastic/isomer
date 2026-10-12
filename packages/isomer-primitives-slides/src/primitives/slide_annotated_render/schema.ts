@@ -6,6 +6,7 @@
  */
 
 import { z } from '@elastic/isomer-sdk';
+import { fromChildren } from '@elastic/isomer-sdk/author';
 import type { ZodType } from 'zod';
 
 import { lineText, wrappedText } from '../authored_text';
@@ -46,13 +47,17 @@ export const buildSchema = <TRender extends ZodType<unknown>>(
       render: render.describe(
         'The slideRender to annotate, usually on the `snapshot` surface. It fills the wider column; its caption sits above it.'
       ),
-      pins: z
-        .array(pinSchema)
-        .min(1)
-        .max(6)
-        .describe(
-          'One to six numbered pins, in the order the legend beside the render explains them.'
-        ),
+      pins: fromChildren(
+        'renderPin',
+        z
+          .array(pinSchema)
+          .min(1)
+          .max(6)
+          .describe(
+            'One to six numbered pins, in the order the legend beside the render explains them.'
+          ),
+        { text: 'body' }
+      ),
     })
     .strict();
 

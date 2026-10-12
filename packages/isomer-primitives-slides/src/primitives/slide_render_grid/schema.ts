@@ -6,6 +6,7 @@
  */
 
 import { unresolvedBodyNodeSchema, z } from '@elastic/isomer-sdk';
+import { fromChildren } from '@elastic/isomer-sdk/author';
 import type { ZodType } from 'zod';
 
 import { slideRenderSurfaces } from '../../theme/variants';
@@ -19,26 +20,30 @@ export const buildSchema = (bodyNodeSchema: ZodType<unknown>) =>
     .object({
       type: z.literal('slideRenderGrid'),
       body: embeddedBody(bodyNodeSchema, 'What every tile renders.'),
-      tiles: z
-        .array(
-          z
-            .object({
-              surface: z
-                .enum(slideRenderSurfaces)
-                .describe(
-                  'The surface this tile renders on, shown as its name. `react`, `html`, and `snapshot` draw the slide; `markdown`, `text`, and `slack` show their output.'
+      tiles: fromChildren(
+        'renderTile',
+        z
+          .array(
+            z
+              .object({
+                surface: z
+                  .enum(slideRenderSurfaces)
+                  .describe(
+                    'The surface this tile renders on, shown as its name. `react`, `html`, and `snapshot` draw the slide; `markdown`, `text`, and `slack` show their output.'
+                  ),
+                caption: lineText().describe(
+                  'A few words on what this surface is for, e.g. "Terminals and SMS".'
                 ),
-              caption: lineText().describe(
-                'A few words on what this surface is for, e.g. "Terminals and SMS".'
-              ),
-            })
-            .strict()
-        )
-        .min(2)
-        .max(6)
-        .describe(
-          'Tiles in reading order, two to six, each surface once. Four tiles make a 2×2 grid; five or six make 3×2.'
-        ),
+              })
+              .strict()
+          )
+          .min(2)
+          .max(6)
+          .describe(
+            'Tiles in reading order, two to six, each surface once. Four tiles make a 2×2 grid; five or six make 3×2.'
+          ),
+        { text: 'caption' }
+      ),
     })
     .strict()
     .check(
