@@ -12,6 +12,7 @@ import type { Composition as SlideComposition } from '@elastic/isomer-sdk';
 import { slideJsx } from '../jsx';
 
 const {
+  BulletItem,
   Composition,
   SlideBulletList,
   SlideCode,
@@ -38,15 +39,12 @@ export const titleSlide: SlideComposition = toComposition(
         title="Isomer"
         tagline="One composition, **every surface**.">
         <TitleAside>
-          <SlideBulletList
-            marker="check"
-            items={[
-              'React and HTML',
-              'Markdown and plain text',
-              'Slack Block Kit',
-              'SVG and PNG',
-            ]}
-          />
+          <SlideBulletList marker="check">
+            <BulletItem>React and HTML</BulletItem>
+            <BulletItem>Markdown and plain text</BulletItem>
+            <BulletItem>Slack Block Kit</BulletItem>
+            <BulletItem>SVG and PNG</BulletItem>
+          </SlideBulletList>
         </TitleAside>
       </TitleSlide>
       <SlideFooter {...footer} />
@@ -57,10 +55,9 @@ export const titleSlide: SlideComposition = toComposition(
 export const splitSlide: SlideComposition = toComposition(
   <Composition title="One tree, every surface">
     <SlideFrame>
-      <SlideHeading
-        title="A slide is **one composition**"
-        lede="The same tree renders here, in Markdown, and in Slack."
-      />
+      <SlideHeading lede="The same tree renders here, in Markdown, and in Slack.">
+        A slide is **one composition**
+      </SlideHeading>
       <SlideSplitLayout ratio="wideLeft" divider="arrow">
         <SplitPane>
           <SlideCode
@@ -78,7 +75,11 @@ export const splitSlide: SlideComposition = toComposition(
           />
         </SplitPane>
         <SplitPane label="Surfaces" tone="primary">
-          <SlideBulletList items={['Markdown', 'Slack blocks', 'An image']} />
+          <SlideBulletList>
+            <BulletItem>Markdown</BulletItem>
+            <BulletItem>Slack blocks</BulletItem>
+            <BulletItem>An image</BulletItem>
+          </SlideBulletList>
         </SplitPane>
       </SlideSplitLayout>
       <SlideFooter {...footer} section="Primitives" sectionNumber="01" />

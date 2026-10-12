@@ -15,7 +15,16 @@ import { slidePrimitiveTypes } from './registry';
 
 const {
   AgendaSection,
+  BulletItem,
   ClosingLink,
+  Definition,
+  ListItem,
+  RoadmapColumn,
+  RoadmapItem,
+  SlideDefinitions,
+  SlideHeading,
+  SlideList,
+  SlideRoadmap,
   ClosingPath,
   Composition,
   SectionItem,
@@ -48,6 +57,12 @@ const componentName = (type: string): string =>
 
 const bullets = createElement(SlideBulletList, { items: ['One call'] });
 const code = createElement(SlideCode, { panels: [{ lines: ['curl'] }] });
+
+const bodyOf = (element: ReturnType<typeof createElement>) => {
+  const composition = toComposition(createElement(Composition, null, element));
+  expect(runtime.validate(composition).errors).toEqual([]);
+  return composition.body[0];
+};
 
 describe('slideJsx', () => {
   it('has a component for every registered primitive', () => {
@@ -331,6 +346,107 @@ describe('slideJsx', () => {
     ).toEqual({
       type: 'slideSource',
       text: 'Support tickets, January to June',
+    });
+  });
+
+  it('fills text primitives from children', () => {
+    expect(
+      bodyOf(
+        createElement(
+          SlideHeading,
+          { lede: 'Same ledger, fewer days.' },
+          'Refunds settle in **two days**'
+        )
+      )
+    ).toEqual({
+      type: 'slideHeading',
+      title: 'Refunds settle in **two days**',
+      lede: 'Same ledger, fewer days.',
+    });
+
+    expect(
+      bodyOf(
+        createElement(
+          SlideBulletList,
+          { marker: 'check' },
+          createElement(BulletItem, null, 'Charges the card once.'),
+          createElement(BulletItem, null, 'Refunds in `two days`.')
+        )
+      )
+    ).toEqual({
+      type: 'slideBulletList',
+      marker: 'check',
+      items: ['Charges the card once.', 'Refunds in `two days`.'],
+    });
+
+    expect(
+      bodyOf(
+        createElement(
+          SlideDefinitions,
+          null,
+          createElement(Definition, { term: 'hold' }, 'Money set aside.'),
+          createElement(Definition, { term: 'capture' }, 'Money taken.')
+        )
+      )
+    ).toEqual({
+      type: 'slideDefinitions',
+      items: [
+        { term: 'hold', body: 'Money set aside.' },
+        { term: 'capture', body: 'Money taken.' },
+      ],
+    });
+
+    expect(
+      bodyOf(
+        createElement(
+          SlideList,
+          { label: 'Limits', footnote: 'Per merchant.' },
+          createElement(ListItem, { term: 'rate' }, '100 a second.'),
+          createElement(ListItem, null, 'Retries back off.')
+        )
+      )
+    ).toEqual({
+      type: 'slideList',
+      label: 'Limits',
+      footnote: 'Per merchant.',
+      items: [
+        { term: 'rate', body: '100 a second.' },
+        { body: 'Retries back off.' },
+      ],
+    });
+
+    expect(
+      bodyOf(
+        createElement(
+          SlideRoadmap,
+          null,
+          createElement(
+            RoadmapColumn,
+            { title: 'Now', status: 'Shipped', current: true },
+            createElement(RoadmapItem, { title: 'Holds' }, 'Set money aside.')
+          ),
+          createElement(
+            RoadmapColumn,
+            { title: 'Next', status: 'In design' },
+            createElement(RoadmapItem, { title: 'Splits' }, 'Pay two stores.')
+          )
+        )
+      )
+    ).toEqual({
+      type: 'slideRoadmap',
+      columns: [
+        {
+          title: 'Now',
+          status: 'Shipped',
+          current: true,
+          items: [{ title: 'Holds', body: 'Set money aside.' }],
+        },
+        {
+          title: 'Next',
+          status: 'In design',
+          items: [{ title: 'Splits', body: 'Pay two stores.' }],
+        },
+      ],
     });
   });
 

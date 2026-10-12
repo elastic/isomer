@@ -151,7 +151,9 @@ Nested nodes arrive as JSX children, never as an element inside a prop object. A
     <SlideCode panels={[{ lines: ['curl …'] }]} />
   </SplitPane>
   <SplitPane label="After" tone="primary">
-    <SlideBulletList items={['One call']} />
+    <SlideBulletList>
+      <BulletItem>One call</BulletItem>
+    </SlideBulletList>
   </SplitPane>
 </SlideSplitLayout>
 ```
@@ -244,7 +246,7 @@ const { Composition, SlideFooter, SlideFrame, SlideHeading, toComposition } =
 const composition = toComposition(
   <Composition title="Refunds settle in two days">
     <SlideFrame>
-      <SlideHeading title="Refunds settle in two days, not five" />
+      <SlideHeading>Refunds settle in two days, not five</SlideHeading>
       <SlideFooter brand="Ledger" sectionNumber="02" section="Settlement" />
     </SlideFrame>
   </Composition>
@@ -259,7 +261,9 @@ A whole-slide layout takes its parts as children. `TitleDefinition` fills `defin
     Everything a customer means to buy, carried from whichever store can fill it.
   </TitleDefinition>
   <TitleAside>
-    <SlideBulletList marker="check" items={['Charges the card once.']} />
+    <SlideBulletList marker="check">
+      <BulletItem>Charges the card once.</BulletItem>
+    </SlideBulletList>
   </TitleAside>
 </TitleSlide>
 
@@ -293,13 +297,48 @@ A container that arranges primitives inside a slide ends in `Layout`. `SlideStac
 
 ```tsx
 <SlideStackLayout spacing="tight">
-  <SlideBulletList items={['One nightly run.']} />
+  <SlideBulletList>
+    <BulletItem>One nightly run.</BulletItem>
+  </SlideBulletList>
   <SlideCode panels={[{ lines: ['npm run settle -- --nightly'] }]} />
 </SlideStackLayout>
 
 <SlideWindowLayout chrome="terminal" title="~/shop — release">
   <SlideCode panels={[{ lines: ['npm run settle -- --nightly'] }]} />
 </SlideWindowLayout>
+```
+
+A content primitive takes its list as children named for it, without the `Slide` prefix. Each child's sentence is its text, and its short fields are attributes. A heading's title is its text, and `lede` stays an attribute. A list of plain strings takes one child per string:
+
+```tsx
+<SlideHeading lede="Same ledger, fewer days.">Refunds settle in **two days**</SlideHeading>
+
+<SlideBulletList marker="check">
+  <BulletItem>Charges the card once.</BulletItem>
+  <BulletItem>Refunds in `two days`.</BulletItem>
+</SlideBulletList>
+
+<SlideColumns highlight={1}>
+  <Column title="Poll">Lags by one interval.</Column>
+  <Column title="Push" tags={['webhook']}>Immediate.</Column>
+</SlideColumns>
+
+<SlideDefinitions>
+  <Definition term="hold">Money set aside, not yet taken.</Definition>
+</SlideDefinitions>
+
+<SlideList label="Limits">
+  <ListItem term="rate">100 requests a second.</ListItem>
+</SlideList>
+
+<SlideRoadmap>
+  <RoadmapColumn title="Now" status="Shipped" current>
+    <RoadmapItem title="Holds">Set money aside at checkout.</RoadmapItem>
+  </RoadmapColumn>
+  <RoadmapColumn title="Next" status="In design">
+    <RoadmapItem title="Splits">Pay two stores from one order.</RoadmapItem>
+  </RoadmapColumn>
+</SlideRoadmap>
 ```
 
 `toComposition` walks the tree back into the plain `Composition` value every surface renders from — JSX is authoring sugar, not a second representation.

@@ -3,6 +3,7 @@
 ## 2026-10-12
 
 - **A prompt without the schema states the view envelope**: `buildAuthoringPrompt` follows the intro, the profile's or a host's `intro`, with `A view is {"type":"view","body":[…]}`… whenever `schema` is not inlined, which is the router profile and an index prompt such as agent-tools' guide. Without it, a model handed the slides pack's index sent its first draft as a bare `slideFrame` in 57% of agent-loop eval runs; with it, none did, and mean input tokens per run fell 23%. ([#163](https://github.com/elastic/isomer/issues/163))
+- **Text primitives read JSX children** (breaking): `slideColumns` takes `Column` children, renamed from `SlideColumn`. `slideBulletList` takes one `BulletItem` per point, `slideDefinitions` takes `Definition`, `slideList` takes `ListItem`, and `slideRoadmap` takes `RoadmapColumn` children that hold `RoadmapItem`, each child's sentence its text. `slideHeading`'s title is its text. The worked deck, the runtime quick start, and the pack's JSX samples author bullets and headings as children.
 
 ## 2026-10-11
 

@@ -15,15 +15,12 @@
       tagline="One composition, **every surface**."
     >
       <TitleAside>
-        <SlideBulletList
-          marker="check"
-          items={[
-            'React and HTML',
-            'Markdown and plain text',
-            'Slack Block Kit',
-            'SVG and PNG',
-          ]}
-        />
+        <SlideBulletList marker="check">
+          <BulletItem>React and HTML</BulletItem>
+          <BulletItem>Markdown and plain text</BulletItem>
+          <BulletItem>Slack Block Kit</BulletItem>
+          <BulletItem>SVG and PNG</BulletItem>
+        </SlideBulletList>
       </TitleAside>
     </TitleSlide>
     <SlideFooter brand="Isomer" url="https://elastic.github.io/isomer" />
