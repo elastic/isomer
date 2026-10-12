@@ -185,7 +185,8 @@ const unquoted = (node: RootContent): RootContent[] =>
 // nested list follows at the next indent; any other block, such as a table,
 // follows on its own; what the item holds after either follows unbulleted,
 // since a Slack list item cannot resume; and the list resumes at its next
-// number. A task item's first line leads with its box.
+// number. An empty item keeps its number, so the list resumes past it. A task
+// item's first line leads with its box.
 const listPieces = (list: List, indent: number): Piece[] => {
   const style = list.ordered ? 'ordered' : 'bullet';
   const out: Piece[] = [];
@@ -254,6 +255,11 @@ const listPieces = (list: List, indent: number): Piece[] => {
       }
     }
     emit();
+    if (item.children.length === 0) {
+      flush();
+      number += 1;
+      offset = number - 1;
+    }
   }
   flush();
   return out;

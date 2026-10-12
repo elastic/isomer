@@ -48,9 +48,29 @@ describe('splitAuthoredMarkdown', () => {
   });
 
   it('keeps the numbering of an item the tag empties', () => {
-    expect(printed(`1. a\n2. ${TAG}\n3. b`)).toEqual([
-      '1. a\n2.\n3. b',
-      { render_attachment: { id: 'x' } },
+    const [list] = split(`1. a\n2. ${TAG}\n3. b`);
+    expect(sourceOf(list)).toBe('1. a\n2.\n3. b');
+    expect(
+      markdownContentToSlackBlocks(
+        list?.type === 'markdown' ? list.content : []
+      )
+    ).toMatchObject([
+      {
+        type: 'rich_text',
+        elements: [
+          {
+            type: 'rich_text_list',
+            style: 'ordered',
+            elements: [{ elements: [{ type: 'text', text: 'a' }] }],
+          },
+          {
+            type: 'rich_text_list',
+            style: 'ordered',
+            offset: 2,
+            elements: [{ elements: [{ type: 'text', text: 'b' }] }],
+          },
+        ],
+      },
     ]);
   });
 
@@ -133,6 +153,12 @@ describe('splitAuthoredMarkdown', () => {
       { render_attachment: { id: 'A' } },
       { render_attachment: { id: 'a' } },
       '`<render_attachment  id="a" />`',
+    ]);
+  });
+
+  it('leaves a code span opened before a tag closed where CommonMark closes it', () => {
+    expect(printed('`<render_attachment id="`" />')).toEqual([
+      '`<render_attachment id="`" />',
     ]);
   });
 
@@ -269,6 +295,7 @@ describe('splitAuthoredMarkdown', () => {
     '<render_attachment id="unfinished',
     '<render_attachmentish id=x />',
     '<render_attachment id=x\n/>',
+    '<render_attachment id="a\nb" />',
     '</render_attachment>',
     '< render_attachment />',
   ])('leaves an incomplete or other tag as Markdown: %s', (source) => {
@@ -381,6 +408,22 @@ describe('splitAuthoredMarkdown', () => {
         /^x+ \[link\]/
       );
       expect(sourceOf(first)).toContain('\\[link\\]');
+    });
+
+    it('applies the parse budget to the source as written', () => {
+      // The value shrinks to a sentinel in the parse, but would come back in
+      // full in every segment that copies the definition.
+      const title = `<render_attachment id="${'x'.repeat(16_400)}" />`;
+      const source = `${'[d] '.repeat(50)}${TAG}\n\n[d]: https://elastic.co "${title}"`;
+      const segments = split(source);
+      expect(
+        segments.every(
+          (segment) =>
+            segment.type !== 'markdown' ||
+            segment.source.length <= source.length
+        )
+      ).toBe(true);
+      expect(sourceOf(segments[0])).toMatch(/^\\\[d\\\] /);
     });
 
     it('keeps a serialized segment within the parse budget', () => {

@@ -17,7 +17,7 @@ import type { Definition, Nodes, RootContent } from 'mdast';
 import type { MarkdownContent } from '../../define/markdown_content';
 
 import { md, printParsed, verbatim } from './builder';
-import { inert, parseGfmBlocks } from './format';
+import { exceedsParseBudget, inert, parseGfmBlocks } from './format';
 import { findHostTags, type HostTag } from './host_tags';
 
 /** A piece of authored Markdown, or one of the host's elements cut out of it. */
@@ -394,8 +394,12 @@ export const splitAuthoredMarkdown = (
   if (tags.length === 0) {
     return markdown(source);
   }
-  const blocks = parseGfmBlocks(substitute(cleaned, tags)) as
-    readonly RootContent[] | null;
+  // The budget applies to the source as written: a long attribute value
+  // shrinks to a sentinel, but comes back in full wherever it is literal.
+  const blocks = exceedsParseBudget(cleaned)
+    ? null
+    : (parseGfmBlocks(substitute(cleaned, tags)) as
+        readonly RootContent[] | null);
   return blocks && !exceedsDepth(blocks)
     ? splitBlocks(blocks, tags)
     : cutLinearly(cleaned, tags);

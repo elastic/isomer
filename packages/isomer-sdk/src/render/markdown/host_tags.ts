@@ -24,7 +24,9 @@ export interface HostTag {
 }
 
 const NAME = String.raw`[A-Za-z_:][\w.:-]*`;
-const VALUE = String.raw`[^\s"'=<>\x60]+|'[^']*'|"[^"]*"`;
+// A quoted value stays on one line and holds no backtick, so a code span
+// opened before the tag still closes where CommonMark closes it.
+const VALUE = String.raw`[^\s"'=<>\x60]+|'[^'\r\n\x60]*'|"[^"\r\n\x60]*"`;
 const ATTRIBUTE = String.raw`[ \t]+${NAME}(?:[ \t]*=[ \t]*(?:${VALUE}))?`;
 const ATTRIBUTE_RE = new RegExp(
   String.raw`[ \t]+(${NAME})(?:[ \t]*=[ \t]*(${VALUE}))?`,
