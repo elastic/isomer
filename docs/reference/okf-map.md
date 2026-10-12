@@ -7,8 +7,8 @@ description: Generated map of the Isomer OKF concept graph.
 
 Generated from `.okf/isomer` by `pnpm okf:map`. Do not edit by hand.
 
-- Concepts: 58
-- Links: 145
+- Concepts: 59
+- Links: 147
 - Isolated concepts: 0
 
 ## Graph
@@ -21,6 +21,7 @@ flowchart LR
     evals_concepts_scoring["Scoring"]:::concept
     evals_entry_points_root["Root"]:::entrypoint
     evals_playbooks_score_a_corpus["Score a corpus"]:::playbook
+    evals_playbooks_score_an_agent_loop["Score an agent loop"]:::playbook
     evals_reference_public_contract["Public contract"]:::reference
     image_takumi_concepts_determinism["Determinism"]:::concept
     image_takumi_concepts_fonts["Fonts"]:::concept
@@ -90,6 +91,8 @@ flowchart LR
     evals_entry_points_root --> evals_reference_public_contract
     evals_playbooks_score_a_corpus --> evals_concepts_scoring
     evals_playbooks_score_a_corpus --> runtime_concepts_authoring_context
+    evals_playbooks_score_an_agent_loop --> evals_concepts_scoring
+    evals_playbooks_score_an_agent_loop --> evals_playbooks_score_a_corpus
     evals_reference_public_contract --> evals_concepts_scoring
     evals_reference_public_contract --> evals_entry_points_root
     image_takumi_concepts_determinism --> image_takumi_concepts_raster
@@ -232,6 +235,7 @@ flowchart LR
 - Scoring (Concept): `evals/concepts/scoring`
 - Root (Entry Point): `evals/entry-points/root`
 - Score a corpus (Playbook): `evals/playbooks/score-a-corpus`
+- Score an agent loop (Playbook): `evals/playbooks/score-an-agent-loop`
 - Public contract (Reference): `evals/reference/public-contract`
 - Determinism (Concept): `image-takumi/concepts/determinism`
 - Fonts (Concept): `image-takumi/concepts/fonts`

@@ -137,12 +137,49 @@ expect(scorePrimitiveSelection(generated, golden).missing).toEqual([]);
 
 `checkAttempt(runtime, parseGenerated(raw))` parses the attempt's value against the runtime's schema and then validates the result, once per attempt — `runEvals` reads that one check for the retry decision, `scoreValidity`, and `scorePayload`. A value that parses but fails a semantic rule (duplicate ids, for instance) therefore never reads as a good composition. `scorePayload` reads the first attempt only, so a retry changes `validity` and not `payload`.
 
+## Agent runs
+
+`runEvals` hands the model the whole catalog in one prompt. An agent instead discovers primitives through tools, and what it spends doing so is the cost to measure. `runAgentEvals` drives that loop: it offers the tools, runs the calls the model makes, and scores the answer the model ends on.
+
+```ts
+import { formatAgentReport, runAgentEvals } from '@elastic/isomer-evals';
+
+const report = await runAgentEvals({
+  runtime,
+  tools, // e.g. createIsomerTools(runtime) from agent-tools
+  corpus, // cases with optional `expected` node types
+  step: async ({ system, tools, messages }) => callYourModel(system, tools, messages),
+  repeat: 3,
+});
+
+console.log(formatAgentReport(report));
+```
+
+`step` is one model turn, and the only way a model is reached. It receives the system prompt, each tool as `{ name, description, parameters }` with `parameters` as JSON Schema, and the conversation so far, and it returns the turn's text, its tool calls, and the tokens it spent. A turn with no tool calls is the answer. A provider adapter translates `AgentMessage` to its own wire format; the `raw` it returns on an assistant turn is handed back to it verbatim, for providers that need their own content replayed.
+
+A tool is an `AgentEvalTool`: a name, a description, a Zod `inputSchema`, and a `handler` returning text content, the same shape `@elastic/isomer-agent-tools` produces. Input the schema refuses, an unknown tool name, and a throwing handler are each answered to the model as a failed result rather than ending the run.
+
+| Option | Default | Decides |
+| --- | --- | --- |
+| `step` | required | One model turn. A step that throws ends the run and records the message as `error`. |
+| `tools` | required | The tools offered on every turn. |
+| `frame` | none | A `validateBody` rule applied to a valid answer, as a host's frame would. |
+| `system` | a short instruction to answer with composition JSON | The system prompt. |
+| `maxTurns` | `12` | Turns before a run is scored unfinished. |
+| `repeat` | `1` | Runs per case; model runs vary, so compare means. |
+| `concurrency` | `1` | Runs in flight at once. |
+
+An `AgentEvalCase` may list `expected` node types; `scoreExpectedPrimitives` counts the case a hit when any of them appears anywhere in the answer's tree, not just at the top of `body`, because a pack whose every view sits in one frame primitive puts its choices below it. `AgentEvalReport.totals` reports finished and valid runs, expected-primitive hits, and per-run means of turns, input and output tokens, tool-result bytes, and calls to each tool.
+
 ## API
 
 | Export | What it is |
 | --- | --- |
 | `runEvals` | `(options: RunEvalsOptions) => Promise<EvalReport>` |
 | `formatReport` | `(report: EvalReport) => string`; returned, never printed |
+| `runAgentEvals` | `(options: RunAgentEvalsOptions) => Promise<AgentEvalReport>` |
+| `formatAgentReport` | `(report: AgentEvalReport) => string`; returned, never printed |
+| `scoreExpectedPrimitives` | `(value, expected, knownTypes) => { hit, used }`; pure |
 | `scoreValidity` | `(attempt: CheckedAttempt, retry?: CheckedAttempt) => ValidityScore`; pure |
 | `scorePrimitiveSelection` | `(generated: Composition, golden: Composition) => PrimitiveSelectionScore`; pure |
 | `scorePayload` | `(runtime, attempt: CheckedAttempt, knownTypes, golden?) => PayloadScore` |
@@ -150,7 +187,7 @@ expect(scorePrimitiveSelection(generated, golden).missing).toEqual([]);
 | `parseGenerated`, `stripCodeFence` | Model output to a `ParsedAttempt`: the JSON parsed once, after any code fence is removed |
 | `checkComposition`, `checkAttempt` | A value, or a `ParsedAttempt`, parsed and validated once, as a `CheckedComposition` or `CheckedAttempt` |
 
-Types: `EvalCase`, `EvalCaseResult`, `EvalReport`, `EvalRuntime`, `RunEvalsOptions`, `Generate`, `GenerateRequest`, `Judge`, `JudgeRequest`, `AnswerabilityVerdict`, and the four score shapes `ValidityScore`, `PrimitiveSelectionScore`, `PayloadScore`, `AnswerabilityScore`. `src/api_reference.test.ts` fails when a name exported from `src/index.ts` is missing from this page.
+Types: `EvalCase`, `EvalCaseResult`, `EvalReport`, `EvalRuntime`, `RunEvalsOptions`, `Generate`, `GenerateRequest`, `Judge`, `JudgeRequest`, `AnswerabilityVerdict`, and the four score shapes `ValidityScore`, `PrimitiveSelectionScore`, `PayloadScore`, `AnswerabilityScore`. Agent runs add `AgentEvalCase`, `AgentEvalCaseResult`, `AgentEvalCall`, `AgentEvalFrame`, `AgentEvalReport`, `AgentEvalTool`, `AgentMessage`, `AgentStep`, `AgentStepRequest`, `AgentStepResult`, `AgentToolCall`, `AgentToolResult`, `AgentToolSpec`, `AgentUsage`, and `RunAgentEvalsOptions`. `src/api_reference.test.ts` fails when a name exported from `src/index.ts` is missing from this page.
 
 ## Package facts
 
