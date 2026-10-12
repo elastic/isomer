@@ -96,14 +96,57 @@ type AuthoredNames<TSchema> = {
     : never;
 }[keyof ShapeOf<TSchema>];
 
+type RequiredKey<T> = {
+  [K in keyof T]-?: Record<string, never> extends Pick<T, K> ? never : K;
+}[keyof T];
+
+/** A required node, or an array of them. `type` itself is the discriminator. */
+type NodeSlotKey<T> = {
+  [K in RequiredKey<T>]: K extends 'type'
+    ? never
+    : NonNullable<T[K]> extends readonly (infer Item)[]
+      ? Item extends { type: string }
+        ? K
+        : never
+      : NonNullable<T[K]> extends { type: string }
+        ? K
+        : never;
+}[RequiredKey<T>];
+
+type IsUnion<T, U = T> = [T] extends [never]
+  ? false
+  : T extends unknown
+    ? [U] extends [T]
+      ? false
+      : true
+    : false;
+
+/** `T` when it is exactly one key. */
+type Only<T> = [T] extends [never]
+  ? never
+  : IsUnion<T> extends true
+    ? never
+    : T;
+
+/**
+ * The one required node field JSX children fill, branded or not. Several
+ * required node fields stay required props.
+ */
+type PassthroughSlot<TSchema extends ZodObject> = Only<
+  NodeSlotKey<z.infer<TSchema>>
+>;
+
+type FilledNames<TSchema extends ZodObject> =
+  AuthoredNames<TSchema> | PassthroughSlot<TSchema>;
+
 type AuthorPropsForSchema<TSchema extends ZodObject> =
   LooseSchema<TSchema> extends true
     ? Record<string, unknown> & { children?: ReactNode }
-    : Omit<z.infer<TSchema>, 'type' | AuthoredNames<TSchema>> &
+    : Omit<z.infer<TSchema>, 'type' | FilledNames<TSchema>> &
         Partial<
           Pick<
             z.infer<TSchema>,
-            Extract<AuthoredNames<TSchema>, keyof z.infer<TSchema>>
+            Extract<FilledNames<TSchema>, keyof z.infer<TSchema>>
           >
         > & { children?: ReactNode };
 
@@ -193,9 +236,13 @@ export type JsxShim<
  * Builds a pack's {@link JsxShim} from its primitive list.
  *
  * Branded schema fields ({@link fromChildren}, {@link fromTextChildren}) fill
- * from JSX children, and each child type becomes a component. A primitive with
- * no brand still fills its one child slot, array or single node, from
- * {@link PrimitiveDefinition.children}.
+ * from JSX children, and each child type becomes a component. Several branded
+ * fields share one children list, and each takes the elements of its type.
+ * Elements of a registered primitive that match none of them fill the one
+ * child slot from {@link PrimitiveDefinition.children}, when that slot is not
+ * itself branded. A primitive with no brand still fills that slot, array or
+ * single node, from its children. That field is optional on the component's
+ * props.
  */
 export const buildJsxShim = <
   const TPrimitives extends readonly { type: string }[] = readonly {
@@ -308,7 +355,15 @@ const bodyNodeFromElement = <TNode extends PrimitiveNode>(
 
   const rawChildren = element.props.children;
   if (authored && (authored.children.length > 0 || authored.text.length > 0)) {
-    fillAuthoredFields(converted, authored, rawChildren, env);
+    fillAuthoredFields(
+      converted,
+      authored,
+      rawChildren,
+      env,
+      slots,
+      parseChild,
+      type
+    );
   } else {
     const unique = slots.length === 1 ? slots[0] : undefined;
     if (
@@ -333,32 +388,107 @@ const fillAuthoredFields = (
   converted: Record<string, unknown>,
   authored: AuthoredSpec,
   rawChildren: ReactNode,
-  env: ParseEnv
+  env: ParseEnv,
+  slots: readonly ChildSlot[],
+  parseChild: (child: ReactNode) => PrimitiveNode,
+  parentType: string
 ): void => {
-  for (const field of authored.children) {
-    if (converted[field.field] !== undefined || rawChildren === undefined) {
-      continue;
-    }
-    converted[field.field] = valueFromBrand(
-      flattenChildren(rawChildren),
-      field,
-      env
-    );
-  }
-  for (const field of authored.text) {
-    if (converted[field.field] !== undefined) {
-      continue;
-    }
-    if (rawChildren === undefined) {
+  const unsetChildren = authored.children.filter(
+    (field) => converted[field.field] === undefined
+  );
+  const unsetText = authored.text.filter(
+    (field) => converted[field.field] === undefined
+  );
+  const brandedFields = new Set(authored.children.map((field) => field.field));
+  const [unique] = slots;
+  const slot =
+    slots.length === 1 && unique && !brandedFields.has(unique.field)
+      ? unique
+      : undefined;
+  const slotOpen = slot !== undefined && converted[slot.field] === undefined;
+  if (
+    rawChildren === undefined ||
+    (unsetChildren.length === 0 && unsetText.length === 0 && !slotOpen)
+  ) {
+    for (const field of unsetText) {
       if (!field.optional) {
         throw new IsomerError(
           'MISSING_AUTHORED_TEXT',
           `Expected text children for "${field.field}".`
         );
       }
+    }
+    return;
+  }
+
+  const flat = flattenChildren(rawChildren);
+  const elements = flat.filter(isAuthorElement);
+  const textNodes = flat.filter((child) => !isAuthorElement(child));
+  const claimed = new Set<ReactElement>();
+  for (const field of unsetChildren) {
+    const matching = elements.filter(
+      (child) => getAuthorType(child) === field.childType
+    );
+    if (matching.length === 0) {
       continue;
     }
-    converted[field.field] = textFromChildren(rawChildren, {
+    for (const child of matching) {
+      claimed.add(child);
+    }
+    converted[field.field] = valueFromBrand(matching, field, env);
+  }
+
+  const brandedTypes = new Set(
+    authored.children.map((field) => field.childType)
+  );
+  const stray = elements.filter(
+    (child) => brandedTypes.has(getAuthorType(child)) && !claimed.has(child)
+  );
+  if (stray.length > 0) {
+    const childType = getAuthorType(stray[0]!);
+    throw new IsomerError(
+      'UNEXPECTED_CHILDREN',
+      `<${capitalize(parentType)}> already has its <${capitalize(childType)}>.`
+    );
+  }
+
+  const leftover = elements.filter((child) => !claimed.has(child));
+  if (slotOpen && slot && leftover.length > 0) {
+    const nested = leftover.map(parseChild);
+    converted[slot.field] = slot.array ? nested : nested[0];
+  } else if (leftover.length > 0) {
+    const childType = getAuthorType(leftover[0]!);
+    if (unsetChildren.length === 1 && !slotOpen) {
+      throw new IsomerError(
+        'AUTHOR_TYPE_MISMATCH',
+        `Expected <${unsetChildren[0]!.childType}> but received <${childType}>.`
+      );
+    }
+    throw new IsomerError(
+      'UNEXPECTED_CHILDREN',
+      `<${capitalize(childType)}> is not a child of <${capitalize(parentType)}>.`
+    );
+  }
+
+  if (textNodes.length === 0) {
+    for (const field of unsetText) {
+      if (!field.optional) {
+        throw new IsomerError(
+          'MISSING_AUTHORED_TEXT',
+          `Expected text children for "${field.field}".`
+        );
+      }
+    }
+    return;
+  }
+  if (unsetText.length === 0) {
+    throw new IsomerError(
+      'EXPECTED_JSX_ELEMENT',
+      'Expected an Isomer JSX element.'
+    );
+  }
+  for (const field of unsetText) {
+    converted[field.field] = textFromChildren(textNodes, {
       collapseWhitespace: field.collapseWhitespace,
     });
   }

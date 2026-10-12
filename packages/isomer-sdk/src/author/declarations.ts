@@ -302,11 +302,14 @@ export const buildAuthoringDeclarations = (
       const spec = model.authoredByType.get(type);
       const slots = model.childSlotsByType.get(type) ?? [];
       const [slot] = slots;
-      const filled = spec
+      const branded = spec
         ? [...spec.children, ...spec.text].map(({ field }) => field)
-        : slots.length === 1 && slot
+        : [];
+      const slotField =
+        slots.length === 1 && slot && !branded.includes(slot.field)
           ? [slot.field]
           : [];
+      const filled = [...branded, ...slotField];
       declareComponent(
         capitalize(type),
         node,

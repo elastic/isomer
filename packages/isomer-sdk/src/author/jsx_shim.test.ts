@@ -342,6 +342,133 @@ describe('buildJsxShim', () => {
     expect(spec.body).toEqual([{ type: 'code', code: 'const x = 1;' }]);
   });
 
+  it('splits sibling child elements across branded fields by type', () => {
+    const schema = z.object({
+      type: z.literal('closing'),
+      links: fromChildren(
+        'link',
+        z.array(z.object({ label: z.string(), text: z.string() })),
+        { text: 'text' }
+      ),
+      paths: fromChildren(
+        'path',
+        z.array(z.object({ title: z.string(), body: z.string() })).optional(),
+        { text: 'body' }
+      ),
+    });
+    const {
+      Closing,
+      Composition: Root,
+      Link,
+      Path,
+      toComposition: convert,
+    } = buildJsxShim([{ type: 'closing' as const, schema }]);
+
+    expect(
+      convert(
+        createElement(
+          Root,
+          null,
+          createElement(
+            Closing,
+            null,
+            createElement(Link, { label: 'Docs' }, 'example.com'),
+            createElement(Path, { title: 'Start' }, 'Read the guide')
+          )
+        )
+      ).body
+    ).toEqual([
+      {
+        type: 'closing',
+        links: [{ label: 'Docs', text: 'example.com' }],
+        paths: [{ title: 'Start', body: 'Read the guide' }],
+      },
+    ]);
+  });
+
+  it('fills a branded child and leaves other elements in the child slot', () => {
+    const schema = z.object({
+      type: z.literal('frame'),
+      footer: fromChildren(
+        'footer',
+        z.object({ brand: z.string() })
+      ).optional(),
+      body: z.array(z.object({ type: z.string() })).min(1),
+    });
+    const frame = {
+      type: 'frame' as const,
+      schema,
+      children: (node: { body: PrimitiveNode[] }) =>
+        node.body.map((item, index) => ({
+          node: item,
+          path: `body[${index}]`,
+        })),
+    };
+    const {
+      Composition: Root,
+      Footer,
+      Frame,
+      Note,
+      toComposition: convert,
+    } = buildJsxShim([{ type: 'note' as const }, frame]);
+
+    expect(
+      convert(
+        createElement(
+          Root,
+          null,
+          createElement(
+            Frame,
+            null,
+            createElement(Note, { body: 'Hello' }),
+            createElement(Footer, { brand: 'Ledger' })
+          )
+        )
+      ).body
+    ).toEqual([
+      {
+        type: 'frame',
+        footer: { brand: 'Ledger' },
+        body: [{ type: 'note', body: 'Hello' }],
+      },
+    ]);
+    expect(
+      convert(
+        createElement(
+          Root,
+          null,
+          createElement(Frame, null, createElement(Note, { body: 'Hello' }))
+        )
+      ).body
+    ).toEqual([{ type: 'frame', body: [{ type: 'note', body: 'Hello' }] }]);
+  });
+
+  it('rejects an element that matches no branded field or child slot', () => {
+    const schema = z.object({
+      type: z.literal('closing'),
+      links: fromChildren('link', z.array(z.object({ label: z.string() }))),
+    });
+    const {
+      Closing,
+      Composition: Root,
+      Note,
+      toComposition: convert,
+    } = buildJsxShim([
+      { type: 'note' as const },
+      { type: 'closing' as const, schema },
+    ]);
+
+    expect(() =>
+      convert(
+        createElement(
+          Root,
+          null,
+          createElement(Closing, null, createElement(Note, { body: 'Nope' }))
+        )
+      )
+    ).toThrow(expect.objectContaining({ code: 'AUTHOR_TYPE_MISMATCH' }));
+  });
+
   it('throws when required text children are missing', () => {
     const schema = z.object({
       type: z.literal('code'),
