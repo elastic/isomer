@@ -132,18 +132,26 @@ const keySpan = (key: string): string =>
       : compactJson(key)
   );
 
-/** One primitive's catalog bullet: its purpose, `useWhen`, `avoidWhen`, and example. */
-export const formatPrimitiveEntry = (entry: PrimitiveCatalogEntry): string => {
-  const lines = [`- ${keySpan(entry.type)} — ${oneLine(entry.purpose)}`];
-  if (entry.useWhen.length > 0) {
-    lines.push(`  - Use when: ${oneLine(entry.useWhen.join(' '))}`);
+/** One primitive's catalog bullet without its example: its purpose, `useWhen`, and `avoidWhen`. */
+export const formatPrimitiveBrief = ({
+  type,
+  purpose,
+  useWhen,
+  avoidWhen,
+}: PrimitiveCatalogEntry): string => {
+  const lines = [`- ${keySpan(type)} — ${oneLine(purpose)}`];
+  if (useWhen.length > 0) {
+    lines.push(`  - Use when: ${oneLine(useWhen.join(' '))}`);
   }
-  if (entry.avoidWhen.length > 0) {
-    lines.push(`  - Avoid when: ${oneLine(entry.avoidWhen.join(' '))}`);
+  if (avoidWhen.length > 0) {
+    lines.push(`  - Avoid when: ${oneLine(avoidWhen.join(' '))}`);
   }
-  lines.push(`  - Example: ${codeSpan(compactJson(entry.example))}`);
   return lines.join('\n');
 };
+
+/** One primitive's catalog bullet: {@link formatPrimitiveBrief}, then its example. */
+export const formatPrimitiveEntry = (entry: PrimitiveCatalogEntry): string =>
+  `${formatPrimitiveBrief(entry)}\n  - Example: ${codeSpan(compactJson(entry.example))}`;
 
 const renderCatalog = (primitives: readonly PrimitiveCatalogEntry[]): string =>
   primitives.map(formatPrimitiveEntry).join('\n');

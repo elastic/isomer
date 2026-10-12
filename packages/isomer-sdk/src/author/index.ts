@@ -37,5 +37,6 @@ export {
   type AuthoringViewSummary,
   AUTHORING_PROFILE_IDS,
   buildAuthoringPrompt,
+  formatPrimitiveBrief,
   formatPrimitiveEntry,
 } from './prompt';

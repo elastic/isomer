@@ -6,7 +6,11 @@
  */
 
 export { type IsomerCompositionCheck, checkComposition } from './check';
-export { buildIsomerAuthoringGuide, buildPrimitiveDescriptions } from './guide';
+export {
+  type PrimitiveDescriptionDetail,
+  buildIsomerAuthoringGuide,
+  buildPrimitiveDescriptions,
+} from './guide';
 export {
   ISOMER_AUTHORING_GUIDE_URI,
   ISOMER_COMPOSE_PROMPT,

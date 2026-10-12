@@ -26,7 +26,7 @@ const prompts = createIsomerPrompts({ runtime });
 | `createIsomerTools(options)` | `IsomerTool[]`: `name`, `title`, `description`, a Zod `inputSchema`, and `handler`, which receives what `inputSchema` parsed and resolves to `{ content, isError? }`. It never rejects: a failure resolves with its message and `isError: true`. Each content block is text, a base64 image, or an embedded resource with a base64 `blob`, the same shape as an MCP `CallToolResult`. Throws an `IsomerError` with code `DUPLICATE_FORMAT` when a host format is named `text`, `markdown`, `html`, or `slack` |
 | `createIsomerResources(options)` | `IsomerResource[]`: the guide as `ISOMER_AUTHORING_GUIDE_URI` (`isomer://authoring-guide`, `text/markdown`) and the whole composition JSON Schema as `ISOMER_COMPOSITION_SCHEMA_URI` (`isomer://composition-schema`, `application/json`), each with a live `read()` |
 | `createIsomerPrompts(options)` | `IsomerPrompt[]`: `ISOMER_COMPOSE_PROMPT` (`compose`), whose `build({ request? })` returns the guide followed by the request. A host without prompts uses it as a system or user message |
-| `buildIsomerAuthoringGuide(options)`, `buildPrimitiveDescriptions({ runtime, types })` | The text `isomer_authoring_guide` and `isomer_describe_primitives` return |
+| `buildIsomerAuthoringGuide(options)`, `buildPrimitiveDescriptions({ runtime, types, detail? })` | The text `isomer_authoring_guide` and `isomer_describe_primitives` return |
 | `checkComposition(runtime, frame, value)` | Parses, validates, and applies the frame's body rule to the copy `validate` checked, returning `IsomerCompositionCheck`: `{ valid, errors, findings, warnings, composition? }`, where `composition` is that copy |
 | `textResult`, `jsonResult`, `imageResult` | Build results in the tools' shape, for a host's own tools. `imageResult(bytes, mimeType?)` defaults to `image/png`. `jsonResult` prints `null` for a value JSON cannot hold, and returns a value `JSON.stringify` throws on, such as a cycle or a `BigInt`, as a failed result with its message |
 | `ISOMER_TOOL_NAMES` | The six tool names below |
@@ -38,7 +38,7 @@ const prompts = createIsomerPrompts({ runtime });
 | Tool | Input | Returns |
 | --- | --- | --- |
 | `isomer_authoring_guide` | none | The guide, rules, registered views, and an index of the primitives, one line each under the packs' groups |
-| `isomer_describe_primitives` | `types` (1–12, each 1–200 characters) | Each type's full catalog entry, with its example, then the JSON Schema `$defs` those types reach. `bodyNode` is a stub meaning any primitive. An unknown type is an error, as JSON with `unknown` and `known` |
+| `isomer_describe_primitives` | `types` (each 1–200 characters), `detail?` (`brief` or `full`, the default) | With `full`, each type's full catalog entry, with its example, then the JSON Schema `$defs` those types reach; `bodyNode` is a stub meaning any primitive. With `brief`, each type's purpose, `useWhen`, and `avoidWhen` alone. `full` takes 1–12 types and `brief` 1–40; more is an error. An unknown type is an error, as JSON with `unknown` and `known` |
 | `isomer_validate` | `composition` | `{ valid, errors, warnings }` as JSON. An invalid composition is a normal answer, not a failed call |
 | `isomer_render` | `composition`, `format`, `theme?` | Text, Markdown, HTML with its CSS inline, Slack Block Kit as JSON, or any format the host registers in `formats`. `theme` overrides the composition's own in HTML and reaches each host format's `render`. An invalid composition returns its errors with `isError: true` |
 | `isomer_list_views` | none | The registered views, with the questions each answers and its input schema |
@@ -50,9 +50,9 @@ The `composition` input is a loose object: the node union is recursive and too l
 
 Each of `errors` is a `formatValidationError` string, `<path> (in <type>) <message>`, naming the primitive the model should look up to repair it. `checkComposition` also returns the same findings as `ValidationError` values; a frame rule's finding has an empty path.
 
-The guide indexes the catalog rather than inlining it, so it stays small as packs grow. JSON Schema is printed compact, without indentation. A host that wants the whole schema reads the `isomer://composition-schema` resource, which is large (about 59 KB for the slides pack), so its description sends a model to the index and `isomer_describe_primitives` instead.
+The guide indexes the catalog rather than inlining it, so it stays small as packs grow. A model reads the index, briefs the candidates it cannot tell apart (about 600 bytes each for the slides pack), then describes in full the types it will use. JSON Schema is printed compact, without indentation. A host that wants the whole schema reads the `isomer://composition-schema` resource, which is large (about 59 KB for the slides pack), so its description sends a model to the index and `isomer_describe_primitives` instead.
 
-Tests hold the slides pack's `tools/list`, guide, and each one-type describe under byte ceilings, so a change that grows what an agent reads shows up in review.
+Tests hold the slides pack's `tools/list`, guide, and each one-type describe and brief under byte ceilings, so a change that grows what an agent reads shows up in review.
 
 ## Options
 

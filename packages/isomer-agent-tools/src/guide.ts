@@ -7,6 +7,7 @@
 
 import {
   buildAuthoringPrompt,
+  formatPrimitiveBrief,
   formatPrimitiveEntry,
 } from '@elastic/isomer-sdk/author';
 
@@ -15,7 +16,7 @@ import type { IsomerGuideOptions, IsomerToolsRuntime } from './types';
 
 const DEFAULT_GUIDE = `Answer with a single composition built only from the primitives below. Prefer one primitive that says the whole thing over several that each say part of it. When \`${ISOMER_TOOL_NAMES.listViews}\` is offered, prefer a registered view that answers the question over composing one. Call \`${ISOMER_TOOL_NAMES.validate}\` before rendering and repair every error it reports.`;
 
-const LOOKUP = `## Before you write\n\nCall \`${ISOMER_TOOL_NAMES.describePrimitives}\` with every type you plan to use, the containers you nest in included, for each one's full entry and JSON Schema. A validation error names the primitive it lands in, so look that one up when you repair it.`;
+const LOOKUP = `## Before you write\n\nTo choose between similar primitives, call \`${ISOMER_TOOL_NAMES.describePrimitives}\` with \`detail: "brief"\` for when to use and avoid each. Then call it with every type you plan to use, the containers you nest in included, for each one's full entry and JSON Schema. A validation error names the primitive it lands in, so look that one up when you repair it.`;
 
 const oneLine = (text: string): string =>
   text.replace(/\s+/g, (run) => (/[\r\n\u2028\u2029]/.test(run) ? ' ' : run));
@@ -41,17 +42,25 @@ export const buildIsomerAuthoringGuide = ({
   return `${prompt}\n\n${LOOKUP}`;
 };
 
-/** The full catalog entries of `types`, then the JSON Schema `$defs` they reach. */
+/** How much {@link buildPrimitiveDescriptions} prints of each type. */
+export type PrimitiveDescriptionDetail = 'brief' | 'full';
+
+/** The full catalog entries of `types`, then the JSON Schema `$defs` they reach; `brief` prints each entry without its example and no schema. */
 export const buildPrimitiveDescriptions = ({
   runtime,
   types,
+  detail = 'full',
 }: {
   runtime: Pick<IsomerToolsRuntime, 'getAuthoringContext'>;
   types: readonly string[];
+  detail?: PrimitiveDescriptionDetail;
 }): string => {
   const { primitives, schema } = runtime
     .getAuthoringContext()
     .describePrimitives(types);
+  if (detail === 'brief') {
+    return `## Primitives\n\n${primitives.map(formatPrimitiveBrief).join('\n')}`;
+  }
   return [
     `## Primitives\n\n${primitives.map(formatPrimitiveEntry).join('\n')}`,
     '## JSON Schema\n\nEach primitive is `$defs.<type>`. `bodyNode` stands for any primitive in the index.',

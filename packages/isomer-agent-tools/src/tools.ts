@@ -37,7 +37,7 @@ const RUNTIME_FORMATS = [
 const isRuntimeFormat = (name: string): name is IsomerToolsRuntimeFormat =>
   (RUNTIME_FORMATS as readonly string[]).includes(name);
 
-const MAX_DESCRIBED_TYPES = 12;
+const MAX_DESCRIBED_TYPES = { brief: 40, full: 12 } as const;
 
 const MAX_INPUT_STRING_LENGTH = 200;
 
@@ -174,15 +174,28 @@ export const createIsomerTools = <THostContext = unknown>(
   const describePrimitives = tool({
     name: ISOMER_TOOL_NAMES.describePrimitives,
     title: 'Describe primitives',
-    description: `Returns the full catalog entry and JSON Schema of each primitive type given: when to use it, when not to, an example, and every field. Ask for the types you will use, the containers you nest in included. Up to ${MAX_DESCRIBED_TYPES} per call, so call again for more.`,
+    description: `Returns the full catalog entry and JSON Schema of each primitive type given: when to use it, when not to, an example, and every field. Ask for the types you will use, the containers you nest in included. \`detail: "brief"\` returns only when to use and avoid each, to choose between similar primitives. Up to ${MAX_DESCRIBED_TYPES.full} types per call, or ${MAX_DESCRIBED_TYPES.brief} brief.`,
     inputSchema: z.object({
       types: z
         .array(z.string().min(1).max(MAX_INPUT_STRING_LENGTH))
         .min(1)
-        .max(MAX_DESCRIBED_TYPES)
+        .max(MAX_DESCRIBED_TYPES.brief)
         .describe('Primitive types from the guide’s index.'),
+      detail: z
+        .enum(['brief', 'full'])
+        .optional()
+        .describe('Defaults to `full`.'),
     }),
-    handler: ({ types }) => {
+    handler: ({ types, detail = 'full' }) => {
+      const limit = MAX_DESCRIBED_TYPES[detail];
+      if (types.length > limit) {
+        return Promise.resolve(
+          textResult(
+            `Ask for up to ${limit} types with \`detail: "${detail}"\`, got ${types.length}; call again for the rest.`,
+            true
+          )
+        );
+      }
       const known = runtime
         .getAuthoringContext()
         .primitives.map(({ type }) => type);
@@ -193,7 +206,7 @@ export const createIsomerTools = <THostContext = unknown>(
               { error: 'Unknown primitive types.', unknown, known },
               true
             )
-          : textResult(buildPrimitiveDescriptions({ runtime, types }))
+          : textResult(buildPrimitiveDescriptions({ runtime, types, detail }))
       );
     },
   });

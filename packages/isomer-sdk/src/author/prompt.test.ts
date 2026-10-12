@@ -7,7 +7,11 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { buildAuthoringPrompt, formatPrimitiveEntry } from './prompt';
+import {
+  buildAuthoringPrompt,
+  formatPrimitiveBrief,
+  formatPrimitiveEntry,
+} from './prompt';
 
 const context = {
   guide: 'Guide',
@@ -248,6 +252,13 @@ describe('formatPrimitiveEntry', () => {
     expect(
       buildAuthoringPrompt('general', { ...context, primitives: [quote] })
     ).toContain(formatPrimitiveEntry(quote));
+    expect(formatPrimitiveBrief(quote)).toBe(
+      [
+        '- `quote` — A pull quote.',
+        '  - Use when: Someone said it.',
+        '  - Avoid when: It is long.',
+      ].join('\n')
+    );
   });
   it('collapses every line terminator', () => {
     for (const lineBreak of ['\n', '\r', '\r\n', '\u2028', '\u2029']) {

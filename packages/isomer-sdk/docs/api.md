@@ -116,7 +116,7 @@ JSX: `fromChildren`, `fromTextChildren`, `AuthoredChildBrand`, `AuthoredToItemBr
 
 Editor declarations: `buildAuthoringDeclarations` (`AuthoringDeclarationsOptions`), an ambient `.d.ts` module for an authoring schema's primitives and, with `jsx`, their JSX components; `authoringBodySchema`, an authoring schema's `body` as a schema of its own, carrying the `$defs` it reaches.
 
-Agent prompts: `buildAuthoringPrompt` (`AuthoringPromptContext`), `formatPrimitiveEntry` (one full catalog bullet), `AUTHORING_PROFILE_IDS` (`AuthoringProfileId`), `AuthoringViewSummary`. `WithNodeFields` is on the root entry, next to `definePrimitive`.
+Agent prompts: `buildAuthoringPrompt` (`AuthoringPromptContext`), `formatPrimitiveEntry` (one full catalog bullet), `formatPrimitiveBrief` (the same bullet without its example), `AUTHORING_PROFILE_IDS` (`AuthoringProfileId`), `AuthoringViewSummary`. `WithNodeFields` is on the root entry, next to `definePrimitive`.
 
 ## `./testing`
 

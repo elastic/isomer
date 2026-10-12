@@ -193,14 +193,50 @@ describe('createIsomerTools', () => {
       )!;
       const parses = (types: string[]) =>
         inputSchema.safeParse({ types }).success;
-      expect(parses(Array.from({ length: 12 }, () => 'slideFrame'))).toBe(true);
-      expect(parses(Array.from({ length: 13 }, () => 'slideFrame'))).toBe(
+      expect(parses(Array.from({ length: 40 }, () => 'slideFrame'))).toBe(true);
+      expect(parses(Array.from({ length: 41 }, () => 'slideFrame'))).toBe(
         false
       );
       expect(parses([])).toBe(false);
       expect(parses([''])).toBe(false);
       expect(parses(['x'.repeat(200)])).toBe(true);
       expect(parses(['x'.repeat(201)])).toBe(false);
+    });
+
+    it('caps a full describe at 12 types and a brief one at 40', async () => {
+      const types = slideDeckPrimitives.slice(0, 13).map(({ type }) => type);
+      const full = await call(tools, ISOMER_TOOL_NAMES.describePrimitives, {
+        types,
+      });
+      expect(full.isError).toBe(true);
+      expect(textOf(full)).toContain('up to 12 types');
+      const brief = await call(tools, ISOMER_TOOL_NAMES.describePrimitives, {
+        types,
+        detail: 'brief',
+      });
+      expect(brief.isError).toBeUndefined();
+    });
+
+    it('describes brief entries with no example or schema', async () => {
+      const brief = textOf(
+        await call(tools, ISOMER_TOOL_NAMES.describePrimitives, {
+          types: ['slideSplit', 'slideStack'],
+          detail: 'brief',
+        })
+      );
+      expect(brief).toContain('- `slideSplit` — ');
+      expect(brief).toContain('Avoid when:');
+      expect(brief).not.toContain('Example:');
+      expect(brief).not.toContain('## JSON Schema');
+    });
+
+    it('describes full entries by default', async () => {
+      const describe = (args: Record<string, unknown>) =>
+        call(tools, ISOMER_TOOL_NAMES.describePrimitives, {
+          types: ['slideFrame'],
+          ...args,
+        }).then(textOf);
+      expect(await describe({})).toBe(await describe({ detail: 'full' }));
     });
   });
 
@@ -781,6 +817,25 @@ describe('payload budget', () => {
       expect(bytes(text)).toBeLessThan(5_000);
     }
   );
+
+  it('keeps a brief describe under 1,100 bytes, and 700 on average', async () => {
+    const sizes = await Promise.all(
+      slideDeckPrimitives.map(async ({ type }) =>
+        bytes(
+          textOf(
+            await call(tools, ISOMER_TOOL_NAMES.describePrimitives, {
+              types: [type],
+              detail: 'brief',
+            })
+          )
+        )
+      )
+    );
+    expect(Math.max(...sizes)).toBeLessThan(1_100);
+    expect(
+      sizes.reduce((sum, size) => sum + size, 0) / sizes.length
+    ).toBeLessThan(700);
+  });
 });
 
 describe('a throwing runtime', () => {
