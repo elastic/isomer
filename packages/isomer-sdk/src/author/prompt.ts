@@ -7,7 +7,10 @@
 
 import { oneLine } from '../composition/one_line';
 import type { PrimitiveCatalogEntry } from '../define/primitive_module';
-import type { PrimitiveGroup } from '../pack/primitive_pack';
+import {
+  type PrimitiveGroup,
+  UNCATEGORIZED_GROUP_TITLE,
+} from '../pack/primitive_pack';
 
 type JsonSchema = Record<string, unknown>;
 
@@ -47,7 +50,7 @@ export interface AuthoringPromptContext {
   primitives: readonly PrimitiveCatalogEntry[];
   /** `'index'` lists each primitive's type and purpose only, for a host that serves the rest on request. */
   catalog?: 'full' | 'index';
-  /** Headings an index sorts primitives under; a type in none is listed under "Other". */
+  /** Headings an index sorts primitives under; a type in none is listed under {@link UNCATEGORIZED_GROUP_TITLE}. */
   groups?: readonly PrimitiveGroup[];
   /**
    * Extra host-supplied compositions beyond each primitive's catalog example.
@@ -157,7 +160,7 @@ const renderIndex = (
       entries: types.flatMap((type) => byType.get(type) ?? []),
     })),
     {
-      title: 'Other',
+      title: UNCATEGORIZED_GROUP_TITLE,
       entries: primitives.filter(({ type }) => !grouped.has(type)),
     },
   ];

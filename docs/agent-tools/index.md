@@ -50,7 +50,9 @@ The `composition` input is a loose object: the node union is recursive and too l
 
 Each of `errors` is a `formatValidationError` string, `<path> (in <type>) <message>`, naming the primitive the model should look up to repair it. `checkComposition` also returns the same findings as `ValidationError` values; a frame rule's finding has an empty path.
 
-The guide indexes the catalog rather than inlining it, so it stays small as packs grow. A host that wants the whole schema reads the `isomer://composition-schema` resource.
+The guide indexes the catalog rather than inlining it, so it stays small as packs grow. JSON Schema is printed compact, without indentation. A host that wants the whole schema reads the `isomer://composition-schema` resource, which is large (about 59 KB for the slides pack), so its description sends a model to the index and `isomer_describe_primitives` instead.
+
+Tests hold the slides pack's `tools/list`, guide, and each one-type describe under byte ceilings, so a change that grows what an agent reads shows up in review.
 
 ## Options
 

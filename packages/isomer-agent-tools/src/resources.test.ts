@@ -13,6 +13,7 @@ import {
   ISOMER_AUTHORING_GUIDE_URI,
   ISOMER_COMPOSE_PROMPT,
   ISOMER_COMPOSITION_SCHEMA_URI,
+  ISOMER_TOOL_NAMES,
 } from './names';
 import { createIsomerPrompts, createIsomerResources } from './resources';
 
@@ -54,13 +55,12 @@ describe('createIsomerResources', () => {
     expect(compose!.build({})).toContain('`late-view`');
   });
 
-  it('reads the whole composition schema as JSON', () => {
-    const { $defs = {} } = JSON.parse(
-      byUri(ISOMER_COMPOSITION_SCHEMA_URI).read()
-    ) as { $defs?: Record<string, unknown> };
-    expect(Object.keys($defs)).toEqual(
-      expect.arrayContaining(['bodyNode', 'slideFrame', 'slideStack'])
-    );
+  it('reads the whole composition schema as compact JSON', () => {
+    const schema = byUri(ISOMER_COMPOSITION_SCHEMA_URI);
+    const text = schema.read();
+    expect(text).not.toContain('\n');
+    expect(JSON.parse(text)).toEqual(runtime.getAuthoringContext().schema);
+    expect(schema.description).toContain(ISOMER_TOOL_NAMES.describePrimitives);
   });
 });
 

@@ -7,15 +7,12 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
-import type { SlideGroup } from '../../groups';
-
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideStatNode}. */
 export const catalog = {
   type: 'slideStat',
   name: 'Stat',
-  group: 'Data',
   description:
     'One headline number and the sentence that explains it. A unit needs a value; leave value out to show a placeholder.',
   purpose:
@@ -31,4 +28,4 @@ export const catalog = {
     'There are many comparable values to rank by size; use slideBars.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry<SlideGroup>;
+} satisfies PrimitiveCatalogEntry;

@@ -20,5 +20,6 @@ export {
   type PrimitiveGroup,
   type PrimitivePack,
   type PrimitivePackInput,
+  UNCATEGORIZED_GROUP_TITLE,
   definePrimitivePack,
 } from './primitive_pack';

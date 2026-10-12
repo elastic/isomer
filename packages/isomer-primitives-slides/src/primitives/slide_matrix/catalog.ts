@@ -7,15 +7,12 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
-import type { SlideGroup } from '../../groups';
-
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideMatrixNode}. */
 export const catalog = {
   type: 'slideMatrix',
   name: 'Matrix',
-  group: 'Data',
   description:
     'Yes, partial, or no marks for one to eight rows against two to six columns. Every row has exactly one mark per column; highlight, when given, is an index into columns.',
   purpose:
@@ -30,4 +27,4 @@ export const catalog = {
     'Each option needs a sentence about it rather than a mark per capability; use slideColumns.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry<SlideGroup>;
+} satisfies PrimitiveCatalogEntry;

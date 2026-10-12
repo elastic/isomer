@@ -7,15 +7,12 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
-import type { SlideGroup } from '../../groups';
-
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideLayersNode}. */
 export const catalog = {
   type: 'slideLayers',
   name: 'Layers',
-  group: 'Diagrams',
   description:
     'Three to six layers, top to bottom. Each layer has exactly one of body or chips.',
   purpose:
@@ -29,4 +26,4 @@ export const catalog = {
     'The parts run in sequence rather than stack; use slidePipeline.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry<SlideGroup>;
+} satisfies PrimitiveCatalogEntry;

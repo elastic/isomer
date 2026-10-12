@@ -93,6 +93,7 @@ export {
   type PrimitivePack,
   type PrimitivePackInput,
   type SurfaceSupport,
+  UNCATEGORIZED_GROUP_TITLE,
   composePacks,
   definePrimitivePack,
   describeCapabilities,
