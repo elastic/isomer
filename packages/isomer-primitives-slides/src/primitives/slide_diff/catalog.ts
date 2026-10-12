@@ -23,7 +23,7 @@ export const catalog = {
   ],
   avoidWhen: [
     'Nothing changed and you are showing code as it is; use slideCode.',
-    'You are comparing two ideas or approaches rather than two versions of one file; use slideSplit.',
+    'You are comparing two ideas or approaches rather than two versions of one file; use slideSplitLayout.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

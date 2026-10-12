@@ -14,13 +14,27 @@ import { slideDeckFrame, slidesPack } from './pack';
 import { slidePrimitiveTypes } from './registry';
 
 const {
+  AgendaSection,
+  ClosingLink,
+  ClosingPath,
   Composition,
+  SectionItem,
+  AgendaSlide,
   SlideBulletList,
+  ClosingSlide,
   SlideCode,
+  SlideFooter,
   SlideFrame,
-  SlideSplit,
-  SlideSplitPane,
-  SlideStack,
+  QuoteSlide,
+  SectionSlide,
+  SlideSource,
+  SlideSplitLayout,
+  SplitPane,
+  SlideStackLayout,
+  StatementSlide,
+  TitleSlide,
+  TitleAside,
+  TitleDefinition,
   toComposition,
 } = slideJsx;
 
@@ -43,7 +57,7 @@ describe('slideJsx', () => {
     expect(missing).toEqual([]);
   });
 
-  it('fills split panes from SlideSplitPane children, left then right', () => {
+  it('fills split panes from SplitPane children, left then right', () => {
     const composition = toComposition(
       createElement(
         Composition,
@@ -52,13 +66,18 @@ describe('slideJsx', () => {
           SlideFrame,
           null,
           createElement(
-            SlideSplit,
+            SlideSplitLayout,
             { divider: 'arrow' },
-            createElement(SlideSplitPane, { label: 'Before' }, code),
+            createElement(SplitPane, { label: 'Before' }, code),
             createElement(
-              SlideSplitPane,
+              SplitPane,
               { label: 'After', tone: 'primary' },
-              createElement(SlideStack, { spacing: 'tight' }, bullets, code)
+              createElement(
+                SlideStackLayout,
+                { spacing: 'tight' },
+                bullets,
+                code
+              )
             )
           )
         )
@@ -69,7 +88,7 @@ describe('slideJsx', () => {
       type: 'slideFrame',
       body: [
         {
-          type: 'slideSplit',
+          type: 'slideSplitLayout',
           divider: 'arrow',
           panes: [
             {
@@ -81,7 +100,7 @@ describe('slideJsx', () => {
               tone: 'primary',
               items: [
                 {
-                  type: 'slideStack',
+                  type: 'slideStackLayout',
                   spacing: 'tight',
                   items: [
                     { type: 'slideBulletList', items: ['One call'] },
@@ -97,13 +116,203 @@ describe('slideJsx', () => {
     expect(runtime.validate(composition).errors).toEqual([]);
   });
 
+  it('fills slide-structure layouts from children', () => {
+    const composition = toComposition(
+      createElement(
+        Composition,
+        null,
+        createElement(
+          SlideFrame,
+          { tone: 'inverse', logo: false },
+          createElement(
+            TitleSlide,
+            {
+              eyebrow: 'A grocery delivery platform',
+              title: 'Crate',
+              tagline: 'One order. Every store.',
+            },
+            createElement(
+              TitleDefinition,
+              { term: 'crate n.' },
+              'Everything a customer means to buy.'
+            ),
+            createElement(TitleAside, null, bullets)
+          ),
+          createElement(SlideFooter, {
+            brand: 'Ledger',
+            section: 'Opening',
+            sectionNumber: '01',
+            url: 'https://example.com/ledger',
+          })
+        )
+      )
+    );
+
+    expect(composition.body[0]).toEqual({
+      type: 'slideFrame',
+      tone: 'inverse',
+      logo: false,
+      footer: {
+        brand: 'Ledger',
+        section: 'Opening',
+        sectionNumber: '01',
+        url: 'https://example.com/ledger',
+      },
+      body: [
+        {
+          type: 'titleSlide',
+          eyebrow: 'A grocery delivery platform',
+          title: 'Crate',
+          tagline: 'One order. Every store.',
+          definition: {
+            term: 'crate n.',
+            text: 'Everything a customer means to buy.',
+          },
+          aside: { type: 'slideBulletList', items: ['One call'] },
+        },
+      ],
+    });
+    expect(runtime.validate(composition).errors).toEqual([]);
+
+    const agenda = toComposition(
+      createElement(
+        Composition,
+        null,
+        createElement(
+          AgendaSlide,
+          null,
+          createElement(AgendaSection, {
+            number: '01',
+            title: 'The problem',
+            count: '3 slides',
+          }),
+          createElement(AgendaSection, {
+            number: '02',
+            title: 'The approach',
+            current: true,
+          })
+        )
+      )
+    );
+    expect(agenda.body[0]).toMatchObject({
+      type: 'agendaSlide',
+      sections: [
+        { number: '01', title: 'The problem', count: '3 slides' },
+        { number: '02', title: 'The approach', current: true },
+      ],
+    });
+
+    const closing = toComposition(
+      createElement(
+        Composition,
+        null,
+        createElement(
+          ClosingSlide,
+          { title: 'Start here' },
+          createElement(
+            ClosingLink,
+            { label: 'Docs', href: 'https://example.com/docs' },
+            'example.com/docs'
+          ),
+          createElement(
+            ClosingPath,
+            { title: 'Write a pack' },
+            'Read the guide first'
+          )
+        )
+      )
+    );
+    expect(closing.body[0]).toEqual({
+      type: 'closingSlide',
+      title: 'Start here',
+      links: [
+        {
+          label: 'Docs',
+          href: 'https://example.com/docs',
+          text: 'example.com/docs',
+        },
+      ],
+      paths: [{ title: 'Write a pack', body: 'Read the guide first' }],
+    });
+
+    const section = toComposition(
+      createElement(
+        Composition,
+        null,
+        createElement(
+          SectionSlide,
+          { number: '02', title: 'Settlement' },
+          createElement(SectionItem, null, 'Refunds settle in two days'),
+          createElement(
+            SectionItem,
+            { href: '#slide-12' },
+            'The ledger writes first'
+          )
+        )
+      )
+    );
+    expect(section.body[0]).toEqual({
+      type: 'sectionSlide',
+      number: '02',
+      title: 'Settlement',
+      slides: [
+        { text: 'Refunds settle in two days' },
+        { text: 'The ledger writes first', href: '#slide-12' },
+      ],
+    });
+
+    expect(
+      toComposition(
+        createElement(
+          Composition,
+          null,
+          createElement(
+            QuoteSlide,
+            { source: 'Priya N.' },
+            'Ship the boring version first.'
+          )
+        )
+      ).body[0]
+    ).toEqual({
+      type: 'quoteSlide',
+      source: 'Priya N.',
+      text: 'Ship the boring version first.',
+    });
+
+    expect(
+      toComposition(
+        createElement(
+          Composition,
+          null,
+          createElement(StatementSlide, null, 'A refund is **a promise**.')
+        )
+      ).body[0]
+    ).toEqual({
+      type: 'statementSlide',
+      text: 'A refund is **a promise**.',
+    });
+
+    expect(
+      toComposition(
+        createElement(
+          Composition,
+          null,
+          createElement(SlideSource, null, 'Support tickets, January to June')
+        )
+      ).body[0]
+    ).toEqual({
+      type: 'slideSource',
+      text: 'Support tickets, January to June',
+    });
+  });
+
   it('rejects a pane outside a split', () => {
     expect(() =>
       toComposition(
         createElement(
           Composition,
           null,
-          createElement(SlideSplitPane, null, bullets)
+          createElement(SplitPane, null, bullets)
         )
       )
     ).toThrow();

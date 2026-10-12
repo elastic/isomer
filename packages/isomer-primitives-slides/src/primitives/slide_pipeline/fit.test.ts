@@ -15,7 +15,7 @@ import { scalePx } from '../../theme/scale';
 import { type SlideSize, slideSizes } from '../../theme/variants';
 import { layoutContext } from '../size.fixtures';
 import { tallestExample } from '../slide_heading/examples';
-import { paneWidths } from '../slide_split/pane_layout';
+import { paneWidths } from '../slide_split_layout/pane_layout';
 
 import { pipelineLoad, pipelineStep } from './fit';
 import type { SlidePipelineNode } from './schema';
@@ -173,7 +173,7 @@ describe('pipeline budgets fit what they allow', () => {
     expect(
       await findings(
         slideOf(tallestExample, {
-          type: 'slideSplit',
+          type: 'slideSplitLayout',
           panes: [
             { items: [{ ...node, size: step }] },
             { items: [{ type: 'slideBulletList', items: ['One'] }] },

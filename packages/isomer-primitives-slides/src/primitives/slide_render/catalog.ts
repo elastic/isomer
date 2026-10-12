@@ -23,7 +23,7 @@ export const catalog = {
   ],
   avoidWhen: [
     'The same content should appear on several surfaces side by side; use slideRenderGrid.',
-    'You are showing where output lands (a chat, a terminal) and will author its content as nodes; use slideWindow.',
+    'You are showing where output lands (a chat, a terminal) and will author its content as nodes; use slideWindowLayout.',
     'You are showing the source, not its output; use slideCode.',
     'You want to point at parts of the render and explain each one; use slideAnnotatedRender.',
   ],

@@ -23,7 +23,7 @@ export const catalog = {
   ],
   avoidWhen: [
     'Only one surface matters; use slideRender.',
-    'You are showing where output lands and will author its content as nodes; use slideWindow.',
+    'You are showing where output lands and will author its content as nodes; use slideWindowLayout.',
     'You are showing the source, not its output; use slideCode.',
   ],
   example,

@@ -17,7 +17,7 @@ export const catalog = {
     'Show one thing going to several destinations at once, and what each one does with it.',
   useWhen: [
     'One event, request, or artifact reaches several consumers independently.',
-    'Beside a slideTitle, to show what the subject feeds.',
+    'Beside a titleSlide, to show what the subject feeds.',
   ],
   avoidWhen: [
     'The steps happen in order; use slidePipeline.',

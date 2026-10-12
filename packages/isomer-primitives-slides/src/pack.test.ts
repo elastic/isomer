@@ -27,13 +27,13 @@ import {
   slideFramePrimitive,
 } from './primitives/slide_frame';
 import {
-  type SlideSplitNode,
-  slideSplitPrimitive,
-} from './primitives/slide_split';
+  type SlideSplitLayoutNode,
+  slideSplitLayoutPrimitive,
+} from './primitives/slide_split_layout';
 import {
-  type SlideStackNode,
-  slideStackPrimitive,
-} from './primitives/slide_stack';
+  type SlideStackLayoutNode,
+  slideStackLayoutPrimitive,
+} from './primitives/slide_stack_layout';
 import { slideDeckPrimitives } from './registry';
 
 const runtime = createIsomerRuntime({
@@ -80,8 +80,7 @@ describe('children declarations', () => {
   it('slideFrame.children walks body', () => {
     const frame: SlideFrameNode = {
       type: 'slideFrame',
-      section: 'test',
-      url: 'https://example.com',
+      footer: { section: 'test', url: 'https://example.com' },
       body: [
         { type: 'slideHeading', title: 'T1' },
         { type: 'slideHeading', title: 'T2' },
@@ -96,36 +95,35 @@ describe('children declarations', () => {
   it('slideFrame.hasOwnContent is true', () => {
     const frame: SlideFrameNode = {
       type: 'slideFrame',
-      section: 'c',
-      url: 'https://example.com',
+      footer: { section: 'c', url: 'https://example.com' },
       body: [{ type: 'slideHeading', title: 'T' }],
     };
     expect(slideFramePrimitive.hasOwnContent?.(frame)).toBe(true);
   });
 
-  it('slideSplit.children walks both panes', () => {
-    const split: SlideSplitNode = {
-      type: 'slideSplit',
+  it('slideSplitLayout.children walks both panes', () => {
+    const split: SlideSplitLayoutNode = {
+      type: 'slideSplitLayout',
       panes: [
         { items: [{ type: 'slideHeading', title: 'L' }] },
         { items: [{ type: 'slideHeading', title: 'R' }] },
       ],
     };
-    const children = slideSplitPrimitive.children?.(split);
+    const children = slideSplitLayoutPrimitive.children?.(split);
     expect(children).toHaveLength(2);
     expect(children?.[0]?.path).toBe('panes[0].items[0]');
     expect(children?.[1]?.path).toBe('panes[1].items[0]');
   });
 
-  it('slideStack.children walks items', () => {
-    const stack: SlideStackNode = {
-      type: 'slideStack',
+  it('slideStackLayout.children walks items', () => {
+    const stack: SlideStackLayoutNode = {
+      type: 'slideStackLayout',
       items: [
         { type: 'slideHeading', title: 'A' },
         { type: 'slideBulletList', items: ['x'] },
       ],
     };
-    const children = slideStackPrimitive.children?.(stack);
+    const children = slideStackLayoutPrimitive.children?.(stack);
     expect(children).toHaveLength(2);
     expect(children?.[0]?.path).toBe('items[0]');
     expect(children?.[1]?.path).toBe('items[1]');
@@ -137,11 +135,10 @@ describe('children declarations', () => {
       body: [
         {
           type: 'slideFrame',
-          section: 'c',
-          url: 'https://example.com',
+          footer: { section: 'c', url: 'https://example.com' },
           body: [
             {
-              type: 'slideSplit',
+              type: 'slideSplitLayout',
               panes: [
                 { items: [{ type: 'slideHeading', id: 'dup', title: 'L' }] },
                 { items: [{ type: 'slideHeading', id: 'dup', title: 'R' }] },
@@ -165,18 +162,17 @@ describe('children declarations', () => {
 });
 
 describe('RenderScope recursion', () => {
-  it('a foreign note nested in slideSplit renders on react', () => {
+  it('a foreign note nested in slideSplitLayout renders on react', () => {
     const composition = {
       type: 'view' as const,
       title: 'Cross-pack',
       body: [
         {
           type: 'slideFrame',
-          section: 'c',
-          url: 'https://example.com',
+          footer: { section: 'c', url: 'https://example.com' },
           body: [
             {
-              type: 'slideSplit',
+              type: 'slideSplitLayout',
               panes: [
                 { items: [{ type: 'slideHeading', title: 'Left' }] },
                 { items: [{ type: 'note', text: 'foreign node' }] },
@@ -191,17 +187,16 @@ describe('RenderScope recursion', () => {
     expect(markup).toContain('foreign node');
   });
 
-  it('a foreign note nested in slideSplit renders on text', () => {
+  it('a foreign note nested in slideSplitLayout renders on text', () => {
     const composition = {
       type: 'view' as const,
       body: [
         {
           type: 'slideFrame',
-          section: 'c',
-          url: 'https://example.com',
+          footer: { section: 'c', url: 'https://example.com' },
           body: [
             {
-              type: 'slideSplit',
+              type: 'slideSplitLayout',
               panes: [
                 { items: [{ type: 'slideHeading', title: 'Left' }] },
                 { items: [{ type: 'note', text: 'foreign-text-node' }] },
@@ -215,17 +210,16 @@ describe('RenderScope recursion', () => {
     expect(text).toContain('foreign-text-node');
   });
 
-  it('a foreign note nested in slideSplit renders on markdown', () => {
+  it('a foreign note nested in slideSplitLayout renders on markdown', () => {
     const composition = {
       type: 'view' as const,
       body: [
         {
           type: 'slideFrame',
-          section: 'c',
-          url: 'https://example.com',
+          footer: { section: 'c', url: 'https://example.com' },
           body: [
             {
-              type: 'slideSplit',
+              type: 'slideSplitLayout',
               panes: [
                 { items: [{ type: 'slideHeading', title: 'Left' }] },
                 { items: [{ type: 'note', text: 'foreign-md-node' }] },
@@ -239,17 +233,16 @@ describe('RenderScope recursion', () => {
     expect(md).toContain('foreign-md-node');
   });
 
-  it('a foreign note nested in slideStack renders on snapshot', () => {
+  it('a foreign note nested in slideStackLayout renders on snapshot', () => {
     const composition = {
       type: 'view' as const,
       body: [
         {
           type: 'slideFrame',
-          section: 'c',
-          url: 'https://example.com',
+          footer: { section: 'c', url: 'https://example.com' },
           body: [
             {
-              type: 'slideStack',
+              type: 'slideStackLayout',
               items: [
                 { type: 'slideHeading', title: 'Top' },
                 { type: 'note', text: 'foreign-svg' },
@@ -300,8 +293,7 @@ describe('sanitize via scope', () => {
       body: [
         {
           type: 'slideFrame',
-          section: 'c',
-          url: 'javascript:alert(1)',
+          footer: { section: 'c', url: 'javascript:alert(1)' },
           body: [{ type: 'slideHeading', title: 'Test' }],
         },
       ],
@@ -317,7 +309,7 @@ describe('sanitize via scope', () => {
       body: [
         {
           type: 'slideFrame',
-          url: 'developer.mozilla.org',
+          footer: { url: 'developer.mozilla.org' },
           body: [{ type: 'slideHeading', title: 'Test' }],
         },
       ],
@@ -334,7 +326,7 @@ describe('frame url', () => {
     body: [
       {
         type: 'slideFrame',
-        url,
+        footer: { url },
         body: [{ type: 'slideHeading', title: 'Test' }],
       },
     ],
@@ -354,7 +346,7 @@ describe('frame url', () => {
       expect(valid).toBe(false);
       expect(errors).toContainEqual(
         expect.objectContaining({
-          path: 'body[0].url',
+          path: 'body[0].footer.url',
           message: expect.stringContaining(
             'absolute http or https URL'
           ) as unknown,
@@ -372,14 +364,18 @@ describe('frames never nest', () => {
   const slots = {
     'body[0].body[0]': inner,
     'body[0].body[0].panes[0].items[0]': {
-      type: 'slideSplit',
+      type: 'slideSplitLayout',
       panes: [
         { items: [inner] },
         { items: [{ type: 'slideHeading', title: 'Right' }] },
       ],
     },
-    'body[0].body[0].items[0]': { type: 'slideStack', items: [inner] },
-    'body[0].body[0].aside': { type: 'slideTitle', title: 'T', aside: inner },
+    'body[0].body[0].items[0]': { type: 'slideStackLayout', items: [inner] },
+    'body[0].body[0].aside': {
+      type: 'titleSlide',
+      title: 'T',
+      aside: inner,
+    },
   };
 
   it.each(Object.entries(slots))('rejects a frame at %s', (path, node) => {

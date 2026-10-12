@@ -108,7 +108,7 @@ export const schema = z
       .min(1)
       .max(2)
       .describe(
-        `One panel, or two side by side with an arrow between them to trace a value from one file to the next. Two panels need the full slide width; do not put them in a slideSplit column. A line holds ${codeLineMaxLength(1, false)} columns in one panel and ${codeLineMaxLength(2, false)} in each of two (${codeLineMaxLength(1, true)} and ${codeLineMaxLength(2, true)} once a panel passes ${codeDenseAfter} lines), a wide glyph such as CJK or an emoji counting as two; a narrower column holds fewer, and a longer line is clipped.`
+        `One panel, or two side by side with an arrow between them to trace a value from one file to the next. Two panels need the full slide width; do not put them in a slideSplitLayout column. A line holds ${codeLineMaxLength(1, false)} columns in one panel and ${codeLineMaxLength(2, false)} in each of two (${codeLineMaxLength(1, true)} and ${codeLineMaxLength(2, true)} once a panel passes ${codeDenseAfter} lines), a wide glyph such as CJK or an emoji counting as two; a narrower column holds fewer, and a longer line is clipped.`
       ),
   })
   .strict()

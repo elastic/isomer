@@ -27,7 +27,7 @@ describe('slides authoring prompt', () => {
       (name) =>
         !registered.has(name) &&
         // Branded child items and `$def` names are not primitives.
-        !['slideSplitPane', 'slideTerritory', 'slideTurn'].includes(name)
+        !['splitPane', 'slideTerritory', 'slideTurn'].includes(name)
     );
     expect(unknown).toEqual([]);
   });

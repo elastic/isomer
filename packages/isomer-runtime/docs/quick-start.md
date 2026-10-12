@@ -39,41 +39,45 @@ The pack ships its own style adapter, so the runtime has CSS without being told.
 
 ## 3. Write a composition
 
-A `Composition` says what the answer is, not how it looks. The wire discriminator stays `type: 'view'`. This one is the reference pack's title slide.
+A `Composition` says what the answer is, not how it looks. The wire discriminator stays `type: 'view'`. `slideJsx` authors it, and `toComposition` is the value every surface renders. This one is the reference pack's title slide: `TitleAside` holds the bullet list, and `SlideFooter` fills the footer.
 
-```ts
-import { type Composition } from '@elastic/isomer-sdk';
+```tsx
+import { slideJsx } from '@elastic/isomer-primitives-slides';
 
-const composition: Composition = {
-  type: 'view',
-  title: 'Isomer',
-  body: [
-    {
-      type: 'slideFrame',
-      tone: 'inverse',
-      brand: 'Isomer',
-      url: 'https://elastic.github.io/isomer',
-      body: [
-        {
-          type: 'slideTitle',
-          eyebrow: 'Reference pack',
-          title: 'Isomer',
-          tagline: 'One composition, **every surface**.',
-          aside: {
-            type: 'slideBulletList',
-            marker: 'check',
-            items: [
+const {
+  Composition,
+  SlideBulletList,
+  SlideFooter,
+  SlideFrame,
+  TitleAside,
+  TitleSlide,
+  toComposition,
+} = slideJsx;
+
+const composition = toComposition(
+  <Composition title="Isomer">
+    <SlideFrame tone="inverse">
+      <TitleSlide
+        eyebrow="Reference pack"
+        title="Isomer"
+        tagline="One composition, **every surface**."
+      >
+        <TitleAside>
+          <SlideBulletList
+            marker="check"
+            items={[
               'React and HTML',
               'Markdown and plain text',
               'Slack Block Kit',
               'SVG and PNG',
-            ],
-          },
-        },
-      ],
-    },
-  ],
-};
+            ]}
+          />
+        </TitleAside>
+      </TitleSlide>
+      <SlideFooter brand="Isomer" url="https://elastic.github.io/isomer" />
+    </SlideFrame>
+  </Composition>
+);
 
 runtime.validate(composition); // { valid: true, errors: [], warnings: [], composition: <its checked copy> }
 ```

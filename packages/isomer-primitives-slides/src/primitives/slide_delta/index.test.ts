@@ -21,7 +21,7 @@ import { scalePx } from '../../theme/scale';
 import { openBody } from '../layout';
 import { emWidth } from '../size';
 import { renderedStep } from '../size.fixtures';
-import { paneWidths } from '../slide_split/pane_layout';
+import { paneWidths } from '../slide_split_layout/pane_layout';
 
 import { example, pendingExample, wideExample } from './examples';
 import { markdown as markdownContent, text } from './index';
@@ -255,13 +255,13 @@ describe('slideDelta', () => {
       expect(deltaValueSize(node, pane)).not.toBe('l');
       expect(
         renderedStep('delta-valueSize', {
-          type: 'slideSplit',
+          type: 'slideSplitLayout',
           panes: [{ items: [node] }, { items: [bullets] }],
         })
       ).toBe(deltaValueSize(node, pane));
       expect(
         renderedStep('delta-valueSize', {
-          type: 'slideTitle',
+          type: 'titleSlide',
           title: 'Payments',
           aside: node,
         })

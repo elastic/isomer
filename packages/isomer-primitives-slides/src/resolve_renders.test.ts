@@ -102,7 +102,7 @@ describe('resolveSlideRenders', () => {
   it('returns a slide the input budget refuses as it is when leaving, and throws otherwise', () => {
     let deep: object = heading;
     for (let level = 0; level < 100_000; level += 1) {
-      deep = { type: 'slideStack', items: [deep] };
+      deep = { type: 'slideStackLayout', items: [deep] };
     }
     const slides = [
       { slug: 'host', composition: frame(renderOf('deep')) },
@@ -120,11 +120,11 @@ describe('resolveSlideRenders', () => {
   });
 
   it('fills from a slide at the input budget’s depth and refuses one a level past it', () => {
-    /** `count` slideStacks around `inner`: two levels each, under four of the composition's. */
+    /** `count` `slideStackLayout` nodes around `inner`: two levels each, under four of the composition's. */
     const chain = (count: number, inner: object): Composition => {
       let node = inner;
       for (let level = 0; level < count; level += 1) {
-        node = { type: 'slideStack', items: [node] };
+        node = { type: 'slideStackLayout', items: [node] };
       }
       return frame(node);
     };
@@ -166,7 +166,7 @@ describe('resolveSlideRenders', () => {
     const chain = (leaf: object): Composition => {
       let node = leaf;
       for (let level = 0; level < depth; level += 1) {
-        node = { type: 'slideStack', items: [node] };
+        node = { type: 'slideStackLayout', items: [node] };
       }
       return frame(node);
     };

@@ -61,7 +61,7 @@ describe('the slides pack authoring declarations', () => {
   it('declare every primitive as a node type, with its catalog text as JSDoc', () => {
     expect(declarations).toContain('interface SlideStatsNode {');
     expect(declarations).toContain('Use when:');
-    expect(declarations).toContain('type BodyNode =\n    | SlideAgendaNode');
+    expect(declarations).toContain('type BodyNode =\n    | AgendaSlideNode');
   });
 
   it('compile on their own', () => {
@@ -72,7 +72,8 @@ describe('the slides pack authoring declarations', () => {
     const use = `
       const deck = (
         <Composition title="Ownership">
-          <SlideFrame brand="Isomer" tone="page">
+          <SlideFrame tone="page">
+            <SlideFooter brand="Isomer" />
             <SlideHeading title="Who owns what" />
             <SlideTerritoryGroup>
               <SlideTerritory title="Us" tone="primary">

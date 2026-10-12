@@ -84,8 +84,7 @@ const wrapInFrame = (node: PrimitiveNode): PrimitiveNode =>
     ? node
     : ({
         type: 'slideFrame',
-        section: 'Conformance',
-        url: 'https://example.com',
+        footer: { section: 'Conformance', url: 'https://example.com' },
         body: [node],
       } as unknown as PrimitiveNode);
 
@@ -114,7 +113,7 @@ const harness: PrimitiveConformanceHarness = {
     runtime.surfaces.snapshot.renderNode(node, collect).element,
   estimateSnapshotHeight: () => 0,
   nestForeignChild: (container) => {
-    if (container.type === 'slideSplit') {
+    if (container.type === 'slideSplitLayout') {
       const { panes } = container as unknown as {
         panes: Record<string, unknown>[];
       };
@@ -126,7 +125,7 @@ const harness: PrimitiveConformanceHarness = {
         })),
       } as unknown as PrimitiveNode;
     }
-    if (container.type === 'slideTitle') {
+    if (container.type === 'titleSlide') {
       return {
         ...container,
         aside: conformanceForeignNode,
@@ -138,7 +137,7 @@ const harness: PrimitiveConformanceHarness = {
         render: conformanceForeignNode,
       } as unknown as PrimitiveNode;
     }
-    if (container.type === 'slideStack') {
+    if (container.type === 'slideStackLayout') {
       return {
         ...container,
         items: [conformanceForeignNode],

@@ -14,7 +14,7 @@ import { describe, expect, it } from 'vitest';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { openBody } from '../layout';
 import { renderedStep } from '../size.fixtures';
-import { paneWidths } from '../slide_split/pane_layout';
+import { paneWidths } from '../slide_split_layout/pane_layout';
 
 import { example, pendingExample } from './examples';
 import { markdown as markdownContent, text } from './index';
@@ -189,13 +189,13 @@ describe('slideStats', () => {
       expect(statsValueSize(node, pane)).not.toBe('l');
       expect(
         renderedStep('stats-valueSize', {
-          type: 'slideSplit',
+          type: 'slideSplitLayout',
           panes: [{ items: [node] }, { items: [bullets] }],
         })
       ).toBe(statsValueSize(node, pane));
       expect(
         renderedStep('stats-valueSize', {
-          type: 'slideTitle',
+          type: 'titleSlide',
           title: 'Payments',
           aside: node,
         })

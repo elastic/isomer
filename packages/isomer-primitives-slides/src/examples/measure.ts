@@ -33,7 +33,7 @@ const walk = createChildNodeWalker(runtime.primitives);
 /** A frame holding `body`, with the footer every preview carries. */
 export const slideOf = (...body: object[]): Composition => ({
   type: 'view',
-  body: [{ type: 'slideFrame', ...previewFooter, body } as PrimitiveNode],
+  body: [{ type: 'slideFrame', footer: previewFooter, body } as PrimitiveNode],
 });
 
 /** Takumi's measure of `slide`, with node anchors on. */

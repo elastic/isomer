@@ -10,16 +10,21 @@ import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import type { SlideContentNode } from '../../body_node';
 import type { SlideFrameTone } from '../../theme/variants';
 
-/** Fixed 16:9 root: body plus a one-line footer. The document's sole body node. */
-export interface SlideFrameNode extends PrimitiveNode {
-  type: 'slideFrame';
+/** One line under the slide: deck name, section, and address. */
+export interface SlideFooter {
   brand?: string;
   section?: string;
   sectionNumber?: string;
+  url?: string;
+}
+
+/** Fixed 16:9 root: body plus a one-line footer. The document's sole body node. */
+export interface SlideFrameNode extends PrimitiveNode {
+  type: 'slideFrame';
+  footer?: SlideFooter;
   /** Defaults to `true`. */
   logo?: boolean;
   /** Defaults to `page`. */
   tone?: SlideFrameTone;
-  url?: string;
   body: readonly SlideContentNode[];
 }

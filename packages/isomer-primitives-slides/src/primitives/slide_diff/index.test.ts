@@ -27,8 +27,8 @@ import { frameContentWidth } from '../../theme/components/frame';
 import { slideDistillery } from '../../theme/distillery';
 import { scalePx } from '../../theme/scale';
 import { authoredTextMaxLength } from '../authored_text';
-import { paneWidths } from '../slide_split/pane_layout';
-import type { SlideSplitNode } from '../slide_split/types';
+import { paneWidths } from '../slide_split_layout/pane_layout';
+import type { SlideSplitLayoutNode } from '../slide_split_layout/types';
 
 import { configExample, denseExample, example, examples } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
@@ -267,8 +267,8 @@ describe('slideDiff in the DOM', () => {
 
 describe('slideDiff sizing', () => {
   const [pane] = paneWidths(frameContentWidth, 'even', 'gap');
-  const inPane = (node: SlideDiffNode): SlideSplitNode => ({
-    type: 'slideSplit',
+  const inPane = (node: SlideDiffNode): SlideSplitLayoutNode => ({
+    type: 'slideSplitLayout',
     panes: [
       { items: [node] },
       { items: [{ type: 'slideBulletList', items: ['One'] }] },

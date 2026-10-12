@@ -34,10 +34,11 @@ const Footer = ({
   context: SlideRenderContext | undefined;
 }): ReactNode => {
   const { handles: frame } = frameModule;
-  const { brand, section, sectionNumber, logo = true } = node;
+  const { logo = true, footer } = node;
+  const { brand, section, sectionNumber } = footer ?? {};
   const sectionLine = [sectionNumber, section].filter(Boolean).join(' ');
   // Exported view: sanitize here too, since a host can call it without the `sanitize` hook.
-  const url = node.url ? sanitizeFrameUrl(node.url) : null;
+  const url = footer?.url ? sanitizeFrameUrl(footer.url) : null;
   return (
     <footer className={cls(context, frame.footer)}>
       <div className={cls(context, frame.footerStart)}>

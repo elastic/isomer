@@ -133,7 +133,7 @@ describe('slideColumns size', () => {
     const node = loaded(198, 1);
     expect(renderedStep('columns-titleSize', node, referenceHeading)).toBe('l');
     const inWindow = {
-      type: 'slideWindow',
+      type: 'slideWindowLayout',
       chrome: 'browser',
       title: 'shop.example',
       body: [node],
@@ -142,10 +142,10 @@ describe('slideColumns size', () => {
       renderedStep('columns-titleSize', inWindow, referenceHeading)
     ).not.toBe('l');
     const inPane = {
-      type: 'slideSplit',
+      type: 'slideSplitLayout',
       panes: [
         { items: [node] },
-        { items: [{ type: 'slideStatement', text: 'x' }] },
+        { items: [{ type: 'statementSlide', text: 'x' }] },
       ],
     };
     expect(renderedStep('columns-titleSize', inPane, referenceHeading)).toBe(

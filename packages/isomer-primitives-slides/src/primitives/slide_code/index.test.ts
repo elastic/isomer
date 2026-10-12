@@ -30,8 +30,8 @@ import { frameContentWidth } from '../../theme/components/frame';
 import { slideDistillery } from '../../theme/distillery';
 import { scalePx } from '../../theme/scale';
 import { authoredTextMaxLength } from '../authored_text';
-import { paneWidths } from '../slide_split/pane_layout';
-import type { SlideSplitNode } from '../slide_split/types';
+import { paneWidths } from '../slide_split_layout/pane_layout';
+import type { SlideSplitLayoutNode } from '../slide_split_layout/types';
 
 import {
   denseExample,
@@ -203,8 +203,8 @@ describe('slideCode line width', () => {
 describe('slideCode in a split pane', () => {
   const [pane] = paneWidths(frameContentWidth, 'even', 'gap');
   const line = 'x'.repeat(codeLineMaxLength(1, false, pane) + 1);
-  const inPane = (node: SlideCodeNode): SlideSplitNode => ({
-    type: 'slideSplit',
+  const inPane = (node: SlideCodeNode): SlideSplitLayoutNode => ({
+    type: 'slideSplitLayout',
     panes: [
       { items: [node] },
       { items: [{ type: 'slideBulletList', items: ['One'] }] },

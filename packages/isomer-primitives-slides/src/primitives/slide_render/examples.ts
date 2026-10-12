@@ -13,9 +13,11 @@ import type { SlideRenderNode } from './types';
 export const deliverySlide: readonly BodyNode[] = [
   {
     type: 'slideFrame',
-    brand: 'Basket',
-    section: 'Operations',
-    sectionNumber: '02',
+    footer: {
+      brand: 'Basket',
+      section: 'Operations',
+      sectionNumber: '02',
+    },
     body: [
       {
         type: 'slideHeading',

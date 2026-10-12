@@ -12,11 +12,13 @@
 // this imports their node types) is type-only and intentional. Do not break it by
 // deriving the union from the registry: that closes it at the value level (TS7022).
 
-import type { SlideAgendaNode } from './primitives/slide_agenda';
+import type { AgendaSlideNode } from './primitives/agenda_slide';
+import type { ClosingSlideNode } from './primitives/closing_slide';
+import type { QuoteSlideNode } from './primitives/quote_slide';
+import type { SectionSlideNode } from './primitives/section_slide';
 import type { SlideAnnotatedRenderNode } from './primitives/slide_annotated_render';
 import type { SlideBarsNode } from './primitives/slide_bars';
 import type { SlideBulletListNode } from './primitives/slide_bullet_list';
-import type { SlideClosingNode } from './primitives/slide_closing';
 import type { SlideCodeNode } from './primitives/slide_code';
 import type { SlideColumnsNode } from './primitives/slide_columns';
 import type { SlideCommandNode } from './primitives/slide_command';
@@ -33,33 +35,33 @@ import type { SlideListNode } from './primitives/slide_list';
 import type { SlideMatrixNode } from './primitives/slide_matrix';
 import type { SlidePipelineNode } from './primitives/slide_pipeline';
 import type { SlideQuadrantNode } from './primitives/slide_quadrant';
-import type { SlideQuoteNode } from './primitives/slide_quote';
 import type { SlideRenderNode } from './primitives/slide_render';
 import type { SlideRenderGridNode } from './primitives/slide_render_grid';
 import type { SlideRoadmapNode } from './primitives/slide_roadmap';
-import type { SlideSectionNode } from './primitives/slide_section';
 import type { SlideSequenceNode } from './primitives/slide_sequence';
 import type { SlideSourceNode } from './primitives/slide_source';
-import type { SlideSplitNode } from './primitives/slide_split';
-import type { SlideStackNode } from './primitives/slide_stack';
+import type { SlideSplitLayoutNode } from './primitives/slide_split_layout';
+import type { SlideStackLayoutNode } from './primitives/slide_stack_layout';
 import type { SlideStatNode } from './primitives/slide_stat';
-import type { SlideStatementNode } from './primitives/slide_statement';
 import type { SlideStatsNode } from './primitives/slide_stats';
 import type { SlideTableNode } from './primitives/slide_table';
 import type { SlideTerritoryGroupNode } from './primitives/slide_territory_group';
 import type { SlideTimelineNode } from './primitives/slide_timeline';
-import type { SlideTitleNode } from './primitives/slide_title';
 import type { SlideTranscriptNode } from './primitives/slide_transcript';
 import type { SlideTreeNode } from './primitives/slide_tree';
-import type { SlideWindowNode } from './primitives/slide_window';
+import type { SlideWindowLayoutNode } from './primitives/slide_window_layout';
+import type { StatementSlideNode } from './primitives/statement_slide';
+import type { TitleSlideNode } from './primitives/title_slide';
 
 /** Discriminated union of every node type this pack defines. */
 export type BodyNode =
-  | SlideAgendaNode
+  | AgendaSlideNode
+  | ClosingSlideNode
+  | QuoteSlideNode
+  | SectionSlideNode
   | SlideAnnotatedRenderNode
   | SlideBarsNode
   | SlideBulletListNode
-  | SlideClosingNode
   | SlideCodeNode
   | SlideColumnsNode
   | SlideCommandNode
@@ -76,25 +78,23 @@ export type BodyNode =
   | SlideMatrixNode
   | SlidePipelineNode
   | SlideQuadrantNode
-  | SlideQuoteNode
   | SlideRenderNode
   | SlideRenderGridNode
   | SlideRoadmapNode
-  | SlideSectionNode
   | SlideSequenceNode
   | SlideSourceNode
-  | SlideSplitNode
-  | SlideStackNode
+  | SlideSplitLayoutNode
+  | SlideStackLayoutNode
   | SlideStatNode
-  | SlideStatementNode
   | SlideStatsNode
   | SlideTableNode
   | SlideTerritoryGroupNode
   | SlideTimelineNode
-  | SlideTitleNode
   | SlideTranscriptNode
   | SlideTreeNode
-  | SlideWindowNode;
+  | SlideWindowLayoutNode
+  | StatementSlideNode
+  | TitleSlideNode;
 
 /** A {@link BodyNode} that may nest inside a {@link SlideFrameNode}; frames cannot nest. */
 export type SlideContentNode = Exclude<BodyNode, SlideFrameNode>;

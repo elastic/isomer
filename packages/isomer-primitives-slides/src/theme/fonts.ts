@@ -29,7 +29,7 @@ const weights = [
 // Roboto Mono ships no extrabold, so no mono style sets it.
 const extrabold = Number(SLIDE_THEME.font.weight.extrabold.value);
 
-// `slideTitle`'s definition term is the one italic run.
+// `titleSlide`'s definition term is the one italic run.
 const italic = Number(SLIDE_THEME.title.definition.weight.value);
 
 /** Derived from the theme, so a new weight cannot silently fall back to the nearest registered face. */

@@ -154,22 +154,22 @@ describe('createIsomerTools', () => {
     it('returns each entry and a schema whose refs resolve', async () => {
       const text = textOf(
         await call(tools, ISOMER_TOOL_NAMES.describePrimitives, {
-          types: ['slideFrame', 'slideStack'],
+          types: ['slideFrame', 'slideStackLayout'],
         })
       );
       expect(text).toContain('- `slideFrame` — ');
-      expect(text).toContain('- `slideStack` — ');
+      expect(text).toContain('- `slideStackLayout` — ');
       expect(text).toContain('Use when:');
       const json = /```json\n([\s\S]*)\n```/.exec(text)?.[1] ?? '{}';
       expect(json).not.toContain('\n');
       expect(JSON.parse(json)).toEqual(
         runtime
           .getAuthoringContext()
-          .describePrimitives(['slideFrame', 'slideStack']).schema
+          .describePrimitives(['slideFrame', 'slideStackLayout']).schema
       );
       const { $defs } = JSON.parse(json) as { $defs: Record<string, unknown> };
       expect(Object.keys($defs)).toEqual(
-        expect.arrayContaining(['slideFrame', 'slideStack', 'bodyNode'])
+        expect.arrayContaining(['slideFrame', 'slideStackLayout', 'bodyNode'])
       );
       for (const [, id] of json.matchAll(/"#\/\$defs\/([^"]+)"/g)) {
         expect($defs).toHaveProperty([id!]);
@@ -237,7 +237,7 @@ describe('createIsomerTools', () => {
     // The view, its body, and the stack hold three of the levels.
     const stackOfDepth = (depth: number) => ({
       type: 'view',
-      body: [{ type: 'slideStack', children: nested(depth - 3) }],
+      body: [{ type: 'slideStackLayout', children: nested(depth - 3) }],
     });
 
     it('parses a composition at the depth limit', async () => {

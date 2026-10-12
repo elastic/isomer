@@ -325,10 +325,10 @@ describe('slideBars', () => {
     it('keeps its rows inside a split pane in a title aside', async () => {
       const root = await drawn(
         compose({
-          type: 'slideTitle',
+          type: 'titleSlide',
           title: 'Payments',
           aside: {
-            type: 'slideSplit',
+            type: 'slideSplitLayout',
             panes: [{ items: [example] }, { items: [example] }],
           },
         })
@@ -429,7 +429,7 @@ describe('slideBars', () => {
       expect(renderedStep('bars-labelSize', example)).toBe('l');
       expect(
         renderedStep('bars-labelSize', {
-          type: 'slideTitle',
+          type: 'titleSlide',
           title: 'Payments',
           aside: example,
         })
