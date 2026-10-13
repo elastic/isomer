@@ -11,12 +11,12 @@ import type { Composition } from '@elastic/isomer-sdk';
 import type { StudioRuntime } from '../config';
 import { PNG_SCALE } from '../types';
 
-/** The tallest viewport the PNG is laid out in before it is cropped to its content. */
-const MAX_PNG_HEIGHT = 8192;
-
 export type NodeRasterizer = (composition: Composition) => Promise<Buffer>;
 
-/** Rasterizes with takumi, loaded on first use because it is native; `undefined` without a snapshot surface. */
+/**
+ * Rasterizes with takumi, loaded on first use because it is native; `undefined` without a snapshot surface.
+ * The PNG takes the frame's own geometry, as the Snapshot preview does.
+ */
 export const createRasterizer = (
   runtime: StudioRuntime
 ): NodeRasterizer | undefined => {
@@ -32,11 +32,9 @@ export const createRasterizer = (
 
   return async (composition) => {
     const takumi = await loadBackend();
-    const render = (height: number) =>
-      snapshot.render(composition, { height, onValidationError: 'collect' });
-    const { height } = await takumi.measure(render(MAX_PNG_HEIGHT));
-    return takumi.png(render(Math.min(Math.ceil(height), MAX_PNG_HEIGHT)), {
-      scale: PNG_SCALE,
-    });
+    return takumi.png(
+      snapshot.render(composition, { onValidationError: 'collect' }),
+      { scale: PNG_SCALE }
+    );
   };
 };
