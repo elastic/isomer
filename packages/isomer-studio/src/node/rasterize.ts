@@ -9,12 +9,10 @@ import type { TakumiBackend } from '@elastic/isomer-image-takumi';
 import type { Composition } from '@elastic/isomer-sdk';
 
 import type { StudioRuntime } from '../config';
+import { PNG_SCALE } from '../types';
 
 /** The tallest viewport the PNG is laid out in before it is cropped to its content. */
 const MAX_PNG_HEIGHT = 8192;
-
-/** Pixels per CSS pixel, so the PNG stays sharp on high-density displays. */
-const PNG_SCALE = 2;
 
 export type NodeRasterizer = (composition: Composition) => Promise<Buffer>;
 
