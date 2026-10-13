@@ -393,14 +393,14 @@ describe('slideRender JSX', () => {
     });
   });
 
-  it('refuses embedded slides passed to <SlideRender> as children', () => {
+  it('takes the slides it embeds as children', () => {
     const {
       Composition: View,
       SlideHeading,
       SlideRender,
       toComposition,
     } = slideJsx;
-    expect(() =>
+    expect(
       toComposition(
         createElement(
           View,
@@ -411,8 +411,14 @@ describe('slideRender JSX', () => {
             createElement(SlideHeading, { title: 'Embedded' })
           )
         )
-      )
-    ).toThrow('<SlideRender> takes no JSX children');
+      ).body
+    ).toEqual([
+      {
+        type: 'slideRender',
+        surface: 'snapshot',
+        body: [{ type: 'slideHeading', title: 'Embedded' }],
+      },
+    ]);
   });
 
   it('refuses embedded slides passed to <SlideRenderGrid> as children', () => {

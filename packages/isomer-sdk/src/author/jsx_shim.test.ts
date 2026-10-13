@@ -13,6 +13,7 @@ import type { PrimitiveNode } from '../define/primitive_module';
 
 import {
   fromChildren,
+  fromNodeChildren,
   fromTextChildren,
   readAuthoredSpec,
 } from './authored_fields';
@@ -978,6 +979,81 @@ describe('nested brands', () => {
         )
       ).body
     ).toEqual([{ type: 'callout', icon: { name: 'bell' } }]);
+  });
+});
+
+describe('fromNodeChildren', () => {
+  const nodeSchema = z.object({ type: z.string() }).loose();
+  const embed = {
+    type: 'embed' as const,
+    schema: z.object({
+      type: z.literal('embed'),
+      caption: z.string().optional(),
+      body: fromNodeChildren(z.array(nodeSchema)).optional(),
+    }),
+  };
+  const gallery = {
+    type: 'gallery' as const,
+    schema: z.object({
+      type: z.literal('gallery'),
+      tiles: fromChildren('tile', z.array(z.object({ label: z.string() })), {
+        text: 'label',
+      }),
+      body: fromNodeChildren(z.array(nodeSchema)),
+    }),
+  };
+  const shim = buildJsxShim([...primitives, embed, gallery] as const);
+
+  it('fills the field from primitive elements, nested in turn', () => {
+    const { Composition, Embed, Note, Stack } = shim;
+    expect(
+      shim.toComposition(
+        createElement(
+          Composition,
+          null,
+          createElement(
+            Embed,
+            { caption: 'Shown' },
+            createElement(Stack, null, createElement(Note))
+          )
+        )
+      ).body
+    ).toEqual([
+      {
+        type: 'embed',
+        caption: 'Shown',
+        body: [{ type: 'stack', items: [{ type: 'note' }] }],
+      },
+    ]);
+  });
+
+  it('takes the elements a branded child field leaves', () => {
+    const { Composition, Gallery, Note, Tile } = shim;
+    expect(
+      shim.toComposition(
+        createElement(
+          Composition,
+          null,
+          createElement(
+            Gallery,
+            null,
+            createElement(Note),
+            createElement(Tile, null, 'One')
+          )
+        )
+      ).body
+    ).toEqual([
+      { type: 'gallery', tiles: [{ label: 'One' }], body: [{ type: 'note' }] },
+    ]);
+  });
+
+  it('reads as a node field on the spec and leaves the prop optional', () => {
+    expect(readAuthoredSpec(embed.schema).nodes).toEqual([
+      { field: 'body', array: true },
+    ]);
+    expectTypeOf<Parameters<typeof shim.Gallery>[0]>()
+      .toHaveProperty('body')
+      .toEqualTypeOf<{ type: string; [key: string]: unknown }[] | undefined>();
   });
 });
 

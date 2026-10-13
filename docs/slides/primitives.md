@@ -455,7 +455,7 @@ A diagram's parts are children of their kind. Two kinds share one children list,
 </SlideTree>
 ```
 
-An annotated render takes its `SlideRender` and its `RenderPin` children side by side; a pin's sentence is its text. A render grid takes `RenderTile` children, each captioned by its text. The slide a render embeds stays its `body` prop, because it is drawn, not walked:
+An annotated render takes its `SlideRender` and its `RenderPin` children side by side; a pin's sentence is its text. A render grid takes `RenderTile` children, each captioned by its text. The slide a render or grid embeds is its other children, branded `fromNodeChildren` because it is drawn, not walked:
 
 ```tsx
 <SlideAnnotatedRender>
@@ -463,7 +463,8 @@ An annotated render takes its `SlideRender` and its `RenderPin` children side by
   <RenderPin x={20} y={30} title="Heading">The claim, in one line.</RenderPin>
 </SlideAnnotatedRender>
 
-<SlideRenderGrid body={[{ type: 'slideHeading', title: 'Refunds settle in two days' }]}>
+<SlideRenderGrid>
+  <SlideHeading>Refunds settle in two days</SlideHeading>
   <RenderTile surface="react">Hosts</RenderTile>
   <RenderTile surface="slack">Channels</RenderTile>
 </SlideRenderGrid>

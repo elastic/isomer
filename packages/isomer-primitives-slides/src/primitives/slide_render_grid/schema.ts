@@ -6,7 +6,7 @@
  */
 
 import { unresolvedBodyNodeSchema, z } from '@elastic/isomer-sdk';
-import { fromChildren } from '@elastic/isomer-sdk/author';
+import { fromChildren, fromNodeChildren } from '@elastic/isomer-sdk/author';
 import type { ZodType } from 'zod';
 
 import { slideRenderSurfaces } from '../../theme/variants';
@@ -19,7 +19,9 @@ export const buildSchema = (bodyNodeSchema: ZodType<unknown>) =>
   z
     .object({
       type: z.literal('slideRenderGrid'),
-      body: embeddedBody(bodyNodeSchema, 'What every tile renders.'),
+      body: fromNodeChildren(
+        embeddedBody(bodyNodeSchema, 'What every tile renders.')
+      ),
       tiles: fromChildren(
         'renderTile',
         z

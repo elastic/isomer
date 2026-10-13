@@ -21,6 +21,7 @@ import type { PrimitiveNode } from '../define/primitive_module';
 import {
   type AuthoredChildBrand,
   type AuthoredChildField,
+  type AuthoredNodesBrand,
   type AuthoredSpec,
   type AuthoredTextBrand,
   type AuthoredToItemBrand,
@@ -76,7 +77,7 @@ type LooseSchema<TSchema> = string extends keyof ShapeOf<TSchema>
 // The schema a brand is read from: `F`, or one an optional, nullable, default,
 // or readonly wrapper holds.
 type Branded<F> = F extends
-  AuthoredChildBrand<string, unknown> | AuthoredTextBrand
+  AuthoredChildBrand<string, unknown> | AuthoredTextBrand | AuthoredNodesBrand
   ? F
   : F extends {
         _zod: {
@@ -91,7 +92,7 @@ type Branded<F> = F extends
 
 type AuthoredNames<TSchema> = {
   [K in keyof ShapeOf<TSchema>]: Branded<ShapeOf<TSchema>[K]> extends
-    AuthoredChildBrand<string, unknown> | AuthoredTextBrand
+    AuthoredChildBrand<string, unknown> | AuthoredTextBrand | AuthoredNodesBrand
     ? K
     : never;
 }[keyof ShapeOf<TSchema>];
@@ -244,7 +245,8 @@ export type JsxShim<
  * from JSX children, and each child type becomes a component. Several branded
  * fields share one children list, and each takes the elements of its type.
  * Elements of a registered primitive that match none of them fill the one
- * unbranded child slot from {@link PrimitiveDefinition.children}. A primitive with no brand still fills that slot, array or
+ * unbranded child slot from {@link PrimitiveDefinition.children}, or the one
+ * {@link fromNodeChildren} field. A primitive with no brand still fills that slot, array or
  * single node, from its children. That field is optional on the component's
  * props.
  */

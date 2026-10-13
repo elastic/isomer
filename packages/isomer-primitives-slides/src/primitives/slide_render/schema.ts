@@ -6,6 +6,7 @@
  */
 
 import { unresolvedBodyNodeSchema, z } from '@elastic/isomer-sdk';
+import { fromNodeChildren } from '@elastic/isomer-sdk/author';
 import type { ZodType } from 'zod';
 
 import { slideRenderSurfaces } from '../../theme/variants';
@@ -24,7 +25,9 @@ export const buildSchema = (bodyNodeSchema: ZodType<unknown>) =>
           'The host’s reference to the slide to embed, e.g. its slug. Until the host fills in `body`, a striped placeholder labeled with this reference stands in. A render needs `slide`, `body`, or both.'
         )
         .optional(),
-      body: embeddedBody(bodyNodeSchema, 'What to render.').optional(),
+      body: fromNodeChildren(
+        embeddedBody(bodyNodeSchema, 'What to render.')
+      ).optional(),
       surface: z
         .enum(slideRenderSurfaces)
         .describe(

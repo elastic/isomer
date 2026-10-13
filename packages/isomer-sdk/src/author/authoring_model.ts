@@ -66,7 +66,11 @@ export const createAuthoringModel = (
       continue;
     }
     const spec = readAuthoredSpec(schema);
-    if (spec.children.length === 0 && spec.text.length === 0) {
+    if (
+      spec.children.length === 0 &&
+      spec.text.length === 0 &&
+      !spec.nodes?.length
+    ) {
       continue;
     }
     authoredByType.set(type, spec);
@@ -88,7 +92,16 @@ export const createAuthoringModel = (
     typeByName.set(name, type);
   }
   const childSlotsByType = new Map(
-    primitives.map(({ type, children }) => [type, inferChildSlots(children)])
+    primitives.map(({ type, children }) => {
+      const walked = inferChildSlots(children);
+      const nodes = (authoredByType.get(type)?.nodes ?? []).filter(
+        ({ field }) => !walked.some((slot) => slot.field === field)
+      );
+      return [
+        type,
+        [...walked, ...nodes.map(({ array, field }) => ({ array, field }))],
+      ];
+    })
   );
   return { authoredByType, children, childSlotsByType };
 };
