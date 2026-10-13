@@ -357,6 +357,39 @@ describe('slackLimitProblems', () => {
     ]);
   });
 
+  it('checks rich text inside a table cell and a list', () => {
+    const deepList = {
+      type: 'rich_text_list' as const,
+      style: 'bullet' as const,
+      indent: SLACK_LIMITS.richTextListMaxIndent + 1,
+      elements: [
+        {
+          type: 'rich_text_section' as const,
+          elements: [
+            {
+              type: 'text' as const,
+              text: over(SLACK_LIMITS.sectionTextChars),
+            },
+          ],
+        },
+      ],
+    };
+    expect(
+      slackLimitProblems({
+        text: 'T',
+        blocks: [
+          {
+            type: 'table',
+            rows: [[{ type: 'rich_text', elements: [deepList] }]],
+          },
+        ],
+      })
+    ).toEqual([
+      `blocks[0] (table) rows[0][0] elements[0] indent has ${SLACK_LIMITS.richTextListMaxIndent + 1}; Slack allows ${SLACK_LIMITS.richTextListMaxIndent}.`,
+      `blocks[0] (table) rows[0][0] elements[0] elements[0] text has ${SLACK_LIMITS.sectionTextChars + 1} characters; Slack allows ${SLACK_LIMITS.sectionTextChars}.`,
+    ]);
+  });
+
   it('names the nested element that breaks a limit', () => {
     expect(
       slackLimitProblems({

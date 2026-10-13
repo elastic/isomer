@@ -9,6 +9,7 @@ import type {
   SlackActionElement,
   SlackBlock,
   SlackOptionObject,
+  SlackRichTextBlock,
   SlackRichTextBlockElement,
   SlackRichTextInline,
   SlackSectionAccessory,
@@ -176,16 +177,29 @@ const richTextProblems = (
   element: SlackRichTextBlockElement
 ): string[] =>
   element.type === 'rich_text_list'
-    ? overCount(
-        `${where} indent`,
-        element.indent ?? 0,
-        SLACK_LIMITS.richTextListMaxIndent
-      )
+    ? [
+        ...overCount(
+          `${where} indent`,
+          element.indent ?? 0,
+          SLACK_LIMITS.richTextListMaxIndent
+        ),
+        ...list(element.elements).flatMap((section, sectionIndex) =>
+          richTextProblems(`${where} elements[${sectionIndex}]`, section)
+        ),
+      ]
     : overLength(
         `${where} text`,
         richTextText(element),
         SLACK_LIMITS.sectionTextChars
       );
+
+const richTextBlockProblems = (
+  where: string,
+  { elements }: SlackRichTextBlock
+): string[] =>
+  list(elements).flatMap((element, elementIndex) =>
+    richTextProblems(`${where} elements[${elementIndex}]`, element)
+  );
 
 const blockProblems = (block: SlackBlock, index: number): string[] => {
   const where = `blocks[${index}] (${block.type})`;
@@ -281,9 +295,7 @@ const blockProblems = (block: SlackBlock, index: number): string[] => {
         ),
       ];
     case 'rich_text':
-      return list(block.elements).flatMap((element, elementIndex) =>
-        richTextProblems(`${where} elements[${elementIndex}]`, element)
-      );
+      return richTextBlockProblems(where, block);
     case 'table': {
       const rows = list(block.rows);
       return [
@@ -296,6 +308,14 @@ const blockProblems = (block: SlackBlock, index: number): string[] => {
             SLACK_LIMITS.tableColumns
           ),
           ...empty(`${where} rows[${rowIndex}] cells`, list(row).length),
+          ...list(row).flatMap((cell, cellIndex) =>
+            cell.type === 'rich_text'
+              ? richTextBlockProblems(
+                  `${where} rows[${rowIndex}][${cellIndex}]`,
+                  cell
+                )
+              : []
+          ),
         ]),
       ];
     }
