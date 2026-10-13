@@ -181,6 +181,35 @@ describe('HtmlSurface', () => {
 
     expect(frame.clientWidth).toBe(800);
   });
+
+  it('remeasures a widened frame when its container grows', () => {
+    let containerWidth = 800;
+    getter('clientWidth', (element) =>
+      Math.max(
+        containerWidth,
+        element instanceof HTMLElement
+          ? parseFloat(element.style.width) || 0
+          : 0
+      )
+    );
+
+    render(<HtmlSurface html="<div>min-width 1200</div>" title="Preview" />);
+    const frame = screen.getByTitle<HTMLIFrameElement>('Preview');
+    loadDocument(frame, 1200);
+    expect(frame.style.width).toBe('1200px');
+
+    const { parentElement } = frame;
+    if (!parentElement) {
+      throw new Error('No container.');
+    }
+    containerWidth = 1600;
+    act(() => {
+      FakeResizeObserver.resize(parentElement);
+    });
+
+    expect(frame.style.width).toBe('');
+    expect(frame.clientWidth).toBe(1600);
+  });
 });
 
 describe('ReactSurface', () => {

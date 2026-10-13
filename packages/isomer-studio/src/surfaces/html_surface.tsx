@@ -55,6 +55,10 @@ export const HtmlSurface = ({
       if (typeof ResizeObserver !== 'undefined') {
         observer = new ResizeObserver(update);
         observer.observe(body);
+        // A frame widened past its container no longer resizes with it.
+        if (element.parentElement) {
+          observer.observe(element.parentElement);
+        }
       }
     };
     element.addEventListener('load', measure);
