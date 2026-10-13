@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-13
+
+- **Slides docs examples validate**: `src/docs_examples.test.ts` evaluates every JSX example in the slides pack's `docs/` and validates it, and the `SlideCodeTrace` example splits its client call so each line fits its panel.
+
 ## 2026-10-12
 
 - **Code splits into one panel and a trace** (breaking): `slideCode` is one panel, flat: `file`, `language`, `lineNumbers`, and `text`, its source as dedented text children like `slideDiff`'s, replacing `panels` of `lines`. `slideCodeTrace` takes exactly two `SlideCodeTrace.Panel` children of that shape, each panel's text its source, joined by the arrow that traces a value from one file to the next. Both keep the panel's checks (at most `codeMaxLines` lines, line feeds only, no tabs, highlights the gutter shows) and the width check for one or two panels. `SlideCodeTraceNode` is exported. `src/primitives/source_text.ts` is removed; the SDK's `dedent` reads the source.

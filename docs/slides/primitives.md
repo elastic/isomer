@@ -371,7 +371,11 @@ Code keeps its whitespace. A command is its text. A `SlideCode`'s text is its so
     `}
   </SlideCodeTrace.Panel>
   <SlideCodeTrace.Panel file="client.ts" language="ts" lineNumbers={{ start: 41 }}>
-    {'createClient({ timeout: config.checkout.timeout });'}
+    {`
+      createClient({
+        timeout: config.checkout.timeout,
+      });
+    `}
   </SlideCodeTrace.Panel>
 </SlideCodeTrace>
 
