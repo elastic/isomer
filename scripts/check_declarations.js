@@ -9,6 +9,7 @@ import { existsSync, globSync, readFileSync } from 'node:fs';
 import { builtinModules } from 'node:module';
 import { dirname, relative, resolve, sep } from 'node:path';
 
+import { isPackedFile } from './packed_files.js';
 import { specifiersIn } from './specifiers.js';
 import { workspacePackages } from './workspace_packages.js';
 
@@ -39,7 +40,15 @@ for (const pkg of workspacePackages()) {
     ...Object.keys(pkg.manifest.optionalDependencies ?? {}),
   ]);
 
-  for (const file of globSync('**/*.{js,d.ts}', { cwd: distDir })) {
+  // `packedFiles` are self-contained bundles, not `tsc` output.
+  const emitted = globSync('**/*.{js,d.ts}', { cwd: distDir }).filter(
+    (file) =>
+      !isPackedFile(
+        `dist/${file.split(sep).join('/')}`,
+        pkg.manifest.isomer?.packedFiles
+      )
+  );
+  for (const file of emitted) {
     const absolute = resolve(distDir, file);
     for (const specifier of specifiersIn(readFileSync(absolute, 'utf-8'))) {
       if (specifier.startsWith('.')) {

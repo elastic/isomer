@@ -14,7 +14,7 @@
 
 const { resolve } = require('node:path');
 
-/** The workspace manifests, serialized by check_exports.js. */
+/** The manifests of every workspace package with a CommonJS build, serialized by check_exports.js. */
 const workspacePackages = JSON.parse(process.argv[2] ?? '[]');
 
 const exportSpecifier = (packageName, key) =>

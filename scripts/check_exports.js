@@ -9,7 +9,7 @@ import { execFileSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { workspacePackages } from './workspace_packages.js';
+import { isEsmOnly, workspacePackages } from './workspace_packages.js';
 
 const exportSpecifier = (packageName, key) =>
   key === '.' ? packageName : `${packageName}/${key.slice(2)}`;
@@ -37,6 +37,11 @@ const cjsCheck = resolve(
 );
 execFileSync(
   process.execPath,
-  [cjsCheck, JSON.stringify(workspacePackages())],
+  [
+    cjsCheck,
+    JSON.stringify(
+      workspacePackages().filter(({ manifest }) => !isEsmOnly(manifest))
+    ),
+  ],
   { stdio: 'inherit' }
 );
