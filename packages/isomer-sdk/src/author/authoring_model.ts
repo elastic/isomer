@@ -112,16 +112,21 @@ export const createAuthoringModel = (
     }
     typeByName.set(name, type);
   }
-  const primitiveTypes = new Set(primitives.map(({ type }) => type));
+  const holderByType = new Map(
+    primitives.map(({ type }) => [type, `the primitive "${type}"`])
+  );
   for (const { authorType, primitiveType, member } of [
     ...membersByType.values(),
   ].flat()) {
-    if (primitiveTypes.has(authorType)) {
+    const holder = `the member ${member} of "${primitiveType}"`;
+    const earlier = holderByType.get(authorType);
+    if (earlier !== undefined) {
       throw new IsomerError(
         'DUPLICATE_PRIMITIVE_TYPE',
-        `buildJsxShim: the primitive "${authorType}" and <${capitalize(primitiveType)}.${member}> share one type`
+        `buildJsxShim: ${earlier} and ${holder} share the type "${authorType}"`
       );
     }
+    holderByType.set(authorType, holder);
   }
   const childSlotsByType = new Map(
     primitives.map(({ type, children }) => {

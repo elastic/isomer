@@ -727,7 +727,24 @@ describe('buildJsxShim', () => {
       expect.objectContaining({
         code: 'DUPLICATE_PRIMITIVE_TYPE',
         message:
-          'buildJsxShim: the primitive "group.Item" and <Group.Item> share one type',
+          'buildJsxShim: the primitive "group.Item" and the member Item of "group" share the type "group.Item"',
+      })
+    );
+  });
+
+  it('throws when members of two primitives share a type', () => {
+    const items = (name: string) =>
+      fromChildren(name, z.array(z.object({ label: z.string() })));
+    expect(() =>
+      buildJsxShim([
+        brandedGroup(items('sub.Item')),
+        { ...brandedGroup(items('item')), type: 'group.Sub' as const },
+      ])
+    ).toThrow(
+      expect.objectContaining({
+        code: 'DUPLICATE_PRIMITIVE_TYPE',
+        message:
+          'buildJsxShim: the member Sub.Item of "group" and the member Item of "group.Sub" share the type "group.Sub.Item"',
       })
     );
   });
