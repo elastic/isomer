@@ -29,28 +29,31 @@ import type { SlideFrameNode } from './types';
 import { displayFrameUrl, sanitizeFrameUrl } from './url';
 
 export { SlideFrameView } from './react';
-export type { SlideFrameNode } from './types';
+export type { SlideFooter, SlideFrameNode } from './types';
 
 const separator = ` ${slideDistillery.tokens.frame.separator.value} `;
 
-const footerParts = ({
-  brand,
-  section,
-  sectionNumber,
-}: SlideFrameNode): string[] =>
-  [brand, [sectionNumber, section].filter(Boolean).join(' ')].filter(
-    (part): part is string => Boolean(part)
-  );
+const footerParts = (footer: SlideFrameNode['footer']): string[] =>
+  footer
+    ? [
+        footer.brand,
+        [footer.sectionNumber, footer.section].filter(Boolean).join(' '),
+      ].filter((part): part is string => Boolean(part))
+    : [];
 
 const footerText = (node: SlideFrameNode): string =>
-  [...footerParts(node), ...(node.url ? [displayFrameUrl(node.url)] : [])]
+  [
+    ...footerParts(node.footer),
+    ...(node.footer?.url ? [displayFrameUrl(node.footer.url)] : []),
+  ]
     .map(oneLine)
     .join(separator);
 
 const footerMarkdown = (node: SlideFrameNode) => {
+  const url = node.footer?.url;
   const parts: MarkdownInlineInput[] = [
-    ...footerParts(node),
-    ...(node.url ? [md.link(displayFrameUrl(node.url), node.url)] : []),
+    ...footerParts(node.footer),
+    ...(url ? [md.link(displayFrameUrl(url), url)] : []),
   ];
   return parts.length === 0
     ? []
@@ -66,7 +69,10 @@ const footerMarkdown = (node: SlideFrameNode) => {
 };
 
 /** Catalog, schema, and renderers for {@link SlideFrameNode}. */
-export const slideFramePrimitive = definePrimitive<SlideFrameNode>({
+export const slideFramePrimitive = definePrimitive<
+  SlideFrameNode,
+  typeof schema
+>({
   type: 'slideFrame',
   catalog,
   icon,
@@ -99,15 +105,16 @@ export const slideFramePrimitive = definePrimitive<SlideFrameNode>({
     })),
   hasOwnContent: () => true,
   sanitize: (node) => {
-    if (node.url === undefined) {
+    const authored = node.footer?.url;
+    if (authored === undefined || !node.footer) {
       return node;
     }
-    const url = sanitizeFrameUrl(node.url);
+    const url = sanitizeFrameUrl(authored);
     if (url) {
-      return { ...node, url };
+      return { ...node, footer: { ...node.footer, url } };
     }
-    const { url: _dropped, ...rest } = node;
-    return rest;
+    const { url: _dropped, ...footer } = node.footer;
+    return { ...node, footer };
   },
   metrics: {
     snapshotHeight: () => scalePx(SLIDE_THEME.frame.height),

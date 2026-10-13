@@ -7,6 +7,7 @@
 
 import { buildAuthoringPrompt } from '@elastic/isomer-sdk/author';
 
+import { mapWithConcurrency, mean } from './concurrency';
 import {
   scoreAnswerability,
   scorePayload,
@@ -28,33 +29,6 @@ import type {
 
 const DEFAULT_GUIDE =
   'Answer the request with a single composition. Prefer one primitive that says the whole thing over several that each say part of it.';
-
-const mean = (values: readonly number[]): number | undefined =>
-  values.length === 0
-    ? undefined
-    : values.reduce((sum, n) => sum + n, 0) / values.length;
-
-/** Runs `fn` over `items` with at most `limit` in flight at once. */
-const mapWithConcurrency = async <T, R>(
-  items: readonly T[],
-  limit: number,
-  fn: (item: T) => Promise<R>
-): Promise<R[]> => {
-  const results: R[] = new Array<R>(items.length);
-  let cursor = 0;
-  const workers = Array.from(
-    { length: Math.max(1, Math.min(limit, items.length)) },
-    async () => {
-      while (cursor < items.length) {
-        const index = cursor;
-        cursor += 1;
-        results[index] = await fn(items[index]!);
-      }
-    }
-  );
-  await Promise.all(workers);
-  return results;
-};
 
 /**
  * Scores a corpus against a pack's authoring context.

@@ -7,9 +7,9 @@
 
 import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 
-const inverseTypes = new Set(['slideClosing', 'slideSection', 'slideTitle']);
+const inverseTypes = new Set(['closingSlide', 'sectionSlide', 'titleSlide']);
 /** Page slides that open without a heading. */
-const openerTypes = new Set(['slideQuote', 'slideStatement']);
+const openerTypes = new Set(['quoteSlide', 'statementSlide']);
 
 /** The footer every preview frame carries. */
 export const previewFooter = {
@@ -29,7 +29,7 @@ export const previewSlide = (node: PrimitiveNode): Composition => ({
       ? node
       : ({
           type: 'slideFrame',
-          ...previewFooter,
+          footer: previewFooter,
           tone: inverseTypes.has(node.type) ? 'inverse' : 'page',
           body:
             inverseTypes.has(node.type) || openerTypes.has(node.type)

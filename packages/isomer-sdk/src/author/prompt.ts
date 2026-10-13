@@ -7,7 +7,10 @@
 
 import { oneLine } from '../composition/one_line';
 import type { PrimitiveCatalogEntry } from '../define/primitive_module';
-import type { PrimitiveGroup } from '../pack/primitive_pack';
+import {
+  type PrimitiveGroup,
+  UNCATEGORIZED_GROUP_TITLE,
+} from '../pack/primitive_pack';
 
 type JsonSchema = Record<string, unknown>;
 
@@ -47,7 +50,7 @@ export interface AuthoringPromptContext {
   primitives: readonly PrimitiveCatalogEntry[];
   /** `'index'` lists each primitive's type and purpose only, for a host that serves the rest on request. */
   catalog?: 'full' | 'index';
-  /** Headings an index sorts primitives under; a type in none is listed under "Other". */
+  /** Headings an index sorts primitives under; a type in none is listed under {@link UNCATEGORIZED_GROUP_TITLE}. */
   groups?: readonly PrimitiveGroup[];
   /**
    * Extra host-supplied compositions beyond each primitive's catalog example.
@@ -64,6 +67,10 @@ export interface AuthoringPromptContext {
 
 const COMPOSE_INTRO_WITHOUT_SCHEMA =
   'You compose views from scratch. Build a single JSON object that answers the question using only the primitives in the catalog below.';
+
+/** The root shape, which a prompt without the composition schema shows nowhere else. */
+const VIEW_ENVELOPE =
+  'A view is `{"type":"view","body":[…]}`: primitives go in `body`, and a primitive is never the view itself.';
 
 const INDEX_INTRO =
   'Each primitive is listed by type and purpose. Before using one, request its catalog entry and JSON Schema by type; compose only from primitives whose details you have.';
@@ -157,7 +164,7 @@ const renderIndex = (
       entries: types.flatMap((type) => byType.get(type) ?? []),
     })),
     {
-      title: 'Other',
+      title: UNCATEGORIZED_GROUP_TITLE,
       entries: primitives.filter(({ type }) => !grouped.has(type)),
     },
   ];
@@ -223,7 +230,9 @@ export const buildAuthoringPrompt = (
       : PROFILE_INTROS[profile];
   const sections = [
     context.heading ?? '# View authoring',
-    context.intro ?? intro,
+    schema === undefined
+      ? `${context.intro ?? intro} ${VIEW_ENVELOPE}`
+      : (context.intro ?? intro),
     `## Guide\n\n${context.guide}`,
   ];
   if (context.rules !== undefined && context.rules.length > 0) {

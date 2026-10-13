@@ -12,6 +12,7 @@ import {
   ISOMER_AUTHORING_GUIDE_URI,
   ISOMER_COMPOSE_PROMPT,
   ISOMER_COMPOSITION_SCHEMA_URI,
+  ISOMER_TOOL_NAMES,
 } from './names';
 import type { IsomerGuideOptions, IsomerPrompt, IsomerResource } from './types';
 
@@ -32,11 +33,9 @@ export const createIsomerResources = (
     name: 'isomer-composition-schema',
     uri: ISOMER_COMPOSITION_SCHEMA_URI,
     title: 'Composition JSON Schema',
-    description:
-      'The whole authoring JSON Schema for a composition, every primitive included.',
+    description: `The whole authoring JSON Schema for a composition, every primitive included. It is large: read the guide's index, then \`${ISOMER_TOOL_NAMES.describePrimitives}\` for the primitives you use.`,
     mimeType: 'application/json',
-    read: () =>
-      JSON.stringify(options.runtime.getAuthoringContext().schema, null, 2),
+    read: () => JSON.stringify(options.runtime.getAuthoringContext().schema),
   },
 ];
 

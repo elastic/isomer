@@ -5,6 +5,25 @@
  * 2.0.
  */
 
+export { formatAgentReport } from './agent_report';
+export { runAgentEvals } from './agent_run';
+export type {
+  AgentEvalCall,
+  AgentEvalCase,
+  AgentEvalCaseResult,
+  AgentEvalFrame,
+  AgentEvalReport,
+  AgentEvalTool,
+  AgentMessage,
+  AgentStep,
+  AgentStepRequest,
+  AgentStepResult,
+  AgentToolCall,
+  AgentToolResult,
+  AgentToolSpec,
+  AgentUsage,
+  RunAgentEvalsOptions,
+} from './agent_types';
 export { formatReport } from './report';
 export { runEvals } from './run';
 export {
@@ -12,6 +31,7 @@ export {
   checkComposition,
   parseGenerated,
   scoreAnswerability,
+  scoreExpectedPrimitives,
   scorePayload,
   scorePrimitiveSelection,
   scoreValidity,

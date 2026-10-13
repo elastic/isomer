@@ -53,52 +53,54 @@ const richLegend = (pins: readonly SlideAnnotatedRenderPin[]): SlackBlock =>
   });
 
 /** Catalog, schema, and renderers for {@link SlideAnnotatedRenderNode}. */
-export const slideAnnotatedRenderPrimitive =
-  definePrimitive<SlideAnnotatedRenderNode>({
-    type: 'slideAnnotatedRender',
-    catalog,
-    icon,
-    examples,
-    schema,
-    schemaFor: (bodyNodeSchema: ZodType<unknown>) =>
-      buildSchema(slideRenderPrimitive.schemaFor!(bodyNodeSchema)),
-    renderers: {
-      react,
-      text: ({ render, pins }, { scope }) =>
-        [
-          scope.renderText(render),
-          pins
-            .map(
-              ({ title, body }, index) =>
-                `${index + 1}. ${oneLine(title)}${dash}${plainText(body)}`
-            )
-            .join('\n'),
-        ]
-          .filter(Boolean)
-          .join('\n\n'),
-      markdown: ({ render, pins }, { scope }) => [
-        scope.renderMarkdownContent(render),
-        md.list(
-          pins.map(({ title, body }) =>
-            md.paragraph(md.strong(title), dash, ...marksMarkdown(body))
-          ),
-          { ordered: true }
+export const slideAnnotatedRenderPrimitive = definePrimitive<
+  SlideAnnotatedRenderNode,
+  typeof schema
+>({
+  type: 'slideAnnotatedRender',
+  catalog,
+  icon,
+  examples,
+  schema,
+  schemaFor: (bodyNodeSchema: ZodType<unknown>) =>
+    buildSchema(slideRenderPrimitive.schemaFor!(bodyNodeSchema)),
+  renderers: {
+    react,
+    text: ({ render, pins }, { scope }) =>
+      [
+        scope.renderText(render),
+        pins
+          .map(
+            ({ title, body }, index) =>
+              `${index + 1}. ${oneLine(title)}${dash}${plainText(body)}`
+          )
+          .join('\n'),
+      ]
+        .filter(Boolean)
+        .join('\n\n'),
+    markdown: ({ render, pins }, { scope }) => [
+      scope.renderMarkdownContent(render),
+      md.list(
+        pins.map(({ title, body }) =>
+          md.paragraph(md.strong(title), dash, ...marksMarkdown(body))
         ),
-      ],
-      slack: ({ render, pins }, { collector, scope }) => [
-        ...scope.renderSlack(render, collector),
-        slackSection(
-          pins
-            .map(
-              ({ title, body }, index) =>
-                `${index + 1}. ${slackBold(title)}${dash}${oneLine(marksSlack(body))}`
-            )
-            .join('\n'),
-          () => richLegend(pins),
-          pins.flatMap(({ title, body }) => [title, { marks: body }])
-        ),
-      ],
-    },
-    children: ({ render }) => [{ node: render, path: 'render' }],
-    hasOwnContent: () => true,
-  });
+        { ordered: true }
+      ),
+    ],
+    slack: ({ render, pins }, { collector, scope }) => [
+      ...scope.renderSlack(render, collector),
+      slackSection(
+        pins
+          .map(
+            ({ title, body }, index) =>
+              `${index + 1}. ${slackBold(title)}${dash}${oneLine(marksSlack(body))}`
+          )
+          .join('\n'),
+        () => richLegend(pins),
+        pins.flatMap(({ title, body }) => [title, { marks: body }])
+      ),
+    ],
+  },
+  children: ({ render }) => [{ node: render, path: 'render' }],
+  hasOwnContent: () => true,
+});

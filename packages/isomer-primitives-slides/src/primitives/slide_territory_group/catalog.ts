@@ -7,15 +7,12 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
-import type { SlideGroup } from '../../groups';
-
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideTerritoryGroupNode}. */
 export const catalog = {
   type: 'slideTerritoryGroup',
   name: 'Territory group',
-  group: 'Diagrams',
   purpose:
     'Show who owns what, so the audience knows which side is responsible for each part.',
   useWhen: [
@@ -23,10 +20,10 @@ export const catalog = {
     'Each owner fits a short title and one or two sentences.',
   ],
   avoidWhen: [
-    'Two sides each hold a list of items, with a divider between; use slideSplit.',
+    'Two sides each hold a list of items, with a divider between; use slideSplitLayout.',
     'Ownership is not the point of the slide; use slideBulletList.',
     'The columns are options to choose between, not owners; use slideColumns.',
     'The owned parts stack in order, each resting on the one below; use slideLayers.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry<SlideGroup>;
+} satisfies PrimitiveCatalogEntry;

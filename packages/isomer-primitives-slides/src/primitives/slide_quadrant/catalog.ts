@@ -7,15 +7,12 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
-import type { SlideGroup } from '../../groups';
-
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideQuadrantNode}. */
 export const catalog = {
   type: 'slideQuadrant',
   name: 'Quadrant',
-  group: 'Data',
   purpose:
     'Sort a handful of things by two qualities at once, so the audience sees which group each one falls in.',
   useWhen: [
@@ -28,4 +25,4 @@ export const catalog = {
     'The options fall into groups without two axes behind them; use slideColumns.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry<SlideGroup>;
+} satisfies PrimitiveCatalogEntry;

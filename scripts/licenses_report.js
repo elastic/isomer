@@ -127,8 +127,8 @@ const CURATED_LICENSES = [
   },
   {
     names: ROLLDOWN_PLATFORM_PACKAGE_NAMES,
-    version: '1.2.8',
-    text: curatedLicense('rolldown-1.2.8-MIT.txt'),
+    version: '1.2.13',
+    text: curatedLicense('rolldown-1.2.13-MIT.txt'),
   },
   {
     names: LIGHTNINGCSS_PLATFORM_PACKAGE_NAMES,

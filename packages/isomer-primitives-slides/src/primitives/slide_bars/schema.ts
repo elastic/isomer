@@ -7,6 +7,7 @@
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
+import { fromChildren } from '@elastic/isomer-sdk/author';
 
 import { lineText } from '../authored_text';
 import { crossRefine } from '../cross_field';
@@ -47,13 +48,17 @@ const maxBars = 6;
 export const schema = z
   .object({
     type: z.literal('slideBars'),
-    items: z
-      .array(itemSchema)
-      .min(2)
-      .max(maxBars)
-      .describe(
-        'Bars top to bottom, usually largest first. 2 to 6, all in the same unit.'
-      ),
+    items: fromChildren(
+      'bar',
+      z
+        .array(itemSchema)
+        .min(2)
+        .max(maxBars)
+        .describe(
+          'Bars top to bottom, usually largest first. 2 to 6, all in the same unit.'
+        ),
+      { text: 'label' }
+    ),
     max: z
       .number()
       .positive()

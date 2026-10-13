@@ -301,12 +301,12 @@ export const buildAuthoringDeclarations = (
       const node = resolveNode(defs, ownDef(defs, type));
       const spec = model.authoredByType.get(type);
       const slots = model.childSlotsByType.get(type) ?? [];
-      const [slot] = slots;
-      const filled = spec
+      const branded = spec
         ? [...spec.children, ...spec.text].map(({ field }) => field)
-        : slots.length === 1 && slot
-          ? [slot.field]
-          : [];
+        : [];
+      const unbranded = slots.filter(({ field }) => !branded.includes(field));
+      const slotField = unbranded.length === 1 ? [unbranded[0]!.field] : [];
+      const filled = [...branded, ...slotField];
       declareComponent(
         capitalize(type),
         node,

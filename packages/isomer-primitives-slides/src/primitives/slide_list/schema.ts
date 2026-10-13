@@ -7,6 +7,7 @@
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
+import { fromChildren } from '@elastic/isomer-sdk/author';
 
 import { lineText, wrappedText } from '../authored_text';
 
@@ -32,11 +33,15 @@ export const schema = z
     label: lineText()
       .describe('Uppercase caption above the list, in a few words.')
       .optional(),
-    items: z
-      .array(itemSchema)
-      .min(1)
-      .max(6)
-      .describe('Facts, top to bottom. 1 to 6.'),
+    items: fromChildren(
+      'listItem',
+      z
+        .array(itemSchema)
+        .min(1)
+        .max(6)
+        .describe('Facts, top to bottom. 1 to 6.'),
+      { text: 'body' }
+    ),
     footnote: wrappedText()
       .describe(
         'One or two sentences under the list that qualify every row. `code` and `**strong**` marks are allowed.'

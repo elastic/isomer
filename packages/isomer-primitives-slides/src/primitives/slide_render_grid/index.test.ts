@@ -122,7 +122,11 @@ describe('slideRenderGrid', () => {
     const node = {
       ...pairExample,
       body: [
-        { type: 'slideStatement', text: 'Drawn only', surfaces: ['snapshot'] },
+        {
+          type: 'statementSlide',
+          text: 'Drawn only',
+          surfaces: ['snapshot'],
+        },
       ],
     };
     expect(runtime.surfaces.text.renderNode(node as PrimitiveNode)).toBe(

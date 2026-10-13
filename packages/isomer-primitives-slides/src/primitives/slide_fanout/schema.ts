@@ -7,6 +7,7 @@
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
+import { fromChildren } from '@elastic/isomer-sdk/author';
 
 import { lineText, wrappedText } from '../authored_text';
 import { slideToneSchema } from '../tone_schema';
@@ -36,13 +37,17 @@ export const schema = z
     source: lineText().describe(
       'The one thing every target receives, set in mono, e.g. `OrderPlaced`. One or two words.'
     ),
-    targets: z
-      .array(targetSchema)
-      .min(2)
-      .max(6)
-      .describe(
-        'Where the source goes, top to bottom. Unordered: none runs before another. 2–6 targets.'
-      ),
+    targets: fromChildren(
+      'fanoutTarget',
+      z
+        .array(targetSchema)
+        .min(2)
+        .max(6)
+        .describe(
+          'Where the source goes, top to bottom. Unordered: none runs before another. 2–6 targets.'
+        ),
+      { text: 'body' }
+    ),
   })
   .strict();
 

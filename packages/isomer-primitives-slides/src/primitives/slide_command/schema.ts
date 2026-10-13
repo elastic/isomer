@@ -7,6 +7,7 @@
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
+import { fromTextChildren } from '@elastic/isomer-sdk/author';
 
 import { hasLineTerminator } from '../../render/marks';
 import { displayColumns } from '../../render/mono';
@@ -30,8 +31,11 @@ export const schema = z
         'A few words above the panel saying what the command does, e.g. "Install".'
       )
       .optional(),
-    command: lineText().describe(
-      `One shell command on one line, without the \`${commandTheme.prompt.value}\` prompt; the slide draws that. Separate words with spaces rather than tabs. It holds ${commandMaxColumns} columns on a full-width slide, a wide glyph such as CJK or an emoji counting as two; a narrower column holds fewer, and a longer command is clipped.`
+    command: fromTextChildren(
+      lineText().describe(
+        `One shell command on one line, without the \`${commandTheme.prompt.value}\` prompt; the slide draws that. Separate words with spaces rather than tabs. It holds ${commandMaxColumns} columns on a full-width slide, a wide glyph such as CJK or an emoji counting as two; a narrower column holds fewer, and a longer command is clipped.`
+      ),
+      { collapseWhitespace: false }
     ),
     highlightPrefix: lineText()
       .describe(

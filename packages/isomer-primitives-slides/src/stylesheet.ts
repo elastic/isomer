@@ -5,11 +5,13 @@
  * 2.0.
  */
 
-import { agendaModule } from './primitives/slide_agenda/styles';
+import { agendaModule } from './primitives/agenda_slide/styles';
+import { closingModule } from './primitives/closing_slide/styles';
+import { quoteModule } from './primitives/quote_slide/styles';
+import { sectionModule } from './primitives/section_slide/styles';
 import { annotatedRenderModule } from './primitives/slide_annotated_render/styles';
 import { barsModule } from './primitives/slide_bars/styles';
 import { bulletsModule } from './primitives/slide_bullet_list/styles';
-import { closingModule } from './primitives/slide_closing/styles';
 import { codeModule } from './primitives/slide_code/styles';
 import { columnsModule } from './primitives/slide_columns/styles';
 import { commandModule } from './primitives/slide_command/styles';
@@ -26,25 +28,23 @@ import { listModule } from './primitives/slide_list/styles';
 import { matrixModule } from './primitives/slide_matrix/styles';
 import { pipelineModule } from './primitives/slide_pipeline/styles';
 import { quadrantModule } from './primitives/slide_quadrant/styles';
-import { quoteModule } from './primitives/slide_quote/styles';
 import { renderModule } from './primitives/slide_render/styles';
 import { renderGridModule } from './primitives/slide_render_grid/styles';
 import { roadmapModule } from './primitives/slide_roadmap/styles';
-import { sectionModule } from './primitives/slide_section/styles';
 import { sequenceModule } from './primitives/slide_sequence/styles';
 import { sourceModule } from './primitives/slide_source/styles';
-import { splitModule } from './primitives/slide_split/styles';
-import { stackModule } from './primitives/slide_stack/styles';
+import { splitModule } from './primitives/slide_split_layout/styles';
+import { stackModule } from './primitives/slide_stack_layout/styles';
 import { statModule } from './primitives/slide_stat/styles';
-import { statementModule } from './primitives/slide_statement/styles';
 import { statsModule } from './primitives/slide_stats/styles';
 import { tableModule } from './primitives/slide_table/styles';
 import { territoryModule } from './primitives/slide_territory_group/styles';
 import { timelineModule } from './primitives/slide_timeline/styles';
-import { titleModule } from './primitives/slide_title/styles';
 import { transcriptModule } from './primitives/slide_transcript/styles';
 import { treeModule } from './primitives/slide_tree/styles';
-import { windowModule } from './primitives/slide_window/styles';
+import { windowModule } from './primitives/slide_window_layout/styles';
+import { statementModule } from './primitives/statement_slide/styles';
+import { titleModule } from './primitives/title_slide/styles';
 import { slideDistillery } from './theme/distillery';
 import {
   connectorModule,

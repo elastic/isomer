@@ -14,13 +14,13 @@ import { slideDeckPrimitives } from './registry';
 const {
   Composition,
   SlideCode,
-  SlideTerritory,
+  Territory,
   SlideTerritoryGroup,
   toComposition,
 } = buildJsxShim(slideDeckPrimitives);
 
 describe('slide authoring', () => {
-  it('maps SlideTerritory children onto items', () => {
+  it('maps Territory children onto items', () => {
     const spec = toComposition(
       createElement(
         Composition,
@@ -29,7 +29,7 @@ describe('slide authoring', () => {
           SlideTerritoryGroup,
           null,
           createElement(
-            SlideTerritory,
+            Territory,
             { title: 'Host', tone: 'accent' },
             'Owns routing.'
           )

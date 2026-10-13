@@ -7,15 +7,12 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
-import type { SlideGroup } from '../../groups';
-
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideLanesNode}. */
 export const catalog = {
   type: 'slideLanes',
   name: 'Lanes',
-  group: 'Diagrams',
   description: 'Exactly two lanes that converge on join.',
   purpose:
     'Contrast two different routes to the same destination, so the audience sees where they differ and where they meet.',
@@ -26,8 +23,8 @@ export const catalog = {
   avoidWhen: [
     'There is only one path; use slidePipeline.',
     'One source feeds many targets instead of two feeding one; use slideFanout.',
-    'The two sides are opposing claims rather than routes; use slideSplit.',
+    'The two sides are opposing claims rather than routes; use slideSplitLayout.',
     'Participants send messages back and forth rather than following a path; use slideSequence.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry<SlideGroup>;
+} satisfies PrimitiveCatalogEntry;

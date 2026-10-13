@@ -7,6 +7,7 @@
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
+import { fromChildren } from '@elastic/isomer-sdk/author';
 
 import { graphMaxMain } from '../../theme/components/graph';
 import { lineText, wrappedText } from '../authored_text';
@@ -50,13 +51,17 @@ const nodeSchema = z
 export const schema = z
   .object({
     type: z.literal('slideGraph'),
-    nodes: z
-      .array(nodeSchema)
-      .min(2)
-      .max(maxNodes)
-      .describe(
-        `2–${maxNodes} named concepts. Nodes without \`placement\` form the main row, left to right in array order (2–${graphMaxMain} of them). Add at most one \`placement: "above"\` and one \`placement: "below"\` node.`
-      ),
+    nodes: fromChildren(
+      'graphNode',
+      z
+        .array(nodeSchema)
+        .min(2)
+        .max(maxNodes)
+        .describe(
+          `2–${maxNodes} named concepts. Nodes without \`placement\` form the main row, left to right in array order (2–${graphMaxMain} of them). Add at most one \`placement: "above"\` and one \`placement: "below"\` node.`
+        ),
+      { text: 'body' }
+    ),
     edges: z
       .array(
         z

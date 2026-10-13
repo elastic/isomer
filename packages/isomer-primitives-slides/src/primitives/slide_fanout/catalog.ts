@@ -7,20 +7,17 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
-import type { SlideGroup } from '../../groups';
-
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideFanoutNode}. */
 export const catalog = {
   type: 'slideFanout',
   name: 'Fan-out',
-  group: 'Diagrams',
   purpose:
     'Show one thing going to several destinations at once, and what each one does with it.',
   useWhen: [
     'One event, request, or artifact reaches several consumers independently.',
-    'Beside a slideTitle, to show what the subject feeds.',
+    'Beside a titleSlide, to show what the subject feeds.',
   ],
   avoidWhen: [
     'The steps happen in order; use slidePipeline.',
@@ -30,4 +27,4 @@ export const catalog = {
     'The targets need more than a line each; use slideColumns.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry<SlideGroup>;
+} satisfies PrimitiveCatalogEntry;

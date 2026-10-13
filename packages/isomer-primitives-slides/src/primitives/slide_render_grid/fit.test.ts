@@ -22,7 +22,7 @@ const captioned = (caption: string) => ({
 });
 
 const inPane = (node: object) => ({
-  type: 'slideSplit',
+  type: 'slideSplitLayout',
   panes: [
     { label: 'Pane', items: [node] },
     { items: [{ type: 'slideBulletList', items: ['One', 'Two'] }] },

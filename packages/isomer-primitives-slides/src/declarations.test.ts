@@ -61,7 +61,7 @@ describe('the slides pack authoring declarations', () => {
   it('declare every primitive as a node type, with its catalog text as JSDoc', () => {
     expect(declarations).toContain('interface SlideStatsNode {');
     expect(declarations).toContain('Use when:');
-    expect(declarations).toContain('type BodyNode =\n    | SlideAgendaNode');
+    expect(declarations).toContain('type BodyNode =\n    | AgendaSlideNode');
   });
 
   it('compile on their own', () => {
@@ -72,12 +72,13 @@ describe('the slides pack authoring declarations', () => {
     const use = `
       const deck = (
         <Composition title="Ownership">
-          <SlideFrame brand="Isomer" tone="page">
+          <SlideFrame tone="page">
+            <SlideFooter brand="Isomer" />
             <SlideHeading title="Who owns what" />
             <SlideTerritoryGroup>
-              <SlideTerritory title="Us" tone="primary">
+              <Territory title="Us" tone="primary">
                 We own the contract.
-              </SlideTerritory>
+              </Territory>
             </SlideTerritoryGroup>
           </SlideFrame>
         </Composition>
@@ -98,7 +99,7 @@ describe('the slides pack authoring declarations', () => {
       diagnostics({
         '/virtual/isomer.d.ts': declarations,
         '/virtual/use.tsx':
-          '<SlideTranscript><SlideTurn role={42}>hello</SlideTurn></SlideTranscript>;',
+          '<SlideTranscript><TranscriptTurn role={42}>hello</TranscriptTurn></SlideTranscript>;',
       })
     ).toHaveLength(1);
   });

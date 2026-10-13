@@ -7,15 +7,12 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
-import type { SlideGroup } from '../../groups';
-
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideRenderNode}. */
 export const catalog = {
   type: 'slideRender',
   name: 'Render',
-  group: 'Renders',
   description:
     'One render. Needs a `slide` reference or a `body`; the body holds whole slides but never another render.',
   purpose:
@@ -26,9 +23,9 @@ export const catalog = {
   ],
   avoidWhen: [
     'The same content should appear on several surfaces side by side; use slideRenderGrid.',
-    'You are showing where output lands (a chat, a terminal) and will author its content as nodes; use slideWindow.',
+    'You are showing where output lands (a chat, a terminal) and will author its content as nodes; use slideWindowLayout.',
     'You are showing the source, not its output; use slideCode.',
     'You want to point at parts of the render and explain each one; use slideAnnotatedRender.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry<SlideGroup>;
+} satisfies PrimitiveCatalogEntry;

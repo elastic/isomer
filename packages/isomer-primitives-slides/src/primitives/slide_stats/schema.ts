@@ -7,6 +7,7 @@
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
+import { fromChildren } from '@elastic/isomer-sdk/author';
 
 import {
   figureRule,
@@ -55,11 +56,17 @@ export type SlideStatsItem = z.infer<typeof statSchema>;
 export const schema = z
   .object({
     type: z.literal('slideStats'),
-    items: z
-      .array(statSchema)
-      .min(2)
-      .max(4)
-      .describe('Numbers to compare, left to right, in equal columns. 2 to 4.'),
+    items: fromChildren(
+      'stat',
+      z
+        .array(statSchema)
+        .min(2)
+        .max(4)
+        .describe(
+          'Numbers to compare, left to right, in equal columns. 2 to 4.'
+        ),
+      { text: 'body' }
+    ),
     size: sizeField(),
   })
   .strict();

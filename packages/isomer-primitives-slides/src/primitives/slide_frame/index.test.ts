@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
 import type { SlideReactEnv } from '../../render/context';
-import { example as titleExample } from '../slide_title/examples';
+import { example as titleExample } from '../title_slide/examples';
 
 import { react } from './react';
 import type { SlideFrameNode } from './types';
@@ -37,12 +37,20 @@ const footer = (frame: Omit<SlideFrameNode, 'type' | 'body'>): string => {
 
 describe('slideFrame footer', () => {
   it('draws the mark beside the footer of a frame with no section', () => {
-    expect(footer({ tone: 'inverse', brand: 'Ledger' })).toContain('<svg');
+    expect(footer({ tone: 'inverse', footer: { brand: 'Ledger' } })).toContain(
+      '<svg'
+    );
   });
 
   it('draws the mark beside a section footer too', () => {
     expect(
-      footer({ brand: 'Ledger', section: 'Settlement', sectionNumber: '02' })
+      footer({
+        footer: {
+          brand: 'Ledger',
+          section: 'Settlement',
+          sectionNumber: '02',
+        },
+      })
     ).toContain('<svg');
   });
 
@@ -50,19 +58,25 @@ describe('slideFrame footer', () => {
     const brandClass = (html: string) =>
       /<span class="([^"]+)">Ledger<\/span>/.exec(html)?.[1];
     const sectionless = brandClass(
-      footer({ tone: 'inverse', brand: 'Ledger' })
+      footer({ tone: 'inverse', footer: { brand: 'Ledger' } })
     );
     expect(sectionless).toBeDefined();
     expect(sectionless).toBe(
       brandClass(
-        footer({ brand: 'Ledger', section: 'Settlement', sectionNumber: '02' })
+        footer({
+          footer: {
+            brand: 'Ledger',
+            section: 'Settlement',
+            sectionNumber: '02',
+          },
+        })
       )
     );
   });
 
   it('leaves the mark out with logo: false', () => {
     expect(
-      footer({ tone: 'inverse', brand: 'Ledger', logo: false })
+      footer({ tone: 'inverse', footer: { brand: 'Ledger' }, logo: false })
     ).not.toContain('<svg');
   });
 });
@@ -91,7 +105,7 @@ describe('slideFrame url display', () => {
   const node = {
     type: 'slideFrame',
     body: [titleExample],
-    url: 'HTTPS://Example.com/deck',
+    footer: { url: 'HTTPS://Example.com/deck' },
   } as PrimitiveNode;
   const composition: Composition = { type: 'view', body: [node] };
 
@@ -126,7 +140,7 @@ describe('slideFrame view called directly', () => {
     const node: SlideFrameNode = {
       type: 'slideFrame',
       body: [],
-      url: 'javascript:alert(1)',
+      footer: { url: 'javascript:alert(1)' },
     };
     const env = {
       context: undefined,

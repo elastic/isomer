@@ -15,7 +15,11 @@ import {
 } from '../define/primitive_module';
 
 import type { EnhancementDefinition } from './enhancements';
-import { definePrimitivePack, type PrimitivePack } from './primitive_pack';
+import {
+  definePrimitivePack,
+  type PrimitivePack,
+  UNCATEGORIZED_GROUP_TITLE,
+} from './primitive_pack';
 
 const renderers = {
   react: () => null,
@@ -23,17 +27,10 @@ const renderers = {
   markdown: () => [],
 };
 
-const leaf = (type: string, group?: string) =>
+const leaf = (type: string) =>
   definePrimitive<PrimitiveNode>({
     type,
-    catalog: {
-      type,
-      ...(group === undefined ? {} : { group }),
-      purpose: '',
-      useWhen: [],
-      avoidWhen: [],
-      example: {},
-    },
+    catalog: { type, purpose: '', useWhen: [], avoidWhen: [], example: {} },
     examples: [],
     schema: z.object({ type: z.literal(type) }),
     renderers,
@@ -173,7 +170,7 @@ describe('definePrimitivePack', () => {
       primitives: [leaf('note')],
       authoring,
     });
-    expect(pack.authoring).toEqual(authoring);
+    expect(pack.authoring).toBe(authoring);
   });
 
   it('rejects a group naming a type the pack does not register', () => {
@@ -187,69 +184,6 @@ describe('definePrimitivePack', () => {
       'primitive pack "grouped": group "Text" names primitive type "quote", which the pack does not register'
     );
     expect(caught(define)).toMatchObject({ code: 'UNKNOWN_PRIMITIVE_TYPE' });
-  });
-
-  it('derives groups from each primitive, in definition order', () => {
-    const pack = definePrimitivePack({
-      id: 'grouped',
-      primitives: [
-        leaf('note', 'Text'),
-        leaf('chart', 'Data'),
-        leaf('quote', 'Text'),
-        leaf('loose'),
-      ],
-    });
-    expect(pack.authoring?.groups).toEqual([
-      { title: 'Text', types: ['note', 'quote'] },
-      { title: 'Data', types: ['chart'] },
-    ]);
-  });
-
-  it('orders derived groups by groupOrder and does not store it', () => {
-    const pack = definePrimitivePack({
-      id: 'grouped',
-      primitives: [leaf('note', 'Text'), leaf('chart', 'Data')],
-      authoring: { groupOrder: ['Data', 'Text'] },
-    });
-    expect(pack.authoring).toEqual({
-      groups: [
-        { title: 'Data', types: ['chart'] },
-        { title: 'Text', types: ['note'] },
-      ],
-    });
-  });
-
-  it.each([
-    ['omits a declared heading', ['Text']],
-    ['lists a heading no primitive names', ['Text', 'Data', 'Notes']],
-    ['repeats a heading', ['Text', 'Data', 'Text']],
-  ])('rejects a groupOrder that %s', (_, groupOrder) => {
-    const define = () =>
-      definePrimitivePack({
-        id: 'grouped',
-        primitives: [leaf('note', 'Text'), leaf('chart', 'Data')],
-        authoring: { groupOrder },
-      });
-    expect(caught(define)).toMatchObject({ code: 'INVALID_PACK_GROUPS' });
-  });
-
-  it.each([
-    ['groupOrder', [leaf('note')], { groupOrder: ['Notes'] }],
-    ['a catalog.group', [leaf('note', 'Text')], {}],
-  ])('rejects explicit groups beside %s', (_, primitives, authoring) => {
-    const define = () =>
-      definePrimitivePack({
-        id: 'grouped',
-        primitives,
-        authoring: {
-          ...authoring,
-          groups: [{ title: 'Notes', types: ['note'] }],
-        },
-      });
-    expect(define).toThrow(
-      'primitive pack "grouped": pass groups, or catalog.group with an optional groupOrder, not both'
-    );
-    expect(caught(define)).toMatchObject({ code: 'INVALID_PACK_GROUPS' });
   });
 
   it('rejects a type in two groups', () => {
@@ -268,6 +202,31 @@ describe('definePrimitivePack', () => {
       'primitive pack "grouped": primitive type "note" is in two groups'
     );
     expect(caught(define)).toMatchObject({ code: 'DUPLICATE_PRIMITIVE_TYPE' });
+  });
+
+  it.each([
+    [
+      'the reserved title',
+      [{ title: UNCATEGORIZED_GROUP_TITLE, types: ['note'] }],
+      `group title "${UNCATEGORIZED_GROUP_TITLE}" is reserved for primitives in no group`,
+    ],
+    [
+      'a title twice',
+      [
+        { title: 'Text', types: ['note'] },
+        { title: 'Text', types: ['quote'] },
+      ],
+      'group title "Text" is used twice',
+    ],
+  ])('rejects a group with %s', (_, groups, message) => {
+    const define = () =>
+      definePrimitivePack({
+        id: 'grouped',
+        primitives: [leaf('note'), leaf('quote')],
+        authoring: { groups },
+      });
+    expect(define).toThrow(`primitive pack "grouped": ${message}`);
+    expect(caught(define)).toMatchObject({ code: 'INVALID_PACK_GROUPS' });
   });
 });
 

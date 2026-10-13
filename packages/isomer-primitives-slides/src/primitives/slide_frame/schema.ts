@@ -6,6 +6,7 @@
  */
 
 import { unresolvedBodyNodeSchema, z } from '@elastic/isomer-sdk';
+import { fromChildren } from '@elastic/isomer-sdk/author';
 
 import { slideFrameTones } from '../../theme/variants';
 import { lineText } from '../authored_text';
@@ -13,16 +14,8 @@ import { statedRefine } from '../cross_field';
 
 import { FRAME_URL_MESSAGE, sanitizeFrameUrl } from './url';
 
-/** Zod schema for {@link SlideFrameNode}. */
-export const schema = z
+const footerSchema = z
   .object({
-    type: z.literal('slideFrame'),
-    body: z
-      .array(unresolvedBodyNodeSchema)
-      .min(1)
-      .describe(
-        'Slide content, top to bottom. Open a content slide with `slideHeading`. At least one node.'
-      ),
     brand: lineText()
       .describe(
         'Name at the left of the footer, e.g. the product. Keep it the same on every slide.'
@@ -38,6 +31,36 @@ export const schema = z
         'Number of the section this slide belongs to, shown before `section`.'
       )
       .optional(),
+    url: lineText()
+      .check(
+        statedRefine((value) => sanitizeFrameUrl(value) !== null, {
+          error: FRAME_URL_MESSAGE,
+          rule: 'An absolute `http` or `https` address',
+        })
+      )
+      .describe(
+        'An absolute `http` or `https` address at the right of the footer, with its scheme, e.g. "https://example.com". A link on web surfaces.'
+      )
+      .optional(),
+  })
+  .strict();
+
+/** Zod schema for {@link SlideFrameNode}. */
+export const schema = z
+  .object({
+    type: z.literal('slideFrame'),
+    body: z
+      .array(unresolvedBodyNodeSchema)
+      .min(1)
+      .describe(
+        'Slide content, top to bottom. Open a content slide with `slideHeading`. At least one node.'
+      ),
+    footer: fromChildren(
+      'slideFooter',
+      footerSchema.describe(
+        'The footer: the deck’s name, the section this slide belongs to, and its address.'
+      )
+    ).optional(),
     logo: z
       .boolean()
       .describe(
@@ -48,17 +71,6 @@ export const schema = z
       .enum(slideFrameTones)
       .describe(
         '`inverse` for title, section, and closing slides; `page` for everything else. Defaults to `page`.'
-      )
-      .optional(),
-    url: lineText()
-      .check(
-        statedRefine((value) => sanitizeFrameUrl(value) !== null, {
-          error: FRAME_URL_MESSAGE,
-          rule: 'An absolute `http` or `https` address',
-        })
-      )
-      .describe(
-        'An absolute `http` or `https` address at the right of the footer, with its scheme, e.g. "https://example.com". A link on web surfaces.'
       )
       .optional(),
   })

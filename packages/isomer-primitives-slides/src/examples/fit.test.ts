@@ -13,9 +13,9 @@ import {
 } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
+import { longExample as agendaExample } from '../primitives/agenda_slide/examples';
 import { slideLayout } from '../primitives/layout';
 import { referenceHeading, renderedStep } from '../primitives/size.fixtures';
-import { longExample as agendaExample } from '../primitives/slide_agenda/examples';
 import {
   example as annotatedExample,
   placeholderExample as annotatedPlaceholderExample,
@@ -134,13 +134,16 @@ describe('the largest steps a slide with no heading takes still fit', () => {
     {
       step,
       variant: 'statement-textSize',
-      node: { type: 'slideStatement', text: prose(most(statementFit[step])) },
+      node: {
+        type: 'statementSlide',
+        text: prose(most(statementFit[step])),
+      },
     },
     {
       step,
       variant: 'quote-textSize',
       node: {
-        type: 'slideQuote',
+        type: 'quoteSlide',
         text: prose(most(quoteFit[step])),
         source: 'A',
       },
@@ -250,7 +253,7 @@ const inFrame = (body: PrimitiveNode[]): Composition => ({
 
 const paneOf = (node: PrimitiveNode): PrimitiveNode =>
   ({
-    type: 'slideSplit',
+    type: 'slideSplitLayout',
     panes: [
       { label: 'Pane', items: [node] },
       { items: [{ type: 'slideBulletList', items: ['One', 'Two'] }] },
@@ -264,7 +267,11 @@ const placements: [string, (node: PrimitiveNode) => Composition][] = [
     'as a title aside',
     (node) =>
       inFrame([
-        { type: 'slideTitle', title: 'Isomer', aside: node } as PrimitiveNode,
+        {
+          type: 'titleSlide',
+          title: 'Isomer',
+          aside: node,
+        } as PrimitiveNode,
       ]),
   ],
   [
@@ -405,7 +412,7 @@ describe('a window sizes the nodes below its heading to the room left', () => {
             type: 'slideFrame',
             body: [
               {
-                type: 'slideWindow',
+                type: 'slideWindowLayout',
                 chrome: 'browser',
                 title: 'shop.example',
                 body: [tallestExample, node],

@@ -13,9 +13,11 @@ import type { SlideAnnotatedRenderNode } from './types';
 export const checkoutSlide: readonly BodyNode[] = [
   {
     type: 'slideFrame',
-    brand: 'Basket',
-    section: 'Checkout',
-    sectionNumber: '03',
+    footer: {
+      brand: 'Basket',
+      section: 'Checkout',
+      sectionNumber: '03',
+    },
     body: [
       {
         type: 'slideHeading',

@@ -35,7 +35,7 @@ The frame is called `slideDeckFrame` (qualified) to avoid colliding with the `sl
 
 ## Footer chrome
 
-The frame draws one footer line and nothing else: the Isomer mark, `brand`, and the section (`sectionNumber` and `section`) on the left, `url` on the right. A slide with no section, such as the title slide, shows `brand` alone. `logo: false` leaves the mark out of the footer and out of a `slideTitle` inside the frame, for a deck about something other than Isomer. `url` is a link on the web surfaces and must be an absolute `http` or `https` address, such as `https://example.com`: a footer has no page to be relative to. One that is not is dropped before render.
+The frame draws one footer line and nothing else. Those fields live on `footer`: the Isomer mark, `brand`, and the section (`sectionNumber` and `section`) on the left, `url` on the right. A slide with no section, such as the title slide, shows `brand` alone. `logo: false` leaves the mark out of the footer and out of a `titleSlide` inside the frame, for a deck about something other than Isomer. `url` is a link on the web surfaces and must be an absolute `http` or `https` address, such as `https://example.com`: a footer has no page to be relative to. One that is not is dropped before render.
 
 ## Tone
 
@@ -45,7 +45,7 @@ The frame draws one footer line and nothing else: the Isomer mark, `brand`, and 
 
 The body renders first, then the footer as one line (`Isomer · 01 Primitives · elastic.github.io/isomer`), italic in Markdown with `url` as a link. Slack sends the same line as a closing `context` block.
 
-A slide opens with its own heading: `slideTitle`, `slideHeading`, `slideStatement`, `slideSection`, or `slideClosing`, each a `#` in Markdown and an `h1` in HTML; a quote slide has none, its words standing in for one, with sub-headings inside the slide, such as a `slideSplit` pane label, a `slideTerritoryGroup` owner, or a `slideRoadmap` horizon, at `##` and `h2`. Render a slide with `heading: false` on the `text`, `markdown`, and `slack` surfaces, as on `react` and `html`, so the composition's `title` names the slide without repeating it.
+A slide opens with its own heading: `titleSlide`, `slideHeading`, `statementSlide`, `sectionSlide`, or `closingSlide`, each a `#` in Markdown and an `h1` in HTML; a quote slide has none, its words standing in for one, with sub-headings inside the slide, such as a `slideSplitLayout` pane label, a `slideTerritoryGroup` owner, or a `slideRoadmap` horizon, at `##` and `h2`. Render a slide with `heading: false` on the `text`, `markdown`, and `slack` surfaces, as on `react` and `html`, so the composition's `title` names the slide without repeating it.
 
 ## `slideDeckFrame` vs `slideFrame`
 

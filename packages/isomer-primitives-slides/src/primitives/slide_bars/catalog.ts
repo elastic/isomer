@@ -7,15 +7,12 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
-import type { SlideGroup } from '../../groups';
-
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideBarsNode}. */
 export const catalog = {
   type: 'slideBars',
   name: 'Bars',
-  group: 'Data',
   description:
     'Two to six bars in one unit. At most one item is highlighted; max, when given, is at least every value.',
   purpose:
@@ -30,4 +27,4 @@ export const catalog = {
     'Each item has several attributes, not one amount; use slideTable.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry<SlideGroup>;
+} satisfies PrimitiveCatalogEntry;

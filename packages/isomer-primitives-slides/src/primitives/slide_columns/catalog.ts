@@ -7,15 +7,12 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
 
-import type { SlideGroup } from '../../groups';
-
 import { example } from './examples';
 
 /** Agent-facing catalog entry for {@link SlideColumnsNode}. */
 export const catalog = {
   type: 'slideColumns',
   name: 'Columns',
-  group: 'Text',
   description:
     'Two to four columns. `highlight`, when set, is an index into `items`.',
   purpose:
@@ -28,12 +25,12 @@ export const catalog = {
   ],
   avoidWhen: [
     'The columns are numbers to compare; use slideStats.',
-    'There are exactly two sides, one per owner, each holding slide nodes; use slideSplit.',
+    'There are exactly two sides, one per owner, each holding slide nodes; use slideSplitLayout.',
     'The columns name who owns what; use slideTerritoryGroup.',
     'The items are terms the audience must learn; use slideDefinitions.',
     'The items are short facts in a single list; use slideList.',
     'Every option shares the same attributes to compare cell by cell; use slideTable.',
-    'Three or four options would sit in a slideSplit pane, too narrow for a column each; give them the slide’s full width.',
+    'Three or four options would sit in a slideSplitLayout pane, too narrow for a column each; give them the slide’s full width.',
   ],
   example,
-} satisfies PrimitiveCatalogEntry<SlideGroup>;
+} satisfies PrimitiveCatalogEntry;

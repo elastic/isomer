@@ -7,6 +7,7 @@
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
+import { fromChildren } from '@elastic/isomer-sdk/author';
 
 import { hasLineTerminator } from '../../render/marks';
 import { displayColumns } from '../../render/mono';
@@ -17,6 +18,7 @@ import {
 } from '../../theme/components/code';
 import { authoredTextMaxLength, lineText } from '../authored_text';
 import { crossRefine } from '../cross_field';
+import { sourceLines } from '../source_text';
 
 /** Whether `lines` is within its count and length caps, so a check that always runs may read it. */
 const linesInBounds = (lines: readonly unknown[]): boolean =>
@@ -103,13 +105,28 @@ const lineLimit = (panels: SlideCodePanel[]) =>
 export const schema = z
   .object({
     type: z.literal('slideCode'),
-    panels: z
-      .array(panelSchema)
-      .min(1)
-      .max(2)
-      .describe(
-        `One panel, or two side by side with an arrow between them to trace a value from one file to the next. Two panels need the full slide width; do not put them in a slideSplit column. A line holds ${codeLineMaxLength(1, false)} columns in one panel and ${codeLineMaxLength(2, false)} in each of two (${codeLineMaxLength(1, true)} and ${codeLineMaxLength(2, true)} once a panel passes ${codeDenseAfter} lines), a wide glyph such as CJK or an emoji counting as two; a narrower column holds fewer, and a longer line is clipped.`
-      ),
+    panels: fromChildren(
+      'codePanel',
+      z
+        .array(panelSchema)
+        .min(1)
+        .max(2)
+        .describe(
+          `One panel, or two side by side with an arrow between them to trace a value from one file to the next. Two panels need the full slide width; do not put them in a slideSplitLayout column. A line holds ${codeLineMaxLength(1, false)} columns in one panel and ${codeLineMaxLength(2, false)} in each of two (${codeLineMaxLength(1, true)} and ${codeLineMaxLength(2, true)} once a panel passes ${codeDenseAfter} lines), a wide glyph such as CJK or an emoji counting as two; a narrower column holds fewer, and a longer line is clipped.`
+        ),
+      {
+        propsSchema: z.strictObject({
+          ...panelSchema.shape,
+          lines: panelSchema.shape.lines.optional(),
+        }),
+        toItem: ({ children, ...panel }) => ({
+          ...panel,
+          ...(panel.lines === undefined && children !== undefined
+            ? { lines: sourceLines(children) }
+            : {}),
+        }),
+      }
+    ),
   })
   .strict()
   .check(

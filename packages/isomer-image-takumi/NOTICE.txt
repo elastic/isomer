@@ -534,7 +534,7 @@ Copyright Elasticsearch B.V.
 
 ---
 
-This product depends on @elastic/esql-definitions@4.29.0, licensed under Elastic-2.0.
+This product depends on @elastic/esql-definitions@4.31.0, licensed under Elastic-2.0.
 
 @elastic/esql-definitions (Shared definitions for the ES|QL language).
 Copyright 2025-2026 Elasticsearch B.V.
@@ -723,7 +723,7 @@ License 2.0, unless the header specifies another license.
 
 ---
 
-This product depends on @elastic/prismjs-esql@4.29.0, licensed under MIT.
+This product depends on @elastic/prismjs-esql@4.31.0, licensed under MIT.
 
 @elastic/prismjs-esql (Prism.js and Refractor syntax highlighting support for ES|QL).
 Copyright 2026 Elasticsearch B.V.
@@ -1887,7 +1887,7 @@ either expressed or implied, of the FreeBSD Project.
 
 ---
 
-This product depends on @oxc-project/types@0.149.0, licensed under MIT.
+This product depends on @oxc-project/types@0.153.0, licensed under MIT.
 
 MIT License
 
@@ -1914,7 +1914,7 @@ SOFTWARE.
 
 ---
 
-This product depends on @rolldown/binding-android-arm-eabi@1.2.8, licensed under MIT.
+This product depends on @rolldown/binding-android-arm-eabi@1.2.13, licensed under MIT.
 
 MIT License
 
@@ -1944,7 +1944,7 @@ The licenses of externally maintained libraries from which parts of the Software
 
 ---
 
-This product depends on @rolldown/binding-android-arm64@1.2.8, licensed under MIT.
+This product depends on @rolldown/binding-android-arm64@1.2.13, licensed under MIT.
 
 MIT License
 
@@ -1974,7 +1974,7 @@ The licenses of externally maintained libraries from which parts of the Software
 
 ---
 
-This product depends on @rolldown/binding-darwin-arm64@1.2.8, licensed under MIT.
+This product depends on @rolldown/binding-darwin-arm64@1.2.13, licensed under MIT.
 
 MIT License
 
@@ -2004,7 +2004,7 @@ The licenses of externally maintained libraries from which parts of the Software
 
 ---
 
-This product depends on @rolldown/binding-darwin-x64@1.2.8, licensed under MIT.
+This product depends on @rolldown/binding-darwin-x64@1.2.13, licensed under MIT.
 
 MIT License
 
@@ -2034,7 +2034,7 @@ The licenses of externally maintained libraries from which parts of the Software
 
 ---
 
-This product depends on @rolldown/binding-freebsd-x64@1.2.8, licensed under MIT.
+This product depends on @rolldown/binding-freebsd-x64@1.2.13, licensed under MIT.
 
 MIT License
 
@@ -2064,7 +2064,7 @@ The licenses of externally maintained libraries from which parts of the Software
 
 ---
 
-This product depends on @rolldown/binding-linux-arm-gnueabihf@1.2.8, licensed under MIT.
+This product depends on @rolldown/binding-linux-arm-gnueabihf@1.2.13, licensed under MIT.
 
 MIT License
 
@@ -2094,7 +2094,7 @@ The licenses of externally maintained libraries from which parts of the Software
 
 ---
 
-This product depends on @rolldown/binding-linux-arm64-gnu@1.2.8, licensed under MIT.
+This product depends on @rolldown/binding-linux-arm64-gnu@1.2.13, licensed under MIT.
 
 MIT License
 
@@ -2124,7 +2124,7 @@ The licenses of externally maintained libraries from which parts of the Software
 
 ---
 
-This product depends on @rolldown/binding-linux-arm64-musl@1.2.8, licensed under MIT.
+This product depends on @rolldown/binding-linux-arm64-musl@1.2.13, licensed under MIT.
 
 MIT License
 
@@ -2154,7 +2154,7 @@ The licenses of externally maintained libraries from which parts of the Software
 
 ---
 
-This product depends on @rolldown/binding-linux-ppc64-gnu@1.2.8, licensed under MIT.
+This product depends on @rolldown/binding-linux-ppc64-gnu@1.2.13, licensed under MIT.
 
 MIT License
 
@@ -2184,7 +2184,7 @@ The licenses of externally maintained libraries from which parts of the Software
 
 ---
 
-This product depends on @rolldown/binding-linux-s390x-gnu@1.2.8, licensed under MIT.
+This product depends on @rolldown/binding-linux-s390x-gnu@1.2.13, licensed under MIT.
 
 MIT License
 
@@ -2214,7 +2214,7 @@ The licenses of externally maintained libraries from which parts of the Software
 
 ---
 
-This product depends on @rolldown/binding-linux-x64-gnu@1.2.8, licensed under MIT.
+This product depends on @rolldown/binding-linux-x64-gnu@1.2.13, licensed under MIT.
 
 MIT License
 
@@ -2244,7 +2244,7 @@ The licenses of externally maintained libraries from which parts of the Software
 
 ---
 
-This product depends on @rolldown/binding-linux-x64-musl@1.2.8, licensed under MIT.
+This product depends on @rolldown/binding-linux-x64-musl@1.2.13, licensed under MIT.
 
 MIT License
 
@@ -2274,7 +2274,7 @@ The licenses of externally maintained libraries from which parts of the Software
 
 ---
 
-This product depends on @rolldown/binding-openharmony-arm64@1.2.8, licensed under MIT.
+This product depends on @rolldown/binding-openharmony-arm64@1.2.13, licensed under MIT.
 
 MIT License
 
@@ -2304,7 +2304,7 @@ The licenses of externally maintained libraries from which parts of the Software
 
 ---
 
-This product depends on @rolldown/binding-win32-arm64-msvc@1.2.8, licensed under MIT.
+This product depends on @rolldown/binding-win32-arm64-msvc@1.2.13, licensed under MIT.
 
 MIT License
 
@@ -2334,7 +2334,7 @@ The licenses of externally maintained libraries from which parts of the Software
 
 ---
 
-This product depends on @rolldown/binding-win32-x64-msvc@1.2.8, licensed under MIT.
+This product depends on @rolldown/binding-win32-x64-msvc@1.2.13, licensed under MIT.
 
 MIT License
 
@@ -2820,7 +2820,7 @@ MIT License
 
 ---
 
-This product depends on @types/lodash@4.17.25, licensed under MIT.
+This product depends on @types/lodash@4.17.26, licensed under MIT.
 
 MIT License
 
@@ -11972,7 +11972,7 @@ SOFTWARE.
 
 ---
 
-This product depends on nanoid@3.3.19, licensed under MIT.
+This product depends on nanoid@3.3.20, licensed under MIT.
 
 The MIT License (MIT)
 
@@ -12295,7 +12295,7 @@ THE SOFTWARE.
 
 ---
 
-This product depends on postcss@8.5.28, licensed under MIT.
+This product depends on postcss@8.5.29, licensed under MIT.
 
 The MIT License (MIT)
 
@@ -13344,7 +13344,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ---
 
-This product depends on rolldown@1.2.8, licensed under MIT.
+This product depends on rolldown@1.2.13, licensed under MIT.
 
 MIT License
 
@@ -13446,7 +13446,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ---
 
-This product depends on source-map-js@1.2.1, licensed under BSD-3-Clause.
+This product depends on source-map-js@1.2.2, licensed under BSD-3-Clause.
 
 Copyright (c) 2009-2011, Mozilla Foundation and contributors
 All rights reserved.
@@ -14680,7 +14680,7 @@ SOFTWARE.
 
 ---
 
-This product depends on uuid@14.0.2, licensed under MIT.
+This product depends on uuid@14.0.3, licensed under MIT.
 
 The MIT License (MIT)
 

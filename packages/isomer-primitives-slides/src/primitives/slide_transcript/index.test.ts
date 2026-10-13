@@ -205,8 +205,13 @@ describe('slideTranscript in the DOM', () => {
 });
 
 describe('slideTranscript from JSX', () => {
-  const { Composition, SlideFrame, SlideTranscript, SlideTurn, toComposition } =
-    slideJsx;
+  const {
+    Composition,
+    SlideFrame,
+    SlideTranscript,
+    TranscriptTurn,
+    toComposition,
+  } = slideJsx;
   const turnsFrom = (...children: ReturnType<typeof createElement>[]) => {
     const composition = toComposition(
       createElement(
@@ -227,12 +232,12 @@ describe('slideTranscript from JSX', () => {
     expect(
       turnsFrom(
         createElement(
-          SlideTurn,
+          TranscriptTurn,
           { role: 'model' },
           'First line.\nSecond line.'
         ),
         createElement(
-          SlideTurn,
+          TranscriptTurn,
           { role: 'host', format: 'code' },
           'a:  1\n',
           '  b: 2'
@@ -246,7 +251,7 @@ describe('slideTranscript from JSX', () => {
 
   it('takes a text prop over children', () => {
     expect(
-      turnsFrom(createElement(SlideTurn, { role: 'user', text: 'Hi' }))
+      turnsFrom(createElement(TranscriptTurn, { role: 'user', text: 'Hi' }))
     ).toEqual([{ role: 'user', text: 'Hi' }]);
   });
 });

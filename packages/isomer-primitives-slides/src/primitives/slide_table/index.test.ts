@@ -33,8 +33,8 @@ import {
   renderedStep,
 } from '../size.fixtures';
 import { headingRoom, referenceRoom } from '../slide_heading/fit';
-import { paneLayouts } from '../slide_split/pane_layout';
-import type { SlideSplitNode } from '../slide_split/types';
+import { paneLayouts } from '../slide_split_layout/pane_layout';
+import type { SlideSplitLayoutNode } from '../slide_split_layout/types';
 
 import { example, fullExample, groupsExample, plainExample } from './examples';
 import { tableHeight, tableSize } from './fit';
@@ -711,7 +711,7 @@ describe('slideTable', () => {
       expect(step).not.toBe(tableSize(node, openBody));
       expect(
         renderedStep('table-headStep', {
-          type: 'slideTitle',
+          type: 'titleSlide',
           title: 'Crate',
           aside: node,
         })
@@ -720,8 +720,8 @@ describe('slideTable', () => {
 
     it('draws the step it measures in a split pane', () => {
       const node = rows(5);
-      const split: SlideSplitNode = {
-        type: 'slideSplit',
+      const split: SlideSplitLayoutNode = {
+        type: 'slideSplitLayout',
         panes: [
           { label: 'Regions', items: [node] },
           { items: [{ type: 'slideBulletList', items: ['One'] }] },

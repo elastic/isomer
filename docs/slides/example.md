@@ -1,14 +1,34 @@
 # Worked example
 
-`src/examples/deck.ts` holds two compositions: a title slide and a content slide. `src/examples/deck.test.ts` validates both, writes the title slide's Markdown, text, and PNG, and writes the pair as `deck.pdf`, all under `src/examples/output/`. A host sequences compositions; Isomer renders one at a time.
+`src/examples/deck.tsx` holds two compositions: a title slide and a content slide. `src/examples/deck.test.ts` validates both, writes the title slide's Markdown, text, and PNG, and writes the pair as `deck.pdf`, all under `src/examples/output/`. A host sequences compositions; Isomer renders one at a time.
 
 ## A deck is a `Composition[]`
 
-```ts
-export const deck: Composition[] = [titleSlide, splitSlide];
+`slideJsx` authors each slide, and `toComposition` is the `Composition` the test renders. The title slide is an inverse frame. `TitleAside` holds the bullet list, and `SlideFooter` fills the footer:
+
+```tsx
+<Composition title="Isomer">
+  <SlideFrame tone="inverse">
+    <TitleSlide
+      eyebrow="Reference pack"
+      title="Isomer"
+      tagline="One composition, **every surface**."
+    >
+      <TitleAside>
+        <SlideBulletList marker="check">
+          <BulletItem>React and HTML</BulletItem>
+          <BulletItem>Markdown and plain text</BulletItem>
+          <BulletItem>Slack Block Kit</BulletItem>
+          <BulletItem>SVG and PNG</BulletItem>
+        </SlideBulletList>
+      </TitleAside>
+    </TitleSlide>
+    <SlideFooter brand="Isomer" url="https://elastic.github.io/isomer" />
+  </SlideFrame>
+</Composition>
 ```
 
-The runtime sees one composition at a time. A host renders them in order and assembles the deck. Each slide is one `slideFrame`: the title slide an inverse frame holding a `slideTitle` with a `slideBulletList` as its aside, and the content slide a page frame opening with a `slideHeading` over a `slideSplit` that joins a `slideCode` to a `slideBulletList` with an arrow.
+The runtime sees one composition at a time. A host renders them in order and assembles the deck. The content slide is a page frame opening with a `SlideHeading` over a `SlideSplitLayout`. Each column is a `SplitPane`, and the pane's primitives are its children: a `SlideCode` on the left, a `SlideBulletList` on the right, joined with an arrow.
 
 ## Surface artifacts
 

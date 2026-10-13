@@ -7,6 +7,7 @@
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
+import { fromTextChildren } from '@elastic/isomer-sdk/author';
 
 import { figureRule, figureText, wrappedText } from '../authored_text';
 import { crossRefine } from '../cross_field';
@@ -25,8 +26,10 @@ export const schema = z
         `Unit after the value, e.g. \`KB\` or \`ms\`. Requires \`value\`. ${figureRule}.`
       )
       .optional(),
-    body: wrappedText().describe(
-      'One or two sentences saying what the number shows and why it matters. `code` and `**strong**` marks are allowed.'
+    body: fromTextChildren(
+      wrappedText().describe(
+        'One or two sentences saying what the number shows and why it matters. `code` and `**strong**` marks are allowed.'
+      )
     ),
   })
   .strict()

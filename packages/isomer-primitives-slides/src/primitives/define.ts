@@ -32,15 +32,11 @@ export type PrimitiveDefinition<
 /**
  * Defines a primitive in this pack.
  *
- * Leave `TNode` and `TSchema` inferred so the schema's field brands survive.
- * Pass `TNode` only for a `schemaFor` container whose node type is not `z.infer`.
+ * Pass `TNode` when it is not `z.infer` of the schema, and `typeof schema`
+ * with it, so field brands and prop types survive. `TSchema` otherwise
+ * defaults to a wide `ZodObject`.
  */
-export const definePrimitive = <
-  TNode extends PrimitiveNode,
-  TSchema extends ZodObject = ZodObject,
->(
-  definition: PrimitiveDefinition<TNode, TSchema>
-) => {
+export const definePrimitive: typeof defineSlidePrimitive = (definition) => {
   const primitive = defineSlidePrimitive(definition);
   recordDefinition(primitive);
   return primitive;

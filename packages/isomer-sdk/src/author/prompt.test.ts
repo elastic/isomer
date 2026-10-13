@@ -34,6 +34,21 @@ describe('buildAuthoringPrompt', () => {
     expect(prompt).toContain('Custom intro.');
   });
 
+  it('states the view envelope only when the schema is not inlined', () => {
+    const envelope = 'A view is `{"type":"view","body":[…]}`';
+    const { schema: _schema, ...withoutSchema } = context;
+    expect(buildAuthoringPrompt('general', context)).not.toContain(envelope);
+    expect(
+      buildAuthoringPrompt('compose-from-primitives', withoutSchema)
+    ).toContain(envelope);
+    expect(buildAuthoringPrompt('registered-view-router', context)).toContain(
+      envelope
+    );
+    expect(
+      buildAuthoringPrompt('general', { ...withoutSchema, intro: 'Custom.' })
+    ).toContain(`Custom. ${envelope}`);
+  });
+
   it('minifies the JSON Schema', () => {
     const prompt = buildAuthoringPrompt('general', context);
     expect(prompt).toContain(
@@ -185,7 +200,7 @@ describe('the index catalog', () => {
     entry('table', 'Rows.'),
   ];
 
-  it('lists each primitive under its group, and the rest under Other', () => {
+  it('lists each primitive under its group, and the rest under Uncategorized', () => {
     const prompt = buildAuthoringPrompt('general', {
       ...context,
       primitives,
@@ -199,7 +214,7 @@ describe('the index catalog', () => {
       [
         '### Data\n\n- `table` — Rows.\n- `stat` — One number.',
         '### Text\n\n- `quote` — A pull quote.',
-        '### Other\n\n- `note` — A note.',
+        '### Uncategorized\n\n- `note` — A note.',
       ].join('\n\n')
     );
     expect(prompt).toContain(

@@ -133,7 +133,7 @@ describe('slideColumns size', () => {
     const node = loaded(198, 1);
     expect(renderedStep('columns-titleSize', node, referenceHeading)).toBe('l');
     const inWindow = {
-      type: 'slideWindow',
+      type: 'slideWindowLayout',
       chrome: 'browser',
       title: 'shop.example',
       body: [node],
@@ -142,10 +142,10 @@ describe('slideColumns size', () => {
       renderedStep('columns-titleSize', inWindow, referenceHeading)
     ).not.toBe('l');
     const inPane = {
-      type: 'slideSplit',
+      type: 'slideSplitLayout',
       panes: [
         { items: [node] },
-        { items: [{ type: 'slideStatement', text: 'x' }] },
+        { items: [{ type: 'statementSlide', text: 'x' }] },
       ],
     };
     expect(renderedStep('columns-titleSize', inPane, referenceHeading)).toBe(
@@ -361,8 +361,8 @@ describe('slideColumns output', () => {
 });
 
 describe('slideColumns JSX', () => {
-  it('fills columns from SlideColumn children, with text as the body', () => {
-    const { SlideColumn, SlideColumns } = slideJsx;
+  it('fills columns from Column children, with text as the body', () => {
+    const { Column, SlideColumns } = slideJsx;
     const node = slideJsx.toComposition(
       createElement(
         slideJsx.Composition,
@@ -370,12 +370,8 @@ describe('slideColumns JSX', () => {
         createElement(
           SlideColumns,
           { highlight: 1 },
-          createElement(
-            SlideColumn,
-            { title: 'Poll' },
-            'Lags by one interval.'
-          ),
-          createElement(SlideColumn, { title: 'Push' }, 'Immediate.')
+          createElement(Column, { title: 'Poll' }, 'Lags by one interval.'),
+          createElement(Column, { title: 'Push' }, 'Immediate.')
         )
       )
     ).body[0];

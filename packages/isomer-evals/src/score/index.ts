@@ -6,6 +6,7 @@
  */
 
 export { scoreAnswerability } from './answerability';
+export { scoreExpectedPrimitives } from './expected_primitives';
 export { scorePayload } from './payload';
 export { scorePrimitiveSelection } from './primitive_selection';
 export {

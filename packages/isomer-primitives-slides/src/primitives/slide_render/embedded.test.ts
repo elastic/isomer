@@ -30,11 +30,11 @@ const runtime = createIsomerRuntime({
   frames: { slide: slideDeckFrame },
 });
 
-/** A `slideStack` holding a `slideStack`, `count` deep, around one bullet list. */
+/** A `slideStackLayout` holding a `slideStackLayout`, `count` deep, around one bullet list. */
 const stackChain = (count: number): object => {
   let node: object = { type: 'slideBulletList', items: ['Deepest'] };
   for (let level = 0; level < count; level += 1) {
-    node = { type: 'slideStack', items: [node] };
+    node = { type: 'slideStackLayout', items: [node] };
   }
   return node;
 };
@@ -53,7 +53,7 @@ describe('findNestedRender', () => {
   it('returns the first render in reading order, with its path', () => {
     const body = [
       {
-        type: 'slideStack',
+        type: 'slideStackLayout',
         items: [{ type: 'slideRender', surface: 'snapshot' }],
       },
       { type: 'slideRender', surface: 'text' },
@@ -75,7 +75,7 @@ describe('findNestedRender', () => {
     expect(
       findNestedRender([
         {
-          type: 'slideSplit',
+          type: 'slideSplitLayout',
           panes: [{ items: [data] }, { items: [{ type: 'slideRenderGrid' }] }],
         },
       ])
@@ -101,23 +101,23 @@ describe('findNestedRender', () => {
   it('treats a node its definition cannot read as a leaf and keeps walking', () => {
     expect(
       findNestedRender([
-        { type: 'slideStack', items: 'not nodes' },
-        { type: 'slideStack', items: [{ type: 'slideRender' }] },
+        { type: 'slideStackLayout', items: 'not nodes' },
+        { type: 'slideStackLayout', items: [{ type: 'slideRender' }] },
       ])
     ).toEqual({ kind: 'found', path: [1, 'items', 0] });
   });
 
-  it('walks a deep slideStack chain without exhausting the stack', () => {
+  it('walks a deep slideStackLayout chain without exhausting the stack', () => {
     expect(findNestedRender([stackChain(100_000)])).toEqual({ kind: 'none' });
   });
 
   it('visits a shared or cyclic node once', () => {
-    const cyclic: Record<string, unknown> = { type: 'slideStack' };
+    const cyclic: Record<string, unknown> = { type: 'slideStackLayout' };
     cyclic.items = [cyclic, cyclic];
     expect(findNestedRender([cyclic])).toEqual({ kind: 'none' });
     let shared: Record<string, unknown> = { type: 'slideHeading' };
     for (let level = 0; level < 64; level += 1) {
-      shared = { type: 'slideStack', items: [shared, shared] };
+      shared = { type: 'slideStackLayout', items: [shared, shared] };
     }
     let visits = 0;
     findNode([shared], slideWalk, () => {
@@ -169,7 +169,7 @@ describe('embedded and window bodies holding foreign data', () => {
     [
       'window',
       (body: object[]) => ({
-        type: 'slideWindow',
+        type: 'slideWindowLayout',
         chrome: 'chat',
         title: 'Chat',
         body,
@@ -178,7 +178,10 @@ describe('embedded and window bodies holding foreign data', () => {
   ])('a %s accepts a node-shaped value in a foreign node’s data', (_, node) => {
     expect(
       errors(
-        node([chart({ type: 'slideRender' }), chart({ type: 'slideWindow' })])
+        node([
+          chart({ type: 'slideRender' }),
+          chart({ type: 'slideWindowLayout' }),
+        ])
       )
     ).toEqual([]);
   });
@@ -190,7 +193,7 @@ describe('embedded and window bodies holding foreign data', () => {
         surface: 'snapshot',
         body: [
           {
-            type: 'slideStack',
+            type: 'slideStackLayout',
             items: [{ type: 'slideRender', surface: 'snapshot', slide: 'a' }],
           },
         ],
@@ -198,15 +201,15 @@ describe('embedded and window bodies holding foreign data', () => {
     ).toEqual(['an embedded body cannot hold another render']);
     expect(
       errors({
-        type: 'slideWindow',
+        type: 'slideWindowLayout',
         chrome: 'chat',
         title: 'Chat',
         body: [
           {
-            type: 'slideStack',
+            type: 'slideStackLayout',
             items: [
               {
-                type: 'slideWindow',
+                type: 'slideWindowLayout',
                 chrome: 'chat',
                 title: 'In',
                 body: [chart({})],
@@ -230,7 +233,7 @@ describe('embedded and window bodies past the input budget', () => {
     body: [stackChain(count)],
   });
   const window = (count: number) => ({
-    type: 'slideWindow',
+    type: 'slideWindowLayout',
     chrome: 'chat',
     title: 'Chat',
     body: [stackChain(count)],
