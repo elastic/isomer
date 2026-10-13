@@ -44,14 +44,14 @@ export const schema = z
       )
       .optional(),
     definition: fromChildren(
-      'titleDefinition',
+      'definition',
       definitionSchema.describe(
         'A dictionary-style line under the tagline that explains the name.'
       ),
       { text: 'text' }
     ).optional(),
     aside: fromChildren(
-      'titleAside',
+      'aside',
       unresolvedBodyNodeSchema.describe(asideDescription),
       {
         toItem: ({ children }: { children?: ReactNode }, { parseChildren }) => {
@@ -59,7 +59,7 @@ export const schema = z
           if (nodes.length !== 1) {
             throw new IsomerError(
               'UNEXPECTED_CHILDREN',
-              '<TitleSlide.TitleAside> takes one slide node.'
+              '<TitleSlide.Aside> takes one slide node.'
             );
           }
           return nodes[0];

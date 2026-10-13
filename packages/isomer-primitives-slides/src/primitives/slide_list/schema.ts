@@ -34,7 +34,7 @@ export const schema = z
       .describe('Uppercase caption above the list, in a few words.')
       .optional(),
     items: fromChildren(
-      'listItem',
+      'item',
       z
         .array(itemSchema)
         .min(1)

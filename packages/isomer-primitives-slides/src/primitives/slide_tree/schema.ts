@@ -30,7 +30,7 @@ export const schema = z
     type: z.literal('slideTree'),
     root: lineText().describe('The folder being shown, e.g. `checkout/`.'),
     entries: fromChildren(
-      'treeEntry',
+      'item',
       z
         .array(entrySchema)
         .min(1)

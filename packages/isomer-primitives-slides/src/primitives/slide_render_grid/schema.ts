@@ -23,7 +23,7 @@ export const buildSchema = (bodyNodeSchema: ZodType<unknown>) =>
         embeddedBody(bodyNodeSchema, 'What every tile renders.')
       ),
       tiles: fromChildren(
-        'renderTile',
+        'tile',
         z
           .array(
             z

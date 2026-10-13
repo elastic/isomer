@@ -38,7 +38,7 @@ export const schema = z
       'The one thing every target receives, set in mono, e.g. `OrderPlaced`. One or two words.'
     ),
     targets: fromChildren(
-      'fanoutTarget',
+      'target',
       z
         .array(targetSchema)
         .min(2)

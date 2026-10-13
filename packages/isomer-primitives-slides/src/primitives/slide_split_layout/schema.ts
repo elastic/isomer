@@ -96,7 +96,7 @@ type SplitPaneProps = Omit<SplitPane, 'items'> & {
 
 /** Zod schema for {@link SlideSplitLayoutNode}. */
 export const schema = buildSchema(
-  fromChildren('splitPane', panesField(unresolvedBodyNodeSchema), {
+  fromChildren('pane', panesField(unresolvedBodyNodeSchema), {
     propsSchema: panePropsSchema,
     toItem: (
       { children, ...pane }: SplitPaneProps,

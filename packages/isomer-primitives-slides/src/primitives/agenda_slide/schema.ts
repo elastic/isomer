@@ -43,7 +43,7 @@ export const schema = z
   .object({
     type: z.literal('agendaSlide'),
     sections: fromChildren(
-      'agendaSection',
+      'section',
       z
         .array(sectionSchema)
         .min(2)

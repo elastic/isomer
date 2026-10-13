@@ -91,7 +91,7 @@ export const schema = z
       )
       .optional(),
     steps: fromChildren(
-      'pipelineStep',
+      'step',
       z
         .array(stepSchema)
         .min(2)
@@ -102,7 +102,7 @@ export const schema = z
       { text: 'body' }
     ),
     spans: fromChildren(
-      'pipelineSpan',
+      'span',
       z
         .array(spanSchema)
         .max(pipelineMaxSpans)

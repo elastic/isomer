@@ -38,7 +38,7 @@ export const schema = z
       'Section name in two or three words, e.g. `The problem`.'
     ),
     slides: fromChildren(
-      'sectionItem',
+      'item',
       z
         .array(slideSchema)
         .min(1)

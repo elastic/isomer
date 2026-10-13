@@ -69,7 +69,7 @@ export const schema = z
       'The single step both paths feed into, set as a filled chip on the right, e.g. "Checkout".'
     ),
     notes: fromChildren(
-      'lanesNote',
+      'note',
       z
         .array(noteSchema)
         .max(lanesMaxNotes)

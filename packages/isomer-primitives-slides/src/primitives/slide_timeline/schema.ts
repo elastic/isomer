@@ -45,7 +45,7 @@ export const schema = z
   .object({
     type: z.literal('slideTimeline'),
     items: fromChildren(
-      'timelineItem',
+      'item',
       z
         .array(itemSchema)
         .min(3)

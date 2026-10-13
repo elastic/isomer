@@ -64,7 +64,7 @@ export const schema = z
       )
       .optional(),
     turns: fromChildren(
-      'transcriptTurn',
+      'turn',
       z
         .array(turnSchema)
         .min(1)

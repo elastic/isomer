@@ -17,7 +17,7 @@ export const schema = z
   .object({
     type: z.literal('slideBulletList'),
     items: textItems(
-      'bulletItem',
+      'item',
       z
         .array(wrappedText())
         .min(1)

@@ -61,7 +61,7 @@ export const schema = z
   .object({
     type: z.literal('slideSequence'),
     actors: fromChildren(
-      'sequenceActor',
+      'actor',
       z
         .array(actorSchema)
         .min(3)
@@ -72,7 +72,7 @@ export const schema = z
       { text: 'label' }
     ),
     messages: fromChildren(
-      'sequenceMessage',
+      'message',
       z
         .array(messageSchema)
         .min(2)

@@ -56,7 +56,7 @@ export const schema = z
         'Slide content, top to bottom. Open a content slide with `slideHeading`. At least one node.'
       ),
     footer: fromChildren(
-      'slideFooter',
+      'footer',
       footerSchema.describe(
         'The footer: the deck’s name, the section this slide belongs to, and its address.'
       )

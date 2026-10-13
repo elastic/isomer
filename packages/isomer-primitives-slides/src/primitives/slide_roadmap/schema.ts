@@ -39,7 +39,7 @@ const columnSchema = z
       )
       .optional(),
     items: fromChildren(
-      'roadmapItem',
+      'item',
       z
         .array(itemSchema)
         .min(1)
@@ -61,7 +61,7 @@ export const schema = z
   .object({
     type: z.literal('slideRoadmap'),
     columns: fromChildren(
-      'roadmapColumn',
+      'column',
       z
         .array(columnSchema)
         .min(2)

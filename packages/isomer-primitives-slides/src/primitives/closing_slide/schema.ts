@@ -47,7 +47,7 @@ export const schema = z
       'Two or three words that close the deck, e.g. `Start here`.'
     ),
     links: fromChildren(
-      'closingLink',
+      'link',
       z
         .array(linkSchema)
         .min(1)
@@ -58,7 +58,7 @@ export const schema = z
       { text: 'text' }
     ),
     paths: fromChildren(
-      'closingPath',
+      'path',
       z
         .array(pathSchema)
         .min(1)

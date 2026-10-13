@@ -226,12 +226,12 @@ describe('slideTranscript from JSX', () => {
     expect(
       turnsFrom(
         createElement(
-          SlideTranscript.TranscriptTurn,
+          SlideTranscript.Turn,
           { role: 'model' },
           'First line.\nSecond line.'
         ),
         createElement(
-          SlideTranscript.TranscriptTurn,
+          SlideTranscript.Turn,
           { role: 'host', format: 'code' },
           'a:  1\n',
           '  b: 2'
@@ -246,7 +246,7 @@ describe('slideTranscript from JSX', () => {
   it('takes a text prop over children', () => {
     expect(
       turnsFrom(
-        createElement(SlideTranscript.TranscriptTurn, {
+        createElement(SlideTranscript.Turn, {
           role: 'user',
           text: 'Hi',
         })

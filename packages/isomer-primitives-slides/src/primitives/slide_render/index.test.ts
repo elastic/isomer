@@ -440,8 +440,6 @@ describe('slideRender JSX', () => {
           )
         )
       )
-    ).toThrow(
-      'Expected <SlideRenderGrid.RenderTile> but received <SlideHeading>.'
-    );
+    ).toThrow('Expected <SlideRenderGrid.Tile> but received <SlideHeading>.');
   });
 });

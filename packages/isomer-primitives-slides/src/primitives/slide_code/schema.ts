@@ -164,7 +164,7 @@ export const schema = z
   .object({
     type: z.literal('slideCode'),
     panels: fromChildren(
-      'codePanel',
+      'panel',
       z
         .array(panelSchema)
         .min(1)

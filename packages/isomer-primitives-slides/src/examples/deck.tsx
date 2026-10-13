@@ -34,22 +34,16 @@ export const titleSlide: SlideComposition = toComposition(
         eyebrow="Reference pack"
         title="Isomer"
         tagline="One composition, **every surface**.">
-        <TitleSlide.TitleAside>
+        <TitleSlide.Aside>
           <SlideBulletList marker="check">
-            <SlideBulletList.BulletItem>
-              React and HTML
-            </SlideBulletList.BulletItem>
-            <SlideBulletList.BulletItem>
-              Markdown and plain text
-            </SlideBulletList.BulletItem>
-            <SlideBulletList.BulletItem>
-              Slack Block Kit
-            </SlideBulletList.BulletItem>
-            <SlideBulletList.BulletItem>SVG and PNG</SlideBulletList.BulletItem>
+            <SlideBulletList.Item>React and HTML</SlideBulletList.Item>
+            <SlideBulletList.Item>Markdown and plain text</SlideBulletList.Item>
+            <SlideBulletList.Item>Slack Block Kit</SlideBulletList.Item>
+            <SlideBulletList.Item>SVG and PNG</SlideBulletList.Item>
           </SlideBulletList>
-        </TitleSlide.TitleAside>
+        </TitleSlide.Aside>
       </TitleSlide>
-      <SlideFrame.SlideFooter {...footer} />
+      <SlideFrame.Footer {...footer} />
     </SlideFrame>
   </Composition>
 );
@@ -61,32 +55,26 @@ export const splitSlide: SlideComposition = toComposition(
         A slide is **one composition**
       </SlideHeading>
       <SlideSplitLayout ratio="wideLeft" divider="arrow">
-        <SlideSplitLayout.SplitPane>
+        <SlideSplitLayout.Pane>
           <SlideCode>
-            <SlideCode.CodePanel file="slide.ts" language="ts">
+            <SlideCode.Panel file="slide.ts" language="ts">
               {`
                 runtime.surfaces.markdown.render(slide);
                 runtime.surfaces.slack.render(slide);
                 runtime.surfaces.snapshot.render(slide);
               `}
-            </SlideCode.CodePanel>
+            </SlideCode.Panel>
           </SlideCode>
-        </SlideSplitLayout.SplitPane>
-        <SlideSplitLayout.SplitPane label="Surfaces" tone="primary">
+        </SlideSplitLayout.Pane>
+        <SlideSplitLayout.Pane label="Surfaces" tone="primary">
           <SlideBulletList>
-            <SlideBulletList.BulletItem>Markdown</SlideBulletList.BulletItem>
-            <SlideBulletList.BulletItem>
-              Slack blocks
-            </SlideBulletList.BulletItem>
-            <SlideBulletList.BulletItem>An image</SlideBulletList.BulletItem>
+            <SlideBulletList.Item>Markdown</SlideBulletList.Item>
+            <SlideBulletList.Item>Slack blocks</SlideBulletList.Item>
+            <SlideBulletList.Item>An image</SlideBulletList.Item>
           </SlideBulletList>
-        </SlideSplitLayout.SplitPane>
+        </SlideSplitLayout.Pane>
       </SlideSplitLayout>
-      <SlideFrame.SlideFooter
-        {...footer}
-        section="Primitives"
-        sectionNumber="01"
-      />
+      <SlideFrame.Footer {...footer} section="Primitives" sectionNumber="01" />
     </SlideFrame>
   </Composition>
 );

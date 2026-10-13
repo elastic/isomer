@@ -52,7 +52,7 @@ export const schema = z
   .object({
     type: z.literal('slideGraph'),
     nodes: fromChildren(
-      'graphNode',
+      'node',
       z
         .array(nodeSchema)
         .min(2)

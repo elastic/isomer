@@ -32,7 +32,7 @@ const quadrantSchema = z
       'A short caption naming the quadrant, set in its outer corner, e.g. “Quick wins”.'
     ),
     items: textItems(
-      'quadrantItem',
+      'item',
       z
         .array(lineText().describe('One or two words, set as a chip.'))
         .max(4)
@@ -57,7 +57,7 @@ export const schema = z
       'The vertical axis: `low` labels the bottom end, `high` the top.'
     ),
     quadrants: fromChildren(
-      'quadrantCell',
+      'cell',
       z
         .array(quadrantSchema)
         .length(4)

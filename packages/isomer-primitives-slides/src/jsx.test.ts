@@ -76,7 +76,7 @@ describe('slideJsx', () => {
     expect(missing).toEqual([]);
   });
 
-  it('fills split panes from SplitPane children, left then right', () => {
+  it('fills split panes from SlideSplitLayout.Pane children, left then right', () => {
     const composition = toComposition(
       createElement(
         Composition,
@@ -87,13 +87,9 @@ describe('slideJsx', () => {
           createElement(
             SlideSplitLayout,
             { divider: 'arrow' },
+            createElement(SlideSplitLayout.Pane, { label: 'Before' }, code),
             createElement(
-              SlideSplitLayout.SplitPane,
-              { label: 'Before' },
-              code
-            ),
-            createElement(
-              SlideSplitLayout.SplitPane,
+              SlideSplitLayout.Pane,
               { label: 'After', tone: 'primary' },
               createElement(
                 SlideStackLayout,
@@ -142,7 +138,7 @@ describe('slideJsx', () => {
   it.each([
     ['no', []],
     ['two', [bullets, code]],
-  ])('rejects a TitleAside with %s slide nodes', (_count, nodes) => {
+  ])('rejects a TitleSlide.Aside with %s slide nodes', (_count, nodes) => {
     expect(() =>
       toComposition(
         createElement(
@@ -154,7 +150,7 @@ describe('slideJsx', () => {
             createElement(
               TitleSlide,
               { title: 'Crate' },
-              createElement(TitleSlide.TitleAside, null, ...nodes)
+              createElement(TitleSlide.Aside, null, ...nodes)
             )
           )
         )
@@ -162,7 +158,7 @@ describe('slideJsx', () => {
     ).toThrow(
       expect.objectContaining({
         code: 'UNEXPECTED_CHILDREN',
-        message: '<TitleSlide.TitleAside> takes one slide node.',
+        message: '<TitleSlide.Aside> takes one slide node.',
       })
     );
   });
@@ -183,13 +179,13 @@ describe('slideJsx', () => {
               tagline: 'One order. Every store.',
             },
             createElement(
-              TitleSlide.TitleDefinition,
+              TitleSlide.Definition,
               { term: 'crate n.' },
               'Everything a customer means to buy.'
             ),
-            createElement(TitleSlide.TitleAside, null, bullets)
+            createElement(TitleSlide.Aside, null, bullets)
           ),
-          createElement(SlideFrame.SlideFooter, {
+          createElement(SlideFrame.Footer, {
             brand: 'Ledger',
             section: 'Opening',
             sectionNumber: '01',
@@ -232,12 +228,12 @@ describe('slideJsx', () => {
         createElement(
           AgendaSlide,
           null,
-          createElement(AgendaSlide.AgendaSection, {
+          createElement(AgendaSlide.Section, {
             number: '01',
             title: 'The problem',
             count: '3 slides',
           }),
-          createElement(AgendaSlide.AgendaSection, {
+          createElement(AgendaSlide.Section, {
             number: '02',
             title: 'The approach',
             current: true,
@@ -261,12 +257,12 @@ describe('slideJsx', () => {
           ClosingSlide,
           { title: 'Start here' },
           createElement(
-            ClosingSlide.ClosingLink,
+            ClosingSlide.Link,
             { label: 'Docs', href: 'https://example.com/docs' },
             'example.com/docs'
           ),
           createElement(
-            ClosingSlide.ClosingPath,
+            ClosingSlide.Path,
             { title: 'Write a pack' },
             'Read the guide first'
           )
@@ -293,13 +289,9 @@ describe('slideJsx', () => {
         createElement(
           SectionSlide,
           { number: '02', title: 'Settlement' },
+          createElement(SectionSlide.Item, null, 'Refunds settle in two days'),
           createElement(
-            SectionSlide.SectionItem,
-            null,
-            'Refunds settle in two days'
-          ),
-          createElement(
-            SectionSlide.SectionItem,
+            SectionSlide.Item,
             { href: '#slide-12' },
             'The ledger writes first'
           )
@@ -381,16 +373,8 @@ describe('slideJsx', () => {
         createElement(
           SlideBulletList,
           { marker: 'check' },
-          createElement(
-            SlideBulletList.BulletItem,
-            null,
-            'Charges the card once.'
-          ),
-          createElement(
-            SlideBulletList.BulletItem,
-            null,
-            'Refunds in `two days`.'
-          )
+          createElement(SlideBulletList.Item, null, 'Charges the card once.'),
+          createElement(SlideBulletList.Item, null, 'Refunds in `two days`.')
         )
       )
     ).toEqual({
@@ -429,8 +413,8 @@ describe('slideJsx', () => {
         createElement(
           SlideList,
           { label: 'Limits', footnote: 'Per merchant.' },
-          createElement(SlideList.ListItem, { term: 'rate' }, '100 a second.'),
-          createElement(SlideList.ListItem, null, 'Retries back off.')
+          createElement(SlideList.Item, { term: 'rate' }, '100 a second.'),
+          createElement(SlideList.Item, null, 'Retries back off.')
         )
       )
     ).toEqual({
@@ -449,19 +433,19 @@ describe('slideJsx', () => {
           SlideRoadmap,
           null,
           createElement(
-            SlideRoadmap.RoadmapColumn,
+            SlideRoadmap.Column,
             { title: 'Now', status: 'Shipped', current: true },
             createElement(
-              SlideRoadmap.RoadmapItem,
+              SlideRoadmap.Item,
               { title: 'Holds' },
               'Set money aside.'
             )
           ),
           createElement(
-            SlideRoadmap.RoadmapColumn,
+            SlideRoadmap.Column,
             { title: 'Next', status: 'In design' },
             createElement(
-              SlideRoadmap.RoadmapItem,
+              SlideRoadmap.Item,
               { title: 'Splits' },
               'Pay two stores.'
             )
@@ -507,7 +491,7 @@ describe('slideJsx', () => {
           SlideCode,
           null,
           createElement(
-            SlideCode.CodePanel,
+            SlideCode.Panel,
             { file: 'refund.ts', lineNumbers: { highlight: '2' } },
             `
               const refund = async (id) => {
@@ -517,7 +501,7 @@ describe('slideJsx', () => {
               };
             `
           ),
-          createElement(SlideCode.CodePanel, { lines: ['ledger.settle(id);'] })
+          createElement(SlideCode.Panel, { lines: ['ledger.settle(id);'] })
         )
       )
     ).toEqual({
@@ -649,12 +633,12 @@ describe('slideJsx', () => {
           SlideFanout,
           { source: 'Order' },
           createElement(
-            SlideFanout.FanoutTarget,
+            SlideFanout.Target,
             { name: 'Ledger' },
             'Holds the money.'
           ),
           createElement(
-            SlideFanout.FanoutTarget,
+            SlideFanout.Target,
             { name: 'Email', tone: 'accent' },
             'Tells the customer.'
           )
@@ -675,12 +659,12 @@ describe('slideJsx', () => {
           SlideGraph,
           { edges: [['cart', 'ledger']] },
           createElement(
-            SlideGraph.GraphNode,
+            SlideGraph.Node,
             { id: 'cart', term: 'Cart' },
             'Items.'
           ),
           createElement(
-            SlideGraph.GraphNode,
+            SlideGraph.Node,
             { id: 'ledger', term: 'Ledger' },
             'Money.'
           )
@@ -708,7 +692,7 @@ describe('slideJsx', () => {
             label: 'Wallet',
             steps: ['Redirect'],
           }),
-          createElement(SlideLanes.LanesNote, { title: 'Card' }, 'One step.')
+          createElement(SlideLanes.Note, { title: 'Card' }, 'One step.')
         )
       )
     ).toEqual({
@@ -757,10 +741,10 @@ describe('slideJsx', () => {
         createElement(
           SlidePipeline,
           null,
-          createElement(SlidePipeline.PipelineStep, { title: 'Hold' }),
-          createElement(SlidePipeline.PipelineStep, { title: 'Settle' }),
+          createElement(SlidePipeline.Step, { title: 'Hold' }),
+          createElement(SlidePipeline.Step, { title: 'Settle' }),
           createElement(
-            SlidePipeline.PipelineSpan,
+            SlidePipeline.Span,
             { from: 0, to: 1, tone: 'primary', label: 'Ours', title: 'Ledger' },
             'We own both steps.'
           )
@@ -786,16 +770,16 @@ describe('slideJsx', () => {
         createElement(
           SlideSequence,
           null,
-          createElement(SlideSequence.SequenceActor, { id: 'app' }, 'App'),
-          createElement(SlideSequence.SequenceActor, { id: 'api' }, 'API'),
-          createElement(SlideSequence.SequenceActor, { id: 'bank' }, 'Bank'),
+          createElement(SlideSequence.Actor, { id: 'app' }, 'App'),
+          createElement(SlideSequence.Actor, { id: 'api' }, 'API'),
+          createElement(SlideSequence.Actor, { id: 'bank' }, 'Bank'),
           createElement(
-            SlideSequence.SequenceMessage,
+            SlideSequence.Message,
             { from: 'app', to: 'api' },
             'Pay'
           ),
           createElement(
-            SlideSequence.SequenceMessage,
+            SlideSequence.Message,
             { from: 'api', to: 'bank' },
             'Charge'
           )
@@ -816,7 +800,7 @@ describe('slideJsx', () => {
 
     const item = (label: string) =>
       createElement(
-        SlideTimeline.TimelineItem,
+        SlideTimeline.Item,
         { label, channel: 'Pager', heading: `${label} paged` },
         'On call answered.'
       );
@@ -850,7 +834,7 @@ describe('slideJsx', () => {
           SlideTree,
           { root: 'checkout/' },
           createElement(
-            SlideTree.TreeEntry,
+            SlideTree.Item,
             { name: 'refund.ts' },
             'Issues refunds.'
           )
@@ -872,7 +856,7 @@ describe('slideJsx', () => {
           null,
           createElement(SlideRender, { surface: 'snapshot', body: embedded }),
           createElement(
-            SlideAnnotatedRender.RenderPin,
+            SlideAnnotatedRender.Pin,
             { x: 20, y: 30, title: 'Heading' },
             'The claim.'
           )
@@ -889,16 +873,8 @@ describe('slideJsx', () => {
         createElement(
           SlideRenderGrid,
           { body: embedded },
-          createElement(
-            SlideRenderGrid.RenderTile,
-            { surface: 'react' },
-            'Hosts'
-          ),
-          createElement(
-            SlideRenderGrid.RenderTile,
-            { surface: 'slack' },
-            'Channels'
-          )
+          createElement(SlideRenderGrid.Tile, { surface: 'react' }, 'Hosts'),
+          createElement(SlideRenderGrid.Tile, { surface: 'slack' }, 'Channels')
         )
       )
     ).toEqual({
@@ -917,7 +893,7 @@ describe('slideJsx', () => {
         createElement(
           Composition,
           null,
-          createElement(SlideSplitLayout.SplitPane, null, bullets)
+          createElement(SlideSplitLayout.Pane, null, bullets)
         )
       )
     ).toThrow();

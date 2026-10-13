@@ -48,7 +48,7 @@ export const buildSchema = <TRender extends ZodType<unknown>>(
         'The slideRender to annotate, usually on the `snapshot` surface. It fills the wider column; its caption sits above it.'
       ),
       pins: fromChildren(
-        'renderPin',
+        'pin',
         z
           .array(pinSchema)
           .min(1)
