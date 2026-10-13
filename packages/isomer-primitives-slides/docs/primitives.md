@@ -381,7 +381,7 @@ Code keeps its whitespace. A command is its text. A `CodePanel`'s text is its `l
 </SlideTranscript>
 ```
 
-A number's sentence is its text, and the figures are attributes. A bar's label is its text. A table, a matrix, and a quadrant keep their grids as props: a row is a list of cells, and an element per cell would be longer than the array it replaces.
+A number's sentence is its text, and the figures are attributes. A bar's label is its text. A table and a matrix keep their grids as props: a row is a list of cells, and an element per cell would be longer than the array it replaces. A quadrant takes four `QuadrantCell` children, top-left to bottom-right, each holding its `QuadrantItem` chips; a cell with none is empty.
 
 ```tsx
 <SlideStat value="2" unit="days">Refunds settle **three days** sooner.</SlideStat>
@@ -399,6 +399,19 @@ A number's sentence is its text, and the figures are attributes. A bar's label i
   <Bar value={12} highlight>Checkout</Bar>
   <Bar value={4} detail="p95">Search</Bar>
 </SlideBars>
+
+<SlideQuadrant x={{ low: 'Easy', high: 'Hard' }} y={{ low: 'Minor', high: 'Major' }} highlight={0}>
+  <QuadrantCell label="Quick wins">
+    <QuadrantItem>dark mode</QuadrantItem>
+  </QuadrantCell>
+  <QuadrantCell label="Big bets">
+    <QuadrantItem>same-day</QuadrantItem>
+  </QuadrantCell>
+  <QuadrantCell label="Fill-ins" />
+  <QuadrantCell label="Money pits">
+    <QuadrantItem>own fleet</QuadrantItem>
+  </QuadrantCell>
+</SlideQuadrant>
 ```
 
 A diagram's parts are children of their kind. Two kinds share one children list, and each element goes to its own field: a pipeline's `PipelineStep` and `PipelineSpan`, a sequence's `SequenceActor` and `SequenceMessage`, and a lanes diagram's `Lane` and `LanesNote`. Ids, edges, indexes, and short lists of chips or steps stay attributes:

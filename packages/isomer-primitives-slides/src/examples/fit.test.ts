@@ -189,7 +189,7 @@ describe('the largest steps a slide with no heading takes still fit', () => {
       variant: 'quadrant-cellSize',
       node: quadrantWith(
         Math.min(
-          2 * (quadrantFullExample.quadrants[0]?.items.length ?? 0),
+          2 * (quadrantFullExample.quadrants[0]?.items?.length ?? 0),
           most(quadrantFit[step])
         )
       ),

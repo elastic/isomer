@@ -47,7 +47,7 @@ export const quadrantSize = (
     crowding,
   }: Pick<ReturnType<typeof slideLayout>, 'width' | 'crowding'>
 ): SlideSize => {
-  const [tl, tr, bl, br] = quadrants.map(({ items }) => items.length);
+  const [tl, tr, bl, br] = quadrants.map(({ items = [] }) => items.length);
   return sizeForLoad(
     size,
     (Math.max(tl ?? 0, tr ?? 0) + Math.max(bl ?? 0, br ?? 0)) *
@@ -78,7 +78,7 @@ export const react = (
         {x.low}
       </span>
       <div className={cls(context, quadrant.plot)}>
-        {quadrants.map(({ label: caption, items }, index) => {
+        {quadrants.map(({ label: caption, items = [] }, index) => {
           const highlighted = index === highlight;
           return (
             <div

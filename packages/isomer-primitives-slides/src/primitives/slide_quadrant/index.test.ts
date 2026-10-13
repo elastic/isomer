@@ -313,7 +313,7 @@ describe('slideQuadrant', () => {
 
     it('draws the full example, four items in every cell, at the smallest step', () => {
       expect(
-        fullExample.quadrants.every(({ items }) => items.length === 4)
+        fullExample.quadrants.every(({ items = [] }) => items.length === 4)
       ).toBe(true);
       expect(
         quadrantSize(fullExample, { width: frameContentWidth, crowding: 1 })
