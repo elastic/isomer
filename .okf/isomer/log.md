@@ -3,6 +3,7 @@
 ## 2026-10-09
 
 - **`isomer-studio dev` hot-updates instead of reloading**: The dev server runs on Vite. A change to the config or anything it imports re-renders the mounted Studio with the new config, keeping the route, the editor's text and view state, and a syntax error shows Vite's overlay until it is fixed. In Node, `dev` loads the config through a Vite module runner and re-runs only the changed modules and their importers before the browser updates, so PNGs follow edits and packages in `node_modules` stay single copies; `check` and `build` keep `tsx`, and `build` keeps esbuild. `pnpm studio:dev` runs the CLI from source against the slides pack, so Studio components also get React Fast Refresh.
+- **Studio v4 chrome**: Dev is tinted forest green with EUI success accents, Docs stays navy with primary blue, and corner glows run across the header and sidebar as one surface. One button toggles light and dark. The sidebar uses fixed 28px rows and one-color outlined icons, with the accent only on the active one. The Dev preview is one card that starts on All surfaces, a grid of 16:9 cards, with a Surface menu, Rendered/Source, Fit width, and a per-surface note; the editor's prop chips move into a `+ Prop` menu beside the example picker. Docs pages get Examples and Guidance headings, a wrapping 1320px layout, guidance and prop descriptions with inline code, and enum values as a union literal in the props table's Type column.
 
 ## 2026-10-08
 

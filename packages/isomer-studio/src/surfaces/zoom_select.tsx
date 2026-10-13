@@ -7,7 +7,7 @@
 
 import React, { useState } from 'react';
 import type { EuiSelectableOption } from '@elastic/eui';
-import { EuiButton, EuiPopover, EuiSelectable } from '@elastic/eui';
+import { EuiButtonEmpty, EuiPopover, EuiSelectable } from '@elastic/eui';
 import { css } from '@emotion/react';
 
 import type { PreviewZoom } from './scaled_preview';
@@ -15,21 +15,23 @@ import type { PreviewZoom } from './scaled_preview';
 const ZOOMS: readonly PreviewZoom[] = ['fit', 0.5, 0.75, 1, 1.5, 2];
 
 export const zoomLabel = (zoom: PreviewZoom): string =>
-  zoom === 'fit' ? 'Fit' : `${Math.round(zoom * 100)}%`;
+  zoom === 'fit' ? 'Fit width' : `${Math.round(zoom * 100)}%`;
 
 /** Chooses how the visual surfaces scale: fit to the panel, or a fixed zoom. */
 export const ZoomSelect = ({
   zoom,
   onChange,
+  isDisabled = false,
 }: {
   zoom: PreviewZoom;
   onChange: (zoom: PreviewZoom) => void;
+  isDisabled?: boolean;
 }) => {
   const [isOpen, setOpen] = useState(false);
 
   const options = ZOOMS.map((candidate): EuiSelectableOption => ({
     key: String(candidate),
-    label: candidate === 'fit' ? 'Fit to container' : zoomLabel(candidate),
+    label: zoomLabel(candidate),
     checked: candidate === zoom ? 'on' : undefined,
   }));
 
@@ -39,17 +41,18 @@ export const ZoomSelect = ({
       isOpen={isOpen}
       closePopover={() => setOpen(false)}
       panelPaddingSize="none"
-      anchorPosition="downLeft"
+      anchorPosition="downRight"
       button={
-        <EuiButton
-          size="s"
+        <EuiButtonEmpty
+          size="xs"
           color="text"
-          iconType="magnifyPlus"
-          iconSide="left"
+          iconType="chevronSingleDown"
+          iconSide="right"
+          {...{ isDisabled }}
           onClick={() => setOpen((open) => !open)}
           aria-label={`Zoom: ${zoomLabel(zoom)}`}>
           {zoomLabel(zoom)}
-        </EuiButton>
+        </EuiButtonEmpty>
       }>
       <EuiSelectable
         aria-label="Zoom"

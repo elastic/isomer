@@ -13,6 +13,7 @@ import { css } from '@emotion/react';
 import { useAccent } from './chrome/accent';
 import type { ColorModePreference } from './chrome/color_mode';
 import { useColorMode } from './chrome/color_mode';
+import { DEV_TINT } from './chrome/dev_tint';
 import { StudioHeader } from './chrome/header';
 import { NAV_WIDTH, StudioNav } from './chrome/nav';
 import type { StudioRoute } from './chrome/route';
@@ -33,22 +34,46 @@ const darkWrapper = {
   `,
 };
 
+const NO_TINT = {};
+
+const docsBackground = css`
+  background-color: #0b2347;
+  background-image:
+    radial-gradient(circle at 0% 0%, rgba(27, 169, 245, 0.3), transparent 24%),
+    radial-gradient(
+      circle at 4% 100%,
+      rgba(240, 78, 152, 0.2),
+      transparent 22%
+    ),
+    radial-gradient(circle at 40% 0%, rgba(0, 191, 179, 0.14), transparent 18%);
+`;
+const devBackground = css`
+  background-color: #0b3a2c;
+  background-image:
+    radial-gradient(circle at 0% 0%, rgba(0, 191, 179, 0.3), transparent 24%),
+    radial-gradient(
+      circle at 4% 100%,
+      rgba(254, 197, 20, 0.2),
+      transparent 22%
+    ),
+    radial-gradient(circle at 40% 0%, rgba(27, 169, 245, 0.14), transparent 18%);
+`;
+
 const Layout = ({
   title,
   route,
   navigate,
-  colorMode,
   onColorModeChange,
 }: {
   title?: string | undefined;
   route: StudioRoute;
   navigate: (next: Partial<StudioRoute>) => void;
-  colorMode: ColorModePreference;
   onColorModeChange: (colorMode: ColorModePreference) => void;
 }) => {
   const { euiTheme } = useEuiTheme();
   const {
     docs: { primitives },
+    theme,
   } = useStudio();
   const { mode, page } = route;
   const accent = useAccent(mode);
@@ -59,8 +84,9 @@ const Layout = ({
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: ${euiTheme.colors.backgroundBasePlain};
     color: ${euiTheme.colors.textParagraph};
+    background-color: ${mode === 'docs' ? '#0b2347' : '#0b3a2c'};
+    background-image: ${mode === 'docs' ? docsBackground : devBackground};
   `;
   const body = css`
     flex: 1;
@@ -70,11 +96,8 @@ const Layout = ({
         0,
         1fr
       );
-    background: ${accent.shell};
-    transition:
-      grid-template-columns ${euiTheme.animation.normal}
-        ${euiTheme.animation.resistance},
-      background ${euiTheme.animation.normal} ${euiTheme.animation.resistance};
+    transition: grid-template-columns ${euiTheme.animation.normal}
+      ${euiTheme.animation.resistance};
   `;
   const main = css`
     min-height: 0;
@@ -97,7 +120,7 @@ const Layout = ({
             title,
             mode,
             accent,
-            colorMode,
+            theme,
             onColorModeChange,
             onSelectPrimitive,
           }}
@@ -107,7 +130,7 @@ const Layout = ({
       <div css={body}>
         <EuiThemeProvider colorMode="dark" wrapperProps={darkWrapper}>
           <StudioNav
-            {...{ mode, page, accent }}
+            {...{ mode, page }}
             isOpen={isNavOpen}
             onToggle={() => setNavOpen((open) => !open)}
             onSelect={(next) => navigate({ page: next, example: 0 })}
@@ -115,11 +138,11 @@ const Layout = ({
         </EuiThemeProvider>
         <main css={main}>
           {!primitives.length ? null : mode === 'dev' ? (
-            <DevView {...{ route, navigate, accent }} />
+            <DevView {...{ route, navigate }} />
           ) : page === GALLERY ? (
             <GalleryView />
           ) : (
-            <DocsView {...{ route, navigate }} />
+            <DocsView {...{ route, navigate, accent }} />
           )}
         </main>
       </div>
@@ -135,11 +158,9 @@ const Studio = ({
   transformJsx,
   rasterizePng,
   theme,
-  colorMode,
   onColorModeChange,
 }: IsomerStudioProps & {
   theme: StudioTheme;
-  colorMode: ColorModePreference;
   onColorModeChange: (colorMode: ColorModePreference) => void;
 }) => {
   const docs = useMemo(() => describeRuntime(runtime), [runtime]);
@@ -183,22 +204,22 @@ const Studio = ({
 
   return (
     <StudioContextProvider {...{ value }}>
-      <Layout {...{ title, route, navigate, colorMode, onColorModeChange }} />
+      <EuiThemeProvider
+        modify={route.mode === 'dev' ? DEV_TINT : NO_TINT}
+        wrapperProps={darkWrapper}>
+        <Layout {...{ title, route, navigate, onColorModeChange }} />
+      </EuiThemeProvider>
     </StudioContextProvider>
   );
 };
 
 /** A dev and docs shell for an Isomer runtime, built only from what the runtime reports. */
 export const IsomerStudio = (props: IsomerStudioProps) => {
-  const {
-    preference: colorMode,
-    theme,
-    setPreference: onColorModeChange,
-  } = useColorMode();
+  const { theme, setPreference: onColorModeChange } = useColorMode();
 
   return (
     <EuiProvider colorMode={theme}>
-      <Studio {...props} {...{ theme, colorMode, onColorModeChange }} />
+      <Studio {...props} {...{ theme, onColorModeChange }} />
     </EuiProvider>
   );
 };

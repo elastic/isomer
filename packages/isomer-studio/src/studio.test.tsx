@@ -200,17 +200,46 @@ describe('IsomerStudio', () => {
     );
   });
 
-  it('remembers the color mode, defaulting to the system', async () => {
+  it('toggles and remembers the color mode, starting from the system', async () => {
     window.localStorage.removeItem('isomer-studio:color-mode');
     await renderStudio();
-    const mode = (name: string) => screen.getByRole('button', { name });
-    expect(mode('System')).toHaveAttribute('aria-pressed', 'true');
+    expect(window.localStorage.getItem('isomer-studio:color-mode')).toBe(
+      'system'
+    );
 
-    fireEvent.click(mode('Dark'));
-    expect(mode('Dark')).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Switch to dark mode' })
+    );
+    expect(
+      screen.getByRole('button', { name: 'Switch to light mode' })
+    ).toBeInTheDocument();
     expect(window.localStorage.getItem('isomer-studio:color-mode')).toBe(
       'dark'
     );
+  });
+
+  it('shows every surface by default, and one at a time when picked', async () => {
+    await renderStudio();
+    expect(
+      screen.getByText(/^All \d+ surfaces from the same props\./)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('region', { name: 'Text preview' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('region', { name: 'HTML preview' })
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Surface/ }));
+    fireEvent.click(await screen.findByRole('option', { name: 'HTML' }));
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('region', { name: 'Text preview' })
+      ).not.toBeInTheDocument()
+    );
+    expect(
+      screen.getByRole('region', { name: 'HTML preview' })
+    ).toBeInTheDocument();
   });
 
   it('picks examples from rendered previews', async () => {

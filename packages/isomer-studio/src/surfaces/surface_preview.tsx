@@ -9,6 +9,7 @@ import type { ReactNode } from 'react';
 import React, { useMemo } from 'react';
 import type { IconType } from '@elastic/eui';
 import {
+  EuiButton,
   EuiButtonGroup,
   EuiCallOut,
   EuiLink,
@@ -45,9 +46,9 @@ export const SURFACE_ICONS: Readonly<Record<StudioSurface, IconType>> = {
   slack: 'logoSlack',
 };
 
-const VIEW_OPTIONS = [
-  { id: 'render', label: 'Render', iconType: 'eye' },
-  { id: 'source', label: 'Source', iconType: 'code' },
+const VIEW_OPTIONS: { id: SurfaceView; label: string }[] = [
+  { id: 'render', label: 'Rendered' },
+  { id: 'source', label: 'Source' },
 ];
 
 const isSurfaceView = (id: string): id is SurfaceView =>
@@ -64,13 +65,18 @@ export const SurfaceViewToggle = ({
   legend: string;
 }) => (
   <EuiButtonGroup
-    legend={legend}
-    options={VIEW_OPTIONS}
+    {...{ legend }}
+    buttonSize="s"
+    variant="selection"
     idSelected={view}
-    onChange={(id) => isSurfaceView(id) && onChange(id)}
-    buttonSize="compressed"
-    isIconOnly
-  />
+    display="highlighted"
+    onChange={(id) => isSurfaceView(id) && onChange(id)}>
+    {VIEW_OPTIONS.map(({ id, label }) => (
+      <EuiButton key={id} id={id}>
+        {label}
+      </EuiButton>
+    ))}
+  </EuiButtonGroup>
 );
 
 /** Pads surfaces that draw bare text to the inset a pack's boxed content (a callout) has. */

@@ -71,6 +71,8 @@ export interface ExamplePickerProps {
   examples: readonly StudioExample[];
   example: number;
   onChange: (example: number) => void;
+  /** Defaults to `downLeft`. */
+  anchorPosition?: 'downLeft' | 'downRight';
 }
 
 /** A button naming the current example that opens every example, rendered, to pick from. */
@@ -78,6 +80,7 @@ export const ExamplePicker = ({
   examples,
   example,
   onChange,
+  anchorPosition = 'downLeft',
 }: ExamplePickerProps) => {
   const { euiTheme } = useEuiTheme();
   const [isOpen, setOpen] = useState(false);
@@ -87,14 +90,15 @@ export const ExamplePicker = ({
     <EuiPopover
       isOpen={isOpen}
       closePopover={() => setOpen(false)}
-      anchorPosition="downLeft"
+      {...{ anchorPosition }}
       panelPaddingSize="s"
       aria-label="Examples"
       button={
         <EuiButton
           size="s"
           color="text"
-          iconType="grid"
+          iconType="chevronSingleDown"
+          iconSide="right"
           isDisabled={!examples.length}
           onClick={() => setOpen((open) => !open)}
           aria-label={`Example: ${name}`}>

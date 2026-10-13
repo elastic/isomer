@@ -8,39 +8,36 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import type { EuiSelectableTemplateSitewideOption } from '@elastic/eui';
 import {
+  EuiButton,
   EuiButtonGroup,
+  EuiButtonIcon,
   EuiSelectableTemplateSitewide,
   EuiText,
   useEuiTheme,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
 
+import type { StudioTheme } from '../config';
 import { useStudio } from '../studio_context';
 
 import type { Accent } from './accent';
 import type { ColorModePreference } from './color_mode';
-import { isColorModePreference } from './color_mode';
 import type { StudioMode } from './route';
 
-const MODE_OPTIONS = [
+const MODE_OPTIONS: { id: StudioMode; label: string }[] = [
   { id: 'dev', label: 'Dev' },
   { id: 'docs', label: 'Docs' },
 ];
-
-const COLOR_MODE_OPTIONS = [
-  { id: 'light', label: 'Light', iconType: 'sun' },
-  { id: 'dark', label: 'Dark', iconType: 'moon' },
-  { id: 'system', label: 'System', iconType: 'display' },
-];
-
-const isMode = (id: string): id is StudioMode => id === 'dev' || id === 'docs';
+const isMode = (id: string): id is StudioMode =>
+  MODE_OPTIONS.some((option) => option.id === id);
 
 export interface StudioHeaderProps {
   /** Defaults to "Isomer Studio". */
   title?: string | undefined;
   mode: StudioMode;
   accent: Accent;
-  colorMode: ColorModePreference;
+  /** The theme shown; the toggle switches to the other one. */
+  theme: StudioTheme;
   onModeChange: (mode: StudioMode) => void;
   onColorModeChange: (colorMode: ColorModePreference) => void;
   onSelectPrimitive: (type: string) => void;
@@ -109,12 +106,30 @@ const Search = ({
   );
 };
 
+const ThemeToggle = ({
+  theme,
+  onColorModeChange,
+}: Pick<StudioHeaderProps, 'theme' | 'onColorModeChange'>) => {
+  const next = theme === 'dark' ? 'light' : 'dark';
+  const label = `Switch to ${next} mode`;
+
+  return (
+    <EuiButtonIcon
+      iconType={theme === 'dark' ? 'sun' : 'moon'}
+      color="text"
+      aria-label={label}
+      title={label}
+      onClick={() => onColorModeChange(next)}
+    />
+  );
+};
+
 /** Title, the Dev/Docs switch, search and the color mode. */
 export const StudioHeader = ({
   title = 'Isomer Studio',
   mode,
   accent,
-  colorMode,
+  theme,
   onModeChange,
   onColorModeChange,
   onSelectPrimitive,
@@ -128,9 +143,6 @@ export const StudioHeader = ({
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    background: ${accent.shell};
-    transition: background ${euiTheme.animation.normal}
-      ${euiTheme.animation.resistance};
   `;
   const logo = css`
     width: ${euiTheme.size.l};
@@ -148,21 +160,26 @@ export const StudioHeader = ({
           gap: ${euiTheme.size.s};
         `}>
         <span css={logo} />
-        <EuiText size="s">
+        <EuiText size="s" color="ghost">
           <strong>{title}</strong>
         </EuiText>
-        <EuiText size="xs" color="subdued">
+        <EuiText size="xs" color="ghost">
           {mode === 'dev' ? 'Workbench' : 'Reference'}
         </EuiText>
       </div>
       <EuiButtonGroup
         legend="Studio mode"
-        options={MODE_OPTIONS}
+        buttonSize="s"
+        variant="selection"
         idSelected={mode}
-        onChange={(id) => isMode(id) && onModeChange(id)}
-        color={accent.color}
-        buttonSize="compressed"
-      />
+        display="highlighted"
+        onChange={(id) => isMode(id) && onModeChange(id)}>
+        {MODE_OPTIONS.map(({ id, label }) => (
+          <EuiButton key={id} id={id}>
+            {label}
+          </EuiButton>
+        ))}
+      </EuiButtonGroup>
       <div
         css={css`
           display: flex;
@@ -171,15 +188,7 @@ export const StudioHeader = ({
           gap: ${euiTheme.size.s};
         `}>
         <Search {...{ onSelectPrimitive }} />
-        <EuiButtonGroup
-          legend="Color mode"
-          options={COLOR_MODE_OPTIONS}
-          idSelected={colorMode}
-          onChange={(id) => isColorModePreference(id) && onColorModeChange(id)}
-          color={accent.color}
-          buttonSize="compressed"
-          isIconOnly
-        />
+        <ThemeToggle {...{ theme, onColorModeChange }} />
       </div>
     </header>
   );

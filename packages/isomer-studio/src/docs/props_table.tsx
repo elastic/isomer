@@ -16,15 +16,33 @@ import {
   EuiText,
 } from '@elastic/eui';
 import type { PropDescriptor } from '@elastic/isomer-runtime';
+import { css } from '@emotion/react';
 
-const COLUMNS: Array<EuiBasicTableColumn<PropDescriptor>> = [
+import type { Accent } from '../chrome/accent';
+
+import { InlineCode } from './inline_code';
+
+/** An enum's values as a TypeScript union literal, such as `"l" | "m" | "s"`. */
+export const enumLiteral = (values: readonly string[]): string =>
+  values.map((value) => JSON.stringify(value)).join(' | ');
+
+const columnsFor = (
+  { text, light }: Accent,
+  names: readonly string[]
+): Array<EuiBasicTableColumn<PropDescriptor>> => [
   {
     name: 'Name',
     width: '14em',
     render: ({ name, required }: PropDescriptor) => (
       <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false} wrap>
         <EuiFlexItem grow={false}>
-          <EuiCode>{name}</EuiCode>
+          <EuiCode
+            css={css`
+              color: ${text};
+              background: ${light};
+            `}>
+            {name}
+          </EuiCode>
         </EuiFlexItem>
         {required ? (
           <EuiFlexItem grow={false}>
@@ -36,20 +54,24 @@ const COLUMNS: Array<EuiBasicTableColumn<PropDescriptor>> = [
   },
   {
     name: 'Type',
-    width: '10em',
-    render: ({ kind, type }: PropDescriptor) => (
-      <EuiText size="s" color="subdued">
-        {kind === 'enum' ? 'enum' : type}
-      </EuiText>
-    ),
+    width: '12em',
+    render: ({ type, values }: PropDescriptor) =>
+      values ? (
+        <EuiCode>{enumLiteral(values)}</EuiCode>
+      ) : (
+        <EuiText size="s" color="subdued">
+          {type}
+        </EuiText>
+      ),
   },
   {
     name: 'Description',
-    render: ({ values, description }: PropDescriptor) =>
-      values || description ? (
+    render: ({ description }: PropDescriptor) =>
+      description ? (
         <EuiText size="s">
-          {values ? <p>{values.join(' | ')}</p> : null}
-          {description ? <p>{description}</p> : null}
+          <p>
+            <InlineCode text={description} {...{ names }} />
+          </p>
         </EuiText>
       ) : (
         <EuiText size="s" color="subdued">
@@ -60,11 +82,20 @@ const COLUMNS: Array<EuiBasicTableColumn<PropDescriptor>> = [
 ];
 
 /** A primitive's props, read from its authoring JSON Schema. */
-export const PropsTable = ({ props }: { props: PropDescriptor[] }) => (
+export const PropsTable = ({
+  props,
+  accent,
+  names,
+}: {
+  props: PropDescriptor[];
+  accent: Accent;
+  /** Primitive types to set as code where a description names them. */
+  names: readonly string[];
+}) => (
   <EuiBasicTable<PropDescriptor>
     tableCaption="Props"
     items={props}
-    columns={COLUMNS}
+    columns={columnsFor(accent, names)}
     itemId="name"
     noItemsMessage="This primitive has no props besides its type."
   />

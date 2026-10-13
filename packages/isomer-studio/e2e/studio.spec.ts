@@ -174,7 +174,8 @@ const editFirstString = async (page: Page) => {
   expect(edited).not.toBe(source);
   await editor(page).locator('.view-lines').click();
   await expect(async () => {
-    await page.keyboard.press('ControlOrMeta+A');
+    // The Desktop Chrome device reports Windows, so Monaco binds select-all to Control on every host.
+    await page.keyboard.press('Control+A');
     await expect(editor(page).locator('.selected-text').first()).toBeVisible({
       timeout: 1000,
     });
@@ -227,7 +228,7 @@ test.describe('static build', () => {
     ).toBeGreaterThan(0);
 
     const [lightPng] = pngRequests;
-    await page.getByRole('button', { name: 'Dark', exact: true }).click();
+    await page.getByRole('button', { name: 'Switch to dark mode' }).click();
     await expect.poll(() => pngRequests.length).toBeGreaterThan(1);
     expect(pngRequests.at(-1)).not.toBe(lightPng);
     await expectPngLoaded(page);

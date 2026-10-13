@@ -10,25 +10,24 @@ import {
   EuiButtonEmpty,
   EuiFlexGroup,
   EuiFlexItem,
-  EuiIcon,
   EuiPanel,
-  EuiTab,
-  EuiTabs,
   EuiText,
   useEuiTheme,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
 
-import type { PrimitiveDoc, StudioSurface } from '../model/describe_runtime';
-import { SURFACE_LABELS } from '../model/describe_runtime';
+import type { PrimitiveDoc } from '../model/describe_runtime';
 import { useStudio } from '../studio_context';
 import { ExamplePicker } from '../surfaces/example_picker';
+import { SurfaceBoard } from '../surfaces/surface_board';
 import type { SurfaceView } from '../surfaces/surface_preview';
+import { SurfaceViewToggle } from '../surfaces/surface_preview';
+import type { SurfaceChoice } from '../surfaces/surface_select';
 import {
-  SURFACE_ICONS,
-  SurfacePreview,
-  SurfaceViewToggle,
-} from '../surfaces/surface_preview';
+  previewSurfaces,
+  surfaceNote,
+  SurfaceSelect,
+} from '../surfaces/surface_select';
 
 export interface ExamplesPanelProps {
   doc: PrimitiveDoc;
@@ -37,7 +36,7 @@ export interface ExamplesPanelProps {
   devHref: string;
 }
 
-/** One example at a time, on one surface at a time. */
+/** One example at a time, on one surface or all of them. */
 export const ExamplesPanel = ({
   doc,
   example,
@@ -45,9 +44,10 @@ export const ExamplesPanel = ({
   devHref,
 }: ExamplesPanelProps) => {
   const { euiTheme } = useEuiTheme();
-  const { runtime, compose } = useStudio();
-  const { examples, surfaces } = doc;
-  const [surface, setSurface] = useState<StudioSurface>(surfaces[0] ?? 'react');
+  const { runtime, compose, rasterizePng } = useStudio();
+  const { examples } = doc;
+  const surfaces = previewSurfaces(doc.surfaces, Boolean(rasterizePng));
+  const [choice, setChoice] = useState<SurfaceChoice>(surfaces[0] ?? 'all');
   const [view, setView] = useState<SurfaceView>('render');
   const selected = examples[example];
 
@@ -59,36 +59,46 @@ export const ExamplesPanel = ({
     () => runtime.validate(composition),
     [runtime, composition]
   );
+  const bar = css`
+    padding: ${euiTheme.size.s} ${euiTheme.size.base};
+  `;
 
   return (
     <EuiPanel paddingSize="none" hasShadow>
-      <EuiTabs
-        size="s"
+      <EuiFlexGroup
+        gutterSize="s"
+        alignItems="center"
+        responsive={false}
+        wrap
         css={css`
-          padding: 0 ${euiTheme.size.m};
+          ${bar};
+          border-bottom: ${euiTheme.border.thin};
         `}>
-        {surfaces.map((candidate) => (
-          <EuiTab
-            key={candidate}
-            isSelected={candidate === surface}
-            onClick={() => setSurface(candidate)}
-            prepend={
-              <EuiIcon
-                type={SURFACE_ICONS[candidate]}
-                size="s"
-                aria-hidden={true}
-              />
-            }>
-            {SURFACE_LABELS[candidate]}
-          </EuiTab>
-        ))}
-      </EuiTabs>
+        <EuiFlexItem grow={false}>
+          <SurfaceSelect
+            {...{ surfaces }}
+            value={choice}
+            onChange={setChoice}
+          />
+        </EuiFlexItem>
+        <EuiFlexItem />
+        <EuiFlexItem grow={false}>
+          <ExamplePicker
+            {...{ examples, example }}
+            onChange={onExampleChange}
+            anchorPosition="downRight"
+          />
+        </EuiFlexItem>
+      </EuiFlexGroup>
       <div
         css={css`
           padding: ${euiTheme.size.l};
           background: ${euiTheme.colors.backgroundBaseSubdued};
         `}>
-        <SurfacePreview {...{ surface, composition, validation, view }} />
+        <SurfaceBoard
+          {...{ choice, surfaces, composition, validation, view }}
+          zoom="fit"
+        />
       </div>
       {selected?.description ? (
         <EuiText
@@ -104,16 +114,11 @@ export const ExamplesPanel = ({
         gutterSize="s"
         alignItems="center"
         responsive={false}
+        wrap
         css={css`
-          padding: ${euiTheme.size.s} ${euiTheme.size.base};
+          ${bar};
           border-top: ${euiTheme.border.thin};
         `}>
-        <EuiFlexItem grow={false}>
-          <ExamplePicker
-            {...{ examples, example }}
-            onChange={onExampleChange}
-          />
-        </EuiFlexItem>
         <EuiFlexItem grow={false}>
           <SurfaceViewToggle
             {...{ view }}
@@ -121,9 +126,20 @@ export const ExamplesPanel = ({
             legend="Example view"
           />
         </EuiFlexItem>
-        <EuiFlexItem />
+        <EuiFlexItem
+          css={css`
+            min-width: 0;
+          `}>
+          <EuiText size="xs" color="subdued">
+            {surfaceNote(choice, surfaces.length)}
+          </EuiText>
+        </EuiFlexItem>
         <EuiFlexItem grow={false}>
-          <EuiButtonEmpty size="s" href={devHref} iconType="code">
+          <EuiButtonEmpty
+            size="s"
+            href={devHref}
+            iconType="external"
+            iconSide="right">
             Open in Dev
           </EuiButtonEmpty>
         </EuiFlexItem>

@@ -6,18 +6,10 @@
  */
 
 import React from 'react';
-import {
-  EuiFlexGroup,
-  EuiFlexItem,
-  EuiResizableContainer,
-  EuiText,
-  EuiTitle,
-  useEuiTheme,
-} from '@elastic/eui';
+import { EuiResizableContainer, useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
 
-import type { Accent } from '../chrome/accent';
-import { PrimitiveTile } from '../chrome/primitive_tile';
+import { PrimitiveHeading } from '../chrome/primitive_heading';
 import type { StudioRoute } from '../chrome/route';
 import type { PrimitiveDoc } from '../model/describe_runtime';
 import { useStudio } from '../studio_context';
@@ -29,18 +21,15 @@ import { useEditor } from './use_editor';
 const Workbench = ({
   doc,
   example,
-  accent,
   onExampleChange,
 }: {
   doc: PrimitiveDoc;
   example: number;
-  accent: Accent;
   onExampleChange: (example: number) => void;
 }) => {
   const { euiTheme } = useEuiTheme();
   const editor = useEditor(doc.examples[example]?.node ?? { type: doc.type });
   const { composition, validation } = editor;
-  const { type, label, purpose } = doc;
 
   return (
     <div
@@ -50,33 +39,9 @@ const Workbench = ({
         display: flex;
         flex-direction: column;
         gap: ${euiTheme.size.base};
-        padding: ${euiTheme.size.base} ${euiTheme.size.l} ${euiTheme.size.l};
+        padding: ${euiTheme.size.l};
       `}>
-      <div>
-        <EuiFlexGroup
-          gutterSize="s"
-          alignItems="flexStart"
-          responsive={false}
-          direction="column">
-          <EuiFlexItem grow={false}>
-            <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
-              <EuiFlexItem grow={false}>
-                <PrimitiveTile {...{ type }} />
-              </EuiFlexItem>
-              <EuiFlexItem>
-                <EuiTitle size="s">
-                  <h2>{label}</h2>
-                </EuiTitle>
-              </EuiFlexItem>
-            </EuiFlexGroup>
-          </EuiFlexItem>
-          <EuiFlexItem>
-            <EuiText size="s" color="subdued">
-              <p>{purpose}</p>
-            </EuiText>
-          </EuiFlexItem>
-        </EuiFlexGroup>
-      </div>
+      <PrimitiveHeading {...{ doc }} layout="inline" />
       <EuiResizableContainer
         css={css`
           flex: 1;
@@ -85,22 +50,16 @@ const Workbench = ({
         {(Panel, Resizer) => (
           <>
             <Panel
-              initialSize={50}
+              initialSize={40}
               minSize="360px"
               paddingSize="none"
               color="transparent">
-              <EditorPanel
-                {...{ doc, example, editor, accent, onExampleChange }}
-              />
+              <EditorPanel {...{ doc, example, editor, onExampleChange }} />
             </Panel>
-            <Resizer
-              css={css`
-                transform: translateX(${euiTheme.size.s});
-              `}
-            />
+            <Resizer accountForScrollbars="both" />
             <Panel
-              initialSize={50}
-              minSize="360px"
+              initialSize={60}
+              minSize="0px"
               paddingSize="none"
               color="transparent">
               <PreviewPanel
@@ -118,14 +77,12 @@ const Workbench = ({
 export interface DevViewProps {
   route: StudioRoute;
   navigate: (next: Partial<StudioRoute>) => void;
-  accent: Accent;
 }
 
-/** The workbench: edit one example on the left, see it on every surface on the right. */
+/** The workbench: edit one example on the left, see it on every surface or one at a time on the right. */
 export const DevView = ({
   route: { page, example },
   navigate,
-  accent,
 }: DevViewProps) => {
   const {
     docs: { primitives },
@@ -138,7 +95,7 @@ export const DevView = ({
   return (
     <Workbench
       key={`${page}/${example}`}
-      {...{ doc, example, accent }}
+      {...{ doc, example }}
       onExampleChange={(next) => navigate({ example: next })}
     />
   );

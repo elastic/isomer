@@ -7,6 +7,7 @@
 
 import React from 'react';
 import {
+  EuiButton,
   EuiButtonEmpty,
   EuiButtonGroup,
   EuiCopy,
@@ -15,12 +16,12 @@ import {
   EuiHealth,
   EuiPanel,
   EuiText,
+  EuiToolTip,
   useEuiTheme,
 } from '@elastic/eui';
 import { formatValidationError } from '@elastic/isomer-sdk';
 import { css } from '@emotion/react';
 
-import type { Accent } from '../chrome/accent';
 import type { PrimitiveDoc } from '../model/describe_runtime';
 import { useStudio } from '../studio_context';
 import { ExamplePicker } from '../surfaces/example_picker';
@@ -91,16 +92,14 @@ export interface EditorPanelProps {
   doc: PrimitiveDoc;
   example: number;
   editor: EditorState;
-  accent: Accent;
   onExampleChange: (example: number) => void;
 }
 
-/** The example picker, the source editor, quick edits and validity. */
+/** The example picker, quick edits, the source editor and validity. */
 export const EditorPanel = ({
   doc,
   example,
   editor,
-  accent,
   onExampleChange,
 }: EditorPanelProps) => {
   const { euiTheme } = useEuiTheme();
@@ -108,21 +107,11 @@ export const EditorPanel = ({
   const { label, examples } = doc;
   const { format, setFormat, source, setSource, nodes, setNodes } = editor;
 
-  const formatOptions = [
-    {
-      id: 'jsx',
-      label: 'JSX',
-      isDisabled: !transformJsx,
-      toolTipContent: transformJsx
-        ? undefined
-        : 'The host supplied no JSX transform.',
-    },
-    { id: 'json', label: 'JSON' },
-  ];
-
-  const section = css`
-    padding: ${euiTheme.size.base};
-  `;
+  const jsxButton = (
+    <EuiButton id="jsx" isDisabled={!transformJsx} hasAriaDisabled>
+      JSX
+    </EuiButton>
+  );
 
   return (
     <EuiPanel
@@ -149,16 +138,31 @@ export const EditorPanel = ({
             onChange={onExampleChange}
           />
         </EuiFlexItem>
+        <EuiFlexItem grow={false}>
+          <QuickProps
+            {...{ doc }}
+            node={nodes[0]}
+            onChange={(node) => setNodes([node, ...nodes.slice(1)])}
+          />
+        </EuiFlexItem>
         <EuiFlexItem />
         <EuiFlexItem grow={false}>
           <EuiButtonGroup
             legend="Source format"
-            options={formatOptions}
+            buttonSize="s"
+            variant="selection"
             idSelected={format}
-            onChange={(id) => isFormat(id) && setFormat(id)}
-            color={accent.color}
-            buttonSize="compressed"
-          />
+            display="highlighted"
+            onChange={(id) => isFormat(id) && setFormat(id)}>
+            {transformJsx ? (
+              jsxButton
+            ) : (
+              <EuiToolTip content="The host supplied no JSX transform.">
+                {jsxButton}
+              </EuiToolTip>
+            )}
+            <EuiButton id="json">JSON</EuiButton>
+          </EuiButtonGroup>
         </EuiFlexItem>
       </EuiFlexGroup>
       <CodeEditor
@@ -169,16 +173,9 @@ export const EditorPanel = ({
       />
       <div
         css={css`
-          ${section};
-          display: flex;
-          flex-direction: column;
-          gap: ${euiTheme.size.s};
+          padding: ${euiTheme.size.s} ${euiTheme.size.base};
+          border-top: ${euiTheme.border.thin};
         `}>
-        <QuickProps
-          {...{ doc, accent }}
-          node={nodes[0]}
-          onChange={(node) => setNodes([node, ...nodes.slice(1)])}
-        />
         <Status {...{ editor }} />
       </div>
     </EuiPanel>

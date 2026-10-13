@@ -6,24 +6,23 @@
  */
 
 import React, { useState } from 'react';
-import type { EuiSelectableOption } from '@elastic/eui';
+import type {
+  EuiContextMenuPanelDescriptor,
+  EuiContextMenuPanelItemDescriptor,
+} from '@elastic/eui';
 import {
-  EuiBadge,
-  EuiFlexGroup,
-  EuiFlexItem,
+  EuiButtonEmpty,
+  EuiContextMenu,
   EuiPopover,
-  EuiSelectable,
-  EuiText,
   useEuiTheme,
 } from '@elastic/eui';
 import type { PropDescriptor } from '@elastic/isomer-runtime';
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { css } from '@emotion/react';
 
-import type { Accent } from '../chrome/accent';
 import type { PrimitiveDoc } from '../model/describe_runtime';
 
-const REMOVE = '__remove__';
+const ROOT_PANEL = 'props';
 
 const defaultFor = ({ kind, values }: PropDescriptor): unknown => {
   switch (kind) {
@@ -70,79 +69,16 @@ const withField = (
   return { type, ...fields };
 };
 
-const EnumChip = ({
-  prop,
-  value,
-  accent,
-  onChange,
-}: {
-  prop: PropDescriptor;
-  value: unknown;
-  accent: Accent;
-  onChange: (value: unknown) => void;
-}) => {
-  const [isOpen, setOpen] = useState(false);
-  const { name, values = [], required } = prop;
-  const isSet = typeof value === 'string';
-
-  const options: EuiSelectableOption[] = [
-    ...values.map((option): EuiSelectableOption => ({
-      key: option,
-      label: option,
-      checked: option === value ? 'on' : undefined,
-    })),
-    ...(isSet && !required ? [{ key: REMOVE, label: `Remove ${name}` }] : []),
-  ];
-
-  return (
-    <EuiPopover
-      aria-label={`${name} values`}
-      isOpen={isOpen}
-      closePopover={() => setOpen(false)}
-      panelPaddingSize="none"
-      button={
-        <EuiBadge
-          color={isSet ? accent.light : 'hollow'}
-          iconType="chevronSingleDown"
-          iconSide="right"
-          onClick={() => setOpen((open) => !open)}
-          onClickAriaLabel={`Choose ${name}`}>
-          {isSet ? `${name}: ${value}` : `+ ${name}`}
-        </EuiBadge>
-      }>
-      <EuiSelectable
-        singleSelection
-        options={options}
-        aria-label={`Choose ${name}`}
-        onChange={(_options, _event, changed) => {
-          setOpen(false);
-          onChange(changed.key === REMOVE ? undefined : changed.key);
-        }}
-        listProps={{ bordered: false }}
-        css={css`
-          min-width: 200px;
-        `}>
-        {(list) => list}
-      </EuiSelectable>
-    </EuiPopover>
-  );
-};
-
 export interface QuickPropsProps {
   doc: PrimitiveDoc;
   node: PrimitiveNode | undefined;
-  accent: Accent;
   onChange: (node: PrimitiveNode) => void;
 }
 
-/** One-click edits from the schema: enum values to pick, and optional props to add. */
-export const QuickProps = ({
-  doc,
-  node,
-  accent,
-  onChange,
-}: QuickPropsProps) => {
+/** A menu of one-click edits from the schema: enum values to pick, and optional props to add. */
+export const QuickProps = ({ doc, node, onChange }: QuickPropsProps) => {
   const { euiTheme } = useEuiTheme();
+  const [isOpen, setOpen] = useState(false);
   if (!node || node.type !== doc.type) {
     return null;
   }
@@ -157,41 +93,85 @@ export const QuickProps = ({
     return null;
   }
 
+  const apply = (name: string, value: unknown) => {
+    setOpen(false);
+    onChange(withField(node, name, value));
+  };
+
+  const panels: EuiContextMenuPanelDescriptor[] = [
+    {
+      id: ROOT_PANEL,
+      title: 'Props',
+      items: [
+        ...enums.map(({ name }): EuiContextMenuPanelItemDescriptor => {
+          const value = fields.get(name);
+          return {
+            name: `${name}: ${typeof value === 'string' ? value : 'unset'}`,
+            panel: name,
+          };
+        }),
+        ...addable.map((prop): EuiContextMenuPanelItemDescriptor => ({
+          name: `+ ${prop.name}`,
+          'aria-label': `Add ${prop.name}`,
+          onClick: () => apply(prop.name, exampleValue(doc, prop)),
+        })),
+      ],
+    },
+    ...enums.map(
+      ({ name, values = [], required }): EuiContextMenuPanelDescriptor => {
+        const value = fields.get(name);
+        return {
+          id: name,
+          title: name,
+          items: [
+            ...values.map((option): EuiContextMenuPanelItemDescriptor => ({
+              name: option,
+              icon: option === value ? 'check' : 'empty',
+              onClick: () => apply(name, option),
+            })),
+            ...(typeof value === 'string' && !required
+              ? [
+                  {
+                    name: `Remove ${name}`,
+                    icon: 'cross',
+                    onClick: () => apply(name, undefined),
+                  },
+                ]
+              : []),
+          ],
+        };
+      }
+    ),
+  ];
+
   return (
-    <EuiFlexGroup gutterSize="xs" wrap alignItems="center" responsive={false}>
-      <EuiFlexItem grow={false}>
-        <EuiText
+    <EuiPopover
+      aria-label="Props"
+      isOpen={isOpen}
+      closePopover={() => setOpen(false)}
+      panelPaddingSize="none"
+      anchorPosition="downLeft"
+      button={
+        <EuiButtonEmpty
           size="xs"
-          color="subdued"
+          color="text"
+          iconType="chevronSingleDown"
+          iconSide="right"
+          onClick={() => setOpen((open) => !open)}
           css={css`
-            margin-right: ${euiTheme.size.xs};
-            text-transform: uppercase;
-            font-weight: ${euiTheme.font.weight.semiBold};
+            border: ${euiTheme.border.width.thin} dashed
+              ${euiTheme.colors.borderBasePlain};
           `}>
-          Props
-        </EuiText>
-      </EuiFlexItem>
-      {enums.map((prop) => (
-        <EuiFlexItem grow={false} key={prop.name}>
-          <EnumChip
-            {...{ prop, accent }}
-            value={fields.get(prop.name)}
-            onChange={(value) => onChange(withField(node, prop.name, value))}
-          />
-        </EuiFlexItem>
-      ))}
-      {addable.map((prop) => (
-        <EuiFlexItem grow={false} key={prop.name}>
-          <EuiBadge
-            color="hollow"
-            onClick={() =>
-              onChange(withField(node, prop.name, exampleValue(doc, prop)))
-            }
-            onClickAriaLabel={`Add ${prop.name}`}>
-            + {prop.name}
-          </EuiBadge>
-        </EuiFlexItem>
-      ))}
-    </EuiFlexGroup>
+          + Prop
+        </EuiButtonEmpty>
+      }>
+      <EuiContextMenu
+        initialPanelId={ROOT_PANEL}
+        {...{ panels }}
+        css={css`
+          min-width: 220px;
+        `}
+      />
+    </EuiPopover>
   );
 };
