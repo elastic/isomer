@@ -15,6 +15,7 @@ import type {
   PrimitiveCatalogEntry,
   PrimitiveGroup,
 } from '@elastic/isomer-sdk';
+import { UNCATEGORIZED_GROUP_TITLE } from '@elastic/isomer-sdk';
 
 import type { StudioRuntime } from '../config';
 
@@ -48,14 +49,12 @@ export interface PrimitiveDoc extends PrimitiveCatalogEntry {
 
 export interface RuntimeDocs {
   primitives: PrimitiveDoc[];
-  /** The packs' groups in pack order, each sorted by label, then `Other` for ungrouped primitives. */
+  /** The packs' groups in pack order, each sorted by label, then {@link UNCATEGORIZED_GROUP_TITLE} for ungrouped primitives. */
   groups: PrimitiveGroup[];
   views: RegisteredViewSummary[];
   surfaces: StudioSurface[];
   authoring: AuthoringTypes;
 }
-
-const UNGROUPED = 'Other';
 
 /** `statGroup` becomes `Stat group`, for a primitive whose catalog has no `name`. */
 export const humanize = (type: string): string => {
@@ -101,7 +100,7 @@ export const describeRuntime = (runtime: StudioRuntime): RuntimeDocs => {
     return {
       ...entry,
       label: entry.name ?? humanize(type),
-      group: groupOf.get(type) ?? UNGROUPED,
+      group: groupOf.get(type) ?? UNCATEGORIZED_GROUP_TITLE,
       examples: readExamples(definition),
       props: (props[type] ?? []).filter(({ name }) => name !== 'type'),
       surfaces: surfaces.filter(
@@ -125,7 +124,7 @@ export const describeRuntime = (runtime: StudioRuntime): RuntimeDocs => {
     groups: [
       ...groups.map(({ title, types }) => ({ title, types: byLabel(types) })),
       ...(ungrouped.length
-        ? [{ title: UNGROUPED, types: byLabel(ungrouped) }]
+        ? [{ title: UNCATEGORIZED_GROUP_TITLE, types: byLabel(ungrouped) }]
         : []),
     ],
     views,

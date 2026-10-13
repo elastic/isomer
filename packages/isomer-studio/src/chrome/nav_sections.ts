@@ -5,9 +5,9 @@
  * 2.0.
  */
 
-import { humanize } from '../model/describe_runtime';
+import { UNCATEGORIZED_GROUP_TITLE } from '@elastic/isomer-sdk';
 
-const UNGROUPED = 'Other';
+import { humanize } from '../model/describe_runtime';
 
 export interface NavPackInput {
   id: string;
@@ -70,8 +70,10 @@ export const navPacks = (
     const ungrouped = byLabel(pack.types.filter((type) => !grouped.has(type)));
     if (ungrouped.length) {
       groups.push({
-        key: separatePacks ? `${pack.id}/${UNGROUPED}` : UNGROUPED,
-        title: UNGROUPED,
+        key: separatePacks
+          ? `${pack.id}/${UNCATEGORIZED_GROUP_TITLE}`
+          : UNCATEGORIZED_GROUP_TITLE,
+        title: UNCATEGORIZED_GROUP_TITLE,
         types: ungrouped,
       });
     }

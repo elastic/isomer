@@ -70,7 +70,7 @@ describe('navPacks', () => {
     );
     expect(packs[0]?.groups).toEqual([
       { key: 'Data display', title: 'Data display', types: ['health'] },
-      { key: 'Other', title: 'Other', types: ['note'] },
+      { key: 'Uncategorized', title: 'Uncategorized', types: ['note'] },
     ]);
   });
 

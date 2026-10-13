@@ -51,7 +51,7 @@ describe('describeRuntime', () => {
     ]);
   });
 
-  it('sorts within a group by label and puts ungrouped primitives under Other', () => {
+  it('sorts within a group by label and puts ungrouped primitives under Uncategorized', () => {
     const unsorted = definePrimitivePack({
       id: 'unsorted-pack',
       primitives: componentsPrimitives,
@@ -67,7 +67,7 @@ describe('describeRuntime', () => {
 
     expect(sorted.groups).toEqual([
       { title: 'Mixed', types: ['callout', 'divider', 'statGroup'] },
-      { title: 'Other', types: ['health'] },
+      { title: 'Uncategorized', types: ['health'] },
     ]);
   });
 
