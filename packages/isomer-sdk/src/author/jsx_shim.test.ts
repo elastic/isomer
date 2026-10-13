@@ -1047,6 +1047,53 @@ describe('fromNodeChildren', () => {
     ]);
   });
 
+  it('rejects a second element for a single-node field', () => {
+    const pinned = buildJsxShim([
+      { type: 'note' as const },
+      {
+        type: 'pin' as const,
+        schema: z.object({
+          type: z.literal('pin'),
+          caption: z.string().optional(),
+          node: fromNodeChildren(nodeSchema),
+        }),
+      },
+      {
+        type: 'card' as const,
+        children: (node: { header: PrimitiveNode }) => [
+          { node: node.header, path: 'header' },
+        ],
+      },
+    ] as const);
+    const { Card, Composition: View, Note: Leaf, Pin } = pinned;
+    const twoNotes = [createElement(Leaf), createElement(Leaf)];
+
+    expect(
+      pinned.toComposition(
+        createElement(View, null, createElement(Pin, null, createElement(Leaf)))
+      ).body
+    ).toEqual([{ type: 'pin', node: { type: 'note' } }]);
+    for (const [element, field] of [
+      [createElement(Pin, null, ...twoNotes), 'node'],
+      [createElement(Card, null, ...twoNotes), 'header'],
+      [
+        createElement(Card, {
+          header: createElement(Fragment, null, ...twoNotes),
+        }),
+        'header',
+      ],
+    ] as const) {
+      expect(() =>
+        pinned.toComposition(createElement(View, null, element))
+      ).toThrow(
+        expect.objectContaining({
+          code: 'UNEXPECTED_CHILDREN',
+          message: `"${field}" takes one node, not 2.`,
+        })
+      );
+    }
+  });
+
   it('reads as a node field on the spec and leaves the prop optional', () => {
     expect(readAuthoredSpec(embed.schema).nodes).toEqual([
       { field: 'body', array: true },

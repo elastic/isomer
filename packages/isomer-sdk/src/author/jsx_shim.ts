@@ -378,7 +378,7 @@ const bodyNodeFromElement = <TNode extends PrimitiveNode>(
       rawChildren !== undefined
     ) {
       const nested = flattenChildren(rawChildren).map(parseChild);
-      converted[unique.field] = unique.array ? nested : nested[0];
+      converted[unique.field] = slotValue(nested, unique);
     } else if (slots.length === 0 && flattenChildren(rawChildren).length > 0) {
       throw new IsomerError(
         'UNEXPECTED_CHILDREN',
@@ -461,7 +461,7 @@ const fillAuthoredFields = (
   const leftover = elements.filter((child) => !claimed.has(child));
   if (slotOpen && slot && leftover.length > 0) {
     const nested = leftover.map(parseChild);
-    converted[slot.field] = slot.array ? nested : nested[0];
+    converted[slot.field] = slotValue(nested, slot);
   } else if (leftover.length > 0) {
     const childType = getAuthorType(leftover[0]!);
     const [empty, ...moreEmpty] = unsetChildren.filter(
@@ -599,16 +599,33 @@ const fillNestedBrands = (
   }
 };
 
+/** The slot's nodes, or its one node; throws on a second node for a single-node slot. */
+const slotValue = <TNode extends PrimitiveNode>(
+  nodes: readonly TNode[],
+  { array, field }: ChildSlot
+): readonly TNode[] | TNode | undefined => {
+  if (array) {
+    return nodes;
+  }
+  if (nodes.length > 1) {
+    throw new IsomerError(
+      'UNEXPECTED_CHILDREN',
+      `"${field}" takes one node, not ${nodes.length}.`
+    );
+  }
+  return nodes[0];
+};
+
 const convertPropValue = <TNode extends PrimitiveNode>(
   value: unknown,
   field: string,
   slots: readonly ChildSlot[],
   parseChild: (child: ReactNode) => TNode
 ): unknown => {
-  const asArray = slots.some((slot) => slot.field === field && slot.array);
+  const array = slots.some((slot) => slot.field === field && slot.array);
   const fromJsx = nodesFromJsx(value, parseChild);
   if (fromJsx) {
-    return asArray ? fromJsx : fromJsx[0];
+    return slotValue(fromJsx, { array, field });
   }
   if (Array.isArray(value)) {
     return value.flatMap((item: unknown) => {
