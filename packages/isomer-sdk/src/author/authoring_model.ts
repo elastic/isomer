@@ -55,7 +55,7 @@ export const createAuthoringModel = (
         const prior = members.get(member);
         if (
           prior &&
-          (prior.field.itemSchema !== field.itemSchema || siblings.has(member))
+          (!isSameChild(prior.field, field) || siblings.has(member))
         ) {
           throw new IsomerError(
             'DUPLICATE_AUTHORED_CHILD',
@@ -112,6 +112,17 @@ export const createAuthoringModel = (
     }
     typeByName.set(name, type);
   }
+  const primitiveTypes = new Set(primitives.map(({ type }) => type));
+  for (const { authorType, primitiveType, member } of [
+    ...membersByType.values(),
+  ].flat()) {
+    if (primitiveTypes.has(authorType)) {
+      throw new IsomerError(
+        'DUPLICATE_PRIMITIVE_TYPE',
+        `buildJsxShim: the primitive "${authorType}" and <${capitalize(primitiveType)}.${member}> share one type`
+      );
+    }
+  }
   const childSlotsByType = new Map(
     primitives.map(({ type, children }) => {
       const walked = inferChildSlots(children);
@@ -126,6 +137,12 @@ export const createAuthoringModel = (
   );
   return { authoredByType, membersByType, childSlotsByType };
 };
+
+const isSameChild = (a: AuthoredChildField, b: AuthoredChildField): boolean =>
+  a.itemSchema === b.itemSchema &&
+  a.propsSchema === b.propsSchema &&
+  a.toItem === b.toItem &&
+  a.textField === b.textField;
 
 const isZodType = (schema: unknown): schema is ZodType =>
   typeof schema === 'object' && schema !== null && '_zod' in schema;

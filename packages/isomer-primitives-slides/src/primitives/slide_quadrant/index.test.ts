@@ -325,8 +325,8 @@ describe('slideQuadrant', () => {
 });
 
 describe('slideQuadrant JSX', () => {
-  it('fills quadrants from QuadrantCell children, leaving out items for an empty cell', () => {
-    const { QuadrantCell, QuadrantItem, SlideQuadrant } = slideJsx;
+  it('fills quadrants from `SlideQuadrant.QuadrantCell` children, leaving out items for an empty cell', () => {
+    const { SlideQuadrant } = slideJsx;
     const { x, y } = menuExample;
     const node = slideJsx.toComposition(
       createElement(
@@ -336,17 +336,17 @@ describe('slideQuadrant JSX', () => {
           SlideQuadrant,
           { x, y, highlight: 1 },
           createElement(
-            QuadrantCell,
+            SlideQuadrant.QuadrantCell,
             { label: 'Plowhorses' },
-            createElement(QuadrantItem, null, 'drip'),
-            createElement(QuadrantItem, { text: 'bagel' })
+            createElement(SlideQuadrant.QuadrantItem, null, 'drip'),
+            createElement(SlideQuadrant.QuadrantItem, { text: 'bagel' })
           ),
-          createElement(QuadrantCell, { label: 'Stars' }),
-          createElement(QuadrantCell, { label: 'Dogs' }),
+          createElement(SlideQuadrant.QuadrantCell, { label: 'Stars' }),
+          createElement(SlideQuadrant.QuadrantCell, { label: 'Dogs' }),
           createElement(
-            QuadrantCell,
+            SlideQuadrant.QuadrantCell,
             { label: 'Puzzles' },
-            createElement(QuadrantItem, null, 'matcha')
+            createElement(SlideQuadrant.QuadrantItem, null, 'matcha')
           )
         )
       )

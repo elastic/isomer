@@ -251,8 +251,7 @@ The registry and the union cannot be collapsed into one — the container `types
 ```tsx
 import { slideJsx } from '@elastic/isomer-primitives-slides';
 
-const { Composition, SlideFooter, SlideFrame, SlideHeading, toComposition } =
-  slideJsx;
+const { Composition, SlideFrame, SlideHeading, toComposition } = slideJsx;
 
 const composition = toComposition(
   <Composition title="Refunds settle in two days">

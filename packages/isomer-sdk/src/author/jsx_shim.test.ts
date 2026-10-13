@@ -691,6 +691,47 @@ describe('buildJsxShim', () => {
     );
   });
 
+  it('throws when one item schema becomes one member with different text', () => {
+    const tag = z.object({ name: z.string(), note: z.string().optional() });
+    const entry = z.object({
+      tags: fromChildren('tag', z.array(tag), { text: 'note' }).optional(),
+    });
+    expect(() =>
+      buildJsxShim([
+        {
+          type: 'group' as const,
+          schema: z.object({
+            type: z.literal('group'),
+            entries: fromChildren('entry', z.array(entry)),
+            tags: fromChildren('tag', z.array(tag), { text: 'name' }),
+          }),
+        },
+      ])
+    ).toThrow(
+      expect.objectContaining({
+        code: 'DUPLICATE_AUTHORED_CHILD',
+        message: 'buildJsxShim: "tags" and "tags" both become <Group.Tag>',
+      })
+    );
+  });
+
+  it('throws when a member shares its type with a primitive', () => {
+    expect(() =>
+      buildJsxShim([
+        { type: 'group.Item' },
+        brandedGroup(
+          fromChildren('item', z.array(z.object({ label: z.string() })))
+        ),
+      ])
+    ).toThrow(
+      expect.objectContaining({
+        code: 'DUPLICATE_PRIMITIVE_TYPE',
+        message:
+          'buildJsxShim: the primitive "group.Item" and <Group.Item> share one type',
+      })
+    );
+  });
+
   it('throws when two types become the same component name', () => {
     expect(() =>
       buildJsxShim([{ type: 'slideStat' }, { type: 'SlideStat' }])
@@ -985,6 +1026,50 @@ describe('nested brands', () => {
         name: 'IsomerError',
         code: 'UNEXPECTED_CHILDREN',
         message: '"delta" takes one <Stats.Delta>, not 2.',
+      })
+    );
+  });
+
+  it('throws on a nested element its item does not claim', () => {
+    const {
+      Composition: Root,
+      OtherStats,
+      Stats,
+      toComposition: convert,
+    } = buildJsxShim([
+      statsPrimitive(),
+      { ...statsPrimitive(), type: 'otherStats' as const },
+    ]);
+    const statWith = (props: object, delta: ReactNode) =>
+      convert(
+        createElement(
+          Root,
+          null,
+          createElement(
+            Stats,
+            null,
+            createElement(Stats.Stat, { value: '42', ...props }, 'Tests', delta)
+          )
+        )
+      );
+
+    expect(() =>
+      statWith({}, createElement(OtherStats.Delta, { tone: 'success' }, '+12'))
+    ).toThrow(
+      expect.objectContaining({
+        code: 'UNEXPECTED_CHILDREN',
+        message: '<OtherStats.Delta> is not a child of <Stats.Stat>.',
+      })
+    );
+    expect(() =>
+      statWith(
+        { delta: { label: '+1', tone: 'success' } },
+        createElement(Stats.Delta, { tone: 'success' }, '+12')
+      )
+    ).toThrow(
+      expect.objectContaining({
+        code: 'UNEXPECTED_CHILDREN',
+        message: '<Stats.Stat> already has its <Stats.Delta>.',
       })
     );
   });

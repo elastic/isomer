@@ -580,7 +580,14 @@ const itemFromElement = (
   ) {
     props[field.textField] = textFromChildren(text);
   }
-  fillNestedBrands(field.itemSchema, props, elements, env, owner);
+  fillNestedBrands(
+    field.itemSchema,
+    props,
+    elements,
+    env,
+    owner,
+    capitalize(memberType(owner, field))
+  );
   return props;
 };
 
@@ -589,12 +596,15 @@ const fillNestedBrands = (
   props: Record<string, unknown>,
   elements: readonly ReactElement[],
   env: ParseEnv,
-  owner: string
+  owner: string,
+  parent: string
 ): void => {
   if (elements.length === 0) {
     return;
   }
-  for (const field of readAuthoredSpec(itemSchema).children) {
+  const fields = readAuthoredSpec(itemSchema).children;
+  const claimed = new Set<ReactElement>();
+  for (const field of fields) {
     if (props[field.field] !== undefined) {
       continue;
     }
@@ -602,8 +612,20 @@ const fillNestedBrands = (
       (child) => getAuthorType(child) === memberType(owner, field)
     );
     if (matching.length > 0) {
+      matching.forEach((child) => claimed.add(child));
       props[field.field] = valueFromBrand(matching, field, env, owner);
     }
+  }
+  const [stray] = elements.filter((child) => !claimed.has(child));
+  if (stray) {
+    const strayType = getAuthorType(stray);
+    const held = fields.some((field) => memberType(owner, field) === strayType);
+    throw new IsomerError(
+      'UNEXPECTED_CHILDREN',
+      held
+        ? `<${parent}> already has its <${capitalize(strayType)}>.`
+        : `<${capitalize(strayType)}> is not a child of <${parent}>.`
+    );
   }
 };
 

@@ -45,12 +45,9 @@ A `Composition` says what the answer is, not how it looks. The wire discriminato
 import { slideJsx } from '@elastic/isomer-primitives-slides';
 
 const {
-  BulletItem,
   Composition,
   SlideBulletList,
-  SlideFooter,
   SlideFrame,
-  TitleAside,
   TitleSlide,
   toComposition,
 } = slideJsx;
