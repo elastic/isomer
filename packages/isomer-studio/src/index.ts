@@ -12,3 +12,4 @@ export type {
   StudioTheme,
 } from './config';
 export { defineStudioConfig } from './config';
+export { adoptStylesheet } from './surfaces/adopt_stylesheet';
