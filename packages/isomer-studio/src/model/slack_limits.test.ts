@@ -357,36 +357,42 @@ describe('slackLimitProblems', () => {
     ]);
   });
 
-  it('checks rich text inside a table cell and a list', () => {
-    const deepList = {
-      type: 'rich_text_list' as const,
-      style: 'bullet' as const,
-      indent: SLACK_LIMITS.richTextListMaxIndent + 1,
+  it('checks list indent in a table cell, but caps text only at the top level', () => {
+    const longSection = {
+      type: 'rich_text_section' as const,
       elements: [
-        {
-          type: 'rich_text_section' as const,
-          elements: [
-            {
-              type: 'text' as const,
-              text: over(SLACK_LIMITS.sectionTextChars),
-            },
-          ],
-        },
+        { type: 'text' as const, text: over(SLACK_LIMITS.sectionTextChars) },
       ],
     };
+    const list = (indent: number) => ({
+      type: 'rich_text_list' as const,
+      style: 'bullet' as const,
+      indent,
+      elements: [longSection],
+    });
     expect(
       slackLimitProblems({
         text: 'T',
         blocks: [
           {
             type: 'table',
-            rows: [[{ type: 'rich_text', elements: [deepList] }]],
+            rows: [
+              [
+                {
+                  type: 'rich_text',
+                  elements: [
+                    list(SLACK_LIMITS.richTextListMaxIndent + 1),
+                    longSection,
+                  ],
+                },
+              ],
+            ],
           },
+          { type: 'rich_text', elements: [list(0)] },
         ],
       })
     ).toEqual([
       `blocks[0] (table) rows[0][0] elements[0] indent has ${SLACK_LIMITS.richTextListMaxIndent + 1}; Slack allows ${SLACK_LIMITS.richTextListMaxIndent}.`,
-      `blocks[0] (table) rows[0][0] elements[0] elements[0] text has ${SLACK_LIMITS.sectionTextChars + 1} characters; Slack allows ${SLACK_LIMITS.sectionTextChars}.`,
     ]);
   });
 

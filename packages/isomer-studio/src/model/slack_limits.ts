@@ -174,31 +174,29 @@ const accessoryProblems = (
 
 const richTextProblems = (
   where: string,
-  element: SlackRichTextBlockElement
-): string[] =>
-  element.type === 'rich_text_list'
-    ? [
-        ...overCount(
-          `${where} indent`,
-          element.indent ?? 0,
-          SLACK_LIMITS.richTextListMaxIndent
-        ),
-        ...list(element.elements).flatMap((section, sectionIndex) =>
-          richTextProblems(`${where} elements[${sectionIndex}]`, section)
-        ),
-      ]
-    : overLength(
-        `${where} text`,
-        richTextText(element),
-        SLACK_LIMITS.sectionTextChars
-      );
+  element: SlackRichTextBlockElement,
+  textLimit: number | undefined
+): string[] => {
+  if (element.type === 'rich_text_list') {
+    return overCount(
+      `${where} indent`,
+      element.indent ?? 0,
+      SLACK_LIMITS.richTextListMaxIndent
+    );
+  }
+  return textLimit === undefined
+    ? []
+    : overLength(`${where} text`, richTextText(element), textLimit);
+};
 
+/** Only a top-level element has a `textLimit`; list items and table cells count toward the message's budgets alone. */
 const richTextBlockProblems = (
   where: string,
-  { elements }: SlackRichTextBlock
+  { elements }: SlackRichTextBlock,
+  textLimit?: number
 ): string[] =>
   list(elements).flatMap((element, elementIndex) =>
-    richTextProblems(`${where} elements[${elementIndex}]`, element)
+    richTextProblems(`${where} elements[${elementIndex}]`, element, textLimit)
   );
 
 const blockProblems = (block: SlackBlock, index: number): string[] => {
@@ -295,7 +293,7 @@ const blockProblems = (block: SlackBlock, index: number): string[] => {
         ),
       ];
     case 'rich_text':
-      return richTextBlockProblems(where, block);
+      return richTextBlockProblems(where, block, SLACK_LIMITS.sectionTextChars);
     case 'table': {
       const rows = list(block.rows);
       return [
