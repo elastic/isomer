@@ -157,7 +157,7 @@ console.log(formatAgentReport(report));
 
 `step` is one model turn, and the only way a model is reached. It receives the system prompt, each tool as `{ name, description, parameters }` with `parameters` as JSON Schema, and the conversation so far, and it returns the turn's text, its tool calls, and the tokens it spent. A turn with no tool calls is the answer. A provider adapter translates `AgentMessage` to its own wire format; the `raw` it returns on an assistant turn is handed back to it verbatim, for providers that need their own content replayed.
 
-A tool is an `AgentEvalTool`: a name, a description, a Zod `inputSchema`, and a `handler` returning text content, the same shape `@elastic/isomer-agent-tools` produces. Input the schema refuses, an unknown tool name, and a throwing handler are each answered to the model as a failed result rather than ending the run.
+A tool is an `AgentEvalTool`: a name, a description, a Zod `inputSchema`, offered to the model as the JSON Schema of the input it accepts, and a `handler` returning text content, the same shape `@elastic/isomer-agent-tools` produces. Input the schema refuses, an unknown tool name, and a throwing handler are each answered to the model as a failed result rather than ending the run.
 
 | Option | Default | Decides |
 | --- | --- | --- |
@@ -169,7 +169,7 @@ A tool is an `AgentEvalTool`: a name, a description, a Zod `inputSchema`, and a 
 | `repeat` | `1` | Runs per case; model runs vary, so compare means. |
 | `concurrency` | `1` | Runs in flight at once. |
 
-An `AgentEvalCase` may list `expected` node types; `scoreExpectedPrimitives` counts the case a hit when any of them appears anywhere in the answer's tree, not just at the top of `body`, because a pack whose every view sits in one frame primitive puts its choices below it. `AgentEvalReport.totals` reports finished and valid runs, expected-primitive hits, and per-run means of turns, input and output tokens, tool-result bytes, and calls to each tool.
+An `AgentEvalCase` may list `expected` node types; `scoreExpectedPrimitives` counts the case a hit when any of them appears as a node anywhere in the answer's body, not just at its top, reached through each primitive's child hook so a data field named `type` is not a node, because a pack whose every view sits in one frame primitive puts its choices below it. `AgentEvalReport.totals` reports finished and valid runs, expected-primitive hits, and per-run means of turns, input and output tokens, tool-result bytes, and calls to each tool.
 
 ## API
 
@@ -179,7 +179,7 @@ An `AgentEvalCase` may list `expected` node types; `scoreExpectedPrimitives` cou
 | `formatReport` | `(report: EvalReport) => string`; returned, never printed |
 | `runAgentEvals` | `(options: RunAgentEvalsOptions) => Promise<AgentEvalReport>` |
 | `formatAgentReport` | `(report: AgentEvalReport) => string`; returned, never printed |
-| `scoreExpectedPrimitives` | `(value, expected, knownTypes) => { hit, used }`; pure |
+| `scoreExpectedPrimitives` | `(runtime, value, expected) => { hit, used }`; reads `runtime.primitives` only |
 | `scoreValidity` | `(attempt: CheckedAttempt, retry?: CheckedAttempt) => ValidityScore`; pure |
 | `scorePrimitiveSelection` | `(generated: Composition, golden: Composition) => PrimitiveSelectionScore`; pure |
 | `scorePayload` | `(runtime, attempt: CheckedAttempt, knownTypes, golden?) => PayloadScore` |

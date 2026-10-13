@@ -5,41 +5,23 @@
  * 2.0.
  */
 
-const collectTypes = (
-  value: unknown,
-  knownTypes: ReadonlySet<string>,
-  found: Set<string>
-): void => {
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      collectTypes(item, knownTypes, found);
-    }
-    return;
-  }
-  if (typeof value !== 'object' || value === null) {
-    return;
-  }
-  const { type } = value as { type?: unknown };
-  if (typeof type === 'string' && knownTypes.has(type)) {
-    found.add(type);
-  }
-  for (const child of Object.values(value)) {
-    collectTypes(child, knownTypes, found);
-  }
-};
+import type { EvalRuntime } from '../types';
+
+import { collectNodeTypes } from './node_types';
 
 /**
- * Whether `value` uses any of `expected` anywhere in its tree, not only at the top of `body`.
+ * Whether `value` uses any of `expected` as a node anywhere in its body, not only at the top.
  *
  * A pack whose frame wraps every answer in one container, such as a slide, puts the choice that matters below it.
  */
 export const scoreExpectedPrimitives = (
+  runtime: Pick<EvalRuntime, 'primitives'>,
   value: unknown,
-  expected: readonly string[],
-  knownTypes: ReadonlySet<string>
+  expected: readonly string[]
 ): { hit: boolean; used: string[] } => {
-  const found = new Set<string>();
-  collectTypes(value, knownTypes, found);
-  const used = [...found].sort();
-  return { hit: expected.some((type) => found.has(type)), used };
+  const known = new Set(runtime.primitives.map(({ type }) => type));
+  const used = [...collectNodeTypes(runtime, value)]
+    .filter((type) => known.has(type))
+    .sort();
+  return { hit: expected.some((type) => used.includes(type)), used };
 };

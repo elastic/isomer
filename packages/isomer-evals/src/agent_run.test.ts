@@ -33,9 +33,20 @@ const typesIn = (value: unknown): string[] =>
         ]
       : [];
 
+/** `frame` holds nodes in `body`; the others are leaves. */
+const stubPrimitives = [
+  {
+    type: 'frame',
+    children: ({ body }: { body: unknown[] }) =>
+      body.map((node, index) => ({ node, path: `body[${index}]` })),
+  },
+  { type: 'stat' },
+  { type: 'callout' },
+] as unknown as EvalRuntime['primitives'];
+
 /** Accepts a view whose nested node types are all known. */
 const stubRuntime: EvalRuntime = {
-  primitives: [],
+  primitives: stubPrimitives,
   getAuthoringContext: () => ({
     schema: {},
     primitives: [...KNOWN].map((type) => ({
@@ -320,5 +331,123 @@ describe('runAgentEvals', () => {
     const text = formatAgentReport(report);
     expect(text).toContain('expected primitive     2 of 4 (50%)');
     expect(text).toContain('two #0: used stat');
+  });
+
+  it('advertises a tool by what it accepts, so transforms and defaults are offered', async () => {
+    let specs: unknown;
+    await runAgentEvals({
+      runtime: stubRuntime,
+      tools: [
+        {
+          name: 'search',
+          description: 'Search.',
+          inputSchema: z.object({
+            query: z.string().transform((value) => value.trim()),
+            limit: z.number().default(10),
+          }),
+          handler: () => Promise.resolve({ content: [] }),
+        },
+      ],
+      corpus,
+      step: ({ tools: offered }) => {
+        specs = offered;
+        return Promise.resolve({ text: answer([]), toolCalls: [] });
+      },
+    });
+    expect(specs).toEqual([
+      expect.objectContaining({
+        parameters: expect.objectContaining({ required: ['query'] }) as unknown,
+      }),
+    ]);
+  });
+
+  it('checks async refinements as a tool result rather than failing the run', async () => {
+    const report = await runAgentEvals({
+      runtime: stubRuntime,
+      tools: [
+        {
+          name: 'lookup',
+          description: 'Look up.',
+          inputSchema: z
+            .object({ id: z.string() })
+            .refine(({ id }) => Promise.resolve(id !== 'missing')),
+          handler: () =>
+            Promise.resolve({ content: [{ type: 'text', text: 'found' }] }),
+        },
+      ],
+      corpus,
+      step: scripted([
+        {
+          text: '',
+          toolCalls: [
+            call('lookup', { id: 'missing' }, 'a'),
+            call('lookup', { id: 'there' }, 'b'),
+          ],
+        },
+        { text: answer([{ type: 'stat' }]), toolCalls: [] },
+      ]),
+    });
+    expect(report.results[0]?.calls.map(({ isError }) => isError)).toEqual([
+      true,
+      false,
+    ]);
+  });
+
+  it('totals calls to tools named like object prototype keys', async () => {
+    const report = await runAgentEvals({
+      runtime: stubRuntime,
+      tools,
+      corpus,
+      step: scripted([
+        {
+          text: '',
+          toolCalls: [call('constructor', {}, 'a'), call('__proto__', {}, 'b')],
+        },
+        { text: answer([{ type: 'stat' }]), toolCalls: [] },
+      ]),
+    });
+    expect(Object.entries(report.totals.callsPerRun)).toEqual([
+      ['constructor', 1],
+      ['__proto__', 1],
+    ]);
+    expect(() => formatAgentReport(report)).not.toThrow();
+  });
+
+  it('counts only node positions, not data fields named `type`', async () => {
+    const report = await runAgentEvals({
+      runtime: stubRuntime,
+      tools,
+      corpus: [{ id: 'one', prompt: 'Note it.', expected: ['callout'] }],
+      step: scripted([
+        {
+          text: answer([{ type: 'stat', data: { type: 'callout' } }]),
+          toolCalls: [],
+        },
+      ]),
+    });
+    expect(report.results[0]?.expected).toEqual({ hit: false, used: ['stat'] });
+  });
+
+  it('scores an arbitrarily deep answer without overflowing', async () => {
+    const depth = 20_000;
+    const text = `{"type":"view","body":[${'{"type":"frame","body":['.repeat(depth)}{"type":"stat"}${']}'.repeat(depth)}]}`;
+    const report = await runAgentEvals({
+      runtime: {
+        ...stubRuntime,
+        validate: () => ({ valid: true, errors: [] }),
+        parse: () => ({
+          valid: false,
+          errors: [{ path: '', message: 'too deep' }],
+        }),
+      },
+      tools,
+      corpus,
+      step: () => Promise.resolve({ text, toolCalls: [] }),
+    });
+    expect(report.results[0]).toMatchObject({
+      valid: false,
+      errors: ['too deep'],
+      expected: { hit: true },
+    });
   });
 });

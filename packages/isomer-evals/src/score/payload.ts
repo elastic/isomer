@@ -5,43 +5,15 @@
  * 2.0.
  */
 
-import { type Composition, createChildNodeWalker } from '@elastic/isomer-sdk';
+import type { Composition } from '@elastic/isomer-sdk';
 
 import type { EvalRuntime, PayloadScore } from '../types';
 
+import { collectNodeTypes } from './node_types';
 import type { CheckedAttempt } from './validity';
 
 const bytes = (value: unknown): number =>
   Buffer.byteLength(JSON.stringify(value) ?? '', 'utf8');
-
-/** Collects node types through pack child hooks; data fields named `type` are not nodes. */
-const collectTypes = (
-  nodes: readonly unknown[],
-  walk: ReturnType<typeof createChildNodeWalker>,
-  found: Set<string>
-): void => {
-  const pending = [...nodes];
-  const seen = new WeakSet<object>();
-  while (pending.length > 0) {
-    const node = pending.pop();
-    if (!node || typeof node !== 'object' || seen.has(node)) {
-      continue;
-    }
-    seen.add(node);
-    const { type } = node as { type?: unknown };
-    if (typeof type === 'string') {
-      found.add(type);
-    }
-    try {
-      for (const { node: child } of walk(node)) {
-        pending.push(child);
-      }
-    } catch {
-      // Child hooks require schema-valid nodes; malformed branches have no known child positions.
-      continue;
-    }
-  }
-};
 
 /**
  * How much of what the model sent survives parsing.
@@ -58,13 +30,9 @@ export const scorePayload = (
   knownTypes: ReadonlySet<string>,
   golden?: Composition
 ): PayloadScore => {
-  const attempted = new Set<string>();
-  const value = attempt.parsed ? attempt.value : undefined;
-  const body = (value as { body?: unknown } | null | undefined)?.body;
-  collectTypes(
-    Array.isArray(body) ? body : [],
-    createChildNodeWalker(runtime.primitives),
-    attempted
+  const attempted = collectNodeTypes(
+    runtime,
+    attempt.parsed ? attempt.value : undefined
   );
 
   const unknownTypes = [...attempted]

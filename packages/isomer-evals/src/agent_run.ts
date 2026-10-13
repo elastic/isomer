@@ -36,7 +36,9 @@ const toolSpec = ({
   description,
   inputSchema,
 }: AgentEvalTool): AgentToolSpec => {
-  const { $schema: _dialect, ...parameters } = toJSONSchema(inputSchema);
+  const { $schema: _dialect, ...parameters } = toJSONSchema(inputSchema, {
+    io: 'input',
+  });
   return { name, description, parameters };
 };
 
@@ -49,11 +51,11 @@ const callTool = async (
   if (tool === undefined) {
     return { id, name, text: `Unknown tool "${name}".`, isError: true };
   }
-  const input = tool.inputSchema.safeParse(args);
-  if (!input.success) {
-    return { id, name, text: input.error.message, isError: true };
-  }
   try {
+    const input = await tool.inputSchema.safeParseAsync(args);
+    if (!input.success) {
+      return { id, name, text: input.error.message, isError: true };
+    }
     const { content, isError = false } = await tool.handler(input.data);
     const text = content
       .map((block) => block.text ?? `[${block.type}]`)
@@ -82,9 +84,6 @@ export const runAgentEvals = async ({
   concurrency = 1,
 }: RunAgentEvalsOptions): Promise<AgentEvalReport> => {
   const specs = tools.map(toolSpec);
-  const knownTypes = new Set(
-    runtime.getAuthoringContext().primitives.map(({ type }) => type)
-  );
 
   const runCase = async (
     evalCase: AgentEvalCase,
@@ -174,9 +173,9 @@ export const runAgentEvals = async ({
         ? {}
         : {
             expected: scoreExpectedPrimitives(
-              attempt.value,
-              evalCase.expected,
-              knownTypes
+              runtime,
+              check.composition ?? attempt.value,
+              evalCase.expected
             ),
           }),
     };
@@ -191,12 +190,15 @@ export const runAgentEvals = async ({
     ({ evalCase, run }) => runCase(evalCase, run)
   );
 
-  const callsPerRun: Record<string, number> = {};
+  const callCounts = new Map<string, number>();
   for (const { calls } of results) {
     for (const { name } of calls) {
-      callsPerRun[name] = (callsPerRun[name] ?? 0) + 1 / results.length;
+      callCounts.set(name, (callCounts.get(name) ?? 0) + 1);
     }
   }
+  const callsPerRun = Object.fromEntries(
+    [...callCounts].map(([name, count]) => [name, count / results.length])
+  );
   const scored = results.filter(({ expected }) => expected !== undefined);
   return {
     results,
