@@ -33,6 +33,7 @@ export const authoredNodes = Symbol.for('elastic.isomer.authored_nodes');
 export const authoredToItem = Symbol.for('elastic.isomer.authored_to_item');
 const authoredTextField = Symbol.for('elastic.isomer.authored_text_field');
 const authoredCollapse = Symbol.for('elastic.isomer.authored_collapse');
+const authoredDedent = Symbol.for('elastic.isomer.authored_dedent');
 const authoredPropsSchema = Symbol.for('elastic.isomer.authored_props_schema');
 
 /**
@@ -137,6 +138,7 @@ const BRANDS = [
   authoredText,
   authoredNodes,
   authoredCollapse,
+  authoredDedent,
   authoredPropsSchema,
 ] as const;
 
@@ -255,16 +257,20 @@ export function fromChildren(
 /**
  * Brands `schema` as text children.
  *
- * Whitespace collapses unless `collapseWhitespace` is `false`.
+ * Whitespace collapses unless `collapseWhitespace` is `false`. `dedent` keeps
+ * it and reads the text as source, as {@link textFromChildren} does.
  */
 export const fromTextChildren = <TSchema extends ZodType>(
   schema: TSchema,
-  options?: { collapseWhitespace?: boolean }
+  options?: { collapseWhitespace?: boolean; dedent?: boolean }
 ): TSchema & AuthoredTextBrand => {
   brand('fromTextChildren', schema, {
     [authoredText]: true,
     [authoredCollapse]:
-      options?.collapseWhitespace === false ? false : undefined,
+      options?.collapseWhitespace === false || options?.dedent
+        ? false
+        : undefined,
+    [authoredDedent]: options?.dedent ? true : undefined,
   });
   return schema as TSchema & AuthoredTextBrand;
 };
@@ -304,8 +310,10 @@ export interface AuthoredChildField {
 /** One {@link fromTextChildren} field as the shim reads it. */
 export interface AuthoredTextField {
   field: string;
-  /** `true` unless the brand was given `collapseWhitespace: false`. */
+  /** `true` unless the brand was given `collapseWhitespace: false` or `dedent`. */
   collapseWhitespace: boolean;
+  /** Set when the brand was given `dedent`. */
+  dedent?: true;
   /** Whether the field accepts `undefined`, so text children may be omitted. */
   optional: boolean;
 }
@@ -498,12 +506,16 @@ const readText = (
   if (!holder) {
     return undefined;
   }
-  return {
+  const text: AuthoredTextField = {
     field,
     collapseWhitespace:
       (holder as { [authoredCollapse]?: unknown })[authoredCollapse] !== false,
     optional: optionalThrough(schema),
   };
+  if ((holder as { [authoredDedent]?: unknown })[authoredDedent] === true) {
+    text.dedent = true;
+  }
+  return text;
 };
 
 /**

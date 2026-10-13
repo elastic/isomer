@@ -1095,6 +1095,39 @@ describe('textFromChildren', () => {
     ).toBe('const x = {\n  a: 1,\n};');
   });
 
+  it('reads source with `dedent`, keeping inner indentation and blank lines', () => {
+    expect(
+      textFromChildren('\n      a {\n        b;\n\n      }\n    ', {
+        dedent: true,
+      })
+    ).toBe('a {\n  b;\n\n}');
+  });
+
+  it('fills a dedent-branded field from a template literal', () => {
+    const {
+      Composition: View,
+      Snippet,
+      toComposition: parse,
+    } = buildJsxShim([
+      {
+        type: 'snippet' as const,
+        schema: z.object({
+          type: z.literal('snippet'),
+          source: fromTextChildren(z.string(), { dedent: true }),
+        }),
+      },
+    ] as const);
+    expect(
+      parse(
+        createElement(
+          View,
+          null,
+          createElement(Snippet, null, '\n  x\n    y\n')
+        )
+      ).body
+    ).toEqual([{ type: 'snippet', source: 'x\n  y' }]);
+  });
+
   it('rejects an element child', () => {
     try {
       textFromChildren(createElement('span', null, 'nope'));

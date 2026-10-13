@@ -499,6 +499,7 @@ const fillAuthoredFields = (
   for (const field of unsetText) {
     converted[field.field] = textFromChildren(textNodes, {
       collapseWhitespace: field.collapseWhitespace,
+      ...(field.dedent ? { dedent: true } : {}),
     });
   }
 };
@@ -649,12 +650,31 @@ export const flattenChildren = (children: ReactNode): ReactNode[] =>
     return child;
   });
 
+const lineBreak = /\r\n|[\n\r\u2028\u2029]/;
+
+// A template literal's source: the break after the opening backtick, the
+// indentation before the closing one, and the indentation every line shares go.
+const dedentSource = (text: string): string => {
+  const all = text.split(lineBreak);
+  const start = all.length > 1 && all[0] === '' ? 1 : 0;
+  const end =
+    all.length - start > 1 && /^ *$/.test(all[all.length - 1]!)
+      ? all.length - 1
+      : all.length;
+  const lines = all.slice(start, end);
+  const indents = lines
+    .filter((line) => line.trim() !== '')
+    .map((line) => line.length - line.trimStart().length);
+  const shared = indents.length > 0 ? Math.min(...indents) : 0;
+  return lines.map((line) => line.slice(shared)).join('\n');
+};
+
 /**
- * Children joined into one string. Throws on an element child, so a prop typed as text stays text. Collapses whitespace unless `{ collapseWhitespace: false }`.
+ * Children joined into one string. Throws on an element child, so a prop typed as text stays text. Collapses whitespace unless `{ collapseWhitespace: false }`; `{ dedent: true }` reads it as source, lines joined by `\n`.
  */
 export const textFromChildren = (
   children: ReactNode,
-  options?: { collapseWhitespace?: boolean }
+  options?: { collapseWhitespace?: boolean; dedent?: boolean }
 ): string => {
   const text = flattenChildren(children)
     .map((child) => {
@@ -667,6 +687,9 @@ export const textFromChildren = (
       );
     })
     .join('');
+  if (options?.dedent) {
+    return dedentSource(text);
+  }
   if (options?.collapseWhitespace === false) {
     return text.trim();
   }
