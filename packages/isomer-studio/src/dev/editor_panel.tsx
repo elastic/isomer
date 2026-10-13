@@ -105,7 +105,7 @@ export const EditorPanel = ({
   const { euiTheme } = useEuiTheme();
   const { transformJsx } = useStudio();
   const { label, examples } = doc;
-  const { format, setFormat, source, setSource, nodes, setNodes } = editor;
+  const { format, setFormat, source, setSource, nodes, editNodes } = editor;
 
   const jsxButton = (
     <EuiButton id="jsx" isDisabled={!transformJsx} hasAriaDisabled>
@@ -142,7 +142,11 @@ export const EditorPanel = ({
           <QuickProps
             {...{ doc }}
             node={nodes[0]}
-            onChange={(node) => setNodes([node, ...nodes.slice(1)])}
+            onChange={(edit) =>
+              editNodes(([first, ...rest]) =>
+                first ? [edit(first), ...rest] : rest
+              )
+            }
           />
         </EuiFlexItem>
         <EuiFlexItem />

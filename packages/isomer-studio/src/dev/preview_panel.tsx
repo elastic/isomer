@@ -44,10 +44,11 @@ export const PreviewPanel = ({
 }: PreviewPanelProps) => {
   const { euiTheme } = useEuiTheme();
   const { rasterizePng } = useStudio();
-  const [choice, setChoice] = useState<SurfaceChoice>('all');
+  const [picked, setChoice] = useState<SurfaceChoice>('all');
   const [view, setView] = useState<SurfaceView>('render');
   const [zoom, setZoom] = useState<PreviewZoom>('fit');
   const surfaces = previewSurfaces(supported, Boolean(rasterizePng));
+  const choice = picked === 'all' || surfaces.includes(picked) ? picked : 'all';
   const bar = css`
     flex-grow: 0;
     padding: ${euiTheme.size.s} ${euiTheme.size.base};

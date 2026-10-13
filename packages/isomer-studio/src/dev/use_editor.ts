@@ -39,14 +39,17 @@ export const parseBodyJson = (source: string): PrimitiveNode[] => {
   return nodes.filter(isNode);
 };
 
+const errorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
 export interface EditorState {
   format: EditorFormat;
   setFormat: (format: EditorFormat) => void;
   source: string;
   setSource: (source: string) => void;
   nodes: PrimitiveNode[];
-  /** Replaces the nodes, as quick edits do, and reprints the source. */
-  setNodes: (nodes: PrimitiveNode[]) => void;
+  /** Applies a quick edit to the draft's nodes and reprints the source, unless the draft doesn't parse or compose. */
+  editNodes: (edit: (nodes: PrimitiveNode[]) => PrimitiveNode[]) => void;
   parseError?: string | undefined;
   isParsing: boolean;
   composition: Composition;
@@ -112,7 +115,7 @@ export const useEditor = (initial: PrimitiveNode): EditorState => {
         }
       } catch (error) {
         if (token === pending.current) {
-          setParseError(error instanceof Error ? error.message : String(error));
+          setParseError(errorMessage(error));
           setParsing(false);
         }
       }
@@ -120,24 +123,41 @@ export const useEditor = (initial: PrimitiveNode): EditorState => {
     [format, parseSource]
   );
 
-  const setFormat = useCallback(
-    (next: EditorFormat) => {
-      const switchTo = (body: PrimitiveNode[]) => {
-        setFormatState(next);
-        reset(body, next);
-      };
-      if (!isParsing) {
-        switchTo(nodes);
+  /** Runs `then` on the nodes the current draft parses to, or reports why it doesn't parse. */
+  const withDraft = useCallback(
+    (then: (body: PrimitiveNode[]) => void) => {
+      if (!isParsing && !parseError) {
+        then(nodes);
         return;
       }
-      void parse(++pending.current, source, switchTo);
+      void parse(++pending.current, source, then);
     },
-    [isParsing, nodes, parse, reset, source]
+    [isParsing, nodes, parse, parseError, source]
   );
 
-  const setNodes = useCallback(
-    (body: PrimitiveNode[]) => reset(body, format),
-    [format, reset]
+  const setFormat = useCallback(
+    (next: EditorFormat) =>
+      withDraft((body) => {
+        setFormatState(next);
+        reset(body, next);
+      }),
+    [reset, withDraft]
+  );
+
+  const editNodes = useCallback(
+    (edit: (body: PrimitiveNode[]) => PrimitiveNode[]) =>
+      withDraft((body) => {
+        const next = edit(body);
+        try {
+          compose(next);
+        } catch (error) {
+          setParseError(errorMessage(error));
+          setParsing(false);
+          return;
+        }
+        reset(next, format);
+      }),
+    [compose, format, reset, withDraft]
   );
 
   const setSource = useCallback(
@@ -172,7 +192,7 @@ export const useEditor = (initial: PrimitiveNode): EditorState => {
     source,
     setSource,
     nodes,
-    setNodes,
+    editNodes,
     parseError,
     isParsing,
     composition,

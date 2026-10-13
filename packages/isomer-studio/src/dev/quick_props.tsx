@@ -72,7 +72,8 @@ const withField = (
 export interface QuickPropsProps {
   doc: PrimitiveDoc;
   node: PrimitiveNode | undefined;
-  onChange: (node: PrimitiveNode) => void;
+  /** Receives an edit to apply to the draft's latest node. */
+  onChange: (edit: (node: PrimitiveNode) => PrimitiveNode) => void;
 }
 
 /** A menu of one-click edits from the schema: enum values to pick, and optional props to add. */
@@ -95,7 +96,7 @@ export const QuickProps = ({ doc, node, onChange }: QuickPropsProps) => {
 
   const apply = (name: string, value: unknown) => {
     setOpen(false);
-    onChange(withField(node, name, value));
+    onChange((current) => withField(current, name, value));
   };
 
   const panels: EuiContextMenuPanelDescriptor[] = [

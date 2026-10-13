@@ -16,15 +16,38 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import ts from 'typescript';
+import { runInNewContext } from 'vm';
 
 import type { StudioCompose } from './config';
 import {
   componentsPack,
   componentsPrimitives,
 } from './fixtures/components_pack';
+import type { CompiledEvaluator } from './model/compile_jsx';
 import { defaultCompose } from './model/compose_example';
+import { JSX_TRANSFORM_OPTIONS } from './model/jsx_transform';
 import { IsomerStudio } from './studio';
-import type { RasterizePng } from './types';
+import type { JsxTransform, RasterizePng } from './types';
+
+vi.mock('./model/compile_jsx', async () => {
+  const actual = await vi.importActual<typeof import('./model/compile_jsx')>(
+    './model/compile_jsx'
+  );
+  const evaluate: CompiledEvaluator = (code, scope) => {
+    const context: Record<string, unknown> = { ...scope };
+    runInNewContext(code, context);
+    return context[actual.COMPILED_RESULT];
+  };
+  return {
+    ...actual,
+    compileCompositionJsx: (
+      ...[source, shim, transformJsx]: Parameters<
+        typeof actual.compileCompositionJsx
+      >
+    ) => actual.compileCompositionJsx(source, shim, transformJsx, { evaluate }),
+  };
+});
 
 vi.mock('./dev/monaco_editor', async () => {
   const { createElement } =
@@ -67,6 +90,18 @@ const framedRuntime = createIsomerRuntime<
     },
   },
 });
+
+const transformJsx: JsxTransform = (source) =>
+  Promise.resolve(
+    ts.transpileModule(source, {
+      compilerOptions: {
+        jsx: ts.JsxEmit.React,
+        jsxFactory: JSX_TRANSFORM_OPTIONS.jsxFactory,
+        jsxFragmentFactory: JSX_TRANSFORM_OPTIONS.jsxFragment,
+      },
+      fileName: 'composition.jsx',
+    }).outputText
+  );
 
 const findEditor = () =>
   screen.findByRole('textbox', { name: 'Callout source' });
@@ -324,6 +359,117 @@ describe('IsomerStudio', () => {
     expect(editor).toBeInTheDocument();
   });
 
+  it('compiles edited JSX into the preview and validates it', async () => {
+    render(<IsomerStudio {...{ runtime, transformJsx }} />);
+    const editor = await findEditor();
+
+    fireEvent.change(editor, {
+      target: {
+        value: '<Composition>\n  <Callout>Compiled.</Callout>\n</Composition>',
+      },
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByRole('region', { name: 'Text preview' })
+      ).toHaveTextContent('Compiled.')
+    );
+    expect(screen.getByText('Valid')).toBeInTheDocument();
+
+    fireEvent.change(editor, {
+      target: {
+        value:
+          '<Composition>\n  <Callout tone="bogus">Compiled.</Callout>\n</Composition>',
+      },
+    });
+    expect(await screen.findByText('Invalid · 1 error')).toBeInTheDocument();
+    expect(screen.getByText(/must be one of/)).toBeInTheDocument();
+  });
+
+  it('keeps a draft that does not parse when the format is switched', async () => {
+    render(<IsomerStudio {...{ runtime, transformJsx }} />);
+    await findEditor();
+    fireEvent.click(screen.getByRole('button', { name: 'JSON' }));
+    const draft = '{ "type": "callout",';
+    fireEvent.change(await findEditor(), { target: { value: draft } });
+    expect(await screen.findByText('JSON error')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'JSX' }));
+    await waitFor(() =>
+      expect(screen.getByText('JSON error')).toBeInTheDocument()
+    );
+    expect(await findEditor()).toHaveValue(draft);
+  });
+
+  it('applies a quick edit to the draft, and keeps a draft that does not parse', async () => {
+    const editor = await renderStudio();
+    const pickTone = async (tone: string) => {
+      fireEvent.click(screen.getByRole('button', { name: '+ Prop' }));
+      fireEvent.click(await screen.findByRole('menuitem', { name: /^tone:/ }));
+      fireEvent.click(await screen.findByRole('menuitem', { name: tone }));
+    };
+
+    fireEvent.change(editor, {
+      target: { value: JSON.stringify({ type: 'callout', body: 'Drafted.' }) },
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByRole('region', { name: 'Text preview' })
+      ).toHaveTextContent('Drafted.')
+    );
+    await pickTone('danger');
+    await waitFor(() =>
+      expect(JSON.parse((editor as HTMLTextAreaElement).value)).toEqual({
+        type: 'callout',
+        body: 'Drafted.',
+        tone: 'danger',
+      })
+    );
+
+    const draft = '{ "type": "callout",';
+    fireEvent.change(editor, { target: { value: draft } });
+    expect(await screen.findByText('JSON error')).toBeInTheDocument();
+    await pickTone('success');
+    await waitFor(() =>
+      expect(screen.getByText('JSON error')).toBeInTheDocument()
+    );
+    expect(editor).toHaveValue(draft);
+  });
+
+  it('reports a quick edit the host composer rejects', async () => {
+    const compose: StudioCompose = (nodes, options) => {
+      if (nodes.some((node) => 'tone' in node && node.tone === 'danger')) {
+        throw new Error('The composer refused this tone.');
+      }
+      return defaultCompose(nodes, options);
+    };
+    render(<IsomerStudio {...{ runtime, compose }} />);
+    const editor = await findEditor();
+    const before = (editor as HTMLTextAreaElement).value;
+
+    fireEvent.click(screen.getByRole('button', { name: '+ Prop' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: /^tone:/ }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'danger' }));
+
+    expect(
+      await screen.findByText(/The composer refused this tone\./)
+    ).toBeInTheDocument();
+    expect(await findEditor()).toHaveValue(before);
+  });
+
+  it('keeps the Dev draft while Docs is open', async () => {
+    const editor = await renderStudio();
+    const draft = JSON.stringify({ type: 'callout', body: 'Kept.' });
+    fireEvent.change(editor, { target: { value: draft } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Docs' }));
+    const nav = screen.getByRole('navigation', { name: 'Primitives' });
+    fireEvent.click(within(nav).getByRole('button', { name: 'Divider' }));
+    fireEvent.click(within(nav).getByRole('button', { name: 'Callout' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Dev' }));
+
+    expect(await findEditor()).toHaveValue(draft);
+  });
+
   describe('PNG preview', () => {
     beforeEach(() => {
       if (!Object.hasOwn(URL, 'revokeObjectURL')) {
@@ -337,9 +483,7 @@ describe('IsomerStudio', () => {
         .mockResolvedValue(new Blob(['png'], { type: 'image/png' }));
       render(<IsomerStudio runtime={framedRuntime} {...{ rasterizePng }} />);
 
-      expect(
-        await screen.findByRole('img', { name: 'PNG preview' })
-      ).toBeInTheDocument();
+      expect(await screen.findByAltText('PNG preview')).toBeInTheDocument();
       const [composition, options] = rasterizePng.mock.lastCall ?? [];
       expect(composition).toMatchObject({ type: 'view' });
       expect(options?.signal).toBeInstanceOf(AbortSignal);
@@ -352,6 +496,29 @@ describe('IsomerStudio', () => {
       render(<IsomerStudio runtime={framedRuntime} {...{ rasterizePng }} />);
 
       expect(await screen.findByText('No takumi here.')).toBeInTheDocument();
+    });
+
+    it('falls back to every surface when the picked one goes away', async () => {
+      const rasterizePng = vi
+        .fn<RasterizePng>()
+        .mockResolvedValue(new Blob(['png'], { type: 'image/png' }));
+      const { rerender } = render(
+        <IsomerStudio runtime={framedRuntime} {...{ rasterizePng }} />
+      );
+      await findEditor();
+      fireEvent.click(screen.getByRole('button', { name: /Surface/ }));
+      fireEvent.click(await screen.findByRole('option', { name: 'PNG' }));
+      expect(
+        await screen.findByText('The snapshot, rasterized by the host.')
+      ).toBeInTheDocument();
+
+      rerender(<IsomerStudio runtime={framedRuntime} />);
+      expect(
+        screen.getByText(/^All \d+ surfaces from the same props\./)
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('region', { name: 'HTML preview' })
+      ).toBeInTheDocument();
     });
 
     it('is absent when the runtime has no snapshot surface', async () => {

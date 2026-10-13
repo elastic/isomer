@@ -47,7 +47,10 @@ export const ExamplesPanel = ({
   const { runtime, compose, rasterizePng } = useStudio();
   const { examples } = doc;
   const surfaces = previewSurfaces(doc.surfaces, Boolean(rasterizePng));
-  const [choice, setChoice] = useState<SurfaceChoice>(surfaces[0] ?? 'all');
+  const fallback = surfaces[0] ?? 'all';
+  const [picked, setChoice] = useState<SurfaceChoice>(fallback);
+  const choice =
+    picked === 'all' || surfaces.includes(picked) ? picked : fallback;
   const [view, setView] = useState<SurfaceView>('render');
   const selected = examples[example];
 

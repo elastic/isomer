@@ -36,6 +36,10 @@ const darkWrapper = {
 
 const NO_TINT = {};
 
+const fill = css`
+  height: 100%;
+`;
+
 const docsBackground = css`
   background-color: #0b2347;
   background-image:
@@ -78,6 +82,10 @@ const Layout = ({
   const { mode, page } = route;
   const accent = useAccent(mode);
   const [isNavOpen, setNavOpen] = useState(true);
+  const [devRoute, setDevRoute] = useState(mode === 'dev' ? route : undefined);
+  if (mode === 'dev' && devRoute !== route) {
+    setDevRoute(route);
+  }
 
   const shell = css`
     height: 100vh;
@@ -137,12 +145,19 @@ const Layout = ({
           />
         </EuiThemeProvider>
         <main css={main}>
-          {!primitives.length ? null : mode === 'dev' ? (
-            <DevView {...{ route, navigate }} />
-          ) : page === GALLERY ? (
-            <GalleryView />
-          ) : (
-            <DocsView {...{ route, navigate, accent }} />
+          {!primitives.length ? null : (
+            <>
+              {devRoute ? (
+                <div hidden={mode !== 'dev'} css={fill}>
+                  <DevView route={devRoute} {...{ navigate }} />
+                </div>
+              ) : null}
+              {mode === 'dev' ? null : page === GALLERY ? (
+                <GalleryView />
+              ) : (
+                <DocsView {...{ route, navigate, accent }} />
+              )}
+            </>
           )}
         </main>
       </div>
