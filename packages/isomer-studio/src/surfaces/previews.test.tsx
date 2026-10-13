@@ -367,7 +367,6 @@ describe('SurfaceBoard', () => {
 
     render(
       <SurfaceBoard
-        choice="all"
         surfaces={['snapshot', 'png']}
         composition={composition('first')}
         validation={noWarnings}

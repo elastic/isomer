@@ -17,29 +17,27 @@ import { css } from '@emotion/react';
 
 import type { PrimitiveDoc } from '../model/describe_runtime';
 
-import { PrimitiveGlyph } from './primitive_glyph';
-
 const LAYOUTS = {
-  stacked: { title: 'l', glyph: 28 },
-  inline: { title: 'm', glyph: 24 },
+  stacked: 'l',
+  inline: 'm',
 } as const;
 
 const PURPOSE_MIN_WIDTH = 280;
 const PURPOSE_MAX_WIDTH = 720;
 
 export interface PrimitiveHeadingProps {
-  doc: Pick<PrimitiveDoc, 'type' | 'label' | 'group' | 'purpose'>;
+  doc: Pick<PrimitiveDoc, 'label' | 'group' | 'purpose'>;
   /** `inline` sets the purpose beside the title, for pages that give most of their height to a workbench. */
   layout?: keyof typeof LAYOUTS;
 }
 
-/** A primitive page's breadcrumb, glyph and title, and purpose. */
+/** A primitive page's breadcrumb, title, and purpose. */
 export const PrimitiveHeading = ({
-  doc: { type, label, group, purpose },
+  doc: { label, group, purpose },
   layout = 'stacked',
 }: PrimitiveHeadingProps) => {
   const { euiTheme } = useEuiTheme();
-  const { title, glyph } = LAYOUTS[layout];
+  const title = LAYOUTS[layout];
   const isInline = layout === 'inline';
 
   return (
@@ -58,13 +56,6 @@ export const PrimitiveHeading = ({
         css={css`
           margin-block: ${euiTheme.size.s};
         `}>
-        <EuiFlexItem
-          grow={false}
-          css={css`
-            color: ${euiTheme.colors.textHeading};
-          `}>
-          <PrimitiveGlyph {...{ type }} size={glyph} />
-        </EuiFlexItem>
         <EuiFlexItem grow={!isInline}>
           <EuiTitle size={title}>
             <h1>{label}</h1>

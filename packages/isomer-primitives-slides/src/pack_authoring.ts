@@ -7,24 +7,25 @@
 
 import type { PackAuthoringOptions, PrimitiveGroup } from '@elastic/isomer-sdk';
 
-/** Every primitive once, by what it draws, in the order an author usually chooses. */
+/** Whole slides, then the frame, then layouts, then what a content slide draws. */
 export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
   {
-    title: 'Slide structure',
+    title: 'Slides',
     types: [
-      'slideFrame',
-      'slideHeading',
+      'titleSlide',
+      'agendaSlide',
+      'sectionSlide',
       'statementSlide',
       'quoteSlide',
-      'titleSlide',
-      'sectionSlide',
-      'agendaSlide',
       'closingSlide',
-      'slideSource',
     ],
   },
   {
-    title: 'Layout',
+    title: 'Frame',
+    types: ['slideFrame', 'slideHeading', 'slideSource'],
+  },
+  {
+    title: 'Layouts',
     types: ['slideSplitLayout', 'slideStackLayout', 'slideWindowLayout'],
   },
   {
@@ -34,7 +35,7 @@ export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
       'slideBulletList',
       'slideDefinitions',
       'slideColumns',
-      'slideRoadmap',
+      'slideTranscript',
     ],
   },
   {
@@ -48,6 +49,7 @@ export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
       'slideTerritoryGroup',
       'slideGraph',
       'slideTimeline',
+      'slideRoadmap',
       'slideTree',
     ],
   },
@@ -65,13 +67,7 @@ export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
   },
   {
     title: 'Code',
-    types: [
-      'slideCode',
-      'slideCodeTrace',
-      'slideDiff',
-      'slideCommand',
-      'slideTranscript',
-    ],
+    types: ['slideCode', 'slideCodeTrace', 'slideDiff', 'slideCommand'],
   },
   {
     title: 'Renders',

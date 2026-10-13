@@ -20,7 +20,17 @@ export const AUTHORING_MODULE = '@elastic/isomer-authoring';
 export interface AuthoringTypes {
   declarations: string;
   bodySchema: SchemaNode;
+  /** The component names JSX source uses without importing. */
+  components: string[];
 }
+
+/** The shim's components: what JSX source can open a tag with. */
+export const authoringComponents = (
+  primitives: readonly AnyPrimitiveDefinition[]
+): string[] =>
+  Object.keys(createShim(primitives)).filter(
+    (name) => name !== 'toComposition'
+  );
 
 /**
  * The SDK's authoring module, plus a global per shim component, since the editor's source uses
@@ -30,9 +40,7 @@ export const authoringDeclarations = (
   schema: SchemaNode,
   primitives: readonly AnyPrimitiveDefinition[]
 ): string => {
-  const names = Object.keys(createShim(primitives)).filter(
-    (name) => name !== 'toComposition'
-  );
+  const names = authoringComponents(primitives);
   return [
     buildAuthoringDeclarations(schema, primitives, {
       jsx: true,

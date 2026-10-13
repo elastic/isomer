@@ -43,9 +43,9 @@ That is enough for a pack whose primitives render inside a plain `view`. A pack 
 ## The app
 
 - **Navigation.** With one pack, the sidebar lists primitives under that pack's authoring groups, in the pack's group order and alphabetically within each group. With more than one pack, each pack is a heading and its groups follow. Primitives no group claims are listed last, under Uncategorized. Each group collapses, the browser remembers which are closed, and a filter opens every group it matches. Resting the pointer on a name shows its first example and purpose.
-- **Surfaces.** The Dev preview starts on All surfaces: one card per surface, each a scaled 16:9 frame, so every surface of the same props sits side by side. The Surface menu picks one to see at full size, and Rendered or Source applies to every card at once. The Docs example card has the same menu and starts on the first surface.
+- **Surfaces.** The Dev preview starts on All surfaces. Cards stay in one column until the pane is wide enough for two, and do not go to three. The Surface menu checks the surfaces to compare: with every surface selected, choosing one shows it at full size, and choosing another adds it. Rendered or Source applies to every card at once. The Docs example card starts on the first surface, with the example picker on the left and the same menu on the right. Its footer shows that example as JSX or JSON.
 - **Zoom.** With one surface picked, the preview's zoom menu scales the React, HTML, Snapshot and PNG previews: Fit width shrinks a preview to the panel's width and never enlarges it, and fixed levels run from 50% to 200%.
-- **Color mode.** The header's moon or sun button switches between light and dark. Until it is pressed the Studio follows the operating system. The choice is remembered per browser, and previews render in the same mode.
+- **Color mode.** The header offers Light, Dark, and System. System follows the operating system, including when it changes. The choice is remembered per browser, and previews render in the resolved mode. In dark mode the Dev preview pane is black.
 
 ## Requirements
 

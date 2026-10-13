@@ -22,9 +22,10 @@ import type { PreviewZoom } from '../surfaces/scaled_preview';
 import { SurfaceBoard } from '../surfaces/surface_board';
 import type { SurfaceView } from '../surfaces/surface_preview';
 import { SurfaceViewToggle } from '../surfaces/surface_preview';
-import type { SurfaceChoice } from '../surfaces/surface_select';
+import type { SurfaceSelection } from '../surfaces/surface_select';
 import {
   previewSurfaces,
+  resolveSurfaces,
   surfaceNote,
   SurfaceSelect,
 } from '../surfaces/surface_select';
@@ -36,19 +37,19 @@ export interface PreviewPanelProps {
   supported: readonly StudioSurface[];
 }
 
-/** One card showing every surface side by side, or one of them at full size. */
+/** One card showing the selected surfaces: one at full size, or several in a two-column grid. */
 export const PreviewPanel = ({
   composition,
   validation,
   supported,
 }: PreviewPanelProps) => {
-  const { euiTheme } = useEuiTheme();
+  const { euiTheme, colorMode } = useEuiTheme();
   const { rasterizePng } = useStudio();
-  const [picked, setChoice] = useState<SurfaceChoice>('all');
+  const [selection, setSelection] = useState<SurfaceSelection>('all');
   const [view, setView] = useState<SurfaceView>('render');
   const [zoom, setZoom] = useState<PreviewZoom>('fit');
   const surfaces = previewSurfaces(supported, Boolean(rasterizePng));
-  const choice = picked === 'all' || surfaces.includes(picked) ? picked : 'all';
+  const showing = resolveSurfaces(surfaces, selection);
   const bar = css`
     flex-grow: 0;
     padding: ${euiTheme.size.s} ${euiTheme.size.base};
@@ -77,8 +78,10 @@ export const PreviewPanel = ({
         <EuiFlexItem grow={false}>
           <SurfaceSelect
             {...{ surfaces }}
-            value={choice}
-            onChange={setChoice}
+            selected={showing}
+            onChange={(next) =>
+              setSelection(next.length === surfaces.length ? 'all' : next)
+            }
           />
         </EuiFlexItem>
         <EuiFlexItem />
@@ -93,7 +96,7 @@ export const PreviewPanel = ({
           <ZoomSelect
             {...{ zoom }}
             onChange={setZoom}
-            isDisabled={choice === 'all'}
+            isDisabled={showing.length !== 1}
           />
         </EuiFlexItem>
       </EuiFlexGroup>
@@ -103,9 +106,11 @@ export const PreviewPanel = ({
           min-height: 0;
           overflow: auto;
           padding: ${euiTheme.size.base};
+          background: ${colorMode === 'DARK' ? '#000' : 'transparent'};
         `}>
         <SurfaceBoard
-          {...{ choice, surfaces, composition, validation, view, zoom }}
+          surfaces={showing}
+          {...{ composition, validation, view, zoom }}
         />
       </div>
       <EuiText
@@ -118,7 +123,7 @@ export const PreviewPanel = ({
           overflow: hidden;
           text-overflow: ellipsis;
         `}>
-        {surfaceNote(choice, surfaces.length)}
+        {surfaceNote(showing, surfaces.length)}
       </EuiText>
     </EuiPanel>
   );

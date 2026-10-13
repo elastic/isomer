@@ -6,7 +6,6 @@
  */
 
 import 'monaco-editor/esm/vs/editor/edcore.main';
-import 'monaco-editor/esm/vs/basic-languages/typescript/typescript.contribution';
 import 'monaco-editor/esm/vs/language/json/monaco.contribution';
 import 'monaco-editor/esm/vs/language/typescript/monaco.contribution';
 
@@ -18,7 +17,10 @@ import { editor, languages, Uri } from 'monaco-editor/esm/vs/editor/editor.api';
 import type { AuthoringTypes } from '../model/authoring_types';
 import { AUTHORING_MODULE } from '../model/authoring_types';
 
+import { registerComponentCompletions, registerTsx } from './tsx_language';
 import type { EditorFormat } from './use_editor';
+
+registerTsx();
 
 export interface MonacoEditorProps {
   format: EditorFormat;
@@ -99,6 +101,11 @@ export const MonacoEditor = ({
   useEffect(() => configureLanguages(authoring), [authoring]);
 
   useEffect(() => {
+    const provider = registerComponentCompletions(authoring.components);
+    return () => provider.dispose();
+  }, [authoring.components]);
+
+  useEffect(() => {
     const { colors } = euiTheme;
     const background = hex(colors.backgroundBaseSubdued);
     const themeColors = Object.fromEntries(
@@ -131,6 +138,7 @@ export const MonacoEditor = ({
       fixedOverflowWidgets: true,
       minimap: { enabled: false },
       scrollBeyondLastLine: false,
+      wordBasedSuggestions: false,
       wordWrap: 'on',
       tabSize: 2,
       fontSize: 12,

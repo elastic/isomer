@@ -235,25 +235,33 @@ describe('IsomerStudio', () => {
     );
   });
 
-  it('toggles and remembers the color mode, starting from the system', async () => {
+  it('offers light, dark, and system, and remembers the choice', async () => {
     window.localStorage.removeItem('isomer-studio:color-mode');
     await renderStudio();
     expect(window.localStorage.getItem('isomer-studio:color-mode')).toBe(
       'system'
     );
-
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Switch to dark mode' })
+    expect(screen.getByRole('button', { name: 'System' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
     );
-    expect(
-      screen.getByRole('button', { name: 'Switch to light mode' })
-    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Dark' }));
+    expect(screen.getByRole('button', { name: 'Dark' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
     expect(window.localStorage.getItem('isomer-studio:color-mode')).toBe(
       'dark'
     );
+
+    fireEvent.click(screen.getByRole('button', { name: 'System' }));
+    expect(window.localStorage.getItem('isomer-studio:color-mode')).toBe(
+      'system'
+    );
   });
 
-  it('shows every surface by default, and one at a time when picked', async () => {
+  it('shows every surface by default, one when picked, and several to compare', async () => {
     await renderStudio();
     expect(
       screen.getByText(/^All \d+ surfaces from the same props\./)
@@ -275,6 +283,12 @@ describe('IsomerStudio', () => {
     expect(
       screen.getByRole('region', { name: 'HTML preview' })
     ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('option', { name: 'Text' }));
+    expect(
+      screen.getByRole('region', { name: 'Text preview' })
+    ).toBeInTheDocument();
+    expect(screen.getByText(/^Comparing 2 surfaces/)).toBeInTheDocument();
   });
 
   it('picks examples from rendered previews', async () => {
@@ -285,6 +299,39 @@ describe('IsomerStudio', () => {
     );
     fireEvent.click(await screen.findByRole('button', { name: /^Example 2/ }));
     await waitFor(() => expect(window.location.hash).toBe('#/dev/callout/1'));
+  });
+
+  it('puts the example picker ahead of the surface menu and shows the example source', async () => {
+    await renderStudio();
+    fireEvent.click(screen.getByRole('button', { name: 'Docs' }));
+    const examples = await screen.findByRole('region', { name: 'Examples' });
+    const examplePicker = within(examples).getByRole('button', {
+      name: /^Example:/,
+    });
+    const surface = within(examples).getByRole('button', { name: /^Surface/ });
+    expect(
+      examplePicker.compareDocumentPosition(surface) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+
+    expect(within(examples).getByRole('tabpanel')).toHaveTextContent(
+      '<Callout'
+    );
+    fireEvent.click(within(examples).getByRole('tab', { name: 'JSON' }));
+    expect(within(examples).getByRole('tabpanel')).toHaveTextContent(
+      '"type": "callout"'
+    );
+
+    fireEvent.click(
+      within(examples).getByRole('button', { name: 'Hide source' })
+    );
+    expect(within(examples).queryByRole('tabpanel')).not.toBeInTheDocument();
+    fireEvent.click(
+      within(examples).getByRole('button', { name: 'View source' })
+    );
+    expect(
+      within(examples).getByRole('tab', { name: 'JSON', selected: true })
+    ).toBeInTheDocument();
   });
 
   it('switches between Dev and Docs', async () => {

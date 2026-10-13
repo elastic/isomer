@@ -67,17 +67,18 @@ const Layout = ({
   title,
   route,
   navigate,
+  colorMode,
   onColorModeChange,
 }: {
   title?: string | undefined;
   route: StudioRoute;
   navigate: (next: Partial<StudioRoute>) => void;
+  colorMode: ColorModePreference;
   onColorModeChange: (colorMode: ColorModePreference) => void;
 }) => {
   const { euiTheme } = useEuiTheme();
   const {
     docs: { primitives },
-    theme,
   } = useStudio();
   const { mode, page } = route;
   const accent = useAccent(mode);
@@ -128,7 +129,7 @@ const Layout = ({
             title,
             mode,
             accent,
-            theme,
+            colorMode,
             onColorModeChange,
             onSelectPrimitive,
           }}
@@ -173,9 +174,11 @@ const Studio = ({
   transformJsx,
   rasterizePng,
   theme,
+  colorMode,
   onColorModeChange,
 }: IsomerStudioProps & {
   theme: StudioTheme;
+  colorMode: ColorModePreference;
   onColorModeChange: (colorMode: ColorModePreference) => void;
 }) => {
   const docs = useMemo(() => describeRuntime(runtime), [runtime]);
@@ -222,7 +225,7 @@ const Studio = ({
       <EuiThemeProvider
         modify={route.mode === 'dev' ? DEV_TINT : NO_TINT}
         wrapperProps={darkWrapper}>
-        <Layout {...{ title, route, navigate, onColorModeChange }} />
+        <Layout {...{ title, route, navigate, colorMode, onColorModeChange }} />
       </EuiThemeProvider>
     </StudioContextProvider>
   );
@@ -230,11 +233,15 @@ const Studio = ({
 
 /** A dev and docs shell for an Isomer runtime, built only from what the runtime reports. */
 export const IsomerStudio = (props: IsomerStudioProps) => {
-  const { theme, setPreference: onColorModeChange } = useColorMode();
+  const {
+    preference: colorMode,
+    theme,
+    setPreference: onColorModeChange,
+  } = useColorMode();
 
   return (
     <EuiProvider colorMode={theme}>
-      <Studio {...props} {...{ theme, onColorModeChange }} />
+      <Studio {...props} {...{ theme, colorMode, onColorModeChange }} />
     </EuiProvider>
   );
 };
