@@ -49,6 +49,7 @@
     "access": "public"
   },
   "scripts": {
+    "build:assets": "node build/build_app_assets.js",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
