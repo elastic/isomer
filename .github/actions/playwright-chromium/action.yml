@@ -1,0 +1,28 @@
+# Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+# or more contributor license agreements. Licensed under the Elastic License
+# 2.0; you may not use this file except in compliance with the Elastic License
+# 2.0.
+
+name: Playwright Chromium
+description: Installs the Chromium that the installed @playwright/test drives, cached by its version. Run after pnpm install.
+
+runs:
+  using: composite
+  steps:
+    - id: version
+      shell: bash
+      run: echo "playwright=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+    - id: cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-chromium-${{ runner.os }}-${{ steps.version.outputs.playwright }}
+
+    - if: ${{ steps.cache.outputs.cache-hit != 'true' }}
+      shell: bash
+      run: pnpm exec playwright install --with-deps chromium
+
+    - if: ${{ steps.cache.outputs.cache-hit == 'true' }}
+      shell: bash
+      run: pnpm exec playwright install-deps chromium

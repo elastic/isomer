@@ -125,19 +125,21 @@ Slack gets its blocks through the Markdown fallback, because the pack wrote no S
 | Copy a working pack | [`@elastic/isomer-primitives-slides`](packages/isomer-primitives-slides/README.md), the in-repo reference pack |
 | Turn the `snapshot` surface into PNG, SVG, or PDF | [`@elastic/isomer-image-takumi`](packages/isomer-image-takumi/README.md) |
 | Score what a model composes from your pack | [`@elastic/isomer-evals`](packages/isomer-evals/README.md) |
+| Browse, check, and publish a pack's primitives | [`@elastic/isomer-studio`](packages/isomer-studio/README.md) |
 | Hand a runtime to an agent as tools | [`@elastic/isomer-agent-tools`](packages/isomer-agent-tools/README.md) |
 
-The published packages ship together at one version: the two a host installs and a host-side rasterizer. The reference pack, the evals harness, and the agent tools stay private in the repository.
+The published packages ship together at one version: the two a host installs, a host-side rasterizer, and the Studio a pack installs as a dev dependency. The reference pack, the evals harness, and the agent tools stay private in the repository.
 
 ## Development
 
 ```sh
 corepack enable
 pnpm install
+pnpm exec playwright install chromium
 pnpm verify
 ```
 
-`pnpm verify` is the full local gate, and CI runs the same command. [CONTRIBUTING.md](CONTRIBUTING.md) lists what it checks, and [AGENTS.md](AGENTS.md) holds the conventions and invariants, written for a human contributor and a coding agent alike.
+On Linux, add `--with-deps` to the Playwright install. `pnpm verify` is the full local gate, and CI runs the same command. [CONTRIBUTING.md](CONTRIBUTING.md) lists what it checks, and [AGENTS.md](AGENTS.md) holds the conventions and invariants, written for a human contributor and a coding agent alike.
 
 ## License
 

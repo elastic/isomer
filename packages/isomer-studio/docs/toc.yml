@@ -6,3 +6,5 @@
 toc:
   - file: index.md
   - file: config.md
+  - file: commands.md
+  - file: ci.md

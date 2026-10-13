@@ -7,6 +7,8 @@ description: "The reference primitive pack: slide-deck primitives, a theme with 
 
 The in-repo reference primitive pack for Isomer. Slide-deck primitives, every surface (`snapshot` exists only when the runtime is given frames), one fixed-size document.
 
+Browse every primitive, its examples and every surface in the [slides Studio](https://elastic.github.io/isomer/studio-app/), built from `isomer-studio.config.ts` at the package root. Run it locally with `pnpm exec isomer-studio dev --config packages/isomer-primitives-slides/isomer-studio.config.ts`; see [Isomer Studio](../studio/index.md).
+
 ## Documentation
 
 | Page | What it covers |

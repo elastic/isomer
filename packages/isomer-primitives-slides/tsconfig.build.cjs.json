@@ -10,5 +10,6 @@
     "declarationMap": false,
     "inlineSources": true
   },
+  "include": ["src"],
   "exclude": ["**/*.test.ts", "**/*.fixtures.ts", "src/examples/**"]
 }

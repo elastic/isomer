@@ -1,0 +1,74 @@
+# Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+# or more contributor license agreements. Licensed under the Elastic License
+# 2.0; you may not use this file except in compliance with the Elastic License
+# 2.0.
+
+name: Isomer Studio
+description: Check every example of an Isomer pack on every surface, build its Studio as a static site, and upload both.
+
+inputs:
+  config:
+    description: The Studio config, relative to working-directory.
+    required: true
+  working-directory:
+    description: Where @elastic/isomer-studio is installed; config, out and report resolve against it.
+    default: .
+  check:
+    description: Run isomer-studio check and fail the step on any failure.
+    default: 'true'
+  png:
+    description: Also rasterize every example in the check.
+    default: 'false'
+  report:
+    description: Where the check writes its JUnit report.
+    default: isomer-studio-report.xml
+  build:
+    description: Run isomer-studio build.
+    default: 'true'
+  out:
+    description: Where the build writes the site.
+    default: dist/studio
+  base:
+    description: The URL path the site is served from.
+    default: ./
+  artifact-name:
+    description: The name of the uploaded site artifact; the report uploads as <name>-report.
+    default: isomer-studio
+
+runs:
+  using: composite
+  steps:
+    - name: Check the pack
+      if: ${{ inputs.check == 'true' }}
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        CONFIG: ${{ inputs.config }}
+        REPORT: ${{ inputs.report }}
+        PNG: ${{ inputs.png == 'true' && '--png' || '' }}
+      run: npx --no isomer-studio check --config "$CONFIG" --format junit --report "$REPORT" $PNG
+
+    - name: Upload the check report
+      if: ${{ !cancelled() && inputs.check == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}-report
+        path: ${{ inputs.working-directory }}/${{ inputs.report }}
+        if-no-files-found: ignore
+
+    - name: Build the Studio
+      if: ${{ !cancelled() && inputs.build == 'true' }}
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        CONFIG: ${{ inputs.config }}
+        OUT: ${{ inputs.out }}
+        BASE: ${{ inputs.base }}
+      run: npx --no isomer-studio build --config "$CONFIG" --out "$OUT" --base "$BASE"
+
+    - name: Upload the Studio
+      if: ${{ !cancelled() && inputs.build == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ inputs.working-directory }}/${{ inputs.out }}

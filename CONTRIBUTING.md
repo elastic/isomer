@@ -9,15 +9,21 @@ Prerequisites: Node.js 22 or later (see `.nvmrc`) and pnpm via Corepack.
 ```sh
 corepack enable
 pnpm install
+pnpm exec playwright install chromium
 pnpm verify
 ```
 
-`pnpm verify` is the full local gate: typecheck, lint (ESLint with Prettier as a rule, markdownlint, and license headers), tests, the dual ESM/CJS build, and the `check:*` scripts (export parity, package exports, emitted declarations, pack contents, module graph, packed consumer) plus `pnpm licenses:report --check`. CI runs the same command.
+The Playwright install is a one-time step that downloads the Chromium `verify` drives; on Linux, add `--with-deps`.
+
+`pnpm verify` is the full local gate: typecheck, lint (ESLint with Prettier as a rule, markdownlint, and license headers), tests, the dual ESM/CJS build, and the `check:*` scripts (export parity, package exports, emitted declarations, pack contents, module graph, packed consumer), the Studio's browser tests, and `pnpm licenses:report --check`. CI runs the same command.
 
 Useful individual scripts:
 
 - `pnpm test` — unit tests
 - `pnpm lint` / `pnpm lint:fix` — ESLint (including Prettier) and markdownlint
+- `pnpm studio:dev` — the Studio for the slides pack, run from the Studio's TypeScript source so edits to the Studio and to the pack both hot-update without a reload. Extra flags pass through, for example `pnpm studio:dev --port 5180`. Run `pnpm build` once first; edits to the SDK or runtime need it again.
+- `pnpm test:browser` — the Studio's Playwright test of `dev` and a static build
+- `pnpm check:studio-consumer` — installs the packed Studio with npm outside the workspace, then runs `check`, `build`, and the browser test against a consumer's own config
 - `pnpm build` — the ESM build, specifier rewriting, and the CommonJS pass (see below)
 - `pnpm licenses:report` — regenerate `THIRD_PARTY_LICENSES.md` and `NOTICE.txt` for the workspace, and each published package's own, scoped to what a consumer installs with it for the workspace, and for each published package scoped to what a consumer installs with it
 - `pnpm docs:dev` — copy package docs into the assembler and serve with live reload (`docs-builder serve`, <http://localhost:3000>). Requires the [docs-builder](https://github.com/elastic/docs-builder) binary (`curl -sL https://ela.st/docs-builder-install | sh`)
