@@ -5,11 +5,13 @@
  * 2.0.
  */
 
+import { createElement } from 'react';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
+import { slideJsx } from '../../jsx';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import {
   frameBodyHeight,
@@ -319,5 +321,48 @@ describe('slideQuadrant', () => {
         quadrantSize(fullExample, { width: frameContentWidth, crowding: 1 })
       ).toBe('s');
     });
+  });
+});
+
+describe('slideQuadrant JSX', () => {
+  it('fills quadrants from QuadrantCell children, leaving out items for an empty cell', () => {
+    const { QuadrantCell, QuadrantItem, SlideQuadrant } = slideJsx;
+    const { x, y } = menuExample;
+    const node = slideJsx.toComposition(
+      createElement(
+        slideJsx.Composition,
+        null,
+        createElement(
+          SlideQuadrant,
+          { x, y, highlight: 1 },
+          createElement(
+            QuadrantCell,
+            { label: 'Plowhorses' },
+            createElement(QuadrantItem, null, 'drip'),
+            createElement(QuadrantItem, { text: 'bagel' })
+          ),
+          createElement(QuadrantCell, { label: 'Stars' }),
+          createElement(QuadrantCell, { label: 'Dogs' }),
+          createElement(
+            QuadrantCell,
+            { label: 'Puzzles' },
+            createElement(QuadrantItem, null, 'matcha')
+          )
+        )
+      )
+    ).body[0];
+    expect(node).toEqual({
+      type: 'slideQuadrant',
+      x,
+      y,
+      highlight: 1,
+      quadrants: [
+        { label: 'Plowhorses', items: ['drip', 'bagel'] },
+        { label: 'Stars' },
+        { label: 'Dogs' },
+        { label: 'Puzzles', items: ['matcha'] },
+      ],
+    });
+    expect(errorPaths(node ?? {})).toEqual([]);
   });
 });
