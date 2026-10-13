@@ -59,7 +59,7 @@ export const schema = z
           if (nodes.length !== 1) {
             throw new IsomerError(
               'UNEXPECTED_CHILDREN',
-              '<TitleAside> takes one slide node.'
+              '<TitleSlide.TitleAside> takes one slide node.'
             );
           }
           return nodes[0];

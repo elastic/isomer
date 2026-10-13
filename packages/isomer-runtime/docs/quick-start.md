@@ -39,7 +39,7 @@ The pack ships its own style adapter, so the runtime has CSS without being told.
 
 ## 3. Write a composition
 
-A `Composition` says what the answer is, not how it looks. The wire discriminator stays `type: 'view'`. `slideJsx` authors it, and `toComposition` is the value every surface renders. This one is the reference pack's title slide: `TitleAside` holds the bullet list, each `BulletItem` is one point, and `SlideFooter` fills the footer.
+A `Composition` says what the answer is, not how it looks. The wire discriminator stays `type: 'view'`. `slideJsx` authors it, and `toComposition` is the value every surface renders. This one is the reference pack's title slide: `TitleSlide.TitleAside` holds the bullet list, each `SlideBulletList.BulletItem` is one point, and `SlideFrame.SlideFooter` fills the footer.
 
 ```tsx
 import { slideJsx } from '@elastic/isomer-primitives-slides';
@@ -63,16 +63,16 @@ const composition = toComposition(
         title="Isomer"
         tagline="One composition, **every surface**."
       >
-        <TitleAside>
+        <TitleSlide.TitleAside>
           <SlideBulletList marker="check">
-            <BulletItem>React and HTML</BulletItem>
-            <BulletItem>Markdown and plain text</BulletItem>
-            <BulletItem>Slack Block Kit</BulletItem>
-            <BulletItem>SVG and PNG</BulletItem>
+            <SlideBulletList.BulletItem>React and HTML</SlideBulletList.BulletItem>
+            <SlideBulletList.BulletItem>Markdown and plain text</SlideBulletList.BulletItem>
+            <SlideBulletList.BulletItem>Slack Block Kit</SlideBulletList.BulletItem>
+            <SlideBulletList.BulletItem>SVG and PNG</SlideBulletList.BulletItem>
           </SlideBulletList>
-        </TitleAside>
+        </TitleSlide.TitleAside>
       </TitleSlide>
-      <SlideFooter brand="Isomer" url="https://elastic.github.io/isomer" />
+      <SlideFrame.SlideFooter brand="Isomer" url="https://elastic.github.io/isomer" />
     </SlideFrame>
   </Composition>
 );

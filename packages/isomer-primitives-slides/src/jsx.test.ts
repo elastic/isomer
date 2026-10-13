@@ -14,21 +14,9 @@ import { slideDeckFrame, slidesPack } from './pack';
 import { slidePrimitiveTypes } from './registry';
 
 const {
-  AgendaSection,
-  RenderPin,
-  RenderTile,
   SlideAnnotatedRender,
   SlideRender,
   SlideRenderGrid,
-  FanoutTarget,
-  GraphNode,
-  Lane,
-  LanesNote,
-  Layer,
-  PipelineSpan,
-  PipelineStep,
-  SequenceActor,
-  SequenceMessage,
   SlideFanout,
   SlideGraph,
   SlideLanes,
@@ -37,46 +25,29 @@ const {
   SlideSequence,
   SlideTimeline,
   SlideTree,
-  TimelineItem,
-  TreeEntry,
-  Bar,
-  BulletItem,
   SlideBars,
   SlideDelta,
   SlideStat,
   SlideStats,
-  Stat,
-  ClosingLink,
-  CodePanel,
-  Definition,
   SlideCommand,
   SlideDiff,
-  ListItem,
-  RoadmapColumn,
-  RoadmapItem,
   SlideDefinitions,
   SlideHeading,
   SlideList,
   SlideRoadmap,
-  ClosingPath,
   Composition,
-  SectionItem,
   AgendaSlide,
   SlideBulletList,
   ClosingSlide,
   SlideCode,
-  SlideFooter,
   SlideFrame,
   QuoteSlide,
   SectionSlide,
   SlideSource,
   SlideSplitLayout,
-  SplitPane,
   SlideStackLayout,
   StatementSlide,
   TitleSlide,
-  TitleAside,
-  TitleDefinition,
   toComposition,
 } = slideJsx;
 
@@ -116,9 +87,13 @@ describe('slideJsx', () => {
           createElement(
             SlideSplitLayout,
             { divider: 'arrow' },
-            createElement(SplitPane, { label: 'Before' }, code),
             createElement(
-              SplitPane,
+              SlideSplitLayout.SplitPane,
+              { label: 'Before' },
+              code
+            ),
+            createElement(
+              SlideSplitLayout.SplitPane,
               { label: 'After', tone: 'primary' },
               createElement(
                 SlideStackLayout,
@@ -179,7 +154,7 @@ describe('slideJsx', () => {
             createElement(
               TitleSlide,
               { title: 'Crate' },
-              createElement(TitleAside, null, ...nodes)
+              createElement(TitleSlide.TitleAside, null, ...nodes)
             )
           )
         )
@@ -187,7 +162,7 @@ describe('slideJsx', () => {
     ).toThrow(
       expect.objectContaining({
         code: 'UNEXPECTED_CHILDREN',
-        message: '<TitleAside> takes one slide node.',
+        message: '<TitleSlide.TitleAside> takes one slide node.',
       })
     );
   });
@@ -208,13 +183,13 @@ describe('slideJsx', () => {
               tagline: 'One order. Every store.',
             },
             createElement(
-              TitleDefinition,
+              TitleSlide.TitleDefinition,
               { term: 'crate n.' },
               'Everything a customer means to buy.'
             ),
-            createElement(TitleAside, null, bullets)
+            createElement(TitleSlide.TitleAside, null, bullets)
           ),
-          createElement(SlideFooter, {
+          createElement(SlideFrame.SlideFooter, {
             brand: 'Ledger',
             section: 'Opening',
             sectionNumber: '01',
@@ -257,12 +232,12 @@ describe('slideJsx', () => {
         createElement(
           AgendaSlide,
           null,
-          createElement(AgendaSection, {
+          createElement(AgendaSlide.AgendaSection, {
             number: '01',
             title: 'The problem',
             count: '3 slides',
           }),
-          createElement(AgendaSection, {
+          createElement(AgendaSlide.AgendaSection, {
             number: '02',
             title: 'The approach',
             current: true,
@@ -286,12 +261,12 @@ describe('slideJsx', () => {
           ClosingSlide,
           { title: 'Start here' },
           createElement(
-            ClosingLink,
+            ClosingSlide.ClosingLink,
             { label: 'Docs', href: 'https://example.com/docs' },
             'example.com/docs'
           ),
           createElement(
-            ClosingPath,
+            ClosingSlide.ClosingPath,
             { title: 'Write a pack' },
             'Read the guide first'
           )
@@ -318,9 +293,13 @@ describe('slideJsx', () => {
         createElement(
           SectionSlide,
           { number: '02', title: 'Settlement' },
-          createElement(SectionItem, null, 'Refunds settle in two days'),
           createElement(
-            SectionItem,
+            SectionSlide.SectionItem,
+            null,
+            'Refunds settle in two days'
+          ),
+          createElement(
+            SectionSlide.SectionItem,
             { href: '#slide-12' },
             'The ledger writes first'
           )
@@ -402,8 +381,16 @@ describe('slideJsx', () => {
         createElement(
           SlideBulletList,
           { marker: 'check' },
-          createElement(BulletItem, null, 'Charges the card once.'),
-          createElement(BulletItem, null, 'Refunds in `two days`.')
+          createElement(
+            SlideBulletList.BulletItem,
+            null,
+            'Charges the card once.'
+          ),
+          createElement(
+            SlideBulletList.BulletItem,
+            null,
+            'Refunds in `two days`.'
+          )
         )
       )
     ).toEqual({
@@ -417,8 +404,16 @@ describe('slideJsx', () => {
         createElement(
           SlideDefinitions,
           null,
-          createElement(Definition, { term: 'hold' }, 'Money set aside.'),
-          createElement(Definition, { term: 'capture' }, 'Money taken.')
+          createElement(
+            SlideDefinitions.Definition,
+            { term: 'hold' },
+            'Money set aside.'
+          ),
+          createElement(
+            SlideDefinitions.Definition,
+            { term: 'capture' },
+            'Money taken.'
+          )
         )
       )
     ).toEqual({
@@ -434,8 +429,8 @@ describe('slideJsx', () => {
         createElement(
           SlideList,
           { label: 'Limits', footnote: 'Per merchant.' },
-          createElement(ListItem, { term: 'rate' }, '100 a second.'),
-          createElement(ListItem, null, 'Retries back off.')
+          createElement(SlideList.ListItem, { term: 'rate' }, '100 a second.'),
+          createElement(SlideList.ListItem, null, 'Retries back off.')
         )
       )
     ).toEqual({
@@ -454,14 +449,22 @@ describe('slideJsx', () => {
           SlideRoadmap,
           null,
           createElement(
-            RoadmapColumn,
+            SlideRoadmap.RoadmapColumn,
             { title: 'Now', status: 'Shipped', current: true },
-            createElement(RoadmapItem, { title: 'Holds' }, 'Set money aside.')
+            createElement(
+              SlideRoadmap.RoadmapItem,
+              { title: 'Holds' },
+              'Set money aside.'
+            )
           ),
           createElement(
-            RoadmapColumn,
+            SlideRoadmap.RoadmapColumn,
             { title: 'Next', status: 'In design' },
-            createElement(RoadmapItem, { title: 'Splits' }, 'Pay two stores.')
+            createElement(
+              SlideRoadmap.RoadmapItem,
+              { title: 'Splits' },
+              'Pay two stores.'
+            )
           )
         )
       )
@@ -504,7 +507,7 @@ describe('slideJsx', () => {
           SlideCode,
           null,
           createElement(
-            CodePanel,
+            SlideCode.CodePanel,
             { file: 'refund.ts', lineNumbers: { highlight: '2' } },
             `
               const refund = async (id) => {
@@ -514,7 +517,7 @@ describe('slideJsx', () => {
               };
             `
           ),
-          createElement(CodePanel, { lines: ['ledger.settle(id);'] })
+          createElement(SlideCode.CodePanel, { lines: ['ledger.settle(id);'] })
         )
       )
     ).toEqual({
@@ -597,8 +600,16 @@ describe('slideJsx', () => {
         createElement(
           SlideStats,
           null,
-          createElement(Stat, { value: '41', label: 'Minutes' }, 'Down.'),
-          createElement(Stat, { value: '0', label: 'Lost' }, 'Orders kept.')
+          createElement(
+            SlideStats.Stat,
+            { value: '41', label: 'Minutes' },
+            'Down.'
+          ),
+          createElement(
+            SlideStats.Stat,
+            { value: '0', label: 'Lost' },
+            'Orders kept.'
+          )
         )
       )
     ).toEqual({
@@ -614,8 +625,12 @@ describe('slideJsx', () => {
         createElement(
           SlideBars,
           null,
-          createElement(Bar, { value: 12, highlight: true }, 'Checkout'),
-          createElement(Bar, { value: 4, detail: 'p95' }, 'Search')
+          createElement(
+            SlideBars.Bar,
+            { value: 12, highlight: true },
+            'Checkout'
+          ),
+          createElement(SlideBars.Bar, { value: 4, detail: 'p95' }, 'Search')
         )
       )
     ).toEqual({
@@ -633,9 +648,13 @@ describe('slideJsx', () => {
         createElement(
           SlideFanout,
           { source: 'Order' },
-          createElement(FanoutTarget, { name: 'Ledger' }, 'Holds the money.'),
           createElement(
-            FanoutTarget,
+            SlideFanout.FanoutTarget,
+            { name: 'Ledger' },
+            'Holds the money.'
+          ),
+          createElement(
+            SlideFanout.FanoutTarget,
             { name: 'Email', tone: 'accent' },
             'Tells the customer.'
           )
@@ -655,8 +674,16 @@ describe('slideJsx', () => {
         createElement(
           SlideGraph,
           { edges: [['cart', 'ledger']] },
-          createElement(GraphNode, { id: 'cart', term: 'Cart' }, 'Items.'),
-          createElement(GraphNode, { id: 'ledger', term: 'Ledger' }, 'Money.')
+          createElement(
+            SlideGraph.GraphNode,
+            { id: 'cart', term: 'Cart' },
+            'Items.'
+          ),
+          createElement(
+            SlideGraph.GraphNode,
+            { id: 'ledger', term: 'Ledger' },
+            'Money.'
+          )
         )
       )
     ).toEqual({
@@ -673,9 +700,15 @@ describe('slideJsx', () => {
         createElement(
           SlideLanes,
           { join: 'Checkout' },
-          createElement(Lane, { label: 'Card', steps: ['Authorize'] }),
-          createElement(Lane, { label: 'Wallet', steps: ['Redirect'] }),
-          createElement(LanesNote, { title: 'Card' }, 'One step.')
+          createElement(SlideLanes.Lane, {
+            label: 'Card',
+            steps: ['Authorize'],
+          }),
+          createElement(SlideLanes.Lane, {
+            label: 'Wallet',
+            steps: ['Redirect'],
+          }),
+          createElement(SlideLanes.LanesNote, { title: 'Card' }, 'One step.')
         )
       )
     ).toEqual({
@@ -694,16 +727,16 @@ describe('slideJsx', () => {
           SlideLayers,
           null,
           createElement(
-            Layer,
+            SlideLayers.Layer,
             { name: 'UI', owner: 'Web' },
             'What people see.'
           ),
           createElement(
-            Layer,
+            SlideLayers.Layer,
             { name: 'API', owner: 'Platform' },
             'Takes orders.'
           ),
-          createElement(Layer, {
+          createElement(SlideLayers.Layer, {
             name: 'Ledger',
             owner: 'Payments',
             chips: ['holds'],
@@ -724,10 +757,10 @@ describe('slideJsx', () => {
         createElement(
           SlidePipeline,
           null,
-          createElement(PipelineStep, { title: 'Hold' }),
-          createElement(PipelineStep, { title: 'Settle' }),
+          createElement(SlidePipeline.PipelineStep, { title: 'Hold' }),
+          createElement(SlidePipeline.PipelineStep, { title: 'Settle' }),
           createElement(
-            PipelineSpan,
+            SlidePipeline.PipelineSpan,
             { from: 0, to: 1, tone: 'primary', label: 'Ours', title: 'Ledger' },
             'We own both steps.'
           )
@@ -753,11 +786,19 @@ describe('slideJsx', () => {
         createElement(
           SlideSequence,
           null,
-          createElement(SequenceActor, { id: 'app' }, 'App'),
-          createElement(SequenceActor, { id: 'api' }, 'API'),
-          createElement(SequenceActor, { id: 'bank' }, 'Bank'),
-          createElement(SequenceMessage, { from: 'app', to: 'api' }, 'Pay'),
-          createElement(SequenceMessage, { from: 'api', to: 'bank' }, 'Charge')
+          createElement(SlideSequence.SequenceActor, { id: 'app' }, 'App'),
+          createElement(SlideSequence.SequenceActor, { id: 'api' }, 'API'),
+          createElement(SlideSequence.SequenceActor, { id: 'bank' }, 'Bank'),
+          createElement(
+            SlideSequence.SequenceMessage,
+            { from: 'app', to: 'api' },
+            'Pay'
+          ),
+          createElement(
+            SlideSequence.SequenceMessage,
+            { from: 'api', to: 'bank' },
+            'Charge'
+          )
         )
       )
     ).toEqual({
@@ -775,7 +816,7 @@ describe('slideJsx', () => {
 
     const item = (label: string) =>
       createElement(
-        TimelineItem,
+        SlideTimeline.TimelineItem,
         { label, channel: 'Pager', heading: `${label} paged` },
         'On call answered.'
       );
@@ -808,7 +849,11 @@ describe('slideJsx', () => {
         createElement(
           SlideTree,
           { root: 'checkout/' },
-          createElement(TreeEntry, { name: 'refund.ts' }, 'Issues refunds.')
+          createElement(
+            SlideTree.TreeEntry,
+            { name: 'refund.ts' },
+            'Issues refunds.'
+          )
         )
       )
     ).toEqual({
@@ -827,7 +872,7 @@ describe('slideJsx', () => {
           null,
           createElement(SlideRender, { surface: 'snapshot', body: embedded }),
           createElement(
-            RenderPin,
+            SlideAnnotatedRender.RenderPin,
             { x: 20, y: 30, title: 'Heading' },
             'The claim.'
           )
@@ -844,8 +889,16 @@ describe('slideJsx', () => {
         createElement(
           SlideRenderGrid,
           { body: embedded },
-          createElement(RenderTile, { surface: 'react' }, 'Hosts'),
-          createElement(RenderTile, { surface: 'slack' }, 'Channels')
+          createElement(
+            SlideRenderGrid.RenderTile,
+            { surface: 'react' },
+            'Hosts'
+          ),
+          createElement(
+            SlideRenderGrid.RenderTile,
+            { surface: 'slack' },
+            'Channels'
+          )
         )
       )
     ).toEqual({
@@ -864,7 +917,7 @@ describe('slideJsx', () => {
         createElement(
           Composition,
           null,
-          createElement(SplitPane, null, bullets)
+          createElement(SlideSplitLayout.SplitPane, null, bullets)
         )
       )
     ).toThrow();

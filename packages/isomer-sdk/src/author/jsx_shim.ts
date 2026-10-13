@@ -32,6 +32,7 @@ import {
   capitalize,
   type ChildSlot,
   createAuthoringModel,
+  memberType,
 } from './authoring_model';
 import { type AuthorComponent, authorType, defineAuthorComponent } from './jsx';
 
@@ -157,18 +158,22 @@ type AuthorPropsFor<P, TTypes extends string> = [SchemaOf<P>] extends [never]
   ? Record<string, unknown> & { children?: ReactNode }
   : AuthorPropsForSchema<SchemaOf<P>, TTypes>;
 
-type ChildEntry<F, TDepth extends unknown[]> = 0 extends 1 & F
+type ChildEntry<
+  F,
+  TOwner extends string,
+  TDepth extends unknown[],
+> = 0 extends 1 & F
   ? NoKeys
   : F extends AuthoredChildBrand<infer Name, infer Props>
     ? [Name] extends [string]
       ? {
           [K in Capitalize<Name>]: AuthorComponent<
             Props & { children?: ReactNode },
-            Name
+            `${TOwner}.${K}`
           >;
         } & (F extends AuthoredToItemBrand
           ? NoKeys
-          : ChildComponentsOf<ItemSchema<F>, [...TDepth, unknown]>)
+          : ChildComponentsOf<ItemSchema<F>, TOwner, [...TDepth, unknown]>)
       : NoKeys
     : NoKeys;
 
@@ -181,6 +186,7 @@ type UnionToIntersection<T> = (
 /** Child components branded on `TSchema`, then on each child's item schema, five levels deep. */
 type ChildComponentsOf<
   TSchema,
+  TOwner extends string,
   TDepth extends unknown[] = [],
 > = TDepth['length'] extends 5
   ? NoKeys
@@ -190,25 +196,21 @@ type ChildComponentsOf<
         {
           [K in keyof ShapeOf<TSchema>]: ChildEntry<
             Branded<ShapeOf<TSchema>[K]>,
+            TOwner,
             TDepth
           >;
         }[keyof ShapeOf<TSchema>]
       >;
 
-type ChildMapOfTuple<TPrimitives> = TPrimitives extends readonly [
-  infer Head,
-  ...infer Tail,
-]
-  ? ChildComponentsOf<SchemaOf<Head>> &
-      ChildMapOfTuple<Tail extends readonly { type: string }[] ? Tail : []>
-  : NoKeys;
-
-type ChildComponentMap<TPrimitives extends readonly { type: string }[]> =
-  ChildMapOfTuple<TPrimitives>;
+/** A primitive's child components, as members of its own component. */
+type MembersOf<P, TType extends string> = [SchemaOf<P>] extends [never]
+  ? NoKeys
+  : ChildComponentsOf<SchemaOf<P>, TType>;
 
 /**
  * PascalCase authoring components keyed from a pack's primitive `type` list.
- * `slideFrame` becomes `SlideFrame`. Props come from the primitive's schema.
+ * `slideFrame` becomes `SlideFrame`. Props come from the primitive's schema,
+ * and each branded child is a member: `SlideFrame.Footer`.
  */
 export type PrimitiveComponentMap<
   TPrimitives extends readonly { type: string }[],
@@ -218,13 +220,14 @@ export type PrimitiveComponentMap<
   ]: AuthorComponent<
     AuthorPropsFor<P, LiteralType<TPrimitives[number]['type'] & string>>,
     P['type'] & string
-  >;
+  > &
+    MembersOf<P, P['type'] & string>;
 };
 
 /**
  * A pack's JSX authoring front: the root `Composition` element, one
- * PascalCase component per primitive and per branded child, and the conversion
- * back to plain data.
+ * PascalCase component per primitive with its branded children as members,
+ * and the conversion back to plain data.
  */
 export type JsxShim<
   TNode extends PrimitiveNode = PrimitiveNode,
@@ -235,15 +238,15 @@ export type JsxShim<
   toComposition: (
     element: ReactElement<CompositionAuthorProps<TNode>>
   ) => AuthorComposition<TNode>;
-} & PrimitiveComponentMap<TPrimitives> &
-  ChildComponentMap<TPrimitives>;
+} & PrimitiveComponentMap<TPrimitives>;
 
 /**
  * Builds a pack's {@link JsxShim} from its primitive list.
  *
  * Branded schema fields ({@link fromChildren}, {@link fromTextChildren}) fill
- * from JSX children, and each child type becomes a component. Several branded
- * fields share one children list, and each takes the elements of its type.
+ * from JSX children, and each child becomes a member of its primitive's
+ * component. Several branded fields share one children list, and each takes
+ * the elements of its member.
  * Elements of a registered primitive that match none of them fill the one
  * unbranded child slot from {@link PrimitiveDefinition.children}, or the one
  * {@link fromNodeChildren} field. A primitive with no brand still fills that slot, array or
@@ -259,11 +262,8 @@ export const buildJsxShim = <
   primitives: TPrimitives = [] as unknown as TPrimitives
 ): JsxShim<TNode, TPrimitives> => {
   const primitiveTypes = new Set(primitives.map((primitive) => primitive.type));
-  const { authoredByType, children, childSlotsByType } =
+  const { authoredByType, membersByType, childSlotsByType } =
     createAuthoringModel(primitives);
-  const childComponents = new Map(
-    [...children.keys()].map((type) => [type, defineAuthorComponent(type)])
-  );
   const view = defineAuthorComponent<CompositionAuthorProps<TNode>, 'view'>(
     'view'
   );
@@ -277,15 +277,17 @@ export const buildJsxShim = <
     Composition: view,
     toComposition: (element) => toAuthorComposition<TNode>(element, env),
     ...Object.fromEntries(
-      primitives.map((primitive) => [
-        capitalize(primitive.type),
-        defineAuthorComponent(primitive.type),
-      ])
-    ),
-    ...Object.fromEntries(
-      [...childComponents].map(([type, component]) => [
+      primitives.map(({ type }) => [
         capitalize(type),
-        component,
+        Object.assign(
+          defineAuthorComponent(type),
+          Object.fromEntries(
+            (membersByType.get(type) ?? []).map(({ member, authorType }) => [
+              member,
+              defineAuthorComponent(authorType),
+            ])
+          )
+        ),
       ])
     ),
   } as JsxShim<TNode, TPrimitives>;
@@ -355,7 +357,7 @@ const bodyNodeFromElement = <TNode extends PrimitiveNode>(
   )) {
     const childField = authored?.children.find((field) => field.field === key);
     converted[key] = childField
-      ? valueFromChildField(value, childField, env)
+      ? valueFromChildField(value, childField, env, type)
       : convertPropValue(value, key, slots, parseChild);
   }
 
@@ -430,7 +432,7 @@ const fillAuthoredFields = (
   const claimed = new Set<ReactElement>();
   for (const field of unsetChildren) {
     const matching = elements.filter(
-      (child) => getAuthorType(child) === field.childType
+      (child) => getAuthorType(child) === memberType(parentType, field)
     );
     if (matching.length === 0) {
       if (flat.length === 0 && field.array && !field.optional) {
@@ -441,11 +443,11 @@ const fillAuthoredFields = (
     for (const child of matching) {
       claimed.add(child);
     }
-    converted[field.field] = valueFromBrand(matching, field, env);
+    converted[field.field] = valueFromBrand(matching, field, env, parentType);
   }
 
   const brandedTypes = new Set(
-    authored.children.map((field) => field.childType)
+    authored.children.map((field) => memberType(parentType, field))
   );
   const stray = elements.filter(
     (child) => brandedTypes.has(getAuthorType(child)) && !claimed.has(child)
@@ -470,7 +472,7 @@ const fillAuthoredFields = (
     if (empty && moreEmpty.length === 0 && !slotOpen) {
       throw new IsomerError(
         'AUTHOR_TYPE_MISMATCH',
-        `Expected <${empty.childType}> but received <${childType}>.`
+        `Expected <${capitalize(memberType(parentType, empty))}> but received <${capitalize(childType)}>.`
       );
     }
     throw new IsomerError(
@@ -507,10 +509,11 @@ const fillAuthoredFields = (
 const valueFromChildField = (
   value: unknown,
   field: AuthoredChildField,
-  env: ParseEnv
+  env: ParseEnv,
+  owner: string
 ): unknown => {
   if (isJsxNodes(value)) {
-    return valueFromBrand(flattenChildren(value), field, env);
+    return valueFromBrand(flattenChildren(value), field, env, owner);
   }
   return value;
 };
@@ -532,16 +535,19 @@ const isJsxNodes = (value: unknown): value is ReactNode => {
 const valueFromBrand = (
   elements: readonly ReactNode[],
   field: AuthoredChildField,
-  env: ParseEnv
+  env: ParseEnv,
+  owner: string
 ): unknown => {
-  const items = elements.map((child) => itemFromElement(child, field, env));
+  const items = elements.map((child) =>
+    itemFromElement(child, field, env, owner)
+  );
   if (field.array) {
     return items;
   }
   if (items.length > 1) {
     throw new IsomerError(
       'UNEXPECTED_CHILDREN',
-      `"${field.field}" takes one <${capitalize(field.childType)}>, not ${items.length}.`
+      `"${field.field}" takes one <${capitalize(memberType(owner, field))}>, not ${items.length}.`
     );
   }
   return items[0];
@@ -550,11 +556,12 @@ const valueFromBrand = (
 const itemFromElement = (
   child: ReactNode,
   field: AuthoredChildField,
-  env: ParseEnv
+  env: ParseEnv,
+  owner: string
 ): unknown => {
   const element = requireAuthorElement<Record<string, unknown>>(
     child,
-    field.childType
+    memberType(owner, field)
   );
   if (field.toItem) {
     return field.toItem(element.props, {
@@ -573,7 +580,7 @@ const itemFromElement = (
   ) {
     props[field.textField] = textFromChildren(text);
   }
-  fillNestedBrands(field.itemSchema, props, elements, env);
+  fillNestedBrands(field.itemSchema, props, elements, env, owner);
   return props;
 };
 
@@ -581,7 +588,8 @@ const fillNestedBrands = (
   itemSchema: ZodType,
   props: Record<string, unknown>,
   elements: readonly ReactElement[],
-  env: ParseEnv
+  env: ParseEnv,
+  owner: string
 ): void => {
   if (elements.length === 0) {
     return;
@@ -591,10 +599,10 @@ const fillNestedBrands = (
       continue;
     }
     const matching = elements.filter(
-      (child) => getAuthorType(child) === field.childType
+      (child) => getAuthorType(child) === memberType(owner, field)
     );
     if (matching.length > 0) {
-      props[field.field] = valueFromBrand(matching, field, env);
+      props[field.field] = valueFromBrand(matching, field, env, owner);
     }
   }
 };

@@ -362,7 +362,7 @@ describe('slideColumns output', () => {
 
 describe('slideColumns JSX', () => {
   it('fills columns from Column children, with text as the body', () => {
-    const { Column, SlideColumns } = slideJsx;
+    const { SlideColumns } = slideJsx;
     const node = slideJsx.toComposition(
       createElement(
         slideJsx.Composition,
@@ -370,8 +370,12 @@ describe('slideColumns JSX', () => {
         createElement(
           SlideColumns,
           { highlight: 1 },
-          createElement(Column, { title: 'Poll' }, 'Lags by one interval.'),
-          createElement(Column, { title: 'Push' }, 'Immediate.')
+          createElement(
+            SlideColumns.Column,
+            { title: 'Poll' },
+            'Lags by one interval.'
+          ),
+          createElement(SlideColumns.Column, { title: 'Push' }, 'Immediate.')
         )
       )
     ).body[0];

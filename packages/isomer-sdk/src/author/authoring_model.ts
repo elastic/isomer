@@ -24,41 +24,65 @@ export interface ChildSlot {
 export interface AuthoringChild {
   field: AuthoredChildField;
   primitiveType: string;
+  /** Property name on the primitive's component, e.g. `Item`. */
+  member: string;
+  /** What the member's elements carry as {@link authorType}, e.g. `slideList.Item`. */
+  authorType: string;
   path: readonly AuthoredChildField[];
 }
+
+/** The {@link AuthoringChild.authorType} of `field`'s elements under the primitive `owner`. */
+export const memberType = (
+  owner: string,
+  { name }: Pick<AuthoredChildField, 'name'>
+): string => `${owner}.${capitalize(name)}`;
 
 export const createAuthoringModel = (
   primitives: readonly { type: string; schema?: unknown; children?: unknown }[]
 ) => {
   const authoredByType = new Map<string, AuthoredSpec>();
-  const children = new Map<string, AuthoringChild>();
-  const visited = new Set<ZodType>();
-  const collectChildren = (
-    fields: readonly AuthoredChildField[],
-    primitiveType: string,
-    path: readonly AuthoredChildField[]
-  ): void => {
-    for (const field of fields) {
-      const prior = children.get(field.childType);
-      if (prior && prior.field.signature !== field.signature) {
-        throw new IsomerError(
-          'DUPLICATE_AUTHORED_CHILD',
-          `Child type "${field.childType}" is branded with incompatible item or props input schemas.`
-        );
+  const membersByType = new Map<string, AuthoringChild[]>();
+  const collectMembers = (type: string, spec: AuthoredSpec): void => {
+    const members = new Map<string, AuthoringChild>();
+    const visited = new Set<ZodType>();
+    const collect = (
+      fields: readonly AuthoredChildField[],
+      path: readonly AuthoredChildField[]
+    ): void => {
+      const siblings = new Set<string>();
+      for (const field of fields) {
+        const member = capitalize(field.name);
+        const prior = members.get(member);
+        if (
+          prior &&
+          (prior.field.itemSchema !== field.itemSchema || siblings.has(member))
+        ) {
+          throw new IsomerError(
+            'DUPLICATE_AUTHORED_CHILD',
+            `buildJsxShim: "${prior.field.field}" and "${field.field}" both become <${capitalize(type)}.${member}>`
+          );
+        }
+        siblings.add(member);
+        const nextPath = [...path, field];
+        if (!prior) {
+          members.set(member, {
+            field,
+            primitiveType: type,
+            member,
+            authorType: memberType(type, field),
+            path: nextPath,
+          });
+        }
+        if (field.toItem || visited.has(field.itemSchema)) {
+          continue;
+        }
+        visited.add(field.itemSchema);
+        collect(readAuthoredSpec(field.itemSchema).children, nextPath);
       }
-      const nextPath = [...path, field];
-      if (!prior) {
-        children.set(field.childType, { field, primitiveType, path: nextPath });
-      }
-      if (field.toItem || visited.has(field.itemSchema)) {
-        continue;
-      }
-      visited.add(field.itemSchema);
-      collectChildren(
-        readAuthoredSpec(field.itemSchema).children,
-        primitiveType,
-        nextPath
-      );
+    };
+    collect(spec.children, []);
+    if (members.size > 0) {
+      membersByType.set(type, [...members.values()]);
     }
   };
   for (const { type, schema } of primitives) {
@@ -74,13 +98,10 @@ export const createAuthoringModel = (
       continue;
     }
     authoredByType.set(type, spec);
-    collectChildren(spec.children, type, []);
+    collectMembers(type, spec);
   }
   const typeByName = new Map([['Composition', 'view']]);
-  for (const type of [
-    ...primitives.map(({ type }) => type),
-    ...children.keys(),
-  ]) {
+  for (const { type } of primitives) {
     const name = capitalize(type);
     const earlier = typeByName.get(name);
     if (earlier !== undefined && earlier !== type) {
@@ -103,7 +124,7 @@ export const createAuthoringModel = (
       ];
     })
   );
-  return { authoredByType, children, childSlotsByType };
+  return { authoredByType, membersByType, childSlotsByType };
 };
 
 const isZodType = (schema: unknown): schema is ZodType =>

@@ -231,7 +231,9 @@ describe('buildAuthoringDeclarations', () => {
       'const Composition: (props: CompositionProps) => null;'
     );
     expect(declarations).toContain('const Note: (props: NoteProps) => null;');
-    expect(declarations).toContain('const Badge: (props: BadgeProps) => null;');
+    expect(declarations).toContain(
+      'const Badges: ((props: BadgesProps) => null) & {\n    readonly Badge: (props: BadgesBadgeProps) => null;\n  };'
+    );
     expect(declarations).toMatch(/interface BadgesProps \{\n {4}items\?: \{/);
     expect(declarations).toMatch(
       /interface CalloutProps \{[^]*?body\?: string;/
@@ -293,7 +295,7 @@ describe('buildAuthoringDeclarations', () => {
             <Note text="Hi" tone="warn" />
             <Callout icon="info">Heads up</Callout>
             <Badges>
-              <Badge tone="info">Open</Badge>
+              <Badges.Badge tone="info">Open</Badges.Badge>
             </Badges>
           </Stack>
           <Badges items={[{ label: 'Done' }]} />
@@ -318,7 +320,7 @@ describe('buildAuthoringDeclarations', () => {
       '/virtual/isomer.d.ts': declarations,
       '/virtual/use.tsx': `
         const a = <Note text={3} />;
-        const b = <Badge tone="loud">Open</Badge>;
+        const b = <Badges.Badge tone="loud">Open</Badges.Badge>;
         const c: BodyNode = { type: 'missing' };
       `,
     });
@@ -442,12 +444,12 @@ describe('buildAuthoringDeclarations', () => {
     );
 
     expect(declarations).toMatch(
-      /interface RowProps \{\n {4}type: "a" \| "b";/
+      /interface RowsRowProps \{\n {4}type: "a" \| "b";/
     );
     expect(
       diagnostics({
         '/virtual/isomer.d.ts': declarations,
-        '/virtual/use.tsx': '<Rows><Row type="a" /></Rows>;',
+        '/virtual/use.tsx': '<Rows><Rows.Row type="a" /></Rows>;',
       })
     ).toEqual([]);
   });
@@ -480,8 +482,8 @@ describe('buildAuthoringDeclarations', () => {
       { jsx: true }
     );
 
-    expect(declarations).toContain('const Card:');
-    expect(declarations).not.toContain('const Tag:');
+    expect(declarations).toContain('readonly Card:');
+    expect(declarations).not.toContain('readonly Tag:');
   });
 
   it('supports colliding ES and DOM component names with both editor library configurations', () => {
@@ -735,7 +737,7 @@ describe('buildAuthoringDeclarations', () => {
     expect(
       diagnostics({
         '/virtual/isomer.d.ts': declarations,
-        '/virtual/use.tsx': '<Nest><NestedItem label="one" /></Nest>;',
+        '/virtual/use.tsx': '<Nest><Nest.NestedItem label="one" /></Nest>;',
       })
     ).toEqual([]);
     const shim = buildJsxShim(defs);
@@ -748,8 +750,8 @@ describe('buildAuthoringDeclarations', () => {
             defineAuthorComponent<Record<string, unknown>, 'nest'>('nest'),
             {},
             createElement(
-              defineAuthorComponent<Record<string, unknown>, 'nestedItem'>(
-                'nestedItem'
+              defineAuthorComponent<Record<string, unknown>, 'nest.NestedItem'>(
+                'nest.NestedItem'
               ),
               { label: 'one' }
             )
@@ -795,58 +797,63 @@ describe('buildAuthoringDeclarations', () => {
       diagnostics({
         '/virtual/isomer.d.ts': declarations,
         '/virtual/use.tsx':
-          '<CardsInput><CardInput title="ok" meta={{count:1}} /></CardsInput>;',
+          '<CardsInput><CardsInput.CardInput title="ok" meta={{count:1}} /></CardsInput>;',
       })
     ).toEqual([]);
     expect(
       diagnostics({
         '/virtual/isomer.d.ts': declarations,
         '/virtual/use.tsx':
-          '<CardsInput><CardInput title={42} meta={{count:1}} /></CardsInput>;',
+          '<CardsInput><CardsInput.CardInput title={42} meta={{count:1}} /></CardsInput>;',
       })
     ).toHaveLength(1);
   });
 
-  it.each([
-    [
-      z.object({ kind: z.literal('first') }),
-      z.object({ kind: z.literal('second') }),
-    ],
-    [z.union([z.string(), z.number()]), z.union([z.string(), z.boolean()])],
-  ])(
-    'rejects incompatible custom props on a shared child component',
-    (first, second) => {
-      const defs = [first, second].map((propsSchema, index) => {
-        const type = `parent${index}`;
-        return definePrimitive<PrimitiveNode>({
-          type,
-          catalog: entry(type),
-          examples: [],
-          schema: z.object({
-            type: z.literal(type),
-            items: fromChildren(
-              'sharedItem',
-              z.array(z.object({ label: z.string() })),
-              {
-                propsSchema,
-                toItem: () => ({ label: 'ok' }),
-              }
-            ),
-          }),
-          renderers,
-        });
+  it('types a member name two parents share from each parent props', () => {
+    const defs = [
+      z.strictObject({ kind: z.literal('first') }),
+      z.strictObject({ kind: z.literal('second') }),
+    ].map((propsSchema, index) => {
+      const type = `parent${index}`;
+      return definePrimitive<PrimitiveNode>({
+        type,
+        catalog: entry(type),
+        examples: [],
+        schema: z.object({
+          type: z.literal(type),
+          items: fromChildren(
+            'sharedItem',
+            z.array(z.object({ label: z.string() })),
+            {
+              propsSchema,
+              toItem: () => ({ label: 'ok' }),
+            }
+          ),
+        }),
+        renderers,
       });
-      const schema = buildAuthoringJsonSchema(defs);
-      for (const build of [
-        () => buildJsxShim(defs),
-        () => buildAuthoringDeclarations(schema, defs, { jsx: true }),
-      ]) {
-        expect(build).toThrow(
-          expect.objectContaining({ code: 'DUPLICATE_AUTHORED_CHILD' })
-        );
-      }
-    }
-  );
+    });
+    const declarations = buildAuthoringDeclarations(
+      buildAuthoringJsonSchema(defs),
+      defs,
+      { jsx: true }
+    );
+    expect(() => buildJsxShim(defs)).not.toThrow();
+    expect(
+      diagnostics({
+        '/virtual/isomer.d.ts': declarations,
+        '/virtual/use.tsx':
+          '<Parent0><Parent0.SharedItem kind="first" /></Parent0>; <Parent1><Parent1.SharedItem kind="second" /></Parent1>;',
+      })
+    ).toEqual([]);
+    expect(
+      diagnostics({
+        '/virtual/isomer.d.ts': declarations,
+        '/virtual/use.tsx':
+          '<Parent0><Parent0.SharedItem kind="second" /></Parent0>;',
+      })
+    ).toHaveLength(1);
+  });
 
   it.each(['default', 'prefault', 'catch'] as const)(
     'does not execute %s callbacks in shared custom props',
@@ -887,14 +894,14 @@ describe('buildAuthoringDeclarations', () => {
       expect(
         diagnostics({
           '/virtual/isomer.d.ts': declarations,
-          '/virtual/use.tsx': `<FirstParent><SharedItem role="viewer"${count} /></FirstParent>; <SecondParent><SharedItem role="viewer"${count} /></SecondParent>;`,
+          '/virtual/use.tsx': `<FirstParent><FirstParent.SharedItem role="viewer"${count} /></FirstParent>; <SecondParent><SecondParent.SharedItem role="viewer"${count} /></SecondParent>;`,
         })
       ).toEqual([]);
       expect(
         diagnostics({
           '/virtual/isomer.d.ts': declarations,
           '/virtual/use.tsx':
-            '<FirstParent><SharedItem role="viewer" count="bad" /></FirstParent>;',
+            '<FirstParent><FirstParent.SharedItem role="viewer" count="bad" /></FirstParent>;',
         })
       ).toHaveLength(1);
       expect(declarations).toContain('Item count.');
@@ -945,14 +952,14 @@ describe('buildAuthoringDeclarations', () => {
       diagnostics({
         '/virtual/isomer.d.ts': declarations,
         '/virtual/use.tsx':
-          '<Choices><Choice kind="text" text="ok" /><Choice kind="count" count={1} /></Choices>;',
+          '<Choices><Choices.Choice kind="text" text="ok" /><Choices.Choice kind="count" count={1} /></Choices>;',
       })
     ).toEqual([]);
     expect(
       diagnostics({
         '/virtual/isomer.d.ts': declarations,
         '/virtual/use.tsx':
-          '<Choices><Choice kind="count" count="bad" /></Choices>;',
+          '<Choices><Choices.Choice kind="count" count="bad" /></Choices>;',
       })
     ).toHaveLength(1);
   });

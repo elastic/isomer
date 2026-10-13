@@ -12,17 +12,12 @@ import type { Composition as SlideComposition } from '@elastic/isomer-sdk';
 import { slideJsx } from '../jsx';
 
 const {
-  BulletItem,
-  CodePanel,
   Composition,
   SlideBulletList,
   SlideCode,
-  SlideFooter,
   SlideFrame,
   SlideHeading,
   SlideSplitLayout,
-  SplitPane,
-  TitleAside,
   TitleSlide,
   toComposition,
 } = slideJsx;
@@ -39,16 +34,22 @@ export const titleSlide: SlideComposition = toComposition(
         eyebrow="Reference pack"
         title="Isomer"
         tagline="One composition, **every surface**.">
-        <TitleAside>
+        <TitleSlide.TitleAside>
           <SlideBulletList marker="check">
-            <BulletItem>React and HTML</BulletItem>
-            <BulletItem>Markdown and plain text</BulletItem>
-            <BulletItem>Slack Block Kit</BulletItem>
-            <BulletItem>SVG and PNG</BulletItem>
+            <SlideBulletList.BulletItem>
+              React and HTML
+            </SlideBulletList.BulletItem>
+            <SlideBulletList.BulletItem>
+              Markdown and plain text
+            </SlideBulletList.BulletItem>
+            <SlideBulletList.BulletItem>
+              Slack Block Kit
+            </SlideBulletList.BulletItem>
+            <SlideBulletList.BulletItem>SVG and PNG</SlideBulletList.BulletItem>
           </SlideBulletList>
-        </TitleAside>
+        </TitleSlide.TitleAside>
       </TitleSlide>
-      <SlideFooter {...footer} />
+      <SlideFrame.SlideFooter {...footer} />
     </SlideFrame>
   </Composition>
 );
@@ -60,26 +61,32 @@ export const splitSlide: SlideComposition = toComposition(
         A slide is **one composition**
       </SlideHeading>
       <SlideSplitLayout ratio="wideLeft" divider="arrow">
-        <SplitPane>
+        <SlideSplitLayout.SplitPane>
           <SlideCode>
-            <CodePanel file="slide.ts" language="ts">
+            <SlideCode.CodePanel file="slide.ts" language="ts">
               {`
                 runtime.surfaces.markdown.render(slide);
                 runtime.surfaces.slack.render(slide);
                 runtime.surfaces.snapshot.render(slide);
               `}
-            </CodePanel>
+            </SlideCode.CodePanel>
           </SlideCode>
-        </SplitPane>
-        <SplitPane label="Surfaces" tone="primary">
+        </SlideSplitLayout.SplitPane>
+        <SlideSplitLayout.SplitPane label="Surfaces" tone="primary">
           <SlideBulletList>
-            <BulletItem>Markdown</BulletItem>
-            <BulletItem>Slack blocks</BulletItem>
-            <BulletItem>An image</BulletItem>
+            <SlideBulletList.BulletItem>Markdown</SlideBulletList.BulletItem>
+            <SlideBulletList.BulletItem>
+              Slack blocks
+            </SlideBulletList.BulletItem>
+            <SlideBulletList.BulletItem>An image</SlideBulletList.BulletItem>
           </SlideBulletList>
-        </SplitPane>
+        </SlideSplitLayout.SplitPane>
       </SlideSplitLayout>
-      <SlideFooter {...footer} section="Primitives" sectionNumber="01" />
+      <SlideFrame.SlideFooter
+        {...footer}
+        section="Primitives"
+        sectionNumber="01"
+      />
     </SlideFrame>
   </Composition>
 );

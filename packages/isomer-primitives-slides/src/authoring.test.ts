@@ -11,13 +11,8 @@ import { describe, expect, it } from 'vitest';
 
 import { slideDeckPrimitives } from './registry';
 
-const {
-  Composition,
-  SlideCode,
-  Territory,
-  SlideTerritoryGroup,
-  toComposition,
-} = buildJsxShim(slideDeckPrimitives);
+const { Composition, SlideCode, SlideTerritoryGroup, toComposition } =
+  buildJsxShim(slideDeckPrimitives);
 
 describe('slide authoring', () => {
   it('maps Territory children onto items', () => {
@@ -29,7 +24,7 @@ describe('slide authoring', () => {
           SlideTerritoryGroup,
           null,
           createElement(
-            Territory,
+            SlideTerritoryGroup.Territory,
             { title: 'Host', tone: 'accent' },
             'Owns routing.'
           )

@@ -73,12 +73,12 @@ describe('the slides pack authoring declarations', () => {
       const deck = (
         <Composition title="Ownership">
           <SlideFrame tone="page">
-            <SlideFooter brand="Isomer" />
+            <SlideFrame.SlideFooter brand="Isomer" />
             <SlideHeading title="Who owns what" />
             <SlideTerritoryGroup>
-              <Territory title="Us" tone="primary">
+              <SlideTerritoryGroup.Territory title="Us" tone="primary">
                 We own the contract.
-              </Territory>
+              </SlideTerritoryGroup.Territory>
             </SlideTerritoryGroup>
           </SlideFrame>
         </Composition>
@@ -99,7 +99,7 @@ describe('the slides pack authoring declarations', () => {
       diagnostics({
         '/virtual/isomer.d.ts': declarations,
         '/virtual/use.tsx':
-          '<SlideTranscript><TranscriptTurn role={42}>hello</TranscriptTurn></SlideTranscript>;',
+          '<SlideTranscript><SlideTranscript.TranscriptTurn role={42}>hello</SlideTranscript.TranscriptTurn></SlideTranscript>;',
       })
     ).toHaveLength(1);
   });

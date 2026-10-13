@@ -4,7 +4,7 @@
 
 ## A deck is a `Composition[]`
 
-`slideJsx` authors each slide, and `toComposition` is the `Composition` the test renders. The title slide is an inverse frame. `TitleAside` holds the bullet list, and `SlideFooter` fills the footer:
+`slideJsx` authors each slide, and `toComposition` is the `Composition` the test renders. The title slide is an inverse frame. `TitleSlide.TitleAside` holds the bullet list, and `SlideFrame.SlideFooter` fills the footer:
 
 ```tsx
 <Composition title="Isomer">
@@ -14,21 +14,21 @@
       title="Isomer"
       tagline="One composition, **every surface**."
     >
-      <TitleAside>
+      <TitleSlide.TitleAside>
         <SlideBulletList marker="check">
-          <BulletItem>React and HTML</BulletItem>
-          <BulletItem>Markdown and plain text</BulletItem>
-          <BulletItem>Slack Block Kit</BulletItem>
-          <BulletItem>SVG and PNG</BulletItem>
+          <SlideBulletList.BulletItem>React and HTML</SlideBulletList.BulletItem>
+          <SlideBulletList.BulletItem>Markdown and plain text</SlideBulletList.BulletItem>
+          <SlideBulletList.BulletItem>Slack Block Kit</SlideBulletList.BulletItem>
+          <SlideBulletList.BulletItem>SVG and PNG</SlideBulletList.BulletItem>
         </SlideBulletList>
-      </TitleAside>
+      </TitleSlide.TitleAside>
     </TitleSlide>
-    <SlideFooter brand="Isomer" url="https://elastic.github.io/isomer" />
+    <SlideFrame.SlideFooter brand="Isomer" url="https://elastic.github.io/isomer" />
   </SlideFrame>
 </Composition>
 ```
 
-The runtime sees one composition at a time. A host renders them in order and assembles the deck. The content slide is a page frame opening with a `SlideHeading` over a `SlideSplitLayout`. Each column is a `SplitPane`, and the pane's primitives are its children: a `SlideCode` on the left, a `SlideBulletList` on the right, joined with an arrow.
+The runtime sees one composition at a time. A host renders them in order and assembles the deck. The content slide is a page frame opening with a `SlideHeading` over a `SlideSplitLayout`. Each column is a `SlideSplitLayout.SplitPane`, and the pane's primitives are its children: a `SlideCode` on the left, a `SlideBulletList` on the right, joined with an arrow.
 
 ## Surface artifacts
 

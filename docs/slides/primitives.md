@@ -144,7 +144,7 @@ items: fromChildren(
 ),
 ```
 
-`slideJsx` then includes `Territory`, typed from the array element. `text: 'body'` copies leftover text children onto that field. An explicit `items` prop wins over children. Placing `<Territory>` directly under `<Composition>` throws, because it is not a body node.
+`slideJsx` then includes `SlideTerritoryGroup.Territory`, typed from the array element. `text: 'body'` copies leftover text children onto that field. An explicit `items` prop wins over children. Placing `<SlideTerritoryGroup.Territory>` directly under `<Composition>` throws, because it is not a body node.
 
 A string field uses `fromTextChildren` the same way, with `collapseWhitespace: false` when newlines matter.
 
@@ -156,22 +156,22 @@ Nested nodes arrive as JSX children, never as an element inside a prop object. A
 
 ```tsx
 <SlideSplitLayout divider="arrow">
-  <SplitPane label="Before">
+  <SlideSplitLayout.SplitPane label="Before">
     <SlideCode>
-      <CodePanel>curl …</CodePanel>
+      <SlideCode.CodePanel>curl …</SlideCode.CodePanel>
     </SlideCode>
-  </SplitPane>
-  <SplitPane label="After" tone="primary">
+  </SlideSplitLayout.SplitPane>
+  <SlideSplitLayout.SplitPane label="After" tone="primary">
     <SlideBulletList>
-      <BulletItem>One call</BulletItem>
+      <SlideBulletList.BulletItem>One call</SlideBulletList.BulletItem>
     </SlideBulletList>
-  </SplitPane>
+  </SlideSplitLayout.SplitPane>
 </SlideSplitLayout>
 ```
 
-Several branded fields share one children list, and each takes the elements of its type. Elements that match none of them fill the primitive's one child slot, when that slot is not itself branded. `slideFrame` is that case: its body nodes are the element children, and `<SlideFooter>` fills `footer`.
+Several branded fields share one children list, and each takes the elements of its type. Elements that match none of them fill the primitive's one child slot, when that slot is not itself branded. `slideFrame` is that case: its body nodes are the element children, and `<SlideFrame.SlideFooter>` fills `footer`.
 
-`titleSlide` brands two optional children. `<TitleDefinition term="ledger n.">` fills `definition`, its sentence the child, and `<TitleAside>` fills `aside` from its one slide node.
+`titleSlide` brands two optional children. `<TitleSlide.TitleDefinition term="ledger n.">` fills `definition`, its sentence the child, and `<TitleSlide.TitleAside>` fills `aside` from its one slide node.
 
 ## Writing a container primitive
 
@@ -258,41 +258,41 @@ const composition = toComposition(
   <Composition title="Refunds settle in two days">
     <SlideFrame>
       <SlideHeading>Refunds settle in two days, not five</SlideHeading>
-      <SlideFooter brand="Ledger" sectionNumber="02" section="Settlement" />
+      <SlideFrame.SlideFooter brand="Ledger" sectionNumber="02" section="Settlement" />
     </SlideFrame>
   </Composition>
 );
 ```
 
-A whole-slide layout takes its parts as children. `TitleDefinition` fills `definition` and `TitleAside` its one node. `AgendaSection` fills an agenda, `SectionItem` a section's `slides`, and `ClosingLink` and `ClosingPath` a closing slide. Quote, statement, and source text is the child:
+A whole-slide layout takes its parts as children. `TitleSlide.TitleDefinition` fills `definition` and `TitleSlide.TitleAside` its one node. `AgendaSlide.AgendaSection` fills an agenda, `SectionSlide.SectionItem` a section's `slides`, and `ClosingSlide.ClosingLink` and `ClosingSlide.ClosingPath` a closing slide. Quote, statement, and source text is the child:
 
 ```tsx
 <TitleSlide eyebrow="A grocery delivery platform" title="Crate" tagline="One order. Every store.">
-  <TitleDefinition term="crate n.">
+  <TitleSlide.TitleDefinition term="crate n.">
     Everything a customer means to buy, carried from whichever store can fill it.
-  </TitleDefinition>
-  <TitleAside>
+  </TitleSlide.TitleDefinition>
+  <TitleSlide.TitleAside>
     <SlideBulletList marker="check">
-      <BulletItem>Charges the card once.</BulletItem>
+      <SlideBulletList.BulletItem>Charges the card once.</SlideBulletList.BulletItem>
     </SlideBulletList>
-  </TitleAside>
+  </TitleSlide.TitleAside>
 </TitleSlide>
 
 <AgendaSlide>
-  <AgendaSection number="01" title="Why returns cost us" count="3 slides" />
-  <AgendaSection number="03" title="The new returns flow" current />
+  <AgendaSlide.AgendaSection number="01" title="Why returns cost us" count="3 slides" />
+  <AgendaSlide.AgendaSection number="03" title="The new returns flow" current />
 </AgendaSlide>
 
 <SectionSlide number="02" title="Settlement">
-  <SectionItem>Refunds settle in two days, not five</SectionItem>
-  <SectionItem href="#slide-12">Checkout failed for 41 minutes</SectionItem>
+  <SectionSlide.SectionItem>Refunds settle in two days, not five</SectionSlide.SectionItem>
+  <SectionSlide.SectionItem href="#slide-12">Checkout failed for 41 minutes</SectionSlide.SectionItem>
 </SectionSlide>
 
 <ClosingSlide title="Start here">
-  <ClosingLink label="Docs" href="https://example.com/ledger/docs">
+  <ClosingSlide.ClosingLink label="Docs" href="https://example.com/ledger/docs">
     example.com/ledger/docs
-  </ClosingLink>
-  <ClosingPath title="Issue a refund">The refunds guide, then `POST /refunds`</ClosingPath>
+  </ClosingSlide.ClosingLink>
+  <ClosingSlide.ClosingPath title="Issue a refund">The refunds guide, then `POST /refunds`</ClosingSlide.ClosingPath>
 </ClosingSlide>
 
 <QuoteSlide source="Priya N." context="Customer interview, March">
@@ -309,7 +309,7 @@ A container that arranges primitives inside a slide ends in `Layout`. `SlideStac
 ```tsx
 <SlideStackLayout spacing="tight">
   <SlideBulletList>
-    <BulletItem>One nightly run.</BulletItem>
+    <SlideBulletList.BulletItem>One nightly run.</SlideBulletList.BulletItem>
   </SlideBulletList>
   <SlideCommand>npm run settle -- --nightly</SlideCommand>
 </SlideStackLayout>
@@ -325,47 +325,47 @@ A content primitive takes its list as children named for it, without the `Slide`
 <SlideHeading lede="Same ledger, fewer days.">Refunds settle in **two days**</SlideHeading>
 
 <SlideBulletList marker="check">
-  <BulletItem>Charges the card once.</BulletItem>
-  <BulletItem>Refunds in `two days`.</BulletItem>
+  <SlideBulletList.BulletItem>Charges the card once.</SlideBulletList.BulletItem>
+  <SlideBulletList.BulletItem>Refunds in `two days`.</SlideBulletList.BulletItem>
 </SlideBulletList>
 
 <SlideColumns highlight={1}>
-  <Column title="Poll">Lags by one interval.</Column>
-  <Column title="Push" tags={['webhook']}>Immediate.</Column>
+  <SlideColumns.Column title="Poll">Lags by one interval.</SlideColumns.Column>
+  <SlideColumns.Column title="Push" tags={['webhook']}>Immediate.</SlideColumns.Column>
 </SlideColumns>
 
 <SlideDefinitions>
-  <Definition term="hold">Money set aside, not yet taken.</Definition>
+  <SlideDefinitions.Definition term="hold">Money set aside, not yet taken.</SlideDefinitions.Definition>
 </SlideDefinitions>
 
 <SlideList label="Limits">
-  <ListItem term="rate">100 requests a second.</ListItem>
+  <SlideList.ListItem term="rate">100 requests a second.</SlideList.ListItem>
 </SlideList>
 
 <SlideRoadmap>
-  <RoadmapColumn title="Now" status="Shipped" current>
-    <RoadmapItem title="Holds">Set money aside at checkout.</RoadmapItem>
-  </RoadmapColumn>
-  <RoadmapColumn title="Next" status="In design">
-    <RoadmapItem title="Splits">Pay two stores from one order.</RoadmapItem>
-  </RoadmapColumn>
+  <SlideRoadmap.RoadmapColumn title="Now" status="Shipped" current>
+    <SlideRoadmap.RoadmapItem title="Holds">Set money aside at checkout.</SlideRoadmap.RoadmapItem>
+  </SlideRoadmap.RoadmapColumn>
+  <SlideRoadmap.RoadmapColumn title="Next" status="In design">
+    <SlideRoadmap.RoadmapItem title="Splits">Pay two stores from one order.</SlideRoadmap.RoadmapItem>
+  </SlideRoadmap.RoadmapColumn>
 </SlideRoadmap>
 ```
 
-Code keeps its whitespace. A command is its text. A `CodePanel`'s text is its `lines`: write it as a template literal, and the line break after the opening backtick, the indentation before the closing one, and the indentation every line shares are dropped. JSX itself collapses line breaks in bare text, so multi-line source needs the template literal. A panel's `lineNumbers`, as in [`EuiCode`](https://eui.elastic.co/docs/components/display/code/#line-numbers), is `true` or `{ start, highlight }`: `highlight` is a range string such as `'2, 5-7'` of line numbers as the gutter shows them, so `start` shifts them, and the gutter's columns come out of every line's budget. Text, Markdown, and Slack print each line after its number. A diff's text is its source, read the same way as a panel's. Its `remove` and `add` are range strings in the same form as `highlight`, but they count the lines of the body from 1, removed ones included, since a removed line has no number in the gutter; no line is both. Its `lineNumbers` is `true` or `{ start }`, and its one gutter numbers the file after the change, leaving removed lines unnumbered. Text and Slack print the numbers before each line's `-` or `+`; Markdown keeps a plain unified diff. A transcript takes `TranscriptTurn` children, each turn's text keeping its line breaks:
+Code keeps its whitespace. A command is its text. A `SlideCode.CodePanel`'s text is its `lines`: write it as a template literal, and the line break after the opening backtick, the indentation before the closing one, and the indentation every line shares are dropped. JSX itself collapses line breaks in bare text, so multi-line source needs the template literal. A panel's `lineNumbers`, as in [`EuiCode`](https://eui.elastic.co/docs/components/display/code/#line-numbers), is `true` or `{ start, highlight }`: `highlight` is a range string such as `'2, 5-7'` of line numbers as the gutter shows them, so `start` shifts them, and the gutter's columns come out of every line's budget. Text, Markdown, and Slack print each line after its number. A diff's text is its source, read the same way as a panel's. Its `remove` and `add` are range strings in the same form as `highlight`, but they count the lines of the body from 1, removed ones included, since a removed line has no number in the gutter; no line is both. Its `lineNumbers` is `true` or `{ start }`, and its one gutter numbers the file after the change, leaving removed lines unnumbered. Text and Slack print the numbers before each line's `-` or `+`; Markdown keeps a plain unified diff. A transcript takes `SlideTranscript.TranscriptTurn` children, each turn's text keeping its line breaks:
 
 ```tsx
 <SlideCommand label="Install">npm install @elastic/isomer-runtime</SlideCommand>
 
 <SlideCode>
-  <CodePanel file="refund.ts" language="ts" lineNumbers={{ highlight: '2' }}>
+  <SlideCode.CodePanel file="refund.ts" language="ts" lineNumbers={{ highlight: '2' }}>
     {`
       const refund = async (id) => {
         await ledger.hold(id);
         return ledger.settle(id);
       };
     `}
-  </CodePanel>
+  </SlideCode.CodePanel>
 </SlideCode>
 
 <SlideDiff file="refund.ts" language="ts" remove="2" add="3" lineNumbers>
@@ -378,12 +378,12 @@ Code keeps its whitespace. A command is its text. A `CodePanel`'s text is its `l
 </SlideDiff>
 
 <SlideTranscript label="Tool call">
-  <TranscriptTurn role="user">Refund order 1042.</TranscriptTurn>
-  <TranscriptTurn role="model" format="code">{'refund({ order: 1042 })'}</TranscriptTurn>
+  <SlideTranscript.TranscriptTurn role="user">Refund order 1042.</SlideTranscript.TranscriptTurn>
+  <SlideTranscript.TranscriptTurn role="model" format="code">{'refund({ order: 1042 })'}</SlideTranscript.TranscriptTurn>
 </SlideTranscript>
 ```
 
-A number's sentence is its text, and the figures are attributes. A bar's label is its text. A table and a matrix keep their grids as props: a row is a list of cells, and an element per cell would be longer than the array it replaces. A quadrant takes four `QuadrantCell` children, top-left to bottom-right, each holding its `QuadrantItem` chips; a cell with none is empty.
+A number's sentence is its text, and the figures are attributes. A bar's label is its text. A table and a matrix keep their grids as props: a row is a list of cells, and an element per cell would be longer than the array it replaces. A quadrant takes four `SlideQuadrant.QuadrantCell` children, top-left to bottom-right, each holding its `SlideQuadrant.QuadrantItem` chips; a cell with none is empty.
 
 ```tsx
 <SlideStat value="2" unit="days">Refunds settle **three days** sooner.</SlideStat>
@@ -393,95 +393,95 @@ A number's sentence is its text, and the figures are attributes. A bar's label i
 </SlideDelta>
 
 <SlideStats>
-  <Stat value="41" label="Minutes">Checkout was down.</Stat>
-  <Stat value="0" label="Lost">Every order was kept.</Stat>
+  <SlideStats.Stat value="41" label="Minutes">Checkout was down.</SlideStats.Stat>
+  <SlideStats.Stat value="0" label="Lost">Every order was kept.</SlideStats.Stat>
 </SlideStats>
 
 <SlideBars>
-  <Bar value={12} highlight>Checkout</Bar>
-  <Bar value={4} detail="p95">Search</Bar>
+  <SlideBars.Bar value={12} highlight>Checkout</SlideBars.Bar>
+  <SlideBars.Bar value={4} detail="p95">Search</SlideBars.Bar>
 </SlideBars>
 
 <SlideQuadrant x={{ low: 'Easy', high: 'Hard' }} y={{ low: 'Minor', high: 'Major' }} highlight={0}>
-  <QuadrantCell label="Quick wins">
-    <QuadrantItem>dark mode</QuadrantItem>
-  </QuadrantCell>
-  <QuadrantCell label="Big bets">
-    <QuadrantItem>same-day</QuadrantItem>
-  </QuadrantCell>
-  <QuadrantCell label="Fill-ins" />
-  <QuadrantCell label="Money pits">
-    <QuadrantItem>own fleet</QuadrantItem>
-  </QuadrantCell>
+  <SlideQuadrant.QuadrantCell label="Quick wins">
+    <SlideQuadrant.QuadrantItem>dark mode</SlideQuadrant.QuadrantItem>
+  </SlideQuadrant.QuadrantCell>
+  <SlideQuadrant.QuadrantCell label="Big bets">
+    <SlideQuadrant.QuadrantItem>same-day</SlideQuadrant.QuadrantItem>
+  </SlideQuadrant.QuadrantCell>
+  <SlideQuadrant.QuadrantCell label="Fill-ins" />
+  <SlideQuadrant.QuadrantCell label="Money pits">
+    <SlideQuadrant.QuadrantItem>own fleet</SlideQuadrant.QuadrantItem>
+  </SlideQuadrant.QuadrantCell>
 </SlideQuadrant>
 ```
 
-A diagram's parts are children of their kind. Two kinds share one children list, and each element goes to its own field: a pipeline's `PipelineStep` and `PipelineSpan`, a sequence's `SequenceActor` and `SequenceMessage`, and a lanes diagram's `Lane` and `LanesNote`. Ids, edges, indexes, and short lists of chips or steps stay attributes:
+A diagram's parts are children of their kind. Two kinds share one children list, and each element goes to its own field: a pipeline's `SlidePipeline.PipelineStep` and `SlidePipeline.PipelineSpan`, a sequence's `SlideSequence.SequenceActor` and `SlideSequence.SequenceMessage`, and a lanes diagram's `SlideLanes.Lane` and `SlideLanes.LanesNote`. Ids, edges, indexes, and short lists of chips or steps stay attributes:
 
 ```tsx
 <SlideFanout source="Order">
-  <FanoutTarget name="Ledger">Holds the money.</FanoutTarget>
-  <FanoutTarget name="Email" tone="accent">Tells the customer.</FanoutTarget>
+  <SlideFanout.FanoutTarget name="Ledger">Holds the money.</SlideFanout.FanoutTarget>
+  <SlideFanout.FanoutTarget name="Email" tone="accent">Tells the customer.</SlideFanout.FanoutTarget>
 </SlideFanout>
 
 <SlideGraph edges={[['cart', 'ledger']]}>
-  <GraphNode id="cart" term="Cart">What the customer picked.</GraphNode>
-  <GraphNode id="ledger" term="Ledger">Where the money is held.</GraphNode>
+  <SlideGraph.GraphNode id="cart" term="Cart">What the customer picked.</SlideGraph.GraphNode>
+  <SlideGraph.GraphNode id="ledger" term="Ledger">Where the money is held.</SlideGraph.GraphNode>
 </SlideGraph>
 
 <SlideLanes join="Checkout">
-  <Lane label="Card" steps={['Authorize', 'Capture']} />
-  <Lane label="Wallet" tone="accent" steps={['Redirect']} />
-  <LanesNote title="Card">Two steps, no redirect.</LanesNote>
+  <SlideLanes.Lane label="Card" steps={['Authorize', 'Capture']} />
+  <SlideLanes.Lane label="Wallet" tone="accent" steps={['Redirect']} />
+  <SlideLanes.LanesNote title="Card">Two steps, no redirect.</SlideLanes.LanesNote>
 </SlideLanes>
 
 <SlideLayers>
-  <Layer name="Storefront" owner="Web">What people see.</Layer>
-  <Layer name="Orders API" owner="Platform">Takes and checks orders.</Layer>
-  <Layer name="Ledger" owner="Payments" chips={['holds', 'refunds']} />
+  <SlideLayers.Layer name="Storefront" owner="Web">What people see.</SlideLayers.Layer>
+  <SlideLayers.Layer name="Orders API" owner="Platform">Takes and checks orders.</SlideLayers.Layer>
+  <SlideLayers.Layer name="Ledger" owner="Payments" chips={['holds', 'refunds']} />
 </SlideLayers>
 
 <SlidePipeline>
-  <PipelineStep title="Hold" />
-  <PipelineStep title="Settle" />
-  <PipelineSpan from={0} to={1} tone="primary" label="Ours" title="Ledger">We own both steps.</PipelineSpan>
+  <SlidePipeline.PipelineStep title="Hold" />
+  <SlidePipeline.PipelineStep title="Settle" />
+  <SlidePipeline.PipelineSpan from={0} to={1} tone="primary" label="Ours" title="Ledger">We own both steps.</SlidePipeline.PipelineSpan>
 </SlidePipeline>
 
 <SlideSequence>
-  <SequenceActor id="app">App</SequenceActor>
-  <SequenceActor id="api">Orders API</SequenceActor>
-  <SequenceActor id="bank">Bank</SequenceActor>
-  <SequenceMessage from="app" to="api">Pay</SequenceMessage>
-  <SequenceMessage from="api" to="bank">Charge</SequenceMessage>
+  <SlideSequence.SequenceActor id="app">App</SlideSequence.SequenceActor>
+  <SlideSequence.SequenceActor id="api">Orders API</SlideSequence.SequenceActor>
+  <SlideSequence.SequenceActor id="bank">Bank</SlideSequence.SequenceActor>
+  <SlideSequence.SequenceMessage from="app" to="api">Pay</SlideSequence.SequenceMessage>
+  <SlideSequence.SequenceMessage from="api" to="bank">Charge</SlideSequence.SequenceMessage>
 </SlideSequence>
 
 <SlideTerritoryGroup>
-  <Territory title="Host" tone="accent">Owns routing.</Territory>
+  <SlideTerritoryGroup.Territory title="Host" tone="accent">Owns routing.</SlideTerritoryGroup.Territory>
 </SlideTerritoryGroup>
 
 <SlideTimeline>
-  <TimelineItem label="09:00" channel="Pager" heading="Checkout paged">On call answered.</TimelineItem>
-  <TimelineItem label="09:12" channel="Slack" heading="Cause found">A bad deploy.</TimelineItem>
-  <TimelineItem label="09:41" channel="Deploy" heading="Rolled back">Orders flowed again.</TimelineItem>
+  <SlideTimeline.TimelineItem label="09:00" channel="Pager" heading="Checkout paged">On call answered.</SlideTimeline.TimelineItem>
+  <SlideTimeline.TimelineItem label="09:12" channel="Slack" heading="Cause found">A bad deploy.</SlideTimeline.TimelineItem>
+  <SlideTimeline.TimelineItem label="09:41" channel="Deploy" heading="Rolled back">Orders flowed again.</SlideTimeline.TimelineItem>
 </SlideTimeline>
 
 <SlideTree root="checkout/">
-  <TreeEntry name="refund.ts">Issues refunds.</TreeEntry>
+  <SlideTree.TreeEntry name="refund.ts">Issues refunds.</SlideTree.TreeEntry>
 </SlideTree>
 ```
 
-An annotated render takes its `SlideRender` and its `RenderPin` children side by side; a pin's sentence is its text. A render grid takes `RenderTile` children, each captioned by its text. The slide a render or grid embeds is its other children, branded `fromNodeChildren` because it is drawn, not walked:
+An annotated render takes its `SlideRender` and its `SlideAnnotatedRender.RenderPin` children side by side; a pin's sentence is its text. A render grid takes `SlideRenderGrid.RenderTile` children, each captioned by its text. The slide a render or grid embeds is its other children, branded `fromNodeChildren` because it is drawn, not walked:
 
 ```tsx
 <SlideAnnotatedRender>
   <SlideRender slide="checkout" surface="snapshot" />
-  <RenderPin x={20} y={30} title="Heading">The claim, in one line.</RenderPin>
+  <SlideAnnotatedRender.RenderPin x={20} y={30} title="Heading">The claim, in one line.</SlideAnnotatedRender.RenderPin>
 </SlideAnnotatedRender>
 
 <SlideRenderGrid>
   <SlideHeading>Refunds settle in two days</SlideHeading>
-  <RenderTile surface="react">Hosts</RenderTile>
-  <RenderTile surface="slack">Channels</RenderTile>
+  <SlideRenderGrid.RenderTile surface="react">Hosts</SlideRenderGrid.RenderTile>
+  <SlideRenderGrid.RenderTile surface="slack">Channels</SlideRenderGrid.RenderTile>
 </SlideRenderGrid>
 ```
 

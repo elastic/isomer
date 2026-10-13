@@ -6,15 +6,13 @@
  */
 
 import type { ReactNode } from 'react';
-import { z, type ZodType } from 'zod';
+import type { ZodType } from 'zod';
 
 import { ISOMER_ERROR_CODES, IsomerError } from '../composition/error';
 import type { PrimitiveNode } from '../define/primitive_module';
 
-import { prepareAuthoringInput } from './authoring_input';
-
 /**
- * Child-element type a schema field is filled from.
+ * Member name of the child component a schema field is filled from.
  *
  * `Symbol.for`: ESM and CJS builds must agree, same as `authorType`.
  */
@@ -170,7 +168,9 @@ const brand = (
 };
 
 /**
- * Brands `schema` as JSX children of `childType`.
+ * Brands `schema` as JSX children of the member `name`, capitalized on the
+ * primitive's component: `fromChildren('item', …)` on `slideList` is
+ * `<SlideList.Item>`. Names are unique across a primitive's child tree.
  *
  * `options.text` copies leftover text onto that field. `options.toItem` replaces
  * the default prop copy; its props annotation is the child component's props.
@@ -182,7 +182,7 @@ export function fromChildren<
   const TName extends string,
   TSchema extends ZodType,
 >(
-  childType: TName,
+  name: TName,
   schema: TSchema
 ): TSchema &
   AuthoredChildBrand<
@@ -194,7 +194,7 @@ export function fromChildren<
   TSchema extends ZodType,
   const TText extends string,
 >(
-  childType: TName,
+  name: TName,
   schema: TSchema,
   options: { text: TText; toItem?: never }
 ): TSchema &
@@ -210,7 +210,7 @@ export function fromChildren<
   TSchema extends ZodType,
   TPropsSchema extends ZodType,
 >(
-  childType: TName,
+  name: TName,
   schema: TSchema,
   options: {
     text?: string;
@@ -228,7 +228,7 @@ export function fromChildren<
   TSchema extends ZodType,
   TProps,
 >(
-  childType: TName,
+  name: TName,
   schema: TSchema,
   options: {
     text?: string;
@@ -237,7 +237,7 @@ export function fromChildren<
   }
 ): TSchema & AuthoredChildBrand<TName, TProps> & AuthoredToItemBrand;
 export function fromChildren(
-  childType: string,
+  name: string,
   schema: ZodType,
   options?: {
     text?: string;
@@ -246,7 +246,7 @@ export function fromChildren(
   }
 ): ZodType {
   brand('fromChildren', schema, {
-    [authoredChild]: childType,
+    [authoredChild]: name,
     [authoredTextField]: options?.text,
     [authoredToItem]: options?.toItem,
     [authoredPropsSchema]: options?.propsSchema,
@@ -290,7 +290,8 @@ export const fromNodeChildren = <TSchema extends ZodType>(
 /** One {@link fromChildren} field as the shim reads it. */
 export interface AuthoredChildField {
   field: string;
-  childType: string;
+  /** The member name `fromChildren` was given, before capitalizing. */
+  name: string;
   /** Field leftover text children fill. */
   textField?: string;
   /** Replaces the default prop copy. */
@@ -303,8 +304,6 @@ export interface AuthoredChildField {
   array: boolean;
   /** Whether the field accepts `undefined`, so children may be omitted. */
   optional: boolean;
-  /** Structural input-schema fingerprint shared by fields branding one child type. */
-  signature: string;
 }
 
 /** One {@link fromTextChildren} field as the shim reads it. */
@@ -387,67 +386,6 @@ const isOptionalSchema = (schema: ZodType): boolean => {
   return type === 'optional' || type === 'default';
 };
 
-const UNORDERED_SCHEMA_ARRAYS = new Set([
-  'allOf',
-  'anyOf',
-  'enum',
-  'oneOf',
-  'required',
-  'type',
-]);
-
-const schemaSignature = (schema: ZodType): string => {
-  const { schema: input } = prepareAuthoringInput(schema);
-  const projected = z.toJSONSchema(input, {
-    io: 'input',
-    target: 'draft-2020-12',
-    cycles: 'ref',
-    reused: 'inline',
-    unrepresentable: 'any',
-    metadata: z.registry(),
-  });
-  const active = new Map<object, number>();
-  const canonical = (value: unknown, key = ''): string => {
-    if (Array.isArray(value)) {
-      const members = value.map((member) => canonical(member));
-      if (UNORDERED_SCHEMA_ARRAYS.has(key)) {
-        members.sort();
-      }
-      return `[${members.join(',')}]`;
-    }
-    if (typeof value !== 'object' || value === null) {
-      return JSON.stringify(value) ?? 'undefined';
-    }
-    const cycle = active.get(value);
-    if (cycle !== undefined) {
-      return `cycle:${cycle}`;
-    }
-    const object = value as Record<string, unknown>;
-    const ref = object.$ref;
-    const target =
-      ref === '#'
-        ? projected
-        : typeof ref === 'string' && ref.startsWith('#/$defs/')
-          ? projected.$defs?.[ref.slice('#/$defs/'.length)]
-          : undefined;
-    if (target && Object.keys(object).length === 1) {
-      return canonical(target);
-    }
-    active.set(value, active.size);
-    const result = `{${Object.entries(object)
-      .filter(([key]) => value !== projected || key !== '$defs')
-      .sort(([first], [second]) => first.localeCompare(second))
-      .map(
-        ([key, member]) =>
-          `${JSON.stringify(key)}:${canonical(key === '$ref' && target ? target : member, key)}`
-      )
-      .join(',')}}`;
-    active.delete(value);
-    return result;
-  };
-  return canonical(projected);
-};
-
 const arrayElement = (schema: ZodType): ZodType | undefined => {
   const inner = unwrapAll(schema);
   return zodDefType(inner) === 'array' && 'element' in inner
@@ -460,10 +398,10 @@ const readChild = (
   schema: ZodType
 ): AuthoredChildField | undefined => {
   const holder = brandHolder(schema, authoredChild);
-  const childType = (holder as { [authoredChild]?: unknown } | undefined)?.[
+  const name = (holder as { [authoredChild]?: unknown } | undefined)?.[
     authoredChild
   ];
-  if (!holder || typeof childType !== 'string') {
+  if (!holder || typeof name !== 'string') {
     return undefined;
   }
   const textField = (holder as { [authoredTextField]?: unknown })[
@@ -477,11 +415,10 @@ const readChild = (
   const itemSchema = element ?? unwrapAll(holder);
   const child: AuthoredChildField = {
     field,
-    childType,
+    name,
     itemSchema,
     array: element !== undefined,
     optional: optionalThrough(schema),
-    signature: `${schemaSignature(itemSchema)}|${typeof textField === 'string' ? textField : ''}|${propsSchema ? schemaSignature(propsSchema) : ''}`,
   };
   if (propsSchema) {
     child.propsSchema = propsSchema;
