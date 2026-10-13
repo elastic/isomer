@@ -11,9 +11,9 @@ import type {
   Composition,
   PrimitiveNode,
 } from '@elastic/isomer-sdk';
+import { printCompositionJsx } from '@elastic/isomer-sdk/author';
 
 import { compileCompositionJsx } from '../model/compile_jsx';
-import { printCompositionJsx } from '../model/print_jsx';
 import { useStudio } from '../studio_context';
 
 export type EditorFormat = 'jsx' | 'json';

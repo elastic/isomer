@@ -62,6 +62,8 @@ When a schema has no brand, the walk fills a unique child-array field (`body`, `
 
 A host that edits or displays a node in its JSX form, such as a composition editor, reads the same brands the shim does with `readAuthoredSpec(schema)`. It returns the schema's top-level branded fields: `children`, each with its `field`, member `name`, `textField`, whether it is an `array`, and its `itemSchema`, whose own brands `readAuthoredSpec` reads in turn; and `text`, each with its `field` and `collapseWhitespace`. A field is `optional` when children may be left out.
 
+`printNodeJsx(node, { schemaFor, shim })` goes the other way: it prints a node as the JSX that `shim` reads back to it, and `printCompositionJsx(body, env)` prints a body inside `<Composition>`. Each branded field prints as children, each nested node as an element, and a field stays a prop wherever children would not read back to the same value, such as text the shim would collapse. Pass `readSpec: () => undefined` to print every field as a prop.
+
 `textFromChildren` remains for hosts that unwrap text children themselves. `textFromChildren` collapses whitespace by default; pass `{ collapseWhitespace: false }` when indentation and newlines are significant.
 
 ### Declarations for an editor

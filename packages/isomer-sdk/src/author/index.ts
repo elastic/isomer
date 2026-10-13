@@ -35,6 +35,11 @@ export {
   textFromChildren,
 } from './jsx_shim';
 export {
+  type PrintJsxEnv,
+  printCompositionJsx,
+  printNodeJsx,
+} from './print_jsx';
+export {
   type AuthoringProfileId,
   type AuthoringPromptContext,
   type AuthoringViewSummary,

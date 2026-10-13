@@ -112,7 +112,7 @@ The root, `./markdown`, and `./slack` load the GFM parser for authored Markdown 
 
 ## `./author`
 
-JSX: `fromChildren`, `fromTextChildren`, `fromNodeChildren`, `AuthoredChildBrand`, `AuthoredToItemBrand` (on a `toItem` field, whose item brands the shim leaves alone), `AuthoredTextBrand`, `AuthoredNodesBrand`, `AuthorChildContext`, `readAuthoredSpec` (a schema's branded fields as an `AuthoredSpec` of `AuthoredChildField`s, `AuthoredTextField`s, and `AuthoredNodesField`s), `AuthorComponent`, `buildJsxShim`, `JsxShim`, `PrimitiveComponentMap`, `CompositionAuthorProps`, `AuthorComposition`, `textFromChildren`.
+JSX: `fromChildren`, `fromTextChildren`, `fromNodeChildren`, `AuthoredChildBrand`, `AuthoredToItemBrand` (on a `toItem` field, whose item brands the shim leaves alone), `AuthoredTextBrand`, `AuthoredNodesBrand`, `AuthorChildContext`, `readAuthoredSpec` (a schema's branded fields as an `AuthoredSpec` of `AuthoredChildField`s, `AuthoredTextField`s, and `AuthoredNodesField`s), `AuthorComponent`, `buildJsxShim`, `JsxShim`, `PrimitiveComponentMap`, `CompositionAuthorProps`, `AuthorComposition`, `textFromChildren`, `printNodeJsx` and `printCompositionJsx` (a node or body as the JSX the shim reads back to it, from a `PrintJsxEnv`).
 
 Editor declarations: `buildAuthoringDeclarations` (`AuthoringDeclarationsOptions`), an ambient `.d.ts` module for an authoring schema's primitives and, with `jsx`, their JSX components; `authoringBodySchema`, an authoring schema's `body` as a schema of its own, carrying the `$defs` it reaches.
 

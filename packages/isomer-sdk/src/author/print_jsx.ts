@@ -6,25 +6,27 @@
  */
 
 import { createElement, type ReactElement, type ReactNode } from 'react';
-import type { PrimitiveNode } from '@elastic/isomer-sdk';
+import type { ZodType } from 'zod';
+
+import type { PrimitiveNode } from '../define/primitive_module';
+
 import type {
   AuthorChildContext,
   AuthoredChildField,
   AuthoredSpec,
-  JsxShim,
-} from '@elastic/isomer-sdk/author';
-import { readAuthoredSpec, textFromChildren } from '@elastic/isomer-sdk/author';
-import type { ZodType } from 'zod';
+} from './authored_fields';
+import { readAuthoredSpec } from './authored_fields';
+import { capitalize, memberType } from './authoring_model';
+import type { JsxShim } from './jsx_shim';
+import { textFromChildren } from './jsx_shim';
 
-/** Reads the JSX authoring brands on a schema; `undefined` prints every field as a prop. */
-export type AuthoredSpecReader = (schema: ZodType) => AuthoredSpec | undefined;
-
-/** What the printer reads a pack's authoring from. */
+/** What {@link printNodeJsx} reads a pack's authoring from. */
 export interface PrintJsxEnv {
   schemaFor: (type: string) => ZodType | undefined;
   /** Parses each candidate back, so a field prints as children only when that round-trips. */
   shim: JsxShim;
-  readSpec?: AuthoredSpecReader;
+  /** Reads a schema's authoring brands; returning `undefined` prints every field as a prop. */
+  readSpec?: (schema: ZodType) => AuthoredSpec | undefined;
 }
 
 const MAX_LINE = 80;
@@ -33,7 +35,7 @@ const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
 const UNSAFE_TEXT = /[{}<>&]/;
 const UNSAFE_ATTRIBUTE = /["\\\n\r&]/;
 
-const TREE = Symbol.for('elastic.isomer.studio.jsx_tree');
+const TREE = Symbol.for('elastic.isomer.author.jsx_tree');
 
 /** A text child: the value React receives, and how it prints at an indent. */
 interface TextChild {
@@ -67,14 +69,6 @@ const printKey = (key: string): string => {
   }
   return IDENTIFIER.test(key) ? key : JSON.stringify(key);
 };
-
-/** The authoring component name for a primitive `type`, as `buildJsxShim` derives it. */
-export const componentName = (type: string): string =>
-  type.charAt(0).toUpperCase() + type.slice(1);
-
-/** A child's element name: the member `buildJsxShim` puts on its primitive's component. */
-export const memberName = (owner: string, name: string): string =>
-  `${componentName(owner)}.${componentName(name)}`;
 
 /** A JavaScript literal for `value`, on one line when it fits. */
 export const printValue = (value: unknown, indent = ''): string => {
@@ -411,7 +405,7 @@ const createPrinter = ({
     field: AuthoredChildField,
     owner: string
   ): JsxTree | undefined => {
-    const name = memberName(owner, field.name);
+    const name = capitalize(memberType(owner, field));
     const { toItem } = field;
     if (toItem) {
       return customItemTree(item, { ...field, toItem }, name);
@@ -491,7 +485,7 @@ const createPrinter = ({
       return cached;
     }
     const { type } = node;
-    const name = componentName(type);
+    const name = capitalize(type);
     const schema = schemaFor(type);
     const spec = schema ? readSpec(schema) : undefined;
     const entries = Object.entries(node).filter(

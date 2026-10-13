@@ -7,57 +7,142 @@
 
 /** @vitest-environment node */
 
-import type { ReactNode } from 'react';
-import type { DefaultPackTypes, PrimitiveNode } from '@elastic/isomer-sdk';
-import { definePrimitive } from '@elastic/isomer-sdk';
 import {
-  fromChildren,
-  fromTextChildren,
-  textFromChildren,
-} from '@elastic/isomer-sdk/author';
-import { transform } from 'esbuild';
+  createElement,
+  Fragment,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
+import ts from 'typescript';
+import { describe, expect, it } from 'vitest';
 import { runInNewContext } from 'vm';
 import { z } from 'zod';
 
-import type { CalloutNode, StatGroupNode } from '../fixtures/components_pack';
-import { componentsPrimitives } from '../fixtures/components_pack';
-import type { JsxTransform } from '../types';
+import type {
+  DefaultPackTypes,
+  PrimitiveNode,
+} from '../define/primitive_module';
+import { definePrimitive } from '../define/primitive_module';
 
-import type { CompiledEvaluator } from './compile_jsx';
-import {
-  compileCompositionJsx,
-  COMPILED_RESULT,
-  createShim,
-} from './compile_jsx';
-import { JSX_TRANSFORM_OPTIONS } from './jsx_transform';
-import type { AuthoredSpecReader } from './print_jsx';
+import { fromChildren, fromTextChildren } from './authored_fields';
+import type { CompositionAuthorProps, JsxShim } from './jsx_shim';
+import { buildJsxShim, textFromChildren } from './jsx_shim';
+import type { PrintJsxEnv } from './print_jsx';
 import { printCompositionJsx, printNodeJsx, printValue } from './print_jsx';
-import { readExamples } from './read_examples';
 
-const transformJsx: JsxTransform = async (source) => {
-  const { code } = await transform(source, JSX_TRANSFORM_OPTIONS);
-  return code;
+/** Compiles authoring JSX against `shim`'s components and returns its body. */
+const compileJsx = (source: string, shim: JsxShim): PrimitiveNode[] => {
+  const { outputText } = ts.transpileModule(`result = ${source};`, {
+    compilerOptions: {
+      jsx: ts.JsxEmit.React,
+      jsxFactory: 'h',
+      jsxFragmentFactory: 'Fragment',
+      target: ts.ScriptTarget.ES2022,
+    },
+  });
+  const context: Record<string, unknown> = {
+    ...shim,
+    h: createElement,
+    Fragment,
+  };
+  runInNewContext(outputText, context);
+  return shim.toComposition(
+    context.result as ReactElement<CompositionAuthorProps>
+  ).body;
 };
 
-const evaluate: CompiledEvaluator = (code, scope) => {
-  const context: Record<string, unknown> = { ...scope };
-  runInNewContext(code, context);
-  return context[COMPILED_RESULT];
-};
+const definition = <TNode extends PrimitiveNode, TSchema extends z.ZodObject>(
+  type: string,
+  schema: TSchema,
+  extra: {
+    children?: (node: TNode) => { node: PrimitiveNode; path: string }[];
+  } = {}
+) =>
+  definePrimitive<TNode, DefaultPackTypes, TSchema>({
+    type,
+    catalog: { type, purpose: '', useWhen: [], avoidWhen: [], example: {} },
+    examples: [],
+    schema,
+    renderers: { react: () => null, text: () => '', markdown: () => [] },
+    ...extra,
+  });
 
-const shim = createShim(componentsPrimitives);
+const calloutSchema = z.object({
+  type: z.literal('callout'),
+  title: z.string().optional(),
+  body: fromTextChildren(z.string()),
+  tone: z.enum(['primary', 'warning']).optional(),
+});
+type CalloutNode = z.infer<typeof calloutSchema>;
+
+const statGroupSchema = z.object({
+  type: z.literal('statGroup'),
+  label: z.string().optional(),
+  stats: fromChildren(
+    'stat',
+    z.array(
+      z.object({
+        label: z.string(),
+        value: z.union([z.string(), z.object({ raw: z.number() })]),
+        tone: z.enum(['danger', 'warning']).optional(),
+        delta: z.object({ label: z.string() }).optional(),
+      })
+    ),
+    { text: 'label' }
+  ),
+});
+type StatGroupNode = z.infer<typeof statGroupSchema>;
+
+const fixtures = [
+  definition<CalloutNode, typeof calloutSchema>('callout', calloutSchema),
+  definition<StatGroupNode, typeof statGroupSchema>(
+    'statGroup',
+    statGroupSchema
+  ),
+];
+const shim = buildJsxShim(fixtures);
 const schemaFor = (type: string) =>
-  componentsPrimitives.find((definition) => definition.type === type)?.schema;
+  fixtures.find((fixture) => fixture.type === type)?.schema;
 const env = { schemaFor, shim };
 
-const examples = componentsPrimitives.flatMap((definition) =>
-  readExamples(definition).map(({ name, node }): [string, typeof node] => [
-    `${definition.type} ${name}`,
-    node,
-  ])
-);
+const examples: [string, CalloutNode | StatGroupNode][] = [
+  [
+    'a callout with every field',
+    {
+      type: 'callout',
+      tone: 'warning',
+      title: 'Error rate spiked',
+      body: 'web-prod-04 saw a 4x jump in 5xx responses over the last hour.',
+    },
+  ],
+  ['a callout with only a body', { type: 'callout', body: 'Disk full.' }],
+  [
+    'a labelled stat group',
+    {
+      type: 'statGroup',
+      label: 'Summary',
+      stats: [
+        { label: 'Hosts', value: { raw: 5 } },
+        { label: 'Total errors', value: { raw: 12847 }, tone: 'danger' },
+      ],
+    },
+  ],
+  [
+    'a stat with a nested object',
+    {
+      type: 'statGroup',
+      stats: [
+        {
+          label: 'Tests',
+          value: '1963',
+          delta: { label: '+12 since yesterday' },
+        },
+      ],
+    },
+  ],
+];
 
-const propsOnly: AuthoredSpecReader = () => undefined;
+const propsOnly: PrintJsxEnv['readSpec'] = () => undefined;
 
 describe('printValue', () => {
   it('keeps short values on one line', () => {
@@ -109,27 +194,25 @@ describe.each([
   ['props only', propsOnly],
   ['with the authored spec', undefined],
 ])('JSX round trip, %s', (_mode, readSpec) => {
-  const roundTrip = async (node: PrimitiveNode) => {
+  const roundTrip = (node: PrimitiveNode) => {
     const source = printCompositionJsx(
       [node],
       readSpec ? { ...env, readSpec } : env
     );
-    await expect(
-      compileCompositionJsx(source, shim, transformJsx, { evaluate })
-    ).resolves.toEqual([node]);
+    expect(compileJsx(source, shim)).toEqual([node]);
   };
 
-  it.each(examples)('%s', async (_name, node) => {
-    await roundTrip(node);
+  it.each(examples)('%s', (_name, node) => {
+    roundTrip(node);
   });
 
   it.each([
     ['an entity sequence', 'Tom &amp; Jerry'],
     ['a carriage return', 'line one\rline two'],
     ['surrounding whitespace', '  padded  '],
-  ])('keeps text with %s', async (_case, body) => {
+  ])('keeps text with %s', (_case, body) => {
     const node: CalloutNode = { type: 'callout', body };
-    await roundTrip(node);
+    roundTrip(node);
   });
 });
 
@@ -159,19 +242,15 @@ describe('JSX round trip, whitespace-preserving text', () => {
   });
   const snippetEnv = {
     schemaFor: () => snippet.schema,
-    shim: createShim([snippet]),
+    shim: buildJsxShim([snippet]),
   };
 
   it.each(['  indented', 'trailing  ', 'a\r\nb', 'a\tb', 'a\rb'])(
     'keeps %j',
-    async (code) => {
+    (code) => {
       const node: SnippetNode = { type: 'snippet', code };
       const source = printCompositionJsx([node], snippetEnv);
-      await expect(
-        compileCompositionJsx(source, snippetEnv.shim, transformJsx, {
-          evaluate,
-        })
-      ).resolves.toEqual([node]);
+      expect(compileJsx(source, snippetEnv.shim)).toEqual([node]);
     }
   );
 
@@ -209,20 +288,16 @@ describe('JSX round trip, dedented source', () => {
   });
   const sourceEnv = {
     schemaFor: () => source.schema,
-    shim: createShim([source]),
+    shim: buildJsxShim([source]),
   };
 
-  it('prints multi-line source as a template literal that reads back', async () => {
+  it('prints multi-line source as a template literal that reads back', () => {
     const node: SourceNode = { type: 'source', code: 'a {\n  b;\n\n}' };
     const printed = printCompositionJsx([node], sourceEnv);
     expect(printNodeJsx(node, sourceEnv)).toBe(
       '<Source>\n  {`\n    a {\n      b;\n\n    }\n  `}\n</Source>'
     );
-    await expect(
-      compileCompositionJsx(printed, sourceEnv.shim, transformJsx, {
-        evaluate,
-      })
-    ).resolves.toEqual([node]);
+    expect(compileJsx(printed, sourceEnv.shim)).toEqual([node]);
   });
 });
 
@@ -253,7 +328,10 @@ describe('JSX round trip, several child fields', () => {
     schema: boardSchema,
     renderers: { react: () => null, text: () => '', markdown: () => [] },
   });
-  const boardEnv = { schemaFor: () => board.schema, shim: createShim([board]) };
+  const boardEnv = {
+    schemaFor: () => board.schema,
+    shim: buildJsxShim([board]),
+  };
 
   it.each<[string, BoardNode]>([
     [
@@ -271,13 +349,9 @@ describe('JSX round trip, several child fields', () => {
     ],
     ['one child field', { type: 'board', rows: [{ label: 'One' }] }],
     ['text alone', { type: 'board', title: 'Plan' }],
-  ])('round-trips %s', async (_case, node) => {
+  ])('round-trips %s', (_case, node) => {
     const source = printCompositionJsx([node], boardEnv);
-    await expect(
-      compileCompositionJsx(source, boardEnv.shim, transformJsx, {
-        evaluate,
-      })
-    ).resolves.toEqual([node]);
+    expect(compileJsx(source, boardEnv.shim)).toEqual([node]);
   });
 
   it('puts text and every child field in children', () => {
@@ -312,26 +386,16 @@ describe('JSX round trip, many child fields', () => {
       ])
     ),
   });
-  const wide = definePrimitive<
-    z.infer<typeof wideSchema>,
-    DefaultPackTypes,
-    typeof wideSchema
-  >({
-    type: 'wide',
-    catalog: {
-      type: 'wide',
-      purpose: '',
-      useWhen: [],
-      avoidWhen: [],
-      example: {},
-    },
-    examples: [],
-    schema: wideSchema,
-    renderers: { react: () => null, text: () => '', markdown: () => [] },
-  });
-  const wideEnv = { schemaFor: () => wide.schema, shim: createShim([wide]) };
+  const wide = definition<z.infer<typeof wideSchema>, typeof wideSchema>(
+    'wide',
+    wideSchema
+  );
+  const wideEnv = {
+    schemaFor: () => wide.schema,
+    shim: buildJsxShim([wide]),
+  };
 
-  it('prints without enumerating every subset of its fields', async () => {
+  it('prints without enumerating every subset of its fields', () => {
     const node = {
       type: 'wide',
       ...Object.fromEntries(
@@ -341,9 +405,7 @@ describe('JSX round trip, many child fields', () => {
     const source = printCompositionJsx([node], wideEnv);
 
     expect(source).toContain('<Wide.Slot23 label="slot23" />');
-    await expect(
-      compileCompositionJsx(source, wideEnv.shim, transformJsx, { evaluate })
-    ).resolves.toEqual([node]);
+    expect(compileJsx(source, wideEnv.shim)).toEqual([node]);
   });
 });
 
@@ -387,14 +449,14 @@ describe('JSX round trip, a member name two primitives share', () => {
   const sharedEnv = {
     schemaFor: (type: string) =>
       primitives.find((primitive) => primitive.type === type)?.schema,
-    shim: createShim(primitives),
+    shim: buildJsxShim(primitives),
   };
   const nodes = [
     { type: 'menu', items: [{ label: 'Open' }] },
     { type: 'roster', items: [{ name: 'Ada', role: 'Lead' }] },
   ];
 
-  it('prints each item as its own primitive member and reads it back', async () => {
+  it('prints each item as its own primitive member and reads it back', () => {
     const source = printCompositionJsx(nodes, sharedEnv);
     expect(source).toBe(
       [
@@ -408,29 +470,11 @@ describe('JSX round trip, a member name two primitives share', () => {
         '</Composition>',
       ].join('\n')
     );
-    await expect(
-      compileCompositionJsx(source, sharedEnv.shim, transformJsx, { evaluate })
-    ).resolves.toEqual(nodes);
+    expect(compileJsx(source, sharedEnv.shim)).toEqual(nodes);
   });
 });
 
 describe('JSX round trip, custom items and node slots', () => {
-  const definition = <TNode extends PrimitiveNode, TSchema extends z.ZodObject>(
-    type: string,
-    schema: TSchema,
-    extra: {
-      children?: (node: TNode) => { node: PrimitiveNode; path: string }[];
-    } = {}
-  ) =>
-    definePrimitive<TNode, DefaultPackTypes, TSchema>({
-      type,
-      catalog: { type, purpose: '', useWhen: [], avoidWhen: [], example: {} },
-      examples: [],
-      schema,
-      renderers: { react: () => null, text: () => '', markdown: () => [] },
-      ...extra,
-    });
-
   const linesSchema = z.object({
     type: z.literal('lines'),
     items: fromChildren('item', z.array(z.string()).optional(), {
@@ -490,7 +534,7 @@ describe('JSX round trip, custom items and node slots', () => {
   const customEnv = {
     schemaFor: (type: string) =>
       primitives.find((primitive) => primitive.type === type)?.schema,
-    shim: createShim(primitives),
+    shim: buildJsxShim(primitives),
   };
 
   const lines: LinesNode = {
@@ -505,11 +549,9 @@ describe('JSX round trip, custom items and node slots', () => {
   it.each<[string, PrimitiveNode]>([
     ['custom items', lines],
     ['a node slot and a node prop', box],
-  ])('round-trips %s', async (_case, node) => {
+  ])('round-trips %s', (_case, node) => {
     const source = printCompositionJsx([node], customEnv);
-    await expect(
-      compileCompositionJsx(source, customEnv.shim, transformJsx, { evaluate })
-    ).resolves.toEqual([node]);
+    expect(compileJsx(source, customEnv.shim)).toEqual([node]);
   });
 
   it('prints custom items, source, and exact lines as children', () => {
