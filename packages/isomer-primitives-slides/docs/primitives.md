@@ -352,7 +352,7 @@ A content primitive takes its list as children named for it, without the `Slide`
 </SlideRoadmap>
 ```
 
-Code keeps its whitespace. A command is its text. A `CodePanel`'s text is its `lines`: write it as a template literal, and the line break after the opening backtick, the indentation before the closing one, and the indentation every line shares are dropped. JSX itself collapses line breaks in bare text, so multi-line source needs the template literal. A panel's `lineNumbers`, as in [`EuiCode`](https://eui.elastic.co/docs/components/display/code/#line-numbers), is `true` or `{ start, highlight }`: `highlight` is a range string such as `'2, 5-7'` of line numbers as the gutter shows them, so `start` shifts them, and the gutter's columns come out of every line's budget. Text, Markdown, and Slack print each line after its number. A `DiffLine` is one line exactly as written; `op` marks it added or removed, and a line that is indented or holds a brace takes its text as a string expression. A transcript takes `TranscriptTurn` children, each turn's text keeping its line breaks:
+Code keeps its whitespace. A command is its text. A `CodePanel`'s text is its `lines`: write it as a template literal, and the line break after the opening backtick, the indentation before the closing one, and the indentation every line shares are dropped. JSX itself collapses line breaks in bare text, so multi-line source needs the template literal. A panel's `lineNumbers`, as in [`EuiCode`](https://eui.elastic.co/docs/components/display/code/#line-numbers), is `true` or `{ start, highlight }`: `highlight` is a range string such as `'2, 5-7'` of line numbers as the gutter shows them, so `start` shifts them, and the gutter's columns come out of every line's budget. Text, Markdown, and Slack print each line after its number. A diff's text is its source, read the same way as a panel's. Its `remove` and `add` are range strings in the same form as `highlight`, but they count the lines of the body from 1, removed ones included, since a removed line has no number in the gutter; no line is both. Its `lineNumbers` is `true` or `{ start }`, and its one gutter numbers the file after the change, leaving removed lines unnumbered. Text and Slack print the numbers before each line's `-` or `+`; Markdown keeps a plain unified diff. A transcript takes `TranscriptTurn` children, each turn's text keeping its line breaks:
 
 ```tsx
 <SlideCommand label="Install">npm install @elastic/isomer-runtime</SlideCommand>
@@ -368,11 +368,13 @@ Code keeps its whitespace. A command is its text. A `CodePanel`'s text is its `l
   </CodePanel>
 </SlideCode>
 
-<SlideDiff file="refund.ts" language="ts">
-  <DiffLine>{'export async function refund(id: string) {'}</DiffLine>
-  <DiffLine op="remove">{'  return settle(id);'}</DiffLine>
-  <DiffLine op="add">{'  return ledger.settle(id);'}</DiffLine>
-  <DiffLine>{'}'}</DiffLine>
+<SlideDiff file="refund.ts" language="ts" remove="2" add="3" lineNumbers>
+  {`
+    export async function refund(id: string) {
+      return settle(id);
+      return ledger.settle(id);
+    }
+  `}
 </SlideDiff>
 
 <SlideTranscript label="Tool call">

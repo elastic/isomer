@@ -7,46 +7,83 @@
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
-import { fromChildren } from '@elastic/isomer-sdk/author';
+import { fromTextChildren } from '@elastic/isomer-sdk/author';
 
 import { hasLineTerminator } from '../../render/marks';
 import { displayColumns } from '../../render/mono';
 import { codeDenseAfter } from '../../theme/components/code';
 import { diffLineMaxLength, diffMaxLines } from '../../theme/components/diff';
-import { slideDiffOps } from '../../theme/variants';
+import type { SlideDiffOp } from '../../theme/variants';
 import { authoredTextMaxLength, lineText } from '../authored_text';
 import { crossRefine } from '../cross_field';
-import { rawText } from '../source_text';
+import { gutterColumns, gutterLabels } from '../line_gutter';
+import {
+  inRanges,
+  type LineRange,
+  lineRangeOrder,
+  lineRanges,
+  lineRangeText,
+  rangesOverlap,
+  rangesWithin,
+} from '../line_ranges';
 
-const lineSchema = z
-  .object({
-    text: z
-      .string()
-      .max(authoredTextMaxLength)
-      .describe(
-        'One line of source, indented with spaces rather than tabs. Use an empty string for a blank line.'
-      ),
-    op: z
-      .enum(slideDiffOps)
-      .describe(
-        '`add` for a line the change introduced, `remove` for one it deleted. Leave it out for an unchanged context line.'
-      )
-      .optional(),
-  })
-  .strict();
+/** One line of a diff as it draws: its text, and whether the change added or removed it. */
+export interface SlideDiffLine {
+  text: string;
+  op?: SlideDiffOp;
+}
 
-export type SlideDiffLine = z.infer<typeof lineSchema>;
+const bodyLines = (text: string): string[] => text.split('\n');
 
-/** Whether `lines` is within its count and length caps, so a check that always runs may read it. */
-const linesInBounds = (lines: readonly SlideDiffLine[]): boolean =>
-  lines.length <= diffMaxLines &&
-  lines.every(
-    ({ text }) =>
-      typeof text === 'string' && text.length <= authoredTextMaxLength
+/** Whether `text` is within its length and line caps, so a check that always runs may read it. */
+const bodyInBounds = (text: unknown): text is string =>
+  typeof text === 'string' &&
+  text.length <= authoredTextMaxLength &&
+  bodyLines(text).length <= diffMaxLines;
+
+const rangesOf = (ranges: string | undefined): LineRange[] =>
+  (ranges === undefined ? undefined : lineRanges(ranges)) ?? [];
+
+const isDense = (text: string) => bodyLines(text).length > codeDenseAfter;
+
+const rangeInBody = (field: 'add' | 'remove') =>
+  crossRefine<{
+    text: string;
+    add?: string | undefined;
+    remove?: string | undefined;
+  }>(
+    (node) =>
+      !bodyInBounds(node.text) ||
+      rangesWithin(rangesOf(node[field]), 1, bodyLines(node.text).length),
+    {
+      error: 'each changed line must be a line of the body',
+      path: [field],
+      rule: 'Each is a line of the body',
+    }
   );
 
-const isDense = (lines: readonly SlideDiffLine[]) =>
-  lines.length > codeDenseAfter;
+const lineNumbersSchema = z
+  .union([
+    z.boolean(),
+    z.strictObject({
+      start: z
+        .number()
+        .int()
+        .nonnegative()
+        .describe('The number of the first line. Defaults to 1.')
+        .optional(),
+    }),
+  ])
+  .describe(
+    'Numbers the lines of the file after the change in a gutter: `true`, or `{ start }` to start past 1. A removed line takes no number. The gutter takes columns from every line.'
+  );
+
+const rangeField = (change: string) =>
+  lineRangeText()
+    .describe(
+      `Lines the change ${change}, as numbers and ranges such as \`2, 5-7\`, ${lineRangeOrder}, counting the lines of the body from 1, removed ones included. Each is a line of the body, and no line is both added and removed; every other line is unchanged context.`
+    )
+    .optional();
 
 /** Zod schema for {@link SlideDiffNode}. */
 export const schema = z
@@ -62,70 +99,91 @@ export const schema = z
         'Language of the source, e.g. `ts`. The slide shows no syntax colors, and markdown fences the lines as `diff`.'
       )
       .optional(),
-    lines: fromChildren(
-      'diffLine',
+    text: fromTextChildren(
       z
-        .array(lineSchema)
+        .string()
         .min(1)
-        .max(diffMaxLines)
+        .max(authoredTextMaxLength)
         .describe(
-          `The changed lines with a little unchanged context around them, in file order. 1 to ${diffMaxLines}; ${codeDenseAfter} or fewer stay at the larger size. A line holds ${diffLineMaxLength(false)} columns (${diffLineMaxLength(true)} past ${codeDenseAfter} lines), a wide glyph such as CJK or an emoji counting as two; a narrower column holds fewer, and a longer line is clipped.`
+          `The changed lines with a little unchanged context around them, in file order, one line of source per line, indented with spaces rather than tabs. 1 to ${diffMaxLines} lines; ${codeDenseAfter} or fewer stay at the larger size. A line holds ${diffLineMaxLength(false)} columns (${diffLineMaxLength(true)} past ${codeDenseAfter} lines), a wide glyph such as CJK or an emoji counting as two, less a line-number gutter; a narrower column holds fewer, and a longer line is clipped.`
         ),
-      {
-        propsSchema: z.strictObject({
-          ...lineSchema.shape,
-          text: lineSchema.shape.text.optional(),
-        }),
-        toItem: ({ children, ...line }) => ({
-          ...line,
-          text: line.text ?? rawText(children),
-        }),
-      }
+      { dedent: true }
     ),
+    remove: rangeField('deleted'),
+    add: rangeField('introduced'),
+    lineNumbers: lineNumbersSchema.optional(),
   })
   .strict()
   .check(
     crossRefine(
-      ({ lines }) =>
-        !linesInBounds(lines) ||
-        !lines.some(({ text }) => hasLineTerminator(text)),
+      ({ text }) =>
+        typeof text !== 'string' ||
+        text.length > authoredTextMaxLength ||
+        bodyLines(text).length <= diffMaxLines,
       {
-        error:
-          'one line per entry: split multi-line source into separate lines',
-        path: ['lines'],
-        rule: 'Each entry in lines is one line of source',
+        error: `at most ${diffMaxLines} lines`,
+        path: ['text'],
+        rule: `1 to ${diffMaxLines} lines`,
       }
     )
   )
   .check(
     crossRefine(
-      ({ lines }) =>
-        !linesInBounds(lines) || !lines.some(({ text }) => text.includes('\t')),
+      ({ text }) =>
+        !bodyInBounds(text) || !bodyLines(text).some(hasLineTerminator),
       {
-        error: 'indent with spaces, not tabs',
-        path: ['lines'],
-        rule: 'indented with spaces rather than tabs',
+        error: 'separate lines with a line feed',
+        path: ['text'],
+        rule: 'one line of source per line',
+      }
+    )
+  )
+  .check(
+    crossRefine(({ text }) => !bodyInBounds(text) || !text.includes('\t'), {
+      error: 'indent with spaces, not tabs',
+      path: ['text'],
+      rule: 'indented with spaces rather than tabs',
+    })
+  )
+  .check(rangeInBody('remove'))
+  .check(rangeInBody('add'))
+  .check(
+    crossRefine(
+      ({ remove, add }) => !rangesOverlap(rangesOf(remove), rangesOf(add)),
+      {
+        error: 'a line cannot be both added and removed',
+        path: ['add'],
+        rule: 'no line is both added and removed',
       }
     )
   )
   .check(
     crossRefine(
-      ({ lines }) => {
-        if (!linesInBounds(lines)) {
+      (node) => {
+        if (!bodyInBounds(node.text)) {
           return true;
         }
-        const max = diffLineMaxLength(isDense(lines));
-        return lines.every(({ text }) => displayColumns(text, max) <= max);
+        const gutter = diffGutter(node);
+        const max =
+          diffLineMaxLength(
+            isDense(node.text),
+            undefined,
+            gutter !== undefined
+          ) - gutterColumns(gutter);
+        return bodyLines(node.text).every(
+          (line) => displayColumns(line, max) <= max
+        );
       },
       {
         error: ({ input }) => {
-          const { lines } = input as { lines: SlideDiffLine[] };
-          const dense = isDense(lines)
+          const { text, lineNumbers } = input as SlideDiffNode;
+          const dense = isDense(text)
             ? ` once there are more than ${codeDenseAfter} lines`
             : '';
-          return `a line is wider than its panel: at most ${diffLineMaxLength(isDense(lines))} columns${dense}, a wide glyph counting as two`;
+          const gutter = lineNumbers ? ', less its line-number gutter' : '';
+          return `a line is wider than its panel: at most ${diffLineMaxLength(isDense(text), undefined, Boolean(lineNumbers))} columns${dense}${gutter}, a wide glyph counting as two`;
         },
-        path: ['lines'],
+        path: ['text'],
         rule: `A line holds ${diffLineMaxLength(false)} columns`,
       }
     )
@@ -133,3 +191,35 @@ export const schema = z
 
 /** Lines of source with the ones a change added and removed marked. */
 export type SlideDiffNode = z.infer<typeof schema> & PrimitiveNode;
+
+/** Each body line with the change `add` and `remove` mark on it. */
+export const diffLines = ({
+  text,
+  add,
+  remove,
+}: Pick<SlideDiffNode, 'text' | 'add' | 'remove'>): SlideDiffLine[] => {
+  const added = rangesOf(add);
+  const removed = rangesOf(remove);
+  return bodyLines(text).map((line, index) => {
+    const op = inRanges(removed, index + 1)
+      ? 'remove'
+      : inRanges(added, index + 1)
+        ? 'add'
+        : undefined;
+    return op ? { text: line, op } : { text: line };
+  });
+};
+
+/** Each line's gutter label, numbering the file after the change; `undefined` without line numbers. */
+export const diffGutter = (
+  node: Pick<SlideDiffNode, 'text' | 'add' | 'remove' | 'lineNumbers'>
+): string[] | undefined => {
+  const { lineNumbers } = node;
+  if (!lineNumbers) {
+    return undefined;
+  }
+  let next = lineNumbers === true ? 1 : (lineNumbers.start ?? 1);
+  return gutterLabels(
+    diffLines(node).map(({ op }) => (op === 'remove' ? undefined : next++))
+  );
+};

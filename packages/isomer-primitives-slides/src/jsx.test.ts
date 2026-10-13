@@ -49,7 +49,6 @@ const {
   ClosingLink,
   CodePanel,
   Definition,
-  DiffLine,
   SlideCommand,
   SlideDiff,
   ListItem,
@@ -540,24 +539,22 @@ describe('slideJsx', () => {
       bodyOf(
         createElement(
           SlideDiff,
-          { file: 'refund.ts' },
-          createElement(DiffLine, null, 'const refund = (id) => {'),
-          createElement(DiffLine, { op: 'remove' }, '  return settle(id);'),
-          createElement(DiffLine, { op: 'add' }, '  return ledger.settle(id);'),
-          createElement(DiffLine),
-          createElement(DiffLine, { text: '};' })
+          { file: 'refund.ts', remove: '2', add: '3' },
+          `
+            const refund = (id) => {
+              return settle(id);
+              return ledger.settle(id);
+
+            };
+          `
         )
       )
     ).toEqual({
       type: 'slideDiff',
       file: 'refund.ts',
-      lines: [
-        { text: 'const refund = (id) => {' },
-        { op: 'remove', text: '  return settle(id);' },
-        { op: 'add', text: '  return ledger.settle(id);' },
-        { text: '' },
-        { text: '};' },
-      ],
+      remove: '2',
+      add: '3',
+      text: 'const refund = (id) => {\n  return settle(id);\n  return ledger.settle(id);\n\n};',
     });
   });
 

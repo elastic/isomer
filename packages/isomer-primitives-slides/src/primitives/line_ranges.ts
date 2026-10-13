@@ -52,6 +52,15 @@ export const lineRangeText = () =>
 export const inRanges = (ranges: readonly LineRange[], line: number): boolean =>
   ranges.some(([first, last]) => line >= first && line <= last);
 
+/** Whether a run of `ranges` shares a line with a run of `others`. */
+export const rangesOverlap = (
+  ranges: readonly LineRange[],
+  others: readonly LineRange[]
+): boolean =>
+  ranges.some(([first, last]) =>
+    others.some(([low, high]) => first <= high && low <= last)
+  );
+
 /** Whether every run of `ranges` lies within `first` and `last`. */
 export const rangesWithin = (
   ranges: readonly LineRange[],

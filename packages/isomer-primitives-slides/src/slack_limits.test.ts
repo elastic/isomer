@@ -568,7 +568,8 @@ const cases: LimitCase[] = [
     node: (fill) => ({
       type: 'slideDiff',
       file: fill,
-      lines: [{ text: 'x', op: 'add' }],
+      text: 'x',
+      add: '1',
     }),
   },
   ...(['prose', 'code'] as const).map((format): LimitCase => ({

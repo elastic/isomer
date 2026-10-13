@@ -54,6 +54,8 @@ const notWords = new Set([
   'format',
   'highlightPrefix',
   'highlight',
+  'add',
+  'remove',
 ]);
 
 /** Embedded bodies print as another surface's output, so only the render's own words are checked. */

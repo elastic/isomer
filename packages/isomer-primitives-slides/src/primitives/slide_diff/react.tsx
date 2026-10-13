@@ -14,24 +14,28 @@ import { diffLineMaxLength } from '../../theme/components/diff';
 import { slideDistillery } from '../../theme/distillery';
 import { layoutModule } from '../../theme/modules';
 import { slideLayout } from '../layout';
+import { gutterColumns } from '../line_gutter';
 import { codeIsDense } from '../slide_code/fit';
 import { codeModule } from '../slide_code/styles';
 
-import type { SlideDiffNode } from './schema';
+import { diffGutter, diffLines, type SlideDiffNode } from './schema';
 import { diffModule } from './styles';
 
 const { marker, markerLabel } = slideDistillery.tokens.diff;
 
 /** React renderer for {@link SlideDiffNode}, drawn in `slideCode`'s panel. */
 export const react = (
-  { type, file, lines }: SlideDiffNode,
+  node: SlideDiffNode,
   { context }: SlideReactEnv
 ): ReactNode => {
+  const { type, file } = node;
   const { handles: code } = codeModule;
   const { handles: diff } = diffModule;
+  const lines = diffLines(node);
+  const gutter = diffGutter(node);
   const dense = codeIsDense(
-    [{ lines: lines.map(({ text }) => text), gutter: 0 }],
-    diffLineMaxLength(false, slideLayout(context).width)
+    [{ lines: lines.map(({ text }) => text), gutter: gutterColumns(gutter) }],
+    diffLineMaxLength(false, slideLayout(context).width, gutter !== undefined)
   );
   return (
     <div
@@ -55,9 +59,15 @@ export const react = (
                 className={cls(
                   context,
                   diff.line,
+                  gutter ? diff.numbered : undefined,
                   dense ? code.denseLine : code.regularLine,
                   op ? diff.op[op] : undefined
                 )}>
+                {gutter ? (
+                  <span aria-hidden className={cls(context, code.gutter)}>
+                    {gutter[index]}
+                  </span>
+                ) : null}
                 <span
                   {...(op
                     ? { role: 'img', 'aria-label': markerLabel[op].value }

@@ -23,6 +23,11 @@ export const diffModule = createStyleModule('diff', ({ css }) => ({
     padding-right: ${code.paddingX};
     white-space: pre;
   `,
+  // A line-number gutter before the marker, as wide as its padded labels.
+  numbered: css`
+    grid-template-columns: auto ${diff.gutter} minmax(0, 1fr);
+    padding-left: ${code.paddingX};
+  `,
   op: variants(slideDiffOps, (op) =>
     op === 'add'
       ? css`
