@@ -20,6 +20,7 @@ import { codeIsDense } from './fit';
 import {
   panelGutter,
   panelHighlights,
+  panelLines,
   type SlideCodeNode,
   type SlideCodePanel,
 } from './schema';
@@ -37,7 +38,8 @@ const Panel = ({
   context: SlideReactEnv['context'];
 }): ReactNode => {
   const { handles: code } = codeModule;
-  const { file, lines } = panel;
+  const { file } = panel;
+  const lines = panelLines(panel);
   const marked = panelHighlights(panel);
   const gutter = panelGutter(panel);
   const lineBox = dense ? code.denseLine : code.regularLine;
@@ -80,10 +82,16 @@ const Panel = ({
 };
 
 /** React renderer for {@link SlideCodeNode}. */
-export const react = (
-  { type, panels }: SlideCodeNode,
-  { context }: SlideReactEnv
-): ReactNode => {
+/** One panel, or two joined by an arrow, at one size so a trace reads at one scale. */
+export const CodePanels = ({
+  type,
+  panels,
+  context,
+}: {
+  type: string;
+  panels: readonly SlideCodePanel[];
+  context: SlideReactEnv['context'];
+}): ReactNode => {
   const { handles: code } = codeModule;
   const { handles: connector } = connectorModule;
   const [first, second] = panels;
@@ -92,10 +100,9 @@ export const react = (
     false,
     slideLayout(context).width
   );
-  // One size for both panels, so a trace reads at one scale.
   const dense = codeIsDense(
     panels.map((panel) => ({
-      lines: panel.lines,
+      lines: panelLines(panel),
       gutter: gutterColumns(panelGutter(panel)),
     })),
     regularMax
@@ -123,3 +130,10 @@ export const react = (
     </div>
   );
 };
+
+export const react = (
+  node: SlideCodeNode,
+  { context }: SlideReactEnv
+): ReactNode => (
+  <CodePanels type={node.type} panels={[node]} {...{ context }} />
+);

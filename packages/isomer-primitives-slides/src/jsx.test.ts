@@ -40,6 +40,7 @@ const {
   SlideBulletList,
   ClosingSlide,
   SlideCode,
+  SlideCodeTrace,
   SlideFrame,
   QuoteSlide,
   SectionSlide,
@@ -60,7 +61,7 @@ const componentName = (type: string): string =>
   type.charAt(0).toUpperCase() + type.slice(1);
 
 const bullets = createElement(SlideBulletList, { items: ['One call'] });
-const code = createElement(SlideCode, { panels: [{ lines: ['curl'] }] });
+const code = createElement(SlideCode, { text: 'curl' });
 
 const bodyOf = (element: ReturnType<typeof createElement>) => {
   const composition = toComposition(createElement(Composition, null, element));
@@ -112,7 +113,7 @@ describe('slideJsx', () => {
           panes: [
             {
               label: 'Before',
-              items: [{ type: 'slideCode', panels: [{ lines: ['curl'] }] }],
+              items: [{ type: 'slideCode', text: 'curl' }],
             },
             {
               label: 'After',
@@ -123,7 +124,7 @@ describe('slideJsx', () => {
                   spacing: 'tight',
                   items: [
                     { type: 'slideBulletList', items: ['One call'] },
-                    { type: 'slideCode', panels: [{ lines: ['curl'] }] },
+                    { type: 'slideCode', text: 'curl' },
                   ],
                 },
               ],
@@ -489,36 +490,50 @@ describe('slideJsx', () => {
       bodyOf(
         createElement(
           SlideCode,
-          null,
-          createElement(
-            SlideCode.Panel,
-            { file: 'refund.ts', lineNumbers: { highlight: '2' } },
-            `
-              const refund = async (id) => {
-                await ledger.hold(id);
+          { file: 'refund.ts', lineNumbers: { highlight: '2' } },
+          `
+            const refund = async (id) => {
+              await ledger.hold(id);
 
-                return ledger.settle(id);
-              };
-            `
-          ),
-          createElement(SlideCode.Panel, { lines: ['ledger.settle(id);'] })
+              return ledger.settle(id);
+            };
+          `
         )
       )
     ).toEqual({
       type: 'slideCode',
+      file: 'refund.ts',
+      lineNumbers: { highlight: '2' },
+      text: [
+        'const refund = async (id) => {',
+        '  await ledger.hold(id);',
+        '',
+        '  return ledger.settle(id);',
+        '};',
+      ].join('\n'),
+    });
+
+    expect(
+      bodyOf(
+        createElement(
+          SlideCodeTrace,
+          null,
+          createElement(
+            SlideCodeTrace.Panel,
+            { file: 'config.yaml' },
+            `
+              checkout:
+                timeout: 30s
+            `
+          ),
+          createElement(SlideCodeTrace.Panel, { text: 'client.timeout();' })
+        )
+      )
+    ).toEqual({
+      type: 'slideCodeTrace',
       panels: [
-        {
-          file: 'refund.ts',
-          lineNumbers: { highlight: '2' },
-          lines: [
-            'const refund = async (id) => {',
-            '  await ledger.hold(id);',
-            '',
-            '  return ledger.settle(id);',
-            '};',
-          ],
-        },
-        { lines: ['ledger.settle(id);'] },
+        { file: 'config.yaml', text: 'checkout:\n  timeout: 30s' },
+        { text: 'client.timeout();' },
       ],
     });
 

@@ -113,7 +113,7 @@ describe('slideSplitLayout schema', () => {
         ...stackedExample,
         panes: [
           stackedExample.panes[0],
-          { items: [bullets, { type: 'slideCode', panels: [] }] },
+          { items: [bullets, { type: 'slideCode', text: '' }] },
         ],
       } as PrimitiveNode)
     );

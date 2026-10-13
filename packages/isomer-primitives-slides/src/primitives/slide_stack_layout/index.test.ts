@@ -54,11 +54,11 @@ describe('slideStackLayout', () => {
     const { errors } = runtime.validate(
       compose({
         ...example,
-        items: [example.items[0], { type: 'slideCode', panels: [] }],
+        items: [example.items[0], { type: 'slideCode', text: '' }],
       } as PrimitiveNode)
     );
     expect(errors.map(({ path }) => path)).toContain(
-      'body[0].body[0].items[1].panels'
+      'body[0].body[0].items[1].text'
     );
   });
 });

@@ -56,14 +56,12 @@ export const splitSlide: SlideComposition = toComposition(
       </SlideHeading>
       <SlideSplitLayout ratio="wideLeft" divider="arrow">
         <SlideSplitLayout.Pane>
-          <SlideCode>
-            <SlideCode.Panel file="slide.ts" language="ts">
-              {`
-                runtime.surfaces.markdown.render(slide);
-                runtime.surfaces.slack.render(slide);
-                runtime.surfaces.snapshot.render(slide);
-              `}
-            </SlideCode.Panel>
+          <SlideCode file="slide.ts" language="ts">
+            {`
+              runtime.surfaces.markdown.render(slide);
+              runtime.surfaces.slack.render(slide);
+              runtime.surfaces.snapshot.render(slide);
+            `}
           </SlideCode>
         </SlideSplitLayout.Pane>
         <SlideSplitLayout.Pane label="Surfaces" tone="primary">

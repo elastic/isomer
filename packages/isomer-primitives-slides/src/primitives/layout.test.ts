@@ -333,7 +333,7 @@ describe('auto-sizing primitives read the layout they are given', () => {
     ['section-titleSize', sectionExample, [narrow]],
     ['closing-titleSize', closingExample, [narrow]],
     ['title-titleSize', titleExample, [narrow]],
-    ['code', { type: 'slideCode', panels: [{ lines: [line] }] }, [narrow]],
+    ['code', { type: 'slideCode', text: line }, [narrow]],
     ['code', { type: 'slideDiff', text: line }, [narrow]],
     [
       'command-textSize',

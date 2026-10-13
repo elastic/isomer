@@ -20,6 +20,7 @@ import type { SlideAnnotatedRenderNode } from './primitives/slide_annotated_rend
 import type { SlideBarsNode } from './primitives/slide_bars';
 import type { SlideBulletListNode } from './primitives/slide_bullet_list';
 import type { SlideCodeNode } from './primitives/slide_code';
+import type { SlideCodeTraceNode } from './primitives/slide_code_trace';
 import type { SlideColumnsNode } from './primitives/slide_columns';
 import type { SlideCommandNode } from './primitives/slide_command';
 import type { SlideDefinitionsNode } from './primitives/slide_definitions';
@@ -63,6 +64,7 @@ export type BodyNode =
   | SlideBarsNode
   | SlideBulletListNode
   | SlideCodeNode
+  | SlideCodeTraceNode
   | SlideColumnsNode
   | SlideCommandNode
   | SlideDefinitionsNode

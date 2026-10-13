@@ -73,7 +73,8 @@ runtime.surfaces.text.render(composition);
 | `slideTable` | A headed table of short cells, optionally in labeled groups. |
 | `slideMatrix` | Yes, partial, or no marks for each row against each column. |
 | `slideQuadrant` | Items sorted into four quadrants by two labeled axes. |
-| `slideCode` | Source in one panel, or two joined by an arrow. |
+| `slideCode` | Source in one panel, with the lines that matter marked. |
+| `slideCodeTrace` | Two panels of source joined by an arrow, tracing a value from one file to the next. |
 | `slideDiff` | Source with the lines a change added and removed marked. |
 | `slideCommand` | One shell command on a single line, with an optional [Copy button](copy.md). |
 | `slideTranscript` | A short exchange between a user, a model, and the host, turn by turn. |

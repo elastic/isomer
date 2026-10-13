@@ -17,6 +17,7 @@ import { slideAnnotatedRenderPrimitive } from './primitives/slide_annotated_rend
 import { slideBarsPrimitive } from './primitives/slide_bars';
 import { slideBulletListPrimitive } from './primitives/slide_bullet_list';
 import { slideCodePrimitive } from './primitives/slide_code';
+import { slideCodeTracePrimitive } from './primitives/slide_code_trace';
 import { slideColumnsPrimitive } from './primitives/slide_columns';
 import { slideCommandPrimitive } from './primitives/slide_command';
 import { slideDefinitionsPrimitive } from './primitives/slide_definitions';
@@ -60,6 +61,7 @@ export const slideDeckPrimitives = [
   slideBarsPrimitive,
   slideBulletListPrimitive,
   slideCodePrimitive,
+  slideCodeTracePrimitive,
   slideColumnsPrimitive,
   slideCommandPrimitive,
   slideDefinitionsPrimitive,

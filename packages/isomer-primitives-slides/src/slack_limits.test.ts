@@ -217,7 +217,8 @@ const cases: LimitCase[] = [
     max: 101,
     node: (fill) => ({
       type: 'slideCode',
-      panels: [{ file: long(2900, 'y'), lines: [fill] }],
+      file: long(2900, 'y'),
+      text: fill,
     }),
   },
   {
@@ -310,7 +311,8 @@ const cases: LimitCase[] = [
     max: 4000,
     node: (fill) => ({
       type: 'slideCode',
-      panels: [{ file: `order ${fill}`, lines: ['{}'] }],
+      file: `order ${fill}`,
+      text: '{}',
     }),
   },
   {

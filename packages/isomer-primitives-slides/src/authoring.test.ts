@@ -41,17 +41,17 @@ describe('slide authoring', () => {
   });
 
   it('passes object props through untouched', () => {
-    const panels = [
-      {
-        file: 'a.ts',
-        lines: ['const a = 1;'],
-        lineNumbers: { highlight: '1' },
-      },
-    ];
+    const lineNumbers = { highlight: '1' };
     const spec = toComposition(
-      createElement(Composition, null, createElement(SlideCode, { panels }))
+      createElement(
+        Composition,
+        null,
+        createElement(SlideCode, { text: 'const a = 1;', lineNumbers })
+      )
     );
 
-    expect(spec.body).toEqual([{ type: 'slideCode', panels }]);
+    expect(spec.body).toEqual([
+      { type: 'slideCode', text: 'const a = 1;', lineNumbers },
+    ]);
   });
 });

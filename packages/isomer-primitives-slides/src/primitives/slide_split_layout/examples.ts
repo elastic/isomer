@@ -83,10 +83,7 @@ export const stackedExample: SlideSplitLayoutNode = {
       tone: 'primary',
       items: [
         { type: 'slideBulletList', items: ['One nightly run.'] },
-        {
-          type: 'slideCode',
-          panels: [{ lines: ['npm run settle -- --nightly'] }],
-        },
+        { type: 'slideCode', text: 'npm run settle -- --nightly' },
       ],
     },
   ],

@@ -65,7 +65,13 @@ export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
   },
   {
     title: 'Code',
-    types: ['slideCode', 'slideDiff', 'slideCommand', 'slideTranscript'],
+    types: [
+      'slideCode',
+      'slideCodeTrace',
+      'slideDiff',
+      'slideCommand',
+      'slideTranscript',
+    ],
   },
   {
     title: 'Renders',

@@ -47,6 +47,7 @@ export type {
 export type { SlideBarsItem, SlideBarsNode } from './primitives/slide_bars';
 export type { SlideBulletListNode } from './primitives/slide_bullet_list';
 export type { SlideCodeNode, SlideCodePanel } from './primitives/slide_code';
+export type { SlideCodeTraceNode } from './primitives/slide_code_trace';
 export type { SlideColumn, SlideColumnsNode } from './primitives/slide_columns';
 export { SLIDE_COPY, slideCopyEnhancement } from './primitives/slide_command';
 export type { SlideCommandNode } from './primitives/slide_command';

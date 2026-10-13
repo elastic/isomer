@@ -47,13 +47,9 @@ import {
 
 const node: SlideCodeNode = {
   type: 'slideCode',
-  panels: [
-    {
-      file: 'Composition',
-      language: 'json',
-      lines: ['{ "type": "view", "body": [] }'],
-    },
-  ],
+  file: 'Composition',
+  language: 'json',
+  text: '{ "type": "view", "body": [] }',
 };
 
 <StandaloneSlideNode node={node} />
