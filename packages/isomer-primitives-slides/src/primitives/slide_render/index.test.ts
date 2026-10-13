@@ -247,17 +247,17 @@ describe('slideRender output', () => {
   it('quotes a drawn slide and prints another surface’s output', () => {
     expect(runtime.surfaces.markdown.renderNode(example))
       .toMatchInlineSnapshot(`
-      "_The delivery slide, from the snapshot surface · delivery-times · snapshot_
+        "_The delivery slide, from the snapshot surface_
 
-      > # Orders now arrive in under 30 minutes
-      >
-      > Routing from the nearest store cut the median wait by eleven minutes.
-      >
-      > _Basket · 02 Operations_"
-    `);
+        > # Orders now arrive in under 30 minutes
+        >
+        > Routing from the nearest store cut the median wait by eleven minutes.
+        >
+        > _Basket · 02 Operations_"
+      `);
     expect(runtime.surfaces.markdown.renderNode(markdownExample))
       .toMatchInlineSnapshot(`
-        "_The delivery slide, as Markdown · markdown_
+        "_The delivery slide, as Markdown_
 
         \`\`\`
         # Orders now arrive in under 30 minutes

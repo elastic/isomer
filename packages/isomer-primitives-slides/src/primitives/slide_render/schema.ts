@@ -34,7 +34,9 @@ export const buildSchema = (bodyNodeSchema: ZodType<unknown>) =>
           '`react`, `html`, or `snapshot` draws the slide scaled into a 16:9 panel; `markdown`, `text`, or `slack` shows that surface’s output in a mono panel.'
         ),
       caption: lineText()
-        .describe('One line above the panel saying what the render shows.')
+        .describe(
+          'One line above the panel saying what the render shows, in place of the slide reference and surface.'
+        )
         .optional(),
     })
     .strict()

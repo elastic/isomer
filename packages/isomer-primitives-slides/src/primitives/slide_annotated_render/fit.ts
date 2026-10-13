@@ -30,18 +30,26 @@ const { legend, pin } = annotatedRender;
 // takumi draws a text block at its line boxes' height rounded up to a whole pixel.
 const drawn = Math.ceil;
 
+const innerWidth = (width: number) =>
+  column(width, 0) - 2 * scalePx(pin.overhang);
+
+/** How far the panel's top edge sits below the figure's: the caption, its gap, and a pin's overhang. */
+export const panelOffset = (
+  render: SlideRenderNode,
+  { width }: Pick<SlideLayout, 'width'>
+): number =>
+  drawn(captionHeight(headline(render), innerWidth(width))) +
+  scalePx(pin.overhang);
+
 /** The scale `render` draws its slide at in the first column of `layout`, inset on every side by a pin's overhang. */
 export const annotatedScale = (
   render: SlideRenderNode,
-  { width, height }: SlideLayout
-): number => {
-  const inset = 2 * scalePx(pin.overhang);
-  const inner = column(width, 0) - inset;
-  return embeddedScale({
-    width: inner,
-    height: height - inset - drawn(captionHeight(headline(render), inner)),
+  layout: SlideLayout
+): number =>
+  embeddedScale({
+    width: innerWidth(layout.width),
+    height: layout.height - scalePx(pin.overhang) - panelOffset(render, layout),
   });
-};
 
 /** Height of the legend at `step` in the second column of `width`, its titles and text wrapped across it as drawn. */
 export const legendHeight = (
@@ -78,3 +86,18 @@ export const legendStep = (
   { width, height }: SlideLayout
 ): SlideSize =>
   slideSizes.find((step) => legendHeight(pins, step, width) <= height) ?? 's';
+
+/** How far the legend drops to meet the panel's top edge, as far as the room below it allows. */
+export const legendOffset = (
+  render: SlideRenderNode,
+  pins: readonly SlideAnnotatedRenderPin[],
+  step: SlideSize,
+  layout: SlideLayout
+): number =>
+  Math.max(
+    0,
+    Math.min(
+      panelOffset(render, layout),
+      layout.height - legendHeight(pins, step, layout.width)
+    )
+  );

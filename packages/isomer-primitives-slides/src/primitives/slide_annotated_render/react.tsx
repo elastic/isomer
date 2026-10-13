@@ -18,7 +18,7 @@ import { headline } from '../slide_render/output';
 import { RenderPanel } from '../slide_render/panel';
 import { renderModule } from '../slide_render/styles';
 
-import { annotatedScale, legendStep } from './fit';
+import { annotatedScale, legendOffset, legendStep } from './fit';
 import { annotatedRenderModule } from './styles';
 import type { SlideAnnotatedRenderNode } from './types';
 
@@ -32,13 +32,15 @@ export const react = (
   const { surface } = node;
   const layout = slideLayout(context);
   const scale = annotatedScale(node, layout);
+  const shown = isVisibleOnSurface(node, 'react');
   const legend = legendStep(pins, layout);
+  const offset = shown ? legendOffset(node, pins, legend, layout) : 0;
   return (
     <div
       {...nodeAnchor(context, { type })}
       className={cls(context, layoutModule.handles.fill)}>
       <div className={cls(context, annotated.grid)}>
-        {isVisibleOnSurface(node, 'react') ? (
+        {shown ? (
           <figure
             {...nodeAnchor(context, { type: node.type })}
             className={cls(context, annotated.figure)}>
@@ -65,7 +67,9 @@ export const react = (
             </div>
           </figure>
         ) : null}
-        <ol className={cls(context, annotated.legend)}>
+        <ol
+          className={cls(context, annotated.legend)}
+          style={{ marginTop: `${offset}px` }}>
           {pins.map(({ title, body }, index) => (
             <li
               className={cls(
