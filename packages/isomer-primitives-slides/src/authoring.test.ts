@@ -47,7 +47,11 @@ describe('slide authoring', () => {
 
   it('passes object props through untouched', () => {
     const panels = [
-      { file: 'a.ts', lines: ['const a = 1;'], highlightLines: [1] },
+      {
+        file: 'a.ts',
+        lines: ['const a = 1;'],
+        lineNumbers: { highlight: '1' },
+      },
     ];
     const spec = toComposition(
       createElement(Composition, null, createElement(SlideCode, { panels }))

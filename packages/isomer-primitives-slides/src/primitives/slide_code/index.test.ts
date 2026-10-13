@@ -41,7 +41,12 @@ import {
   traceExample,
 } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
-import { schema, type SlideCodeNode } from './schema';
+import {
+  panelHighlights,
+  schema,
+  type SlideCodeNode,
+  type SlideCodePanel,
+} from './schema';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -96,12 +101,55 @@ describe('slideCode schema', () => {
         ...traceExample,
         panels: [
           traceExample.panels[0],
-          { lines: ['one'], highlightLines: [2] },
+          { lines: ['one'], lineNumbers: { highlight: '2' } },
         ],
       })
     ).toContainEqual(
-      'body[0].body[0].panels[1].highlightLines: highlightLines must exist in lines'
+      'body[0].body[0].panels[1].lineNumbers.highlight: each highlighted line must be a number the gutter shows'
     );
+  });
+
+  it('reads a highlight as the number the gutter shows', () => {
+    const numbered = (lineNumbers: SlideCodePanel['lineNumbers']) =>
+      errorPaths({
+        type: 'slideCode',
+        panels: [{ lines: ['one', 'two'], lineNumbers }],
+      });
+    expect(numbered({ start: 10, highlight: '10-11' })).toEqual([]);
+    expect(numbered({ start: 10, highlight: ' 10 , 11 ' })).toEqual([]);
+    expect(numbered({ start: 10, highlight: '2' })).toEqual([
+      'body[0].body[0].panels[0].lineNumbers.highlight: each highlighted line must be a number the gutter shows',
+    ]);
+    expect(numbered({ start: 10, highlight: '10-12' })).toHaveLength(1);
+    expect(numbered({ highlight: '2-1' })).toEqual([
+      'body[0].body[0].panels[0].lineNumbers.highlight: a range runs from its lower number to its higher one',
+    ]);
+    expect(numbered({ highlight: '1;2' })).toEqual([
+      'body[0].body[0].panels[0].lineNumbers.highlight: line numbers and ranges separated by commas, e.g. `2, 5-7`',
+    ]);
+  });
+
+  it('takes the gutter out of the columns a line holds', () => {
+    const max = codeLineMaxLength(1, false);
+    const lines = ['x'.repeat(max - 4)];
+    expect(errorPaths({ type: 'slideCode', panels: [{ lines }] })).toEqual([]);
+    expect(
+      errorPaths({ type: 'slideCode', panels: [{ lines, lineNumbers: true }] })
+    ).toEqual([]);
+    expect(
+      errorPaths({
+        type: 'slideCode',
+        panels: [{ lines, lineNumbers: { start: 100 } }],
+      })
+    ).toHaveLength(1);
+  });
+
+  it('prints line numbers on text, Markdown, and Slack', () => {
+    const node: SlideCodeNode = {
+      type: 'slideCode',
+      panels: [{ lines: ['a', '', 'b'], lineNumbers: { start: 9 } }],
+    };
+    expect(text(node)).toBe(' 9  a\n10\n11  b');
   });
 
   it.each(
@@ -184,7 +232,9 @@ describe('slideCode line width', () => {
 
   it('reads no line of a panel or group past its count', () => {
     const tabs = Array<string>(codeMaxLines + 1).fill('\tx');
-    expect(errorPaths(panel(tabs, { highlightLines: [99] }))).toEqual([
+    expect(
+      errorPaths(panel(tabs, { lineNumbers: { highlight: '99' } }))
+    ).toEqual([
       expect.stringMatching(/^body\[0\]\.body\[0\]\.panels\[0\]\.lines: /),
     ]);
     const wide = { lines: ['x'.repeat(codeLineMaxLength(1, false) + 1)] };
@@ -273,36 +323,36 @@ describe('slideCode output', () => {
   it('renders text with the caption above the lines', () => {
     expect(text(example)).toMatchInlineSnapshot(`
       "refund.ts
-      export const refund = async (order: Order) => {
-        await ledger.write(order.id, -order.total);
-        await fraud.check(order);
-        return notify(order.customer);
-      };"
+      1  export const refund = async (order: Order) => {
+      2    await ledger.write(order.id, -order.total);
+      3    await fraud.check(order);
+      4    return notify(order.customer);
+      5  };"
     `);
   });
 
   it('joins two panels with an arrow', () => {
     expect(text(traceExample)).toMatchInlineSnapshot(`
       "config.yaml
-      checkout:
-        timeout: 30s
-        retries: 3
+      1  checkout:
+      2    timeout: 30s
+      3    retries: 3
 
       →
 
       client.ts
-      const client = createClient({
-        timeout: config.checkout.timeout,
-        retries: config.checkout.retries,
-      });"
+      41  const client = createClient({
+      42    timeout: config.checkout.timeout,
+      43    retries: config.checkout.retries,
+      44  });"
     `);
     expect(markdown(traceExample)).toMatchInlineSnapshot(`
       "**config.yaml**
 
       \`\`\`yaml
-      checkout:
-        timeout: 30s
-        retries: 3
+      1  checkout:
+      2    timeout: 30s
+      3    retries: 3
       \`\`\`
 
       →
@@ -310,10 +360,10 @@ describe('slideCode output', () => {
       **client.ts**
 
       \`\`\`ts
-      const client = createClient({
-        timeout: config.checkout.timeout,
-        retries: config.checkout.retries,
-      });
+      41  const client = createClient({
+      42    timeout: config.checkout.timeout,
+      43    retries: config.checkout.retries,
+      44  });
       \`\`\`"
     `);
   });
@@ -325,11 +375,11 @@ describe('slideCode output', () => {
           "text": {
             "text": "refund.ts
       \`\`\`
-      export const refund = async (order: Order) => {
-        await ledger.write(order.id, -order.total);
-        await fraud.check(order);
-        return notify(order.customer);
-      };
+      1  export const refund = async (order: Order) => {
+      2    await ledger.write(order.id, -order.total);
+      3    await fraud.check(order);
+      4    return notify(order.customer);
+      5  };
       \`\`\`",
             "type": "mrkdwn",
           },
@@ -405,6 +455,7 @@ describe('slideCode in the DOM', () => {
     ].map(([, inner = '']) => inner);
   const textOf = (html: string) =>
     html
+      .replace(/<span aria-hidden[^>]*>[^<]*<\/span>/g, '')
       .replace(/<[^>]+>/g, '')
       .replace(
         /&(?:amp|lt|gt|quot|#x27);/g,
@@ -425,9 +476,7 @@ describe('slideCode in the DOM', () => {
     (_index, node) => {
       expect(
         panelsOf(node).map((html) => html.match(/<mark[\s>]/g)?.length ?? 0)
-      ).toEqual(
-        node.panels.map(({ highlightLines = [] }) => highlightLines.length)
-      );
+      ).toEqual(node.panels.map((panel) => panelHighlights(panel).size));
     }
   );
 });

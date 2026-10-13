@@ -12,33 +12,48 @@ import { slackCodePanel } from '../../render';
 import { oneLine } from '../../render/one_line';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
+import { withGutter } from '../line_gutter';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
-import { schema, type SlideCodeNode } from './schema';
+import {
+  panelGutter,
+  schema,
+  type SlideCodeNode,
+  type SlideCodePanel,
+} from './schema';
 
 export type { SlideCodeNode, SlideCodePanel } from './schema';
 
 const traceArrow = slideDistillery.tokens.code.traceArrow.value;
 
+/** A panel's lines as printed, each after its line number when it has one. */
+const printedLines = (panel: SlideCodePanel): string[] => {
+  const gutter = panelGutter(panel);
+  return panel.lines.map((line, index) => withGutter(gutter?.[index], line));
+};
+
 export const text = ({ panels }: SlideCodeNode): string =>
   panels
-    .map(({ file, lines }) =>
-      [...(file ? [oneLine(file)] : []), ...lines].join('\n')
+    .map((panel) =>
+      [
+        ...(panel.file ? [oneLine(panel.file)] : []),
+        ...printedLines(panel),
+      ].join('\n')
     )
     .join(`\n\n${traceArrow}\n\n`);
 
 export const markdown = ({ panels }: SlideCodeNode) =>
-  panels.flatMap(({ file, language, lines }, index) => [
+  panels.flatMap((panel, index) => [
     ...(index > 0 ? [md.paragraph(traceArrow)] : []),
-    ...(file ? [md.paragraph(md.strong(file))] : []),
-    md.codeBlock(lines.join('\n'), language),
+    ...(panel.file ? [md.paragraph(md.strong(panel.file))] : []),
+    md.codeBlock(printedLines(panel).join('\n'), panel.language),
   ]);
 
 export const slack = ({ panels }: SlideCodeNode): SlackBlock[] =>
-  panels.flatMap(({ file, lines }, index) => [
+  panels.flatMap((panel, index) => [
     ...(index > 0
       ? [
           {
@@ -47,7 +62,7 @@ export const slack = ({ panels }: SlideCodeNode): SlackBlock[] =>
           } satisfies SlackBlock,
         ]
       : []),
-    slackCodePanel(lines.join('\n'), file),
+    slackCodePanel(printedLines(panel).join('\n'), panel.file),
   ]);
 
 /** Catalog, schema, and renderers for {@link SlideCodeNode}. */

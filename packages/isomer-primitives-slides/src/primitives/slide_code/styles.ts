@@ -74,6 +74,13 @@ export const codeModule = createStyleModule('code', ({ css }) => ({
     border-left: ${code.highlightBar} solid ${color.primary};
     padding-left: ${code.highlightPaddingStart};
   `,
+  // Padded to the widest number, so every line keeps its column.
+  gutter: css`
+    color: ${color.textSubtle};
+    flex: 0 0 auto;
+    user-select: none;
+    white-space: pre;
+  `,
   // The band is drawn by `highlight`; `mark` only tells assistive technology.
   mark: css`
     background: none;

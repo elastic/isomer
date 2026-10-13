@@ -8,13 +8,15 @@
 import { displayColumns } from '../../render/mono';
 import { codeDenseAfter } from '../../theme/components/code';
 
-/** Whether panels holding these lines take the dense size: past `codeDenseAfter` lines, or a line wider than `regularMax` columns. */
+/** Whether panels holding these lines take the dense size: past `codeDenseAfter` lines, or a line wider than `regularMax` columns less its panel's `gutter`. */
 export const codeIsDense = (
-  panels: readonly (readonly string[])[],
+  panels: readonly { lines: readonly string[]; gutter: number }[],
   regularMax: number
 ): boolean =>
-  panels.some(
-    (lines) =>
+  panels.some(({ lines, gutter }) => {
+    const max = regularMax - gutter;
+    return (
       lines.length > codeDenseAfter ||
-      lines.some((line) => displayColumns(line, regularMax) > regularMax)
-  );
+      lines.some((line) => displayColumns(line, max) > max)
+    );
+  });

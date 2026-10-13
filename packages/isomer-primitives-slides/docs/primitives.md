@@ -352,13 +352,13 @@ A content primitive takes its list as children named for it, without the `Slide`
 </SlideRoadmap>
 ```
 
-Code keeps its whitespace. A command is its text. A `CodePanel`'s text is its `lines`: write it as a template literal, and the line break after the opening backtick, the indentation before the closing one, and the indentation every line shares are dropped. JSX itself collapses line breaks in bare text, so multi-line source needs the template literal. A `DiffLine` is one line exactly as written; `op` marks it added or removed, and a line that is indented or holds a brace takes its text as a string expression. A transcript takes `TranscriptTurn` children, each turn's text keeping its line breaks:
+Code keeps its whitespace. A command is its text. A `CodePanel`'s text is its `lines`: write it as a template literal, and the line break after the opening backtick, the indentation before the closing one, and the indentation every line shares are dropped. JSX itself collapses line breaks in bare text, so multi-line source needs the template literal. A panel's `lineNumbers`, as in [`EuiCode`](https://eui.elastic.co/docs/components/display/code/#line-numbers), is `true` or `{ start, highlight }`: `highlight` is a range string such as `'2, 5-7'` of line numbers as the gutter shows them, so `start` shifts them, and the gutter's columns come out of every line's budget. Text, Markdown, and Slack print each line after its number. A `DiffLine` is one line exactly as written; `op` marks it added or removed, and a line that is indented or holds a brace takes its text as a string expression. A transcript takes `TranscriptTurn` children, each turn's text keeping its line breaks:
 
 ```tsx
 <SlideCommand label="Install">npm install @elastic/isomer-runtime</SlideCommand>
 
 <SlideCode>
-  <CodePanel file="refund.ts" language="ts" highlightLines={[2]}>
+  <CodePanel file="refund.ts" language="ts" lineNumbers={{ highlight: '2' }}>
     {`
       const refund = async (id) => {
         await ledger.hold(id);

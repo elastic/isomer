@@ -18,6 +18,14 @@ import {
 } from '../../theme/components/code';
 import { authoredTextMaxLength, lineText } from '../authored_text';
 import { crossRefine } from '../cross_field';
+import { gutterColumns, gutterLabels } from '../line_gutter';
+import {
+  inRanges,
+  lineRangeOrder,
+  lineRanges,
+  lineRangeText,
+  rangesWithin,
+} from '../line_ranges';
 import { sourceLines } from '../source_text';
 
 /** Whether `lines` is within its count and length caps, so a check that always runs may read it. */
@@ -46,12 +54,25 @@ const panelSchema = z
       .describe(
         `Source, one entry per line, indented with spaces rather than tabs. Use an empty string for a blank line. 1 to ${codeMaxLines} lines; while every panel has ${codeDenseAfter} or fewer, they stay at the larger size.`
       ),
-    highlightLines: z
-      .array(z.number().int().positive())
-      .min(1)
-      .max(codeMaxLines)
+    lineNumbers: z
+      .union([
+        z.boolean(),
+        z.strictObject({
+          start: z
+            .number()
+            .int()
+            .nonnegative()
+            .describe('The number of the first line. Defaults to 1.')
+            .optional(),
+          highlight: lineRangeText()
+            .describe(
+              `Lines to mark with a tinted band, as numbers and ranges such as \`2, 5-7\`, ${lineRangeOrder}. They are the numbers the gutter shows, so \`start\` shifts them, and each is a line of this panel. Other lines stay at full strength.`
+            )
+            .optional(),
+        }),
+      ])
       .describe(
-        '1-based line numbers to mark with a tinted band. Each is a line of this panel. Other lines stay at full strength.'
+        'Numbers each line in a gutter: `true`, or `{ start, highlight }` to start past 1 or mark lines. The gutter takes columns from every line.'
       )
       .optional(),
   })
@@ -80,20 +101,57 @@ const panelSchema = z
   )
   .check(
     crossRefine(
-      ({ highlightLines, lines }) =>
-        highlightLines === undefined ||
-        highlightLines.length > codeMaxLines ||
-        lines.length > codeMaxLines ||
-        highlightLines.every((line) => line <= lines.length),
+      ({ lineNumbers, lines }) => {
+        if (typeof lineNumbers !== 'object') {
+          return true;
+        }
+        const { start = 1, highlight } = lineNumbers;
+        const ranges =
+          highlight === undefined ? undefined : lineRanges(highlight);
+        return (
+          ranges === undefined ||
+          lines.length > codeMaxLines ||
+          rangesWithin(ranges, start, start + lines.length - 1)
+        );
+      },
       {
-        error: 'highlightLines must exist in lines',
-        path: ['highlightLines'],
-        rule: 'Each is a line of this panel.',
+        error: 'each highlighted line must be a number the gutter shows',
+        path: ['lineNumbers', 'highlight'],
+        rule: 'each is a line of this panel',
       }
     )
   );
 
 export type SlideCodePanel = z.infer<typeof panelSchema>;
+
+/** Each line's gutter label, or `undefined` for a panel without line numbers. */
+export const panelGutter = ({
+  lineNumbers,
+  lines,
+}: SlideCodePanel): string[] | undefined => {
+  if (!lineNumbers) {
+    return undefined;
+  }
+  const start = lineNumbers === true ? 1 : (lineNumbers.start ?? 1);
+  return gutterLabels(lines.map((_, index) => start + index));
+};
+
+/** The indexes of the lines `lineNumbers.highlight` marks. */
+export const panelHighlights = ({
+  lineNumbers,
+  lines,
+}: SlideCodePanel): ReadonlySet<number> => {
+  if (typeof lineNumbers !== 'object' || lineNumbers.highlight === undefined) {
+    return new Set();
+  }
+  const { start = 1, highlight } = lineNumbers;
+  const ranges = lineRanges(highlight) ?? [];
+  return new Set(
+    lines.flatMap((_, index) =>
+      inRanges(ranges, start + index) ? [index] : []
+    )
+  );
+};
 
 const isDense = (panels: SlideCodePanel[]) =>
   panels.some(({ lines }) => lines.length > codeDenseAfter);
@@ -138,10 +196,10 @@ export const schema = z
         ) {
           return true;
         }
-        const max = lineLimit(panels);
-        return panels.every(({ lines }) =>
-          lines.every((line) => displayColumns(line, max) <= max)
-        );
+        return panels.every((panel) => {
+          const max = lineLimit(panels) - gutterColumns(panelGutter(panel));
+          return panel.lines.every((line) => displayColumns(line, max) <= max);
+        });
       },
       {
         error: ({ input }) => {
@@ -151,7 +209,10 @@ export const schema = z
           const dense = isDense(panels)
             ? ` once a panel passes ${codeDenseAfter} lines`
             : '';
-          return `a line is wider than its panel: at most ${lineLimit(panels)} columns ${where}${dense}, a wide glyph counting as two`;
+          const gutter = panels.some(({ lineNumbers }) => lineNumbers)
+            ? ', less its line-number gutter'
+            : '';
+          return `a line is wider than its panel: at most ${lineLimit(panels)} columns ${where}${dense}${gutter}, a wide glyph counting as two`;
         },
         path: ['panels'],
         rule: `A line holds ${codeLineMaxLength(1, false)} columns in one panel`,

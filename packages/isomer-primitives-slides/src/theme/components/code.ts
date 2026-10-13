@@ -34,6 +34,9 @@ export const code = {
   traceArrow: glyph.arrow,
 } as const;
 
+/** Columns between a line number and its line. */
+export const codeGutterGap = 2;
+
 /** Lines a panel holds before it takes `denseText`. */
 export const codeDenseAfter = 10;
 

@@ -14,15 +14,21 @@ import { codeLineMaxLength } from '../../theme/components/code';
 import { slideDistillery } from '../../theme/distillery';
 import { connectorModule, layoutModule } from '../../theme/modules';
 import { slideLayout } from '../layout';
+import { gutterColumns } from '../line_gutter';
 
 import { codeIsDense } from './fit';
-import type { SlideCodeNode, SlideCodePanel } from './schema';
+import {
+  panelGutter,
+  panelHighlights,
+  type SlideCodeNode,
+  type SlideCodePanel,
+} from './schema';
 import { codeModule } from './styles';
 
 const { label: connectorLabel } = slideDistillery.tokens.connector;
 
 const Panel = ({
-  panel: { file, highlightLines = [], lines },
+  panel,
   dense,
   context,
 }: {
@@ -31,7 +37,9 @@ const Panel = ({
   context: SlideReactEnv['context'];
 }): ReactNode => {
   const { handles: code } = codeModule;
-  const marked = new Set(highlightLines);
+  const { file, lines } = panel;
+  const marked = panelHighlights(panel);
+  const gutter = panelGutter(panel);
   const lineBox = dense ? code.denseLine : code.regularLine;
   return (
     <figure className={cls(context, code.figure)}>
@@ -44,13 +52,23 @@ const Panel = ({
           <Fragment key={index}>
             {/* `panel` collapses it: the line break is in the text, never drawn. */}
             {index > 0 ? '\n' : null}
-            {marked.has(index + 1) ? (
+            {marked.has(index) ? (
               <code
                 className={cls(context, code.line, lineBox, code.highlight)}>
+                {gutter ? (
+                  <span aria-hidden className={cls(context, code.gutter)}>
+                    {gutter[index]}
+                  </span>
+                ) : null}
                 <mark className={cls(context, code.mark)}>{line}</mark>
               </code>
             ) : (
               <code className={cls(context, code.line, lineBox, code.plain)}>
+                {gutter ? (
+                  <span aria-hidden className={cls(context, code.gutter)}>
+                    {gutter[index]}
+                  </span>
+                ) : null}
                 {line}
               </code>
             )}
@@ -76,7 +94,10 @@ export const react = (
   );
   // One size for both panels, so a trace reads at one scale.
   const dense = codeIsDense(
-    panels.map(({ lines }) => lines),
+    panels.map((panel) => ({
+      lines: panel.lines,
+      gutter: gutterColumns(panelGutter(panel)),
+    })),
     regularMax
   );
   return (

@@ -30,7 +30,7 @@ export const react = (
   const { handles: code } = codeModule;
   const { handles: diff } = diffModule;
   const dense = codeIsDense(
-    [lines.map(({ text }) => text)],
+    [{ lines: lines.map(({ text }) => text), gutter: 0 }],
     diffLineMaxLength(false, slideLayout(context).width)
   );
   return (

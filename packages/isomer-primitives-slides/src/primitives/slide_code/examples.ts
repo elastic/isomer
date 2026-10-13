@@ -21,7 +21,7 @@ export const example: SlideCodeNode = {
         '  return notify(order.customer);',
         '};',
       ],
-      highlightLines: [2],
+      lineNumbers: { highlight: '2' },
     },
   ],
 };
@@ -43,7 +43,7 @@ export const traceExample: SlideCodeNode = {
       file: 'config.yaml',
       language: 'yaml',
       lines: ['checkout:', '  timeout: 30s', '  retries: 3'],
-      highlightLines: [2],
+      lineNumbers: { highlight: '2' },
     },
     {
       file: 'client.ts',
@@ -54,7 +54,7 @@ export const traceExample: SlideCodeNode = {
         '  retries: config.checkout.retries,',
         '});',
       ],
-      highlightLines: [2],
+      lineNumbers: { start: 41, highlight: '42-43' },
     },
   ],
 };
@@ -80,10 +80,10 @@ const orderPanel: SlideCodePanel = {
     '  }',
     '}',
   ],
-  highlightLines: [4, 13],
+  lineNumbers: { highlight: '4, 12-14' },
 };
 
-/** The most lines a panel holds, at the dense size, with a caption, a blank line, and two highlights. */
+/** The most lines a panel holds, at the dense size, with a caption, a blank line, line numbers, and two highlights. */
 export const denseExample: SlideCodeNode = {
   type: 'slideCode',
   panels: [orderPanel],
@@ -115,7 +115,7 @@ export const denseTraceExample: SlideCodeNode = {
         '  return notify(order.customer);',
         '};',
       ],
-      highlightLines: [8],
+      lineNumbers: { start: 120, highlight: '126-129' },
     },
   ],
 };

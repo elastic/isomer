@@ -506,7 +506,7 @@ describe('slideJsx', () => {
           null,
           createElement(
             CodePanel,
-            { file: 'refund.ts', highlightLines: [2] },
+            { file: 'refund.ts', lineNumbers: { highlight: '2' } },
             `
               const refund = async (id) => {
                 await ledger.hold(id);
@@ -523,7 +523,7 @@ describe('slideJsx', () => {
       panels: [
         {
           file: 'refund.ts',
-          highlightLines: [2],
+          lineNumbers: { highlight: '2' },
           lines: [
             'const refund = async (id) => {',
             '  await ledger.hold(id);',
