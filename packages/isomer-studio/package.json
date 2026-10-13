@@ -4,7 +4,6 @@
   "description": "Isomer Studio: a gallery, docs, JSX editor, and every-surface preview for any Isomer pack, run as a dev server, a static site, or a headless CI check.",
   "license": "Elastic-2.0",
   "author": "Elastic",
-  "private": true,
   "repository": {
     "type": "git",
     "url": "git+https://github.com/elastic/isomer.git",
