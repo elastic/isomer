@@ -134,27 +134,18 @@ const importWithTsx = (
   }
 };
 
-const requireCache = createRequire(import.meta.url).cache;
-
-/** The CommonJS modules each config's last `tsx` load added; `tsx` namespaces only the ES module graph. */
-const requiredByConfig = new Map<string, readonly string[]>();
-
-const importFresh = async (configPath: string): Promise<unknown> => {
-  requiredByConfig.get(configPath)?.forEach((id) => delete requireCache[id]);
-  const before = new Set(Object.keys(requireCache));
-  try {
-    return await importWithTsx(
-      pathToFileURL(configPath).href,
-      nearestTsconfig(configPath)
-    );
-  } finally {
-    requiredByConfig.set(
-      configPath,
-      Object.keys(requireCache).filter(
-        (id) => !before.has(id) && !id.endsWith('.node')
-      )
+/** The Studio config a module namespace default-exports, or an error naming `configPath`. */
+export const studioConfigFrom = (
+  namespace: unknown,
+  configPath: string
+): StudioConfig => {
+  const config = defaultExport(namespace);
+  if (!isStudioConfig(config)) {
+    throw new Error(
+      `${configPath} must default-export defineStudioConfig({ runtime, ... }).`
     );
   }
+  return config;
 };
 
 /** Imports the config's default export in Node; `tsx` compiles TypeScript and leaves resolution to Node. */
@@ -163,17 +154,12 @@ export const loadStudioConfig = async (
   { loader = 'tsx' }: { loader?: ConfigLoader | undefined } = {}
 ): Promise<StudioConfig> => {
   assertSingleReact(configPath);
+  const url = pathToFileURL(configPath).href;
   const namespace: unknown =
     loader === 'none'
-      ? await import(pathToFileURL(configPath).href)
-      : await importFresh(configPath);
-  const config = defaultExport(namespace);
-  if (!isStudioConfig(config)) {
-    throw new Error(
-      `${configPath} must default-export defineStudioConfig({ runtime, ... }).`
-    );
-  }
-  return config;
+      ? await import(url)
+      : await importWithTsx(url, nearestTsconfig(configPath));
+  return studioConfigFrom(namespace, configPath);
 };
 
 const isRenderToString = (

@@ -35,13 +35,8 @@ const rasterizePng: RasterizePng = async (composition, { signal }) => {
   return response.blob();
 };
 
-/** `isomer-studio dev`: the server compiles JSX and rasterizes PNGs, and reloads the page after each rebuild. */
-export const devHost = ({ runtime }: StudioConfig): StudioHost => {
-  new EventSource(assetUrl('events')).addEventListener('reload', () =>
-    window.location.reload()
-  );
-  return {
-    transformJsx,
-    rasterizePng: runtime.surfaces.snapshot ? rasterizePng : undefined,
-  };
-};
+/** `isomer-studio dev`: the server compiles JSX and rasterizes PNGs. */
+export const devHost = ({ runtime }: StudioConfig): StudioHost => ({
+  transformJsx,
+  rasterizePng: runtime.surfaces.snapshot ? rasterizePng : undefined,
+});

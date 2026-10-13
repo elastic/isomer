@@ -143,8 +143,9 @@ describe('reactFromConfig', () => {
 });
 
 describe('appEntry', () => {
+  const configPath = '/work/pack/isomer-studio.config.ts';
+
   it('mounts the config with the mode’s host', () => {
-    const configPath = '/work/pack/isomer-studio.config.ts';
     expect(appEntry(configPath, 'build')).toContain(
       `import config from "${configPath}";`
     );
@@ -155,23 +156,25 @@ describe('appEntry', () => {
       'mountStudio(config, devHost(config));'
     );
   });
+
+  it('accepts config updates in dev only', () => {
+    expect(appEntry(configPath, 'dev')).toContain(
+      `import.meta.hot.accept("${configPath}", (next) => {`
+    );
+    expect(appEntry(configPath, 'build')).not.toContain('import.meta.hot');
+  });
 });
 
 describe('appBuildOptions', () => {
-  it('minifies a build and maps sources in dev', () => {
-    const options = {
-      configPath: '/work/pack/isomer-studio.config.ts',
-      assetsDir: '/out/assets',
-    };
-    expect(appBuildOptions({ ...options, mode: 'build' })).toMatchObject({
+  it('minifies for production', () => {
+    expect(
+      appBuildOptions({
+        configPath: '/work/pack/isomer-studio.config.ts',
+        assetsDir: '/out/assets',
+      })
+    ).toMatchObject({
       minify: true,
-      sourcemap: false,
       define: { 'process.env.NODE_ENV': '"production"' },
-    });
-    expect(appBuildOptions({ ...options, mode: 'dev' })).toMatchObject({
-      minify: false,
-      sourcemap: 'linked',
-      define: { 'process.env.NODE_ENV': '"development"' },
     });
   });
 });

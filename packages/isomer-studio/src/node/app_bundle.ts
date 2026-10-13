@@ -16,11 +16,17 @@ export type AppMode = 'build' | 'dev';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-/** The package's prebuilt, pack-independent assets: `dist/app/`. */
-export const APP_DIR = resolve(here, '../../dist/app');
+/** The package root, whether this module runs from `dist/node` or `src/node`. */
+export const PACKAGE_DIR = resolve(here, '../..');
 
-/** Without an extension, so the bundle takes `dist/browser/*.js`, or the `.ts(x)` beside it under test. */
-const browserModule = (name: string): string =>
+/** Whether the CLI runs from its TypeScript source, as `pnpm studio:dev` does, rather than from `dist`. */
+export const RUNS_FROM_SOURCE = import.meta.url.endsWith('.ts');
+
+/** The package's prebuilt, pack-independent assets: `dist/app/`. */
+export const APP_DIR = join(PACKAGE_DIR, 'dist/app');
+
+/** Without an extension, so the bundle takes `dist/browser/*.js`, or the `.ts(x)` beside it when the CLI runs from source. */
+export const browserModule = (name: string): string =>
   resolve(here, '../browser', name);
 
 const HOSTS: Readonly<Record<AppMode, { module: string; name: string }>> = {
@@ -28,14 +34,24 @@ const HOSTS: Readonly<Record<AppMode, { module: string; name: string }>> = {
   build: { module: 'static_host', name: 'staticHost' },
 };
 
-/** The bundle's entry: the config's default export mounted with the mode's host functions. */
+/** The bundle's entry: the config's default export mounted with the mode's host functions. In `dev`, a changed config re-renders the mounted Studio in place. */
 export const appEntry = (configPath: string, mode: AppMode): string => {
   const { module, name } = HOSTS[mode];
+  const config = JSON.stringify(configPath);
   return [
-    `import config from ${JSON.stringify(configPath)};`,
+    `import config from ${config};`,
     `import { mountStudio } from ${JSON.stringify(browserModule('mount'))};`,
     `import { ${name} } from ${JSON.stringify(browserModule(module))};`,
-    `mountStudio(config, ${name}(config));`,
+    `const studio = mountStudio(config, ${name}(config));`,
+    ...(mode === 'dev'
+      ? [
+          'if (import.meta.hot) {',
+          `  import.meta.hot.accept(${config}, (next) => {`,
+          `    if (next) studio.update(next.default, ${name}(next.default));`,
+          '  });',
+          '}',
+        ]
+      : []),
     '',
   ].join('\n');
 };
@@ -79,7 +95,7 @@ export const reactFromConfig = (configPath: string): Plugin => ({
 
 const ENTRY = 'isomer-studio:app';
 
-const entryPlugin = (configPath: string, mode: AppMode): Plugin => ({
+const entryPlugin = (configPath: string): Plugin => ({
   name: 'isomer-studio-entry',
   setup: (build) => {
     build.onResolve({ filter: /^isomer-studio:app$/ }, ({ path }) => ({
@@ -87,22 +103,20 @@ const entryPlugin = (configPath: string, mode: AppMode): Plugin => ({
       namespace: 'isomer-studio',
     }));
     build.onLoad({ filter: /.*/, namespace: 'isomer-studio' }, () => ({
-      contents: appEntry(configPath, mode),
+      contents: appEntry(configPath, 'build'),
       resolveDir: dirname(configPath),
       loader: 'js',
     }));
   },
 });
 
-/** esbuild options for `assets/app.js` and its chunks, written to `assetsDir`. */
+/** esbuild options for a static build's `assets/app.js` and its chunks, written to `assetsDir`. */
 export const appBuildOptions = ({
   configPath,
-  mode,
   assetsDir,
   plugins = [],
 }: {
   configPath: string;
-  mode: AppMode;
   assetsDir: string;
   plugins?: Plugin[] | undefined;
 }): BuildOptions => ({
@@ -125,19 +139,12 @@ export const appBuildOptions = ({
     '.svg': 'file',
   },
   define: {
-    'process.env.NODE_ENV': JSON.stringify(
-      mode === 'dev' ? 'development' : 'production'
-    ),
+    'process.env.NODE_ENV': JSON.stringify('production'),
     global: 'globalThis',
   },
-  minify: mode === 'build',
-  sourcemap: mode === 'dev' ? 'linked' : false,
+  minify: true,
   logLevel: 'warning',
-  plugins: [
-    entryPlugin(configPath, mode),
-    reactFromConfig(configPath),
-    ...plugins,
-  ],
+  plugins: [entryPlugin(configPath), reactFromConfig(configPath), ...plugins],
 });
 
 const HTML_ESCAPES: Readonly<Record<string, string>> = {
@@ -150,13 +157,15 @@ const HTML_ESCAPES: Readonly<Record<string, string>> = {
 const escapeHtml = (value: string): string =>
   value.replace(/[&<>"]/g, (char) => HTML_ESCAPES[char] ?? char);
 
-/** `dist/app/index.html` with the deployment's `<base href>` and the config's title. */
+/** `dist/app/index.html` with the deployment's `<base href>`, the config's title, and the entry script. */
 export const renderIndexHtml = ({
   base,
   title = 'Isomer Studio',
+  entry = 'assets/app.js',
 }: {
   base: string;
   title?: string | undefined;
+  entry?: string | undefined;
 }): string => {
   const template = readFileSync(join(APP_DIR, 'index.html'), 'utf8');
   return template
@@ -164,5 +173,9 @@ export const renderIndexHtml = ({
     .replace(
       '<title>Isomer Studio</title>',
       `<title>${escapeHtml(title)}</title>`
+    )
+    .replace(
+      '<script type="module" src="assets/app.js"></script>',
+      `<script type="module" src="${escapeHtml(entry)}"></script>`
     );
 };

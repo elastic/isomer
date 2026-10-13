@@ -5,14 +5,18 @@
  * 2.0.
  */
 
+import { existsSync, realpathSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import { createServer } from 'node:http';
-import { extname, join, normalize, relative, sep } from 'node:path';
+import { extname, join, normalize } from 'node:path';
 
 import type { Composition } from '@elastic/isomer-sdk';
-import type { Plugin } from 'esbuild';
-import { context, transform } from 'esbuild';
+import { transform } from 'esbuild';
+import {
+  createServer as createViteServer,
+  createServerModuleRunner,
+} from 'vite';
 
 import type { StudioConfig } from '../config';
 import {
@@ -20,9 +24,15 @@ import {
   JSX_TRANSFORM_OPTIONS,
 } from '../model/jsx_transform';
 
-import { APP_DIR, appBuildOptions, renderIndexHtml } from './app_bundle';
+import { APP_DIR, renderIndexHtml } from './app_bundle';
+import type { ConfigChangeHandler } from './dev_bundle';
+import { DEV_ENTRY_URL, devViteConfig } from './dev_bundle';
 import type { ConfigLoader } from './load_config';
-import { loadStudioConfig } from './load_config';
+import {
+  assertSingleReact,
+  loadStudioConfig,
+  studioConfigFrom,
+} from './load_config';
 import type { NodeRasterizer } from './rasterize';
 import { createRasterizer } from './rasterize';
 
@@ -97,83 +107,92 @@ export interface DevServerOptions {
   log?: ((line: string) => void) | undefined;
 }
 
+interface LoadedConfig {
+  config: StudioConfig;
+  rasterize: NodeRasterizer | undefined;
+}
+
 export interface DevServer {
   url: string;
   close: () => Promise<void>;
 }
 
-/** Serves the Studio for `configPath`, rebuilding on change and reloading open tabs and the Node-side config. */
+/** Serves the Studio for `configPath` with hot updates, re-running the Node-side config whenever its modules change. */
 export const startDevServer = async ({
-  configPath,
+  configPath: givenConfigPath,
   port,
   loader,
   log = (line) => process.stdout.write(`${line}\n`),
 }: DevServerOptions): Promise<DevServer> => {
-  let config: StudioConfig = await loadStudioConfig(configPath, { loader });
-  let rasterize: NodeRasterizer | undefined = createRasterizer(config.runtime);
-  let outputs = new Map<string, Uint8Array>();
-  const listeners = new Set<ServerResponse>();
-  const outdir = join(APP_DIR, 'dev-assets');
-  let markFirstBuild = () => {};
-  const firstBuild = new Promise<void>((resolve) => (markFirstBuild = resolve));
-
+  // Vite's module ids and serving allow list compare real paths.
+  const configPath = realpathSync(givenConfigPath);
+  if (!existsSync(join(APP_DIR, 'index.html'))) {
+    throw new Error(
+      `The Studio's app assets are missing from ${APP_DIR}. In the Isomer repository, run \`pnpm build\` once.`
+    );
+  }
+  assertSingleReact(configPath);
   if (loader === 'none') {
     log(
       'PNGs render with the config as loaded now: Node caches a plain import(), so restart dev to pick up config or pack changes.'
     );
   }
 
-  const reloadConfig = async () => {
-    if (loader === 'none') {
+  const server: Server = createServer();
+  const vite = await createViteServer(
+    devViteConfig({
+      configPath,
+      server,
+      onConfigChange: (stale) => reloadConfig(stale),
+    })
+  );
+  const runner =
+    loader === 'none'
+      ? undefined
+      : createServerModuleRunner(vite.environments.ssr, { hmr: false });
+
+  const importConfig = async (): Promise<LoadedConfig> => {
+    const config = runner
+      ? studioConfigFrom(await runner.import(configPath), configPath)
+      : await loadStudioConfig(configPath, { loader });
+    return { config, rasterize: createRasterizer(config.runtime) };
+  };
+
+  let loaded = importConfig();
+
+  const reloadConfig: ConfigChangeHandler = async (stale) => {
+    if (!runner) {
       return;
     }
-    try {
-      config = await loadStudioConfig(configPath, { loader });
-      rasterize = createRasterizer(config.runtime);
-    } catch (error) {
+    const { evaluatedModules } = runner;
+    stale.forEach(({ id }) => {
+      const node = id === null ? undefined : evaluatedModules.getModuleById(id);
+      if (node) {
+        evaluatedModules.invalidateModule(node);
+      }
+    });
+    const previous = loaded;
+    loaded = previous.then(importConfig).catch((error: unknown) => {
       log(`Could not reload the Studio config: ${describeError(error)}`);
-    }
+      return previous;
+    });
+    await loaded;
   };
 
-  const inMemory: Plugin = {
-    name: 'isomer-studio-in-memory',
-    setup: (build) => {
-      let isFirst = true;
-      build.onEnd(async ({ errors, outputFiles = [] }) => {
-        if (errors.length) {
-          markFirstBuild();
-          return;
-        }
-        outputs = new Map(
-          outputFiles.map(({ path, contents }) => [
-            `/assets/${relative(outdir, path).split(sep).join('/')}`,
-            contents,
-          ])
-        );
-        if (!isFirst) {
-          await reloadConfig();
-          listeners.forEach((listener) =>
-            listener.write('event: reload\ndata: {}\n\n')
-          );
-        }
-        isFirst = false;
-        markFirstBuild();
-        log(`Isomer Studio built at ${new Date().toLocaleTimeString()}`);
-      });
-    },
+  const close = async () => {
+    await runner?.close();
+    await vite.close();
   };
 
-  const bundler = await context({
-    ...appBuildOptions({
-      configPath,
-      mode: 'dev',
-      assetsDir: outdir,
-      plugins: [inMemory],
-    }),
-    write: false,
-  });
+  try {
+    await loaded;
+  } catch (error) {
+    await close();
+    throw error;
+  }
 
   const png = async (request: IncomingMessage, response: ServerResponse) => {
+    const { rasterize } = await loaded;
     if (!rasterize) {
       sendText(response, 404, 'The runtime has no snapshot surface.');
       return;
@@ -214,15 +233,10 @@ export const startDevServer = async ({
   };
 
   const serveAsset = async (pathname: string, response: ServerResponse) => {
-    const built = outputs.get(pathname);
     const relativePath = normalize(pathname.slice('/assets/'.length));
-    const file =
-      built ??
-      (relativePath.startsWith('..')
-        ? undefined
-        : await readFile(join(ASSETS_DIR, relativePath)).catch(
-            () => undefined
-          ));
+    const file = relativePath.startsWith('..')
+      ? undefined
+      : await readFile(join(ASSETS_DIR, relativePath)).catch(() => undefined);
     if (!file) {
       sendText(response, 404, 'Not found');
       return;
@@ -235,12 +249,31 @@ export const startDevServer = async ({
     response.end(file);
   };
 
-  const serve = (request: IncomingMessage, response: ServerResponse) => {
+  const serveIndex = async (url: string, response: ServerResponse) => {
+    try {
+      const { config } = await loaded;
+      const html = await vite.transformIndexHtml(
+        url,
+        renderIndexHtml({
+          base: '/',
+          title: config.title,
+          entry: DEV_ENTRY_URL,
+        })
+      );
+      response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      response.end(html);
+    } catch (error) {
+      sendText(response, 500, describeError(error));
+    }
+  };
+
+  server.on('request', (request: IncomingMessage, response: ServerResponse) => {
     if (!isLoopbackHost(request.headers.host)) {
       sendText(response, 403, 'Forbidden host');
       return;
     }
-    const { pathname } = new URL(request.url ?? '/', `http://${HOST}`);
+    const url = request.url ?? '/';
+    const { pathname } = new URL(url, `http://${HOST}`);
     if (request.method === 'POST' && pathname === '/transform') {
       void transformJsx(request, response);
       return;
@@ -249,32 +282,19 @@ export const startDevServer = async ({
       void png(request, response);
       return;
     }
-    if (pathname === '/events') {
-      response.writeHead(200, {
-        'content-type': 'text/event-stream',
-        'cache-control': 'no-cache',
-        connection: 'keep-alive',
-      });
-      response.write(': connected\n\n');
-      listeners.add(response);
-      request.on('close', () => listeners.delete(response));
-      return;
-    }
     if (pathname === '/' || pathname === '/index.html') {
-      response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-      response.end(renderIndexHtml({ base: '/', title: config.title }));
+      void serveIndex(url, response);
       return;
     }
     if (pathname.startsWith('/assets/')) {
       void serveAsset(pathname, response);
       return;
     }
-    sendText(response, 404, 'Not found');
-  };
+    vite.middlewares(request, response, () =>
+      sendText(response, 404, 'Not found')
+    );
+  });
 
-  await bundler.watch();
-  await firstBuild;
-  const server: Server = createServer(serve);
   await new Promise<void>((resolve, reject) => {
     server.once('error', (error: NodeJS.ErrnoException) =>
       reject(
@@ -285,7 +305,7 @@ export const startDevServer = async ({
     );
     server.listen(port, HOST, () => resolve());
   }).catch(async (error: unknown) => {
-    await bundler.dispose();
+    await close();
     throw error;
   });
 
@@ -295,8 +315,7 @@ export const startDevServer = async ({
   return {
     url: `http://${HOST}:${boundPort}/`,
     close: async () => {
-      listeners.forEach((listener) => listener.end());
-      await bundler.dispose();
+      await close();
       await new Promise<void>((resolve) => server.close(() => resolve()));
     },
   };

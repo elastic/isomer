@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-09
+
+- **`isomer-studio dev` hot-updates instead of reloading**: The dev server runs on Vite. A change to the config or anything it imports re-renders the mounted Studio with the new config, keeping the route, the editor's text and view state, and a syntax error shows Vite's overlay until it is fixed. In Node, `dev` loads the config through a Vite module runner and re-runs only the changed modules and their importers before the browser updates, so PNGs follow edits and packages in `node_modules` stay single copies; `check` and `build` keep `tsx`, and `build` keeps esbuild. `pnpm studio:dev` runs the CLI from source against the slides pack, so Studio components also get React Fast Refresh.
+
 ## 2026-10-08
 
 - **The gallery mounts previews as they near the viewport**: The docs gallery renders the first row of examples immediately and the rest when they approach the viewport. `adoptStylesheet` parses a pack stylesheet once per document and adopts that sheet onto each preview's shadow root; the slides config holds the string and uses it.

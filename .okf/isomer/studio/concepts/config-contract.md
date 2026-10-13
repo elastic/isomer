@@ -19,6 +19,9 @@ sources:
   - id: stylesheet
     resource: https://github.com/elastic/isomer/blob/main/packages/isomer-studio/src/surfaces/adopt_stylesheet.ts
     title: adoptStylesheet
+  - id: dev
+    resource: https://github.com/elastic/isomer/blob/main/packages/isomer-studio/src/node/dev_bundle.ts
+    title: Dev server Vite config
 ---
 
 # Definition
@@ -31,7 +34,9 @@ The header and the page title are `Isomer Studio` unless `title` replaces them; 
 
 Surfaces come from `runtime.surfaces`: without a `snapshot` surface there are no Snapshot or PNG previews, no prerendered PNGs, and `check` skips those checks.
 
-In Node the config loads through `tsx`'s `tsImport` with the nearest `tsconfig.json`, also passed as `TSX_TSCONFIG_PATH` so CommonJS projects compile JSX the same way; A reload first evicts the CommonJS modules the previous load required, because `tsx` namespaces only the config itself. `--loader none` uses a plain `import()`, which Node caches, so `dev` rebuilds the browser bundle on edits but keeps the Node config it started with. Before loading, the Studio compares the React the config resolves with the one beside the `@elastic/isomer-runtime` it resolves, and throws naming both when they differ. `react-dom/server` comes from the config's React through `createRequire`. In the browser bundle, an esbuild plugin re-resolves `react`, `react-dom` and their subpaths from the config's directory, keeping each package's `browser` mapping.[^loader]
+For `check` and `build`, the config loads once in Node through `tsx`'s `tsImport` with the nearest `tsconfig.json`, also passed as `TSX_TSCONFIG_PATH` so CommonJS projects compile JSX the same way. `dev` loads it through a Vite module runner on the server-side environment instead: on a change that reaches the config, the `hotUpdate` hook invalidates the changed modules and their importers in the runner, re-imports the config, and only then lets the browser update. Packages in `node_modules` are externalized, so they load once and stay single copies. `--loader none` uses a plain `import()`, which Node caches, so `dev` hot-updates the browser but keeps the Node config it started with. Before loading, the Studio compares the React the config resolves with the one beside the `@elastic/isomer-runtime` it resolves, and throws naming both when they differ. `react-dom/server` comes from the config's React through `createRequire`. In the static build's bundle, an esbuild plugin re-resolves `react`, `react-dom` and their subpaths from the config's directory, keeping each package's `browser` mapping; `dev` gets the same with Vite's `resolve.dedupe` rooted at the config's directory.[^loader]
+
+In `dev`, the page loads a virtual entry that mounts the Studio and accepts hot updates to the config, re-rendering with the new config without remounting, so the route and view state survive. Studio components get React Fast Refresh when the CLI runs from source (`pnpm studio:dev`). `build.rolldownOptions.input` names the config and the browser host modules so Vite's dependency scanner finds Monaco's lazy imports before the first request.[^dev]
 
 Related: [static PNGs](/studio/concepts/static-png.md), [root and CLI](/studio/entry-points/root.md).
 
@@ -39,3 +44,4 @@ Related: [static PNGs](/studio/concepts/static-png.md), [root and CLI](/studio/e
 [^compose]: composeExample
 [^loader]: Config loader
 [^stylesheet]: adoptStylesheet
+[^dev]: Dev server Vite config

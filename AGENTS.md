@@ -12,7 +12,7 @@ The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, a
 
 `packages/isomer-evals` scores whether a model produces valid, well-chosen compositions from a pack's authoring context. It depends on the SDK's public API alone and runs with no credentials.
 
-`packages/isomer-studio` is the `isomer-studio` CLI a pack installs as a dev dependency: `dev`, `build` and `check` over a consumer's `isomer-studio.config.ts`. It is ESM only, ships its browser app prebuilt in `dist/app`, and keeps React at 18 until EUI allows 19. `pnpm test:browser` and `scripts/check_studio_consumer.js` drive it in Chromium.
+`packages/isomer-studio` is the `isomer-studio` CLI a pack installs as a dev dependency: `dev`, `build` and `check` over a consumer's `isomer-studio.config.ts`. It is ESM only, ships its browser app prebuilt in `dist/app`, and keeps React at 18 until EUI allows 19. `dev` runs on Vite and hot-updates a changed config in place; `build` stays on esbuild. `pnpm studio:dev` runs the CLI from source against the slides pack. `pnpm test:browser` and `scripts/check_studio_consumer.js` drive it in Chromium.
 
 `packages/isomer-agent-tools` turns any runtime into transport-neutral agent tools, resources, and a `compose` prompt. It declares the runtime structurally and depends on the SDK alone; hosts bring the transport, and it must never reach `@modelcontextprotocol/sdk`, which `scripts/check_module_graph.js` enforces.
 

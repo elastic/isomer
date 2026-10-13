@@ -29,10 +29,15 @@ const WORKERS: Readonly<Record<string, string>> = {
 export const assetUrl = (path: string): string =>
   new URL(path, document.baseURI).href;
 
+export interface MountedStudio {
+  /** Re-renders with a new config, keeping the route and every view's state. */
+  update: (config: StudioConfig, host: StudioHost) => void;
+}
+
 export const mountStudio = (
   config: StudioConfig,
-  { transformJsx, rasterizePng }: StudioHost
-): void => {
+  host: StudioHost
+): MountedStudio => {
   window.MonacoEnvironment = {
     getWorker: (_id, label) =>
       new Worker(assetUrl(`assets/${WORKERS[label] ?? 'editor.worker'}.js`), {
@@ -43,7 +48,14 @@ export const mountStudio = (
   if (!container) {
     throw new Error('The Studio page has no #root element.');
   }
-  createRoot(container).render(
-    <IsomerStudio {...config} {...{ transformJsx, rasterizePng }} />
-  );
+  const root = createRoot(container);
+  const update = (
+    next: StudioConfig,
+    { transformJsx, rasterizePng }: StudioHost
+  ) => {
+    document.title = next.title ?? 'Isomer Studio';
+    root.render(<IsomerStudio {...next} {...{ transformJsx, rasterizePng }} />);
+  };
+  update(config, host);
+  return { update };
 };

@@ -70,6 +70,23 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `@jridgewell/sourcemap-codec` | 1.6.0 | MIT | `node_modules/.pnpm/@jridgewell+sourcemap-codec@1.6.0/node_modules/@jridgewell/sourcemap-codec` |  |
 | `@jridgewell/trace-mapping` | 0.3.31 | MIT | `node_modules/.pnpm/@jridgewell+trace-mapping@0.3.31/node_modules/@jridgewell/trace-mapping` |  |
 | `@mapbox/hast-util-table-cell-style` | 0.2.1 | BSD-2-Clause | `node_modules/.pnpm/@mapbox+hast-util-table-cell-style@0.2.1/node_modules/@mapbox/hast-util-table-cell-style` |  |
+| `@oxc-project/types` | 0.149.0 | MIT | `node_modules/.pnpm/@oxc-project+types@0.149.0/node_modules/@oxc-project/types` |  |
+| `@rolldown/binding-android-arm-eabi` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-android-arm64` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-darwin-arm64` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-darwin-x64` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-freebsd-x64` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-linux-arm-gnueabihf` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-linux-arm64-gnu` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-linux-arm64-musl` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-linux-ppc64-gnu` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-linux-s390x-gnu` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-linux-x64-gnu` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-linux-x64-musl` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-openharmony-arm64` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-win32-arm64-msvc` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/binding-win32-x64-msvc` | 1.2.8 | MIT | `declared optional dependency` |  |
+| `@rolldown/pluginutils` | 1.0.1 | MIT | `node_modules/.pnpm/@rolldown+pluginutils@1.0.1/node_modules/@rolldown/pluginutils` |  |
 | `@sindresorhus/is` | 4.6.0 | MIT | `node_modules/.pnpm/@sindresorhus+is@4.6.0/node_modules/@sindresorhus/is` |  |
 | `@takumi-rs/core` | 2.14.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+core@2.14.0_csstype@3.2.3_react@18.3.1/node_modules/@takumi-rs/core` | `@takumi-rs/core-darwin-arm64`, `@takumi-rs/core-darwin-x64`, `@takumi-rs/core-linux-arm64-gnu`, `@takumi-rs/core-linux-arm64-musl`, `@takumi-rs/core-linux-x64-gnu`, `@takumi-rs/core-linux-x64-musl`, `@takumi-rs/core-win32-arm64-msvc`, `@takumi-rs/core-win32-x64-msvc` |
 | `@takumi-rs/core-darwin-arm64` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
@@ -103,6 +120,7 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `@types/unist` | 3.0.3 | MIT | `node_modules/.pnpm/@types+unist@3.0.3/node_modules/@types/unist` |  |
 | `@types/use-sync-external-store` | 0.0.3 | MIT | `node_modules/.pnpm/@types+use-sync-external-store@0.0.3/node_modules/@types/use-sync-external-store` |  |
 | `@ungap/structured-clone` | 1.4.0 | ISC | `node_modules/.pnpm/@ungap+structured-clone@1.4.0/node_modules/@ungap/structured-clone` |  |
+| `@vitejs/plugin-react` | 6.1.2 | MIT | `node_modules/.pnpm/@vitejs+plugin-react@6.1.2_vite@8.3.0_@types+node@22.20.2_esbuild@0.28.2_jiti@2.6.1_tsx@4.23.15_yaml@2.9.1_/node_modules/@vitejs/plugin-react` |  |
 | `acorn` | 8.18.0 | MIT | `node_modules/.pnpm/acorn@8.18.0/node_modules/acorn` |  |
 | `aria-hidden` | 1.2.6 | MIT | `node_modules/.pnpm/aria-hidden@1.2.6/node_modules/aria-hidden` |  |
 | `attr-accept` | 2.2.5 | MIT | `node_modules/.pnpm/attr-accept@2.2.5/node_modules/attr-accept` |  |
@@ -133,6 +151,7 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `debug` | 4.4.3 | MIT | `node_modules/.pnpm/debug@4.4.3/node_modules/debug` |  |
 | `decode-named-character-reference` | 1.3.0 | MIT | `node_modules/.pnpm/decode-named-character-reference@1.3.0/node_modules/decode-named-character-reference` |  |
 | `dequal` | 2.0.3 | MIT | `node_modules/.pnpm/dequal@2.0.3/node_modules/dequal` |  |
+| `detect-libc` | 2.1.2 | Apache-2.0 | `node_modules/.pnpm/detect-libc@2.1.2/node_modules/detect-libc` |  |
 | `detect-node-es` | 1.1.0 | MIT | `node_modules/.pnpm/detect-node-es@1.1.0/node_modules/detect-node-es` |  |
 | `devlop` | 1.1.0 | MIT | `node_modules/.pnpm/devlop@1.1.0/node_modules/devlop` |  |
 | `diff-match-patch` | 1.0.5 | Apache-2.0 | `node_modules/.pnpm/diff-match-patch@1.0.5/node_modules/diff-match-patch` |  |
@@ -146,6 +165,7 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `escape-string-regexp` | 5.0.0 | MIT | `node_modules/.pnpm/escape-string-regexp@5.0.0/node_modules/escape-string-regexp` |  |
 | `estree-util-is-identifier-name` | 3.0.0 | MIT | `node_modules/.pnpm/estree-util-is-identifier-name@3.0.0/node_modules/estree-util-is-identifier-name` |  |
 | `extend` | 3.0.2 | MIT | `node_modules/.pnpm/extend@3.0.2/node_modules/extend` |  |
+| `fdir` | 6.5.0 | MIT | `node_modules/.pnpm/fdir@6.5.0_picomatch@4.0.7/node_modules/fdir` |  |
 | `file-selector` | 0.4.0 | MIT | `node_modules/.pnpm/file-selector@0.4.0/node_modules/file-selector` |  |
 | `find-root` | 1.1.0 | MIT | `node_modules/.pnpm/find-root@1.1.0/node_modules/find-root` |  |
 | `focus-lock` | 1.3.6 | MIT | `node_modules/.pnpm/focus-lock@1.3.6/node_modules/focus-lock` |  |
@@ -189,6 +209,18 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `js-tokens` | 4.0.0 | MIT | `node_modules/.pnpm/js-tokens@4.0.0/node_modules/js-tokens` |  |
 | `jsesc` | 3.1.0 | MIT | `node_modules/.pnpm/jsesc@3.1.0/node_modules/jsesc` |  |
 | `json-parse-even-better-errors` | 2.3.1 | MIT | `node_modules/.pnpm/json-parse-even-better-errors@2.3.1/node_modules/json-parse-even-better-errors` |  |
+| `lightningcss` | 1.33.0 | MPL-2.0 | `node_modules/.pnpm/lightningcss@1.33.0/node_modules/lightningcss` | `lightningcss-android-arm64`, `lightningcss-darwin-arm64`, `lightningcss-darwin-x64`, `lightningcss-freebsd-x64`, `lightningcss-linux-arm-gnueabihf`, `lightningcss-linux-arm64-gnu`, `lightningcss-linux-arm64-musl`, `lightningcss-linux-x64-gnu`, `lightningcss-linux-x64-musl`, `lightningcss-win32-arm64-msvc`, `lightningcss-win32-x64-msvc` |
+| `lightningcss-android-arm64` | 1.33.0 | MPL-2.0 | `declared optional dependency` |  |
+| `lightningcss-darwin-arm64` | 1.33.0 | MPL-2.0 | `declared optional dependency` |  |
+| `lightningcss-darwin-x64` | 1.33.0 | MPL-2.0 | `declared optional dependency` |  |
+| `lightningcss-freebsd-x64` | 1.33.0 | MPL-2.0 | `declared optional dependency` |  |
+| `lightningcss-linux-arm-gnueabihf` | 1.33.0 | MPL-2.0 | `declared optional dependency` |  |
+| `lightningcss-linux-arm64-gnu` | 1.33.0 | MPL-2.0 | `declared optional dependency` |  |
+| `lightningcss-linux-arm64-musl` | 1.33.0 | MPL-2.0 | `declared optional dependency` |  |
+| `lightningcss-linux-x64-gnu` | 1.33.0 | MPL-2.0 | `declared optional dependency` |  |
+| `lightningcss-linux-x64-musl` | 1.33.0 | MPL-2.0 | `declared optional dependency` |  |
+| `lightningcss-win32-arm64-msvc` | 1.33.0 | MPL-2.0 | `declared optional dependency` |  |
+| `lightningcss-win32-x64-msvc` | 1.33.0 | MPL-2.0 | `declared optional dependency` |  |
 | `lines-and-columns` | 1.2.4 | MIT | `node_modules/.pnpm/lines-and-columns@1.2.4/node_modules/lines-and-columns` |  |
 | `lodash` | 4.18.1 | MIT | `node_modules/.pnpm/lodash@4.18.1/node_modules/lodash` |  |
 | `longest-streak` | 3.1.0 | MIT | `node_modules/.pnpm/longest-streak@3.1.0/node_modules/longest-streak` |  |
@@ -246,6 +278,7 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `moment` | 2.31.0 | MIT | `node_modules/.pnpm/moment@2.31.0/node_modules/moment` |  |
 | `monaco-editor` | 0.44.0 | MIT | `node_modules/.pnpm/monaco-editor@0.44.0/node_modules/monaco-editor` |  |
 | `ms` | 2.1.3 | MIT | `node_modules/.pnpm/ms@2.1.3/node_modules/ms` |  |
+| `nanoid` | 3.3.19 | MIT | `node_modules/.pnpm/nanoid@3.3.19/node_modules/nanoid` |  |
 | `node-emoji` | 1.11.0 | MIT | `node_modules/.pnpm/node-emoji@1.11.0/node_modules/node-emoji` |  |
 | `node-emoji` | 2.2.0 | MIT | `node_modules/.pnpm/node-emoji@2.2.0/node_modules/node-emoji` |  |
 | `numeral` | 2.0.6 | MIT | `node_modules/.pnpm/numeral@2.0.6/node_modules/numeral` |  |
@@ -258,6 +291,8 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `path-parse` | 1.0.7 | MIT | `node_modules/.pnpm/path-parse@1.0.7/node_modules/path-parse` |  |
 | `path-type` | 4.0.0 | MIT | `node_modules/.pnpm/path-type@4.0.0/node_modules/path-type` |  |
 | `picocolors` | 1.1.1 | ISC | `node_modules/.pnpm/picocolors@1.1.1/node_modules/picocolors` |  |
+| `picomatch` | 4.0.7 | MIT | `node_modules/.pnpm/picomatch@4.0.7/node_modules/picomatch` |  |
+| `postcss` | 8.5.28 | MIT | `node_modules/.pnpm/postcss@8.5.28/node_modules/postcss` |  |
 | `prettier` | 3.9.6 | MIT | `node_modules/.pnpm/prettier@3.9.6/node_modules/prettier` |  |
 | `prismjs` | 1.27.0 | MIT | `node_modules/.pnpm/prismjs@1.27.0/node_modules/prismjs` |  |
 | `prop-types` | 15.8.1 | MIT | `node_modules/.pnpm/prop-types@15.8.1/node_modules/prop-types` |  |
@@ -298,9 +333,11 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `requires-port` | 1.0.0 | MIT | `node_modules/.pnpm/requires-port@1.0.0/node_modules/requires-port` |  |
 | `resolve` | 1.22.13 | MIT | `node_modules/.pnpm/resolve@1.22.13/node_modules/resolve` |  |
 | `resolve-from` | 4.0.0 | MIT | `node_modules/.pnpm/resolve-from@4.0.0/node_modules/resolve-from` |  |
+| `rolldown` | 1.2.8 | MIT | `node_modules/.pnpm/rolldown@1.2.8/node_modules/rolldown` | `@rolldown/binding-android-arm-eabi`, `@rolldown/binding-android-arm64`, `@rolldown/binding-darwin-arm64`, `@rolldown/binding-darwin-x64`, `@rolldown/binding-freebsd-x64`, `@rolldown/binding-linux-arm-gnueabihf`, `@rolldown/binding-linux-arm64-gnu`, `@rolldown/binding-linux-arm64-musl`, `@rolldown/binding-linux-ppc64-gnu`, `@rolldown/binding-linux-s390x-gnu`, `@rolldown/binding-linux-x64-gnu`, `@rolldown/binding-linux-x64-musl`, `@rolldown/binding-openharmony-arm64`, `@rolldown/binding-win32-arm64-msvc`, `@rolldown/binding-win32-x64-msvc` |
 | `skin-tone` | 2.0.0 | MIT | `node_modules/.pnpm/skin-tone@2.0.0/node_modules/skin-tone` |  |
 | `slack-blocks-to-jsx` | 1.1.2 | MIT | `node_modules/.pnpm/slack-blocks-to-jsx@1.1.2_@types+react@18.3.31_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/slack-blocks-to-jsx` |  |
 | `source-map` | 0.5.7 | BSD-3-Clause | `node_modules/.pnpm/source-map@0.5.7/node_modules/source-map` |  |
+| `source-map-js` | 1.2.1 | BSD-3-Clause | `node_modules/.pnpm/source-map-js@1.2.1/node_modules/source-map-js` |  |
 | `space-separated-tokens` | 1.1.5 | MIT | `node_modules/.pnpm/space-separated-tokens@1.1.5/node_modules/space-separated-tokens` |  |
 | `space-separated-tokens` | 2.0.2 | MIT | `node_modules/.pnpm/space-separated-tokens@2.0.2/node_modules/space-separated-tokens` |  |
 | `state-toggle` | 1.0.3 | MIT | `node_modules/.pnpm/state-toggle@1.0.3/node_modules/state-toggle` |  |
@@ -314,6 +351,7 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `tabbable` | 5.3.3 | MIT | `node_modules/.pnpm/tabbable@5.3.3/node_modules/tabbable` |  |
 | `takumi-pdf` | 0.15.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/takumi-pdf@0.15.0_react@18.3.1/node_modules/takumi-pdf` |  |
 | `tiny-invariant` | 1.3.3 | MIT | `node_modules/.pnpm/tiny-invariant@1.3.3/node_modules/tiny-invariant` |  |
+| `tinyglobby` | 0.2.17 | MIT | `node_modules/.pnpm/tinyglobby@0.2.17/node_modules/tinyglobby` |  |
 | `trim-lines` | 3.0.1 | MIT | `node_modules/.pnpm/trim-lines@3.0.1/node_modules/trim-lines` |  |
 | `trim-trailing-lines` | 1.1.4 | MIT | `node_modules/.pnpm/trim-trailing-lines@1.1.4/node_modules/trim-trailing-lines` |  |
 | `trough` | 1.0.5 | MIT | `node_modules/.pnpm/trough@1.0.5/node_modules/trough` |  |
@@ -352,6 +390,7 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `vfile-location` | 3.2.0 | MIT | `node_modules/.pnpm/vfile-location@3.2.0/node_modules/vfile-location` |  |
 | `vfile-message` | 2.0.4 | MIT | `node_modules/.pnpm/vfile-message@2.0.4/node_modules/vfile-message` |  |
 | `vfile-message` | 4.0.3 | MIT | `node_modules/.pnpm/vfile-message@4.0.3/node_modules/vfile-message` |  |
+| `vite` | 8.3.0 | MIT | `node_modules/.pnpm/vite@8.3.0_@types+node@22.20.2_esbuild@0.28.2_jiti@2.6.1_tsx@4.23.15_yaml@2.9.1/node_modules/vite` | `fsevents` |
 | `web-namespaces` | 1.1.4 | MIT | `node_modules/.pnpm/web-namespaces@1.1.4/node_modules/web-namespaces` |  |
 | `xtend` | 4.0.2 | MIT | `node_modules/.pnpm/xtend@4.0.2/node_modules/xtend` |  |
 | `yaml` | 1.10.3 | ISC | `node_modules/.pnpm/yaml@1.10.3/node_modules/yaml` |  |

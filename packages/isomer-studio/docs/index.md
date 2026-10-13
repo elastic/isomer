@@ -17,7 +17,7 @@ It ships as a command-line tool, not a React library. EUI, Emotion and Monaco ar
 ```sh
 npm install --save-dev @elastic/isomer-studio
 
-npx isomer-studio dev                                 # a local server with live reload
+npx isomer-studio dev                                 # a local server with hot updates
 npx isomer-studio build --out dist/studio --base /studio/  # a static site
 npx isomer-studio check --report studio-report.json   # a headless CI gate
 ```

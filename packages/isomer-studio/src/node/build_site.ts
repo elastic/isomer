@@ -128,7 +128,6 @@ export const buildSite = async ({
   await build(
     appBuildOptions({
       configPath,
-      mode: 'build',
       assetsDir: join(out, 'assets'),
     })
   );

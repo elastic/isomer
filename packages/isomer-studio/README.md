@@ -28,7 +28,7 @@ export default defineStudioConfig({ runtime: createIsomerRuntime({ packs: [myPac
 ```
 
 ```sh
-npx isomer-studio dev                                     # a local server with live reload
+npx isomer-studio dev                                     # a local server with hot updates
 npx isomer-studio build --out dist/studio --base /studio/ # a static site
 npx isomer-studio check --format junit --report report.xml # a headless CI gate
 ```

@@ -51,7 +51,9 @@ const evaluateAsModule: CompiledEvaluator = async (code, scope) => {
     new Blob([module], { type: 'text/javascript' })
   );
   try {
-    const { default: run } = (await import(/* webpackIgnore: true */ url)) as {
+    const { default: run } = (await import(
+      /* @vite-ignore */ /* webpackIgnore: true */ url
+    )) as {
       default?: unknown;
     };
     if (!isRunner(run)) {

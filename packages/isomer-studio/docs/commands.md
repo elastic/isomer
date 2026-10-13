@@ -32,7 +32,7 @@ Serves the Studio on `127.0.0.1` and prints its URL.
 | `--port <number>` | `5179` | `0` picks a free port. |
 | `--open` | Off | Opens the Studio in the default browser. |
 
-The server rebuilds the app when the config or anything it imports changes, then reloads the config in Node and every open tab, so previews and PNGs never show a stale pack. The editor compiles JSX on the server, and the PNG preview rasterizes the composition being edited.
+The server runs on Vite. When the config or anything it imports changes, the Studio re-renders in place with the new config: the page does not reload, so the route, the editor's text and every panel's state survive. The server re-runs the same modules in Node before the page updates, so PNGs never show a stale pack. A syntax error shows Vite's error overlay, and the Studio picks up again once the file is fixed. The editor compiles JSX on the server, and the PNG preview rasterizes the composition being edited.
 
 ## `build`
 

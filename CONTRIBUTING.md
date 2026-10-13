@@ -21,6 +21,7 @@ Useful individual scripts:
 
 - `pnpm test` — unit tests
 - `pnpm lint` / `pnpm lint:fix` — ESLint (including Prettier) and markdownlint
+- `pnpm studio:dev` — the Studio for the slides pack, run from the Studio's TypeScript source so edits to the Studio and to the pack both hot-update without a reload. Extra flags pass through, for example `pnpm studio:dev --port 5180`. Run `pnpm build` once first; edits to the SDK or runtime need it again.
 - `pnpm test:browser` — the Studio's Playwright test of `dev` and a static build
 - `pnpm check:studio-consumer` — installs the packed Studio with npm outside the workspace, then runs `check`, `build`, and the browser test against a consumer's own config
 - `pnpm build` — the ESM build, specifier rewriting, and the CommonJS pass (see below)

@@ -78,6 +78,36 @@ const ESBUILD_PLATFORM_PACKAGE_NAMES = [
   'win32-ia32',
   'win32-x64',
 ].map((platform) => `@esbuild/${platform}`);
+const ROLLDOWN_PLATFORM_PACKAGE_NAMES = [
+  'android-arm-eabi',
+  'android-arm64',
+  'darwin-arm64',
+  'darwin-x64',
+  'freebsd-x64',
+  'linux-arm-gnueabihf',
+  'linux-arm64-gnu',
+  'linux-arm64-musl',
+  'linux-ppc64-gnu',
+  'linux-s390x-gnu',
+  'linux-x64-gnu',
+  'linux-x64-musl',
+  'openharmony-arm64',
+  'win32-arm64-msvc',
+  'win32-x64-msvc',
+].map((platform) => `@rolldown/binding-${platform}`);
+const LIGHTNINGCSS_PLATFORM_PACKAGE_NAMES = [
+  'android-arm64',
+  'darwin-arm64',
+  'darwin-x64',
+  'freebsd-x64',
+  'linux-arm-gnueabihf',
+  'linux-arm64-gnu',
+  'linux-arm64-musl',
+  'linux-x64-gnu',
+  'linux-x64-musl',
+  'win32-arm64-msvc',
+  'win32-x64-msvc',
+].map((platform) => `lightningcss-${platform}`);
 /** Packages whose tarballs ship no license file, with the text their pinned version publishes. */
 const CURATED_LICENSES = [
   {
@@ -94,6 +124,16 @@ const CURATED_LICENSES = [
     names: ESBUILD_PLATFORM_PACKAGE_NAMES,
     version: '0.28.2',
     text: curatedLicense('esbuild-0.28.2-MIT.txt'),
+  },
+  {
+    names: ROLLDOWN_PLATFORM_PACKAGE_NAMES,
+    version: '1.2.8',
+    text: curatedLicense('rolldown-1.2.8-MIT.txt'),
+  },
+  {
+    names: LIGHTNINGCSS_PLATFORM_PACKAGE_NAMES,
+    version: '1.33.0',
+    text: curatedLicense('lightningcss-1.33.0-MPL-2.0.txt'),
   },
   {
     names: ['inline-style-parser'],

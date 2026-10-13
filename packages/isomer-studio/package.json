@@ -52,6 +52,7 @@
   },
   "scripts": {
     "build:assets": "node build/build_app_assets.js",
+    "dev": "node --import tsx src/cli.ts dev --config ../isomer-primitives-slides/isomer-studio.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -61,13 +62,15 @@
     "@elastic/isomer-image-takumi": "workspace:*",
     "@emotion/css": "11.13.5",
     "@emotion/react": "11.14.0",
+    "@vitejs/plugin-react": "6.1.2",
     "esbuild": "0.28.2",
     "esbuild-wasm": "0.28.2",
     "moment": "2.31.0",
     "monaco-editor": "0.44.0",
     "prettier": "3.9.6",
     "slack-blocks-to-jsx": "1.1.2",
-    "tsx": "4.23.15"
+    "tsx": "4.23.15",
+    "vite": "8.3.0"
   },
   "peerDependencies": {
     "@elastic/isomer-runtime": "workspace:^",

@@ -57,11 +57,13 @@ The Studio offers the surfaces `runtime.surfaces` has. A runtime without a frame
 
 The config runs in two places: in Node, for `check` and for the dev server's PNGs, and in the browser, bundled into the app.
 
-**In Node**, the Studio imports the config with `tsx`, which compiles TypeScript and JSX as it loads and leaves resolution to Node. The config, its pack, React and the runtime all resolve from the config's own directory, so they come from the pack's `node_modules`. `tsx` applies the `tsconfig.json` nearest the config, so the pack's `jsx` setting holds in both ES module and CommonJS projects.
+**In Node**, `check` and `build` import the config with `tsx`, which compiles TypeScript and JSX as it loads and leaves resolution to Node. The config, its pack, React and the runtime all resolve from the config's own directory, so they come from the pack's `node_modules`. `tsx` applies the `tsconfig.json` nearest the config, so the pack's `jsx` setting holds in both ES module and CommonJS projects.
 
-`--loader none` skips `tsx` and imports the config with a plain `import()`. Use it for a JavaScript config, or to bring another loader through `NODE_OPTIONS=--import ...`. Node caches that import, so under `dev` the browser picks up edits but PNGs keep the config and pack as they were at startup; restart `dev` to refresh them.
+`dev` loads the config through Vite's server-side module graph instead, with the same nearest-`tsconfig.json` JSX settings. Packages in `node_modules` load once through Node, and an edit re-runs only the files that changed and the modules that import them.
 
-**In the browser**, the Studio bundles the config with esbuild. `react`, `react-dom` and their subpaths resolve as if imported from the config, so the Studio's own components, Emotion and the pack share one React, and each package's browser build is the one bundled.
+`--loader none` skips both and imports the config with a plain `import()`. Use it for a JavaScript config, or to bring another loader through `NODE_OPTIONS=--import ...`. Node caches that import, so under `dev` the browser picks up edits but PNGs keep the config and pack as they were at startup; restart `dev` to refresh them.
+
+**In the browser**, `build` bundles the config with esbuild and `dev` serves it through Vite. `react`, `react-dom` and their subpaths resolve as if imported from the config, so the Studio's own components, Emotion and the pack share one React, and each package's browser build is the one loaded.
 
 ## One React
 

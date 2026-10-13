@@ -295,7 +295,7 @@ test.describe('dev server reload', () => {
     'needs the repository fixture pack'
   );
 
-  // Under the package's `node_modules`, so the config resolves React and the runtime, and loads as CommonJS.
+  // Inside the package, so the config resolves React and the runtime, but outside `node_modules`, which the dev server does not watch.
   let dir: string;
   let dev: { url: string; child: ChildProcess };
 
@@ -306,9 +306,13 @@ test.describe('dev server reload', () => {
     );
 
   test.beforeAll(async () => {
-    const cache = join(packageDir, 'node_modules/.cache');
-    mkdirSync(cache, { recursive: true });
-    dir = mkdtempSync(join(cache, 'isomer-studio-reload-'));
+    const artifacts = join(packageDir, '.artifacts');
+    mkdirSync(artifacts, { recursive: true });
+    dir = mkdtempSync(join(artifacts, 'isomer-studio-reload-'));
+    writeFileSync(
+      join(dir, 'package.json'),
+      JSON.stringify({ type: 'commonjs' })
+    );
     writeOptions('Before reload', false);
     writeFileSync(
       join(dir, 'isomer-studio.config.ts'),
@@ -344,7 +348,7 @@ test.describe('dev server reload', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  test('reloads the page and the server-side config when a pack module changes', async ({
+  test('hot-updates the page and the server-side config when a pack module changes', async ({
     page,
   }) => {
     const composition = {
@@ -358,11 +362,17 @@ test.describe('dev server reload', () => {
     await page.goto(dev.url);
     await expect(page).toHaveTitle('Before reload');
     expect((await postPng()).status()).toBe(404);
+    await page.evaluate(() => {
+      document.documentElement.dataset.mounted = 'once';
+    });
 
     writeOptions('After reload', true);
 
     await expect(page).toHaveTitle('After reload', { timeout: 60_000 });
     await expect(page.getByText('After reload').first()).toBeVisible();
+    expect(
+      await page.evaluate(() => document.documentElement.dataset.mounted)
+    ).toBe('once');
     const png = await postPng();
     expect(png.status(), await png.text()).toBe(200);
     expect(png.headers()['content-type']).toBe('image/png');
