@@ -23,7 +23,7 @@ import { example, outwardEdgesExample, pairExample } from './examples';
 import { graphCaptionWidth, graphLoad, graphStep, graphWordStep } from './fit';
 import { markdown as markdownContent, slack, text } from './index';
 import { graphLayout } from './layout';
-import { schema, type SlideGraphNode } from './schema';
+import { graphEdges, schema, type SlideGraphNode } from './schema';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -44,7 +44,7 @@ const messages = (value: unknown): string[] =>
 const SUPPORTED = /supports one left-to-right main row of 2–4 nodes/;
 
 describe('slideGraph', () => {
-  it('resolves the fixed template, including edge direction', () => {
+  it('resolves the fixed template, including arrow direction', () => {
     const { main, above, below } = graphLayout(example);
     expect(main.map(({ id }) => id)).toEqual([
       'catalog',
@@ -60,57 +60,66 @@ describe('slideGraph', () => {
     });
   });
 
-  it('rejects unknown ids and names the supported shape', () => {
-    const [message] = messages({
-      ...example,
-      edges: [...example.edges.slice(0, 4), ['order', 'refund']],
-    });
-    expect(message).toMatch(/unknown node "refund"/);
-    expect(message).toMatch(SUPPORTED);
-  });
-
-  it.each([
-    ['skips a main-row node', [['catalog', 'order']]],
-    ['joins the two off-row nodes', [['pricing', 'stock']]],
-    ['attaches the node above twice', [['pricing', 'basket']]],
-  ] as const)('rejects an edge that %s', (_name, extra) => {
-    const found = messages({
-      ...example,
-      edges: [...example.edges.slice(0, 4), ...extra],
-    });
-    expect(found.length).toBeGreaterThan(0);
-    expect(found.every((message) => SUPPORTED.test(message))).toBe(true);
-  });
-
-  it('rejects a main-row edge that runs right to left', () => {
-    expect(
-      messages({
-        ...pairExample,
-        edges: [['review', 'incident']],
-      })
-    ).toEqual([
-      expect.stringMatching(/does not fit the layout/),
-      expect.stringMatching(/missing main-row edge \[incident, review\]/),
+  it('derives each arrow: the main row left to right, then each placed node', () => {
+    expect(graphEdges(example)).toEqual([
+      ['catalog', 'basket'],
+      ['basket', 'order'],
+      ['order', 'delivery'],
+      ['pricing', 'order'],
+      ['stock', 'order'],
+    ]);
+    expect(graphEdges(outwardEdgesExample)).toEqual([
+      ['commit', 'build'],
+      ['build', 'release'],
+      ['policy', 'commit'],
+      ['release', 'changelog'],
     ]);
   });
 
-  it('rejects a missing main-row edge and an unattached off-row node', () => {
-    expect(
+  it('rejects an `of` that names no main-row node, and names the supported shape', () => {
+    const placed = (of: string) =>
       messages({
         ...example,
-        edges: example.edges.filter(
-          ([from, to]) => !(from === 'basket' && to === 'order')
+        nodes: example.nodes.map((node) =>
+          node.id === 'stock' ? { ...node, of } : node
         ),
-      })
-    ).toEqual([
-      expect.stringMatching(/missing main-row edge \[basket, order\]/),
+      });
+    const [unknown] = placed('refund');
+    expect(unknown).toMatch(
+      /"stock" names "refund" in `of`, not a main-row node/
+    );
+    expect(unknown).toMatch(SUPPORTED);
+    expect(placed('pricing')).toEqual([
+      expect.stringMatching(/"stock" names "pricing" in `of`/),
     ]);
+  });
+
+  it('needs `of` on a placed node and refuses it, and `direction`, on the main row', () => {
     expect(
       messages({
         ...example,
-        edges: example.edges.filter(([from]) => from !== 'stock'),
+        nodes: example.nodes.map(({ of: _of, ...node }) => node),
       })
-    ).toEqual([expect.stringMatching(/"stock" needs exactly one edge/)]);
+    ).toEqual([
+      expect.stringMatching(/the above node "pricing" needs `of`/),
+      expect.stringMatching(/the below node "stock" needs `of`/),
+    ]);
+    expect(
+      schema
+        .safeParse({
+          ...pairExample,
+          nodes: pairExample.nodes.map((node, index) =>
+            index === 0 ? { ...node, of: 'review', direction: 'out' } : node
+          ),
+        })
+        .error?.issues.map(({ message, path }) => [path, message])
+    ).toEqual([
+      [['nodes', 0, 'of'], expect.stringMatching(/"incident" takes no `of`/)],
+      [
+        ['nodes', 0, 'direction'],
+        expect.stringMatching(/"incident" takes no `direction`/),
+      ],
+    ]);
   });
 
   it('takes one emphasized node and rejects a second', () => {
@@ -129,47 +138,7 @@ describe('slideGraph', () => {
     ).toEqual(['nodes', 1, 'emphasis']);
   });
 
-  it('keeps ids that hold the arrow apart from the edges they would spell', () => {
-    const joined = {
-      type: 'slideGraph',
-      nodes: [
-        { id: 'a→b', term: 'A', body: 'x' },
-        { id: 'c', term: 'C', body: 'y' },
-      ],
-      edges: [['a→b', 'c']],
-    };
-    expect(messages(joined)).toEqual([]);
-    expect(
-      messages({
-        type: 'slideGraph',
-        nodes: [
-          { id: 'a', term: 'A', body: 'x' },
-          { id: 'b→c', term: 'B', body: 'y' },
-          { id: 'a→b', term: 'C', body: 'z', placement: 'above' },
-          { id: 'c', term: 'D', body: 'w', placement: 'below' },
-        ],
-        edges: [
-          ['a→b', 'c'],
-          ['a→b', 'a'],
-          ['c', 'b→c'],
-        ],
-      })
-    ).toEqual([
-      expect.stringMatching(/edge \[a→b, c\] does not fit the layout/),
-      expect.stringMatching(/missing main-row edge \[a, b→c\]/),
-    ]);
-    expect(
-      messages({
-        ...joined,
-        edges: [
-          ['a→b', 'c'],
-          ['a→b', 'c'],
-        ],
-      })
-    ).toEqual([expect.stringMatching(/edge \[a→b, c\] is repeated/)]);
-  });
-
-  it('holds two to six nodes, two to four in the main row, and one to five edges', () => {
+  it('holds two to six nodes, two to four in the main row', () => {
     const [first] = example.nodes;
     expect(messages({ ...pairExample, nodes: [first] })).toContainEqual(
       expect.stringMatching(/Too small/)
@@ -189,13 +158,6 @@ describe('slideGraph', () => {
         nodes: [...example.nodes, { ...first, id: 'extra' }],
       })
     ).toEqual([expect.stringMatching(/Too big/)]);
-    expect(messages({ ...pairExample, edges: [] })).toContainEqual(
-      expect.stringMatching(/Too small/)
-    );
-    expect(example.edges).toHaveLength(5);
-    expect(
-      messages({ ...example, edges: [...example.edges, ['catalog', 'basket']] })
-    ).toEqual([expect.stringMatching(/Too big/)]);
   });
 
   it('pins `example` at the most nodes the layout takes', () => {
@@ -207,7 +169,7 @@ describe('slideGraph', () => {
     expect(messages(example)).toEqual([]);
   });
 
-  it('skips the layout rules once nodes or edges are over their cap', () => {
+  it('skips the layout rules once nodes are over their cap', () => {
     const nodes = Array.from({ length: 10_000 }, (_, index) => ({
       id: `n${index}`,
       term: 'T',
@@ -216,9 +178,6 @@ describe('slideGraph', () => {
     expect(messages({ ...example, nodes })).toEqual([
       expect.stringMatching(/Too big/),
     ]);
-    expect(
-      messages({ ...example, edges: Array(10_000).fill(['x', 'y']) })
-    ).toEqual([expect.stringMatching(/Too big/)]);
   });
 
   it('rejects too many main-row or placed nodes, and duplicate ids', () => {
@@ -267,7 +226,7 @@ describe('slideGraph', () => {
     expect(outward).toContain('aria-label="Release leads to Changelog"');
   });
 
-  it('renders a glossary, then the edges', () => {
+  it('renders a glossary, then the arrows', () => {
     expect(text(example)).toMatchInlineSnapshot(`
       "A basket becomes an order once pricing and stock agree.
 
@@ -306,7 +265,7 @@ describe('slideGraph', () => {
     expect(JSON.stringify(relations)).toContain(`${term} → Review`);
   });
 
-  it('renders Slack as a native list, then the edges', () => {
+  it('renders Slack as a native list, then the arrows', () => {
     expect(slack(pairExample)).toMatchInlineSnapshot(`
       [
         {
@@ -403,7 +362,6 @@ describe('slideGraph', () => {
       { id: 'a', term: 'A', body: shortWords(load - 1) },
       { id: 'b', term: 'B', body: 'y' },
     ],
-    edges: [['a', 'b']],
   });
 
   it('loads node rows times the longest node, plus the caption', () => {
@@ -455,12 +413,7 @@ describe('slideGraph', () => {
         { id: 'a', term: 'A', body: 'x' },
         { id: 'b', term: 'B', body: 'x' },
         { id: 'c', term: 'C', body: 'x' },
-        { id: 'd', term: 'D', body: 'x', placement: 'above' },
-      ],
-      edges: [
-        ['a', 'b'],
-        ['b', 'c'],
-        ['d', 'b'],
+        { id: 'd', term: 'D', body: 'x', placement: 'above', of: 'b' },
       ],
     };
     const widest = (step: SlideSize) =>
@@ -475,7 +428,6 @@ describe('slideGraph', () => {
         {
           ...node,
           nodes: node.nodes.slice(0, 3),
-          edges: node.edges.slice(0, 2),
         },
         width
       )

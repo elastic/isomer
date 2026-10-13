@@ -329,12 +329,8 @@ describe('a graph caption is set in the width its step is measured in', () => {
         term: 'Pricing',
         body: 'What each costs.',
         placement: 'above',
+        of: 'b',
       },
-    ],
-    edges: [
-      ['a', 'b'],
-      ['b', 'c'],
-      ['d', 'b'],
     ],
   };
 

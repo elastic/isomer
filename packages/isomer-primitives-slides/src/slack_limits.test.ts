@@ -300,7 +300,6 @@ const cases: LimitCase[] = [
         { id: 'a', term: fill, body: 'One' },
         { id: 'b', term: 'Two', body: 'Two' },
       ],
-      edges: [['a', 'b']],
     }),
   },
   {

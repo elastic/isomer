@@ -40,13 +40,10 @@ const row = (body: string, caption?: string): SlideGraphNode => ({
       id: 'd',
       term: 'D',
       body: 'x',
-      ...(caption === undefined ? {} : { placement: 'above' as const }),
+      ...(caption === undefined
+        ? {}
+        : { placement: 'above' as const, of: 'b' }),
     },
-  ],
-  edges: [
-    ['a', 'b'],
-    ['b', 'c'],
-    caption === undefined ? ['c', 'd'] : ['d', 'b'],
   ],
 });
 

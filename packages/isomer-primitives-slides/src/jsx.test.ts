@@ -657,7 +657,7 @@ describe('slideJsx', () => {
       bodyOf(
         createElement(
           SlideGraph,
-          { edges: [['cart', 'ledger']] },
+          null,
           createElement(
             SlideGraph.Node,
             { id: 'cart', term: 'Cart' },
@@ -667,15 +667,26 @@ describe('slideJsx', () => {
             SlideGraph.Node,
             { id: 'ledger', term: 'Ledger' },
             'Money.'
+          ),
+          createElement(
+            SlideGraph.Node,
+            { id: 'stock', term: 'Stock', placement: 'below', of: 'ledger' },
+            'On hand.'
           )
         )
       )
     ).toEqual({
       type: 'slideGraph',
-      edges: [['cart', 'ledger']],
       nodes: [
         { id: 'cart', term: 'Cart', body: 'Items.' },
         { id: 'ledger', term: 'Ledger', body: 'Money.' },
+        {
+          id: 'stock',
+          term: 'Stock',
+          body: 'On hand.',
+          placement: 'below',
+          of: 'ledger',
+        },
       ],
     });
 

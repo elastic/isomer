@@ -24,7 +24,12 @@ import { catalog } from './catalog';
 import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
-import { schema, type SlideGraphNode, type SlideGraphTerm } from './schema';
+import {
+  graphEdges,
+  schema,
+  type SlideGraphNode,
+  type SlideGraphTerm,
+} from './schema';
 
 export type {
   SlideGraphNode,
@@ -38,9 +43,9 @@ const termJoiner = slideDistillery.tokens.glyph.termJoiner.value;
 const cue = ({ emphasis }: SlideGraphTerm): string =>
   toneCueText(emphasis ? 'primary' : undefined);
 
-const relations = ({ nodes, edges }: SlideGraphNode): string => {
-  const terms = new Map(nodes.map(({ id, term }) => [id, term]));
-  return edges
+const relations = (node: SlideGraphNode): string => {
+  const terms = new Map(node.nodes.map(({ id, term }) => [id, term]));
+  return graphEdges(node)
     .map(([from, to]) =>
       oneLine(
         `${terms.get(from) ?? from} ${arrow.value} ${terms.get(to) ?? to}`

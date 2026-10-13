@@ -23,7 +23,7 @@ export interface GraphLayout {
 }
 
 const branch = (
-  { nodes, edges }: SlideGraphNode,
+  { nodes }: SlideGraphNode,
   main: SlideGraphTerm[],
   side: 'above' | 'below'
 ): GraphBranch | undefined => {
@@ -31,15 +31,8 @@ const branch = (
   if (term === undefined) {
     return undefined;
   }
-  const { id } = term;
-  const edge = edges.find(([from, to]) => from === id || to === id);
-  if (edge === undefined) {
-    return undefined;
-  }
-  const [from, to] = edge;
-  const inward = from === id;
-  const at = main.findIndex((node) => node.id === (inward ? to : from));
-  return at === -1 ? undefined : { term, at, inward };
+  const at = main.findIndex(({ id }) => id === term.of);
+  return at === -1 ? undefined : { term, at, inward: term.direction !== 'out' };
 };
 
 export const graphLayout = (node: SlideGraphNode): GraphLayout => {

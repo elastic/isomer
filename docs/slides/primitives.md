@@ -415,7 +415,7 @@ A number's sentence is its text, and the figures are attributes. A bar's label i
 </SlideQuadrant>
 ```
 
-A diagram's parts are children of their kind. Two kinds share one children list, and each element goes to its own field: a pipeline's `SlidePipeline.Step` and `SlidePipeline.Span`, a sequence's `SlideSequence.Actor` and `SlideSequence.Message`, and a lanes diagram's `SlideLanes.Lane` and `SlideLanes.Note`. Ids, edges, indexes, and short lists of chips or steps stay attributes:
+A diagram's parts are children of their kind. Two kinds share one children list, and each element goes to its own field: a pipeline's `SlidePipeline.Step` and `SlidePipeline.Span`, a sequence's `SlideSequence.Actor` and `SlideSequence.Message`, and a lanes diagram's `SlideLanes.Lane` and `SlideLanes.Note`. Ids, indexes, and short lists of chips or steps stay attributes. A graph draws no arrow it is not given a place for, so its arrows follow from its nodes: the main row joins left to right, and a node `placement="above"` or `"below"` names the main-row node it joins in `of`, its arrow pointing into the row unless `direction="out"`:
 
 ```tsx
 <SlideFanout source="Order">
@@ -423,9 +423,12 @@ A diagram's parts are children of their kind. Two kinds share one children list,
   <SlideFanout.Target name="Email" tone="accent">Tells the customer.</SlideFanout.Target>
 </SlideFanout>
 
-<SlideGraph edges={[['cart', 'ledger']]}>
+<SlideGraph>
   <SlideGraph.Node id="cart" term="Cart">What the customer picked.</SlideGraph.Node>
   <SlideGraph.Node id="ledger" term="Ledger">Where the money is held.</SlideGraph.Node>
+  <SlideGraph.Node id="pricing" term="Pricing" placement="above" of="ledger">
+    Offers, fixed at checkout.
+  </SlideGraph.Node>
 </SlideGraph>
 
 <SlideLanes join="Checkout">
