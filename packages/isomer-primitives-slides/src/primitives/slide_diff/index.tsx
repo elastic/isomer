@@ -12,32 +12,39 @@ import { slackCodePanel } from '../../render';
 import { oneLine } from '../../render/one_line';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
+import { withGutter } from '../line_gutter';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
-import { schema, type SlideDiffLine, type SlideDiffNode } from './schema';
+import { diffGutter, diffLines, schema, type SlideDiffNode } from './schema';
 
 export type { SlideDiffLine, SlideDiffNode } from './schema';
 
 const { marker } = slideDistillery.tokens.diff;
 
-const unified = (lines: readonly SlideDiffLine[]): string =>
-  lines
-    .map(({ text, op }) => `${marker[op ?? 'context'].value}${text}`)
+/** The lines in unified-diff form, each after its line number when `numbered` and the diff has them. */
+const unified = (node: SlideDiffNode, numbered: boolean): string => {
+  const gutter = numbered ? diffGutter(node) : undefined;
+  return diffLines(node)
+    .map(({ text, op }, index) =>
+      withGutter(gutter?.[index], `${marker[op ?? 'context'].value}${text}`)
+    )
     .join('\n');
+};
 
-export const text = ({ file, lines }: SlideDiffNode): string =>
-  [...(file ? [oneLine(file)] : []), unified(lines)].join('\n');
+export const text = (node: SlideDiffNode): string =>
+  [...(node.file ? [oneLine(node.file)] : []), unified(node, true)].join('\n');
 
-export const markdown = ({ file, lines }: SlideDiffNode) => [
-  ...(file ? [md.paragraph(md.strong(file))] : []),
-  md.codeBlock(unified(lines), 'diff'),
+// The fence stays a unified diff, so its marker column comes first.
+export const markdown = (node: SlideDiffNode) => [
+  ...(node.file ? [md.paragraph(md.strong(node.file))] : []),
+  md.codeBlock(unified(node, false), 'diff'),
 ];
 
-export const slack = ({ file, lines }: SlideDiffNode): SlackBlock[] => [
-  slackCodePanel(unified(lines), file),
+export const slack = (node: SlideDiffNode): SlackBlock[] => [
+  slackCodePanel(unified(node, true), node.file),
 ];
 
 export const slideDiffPrimitive = definePrimitive({

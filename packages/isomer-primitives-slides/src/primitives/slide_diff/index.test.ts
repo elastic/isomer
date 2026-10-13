@@ -27,12 +27,17 @@ import { frameContentWidth } from '../../theme/components/frame';
 import { slideDistillery } from '../../theme/distillery';
 import { scalePx } from '../../theme/scale';
 import { authoredTextMaxLength } from '../authored_text';
-import { paneWidths } from '../slide_split/pane_layout';
-import type { SlideSplitNode } from '../slide_split/types';
+import { paneWidths } from '../slide_split_layout/pane_layout';
+import type { SlideSplitLayoutNode } from '../slide_split_layout/types';
 
 import { configExample, denseExample, example, examples } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
-import { schema, type SlideDiffLine, type SlideDiffNode } from './schema';
+import {
+  diffLines,
+  schema,
+  type SlideDiffLine,
+  type SlideDiffNode,
+} from './schema';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -47,11 +52,22 @@ const compose = (node: PrimitiveNode): Composition => ({
   body: [{ type: 'slideFrame', body: [node] } as PrimitiveNode],
 });
 
-const diffOf = (lines: SlideDiffLine[], file?: string): SlideDiffNode => ({
-  type: 'slideDiff',
-  ...(file ? { file } : {}),
-  lines,
-});
+const rangesOf = (lines: SlideDiffLine[], op: SlideDiffLine['op']) =>
+  lines
+    .flatMap((line, index) => (line.op === op ? [index + 1] : []))
+    .join(', ');
+
+const diffOf = (lines: SlideDiffLine[], file?: string): SlideDiffNode => {
+  const remove = rangesOf(lines, 'remove');
+  const add = rangesOf(lines, 'add');
+  return {
+    type: 'slideDiff',
+    ...(file ? { file } : {}),
+    text: lines.map(({ text }) => text).join('\n'),
+    ...(remove ? { remove } : {}),
+    ...(add ? { add } : {}),
+  };
+};
 
 const errorPaths = (node: unknown) =>
   runtime
@@ -71,18 +87,59 @@ describe('slideDiff schema', () => {
     expect(examples.every((node) => schema.safeParse(node).success)).toBe(true);
   });
 
-  it.each(['\n', '\r', ' ', ' '].map((mark) => [JSON.stringify(mark), mark]))(
-    'rejects an entry split by %s',
-    (_name, mark) => {
-      expect(errorPaths(diffOf([{ text: `one${mark}two` }]))).toEqual([
-        'body[0].body[0].lines: one line per entry: split multi-line source into separate lines',
-      ]);
-    }
-  );
+  it.each(
+    ['\r', '\u2028', '\u2029'].map((mark) => [JSON.stringify(mark), mark])
+  )('rejects lines split by %s', (_name, mark) => {
+    expect(errorPaths(diffOf([{ text: `one${mark}two` }]))).toEqual([
+      'body[0].body[0].text: separate lines with a line feed',
+    ]);
+  });
+
+  it('reads `add` and `remove` as ranges of body lines', () => {
+    const body = { type: 'slideDiff', text: 'a\nb\nc\nd' } as const;
+    expect(diffLines({ ...body, remove: '1', add: '2-3' })).toEqual([
+      { text: 'a', op: 'remove' },
+      { text: 'b', op: 'add' },
+      { text: 'c', op: 'add' },
+      { text: 'd' },
+    ]);
+    expect(errorPaths({ ...body, add: '4-5' })).toEqual([
+      'body[0].body[0].add: each changed line must be a line of the body',
+    ]);
+    expect(errorPaths({ ...body, remove: '0' })).toEqual([
+      'body[0].body[0].remove: each changed line must be a line of the body',
+    ]);
+    expect(errorPaths({ ...body, remove: '1-2', add: '2' })).toEqual([
+      'body[0].body[0].add: a line cannot be both added and removed',
+    ]);
+    expect(errorPaths({ ...body, add: '3-2' })).toEqual([
+      'body[0].body[0].add: a range runs from its lower number to its higher one',
+    ]);
+  });
+
+  it('numbers the file after the change, leaving removed lines unnumbered', () => {
+    expect(
+      text({
+        type: 'slideDiff',
+        text: 'a\nb\nc',
+        remove: '2',
+        lineNumbers: { start: 9 },
+      }).split('\n')
+    ).toEqual([' 9   a', '    -b', '10   c']);
+  });
+
+  it('takes the gutter out of the columns a line holds', () => {
+    const max = diffLineMaxLength(false, frameContentWidth, true);
+    const node = diffOf([{ text: 'x'.repeat(max - 3) }]);
+    expect(errorPaths({ ...node, lineNumbers: true })).toEqual([]);
+    expect(errorPaths({ ...node, lineNumbers: { start: 10 } })).toEqual([
+      `body[0].body[0].text: a line is wider than its panel: at most ${max} columns, less its line-number gutter, a wide glyph counting as two`,
+    ]);
+  });
 
   it('rejects a tab, whose width depends on the renderer', () => {
     expect(errorPaths(diffOf([{ text: '\tindented' }]))).toEqual([
-      'body[0].body[0].lines: indent with spaces, not tabs',
+      'body[0].body[0].text: indent with spaces, not tabs',
     ]);
   });
 
@@ -90,7 +147,7 @@ describe('slideDiff schema', () => {
     const regular = diffLineMaxLength(false);
     expect(errorPaths(diffOf([{ text: 'x'.repeat(regular) }]))).toEqual([]);
     expect(errorPaths(diffOf([{ text: 'x'.repeat(regular + 1) }]))).toEqual([
-      `body[0].body[0].lines: a line is wider than its panel: at most ${regular} columns, a wide glyph counting as two`,
+      `body[0].body[0].text: a line is wider than its panel: at most ${regular} columns, a wide glyph counting as two`,
     ]);
     const dense = diffLineMaxLength(true);
     expect(
@@ -101,33 +158,31 @@ describe('slideDiff schema', () => {
         ])
       )
     ).toEqual([
-      `body[0].body[0].lines: a line is wider than its panel: at most ${dense} columns once there are more than ${codeDenseAfter} lines, a wide glyph counting as two`,
+      `body[0].body[0].text: a line is wider than its panel: at most ${dense} columns once there are more than ${codeDenseAfter} lines, a wide glyph counting as two`,
     ]);
   });
 
   it('pins the dense example at the most lines it holds', () => {
-    expect(denseExample.lines).toHaveLength(diffMaxLines);
+    expect(diffLines(denseExample)).toHaveLength(diffMaxLines);
   });
 
   it('measures a line at the input-size guard and refuses one past it unmeasured', () => {
     expect(
       errorPaths(diffOf([{ text: 'x'.repeat(authoredTextMaxLength) }]))
-    ).toEqual([expect.stringMatching(/lines: a line is wider than its panel/)]);
+    ).toEqual([expect.stringMatching(/text: a line is wider than its panel/)]);
     expect(
       errorPaths(diffOf([{ text: `\t${'x'.repeat(authoredTextMaxLength)}` }]))
     ).toEqual([
-      `body[0].body[0].lines[0].text: must be at most ${authoredTextMaxLength} characters`,
+      `body[0].body[0].text: must be at most ${authoredTextMaxLength} characters`,
     ]);
   });
 
   it('reads no line past its count', () => {
     expect(
       errorPaths(
-        diffOf(Array<SlideDiffLine>(diffMaxLines + 1).fill({ text: '\tx\n' }))
+        diffOf(Array<SlideDiffLine>(diffMaxLines + 1).fill({ text: '\tx\r' }))
       )
-    ).toEqual([
-      `body[0].body[0].lines: must have at most ${diffMaxLines} items`,
-    ]);
+    ).toEqual([`body[0].body[0].text: at most ${diffMaxLines} lines`]);
   });
 
   it('counts a wide glyph as two columns', () => {
@@ -141,12 +196,12 @@ describe('slideDiff output', () => {
   it('prefixes each line in text with the marker the slide draws', () => {
     expect(text(example).split('\n')).toEqual([
       'refund.ts · before and after',
-      ' export const refund = async (order: Order) => {',
-      '-  await fraud.check(order);',
-      '   await ledger.write(order.id, -order.total);',
-      '+  await fraud.check(order);',
-      '   return notify(order.customer);',
-      ' };',
+      '12   export const refund = async (order: Order) => {',
+      '    -  await fraud.check(order);',
+      '13     await ledger.write(order.id, -order.total);',
+      '14  +  await fraud.check(order);',
+      '15     return notify(order.customer);',
+      '16   };',
     ]);
   });
 
@@ -246,7 +301,7 @@ describe('slideDiff in the DOM', () => {
     (_index, node) => {
       const html = panelOf(node);
       const count = (op: SlideDiffLine['op']) =>
-        node.lines.filter((line) => line.op === op).length;
+        diffLines(node).filter((line) => line.op === op).length;
       for (const op of ['add', 'remove'] as const) {
         expect(
           html.split(`role="img" aria-label="${markerLabel[op].value}"`)
@@ -267,8 +322,8 @@ describe('slideDiff in the DOM', () => {
 
 describe('slideDiff sizing', () => {
   const [pane] = paneWidths(frameContentWidth, 'even', 'gap');
-  const inPane = (node: SlideDiffNode): SlideSplitNode => ({
-    type: 'slideSplit',
+  const inPane = (node: SlideDiffNode): SlideSplitLayoutNode => ({
+    type: 'slideSplitLayout',
     panes: [
       { items: [node] },
       { items: [{ type: 'slideBulletList', items: ['One'] }] },

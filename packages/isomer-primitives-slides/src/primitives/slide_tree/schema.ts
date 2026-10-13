@@ -7,6 +7,7 @@
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
+import { fromChildren } from '@elastic/isomer-sdk/author';
 
 import { lineText, wrappedText } from '../authored_text';
 
@@ -28,13 +29,17 @@ export const schema = z
   .object({
     type: z.literal('slideTree'),
     root: lineText().describe('The folder being shown, e.g. `checkout/`.'),
-    entries: z
-      .array(entrySchema)
-      .min(1)
-      .max(8)
-      .describe(
-        'Contents of `root`, in display order. 1 to 8. The branch connectors are drawn for you; do not type them.'
-      ),
+    entries: fromChildren(
+      'item',
+      z
+        .array(entrySchema)
+        .min(1)
+        .max(8)
+        .describe(
+          'Contents of `root`, in display order. 1 to 8. The branch connectors are drawn for you; do not type them.'
+        ),
+      { text: 'body' }
+    ),
   })
   .strict();
 

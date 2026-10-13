@@ -11,16 +11,11 @@ import { describe, expect, it } from 'vitest';
 
 import { slideDeckPrimitives } from './registry';
 
-const {
-  Composition,
-  SlideCode,
-  SlideTerritory,
-  SlideTerritoryGroup,
-  toComposition,
-} = buildJsxShim(slideDeckPrimitives);
+const { Composition, SlideCode, SlideTerritoryGroup, toComposition } =
+  buildJsxShim(slideDeckPrimitives);
 
 describe('slide authoring', () => {
-  it('maps SlideTerritory children onto items', () => {
+  it('maps Territory children onto items', () => {
     const spec = toComposition(
       createElement(
         Composition,
@@ -29,7 +24,7 @@ describe('slide authoring', () => {
           SlideTerritoryGroup,
           null,
           createElement(
-            SlideTerritory,
+            SlideTerritoryGroup.Territory,
             { title: 'Host', tone: 'accent' },
             'Owns routing.'
           )
@@ -46,13 +41,17 @@ describe('slide authoring', () => {
   });
 
   it('passes object props through untouched', () => {
-    const panels = [
-      { file: 'a.ts', lines: ['const a = 1;'], highlightLines: [1] },
-    ];
+    const lineNumbers = { highlight: '1' };
     const spec = toComposition(
-      createElement(Composition, null, createElement(SlideCode, { panels }))
+      createElement(
+        Composition,
+        null,
+        createElement(SlideCode, { text: 'const a = 1;', lineNumbers })
+      )
     );
 
-    expect(spec.body).toEqual([{ type: 'slideCode', panels }]);
+    expect(spec.body).toEqual([
+      { type: 'slideCode', text: 'const a = 1;', lineNumbers },
+    ]);
   });
 });

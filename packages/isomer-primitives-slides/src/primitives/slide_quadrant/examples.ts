@@ -29,7 +29,7 @@ export const menuExample: SlideQuadrantNode = {
   quadrants: [
     { label: 'Plowhorses', items: ['drip', 'bagel', 'muffin', 'tea'] },
     { label: 'Stars', items: ['latte', 'cold brew'] },
-    { label: 'Dogs', items: [] },
+    { label: 'Dogs' },
     { label: 'Puzzles', items: ['matcha', 'affogato', 'cortado'] },
   ],
 };

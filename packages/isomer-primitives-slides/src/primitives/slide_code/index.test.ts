@@ -27,21 +27,19 @@ import {
   codeMaxLines,
 } from '../../theme/components/code';
 import { frameContentWidth } from '../../theme/components/frame';
-import { slideDistillery } from '../../theme/distillery';
 import { scalePx } from '../../theme/scale';
 import { authoredTextMaxLength } from '../authored_text';
-import { paneWidths } from '../slide_split/pane_layout';
-import type { SlideSplitNode } from '../slide_split/types';
+import { paneWidths } from '../slide_split_layout/pane_layout';
+import type { SlideSplitLayoutNode } from '../slide_split_layout/types';
 
-import {
-  denseExample,
-  denseTraceExample,
-  example,
-  examples,
-  traceExample,
-} from './examples';
+import { denseExample, example, examples } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
-import { schema, type SlideCodeNode } from './schema';
+import {
+  panelHighlights,
+  schema,
+  type SlideCodeNode,
+  type SlideCodePanel,
+} from './schema';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -60,7 +58,8 @@ const compose = (node: PrimitiveNode): Composition => ({
 
 const panel = (lines: string[], extra: object = {}): SlideCodeNode => ({
   type: 'slideCode',
-  panels: [{ lines, ...extra }],
+  text: lines.join('\n'),
+  ...extra,
 });
 
 const errorPaths = (node: unknown) =>
@@ -69,55 +68,62 @@ const errorPaths = (node: unknown) =>
     .errors.map(({ path, message }) => `${path}: ${message}`);
 
 describe('slideCode schema', () => {
-  it('holds one or two panels of one to sixteen lines', () => {
-    expect(schema.safeParse({ type: 'slideCode', panels: [] }).success).toBe(
+  it('holds one to sixteen lines', () => {
+    expect(schema.safeParse({ type: 'slideCode', text: '' }).success).toBe(
       false
     );
-    const [first] = traceExample.panels;
-    expect(
-      schema.safeParse({ ...traceExample, panels: [first, first, first] })
-        .success
-    ).toBe(false);
     expect(schema.safeParse(panel(Array<string>(17).fill('x'))).success).toBe(
       false
     );
     expect(examples.every((node) => schema.safeParse(node).success)).toBe(true);
-    // The fit test measures these, so they hold the most lines a panel takes.
-    for (const { panels } of [denseExample, denseTraceExample]) {
-      for (const { lines } of panels) {
-        expect(lines).toHaveLength(codeMaxLines);
-      }
-    }
+    // The fit test measures it, so it holds the most lines a panel takes.
+    expect(denseExample.text.split('\n')).toHaveLength(codeMaxLines);
   });
 
-  it('rejects a highlight past the end of its panel, at that panel', () => {
+  it('reads a highlight as the number the gutter shows', () => {
+    const numbered = (lineNumbers: SlideCodePanel['lineNumbers']) =>
+      errorPaths(panel(['one', 'two'], { lineNumbers }));
+    expect(numbered({ start: 10, highlight: '10-11' })).toEqual([]);
+    expect(numbered({ start: 10, highlight: ' 10 , 11 ' })).toEqual([]);
+    expect(numbered({ start: 10, highlight: '2' })).toEqual([
+      'body[0].body[0].lineNumbers.highlight: each highlighted line must be a number the gutter shows',
+    ]);
+    expect(numbered({ start: 10, highlight: '10-12' })).toHaveLength(1);
+    expect(numbered({ highlight: '2-1' })).toEqual([
+      'body[0].body[0].lineNumbers.highlight: a range runs from its lower number to its higher one',
+    ]);
+    expect(numbered({ highlight: '1;2' })).toEqual([
+      'body[0].body[0].lineNumbers.highlight: line numbers and ranges separated by commas, e.g. `2, 5-7`',
+    ]);
+  });
+
+  it('takes the gutter out of the columns a line holds', () => {
+    const max = codeLineMaxLength(1, false);
+    const lines = ['x'.repeat(max - 4)];
+    expect(errorPaths(panel(lines))).toEqual([]);
+    expect(errorPaths(panel(lines, { lineNumbers: true }))).toEqual([]);
     expect(
-      errorPaths({
-        ...traceExample,
-        panels: [
-          traceExample.panels[0],
-          { lines: ['one'], highlightLines: [2] },
-        ],
-      })
-    ).toContainEqual(
-      'body[0].body[0].panels[1].highlightLines: highlightLines must exist in lines'
-    );
+      errorPaths(panel(lines, { lineNumbers: { start: 100 } }))
+    ).toHaveLength(1);
+  });
+
+  it('prints line numbers on text, Markdown, and Slack', () => {
+    const node = panel(['a', '', 'b'], { lineNumbers: { start: 9 } });
+    expect(text(node)).toBe(' 9  a\n10\n11  b');
   });
 
   it.each(
-    ['\n', '\r', '\u2028', '\u2029'].map((mark) => [JSON.stringify(mark), mark])
-  )('rejects an entry split by %s', (_name, mark) => {
+    ['\r', '\u2028', '\u2029'].map((mark) => [JSON.stringify(mark), mark])
+  )('rejects a line split by %s', (_name, mark) => {
     expect(errorPaths(panel([`one${mark}two`]))).toContainEqual(
-      expect.stringMatching(
-        /^body\[0\]\.body\[0\]\.panels\[0\]\.lines: one line per entry/
-      )
+      'body[0].body[0].text: separate lines with a line feed'
     );
   });
 });
 
 describe('slideCode line width', () => {
   const widthError: unknown = expect.stringMatching(
-    /^body\[0\]\.body\[0\]\.panels: a line is wider than its panel/
+    /^body\[0\]\.body\[0\]\.text: a line is wider than its panel/
   );
 
   it('takes a line that fills one panel and rejects one that would be clipped', () => {
@@ -126,40 +132,10 @@ describe('slideCode line width', () => {
     expect(errorPaths(panel(['x'.repeat(one + 1)]))).toContainEqual(widthError);
   });
 
-  it('holds less in each of two panels, and more once they are dense', () => {
-    const two = codeLineMaxLength(2, false);
-    const pair = (line: string, count = 1): SlideCodeNode => ({
-      type: 'slideCode',
-      panels: [
-        { lines: Array.from({ length: count }, () => line) },
-        { lines: ['y'] },
-      ],
-    });
-    expect(errorPaths(pair('x'.repeat(two)))).toEqual([]);
-    expect(errorPaths(pair('x'.repeat(two + 1)))).toContainEqual(widthError);
-    expect(
-      errorPaths(
-        pair('x'.repeat(codeLineMaxLength(2, true)), codeDenseAfter + 1)
-      )
-    ).toEqual([]);
-  });
-
   it('reports the limit it applied', () => {
     const one = codeLineMaxLength(1, false);
     expect(errorPaths(panel(['x'.repeat(one + 1)]))).toContainEqual(
-      `body[0].body[0].panels: a line is wider than its panel: at most ${one} columns in one panel, a wide glyph counting as two`
-    );
-    const dense = codeLineMaxLength(2, true);
-    expect(
-      errorPaths({
-        type: 'slideCode',
-        panels: [
-          { lines: ['x'.repeat(dense + 1)] },
-          { lines: Array<string>(codeDenseAfter + 1).fill('y') },
-        ],
-      })
-    ).toContainEqual(
-      `body[0].body[0].panels: a line is wider than its panel: at most ${dense} columns in each of two panels once a panel passes ${codeDenseAfter} lines, a wide glyph counting as two`
+      `body[0].body[0].text: a line is wider than its panel: at most ${one} columns in one panel, a wide glyph counting as two`
     );
   });
 
@@ -178,24 +154,20 @@ describe('slideCode line width', () => {
     expect(
       errorPaths(panel([`\t${'x'.repeat(authoredTextMaxLength)}`]))
     ).toEqual([
-      `body[0].body[0].panels[0].lines[0]: must be at most ${authoredTextMaxLength} characters`,
+      `body[0].body[0].text: must be at most ${authoredTextMaxLength} characters`,
     ]);
   });
 
-  it('reads no line of a panel or group past its count', () => {
+  it('reads no line past its count', () => {
     const tabs = Array<string>(codeMaxLines + 1).fill('\tx');
-    expect(errorPaths(panel(tabs, { highlightLines: [99] }))).toEqual([
-      expect.stringMatching(/^body\[0\]\.body\[0\]\.panels\[0\]\.lines: /),
-    ]);
-    const wide = { lines: ['x'.repeat(codeLineMaxLength(1, false) + 1)] };
     expect(
-      errorPaths({ type: 'slideCode', panels: [wide, wide, wide] })
-    ).toEqual([expect.stringMatching(/^body\[0\]\.body\[0\]\.panels: /)]);
+      errorPaths(panel(tabs, { lineNumbers: { highlight: '99' } }))
+    ).toEqual([`body[0].body[0].text: at most ${codeMaxLines} lines`]);
   });
 
   it('rejects a tab, whose width depends on the renderer', () => {
     expect(errorPaths(panel(['\tindented']))).toEqual([
-      'body[0].body[0].panels[0].lines: indent with spaces, not tabs',
+      'body[0].body[0].text: indent with spaces, not tabs',
     ]);
   });
 });
@@ -203,8 +175,8 @@ describe('slideCode line width', () => {
 describe('slideCode in a split pane', () => {
   const [pane] = paneWidths(frameContentWidth, 'even', 'gap');
   const line = 'x'.repeat(codeLineMaxLength(1, false, pane) + 1);
-  const inPane = (node: SlideCodeNode): SlideSplitNode => ({
-    type: 'slideSplit',
+  const inPane = (node: SlideCodeNode): SlideSplitLayoutNode => ({
+    type: 'slideSplitLayout',
     panes: [
       { items: [node] },
       { items: [{ type: 'slideBulletList', items: ['One'] }] },
@@ -230,18 +202,6 @@ describe('slideCode in a split pane', () => {
         expect(codeLineMaxLength(panels, dense, 40)).toBe(0);
       }
     }
-  });
-
-  it('measures each of two panels across the layout width', () => {
-    const two = codeLineMaxLength(2, false, frameContentWidth);
-    const pair = (width: string) => ({
-      type: 'slideCode' as const,
-      panels: [{ lines: [width] }, { lines: ['y'] }],
-    });
-    expect(two).toBe(codeLineMaxLength(2, false));
-    expect(codeLineMaxLength(2, false, pane)).toBeLessThan(two);
-    expect(density(pair('x'.repeat(two)))).toBe('regular');
-    expect(density(pair('x'.repeat(two + 1)))).toBe('dense');
   });
 
   it('draws that line inside its panel', async () => {
@@ -273,63 +233,26 @@ describe('slideCode output', () => {
   it('renders text with the caption above the lines', () => {
     expect(text(example)).toMatchInlineSnapshot(`
       "refund.ts
-      export const refund = async (order: Order) => {
-        await ledger.write(order.id, -order.total);
-        await fraud.check(order);
-        return notify(order.customer);
-      };"
+      1  export const refund = async (order: Order) => {
+      2    await ledger.write(order.id, -order.total);
+      3    await fraud.check(order);
+      4    return notify(order.customer);
+      5  };"
     `);
   });
 
-  it('joins two panels with an arrow', () => {
-    expect(text(traceExample)).toMatchInlineSnapshot(`
-      "config.yaml
-      checkout:
-        timeout: 30s
-        retries: 3
-
-      →
-
-      client.ts
-      const client = createClient({
-        timeout: config.checkout.timeout,
-        retries: config.checkout.retries,
-      });"
-    `);
-    expect(markdown(traceExample)).toMatchInlineSnapshot(`
-      "**config.yaml**
-
-      \`\`\`yaml
-      checkout:
-        timeout: 30s
-        retries: 3
-      \`\`\`
-
-      →
-
-      **client.ts**
-
-      \`\`\`ts
-      const client = createClient({
-        timeout: config.checkout.timeout,
-        retries: config.checkout.retries,
-      });
-      \`\`\`"
-    `);
-  });
-
-  it('renders a Slack code block per panel', () => {
+  it('renders a Slack code block', () => {
     expect(slack(example)).toMatchInlineSnapshot(`
       [
         {
           "text": {
             "text": "refund.ts
       \`\`\`
-      export const refund = async (order: Order) => {
-        await ledger.write(order.id, -order.total);
-        await fraud.check(order);
-        return notify(order.customer);
-      };
+      1  export const refund = async (order: Order) => {
+      2    await ledger.write(order.id, -order.total);
+      3    await fraud.check(order);
+      4    return notify(order.customer);
+      5  };
       \`\`\`",
             "type": "mrkdwn",
           },
@@ -351,13 +274,6 @@ describe('slideCode output', () => {
     );
     expect(md).toMatch(/^````md\n/);
     expect(md.trim().endsWith('````')).toBe(true);
-  });
-
-  it('names the trace arrow between two panels for assistive technology', () => {
-    const { label } = slideDistillery.tokens.connector;
-    expect(runtime.surfaces.html.render(compose(traceExample)).html).toContain(
-      `role="img" aria-label="${label.value}"`
-    );
   });
 
   it('keeps a blank line empty in the markup and one line tall on the slide', async () => {
@@ -405,6 +321,7 @@ describe('slideCode in the DOM', () => {
     ].map(([, inner = '']) => inner);
   const textOf = (html: string) =>
     html
+      .replace(/<span aria-hidden[^>]*>[^<]*<\/span>/g, '')
       .replace(/<[^>]+>/g, '')
       .replace(
         /&(?:amp|lt|gt|quot|#x27);/g,
@@ -414,9 +331,7 @@ describe('slideCode in the DOM', () => {
   it.each(examples.map((node, index) => [index, node] as const))(
     'example %i keeps each line, blank ones too, in its text',
     (_index, node) => {
-      expect(panelsOf(node).map(textOf)).toEqual(
-        node.panels.map(({ lines }) => lines.join('\n'))
-      );
+      expect(panelsOf(node).map(textOf)).toEqual([node.text]);
     }
   );
 
@@ -425,9 +340,7 @@ describe('slideCode in the DOM', () => {
     (_index, node) => {
       expect(
         panelsOf(node).map((html) => html.match(/<mark[\s>]/g)?.length ?? 0)
-      ).toEqual(
-        node.panels.map(({ highlightLines = [] }) => highlightLines.length)
-      );
+      ).toEqual([panelHighlights(node).size]);
     }
   );
 });

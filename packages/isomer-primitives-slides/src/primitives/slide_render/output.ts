@@ -59,15 +59,23 @@ export const renderLabel = ({
     .filter(Boolean)
     .join(` ${separator.value} `);
 
-/** The caption, then what is rendered and where: every surface's line above a render. */
+/** The caption, or else what is rendered and where: every surface's line above a render. */
 export const headline = (node: {
   caption?: string | undefined;
   slide?: string | undefined;
   surface: SlideRenderSurface;
+}): string => (node.caption ? oneLine(node.caption) : renderLabel(node));
+
+/** The {@link headline} a surface prints; a placeholder keeps its reference there, since no panel names it. */
+export const printedHeadline = (node: {
+  body?: unknown;
+  caption?: string | undefined;
+  slide?: string | undefined;
+  surface: SlideRenderSurface;
 }): string =>
-  [node.caption && oneLine(node.caption), renderLabel(node)]
-    .filter(Boolean)
-    .join(` ${separator.value} `);
+  node.body || !node.caption
+    ? headline(node)
+    : [oneLine(node.caption), renderLabel(node)].join(` ${separator.value} `);
 
 /** Every `text` and `alt_text` string in `value`, in document order. */
 const textsIn = (value: unknown): string[] => {

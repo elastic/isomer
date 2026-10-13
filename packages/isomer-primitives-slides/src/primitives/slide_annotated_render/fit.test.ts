@@ -18,7 +18,7 @@ import { headingRoom } from '../slide_heading/fit';
 import type { SlideHeadingNode } from '../slide_heading/schema';
 
 import { example, placeholderExample } from './examples';
-import { legendHeight, legendStep } from './fit';
+import { legendHeight, legendOffset, legendStep, panelOffset } from './fit';
 import type { SlideAnnotatedRenderPin } from './schema';
 import type { SlideAnnotatedRenderNode } from './types';
 
@@ -86,6 +86,65 @@ describe('legendHeight', () => {
     expect(legendHeight(dense, 's', openBody.width)).toBeLessThanOrEqual(
       belowTallest.layout.height
     );
+  });
+});
+
+describe('legendOffset', () => {
+  const offset = (
+    pins: readonly SlideAnnotatedRenderPin[],
+    { layout }: typeof alone
+  ) => legendOffset(example.render, pins, legendStep(pins, layout), layout);
+
+  const drawn = async (
+    node: SlideAnnotatedRenderNode,
+    { place }: typeof alone
+  ) => {
+    const [grid] = nodeBox(
+      await measured(place(node)),
+      'slideAnnotatedRender'
+    ).children;
+    if (grid === undefined) {
+      throw new Error('no grid in the measured layout');
+    }
+    return grid;
+  };
+
+  it('meets the panel top when the room allows', async () => {
+    const top = panelOffset(example.render, alone.layout);
+    expect(top).toBeGreaterThan(0);
+    expect(offset(twoLine, alone)).toBe(top);
+    const [figure, list] = (await drawn(example, alone)).children;
+    expect(list?.y).toBe(figure?.children[1]?.y);
+  });
+
+  it('rises only as far as a nearly full room needs', async () => {
+    const { layout } = belowHeading;
+    const room =
+      layout.height -
+      legendHeight(dense, legendStep(dense, layout), layout.width);
+    expect(room).toBeGreaterThan(0);
+    expect(room).toBeLessThan(panelOffset(example.render, layout));
+    expect(offset(dense, belowHeading)).toBe(room);
+    const grid = await drawn({ ...example, pins: dense }, belowHeading);
+    const list = grid.children[1];
+    expect(Math.abs((list?.y ?? NaN) - grid.y - room)).toBeLessThan(1);
+  });
+
+  it('is zero when the legend overfills the room', () => {
+    const pins = [...twoLine, ...twoLine];
+    const { layout } = belowTallest;
+    expect(
+      legendHeight(pins, legendStep(pins, layout), layout.width)
+    ).toBeGreaterThan(layout.height);
+    expect(offset(pins, belowTallest)).toBe(0);
+  });
+
+  it('is zero when the render is hidden', async () => {
+    const render = { ...example.render, surfaces: ['text' as const] };
+    expect(offset(twoLine, alone)).toBeGreaterThan(0);
+    const grid = await drawn({ ...example, render }, alone);
+    expect(grid.children).toHaveLength(1);
+    expect(grid.children[0]?.y).toBe(grid.y);
   });
 });
 

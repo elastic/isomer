@@ -31,8 +31,8 @@ import { marks as marksTheme } from '../../theme/components/marks';
 import { type SlideSize, slideSizes } from '../../theme/variants';
 import { authoredTextMaxLength } from '../authored_text';
 import { renderedStep } from '../size.fixtures';
-import { paneWidths } from '../slide_split/pane_layout';
-import type { SlideSplitNode } from '../slide_split/types';
+import { paneWidths } from '../slide_split_layout/pane_layout';
+import type { SlideSplitLayoutNode } from '../slide_split_layout/types';
 
 import { COPY_BUTTON_ATTRIBUTE, SLIDE_COPY } from './copy';
 import { example, examples, highlightExample, longExample } from './examples';
@@ -130,8 +130,8 @@ describe('slideCommand schema', () => {
 
 describe('slideCommand sizing', () => {
   const [pane] = paneWidths(frameContentWidth, 'even', 'gap');
-  const inPane = (node: SlideCommandNode): SlideSplitNode => ({
-    type: 'slideSplit',
+  const inPane = (node: SlideCommandNode): SlideSplitLayoutNode => ({
+    type: 'slideSplitLayout',
     panes: [
       { items: [node] },
       { items: [{ type: 'slideBulletList', items: ['One'] }] },

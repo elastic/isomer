@@ -25,9 +25,14 @@ export const diff = {
 /** Lines that fit under a heading with a caption; past `codeDenseAfter` they take `denseText`. */
 export const diffMaxLines = 14;
 
-/** Characters a line holds across `width`, a full-width slide by default, before its panel clips it. */
+/** Characters a line holds across `width`, a full-width slide by default, before its panel clips it; `numbered` lines are inset from the panel's edge, before their line numbers. */
 export const diffLineMaxLength = (
   dense: boolean,
-  width = frameContentWidth
+  width = frameContentWidth,
+  numbered = false
 ): number =>
-  codePanelColumns(width, scalePx(diff.gutter) + scalePx(code.paddingX), dense);
+  codePanelColumns(
+    width,
+    scalePx(diff.gutter) + (numbered ? 2 : 1) * scalePx(code.paddingX),
+    dense
+  );

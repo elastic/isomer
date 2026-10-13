@@ -18,13 +18,13 @@ import { slideDeckPrimitives } from './registry';
 export const slidesAuthoringGuide = [
   'A deck is an ordered list of compositions, one per slide. Each is `{ "type": "view", "title": "<a short name for the slide>", "body": [<one slideFrame>] }`. Everything on the slide goes inside that frame\'s `body`. The `title` names the slide in navigation and is not drawn; the slide\'s words, its claim included, go in the frame. Make the `title` a short form of the slide\'s heading, since a section divider lists it; a title, section, or closing slide uses its own display title.',
   'There are five kinds of slide:',
-  '- Title (first): `tone: "inverse"`, body `[slideTitle]`, optionally with one compact node as its `aside`, such as a `slideFanout`.',
-  '- Section divider: `tone: "inverse"`, body `[slideSection]` whose `contents` lists, in order, the composition `title` of each slide in that section. Keep those titles to a few words. The closing slide is in no section\'s `contents`.',
-  '- Content: `tone: "page"`, body starts with `slideHeading`, then one primitive that carries the idea. Put two things side by side with `slideSplit`; give it `ratio: "aside"` and `divider: "hairline"` for a main idea with a narrow column of notes. A `slideStat` band may follow as a closing proof point, and a `slideSource` line closes any slide that shows figures or claims taken from a real source; illustrative scenarios need none.',
-  '- Statement or quote: `tone: "page"`, body `[slideStatement]` for one thesis sentence of your own, or `[slideQuote]` for someone else\'s words. No heading.',
-  '- Closing (last): `tone: "inverse"`, body `[slideClosing]`.',
+  '- Title (first): `tone: "inverse"`, body `[titleSlide]`, optionally with one compact node as its `aside`, such as a `slideFanout`.',
+  '- Section divider: `tone: "inverse"`, body `[sectionSlide]` whose `slides` lists, in order, each slide in that section by its composition `title`. Keep those titles to a few words. The closing slide is in no section\'s `slides`.',
+  '- Content: `tone: "page"`, body starts with `slideHeading`, then one primitive that carries the idea. Put two things side by side with `slideSplitLayout`; give it `ratio: "aside"` and `divider: "hairline"` for a main idea with a narrow column of notes. A `slideStat` band may follow as a closing proof point, and a `slideSource` line closes any slide that shows figures or claims taken from a real source; illustrative scenarios need none.',
+  '- Statement or quote: `tone: "page"`, body `[statementSlide]` for one thesis sentence of your own, or `[quoteSlide]` for someone else\'s words. No heading.',
+  '- Closing (last): `tone: "inverse"`, body `[closingSlide]`.',
   'The heading title is the slide\'s claim written as a sentence ("Refunds settle in two days, not five"), not a topic label ("Refunds"). The lede supports it in one or two sentences. A title that needs two lines breaks near its middle, since both lines balance, so keep a strong phrase short enough to stay on one of them.',
-  "Frame footers carry the deck's identity: the same `brand` and `url` on every slide, and `sectionNumber` plus `section` naming the section the slide belongs to. The title slide has no section; every other slide has one, the closing slide keeping the last section's. A deck with one section still numbers it `01` and names it. The theme draws the Isomer mark beside the footer and on the title slide; set `logo: false` on every frame unless the deck is about Isomer.",
+  "A frame's `footer` carries the deck's identity: the same `brand` and `url` on every slide, and `sectionNumber` plus `section` naming the section the slide belongs to. The title slide has no section; every other slide has one, the closing slide keeping the last section's. A deck with one section still numbers it `01` and names it. The theme draws the Isomer mark beside the footer and on the title slide; set `logo: false` on every frame unless the deck is about Isomer.",
   'Tones are theme roles, not colors. `primary` marks what is yours or in focus: your product, the runtime, the current item, or the option a `highlight` singles out, whoever owns it. `accent` marks the host or another party where ownership is the point, as on a diagram of who runs what. Everything else is neutral, so use a tone only where one of those distinctions matters. The same party can take different tones on different slides: a vendor you recommend is `primary` where its option is highlighted and `accent` where the slide shows who runs what.',
   "Slides render at a fixed 1920×1080 and nothing is set below 24px, so space is scarce: one idea per slide, short phrases, and the limits in each primitive's schema are ceilings, not targets.",
   'Headings, the title slide, and every primitive with a `size` field size their type to their text: with `size` left out they pick the largest of `l`, `m`, and `s` that fits. The pick is an estimate: if a render still runs past the footer, set `size` one step below what it drew, then shorten the copy. `s` is the smallest step, so after it only shorter text helps.',
@@ -36,11 +36,11 @@ export const slidesAuthoringGuide = [
 export const slidesAuthoringRules: readonly string[] = [
   "Each composition's `body` is exactly one `slideFrame`. Frames never nest.",
   'Use only the primitives in the catalog, with only the fields their schema lists.',
-  'Every page-tone slide opens with `slideHeading`, or holds a lone `slideStatement` or `slideQuote`; title, section, and closing slides use `tone: "inverse"` and no heading.',
+  'Every page-tone slide opens with `slideHeading`, or holds a lone `statementSlide` or `quoteSlide`; title, section, and closing slides use `tone: "inverse"` and no heading.',
   'A `slideSource`, when present, is the last node in the frame body.',
-  'Keep `brand`, `url`, and `logo` identical across the deck. `url` is absolute, scheme included: `https://example.com`, never `example.com`.',
+  'Keep `footer.brand`, `footer.url`, and `logo` identical across the deck. `url` is absolute, scheme included: `https://example.com`, never `example.com`.',
   'Tones are `primary` or `accent`; there are no others.',
-  'A `slideWindow` cannot hold another `slideWindow`, and an embedded render cannot embed another render.',
+  'A `slideWindowLayout` cannot hold another `slideWindowLayout`, and an embedded render cannot embed another render.',
 ];
 
 const slideAuthoringIntro =

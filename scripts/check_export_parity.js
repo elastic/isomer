@@ -8,7 +8,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { workspacePackages } from './workspace_packages.js';
+import { isEsmOnly, workspacePackages } from './workspace_packages.js';
 
 const toCjsPath = (importPath) => {
   if (!importPath.startsWith('./dist/')) {
@@ -25,6 +25,10 @@ const violations = [];
 
 for (const pkg of workspacePackages()) {
   const { exports: exportMap, main, module, types, name } = pkg.manifest;
+  const esmOnly = isEsmOnly(pkg.manifest);
+  const conditionNames = esmOnly
+    ? ['types', 'import']
+    : ['types', 'import', 'require'];
   if (exportMap === undefined || typeof exportMap !== 'object') {
     violations.push(`${name}: missing exports map`);
     continue;
@@ -37,25 +41,26 @@ for (const pkg of workspacePackages()) {
       continue;
     }
 
-    for (const cond of ['types', 'import', 'require']) {
+    for (const cond of conditionNames) {
       if (typeof conditions[cond] !== 'string') {
         violations.push(`${label}: missing "${cond}" condition`);
       }
     }
+    if (esmOnly && conditions.require !== undefined) {
+      violations.push(`${label}: an ESM-only package has no "require"`);
+    }
 
-    if (
-      typeof conditions.import !== 'string' ||
-      typeof conditions.require !== 'string' ||
-      typeof conditions.types !== 'string'
-    ) {
+    if (conditionNames.some((cond) => typeof conditions[cond] !== 'string')) {
       continue;
     }
 
-    const expectedRequire = toCjsPath(conditions.import);
-    if (conditions.require !== expectedRequire) {
-      violations.push(
-        `${label}: require "${conditions.require}" should be "${expectedRequire}"`
-      );
+    if (!esmOnly) {
+      const expectedRequire = toCjsPath(conditions.import);
+      if (conditions.require !== expectedRequire) {
+        violations.push(
+          `${label}: require "${conditions.require}" should be "${expectedRequire}"`
+        );
+      }
     }
 
     const expectedTypes = toTypesPath(conditions.import);
@@ -65,11 +70,8 @@ for (const pkg of workspacePackages()) {
       );
     }
 
-    for (const [cond, target] of Object.entries({
-      types: conditions.types,
-      import: conditions.import,
-      require: conditions.require,
-    })) {
+    for (const cond of conditionNames) {
+      const target = conditions[cond];
       const absolute = join(pkg.dir, target);
       if (!existsSync(absolute)) {
         violations.push(`${label}: ${cond} target missing on disk: ${target}`);
@@ -79,7 +81,10 @@ for (const pkg of workspacePackages()) {
 
   const root = exportMap['.'];
   if (root && typeof root === 'object') {
-    if (main !== root.require) {
+    if (esmOnly && main !== undefined) {
+      violations.push(`${name}: an ESM-only package has no "main"`);
+    }
+    if (!esmOnly && main !== root.require) {
       violations.push(
         `${name}: "main" (${main}) must equal exports["."].require (${root.require})`
       );

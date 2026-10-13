@@ -22,7 +22,15 @@ export const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
  * @property {Record<string, string>} [devDependencies]
  * @property {Record<string, string>} [peerDependencies]
  * @property {Record<string, string>} [optionalDependencies]
+ * @property {{ esmOnly?: boolean; packedFiles?: string[] }} [isomer]
  */
+
+/**
+ * Whether the package ships no CommonJS build, set by `"isomer": { "esmOnly": true }`.
+ *
+ * @param {PackageManifest} manifest
+ */
+export const isEsmOnly = (manifest) => manifest.isomer?.esmOnly === true;
 
 /** @returns {Array<{ dir: string; folder: string; manifest: PackageManifest }>} */
 export const workspacePackages = () => {

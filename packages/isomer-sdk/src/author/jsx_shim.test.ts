@@ -13,6 +13,7 @@ import type { PrimitiveNode } from '../define/primitive_module';
 
 import {
   fromChildren,
+  fromNodeChildren,
   fromTextChildren,
   readAuthoredSpec,
 } from './authored_fields';
@@ -239,7 +240,6 @@ describe('buildJsxShim', () => {
     const {
       Composition: Root,
       Group,
-      Item,
       toComposition: convert,
     } = buildJsxShim([
       brandedGroup(
@@ -253,7 +253,7 @@ describe('buildJsxShim', () => {
         createElement(
           Group,
           { title: 'Open' },
-          createElement(Item, { label: 'A' })
+          createElement(Group.Item, { label: 'A' })
         )
       )
     );
@@ -271,7 +271,6 @@ describe('buildJsxShim', () => {
     const {
       Composition: Root,
       Group,
-      Item,
       toComposition: convert,
     } = buildJsxShim([
       brandedGroup(
@@ -291,7 +290,7 @@ describe('buildJsxShim', () => {
         createElement(
           Group,
           null,
-          createElement(Item, { title: 'Host' }, 'Owns routing.')
+          createElement(Group.Item, { title: 'Host' }, 'Owns routing.')
         )
       )
     );
@@ -342,6 +341,260 @@ describe('buildJsxShim', () => {
     expect(spec.body).toEqual([{ type: 'code', code: 'const x = 1;' }]);
   });
 
+  it('splits sibling child elements across branded fields by type', () => {
+    const schema = z.object({
+      type: z.literal('closing'),
+      links: fromChildren(
+        'link',
+        z.array(z.object({ label: z.string(), text: z.string() })),
+        { text: 'text' }
+      ),
+      paths: fromChildren(
+        'path',
+        z.array(z.object({ title: z.string(), body: z.string() })).optional(),
+        { text: 'body' }
+      ),
+    });
+    const {
+      Closing,
+      Composition: Root,
+      toComposition: convert,
+    } = buildJsxShim([{ type: 'closing' as const, schema }]);
+
+    expect(
+      convert(
+        createElement(
+          Root,
+          null,
+          createElement(
+            Closing,
+            null,
+            createElement(Closing.Link, { label: 'Docs' }, 'example.com'),
+            createElement(Closing.Path, { title: 'Start' }, 'Read the guide')
+          )
+        )
+      ).body
+    ).toEqual([
+      {
+        type: 'closing',
+        links: [{ label: 'Docs', text: 'example.com' }],
+        paths: [{ title: 'Start', body: 'Read the guide' }],
+      },
+    ]);
+  });
+
+  it('fills a branded child and leaves other elements in the child slot', () => {
+    const schema = z.object({
+      type: z.literal('frame'),
+      footer: fromChildren(
+        'footer',
+        z.object({ brand: z.string() })
+      ).optional(),
+      body: z.array(z.object({ type: z.string() })).min(1),
+    });
+    const frame = {
+      type: 'frame' as const,
+      schema,
+      children: (node: { body: PrimitiveNode[] }) =>
+        node.body.map((item, index) => ({
+          node: item,
+          path: `body[${index}]`,
+        })),
+    };
+    const {
+      Composition: Root,
+      Frame,
+      Note,
+      toComposition: convert,
+    } = buildJsxShim([{ type: 'note' as const }, frame]);
+
+    expect(
+      convert(
+        createElement(
+          Root,
+          null,
+          createElement(
+            Frame,
+            null,
+            createElement(Note, { body: 'Hello' }),
+            createElement(Frame.Footer, { brand: 'Ledger' })
+          )
+        )
+      ).body
+    ).toEqual([
+      {
+        type: 'frame',
+        footer: { brand: 'Ledger' },
+        body: [{ type: 'note', body: 'Hello' }],
+      },
+    ]);
+    expect(
+      convert(
+        createElement(
+          Root,
+          null,
+          createElement(Frame, null, createElement(Note, { body: 'Hello' }))
+        )
+      ).body
+    ).toEqual([{ type: 'frame', body: [{ type: 'note', body: 'Hello' }] }]);
+  });
+
+  it('rejects an element that matches no branded field or child slot', () => {
+    const schema = z.object({
+      type: z.literal('closing'),
+      links: fromChildren('link', z.array(z.object({ label: z.string() }))),
+    });
+    const {
+      Closing,
+      Composition: Root,
+      Note,
+      toComposition: convert,
+    } = buildJsxShim([
+      { type: 'note' as const },
+      { type: 'closing' as const, schema },
+    ]);
+
+    expect(() =>
+      convert(
+        createElement(
+          Root,
+          null,
+          createElement(Closing, null, createElement(Note, { body: 'Nope' }))
+        )
+      )
+    ).toThrow(expect.objectContaining({ code: 'AUTHOR_TYPE_MISMATCH' }));
+  });
+
+  it('rejects a stray element beside a filled branded field', () => {
+    const schema = z.object({
+      type: z.literal('closing'),
+      links: fromChildren('link', z.array(z.object({ label: z.string() }))),
+    });
+    const {
+      Closing,
+      Composition: Root,
+      Note,
+      toComposition: convert,
+    } = buildJsxShim([
+      { type: 'note' as const },
+      { type: 'closing' as const, schema },
+    ]);
+
+    expect(() =>
+      convert(
+        createElement(
+          Root,
+          null,
+          createElement(
+            Closing,
+            null,
+            createElement(Closing.Link, { label: 'Docs' }),
+            createElement(Note, { body: 'Nope' })
+          )
+        )
+      )
+    ).toThrow(expect.objectContaining({ code: 'UNEXPECTED_CHILDREN' }));
+  });
+
+  it('keeps an explicitly empty children list as an empty array', () => {
+    const schema = z.object({
+      type: z.literal('closing'),
+      links: fromChildren('link', z.array(z.object({ label: z.string() }))),
+    });
+    const {
+      Closing,
+      Composition: Root,
+      toComposition: convert,
+    } = buildJsxShim([{ type: 'closing' as const, schema }]);
+
+    expect(
+      convert(createElement(Root, null, createElement(Closing, null, []))).body
+    ).toEqual([{ type: 'closing', links: [] }]);
+  });
+
+  it('fills the one unbranded slot when children() also visits a branded field', () => {
+    const node = z.object({ type: z.string() });
+    const schema = z.object({
+      type: z.literal('frame'),
+      lead: fromChildren('lead', node).optional(),
+      body: z.array(node),
+    });
+    const frame = {
+      type: 'frame' as const,
+      schema,
+      children: (value: { lead?: PrimitiveNode; body: PrimitiveNode[] }) => [
+        ...(value.lead ? [{ node: value.lead, path: 'lead' }] : []),
+        ...value.body.map((item, index) => ({
+          node: item,
+          path: `body[${index}]`,
+        })),
+      ],
+    };
+    const {
+      Composition: Root,
+      Frame,
+      Note,
+      toComposition: convert,
+    } = buildJsxShim([{ type: 'note' as const }, frame]);
+
+    expectTypeOf<{ children: ReactNode }>().toExtend<
+      Parameters<typeof Frame>[0]
+    >();
+    expect(
+      convert(
+        createElement(
+          Root,
+          null,
+          createElement(
+            Frame,
+            null,
+            createElement(Frame.Lead, { type: 'note' }),
+            createElement(Note, { body: 'Hello' })
+          )
+        )
+      ).body
+    ).toEqual([
+      {
+        type: 'frame',
+        lead: { type: 'note' },
+        body: [{ type: 'note', body: 'Hello' }],
+      },
+    ]);
+  });
+
+  it('makes only a lone unbranded node field optional on props', () => {
+    const node = z.object({ type: z.string() });
+    const shim = buildJsxShim([
+      {
+        type: 'pair' as const,
+        schema: z.object({
+          type: z.literal('pair'),
+          left: node,
+          right: node.optional(),
+        }),
+      },
+      {
+        type: 'chart' as const,
+        schema: z.object({
+          type: z.literal('chart'),
+          curve: z.object({ type: z.literal('linear') }),
+        }),
+      },
+      {
+        type: 'panel' as const,
+        schema: z.object({ type: z.literal('panel'), body: z.array(node) }),
+      },
+    ]);
+    expect(shim.Pair).toBeDefined();
+    type PairProps = Parameters<typeof shim.Pair>[0];
+    type ChartProps = Parameters<typeof shim.Chart>[0];
+    type PanelProps = Parameters<typeof shim.Panel>[0];
+
+    expectTypeOf<{ children: ReactNode }>().not.toExtend<PairProps>();
+    expectTypeOf<{ children: ReactNode }>().not.toExtend<ChartProps>();
+    expectTypeOf<{ children: ReactNode }>().toExtend<PanelProps>();
+  });
+
   it('throws when required text children are missing', () => {
     const schema = z.object({
       type: z.literal('code'),
@@ -364,20 +617,68 @@ describe('buildJsxShim', () => {
     }
   });
 
-  it('throws when two primitives brand one child type with different shapes', () => {
+  it('lets two primitives share a member name with different shapes', () => {
+    const shim = buildJsxShim([
+      brandedGroup(
+        fromChildren('item', z.array(z.object({ label: z.string() })))
+      ),
+      {
+        type: 'other' as const,
+        schema: z.object({
+          type: z.literal('other'),
+          items: fromChildren('item', z.array(z.object({ name: z.string() }))),
+        }),
+      },
+    ]);
+    const { Composition: Root, Group, Other, toComposition: convert } = shim;
+    expectTypeOf<{ label: string }>().toExtend<
+      Parameters<typeof Group.Item>[0]
+    >();
+    expectTypeOf<{ label: string }>().not.toExtend<
+      Parameters<typeof Other.Item>[0]
+    >();
+    expect(
+      convert(
+        createElement(
+          Root,
+          null,
+          createElement(Group, null, createElement(Group.Item, { label: 'A' })),
+          createElement(Other, null, createElement(Other.Item, { name: 'B' }))
+        )
+      ).body
+    ).toEqual([
+      { type: 'group', items: [{ label: 'A' }] },
+      { type: 'other', items: [{ name: 'B' }] },
+    ]);
+    expect(() =>
+      convert(
+        createElement(
+          Root,
+          null,
+          createElement(Group, null, createElement(Other.Item, { name: 'B' }))
+        )
+      )
+    ).toThrow(
+      expect.objectContaining({
+        code: 'AUTHOR_TYPE_MISMATCH',
+        message: 'Expected <Group.Item> but received <Other.Item>.',
+      })
+    );
+  });
+
+  it('throws when two fields in one primitive tree share a member name', () => {
+    const entry = z.object({
+      label: z.string(),
+      items: fromChildren('item', z.array(z.object({ name: z.string() }))),
+    });
     expect(() =>
       buildJsxShim([
-        brandedGroup(
-          fromChildren('item', z.array(z.object({ label: z.string() })))
-        ),
         {
-          type: 'other' as const,
+          type: 'group' as const,
           schema: z.object({
-            type: z.literal('other'),
-            items: fromChildren(
-              'item',
-              z.array(z.object({ name: z.string() }))
-            ),
+            type: z.literal('group'),
+            entries: fromChildren('entry', z.array(entry)),
+            items: fromChildren('item', z.array(z.object({ id: z.string() }))),
           }),
         },
       ])
@@ -385,6 +686,65 @@ describe('buildJsxShim', () => {
       expect.objectContaining({
         name: 'IsomerError',
         code: 'DUPLICATE_AUTHORED_CHILD',
+        message: 'buildJsxShim: "items" and "items" both become <Group.Item>',
+      })
+    );
+  });
+
+  it('throws when one item schema becomes one member with different text', () => {
+    const tag = z.object({ name: z.string(), note: z.string().optional() });
+    const entry = z.object({
+      tags: fromChildren('tag', z.array(tag), { text: 'note' }).optional(),
+    });
+    expect(() =>
+      buildJsxShim([
+        {
+          type: 'group' as const,
+          schema: z.object({
+            type: z.literal('group'),
+            entries: fromChildren('entry', z.array(entry)),
+            tags: fromChildren('tag', z.array(tag), { text: 'name' }),
+          }),
+        },
+      ])
+    ).toThrow(
+      expect.objectContaining({
+        code: 'DUPLICATE_AUTHORED_CHILD',
+        message: 'buildJsxShim: "tags" and "tags" both become <Group.Tag>',
+      })
+    );
+  });
+
+  it('throws when a member shares its type with a primitive', () => {
+    expect(() =>
+      buildJsxShim([
+        { type: 'group.Item' },
+        brandedGroup(
+          fromChildren('item', z.array(z.object({ label: z.string() })))
+        ),
+      ])
+    ).toThrow(
+      expect.objectContaining({
+        code: 'DUPLICATE_PRIMITIVE_TYPE',
+        message:
+          'buildJsxShim: the primitive "group.Item" and the member Item of "group" share the type "group.Item"',
+      })
+    );
+  });
+
+  it('throws when members of two primitives share a type', () => {
+    const items = (name: string) =>
+      fromChildren(name, z.array(z.object({ label: z.string() })));
+    expect(() =>
+      buildJsxShim([
+        brandedGroup(items('sub.Item')),
+        { ...brandedGroup(items('item')), type: 'group.Sub' as const },
+      ])
+    ).toThrow(
+      expect.objectContaining({
+        code: 'DUPLICATE_PRIMITIVE_TYPE',
+        message:
+          'buildJsxShim: the member Sub.Item of "group" and the member Item of "group.Sub" share the type "group.Sub.Item"',
       })
     );
   });
@@ -410,13 +770,7 @@ describe('buildJsxShim', () => {
           fromChildren('item', z.array(z.object({ label: z.string() })))
         ),
       ])
-    ).toThrow(
-      expect.objectContaining({
-        code: 'DUPLICATE_PRIMITIVE_TYPE',
-        message:
-          'buildJsxShim: "Item" and "item" both become the component Item',
-      })
-    );
+    ).not.toThrow();
   });
 });
 
@@ -445,7 +799,6 @@ describe('recursive fromChildren', () => {
     const {
       Composition: Root,
       List,
-      ListItem,
       toComposition: convert,
     } = buildJsxShim([
       {
@@ -466,9 +819,9 @@ describe('recursive fromChildren', () => {
             List,
             null,
             createElement(
-              ListItem,
+              List.ListItem,
               { content: 'Parent' },
-              createElement(ListItem, { content: 'Child' })
+              createElement(List.ListItem, { content: 'Child' })
             )
           )
         )
@@ -505,15 +858,15 @@ describe('nested brands', () => {
   it('types a nested child component from its item schema', () => {
     const shim = buildJsxShim([statsPrimitive()]);
 
-    expect(shim.Delta).toBeDefined();
-    type DeltaProps = Parameters<typeof shim.Delta>[0];
-    expectTypeOf(shim.Delta).not.toBeNever();
+    expect(shim.Stats.Delta).toBeDefined();
+    type DeltaProps = Parameters<typeof shim.Stats.Delta>[0];
+    expectTypeOf(shim.Stats.Delta).not.toBeNever();
     expectTypeOf<{ tone: 'success' }>().toExtend<DeltaProps>();
     expectTypeOf<{ label: string }>().not.toExtend<DeltaProps>();
     expectTypeOf<DeltaProps['children']>().toEqualTypeOf<
       ReactNode | undefined
     >();
-    expectTypeOf(shim.Stat).not.toBeNever();
+    expectTypeOf(shim.Stats.Stat).not.toBeNever();
   });
 
   it('finds nested components through a wrapped array brand', () => {
@@ -534,8 +887,8 @@ describe('nested brands', () => {
       },
     ]);
 
-    expect(shim.Delta).toBeDefined();
-    expectTypeOf(shim.Delta).not.toBeNever();
+    expect(shim.Stats.Delta).toBeDefined();
+    expectTypeOf(shim.Stats.Delta).not.toBeNever();
   });
 
   it('types no nested components under a toItem brand, as it builds none', () => {
@@ -558,10 +911,10 @@ describe('nested brands', () => {
       },
     ]);
 
-    expect(shim.Stat).toBeDefined();
-    expect('Delta' in shim).toBe(false);
+    expect(shim.Stats.Stat).toBeDefined();
+    expect('Delta' in shim.Stats).toBe(false);
     expectTypeOf<
-      'Delta' extends keyof typeof shim ? true : false
+      'Delta' extends keyof typeof shim.Stats ? true : false
     >().toEqualTypeOf<false>();
   });
 
@@ -587,9 +940,9 @@ describe('nested brands', () => {
       },
     ]);
 
-    expect('Delta' in shim).toBe(false);
+    expect('Delta' in shim.Stats).toBe(false);
     expectTypeOf<
-      'Delta' extends keyof typeof shim ? true : false
+      'Delta' extends keyof typeof shim.Stats ? true : false
     >().toEqualTypeOf<false>();
   });
 
@@ -609,9 +962,9 @@ describe('nested brands', () => {
         }),
       },
     ]);
-    type StatProps = Parameters<typeof shim.Stat>[0];
+    type StatProps = Parameters<typeof shim.Stats.Stat>[0];
 
-    expect(shim.Stat).toBeDefined();
+    expect(shim.Stats.Stat).toBeDefined();
     expectTypeOf<{ value: string }>().toExtend<StatProps>();
     expectTypeOf<{ label: string }>().not.toExtend<StatProps>();
   });
@@ -619,8 +972,6 @@ describe('nested brands', () => {
   it('fills a single nested item and its owner text from mixed children', () => {
     const {
       Composition: Root,
-      Delta,
-      Stat,
       Stats,
       toComposition: convert,
     } = buildJsxShim([statsPrimitive()]);
@@ -634,12 +985,16 @@ describe('nested brands', () => {
             Stats,
             null,
             createElement(
-              Stat,
+              Stats.Stat,
               { value: '42' },
               'Tests',
-              createElement(Delta, { tone: 'success' }, '+12 since yesterday')
+              createElement(
+                Stats.Delta,
+                { tone: 'success' },
+                '+12 since yesterday'
+              )
             ),
-            createElement(Stat, { value: '3' }, 'Flaky')
+            createElement(Stats.Stat, { value: '3' }, 'Flaky')
           )
         )
       ).body
@@ -661,8 +1016,6 @@ describe('nested brands', () => {
   it('throws on a second element for a single-item field', () => {
     const {
       Composition: Root,
-      Delta,
-      Stat,
       Stats,
       toComposition: convert,
     } = buildJsxShim([statsPrimitive()]);
@@ -676,11 +1029,11 @@ describe('nested brands', () => {
             Stats,
             null,
             createElement(
-              Stat,
+              Stats.Stat,
               { value: '42' },
               'Tests',
-              createElement(Delta, { tone: 'success' }, '+12'),
-              createElement(Delta, { tone: 'danger' }, '-3')
+              createElement(Stats.Delta, { tone: 'success' }, '+12'),
+              createElement(Stats.Delta, { tone: 'danger' }, '-3')
             )
           )
         )
@@ -689,7 +1042,51 @@ describe('nested brands', () => {
       expect.objectContaining({
         name: 'IsomerError',
         code: 'UNEXPECTED_CHILDREN',
-        message: '"delta" takes one <Delta>, not 2.',
+        message: '"delta" takes one <Stats.Delta>, not 2.',
+      })
+    );
+  });
+
+  it('throws on a nested element its item does not claim', () => {
+    const {
+      Composition: Root,
+      OtherStats,
+      Stats,
+      toComposition: convert,
+    } = buildJsxShim([
+      statsPrimitive(),
+      { ...statsPrimitive(), type: 'otherStats' as const },
+    ]);
+    const statWith = (props: object, delta: ReactNode) =>
+      convert(
+        createElement(
+          Root,
+          null,
+          createElement(
+            Stats,
+            null,
+            createElement(Stats.Stat, { value: '42', ...props }, 'Tests', delta)
+          )
+        )
+      );
+
+    expect(() =>
+      statWith({}, createElement(OtherStats.Delta, { tone: 'success' }, '+12'))
+    ).toThrow(
+      expect.objectContaining({
+        code: 'UNEXPECTED_CHILDREN',
+        message: '<OtherStats.Delta> is not a child of <Stats.Stat>.',
+      })
+    );
+    expect(() =>
+      statWith(
+        { delta: { label: '+1', tone: 'success' } },
+        createElement(Stats.Delta, { tone: 'success' }, '+12')
+      )
+    ).toThrow(
+      expect.objectContaining({
+        code: 'UNEXPECTED_CHILDREN',
+        message: '<Stats.Stat> already has its <Stats.Delta>.',
       })
     );
   });
@@ -698,7 +1095,6 @@ describe('nested brands', () => {
     const {
       Composition: Root,
       Callout,
-      Icon,
       toComposition: convert,
     } = buildJsxShim([
       {
@@ -715,10 +1111,136 @@ describe('nested brands', () => {
         createElement(
           Root,
           null,
-          createElement(Callout, null, createElement(Icon, { name: 'bell' }))
+          createElement(
+            Callout,
+            null,
+            createElement(Callout.Icon, { name: 'bell' })
+          )
         )
       ).body
     ).toEqual([{ type: 'callout', icon: { name: 'bell' } }]);
+  });
+});
+
+describe('fromNodeChildren', () => {
+  const nodeSchema = z.object({ type: z.string() }).loose();
+  const embed = {
+    type: 'embed' as const,
+    schema: z.object({
+      type: z.literal('embed'),
+      caption: z.string().optional(),
+      body: fromNodeChildren(z.array(nodeSchema)).optional(),
+    }),
+  };
+  const gallery = {
+    type: 'gallery' as const,
+    schema: z.object({
+      type: z.literal('gallery'),
+      tiles: fromChildren('tile', z.array(z.object({ label: z.string() })), {
+        text: 'label',
+      }),
+      body: fromNodeChildren(z.array(nodeSchema)),
+    }),
+  };
+  const shim = buildJsxShim([...primitives, embed, gallery] as const);
+
+  it('fills the field from primitive elements, nested in turn', () => {
+    const { Composition, Embed, Note, Stack } = shim;
+    expect(
+      shim.toComposition(
+        createElement(
+          Composition,
+          null,
+          createElement(
+            Embed,
+            { caption: 'Shown' },
+            createElement(Stack, null, createElement(Note))
+          )
+        )
+      ).body
+    ).toEqual([
+      {
+        type: 'embed',
+        caption: 'Shown',
+        body: [{ type: 'stack', items: [{ type: 'note' }] }],
+      },
+    ]);
+  });
+
+  it('takes the elements a branded child field leaves', () => {
+    const { Composition, Gallery, Note } = shim;
+    expect(
+      shim.toComposition(
+        createElement(
+          Composition,
+          null,
+          createElement(
+            Gallery,
+            null,
+            createElement(Note),
+            createElement(Gallery.Tile, null, 'One')
+          )
+        )
+      ).body
+    ).toEqual([
+      { type: 'gallery', tiles: [{ label: 'One' }], body: [{ type: 'note' }] },
+    ]);
+  });
+
+  it('rejects a second element for a single-node field', () => {
+    const pinned = buildJsxShim([
+      { type: 'note' as const },
+      {
+        type: 'pin' as const,
+        schema: z.object({
+          type: z.literal('pin'),
+          caption: z.string().optional(),
+          node: fromNodeChildren(nodeSchema),
+        }),
+      },
+      {
+        type: 'card' as const,
+        children: (node: { header: PrimitiveNode }) => [
+          { node: node.header, path: 'header' },
+        ],
+      },
+    ] as const);
+    const { Card, Composition: View, Note: Leaf, Pin } = pinned;
+    const twoNotes = [createElement(Leaf), createElement(Leaf)];
+
+    expect(
+      pinned.toComposition(
+        createElement(View, null, createElement(Pin, null, createElement(Leaf)))
+      ).body
+    ).toEqual([{ type: 'pin', node: { type: 'note' } }]);
+    for (const [element, field] of [
+      [createElement(Pin, null, ...twoNotes), 'node'],
+      [createElement(Card, null, ...twoNotes), 'header'],
+      [
+        createElement(Card, {
+          header: createElement(Fragment, null, ...twoNotes),
+        }),
+        'header',
+      ],
+    ] as const) {
+      expect(() =>
+        pinned.toComposition(createElement(View, null, element))
+      ).toThrow(
+        expect.objectContaining({
+          code: 'UNEXPECTED_CHILDREN',
+          message: `"${field}" takes one node, not 2.`,
+        })
+      );
+    }
+  });
+
+  it('reads as a node field on the spec and leaves the prop optional', () => {
+    expect(readAuthoredSpec(embed.schema).nodes).toEqual([
+      { field: 'body', array: true },
+    ]);
+    expectTypeOf<Parameters<typeof shim.Gallery>[0]>()
+      .toHaveProperty('body')
+      .toEqualTypeOf<{ type: string; [key: string]: unknown }[] | undefined>();
   });
 });
 
@@ -734,7 +1256,7 @@ describe('readAuthoredSpec', () => {
     );
 
     expect(spec.children).toMatchObject([
-      { field: 'stats', childType: 'stat', array: true, textField: 'label' },
+      { field: 'stats', name: 'stat', array: true, textField: 'label' },
     ]);
     expect(spec.text).toEqual([
       { field: 'title', collapseWhitespace: true, optional: true },
@@ -742,7 +1264,7 @@ describe('readAuthoredSpec', () => {
     expect(
       readAuthoredSpec(spec.children[0]!.itemSchema).children
     ).toMatchObject([
-      { field: 'delta', childType: 'delta', array: false, optional: true },
+      { field: 'delta', name: 'delta', array: false, optional: true },
     ]);
   });
 });
@@ -758,6 +1280,39 @@ describe('textFromChildren', () => {
         collapseWhitespace: false,
       })
     ).toBe('const x = {\n  a: 1,\n};');
+  });
+
+  it('reads source with `dedent`, keeping inner indentation and blank lines', () => {
+    expect(
+      textFromChildren('\n      a {\n        b;\n\n      }\n    ', {
+        dedent: true,
+      })
+    ).toBe('a {\n  b;\n\n}');
+  });
+
+  it('fills a dedent-branded field from a template literal', () => {
+    const {
+      Composition: View,
+      Snippet,
+      toComposition: parse,
+    } = buildJsxShim([
+      {
+        type: 'snippet' as const,
+        schema: z.object({
+          type: z.literal('snippet'),
+          source: fromTextChildren(z.string(), { dedent: true }),
+        }),
+      },
+    ] as const);
+    expect(
+      parse(
+        createElement(
+          View,
+          null,
+          createElement(Snippet, null, '\n  x\n    y\n')
+        )
+      ).body
+    ).toEqual([{ type: 'snippet', source: 'x\n  y' }]);
   });
 
   it('rejects an element child', () => {
@@ -783,19 +1338,18 @@ describe('fromChildren through wrappers', () => {
     const {
       Composition: Root,
       Group,
-      Item,
       toComposition: convert,
     } = buildJsxShim([
       brandedGroup(
         wrap(fromChildren('item', z.array(z.object({ label: z.string() }))))
       ),
     ]);
-    expect(Item).toBeDefined();
+    expect(Group.Item).toBeDefined();
     const spec = convert(
       createElement(
         Root,
         null,
-        createElement(Group, null, createElement(Item, { label: 'A' }))
+        createElement(Group, null, createElement(Group.Item, { label: 'A' }))
       )
     );
     expect(spec.body).toEqual([{ type: 'group', items: [{ label: 'A' }] }]);
@@ -853,33 +1407,26 @@ describe('fromChildren through wrappers', () => {
 
   it('reads the items of a nullable or readonly child array', () => {
     const items = () => z.array(z.object({ label: z.string() }));
-    expect(() =>
-      buildJsxShim([
-        brandedGroup(fromChildren('item', items())),
-        {
-          type: 'other' as const,
-          schema: z.object({
-            type: z.literal('other'),
-            items: fromChildren('item', items().nullable()),
-          }),
-        },
-      ])
-    ).not.toThrow();
-    expect(() =>
-      buildJsxShim([
-        brandedGroup(fromChildren('item', items().readonly())),
-        {
-          type: 'other' as const,
-          schema: z.object({
-            type: z.literal('other'),
-            items: fromChildren(
-              'item',
-              z.array(z.object({ count: z.number() })).readonly()
-            ),
-          }),
-        },
-      ])
-    ).toThrow(expect.objectContaining({ code: 'DUPLICATE_AUTHORED_CHILD' }));
+    for (const wrapped of [items().nullable(), items().readonly()]) {
+      const {
+        Composition: Root,
+        Group,
+        toComposition: convert,
+      } = buildJsxShim([brandedGroup(fromChildren('item', wrapped))]);
+      expect(
+        convert(
+          createElement(
+            Root,
+            null,
+            createElement(
+              Group,
+              null,
+              createElement(Group.Item, { label: 'A' })
+            )
+          )
+        ).body
+      ).toEqual([{ type: 'group', items: [{ label: 'A' }] }]);
+    }
   });
 
   it('names the function that rebranded a schema', () => {

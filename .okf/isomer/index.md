@@ -14,5 +14,6 @@ Bundle root.
 - [runtime/](runtime/index.md)
 - [sdk/](sdk/index.md)
 - [slides/](slides/index.md)
+- [studio/](studio/index.md)
 - [workspace/](workspace/index.md)
 

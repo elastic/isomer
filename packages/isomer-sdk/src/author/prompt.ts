@@ -68,6 +68,10 @@ export interface AuthoringPromptContext {
 const COMPOSE_INTRO_WITHOUT_SCHEMA =
   'You compose views from scratch. Build a single JSON object that answers the question using only the primitives in the catalog below.';
 
+/** The root shape, which a prompt without the composition schema shows nowhere else. */
+const VIEW_ENVELOPE =
+  'A view is `{"type":"view","body":[…]}`: primitives go in `body`, and a primitive is never the view itself.';
+
 const INDEX_INTRO =
   'Each primitive is listed by type and purpose. Before using one, request its catalog entry and JSON Schema by type; compose only from primitives whose details you have.';
 
@@ -226,7 +230,9 @@ export const buildAuthoringPrompt = (
       : PROFILE_INTROS[profile];
   const sections = [
     context.heading ?? '# View authoring',
-    context.intro ?? intro,
+    schema === undefined
+      ? `${context.intro ?? intro} ${VIEW_ENVELOPE}`
+      : (context.intro ?? intro),
     `## Guide\n\n${context.guide}`,
   ];
   if (context.rules !== undefined && context.rules.length > 0) {

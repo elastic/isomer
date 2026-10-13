@@ -127,7 +127,9 @@ interface Drawn {
 
 /** Whether a mark appended to each of `paths` is drawn, from one render of `example` with a distinct mark in every valid field. */
 const drawnMarks = (example: unknown, paths: readonly Path[]): Drawn[] => {
-  const valid = paths.map((path) => isValid(withAppended(example, path)));
+  const valid = paths.map((path, index) =>
+    isValid(withAppended(example, path, `mk${index}`))
+  );
   const marked = paths.reduce<unknown>(
     (node, path, index) =>
       valid[index] ? withAppended(node, path, `mk${index}`) : node,

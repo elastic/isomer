@@ -37,7 +37,10 @@ export type { SlideRenderGridNode, SlideRenderGridTile } from './types';
 const join = ` ${slideDistillery.tokens.render.separator.value} `;
 
 /** Catalog, schema, and renderers for {@link SlideRenderGridNode}. */
-export const slideRenderGridPrimitive = definePrimitive<SlideRenderGridNode>({
+export const slideRenderGridPrimitive = definePrimitive<
+  SlideRenderGridNode,
+  typeof schema
+>({
   type: 'slideRenderGrid',
   catalog,
   icon,

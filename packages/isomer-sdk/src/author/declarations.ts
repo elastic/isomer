@@ -11,7 +11,11 @@ import type { AnyPrimitiveDefinition } from '../define/primitive_module';
 
 import { readAuthoredSpec } from './authored_fields';
 import { prepareAuthoringInput } from './authoring_input';
-import { capitalize, createAuthoringModel } from './authoring_model';
+import {
+  type AuthoringChild,
+  capitalize,
+  createAuthoringModel,
+} from './authoring_model';
 import {
   ANONYMOUS_DEF,
   createTypePrinter,
@@ -131,8 +135,9 @@ export const buildAuthoringDeclarations = (
 ): string => {
   const defs = { ...(isJsonObject(schema.$defs) ? schema.$defs : {}) };
   const model = jsx ? createAuthoringModel(definitions) : undefined;
+  const members = [...(model?.membersByType.values() ?? [])].flat();
   const customProps = new Map<string, string>();
-  for (const [type, { field }] of model?.children ?? []) {
+  for (const { authorType, field } of members) {
     if (!field.propsSchema) {
       continue;
     }
@@ -175,7 +180,7 @@ export const buildAuthoringDeclarations = (
     }
     const { $defs: _defs, $schema: _schema, ...node } = projected;
     defs[id] = rewrite(node);
-    customProps.set(type, id);
+    customProps.set(authorType, id);
   }
   const used = new Set(RESERVED_NAMES);
   const claim = (base: string): string => {
@@ -236,19 +241,14 @@ export const buildAuthoringDeclarations = (
     }
     const out = [JSX_PRELUDE, AUTHOR_CHILDREN];
     const bindings: string[] = [];
-    const declared = new Set<string>();
-    const declareComponent = (
+    /** Declares the props type and returns the component's call signature. */
+    const declareProps = (
       component: string,
       node: JsonObject | undefined,
       optional: ReadonlySet<string>,
       takesChildren: boolean,
-      omit: ReadonlySet<string> = new Set(),
-      docs: readonly string[] = []
-    ): void => {
-      if (declared.has(component)) {
-        return;
-      }
-      declared.add(component);
+      omit: ReadonlySet<string> = new Set()
+    ): string => {
       const propsName =
         component === 'Composition'
           ? 'CompositionProps'
@@ -280,43 +280,29 @@ export const buildAuthoringDeclarations = (
           : printer.print(extra);
       const inputName = claim('AuthorInput');
       const keyName = claim('AuthorKey');
-      const signature = open
+      return open
         ? `<${inputName} extends ${propsName}>(props: ${inputName} & { [${keyName} in keyof ${inputName} as ${keyName} extends keyof ${propsName} | 'key' ? never : ${keyName}]: ${extraType} }) => null`
         : `(props: ${propsName}) => null`;
-      bindings.push(`  ${JSON.stringify(component)}: ${signature};`);
+    };
+    const bind = (
+      component: string,
+      signature: string,
+      docs: readonly string[]
+    ): void => {
       if (IDENTIFIER.test(component)) {
         out.push(`${jsDoc(docs, '')}const ${component}: ${signature};\n`);
       }
-    };
-    declareComponent(
-      'Composition',
-      schema,
-      new Set(['body']),
-      true,
-      new Set(['type']),
-      ['Props of the root `<Composition>` element.']
-    );
-    for (const definition of definitions) {
-      const { type } = definition;
-      const node = resolveNode(defs, ownDef(defs, type));
-      const spec = model.authoredByType.get(type);
-      const slots = model.childSlotsByType.get(type) ?? [];
-      const [slot] = slots;
-      const filled = spec
-        ? [...spec.children, ...spec.text].map(({ field }) => field)
-        : slots.length === 1 && slot
-          ? [slot.field]
-          : [];
-      declareComponent(
-        capitalize(type),
-        node,
-        new Set(filled),
-        filled.length > 0,
-        new Set(['type']),
-        primitiveDoc(definition, node)
+      bindings.push(
+        `  ${JSON.stringify(component)}: ${IDENTIFIER.test(component) ? `typeof ${component}` : signature.replace(/\n/g, '\n  ')};`
       );
-    }
-    for (const [type, { field, primitiveType, path }] of model.children) {
+    };
+    const memberSignature = ({
+      authorType,
+      field,
+      member,
+      primitiveType,
+      path,
+    }: AuthoringChild): string => {
       let node = resolveNode(defs, ownDef(defs, primitiveType));
       for (const step of path) {
         const properties =
@@ -324,7 +310,7 @@ export const buildAuthoringDeclarations = (
         const property = resolveNode(defs, properties[step.field]);
         node = step.array ? resolveNode(defs, property?.items) : property;
       }
-      const customId = customProps.get(type);
+      const customId = customProps.get(authorType);
       if (field.toItem) {
         node = customId ? resolveNode(defs, ownDef(defs, customId)) : undefined;
       }
@@ -337,11 +323,49 @@ export const buildAuthoringDeclarations = (
           ? []
           : [field.textField]),
       ]);
-      declareComponent(
-        capitalize(type),
+      return `  readonly ${IDENTIFIER.test(member) ? member : JSON.stringify(member)}: ${declareProps(
+        `${capitalize(primitiveType)}${member}`,
         node,
         optional,
         !!field.toItem || nested.length > 0 || field.textField !== undefined
+      )};\n`;
+    };
+    bind(
+      'Composition',
+      declareProps(
+        'Composition',
+        schema,
+        new Set(['body']),
+        true,
+        new Set(['type'])
+      ),
+      ['Props of the root `<Composition>` element.']
+    );
+    for (const definition of definitions) {
+      const { type } = definition;
+      const node = resolveNode(defs, ownDef(defs, type));
+      const spec = model.authoredByType.get(type);
+      const slots = model.childSlotsByType.get(type) ?? [];
+      const branded = spec
+        ? [...spec.children, ...spec.text].map(({ field }) => field)
+        : [];
+      const unbranded = slots.filter(({ field }) => !branded.includes(field));
+      const slotField = unbranded.length === 1 ? [unbranded[0]!.field] : [];
+      const filled = [...branded, ...slotField];
+      const signature = declareProps(
+        capitalize(type),
+        node,
+        new Set(filled),
+        filled.length > 0,
+        new Set(['type'])
+      );
+      const typeMembers = model.membersByType.get(type) ?? [];
+      bind(
+        capitalize(type),
+        typeMembers.length > 0
+          ? `(${signature}) & {\n${typeMembers.map(memberSignature).join('')}}`
+          : signature,
+        primitiveDoc(definition, node)
       );
     }
     out.push(`const components: {\n${bindings.join('\n')}\n};\n`);

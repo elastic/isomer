@@ -37,7 +37,7 @@ export const schema = z
   .object({
     type: z.literal('slideColumns'),
     items: fromChildren(
-      'slideColumn',
+      'column',
       z
         .array(columnSchema)
         .min(2)

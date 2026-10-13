@@ -14,7 +14,7 @@ export const catalog = {
   type: 'slideDiff',
   name: 'Diff',
   description:
-    'One snippet with changed lines marked. Each entry in lines is one line of source, with no newline.',
+    'One snippet whose `add` and `remove` ranges mark the lines a change introduced and deleted.',
   purpose:
     'Show the reader exactly what a change did to a piece of source: which lines it added, which it removed, and what stayed.',
   useWhen: [
@@ -23,7 +23,7 @@ export const catalog = {
   ],
   avoidWhen: [
     'Nothing changed and you are showing code as it is; use slideCode.',
-    'You are comparing two ideas or approaches rather than two versions of one file; use slideSplit.',
+    'You are comparing two ideas or approaches rather than two versions of one file; use slideSplitLayout.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

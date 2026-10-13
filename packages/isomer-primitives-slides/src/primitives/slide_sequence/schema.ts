@@ -7,6 +7,7 @@
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
+import { fromChildren } from '@elastic/isomer-sdk/author';
 
 import { authoredTextMaxLength, lineText } from '../authored_text';
 import { crossSuperRefine } from '../cross_field';
@@ -59,20 +60,28 @@ export type SlideSequenceMessage = z.infer<typeof messageSchema>;
 export const schema = z
   .object({
     type: z.literal('slideSequence'),
-    actors: z
-      .array(actorSchema)
-      .min(3)
-      .max(sequenceMaxActors)
-      .describe(
-        `Participants, left to right, each with a lifeline down the slide. 3 to ${sequenceMaxActors}. Every actor sends or receives at least one message. Order them so most messages join neighbors; a message that skips one sets its label by the sender.`
-      ),
-    messages: z
-      .array(messageSchema)
-      .min(2)
-      .max(sequenceMaxMessages)
-      .describe(
-        `Messages, top to bottom in the order they happen, each one arrow from sender to receiver. 2 to ${sequenceMaxMessages}, enough for every actor to take part.`
-      ),
+    actors: fromChildren(
+      'actor',
+      z
+        .array(actorSchema)
+        .min(3)
+        .max(sequenceMaxActors)
+        .describe(
+          `Participants, left to right, each with a lifeline down the slide. 3 to ${sequenceMaxActors}. Every actor sends or receives at least one message. Order them so most messages join neighbors; a message that skips one sets its label by the sender.`
+        ),
+      { text: 'label' }
+    ),
+    messages: fromChildren(
+      'message',
+      z
+        .array(messageSchema)
+        .min(2)
+        .max(sequenceMaxMessages)
+        .describe(
+          `Messages, top to bottom in the order they happen, each one arrow from sender to receiver. 2 to ${sequenceMaxMessages}, enough for every actor to take part.`
+        ),
+      { text: 'label' }
+    ),
     size: sizeField(),
   })
   .strict()

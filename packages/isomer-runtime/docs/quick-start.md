@@ -39,41 +39,35 @@ The pack ships its own style adapter, so the runtime has CSS without being told.
 
 ## 3. Write a composition
 
-A `Composition` says what the answer is, not how it looks. The wire discriminator stays `type: 'view'`. This one is the reference pack's title slide.
+A `Composition` says what the answer is, not how it looks. The wire discriminator stays `type: 'view'`. `slideJsx` authors it, and `toComposition` is the value every surface renders. This one is the reference pack's title slide: `TitleSlide.Aside` holds the bullet list, each `SlideBulletList.Item` is one point, and `SlideFrame.Footer` fills the footer.
 
-```ts
-import { type Composition } from '@elastic/isomer-sdk';
+```tsx
+import { slideJsx } from '@elastic/isomer-primitives-slides';
 
-const composition: Composition = {
-  type: 'view',
-  title: 'Isomer',
-  body: [
-    {
-      type: 'slideFrame',
-      tone: 'inverse',
-      brand: 'Isomer',
-      url: 'https://elastic.github.io/isomer',
-      body: [
-        {
-          type: 'slideTitle',
-          eyebrow: 'Reference pack',
-          title: 'Isomer',
-          tagline: 'One composition, **every surface**.',
-          aside: {
-            type: 'slideBulletList',
-            marker: 'check',
-            items: [
-              'React and HTML',
-              'Markdown and plain text',
-              'Slack Block Kit',
-              'SVG and PNG',
-            ],
-          },
-        },
-      ],
-    },
-  ],
-};
+const { Composition, SlideBulletList, SlideFrame, TitleSlide, toComposition } =
+  slideJsx;
+
+const composition = toComposition(
+  <Composition title="Isomer">
+    <SlideFrame tone="inverse">
+      <TitleSlide
+        eyebrow="Reference pack"
+        title="Isomer"
+        tagline="One composition, **every surface**."
+      >
+        <TitleSlide.Aside>
+          <SlideBulletList marker="check">
+            <SlideBulletList.Item>React and HTML</SlideBulletList.Item>
+            <SlideBulletList.Item>Markdown and plain text</SlideBulletList.Item>
+            <SlideBulletList.Item>Slack Block Kit</SlideBulletList.Item>
+            <SlideBulletList.Item>SVG and PNG</SlideBulletList.Item>
+          </SlideBulletList>
+        </TitleSlide.Aside>
+      </TitleSlide>
+      <SlideFrame.Footer brand="Isomer" url="https://elastic.github.io/isomer" />
+    </SlideFrame>
+  </Composition>
+);
 
 runtime.validate(composition); // { valid: true, errors: [], warnings: [], composition: <its checked copy> }
 ```

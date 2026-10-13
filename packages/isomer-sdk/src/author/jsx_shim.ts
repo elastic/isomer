@@ -21,6 +21,7 @@ import type { PrimitiveNode } from '../define/primitive_module';
 import {
   type AuthoredChildBrand,
   type AuthoredChildField,
+  type AuthoredNodesBrand,
   type AuthoredSpec,
   type AuthoredTextBrand,
   type AuthoredToItemBrand,
@@ -31,6 +32,7 @@ import {
   capitalize,
   type ChildSlot,
   createAuthoringModel,
+  memberType,
 } from './authoring_model';
 import { type AuthorComponent, authorType, defineAuthorComponent } from './jsx';
 
@@ -76,7 +78,7 @@ type LooseSchema<TSchema> = string extends keyof ShapeOf<TSchema>
 // The schema a brand is read from: `F`, or one an optional, nullable, default,
 // or readonly wrapper holds.
 type Branded<F> = F extends
-  AuthoredChildBrand<string, unknown> | AuthoredTextBrand
+  AuthoredChildBrand<string, unknown> | AuthoredTextBrand | AuthoredNodesBrand
   ? F
   : F extends {
         _zod: {
@@ -91,38 +93,87 @@ type Branded<F> = F extends
 
 type AuthoredNames<TSchema> = {
   [K in keyof ShapeOf<TSchema>]: Branded<ShapeOf<TSchema>[K]> extends
-    AuthoredChildBrand<string, unknown> | AuthoredTextBrand
+    AuthoredChildBrand<string, unknown> | AuthoredTextBrand | AuthoredNodesBrand
     ? K
     : never;
 }[keyof ShapeOf<TSchema>];
 
-type AuthorPropsForSchema<TSchema extends ZodObject> =
+type SlotValue<V> =
+  NonNullable<V> extends readonly (infer Item)[] ? Item : NonNullable<V>;
+
+/**
+ * A field holding body nodes, or an array of them: its `type` is wide or one of
+ * the pack's `TTypes`, so a discriminated config object does not count.
+ */
+type NodeSlotKey<T, TTypes extends string> = {
+  [K in keyof T]-?: K extends 'type'
+    ? never
+    : SlotValue<T[K]> extends { type: infer Type extends string }
+      ? string extends Type
+        ? K
+        : [Type] extends [TTypes]
+          ? K
+          : never
+      : never;
+}[keyof T];
+
+type IsUnion<T, U = T> = [T] extends [never]
+  ? false
+  : T extends unknown
+    ? [U] extends [T]
+      ? false
+      : true
+    : false;
+
+/** `T` when it is exactly one key. */
+type Only<T> = [T] extends [never]
+  ? never
+  : IsUnion<T> extends true
+    ? never
+    : T;
+
+/**
+ * The one unbranded node field JSX children fill. With several, each stays a
+ * prop, as at runtime.
+ */
+type PassthroughSlot<TSchema extends ZodObject, TTypes extends string> = Only<
+  Exclude<NodeSlotKey<z.infer<TSchema>, TTypes>, AuthoredNames<TSchema>>
+>;
+
+type FilledNames<TSchema extends ZodObject, TTypes extends string> =
+  AuthoredNames<TSchema> | PassthroughSlot<TSchema, TTypes>;
+
+type AuthorPropsForSchema<TSchema extends ZodObject, TTypes extends string> =
   LooseSchema<TSchema> extends true
     ? Record<string, unknown> & { children?: ReactNode }
-    : Omit<z.infer<TSchema>, 'type' | AuthoredNames<TSchema>> &
+    : Omit<z.infer<TSchema>, 'type' | FilledNames<TSchema, TTypes>> &
         Partial<
           Pick<
             z.infer<TSchema>,
-            Extract<AuthoredNames<TSchema>, keyof z.infer<TSchema>>
+            Extract<FilledNames<TSchema, TTypes>, keyof z.infer<TSchema>>
           >
         > & { children?: ReactNode };
 
-type AuthorPropsFor<P> = [SchemaOf<P>] extends [never]
+type AuthorPropsFor<P, TTypes extends string> = [SchemaOf<P>] extends [never]
   ? Record<string, unknown> & { children?: ReactNode }
-  : AuthorPropsForSchema<SchemaOf<P>>;
+  : AuthorPropsForSchema<SchemaOf<P>, TTypes>;
 
-type ChildEntry<F, TDepth extends unknown[]> = 0 extends 1 & F
+type ChildEntry<
+  F,
+  TOwner extends string,
+  TDepth extends unknown[],
+> = 0 extends 1 & F
   ? NoKeys
   : F extends AuthoredChildBrand<infer Name, infer Props>
     ? [Name] extends [string]
       ? {
           [K in Capitalize<Name>]: AuthorComponent<
             Props & { children?: ReactNode },
-            Name
+            `${TOwner}.${K}`
           >;
         } & (F extends AuthoredToItemBrand
           ? NoKeys
-          : ChildComponentsOf<ItemSchema<F>, [...TDepth, unknown]>)
+          : ChildComponentsOf<ItemSchema<F>, TOwner, [...TDepth, unknown]>)
       : NoKeys
     : NoKeys;
 
@@ -135,6 +186,7 @@ type UnionToIntersection<T> = (
 /** Child components branded on `TSchema`, then on each child's item schema, five levels deep. */
 type ChildComponentsOf<
   TSchema,
+  TOwner extends string,
   TDepth extends unknown[] = [],
 > = TDepth['length'] extends 5
   ? NoKeys
@@ -144,38 +196,38 @@ type ChildComponentsOf<
         {
           [K in keyof ShapeOf<TSchema>]: ChildEntry<
             Branded<ShapeOf<TSchema>[K]>,
+            TOwner,
             TDepth
           >;
         }[keyof ShapeOf<TSchema>]
       >;
 
-type ChildMapOfTuple<TPrimitives> = TPrimitives extends readonly [
-  infer Head,
-  ...infer Tail,
-]
-  ? ChildComponentsOf<SchemaOf<Head>> &
-      ChildMapOfTuple<Tail extends readonly { type: string }[] ? Tail : []>
-  : NoKeys;
-
-type ChildComponentMap<TPrimitives extends readonly { type: string }[]> =
-  ChildMapOfTuple<TPrimitives>;
+/** A primitive's child components, as members of its own component. */
+type MembersOf<P, TType extends string> = [SchemaOf<P>] extends [never]
+  ? NoKeys
+  : ChildComponentsOf<SchemaOf<P>, TType>;
 
 /**
  * PascalCase authoring components keyed from a pack's primitive `type` list.
- * `slideFrame` becomes `SlideFrame`. Props come from the primitive's schema.
+ * `slideFrame` becomes `SlideFrame`. Props come from the primitive's schema,
+ * and each branded child is a member: `SlideFrame.Footer`.
  */
 export type PrimitiveComponentMap<
   TPrimitives extends readonly { type: string }[],
 > = {
   [
     P in TPrimitives[number] as Capitalize<LiteralType<P['type'] & string>>
-  ]: AuthorComponent<AuthorPropsFor<P>, P['type'] & string>;
+  ]: AuthorComponent<
+    AuthorPropsFor<P, LiteralType<TPrimitives[number]['type'] & string>>,
+    P['type'] & string
+  > &
+    MembersOf<P, P['type'] & string>;
 };
 
 /**
  * A pack's JSX authoring front: the root `Composition` element, one
- * PascalCase component per primitive and per branded child, and the conversion
- * back to plain data.
+ * PascalCase component per primitive with its branded children as members,
+ * and the conversion back to plain data.
  */
 export type JsxShim<
   TNode extends PrimitiveNode = PrimitiveNode,
@@ -186,16 +238,20 @@ export type JsxShim<
   toComposition: (
     element: ReactElement<CompositionAuthorProps<TNode>>
   ) => AuthorComposition<TNode>;
-} & PrimitiveComponentMap<TPrimitives> &
-  ChildComponentMap<TPrimitives>;
+} & PrimitiveComponentMap<TPrimitives>;
 
 /**
  * Builds a pack's {@link JsxShim} from its primitive list.
  *
  * Branded schema fields ({@link fromChildren}, {@link fromTextChildren}) fill
- * from JSX children, and each child type becomes a component. A primitive with
- * no brand still fills its one child slot, array or single node, from
- * {@link PrimitiveDefinition.children}.
+ * from JSX children, and each child becomes a member of its primitive's
+ * component. Several branded fields share one children list, and each takes
+ * the elements of its member.
+ * Elements of a registered primitive that match none of them fill the one
+ * unbranded child slot from {@link PrimitiveDefinition.children}, or the one
+ * {@link fromNodeChildren} field. A primitive with no brand still fills that slot, array or
+ * single node, from its children. That field is optional on the component's
+ * props.
  */
 export const buildJsxShim = <
   const TPrimitives extends readonly { type: string }[] = readonly {
@@ -206,11 +262,8 @@ export const buildJsxShim = <
   primitives: TPrimitives = [] as unknown as TPrimitives
 ): JsxShim<TNode, TPrimitives> => {
   const primitiveTypes = new Set(primitives.map((primitive) => primitive.type));
-  const { authoredByType, children, childSlotsByType } =
+  const { authoredByType, membersByType, childSlotsByType } =
     createAuthoringModel(primitives);
-  const childComponents = new Map(
-    [...children.keys()].map((type) => [type, defineAuthorComponent(type)])
-  );
   const view = defineAuthorComponent<CompositionAuthorProps<TNode>, 'view'>(
     'view'
   );
@@ -224,15 +277,17 @@ export const buildJsxShim = <
     Composition: view,
     toComposition: (element) => toAuthorComposition<TNode>(element, env),
     ...Object.fromEntries(
-      primitives.map((primitive) => [
-        capitalize(primitive.type),
-        defineAuthorComponent(primitive.type),
-      ])
-    ),
-    ...Object.fromEntries(
-      [...childComponents].map(([type, component]) => [
+      primitives.map(({ type }) => [
         capitalize(type),
-        component,
+        Object.assign(
+          defineAuthorComponent(type),
+          Object.fromEntries(
+            (membersByType.get(type) ?? []).map(({ member, authorType }) => [
+              member,
+              defineAuthorComponent(authorType),
+            ])
+          )
+        ),
       ])
     ),
   } as JsxShim<TNode, TPrimitives>;
@@ -302,13 +357,21 @@ const bodyNodeFromElement = <TNode extends PrimitiveNode>(
   )) {
     const childField = authored?.children.find((field) => field.field === key);
     converted[key] = childField
-      ? valueFromChildField(value, childField, env)
+      ? valueFromChildField(value, childField, env, type)
       : convertPropValue(value, key, slots, parseChild);
   }
 
   const rawChildren = element.props.children;
   if (authored && (authored.children.length > 0 || authored.text.length > 0)) {
-    fillAuthoredFields(converted, authored, rawChildren, env);
+    fillAuthoredFields(
+      converted,
+      authored,
+      rawChildren,
+      env,
+      slots,
+      parseChild,
+      type
+    );
   } else {
     const unique = slots.length === 1 ? slots[0] : undefined;
     if (
@@ -317,7 +380,7 @@ const bodyNodeFromElement = <TNode extends PrimitiveNode>(
       rawChildren !== undefined
     ) {
       const nested = flattenChildren(rawChildren).map(parseChild);
-      converted[unique.field] = unique.array ? nested : nested[0];
+      converted[unique.field] = slotValue(nested, unique);
     } else if (slots.length === 0 && flattenChildren(rawChildren).length > 0) {
       throw new IsomerError(
         'UNEXPECTED_CHILDREN',
@@ -333,33 +396,112 @@ const fillAuthoredFields = (
   converted: Record<string, unknown>,
   authored: AuthoredSpec,
   rawChildren: ReactNode,
-  env: ParseEnv
+  env: ParseEnv,
+  slots: readonly ChildSlot[],
+  parseChild: (child: ReactNode) => PrimitiveNode,
+  parentType: string
 ): void => {
-  for (const field of authored.children) {
-    if (converted[field.field] !== undefined || rawChildren === undefined) {
-      continue;
-    }
-    converted[field.field] = valueFromBrand(
-      flattenChildren(rawChildren),
-      field,
-      env
-    );
-  }
-  for (const field of authored.text) {
-    if (converted[field.field] !== undefined) {
-      continue;
-    }
-    if (rawChildren === undefined) {
+  const unsetChildren = authored.children.filter(
+    (field) => converted[field.field] === undefined
+  );
+  const unsetText = authored.text.filter(
+    (field) => converted[field.field] === undefined
+  );
+  const brandedFields = new Set(authored.children.map((field) => field.field));
+  const unbranded = slots.filter(({ field }) => !brandedFields.has(field));
+  const slot = unbranded.length === 1 ? unbranded[0] : undefined;
+  const slotOpen = slot !== undefined && converted[slot.field] === undefined;
+  if (
+    rawChildren === undefined ||
+    (unsetChildren.length === 0 && unsetText.length === 0 && !slotOpen)
+  ) {
+    for (const field of unsetText) {
       if (!field.optional) {
         throw new IsomerError(
           'MISSING_AUTHORED_TEXT',
           `Expected text children for "${field.field}".`
         );
       }
+    }
+    return;
+  }
+
+  const flat = flattenChildren(rawChildren);
+  const elements = flat.filter(isAuthorElement);
+  const textNodes = flat.filter((child) => !isAuthorElement(child));
+  const claimed = new Set<ReactElement>();
+  for (const field of unsetChildren) {
+    const matching = elements.filter(
+      (child) => getAuthorType(child) === memberType(parentType, field)
+    );
+    if (matching.length === 0) {
+      if (flat.length === 0 && field.array && !field.optional) {
+        converted[field.field] = [];
+      }
       continue;
     }
-    converted[field.field] = textFromChildren(rawChildren, {
+    for (const child of matching) {
+      claimed.add(child);
+    }
+    converted[field.field] = valueFromBrand(matching, field, env, parentType);
+  }
+
+  const brandedTypes = new Set(
+    authored.children.map((field) => memberType(parentType, field))
+  );
+  const stray = elements.filter(
+    (child) => brandedTypes.has(getAuthorType(child)) && !claimed.has(child)
+  );
+  if (stray.length > 0) {
+    const childType = getAuthorType(stray[0]!);
+    throw new IsomerError(
+      'UNEXPECTED_CHILDREN',
+      `<${capitalize(parentType)}> already has its <${capitalize(childType)}>.`
+    );
+  }
+
+  const leftover = elements.filter((child) => !claimed.has(child));
+  if (slotOpen && slot && leftover.length > 0) {
+    const nested = leftover.map(parseChild);
+    converted[slot.field] = slotValue(nested, slot);
+  } else if (leftover.length > 0) {
+    const childType = getAuthorType(leftover[0]!);
+    const [empty, ...moreEmpty] = unsetChildren.filter(
+      ({ field }) => converted[field] === undefined
+    );
+    if (empty && moreEmpty.length === 0 && !slotOpen) {
+      throw new IsomerError(
+        'AUTHOR_TYPE_MISMATCH',
+        `Expected <${capitalize(memberType(parentType, empty))}> but received <${capitalize(childType)}>.`
+      );
+    }
+    throw new IsomerError(
+      'UNEXPECTED_CHILDREN',
+      `<${capitalize(childType)}> is not a child of <${capitalize(parentType)}>.`
+    );
+  }
+
+  if (textNodes.length === 0) {
+    for (const field of unsetText) {
+      if (!field.optional) {
+        throw new IsomerError(
+          'MISSING_AUTHORED_TEXT',
+          `Expected text children for "${field.field}".`
+        );
+      }
+    }
+    return;
+  }
+  if (unsetText.length === 0) {
+    throw new IsomerError(
+      'EXPECTED_JSX_ELEMENT',
+      'Expected an Isomer JSX element.'
+    );
+  }
+  for (const field of unsetText) {
+    converted[field.field] = textFromChildren(textNodes, {
       collapseWhitespace: field.collapseWhitespace,
+      ...(field.dedent ? { dedent: true } : {}),
     });
   }
 };
@@ -367,10 +509,11 @@ const fillAuthoredFields = (
 const valueFromChildField = (
   value: unknown,
   field: AuthoredChildField,
-  env: ParseEnv
+  env: ParseEnv,
+  owner: string
 ): unknown => {
   if (isJsxNodes(value)) {
-    return valueFromBrand(flattenChildren(value), field, env);
+    return valueFromBrand(flattenChildren(value), field, env, owner);
   }
   return value;
 };
@@ -392,16 +535,19 @@ const isJsxNodes = (value: unknown): value is ReactNode => {
 const valueFromBrand = (
   elements: readonly ReactNode[],
   field: AuthoredChildField,
-  env: ParseEnv
+  env: ParseEnv,
+  owner: string
 ): unknown => {
-  const items = elements.map((child) => itemFromElement(child, field, env));
+  const items = elements.map((child) =>
+    itemFromElement(child, field, env, owner)
+  );
   if (field.array) {
     return items;
   }
   if (items.length > 1) {
     throw new IsomerError(
       'UNEXPECTED_CHILDREN',
-      `"${field.field}" takes one <${capitalize(field.childType)}>, not ${items.length}.`
+      `"${field.field}" takes one <${capitalize(memberType(owner, field))}>, not ${items.length}.`
     );
   }
   return items[0];
@@ -410,11 +556,12 @@ const valueFromBrand = (
 const itemFromElement = (
   child: ReactNode,
   field: AuthoredChildField,
-  env: ParseEnv
+  env: ParseEnv,
+  owner: string
 ): unknown => {
   const element = requireAuthorElement<Record<string, unknown>>(
     child,
-    field.childType
+    memberType(owner, field)
   );
   if (field.toItem) {
     return field.toItem(element.props, {
@@ -433,7 +580,14 @@ const itemFromElement = (
   ) {
     props[field.textField] = textFromChildren(text);
   }
-  fillNestedBrands(field.itemSchema, props, elements, env);
+  fillNestedBrands(
+    field.itemSchema,
+    props,
+    elements,
+    env,
+    owner,
+    capitalize(memberType(owner, field))
+  );
   return props;
 };
 
@@ -441,22 +595,55 @@ const fillNestedBrands = (
   itemSchema: ZodType,
   props: Record<string, unknown>,
   elements: readonly ReactElement[],
-  env: ParseEnv
+  env: ParseEnv,
+  owner: string,
+  parent: string
 ): void => {
   if (elements.length === 0) {
     return;
   }
-  for (const field of readAuthoredSpec(itemSchema).children) {
+  const fields = readAuthoredSpec(itemSchema).children;
+  const claimed = new Set<ReactElement>();
+  for (const field of fields) {
     if (props[field.field] !== undefined) {
       continue;
     }
     const matching = elements.filter(
-      (child) => getAuthorType(child) === field.childType
+      (child) => getAuthorType(child) === memberType(owner, field)
     );
     if (matching.length > 0) {
-      props[field.field] = valueFromBrand(matching, field, env);
+      matching.forEach((child) => claimed.add(child));
+      props[field.field] = valueFromBrand(matching, field, env, owner);
     }
   }
+  const [stray] = elements.filter((child) => !claimed.has(child));
+  if (stray) {
+    const strayType = getAuthorType(stray);
+    const held = fields.some((field) => memberType(owner, field) === strayType);
+    throw new IsomerError(
+      'UNEXPECTED_CHILDREN',
+      held
+        ? `<${parent}> already has its <${capitalize(strayType)}>.`
+        : `<${capitalize(strayType)}> is not a child of <${parent}>.`
+    );
+  }
+};
+
+/** The slot's nodes, or its one node; throws on a second node for a single-node slot. */
+const slotValue = <TNode extends PrimitiveNode>(
+  nodes: readonly TNode[],
+  { array, field }: ChildSlot
+): readonly TNode[] | TNode | undefined => {
+  if (array) {
+    return nodes;
+  }
+  if (nodes.length > 1) {
+    throw new IsomerError(
+      'UNEXPECTED_CHILDREN',
+      `"${field}" takes one node, not ${nodes.length}.`
+    );
+  }
+  return nodes[0];
 };
 
 const convertPropValue = <TNode extends PrimitiveNode>(
@@ -465,10 +652,10 @@ const convertPropValue = <TNode extends PrimitiveNode>(
   slots: readonly ChildSlot[],
   parseChild: (child: ReactNode) => TNode
 ): unknown => {
-  const asArray = slots.some((slot) => slot.field === field && slot.array);
+  const array = slots.some((slot) => slot.field === field && slot.array);
   const fromJsx = nodesFromJsx(value, parseChild);
   if (fromJsx) {
-    return asArray ? fromJsx : fromJsx[0];
+    return slotValue(fromJsx, { array, field });
   }
   if (Array.isArray(value)) {
     return value.flatMap((item: unknown) => {
@@ -510,12 +697,31 @@ export const flattenChildren = (children: ReactNode): ReactNode[] =>
     return child;
   });
 
+const lineBreak = /\r\n|[\n\r\u2028\u2029]/;
+
+// A template literal's source: the break after the opening backtick, the
+// indentation before the closing one, and the indentation every line shares go.
+const dedentSource = (text: string): string => {
+  const all = text.split(lineBreak);
+  const start = all.length > 1 && all[0] === '' ? 1 : 0;
+  const end =
+    all.length - start > 1 && /^ *$/.test(all[all.length - 1]!)
+      ? all.length - 1
+      : all.length;
+  const lines = all.slice(start, end);
+  const indents = lines
+    .filter((line) => line.trim() !== '')
+    .map((line) => line.length - line.trimStart().length);
+  const shared = indents.length > 0 ? Math.min(...indents) : 0;
+  return lines.map((line) => line.slice(shared)).join('\n');
+};
+
 /**
- * Children joined into one string. Throws on an element child, so a prop typed as text stays text. Collapses whitespace unless `{ collapseWhitespace: false }`.
+ * Children joined into one string. Throws on an element child, so a prop typed as text stays text. Collapses whitespace unless `{ collapseWhitespace: false }`; `{ dedent: true }` reads it as source, lines joined by `\n`.
  */
 export const textFromChildren = (
   children: ReactNode,
-  options?: { collapseWhitespace?: boolean }
+  options?: { collapseWhitespace?: boolean; dedent?: boolean }
 ): string => {
   const text = flattenChildren(children)
     .map((child) => {
@@ -528,6 +734,9 @@ export const textFromChildren = (
       );
     })
     .join('');
+  if (options?.dedent) {
+    return dedentSource(text);
+  }
   if (options?.collapseWhitespace === false) {
     return text.trim();
   }

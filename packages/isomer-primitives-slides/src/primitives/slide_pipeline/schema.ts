@@ -7,6 +7,7 @@
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
+import { fromChildren } from '@elastic/isomer-sdk/author';
 
 import { lineText, wrappedText } from '../authored_text';
 import { crossRefine } from '../cross_field';
@@ -89,20 +90,27 @@ export const schema = z
         'What comes out, as a short code-style chip after the last step, e.g. "Receipt". Steps mode only.'
       )
       .optional(),
-    steps: z
-      .array(stepSchema)
-      .min(2)
-      .max(pipelineMaxSteps)
-      .describe(
-        `Steps in the order they run, left to right. 2 to ${pipelineMaxSteps}. Without \`spans\` they render numbered, each with a title and body. With \`spans\` they render as chips joined by lines.`
-      ),
-    spans: z
-      .array(spanSchema)
-      .max(pipelineMaxSpans)
-      .describe(
-        `Brackets under runs of adjacent steps, each captioned with who owns that part. Up to ${pipelineMaxSpans}. A non-empty list switches to spans mode: steps become chips, and \`start\`, \`end\`, \`size\`, and step bodies are not allowed. Spans must not overlap. Leave it out or empty for steps mode.`
-      )
-      .optional(),
+    steps: fromChildren(
+      'step',
+      z
+        .array(stepSchema)
+        .min(2)
+        .max(pipelineMaxSteps)
+        .describe(
+          `Steps in the order they run, left to right. 2 to ${pipelineMaxSteps}. Without \`spans\` they render numbered, each with a title and body. With \`spans\` they render as chips joined by lines.`
+        ),
+      { text: 'body' }
+    ),
+    spans: fromChildren(
+      'span',
+      z
+        .array(spanSchema)
+        .max(pipelineMaxSpans)
+        .describe(
+          `Brackets under runs of adjacent steps, each captioned with who owns that part. Up to ${pipelineMaxSpans}. A non-empty list switches to spans mode: steps become chips, and \`start\`, \`end\`, \`size\`, and step bodies are not allowed. Spans must not overlap. Leave it out or empty for steps mode.`
+        ),
+      { text: 'body' }
+    ).optional(),
     size: sizeField(),
   })
   .strict()

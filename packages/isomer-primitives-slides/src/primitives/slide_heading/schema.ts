@@ -7,6 +7,7 @@
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
+import { fromTextChildren } from '@elastic/isomer-sdk/author';
 
 import { wrappedText } from '../authored_text';
 import { sizeField } from '../size';
@@ -15,8 +16,10 @@ import { sizeField } from '../size';
 export const schema = z
   .object({
     type: z.literal('slideHeading'),
-    title: wrappedText().describe(
-      'The slide’s claim, as a sentence. Aim for one line; two at most. `code` and `**strong**` marks are allowed; strong takes the `primary` tone.'
+    title: fromTextChildren(
+      wrappedText().describe(
+        'The slide’s claim, as a sentence. Aim for one line; two at most. `code` and `**strong**` marks are allowed; strong takes the `primary` tone.'
+      )
     ),
     lede: wrappedText()
       .describe(

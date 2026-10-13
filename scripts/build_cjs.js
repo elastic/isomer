@@ -8,9 +8,11 @@
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 
-import { workspacePackages } from './workspace_packages.js';
+import { isEsmOnly, workspacePackages } from './workspace_packages.js';
 
-for (const pkg of workspacePackages()) {
+for (const pkg of workspacePackages().filter(
+  ({ manifest }) => !isEsmOnly(manifest)
+)) {
   execFileSync(
     'pnpm',
     ['exec', 'tsc', '-p', join(pkg.dir, 'tsconfig.build.cjs.json')],

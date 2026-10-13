@@ -1,0 +1,29 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "composite": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "tsconfig.build.tsbuildinfo",
+    "inlineSources": true,
+    "types": ["node"]
+  },
+  "include": ["src"],
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "src/fixtures/**",
+    "src/test_setup.ts",
+    "dev/**"
+  ],
+  "references": [
+    { "path": "../isomer-sdk/tsconfig.build.json" },
+    { "path": "../isomer-runtime/tsconfig.build.json" },
+    { "path": "../isomer-image-takumi/tsconfig.build.json" }
+  ],
+  "tsc-alias": {
+    "resolveFullPaths": true,
+    "resolveFullExtension": ".js"
+  }
+}

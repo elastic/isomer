@@ -7,10 +7,12 @@
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
+import { fromChildren } from '@elastic/isomer-sdk/author';
 
 import { quadrant } from '../../theme/components/quadrant';
 import { lineText } from '../authored_text';
 import { sizeField } from '../size';
+import { textItems } from '../text_items';
 
 const axisSchema = (name: string, low: string, high: string) =>
   z
@@ -29,10 +31,15 @@ const quadrantSchema = z
     label: lineText().describe(
       'A short caption naming the quadrant, set in its outer corner, e.g. “Quick wins”.'
     ),
-    items: z
-      .array(lineText().describe('One or two words, set as a chip.'))
-      .max(4)
-      .describe('0 to 4 things that belong in this quadrant, set as chips.'),
+    items: textItems(
+      'item',
+      z
+        .array(lineText().describe('One or two words, set as a chip.'))
+        .max(4)
+        .describe(
+          'Up to 4 things that belong in this quadrant, set as chips. Leave it out for an empty quadrant.'
+        )
+    ).optional(),
   })
   .strict();
 
@@ -49,12 +56,15 @@ export const schema = z
     y: axisSchema('vertical', 'bottom', 'top').describe(
       'The vertical axis: `low` labels the bottom end, `high` the top.'
     ),
-    quadrants: z
-      .array(quadrantSchema)
-      .length(4)
-      .describe(
-        'Exactly four quadrants, in the order top-left, top-right, bottom-left, bottom-right. Items go in a quadrant, never at a coordinate.'
-      ),
+    quadrants: fromChildren(
+      'cell',
+      z
+        .array(quadrantSchema)
+        .length(4)
+        .describe(
+          'Exactly four quadrants, in the order top-left, top-right, bottom-left, bottom-right. Items go in a quadrant, never at a coordinate.'
+        )
+    ),
     highlight: z
       .number()
       .int()

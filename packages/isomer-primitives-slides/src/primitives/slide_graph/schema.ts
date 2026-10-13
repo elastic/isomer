@@ -7,6 +7,7 @@
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
+import { fromChildren } from '@elastic/isomer-sdk/author';
 
 import { graphMaxMain } from '../../theme/components/graph';
 import { lineText, wrappedText } from '../authored_text';
@@ -15,18 +16,17 @@ import { sizeField } from '../size';
 
 export const slideGraphPlacements = ['above', 'below'] as const;
 
-export const slideGraphShape = `slideGraph supports one left-to-right main row of 2–${graphMaxMain} nodes (the nodes without \`placement\`, in order, joined by edges [main[i], main[i + 1]]), plus at most one \`above\` and one \`below\` node, each joined to one main-row node by a single edge`;
+export const slideGraphDirections = ['in', 'out'] as const;
+
+export const slideGraphShape = `slideGraph supports one left-to-right main row of 2–${graphMaxMain} nodes (the nodes without \`placement\`, in order, each joined to the next by an arrow), plus at most one \`above\` and one \`below\` node, each joined by one arrow to the main-row node its \`of\` names`;
 
 const maxNodes = graphMaxMain + slideGraphPlacements.length;
-const maxEdges = graphMaxMain - 1 + slideGraphPlacements.length;
-
-/** `[from, to]` as a key no id text can collide with. */
-const edgeKey = (from: string, to: string): string =>
-  JSON.stringify([from, to]);
 
 const nodeSchema = z
   .object({
-    id: lineText().describe('A unique id that `edges` refer to, e.g. "cart".'),
+    id: lineText().describe(
+      'A unique id, e.g. "cart". An above or below node names a main-row node by it in `of`.'
+    ),
     term: lineText().describe('The concept’s name: one or two words.'),
     body: wrappedText().describe(
       'A short sentence defining the term, about six words. `code` and `**strong**` marks are allowed.'
@@ -40,7 +40,18 @@ const nodeSchema = z
     placement: z
       .enum(slideGraphPlacements)
       .describe(
-        'Takes the node out of the main row and sets it above or below the main-row node it has an edge with. Omit for main-row nodes; at most one node each above and below.'
+        'Takes the node out of the main row and sets it above or below the main-row node `of` names. Omit for main-row nodes; at most one node each above and below.'
+      )
+      .optional(),
+    of: lineText()
+      .describe(
+        'The `id` of the main-row node this above or below node sits over or under, joined to it by one arrow. Set with `placement`, and only with it.'
+      )
+      .optional(),
+    direction: z
+      .enum(slideGraphDirections)
+      .describe(
+        'Which way an above or below node’s arrow runs: `in`, the default, from this node to `of`; `out`, from `of` to this node. Only with `placement`.'
       )
       .optional(),
   })
@@ -50,27 +61,17 @@ const nodeSchema = z
 export const schema = z
   .object({
     type: z.literal('slideGraph'),
-    nodes: z
-      .array(nodeSchema)
-      .min(2)
-      .max(maxNodes)
-      .describe(
-        `2–${maxNodes} named concepts. Nodes without \`placement\` form the main row, left to right in array order (2–${graphMaxMain} of them). Add at most one \`placement: "above"\` and one \`placement: "below"\` node.`
-      ),
-    edges: z
-      .array(
-        z
-          .tuple([
-            lineText().describe('The `id` the arrow starts from.'),
-            lineText().describe('The `id` the arrow points at.'),
-          ])
-          .describe('`[from, to]` node ids; the arrow points at `to`.')
-      )
-      .min(1)
-      .max(maxEdges)
-      .describe(
-        'Arrows between nodes. Include exactly [main[i], main[i + 1]] for each neighboring pair in the main row, plus one edge per above or below node to the main-row node it sits over or under, in either direction. No other edges are drawn, so none are allowed.'
-      ),
+    nodes: fromChildren(
+      'node',
+      z
+        .array(nodeSchema)
+        .min(2)
+        .max(maxNodes)
+        .describe(
+          `2–${maxNodes} named concepts. Nodes without \`placement\` form the main row, left to right in array order (2–${graphMaxMain} of them), each joined to the next by an arrow. Add at most one \`placement: "above"\` and one \`placement: "below"\` node, each naming the main-row node it joins in \`of\`.`
+        ),
+      { text: 'body' }
+    ),
     caption: wrappedText()
       .describe(
         'One or two sentences on how the concepts fit together, set in the empty space beside the upper node. `code` and `**strong**` marks are allowed.'
@@ -81,8 +82,8 @@ export const schema = z
   .strict()
   .check(
     crossSuperRefine(
-      ({ nodes, edges }, ctx) => {
-        if (nodes.length > maxNodes || edges.length > maxEdges) {
+      ({ nodes }, ctx) => {
+        if (nodes.length > maxNodes) {
           return;
         }
         const fail = (message: string, path: PropertyKey[]) =>
@@ -122,50 +123,32 @@ export const schema = z
           }
         }
 
-        const mainIds = main.map(({ id }) => id);
-        const links = mainIds.flatMap((from, index) => {
-          const to = mainIds[index + 1];
-          return to === undefined ? [] : [[from, to] as const];
-        });
-        const chain = new Set(links.map(([from, to]) => edgeKey(from, to)));
-        const seen = new Set<string>();
-        const attached = new Map<string, number>();
-        edges.forEach(([from, to], index) => {
-          const path = ['edges', index];
-          const unknown = [from, to].find((id) => !ids.has(id));
-          if (unknown !== undefined) {
-            fail(`edge [${from}, ${to}] names unknown node "${unknown}"`, path);
+        const mainIds = new Set(main.map(({ id }) => id));
+        nodes.forEach(({ id, placement, of, direction }, index) => {
+          if (placement === undefined) {
+            for (const [key, value] of [
+              ['of', of],
+              ['direction', direction],
+            ] as const) {
+              if (value !== undefined) {
+                fail(`the main-row node "${id}" takes no \`${key}\``, [
+                  'nodes',
+                  index,
+                  key,
+                ]);
+              }
+            }
             return;
           }
-          const key = edgeKey(from, to);
-          if (seen.has(key)) {
-            fail(`edge [${from}, ${to}] is repeated`, path);
-            return;
-          }
-          seen.add(key);
-          if (chain.has(key)) {
-            return;
-          }
-          const [offRow, ...rest] = [from, to].filter(
-            (id) => !mainIds.includes(id)
-          );
-          if (offRow === undefined || rest.length > 0) {
-            fail(`edge [${from}, ${to}] does not fit the layout`, path);
-            return;
-          }
-          attached.set(offRow, (attached.get(offRow) ?? 0) + 1);
-        });
-
-        links.forEach(([from, to]) => {
-          if (!seen.has(edgeKey(from, to))) {
-            fail(`missing main-row edge [${from}, ${to}]`, ['edges']);
-          }
-        });
-        nodes.forEach(({ id, placement }, index) => {
-          if (placement !== undefined && attached.get(id) !== 1) {
+          if (of === undefined) {
+            fail(`the ${placement} node "${id}" needs \`of\``, [
+              'nodes',
+              index,
+            ]);
+          } else if (!mainIds.has(of)) {
             fail(
-              `the ${placement} node "${id}" needs exactly one edge to a main-row node`,
-              ['nodes', index]
+              `the ${placement} node "${id}" names "${of}" in \`of\`, not a main-row node`,
+              ['nodes', index, 'of']
             );
           }
         });
@@ -173,9 +156,9 @@ export const schema = z
       [
         slideGraphShape,
         'Node ids are unique.',
-        'Every edge names a node id.',
-        'No edge repeats.',
         'At most one node is emphasized.',
+        'Set with `placement`, and only with it.',
+        'Only with `placement`.',
       ]
     )
   );
@@ -186,3 +169,23 @@ export type SlideGraphPlacement = (typeof slideGraphPlacements)[number];
 
 /** Named terms in a fixed layout: a main chain, one node above, one below. */
 export type SlideGraphNode = z.infer<typeof schema> & PrimitiveNode;
+
+/** Every arrow as `[from, to]` ids: the main row left to right, then each placed node's. */
+export const graphEdges = ({
+  nodes,
+}: Pick<SlideGraphNode, 'nodes'>): (readonly [string, string])[] => {
+  const main = nodes
+    .filter(({ placement }) => placement === undefined)
+    .map(({ id }) => id);
+  return [
+    ...main.flatMap((from, index) => {
+      const to = main[index + 1];
+      return to === undefined ? [] : [[from, to] as const];
+    }),
+    ...nodes.flatMap(({ id, placement, of, direction }) =>
+      placement === undefined || of === undefined
+        ? []
+        : [direction === 'out' ? ([of, id] as const) : ([id, of] as const)]
+    ),
+  ];
+};

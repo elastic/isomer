@@ -80,7 +80,7 @@ describe('slideRender schema', () => {
     expect(
       errorsOf({
         ...bareExample,
-        body: [{ type: 'slideStack', items: [placeholderExample] }],
+        body: [{ type: 'slideStackLayout', items: [placeholderExample] }],
       })
     ).toContainEqual(
       'body[0].body[1].body[0].items[0]: an embedded body cannot hold another render'
@@ -190,13 +190,13 @@ describe('slideRender layout', () => {
 
   it('lays out an embedded slide on a fresh full slide, wherever the render sits', () => {
     const statement = {
-      type: 'slideStatement',
+      type: 'statementSlide',
       text: 'x'.repeat(statementFit.l + 1),
     };
     const alone = renderedStep('statement-textSize', statement);
     const inPane = (node: object) =>
       renderedStep('statement-textSize', {
-        type: 'slideSplit',
+        type: 'slideSplitLayout',
         panes: [
           { items: [node] },
           { items: [{ type: 'slideBulletList', items: ['Beside'] }] },
@@ -247,17 +247,17 @@ describe('slideRender output', () => {
   it('quotes a drawn slide and prints another surface’s output', () => {
     expect(runtime.surfaces.markdown.renderNode(example))
       .toMatchInlineSnapshot(`
-      "_The delivery slide, from the snapshot surface · delivery-times · snapshot_
+        "_The delivery slide, from the snapshot surface_
 
-      > # Orders now arrive in under 30 minutes
-      >
-      > Routing from the nearest store cut the median wait by eleven minutes.
-      >
-      > _Basket · 02 Operations_"
-    `);
+        > # Orders now arrive in under 30 minutes
+        >
+        > Routing from the nearest store cut the median wait by eleven minutes.
+        >
+        > _Basket · 02 Operations_"
+      `);
     expect(runtime.surfaces.markdown.renderNode(markdownExample))
       .toMatchInlineSnapshot(`
-        "_The delivery slide, as Markdown · markdown_
+        "_The delivery slide, as Markdown_
 
         \`\`\`
         # Orders now arrive in under 30 minutes
@@ -303,7 +303,8 @@ describe('slideRender output', () => {
 describe('slideRender blank lines', () => {
   const code = {
     type: 'slideCode',
-    panels: [{ file: 'a.ts', lines: ['const a = 1;', '', 'const b = 2;'] }],
+    file: 'a.ts',
+    text: 'const a = 1;\n\nconst b = 2;',
   };
   const node = { type: 'slideRender', surface: 'text', body: [code] };
 
@@ -327,7 +328,7 @@ describe('slideRender blank lines', () => {
 
 describe('slideRender embedded visibility', () => {
   const statement = (text: string, surfaces: string[]) => ({
-    type: 'slideStatement',
+    type: 'statementSlide',
     text,
     surfaces,
   });
@@ -393,23 +394,53 @@ describe('slideRender JSX', () => {
     });
   });
 
-  it.each(['SlideRender', 'SlideRenderGrid'] as const)(
-    'refuses embedded slides passed to <%s> as children',
-    (name) => {
-      const { Composition: View, SlideHeading, toComposition } = slideJsx;
-      expect(() =>
-        toComposition(
+  it('takes the slides it embeds as children', () => {
+    const {
+      Composition: View,
+      SlideHeading,
+      SlideRender,
+      toComposition,
+    } = slideJsx;
+    expect(
+      toComposition(
+        createElement(
+          View,
+          null,
           createElement(
-            View,
-            null,
-            createElement(
-              slideJsx[name],
-              { surface: 'snapshot', tiles: [] },
-              createElement(SlideHeading, { title: 'Embedded' })
-            )
+            SlideRender,
+            { surface: 'snapshot' },
+            createElement(SlideHeading, { title: 'Embedded' })
           )
         )
-      ).toThrow(`<${name}> takes no JSX children`);
-    }
-  );
+      ).body
+    ).toEqual([
+      {
+        type: 'slideRender',
+        surface: 'snapshot',
+        body: [{ type: 'slideHeading', title: 'Embedded' }],
+      },
+    ]);
+  });
+
+  it('refuses embedded slides passed to <SlideRenderGrid> as children', () => {
+    const {
+      Composition: View,
+      SlideHeading,
+      SlideRenderGrid,
+      toComposition,
+    } = slideJsx;
+    expect(() =>
+      toComposition(
+        createElement(
+          View,
+          null,
+          createElement(
+            SlideRenderGrid,
+            { body: [{ type: 'slideHeading', title: 'Embedded' }] },
+            createElement(SlideHeading, { title: 'Embedded' })
+          )
+        )
+      )
+    ).toThrow('Expected <SlideRenderGrid.Tile> but received <SlideHeading>.');
+  });
 });

@@ -27,26 +27,26 @@ import { statementFit } from '../theme/components/statement';
 import { title, titleShares } from '../theme/components/title';
 import { scalePx } from '../theme/scale';
 
+import { example as agendaExample } from './agenda_slide/examples';
+import { example as closingExample } from './closing_slide/examples';
 import { frameBodyLayout, openBody, slideLayout, withLayout } from './layout';
+import { example as sectionExample } from './section_slide/examples';
 import { lineBox, trackWidth } from './size';
 import { referenceHeading } from './size.fixtures';
-import { example as agendaExample } from './slide_agenda/examples';
-import { example as closingExample } from './slide_closing/examples';
 import { react as frameReact } from './slide_frame/react';
 import type { SlideFrameNode } from './slide_frame/types';
 import { tallestExample } from './slide_heading/examples';
 import { headingRoom, referenceRoom } from './slide_heading/fit';
 import type { SlideHeadingNode } from './slide_heading/schema';
-import { example as sectionExample } from './slide_section/examples';
-import { paneWidths } from './slide_split/pane_layout';
-import { react as splitReact } from './slide_split/react';
-import type { SlideSplitNode } from './slide_split/types';
-import { react as stackReact } from './slide_stack/react';
-import type { SlideStackNode } from './slide_stack/types';
-import type { SlideStatementNode } from './slide_statement/schema';
-import { soloExample as titleExample } from './slide_title/examples';
-import { react as titleReact } from './slide_title/react';
-import type { SlideTitleNode } from './slide_title/types';
+import { paneWidths } from './slide_split_layout/pane_layout';
+import { react as splitReact } from './slide_split_layout/react';
+import type { SlideSplitLayoutNode } from './slide_split_layout/types';
+import { react as stackReact } from './slide_stack_layout/react';
+import type { SlideStackLayoutNode } from './slide_stack_layout/types';
+import type { StatementSlideNode } from './statement_slide/schema';
+import { soloExample as titleExample } from './title_slide/examples';
+import { react as titleReact } from './title_slide/react';
+import type { TitleSlideNode } from './title_slide/types';
 
 const dispatcher = createPrimitiveDispatcher<PrimitiveNode, SlidePackTypes>(
   slideDeckPrimitives
@@ -62,12 +62,12 @@ const layouts = (root: PrimitiveNode): Map<string, SlideLayout | undefined> => {
       switch (node.type) {
         case 'slideFrame':
           return frameReact(node as SlideFrameNode, env);
-        case 'slideSplit':
-          return splitReact(node as SlideSplitNode, env);
-        case 'slideStack':
-          return stackReact(node as SlideStackNode, env);
-        case 'slideTitle':
-          return titleReact(node as SlideTitleNode, env);
+        case 'slideSplitLayout':
+          return splitReact(node as SlideSplitLayoutNode, env);
+        case 'slideStackLayout':
+          return stackReact(node as SlideStackLayoutNode, env);
+        case 'titleSlide':
+          return titleReact(node as TitleSlideNode, env);
         default: {
           const { text } = node as { text?: string };
           seen.set(text ?? node.type, context?.layout);
@@ -80,8 +80,8 @@ const layouts = (root: PrimitiveNode): Map<string, SlideLayout | undefined> => {
   return seen;
 };
 
-const leaf = (text: string): SlideStatementNode => ({
-  type: 'slideStatement',
+const leaf = (text: string): StatementSlideNode => ({
+  type: 'statementSlide',
   text,
 });
 
@@ -168,17 +168,17 @@ describe('slideFrame layout', () => {
 
   it('holds its body at the frame whatever layout it is rendered in', () => {
     const seen = layouts({
-      type: 'slideSplit',
+      type: 'slideSplitLayout',
       panes: [{ items: [inFrame(leaf('a'))] }, { items: [] }],
     } as PrimitiveNode);
     expect(seen.get('a')).toEqual(openBody);
   });
 });
 
-describe('slideSplit layout', () => {
-  const panes = (fields: Partial<SlideSplitNode> = {}) =>
+describe('slideSplitLayout layout', () => {
+  const panes = (fields: Partial<SlideSplitLayoutNode> = {}) =>
     ({
-      type: 'slideSplit',
+      type: 'slideSplitLayout',
       panes: [{ items: [leaf('left')] }, { items: [leaf('right')] }],
       ...fields,
     }) as PrimitiveNode;
@@ -236,7 +236,7 @@ describe('slideSplit layout', () => {
       depth === 0
         ? leaf('inner')
         : ({
-            type: 'slideSplit',
+            type: 'slideSplitLayout',
             ratio: 'aside',
             divider: 'hairline',
             panes: [
@@ -265,10 +265,14 @@ describe('slideSplit layout', () => {
   });
 });
 
-describe('slideTitle and slideStack layout', () => {
+describe('titleSlide and slideStackLayout layout', () => {
   it('gives a title aside its column and the height the title has', () => {
     const seen = layouts(
-      inFrame({ type: 'slideTitle', title: 'Crate', aside: leaf('aside') })
+      inFrame({
+        type: 'titleSlide',
+        title: 'Crate',
+        aside: leaf('aside'),
+      })
     );
     expect(seen.get('aside')).toEqual({
       width: trackWidth(frameContentWidth, titleShares, title.columnGap, 1),
@@ -279,7 +283,7 @@ describe('slideTitle and slideStack layout', () => {
   it('passes a stack its own layout', () => {
     const seen = layouts(
       inFrame(referenceHeading, {
-        type: 'slideStack',
+        type: 'slideStackLayout',
         items: [leaf('a'), leaf('b')],
       })
     );
@@ -309,12 +313,12 @@ describe('auto-sizing primitives read the layout they are given', () => {
   const cases = [
     [
       'statement-textSize',
-      { type: 'slideStatement', text: 'x'.repeat(statementFit.l) },
+      { type: 'statementSlide', text: 'x'.repeat(statementFit.l) },
       [narrow, short],
     ],
     [
       'quote-textSize',
-      { type: 'slideQuote', text: 'x'.repeat(quoteFit.l), source: 'A' },
+      { type: 'quoteSlide', text: 'x'.repeat(quoteFit.l), source: 'A' },
       [narrow, short],
     ],
     [
@@ -329,8 +333,8 @@ describe('auto-sizing primitives read the layout they are given', () => {
     ['section-titleSize', sectionExample, [narrow]],
     ['closing-titleSize', closingExample, [narrow]],
     ['title-titleSize', titleExample, [narrow]],
-    ['code', { type: 'slideCode', panels: [{ lines: [line] }] }, [narrow]],
-    ['code', { type: 'slideDiff', lines: [{ text: line }] }, [narrow]],
+    ['code', { type: 'slideCode', text: line }, [narrow]],
+    ['code', { type: 'slideDiff', text: line }, [narrow]],
     [
       'command-textSize',
       { type: 'slideCommand', command: 'x'.repeat(30) },
@@ -365,7 +369,7 @@ describe('auto-sizing primitives read the layout they are given', () => {
 
 describe('frameBodyLayout', () => {
   const heading = { type: 'slideHeading', title: 'Lead' };
-  const rest = { type: 'slideStatement', text: 'Rest' };
+  const rest = { type: 'statementSlide', text: 'Rest' };
   const below = frameBodyLayout([heading, rest], 1);
 
   it('charges a leading heading only on the surface that draws it', () => {

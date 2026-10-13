@@ -22,7 +22,7 @@ export const catalog = {
   ],
   avoidWhen: [
     'The line explains or qualifies the slide’s point; put it in the slideHeading `lede`.',
-    'The line draws a conclusion under two columns; put it in the slideSplit `footnote`.',
+    'The line draws a conclusion under two columns; put it in the slideSplitLayout `footnote`.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

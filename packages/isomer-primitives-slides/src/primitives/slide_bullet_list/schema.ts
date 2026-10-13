@@ -10,18 +10,22 @@ import { z } from '@elastic/isomer-sdk';
 
 import { slideBulletMarkers } from '../../theme/variants';
 import { lineText, wrappedText } from '../authored_text';
+import { textItems } from '../text_items';
 
 /** Zod schema for {@link SlideBulletListNode}. */
 export const schema = z
   .object({
     type: z.literal('slideBulletList'),
-    items: z
-      .array(wrappedText())
-      .min(1)
-      .max(6)
-      .describe(
-        'Points, top to bottom, one short sentence each. 1 to 6. `code` and `**strong**` marks are allowed.'
-      ),
+    items: textItems(
+      'item',
+      z
+        .array(wrappedText())
+        .min(1)
+        .max(6)
+        .describe(
+          'Points, top to bottom, one short sentence each. 1 to 6. `code` and `**strong**` marks are allowed.'
+        )
+    ),
     label: lineText()
       .describe('Uppercase caption above the list, in a few words.')
       .optional(),

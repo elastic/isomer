@@ -19,7 +19,7 @@ export const annotatedRenderModule = createStyleModule(
   'annotatedRender',
   ({ css }) => ({
     grid: css`
-      align-items: center;
+      align-items: start;
       display: grid;
       gap: ${annotatedRender.gap};
       grid-template-columns: ${annotatedRender.columns};

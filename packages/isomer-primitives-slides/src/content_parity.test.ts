@@ -45,13 +45,18 @@ const notWords = new Set([
   'spacing',
   'marker',
   'chrome',
+  'slide',
   'surface',
-  'edges',
   'placement',
+  'of',
+  'direction',
   'op',
   'role',
   'format',
   'highlightPrefix',
+  'highlight',
+  'add',
+  'remove',
 ]);
 
 /** Embedded bodies print as another surface's output, so only the render's own words are checked. */
@@ -77,7 +82,8 @@ const withoutEmbedded = (value: unknown): unknown => {
 
 /** Fields whose line breaks are meant, or that no degraded surface prints. */
 const keptAsAuthored = new Set([
-  'slideCode.lines',
+  'slideCode.text',
+  'slideCodeTrace.text',
   'slideCommand.command',
   'slideDiff.text',
   'slideTranscript.text',

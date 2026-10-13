@@ -16,8 +16,8 @@ import { openBody, withLayout } from '../layout';
 import { renderedStep } from '../size.fixtures';
 import { tallestExample } from '../slide_heading/examples';
 import { headingRoom } from '../slide_heading/fit';
-import { paneLayouts } from '../slide_split/pane_layout';
-import type { SlideSplitNode } from '../slide_split/types';
+import { paneLayouts } from '../slide_split_layout/pane_layout';
+import type { SlideSplitLayoutNode } from '../slide_split_layout/types';
 
 import { example, fourNotesExample, unevenLanesExample } from './examples';
 import { lanesHeight, lanesStep, lanesWidth } from './fit';
@@ -26,8 +26,8 @@ import type { SlideLanesNode } from './schema';
 const inLayout = (width: number, height: number) =>
   withLayout(undefined, { width, height });
 
-const split = (node: SlideLanesNode): SlideSplitNode => ({
-  type: 'slideSplit',
+const split = (node: SlideLanesNode): SlideSplitLayoutNode => ({
+  type: 'slideSplitLayout',
   panes: [
     { items: [node] },
     { items: [{ type: 'slideBulletList', items: ['One'] }] },

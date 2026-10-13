@@ -19,12 +19,13 @@
   },
   "scripts": {
     "preinstall": "npx only-allow pnpm",
-    "build": "pnpm build:clean && pnpm build:esm && pnpm build:specifiers && pnpm build:cjs && pnpm build:cjs-manifest",
+    "build": "pnpm build:clean && pnpm build:esm && pnpm build:specifiers && pnpm build:cjs && pnpm build:cjs-manifest && pnpm build:assets",
     "build:clean": "rm -rf packages/*/dist packages/*/tsconfig.build.tsbuildinfo",
     "build:esm": "tsc --build tsconfig.workspace.json",
     "build:specifiers": "node scripts/rewrite_specifiers.js",
     "build:cjs": "node scripts/build_cjs.js",
     "build:cjs-manifest": "node scripts/write_cjs_manifest.js",
+    "build:assets": "pnpm -r --if-present run build:assets",
     "typecheck": "tsc --build tsconfig.workspace.json --pretty && pnpm -r typecheck && tsc -p tsconfig.json --noEmit",
     "lint": "pnpm lint:es && pnpm lint:md",
     "lint:es": "eslint .",
@@ -59,6 +60,7 @@
     "@elastic/isomer-primitives-slides": "workspace:*",
     "@elastic/isomer-runtime": "workspace:*",
     "@elastic/isomer-sdk": "workspace:*",
+    "@elastic/isomer-studio": "workspace:*",
     "@eslint/js": "^9.25.1",
     "@semantic-release/commit-analyzer": "^13.0.1",
     "@semantic-release/release-notes-generator": "^14.1.1",
@@ -76,7 +78,7 @@
     "husky": "^9.1.7",
     "jsdom": "20.0.1",
     "lint-staged": "^16.1.2",
-    "markdownlint-cli2": "^0.23.2",
+    "markdownlint-cli2": "^0.23.3",
     "prettier": "^3.5.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -89,7 +91,9 @@
   },
   "pnpm": {
     "overrides": {
-      "smol-toml": "1.7.1"
+      "katex": "^0.18.2",
+      "nwsapi": "2.2.2",
+      "smol-toml": "^1.9.1"
     },
     "onlyBuiltDependencies": [
       "esbuild"

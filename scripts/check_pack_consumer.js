@@ -18,7 +18,11 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 
-import { repoRoot, workspacePackages } from './workspace_packages.js';
+import {
+  isEsmOnly,
+  repoRoot,
+  workspacePackages,
+} from './workspace_packages.js';
 
 const workspace = workspacePackages();
 const privateNames = new Set(
@@ -124,7 +128,8 @@ try {
     }
 
     for (const peer of requiredPeers) {
-      const installedPeer = resolve(repoRoot, 'node_modules', peer);
+      const installedPeer =
+        packages.get(peer)?.dir ?? resolve(repoRoot, 'node_modules', peer);
       if (!existsSync(installedPeer)) {
         throw new Error(
           `${packageName}: required peer "${peer}" is not installed`
@@ -157,14 +162,17 @@ try {
       ],
       { cwd: consumerDir, stdio: 'inherit' }
     );
-    execFileSync(
-      process.execPath,
-      ['--eval', `${failOnWarning} require('${packageName}')`],
-      { cwd: consumerDir, stdio: 'inherit' }
-    );
+    const esmOnly = isEsmOnly(pkg.manifest);
+    if (!esmOnly) {
+      execFileSync(
+        process.execPath,
+        ['--eval', `${failOnWarning} require('${packageName}')`],
+        { cwd: consumerDir, stdio: 'inherit' }
+      );
+    }
 
     console.log(
-      `${packageName}: packed root imports passed with required peers (${requiredPeers.join(', ')}).`
+      `${packageName}: packed root ${esmOnly ? 'import' : 'imports'} passed with required peers (${requiredPeers.join(', ')}).`
     );
   }
 

@@ -7,6 +7,7 @@
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
+import { fromChildren } from '@elastic/isomer-sdk/author';
 
 import { lineText, wrappedText } from '../authored_text';
 import { crossRefine } from '../cross_field';
@@ -37,11 +38,15 @@ const columnSchema = z
         'Marks the column the audience is in now: a bar above it and a dot before its status, in primary. At most one column. Defaults to false.'
       )
       .optional(),
-    items: z
-      .array(itemSchema)
-      .min(1)
-      .max(4)
-      .describe('The work in this horizon, top to bottom. 1 to 4.'),
+    items: fromChildren(
+      'item',
+      z
+        .array(itemSchema)
+        .min(1)
+        .max(4)
+        .describe('The work in this horizon, top to bottom. 1 to 4.'),
+      { text: 'body' }
+    ),
   })
   .strict();
 
@@ -55,13 +60,16 @@ export type SlideRoadmapColumn = z.infer<typeof columnSchema>;
 export const schema = z
   .object({
     type: z.literal('slideRoadmap'),
-    columns: z
-      .array(columnSchema)
-      .min(2)
-      .max(maxColumns)
-      .describe(
-        'Horizons in order, left to right, nearest first. 2 to 4. Mark the one happening now current.'
-      ),
+    columns: fromChildren(
+      'column',
+      z
+        .array(columnSchema)
+        .min(2)
+        .max(maxColumns)
+        .describe(
+          'Horizons in order, left to right, nearest first. 2 to 4. Mark the one happening now current.'
+        )
+    ),
     size: sizeField(),
   })
   .strict()

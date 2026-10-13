@@ -5,52 +5,25 @@
  * 2.0.
  */
 
-import { md } from '@elastic/isomer-sdk/markdown';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import { slackCodePanel } from '../../render';
-import { oneLine } from '../../render/one_line';
-import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
 import { catalog } from './catalog';
 import { examples } from './examples';
 import { icon } from './icon';
+import { panelsMarkdown, panelsSlack, panelsText } from './panels';
 import { react } from './react';
 import { schema, type SlideCodeNode } from './schema';
 
 export type { SlideCodeNode, SlideCodePanel } from './schema';
 
-const traceArrow = slideDistillery.tokens.code.traceArrow.value;
+export const text = (node: SlideCodeNode): string => panelsText([node]);
 
-export const text = ({ panels }: SlideCodeNode): string =>
-  panels
-    .map(({ file, lines }) =>
-      [...(file ? [oneLine(file)] : []), ...lines].join('\n')
-    )
-    .join(`\n\n${traceArrow}\n\n`);
+export const markdown = (node: SlideCodeNode) => panelsMarkdown([node]);
 
-export const markdown = ({ panels }: SlideCodeNode) =>
-  panels.flatMap(({ file, language, lines }, index) => [
-    ...(index > 0 ? [md.paragraph(traceArrow)] : []),
-    ...(file ? [md.paragraph(md.strong(file))] : []),
-    md.codeBlock(lines.join('\n'), language),
-  ]);
+export const slack = (node: SlideCodeNode): SlackBlock[] => panelsSlack([node]);
 
-export const slack = ({ panels }: SlideCodeNode): SlackBlock[] =>
-  panels.flatMap(({ file, lines }, index) => [
-    ...(index > 0
-      ? [
-          {
-            type: 'section',
-            text: { type: 'mrkdwn', text: traceArrow },
-          } satisfies SlackBlock,
-        ]
-      : []),
-    slackCodePanel(lines.join('\n'), file),
-  ]);
-
-/** Catalog, schema, and renderers for {@link SlideCodeNode}. */
 export const slideCodePrimitive = definePrimitive({
   type: 'slideCode',
   catalog,

@@ -5,11 +5,13 @@
  * 2.0.
  */
 
+import { createElement } from 'react';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
+import { slideJsx } from '../../jsx';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import {
   frameBodyHeight,
@@ -24,8 +26,8 @@ import {
   renderedStep,
 } from '../size.fixtures';
 import { headingRoom } from '../slide_heading/fit';
-import { paneLayouts } from '../slide_split/pane_layout';
-import type { SlideSplitNode } from '../slide_split/types';
+import { paneLayouts } from '../slide_split_layout/pane_layout';
+import type { SlideSplitLayoutNode } from '../slide_split_layout/types';
 
 import { example, fullExample, menuExample } from './examples';
 import { markdown as markdownContent, text } from './index';
@@ -267,8 +269,8 @@ describe('slideQuadrant', () => {
 
     it('draws the step it counts in a split pane', () => {
       const node = cells(2, 1);
-      const split: SlideSplitNode = {
-        type: 'slideSplit',
+      const split: SlideSplitLayoutNode = {
+        type: 'slideSplitLayout',
         panes: [
           { label: 'Features', items: [node] },
           { items: [{ type: 'slideBulletList', items: ['One'] }] },
@@ -304,7 +306,7 @@ describe('slideQuadrant', () => {
       expect(step).not.toBe('l');
       expect(
         renderedStep('quadrant-cellSize', {
-          type: 'slideTitle',
+          type: 'titleSlide',
           title: 'Crate',
           aside: node,
         })
@@ -313,11 +315,54 @@ describe('slideQuadrant', () => {
 
     it('draws the full example, four items in every cell, at the smallest step', () => {
       expect(
-        fullExample.quadrants.every(({ items }) => items.length === 4)
+        fullExample.quadrants.every(({ items = [] }) => items.length === 4)
       ).toBe(true);
       expect(
         quadrantSize(fullExample, { width: frameContentWidth, crowding: 1 })
       ).toBe('s');
     });
+  });
+});
+
+describe('slideQuadrant JSX', () => {
+  it('fills quadrants from `SlideQuadrant.Cell` children, leaving out items for an empty cell', () => {
+    const { SlideQuadrant } = slideJsx;
+    const { x, y } = menuExample;
+    const node = slideJsx.toComposition(
+      createElement(
+        slideJsx.Composition,
+        null,
+        createElement(
+          SlideQuadrant,
+          { x, y, highlight: 1 },
+          createElement(
+            SlideQuadrant.Cell,
+            { label: 'Plowhorses' },
+            createElement(SlideQuadrant.Item, null, 'drip'),
+            createElement(SlideQuadrant.Item, { text: 'bagel' })
+          ),
+          createElement(SlideQuadrant.Cell, { label: 'Stars' }),
+          createElement(SlideQuadrant.Cell, { label: 'Dogs' }),
+          createElement(
+            SlideQuadrant.Cell,
+            { label: 'Puzzles' },
+            createElement(SlideQuadrant.Item, null, 'matcha')
+          )
+        )
+      )
+    ).body[0];
+    expect(node).toEqual({
+      type: 'slideQuadrant',
+      x,
+      y,
+      highlight: 1,
+      quadrants: [
+        { label: 'Plowhorses', items: ['drip', 'bagel'] },
+        { label: 'Stars' },
+        { label: 'Dogs' },
+        { label: 'Puzzles', items: ['matcha'] },
+      ],
+    });
+    expect(errorPaths(node ?? {})).toEqual([]);
   });
 });

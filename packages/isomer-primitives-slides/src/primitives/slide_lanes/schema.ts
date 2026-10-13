@@ -7,6 +7,7 @@
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
+import { fromChildren } from '@elastic/isomer-sdk/author';
 
 import { lineText, wrappedText } from '../authored_text';
 import { sizeField } from '../size';
@@ -55,22 +56,28 @@ export type SlideLanesNote = z.infer<typeof noteSchema>;
 export const schema = z
   .object({
     type: z.literal('slideLanes'),
-    lanes: z
-      .array(laneSchema)
-      .length(2)
-      .describe(
-        'Exactly two paths, drawn one above the other, that converge on `join`.'
-      ),
+    lanes: fromChildren(
+      'lane',
+      z
+        .array(laneSchema)
+        .length(2)
+        .describe(
+          'Exactly two paths, drawn one above the other, that converge on `join`.'
+        )
+    ),
     join: lineText().describe(
       'The single step both paths feed into, set as a filled chip on the right, e.g. "Checkout".'
     ),
-    notes: z
-      .array(noteSchema)
-      .max(lanesMaxNotes)
-      .describe(
-        `Notes under the lanes, two per row, usually one per lane in lane order, saying how that path differs. Up to ${lanesMaxNotes}. Leave it out for none.`
-      )
-      .optional(),
+    notes: fromChildren(
+      'note',
+      z
+        .array(noteSchema)
+        .max(lanesMaxNotes)
+        .describe(
+          `Notes under the lanes, two per row, usually one per lane in lane order, saying how that path differs. Up to ${lanesMaxNotes}. Leave it out for none.`
+        ),
+      { text: 'body' }
+    ).optional(),
     size: sizeField(),
   })
   .strict();

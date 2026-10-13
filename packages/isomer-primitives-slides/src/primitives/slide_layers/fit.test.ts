@@ -16,7 +16,7 @@ import { openBody, withLayout } from '../layout';
 import { renderedStep } from '../size.fixtures';
 import { tallestExample } from '../slide_heading/examples';
 import { headingRoom } from '../slide_heading/fit';
-import { paneWidths } from '../slide_split/pane_layout';
+import { paneWidths } from '../slide_split_layout/pane_layout';
 
 import { example, fullExample, shortExample } from './examples';
 import { layersHeight, layersStep } from './fit';
@@ -64,7 +64,7 @@ const allChips = (count: number): SlideLayersNode => ({
 });
 
 const inSplit = (node: SlideLayersNode) => ({
-  type: 'slideSplit',
+  type: 'slideSplitLayout',
   panes: [
     { items: [node] },
     { items: [{ type: 'slideBulletList', items: ['One'] }] },

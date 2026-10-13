@@ -20,11 +20,11 @@ export const catalog = {
     'The audience should get the point of the slide before reading its body.',
   ],
   avoidWhen: [
-    'The slide opens the deck; use slideTitle in an inverse frame.',
-    'The slide opens a section; use slideSection in an inverse frame.',
-    'The slide closes the deck; use slideClosing in an inverse frame.',
-    'The whole slide is one sentence with nothing under it; use slideStatement.',
-    'The point is someone else’s words; use slideQuote.',
+    'The slide opens the deck; use titleSlide in an inverse frame.',
+    'The slide opens a section; use sectionSlide in an inverse frame.',
+    'The slide closes the deck; use closingSlide in an inverse frame.',
+    'The whole slide is one sentence with nothing under it; use statementSlide.',
+    'The point is someone else’s words; use quoteSlide.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

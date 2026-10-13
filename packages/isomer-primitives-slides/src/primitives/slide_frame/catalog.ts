@@ -23,7 +23,7 @@ export const catalog = {
     'Slides belong to numbered sections; set `sectionNumber` and `section` to the section so the footer tracks it.',
   ],
   avoidWhen: [
-    'Content inside a slide needs grouping; frames never nest, so use slideSplit or slideStack.',
+    'Content inside a slide needs grouping; frames never nest, so use slideSplitLayout or slideStackLayout.',
   ],
   example,
 } satisfies PrimitiveCatalogEntry;

@@ -14,18 +14,18 @@ export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
     types: [
       'slideFrame',
       'slideHeading',
-      'slideStatement',
-      'slideQuote',
-      'slideTitle',
-      'slideSection',
-      'slideAgenda',
-      'slideClosing',
+      'statementSlide',
+      'quoteSlide',
+      'titleSlide',
+      'sectionSlide',
+      'agendaSlide',
+      'closingSlide',
       'slideSource',
     ],
   },
   {
     title: 'Layout',
-    types: ['slideSplit', 'slideStack', 'slideWindow'],
+    types: ['slideSplitLayout', 'slideStackLayout', 'slideWindowLayout'],
   },
   {
     title: 'Text',
@@ -65,7 +65,13 @@ export const slidePrimitiveGroups: readonly PrimitiveGroup[] = [
   },
   {
     title: 'Code',
-    types: ['slideCode', 'slideDiff', 'slideCommand', 'slideTranscript'],
+    types: [
+      'slideCode',
+      'slideCodeTrace',
+      'slideDiff',
+      'slideCommand',
+      'slideTranscript',
+    ],
   },
   {
     title: 'Renders',

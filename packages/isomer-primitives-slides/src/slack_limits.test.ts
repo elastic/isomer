@@ -41,12 +41,12 @@ const long = (length: number, char = 'x') => char.repeat(length);
 
 const cases: LimitCase[] = [
   {
-    name: 'slideStatement',
+    name: 'statementSlide',
     slot: 'header',
     limit: SLACK_LIMITS.headerTextChars,
     filler: 'x',
     max: 400,
-    node: (fill) => ({ type: 'slideStatement', text: `Refunds ${fill}` }),
+    node: (fill) => ({ type: 'statementSlide', text: `Refunds ${fill}` }),
   },
   {
     name: 'slideHeading title',
@@ -69,70 +69,70 @@ const cases: LimitCase[] = [
     }),
   },
   {
-    name: 'slideTitle title',
+    name: 'titleSlide title',
     slot: 'header',
     limit: SLACK_LIMITS.headerTextChars,
     filler: 'x',
     max: 400,
-    node: (fill) => ({ type: 'slideTitle', title: `Ledger ${fill}` }),
+    node: (fill) => ({ type: 'titleSlide', title: `Ledger ${fill}` }),
   },
   {
-    name: 'slideTitle tagline',
+    name: 'titleSlide tagline',
     slot: 'section',
     limit: SLACK_LIMITS.sectionTextChars,
     filler: 'x',
     max: 4000,
     node: (fill) => ({
-      type: 'slideTitle',
+      type: 'titleSlide',
       title: 'Ledger',
       tagline: `Money ${fill}`,
     }),
   },
   {
-    name: 'slideTitle definition',
+    name: 'titleSlide definition',
     slot: 'context',
     limit: SLACK_LIMITS.contextElementChars,
     filler: 'x',
     max: 3000,
     node: (fill) => ({
-      type: 'slideTitle',
+      type: 'titleSlide',
       title: 'Ledger',
       definition: { term: 'ledger', text: `A book ${fill}` },
     }),
   },
   {
-    name: 'slideSection heading',
+    name: 'sectionSlide heading',
     slot: 'header',
     limit: SLACK_LIMITS.headerTextChars,
     filler: 'x',
     max: 220,
     node: (fill) => ({
-      type: 'slideSection',
+      type: 'sectionSlide',
       number: '01',
       title: `Part ${fill}`,
-      contents: ['One'],
+      slides: [{ text: 'One' }],
     }),
   },
   {
-    name: 'slideClosing title',
+    name: 'closingSlide title',
     slot: 'header',
     limit: SLACK_LIMITS.headerTextChars,
     filler: 'x',
     max: 220,
     node: (fill) => ({
-      type: 'slideClosing',
+      type: 'closingSlide',
       title: `Thanks ${fill}`,
       links: [{ label: 'Docs', href: 'https://example.com', text: 'docs' }],
     }),
   },
   {
-    name: 'slideClosing links',
+    name: 'closingSlide links',
     slot: 'section',
     limit: SLACK_LIMITS.sectionTextChars,
     filler: '&',
     max: 231,
     node: (fill) => ({
-      type: 'slideClosing',
+      type: 'closingSlide',
       title: 'Thanks',
       links: [
         {
@@ -145,13 +145,13 @@ const cases: LimitCase[] = [
     }),
   },
   {
-    name: 'slideQuote',
+    name: 'quoteSlide',
     slot: 'section',
     limit: SLACK_LIMITS.sectionTextChars,
     filler: '&',
     max: 300,
     node: (fill) => ({
-      type: 'slideQuote',
+      type: 'quoteSlide',
       text: fill,
       source: long(231, '&'),
       context: long(231, '&'),
@@ -195,13 +195,13 @@ const cases: LimitCase[] = [
     }),
   },
   {
-    name: 'slideSplit footnote',
+    name: 'slideSplitLayout footnote',
     slot: 'section',
     limit: SLACK_LIMITS.sectionTextChars,
     filler: 'x',
     max: 4000,
     node: (fill) => ({
-      type: 'slideSplit',
+      type: 'slideSplitLayout',
       panes: [
         { items: [{ type: 'slideBulletList', items: ['One'] }] },
         { items: [{ type: 'slideBulletList', items: ['Two'] }] },
@@ -217,7 +217,8 @@ const cases: LimitCase[] = [
     max: 101,
     node: (fill) => ({
       type: 'slideCode',
-      panels: [{ file: long(2900, 'y'), lines: [fill] }],
+      file: long(2900, 'y'),
+      text: fill,
     }),
   },
   {
@@ -228,19 +229,18 @@ const cases: LimitCase[] = [
     max: 231,
     node: (fill) => ({
       type: 'slideFrame',
-      brand: long(231, '&'),
-      section: fill,
+      footer: { brand: long(231, '&'), section: fill },
       body: [{ type: 'slideHeading', title: 'Why' }],
     }),
   },
   {
-    name: 'slideTitle eyebrow',
+    name: 'titleSlide eyebrow',
     slot: 'context',
     limit: SLACK_LIMITS.contextElementChars,
     filler: 'x',
     max: 3000,
     node: (fill) => ({
-      type: 'slideTitle',
+      type: 'titleSlide',
       title: 'Ledger',
       eyebrow: `Launch ${fill}`,
     }),
@@ -260,13 +260,13 @@ const cases: LimitCase[] = [
     }),
   },
   {
-    name: 'slideSplit toned label',
+    name: 'slideSplitLayout toned label',
     slot: 'context',
     limit: SLACK_LIMITS.contextElementChars,
     filler: '&',
     max: 3000,
     node: (fill) => ({
-      type: 'slideSplit',
+      type: 'slideSplitLayout',
       panes: [
         {
           label: fill,
@@ -301,7 +301,6 @@ const cases: LimitCase[] = [
         { id: 'a', term: fill, body: 'One' },
         { id: 'b', term: 'Two', body: 'Two' },
       ],
-      edges: [['a', 'b']],
     }),
   },
   {
@@ -312,7 +311,8 @@ const cases: LimitCase[] = [
     max: 4000,
     node: (fill) => ({
       type: 'slideCode',
-      panels: [{ file: `order ${fill}`, lines: ['{}'] }],
+      file: `order ${fill}`,
+      text: '{}',
     }),
   },
   {
@@ -398,13 +398,13 @@ const cases: LimitCase[] = [
     }),
   },
   {
-    name: 'slideWindow title',
+    name: 'slideWindowLayout title',
     slot: 'context',
     limit: SLACK_LIMITS.contextElementChars,
     filler: 'x',
     max: 4000,
     node: (fill) => ({
-      type: 'slideWindow',
+      type: 'slideWindowLayout',
       chrome: 'chat',
       title: `Chat ${fill}`,
       body: [{ type: 'slideBulletList', items: ['One'] }],
@@ -569,7 +569,8 @@ const cases: LimitCase[] = [
     node: (fill) => ({
       type: 'slideDiff',
       file: fill,
-      lines: [{ text: 'x', op: 'add' }],
+      text: 'x',
+      add: '1',
     }),
   },
   ...(['prose', 'code'] as const).map((format): LimitCase => ({
@@ -709,17 +710,16 @@ describe('Slack slots below their schema cap', () => {
     [
       'a linked section line',
       {
-        type: 'slideSection',
+        type: 'sectionSlide',
         number: '01',
         title: 'Part',
-        contents: [past],
-        hrefs: ['https://example.com/deck/1'],
+        slides: [{ text: past, href: 'https://example.com/deck/1' }],
       },
     ],
     [
       'a closing link past its section',
       {
-        type: 'slideClosing',
+        type: 'closingSlide',
         title: 'Thanks',
         links: [{ label: 'Docs', href: 'https://example.com', text: past }],
       },

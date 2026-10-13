@@ -51,7 +51,7 @@ const turnSchema = z
 
 export type SlideTranscriptTurn = z.infer<typeof turnSchema>;
 
-type SlideTurnProps = Omit<SlideTranscriptTurn, 'text'> &
+type TranscriptTurnProps = Omit<SlideTranscriptTurn, 'text'> &
   Partial<Pick<SlideTranscriptTurn, 'text'>> & { children?: ReactNode };
 
 /** Zod schema for {@link SlideTranscriptNode}. */
@@ -64,7 +64,7 @@ export const schema = z
       )
       .optional(),
     turns: fromChildren(
-      'slideTurn',
+      'turn',
       z
         .array(turnSchema)
         .min(1)
@@ -77,7 +77,7 @@ export const schema = z
           text: turnSchema.shape.text.optional(),
         }),
         // Keeps the line breaks the default copy would collapse.
-        toItem: ({ children, ...turn }: SlideTurnProps) => ({
+        toItem: ({ children, ...turn }: TranscriptTurnProps) => ({
           ...turn,
           ...(turn.text === undefined && children !== undefined
             ? {

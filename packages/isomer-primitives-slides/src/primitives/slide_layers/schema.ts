@@ -7,6 +7,7 @@
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
+import { fromChildren } from '@elastic/isomer-sdk/author';
 
 import { lineText, wrappedText } from '../authored_text';
 import { crossRefine } from '../cross_field';
@@ -62,13 +63,17 @@ export type SlideLayer = z.infer<typeof layerSchema>;
 export const schema = z
   .object({
     type: z.literal('slideLayers'),
-    layers: z
-      .array(layerSchema)
-      .min(3)
-      .max(layersMaxLayers)
-      .describe(
-        `Layers, top to bottom in stack order: the layer nearest the user first. 3 to ${layersMaxLayers}.`
-      ),
+    layers: fromChildren(
+      'layer',
+      z
+        .array(layerSchema)
+        .min(3)
+        .max(layersMaxLayers)
+        .describe(
+          `Layers, top to bottom in stack order: the layer nearest the user first. 3 to ${layersMaxLayers}.`
+        ),
+      { text: 'body' }
+    ),
     size: sizeField(),
   })
   .strict();

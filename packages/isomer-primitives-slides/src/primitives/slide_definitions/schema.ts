@@ -7,6 +7,7 @@
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
+import { fromChildren } from '@elastic/isomer-sdk/author';
 
 import { definitionsSingleColumnMax } from '../../theme/components/definitions';
 import { lineText, wrappedText } from '../authored_text';
@@ -29,13 +30,17 @@ export type SlideDefinition = z.infer<typeof definitionSchema>;
 export const schema = z
   .object({
     type: z.literal('slideDefinitions'),
-    items: z
-      .array(definitionSchema)
-      .min(1)
-      .max(6)
-      .describe(
-        `Terms in the order a reader should learn them. 1 to 6; ${definitionsSingleColumnMax + 1} or more lay out in two columns.`
-      ),
+    items: fromChildren(
+      'definition',
+      z
+        .array(definitionSchema)
+        .min(1)
+        .max(6)
+        .describe(
+          `Terms in the order a reader should learn them. 1 to 6; ${definitionsSingleColumnMax + 1} or more lay out in two columns.`
+        ),
+      { text: 'body' }
+    ),
     size: sizeField(),
   })
   .strict();

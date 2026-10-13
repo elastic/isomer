@@ -23,7 +23,7 @@ export const catalog = {
   avoidWhen: [
     'There is only one path; use slidePipeline.',
     'One source feeds many targets instead of two feeding one; use slideFanout.',
-    'The two sides are opposing claims rather than routes; use slideSplit.',
+    'The two sides are opposing claims rather than routes; use slideSplitLayout.',
     'Participants send messages back and forth rather than following a path; use slideSequence.',
   ],
   example,

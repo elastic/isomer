@@ -6,17 +6,19 @@
  */
 
 import { example as headingExample } from '../slide_heading/examples';
-import { example as titleExample } from '../slide_title/examples';
+import { example as titleExample } from '../title_slide/examples';
 
 import type { SlideFrameNode } from './types';
 
 /** Canonical {@link SlideFrameNode} example: a content slide. */
 export const example: SlideFrameNode = {
   type: 'slideFrame',
-  brand: 'Ledger',
-  section: 'Settlement',
-  sectionNumber: '02',
-  url: 'https://example.com/ledger',
+  footer: {
+    brand: 'Ledger',
+    section: 'Settlement',
+    sectionNumber: '02',
+    url: 'https://example.com/ledger',
+  },
   body: [headingExample],
 };
 
@@ -24,7 +26,7 @@ export const example: SlideFrameNode = {
 export const inverseExample: SlideFrameNode = {
   type: 'slideFrame',
   tone: 'inverse',
-  brand: 'Ledger',
+  footer: { brand: 'Ledger' },
   body: [titleExample],
 };
 

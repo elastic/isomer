@@ -60,7 +60,7 @@ describe('slide builds', () => {
     expect(
       slideBuilds(
         slide({
-          type: 'slideWindow',
+          type: 'slideWindowLayout',
           chrome: 'chat',
           title: 'Chat',
           body: [two],
@@ -419,7 +419,7 @@ const placements = [
     'in a window',
     (node: object) =>
       slide({
-        type: 'slideWindow',
+        type: 'slideWindowLayout',
         chrome: 'browser',
         title: 'shop.example',
         body: [node],
@@ -429,7 +429,7 @@ const placements = [
     'in a split pane',
     (node: object) =>
       slide({
-        type: 'slideSplit',
+        type: 'slideSplitLayout',
         panes: [
           { items: [{ type: 'slideHeading', title: 'Left' }] },
           { items: [node] },

@@ -7,6 +7,7 @@
 
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { z } from '@elastic/isomer-sdk';
+import { fromTextChildren } from '@elastic/isomer-sdk/author';
 
 import { lineText } from '../authored_text';
 
@@ -16,8 +17,10 @@ import { prefix } from './prefix';
 export const schema = z
   .object({
     type: z.literal('slideSource'),
-    text: lineText().describe(
-      `Where the numbers or claims on the slide come from, in one short line, e.g. "Support tickets, January to June". The slide adds the "${prefix}" prefix. \`code\` and \`**strong**\` marks are allowed.`
+    text: fromTextChildren(
+      lineText().describe(
+        `Where the numbers or claims on the slide come from, in one short line, e.g. "Support tickets, January to June". The slide adds the "${prefix}" prefix. \`code\` and \`**strong**\` marks are allowed.`
+      )
     ),
   })
   .strict();

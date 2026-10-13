@@ -14,7 +14,7 @@ sources:
 
 # Definition
 
-One entry. Values: `runEvals`, `formatReport`, `parseGenerated`, `stripCodeFence`, `checkComposition`, `checkAttempt`, and `scoreValidity`, `scorePrimitiveSelection`, `scorePayload`, `scoreAnswerability`. Types: `EvalCase`, `EvalCaseResult`, `EvalReport`, `EvalRuntime` (the structural runtime slice), `RunEvalsOptions`, `Generate` and `GenerateRequest`, `Judge` and `JudgeRequest`, `AnswerabilityVerdict`, the four score shapes, and `ParsedAttempt`, `CheckedAttempt`, and `CheckedComposition`. `src/api_reference.test.ts` fails when the package page misses an export.[^barrel]
+One entry. Values: `runEvals`, `formatReport`, `runAgentEvals`, `formatAgentReport`, `parseGenerated`, `stripCodeFence`, `checkComposition`, `checkAttempt`, and `scoreValidity`, `scorePrimitiveSelection`, `scorePayload`, `scoreAnswerability`, `scoreExpectedPrimitives`. Agent runs type their options, cases, tools, messages, step, and report as `RunAgentEvalsOptions` and the `Agent*` types. Types: `EvalCase`, `EvalCaseResult`, `EvalReport`, `EvalRuntime` (the structural runtime slice), `RunEvalsOptions`, `Generate` and `GenerateRequest`, `Judge` and `JudgeRequest`, `AnswerabilityVerdict`, the four score shapes, and `ParsedAttempt`, `CheckedAttempt`, and `CheckedComposition`. `src/api_reference.test.ts` fails when the package page misses an export.[^barrel]
 
 Related: [scoring](/evals/concepts/scoring.md), [public contract](/evals/reference/public-contract.md).
 

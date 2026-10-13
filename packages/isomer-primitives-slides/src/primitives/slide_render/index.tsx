@@ -18,7 +18,7 @@ import {
   embeddedMarkdown,
   embeddedSlack,
   embeddedText,
-  headline,
+  printedHeadline,
 } from './output';
 import { react } from './react';
 import { buildSchema, schema } from './schema';
@@ -27,7 +27,10 @@ import type { SlideRenderNode } from './types';
 export type { SlideRenderNode } from './types';
 
 /** Catalog, schema, and renderers for {@link SlideRenderNode}. */
-export const slideRenderPrimitive = definePrimitive<SlideRenderNode>({
+export const slideRenderPrimitive = definePrimitive<
+  SlideRenderNode,
+  typeof schema
+>({
   type: 'slideRender',
   catalog,
   icon,
@@ -38,17 +41,17 @@ export const slideRenderPrimitive = definePrimitive<SlideRenderNode>({
     react,
     text: (node, { scope }) =>
       [
-        headline(node),
+        printedHeadline(node),
         node.body && embeddedText(node.body, node.surface, scope),
       ]
         .filter(Boolean)
         .join('\n\n'),
     markdown: (node, { scope }) => [
-      md.paragraph(md.emphasis(headline(node))),
+      md.paragraph(md.emphasis(printedHeadline(node))),
       ...(node.body ? [embeddedMarkdown(node.body, node.surface, scope)] : []),
     ],
     slack: (node, { collector, scope }) => [
-      slackCaption(headline(node)),
+      slackCaption(printedHeadline(node)),
       ...(node.body
         ? embeddedSlack(node.body, node.surface, scope, collector)
         : []),

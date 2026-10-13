@@ -113,7 +113,7 @@ Slack clamps `header`, `section`, field, and `context` text well below `authored
 
 `mrkdwn` has no escape for `*`, `_`, `~`, or a backtick, and Slack reads `<` and `&amp;`-style escapes even inside code, so authored text that holds them goes to Slack as literal rich text instead. `slackSection`, `slackContext`, and `slackFields` take the authored text their `mrkdwn` carries as a required last argument, each a `MrkdwnSource`: a plain string, `{ marks }` for a field whose `code` and `**strong**` marks `marksSlack` draws, or `{ code }` for code in a code block. When `mrkdwnKeeps(sources)` says Slack would not print one as written, they return the fallback, which must hold the same text as literal rich-text runs. Pass `[]` only for text the pack writes itself. `slackMarksSection`, `slackMarksContext`, and `slackCaption` pass their own. Send code through `slackCodePanel(source, caption?, strong?)`, which falls back to `rich_text_preformatted` when the source holds a backtick fence, a `<`, or an `&amp;`, `&lt;`, or `&gt;`. `src/content_parity.test.ts` reads every Slack block back the way Slack does and fails when a field that holds any of these, added to any example, does not come back as authored.
 
-Spread `nodeAnchor(context, { type })` from `@elastic/isomer-sdk` on the renderer's root element. It renders nothing unless a host asks for anchors, and it is what `checkLayout` pairs measured boxes to nodes by. `slideFrame` also spreads `layoutRoom(context)` on its body, and `slideSplit` on each pane's column, which its grid shrinks to the height the footnote leaves, so `checkLayout` measures the nodes inside against that room rather than the whole canvas.
+Spread `nodeAnchor(context, { type })` from `@elastic/isomer-sdk` on the renderer's root element. It renders nothing unless a host asks for anchors, and it is what `checkLayout` pairs measured boxes to nodes by. `slideFrame` also spreads `layoutRoom(context)` on its body, and `slideSplitLayout` on each pane's column, which its grid shrinks to the height the footnote leaves, so `checkLayout` measures the nodes inside against that room rather than the whole canvas.
 
 A primitive that picks its own size reads the room it has with `slideLayout(context)` from `src/primitives/layout.ts`: `width` and `height` in pixels, and `crowding`. A container gives its children theirs with `withLayout(context, { width, height })`, after taking out what it draws around them; [Size steps](theme.md#size-steps) lists who sets and reads it.
 
@@ -121,42 +121,55 @@ A primitive that picks its own size reads the room it has with `slideLayout(cont
 
 Measure text with `measureText(text, role, width?)` from `src/primitives/size.ts`, which returns `{ lines, widest }` in pixels. `role` is the same type role the primitive's `styles.ts` hands `typeRole()`, at the step being tried (`{ ...agenda.title, size: agenda.titleSizes[step] }`), so the estimate and the stylesheet read one value. A role's `transform` (`font.transform.uppercase`) and `whiteSpace` (`font.whiteSpace.nowrap`) are what `typeRole()` emits as `text-transform` and `white-space`; set them on the role, not as a literal in the module, and the measure follows. Its `family` and `weight` pick the advances: mono and regular by column, semibold and heavier by Inter ExtraBold's glyph classes. Whitespace runs and line terminators collapse to one space, as CSS and takumi collapse them; a no-break space stays a glyph. A word wider than its line breaks between glyphs, as `overflow-wrap: anywhere` does on the deck root, one glyph a line at least, so a zero width counts one line a glyph. Strip marks before measuring, or measure marked text with `measureMarks(text, role, width?, strong?)`, which sets each run as `marksReact` draws it for the same `strong`: code in mono, in its own case without its chip under `'primary'` and with its chip's `codeInset` and border at each end otherwise, and strong in bold except under `'primary'`; a word that spans runs stays one word, and each space is priced in the face of the run it sits in. It also returns `codeLines`, how many of the lines it lays out hold a chip. `lineBox(role)` is one line's height, and `marksHeight(text, role, width?)` is marked text's height: its lines, and each line holding a chip grown by the chip's `codePaddingY` and border at top and bottom.
 
-`wrappedLines`, `proseLines`, and `monoLines` are `measureText` for ExtraBold, Regular, and mono at a pixel size, never under one line; `textColumns` counts columns after whitespace collapses, and `rowLoad` sums it. `sizeForLines` breaks no word, so its words pack whole. `sizeForWords(text, role, sizes, width)` is the largest step at which no word of `text` is wider than `width`, and under a `nowrap` role the whole text; `sizeForMarkedWords(text, role, sizes, width, strong?)` is the same for marked text, each run set as `measureMarks` sets it. `styledText(text, role)` is the text as the role's `transform` prints it, for a load that counts characters. `slideCode` compares `displayColumns` against its column cap directly: its lines are `white-space: pre`, and its schema refuses line terminators and tabs. `src/primitives/size.test.ts` checks the uppercase, `nowrap`, per-step, whitespace, long-word, zero-width, and marked-run cases, and spot-checks `measureText` against takumi.
+`wrappedLines`, `proseLines`, and `monoLines` are `measureText` for ExtraBold, Regular, and mono at a pixel size, never under one line; `textColumns` counts columns after whitespace collapses, and `rowLoad` sums it. `sizeForLines` breaks no word, so its words pack whole. `sizeForWords(text, role, sizes, width)` is the largest step at which no word of `text` is wider than `width`, and under a `nowrap` role the whole text; `sizeForMarkedWords(text, role, sizes, width, strong?)` is the same for marked text, each run set as `measureMarks` sets it. `styledText(text, role)` is the text as the role's `transform` prints it, for a load that counts characters. `slideCode` and `slideCodeTrace` compare `displayColumns` against their column cap directly: its lines are `white-space: pre`, and its schema refuses line terminators and tabs. `src/primitives/size.test.ts` checks the uppercase, `nowrap`, per-step, whitespace, long-word, zero-width, and marked-run cases, and spot-checks `measureText` against takumi.
 
 ## Children come from the schema field
+
+Which fields become children follows one rule:
+
+- Nested nodes are always children.
+- A collection of records brands a child component, named for its item without the `Slide` prefix.
+- A primitive's one authored text is its text children.
+- Scalars and enums stay props.
+
+A collection field you add brands a child component the same way. Grids are the exception: `slideTable`, `slideMatrix`, and `slideQuadrant` keep their grids as props, because each cell is addressed by its position, and an element per cell adds markup without adding meaning.
 
 A field filled from JSX children is branded on the schema. `fromChildren` and `fromTextChildren` are identity wrappers: `z.infer` is unchanged, and `buildJsxShim` reads the brand for the child component and for parsing. Describe the inner schema first — `.describe()` clones the schema and drops the brand.
 
 ```ts
 items: fromChildren(
-  'slideTerritory',
+  'territory',
   z.array(territorySchema).min(1).max(4).describe('Owners, left to right, in equal columns. 1 to 4.'),
   { text: 'body' }
 ),
 ```
 
-`slideJsx` then includes `SlideTerritory`, typed from the array element. `text: 'body'` copies leftover text children onto that field. An explicit `items` prop wins over children. Placing `<SlideTerritory>` directly under `<Composition>` throws, because it is not a body node.
+`slideJsx` then includes `SlideTerritoryGroup.Territory`, typed from the array element. `text: 'body'` copies leftover text children onto that field. An explicit `items` prop wins over children. Placing `<SlideTerritoryGroup.Territory>` directly under `<Composition>` throws, because it is not a body node. A child is a member of its primitive, so name it for its role there, without the primitive's name: `item`, `cell`, `node`. A name is unique across the primitive's children at any depth, so a quadrant's cells and the chips inside them are `SlideQuadrant.Cell` and `SlideQuadrant.Item`.
 
 A string field uses `fromTextChildren` the same way, with `collapseWhitespace: false` when newlines matter.
 
 Required text that is missing throws `IsomerError` with code `MISSING_AUTHORED_TEXT`. JSX children on a primitive with no field to fill from them, such as a render whose embedded slides belong in its `body` prop, throw `UNEXPECTED_CHILDREN` rather than being dropped. Two primitives that brand the same child type with different item shapes throw `DUPLICATE_AUTHORED_CHILD` when the shim is built. Two types that capitalize to the same component name, such as `slideStat` and `SlideStat`, or a type named `composition`, throw `DUPLICATE_PRIMITIVE_TYPE`.
 
-One branch: a primitive that declares `schemaFor` also hand-writes its node type. The body-node union is injected per composition, so it cannot appear in a static schema — which is why `schemaFor` exists — and `z.infer` cannot name that cycle (`TS2456`, `TS7022`). `slideFrame`, `slideSplit`, `slideStack`, `slideTitle`, `slideWindow`, and the three renders are that branch. Every other primitive's schema is its only declaration.
+One branch: a primitive that declares `schemaFor` also hand-writes its node type. The body-node union is injected per composition, so it cannot appear in a static schema — which is why `schemaFor` exists — and `z.infer` cannot name that cycle (`TS2456`, `TS7022`). `slideFrame`, `slideSplitLayout`, `slideStackLayout`, `titleSlide`, `slideWindowLayout`, and the three renders are that branch. Every other primitive's schema is its only declaration.
 
-Nested nodes arrive as JSX children, never as an element inside a prop object. A container with one node slot fills it from its own children: `<SlideStack>…nodes…</SlideStack>` fills `items`, and `<SlideWindow>` fills `body`. A container with several slots, or with props per slot, brands one field of sub-elements, and each sub-element's children are its nodes. `slideSplit` is that case: `panes` is `fromChildren('slideSplitPane', …, { toItem })`, and `toItem` fills each pane's `items` through `parseChildren`, left then right by index. `toItem` receives `children` among the props and strips it. Brand the standalone `schema`, not `schemaFor`, and pass both type arguments to `definePrimitive` (`definePrimitive<SlideSplitNode, typeof schema>`) so the brand reaches `slideJsx`.
+Nested nodes arrive as JSX children, never as an element inside a prop object. A container with one node slot fills it from its own children: `<SlideStackLayout>…nodes…</SlideStackLayout>` fills `items`, and `<SlideWindowLayout>` fills `body`. A window's `body` is `SlideWindowChild`: every content primitive except `{ type: 'slideWindowLayout' }`. A window nested through another container still fails validation. A stack's `items` are `SlideContentNode`, so a frame never nests. A container with several slots, or with props per slot, brands one field of sub-elements, and each sub-element's children are its nodes. `slideSplitLayout` is that case: `panes` is `fromChildren('pane', …, { toItem })`, and `toItem` fills each pane's `items` through `parseChildren`, left then right by index. `toItem` receives `children` among the props and strips it. Brand the standalone `schema`, not `schemaFor`, and pass both type arguments to `definePrimitive` (`definePrimitive<SlideSplitLayoutNode, typeof schema>`) so the brand reaches `slideJsx`.
 
 ```tsx
-<SlideSplit divider="arrow">
-  <SlideSplitPane label="Before">
-    <SlideCode panels={[{ lines: ['curl …'] }]} />
-  </SlideSplitPane>
-  <SlideSplitPane label="After" tone="primary">
-    <SlideBulletList items={['One call']} />
-  </SlideSplitPane>
-</SlideSplit>
+<SlideSplitLayout divider="arrow">
+  <SlideSplitLayout.Pane label="Before">
+    <SlideCode>curl …</SlideCode>
+  </SlideSplitLayout.Pane>
+  <SlideSplitLayout.Pane label="After" tone="primary">
+    <SlideBulletList>
+      <SlideBulletList.Item>One call</SlideBulletList.Item>
+    </SlideBulletList>
+  </SlideSplitLayout.Pane>
+</SlideSplitLayout>
 ```
 
-A single-node prop such as `slideTitle`'s `aside` takes an element as the whole prop value: `aside={<SlideBulletList … />}`.
+Several branded fields share one children list, and each takes the elements of its type. Elements that match none of them fill the primitive's one child slot, when that slot is not itself branded. `slideFrame` is that case: its body nodes are the element children, and `<SlideFrame.Footer>` fills `footer`.
+
+`titleSlide` brands two optional children. `<TitleSlide.Definition term="ledger n.">` fills `definition`, its sentence the child, and `<TitleSlide.Aside>` fills `aside` from its one slide node.
 
 ## Writing a container primitive
 
@@ -180,7 +193,7 @@ renderers: {
 - `children` exposes nested nodes to the duplicate-id checker, the empty-surface checker, and node anchors. An embedded slide is not a child: the renders validate their `body` through `schemaFor`, declare no `children` for it, and draw it under `withoutAnchors`, so anchors and builds pair only the host slide's nodes.
 - `src/render/children.ts` dispatches each child through the render scope, so a foreign node inside a container renders rather than disappearing. `renderMarkdownChildren` embeds each child's builder content through `scope.renderMarkdownContent`. Without a container `slack` renderer, the dispatcher sends the container's Markdown to Block Kit and every child goes with it, including one that has a native `slack` renderer.
 
-A container that also draws chrome of its own sets two more. `hasOwnContent: () => true` keeps it on a surface when every child is hidden there, and `metrics.snapshotHeight` reports its drawn height to a frame that sums node heights. `slideFrame` sets both because it owns the 16:9 canvas. `slideSplit` has its own content only when a pane has a label or the split has a footnote; `slideStack` draws nothing and sets neither.
+A container that also draws chrome of its own sets two more. `hasOwnContent: () => true` keeps it on a surface when every child is hidden there, and `metrics.snapshotHeight` reports its drawn height to a frame that sums node heights. `slideFrame` sets both because it owns the 16:9 canvas. `slideSplitLayout` has its own content only when a pane has a label or the split has a footnote; `slideStackLayout` draws nothing and sets neither.
 
 ## Writing catalog copy
 
@@ -199,7 +212,7 @@ Each primitive's `index.test.ts` covers its schema rejections and every surface'
 
 - `src/content_parity.test.ts` checks that text, Markdown, Slack, and HTML carry every authored string of every example, reading Markdown back through `mdast-util-from-markdown` with GFM and Slack mrkdwn back to its text; that entity-like text such as `&lt;` and unpaired `` ` `` or `*` print as authored, one field at a time; and that a line break in a one-line field reads as a space on each surface.
 - `src/slack_limits.test.ts` renders each Slack slot whose limit is below its schema cap at the limit and one past it, and expects the authored text whole both times.
-- `src/examples/fit.test.ts` renders every example on a slide (a frame as it is; a title, section, or closing slide alone on an inverse frame; a statement or quote alone on a page frame; anything else under a heading and lede on a page frame), measures it with takumi, and expects no finding from `checkLayout`, which measures the body's nodes against the frame's body and a split pane's nodes against the pane; the fullest `slideAgenda` and `slideDefinitions` examples are measured again below a two-line heading and lede, the room their load budgets are set against. Give each primitive an example at the most items, lines, or panels its schema takes, in representative copy. That proves the most structure fits, not every schema-valid string: a string may hold far more than a slide draws, which `checkLayout` reports. The same file measures statement, quote, agenda, and definitions at the most each holds at `l` and `m` on a slide with no heading, and keeps a fanout, a list, an agenda, the fullest roadmap, and the eight-entry tree that run past the body below the tallest heading, so a regression in that report fails. Each `slideGraph`, `slideRoadmap`, and `slideTimeline` example is also measured alone, under the tallest heading, as a title aside, and in a labelled split pane with and without a heading above it, where the step it picks must fit wherever `s` does.
+- `src/examples/fit.test.ts` renders every example on a slide (a frame as it is; a title, section, or closing slide alone on an inverse frame; a statement or quote alone on a page frame; anything else under a heading and lede on a page frame), measures it with takumi, and expects no finding from `checkLayout`, which measures the body's nodes against the frame's body and a split pane's nodes against the pane; the fullest `agendaSlide` and `slideDefinitions` examples are measured again below a two-line heading and lede, the room their load budgets are set against. Give each primitive an example at the most items, lines, or panels its schema takes, in representative copy. That proves the most structure fits, not every schema-valid string: a string may hold far more than a slide draws, which `checkLayout` reports. The same file measures statement, quote, agenda, and definitions at the most each holds at `l` and `m` on a slide with no heading, and keeps a fanout, a list, an agenda, the fullest roadmap, and the eight-entry tree that run past the body below the tallest heading, so a regression in that report fails. Each `slideGraph`, `slideRoadmap`, and `slideTimeline` example is also measured alone, under the tallest heading, as a title aside, and in a labelled split pane with and without a heading above it, where the step it picks must fit wherever `s` does.
 - `src/conformance.test.ts` runs the SDK's conformance harness.
 - `src/primitives/authored_text.test.ts` checks that `lineText()` and `wrappedText()` take exactly `authoredTextMaxLength` and refuse one more, and that every string in every example refuses one more.
 - `src/heading_levels.test.ts` fails when an example's HTML headings and Markdown headings differ in level or order.
@@ -240,11 +253,250 @@ const { Composition, SlideFrame, SlideHeading, toComposition } = slideJsx;
 
 const composition = toComposition(
   <Composition title="Refunds settle in two days">
-    <SlideFrame brand="Ledger" sectionNumber="02" section="Settlement">
-      <SlideHeading title="Refunds settle in two days, not five" />
+    <SlideFrame>
+      <SlideHeading>Refunds settle in two days, not five</SlideHeading>
+      <SlideFrame.Footer brand="Ledger" sectionNumber="02" section="Settlement" />
     </SlideFrame>
   </Composition>
 );
+```
+
+A whole-slide layout takes its parts as children. `TitleSlide.Definition` fills `definition` and `TitleSlide.Aside` its one node. `AgendaSlide.Section` fills an agenda, `SectionSlide.Item` a section's `slides`, and `ClosingSlide.Link` and `ClosingSlide.Path` a closing slide. Quote, statement, and source text is the child:
+
+```tsx
+<TitleSlide eyebrow="A grocery delivery platform" title="Crate" tagline="One order. Every store.">
+  <TitleSlide.Definition term="crate n.">
+    Everything a customer means to buy, carried from whichever store can fill it.
+  </TitleSlide.Definition>
+  <TitleSlide.Aside>
+    <SlideBulletList marker="check">
+      <SlideBulletList.Item>Charges the card once.</SlideBulletList.Item>
+    </SlideBulletList>
+  </TitleSlide.Aside>
+</TitleSlide>
+
+<AgendaSlide>
+  <AgendaSlide.Section number="01" title="Why returns cost us" count="3 slides" />
+  <AgendaSlide.Section number="03" title="The new returns flow" current />
+</AgendaSlide>
+
+<SectionSlide number="02" title="Settlement">
+  <SectionSlide.Item>Refunds settle in two days, not five</SectionSlide.Item>
+  <SectionSlide.Item href="#slide-12">Checkout failed for 41 minutes</SectionSlide.Item>
+</SectionSlide>
+
+<ClosingSlide title="Start here">
+  <ClosingSlide.Link label="Docs" href="https://example.com/ledger/docs">
+    example.com/ledger/docs
+  </ClosingSlide.Link>
+  <ClosingSlide.Path title="Issue a refund">The refunds guide, then `POST /refunds`</ClosingSlide.Path>
+</ClosingSlide>
+
+<QuoteSlide source="Priya N." context="Customer interview, March">
+  I stopped checking my bank app once the refund email said **which day** it would land.
+</QuoteSlide>
+
+<StatementSlide>A refund is **a promise**, not a transaction.</StatementSlide>
+
+<SlideSource>Support tickets tagged “refund”, January to June</SlideSource>
+```
+
+A container that arranges primitives inside a slide ends in `Layout`. `SlideStackLayout` and `SlideWindowLayout` take those primitives as children. A window's direct child cannot be another `SlideWindowLayout`.
+
+```tsx
+<SlideStackLayout spacing="tight">
+  <SlideBulletList>
+    <SlideBulletList.Item>One nightly run.</SlideBulletList.Item>
+  </SlideBulletList>
+  <SlideCommand>npm run settle -- --nightly</SlideCommand>
+</SlideStackLayout>
+
+<SlideWindowLayout chrome="terminal" title="~/shop — release">
+  <SlideCommand>npm run settle -- --nightly</SlideCommand>
+</SlideWindowLayout>
+```
+
+A content primitive takes its list as children named for it, without the `Slide` prefix. Each child's sentence is its text, and its short fields are attributes. A heading's title is its text, and `lede` stays an attribute. A list of plain strings takes one child per string:
+
+```tsx
+<SlideHeading lede="Same ledger, fewer days.">Refunds settle in **two days**</SlideHeading>
+
+<SlideBulletList marker="check">
+  <SlideBulletList.Item>Charges the card once.</SlideBulletList.Item>
+  <SlideBulletList.Item>Refunds in `two days`.</SlideBulletList.Item>
+</SlideBulletList>
+
+<SlideColumns highlight={1}>
+  <SlideColumns.Column title="Poll">Lags by one interval.</SlideColumns.Column>
+  <SlideColumns.Column title="Push" tags={['webhook']}>Immediate.</SlideColumns.Column>
+</SlideColumns>
+
+<SlideDefinitions>
+  <SlideDefinitions.Definition term="hold">Money set aside, not yet taken.</SlideDefinitions.Definition>
+</SlideDefinitions>
+
+<SlideList label="Limits">
+  <SlideList.Item term="rate">100 requests a second.</SlideList.Item>
+</SlideList>
+
+<SlideRoadmap>
+  <SlideRoadmap.Column title="Now" status="Shipped" current>
+    <SlideRoadmap.Item title="Holds">Set money aside at checkout.</SlideRoadmap.Item>
+  </SlideRoadmap.Column>
+  <SlideRoadmap.Column title="Next" status="In design">
+    <SlideRoadmap.Item title="Splits">Pay two stores from one order.</SlideRoadmap.Item>
+  </SlideRoadmap.Column>
+</SlideRoadmap>
+```
+
+Code keeps its whitespace. A command is its text. A `SlideCode`'s text is its source: write it as a template literal, and the line break after the opening backtick, the indentation before the closing one, and the indentation every line shares are dropped. JSX itself collapses line breaks in bare text, so multi-line source needs the template literal. Its `file`, `language`, and `lineNumbers` are attributes. A `slideCodeTrace` takes two `SlideCodeTrace.Panel` children, left then right, each with the same attributes and its source as its text, joined by an arrow. A panel's `lineNumbers`, as in [`EuiCode`](https://eui.elastic.co/docs/components/display/code/#line-numbers), is `true` or `{ start, highlight }`: `highlight` is a range string such as `'2, 5-7'` of line numbers as the gutter shows them, so `start` shifts them, and the gutter's columns come out of every line's budget. Text, Markdown, and Slack print each line after its number. A diff's text is its source, read the same way as a panel's. Its `remove` and `add` are range strings in the same form as `highlight`, but they count the lines of the body from 1, removed ones included, since a removed line has no number in the gutter; no line is both. Its `lineNumbers` is `true` or `{ start }`, and its one gutter numbers the file after the change, leaving removed lines unnumbered. Text and Slack print the numbers before each line's `-` or `+`; Markdown keeps a plain unified diff. A transcript takes `SlideTranscript.Turn` children, each turn's text keeping its line breaks:
+
+```tsx
+<SlideCommand label="Install">npm install @elastic/isomer-runtime</SlideCommand>
+
+<SlideCode file="refund.ts" language="ts" lineNumbers={{ highlight: '2' }}>
+  {`
+    const refund = async (id) => {
+      await ledger.hold(id);
+      return ledger.settle(id);
+    };
+  `}
+</SlideCode>
+
+<SlideCodeTrace>
+  <SlideCodeTrace.Panel file="config.yaml" language="yaml">
+    {`
+      checkout:
+        timeout: 30s
+    `}
+  </SlideCodeTrace.Panel>
+  <SlideCodeTrace.Panel file="client.ts" language="ts" lineNumbers={{ start: 41 }}>
+    {`
+      createClient({
+        timeout: config.checkout.timeout,
+      });
+    `}
+  </SlideCodeTrace.Panel>
+</SlideCodeTrace>
+
+<SlideDiff file="refund.ts" language="ts" remove="2" add="3" lineNumbers>
+  {`
+    export async function refund(id: string) {
+      return settle(id);
+      return ledger.settle(id);
+    }
+  `}
+</SlideDiff>
+
+<SlideTranscript label="Tool call">
+  <SlideTranscript.Turn role="user">Refund order 1042.</SlideTranscript.Turn>
+  <SlideTranscript.Turn role="model" format="code">{'refund({ order: 1042 })'}</SlideTranscript.Turn>
+</SlideTranscript>
+```
+
+A number's sentence is its text, and the figures are attributes. A bar's label is its text. A table and a matrix keep their grids as props: a row is a list of cells, and an element per cell would be longer than the array it replaces. A quadrant takes four `SlideQuadrant.Cell` children, top-left to bottom-right, each holding its `SlideQuadrant.Item` chips; a cell with none is empty.
+
+```tsx
+<SlideStat value="2" unit="days">Refunds settle **three days** sooner.</SlideStat>
+
+<SlideDelta before={{ label: 'Before', value: '5 days' }} after={{ label: 'After', value: '2 days' }}>
+  The ledger writes first.
+</SlideDelta>
+
+<SlideStats>
+  <SlideStats.Stat value="41" label="Minutes">Checkout was down.</SlideStats.Stat>
+  <SlideStats.Stat value="0" label="Lost">Every order was kept.</SlideStats.Stat>
+</SlideStats>
+
+<SlideBars>
+  <SlideBars.Bar value={12} highlight>Checkout</SlideBars.Bar>
+  <SlideBars.Bar value={4} detail="p95">Search</SlideBars.Bar>
+</SlideBars>
+
+<SlideQuadrant x={{ low: 'Easy', high: 'Hard' }} y={{ low: 'Minor', high: 'Major' }} highlight={0}>
+  <SlideQuadrant.Cell label="Quick wins">
+    <SlideQuadrant.Item>dark mode</SlideQuadrant.Item>
+  </SlideQuadrant.Cell>
+  <SlideQuadrant.Cell label="Big bets">
+    <SlideQuadrant.Item>same-day</SlideQuadrant.Item>
+  </SlideQuadrant.Cell>
+  <SlideQuadrant.Cell label="Fill-ins" />
+  <SlideQuadrant.Cell label="Money pits">
+    <SlideQuadrant.Item>own fleet</SlideQuadrant.Item>
+  </SlideQuadrant.Cell>
+</SlideQuadrant>
+```
+
+A diagram's parts are children of their kind. Two kinds share one children list, and each element goes to its own field: a pipeline's `SlidePipeline.Step` and `SlidePipeline.Span`, a sequence's `SlideSequence.Actor` and `SlideSequence.Message`, and a lanes diagram's `SlideLanes.Lane` and `SlideLanes.Note`. Ids, indexes, and short lists of chips or steps stay attributes. A graph draws no arrow it is not given a place for, so its arrows follow from its nodes: the main row joins left to right, and a node `placement="above"` or `"below"` names the main-row node it joins in `of`, its arrow pointing into the row unless `direction="out"`:
+
+```tsx
+<SlideFanout source="Order">
+  <SlideFanout.Target name="Ledger">Holds the money.</SlideFanout.Target>
+  <SlideFanout.Target name="Email" tone="accent">Tells the customer.</SlideFanout.Target>
+</SlideFanout>
+
+<SlideGraph>
+  <SlideGraph.Node id="cart" term="Cart">What the customer picked.</SlideGraph.Node>
+  <SlideGraph.Node id="ledger" term="Ledger">Where the money is held.</SlideGraph.Node>
+  <SlideGraph.Node id="pricing" term="Pricing" placement="above" of="ledger">
+    Offers, fixed at checkout.
+  </SlideGraph.Node>
+</SlideGraph>
+
+<SlideLanes join="Checkout">
+  <SlideLanes.Lane label="Card" steps={['Authorize', 'Capture']} />
+  <SlideLanes.Lane label="Wallet" tone="accent" steps={['Redirect']} />
+  <SlideLanes.Note title="Card">Two steps, no redirect.</SlideLanes.Note>
+</SlideLanes>
+
+<SlideLayers>
+  <SlideLayers.Layer name="Storefront" owner="Web">What people see.</SlideLayers.Layer>
+  <SlideLayers.Layer name="Orders API" owner="Platform">Takes and checks orders.</SlideLayers.Layer>
+  <SlideLayers.Layer name="Ledger" owner="Payments" chips={['holds', 'refunds']} />
+</SlideLayers>
+
+<SlidePipeline>
+  <SlidePipeline.Step title="Hold" />
+  <SlidePipeline.Step title="Settle" />
+  <SlidePipeline.Span from={0} to={1} tone="primary" label="Ours" title="Ledger">We own both steps.</SlidePipeline.Span>
+</SlidePipeline>
+
+<SlideSequence>
+  <SlideSequence.Actor id="app">App</SlideSequence.Actor>
+  <SlideSequence.Actor id="api">Orders API</SlideSequence.Actor>
+  <SlideSequence.Actor id="bank">Bank</SlideSequence.Actor>
+  <SlideSequence.Message from="app" to="api">Pay</SlideSequence.Message>
+  <SlideSequence.Message from="api" to="bank">Charge</SlideSequence.Message>
+</SlideSequence>
+
+<SlideTerritoryGroup>
+  <SlideTerritoryGroup.Territory title="Host" tone="accent">Owns routing.</SlideTerritoryGroup.Territory>
+</SlideTerritoryGroup>
+
+<SlideTimeline>
+  <SlideTimeline.Item label="09:00" channel="Pager" heading="Checkout paged">On call answered.</SlideTimeline.Item>
+  <SlideTimeline.Item label="09:12" channel="Slack" heading="Cause found">A bad deploy.</SlideTimeline.Item>
+  <SlideTimeline.Item label="09:41" channel="Deploy" heading="Rolled back">Orders flowed again.</SlideTimeline.Item>
+</SlideTimeline>
+
+<SlideTree root="checkout/">
+  <SlideTree.Item name="refund.ts">Issues refunds.</SlideTree.Item>
+</SlideTree>
+```
+
+An annotated render takes its `SlideRender` and its `SlideAnnotatedRender.Pin` children side by side; a pin's sentence is its text. A render grid takes `SlideRenderGrid.Tile` children, each captioned by its text. The slide a render or grid embeds is its other children, branded `fromNodeChildren` because it is drawn, not walked:
+
+```tsx
+<SlideAnnotatedRender>
+  <SlideRender slide="checkout" surface="snapshot" />
+  <SlideAnnotatedRender.Pin x={20} y={30} title="Heading">The claim, in one line.</SlideAnnotatedRender.Pin>
+</SlideAnnotatedRender>
+
+<SlideRenderGrid>
+  <SlideHeading>Refunds settle in two days</SlideHeading>
+  <SlideRenderGrid.Tile surface="react">Hosts</SlideRenderGrid.Tile>
+  <SlideRenderGrid.Tile surface="slack">Channels</SlideRenderGrid.Tile>
+</SlideRenderGrid>
 ```
 
 `toComposition` walks the tree back into the plain `Composition` value every surface renders from — JSX is authoring sugar, not a second representation.

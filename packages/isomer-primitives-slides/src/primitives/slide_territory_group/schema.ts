@@ -36,7 +36,7 @@ export const schema = z
   .object({
     type: z.literal('slideTerritoryGroup'),
     items: fromChildren(
-      'slideTerritory',
+      'territory',
       z
         .array(territorySchema)
         .min(1)

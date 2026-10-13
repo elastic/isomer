@@ -131,11 +131,11 @@ describe('slide frame', () => {
   it('reports a bare content node as the root', () => {
     const content = exampleNodes(
       slideDeckPrimitives.find(
-        (definition) => definition.type === 'slideTitle'
+        (definition) => definition.type === 'titleSlide'
       )!
     )[0]! as PrimitiveNode;
     expect(slideDeckFrame.validateBody?.([content])).toEqual([
-      expect.stringMatching(/needs a "slideFrame" root, got "slideTitle"/),
+      expect.stringMatching(/needs a "slideFrame" root, got "titleSlide"/),
     ]);
   });
 

@@ -38,20 +38,15 @@ export const example: SlideGraphNode = {
       term: 'Pricing',
       body: 'Offers, fixed at checkout.',
       placement: 'above',
+      of: 'order',
     },
     {
       id: 'stock',
       term: 'Stock',
       body: 'What the store holds now.',
       placement: 'below',
+      of: 'order',
     },
-  ],
-  edges: [
-    ['catalog', 'basket'],
-    ['basket', 'order'],
-    ['order', 'delivery'],
-    ['pricing', 'order'],
-    ['stock', 'order'],
   ],
 };
 
@@ -72,10 +67,9 @@ export const pairExample: SlideGraphNode = {
       emphasis: true,
     },
   ],
-  edges: [['incident', 'review']],
 };
 
-/** An edge pointing down out of the row. */
+/** An arrow pointing down out of the row. */
 export const outwardEdgesExample: SlideGraphNode = {
   type: 'slideGraph',
   caption: 'A release ships a build; the changelog is written from it.',
@@ -101,19 +95,16 @@ export const outwardEdgesExample: SlideGraphNode = {
       term: 'Policy',
       body: 'Checks every commit must pass before it lands.',
       placement: 'above',
+      of: 'commit',
     },
     {
       id: 'changelog',
       term: 'Changelog',
       body: 'The customer-facing notes for a release.',
       placement: 'below',
+      of: 'release',
+      direction: 'out',
     },
-  ],
-  edges: [
-    ['commit', 'build'],
-    ['build', 'release'],
-    ['policy', 'commit'],
-    ['release', 'changelog'],
   ],
 };
 

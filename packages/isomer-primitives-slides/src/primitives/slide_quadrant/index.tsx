@@ -50,7 +50,7 @@ const axes = ({ x, y }: SlideQuadrantNode): string =>
 /** `label (place): items`, the highlighted label leading with its cue. */
 const cells = (node: SlideQuadrantNode) => {
   const places = quadrantPlaces(node);
-  return node.quadrants.map(({ label, items }, index) => ({
+  return node.quadrants.map(({ label, items = [] }, index) => ({
     label: oneLine(
       index === node.highlight ? `${toneCueText('primary')}${label}` : label
     ),
@@ -99,7 +99,7 @@ export const slack = (node: SlideQuadrantNode): SlackBlock[] => {
         x.high,
         y.low,
         y.high,
-        ...quadrants.flatMap(({ label, items }) => [label, ...items]),
+        ...quadrants.flatMap(({ label, items = [] }) => [label, ...items]),
       ]
     ),
   ];

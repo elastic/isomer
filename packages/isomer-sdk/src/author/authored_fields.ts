@@ -6,15 +6,13 @@
  */
 
 import type { ReactNode } from 'react';
-import { z, type ZodType } from 'zod';
+import type { ZodType } from 'zod';
 
 import { ISOMER_ERROR_CODES, IsomerError } from '../composition/error';
 import type { PrimitiveNode } from '../define/primitive_module';
 
-import { prepareAuthoringInput } from './authoring_input';
-
 /**
- * Child-element type a schema field is filled from.
+ * Member name of the child component a schema field is filled from.
  *
  * `Symbol.for`: ESM and CJS builds must agree, same as `authorType`.
  */
@@ -26,10 +24,14 @@ export const authoredProps = Symbol.for('elastic.isomer.authored_props');
 /** Set when a field is filled from text children. */
 export const authoredText = Symbol.for('elastic.isomer.authored_text');
 
+/** Set when a field is filled from primitive elements no other field claims. */
+export const authoredNodes = Symbol.for('elastic.isomer.authored_nodes');
+
 /** Holds a {@link fromChildren} brand's `toItem`. */
 export const authoredToItem = Symbol.for('elastic.isomer.authored_to_item');
 const authoredTextField = Symbol.for('elastic.isomer.authored_text_field');
 const authoredCollapse = Symbol.for('elastic.isomer.authored_collapse');
+const authoredDedent = Symbol.for('elastic.isomer.authored_dedent');
 const authoredPropsSchema = Symbol.for('elastic.isomer.authored_props_schema');
 
 /**
@@ -54,6 +56,11 @@ export interface AuthoredToItemBrand {
 /** A field filled from text children. */
 export interface AuthoredTextBrand {
   readonly [authoredText]: true;
+}
+
+/** A field filled from primitive elements, like a child slot the tree walk does not visit. */
+export interface AuthoredNodesBrand {
+  readonly [authoredNodes]: true;
 }
 
 /** What {@link fromChildren}'s `toItem` receives. */
@@ -127,14 +134,16 @@ const BRANDS = [
   authoredTextField,
   authoredToItem,
   authoredText,
+  authoredNodes,
   authoredCollapse,
+  authoredDedent,
   authoredPropsSchema,
 ] as const;
 
 // Applies a complete branding. Branding an instance again is allowed only with
 // the same configuration, absent options included, since both fields share it.
 const brand = (
-  caller: 'fromChildren' | 'fromTextChildren',
+  caller: 'fromChildren' | 'fromNodeChildren' | 'fromTextChildren',
   schema: object,
   config: Partial<Record<(typeof BRANDS)[number], unknown>>
 ): void => {
@@ -159,7 +168,9 @@ const brand = (
 };
 
 /**
- * Brands `schema` as JSX children of `childType`.
+ * Brands `schema` as JSX children of the member `name`, capitalized on the
+ * primitive's component: `fromChildren('item', …)` on `slideList` is
+ * `<SlideList.Item>`. Names are unique across a primitive's child tree.
  *
  * `options.text` copies leftover text onto that field. `options.toItem` replaces
  * the default prop copy; its props annotation is the child component's props.
@@ -171,7 +182,7 @@ export function fromChildren<
   const TName extends string,
   TSchema extends ZodType,
 >(
-  childType: TName,
+  name: TName,
   schema: TSchema
 ): TSchema &
   AuthoredChildBrand<
@@ -183,7 +194,7 @@ export function fromChildren<
   TSchema extends ZodType,
   const TText extends string,
 >(
-  childType: TName,
+  name: TName,
   schema: TSchema,
   options: { text: TText; toItem?: never }
 ): TSchema &
@@ -199,7 +210,7 @@ export function fromChildren<
   TSchema extends ZodType,
   TPropsSchema extends ZodType,
 >(
-  childType: TName,
+  name: TName,
   schema: TSchema,
   options: {
     text?: string;
@@ -217,7 +228,7 @@ export function fromChildren<
   TSchema extends ZodType,
   TProps,
 >(
-  childType: TName,
+  name: TName,
   schema: TSchema,
   options: {
     text?: string;
@@ -226,7 +237,7 @@ export function fromChildren<
   }
 ): TSchema & AuthoredChildBrand<TName, TProps> & AuthoredToItemBrand;
 export function fromChildren(
-  childType: string,
+  name: string,
   schema: ZodType,
   options?: {
     text?: string;
@@ -235,7 +246,7 @@ export function fromChildren(
   }
 ): ZodType {
   brand('fromChildren', schema, {
-    [authoredChild]: childType,
+    [authoredChild]: name,
     [authoredTextField]: options?.text,
     [authoredToItem]: options?.toItem,
     [authoredPropsSchema]: options?.propsSchema,
@@ -246,24 +257,41 @@ export function fromChildren(
 /**
  * Brands `schema` as text children.
  *
- * Whitespace collapses unless `collapseWhitespace` is `false`.
+ * Whitespace collapses unless `collapseWhitespace` is `false`. `dedent` keeps
+ * it and reads the text as source, as {@link textFromChildren} does.
  */
 export const fromTextChildren = <TSchema extends ZodType>(
   schema: TSchema,
-  options?: { collapseWhitespace?: boolean }
+  options?: { collapseWhitespace?: boolean; dedent?: boolean }
 ): TSchema & AuthoredTextBrand => {
   brand('fromTextChildren', schema, {
     [authoredText]: true,
     [authoredCollapse]:
-      options?.collapseWhitespace === false ? false : undefined,
+      options?.collapseWhitespace === false || options?.dedent
+        ? false
+        : undefined,
+    [authoredDedent]: options?.dedent ? true : undefined,
   });
   return schema as TSchema & AuthoredTextBrand;
+};
+
+/**
+ * Brands `schema`, a node or an array of nodes, as the primitive elements among
+ * the children that no other field claims. Use it for nodes the tree walk does
+ * not visit; a walked child slot fills from children already.
+ */
+export const fromNodeChildren = <TSchema extends ZodType>(
+  schema: TSchema
+): TSchema & AuthoredNodesBrand => {
+  brand('fromNodeChildren', schema, { [authoredNodes]: true });
+  return schema as TSchema & AuthoredNodesBrand;
 };
 
 /** One {@link fromChildren} field as the shim reads it. */
 export interface AuthoredChildField {
   field: string;
-  childType: string;
+  /** The member name `fromChildren` was given, before capitalizing. */
+  name: string;
   /** Field leftover text children fill. */
   textField?: string;
   /** Replaces the default prop copy. */
@@ -276,23 +304,32 @@ export interface AuthoredChildField {
   array: boolean;
   /** Whether the field accepts `undefined`, so children may be omitted. */
   optional: boolean;
-  /** Structural input-schema fingerprint shared by fields branding one child type. */
-  signature: string;
 }
 
 /** One {@link fromTextChildren} field as the shim reads it. */
 export interface AuthoredTextField {
   field: string;
-  /** `true` unless the brand was given `collapseWhitespace: false`. */
+  /** `true` unless the brand was given `collapseWhitespace: false` or `dedent`. */
   collapseWhitespace: boolean;
+  /** Set when the brand was given `dedent`. */
+  dedent?: true;
   /** Whether the field accepts `undefined`, so text children may be omitted. */
   optional: boolean;
+}
+
+/** One {@link fromNodeChildren} field as the shim reads it. */
+export interface AuthoredNodesField {
+  field: string;
+  /** Whether the field holds an array of nodes rather than one. */
+  array: boolean;
 }
 
 /** The branded fields found on one object schema. */
 export interface AuthoredSpec {
   children: AuthoredChildField[];
   text: AuthoredTextField[];
+  /** Absent on a spec built by hand; read as none. */
+  nodes?: AuthoredNodesField[];
 }
 
 const zodDefType = (schema: object): string | undefined =>
@@ -349,67 +386,6 @@ const isOptionalSchema = (schema: ZodType): boolean => {
   return type === 'optional' || type === 'default';
 };
 
-const UNORDERED_SCHEMA_ARRAYS = new Set([
-  'allOf',
-  'anyOf',
-  'enum',
-  'oneOf',
-  'required',
-  'type',
-]);
-
-const schemaSignature = (schema: ZodType): string => {
-  const { schema: input } = prepareAuthoringInput(schema);
-  const projected = z.toJSONSchema(input, {
-    io: 'input',
-    target: 'draft-2020-12',
-    cycles: 'ref',
-    reused: 'inline',
-    unrepresentable: 'any',
-    metadata: z.registry(),
-  });
-  const active = new Map<object, number>();
-  const canonical = (value: unknown, key = ''): string => {
-    if (Array.isArray(value)) {
-      const members = value.map((member) => canonical(member));
-      if (UNORDERED_SCHEMA_ARRAYS.has(key)) {
-        members.sort();
-      }
-      return `[${members.join(',')}]`;
-    }
-    if (typeof value !== 'object' || value === null) {
-      return JSON.stringify(value) ?? 'undefined';
-    }
-    const cycle = active.get(value);
-    if (cycle !== undefined) {
-      return `cycle:${cycle}`;
-    }
-    const object = value as Record<string, unknown>;
-    const ref = object.$ref;
-    const target =
-      ref === '#'
-        ? projected
-        : typeof ref === 'string' && ref.startsWith('#/$defs/')
-          ? projected.$defs?.[ref.slice('#/$defs/'.length)]
-          : undefined;
-    if (target && Object.keys(object).length === 1) {
-      return canonical(target);
-    }
-    active.set(value, active.size);
-    const result = `{${Object.entries(object)
-      .filter(([key]) => value !== projected || key !== '$defs')
-      .sort(([first], [second]) => first.localeCompare(second))
-      .map(
-        ([key, member]) =>
-          `${JSON.stringify(key)}:${canonical(key === '$ref' && target ? target : member, key)}`
-      )
-      .join(',')}}`;
-    active.delete(value);
-    return result;
-  };
-  return canonical(projected);
-};
-
 const arrayElement = (schema: ZodType): ZodType | undefined => {
   const inner = unwrapAll(schema);
   return zodDefType(inner) === 'array' && 'element' in inner
@@ -422,10 +398,10 @@ const readChild = (
   schema: ZodType
 ): AuthoredChildField | undefined => {
   const holder = brandHolder(schema, authoredChild);
-  const childType = (holder as { [authoredChild]?: unknown } | undefined)?.[
+  const name = (holder as { [authoredChild]?: unknown } | undefined)?.[
     authoredChild
   ];
-  if (!holder || typeof childType !== 'string') {
+  if (!holder || typeof name !== 'string') {
     return undefined;
   }
   const textField = (holder as { [authoredTextField]?: unknown })[
@@ -439,11 +415,10 @@ const readChild = (
   const itemSchema = element ?? unwrapAll(holder);
   const child: AuthoredChildField = {
     field,
-    childType,
+    name,
     itemSchema,
     array: element !== undefined,
     optional: optionalThrough(schema),
-    signature: `${schemaSignature(itemSchema)}|${typeof textField === 'string' ? textField : ''}|${propsSchema ? schemaSignature(propsSchema) : ''}`,
   };
   if (propsSchema) {
     child.propsSchema = propsSchema;
@@ -468,12 +443,16 @@ const readText = (
   if (!holder) {
     return undefined;
   }
-  return {
+  const text: AuthoredTextField = {
     field,
     collapseWhitespace:
       (holder as { [authoredCollapse]?: unknown })[authoredCollapse] !== false,
     optional: optionalThrough(schema),
   };
+  if ((holder as { [authoredDedent]?: unknown })[authoredDedent] === true) {
+    text.dedent = true;
+  }
+  return text;
 };
 
 /**
@@ -482,10 +461,11 @@ const readText = (
  */
 export const readAuthoredSpec = (schema: ZodType): AuthoredSpec => {
   if (zodDefType(schema) !== 'object' || !('shape' in schema)) {
-    return { children: [], text: [] };
+    return { children: [], text: [], nodes: [] };
   }
   const children: AuthoredChildField[] = [];
   const text: AuthoredTextField[] = [];
+  const nodes: AuthoredNodesField[] = [];
   for (const [field, fieldSchema] of Object.entries(
     schema.shape as Record<string, ZodType>
   )) {
@@ -497,7 +477,12 @@ export const readAuthoredSpec = (schema: ZodType): AuthoredSpec => {
     const textField = readText(field, fieldSchema);
     if (textField) {
       text.push(textField);
+      continue;
+    }
+    const holder = brandHolder(fieldSchema, authoredNodes);
+    if (holder) {
+      nodes.push({ field, array: arrayElement(holder) !== undefined });
     }
   }
-  return { children, text };
+  return { children, text, nodes };
 };

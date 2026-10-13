@@ -14,7 +14,7 @@ import { sequence, sequenceFit } from '../../theme/components/sequence';
 import { scalePx } from '../../theme/scale';
 import { layoutContext, renderedStep } from '../size.fixtures';
 import { tallestExample } from '../slide_heading/examples';
-import { paneWidths } from '../slide_split/pane_layout';
+import { paneWidths } from '../slide_split_layout/pane_layout';
 
 import { fullExample } from './examples';
 import { sequenceLoad, sequenceStep, wrapHeight } from './fit';
@@ -38,7 +38,7 @@ const firstMessages = (count: number): SlideSequenceNode => {
 const codeRise = 2 * (scalePx(marks.codePaddingY) + scalePx(marks.codeBorder));
 
 const inSplit = (node: SlideSequenceNode) => ({
-  type: 'slideSplit',
+  type: 'slideSplitLayout',
   panes: [
     { items: [node] },
     { items: [{ type: 'slideBulletList', items: ['One'] }] },

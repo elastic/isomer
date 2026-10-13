@@ -19,7 +19,7 @@ Useful individual scripts:
 - `pnpm test` — unit tests
 - `pnpm lint` / `pnpm lint:fix` — ESLint (including Prettier) and markdownlint
 - `pnpm build` — the ESM build, specifier rewriting, and the CommonJS pass (see below)
-- `pnpm licenses:report` — regenerate `THIRD_PARTY_LICENSES.md` and `NOTICE.txt`
+- `pnpm licenses:report` — regenerate `THIRD_PARTY_LICENSES.md` and `NOTICE.txt` for the workspace, and each published package's own, scoped to what a consumer installs with it for the workspace, and for each published package scoped to what a consumer installs with it
 - `pnpm docs:dev` — copy package docs into the assembler and serve with live reload (`docs-builder serve`, <http://localhost:3000>). Requires the [docs-builder](https://github.com/elastic/docs-builder) binary (`curl -sL https://ela.st/docs-builder-install | sh`)
 
 ## The build
