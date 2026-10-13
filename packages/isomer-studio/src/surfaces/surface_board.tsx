@@ -8,6 +8,7 @@
 import React from 'react';
 import { EuiIcon, EuiText, useEuiTheme } from '@elastic/eui';
 import type { Composition, ValidationResult } from '@elastic/isomer-sdk';
+import type { SerializedStyles } from '@emotion/react';
 import { css } from '@emotion/react';
 
 import { useStudio } from '../studio_context';
@@ -39,15 +40,21 @@ const SurfaceRender = ({
   validation,
   view,
   zoom,
-}: RenderProps & { surface: PreviewSurface }) => {
+  frameCss,
+}: RenderProps & {
+  surface: PreviewSurface;
+  frameCss?: SerializedStyles | undefined;
+}) => {
   const { rasterizePng } = useStudio();
   if (surface !== 'png') {
     return (
-      <SurfacePreview {...{ surface, composition, validation, view, zoom }} />
+      <SurfacePreview
+        {...{ surface, composition, validation, view, zoom, frameCss }}
+      />
     );
   }
   return rasterizePng ? (
-    <PngSurface {...{ composition, rasterizePng, zoom }} />
+    <PngSurface {...{ composition, rasterizePng, zoom, frameCss }} />
   ) : null;
 };
 
@@ -96,17 +103,15 @@ const SurfaceCard = ({
           {SURFACE_NOTES[surface]}
         </EuiText>
       </div>
-      <div
-        css={css`
+      <SurfaceRender
+        {...{ surface, composition, validation, view }}
+        zoom="fit"
+        frameCss={css`
           aspect-ratio: 16 / 9;
           overflow: ${clipsRender ? 'hidden' : 'auto'};
           background: ${euiTheme.colors.backgroundBaseSubdued};
-        `}>
-        <SurfaceRender
-          {...{ surface, composition, validation, view }}
-          zoom="fit"
-        />
-      </div>
+        `}
+      />
     </section>
   );
 };

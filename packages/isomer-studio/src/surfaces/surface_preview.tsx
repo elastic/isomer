@@ -18,6 +18,7 @@ import {
   useEuiTheme,
 } from '@elastic/eui';
 import type { Composition, ValidationResult } from '@elastic/isomer-sdk';
+import type { SerializedStyles } from '@emotion/react';
 import { css } from '@emotion/react';
 
 import type { StudioSurface } from '../model/describe_runtime';
@@ -32,6 +33,7 @@ import type { PreviewZoom } from './scaled_preview';
 import { ScaledPreview } from './scaled_preview';
 import { blockKitBuilderUrl, SlackSurface } from './slack_surface';
 import { SnapshotSurface } from './snapshot_surface';
+import { SurfaceFrame } from './surface_frame';
 import { MarkdownLogo, ReactLogo, SnapshotLogo } from './surface_logos';
 import { MarkdownSurface, SourceView, TextSurface } from './text_surfaces';
 
@@ -159,6 +161,8 @@ export interface SurfacePreviewProps {
   view: SurfaceView;
   /** Scales the `react`, `html` and `snapshot` renders. Defaults to `fit`. */
   zoom?: PreviewZoom;
+  /** Styles a frame around the render or source alone; diagnostics sit below it. */
+  frameCss?: SerializedStyles | undefined;
 }
 
 /** One surface's render or source, with what it reported. */
@@ -168,6 +172,7 @@ export const SurfacePreview = ({
   validation,
   view,
   zoom = 'fit',
+  frameCss,
 }: SurfacePreviewProps) => {
   const { runtime } = useStudio();
   const output = useMemo(
@@ -187,23 +192,27 @@ export const SurfacePreview = ({
           title="This surface could not render"
           text={<p>{error}</p>}
         />
-      ) : view === 'source' ? (
-        <>
-          <SourceView {...{ output }} />
-          {slack ? (
-            <EuiText size="xs">
-              <EuiSpacer size="xs" />
-              <EuiLink
-                href={blockKitBuilderUrl(slack.blocks)}
-                target="_blank"
-                external>
-                Open in Block Kit Builder
-              </EuiLink>
-            </EuiText>
-          ) : null}
-        </>
       ) : (
-        <Rendered {...{ surface, composition, output, zoom }} />
+        <SurfaceFrame {...{ frameCss }}>
+          {view === 'source' ? (
+            <>
+              <SourceView {...{ output }} />
+              {slack ? (
+                <EuiText size="xs">
+                  <EuiSpacer size="xs" />
+                  <EuiLink
+                    href={blockKitBuilderUrl(slack.blocks)}
+                    target="_blank"
+                    external>
+                    Open in Block Kit Builder
+                  </EuiLink>
+                </EuiText>
+              ) : null}
+            </>
+          ) : (
+            <Rendered {...{ surface, composition, output, zoom }} />
+          )}
+        </SurfaceFrame>
       )}
       {warnings.length ? (
         <>

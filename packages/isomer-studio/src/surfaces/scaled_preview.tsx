@@ -27,6 +27,12 @@ interface Size {
 const sameSize = (a: Size, b: Size) =>
   a.width === b.width && a.height === b.height;
 
+/** Grows with content wider than the layout width, which `ResizeObserver` reports where overflow alone is not. */
+const contentBoxStyles = css`
+  width: fit-content;
+  min-width: 100%;
+`;
+
 const scaleFor = (
   zoom: PreviewZoom,
   available: number,
@@ -54,13 +60,15 @@ export const ScaledPreview = ({
 }: ScaledPreviewProps) => {
   const outer = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
+  const contentBox = useRef<HTMLDivElement>(null);
   const [available, setAvailable] = useState(0);
   const [content, setContent] = useState<Size>({ width: 0, height: 0 });
 
   useLayoutEffect(() => {
     const outerElement = outer.current;
     const innerElement = inner.current;
-    if (!outerElement || !innerElement) {
+    const contentElement = contentBox.current;
+    if (!outerElement || !innerElement || !contentElement) {
       return;
     }
     const measure = () => {
@@ -77,7 +85,7 @@ export const ScaledPreview = ({
     }
     const observer = new ResizeObserver(measure);
     observer.observe(outerElement);
-    observer.observe(innerElement);
+    observer.observe(contentElement);
     return () => observer.disconnect();
   }, []);
 
@@ -118,7 +126,9 @@ export const ScaledPreview = ({
                 `
               : undefined
           }>
-          {children}
+          <div ref={contentBox} css={contentBoxStyles}>
+            {children}
+          </div>
         </div>
       </div>
     </div>

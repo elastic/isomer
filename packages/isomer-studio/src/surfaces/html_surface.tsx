@@ -29,7 +29,6 @@ export const HtmlSurface = ({
 }) => {
   const frame = useRef<HTMLIFrameElement>(null);
   const [height, setHeight] = useState(MIN_HEIGHT);
-  const [minWidth, setMinWidth] = useState<number>();
 
   useEffect(() => {
     const element = frame.current;
@@ -43,11 +42,13 @@ export const HtmlSurface = ({
         return;
       }
       // A frame clips what overflows it, so a fixed-width document widens the frame to show it.
+      // The width is set on the node so each measurement starts from the container's width.
       const update = () => {
-        setHeight(Math.max(MIN_HEIGHT, body.offsetHeight));
+        element.style.width = '';
         const { scrollWidth } = body.ownerDocument.documentElement;
-        const containerWidth = element.parentElement?.clientWidth ?? 0;
-        setMinWidth(scrollWidth > containerWidth ? scrollWidth : undefined);
+        element.style.width =
+          scrollWidth > element.clientWidth ? `${scrollWidth}px` : '';
+        setHeight(Math.max(MIN_HEIGHT, body.offsetHeight));
       };
       update();
       observer?.disconnect();
@@ -70,7 +71,7 @@ export const HtmlSurface = ({
       sandbox="allow-same-origin"
       srcDoc={documentFor(html)}
       css={frameStyles}
-      style={{ height, minWidth }}
+      style={{ height }}
     />
   );
 };

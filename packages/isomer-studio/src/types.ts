@@ -15,7 +15,13 @@ import type { StudioConfig } from './config';
  */
 export type JsxTransform = (source: string) => Promise<string>;
 
-/** Rasterizes a composition to PNG on the host, which can run `@elastic/isomer-image-takumi` where the browser can't. */
+/** Raster pixels per CSS pixel in a {@link RasterizePng} image. */
+export const PNG_SCALE = 2;
+
+/**
+ * Rasterizes a composition to PNG on the host, which can run `@elastic/isomer-image-takumi` where the browser can't.
+ * The image is drawn at {@link PNG_SCALE}, and the preview shows it at its size in CSS pixels.
+ */
 export type RasterizePng = (
   composition: Composition,
   options: { signal: AbortSignal }
