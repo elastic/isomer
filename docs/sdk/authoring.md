@@ -29,6 +29,8 @@ items: fromChildren('badge', z.array(badgeItemSchema).min(1).max(12).describe('B
 body: fromTextChildren(z.string().min(1).describe('Callout copy.')),
 ```
 
+Choose what a field takes by what it holds. Nested nodes are always children. A collection of records brands a child component. A primitive's one authored text is its text children. Scalars and enums stay props.
+
 `options.text` copies leftover text onto that field of each child. `options.toItem` replaces the default prop copy when one element becomes a different record; declare it method-style so its props annotation is the child component's props. `fromTextChildren` collapses whitespace unless `{ collapseWhitespace: false }`. An explicit prop wins over children. Required text that is missing throws `IsomerError` with code `MISSING_AUTHORED_TEXT`. Children on a primitive with no branded field and no child slot throw `UNEXPECTED_CHILDREN` rather than being dropped. Two primitives that brand the same child type with different item or custom input props schemas throw `DUPLICATE_AUTHORED_CHILD` when the shim is built. Two types that capitalize to the same component name, such as `slideStat` and `SlideStat`, or a type named `composition`, throw `DUPLICATE_PRIMITIVE_TYPE`.
 
 A primitive that declares `schemaFor` also hand-writes its node type and passes `toItem` when the child record holds the body-node union. Every other primitive's schema is its only declaration: the node type is `z.infer`.

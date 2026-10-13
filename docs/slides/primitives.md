@@ -125,6 +125,15 @@ Measure text with `measureText(text, role, width?)` from `src/primitives/size.ts
 
 ## Children come from the schema field
 
+Which fields become children follows one rule:
+
+- Nested nodes are always children.
+- A collection of records brands a child component, named for its item without the `Slide` prefix.
+- A primitive's one authored text is its text children.
+- Scalars and enums stay props.
+
+A collection field you add brands a child component the same way. Grids are the exception: `slideTable`, `slideMatrix`, and `slideQuadrant` keep their grids as props, because each cell is addressed by its position, and an element per cell adds markup without adding meaning.
+
 A field filled from JSX children is branded on the schema. `fromChildren` and `fromTextChildren` are identity wrappers: `z.infer` is unchanged, and `buildJsxShim` reads the brand for the child component and for parsing. Describe the inner schema first — `.describe()` clones the schema and drops the brand.
 
 ```ts
