@@ -3,6 +3,7 @@
 ## 2026-10-13
 
 - **Slides docs examples validate**: `src/docs_examples.test.ts` evaluates every JSX example in the slides pack's `docs/` and validates it, and the `SlideCodeTrace` example splits its client call so each line fits its panel.
+- **Studio documents its config, and its model checks more**: `packages/isomer-studio/docs` and `studio/concepts/config-contract.md` describe `runtime`, `title`, `createReactContext`, and `compose`. The editor compiles JSX with `isomerStudioH` and `isomerStudioFragment`, so a primitive named `fragment` keeps its `<Fragment>` component. `slackLimitProblems` checks every `SLACK_LIMITS` entry, nested elements included, and counts table cell text across the message. The JSX printer tries at most 256 child placements per attribute style, lazily, before printing every field as a prop.
 
 ## 2026-10-12
 

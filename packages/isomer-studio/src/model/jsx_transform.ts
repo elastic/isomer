@@ -5,12 +5,12 @@
  * 2.0.
  */
 
-/** esbuild `transform` options for the editor's JSX, which `compileCompositionJsx` evaluates with `h` and `Fragment`. */
+/** esbuild `transform` options for the editor's JSX. Factory names are lowercase-initial, so no primitive's component shadows them. */
 export const JSX_TRANSFORM_OPTIONS = {
   loader: 'jsx',
   jsx: 'transform',
-  jsxFactory: 'h',
-  jsxFragment: 'Fragment',
+  jsxFactory: 'isomerStudioH',
+  jsxFragment: 'isomerStudioFragment',
 } as const;
 
 interface EsbuildMessage {

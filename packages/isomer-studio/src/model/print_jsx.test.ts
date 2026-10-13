@@ -24,25 +24,25 @@ import { componentsPrimitives } from '../fixtures/components_pack';
 import type { JsxTransform } from '../types';
 
 import type { CompiledEvaluator } from './compile_jsx';
-import { compileCompositionJsx, createShim } from './compile_jsx';
+import {
+  compileCompositionJsx,
+  COMPILED_RESULT,
+  createShim,
+} from './compile_jsx';
+import { JSX_TRANSFORM_OPTIONS } from './jsx_transform';
 import type { AuthoredSpecReader } from './print_jsx';
 import { printCompositionJsx, printNodeJsx, printValue } from './print_jsx';
 import { readExamples } from './read_examples';
 
 const transformJsx: JsxTransform = async (source) => {
-  const { code } = await transform(source, {
-    loader: 'jsx',
-    jsx: 'transform',
-    jsxFactory: 'h',
-    jsxFragment: 'Fragment',
-  });
+  const { code } = await transform(source, JSX_TRANSFORM_OPTIONS);
   return code;
 };
 
 const evaluate: CompiledEvaluator = (code, scope) => {
   const context: Record<string, unknown> = { ...scope };
   runInNewContext(code, context);
-  return context.__isomerStudioResult;
+  return context[COMPILED_RESULT];
 };
 
 const shim = createShim(componentsPrimitives);
@@ -297,6 +297,53 @@ describe('JSX round trip, several child fields', () => {
     expect(printNodeJsx(node, boardEnv)).toBe(
       '<Board>\n  <Board.Note label="Two" />\n</Board>'
     );
+  });
+});
+
+describe('JSX round trip, many child fields', () => {
+  const fieldNames = Array.from({ length: 24 }, (_, index) => `slot${index}`);
+  const entrySchema = z.object({ label: z.string() });
+  const wideSchema = z.object({
+    type: z.literal('wide'),
+    ...Object.fromEntries(
+      fieldNames.map((field) => [
+        field,
+        fromChildren(field, z.array(entrySchema).optional()),
+      ])
+    ),
+  });
+  const wide = definePrimitive<
+    z.infer<typeof wideSchema>,
+    DefaultPackTypes,
+    typeof wideSchema
+  >({
+    type: 'wide',
+    catalog: {
+      type: 'wide',
+      purpose: '',
+      useWhen: [],
+      avoidWhen: [],
+      example: {},
+    },
+    examples: [],
+    schema: wideSchema,
+    renderers: { react: () => null, text: () => '', markdown: () => [] },
+  });
+  const wideEnv = { schemaFor: () => wide.schema, shim: createShim([wide]) };
+
+  it('prints without enumerating every subset of its fields', async () => {
+    const node = {
+      type: 'wide',
+      ...Object.fromEntries(
+        fieldNames.map((field) => [field, [{ label: field }]])
+      ),
+    } as PrimitiveNode;
+    const source = printCompositionJsx([node], wideEnv);
+
+    expect(source).toContain('<Wide.Slot23 label="slot23" />');
+    await expect(
+      compileCompositionJsx(source, wideEnv.shim, transformJsx, { evaluate })
+    ).resolves.toEqual([node]);
   });
 });
 

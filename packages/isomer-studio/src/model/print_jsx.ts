@@ -221,13 +221,30 @@ const sameValue = (a: unknown, b: unknown): boolean => {
 /** A field's children, or `undefined` when they cannot carry it. */
 type Children = ReadonlyArray<JsxTree | TextChild> | undefined;
 
-/** Unique subsets of `count` indexes, largest first. */
-const subsetsBySize = (count: number): number[][] =>
-  Array.from({ length: 2 ** count }, (_, mask) =>
-    Array.from({ length: count }, (_, index) => index).filter(
-      (index) => mask & (1 << index)
-    )
-  ).sort((a, b) => b.length - a.length);
+/** Round trips one node's printer tries per attribute style before printing every field as a prop. */
+const MAX_CANDIDATES = 256;
+
+/** The `size`-element subsets of `0..count - 1`, in colexicographic order. */
+function* subsetsOfSize(count: number, size: number): Generator<number[]> {
+  if (size === 0) {
+    yield [];
+    return;
+  }
+  if (count < size) {
+    return;
+  }
+  yield* subsetsOfSize(count - 1, size);
+  for (const subset of subsetsOfSize(count - 1, size - 1)) {
+    yield [...subset, count - 1];
+  }
+}
+
+/** Every subset of `0..count - 1`, largest first. */
+function* subsetsBySize(count: number): Generator<number[]> {
+  for (let size = count; size >= 0; size -= 1) {
+    yield* subsetsOfSize(count, size);
+  }
+}
 
 interface Printer {
   nodeTree: (node: PrimitiveNode) => JsxTree;
@@ -507,14 +524,25 @@ const createPrinter = ({
       );
     };
 
-    const subsets = subsetsBySize(capable.length).map(
-      (indexes) => new Set(indexes.map((index) => capable[index]!.key))
-    );
-    const found =
-      [jsxAttribute, (value: unknown) => value]
-        .flatMap((attribute) => subsets.map((set) => build(set, attribute)))
-        .find((candidate) => roundTrips(candidate, node)) ??
-      tree(name, entries);
+    const search = (): JsxTree => {
+      for (const attribute of [jsxAttribute, (value: unknown) => value]) {
+        let tried = 0;
+        for (const indexes of subsetsBySize(capable.length)) {
+          if (tried++ === MAX_CANDIDATES) {
+            break;
+          }
+          const candidate = build(
+            new Set(indexes.map((index) => capable[index]!.key)),
+            attribute
+          );
+          if (roundTrips(candidate, node)) {
+            return candidate;
+          }
+        }
+      }
+      return tree(name, entries);
+    };
+    const found = search();
     trees.set(node, found);
     return found;
   };

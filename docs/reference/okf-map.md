@@ -7,9 +7,9 @@ description: Generated map of the Isomer OKF concept graph.
 
 Generated from `.okf/isomer` by `pnpm okf:map`. Do not edit by hand.
 
-- Concepts: 59
+- Concepts: 60
 - Links: 147
-- Isolated concepts: 0
+- Isolated concepts: 1
 
 ## Graph
 
@@ -68,6 +68,7 @@ flowchart LR
     slides_entry_points_root["Root"]:::entrypoint
     slides_playbooks_author_a_primitive["Author a primitive"]:::playbook
     slides_reference_public_contract["Public contract"]:::reference
+    studio_concepts_config_contract["Config contract"]:::concept
     workspace_concepts_workspace["Workspace"]:::concept
     workspace_playbooks_docs_builder["Docs-builder"]:::playbook
     workspace_playbooks_maintain_okf["Maintain OKF"]:::playbook
@@ -282,6 +283,7 @@ flowchart LR
 - Root (Entry Point): `slides/entry-points/root`
 - Author a primitive (Playbook): `slides/playbooks/author-a-primitive`
 - Public contract (Reference): `slides/reference/public-contract`
+- Config contract (Concept): `studio/concepts/config-contract`
 - Workspace (Concept): `workspace/concepts/workspace`
 - Docs-builder (Playbook): `workspace/playbooks/docs-builder`
 - Maintain OKF (Playbook): `workspace/playbooks/maintain-okf`

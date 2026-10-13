@@ -16,7 +16,10 @@ import { buildJsxShim } from '@elastic/isomer-sdk/author';
 
 import type { JsxTransform } from '../types';
 
-const RESULT = '__isomerStudioResult';
+import { JSX_TRANSFORM_OPTIONS } from './jsx_transform';
+
+/** The binding compiled code assigns its element to. Lowercase-initial, so no component name can shadow it. */
+export const COMPILED_RESULT = 'isomerStudioResult';
 
 /** Builds the authoring shim once per primitive inventory. */
 export const createShim = (primitives: readonly { type: string }[]): JsxShim =>
@@ -30,7 +33,7 @@ const isElement = (
   'type' in value &&
   'props' in value;
 
-/** Runs compiled code with `scope` as its free variables and returns `__isomerStudioResult`. */
+/** Runs compiled code with `scope` as its free variables and returns {@link COMPILED_RESULT}. */
 export type CompiledEvaluator = (
   code: string,
   scope: Readonly<Record<string, unknown>>
@@ -43,9 +46,9 @@ const isRunner = (
 
 const evaluateAsModule: CompiledEvaluator = async (code, scope) => {
   const module = `export default ({ ${Object.keys(scope).join(', ')} }) => {
-  let ${RESULT};
+  let ${COMPILED_RESULT};
   ${code}
-  return ${RESULT};
+  return ${COMPILED_RESULT};
 };`;
   const url = URL.createObjectURL(
     new Blob([module], { type: 'text/javascript' })
@@ -75,14 +78,14 @@ export const compileCompositionJsx = async (
   transformJsx: JsxTransform,
   { evaluate = evaluateAsModule }: { evaluate?: CompiledEvaluator } = {}
 ): Promise<PrimitiveNode[]> => {
-  const compiled = await transformJsx(`${RESULT} =\n${source}`);
+  const compiled = await transformJsx(`${COMPILED_RESULT} =\n${source}`);
   const components = Object.fromEntries(
     Object.entries(shim).filter(([name]) => name !== 'toComposition')
   );
   const element = await evaluate(compiled, {
     ...components,
-    h: createElement,
-    Fragment,
+    [JSX_TRANSFORM_OPTIONS.jsxFactory]: createElement,
+    [JSX_TRANSFORM_OPTIONS.jsxFragment]: Fragment,
   });
 
   if (!isElement(element)) {
