@@ -289,6 +289,21 @@ export default tseslint.config(
     },
   },
   {
+    // API Extractor reports a re-exported anonymous default without its public name.
+    files: ['packages/*/src/**/*.{ts,tsx}'],
+    ignores: ['packages/*/src/**/*.test.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "ExportDefaultDeclaration, ExportSpecifier[exported.name='default'], ExportSpecifier[local.name='default']",
+          message: 'Packages export by name only.',
+        },
+      ],
+    },
+  },
+  {
     files: [
       'packages/**/*.{ts,tsx}',
       'examples/**/*.{ts,tsx}',

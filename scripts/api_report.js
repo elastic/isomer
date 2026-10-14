@@ -5,435 +5,235 @@
  * 2.0.
  */
 
-// Writes `api/<package>.api.md`: every declaration each published entry
-// exports, as the built `.d.ts` states it, plus the unexported declarations
-// those signatures reference. `--check` fails when a committed report is stale.
+// Writes an API Extractor report to `api/` for every export subpath of each
+// published package, from its built `.d.ts`. `--check` fails when a committed
+// report differs from the build, is missing, or belongs to no published entry.
 
 import {
   existsSync,
   mkdirSync,
+  mkdtempSync,
   readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
-import { join, relative, resolve, sep } from 'node:path';
+import { tmpdir } from 'node:os';
+import { join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import ts from 'typescript';
+import { Extractor, ExtractorConfig } from '@microsoft/api-extractor';
 
 import { repoRoot, workspacePackages } from './workspace_packages.js';
 
 const REPORT_SUFFIX = '.api.md';
+const RUNTIME_SUFFIX = '.runtime.txt';
 
-/** `types` of an export condition, at any nesting depth. */
-const typesOf = (condition) => {
+/** The path an export condition gives `name` (`types`, `import`), at any nesting depth. */
+const conditionPath = (condition, name) => {
   if (typeof condition !== 'object' || condition === null) {
     return undefined;
   }
-  if (typeof condition.types === 'string') {
-    return condition.types;
+  if (typeof condition[name] === 'string') {
+    return condition[name];
   }
   for (const value of Object.values(condition)) {
-    const types = typesOf(value);
-    if (types) {
-      return types;
+    const path = conditionPath(value, name);
+    if (path) {
+      return path;
     }
   }
   return undefined;
 };
 
-const entriesOf = ({ dir, manifest }) =>
-  Object.entries(manifest.exports ?? {}).flatMap(([key, condition]) => {
-    const types = typesOf(condition);
-    if (!types) {
-      return [];
-    }
-    const file = resolve(dir, types);
-    if (!existsSync(file)) {
-      throw new Error(
-        `${manifest.name}: ${types} is missing. Run \`pnpm build\` before this report.`
-      );
-    }
-    return [
-      {
-        specifier:
-          key === '.' ? manifest.name : `${manifest.name}/${key.slice(2)}`,
-        file,
-      },
-    ];
-  });
-
-/** The statement a declaration prints as: a variable's whole `declare const`. */
-const statementOf = (declaration) =>
-  ts.isVariableDeclaration(declaration)
-    ? declaration.parent.parent
-    : declaration;
-
-const stripModifiers = (text) =>
-  text.replace(/^(export )?(default )?(declare )?/, '');
-
-const isTypeOnlyAlias = (alias) =>
-  (alias.declarations ?? []).some(
-    (declaration) =>
-      ts.isExportSpecifier(declaration) &&
-      (declaration.isTypeOnly || declaration.parent.parent.isTypeOnly)
-  );
-
 /**
- * Report text for each package, keyed by `<folder>.api.md`.
+ * One report per export subpath that declares `types`: `isomer-sdk` for `.`,
+ * `isomer-sdk.html` for `./html`.
  *
  * @param {Array<{ dir: string; folder: string; manifest: import('./workspace_packages.js').PackageManifest }>} packages
- * @returns {Map<string, string>}
  */
-export const createApiReports = (packages) => {
-  const entries = packages.map((pkg) => ({ pkg, entries: entriesOf(pkg) }));
-  const program = ts.createProgram(
-    entries.flatMap(({ entries: list }) => list.map(({ file }) => file)),
-    {
-      module: ts.ModuleKind.NodeNext,
-      moduleResolution: ts.ModuleResolutionKind.NodeNext,
-      target: ts.ScriptTarget.ES2022,
-      noEmit: true,
-      skipLibCheck: true,
-      types: [],
-    }
-  );
-  const checker = program.getTypeChecker();
-  const printer = ts.createPrinter({
-    removeComments: true,
-    newLine: ts.NewLineKind.LineFeed,
-  });
-
-  const distDirs = packages.map(({ dir }) => `${join(dir, 'dist')}${sep}`);
-  const isPublishedDeclaration = (node) => {
-    const fileName = resolve(node.getSourceFile().fileName);
-    return distDirs.some((dist) => fileName.startsWith(dist));
-  };
-  const isOwn = (symbol) =>
-    (symbol.declarations ?? []).some(isPublishedDeclaration);
-
-  /** A symbol's name, with a module's absolute path replaced by its package-relative specifier. */
-  const displayName = (symbol) => {
-    const sourceFile = symbol.declarations?.find(ts.isSourceFile);
-    if (!sourceFile) {
-      return symbol.name;
-    }
-    const fileName = resolve(sourceFile.fileName);
-    const pkg = packages.find(({ dir }) =>
-      fileName.startsWith(`${join(dir, 'dist')}${sep}`)
-    );
-    return pkg
-      ? `${pkg.manifest.name}/${relative(pkg.dir, fileName).split(sep).join('/')}`
-      : symbol.name;
-  };
-
-  const resolveAlias = (symbol) =>
-    symbol.flags & ts.SymbolFlags.Alias
-      ? checker.getAliasedSymbol(symbol)
-      : symbol;
-
-  const exportsOf = (file) => {
-    const moduleSymbol = checker.getSymbolAtLocation(
-      program.getSourceFile(file)
-    );
-    return moduleSymbol ? checker.getExportsOfModule(moduleSymbol) : [];
-  };
-
-  const printDeclaration = (declaration) =>
-    stripModifiers(
-      printer.printNode(
-        ts.EmitHint.Unspecified,
-        statementOf(declaration),
-        declaration.getSourceFile()
-      )
-    );
-
-  const printSymbol = (symbol) =>
-    (symbol.declarations ?? [])
-      .filter(isPublishedDeclaration)
-      .map(printDeclaration)
-      .join('\n');
-
-  /** The node naming another declaration, for each way a `.d.ts` can name one. */
-  const referenceName = (node) => {
-    if (ts.isTypeReferenceNode(node)) {
-      return node.typeName;
-    }
-    if (ts.isTypeQueryNode(node)) {
-      return node.exprName;
-    }
-    if (ts.isExpressionWithTypeArguments(node)) {
-      return node.expression;
-    }
-    if (ts.isComputedPropertyName(node)) {
-      return node.expression;
-    }
-    if (ts.isImportTypeNode(node)) {
-      return node.qualifier;
-    }
-    return undefined;
-  };
-
-  const symbolAt = (node) => {
-    const symbol = node && checker.getSymbolAtLocation(node);
-    return symbol && !(symbol.flags & ts.SymbolFlags.TypeParameter)
-      ? resolveAlias(symbol)
-      : undefined;
-  };
-
-  /**
-   * Each name a declaration's printed text uses: the leading identifier and
-   * what it binds to, and the declaration the whole name, `Types.Input`, reaches.
-   */
-  const references = (declaration) => {
-    const found = [];
-    const visit = (node) => {
-      const name = referenceName(node);
-      let head = name;
-      while (
-        head &&
-        (ts.isQualifiedName(head) || ts.isPropertyAccessExpression(head))
-      ) {
-        head = ts.isQualifiedName(head) ? head.left : head.expression;
+export const apiReportEntries = (packages) =>
+  packages.flatMap((pkg) =>
+    Object.entries(pkg.manifest.exports ?? {}).flatMap(([key, condition]) => {
+      const types = conditionPath(condition, 'types');
+      if (!types) {
+        return [];
       }
-      const bound = symbolAt(head);
-      if (bound) {
-        found.push({
-          local: head.getText(),
-          bound,
-          target: symbolAt(name) ?? bound,
-        });
-      }
-      ts.forEachChild(node, visit);
-    };
-    visit(statementOf(declaration));
-    return found;
-  };
-
-  /** Whether a symbol is declared as a statement of a file or namespace, not a module or a member. */
-  const isTopLevel = (symbol) =>
-    (symbol.declarations ?? []).some((declaration) => {
-      const { parent } = statementOf(declaration);
-      return (
-        !ts.isSourceFile(declaration) &&
-        (ts.isSourceFile(parent) || ts.isModuleBlock(parent))
-      );
-    });
-
-  /** The first bare specifier an alias chain re-exports from, with the name it imports there. */
-  const externalSourceOf = (alias) => {
-    for (
-      let current = alias;
-      current && current.flags & ts.SymbolFlags.Alias;
-      current = checker.getImmediateAliasedSymbol(current)
-    ) {
-      for (const declaration of current.declarations ?? []) {
-        const statement = ts.findAncestor(
-          declaration,
-          (node) => ts.isExportDeclaration(node) || ts.isImportDeclaration(node)
+      const file = resolve(pkg.dir, types);
+      if (!existsSync(file)) {
+        throw new Error(
+          `${pkg.manifest.name}: ${types} is missing. Run \`pnpm build\` before this report.`
         );
-        const specifier = statement?.moduleSpecifier;
-        if (
-          specifier &&
-          ts.isStringLiteral(specifier) &&
-          !specifier.text.startsWith('.')
-        ) {
-          const imported =
-            (ts.isExportSpecifier(declaration) ||
-              ts.isImportSpecifier(declaration)) &&
-            declaration.propertyName
-              ? declaration.propertyName.text
-              : declaration.name?.text;
-          return { module: specifier.text, imported };
-        }
       }
-    }
-    return undefined;
-  };
-
-  const printExport = (alias) => {
-    const target = resolveAlias(alias);
-    const { name } = alias;
-    const notes = [
-      ...(isOwn(target) && target.name !== name
-        ? [`exported as \`${name}\``]
-        : []),
-      ...(isTypeOnlyAlias(alias) && target.flags & ts.SymbolFlags.Value
-        ? ['type-only export']
-        : []),
-    ];
-    let text;
-    if (isOwn(target)) {
-      text = printSymbol(target);
-    } else {
-      const source = externalSourceOf(alias);
-      const imported = source?.imported ?? name;
-      const binding = imported === name ? name : `${imported} as ${name}`;
-      text = `export { ${binding} } from '${source?.module ?? 'unknown'}';`;
-    }
-    return notes.length > 0 ? `// ${notes.join('; ')}\n${text}` : text;
-  };
-
-  const exported = new Set(
-    entries.flatMap(({ entries: list }) =>
-      list.flatMap(({ file }) => exportsOf(file).map(resolveAlias))
-    )
-  );
-
-  /**
-   * Unexported declarations a public signature names, transitively, and each
-   * local name there that differs from the declaration it binds to.
-   */
-  const signatureReferences = (exports) => {
-    const seen = new Set();
-    const queue = exports.map(resolveAlias);
-    const unexported = [];
-    const renamed = new Set();
-    while (queue.length > 0) {
-      const symbol = queue.shift();
-      for (const declaration of symbol.declarations ?? []) {
-        if (!isPublishedDeclaration(declaration)) {
-          continue;
-        }
-        for (const { local, bound, target } of references(declaration)) {
-          if (isOwn(bound) && local !== displayName(bound)) {
-            renamed.add(`${local} = ${displayName(bound)}`);
-          }
-          // A name that is a whole module, as in `typeof Types`, stands for every declaration it exports;
-          // `Types.Input` reaches `Input` alone.
-          const isModule = (symbol) =>
-            Boolean(symbol.declarations?.some(ts.isSourceFile));
-          const reached = isModule(target)
-            ? checker.getExportsOfModule(target).map(resolveAlias)
-            : [target, ...(isModule(bound) ? [] : [bound])];
-          for (const referenced of new Set(reached)) {
-            if (
-              !isOwn(referenced) ||
-              !isTopLevel(referenced) ||
-              seen.has(referenced)
-            ) {
-              continue;
-            }
-            seen.add(referenced);
-            if (!exported.has(referenced)) {
-              unexported.push(referenced);
-            }
-            queue.push(referenced);
-          }
-        }
-      }
-    }
-    return {
-      unexported: [
-        ...new Set(
-          unexported
-            .sort((a, b) => displayName(a).localeCompare(displayName(b)))
-            .map(printSymbol)
-        ),
-      ],
-      renamed: [...renamed].sort(),
-    };
-  };
-
-  const reportFor = ({ pkg, entries: list }) => {
-    const sections = list.map(({ specifier, file }) => {
-      const exports = exportsOf(file);
-      const printed = [...exports]
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .map(printExport);
-      const { unexported, renamed } = signatureReferences(exports);
-      const block = (title, lines) =>
-        lines.length > 0
-          ? ['', `### ${title}`, '', '```ts', ...lines, '```']
-          : [];
+      const subpath =
+        key === '.' ? '' : `.${key.slice(2).replaceAll('/', '.')}`;
+      const module = conditionPath(condition, 'import');
       return [
-        `## \`${specifier}\``,
-        '',
-        '```ts',
-        printed.join('\n\n'),
-        '```',
-        ...block(
-          'Referenced, not exported',
-          [unexported.join('\n\n')].filter(Boolean)
-        ),
-        ...block('Names bound under another name', renamed),
-      ].join('\n');
-    });
-
-    return [
-      `# \`${pkg.manifest.name}\` API report`,
-      '',
-      `Generated by \`pnpm api:report\` from the built declarations. Do not edit.`,
-      '',
-      sections.join('\n\n'),
-      '',
-    ].join('\n');
-  };
-
-  return new Map(
-    entries.map((item) => [
-      `${item.pkg.folder}${REPORT_SUFFIX}`,
-      reportFor(item),
-    ])
+        {
+          pkg,
+          file,
+          module: module && resolve(pkg.dir, module),
+          reportName: `${pkg.folder}${subpath}`,
+        },
+      ];
+    })
   );
-};
 
 /**
- * Committed reports that differ from `reports`, are missing, or belong to no published package.
+ * The names an entry's built ESM module exports at run time, one per line, so
+ * a value made type-only shows even though its declaration prints the same.
+ *
+ * @param {{ module?: string }} entry
+ */
+export const runtimeExports = async ({ module }) =>
+  module
+    ? `${Object.keys(await import(pathToFileURL(module).href))
+        .sort()
+        .join('\n')}\n`
+    : undefined;
+
+/**
+ * Committed report files no entry produces.
  *
  * @param {string} reportDir
- * @param {Map<string, string>} reports
+ * @param {Array<{ reportName: string }>} entries
  */
-export const staleApiReports = (reportDir, reports) => {
-  const committed = existsSync(reportDir)
-    ? readdirSync(reportDir).filter((file) => file.endsWith(REPORT_SUFFIX))
+export const orphanedApiReports = (reportDir, entries) => {
+  const expected = new Set(
+    entries.flatMap(({ module, reportName }) => [
+      `${reportName}${REPORT_SUFFIX}`,
+      ...(module ? [`${reportName}${RUNTIME_SUFFIX}`] : []),
+    ])
+  );
+  return existsSync(reportDir)
+    ? readdirSync(reportDir)
+        .filter(
+          (file) =>
+            (file.endsWith(REPORT_SUFFIX) || file.endsWith(RUNTIME_SUFFIX)) &&
+            !expected.has(file)
+        )
+        .sort()
     : [];
-  return [
-    ...[...reports].flatMap(([file, report]) => {
-      const path = join(reportDir, file);
-      return existsSync(path) && readFileSync(path, 'utf-8') === report
-        ? []
-        : [file];
-    }),
-    ...committed.filter((file) => !reports.has(file)),
-  ].sort();
 };
 
-const main = () => {
+const silent = { logLevel: 'none' };
+
+/**
+ * Runs API Extractor for one entry. With `localBuild`, writes the report;
+ * without, leaves it and reports whether it changed.
+ */
+export const runApiExtractor = (
+  { pkg, file, reportName },
+  { reportDir, tempDir, localBuild }
+) => {
+  mkdirSync(reportDir, { recursive: true });
+  const config = ExtractorConfig.prepare({
+    configObject: {
+      projectFolder: pkg.dir,
+      mainEntryPointFilePath: file,
+      compiler: {
+        overrideTsconfig: {
+          compilerOptions: {
+            module: 'nodenext',
+            moduleResolution: 'nodenext',
+            target: 'es2022',
+            lib: ['es2023', 'dom'],
+            types: ['node'],
+            strict: true,
+            skipLibCheck: true,
+          },
+          files: [file],
+        },
+      },
+      apiReport: {
+        enabled: true,
+        reportFileName: reportName,
+        reportFolder: reportDir,
+        reportTempFolder: tempDir,
+        includeForgottenExports: true,
+      },
+      docModel: { enabled: false },
+      dtsRollup: { enabled: false },
+      tsdocMetadata: { enabled: false },
+      newlineKind: 'lf',
+      messages: {
+        compilerMessageReporting: { default: silent },
+        extractorMessageReporting: {
+          default: silent,
+          'ae-missing-release-tag': { ...silent, addToApiReportFile: false },
+        },
+        tsdocMessageReporting: { default: silent },
+      },
+    },
+    configObjectFullPath: join(pkg.dir, 'api-extractor.json'),
+    packageJsonFullPath: join(pkg.dir, 'package.json'),
+  });
+  return Extractor.invoke(config, {
+    localBuild,
+    showVerboseMessages: false,
+    messageCallback: (message) => {
+      message.handled = true;
+    },
+  });
+};
+
+const main = async () => {
   const check = process.argv.includes('--check');
   const reportDir = join(repoRoot, 'api');
-  const reports = createApiReports(
+  const entries = apiReportEntries(
     workspacePackages().filter(({ manifest }) => manifest.private !== true)
   );
-
-  if (check) {
-    const stale = staleApiReports(reportDir, reports);
-    if (stale.length > 0) {
-      console.error(
-        `API report out of date: ${stale.map((file) => `api/${file}`).join(', ')}.\n` +
-          'Run `pnpm build && pnpm api:report` and commit the result. A changed signature in a published package is a breaking change unless it only widens what callers may pass or narrows what they get back.'
-      );
-      process.exit(1);
-    }
-    console.log('API reports are current.');
-    return;
-  }
-
+  const tempDir = mkdtempSync(join(tmpdir(), 'isomer-api-report-'));
   mkdirSync(reportDir, { recursive: true });
-  for (const file of staleApiReports(reportDir, reports)) {
-    if (!reports.has(file)) {
-      rmSync(join(reportDir, file));
+
+  try {
+    const changed = entries
+      .filter(
+        (entry) =>
+          runApiExtractor(entry, { reportDir, tempDir, localBuild: !check })
+            .apiReportChanged
+      )
+      .map(({ reportName }) => `${reportName}${REPORT_SUFFIX}`);
+    for (const entry of entries) {
+      const names = await runtimeExports(entry);
+      if (names === undefined) {
+        continue;
+      }
+      const path = join(reportDir, `${entry.reportName}${RUNTIME_SUFFIX}`);
+      if (check) {
+        if (!existsSync(path) || readFileSync(path, 'utf-8') !== names) {
+          changed.push(`${entry.reportName}${RUNTIME_SUFFIX}`);
+        }
+      } else {
+        writeFileSync(path, names);
+      }
     }
+    const orphaned = orphanedApiReports(reportDir, entries);
+
+    if (check) {
+      const stale = [...changed, ...orphaned].sort();
+      if (stale.length > 0) {
+        console.error(
+          `API report out of date: ${stale.map((name) => `api/${name}`).join(', ')}.\n` +
+            'Run `pnpm build && pnpm api:report` and commit the result. A changed signature in a published package is a breaking change unless it only widens what callers may pass or narrows what they get back.'
+        );
+        process.exit(1);
+      }
+      console.log('API reports are current.');
+      return;
+    }
+
+    for (const name of orphaned) {
+      rmSync(join(reportDir, name));
+    }
+    console.log(
+      `Wrote ${entries.length} API report(s) to ${relative(repoRoot, reportDir)}/.`
+    );
+  } finally {
+    rmSync(tempDir, { force: true, recursive: true });
   }
-  for (const [file, report] of reports) {
-    writeFileSync(join(reportDir, file), report);
-  }
-  console.log(
-    `Wrote ${reports.size} API report(s) to ${relative(repoRoot, reportDir)}/.`
-  );
 };
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  main();
+  await main();
 }

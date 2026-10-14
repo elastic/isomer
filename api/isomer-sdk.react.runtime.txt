@@ -1,0 +1,6 @@
+applyEnhancements
+findNodeElementPairs
+measureDom
+renderCompositionContent
+runEnhancementScript
+wrapCompositionContent

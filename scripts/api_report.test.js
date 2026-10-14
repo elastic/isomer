@@ -5,13 +5,24 @@
  * 2.0.
  */
 
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { createApiReports, staleApiReports } from './api_report.js';
+import {
+  apiReportEntries,
+  orphanedApiReports,
+  runApiExtractor,
+  runtimeExports,
+} from './api_report.js';
 
 let root;
 
@@ -38,90 +49,54 @@ const fixturePackage = (
   const dir = join(root, folder);
   const manifest = {
     name: `@fixture/${folder}`,
+    version: '1.0.0',
     type: 'module',
     exports: Object.fromEntries(
       Object.entries(exports).map(([key, types]) => [key, { types }])
     ),
   };
-  writeFiles(dir, {
-    'package.json': JSON.stringify(manifest),
-    ...files,
-  });
+  writeFiles(dir, { 'package.json': JSON.stringify(manifest), ...files });
   return { dir, folder, manifest };
 };
 
-const reportOf = (pkg) => createApiReports([pkg]).get(`${pkg.folder}.api.md`);
+/** Writes the report for the package's root entry and returns it. */
+const reportOf = (pkg) => {
+  const [entry] = apiReportEntries([pkg]);
+  const reportDir = join(root, 'api');
+  const tempDir = join(root, 'temp');
+  runApiExtractor(entry, { reportDir, tempDir, localBuild: true });
+  return readFileSync(join(reportDir, `${entry.reportName}.api.md`), 'utf-8');
+};
 
-describe('createApiReports', () => {
-  it('prints each export without comments, sorted, and notes a rename', () => {
-    const report = reportOf(
-      fixturePackage('basic', {
-        'dist/index.d.ts':
-          "export { zeta, alpha as renamed } from './values.js';\n",
-        'dist/values.d.ts':
-          '/** Doc. */\nexport declare const zeta: number;\nexport declare function alpha(input: string): string;\n',
-      })
+describe('apiReportEntries', () => {
+  it('names one report per export subpath', () => {
+    const pkg = fixturePackage(
+      'subpaths',
+      {
+        'dist/index.d.ts': 'export declare const root: 1;\n',
+        'dist/nested/extra.d.ts': 'export declare const extra: 2;\n',
+      },
+      { '.': './dist/index.d.ts', './nested/extra': './dist/nested/extra.d.ts' }
     );
-    expect(report).toContain(
-      '// exported as `renamed`\nfunction alpha(input: string): string;\n\nconst zeta: number;'
+    expect(apiReportEntries([pkg]).map(({ reportName }) => reportName)).toEqual(
+      ['subpaths', 'subpaths.nested.extra']
     );
-    expect(report).not.toContain('Doc.');
   });
+});
 
-  it('names a default export by its public name', () => {
+describe('runApiExtractor', () => {
+  it('lists unexported declarations a public signature names', () => {
     const report = reportOf(
-      fixturePackage('default', {
-        'dist/index.d.ts': "export { default as Widget } from './widget.js';\n",
-        'dist/widget.d.ts': 'export default function (): void;\n',
-      })
-    );
-    expect(report).toContain('// exported as `Widget`');
-  });
-
-  it('lists the unexported value a member access starts from', () => {
-    const report = reportOf(
-      fixturePackage('member', {
-        'dist/index.d.ts': "export { read } from './read.js';\n",
-        'dist/read.d.ts':
-          'declare const schema: {\n    optional(): string;\n};\nexport declare const read: ReturnType<typeof schema.optional>;\nexport {};\n',
-      })
-    );
-    const [, referenced] = report.split('### Referenced, not exported');
-    expect(referenced).toContain('const schema: {');
-    expect(referenced).not.toContain('\noptional(): string;');
-  });
-
-  it('lists what a whole-module reference exports', () => {
-    const report = reportOf(
-      fixturePackage('module', {
-        'dist/index.d.ts': "export { types } from './take.js';\n",
+      fixturePackage('forgotten', {
+        'dist/index.d.ts': "export { type Public } from './types.js';\n",
         'dist/types.d.ts':
-          'export interface Input {\n    value: string;\n}\nexport declare const limit: number;\n',
-        'dist/take.d.ts':
-          "import * as Types from './types.js';\nexport declare const types: typeof Types;\n",
+          'interface Inner {\n    value: string;\n}\nexport interface Public {\n    inner: Inner;\n}\nexport {};\n',
       })
     );
-    const [, referenced] = report.split('### Referenced, not exported');
-    expect(referenced).toContain('interface Input {');
-    expect(referenced).toContain('const limit: number;');
+    expect(report).toContain('interface Inner {');
   });
 
-  it('names a namespace import by its package-relative module, never its path', () => {
-    const pkg = fixturePackage('namespace', {
-      'dist/index.d.ts': "export { take } from './take.js';\n",
-      'dist/types.d.ts':
-        'export interface Input {\n    value: string;\n}\nexport interface Unrelated {\n    other: number;\n}\n',
-      'dist/take.d.ts':
-        "import type * as Types from './types.js';\nexport declare function take(value: Types.Input): void;\n",
-    });
-    const report = reportOf(pkg);
-    expect(report).toContain('Types = @fixture/namespace/dist/types.d.ts');
-    expect(report).toContain('interface Input {');
-    expect(report).not.toContain('interface Unrelated');
-    expect(report).not.toContain(root);
-  });
-
-  it('lists a signature name bound to a declaration of another name', () => {
+  it('prints an aliased import by the declaration it binds to', () => {
     const report = reportOf(
       fixturePackage('aliased', {
         'dist/index.d.ts':
@@ -132,83 +107,53 @@ describe('createApiReports', () => {
           "import type { Narrow as Input } from './types.js';\nexport declare function take(value: Input): void;\n",
       })
     );
-    const [, renamed] = report.split('### Names bound under another name');
-    expect(renamed).toContain('Input = Narrow');
+    expect(report).toContain('function take(value: Narrow): void;');
   });
 
-  it('marks a value exported as type only', () => {
+  it('lists what a namespace import exposes, and nothing it does not', () => {
     const report = reportOf(
-      fixturePackage('type-only', {
-        'dist/index.d.ts': "export { type Box } from './box.js';\n",
-        'dist/box.d.ts': 'export declare class Box {\n    size: number;\n}\n',
+      fixturePackage('namespace', {
+        'dist/index.d.ts': "export { take, types } from './take.js';\n",
+        'dist/types.d.ts':
+          'export interface Input {\n    value: string;\n}\nexport declare const limit: number;\n',
+        'dist/take.d.ts':
+          "import * as Types from './types.js';\nexport declare function take(value: Types.Input): void;\nexport declare const types: typeof Types;\n",
       })
     );
-    expect(report).toContain('// type-only export\nclass Box {');
-  });
-
-  it('prints a dependency re-export with the specifier the declaration writes', () => {
-    const report = reportOf(
-      fixturePackage('external', {
-        'dist/index.d.ts': "export type { Thing as Other } from 'some-lib';\n",
-      })
-    );
-    expect(report).toContain("export { Thing as Other } from 'some-lib';");
-  });
-
-  it('lists unexported declarations a signature names, through keys and transitively', () => {
-    const report = reportOf(
-      fixturePackage('referenced', {
-        'dist/index.d.ts': "export { type Public } from './types.js';\n",
-        'dist/types.d.ts': [
-          'declare const brand: unique symbol;',
-          'interface Inner {\n    value: string;\n}',
-          'interface Middle {\n    inner: Inner;\n}',
-          'export interface Public {\n    [brand]: true;\n    middle: Middle;\n}',
-          '',
-        ].join('\n'),
-      })
-    );
-    const [, referenced] = report.split('### Referenced, not exported');
-    expect(referenced).toContain('const brand: unique symbol;');
-    expect(referenced).toContain('interface Middle {');
-    expect(referenced).toContain('interface Inner {');
-  });
-
-  it('gives each export subpath its own section', () => {
-    const report = reportOf(
-      fixturePackage(
-        'subpaths',
-        {
-          'dist/index.d.ts': 'export declare const root: 1;\n',
-          'dist/extra.d.ts': 'export declare const extra: 2;\n',
-        },
-        { '.': './dist/index.d.ts', './extra': './dist/extra.d.ts' }
-      )
-    );
-    expect(report).toContain('## `@fixture/subpaths`\n\n```ts\nconst root: 1;');
-    expect(report).toContain(
-      '## `@fixture/subpaths/extra`\n\n```ts\nconst extra: 2;'
-    );
+    expect(report).toContain('interface Input {');
+    expect(report).toContain('limit');
+    expect(report).not.toContain(root);
   });
 });
 
-describe('staleApiReports', () => {
-  it('reports changed, missing, and orphaned reports', () => {
+describe('runtimeExports', () => {
+  it('lists the names the built module exports, leaving out type-only ones', async () => {
+    const pkg = fixturePackage('runtime', {
+      'dist/index.d.ts':
+        "export { type Box } from './box.js';\nexport { Crate } from './box.js';\n",
+      'dist/box.d.ts':
+        'export declare class Box {\n}\nexport declare class Crate {\n}\n',
+      'dist/index.js': "export { Crate } from './box.js';\n",
+      'dist/box.js': 'export class Box {}\nexport class Crate {}\n',
+    });
+    pkg.manifest.exports['.'].import = './dist/index.js';
+    const [entry] = apiReportEntries([pkg]);
+    expect(await runtimeExports(entry)).toBe('Crate\n');
+  });
+});
+
+describe('orphanedApiReports', () => {
+  it('lists committed reports no entry produces', () => {
     const reportDir = join(root, 'api');
     writeFiles(reportDir, {
-      'current.api.md': 'same',
-      'changed.api.md': 'before',
-      'orphan.api.md': 'no package',
+      'kept.api.md': '',
+      'kept.runtime.txt': '',
+      'gone.api.md': '',
+      'gone.runtime.txt': '',
+      'notes.md': '',
     });
-    const reports = new Map([
-      ['current.api.md', 'same'],
-      ['changed.api.md', 'after'],
-      ['missing.api.md', 'new'],
-    ]);
-    expect(staleApiReports(reportDir, reports)).toEqual([
-      'changed.api.md',
-      'missing.api.md',
-      'orphan.api.md',
-    ]);
+    expect(
+      orphanedApiReports(reportDir, [{ reportName: 'kept', module: 'x.js' }])
+    ).toEqual(['gone.api.md', 'gone.runtime.txt']);
   });
 });
