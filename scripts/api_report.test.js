@@ -8,6 +8,7 @@
 import {
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -211,6 +212,7 @@ describe('syncApiReports', () => {
     expect(
       await syncApiReports(apiReportEntries([pkg]), { reportDir, check: true })
     ).toEqual(['checked.api.md', 'checked.runtime.txt', 'gone.api.md']);
+    expect(readdirSync(reportDir)).toEqual(['gone.api.md']);
   });
 });
 
