@@ -300,12 +300,13 @@ export const createApiReports = (packages) => {
           if (isOwn(bound) && local !== displayName(bound)) {
             renamed.add(`${local} = ${displayName(bound)}`);
           }
-          // A whole module, as in `typeof Types`, stands for every declaration it exports.
-          const reached = [bound, target].flatMap((symbol) =>
-            symbol.declarations?.some(ts.isSourceFile)
-              ? checker.getExportsOfModule(symbol).map(resolveAlias)
-              : [symbol]
-          );
+          // A name that is a whole module, as in `typeof Types`, stands for every declaration it exports;
+          // `Types.Input` reaches `Input` alone.
+          const isModule = (symbol) =>
+            Boolean(symbol.declarations?.some(ts.isSourceFile));
+          const reached = isModule(target)
+            ? checker.getExportsOfModule(target).map(resolveAlias)
+            : [target, ...(isModule(bound) ? [] : [bound])];
           for (const referenced of new Set(reached)) {
             if (
               !isOwn(referenced) ||

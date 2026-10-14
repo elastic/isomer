@@ -109,13 +109,15 @@ describe('createApiReports', () => {
   it('names a namespace import by its package-relative module, never its path', () => {
     const pkg = fixturePackage('namespace', {
       'dist/index.d.ts': "export { take } from './take.js';\n",
-      'dist/types.d.ts': 'export interface Input {\n    value: string;\n}\n',
+      'dist/types.d.ts':
+        'export interface Input {\n    value: string;\n}\nexport interface Unrelated {\n    other: number;\n}\n',
       'dist/take.d.ts':
         "import type * as Types from './types.js';\nexport declare function take(value: Types.Input): void;\n",
     });
     const report = reportOf(pkg);
     expect(report).toContain('Types = @fixture/namespace/dist/types.d.ts');
     expect(report).toContain('interface Input {');
+    expect(report).not.toContain('interface Unrelated');
     expect(report).not.toContain(root);
   });
 
