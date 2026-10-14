@@ -22,6 +22,7 @@ import {
   orphanedApiReports,
   runApiExtractor,
   runtimeExports,
+  syncApiReports,
 } from './api_report.js';
 
 let root;
@@ -139,6 +140,77 @@ describe('runtimeExports', () => {
     pkg.manifest.exports['.'].import = './dist/index.js';
     const [entry] = apiReportEntries([pkg]);
     expect(await runtimeExports(entry)).toBe('Crate\n');
+  });
+});
+
+describe('syncApiReports', () => {
+  const checked = () => {
+    const pkg = fixturePackage('checked', {
+      'dist/index.d.ts': 'export declare function size(): number;\n',
+      'dist/index.js': 'export function size() {\n    return 1;\n}\n',
+    });
+    pkg.manifest.exports['.'].import = './dist/index.js';
+    return { pkg, reportDir: join(root, 'api') };
+  };
+  const snapshot = (reportDir) =>
+    ['checked.api.md', 'checked.runtime.txt'].map((file) =>
+      readFileSync(join(reportDir, file), 'utf-8')
+    );
+
+  it('passes a check right after writing', async () => {
+    const { pkg, reportDir } = checked();
+    const entries = apiReportEntries([pkg]);
+    expect(await syncApiReports(entries, { reportDir, check: false })).toEqual(
+      []
+    );
+    expect(await syncApiReports(entries, { reportDir, check: true })).toEqual(
+      []
+    );
+  });
+
+  it('reports a changed declaration without rewriting the report', async () => {
+    const { pkg, reportDir } = checked();
+    const entries = apiReportEntries([pkg]);
+    await syncApiReports(entries, { reportDir, check: false });
+    const before = snapshot(reportDir);
+    writeFiles(pkg.dir, {
+      'dist/index.d.ts': 'export declare function size(): string;\n',
+    });
+    expect(await syncApiReports(entries, { reportDir, check: true })).toEqual([
+      'checked.api.md',
+    ]);
+    expect(snapshot(reportDir)).toEqual(before);
+  });
+
+  it('reports a changed runtime export list without rewriting it', async () => {
+    const { pkg, reportDir } = checked();
+    const entries = apiReportEntries([pkg]);
+    await syncApiReports(entries, { reportDir, check: false });
+    const before = snapshot(reportDir);
+    // A new file, since an imported ES module stays cached by URL.
+    writeFiles(pkg.dir, {
+      'dist/changed.js':
+        'export function size() {\n    return 1;\n}\nexport const extra = 2;\n',
+    });
+    const [entry] = apiReportEntries([pkg]);
+    expect(
+      await syncApiReports(
+        [{ ...entry, module: join(pkg.dir, 'dist/changed.js') }],
+        {
+          reportDir,
+          check: true,
+        }
+      )
+    ).toEqual(['checked.runtime.txt']);
+    expect(snapshot(reportDir)).toEqual(before);
+  });
+
+  it('reports missing and orphaned files', async () => {
+    const { pkg, reportDir } = checked();
+    writeFiles(reportDir, { 'gone.api.md': '' });
+    expect(
+      await syncApiReports(apiReportEntries([pkg]), { reportDir, check: true })
+    ).toEqual(['checked.api.md', 'checked.runtime.txt', 'gone.api.md']);
   });
 });
 

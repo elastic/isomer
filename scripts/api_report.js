@@ -177,17 +177,16 @@ export const runApiExtractor = (
   });
 };
 
-const main = async () => {
-  const check = process.argv.includes('--check');
-  const reportDir = join(repoRoot, 'api');
-  const entries = apiReportEntries(
-    workspacePackages().filter(({ manifest }) => manifest.private !== true)
-  );
+/**
+ * Writes every entry's report files and deletes orphans, or with `check`
+ * leaves `reportDir` untouched and returns the files that differ from the build.
+ *
+ * @returns {Promise<string[]>} Stale file names, sorted; empty when writing.
+ */
+export const syncApiReports = async (entries, { reportDir, check }) => {
   const tempDir = mkdtempSync(join(tmpdir(), 'isomer-api-report-'));
-  mkdirSync(reportDir, { recursive: true });
-
   try {
-    const changed = entries
+    const stale = entries
       .filter(
         (entry) =>
           runApiExtractor(entry, { reportDir, tempDir, localBuild: !check })
@@ -200,38 +199,44 @@ const main = async () => {
         continue;
       }
       const path = join(reportDir, `${entry.reportName}${RUNTIME_SUFFIX}`);
-      if (check) {
-        if (!existsSync(path) || readFileSync(path, 'utf-8') !== names) {
-          changed.push(`${entry.reportName}${RUNTIME_SUFFIX}`);
-        }
-      } else {
+      if (!check) {
         writeFileSync(path, names);
+      } else if (!existsSync(path) || readFileSync(path, 'utf-8') !== names) {
+        stale.push(`${entry.reportName}${RUNTIME_SUFFIX}`);
       }
     }
     const orphaned = orphanedApiReports(reportDir, entries);
-
     if (check) {
-      const stale = [...changed, ...orphaned].sort();
-      if (stale.length > 0) {
-        console.error(
-          `API report out of date: ${stale.map((name) => `api/${name}`).join(', ')}.\n` +
-            'Run `pnpm build && pnpm api:report` and commit the result. A changed signature in a published package is a breaking change unless it only widens what callers may pass or narrows what they get back.'
-        );
-        process.exit(1);
-      }
-      console.log('API reports are current.');
-      return;
+      return [...stale, ...orphaned].sort();
     }
-
     for (const name of orphaned) {
       rmSync(join(reportDir, name));
     }
-    console.log(
-      `Wrote ${entries.length} API report(s) to ${relative(repoRoot, reportDir)}/.`
-    );
+    return [];
   } finally {
     rmSync(tempDir, { force: true, recursive: true });
   }
+};
+
+const main = async () => {
+  const check = process.argv.includes('--check');
+  const reportDir = join(repoRoot, 'api');
+  const entries = apiReportEntries(
+    workspacePackages().filter(({ manifest }) => manifest.private !== true)
+  );
+  const stale = await syncApiReports(entries, { reportDir, check });
+  if (stale.length > 0) {
+    console.error(
+      `API report out of date: ${stale.map((name) => `api/${name}`).join(', ')}.\n` +
+        'Run `pnpm build && pnpm api:report` and commit the result. A changed signature in a published package is a breaking change unless it only widens what callers may pass or narrows what they get back.'
+    );
+    process.exit(1);
+  }
+  console.log(
+    check
+      ? 'API reports are current.'
+      : `Wrote ${entries.length} API report(s) to ${relative(repoRoot, reportDir)}/.`
+  );
 };
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
