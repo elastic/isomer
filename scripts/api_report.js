@@ -113,6 +113,21 @@ export const createApiReports = (packages) => {
   const isOwn = (symbol) =>
     (symbol.declarations ?? []).some(isPublishedDeclaration);
 
+  /** A symbol's name, with a module's absolute path replaced by its package-relative specifier. */
+  const displayName = (symbol) => {
+    const sourceFile = symbol.declarations?.find(ts.isSourceFile);
+    if (!sourceFile) {
+      return symbol.name;
+    }
+    const fileName = resolve(sourceFile.fileName);
+    const pkg = packages.find(({ dir }) =>
+      fileName.startsWith(`${join(dir, 'dist')}${sep}`)
+    );
+    return pkg
+      ? `${pkg.manifest.name}/${relative(pkg.dir, fileName).split(sep).join('/')}`
+      : symbol.name;
+  };
+
   const resolveAlias = (symbol) =>
     symbol.flags & ts.SymbolFlags.Alias
       ? checker.getAliasedSymbol(symbol)
@@ -160,26 +175,51 @@ export const createApiReports = (packages) => {
     return undefined;
   };
 
-  /** Each name a declaration's printed text uses, with the symbol it resolves to. */
+  const symbolAt = (node) => {
+    const symbol = node && checker.getSymbolAtLocation(node);
+    return symbol && !(symbol.flags & ts.SymbolFlags.TypeParameter)
+      ? resolveAlias(symbol)
+      : undefined;
+  };
+
+  /**
+   * Each name a declaration's printed text uses: the leading identifier and
+   * what it binds to, and the declaration the whole name, `Types.Input`, reaches.
+   */
   const references = (declaration) => {
     const found = [];
     const visit = (node) => {
-      let name = referenceName(node);
-      while (name && ts.isQualifiedName(name)) {
-        name = name.left;
+      const name = referenceName(node);
+      let head = name;
+      while (
+        head &&
+        (ts.isQualifiedName(head) || ts.isPropertyAccessExpression(head))
+      ) {
+        head = ts.isQualifiedName(head) ? head.left : head.expression;
       }
-      while (name && ts.isPropertyAccessExpression(name)) {
-        name = name.expression;
-      }
-      const symbol = name && checker.getSymbolAtLocation(name);
-      if (symbol && !(symbol.flags & ts.SymbolFlags.TypeParameter)) {
-        found.push({ local: name.getText(), symbol: resolveAlias(symbol) });
+      const bound = symbolAt(head);
+      if (bound) {
+        found.push({
+          local: head.getText(),
+          bound,
+          target: symbolAt(name) ?? bound,
+        });
       }
       ts.forEachChild(node, visit);
     };
     visit(statementOf(declaration));
     return found;
   };
+
+  /** Whether a symbol is declared as a statement of a file or namespace, not a module or a member. */
+  const isTopLevel = (symbol) =>
+    (symbol.declarations ?? []).some((declaration) => {
+      const { parent } = statementOf(declaration);
+      return (
+        !ts.isSourceFile(declaration) &&
+        (ts.isSourceFile(parent) || ts.isModuleBlock(parent))
+      );
+    });
 
   /** The first bare specifier an alias chain re-exports from, with the name it imports there. */
   const externalSourceOf = (alias) => {
@@ -256,21 +296,24 @@ export const createApiReports = (packages) => {
         if (!isPublishedDeclaration(declaration)) {
           continue;
         }
-        for (const { local, symbol: referenced } of references(declaration)) {
-          if (!isOwn(referenced)) {
-            continue;
+        for (const { local, bound, target } of references(declaration)) {
+          if (isOwn(bound) && local !== displayName(bound)) {
+            renamed.add(`${local} = ${displayName(bound)}`);
           }
-          if (local !== referenced.name) {
-            renamed.add(`${local} = ${referenced.name}`);
+          for (const referenced of new Set([bound, target])) {
+            if (
+              !isOwn(referenced) ||
+              !isTopLevel(referenced) ||
+              seen.has(referenced)
+            ) {
+              continue;
+            }
+            seen.add(referenced);
+            if (!exported.has(referenced)) {
+              unexported.push(referenced);
+            }
+            queue.push(referenced);
           }
-          if (seen.has(referenced)) {
-            continue;
-          }
-          seen.add(referenced);
-          if (!exported.has(referenced)) {
-            unexported.push(referenced);
-          }
-          queue.push(referenced);
         }
       }
     }
@@ -278,7 +321,7 @@ export const createApiReports = (packages) => {
       unexported: [
         ...new Set(
           unexported
-            .sort((a, b) => a.name.localeCompare(b.name))
+            .sort((a, b) => displayName(a).localeCompare(displayName(b)))
             .map(printSymbol)
         ),
       ],

@@ -72,11 +72,36 @@ describe('createApiReports', () => {
     const report = reportOf(
       fixturePackage('default', {
         'dist/index.d.ts': "export { default as Widget } from './widget.js';\n",
-        'dist/widget.d.ts':
-          'declare const _default: number;\nexport default _default;\n',
+        'dist/widget.d.ts': 'export default function (): void;\n',
       })
     );
     expect(report).toContain('// exported as `Widget`');
+  });
+
+  it('lists the unexported value a member access starts from', () => {
+    const report = reportOf(
+      fixturePackage('member', {
+        'dist/index.d.ts': "export { read } from './read.js';\n",
+        'dist/read.d.ts':
+          'declare const schema: {\n    optional(): string;\n};\nexport declare const read: ReturnType<typeof schema.optional>;\nexport {};\n',
+      })
+    );
+    const [, referenced] = report.split('### Referenced, not exported');
+    expect(referenced).toContain('const schema: {');
+    expect(referenced).not.toContain('\noptional(): string;');
+  });
+
+  it('names a namespace import by its package-relative module, never its path', () => {
+    const pkg = fixturePackage('namespace', {
+      'dist/index.d.ts': "export { take } from './take.js';\n",
+      'dist/types.d.ts': 'export interface Input {\n    value: string;\n}\n',
+      'dist/take.d.ts':
+        "import type * as Types from './types.js';\nexport declare function take(value: Types.Input): void;\n",
+    });
+    const report = reportOf(pkg);
+    expect(report).toContain('Types = @fixture/namespace/dist/types.d.ts');
+    expect(report).toContain('interface Input {');
+    expect(report).not.toContain(root);
   });
 
   it('lists a signature name bound to a declaration of another name', () => {
