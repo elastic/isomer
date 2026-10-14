@@ -807,7 +807,11 @@ const bodyNodeSurfacesSchema: z.ZodArray<z.ZodEnum<{
     slack: "slack";
 }>>;
 
+const checkedComposition: unique symbol;
+
 type JsonSchema = Record<string, unknown>;
+
+const markdownContent: unique symbol;
 
 type NodeOf<TDefinition extends WithExamples> = ExampleNode<TDefinition['examples'][number]>;
 
@@ -891,6 +895,12 @@ interface ReactContentOptions {
 }
 
 const renderHTMLWithDispatcher: <TNode extends PrimitiveNode, TCollector extends PrimitiveStyleCollector = PrimitiveStyleCollector, TContext = StyledRenderContext>(input: Composition<TNode>, { dispatcher, validate, options: rawOptions, defaultAriaLabel, styleAdapter, scriptText, enhancementDefinitions, }: HTMLDispatcherRenderOptions<TNode, TCollector, TContext>) => HTMLRenderResult;
+```
+
+### Referenced, not exported
+
+```ts
+const checkedComposition: unique symbol;
 ```
 
 ## `@elastic/isomer-sdk/slack`
@@ -1219,6 +1229,12 @@ interface SlackVideoBlock {
 const strike: (text: string) => string;
 ```
 
+### Referenced, not exported
+
+```ts
+const markdownContent: unique symbol;
+```
+
 ## `@elastic/isomer-sdk/text`
 
 ```ts
@@ -1295,6 +1311,12 @@ const splitAuthoredMarkdown: (source: string, { elements }: SplitAuthoredMarkdow
 interface SplitAuthoredMarkdownOptions {
     readonly elements: readonly string[];
 }
+```
+
+### Referenced, not exported
+
+```ts
+const markdownContent: unique symbol;
 ```
 
 ## `@elastic/isomer-sdk/react`
@@ -1511,9 +1533,19 @@ const textFromChildren: (children: ReactNode, options?: {
 ```ts
 type ArrayItem<TSchema extends ZodType> = NonNullable<zOutput<TSchema>> extends readonly (infer Item)[] ? Item : NonNullable<zOutput<TSchema>>;
 
+const authoredChild: unique symbol;
+
 type AuthoredNames<TSchema> = {
     [K in keyof ShapeOf<TSchema>]: Branded<ShapeOf<TSchema>[K]> extends AuthoredChildBrand<string, unknown> | AuthoredTextBrand | AuthoredNodesBrand ? K : never;
 }[keyof ShapeOf<TSchema>];
+
+const authoredNodes: unique symbol;
+
+const authoredProps: unique symbol;
+
+const authoredText: unique symbol;
+
+const authoredToItem: unique symbol;
 
 type AuthorPropsFor<P, TTypes extends string> = [
     SchemaOf<P>
@@ -1528,6 +1560,8 @@ type AuthorPropsForSchema<TSchema extends ZodObject, TTypes extends string> = Lo
 } : Omit<z.infer<TSchema>, 'type' | FilledNames<TSchema, TTypes>> & Partial<Pick<z.infer<TSchema>, Extract<FilledNames<TSchema, TTypes>, keyof z.infer<TSchema>>>> & {
     children?: ReactNode;
 };
+
+const authorType: unique symbol;
 
 type Branded<F> = F extends AuthoredChildBrand<string, unknown> | AuthoredTextBrand | AuthoredNodesBrand ? F : F extends {
     _zod: {

@@ -351,7 +351,11 @@ interface ViewResponse<TNode extends PrimitiveNode = PrimitiveNode> {
 ### Referenced, not exported
 
 ```ts
+const checkedComposition: unique symbol;
+
 type ErasedSurfaceMap = SurfaceMap<RuntimePackTypes<unknown>>;
+
+const markdownContent: unique symbol;
 
 interface OverridableRenderers {
     react(node: PrimitiveNode, env: ErasedSurfaceMap['react']['env']): ReactNode;

@@ -24,3 +24,9 @@ type StudioRuntime = IsomerRuntime<unknown, StyledRenderContext>;
 
 type StudioTheme = 'light' | 'dark';
 ```
+
+### Referenced, not exported
+
+```ts
+const checkedComposition: unique symbol;
+```
