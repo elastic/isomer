@@ -47,6 +47,30 @@ jobs:
           report: .artifacts/studio-report.xml
           artifact-name: slides-studio
 
+  peers:
+    name: peers (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [floor, kibana, latest]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v6.0.6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Packages build against the lockfile, as the release does; the target swaps what they run and compile against.
+      - run: pnpm build
+      - run: node scripts/apply_peer_target.js ${{ matrix.target }}
+      - run: pnpm install --no-frozen-lockfile
+      # The Studio pins React 18 until EUI allows 19.
+      - run: pnpm --filter './packages/*' --filter '!@elastic/isomer-studio' typecheck
+      - run: pnpm vitest run --project node
+      - run: pnpm check:pack-consumer
+
   docs:
     name: docs-builder
     runs-on: ubuntu-latest

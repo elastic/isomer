@@ -15,8 +15,11 @@ import {
   symlinkSync,
   writeFileSync,
 } from 'node:fs';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
+
+import semver from 'semver';
 
 import {
   isEsmOnly,
@@ -94,10 +97,52 @@ const installedDependency = (pkg, dependency) =>
     join(repoRoot, 'node_modules', dependency),
   ].find((candidate) => existsSync(candidate));
 
-try {
-  const packages = new Map(
-    packageNames.map((packageName) => [packageName, packPackage(packageName)])
+/** Required peers whose installed version falls outside the package's own range. */
+const unsatisfiedPeers = (pkg) =>
+  Object.entries(pkg.manifest.peerDependencies ?? {}).filter(
+    ([peer, range]) => {
+      if (
+        packageNames.includes(peer) ||
+        pkg.manifest.peerDependenciesMeta?.[peer]?.optional === true
+      ) {
+        return false;
+      }
+      const manifestPath = resolve(
+        repoRoot,
+        'node_modules',
+        peer,
+        'package.json'
+      );
+      return (
+        existsSync(manifestPath) &&
+        !semver.satisfies(
+          JSON.parse(readFileSync(manifestPath, 'utf-8')).version,
+          range
+        )
+      );
+    }
   );
+
+const exportSpecifiers = ({ name, exports: exportMap = {} }) =>
+  Object.keys(exportMap).map((key) =>
+    key === '.' ? name : `${name}/${key.slice(2)}`
+  );
+
+const tsc = createRequire(import.meta.url).resolve('typescript/bin/tsc');
+
+try {
+  const packages = new Map();
+  for (const packageName of packageNames) {
+    const pkg = packPackage(packageName);
+    const unsatisfied = unsatisfiedPeers(pkg);
+    if (unsatisfied.length > 0) {
+      console.log(
+        `${packageName}: skipped, installed ${unsatisfied.map(([peer, range]) => `${peer} is outside ${range}`).join(', ')}.`
+      );
+      continue;
+    }
+    packages.set(packageName, pkg);
+  }
 
   // Every packed package gets its dependencies before any is imported, since
   // one package's import loads another's packed copy.
@@ -175,6 +220,52 @@ try {
       `${packageName}: packed root ${esmOnly ? 'import' : 'imports'} passed with required peers (${requiredPeers.join(', ')}).`
     );
   }
+
+  // A consumer compiles every published declaration with `skipLibCheck` off,
+  // against whichever `@types/react` this install has.
+  for (const types of ['node', 'react', 'react-dom']) {
+    linkDirectory(
+      resolve(repoRoot, 'node_modules', '@types', types),
+      join(tempDir, 'node_modules', '@types', types)
+    );
+  }
+  const typesConsumerDir = join(tempDir, 'consumers', 'types');
+  const specifiers = [...packages].flatMap(([packageName, pkg]) => {
+    linkDirectory(pkg.dir, join(typesConsumerDir, 'node_modules', packageName));
+    return exportSpecifiers(pkg.manifest);
+  });
+  mkdirSync(typesConsumerDir, { recursive: true });
+  writeFileSync(
+    join(typesConsumerDir, 'index.ts'),
+    `${specifiers.map((specifier, index) => `import type * as entry${index} from '${specifier}';`).join('\n')}\nexport type { ${specifiers.map((_, index) => `entry${index}`).join(', ')} };\n`
+  );
+  for (const [module, moduleResolution] of [
+    ['nodenext', 'nodenext'],
+    ['esnext', 'bundler'],
+  ]) {
+    writeFileSync(
+      join(typesConsumerDir, 'tsconfig.json'),
+      JSON.stringify({
+        compilerOptions: {
+          module,
+          moduleResolution,
+          target: 'es2022',
+          lib: ['es2023', 'dom'],
+          strict: true,
+          skipLibCheck: false,
+          noEmit: true,
+          types: ['node'],
+        },
+        files: ['index.ts'],
+      })
+    );
+    execFileSync(process.execPath, [tsc, '-p', typesConsumerDir], {
+      stdio: 'inherit',
+    });
+  }
+  console.log(
+    `Packed declarations of ${specifiers.length} entry points compile under nodenext and bundler resolution.`
+  );
 
   // `assertPackRegistrationComplete` loads files by itself, so each module
   // system's build must load a primitive directory.
