@@ -12,14 +12,12 @@ description: A gallery, per-primitive docs, a JSX editor and a preview of every 
 - a JSX or JSON editor with a live preview;
 - the same composition on every surface the runtime has: React, HTML, Snapshot, PNG, Slack, Markdown and text.
 
-It ships as a command-line tool, not a React library. EUI, Emotion and Monaco are bundled into it, so a pack never takes them as dependencies.
+It ships as a command-line tool, not a React library. EUI, Emotion and Monaco are bundled into it, so a pack never takes them as dependencies. The package is private and not published to npm; this repository runs it.
 
 ```sh
-npm install --save-dev @elastic/isomer-studio
-
-npx isomer-studio dev                                 # a local server with hot updates
-npx isomer-studio build --out dist/studio --base /studio/  # a static site
-npx isomer-studio check --report studio-report.json   # a headless CI gate
+pnpm studio:dev                                       # a local server with hot updates
+pnpm exec isomer-studio build --out dist/studio --base /studio/  # a static site
+pnpm exec isomer-studio check --report studio-report.json   # a headless CI gate
 ```
 
 Each command reads `isomer-studio.config.ts` (or `.tsx` or `.js`) from the current directory unless `--config` names another file.

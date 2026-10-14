@@ -2,6 +2,7 @@
 
 ## 2026-10-13
 
+- **Studio stays private**: `@elastic/isomer-studio` sets `"private": true`, so the release workflow does not publish it.
 - **Studio color mode offers System**: The header's color mode is Light, Dark, or System. System follows the operating system's `prefers-color-scheme`, including when it changes, and the choice is remembered per browser.
 - **Studio preview, docs source, and slides groups**: Dev surface cards stay one column until the width that used to fit three, then two, and never three. The Surface menu compares any subset: with every surface selected, choosing one shows it at full size, and choosing another adds it. The Dev preview pane is black in dark mode. Docs puts the example picker before the surface menu and adds a view-source footer for the example's JSX and JSON. Page titles no longer draw the primitive icon. The slides pack's groups separate whole slides from the frame and from layouts; `slideTranscript` moves to Text and `slideRoadmap` to Diagrams.
 - **Each package's license files cover its own dependencies**: `pnpm licenses:report` writes a published package's `NOTICE.txt` and `THIRD_PARTY_LICENSES.md` from what a consumer installs with it: its own `dependencies` and those of the workspace packages it depends on. The root files still cover the workspace. `.gitattributes` marks both as generated so GitHub collapses them in diffs.

@@ -36,8 +36,8 @@ Pin the action to a release tag rather than `main` once you depend on it. The Is
 The action is two commands. On another CI system, run them yourself:
 
 ```sh
-npx isomer-studio check --config isomer-studio.config.ts --format junit --report isomer-studio-report.xml
-npx isomer-studio build --config isomer-studio.config.ts --out dist/studio
+pnpm exec isomer-studio check --config isomer-studio.config.ts --format junit --report isomer-studio-report.xml
+pnpm exec isomer-studio build --config isomer-studio.config.ts --out dist/studio
 ```
 
 `build` and `check --png` rasterize with `@elastic/isomer-image-takumi`, a native dependency the Studio installs for the platform it runs on.
@@ -47,7 +47,7 @@ npx isomer-studio build --config isomer-studio.config.ts --out dist/studio
 To serve the Studio from a docs site, build it into the site's output with the path it will be served from:
 
 ```sh
-npx isomer-studio build --config isomer-studio.config.ts --out site/studio-app --base /my-docs/studio-app/
+pnpm exec isomer-studio build --config isomer-studio.config.ts --out site/studio-app --base /my-docs/studio-app/
 ```
 
 Give the app its own directory, not the one the Studio's or the pack's docs build into, so neither overwrites the other.

@@ -174,8 +174,7 @@ type Frame = 'tag' | 'children' | 'closing' | 'braces';
 
 const JSX_BRACKET = /<>|<\/|\/>|\$\{|[<>{}]/g;
 
-/** Whether `text` ends where an element's children go. Reads the brackets {@link tokens} marks. */
-export const endsInJsxChildren = (text: string): boolean => {
+const jsxFrame = (text: string): Frame | undefined => {
   const stack: Frame[] = [];
   const lines = text.split(/\r\n|\r|\n/);
   editor.tokenize(text, 'typescript').forEach((row, index) => {
@@ -222,47 +221,83 @@ export const endsInJsxChildren = (text: string): boolean => {
       }
     });
   });
-  return stack[stack.length - 1] === 'children';
+  return stack[stack.length - 1];
 };
 
-/** Offers `components` as tag openers where only text could go, on an explicit invoke. */
+/** Whether `text` ends where an element's children go. Reads the brackets {@link tokens} marks. */
+export const endsInJsxChildren = (text: string): boolean =>
+  jsxFrame(text) === 'children';
+
+/** A `<` or `<Name` already typed. The bare `<` is not a bracket until a name follows. */
+const PENDING_TAG = /<([A-Za-z_$][\w$]*)?$/;
+
+const offersComponents = (text: string): boolean => {
+  const frame = jsxFrame(text);
+  if (frame === 'children') {
+    return true;
+  }
+  const pending = PENDING_TAG.exec(text);
+  return frame === 'tag' && pending?.[1] !== undefined;
+};
+
+/** Replaces a `<` already before the cursor, so the inserted opener does not double it. */
+const completionRange = (
+  text: string,
+  position: { lineNumber: number; column: number },
+  word: { startColumn: number; endColumn: number }
+) => {
+  const pending = PENDING_TAG.exec(text);
+  const { lineNumber, column } = position;
+  return {
+    startLineNumber: lineNumber,
+    endLineNumber: lineNumber,
+    startColumn: pending ? column - pending[0].length : word.startColumn,
+    endColumn: pending ? column : word.endColumn,
+  };
+};
+
+/** Offers `components` as tag openers in element children, or over a tag name already started, on an explicit invoke. */
+export const componentCompletionProvider = (
+  components: readonly string[]
+): languages.CompletionItemProvider => ({
+  provideCompletionItems: (model, position, { triggerKind }) => {
+    const { lineNumber, column } = position;
+    const text = model.getValueInRange({
+      startLineNumber: 1,
+      startColumn: 1,
+      endLineNumber: lineNumber,
+      endColumn: column,
+    });
+    if (
+      triggerKind !== languages.CompletionTriggerKind.Invoke ||
+      !offersComponents(text)
+    ) {
+      return { suggestions: [] };
+    }
+    const range = completionRange(
+      text,
+      position,
+      model.getWordUntilPosition(position)
+    );
+    return {
+      suggestions: components.map((name) => ({
+        label: name,
+        kind: languages.CompletionItemKind.Class,
+        insertText: `<${name} `,
+        range,
+        command: { id: 'editor.action.triggerSuggest', title: '' },
+      })),
+    };
+  },
+});
+
 export const registerComponentCompletions = (
   components: readonly string[]
 ): IDisposable =>
-  languages.registerCompletionItemProvider('typescript', {
-    provideCompletionItems: (model, position, { triggerKind }) => {
-      const { lineNumber, column } = position;
-      if (
-        triggerKind !== languages.CompletionTriggerKind.Invoke ||
-        !endsInJsxChildren(
-          model.getValueInRange({
-            startLineNumber: 1,
-            startColumn: 1,
-            endLineNumber: lineNumber,
-            endColumn: column,
-          })
-        )
-      ) {
-        return { suggestions: [] };
-      }
-      const { startColumn, endColumn } = model.getWordUntilPosition(position);
-      const range = {
-        startLineNumber: lineNumber,
-        endLineNumber: lineNumber,
-        startColumn,
-        endColumn,
-      };
-      return {
-        suggestions: components.map((name) => ({
-          label: name,
-          kind: languages.CompletionItemKind.Class,
-          insertText: `<${name} `,
-          range,
-          command: { id: 'editor.action.triggerSuggest', title: '' },
-        })),
-      };
-    },
-  });
+  languages.registerCompletionItemProvider(
+    'typescript',
+    componentCompletionProvider(components)
+  );
 
 /** Replaces the `typescript` language's tokenizer, so every TypeScript model reads JSX. */
 export const registerTsx = () => {
