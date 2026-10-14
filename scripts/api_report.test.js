@@ -68,6 +68,32 @@ describe('createApiReports', () => {
     expect(report).not.toContain('Doc.');
   });
 
+  it('names a default export by its public name', () => {
+    const report = reportOf(
+      fixturePackage('default', {
+        'dist/index.d.ts': "export { default as Widget } from './widget.js';\n",
+        'dist/widget.d.ts':
+          'declare const _default: number;\nexport default _default;\n',
+      })
+    );
+    expect(report).toContain('// exported as `Widget`');
+  });
+
+  it('lists a signature name bound to a declaration of another name', () => {
+    const report = reportOf(
+      fixturePackage('aliased', {
+        'dist/index.d.ts':
+          "export { type Wide, type Narrow } from './types.js';\nexport { take } from './take.js';\n",
+        'dist/types.d.ts':
+          'export type Wide = string | number;\nexport type Narrow = string;\n',
+        'dist/take.d.ts':
+          "import type { Narrow as Input } from './types.js';\nexport declare function take(value: Input): void;\n",
+      })
+    );
+    const [, renamed] = report.split('### Names bound under another name');
+    expect(renamed).toContain('Input = Narrow');
+  });
+
   it('marks a value exported as type only', () => {
     const report = reportOf(
       fixturePackage('type-only', {

@@ -160,9 +160,9 @@ export const createApiReports = (packages) => {
     return undefined;
   };
 
-  /** Symbols a declaration's printed text names. */
-  const referencedSymbols = (declaration) => {
-    const found = new Set();
+  /** Each name a declaration's printed text uses, with the symbol it resolves to. */
+  const references = (declaration) => {
+    const found = [];
     const visit = (node) => {
       let name = referenceName(node);
       while (name && ts.isQualifiedName(name)) {
@@ -173,7 +173,7 @@ export const createApiReports = (packages) => {
       }
       const symbol = name && checker.getSymbolAtLocation(name);
       if (symbol && !(symbol.flags & ts.SymbolFlags.TypeParameter)) {
-        found.add(resolveAlias(symbol));
+        found.push({ local: name.getText(), symbol: resolveAlias(symbol) });
       }
       ts.forEachChild(node, visit);
     };
@@ -216,7 +216,7 @@ export const createApiReports = (packages) => {
     const target = resolveAlias(alias);
     const { name } = alias;
     const notes = [
-      ...(isOwn(target) && target.name !== name && target.name !== 'default'
+      ...(isOwn(target) && target.name !== name
         ? [`exported as \`${name}\``]
         : []),
       ...(isTypeOnlyAlias(alias) && target.flags & ts.SymbolFlags.Value
@@ -241,19 +241,29 @@ export const createApiReports = (packages) => {
     )
   );
 
-  /** Unexported declarations a public signature names, transitively. */
-  const unexportedReferences = (exports) => {
+  /**
+   * Unexported declarations a public signature names, transitively, and each
+   * local name there that differs from the declaration it binds to.
+   */
+  const signatureReferences = (exports) => {
     const seen = new Set();
     const queue = exports.map(resolveAlias);
     const unexported = [];
+    const renamed = new Set();
     while (queue.length > 0) {
       const symbol = queue.shift();
       for (const declaration of symbol.declarations ?? []) {
         if (!isPublishedDeclaration(declaration)) {
           continue;
         }
-        for (const referenced of referencedSymbols(declaration)) {
-          if (seen.has(referenced) || !isOwn(referenced)) {
+        for (const { local, symbol: referenced } of references(declaration)) {
+          if (!isOwn(referenced)) {
+            continue;
+          }
+          if (local !== referenced.name) {
+            renamed.add(`${local} = ${referenced.name}`);
+          }
+          if (seen.has(referenced)) {
             continue;
           }
           seen.add(referenced);
@@ -264,11 +274,16 @@ export const createApiReports = (packages) => {
         }
       }
     }
-    return [
-      ...new Set(
-        unexported.sort((a, b) => a.name.localeCompare(b.name)).map(printSymbol)
-      ),
-    ];
+    return {
+      unexported: [
+        ...new Set(
+          unexported
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map(printSymbol)
+        ),
+      ],
+      renamed: [...renamed].sort(),
+    };
   };
 
   const reportFor = ({ pkg, entries: list }) => {
@@ -277,23 +292,22 @@ export const createApiReports = (packages) => {
       const printed = [...exports]
         .sort((a, b) => a.name.localeCompare(b.name))
         .map(printExport);
-      const unexported = unexportedReferences(exports);
+      const { unexported, renamed } = signatureReferences(exports);
+      const block = (title, lines) =>
+        lines.length > 0
+          ? ['', `### ${title}`, '', '```ts', ...lines, '```']
+          : [];
       return [
         `## \`${specifier}\``,
         '',
         '```ts',
         printed.join('\n\n'),
         '```',
-        ...(unexported.length > 0
-          ? [
-              '',
-              '### Referenced, not exported',
-              '',
-              '```ts',
-              unexported.join('\n\n'),
-              '```',
-            ]
-          : []),
+        ...block(
+          'Referenced, not exported',
+          [unexported.join('\n\n')].filter(Boolean)
+        ),
+        ...block('Names bound under another name', renamed),
       ].join('\n');
     });
 
