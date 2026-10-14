@@ -300,7 +300,13 @@ export const createApiReports = (packages) => {
           if (isOwn(bound) && local !== displayName(bound)) {
             renamed.add(`${local} = ${displayName(bound)}`);
           }
-          for (const referenced of new Set([bound, target])) {
+          // A whole module, as in `typeof Types`, stands for every declaration it exports.
+          const reached = [bound, target].flatMap((symbol) =>
+            symbol.declarations?.some(ts.isSourceFile)
+              ? checker.getExportsOfModule(symbol).map(resolveAlias)
+              : [symbol]
+          );
+          for (const referenced of new Set(reached)) {
             if (
               !isOwn(referenced) ||
               !isTopLevel(referenced) ||

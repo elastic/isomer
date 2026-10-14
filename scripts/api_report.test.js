@@ -91,6 +91,21 @@ describe('createApiReports', () => {
     expect(referenced).not.toContain('\noptional(): string;');
   });
 
+  it('lists what a whole-module reference exports', () => {
+    const report = reportOf(
+      fixturePackage('module', {
+        'dist/index.d.ts': "export { types } from './take.js';\n",
+        'dist/types.d.ts':
+          'export interface Input {\n    value: string;\n}\nexport declare const limit: number;\n',
+        'dist/take.d.ts':
+          "import * as Types from './types.js';\nexport declare const types: typeof Types;\n",
+      })
+    );
+    const [, referenced] = report.split('### Referenced, not exported');
+    expect(referenced).toContain('interface Input {');
+    expect(referenced).toContain('const limit: number;');
+  });
+
   it('names a namespace import by its package-relative module, never its path', () => {
     const pkg = fixturePackage('namespace', {
       'dist/index.d.ts': "export { take } from './take.js';\n",
