@@ -32,7 +32,7 @@ import {
 import { showSlideBuild, SLIDE_BUILDS, slideBuilds } from '.';
 
 /** `react` exports `act` from 18.3; `react-dom/test-utils` covers earlier 18.x. */
-const act = React.act ?? testUtilsAct;
+const { act = testUtilsAct } = React as { act?: typeof testUtilsAct };
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
