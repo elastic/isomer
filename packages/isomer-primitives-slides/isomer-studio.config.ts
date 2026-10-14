@@ -25,7 +25,7 @@ export default defineStudioConfig({
   apps: [
     {
       id: 'slides',
-      title: 'Slides',
+      title: 'Slide viewer',
       load: () => import('./studio/slides_app'),
     },
   ],

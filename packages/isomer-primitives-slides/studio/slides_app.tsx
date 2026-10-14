@@ -51,7 +51,7 @@ const SlidesApp = ({ Preview, runtime, path, navigate }: StudioAppProps) => {
       <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
         <EuiFlexItem grow={false}>
           <EuiButtonIcon
-            iconType="arrowLeft"
+            iconType="chevronSingleLeft"
             aria-label="Previous slide"
             isDisabled={index === 0}
             onClick={() => go(-1)}
@@ -59,7 +59,7 @@ const SlidesApp = ({ Preview, runtime, path, navigate }: StudioAppProps) => {
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
           <EuiButtonIcon
-            iconType="arrowRight"
+            iconType="chevronSingleRight"
             aria-label="Next slide"
             isDisabled={index === slides.length - 1}
             onClick={() => go(1)}
