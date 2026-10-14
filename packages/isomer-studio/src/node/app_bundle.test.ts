@@ -182,7 +182,19 @@ describe('appBuildOptions', () => {
       'consumer/node_modules/monaco-editor/index.js',
       "import './editor.css';\nexport const monaco = true;\n"
     );
-    write('consumer/app.module.css', '.box { color: red; }\n');
+    write(
+      'consumer/app.module.css',
+      ['jpg', 'jpeg', 'gif', 'webp', 'avif', 'otf']
+        .map(
+          (extension) =>
+            `.${extension} { background: url("./image.${extension}"); }`
+        )
+        .concat('.box { color: red; }')
+        .join('\n')
+    );
+    for (const extension of ['jpg', 'jpeg', 'gif', 'webp', 'avif', 'otf']) {
+      write(`consumer/image.${extension}`, extension);
+    }
     write(
       'consumer/app.css',
       '@font-face { font-family: Fixture; src: url("./fixture.woff2"); }\n'
@@ -222,6 +234,9 @@ describe('appBuildOptions', () => {
     expect(css).toMatch(/\.app_box\b/);
     expect(css).toMatch(/url\("\.\/media\/fixture-[A-Z0-9]+\.woff2"\)/);
     expect(css).not.toContain('.monaco');
+    expect(css.match(/url\("\.\/media\/image-[A-Z0-9]+\.\w+"\)/g)).toHaveLength(
+      6
+    );
     expect(chunks.length).toBeGreaterThan(0);
     expect(
       chunks.every((chunk) => chunk.startsWith('out/assets/chunks/'))

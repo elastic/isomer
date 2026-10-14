@@ -30,6 +30,15 @@ export const GALLERY = 'gallery';
 
 const APP_SEGMENT = 'app';
 
+/** A segment as written, when it is not valid percent-encoding. */
+const decodeSegment = (segment: string): string => {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
+};
+
 export const isAppRoute = (location: StudioLocation): location is AppRoute =>
   'app' in location;
 
@@ -69,7 +78,7 @@ export const parseLocation = (
 ): StudioLocation => {
   const [segment, id, ...rest] = hash.replace(/^#\/?/, '').split('/');
   return segment === APP_SEGMENT && id !== undefined && appIds.includes(id)
-    ? { app: id, path: rest.join('/') }
+    ? { app: id, path: rest.map(decodeSegment).join('/') }
     : parseRoute(hash, docs);
 };
 
@@ -78,7 +87,7 @@ export const formatRoute = ({ mode, page, example }: StudioRoute): string =>
 
 export const formatLocation = (location: StudioLocation): string =>
   isAppRoute(location)
-    ? `#/${APP_SEGMENT}/${location.app}/${location.path}`
+    ? `#/${APP_SEGMENT}/${location.app}/${location.path.split('/').map(encodeURIComponent).join('/')}`
     : formatRoute(location);
 
 export interface StudioRouter {
@@ -87,6 +96,7 @@ export interface StudioRouter {
   route: StudioRoute;
   /** Moves to a primitive route, merging `next` into {@link StudioRouter.route}. */
   navigate: (next: Partial<StudioRoute>) => void;
+  /** `path` is percent-encoded in the hash, segment by segment, and decoded when read back. */
   openApp: (id: string, path?: string) => void;
 }
 

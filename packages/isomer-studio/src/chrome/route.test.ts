@@ -37,6 +37,20 @@ describe('parseLocation', () => {
     });
   });
 
+  it('encodes an app path in the hash and decodes it back', () => {
+    const location = { app: 'deck', path: 'my deck/50%/a#b?c' };
+    expect(formatLocation(location)).toBe(
+      '#/app/deck/my%20deck/50%25/a%23b%3Fc'
+    );
+    expect(parseLocation(formatLocation(location), docs, ['deck'])).toEqual(
+      location
+    );
+    expect(parseLocation('#/app/deck/100%', docs, ['deck'])).toEqual({
+      app: 'deck',
+      path: '100%',
+    });
+  });
+
   it('falls back to the first primitive for an unknown app', () => {
     expect(parseLocation('#/app/gone/a', docs, ['deck'])).toEqual(first);
   });
@@ -84,6 +98,15 @@ describe('useStudioRoute', () => {
       page: 'divider',
       example: 0,
     });
+  });
+
+  it('reads back the path it navigated to after the browser re-reads the hash', () => {
+    const { result } = renderHook(() => useStudioRoute(docs, ['deck']));
+    act(() => result.current.openApp('deck', 'my deck/2'));
+    expect(window.location.hash).toBe('#/app/deck/my%20deck/2');
+    expect(parseLocation(window.location.hash, docs, ['deck'])).toEqual(
+      result.current.location
+    );
   });
 
   it('starts on the first primitive when the hash opens an app', () => {

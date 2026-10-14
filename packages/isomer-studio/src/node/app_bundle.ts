@@ -110,6 +110,25 @@ const entryPlugin = (configPath: string): Plugin => ({
   },
 });
 
+/** Fonts and images a stylesheet or module may reference, emitted to `assets/media/`. */
+const ASSET_LOADERS = Object.fromEntries(
+  [
+    '.avif',
+    '.eot',
+    '.gif',
+    '.ico',
+    '.jpeg',
+    '.jpg',
+    '.otf',
+    '.png',
+    '.svg',
+    '.ttf',
+    '.webp',
+    '.woff',
+    '.woff2',
+  ].map((extension) => [extension, 'file' as const])
+);
+
 /** `assets/studio.css` already carries Monaco's stylesheet, which Monaco's modules also import piecemeal. */
 const monacoCssEmpty: Plugin = {
   name: 'isomer-studio-monaco-css',
@@ -143,11 +162,7 @@ export const appBuildOptions = ({
   loader: {
     '.css': 'css',
     '.module.css': 'local-css',
-    '.ttf': 'file',
-    '.woff': 'file',
-    '.woff2': 'file',
-    '.png': 'file',
-    '.svg': 'file',
+    ...ASSET_LOADERS,
   },
   define: {
     'process.env.NODE_ENV': JSON.stringify('production'),

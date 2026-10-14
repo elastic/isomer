@@ -79,12 +79,12 @@ The page is a React component, and the Studio hands it `StudioAppProps`:
 | `Preview` | Renders pack output inside a shadow root, isolated from the app's styles and the Studio's. Pass `nodes`, which go through the config's `compose` at the current theme, or a finished `composition`. `zoom` defaults to `fit`, and `maxHeight` caps a fitted preview's height. Without `createReactContext`, it shows the `html` surface. |
 | `runtime` | The config's runtime. |
 | `theme` | `light` or `dark`, following the Studio's color mode. |
-| `path` | Everything after `#/app/<id>/`, slashes included. |
-| `navigate(path)` | Moves to another `path` within the app, adding a history entry. |
+| `path` | Everything after `#/app/<id>/`, slashes included, with each segment percent-decoded. |
+| `navigate(path)` | Moves to another `path` within the app, adding a history entry. Each segment is percent-encoded in the hash, so `path` reads back the same after a reload. |
 
 Import only types from `@elastic/isomer-studio` in an app module. The Studio hands the page everything it needs as props.
 
-The page stays mounted when `path`, the theme or the config changes. Edits to the app module update it in place through React Fast Refresh, as long as the module exports only components. A module that exports anything else re-runs the config instead.
+The page stays mounted when `path`, the theme or the config changes. When the config changes, the Studio calls the new `load` and remounts the page only if the module's default export is a different component. Edits to the app module update it in place through React Fast Refresh, as long as the module exports only components. A module that exports anything else re-runs the config instead.
 
 `load` runs only in the browser. Node imports the config for `check` and `build`, but never calls `load`, so code that must stay off the server belongs behind it.
 
@@ -102,7 +102,7 @@ Apps are not inside a shadow root, because EUI's popovers, flyouts, modals and t
 | --- | --- | --- |
 | Emotion's `css` | Scoped | Needs `@emotion/react` as the JSX import source: add `/** @jsxImportSource @emotion/react */` to the file, or set `jsxImportSource` in a `tsconfig.json` for the app's folder. |
 | CSS Modules, `*.module.css` | Scoped | TypeScript needs a declaration such as `declare module '*.module.css' { const classes: Readonly<Record<string, string>>; export default classes; }`. |
-| Plain `.css` | Global | Scope its selectors under the app's root element. `url()`s to fonts and images resolve under any `--base`. |
+| Plain `.css` | Global | Scope its selectors under the app's root element. `url()`s to fonts (`woff2`, `woff`, `ttf`, `otf`, `eot`) and images (`png`, `jpg`, `jpeg`, `gif`, `webp`, `avif`, `svg`, `ico`) resolve under any `--base`. |
 
 In `dev`, a stylesheet loads when the app first opens. A static build bundles every stylesheet the config imports into `assets/app.css`, which loads with the page.
 

@@ -48,6 +48,8 @@ const Counter = ({ Preview, theme, path, navigate }: StudioAppProps) => {
   );
 };
 
+const OtherCounter = (props: StudioAppProps) => <Counter {...props} />;
+
 const deck = (load: StudioApp['load']): StudioApp => ({
   id: 'deck',
   title: 'Deck',
@@ -100,7 +102,7 @@ describe('Studio apps', () => {
     expect(screen.queryByText(/^count/)).toBeNull();
   });
 
-  it('keeps app state across a theme change and a config re-run, and resets it when load changes', async () => {
+  it('keeps app state across a theme change and a config re-run, and resets it when the page changes', async () => {
     const { rerender } = render(
       <IsomerStudio {...{ runtime }} apps={[deck(sameLoad())]} />
     );
@@ -117,14 +119,33 @@ describe('Studio apps', () => {
     rerender(
       <IsomerStudio
         {...{ runtime }}
-        apps={[
-          deck(() => Promise.resolve({ default: Counter, replaced: true })),
-        ]}
+        apps={[deck(() => Promise.resolve({ default: OtherCounter }))]}
       />
     );
     await waitFor(() =>
       expect(screen.getByText(/^count/)).toHaveTextContent('count 0')
     );
+  });
+
+  it('follows the module a loader resolves, even when its source is unchanged', async () => {
+    const pages: Record<string, StudioApp['load']> = {
+      first: () => Promise.resolve({ default: () => <p>First page</p> }),
+      second: () => Promise.resolve({ default: () => <p>Second page</p> }),
+    };
+    const loaderFor =
+      (choice: string): StudioApp['load'] =>
+      () =>
+        pages[choice]?.() ?? Promise.reject(new Error(choice));
+    const { rerender } = render(
+      <IsomerStudio {...{ runtime }} apps={[deck(loaderFor('first'))]} />
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Deck' }));
+    expect(await screen.findByText('First page')).toBeInTheDocument();
+
+    rerender(
+      <IsomerStudio {...{ runtime }} apps={[deck(loaderFor('second'))]} />
+    );
+    expect(await screen.findByText('Second page')).toBeInTheDocument();
   });
 
   it('falls back to the first primitive and rewrites the hash when the open app goes away', async () => {

@@ -335,6 +335,56 @@ test.describe('static build', () => {
   });
 });
 
+test.describe('slide viewer', () => {
+  test.skip(
+    Boolean(process.env.STUDIO_CONFIG),
+    'needs the repository slides pack'
+  );
+
+  let site: StaticServer;
+  let tempDir: string;
+
+  test.beforeAll(async () => {
+    tempDir = mkdtempSync(join(tmpdir(), 'isomer-studio-viewer-'));
+    const dir = join(tempDir, 'site');
+    await runCli(['build', '--config', CONFIG, '--out', dir, '--base', BASE]);
+    site = await serveStatic(dir, BASE);
+  });
+
+  test.afterAll(async () => {
+    await site.close();
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  test('deep-links a slide and steps through slides with Previous and Next', async ({
+    page,
+  }) => {
+    const counter = page.getByText(/^\d+ of \d+$/);
+    const previous = page.getByRole('button', { name: 'Previous slide' });
+    const next = page.getByRole('button', { name: 'Next slide' });
+
+    await page.goto(`${site.url}#/app/slides/agendaSlide/1`);
+    await expect(counter).toHaveText(/^2 of /);
+    await expect(previous).toBeEnabled();
+
+    await next.click();
+    await expect(counter).toHaveText(/^3 of /);
+    const third = new URL(page.url()).hash;
+    expect(third).toMatch(/^#\/app\/slides\/\w+\/\d+$/);
+    await page.reload();
+    await expect(counter).toHaveText(/^3 of /);
+
+    await previous.click();
+    await previous.click();
+    await expect(counter).toHaveText(/^1 of /);
+    await expect(page).toHaveURL(/#\/app\/slides\/agendaSlide\/0$/);
+    await expect(previous).toBeDisabled();
+
+    await page.goto(`${site.url}#/app/slides/not-a-slide/9`);
+    await expect(counter).toHaveText(/^1 of /);
+  });
+});
+
 test.describe('dev server', () => {
   test.skip(SKIP_DEV, 'STUDIO_DEV=0');
 
