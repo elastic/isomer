@@ -135,20 +135,17 @@ const studioVersions = (studioDir: string): Record<string, string> => {
   return { ...peerDependencies, ...dependencies };
 };
 
-/** Throws when a config that installs `@elastic/eui` would load a different EUI or Emotion from the Studio's. */
+/** Throws when the config would load a different EUI or Emotion from the Studio's, which its apps share; one it cannot resolve at all is fine. */
 export const assertSingleEui = (
   configPath: string,
   studioDir: string = PACKAGE_DIR
 ): void => {
-  if (packageDirectory('@elastic/eui', configPath) === undefined) {
-    return;
-  }
   const studioPackage = join(studioDir, 'package.json');
   const mismatched = SHARED_WITH_APPS.map((name) => ({
     name,
     config: packageDirectory(name, configPath),
     studio: packageDirectory(name, studioPackage),
-  })).filter(({ config, studio }) => config !== studio);
+  })).filter(({ config, studio }) => config !== undefined && config !== studio);
   if (!mismatched.length) {
     return;
   }
@@ -161,7 +158,7 @@ export const assertSingleEui = (
       'The Studio config and @elastic/isomer-studio resolve different copies of packages that Studio apps share:',
       ...mismatched.flatMap(({ name, config, studio }) => [
         `  ${name}`,
-        `    config: ${config ?? '(not installed)'}`,
+        `    config: ${config}`,
         `    studio: ${studio ?? '(not installed)'}`,
       ]),
       `Install the Studio's versions beside the config, then deduplicate your lockfile: ${wanted.join(', ')}.`,
@@ -225,6 +222,9 @@ export const studioConfigFrom = (
       ].join('\n')
     );
   }
+  if (config.apps?.length) {
+    assertSingleEui(configPath);
+  }
   return config;
 };
 
@@ -234,7 +234,6 @@ export const loadStudioConfig = async (
   { loader = 'tsx' }: { loader?: ConfigLoader | undefined } = {}
 ): Promise<StudioConfig> => {
   assertSingleReact(configPath);
-  assertSingleEui(configPath);
   const url = pathToFileURL(configPath).href;
   const namespace: unknown =
     loader === 'none'

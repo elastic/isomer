@@ -212,6 +212,31 @@ describe('studio apps', () => {
     );
   });
 
+  it('checks EUI only for a config with apps', async () => {
+    fakePackage('node_modules/@elastic/eui', '@elastic/eui');
+    const withoutApps = write(
+      'plain.config.mjs',
+      'export default { runtime: { surfaces: {} } };\n'
+    );
+    await expect(
+      loadStudioConfig(withoutApps, { loader: 'none' })
+    ).resolves.toBeDefined();
+
+    const withApps = write(
+      'apps.config.mjs',
+      `export default {
+  runtime: { surfaces: {} },
+  apps: [{ id: 'deck', title: 'Deck', load: () => import('./app.mjs') }],
+};
+`
+    );
+    await expect(
+      loadStudioConfig(withApps, { loader: 'none' })
+    ).rejects.toThrow(
+      `@elastic/eui\n    config: ${join(root, 'node_modules/@elastic/eui')}`
+    );
+  });
+
   it('rejects apps that are not an array', async () => {
     const configPath = write(
       'isomer-studio.config.mjs',

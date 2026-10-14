@@ -144,9 +144,11 @@ export const createPack = (noticeTitle: string) =>
   definePrimitivePack({ id: 'consumer', primitives: [banner, noticeOf(noticeTitle)] });
 `;
 
-const APP = `import React, { useState } from 'react';
+const APP = `/** @jsxImportSource @emotion/react */
+import { useState } from 'react';
 import { EuiButton, EuiPopover, EuiText } from '@elastic/eui';
 import type { StudioAppProps } from '@elastic/isomer-studio';
+import { css } from '@emotion/react';
 
 import styles from './app.module.css';
 import './app.css';
@@ -156,6 +158,7 @@ const DemoApp = ({ Preview, path }: StudioAppProps) => {
   return (
     <div className={styles.panel}>
       <p className="demo-font">Demo app at "{path}"</p>
+      <p data-testid="emotion-styled" css={css\`color: rgb(1, 2, 3);\`}>Styled by Emotion</p>
       <EuiPopover
         button={<EuiButton onClick={() => setOpen(!isOpen)}>Open popover</EuiButton>}
         isOpen={isOpen}
@@ -280,13 +283,17 @@ const DECLARATIONS_TSCONFIG = {
   include: ['declarations.ts'],
 };
 
-const DECLARATIONS = `${Object.keys(PACKED)
-  .map((name, index) => `import type * as Package${index} from '${name}';`)
-  .join('\n')}
+/** Every packed entry the consumer imports. */
+const DECLARED_ENTRIES = [
+  ...Object.keys(PACKED),
+  '@elastic/isomer-sdk/markdown',
+];
 
-export type { ${Object.keys(PACKED)
-  .map((_name, index) => `Package${index}`)
-  .join(', ')} };
+const DECLARATIONS = `${DECLARED_ENTRIES.map(
+  (name, index) => `import type * as Entry${index} from '${name}';`
+).join('\n')}
+
+export type { ${DECLARED_ENTRIES.map((_name, index) => `Entry${index}`).join(', ')} };
 `;
 
 /** Runs a consumer command, failing unless it exits with `expected`. */
@@ -489,6 +496,7 @@ try {
       STUDIO_APP_TITLE: 'Demo',
       STUDIO_APP_FONT: 'DemoFont',
       STUDIO_APP_POPOVER: 'Open popover',
+      STUDIO_APP_EMOTION: 'emotion-styled',
     }),
   });
   if (status !== 0) {

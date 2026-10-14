@@ -35,6 +35,8 @@ const APP_TITLE = process.env.STUDIO_APP_TITLE ?? 'Slide viewer';
 const APP_FONT = process.env.STUDIO_APP_FONT;
 /** The name of a button in the app that opens an EUI popover, when it has one. */
 const APP_POPOVER = process.env.STUDIO_APP_POPOVER;
+/** The test id of an app element whose Emotion `css` prop sets `color: rgb(1, 2, 3)`, when it has one. */
+const APP_EMOTION = process.env.STUDIO_APP_EMOTION;
 const SKIP_DEV = process.env.STUDIO_DEV === '0';
 
 const EDITED_TEXT = 'Edited by the smoke test';
@@ -251,6 +253,12 @@ const exerciseApp = async (page: Page, url: string) => {
         )
       )
       .toBe(true);
+  }
+  if (APP_EMOTION) {
+    await expect(page.getByTestId(APP_EMOTION)).toHaveCSS(
+      'color',
+      'rgb(1, 2, 3)'
+    );
   }
   if (APP_POPOVER) {
     await page.getByRole('button', { name: APP_POPOVER }).click();

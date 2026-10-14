@@ -92,7 +92,7 @@ The page stays mounted when `path`, the theme or the config changes. Edits to th
 
 Apps render under the Studio's own `EuiProvider`. Use EUI components directly, and nest `EuiThemeProvider` to change the theme for part of the page. Never mount a second `EuiProvider`.
 
-EUI's theme and Emotion's cache reach the app only when it imports the same copies the Studio does. A config that installs `@elastic/eui` must therefore resolve the same `@elastic/eui` and `@emotion/react` as the Studio, and `dev`, `build` and `check` stop when it does not. Install the Studio's versions of EUI and its peers beside the config: `@elastic/eui`, `@elastic/eui-theme-borealis`, `@elastic/datemath`, `@emotion/react`, `@emotion/css` and `moment`.
+EUI's theme and Emotion's cache reach the app only when it imports the same copies the Studio does. When a config with apps resolves `@elastic/eui` or `@emotion/react`, it must resolve the Studio's copy, and `dev`, `build` and `check` stop when it does not. A config without apps is not checked. Install the Studio's versions of EUI and its peers beside the config: `@elastic/eui`, `@elastic/eui-theme-borealis`, `@elastic/datemath`, `@emotion/react`, `@emotion/css` and `moment`.
 
 Apps are not inside a shadow root, because EUI's popovers, flyouts, modals and toasts portal to `document.body`.
 
