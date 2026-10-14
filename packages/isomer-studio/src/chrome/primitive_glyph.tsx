@@ -19,17 +19,19 @@ export interface PrimitiveGlyphProps {
   size: number;
 }
 
-/** A primitive's icon as a bare glyph in `currentColor`; its initial when it has no icon. */
-export const PrimitiveGlyph = ({ type, size }: PrimitiveGlyphProps) => {
+/** An icon as a bare glyph in `currentColor`; the label's initial when there is no `svg`. */
+export const Glyph = ({
+  svg,
+  label,
+  size,
+}: {
+  svg: string | undefined;
+  label: string;
+  size: number;
+}) => {
   const {
     euiTheme: { font, colors },
   } = useEuiTheme();
-  const {
-    docs: { primitives },
-  } = useStudio();
-  const doc = primitives.find((primitive) => primitive.type === type);
-  const svg = doc?.definition.icon?.svg;
-  const label = doc?.label ?? type;
   const src = useMemo(
     () =>
       svg
@@ -67,5 +69,20 @@ export const PrimitiveGlyph = ({ type, size }: PrimitiveGlyphProps) => {
       `}>
       {src ? null : label.charAt(0).toUpperCase()}
     </span>
+  );
+};
+
+/** A primitive's {@link Glyph}. */
+export const PrimitiveGlyph = ({ type, size }: PrimitiveGlyphProps) => {
+  const {
+    docs: { primitives },
+  } = useStudio();
+  const doc = primitives.find((primitive) => primitive.type === type);
+  return (
+    <Glyph
+      svg={doc?.definition.icon?.svg}
+      label={doc?.label ?? type}
+      {...{ size }}
+    />
   );
 };

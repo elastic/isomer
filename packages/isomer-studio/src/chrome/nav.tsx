@@ -26,7 +26,7 @@ import type { Accent } from './accent';
 import { useAccent } from './accent';
 import { useClosedNavGroups } from './nav_groups';
 import { navPacks } from './nav_sections';
-import { PrimitiveGlyph } from './primitive_glyph';
+import { Glyph, PrimitiveGlyph } from './primitive_glyph';
 import { PrimitivePeek } from './primitive_peek';
 import type { StudioMode } from './route';
 import { GALLERY } from './route';
@@ -34,6 +34,7 @@ import { GALLERY } from './route';
 export const NAV_WIDTH = { open: 232, closed: 52 } as const;
 
 const NAV_GLYPH_SIZE = 17;
+const APPS_GROUP = 'Apps';
 const ROW_HEIGHT = 28;
 const ROW_GAP = 2;
 const HOVER_ROW = 'rgba(255, 255, 255, 0.08)';
@@ -73,9 +74,12 @@ const NavIcon = ({
 export interface StudioNavProps {
   mode: StudioMode;
   page: string;
+  /** The open app's id; while one is open, no primitive is active. */
+  app?: string | undefined;
   isOpen: boolean;
   onToggle: () => void;
   onSelect: (page: string) => void;
+  onSelectApp: (id: string) => void;
 }
 
 interface NavItem {
@@ -258,15 +262,33 @@ const Group = ({
   );
 };
 
-/** Primitives under collapsible groups, narrowed by a filter, and the docs-only views. */
-export const StudioNav = ({ mode, page, isOpen, onSelect }: StudioNavProps) => {
+/** The config's apps, then primitives under collapsible groups, narrowed by a filter, and the docs-only views. */
+export const StudioNav = ({
+  mode,
+  page,
+  app,
+  isOpen,
+  onSelect,
+  onSelectApp,
+}: StudioNavProps) => {
   const { euiTheme } = useEuiTheme();
-  const accent = useAccent(mode);
+  const accent = useAccent(app === undefined ? mode : 'docs');
   const scrollbar = useEuiScrollBar();
   const {
     runtime,
+    apps,
     docs: { primitives },
   } = useStudio();
+  const appItems = useMemo(
+    (): NavItem[] =>
+      apps.map(({ id, title, icon }) => ({
+        id,
+        label: title,
+        icon: <Glyph svg={icon?.svg} label={title} size={NAV_GLYPH_SIZE} />,
+        isPrimitive: false,
+      })),
+    [apps]
+  );
   const [filter, setFilter] = useState('');
   const { closed, setOpen } = useClosedNavGroups();
   const separatePacks = runtime.packs.length > 1;
@@ -377,14 +399,23 @@ export const StudioNav = ({ mode, page, isOpen, onSelect }: StudioNavProps) => {
     font-weight: ${euiTheme.font.weight.semiBold};
     text-transform: uppercase;
   `;
+  const activePage = app === undefined ? page : undefined;
   const rows = (items: readonly NavItem[]) =>
     items.map((item) => (
       <Row
         key={item.id}
         {...{ item, accent, onSelect }}
-        isActive={item.id === page}
+        isActive={item.id === activePage}
       />
     ));
+  const appRows = appItems.map((item) => (
+    <Row
+      key={item.id}
+      {...{ item, accent }}
+      onSelect={onSelectApp}
+      isActive={item.id === app}
+    />
+  ));
 
   return (
     <nav css={column} aria-label="Primitives">
@@ -403,6 +434,14 @@ export const StudioNav = ({ mode, page, isOpen, onSelect }: StudioNavProps) => {
       <div css={scroller}>
         {isOpen ? (
           <>
+            {appRows.length ? (
+              <Group
+                title="Apps"
+                isOpen={isGroupOpen(APPS_GROUP)}
+                onToggle={() => toggleGroup(APPS_GROUP)}>
+                {appRows}
+              </Group>
+            ) : null}
             {listed.map((pack) => (
               <React.Fragment key={pack.id}>
                 {separatePacks ? <h2 css={packHeading}>{pack.label}</h2> : null}
@@ -428,18 +467,30 @@ export const StudioNav = ({ mode, page, isOpen, onSelect }: StudioNavProps) => {
           </>
         ) : (
           [
+            ...(appItems.length
+              ? [{ key: APPS_GROUP, items: appItems, isApps: true }]
+              : []),
             ...listed.flatMap((pack) => pack.groups),
             ...(gallery.length ? [{ key: 'Views', items: gallery }] : []),
           ].map((group, index) => (
             <div key={group.key} css={rail}>
               {index > 0 ? <EuiHorizontalRule margin="xs" /> : null}
-              {group.items.map((item) => (
-                <RailEntry
-                  key={item.id}
-                  {...{ item, accent, onSelect }}
-                  isActive={item.id === page}
-                />
-              ))}
+              {group.items.map((item) =>
+                'isApps' in group ? (
+                  <RailEntry
+                    key={item.id}
+                    {...{ item, accent }}
+                    onSelect={onSelectApp}
+                    isActive={item.id === app}
+                  />
+                ) : (
+                  <RailEntry
+                    key={item.id}
+                    {...{ item, accent, onSelect }}
+                    isActive={item.id === activePage}
+                  />
+                )
+              )}
             </div>
           ))
         )}

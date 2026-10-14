@@ -29,6 +29,7 @@ import type { ConfigChangeHandler } from './dev_bundle';
 import { DEV_ENTRY_URL, devViteConfig } from './dev_bundle';
 import type { ConfigLoader } from './load_config';
 import {
+  assertSingleEui,
   assertSingleReact,
   loadStudioConfig,
   studioConfigFrom,
@@ -132,6 +133,7 @@ export const startDevServer = async ({
     );
   }
   assertSingleReact(configPath);
+  assertSingleEui(configPath);
   if (loader === 'none') {
     log(
       'PNGs render with the config as loaded now: Node caches a plain import(), so restart dev to pick up config or pack changes.'
