@@ -13,7 +13,7 @@ import { cleanup } from '@testing-library/react';
 import { afterEach } from 'vitest';
 
 // Monaco's theme service reads this when a test imports the editor. jsdom does not provide it.
-if (typeof window.matchMedia !== 'function') {
+if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
   window.matchMedia = (query) => ({
     matches: false,
     media: query,
