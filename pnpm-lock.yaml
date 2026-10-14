@@ -203,6 +203,15 @@ importers:
         specifier: ^4.5.4
         version: 4.6.5
     devDependencies:
+      '@elastic/datemath':
+        specifier: 5.0.3
+        version: 5.0.3(moment@2.31.0)
+      '@elastic/eui':
+        specifier: 123.0.0
+        version: 123.0.0(@elastic/datemath@5.0.3(moment@2.31.0))(@elastic/eui-theme-borealis@8.1.0(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@emotion/css@11.13.5)(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
+      '@elastic/eui-theme-borealis':
+        specifier: 8.1.0
+        version: 8.1.0(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@elastic/isomer-image-takumi':
         specifier: workspace:*
         version: link:../isomer-image-takumi
@@ -212,6 +221,12 @@ importers:
       '@elastic/isomer-studio':
         specifier: workspace:*
         version: link:../isomer-studio
+      '@emotion/css':
+        specifier: 11.13.5
+        version: 11.13.5
+      '@emotion/react':
+        specifier: 11.14.0
+        version: 11.14.0(@types/react@18.3.31)(react@18.3.1)
       '@fontsource/inter':
         specifier: ^5.3.0
         version: 5.3.0
@@ -233,6 +248,9 @@ importers:
       micromark-extension-gfm:
         specifier: ^3.0.0
         version: 3.0.0
+      moment:
+        specifier: 2.31.0
+        version: 2.31.0
       react:
         specifier: ^18.3.1
         version: 18.3.1

@@ -22,6 +22,13 @@ let stylesheet: string | undefined;
 
 export default defineStudioConfig({
   runtime,
+  apps: [
+    {
+      id: 'slides',
+      title: 'Slides',
+      load: () => import('./studio/slides_app'),
+    },
+  ],
   createReactContext: (root) => {
     stylesheet ??= slideStylesheet();
     adoptStylesheet(root, stylesheet);
