@@ -14,7 +14,7 @@ sources:
 # Definition
 
 - Published with the workspace at one version, as the reference pack. Depends on `@elastic/distillate` `^0.2.0` and `@elastic/isomer-sdk` `workspace:*`.
-- Peers: `react` `>=18 <20`, `zod` `^4.4.1`.
+- Peers: `react` `>=18 <20`, `zod` `^4.5.4`.
 - Dev dependencies: `@elastic/isomer-runtime` and `@elastic/isomer-image-takumi` for examples and raster fixtures, and `mdast-util-from-markdown`, `mdast-util-gfm`, and `micromark-extension-gfm` to read Markdown output back in tests.[^package]
 
 Related: [pack](/slides/concepts/pack.md), [distillate](/slides/concepts/distillate.md).

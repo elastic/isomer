@@ -7,8 +7,9 @@
 
 // @vitest-environment jsdom
 
-import { act } from 'react';
+import * as React from 'react';
 import { createRoot } from 'react-dom/client';
+import { act as testUtilsAct } from 'react-dom/test-utils';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
@@ -29,6 +30,9 @@ import {
   threeItemsExample,
 } from '../primitives/slide_timeline/examples';
 import { showSlideBuild, SLIDE_BUILDS, slideBuilds } from '.';
+
+/** `react` exports `act` from 18.3; `react-dom/test-utils` covers earlier 18.x. */
+const { act = testUtilsAct } = React as { act?: typeof testUtilsAct };
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
