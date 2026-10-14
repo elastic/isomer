@@ -9,7 +9,7 @@ description: Run isomer-studio check and build in GitHub Actions with the compos
 
 ## The GitHub Action
 
-The Isomer repository has a composite action that runs both and uploads what they write. Install the workspace's dependencies first, then:
+The Isomer repository has a composite action that runs both and uploads what they write. Install the workspace's dependencies and run `pnpm build` first, since the `isomer-studio` command runs from the Studio's `dist/`. Then:
 
 ```yaml
 - uses: ./.github/actions/isomer-studio
