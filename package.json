@@ -41,6 +41,8 @@
     "check:studio-consumer": "node scripts/check_studio_consumer.js",
     "check:module-graph": "node scripts/check_module_graph.js",
     "check:pack-contents": "node scripts/check_pack_contents.js",
+    "api:report": "node scripts/api_report.js",
+    "api:check": "node scripts/api_report.js --check",
     "licenses:report": "node scripts/licenses_report.js",
     "docs:assemble": "node scripts/assemble_package_docs.js",
     "docs:build": "pnpm docs:assemble && docs-builder",
@@ -50,7 +52,7 @@
     "okf:check": "okf validate .okf/isomer && node scripts/check_okf_anchors.js && node scripts/write_okf_map.js --check",
     "okf:index": "okf index .okf/isomer && pnpm okf:map",
     "okf:map": "node scripts/write_okf_map.js",
-    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm check:export-parity && pnpm check:exports && pnpm check:declarations && pnpm check:pack-contents && pnpm check:module-graph && pnpm check:pack-consumer && pnpm test:browser && pnpm check:studio-consumer && pnpm licenses:report --check",
+    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm api:check && pnpm check:export-parity && pnpm check:exports && pnpm check:declarations && pnpm check:pack-contents && pnpm check:module-graph && pnpm check:pack-consumer && pnpm test:browser && pnpm check:studio-consumer && pnpm licenses:report --check",
     "semantic-release": "node scripts/run_semantic_release.js",
     "prepare": "husky"
   },
