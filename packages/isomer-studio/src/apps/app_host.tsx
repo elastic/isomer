@@ -6,7 +6,13 @@
  */
 
 import type { ComponentType, ReactNode } from 'react';
-import React, { Component, useCallback, useEffect, useState } from 'react';
+import React, {
+  Component,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { EuiButton, EuiCallOut, EuiLoadingSpinner } from '@elastic/eui';
 import { css } from '@emotion/react';
 
@@ -16,7 +22,8 @@ import { AppPreview } from '../surfaces/app_preview';
 
 type AppPage = ComponentType<StudioAppProps>;
 
-type Loaded = { page: AppPage } | { error: Error } | undefined;
+/** `version` counts the distinct pages resolved, so a new page also gets a fresh error boundary. */
+type Loaded = { page: AppPage; version: number } | { error: Error } | undefined;
 
 const asError = (error: unknown): Error =>
   error instanceof Error ? error : new Error(String(error));
@@ -27,15 +34,19 @@ const asError = (error: unknown): Error =>
  */
 const useAppPage = (load: StudioApp['load'], attempt: number): Loaded => {
   const [loaded, setLoaded] = useState<Loaded>();
+  const versions = useRef(0);
   useEffect(() => {
     let isCurrent = true;
-    load().then(
+    // A loader that throws before returning its promise fails like one that rejects.
+    new Promise<Awaited<ReturnType<StudioApp['load']>>>((resolve) =>
+      resolve(load())
+    ).then(
       ({ default: page }) => {
         if (isCurrent) {
           setLoaded((previous) =>
             previous && 'page' in previous && previous.page === page
               ? previous
-              : { page }
+              : { page, version: (versions.current += 1) }
           );
         }
       },
@@ -137,10 +148,10 @@ export const AppHost = ({
   if ('error' in loaded) {
     return <AppError {...{ title, onRetry }} error={loaded.error} />;
   }
-  const { page: Page } = loaded;
+  const { page: Page, version } = loaded;
   return (
     <div css={fill}>
-      <AppBoundary key={attempt} {...{ title, onRetry }}>
+      <AppBoundary key={`${version}/${attempt}`} {...{ title, onRetry }}>
         <Page Preview={AppPreview} {...{ runtime, theme, path, navigate }} />
       </AppBoundary>
     </div>

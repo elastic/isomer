@@ -179,6 +179,36 @@ describe('Studio apps', () => {
     });
   });
 
+  it('shows an error from a loader that throws before returning a promise', async () => {
+    const load: StudioApp['load'] = () => {
+      throw new Error('thrown synchronously');
+    };
+    render(<IsomerStudio {...{ runtime }} apps={[deck(load)]} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Deck' }));
+
+    expect(
+      await screen.findByText('Deck could not load or render')
+    ).toBeInTheDocument();
+    expect(screen.getByText('thrown synchronously')).toBeInTheDocument();
+  });
+
+  it('renders a replacement page after the previous one threw', async () => {
+    const Broken = (): never => {
+      throw new Error('render failed');
+    };
+    const { rerender } = render(
+      <IsomerStudio
+        {...{ runtime }}
+        apps={[deck(() => Promise.resolve({ default: Broken }))]}
+      />
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Deck' }));
+    expect(await screen.findByText('render failed')).toBeInTheDocument();
+
+    rerender(<IsomerStudio {...{ runtime }} apps={[deck(sameLoad())]} />);
+    expect(await countText()).toHaveTextContent('count 0');
+  });
+
   it('shows a load error in place and retries', async () => {
     let fail = true;
     const load: StudioApp['load'] = () =>
