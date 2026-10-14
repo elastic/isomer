@@ -1,6 +1,7 @@
 {
   "name": "@elastic/isomer-studio",
   "version": "0.0.0-development",
+  "private": true,
   "description": "Isomer Studio: a gallery, docs, JSX editor, and every-surface preview for any Isomer pack, run as a dev server, a static site, or a headless CI check.",
   "license": "Elastic-2.0",
   "author": "Elastic",

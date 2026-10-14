@@ -20,7 +20,11 @@ import { UNCATEGORIZED_GROUP_TITLE } from '@elastic/isomer-sdk';
 import type { StudioRuntime } from '../config';
 
 import type { AuthoringTypes } from './authoring_types';
-import { authoringDeclarations, bodyJsonSchema } from './authoring_types';
+import {
+  authoringComponents,
+  authoringDeclarations,
+  bodyJsonSchema,
+} from './authoring_types';
 import type { StudioExample } from './read_examples';
 import { readExamples } from './read_examples';
 
@@ -132,6 +136,7 @@ export const describeRuntime = (runtime: StudioRuntime): RuntimeDocs => {
     authoring: {
       declarations: authoringDeclarations(context.schema, runtime.primitives),
       bodySchema: bodyJsonSchema(context),
+      components: authoringComponents(runtime.primitives),
     },
   };
 };

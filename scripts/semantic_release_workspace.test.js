@@ -88,14 +88,14 @@ describe('shipsChange', () => {
     expect(ships(files)).toBe(true);
   });
 
-  it("counts a change to the Studio's in-package asset builder", () => {
+  it("ignores a change to the Studio's in-package asset builder", () => {
     expect(
       shipsChange(
         ['packages/isomer-studio/build/build_app_assets.js'],
         publishedFolders(workspacePackages()),
         () => undefined
       )
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it.each([

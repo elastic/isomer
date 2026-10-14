@@ -44,21 +44,23 @@ runtime.surfaces.text.render(composition);
 
 | Type | Description |
 | --- | --- |
-| `slideFrame` | The 16:9 root node: the slide body and a one-line footer. Required by the document. |
-| `slideHeading` | A content slide's claim and optional lede. |
+| `titleSlide` | The deck's opening slide, with an optional node beside it. |
+| `agendaSlide` | Every section of the talk, with the current one marked. |
+| `sectionSlide` | A section divider: number, title, and the slides it holds. |
 | `statementSlide` | One thesis sentence set large on a slide of its own. |
 | `quoteSlide` | Someone else's words set large, with the source beneath. |
-| `titleSlide` | The deck's opening slide, with an optional node beside it. |
-| `sectionSlide` | A section divider: number, title, and the slides it holds. |
-| `agendaSlide` | Every section of the talk, with the current one marked. |
 | `closingSlide` | The deck's last slide: links and next steps by goal. |
+| `slideFrame` | The 16:9 root node: the slide body and a one-line footer. Required by the document. |
+| `slideHeading` | A content slide's claim and optional lede. |
 | `slideSource` | One citation line at the foot of a slide. |
 | `slideSplitLayout` | Two panes of slide nodes, with a width ratio and a divider. |
 | `slideStackLayout` | Slide nodes stacked with controlled spacing, for a one-node slot. |
+| `slideWindowLayout` | Slide nodes in one app's title bar: a browser, terminal, chat, or Slack channel. |
 | `slideList` | Short facts, each optionally keyed by a term, with a caption and a footnote. |
 | `slideBulletList` | Short points with a dot, check, or × marker. |
 | `slideDefinitions` | Terms and their meanings as a ruled glossary. |
-| `slideRoadmap` | Planned work in ruled columns by horizon, at most one current. |
+| `slideColumns` | Two to four parallel options, one recommended. |
+| `slideTranscript` | A short exchange between a user, a model, and the host, turn by turn. |
 | `slideFanout` | One source branching to several unordered targets. |
 | `slidePipeline` | Ordered steps along one path, or chips bracketed by who owns each run. |
 | `slideSequence` | Messages between three to five actors, top to bottom in time order. |
@@ -67,6 +69,7 @@ runtime.surfaces.text.render(composition);
 | `slideTerritoryGroup` | Who owns what, one color-keyed column per owner. |
 | `slideGraph` | Named terms in a main chain, with at most one node above and one below. |
 | `slideTimeline` | Dated points on a rail, read left to right, at most one current. |
+| `slideRoadmap` | Planned work in ruled columns by horizon, at most one current. |
 | `slideTree` | A folder and its entries, each with a one-line note. |
 | `slideStat` | One headline number beside the sentence that explains it, as a band under the body. |
 | `slideStats` | Two to four comparable numbers in ruled columns. |
@@ -79,9 +82,6 @@ runtime.surfaces.text.render(composition);
 | `slideCodeTrace` | Two panels of source joined by an arrow, tracing a value from one file to the next. |
 | `slideDiff` | Source with the lines a change added and removed marked. |
 | `slideCommand` | One shell command on a single line, with an optional [Copy button](copy.md). |
-| `slideTranscript` | A short exchange between a user, a model, and the host, turn by turn. |
-| `slideColumns` | Two to four parallel options, one recommended. |
-| `slideWindowLayout` | Slide nodes in one app's title bar: a browser, terminal, chat, or Slack channel. |
 | `slideRender` | Another slide as one surface renders it, or a placeholder for a host reference. |
 | `slideRenderGrid` | One slide on two to six surfaces, side by side. |
 | `slideAnnotatedRender` | A `slideRender` with numbered pins and a legend. |

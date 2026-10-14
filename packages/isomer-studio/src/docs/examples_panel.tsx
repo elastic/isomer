@@ -22,12 +22,14 @@ import { ExamplePicker } from '../surfaces/example_picker';
 import { SurfaceBoard } from '../surfaces/surface_board';
 import type { SurfaceView } from '../surfaces/surface_preview';
 import { SurfaceViewToggle } from '../surfaces/surface_preview';
-import type { SurfaceChoice } from '../surfaces/surface_select';
 import {
   previewSurfaces,
   surfaceNote,
   SurfaceSelect,
+  useSurfaceSelection,
 } from '../surfaces/surface_select';
+
+import { ExampleSource } from './example_source';
 
 export interface ExamplesPanelProps {
   doc: PrimitiveDoc;
@@ -47,10 +49,10 @@ export const ExamplesPanel = ({
   const { runtime, compose, rasterizePng } = useStudio();
   const { examples } = doc;
   const surfaces = previewSurfaces(doc.surfaces, Boolean(rasterizePng));
-  const fallback = surfaces[0] ?? 'all';
-  const [picked, setChoice] = useState<SurfaceChoice>(fallback);
-  const choice =
-    picked === 'all' || surfaces.includes(picked) ? picked : fallback;
+  const { showing, select } = useSurfaceSelection(
+    surfaces,
+    surfaces[0] ? [surfaces[0]] : 'all'
+  );
   const [view, setView] = useState<SurfaceView>('render');
   const selected = examples[example];
 
@@ -78,18 +80,18 @@ export const ExamplesPanel = ({
           border-bottom: ${euiTheme.border.thin};
         `}>
         <EuiFlexItem grow={false}>
-          <SurfaceSelect
-            {...{ surfaces }}
-            value={choice}
-            onChange={setChoice}
+          <ExamplePicker
+            {...{ examples, example }}
+            onChange={onExampleChange}
           />
         </EuiFlexItem>
         <EuiFlexItem />
         <EuiFlexItem grow={false}>
-          <ExamplePicker
-            {...{ examples, example }}
-            onChange={onExampleChange}
+          <SurfaceSelect
+            {...{ surfaces }}
+            selected={showing}
             anchorPosition="downRight"
+            onChange={select}
           />
         </EuiFlexItem>
       </EuiFlexGroup>
@@ -99,7 +101,8 @@ export const ExamplesPanel = ({
           background: ${euiTheme.colors.backgroundBaseSubdued};
         `}>
         <SurfaceBoard
-          {...{ choice, surfaces, composition, validation, view }}
+          surfaces={showing}
+          {...{ composition, validation, view }}
           zoom="fit"
         />
       </div>
@@ -134,7 +137,7 @@ export const ExamplesPanel = ({
             min-width: 0;
           `}>
           <EuiText size="xs" color="subdued">
-            {surfaceNote(choice, surfaces.length)}
+            {surfaceNote(showing, surfaces.length)}
           </EuiText>
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
@@ -147,6 +150,7 @@ export const ExamplesPanel = ({
           </EuiButtonEmpty>
         </EuiFlexItem>
       </EuiFlexGroup>
+      {selected ? <ExampleSource node={selected.node} /> : null}
     </EuiPanel>
   );
 };
