@@ -6,6 +6,7 @@
  */
 
 // Monaco ships this suggest model as JavaScript. The completion test filters through it.
+// These signatures are internal to Monaco and copied by hand: recheck them when `monaco-editor` is upgraded.
 
 declare module 'monaco-editor/esm/vs/editor/contrib/suggest/browser/completionModel' {
   export class CompletionModel {

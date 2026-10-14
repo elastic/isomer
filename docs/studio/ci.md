@@ -9,18 +9,18 @@ description: Run isomer-studio check and build in GitHub Actions with the compos
 
 ## The GitHub Action
 
-The Isomer repository has a composite action that runs both and uploads what they write. Install your dependencies first, including `@elastic/isomer-studio`, then:
+The Isomer repository has a composite action that runs both and uploads what they write. Install the workspace's dependencies first, then:
 
 ```yaml
-- uses: elastic/isomer/.github/actions/isomer-studio@main
+- uses: ./.github/actions/isomer-studio
   with:
-    config: isomer-studio.config.ts
+    config: packages/isomer-primitives-slides/isomer-studio.config.ts
 ```
 
 | Input | Default | What it does |
 | --- | --- | --- |
 | `config` | Required | The config, relative to `working-directory`. |
-| `working-directory` | `.` | Where `@elastic/isomer-studio` is installed. `config`, `out` and `report` resolve against it. |
+| `working-directory` | `.` | Where the `isomer-studio` command resolves. `config`, `out` and `report` resolve against it. |
 | `check` | `true` | Runs `check`, writing a JUnit report. A failure fails the step. |
 | `png` | `false` | Adds `--png` to the check. |
 | `report` | `isomer-studio-report.xml` | Where the report goes. It uploads as `<artifact-name>-report`, even when the check fails. |
@@ -29,7 +29,7 @@ The Isomer repository has a composite action that runs both and uploads what the
 | `base` | `./` | The URL path the site is served from. |
 | `artifact-name` | `isomer-studio` | The name of the uploaded site. |
 
-Pin the action to a release tag rather than `main` once you depend on it. The Isomer repository runs it on the slides pack in its own CI, after `pnpm verify`.
+The Isomer repository runs it on the slides pack in its own CI, after `pnpm verify`.
 
 ## Without the action
 

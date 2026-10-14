@@ -30,7 +30,11 @@ export type PreviewSurface = StudioSurface | 'png';
 /** Every surface, or an explicit subset in display order. */
 export type SurfaceSelection = 'all' | readonly PreviewSurface[];
 
-type SurfaceOption = EuiSelectableOption<{ surface: PreviewSurface }>;
+interface SurfaceOptionData {
+  surface: PreviewSurface | 'all';
+}
+
+type SurfaceOption = EuiSelectableOption<SurfaceOptionData>;
 
 export const PREVIEW_LABELS: Readonly<Record<PreviewSurface, string>> = {
   ...SURFACE_LABELS,
@@ -131,6 +135,19 @@ const Option = ({ icon, label }: { icon: IconType; label: string }) => (
   </EuiFlexGroup>
 );
 
+/** The surfaces to show, and a setter that stores a full selection as `'all'`. */
+export const useSurfaceSelection = (
+  surfaces: readonly PreviewSurface[],
+  initial: SurfaceSelection
+) => {
+  const [selection, setSelection] = useState<SurfaceSelection>(initial);
+  const select = (next: readonly PreviewSurface[]) =>
+    setSelection(next.length === surfaces.length ? 'all' : next);
+  return { showing: resolveSurfaces(surfaces, selection), select };
+};
+
+const MENU_WIDTH = 220;
+
 /** Checks the surfaces to compare. One shows at full size; several share the grid. */
 export const SurfaceSelect = ({
   surfaces,
@@ -147,12 +164,20 @@ export const SurfaceSelect = ({
   const [isOpen, setOpen] = useState(false);
   const summary = surfaceSummary(selected, surfaces);
   const allSelected = selected.length === surfaces.length;
-  const options: SurfaceOption[] = surfaces.map((surface) => ({
-    label: PREVIEW_LABELS[surface],
-    key: surface,
-    surface,
-    checked: selected.includes(surface) ? 'on' : undefined,
-  }));
+  const options: SurfaceOption[] = [
+    {
+      label: 'All surfaces',
+      key: 'all',
+      surface: 'all',
+      checked: allSelected ? 'on' : undefined,
+    },
+    ...surfaces.map((surface): SurfaceOption => ({
+      label: PREVIEW_LABELS[surface],
+      key: surface,
+      surface,
+      checked: selected.includes(surface) ? 'on' : undefined,
+    })),
+  ];
 
   return (
     <EuiPopover
@@ -179,7 +204,7 @@ export const SurfaceSelect = ({
           <span
             css={css`
               display: inline-block;
-              max-width: 220px;
+              max-width: ${MENU_WIDTH}px;
               overflow: hidden;
               text-overflow: ellipsis;
               vertical-align: bottom;
@@ -190,42 +215,24 @@ export const SurfaceSelect = ({
       }>
       <div
         css={css`
-          min-width: 220px;
+          min-width: ${MENU_WIDTH}px;
         `}>
-        <button
-          type="button"
-          onClick={() => onChange([...surfaces])}
-          css={css`
-            display: flex;
-            align-items: center;
-            gap: ${euiTheme.size.s};
-            inline-size: 100%;
-            padding: ${euiTheme.size.s} ${euiTheme.size.m};
-            border: none;
-            border-bottom: ${euiTheme.border.thin};
-            background: transparent;
-            cursor: pointer;
-            font: inherit;
-            color: ${allSelected ? euiTheme.colors.primary : euiTheme.colors.text};
-            font-weight: ${euiTheme.font.weight.medium};
-            text-align: start;
-
-            &:hover {
-              background: ${euiTheme.colors.backgroundBaseSubdued};
-            }
-          `}>
-          <EuiIcon type="chevronSingleDown" size="m" aria-hidden={true} />
-          All surfaces
-        </button>
-        <EuiSelectable<{ surface: PreviewSurface }>
+        <EuiSelectable<SurfaceOptionData>
           aria-label="Surfaces"
           {...{ options }}
           onChange={(_next, _event, { surface }) =>
-            onChange(toggleSurface(surfaces, selected, surface))
+            onChange(
+              surface === 'all'
+                ? [...surfaces]
+                : toggleSurface(surfaces, selected, surface)
+            )
           }
           listProps={{ bordered: false }}
           renderOption={({ surface, label }) => (
-            <Option icon={PREVIEW_ICONS[surface]} {...{ label }} />
+            <Option
+              icon={surface === 'all' ? 'apps' : PREVIEW_ICONS[surface]}
+              {...{ label }}
+            />
           )}>
           {(list) => list}
         </EuiSelectable>

@@ -22,12 +22,11 @@ import type { PreviewZoom } from '../surfaces/scaled_preview';
 import { SurfaceBoard } from '../surfaces/surface_board';
 import type { SurfaceView } from '../surfaces/surface_preview';
 import { SurfaceViewToggle } from '../surfaces/surface_preview';
-import type { SurfaceSelection } from '../surfaces/surface_select';
 import {
   previewSurfaces,
-  resolveSurfaces,
   surfaceNote,
   SurfaceSelect,
+  useSurfaceSelection,
 } from '../surfaces/surface_select';
 import { ZoomSelect } from '../surfaces/zoom_select';
 
@@ -45,11 +44,10 @@ export const PreviewPanel = ({
 }: PreviewPanelProps) => {
   const { euiTheme, colorMode } = useEuiTheme();
   const { rasterizePng } = useStudio();
-  const [selection, setSelection] = useState<SurfaceSelection>('all');
   const [view, setView] = useState<SurfaceView>('render');
   const [zoom, setZoom] = useState<PreviewZoom>('fit');
   const surfaces = previewSurfaces(supported, Boolean(rasterizePng));
-  const showing = resolveSurfaces(surfaces, selection);
+  const { showing, select } = useSurfaceSelection(surfaces, 'all');
   const bar = css`
     flex-grow: 0;
     padding: ${euiTheme.size.s} ${euiTheme.size.base};
@@ -79,9 +77,7 @@ export const PreviewPanel = ({
           <SurfaceSelect
             {...{ surfaces }}
             selected={showing}
-            onChange={(next) =>
-              setSelection(next.length === surfaces.length ? 'all' : next)
-            }
+            onChange={select}
           />
         </EuiFlexItem>
         <EuiFlexItem />
@@ -106,7 +102,11 @@ export const PreviewPanel = ({
           min-height: 0;
           overflow: auto;
           padding: ${euiTheme.size.base};
-          background: ${colorMode === 'DARK' ? '#000' : 'transparent'};
+          background: ${
+            colorMode === 'DARK'
+              ? euiTheme.colors.backgroundBaseRecessed
+              : 'transparent'
+          };
         `}>
         <SurfaceBoard
           surfaces={showing}

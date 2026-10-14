@@ -11,8 +11,11 @@ import {
   EuiButtonIcon,
   EuiCodeBlock,
   EuiCopy,
+  EuiTab,
+  EuiTabs,
   EuiThemeProvider,
   useEuiTheme,
+  useGeneratedHtmlId,
 } from '@elastic/eui';
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { printNodeJsx } from '@elastic/isomer-sdk/author';
@@ -23,6 +26,8 @@ import { useStudio } from '../studio_context';
 const FORMATS = ['jsx', 'json'] as const;
 
 type SourceFormat = (typeof FORMATS)[number];
+
+const SOURCE_MAX_HEIGHT = 280;
 
 const themeWrapper = {
   css: css`
@@ -53,6 +58,9 @@ const SourcePanel = ({
   onClose: () => void;
 }) => {
   const { euiTheme } = useEuiTheme();
+  const idPrefix = useGeneratedHtmlId({ prefix: 'exampleSource' });
+  const panelId = `${idPrefix}-panel`;
+  const tabId = (id: SourceFormat) => `${idPrefix}-${id}`;
   const text = source[format];
 
   return (
@@ -70,49 +78,24 @@ const SourcePanel = ({
           padding-inline: ${euiTheme.size.m};
           border-bottom: ${euiTheme.border.thin};
         `}>
-        <div
-          role="tablist"
+        <EuiTabs
+          size="s"
+          bottomBorder={false}
           aria-label="Example source format"
           css={css`
-            display: flex;
-            gap: ${euiTheme.size.m};
-          `}>
-          {FORMATS.map((id) => {
-            const isSelected = id === format;
-            return (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                id={`example-source-${id}`}
-                aria-selected={isSelected}
-                aria-controls="example-source-panel"
-                onClick={() => onFormat(id)}
-                css={css`
-                  padding-block: ${euiTheme.size.s};
-                  border: none;
-                  font: inherit;
-                  border-bottom: 2px solid
-                    ${isSelected ? euiTheme.colors.primary : 'transparent'};
-                  background: transparent;
-                  color: ${
-                    isSelected
-                      ? euiTheme.colors.text
-                      : euiTheme.colors.textSubdued
-                  };
-                  font-weight: ${euiTheme.font.weight.semiBold};
-                  cursor: pointer;
-                `}>
-                {id.toUpperCase()}
-              </button>
-            );
-          })}
-        </div>
-        <div
-          css={css`
             flex: 1;
-          `}
-        />
+          `}>
+          {FORMATS.map((id) => (
+            <EuiTab
+              key={id}
+              id={tabId(id)}
+              isSelected={id === format}
+              aria-controls={panelId}
+              onClick={() => onFormat(id)}>
+              {id.toUpperCase()}
+            </EuiTab>
+          ))}
+        </EuiTabs>
         <EuiCopy textToCopy={text}>
           {(copy) => (
             <EuiButtonIcon
@@ -132,10 +115,10 @@ const SourcePanel = ({
       </div>
       <div
         role="tabpanel"
-        id="example-source-panel"
-        aria-labelledby={`example-source-${format}`}
+        id={panelId}
+        aria-labelledby={tabId(format)}
         css={css`
-          max-height: 280px;
+          max-height: ${SOURCE_MAX_HEIGHT}px;
           overflow: auto;
         `}>
         <EuiCodeBlock

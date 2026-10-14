@@ -289,6 +289,11 @@ describe('IsomerStudio', () => {
       screen.getByRole('region', { name: 'Text preview' })
     ).toBeInTheDocument();
     expect(screen.getByText(/^Comparing 2 surfaces/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('option', { name: 'All surfaces' }));
+    expect(
+      screen.getByText(/^All \d+ surfaces from the same props\./)
+    ).toBeInTheDocument();
   });
 
   it('picks examples from rendered previews', async () => {

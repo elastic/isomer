@@ -22,12 +22,11 @@ import { ExamplePicker } from '../surfaces/example_picker';
 import { SurfaceBoard } from '../surfaces/surface_board';
 import type { SurfaceView } from '../surfaces/surface_preview';
 import { SurfaceViewToggle } from '../surfaces/surface_preview';
-import type { SurfaceSelection } from '../surfaces/surface_select';
 import {
   previewSurfaces,
-  resolveSurfaces,
   surfaceNote,
   SurfaceSelect,
+  useSurfaceSelection,
 } from '../surfaces/surface_select';
 
 import { ExampleSource } from './example_source';
@@ -50,10 +49,10 @@ export const ExamplesPanel = ({
   const { runtime, compose, rasterizePng } = useStudio();
   const { examples } = doc;
   const surfaces = previewSurfaces(doc.surfaces, Boolean(rasterizePng));
-  const [selection, setSelection] = useState<SurfaceSelection>(
+  const { showing, select } = useSurfaceSelection(
+    surfaces,
     surfaces[0] ? [surfaces[0]] : 'all'
   );
-  const showing = resolveSurfaces(surfaces, selection);
   const [view, setView] = useState<SurfaceView>('render');
   const selected = examples[example];
 
@@ -92,9 +91,7 @@ export const ExamplesPanel = ({
             {...{ surfaces }}
             selected={showing}
             anchorPosition="downRight"
-            onChange={(next) =>
-              setSelection(next.length === surfaces.length ? 'all' : next)
-            }
+            onChange={select}
           />
         </EuiFlexItem>
       </EuiFlexGroup>
