@@ -11,4 +11,4 @@ paths:
     - "NOTICE.txt"
     - ".okf/**/index.md"
 publication:
-  publish_min_severity: 2
+  publish_min_severity: P3
