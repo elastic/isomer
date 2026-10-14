@@ -15,6 +15,7 @@
     "**/*.test.tsx",
     "src/fixtures/**",
     "src/test_setup.ts",
+    "src/dev/monaco_suggest.d.ts",
     "dev/**"
   ],
   "references": [

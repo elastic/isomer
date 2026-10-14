@@ -249,10 +249,13 @@ const completionRange = (
   const pending = PENDING_TAG.exec(text);
   const { lineNumber, column } = position;
   return {
-    startLineNumber: lineNumber,
-    endLineNumber: lineNumber,
-    startColumn: pending ? column - pending[0].length : word.startColumn,
-    endColumn: pending ? column : word.endColumn,
+    pending,
+    range: {
+      startLineNumber: lineNumber,
+      endLineNumber: lineNumber,
+      startColumn: pending ? column - pending[0].length : word.startColumn,
+      endColumn: pending ? column : word.endColumn,
+    },
   };
 };
 
@@ -274,7 +277,7 @@ export const componentCompletionProvider = (
     ) {
       return { suggestions: [] };
     }
-    const range = completionRange(
+    const { pending, range } = completionRange(
       text,
       position,
       model.getWordUntilPosition(position)
@@ -284,6 +287,8 @@ export const componentCompletionProvider = (
         label: name,
         kind: languages.CompletionItemKind.Class,
         insertText: `<${name} `,
+        // Monaco filters on the replaced text, which includes the typed `<`.
+        ...(pending ? { filterText: `<${name}` } : {}),
         range,
         command: { id: 'editor.action.triggerSuggest', title: '' },
       })),

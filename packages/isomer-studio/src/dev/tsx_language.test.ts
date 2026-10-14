@@ -5,6 +5,8 @@
  * 2.0.
  */
 
+import { CompletionModel } from 'monaco-editor/esm/vs/editor/contrib/suggest/browser/completionModel';
+import { CompletionItem } from 'monaco-editor/esm/vs/editor/contrib/suggest/browser/suggest';
 import {
   type CancellationToken,
   editor,
@@ -114,6 +116,7 @@ describe('component completions', () => {
     const callout = result.suggestions.find(({ label }) => label === 'Callout');
     expect(result.suggestions.map(({ label }) => label)).toEqual(COMPONENTS);
     expect(callout?.insertText).toBe('<Callout ');
+    expect(callout).toMatchObject({ filterText: '<Callout' });
     expect(callout && inserted(model, callout)).toBe(
       '<Composition>\n<Callout '
     );
@@ -141,6 +144,38 @@ describe('component completions', () => {
     expect((await suggestionsAt('<Callout tone=')).result.suggestions).toEqual(
       []
     );
+  });
+
+  it('stays visible when Monaco filters on a typed opener', async () => {
+    const labels = async (text: string) => {
+      const { model, result } = await suggestionsAt(text);
+      const position = model.getPositionAt(model.getValueLength());
+      const items = result.suggestions.map(
+        (completion) =>
+          new CompletionItem(
+            position,
+            completion,
+            { suggestions: result.suggestions, incomplete: false },
+            provider
+          )
+      );
+      const visible = new CompletionModel(
+        items,
+        position.column,
+        {
+          leadingLineContent: model.getLineContent(position.lineNumber),
+          characterCountDelta: 0,
+        },
+        { distance: () => 0 },
+        { filterGraceful: true },
+        'inline'
+      );
+      return visible.items.map(({ textLabel }) => textLabel);
+    };
+
+    expect(await labels('<Composition>\n<')).toEqual(COMPONENTS);
+    expect((await labels('<Composition>\n<Ca'))[0]).toBe('Callout');
+    expect((await labels('<Composition>\n<St'))[0]).toBe('Stack');
   });
 
   it('stays quiet unless completion was invoked', async () => {
