@@ -14,7 +14,7 @@ A runtime needs this package, the SDK, a pack, `zod`, `react`, and `react-dom`. 
     "@elastic/isomer-sdk": "^0.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "zod": "^4.4.1"
+    "zod": "^4.5.4"
   }
 }
 ```

@@ -975,7 +975,7 @@ describe('buildAuthoringDeclarations', () => {
           {
             '/virtual/isomer.d.ts': declarations,
             '/virtual/use.tsx':
-              'const hostElement: JSX.Element = React.createElement("div"); <Composition><Callout>Hello</Callout></Composition>;',
+              'const hostElement: React.JSX.Element = React.createElement("div"); <Composition><Callout>Hello</Callout></Composition>;',
           },
           {
             types: ['react'],

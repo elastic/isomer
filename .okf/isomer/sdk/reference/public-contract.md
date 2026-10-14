@@ -16,7 +16,7 @@ sources:
 
 # Definition
 
-- Source available under the Elastic License 2.0 (SPDX: `Elastic-2.0`). Publishes as `@elastic/isomer-sdk` with public access, at the workspace's one version. Peers: `react` `>=18 <20` and `zod` `^4.4.1` are required. `react-dom` `>=18 <20` is optional and needed by `./html`.[^package]
+- Source available under the Elastic License 2.0 (SPDX: `Elastic-2.0`). Publishes as `@elastic/isomer-sdk` with public access, at the workspace's one version. Peers: `react` `>=18 <20` and `zod` `^4.5.4` are required. `react-dom` `>=18 <20` is optional and needed by `./html`.[^package]
 - Dependencies: `acorn`, which `./html` uses to embed scripts, and the GFM parser and serializer (`mdast-util-from-markdown`, `micromark-extension-gfm`, `mdast-util-to-markdown`, `mdast-util-gfm`), which the root, `./markdown`, and `./slack` reach. `./text` reaches nothing; `./testing` is the only entry that reaches Node built-ins.
 - Entries: `.` · `./html` · `./text` · `./markdown` · `./slack` · `./react` · `./author` · `./testing`, each with `import` and `require` conditions and a `typesVersions` mapping for `Node10` resolvers. The tarball carries `dist`, `LICENSE.txt`, `NOTICE.txt`, and `THIRD_PARTY_LICENSES.md`.
 - Dual ESM/CJS. `engines.node` `>=22.13.0`. `zod` stays a peer; do not add it to `dependencies`.

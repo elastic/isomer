@@ -10,6 +10,7 @@ import {
   createElement,
   type ReactElement,
   type ReactNode,
+  type Ref,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -142,7 +143,11 @@ const ScriptedSection = ({
       runEnhancementScript(js, root);
     }
   }, [key]);
-  return cloneElement(section, { key, ref });
+  // React 19 types `ReactElement` props as `unknown`, which `cloneElement` will not extend with `ref`.
+  return cloneElement(section as ReactElement<{ ref?: Ref<HTMLElement> }>, {
+    key,
+    ref,
+  });
 };
 
 /**

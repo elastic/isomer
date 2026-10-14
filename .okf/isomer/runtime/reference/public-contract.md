@@ -18,7 +18,7 @@ sources:
 
 - Source available under the Elastic License 2.0 (SPDX: `Elastic-2.0`). Publishes as `@elastic/isomer-runtime` with public access, at the workspace's one version.
 - Depends on `@elastic/isomer-sdk`: `workspace:*` in the repository, which `pnpm publish` rewrites to the release version, so a published runtime pins the SDK at its own version and the two install together.[^package][^release]
-- Peers: `react`, `react-dom` `>=18 <20`, `zod` `^4.4.1`. All required, because the root entry always constructs the `react` and `html` surfaces, and `html` loads `react-dom/server`.
+- Peers: `react`, `react-dom` `>=18 <20`, `zod` `^4.5.4`. All required, because the root entry always constructs the `react` and `html` surfaces, and `html` loads `react-dom/server`.
 - One entry point, `.`, with `import` and `require` conditions: ESM under `dist/`, CommonJS under `dist/cjs/`, types from `dist/index.d.ts`. The tarball carries `dist`, `LICENSE.txt`, `NOTICE.txt`, and `THIRD_PARTY_LICENSES.md`.
 - `engines.node` `>=22.13.0`. No Node built-ins, so the package runs in a browser, on a server, or in an edge function.[^package]
 
