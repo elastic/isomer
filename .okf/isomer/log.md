@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-14
+
+- **Studio apps**: a config's `apps` adds pages under Apps in the nav, at `#/app/<id>/<path>`. Each is `{ id, title, icon?, load }`, and `load` imports a page that receives `Preview`, `runtime`, `theme`, `path` and `navigate`. `Preview` renders pack output in a shadow root through `compose`. Apps render under the Studio's `EuiProvider`, and `assertSingleEui` stops a config whose `@elastic/eui` or `@emotion/react` differs from the Studio's. `dev`, `build` and `check` reject invalid apps by name, a browser hot update with invalid apps keeps the last valid ones, and `check` counts apps without loading them. A static build bundles the config's CSS, apps included, into `assets/app.css`, with `.module.css` as CSS Modules; the Studio's own stylesheet is now `assets/studio.css`. The slides pack's Studio adds a Slide viewer app.
+
 ## 2026-10-13
 
 - **Studio stays private**: `@elastic/isomer-studio` sets `"private": true`, so the release workflow does not publish it, and it runs from this repository: the CI docs use the action by its local path, and no doc tells a pack to install it.

@@ -1,7 +1,7 @@
 ---
 type: Concept
 title: Config contract
-description: A Studio config supplies a runtime, and optionally a title, createReactContext and compose; the CLI supplies JSX compilation and PNGs per mode.
+description: A Studio config supplies a runtime, and optionally a title, createReactContext, compose and apps; the CLI supplies JSX compilation and PNGs per mode.
 resource: https://github.com/elastic/isomer/blob/main/packages/isomer-studio/src/config.ts
 tags: [isomer, studio]
 status: stable
@@ -22,11 +22,14 @@ sources:
   - id: dev
     resource: https://github.com/elastic/isomer/blob/main/packages/isomer-studio/src/node/dev_bundle.ts
     title: Dev server Vite config
+  - id: apps
+    resource: https://github.com/elastic/isomer/blob/main/packages/isomer-studio/src/apps/app_host.tsx
+    title: App host
 ---
 
 # Definition
 
-A config default-exports `defineStudioConfig({ runtime, title?, createReactContext?, compose? })`. `createReactContext(root)` styles the React preview inside a shadow root; without it the React preview shows the `html` surface. `adoptStylesheet(root, css)` parses that CSS once per document and adopts the sheet onto each preview's shadow root, appending a `style` element where constructable stylesheets are missing.[^stylesheet] `compose(nodes, { theme })` wraps example nodes in a composition and defaults to `{ type: 'view', body: nodes, theme }`. `theme` is the resolved color mode, `light` or `dark`. The header offers Light, Dark, and System; System follows `prefers-color-scheme` as it changes, and the choice is remembered in `localStorage`, so previews match the chrome.[^config]
+A config default-exports `defineStudioConfig({ runtime, title?, createReactContext?, compose?, apps? })`. `createReactContext(root)` styles the React preview inside a shadow root; without it the React preview shows the `html` surface. `adoptStylesheet(root, css)` parses that CSS once per document and adopts the sheet onto each preview's shadow root, appending a `style` element where constructable stylesheets are missing.[^stylesheet] `compose(nodes, { theme })` wraps example nodes in a composition and defaults to `{ type: 'view', body: nodes, theme }`. `theme` is the resolved color mode, `light` or `dark`. The header offers Light, Dark, and System; System follows `prefers-color-scheme` as it changes, and the choice is remembered in `localStorage`, so previews match the chrome.[^config]
 
 The header and the page title are `Isomer Studio` unless `title` replaces them; `title` is also the `check` report name. With one pack, the sidebar lists that pack's primitives under its authoring groups. With more than one, each pack is a heading and its groups follow. Groups stay in pack order, each sorted by label, with ungrouped primitives last under Uncategorized (`UNCATEGORIZED_GROUP_TITLE`). Groups collapse, closed ones are remembered in `localStorage` (keyed by pack and group when there is more than one pack), and a filter forces every matching group open.
 
@@ -38,6 +41,8 @@ For `check` and `build`, the config loads once in Node through `tsx`'s `tsImport
 
 In `dev`, the page loads a virtual entry that mounts the Studio and accepts hot updates to the config, re-rendering with the new config without remounting, so the route and view state survive. Studio components get React Fast Refresh when the CLI runs from source (`pnpm studio:dev`). `build.rolldownOptions.input` names the config and the browser host modules so Vite's dependency scanner finds Monaco's lazy imports before the first request.[^dev]
 
+Each of `apps` is `{ id, title, icon?, load }`: a page under Apps in the nav at `#/app/<id>/<path>`, where `load` imports a module whose default export is the page. The page gets `Preview`, which renders `nodes` through `compose`, or a `composition`, inside a shadow root, plus `runtime`, `theme`, `path` and `navigate`. `appProblems` validates `apps` when the config loads and again on each browser hot update, which keeps the last valid apps. The lazy page is cached by id and `load`'s source with Vite's `?t=` stamps removed, so a config re-run keeps an open app mounted and Fast Refresh updates its module in place. `check` counts apps without calling `load` and validates their icons. Apps render under the Studio's `EuiProvider` without a shadow root, so `assertSingleEui` stops a config that resolves a different `@elastic/eui` or `@emotion/react` from the Studio. A static build bundles every stylesheet the config reaches, lazy apps included, into `assets/app.css`: `.module.css` is a CSS Module, plain `.css` stays global, and Monaco's CSS imports are emptied because `assets/studio.css` carries them.[^apps]
+
 Related: [static PNGs](/studio/concepts/static-png.md), [root and CLI](/studio/entry-points/root.md).
 
 [^config]: Config types
@@ -45,3 +50,4 @@ Related: [static PNGs](/studio/concepts/static-png.md), [root and CLI](/studio/e
 [^loader]: Config loader
 [^stylesheet]: adoptStylesheet
 [^dev]: Dev server Vite config
+[^apps]: App host

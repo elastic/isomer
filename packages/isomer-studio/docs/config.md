@@ -1,11 +1,11 @@
 ---
 navigation_title: The config
-description: What an isomer-studio.config.ts exports, how compose wraps examples, and how the Studio loads the config in Node and the browser.
+description: What an isomer-studio.config.ts exports, how compose wraps examples, how apps add pages, and how the Studio loads the config in Node and the browser.
 ---
 
 # The config
 
-A config file default-exports `defineStudioConfig({ ... })`. `defineStudioConfig` returns its argument; it exists so the object is typed. The runtime exports are `defineStudioConfig` and `adoptStylesheet`, beside the `StudioConfig`, `StudioCompose`, `StudioRuntime` and `StudioTheme` types.
+A config file default-exports `defineStudioConfig({ ... })`. `defineStudioConfig` returns its argument; it exists so the object is typed. The runtime exports are `defineStudioConfig` and `adoptStylesheet`. The types are `StudioConfig`, `StudioCompose`, `StudioRuntime`, `StudioTheme`, and, for [apps](#apps), `StudioApp`, `StudioAppProps`, `StudioPreviewProps` and `PreviewZoom`.
 
 ```ts
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
@@ -40,6 +40,7 @@ export default defineStudioConfig({
 | `title` | No | Replaces the header, the page title, and the `check` report name. Defaults to `Isomer Studio`. Leave it unset to keep the product name; a runtime with more than one pack shows each pack in the nav. |
 | `createReactContext(root)` | No | Styles the React preview, which renders inside a shadow root. Call `adoptStylesheet(root, css)` with the pack's stylesheet and return the render context its renderers expect. Without it, the React preview shows the `html` surface instead. |
 | `compose(nodes, { theme })` | No | Wraps example nodes in a composition. Defaults to `{ type: 'view', body: nodes, theme }`. |
+| `apps` | No | Pages that demonstrate the pack, listed under Apps in the nav. See [Apps](#apps). |
 
 ## `compose`
 
@@ -48,6 +49,62 @@ Examples are nodes, not compositions. Every place the Studio needs a composition
 The default fits a pack whose primitives render inside a plain `view`. A pack whose frame requires a particular root writes its own. The slides frame draws exactly one `slideFrame`, so the slides `compose` wraps a lone node in a preview slide, and passes a node that is already a `slideFrame` through unwrapped.
 
 `compose` receives the theme the Studio is showing, `light` or `dark`, and puts it on the composition. That theme is the app's color mode, so previews always match the chrome around them. Light and dark are then different compositions, which is how a static build tells their PNGs apart.
+
+## Apps
+
+An app is a whole page of the Studio, such as a deck viewer. Each one gets a nav entry under Apps and a route at `#/app/<id>/`.
+
+```ts
+export default defineStudioConfig({
+  runtime,
+  apps: [{ id: 'slides', title: 'Slide viewer', load: () => import('./studio/slides_app') }],
+});
+```
+
+| Field | Required | What it does |
+| --- | --- | --- |
+| `id` | Yes | The route segment, matching `/^[a-z][a-z0-9-]*$/` and unique within the config. |
+| `title` | Yes | The nav entry and the header's label while the app is open. |
+| `icon` | No | A `PrimitiveIcon`, held to the same rules as a primitive's icon by `check`. Without one, the nav shows the title's initial. |
+| `load` | Yes | Imports a module whose default export is the app's page. |
+
+`dev`, `build` and `check` reject invalid apps and name each one. A hot update with invalid apps keeps the last valid ones and shows why. `check` counts the apps but never calls `load`.
+
+### The page
+
+The page is a React component, and the Studio hands it `StudioAppProps`:
+
+| Prop | What it is |
+| --- | --- |
+| `Preview` | Renders pack output inside a shadow root, isolated from the app's styles and the Studio's. Pass `nodes`, which go through the config's `compose` at the current theme, or a finished `composition`. `zoom` defaults to `fit`, and `maxHeight` caps a fitted preview's height. Without `createReactContext`, it shows the `html` surface. |
+| `runtime` | The config's runtime. |
+| `theme` | `light` or `dark`, following the Studio's color mode. |
+| `path` | Everything after `#/app/<id>/`, slashes included. |
+| `navigate(path)` | Moves to another `path` within the app, adding a history entry. |
+
+Import only types from `@elastic/isomer-studio` in an app module. The Studio hands the page everything it needs as props.
+
+The page stays mounted when `path`, the theme or the config changes. Edits to the app module update it in place through React Fast Refresh, as long as the module exports only components. A module that exports anything else re-runs the config instead.
+
+`load` runs only in the browser. Node imports the config for `check` and `build`, but never calls `load`, so code that must stay off the server belongs behind it.
+
+### EUI
+
+Apps render under the Studio's own `EuiProvider`. Use EUI components directly, and nest `EuiThemeProvider` to change the theme for part of the page. Never mount a second `EuiProvider`.
+
+EUI's theme and Emotion's cache reach the app only when it imports the same copies the Studio does. A config that installs `@elastic/eui` must therefore resolve the same `@elastic/eui` and `@emotion/react` as the Studio, and `dev`, `build` and `check` stop when it does not. Install the Studio's versions of EUI and its peers beside the config: `@elastic/eui`, `@elastic/eui-theme-borealis`, `@elastic/datemath`, `@emotion/react`, `@emotion/css` and `moment`.
+
+Apps are not inside a shadow root, because EUI's popovers, flyouts, modals and toasts portal to `document.body`.
+
+### CSS
+
+| Form | Scope | Notes |
+| --- | --- | --- |
+| Emotion's `css` | Scoped | Needs `@emotion/react` as the JSX import source: add `/** @jsxImportSource @emotion/react */` to the file, or set `jsxImportSource` in a `tsconfig.json` for the app's folder. |
+| CSS Modules, `*.module.css` | Scoped | TypeScript needs a declaration such as `declare module '*.module.css' { const classes: Readonly<Record<string, string>>; export default classes; }`. |
+| Plain `.css` | Global | Scope its selectors under the app's root element. `url()`s to fonts and images resolve under any `--base`. |
+
+In `dev`, a stylesheet loads when the app first opens. A static build bundles every stylesheet the config imports into `assets/app.css`, which loads with the page.
 
 ## Surfaces a runtime may lack
 
