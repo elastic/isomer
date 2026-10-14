@@ -228,7 +228,7 @@ test.describe('static build', () => {
     ).toBeGreaterThan(0);
 
     const [lightPng] = pngRequests;
-    await page.getByRole('button', { name: 'Switch to dark mode' }).click();
+    await page.getByRole('button', { name: 'Dark' }).click();
     await expect.poll(() => pngRequests.length).toBeGreaterThan(1);
     expect(pngRequests.at(-1)).not.toBe(lightPng);
     await expectPngLoaded(page);

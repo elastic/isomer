@@ -128,7 +128,7 @@ Slack gets its blocks through the Markdown fallback, because the pack wrote no S
 | Browse, check, and publish a pack's primitives | [`@elastic/isomer-studio`](packages/isomer-studio/README.md) |
 | Hand a runtime to an agent as tools | [`@elastic/isomer-agent-tools`](packages/isomer-agent-tools/README.md) |
 
-The published packages ship together at one version: the two a host installs, a host-side rasterizer, and the Studio a pack installs as a dev dependency. The reference pack, the evals harness, and the agent tools stay private in the repository.
+The published packages ship together at one version: the two a host installs and a host-side rasterizer. The reference pack, the evals harness, the Studio, and the agent tools stay private in the repository.
 
 ## Development
 

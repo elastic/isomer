@@ -11,7 +11,7 @@ inputs:
     description: The Studio config, relative to working-directory.
     required: true
   working-directory:
-    description: Where @elastic/isomer-studio is installed; config, out and report resolve against it.
+    description: Where the isomer-studio command resolves; config, out and report resolve against it.
     default: .
   check:
     description: Run isomer-studio check and fail the step on any failure.

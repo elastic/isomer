@@ -17,7 +17,7 @@ import { PngSurface } from './png_surface';
 import type { PreviewZoom } from './scaled_preview';
 import type { SurfaceView } from './surface_preview';
 import { SurfacePreview } from './surface_preview';
-import type { PreviewSurface, SurfaceChoice } from './surface_select';
+import type { PreviewSurface } from './surface_select';
 import {
   isVisualSurface,
   PREVIEW_ICONS,
@@ -26,6 +26,10 @@ import {
 } from './surface_select';
 
 const CARD_MIN_WIDTH = 360;
+
+/** Two columns from the width of three {@link CARD_MIN_WIDTH} cards, gaps included. Never three. */
+const twoColumnBreak = (gap: string) =>
+  `calc(${CARD_MIN_WIDTH}px * 3 + ${gap} * 2)`;
 
 interface RenderProps {
   composition: Composition;
@@ -117,13 +121,11 @@ const SurfaceCard = ({
 };
 
 export interface SurfaceBoardProps extends RenderProps {
-  choice: SurfaceChoice;
   surfaces: readonly PreviewSurface[];
 }
 
-/** Every surface as a grid of scaled cards, or the chosen one at full size. */
+/** One surface at full size, or several as a grid that stops at two columns. */
 export const SurfaceBoard = ({
-  choice,
   surfaces,
   composition,
   validation,
@@ -131,12 +133,13 @@ export const SurfaceBoard = ({
   zoom,
 }: SurfaceBoardProps) => {
   const { euiTheme } = useEuiTheme();
+  const [only] = surfaces;
 
-  if (choice !== 'all') {
+  if (surfaces.length === 1 && only) {
     return (
-      <section aria-label={`${PREVIEW_LABELS[choice]} preview`}>
+      <section aria-label={`${PREVIEW_LABELS[only]} preview`}>
         <SurfaceRender
-          surface={choice}
+          surface={only}
           {...{ composition, validation, view, zoom }}
         />
       </section>
@@ -146,19 +149,25 @@ export const SurfaceBoard = ({
   return (
     <div
       css={css`
-        display: grid;
-        grid-template-columns: repeat(
-          auto-fill,
-          minmax(min(${CARD_MIN_WIDTH}px, 100%), 1fr)
-        );
-        gap: ${euiTheme.size.base};
+        container: surfaces / inline-size;
       `}>
-      {surfaces.map((surface) => (
-        <SurfaceCard
-          key={surface}
-          {...{ surface, composition, validation, view }}
-        />
-      ))}
+      <div
+        css={css`
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          gap: ${euiTheme.size.base};
+
+          @container surfaces (min-width: ${twoColumnBreak(euiTheme.size.base)}) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        `}>
+        {surfaces.map((surface) => (
+          <SurfaceCard
+            key={surface}
+            {...{ surface, composition, validation, view }}
+          />
+        ))}
+      </div>
     </div>
   );
 };

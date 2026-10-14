@@ -17,7 +17,6 @@ import {
 } from '@elastic/eui';
 import { css } from '@emotion/react';
 
-import type { StudioTheme } from '../config';
 import { useStudio } from '../studio_context';
 
 import type { Accent } from './accent';
@@ -36,8 +35,7 @@ export interface StudioHeaderProps {
   title?: string | undefined;
   mode: StudioMode;
   accent: Accent;
-  /** The theme shown; the toggle switches to the other one. */
-  theme: StudioTheme;
+  colorMode: ColorModePreference;
   onModeChange: (mode: StudioMode) => void;
   onColorModeChange: (colorMode: ColorModePreference) => void;
   onSelectPrimitive: (type: string) => void;
@@ -106,30 +104,47 @@ const Search = ({
   );
 };
 
-const ThemeToggle = ({
-  theme,
-  onColorModeChange,
-}: Pick<StudioHeaderProps, 'theme' | 'onColorModeChange'>) => {
-  const next = theme === 'dark' ? 'light' : 'dark';
-  const label = `Switch to ${next} mode`;
+const COLOR_MODES: {
+  id: ColorModePreference;
+  label: string;
+  iconType: 'sun' | 'moon' | 'display';
+}[] = [
+  { id: 'system', label: 'System', iconType: 'display' },
+  { id: 'light', label: 'Light', iconType: 'sun' },
+  { id: 'dark', label: 'Dark', iconType: 'moon' },
+];
 
-  return (
-    <EuiButtonIcon
-      iconType={theme === 'dark' ? 'sun' : 'moon'}
-      color="text"
-      aria-label={label}
-      title={label}
-      onClick={() => onColorModeChange(next)}
-    />
-  );
-};
+const isColorMode = (id: string): id is ColorModePreference =>
+  COLOR_MODES.some((option) => option.id === id);
+
+const ColorModePicker = ({
+  colorMode,
+  onColorModeChange,
+}: Pick<StudioHeaderProps, 'colorMode' | 'onColorModeChange'>) => (
+  <EuiButtonGroup
+    legend="Color mode"
+    buttonSize="s"
+    variant="selection"
+    idSelected={colorMode}
+    display="highlighted"
+    onChange={(id) => isColorMode(id) && onColorModeChange(id)}>
+    {COLOR_MODES.map(({ id, label, iconType }) => (
+      <EuiButtonIcon
+        key={id}
+        {...{ id, iconType }}
+        aria-label={label}
+        title={label}
+      />
+    ))}
+  </EuiButtonGroup>
+);
 
 /** Title, the Dev/Docs switch, search and the color mode. */
 export const StudioHeader = ({
   title = 'Isomer Studio',
   mode,
   accent,
-  theme,
+  colorMode,
   onModeChange,
   onColorModeChange,
   onSelectPrimitive,
@@ -175,7 +190,10 @@ export const StudioHeader = ({
         display="highlighted"
         onChange={(id) => isMode(id) && onModeChange(id)}>
         {MODE_OPTIONS.map(({ id, label }) => (
-          <EuiButton key={id} id={id}>
+          <EuiButton
+            key={id}
+            id={id}
+            iconType={id === 'dev' ? 'code' : 'document'}>
             {label}
           </EuiButton>
         ))}
@@ -188,7 +206,7 @@ export const StudioHeader = ({
           gap: ${euiTheme.size.s};
         `}>
         <Search {...{ onSelectPrimitive }} />
-        <ThemeToggle {...{ theme, onColorModeChange }} />
+        <ColorModePicker {...{ colorMode, onColorModeChange }} />
       </div>
     </header>
   );

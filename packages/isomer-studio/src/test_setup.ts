@@ -12,6 +12,20 @@ import { createRequire } from 'node:module';
 import { cleanup } from '@testing-library/react';
 import { afterEach } from 'vitest';
 
+// Monaco's theme service reads this when a test imports the editor. jsdom does not provide it.
+if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
+  window.matchMedia = (query) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    dispatchEvent: () => false,
+  });
+}
+
 interface EmotionCache {
   sheet: { flush: () => void };
   inserted: Record<string, unknown>;
