@@ -215,7 +215,7 @@ describe('appBuildOptions', () => {
       minify: false,
       metafile: true,
     });
-    const { bundle, chunks } = appStylesheets(metafile);
+    const { bundle, chunks } = appStylesheets(metafile, 'consumer/entry.js');
 
     expect(bundle).toBe('out/assets/app.css');
     const css = readFileSync(join(root, 'out/assets/app.css'), 'utf8');

@@ -163,15 +163,19 @@ export const appBuildOptions = ({
   ],
 });
 
+/** The bundle entry's id in an esbuild metafile. */
+const APP_ENTRY_POINT = `isomer-studio:${ENTRY}`;
+
 /**
  * The entry's CSS bundle, relative to the working directory: every CSS file the config reaches, lazy chunks
  * included, with `url()`s relative to `assets/`. The per-chunk CSS esbuild also writes is never linked.
  */
 export const appStylesheets = (
-  metafile: Metafile
+  metafile: Metafile,
+  entryPoint: string = APP_ENTRY_POINT
 ): { bundle: string | undefined; chunks: string[] } => {
   const bundle = Object.values(metafile.outputs).find(
-    ({ entryPoint }) => entryPoint !== undefined
+    (output) => output.entryPoint === entryPoint
   )?.cssBundle;
   return {
     bundle,
