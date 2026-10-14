@@ -86,7 +86,7 @@ A renderer is not told the scheme on `react` or `html`. Under `auto` the page al
 
 - **Inline styles.** An inline style beats every class rule, so a class cannot correct it. Write the literal from `env.theme` when it is present, which is on `snapshot`, and `light-dark(…)` otherwise.
 
-- **Canvas or other output drawn in the browser.** Read the scheme where it has been resolved, from the closest `[data-theme]` the wrapper sets and otherwise `prefers-color-scheme`, and redraw when either changes.
+- **Canvas or other output drawn in the browser.** Read the scheme as CSS resolved it, not from `[data-theme]` or `prefers-color-scheme`: a host can set `color-scheme` on any ancestor. Give an element inside the wrapper `color: light-dark(#000, #fff)`, or a pack token holding `light-dark(…)`, and draw from its computed `color`. Read it again when `prefers-color-scheme` changes or the host switches its scheme.
 
 ## Enhancements
 
