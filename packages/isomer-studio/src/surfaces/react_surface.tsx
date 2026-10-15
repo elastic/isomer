@@ -6,7 +6,7 @@
  */
 
 import type { ReactNode } from 'react';
-import React, { Component, useMemo } from 'react';
+import React, { Component, useLayoutEffect, useMemo } from 'react';
 import { EuiCallOut } from '@elastic/eui';
 import type { Composition, StyledRenderContext } from '@elastic/isomer-sdk';
 
@@ -53,13 +53,21 @@ class RenderBoundary extends Component<
   }
 }
 
+export interface ReactSurfaceProps {
+  composition: Composition;
+  enhancements?: readonly string[] | undefined;
+  /** Runs after each commit of the shadow root's content; the `html` fallback has no root to hand it. */
+  onCommit?: ((root: ShadowRoot) => void) | undefined;
+}
+
 const ReactContent = ({
   root,
   composition,
+  enhancements,
+  onCommit,
   createReactContext,
-}: {
+}: ReactSurfaceProps & {
   root: ShadowRoot;
-  composition: Composition;
   createReactContext: (root: ShadowRoot) => StyledRenderContext;
 }) => {
   const { runtime } = useStudio();
@@ -67,23 +75,38 @@ const ReactContent = ({
     () => createReactContext(root),
     [createReactContext, root]
   );
+  useLayoutEffect(() => {
+    onCommit?.(root);
+  });
   return (
     <>
-      {runtime.surfaces.react.render(composition, { wrapper: true, context })}
+      {runtime.surfaces.react.render(composition, {
+        wrapper: true,
+        context,
+        ...(enhancements ? { enhancements } : {}),
+      })}
     </>
   );
 };
 
-const HtmlContent = ({ composition }: { composition: Composition }) => {
+const HtmlContent = ({
+  composition,
+  enhancements,
+}: Pick<ReactSurfaceProps, 'composition' | 'enhancements'>) => {
   const { runtime } = useStudio();
   const { html } = runtime.surfaces.html.render(composition, {
     scripts: 'host',
+    ...(enhancements ? { enhancements } : {}),
   });
   return <HtmlSurface {...{ html }} title="React preview" />;
 };
 
 /** The React surface in a shadow root, styled by the host, or the `html` surface when it supplies no styling. */
-export const ReactSurface = ({ composition }: { composition: Composition }) => {
+export const ReactSurface = ({
+  composition,
+  enhancements,
+  onCommit,
+}: ReactSurfaceProps) => {
   const { createReactContext } = useStudio();
 
   return (
@@ -91,11 +114,19 @@ export const ReactSurface = ({ composition }: { composition: Composition }) => {
       {createReactContext ? (
         <ShadowRootHost>
           {(root) => (
-            <ReactContent {...{ root, composition, createReactContext }} />
+            <ReactContent
+              {...{
+                root,
+                composition,
+                enhancements,
+                onCommit,
+                createReactContext,
+              }}
+            />
           )}
         </ShadowRootHost>
       ) : (
-        <HtmlContent {...{ composition }} />
+        <HtmlContent {...{ composition, enhancements }} />
       )}
     </RenderBoundary>
   );

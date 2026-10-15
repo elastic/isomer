@@ -20,6 +20,9 @@ const runtime = createIsomerRuntime({
 // Built once. `adoptStylesheet` parses it once per document.
 let stylesheet: string | undefined;
 
+const { primitives: catalog, groups } = runtime.getAuthoringContext();
+const [slideGroup] = groups;
+
 export default defineStudioConfig({
   runtime,
   apps: [
@@ -27,6 +30,11 @@ export default defineStudioConfig({
       id: 'slides',
       title: 'Slide viewer',
       load: () => import('./studio/slides_app'),
+      pages: (slideGroup?.types ?? []).map((type) => ({
+        path: type,
+        title: catalog.find((entry) => entry.type === type)?.name ?? type,
+        section: slideGroup?.title,
+      })),
     },
   ],
   createReactContext: (root) => {

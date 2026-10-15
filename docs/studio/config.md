@@ -5,7 +5,7 @@ description: What an isomer-studio.config.ts exports, how compose wraps examples
 
 # The config
 
-A config file default-exports `defineStudioConfig({ ... })`. `defineStudioConfig` returns its argument; it exists so the object is typed. The runtime exports are `defineStudioConfig` and `adoptStylesheet`. The types are `StudioConfig`, `StudioCompose`, `StudioRuntime`, `StudioTheme`, and, for [apps](#apps), `StudioApp`, `StudioAppProps`, `StudioPreviewProps` and `PreviewZoom`.
+A config file default-exports `defineStudioConfig({ ... })`. `defineStudioConfig` returns its argument; it exists so the object is typed. The runtime exports are `defineStudioConfig` and `adoptStylesheet`. The types are `StudioConfig`, `StudioCompose`, `StudioRuntime`, `StudioTheme`, and, for [apps](#apps), `StudioApp`, `StudioAppPage`, `StudioAppProps`, `StudioPreviewProps` and `PreviewZoom`.
 
 ```ts
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
@@ -19,7 +19,10 @@ import { slideDeckFrame, slidesPack, slideStylesheet } from './src/index';
 let stylesheet: string | undefined;
 
 export default defineStudioConfig({
-  runtime: createIsomerRuntime({ packs: [slidesPack], frames: { slide: slideDeckFrame } }),
+  runtime: createIsomerRuntime({
+    packs: [slidesPack],
+    frames: { slide: slideDeckFrame },
+  }),
   createReactContext: (root) => {
     stylesheet ??= slideStylesheet();
     adoptStylesheet(root, stylesheet);
@@ -28,19 +31,21 @@ export default defineStudioConfig({
   compose: (nodes, { theme }): Composition => {
     const [only] = nodes;
     const preview: Composition =
-      nodes.length === 1 && only ? previewSlide(only) : { type: 'view', body: [...nodes] };
+      nodes.length === 1 && only
+        ? previewSlide(only)
+        : { type: 'view', body: [...nodes] };
     return { ...preview, theme };
   },
 });
 ```
 
-| Field | Required | What it does |
-| --- | --- | --- |
-| `runtime` | Yes | The runtime from `createIsomerRuntime`. Its packs are what the Studio lists, and its surfaces are the previews it offers. |
-| `title` | No | Replaces the header, the page title, and the `check` report name. Defaults to `Isomer Studio`. Leave it unset to keep the product name; a runtime with more than one pack shows each pack in the nav. |
-| `createReactContext(root)` | No | Styles the React preview, which renders inside a shadow root. Call `adoptStylesheet(root, css)` with the pack's stylesheet and return the render context its renderers expect. Without it, the React preview shows the `html` surface instead. |
-| `compose(nodes, { theme })` | No | Wraps example nodes in a composition. Defaults to `{ type: 'view', body: nodes, theme }`. |
-| `apps` | No | Pages that demonstrate the pack, listed under Apps in the nav. See [Apps](#apps). |
+| Field                       | Required | What it does                                                                                                                                                                                                                                   |
+| --------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `runtime`                   | Yes      | The runtime from `createIsomerRuntime`. Its packs are what the Studio lists, and its surfaces are the previews it offers.                                                                                                                      |
+| `title`                     | No       | Replaces the header, the page title, and the `check` report name. Defaults to `Isomer Studio`. Leave it unset to keep the product name; a runtime with more than one pack shows each pack in the nav.                                          |
+| `createReactContext(root)`  | No       | Styles the React preview, which renders inside a shadow root. Call `adoptStylesheet(root, css)` with the pack's stylesheet and return the render context its renderers expect. Without it, the React preview shows the `html` surface instead. |
+| `compose(nodes, { theme })` | No       | Wraps example nodes in a composition. Defaults to `{ type: 'view', body: nodes, theme }`.                                                                                                                                                      |
+| `apps`                      | No       | Pages that demonstrate the pack, listed under Apps in the nav. See [Apps](#apps).                                                                                                                                                              |
 
 ## `compose`
 
@@ -57,30 +62,58 @@ An app is a whole page of the Studio, such as a deck viewer. Each one gets a nav
 ```ts
 export default defineStudioConfig({
   runtime,
-  apps: [{ id: 'slides', title: 'Slide viewer', load: () => import('./studio/slides_app') }],
+  apps: [
+    {
+      id: 'slides',
+      title: 'Slide viewer',
+      load: () => import('./studio/slides_app'),
+    },
+  ],
 });
 ```
 
-| Field | Required | What it does |
-| --- | --- | --- |
-| `id` | Yes | The route segment, matching `/^[a-z][a-z0-9-]*$/` and unique within the config. |
-| `title` | Yes | The nav entry and the header's label while the app is open. |
-| `icon` | No | A `PrimitiveIcon`, held to the same rules as a primitive's icon by `check`. Without one, the nav shows the title's initial. |
-| `load` | Yes | Imports a module whose default export is the app's page. |
+| Field   | Required | What it does                                                                                                                |
+| ------- | -------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `id`    | Yes      | The route segment, matching `/^[a-z][a-z0-9-]*$/` and unique within the config.                                             |
+| `title` | Yes      | The nav entry and the header's label while the app is open.                                                                 |
+| `icon`  | No       | A `PrimitiveIcon`, held to the same rules as a primitive's icon by `check`. Without one, the nav shows the title's initial. |
+| `load`  | Yes      | Imports a module whose default export is the app's page.                                                                    |
+| `pages` | No       | Nav rows under the app's own row. See [Pages](#pages).                                                                      |
 
 `dev`, `build` and `check` reject invalid apps and name each one. A hot update with invalid apps keeps the last valid ones and shows why. `check` counts the apps but never calls `load`.
+
+### Pages
+
+An app can list its own pages in the nav, such as one per deck. The nav shows them without loading the app, so a config builds them from data it already imports.
+
+```ts
+pages: [
+  { path: 'isomer', title: 'Isomer', section: 'Decks' },
+  { path: 'distillate', title: 'Distillate', section: 'Decks' },
+],
+```
+
+| Field     | Required | What it does                                                                                                       |
+| --------- | -------- | ------------------------------------------------------------------------------------------------------------------ |
+| `path`    | Yes      | Opens `#/app/<id>/<path>`. One or more non-empty segments, with no leading or trailing `/`, unique within the app. |
+| `title`   | Yes      | The row's label. The nav filter matches it.                                                                        |
+| `section` | No       | Pages with the same `section` are listed under it, in order of first appearance. Pages without one come first.     |
+
+A page is current when the app's `path` equals the page's `path` or starts with it plus `/`. The longest match wins, so `isomer/3` keeps a page at `isomer/3` current over one at `isomer`. While a page is current, the app's own row is not. The collapsed rail shows only the app's row.
+
+`dev`, `build` and `check` reject invalid pages as they do invalid apps, naming the app and the page's index.
 
 ### The page
 
 The page is a React component, and the Studio hands it `StudioAppProps`:
 
-| Prop | What it is |
-| --- | --- |
-| `Preview` | Renders pack output inside a shadow root, isolated from the app's styles and the Studio's. Pass `nodes`, which go through the config's `compose` at the current theme, or a finished `composition`. `zoom` defaults to `fit`, and `maxHeight` caps a fitted preview's height. Without `createReactContext`, it shows the `html` surface. |
-| `runtime` | The config's runtime. |
-| `theme` | `light` or `dark`, following the Studio's color mode. |
-| `path` | Everything after `#/app/<id>/`, slashes included, with each segment percent-decoded. |
-| `navigate(path)` | Moves to another `path` within the app, adding a history entry. Each segment is percent-encoded in the hash, so `path` reads back the same after a reload. |
+| Prop             | What it is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Preview`        | Renders pack output inside a shadow root, isolated from the app's styles and the Studio's. Pass `nodes`, which go through the config's `compose` at the current theme, or a finished `composition`. `zoom` defaults to `fit`, and `maxHeight` caps a fitted preview's height. `enhancements` are enhancement ids the surface renders with, such as the slides pack's `SLIDE_BUILDS`. `onCommit(root)` runs with the shadow root after each render commits, for a host step such as `showSlideBuild`. Without `createReactContext`, it shows the `html` surface, which gets `enhancements` but has no shadow root, so `onCommit` is never called. |
+| `runtime`        | The config's runtime.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `theme`          | `light` or `dark`, following the Studio's color mode.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `path`           | Everything after `#/app/<id>/`, slashes included, with each segment percent-decoded.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `navigate(path)` | Moves to another `path` within the app, adding a history entry. Each segment is percent-encoded in the hash, so `path` reads back the same after a reload.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 
 Import only types from `@elastic/isomer-studio` in an app module. The Studio hands the page everything it needs as props.
 
@@ -98,11 +131,11 @@ Apps are not inside a shadow root, because EUI's popovers, flyouts, modals and t
 
 ### CSS
 
-| Form | Scope | Notes |
-| --- | --- | --- |
-| Emotion's `css` | Scoped | Needs `@emotion/react` as the JSX import source: add `/** @jsxImportSource @emotion/react */` to the file, or set `jsxImportSource` in a `tsconfig.json` for the app's folder. |
-| CSS Modules, `*.module.css` | Scoped | TypeScript needs a declaration such as `declare module '*.module.css' { const classes: Readonly<Record<string, string>>; export default classes; }`. |
-| Plain `.css` | Global | Scope its selectors under the app's root element. `url()`s to fonts (`woff2`, `woff`, `ttf`, `otf`, `eot`) and images (`png`, `jpg`, `jpeg`, `gif`, `webp`, `avif`, `svg`, `ico`) resolve under any `--base`. |
+| Form                        | Scope  | Notes                                                                                                                                                                                                         |
+| --------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Emotion's `css`             | Scoped | Needs `@emotion/react` as the JSX import source: add `/** @jsxImportSource @emotion/react */` to the file, or set `jsxImportSource` in a `tsconfig.json` for the app's folder.                                |
+| CSS Modules, `*.module.css` | Scoped | TypeScript needs a declaration such as `declare module '*.module.css' { const classes: Readonly<Record<string, string>>; export default classes; }`.                                                          |
+| Plain `.css`                | Global | Scope its selectors under the app's root element. `url()`s to fonts (`woff2`, `woff`, `ttf`, `otf`, `eot`) and images (`png`, `jpg`, `jpeg`, `gif`, `webp`, `avif`, `svg`, `ico`) resolve under any `--base`. |
 
 In `dev`, a stylesheet loads when the app first opens. A static build bundles every stylesheet the config imports into `assets/app.css`, which loads with the page.
 

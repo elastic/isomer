@@ -18,7 +18,7 @@ import type { StudioAppProps } from '@elastic/isomer-studio';
 
 import styles from './slides_app.module.css';
 
-/** Every example of every primitive, one slide each, at `#/app/slides/<type>/<n>`. */
+/** Every example of every primitive, one slide each, at `#/app/slides/<type>/<n>`; `#/app/slides/<type>` opens its first. */
 const SlidesApp = ({ Preview, runtime, path, navigate }: StudioAppProps) => {
   const slides = useMemo(
     () =>
@@ -33,7 +33,9 @@ const SlidesApp = ({ Preview, runtime, path, navigate }: StudioAppProps) => {
   );
   const index = Math.max(
     0,
-    slides.findIndex((slide) => slide.path === path)
+    slides.findIndex(
+      (slide) => slide.path === path || slide.path.startsWith(`${path}/`)
+    )
   );
   const slide = slides[index];
   if (!slide) {
