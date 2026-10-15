@@ -10,9 +10,9 @@ The pack commits whole decks under `decks/`, and the slides Studio shows them in
 | `decks/catalog.ts`   | `deckCatalog`, the decks the app lists, in order.                |
 | `decks/v1/<id>.json` | The same deck as authored against v0.2.0, byte for byte. Frozen. |
 
-A deck file is `{ id, title, slides, updatedAt }`. `id` matches the file name, `title` matches its catalog entry, and each of `slides` is one `Composition` whose body is one `slideFrame`. Slides carry no `theme`; the app gives each the Studio's.
+A deck file is `{ id, title, slides, updatedAt }`. `id` matches the file name, `title` matches its catalog entry, and each of `slides` is one `Composition` whose body is one `slideFrame`. Slides carry no `theme`; the app gives each the Studio's. A link to another slide in the same deck, such as a `sectionSlide` entry's `href`, is `?slide=<index from 0>`, and the app opens that slide.
 
-`v1/` is input for the migration tests and is never edited. Each frozen deck has a migrated copy with the same number of slides.
+`v1/` is input for the migration tests and is never edited. Each frozen deck has a migrated copy with the same number of slides; a deck authored since needs no frozen original.
 
 ## Adding a deck
 
@@ -31,4 +31,4 @@ The app lives at `#/app/decks/<id>/<n>/<step>`, with `n` counting slides from 1 
 | Home        | the first slide                                   |
 | End         | the last slide, built                             |
 
-Present shows the slide full screen; the same keys drive it.
+Present shows the slide full screen, scaled to fill it; the same keys drive it. Thumbnails are inert, so their links are not tab stops.

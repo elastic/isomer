@@ -453,6 +453,67 @@ test.describe('decks', () => {
 
     expect(problems).toEqual([]);
   });
+
+  test('follows a section slide link, keeps thumbnails out of the tab order, and presents full screen', async ({
+    page,
+  }) => {
+    const problems = watchProblems(page);
+    const deck = '#/app/decks/isomer-every-surface';
+    const counter = page.getByText(/^\d+ of \d+$/);
+    const build = page.getByText(/^Build \d+ of \d+$/);
+
+    await page.goto(`${site.url}${deck}`);
+    const thumbnailLink = page.locator('main ol a[href="?slide=3"]');
+    await expect(thumbnailLink).toHaveCount(1);
+    expect(
+      await thumbnailLink.evaluate((link: HTMLAnchorElement) => {
+        link.focus();
+        return (link.getRootNode() as ShadowRoot).activeElement === link;
+      })
+    ).toBe(false);
+
+    await page.goto(`${site.url}${deck}/3/0`);
+    await page.locator('main a[href="?slide=3"]').click();
+    await expect(page).toHaveURL(new RegExp(`${deck}/4/0$`));
+    await expect(counter).toHaveText('4 of 33');
+
+    // Wider than the slide's 1920px, which `zoom="fit"` alone would never scale up to.
+    await page.setViewportSize({ width: 2400, height: 1350 });
+    await page.goto(`${site.url}${deck}/6/0`);
+    await page.getByRole('button', { name: 'Present', exact: true }).click();
+    await expect
+      .poll(() => page.evaluate(() => document.fullscreenElement !== null))
+      .toBe(true);
+    await page.keyboard.press('ArrowRight');
+    await expect(build).toHaveText('Build 1 of 3');
+    expect(await page.evaluate(() => document.fullscreenElement !== null)).toBe(
+      true
+    );
+
+    const { innerWidth, innerHeight } = await page.evaluate(() => ({
+      innerWidth: window.innerWidth,
+      innerHeight: window.innerHeight,
+    }));
+    const slideWidth = () =>
+      page.evaluate(() => {
+        const slide = Array.from(
+          document.fullscreenElement?.querySelectorAll('*') ?? []
+        )
+          .map(({ shadowRoot }) => shadowRoot?.querySelector('.isomerDeckRoot'))
+          .find(Boolean);
+        return slide?.getBoundingClientRect().width ?? 0;
+      });
+    await expect
+      .poll(slideWidth)
+      .toBeCloseTo(Math.min(innerWidth, (innerHeight * 16) / 9), 0);
+
+    await page.evaluate(() => document.exitFullscreen());
+    await expect
+      .poll(() => page.evaluate(() => document.fullscreenElement))
+      .toBeNull();
+
+    expect(problems).toEqual([]);
+  });
 });
 
 test.describe('dev server', () => {

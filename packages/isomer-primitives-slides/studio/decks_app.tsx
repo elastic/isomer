@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, MouseEvent, ReactNode, RefObject } from 'react';
 import React, {
   useCallback,
   useEffect,
@@ -104,6 +104,41 @@ const useThemedSlides = (deck: SavedDeck, theme: StudioTheme) =>
     [deck, theme]
   );
 
+/** Reads a deck's own slide links, `?slide=<index from 0>`. */
+const linkedSlide = (event: MouseEvent): number | undefined => {
+  const anchor = event.nativeEvent
+    .composedPath()
+    .find(
+      (target): target is HTMLAnchorElement =>
+        target instanceof HTMLAnchorElement
+    );
+  const match = /^\?slide=(\d+)$/.exec(anchor?.getAttribute('href') ?? '');
+  return match ? Number(match[1]) : undefined;
+};
+
+/** The zoom that fills the screen while `presenter` is full screen; `fit` never scales up. */
+const usePresentingZoom = (presenter: RefObject<HTMLElement>) => {
+  const [zoom, setZoom] = useState<number>();
+  useEffect(() => {
+    const update = () =>
+      setZoom(
+        document.fullscreenElement === presenter.current
+          ? Math.min(
+              window.innerWidth / SLIDE_WIDTH,
+              window.innerHeight / SLIDE_HEIGHT
+            )
+          : undefined
+      );
+    document.addEventListener('fullscreenchange', update);
+    window.addEventListener('resize', update);
+    return () => {
+      document.removeEventListener('fullscreenchange', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [presenter]);
+  return zoom;
+};
+
 const isEditable = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement &&
   (target.isContentEditable ||
@@ -121,7 +156,10 @@ const Tile = ({
   children: ReactNode;
 }) => (
   <li className={styles.tile}>
-    <div className={styles.thumb} aria-hidden>
+    {/* React 18 drops an `inert` prop. */}
+    <div
+      className={styles.thumb}
+      ref={(element) => element?.setAttribute('inert', '')}>
       {children}
     </div>
     <button
@@ -337,6 +375,15 @@ const SlideStage = ({
   }, [builds, go, next, previous]);
 
   const presenter = useRef<HTMLDivElement>(null);
+  const zoom = usePresentingZoom(presenter);
+
+  const onClickCapture = (event: MouseEvent) => {
+    const linked = linkedSlide(event);
+    if (linked !== undefined) {
+      event.preventDefault();
+      go({ slide: linked, step: 0 });
+    }
+  };
 
   const onCommit = useCallback(
     (root: ShadowRoot) => {
@@ -405,12 +452,17 @@ const SlideStage = ({
           </EuiButton>
         </EuiFlexItem>
       </EuiFlexGroup>
-      <div ref={presenter} className={styles.presenter} style={stageStyle}>
+      <div
+        ref={presenter}
+        className={styles.presenter}
+        style={stageStyle}
+        {...{ onClickCapture }}>
         <div className={styles.screen}>
           <Preview
             {...{ composition, onCommit }}
             heading={false}
             enhancements={BUILDS}
+            zoom={zoom ?? 'fit'}
           />
         </div>
       </div>

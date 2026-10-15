@@ -49,12 +49,12 @@ const slides = migrated.flatMap(({ id, deck }) =>
 
 describe('the committed decks', () => {
   it('pair each frozen v1 deck with a migrated copy of the same length', () => {
-    const frozen = deckFiles(join(decksDir, 'v1'));
-    expect(migrated.map(({ id }) => id)).toEqual(frozen);
-    for (const id of frozen) {
+    for (const id of deckFiles(join(decksDir, 'v1'))) {
       const { slides: original } = readDeck(join(decksDir, 'v1', `${id}.json`));
-      const { deck } = migrated.find((entry) => entry.id === id)!;
-      expect(deck.slides).toHaveLength(original.length);
+      expect(
+        migrated.find((entry) => entry.id === id)?.deck.slides,
+        id
+      ).toHaveLength(original.length);
     }
   });
 
