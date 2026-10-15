@@ -7,3 +7,4 @@ NOTICE.txt
 pnpm-lock.yaml
 .artifacts
 .okf
+packages/isomer-primitives-slides/decks/v1

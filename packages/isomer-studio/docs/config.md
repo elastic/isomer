@@ -64,9 +64,9 @@ export default defineStudioConfig({
   runtime,
   apps: [
     {
-      id: 'slides',
-      title: 'Slide viewer',
-      load: () => import('./studio/slides_app'),
+      id: 'decks',
+      title: 'Decks',
+      load: () => import('./studio/decks_app'),
     },
   ],
 });

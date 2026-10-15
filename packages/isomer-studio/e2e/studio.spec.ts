@@ -29,8 +29,8 @@ const CONFIG =
 const BASE = process.env.STUDIO_BASE ?? '/sub/path/';
 const PREBUILT_SITE = process.env.STUDIO_SITE;
 const EDIT_ROUTE = process.env.STUDIO_EDIT_ROUTE ?? '#/dev/slideHeading/0';
-const APP_ID = process.env.STUDIO_APP_ID ?? 'slides';
-const APP_TITLE = process.env.STUDIO_APP_TITLE ?? 'Slide viewer';
+const APP_ID = process.env.STUDIO_APP_ID ?? 'decks';
+const APP_TITLE = process.env.STUDIO_APP_TITLE ?? 'Decks';
 /** A page the app lists in the nav, as `title` and `path`, and the heading it shows if one is known, when it has one. */
 const APP_PAGE: { title: string; path: string; heading?: string } | undefined =
   process.env.STUDIO_CONFIG
@@ -41,9 +41,9 @@ const APP_PAGE: { title: string; path: string; heading?: string } | undefined =
         }
       : undefined
     : {
-        title: 'Statement slide',
-        path: 'statementSlide',
-        heading: 'statementSlide 1',
+        title: 'Isomer: one composition, every surface',
+        path: 'isomer-every-surface',
+        heading: 'Isomer: one composition, every surface',
       };
 /** A font family the app's global CSS loads with `url()`, when it has one. */
 const APP_FONT = process.env.STUDIO_APP_FONT;
@@ -368,7 +368,7 @@ test.describe('static build', () => {
   });
 });
 
-test.describe('slide viewer', () => {
+test.describe('decks', () => {
   test.skip(
     Boolean(process.env.STUDIO_CONFIG),
     'needs the repository slides pack'
@@ -378,7 +378,7 @@ test.describe('slide viewer', () => {
   let tempDir: string;
 
   test.beforeAll(async () => {
-    tempDir = mkdtempSync(join(tmpdir(), 'isomer-studio-viewer-'));
+    tempDir = mkdtempSync(join(tmpdir(), 'isomer-studio-decks-'));
     const dir = join(tempDir, 'site');
     await runCli(['build', '--config', CONFIG, '--out', dir, '--base', BASE]);
     site = await serveStatic(dir, BASE);
@@ -389,32 +389,69 @@ test.describe('slide viewer', () => {
     rmSync(tempDir, { recursive: true, force: true });
   });
 
-  test('deep-links a slide and steps through slides with Previous and Next', async ({
+  test('opens a deck from the nav, steps through builds and slides, and keeps the place', async ({
     page,
   }) => {
+    const problems = watchProblems(page);
+    const deck = '#/app/decks/isomer-every-surface';
     const counter = page.getByText(/^\d+ of \d+$/);
-    const previous = page.getByRole('button', { name: 'Previous slide' });
-    const next = page.getByRole('button', { name: 'Next slide' });
+    const build = page.getByText(/^Build \d+ of \d+$/);
+    const next = page.getByRole('button', { name: 'Next', exact: true });
+    /** Build parts `showSlideBuild` hides in the stage's shadow root. */
+    const hidden = () =>
+      page
+        .locator('main')
+        .first()
+        .evaluate((main) =>
+          Array.from(main.querySelectorAll('*')).reduce(
+            (total, element) =>
+              total +
+              (element.shadowRoot?.querySelectorAll('[data-slide-build-hidden]')
+                .length ?? 0),
+            0
+          )
+        );
 
-    await page.goto(`${site.url}#/app/slides/agendaSlide/1`);
-    await expect(counter).toHaveText(/^2 of /);
-    await expect(previous).toBeEnabled();
+    await page.goto(site.url);
+    await page
+      .getByRole('list', { name: 'Decks pages' })
+      .getByRole('button', { name: 'Isomer: one composition, every surface' })
+      .click();
+    await expect(page).toHaveURL(new RegExp(`${deck}$`));
+    await expect(
+      page.getByRole('button', { name: /^Slide \d+: / })
+    ).toHaveCount(33);
+
+    await page.goto(`${site.url}${deck}/6/0`);
+    await expect(counter).toHaveText('6 of 33');
+    await expect(build).toHaveText('Build 0 of 3');
+    await expect.poll(hidden).toBeGreaterThan(0);
+    const unbuilt = await hidden();
+
+    await page.keyboard.press('ArrowRight');
+    await expect(build).toHaveText('Build 1 of 3');
+    await expect(page).toHaveURL(new RegExp(`${deck}/6/1$`));
+    await expect.poll(hidden).toBeLessThan(unbuilt);
 
     await next.click();
-    await expect(counter).toHaveText(/^3 of /);
-    const third = new URL(page.url()).hash;
-    expect(third).toMatch(/^#\/app\/slides\/\w+\/\d+$/);
+    await next.click();
+    await expect(build).toHaveText('Build 3 of 3');
+    await expect.poll(hidden).toBe(0);
+    await next.click();
+    await expect(counter).toHaveText('7 of 33');
+
     await page.reload();
-    await expect(counter).toHaveText(/^3 of /);
+    await expect(counter).toHaveText('7 of 33');
+    await page.keyboard.press('ArrowLeft');
+    await expect(counter).toHaveText('6 of 33');
+    await expect(build).toHaveText('Build 3 of 3');
+    await page.keyboard.press('Home');
+    await expect(counter).toHaveText('1 of 33');
 
-    await previous.click();
-    await previous.click();
-    await expect(counter).toHaveText(/^1 of /);
-    await expect(page).toHaveURL(/#\/app\/slides\/agendaSlide\/0$/);
-    await expect(previous).toBeDisabled();
+    await page.goto(`${site.url}${deck}/99/0`);
+    await expect(counter).toHaveText('1 of 33');
 
-    await page.goto(`${site.url}#/app/slides/not-a-slide/9`);
-    await expect(counter).toHaveText(/^1 of /);
+    expect(problems).toEqual([]);
   });
 });
 

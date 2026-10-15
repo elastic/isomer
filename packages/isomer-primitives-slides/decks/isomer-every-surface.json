@@ -1,0 +1,1518 @@
+{
+  "id": "isomer-every-surface",
+  "title": "Isomer: one composition, every surface",
+  "updatedAt": "2026-09-30T13:26:20.353Z",
+  "slides": [
+    {
+      "type": "view",
+      "title": "Isomer",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "titleSlide",
+              "eyebrow": "A portable view runtime",
+              "title": "Isomer",
+              "tagline": "Compose the answer once. **Render it everywhere.**",
+              "definition": {
+                "term": "isomer n.",
+                "text": "One formula, many forms: the same composition rendered to every surface."
+              },
+              "aside": {
+                "type": "slideFanout",
+                "source": "Composition",
+                "targets": [
+                  {
+                    "name": "react",
+                    "body": "Interactive pages",
+                    "tone": "primary"
+                  },
+                  {
+                    "name": "html",
+                    "body": "Emails, exports, MCP apps"
+                  },
+                  {
+                    "name": "png",
+                    "body": "Images via SVG + Takumi"
+                  },
+                  {
+                    "name": "slack",
+                    "body": "Block Kit messages"
+                  },
+                  {
+                    "name": "markdown",
+                    "body": "Agent replies, GitHub"
+                  },
+                  {
+                    "name": "text",
+                    "body": "SMS, logs, fallbacks"
+                  }
+                ]
+              }
+            }
+          ],
+          "logo": true,
+          "tone": "inverse",
+          "footer": {
+            "brand": "Isomer",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Agenda",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "Five parts, from the problem to where it lands"
+            },
+            {
+              "type": "agendaSlide",
+              "sections": [
+                {
+                  "number": "01",
+                  "title": "The problem",
+                  "count": "6 slides"
+                },
+                {
+                  "number": "02",
+                  "title": "The model",
+                  "count": "5 slides"
+                },
+                {
+                  "number": "03",
+                  "title": "Inside a render",
+                  "count": "7 slides"
+                },
+                {
+                  "number": "04",
+                  "title": "Agents",
+                  "count": "4 slides"
+                },
+                {
+                  "number": "05",
+                  "title": "Why it matters",
+                  "count": "3 slides"
+                }
+              ]
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "Agenda",
+            "sectionNumber": "00",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "The problem",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "sectionSlide",
+              "number": "01",
+              "title": "The problem",
+              "slides": [
+                {
+                  "text": "Alerts escape per connector",
+                  "href": "?slide=3"
+                },
+                {
+                  "text": "Email carries two templates",
+                  "href": "?slide=4"
+                },
+                {
+                  "text": "Mobile has been asked for since 2015",
+                  "href": "?slide=5"
+                },
+                {
+                  "text": "Nightshift must work outside Kibana",
+                  "href": "?slide=6"
+                },
+                {
+                  "text": "Who owns rendering?",
+                  "href": "?slide=7"
+                },
+                {
+                  "text": "Write the answer once",
+                  "href": "?slide=8"
+                }
+              ]
+            }
+          ],
+          "logo": true,
+          "tone": "inverse",
+          "footer": {
+            "brand": "Isomer",
+            "section": "The problem",
+            "sectionNumber": "01",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Alerts escape per connector",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "An alert is a string template, escaped per channel",
+              "lede": "Kibana’s action connectors share no view of the alert. Each one takes Mustache strings and escapes them for its own destination."
+            },
+            {
+              "type": "slideStats",
+              "items": [
+                {
+                  "value": "32",
+                  "label": "Connector types",
+                  "body": "Every directory under `connector_types`."
+                },
+                {
+                  "value": "17",
+                  "label": "Own their templates",
+                  "body": "Each defines its own `renderParameterTemplates`."
+                },
+                {
+                  "value": "5",
+                  "label": "Escape modes",
+                  "body": "`markdown`, `slack`, `json`, `html`, and `none`."
+                }
+              ]
+            },
+            {
+              "type": "slideSource",
+              "text": "Kibana `stack_connectors` and `actions` plugins, local checkout of Aug 19, 2026"
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "The problem",
+            "sectionNumber": "01",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Email carries two templates",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "An email alert carries **two templates**, escaped two ways",
+              "lede": "`message` is escaped as Markdown and the optional `messageHTML` as HTML. Slack has two paths of its own: `postMessage` and raw `postBlockkit` JSON."
+            },
+            {
+              "type": "slideCode",
+              "file": "stack_connectors/…/email/index.ts",
+              "language": "ts",
+              "text": "return {\n  // most of the params need no escaping\n  ...renderMustacheObject(logger, params, variables),\n  // message however, needs to escaped as markdown\n  message: renderMustacheString(logger, params.message, variables, 'markdown'),\n  messageHTML: renderMustacheString(logger, params.messageHTML, variables, 'html'),\n};",
+              "lineNumbers": {
+                "highlight": "5-6"
+              }
+            },
+            {
+              "type": "slideSource",
+              "text": "Kibana `email/index.ts`, lines 309–315, local checkout of Aug 19, 2026"
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "The problem",
+            "sectionNumber": "01",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Mobile has been asked for since 2015",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "Mobile has been asked for **since 2015**",
+              "lede": "The asks go beyond responsive CSS: a compact, task-shaped view of one alert or incident on a phone."
+            },
+            {
+              "type": "slideList",
+              "items": [
+                {
+                  "term": "#2563",
+                  "body": "2015 · “Improve dashboard mobile experience” — closed"
+                },
+                {
+                  "term": "#16717",
+                  "body": "2018 · “Make Kibana mobile devices responsive” — open"
+                },
+                {
+                  "term": "#213273",
+                  "body": "2025 · “Mobile App for Kibana” — open"
+                }
+              ],
+              "footnote": "Comments ask to go from a Slack or PagerDuty alert to a dashboard on a phone, and for a mobile-friendly data payload, not only responsive CSS."
+            },
+            {
+              "type": "slideSource",
+              "text": "`elastic/kibana` issues; comment summary from the Adaptive UI field-evidence notes"
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "The problem",
+            "sectionNumber": "01",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Nightshift must work outside Kibana",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "quoteSlide",
+              "text": "A user can use Nightshift effectively **without ever opening Kibana** — interacting entirely through Slack, GitHub, PagerDuty, or other external surfaces.",
+              "source": "Nightshift Interfaces workstream",
+              "context": "Success criterion, workstream README"
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "The problem",
+            "sectionNumber": "01",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Who owns rendering?",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "quoteSlide",
+              "text": "…who’s gonna own this rendering capability, right? Because the schema’s gonna define, like, how we render on Slack, how we render on GitHub, how we render on, like, some other external surface.",
+              "source": "Nightshift relay design session",
+              "context": "June 18, 2026"
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "The problem",
+            "sectionNumber": "01",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Write the answer once",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "statementSlide",
+              "text": "Stop writing a renderer per channel. **Write the answer once.**"
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "The problem",
+            "sectionNumber": "01",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "The model",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "sectionSlide",
+              "number": "02",
+              "title": "The model",
+              "slides": [
+                {
+                  "text": "Six terms carry the design",
+                  "href": "?slide=10"
+                },
+                {
+                  "text": "Isomer owns layout, not consequences",
+                  "href": "?slide=11"
+                },
+                {
+                  "text": "A primitive is schema + catalog + renderers",
+                  "href": "?slide=12"
+                },
+                {
+                  "text": "Views arrive by two paths",
+                  "href": "?slide=13"
+                },
+                {
+                  "text": "Hosts install two packages",
+                  "href": "?slide=14"
+                }
+              ]
+            }
+          ],
+          "logo": true,
+          "tone": "inverse",
+          "footer": {
+            "brand": "Isomer",
+            "section": "The model",
+            "sectionNumber": "02",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Six terms carry the design",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "Six terms carry the whole design"
+            },
+            {
+              "type": "slideDefinitions",
+              "items": [
+                {
+                  "term": "Composition",
+                  "body": "The wire document, `{ type: 'view', title?, body: Node[] }`. It says **what** the answer is, never how it looks."
+                },
+                {
+                  "term": "Primitive",
+                  "body": "One node type: a Zod schema, a catalog entry, examples, and a renderer per surface."
+                },
+                {
+                  "term": "Pack",
+                  "body": "A vocabulary as a value. Packs compose; duplicate types are rejected by name."
+                },
+                {
+                  "term": "Runtime",
+                  "body": "Packs assembled into one validator, one parser, the surfaces, and a view registry."
+                },
+                {
+                  "term": "Frame",
+                  "body": "The document an image is drawn in: size, theme, surround. No frame, no `svg`."
+                },
+                {
+                  "term": "Surface",
+                  "body": "One output format, with `render` and `renderNode`. Every surface is synchronous."
+                }
+              ]
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "The model",
+            "sectionNumber": "02",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Isomer owns layout, not consequences",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "Isomer owns layout. The host owns **everything with consequences**.",
+              "lede": "That line is what lets an agent author a composition: the host trusts it with layout and nothing else."
+            },
+            {
+              "type": "slideTerritoryGroup",
+              "items": [
+                {
+                  "body": "The composition contract, the primitive catalog, validation, and rendering to every surface.",
+                  "title": "Isomer",
+                  "tone": "primary"
+                },
+                {
+                  "body": "Data, authorization, routing, and side effects: Kibana, a Slack bot, an email job, an MCP server.",
+                  "title": "Host",
+                  "tone": "accent"
+                }
+              ]
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "The model",
+            "sectionNumber": "02",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "A primitive is schema + catalog + renderers",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "A primitive is a schema, a catalog entry, and renderers"
+            },
+            {
+              "type": "slideCode",
+              "file": "metric.ts",
+              "language": "ts",
+              "text": "const metric = definePrimitive({\n  type: 'metric',\n  schema: z.object({ type: z.literal('metric'), label: z.string(), value: z.string() }),\n  catalog: {\n    purpose: 'State one measured value.',\n    useWhen: ['A single number answers the question.'],\n    avoidWhen: ['Several values belong together.'],\n  },\n  renderers: {\n    react: (node) => `${node.label}: ${node.value}`,\n    text: (node) => `${node.label}: ${node.value}`,\n    markdown: (node) => `**${node.label}**: ${node.value}`,\n  },\n});",
+              "lineNumbers": {
+                "highlight": "3, 5-7, 10-12"
+              }
+            },
+            {
+              "type": "slideSource",
+              "text": "Isomer `README.md`, “A first composition”, trimmed"
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "The model",
+            "sectionNumber": "02",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Views arrive by two paths",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "Views arrive by two paths and meet at one renderer"
+            },
+            {
+              "type": "slideLanes",
+              "lanes": [
+                {
+                  "label": "Product",
+                  "steps": ["defineView", "request", "check input", "build"],
+                  "tone": "primary"
+                },
+                {
+                  "label": "Agent",
+                  "steps": ["context", "compose", "parse", "retry"],
+                  "tone": "accent"
+                }
+              ],
+              "join": "validate + render",
+              "notes": [
+                {
+                  "title": "Code owns the composition",
+                  "body": "A Zod input schema and a builder that fetches data. Nothing model-authored touches this path."
+                },
+                {
+                  "title": "A model owns the composition",
+                  "body": "It gets the JSON Schema, the catalog, and the views it may request instead. Only what validates renders."
+                }
+              ]
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "The model",
+            "sectionNumber": "02",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Hosts install two packages",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "A host installs two packages; the rest are opt-in",
+              "lede": "The published packages release together at one version. `isomer-image-takumi` rasterizes; `isomer-evals` scores a model against a pack."
+            },
+            {
+              "type": "slideLayers",
+              "layers": [
+                {
+                  "name": "Host",
+                  "body": "Kibana, a Slack bot, an email job, an MCP server",
+                  "owner": "Your team",
+                  "tone": "accent"
+                },
+                {
+                  "name": "Agent tools",
+                  "body": "Six tools, two resources, and a prompt — in review, PR #86",
+                  "owner": "isomer-agent-tools"
+                },
+                {
+                  "name": "Runtime",
+                  "body": "`createIsomerRuntime`: validate, parse, surfaces, views",
+                  "owner": "isomer-runtime",
+                  "tone": "primary"
+                },
+                {
+                  "name": "Packs",
+                  "chips": ["slides", "your-pack"],
+                  "owner": "Pack authors"
+                },
+                {
+                  "name": "SDK",
+                  "body": "`definePrimitive`, schema, dispatcher, envelopes, URL trust",
+                  "owner": "isomer-sdk",
+                  "tone": "primary"
+                }
+              ]
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "The model",
+            "sectionNumber": "02",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Inside a render",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "sectionSlide",
+              "number": "03",
+              "title": "Inside a render",
+              "slides": [
+                {
+                  "text": "Four stages per render",
+                  "href": "?slide=16"
+                },
+                {
+                  "text": "An alert, composed once",
+                  "href": "?slide=17"
+                },
+                {
+                  "text": "Markdown and text from one document",
+                  "href": "?slide=18"
+                },
+                {
+                  "text": "Slack gets real Block Kit",
+                  "href": "?slide=19"
+                },
+                {
+                  "text": "One validation posture per surface",
+                  "href": "?slide=20"
+                },
+                {
+                  "text": "Only the CSS a render reached",
+                  "href": "?slide=21"
+                },
+                {
+                  "text": "Images take two steps",
+                  "href": "?slide=22"
+                }
+              ]
+            }
+          ],
+          "logo": true,
+          "tone": "inverse",
+          "footer": {
+            "brand": "Isomer",
+            "section": "Inside a render",
+            "sectionNumber": "03",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Four stages per render",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "A render validates, dispatches, wraps, and styles",
+              "lede": "`react` skips validation, and only `html` and `svg` run the styles stage. Everything else is shared."
+            },
+            {
+              "type": "slidePipeline",
+              "start": "Composition",
+              "end": "Output",
+              "steps": [
+                {
+                  "title": "Validate",
+                  "body": "A discriminated union over every primitive, then semantic passes. Errors are `{ path, message }`."
+                },
+                {
+                  "title": "Dispatch",
+                  "body": "Routes each node to its renderer for the surface, after the primitive’s `sanitize` hook."
+                },
+                {
+                  "title": "Envelope",
+                  "body": "Wraps the body: `section.isomer`, an `h1`, a Slack `header`, or a frame."
+                },
+                {
+                  "title": "Styles",
+                  "body": "Renders once to collect class names, then emits **only** that stylesheet."
+                }
+              ]
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "Inside a render",
+            "sectionNumber": "03",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "An alert, composed once",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "An alert, composed once as data",
+              "lede": "Built from the slides pack, the only pack in the repo; an alerts pack would bring its own primitives. The next two slides show what it renders to."
+            },
+            {
+              "type": "slideCode",
+              "file": "checkout-alert.json",
+              "language": "json",
+              "text": "{\n  \"type\": \"view\",\n  \"title\": \"Checkout alert\",\n  \"body\": [{ \"type\": \"slideFrame\", \"logo\": false, \"body\": [\n    { \"type\": \"slideHeading\",\n      \"title\": \"Checkout is declining **card payments**\",\n      \"lede\": \"Failures began after the last deploy.\" },\n    { \"type\": \"slideList\", \"items\": [\n      { \"term\": \"service\", \"body\": \"`checkout-api`\" },\n      { \"term\": \"owner\", \"body\": \"Payments on-call\" },\n      { \"term\": \"next\", \"body\": \"Roll back the deploy\" }\n    ] }\n  ] }]\n}",
+              "lineNumbers": {
+                "highlight": "5, 8"
+              }
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "Inside a render",
+            "sectionNumber": "03",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Markdown and text from one document",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "The same document as Markdown and as plain text",
+              "lede": "Unedited output from the `markdown` and `text` surfaces. Nothing here was written by hand."
+            },
+            {
+              "type": "slideSplitLayout",
+              "panes": [
+                {
+                  "items": [
+                    {
+                      "type": "slideCode",
+                      "file": "surfaces.markdown.render()",
+                      "language": "markdown",
+                      "text": "# Checkout is declining **card payments**\n\nFailures began after the last deploy.\n\n- **service**: `checkout-api`\n- **owner**: Payments on-call\n- **next**: Roll back the deploy"
+                    }
+                  ]
+                },
+                {
+                  "items": [
+                    {
+                      "type": "slideCode",
+                      "file": "surfaces.text.render()",
+                      "language": "text",
+                      "text": "CHECKOUT IS DECLINING CARD PAYMENTS\nFailures began after the last deploy.\n\nservice: checkout-api\nowner: Payments on-call\nnext: Roll back the deploy"
+                    }
+                  ]
+                }
+              ],
+              "divider": "gap"
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "Inside a render",
+            "sectionNumber": "03",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Slack gets real Block Kit",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "Slack gets real Block Kit, not escaped Markdown",
+              "lede": "A `header`, a `section`, and a `rich_text` list with bold and code styles. The result’s `text` carries the notification fallback."
+            },
+            {
+              "type": "slideCode",
+              "file": "surfaces.slack.render().blocks — excerpt, reflowed",
+              "language": "json",
+              "text": "[ { \"type\": \"header\",\n    \"text\": { \"type\": \"plain_text\", \"emoji\": true,\n      \"text\": \"Checkout is declining card payments\" } },\n  { \"type\": \"section\",\n    \"text\": { \"type\": \"mrkdwn\", \"text\": \"Failures began after the last deploy.\" } },\n  { \"type\": \"rich_text\", \"elements\": [{ \"type\": \"rich_text_list\", \"style\": \"bullet\",\n    \"elements\": [{ \"type\": \"rich_text_section\", \"elements\": [\n      { \"type\": \"text\", \"text\": \"service\", \"style\": { \"bold\": true } },\n      { \"type\": \"text\", \"text\": \": \" },\n      { \"type\": \"text\", \"text\": \"checkout-api\", \"style\": { \"code\": true } }",
+              "lineNumbers": {
+                "highlight": "1, 6"
+              }
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "Inside a render",
+            "sectionNumber": "03",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "One validation posture per surface",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "Each surface fails the way its output can carry",
+              "lede": "`parse` is the schema alone, for model output. `validate` adds semantic passes, for code-built compositions. `onValidationError` overrides any surface."
+            },
+            {
+              "type": "slideTable",
+              "columns": ["Surface", "On invalid input", "Because"],
+              "rowHeaders": true,
+              "rows": [
+                [
+                  "html",
+                  "Renders; reports validationErrors",
+                  "A partial document is still worth showing"
+                ],
+                [
+                  "text, markdown, slack, svg",
+                  "Throws CompositionValidationError",
+                  "A string, a post, or an image can’t carry findings"
+                ],
+                [
+                  "react",
+                  "Never validates",
+                  "Interactive: a partial render beats an exception"
+                ]
+              ]
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "Inside a render",
+            "sectionNumber": "03",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Only the CSS a render reached",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "HTML ships **only the CSS the render reached**",
+              "lede": "A pack contributes styles through a style adapter. The slides pack’s adapter is one Distillate instance — the next deck."
+            },
+            {
+              "type": "slideSplitLayout",
+              "panes": [
+                {
+                  "items": [
+                    {
+                      "type": "slideCode",
+                      "file": "isomer-primitives-slides/src/theme/distillery.ts",
+                      "language": "ts",
+                      "text": "export const slideDistillery = createDistillery({\n  dev,\n  prefix: 'slide',\n  themeScope: `.${isomerDeckRoot}`,\n  sharedVars: ['vars/tone', 'vars/toneBg'],\n  theme: SLIDE_THEME,\n});",
+                      "lineNumbers": {
+                        "highlight": "1"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "label": "One slide’s HTML",
+                  "items": [
+                    {
+                      "type": "slideBulletList",
+                      "items": [
+                        "Rules only for the style modules it used",
+                        "No table, code, or pipeline CSS"
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "ratio": "aside",
+              "divider": "hairline"
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "Inside a render",
+            "sectionNumber": "03",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Images take two steps",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "Images take two steps, so the runtime stays isomorphic",
+              "lede": "Rasterizing is a host-side capability with its own peers. The laid-out tree also feeds `checkLayout`, which reports nodes past their room — the fit notes behind every slide here."
+            },
+            {
+              "type": "slidePipeline",
+              "start": "Composition",
+              "end": "PNG",
+              "steps": [
+                {
+                  "title": "svg surface",
+                  "body": "Returns `{ element, css, width, height }` inside a frame, not bytes. No native dependencies."
+                },
+                {
+                  "title": "Takumi",
+                  "body": "`isomer-image-takumi` turns the element and stylesheet into PNG or SVG bytes."
+                }
+              ]
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "Inside a render",
+            "sectionNumber": "03",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Agents",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "sectionSlide",
+              "number": "04",
+              "title": "Agents",
+              "slides": [
+                {
+                  "text": "Written by an agent",
+                  "href": "?slide=24"
+                },
+                {
+                  "text": "The loop that built this deck",
+                  "href": "?slide=25"
+                },
+                {
+                  "text": "Errors a model can repair from",
+                  "href": "?slide=26"
+                },
+                {
+                  "text": "Evals score the pack, not just the model",
+                  "href": "?slide=27"
+                }
+              ]
+            }
+          ],
+          "logo": true,
+          "tone": "inverse",
+          "footer": {
+            "brand": "Isomer",
+            "section": "Agents",
+            "sectionNumber": "04",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Written by an agent",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "statementSlide",
+              "text": "An agent wrote this deck, **one validated composition per slide**."
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "Agents",
+            "sectionNumber": "04",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "The loop that built this deck",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "Every slide here went through the same loop",
+              "lede": "Look up the primitives, write, render, and fix what the layout check flags. The studio is an MCP server on `isomer-agent-tools`, in review as PR #86."
+            },
+            {
+              "type": "slideSequence",
+              "actors": [
+                {
+                  "id": "agent",
+                  "label": "agent",
+                  "tone": "accent"
+                },
+                {
+                  "id": "tools",
+                  "label": "tools",
+                  "tone": "primary"
+                },
+                {
+                  "id": "studio",
+                  "label": "studio"
+                },
+                {
+                  "id": "runtime",
+                  "label": "runtime",
+                  "tone": "primary"
+                }
+              ],
+              "messages": [
+                {
+                  "from": "agent",
+                  "to": "tools",
+                  "label": "`isomer_describe_primitives`"
+                },
+                {
+                  "from": "agent",
+                  "to": "studio",
+                  "label": "`deck_set_slide`"
+                },
+                {
+                  "from": "studio",
+                  "to": "runtime",
+                  "label": "`validate`"
+                },
+                {
+                  "from": "runtime",
+                  "to": "studio",
+                  "label": "valid"
+                },
+                {
+                  "from": "agent",
+                  "to": "studio",
+                  "label": "`deck_render_slide`"
+                },
+                {
+                  "from": "studio",
+                  "to": "runtime",
+                  "label": "`svg` + `checkLayout`"
+                },
+                {
+                  "from": "studio",
+                  "to": "agent",
+                  "label": "PNG + “runs 8px past”"
+                },
+                {
+                  "from": "agent",
+                  "to": "studio",
+                  "label": "`deck_set_slide` (fixed)"
+                }
+              ]
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "Agents",
+            "sectionNumber": "04",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Errors a model can repair from",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "Errors are written for **a model to repair from**",
+              "lede": "Each names the path, the primitive it lands in, and what that primitive accepts. Both host turns are real `isomer_validate` output.",
+              "size": "m"
+            },
+            {
+              "type": "slideTranscript",
+              "label": "Illustrative retry, real validator output",
+              "turns": [
+                {
+                  "format": "code",
+                  "role": "model",
+                  "text": "{ \"type\": \"slideStat\", \"value\": 4.2, \"label\": \"Error rate\" }"
+                },
+                {
+                  "format": "code",
+                  "role": "host",
+                  "text": "body[0].body[1].value (in slideStat) Invalid input: expected string, received number\nbody[0].body[1].body (in slideStat) is required\nbody[0].body[1] (in slideStat) has unrecognized key(s): label; its fields are value, unit, body"
+                },
+                {
+                  "format": "code",
+                  "role": "model",
+                  "text": "{ \"type\": \"slideStat\", \"value\": \"4.2\", \"unit\": \"%\", \"body\": \"Error rate after the deploy.\" }"
+                },
+                {
+                  "format": "code",
+                  "role": "host",
+                  "text": "{ \"valid\": true, \"errors\": [], \"warnings\": [] }"
+                }
+              ]
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "Agents",
+            "sectionNumber": "04",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Evals score the pack, not just the model",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "Evals score the pack, not just the model",
+              "lede": "Catalog `useWhen` and `avoidWhen` copy is the tunable. A wide gap between `valid` and `validAfterRetry` is a bug report about error copy."
+            },
+            {
+              "type": "slideTable",
+              "columns": ["Axis", "Needs a model", "Measures"],
+              "rowHeaders": true,
+              "rows": [
+                [
+                  "Validity",
+                  "No",
+                  "Parse and validation pass rate, and pass after one retry"
+                ],
+                [
+                  "Selection",
+                  "No",
+                  "Multiset F1 of the primitives chosen against a golden"
+                ],
+                ["Payload", "No", "Raw vs sanitized size, invented node types"],
+                [
+                  "Answerability",
+                  "Yes",
+                  "Whether the text render still answers the prompt"
+                ]
+              ]
+            },
+            {
+              "type": "slideSource",
+              "text": "`@elastic/isomer-evals` docs; runs with no credentials on a replayed corpus"
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "Agents",
+            "sectionNumber": "04",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Why it matters",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "sectionSlide",
+              "number": "05",
+              "title": "Why it matters",
+              "slides": [
+                {
+                  "text": "What’s new is the contract",
+                  "href": "?slide=29"
+                },
+                {
+                  "text": "Where portable views pay off",
+                  "href": "?slide=30"
+                },
+                {
+                  "text": "Where it stands today",
+                  "href": "?slide=31"
+                }
+              ]
+            }
+          ],
+          "logo": true,
+          "tone": "inverse",
+          "footer": {
+            "brand": "Isomer",
+            "section": "Why it matters",
+            "sectionNumber": "05",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "What’s new is the contract",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "What’s new is the contract, not any one renderer",
+              "lede": "Code, agents, and every channel meet at one typed document."
+            },
+            {
+              "type": "slideList",
+              "items": [
+                {
+                  "term": "degrades",
+                  "body": "Three renderers are mandatory, so every composition has a text and a Markdown form."
+                },
+                {
+                  "term": "one schema",
+                  "body": "The JSON Schema the agent reads is projected from the Zod schema that validates."
+                },
+                {
+                  "term": "trust line",
+                  "body": "Agents author layout only; the host keeps data, auth, and side effects."
+                },
+                {
+                  "term": "error copy",
+                  "body": "Errors are written for a model to repair from, and evals measure it."
+                },
+                {
+                  "term": "reachable CSS",
+                  "body": "HTML and images carry only the styles a render reached."
+                }
+              ]
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "Why it matters",
+            "sectionNumber": "05",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Where portable views pay off",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "Where portable views pay off first",
+              "lede": "These are targets, not commitments. No team has adopted Isomer yet."
+            },
+            {
+              "type": "slideTable",
+              "columns": ["Problem", "Today", "With Isomer"],
+              "rowHeaders": true,
+              "rows": [
+                [
+                  "Alerts",
+                  "17 connectors escape their own templates",
+                  "One composition per alert, rendered per channel"
+                ],
+                [
+                  "Mobile",
+                  "Dashboards squeezed onto a phone",
+                  "Task-shaped views as HTML or PNG"
+                ],
+                [
+                  "Nightshift",
+                  "Who owns Slack and GitHub rendering is open",
+                  "The agent composes once; each surface renders it"
+                ],
+                [
+                  "Agent replies",
+                  "Markdown, or bespoke HTML per client",
+                  "Validated compositions through agent tools"
+                ]
+              ]
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "Why it matters",
+            "sectionNumber": "05",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Where it stands today",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "It works end to end, and it isn’t released yet",
+              "lede": "Isomer grew out of the Adaptive UI proof of concept."
+            },
+            {
+              "type": "slideSplitLayout",
+              "panes": [
+                {
+                  "label": "On main today",
+                  "tone": "primary",
+                  "items": [
+                    {
+                      "type": "slideBulletList",
+                      "items": [
+                        "SDK, runtime, slides pack, Takumi, and evals",
+                        "`pnpm verify` gates every change in CI",
+                        "Public at `github.com/elastic/isomer`",
+                        "Docs at `elastic.github.io/isomer`"
+                      ],
+                      "marker": "check"
+                    }
+                  ]
+                },
+                {
+                  "label": "Not yet",
+                  "items": [
+                    {
+                      "type": "slideBulletList",
+                      "items": [
+                        "A real npm release: packages sit at `0.0.0`",
+                        "Agent tools and the studio merged (PR #86)",
+                        "A production consumer",
+                        "Slack-only hosts without `react-dom`"
+                      ],
+                      "marker": "x"
+                    }
+                  ]
+                }
+              ],
+              "divider": "rule"
+            }
+          ],
+          "logo": true,
+          "tone": "page",
+          "footer": {
+            "brand": "Isomer",
+            "section": "Why it matters",
+            "sectionNumber": "05",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Start here",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "closingSlide",
+              "title": "Start here",
+              "links": [
+                {
+                  "label": "Docs",
+                  "href": "https://elastic.github.io/isomer",
+                  "text": "elastic.github.io/isomer"
+                },
+                {
+                  "label": "Source",
+                  "href": "https://github.com/elastic/isomer",
+                  "text": "github.com/elastic/isomer"
+                }
+              ],
+              "paths": [
+                {
+                  "title": "Render in a host",
+                  "body": "The runtime quick start, then Surfaces"
+                },
+                {
+                  "title": "Write a pack",
+                  "body": "The SDK quick start; copy the slides pack"
+                },
+                {
+                  "title": "Wire up an agent",
+                  "body": "The authoring context; agent tools in PR #86"
+                },
+                {
+                  "title": "Score a pack",
+                  "body": "`isomer-evals` on a replayed corpus"
+                }
+              ]
+            }
+          ],
+          "logo": true,
+          "tone": "inverse",
+          "footer": {
+            "brand": "Isomer",
+            "section": "Why it matters",
+            "sectionNumber": "05",
+            "url": "https://elastic.github.io/isomer"
+          }
+        }
+      ]
+    }
+  ]
+}
