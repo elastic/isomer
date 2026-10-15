@@ -227,6 +227,7 @@ export const demoApp: StudioApp = {
   title: 'Demo',
   icon: demoIcon,
   load: () => import('./app'),
+  pages: [{ path: 'nested/page', title: 'Nested page', section: 'Pages' }],
 };
 
 export const createStudioConfig = (noticeTitle: string, apps: readonly StudioApp[] = [demoApp]) =>
@@ -494,6 +495,8 @@ try {
       STUDIO_EDIT_ROUTE: '#/dev/notice/0',
       STUDIO_APP_ID: 'demo',
       STUDIO_APP_TITLE: 'Demo',
+      STUDIO_APP_PAGE_TITLE: 'Nested page',
+      STUDIO_APP_PAGE_PATH: 'nested/page',
       STUDIO_APP_FONT: 'DemoFont',
       STUDIO_APP_POPOVER: 'Open popover',
       STUDIO_APP_EMOTION: 'emotion-styled',

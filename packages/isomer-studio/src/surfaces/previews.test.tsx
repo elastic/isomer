@@ -242,6 +242,69 @@ describe('ReactSurface', () => {
     ).not.toBeInTheDocument();
     expect(screen.getByTitle('React preview')).toBeInTheDocument();
   });
+
+  it('passes heading and enhancements to the React surface and hands onCommit the shadow root after each commit', () => {
+    const reactRender = vi.fn((value: Composition) => (
+      <p>{value.body[0]?.type}</p>
+    ));
+    const wrapper = withStudio({
+      runtime: {
+        surfaces: { react: { render: reactRender } },
+      } as unknown as StudioRuntime,
+      createReactContext: () => ({}),
+    } as unknown as StudioContextValue);
+    const enhancements = ['slideBuilds'];
+    const committed: string[] = [];
+    const onCommit = vi.fn((root: ShadowRoot) => {
+      committed.push(root.textContent ?? '');
+    });
+
+    const { rerender } = render(
+      <ReactSurface
+        composition={composition('first')}
+        heading={false}
+        {...{ enhancements, onCommit }}
+      />,
+      { wrapper }
+    );
+    expect(reactRender).toHaveBeenLastCalledWith(composition('first'), {
+      wrapper: true,
+      context: {},
+      heading: false,
+      enhancements,
+    });
+    const [[root]] = onCommit.mock.calls as [[ShadowRoot]];
+    expect(root).toBeInstanceOf(ShadowRoot);
+
+    rerender(
+      <ReactSurface
+        composition={composition('second')}
+        {...{ enhancements, onCommit }}
+      />
+    );
+    expect(onCommit).toHaveBeenLastCalledWith(root);
+    expect(committed.at(0)).toBe('first');
+    expect(committed.at(-1)).toBe('second');
+  });
+
+  it('passes heading and enhancements to the html fallback, which has no root for onCommit', () => {
+    const onCommit = vi.fn();
+    render(
+      <ReactSurface
+        composition={composition('plain')}
+        heading={false}
+        enhancements={['slideBuilds']}
+        {...{ onCommit }}
+      />,
+      { wrapper: withStudio(studio()) }
+    );
+    expect(htmlRender).toHaveBeenLastCalledWith(composition('plain'), {
+      scripts: 'host',
+      heading: false,
+      enhancements: ['slideBuilds'],
+    });
+    expect(onCommit).not.toHaveBeenCalled();
+  });
 });
 
 describe('PngSurface', () => {

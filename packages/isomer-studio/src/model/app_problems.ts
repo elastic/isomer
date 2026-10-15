@@ -13,6 +13,48 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const label = (index: number, id: unknown) =>
   typeof id === 'string' ? `apps[${index}] ("${id}")` : `apps[${index}]`;
 
+const isNonEmptyString = (value: unknown): value is string =>
+  typeof value === 'string' && value.trim().length > 0;
+
+const isPagePath = (path: unknown): path is string =>
+  typeof path === 'string' &&
+  path.split('/').every((segment) => segment.length > 0);
+
+const pageProblems = (name: string, pages: unknown): string[] => {
+  if (pages === undefined) {
+    return [];
+  }
+  if (!Array.isArray(pages)) {
+    return [`${name}: pages must be an array.`];
+  }
+  const problems: string[] = [];
+  const seen = new Set<string>();
+  pages.forEach((page: unknown, index) => {
+    const at = `${name}: pages[${index}]`;
+    if (!isRecord(page)) {
+      problems.push(`${at} must be an object.`);
+      return;
+    }
+    const { path, title, section } = page;
+    if (!isPagePath(path)) {
+      problems.push(
+        `${at}: path must be one or more non-empty segments, with no leading or trailing "/".`
+      );
+    } else if (seen.has(path)) {
+      problems.push(`${at}: path "${path}" is used by an earlier page.`);
+    } else {
+      seen.add(path);
+    }
+    if (!isNonEmptyString(title)) {
+      problems.push(`${at}: title must be a non-empty string.`);
+    }
+    if (section !== undefined && !isNonEmptyString(section)) {
+      problems.push(`${at}: section must be a non-empty string.`);
+    }
+  });
+  return problems;
+};
+
 /** What is wrong with a config's `apps`, one line per problem, each naming the app. Runs in Node and the browser. */
 export const appProblems = (apps: unknown): string[] => {
   if (apps === undefined) {
@@ -28,7 +70,7 @@ export const appProblems = (apps: unknown): string[] => {
       problems.push(`apps[${index}] must be an object.`);
       return;
     }
-    const { id, title, icon, load } = app;
+    const { id, title, icon, load, pages } = app;
     const name = label(index, id);
     if (typeof id !== 'string' || !APP_ID_PATTERN.test(id)) {
       problems.push(`${name}: id must match ${APP_ID_PATTERN.source}.`);
@@ -37,7 +79,7 @@ export const appProblems = (apps: unknown): string[] => {
     } else {
       seen.add(id);
     }
-    if (typeof title !== 'string' || !title.trim()) {
+    if (!isNonEmptyString(title)) {
       problems.push(`${name}: title must be a non-empty string.`);
     }
     if (typeof load !== 'function') {
@@ -49,6 +91,7 @@ export const appProblems = (apps: unknown): string[] => {
     ) {
       problems.push(`${name}: icon must be { svg: string }.`);
     }
+    problems.push(...pageProblems(name, pages));
   });
   return problems;
 };

@@ -8,7 +8,13 @@
 import React, { useState } from 'react';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { StyledRenderContext } from '@elastic/isomer-sdk';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 
 import type { StudioApp, StudioAppProps } from '../config';
 import type { CalloutNode } from '../fixtures/components_pack';
@@ -87,6 +93,34 @@ describe('Studio apps', () => {
 
     expect(await countText()).toHaveTextContent('count 1, path "slides/2"');
     expect(window.location.hash).toBe('#/app/deck/slides/2');
+  });
+
+  it('opens an app at a page picked from the nav, and keeps the page current below it', async () => {
+    render(
+      <IsomerStudio
+        {...{ runtime }}
+        apps={[
+          {
+            ...deck(sameLoad()),
+            pages: [{ path: 'slides', title: 'Slides', section: 'Decks' }],
+          },
+        ]}
+      />
+    );
+    const pages = screen.getByRole('list', { name: 'Deck pages' });
+    fireEvent.click(within(pages).getByRole('button', { name: 'Slides' }));
+
+    expect(await countText()).toHaveTextContent('path "slides"');
+    expect(window.location.hash).toBe('#/app/deck/slides');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Go' }));
+    expect(await countText()).toHaveTextContent('path "slides/2"');
+    expect(
+      within(pages).getByRole('button', { name: 'Slides' })
+    ).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('button', { name: 'Deck' })).not.toHaveAttribute(
+      'aria-current'
+    );
   });
 
   it('deep-links into an app, and returns to the remembered primitive from the header', async () => {

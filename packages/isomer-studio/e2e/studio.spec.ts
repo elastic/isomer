@@ -31,6 +31,20 @@ const PREBUILT_SITE = process.env.STUDIO_SITE;
 const EDIT_ROUTE = process.env.STUDIO_EDIT_ROUTE ?? '#/dev/slideHeading/0';
 const APP_ID = process.env.STUDIO_APP_ID ?? 'slides';
 const APP_TITLE = process.env.STUDIO_APP_TITLE ?? 'Slide viewer';
+/** A page the app lists in the nav, as `title` and `path`, and the heading it shows if one is known, when it has one. */
+const APP_PAGE: { title: string; path: string; heading?: string } | undefined =
+  process.env.STUDIO_CONFIG
+    ? process.env.STUDIO_APP_PAGE_TITLE && process.env.STUDIO_APP_PAGE_PATH
+      ? {
+          title: process.env.STUDIO_APP_PAGE_TITLE,
+          path: process.env.STUDIO_APP_PAGE_PATH,
+        }
+      : undefined
+    : {
+        title: 'Statement slide',
+        path: 'statementSlide',
+        heading: 'statementSlide 1',
+      };
 /** A font family the app's global CSS loads with `url()`, when it has one. */
 const APP_FONT = process.env.STUDIO_APP_FONT;
 /** The name of a button in the app that opens an EUI popover, when it has one. */
@@ -194,11 +208,30 @@ const editFirstString = async (page: Page) => {
 const reactPreview = (page: Page) =>
   page.getByRole('region', { name: 'React preview' });
 
-/** Opens the app from the nav, deep-links a sub-path through a reload, and checks its styles and `Preview`. */
+/** Opens the app and one of its pages from the nav, deep-links a sub-path through a reload, and checks its styles and `Preview`. */
 const exerciseApp = async (page: Page, url: string) => {
   await page.goto(url);
   await page.getByRole('button', { name: APP_TITLE, exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`#/app/${APP_ID}/$`));
+
+  if (APP_PAGE) {
+    const entry = page
+      .getByRole('list', { name: `${APP_TITLE} pages` })
+      .getByRole('button', { name: APP_PAGE.title, exact: true });
+    await entry.click();
+    await expect(page).toHaveURL(
+      new RegExp(`#/app/${APP_ID}/${APP_PAGE.path}$`)
+    );
+    await expect(entry).toHaveAttribute('aria-current', 'page');
+    if (APP_PAGE.heading) {
+      await expect(
+        page.locator('main').getByRole('heading', {
+          name: APP_PAGE.heading,
+          exact: true,
+        })
+      ).toBeVisible();
+    }
+  }
 
   await page.goto(`${url}#/app/${APP_ID}/a/b`);
   await page.reload();

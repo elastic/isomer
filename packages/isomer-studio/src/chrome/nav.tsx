@@ -19,11 +19,13 @@ import {
 import type { SerializedStyles } from '@emotion/react';
 import { css } from '@emotion/react';
 
+import type { StudioApp, StudioAppPage } from '../config';
 import { searchPrimitives } from '../model/search';
 import { useStudio } from '../studio_context';
 
 import type { Accent } from './accent';
 import { useAccent } from './accent';
+import { activeAppPage, appPageSections, filterAppPages } from './app_pages';
 import { useClosedNavGroups } from './nav_groups';
 import { navPacks } from './nav_sections';
 import { Glyph, PrimitiveGlyph } from './primitive_glyph';
@@ -46,6 +48,10 @@ const GLYPH_OPACITY = 0.6;
 /** Clears the group header's inset, chevron, and gap, then indents a further `s`. */
 const itemInset = ({ xs, m }: { xs: string; m: string }) =>
   `calc(${xs} + ${m} + ${xs})`;
+
+/** Lines an app's pages up with its label, past its glyph and gap. */
+const pageInset = (size: { xs: string; s: string; m: string }) =>
+  `calc(${itemInset(size)} + ${NAV_GLYPH_SIZE}px + ${size.s})`;
 
 /** An accent tint behind the active entry, with a bar on its leading edge. */
 const activeMark = ({ bright }: Accent): SerializedStyles => css`
@@ -76,16 +82,18 @@ export interface StudioNavProps {
   page: string;
   /** The open app's id; while one is open, no primitive is active. */
   app?: string | undefined;
+  /** The open app's `path`, which picks its active page. */
+  appPath?: string | undefined;
   isOpen: boolean;
   onToggle: () => void;
   onSelect: (page: string) => void;
-  onSelectApp: (id: string) => void;
+  onSelectApp: (id: string, path?: string) => void;
 }
 
 interface NavItem {
   id: string;
   label: string;
-  icon: React.ReactElement;
+  icon?: React.ReactElement | undefined;
   isPrimitive: boolean;
 }
 
@@ -126,11 +134,17 @@ const Row = ({
   isActive,
   accent,
   onSelect,
+  inset,
+  children,
 }: {
   item: NavItem;
   isActive: boolean;
   accent: Accent;
   onSelect: (page: string) => void;
+  /** Defaults to {@link itemInset}. */
+  inset?: string | undefined;
+  /** Rendered after the row's button, inside its list item. */
+  children?: ReactNode;
 }) => {
   const { euiTheme } = useEuiTheme();
   const { id, label, icon } = item;
@@ -152,7 +166,8 @@ const Row = ({
             gap: ${euiTheme.size.s};
             inline-size: 100%;
             block-size: ${ROW_HEIGHT}px;
-            padding-inline: ${itemInset(euiTheme.size)} ${euiTheme.size.s};
+            padding-inline: ${inset ?? itemInset(euiTheme.size)}
+              ${euiTheme.size.s};
             border-radius: ${euiTheme.border.radius.small};
             color: ${LABEL};
             font-size: 14px;
@@ -171,7 +186,7 @@ const Row = ({
               outline-offset: -${euiTheme.focus.width};
             }
           `}>
-          <NavIcon {...{ isActive }}>{icon}</NavIcon>
+          {icon ? <NavIcon {...{ isActive }}>{icon}</NavIcon> : null}
           <span
             css={css`
               overflow: hidden;
@@ -182,7 +197,98 @@ const Row = ({
           </span>
         </button>
       )}
+      {children}
     </li>
+  );
+};
+
+const subList = (gap: number) => css`
+  display: flex;
+  flex-direction: column;
+  gap: ${gap}px;
+  margin: ${gap}px 0 0;
+  padding: 0;
+  list-style: none;
+`;
+
+const appItem = ({ id, title, icon }: StudioApp): NavItem => ({
+  id,
+  label: title,
+  icon: <Glyph svg={icon?.svg} label={title} size={NAV_GLYPH_SIZE} />,
+  isPrimitive: false,
+});
+
+/** An app's row, with its pages under it in their sections. */
+const AppRow = ({
+  app,
+  openApp,
+  appPath,
+  filter,
+  accent,
+  onSelectApp,
+}: {
+  app: StudioApp;
+  /** The open app's id. */
+  openApp: string | undefined;
+  appPath: string;
+  filter: string;
+  accent: Accent;
+  onSelectApp: (id: string, path?: string) => void;
+}) => {
+  const { euiTheme } = useEuiTheme();
+  const { id, title, pages = [] } = app;
+  const item = useMemo(() => appItem(app), [app]);
+  const isOpen = openApp === id;
+  const active = isOpen ? activeAppPage(pages, appPath) : undefined;
+  const sections = appPageSections(filterAppPages(pages, filter));
+  const inset = pageInset(euiTheme.size);
+  const pageRows = (listed: readonly StudioAppPage[]) =>
+    listed.map(({ path, title: label }) => (
+      <Row
+        key={path}
+        item={{ id: path, label, isPrimitive: false }}
+        isActive={active?.path === path}
+        onSelect={(next) => onSelectApp(id, next)}
+        {...{ accent, inset }}
+      />
+    ));
+
+  return (
+    <Row
+      {...{ item, accent }}
+      isActive={isOpen && active === undefined}
+      onSelect={() => onSelectApp(id)}>
+      {sections.length ? (
+        <ul css={subList(ROW_GAP)} aria-label={`${title} pages`}>
+          {sections.map(({ title: section, pages: listed }) =>
+            section === undefined ? (
+              <React.Fragment key="unsectioned">
+                {pageRows(listed)}
+              </React.Fragment>
+            ) : (
+              <li key={`section:${section}`}>
+                <h4
+                  css={css`
+                    margin: ${euiTheme.size.xs} 0 0;
+                    padding-inline: ${inset} ${euiTheme.size.s};
+                    color: ${GROUP_LABEL};
+                    font-size: 11px;
+                    font-weight: ${euiTheme.font.weight.semiBold};
+                    letter-spacing: 0.08em;
+                    line-height: ${ROW_HEIGHT}px;
+                    text-transform: uppercase;
+                  `}>
+                  {section}
+                </h4>
+                <ul css={subList(ROW_GAP)} aria-label={section}>
+                  {pageRows(listed)}
+                </ul>
+              </li>
+            )
+          )}
+        </ul>
+      ) : null}
+    </Row>
   );
 };
 
@@ -262,11 +368,12 @@ const Group = ({
   );
 };
 
-/** The config's apps, then primitives under collapsible groups, narrowed by a filter, and the docs-only views. */
+/** The config's apps and their pages, then primitives under collapsible groups, narrowed by a filter, and the docs-only views. */
 export const StudioNav = ({
   mode,
   page,
   app,
+  appPath = '',
   isOpen,
   onSelect,
   onSelectApp,
@@ -279,16 +386,7 @@ export const StudioNav = ({
     apps,
     docs: { primitives },
   } = useStudio();
-  const appItems = useMemo(
-    (): NavItem[] =>
-      apps.map(({ id, title, icon }) => ({
-        id,
-        label: title,
-        icon: <Glyph svg={icon?.svg} label={title} size={NAV_GLYPH_SIZE} />,
-        isPrimitive: false,
-      })),
-    [apps]
-  );
+  const appItems = useMemo(() => apps.map(appItem), [apps]);
   const [filter, setFilter] = useState('');
   const { closed, setOpen } = useClosedNavGroups();
   const separatePacks = runtime.packs.length > 1;
@@ -408,12 +506,12 @@ export const StudioNav = ({
         isActive={item.id === activePage}
       />
     ));
-  const appRows = appItems.map((item) => (
-    <Row
-      key={item.id}
-      {...{ item, accent }}
-      onSelect={onSelectApp}
-      isActive={item.id === app}
+  const appRows = apps.map((entry) => (
+    <AppRow
+      key={entry.id}
+      app={entry}
+      openApp={app}
+      {...{ appPath, filter, accent, onSelectApp }}
     />
   ));
 
@@ -480,7 +578,7 @@ export const StudioNav = ({
                   <RailEntry
                     key={item.id}
                     {...{ item, accent }}
-                    onSelect={onSelectApp}
+                    onSelect={(id) => onSelectApp(id)}
                     isActive={item.id === app}
                   />
                 ) : (

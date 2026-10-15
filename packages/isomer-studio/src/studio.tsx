@@ -158,10 +158,11 @@ const Layout = ({
             {...{ page }}
             mode={route.mode}
             app={app?.id}
+            appPath={isAppRoute(location) ? location.path : undefined}
             isOpen={isNavOpen}
             onToggle={() => setNavOpen((open) => !open)}
             onSelect={(next) => navigate({ page: next, example: 0 })}
-            onSelectApp={(id) => openApp(id)}
+            onSelectApp={openApp}
           />
         </EuiThemeProvider>
         <main css={main}>
