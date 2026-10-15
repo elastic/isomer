@@ -55,6 +55,7 @@ class RenderBoundary extends Component<
 
 export interface ReactSurfaceProps {
   composition: Composition;
+  heading?: boolean | undefined;
   enhancements?: readonly string[] | undefined;
   /** Runs after each commit of the shadow root's content; the `html` fallback has no root to hand it. */
   onCommit?: ((root: ShadowRoot) => void) | undefined;
@@ -63,6 +64,7 @@ export interface ReactSurfaceProps {
 const ReactContent = ({
   root,
   composition,
+  heading,
   enhancements,
   onCommit,
   createReactContext,
@@ -83,6 +85,7 @@ const ReactContent = ({
       {runtime.surfaces.react.render(composition, {
         wrapper: true,
         context,
+        ...(heading === false ? { heading } : {}),
         ...(enhancements ? { enhancements } : {}),
       })}
     </>
@@ -91,11 +94,13 @@ const ReactContent = ({
 
 const HtmlContent = ({
   composition,
+  heading,
   enhancements,
-}: Pick<ReactSurfaceProps, 'composition' | 'enhancements'>) => {
+}: Pick<ReactSurfaceProps, 'composition' | 'heading' | 'enhancements'>) => {
   const { runtime } = useStudio();
   const { html } = runtime.surfaces.html.render(composition, {
     scripts: 'host',
+    ...(heading === false ? { heading } : {}),
     ...(enhancements ? { enhancements } : {}),
   });
   return <HtmlSurface {...{ html }} title="React preview" />;
@@ -104,6 +109,7 @@ const HtmlContent = ({
 /** The React surface in a shadow root, styled by the host, or the `html` surface when it supplies no styling. */
 export const ReactSurface = ({
   composition,
+  heading,
   enhancements,
   onCommit,
 }: ReactSurfaceProps) => {
@@ -118,6 +124,7 @@ export const ReactSurface = ({
               {...{
                 root,
                 composition,
+                heading,
                 enhancements,
                 onCommit,
                 createReactContext,
@@ -126,7 +133,7 @@ export const ReactSurface = ({
           )}
         </ShadowRootHost>
       ) : (
-        <HtmlContent {...{ composition, enhancements }} />
+        <HtmlContent {...{ composition, heading, enhancements }} />
       )}
     </RenderBoundary>
   );

@@ -35,6 +35,8 @@ export type StudioPreviewProps = (
   zoom?: PreviewZoom | undefined;
   /** With `fit`, also scales down to this height. */
   maxHeight?: number | undefined;
+  /** `false` leaves out the composition's leading title, as a slide on its own wants. Defaults to `true`. */
+  heading?: boolean | undefined;
   /** Enhancement ids passed to the React surface, such as the slides pack's `SLIDE_BUILDS`. */
   enhancements?: readonly string[] | undefined;
   /** Called with the shadow root after each render commits, for a host step such as `showSlideBuild`. Never called on the `html` fallback. */

@@ -23,6 +23,7 @@ export const AppPreview = ({
   composition: given,
   zoom,
   maxHeight,
+  heading,
   enhancements,
   onCommit,
 }: StudioPreviewProps) => {
@@ -54,7 +55,7 @@ export const AppPreview = ({
     <ScaledPreview {...{ zoom, maxHeight }}>
       <ReactSurface
         composition={composed.composition}
-        {...{ enhancements, onCommit }}
+        {...{ heading, enhancements, onCommit }}
       />
     </ScaledPreview>
   );

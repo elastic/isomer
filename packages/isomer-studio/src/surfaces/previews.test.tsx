@@ -243,7 +243,7 @@ describe('ReactSurface', () => {
     expect(screen.getByTitle('React preview')).toBeInTheDocument();
   });
 
-  it('passes enhancements to the React surface and hands onCommit the shadow root after each commit', () => {
+  it('passes heading and enhancements to the React surface and hands onCommit the shadow root after each commit', () => {
     const reactRender = vi.fn((value: Composition) => (
       <p>{value.body[0]?.type}</p>
     ));
@@ -262,6 +262,7 @@ describe('ReactSurface', () => {
     const { rerender } = render(
       <ReactSurface
         composition={composition('first')}
+        heading={false}
         {...{ enhancements, onCommit }}
       />,
       { wrapper }
@@ -269,6 +270,7 @@ describe('ReactSurface', () => {
     expect(reactRender).toHaveBeenLastCalledWith(composition('first'), {
       wrapper: true,
       context: {},
+      heading: false,
       enhancements,
     });
     const [[root]] = onCommit.mock.calls as [[ShadowRoot]];
@@ -285,11 +287,12 @@ describe('ReactSurface', () => {
     expect(committed.at(-1)).toBe('second');
   });
 
-  it('passes enhancements to the html fallback, which has no root for onCommit', () => {
+  it('passes heading and enhancements to the html fallback, which has no root for onCommit', () => {
     const onCommit = vi.fn();
     render(
       <ReactSurface
         composition={composition('plain')}
+        heading={false}
         enhancements={['slideBuilds']}
         {...{ onCommit }}
       />,
@@ -297,6 +300,7 @@ describe('ReactSurface', () => {
     );
     expect(htmlRender).toHaveBeenLastCalledWith(composition('plain'), {
       scripts: 'host',
+      heading: false,
       enhancements: ['slideBuilds'],
     });
     expect(onCommit).not.toHaveBeenCalled();

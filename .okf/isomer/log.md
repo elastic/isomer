@@ -2,7 +2,7 @@
 
 ## 2026-10-15
 
-- **Studio app pages and slide builds through `Preview`**: a Studio app may list `pages`, `{ path, title, section? }`, which the nav shows under the app's row, grouped by `section`, without loading the app. A page is current for its `path` and every path below it, the longest match winning; the nav filter matches page titles, and the collapsed rail shows only the app. `appProblems` checks each page's `path`, `title` and `section`. `Preview` takes `enhancements`, passed to the React surface (and to the `html` fallback), and `onCommit(root)`, called with the shadow root after each commit so a host can run a step such as `showSlideBuild`. `StudioAppPage` is exported. The slides pack's Slide viewer lists its slide-level primitives as pages. ([#210](https://github.com/elastic/isomer/issues/210))
+- **Studio app pages and slide builds through `Preview`**: a Studio app may list `pages`, `{ path, title, section? }`, which the nav shows under the app's row, grouped by `section`, without loading the app. A page is current for its `path` and every path below it, the longest match winning; the nav filter matches page titles, and the collapsed rail shows only the app. `appProblems` checks each page's `path`, `title` and `section`. `Preview` takes `heading={false}`, which leaves out the composition's leading title, `enhancements`, passed to the React surface (and to the `html` fallback), and `onCommit(root)`, called with the shadow root after each commit so a host can run a step such as `showSlideBuild`. `StudioAppPage` is exported. The slides pack's Slide viewer lists its slide-level primitives as pages. ([#210](https://github.com/elastic/isomer/issues/210))
 
 ## 2026-10-14
 
