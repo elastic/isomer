@@ -29,6 +29,14 @@ const CONFIG =
 const BASE = process.env.STUDIO_BASE ?? '/sub/path/';
 const PREBUILT_SITE = process.env.STUDIO_SITE;
 const EDIT_ROUTE = process.env.STUDIO_EDIT_ROUTE ?? '#/dev/slideHeading/0';
+const APP_ID = process.env.STUDIO_APP_ID ?? 'slides';
+const APP_TITLE = process.env.STUDIO_APP_TITLE ?? 'Slide viewer';
+/** A font family the app's global CSS loads with `url()`, when it has one. */
+const APP_FONT = process.env.STUDIO_APP_FONT;
+/** The name of a button in the app that opens an EUI popover, when it has one. */
+const APP_POPOVER = process.env.STUDIO_APP_POPOVER;
+/** The test id of an app element whose Emotion `css` prop sets `color: rgb(1, 2, 3)`, when it has one. */
+const APP_EMOTION = process.env.STUDIO_APP_EMOTION;
 const SKIP_DEV = process.env.STUDIO_DEV === '0';
 
 const EDITED_TEXT = 'Edited by the smoke test';
@@ -186,6 +194,78 @@ const editFirstString = async (page: Page) => {
 const reactPreview = (page: Page) =>
   page.getByRole('region', { name: 'React preview' });
 
+/** Opens the app from the nav, deep-links a sub-path through a reload, and checks its styles and `Preview`. */
+const exerciseApp = async (page: Page, url: string) => {
+  await page.goto(url);
+  await page.getByRole('button', { name: APP_TITLE, exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`#/app/${APP_ID}/$`));
+
+  await page.goto(`${url}#/app/${APP_ID}/a/b`);
+  await page.reload();
+  await expect(page).toHaveURL(new RegExp(`#/app/${APP_ID}/a/b$`));
+  const main = page.locator('main').first();
+
+  await expect
+    .poll(
+      () =>
+        main.evaluate(
+          (element) =>
+            Array.from(element.querySelectorAll('*')).filter(
+              (node) => (node.shadowRoot?.textContent ?? '').trim().length > 0
+            ).length
+        ),
+      { message: 'Preview hosts with rendered output in a shadow root' }
+    )
+    .toBeGreaterThan(0);
+
+  const styled = await main.evaluate((element) => {
+    const selectors = Array.from(document.styleSheets).flatMap((sheet) => {
+      try {
+        return Array.from(sheet.cssRules).flatMap((rule) =>
+          rule instanceof CSSStyleRule &&
+          /^\.[\w-]+$/.test(rule.selectorText) &&
+          !rule.selectorText.startsWith('.css-') &&
+          !rule.selectorText.startsWith('.eui')
+            ? [rule.selectorText]
+            : []
+        );
+      } catch {
+        return [];
+      }
+    });
+    return Array.from(element.querySelectorAll('[class]')).filter((node) =>
+      selectors.some((selector) => node.matches(selector))
+    ).length;
+  });
+  expect(styled, "elements the app's own stylesheets style").toBeGreaterThan(0);
+
+  if (APP_FONT) {
+    await expect
+      .poll(() =>
+        page.evaluate(
+          (family) =>
+            Array.from(document.fonts).some(
+              (font) =>
+                font.family.replace(/"/g, '') === family &&
+                font.status === 'loaded'
+            ),
+          APP_FONT
+        )
+      )
+      .toBe(true);
+  }
+  if (APP_EMOTION) {
+    await expect(page.getByTestId(APP_EMOTION)).toHaveCSS(
+      'color',
+      'rgb(1, 2, 3)'
+    );
+  }
+  if (APP_POPOVER) {
+    await page.getByRole('button', { name: APP_POPOVER }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+  }
+};
+
 test.describe('static build', () => {
   let site: StaticServer;
   let tempDir: string | undefined;
@@ -245,6 +325,64 @@ test.describe('static build', () => {
 
     expect(problems).toEqual([]);
   });
+
+  test('serves apps, their chunks and their CSS from the sub-path', async ({
+    page,
+  }) => {
+    const problems = watchProblems(page);
+    await exerciseApp(page, site.url);
+    expect(problems).toEqual([]);
+  });
+});
+
+test.describe('slide viewer', () => {
+  test.skip(
+    Boolean(process.env.STUDIO_CONFIG),
+    'needs the repository slides pack'
+  );
+
+  let site: StaticServer;
+  let tempDir: string;
+
+  test.beforeAll(async () => {
+    tempDir = mkdtempSync(join(tmpdir(), 'isomer-studio-viewer-'));
+    const dir = join(tempDir, 'site');
+    await runCli(['build', '--config', CONFIG, '--out', dir, '--base', BASE]);
+    site = await serveStatic(dir, BASE);
+  });
+
+  test.afterAll(async () => {
+    await site.close();
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  test('deep-links a slide and steps through slides with Previous and Next', async ({
+    page,
+  }) => {
+    const counter = page.getByText(/^\d+ of \d+$/);
+    const previous = page.getByRole('button', { name: 'Previous slide' });
+    const next = page.getByRole('button', { name: 'Next slide' });
+
+    await page.goto(`${site.url}#/app/slides/agendaSlide/1`);
+    await expect(counter).toHaveText(/^2 of /);
+    await expect(previous).toBeEnabled();
+
+    await next.click();
+    await expect(counter).toHaveText(/^3 of /);
+    const third = new URL(page.url()).hash;
+    expect(third).toMatch(/^#\/app\/slides\/\w+\/\d+$/);
+    await page.reload();
+    await expect(counter).toHaveText(/^3 of /);
+
+    await previous.click();
+    await previous.click();
+    await expect(counter).toHaveText(/^1 of /);
+    await expect(page).toHaveURL(/#\/app\/slides\/agendaSlide\/0$/);
+    await expect(previous).toBeDisabled();
+
+    await page.goto(`${site.url}#/app/slides/not-a-slide/9`);
+    await expect(counter).toHaveText(/^1 of /);
+  });
 });
 
 test.describe('dev server', () => {
@@ -288,6 +426,12 @@ test.describe('dev server', () => {
 
     expect(problems).toEqual([]);
   });
+
+  test('serves apps and their CSS', async ({ page }) => {
+    const problems = watchProblems(page);
+    await exerciseApp(page, dev.url);
+    expect(problems).toEqual([]);
+  });
 });
 
 test.describe('dev server reload', () => {
@@ -316,6 +460,20 @@ test.describe('dev server reload', () => {
     );
     writeOptions('Before reload', false);
     writeFileSync(
+      join(dir, 'counter.ts'),
+      [
+        "import { createElement, useState } from 'react';",
+        '',
+        'const Counter = () => {',
+        '  const [count, setCount] = useState(0);',
+        "  return createElement('button', { type: 'button', onClick: () => setCount(count + 1) }, `Count ${count}`);",
+        '};',
+        '',
+        'export default Counter;',
+        '',
+      ].join('\n')
+    );
+    writeFileSync(
       join(dir, 'isomer-studio.config.ts'),
       [
         "import { createElement } from 'react';",
@@ -332,6 +490,7 @@ test.describe('dev server reload', () => {
         '',
         'export default {',
         '  title,',
+        "  apps: [{ id: 'counter', title: 'Counter', load: () => import('./counter') }],",
         '  runtime: createIsomerRuntime({',
         '    packs: [componentsPack],',
         '    ...(framed ? { frames: { card } } : {}),',
@@ -377,5 +536,18 @@ test.describe('dev server reload', () => {
     const png = await postPng();
     expect(png.status(), await png.text()).toBe(200);
     expect(png.headers()['content-type']).toBe('image/png');
+  });
+
+  test('keeps an open app mounted when a pack module changes', async ({
+    page,
+  }) => {
+    await page.goto(`${dev.url}#/app/counter/`);
+    await page.getByRole('button', { name: 'Count 0' }).click();
+    await expect(page.getByRole('button', { name: 'Count 1' })).toBeVisible();
+
+    writeOptions('App reload', false);
+
+    await expect(page).toHaveTitle('App reload', { timeout: 60_000 });
+    await expect(page.getByRole('button', { name: 'Count 1' })).toBeVisible();
   });
 });

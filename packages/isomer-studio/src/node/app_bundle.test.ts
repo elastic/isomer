@@ -8,8 +8,10 @@
 // @vitest-environment node
 
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   realpathSync,
   rmSync,
   writeFileSync,
@@ -22,6 +24,7 @@ import { build } from 'esbuild';
 import {
   appBuildOptions,
   appEntry,
+  appStylesheets,
   reactDirectories,
   reactFromConfig,
 } from './app_bundle';
@@ -166,6 +169,81 @@ describe('appEntry', () => {
 });
 
 describe('appBuildOptions', () => {
+  it("bundles a lazy app's module and global CSS into one stylesheet, leaving Monaco's out", async () => {
+    write(
+      'consumer/node_modules/monaco-editor/package.json',
+      JSON.stringify({ name: 'monaco-editor', version: '1.0.0' })
+    );
+    write(
+      'consumer/node_modules/monaco-editor/editor.css',
+      '.monaco { color: blue; }\n'
+    );
+    write(
+      'consumer/node_modules/monaco-editor/index.js',
+      "import './editor.css';\nexport const monaco = true;\n"
+    );
+    write(
+      'consumer/app.module.css',
+      ['jpg', 'jpeg', 'gif', 'webp', 'avif', 'otf']
+        .map(
+          (extension) =>
+            `.${extension} { background: url("./image.${extension}"); }`
+        )
+        .concat('.box { color: red; }')
+        .join('\n')
+    );
+    for (const extension of ['jpg', 'jpeg', 'gif', 'webp', 'avif', 'otf']) {
+      write(`consumer/image.${extension}`, extension);
+    }
+    write(
+      'consumer/app.css',
+      '@font-face { font-family: Fixture; src: url("./fixture.woff2"); }\n'
+    );
+    write('consumer/fixture.woff2', 'font');
+    write(
+      'consumer/app.js',
+      [
+        "import styles from './app.module.css';",
+        "import './app.css';",
+        'export default styles.box;',
+        '',
+      ].join('\n')
+    );
+    const entry = write(
+      'consumer/entry.js',
+      [
+        "import { monaco } from 'monaco-editor';",
+        "export const load = () => import('./app.js');",
+        'export { monaco };',
+        '',
+      ].join('\n')
+    );
+    const configPath = write('consumer/isomer-studio.config.ts', '');
+
+    const { metafile } = await build({
+      ...appBuildOptions({ configPath, assetsDir: join(root, 'out/assets') }),
+      entryPoints: { app: entry },
+      absWorkingDir: root,
+      minify: false,
+      metafile: true,
+    });
+    const { bundle, chunks } = appStylesheets(metafile, 'consumer/entry.js');
+
+    expect(bundle).toBe('out/assets/app.css');
+    const css = readFileSync(join(root, 'out/assets/app.css'), 'utf8');
+    expect(css).toMatch(/\.app_box\b/);
+    expect(css).toMatch(/url\("\.\/media\/fixture-[A-Z0-9]+\.woff2"\)/);
+    expect(css).not.toContain('.monaco');
+    expect(css.match(/url\("\.\/media\/image-[A-Z0-9]+\.\w+"\)/g)).toHaveLength(
+      6
+    );
+    expect(chunks.length).toBeGreaterThan(0);
+    expect(
+      chunks.every((chunk) => chunk.startsWith('out/assets/chunks/'))
+    ).toBe(true);
+    expect(existsSync(join(root, chunks[0] ?? ''))).toBe(true);
+  });
+
   it('minifies for production', () => {
     expect(
       appBuildOptions({

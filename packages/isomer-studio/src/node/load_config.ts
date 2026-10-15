@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { existsSync, realpathSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -14,6 +14,9 @@ import type { ReactNode } from 'react';
 import { tsImport } from 'tsx/esm/api';
 
 import type { StudioConfig } from '../config';
+import { appProblems } from '../model/app_problems';
+
+import { PACKAGE_DIR } from './app_bundle';
 
 export type ConfigLoader = 'none' | 'tsx';
 
@@ -98,6 +101,71 @@ export const assertSingleReact = (configPath: string): void => {
   }
 };
 
+/** Packages an app must share with the Studio for EUI's theme context and Emotion's cache to reach it. */
+const SHARED_WITH_APPS = ['@elastic/eui', '@emotion/react'] as const;
+
+/** `@elastic/eui`'s peers, which pnpm must resolve alike for the config and the Studio to share one EUI. */
+const EUI_PEERS = [
+  'react',
+  'react-dom',
+  '@emotion/react',
+  '@emotion/css',
+  '@elastic/eui-theme-borealis',
+  '@elastic/datemath',
+  'moment',
+] as const;
+
+const packageDirectory = (name: string, from: string): string | undefined => {
+  try {
+    return dirname(
+      realpathSync(createRequire(from).resolve(`${name}/package.json`))
+    );
+  } catch {
+    return undefined;
+  }
+};
+
+const studioVersions = (studioDir: string): Record<string, string> => {
+  const { dependencies = {}, peerDependencies = {} } = JSON.parse(
+    readFileSync(join(studioDir, 'package.json'), 'utf8')
+  ) as {
+    dependencies?: Record<string, string>;
+    peerDependencies?: Record<string, string>;
+  };
+  return { ...peerDependencies, ...dependencies };
+};
+
+/** Throws when the config would load a different EUI or Emotion from the Studio's, which its apps share; one it cannot resolve at all is fine. */
+export const assertSingleEui = (
+  configPath: string,
+  studioDir: string = PACKAGE_DIR
+): void => {
+  const studioPackage = join(studioDir, 'package.json');
+  const mismatched = SHARED_WITH_APPS.map((name) => ({
+    name,
+    config: packageDirectory(name, configPath),
+    studio: packageDirectory(name, studioPackage),
+  })).filter(({ config, studio }) => config !== undefined && config !== studio);
+  if (!mismatched.length) {
+    return;
+  }
+  const versions = studioVersions(studioDir);
+  const wanted = ['@elastic/eui', ...EUI_PEERS].map((name) =>
+    versions[name] === undefined ? name : `${name}@${versions[name]}`
+  );
+  throw new Error(
+    [
+      'The Studio config and @elastic/isomer-studio resolve different copies of packages that Studio apps share:',
+      ...mismatched.flatMap(({ name, config, studio }) => [
+        `  ${name}`,
+        `    config: ${config}`,
+        `    studio: ${studio ?? '(not installed)'}`,
+      ]),
+      `Install the Studio's versions beside the config, then deduplicate your lockfile: ${wanted.join(', ')}.`,
+    ].join('\n')
+  );
+};
+
 /** The `tsconfig.json` nearest the config, which `tsx` applies to the files it includes. */
 export const nearestTsconfig = (configPath: string): string | undefined => {
   for (let dir = dirname(configPath); ; dir = dirname(dir)) {
@@ -144,6 +212,18 @@ export const studioConfigFrom = (
     throw new Error(
       `${configPath} must default-export defineStudioConfig({ runtime, ... }).`
     );
+  }
+  const problems = appProblems(config.apps);
+  if (problems.length) {
+    throw new Error(
+      [
+        `${configPath} has invalid apps:`,
+        ...problems.map((line) => `  ${line}`),
+      ].join('\n')
+    );
+  }
+  if (config.apps?.length) {
+    assertSingleEui(configPath);
   }
   return config;
 };

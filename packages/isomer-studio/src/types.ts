@@ -32,4 +32,6 @@ export interface IsomerStudioProps extends StudioConfig {
   transformJsx?: JsxTransform | undefined;
   /** Adds a PNG preview beneath the `snapshot` surface; without it there is none. */
   rasterizePng?: RasterizePng | undefined;
+  /** Why the config's latest apps were rejected, shown above the page. */
+  configProblems?: readonly string[] | undefined;
 }

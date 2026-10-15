@@ -41,7 +41,7 @@ describe('missingPackedFiles', () => {
     expect(studioPackedFiles).toEqual(
       expect.arrayContaining([
         'dist/app/index.html',
-        'dist/app/assets/app.css',
+        'dist/app/assets/studio.css',
         'dist/app/assets/codicon-*.ttf',
         'dist/app/assets/editor.worker.js',
         'dist/app/assets/ts.worker.js',

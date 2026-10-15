@@ -10,6 +10,7 @@ import { createRoot } from 'react-dom/client';
 import type {} from 'monaco-editor/esm/vs/editor/editor.api';
 
 import type { StudioConfig } from '../config';
+import { appProblems } from '../model/app_problems';
 import { IsomerStudio } from '../studio';
 import type { JsxTransform, RasterizePng } from '../types';
 
@@ -30,7 +31,7 @@ export const assetUrl = (path: string): string =>
   new URL(path, document.baseURI).href;
 
 export interface MountedStudio {
-  /** Re-renders with a new config, keeping the route and every view's state. */
+  /** Re-renders with a new config, keeping the route and every view's state. A config with invalid apps keeps the previous apps and shows why. */
   update: (config: StudioConfig, host: StudioHost) => void;
 }
 
@@ -49,12 +50,23 @@ export const mountStudio = (
     throw new Error('The Studio page has no #root element.');
   }
   const root = createRoot(container);
+  let apps: StudioConfig['apps'];
   const update = (
     next: StudioConfig,
     { transformJsx, rasterizePng }: StudioHost
   ) => {
+    const problems = appProblems(next.apps);
+    if (!problems.length) {
+      ({ apps } = next);
+    }
     document.title = next.title ?? 'Isomer Studio';
-    root.render(<IsomerStudio {...next} {...{ transformJsx, rasterizePng }} />);
+    root.render(
+      <IsomerStudio
+        {...next}
+        {...{ apps, transformJsx, rasterizePng }}
+        configProblems={problems}
+      />
+    );
   };
   update(config, host);
   return { update };

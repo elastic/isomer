@@ -3,5 +3,5 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "include": ["src", "isomer-studio.config.ts"]
+  "include": ["src", "studio", "isomer-studio.config.ts"]
 }
