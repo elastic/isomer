@@ -13,18 +13,20 @@ export interface AppPageSection {
   pages: StudioAppPage[];
 }
 
-/** `pages` grouped by `section`, sections and pages in order of first appearance. */
+/** `pages` grouped by `section`: unsectioned pages first, then sections in order of first appearance. */
 export const appPageSections = (
   pages: readonly StudioAppPage[]
 ): AppPageSection[] => {
-  const sections = new Map<string | undefined, AppPageSection>();
+  const sections = new Map<string | undefined, AppPageSection>([
+    [undefined, { title: undefined, pages: [] }],
+  ]);
   for (const page of pages) {
     const { section: title } = page;
     const section = sections.get(title) ?? { title, pages: [] };
     section.pages.push(page);
     sections.set(title, section);
   }
-  return [...sections.values()];
+  return [...sections.values()].filter(({ pages: listed }) => listed.length);
 };
 
 /** The page `path` is at or below, the longest such page winning. */
