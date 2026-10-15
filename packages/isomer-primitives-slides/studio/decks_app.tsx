@@ -117,7 +117,7 @@ const linkedSlide = (event: MouseEvent): number | undefined => {
 };
 
 /** The zoom that fills the screen while `presenter` is full screen; `fit` never scales up. */
-const usePresentingZoom = (presenter: RefObject<HTMLElement>) => {
+const usePresentingZoom = (presenter: RefObject<HTMLElement | null>) => {
   const [zoom, setZoom] = useState<number>();
   useEffect(() => {
     const update = () =>
