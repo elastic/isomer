@@ -16,6 +16,7 @@ import React, {
 import {
   EuiButton,
   EuiButtonEmpty,
+  EuiButtonGroup,
   EuiButtonIcon,
   EuiCallOut,
   EuiFlexGroup,
@@ -23,9 +24,15 @@ import {
   EuiLoadingSpinner,
   EuiText,
   EuiTitle,
+  EuiToolTip,
 } from '@elastic/eui';
 import type { Composition } from '@elastic/isomer-sdk';
-import type { StudioAppProps, StudioTheme } from '@elastic/isomer-studio';
+import type {
+  RenderPdf,
+  StudioAppProps,
+  StudioAppSurface,
+  StudioTheme,
+} from '@elastic/isomer-studio';
 
 import type { DeckEntry, SavedDeck } from '../decks/catalog';
 import { deckCatalog } from '../decks/catalog';
@@ -50,6 +57,14 @@ import {
 import styles from './decks_app.module.css';
 
 type Preview = StudioAppProps['Preview'];
+
+/** `slide` is the React render with its builds; the rest are the host's surfaces. */
+type StageView = 'slide' | StudioAppSurface;
+
+type StageProps = Pick<
+  StudioAppProps,
+  'Preview' | 'Surface' | 'surfaces' | 'renderPdf' | 'theme' | 'navigate'
+>;
 
 const BUILDS = [SLIDE_BUILDS];
 
@@ -143,6 +158,77 @@ const isEditable = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement &&
   (target.isContentEditable ||
     ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName));
+
+const INTERACTIVE =
+  'a, button, input, select, textarea, label, [role="button"]';
+
+const isInteractive = (target: EventTarget): boolean =>
+  target instanceof Element && target.matches(INTERACTIVE);
+
+const FORWARD_KEYS = new Set(['ArrowRight', 'ArrowDown', 'PageDown', ' ']);
+const BACK_KEYS = new Set(['ArrowLeft', 'ArrowUp', 'PageUp']);
+/** Keys an output view keeps for scrolling. */
+const SCROLL_KEYS = new Set([
+  'ArrowDown',
+  'ArrowUp',
+  'PageDown',
+  'PageUp',
+  ' ',
+]);
+
+const download = (blob: Blob, name: string) => {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url));
+};
+
+const PdfButton = ({
+  renderPdf,
+  slides,
+  entry: { id, title },
+}: {
+  renderPdf: RenderPdf | undefined;
+  slides: readonly Composition[];
+  entry: DeckEntry;
+}) => {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
+  if (!renderPdf) {
+    return (
+      <EuiToolTip content="PDFs render under isomer-studio dev.">
+        <EuiButton size="s" iconType="download" isDisabled>
+          Download PDF
+        </EuiButton>
+      </EuiToolTip>
+    );
+  }
+  const onClick = async () => {
+    setBusy(true);
+    setError(undefined);
+    try {
+      download(await renderPdf(slides, { title }), `${id}.pdf`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <EuiToolTip content={error} title={error ? 'The PDF failed' : undefined}>
+      <EuiButton
+        size="s"
+        iconType="download"
+        isLoading={busy}
+        color={error ? 'danger' : 'primary'}
+        onClick={() => void onClick()}>
+        Download PDF
+      </EuiButton>
+    </EuiToolTip>
+  );
+};
 
 const Tile = ({
   label,
@@ -259,15 +345,17 @@ const DeckList = ({
 );
 
 const DeckSlides = ({
-  entry: { id, title },
+  entry,
   deck,
   Preview,
+  renderPdf,
   theme,
   navigate,
 }: {
   entry: DeckEntry;
   deck: SavedDeck;
-} & Pick<StudioAppProps, 'Preview' | 'theme' | 'navigate'>) => {
+} & Pick<StageProps, 'Preview' | 'renderPdf' | 'theme' | 'navigate'>) => {
+  const { id, title } = entry;
   const slides = useThemedSlides(deck, theme);
   const open = (slide: number) =>
     navigate(formatDeckPath({ deck: id, place: { slide, step: 0 } }));
@@ -286,6 +374,9 @@ const DeckSlides = ({
           <EuiTitle size="s">
             <h2>{title}</h2>
           </EuiTitle>
+        </EuiFlexItem>
+        <EuiFlexItem grow={false}>
+          <PdfButton {...{ renderPdf, slides, entry }} />
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
           <EuiButton size="s" iconType="play" onClick={() => open(0)}>
@@ -316,72 +407,129 @@ const DeckSlides = ({
 };
 
 const SlideStage = ({
-  entry: { id, title },
+  entry,
   deck,
   place: requested,
   Preview,
+  Surface,
+  surfaces,
+  renderPdf,
   theme,
   navigate,
 }: {
   entry: DeckEntry;
   deck: SavedDeck;
   place: DeckPlace;
-} & Pick<StudioAppProps, 'Preview' | 'theme' | 'navigate'>) => {
+} & StageProps) => {
+  const { id, title } = entry;
   const slides = useThemedSlides(deck, theme);
   const builds = useMemo(
     () => deck.slides.map((slide) => slideBuilds(slide)),
     [deck]
   );
+  const [view, setView] = useState<StageView>('slide');
+  const views = useMemo(
+    () => [
+      { id: 'slide', label: 'Slide' },
+      ...surfaces.filter((surface) => surface.id !== 'react'),
+    ],
+    [surfaces]
+  );
   const place = clampPlace(requested, builds);
   const { slide, step } = place;
   const composition = slides[slide];
-  const previous = stepBack(place, builds);
-  const next = stepForward(place, builds);
+  const isSlide = view === 'slide';
+  const slideAt = (index: number): DeckPlace | undefined =>
+    index >= 0 && index < slides.length ? { slide: index, step: 0 } : undefined;
+  const previous = isSlide ? stepBack(place, builds) : slideAt(slide - 1);
+  const next = isSlide ? stepForward(place, builds) : slideAt(slide + 1);
 
   const go = useCallback(
     (to: DeckPlace) => navigate(formatDeckPath({ deck: id, place: to })),
     [id, navigate]
   );
 
+  const presenter = useRef<HTMLDivElement>(null);
+  const zoom = usePresentingZoom(presenter);
+  const togglePresenting = useCallback(() => {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen();
+    } else {
+      void presenter.current?.requestFullscreen();
+    }
+  }, []);
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      const { key, altKey, ctrlKey, metaKey, defaultPrevented, target } = event;
+      const { key, shiftKey, altKey, ctrlKey, metaKey, defaultPrevented } =
+        event;
+      const [target] = event.composedPath();
       if (
         defaultPrevented ||
         altKey ||
         ctrlKey ||
         metaKey ||
-        isEditable(target)
+        isEditable(target ?? null) ||
+        (!isSlide && SCROLL_KEYS.has(key)) ||
+        (key === ' ' && target !== undefined && isInteractive(target))
       ) {
         return;
       }
-      const to =
-        key === 'ArrowRight'
-          ? next
-          : key === 'ArrowLeft'
-            ? previous
-            : key === 'Home'
-              ? firstPlace
-              : key === 'End'
-                ? lastPlace(builds)
-                : undefined;
-      if (to) {
+      if (key === 'f' && isSlide) {
         event.preventDefault();
+        togglePresenting();
+        return;
+      }
+      const to =
+        key === ' ' && shiftKey
+          ? previous
+          : FORWARD_KEYS.has(key)
+            ? next
+            : BACK_KEYS.has(key)
+              ? previous
+              : key === 'Home'
+                ? firstPlace
+                : key === 'End'
+                  ? lastPlace(builds)
+                  : undefined;
+      if (FORWARD_KEYS.has(key) || BACK_KEYS.has(key) || to) {
+        event.preventDefault();
+      }
+      if (to) {
         go(to);
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [builds, go, next, previous]);
-
-  const presenter = useRef<HTMLDivElement>(null);
-  const zoom = usePresentingZoom(presenter);
+  }, [builds, go, isSlide, next, previous, togglePresenting]);
 
   const onClickCapture = (event: MouseEvent) => {
     const linked = linkedSlide(event);
     if (linked !== undefined) {
       event.preventDefault();
       go({ slide: linked, step: 0 });
+    }
+  };
+
+  const lastClick = useRef<Event>();
+  /** Clicking the slide advances, unless it lands on something clickable or ends a text selection. */
+  const onClick = (event: MouseEvent) => {
+    const { nativeEvent } = event;
+    const path = nativeEvent.composedPath();
+    const selection = window.getSelection();
+    // React also listens on the shadow root `Preview` portals into, so one click arrives twice.
+    const isRepeat = lastClick.current === nativeEvent;
+    lastClick.current = nativeEvent;
+    if (
+      isRepeat ||
+      event.defaultPrevented ||
+      path.some(isInteractive) ||
+      (selection && !selection.isCollapsed)
+    ) {
+      return;
+    }
+    if (next) {
+      go(next);
     }
   };
 
@@ -398,6 +546,22 @@ const SlideStage = ({
     return null;
   }
   const stepCount = builds[slide] ?? 0;
+  const stepButtons = (
+    <>
+      <EuiButtonIcon
+        iconType="chevronSingleLeft"
+        aria-label="Previous"
+        isDisabled={!previous}
+        onClick={() => previous && go(previous)}
+      />
+      <EuiButtonIcon
+        iconType="chevronSingleRight"
+        aria-label="Next"
+        isDisabled={!next}
+        onClick={() => next && go(next)}
+      />
+    </>
+  );
 
   return (
     <div className={styles.page}>
@@ -411,27 +575,16 @@ const SlideStage = ({
           </EuiButtonEmpty>
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
-          <EuiButtonIcon
-            iconType="chevronSingleLeft"
-            aria-label="Previous"
-            isDisabled={!previous}
-            onClick={() => previous && go(previous)}
-          />
-        </EuiFlexItem>
-        <EuiFlexItem grow={false}>
-          <EuiButtonIcon
-            iconType="chevronSingleRight"
-            aria-label="Next"
-            isDisabled={!next}
-            onClick={() => next && go(next)}
-          />
+          <EuiFlexGroup gutterSize="xs" responsive={false}>
+            {stepButtons}
+          </EuiFlexGroup>
         </EuiFlexItem>
         <EuiFlexItem>
           <EuiTitle size="xs">
             <h2>{composition.title ?? `Slide ${slide + 1}`}</h2>
           </EuiTitle>
         </EuiFlexItem>
-        {stepCount > 0 ? (
+        {isSlide && stepCount > 0 ? (
           <EuiFlexItem grow={false}>
             <EuiText size="s" color="subdued">
               Build {step} of {stepCount}
@@ -444,34 +597,72 @@ const SlideStage = ({
           </EuiText>
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
+          <PdfButton {...{ renderPdf, slides, entry }} />
+        </EuiFlexItem>
+        <EuiFlexItem grow={false}>
           <EuiButton
             size="s"
             iconType="fullScreen"
-            onClick={() => void presenter.current?.requestFullscreen()}>
+            isDisabled={!isSlide}
+            onClick={togglePresenting}>
             Present
           </EuiButton>
         </EuiFlexItem>
       </EuiFlexGroup>
-      <div
-        ref={presenter}
-        className={styles.presenter}
-        style={stageStyle}
-        {...{ onClickCapture }}>
-        <div className={styles.screen}>
-          <Preview
-            {...{ composition, onCommit }}
-            heading={false}
-            enhancements={BUILDS}
-            zoom={zoom ?? 'fit'}
-          />
+      <EuiButtonGroup
+        legend="Output"
+        buttonSize="compressed"
+        options={views}
+        idSelected={view}
+        onChange={(selected) => setView(selected as StageView)}
+      />
+      {isSlide ? (
+        <div
+          ref={presenter}
+          className={styles.presenter}
+          style={stageStyle}
+          {...{ onClickCapture, onClick }}>
+          <div className={styles.screen} data-test-subj="deckStage">
+            <Preview
+              {...{ composition, onCommit }}
+              heading={false}
+              enhancements={BUILDS}
+              zoom={zoom ?? 'fit'}
+            />
+          </div>
+          <div className={styles.overlay}>
+            {stepButtons}
+            <EuiButtonIcon
+              iconType="fullScreenExit"
+              aria-label="Stop presenting"
+              onClick={togglePresenting}
+            />
+          </div>
         </div>
-      </div>
+      ) : (
+        <div
+          className={styles.presenter}
+          style={stageStyle}
+          data-test-subj="deckOutput">
+          <div className={styles.screen}>
+            <Surface {...{ composition }} surface={view} heading={false} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 /** The committed decks in `decks/`, at `#/app/decks/<deck>/<n>/<step>`. */
-const DecksApp = ({ Preview, theme, path, navigate }: StudioAppProps) => {
+const DecksApp = ({
+  Preview,
+  Surface,
+  surfaces,
+  renderPdf,
+  theme,
+  path,
+  navigate,
+}: StudioAppProps) => {
   const { deck: id, place } = parseDeckPath(path);
   const entry = deckCatalog.find((candidate) => candidate.id === id);
   const loaded = useDeck(entry);
@@ -488,9 +679,21 @@ const DecksApp = ({ Preview, theme, path, navigate }: StudioAppProps) => {
   }
   const { deck } = loaded;
   return place ? (
-    <SlideStage {...{ entry, deck, place, Preview, theme, navigate }} />
+    <SlideStage
+      {...{
+        entry,
+        deck,
+        place,
+        Preview,
+        Surface,
+        surfaces,
+        renderPdf,
+        theme,
+        navigate,
+      }}
+    />
   ) : (
-    <DeckSlides {...{ entry, deck, Preview, theme, navigate }} />
+    <DeckSlides {...{ entry, deck, Preview, renderPdf, theme, navigate }} />
   );
 };
 

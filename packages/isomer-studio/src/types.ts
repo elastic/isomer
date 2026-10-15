@@ -27,11 +27,19 @@ export type RasterizePng = (
   options: { signal: AbortSignal }
 ) => Promise<Blob>;
 
+/** Writes compositions as one PDF on the host, a page each, drawn like {@link RasterizePng}'s images. */
+export type RenderPdf = (
+  compositions: readonly Composition[],
+  options?: { title?: string | undefined; signal?: AbortSignal | undefined }
+) => Promise<Blob>;
+
 export interface IsomerStudioProps extends StudioConfig {
   /** Compiles edited JSX; without it the editor offers JSON only. */
   transformJsx?: JsxTransform | undefined;
   /** Adds a PNG preview beneath the `snapshot` surface; without it there is none. */
   rasterizePng?: RasterizePng | undefined;
+  /** Lets apps download PDFs; without it they can't. */
+  renderPdf?: RenderPdf | undefined;
   /** Why the config's latest apps were rejected, shown above the page. */
   configProblems?: readonly string[] | undefined;
 }

@@ -7,7 +7,7 @@
 
 /* `--chrome-height` is the Studio header and this page's toolbar, which the stage leaves room for. */
 .page {
-  --chrome-height: 232px;
+  --chrome-height: 280px;
 
   display: flex;
   flex-direction: column;
@@ -65,6 +65,7 @@
 }
 
 .presenter {
+  position: relative;
   display: flex;
   justify-content: center;
 }
@@ -80,4 +81,26 @@
 
 .presenter:fullscreen .screen {
   width: min(100vw, calc(100vh * var(--slide-aspect)));
+}
+
+.overlay {
+  display: none;
+}
+
+.presenter:fullscreen .overlay {
+  position: absolute;
+  inset-block-end: 16px;
+  inset-inline-end: 16px;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 85%);
+  opacity: 0;
+  transition: opacity 150ms;
+}
+
+.presenter:fullscreen:hover .overlay,
+.presenter:fullscreen .overlay:focus-within {
+  opacity: 1;
 }

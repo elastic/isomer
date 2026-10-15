@@ -213,6 +213,39 @@ describe('Studio apps', () => {
     });
   });
 
+  it("hands an app the runtime's surfaces, a `Surface` that shows one, and the host's `renderPdf`", async () => {
+    const renderPdf = vi.fn(() => Promise.resolve(new Blob()));
+    const Outputs = ({
+      Surface,
+      surfaces,
+      renderPdf: given,
+    }: StudioAppProps) => (
+      <div>
+        <p>{`surfaces ${surfaces.map(({ id }) => id).join(' ')}`}</p>
+        <p>{`pdf ${String(given === renderPdf)}`}</p>
+        <Surface
+          composition={{ type: 'view', title: 'Dropped', body: [inApp] }}
+          surface="markdown"
+          heading={false}
+        />
+      </div>
+    );
+    render(
+      <IsomerStudio
+        {...{ runtime, renderPdf }}
+        apps={[deck(() => Promise.resolve({ default: Outputs }))]}
+      />
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Deck' }));
+
+    expect(await screen.findByText(/^surfaces/)).toHaveTextContent(
+      'surfaces react html slack markdown text'
+    );
+    expect(screen.getByText(/^pdf/)).toHaveTextContent('pdf true');
+    expect(await screen.findByText(/In the app/)).toBeInTheDocument();
+    expect(screen.queryByText(/Dropped/)).toBeNull();
+  });
+
   it('shows an error from a loader that throws before returning a promise', async () => {
     const load: StudioApp['load'] = () => {
       throw new Error('thrown synchronously');

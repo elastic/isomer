@@ -107,18 +107,20 @@ const Rendered = ({
   composition,
   output,
   zoom,
+  heading,
 }: {
   surface: StudioSurface;
   composition: Composition;
   output: SurfaceOutput;
   zoom: PreviewZoom;
+  heading: boolean | undefined;
 }) => {
   const { source, slack, snapshot } = output;
   switch (surface) {
     case 'react':
       return (
         <ScaledPreview {...{ zoom }}>
-          <ReactSurface {...{ composition }} />
+          <ReactSurface {...{ composition, heading }} />
         </ScaledPreview>
       );
     case 'html':
@@ -163,6 +165,8 @@ export interface SurfacePreviewProps {
   zoom?: PreviewZoom;
   /** Styles a frame around the render or source alone; diagnostics sit below it. */
   frameCss?: SerializedStyles | undefined;
+  /** `false` leaves out the composition's leading title. Defaults to `true`. */
+  heading?: boolean | undefined;
 }
 
 /** One surface's render or source, with what it reported. */
@@ -173,11 +177,15 @@ export const SurfacePreview = ({
   view,
   zoom = 'fit',
   frameCss,
+  heading,
 }: SurfacePreviewProps) => {
   const { runtime } = useStudio();
   const output = useMemo(
-    () => renderSurfaceOutput(runtime, surface, composition, validation),
-    [runtime, surface, composition, validation]
+    () =>
+      renderSurfaceOutput(runtime, surface, composition, validation, {
+        heading,
+      }),
+    [runtime, surface, composition, validation, heading]
   );
   const { error, warnings, slack } = output;
 
@@ -210,7 +218,7 @@ export const SurfacePreview = ({
               ) : null}
             </>
           ) : (
-            <Rendered {...{ surface, composition, output, zoom }} />
+            <Rendered {...{ surface, composition, output, zoom, heading }} />
           )}
         </SurfaceFrame>
       )}

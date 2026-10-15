@@ -65,6 +65,6 @@ These docs build in two places, and the app only in one:
 ## Known gaps
 
 - **PNGs of edited compositions.** A static site has PNGs for the examples it prerendered and nothing else; an edited composition shows "PNG previews of edited compositions need `isomer-studio dev`". See [Static sites](commands.md#static-sites).
+- **PDFs on a static site.** Only `dev` writes PDFs, so an app's `renderPdf` is `undefined` in a static build.
 - **Slack `tag` elements.** `slack-blocks-to-jsx` cannot draw rich-text `tag` elements, so toned values render blank in the Slack preview. The Block Kit is valid, so `check` passes it.
-- **Fonts in PNGs.** The config has no way to hand fonts to the rasterizer yet, so PNGs draw without the pack's fonts.
 - **Web fonts in the app.** The app loads no web fonts, so EUI's Inter falls back to the system font.

@@ -125,6 +125,37 @@ describe('renderSurfaceOutput', () => {
     }
   });
 
+  it('leaves out the heading on every surface that renders one when `heading` is false', () => {
+    const { surfaces, runtime } = stubRuntime();
+    const options = { heading: false };
+
+    for (const surface of [
+      'react',
+      'html',
+      'markdown',
+      'text',
+      'slack',
+    ] as const) {
+      renderSurfaceOutput(runtime, surface, composition, validation, options);
+    }
+
+    expect(surfaces.html.render).toHaveBeenCalledTimes(2);
+    for (const [, renderOptions] of surfaces.html.render.mock
+      .calls as unknown as [unknown, object][]) {
+      expect(renderOptions).toMatchObject({ heading: false });
+    }
+    for (const { render } of [
+      surfaces.markdown,
+      surfaces.text,
+      surfaces.slack,
+    ]) {
+      expect(render).toHaveBeenCalledWith(composition, {
+        onValidationError: 'collect',
+        heading: false,
+      });
+    }
+  });
+
   it('merges snapshot render warnings with validation warnings, without duplicates', () => {
     const { runtime } = stubRuntime();
 

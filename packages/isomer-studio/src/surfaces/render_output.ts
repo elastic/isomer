@@ -46,12 +46,21 @@ const COLLECT = { onValidationError: 'collect' } as const;
 const describeError = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
+/** Options for {@link renderSurfaceOutput}. */
+export interface SurfaceOutputOptions {
+  /** `false` leaves out the composition's leading title. Defaults to `true`. */
+  heading?: boolean | undefined;
+}
+
 const render = (
   runtime: StudioRuntime,
   surface: StudioSurface,
-  composition: Composition
+  composition: Composition,
+  { heading }: SurfaceOutputOptions
 ): RenderedOutput => {
   const { surfaces } = runtime;
+  const lead = heading === false ? { heading } : {};
+  const collect = { ...COLLECT, ...lead };
   switch (surface) {
     case 'react':
       return {
@@ -59,26 +68,28 @@ const render = (
           css: 'separate',
           minify: false,
           scripts: 'host',
+          ...lead,
         }).html,
         language: 'html',
       };
     case 'html':
       return {
-        source: surfaces.html.render(composition, { minify: false }).html,
+        source: surfaces.html.render(composition, { minify: false, ...lead })
+          .html,
         language: 'html',
       };
     case 'markdown':
       return {
-        source: surfaces.markdown.render(composition, COLLECT),
+        source: surfaces.markdown.render(composition, collect),
         language: 'markdown',
       };
     case 'text':
       return {
-        source: surfaces.text.render(composition, COLLECT),
+        source: surfaces.text.render(composition, collect),
         language: 'text',
       };
     case 'slack': {
-      const { text, blocks } = surfaces.slack.render(composition, COLLECT);
+      const { text, blocks } = surfaces.slack.render(composition, collect);
       return {
         source: JSON.stringify({ text, blocks }, null, 2),
         language: 'json',
@@ -133,10 +144,16 @@ export const renderSurfaceOutput = (
   runtime: StudioRuntime,
   surface: StudioSurface,
   composition: Composition,
-  validation: ValidationResult
+  validation: ValidationResult,
+  options: SurfaceOutputOptions = {}
 ): SurfaceOutput => {
   try {
-    const { renderWarnings, ...output } = render(runtime, surface, composition);
+    const { renderWarnings, ...output } = render(
+      runtime,
+      surface,
+      composition,
+      options
+    );
     return {
       ...output,
       warnings: surfaceWarnings(

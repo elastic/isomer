@@ -7,7 +7,13 @@
 
 import type { ChildProcess } from 'node:child_process';
 import { spawn } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -514,6 +520,43 @@ test.describe('decks', () => {
 
     expect(problems).toEqual([]);
   });
+
+  test('advances on a click, shows a slide on each surface, and needs dev for a PDF', async ({
+    page,
+  }) => {
+    const problems = watchProblems(page);
+    const deck = '#/app/decks/isomer-every-surface';
+    const counter = page.getByText(/^\d+ of \d+$/);
+    const build = page.getByText(/^Build \d+ of \d+$/);
+    const output = page.getByRole('group', { name: 'Output' });
+
+    await page.goto(`${site.url}${deck}/6/0`);
+    await expect(build).toHaveText('Build 0 of 3');
+    await page.locator('[data-test-subj="deckStage"]').click();
+    await expect(build).toHaveText('Build 1 of 3');
+    await page.keyboard.press('Space');
+    await expect(build).toHaveText('Build 2 of 3');
+    await page.keyboard.press('PageUp');
+    await expect(build).toHaveText('Build 1 of 3');
+
+    await output.getByRole('button', { name: 'Markdown', exact: true }).click();
+    await expect(build).toHaveCount(0);
+    await expect(page.locator('[data-test-subj="deckOutput"]')).toContainText(
+      'The problem'
+    );
+    await page.keyboard.press('ArrowRight');
+    await expect(counter).toHaveText('7 of 33');
+    await expect(page).toHaveURL(new RegExp(`${deck}/7/0$`));
+    await expect(
+      output.getByRole('button', { name: 'Slack', exact: true })
+    ).toBeVisible();
+
+    await expect(
+      page.getByRole('button', { name: 'Download PDF', exact: true })
+    ).toBeDisabled();
+
+    expect(problems).toEqual([]);
+  });
 });
 
 test.describe('dev server', () => {
@@ -561,6 +604,26 @@ test.describe('dev server', () => {
   test('serves apps and their CSS', async ({ page }) => {
     const problems = watchProblems(page);
     await exerciseApp(page, dev.url);
+    expect(problems).toEqual([]);
+  });
+
+  test('downloads a deck as one PDF', async ({ page }) => {
+    test.skip(
+      Boolean(process.env.STUDIO_CONFIG),
+      'needs the repository slides pack'
+    );
+    const problems = watchProblems(page);
+
+    await page.goto(`${dev.url}#/app/decks/isomer-every-surface/1/0`);
+    const downloaded = page.waitForEvent('download');
+    await page
+      .getByRole('button', { name: 'Download PDF', exact: true })
+      .click();
+    const download = await downloaded;
+    expect(download.suggestedFilename()).toBe('isomer-every-surface.pdf');
+    const path = await download.path();
+    expect(readFileSync(path).subarray(0, 5).toString()).toBe('%PDF-');
+
     expect(problems).toEqual([]);
   });
 });
