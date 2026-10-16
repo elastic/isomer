@@ -57,11 +57,11 @@ export const SurfaceChart = ({
     max-width: ${CONTENT_WIDTH}px;
     margin-inline: auto;
     aspect-ratio: 62 / 26;
-    @media (max-width: 900px) {
+    @container (max-width: ${CONTENT_WIDTH - 1}px) {
       aspect-ratio: auto;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(${CARD_WIDTH}px, 1fr));
+      justify-items: center;
       gap: 10px;
       padding: 8px 0;
     }
@@ -72,7 +72,7 @@ export const SurfaceChart = ({
     width: 100%;
     height: 100%;
     color: ${HOME.accent};
-    @media (max-width: 900px) {
+    @container (max-width: ${CONTENT_WIDTH - 1}px) {
       display: none;
     }
   `;
@@ -113,9 +113,11 @@ export const SurfaceChart = ({
         0 6px 18px rgba(0, 0, 0, 0.45);
       scale: 1.04;
     }
-    @media (max-width: 900px) {
+    @container (max-width: ${CONTENT_WIDTH - 1}px) {
       position: static;
       translate: none;
+      grid-column: 1 / -1;
+      width: 190px;
     }
   `;
   const card = (x: number) => css`
@@ -137,7 +139,7 @@ export const SurfaceChart = ({
       0 2px 6px rgba(0, 0, 0, 0.35),
       0 0 0 1px rgba(0, 0, 0, 0.08);
     font-family: ${font.familyCode};
-    font-size: 9px;
+    font-size: 11px;
     letter-spacing: 0.02em;
     text-transform: uppercase;
     cursor: default;
@@ -147,7 +149,7 @@ export const SurfaceChart = ({
       z-index: 1;
       transform: translateY(-6px);
     }
-    @media (max-width: 900px) {
+    @container (max-width: ${CONTENT_WIDTH - 1}px) {
       position: static;
       margin: 0;
     }
@@ -156,6 +158,9 @@ export const SurfaceChart = ({
   const body = css`
     display: grid;
     grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'blurb'
+      'chart';
     gap: 20px;
     ${WIDE} {
       grid-template-columns: ${CONTENT_WIDTH}px minmax(0, 1fr);
@@ -188,6 +193,7 @@ export const SurfaceChart = ({
   `;
   const chart = css`
     grid-area: chart;
+    container-type: inline-size;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -207,7 +213,7 @@ export const SurfaceChart = ({
       </div>
       <div css={body}>
         <div css={blurb}>
-          <h3 css={blurbTitle}>Author once, render anywhere.</h3>
+          <h2 css={blurbTitle}>Author once, render anywhere.</h2>
           <p css={blurbText}>
             Isomer turns one typed composition into every surface your product
             speaks: web, Slack, Markdown, images.

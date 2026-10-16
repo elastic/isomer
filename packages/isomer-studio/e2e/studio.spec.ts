@@ -380,6 +380,60 @@ test.describe('static build', () => {
     await exerciseApp(page, site.url);
     expect(problems).toEqual([]);
   });
+
+  for (const width of [320, 390, 768, 900, 901, 1043, 1399, 1400, 1920]) {
+    test(`keeps Home's surface chart readable at ${width}px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(site.url);
+      const section = page.getByRole('region', {
+        name: 'One composition, every surface',
+      });
+      await expect(section).toBeVisible();
+      await expect(
+        section.getByRole('heading', {
+          level: 2,
+          name: 'Author once, render anywhere.',
+        })
+      ).toBeVisible();
+      const layout = await section.evaluate((element) => {
+        const body = element.lastElementChild!;
+        const [blurb, chart] = Array.from(body.children);
+        const blurbBox = blurb!.getBoundingClientRect();
+        const chartBox = chart!.getBoundingClientRect();
+        const items = Array.from(
+          chart!.querySelectorAll<HTMLElement>('[tabindex="0"]')
+        );
+        const boxes = items.map((item) => item.getBoundingClientRect());
+        const overlaps = (a: DOMRect, b: DOMRect) =>
+          a.left < b.right &&
+          a.right > b.left &&
+          a.top < b.bottom &&
+          a.bottom > b.top;
+        return {
+          copyOverlapsChart: overlaps(blurbBox, chartBox),
+          itemsOverlap: boxes.some((box, index) =>
+            boxes.slice(index + 1).some((other) => overlaps(box, other))
+          ),
+          itemsFit: boxes.every(
+            (box) =>
+              box.left >= chartBox.left - 1 && box.right <= chartBox.right + 1
+          ),
+          labelSizes: items
+            .slice(1)
+            .map((item) => parseFloat(getComputedStyle(item).fontSize)),
+          overflows: element.scrollWidth > element.clientWidth,
+        };
+      });
+      expect(layout.copyOverlapsChart).toBe(false);
+      expect(layout.itemsOverlap).toBe(false);
+      expect(layout.itemsFit).toBe(true);
+      expect(layout.overflows).toBe(false);
+      expect(layout.labelSizes.length).toBeGreaterThan(0);
+      expect(layout.labelSizes.every((size) => size >= 11)).toBe(true);
+    });
+  }
 });
 
 test.describe('decks', () => {
