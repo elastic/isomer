@@ -551,6 +551,33 @@ test.describe('decks', () => {
       output.getByRole('button', { name: 'Slack', exact: true })
     ).toBeVisible();
 
+    await output.getByRole('button', { name: 'HTML', exact: true }).click();
+    await page
+      .locator('[data-test-subj="deckOutput"] iframe')
+      .contentFrame()
+      .locator('body')
+      .click();
+    await page.keyboard.press('ArrowRight');
+    await expect(counter).toHaveText('8 of 33');
+
+    await page.setViewportSize({ width: 1000, height: 700 });
+    await output.getByRole('button', { name: 'Slide', exact: true }).click();
+    const stageWidth = await page
+      .locator('[data-test-subj="deckStage"]')
+      .evaluate((stage) => stage.getBoundingClientRect().width);
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const slide = Array.from(document.querySelectorAll('main *'))
+            .map(({ shadowRoot }) =>
+              shadowRoot?.querySelector('.isomerDeckRoot')
+            )
+            .find(Boolean);
+          return slide?.getBoundingClientRect().width ?? Infinity;
+        })
+      )
+      .toBeLessThanOrEqual(stageWidth + 1);
+
     await expect(
       page.getByRole('button', { name: 'Download PDF', exact: true })
     ).toBeDisabled();
@@ -644,6 +671,9 @@ test.describe('dev server reload', () => {
       `export const title = ${JSON.stringify(title)};\nexport const framed = ${framed};\n`
     );
 
+  const writeFonts = (exported: string) =>
+    writeFileSync(join(dir, 'fonts.ts'), `export default ${exported};\n`);
+
   test.beforeAll(async () => {
     const artifacts = join(packageDir, '.artifacts');
     mkdirSync(artifacts, { recursive: true });
@@ -653,6 +683,7 @@ test.describe('dev server reload', () => {
       JSON.stringify({ type: 'commonjs' })
     );
     writeOptions('Before reload', false);
+    writeFonts('[]');
     writeFileSync(
       join(dir, 'counter.ts'),
       [
@@ -685,6 +716,7 @@ test.describe('dev server reload', () => {
         'export default {',
         '  title,',
         "  apps: [{ id: 'counter', title: 'Counter', load: () => import('./counter') }],",
+        "  imageFonts: './fonts.ts',",
         '  runtime: createIsomerRuntime({',
         '    packs: [componentsPack],',
         '    ...(framed ? { frames: { card } } : {}),',
@@ -743,5 +775,29 @@ test.describe('dev server reload', () => {
 
     await expect(page).toHaveTitle('App reload', { timeout: 60_000 });
     await expect(page.getByRole('button', { name: 'Count 1' })).toBeVisible();
+  });
+
+  test('re-imports `imageFonts` when it changes, and recovers from a bad export', async ({
+    page,
+  }) => {
+    const postPdf = async () => {
+      const response = await page.request.post(`${dev.url}pdf`, {
+        data: { compositions: [{ type: 'view', body: [], theme: 'light' }] },
+      });
+      return `${response.status()} ${response.ok() ? '' : await response.text()}`;
+    };
+
+    await page.goto(dev.url);
+    writeOptions('Fonts reload', true);
+    await expect(page).toHaveTitle('Fonts reload', { timeout: 60_000 });
+    await expect.poll(postPdf).toBe('200 ');
+
+    writeFonts('"not a list"');
+    await expect
+      .poll(postPdf, { timeout: 60_000 })
+      .toContain('must default-export an array of takumi font loaders');
+
+    writeFonts('[]');
+    await expect.poll(postPdf, { timeout: 60_000 }).toBe('200 ');
   });
 });

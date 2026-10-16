@@ -137,7 +137,7 @@ const usePresentingZoom = (presenter: RefObject<HTMLElement | null>) => {
   useEffect(() => {
     const update = () =>
       setZoom(
-        document.fullscreenElement === presenter.current
+        presenter.current && document.fullscreenElement === presenter.current
           ? Math.min(
               window.innerWidth / SLIDE_WIDTH,
               window.innerHeight / SLIDE_HEIGHT

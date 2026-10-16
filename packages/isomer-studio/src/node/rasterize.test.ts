@@ -129,6 +129,21 @@ describe('imageFontsOf', () => {
     expect(importModule).toHaveBeenCalledWith('/deck/studio/fonts.ts');
   });
 
+  it('imports again after a failed import', async () => {
+    const importModule = vi
+      .fn<(path: string) => Promise<unknown>>()
+      .mockRejectedValueOnce(new Error('syntax error'))
+      .mockResolvedValueOnce({ default: [font] });
+    const fonts = imageFontsOf(
+      { imageFonts: './fonts.ts' },
+      '/deck/isomer-studio.config.ts',
+      importModule
+    );
+
+    await expect(fonts?.()).rejects.toThrow('syntax error');
+    expect(await fonts?.()).toEqual([font]);
+  });
+
   it('names the module when its default export is not a list', async () => {
     const fonts = imageFontsOf(
       { imageFonts: './fonts.ts' },

@@ -55,15 +55,20 @@ export const imageFontsOf = (
   const path = resolve(dirname(configPath), imageFonts);
   let fonts: Promise<readonly FontLoader[]> | undefined;
   return () =>
-    (fonts ??= importModule(path).then((namespace) => {
-      const exported = fontsIn(namespace);
-      if (!Array.isArray(exported)) {
-        throw new Error(
-          `${imageFonts} must default-export an array of takumi font loaders.`
-        );
-      }
-      return exported as readonly FontLoader[];
-    }));
+    (fonts ??= importModule(path)
+      .then((namespace) => {
+        const exported = fontsIn(namespace);
+        if (!Array.isArray(exported)) {
+          throw new Error(
+            `${imageFonts} must default-export an array of takumi font loaders.`
+          );
+        }
+        return exported as readonly FontLoader[];
+      })
+      .catch((error: unknown) => {
+        fonts = undefined;
+        throw error;
+      }));
 };
 
 /**
@@ -83,9 +88,14 @@ export const createRenderers = (
     (backend ??= Promise.all([
       import('@elastic/isomer-image-takumi'),
       fonts?.() ?? [],
-    ]).then(([{ createTakumiImageBackend }, faces]) =>
-      createTakumiImageBackend({ fonts: faces })
-    ));
+    ])
+      .then(([{ createTakumiImageBackend }, faces]) =>
+        createTakumiImageBackend({ fonts: faces })
+      )
+      .catch((error: unknown) => {
+        backend = undefined;
+        throw error;
+      }));
 
   return {
     png: async (composition) =>

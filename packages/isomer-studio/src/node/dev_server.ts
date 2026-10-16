@@ -158,11 +158,13 @@ export const startDevServer = async ({
   }
 
   const server: Server = createServer();
+  const fontFiles = new Set<string>();
   const vite = await createViteServer(
     devViteConfig({
       configPath,
       server,
       onConfigChange: (stale) => reloadConfig(stale),
+      reloadsWith: () => fontFiles,
     })
   );
   const runner =
@@ -174,9 +176,18 @@ export const startDevServer = async ({
     const config = runner
       ? studioConfigFrom(await runner.import(configPath), configPath)
       : await loadStudioConfig(configPath, { loader });
-    const fonts = imageFontsOf(config, configPath, (path) =>
-      runner ? runner.import(path) : importStudioModule(path, { loader })
-    );
+    const fonts = imageFontsOf(config, configPath, async (path) => {
+      if (!runner) {
+        return importStudioModule(path, { loader });
+      }
+      const namespace: unknown = await runner.import(path);
+      const node = await vite.environments.ssr.moduleGraph.getModuleByUrl(path);
+      fontFiles.clear();
+      if (node?.file) {
+        fontFiles.add(node.file);
+      }
+      return namespace;
+    });
     return { config, renderers: createRenderers(config.runtime, fonts) };
   };
 

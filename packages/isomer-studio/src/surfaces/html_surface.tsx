@@ -16,6 +16,21 @@ const frameStyles = css`
   border: 0;
 `;
 
+/** Re-dispatches a key pressed inside the frame from the frame element, so the page's key handlers still see it. */
+const forwardKey = (frame: HTMLIFrameElement) => (event: KeyboardEvent) => {
+  const { key, code, location, repeat, shiftKey, altKey, ctrlKey, metaKey } =
+    event;
+  const forwarded = new KeyboardEvent(event.type, {
+    ...{ key, code, location, repeat, shiftKey, altKey, ctrlKey, metaKey },
+    bubbles: true,
+    cancelable: true,
+    composed: true,
+  });
+  if (!frame.dispatchEvent(forwarded)) {
+    event.preventDefault();
+  }
+};
+
 const documentFor = (html: string) =>
   `<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;display:flow-root}</style></head><body>${html}</body></html>`;
 
@@ -36,8 +51,13 @@ export const HtmlSurface = ({
       return;
     }
     let observer: ResizeObserver | undefined;
+    let framed: Document | undefined;
+    const onKey = forwardKey(element);
     const measure = () => {
-      const body = element.contentDocument?.body;
+      framed?.removeEventListener('keydown', onKey);
+      framed = element.contentDocument ?? undefined;
+      framed?.addEventListener('keydown', onKey);
+      const body = framed?.body;
       if (!body) {
         return;
       }
@@ -64,6 +84,7 @@ export const HtmlSurface = ({
     element.addEventListener('load', measure);
     return () => {
       element.removeEventListener('load', measure);
+      framed?.removeEventListener('keydown', onKey);
       observer?.disconnect();
     };
   }, []);
