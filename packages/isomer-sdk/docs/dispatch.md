@@ -37,11 +37,11 @@ Duplicate types throw at construction, with the label in front of the message so
 
 **`sanitize`.** The definition's hook runs on the node, and may return `null` to drop it. Because it sits here rather than in each renderer, a renderer invoked with an unvalidated node still cannot emit an unsafe URL.
 
-`renderSnapshot`'s `theme` reaches the renderer as `env.theme`: the frame's resolved palette for this render, supplied by `BoundFrame.resolveTheme`. `renderReact`/the `react` surface pass no theme — a bare React render has no `Frame` to resolve one from — so `env.theme` is `undefined` there; [Light and dark](rendering.md#light-and-dark) covers color the stylesheet does not reach. A container recursing into a child on the `snapshot` surface forwards it explicitly through `scope.renderOn('snapshot', child, { context, theme })`; `scope.renderReact` does not carry it.
+`renderSnapshot`'s `theme` reaches the renderer as `env.theme`: the frame's resolved palette for this render, supplied by `BoundFrame.resolveTheme`. `renderReact`/the `react` surface pass no theme — a bare React render has no `Frame` to resolve one from — so `env.theme` is `undefined` there; [Light and dark](rendering.md#light-and-dark) covers color the stylesheet does not reach. On `snapshot`, a container's `scope.renderReact(child, context)` preserves the frame palette and snapshot visibility through every descendant, even when the container passes a fresh context. The scope retains those values when passed to a deferred React component. `scope.renderOn` selects its surface and extras explicitly.
 
 ## RenderScope
 
-Container primitives recurse — a `row` renders its children — but a pack cannot import another pack's renderers. Every renderer receives the dispatcher as `scope` on its env bag, erased to `PrimitiveNode` so a child owned by another pack still type-checks:
+Container primitives recurse — a `row` renders its children — but a pack cannot import another pack's renderers. Every renderer receives a render scope as `scope` on its env bag, erased to `PrimitiveNode` so a child owned by another pack still type-checks:
 
 ```ts
 text: (node, { scope }) =>

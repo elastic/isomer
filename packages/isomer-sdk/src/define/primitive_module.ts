@@ -169,10 +169,8 @@ export interface SurfaceMap<T extends PackTypes = DefaultPackTypes> {
       context: T['context'];
       scope: RenderScope<T>;
       /**
-       * The frame's resolved palette, when this render is reached through the
-       * `snapshot` surface. A bare `react`/`html` render has no {@link Frame} to
-       * resolve one from, so it is absent there — a pack that needs a
-       * literal color outside `snapshot` still goes through `context`.
+       * The frame's resolved palette, inherited by descendants on `snapshot`.
+       * Bare `react`/`html` renders leave it absent; browser colors follow CSS.
        */
       theme?: T['theme'];
     };
@@ -237,6 +235,7 @@ export interface RenderScope<T extends PackTypes = DefaultPackTypes> {
     node: PrimitiveNode,
     extras: Omit<SurfaceMap<T>[S]['env'], 'scope'>
   ): SurfaceMap<T>[S]['output'] | undefined;
+  /** On `snapshot`, preserves snapshot visibility and the frame palette. */
   renderReact(node: PrimitiveNode, context?: T['context']): ReactNode;
   collectStyles(
     node: PrimitiveNode,

@@ -68,7 +68,7 @@ The wrapper hook is named for the wrapper rather than the frame. The document a 
 
 ## Light and dark
 
-On `react` and `html` a browser draws the pack's stylesheet, so color that varies by scheme is written once as `light-dark(…)`. It follows the wrapper's `color-scheme` for an explicit `light` or `dark` theme, and the page's under `auto`, including when the page changes scheme after the render. The `snapshot` surface resolves the same stylesheet to the frame's mode, and also hands each renderer the frame's palette for that mode as `env.theme`.
+On `react` and `html` a browser draws the pack's stylesheet, so color that varies by scheme is written once as `light-dark(…)`. It follows the wrapper's `color-scheme` for an explicit `light` or `dark` theme, and the page's under `auto`, including when the page changes scheme after the render. The `snapshot` surface resolves the same stylesheet to the frame's mode, and also hands each renderer the frame's palette for that mode as `env.theme`. Containers recurse with `scope.renderReact(child, context)`: the scope preserves that palette and snapshot visibility, including through deferred React components and fresh child contexts.
 
 A renderer is not told the scheme on `react` or `html`. Under `auto` the page alone knows it, at paint time, so a value decided while rendering would be a guess that goes stale when the page flips. Color that lives outside the stylesheet still follows the scheme, by leaving the browser's copy to CSS:
 
@@ -82,9 +82,9 @@ A renderer is not told the scheme on `react` or `html`. Under `auto` the page al
 
   Do not write `var(--x, #fallback)` in the attribute. SVG parsers that do not implement custom properties drop the whole value, so the shape paints black.
 
-- **Markup a library draws.** A chart library that renders SVG on the server writes `fill` and `stroke` from the palette the pack passed it, with no classes. The pack knows every literal it passed, so it can add a class per palette slot to the markup afterwards, or generate rules from the palette that match the attribute, such as `[fill='#5470c6'] { fill: light-dark(#5470c6, #8aa2e8) }`. Matching by attribute needs every slot's light literal to be distinct.
+- **Markup a library draws.** A chart library that renders SVG on the server writes `fill` and `stroke` from the palette the pack passed it, with no classes. The pack knows every literal it passed, so it can add a class per palette slot to the markup afterwards, or generate rules from the palette that match the attribute, such as `[fill='#5470c6'] { fill: light-dark(#5470c6, #8aa2e8) }`. Prefer classes that identify palette slots and scope the rules to the chart. Matching by attribute requires distinct light literals, unchanged attribute serialization, and no unrelated marks sharing those values; colors in inline styles need the inline-style recipe instead.
 
-- **Inline styles.** An inline style beats every class rule, so a class cannot correct it. Write the literal from `env.theme` when it is present, which is on `snapshot`, and `light-dark(…)` otherwise.
+- **Inline styles.** An ordinary class rule cannot override an inline style. Write the literal from `env.theme` when it is present, which is on `snapshot`, and `light-dark(…)` otherwise.
 
 - **Canvas or other output drawn in the browser.** Read the scheme as CSS resolved it, not from `[data-theme]` or `prefers-color-scheme`: a host can set `color-scheme` on any ancestor. Give an element inside the wrapper `color: light-dark(#000, #fff)`, or a pack token holding `light-dark(…)`, and draw from its computed `color`. Read it again when `prefers-color-scheme` changes or the host switches its scheme.
 

@@ -16,6 +16,8 @@ sources:
 
 The dispatcher is keyed on `type` and nothing else. A missing renderer is a structured error, not a silent skip. A pack's inventory is surface-erased, so callers pass the node type parameter into `createPrimitiveDispatcher`.[^docs]
 
+On `snapshot`, the renderer's `scope.renderReact` preserves snapshot visibility and the frame palette for descendants, including across fresh contexts and deferred React components. `scope.renderOn` selects a surface and extras explicitly.[^docs]
+
 Related: [primitives](/sdk/concepts/primitives.md), [rendering](/sdk/concepts/rendering.md), [composition](/sdk/concepts/composition.md).
 
 [^docs]: Dispatch

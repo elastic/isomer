@@ -30,7 +30,7 @@ Node anchors let runtime code find a node's element. A `react` renderer spreads 
 
 Inline text cannot close its own element: CSS has `</style` escaped, and inline JavaScript is parsed so that `</script` and `<!--` are escaped while strings, regular expressions, and tagged-template raw and cooked values and per-site identity are preserved, with legacy HTML-style comments turned into line comments; none of it needs `eval`.[^docs]
 
-Renderers are not told the light/dark scheme on `react` or `html`: under `auto` only the page knows it, at paint time. Color that varies by scheme is the stylesheet's `light-dark(…)`. Color baked into markup follows it by leaving the browser's copy to CSS: an SVG shape carries a presentation attribute, from `env.theme` on `snapshot`, beside a class whose rule beats it in the browser; markup a library draws gets classes or attribute-matching rules generated from the pack's palette.[^docs]
+Renderers are not told the light/dark scheme on `react` or `html`: under `auto` only the page knows it, at paint time. Color that varies by scheme is the stylesheet's `light-dark(…)`. Color baked into markup follows it by leaving the browser's copy to CSS: an SVG shape carries a presentation attribute, from `env.theme` on `snapshot`, beside a class whose rule beats it in the browser; markup a library draws gets classes or attribute-matching rules generated from the pack's palette. Snapshot descendants inherit the palette and snapshot visibility through `scope.renderReact`, independent of their render context.[^docs]
 
 URL-bearing fields go through one trust policy. See [URL trust](/sdk/concepts/url-trust.md).
 
