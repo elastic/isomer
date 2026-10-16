@@ -1,0 +1,83 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+/* `--chrome-height` is the Studio header and this page's toolbar, which the stage leaves room for. */
+.page {
+  --chrome-height: 232px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.thumb {
+  pointer-events: none;
+}
+
+.tileButton {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.tileButton::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 6px;
+}
+
+.tileButton:hover::after,
+.tileButton:focus-visible::after {
+  outline: 2px solid currentcolor;
+}
+
+.tileButton:focus-visible {
+  outline: none;
+}
+
+.presenter {
+  display: flex;
+  justify-content: center;
+}
+
+.screen {
+  width: min(100%, calc((100vh - var(--chrome-height)) * var(--slide-aspect)));
+}
+
+.presenter:fullscreen {
+  align-items: center;
+  background: #000;
+}
+
+.presenter:fullscreen .screen {
+  width: min(100vw, calc(100vh * var(--slide-aspect)));
+}

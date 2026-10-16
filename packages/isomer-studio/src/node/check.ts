@@ -27,6 +27,7 @@ export type CheckStatus = 'passed' | 'failed' | 'skipped';
 export type CheckName = StudioSurface | 'icon' | 'png' | 'props';
 
 export interface CheckResult {
+  /** A primitive's type, or `app:<id>` for a Studio app's checks. */
   primitive: string;
   /** Absent for checks on the primitive itself, such as `icon`. */
   example?: string | undefined;
@@ -37,6 +38,8 @@ export interface CheckResult {
 
 export interface CheckReport {
   title: string;
+  /** How many apps the config lists; `check` never loads them. */
+  apps: number;
   results: CheckResult[];
   passed: number;
   failed: number;
@@ -125,11 +128,16 @@ const iconOutcome = (
   });
 };
 
-const summarize = (title: string, results: CheckResult[]): CheckReport => {
+const summarize = (
+  title: string,
+  apps: number,
+  results: CheckResult[]
+): CheckReport => {
   const count = (status: CheckStatus) =>
     results.filter((result) => result.status === status).length;
   return {
     title,
+    apps,
     results,
     passed: count('passed'),
     failed: count('failed'),
@@ -150,13 +158,26 @@ export const checkStudio = async (
     theme = 'light',
   }: CheckOptions
 ): Promise<CheckReport> => {
-  const { runtime, compose, title = 'Isomer Studio' } = config;
+  const { runtime, compose, apps = [], title = 'Isomer Studio' } = config;
   const { support } = runtime.getCapabilities();
   const available = runtimeSurfaces(runtime);
   const surfaces = only
     ? only.filter((surface) => available.includes(surface))
     : available;
-  const results: CheckResult[] = [];
+  const results: CheckResult[] = apps.flatMap(({ id, icon }) =>
+    icon
+      ? [
+          {
+            primitive: `app:${id}`,
+            check: 'icon' as const,
+            ...attempt(() => {
+              assertPackIconsValid({ icons: { [id]: icon }, primitives: [] });
+              return [];
+            }),
+          },
+        ]
+      : []
+  );
 
   for (const pack of runtime.packs) {
     for (const definition of pack.primitives) {
@@ -231,5 +252,5 @@ export const checkStudio = async (
     }
   }
 
-  return summarize(title, results);
+  return summarize(title, apps.length, results);
 };

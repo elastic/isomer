@@ -115,6 +115,32 @@ const find = (results: readonly CheckResult[], match: Partial<CheckResult>) =>
   );
 
 describe('checkStudio', () => {
+  it('counts apps without loading them, and checks the icons they have', async () => {
+    const load = vi.fn(() => Promise.reject(new Error('never loaded')));
+    const report = await checkStudio(
+      {
+        runtime: runtimeOf([componentsPack]),
+        apps: [
+          { id: 'plain', title: 'Plain', load },
+          {
+            id: 'iconic',
+            title: 'Iconic',
+            icon: { svg: '<svg><script /></svg>' },
+            load,
+          },
+        ],
+      },
+      { renderToString }
+    );
+
+    expect(report.apps).toBe(2);
+    expect(load).not.toHaveBeenCalled();
+    expect(find(report.results, { primitive: 'app:plain' })).toEqual([]);
+    expect(find(report.results, { primitive: 'app:iconic' })).toEqual([
+      expect.objectContaining({ check: 'icon', status: 'failed' }),
+    ]);
+  });
+
   it('passes every example of a sound pack on every surface it renders natively', async () => {
     const report = await checkStudio(
       { title: 'Components', runtime: runtimeOf([componentsPack]) },
@@ -259,6 +285,7 @@ describe('checkStudio', () => {
 describe('formatReport', () => {
   const report = {
     title: 'Pack & co',
+    apps: 0,
     passed: 1,
     failed: 1,
     skipped: 1,
@@ -302,6 +329,9 @@ describe('formatReport', () => {
   it('summarizes failures and counts', () => {
     const summary = summarizeReport(report);
     expect(summary).toContain('✗ callout › Example 1 › slack\n  Too <long>.');
-    expect(summary).toContain('Pack & co: 1 passed, 1 failed, 1 skipped.');
+    expect(summary).toContain('Pack & co: 1 passed, 1 failed, 1 skipped.\n');
+    expect(summarizeReport({ ...report, apps: 2 })).toContain(
+      'Pack & co: 1 passed, 1 failed, 1 skipped. 2 apps listed.'
+    );
   });
 });

@@ -10,6 +10,7 @@
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import {
+  copyFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -17,6 +18,7 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -35,6 +37,21 @@ const rootManifest = JSON.parse(
   readFileSync(join(repoRoot, 'package.json'), 'utf-8')
 );
 const { devDependencies } = rootManifest;
+const studioManifest = JSON.parse(
+  readFileSync(join(repoRoot, 'packages/isomer-studio/package.json'), 'utf-8')
+);
+/** EUI and the peers npm must resolve alike for the app to share the Studio's EUI. */
+const EUI_PACKAGES = [
+  '@elastic/eui',
+  '@elastic/eui-theme-borealis',
+  '@elastic/datemath',
+  '@emotion/css',
+  '@emotion/react',
+  'moment',
+];
+const FONT = createRequire(
+  join(repoRoot, 'packages/isomer-primitives-slides/package.json')
+).resolve('@fontsource/inter/files/inter-latin-400-normal.woff2');
 
 /** The environment without pnpm's `NODE_PATH`, which would resolve workspace packages. */
 const isolatedEnv = (extra = {}) => {
@@ -127,9 +144,63 @@ export const createPack = (noticeTitle: string) =>
   definePrimitivePack({ id: 'consumer', primitives: [banner, noticeOf(noticeTitle)] });
 `;
 
+const APP = `/** @jsxImportSource @emotion/react */
+import { useState } from 'react';
+import { EuiButton, EuiPopover, EuiText } from '@elastic/eui';
+import type { StudioAppProps } from '@elastic/isomer-studio';
+import { css } from '@emotion/react';
+
+import styles from './app.module.css';
+import './app.css';
+
+const DemoApp = ({ Preview, path }: StudioAppProps) => {
+  const [isOpen, setOpen] = useState(false);
+  return (
+    <div className={styles.panel}>
+      <p className="demo-font">Demo app at "{path}"</p>
+      <p data-testid="emotion-styled" css={css\`color: rgb(1, 2, 3);\`}>Styled by Emotion</p>
+      <EuiPopover
+        button={<EuiButton onClick={() => setOpen(!isOpen)}>Open popover</EuiButton>}
+        isOpen={isOpen}
+        closePopover={() => setOpen(false)}>
+        <EuiText size="s">Inside the popover</EuiText>
+      </EuiPopover>
+      <Preview nodes={[]} />
+    </div>
+  );
+};
+
+export default DemoApp;
+`;
+
+const APP_MODULE_CSS = `.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+`;
+
+const APP_CSS = `@font-face {
+  font-family: DemoFont;
+  src: url('./demo.woff2') format('woff2');
+}
+
+.demo-font {
+  font-family: DemoFont, sans-serif;
+}
+`;
+
+const CSS_MODULES_D_TS = `declare module '*.module.css' {
+  const classes: Readonly<Record<string, string>>;
+  export default classes;
+}
+`;
+
 const STUDIO = `import React from 'react';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
-import type { Composition, Frame } from '@elastic/isomer-sdk';
+import type { Composition, Frame, PrimitiveIcon } from '@elastic/isomer-sdk';
+import type { StudioApp } from '@elastic/isomer-studio';
 import { defineStudioConfig } from '@elastic/isomer-studio';
 
 import { bannerExample, createPack } from './pack';
@@ -147,9 +218,22 @@ const card: Frame<string> = {
   ),
 };
 
-export const createStudioConfig = (noticeTitle: string) =>
+const demoIcon: PrimitiveIcon = {
+  svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="10" fill="var(--isomer-icon-accent)"/></svg>',
+};
+
+export const demoApp: StudioApp = {
+  id: 'demo',
+  title: 'Demo',
+  icon: demoIcon,
+  load: () => import('./app'),
+  pages: [{ path: 'nested/page', title: 'Nested page', section: 'Pages' }],
+};
+
+export const createStudioConfig = (noticeTitle: string, apps: readonly StudioApp[] = [demoApp]) =>
   defineStudioConfig({
     title: 'Consumer',
+    apps,
     runtime: createIsomerRuntime({ packs: [createPack(noticeTitle)], frames: { card } }),
     createReactContext: () => ({}),
     compose: (nodes, { theme }): Composition => ({
@@ -170,6 +254,15 @@ const BROKEN_CONFIG = `import { createStudioConfig } from './studio';
 export default createStudioConfig('');
 `;
 
+const BROKEN_APP_CONFIG = `import type { StudioApp } from '@elastic/isomer-studio';
+
+import { createStudioConfig, demoApp } from './studio';
+
+const unchecked: unknown = { ...demoApp, id: 'Bad App' };
+
+export default createStudioConfig('Deploy finished', [unchecked as StudioApp]);
+`;
+
 const TSCONFIG = {
   compilerOptions: {
     target: 'ES2022',
@@ -178,11 +271,31 @@ const TSCONFIG = {
     jsx: 'react-jsx',
     strict: true,
     noEmit: true,
-    skipLibCheck: false,
+    skipLibCheck: true,
     lib: ['ES2022', 'DOM'],
   },
   include: ['*.ts', '*.tsx'],
 };
+
+/** EUI's own declarations do not pass `skipLibCheck: false`, so the packed declarations are checked apart from the app. */
+const DECLARATIONS_TSCONFIG = {
+  extends: './tsconfig.json',
+  compilerOptions: { skipLibCheck: false },
+  include: ['declarations.ts'],
+};
+
+/** Every packed entry the consumer imports. */
+const DECLARED_ENTRIES = [
+  ...Object.keys(PACKED),
+  '@elastic/isomer-sdk/markdown',
+];
+
+const DECLARATIONS = `${DECLARED_ENTRIES.map(
+  (name, index) => `import type * as Entry${index} from '${name}';`
+).join('\n')}
+
+export type { ${DECLARED_ENTRIES.map((_name, index) => `Entry${index}`).join(', ')} };
+`;
 
 /** Runs a consumer command, failing unless it exits with `expected`. */
 const run = (dir, command, args, { expected = 0 } = {}) => {
@@ -247,6 +360,12 @@ try {
           react: devDependencies.react,
           'react-dom': devDependencies['react-dom'],
           zod: devDependencies.zod,
+          ...Object.fromEntries(
+            EUI_PACKAGES.map((name) => [
+              name,
+              studioManifest.dependencies[name],
+            ])
+          ),
         },
         devDependencies: {
           '@types/react': devDependencies['@types/react'],
@@ -266,10 +385,21 @@ try {
     join(consumer, 'tsconfig.json'),
     `${JSON.stringify(TSCONFIG, null, 2)}\n`
   );
+  writeFileSync(
+    join(consumer, 'tsconfig.declarations.json'),
+    `${JSON.stringify(DECLARATIONS_TSCONFIG, null, 2)}\n`
+  );
+  writeFileSync(join(consumer, 'declarations.ts'), DECLARATIONS);
   writeFileSync(join(consumer, 'pack.tsx'), PACK);
   writeFileSync(join(consumer, 'studio.tsx'), STUDIO);
   writeFileSync(join(consumer, 'isomer-studio.config.ts'), CONFIG);
   writeFileSync(join(consumer, 'broken.config.ts'), BROKEN_CONFIG);
+  writeFileSync(join(consumer, 'broken-app.config.ts'), BROKEN_APP_CONFIG);
+  writeFileSync(join(consumer, 'app.tsx'), APP);
+  writeFileSync(join(consumer, 'app.module.css'), APP_MODULE_CSS);
+  writeFileSync(join(consumer, 'app.css'), APP_CSS);
+  writeFileSync(join(consumer, 'css_modules.d.ts'), CSS_MODULES_D_TS);
+  copyFileSync(FONT, join(consumer, 'demo.woff2'));
 
   run(consumer, 'npm', [
     'install',
@@ -279,6 +409,13 @@ try {
     '--loglevel=error',
   ]);
   run(consumer, 'npx', ['--no', '--', 'tsc', '-p', '.']);
+  run(consumer, 'npx', [
+    '--no',
+    '--',
+    'tsc',
+    '-p',
+    'tsconfig.declarations.json',
+  ]);
 
   const { stdout: checked } = run(consumer, 'npx', [
     '--no',
@@ -292,6 +429,9 @@ try {
     'report.xml',
   ]);
   console.log(checked.trim());
+  if (!checked.includes('1 app listed.')) {
+    throw new Error(`check does not report the demo app:\n${checked}`);
+  }
   const { stderr: broken } = run(
     consumer,
     'npx',
@@ -309,6 +449,25 @@ try {
   if (!broken.includes('notice')) {
     throw new Error(
       `The broken example's failure does not name it:\n${broken}`
+    );
+  }
+
+  const { stderr: brokenApp } = run(
+    consumer,
+    'npx',
+    [
+      '--no',
+      '--',
+      'isomer-studio',
+      'check',
+      '--config',
+      'broken-app.config.ts',
+    ],
+    { expected: 1 }
+  );
+  if (!brokenApp.includes('apps[0] ("Bad App")')) {
+    throw new Error(
+      `The invalid app's failure does not name it:\n${brokenApp}`
     );
   }
 
@@ -334,6 +493,13 @@ try {
       STUDIO_SITE: site,
       STUDIO_BASE: BASE,
       STUDIO_EDIT_ROUTE: '#/dev/notice/0',
+      STUDIO_APP_ID: 'demo',
+      STUDIO_APP_TITLE: 'Demo',
+      STUDIO_APP_PAGE_TITLE: 'Nested page',
+      STUDIO_APP_PAGE_PATH: 'nested/page',
+      STUDIO_APP_FONT: 'DemoFont',
+      STUDIO_APP_POPOVER: 'Open popover',
+      STUDIO_APP_EMOTION: 'emotion-styled',
     }),
   });
   if (status !== 0) {

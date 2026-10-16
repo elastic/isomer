@@ -112,6 +112,9 @@ importers:
       semantic-release:
         specifier: ^25.0.9
         version: 25.0.9(typescript@5.9.3)
+      semver:
+        specifier: 7.8.5
+        version: 7.8.5
       tsc-alias:
         specifier: ^1.8.16
         version: 1.9.5
@@ -125,7 +128,7 @@ importers:
         specifier: ^4.1.11
         version: 4.1.11(@types/node@22.20.2)(@vitest/coverage-v8@4.1.11)(jsdom@20.0.1)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(jiti@2.6.1)(tsx@4.23.15)(yaml@2.9.1))
       zod:
-        specifier: ^4.4.1
+        specifier: ^4.5.4
         version: 4.6.5
 
   packages/isomer-agent-tools:
@@ -137,7 +140,7 @@ importers:
         specifier: '>=18 <20'
         version: 18.3.1
       zod:
-        specifier: ^4.4.1
+        specifier: ^4.5.4
         version: 4.6.5
     devDependencies:
       '@elastic/isomer-primitives-slides':
@@ -156,7 +159,7 @@ importers:
         specifier: '>=18 <20'
         version: 18.3.1
       zod:
-        specifier: ^4.4.1
+        specifier: ^4.5.4
         version: 4.6.5
     devDependencies:
       '@elastic/isomer-runtime':
@@ -200,9 +203,18 @@ importers:
         specifier: workspace:*
         version: link:../isomer-sdk
       zod:
-        specifier: ^4.4.1
+        specifier: ^4.5.4
         version: 4.6.5
     devDependencies:
+      '@elastic/datemath':
+        specifier: 5.0.3
+        version: 5.0.3(moment@2.31.0)
+      '@elastic/eui':
+        specifier: 123.1.0
+        version: 123.1.0(@elastic/datemath@5.0.3(moment@2.31.0))(@elastic/eui-theme-borealis@8.1.0(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@emotion/css@11.13.5)(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
+      '@elastic/eui-theme-borealis':
+        specifier: 8.1.0
+        version: 8.1.0(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@elastic/isomer-image-takumi':
         specifier: workspace:*
         version: link:../isomer-image-takumi
@@ -212,6 +224,12 @@ importers:
       '@elastic/isomer-studio':
         specifier: workspace:*
         version: link:../isomer-studio
+      '@emotion/css':
+        specifier: 11.13.5
+        version: 11.13.5
+      '@emotion/react':
+        specifier: 11.14.0
+        version: 11.14.0(@types/react@18.3.31)(react@18.3.1)
       '@fontsource/inter':
         specifier: ^5.3.0
         version: 5.3.0
@@ -233,6 +251,9 @@ importers:
       micromark-extension-gfm:
         specifier: ^3.0.0
         version: 3.0.0
+      moment:
+        specifier: 2.31.0
+        version: 2.31.0
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -252,7 +273,7 @@ importers:
         specifier: '>=18 <20'
         version: 18.3.1(react@18.3.1)
       zod:
-        specifier: ^4.4.1
+        specifier: ^4.5.4
         version: 4.6.5
 
   packages/isomer-sdk:
@@ -279,7 +300,7 @@ importers:
         specifier: '>=18 <20'
         version: 18.3.1(react@18.3.1)
       zod:
-        specifier: ^4.4.1
+        specifier: ^4.5.4
         version: 4.6.5
     devDependencies:
       '@types/mdast':
@@ -295,8 +316,8 @@ importers:
         specifier: 5.0.3
         version: 5.0.3(moment@2.31.0)
       '@elastic/eui':
-        specifier: 123.0.0
-        version: 123.0.0(@elastic/datemath@5.0.3(moment@2.31.0))(@elastic/eui-theme-borealis@8.1.0(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@emotion/css@11.13.5)(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
+        specifier: 123.1.0
+        version: 123.1.0(@elastic/datemath@5.0.3(moment@2.31.0))(@elastic/eui-theme-borealis@8.1.0(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@emotion/css@11.13.5)(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@elastic/eui-theme-borealis':
         specifier: 8.1.0
         version: 8.1.0(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -337,7 +358,7 @@ importers:
         specifier: 8.3.0
         version: 8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(jiti@2.6.1)(tsx@4.23.15)(yaml@2.9.1)
       zod:
-        specifier: ^4.4.1
+        specifier: ^4.5.4
         version: 4.6.5
     devDependencies:
       '@elastic/isomer-runtime':
@@ -534,8 +555,8 @@ packages:
       react: ^17.0 || ^18.0
       react-dom: ^17.0 || ^18.0
 
-  '@elastic/eui@123.0.0':
-    resolution: {integrity: sha512-xG06KyP4zAtGWX1UW/ceZvNaWMJgwMkDSY0BmPomFjvUgkt0fXUsDMwYHcNjAfwhkbs+w1wAH4NaoAmf4ML7bQ==}
+  '@elastic/eui@123.1.0':
+    resolution: {integrity: sha512-DndrCzhyrCxcfTqK13/2y7g8bFiBGLQIb/DIrg8AEKbjwrQo6c4WO0DU6AcZu+/1xyBpj4asmNR4MBSI/GDAlA==}
     engines: {node: 16.x || 18.x || >=20.x}
     peerDependencies:
       '@elastic/datemath': ^5.0.2
@@ -4820,7 +4841,7 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  '@elastic/eui@123.0.0(@elastic/datemath@5.0.3(moment@2.31.0))(@elastic/eui-theme-borealis@8.1.0(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@emotion/css@11.13.5)(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)':
+  '@elastic/eui@123.1.0(@elastic/datemath@5.0.3(moment@2.31.0))(@elastic/eui-theme-borealis@8.1.0(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@emotion/css@11.13.5)(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)':
     dependencies:
       '@elastic/datemath': 5.0.3(moment@2.31.0)
       '@elastic/eui-theme-borealis': 8.1.0(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)

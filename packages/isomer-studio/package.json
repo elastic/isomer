@@ -19,7 +19,7 @@
     "esmOnly": true,
     "packedFiles": [
       "dist/app/index.html",
-      "dist/app/assets/app.css",
+      "dist/app/assets/studio.css",
       "dist/app/assets/codicon-*.ttf",
       "dist/app/assets/editor.worker.js",
       "dist/app/assets/ts.worker.js",
@@ -58,7 +58,7 @@
   },
   "dependencies": {
     "@elastic/datemath": "5.0.3",
-    "@elastic/eui": "123.0.0",
+    "@elastic/eui": "123.1.0",
     "@elastic/eui-theme-borealis": "8.1.0",
     "@elastic/isomer-image-takumi": "workspace:*",
     "@emotion/css": "11.13.5",
@@ -78,7 +78,7 @@
     "@elastic/isomer-sdk": "workspace:^",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "zod": "^4.4.1"
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@elastic/isomer-runtime": "workspace:*",

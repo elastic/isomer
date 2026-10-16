@@ -10,7 +10,7 @@ import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import type { BuildOptions, Plugin } from 'esbuild';
+import type { BuildOptions, Metafile, Plugin } from 'esbuild';
 
 export type AppMode = 'build' | 'dev';
 
@@ -110,6 +110,36 @@ const entryPlugin = (configPath: string): Plugin => ({
   },
 });
 
+/** Fonts and images a stylesheet or module may reference, emitted to `assets/media/`. */
+const ASSET_LOADERS = Object.fromEntries(
+  [
+    '.avif',
+    '.eot',
+    '.gif',
+    '.ico',
+    '.jpeg',
+    '.jpg',
+    '.otf',
+    '.png',
+    '.svg',
+    '.ttf',
+    '.webp',
+    '.woff',
+    '.woff2',
+  ].map((extension) => [extension, 'file' as const])
+);
+
+/** `assets/studio.css` already carries Monaco's stylesheet, which Monaco's modules also import piecemeal. */
+const monacoCssEmpty: Plugin = {
+  name: 'isomer-studio-monaco-css',
+  setup: (build) => {
+    build.onLoad({ filter: /[\\/]monaco-editor[\\/].*\.css$/ }, () => ({
+      contents: '',
+      loader: 'empty',
+    }));
+  },
+};
+
 /** esbuild options for a static build's `assets/app.js` and its chunks, written to `assetsDir`. */
 export const appBuildOptions = ({
   configPath,
@@ -129,14 +159,10 @@ export const appBuildOptions = ({
   format: 'esm',
   platform: 'browser',
   target: 'es2022',
-  // `assets/app.css` carries Monaco's stylesheet; its modules' own CSS imports would duplicate it.
   loader: {
-    '.css': 'empty',
-    '.ttf': 'file',
-    '.woff': 'file',
-    '.woff2': 'file',
-    '.png': 'file',
-    '.svg': 'file',
+    '.css': 'css',
+    '.module.css': 'local-css',
+    ...ASSET_LOADERS,
   },
   define: {
     'process.env.NODE_ENV': JSON.stringify('production'),
@@ -144,8 +170,37 @@ export const appBuildOptions = ({
   },
   minify: true,
   logLevel: 'warning',
-  plugins: [entryPlugin(configPath), reactFromConfig(configPath), ...plugins],
+  plugins: [
+    entryPlugin(configPath),
+    reactFromConfig(configPath),
+    monacoCssEmpty,
+    ...plugins,
+  ],
 });
+
+/** The bundle entry's id in an esbuild metafile. */
+const APP_ENTRY_POINT = `isomer-studio:${ENTRY}`;
+
+/**
+ * The entry's CSS bundle, relative to the working directory: every CSS file the config reaches, lazy chunks
+ * included, with `url()`s relative to `assets/`. The per-chunk CSS esbuild also writes is never linked.
+ */
+export const appStylesheets = (
+  metafile: Metafile,
+  entryPoint: string = APP_ENTRY_POINT
+): { bundle: string | undefined; chunks: string[] } => {
+  const bundle = Object.values(metafile.outputs).find(
+    (output) => output.entryPoint === entryPoint
+  )?.cssBundle;
+  return {
+    bundle,
+    chunks: Object.keys(metafile.outputs).filter(
+      (output) => output.endsWith('.css') && output !== bundle
+    ),
+  };
+};
+
+const SLACK_STYLESHEET = '<link rel="stylesheet" href="assets/slack.css" />';
 
 const HTML_ESCAPES: Readonly<Record<string, string>> = {
   '&': '&amp;',
@@ -162,10 +217,13 @@ export const renderIndexHtml = ({
   base,
   title = 'Isomer Studio',
   entry = 'assets/app.js',
+  stylesheets = [],
 }: {
   base: string;
   title?: string | undefined;
   entry?: string | undefined;
+  /** Linked after the Studio's own stylesheets, relative to `base`. */
+  stylesheets?: readonly string[] | undefined;
 }): string => {
   const template = readFileSync(join(APP_DIR, 'index.html'), 'utf8');
   return template
@@ -173,6 +231,15 @@ export const renderIndexHtml = ({
     .replace(
       '<title>Isomer Studio</title>',
       `<title>${escapeHtml(title)}</title>`
+    )
+    .replace(
+      SLACK_STYLESHEET,
+      [
+        SLACK_STYLESHEET,
+        ...stylesheets.map(
+          (href) => `<link rel="stylesheet" href="${escapeHtml(href)}" />`
+        ),
+      ].join('\n    ')
     )
     .replace(
       '<script type="module" src="assets/app.js"></script>',

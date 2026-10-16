@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-// Writes the pack-independent half of the asset contract to `dist/app/`. The CLI adds `assets/app.js`, which bundles the Studio with a config.
+// Writes the pack-independent half of the asset contract to `dist/app/`. The CLI adds `assets/app.js`, which bundles the Studio with a config, and the config's own CSS as `assets/app.css`.
 
 import { copyFileSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -27,7 +27,7 @@ const INDEX_HTML = `<!doctype html>
     <base href="./" />
     <title>Isomer Studio</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="assets/app.css" />
+    <link rel="stylesheet" href="assets/studio.css" />
     <link rel="stylesheet" href="assets/slack.css" />
   </head>
   <body>
@@ -37,7 +37,7 @@ const INDEX_HTML = `<!doctype html>
 </html>
 `;
 
-const APP_CSS = `@import '${require.resolve('monaco-editor/min/vs/editor/editor.main.css')}';
+const STUDIO_CSS = `@import '${require.resolve('monaco-editor/min/vs/editor/editor.main.css')}';
 
 html,
 body,
@@ -59,12 +59,12 @@ writeFileSync(join(appDir, 'index.html'), INDEX_HTML);
 
 await build({
   stdin: {
-    contents: APP_CSS,
+    contents: STUDIO_CSS,
     loader: 'css',
     resolveDir: packageDir,
-    sourcefile: 'app.css',
+    sourcefile: 'studio.css',
   },
-  outfile: join(assetsDir, 'app.css'),
+  outfile: join(assetsDir, 'studio.css'),
   bundle: true,
   minify: true,
   loader: { '.ttf': 'file' },

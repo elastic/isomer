@@ -7,8 +7,8 @@ description: Generated map of the Isomer OKF concept graph.
 
 Generated from `.okf/isomer` by `pnpm okf:map`. Do not edit by hand.
 
-- Concepts: 64
-- Links: 154
+- Concepts: 65
+- Links: 156
 - Isolated concepts: 0
 
 ## Graph
@@ -59,6 +59,7 @@ flowchart LR
     sdk_playbooks_define_a_pack["Define a pack"]:::playbook
     sdk_playbooks_define_a_primitive["Define a primitive"]:::playbook
     sdk_reference_public_contract["Public contract"]:::reference
+    slides_concepts_decks["Decks"]:::concept
     slides_concepts_distillate["Distillate"]:::concept
     slides_concepts_document["Document"]:::concept
     slides_concepts_no_snapshot_renderer["No snapshot renderer"]:::concept
@@ -191,6 +192,8 @@ flowchart LR
     sdk_playbooks_define_a_primitive --> sdk_playbooks_define_a_pack
     sdk_reference_public_contract --> sdk_concepts_pipeline
     sdk_reference_public_contract --> sdk_entry_points_root
+    slides_concepts_decks --> slides_concepts_pack
+    slides_concepts_decks --> studio_concepts_config_contract
     slides_concepts_distillate --> runtime_concepts_style_adapters
     slides_concepts_distillate --> slides_concepts_pack
     slides_concepts_document --> runtime_concepts_frame
@@ -285,6 +288,7 @@ flowchart LR
 - Define a pack (Playbook): `sdk/playbooks/define-a-pack`
 - Define a primitive (Playbook): `sdk/playbooks/define-a-primitive`
 - Public contract (Reference): `sdk/reference/public-contract`
+- Decks (Concept): `slides/concepts/decks`
 - Distillate (Concept): `slides/concepts/distillate`
 - Document (Concept): `slides/concepts/document`
 - No snapshot renderer (Concept): `slides/concepts/no-snapshot-renderer`

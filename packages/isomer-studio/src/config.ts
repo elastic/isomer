@@ -5,12 +5,16 @@
  * 2.0.
  */
 
+import type { ComponentType } from 'react';
 import type { IsomerRuntime } from '@elastic/isomer-runtime';
 import type {
   Composition,
+  PrimitiveIcon,
   PrimitiveNode,
   StyledRenderContext,
 } from '@elastic/isomer-sdk';
+
+import type { PreviewZoom } from './surfaces/scaled_preview';
 
 /** A runtime whose React renderers resolve style handles through `resolveClassName`. */
 export type StudioRuntime = IsomerRuntime<unknown, StyledRenderContext>;
@@ -22,6 +26,53 @@ export type StudioCompose = (
   nodes: readonly PrimitiveNode[],
   options: { theme: StudioTheme }
 ) => Composition;
+
+export type StudioPreviewProps = (
+  | { nodes: readonly PrimitiveNode[]; composition?: never }
+  | { composition: Composition; nodes?: never }
+) & {
+  /** Defaults to `fit`. */
+  zoom?: PreviewZoom | undefined;
+  /** With `fit`, also scales down to this height. */
+  maxHeight?: number | undefined;
+  /** `false` leaves out the composition's leading title, as a slide on its own wants. Defaults to `true`. */
+  heading?: boolean | undefined;
+  /** Enhancement ids passed to the React surface, such as the slides pack's `SLIDE_BUILDS`. */
+  enhancements?: readonly string[] | undefined;
+  /** Called with the shadow root after each render commits, for a host step such as `showSlideBuild`. Never called on the `html` fallback. */
+  onCommit?: ((root: ShadowRoot) => void) | undefined;
+};
+
+/** What the Studio hands an app's page. */
+export interface StudioAppProps {
+  /** Renders pack output in a shadow root, isolated from the app's and the Studio's styles. `nodes` go through the config's `compose`. */
+  Preview: ComponentType<StudioPreviewProps>;
+  runtime: StudioRuntime;
+  theme: StudioTheme;
+  /** The part of the hash after `#/app/<id>/`, which may contain slashes. */
+  path: string;
+  navigate: (path: string) => void;
+}
+
+/** A nav row under an app, listed without loading it. */
+export interface StudioAppPage {
+  /** The page's `path` under `#/app/<id>/`, one or more segments; the page is active for it and every path below it. */
+  path: string;
+  title: string;
+  /** Pages with the same `section` are listed under it, in order of first appearance. */
+  section?: string | undefined;
+}
+
+/** A page of the Studio that demonstrates the pack, under `#/app/<id>/`. */
+export interface StudioApp {
+  /** A URL-safe hash segment, unique within the config: `/^[a-z][a-z0-9-]*$/`. */
+  id: string;
+  title: string;
+  icon?: PrimitiveIcon | undefined;
+  /** A module whose default export is the app's page. Node never calls it, so server-only code stays out of it. */
+  load: () => Promise<{ default: ComponentType<StudioAppProps> }>;
+  pages?: readonly StudioAppPage[] | undefined;
+}
 
 /** What a pack hands `isomer-studio`, as the default export of its config file. */
 export interface StudioConfig {
@@ -35,6 +86,8 @@ export interface StudioConfig {
   createReactContext?: ((root: ShadowRoot) => StyledRenderContext) | undefined;
   /** Defaults to `{ type: 'view', body: nodes, theme }`. Return a node that is already a valid root as is. */
   compose?: StudioCompose | undefined;
+  /** Pages listed under Apps in the nav. */
+  apps?: readonly StudioApp[] | undefined;
 }
 
 /** Types a config file's default export. */

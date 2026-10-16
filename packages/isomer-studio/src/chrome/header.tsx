@@ -33,7 +33,10 @@ const isMode = (id: string): id is StudioMode =>
 export interface StudioHeaderProps {
   /** Defaults to "Isomer Studio". */
   title?: string | undefined;
-  mode: StudioMode;
+  /** Absent while an app is open, which selects neither mode. */
+  mode: StudioMode | undefined;
+  /** The open app's title, shown in place of the mode's name. */
+  appTitle?: string | undefined;
   accent: Accent;
   colorMode: ColorModePreference;
   onModeChange: (mode: StudioMode) => void;
@@ -143,6 +146,7 @@ const ColorModePicker = ({
 export const StudioHeader = ({
   title = 'Isomer Studio',
   mode,
+  appTitle,
   accent,
   colorMode,
   onModeChange,
@@ -179,14 +183,18 @@ export const StudioHeader = ({
           <strong>{title}</strong>
         </EuiText>
         <EuiText size="xs" color="ghost">
-          {mode === 'dev' ? 'Workbench' : 'Reference'}
+          {mode === undefined
+            ? appTitle
+            : mode === 'dev'
+              ? 'Workbench'
+              : 'Reference'}
         </EuiText>
       </div>
       <EuiButtonGroup
         legend="Studio mode"
         buttonSize="s"
         variant="selection"
-        idSelected={mode}
+        idSelected={mode ?? ''}
         display="highlighted"
         onChange={(id) => isMode(id) && onModeChange(id)}>
         {MODE_OPTIONS.map(({ id, label }) => (

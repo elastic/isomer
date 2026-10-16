@@ -6,18 +6,25 @@
  */
 
 import React, { useCallback, useMemo, useState } from 'react';
-import { EuiProvider, EuiThemeProvider, useEuiTheme } from '@elastic/eui';
+import {
+  EuiCallOut,
+  EuiProvider,
+  EuiThemeProvider,
+  useEuiTheme,
+} from '@elastic/eui';
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { css } from '@emotion/react';
 
+import { AppHost } from './apps/app_host';
 import { useAccent } from './chrome/accent';
 import type { ColorModePreference } from './chrome/color_mode';
 import { useColorMode } from './chrome/color_mode';
 import { DEV_TINT } from './chrome/dev_tint';
 import { StudioHeader } from './chrome/header';
 import { NAV_WIDTH, StudioNav } from './chrome/nav';
-import type { StudioRoute } from './chrome/route';
-import { GALLERY, useStudioRoute } from './chrome/route';
+import type { StudioRouter } from './chrome/route';
+import { GALLERY, isAppRoute, useStudioRoute } from './chrome/route';
+import type { StudioApp } from './config';
 import { DevView } from './dev/dev_view';
 import { DocsView } from './docs/docs_view';
 import { GalleryView } from './docs/gallery_view';
@@ -35,6 +42,8 @@ const darkWrapper = {
 };
 
 const NO_TINT = {};
+
+const NO_APPS: readonly StudioApp[] = [];
 
 const fill = css`
   height: 100%;
@@ -65,23 +74,29 @@ const devBackground = css`
 
 const Layout = ({
   title,
-  route,
-  navigate,
+  router: { location, route, navigate, openApp },
+  configProblems = [],
   colorMode,
   onColorModeChange,
 }: {
   title?: string | undefined;
-  route: StudioRoute;
-  navigate: (next: Partial<StudioRoute>) => void;
+  router: StudioRouter;
+  configProblems?: readonly string[] | undefined;
   colorMode: ColorModePreference;
   onColorModeChange: (colorMode: ColorModePreference) => void;
 }) => {
   const { euiTheme } = useEuiTheme();
   const {
+    apps,
     docs: { primitives },
   } = useStudio();
-  const { mode, page } = route;
-  const accent = useAccent(mode);
+  const app = isAppRoute(location)
+    ? apps.find(({ id }) => id === location.app)
+    : undefined;
+  const { page } = route;
+  const mode = app ? undefined : route.mode;
+  const look = mode ?? 'docs';
+  const accent = useAccent(look);
   const [isNavOpen, setNavOpen] = useState(true);
   const [devRoute, setDevRoute] = useState(mode === 'dev' ? route : undefined);
   if (mode === 'dev' && devRoute !== route) {
@@ -94,8 +109,8 @@ const Layout = ({
     flex-direction: column;
     overflow: hidden;
     color: ${euiTheme.colors.textParagraph};
-    background-color: ${mode === 'docs' ? '#0b2347' : '#0b3a2c'};
-    background-image: ${mode === 'docs' ? docsBackground : devBackground};
+    background-color: ${look === 'docs' ? '#0b2347' : '#0b3a2c'};
+    background-image: ${look === 'docs' ? docsBackground : devBackground};
   `;
   const body = css`
     flex: 1;
@@ -129,6 +144,7 @@ const Layout = ({
             title,
             mode,
             accent,
+            appTitle: app?.title,
             colorMode,
             onColorModeChange,
             onSelectPrimitive,
@@ -139,13 +155,33 @@ const Layout = ({
       <div css={body}>
         <EuiThemeProvider colorMode="dark" wrapperProps={darkWrapper}>
           <StudioNav
-            {...{ mode, page }}
+            {...{ page }}
+            mode={route.mode}
+            app={app?.id}
+            appPath={isAppRoute(location) ? location.path : undefined}
             isOpen={isNavOpen}
             onToggle={() => setNavOpen((open) => !open)}
             onSelect={(next) => navigate({ page: next, example: 0 })}
+            onSelectApp={openApp}
           />
         </EuiThemeProvider>
         <main css={main}>
+          {configProblems.length ? (
+            <EuiCallOut
+              announceOnMount
+              color="danger"
+              iconType="error"
+              title="The config's apps are invalid; the Studio keeps the last valid apps">
+              <ul>
+                {configProblems.map((problem) => (
+                  <li key={problem}>{problem}</li>
+                ))}
+              </ul>
+            </EuiCallOut>
+          ) : null}
+          {app && isAppRoute(location) ? (
+            <AppHost key={app.id} path={location.path} {...{ app, openApp }} />
+          ) : null}
           {!primitives.length ? null : (
             <>
               {devRoute ? (
@@ -153,7 +189,7 @@ const Layout = ({
                   <DevView route={devRoute} {...{ navigate }} />
                 </div>
               ) : null}
-              {mode === 'dev' ? null : page === GALLERY ? (
+              {mode !== 'docs' ? null : page === GALLERY ? (
                 <GalleryView />
               ) : (
                 <DocsView {...{ route, navigate, accent }} />
@@ -169,10 +205,12 @@ const Layout = ({
 const Studio = ({
   title,
   runtime,
+  apps = NO_APPS,
   createReactContext,
   compose: composeNodes,
   transformJsx,
   rasterizePng,
+  configProblems,
   theme,
   colorMode,
   onColorModeChange,
@@ -188,7 +226,8 @@ const Studio = ({
       runtime.primitives.find((definition) => definition.type === type)?.schema,
     [runtime]
   );
-  const [route, navigate] = useStudioRoute(docs);
+  const appIds = useMemo(() => apps.map(({ id }) => id), [apps]);
+  const router = useStudioRoute(docs, appIds);
   const compose = useCallback(
     (nodes: readonly PrimitiveNode[]) =>
       composeExample(composeNodes, nodes, theme),
@@ -198,6 +237,7 @@ const Studio = ({
   const value = useMemo(
     (): StudioContextValue => ({
       runtime,
+      apps,
       docs,
       shim,
       schemaFor,
@@ -209,6 +249,7 @@ const Studio = ({
     }),
     [
       runtime,
+      apps,
       docs,
       shim,
       schemaFor,
@@ -223,9 +264,15 @@ const Studio = ({
   return (
     <StudioContextProvider {...{ value }}>
       <EuiThemeProvider
-        modify={route.mode === 'dev' ? DEV_TINT : NO_TINT}
+        modify={
+          !isAppRoute(router.location) && router.route.mode === 'dev'
+            ? DEV_TINT
+            : NO_TINT
+        }
         wrapperProps={darkWrapper}>
-        <Layout {...{ title, route, navigate, colorMode, onColorModeChange }} />
+        <Layout
+          {...{ title, router, configProblems, colorMode, onColorModeChange }}
+        />
       </EuiThemeProvider>
     </StudioContextProvider>
   );

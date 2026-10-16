@@ -13,7 +13,7 @@ import { css } from '@emotion/react';
 export type PreviewZoom = 'fit' | number;
 
 export interface ScaledPreviewProps {
-  zoom?: PreviewZoom;
+  zoom?: PreviewZoom | undefined;
   /** With `fit`, also scales content down to this height. */
   maxHeight?: number | undefined;
   children: ReactNode;

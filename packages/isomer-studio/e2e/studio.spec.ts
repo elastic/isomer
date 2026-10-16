@@ -29,6 +29,28 @@ const CONFIG =
 const BASE = process.env.STUDIO_BASE ?? '/sub/path/';
 const PREBUILT_SITE = process.env.STUDIO_SITE;
 const EDIT_ROUTE = process.env.STUDIO_EDIT_ROUTE ?? '#/dev/slideHeading/0';
+const APP_ID = process.env.STUDIO_APP_ID ?? 'decks';
+const APP_TITLE = process.env.STUDIO_APP_TITLE ?? 'Decks';
+/** A page the app lists in the nav, as `title` and `path`, and the heading it shows if one is known, when it has one. */
+const APP_PAGE: { title: string; path: string; heading?: string } | undefined =
+  process.env.STUDIO_CONFIG
+    ? process.env.STUDIO_APP_PAGE_TITLE && process.env.STUDIO_APP_PAGE_PATH
+      ? {
+          title: process.env.STUDIO_APP_PAGE_TITLE,
+          path: process.env.STUDIO_APP_PAGE_PATH,
+        }
+      : undefined
+    : {
+        title: 'Isomer: one composition, every surface',
+        path: 'isomer-every-surface',
+        heading: 'Isomer: one composition, every surface',
+      };
+/** A font family the app's global CSS loads with `url()`, when it has one. */
+const APP_FONT = process.env.STUDIO_APP_FONT;
+/** The name of a button in the app that opens an EUI popover, when it has one. */
+const APP_POPOVER = process.env.STUDIO_APP_POPOVER;
+/** The test id of an app element whose Emotion `css` prop sets `color: rgb(1, 2, 3)`, when it has one. */
+const APP_EMOTION = process.env.STUDIO_APP_EMOTION;
 const SKIP_DEV = process.env.STUDIO_DEV === '0';
 
 const EDITED_TEXT = 'Edited by the smoke test';
@@ -186,6 +208,97 @@ const editFirstString = async (page: Page) => {
 const reactPreview = (page: Page) =>
   page.getByRole('region', { name: 'React preview' });
 
+/** Opens the app and one of its pages from the nav, deep-links a sub-path through a reload, and checks its styles and `Preview`. */
+const exerciseApp = async (page: Page, url: string) => {
+  await page.goto(url);
+  await page.getByRole('button', { name: APP_TITLE, exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`#/app/${APP_ID}/$`));
+
+  if (APP_PAGE) {
+    const entry = page
+      .getByRole('list', { name: `${APP_TITLE} pages` })
+      .getByRole('button', { name: APP_PAGE.title, exact: true });
+    await entry.click();
+    await expect(page).toHaveURL(
+      new RegExp(`#/app/${APP_ID}/${APP_PAGE.path}$`)
+    );
+    await expect(entry).toHaveAttribute('aria-current', 'page');
+    if (APP_PAGE.heading) {
+      await expect(
+        page.locator('main').getByRole('heading', {
+          name: APP_PAGE.heading,
+          exact: true,
+        })
+      ).toBeVisible();
+    }
+  }
+
+  await page.goto(`${url}#/app/${APP_ID}/a/b`);
+  await page.reload();
+  await expect(page).toHaveURL(new RegExp(`#/app/${APP_ID}/a/b$`));
+  const main = page.locator('main').first();
+
+  await expect
+    .poll(
+      () =>
+        main.evaluate(
+          (element) =>
+            Array.from(element.querySelectorAll('*')).filter(
+              (node) => (node.shadowRoot?.textContent ?? '').trim().length > 0
+            ).length
+        ),
+      { message: 'Preview hosts with rendered output in a shadow root' }
+    )
+    .toBeGreaterThan(0);
+
+  const styled = await main.evaluate((element) => {
+    const selectors = Array.from(document.styleSheets).flatMap((sheet) => {
+      try {
+        return Array.from(sheet.cssRules).flatMap((rule) =>
+          rule instanceof CSSStyleRule &&
+          /^\.[\w-]+$/.test(rule.selectorText) &&
+          !rule.selectorText.startsWith('.css-') &&
+          !rule.selectorText.startsWith('.eui')
+            ? [rule.selectorText]
+            : []
+        );
+      } catch {
+        return [];
+      }
+    });
+    return Array.from(element.querySelectorAll('[class]')).filter((node) =>
+      selectors.some((selector) => node.matches(selector))
+    ).length;
+  });
+  expect(styled, "elements the app's own stylesheets style").toBeGreaterThan(0);
+
+  if (APP_FONT) {
+    await expect
+      .poll(() =>
+        page.evaluate(
+          (family) =>
+            Array.from(document.fonts).some(
+              (font) =>
+                font.family.replace(/"/g, '') === family &&
+                font.status === 'loaded'
+            ),
+          APP_FONT
+        )
+      )
+      .toBe(true);
+  }
+  if (APP_EMOTION) {
+    await expect(page.getByTestId(APP_EMOTION)).toHaveCSS(
+      'color',
+      'rgb(1, 2, 3)'
+    );
+  }
+  if (APP_POPOVER) {
+    await page.getByRole('button', { name: APP_POPOVER }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+  }
+};
+
 test.describe('static build', () => {
   let site: StaticServer;
   let tempDir: string | undefined;
@@ -245,6 +358,162 @@ test.describe('static build', () => {
 
     expect(problems).toEqual([]);
   });
+
+  test('serves apps, their chunks and their CSS from the sub-path', async ({
+    page,
+  }) => {
+    const problems = watchProblems(page);
+    await exerciseApp(page, site.url);
+    expect(problems).toEqual([]);
+  });
+});
+
+test.describe('decks', () => {
+  test.skip(
+    Boolean(process.env.STUDIO_CONFIG),
+    'needs the repository slides pack'
+  );
+
+  let site: StaticServer;
+  let tempDir: string;
+
+  test.beforeAll(async () => {
+    tempDir = mkdtempSync(join(tmpdir(), 'isomer-studio-decks-'));
+    const dir = join(tempDir, 'site');
+    await runCli(['build', '--config', CONFIG, '--out', dir, '--base', BASE]);
+    site = await serveStatic(dir, BASE);
+  });
+
+  test.afterAll(async () => {
+    await site.close();
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  test('opens a deck from the nav, steps through builds and slides, and keeps the place', async ({
+    page,
+  }) => {
+    const problems = watchProblems(page);
+    const deck = '#/app/decks/isomer-every-surface';
+    const counter = page.getByText(/^\d+ of \d+$/);
+    const build = page.getByText(/^Build \d+ of \d+$/);
+    const next = page.getByRole('button', { name: 'Next', exact: true });
+    /** Build parts `showSlideBuild` hides in the stage's shadow root. */
+    const hidden = () =>
+      page
+        .locator('main')
+        .first()
+        .evaluate((main) =>
+          Array.from(main.querySelectorAll('*')).reduce(
+            (total, element) =>
+              total +
+              (element.shadowRoot?.querySelectorAll('[data-slide-build-hidden]')
+                .length ?? 0),
+            0
+          )
+        );
+
+    await page.goto(site.url);
+    await page
+      .getByRole('list', { name: 'Decks pages' })
+      .getByRole('button', { name: 'Isomer: one composition, every surface' })
+      .click();
+    await expect(page).toHaveURL(new RegExp(`${deck}$`));
+    await expect(
+      page.getByRole('button', { name: /^Slide \d+: / })
+    ).toHaveCount(33);
+
+    await page.goto(`${site.url}${deck}/6/0`);
+    await expect(counter).toHaveText('6 of 33');
+    await expect(build).toHaveText('Build 0 of 3');
+    await expect.poll(hidden).toBeGreaterThan(0);
+    const unbuilt = await hidden();
+
+    await page.keyboard.press('ArrowRight');
+    await expect(build).toHaveText('Build 1 of 3');
+    await expect(page).toHaveURL(new RegExp(`${deck}/6/1$`));
+    await expect.poll(hidden).toBeLessThan(unbuilt);
+
+    await next.click();
+    await next.click();
+    await expect(build).toHaveText('Build 3 of 3');
+    await expect.poll(hidden).toBe(0);
+    await next.click();
+    await expect(counter).toHaveText('7 of 33');
+
+    await page.reload();
+    await expect(counter).toHaveText('7 of 33');
+    await page.keyboard.press('ArrowLeft');
+    await expect(counter).toHaveText('6 of 33');
+    await expect(build).toHaveText('Build 3 of 3');
+    await page.keyboard.press('Home');
+    await expect(counter).toHaveText('1 of 33');
+
+    await page.goto(`${site.url}${deck}/99/0`);
+    await expect(counter).toHaveText('1 of 33');
+
+    expect(problems).toEqual([]);
+  });
+
+  test('follows a section slide link, keeps thumbnails out of the tab order, and presents full screen', async ({
+    page,
+  }) => {
+    const problems = watchProblems(page);
+    const deck = '#/app/decks/isomer-every-surface';
+    const counter = page.getByText(/^\d+ of \d+$/);
+    const build = page.getByText(/^Build \d+ of \d+$/);
+
+    await page.goto(`${site.url}${deck}`);
+    const thumbnailLink = page.locator('main ol a[href="?slide=3"]');
+    await expect(thumbnailLink).toHaveCount(1);
+    expect(
+      await thumbnailLink.evaluate((link: HTMLAnchorElement) => {
+        link.focus();
+        return (link.getRootNode() as ShadowRoot).activeElement === link;
+      })
+    ).toBe(false);
+
+    await page.goto(`${site.url}${deck}/3/0`);
+    await page.locator('main a[href="?slide=3"]').click();
+    await expect(page).toHaveURL(new RegExp(`${deck}/4/0$`));
+    await expect(counter).toHaveText('4 of 33');
+
+    // Wider than the slide's 1920px, which `zoom="fit"` alone would never scale up to.
+    await page.setViewportSize({ width: 2400, height: 1350 });
+    await page.goto(`${site.url}${deck}/6/0`);
+    await page.getByRole('button', { name: 'Present', exact: true }).click();
+    await expect
+      .poll(() => page.evaluate(() => document.fullscreenElement !== null))
+      .toBe(true);
+    await page.keyboard.press('ArrowRight');
+    await expect(build).toHaveText('Build 1 of 3');
+    expect(await page.evaluate(() => document.fullscreenElement !== null)).toBe(
+      true
+    );
+
+    const { innerWidth, innerHeight } = await page.evaluate(() => ({
+      innerWidth: window.innerWidth,
+      innerHeight: window.innerHeight,
+    }));
+    const slideWidth = () =>
+      page.evaluate(() => {
+        const slide = Array.from(
+          document.fullscreenElement?.querySelectorAll('*') ?? []
+        )
+          .map(({ shadowRoot }) => shadowRoot?.querySelector('.isomerDeckRoot'))
+          .find(Boolean);
+        return slide?.getBoundingClientRect().width ?? 0;
+      });
+    await expect
+      .poll(slideWidth)
+      .toBeCloseTo(Math.min(innerWidth, (innerHeight * 16) / 9), 0);
+
+    await page.evaluate(() => document.exitFullscreen());
+    await expect
+      .poll(() => page.evaluate(() => document.fullscreenElement))
+      .toBeNull();
+
+    expect(problems).toEqual([]);
+  });
 });
 
 test.describe('dev server', () => {
@@ -288,6 +557,12 @@ test.describe('dev server', () => {
 
     expect(problems).toEqual([]);
   });
+
+  test('serves apps and their CSS', async ({ page }) => {
+    const problems = watchProblems(page);
+    await exerciseApp(page, dev.url);
+    expect(problems).toEqual([]);
+  });
 });
 
 test.describe('dev server reload', () => {
@@ -316,6 +591,20 @@ test.describe('dev server reload', () => {
     );
     writeOptions('Before reload', false);
     writeFileSync(
+      join(dir, 'counter.ts'),
+      [
+        "import { createElement, useState } from 'react';",
+        '',
+        'const Counter = () => {',
+        '  const [count, setCount] = useState(0);',
+        "  return createElement('button', { type: 'button', onClick: () => setCount(count + 1) }, `Count ${count}`);",
+        '};',
+        '',
+        'export default Counter;',
+        '',
+      ].join('\n')
+    );
+    writeFileSync(
       join(dir, 'isomer-studio.config.ts'),
       [
         "import { createElement } from 'react';",
@@ -332,6 +621,7 @@ test.describe('dev server reload', () => {
         '',
         'export default {',
         '  title,',
+        "  apps: [{ id: 'counter', title: 'Counter', load: () => import('./counter') }],",
         '  runtime: createIsomerRuntime({',
         '    packs: [componentsPack],',
         '    ...(framed ? { frames: { card } } : {}),',
@@ -377,5 +667,18 @@ test.describe('dev server reload', () => {
     const png = await postPng();
     expect(png.status(), await png.text()).toBe(200);
     expect(png.headers()['content-type']).toBe('image/png');
+  });
+
+  test('keeps an open app mounted when a pack module changes', async ({
+    page,
+  }) => {
+    await page.goto(`${dev.url}#/app/counter/`);
+    await page.getByRole('button', { name: 'Count 0' }).click();
+    await expect(page.getByRole('button', { name: 'Count 1' })).toBeVisible();
+
+    writeOptions('App reload', false);
+
+    await expect(page).toHaveTitle('App reload', { timeout: 60_000 });
+    await expect(page.getByRole('button', { name: 'Count 1' })).toBeVisible();
   });
 });

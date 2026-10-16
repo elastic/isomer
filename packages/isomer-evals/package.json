@@ -39,7 +39,7 @@
   },
   "peerDependencies": {
     "react": ">=18 <20",
-    "zod": "^4.4.1"
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@elastic/isomer-runtime": "workspace:*"

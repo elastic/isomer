@@ -52,7 +52,9 @@ Every URL in the site resolves against `--base`, so the same build works at a do
 ```text
 <out>/index.html
 <out>/assets/app.js, assets/chunks/*   # the Studio and the config
-<out>/assets/app.css                    # the Studio's chrome and Monaco's stylesheet
+<out>/assets/app.css                    # every stylesheet the config imports, apps included
+<out>/assets/media/*                    # fonts and images those stylesheets reference
+<out>/assets/studio.css                 # the Studio's chrome and Monaco's stylesheet
 <out>/assets/codicon-<hash>.ttf         # Monaco's icon font
 <out>/assets/editor.worker.js, ts.worker.js, json.worker.js
 <out>/assets/slack.css                  # the Slack preview's stylesheet

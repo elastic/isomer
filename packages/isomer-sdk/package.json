@@ -99,7 +99,7 @@
   "peerDependencies": {
     "react": ">=18 <20",
     "react-dom": ">=18 <20",
-    "zod": "^4.4.1"
+    "zod": "^4.5.4"
   },
   "peerDependenciesMeta": {
     "react-dom": {

@@ -6,6 +6,7 @@ Directory: `slides/concepts/`
 
 | Title | Type | Description |
 |-------|------|-------------|
+| [Decks](decks.md) | Concept | Committed decks in decks/, frozen v1 originals, and the Studio's Decks app th... |
 | [Distillate](distillate.md) | Concept | @elastic/distillate ^0.2.0 from the registry. The pack owns its Distillate HT... |
 | [Document](document.md) | Concept | slideDeckFrame is the 16:9 document. The host chooses the frame name. |
 | [No snapshot renderer](no-snapshot-renderer.md) | Concept | The `snapshot` surface dispatches to react. Inline svg needs literal fill and... |

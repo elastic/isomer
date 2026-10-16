@@ -1,0 +1,290 @@
+{
+  "id": "elastic-one-platform",
+  "title": "Elastic: search, observability, and security on one platform",
+  "updatedAt": "2026-10-06T14:49:22.596Z",
+  "slides": [
+    {
+      "type": "view",
+      "title": "Elastic",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "titleSlide",
+              "eyebrow": "The Search AI Company",
+              "title": "Elastic",
+              "tagline": "Find what matters in **all your data**, fast.",
+              "definition": {
+                "term": "elastic adj.",
+                "text": "Built to stretch with your data, from one laptop to thousands of nodes."
+              }
+            }
+          ],
+          "logo": false,
+          "tone": "inverse",
+          "footer": {
+            "brand": "Elastic",
+            "url": "https://www.elastic.co"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Elastic",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "sectionSlide",
+              "number": "01",
+              "title": "Elastic",
+              "slides": [
+                {
+                  "text": "One platform, built in layers",
+                  "href": "?slide=2"
+                },
+                {
+                  "text": "Three solutions, one engine",
+                  "href": "?slide=3"
+                },
+                {
+                  "text": "From open source to Search AI",
+                  "href": "?slide=4"
+                }
+              ]
+            }
+          ],
+          "logo": false,
+          "tone": "inverse",
+          "footer": {
+            "brand": "Elastic",
+            "section": "Elastic",
+            "sectionNumber": "01",
+            "url": "https://www.elastic.co"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "One platform, built in layers",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "One platform, built in layers",
+              "lede": "Every Elastic solution rests on the same open data engine."
+            },
+            {
+              "type": "slideLayers",
+              "layers": [
+                {
+                  "name": "Solutions",
+                  "chips": ["search", "observability", "security"],
+                  "owner": "Elastic",
+                  "tone": "primary"
+                },
+                {
+                  "name": "Kibana",
+                  "body": "Explore, visualize, and act on data in one interface",
+                  "owner": "Elastic",
+                  "tone": "primary"
+                },
+                {
+                  "name": "Elasticsearch",
+                  "body": "Distributed search, analytics, and **vector** engine",
+                  "owner": "Elastic",
+                  "tone": "primary"
+                },
+                {
+                  "name": "Ingest",
+                  "chips": ["agent", "beats", "logstash"],
+                  "owner": "Elastic"
+                },
+                {
+                  "name": "Deployment",
+                  "chips": ["cloud", "self-managed", "serverless"],
+                  "owner": "You choose",
+                  "tone": "accent"
+                }
+              ]
+            }
+          ],
+          "logo": false,
+          "tone": "page",
+          "footer": {
+            "brand": "Elastic",
+            "section": "Elastic",
+            "sectionNumber": "01",
+            "url": "https://www.elastic.co"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Three solutions, one engine",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "Three solutions share one engine",
+              "lede": "Teams pick the problem they have; the data stays in one place."
+            },
+            {
+              "type": "slideColumns",
+              "items": [
+                {
+                  "title": "Search",
+                  "tags": ["full-text", "vector", "hybrid"],
+                  "body": "Fast, relevant results for apps, sites, and **AI assistants** grounded in your own data."
+                },
+                {
+                  "title": "Observability",
+                  "tags": ["logs", "metrics", "traces"],
+                  "body": "See how systems behave and find the cause of an incident in one place."
+                },
+                {
+                  "title": "Security",
+                  "tags": ["SIEM", "endpoint", "cloud"],
+                  "body": "Detect, investigate, and respond to threats across the data you already collect."
+                }
+              ],
+              "footnote": {
+                "code": "Elasticsearch",
+                "text": "stores and searches the data behind all three."
+              }
+            }
+          ],
+          "logo": false,
+          "tone": "page",
+          "footer": {
+            "brand": "Elastic",
+            "section": "Elastic",
+            "sectionNumber": "01",
+            "url": "https://www.elastic.co"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "From open source to Search AI",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "From open source to Search AI",
+              "lede": "A search library grew into a platform, then a public company."
+            },
+            {
+              "type": "slideTimeline",
+              "items": [
+                {
+                  "label": "2010",
+                  "channel": "Open source",
+                  "heading": "Can search just work at scale?",
+                  "body": "Elasticsearch is first released as a distributed search engine."
+                },
+                {
+                  "label": "2012",
+                  "channel": "Company",
+                  "heading": "Let’s build a business around it.",
+                  "body": "Elasticsearch BV is founded to support the growing community."
+                },
+                {
+                  "label": "2018",
+                  "channel": "Public",
+                  "heading": "Take Elastic to the public markets.",
+                  "body": "Elastic lists on the New York Stock Exchange."
+                },
+                {
+                  "label": "Today",
+                  "channel": "Search AI",
+                  "heading": "Ground AI in our own data.",
+                  "body": "Vector search and **generative AI** join search, observability, and security.",
+                  "current": true
+                }
+              ]
+            },
+            {
+              "type": "slideSource",
+              "text": "Elastic company history, elastic.co"
+            }
+          ],
+          "logo": false,
+          "tone": "page",
+          "footer": {
+            "brand": "Elastic",
+            "section": "Elastic",
+            "sectionNumber": "01",
+            "url": "https://www.elastic.co"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Start here",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "closingSlide",
+              "title": "Start here",
+              "links": [
+                {
+                  "label": "Website",
+                  "href": "https://www.elastic.co",
+                  "text": "elastic.co"
+                },
+                {
+                  "label": "Docs",
+                  "href": "https://www.elastic.co/docs",
+                  "text": "elastic.co/docs"
+                },
+                {
+                  "label": "Try it",
+                  "href": "https://cloud.elastic.co/registration",
+                  "text": "cloud.elastic.co"
+                }
+              ],
+              "paths": [
+                {
+                  "title": "Add search to an app",
+                  "body": "The Elasticsearch quick start"
+                },
+                {
+                  "title": "Watch your systems",
+                  "body": "Observability guides for logs and metrics"
+                },
+                {
+                  "title": "Hunt threats",
+                  "body": "Elastic Security detection rules"
+                }
+              ]
+            }
+          ],
+          "logo": false,
+          "tone": "inverse",
+          "footer": {
+            "brand": "Elastic",
+            "section": "Elastic",
+            "sectionNumber": "01",
+            "url": "https://www.elastic.co"
+          }
+        }
+      ]
+    }
+  ]
+}

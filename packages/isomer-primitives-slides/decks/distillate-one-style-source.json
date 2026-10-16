@@ -1,0 +1,647 @@
+{
+  "id": "distillate-one-style-source",
+  "title": "Distillate: one style source, two outputs",
+  "updatedAt": "2026-09-30T02:46:59.028Z",
+  "slides": [
+    {
+      "type": "view",
+      "title": "Distillate",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "titleSlide",
+              "eyebrow": "A CSS engine for component libraries",
+              "title": "Distillate",
+              "tagline": "Author styles once. Ship **only what renders**.",
+              "definition": {
+                "term": "distillate n.",
+                "text": "Concentrated CSS: the pure, fractionated styles extracted for a render."
+              },
+              "aside": {
+                "type": "slideFanout",
+                "source": "createStyleModule",
+                "targets": [
+                  {
+                    "name": "stylesheet",
+                    "body": "Readable CSS for host apps",
+                    "tone": "primary"
+                  },
+                  {
+                    "name": "email",
+                    "body": "Inline, self-contained CSS"
+                  },
+                  {
+                    "name": "SVG",
+                    "body": "Styles for a static render"
+                  },
+                  {
+                    "name": "agent reply",
+                    "body": "Compact card payload"
+                  }
+                ]
+              }
+            }
+          ],
+          "logo": false,
+          "tone": "inverse",
+          "footer": {
+            "brand": "Distillate",
+            "url": "https://elastic.github.io/distillate"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "The problem",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "sectionSlide",
+              "number": "01",
+              "title": "The problem",
+              "slides": [
+                {
+                  "text": "Components render outside the app",
+                  "href": "?slide=2"
+                },
+                {
+                  "text": "One source, two outputs",
+                  "href": "?slide=3"
+                }
+              ]
+            }
+          ],
+          "logo": false,
+          "tone": "inverse",
+          "footer": {
+            "brand": "Distillate",
+            "section": "The problem",
+            "sectionNumber": "01",
+            "url": "https://elastic.github.io/distillate"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Components render outside the app",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "Components now render **outside the host app**",
+              "lede": "Emails, SVG renders, agent replies, and exported HTML can’t load your stylesheet — their CSS has to travel with them."
+            },
+            {
+              "type": "slideSplitLayout",
+              "panes": [
+                {
+                  "label": "Host app",
+                  "tone": "accent",
+                  "items": [
+                    {
+                      "type": "slideBulletList",
+                      "items": [
+                        "Loads one public stylesheet",
+                        "Wants readable class names",
+                        "Needs every variant and token"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "label": "Artifact",
+                  "tone": "primary",
+                  "items": [
+                    {
+                      "type": "slideBulletList",
+                      "items": [
+                        "Carries its own `<style>` block",
+                        "Pays for every byte it ships",
+                        "Breaks on any undeclared `var()`"
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "divider": "rule",
+              "footnote": "A library that serves both usually maintains **two style systems** — or ships the whole sheet everywhere."
+            }
+          ],
+          "logo": false,
+          "tone": "page",
+          "footer": {
+            "brand": "Distillate",
+            "section": "The problem",
+            "sectionNumber": "01",
+            "url": "https://elastic.github.io/distillate"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "One source, two outputs",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "statementSlide",
+              "text": "Author styles once. Emit them as a stylesheet **and** as a payload."
+            }
+          ],
+          "logo": false,
+          "tone": "page",
+          "footer": {
+            "brand": "Distillate",
+            "section": "The problem",
+            "sectionNumber": "01",
+            "url": "https://elastic.github.io/distillate"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "How it works",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "sectionSlide",
+              "number": "02",
+              "title": "How it works",
+              "slides": [
+                {
+                  "text": "Bind, author, collect, emit",
+                  "href": "?slide=5"
+                },
+                {
+                  "text": "Tokens are typed paths",
+                  "href": "?slide=6"
+                },
+                {
+                  "text": "Two targets, two name modes",
+                  "href": "?slide=7"
+                },
+                {
+                  "text": "Artifacts ship only what renders",
+                  "href": "?slide=8"
+                }
+              ]
+            }
+          ],
+          "logo": false,
+          "tone": "inverse",
+          "footer": {
+            "brand": "Distillate",
+            "section": "How it works",
+            "sectionNumber": "02",
+            "url": "https://elastic.github.io/distillate"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Bind, author, collect, emit",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "Styles move through four steps: bind, author, collect, emit",
+              "lede": "Collection is a side effect of rendering, so the CSS that ships matches the HTML that rendered."
+            },
+            {
+              "type": "slidePipeline",
+              "start": "theme",
+              "end": "CSS",
+              "steps": [
+                {
+                  "title": "Bind",
+                  "body": "`createDistillery` fixes the prefix, tokens, and scope selector."
+                },
+                {
+                  "title": "Author",
+                  "body": "`createStyleModule` records typed declarations once, at load."
+                },
+                {
+                  "title": "Collect",
+                  "body": "Resolving a class name during render pulls in that handle."
+                },
+                {
+                  "title": "Emit",
+                  "body": "`renderStyles` writes a readable sheet or a compact payload."
+                }
+              ]
+            }
+          ],
+          "logo": false,
+          "tone": "page",
+          "footer": {
+            "brand": "Distillate",
+            "section": "How it works",
+            "sectionNumber": "02",
+            "url": "https://elastic.github.io/distillate"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Tokens are typed paths",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "Tokens are **typed paths**, not strings",
+              "lede": "The theme passed to `createDistillery` becomes a typed `tokens` tree. Modules interpolate it, and the engine records each dependency."
+            },
+            {
+              "type": "slideCodeTrace",
+              "panels": [
+                {
+                  "file": "distillery.ts",
+                  "language": "ts",
+                  "text": "const distillery = createDistillery({\n  prefix: 'eui',\n  themeScope: '.eui-view',\n  theme: {\n    colors: {\n      ink: lightDark('#111', '#eee'),\n    },\n    gap: cq('8px', '2cqi'),\n  },\n});",
+                  "lineNumbers": {
+                    "highlight": "6"
+                  }
+                },
+                {
+                  "file": "demo.ts",
+                  "language": "ts",
+                  "text": "const demo =\n  distillery.createStyleModule(\n    'demo',\n    ({ css, tokens }) => ({\n      root: css`\n        color: ${tokens.colors.ink};\n        padding: ${tokens.gap};\n      `,\n    })\n  );",
+                  "lineNumbers": {
+                    "highlight": "6"
+                  }
+                }
+              ]
+            }
+          ],
+          "logo": false,
+          "tone": "page",
+          "footer": {
+            "brand": "Distillate",
+            "section": "How it works",
+            "sectionNumber": "02",
+            "url": "https://elastic.github.io/distillate"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Two targets, two name modes",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "Two targets and two name modes make four outputs",
+              "lede": "The target decides **what** ships; the name mode decides how it’s spelled."
+            },
+            {
+              "type": "slideTable",
+              "columns": ["Target", "Readable names", "Compact names"],
+              "rowHeaders": true,
+              "rows": [
+                [
+                  "Stylesheet",
+                  "Full public sheet, e.g. .demo-root",
+                  "Minified full sheet; rarely worth it"
+                ],
+                [
+                  "Artifact",
+                  "Only the handles a render reached",
+                  "Minimal payload, e.g. .a and --b"
+                ]
+              ]
+            }
+          ],
+          "logo": false,
+          "tone": "page",
+          "footer": {
+            "brand": "Distillate",
+            "section": "How it works",
+            "sectionNumber": "02",
+            "url": "https://elastic.github.io/distillate"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Artifacts ship only what renders",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "Artifacts ship **only what the render reached**",
+              "lede": "Unnamed variants, unread tokens, and untouched handles drop out of the compact payload."
+            },
+            {
+              "type": "slideDelta",
+              "before": {
+                "label": "Full stylesheet, bytes",
+                "value": "782"
+              },
+              "after": {
+                "label": "Compact artifact, bytes",
+                "value": "185"
+              },
+              "change": "−76%",
+              "body": "A toy `panel` module rendering its root and one tone; real savings vary."
+            },
+            {
+              "type": "slideSource",
+              "text": "`docs/examples/06-payload.ts`, run on `main` at the Sep 25, 2026 commit"
+            }
+          ],
+          "logo": false,
+          "tone": "page",
+          "footer": {
+            "brand": "Distillate",
+            "section": "How it works",
+            "sectionNumber": "02",
+            "url": "https://elastic.github.io/distillate"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "When it fits",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "sectionSlide",
+              "number": "03",
+              "title": "When it fits",
+              "slides": [
+                {
+                  "text": "Distillate vs Emotion",
+                  "href": "?slide=10"
+                },
+                {
+                  "text": "When to reach for it",
+                  "href": "?slide=11"
+                },
+                {
+                  "text": "Guardrails keep payloads honest",
+                  "href": "?slide=12"
+                }
+              ]
+            }
+          ],
+          "logo": false,
+          "tone": "inverse",
+          "footer": {
+            "brand": "Distillate",
+            "section": "When it fits",
+            "sectionNumber": "03",
+            "url": "https://elastic.github.io/distillate"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Distillate vs Emotion",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "**Distillate** trades runtime freedom for exportable CSS",
+              "lede": "Emotion styles apps at render time. Distillate records styles once so a library can export them."
+            },
+            {
+              "type": "slideMatrix",
+              "columns": ["Emotion", "Distillate"],
+              "rows": [
+                {
+                  "label": "Tree-shaken artifacts",
+                  "marks": ["none", "full"]
+                },
+                {
+                  "label": "Typed tokens",
+                  "marks": ["none", "full"]
+                },
+                {
+                  "label": "Readable + compact names",
+                  "marks": ["none", "full"]
+                },
+                {
+                  "label": "Keyframes, object styles",
+                  "marks": ["full", "none"]
+                },
+                {
+                  "label": "`styled.*`",
+                  "marks": ["full", "none"]
+                },
+                {
+                  "label": "Works in any bundle",
+                  "marks": ["full", "none"]
+                }
+              ],
+              "highlight": 1,
+              "legend": false
+            },
+            {
+              "type": "slideSource",
+              "text": "“Distillate vs CSS-in-JS”, `docs/guides/vs-emotion.md`"
+            }
+          ],
+          "logo": false,
+          "tone": "page",
+          "footer": {
+            "brand": "Distillate",
+            "section": "When it fits",
+            "sectionNumber": "03",
+            "url": "https://elastic.github.io/distillate"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "When to reach for it",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "Reach for it when **styles leave the app**",
+              "lede": "Its artifact path only pays off when CSS has to travel with HTML."
+            },
+            {
+              "type": "slideSplitLayout",
+              "panes": [
+                {
+                  "label": "Use it when",
+                  "tone": "primary",
+                  "items": [
+                    {
+                      "type": "slideBulletList",
+                      "items": [
+                        "You ship a component library",
+                        "Apps need a loadable stylesheet",
+                        "Emails, SVGs, or replies need payloads",
+                        "You want typed, prunable tokens"
+                      ],
+                      "marker": "check"
+                    }
+                  ]
+                },
+                {
+                  "label": "Skip it when",
+                  "items": [
+                    {
+                      "type": "slideBulletList",
+                      "items": [
+                        "You style one app directly",
+                        "You need per-render class names",
+                        "You rely on keyframes or `styled.*`",
+                        "Your bundle can’t share one copy"
+                      ],
+                      "marker": "x"
+                    }
+                  ]
+                }
+              ],
+              "divider": "rule",
+              "footnote": "Migrating? `@elastic/distillate/emotion` keeps `css`, `cx`, and `injectGlobal` call sites."
+            }
+          ],
+          "logo": false,
+          "tone": "page",
+          "footer": {
+            "brand": "Distillate",
+            "section": "When it fits",
+            "sectionNumber": "03",
+            "url": "https://elastic.github.io/distillate"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Guardrails keep payloads honest",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "slideHeading",
+              "title": "Guardrails catch what breaks **outside the app**",
+              "lede": "A payload can look fine in development and break in an email inbox."
+            },
+            {
+              "type": "slideList",
+              "items": [
+                {
+                  "term": "./testing",
+                  "body": "`assertVarRefsHaveDeclarations` fails any `var()` with no declaration."
+                },
+                {
+                  "term": "one copy",
+                  "body": "A second loaded copy warns at import, since variants would stop tree-shaking."
+                },
+                {
+                  "term": "names",
+                  "body": "Paths that join to the same class or var name throw at registration."
+                },
+                {
+                  "term": "stylis",
+                  "body": "The only runtime dependency, pinned to exactly 4.4.0."
+                }
+              ]
+            }
+          ],
+          "logo": false,
+          "tone": "page",
+          "footer": {
+            "brand": "Distillate",
+            "section": "When it fits",
+            "sectionNumber": "03",
+            "url": "https://elastic.github.io/distillate"
+          }
+        }
+      ]
+    },
+    {
+      "type": "view",
+      "title": "Start here",
+      "body": [
+        {
+          "type": "slideFrame",
+          "body": [
+            {
+              "type": "closingSlide",
+              "title": "Start here",
+              "links": [
+                {
+                  "label": "Docs",
+                  "href": "https://elastic.github.io/distillate",
+                  "text": "elastic.github.io/distillate"
+                },
+                {
+                  "label": "Source",
+                  "href": "https://github.com/elastic/distillate",
+                  "text": "github.com/elastic/distillate"
+                }
+              ],
+              "paths": [
+                {
+                  "title": "Try it",
+                  "body": "`npm install @elastic/distillate`, Node 20+"
+                },
+                {
+                  "title": "See the output",
+                  "body": "The playground, linked from the docs"
+                },
+                {
+                  "title": "Decide if it fits",
+                  "body": "The “Distillate vs CSS-in-JS” guide"
+                },
+                {
+                  "title": "Migrate from Emotion",
+                  "body": "The `/emotion` entry and its migration guide"
+                }
+              ]
+            }
+          ],
+          "logo": false,
+          "tone": "inverse",
+          "footer": {
+            "brand": "Distillate",
+            "section": "When it fits",
+            "sectionNumber": "03",
+            "url": "https://elastic.github.io/distillate"
+          }
+        }
+      ]
+    }
+  ]
+}

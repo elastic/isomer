@@ -13,7 +13,7 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative, resolve, sep } from 'node:path';
 
 import { build } from 'esbuild';
 
@@ -23,7 +23,12 @@ import { compositionKey } from '../model/composition_key';
 import type { PngManifest } from '../model/png_manifest';
 import { readExamples } from '../model/read_examples';
 
-import { APP_DIR, appBuildOptions, renderIndexHtml } from './app_bundle';
+import {
+  APP_DIR,
+  appBuildOptions,
+  appStylesheets,
+  renderIndexHtml,
+} from './app_bundle';
 import type { ConfigLoader } from './load_config';
 import { loadStudioConfig } from './load_config';
 import type { NodeRasterizer } from './rasterize';
@@ -121,14 +126,21 @@ export const buildSite = async ({
   const config = await loadStudioConfig(configPath, { loader });
   prepareOut(out);
   cpSync(APP_DIR, out, { recursive: true });
+  const { metafile } = await build({
+    ...appBuildOptions({ configPath, assetsDir: join(out, 'assets') }),
+    metafile: true,
+  });
+  const { bundle, chunks } = appStylesheets(metafile);
+  chunks.forEach((chunk) => rmSync(resolve(chunk)));
   writeFileSync(
     join(out, 'index.html'),
-    renderIndexHtml({ base, title: config.title })
-  );
-  await build(
-    appBuildOptions({
-      configPath,
-      assetsDir: join(out, 'assets'),
+    renderIndexHtml({
+      base,
+      title: config.title,
+      stylesheets:
+        bundle === undefined
+          ? []
+          : [relative(out, resolve(bundle)).split(sep).join('/')],
     })
   );
 

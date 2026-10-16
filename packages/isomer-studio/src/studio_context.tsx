@@ -11,7 +11,7 @@ import type { Composition } from '@elastic/isomer-sdk';
 import type { JsxShim } from '@elastic/isomer-sdk/author';
 import type { ZodType } from 'zod';
 
-import type { StudioRuntime, StudioTheme } from './config';
+import type { StudioApp, StudioRuntime, StudioTheme } from './config';
 import type { RuntimeDocs } from './model/describe_runtime';
 import type { JsxTransform, RasterizePng } from './types';
 
@@ -19,6 +19,7 @@ export type { StudioTheme } from './config';
 
 export interface StudioContextValue {
   runtime: StudioRuntime;
+  apps: readonly StudioApp[];
   docs: RuntimeDocs;
   shim: JsxShim;
   schemaFor: (type: string) => ZodType | undefined;

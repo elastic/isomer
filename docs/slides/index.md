@@ -19,6 +19,7 @@ Browse every primitive, its examples and every surface in the [slides Studio](ht
 | [Theme](theme.md) | The one-field bound and how palette selection works |
 | [Styling](styling.md) | Distillate collection, the pack's own adapter, and the React surface |
 | [Copy buttons](copy.md) | The `slideCopy` enhancement on `slideCommand` |
+| [Decks](decks.md) | The committed decks, their file format, and the Studio's Decks app |
 | [Worked example](example.md) | The example compositions, their artifacts, and how to get a PNG |
 
 ## Quick start

@@ -72,6 +72,7 @@ export const formatReport = (
 /** Every failure, then the totals, for the terminal. */
 export const summarizeReport = ({
   title,
+  apps,
   results,
   passed,
   failed,
@@ -84,6 +85,6 @@ export const summarizeReport = ({
         (result) =>
           `✗ ${result.primitive} › ${caseName(result)}\n  ${(result.message ?? '').split('\n').join('\n  ')}`
       ),
-    `${title}: ${passed} passed, ${failed} failed, ${skipped} skipped.`,
+    `${title}: ${passed} passed, ${failed} failed, ${skipped} skipped.${apps ? ` ${apps} ${apps === 1 ? 'app' : 'apps'} listed.` : ''}`,
     '',
   ].join('\n');

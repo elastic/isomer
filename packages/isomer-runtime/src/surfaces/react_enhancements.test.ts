@@ -7,8 +7,10 @@
 
 // @vitest-environment jsdom
 
-import { act, createElement, type ReactNode, StrictMode } from 'react';
+import * as React from 'react';
+import { createElement, type ReactNode, StrictMode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { act as testUtilsAct } from 'react-dom/test-utils';
 import {
   type Composition,
   createChildNodeWalker,
@@ -25,6 +27,9 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
 import { createIsomerRuntime } from '../assemble';
+
+/** `react` exports `act` from 18.3; `react-dom/test-utils` covers earlier 18.x. */
+const { act = testUtilsAct } = React as { act?: typeof testUtilsAct };
 
 interface StepNode extends PrimitiveNode {
   type: 'step';

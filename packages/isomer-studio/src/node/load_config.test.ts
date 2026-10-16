@@ -20,6 +20,7 @@ import { dirname, join } from 'node:path';
 import { parseCliArgs } from '../cli/args';
 
 import {
+  assertSingleEui,
   assertSingleReact,
   loadStudioConfig,
   nearestTsconfig,
@@ -156,6 +157,134 @@ export default config;
       loadStudioConfig(configPath, { loader: 'none' })
     ).rejects.toThrow(
       `${configPath} must default-export defineStudioConfig({ runtime, ... }).`
+    );
+  });
+});
+
+describe('studio apps', () => {
+  beforeEach(() => {
+    fakePackage('node_modules/react', 'react');
+    fakePackage(
+      'node_modules/@elastic/isomer-runtime',
+      '@elastic/isomer-runtime'
+    );
+  });
+
+  it('accepts valid apps', async () => {
+    const configPath = write(
+      'isomer-studio.config.mjs',
+      `export default {
+  runtime: { surfaces: {} },
+  apps: [{ id: 'deck', title: 'Deck', icon: { svg: '<svg/>' }, load: () => import('./app.mjs') }],
+};
+`
+    );
+    const config = await loadStudioConfig(configPath, { loader: 'none' });
+    expect(config.apps?.map(({ id }) => id)).toEqual(['deck']);
+  });
+
+  it('names every invalid app', async () => {
+    const configPath = write(
+      'isomer-studio.config.mjs',
+      `export default {
+  runtime: { surfaces: {} },
+  apps: [
+    { id: 'deck', title: 'Deck', load: () => null },
+    { id: 'deck', title: '', load: 'app.tsx' },
+    { id: 'Bad Id', title: 'Bad', load: () => null, icon: '<svg/>' },
+    null,
+  ],
+};
+`
+    );
+    await expect(
+      loadStudioConfig(configPath, { loader: 'none' })
+    ).rejects.toThrow(
+      [
+        `${configPath} has invalid apps:`,
+        '  apps[1] ("deck"): id is used by an earlier app.',
+        '  apps[1] ("deck"): title must be a non-empty string.',
+        '  apps[1] ("deck"): load must be a function.',
+        '  apps[2] ("Bad Id"): id must match ^[a-z][a-z0-9-]*$.',
+        '  apps[2] ("Bad Id"): icon must be { svg: string }.',
+        '  apps[3] must be an object.',
+      ].join('\n')
+    );
+  });
+
+  it('checks EUI only for a config with apps', async () => {
+    fakePackage('node_modules/@elastic/eui', '@elastic/eui');
+    const withoutApps = write(
+      'plain.config.mjs',
+      'export default { runtime: { surfaces: {} } };\n'
+    );
+    await expect(
+      loadStudioConfig(withoutApps, { loader: 'none' })
+    ).resolves.toBeDefined();
+
+    const withApps = write(
+      'apps.config.mjs',
+      `export default {
+  runtime: { surfaces: {} },
+  apps: [{ id: 'deck', title: 'Deck', load: () => import('./app.mjs') }],
+};
+`
+    );
+    await expect(
+      loadStudioConfig(withApps, { loader: 'none' })
+    ).rejects.toThrow(
+      `@elastic/eui\n    config: ${join(root, 'node_modules/@elastic/eui')}`
+    );
+  });
+
+  it('rejects apps that are not an array', async () => {
+    const configPath = write(
+      'isomer-studio.config.mjs',
+      'export default { runtime: { surfaces: {} }, apps: {} };\n'
+    );
+    await expect(
+      loadStudioConfig(configPath, { loader: 'none' })
+    ).rejects.toThrow('apps must be an array.');
+  });
+});
+
+describe('assertSingleEui', () => {
+  const studioDir = () => {
+    write(
+      'studio/package.json',
+      JSON.stringify({
+        name: '@elastic/isomer-studio',
+        dependencies: { '@elastic/eui': '1.0.0', moment: '2.0.0' },
+        peerDependencies: { react: '^18.2.0' },
+      })
+    );
+    return join(root, 'studio');
+  };
+
+  it('passes when the config and the Studio share EUI and Emotion', () => {
+    const studio = studioDir();
+    fakePackage('node_modules/@elastic/eui', '@elastic/eui');
+    fakePackage('node_modules/@emotion/react', '@emotion/react');
+    expect(() =>
+      assertSingleEui(write('app/isomer-studio.config.ts', ''), studio)
+    ).not.toThrow();
+  });
+
+  it('names each copy that differs, and the versions to install', () => {
+    const studio = studioDir();
+    fakePackage('node_modules/@emotion/react', '@emotion/react');
+    fakePackage('studio/node_modules/@elastic/eui', '@elastic/eui');
+    fakePackage('app/node_modules/@elastic/eui', '@elastic/eui');
+    const configPath = write('app/isomer-studio.config.ts', '');
+
+    expect(() => assertSingleEui(configPath, studio)).toThrow(
+      [
+        'The Studio config and @elastic/isomer-studio resolve different copies of packages that Studio apps share:',
+        '  @elastic/eui',
+        `    config: ${join(root, 'app/node_modules/@elastic/eui')}`,
+        `    studio: ${join(root, 'studio/node_modules/@elastic/eui')}`,
+        "Install the Studio's versions beside the config, then deduplicate your lockfile: @elastic/eui@1.0.0, react@^18.2.0, react-dom, @emotion/react, @emotion/css, @elastic/eui-theme-borealis, @elastic/datemath, moment@2.0.0.",
+      ].join('\n')
     );
   });
 });

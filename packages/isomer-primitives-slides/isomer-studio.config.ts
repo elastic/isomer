@@ -9,6 +9,7 @@ import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { Composition } from '@elastic/isomer-sdk';
 import { adoptStylesheet, defineStudioConfig } from '@elastic/isomer-studio';
 
+import { deckCatalog } from './decks/catalog';
 import { previewSlide } from './src/examples/preview_slide';
 import { slideDeckFrame, slidesPack, slideStylesheet } from './src/index';
 
@@ -22,6 +23,14 @@ let stylesheet: string | undefined;
 
 export default defineStudioConfig({
   runtime,
+  apps: [
+    {
+      id: 'decks',
+      title: 'Decks',
+      load: () => import('./studio/decks_app'),
+      pages: deckCatalog.map(({ id, title }) => ({ path: id, title })),
+    },
+  ],
   createReactContext: (root) => {
     stylesheet ??= slideStylesheet();
     adoptStylesheet(root, stylesheet);
