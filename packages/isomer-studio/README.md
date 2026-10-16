@@ -10,7 +10,7 @@
 </p>
 <!-- markdownlint-enable MD033 -->
 
-A dev and docs shell for any Isomer pack: a component gallery, per-primitive docs, a JSX editor with a live preview, and a preview of every surface the runtime has. It ships as a command-line tool with EUI, Emotion and Monaco bundled in.
+A dev and docs shell for any Isomer pack: a home page, a component gallery, per-primitive docs, a JSX editor with a live preview, and a preview of every surface the runtime has. It ships as a command-line tool with EUI, Emotion and Monaco bundled in.
 
 This package is private and not published to npm; it runs from this repository.
 

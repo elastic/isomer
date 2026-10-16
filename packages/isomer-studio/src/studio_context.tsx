@@ -20,6 +20,8 @@ export type { StudioTheme } from './config';
 export interface StudioContextValue {
   runtime: StudioRuntime;
   apps: readonly StudioApp[];
+  /** The config's `featured`, or undefined to draw at random on Home. */
+  featured?: readonly string[] | undefined;
   docs: RuntimeDocs;
   shim: JsxShim;
   schemaFor: (type: string) => ZodType | undefined;

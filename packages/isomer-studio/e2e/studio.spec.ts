@@ -215,9 +215,20 @@ const editFirstString = async (page: Page) => {
 const reactPreview = (page: Page) =>
   page.getByRole('region', { name: 'React preview' });
 
-/** Opens the app and one of its pages from the nav, deep-links a sub-path through a reload, and checks its styles and `Preview`. */
+/** Opens the app from Home and then one of its pages from the nav, deep-links a sub-path through a reload, and checks its styles and `Preview`. */
 const exerciseApp = async (page: Page, url: string) => {
   await page.goto(url);
+  await expect(
+    page.getByRole('heading', {
+      level: 1,
+      name: 'What are we rendering today?',
+    })
+  ).toBeVisible();
+  await page
+    .getByRole('link', { name: new RegExp(`^${APP_TITLE}\\b`) })
+    .click();
+  await expect(page).toHaveURL(new RegExp(`#/app/${APP_ID}/$`));
+  await page.goto(`${url}#/dev`);
   await page.getByRole('button', { name: APP_TITLE, exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`#/app/${APP_ID}/$`));
 
@@ -419,7 +430,7 @@ test.describe('decks', () => {
           )
         );
 
-    await page.goto(site.url);
+    await page.goto(`${site.url}#/dev`);
     await page
       .getByRole('list', { name: 'Decks pages' })
       .getByRole('button', { name: 'Isomer: one composition, every surface' })

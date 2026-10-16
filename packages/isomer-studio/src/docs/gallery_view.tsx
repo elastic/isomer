@@ -110,8 +110,12 @@ const ExampleTile = ({
   </EuiPanel>
 );
 
-/** Every example of every primitive on the React surface, by group. */
-export const GalleryView = () => {
+/** A heading id the Home page's category chips can scroll to. */
+export const galleryGroupId = (title: string): string =>
+  `isomer-studio-gallery-${encodeURIComponent(title)}`;
+
+/** Every example of every primitive on the React surface, by group; `group` scrolls to that group's heading. */
+export const GalleryView = ({ group }: { group?: string | undefined }) => {
   const { euiTheme } = useEuiTheme();
   const {
     docs: { primitives, groups },
@@ -129,6 +133,15 @@ export const GalleryView = () => {
     [primitives, compose]
   );
 
+  useEffect(() => {
+    if (group === undefined) {
+      return;
+    }
+    document
+      .getElementById(galleryGroupId(group))
+      ?.scrollIntoView({ block: 'start' });
+  }, [group]);
+
   let rendered = 0;
 
   return (
@@ -145,7 +158,7 @@ export const GalleryView = () => {
         <React.Fragment key={title}>
           <EuiSpacer size="l" />
           <EuiTitle size="s">
-            <h2>{title}</h2>
+            <h2 id={galleryGroupId(title)}>{title}</h2>
           </EuiTitle>
           <EuiSpacer size="m" />
           <EuiFlexGrid columns={GALLERY_COLUMNS} gutterSize="m">

@@ -45,8 +45,9 @@ export default defineStudioConfig({
 | `title`                     | No       | Replaces the header, the page title, and the `check` report name. Defaults to `Isomer Studio`. Leave it unset to keep the product name; a runtime with more than one pack shows each pack in the nav.                                          |
 | `createReactContext(root)`  | No       | Styles the React preview, which renders inside a shadow root. Call `adoptStylesheet(root, css)` with the pack's stylesheet and return the render context its renderers expect. Without it, the React preview shows the `html` surface instead. |
 | `compose(nodes, { theme })` | No       | Wraps example nodes in a composition. Defaults to `{ type: 'view', body: nodes, theme }`.                                                                                                                                                      |
-| `apps`                      | No       | Pages that demonstrate the pack, listed under Apps in the nav. See [Apps](#apps).                                                                                                                                                              |
+| `apps`                      | No       | Pages that demonstrate the pack, listed under Apps in the nav and on Home. See [Apps](#apps).                                                                                                                                                  |
 | `imageFonts`                | No       | A module path, relative to the config, whose default export lists the takumi `FontLoader`s PNGs and PDFs draw text with. See [Image fonts](#image-fonts).                                                                                      |
+| `featured`                  | No       | Primitive types Home features, in order. Without it Home draws six at random on each load. See [Featured primitives](#featured-primitives).                                                                                                    |
 
 ## `compose`
 
@@ -56,9 +57,22 @@ The default fits a pack whose primitives render inside a plain `view`. A pack wh
 
 `compose` receives the theme the Studio is showing, `light` or `dark`, and puts it on the composition. That theme is the app's color mode, so previews always match the chrome around them. Light and dark are then different compositions, which is how a static build tells their PNGs apart.
 
+## Featured primitives
+
+Home opens with a strip of featured primitives, each with a link to its Docs page and to the Dev workbench. `featured` names them by type, in the order they appear:
+
+```ts
+export default defineStudioConfig({
+  runtime,
+  featured: ['titleSlide', 'slideBulletList', 'slideSplitLayout'],
+});
+```
+
+Without `featured`, Home draws six primitives at random each time it loads, so a pack with no opinion still shows its range. `dev`, `build` and `check` reject a `featured` entry the runtime has no primitive for, or one listed twice, and name it. A browser hot update with an invalid entry reports it and skips it.
+
 ## Apps
 
-An app is a whole page of the Studio, such as a deck viewer. Each one gets a nav entry under Apps and a route at `#/app/<id>/`.
+An app is a whole page of the Studio, such as a deck viewer. Each one gets a nav entry under Apps, a tile on Home, and a route at `#/app/<id>/`.
 
 ```ts
 export default defineStudioConfig({
@@ -67,19 +81,21 @@ export default defineStudioConfig({
     {
       id: 'decks',
       title: 'Decks',
+      description: 'Whole presentations, played one slide at a time.',
       load: () => import('./studio/decks_app'),
     },
   ],
 });
 ```
 
-| Field   | Required | What it does                                                                                                                |
-| ------- | -------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `id`    | Yes      | The route segment, matching `/^[a-z][a-z0-9-]*$/` and unique within the config.                                             |
-| `title` | Yes      | The nav entry and the header's label while the app is open.                                                                 |
-| `icon`  | No       | A `PrimitiveIcon`, held to the same rules as a primitive's icon by `check`. Without one, the nav shows the title's initial. |
-| `load`  | Yes      | Imports a module whose default export is the app's page.                                                                    |
-| `pages` | No       | Nav rows under the app's own row. See [Pages](#pages).                                                                      |
+| Field         | Required | What it does                                                                                                                        |
+| ------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `id`          | Yes      | The route segment, matching `/^[a-z][a-z0-9-]*$/` and unique within the config.                                                     |
+| `title`       | Yes      | The nav entry, the header's label while the app is open, and the Home tile's title.                                                 |
+| `description` | No       | One line under the title on the Home tile and in Home's Loaded panel.                                                               |
+| `icon`        | No       | A `PrimitiveIcon`, held to the same rules as a primitive's icon by `check`. Without one, the nav and Home show the title's initial. |
+| `load`        | Yes      | Imports a module whose default export is the app's page.                                                                            |
+| `pages`       | No       | Nav rows under the app's own row. See [Pages](#pages).                                                                              |
 
 `dev`, `build` and `check` reject invalid apps and name each one. A hot update with invalid apps keeps the last valid ones and shows why. `check` counts the apps but never calls `load`.
 

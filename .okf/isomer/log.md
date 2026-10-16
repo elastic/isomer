@@ -3,6 +3,7 @@
 ## 2026-10-16
 
 - **The authoring context is built on first use**: `createIsomerRuntime` no longer builds the authoring schema, body schema, declarations, catalog, and groups. The first `getAuthoringContext()` call builds them and later calls reuse them, so a runtime that only validates and renders never holds them in memory.
+- **Studio Home**: an empty or unknown hash, `#/home`, or the mark in the header opens a Home page on its own plum shell, with no nav or main panel: the primitive search (opening in the mode last used), one chip per authoring group linking to `#/docs/gallery/<group>`, which scrolls the gallery to that heading, a strip of featured primitives with Docs and Dev links ending on a tile that opens the gallery, a tile per app plus one on adding apps, three doors (the gallery, the workbench on the first primitive, the docs site), a chart of the composition wired to one card per surface the runtime has, a panel of the packs, views, apps and surfaces loaded with empty states that say how to add apps and views, and a footer. The config takes `featured`, primitive types in order, which `featuredProblems` validates when the config loads and on hot update; without it `pickFeatured` draws six at random. An app takes `description`, shown on its Home tile and in the panel. The header's mark is a button with the four-ball logo. The slides config features six primitives and gives the Decks app a description and icon.
 
 ## 2026-10-15
 

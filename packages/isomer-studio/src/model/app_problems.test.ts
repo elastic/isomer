@@ -26,6 +26,17 @@ describe('appProblems', () => {
     ).toEqual([]);
   });
 
+  it('accepts a description, and rejects an empty one', () => {
+    expect(
+      appProblems([
+        { id: 'plain', title: 'Plain', description: 'A page.', load },
+      ])
+    ).toEqual([]);
+    expect(
+      appProblems([{ id: 'plain', title: 'Plain', description: ' ', load }])
+    ).toEqual(['apps[0] ("plain"): description must be a non-empty string.']);
+  });
+
   it('rejects pages that are not an array of objects', () => {
     expect(appProblems(withPages('isomer'))).toEqual([
       'apps[0] ("decks"): pages must be an array.',

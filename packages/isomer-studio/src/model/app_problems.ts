@@ -70,7 +70,7 @@ export const appProblems = (apps: unknown): string[] => {
       problems.push(`apps[${index}] must be an object.`);
       return;
     }
-    const { id, title, icon, load, pages } = app;
+    const { id, title, description, icon, load, pages } = app;
     const name = label(index, id);
     if (typeof id !== 'string' || !APP_ID_PATTERN.test(id)) {
       problems.push(`${name}: id must match ${APP_ID_PATTERN.source}.`);
@@ -81,6 +81,9 @@ export const appProblems = (apps: unknown): string[] => {
     }
     if (!isNonEmptyString(title)) {
       problems.push(`${name}: title must be a non-empty string.`);
+    }
+    if (description !== undefined && !isNonEmptyString(description)) {
+      problems.push(`${name}: description must be a non-empty string.`);
     }
     if (typeof load !== 'function') {
       problems.push(`${name}: load must be a function.`);
