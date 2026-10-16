@@ -9,6 +9,7 @@ import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { Composition } from '@elastic/isomer-sdk';
 import { adoptStylesheet, defineStudioConfig } from '@elastic/isomer-studio';
 
+import { deckCatalog } from './decks/catalog';
 import { previewSlide } from './src/examples/preview_slide';
 import { slideDeckFrame, slidesPack, slideStylesheet } from './src/index';
 
@@ -20,21 +21,14 @@ const runtime = createIsomerRuntime({
 // Built once. `adoptStylesheet` parses it once per document.
 let stylesheet: string | undefined;
 
-const { primitives: catalog, groups } = runtime.getAuthoringContext();
-const [slideGroup] = groups;
-
 export default defineStudioConfig({
   runtime,
   apps: [
     {
-      id: 'slides',
-      title: 'Slide viewer',
-      load: () => import('./studio/slides_app'),
-      pages: (slideGroup?.types ?? []).map((type) => ({
-        path: type,
-        title: catalog.find((entry) => entry.type === type)?.name ?? type,
-        section: slideGroup?.title,
-      })),
+      id: 'decks',
+      title: 'Decks',
+      load: () => import('./studio/decks_app'),
+      pages: deckCatalog.map(({ id, title }) => ({ path: id, title })),
     },
   ],
   createReactContext: (root) => {
