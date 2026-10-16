@@ -15,6 +15,7 @@
 
 ## 2026-10-13
 
+- **Published APIs are committed**: `pnpm api:report` runs API Extractor on the built `.d.ts` of every export subpath of each published package and writes `api/<package>[.<subpath>].api.md`, forgotten exports included, beside `.runtime.txt`, the names the built ESM entry exports at run time, so a value made type-only shows. `pnpm verify` runs `pnpm api:check` after the build; it fails on a changed, missing, or orphaned file. ESLint refuses default exports in package sources, since API Extractor reports a re-exported anonymous default without its public name.
 - **Studio stays private**: `@elastic/isomer-studio` sets `"private": true`, so the release workflow does not publish it, and it runs from this repository: the CI docs use the action by its local path, and no doc tells a pack to install it.
 - **Studio surface menu and source tabs**: All surfaces is the first option of the Surface menu's list, so it is reachable by arrow key and announced as checked. The example source footer's JSX and JSON tabs are `EuiTabs`, with generated ids.
 - **Studio color mode offers System**: The header's color mode is Light, Dark, or System. System follows the operating system's `prefers-color-scheme`, including when it changes, and the choice is remembered per browser.

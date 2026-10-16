@@ -8,6 +8,7 @@
     ".github/**",
     ".okf/**",
     "**/THIRD_PARTY_LICENSES.md",
+    "api/**",
     "**/src/examples/**/output/**",
   ],
 }
