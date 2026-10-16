@@ -16,10 +16,24 @@ const frameStyles = css`
   border: 0;
 `;
 
-/** Re-dispatches a key pressed inside the frame from the frame element, so the page's key handlers still see it. */
+const EDITABLE =
+  'input, select, textarea, [contenteditable]:not([contenteditable="false"])';
+
+/** Duck-typed: the framed document's elements belong to its own realm. */
+const isEditable = (target: EventTarget | null): boolean =>
+  typeof target === 'object' &&
+  target !== null &&
+  'closest' in target &&
+  typeof target.closest === 'function' &&
+  (target as Element).closest(EDITABLE) !== null;
+
+/** Re-dispatches a key pressed inside the frame from the frame element, so the page's key handlers still see it; keys typed into the frame's own fields stay there. */
 const forwardKey = (frame: HTMLIFrameElement) => (event: KeyboardEvent) => {
   const { key, code, location, repeat, shiftKey, altKey, ctrlKey, metaKey } =
     event;
+  if (event.defaultPrevented || isEditable(event.target)) {
+    return;
+  }
   const forwarded = new KeyboardEvent(event.type, {
     ...{ key, code, location, repeat, shiftKey, altKey, ctrlKey, metaKey },
     bubbles: true,
