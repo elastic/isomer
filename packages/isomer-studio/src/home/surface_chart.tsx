@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { EuiIcon, useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
 
@@ -47,6 +47,41 @@ export const SurfaceChart = ({
     euiTheme: { font },
   } = useEuiTheme();
   const [note, setNote] = useState('');
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [connections, setConnections] = useState<readonly string[]>([]);
+  useLayoutEffect(() => {
+    const element = stageRef.current;
+    if (!element) {
+      return;
+    }
+    const measure = () => {
+      const stageBox = element.getBoundingClientRect();
+      const [source, ...cards] = Array.from(
+        element.querySelectorAll<HTMLElement>('[tabindex="0"]')
+      ).map((item) => item.getBoundingClientRect());
+      if (!source) {
+        return;
+      }
+      const sourceX = source.left + source.width / 2 - stageBox.left;
+      const sourceY = source.bottom - stageBox.top;
+      const hubY = sourceY + 14;
+      setConnections(
+        cards.map((box) => {
+          const x = box.left + box.width / 2 - stageBox.left;
+          const y = box.top - stageBox.top;
+          return `M ${sourceX} ${sourceY} V ${hubY} H 4 V ${y - 14} H ${x} V ${y}`;
+        })
+      );
+    };
+    measure();
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', measure);
+      return () => window.removeEventListener('resize', measure);
+    }
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [surfaces]);
   const spots = spotsFor(surfaces.length);
   const first = spots[0] ?? 50;
   const last = spots[spots.length - 1] ?? 50;
@@ -62,8 +97,9 @@ export const SurfaceChart = ({
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(${CARD_WIDTH}px, 1fr));
       justify-items: center;
-      gap: 10px;
-      padding: 8px 0;
+      gap: 28px 10px;
+      padding: 8px 0 8px 16px;
+      box-sizing: border-box;
     }
   `;
   const wires = css`
@@ -72,8 +108,16 @@ export const SurfaceChart = ({
     width: 100%;
     height: 100%;
     color: ${HOME.accent};
+    pointer-events: none;
     @container (max-width: ${CONTENT_WIDTH - 1}px) {
       display: none;
+    }
+  `;
+  const wrappedWires = css`
+    ${wires};
+    display: none;
+    @container (max-width: ${CONTENT_WIDTH - 1}px) {
+      display: block;
     }
   `;
   const pill = css`
@@ -225,6 +269,7 @@ export const SurfaceChart = ({
         </div>
         <div css={chart}>
           <div
+            ref={stageRef}
             css={stage}
             onMouseLeave={() => setNote('')}
             onBlur={(event) => {
@@ -241,6 +286,7 @@ export const SurfaceChart = ({
               <span>composition</span>
             </div>
             <svg
+              data-surface-connections="wide"
               css={wires}
               viewBox="0 0 100 100"
               preserveAspectRatio="none"
@@ -257,6 +303,21 @@ export const SurfaceChart = ({
                   strokeWidth="1"
                   opacity="0.55"
                   vectorEffect="non-scaling-stroke"
+                />
+              ))}
+            </svg>
+            <svg
+              data-surface-connections="wrapped"
+              css={wrappedWires}
+              opacity="0.55"
+              aria-hidden={true}>
+              {connections.map((d, index) => (
+                <path
+                  key={surfaces[index]}
+                  d={d}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1"
                 />
               ))}
             </svg>

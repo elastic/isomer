@@ -43,6 +43,7 @@ export const homeBackground = css`
 `;
 
 export const CONTENT_WIDTH = 620;
+export const HOME_NARROW = `@container isomer-home (max-width: ${CONTENT_WIDTH - 1}px)`;
 export const WIDE_CONTENT_WIDTH = 880;
 export const PANEL_WIDTH = 360;
 export const GUTTER = 48;
@@ -162,7 +163,7 @@ export const tilesGrid = css`
   display: grid;
   grid-template-columns: repeat(var(${TILE_COLUMNS}, 3), minmax(0, 1fr));
   gap: 12px;
-  @media (max-width: 900px) {
+  ${HOME_NARROW} {
     grid-template-columns: minmax(0, 1fr);
   }
 `;

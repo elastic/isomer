@@ -423,15 +423,76 @@ test.describe('static build', () => {
           labelSizes: items
             .slice(1)
             .map((item) => parseFloat(getComputedStyle(item).fontSize)),
+          connectedCards: Array.from(
+            chart!.querySelectorAll('svg[data-surface-connections]')
+          ).some((svg) => {
+            if (getComputedStyle(svg).display === 'none') {
+              return false;
+            }
+            return (
+              svg.querySelectorAll('path').length === items.length - 1 ||
+              svg.querySelectorAll('line').length === items.length + 1
+            );
+          }),
+          wrappedEndpointsMatch: Array.from(
+            chart!.querySelectorAll<SVGPathElement>(
+              'svg[data-surface-connections="wrapped"] > path'
+            )
+          ).every((path, index) => {
+            if (getComputedStyle(path.ownerSVGElement!).display === 'none') {
+              return true;
+            }
+            const svgBox = path.ownerSVGElement!.getBoundingClientRect();
+            const endpoint = path.getPointAtLength(path.getTotalLength());
+            const box = boxes[index + 1]!;
+            return (
+              Math.abs(svgBox.left + endpoint.x - box.left - box.width / 2) <
+                1 && Math.abs(svgBox.top + endpoint.y - box.top) < 1
+            );
+          }),
           overflows: element.scrollWidth > element.clientWidth,
         };
       });
       expect(layout.copyOverlapsChart).toBe(false);
       expect(layout.itemsOverlap).toBe(false);
       expect(layout.itemsFit).toBe(true);
+      expect(layout.connectedCards).toBe(true);
+      expect(layout.wrappedEndpointsMatch).toBe(true);
       expect(layout.overflows).toBe(false);
       expect(layout.labelSizes.length).toBeGreaterThan(0);
       expect(layout.labelSizes.every((size) => size >= 11)).toBe(true);
+      const tiles = await page
+        .getByRole('region', { name: 'Featured primitives', exact: true })
+        .evaluate((featured) => {
+          const content = featured.parentElement!;
+          const narrow = content.clientWidth < 620;
+          const groups = [
+            featured,
+            content.querySelector(
+              'section[aria-labelledby="isomer-studio-applications"]'
+            )!,
+            content.querySelector(
+              'section[aria-labelledby="isomer-studio-learn"]'
+            )!,
+          ];
+          return {
+            narrow,
+            stacked: groups.every((group) => {
+              const boxes = Array.from(group.lastElementChild!.children).map(
+                (child) => child.getBoundingClientRect()
+              );
+              return boxes.every(
+                (box, index) =>
+                  index === 0 || box.top >= boxes[index - 1]!.bottom - 1
+              );
+            }),
+            pagerVisible:
+              getComputedStyle(featured.querySelector('button')!.parentElement!)
+                .display !== 'none',
+          };
+        });
+      expect(tiles.stacked).toBe(tiles.narrow);
+      expect(tiles.pagerVisible).toBe(!tiles.narrow);
     });
   }
 });

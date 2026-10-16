@@ -16,6 +16,7 @@ import type { PrimitiveDoc } from '../model/describe_runtime';
 import {
   helpTile,
   HOME,
+  HOME_NARROW,
   sectionLabel,
   tile,
   TILE_COLUMNS,
@@ -169,8 +170,13 @@ export const FeaturedStrip = ({ featured, total }: FeaturedStripProps) => {
     &::-webkit-scrollbar {
       display: none;
     }
-    @media (max-width: 900px) {
-      grid-auto-columns: 100%;
+    ${HOME_NARROW} {
+      grid-auto-flow: row;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: none;
+      grid-auto-columns: auto;
+      overflow-x: visible;
+      scroll-snap-type: none;
     }
   `;
 
@@ -182,6 +188,9 @@ export const FeaturedStrip = ({ featured, total }: FeaturedStripProps) => {
           css={css`
             display: flex;
             gap: 6px;
+            ${HOME_NARROW} {
+              display: none;
+            }
           `}>
           <EuiButtonIcon
             iconType="chevronSingleLeft"

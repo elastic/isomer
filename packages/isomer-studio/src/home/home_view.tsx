@@ -26,6 +26,7 @@ import {
   CONTENT_WIDTH,
   GUTTER,
   HOME,
+  HOME_NARROW,
   PANEL_WIDTH,
   sectionLabel,
   TILE_COLUMNS,
@@ -191,6 +192,7 @@ export const HomeView = ({
     }
   `;
   const content = css`
+    container: isomer-home / inline-size;
     display: flex;
     flex-direction: column;
     gap: 32px;
@@ -396,7 +398,7 @@ export const HomeView = ({
                   display: grid;
                   grid-template-columns: repeat(3, minmax(0, 1fr));
                   gap: 12px;
-                  @media (max-width: 900px) {
+                  ${HOME_NARROW} {
                     grid-template-columns: minmax(0, 1fr);
                   }
                 `}>
