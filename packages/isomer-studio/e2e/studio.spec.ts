@@ -16,6 +16,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 
 import type { Page } from '@playwright/test';
@@ -797,6 +798,8 @@ test.describe('dev server reload', () => {
       .poll(postPdf, { timeout: 60_000 })
       .toContain('must default-export an array of takumi font loaders');
 
+    // Vite's watcher drops a change within 50ms of the last one to the same file, and the 400 can arrive sooner.
+    await delay(100);
     writeFonts('[]');
     await expect.poll(postPdf, { timeout: 60_000 }).toBe('200 ');
   });

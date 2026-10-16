@@ -511,7 +511,7 @@ const SlideStage = ({
     }
   };
 
-  const lastClick = useRef<Event>();
+  const lastClick = useRef<Event>(undefined);
   /** Clicking the slide advances, unless it lands on something clickable or ends a text selection. */
   const onClick = (event: MouseEvent) => {
     const { nativeEvent } = event;
