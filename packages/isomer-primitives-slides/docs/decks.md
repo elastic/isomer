@@ -24,11 +24,18 @@ A deck file is `{ id, title, slides, updatedAt }`. `id` matches the file name, `
 
 The app lives at `#/app/decks/<id>/<n>/<step>`, with `n` counting slides from 1 and `step` the builds shown. Without `<n>` it shows the deck's thumbnails, and without `<id>` the list of decks. An unknown slide opens the first, and a step past the slide's last build shows the slide built.
 
-| Key         | Moves to                                          |
-| ----------- | ------------------------------------------------- |
-| Right arrow | the next build, then the next slide               |
-| Left arrow  | the previous build, then the previous slide built |
-| Home        | the first slide                                   |
-| End         | the last slide, built                             |
+Above the slide, Output switches between the slide and each of the Studio's surfaces: HTML, Slack, Markdown, Text, Snapshot and, when the Studio rasterizes, PNG. Builds step only on the slide; the other views move a whole slide at a time.
 
-Present shows the slide full screen, scaled to fill it; the same keys drive it. Thumbnails are inert, so their links are not tab stops.
+| Input                            | Moves to                                          |
+| -------------------------------- | ------------------------------------------------- |
+| Click the slide, Right arrow     | the next build, then the next slide               |
+| Space, Down arrow, Page Down     | the same, on the slide                            |
+| Left arrow                       | the previous build, then the previous slide built |
+| Shift + Space, Up arrow, Page Up | the same, on the slide                            |
+| Home                             | the first slide                                   |
+| End                              | the last slide, built                             |
+| F                                | Present, or stop presenting                       |
+
+A click on a link or a button, or one that ends a text selection, does not advance. Present shows the slide full screen, scaled to fill it; the same keys drive it, and its controls appear on hover. Thumbnails are inert, so their links are not tab stops.
+
+Download PDF, on the thumbnails and the stage, writes the deck as `<id>.pdf`, a page per slide with every build shown, drawn in the pack's fonts through the config's `imageFonts`. It needs `isomer-studio dev`; a static site disables it.

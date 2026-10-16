@@ -12,12 +12,13 @@ import type {} from 'monaco-editor/esm/vs/editor/editor.api';
 import type { StudioConfig } from '../config';
 import { appProblems } from '../model/app_problems';
 import { IsomerStudio } from '../studio';
-import type { JsxTransform, RasterizePng } from '../types';
+import type { JsxTransform, RasterizePng, RenderPdf } from '../types';
 
 /** What the CLI's mode supplies: `dev` asks its server, a static build works in the browser alone. */
 export interface StudioHost {
   transformJsx?: JsxTransform | undefined;
   rasterizePng?: RasterizePng | undefined;
+  renderPdf?: RenderPdf | undefined;
 }
 
 const WORKERS: Readonly<Record<string, string>> = {
@@ -53,7 +54,7 @@ export const mountStudio = (
   let apps: StudioConfig['apps'];
   const update = (
     next: StudioConfig,
-    { transformJsx, rasterizePng }: StudioHost
+    { transformJsx, rasterizePng, renderPdf }: StudioHost
   ) => {
     const problems = appProblems(next.apps);
     if (!problems.length) {
@@ -63,7 +64,7 @@ export const mountStudio = (
     root.render(
       <IsomerStudio
         {...next}
-        {...{ apps, transformJsx, rasterizePng }}
+        {...{ apps, transformJsx, rasterizePng, renderPdf }}
         configProblems={problems}
       />
     );

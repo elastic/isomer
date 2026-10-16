@@ -228,18 +228,27 @@ export const studioConfigFrom = (
   return config;
 };
 
+/** Imports a module beside the config as the config itself is imported. */
+export const importStudioModule = (
+  path: string,
+  { loader = 'tsx' }: { loader?: ConfigLoader | undefined } = {}
+): Promise<unknown> => {
+  const url = pathToFileURL(path).href;
+  return loader === 'none'
+    ? import(url)
+    : importWithTsx(url, nearestTsconfig(path));
+};
+
 /** Imports the config's default export in Node; `tsx` compiles TypeScript and leaves resolution to Node. */
 export const loadStudioConfig = async (
   configPath: string,
-  { loader = 'tsx' }: { loader?: ConfigLoader | undefined } = {}
+  options: { loader?: ConfigLoader | undefined } = {}
 ): Promise<StudioConfig> => {
   assertSingleReact(configPath);
-  const url = pathToFileURL(configPath).href;
-  const namespace: unknown =
-    loader === 'none'
-      ? await import(url)
-      : await importWithTsx(url, nearestTsconfig(configPath));
-  return studioConfigFrom(namespace, configPath);
+  return studioConfigFrom(
+    await importStudioModule(configPath, options),
+    configPath
+  );
 };
 
 const isRenderToString = (

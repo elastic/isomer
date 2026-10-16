@@ -14,7 +14,9 @@ import type {
   StyledRenderContext,
 } from '@elastic/isomer-sdk';
 
+import type { StudioSurface } from './model/describe_runtime';
 import type { PreviewZoom } from './surfaces/scaled_preview';
+import type { RenderPdf } from './types';
 
 /** A runtime whose React renderers resolve style handles through `resolveClassName`. */
 export type StudioRuntime = IsomerRuntime<unknown, StyledRenderContext>;
@@ -43,6 +45,20 @@ export type StudioPreviewProps = (
   onCommit?: ((root: ShadowRoot) => void) | undefined;
 };
 
+/** A surface an app can show: one of the runtime's, or `png`, the host's rasterized snapshot. */
+export type StudioAppSurface = StudioSurface | 'png';
+
+export interface StudioSurfaceProps {
+  composition: Composition;
+  surface: StudioAppSurface;
+  /** `source` shows what the surface produced, as text. Defaults to `render`. */
+  view?: 'render' | 'source' | undefined;
+  /** Scales the `react`, `html`, `snapshot` and `png` renders. Defaults to `fit`. */
+  zoom?: PreviewZoom | undefined;
+  /** `false` leaves out the composition's leading title. Defaults to `true`. */
+  heading?: boolean | undefined;
+}
+
 /** What the Studio hands an app's page. */
 export interface StudioAppProps {
   /** Renders pack output in a shadow root, isolated from the app's and the Studio's styles. `nodes` go through the config's `compose`. */
@@ -52,6 +68,12 @@ export interface StudioAppProps {
   /** The part of the hash after `#/app/<id>/`, which may contain slashes. */
   path: string;
   navigate: (path: string) => void;
+  /** Renders a finished composition on one surface, with what it reported, as the Studio's own previews do. */
+  Surface: ComponentType<StudioSurfaceProps>;
+  /** The surfaces `Surface` can show, in display order, with their labels; `png` only when the host rasterizes. */
+  surfaces: readonly { id: StudioAppSurface; label: string }[];
+  /** Present when the host can write PDFs, as `dev` does. */
+  renderPdf?: RenderPdf | undefined;
 }
 
 /** A nav row under an app, listed without loading it. */
@@ -88,6 +110,11 @@ export interface StudioConfig {
   compose?: StudioCompose | undefined;
   /** Pages listed under Apps in the nav. */
   apps?: readonly StudioApp[] | undefined;
+  /**
+   * A module path, relative to the config, whose default export lists the takumi `FontLoader`s PNGs and PDFs are drawn with.
+   * Node imports it and the browser never does, so it may read files. Without it, PNGs use takumi's built-in face and PDFs can't draw text.
+   */
+  imageFonts?: string | undefined;
 }
 
 /** Types a config file's default export. */

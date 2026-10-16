@@ -7,9 +7,16 @@
 
 import type { ChildProcess } from 'node:child_process';
 import { spawn } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 
 import type { Page } from '@playwright/test';
@@ -514,6 +521,70 @@ test.describe('decks', () => {
 
     expect(problems).toEqual([]);
   });
+
+  test('advances on a click, shows a slide on each surface, and needs dev for a PDF', async ({
+    page,
+  }) => {
+    const problems = watchProblems(page);
+    const deck = '#/app/decks/isomer-every-surface';
+    const counter = page.getByText(/^\d+ of \d+$/);
+    const build = page.getByText(/^Build \d+ of \d+$/);
+    const output = page.getByRole('group', { name: 'Output' });
+
+    await page.goto(`${site.url}${deck}/6/0`);
+    await expect(build).toHaveText('Build 0 of 3');
+    await page.locator('[data-test-subj="deckStage"]').click();
+    await expect(build).toHaveText('Build 1 of 3');
+    await page.keyboard.press('Space');
+    await expect(build).toHaveText('Build 2 of 3');
+    await page.keyboard.press('PageUp');
+    await expect(build).toHaveText('Build 1 of 3');
+
+    await output.getByRole('button', { name: 'Markdown', exact: true }).click();
+    await expect(build).toHaveCount(0);
+    await expect(page.locator('[data-test-subj="deckOutput"]')).toContainText(
+      'The problem'
+    );
+    await page.keyboard.press('ArrowRight');
+    await expect(counter).toHaveText('7 of 33');
+    await expect(page).toHaveURL(new RegExp(`${deck}/7/0$`));
+    await expect(
+      output.getByRole('button', { name: 'Slack', exact: true })
+    ).toBeVisible();
+
+    await output.getByRole('button', { name: 'HTML', exact: true }).click();
+    await page
+      .locator('[data-test-subj="deckOutput"] iframe')
+      .contentFrame()
+      .locator('body')
+      .click();
+    await page.keyboard.press('ArrowRight');
+    await expect(counter).toHaveText('8 of 33');
+
+    await page.setViewportSize({ width: 1000, height: 700 });
+    await output.getByRole('button', { name: 'Slide', exact: true }).click();
+    const stageWidth = await page
+      .locator('[data-test-subj="deckStage"]')
+      .evaluate((stage) => stage.getBoundingClientRect().width);
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const slide = Array.from(document.querySelectorAll('main *'))
+            .map(({ shadowRoot }) =>
+              shadowRoot?.querySelector('.isomerDeckRoot')
+            )
+            .find(Boolean);
+          return slide?.getBoundingClientRect().width ?? Infinity;
+        })
+      )
+      .toBeLessThanOrEqual(stageWidth + 1);
+
+    await expect(
+      page.getByRole('button', { name: 'Download PDF', exact: true })
+    ).toBeDisabled();
+
+    expect(problems).toEqual([]);
+  });
 });
 
 test.describe('dev server', () => {
@@ -563,6 +634,26 @@ test.describe('dev server', () => {
     await exerciseApp(page, dev.url);
     expect(problems).toEqual([]);
   });
+
+  test('downloads a deck as one PDF', async ({ page }) => {
+    test.skip(
+      Boolean(process.env.STUDIO_CONFIG),
+      'needs the repository slides pack'
+    );
+    const problems = watchProblems(page);
+
+    await page.goto(`${dev.url}#/app/decks/isomer-every-surface/1/0`);
+    const downloaded = page.waitForEvent('download');
+    await page
+      .getByRole('button', { name: 'Download PDF', exact: true })
+      .click();
+    const download = await downloaded;
+    expect(download.suggestedFilename()).toBe('isomer-every-surface.pdf');
+    const path = await download.path();
+    expect(readFileSync(path).subarray(0, 5).toString()).toBe('%PDF-');
+
+    expect(problems).toEqual([]);
+  });
 });
 
 test.describe('dev server reload', () => {
@@ -581,6 +672,9 @@ test.describe('dev server reload', () => {
       `export const title = ${JSON.stringify(title)};\nexport const framed = ${framed};\n`
     );
 
+  const writeFonts = (exported: string) =>
+    writeFileSync(join(dir, 'fonts.ts'), `export default ${exported};\n`);
+
   test.beforeAll(async () => {
     const artifacts = join(packageDir, '.artifacts');
     mkdirSync(artifacts, { recursive: true });
@@ -590,6 +684,7 @@ test.describe('dev server reload', () => {
       JSON.stringify({ type: 'commonjs' })
     );
     writeOptions('Before reload', false);
+    writeFonts('[]');
     writeFileSync(
       join(dir, 'counter.ts'),
       [
@@ -622,6 +717,7 @@ test.describe('dev server reload', () => {
         'export default {',
         '  title,',
         "  apps: [{ id: 'counter', title: 'Counter', load: () => import('./counter') }],",
+        "  imageFonts: './fonts.ts',",
         '  runtime: createIsomerRuntime({',
         '    packs: [componentsPack],',
         '    ...(framed ? { frames: { card } } : {}),',
@@ -680,5 +776,31 @@ test.describe('dev server reload', () => {
 
     await expect(page).toHaveTitle('App reload', { timeout: 60_000 });
     await expect(page.getByRole('button', { name: 'Count 1' })).toBeVisible();
+  });
+
+  test('re-imports `imageFonts` when it changes, and recovers from a bad export', async ({
+    page,
+  }) => {
+    const postPdf = async () => {
+      const response = await page.request.post(`${dev.url}pdf`, {
+        data: { compositions: [{ type: 'view', body: [], theme: 'light' }] },
+      });
+      return `${response.status()} ${response.ok() ? '' : await response.text()}`;
+    };
+
+    await page.goto(dev.url);
+    writeOptions('Fonts reload', true);
+    await expect(page).toHaveTitle('Fonts reload', { timeout: 60_000 });
+    await expect.poll(postPdf).toBe('200 ');
+
+    writeFonts('"not a list"');
+    await expect
+      .poll(postPdf, { timeout: 60_000 })
+      .toContain('must default-export an array of takumi font loaders');
+
+    // Vite's watcher drops a change within 50ms of the last one to the same file, and the 400 can arrive sooner.
+    await delay(100);
+    writeFonts('[]');
+    await expect.poll(postPdf, { timeout: 60_000 }).toBe('200 ');
   });
 });

@@ -30,14 +30,17 @@ import { DEV_ENTRY_URL, devViteConfig } from './dev_bundle';
 import type { ConfigLoader } from './load_config';
 import {
   assertSingleReact,
+  importStudioModule,
   loadStudioConfig,
   studioConfigFrom,
 } from './load_config';
-import type { NodeRasterizer } from './rasterize';
-import { createRasterizer } from './rasterize';
+import type { NodeRenderers } from './rasterize';
+import { createRenderers, imageFontsOf } from './rasterize';
 
 const HOST = '127.0.0.1';
 const MAX_BODY_BYTES = 256 * 1024;
+/** A whole deck's compositions. */
+const MAX_PDF_BODY_BYTES = 8 * 1024 * 1024;
 const ASSETS_DIR = join(APP_DIR, 'assets');
 
 const CONTENT_TYPES: Readonly<Record<string, string>> = {
@@ -54,14 +57,17 @@ const CONTENT_TYPES: Readonly<Record<string, string>> = {
   '.woff2': 'font/woff2',
 };
 
-const readBody = (request: IncomingMessage): Promise<string> =>
+const readBody = (
+  request: IncomingMessage,
+  maxBytes = MAX_BODY_BYTES
+): Promise<string> =>
   new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
     let size = 0;
     request.on('data', (chunk: Buffer) => {
       size += chunk.length;
-      if (size > MAX_BODY_BYTES) {
-        reject(new Error(`Request body is over ${MAX_BODY_BYTES} bytes.`));
+      if (size > maxBytes) {
+        reject(new Error(`Request body is over ${maxBytes} bytes.`));
         request.destroy();
         return;
       }
@@ -97,6 +103,19 @@ const isComposition = (value: unknown): value is Composition =>
   'type' in value &&
   typeof value.type === 'string';
 
+const isPdfRequest = (
+  value: unknown
+): value is { title?: string; compositions: Composition[] } =>
+  typeof value === 'object' &&
+  value !== null &&
+  'compositions' in value &&
+  Array.isArray(value.compositions) &&
+  value.compositions.length > 0 &&
+  value.compositions.every(isComposition) &&
+  (!('title' in value) ||
+    value.title === undefined ||
+    typeof value.title === 'string');
+
 const describeError = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
@@ -109,7 +128,7 @@ export interface DevServerOptions {
 
 interface LoadedConfig {
   config: StudioConfig;
-  rasterize: NodeRasterizer | undefined;
+  renderers: NodeRenderers | undefined;
 }
 
 export interface DevServer {
@@ -139,11 +158,13 @@ export const startDevServer = async ({
   }
 
   const server: Server = createServer();
+  const fontFiles = new Set<string>();
   const vite = await createViteServer(
     devViteConfig({
       configPath,
       server,
       onConfigChange: (stale) => reloadConfig(stale),
+      reloadsWith: () => fontFiles,
     })
   );
   const runner =
@@ -155,7 +176,19 @@ export const startDevServer = async ({
     const config = runner
       ? studioConfigFrom(await runner.import(configPath), configPath)
       : await loadStudioConfig(configPath, { loader });
-    return { config, rasterize: createRasterizer(config.runtime) };
+    const fonts = imageFontsOf(config, configPath, async (path) => {
+      if (!runner) {
+        return importStudioModule(path, { loader });
+      }
+      const namespace: unknown = await runner.import(path);
+      const node = await vite.environments.ssr.moduleGraph.getModuleByUrl(path);
+      fontFiles.clear();
+      if (node?.file) {
+        fontFiles.add(node.file);
+      }
+      return namespace;
+    });
+    return { config, renderers: createRenderers(config.runtime, fonts) };
   };
 
   let loaded = importConfig();
@@ -192,8 +225,8 @@ export const startDevServer = async ({
   }
 
   const png = async (request: IncomingMessage, response: ServerResponse) => {
-    const { rasterize } = await loaded;
-    if (!rasterize) {
+    const { renderers } = await loaded;
+    if (!renderers) {
       sendText(response, 404, 'The runtime has no snapshot surface.');
       return;
     }
@@ -203,12 +236,38 @@ export const startDevServer = async ({
         sendText(response, 400, 'Not a composition.');
         return;
       }
-      const image = await rasterize(composition);
+      const image = await renderers.png(composition);
       response.writeHead(200, {
         'content-type': 'image/png',
         'cache-control': 'no-store',
       });
       response.end(image);
+    } catch (error) {
+      sendText(response, 400, describeError(error));
+    }
+  };
+
+  const pdf = async (request: IncomingMessage, response: ServerResponse) => {
+    const { renderers } = await loaded;
+    if (!renderers) {
+      sendText(response, 404, 'The runtime has no snapshot surface.');
+      return;
+    }
+    try {
+      const body: unknown = JSON.parse(
+        await readBody(request, MAX_PDF_BODY_BYTES)
+      );
+      if (!isPdfRequest(body)) {
+        sendText(response, 400, 'Not one or more compositions.');
+        return;
+      }
+      const { title, compositions } = body;
+      const document = await renderers.pdf(compositions, { title });
+      response.writeHead(200, {
+        'content-type': 'application/pdf',
+        'cache-control': 'no-store',
+      });
+      response.end(document);
     } catch (error) {
       sendText(response, 400, describeError(error));
     }
@@ -280,6 +339,10 @@ export const startDevServer = async ({
     }
     if (request.method === 'POST' && pathname === '/png') {
       void png(request, response);
+      return;
+    }
+    if (request.method === 'POST' && pathname === '/pdf') {
+      void pdf(request, response);
       return;
     }
     if (pathname === '/' || pathname === '/index.html') {

@@ -30,9 +30,9 @@ import {
   renderIndexHtml,
 } from './app_bundle';
 import type { ConfigLoader } from './load_config';
-import { loadStudioConfig } from './load_config';
+import { importStudioModule, loadStudioConfig } from './load_config';
 import type { NodeRasterizer } from './rasterize';
-import { createRasterizer } from './rasterize';
+import { createRasterizer, imageFontsOf } from './rasterize';
 
 const THEMES: readonly StudioTheme[] = ['light', 'dark'];
 
@@ -144,7 +144,12 @@ export const buildSite = async ({
     })
   );
 
-  const rasterize = createRasterizer(config.runtime);
+  const rasterize = createRasterizer(
+    config.runtime,
+    imageFontsOf(config, configPath, (path) =>
+      importStudioModule(path, { loader })
+    )
+  );
   if (!rasterize) {
     return { pngs: 0, failures: [] };
   }

@@ -16,6 +16,35 @@ const frameStyles = css`
   border: 0;
 `;
 
+const EDITABLE =
+  'input, select, textarea, [contenteditable]:not([contenteditable="false"])';
+
+/** Duck-typed: the framed document's elements belong to its own realm. */
+const isEditable = (target: EventTarget | null): boolean =>
+  typeof target === 'object' &&
+  target !== null &&
+  'closest' in target &&
+  typeof target.closest === 'function' &&
+  (target as Element).closest(EDITABLE) !== null;
+
+/** Re-dispatches a key pressed inside the frame from the frame element, so the page's key handlers still see it; keys typed into the frame's own fields stay there. */
+const forwardKey = (frame: HTMLIFrameElement) => (event: KeyboardEvent) => {
+  const { key, code, location, repeat, shiftKey, altKey, ctrlKey, metaKey } =
+    event;
+  if (event.defaultPrevented || isEditable(event.target)) {
+    return;
+  }
+  const forwarded = new KeyboardEvent(event.type, {
+    ...{ key, code, location, repeat, shiftKey, altKey, ctrlKey, metaKey },
+    bubbles: true,
+    cancelable: true,
+    composed: true,
+  });
+  if (!frame.dispatchEvent(forwarded)) {
+    event.preventDefault();
+  }
+};
+
 const documentFor = (html: string) =>
   `<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;display:flow-root}</style></head><body>${html}</body></html>`;
 
@@ -36,8 +65,13 @@ export const HtmlSurface = ({
       return;
     }
     let observer: ResizeObserver | undefined;
+    let framed: Document | undefined;
+    const onKey = forwardKey(element);
     const measure = () => {
-      const body = element.contentDocument?.body;
+      framed?.removeEventListener('keydown', onKey);
+      framed = element.contentDocument ?? undefined;
+      framed?.addEventListener('keydown', onKey);
+      const body = framed?.body;
       if (!body) {
         return;
       }
@@ -64,6 +98,7 @@ export const HtmlSurface = ({
     element.addEventListener('load', measure);
     return () => {
       element.removeEventListener('load', measure);
+      framed?.removeEventListener('keydown', onKey);
       observer?.disconnect();
     };
   }, []);

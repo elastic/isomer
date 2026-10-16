@@ -210,6 +210,7 @@ const Studio = ({
   compose: composeNodes,
   transformJsx,
   rasterizePng,
+  renderPdf,
   configProblems,
   theme,
   colorMode,
@@ -246,6 +247,7 @@ const Studio = ({
       createReactContext,
       transformJsx,
       rasterizePng,
+      renderPdf,
     }),
     [
       runtime,
@@ -258,6 +260,7 @@ const Studio = ({
       createReactContext,
       transformJsx,
       rasterizePng,
+      renderPdf,
     ]
   );
 
