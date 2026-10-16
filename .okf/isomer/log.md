@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-16
+
+- **The authoring context is built on first use**: `createIsomerRuntime` no longer builds the authoring schema, body schema, declarations, catalog, and groups. The first `getAuthoringContext()` call builds them and later calls reuse them, so a runtime that only validates and renders never holds them in memory.
+
 ## 2026-10-15
 
 - **Slides decks and the Decks app**: the slides pack commits four decks as `decks/<id>.json` in the current vocabulary, with their v0.2.0 originals frozen in `decks/v1/`, and lists them in `deckCatalog`. `src/decks.test.ts` checks that every slide validates, renders on every surface, and fits, and that files, ids and the catalog agree. The Studio's Slide viewer is replaced by a Decks app with one nav page per deck, at `#/app/decks/<id>/<n>/<step>`, which steps through builds and slides by keyboard or buttons and presents full screen. ([#211](https://github.com/elastic/isomer/issues/211))

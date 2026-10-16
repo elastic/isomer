@@ -116,15 +116,21 @@ const mergePackAuthoring = (
   };
 };
 
+/** The part of {@link RuntimeAuthoringContext} fixed for the runtime's lifetime. */
+type CachedAuthoring = Pick<
+  RuntimeAuthoringContext,
+  'schema' | 'bodySchema' | 'declarations' | 'primitives' | 'groups'
+>;
+
 /**
- * Builds the authoring JSON Schema and the primitive catalog once from
- * `definitions`, returning a factory that reuses them on every call and
- * reads the view list fresh.
+ * Returns a factory that builds the authoring JSON Schema, declarations and
+ * primitive catalog from `definitions` on its first call, reuses them on every
+ * later call, and reads the view list fresh.
  *
  * Projecting a discriminated union to JSON Schema is expensive and fixed for
- * the runtime's lifetime, so it is cached. The registered-view list is cheap
- * (each summary is projected once at `register`) and changes as a host
- * registers, so it is not.
+ * the runtime's lifetime, so it is cached, and a runtime that only renders
+ * never pays for it. The registered-view list is cheap (each summary is
+ * projected once at `register`) and changes as a host registers, so it is not.
  */
 export const createRuntimeAuthoringContextFactory = (
   definitions: readonly AnyPrimitiveDefinition[],
@@ -133,17 +139,28 @@ export const createRuntimeAuthoringContextFactory = (
   { jsx, moduleName, ...runtimeAuthoring }: RuntimeAuthoringOptions = {}
 ): (() => RuntimeAuthoringContext) => {
   const options = mergePackAuthoring(packs, runtimeAuthoring);
-  const schema = buildAuthoringJsonSchema(definitions, options);
-  const bodySchema = authoringBodySchema(schema);
-  const declarations = buildAuthoringDeclarations(schema, definitions, {
-    ...(jsx === undefined ? {} : { jsx }),
-    ...(moduleName === undefined ? {} : { moduleName }),
-  });
-  const primitives = definitions.map((definition) => definition.catalog);
   const definitionsByType = new Map(
     definitions.map((definition) => [definition.type, definition])
   );
-  const groups = packs.flatMap((pack) => pack.authoring?.groups ?? []);
+
+  let cached: CachedAuthoring | undefined;
+  const getCached = (): CachedAuthoring => {
+    if (cached) {
+      return cached;
+    }
+    const schema = buildAuthoringJsonSchema(definitions, options);
+    cached = {
+      schema,
+      bodySchema: authoringBodySchema(schema),
+      declarations: buildAuthoringDeclarations(schema, definitions, {
+        ...(jsx === undefined ? {} : { jsx }),
+        ...(moduleName === undefined ? {} : { moduleName }),
+      }),
+      primitives: definitions.map((definition) => definition.catalog),
+      groups: packs.flatMap((pack) => pack.authoring?.groups ?? []),
+    };
+    return cached;
+  };
 
   const assertKnown = (caller: string, types: readonly string[]): void => {
     const missing = types.filter((type) => !definitionsByType.has(type));
@@ -171,6 +188,7 @@ export const createRuntimeAuthoringContextFactory = (
   ): PrimitiveDescriptions => {
     assertKnown('describePrimitives', types);
     const wanted = [...new Set(types)];
+    const { schema } = getCached();
     return {
       primitives: wanted.flatMap(
         (type) => definitionsByType.get(type)?.catalog ?? []
@@ -181,11 +199,7 @@ export const createRuntimeAuthoringContextFactory = (
   };
 
   return () => ({
-    schema,
-    bodySchema,
-    declarations,
-    primitives,
-    groups,
+    ...getCached(),
     views: listViews(),
     schemaFor,
     describePrimitives,
