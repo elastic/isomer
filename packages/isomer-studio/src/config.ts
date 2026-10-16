@@ -110,7 +110,7 @@ export interface StudioConfig {
   createReactContext?: ((root: ShadowRoot) => StyledRenderContext) | undefined;
   /** Defaults to `{ type: 'view', body: nodes, theme }`. Return a node that is already a valid root as is. */
   compose?: StudioCompose | undefined;
-  /** Pages listed under Apps in the nav. */
+  /** Pages listed under the app in the nav. */
   apps?: readonly StudioApp[] | undefined;
   /**
    * A module path, relative to the config, whose default export lists the takumi `FontLoader`s PNGs and PDFs are drawn with.

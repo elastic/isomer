@@ -28,6 +28,9 @@ import {
   HOME,
   PANEL_WIDTH,
   sectionLabel,
+  TILE_COLUMNS,
+  WIDE,
+  WIDE_CONTENT_WIDTH,
 } from './tokens';
 
 export interface HomeViewProps {
@@ -173,21 +176,29 @@ export const HomeView = ({
     flex: 1;
     display: grid;
     grid-template-columns: minmax(0, 1fr) ${PANEL_WIDTH}px;
+    width: 100%;
+    max-width: ${WIDE_CONTENT_WIDTH + 5 * GUTTER + PANEL_WIDTH}px;
+    margin-inline: auto;
     @media (max-width: 900px) {
       grid-template-columns: minmax(0, 1fr);
     }
   `;
   const main = css`
     min-width: 0;
+    padding: 20px ${GUTTER}px 48px;
+    @media (max-width: 900px) {
+      padding-inline: 16px;
+    }
+  `;
+  const content = css`
     display: flex;
     flex-direction: column;
     gap: 32px;
-    padding: 20px 56px 48px ${GUTTER}px;
-    > * {
-      max-width: ${CONTENT_WIDTH}px;
-    }
-    @media (max-width: 900px) {
-      padding-inline: 16px;
+    max-width: ${CONTENT_WIDTH}px;
+    margin-inline: auto;
+    ${WIDE} {
+      max-width: ${WIDE_CONTENT_WIDTH}px;
+      ${TILE_COLUMNS}: 4;
     }
   `;
   const aside = css`
@@ -195,8 +206,17 @@ export const HomeView = ({
     flex-direction: column;
     gap: 20px;
     border-left: 1px solid ${HOME.line1};
-    padding: 20px ${GUTTER}px 32px 32px;
+    border-image: linear-gradient(
+        to bottom,
+        transparent,
+        ${HOME.line1} 70px,
+        ${HOME.line1} calc(100% - 70px),
+        transparent
+      )
+      1;
+    padding: 44px ${GUTTER}px 32px 32px;
     @media (max-width: 900px) {
+      border-image: none;
       border-left: 0;
       border-top: 1px solid ${HOME.line1};
       padding-inline: 16px;
@@ -236,7 +256,6 @@ export const HomeView = ({
     gap: 8px 24px;
     font-size: 12px;
     color: ${HOME.fg3};
-    border-top: 1px solid ${HOME.line1};
     padding: 14px ${GUTTER}px;
     a {
       color: ${HOME.fg2};
@@ -268,151 +287,155 @@ export const HomeView = ({
       ) : null}
       <div css={columns}>
         <div css={main}>
-          <div
-            css={css`
-              display: flex;
-              flex-direction: column;
-              gap: 12px;
-            `}>
+          <div css={content}>
             <div
               css={css`
-                font-family: ${font.familyCode};
-                font-size: 12px;
-                color: ${HOME.accent};
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
               `}>
-              isomer{' '}
-              <span
+              <div
                 css={css`
-                  color: ${HOME.fg3};
+                  font-family: ${font.familyCode};
+                  font-size: 12px;
+                  color: ${HOME.accent};
                 `}>
-                n.
-              </span>{' '}
-              one formula, many forms
+                isomer{' '}
+                <span
+                  css={css`
+                    color: ${HOME.fg3};
+                  `}>
+                  n.
+                </span>{' '}
+                one formula, many forms
+              </div>
+              <h1
+                css={css`
+                  margin: 0;
+                  font-size: 44px;
+                  font-weight: 600;
+                  letter-spacing: -0.025em;
+                  line-height: 1.05;
+                  color: ${HOME.fg};
+                  text-wrap: balance;
+                  @media (max-width: 900px) {
+                    font-size: 32px;
+                  }
+                `}>
+                What are we rendering today?
+              </h1>
+              <p
+                css={css`
+                  margin: 0;
+                  font-size: 16px;
+                  text-wrap: pretty;
+                `}>
+                Isomer Studio is a workbench for primitives, primitive packs,
+                compositions, views, tools, and applications built on Isomer.
+              </p>
             </div>
-            <h1
-              css={css`
-                margin: 0;
-                font-size: 44px;
-                font-weight: 600;
-                letter-spacing: -0.025em;
-                line-height: 1.05;
-                color: ${HOME.fg};
-                max-width: 16ch;
-                text-wrap: balance;
-                @media (max-width: 900px) {
-                  font-size: 32px;
-                }
-              `}>
-              What are we rendering today?
-            </h1>
-            <p
-              css={css`
-                margin: 0;
-                font-size: 16px;
-                max-width: 52ch;
-                text-wrap: pretty;
-              `}>
-              A workbench for primitives, primitive packs, compositions, views,
-              and applications built on Isomer.
-            </p>
-          </div>
 
-          <PrimitiveSearch
-            size="large"
-            placeholder="Search primitives by name, purpose or prop"
-            onSelectPrimitive={(type) =>
-              navigate({ mode: route.mode, page: type, example: 0 })
-            }
-          />
+            <PrimitiveSearch
+              size="large"
+              placeholder="Search primitives by name, purpose or prop"
+              onSelectPrimitive={(type) =>
+                navigate({ mode: route.mode, page: type, example: 0 })
+              }
+            />
 
-          {groups.length ? (
-            <nav aria-label="Primitive categories" css={chips}>
-              {groups.map(({ title: group, types }) => (
-                <a
-                  key={group}
+            {groups.length ? (
+              <nav aria-label="Primitive categories" css={chips}>
+                {groups.map(({ title: group, types }) => (
+                  <a
+                    key={group}
+                    href={formatRoute({
+                      mode: 'docs',
+                      page: GALLERY,
+                      example: 0,
+                      group,
+                    })}
+                    css={chip}>
+                    {types[0] ? (
+                      <span
+                        css={css`
+                          color: ${HOME.fg2};
+                        `}>
+                        <PrimitiveGlyph type={types[0]} size={16} />
+                      </span>
+                    ) : null}
+                    {group}
+                    <span
+                      css={css`
+                        font-family: ${font.familyCode};
+                        font-size: 11px;
+                        color: ${HOME.fg3};
+                      `}>
+                      {types.length}
+                    </span>
+                  </a>
+                ))}
+              </nav>
+            ) : null}
+
+            <FeaturedStrip {...{ featured }} total={primitives.length} />
+
+            <AppsSection {...{ apps }} />
+
+            <section
+              aria-labelledby="isomer-studio-learn"
+              css={css`
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+              `}>
+              <div css={sectionLabel}>
+                <span id="isomer-studio-learn">Learn more about Isomer</span>
+              </div>
+              <div
+                css={css`
+                  display: grid;
+                  grid-template-columns: repeat(3, minmax(0, 1fr));
+                  gap: 12px;
+                  @media (max-width: 900px) {
+                    grid-template-columns: minmax(0, 1fr);
+                  }
+                `}>
+                <Door
                   href={formatRoute({
                     mode: 'docs',
                     page: GALLERY,
                     example: 0,
-                    group,
                   })}
-                  css={chip}>
-                  {types[0] ? (
-                    <span
-                      css={css`
-                        color: ${HOME.fg2};
-                      `}>
-                      <PrimitiveGlyph type={types[0]} size={16} />
-                    </span>
-                  ) : null}
-                  {group}
-                  <span
-                    css={css`
-                      font-family: ${font.familyCode};
-                      font-size: 11px;
-                      color: ${HOME.fg3};
-                    `}>
-                    {types.length}
-                  </span>
-                </a>
-              ))}
-            </nav>
-          ) : null}
+                  color={HOME.docs}
+                  tag="Docs"
+                  title="Read and use"
+                  action="Open the gallery →">
+                  Every primitive in the pack, with its purpose, props and
+                  examples.
+                </Door>
+                <Door
+                  href={formatRoute({ mode: 'dev', page: first, example: 0 })}
+                  color={HOME.dev}
+                  tag="Dev"
+                  title="Build and test"
+                  action="Open the workbench →">
+                  Edit a composition and watch it render on every surface the
+                  runtime has.
+                </Door>
+                <Door
+                  href={DOCS_URL}
+                  external
+                  color={HOME.accent}
+                  tag="Guide"
+                  title="Learn how Isomer works"
+                  action="Read the docs ↗">
+                  The composition contract, packs, surfaces and the agent tools.
+                </Door>
+              </div>
+            </section>
 
-          <FeaturedStrip {...{ featured }} total={primitives.length} />
-
-          <AppsSection {...{ apps }} />
-
-          <section
-            aria-labelledby="isomer-studio-learn"
-            css={css`
-              display: flex;
-              flex-direction: column;
-              gap: 10px;
-            `}>
-            <div css={sectionLabel}>
-              <span id="isomer-studio-learn">Learn more about Isomer</span>
-            </div>
-            <div
-              css={css`
-                display: grid;
-                grid-template-columns: repeat(3, minmax(0, 1fr));
-                gap: 12px;
-                @media (max-width: 900px) {
-                  grid-template-columns: minmax(0, 1fr);
-                }
-              `}>
-              <Door
-                href={formatRoute({ mode: 'docs', page: GALLERY, example: 0 })}
-                color={HOME.docs}
-                tag="Docs"
-                title="Read and use"
-                action="Open the gallery →">
-                Every primitive in the pack, with its purpose, props and
-                examples.
-              </Door>
-              <Door
-                href={formatRoute({ mode: 'dev', page: first, example: 0 })}
-                color={HOME.dev}
-                tag="Dev"
-                title="Build and test"
-                action="Open the workbench →">
-                Edit a composition and watch it render on every surface the
-                runtime has.
-              </Door>
-              <Door
-                href={DOCS_URL}
-                external
-                color={HOME.accent}
-                tag="Guide"
-                title="Learn how Isomer works"
-                action="Read the docs ↗">
-                The composition contract, packs, surfaces and the agent tools.
-              </Door>
-            </div>
-          </section>
-
-          <SurfaceChart {...{ surfaces }} />
+            <SurfaceChart {...{ surfaces }} />
+          </div>
         </div>
 
         <aside css={aside}>

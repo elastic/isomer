@@ -47,11 +47,7 @@ const APP_PAGE: { title: string; path: string; heading?: string } | undefined =
           path: process.env.STUDIO_APP_PAGE_PATH,
         }
       : undefined
-    : {
-        title: 'Isomer: one composition, every surface',
-        path: 'isomer-every-surface',
-        heading: 'Isomer: one composition, every surface',
-      };
+    : undefined;
 /** A font family the app's global CSS loads with `url()`, when it has one. */
 const APP_FONT = process.env.STUDIO_APP_FONT;
 /** The name of a button in the app that opens an EUI popover, when it has one. */
@@ -431,9 +427,13 @@ test.describe('decks', () => {
         );
 
     await page.goto(`${site.url}#/dev`);
+    await page.getByRole('button', { name: 'Decks', exact: true }).click();
     await page
-      .getByRole('list', { name: 'Decks pages' })
-      .getByRole('button', { name: 'Isomer: one composition, every surface' })
+      .locator('main')
+      .getByRole('button', {
+        name: 'Isomer: one composition, every surface',
+        exact: true,
+      })
       .click();
     await expect(page).toHaveURL(new RegExp(`${deck}$`));
     await expect(

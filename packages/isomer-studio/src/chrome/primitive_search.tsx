@@ -10,6 +10,7 @@ import type { EuiSelectableTemplateSitewideOption } from '@elastic/eui';
 import { EuiSelectableTemplateSitewide } from '@elastic/eui';
 import { css } from '@emotion/react';
 
+import { HOME } from '../home/tokens';
 import { useStudio } from '../studio_context';
 
 export interface PrimitiveSearchProps {
@@ -88,6 +89,26 @@ export const PrimitiveSearch = ({
               .euiFormControlLayout,
               .euiFieldSearch {
                 block-size: 52px;
+              }
+              .euiFormControlLayout {
+                background-color: ${HOME.field};
+              }
+              .euiFormControlLayout:not(:focus-within)::after {
+                border-color: ${HOME.line3};
+              }
+              .euiFieldSearch {
+                background-color: transparent;
+                color: ${HOME.fg};
+              }
+              .euiFieldSearch::placeholder {
+                color: ${HOME.fg3};
+              }
+              .euiFormControlLayoutIcons,
+              .euiFormControlLayout__append {
+                color: ${HOME.fg2};
+              }
+              .euiFormControlLayoutIcons {
+                max-block-size: none;
               }
               .euiFieldSearch {
                 font-size: 15px;

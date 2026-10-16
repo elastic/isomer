@@ -67,6 +67,9 @@ const renderNav = (props: Partial<StudioNavProps> = {}) => {
   return { nav: screen.getByRole('navigation'), onSelectApp };
 };
 
+const isBefore = (a: HTMLElement, b: HTMLElement) =>
+  Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
 const pageList = () => screen.getByRole('list', { name: 'Decks pages' });
 
 const texts = (elements: readonly HTMLElement[]) =>
@@ -150,5 +153,48 @@ describe('StudioNav app pages', () => {
     expect(app).toHaveAttribute('aria-current', 'page');
     fireEvent.click(app);
     expect(onSelectApp).toHaveBeenLastCalledWith('decks');
+  });
+});
+
+describe('StudioNav gallery link', () => {
+  it.each([
+    ['dev', false],
+    ['docs', true],
+  ] as const)('is listed in %s mode and opens the gallery', (mode, current) => {
+    const onSelect = vi.fn();
+    const { nav } = renderNav({
+      mode,
+      page: current ? 'gallery' : 'callout',
+      onSelect,
+    });
+    const gallery = within(nav).getByRole('button', { name: 'Gallery' });
+
+    if (current) {
+      expect(gallery).toHaveAttribute('aria-current', 'page');
+    } else {
+      expect(gallery).not.toHaveAttribute('aria-current');
+    }
+    fireEvent.click(gallery);
+    expect(onSelect).toHaveBeenLastCalledWith('gallery');
+  });
+
+  it('sits between the apps and the first primitive group', () => {
+    const { nav } = renderNav();
+    const gallery = within(nav).getByRole('button', { name: 'Gallery' });
+    const first = value.docs.primitives[0]?.label ?? '';
+    expect(
+      isBefore(within(nav).getByRole('button', { name: 'Decks' }), gallery)
+    ).toBe(true);
+    expect(
+      isBefore(gallery, within(nav).getByRole('button', { name: first }))
+    ).toBe(true);
+  });
+
+  it('follows the apps on the collapsed rail', () => {
+    const { nav } = renderNav({ isOpen: false });
+    const gallery = within(nav).getByRole('button', { name: 'Gallery' });
+    expect(
+      isBefore(within(nav).getByRole('button', { name: 'Decks' }), gallery)
+    ).toBe(true);
   });
 });

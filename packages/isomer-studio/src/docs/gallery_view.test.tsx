@@ -8,9 +8,10 @@
 import React from 'react';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { StyledRenderContext } from '@elastic/isomer-sdk';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 
 import { componentsPack } from '../fixtures/components_pack';
+import { describeRuntime } from '../model/describe_runtime';
 import { readExamples } from '../model/read_examples';
 import { IsomerStudio } from '../studio';
 
@@ -61,6 +62,11 @@ class MockObserver {
   }
 }
 
+const previewObservers = () =>
+  MockObserver.observers.filter(
+    ({ observe }) => !observe.mock.calls.some(([{ id }]) => id)
+  );
+
 const previews = () => screen.queryAllByTitle('React preview');
 
 describe('GalleryView', () => {
@@ -85,15 +91,31 @@ describe('GalleryView', () => {
       screen.getAllByRole('link', { name: /Open .+ in Dev/ })
     ).toHaveLength(exampleCount);
     expect(previews()).toHaveLength(GALLERY_COLUMNS);
-    expect(MockObserver.observers).toHaveLength(exampleCount - GALLERY_COLUMNS);
+    expect(previewObservers()).toHaveLength(exampleCount - GALLERY_COLUMNS);
 
     act(() => {
-      MockObserver.observers.forEach((observer) => observer.intersect());
+      previewObservers().forEach((observer) => observer.intersect());
     });
 
     expect(previews()).toHaveLength(exampleCount);
-    for (const observer of MockObserver.observers) {
+    for (const observer of previewObservers()) {
       expect(observer.disconnect).toHaveBeenCalled();
     }
+  });
+
+  it('lists each group in an "On this page" gutter', () => {
+    render(<IsomerStudio {...{ runtime }} />);
+
+    const toc = screen.getByRole('navigation', { name: 'On this page' });
+    const titles = describeRuntime(runtime).groups.map(({ title }) => title);
+    expect(
+      within(toc)
+        .getAllByRole('button')
+        .map(({ textContent }) => textContent)
+    ).toEqual(titles);
+    expect(within(toc).getAllByRole('button')[0]).toHaveAttribute(
+      'aria-current',
+      'location'
+    );
   });
 });

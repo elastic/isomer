@@ -18,6 +18,7 @@ export const HOME = {
   surface1: 'rgba(255, 255, 255, 0.05)',
   surface2: 'rgba(255, 255, 255, 0.07)',
   surface3: 'rgba(255, 255, 255, 0.11)',
+  field: 'rgba(22, 12, 30, 0.5)',
   line1: 'rgba(255, 255, 255, 0.12)',
   line2: 'rgba(255, 255, 255, 0.14)',
   line3: 'rgba(255, 255, 255, 0.18)',
@@ -42,12 +43,19 @@ export const homeBackground = css`
 `;
 
 export const CONTENT_WIDTH = 620;
+export const WIDE_CONTENT_WIDTH = 880;
 export const PANEL_WIDTH = 360;
 export const GUTTER = 48;
 
+/** Where the main column fits {@link WIDE_CONTENT_WIDTH} beside the panel. */
+export const WIDE = `@media (min-width: ${WIDE_CONTENT_WIDTH + 2 * GUTTER + PANEL_WIDTH + 64}px)`;
+
+/** Tiles per row, set on the main column and read by every tile grid inside it. */
+export const TILE_COLUMNS = '--isomer-studio-tile-columns';
+
 export const sectionLabel = css`
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   font-size: 12px;
   font-weight: 600;
@@ -152,7 +160,7 @@ export const helpTile = (rows: number, color: string) => css`
 
 export const tilesGrid = css`
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(var(${TILE_COLUMNS}, 3), minmax(0, 1fr));
   gap: 12px;
   @media (max-width: 900px) {
     grid-template-columns: minmax(0, 1fr);

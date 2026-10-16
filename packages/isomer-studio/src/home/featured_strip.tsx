@@ -14,11 +14,11 @@ import { formatRoute, GALLERY } from '../chrome/route';
 import type { PrimitiveDoc } from '../model/describe_runtime';
 
 import {
-  CONTENT_WIDTH,
   helpTile,
   HOME,
   sectionLabel,
   tile,
+  TILE_COLUMNS,
   tileActions,
   tileDescription,
   tileName,
@@ -26,8 +26,6 @@ import {
 } from './tokens';
 
 const GAP = 12;
-/** Tiles in view at once, and how many a page turn moves. */
-const PER_PAGE = 3;
 
 export interface FeaturedStripProps {
   featured: readonly PrimitiveDoc[];
@@ -50,6 +48,7 @@ const PrimitiveTile = ({ doc }: { doc: PrimitiveDoc }) => {
           &:focus-within {
             border-color: rgba(240, 78, 152, 0.75);
           }
+          cursor: default;
         `,
       ]}
       data-testid="featured-primitive">
@@ -77,6 +76,7 @@ const PrimitiveTile = ({ doc }: { doc: PrimitiveDoc }) => {
           href={formatRoute({ mode: 'docs', page: type, example: 0 })}
           css={css`
             color: ${HOME.docs};
+            cursor: pointer;
           `}>
           Docs →
         </a>
@@ -93,7 +93,7 @@ const PrimitiveTile = ({ doc }: { doc: PrimitiveDoc }) => {
 };
 
 /**
- * The featured primitives in a recessed well, three at a time, paged by the buttons or scrolled, ending on
+ * The featured primitives in a recessed well, a row at a time, paged by the buttons or scrolled, ending on
  * a tile that opens the gallery.
  */
 export const FeaturedStrip = ({ featured, total }: FeaturedStripProps) => {
@@ -124,7 +124,8 @@ export const FeaturedStrip = ({ featured, total }: FeaturedStripProps) => {
       return;
     }
     const step = first.getBoundingClientRect().width + GAP;
-    element.scrollBy({ left: direction * step * PER_PAGE, behavior: 'smooth' });
+    const perPage = Math.max(1, Math.round((element.clientWidth + GAP) / step));
+    element.scrollBy({ left: direction * step * perPage, behavior: 'smooth' });
   };
 
   const well = css`
@@ -133,7 +134,6 @@ export const FeaturedStrip = ({ featured, total }: FeaturedStripProps) => {
     gap: 10px;
     padding: 14px 16px 16px;
     margin-inline: -16px;
-    max-width: ${CONTENT_WIDTH + 32}px;
     border-radius: 12px;
     box-sizing: border-box;
     background: rgba(0, 0, 0, 0.18);
@@ -141,11 +141,24 @@ export const FeaturedStrip = ({ featured, total }: FeaturedStripProps) => {
       inset 0 1px 0 rgba(0, 0, 0, 0.25),
       inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   `;
+  const pager = css`
+    background-color: ${HOME.surface3};
+    border-color: ${HOME.line3};
+    color: ${HOME.fg};
+    &:disabled {
+      background-color: ${HOME.surface1};
+      border-color: ${HOME.line1};
+      color: ${HOME.fg3};
+    }
+  `;
   const tiles = css`
     display: grid;
     grid-template-rows: repeat(4, auto);
     grid-auto-flow: column;
-    grid-auto-columns: calc((100% - ${GAP * (PER_PAGE - 1)}px) / ${PER_PAGE});
+    grid-auto-columns: calc(
+      (100% - ${GAP}px * (var(${TILE_COLUMNS}, 3) - 1)) /
+        var(${TILE_COLUMNS}, 3)
+    );
     gap: ${GAP}px;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
@@ -175,6 +188,7 @@ export const FeaturedStrip = ({ featured, total }: FeaturedStripProps) => {
             size="xs"
             color="text"
             display="base"
+            css={pager}
             aria-label="Previous primitives"
             isDisabled={edges.start}
             onClick={() => page(-1)}
@@ -184,6 +198,7 @@ export const FeaturedStrip = ({ featured, total }: FeaturedStripProps) => {
             size="xs"
             color="text"
             display="base"
+            css={pager}
             aria-label="Next primitives"
             isDisabled={edges.end}
             onClick={() => page(1)}

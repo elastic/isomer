@@ -22,6 +22,7 @@ import type { ColorModePreference } from './color_mode';
 import { IsomerMark } from './isomer_mark';
 import { PrimitiveSearch } from './primitive_search';
 import type { StudioMode } from './route';
+import { formatLocation, HOME } from './route';
 
 const MODE_OPTIONS: { id: StudioMode; label: string }[] = [
   { id: 'dev', label: 'Dev' },
@@ -81,7 +82,7 @@ const ColorModePicker = ({
   </EuiButtonGroup>
 );
 
-/** Title, the Dev/Docs switch, search and the color mode. The mark returns to Home. */
+/** Title, the Dev/Docs switch, search and the color mode. The mark and title link to Home. */
 export const StudioHeader = ({
   title = 'Isomer Studio',
   mode,
@@ -103,13 +104,15 @@ export const StudioHeader = ({
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
   `;
-  const logo = css`
+  const brand = css`
     display: inline-flex;
-    padding: 0;
-    border: 0;
-    background: none;
-    cursor: pointer;
+    align-items: center;
+    gap: ${euiTheme.size.s};
     border-radius: ${euiTheme.border.radius.small};
+    text-decoration: none;
+    &:hover {
+      text-decoration: none;
+    }
     &:focus-visible {
       outline: 2px solid ${euiTheme.colors.primary};
       outline-offset: 2px;
@@ -124,16 +127,22 @@ export const StudioHeader = ({
           align-items: center;
           gap: ${euiTheme.size.s};
         `}>
-        <button
-          type="button"
-          css={logo}
+        <a
+          href={formatLocation(HOME)}
+          css={brand}
           aria-label={`${title} home`}
-          onClick={onHome}>
+          onClick={(event) => {
+            if (event.button !== 0 || event.metaKey || event.ctrlKey) {
+              return;
+            }
+            event.preventDefault();
+            onHome();
+          }}>
           <IsomerMark size={22} />
-        </button>
-        <EuiText size="s" color="ghost">
-          <strong>{title}</strong>
-        </EuiText>
+          <EuiText size="s" color="ghost">
+            <strong>{title}</strong>
+          </EuiText>
+        </a>
         {home ? null : (
           <EuiText size="xs" color="ghost">
             {mode === undefined

@@ -5,14 +5,8 @@
  * 2.0.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
-import {
-  EuiButtonEmpty,
-  EuiPanel,
-  EuiText,
-  EuiTitle,
-  useEuiTheme,
-} from '@elastic/eui';
+import React, { useMemo } from 'react';
+import { EuiPanel, EuiText, EuiTitle, useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
 
 import type { Accent } from '../chrome/accent';
@@ -23,6 +17,13 @@ import { useStudio } from '../studio_context';
 
 import { ExamplesPanel } from './examples_panel';
 import { InlineCode } from './inline_code';
+import {
+  CONTENT_BASIS,
+  OnThisPage,
+  PAGE_WIDTH,
+  TOC_GAP,
+  useActiveEntry,
+} from './on_this_page';
 import { PropsTable } from './props_table';
 
 const SECTIONS = [
@@ -35,46 +36,12 @@ type SectionId = (typeof SECTIONS)[number]['id'];
 
 const sectionId = (id: SectionId) => `isomer-studio-${id}`;
 
-const PAGE_WIDTH = 1320;
-const CONTENT_BASIS = 560;
-const TOC_WIDTH = 180;
-const TOC_GAP = 48;
+const TOC_ENTRIES = SECTIONS.map(({ id, title }) => ({
+  id: sectionId(id),
+  title,
+}));
 
-/** The topmost section in view, or the first when the browser can't observe intersections. */
-const useActiveSection = (
-  page: string
-): [SectionId, (id: SectionId) => void] => {
-  const [active, setActive] = useState<SectionId>(SECTIONS[0].id);
-
-  useEffect(() => {
-    setActive(SECTIONS[0].id);
-    if (typeof IntersectionObserver === 'undefined') {
-      return;
-    }
-    const visible = new Set<string>();
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach(({ target: { id }, isIntersecting }) =>
-          isIntersecting ? visible.add(id) : visible.delete(id)
-        );
-        const first = SECTIONS.find(({ id }) => visible.has(sectionId(id)));
-        if (first) {
-          setActive(first.id);
-        }
-      },
-      { rootMargin: '0px 0px -60% 0px' }
-    );
-    SECTIONS.forEach(({ id }) => {
-      const element = document.getElementById(sectionId(id));
-      if (element) {
-        observer.observe(element);
-      }
-    });
-    return () => observer.disconnect();
-  }, [page]);
-
-  return [active, setActive];
-};
+const TOC_IDS = TOC_ENTRIES.map(({ id }) => id);
 
 const Section = ({
   id,
@@ -136,58 +103,6 @@ const Guidance = ({
   </EuiPanel>
 );
 
-const OnThisPage = ({
-  active,
-  onSelect,
-}: {
-  active: SectionId;
-  onSelect: (id: SectionId) => void;
-}) => {
-  const { euiTheme } = useEuiTheme();
-  return (
-    <nav
-      aria-label="On this page"
-      css={css`
-        flex: 0 0 ${TOC_WIDTH}px;
-        position: sticky;
-        top: ${euiTheme.size.xl};
-        height: fit-content;
-        display: flex;
-        flex-direction: column;
-        gap: ${euiTheme.size.xxs};
-      `}>
-      <EuiText
-        size="xs"
-        color="subdued"
-        css={css`
-          text-transform: uppercase;
-          font-weight: ${euiTheme.font.weight.semiBold};
-        `}>
-        On this page
-      </EuiText>
-      {SECTIONS.map(({ id, title }) => (
-        <EuiButtonEmpty
-          key={id}
-          size="xs"
-          flush="left"
-          color={id === active ? 'primary' : 'text'}
-          aria-current={id === active ? 'location' : undefined}
-          css={css`
-            align-self: flex-start;
-          `}
-          onClick={() => {
-            onSelect(id);
-            document
-              .getElementById(sectionId(id))
-              ?.scrollIntoView({ behavior: 'smooth' });
-          }}>
-          {title}
-        </EuiButtonEmpty>
-      ))}
-    </nav>
-  );
-};
-
 export interface DocsViewProps {
   route: StudioRoute;
   navigate: (next: Partial<StudioRoute>) => void;
@@ -204,7 +119,7 @@ export const DocsView = ({
   const {
     docs: { primitives },
   } = useStudio();
-  const [active, setActive] = useActiveSection(page);
+  const [active, setActive] = useActiveEntry(TOC_IDS, page);
   const names = useMemo(() => primitives.map(({ type }) => type), [primitives]);
   const doc = primitives.find(({ type }) => type === page);
   if (!doc) {
@@ -270,7 +185,7 @@ export const DocsView = ({
         </Section>
       </div>
 
-      <OnThisPage {...{ active }} onSelect={setActive} />
+      <OnThisPage entries={TOC_ENTRIES} {...{ active }} onSelect={setActive} />
     </div>
   );
 };

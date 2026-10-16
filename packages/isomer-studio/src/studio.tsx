@@ -187,7 +187,13 @@ const Layout = ({
               appPath={isAppRoute(location) ? location.path : undefined}
               isOpen={isNavOpen}
               onToggle={() => setNavOpen((open) => !open)}
-              onSelect={(next) => navigate({ page: next, example: 0 })}
+              onSelect={(next) =>
+                navigate(
+                  next === GALLERY
+                    ? { mode: 'docs', page: GALLERY }
+                    : { page: next, example: 0 }
+                )
+              }
               onSelectApp={openApp}
             />
           </EuiThemeProvider>

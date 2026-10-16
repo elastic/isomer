@@ -45,7 +45,7 @@ export default defineStudioConfig({
 | `title`                     | No       | Replaces the header, the page title, and the `check` report name. Defaults to `Isomer Studio`. Leave it unset to keep the product name; a runtime with more than one pack shows each pack in the nav.                                          |
 | `createReactContext(root)`  | No       | Styles the React preview, which renders inside a shadow root. Call `adoptStylesheet(root, css)` with the pack's stylesheet and return the render context its renderers expect. Without it, the React preview shows the `html` surface instead. |
 | `compose(nodes, { theme })` | No       | Wraps example nodes in a composition. Defaults to `{ type: 'view', body: nodes, theme }`.                                                                                                                                                      |
-| `apps`                      | No       | Pages that demonstrate the pack, listed under Apps in the nav and on Home. See [Apps](#apps).                                                                                                                                                  |
+| `apps`                      | No       | Pages that demonstrate the pack, listed in the nav and on Home. See [Apps](#apps).                                                                                                                                                             |
 | `imageFonts`                | No       | A module path, relative to the config, whose default export lists the takumi `FontLoader`s PNGs and PDFs draw text with. See [Image fonts](#image-fonts).                                                                                      |
 | `featured`                  | No       | Primitive types Home features, in order. Without it Home draws six at random on each load. See [Featured primitives](#featured-primitives).                                                                                                    |
 
@@ -72,7 +72,7 @@ Without `featured`, Home draws six primitives at random each time it loads, so a
 
 ## Apps
 
-An app is a whole page of the Studio, such as a deck viewer. Each one gets a nav entry under Apps, a tile on Home, and a route at `#/app/<id>/`.
+An app is a whole page of the Studio, such as a deck viewer. Each one gets a top-level nav entry beside Gallery, a tile on Home, and a route at `#/app/<id>/`.
 
 ```ts
 export default defineStudioConfig({

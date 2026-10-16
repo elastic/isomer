@@ -17,7 +17,7 @@ import {
   SURFACE_NOTES,
 } from '../surfaces/surface_select';
 
-import { HOME, quietLabel } from './tokens';
+import { CONTENT_WIDTH, HOME, quietLabel, WIDE } from './tokens';
 
 const COMPOSITION_NOTE =
   'composition: one typed Composition, validated once, rendered to every surface the runtime has.';
@@ -53,6 +53,9 @@ export const SurfaceChart = ({
 
   const stage = css`
     position: relative;
+    width: 100%;
+    max-width: ${CONTENT_WIDTH}px;
+    margin-inline: auto;
     aspect-ratio: 62 / 26;
     @media (max-width: 900px) {
       aspect-ratio: auto;
@@ -150,6 +153,47 @@ export const SurfaceChart = ({
     }
   `;
 
+  const body = css`
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+    ${WIDE} {
+      grid-template-columns: ${CONTENT_WIDTH}px minmax(0, 1fr);
+      grid-template-areas: 'chart blurb';
+      gap: 32px;
+      align-items: center;
+    }
+  `;
+  const blurb = css`
+    grid-area: blurb;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 52ch;
+  `;
+  const blurbTitle = css`
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+    text-wrap: balance;
+    color: ${HOME.fg};
+  `;
+  const blurbText = css`
+    margin: 0;
+    font-size: 14px;
+    color: ${HOME.fg2};
+    text-wrap: pretty;
+  `;
+  const chart = css`
+    grid-area: chart;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+  `;
+
   return (
     <section
       aria-labelledby="isomer-studio-surfaces"
@@ -161,74 +205,89 @@ export const SurfaceChart = ({
       <div css={quietLabel}>
         <span id="isomer-studio-surfaces">One composition, every surface</span>
       </div>
-      <div
-        css={stage}
-        onMouseLeave={() => setNote('')}
-        onBlur={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget)) {
-            setNote('');
-          }
-        }}>
-        <div
-          css={pill}
-          tabIndex={0}
-          onMouseEnter={() => setNote(COMPOSITION_NOTE)}
-          onFocus={() => setNote(COMPOSITION_NOTE)}>
-          <IsomerMark size={26} />
-          <span>composition</span>
+      <div css={body}>
+        <div css={blurb}>
+          <h3 css={blurbTitle}>Author once, render anywhere.</h3>
+          <p css={blurbText}>
+            Isomer turns one typed composition into every surface your product
+            speaks: web, Slack, Markdown, images.
+          </p>
+          <p css={blurbText}>
+            Hosts keep their data, authorization and routing. Isomer owns the
+            contract, the primitive catalog, validation and rendering.
+          </p>
         </div>
-        <svg
-          css={wires}
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          aria-hidden={true}>
-          {[
-            [50, HUB_Y, 50, BUS_Y],
-            [first, BUS_Y, last, BUS_Y],
-            ...spots.map((x) => [x, BUS_Y, x, ROW_Y - CARD_HALF]),
-          ].map(([x1, y1, x2, y2], index) => (
-            <line
-              key={index}
-              {...{ x1, y1, x2, y2 }}
-              stroke="currentColor"
-              strokeWidth="1"
-              opacity="0.55"
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
-        </svg>
-        {surfaces.map((surface, index) => {
-          const text = `${surface}: ${SURFACE_NOTES[surface]}`;
-          return (
+        <div css={chart}>
+          <div
+            css={stage}
+            onMouseLeave={() => setNote('')}
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) {
+                setNote('');
+              }
+            }}>
             <div
-              key={surface}
-              css={card(spots[index] ?? 50)}
+              css={pill}
               tabIndex={0}
-              aria-label={PREVIEW_LABELS[surface]}
-              onMouseEnter={() => setNote(text)}
-              onFocus={() => setNote(text)}>
-              <EuiIcon type={PREVIEW_ICONS[surface]} size="xl" />
-              <span>
-                {surface === 'snapshot'
-                  ? 'snap'
-                  : surface === 'markdown'
-                    ? 'md'
-                    : surface}
-              </span>
+              onMouseEnter={() => setNote(COMPOSITION_NOTE)}
+              onFocus={() => setNote(COMPOSITION_NOTE)}>
+              <IsomerMark size={26} />
+              <span>composition</span>
             </div>
-          );
-        })}
-      </div>
-      <div
-        aria-live="polite"
-        css={css`
-          min-height: 20px;
-          text-align: center;
-          font-size: 12.5px;
-          color: ${HOME.fg2};
-          text-wrap: pretty;
-        `}>
-        {note}
+            <svg
+              css={wires}
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              aria-hidden={true}>
+              {[
+                [50, HUB_Y, 50, BUS_Y],
+                [first, BUS_Y, last, BUS_Y],
+                ...spots.map((x) => [x, BUS_Y, x, ROW_Y - CARD_HALF]),
+              ].map(([x1, y1, x2, y2], index) => (
+                <line
+                  key={index}
+                  {...{ x1, y1, x2, y2 }}
+                  stroke="currentColor"
+                  strokeWidth="1"
+                  opacity="0.55"
+                  vectorEffect="non-scaling-stroke"
+                />
+              ))}
+            </svg>
+            {surfaces.map((surface, index) => {
+              const text = `${surface}: ${SURFACE_NOTES[surface]}`;
+              return (
+                <div
+                  key={surface}
+                  css={card(spots[index] ?? 50)}
+                  tabIndex={0}
+                  aria-label={PREVIEW_LABELS[surface]}
+                  onMouseEnter={() => setNote(text)}
+                  onFocus={() => setNote(text)}>
+                  <EuiIcon type={PREVIEW_ICONS[surface]} size="xl" />
+                  <span>
+                    {surface === 'snapshot'
+                      ? 'snap'
+                      : surface === 'markdown'
+                        ? 'md'
+                        : surface}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div
+            aria-live="polite"
+            css={css`
+              min-height: 20px;
+              text-align: center;
+              font-size: 12.5px;
+              color: ${HOME.fg2};
+              text-wrap: pretty;
+            `}>
+            {note}
+          </div>
+        </div>
       </div>
     </section>
   );

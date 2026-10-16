@@ -9,7 +9,6 @@ import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { Composition } from '@elastic/isomer-sdk';
 import { adoptStylesheet, defineStudioConfig } from '@elastic/isomer-studio';
 
-import { deckCatalog } from './decks/catalog';
 import { previewSlide } from './src/examples/preview_slide';
 import { slideDeckFrame, slidesPack, slideStylesheet } from './src/index';
 import { decksIcon } from './studio/decks_icon';
@@ -42,7 +41,6 @@ export default defineStudioConfig({
         'Whole presentations built from the slides pack, played one slide at a time.',
       icon: decksIcon,
       load: () => import('./studio/decks_app'),
-      pages: deckCatalog.map(({ id, title }) => ({ path: id, title })),
     },
   ],
   createReactContext: (root) => {
