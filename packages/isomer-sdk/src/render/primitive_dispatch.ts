@@ -185,7 +185,21 @@ export const createPrimitiveDispatcher = <
   // eslint-disable-next-line prefer-const
   let self: PrimitiveDispatcher<TNode, T>;
 
-  const scope = (): RenderScope<T> => self;
+  const scopeFor = <S extends SurfaceName>(
+    surface: S,
+    extras: Omit<SurfaceMap<T>[S]['env'], 'scope'>
+  ): RenderScope<T> => {
+    const parent: RenderScope<T> = self;
+    if (surface !== 'snapshot') {
+      return parent;
+    }
+    const { theme } = extras as Omit<SurfaceMap<T>['snapshot']['env'], 'scope'>;
+    return {
+      ...parent,
+      renderReact: (node, context) =>
+        parent.renderOn('snapshot', node, { context: context ?? {}, theme }),
+    };
+  };
 
   const renderOn = <S extends SurfaceName>(
     surface: S,
@@ -211,7 +225,10 @@ export const createPrimitiveDispatcher = <
   ): SurfaceMap<T>[S]['output'] | undefined => {
     const renderer = definition.renderers[RENDERER_FOR_SURFACE[surface]] as
       Renderer<TNode, S, T> | undefined;
-    return renderer?.(safeNode, { ...extras, scope: scope() });
+    return renderer?.(safeNode, {
+      ...extras,
+      scope: scopeFor(surface, extras),
+    });
   };
 
   const renderMarkdownContent = (node: TNode): MarkdownContent =>
@@ -295,7 +312,7 @@ export const createPrimitiveDispatcher = <
       }
       const rendered = slackRenderer(safeNode, {
         ...(collector === undefined ? {} : { collector }),
-        scope: scope(),
+        scope: self,
       });
       return isReadonlyArray(rendered) ? rendered : [rendered];
     },
