@@ -12,6 +12,7 @@ export {
   type PrimitiveConformanceHtmlOptions,
   type PrimitiveConformanceSlackResult,
   type PrimitiveConformanceSnapshotResult,
+  CONFORMANCE_FIXTURE_TITLE,
   CONFORMANCE_FOREIGN_MARKER,
   primitiveConformanceRows,
   runPrimitiveInventoryConformance,

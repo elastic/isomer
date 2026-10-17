@@ -4,6 +4,7 @@
 
 - **Parse budget and parsed-destination sanitizers are public**: `@elastic/isomer-sdk/markdown` exports `exceedsParseBudget`, and the root entry exports `sanitizeParsedNavigationHref` and `sanitizeParsedAssetUrl`, so a pack rendering Markdown with its own parser applies the SDK's policy instead of a copy. ([#221](https://github.com/elastic/isomer/issues/221))
 - **The authoring context is built on first use**: `createIsomerRuntime` no longer builds the authoring schema, body schema, declarations, catalog, and groups. The first `getAuthoringContext()` call builds them and later calls reuse them, so a runtime that only validates and renders never holds them in memory.
+- **Runtime-backed conformance harness**: `@elastic/isomer-runtime/testing` exports `createRuntimeConformanceHarness(runtime, overrides?)`, which derives the SDK's `PrimitiveConformanceHarness` from an `IsomerRuntime` and takes only what a runtime cannot answer through `overrides`. The SDK's `./testing` adds `CONFORMANCE_FIXTURE_TITLE`, and the slides pack's conformance test now uses the factory. ([#222](https://github.com/elastic/isomer/issues/222))
 
 ## 2026-10-15
 

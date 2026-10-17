@@ -8,16 +8,16 @@
 import assert from 'node:assert/strict';
 
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
+import { createRuntimeConformanceHarness } from '@elastic/isomer-runtime/testing';
 import {
-  createChildNodeWalker,
   definePrimitive,
   definePrimitivePack,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
 import { md } from '@elastic/isomer-sdk/markdown';
 import {
+  CONFORMANCE_FIXTURE_TITLE,
   CONFORMANCE_FOREIGN_MARKER,
-  type PrimitiveConformanceHarness,
   primitiveConformanceRows,
   runPrimitiveInventoryConformance,
 } from '@elastic/isomer-sdk/testing';
@@ -65,9 +65,6 @@ const conformanceForeignPack = definePrimitivePack({
   ],
 });
 
-/** Renders nodes validation rejects, which these tests feed renderers on purpose. */
-const collect = { onValidationError: 'collect' } as const;
-
 const runtime = createIsomerRuntime({
   packs: [slidesPack, conformanceForeignPack],
   frames: { slide: slideDeckFrame },
@@ -88,100 +85,59 @@ const wrapInFrame = (node: PrimitiveNode): PrimitiveNode =>
         body: [node],
       } as unknown as PrimitiveNode);
 
-const harness: PrimitiveConformanceHarness = {
+const nestForeignChild = (container: PrimitiveNode): PrimitiveNode => {
+  if (container.type === 'slideSplitLayout') {
+    const { panes } = container as unknown as {
+      panes: Record<string, unknown>[];
+    };
+    return {
+      ...container,
+      panes: panes.map((pane) => ({
+        ...pane,
+        items: [conformanceForeignNode],
+      })),
+    } as unknown as PrimitiveNode;
+  }
+  if (container.type === 'titleSlide') {
+    return {
+      ...container,
+      aside: conformanceForeignNode,
+    } as unknown as PrimitiveNode;
+  }
+  if (container.type === 'slideAnnotatedRender') {
+    return {
+      ...container,
+      render: conformanceForeignNode,
+    } as unknown as PrimitiveNode;
+  }
+  if (container.type === 'slideStackLayout') {
+    return {
+      ...container,
+      items: [conformanceForeignNode],
+    } as unknown as PrimitiveNode;
+  }
+  return {
+    ...container,
+    body: [conformanceForeignNode],
+  } as unknown as PrimitiveNode;
+};
+
+const harness = createRuntimeConformanceHarness(runtime, {
   sizesFromNodeHeights: false,
   wrapComposition: (node) => ({
     type: 'view',
-    title: 'Conformance fixture',
+    title: CONFORMANCE_FIXTURE_TITLE,
     body: [wrapInFrame(node)],
   }),
-  validateNode: (node) => {
-    const result = runtime.validate({ type: 'view', body: [node] });
-    return result.valid ? [] : result.errors;
-  },
-  validateComposition: (composition) => runtime.validate(composition),
-  renderReact: (node) =>
-    runtime.surfaces.react.render({ type: 'view', body: [node] }),
-  collectStyles: (node) => {
-    runtime.surfaces.react.render({ type: 'view', body: [node] });
-  },
-  renderText: (node) => runtime.surfaces.text.renderNode(node, collect),
-  renderMarkdown: (node) => runtime.surfaces.markdown.renderNode(node, collect),
-  renderSlack: (node) =>
-    runtime.surfaces.slack.renderNode(node, collect).blocks,
-  renderSnapshot: (node) =>
-    runtime.surfaces.snapshot.renderNode(node, collect).element,
   estimateSnapshotHeight: () => 0,
-  nestForeignChild: (container) => {
-    if (container.type === 'slideSplitLayout') {
-      const { panes } = container as unknown as {
-        panes: Record<string, unknown>[];
-      };
-      return {
-        ...container,
-        panes: panes.map((pane) => ({
-          ...pane,
-          items: [conformanceForeignNode],
-        })),
-      } as unknown as PrimitiveNode;
-    }
-    if (container.type === 'titleSlide') {
-      return {
-        ...container,
-        aside: conformanceForeignNode,
-      } as unknown as PrimitiveNode;
-    }
-    if (container.type === 'slideAnnotatedRender') {
-      return {
-        ...container,
-        render: conformanceForeignNode,
-      } as unknown as PrimitiveNode;
-    }
-    if (container.type === 'slideStackLayout') {
-      return {
-        ...container,
-        items: [conformanceForeignNode],
-      } as unknown as PrimitiveNode;
-    }
-    return {
-      ...container,
-      body: [conformanceForeignNode],
-    } as unknown as PrimitiveNode;
-  },
-  renderHTML: (composition, options) =>
-    runtime.surfaces.html.render(
-      composition,
-      options?.anchors ? { anchors: true } : {}
-    ),
-  anchorWalk: createChildNodeWalker(runtime.primitives),
+  nestForeignChild,
   assertVarRefsHaveDeclarations: (css) => {
     const missing = varRefs(css).filter(
       (name) => !new RegExp(`${name}\\s*:`).test(css)
     );
     assert.deepEqual(missing, [], `undeclared css vars: ${missing.join(', ')}`);
   },
-  renderTextComposition: (composition) =>
-    runtime.surfaces.text.render(composition),
-  renderMarkdownComposition: (composition) =>
-    runtime.surfaces.markdown.render(composition),
-  renderSlackComposition: (composition) => {
-    const result = runtime.surfaces.slack.render(composition);
-    return {
-      blocks: result.blocks,
-      text: result.text,
-    };
-  },
-  renderSnapshotComposition: (composition) => {
-    const validation = runtime.validate(composition);
-    const { html: markup, css } = runtime.surfaces.snapshot.render(composition);
-    const html = `<style>${css}</style>${markup}`;
-    return Promise.resolve({
-      validationErrors: validation.errors,
-      html,
-      measurement: { total: Buffer.byteLength(html, 'utf8') },
-    });
-  },
-};
+});
 
 describe('slide pack inventory', () => {
   it('passes inventory conformance', () => {
