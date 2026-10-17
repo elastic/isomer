@@ -5,23 +5,24 @@
  * 2.0.
  */
 
-import React, { useEffect, useMemo, useRef } from 'react';
-import type { EuiSelectableTemplateSitewideOption } from '@elastic/eui';
+import React from 'react';
 import {
   EuiButton,
   EuiButtonGroup,
   EuiButtonIcon,
-  EuiSelectableTemplateSitewide,
+  EuiLink,
   EuiText,
   useEuiTheme,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
 
-import { useStudio } from '../studio_context';
+import { DOCS_URL } from '../home/links';
 
-import type { Accent } from './accent';
 import type { ColorModePreference } from './color_mode';
+import { IsomerMark } from './isomer_mark';
+import { PrimitiveSearch } from './primitive_search';
 import type { StudioMode } from './route';
+import { formatLocation, HOME } from './route';
 
 const MODE_OPTIONS: { id: StudioMode; label: string }[] = [
   { id: 'dev', label: 'Dev' },
@@ -33,79 +34,18 @@ const isMode = (id: string): id is StudioMode =>
 export interface StudioHeaderProps {
   /** Defaults to "Isomer Studio". */
   title?: string | undefined;
-  /** Absent while an app is open, which selects neither mode. */
+  /** Absent while an app or Home is open, which selects neither mode. */
   mode: StudioMode | undefined;
   /** The open app's title, shown in place of the mode's name. */
   appTitle?: string | undefined;
-  accent: Accent;
+  /** On Home the switch, search and color mode give way to a docs link. */
+  home?: boolean | undefined;
   colorMode: ColorModePreference;
   onModeChange: (mode: StudioMode) => void;
   onColorModeChange: (colorMode: ColorModePreference) => void;
   onSelectPrimitive: (type: string) => void;
+  onHome: () => void;
 }
-
-const Search = ({
-  onSelectPrimitive,
-}: Pick<StudioHeaderProps, 'onSelectPrimitive'>) => {
-  const {
-    docs: { primitives },
-  } = useStudio();
-  const input = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      // Editors claim Cmd/Ctrl+K chords by preventing the default.
-      if (
-        !event.defaultPrevented &&
-        (event.metaKey || event.ctrlKey) &&
-        event.key.toLowerCase() === 'k'
-      ) {
-        event.preventDefault();
-        input.current?.focus();
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
-
-  const options = useMemo(
-    (): EuiSelectableTemplateSitewideOption[] =>
-      primitives.map(({ type, label, group, purpose, useWhen, avoidWhen }) => ({
-        key: type,
-        label,
-        searchableLabel: [type, label, purpose, ...useWhen, ...avoidWhen].join(
-          ' '
-        ),
-        meta: [{ text: group, type: 'application' }, { text: purpose }],
-      })),
-    [primitives]
-  );
-
-  return (
-    <EuiSelectableTemplateSitewide
-      options={options}
-      onChange={(updated) => {
-        const selected = updated.find(({ checked }) => checked === 'on');
-        if (selected?.key) {
-          onSelectPrimitive(selected.key);
-        }
-      }}
-      searchProps={{
-        placeholder: 'Search names and descriptions',
-        append: '⌘K',
-        compressed: true,
-        inputRef: (element: HTMLInputElement | null) => {
-          input.current = element;
-        },
-        'aria-label': 'Search primitives',
-      }}
-      popoverProps={{ width: 420 }}
-      css={css`
-        width: 280px;
-      `}
-    />
-  );
-};
 
 const COLOR_MODES: {
   id: ColorModePreference;
@@ -142,16 +82,17 @@ const ColorModePicker = ({
   </EuiButtonGroup>
 );
 
-/** Title, the Dev/Docs switch, search and the color mode. */
+/** Title, the Dev/Docs switch, search and the color mode. The mark and title link to Home. */
 export const StudioHeader = ({
   title = 'Isomer Studio',
   mode,
   appTitle,
-  accent,
+  home = false,
   colorMode,
   onModeChange,
   onColorModeChange,
   onSelectPrimitive,
+  onHome,
 }: StudioHeaderProps) => {
   const { euiTheme } = useEuiTheme();
 
@@ -163,11 +104,19 @@ export const StudioHeader = ({
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
   `;
-  const logo = css`
-    width: ${euiTheme.size.l};
-    height: ${euiTheme.size.l};
+  const brand = css`
+    display: inline-flex;
+    align-items: center;
+    gap: ${euiTheme.size.s};
     border-radius: ${euiTheme.border.radius.small};
-    background: ${accent.fill};
+    text-decoration: none;
+    &:hover {
+      text-decoration: none;
+    }
+    &:focus-visible {
+      outline: 2px solid ${euiTheme.colors.primary};
+      outline-offset: 2px;
+    }
   `;
 
   return (
@@ -178,34 +127,52 @@ export const StudioHeader = ({
           align-items: center;
           gap: ${euiTheme.size.s};
         `}>
-        <span css={logo} />
-        <EuiText size="s" color="ghost">
-          <strong>{title}</strong>
-        </EuiText>
-        <EuiText size="xs" color="ghost">
-          {mode === undefined
-            ? appTitle
-            : mode === 'dev'
-              ? 'Workbench'
-              : 'Reference'}
-        </EuiText>
+        <a
+          href={formatLocation(HOME)}
+          css={brand}
+          aria-label={`${title} home`}
+          onClick={(event) => {
+            if (event.button !== 0 || event.metaKey || event.ctrlKey) {
+              return;
+            }
+            event.preventDefault();
+            onHome();
+          }}>
+          <IsomerMark size={22} />
+          <EuiText size="s" color="ghost">
+            <strong>{title}</strong>
+          </EuiText>
+        </a>
+        {home ? null : (
+          <EuiText size="xs" color="ghost">
+            {mode === undefined
+              ? appTitle
+              : mode === 'dev'
+                ? 'Workbench'
+                : 'Reference'}
+          </EuiText>
+        )}
       </div>
-      <EuiButtonGroup
-        legend="Studio mode"
-        buttonSize="s"
-        variant="selection"
-        idSelected={mode ?? ''}
-        display="highlighted"
-        onChange={(id) => isMode(id) && onModeChange(id)}>
-        {MODE_OPTIONS.map(({ id, label }) => (
-          <EuiButton
-            key={id}
-            id={id}
-            iconType={id === 'dev' ? 'code' : 'document'}>
-            {label}
-          </EuiButton>
-        ))}
-      </EuiButtonGroup>
+      {home ? (
+        <span />
+      ) : (
+        <EuiButtonGroup
+          legend="Studio mode"
+          buttonSize="s"
+          variant="selection"
+          idSelected={mode ?? ''}
+          display="highlighted"
+          onChange={(id) => isMode(id) && onModeChange(id)}>
+          {MODE_OPTIONS.map(({ id, label }) => (
+            <EuiButton
+              key={id}
+              id={id}
+              iconType={id === 'dev' ? 'code' : 'document'}>
+              {label}
+            </EuiButton>
+          ))}
+        </EuiButtonGroup>
+      )}
       <div
         css={css`
           display: flex;
@@ -213,8 +180,16 @@ export const StudioHeader = ({
           align-items: center;
           gap: ${euiTheme.size.s};
         `}>
-        <Search {...{ onSelectPrimitive }} />
-        <ColorModePicker {...{ colorMode, onColorModeChange }} />
+        {home ? (
+          <EuiLink href={DOCS_URL} target="_blank" external color="ghost">
+            Isomer docs
+          </EuiLink>
+        ) : (
+          <>
+            <PrimitiveSearch {...{ onSelectPrimitive }} />
+            <ColorModePicker {...{ colorMode, onColorModeChange }} />
+          </>
+        )}
       </div>
     </header>
   );

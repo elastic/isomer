@@ -75,7 +75,7 @@ const openDeck = async () => {
 
 describe('Studio apps', () => {
   beforeEach(() => {
-    window.location.hash = '';
+    window.location.hash = '#/dev';
   });
 
   it('opens an app from the nav, and keeps it mounted across sub-path navigation', async () => {
@@ -182,7 +182,7 @@ describe('Studio apps', () => {
     expect(await screen.findByText('Second page')).toBeInTheDocument();
   });
 
-  it('falls back to the first primitive and rewrites the hash when the open app goes away', async () => {
+  it('goes Home and rewrites the hash when the open app goes away', async () => {
     const { rerender } = render(
       <IsomerStudio {...{ runtime }} apps={[deck(sameLoad())]} />
     );
@@ -190,7 +190,13 @@ describe('Studio apps', () => {
 
     rerender(<IsomerStudio {...{ runtime }} apps={[]} />);
 
-    await waitFor(() => expect(window.location.hash).toMatch(/^#\/dev\//));
+    await waitFor(() => expect(window.location.hash).toBe('#/home'));
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'What are we rendering today?',
+      })
+    ).toBeInTheDocument();
     expect(screen.queryByText(/^count/)).toBeNull();
     expect(screen.queryByRole('button', { name: 'Deck' })).toBeNull();
   });

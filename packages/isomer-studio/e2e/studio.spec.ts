@@ -47,11 +47,7 @@ const APP_PAGE: { title: string; path: string; heading?: string } | undefined =
           path: process.env.STUDIO_APP_PAGE_PATH,
         }
       : undefined
-    : {
-        title: 'Isomer: one composition, every surface',
-        path: 'isomer-every-surface',
-        heading: 'Isomer: one composition, every surface',
-      };
+    : undefined;
 /** A font family the app's global CSS loads with `url()`, when it has one. */
 const APP_FONT = process.env.STUDIO_APP_FONT;
 /** The name of a button in the app that opens an EUI popover, when it has one. */
@@ -215,9 +211,20 @@ const editFirstString = async (page: Page) => {
 const reactPreview = (page: Page) =>
   page.getByRole('region', { name: 'React preview' });
 
-/** Opens the app and one of its pages from the nav, deep-links a sub-path through a reload, and checks its styles and `Preview`. */
+/** Opens the app from Home and then one of its pages from the nav, deep-links a sub-path through a reload, and checks its styles and `Preview`. */
 const exerciseApp = async (page: Page, url: string) => {
   await page.goto(url);
+  await expect(
+    page.getByRole('heading', {
+      level: 1,
+      name: 'What are we rendering today?',
+    })
+  ).toBeVisible();
+  await page
+    .getByRole('link', { name: new RegExp(`^${APP_TITLE}\\b`) })
+    .click();
+  await expect(page).toHaveURL(new RegExp(`#/app/${APP_ID}/$`));
+  await page.goto(`${url}#/dev`);
   await page.getByRole('button', { name: APP_TITLE, exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`#/app/${APP_ID}/$`));
 
@@ -373,6 +380,228 @@ test.describe('static build', () => {
     await exerciseApp(page, site.url);
     expect(problems).toEqual([]);
   });
+
+  for (const width of [320, 390, 768, 900, 901, 1043, 1399, 1400, 1920]) {
+    test(`keeps Home's surface chart readable at ${width}px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(site.url);
+      const section = page.getByRole('region', {
+        name: 'One composition, every surface',
+      });
+      await expect(section).toBeVisible();
+      await expect(
+        section.getByRole('heading', {
+          level: 2,
+          name: 'Author once, render anywhere.',
+        })
+      ).toBeVisible();
+      const layout = await section.evaluate((element) => {
+        const body = element.lastElementChild!;
+        const [blurb, chart] = Array.from(body.children);
+        const blurbBox = blurb!.getBoundingClientRect();
+        const chartBox = chart!.getBoundingClientRect();
+        const items = Array.from(
+          chart!.querySelectorAll<HTMLElement>('[tabindex="0"]')
+        );
+        const boxes = items.map((item) => item.getBoundingClientRect());
+        const overlaps = (a: DOMRect, b: DOMRect) =>
+          a.left < b.right &&
+          a.right > b.left &&
+          a.top < b.bottom &&
+          a.bottom > b.top;
+        return {
+          copyOverlapsChart: overlaps(blurbBox, chartBox),
+          itemsOverlap: boxes.some((box, index) =>
+            boxes.slice(index + 1).some((other) => overlaps(box, other))
+          ),
+          itemsFit: boxes.every(
+            (box) =>
+              box.left >= chartBox.left - 1 && box.right <= chartBox.right + 1
+          ),
+          labelSizes: items
+            .slice(1)
+            .map((item) => parseFloat(getComputedStyle(item).fontSize)),
+          connectedCards: Array.from(
+            chart!.querySelectorAll('svg[data-surface-connections]')
+          ).some((svg) => {
+            if (getComputedStyle(svg).display === 'none') {
+              return false;
+            }
+            return (
+              svg.querySelectorAll('path').length === items.length - 1 ||
+              svg.querySelectorAll('line').length === items.length + 1
+            );
+          }),
+          wrappedEndpointsMatch: Array.from(
+            chart!.querySelectorAll<SVGPathElement>(
+              'svg[data-surface-connections="wrapped"] > path'
+            )
+          ).every((path, index) => {
+            if (getComputedStyle(path.ownerSVGElement!).display === 'none') {
+              return true;
+            }
+            const svgBox = path.ownerSVGElement!.getBoundingClientRect();
+            const endpoint = path.getPointAtLength(path.getTotalLength());
+            const box = boxes[index + 1]!;
+            return (
+              Math.abs(svgBox.left + endpoint.x - box.left - box.width / 2) <
+                1 && Math.abs(svgBox.top + endpoint.y - box.top) < 1
+            );
+          }),
+          overflows: element.scrollWidth > element.clientWidth,
+        };
+      });
+      expect(layout.copyOverlapsChart).toBe(false);
+      expect(layout.itemsOverlap).toBe(false);
+      expect(layout.itemsFit).toBe(true);
+      expect(layout.connectedCards).toBe(true);
+      expect(layout.wrappedEndpointsMatch).toBe(true);
+      expect(layout.overflows).toBe(false);
+      expect(layout.labelSizes.length).toBeGreaterThan(0);
+      expect(layout.labelSizes.every((size) => size >= 11)).toBe(true);
+      const tiles = await page
+        .getByRole('region', { name: 'Featured primitives', exact: true })
+        .evaluate((featured) => {
+          const content = featured.parentElement!;
+          const narrow = content.clientWidth < 620;
+          const groups = [
+            featured,
+            content.querySelector(
+              'section[aria-labelledby="isomer-studio-applications"]'
+            )!,
+            content.querySelector(
+              'section[aria-labelledby="isomer-studio-learn"]'
+            )!,
+          ];
+          return {
+            narrow,
+            stacked: groups.every((group) => {
+              const boxes = Array.from(group.lastElementChild!.children)
+                .map((child) => child.getBoundingClientRect())
+                .filter((box) => box.width > 0 && box.height > 0);
+              return boxes.every(
+                (box, index) =>
+                  index === 0 || box.top >= boxes[index - 1]!.bottom - 1
+              );
+            }),
+            pagerVisible:
+              getComputedStyle(featured.querySelector('button')!.parentElement!)
+                .display !== 'none',
+          };
+        });
+      expect(tiles.stacked).toBe(tiles.narrow);
+      expect(tiles.pagerVisible).toBe(true);
+      const firstTile = page.getByTestId('featured-primitive').first();
+      await firstTile.getByRole('link', { name: 'Docs →' }).focus();
+      await page.keyboard.press('Tab');
+      const dev = firstTile.getByRole('link', { name: 'Dev →' });
+      await expect(dev).toBeFocused();
+      await expect(dev).toHaveCSS('outline-color', 'rgb(255, 255, 255)');
+      await expect(dev).toHaveCSS('outline-style', 'solid');
+      await expect(dev.locator('..')).toHaveCSS('opacity', '1');
+    });
+  }
+
+  test('respects reduced motion for chart feedback and featured paging', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1920, height: 900 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto(site.url);
+    const chart = page.getByRole('region', {
+      name: 'One composition, every surface',
+    });
+    const items = chart.locator('[tabindex="0"]');
+    for (const index of [0, 1]) {
+      const item = items.nth(index);
+      await item.focus();
+      await expect(item).toHaveCSS('transition-duration', '0s');
+      await expect(item).toHaveCSS('transform', 'none');
+      await expect(item).toHaveCSS('scale', 'none');
+      await item.hover();
+      await expect(item).toHaveCSS('transform', 'none');
+      await expect(item).toHaveCSS('scale', 'none');
+    }
+    const featured = page.getByRole('region', {
+      name: 'Featured primitives',
+      exact: true,
+    });
+    const next = featured.getByRole('button', { name: 'Next primitives' });
+    const strip = featured.locator(':scope > div:last-child');
+    await strip.evaluate((element) => {
+      element.scrollBy = (options?: ScrollToOptions | number) => {
+        element.setAttribute(
+          'data-scroll-behavior',
+          typeof options === 'object' ? String(options.behavior) : 'number'
+        );
+      };
+    });
+    if (await next.isEnabled()) {
+      await next.click();
+      await expect(strip).toHaveAttribute('data-scroll-behavior', 'instant');
+    }
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    if (await next.isEnabled()) {
+      await next.click();
+      await expect(strip).toHaveAttribute('data-scroll-behavior', 'smooth');
+    }
+    await items.nth(1).focus();
+    await items.nth(1).hover();
+    await expect(items.nth(1)).toHaveCSS('transition-duration', '0.12s');
+    await expect(items.nth(1)).not.toHaveCSS('transform', 'none');
+  });
+
+  test('pages stacked featured tiles three at a time and preserves desktop browsing', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 900 });
+    await page.goto(site.url);
+    const featured = page.getByRole('region', {
+      name: 'Featured primitives',
+      exact: true,
+    });
+    const tiles = featured.locator(':scope > div:last-child > *');
+    const visible = featured.locator(':scope > div:last-child > :visible');
+    const previous = featured.getByRole('button', {
+      name: 'Previous primitives',
+    });
+    const next = featured.getByRole('button', { name: 'Next primitives' });
+    const count = await tiles.count();
+    expect(count).toBeGreaterThan(0);
+    await expect(previous).toBeDisabled();
+    for (let offset = 0; offset < count; offset += 3) {
+      await expect(visible).toHaveCount(Math.min(3, count - offset));
+      expect(await visible.allTextContents()).toEqual(
+        (await tiles.allTextContents()).slice(offset, offset + 3)
+      );
+      if (offset + 3 < count) {
+        await next.click();
+      }
+    }
+    await expect(next).toBeDisabled();
+    await expect(
+      featured.getByRole('link', { name: /Open the gallery/ })
+    ).toBeVisible();
+    if (count <= 3) {
+      await expect(previous).toBeDisabled();
+      await page.setViewportSize({ width: 1920, height: 900 });
+      await expect(visible).toHaveCount(count);
+      return;
+    }
+    await previous.click();
+    await expect(next).toBeEnabled();
+    await page.setViewportSize({ width: 1920, height: 900 });
+    await expect(visible).toHaveCount(count);
+    await expect(previous).toBeDisabled();
+    await expect(next).toBeEnabled();
+    await next.click();
+    await expect(previous).toBeEnabled();
+    await page.setViewportSize({ width: 390, height: 900 });
+    await expect(visible).toHaveCount(3);
+    await expect(next).toBeEnabled();
+  });
 });
 
 test.describe('decks', () => {
@@ -419,10 +648,14 @@ test.describe('decks', () => {
           )
         );
 
-    await page.goto(site.url);
+    await page.goto(`${site.url}#/dev`);
+    await page.getByRole('button', { name: 'Decks', exact: true }).click();
     await page
-      .getByRole('list', { name: 'Decks pages' })
-      .getByRole('button', { name: 'Isomer: one composition, every surface' })
+      .locator('main')
+      .getByRole('button', {
+        name: 'Isomer: one composition, every surface',
+        exact: true,
+      })
       .click();
     await expect(page).toHaveURL(new RegExp(`${deck}$`));
     await expect(

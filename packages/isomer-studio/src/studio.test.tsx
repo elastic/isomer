@@ -113,7 +113,52 @@ const renderStudio = async () => {
 
 describe('IsomerStudio', () => {
   beforeEach(() => {
+    window.location.hash = '#/dev';
+  });
+
+  it('opens Home on an empty hash, and returns to it from the mark', async () => {
     window.location.hash = '';
+    render(<IsomerStudio {...{ runtime }} />);
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'What are we rendering today?',
+      })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Docs' })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('navigation', { name: 'Primitives' })
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('link', { name: /Open the workbench/ }));
+    await waitFor(() => expect(window.location.hash).toBe('#/dev/callout/0'));
+    expect(await findEditor()).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Docs' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('link', { name: 'Isomer Studio home' }));
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'What are we rendering today?',
+      })
+    ).toBeInTheDocument();
+    expect(window.location.hash).toBe('#/home');
+  });
+
+  it('opens a searched primitive from Home in the mode last used', async () => {
+    window.location.hash = '#/docs/divider/0';
+    render(<IsomerStudio {...{ runtime }} />);
+    fireEvent.click(screen.getByRole('link', { name: 'Isomer Studio home' }));
+    const search = await screen.findByLabelText('Search primitives');
+    fireEvent.focus(search);
+    fireEvent.change(search, { target: { value: 'health' } });
+    fireEvent.click(await screen.findByRole('option', { name: /Health/ }));
+    await waitFor(() => expect(window.location.hash).toBe('#/docs/health/0'));
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Health' })
+    ).toBeInTheDocument();
   });
 
   it('lists the runtime primitives under their groups, narrowed by the filter', async () => {
@@ -128,7 +173,13 @@ describe('IsomerStudio', () => {
         .getAllByRole('listitem')
         .map(({ textContent }) => textContent);
     expect(headings()).toEqual(['Narrative and content', 'Data display']);
-    expect(labels()).toEqual(['Callout', 'Divider', 'Health', 'Stat group']);
+    expect(labels()).toEqual([
+      'Gallery',
+      'Callout',
+      'Divider',
+      'Health',
+      'Stat group',
+    ]);
     expect(
       within(nav).getByRole('button', { current: 'page' })
     ).toHaveTextContent('Callout');
@@ -138,7 +189,7 @@ describe('IsomerStudio', () => {
       { target: { value: 'statGroup' } }
     );
     expect(headings()).toEqual(['Data display']);
-    expect(labels()).toEqual(['Stat group']);
+    expect(labels()).toEqual(['Gallery', 'Stat group']);
   });
 
   it('heads each pack when the runtime has more than one', async () => {

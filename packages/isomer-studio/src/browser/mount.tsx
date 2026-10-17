@@ -11,6 +11,7 @@ import type {} from 'monaco-editor/esm/vs/editor/editor.api';
 
 import type { StudioConfig } from '../config';
 import { appProblems } from '../model/app_problems';
+import { featuredProblems, runtimePrimitiveTypes } from '../model/featured';
 import { IsomerStudio } from '../studio';
 import type { JsxTransform, RasterizePng, RenderPdf } from '../types';
 
@@ -32,7 +33,7 @@ export const assetUrl = (path: string): string =>
   new URL(path, document.baseURI).href;
 
 export interface MountedStudio {
-  /** Re-renders with a new config, keeping the route and every view's state. A config with invalid apps keeps the previous apps and shows why. */
+  /** Re-renders with a new config, keeping the route and every view's state. A config with invalid apps keeps the previous apps and shows why; invalid `featured` entries are reported and skipped. */
   update: (config: StudioConfig, host: StudioHost) => void;
 }
 
@@ -60,6 +61,9 @@ export const mountStudio = (
     if (!problems.length) {
       ({ apps } = next);
     }
+    problems.push(
+      ...featuredProblems(next.featured, runtimePrimitiveTypes(next.runtime))
+    );
     document.title = next.title ?? 'Isomer Studio';
     root.render(
       <IsomerStudio

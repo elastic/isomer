@@ -23,11 +23,18 @@ import { DEV_TINT } from './chrome/dev_tint';
 import { StudioHeader } from './chrome/header';
 import { NAV_WIDTH, StudioNav } from './chrome/nav';
 import type { StudioRouter } from './chrome/route';
-import { GALLERY, isAppRoute, useStudioRoute } from './chrome/route';
+import {
+  GALLERY,
+  isAppRoute,
+  isHomeRoute,
+  useStudioRoute,
+} from './chrome/route';
 import type { StudioApp } from './config';
 import { DevView } from './dev/dev_view';
 import { DocsView } from './docs/docs_view';
 import { GalleryView } from './docs/gallery_view';
+import { HomeView } from './home/home_view';
+import { homeBackground } from './home/tokens';
 import { createShim } from './model/compile_jsx';
 import { composeExample } from './model/compose_example';
 import { describeRuntime } from './model/describe_runtime';
@@ -72,9 +79,17 @@ const devBackground = css`
     radial-gradient(circle at 40% 0%, rgba(27, 169, 245, 0.14), transparent 18%);
 `;
 
+type Look = 'dev' | 'docs' | 'home';
+
+const BACKGROUNDS = {
+  dev: devBackground,
+  docs: docsBackground,
+  home: homeBackground,
+} as const;
+
 const Layout = ({
-  title,
-  router: { location, route, navigate, openApp },
+  title = 'Isomer Studio',
+  router,
   configProblems = [],
   colorMode,
   onColorModeChange,
@@ -85,18 +100,21 @@ const Layout = ({
   colorMode: ColorModePreference;
   onColorModeChange: (colorMode: ColorModePreference) => void;
 }) => {
+  const { location, route, navigate, openApp, goHome } = router;
   const { euiTheme } = useEuiTheme();
   const {
     apps,
+    featured,
     docs: { primitives },
   } = useStudio();
+  const home = isHomeRoute(location);
   const app = isAppRoute(location)
     ? apps.find(({ id }) => id === location.app)
     : undefined;
   const { page } = route;
-  const mode = app ? undefined : route.mode;
-  const look = mode ?? 'docs';
-  const accent = useAccent(look);
+  const mode = app || home ? undefined : route.mode;
+  const look: Look = home ? 'home' : (mode ?? 'docs');
+  const accent = useAccent(look === 'home' ? 'docs' : look);
   const [isNavOpen, setNavOpen] = useState(true);
   const [devRoute, setDevRoute] = useState(mode === 'dev' ? route : undefined);
   if (mode === 'dev' && devRoute !== route) {
@@ -109,8 +127,7 @@ const Layout = ({
     flex-direction: column;
     overflow: hidden;
     color: ${euiTheme.colors.textParagraph};
-    background-color: ${look === 'docs' ? '#0b2347' : '#0b3a2c'};
-    background-image: ${look === 'docs' ? docsBackground : devBackground};
+    ${BACKGROUNDS[look]};
   `;
   const body = css`
     flex: 1;
@@ -143,61 +160,81 @@ const Layout = ({
           {...{
             title,
             mode,
-            accent,
+            home,
             appTitle: app?.title,
             colorMode,
             onColorModeChange,
             onSelectPrimitive,
           }}
           onModeChange={(next) => navigate({ mode: next })}
+          onHome={goHome}
         />
       </EuiThemeProvider>
-      <div css={body}>
+      {home ? (
         <EuiThemeProvider colorMode="dark" wrapperProps={darkWrapper}>
-          <StudioNav
-            {...{ page }}
-            mode={route.mode}
-            app={app?.id}
-            appPath={isAppRoute(location) ? location.path : undefined}
-            isOpen={isNavOpen}
-            onToggle={() => setNavOpen((open) => !open)}
-            onSelect={(next) => navigate({ page: next, example: 0 })}
-            onSelectApp={openApp}
+          <HomeView
+            {...{ title, featured, configProblems }}
+            router={{ route, navigate }}
           />
         </EuiThemeProvider>
-        <main css={main}>
-          {configProblems.length ? (
-            <EuiCallOut
-              announceOnMount
-              color="danger"
-              iconType="error"
-              title="The config's apps are invalid; the Studio keeps the last valid apps">
-              <ul>
-                {configProblems.map((problem) => (
-                  <li key={problem}>{problem}</li>
-                ))}
-              </ul>
-            </EuiCallOut>
-          ) : null}
-          {app && isAppRoute(location) ? (
-            <AppHost key={app.id} path={location.path} {...{ app, openApp }} />
-          ) : null}
-          {!primitives.length ? null : (
-            <>
-              {devRoute ? (
-                <div hidden={mode !== 'dev'} css={fill}>
-                  <DevView route={devRoute} {...{ navigate }} />
-                </div>
-              ) : null}
-              {mode !== 'docs' ? null : page === GALLERY ? (
-                <GalleryView />
-              ) : (
-                <DocsView {...{ route, navigate, accent }} />
-              )}
-            </>
-          )}
-        </main>
-      </div>
+      ) : (
+        <div css={body}>
+          <EuiThemeProvider colorMode="dark" wrapperProps={darkWrapper}>
+            <StudioNav
+              {...{ page }}
+              mode={route.mode}
+              app={app?.id}
+              appPath={isAppRoute(location) ? location.path : undefined}
+              isOpen={isNavOpen}
+              onToggle={() => setNavOpen((open) => !open)}
+              onSelect={(next) =>
+                navigate(
+                  next === GALLERY
+                    ? { mode: 'docs', page: GALLERY }
+                    : { page: next, example: 0 }
+                )
+              }
+              onSelectApp={openApp}
+            />
+          </EuiThemeProvider>
+          <main css={main}>
+            {configProblems.length ? (
+              <EuiCallOut
+                announceOnMount
+                color="danger"
+                iconType="error"
+                title="The config is invalid; the Studio keeps the last valid one">
+                <ul>
+                  {configProblems.map((problem) => (
+                    <li key={problem}>{problem}</li>
+                  ))}
+                </ul>
+              </EuiCallOut>
+            ) : null}
+            {app && isAppRoute(location) ? (
+              <AppHost
+                key={app.id}
+                path={location.path}
+                {...{ app, openApp }}
+              />
+            ) : null}
+            {!primitives.length ? null : (
+              <>
+                {devRoute ? (
+                  <div hidden={mode !== 'dev'} css={fill}>
+                    <DevView route={devRoute} {...{ navigate }} />
+                  </div>
+                ) : null}
+                {mode !== 'docs' ? null : page === GALLERY ? (
+                  <GalleryView group={route.group} />
+                ) : (
+                  <DocsView {...{ route, navigate, accent }} />
+                )}
+              </>
+            )}
+          </main>
+        </div>
+      )}
     </div>
   );
 };
@@ -206,6 +243,7 @@ const Studio = ({
   title,
   runtime,
   apps = NO_APPS,
+  featured,
   createReactContext,
   compose: composeNodes,
   transformJsx,
@@ -239,6 +277,7 @@ const Studio = ({
     (): StudioContextValue => ({
       runtime,
       apps,
+      featured,
       docs,
       shim,
       schemaFor,
@@ -252,6 +291,7 @@ const Studio = ({
     [
       runtime,
       apps,
+      featured,
       docs,
       shim,
       schemaFor,
@@ -264,14 +304,16 @@ const Studio = ({
     ]
   );
 
+  const { location } = router;
+  const tinted =
+    !isAppRoute(location) &&
+    !isHomeRoute(location) &&
+    router.route.mode === 'dev';
+
   return (
     <StudioContextProvider {...{ value }}>
       <EuiThemeProvider
-        modify={
-          !isAppRoute(router.location) && router.route.mode === 'dev'
-            ? DEV_TINT
-            : NO_TINT
-        }
+        modify={tinted ? DEV_TINT : NO_TINT}
         wrapperProps={darkWrapper}>
         <Layout
           {...{ title, router, configProblems, colorMode, onColorModeChange }}
@@ -281,7 +323,7 @@ const Studio = ({
   );
 };
 
-/** A dev and docs shell for an Isomer runtime, built only from what the runtime reports. */
+/** A home, dev and docs shell for an Isomer runtime, built only from what the runtime reports. */
 export const IsomerStudio = (props: IsomerStudioProps) => {
   const {
     preference: colorMode,

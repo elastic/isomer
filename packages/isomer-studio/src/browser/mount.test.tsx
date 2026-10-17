@@ -33,6 +33,7 @@ const app = (id: string): StudioApp => ({
 
 describe('mountStudio', () => {
   beforeEach(() => {
+    window.location.hash = '#/dev';
     document.body.innerHTML = '<div id="root"></div>';
   });
 

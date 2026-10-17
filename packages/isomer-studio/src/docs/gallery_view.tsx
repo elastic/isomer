@@ -27,6 +27,14 @@ import { useStudio } from '../studio_context';
 import { ReactSurface } from '../surfaces/react_surface';
 import { ScaledPreview } from '../surfaces/scaled_preview';
 
+import {
+  CONTENT_BASIS,
+  OnThisPage,
+  PAGE_WIDTH,
+  TOC_GAP,
+  useActiveEntry,
+} from './on_this_page';
+
 /** Columns in the gallery grid. That many previews mount immediately. */
 export const GALLERY_COLUMNS = 3;
 
@@ -110,8 +118,12 @@ const ExampleTile = ({
   </EuiPanel>
 );
 
-/** Every example of every primitive on the React surface, by group. */
-export const GalleryView = () => {
+/** A heading id the Home page's category chips can scroll to. */
+export const galleryGroupId = (title: string): string =>
+  `isomer-studio-gallery-${encodeURIComponent(title)}`;
+
+/** Every example of every primitive on the React surface, by group, beside an "On this page" gutter; `group` scrolls to that group. */
+export const GalleryView = ({ group }: { group?: string | undefined }) => {
   const { euiTheme } = useEuiTheme();
   const {
     docs: { primitives, groups },
@@ -129,54 +141,91 @@ export const GalleryView = () => {
     [primitives, compose]
   );
 
+  useEffect(() => {
+    if (group === undefined) {
+      return;
+    }
+    document
+      .getElementById(galleryGroupId(group))
+      ?.scrollIntoView({ block: 'start' });
+  }, [group]);
+
+  const entries = useMemo(
+    () => groups.map(({ title }) => ({ id: galleryGroupId(title), title })),
+    [groups]
+  );
+  const ids = useMemo(() => entries.map(({ id }) => id), [entries]);
+  const [active, setActive] = useActiveEntry(ids, '');
+
   let rendered = 0;
 
   return (
     <div
       css={css`
-        max-width: 1080px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: ${TOC_GAP}px;
+        max-width: ${PAGE_WIDTH}px;
         margin-inline: auto;
         padding: ${euiTheme.size.xl} ${euiTheme.size.xxl} ${euiTheme.size.xxxxl};
       `}>
-      <EuiTitle size="l">
-        <h1>Gallery</h1>
-      </EuiTitle>
-      {groups.map(({ title, types }) => (
-        <React.Fragment key={title}>
-          <EuiSpacer size="l" />
-          <EuiTitle size="s">
-            <h2>{title}</h2>
-          </EuiTitle>
-          <EuiSpacer size="m" />
-          <EuiFlexGrid columns={GALLERY_COLUMNS} gutterSize="m">
-            {types.flatMap((type) => {
-              const doc = primitives.find(
-                (candidate) => candidate.type === type
-              );
-              return doc
-                ? doc.examples.map(({ name }, index) => {
-                    const eager = rendered < GALLERY_COLUMNS;
-                    rendered += 1;
-                    return (
-                      <ExampleTile
-                        key={`${type}/${index}`}
-                        {...{ doc, name, eager }}
-                        composition={
-                          compositions.get(type)?.[index] ?? compose([])
-                        }
-                        devHref={formatRoute({
-                          mode: 'dev',
-                          page: type,
-                          example: index,
-                        })}
-                      />
-                    );
-                  })
-                : [];
-            })}
-          </EuiFlexGrid>
-        </React.Fragment>
-      ))}
+      <div
+        css={css`
+          flex: 1 1 ${CONTENT_BASIS}px;
+          display: flex;
+          flex-direction: column;
+          gap: ${euiTheme.size.l};
+          min-width: 0;
+        `}>
+        <EuiTitle size="l">
+          <h1>Gallery</h1>
+        </EuiTitle>
+        {groups.map(({ title, types }) => (
+          <section
+            key={title}
+            id={galleryGroupId(title)}
+            aria-label={title}
+            css={css`
+              display: flex;
+              flex-direction: column;
+              gap: ${euiTheme.size.m};
+              scroll-margin-top: ${euiTheme.size.l};
+            `}>
+            <EuiTitle size="s">
+              <h2>{title}</h2>
+            </EuiTitle>
+            <EuiFlexGrid columns={GALLERY_COLUMNS} gutterSize="m">
+              {types.flatMap((type) => {
+                const doc = primitives.find(
+                  (candidate) => candidate.type === type
+                );
+                return doc
+                  ? doc.examples.map(({ name }, index) => {
+                      const eager = rendered < GALLERY_COLUMNS;
+                      rendered += 1;
+                      return (
+                        <ExampleTile
+                          key={`${type}/${index}`}
+                          {...{ doc, name, eager }}
+                          composition={
+                            compositions.get(type)?.[index] ?? compose([])
+                          }
+                          devHref={formatRoute({
+                            mode: 'dev',
+                            page: type,
+                            example: index,
+                          })}
+                        />
+                      );
+                    })
+                  : [];
+              })}
+            </EuiFlexGrid>
+          </section>
+        ))}
+      </div>
+      <OnThisPage {...{ entries, active }} onSelect={setActive} />
     </div>
   );
 };

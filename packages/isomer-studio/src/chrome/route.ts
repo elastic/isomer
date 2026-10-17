@@ -16,6 +16,8 @@ export interface StudioRoute {
   /** A primitive `type`, or `gallery` in docs mode. */
   page: string;
   example: number;
+  /** A group title the gallery scrolls to, from `#/docs/gallery/<group>`. */
+  group?: string | undefined;
 }
 
 export interface AppRoute {
@@ -24,11 +26,19 @@ export interface AppRoute {
   path: string;
 }
 
-export type StudioLocation = StudioRoute | AppRoute;
+/** The landing page, at `#/home`, which an empty or unknown hash also opens. */
+export interface HomeRoute {
+  home: true;
+}
+
+export type StudioLocation = StudioRoute | AppRoute | HomeRoute;
 
 export const GALLERY = 'gallery';
 
 const APP_SEGMENT = 'app';
+const HOME_SEGMENT = 'home';
+
+export const HOME: HomeRoute = { home: true };
 
 /** A segment as written, when it is not valid percent-encoding. */
 const decodeSegment = (segment: string): string => {
@@ -42,7 +52,14 @@ const decodeSegment = (segment: string): string => {
 export const isAppRoute = (location: StudioLocation): location is AppRoute =>
   'app' in location;
 
-/** Reads `#/dev/callout/0`, `#/docs/statGroup` or `#/docs/gallery`, falling back to the first primitive. */
+export const isHomeRoute = (location: StudioLocation): location is HomeRoute =>
+  'home' in location;
+
+export const isPrimitiveRoute = (
+  location: StudioLocation
+): location is StudioRoute => 'mode' in location;
+
+/** Reads `#/dev/callout/0`, `#/docs/statGroup`, `#/docs/gallery` or `#/docs/gallery/Text`, falling back to the first primitive. */
 export const parseRoute = (
   hash: string,
   { primitives, groups }: RuntimeDocs
@@ -53,13 +70,20 @@ export const parseRoute = (
   const doc = primitives.find(({ type }) => type === page);
   const index = Number(example);
 
+  if (!doc && resolvedMode === 'docs' && page === GALLERY) {
+    const title = example === undefined ? undefined : decodeSegment(example);
+    const group = groups.find((candidate) => candidate.title === title);
+    return {
+      mode: resolvedMode,
+      page: GALLERY,
+      example: 0,
+      ...(group ? { group: group.title } : {}),
+    };
+  }
+
   return {
     mode: resolvedMode,
-    page: doc
-      ? doc.type
-      : resolvedMode === 'docs' && page === GALLERY
-        ? GALLERY
-        : first,
+    page: doc ? doc.type : first,
     example:
       doc &&
       Number.isInteger(index) &&
@@ -70,34 +94,56 @@ export const parseRoute = (
   };
 };
 
-/** {@link parseRoute}, plus `#/app/<id>/<path>` for an id in `appIds`. */
+/**
+ * {@link parseRoute} for `#/dev/...` and `#/docs/...`, `#/app/<id>/<path>` for an id in `appIds`, and
+ * {@link HOME} for an empty hash, `#/home`, an unknown app, or any other first segment.
+ */
 export const parseLocation = (
   hash: string,
   docs: RuntimeDocs,
   appIds: readonly string[]
 ): StudioLocation => {
   const [segment, id, ...rest] = hash.replace(/^#\/?/, '').split('/');
-  return segment === APP_SEGMENT && id !== undefined && appIds.includes(id)
-    ? { app: id, path: rest.map(decodeSegment).join('/') }
-    : parseRoute(hash, docs);
+  if (segment === APP_SEGMENT) {
+    return id !== undefined && appIds.includes(id)
+      ? { app: id, path: rest.map(decodeSegment).join('/') }
+      : HOME;
+  }
+  if (segment === 'dev' || segment === 'docs') {
+    return parseRoute(hash, docs);
+  }
+  return HOME;
 };
 
-export const formatRoute = ({ mode, page, example }: StudioRoute): string =>
-  page === GALLERY ? `#/${mode}/${GALLERY}` : `#/${mode}/${page}/${example}`;
+export const formatRoute = ({
+  mode,
+  page,
+  example,
+  group,
+}: StudioRoute): string =>
+  page === GALLERY
+    ? group === undefined
+      ? `#/${mode}/${GALLERY}`
+      : `#/${mode}/${GALLERY}/${encodeURIComponent(group)}`
+    : `#/${mode}/${page}/${example}`;
 
 export const formatLocation = (location: StudioLocation): string =>
-  isAppRoute(location)
-    ? `#/${APP_SEGMENT}/${location.app}/${location.path.split('/').map(encodeURIComponent).join('/')}`
-    : formatRoute(location);
+  isHomeRoute(location)
+    ? `#/${HOME_SEGMENT}`
+    : isAppRoute(location)
+      ? `#/${APP_SEGMENT}/${location.app}/${location.path.split('/').map(encodeURIComponent).join('/')}`
+      : formatRoute(location);
 
 export interface StudioRouter {
   location: StudioLocation;
-  /** The current primitive route, or the last one before an app opened. */
+  /** The current primitive route, or the last one before an app or Home opened. */
   route: StudioRoute;
   /** Moves to a primitive route, merging `next` into {@link StudioRouter.route}. */
   navigate: (next: Partial<StudioRoute>) => void;
   /** `path` is percent-encoded in the hash, segment by segment, and decoded when read back. */
   openApp: (id: string, path?: string) => void;
+  /** Opens `#/home`. */
+  goHome: () => void;
 }
 
 /** The location in the URL hash, re-checked whenever the primitives or apps change. */
@@ -113,7 +159,7 @@ export const useStudioRoute = (
     parseLocation(window.location.hash, docs, appIds)
   );
   const [route, setRoute] = useState(() =>
-    isAppRoute(location) ? parseRoute('', docs) : location
+    isPrimitiveRoute(location) ? location : parseRoute('', docs)
   );
   const current = useRef(route);
   current.current = route;
@@ -122,7 +168,7 @@ export const useStudioRoute = (
 
   const show = useCallback((next: StudioLocation) => {
     setLocation(next);
-    if (!isAppRoute(next)) {
+    if (isPrimitiveRoute(next)) {
       setRoute(next);
     }
   }, []);
@@ -166,7 +212,8 @@ export const useStudioRoute = (
 
   const navigate = useCallback(
     (next: Partial<StudioRoute>) => {
-      const merged = { ...current.current, ...next };
+      const { mode, page, example } = current.current;
+      const merged = { mode, page, example, ...next };
       go(
         parseRoute(
           formatRoute(
@@ -186,5 +233,7 @@ export const useStudioRoute = (
     [go]
   );
 
-  return { location, route, navigate, openApp };
+  const goHome = useCallback(() => go(HOME), [go]);
+
+  return { location, route, navigate, openApp, goHome };
 };

@@ -13,6 +13,8 @@ coverage/
 *.tsbuildinfo
 test-results/
 playwright-report/
+.playwright-mcp
+.impeccable/
 
 # IDE
 .idea

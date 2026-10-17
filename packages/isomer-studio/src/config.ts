@@ -90,6 +90,8 @@ export interface StudioApp {
   /** A URL-safe hash segment, unique within the config: `/^[a-z][a-z0-9-]*$/`. */
   id: string;
   title: string;
+  /** One line on what the app shows, on the Home page's tile and its Loaded panel. */
+  description?: string | undefined;
   icon?: PrimitiveIcon | undefined;
   /** A module whose default export is the app's page. Node never calls it, so server-only code stays out of it. */
   load: () => Promise<{ default: ComponentType<StudioAppProps> }>;
@@ -108,14 +110,22 @@ export interface StudioConfig {
   createReactContext?: ((root: ShadowRoot) => StyledRenderContext) | undefined;
   /** Defaults to `{ type: 'view', body: nodes, theme }`. Return a node that is already a valid root as is. */
   compose?: StudioCompose | undefined;
-  /** Pages listed under Apps in the nav. */
+  /** Pages listed under the app in the nav. */
   apps?: readonly StudioApp[] | undefined;
   /**
    * A module path, relative to the config, whose default export lists the takumi `FontLoader`s PNGs and PDFs are drawn with.
    * Node imports it and the browser never does, so it may read files. Without it, PNGs use takumi's built-in face and PDFs can't draw text.
    */
   imageFonts?: string | undefined;
+  /**
+   * Primitive `type`s the Home page features, in this order. Without it, Home picks {@link FEATURED_COUNT}
+   * at random on each load.
+   */
+  featured?: readonly string[] | undefined;
 }
+
+/** How many primitives Home features when the config names none. */
+export const FEATURED_COUNT = 6;
 
 /** Types a config file's default export. */
 export const defineStudioConfig = (config: StudioConfig): StudioConfig =>

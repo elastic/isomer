@@ -15,6 +15,7 @@ import { tsImport } from 'tsx/esm/api';
 
 import type { StudioConfig } from '../config';
 import { appProblems } from '../model/app_problems';
+import { featuredProblems, runtimePrimitiveTypes } from '../model/featured';
 
 import { PACKAGE_DIR } from './app_bundle';
 
@@ -219,6 +220,18 @@ export const studioConfigFrom = (
       [
         `${configPath} has invalid apps:`,
         ...problems.map((line) => `  ${line}`),
+      ].join('\n')
+    );
+  }
+  const featured = featuredProblems(
+    config.featured,
+    runtimePrimitiveTypes(config.runtime)
+  );
+  if (featured.length) {
+    throw new Error(
+      [
+        `${configPath} has invalid featured primitives:`,
+        ...featured.map((line) => `  ${line}`),
       ].join('\n')
     );
   }
