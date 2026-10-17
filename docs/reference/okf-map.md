@@ -7,8 +7,8 @@ description: Generated map of the Isomer OKF concept graph.
 
 Generated from `.okf/isomer` by `pnpm okf:map`. Do not edit by hand.
 
-- Concepts: 65
-- Links: 156
+- Concepts: 66
+- Links: 158
 - Isolated concepts: 0
 
 ## Graph
@@ -38,6 +38,7 @@ flowchart LR
     runtime_concepts_surfaces["Surfaces"]:::concept
     runtime_concepts_view_registry["View registry"]:::concept
     runtime_entry_points_root["Root"]:::entrypoint
+    runtime_entry_points_testing["Testing"]:::entrypoint
     runtime_playbooks_create_a_runtime["Create a runtime"]:::playbook
     runtime_reference_public_contract["Public contract"]:::reference
     sdk_concepts_authoring["Authoring"]:::concept
@@ -139,6 +140,8 @@ flowchart LR
     runtime_concepts_view_registry --> runtime_concepts_runtime
     runtime_entry_points_root --> runtime_concepts_runtime
     runtime_entry_points_root --> runtime_reference_public_contract
+    runtime_entry_points_testing --> runtime_entry_points_root
+    runtime_entry_points_testing --> sdk_entry_points_testing
     runtime_playbooks_create_a_runtime --> runtime_concepts_runtime
     runtime_playbooks_create_a_runtime --> sdk_playbooks_define_a_pack
     runtime_reference_public_contract --> runtime_entry_points_root
@@ -267,6 +270,7 @@ flowchart LR
 - Surfaces (Concept): `runtime/concepts/surfaces`
 - View registry (Concept): `runtime/concepts/view-registry`
 - Root (Entry Point): `runtime/entry-points/root`
+- Testing (Entry Point): `runtime/entry-points/testing`
 - Create a runtime (Playbook): `runtime/playbooks/create-a-runtime`
 - Public contract (Reference): `runtime/reference/public-contract`
 - Authoring (Concept): `sdk/concepts/authoring`

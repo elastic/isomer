@@ -1,6 +1,6 @@
 # API reference
 
-Everything `@elastic/isomer-runtime` exports from its single entry point, plus what a host has to import from elsewhere.
+Everything `@elastic/isomer-runtime` exports from its entry point and its `./testing` subpath, plus what a host has to import from elsewhere.
 
 ## Functions
 
@@ -129,6 +129,19 @@ Three results carry a `composition`, each with its own rule:
 | `RegisteredViewInputError` | `viewRegistry.request`, on input refused before parsing or invalid against the view's schema | `code` (`VIEW_INPUT_INVALID`), `viewId`, `errors` (`{ path, message, nodeType?, code? }` each) |
 | `CompositionValidationError` | `render` and `renderNode` on `text`, `markdown`, `slack`, and `snapshot` by default; on `html` with `onValidationError: 'throw'`; on every validating surface on input refused before parsing | `code` (`COMPOSITION_INVALID`), `errors` |
 
+## `./testing`
+
+`createRuntimeConformanceHarness(runtime, overrides?)` returns the SDK's `PrimitiveConformanceHarness` for an `IsomerRuntime`, so a pack's conformance test needs no hand-written bindings. It derives every member the runtime can answer: validation, the `react`, `html`, `text`, `markdown`, and `slack` surfaces (per-node renders collect validation errors rather than throw), `anchorWalk` over the runtime's primitives, and `wrapComposition` titled `CONFORMANCE_FIXTURE_TITLE`. `renderSnapshot` and `renderSnapshotComposition` are present only when the runtime has a frame. `renderHTML` forwards `css` and `anchors`, not `names`, which no HTML option carries. `overrides` is a `Partial<PrimitiveConformanceHarness>` that replaces derived members and supplies what a runtime cannot know: `nestForeignChild`, `sizesFromNodeHeights`, `estimateSnapshotHeight`, `assertVarRefsHaveDeclarations`, or a `wrapComposition` that puts the node in the pack's frame.
+
+```ts
+const harness = createRuntimeConformanceHarness(createIsomerRuntime({ packs: [pack] }));
+
+it('passes inventory conformance', () => runPrimitiveInventoryConformance(primitives));
+it.each(primitiveConformanceRows(primitives))('$type #$exampleIndex: $name', (row) => row.run(row, harness));
+```
+
+The anchor case asserts every node renders an anchor, so a pack's `react` renderers spread `nodeAnchor` before it passes.
+
 ## Where the code is
 
 | Concern | File |
@@ -139,6 +152,7 @@ Three results carry a `composition`, each with its own rule:
 | Surfaces, one file each behind a barrel | `src/surfaces/` |
 | View registry, `defineView`, input error | `src/registry/view_registry.ts` |
 | Public entry point | `src/index.ts` |
+| Conformance harness factory (`./testing`) | `src/testing/conformance_harness.ts` |
 | Style-adapter composition | `src/assemble/style_adapter.ts` |
 | Coverage of this page against the entry point | `src/api_reference.test.ts` |
 | Composition and render behaviour | `src/assemble/runtime.test.ts` |

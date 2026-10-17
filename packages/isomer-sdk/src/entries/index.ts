@@ -157,6 +157,8 @@ export {
   renderThemeSchema,
   sanitizeAssetUrl,
   sanitizeNavigationHref,
+  sanitizeParsedAssetUrl,
+  sanitizeParsedNavigationHref,
   structuredValueSchema,
   warningsForSurface,
 } from '../validate';

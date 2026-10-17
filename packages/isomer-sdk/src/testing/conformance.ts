@@ -40,6 +40,9 @@ import type { ValidationResult } from '../validate/validation';
  */
 export const CONFORMANCE_FOREIGN_MARKER = 'isomerConformanceForeign';
 
+/** The `title` {@link PrimitiveConformanceHarness.wrapComposition} must give its composition. */
+export const CONFORMANCE_FIXTURE_TITLE = 'Conformance fixture';
+
 /** One example node, paired with the definition that published it. */
 export interface PrimitiveConformanceExample {
   readonly definition: AnyPrimitiveDefinition;
@@ -91,7 +94,7 @@ export interface PrimitiveConformanceSlackResult {
 export interface PrimitiveConformanceHarness {
   /**
    * The smallest composition that carries one node. Its `title` must be
-   * `'Conformance fixture'`, which the envelope cases look for as
+   * {@link CONFORMANCE_FIXTURE_TITLE}, which the envelope cases look for as
    * `CONFORMANCE FIXTURE` in text and `# Conformance fixture` in markdown.
    */
   wrapComposition(node: PrimitiveNode): Composition;
