@@ -61,7 +61,7 @@ Both surfaces read the one they can. A presentation attribute carries no specifi
 Two traps worth naming:
 
 - **`var(--x, #fallback)` is worse than `#fallback`.** SVG parsers generally do not implement custom properties, and rather than taking the fallback they discard the whole declaration — so the shape ends up black, which is the failure the fallback looked like it was preventing. Write the literal.
-- **The attribute cannot vary by scheme.** There is no stylesheet behind it, so it is one value for both. Treat a mark drawn this way as brand-fixed, the way the logo is, and keep scheme-varying color for everything outside the `<svg>`.
+- **A fixed literal is one value for both schemes.** The image has no stylesheet behind the attribute, so it varies by scheme only when its value comes from the frame's palette for the image's mode, `env.theme`; [Light and dark](../sdk/rendering.md#light-and-dark) shows how. This pack draws only the brand-fixed logo inside an `<svg>`, so it keeps scheme-varying color outside one.
 
 ## Inline marks
 

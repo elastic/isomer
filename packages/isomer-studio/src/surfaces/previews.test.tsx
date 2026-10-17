@@ -210,6 +210,42 @@ describe('HtmlSurface', () => {
     expect(frame.style.width).toBe('');
     expect(frame.clientWidth).toBe(1600);
   });
+
+  it("forwards keys from the frame's document to the page, but not keys typed into its fields", () => {
+    render(<HtmlSurface html="<p>keys</p>" title="Preview" />);
+    const frame = screen.getByTitle<HTMLIFrameElement>('Preview');
+    loadDocument(frame, 400);
+    const framed = frame.contentDocument;
+    if (!framed) {
+      throw new Error('No frame document.');
+    }
+    framed.body.innerHTML =
+      '<p>text</p><input><div contenteditable><span>rich</span></div>';
+    const seen: string[] = [];
+    const onKeyDown = (event: KeyboardEvent) => {
+      seen.push(event.key);
+      event.preventDefault();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    const press = (target: Element, key: string) => {
+      const event = new KeyboardEvent('keydown', {
+        key,
+        bubbles: true,
+        cancelable: true,
+      });
+      target.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+
+    try {
+      expect(press(framed.querySelector('p')!, 'ArrowRight')).toBe(true);
+      expect(press(framed.querySelector('input')!, 'ArrowLeft')).toBe(false);
+      expect(press(framed.querySelector('span')!, 'Home')).toBe(false);
+      expect(seen).toEqual(['ArrowRight']);
+    } finally {
+      window.removeEventListener('keydown', onKeyDown);
+    }
+  });
 });
 
 describe('ReactSurface', () => {

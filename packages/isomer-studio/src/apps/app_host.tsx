@@ -10,6 +10,7 @@ import React, {
   Component,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -19,6 +20,7 @@ import { css } from '@emotion/react';
 import type { StudioApp, StudioAppProps } from '../config';
 import { useStudio } from '../studio_context';
 import { AppPreview } from '../surfaces/app_preview';
+import { AppSurface, appSurfaces } from '../surfaces/app_surface';
 
 type AppPage = ComponentType<StudioAppProps>;
 
@@ -129,7 +131,11 @@ export const AppHost = ({
   path: string;
   openApp: (id: string, path: string) => void;
 }) => {
-  const { runtime, theme } = useStudio();
+  const { runtime, theme, rasterizePng, renderPdf } = useStudio();
+  const surfaces = useMemo(
+    () => appSurfaces(runtime, Boolean(rasterizePng)),
+    [runtime, rasterizePng]
+  );
   const [attempt, setAttempt] = useState(0);
   const loaded = useAppPage(load, attempt);
   const navigate = useCallback(
@@ -152,7 +158,12 @@ export const AppHost = ({
   return (
     <div css={fill}>
       <AppBoundary key={`${version}/${attempt}`} {...{ title, onRetry }}>
-        <Page Preview={AppPreview} {...{ runtime, theme, path, navigate }} />
+        <Page
+          Preview={AppPreview}
+          Surface={AppSurface}
+          {...{ runtime, theme, path, navigate, surfaces }}
+          {...(renderPdf ? { renderPdf } : {})}
+        />
       </AppBoundary>
     </div>
   );

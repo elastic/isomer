@@ -53,7 +53,7 @@ interface FrameViewport<TTheme> {
 
 An image has no media queries, so it must commit to one palette; `bindFrame` resolves `light`/`dark` per render and `auto` resolves light. The type is named for the viewport rather than the frame because `wrap` draws *a* frame within it.
 
-`BoundFrame.resolveTheme(mode)` resolves the same palette, erased to `unknown`. The `snapshot` surface calls it once per render and hands the result to `renderSnapshot` as `theme`, which reaches a primitive's `react` renderer as `env.theme` — see [Dispatch](dispatch.md).
+`BoundFrame.resolveTheme(mode)` resolves the same palette, erased to `unknown`. The `snapshot` surface calls it once per render and hands the result to `renderSnapshot` as `theme`, which reaches a primitive's `react` renderer as `env.theme` — see [Dispatch](dispatch.md), and [Light and dark](rendering.md#light-and-dark) for drawing with it.
 
 ## `bindFrame`, and the theme bound around it
 

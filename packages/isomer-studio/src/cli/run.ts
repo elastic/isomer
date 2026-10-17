@@ -14,11 +14,12 @@ import { checkStudio } from '../node/check';
 import type { DevServer } from '../node/dev_server';
 import { startDevServer } from '../node/dev_server';
 import {
+  importStudioModule,
   loadRenderToString,
   loadStudioConfig,
   resolveConfigPath,
 } from '../node/load_config';
-import { createRasterizer } from '../node/rasterize';
+import { createRasterizer, imageFontsOf } from '../node/rasterize';
 import { formatReport, summarizeReport } from '../node/report';
 
 import type { CliArgs } from './args';
@@ -90,7 +91,12 @@ const runCommand = async (
     case 'check': {
       const config = await loadStudioConfig(configPath, { loader });
       const rasterizePng = args.png
-        ? createRasterizer(config.runtime)
+        ? createRasterizer(
+            config.runtime,
+            imageFontsOf(config, configPath, (path) =>
+              importStudioModule(path, { loader })
+            )
+          )
         : undefined;
       if (args.png && !rasterizePng) {
         stderr('--png: the runtime has no snapshot surface, so no PNGs.\n');

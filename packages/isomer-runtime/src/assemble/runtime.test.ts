@@ -1971,6 +1971,75 @@ describe('createIsomerRuntime', () => {
     expect(schemes).toEqual(['dark', 'light', 'light']);
   });
 
+  it.each(['light', 'dark', 'auto'] as const)(
+    'inherits the %s frame palette across packs and snapshot entry points',
+    (theme) => {
+      const light = '#E3E8F2';
+      const dark = '#2B394F';
+      const coloredNote = definePrimitive<NoteNode>({
+        ...notePrimitive,
+        renderers: {
+          ...notePrimitive.renderers,
+          react: (_node, { theme: palette }) => {
+            const ink =
+              palette === 'dark-theme'
+                ? dark
+                : palette === 'light-theme'
+                  ? light
+                  : `light-dark(${light}, ${dark})`;
+            return createElement(
+              'div',
+              { style: { border: `1px solid ${ink}` } },
+              createElement(
+                'svg',
+                null,
+                createElement('path', {
+                  fill: palette === 'dark-theme' ? dark : light,
+                })
+              )
+            );
+          },
+        },
+      });
+      const runtime = createIsomerRuntime({
+        packs: [
+          snapshotPackOf(wrapPrimitive),
+          definePrimitivePack<string>({
+            id: 'test.colors',
+            primitives: [coloredNote],
+          }),
+        ],
+        frames: { card: testFrame },
+      });
+      const root: WrapNode = {
+        type: 'wrap',
+        items: [
+          {
+            type: 'wrap',
+            items: [{ type: 'note', text: 'nested', surfaces: ['snapshot'] }],
+          },
+        ],
+      };
+      const composition = { type: 'view' as const, body: [root] };
+      const { snapshot } = runtime.surfaces;
+      const options = { theme, height: 40 };
+      const results = [
+        snapshot.render(composition, options),
+        snapshot.renderNode(root, options),
+        ...snapshot.renderPages([composition, composition], options).pages,
+      ];
+      for (const { html } of results) {
+        const ink = theme === 'dark' ? dark : light;
+        expect(html).toContain(`fill="${ink}"`);
+        expect(html).toContain(`border:1px solid ${ink}`);
+        expect(html).not.toContain('light-dark(');
+      }
+      expect(runtime.surfaces.html.render(composition).body).not.toContain(
+        '<path'
+      );
+    }
+  );
+
   it('renders a view and a single node through the runtime frame', () => {
     const runtime = drawingRuntime(notePrimitive);
 

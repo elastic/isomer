@@ -23,6 +23,7 @@ let stylesheet: string | undefined;
 
 export default defineStudioConfig({
   runtime,
+  imageFonts: './studio/image_fonts.ts',
   apps: [
     {
       id: 'decks',

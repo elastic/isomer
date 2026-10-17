@@ -9,12 +9,15 @@ export type {
   StudioApp,
   StudioAppPage,
   StudioAppProps,
+  StudioAppSurface,
   StudioCompose,
   StudioConfig,
   StudioPreviewProps,
   StudioRuntime,
+  StudioSurfaceProps,
   StudioTheme,
 } from './config';
 export { defineStudioConfig } from './config';
 export { adoptStylesheet } from './surfaces/adopt_stylesheet';
 export type { PreviewZoom } from './surfaces/scaled_preview';
+export type { RenderPdf } from './types';

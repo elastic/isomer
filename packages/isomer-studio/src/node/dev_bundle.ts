@@ -40,14 +40,15 @@ export const withImporters = <T extends { importers: Iterable<T> }>(
   return found;
 };
 
-/** Receives the server-side modules a change invalidates, when they include the config. */
+/** Receives the server-side modules a change invalidates, when they include the config or a file it reloads with. */
 export type ConfigChangeHandler = (
   stale: ReadonlySet<EnvironmentModuleNode>
 ) => Promise<void>;
 
 const studioEntry = (
   configPath: string,
-  onConfigChange: ConfigChangeHandler
+  onConfigChange: ConfigChangeHandler,
+  reloadsWith: () => Iterable<string>
 ): Plugin => {
   const configFile = normalizePath(configPath);
   return {
@@ -60,7 +61,8 @@ const studioEntry = (
         return;
       }
       const stale = withImporters(modules);
-      if (![...stale].some(({ file }) => file === configFile)) {
+      const roots = new Set([configFile, ...reloadsWith()]);
+      if (![...stale].some(({ file }) => file !== null && roots.has(file))) {
         return;
       }
       await onConfigChange(stale);
@@ -74,10 +76,13 @@ export const devViteConfig = ({
   configPath,
   server,
   onConfigChange,
+  reloadsWith = () => [],
 }: {
   configPath: string;
   server: Server;
   onConfigChange: ConfigChangeHandler;
+  /** Server-side entries other than the config, such as its `imageFonts` module, whose changes also re-run it. */
+  reloadsWith?: (() => Iterable<string>) | undefined;
 }): InlineConfig => {
   const root = dirname(configPath);
   return {
@@ -105,6 +110,6 @@ export const devViteConfig = ({
         ? ['@elastic/isomer-studio > @emotion/react/jsx-dev-runtime']
         : [],
     },
-    plugins: [studioEntry(configPath, onConfigChange), react()],
+    plugins: [studioEntry(configPath, onConfigChange, reloadsWith), react()],
   };
 };

@@ -6,7 +6,7 @@
  */
 
 import type { StudioConfig } from '../config';
-import type { JsxTransform, RasterizePng } from '../types';
+import type { JsxTransform, RasterizePng, RenderPdf } from '../types';
 
 import type { StudioHost } from './mount';
 import { assetUrl } from './mount';
@@ -35,8 +35,20 @@ const rasterizePng: RasterizePng = async (composition, { signal }) => {
   return response.blob();
 };
 
-/** `isomer-studio dev`: the server compiles JSX and rasterizes PNGs. */
+const renderPdf: RenderPdf = async (compositions, { title, signal } = {}) => {
+  const response = await fetch(assetUrl('pdf'), {
+    method: 'POST',
+    body: JSON.stringify({ title, compositions }),
+    ...(signal ? { signal } : {}),
+  });
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+  return response.blob();
+};
+
+/** `isomer-studio dev`: the server compiles JSX, rasterizes PNGs and writes PDFs. */
 export const devHost = ({ runtime }: StudioConfig): StudioHost => ({
   transformJsx,
-  rasterizePng: runtime.surfaces.snapshot ? rasterizePng : undefined,
+  ...(runtime.surfaces.snapshot ? { rasterizePng, renderPdf } : {}),
 });

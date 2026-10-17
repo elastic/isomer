@@ -13,7 +13,7 @@ import type { ZodType } from 'zod';
 
 import type { StudioApp, StudioRuntime, StudioTheme } from './config';
 import type { RuntimeDocs } from './model/describe_runtime';
-import type { JsxTransform, RasterizePng } from './types';
+import type { JsxTransform, RasterizePng, RenderPdf } from './types';
 
 export type { StudioTheme } from './config';
 
@@ -29,6 +29,7 @@ export interface StudioContextValue {
   createReactContext?: ((root: ShadowRoot) => StyledRenderContext) | undefined;
   transformJsx?: JsxTransform | undefined;
   rasterizePng?: RasterizePng | undefined;
+  renderPdf?: RenderPdf | undefined;
 }
 
 const StudioContext = createContext<StudioContextValue | undefined>(undefined);
