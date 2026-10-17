@@ -76,7 +76,7 @@ Types: `ValidationError`, `ValidationResult`, `CheckedValidationResult` (`Valida
 
 ## Root entry — values, URLs, helpers
 
-`assetUrl` and `navigationHref` (each taking `UrlSchemaOptions`, an optional `max` length), `sanitizeAssetUrl`, `sanitizeNavigationHref`, `ASSET_URL_RULE`, `NAVIGATION_HREF_RULE`, `ASSET_URL_MESSAGE`, `NAVIGATION_HREF_MESSAGE`, `BLOCKED_HREF` — see [URL trust](url-trust.md).
+`assetUrl` and `navigationHref` (each taking `UrlSchemaOptions`, an optional `max` length), `sanitizeAssetUrl`, `sanitizeNavigationHref`, `sanitizeParsedAssetUrl`, `sanitizeParsedNavigationHref`, `ASSET_URL_RULE`, `NAVIGATION_HREF_RULE`, `ASSET_URL_MESSAGE`, `NAVIGATION_HREF_MESSAGE`, `BLOCKED_HREF` — see [URL trust](url-trust.md).
 
 `displayValueSchema`, `structuredValueSchema`, `namedColorSchema`, `renderThemeSchema`, `formatDisplayValue` (with `FormatDisplayValueOptions`), `isStructuredValue`, `rawDisplayValue`, `STRUCTURED_VALUE_FORMATS`, `ALL_NAMED_COLORS`, `ISOMER_ERROR_CODES`. `PayloadMeasurement` is the byte breakdown on `HTMLRenderResult.measurement`.
 
@@ -100,7 +100,7 @@ The browser-side helpers, exported here rather than from the root entry: `runEnh
 
 `./text` — `renderTextEnvelope` with `TextEnvelopeOptions`, and `TextEnvelopeDispatcher`. Text formatting is pack-owned; the SDK ships no house style.
 
-`./markdown` — `renderMarkdownEnvelope` with `MarkdownEnvelopeOptions`, `MarkdownEnvelopeDispatcher`, the `md` builder with `MarkdownBlock`, `MarkdownInline`, `MarkdownInlineInput`, and `MarkdownContent`, `serializeMarkdown`, and `splitAuthoredMarkdown` with `SplitAuthoredMarkdownOptions` and `AuthoredMarkdownSegment`, which splits authored Markdown at a host's own elements ([Splitting authored Markdown](rendering.md#splitting-authored-markdown-at-host-elements)).
+`./markdown` — `renderMarkdownEnvelope` with `MarkdownEnvelopeOptions`, `MarkdownEnvelopeDispatcher`, the `md` builder with `MarkdownBlock`, `MarkdownInline`, `MarkdownInlineInput`, and `MarkdownContent`, `serializeMarkdown`, `exceedsParseBudget`, and `splitAuthoredMarkdown` with `SplitAuthoredMarkdownOptions` and `AuthoredMarkdownSegment`, which splits authored Markdown at a host's own elements ([Splitting authored Markdown](rendering.md#splitting-authored-markdown-at-host-elements)).
 
 `./slack` — `renderSlackEnvelope` with `SlackEnvelopeOptions` and `SlackEnvelopeResult`, `SlackEnvelopeDispatcher`, `SLACK_LIMITS`, `createSlackAssetCollector` (`{ prefix? }`), `SlackAssetCollector`, `SlackAssetRequest`, `SlackFileReference`, `isSlackReachableImageUrl`.
 

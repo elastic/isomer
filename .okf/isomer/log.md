@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-16
+
+- **Parse budget and parsed-destination sanitizers are public**: `@elastic/isomer-sdk/markdown` exports `exceedsParseBudget`, and the root entry exports `sanitizeParsedNavigationHref` and `sanitizeParsedAssetUrl`, so a pack rendering Markdown with its own parser applies the SDK's policy instead of a copy. ([#221](https://github.com/elastic/isomer/issues/221))
+
 ## 2026-10-15
 
 - **Slides decks and the Decks app**: the slides pack commits four decks as `decks/<id>.json` in the current vocabulary, with their v0.2.0 originals frozen in `decks/v1/`, and lists them in `deckCatalog`. `src/decks.test.ts` checks that every slide validates, renders on every surface, and fits, and that files, ids and the catalog agree. The Studio's Slide viewer is replaced by a Decks app with one nav page per deck, at `#/app/decks/<id>/<n>/<step>`, which steps through builds and slides by keyboard or buttons and presents full screen. ([#211](https://github.com/elastic/isomer/issues/211))
