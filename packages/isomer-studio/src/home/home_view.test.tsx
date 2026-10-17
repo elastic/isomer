@@ -92,6 +92,41 @@ const featuredTiles = () =>
     .map((tile) => tile.querySelector('a')?.getAttribute('href'));
 
 describe('HomeView', () => {
+  it('exposes a main landmark and headings for its primary sections', () => {
+    renderHome();
+    const main = screen.getByRole('main');
+    expect(
+      within(main).getByRole('heading', {
+        level: 1,
+        name: 'What are we rendering today?',
+      })
+    ).toBeInTheDocument();
+    for (const name of [
+      'Featured primitives',
+      'Applications',
+      'Learn more about Isomer',
+    ]) {
+      expect(
+        within(within(main).getByRole('region', { name })).getByRole(
+          'heading',
+          {
+            level: 2,
+            name,
+          }
+        )
+      ).toBeInTheDocument();
+    }
+    expect(
+      within(main).queryByRole('heading', { name: 'Loaded in this Studio' })
+    ).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('complementary')).getByRole('heading', {
+        name: 'Loaded in this Studio',
+        level: 2,
+      })
+    ).toBeInTheDocument();
+  });
+
   it('features the configured primitives in order, with Docs and Dev links', () => {
     renderHome({ featured: ['statGroup', 'callout'] });
     expect(featuredTiles()).toEqual(['#/docs/statGroup/0', '#/docs/callout/0']);

@@ -27,6 +27,8 @@ export const HOME = {
   docs: ISOMER_MARK.blue,
   dev: ISOMER_MARK.teal,
   app: ISOMER_MARK.yellow,
+  actionSurface: '#302938',
+  actionSurfaceHover: '#382F40',
 } as const;
 
 /** The glows behind the shell: the same stops as Dev and Docs, in the logo's palette. */
@@ -64,6 +66,11 @@ export const sectionLabel = css`
   color: ${HOME.fg2};
 `;
 
+export const sectionHeading = css`
+  margin: 0;
+  font: inherit;
+`;
+
 export const quietLabel = css`
   ${sectionLabel};
   font-size: 11px;
@@ -94,6 +101,15 @@ export const tile = (rows: number) => css`
   &:focus-within {
     background: ${HOME.surface3};
     text-decoration: none;
+  }
+`;
+
+/** Opaque plum keeps the logo-colored actions readable over the shell's glows. */
+export const actionCard = css`
+  background: ${HOME.actionSurface};
+  &:hover,
+  &:focus-within {
+    background: ${HOME.actionSurfaceHover};
   }
 `;
 

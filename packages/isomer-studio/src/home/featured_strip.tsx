@@ -14,9 +14,11 @@ import { formatRoute, GALLERY } from '../chrome/route';
 import type { PrimitiveDoc } from '../model/describe_runtime';
 
 import {
+  actionCard,
   helpTile,
   HOME,
   HOME_NARROW,
+  sectionHeading,
   sectionLabel,
   tile,
   TILE_COLUMNS,
@@ -27,6 +29,7 @@ import {
 } from './tokens';
 
 const GAP = 12;
+const STACKED_PAGE_SIZE = 3;
 
 export interface FeaturedStripProps {
   featured: readonly PrimitiveDoc[];
@@ -43,6 +46,7 @@ const PrimitiveTile = ({ doc }: { doc: PrimitiveDoc }) => {
     <div
       css={[
         tile(4),
+        actionCard,
         css`
           scroll-snap-align: start;
           &:hover,
@@ -100,12 +104,18 @@ const PrimitiveTile = ({ doc }: { doc: PrimitiveDoc }) => {
 export const FeaturedStrip = ({ featured, total }: FeaturedStripProps) => {
   const strip = useRef<HTMLDivElement>(null);
   const [edges, setEdges] = useState({ start: true, end: true });
+  const [stacked, setStacked] = useState(false);
+  const [stackedPage, setStackedPage] = useState(0);
+  const lastStackedPage = Math.floor(featured.length / STACKED_PAGE_SIZE);
+  const currentStackedPage = Math.min(stackedPage, lastStackedPage);
+  const firstStackedTile = currentStackedPage * STACKED_PAGE_SIZE;
 
   const sync = useCallback(() => {
     const element = strip.current;
     if (!element) {
       return;
     }
+    setStacked(getComputedStyle(element).gridAutoFlow === 'row');
     setEdges({
       start: element.scrollLeft <= 1,
       end: element.scrollLeft + element.clientWidth >= element.scrollWidth - 1,
@@ -114,11 +124,28 @@ export const FeaturedStrip = ({ featured, total }: FeaturedStripProps) => {
 
   useEffect(() => {
     sync();
+    const element = strip.current;
+    const observer =
+      typeof ResizeObserver === 'undefined'
+        ? undefined
+        : new ResizeObserver(sync);
+    if (element) {
+      observer?.observe(element);
+    }
     window.addEventListener('resize', sync);
-    return () => window.removeEventListener('resize', sync);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', sync);
+    };
   }, [sync, featured]);
 
   const page = (direction: -1 | 1) => {
+    if (stacked) {
+      setStackedPage(
+        Math.max(0, Math.min(currentStackedPage + direction, lastStackedPage))
+      );
+      return;
+    }
     const element = strip.current;
     const first = element?.firstElementChild;
     if (!element || !first) {
@@ -126,7 +153,12 @@ export const FeaturedStrip = ({ featured, total }: FeaturedStripProps) => {
     }
     const step = first.getBoundingClientRect().width + GAP;
     const perPage = Math.max(1, Math.round((element.clientWidth + GAP) / step));
-    element.scrollBy({ left: direction * step * perPage, behavior: 'smooth' });
+    element.scrollBy({
+      left: direction * step * perPage,
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ? 'instant'
+        : 'smooth',
+    });
   };
 
   const well = css`
@@ -177,20 +209,23 @@ export const FeaturedStrip = ({ featured, total }: FeaturedStripProps) => {
       grid-auto-columns: auto;
       overflow-x: visible;
       scroll-snap-type: none;
+      > :nth-child(-n + ${firstStackedTile}),
+      > :nth-child(n + ${firstStackedTile + STACKED_PAGE_SIZE + 1}) {
+        display: none;
+      }
     }
   `;
 
   return (
     <section css={well} aria-labelledby="isomer-studio-featured">
       <div css={sectionLabel}>
-        <span id="isomer-studio-featured">Featured primitives</span>
+        <h2 id="isomer-studio-featured" css={sectionHeading}>
+          Featured primitives
+        </h2>
         <span
           css={css`
             display: flex;
             gap: 6px;
-            ${HOME_NARROW} {
-              display: none;
-            }
           `}>
           <EuiButtonIcon
             iconType="chevronSingleLeft"
@@ -199,7 +234,7 @@ export const FeaturedStrip = ({ featured, total }: FeaturedStripProps) => {
             display="base"
             css={pager}
             aria-label="Previous primitives"
-            isDisabled={edges.start}
+            isDisabled={stacked ? currentStackedPage === 0 : edges.start}
             onClick={() => page(-1)}
           />
           <EuiButtonIcon
@@ -209,7 +244,9 @@ export const FeaturedStrip = ({ featured, total }: FeaturedStripProps) => {
             display="base"
             css={pager}
             aria-label="Next primitives"
-            isDisabled={edges.end}
+            isDisabled={
+              stacked ? currentStackedPage === lastStackedPage : edges.end
+            }
             onClick={() => page(1)}
           />
         </span>
@@ -222,6 +259,7 @@ export const FeaturedStrip = ({ featured, total }: FeaturedStripProps) => {
           href={formatRoute({ mode: 'docs', page: GALLERY, example: 0 })}
           css={[
             helpTile(4, HOME.docs),
+            actionCard,
             css`
               scroll-snap-align: start;
             `,

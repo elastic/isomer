@@ -157,6 +157,13 @@ export const SurfaceChart = ({
         0 6px 18px rgba(0, 0, 0, 0.45);
       scale: 1.04;
     }
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+      &:hover,
+      &:focus-visible {
+        scale: none;
+      }
+    }
     @container (max-width: ${CONTENT_WIDTH - 1}px) {
       position: static;
       translate: none;
@@ -192,6 +199,15 @@ export const SurfaceChart = ({
     &:focus-visible {
       z-index: 1;
       transform: translateY(-6px);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+      &:hover,
+      &:focus-visible {
+        transform: none;
+        outline: 2px solid ${HOME.accent};
+        outline-offset: 2px;
+      }
     }
     @container (max-width: ${CONTENT_WIDTH - 1}px) {
       position: static;

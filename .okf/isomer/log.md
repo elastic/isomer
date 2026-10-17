@@ -2,6 +2,11 @@
 
 ## 2026-10-16
 
+- **Home keyboard focus matches its dark shell**: links and buttons use a white focus-visible outline instead of inheriting the light-theme blue ring. Featured Docs and Dev actions retain their exact logo colors and reveal when reached by keyboard.
+- **Home respects reduced motion**: chart focus and hover feedback stays stationary when reduced motion is requested, with outlines and color changes retained. Horizontal featured paging reads the current preference on every action and switches from smooth to immediate scrolling.
+- **Stacked featured primitives page three tiles at a time**: narrow Home columns retain Previous and Next controls rather than showing an unbounded list. Hidden pages leave the tab order, the final gallery tile remains reachable, and wider columns retain horizontal browsing.
+- **Home supports landmark and heading navigation**: its primary column is a main landmark, and Featured primitives, Applications, and Learn more about Isomer use level-two headings without changing their visual styling. The loaded-runtime panel stays outside main as a complementary landmark.
+- **Home keeps its logo colors with readable actions**: Docs and Dev retain the exact Isomer logo blue and teal. Featured and learning cards use deeper, opaque plum surfaces in resting, hover, and focus states, improving small-text contrast without pastel action colors.
 - **Home tiles stack in narrow columns**: below 620px of main-column width, Applications, Learn more, and Featured primitives become vertical lists; featured paging gives way to the full list. Studio remains a desktop DX/demo tool, with narrow layouts as a readable fallback.
 - **Wrapped surface cards keep their connections**: Home measures its compact chart with a `ResizeObserver` and draws connectors from the composition through a shared left-side trunk to every card, including subsequent rows.
 - **Studio Home adapts to its column**: the surface chart has explicit stacked grid areas below the wide layout, preventing its diagram from overlapping the explanatory copy. A container query reflows the composition and surface cards when the chart's own column is narrow, and surface labels use 11px type. Home remains a configurable DX landing page with its existing entry points, loaded-runtime panel, and featured fallback.

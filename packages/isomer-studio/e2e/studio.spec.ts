@@ -478,9 +478,9 @@ test.describe('static build', () => {
           return {
             narrow,
             stacked: groups.every((group) => {
-              const boxes = Array.from(group.lastElementChild!.children).map(
-                (child) => child.getBoundingClientRect()
-              );
+              const boxes = Array.from(group.lastElementChild!.children)
+                .map((child) => child.getBoundingClientRect())
+                .filter((box) => box.width > 0 && box.height > 0);
               return boxes.every(
                 (box, index) =>
                   index === 0 || box.top >= boxes[index - 1]!.bottom - 1
@@ -492,9 +492,116 @@ test.describe('static build', () => {
           };
         });
       expect(tiles.stacked).toBe(tiles.narrow);
-      expect(tiles.pagerVisible).toBe(!tiles.narrow);
+      expect(tiles.pagerVisible).toBe(true);
+      const firstTile = page.getByTestId('featured-primitive').first();
+      await firstTile.getByRole('link', { name: 'Docs →' }).focus();
+      await page.keyboard.press('Tab');
+      const dev = firstTile.getByRole('link', { name: 'Dev →' });
+      await expect(dev).toBeFocused();
+      await expect(dev).toHaveCSS('outline-color', 'rgb(255, 255, 255)');
+      await expect(dev).toHaveCSS('outline-style', 'solid');
+      await expect(dev.locator('..')).toHaveCSS('opacity', '1');
     });
   }
+
+  test('respects reduced motion for chart feedback and featured paging', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1920, height: 900 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto(site.url);
+    const chart = page.getByRole('region', {
+      name: 'One composition, every surface',
+    });
+    const items = chart.locator('[tabindex="0"]');
+    for (const index of [0, 1]) {
+      const item = items.nth(index);
+      await item.focus();
+      await expect(item).toHaveCSS('transition-duration', '0s');
+      await expect(item).toHaveCSS('transform', 'none');
+      await expect(item).toHaveCSS('scale', 'none');
+      await item.hover();
+      await expect(item).toHaveCSS('transform', 'none');
+      await expect(item).toHaveCSS('scale', 'none');
+    }
+    const featured = page.getByRole('region', {
+      name: 'Featured primitives',
+      exact: true,
+    });
+    const next = featured.getByRole('button', { name: 'Next primitives' });
+    const strip = featured.locator(':scope > div:last-child');
+    await strip.evaluate((element) => {
+      element.scrollBy = (options?: ScrollToOptions | number) => {
+        element.setAttribute(
+          'data-scroll-behavior',
+          typeof options === 'object' ? String(options.behavior) : 'number'
+        );
+      };
+    });
+    if (await next.isEnabled()) {
+      await next.click();
+      await expect(strip).toHaveAttribute('data-scroll-behavior', 'instant');
+    }
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    if (await next.isEnabled()) {
+      await next.click();
+      await expect(strip).toHaveAttribute('data-scroll-behavior', 'smooth');
+    }
+    await items.nth(1).focus();
+    await items.nth(1).hover();
+    await expect(items.nth(1)).toHaveCSS('transition-duration', '0.12s');
+    await expect(items.nth(1)).not.toHaveCSS('transform', 'none');
+  });
+
+  test('pages stacked featured tiles three at a time and preserves desktop browsing', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 900 });
+    await page.goto(site.url);
+    const featured = page.getByRole('region', {
+      name: 'Featured primitives',
+      exact: true,
+    });
+    const tiles = featured.locator(':scope > div:last-child > *');
+    const visible = featured.locator(':scope > div:last-child > :visible');
+    const previous = featured.getByRole('button', {
+      name: 'Previous primitives',
+    });
+    const next = featured.getByRole('button', { name: 'Next primitives' });
+    const count = await tiles.count();
+    expect(count).toBeGreaterThan(0);
+    await expect(previous).toBeDisabled();
+    for (let offset = 0; offset < count; offset += 3) {
+      await expect(visible).toHaveCount(Math.min(3, count - offset));
+      expect(await visible.allTextContents()).toEqual(
+        (await tiles.allTextContents()).slice(offset, offset + 3)
+      );
+      if (offset + 3 < count) {
+        await next.click();
+      }
+    }
+    await expect(next).toBeDisabled();
+    await expect(
+      featured.getByRole('link', { name: /Open the gallery/ })
+    ).toBeVisible();
+    if (count <= 3) {
+      await expect(previous).toBeDisabled();
+      await page.setViewportSize({ width: 1920, height: 900 });
+      await expect(visible).toHaveCount(count);
+      return;
+    }
+    await previous.click();
+    await expect(next).toBeEnabled();
+    await page.setViewportSize({ width: 1920, height: 900 });
+    await expect(visible).toHaveCount(count);
+    await expect(previous).toBeDisabled();
+    await expect(next).toBeEnabled();
+    await next.click();
+    await expect(previous).toBeEnabled();
+    await page.setViewportSize({ width: 390, height: 900 });
+    await expect(visible).toHaveCount(3);
+    await expect(next).toBeEnabled();
+  });
 });
 
 test.describe('decks', () => {

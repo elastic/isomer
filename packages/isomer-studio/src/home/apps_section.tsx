@@ -16,6 +16,7 @@ import { APPS_DOCS_URL } from './links';
 import {
   helpTile,
   HOME,
+  sectionHeading,
   sectionLabel,
   tile,
   tileActions,
@@ -114,7 +115,9 @@ export const AppsSection = ({ apps }: { apps: readonly StudioApp[] }) => (
       gap: 10px;
     `}>
     <div css={sectionLabel}>
-      <span id="isomer-studio-applications">Applications</span>
+      <h2 id="isomer-studio-applications" css={sectionHeading}>
+        Applications
+      </h2>
     </div>
     <div css={tilesGrid}>
       {apps.map((app) => (

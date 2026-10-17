@@ -23,11 +23,13 @@ import { DOCS_URL, LICENSE_URL, REPO_URL } from './links';
 import { LoadedPanel } from './loaded_panel';
 import { SurfaceChart } from './surface_chart';
 import {
+  actionCard,
   CONTENT_WIDTH,
   GUTTER,
   HOME,
   HOME_NARROW,
   PANEL_WIDTH,
+  sectionHeading,
   sectionLabel,
   TILE_COLUMNS,
   WIDE,
@@ -63,6 +65,7 @@ const Door = ({
     href={href}
     {...(external ? { target: '_blank', rel: 'noopener' } : {})}
     css={css`
+      ${actionCard};
       display: grid;
       grid-template-rows: subgrid;
       grid-row: span 3;
@@ -71,7 +74,6 @@ const Door = ({
       border-radius: 10px;
       box-sizing: border-box;
       min-height: 96px;
-      background: ${HOME.surface1};
       border: 1px solid ${HOME.line2};
       color: ${HOME.fg2};
       text-decoration: none;
@@ -80,7 +82,6 @@ const Door = ({
         border-color 0.12s;
       &:hover,
       &:focus-visible {
-        background: ${HOME.surface3};
         border-color: ${color};
         text-decoration: none;
       }
@@ -172,6 +173,11 @@ export const HomeView = ({
     color: ${HOME.fg2};
     font-size: 14px;
     line-height: 1.5;
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid ${HOME.fg};
+      outline-offset: 2px;
+    }
   `;
   const columns = css`
     flex: 1;
@@ -288,7 +294,7 @@ export const HomeView = ({
         </EuiCallOut>
       ) : null}
       <div css={columns}>
-        <div css={main}>
+        <main css={main}>
           <div css={content}>
             <div
               css={css`
@@ -391,7 +397,9 @@ export const HomeView = ({
                 gap: 10px;
               `}>
               <div css={sectionLabel}>
-                <span id="isomer-studio-learn">Learn more about Isomer</span>
+                <h2 id="isomer-studio-learn" css={sectionHeading}>
+                  Learn more about Isomer
+                </h2>
               </div>
               <div
                 css={css`
@@ -438,7 +446,7 @@ export const HomeView = ({
 
             <SurfaceChart {...{ surfaces }} />
           </div>
-        </div>
+        </main>
 
         <aside css={aside}>
           <LoadedPanel {...{ surfaces }} />
