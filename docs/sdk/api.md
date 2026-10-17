@@ -120,11 +120,11 @@ Agent prompts: `buildAuthoringPrompt` (`AuthoringPromptContext`), `formatPrimiti
 
 ## `./testing`
 
-`runPrimitiveInventoryConformance` checks the inventory itself: every definition has an example, `catalog.name` and example names are non-empty, example names are unique within a definition, each example's `type` matches, and `catalog.example` parses or matches a published example. `primitiveConformanceRows` crosses every definition's examples (`PrimitiveConformanceExample`, whose `exampleName` is set for a named one) with the cases (`PrimitiveConformanceCase`) for `it.each`. `CONFORMANCE_FOREIGN_MARKER` is the string a container's `nestForeignChild` case checks for. `assertPackRegistrationComplete` (`PackRegistrationOptions`) separately checks that every directory under a pack's `src/primitives/` is registered. `assertPackIconsValid` checks every icon in a pack's `icons` against the [icon rules](primitives.md#names-and-icons), throwing one error that names each offending type; it reads no filesystem.
+`runPrimitiveInventoryConformance` checks the inventory itself: every definition has an example, `catalog.name` and example names are non-empty, example names are unique within a definition, each example's `type` matches, and `catalog.example` parses or matches a published example. `primitiveConformanceRows` crosses every definition's examples (`PrimitiveConformanceExample`, whose `exampleName` is set for a named one) with the cases (`PrimitiveConformanceCase`) for `it.each`. `CONFORMANCE_FIXTURE_TITLE` is the title `wrapComposition` must use, and `CONFORMANCE_FOREIGN_MARKER` is the string a container's `nestForeignChild` case checks for. `assertPackRegistrationComplete` (`PackRegistrationOptions`) separately checks that every directory under a pack's `src/primitives/` is registered. `assertPackIconsValid` checks every icon in a pack's `icons` against the [icon rules](primitives.md#names-and-icons), throwing one error that names each offending type; it reads no filesystem.
 
 ### The harness contract
 
-A pack supplies a `PrimitiveConformanceHarness` closing over its own dispatcher, frame, and theme. Unsuffixed members take one node; `Composition`-suffixed members take the whole composition.
+A pack supplies a `PrimitiveConformanceHarness` closing over its own dispatcher, frame, and theme; `createRuntimeConformanceHarness` from `@elastic/isomer-runtime/testing` derives one from an `IsomerRuntime`, and a pack passes only what the runtime cannot answer. Unsuffixed members take one node; `Composition`-suffixed members take the whole composition.
 
 | Member | Required | Contract |
 | --- | --- | --- |
