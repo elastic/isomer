@@ -34,6 +34,19 @@ Protocol-relative forms are rejected including the backslash variants browsers f
 
 Authored Markdown is parsed as GFM. Its already-decoded destinations are checked without another reference decode; nested labels and HTML blocks receive the same policy. Reference definitions are resolved at each use: links use the navigation policy and images use the asset policy, so a shared definition can remain valid for one and be blocked for the other. Source beyond 16,384 UTF-16 code units, 2,048 syntax delimiters (a backslash escape counts once), or 256 characters of container prefix degrades to inert text rather than entering the parser.
 
+`sanitizeParsedNavigationHref` and `sanitizeParsedAssetUrl` apply the same policies to a destination a Markdown parser has already decoded, without decoding it again, and `exceedsParseBudget` from `@elastic/isomer-sdk/markdown` reports whether source is past the parse budget above. A pack rendering Markdown with a parser of its own uses them in place of copies:
+
+```tsx
+import { sanitizeParsedAssetUrl, sanitizeParsedNavigationHref } from '@elastic/isomer-sdk';
+import { exceedsParseBudget } from '@elastic/isomer-sdk/markdown';
+
+const urlTransform = (url: string, key: string) =>
+  (key === 'src' ? sanitizeParsedAssetUrl : sanitizeParsedNavigationHref)(url) ?? '';
+
+const render = (source: string) =>
+  exceedsParseBudget(source) ? <pre>{source}</pre> : <Markdown {...{ urlTransform }}>{source}</Markdown>;
+```
+
 ## Using it in a primitive
 
 ```ts

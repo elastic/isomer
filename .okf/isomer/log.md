@@ -2,6 +2,7 @@
 
 ## 2026-10-16
 
+- **Parse budget and parsed-destination sanitizers are public**: `@elastic/isomer-sdk/markdown` exports `exceedsParseBudget`, and the root entry exports `sanitizeParsedNavigationHref` and `sanitizeParsedAssetUrl`, so a pack rendering Markdown with its own parser applies the SDK's policy instead of a copy. ([#221](https://github.com/elastic/isomer/issues/221))
 - **The authoring context is built on first use**: `createIsomerRuntime` no longer builds the authoring schema, body schema, declarations, catalog, and groups. The first `getAuthoringContext()` call builds them and later calls reuse them, so a runtime that only validates and renders never holds them in memory.
 
 ## 2026-10-15

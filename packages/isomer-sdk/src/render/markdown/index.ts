@@ -11,6 +11,7 @@ export {
   type MarkdownEnvelopeOptions,
   renderMarkdownEnvelope,
 } from './envelope';
+export { exceedsParseBudget } from './format';
 
 export {
   type AuthoredMarkdownSegment,
