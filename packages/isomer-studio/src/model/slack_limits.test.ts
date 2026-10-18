@@ -10,9 +10,9 @@ import type {
   SlackBlock,
   SlackOptionObject,
 } from '@elastic/isomer-sdk/slack';
-import { SLACK_LIMITS } from '@elastic/isomer-sdk/slack';
+import { SLACK_LIMITS, unmodeledSlackBlock } from '@elastic/isomer-sdk/slack';
 
-import { slackLimitProblems } from './slack_limits';
+import { slackLimitProblems, unmodeledSlackNotes } from './slack_limits';
 
 const plain = (text: string) => ({ type: 'plain_text' as const, text });
 const mrkdwn = (text: string) => ({ type: 'mrkdwn' as const, text });
@@ -404,6 +404,34 @@ describe('slackLimitProblems', () => {
       })
     ).toEqual([
       `blocks[0] (actions) elements[0] text has ${SLACK_LIMITS.buttonTextChars + 1} characters; Slack allows ${SLACK_LIMITS.buttonTextChars}.`,
+    ]);
+  });
+
+  it('names a wrapped block of a type Isomer models, and leaves an unmodeled one alone', () => {
+    const type: string = 'divider';
+    expect(
+      slackLimitProblems({
+        text: 'T',
+        blocks: [
+          unmodeledSlackBlock({ type: 'carousel', elements: [] }),
+          unmodeledSlackBlock({ type }),
+        ],
+      })
+    ).toEqual([
+      'blocks[1] (divider) is wrapped in `unmodeledSlackBlock`, but Isomer models `divider` blocks: return it unwrapped so its limits are fitted.',
+    ]);
+  });
+});
+
+describe('unmodeledSlackNotes', () => {
+  it('notes each type Isomer does not model once, wrapped or not', () => {
+    const blocks = [
+      unmodeledSlackBlock({ type: 'carousel', elements: [] }),
+      { type: 'carousel' } as unknown as SlackBlock,
+      { type: 'divider' } satisfies SlackBlock,
+    ];
+    expect(unmodeledSlackNotes(blocks)).toEqual([
+      "Isomer doesn't model `carousel` blocks, so their Slack limits aren't checked and this preview may not draw them. Check the message in Block Kit Builder.",
     ]);
   });
 });

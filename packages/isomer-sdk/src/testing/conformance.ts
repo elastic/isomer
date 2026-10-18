@@ -30,6 +30,10 @@ import {
 } from '../render/anchors';
 import type { HTMLRenderResult } from '../render/html/envelope';
 import type { SlackBlock } from '../render/slack/blocks';
+import {
+  isModeledSlackBlockType,
+  isUnmodeledSlackBlock,
+} from '../render/slack/unmodeled';
 import { checkInputBudget } from '../validate/input_budget';
 import type { ValidationResult } from '../validate/validation';
 
@@ -366,6 +370,19 @@ export const primitiveConformanceCases: readonly PrimitiveConformanceCase[] = [
       for (const block of blocks) {
         assert.equal(typeof block, 'object');
         assert.equal(typeof block.type, 'string');
+      }
+    },
+  },
+  {
+    name: 'wraps only Slack blocks Isomer does not model',
+    run: (example, harness) => {
+      for (const { type } of harness
+        .renderSlack(example.node)
+        .filter(isUnmodeledSlackBlock)) {
+        assert.ok(
+          !isModeledSlackBlockType(type),
+          `Isomer models \`${type}\` blocks: return this one without \`unmodeledSlackBlock\`. ${previewHint(example)}`
+        );
       }
     },
   },

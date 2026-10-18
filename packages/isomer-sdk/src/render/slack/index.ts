@@ -75,3 +75,9 @@ export {
 } from './format';
 
 export { markdownContentToSlackBlocks } from './markdown_content';
+
+export {
+  isModeledSlackBlockType,
+  isUnmodeledSlackBlock,
+  unmodeledSlackBlock,
+} from './unmodeled';

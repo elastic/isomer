@@ -40,6 +40,7 @@ import {
   formatHeaderText,
   italic,
 } from './format';
+import { isUnmodeledSlackBlock } from './unmodeled';
 
 /**
  * Adds Block Kit to {@link MarkdownEnvelopeDispatcher}.
@@ -91,8 +92,9 @@ export interface SlackEnvelopeResult {
  * fitted to Slack's limits — text is clamped, blocks past a count limit and
  * `rich_text` elements past a section's limit split, tables past a table limit
  * or the message's cell budget become rich text, spacers and then whole blocks
- * are dropped — so the output is always postable. `assets` stays empty
- * unless `collectAssets` is set.
+ * are dropped — so the output is always postable, except for a block from
+ * `unmodeledSlackBlock` or of a type Isomer does not model, which passes
+ * through unfitted. `assets` stays empty unless `collectAssets` is set.
  */
 export const renderSlackEnvelope = <TNode extends PrimitiveNode>(
   composition: Composition<TNode>,
@@ -283,6 +285,9 @@ const chunks = <T>(items: readonly T[], size: number): T[][] =>
 // Splits a block past a count limit into blocks of its type. Only the first
 // keeps a `block_id`, which Slack requires to be unique.
 const splitBlockCounts = (block: SlackBlock): SlackBlock[] => {
+  if (isUnmodeledSlackBlock(block)) {
+    return [block];
+  }
   switch (block.type) {
     case 'context':
       return chunks(block.elements, SLACK_LIMITS.contextElements).map(
@@ -348,7 +353,9 @@ const fitImageUrls = (block: SlackBlock): SlackBlock[] => {
 };
 
 const fitBlock = (block: SlackBlock): SlackBlock[] =>
-  fitImageUrls(block).map(clampBlockText);
+  isUnmodeledSlackBlock(block)
+    ? [block]
+    : fitImageUrls(block).map(clampBlockText);
 
 // Pack renderers build their own blocks, and one overlong text makes Slack
 // reject the whole message.
@@ -461,6 +468,7 @@ const slackSpacerBlock = (): SlackSectionBlock => ({
 });
 
 const isSpacer = (block: SlackBlock): boolean =>
+  !isUnmodeledSlackBlock(block) &&
   block.type === 'section' &&
   block.text?.type === 'mrkdwn' &&
   block.text.text === SLACK_SPACER_TEXT &&
@@ -470,6 +478,7 @@ const isSpacer = (block: SlackBlock): boolean =>
 const isFieldsOnly = (
   block: SlackBlock
 ): block is SlackSectionBlock & { fields: SlackMrkdwnTextObject[] } =>
+  !isUnmodeledSlackBlock(block) &&
   block.type === 'section' &&
   (block.fields?.length ?? 0) > 0 &&
   block.text === undefined &&
@@ -762,7 +771,7 @@ const fitsTableShape = ({ rows }: SlackTableBlock): boolean =>
 const enforceTableLimits = (blocks: readonly SlackBlock[]): SlackBlock[] => {
   let spent = 0;
   return blocks.flatMap((block) => {
-    if (block.type !== 'table') {
+    if (block.type !== 'table' || isUnmodeledSlackBlock(block)) {
       return [block];
     }
     const cost = tableCharCount(block);

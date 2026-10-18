@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-18
+
+- **Slack blocks Isomer does not model yet**: `@elastic/isomer-sdk/slack` exports `unmodeledSlackBlock`, which returns a Block Kit block Isomer does not model as a `SlackBlock`, so a pack can use a new block without an Isomer release. The envelope passes it through unfitted and counts it as one block, the way Slack's 50-block limit counts top-level blocks. A literal `type` Isomer models does not compile; `isUnmodeledSlackBlock` and `isModeledSlackBlockType` back a conformance case and an `isomer-studio check` problem for a wrapper left on a block Isomer now models, and Studio's Slack preview warns about unmodeled blocks. A **Model a Slack block** issue template asks Isomer to model one. ([#234](https://github.com/elastic/isomer/issues/234))
+
 ## 2026-10-16
 
 - **Studio Home**: a configurable DX landing page brings together primitive search, categories, featured Docs/Dev links, apps, learning links, surfaces, and loaded-runtime details; `featured` sets the primitive order (six random picks otherwise), and app `description` supplies tile copy.

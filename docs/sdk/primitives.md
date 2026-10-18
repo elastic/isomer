@@ -95,7 +95,7 @@ There is no `snapshot` renderer. The `snapshot` surface dispatches to `react`: a
 
 A `markdown` renderer returns content built with `md` from `./markdown`. `md` escapes each value where it lands, so authored `*`, `|`, or a leading `#` stays text, and its links and images apply the [URL policy](url-trust.md). Markdown a pack already has, such as authored source, goes through `md.authored`, which sanitizes it and drops it when it is only whitespace. `md.blockquote` quotes blocks, embedded child content included, `md.break()` breaks a paragraph's line with a backslash and prints as a space inside a heading, strong, emphasis, link label, or table cell, and one at the start or end of any of these is dropped, and a `md.table` cell takes one inline run or an array of them.
 
-`slack` is the one optional renderer, and it degrades: with none the dispatcher converts the mandatory markdown to Block Kit, so a missing renderer costs fidelity and nothing else.
+`slack` is the one optional renderer, and it degrades: with none the dispatcher converts the mandatory markdown to Block Kit, so a missing renderer costs fidelity and nothing else. A block Isomer does not model yet goes through `unmodeledSlackBlock` ([Slack blocks Isomer does not model yet](rendering.md#slack-blocks-isomer-does-not-model-yet)).
 
 The second argument is a bag so a new extra on a surface is additive: an existing renderer destructures a subset and keeps compiling. `scope` is a `RenderScope`, the dispatcher erased to `PrimitiveNode` so a container can recurse into a child owned by another pack. Leaf renderers can omit the bag.
 
