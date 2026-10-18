@@ -71,6 +71,8 @@ export {
   type SlackBlock,
   type SlackButtonElement,
   type SlackCheckboxesElement,
+  type SlackContainerBlock,
+  type SlackContainerChildBlock,
   type SlackContextBlock,
   type SlackDividerBlock,
   type SlackFileReference,

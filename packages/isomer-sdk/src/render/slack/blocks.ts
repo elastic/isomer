@@ -11,6 +11,8 @@ export type {
   SlackBlock,
   SlackButtonElement,
   SlackCheckboxesElement,
+  SlackContainerBlock,
+  SlackContainerChildBlock,
   SlackContextBlock,
   SlackDividerBlock,
   SlackFileReference,
@@ -53,7 +55,14 @@ export type {
  * cannot silently trip Slack's validation.
  */
 export const SLACK_LIMITS = {
+  /** Top-level blocks; a `container`'s `child_blocks` do not count. */
   blocksPerMessage: 50,
+  /** `container.title`, which is `plain_text`. */
+  containerTitleChars: 150,
+  /** `container.subtitle`. */
+  containerSubtitleChars: 150,
+  /** `container.child_blocks`; Slack also requires at least one. */
+  containerChildBlocks: 10,
   /** `section.text`. */
   sectionTextChars: 3000,
   /** One entry of `section.fields`. */

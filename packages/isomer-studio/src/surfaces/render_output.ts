@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-import type { SnapshotHeightWarning } from '@elastic/isomer-runtime';
 import type {
   Composition,
   SurfaceName,
@@ -17,6 +16,7 @@ import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
 import type { StudioRuntime } from '../config';
 import type { StudioSurface } from '../model/describe_runtime';
+import { unmodeledSlackNotes } from '../model/slack_limits';
 
 export interface SurfaceOutput {
   /** What the surface produced, as text. */
@@ -29,8 +29,10 @@ export interface SurfaceOutput {
   snapshot?: { css: string; html: string; width: number; height: number };
 }
 
+type RenderWarning = Omit<ValidationWarning, 'surface'>;
+
 type RenderedOutput = Omit<SurfaceOutput, 'warnings'> & {
-  renderWarnings?: readonly SnapshotHeightWarning[];
+  renderWarnings?: readonly RenderWarning[];
 };
 
 const VALIDATION_SURFACE: Readonly<Record<StudioSurface, SurfaceName>> = {
@@ -103,6 +105,9 @@ const render = (
         source: JSON.stringify({ text, blocks }, null, 2),
         language: 'json',
         slack: { text, blocks },
+        renderWarnings: unmodeledSlackNotes(blocks).map((message) => ({
+          message,
+        })),
       };
     }
     case 'snapshot': {
@@ -131,7 +136,7 @@ const render = (
 const surfaceWarnings = (
   validation: ValidationResult,
   surface: SurfaceName,
-  renderWarnings: readonly SnapshotHeightWarning[] = []
+  renderWarnings: readonly RenderWarning[] = []
 ): ValidationWarning[] => {
   const seen = new Set<string>();
 

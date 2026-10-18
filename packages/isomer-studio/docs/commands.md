@@ -148,7 +148,7 @@ For each primitive and example, `check` runs:
 
 - **`icon`:** the primitive has an icon, from the pack's `icons` or its definition, and it passes `assertPackIconsValid`.
 - **`props`:** `compose` returns a composition that validates against the runtime. When it throws or the composition is invalid, every surface for that example is skipped.
-- **One check per surface:** the surface renders without throwing. React renders through `react-dom/server` from the config's React. Slack output is also held to `SLACK_LIMITS` from `@elastic/isomer-sdk/slack`. A surface the primitive has no native renderer for is skipped, not failed.
+- **One check per surface:** the surface renders without throwing. React renders through `react-dom/server` from the config's React. Slack output is also held to `SLACK_LIMITS` from `@elastic/isomer-sdk/slack`, and fails on a block wrapped in `unmodeledSlackBlock` whose type Isomer now models. A surface the primitive has no native renderer for is skipped, not failed.
 - **`png`,** with `--png`: the composition rasterizes.
 
 `check` renders the light theme.
