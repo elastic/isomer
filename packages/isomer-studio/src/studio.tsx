@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   EuiCallOut,
   EuiProvider,
@@ -115,7 +115,18 @@ const Layout = ({
   const mode = app || home ? undefined : route.mode;
   const look: Look = home ? 'home' : (mode ?? 'docs');
   const accent = useAccent(look === 'home' ? 'docs' : look);
-  const [isNavOpen, setNavOpen] = useState(true);
+  const [isNavOpen, setNavOpen] = useState(
+    () => typeof window === 'undefined' || window.innerWidth > 900
+  );
+  useEffect(() => {
+    const closeNavOnNarrowViewport = () => {
+      if (window.innerWidth <= 900) {
+        setNavOpen(false);
+      }
+    };
+    window.addEventListener('resize', closeNavOnNarrowViewport);
+    return () => window.removeEventListener('resize', closeNavOnNarrowViewport);
+  }, []);
   const [devRoute, setDevRoute] = useState(mode === 'dev' ? route : undefined);
   if (mode === 'dev' && devRoute !== route) {
     setDevRoute(route);

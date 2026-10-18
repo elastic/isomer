@@ -391,6 +391,7 @@ export const StudioNav = ({
   app,
   appPath = '',
   isOpen,
+  onToggle,
   onSelect,
   onSelectApp,
 }: StudioNavProps) => {
@@ -462,11 +463,6 @@ export const StudioNav = ({
     padding-block: 0 ${euiTheme.size.m};
     overflow: hidden;
   `;
-  const fieldInset = css`
-    flex: none;
-    margin-inline: ${euiTheme.size.s};
-    margin-block-end: ${euiTheme.size.s};
-  `;
   const scroller = css`
     flex: 1;
     min-block-size: 0;
@@ -519,18 +515,45 @@ export const StudioNav = ({
 
   return (
     <nav css={column} aria-label="Primitives">
-      {isOpen ? (
-        <div css={fieldInset}>
-          <EuiFieldSearch
-            compressed
-            fullWidth
-            placeholder="Filter primitives"
-            value={filter}
-            onChange={({ target: { value } }) => setFilter(value)}
-            aria-label="Filter primitives"
-          />
-        </div>
-      ) : null}
+      <div
+        css={css`
+          display: flex;
+          flex: none;
+          flex-wrap: nowrap;
+          align-items: center;
+          gap: ${euiTheme.size.xs};
+          justify-content: ${isOpen ? 'flex-end' : 'center'};
+          padding-inline: ${isOpen ? euiTheme.size.s : euiTheme.size.xs};
+          margin-block-end: ${isOpen ? euiTheme.size.s : 0};
+        `}>
+        {isOpen ? (
+          <div
+            css={css`
+              flex: 1 1 auto;
+              min-inline-size: 0;
+            `}>
+            <EuiFieldSearch
+              compressed
+              fullWidth
+              placeholder="Filter primitives"
+              value={filter}
+              onChange={({ target: { value } }) => setFilter(value)}
+              aria-label="Filter primitives"
+            />
+          </div>
+        ) : null}
+        <EuiButtonIcon
+          css={css`
+            flex: none;
+          `}
+          display="empty"
+          color="text"
+          iconType={isOpen ? 'chevronSingleLeft' : 'chevronSingleRight'}
+          aria-label={`${isOpen ? 'Collapse' : 'Expand'} primitive navigation`}
+          aria-expanded={isOpen}
+          onClick={onToggle}
+        />
+      </div>
       <div css={scroller}>
         {isOpen ? (
           <>

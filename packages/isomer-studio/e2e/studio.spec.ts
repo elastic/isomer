@@ -381,6 +381,44 @@ test.describe('static build', () => {
     expect(problems).toEqual([]);
   });
 
+  test('keeps the Reference example usable on a mobile viewport', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${site.url}#/docs/slidePipeline/0`);
+    const header = page.locator('header').first();
+    const examples = page.getByRole('region', { name: 'Examples' });
+    const views = examples.getByRole('group', { name: 'Example view' });
+
+    await expect(header).toBeVisible();
+    const outline = page.getByRole('navigation', { name: 'On this page' });
+    const [outlineBox, examplesBox] = await Promise.all([
+      outline.boundingBox(),
+      examples.boundingBox(),
+    ]);
+    expect(outlineBox!.y + outlineBox!.height).toBeLessThanOrEqual(
+      examplesBox!.y
+    );
+    await expect
+      .poll(() =>
+        header.evaluate((element) => element.scrollWidth <= element.clientWidth)
+      )
+      .toBe(true);
+    await expect(
+      page.getByRole('button', { name: 'Expand primitive navigation' })
+    ).toHaveAttribute('aria-expanded', 'false');
+    await expect(
+      views.getByRole('button', { name: 'Example source' })
+    ).toBeVisible();
+
+    await views.getByRole('button', { name: 'Example source' }).click();
+    await expect(examples.getByRole('tabpanel')).toBeVisible();
+    const rendered = views.getByRole('button', { name: 'Rendered' });
+    await rendered.focus();
+    await page.keyboard.press('Enter');
+    await expect(rendered).toHaveAttribute('aria-pressed', 'true');
+  });
+
   for (const width of [320, 390, 768, 900, 901, 1043, 1399, 1400, 1920]) {
     test(`keeps Home's surface chart readable at ${width}px`, async ({
       page,
@@ -494,13 +532,13 @@ test.describe('static build', () => {
       expect(tiles.stacked).toBe(tiles.narrow);
       expect(tiles.pagerVisible).toBe(true);
       const firstTile = page.getByTestId('featured-primitive').first();
-      await firstTile.getByRole('link', { name: 'Docs →' }).focus();
+      await firstTile.getByRole('link', { name: 'Reference →' }).focus();
       await page.keyboard.press('Tab');
-      const dev = firstTile.getByRole('link', { name: 'Dev →' });
-      await expect(dev).toBeFocused();
-      await expect(dev).toHaveCSS('outline-color', 'rgb(255, 255, 255)');
-      await expect(dev).toHaveCSS('outline-style', 'solid');
-      await expect(dev.locator('..')).toHaveCSS('opacity', '1');
+      const workbench = firstTile.getByRole('link', { name: 'Workbench →' });
+      await expect(workbench).toBeFocused();
+      await expect(workbench).toHaveCSS('outline-color', 'rgb(255, 255, 255)');
+      await expect(workbench).toHaveCSS('outline-style', 'solid');
+      await expect(workbench.locator('..')).toHaveCSS('opacity', '1');
     });
   }
 

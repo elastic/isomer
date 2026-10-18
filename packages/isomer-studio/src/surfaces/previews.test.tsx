@@ -499,4 +499,26 @@ describe('SurfaceBoard', () => {
       pngCard.querySelector('[data-test-subj="surfaceFrame"]')
     ).not.toBeInTheDocument();
   });
+
+  it('offers a Workbench route when a reference example fails to render', () => {
+    htmlRender.mockImplementationOnce(() => {
+      throw new Error('HTML renderer failed.');
+    });
+    render(
+      <SurfaceBoard
+        surfaces={['html']}
+        composition={composition('first')}
+        validation={noWarnings}
+        view="render"
+        zoom="fit"
+        errorHref="#/dev/first/0"
+      />,
+      { wrapper: withStudio(studio()) }
+    );
+
+    expect(screen.getByText('HTML renderer failed.')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'Open this example in Workbench' })
+    ).toHaveAttribute('href', '#/dev/first/0');
+  });
 });

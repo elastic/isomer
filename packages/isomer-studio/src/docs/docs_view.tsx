@@ -97,7 +97,7 @@ const Guidance = ({
           ))}
         </ul>
       ) : (
-        <p>Not documented.</p>
+        <p>No guidance has been added for this primitive yet.</p>
       )}
     </EuiText>
   </EuiPanel>
@@ -138,6 +138,7 @@ export const DocsView = ({
         margin-inline: auto;
         padding: ${euiTheme.size.xl} ${euiTheme.size.xxl} ${euiTheme.size.xxxxl};
       `}>
+      <OnThisPage entries={TOC_ENTRIES} {...{ active }} onSelect={setActive} />
       <div
         css={css`
           flex: 1 1 ${CONTENT_BASIS}px;
@@ -146,7 +147,25 @@ export const DocsView = ({
           gap: ${euiTheme.size.xl};
           min-width: 0;
         `}>
-        <PrimitiveHeading {...{ doc }} />
+        <div
+          css={css`
+            display: flex;
+            flex-direction: column;
+            gap: ${euiTheme.size.s};
+          `}>
+          <PrimitiveHeading {...{ doc }} />
+          <EuiText
+            size="s"
+            color="subdued"
+            css={css`
+              max-inline-size: 72ch;
+            `}>
+            <p>
+              Explore the example to see the primitive in context; its guidance
+              and props explain when and how to use it.
+            </p>
+          </EuiText>
+        </div>
 
         <Section id="examples">
           <ExamplesPanel
@@ -184,8 +203,6 @@ export const DocsView = ({
           <PropsTable {...{ props, accent, names }} />
         </Section>
       </div>
-
-      <OnThisPage entries={TOC_ENTRIES} {...{ active }} onSelect={setActive} />
     </div>
   );
 };

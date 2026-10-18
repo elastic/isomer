@@ -36,6 +36,7 @@ interface RenderProps {
   validation: ValidationResult;
   view: SurfaceView;
   zoom: PreviewZoom;
+  errorHref?: string | undefined;
 }
 
 const SurfaceRender = ({
@@ -44,6 +45,7 @@ const SurfaceRender = ({
   validation,
   view,
   zoom,
+  errorHref,
   frameCss,
 }: RenderProps & {
   surface: PreviewSurface;
@@ -53,7 +55,15 @@ const SurfaceRender = ({
   if (surface !== 'png') {
     return (
       <SurfacePreview
-        {...{ surface, composition, validation, view, zoom, frameCss }}
+        {...{
+          surface,
+          composition,
+          validation,
+          view,
+          zoom,
+          frameCss,
+          errorHref,
+        }}
       />
     );
   }
@@ -67,6 +77,7 @@ const SurfaceCard = ({
   composition,
   validation,
   view,
+  errorHref,
 }: Omit<RenderProps, 'zoom'> & { surface: PreviewSurface }) => {
   const { euiTheme } = useEuiTheme();
   const label = PREVIEW_LABELS[surface];
@@ -108,7 +119,7 @@ const SurfaceCard = ({
         </EuiText>
       </div>
       <SurfaceRender
-        {...{ surface, composition, validation, view }}
+        {...{ surface, composition, validation, view, errorHref }}
         zoom="fit"
         frameCss={css`
           aspect-ratio: 16 / 9;
@@ -131,6 +142,7 @@ export const SurfaceBoard = ({
   validation,
   view,
   zoom,
+  errorHref,
 }: SurfaceBoardProps) => {
   const { euiTheme } = useEuiTheme();
   const [only] = surfaces;
@@ -140,7 +152,7 @@ export const SurfaceBoard = ({
       <section aria-label={`${PREVIEW_LABELS[only]} preview`}>
         <SurfaceRender
           surface={only}
-          {...{ composition, validation, view, zoom }}
+          {...{ composition, validation, view, zoom, errorHref }}
         />
       </section>
     );
@@ -164,7 +176,7 @@ export const SurfaceBoard = ({
         {surfaces.map((surface) => (
           <SurfaceCard
             key={surface}
-            {...{ surface, composition, validation, view }}
+            {...{ surface, composition, validation, view, errorHref }}
           />
         ))}
       </div>

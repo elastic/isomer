@@ -70,7 +70,13 @@ const columnsFor = (
       description ? (
         <EuiText size="s">
           <p>
-            <InlineCode text={description} {...{ names }} />
+            <span
+              css={css`
+                display: inline-block;
+                max-inline-size: 72ch;
+              `}>
+              <InlineCode text={description} {...{ names }} />
+            </span>
           </p>
         </EuiText>
       ) : (

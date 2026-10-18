@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-18
+
+- **Studio's primitive docs are Reference and its editor is Workbench**: visible labels and learning copy use those names, while internal component/file names, `#/docs` and `#/dev` routes, and the `isomer-studio dev` CLI command stay stable. Reference prioritizes teaching with an in-context example and guidance; example code is collapsed until requested. Narrow layouts move the page outline into the content flow, and failed reference previews link to the same example in Workbench.
+
 ## 2026-10-16
 
 - **Studio Home**: a configurable DX landing page brings together primitive search, categories, featured Docs/Dev links, apps, learning links, surfaces, and loaded-runtime details; `featured` sets the primitive order (six random picks otherwise), and app `description` supplies tile copy.
