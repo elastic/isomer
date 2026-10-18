@@ -103,7 +103,10 @@ const Workbench = ({
           `}>
           <div
             css={css`
-              flex: none;
+              flex: 0 1 auto;
+              min-height: 0;
+              display: flex;
+              flex-direction: column;
               padding: ${euiTheme.size.s} ${euiTheme.size.base};
             `}>
             <WorkbenchStatus

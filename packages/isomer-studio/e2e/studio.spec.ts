@@ -705,6 +705,95 @@ test.describe('static build', () => {
     await expect(rendered).toHaveAttribute('aria-pressed', 'true');
   });
 
+  test('scrolls only the content when jumping within a Reference page', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1013, height: 600 });
+    await page.goto(`${site.url}#/docs/titleSlide/0`);
+    const header = page.locator('header').first();
+    const main = page.locator('main').first();
+    await page
+      .getByRole('navigation', { name: 'On this page' })
+      .getByRole('button', { name: 'Props', exact: true })
+      .click();
+
+    await expect
+      .poll(() => main.evaluate((element) => element.scrollTop))
+      .toBeGreaterThan(0);
+    await expect
+      .poll(() =>
+        header.evaluate((element) => element.getBoundingClientRect().top)
+      )
+      .toBe(0);
+    expect(
+      await main.evaluate((element) => {
+        let shell = element.parentElement;
+        while (shell && shell.scrollHeight <= shell.clientHeight) {
+          shell = shell.parentElement;
+        }
+        return shell === document.documentElement || shell === null;
+      })
+    ).toBe(true);
+  });
+
+  test('scrolls a long validation list within the workbench footer', async ({
+    page,
+  }) => {
+    test.skip(
+      Boolean(process.env.STUDIO_CONFIG),
+      'needs the repository slides pack'
+    );
+    await page.setViewportSize({ width: 1440, height: 720 });
+    await page.goto(`${site.url}#/dev/slidePipeline/0`);
+    await expectMonacoReady(page);
+    await page
+      .getByRole('group', { name: 'Source format' })
+      .getByRole('button', { name: 'JSON' })
+      .click();
+    await editor(page).locator('.view-lines').click();
+    await expect(async () => {
+      await page.keyboard.press('Control+A');
+      await expect(editor(page).locator('.selected-text').first()).toBeVisible({
+        timeout: 1000,
+      });
+    }).toPass();
+    await page.keyboard.press('Backspace');
+    await page.keyboard.insertText(
+      JSON.stringify({ type: 'slidePipeline', steps: Array(30).fill({}) })
+    );
+    // JSON mode auto-closes the leading brace and quote after the cursor.
+    await page.keyboard.press('Control+Shift+End');
+    await page.keyboard.press('Delete');
+
+    const errors = page.getByRole('region', { name: 'Validation errors' });
+    await expect(errors.getByRole('listitem').nth(20)).toBeAttached();
+    expect(
+      await errors.evaluate(
+        (element) => element.scrollHeight > element.clientHeight
+      )
+    ).toBe(true);
+    const last = errors.getByRole('listitem').last();
+    await expect(last).not.toBeInViewport();
+    await errors.focus();
+    await page.keyboard.press('End');
+    await expect(last).toBeInViewport();
+
+    await page.getByRole('button', { name: 'Props', exact: true }).click();
+    const reference = page.getByRole('region', {
+      name: 'Primitive prop reference',
+    });
+    await expect(reference.getByRole('table')).toBeInViewport();
+    await reference
+      .getByRole('tab', { name: 'SlidePipeline.Step', exact: true })
+      .click();
+    await expect(
+      reference.getByRole('tabpanel', {
+        name: 'SlidePipeline.Step',
+        exact: true,
+      })
+    ).toContainText('title');
+  });
+
   for (const width of [320, 390, 768, 900, 901, 1043, 1399, 1400, 1920]) {
     test(`keeps Home's surface chart readable at ${width}px`, async ({
       page,

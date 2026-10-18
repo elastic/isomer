@@ -128,6 +128,14 @@ export const PropReference = ({
   } = useStudio();
   const references = useMemo(() => {
     const walk = createChildNodeWalker(runtime.primitives);
+    // A primitive's child walker may assume schema-valid props.
+    const walkChildren = (node: Schema) => {
+      try {
+        return walk(node);
+      } catch {
+        return [];
+      }
+    };
     const types = new Set([doc.type]);
     const visited = new Set<unknown>();
     const visit = (node: unknown) => {
@@ -138,7 +146,7 @@ export const PropReference = ({
       if (typeof node.type === 'string') {
         types.add(node.type);
       }
-      walk(node).forEach(({ node: child }) => visit(child));
+      walkChildren(node).forEach(({ node: child }) => visit(child));
     };
     nodes.forEach(visit);
     return [...types].flatMap((type): Reference[] => {
