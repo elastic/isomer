@@ -49,6 +49,7 @@ const value: StudioContextValue = {
 
 const renderNav = (props: Partial<StudioNavProps> = {}) => {
   const onSelectApp = vi.fn();
+  const onToggle = vi.fn();
   render(
     <EuiProvider>
       <StudioContextProvider {...{ value }}>
@@ -56,7 +57,7 @@ const renderNav = (props: Partial<StudioNavProps> = {}) => {
           mode="dev"
           page="callout"
           isOpen
-          onToggle={() => undefined}
+          {...{ onToggle }}
           onSelect={() => undefined}
           {...{ onSelectApp }}
           {...props}
@@ -64,7 +65,7 @@ const renderNav = (props: Partial<StudioNavProps> = {}) => {
       </StudioContextProvider>
     </EuiProvider>
   );
-  return { nav: screen.getByRole('navigation'), onSelectApp };
+  return { nav: screen.getByRole('navigation'), onSelectApp, onToggle };
 };
 
 const isBefore = (a: HTMLElement, b: HTMLElement) =>
@@ -76,6 +77,18 @@ const texts = (elements: readonly HTMLElement[]) =>
   elements.map(({ textContent }) => textContent);
 
 describe('StudioNav app pages', () => {
+  it('places the collapse toggle after the filter in the same toolbar', () => {
+    const { onToggle } = renderNav();
+    const filter = screen.getByRole('searchbox', { name: 'Filter primitives' });
+    const toggle = screen.getByRole('button', {
+      name: 'Collapse primitive sidebar',
+    });
+    expect(isBefore(filter, toggle)).toBe(true);
+    expect(toggle.parentElement).toContainElement(filter);
+    fireEvent.click(toggle);
+    expect(onToggle).toHaveBeenCalledOnce();
+  });
+
   beforeEach(() => {
     window.localStorage.removeItem('isomer-studio:nav-closed-groups');
   });
@@ -196,5 +209,38 @@ describe('StudioNav gallery link', () => {
     expect(
       isBefore(within(nav).getByRole('button', { name: 'Decks' }), gallery)
     ).toBe(true);
+  });
+});
+
+describe('StudioNav compact behavior', () => {
+  it('reveals labels while hovered and can be pinned open', () => {
+    const { nav, onToggle } = renderNav({
+      isOpen: false,
+      isCompact: true,
+    });
+
+    expect(
+      screen.queryByRole('searchbox', { name: 'Filter primitives' })
+    ).not.toBeInTheDocument();
+    fireEvent.mouseEnter(nav);
+    expect(
+      screen.getByRole('searchbox', { name: 'Filter primitives' })
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Pin primitive sidebar' })
+    );
+    expect(onToggle).toHaveBeenCalledOnce();
+  });
+
+  it('reveals labels when keyboard focus enters the compact rail', () => {
+    renderNav({ isOpen: false, isCompact: true });
+    fireEvent.focus(
+      screen.getByRole('button', { name: 'Pin primitive sidebar' })
+    );
+
+    expect(
+      screen.getByRole('searchbox', { name: 'Filter primitives' })
+    ).toBeInTheDocument();
   });
 });

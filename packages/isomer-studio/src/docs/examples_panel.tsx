@@ -48,7 +48,7 @@ export const ExamplesPanel = ({
   const { euiTheme } = useEuiTheme();
   const { runtime, compose, rasterizePng } = useStudio();
   const { examples } = doc;
-  const surfaces = previewSurfaces(doc.surfaces, Boolean(rasterizePng));
+  const surfaces = previewSurfaces(doc.surfaces, Boolean(rasterizePng), true);
   const { showing, select } = useSurfaceSelection(
     surfaces,
     surfaces[0] ? [surfaces[0]] : 'all'

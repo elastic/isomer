@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   EuiCallOut,
   EuiProvider,
@@ -116,10 +116,22 @@ const Layout = ({
   const look: Look = home ? 'home' : (mode ?? 'docs');
   const accent = useAccent(look === 'home' ? 'docs' : look);
   const [isNavOpen, setNavOpen] = useState(true);
+  const [isCompactNav, setCompactNav] = useState(false);
   const [devRoute, setDevRoute] = useState(mode === 'dev' ? route : undefined);
   if (mode === 'dev' && devRoute !== route) {
     setDevRoute(route);
   }
+
+  useEffect(() => {
+    const query = window.matchMedia(`(max-width: ${NAV_WIDTH.compactAt}px)`);
+    const update = () => {
+      setCompactNav(query.matches);
+      setNavOpen(!query.matches);
+    };
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
 
   const shell = css`
     height: 100vh;
@@ -133,14 +145,19 @@ const Layout = ({
     flex: 1;
     min-height: 0;
     display: grid;
-    grid-template-columns: ${isNavOpen ? NAV_WIDTH.open : NAV_WIDTH.closed}px minmax(
-        0,
-        1fr
-      );
+    position: relative;
+    grid-template-columns: ${
+      isCompactNav
+        ? NAV_WIDTH.closed
+        : isNavOpen
+          ? NAV_WIDTH.open
+          : NAV_WIDTH.closed
+    }px minmax(0, 1fr);
     transition: grid-template-columns ${euiTheme.animation.normal}
       ${euiTheme.animation.resistance};
   `;
   const main = css`
+    grid-column: 2;
     min-height: 0;
     margin: 0 ${euiTheme.size.m} ${euiTheme.size.m} 0;
     overflow: auto;
@@ -186,6 +203,7 @@ const Layout = ({
               app={app?.id}
               appPath={isAppRoute(location) ? location.path : undefined}
               isOpen={isNavOpen}
+              isCompact={isCompactNav}
               onToggle={() => setNavOpen((open) => !open)}
               onSelect={(next) =>
                 navigate(
@@ -222,7 +240,11 @@ const Layout = ({
               <>
                 {devRoute ? (
                   <div hidden={mode !== 'dev'} css={fill}>
-                    <DevView route={devRoute} {...{ navigate }} />
+                    <DevView
+                      route={devRoute}
+                      stacked={isCompactNav}
+                      {...{ navigate }}
+                    />
                   </div>
                 ) : null}
                 {mode !== 'docs' ? null : page === GALLERY ? (

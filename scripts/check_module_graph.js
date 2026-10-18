@@ -108,6 +108,13 @@ for (const [packageName, entryRules] of Object.entries(RULES)) {
 /** Packages a package must never reach: no specifier in its source, no entry in its dependency fields. */
 const FORBIDDEN_PACKAGES = {
   '@elastic/isomer-agent-tools': ['@modelcontextprotocol/sdk'],
+  '@elastic/isomer-studio': [
+    '@playwright/test',
+    'playwright',
+    'playwright-core',
+    'puppeteer',
+    'puppeteer-core',
+  ],
 };
 
 for (const [packageName, forbidden] of Object.entries(FORBIDDEN_PACKAGES)) {

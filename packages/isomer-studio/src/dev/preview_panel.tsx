@@ -6,13 +6,7 @@
  */
 
 import React, { useState } from 'react';
-import {
-  EuiFlexGroup,
-  EuiFlexItem,
-  EuiPanel,
-  EuiText,
-  useEuiTheme,
-} from '@elastic/eui';
+import { EuiFlexGroup, EuiFlexItem, useEuiTheme } from '@elastic/eui';
 import type { Composition, ValidationResult } from '@elastic/isomer-sdk';
 import { css } from '@emotion/react';
 
@@ -24,7 +18,6 @@ import type { SurfaceView } from '../surfaces/surface_preview';
 import { SurfaceViewToggle } from '../surfaces/surface_preview';
 import {
   previewSurfaces,
-  surfaceNote,
   SurfaceSelect,
   useSurfaceSelection,
 } from '../surfaces/surface_select';
@@ -36,17 +29,17 @@ export interface PreviewPanelProps {
   supported: readonly StudioSurface[];
 }
 
-/** One card showing the selected surfaces: one at full size, or several in a two-column grid. */
+/** The output column, with its own toolbar and scroll area. */
 export const PreviewPanel = ({
   composition,
   validation,
   supported,
 }: PreviewPanelProps) => {
-  const { euiTheme, colorMode } = useEuiTheme();
+  const { euiTheme } = useEuiTheme();
   const { rasterizePng } = useStudio();
   const [view, setView] = useState<SurfaceView>('render');
   const [zoom, setZoom] = useState<PreviewZoom>('fit');
-  const surfaces = previewSurfaces(supported, Boolean(rasterizePng));
+  const surfaces = previewSurfaces(supported, Boolean(rasterizePng), true);
   const { showing, select } = useSurfaceSelection(surfaces, 'all');
   const bar = css`
     flex-grow: 0;
@@ -54,9 +47,9 @@ export const PreviewPanel = ({
   `;
 
   return (
-    <EuiPanel
-      paddingSize="none"
-      hasShadow
+    <div
+      role="region"
+      aria-label="Outputs"
       css={css`
         height: 100%;
         display: flex;
@@ -102,29 +95,13 @@ export const PreviewPanel = ({
           min-height: 0;
           overflow: auto;
           padding: ${euiTheme.size.base};
-          background: ${
-            colorMode === 'DARK'
-              ? euiTheme.colors.backgroundBaseRecessed
-              : 'transparent'
-          };
+          background: ${euiTheme.colors.backgroundBaseRecessed};
         `}>
         <SurfaceBoard
           surfaces={showing}
           {...{ composition, validation, view, zoom }}
         />
       </div>
-      <EuiText
-        size="xs"
-        color="subdued"
-        css={css`
-          ${bar};
-          border-top: ${euiTheme.border.thin};
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        `}>
-        {surfaceNote(showing, surfaces.length)}
-      </EuiText>
-    </EuiPanel>
+    </div>
   );
 };

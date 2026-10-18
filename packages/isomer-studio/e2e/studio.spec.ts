@@ -208,8 +208,7 @@ const editFirstString = async (page: Page) => {
   await page.keyboard.insertText(edited);
 };
 
-const reactPreview = (page: Page) =>
-  page.getByRole('region', { name: 'React preview' });
+const reactPreview = (page: Page) => page.locator('[title="HTML preview"]');
 
 /** Opens the app from Home and then one of its pages from the nav, deep-links a sub-path through a reload, and checks its styles and `Preview`. */
 const exerciseApp = async (page: Page, url: string) => {
@@ -373,11 +372,298 @@ test.describe('static build', () => {
     expect(problems).toEqual([]);
   });
 
+  test('stacks the Dev editor above all previews when the window is narrow', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 900, height: 1000 });
+    await page.goto(`${site.url}${EDIT_ROUTE}`);
+    await expectMonacoReady(page);
+
+    const panels = page.locator('.euiResizablePanel');
+    const editor = panels.nth(0);
+    const preview = panels.nth(1);
+    await expect
+      .poll(() =>
+        page
+          .locator('.euiResizableContainer')
+          .evaluate((element) => getComputedStyle(element).flexDirection)
+      )
+      .toBe('column');
+
+    const narrowBounds = await Promise.all([
+      editor.boundingBox(),
+      preview.boundingBox(),
+    ]);
+    const editorContentBounds = await editor
+      .getByRole('region', { name: 'Source editor' })
+      .boundingBox();
+    expect(narrowBounds[0]).not.toBeNull();
+    expect(narrowBounds[1]).not.toBeNull();
+    expect(editorContentBounds).not.toBeNull();
+    expect(editorContentBounds!.width).toBeGreaterThanOrEqual(
+      narrowBounds[0]!.width - 2
+    );
+    expect(narrowBounds[1]!.y).toBeGreaterThan(narrowBounds[0]!.y);
+    for (const surface of ['Web', 'Slack', 'Markdown', 'Text', 'PNG']) {
+      await expect(
+        preview.getByRole('heading', { level: 3, name: surface })
+      ).toBeAttached();
+    }
+    await expect(
+      preview.getByRole('combobox', { name: 'Visual preview surface' })
+    ).toHaveCount(0);
+    await expect(preview.getByTitle('HTML preview')).toBeAttached();
+    await expect(editor.locator('[data-keybinding-context]')).toHaveCSS(
+      'border-bottom-width',
+      '0px'
+    );
+    for (const mode of ['Light', 'Dark']) {
+      await page.getByRole('button', { name: mode, exact: true }).click();
+      const backgrounds = await preview
+        .getByRole('region', { name: 'Web preview', exact: true })
+        .evaluate((card) => ({
+          header: getComputedStyle(card.firstElementChild!).backgroundColor,
+          board: getComputedStyle(
+            card.closest('[aria-label="Outputs"]')!.lastElementChild!
+          ).backgroundColor,
+        }));
+      expect(backgrounds.header).not.toBe('rgba(0, 0, 0, 0)');
+      expect(backgrounds.header).not.toBe(backgrounds.board);
+    }
+    const visualGroup = preview.getByRole('region', {
+      name: 'Visual output previews',
+    });
+    const visualGrid = visualGroup.getByRole('region', {
+      name: 'Visual preview grid',
+    });
+    const otherGroup = preview.getByRole('region', {
+      name: 'Other output previews',
+    });
+    await expect
+      .poll(() =>
+        visualGrid.evaluate((element) => ({
+          columns: getComputedStyle(element).gridTemplateColumns,
+          overflows: element.scrollWidth > element.clientWidth,
+        }))
+      )
+      .toMatchObject({ overflows: false });
+    const [visualBounds, otherBounds] = await Promise.all([
+      visualGroup.boundingBox(),
+      otherGroup.boundingBox(),
+    ]);
+    expect(visualBounds).not.toBeNull();
+    expect(otherBounds).not.toBeNull();
+    expect(otherBounds!.y).toBeGreaterThan(visualBounds!.y);
+
+    await page.setViewportSize({ width: 1400, height: 1000 });
+    await expect
+      .poll(() =>
+        page
+          .locator('.euiResizableContainer')
+          .evaluate((element) => getComputedStyle(element).flexDirection)
+      )
+      .toBe('row');
+    const wideBounds = await Promise.all([
+      editor.boundingBox(),
+      preview.boundingBox(),
+    ]);
+    expect(wideBounds[0]!.y).toBe(wideBounds[1]!.y);
+    expect(wideBounds[1]!.x).toBeGreaterThan(wideBounds[0]!.x);
+    await expect
+      .poll(async () => {
+        const [left, right] = await Promise.all([
+          editor.boundingBox(),
+          preview.boundingBox(),
+        ]);
+        return Math.abs(right!.x - (left!.x + left!.width));
+      })
+      .toBeLessThanOrEqual(1);
+    const toolbarBottoms = await Promise.all(
+      ['Source editor', 'Outputs'].map((name) =>
+        page
+          .getByRole('region', { name, exact: true })
+          .evaluate(
+            (element) =>
+              element.firstElementChild!.getBoundingClientRect().bottom
+          )
+      )
+    );
+    expect(
+      Math.abs(toolbarBottoms[0]! - toolbarBottoms[1]!)
+    ).toBeLessThanOrEqual(1);
+    await page.setViewportSize({ width: 2200, height: 700 });
+    for (const group of [visualGroup, otherGroup]) {
+      const cards = group.locator('section[aria-label$=" preview"]');
+      const bounds = await cards.evaluateAll((elements) =>
+        elements.map((element) => {
+          const { x, y, bottom } = element.getBoundingClientRect();
+          return { x, y, bottom };
+        })
+      );
+      for (let index = 1; index < bounds.length; index++) {
+        expect(bounds[index]!.x).toBe(bounds[0]!.x);
+        expect(bounds[index]!.y).toBeGreaterThan(bounds[index - 1]!.bottom);
+      }
+    }
+    const nav = page.getByRole('navigation', { name: 'Primitives' });
+    await nav
+      .getByRole('button', { name: 'Collapse primitive sidebar' })
+      .click();
+    await expect
+      .poll(() =>
+        nav.evaluate((element) => element.getBoundingClientRect().width)
+      )
+      .toBe(72);
+    const railButtons = nav.getByRole('button');
+    const railBounds = await railButtons.evaluateAll((buttons) =>
+      buttons.map((button) => {
+        const { x, width, height } = button.getBoundingClientRect();
+        return { center: x + width / 2, width, height };
+      })
+    );
+    for (const bounds of railBounds) {
+      expect(bounds.width).toBe(32);
+      expect(bounds.height).toBe(32);
+      expect(
+        Math.abs(bounds.center - railBounds[0]!.center)
+      ).toBeLessThanOrEqual(1);
+    }
+    await railButtons.last().scrollIntoViewIfNeeded();
+    await expect(railButtons.first()).toBeInViewport();
+    await expect(railButtons.last()).toBeInViewport();
+  });
+
   test('serves apps, their chunks and their CSS from the sub-path', async ({
     page,
   }) => {
     const problems = watchProblems(page);
     await exerciseApp(page, site.url);
+    expect(problems).toEqual([]);
+  });
+
+  test('toggles real enhancements in the combined browser preview', async ({
+    page,
+  }) => {
+    test.skip(
+      Boolean(process.env.STUDIO_CONFIG),
+      'uses the slides pack copy enhancement'
+    );
+    const problems = watchProblems(page);
+    for (const primitive of ['slideHeading', 'slidePipeline', 'slideCommand']) {
+      await page.goto(`${site.url}#/dev/${primitive}/0`);
+      await expectMonacoReady(page);
+      const panel = page.getByRole('region', {
+        name: 'Web preview',
+      });
+      await expect(panel).toBeVisible();
+      const toggle = panel.getByRole('button', { name: 'Enhancements (0/0)' });
+      if (primitive === 'slideHeading') {
+        await expect(toggle).toBeDisabled();
+      } else {
+        const id = primitive === 'slidePipeline' ? 'slideBuilds' : 'slideCopy';
+        await panel.getByRole('button', { name: 'Enhancements (0/1)' }).click();
+        const applicable = page.getByRole('checkbox', { name: id });
+        await applicable.check();
+        if (primitive === 'slideCommand') {
+          await expect(panel.locator('[data-slide-copy]')).toHaveCount(1);
+        }
+        await applicable.uncheck();
+        await panel.getByRole('button', { name: 'Enhancements (0/1)' }).click();
+      }
+      await expect(
+        page.getByRole('region', { name: 'Primitive prop reference' })
+      ).toHaveCount(0);
+      await page.getByRole('button', { name: 'Props', exact: true }).click();
+      const reference = page.getByRole('region', {
+        name: 'Primitive prop reference',
+      });
+      await expect(reference.getByRole('table')).not.toHaveCount(0);
+      await expect(
+        reference.getByRole('columnheader', { name: 'Description' })
+      ).toHaveCount(1);
+      const referenceBounds = (await reference.boundingBox())!;
+      const editorBounds = (await page
+        .locator('.euiResizablePanel')
+        .first()
+        .boundingBox())!;
+      const previewBounds = (await page
+        .locator('.euiResizablePanel')
+        .nth(1)
+        .boundingBox())!;
+      expect(referenceBounds.width).toBeGreaterThan(editorBounds.width);
+      expect(referenceBounds.width).toBeGreaterThan(previewBounds.width);
+      const resizer = page.getByRole('button', {
+        name: 'Press the left or right arrow keys to adjust panels size',
+      });
+      await resizer.focus();
+      await page.keyboard.press('ArrowRight');
+      expect(
+        Math.abs((await reference.boundingBox())!.width - referenceBounds.width)
+      ).toBeLessThan(2);
+      if (primitive === 'slidePipeline') {
+        const descriptionCell = reference.getByRole('cell').filter({
+          hasText: 'What goes in, as a short code-style chip',
+        });
+        expect((await descriptionCell.boundingBox())!.width).toBeGreaterThan(
+          160
+        );
+      }
+      await expect(page.getByRole('button', { name: '+ Prop' })).toHaveCount(0);
+      if (primitive === 'slidePipeline') {
+        await reference
+          .getByRole('tab', { name: 'SlidePipeline.Step', exact: true })
+          .click();
+        await expect(
+          reference.getByRole('tabpanel', {
+            name: 'SlidePipeline.Step',
+            exact: true,
+          })
+        ).toContainText('title');
+      }
+      const slack = page.locator('#slack_blocks_to_jsx');
+      await expect(slack).toBeAttached();
+      const slackBackground = await slack.evaluate((element) => {
+        const wrapper = element.parentElement!;
+        const theme = element.getAttribute('data-theme');
+        return {
+          actual: getComputedStyle(wrapper).backgroundColor,
+          expected: theme === 'dark' ? 'rgb(26, 29, 33)' : 'rgb(255, 255, 255)',
+        };
+      });
+      expect(slackBackground.actual).toBe(slackBackground.expected);
+      await expect(panel.locator('[data-slide-copy]')).toHaveCount(0);
+      await expect(panel.locator('iframe')).toHaveCount(0);
+      await expect(
+        panel.getByRole('combobox', { name: 'Visual preview surface' })
+      ).toHaveCount(0);
+      await expect(panel.getByTitle('HTML preview')).toBeAttached();
+    }
+    await page.goto(`${site.url}#/dev/slideQuadrant/0`);
+    await expectMonacoReady(page);
+    await page.getByRole('button', { name: 'Props', exact: true }).click();
+    const nestedReference = page.getByRole('region', {
+      name: 'Primitive prop reference',
+    });
+    await expect(
+      nestedReference.getByRole('tab', {
+        name: 'SlideQuadrant.Cell',
+        exact: true,
+      })
+    ).toHaveCount(1);
+    await expect(
+      nestedReference.getByRole('tab', {
+        name: 'SlideQuadrant.Item',
+        exact: true,
+      })
+    ).toHaveCount(1);
+    await expect(
+      nestedReference.getByRole('tab', {
+        name: 'SlideQuadrant.Cell.Item',
+        exact: true,
+      })
+    ).toHaveCount(0);
+    await page.getByRole('button', { name: 'Props', exact: true }).click();
+    await expect(nestedReference).toHaveCount(0);
     expect(problems).toEqual([]);
   });
 
@@ -786,11 +1072,7 @@ test.describe('decks', () => {
     ).toBeVisible();
 
     await output.getByRole('button', { name: 'HTML', exact: true }).click();
-    await page
-      .locator('[data-test-subj="deckOutput"] iframe')
-      .contentFrame()
-      .locator('body')
-      .click();
+    await page.locator('[data-test-subj="deckOutput"] .isomer').click();
     await page.keyboard.press('ArrowRight');
     await expect(counter).toHaveText('8 of 33');
 

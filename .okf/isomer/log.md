@@ -1,5 +1,30 @@
 # Directory Update Log
 
+## 2026-10-18
+
+- **Output section boundaries**: output headers use the plain surface against a recessed canvas in both color modes. Removed Monaco's bottom border so the shared footer has a single divider.
+
+## 2026-10-17
+
+- **Vertical outputs and rail alignment**: all output previews remain single-column, including wide workbenches. Columns abut the overlapping border resizer, retaining toolbar control padding. Widened the collapsed rail to 72 pixels, standardized its buttons and toggle to 32 pixels, centered them, and prevented group compression so short windows scroll to every entry.
+
+- **Unified workbench boundary**: editor, outputs, and reference drawer now share one outer panel. Removed the column card borders, rounded corners, and shadows that collided with the footer divider; preserved independent scrolling and resizing. A visible resizer divider separates the columns; compact source copy keeps the editor toolbar on one row.
+
+- **Attached reference strip**: removed the floating bottom card treatment and gap. Props anchors the left of the flat shared strip, validity sits at the right, and source copy returns to the editor's format controls.
+
+- **Shared workbench prop drawer**: validity, Props and copy span the editor and outputs below their resizer. The full-width drawer selects one relevant component's table through tabs, with proportional columns and top-aligned cells. The white sidebar toggle uses the corrected collapse/expand transition directions.
+
+- **Sidebar toolbar and quieter prop reference**: the collapse/expand button sits to the filter's right, using EUI transition icons. Removed visible prop-reference and component headings while retaining accessible region labels.
+
+- **Compact Dev controls**: collapsed navigation icons are fully opaque white. Web replaces the combined preview's HTML heading; the enhancement checklist always uses a selected/applicable count, even for one choice. Props in the editor status row toggles an initially collapsed reference, with descriptions below names rather than squeezed into a third column. Removed the preview footer hint.
+
+- **Context-aware Dev reference and enhancements**: the editor replaces first-node quick edits and the reference popover with a bottom prop-table panel covering the selected primitive, branded JSX children, nested members and other primitives in the draft. Enhancement controls filter registered definitions through their composition-level applicability predicates and the shared child walker. Slack preview padding matches its message canvas.
+
+- **Output controls follow displayed previews**: the HTML card uses an HTML / React / Snapshot subtitle without redundant group headings or kind badges. Outputs lists consolidated previews without an All surfaces option. Right-aligned enhancement controls expose registered IDs, with an independent checklist for several or a named switch for one.
+- **Shared Dev browser preview**: React, HTML and Snapshot share one panel, using HTML by preference with no per-panel dropdown. HTML and its stylesheet render in a shadow root; the SDK's host helper runs only explicitly requested pack enhancements. Disabling enhancements remounts clean output. PNG stays separate. Source view, Snapshot, unstyled React fallbacks and runtimes without enhancements disable enhancement controls. Consolidation does not assert pixel equality.
+- **No headless capture in Studio**: removed the proposed browser-backed comparison endpoint, capture pages, runtime dependencies and percentage-based matching groups. Studio must not install or launch a headless browser to capture previews; the module-graph gate rejects Playwright and Puppeteer imports and runtime dependencies in Studio. Every selected output remains visible for manual comparison; PNGs continue to use Takumi.
+- **Dev workbench refinement**: a hover/focus-expandable compact sidebar, full-width stacked editor at narrow desktop widths, stronger navigation separators, prop reference, responsive visual comparison grid and readable text-oriented previews preserve access to every surface.
+
 ## 2026-10-16
 
 - **Studio Home**: a configurable DX landing page brings together primitive search, categories, featured Docs/Dev links, apps, learning links, surfaces, and loaded-runtime details; `featured` sets the primitive order (six random picks otherwise), and app `description` supplies tile copy.
