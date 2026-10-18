@@ -17,6 +17,8 @@ The Playwright install is a one-time step that downloads the Chromium `verify` d
 
 `pnpm verify` is the full local gate: typecheck, lint (ESLint with Prettier as a rule, markdownlint, and license headers), tests, the dual ESM/CJS build, and the `check:*` scripts (export parity, package exports, emitted declarations, pack contents, module graph, packed consumer), the Studio's browser tests, and `pnpm licenses:report --check`. CI runs the same command.
 
+`pnpm verify:fast` is the inner loop: typecheck, lint, and the license check side by side, then the tests. It skips the build, the packed checks, and the browser tests, so run `pnpm verify` before opening a PR. ESLint caches results in `node_modules/.cache/eslint/` and rechecks only files whose content changed, so a type-aware rule can miss an error that a change in another file causes; delete the cache, or let CI's fresh run catch it.
+
 CI also runs the typecheck, the node tests, and the packed consumer check at three peer targets: `floor` (the lowest versions the published peer ranges admit), `kibana` (what elastic/kibana pins on `main`), and `latest` (the highest versions they admit). To reproduce one, run `node scripts/apply_peer_target.js <target>` and `pnpm install --no-frozen-lockfile`, then restore `package.json` and `pnpm-lock.yaml`.
 
 Useful individual scripts:

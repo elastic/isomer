@@ -312,25 +312,38 @@ const exerciseApp = async (page: Page, url: string) => {
   }
 };
 
+let builtSite: Promise<string> | undefined;
+let builtSiteDir: string | undefined;
+
+/** One `build` of {@link CONFIG}, shared by every group that serves it statically. */
+const buildSite = (): Promise<string> => {
+  if (PREBUILT_SITE !== undefined) {
+    return Promise.resolve(PREBUILT_SITE);
+  }
+  builtSite ??= (async () => {
+    builtSiteDir = mkdtempSync(join(tmpdir(), 'isomer-studio-site-'));
+    const dir = join(builtSiteDir, 'site');
+    await runCli(['build', '--config', CONFIG, '--out', dir, '--base', BASE]);
+    return dir;
+  })();
+  return builtSite;
+};
+
+test.afterAll(() => {
+  if (builtSiteDir) {
+    rmSync(builtSiteDir, { recursive: true, force: true });
+  }
+});
+
 test.describe('static build', () => {
   let site: StaticServer;
-  let tempDir: string | undefined;
 
   test.beforeAll(async () => {
-    let dir = PREBUILT_SITE;
-    if (dir === undefined) {
-      tempDir = mkdtempSync(join(tmpdir(), 'isomer-studio-site-'));
-      dir = join(tempDir, 'site');
-      await runCli(['build', '--config', CONFIG, '--out', dir, '--base', BASE]);
-    }
-    site = await serveStatic(dir, BASE);
+    site = await serveStatic(await buildSite(), BASE);
   });
 
   test.afterAll(async () => {
     await site.close();
-    if (tempDir) {
-      rmSync(tempDir, { recursive: true, force: true });
-    }
   });
 
   test('serves the Studio from a sub-path with no failed requests', async ({
@@ -1025,18 +1038,13 @@ test.describe('decks', () => {
   );
 
   let site: StaticServer;
-  let tempDir: string;
 
   test.beforeAll(async () => {
-    tempDir = mkdtempSync(join(tmpdir(), 'isomer-studio-decks-'));
-    const dir = join(tempDir, 'site');
-    await runCli(['build', '--config', CONFIG, '--out', dir, '--base', BASE]);
-    site = await serveStatic(dir, BASE);
+    site = await serveStatic(await buildSite(), BASE);
   });
 
   test.afterAll(async () => {
     await site.close();
-    rmSync(tempDir, { recursive: true, force: true });
   });
 
   test('opens a deck from the nav, steps through builds and slides, and keeps the place', async ({
