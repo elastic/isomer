@@ -441,7 +441,7 @@ describe('IsomerStudio', () => {
     expect(screen.queryByRole('option', { name: 'React' })).toBeNull();
     expect(screen.queryByRole('option', { name: 'Snapshot' })).toBeNull();
     fireEvent.click(
-      await screen.findByRole('option', { name: 'HTML', checked: true })
+      await screen.findByRole('option', { name: 'Web', checked: true })
     );
     await waitFor(() =>
       expect(
@@ -457,7 +457,7 @@ describe('IsomerStudio', () => {
       screen.getByRole('region', { name: 'Text preview' })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'Outputs: HTML, Text' })
+      screen.getByRole('button', { name: 'Outputs: Web, Text' })
     ).toBeInTheDocument();
 
     for (const option of screen.getAllByRole('option', { checked: false })) {

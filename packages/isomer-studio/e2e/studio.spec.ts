@@ -705,6 +705,37 @@ test.describe('static build', () => {
     await expect(rendered).toHaveAttribute('aria-pressed', 'true');
   });
 
+  test('scrolls only the content when jumping within a Reference page', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1013, height: 600 });
+    await page.goto(`${site.url}#/docs/titleSlide/0`);
+    const header = page.locator('header').first();
+    const main = page.locator('main').first();
+    await page
+      .getByRole('navigation', { name: 'On this page' })
+      .getByRole('button', { name: 'Props', exact: true })
+      .click();
+
+    await expect
+      .poll(() => main.evaluate((element) => element.scrollTop))
+      .toBeGreaterThan(0);
+    await expect
+      .poll(() =>
+        header.evaluate((element) => element.getBoundingClientRect().top)
+      )
+      .toBe(0);
+    expect(
+      await main.evaluate((element) => {
+        let shell = element.parentElement;
+        while (shell && shell.scrollHeight <= shell.clientHeight) {
+          shell = shell.parentElement;
+        }
+        return shell === document.documentElement || shell === null;
+      })
+    ).toBe(true);
+  });
+
   for (const width of [320, 390, 768, 900, 901, 1043, 1399, 1400, 1920]) {
     test(`keeps Home's surface chart readable at ${width}px`, async ({
       page,
