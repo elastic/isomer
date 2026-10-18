@@ -2617,6 +2617,27 @@ describe('createIsomerRuntime', () => {
       (type: string) =>
       (body: readonly PrimitiveNode[]): boolean =>
         body.some((node) => node.type === type);
+    it('exposes every pack enhancement on the runtime', () => {
+      const runtime = createIsomerRuntime({
+        packs: [
+          definePrimitivePack({
+            id: 'a',
+            surfaces: [],
+            primitives: [notePrimitive],
+            enhancements: [
+              {
+                id: 'noteCopy',
+                name: 'Note copy',
+                appliesTo: hasType('note'),
+              },
+            ],
+          }),
+        ],
+      });
+      expect(runtime.enhancements).toEqual([
+        expect.objectContaining({ id: 'noteCopy', name: 'Note copy' }),
+      ]);
+    });
     const enhancedPacks = () => [
       definePrimitivePack({
         id: 'a',

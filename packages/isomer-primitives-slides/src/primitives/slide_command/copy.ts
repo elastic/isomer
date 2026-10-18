@@ -46,6 +46,9 @@ for (const command of root.querySelectorAll('[${NODE_ANCHOR_ATTRIBUTE}="slideCom
 
 export const slideCopyEnhancement: EnhancementDefinition = {
   id: SLIDE_COPY,
+  name: 'Copy command',
+  description:
+    'Adds a Copy button to each slideCommand when the clipboard API is available.',
   appliesTo: (body, walk) => someBodyNode(body, 'react', isCommand, walk),
   anchors: true,
   script: copyScriptBody,

@@ -90,7 +90,7 @@ A renderer is not told the scheme on `react` or `html`. Under `auto` the page al
 
 ## Enhancements
 
-A progressive enhancement is an id, a content gate, and usually a script. A render keeps the first definition of each requested id whose gate finds content in the composition, the same way on the `html` and React surfaces, so a composition with no table never ships the sort script. The host opts in by id: `enhancements: ['tableSort']`. The HTML render resolves the request once for every pack: the set reaches every renderer as `context.enhancements`, in place of anything the adapter's context holds, and each resolved enhancement's script is emitted once. A set rather than a field per feature, so adding one costs no plumbing:
+A progressive enhancement is an id, optional `name` and `description` for host UI, a content gate, and usually a script. A render keeps the first definition of each requested id whose gate finds content in the composition, the same way on the `html` and React surfaces, so a composition with no table never ships the sort script. The host opts in by id: `enhancements: ['tableSort']`. The HTML render resolves the request once for every pack: the set reaches every renderer as `context.enhancements`, in place of anything the adapter's context holds, and each resolved enhancement's script is emitted once. A set rather than a field per feature, so adding one costs no plumbing:
 
 ```ts
 context.enhancements?.has('tableSort');

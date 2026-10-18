@@ -6,15 +6,8 @@
  */
 
 import type { ReactNode } from 'react';
-import React, { useState } from 'react';
-import {
-  EuiButtonEmpty,
-  EuiCheckbox,
-  EuiIcon,
-  EuiPopover,
-  EuiText,
-  useEuiTheme,
-} from '@elastic/eui';
+import React, { useMemo, useState } from 'react';
+import { EuiIcon, EuiText, useEuiTheme } from '@elastic/eui';
 import type { Composition, ValidationResult } from '@elastic/isomer-sdk';
 import { createChildNodeWalker } from '@elastic/isomer-sdk';
 import type { SerializedStyles } from '@emotion/react';
@@ -22,6 +15,8 @@ import { css } from '@emotion/react';
 
 import { useStudio } from '../studio_context';
 
+import { applicableEnhancements } from './applicable_enhancements';
+import { EnhancementSelect } from './enhancement_select';
 import { PngSurface } from './png_surface';
 import type { PreviewZoom } from './scaled_preview';
 import type { SurfaceView } from './surface_preview';
@@ -34,56 +29,6 @@ import {
   PREVIEW_LABELS,
   SURFACE_NOTES,
 } from './surface_select';
-
-const EnhancementSelect = ({
-  ids,
-  selected,
-  disabled,
-  onChange,
-}: {
-  ids: readonly string[];
-  selected: readonly string[];
-  disabled: boolean;
-  onChange: (ids: string[]) => void;
-}) => {
-  const [open, setOpen] = useState(false);
-  return (
-    <EuiPopover
-      isOpen={open && !disabled}
-      closePopover={() => setOpen(false)}
-      anchorPosition="downRight"
-      button={
-        <EuiButtonEmpty
-          size="xs"
-          color="text"
-          iconType="chevronSingleDown"
-          iconSide="right"
-          isDisabled={disabled}
-          onClick={() => setOpen((value) => !value)}>
-          Enhancements ({selected.length}/{ids.length})
-        </EuiButtonEmpty>
-      }>
-      <div role="group" aria-label="Enhancements">
-        {ids.map((id) => (
-          <EuiCheckbox
-            key={id}
-            id={`studio-enhancement-${id}`}
-            label={id}
-            disabled={disabled}
-            checked={selected.includes(id)}
-            onChange={(event) =>
-              onChange(
-                event.target.checked
-                  ? [...selected, id]
-                  : selected.filter((value) => value !== id)
-              )
-            }
-          />
-        ))}
-      </div>
-    </EuiPopover>
-  );
-};
 
 interface RenderProps {
   composition: Composition;
@@ -269,18 +214,20 @@ export const SurfaceBoard = ({
   const activeSurface = browserSurfaces.includes('html')
     ? 'html'
     : browserSurfaces[0];
-  const walk = createChildNodeWalker(runtime.primitives);
-  const enhancementIds = runtime.packs
-    .flatMap((pack) => pack.enhancements)
-    .filter(({ appliesTo }) => {
-      // Predicates and child walkers may assume a schema-valid body.
-      try {
-        return appliesTo(composition.body, walk);
-      } catch {
-        return false;
-      }
-    })
-    .map(({ id }) => id);
+  const walk = useMemo(
+    () => createChildNodeWalker(runtime.primitives),
+    [runtime.primitives]
+  );
+  const applicable = useMemo(
+    () =>
+      applicableEnhancements(
+        runtime.enhancements ?? [],
+        composition.body,
+        walk
+      ),
+    [runtime.enhancements, composition.body, walk]
+  );
+  const enhancementIds = applicable.map(({ id }) => id);
   const canEnhance =
     (activeSurface === 'html' ||
       (activeSurface === 'react' && Boolean(createReactContext))) &&
@@ -356,7 +303,7 @@ export const SurfaceBoard = ({
                 fullSize={surfaces.length === 1}
                 controls={
                   <EnhancementSelect
-                    ids={enhancementIds}
+                    definitions={applicable}
                     selected={enabled}
                     disabled={!canEnhance || view !== 'render'}
                     onChange={setSelectedEnhancements}

@@ -560,9 +560,10 @@ test.describe('static build', () => {
       if (primitive === 'slideHeading') {
         await expect(toggle).toBeDisabled();
       } else {
-        const id = primitive === 'slidePipeline' ? 'slideBuilds' : 'slideCopy';
+        const name =
+          primitive === 'slidePipeline' ? 'Slide builds' : 'Copy command';
         await panel.getByRole('button', { name: 'Enhancements (0/1)' }).click();
-        const applicable = page.getByRole('checkbox', { name: id });
+        const applicable = page.getByRole('checkbox', { name });
         await applicable.check();
         if (primitive === 'slideCommand') {
           await expect(panel.locator('[data-slide-copy]')).toHaveCount(1);

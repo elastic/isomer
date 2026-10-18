@@ -19,6 +19,10 @@ import type { PrimitiveNode } from '../composition/node';
 export interface EnhancementDefinition {
   /** What a renderer tests for via `context.enhancements`. Unique across a runtime's packs. */
   id: string;
+  /** Short label for hosts; when omitted, use {@link EnhancementDefinition.id}. */
+  name?: string;
+  /** What enabling the enhancement does, for host UI and authoring material. */
+  description?: string;
   /**
    * Whether this composition has anything for the enhancement to act on.
    * Gating on content rather than the opt-in alone is what keeps a composition
