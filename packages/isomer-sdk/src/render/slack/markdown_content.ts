@@ -11,7 +11,6 @@
 
 import type {
   Blockquote,
-  Definition,
   FootnoteDefinition,
   List,
   ListItem,
@@ -23,8 +22,7 @@ import type {
 } from 'mdast';
 
 import type { MarkdownContent } from '../../define/markdown_content';
-import { markdownBlocks, VERBATIM_TYPE } from '../markdown/builder';
-import { parseGfmBlocks } from '../markdown/format';
+import { gfmBlocks, resolvedMarkdownBlocks } from '../markdown/blocks';
 
 import {
   SLACK_LIMITS,
@@ -407,76 +405,6 @@ const blockPieces = (node: RootContent): Piece[] => {
   }
 };
 
-// Each reference resolved to its document's first definition.
-const withReferences = (blocks: readonly RootContent[]): RootContent[] => {
-  const definitions = new Map<string, Definition>();
-  const collect = (node: Nodes): void => {
-    if (node.type === 'definition' && !definitions.has(node.identifier)) {
-      definitions.set(node.identifier, node);
-    }
-    if ('children' in node) {
-      node.children.forEach(collect);
-    }
-  };
-  blocks.forEach(collect);
-  if (definitions.size === 0) {
-    return [...blocks];
-  }
-  const resolve = (node: Nodes): Nodes => {
-    switch (node.type) {
-      case 'linkReference':
-        return {
-          type: 'link',
-          url: definitions.get(node.identifier)?.url ?? '',
-          children: node.children.map(resolve) as PhrasingContent[],
-        };
-      case 'imageReference':
-        return {
-          type: 'image',
-          url: definitions.get(node.identifier)?.url ?? '',
-          alt: node.alt ?? null,
-        };
-      default:
-        return 'children' in node
-          ? ({ ...node, children: node.children.map(resolve) } as Nodes)
-          : node;
-    }
-  };
-  return blocks.map(resolve) as RootContent[];
-};
-
-const lines = (text: string): string => text.replace(/\r\n?/g, '\n');
-
-const literalParagraphs = (text: string): RootContent[] =>
-  lines(text)
-    .split(/\n[ \t]*\n/)
-    .filter((paragraph) => paragraph.trim() !== '')
-    .map((paragraph) => ({
-      type: 'paragraph',
-      children: [{ type: 'text', value: paragraph.trim() }],
-    }));
-
-// Source past the parse budget prints as its literal paragraphs.
-const gfmBlocks = (gfm: string): RootContent[] => {
-  const parsed = parseGfmBlocks(lines(gfm)) as RootContent[] | null;
-  return parsed === null ? literalParagraphs(gfm) : withReferences(parsed);
-};
-
-// Markdown printed as written is read as the GFM it holds; authored source
-// that sanitizing left inert is never parsed.
-const expanded = (node: Nodes): Nodes[] => {
-  if ((node.type as string) === VERBATIM_TYPE) {
-    const { value, source } = node as unknown as {
-      value: string;
-      source?: string;
-    };
-    return source === undefined ? gfmBlocks(value) : literalParagraphs(source);
-  }
-  return 'children' in node
-    ? [{ ...node, children: node.children.flatMap(expanded) } as Nodes]
-    : [node];
-};
-
 const toSlackBlocks = (nodes: readonly RootContent[]): SlackBlock[] => {
   const blocks: SlackBlock[] = [];
   let elements: SlackRichTextBlockElement[] = [];
@@ -529,11 +457,7 @@ const toSlackBlocks = (nodes: readonly RootContent[]): SlackBlock[] => {
 export const markdownContentToSlackBlocks = (
   content: MarkdownContent
 ): SlackBlock[] =>
-  toSlackBlocks(
-    (markdownBlocks(content) as RootContent[]).flatMap(
-      expanded
-    ) as RootContent[]
-  );
+  toSlackBlocks(resolvedMarkdownBlocks(content) as RootContent[]);
 
 /**
  * GFM as Block Kit, parsed as CommonMark with GFM and translated as
@@ -541,4 +465,4 @@ export const markdownContentToSlackBlocks = (
  * the parse budget that `md.authored` applies prints as literal paragraphs.
  */
 export const gfmToSlackBlocks = (gfm: string): SlackBlock[] =>
-  toSlackBlocks(gfmBlocks(gfm));
+  toSlackBlocks(gfmBlocks(gfm) as RootContent[]);

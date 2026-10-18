@@ -25,7 +25,7 @@ import type { StudioSurface } from '../model/describe_runtime';
 import { SURFACE_LABELS } from '../model/describe_runtime';
 import { useStudio } from '../studio_context';
 
-import { HtmlSurface } from './html_surface';
+import { ShadowHtmlSurface } from './html_surface';
 import { ReactSurface } from './react_surface';
 import type { SurfaceOutput } from './render_output';
 import { renderSurfaceOutput } from './render_output';
@@ -50,7 +50,7 @@ export const SURFACE_ICONS: Readonly<Record<StudioSurface, IconType>> = {
 
 const VIEW_OPTIONS: { id: SurfaceView; label: string }[] = [
   { id: 'render', label: 'Rendered' },
-  { id: 'source', label: 'Source' },
+  { id: 'source', label: 'Output source' },
 ];
 
 const isSurfaceView = (id: string): id is SurfaceView =>
@@ -108,25 +108,31 @@ const Rendered = ({
   output,
   zoom,
   heading,
+  enhancements,
 }: {
   surface: StudioSurface;
   composition: Composition;
   output: SurfaceOutput;
   zoom: PreviewZoom;
   heading: boolean | undefined;
+  enhancements: readonly string[] | undefined;
 }) => {
   const { source, slack, snapshot } = output;
   switch (surface) {
     case 'react':
       return (
         <ScaledPreview {...{ zoom }}>
-          <ReactSurface {...{ composition, heading }} />
+          <ReactSurface {...{ composition, heading, enhancements }} />
         </ScaledPreview>
       );
     case 'html':
       return (
         <ScaledPreview {...{ zoom }}>
-          <HtmlSurface html={source} title={`${SURFACE_LABELS.html} preview`} />
+          <ShadowHtmlSurface
+            html={source}
+            title={`${SURFACE_LABELS.html} preview`}
+            enhancementScript={output.enhancementScript}
+          />
         </ScaledPreview>
       );
     case 'markdown':
@@ -142,11 +148,7 @@ const Rendered = ({
         </Inset>
       );
     case 'slack':
-      return slack ? (
-        <Inset>
-          <SlackSurface blocks={slack.blocks} />
-        </Inset>
-      ) : null;
+      return slack ? <SlackSurface blocks={slack.blocks} /> : null;
     case 'snapshot':
       return snapshot ? (
         <ScaledPreview {...{ zoom }}>
@@ -165,8 +167,12 @@ export interface SurfacePreviewProps {
   zoom?: PreviewZoom;
   /** Styles a frame around the render or source alone; diagnostics sit below it. */
   frameCss?: SerializedStyles | undefined;
+  /** A relevant recovery destination when rendering fails. */
+  errorHref?: string | undefined;
   /** `false` leaves out the composition's leading title. Defaults to `true`. */
   heading?: boolean | undefined;
+  /** Runs the requested enhancements on React or shadow-DOM HTML previews. */
+  enhancements?: readonly string[] | undefined;
 }
 
 /** One surface's render or source, with what it reported. */
@@ -177,15 +183,18 @@ export const SurfacePreview = ({
   view,
   zoom = 'fit',
   frameCss,
+  errorHref,
   heading,
+  enhancements,
 }: SurfacePreviewProps) => {
   const { runtime } = useStudio();
   const output = useMemo(
     () =>
       renderSurfaceOutput(runtime, surface, composition, validation, {
         heading,
+        enhancements,
       }),
-    [runtime, surface, composition, validation, heading]
+    [runtime, surface, composition, validation, heading, enhancements]
   );
   const { error, warnings, slack } = output;
 
@@ -198,7 +207,16 @@ export const SurfacePreview = ({
           color="danger"
           iconType="error"
           title="This surface could not render"
-          text={<p>{error}</p>}
+          text={
+            <>
+              <p>{error}</p>
+              {errorHref ? (
+                <EuiLink href={errorHref}>
+                  Open this example in Workbench
+                </EuiLink>
+              ) : null}
+            </>
+          }
         />
       ) : (
         <SurfaceFrame {...{ frameCss }}>
@@ -218,7 +236,9 @@ export const SurfacePreview = ({
               ) : null}
             </>
           ) : (
-            <Rendered {...{ surface, composition, output, zoom, heading }} />
+            <Rendered
+              {...{ surface, composition, output, zoom, heading, enhancements }}
+            />
           )}
         </SurfaceFrame>
       )}

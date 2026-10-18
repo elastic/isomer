@@ -88,7 +88,7 @@ describe('GalleryView', () => {
       screen.getByRole('heading', { level: 1, name: 'Gallery' })
     ).toBeInTheDocument();
     expect(
-      screen.getAllByRole('link', { name: /Open .+ in Dev/ })
+      screen.getAllByRole('link', { name: /Open .+ in Workbench/ })
     ).toHaveLength(exampleCount);
     expect(previews()).toHaveLength(GALLERY_COLUMNS);
     expect(previewObservers()).toHaveLength(exampleCount - GALLERY_COLUMNS);

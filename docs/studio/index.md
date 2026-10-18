@@ -1,16 +1,16 @@
 ---
 navigation_title: Isomer Studio
-description: A gallery, per-primitive docs, a JSX editor and a preview of every surface for any Isomer pack, run as a dev server, a static site or a CI check.
+description: A gallery, per-primitive Reference, a composition Workbench and a preview of every surface for any Isomer pack, run as a dev server, a static site or a CI check.
 ---
 
 # Isomer Studio
 
-`@elastic/isomer-studio` is a dev and docs shell for any Isomer pack. Point it at a config file that exports a runtime, and it shows:
+`@elastic/isomer-studio` is a learning and testing shell for any Isomer pack. Point it at a config file that exports a runtime, and it shows:
 
 - a Home page with search, featured primitives, the pack's apps, and what the runtime loaded;
 - a gallery of every primitive, grouped as the pack's authoring groups are, whose React previews mount as they near the viewport;
-- a docs page per primitive, with its catalog entry, props and examples;
-- a JSX or JSON editor with a live preview;
+- a Reference page per primitive, with its purpose, guidance, props and live examples to teach its use;
+- a Workbench for editing a composition and seeing its live preview;
 - the same composition on every surface the runtime has: React, HTML, Snapshot, PNG, Slack, Markdown and text.
 
 It ships as a command-line tool, not a React library. EUI, Emotion and Monaco are bundled into it, so a pack never takes them as dependencies. The package is private and not published to npm; this repository runs it.
@@ -22,6 +22,8 @@ pnpm exec isomer-studio check --report studio-report.json   # a headless CI gate
 ```
 
 Each command reads `isomer-studio.config.ts` (or `.tsx` or `.js`) from the current directory unless `--config` names another file.
+
+In the interface, **Reference** teaches how and when to use each primitive, while **Workbench** is where you edit compositions. The existing `#/docs` and `#/dev` routes and the `isomer-studio dev` CLI command remain unchanged.
 
 ## A first config
 
@@ -43,21 +45,21 @@ That is enough for a pack whose primitives render inside a plain `view`. A pack 
 
 Home is a landing page for the configured developer workbench, not the introductory Isomer site. Its entry points and loaded-runtime panel reflect the packs and applications supplied by the host. The surface chart keeps its explanatory copy separate at every width, and reflows into a composition row above the surface cards when its column is narrow. Connecting lines follow the cards across wrapped rows.
 
-Studio is primarily a desktop DX and demo tool. When Home's main column is narrower than 620px, its application, learning, and featured tiles stack vertically. Featured primitives show three tiles per page, with Previous and Next buttons; the final gallery tile occupies a paging slot. Wider columns retain the horizontal strip. This is a readable narrow-window fallback, not a mobile Dev workbench.
+Studio is primarily a desktop learning and demo tool. When Home's main column is narrower than 620px, its application, learning, and featured tiles stack vertically. Featured primitives show three tiles per page, with Previous and Next buttons; the final gallery tile occupies a paging slot. Wider columns retain the horizontal strip. This is a readable narrow-window fallback, not a mobile Workbench.
 
-Home's Docs and Dev actions keep the exact blue and teal from the Isomer logo. Featured and learning cards use deeper, opaque plum surfaces so their small action text stays readable without washing out the brand colors.
+Home's Reference and Workbench actions keep the exact blue and teal from the Isomer logo. Featured and learning cards use deeper, opaque plum surfaces so their small action text stays readable without washing out the brand colors.
 
 Home exposes its primary column as the main landmark, with level-two headings for Featured primitives, Applications, and Learn more about Isomer. The loaded-runtime panel remains a separate complementary landmark.
 
-Links and buttons within Home use a white keyboard-focus outline that stays visible on the fixed dark palette, independently of the Dev and Docs color mode.
+Links and buttons within Home use a white keyboard-focus outline that stays visible on the fixed dark palette, independently of the Workbench and Reference color mode.
 
 Home respects reduced-motion preferences: the surface chart keeps its focus and color feedback without scaling or lifting cards, and horizontal featured paging moves immediately instead of scrolling smoothly.
 
-- **Home.** An empty or unknown hash, `#/home`, and the mark in the header open Home. It has the primitive search, one chip per authoring group that opens the gallery at that group, the featured primitives (the config's `featured`, or six drawn at random) with Docs and Dev links, a tile per app, three doors into the gallery, the workbench and the docs site, a chart of the surfaces the runtime has, and a panel of the packs, views, apps and surfaces loaded. With no apps or no views, the panel and the Applications row say how to add them and link to the docs. Home keeps its own dark look; the color mode applies from Dev and Docs on.
+- **Home.** An empty or unknown hash, `#/home`, and the mark in the header open Home. It has the primitive search, one chip per authoring group that opens the gallery at that group, the featured primitives (the config's `featured`, or six drawn at random) with Reference and Workbench links, a tile per app, three doors into the gallery, the Workbench and the Isomer documentation site, a chart of the surfaces the runtime has, and a panel of the packs, views, apps and surfaces loaded. With no apps or no views, the panel and the Applications row say how to add them and link to the Isomer documentation. Home keeps its own dark look; the color mode applies from Reference and Workbench on.
 - **Navigation.** With one pack, the sidebar lists primitives under that pack's authoring groups, in the pack's group order and alphabetically within each group. With more than one pack, each pack is a heading and its groups follow. Primitives no group claims are listed last, under Uncategorized. Each group collapses, the browser remembers which are closed, and a filter opens every group it matches. Resting the pointer on a name shows its first example and purpose.
-- **Surfaces.** The Dev preview starts on All surfaces. Cards stay in one column until the pane is wide enough for two, and do not go to three. The Surface menu checks the surfaces to compare: with every surface selected, choosing one shows it at full size, and choosing another adds it. Rendered or Source applies to every card at once. The Docs example card starts on the first surface, with the example picker on the left and the same menu on the right. Its footer shows that example as JSX or JSON.
+- **Surfaces.** The Workbench preview starts with every output selected, in one column at every width. The Outputs menu checks the outputs to compare: with every output selected, choosing one shows it at full size, and choosing another adds it. Rendered or Output source applies to every card at once. The Reference example card starts on the first surface, with the example picker on the left and the same menu on the right. Its view selector switches among Rendered, Output source, and Example source; the latter shows the example as JSX or JSON.
 - **Zoom.** With one surface picked, the preview's zoom menu scales the React, HTML, Snapshot and PNG previews: Fit width shrinks a preview to the panel's width and never enlarges it, and fixed levels run from 50% to 200%.
-- **Color mode.** The header offers Light, Dark, and System. System follows the operating system, including when it changes. The choice is remembered per browser, and previews render in the resolved mode. In dark mode the Dev preview pane takes the theme's recessed background.
+- **Color mode.** The header offers Light, Dark, and System. System follows the operating system, including when it changes. The choice is remembered per browser, and previews render in the resolved mode. In dark mode the Workbench preview pane takes the theme's recessed background.
 
 ## Requirements
 

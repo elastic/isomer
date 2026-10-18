@@ -24,6 +24,7 @@ export interface SurfaceOutput {
   language: 'html' | 'markdown' | 'text' | 'json';
   warnings: ValidationWarning[];
   error?: string;
+  enhancementScript?: string;
   slack?: { text: string; blocks: SlackBlock[] };
   snapshot?: { css: string; html: string; width: number; height: number };
 }
@@ -52,13 +53,14 @@ const describeError = (error: unknown): string =>
 export interface SurfaceOutputOptions {
   /** `false` leaves out the composition's leading title. Defaults to `true`. */
   heading?: boolean | undefined;
+  enhancements?: readonly string[] | undefined;
 }
 
 const render = (
   runtime: StudioRuntime,
   surface: StudioSurface,
   composition: Composition,
-  { heading }: SurfaceOutputOptions
+  { heading, enhancements }: SurfaceOutputOptions
 ): RenderedOutput => {
   const { surfaces } = runtime;
   const lead = heading === false ? { heading } : {};
@@ -70,16 +72,23 @@ const render = (
           css: 'separate',
           minify: false,
           scripts: 'host',
+          ...(enhancements ? { enhancements } : {}),
           ...lead,
         }).html,
         language: 'html',
       };
-    case 'html':
+    case 'html': {
+      const result = surfaces.html.render(composition, {
+        minify: false,
+        ...lead,
+        ...(enhancements ? { enhancements, scripts: 'host' as const } : {}),
+      });
       return {
-        source: surfaces.html.render(composition, { minify: false, ...lead })
-          .html,
+        source: result.html,
+        ...(enhancements ? { enhancementScript: result.js } : {}),
         language: 'html',
       };
+    }
     case 'markdown':
       return {
         source: surfaces.markdown.render(composition, collect),

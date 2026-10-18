@@ -87,7 +87,12 @@ export const PrimitiveHeading = ({
       </EuiFlexGroup>
       {isInline ? null : (
         <EuiText>
-          <p>{purpose}</p>
+          <p
+            css={css`
+              max-inline-size: 72ch;
+            `}>
+            {purpose}
+          </p>
         </EuiText>
       )}
     </div>

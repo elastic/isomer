@@ -59,7 +59,7 @@ The default fits a pack whose primitives render inside a plain `view`. A pack wh
 
 ## Featured primitives
 
-Home opens with a strip of featured primitives, each with a link to its Docs page and to the Dev workbench. `featured` names them by type, in the order they appear:
+Home opens with a strip of featured primitives, each with a link to its Reference page and to the Workbench. `featured` names them by type, in the order they appear:
 
 ```ts
 export default defineStudioConfig({

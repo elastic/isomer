@@ -55,6 +55,25 @@ const stubRuntime = (snapshot = true) => {
 };
 
 describe('renderSurfaceOutput', () => {
+  it('requests host-run enhancements for React and HTML', () => {
+    const { surfaces, runtime } = stubRuntime();
+    renderSurfaceOutput(runtime, 'react', composition, validation, {
+      enhancements: ['copy'],
+    });
+    expect(surfaces.html.render).toHaveBeenLastCalledWith(
+      composition,
+      expect.objectContaining({ enhancements: ['copy'], scripts: 'host' })
+    );
+    renderSurfaceOutput(runtime, 'html', composition, validation, {
+      enhancements: ['copy'],
+    });
+    expect(surfaces.html.render).toHaveBeenLastCalledWith(composition, {
+      minify: false,
+      enhancements: ['copy'],
+      scripts: 'host',
+    });
+  });
+
   it('renders `react` as HTML with separate CSS and host scripts', () => {
     const { surfaces, runtime } = stubRuntime();
 

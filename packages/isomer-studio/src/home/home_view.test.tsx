@@ -127,16 +127,15 @@ describe('HomeView', () => {
     ).toBeInTheDocument();
   });
 
-  it('features the configured primitives in order, with Docs and Dev links', () => {
+  it('features the configured primitives in order, with Reference and Workbench links', () => {
     renderHome({ featured: ['statGroup', 'callout'] });
     expect(featuredTiles()).toEqual(['#/docs/statGroup/0', '#/docs/callout/0']);
     const first = within(
       screen.getByRole('region', { name: 'Featured primitives' })
     ).getAllByTestId('featured-primitive')[0]!;
-    expect(within(first).getByRole('link', { name: 'Dev →' })).toHaveAttribute(
-      'href',
-      '#/dev/statGroup/0'
-    );
+    expect(
+      within(first).getByRole('link', { name: 'Workbench →' })
+    ).toHaveAttribute('href', '#/dev/statGroup/0');
     expect(
       screen.getByRole('link', { name: /4 primitives in this Studio/ })
     ).toHaveAttribute('href', '#/docs/gallery');

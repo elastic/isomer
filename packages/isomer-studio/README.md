@@ -10,7 +10,7 @@
 </p>
 <!-- markdownlint-enable MD033 -->
 
-A dev and docs shell for any Isomer pack: a home page, a component gallery, per-primitive docs, a JSX editor with a live preview, and a preview of every surface the runtime has. It ships as a command-line tool with EUI, Emotion and Monaco bundled in.
+A learning and testing shell for any Isomer pack: a Home page, a component gallery, Reference pages for each primitive, a Workbench for editing compositions, and a preview of every surface the runtime has. It ships as a command-line tool with EUI, Emotion and Monaco bundled in.
 
 This package is private and not published to npm; it runs from this repository.
 
@@ -25,7 +25,9 @@ import { defineStudioConfig } from '@elastic/isomer-studio';
 
 import { myPack } from './src';
 
-export default defineStudioConfig({ runtime: createIsomerRuntime({ packs: [myPack] }) });
+export default defineStudioConfig({
+  runtime: createIsomerRuntime({ packs: [myPack] }),
+});
 ```
 
 ```sh

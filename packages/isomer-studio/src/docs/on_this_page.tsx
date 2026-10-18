@@ -57,7 +57,7 @@ export const useActiveEntry = (
   return [active, setActive];
 };
 
-/** A sticky "On this page" gutter that scrolls to each entry's element. */
+/** A sticky "On this page" gutter when wide, a row above the content when narrow. Render it before the content. */
 export const OnThisPage = ({
   entries,
   active,
@@ -73,12 +73,23 @@ export const OnThisPage = ({
       aria-label="On this page"
       css={css`
         flex: 0 0 ${TOC_WIDTH}px;
+        order: 1;
         position: sticky;
         top: ${euiTheme.size.xl};
         height: fit-content;
         display: flex;
         flex-direction: column;
         gap: ${euiTheme.size.xxs};
+
+        @media (max-width: 1200px) {
+          flex: 1 1 100%;
+          order: 0;
+          position: static;
+          flex-direction: row;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: ${euiTheme.size.xxs} ${euiTheme.size.s};
+        }
       `}>
       <EuiText
         size="xs"
@@ -86,6 +97,10 @@ export const OnThisPage = ({
         css={css`
           text-transform: uppercase;
           font-weight: ${euiTheme.font.weight.semiBold};
+
+          @media (max-width: 1200px) {
+            flex: 0 0 100%;
+          }
         `}>
         On this page
       </EuiText>
