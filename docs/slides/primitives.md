@@ -33,6 +33,10 @@ This does not reach every literal in a module: `1fr`, `minmax(0, …)`, `50%`, a
 
 A CSS module that branches on an enum field uses `variants(domain, factory)` with the domain array already in `src/theme/variants.ts`. Do not add a private `switch`. One that branches on a count or a grid line builds its domain with `countKeys` and reads a key with `countKey`, since a variant key must start with a letter.
 
+## Before you change a schema
+
+Decks are stored documents. Check a schema change against the SDK's [Before you change a schema](../sdk/primitives.md#before-you-change-a-schema), whose examples all come from this pack. When a change breaks a shape, freeze decks written in the old one beside their migrated copies, the way `decks/v1/` holds 0.2.0's ([Decks](decks.md)).
+
 ## Icons
 
 Every primitive has a `catalog.name` and an `icon`, unique across the pack, and `pack_contract.test.ts` fails without them. The SDK's [Names and icons](../sdk/primitives.md#names-and-icons) has the rules an icon must pass and why its values are exempt from the rule above.

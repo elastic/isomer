@@ -138,6 +138,18 @@ renderers: {
 
 A container that instead pattern-matches `item.node.type` against its own pack's types renders correctly until a host nests a node from a different pack, then throws `UNKNOWN_PRIMITIVE_TYPE`. `scope` is erased to `PrimitiveNode` precisely so that mistake cannot compile. `./testing`'s conformance harness has a case for this: implement `PrimitiveConformanceHarness.nestForeignChild` and it runs automatically.
 
+## Before you change a schema
+
+A host stores the compositions it renders, so a primitive's schema is a wire format as well as an authoring contract. Check a change against the list below before you make it. Each item comes from the slides pack's move from 0.2.0 to 0.3.0, where three breaking commits renamed nine types and reshaped five more.
+
+- **Every value the old schema accepted needs a form in the new one.** A restructure is cheap when it maps one to one: `slideFrame`'s four footer fields moving into `footer`, or `slideSection`'s `contents` and `hrefs` becoming `slides`. Losing something the old shape could say is expensive. `slideCode` moved `highlightLines` under `lineNumbers`, so a highlighted line now brings a gutter, and a highlight without line numbers has no form at all. Three of the twelve highlighted panels in the stored decks no longer fit. Before you reshape a field, name every old value that has no new form, or confirm there is none.
+- **Keep independent options independent.** Nesting one option inside another removes every combination the nesting rules out. `highlight` and `lineNumbers` are the example above.
+- **A tighter limit is a breaking change, even when the shape is the same.** So is a layout change that takes room a document was using. `slideCode`'s 10,000-character cap moved from each line to the whole text, its `text` gained a minimum length, and the gutter takes columns from the width check. None of these changed the JSON shape, and each one turns documents that used to validate into documents that don't.
+- **Strict validation keeps a later change cheap.** `slideGraph` replaced `edges` with `of` and `direction` without losing a document, because 0.2.0's refinement allowed exactly one edge set per graph. A loose field whose readings you can't list is a field you can't migrate.
+- **Rename rarely, and in batches.** A rename costs an author a find and replace. Code that walks stored documents by `type`, a migration included, finds no definition under the old name and stops visiting that node's `children`.
+- **Keep real documents from before the change.** The slides pack's `decks/v1/` holds [decks](../../isomer-primitives-slides/docs/decks.md) written against 0.2.0, byte for byte, beside their migrated copies, and they surfaced the gutter overflow. When you break a shape, freeze documents written in the old one.
+- **Say what broke.** Mark the commit `!`, and list the change to the stored shape in its body and in `.okf/isomer/log.md`. A private pack's commits never reach the release notes, so that is the only record a host reading stored documents gets.
+
 ## `sanitize`
 
 Runs before every render, on every surface, and may return `null` to drop the node. It is the render-time half of the [URL trust policy](url-trust.md): the Zod refinement gives an agent a useful validation error, and `sanitize` means a renderer invoked with an unvalidated node still never emits an unsafe URL.

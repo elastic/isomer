@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-18
+
+- **Before you change a schema**: the SDK's primitive docs gain a checklist for changing a schema hosts may have stored, drawn from the slides pack's 0.2.0 to 0.3.0 breaks. Every old value needs a form in the new shape. Independent options stay independent. A tighter limit or a layout change that takes room is breaking even with the same JSON shape. Renames are rare and batched. Real documents from before the change are frozen. The commit is marked `!` and lists the change. `AGENTS.md` gives the rules their own section, and the slides pack's primitive guide links to them. ([#201](https://github.com/elastic/isomer/issues/201))
+
 ## 2026-10-16
 
 - **Studio Home**: a configurable DX landing page brings together primitive search, categories, featured Docs/Dev links, apps, learning links, surfaces, and loaded-runtime details; `featured` sets the primitive order (six random picks otherwise), and app `description` supplies tile copy.

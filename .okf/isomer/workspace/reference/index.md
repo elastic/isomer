@@ -6,5 +6,5 @@ Directory: `workspace/reference/`
 
 | Title | Type | Description |
 |-------|------|-------------|
-| [Conventions](conventions.md) | Reference | Brands, errors, barrels, peers, licenses, and pack drawing rules. |
+| [Conventions](conventions.md) | Reference | Brands, errors, barrels, peers, licenses, schema changes, and pack drawing ru... |
 

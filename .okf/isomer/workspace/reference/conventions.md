@@ -1,7 +1,7 @@
 ---
 type: Reference
 title: Conventions
-description: Brands, errors, barrels, peers, licenses, and pack drawing rules.
+description: Brands, errors, barrels, peers, licenses, schema changes, and pack drawing rules.
 tags: [isomer, workspace, conventions]
 status: stable
 stale_after: 2027-03-18
@@ -30,6 +30,7 @@ sources:
 - Narrative docs live in each package's `docs/`. Root `docs/` is the docs-builder assembler; do not author package pages there.
 - A pack holds no rendered value of its own: every number, length, ratio, and glyph it draws has one authoring source in its theme.
 - There is no per-primitive `snapshot` renderer. The `snapshot` surface dispatches to `react` and is handed the pack's stylesheet.
+- A primitive's schema is a wire format, because hosts persist compositions. A change must leave every old value a form in the new shape, keep independent options independent, and count a tighter limit or a layout change that takes room as breaking even when the JSON shape is unchanged. Rename types rarely and in batches, freeze real documents written in the old shape beside their migrated copies, and mark the commit `!` with the stored-shape change listed in its body and in the log.[^agents]
 - The pack stylesheet does not reach inside an inline `<svg>`. Anything drawn there needs a literal `fill` / `stroke` alongside its class.[^agents]
 
 Related: [verify](/workspace/playbooks/verify.md), [maintain OKF](/workspace/playbooks/maintain-okf.md).

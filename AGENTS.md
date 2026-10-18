@@ -24,6 +24,17 @@ Every package under `packages/` without `"private": true` publishes, at one vers
 
 This repository is the source of truth for Isomer. Earlier prototypes and host-side integrations are references, not destinations: when they disagree with the code and docs here, this repository wins.
 
+## Changing a schema a host may have stored
+
+Hosts persist compositions, so a primitive's schema is a wire format as well as an authoring contract. Before you change one, read [Before you change a schema](packages/isomer-sdk/docs/primitives.md#before-you-change-a-schema). In short:
+
+- Every value the old schema accepted needs a form in the new one. Name any that doesn't before you merge.
+- Keep independent options independent; nesting one inside another removes combinations.
+- A tighter limit, or a layout change that takes room a document used, is breaking even when the JSON shape is unchanged.
+- Rename types rarely, and in batches.
+- Freeze real documents written in the old shape beside their migrated copies, as `packages/isomer-primitives-slides/decks/v1/` does.
+- Mark the commit `!`, and list the stored-shape change in its body and in `.okf/isomer/log.md`.
+
 ## Verify your work
 
 ```sh
