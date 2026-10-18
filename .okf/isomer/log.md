@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-18
+
+- **A faster local loop**: `pnpm verify:fast` runs typecheck, lint, and `licenses:report --check` side by side, then the tests, and `pnpm verify` starts with it before the build, packed, and browser checks. ESLint caches by file content in `node_modules/.cache/eslint/`. The slides pack's Slack formatting parity cases split across `content_parity_slack_<n>.test.ts` so Vitest runs them in parallel, and the Studio's browser test builds the slides config once for the static-build and decks groups.
+
 ## 2026-10-16
 
 - **Studio Home**: a configurable DX landing page brings together primitive search, categories, featured Docs/Dev links, apps, learning links, surfaces, and loaded-runtime details; `featured` sets the primitive order (six random picks otherwise), and app `description` supplies tile copy.

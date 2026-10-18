@@ -30,7 +30,7 @@ This repository is the source of truth for Isomer. Earlier prototypes and host-s
 pnpm verify
 ```
 
-That is the complete local gate. If a check fails in a way that looks unrelated to your change, say so rather than papering over it.
+That is the complete local gate. `pnpm verify:fast` (typecheck, lint, license check, tests) is the inner loop; it is not a substitute before a PR. If a check fails in a way that looks unrelated to your change, say so rather than papering over it.
 
 ## Conventions
 
