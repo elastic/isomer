@@ -93,34 +93,43 @@ const inline = (node: PhrasingContent): ReactNode => {
 const paragraphCount = (item: ListItem): number =>
   item.children.filter(({ type }) => type === 'paragraph').length;
 
-// One spread item, or one with two paragraphs, makes the whole list loose.
+// A spread list, a spread item, or an item with two paragraphs makes the whole list loose.
 const items = (list: List): ReactNode[] => {
-  const tight = !list.children.some(
-    (item) => item.spread === true || paragraphCount(item) > 1
-  );
+  const tight =
+    list.spread !== true &&
+    !list.children.some(
+      (item) => item.spread === true || paragraphCount(item) > 1
+    );
   return list.children.map((item, index) => listItem(item, index, tight));
 };
 
+// A task item's checkbox leads its first paragraph, so a loose item keeps it on the task's line.
 const listItem = (item: ListItem, key: number, tight: boolean): ReactNode => {
   const checkbox =
     typeof item.checked === 'boolean'
       ? [
           createElement('input', {
-            key: 'checkbox',
             type: 'checkbox',
             checked: item.checked,
             disabled: true,
-            readOnly: true,
           }),
           ' ',
         ]
       : [];
-  const children = item.children.flatMap((child): ReactNode[] =>
-    child.type === 'paragraph' && tight
-      ? inlines(child.children)
-      : [block(child)]
+  const [first, ...rest] = item.children;
+  const leadsWithParagraph = first?.type === 'paragraph';
+  const lead = leadsWithParagraph
+    ? [...checkbox, ...inlines(first.children)]
+    : checkbox;
+  const head =
+    leadsWithParagraph && !tight ? [createElement('p', null, ...lead)] : lead;
+  const body = (leadsWithParagraph ? rest : item.children).flatMap(
+    (child): ReactNode[] =>
+      child.type === 'paragraph' && tight
+        ? inlines(child.children)
+        : [block(child)]
   );
-  return createElement('li', { key }, ...checkbox, ...keyed(children));
+  return createElement('li', { key }, ...keyed([...head, ...body]));
 };
 
 const tableRows = (table: Table): ReactNode => {

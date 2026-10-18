@@ -14,8 +14,12 @@ import { SAFE_INPUTS } from '../markdown/safe_inputs.fixtures';
 
 import { renderMarkdownContent } from './markdown_content';
 
+// React 19 hoists a preload `link` for each `img`; React 18 does not.
 const html = (content: MarkdownContent): string =>
-  renderToStaticMarkup(renderMarkdownContent(content));
+  renderToStaticMarkup(renderMarkdownContent(content)).replace(
+    /<link rel="preload" as="image"[^>]*\/>/g,
+    ''
+  );
 
 describe('renderMarkdownContent', () => {
   it('renders builder blocks', () => {
@@ -75,7 +79,7 @@ describe('renderMarkdownContent', () => {
     ).toBe(
       '<h1>Heading</h1>' +
         '<p>A <strong>bold</strong> and <del>struck</del> <a href="https://a.b" title="t">link</a> with <code>code</code>.</p>' +
-        '<ul><li><input type="checkbox" disabled="" readonly="" checked=""/> done</li><li><input type="checkbox" disabled="" readonly=""/> todo</li></ul>' +
+        '<ul><li><input type="checkbox" disabled="" checked=""/> done</li><li><input type="checkbox" disabled=""/> todo</li></ul>' +
         '<table><thead><tr><th style="text-align:left">L</th><th style="text-align:right">R</th></tr></thead><tbody><tr><td style="text-align:left">1</td><td style="text-align:right">2</td></tr></tbody></table>' +
         '<hr/>' +
         '<pre><code class="language-js">run();</code></pre>'
@@ -123,6 +127,18 @@ describe('renderMarkdownContent', () => {
     ).toBe(
       '<ul><li><p>first</p><p>second</p></li></ul>' +
         '<ul><li><p>first</p><p>second</p></li><li><p>tight</p></li></ul>'
+    );
+  });
+
+  it('keeps paragraphs in a list loosened by blank lines between items', () => {
+    expect(html(md.authored('- one\n\n- two'))).toBe(
+      '<ul><li><p>one</p></li><li><p>two</p></li></ul>'
+    );
+  });
+
+  it('puts a loose task item’s checkbox in its first paragraph', () => {
+    expect(html(md.authored('- [x] first\n\n  second'))).toBe(
+      '<ul><li><p><input type="checkbox" disabled="" checked=""/> first</p><p>second</p></li></ul>'
     );
   });
 
