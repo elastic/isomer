@@ -22,7 +22,7 @@ The exit code is 0 on success, 1 when a command fails or `check` finds a failure
 ## `dev`
 
 ```sh
-pnpm exec isomer-studio dev --port 5179 --open
+npx isomer-studio dev --port 5179 --open
 ```
 
 Serves the Studio on `127.0.0.1` and prints its URL.
@@ -96,7 +96,7 @@ background in both color modes.
 ## `build`
 
 ```sh
-pnpm exec isomer-studio build --out dist/studio --base /studio/
+npx isomer-studio build --out dist/studio --base /studio/
 ```
 
 Writes the Studio as a static site.
@@ -131,7 +131,7 @@ A static site has no server, so two things work differently from `dev`:
 ## `check`
 
 ```sh
-pnpm exec isomer-studio check --format junit --report studio-report.xml --png
+npx isomer-studio check --format junit --report studio-report.xml --png
 ```
 
 Validates and renders every example of every primitive, composed with the config's `compose`, without a browser. It prints each failure and the totals, and exits 1 on any failure.

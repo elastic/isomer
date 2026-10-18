@@ -2,6 +2,8 @@
 
 ## 2026-10-18
 
+- **Studio publishes**: `@elastic/isomer-studio` is no longer private, so the release workflow publishes it at the shared version beside the SDK, runtime and Takumi. Its docs install it beside the pack and run the installed `npx isomer-studio`; the CI action is referenced as `elastic/isomer/.github/actions/isomer-studio@main`.
+
 - **Click-only compact navigation**: the collapsed rail keeps its full-opacity icons, 32-pixel buttons and transition-icon toggle, but no longer expands on hover or focus. Narrow windows (1120 pixels or less) start collapsed and expand over the content when toggled. The toggle is labeled Expand/Collapse primitive navigation and reports `aria-expanded`.
 
 - **Studio's primitive docs are Reference and its editor is Workbench**: visible labels and learning copy use those names, while internal component/file names, `#/docs` and `#/dev` routes, and the `isomer-studio dev` CLI command stay stable. Reference prioritizes teaching with an in-context example and guidance; example code is collapsed until requested. Narrow layouts move the page outline into the content flow, and failed reference previews link to the same example in Workbench.
