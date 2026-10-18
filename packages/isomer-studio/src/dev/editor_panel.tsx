@@ -57,7 +57,13 @@ export const WorkbenchStatus = ({
 
   return (
     <>
-      <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+      <EuiFlexGroup
+        gutterSize="s"
+        alignItems="center"
+        responsive={false}
+        css={css`
+          flex: none;
+        `}>
         <EuiFlexItem grow={false}>
           <EuiButtonEmpty
             size="xs"
@@ -79,7 +85,17 @@ export const WorkbenchStatus = ({
         </EuiFlexItem>
       </EuiFlexGroup>
       {parseError || errors.length ? (
-        <EuiText size="xs" color="danger">
+        <EuiText
+          size="xs"
+          color="danger"
+          role="region"
+          tabIndex={0}
+          aria-label="Validation errors"
+          css={css`
+            flex: 0 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+          `}>
           <ul>
             {parseError ? (
               <li>{parseError}</li>
