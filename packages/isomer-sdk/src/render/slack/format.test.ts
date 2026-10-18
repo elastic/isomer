@@ -193,17 +193,34 @@ describe('slackLinkUrl with a baseUrl', () => {
     expect(slackLinkUrl('mailto:a@b.c', baseUrl)).toBe('mailto:a@b.c');
   });
 
-  it.each(['/relative', 'ftp://a.b/', 'mailto:a@b.c', 'https://', 'kibana'])(
-    'throws for the base %s',
-    (base) => {
-      expect(() => slackLinkUrl('/app', base)).toThrow(
-        expect.objectContaining({
-          name: 'IsomerError',
-          code: 'INVALID_BASE_URL',
-        })
-      );
+  it.each([
+    ['https://kibana.example:443/s/', 'app', 'https://kibana.example/s/app'],
+    ['HTTPS://Kibana.Example/s/', 'app', 'https://kibana.example/s/app'],
+    ['http://kibana.example:8080', '/app', 'http://kibana.example:8080/app'],
+    ['https://[::1]/s/', 'app', 'https://[::1]/s/app'],
+  ])(
+    'resolves against the base %s as URL parses it',
+    (base, href, resolved) => {
+      expect(slackLinkUrl(href, base)).toBe(resolved);
     }
   );
+
+  it.each([
+    '/relative',
+    'ftp://a.b/',
+    'mailto:a@b.c',
+    'https://',
+    'kibana',
+    'https://user:secret@kibana.example/',
+    'https://bad_host.example/',
+  ])('throws for the base %s', (base) => {
+    expect(() => slackLinkUrl('/app', base)).toThrow(
+      expect.objectContaining({
+        name: 'IsomerError',
+        code: 'INVALID_BASE_URL',
+      })
+    );
+  });
 });
 
 describe('clamping', () => {

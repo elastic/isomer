@@ -142,15 +142,32 @@ export interface SlackLinkOptions {
   baseUrl?: string;
 }
 
+// Parsed rather than checked as written: a base is only resolved against, so
+// a default port or an uppercase host is fine.
+const isSlackBaseUrl = (baseUrl: string): boolean => {
+  let parsed: URL;
+  try {
+    parsed = new URL(baseUrl);
+  } catch {
+    return false;
+  }
+  return (
+    (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
+    parsed.username === '' &&
+    parsed.password === '' &&
+    (DNS_NAME_RE.test(parsed.hostname) || IPV6_HOST_RE.test(parsed.hostname))
+  );
+};
+
 /**
- * Throws `INVALID_BASE_URL` unless `baseUrl` is absent or passes
- * {@link isAbsoluteHttpUrl}.
+ * Throws `INVALID_BASE_URL` unless `baseUrl` is absent or an `http:` or
+ * `https:` URL with a DNS or IPv6 host and no credentials.
  */
 export const assertSlackBaseUrl = (baseUrl: string | undefined): void => {
-  if (baseUrl !== undefined && !isAbsoluteHttpUrl(baseUrl)) {
+  if (baseUrl !== undefined && !isSlackBaseUrl(baseUrl)) {
     throw new IsomerError(
       'INVALID_BASE_URL',
-      `Slack baseUrl must be an absolute http or https URL, got "${baseUrl}"`
+      `Slack baseUrl must be an absolute http or https URL without credentials, got "${baseUrl}"`
     );
   }
 };

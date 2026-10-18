@@ -66,7 +66,7 @@ runtime.surfaces.slack.render(composition, {
 });
 ```
 
-Each navigation href is checked by the policy first. One that passes and is relative resolves with `new URL(href, baseUrl)`, and the result links only when it stays on the base's origin and passes the policy and Slack's absolute-URL check again. A fragment, `BLOCKED_HREF` included, never resolves, since it names a place in a document Slack does not show, and protocol-relative forms stay rejected. Images do not resolve: Slack draws none inline, and an asset reaches it as an upload. A `baseUrl` that is not an absolute `http` or `https` URL throws an `IsomerError` with the code `INVALID_BASE_URL`.
+Each navigation href is checked by the policy first. One that passes and is relative resolves with `new URL(href, baseUrl)`, and the result links only when it stays on the base's origin and passes the policy and Slack's absolute-URL check again. A fragment, `BLOCKED_HREF` included, never resolves, since it names a place in a document Slack does not show, and protocol-relative forms stay rejected. Images do not resolve: Slack draws none inline, and an asset reaches it as an upload. The base is read as `URL` parses it, so a default port or an uppercase host is fine; one that is not an `http` or `https` URL with a DNS or IPv6 host, or that carries credentials, throws an `IsomerError` with the code `INVALID_BASE_URL`.
 
 ## Using it in a primitive
 
