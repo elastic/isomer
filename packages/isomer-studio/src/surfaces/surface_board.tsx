@@ -271,7 +271,14 @@ export const SurfaceBoard = ({
   const walk = createChildNodeWalker(runtime.primitives);
   const enhancementIds = runtime.packs
     .flatMap((pack) => pack.enhancements)
-    .filter(({ appliesTo }) => appliesTo(composition.body, walk))
+    .filter(({ appliesTo }) => {
+      // Predicates and child walkers may assume a schema-valid body.
+      try {
+        return appliesTo(composition.body, walk);
+      } catch {
+        return false;
+      }
+    })
     .map(({ id }) => id);
   const canEnhance =
     (activeSurface === 'html' ||

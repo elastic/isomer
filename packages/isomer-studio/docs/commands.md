@@ -38,7 +38,8 @@ The server runs on Vite. When the config or anything it imports changes, the Stu
 
 Workbench combines browser renders in one **Web** panel, labeled **HTML / React /
 Snapshot** beneath its title, without a per-panel dropdown. HTML and its stylesheet
-render in a shadow root, not an iframe. PNG stays separate; Slack, Markdown and
+render in a shadow root, not an iframe; its links open in a new tab so following one
+never unloads the draft. PNG stays separate; Slack, Markdown and
 Text appear below. The **Outputs** menu lists these displayed outputs rather than
 separate React and Snapshot entries when HTML is available. Workbench starts with every
 output selected; pick one to inspect it at full size, or add others to compare.
