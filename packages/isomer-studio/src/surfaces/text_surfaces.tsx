@@ -13,14 +13,14 @@ import type { SurfaceOutput } from './render_output';
 
 /** Markdown as a reader sees it. */
 export const MarkdownSurface = ({ markdown }: { markdown: string }) => (
-  <EuiMarkdownFormat textSize="s">{markdown}</EuiMarkdownFormat>
+  <EuiMarkdownFormat textSize="m">{markdown}</EuiMarkdownFormat>
 );
 
 /** Plain text, which looks the same rendered as it does as source. */
 export const TextSurface = ({ text }: { text: string }) => (
   <EuiCodeBlock
     language="text"
-    fontSize="m"
+    fontSize="l"
     paddingSize="none"
     transparentBackground>
     {text}

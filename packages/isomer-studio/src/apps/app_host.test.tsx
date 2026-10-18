@@ -131,7 +131,7 @@ describe('Studio apps', () => {
 
     expect(await countText()).toHaveTextContent('path "a/b"');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Dev' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Workbench' }));
     await waitFor(() => expect(window.location.hash).toBe('#/dev/divider/0'));
     expect(screen.queryByText(/^count/)).toBeNull();
   });

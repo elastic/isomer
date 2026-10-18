@@ -31,7 +31,7 @@ export type PreviewSurface = StudioSurface | 'png';
 export type SurfaceSelection = 'all' | readonly PreviewSurface[];
 
 interface SurfaceOptionData {
-  surface: PreviewSurface | 'all';
+  surface: PreviewSurface;
 }
 
 type SurfaceOption = EuiSelectableOption<SurfaceOptionData>;
@@ -48,7 +48,7 @@ export const PREVIEW_ICONS: Readonly<Record<PreviewSurface, IconType>> = {
 
 export const SURFACE_NOTES: Readonly<Record<PreviewSurface, string>> = {
   react: 'Live React, styled by the host.',
-  html: 'Static markup in a sandboxed frame.',
+  html: 'HTML and its stylesheet in shadow DOM.',
   slack: 'Block Kit, drawn as Slack would.',
   markdown: 'Markdown for chat and docs.',
   text: 'Plain text with no markup.',
@@ -96,7 +96,7 @@ export const surfaceSummary = (
   surfaces: readonly PreviewSurface[]
 ): string => {
   if (selected.length === surfaces.length) {
-    return 'All surfaces';
+    return `${surfaces.length} outputs`;
   }
   const [only] = selected;
   return selected.length === 1 && only
@@ -113,18 +113,28 @@ export const surfaceNote = (
     return SURFACE_NOTES[only];
   }
   return showing.length === available
-    ? `All ${available} surfaces from the same props. Pick a surface above to inspect one at full size, or several to compare.`
-    : `Comparing ${showing.length} surfaces from the same props.`;
+    ? `All ${available} outputs from the same props. Pick an output above to inspect one at full size, or several to compare.`
+    : `Comparing ${showing.length} outputs from the same props.`;
 };
 
-/** `supported` in display order, with `png` after `snapshot` when the host rasterizes. */
+/** Adds host PNG output, optionally consolidating browser renders as HTML. */
 export const previewSurfaces = (
   supported: readonly StudioSurface[],
-  canRasterize: boolean
+  canRasterize: boolean,
+  consolidateBrowser = false
 ): PreviewSurface[] =>
-  supported.flatMap((surface): PreviewSurface[] =>
-    surface === 'snapshot' && canRasterize ? [surface, 'png'] : [surface]
-  );
+  supported.flatMap((surface): PreviewSurface[] => {
+    if (
+      consolidateBrowser &&
+      supported.includes('html') &&
+      (surface === 'react' || surface === 'snapshot')
+    ) {
+      return surface === 'snapshot' && canRasterize ? ['png'] : [];
+    }
+    return surface === 'snapshot' && canRasterize
+      ? [surface, 'png']
+      : [surface];
+  });
 
 const Option = ({ icon, label }: { icon: IconType; label: string }) => (
   <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
@@ -163,21 +173,12 @@ export const SurfaceSelect = ({
   const { euiTheme } = useEuiTheme();
   const [isOpen, setOpen] = useState(false);
   const summary = surfaceSummary(selected, surfaces);
-  const allSelected = selected.length === surfaces.length;
-  const options: SurfaceOption[] = [
-    {
-      label: 'All surfaces',
-      key: 'all',
-      surface: 'all',
-      checked: allSelected ? 'on' : undefined,
-    },
-    ...surfaces.map((surface): SurfaceOption => ({
-      label: PREVIEW_LABELS[surface],
-      key: surface,
-      surface,
-      checked: selected.includes(surface) ? 'on' : undefined,
-    })),
-  ];
+  const options: SurfaceOption[] = surfaces.map((surface): SurfaceOption => ({
+    label: PREVIEW_LABELS[surface],
+    key: surface,
+    surface,
+    checked: selected.includes(surface) ? 'on' : undefined,
+  }));
 
   return (
     <EuiPopover
@@ -191,7 +192,7 @@ export const SurfaceSelect = ({
           color="text"
           iconType="chevronSingleDown"
           iconSide="right"
-          aria-label={`Surface: ${summary}`}
+          aria-label={`Outputs: ${summary}`}
           onClick={() => setOpen((open) => !open)}>
           <span
             css={css`
@@ -199,7 +200,7 @@ export const SurfaceSelect = ({
               color: ${euiTheme.colors.textSubdued};
               font-weight: ${euiTheme.font.weight.regular};
             `}>
-            Surface
+            Outputs
           </span>
           <span
             css={css`
@@ -218,21 +219,14 @@ export const SurfaceSelect = ({
           min-width: ${MENU_WIDTH}px;
         `}>
         <EuiSelectable<SurfaceOptionData>
-          aria-label="Surfaces"
+          aria-label="Outputs"
           {...{ options }}
           onChange={(_next, _event, { surface }) =>
-            onChange(
-              surface === 'all'
-                ? [...surfaces]
-                : toggleSurface(surfaces, selected, surface)
-            )
+            onChange(toggleSurface(surfaces, selected, surface))
           }
           listProps={{ bordered: false }}
           renderOption={({ surface, label }) => (
-            <Option
-              icon={surface === 'all' ? 'apps' : PREVIEW_ICONS[surface]}
-              {...{ label }}
-            />
+            <Option icon={PREVIEW_ICONS[surface]} {...{ label }} />
           )}>
           {(list) => list}
         </EuiSelectable>

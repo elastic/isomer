@@ -14,5 +14,6 @@ export {
   type ReactContentOptions,
   applyEnhancements,
   renderCompositionContent,
+  renderMarkdownContent,
   wrapCompositionContent,
 } from '../render/react';

@@ -8,6 +8,7 @@
 import React from 'react';
 import { useEuiTheme } from '@elastic/eui';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
+import { css } from '@emotion/react';
 import type { Block } from 'slack-blocks-to-jsx';
 import { Message } from 'slack-blocks-to-jsx';
 
@@ -25,14 +26,25 @@ const toMessageBlocks = (blocks: readonly SlackBlock[]) =>
  * Its stylesheet, `slack-blocks-to-jsx/dist/style.css`, is the host's to load.
  */
 export const SlackSurface = ({ blocks }: { blocks: readonly SlackBlock[] }) => {
-  const { colorMode } = useEuiTheme();
+  const { colorMode, euiTheme } = useEuiTheme();
   return (
-    <Message
-      blocks={toMessageBlocks(blocks)}
-      name="Isomer"
-      logo={LOGO}
-      theme={colorMode === 'DARK' ? 'dark' : 'light'}
-    />
+    <div
+      css={css`
+        padding: ${euiTheme.size.m};
+        /* Matches slack-blocks-to-jsx's message canvas. */
+        background: ${colorMode === 'DARK' ? 'rgb(26, 29, 33)' : '#fff'};
+        #slack_blocks_to_jsx .text-base {
+          font-size: 16px;
+          line-height: 1.5;
+        }
+      `}>
+      <Message
+        blocks={toMessageBlocks(blocks)}
+        name="Isomer"
+        logo={LOGO}
+        theme={colorMode === 'DARK' ? 'dark' : 'light'}
+      />
+    </div>
   );
 };
 

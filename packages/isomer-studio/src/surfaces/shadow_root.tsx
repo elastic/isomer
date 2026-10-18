@@ -11,10 +11,11 @@ import { createPortal } from 'react-dom';
 
 export interface ShadowRootHostProps {
   children: (root: ShadowRoot) => ReactNode;
+  title?: string | undefined;
 }
 
 /** Renders `children` into an open shadow root, isolating them from the page's styles. */
-export const ShadowRootHost = ({ children }: ShadowRootHostProps) => {
+export const ShadowRootHost = ({ children, title }: ShadowRootHostProps) => {
   const host = useRef<HTMLDivElement>(null);
   const [root, setRoot] = useState<ShadowRoot>();
 
@@ -27,6 +28,8 @@ export const ShadowRootHost = ({ children }: ShadowRootHostProps) => {
   }, []);
 
   return (
-    <div ref={host}>{root ? createPortal(children(root), root) : null}</div>
+    <div ref={host} title={title}>
+      {root ? createPortal(children(root), root) : null}
+    </div>
   );
 };
