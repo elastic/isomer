@@ -2,6 +2,7 @@
 
 ## 2026-10-18
 
+- **Slack `container` blocks for titled sections**: `SlackBlock` gains `SlackContainerBlock` (with `SlackContainerChildBlock`), and `SLACK_LIMITS` gains `containerTitleChars`, `containerSubtitleChars`, and `containerChildBlocks`. `slackContainer(title, children, options)` builds one from a section's rendered body, unwrapping a nested container and falling back to a `header` and the blocks when the body renders to none or more than 10. The envelope fits a container's title, subtitle, icon, and children, shares the table cell budget with them, puts no spacer inside or beside it, and counts it as one block; Studio's `check` looks inside containers. ([#231](https://github.com/elastic/isomer/issues/231))
 - **Slack blocks Isomer does not model yet**: `@elastic/isomer-sdk/slack` exports `unmodeledSlackBlock`, which returns a Block Kit block Isomer does not model as a `SlackBlock`, so a pack can use a new block without an Isomer release. The envelope passes it through unfitted and counts it as one block, the way Slack's 50-block limit counts top-level blocks. A literal `type` Isomer models does not compile; `isUnmodeledSlackBlock` and `isModeledSlackBlockType` back a conformance case and an `isomer-studio check` problem for a wrapper left on a block Isomer now models, and Studio's Slack preview warns about unmodeled blocks. A **Model a Slack block** issue template asks Isomer to model one. ([#234](https://github.com/elastic/isomer/issues/234))
 
 ## 2026-10-16

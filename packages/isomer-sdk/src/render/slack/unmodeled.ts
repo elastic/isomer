@@ -5,12 +5,13 @@
  * 2.0.
  */
 
-import type { SlackBlock } from './blocks';
+import type { SlackBlock, SlackContainerChildBlock } from './blocks';
 
 const UNMODELED = Symbol.for('elastic.isomer.slack_unmodeled_block');
 
 const MODELED_BLOCK_TYPES: Readonly<Record<SlackBlock['type'], true>> = {
   actions: true,
+  container: true,
   context: true,
   divider: true,
   header: true,
@@ -28,9 +29,9 @@ export const isModeledSlackBlockType = (
   Object.prototype.hasOwnProperty.call(MODELED_BLOCK_TYPES, type);
 
 /**
- * A Block Kit block Isomer does not model yet, as a {@link SlackBlock} a `slack` renderer can return.
+ * A Block Kit block Isomer does not model yet, typed so a `slack` renderer can return it or put it in a container's `child_blocks`.
  *
- * The envelope passes it through unfitted, so Slack rejects the whole message if it breaks a limit. A literal `type` Isomer models does not compile: return that block unwrapped. Pass the block's interface as `TBlock` to check its fields.
+ * The envelope passes it through unfitted, so Slack rejects the whole message if it breaks a limit, or if Slack does not accept it inside a container. A literal `type` Isomer models does not compile: return that block unwrapped. Pass the block's interface as `TBlock` to check its fields.
  */
 export const unmodeledSlackBlock = <
   const TBlock extends { readonly type: string },
@@ -41,7 +42,8 @@ export const unmodeledSlackBlock = <
           readonly 'Isomer models this block type: return it without unmodeledSlackBlock': never;
         }
       : unknown)
-): SlackBlock => ({ ...block, [UNMODELED]: true }) as unknown as SlackBlock;
+): SlackContainerChildBlock =>
+  ({ ...block, [UNMODELED]: true }) as unknown as SlackContainerChildBlock;
 
 /** Whether `block` came from {@link unmodeledSlackBlock}. The mark is a symbol key, so it never reaches the JSON sent to Slack. */
 export const isUnmodeledSlackBlock = (block: unknown): boolean =>

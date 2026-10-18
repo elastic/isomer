@@ -203,9 +203,64 @@ const richTextBlockProblems = (
     richTextProblems(`${where} elements[${elementIndex}]`, element, textLimit)
   );
 
-const blockProblems = (block: SlackBlock, index: number): string[] => {
-  const where = `blocks[${index}] (${block.type})`;
+interface LocatedBlock {
+  where: string;
+  block: SlackBlock;
+}
+
+/** Every block in the message, a container's children after it, each with the path a problem names. */
+const located = (blocks: readonly SlackBlock[]): LocatedBlock[] =>
+  blocks.flatMap((block, index) => {
+    const where = `blocks[${index}] (${block.type})`;
+    return [
+      { where, block },
+      ...(block.type === 'container'
+        ? list(block.child_blocks).map((child, childIndex) => ({
+            where: `${where} child_blocks[${childIndex}] (${child.type})`,
+            block: child,
+          }))
+        : []),
+    ];
+  });
+
+const blockProblems = ({ where, block }: LocatedBlock): string[] => {
   switch (block.type) {
+    case 'container': {
+      const children = list(block.child_blocks);
+      return [
+        ...overLength(
+          `${where} title`,
+          block.title?.text,
+          SLACK_LIMITS.containerTitleChars
+        ),
+        ...overLength(
+          `${where} subtitle`,
+          block.subtitle?.text,
+          SLACK_LIMITS.containerSubtitleChars
+        ),
+        ...(block.icon ? imageProblems(`${where} icon`, block.icon) : []),
+        ...(block.rich_text_title
+          ? richTextBlockProblems(
+              `${where} rich_text_title`,
+              block.rich_text_title,
+              SLACK_LIMITS.sectionTextChars
+            )
+          : []),
+        ...overCount(
+          `${where} child_blocks`,
+          children.length,
+          SLACK_LIMITS.containerChildBlocks
+        ),
+        ...empty(`${where} child_blocks`, children.length),
+        ...children.flatMap(({ type }, childIndex) =>
+          (type as string) === 'container'
+            ? [
+                `${where} child_blocks[${childIndex}] is a container; Slack does not accept one inside another.`,
+              ]
+            : []
+        ),
+      ];
+    }
     case 'header':
       return overLength(
         `${where} text`,
@@ -349,11 +404,11 @@ const tableTextLength = (blocks: readonly SlackBlock[]): number =>
     0
   );
 
-const staleWrapperProblems = (block: SlackBlock, index: number): string[] => {
+const staleWrapperProblems = ({ where, block }: LocatedBlock): string[] => {
   const { type } = block;
   return isUnmodeledSlackBlock(block) && isModeledSlackBlockType(type)
     ? [
-        `blocks[${index}] (${type}) is wrapped in \`unmodeledSlackBlock\`, but Isomer models \`${type}\` blocks: return it unwrapped so its limits are fitted.`,
+        `${where} is wrapped in \`unmodeledSlackBlock\`, but Isomer models \`${type}\` blocks: return it unwrapped so its limits are fitted.`,
       ]
     : [];
 };
@@ -362,8 +417,8 @@ const staleWrapperProblems = (block: SlackBlock, index: number): string[] => {
 export const unmodeledSlackNotes = (blocks: readonly SlackBlock[]): string[] =>
   [
     ...new Set(
-      blocks
-        .map(({ type }): string => type)
+      located(blocks)
+        .map(({ block: { type } }): string => type)
         .filter((type) => !isModeledSlackBlockType(type))
     ),
   ].map(
@@ -378,14 +433,17 @@ export const slackLimitProblems = ({
 }: {
   text: string;
   blocks: readonly SlackBlock[];
-}): string[] => [
-  ...overCount(
-    'The message blocks',
-    blocks.length,
-    SLACK_LIMITS.blocksPerMessage
-  ),
-  ...overLength('The fallback text', text, SLACK_LIMITS.fallbackTextChars),
-  ...overTableText(tableTextLength(blocks)),
-  ...blocks.flatMap(blockProblems),
-  ...blocks.flatMap(staleWrapperProblems),
-];
+}): string[] => {
+  const all = located(blocks);
+  return [
+    ...overCount(
+      'The message blocks',
+      blocks.length,
+      SLACK_LIMITS.blocksPerMessage
+    ),
+    ...overLength('The fallback text', text, SLACK_LIMITS.fallbackTextChars),
+    ...overTableText(tableTextLength(all.map(({ block }) => block))),
+    ...all.flatMap(blockProblems),
+    ...all.flatMap(staleWrapperProblems),
+  ];
+};

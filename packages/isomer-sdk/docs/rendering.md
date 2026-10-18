@@ -158,6 +158,32 @@ Findings are advice, not validation errors, and no surface runs the check: an ov
 
 A block from `unmodeledSlackBlock`, or of a type Isomer does not model, skips steps 1 to 3 and counts as one block in step 4. Slack counts the same way: `blocksPerMessage` limits top-level blocks, and blocks nested inside one, such as a `container`'s `child_blocks`, do not count toward it.
 
+A `container` goes through every step with its children:
+
+- Step 1 cuts its `title` to `containerTitleChars` and its `subtitle` to `containerSubtitleChars`, drops an `icon` whose URL is past `imageUrlChars`, cuts the icon's alt text, and fits each child as a block of its own.
+- Step 2 counts the cells of its tables toward the message in document order, with the tables around it.
+- Step 3 coalesces field sections and splits blocks within its children, never across its edge. It puts no spacer inside a container, nor beside one, since a container sets itself apart.
+- Step 4 counts it as one block, however many children it holds.
+
+A container nested in another is unwrapped into its parent, since Slack rejects one. A container any step leaves with no children, or more than `containerChildBlocks`, is unwrapped too: its title becomes a `header` (or its `rich_text_title` a `rich_text` block), its subtitle a `context` block, followed by its children.
+
+## Titled sections on Slack
+
+A primitive that groups its body under a title, such as an "Impact" or "Hypotheses" section, renders on Slack through `slackContainer`, which builds a Block Kit `container`:
+
+```ts
+import { slackContainer } from '@elastic/isomer-sdk/slack';
+
+slack: (node, { collector, scope }) =>
+  slackContainer(
+    node.title,
+    node.children.flatMap((child) => scope.renderSlack(child, collector)),
+    { is_collapsible: node.collapsible, fallbackLevel: 3 }
+  ),
+```
+
+The options are the container's own optional fields, `subtitle`, `icon`, `width`, `is_collapsible`, `default_collapsed`, `has_header_divider`, and `block_id`, plus `fallbackLevel`. The title is collapsed to one line and cut to `containerTitleChars`. When the body renders to no blocks, or to more than `containerChildBlocks`, the section falls back to a `header` at `fallbackLevel` followed by the blocks. A container among the children, such as a nested section's, is unwrapped into this one, since Slack does not accept a container inside another.
+
 ## Slack blocks Isomer does not model yet
 
 Slack adds Block Kit blocks faster than Isomer releases. `SlackBlock` covers the blocks Isomer models. A `slack` renderer returns any other block through `unmodeledSlackBlock`, a bridge until Isomer models it:

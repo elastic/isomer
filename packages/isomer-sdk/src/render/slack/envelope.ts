@@ -19,6 +19,7 @@ import {
   SLACK_LIMITS,
   type SlackActionElement,
   type SlackBlock,
+  type SlackContainerBlock,
   type SlackContextBlock,
   type SlackHeaderBlock,
   type SlackMrkdwnTextObject,
@@ -32,6 +33,7 @@ import {
   type SlackTableCell,
   type SlackTextObject,
 } from './blocks';
+import { containerWithChildren, isContainer } from './container';
 import {
   clampMrkdwn,
   clampSlackText,
@@ -289,6 +291,11 @@ const splitBlockCounts = (block: SlackBlock): SlackBlock[] => {
     return [block];
   }
   switch (block.type) {
+    case 'container':
+      return containerWithChildren(
+        block,
+        block.child_blocks.flatMap(splitBlockCounts)
+      );
     case 'context':
       return chunks(block.elements, SLACK_LIMITS.contextElements).map(
         (elements, index) =>
@@ -352,10 +359,33 @@ const fitImageUrls = (block: SlackBlock): SlackBlock[] => {
   }
 };
 
-const fitBlock = (block: SlackBlock): SlackBlock[] =>
-  isUnmodeledSlackBlock(block)
-    ? [block]
+const fitBlock = (block: SlackBlock): SlackBlock[] => {
+  if (isUnmodeledSlackBlock(block)) {
+    return [block];
+  }
+  return block.type === 'container'
+    ? fitContainer(block)
     : fitImageUrls(block).map(clampBlockText);
+};
+
+const fitContainer = (container: SlackContainerBlock): SlackBlock[] => {
+  const { title, subtitle, icon, child_blocks } = container;
+  const fitted: SlackContainerBlock = {
+    ...container,
+    ...(title && {
+      title: clampText(title, SLACK_LIMITS.containerTitleChars),
+    }),
+    ...(subtitle && {
+      subtitle: clampText(subtitle, SLACK_LIMITS.containerSubtitleChars),
+    }),
+  };
+  if (icon && fitsImageUrl(icon)) {
+    fitted.icon = clampAlt(icon);
+  } else {
+    delete fitted.icon;
+  }
+  return containerWithChildren(fitted, child_blocks.flatMap(fitBlock));
+};
 
 // Pack renderers build their own blocks, and one overlong text makes Slack
 // reject the whole message.
@@ -433,11 +463,14 @@ const collectSlackFileRefs = (
   blocks: readonly SlackBlock[]
 ): ReadonlySet<string> => {
   const refs = new Set<string>();
-  for (const block of blocks) {
+  const visit = (block: SlackBlock): void => {
     if (block.type === 'image' && block.slack_file?.ref !== undefined) {
       refs.add(block.slack_file.ref);
+    } else if (isContainer(block)) {
+      block.child_blocks.forEach(visit);
     }
-  }
+  };
+  blocks.forEach(visit);
   return refs;
 };
 
@@ -484,7 +517,9 @@ const isFieldsOnly = (
   block.text === undefined &&
   block.accessory === undefined;
 
+// A container sets itself apart, so no spacer goes beside it.
 const isContent = (block: SlackBlock): boolean =>
+  block.type !== 'container' &&
   block.type !== 'header' &&
   block.type !== 'divider' &&
   block.type !== 'actions' &&
@@ -517,7 +552,14 @@ const coalesceFieldSections = (blocks: readonly SlackBlock[]): SlackBlock[] => {
       out.push({ type: 'section', fields });
       continue;
     }
-    out.push(block);
+    out.push(
+      ...(isContainer(block)
+        ? containerWithChildren(
+            block,
+            coalesceFieldSections(block.child_blocks)
+          )
+        : [block])
+    );
     index += 1;
   }
   return out;
@@ -770,7 +812,10 @@ const fitsTableShape = ({ rows }: SlackTableBlock): boolean =>
 // kept ones left.
 const enforceTableLimits = (blocks: readonly SlackBlock[]): SlackBlock[] => {
   let spent = 0;
-  return blocks.flatMap((block) => {
+  const fit = (block: SlackBlock): SlackBlock[] => {
+    if (isContainer(block)) {
+      return containerWithChildren(block, block.child_blocks.flatMap(fit));
+    }
     if (block.type !== 'table' || isUnmodeledSlackBlock(block)) {
       return [block];
     }
@@ -783,7 +828,8 @@ const enforceTableLimits = (blocks: readonly SlackBlock[]): SlackBlock[] => {
       return [block];
     }
     return degradeTable(block);
-  });
+  };
+  return blocks.flatMap(fit);
 };
 
 const enforceBlockBudget = (blocks: SlackBlock[]): SlackBlock[] => {

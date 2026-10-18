@@ -17,6 +17,8 @@ export {
   type SlackBlock,
   type SlackButtonElement,
   type SlackCheckboxesElement,
+  type SlackContainerBlock,
+  type SlackContainerChildBlock,
   type SlackContextBlock,
   type SlackDividerBlock,
   type SlackFileReference,
@@ -54,6 +56,7 @@ export {
   type SlackVideoBlock,
   SLACK_LIMITS,
 } from './blocks';
+export { type SlackContainerOptions, slackContainer } from './container';
 export {
   type SlackEnvelopeDispatcher,
   type SlackEnvelopeOptions,

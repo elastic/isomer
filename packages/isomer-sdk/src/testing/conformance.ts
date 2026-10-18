@@ -378,6 +378,9 @@ export const primitiveConformanceCases: readonly PrimitiveConformanceCase[] = [
     run: (example, harness) => {
       for (const { type } of harness
         .renderSlack(example.node)
+        .flatMap((block): readonly SlackBlock[] =>
+          block.type === 'container' ? [block, ...block.child_blocks] : [block]
+        )
         .filter(isUnmodeledSlackBlock)) {
         assert.ok(
           !isModeledSlackBlockType(type),
