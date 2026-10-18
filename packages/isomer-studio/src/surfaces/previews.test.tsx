@@ -23,6 +23,7 @@ import { HtmlSurface, ShadowHtmlSurface } from './html_surface';
 import { PngSurface } from './png_surface';
 import { ReactSurface } from './react_surface';
 import { ScaledPreview } from './scaled_preview';
+import { ShadowRootHost } from './shadow_root';
 import { SurfaceBoard } from './surface_board';
 
 class FakeResizeObserver {
@@ -206,6 +207,40 @@ describe('HtmlSurface', () => {
     );
     expect(fireEvent.click(top)).toBe(false);
     expect(fireEvent.submit(button.form!)).toBe(false);
+    expect(open).toHaveBeenCalledOnce();
+  });
+
+  it('lets a React preview handler cancel a link before the navigation guard runs', () => {
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    const seen: boolean[] = [];
+    render(
+      <ShadowRootHost title="React preview">
+        {() => (
+          <>
+            <a
+              href="https://example.com/step"
+              onClick={(event) => {
+                seen.push(event.defaultPrevented);
+                event.preventDefault();
+              }}>
+              Next step
+            </a>
+            <a href="https://example.com/docs">Docs</a>
+          </>
+        )}
+      </ShadowRootHost>
+    );
+    const [step, docs] =
+      screen.getByTitle('React preview').shadowRoot?.querySelectorAll('a') ??
+      [];
+    if (!step || !docs) {
+      throw new Error('No preview links.');
+    }
+
+    expect(fireEvent.click(step)).toBe(false);
+    expect(seen).toEqual([false]);
+    expect(open).not.toHaveBeenCalled();
+    fireEvent.click(docs);
     expect(open).toHaveBeenCalledOnce();
   });
 

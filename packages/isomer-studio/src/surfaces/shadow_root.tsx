@@ -6,7 +6,7 @@
  */
 
 import type { ReactNode } from 'react';
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 export interface ShadowRootHostProps {
@@ -41,19 +41,25 @@ export const ShadowRootHost = ({ children, title }: ShadowRootHostProps) => {
   const [root, setRoot] = useState<ShadowRoot>();
 
   useLayoutEffect(() => {
-    if (!host.current) {
+    if (host.current) {
+      setRoot(
+        host.current.shadowRoot ?? host.current.attachShadow({ mode: 'open' })
+      );
+    }
+  }, []);
+
+  // Registered once the portal has mounted, so React's listener on the root runs first and its handlers can cancel navigation.
+  useEffect(() => {
+    if (!root) {
       return;
     }
-    const shadow =
-      host.current.shadowRoot ?? host.current.attachShadow({ mode: 'open' });
-    shadow.addEventListener('click', containLinks);
-    shadow.addEventListener('submit', containSubmit);
-    setRoot(shadow);
+    root.addEventListener('click', containLinks);
+    root.addEventListener('submit', containSubmit);
     return () => {
-      shadow.removeEventListener('click', containLinks);
-      shadow.removeEventListener('submit', containSubmit);
+      root.removeEventListener('click', containLinks);
+      root.removeEventListener('submit', containSubmit);
     };
-  }, []);
+  }, [root]);
 
   return (
     <div ref={host} title={title}>
