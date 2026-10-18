@@ -13,3 +13,4 @@ export {
   wrapCompositionContent,
 } from './content';
 export { applyEnhancements } from './enhancements';
+export { renderMarkdownContent } from './markdown_content';

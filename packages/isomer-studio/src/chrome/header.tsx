@@ -25,8 +25,8 @@ import type { StudioMode } from './route';
 import { formatLocation, HOME } from './route';
 
 const MODE_OPTIONS: { id: StudioMode; label: string }[] = [
-  { id: 'dev', label: 'Dev' },
-  { id: 'docs', label: 'Docs' },
+  { id: 'dev', label: 'Workbench' },
+  { id: 'docs', label: 'Reference' },
 ];
 const isMode = (id: string): id is StudioMode =>
   MODE_OPTIONS.some((option) => option.id === id);
@@ -65,6 +65,9 @@ const ColorModePicker = ({
   onColorModeChange,
 }: Pick<StudioHeaderProps, 'colorMode' | 'onColorModeChange'>) => (
   <EuiButtonGroup
+    css={css`
+      flex: none;
+    `}
     legend="Color mode"
     buttonSize="s"
     variant="selection"
@@ -82,7 +85,7 @@ const ColorModePicker = ({
   </EuiButtonGroup>
 );
 
-/** Title, the Dev/Docs switch, search and the color mode. The mark and title link to Home. */
+/** Title, the Workbench/Reference switch, search and color mode. The mark and title link to Home. */
 export const StudioHeader = ({
   title = 'Isomer Studio',
   mode,
@@ -103,8 +106,54 @@ export const StudioHeader = ({
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
+    gap: ${euiTheme.size.s};
+    @media (max-width: 1200px) {
+      display: flex;
+      flex-wrap: nowrap;
+      padding-inline: ${euiTheme.size.s};
+    }
+  `;
+  const brandSlot = css`
+    min-width: 0;
+    flex-wrap: nowrap;
+    @media (max-width: 1200px) {
+      flex: 1 0 auto;
+    }
+  `;
+  const subtitle = css`
+    white-space: nowrap;
+    @media (max-width: 1024px) {
+      display: none;
+    }
+  `;
+  const titleText = css`
+    white-space: nowrap;
+    @media (max-width: 640px) {
+      display: none;
+    }
+  `;
+  const modeSlot = css`
+    flex: none;
+  `;
+  const modeLabel = css`
+    @media (max-width: 1200px) {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  `;
+  const toolsSlot = css`
+    min-width: 0;
+    flex-wrap: nowrap;
+    @media (max-width: 1200px) {
+      flex: 0 1 auto;
+    }
   `;
   const brand = css`
+    flex: none;
     display: inline-flex;
     align-items: center;
     gap: ${euiTheme.size.s};
@@ -122,11 +171,14 @@ export const StudioHeader = ({
   return (
     <header css={bar}>
       <div
-        css={css`
-          display: flex;
-          align-items: center;
-          gap: ${euiTheme.size.s};
-        `}>
+        css={[
+          brandSlot,
+          css`
+            display: flex;
+            align-items: center;
+            gap: ${euiTheme.size.s};
+          `,
+        ]}>
         <a
           href={formatLocation(HOME)}
           css={brand}
@@ -139,24 +191,31 @@ export const StudioHeader = ({
             onHome();
           }}>
           <IsomerMark size={22} />
-          <EuiText size="s" color="ghost">
+          <EuiText size="s" color="ghost" css={titleText}>
             <strong>{title}</strong>
           </EuiText>
         </a>
         {home ? null : (
-          <EuiText size="xs" color="ghost">
+          <EuiText size="xs" color="ghost" css={subtitle}>
             {mode === undefined
               ? appTitle
               : mode === 'dev'
-                ? 'Workbench'
-                : 'Reference'}
+                ? 'Composition editor'
+                : 'Primitive reference'}
           </EuiText>
         )}
       </div>
       {home ? (
-        <span />
+        <span
+          css={css`
+            @media (max-width: 1200px) {
+              display: none;
+            }
+          `}
+        />
       ) : (
         <EuiButtonGroup
+          css={modeSlot}
           legend="Studio mode"
           buttonSize="s"
           variant="selection"
@@ -167,19 +226,23 @@ export const StudioHeader = ({
             <EuiButton
               key={id}
               id={id}
+              title={label}
               iconType={id === 'dev' ? 'code' : 'document'}>
-              {label}
+              <span css={modeLabel}>{label}</span>
             </EuiButton>
           ))}
         </EuiButtonGroup>
       )}
       <div
-        css={css`
-          display: flex;
-          justify-content: flex-end;
-          align-items: center;
-          gap: ${euiTheme.size.s};
-        `}>
+        css={[
+          toolsSlot,
+          css`
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: ${euiTheme.size.s};
+          `,
+        ]}>
         {home ? (
           <EuiLink href={DOCS_URL} target="_blank" external color="ghost">
             Isomer docs

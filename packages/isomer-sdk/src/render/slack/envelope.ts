@@ -19,6 +19,7 @@ import {
   SLACK_LIMITS,
   type SlackActionElement,
   type SlackBlock,
+  type SlackContainerBlock,
   type SlackContextBlock,
   type SlackHeaderBlock,
   type SlackMrkdwnTextObject,
@@ -32,6 +33,7 @@ import {
   type SlackTableCell,
   type SlackTextObject,
 } from './blocks';
+import { containerWithChildren, isContainer } from './container';
 import {
   clampMrkdwn,
   clampSlackText,
@@ -40,6 +42,7 @@ import {
   formatHeaderText,
   italic,
 } from './format';
+import { isUnmodeledSlackBlock } from './unmodeled';
 
 /**
  * Adds Block Kit to {@link MarkdownEnvelopeDispatcher}.
@@ -91,8 +94,9 @@ export interface SlackEnvelopeResult {
  * fitted to Slack's limits — text is clamped, blocks past a count limit and
  * `rich_text` elements past a section's limit split, tables past a table limit
  * or the message's cell budget become rich text, spacers and then whole blocks
- * are dropped — so the output is always postable. `assets` stays empty
- * unless `collectAssets` is set.
+ * are dropped — so the output is always postable, except for a block from
+ * `unmodeledSlackBlock` or of a type Isomer does not model, which passes
+ * through unfitted. `assets` stays empty unless `collectAssets` is set.
  */
 export const renderSlackEnvelope = <TNode extends PrimitiveNode>(
   composition: Composition<TNode>,
@@ -283,7 +287,15 @@ const chunks = <T>(items: readonly T[], size: number): T[][] =>
 // Splits a block past a count limit into blocks of its type. Only the first
 // keeps a `block_id`, which Slack requires to be unique.
 const splitBlockCounts = (block: SlackBlock): SlackBlock[] => {
+  if (isUnmodeledSlackBlock(block)) {
+    return [block];
+  }
   switch (block.type) {
+    case 'container':
+      return containerWithChildren(
+        block,
+        block.child_blocks.flatMap(splitBlockCounts)
+      );
     case 'context':
       return chunks(block.elements, SLACK_LIMITS.contextElements).map(
         (elements, index) =>
@@ -347,8 +359,39 @@ const fitImageUrls = (block: SlackBlock): SlackBlock[] => {
   }
 };
 
-const fitBlock = (block: SlackBlock): SlackBlock[] =>
-  fitImageUrls(block).map(clampBlockText);
+const fitBlock = (block: SlackBlock): SlackBlock[] => {
+  if (isUnmodeledSlackBlock(block)) {
+    return [block];
+  }
+  return block.type === 'container'
+    ? fitContainer(block)
+    : fitImageUrls(block).map(clampBlockText);
+};
+
+const fitContainer = (container: SlackContainerBlock): SlackBlock[] => {
+  const { title, rich_text_title, subtitle, icon, child_blocks } = container;
+  const fitted: SlackContainerBlock = {
+    ...container,
+    ...(title && {
+      title: clampText(title, SLACK_LIMITS.containerTitleChars),
+    }),
+    ...(rich_text_title && {
+      rich_text_title: {
+        ...rich_text_title,
+        elements: rich_text_title.elements.flatMap(splitRichTextElement),
+      },
+    }),
+    ...(subtitle && {
+      subtitle: clampText(subtitle, SLACK_LIMITS.containerSubtitleChars),
+    }),
+  };
+  if (icon && fitsImageUrl(icon)) {
+    fitted.icon = clampAlt(icon);
+  } else {
+    delete fitted.icon;
+  }
+  return containerWithChildren(fitted, child_blocks.flatMap(fitBlock));
+};
 
 // Pack renderers build their own blocks, and one overlong text makes Slack
 // reject the whole message.
@@ -426,11 +469,14 @@ const collectSlackFileRefs = (
   blocks: readonly SlackBlock[]
 ): ReadonlySet<string> => {
   const refs = new Set<string>();
-  for (const block of blocks) {
+  const visit = (block: SlackBlock): void => {
     if (block.type === 'image' && block.slack_file?.ref !== undefined) {
       refs.add(block.slack_file.ref);
+    } else if (isContainer(block)) {
+      block.child_blocks.forEach(visit);
     }
-  }
+  };
+  blocks.forEach(visit);
   return refs;
 };
 
@@ -461,6 +507,7 @@ const slackSpacerBlock = (): SlackSectionBlock => ({
 });
 
 const isSpacer = (block: SlackBlock): boolean =>
+  !isUnmodeledSlackBlock(block) &&
   block.type === 'section' &&
   block.text?.type === 'mrkdwn' &&
   block.text.text === SLACK_SPACER_TEXT &&
@@ -470,12 +517,15 @@ const isSpacer = (block: SlackBlock): boolean =>
 const isFieldsOnly = (
   block: SlackBlock
 ): block is SlackSectionBlock & { fields: SlackMrkdwnTextObject[] } =>
+  !isUnmodeledSlackBlock(block) &&
   block.type === 'section' &&
   (block.fields?.length ?? 0) > 0 &&
   block.text === undefined &&
   block.accessory === undefined;
 
+// A container sets itself apart, so no spacer goes beside it.
 const isContent = (block: SlackBlock): boolean =>
+  block.type !== 'container' &&
   block.type !== 'header' &&
   block.type !== 'divider' &&
   block.type !== 'actions' &&
@@ -508,7 +558,14 @@ const coalesceFieldSections = (blocks: readonly SlackBlock[]): SlackBlock[] => {
       out.push({ type: 'section', fields });
       continue;
     }
-    out.push(block);
+    out.push(
+      ...(isContainer(block)
+        ? containerWithChildren(
+            block,
+            coalesceFieldSections(block.child_blocks)
+          )
+        : [block])
+    );
     index += 1;
   }
   return out;
@@ -761,8 +818,11 @@ const fitsTableShape = ({ rows }: SlackTableBlock): boolean =>
 // kept ones left.
 const enforceTableLimits = (blocks: readonly SlackBlock[]): SlackBlock[] => {
   let spent = 0;
-  return blocks.flatMap((block) => {
-    if (block.type !== 'table') {
+  const fit = (block: SlackBlock): SlackBlock[] => {
+    if (isContainer(block)) {
+      return containerWithChildren(block, block.child_blocks.flatMap(fit));
+    }
+    if (block.type !== 'table' || isUnmodeledSlackBlock(block)) {
       return [block];
     }
     const cost = tableCharCount(block);
@@ -774,7 +834,8 @@ const enforceTableLimits = (blocks: readonly SlackBlock[]): SlackBlock[] => {
       return [block];
     }
     return degradeTable(block);
-  });
+  };
+  return blocks.flatMap(fit);
 };
 
 const enforceBlockBudget = (blocks: SlackBlock[]): SlackBlock[] => {

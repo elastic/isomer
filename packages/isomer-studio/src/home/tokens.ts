@@ -31,7 +31,7 @@ export const HOME = {
   actionSurfaceHover: '#382F40',
 } as const;
 
-/** The glows behind the shell: the same stops as Dev and Docs, in the logo's palette. */
+/** The glows behind the shell: the same stops as Workbench and Reference, in the logo's palette. */
 export const homeBackground = css`
   background-color: ${HOME.shell};
   background-image:

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   EuiCallOut,
   EuiProvider,
@@ -81,6 +81,11 @@ const devBackground = css`
 
 type Look = 'dev' | 'docs' | 'home';
 
+const compactNavQuery = () =>
+  typeof window === 'undefined'
+    ? undefined
+    : window.matchMedia(`(max-width: ${NAV_WIDTH.compactAt}px)`);
+
 const BACKGROUNDS = {
   dev: devBackground,
   docs: docsBackground,
@@ -115,11 +120,28 @@ const Layout = ({
   const mode = app || home ? undefined : route.mode;
   const look: Look = home ? 'home' : (mode ?? 'docs');
   const accent = useAccent(look === 'home' ? 'docs' : look);
-  const [isNavOpen, setNavOpen] = useState(true);
+  const [isCompactNav, setCompactNav] = useState(
+    () => compactNavQuery()?.matches ?? false
+  );
+  const [isNavOpen, setNavOpen] = useState(() => !isCompactNav);
   const [devRoute, setDevRoute] = useState(mode === 'dev' ? route : undefined);
   if (mode === 'dev' && devRoute !== route) {
     setDevRoute(route);
   }
+
+  useEffect(() => {
+    const query = compactNavQuery();
+    if (!query) {
+      return;
+    }
+    const update = () => {
+      setCompactNav(query.matches);
+      setNavOpen(!query.matches);
+    };
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
 
   const shell = css`
     height: 100vh;
@@ -133,16 +155,23 @@ const Layout = ({
     flex: 1;
     min-height: 0;
     display: grid;
-    grid-template-columns: ${isNavOpen ? NAV_WIDTH.open : NAV_WIDTH.closed}px minmax(
-        0,
-        1fr
-      );
+    position: relative;
+    grid-template-columns: ${
+      isCompactNav
+        ? NAV_WIDTH.closed
+        : isNavOpen
+          ? NAV_WIDTH.open
+          : NAV_WIDTH.closed
+    }px minmax(0, 1fr);
     transition: grid-template-columns ${euiTheme.animation.normal}
       ${euiTheme.animation.resistance};
   `;
   const main = css`
+    grid-column: 2;
     min-height: 0;
     margin: 0 ${euiTheme.size.m} ${euiTheme.size.m} 0;
+    /* Contain absolute descendants (EUI screen-reader text) so they cannot overflow the shell. */
+    position: relative;
     overflow: auto;
     border-radius: ${euiTheme.border.radius.frame};
     background: ${euiTheme.colors.backgroundBasePlain};
@@ -186,6 +215,7 @@ const Layout = ({
               app={app?.id}
               appPath={isAppRoute(location) ? location.path : undefined}
               isOpen={isNavOpen}
+              isCompact={isCompactNav}
               onToggle={() => setNavOpen((open) => !open)}
               onSelect={(next) =>
                 navigate(
@@ -222,7 +252,11 @@ const Layout = ({
               <>
                 {devRoute ? (
                   <div hidden={mode !== 'dev'} css={fill}>
-                    <DevView route={devRoute} {...{ navigate }} />
+                    <DevView
+                      route={devRoute}
+                      stacked={isCompactNav}
+                      {...{ navigate }}
+                    />
                   </div>
                 ) : null}
                 {mode !== 'docs' ? null : page === GALLERY ? (

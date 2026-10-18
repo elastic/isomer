@@ -7,7 +7,9 @@
 
 import React, { useMemo, useState } from 'react';
 import {
+  EuiButton,
   EuiButtonEmpty,
+  EuiButtonGroup,
   EuiFlexGroup,
   EuiFlexItem,
   EuiPanel,
@@ -21,15 +23,24 @@ import { useStudio } from '../studio_context';
 import { ExamplePicker } from '../surfaces/example_picker';
 import { SurfaceBoard } from '../surfaces/surface_board';
 import type { SurfaceView } from '../surfaces/surface_preview';
-import { SurfaceViewToggle } from '../surfaces/surface_preview';
 import {
   previewSurfaces,
-  surfaceNote,
   SurfaceSelect,
   useSurfaceSelection,
 } from '../surfaces/surface_select';
 
 import { ExampleSource } from './example_source';
+
+type ExamplesView = SurfaceView | 'example';
+
+const EXAMPLE_VIEW_OPTIONS: { id: ExamplesView; label: string }[] = [
+  { id: 'example', label: 'Example source' },
+  { id: 'render', label: 'Rendered' },
+  { id: 'source', label: 'Output source' },
+];
+
+const isExamplesView = (id: string): id is ExamplesView =>
+  id === 'render' || id === 'source' || id === 'example';
 
 export interface ExamplesPanelProps {
   doc: PrimitiveDoc;
@@ -48,12 +59,12 @@ export const ExamplesPanel = ({
   const { euiTheme } = useEuiTheme();
   const { runtime, compose, rasterizePng } = useStudio();
   const { examples } = doc;
-  const surfaces = previewSurfaces(doc.surfaces, Boolean(rasterizePng));
+  const surfaces = previewSurfaces(doc.surfaces, Boolean(rasterizePng), true);
   const { showing, select } = useSurfaceSelection(
     surfaces,
     surfaces[0] ? [surfaces[0]] : 'all'
   );
-  const [view, setView] = useState<SurfaceView>('render');
+  const [view, setView] = useState<ExamplesView>('render');
   const selected = examples[example];
 
   const composition = useMemo(
@@ -96,16 +107,22 @@ export const ExamplesPanel = ({
         </EuiFlexItem>
       </EuiFlexGroup>
       <div
+        hidden={view === 'example'}
         css={css`
           padding: ${euiTheme.size.l};
           background: ${euiTheme.colors.backgroundBaseSubdued};
         `}>
         <SurfaceBoard
           surfaces={showing}
-          {...{ composition, validation, view }}
+          view={view === 'example' ? 'render' : view}
+          {...{ composition, validation }}
+          errorHref={devHref}
           zoom="fit"
         />
       </div>
+      {selected ? (
+        <ExampleSource node={selected.node} isOpen={view === 'example'} />
+      ) : null}
       {selected?.description ? (
         <EuiText
           size="s"
@@ -126,31 +143,29 @@ export const ExamplesPanel = ({
           border-top: ${euiTheme.border.thin};
         `}>
         <EuiFlexItem grow={false}>
-          <SurfaceViewToggle
-            {...{ view }}
-            onChange={setView}
+          <EuiButtonGroup
             legend="Example view"
-          />
+            buttonSize="s"
+            variant="selection"
+            idSelected={view}
+            display="highlighted"
+            onChange={(id) => isExamplesView(id) && setView(id)}>
+            {EXAMPLE_VIEW_OPTIONS.map(({ id, label }) => (
+              <EuiButton key={id} id={id}>
+                {label}
+              </EuiButton>
+            ))}
+          </EuiButtonGroup>
         </EuiFlexItem>
         <EuiFlexItem
           css={css`
-            min-width: 0;
+            align-items: flex-end;
           `}>
-          <EuiText size="xs" color="subdued">
-            {surfaceNote(showing, surfaces.length)}
-          </EuiText>
-        </EuiFlexItem>
-        <EuiFlexItem grow={false}>
-          <EuiButtonEmpty
-            size="s"
-            href={devHref}
-            iconType="external"
-            iconSide="right">
-            Open in Dev
+          <EuiButtonEmpty size="s" href={devHref} iconType="code">
+            Open in Workbench
           </EuiButtonEmpty>
         </EuiFlexItem>
       </EuiFlexGroup>
-      {selected ? <ExampleSource node={selected.node} /> : null}
     </EuiPanel>
   );
 };

@@ -49,6 +49,7 @@ const value: StudioContextValue = {
 
 const renderNav = (props: Partial<StudioNavProps> = {}) => {
   const onSelectApp = vi.fn();
+  const onToggle = vi.fn();
   render(
     <EuiProvider>
       <StudioContextProvider {...{ value }}>
@@ -56,7 +57,7 @@ const renderNav = (props: Partial<StudioNavProps> = {}) => {
           mode="dev"
           page="callout"
           isOpen
-          onToggle={() => undefined}
+          {...{ onToggle }}
           onSelect={() => undefined}
           {...{ onSelectApp }}
           {...props}
@@ -64,7 +65,7 @@ const renderNav = (props: Partial<StudioNavProps> = {}) => {
       </StudioContextProvider>
     </EuiProvider>
   );
-  return { nav: screen.getByRole('navigation'), onSelectApp };
+  return { nav: screen.getByRole('navigation'), onSelectApp, onToggle };
 };
 
 const isBefore = (a: HTMLElement, b: HTMLElement) =>
@@ -76,6 +77,19 @@ const texts = (elements: readonly HTMLElement[]) =>
   elements.map(({ textContent }) => textContent);
 
 describe('StudioNav app pages', () => {
+  it('places the collapse toggle after the filter in the same toolbar', () => {
+    const { onToggle } = renderNav();
+    const filter = screen.getByRole('searchbox', { name: 'Filter primitives' });
+    const toggle = screen.getByRole('button', {
+      name: 'Collapse primitive navigation',
+    });
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(isBefore(filter, toggle)).toBe(true);
+    expect(toggle.parentElement).toContainElement(filter);
+    fireEvent.click(toggle);
+    expect(onToggle).toHaveBeenCalledOnce();
+  });
+
   beforeEach(() => {
     window.localStorage.removeItem('isomer-studio:nav-closed-groups');
   });
@@ -196,5 +210,27 @@ describe('StudioNav gallery link', () => {
     expect(
       isBefore(within(nav).getByRole('button', { name: 'Decks' }), gallery)
     ).toBe(true);
+  });
+});
+
+describe('StudioNav compact behavior', () => {
+  it('stays collapsed on hover and focus until expanded', () => {
+    const { nav, onToggle } = renderNav({
+      isOpen: false,
+      isCompact: true,
+    });
+    const expand = screen.getByRole('button', {
+      name: 'Expand primitive navigation',
+    });
+
+    fireEvent.mouseEnter(nav);
+    fireEvent.focus(expand);
+    expect(
+      screen.queryByRole('searchbox', { name: 'Filter primitives' })
+    ).not.toBeInTheDocument();
+    expect(expand).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.click(expand);
+    expect(onToggle).toHaveBeenCalledOnce();
   });
 });

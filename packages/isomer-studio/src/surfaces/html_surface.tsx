@@ -5,8 +5,12 @@
  * 2.0.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { EuiCallOut } from '@elastic/eui';
+import { runEnhancementScript } from '@elastic/isomer-sdk/react';
 import { css } from '@emotion/react';
+
+import { ShadowRootHost } from './shadow_root';
 
 const MIN_HEIGHT = 48;
 
@@ -112,5 +116,67 @@ export const HtmlSurface = ({
       css={frameStyles}
       style={{ height }}
     />
+  );
+};
+
+interface ShadowHtmlProps {
+  html: string;
+  title: string;
+  enhancementScript?: string | undefined;
+}
+
+const ShadowHtmlContent = ({
+  html,
+  enhancementScript,
+  onError,
+}: ShadowHtmlProps & {
+  onError: (error: string | undefined) => void;
+}) => {
+  const content = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const element = content.current;
+    if (!element) {
+      return;
+    }
+    element.innerHTML = html;
+    onError(undefined);
+    if (enhancementScript) {
+      try {
+        const root = element.querySelector('.isomer');
+        if (!root) {
+          throw new Error('The HTML output has no .isomer enhancement root.');
+        }
+        runEnhancementScript(enhancementScript, root);
+      } catch (error) {
+        onError(error instanceof Error ? error.message : String(error));
+      }
+    }
+    return () => element.replaceChildren();
+  }, [html, enhancementScript, onError]);
+  return (
+    <div
+      ref={content}
+      style={{ all: 'initial', display: 'flow-root', colorScheme: 'inherit' }}
+    />
+  );
+};
+
+/** HTML and its stylesheet in a shadow root; only host-provided enhancement scripts run. */
+export const ShadowHtmlSurface = (props: ShadowHtmlProps) => {
+  const [error, setError] = useState<string>();
+  return (
+    <>
+      {error ? (
+        <EuiCallOut
+          size="s"
+          color="danger"
+          title="HTML enhancements failed"
+          text={<p>{error}</p>}
+        />
+      ) : null}
+      <ShadowRootHost title={props.title}>
+        {() => <ShadowHtmlContent {...props} onError={setError} />}
+      </ShadowRootHost>
+    </>
   );
 };

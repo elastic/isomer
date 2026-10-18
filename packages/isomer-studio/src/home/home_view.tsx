@@ -417,17 +417,17 @@ export const HomeView = ({
                     example: 0,
                   })}
                   color={HOME.docs}
-                  tag="Docs"
-                  title="Read and use"
-                  action="Open the gallery →">
+                  tag="Reference"
+                  title="Understand primitives"
+                  action="Browse reference →">
                   Every primitive in the pack, with its purpose, props and
                   examples.
                 </Door>
                 <Door
                   href={formatRoute({ mode: 'dev', page: first, example: 0 })}
                   color={HOME.dev}
-                  tag="Dev"
-                  title="Build and test"
+                  tag="Workbench"
+                  title="Experiment and edit"
                   action="Open the workbench →">
                   Edit a composition and watch it render on every surface the
                   runtime has.

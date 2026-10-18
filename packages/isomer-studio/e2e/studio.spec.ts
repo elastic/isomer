@@ -208,8 +208,7 @@ const editFirstString = async (page: Page) => {
   await page.keyboard.insertText(edited);
 };
 
-const reactPreview = (page: Page) =>
-  page.getByRole('region', { name: 'React preview' });
+const reactPreview = (page: Page) => page.locator('[title="HTML preview"]');
 
 /** Opens the app from Home and then one of its pages from the nav, deep-links a sub-path through a reload, and checks its styles and `Preview`. */
 const exerciseApp = async (page: Page, url: string) => {
@@ -386,12 +385,426 @@ test.describe('static build', () => {
     expect(problems).toEqual([]);
   });
 
+  test('stacks the Dev editor above all previews when the window is narrow', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 900, height: 1000 });
+    await page.goto(`${site.url}${EDIT_ROUTE}`);
+    await expectMonacoReady(page);
+
+    const panels = page.locator('.euiResizablePanel');
+    const editor = panels.nth(0);
+    const preview = panels.nth(1);
+    await expect
+      .poll(() =>
+        page
+          .locator('.euiResizableContainer')
+          .evaluate((element) => getComputedStyle(element).flexDirection)
+      )
+      .toBe('column');
+
+    const narrowBounds = await Promise.all([
+      editor.boundingBox(),
+      preview.boundingBox(),
+    ]);
+    const editorContentBounds = await editor
+      .getByRole('region', { name: 'Source editor' })
+      .boundingBox();
+    expect(narrowBounds[0]).not.toBeNull();
+    expect(narrowBounds[1]).not.toBeNull();
+    expect(editorContentBounds).not.toBeNull();
+    expect(editorContentBounds!.width).toBeGreaterThanOrEqual(
+      narrowBounds[0]!.width - 2
+    );
+    expect(narrowBounds[1]!.y).toBeGreaterThan(narrowBounds[0]!.y);
+    for (const surface of ['Web', 'Slack', 'Markdown', 'Text', 'PNG']) {
+      await expect(
+        preview.getByRole('heading', { level: 3, name: surface })
+      ).toBeAttached();
+    }
+    await expect(
+      preview.getByRole('combobox', { name: 'Visual preview surface' })
+    ).toHaveCount(0);
+    await expect(preview.getByTitle('HTML preview')).toBeAttached();
+    await expect(editor.locator('[data-keybinding-context]')).toHaveCSS(
+      'border-bottom-width',
+      '0px'
+    );
+    for (const mode of ['Light', 'Dark']) {
+      await page.getByRole('button', { name: mode, exact: true }).click();
+      const backgrounds = await preview
+        .getByRole('region', { name: 'Web preview', exact: true })
+        .evaluate((card) => ({
+          header: getComputedStyle(card.firstElementChild!).backgroundColor,
+          board: getComputedStyle(
+            card.closest('[aria-label="Outputs"]')!.lastElementChild!
+          ).backgroundColor,
+        }));
+      expect(backgrounds.header).not.toBe('rgba(0, 0, 0, 0)');
+      expect(backgrounds.header).not.toBe(backgrounds.board);
+    }
+    const visualGroup = preview.getByRole('region', {
+      name: 'Visual output previews',
+    });
+    const visualGrid = visualGroup.getByRole('region', {
+      name: 'Visual preview grid',
+    });
+    const otherGroup = preview.getByRole('region', {
+      name: 'Other output previews',
+    });
+    await expect
+      .poll(() =>
+        visualGrid.evaluate((element) => ({
+          columns: getComputedStyle(element).gridTemplateColumns,
+          overflows: element.scrollWidth > element.clientWidth,
+        }))
+      )
+      .toMatchObject({ overflows: false });
+    const [visualBounds, otherBounds] = await Promise.all([
+      visualGroup.boundingBox(),
+      otherGroup.boundingBox(),
+    ]);
+    expect(visualBounds).not.toBeNull();
+    expect(otherBounds).not.toBeNull();
+    expect(otherBounds!.y).toBeGreaterThan(visualBounds!.y);
+
+    await page.setViewportSize({ width: 1400, height: 1000 });
+    await expect
+      .poll(() =>
+        page
+          .locator('.euiResizableContainer')
+          .evaluate((element) => getComputedStyle(element).flexDirection)
+      )
+      .toBe('row');
+    const wideBounds = await Promise.all([
+      editor.boundingBox(),
+      preview.boundingBox(),
+    ]);
+    expect(wideBounds[0]!.y).toBe(wideBounds[1]!.y);
+    expect(wideBounds[1]!.x).toBeGreaterThan(wideBounds[0]!.x);
+    await expect
+      .poll(async () => {
+        const [left, right] = await Promise.all([
+          editor.boundingBox(),
+          preview.boundingBox(),
+        ]);
+        return Math.abs(right!.x - (left!.x + left!.width));
+      })
+      .toBeLessThanOrEqual(1);
+    const toolbarBottoms = await Promise.all(
+      ['Source editor', 'Outputs'].map((name) =>
+        page
+          .getByRole('region', { name, exact: true })
+          .evaluate(
+            (element) =>
+              element.firstElementChild!.getBoundingClientRect().bottom
+          )
+      )
+    );
+    expect(
+      Math.abs(toolbarBottoms[0]! - toolbarBottoms[1]!)
+    ).toBeLessThanOrEqual(1);
+    await page.setViewportSize({ width: 2200, height: 700 });
+    for (const group of [visualGroup, otherGroup]) {
+      const cards = group.locator('section[aria-label$=" preview"]');
+      const bounds = await cards.evaluateAll((elements) =>
+        elements.map((element) => {
+          const { x, y, bottom } = element.getBoundingClientRect();
+          return { x, y, bottom };
+        })
+      );
+      for (let index = 1; index < bounds.length; index++) {
+        expect(bounds[index]!.x).toBe(bounds[0]!.x);
+        expect(bounds[index]!.y).toBeGreaterThan(bounds[index - 1]!.bottom);
+      }
+    }
+    const nav = page.getByRole('navigation', { name: 'Primitives' });
+    await nav
+      .getByRole('button', { name: 'Collapse primitive navigation' })
+      .click();
+    await expect
+      .poll(() =>
+        nav.evaluate((element) => element.getBoundingClientRect().width)
+      )
+      .toBe(72);
+    const railButtons = nav.getByRole('button');
+    const railBounds = await railButtons.evaluateAll((buttons) =>
+      buttons.map((button) => {
+        const { x, width, height } = button.getBoundingClientRect();
+        return { center: x + width / 2, width, height };
+      })
+    );
+    for (const bounds of railBounds) {
+      expect(bounds.width).toBe(32);
+      expect(bounds.height).toBe(32);
+      expect(
+        Math.abs(bounds.center - railBounds[0]!.center)
+      ).toBeLessThanOrEqual(1);
+    }
+    await railButtons.last().scrollIntoViewIfNeeded();
+    await expect(railButtons.first()).toBeInViewport();
+    await expect(railButtons.last()).toBeInViewport();
+  });
+
   test('serves apps, their chunks and their CSS from the sub-path', async ({
     page,
   }) => {
     const problems = watchProblems(page);
     await exerciseApp(page, site.url);
     expect(problems).toEqual([]);
+  });
+
+  test('toggles real enhancements in the combined browser preview', async ({
+    page,
+  }) => {
+    test.skip(
+      Boolean(process.env.STUDIO_CONFIG),
+      'uses the slides pack copy enhancement'
+    );
+    const problems = watchProblems(page);
+    for (const primitive of ['slideHeading', 'slidePipeline', 'slideCommand']) {
+      await page.goto(`${site.url}#/dev/${primitive}/0`);
+      await expectMonacoReady(page);
+      const panel = page.getByRole('region', {
+        name: 'Web preview',
+      });
+      await expect(panel).toBeVisible();
+      const toggle = panel.getByRole('button', { name: 'Enhancements (0/0)' });
+      if (primitive === 'slideHeading') {
+        await expect(toggle).toBeDisabled();
+      } else {
+        const id = primitive === 'slidePipeline' ? 'slideBuilds' : 'slideCopy';
+        await panel.getByRole('button', { name: 'Enhancements (0/1)' }).click();
+        const applicable = page.getByRole('checkbox', { name: id });
+        await applicable.check();
+        if (primitive === 'slideCommand') {
+          await expect(panel.locator('[data-slide-copy]')).toHaveCount(1);
+        }
+        await applicable.uncheck();
+        await panel.getByRole('button', { name: 'Enhancements (0/1)' }).click();
+      }
+      await expect(
+        page.getByRole('region', { name: 'Primitive prop reference' })
+      ).toHaveCount(0);
+      await page.getByRole('button', { name: 'Props', exact: true }).click();
+      const reference = page.getByRole('region', {
+        name: 'Primitive prop reference',
+      });
+      await expect(reference.getByRole('table')).not.toHaveCount(0);
+      await expect(
+        reference.getByRole('columnheader', { name: 'Description' })
+      ).toHaveCount(1);
+      const referenceBounds = (await reference.boundingBox())!;
+      const editorBounds = (await page
+        .locator('.euiResizablePanel')
+        .first()
+        .boundingBox())!;
+      const previewBounds = (await page
+        .locator('.euiResizablePanel')
+        .nth(1)
+        .boundingBox())!;
+      expect(referenceBounds.width).toBeGreaterThan(editorBounds.width);
+      expect(referenceBounds.width).toBeGreaterThan(previewBounds.width);
+      const resizer = page.getByRole('button', {
+        name: 'Press the left or right arrow keys to adjust panels size',
+      });
+      await resizer.focus();
+      await page.keyboard.press('ArrowRight');
+      expect(
+        Math.abs((await reference.boundingBox())!.width - referenceBounds.width)
+      ).toBeLessThan(2);
+      if (primitive === 'slidePipeline') {
+        const descriptionCell = reference.getByRole('cell').filter({
+          hasText: 'What goes in, as a short code-style chip',
+        });
+        expect((await descriptionCell.boundingBox())!.width).toBeGreaterThan(
+          160
+        );
+      }
+      await expect(page.getByRole('button', { name: '+ Prop' })).toHaveCount(0);
+      if (primitive === 'slidePipeline') {
+        await reference
+          .getByRole('tab', { name: 'SlidePipeline.Step', exact: true })
+          .click();
+        await expect(
+          reference.getByRole('tabpanel', {
+            name: 'SlidePipeline.Step',
+            exact: true,
+          })
+        ).toContainText('title');
+      }
+      const slack = page.locator('#slack_blocks_to_jsx');
+      await expect(slack).toBeAttached();
+      const slackBackground = await slack.evaluate((element) => {
+        const wrapper = element.parentElement!;
+        const theme = element.getAttribute('data-theme');
+        return {
+          actual: getComputedStyle(wrapper).backgroundColor,
+          expected: theme === 'dark' ? 'rgb(26, 29, 33)' : 'rgb(255, 255, 255)',
+        };
+      });
+      expect(slackBackground.actual).toBe(slackBackground.expected);
+      await expect(panel.locator('[data-slide-copy]')).toHaveCount(0);
+      await expect(panel.locator('iframe')).toHaveCount(0);
+      await expect(
+        panel.getByRole('combobox', { name: 'Visual preview surface' })
+      ).toHaveCount(0);
+      await expect(panel.getByTitle('HTML preview')).toBeAttached();
+    }
+    await page.goto(`${site.url}#/dev/slideQuadrant/0`);
+    await expectMonacoReady(page);
+    await page.getByRole('button', { name: 'Props', exact: true }).click();
+    const nestedReference = page.getByRole('region', {
+      name: 'Primitive prop reference',
+    });
+    await expect(
+      nestedReference.getByRole('tab', {
+        name: 'SlideQuadrant.Cell',
+        exact: true,
+      })
+    ).toHaveCount(1);
+    await expect(
+      nestedReference.getByRole('tab', {
+        name: 'SlideQuadrant.Item',
+        exact: true,
+      })
+    ).toHaveCount(1);
+    await expect(
+      nestedReference.getByRole('tab', {
+        name: 'SlideQuadrant.Cell.Item',
+        exact: true,
+      })
+    ).toHaveCount(0);
+    await page.getByRole('button', { name: 'Props', exact: true }).click();
+    await expect(nestedReference).toHaveCount(0);
+    expect(problems).toEqual([]);
+  });
+
+  test('keeps the Reference example usable on a mobile viewport', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${site.url}#/docs/slidePipeline/0`);
+    const header = page.locator('header').first();
+    const examples = page.getByRole('region', { name: 'Examples' });
+    const views = examples.getByRole('group', { name: 'Example view' });
+
+    await expect(header).toBeVisible();
+    const outline = page.getByRole('navigation', { name: 'On this page' });
+    const [outlineBox, examplesBox] = await Promise.all([
+      outline.boundingBox(),
+      examples.boundingBox(),
+    ]);
+    expect(outlineBox!.y + outlineBox!.height).toBeLessThanOrEqual(
+      examplesBox!.y
+    );
+    await expect
+      .poll(() =>
+        header.evaluate((element) => element.scrollWidth <= element.clientWidth)
+      )
+      .toBe(true);
+    await expect(
+      page.getByRole('button', { name: 'Expand primitive navigation' })
+    ).toHaveAttribute('aria-expanded', 'false');
+    await expect(
+      views.getByRole('button', { name: 'Example source' })
+    ).toBeVisible();
+
+    await views.getByRole('button', { name: 'Example source' }).click();
+    await expect(examples.getByRole('tabpanel')).toBeVisible();
+    const rendered = views.getByRole('button', { name: 'Rendered' });
+    await rendered.focus();
+    await page.keyboard.press('Enter');
+    await expect(rendered).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('scrolls only the content when jumping within a Reference page', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1013, height: 600 });
+    await page.goto(`${site.url}#/docs/titleSlide/0`);
+    const header = page.locator('header').first();
+    const main = page.locator('main').first();
+    await page
+      .getByRole('navigation', { name: 'On this page' })
+      .getByRole('button', { name: 'Props', exact: true })
+      .click();
+
+    await expect
+      .poll(() => main.evaluate((element) => element.scrollTop))
+      .toBeGreaterThan(0);
+    await expect
+      .poll(() =>
+        header.evaluate((element) => element.getBoundingClientRect().top)
+      )
+      .toBe(0);
+    expect(
+      await main.evaluate((element) => {
+        let shell = element.parentElement;
+        while (shell && shell.scrollHeight <= shell.clientHeight) {
+          shell = shell.parentElement;
+        }
+        return shell === document.documentElement || shell === null;
+      })
+    ).toBe(true);
+  });
+
+  test('scrolls a long validation list within the workbench footer', async ({
+    page,
+  }) => {
+    test.skip(
+      Boolean(process.env.STUDIO_CONFIG),
+      'needs the repository slides pack'
+    );
+    await page.setViewportSize({ width: 1440, height: 720 });
+    await page.goto(`${site.url}#/dev/slidePipeline/0`);
+    await expectMonacoReady(page);
+    await page
+      .getByRole('group', { name: 'Source format' })
+      .getByRole('button', { name: 'JSON' })
+      .click();
+    await editor(page).locator('.view-lines').click();
+    await expect(async () => {
+      await page.keyboard.press('Control+A');
+      await expect(editor(page).locator('.selected-text').first()).toBeVisible({
+        timeout: 1000,
+      });
+    }).toPass();
+    await page.keyboard.press('Backspace');
+    await page.keyboard.insertText(
+      JSON.stringify({ type: 'slidePipeline', steps: Array(30).fill({}) })
+    );
+    // JSON mode auto-closes the leading brace and quote after the cursor.
+    await page.keyboard.press('Control+Shift+End');
+    await page.keyboard.press('Delete');
+
+    const errors = page.getByRole('region', { name: 'Validation errors' });
+    await expect(errors.getByRole('listitem').nth(20)).toBeAttached();
+    expect(
+      await errors.evaluate(
+        (element) => element.scrollHeight > element.clientHeight
+      )
+    ).toBe(true);
+    const last = errors.getByRole('listitem').last();
+    await expect(last).not.toBeInViewport();
+    await errors.focus();
+    await page.keyboard.press('End');
+    await expect(last).toBeInViewport();
+
+    await page.getByRole('button', { name: 'Props', exact: true }).click();
+    const reference = page.getByRole('region', {
+      name: 'Primitive prop reference',
+    });
+    await expect(reference.getByRole('table')).toBeInViewport();
+    await reference
+      .getByRole('tab', { name: 'SlidePipeline.Step', exact: true })
+      .click();
+    await expect(
+      reference.getByRole('tabpanel', {
+        name: 'SlidePipeline.Step',
+        exact: true,
+      })
+    ).toContainText('title');
   });
 
   for (const width of [320, 390, 768, 900, 901, 1043, 1399, 1400, 1920]) {
@@ -507,13 +920,13 @@ test.describe('static build', () => {
       expect(tiles.stacked).toBe(tiles.narrow);
       expect(tiles.pagerVisible).toBe(true);
       const firstTile = page.getByTestId('featured-primitive').first();
-      await firstTile.getByRole('link', { name: 'Docs →' }).focus();
+      await firstTile.getByRole('link', { name: 'Reference →' }).focus();
       await page.keyboard.press('Tab');
-      const dev = firstTile.getByRole('link', { name: 'Dev →' });
-      await expect(dev).toBeFocused();
-      await expect(dev).toHaveCSS('outline-color', 'rgb(255, 255, 255)');
-      await expect(dev).toHaveCSS('outline-style', 'solid');
-      await expect(dev.locator('..')).toHaveCSS('opacity', '1');
+      const workbench = firstTile.getByRole('link', { name: 'Workbench →' });
+      await expect(workbench).toBeFocused();
+      await expect(workbench).toHaveCSS('outline-color', 'rgb(255, 255, 255)');
+      await expect(workbench).toHaveCSS('outline-style', 'solid');
+      await expect(workbench.locator('..')).toHaveCSS('opacity', '1');
     });
   }
 
@@ -794,11 +1207,7 @@ test.describe('decks', () => {
     ).toBeVisible();
 
     await output.getByRole('button', { name: 'HTML', exact: true }).click();
-    await page
-      .locator('[data-test-subj="deckOutput"] iframe')
-      .contentFrame()
-      .locator('body')
-      .click();
+    await page.locator('[data-test-subj="deckOutput"] .isomer').click();
     await page.keyboard.press('ArrowRight');
     await expect(counter).toHaveText('8 of 33');
 

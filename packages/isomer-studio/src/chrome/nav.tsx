@@ -10,7 +10,6 @@ import React, { useMemo, useState } from 'react';
 import {
   EuiButtonIcon,
   EuiFieldSearch,
-  EuiHorizontalRule,
   EuiIcon,
   transparentize,
   useEuiScrollBar,
@@ -33,7 +32,11 @@ import { PrimitivePeek } from './primitive_peek';
 import type { StudioMode } from './route';
 import { GALLERY } from './route';
 
-export const NAV_WIDTH = { open: 272, closed: 52 } as const;
+export const NAV_WIDTH = {
+  open: 272,
+  closed: 72,
+  compactAt: 1120,
+} as const;
 
 const NAV_GLYPH_SIZE = 17;
 const ROW_HEIGHT = 32;
@@ -61,16 +64,18 @@ const activeMark = ({ bright }: Accent): SerializedStyles => css`
 
 const NavIcon = ({
   isActive,
+  isRail = false,
   children,
 }: {
   isActive: boolean;
+  isRail?: boolean;
   children: ReactNode;
 }) => (
   <span
     css={css`
       display: inline-flex;
       flex: none;
-      opacity: ${isActive ? 1 : GLYPH_OPACITY};
+      opacity: ${isActive || isRail ? 1 : GLYPH_OPACITY};
     `}>
     {children}
   </span>
@@ -84,6 +89,7 @@ export interface StudioNavProps {
   /** The open app's `path`, which picks its active page. */
   appPath?: string | undefined;
   isOpen: boolean;
+  isCompact?: boolean | undefined;
   onToggle: () => void;
   onSelect: (page: string) => void;
   onSelectApp: (id: string, path?: string) => void;
@@ -131,10 +137,18 @@ const RailEntry = ({
     item,
     <EuiButtonIcon
       display="empty"
+      size="s"
       color="text"
-      iconType={() => <NavIcon {...{ isActive }}>{icon}</NavIcon>}
+      iconType={() => (
+        <NavIcon {...{ isActive }} isRail>
+          {icon}
+        </NavIcon>
+      )}
       css={css`
-        color: ${LABEL};
+        flex: none;
+        inline-size: ${ROW_HEIGHT}px;
+        block-size: ${ROW_HEIGHT}px;
+        color: ${ACTIVE_LABEL};
         ${isActive ? activeMark(accent) : ''}
       `}
       aria-label={label}
@@ -391,6 +405,8 @@ export const StudioNav = ({
   app,
   appPath = '',
   isOpen,
+  isCompact = false,
+  onToggle,
   onSelect,
   onSelectApp,
 }: StudioNavProps) => {
@@ -461,11 +477,35 @@ export const StudioNav = ({
     min-block-size: 0;
     padding-block: 0 ${euiTheme.size.m};
     overflow: hidden;
+    ${
+      isCompact
+        ? css`
+            position: absolute;
+            inset-block: 0;
+            inset-inline-start: 0;
+            z-index: 1;
+            inline-size: ${isOpen ? NAV_WIDTH.open : NAV_WIDTH.closed}px;
+            background: ${
+              isOpen ? euiTheme.colors.backgroundBasePlain : 'transparent'
+            };
+            border-inline-end: ${isOpen ? euiTheme.border.thin : 'none'};
+            box-shadow: ${isOpen ? '0 8px 24px rgba(0, 0, 0, 0.28)' : 'none'};
+            transition: inline-size ${euiTheme.animation.normal}
+              ${euiTheme.animation.resistance};
+          `
+        : ''
+    }
   `;
   const fieldInset = css`
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: ${euiTheme.size.xs};
     flex: none;
     margin-inline: ${euiTheme.size.s};
     margin-block-end: ${euiTheme.size.s};
+    min-block-size: ${ROW_HEIGHT}px;
+    justify-content: ${isOpen ? 'flex-start' : 'center'};
   `;
   const scroller = css`
     flex: 1;
@@ -473,15 +513,17 @@ export const StudioNav = ({
     display: flex;
     flex-direction: column;
     gap: ${euiTheme.size.s};
-    padding-inline: ${euiTheme.size.s};
+    padding-inline: ${isOpen ? euiTheme.size.s : 0};
     overflow: hidden auto;
     ${scrollbar}
   `;
   const rail = css`
+    flex: none;
+    inline-size: ${NAV_WIDTH.closed}px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: ${euiTheme.size.xxs};
+    gap: ${ROW_GAP}px;
   `;
   const packHeading = css`
     flex: none;
@@ -517,20 +559,44 @@ export const StudioNav = ({
     />
   ));
 
+  const toggleLabel = `${isOpen ? 'Collapse' : 'Expand'} primitive navigation`;
+
   return (
     <nav css={column} aria-label="Primitives">
-      {isOpen ? (
-        <div css={fieldInset}>
-          <EuiFieldSearch
-            compressed
-            fullWidth
-            placeholder="Filter primitives"
-            value={filter}
-            onChange={({ target: { value } }) => setFilter(value)}
-            aria-label="Filter primitives"
-          />
-        </div>
-      ) : null}
+      <div css={fieldInset}>
+        {isOpen ? (
+          <div
+            css={css`
+              flex: 1 1 auto;
+              min-inline-size: 0;
+            `}>
+            <EuiFieldSearch
+              compressed
+              fullWidth
+              placeholder="Filter primitives"
+              value={filter}
+              onChange={({ target: { value } }) => setFilter(value)}
+              aria-label="Filter primitives"
+            />
+          </div>
+        ) : null}
+        <EuiButtonIcon
+          display="empty"
+          size="s"
+          color="text"
+          css={css`
+            flex: none;
+            inline-size: ${ROW_HEIGHT}px;
+            block-size: ${ROW_HEIGHT}px;
+            color: ${ACTIVE_LABEL};
+          `}
+          iconType={isOpen ? 'transitionRightIn' : 'transitionLeftIn'}
+          aria-label={toggleLabel}
+          title={toggleLabel}
+          aria-expanded={isOpen}
+          onClick={onToggle}
+        />
+      </div>
       <div css={scroller}>
         {isOpen ? (
           <>
@@ -579,7 +645,14 @@ export const StudioNav = ({
               .flatMap((pack) => pack.groups)
               .map((group) => (
                 <div key={group.key} css={rail}>
-                  <EuiHorizontalRule margin="xs" />
+                  <div
+                    role="separator"
+                    css={css`
+                      width: ${NAV_GLYPH_SIZE}px;
+                      margin-block: ${euiTheme.size.xs};
+                      border-top: 1px solid ${euiTheme.colors.textSubdued};
+                    `}
+                  />
                   {group.items.map((item) => (
                     <RailEntry
                       key={item.id}

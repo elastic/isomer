@@ -55,6 +55,25 @@ const stubRuntime = (snapshot = true) => {
 };
 
 describe('renderSurfaceOutput', () => {
+  it('requests host-run enhancements for React and HTML', () => {
+    const { surfaces, runtime } = stubRuntime();
+    renderSurfaceOutput(runtime, 'react', composition, validation, {
+      enhancements: ['copy'],
+    });
+    expect(surfaces.html.render).toHaveBeenLastCalledWith(
+      composition,
+      expect.objectContaining({ enhancements: ['copy'], scripts: 'host' })
+    );
+    renderSurfaceOutput(runtime, 'html', composition, validation, {
+      enhancements: ['copy'],
+    });
+    expect(surfaces.html.render).toHaveBeenLastCalledWith(composition, {
+      minify: false,
+      enhancements: ['copy'],
+      scripts: 'host',
+    });
+  });
+
   it('renders `react` as HTML with separate CSS and host scripts', () => {
     const { surfaces, runtime } = stubRuntime();
 
@@ -123,6 +142,30 @@ describe('renderSurfaceOutput', () => {
         onValidationError: 'collect',
       });
     }
+  });
+
+  it('warns once per Slack block type Isomer does not model', () => {
+    const { runtime, surfaces } = stubRuntime();
+    surfaces.slack.render.mockReturnValueOnce({
+      text: 'Hi',
+      blocks: [{ type: 'carousel' }, { type: 'divider' }, { type: 'carousel' }],
+    });
+
+    const { warnings } = renderSurfaceOutput(
+      runtime,
+      'slack',
+      composition,
+      validation
+    );
+
+    expect(warnings).toEqual([
+      validation.warnings[3],
+      {
+        surface: 'slack',
+        message:
+          "Isomer doesn't model `carousel` blocks, so their Slack limits aren't checked and this preview may not draw them. Check the message in Block Kit Builder.",
+      },
+    ]);
   });
 
   it('leaves out the heading on every surface that renders one when `heading` is false', () => {
