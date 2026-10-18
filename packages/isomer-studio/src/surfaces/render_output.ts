@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-import type { SnapshotHeightWarning } from '@elastic/isomer-runtime';
 import type {
   Composition,
   SurfaceName,
@@ -17,6 +16,7 @@ import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
 import type { StudioRuntime } from '../config';
 import type { StudioSurface } from '../model/describe_runtime';
+import { unmodeledSlackNotes } from '../model/slack_limits';
 
 export interface SurfaceOutput {
   /** What the surface produced, as text. */
@@ -24,12 +24,15 @@ export interface SurfaceOutput {
   language: 'html' | 'markdown' | 'text' | 'json';
   warnings: ValidationWarning[];
   error?: string;
+  enhancementScript?: string;
   slack?: { text: string; blocks: SlackBlock[] };
   snapshot?: { css: string; html: string; width: number; height: number };
 }
 
+type RenderWarning = Omit<ValidationWarning, 'surface'>;
+
 type RenderedOutput = Omit<SurfaceOutput, 'warnings'> & {
-  renderWarnings?: readonly SnapshotHeightWarning[];
+  renderWarnings?: readonly RenderWarning[];
 };
 
 const VALIDATION_SURFACE: Readonly<Record<StudioSurface, SurfaceName>> = {
@@ -50,13 +53,14 @@ const describeError = (error: unknown): string =>
 export interface SurfaceOutputOptions {
   /** `false` leaves out the composition's leading title. Defaults to `true`. */
   heading?: boolean | undefined;
+  enhancements?: readonly string[] | undefined;
 }
 
 const render = (
   runtime: StudioRuntime,
   surface: StudioSurface,
   composition: Composition,
-  { heading }: SurfaceOutputOptions
+  { heading, enhancements }: SurfaceOutputOptions
 ): RenderedOutput => {
   const { surfaces } = runtime;
   const lead = heading === false ? { heading } : {};
@@ -68,16 +72,23 @@ const render = (
           css: 'separate',
           minify: false,
           scripts: 'host',
+          ...(enhancements ? { enhancements } : {}),
           ...lead,
         }).html,
         language: 'html',
       };
-    case 'html':
+    case 'html': {
+      const result = surfaces.html.render(composition, {
+        minify: false,
+        ...lead,
+        ...(enhancements ? { enhancements, scripts: 'host' as const } : {}),
+      });
       return {
-        source: surfaces.html.render(composition, { minify: false, ...lead })
-          .html,
+        source: result.html,
+        ...(enhancements ? { enhancementScript: result.js } : {}),
         language: 'html',
       };
+    }
     case 'markdown':
       return {
         source: surfaces.markdown.render(composition, collect),
@@ -94,6 +105,9 @@ const render = (
         source: JSON.stringify({ text, blocks }, null, 2),
         language: 'json',
         slack: { text, blocks },
+        renderWarnings: unmodeledSlackNotes(blocks).map((message) => ({
+          message,
+        })),
       };
     }
     case 'snapshot': {
@@ -122,7 +136,7 @@ const render = (
 const surfaceWarnings = (
   validation: ValidationResult,
   surface: SurfaceName,
-  renderWarnings: readonly SnapshotHeightWarning[] = []
+  renderWarnings: readonly RenderWarning[] = []
 ): ValidationWarning[] => {
   const seen = new Set<string>();
 

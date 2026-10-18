@@ -156,6 +156,85 @@ Findings are advice, not validation errors, and no surface runs the check: an ov
 
 `assets` is filtered to the requests whose placeholder block survived step 4 — a block `enforceBlockBudget` elides is never posted, so uploading its file would be wasted, orphaned work.
 
+A block from `unmodeledSlackBlock`, or of a type Isomer does not model, skips steps 1 to 3 and counts as one block in step 4. Slack counts the same way: `blocksPerMessage` limits top-level blocks, and blocks nested inside one, such as a `container`'s `child_blocks`, do not count toward it.
+
+A `container` goes through every step with its children:
+
+- Step 1 cuts its `title` to `containerTitleChars` and its `subtitle` to `containerSubtitleChars`, splits a `rich_text_title` element past `sectionTextChars` as in any `rich_text` block, drops an `icon` whose URL is past `imageUrlChars`, cuts the icon's alt text, and fits each child as a block of its own.
+- Step 2 counts the cells of its tables toward the message in document order, with the tables around it.
+- Step 3 coalesces field sections and splits blocks within its children, never across its edge. It puts no spacer inside a container, nor beside one, since a container sets itself apart.
+- Step 4 counts it as one block, however many children it holds.
+
+A container nested in another is unwrapped into its parent, since Slack rejects one. A container any step leaves with no children, or more than `containerChildBlocks`, is unwrapped too: its title becomes a `header` (or its `rich_text_title` a `rich_text` block), its subtitle a `context` block, followed by its children.
+
+## Titled sections on Slack
+
+A primitive that groups its body under a title, such as an "Impact" or "Hypotheses" section, renders on Slack through `slackContainer`, which builds a Block Kit `container`:
+
+```ts
+import { slackContainer } from '@elastic/isomer-sdk/slack';
+
+slack: (node, { collector, scope }) =>
+  slackContainer(
+    node.title,
+    node.children.flatMap((child) => scope.renderSlack(child, collector)),
+    { is_collapsible: node.collapsible, fallbackLevel: 3 }
+  ),
+```
+
+The options are the container's own optional fields, `subtitle`, `icon`, `width`, `is_collapsible`, `default_collapsed`, `has_header_divider`, and `block_id`, plus `fallbackLevel`. The title is collapsed to one line and cut to `containerTitleChars`. When the body renders to no blocks, or to more than `containerChildBlocks`, the section falls back to a `header` at `fallbackLevel` followed by the blocks. A container among the children, such as a nested section's, is unwrapped into this one, since Slack does not accept a container inside another.
+
+## Slack blocks Isomer does not model yet
+
+Slack adds Block Kit blocks faster than Isomer releases. `SlackBlock` covers the blocks Isomer models. A `slack` renderer returns any other block through `unmodeledSlackBlock`, a bridge until Isomer models it:
+
+```ts
+import { unmodeledSlackBlock } from '@elastic/isomer-sdk/slack';
+
+// elastic/isomer#123
+interface SlackCarouselBlock {
+  type: 'carousel';
+  elements: SlackCardBlock[];
+}
+
+slack: (node) =>
+  unmodeledSlackBlock<SlackCarouselBlock>({
+    type: 'carousel',
+    elements: node.items.map(card),
+  }),
+```
+
+The type argument is optional. With it, the block's fields are checked against an interface the pack writes from Slack's reference page for the block.
+
+What Isomer does with the block:
+
+- The envelope passes it through exactly as built and counts it as one block toward `blocksPerMessage`. It fits nothing inside it, so a field past a Slack limit makes Slack reject the whole message. Keep its content within the limits on Slack's reference page.
+- The notification `text` comes from the text render, so it carries the node even on a client that cannot draw the block.
+- Studio's Slack preview warns that the block's limits are not checked and that the preview may not draw it. Check the message in Block Kit Builder.
+
+When Isomer models the type, the pack hears about it before Slack does:
+
+- A call with a literal `type` stops compiling, and the error says to return the block without `unmodeledSlackBlock`. Unwrapped, it is Isomer's own block type and the envelope fits it.
+- When `type` is not a literal, or the pack is not type-checked, the conformance case `wraps only Slack blocks Isomer does not model` fails, and `isomer-studio check` reports the block.
+- A wrapped block is never fitted, even one whose type Isomer models, so a stale wrapper costs fitting and nothing else.
+
+`isModeledSlackBlockType(type)` says whether Isomer models a type, and `isUnmodeledSlackBlock(block)` whether a block came from `unmodeledSlackBlock`.
+
+### Asking Isomer to model a block
+
+Every `unmodeledSlackBlock` call has an issue asking Isomer to model its block, so the bridge has an end. Before adding one:
+
+1. Check that Isomer does not model the type already: `isModeledSlackBlockType('carousel')`, or the `SlackBlock` union in the version the pack depends on. If a newer version models it, upgrade instead.
+2. Look for an open issue: `gh issue list -R elastic/isomer --state open --search "carousel in:title"`.
+3. If there is none, open one from the **Model a Slack block** template, with `gh issue create -R elastic/isomer --label enhancement --title "feat(sdk): model the Slack carousel block"` and a body that follows the template: the block's Slack reference page, the fields the pack emits, the limits Slack documents for it, and the primitive that needs it.
+4. Put the issue's reference in a comment beside the pack's interface for the block, as in the example above, so whoever removes the wrapper can find it.
+
+### Modeling a block in Isomer
+
+1. Add the block's interface to `define/slack_blocks.ts` and to the `SlackBlock` union. The type list in `render/slack/unmodeled.ts` does not compile until the type is added there too.
+2. Add a `SLACK_LIMITS` entry for each limit Slack documents, fit it in the envelope, and check it in Studio's `slackLimitProblems`.
+3. Export the new types from the `./slack` barrels, and say in the release notes that packs wrapping the type drop the wrapper.
+
 ## Formatting helpers
 
 `./markdown` publishes the `md` builder and `serializeMarkdown`, both printed through one GFM serializer that escapes each value where it lands; `./slack` the mrkdwn escaping and clamping. The structured-value formatters live on the root entry, since every surface needs them. `./text` publishes no formatters: line width, trend glyphs, and threshold copy are editorial choices a pack makes, not contract.

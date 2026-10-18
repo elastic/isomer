@@ -83,14 +83,14 @@ const PrimitiveTile = ({ doc }: { doc: PrimitiveDoc }) => {
             color: ${HOME.docs};
             cursor: pointer;
           `}>
-          Docs →
+          Reference →
         </a>
         <a
           href={formatRoute({ mode: 'dev', page: type, example: 0 })}
           css={css`
             color: ${HOME.dev};
           `}>
-          Dev →
+          Workbench →
         </a>
       </span>
     </div>

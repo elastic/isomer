@@ -103,8 +103,10 @@ const ExampleTile = ({
       </EuiFlexItem>
       <EuiFlexItem grow={false}>
         <EuiText size="xs">
-          <EuiLink href={devHref} aria-label={`Open ${label} ${name} in Dev`}>
-            Open in Dev
+          <EuiLink
+            href={devHref}
+            aria-label={`Open ${label} ${name} in Workbench`}>
+            Open in Workbench
           </EuiLink>
         </EuiText>
       </EuiFlexItem>
@@ -170,6 +172,7 @@ export const GalleryView = ({ group }: { group?: string | undefined }) => {
         margin-inline: auto;
         padding: ${euiTheme.size.xl} ${euiTheme.size.xxl} ${euiTheme.size.xxxxl};
       `}>
+      <OnThisPage {...{ entries, active }} onSelect={setActive} />
       <div
         css={css`
           flex: 1 1 ${CONTENT_BASIS}px;
@@ -225,7 +228,6 @@ export const GalleryView = ({ group }: { group?: string | undefined }) => {
           </section>
         ))}
       </div>
-      <OnThisPage {...{ entries, active }} onSelect={setActive} />
     </div>
   );
 };

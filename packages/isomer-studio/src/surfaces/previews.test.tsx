@@ -6,7 +6,12 @@
  */
 
 import type { ReactNode } from 'react';
-import type { Composition, ValidationResult } from '@elastic/isomer-sdk';
+import type {
+  ChildNodeWalker,
+  Composition,
+  ValidationResult,
+} from '@elastic/isomer-sdk';
+import { someBodyNode } from '@elastic/isomer-sdk';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 
 import type { StudioRuntime } from '../config';
@@ -14,10 +19,11 @@ import type { StudioContextValue } from '../studio_context';
 import { StudioContextProvider } from '../studio_context';
 import type { RasterizePng } from '../types';
 
-import { HtmlSurface } from './html_surface';
+import { HtmlSurface, ShadowHtmlSurface } from './html_surface';
 import { PngSurface } from './png_surface';
 import { ReactSurface } from './react_surface';
 import { ScaledPreview } from './scaled_preview';
+import { ShadowRootHost } from './shadow_root';
 import { SurfaceBoard } from './surface_board';
 
 class FakeResizeObserver {
@@ -86,6 +92,8 @@ const snapshotRender = vi.fn(() => ({
 const studio = (rasterizePng?: RasterizePng) =>
   ({
     runtime: {
+      primitives: [],
+      packs: [],
       surfaces: {
         html: { render: htmlRender },
         snapshot: { render: snapshotRender },
@@ -144,6 +152,117 @@ describe('ScaledPreview', () => {
 });
 
 describe('HtmlSurface', () => {
+  it('renders HTML in a shadow root, runs only explicit enhancements, and replaces enhanced content', () => {
+    const html =
+      '<style>.isomer { color: red; }</style><section class="isomer"><p>Preview</p><script>window.unrequestedScript = true;</script></section>';
+    const { rerender } = render(
+      <ShadowHtmlSurface html={html} title="Shadow HTML" />
+    );
+    const host = screen.getByTitle('Shadow HTML');
+    expect(host.shadowRoot?.querySelector('style')).not.toBeNull();
+    expect(host.shadowRoot?.querySelector('p')?.textContent).toBe('Preview');
+    expect(document.querySelector('iframe')).toBeNull();
+    expect(window).not.toHaveProperty('unrequestedScript');
+    rerender(
+      <ShadowHtmlSurface
+        html={html}
+        title="Shadow HTML"
+        enhancementScript="root.setAttribute('data-enhanced', 'true'); root.appendChild(document.createElement('button'));"
+      />
+    );
+    expect(host.shadowRoot?.querySelector('.isomer')).toHaveAttribute(
+      'data-enhanced',
+      'true'
+    );
+    expect(host.shadowRoot?.querySelector('button')).not.toBeNull();
+    rerender(<ShadowHtmlSurface html={html} title="Shadow HTML" />);
+    expect(host.shadowRoot?.querySelector('button')).toBeNull();
+    expect(host.shadowRoot?.querySelector('.isomer')).not.toHaveAttribute(
+      'data-enhanced'
+    );
+  });
+
+  it('opens previewed links in a new tab without navigating Studio', () => {
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    render(
+      <ShadowHtmlSurface
+        html={
+          '<a href="https://example.com/docs">Docs</a><a href="#top">Top</a><form><button>Go</button></form>'
+        }
+        title="Shadow HTML"
+      />
+    );
+    const root = screen.getByTitle('Shadow HTML').shadowRoot;
+    const [docs, top] = root?.querySelectorAll('a') ?? [];
+    const button = root?.querySelector('button');
+    if (!docs || !top || !button) {
+      throw new Error('No preview controls.');
+    }
+
+    expect(fireEvent.click(docs)).toBe(false);
+    expect(open).toHaveBeenCalledWith(
+      'https://example.com/docs',
+      '_blank',
+      'noopener,noreferrer'
+    );
+    expect(fireEvent.click(top)).toBe(false);
+    expect(fireEvent.submit(button.form!)).toBe(false);
+    expect(open).toHaveBeenCalledOnce();
+  });
+
+  it('lets a React preview handler cancel a link before the navigation guard runs', () => {
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    const seen: boolean[] = [];
+    render(
+      <ShadowRootHost title="React preview">
+        {() => (
+          <>
+            <a
+              href="https://example.com/step"
+              onClick={(event) => {
+                seen.push(event.defaultPrevented);
+                event.preventDefault();
+              }}>
+              Next step
+            </a>
+            <a href="https://example.com/docs">Docs</a>
+          </>
+        )}
+      </ShadowRootHost>
+    );
+    const [step, docs] =
+      screen.getByTitle('React preview').shadowRoot?.querySelectorAll('a') ??
+      [];
+    if (!step || !docs) {
+      throw new Error('No preview links.');
+    }
+
+    expect(fireEvent.click(step)).toBe(false);
+    expect(seen).toEqual([false]);
+    expect(open).not.toHaveBeenCalled();
+    fireEvent.click(docs);
+    expect(open).toHaveBeenCalledOnce();
+  });
+
+  it('surfaces enhancement errors and recovers on the next render', () => {
+    vi.useFakeTimers();
+    const { rerender } = render(
+      <ShadowHtmlSurface
+        html={'<section class="isomer"></section>'}
+        title="Shadow HTML"
+        enhancementScript="throw new Error('Pack failed.');"
+      />
+    );
+    expect(screen.getByText('HTML enhancements failed')).toBeInTheDocument();
+    expect(screen.getByText('Pack failed.')).toBeInTheDocument();
+    rerender(<ShadowHtmlSurface html="<p>Fixed</p>" title="Shadow HTML" />);
+    expect(screen.queryByText('Pack failed.')).toBeNull();
+    expect(
+      screen.getByTitle('Shadow HTML').shadowRoot?.querySelector('p')
+        ?.textContent
+    ).toBe('Fixed');
+  });
+
   // The frame's document has its own realm, so its layout is stubbed per element.
   const loadDocument = (frame: HTMLIFrameElement, documentWidth: number) => {
     const { documentElement } = frame.contentDocument ?? {};
@@ -498,5 +617,317 @@ describe('SurfaceBoard', () => {
     expect(
       pngCard.querySelector('[data-test-subj="surfaceFrame"]')
     ).not.toBeInTheDocument();
+  });
+
+  it('groups visual previews without redundant group headings or kind badges', () => {
+    render(
+      <SurfaceBoard
+        surfaces={['snapshot', 'png']}
+        composition={composition('first')}
+        validation={noWarnings}
+        view="render"
+        zoom="fit"
+      />,
+      { wrapper: withStudio(studio()) }
+    );
+
+    expect(
+      screen.getByRole('region', { name: 'Visual output previews' })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { level: 2, name: 'Visual outputs' })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'Snapshot' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'PNG' })
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Image')).not.toBeInTheDocument();
+    expect(screen.queryByText('Visual')).not.toBeInTheDocument();
+    expect(screen.queryByText('Other outputs')).not.toBeInTheDocument();
+  });
+
+  it('uses HTML for combined browser outputs without a dropdown and keeps PNG separate', () => {
+    vi.useFakeTimers();
+    const props = {
+      surfaces: ['react', 'html', 'snapshot', 'png'] as const,
+      composition: composition('first'),
+      validation: noWarnings,
+      view: 'render' as const,
+      zoom: 'fit' as const,
+    };
+    const { rerender } = render(<SurfaceBoard {...props} />, {
+      wrapper: withStudio(studio()),
+    });
+    expect(
+      screen.getByRole('region', { name: 'Web preview' })
+    ).toBeInTheDocument();
+    expect(screen.getByText('HTML / React / Snapshot')).toBeInTheDocument();
+    expect(
+      screen.getByRole('region', { name: 'PNG preview' })
+    ).toBeInTheDocument();
+    expect(screen.queryByTitle('React preview')).toBeNull();
+    expect(screen.getByTitle('HTML preview')).toBeInTheDocument();
+    expect(screen.queryByTitle('Snapshot preview')).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Enhancements (0/0)' })
+    ).toBeDisabled();
+    expect(
+      screen.queryByRole('combobox', { name: 'Visual preview surface' })
+    ).toBeNull();
+    rerender(<SurfaceBoard {...props} surfaces={['snapshot']} />);
+    expect(screen.getByTitle('Snapshot preview')).toBeInTheDocument();
+    expect(
+      screen.getByText('body[0]: No height estimate.')
+    ).toBeInTheDocument();
+    rerender(<SurfaceBoard {...props} surfaces={['snapshot']} view="source" />);
+    expect(screen.getByText('<div>frame</div>')).toBeInTheDocument();
+    rerender(<SurfaceBoard {...props} surfaces={['react', 'html']} />);
+    expect(screen.getByTitle('HTML preview')).toBeInTheDocument();
+    expect(screen.queryByTitle('Snapshot preview')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Compare pixels' })).toBeNull();
+  });
+
+  it('toggles registered HTML enhancements without a React context and disables them for Snapshot', () => {
+    const reactRender = vi.fn(
+      (_composition: Composition, _options: unknown) => (
+        <p>Interactive output</p>
+      )
+    );
+    const value = studio();
+    const wrapper = withStudio({
+      ...value,
+      runtime: {
+        ...value.runtime,
+        packs: [{ enhancements: [{ id: 'copy', appliesTo: () => true }] }],
+        surfaces: { ...value.runtime.surfaces, react: { render: reactRender } },
+      } as unknown as StudioRuntime,
+    });
+    const props = {
+      surfaces: ['react', 'html', 'snapshot'] as const,
+      composition: composition('first'),
+      validation: noWarnings,
+      view: 'render' as const,
+      zoom: 'fit' as const,
+    };
+    const { rerender } = render(<SurfaceBoard {...props} />, { wrapper });
+    fireEvent.click(screen.getByRole('button', { name: 'Enhancements (0/1)' }));
+    const toggle = screen.getByRole('checkbox', { name: 'copy' });
+    expect(toggle).not.toBeChecked();
+    expect(reactRender).not.toHaveBeenCalled();
+    fireEvent.click(toggle);
+    expect(toggle).toBeChecked();
+    expect(htmlRender).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ enhancements: ['copy'], scripts: 'host' })
+    );
+    fireEvent.click(toggle);
+    expect(toggle).not.toBeChecked();
+    expect(htmlRender).toHaveBeenLastCalledWith(expect.anything(), {
+      minify: false,
+    });
+    rerender(<SurfaceBoard {...props} surfaces={['snapshot']} />);
+    expect(
+      screen.getByRole('button', { name: 'Enhancements (0/1)' })
+    ).toBeDisabled();
+  });
+
+  it('treats an enhancement whose predicate throws on an invalid draft as not applicable', () => {
+    const value = studio();
+    const wrapper = withStudio({
+      ...value,
+      runtime: {
+        ...value.runtime,
+        packs: [
+          {
+            enhancements: [
+              {
+                id: 'builds',
+                appliesTo: () => {
+                  throw new TypeError('panes.flatMap is not a function');
+                },
+              },
+              { id: 'copy', appliesTo: () => true },
+            ],
+          },
+        ],
+      } as unknown as StudioRuntime,
+    });
+    render(
+      <SurfaceBoard
+        surfaces={['html']}
+        composition={composition('first')}
+        validation={noWarnings}
+        view="render"
+        zoom="fit"
+      />,
+      { wrapper }
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Enhancements (0/1)' }));
+    expect(screen.getByRole('checkbox', { name: 'copy' })).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'builds' })).toBeNull();
+  });
+
+  it('selects multiple named enhancements independently and disables selection in Source view', () => {
+    const value = studio();
+    const wrapper = withStudio({
+      ...value,
+      runtime: {
+        ...value.runtime,
+        packs: [
+          {
+            enhancements: [
+              { id: 'copy', appliesTo: () => true },
+              { id: 'builds', appliesTo: () => true },
+            ],
+          },
+        ],
+      } as unknown as StudioRuntime,
+    });
+    const props = {
+      surfaces: ['html'] as const,
+      composition: composition('first'),
+      validation: noWarnings,
+      view: 'render' as const,
+      zoom: 'fit' as const,
+    };
+    const { rerender } = render(<SurfaceBoard {...props} />, { wrapper });
+    fireEvent.click(screen.getByRole('button', { name: 'Enhancements (0/2)' }));
+    const copy = screen.getByRole('checkbox', { name: 'copy' });
+    const builds = screen.getByRole('checkbox', { name: 'builds' });
+    expect(copy).not.toBeChecked();
+    expect(builds).not.toBeChecked();
+    fireEvent.click(copy);
+    expect(htmlRender).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ enhancements: ['copy'], scripts: 'host' })
+    );
+    fireEvent.click(builds);
+    expect(htmlRender).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ enhancements: ['copy', 'builds'] })
+    );
+    fireEvent.click(copy);
+    expect(htmlRender).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ enhancements: ['builds'] })
+    );
+    rerender(<SurfaceBoard {...props} view="source" />);
+    expect(
+      screen.getByRole('button', { name: 'Enhancements (1/2)' })
+    ).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: 'builds' })).toBeDisabled();
+    rerender(<SurfaceBoard {...props} />);
+    fireEvent.click(screen.getByRole('checkbox', { name: 'builds' }));
+    expect(htmlRender).toHaveBeenLastCalledWith(expect.anything(), {
+      minify: false,
+    });
+  });
+
+  it('offers only enhancements that apply to the composition, including nested nodes', () => {
+    const value = studio();
+    const wrapper = withStudio({
+      ...value,
+      runtime: {
+        ...value.runtime,
+        primitives: [
+          {
+            type: 'container',
+            children: () => [{ node: { type: 'copyable' }, path: 'content' }],
+          },
+        ],
+        packs: [
+          {
+            enhancements: [
+              {
+                id: 'copy',
+                appliesTo: (body: Composition['body'], walk: ChildNodeWalker) =>
+                  someBodyNode(
+                    body,
+                    'react',
+                    (node) =>
+                      typeof node === 'object' &&
+                      node !== null &&
+                      'type' in node &&
+                      node.type === 'copyable',
+                    walk
+                  ),
+              },
+            ],
+          },
+        ],
+      } as unknown as StudioRuntime,
+    });
+    const props = {
+      surfaces: ['html'] as const,
+      composition: composition('first'),
+      validation: noWarnings,
+      view: 'render' as const,
+      zoom: 'fit' as const,
+    };
+    const { rerender } = render(<SurfaceBoard {...props} />, { wrapper });
+    expect(
+      screen.getByRole('button', { name: 'Enhancements (0/0)' })
+    ).toBeDisabled();
+    rerender(
+      <SurfaceBoard {...props} composition={composition('container')} />
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Enhancements (0/1)' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'copy' }));
+    expect(htmlRender).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ enhancements: ['copy'] })
+    );
+    rerender(<SurfaceBoard {...props} />);
+    expect(
+      screen.getByRole('button', { name: 'Enhancements (0/0)' })
+    ).toBeDisabled();
+    expect(htmlRender).toHaveBeenLastCalledWith(expect.anything(), {
+      minify: false,
+    });
+  });
+
+  it('reports a selected snapshot failure without replacing the other preview choices', () => {
+    vi.useFakeTimers();
+    snapshotRender.mockImplementationOnce(() => {
+      throw new Error('Frame failed.');
+    });
+    const props = {
+      surfaces: ['snapshot'] as const,
+      composition: composition('first'),
+      validation: noWarnings,
+      view: 'render' as const,
+      zoom: 'fit' as const,
+    };
+    const { rerender } = render(<SurfaceBoard {...props} />, {
+      wrapper: withStudio(studio()),
+    });
+    expect(screen.getByText('Frame failed.')).toBeInTheDocument();
+    rerender(<SurfaceBoard {...props} surfaces={['react', 'html']} />);
+    expect(screen.queryByText('Frame failed.')).toBeNull();
+    expect(screen.getByTitle('HTML preview')).toBeInTheDocument();
+  });
+
+  it('offers a Workbench route when a reference example fails to render', () => {
+    htmlRender.mockImplementationOnce(() => {
+      throw new Error('HTML renderer failed.');
+    });
+    render(
+      <SurfaceBoard
+        surfaces={['html']}
+        composition={composition('first')}
+        validation={noWarnings}
+        view="render"
+        zoom="fit"
+        errorHref="#/dev/first/0"
+      />,
+      { wrapper: withStudio(studio()) }
+    );
+
+    expect(screen.getByText('HTML renderer failed.')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'Open this example in Workbench' })
+    ).toHaveAttribute('href', '#/dev/first/0');
   });
 });
