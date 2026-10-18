@@ -81,6 +81,11 @@ const devBackground = css`
 
 type Look = 'dev' | 'docs' | 'home';
 
+const compactNavQuery = () =>
+  typeof window === 'undefined'
+    ? undefined
+    : window.matchMedia(`(max-width: ${NAV_WIDTH.compactAt}px)`);
+
 const BACKGROUNDS = {
   dev: devBackground,
   docs: docsBackground,
@@ -115,15 +120,20 @@ const Layout = ({
   const mode = app || home ? undefined : route.mode;
   const look: Look = home ? 'home' : (mode ?? 'docs');
   const accent = useAccent(look === 'home' ? 'docs' : look);
-  const [isNavOpen, setNavOpen] = useState(true);
-  const [isCompactNav, setCompactNav] = useState(false);
+  const [isCompactNav, setCompactNav] = useState(
+    () => compactNavQuery()?.matches ?? false
+  );
+  const [isNavOpen, setNavOpen] = useState(() => !isCompactNav);
   const [devRoute, setDevRoute] = useState(mode === 'dev' ? route : undefined);
   if (mode === 'dev' && devRoute !== route) {
     setDevRoute(route);
   }
 
   useEffect(() => {
-    const query = window.matchMedia(`(max-width: ${NAV_WIDTH.compactAt}px)`);
+    const query = compactNavQuery();
+    if (!query) {
+      return;
+    }
     const update = () => {
       setCompactNav(query.matches);
       setNavOpen(!query.matches);

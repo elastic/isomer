@@ -421,9 +421,6 @@ export const StudioNav = ({
   const appItems = useMemo(() => apps.map(appItem), [apps]);
   const [filter, setFilter] = useState('');
   const { closed, setOpen } = useClosedNavGroups();
-  const [isHovered, setHovered] = useState(false);
-  const [isFocusWithin, setFocusWithin] = useState(false);
-  const isExpanded = isOpen || (isCompact && (isHovered || isFocusWithin));
   const separatePacks = runtime.packs.length > 1;
 
   const packs = useMemo(() => {
@@ -487,14 +484,12 @@ export const StudioNav = ({
             inset-block: 0;
             inset-inline-start: 0;
             z-index: 1;
-            inline-size: ${isExpanded ? NAV_WIDTH.open : NAV_WIDTH.closed}px;
+            inline-size: ${isOpen ? NAV_WIDTH.open : NAV_WIDTH.closed}px;
             background: ${
-              isExpanded ? euiTheme.colors.backgroundBasePlain : 'transparent'
+              isOpen ? euiTheme.colors.backgroundBasePlain : 'transparent'
             };
-            border-inline-end: ${isExpanded ? euiTheme.border.thin : 'none'};
-            box-shadow: ${
-              isExpanded ? '0 8px 24px rgba(0, 0, 0, 0.28)' : 'none'
-            };
+            border-inline-end: ${isOpen ? euiTheme.border.thin : 'none'};
+            box-shadow: ${isOpen ? '0 8px 24px rgba(0, 0, 0, 0.28)' : 'none'};
             transition: inline-size ${euiTheme.animation.normal}
               ${euiTheme.animation.resistance};
           `
@@ -503,13 +498,14 @@ export const StudioNav = ({
   `;
   const fieldInset = css`
     display: flex;
+    flex-wrap: nowrap;
     align-items: center;
     gap: ${euiTheme.size.xs};
     flex: none;
     margin-inline: ${euiTheme.size.s};
     margin-block-end: ${euiTheme.size.s};
     min-block-size: ${ROW_HEIGHT}px;
-    justify-content: ${isExpanded ? 'flex-start' : 'center'};
+    justify-content: ${isOpen ? 'flex-start' : 'center'};
   `;
   const scroller = css`
     flex: 1;
@@ -517,7 +513,7 @@ export const StudioNav = ({
     display: flex;
     flex-direction: column;
     gap: ${euiTheme.size.s};
-    padding-inline: ${isExpanded ? euiTheme.size.s : 0};
+    padding-inline: ${isOpen ? euiTheme.size.s : 0};
     overflow: hidden auto;
     ${scrollbar}
   `;
@@ -563,28 +559,16 @@ export const StudioNav = ({
     />
   ));
 
+  const toggleLabel = `${isOpen ? 'Collapse' : 'Expand'} primitive navigation`;
+
   return (
-    <nav
-      css={column}
-      aria-label="Primitives"
-      onMouseEnter={() => isCompact && setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onFocusCapture={() => isCompact && setFocusWithin(true)}
-      onBlurCapture={(event) => {
-        if (
-          isCompact &&
-          (!(event.relatedTarget instanceof Node) ||
-            !event.currentTarget.contains(event.relatedTarget))
-        ) {
-          setFocusWithin(false);
-        }
-      }}>
+    <nav css={column} aria-label="Primitives">
       <div css={fieldInset}>
-        {isExpanded ? (
+        {isOpen ? (
           <div
             css={css`
-              flex: 1;
-              min-width: 0;
+              flex: 1 1 auto;
+              min-inline-size: 0;
             `}>
             <EuiFieldSearch
               compressed
@@ -606,30 +590,15 @@ export const StudioNav = ({
             block-size: ${ROW_HEIGHT}px;
             color: ${ACTIVE_LABEL};
           `}
-          iconType={isExpanded ? 'transitionRightIn' : 'transitionLeftIn'}
-          aria-label={
-            isCompact
-              ? isOpen
-                ? 'Unpin primitive sidebar'
-                : 'Pin primitive sidebar'
-              : isOpen
-                ? 'Collapse primitive sidebar'
-                : 'Expand primitive sidebar'
-          }
-          title={
-            isCompact
-              ? isOpen
-                ? 'Unpin primitive sidebar'
-                : 'Pin primitive sidebar'
-              : isOpen
-                ? 'Collapse primitive sidebar'
-                : 'Expand primitive sidebar'
-          }
+          iconType={isOpen ? 'transitionRightIn' : 'transitionLeftIn'}
+          aria-label={toggleLabel}
+          title={toggleLabel}
+          aria-expanded={isOpen}
           onClick={onToggle}
         />
       </div>
       <div css={scroller}>
-        {isExpanded ? (
+        {isOpen ? (
           <>
             <ul css={plainList}>
               {appRows}

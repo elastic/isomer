@@ -36,11 +36,11 @@ The server runs on Vite. When the config or anything it imports changes, the Stu
 
 ### Comparing outputs
 
-Dev combines browser renders in one **Web** panel, labeled **HTML / React /
+Workbench combines browser renders in one **Web** panel, labeled **HTML / React /
 Snapshot** beneath its title, without a per-panel dropdown. HTML and its stylesheet
 render in a shadow root, not an iframe. PNG stays separate; Slack, Markdown and
 Text appear below. The **Outputs** menu lists these displayed outputs rather than
-separate React and Snapshot entries when HTML is available. Dev starts with every
+separate React and Snapshot entries when HTML is available. Workbench starts with every
 output selected; pick one to inspect it at full size, or add others to compare.
 Runtimes without HTML retain their React or Snapshot output.
 
@@ -86,7 +86,9 @@ The 72-pixel collapsed navigation rail uses full-opacity white icons in centered
 32-pixel buttons. Its toggle stays fixed while the grouped entries scroll
 vertically when they exceed the available height.
 The white sidebar toggle sits beside the filter, using `transitionRightIn` to
-collapse and `transitionLeftIn` to expand. Component tabs replace prop section
+collapse and `transitionLeftIn` to expand. At 1120 pixels or narrower, navigation
+starts collapsed, expands over the content when toggled, and does not expand on
+hover. Component tabs replace prop section
 headings and label the active table for assistive technology.
 Slack's preview padding uses the message canvas
 background in both color modes.

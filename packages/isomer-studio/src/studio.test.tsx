@@ -126,7 +126,7 @@ describe('IsomerStudio', () => {
       })
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: 'Docs' })
+      screen.queryByRole('button', { name: 'Reference' })
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('navigation', { name: 'Primitives' })
@@ -135,7 +135,9 @@ describe('IsomerStudio', () => {
     fireEvent.click(screen.getByRole('link', { name: /Open the workbench/ }));
     await waitFor(() => expect(window.location.hash).toBe('#/dev/callout/0'));
     expect(await findEditor()).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Docs' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Reference' })
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('link', { name: 'Isomer Studio home' }));
     expect(
@@ -274,6 +276,32 @@ describe('IsomerStudio', () => {
         (element) => element.textContent
       )
     ).toEqual(expect.arrayContaining(['label', 'value']));
+  });
+
+  it('starts with collapsed navigation on narrow screens and lets readers expand it', async () => {
+    const matchMedia = window.matchMedia.bind(window);
+    window.matchMedia = (query) => ({
+      ...matchMedia(query),
+      matches: query.includes('max-width'),
+    });
+    try {
+      window.location.hash = '#/docs/callout/0';
+      render(<IsomerStudio {...{ runtime }} />);
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Callout' })
+      ).toBeInTheDocument();
+
+      const expand = screen.getByRole('button', {
+        name: 'Expand primitive navigation',
+      });
+      expect(expand).toHaveAttribute('aria-expanded', 'false');
+      fireEvent.click(expand);
+      expect(
+        screen.getByRole('button', { name: 'Collapse primitive navigation' })
+      ).toHaveAttribute('aria-expanded', 'true');
+    } finally {
+      window.matchMedia = matchMedia;
+    }
   });
 
   it('heads each pack when the runtime has more than one', async () => {
@@ -450,9 +478,9 @@ describe('IsomerStudio', () => {
     await waitFor(() => expect(window.location.hash).toBe('#/dev/callout/1'));
   });
 
-  it('puts the example picker ahead of the surface menu and shows the example source', async () => {
+  it('puts the example picker ahead of the surface menu and lets readers switch to example source', async () => {
     await renderStudio();
-    fireEvent.click(screen.getByRole('button', { name: 'Docs' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reference' }));
     const examples = await screen.findByRole('region', { name: 'Examples' });
     const examplePicker = within(examples).getByRole('button', {
       name: /^Example:/,
@@ -463,6 +491,19 @@ describe('IsomerStudio', () => {
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
 
+    const viewToggle = within(examples).getByRole('group', {
+      name: 'Example view',
+    });
+    expect(
+      within(viewToggle).getByRole('button', { name: 'Example source' })
+    ).toBeInTheDocument();
+    expect(
+      within(examples).queryByText('Live React, styled by the host.')
+    ).not.toBeInTheDocument();
+    expect(within(examples).queryByRole('tabpanel')).not.toBeInTheDocument();
+    fireEvent.click(
+      within(viewToggle).getByRole('button', { name: 'Example source' })
+    );
     expect(within(examples).getByRole('tabpanel')).toHaveTextContent(
       '<Callout'
     );
@@ -472,21 +513,21 @@ describe('IsomerStudio', () => {
     );
 
     fireEvent.click(
-      within(examples).getByRole('button', { name: 'Hide source' })
+      within(viewToggle).getByRole('button', { name: 'Rendered' })
     );
     expect(within(examples).queryByRole('tabpanel')).not.toBeInTheDocument();
     fireEvent.click(
-      within(examples).getByRole('button', { name: 'View source' })
+      within(viewToggle).getByRole('button', { name: 'Example source' })
     );
     expect(
       within(examples).getByRole('tab', { name: 'JSON', selected: true })
     ).toBeInTheDocument();
   });
 
-  it('switches between Dev and Docs', async () => {
+  it('switches between Workbench and Reference without changing routes', async () => {
     expect(await renderStudio()).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Docs' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reference' }));
     expect(
       screen.getByRole('heading', { level: 1, name: 'Callout' })
     ).toBeInTheDocument();
@@ -495,8 +536,9 @@ describe('IsomerStudio', () => {
     ).toBeInTheDocument();
     expect(window.location.hash).toBe('#/docs/callout/0');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Dev' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Workbench' }));
     expect(await findEditor()).toBeInTheDocument();
+    expect(window.location.hash).toBe('#/dev/callout/0');
   });
 
   it('edits JSON when the host supplies no JSX transform, and reports invalid nodes', async () => {
@@ -649,16 +691,16 @@ describe('IsomerStudio', () => {
     expect(await findEditor()).toHaveValue(draft);
   });
 
-  it('keeps the Dev draft while Docs is open', async () => {
+  it('keeps the Workbench draft while Reference is open', async () => {
     const editor = await renderStudio();
     const draft = JSON.stringify({ type: 'callout', body: 'Kept.' });
     fireEvent.change(editor, { target: { value: draft } });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Docs' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reference' }));
     const nav = screen.getByRole('navigation', { name: 'Primitives' });
     fireEvent.click(within(nav).getByRole('button', { name: 'Divider' }));
     fireEvent.click(within(nav).getByRole('button', { name: 'Callout' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Dev' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Workbench' }));
 
     expect(await findEditor()).toHaveValue(draft);
   });

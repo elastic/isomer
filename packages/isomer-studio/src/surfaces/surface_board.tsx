@@ -90,6 +90,7 @@ interface RenderProps {
   view: SurfaceView;
   zoom: PreviewZoom;
   enhancements?: readonly string[] | undefined;
+  errorHref?: string | undefined;
 }
 
 const SurfaceRender = ({
@@ -98,6 +99,7 @@ const SurfaceRender = ({
   validation,
   view,
   zoom,
+  errorHref,
   frameCss,
   enhancements,
 }: RenderProps & {
@@ -116,6 +118,7 @@ const SurfaceRender = ({
           zoom,
           frameCss,
           enhancements,
+          errorHref,
         }}
       />
     );
@@ -134,6 +137,7 @@ const SurfaceCard = ({
   title,
   note,
   enhancements,
+  errorHref,
   zoom = 'fit',
   fullSize = false,
 }: Omit<RenderProps, 'zoom'> & {
@@ -205,7 +209,15 @@ const SurfaceCard = ({
       </div>
       <SurfaceRender
         key={`${surface}-${enhancements?.join(',') ?? ''}`}
-        {...{ surface, composition, validation, view, enhancements, zoom }}
+        {...{
+          surface,
+          composition,
+          validation,
+          view,
+          enhancements,
+          zoom,
+          errorHref,
+        }}
         frameCss={
           fullSize
             ? undefined
@@ -244,6 +256,7 @@ export const SurfaceBoard = ({
   validation,
   view,
   zoom,
+  errorHref,
 }: SurfaceBoardProps) => {
   const { euiTheme } = useEuiTheme();
   const { runtime, createReactContext } = useStudio();
@@ -291,7 +304,7 @@ export const SurfaceBoard = ({
         </h2>
         <SurfaceRender
           surface={only}
-          {...{ composition, validation, view, zoom }}
+          {...{ composition, validation, view, zoom, errorHref }}
         />
       </section>
     );
@@ -301,7 +314,7 @@ export const SurfaceBoard = ({
     items.map((surface) => (
       <SurfaceCard
         key={surface}
-        {...{ surface, composition, validation, view }}
+        {...{ surface, composition, validation, view, errorHref }}
       />
     ));
 
@@ -334,7 +347,7 @@ export const SurfaceBoard = ({
                     ? 'HTML / React / Snapshot'
                     : undefined
                 }
-                {...{ composition, validation, view, enhancements }}
+                {...{ composition, validation, view, enhancements, errorHref }}
                 zoom={surfaces.length === 1 ? zoom : 'fit'}
                 fullSize={surfaces.length === 1}
                 controls={

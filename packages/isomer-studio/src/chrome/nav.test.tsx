@@ -81,8 +81,9 @@ describe('StudioNav app pages', () => {
     const { onToggle } = renderNav();
     const filter = screen.getByRole('searchbox', { name: 'Filter primitives' });
     const toggle = screen.getByRole('button', {
-      name: 'Collapse primitive sidebar',
+      name: 'Collapse primitive navigation',
     });
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(isBefore(filter, toggle)).toBe(true);
     expect(toggle.parentElement).toContainElement(filter);
     fireEvent.click(toggle);
@@ -213,34 +214,23 @@ describe('StudioNav gallery link', () => {
 });
 
 describe('StudioNav compact behavior', () => {
-  it('reveals labels while hovered and can be pinned open', () => {
+  it('stays collapsed on hover and focus until expanded', () => {
     const { nav, onToggle } = renderNav({
       isOpen: false,
       isCompact: true,
     });
+    const expand = screen.getByRole('button', {
+      name: 'Expand primitive navigation',
+    });
 
+    fireEvent.mouseEnter(nav);
+    fireEvent.focus(expand);
     expect(
       screen.queryByRole('searchbox', { name: 'Filter primitives' })
     ).not.toBeInTheDocument();
-    fireEvent.mouseEnter(nav);
-    expect(
-      screen.getByRole('searchbox', { name: 'Filter primitives' })
-    ).toBeInTheDocument();
+    expect(expand).toHaveAttribute('aria-expanded', 'false');
 
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Pin primitive sidebar' })
-    );
+    fireEvent.click(expand);
     expect(onToggle).toHaveBeenCalledOnce();
-  });
-
-  it('reveals labels when keyboard focus enters the compact rail', () => {
-    renderNav({ isOpen: false, isCompact: true });
-    fireEvent.focus(
-      screen.getByRole('button', { name: 'Pin primitive sidebar' })
-    );
-
-    expect(
-      screen.getByRole('searchbox', { name: 'Filter primitives' })
-    ).toBeInTheDocument();
   });
 });

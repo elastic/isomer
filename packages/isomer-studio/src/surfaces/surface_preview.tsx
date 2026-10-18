@@ -50,7 +50,7 @@ export const SURFACE_ICONS: Readonly<Record<StudioSurface, IconType>> = {
 
 const VIEW_OPTIONS: { id: SurfaceView; label: string }[] = [
   { id: 'render', label: 'Rendered' },
-  { id: 'source', label: 'Source' },
+  { id: 'source', label: 'Output source' },
 ];
 
 const isSurfaceView = (id: string): id is SurfaceView =>
@@ -167,6 +167,8 @@ export interface SurfacePreviewProps {
   zoom?: PreviewZoom;
   /** Styles a frame around the render or source alone; diagnostics sit below it. */
   frameCss?: SerializedStyles | undefined;
+  /** A relevant recovery destination when rendering fails. */
+  errorHref?: string | undefined;
   /** `false` leaves out the composition's leading title. Defaults to `true`. */
   heading?: boolean | undefined;
   /** Runs the requested enhancements on React or shadow-DOM HTML previews. */
@@ -181,6 +183,7 @@ export const SurfacePreview = ({
   view,
   zoom = 'fit',
   frameCss,
+  errorHref,
   heading,
   enhancements,
 }: SurfacePreviewProps) => {
@@ -204,7 +207,16 @@ export const SurfacePreview = ({
           color="danger"
           iconType="error"
           title="This surface could not render"
-          text={<p>{error}</p>}
+          text={
+            <>
+              <p>{error}</p>
+              {errorHref ? (
+                <EuiLink href={errorHref}>
+                  Open this example in Workbench
+                </EuiLink>
+              ) : null}
+            </>
+          }
         />
       ) : (
         <SurfaceFrame {...{ frameCss }}>
