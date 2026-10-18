@@ -369,11 +369,17 @@ const fitBlock = (block: SlackBlock): SlackBlock[] => {
 };
 
 const fitContainer = (container: SlackContainerBlock): SlackBlock[] => {
-  const { title, subtitle, icon, child_blocks } = container;
+  const { title, rich_text_title, subtitle, icon, child_blocks } = container;
   const fitted: SlackContainerBlock = {
     ...container,
     ...(title && {
       title: clampText(title, SLACK_LIMITS.containerTitleChars),
+    }),
+    ...(rich_text_title && {
+      rich_text_title: {
+        ...rich_text_title,
+        elements: rich_text_title.elements.flatMap(splitRichTextElement),
+      },
     }),
     ...(subtitle && {
       subtitle: clampText(subtitle, SLACK_LIMITS.containerSubtitleChars),

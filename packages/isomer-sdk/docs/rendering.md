@@ -160,7 +160,7 @@ A block from `unmodeledSlackBlock`, or of a type Isomer does not model, skips st
 
 A `container` goes through every step with its children:
 
-- Step 1 cuts its `title` to `containerTitleChars` and its `subtitle` to `containerSubtitleChars`, drops an `icon` whose URL is past `imageUrlChars`, cuts the icon's alt text, and fits each child as a block of its own.
+- Step 1 cuts its `title` to `containerTitleChars` and its `subtitle` to `containerSubtitleChars`, splits a `rich_text_title` element past `sectionTextChars` as in any `rich_text` block, drops an `icon` whose URL is past `imageUrlChars`, cuts the icon's alt text, and fits each child as a block of its own.
 - Step 2 counts the cells of its tables toward the message in document order, with the tables around it.
 - Step 3 coalesces field sections and splits blocks within its children, never across its edge. It puts no spacer inside a container, nor beside one, since a container sets itself apart.
 - Step 4 counts it as one block, however many children it holds.

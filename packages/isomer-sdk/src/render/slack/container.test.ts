@@ -203,6 +203,42 @@ describe('the Slack envelope and containers', () => {
     ]);
   });
 
+  it('splits a long rich text title, kept or unwrapped', () => {
+    const long = 'r'.repeat(SLACK_LIMITS.sectionTextChars + 1);
+    const rich_text_title = {
+      type: 'rich_text' as const,
+      elements: [
+        {
+          type: 'rich_text_section' as const,
+          elements: [{ type: 'text' as const, text: long }],
+        },
+      ],
+    };
+    const lengths = (block: SlackBlock | undefined) =>
+      block?.type === 'rich_text'
+        ? block.elements.map(({ elements }) =>
+            elements.reduce(
+              (sum, inline) =>
+                sum + ('text' in inline ? (inline.text ?? '') : '').length,
+              0
+            )
+          )
+        : [];
+    const split = [SLACK_LIMITS.sectionTextChars, 1];
+
+    const kept = onlyContainer(
+      render([
+        { type: 'container', rich_text_title, child_blocks: sections(1) },
+      ])
+    );
+    expect(lengths(kept.rich_text_title)).toEqual(split);
+
+    const [unwrapped] = render([
+      { type: 'container', rich_text_title, child_blocks: sections(11) },
+    ]);
+    expect(lengths(unwrapped)).toEqual(split);
+  });
+
   it('counts a table inside a container toward the message cell budget', () => {
     const cells = SLACK_LIMITS.tableCellCharsPerMessage / 2 + 1;
     const [kept, held] = render([table(cells), container([table(cells)])]);
