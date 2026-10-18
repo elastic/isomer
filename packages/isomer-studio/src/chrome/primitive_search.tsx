@@ -115,7 +115,14 @@ export const PrimitiveSearch = ({
               }
             `
           : css`
+              flex: 0 1 280px;
               width: 280px;
+              min-width: 72px;
+              @media (max-width: 480px) {
+                .euiFormControlLayout__append {
+                  display: none;
+                }
+              }
             `
       }
     />

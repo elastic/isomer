@@ -7,7 +7,6 @@
 
 import React, { useMemo, useState } from 'react';
 import {
-  EuiButtonEmpty,
   EuiButtonIcon,
   EuiCodeBlock,
   EuiCopy,
@@ -50,12 +49,10 @@ const SourcePanel = ({
   format,
   source,
   onFormat,
-  onClose,
 }: {
   format: SourceFormat;
   source: Record<SourceFormat, string>;
   onFormat: (format: SourceFormat) => void;
-  onClose: () => void;
 }) => {
   const { euiTheme } = useEuiTheme();
   const idPrefix = useGeneratedHtmlId({ prefix: 'exampleSource' });
@@ -81,7 +78,7 @@ const SourcePanel = ({
         <EuiTabs
           size="s"
           bottomBorder={false}
-          aria-label="Example source format"
+          aria-label="Example code format"
           css={css`
             flex: 1;
           `}>
@@ -106,12 +103,6 @@ const SourcePanel = ({
             />
           )}
         </EuiCopy>
-        <EuiButtonIcon
-          iconType="arrowUp"
-          aria-label="Hide source"
-          color="text"
-          onClick={onClose}
-        />
       </div>
       <div
         role="tabpanel"
@@ -134,38 +125,22 @@ const SourcePanel = ({
   );
 };
 
-/** The example node as JSX or JSON, in a collapsible footer. */
-export const ExampleSource = ({ node }: { node: PrimitiveNode }) => {
-  const { euiTheme } = useEuiTheme();
+/** The example node as JSX or JSON. */
+export const ExampleSource = ({
+  node,
+  isOpen,
+}: {
+  node: PrimitiveNode;
+  isOpen: boolean;
+}) => {
   const source = useExampleSource(node);
-  const [isOpen, setOpen] = useState(true);
   const [format, setFormat] = useState<SourceFormat>('jsx');
 
-  if (!isOpen) {
-    return (
-      <div
-        css={css`
-          padding: ${euiTheme.size.xs} ${euiTheme.size.s};
-          border-top: ${euiTheme.border.thin};
-        `}>
-        <EuiButtonEmpty
-          size="s"
-          iconType="arrowDown"
-          iconSide="right"
-          onClick={() => setOpen(true)}>
-          View source
-        </EuiButtonEmpty>
-      </div>
-    );
-  }
-
   return (
-    <EuiThemeProvider colorMode="dark" wrapperProps={themeWrapper}>
-      <SourcePanel
-        {...{ format, source }}
-        onFormat={setFormat}
-        onClose={() => setOpen(false)}
-      />
-    </EuiThemeProvider>
+    <div hidden={!isOpen}>
+      <EuiThemeProvider colorMode="dark" wrapperProps={themeWrapper}>
+        <SourcePanel {...{ format, source }} onFormat={setFormat} />
+      </EuiThemeProvider>
+    </div>
   );
 };

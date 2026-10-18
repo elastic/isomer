@@ -28,33 +28,42 @@ export const enumLiteral = (values: readonly string[]): string =>
 
 const columnsFor = (
   { text, light }: Accent,
-  names: readonly string[]
+  names: readonly string[],
+  compact = false
 ): Array<EuiBasicTableColumn<PropDescriptor>> => [
   {
     name: 'Name',
-    width: '14em',
+    width: compact ? '24%' : '14em',
+    valign: 'top',
     render: ({ name, required }: PropDescriptor) => (
-      <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false} wrap>
-        <EuiFlexItem grow={false}>
-          <EuiCode
-            css={css`
-              color: ${text};
-              background: ${light};
-            `}>
-            {name}
-          </EuiCode>
-        </EuiFlexItem>
-        {required ? (
+      <div>
+        <EuiFlexGroup
+          gutterSize="xs"
+          alignItems="center"
+          responsive={false}
+          wrap>
           <EuiFlexItem grow={false}>
-            <EuiBadge color="hollow">required</EuiBadge>
+            <EuiCode
+              css={css`
+                color: ${text};
+                background: ${light};
+              `}>
+              {name}
+            </EuiCode>
           </EuiFlexItem>
-        ) : null}
-      </EuiFlexGroup>
+          {required ? (
+            <EuiFlexItem grow={false}>
+              <EuiBadge color="hollow">required</EuiBadge>
+            </EuiFlexItem>
+          ) : null}
+        </EuiFlexGroup>
+      </div>
     ),
   },
   {
     name: 'Type',
-    width: '12em',
+    width: compact ? '24%' : '12em',
+    valign: 'top',
     render: ({ type, values }: PropDescriptor) =>
       values ? (
         <EuiCode>{enumLiteral(values)}</EuiCode>
@@ -66,11 +75,18 @@ const columnsFor = (
   },
   {
     name: 'Description',
+    valign: 'top',
     render: ({ description }: PropDescriptor) =>
       description ? (
         <EuiText size="s">
           <p>
-            <InlineCode text={description} {...{ names }} />
+            <span
+              css={css`
+                display: inline-block;
+                max-inline-size: 72ch;
+              `}>
+              <InlineCode text={description} {...{ names }} />
+            </span>
           </p>
         </EuiText>
       ) : (
@@ -86,16 +102,19 @@ export const PropsTable = ({
   props,
   accent,
   names,
+  compact = false,
 }: {
   props: PropDescriptor[];
   accent: Accent;
   /** Primitive types to set as code where a description names them. */
   names: readonly string[];
+  /** Uses proportional column widths for the shared Dev drawer. */
+  compact?: boolean;
 }) => (
   <EuiBasicTable<PropDescriptor>
     tableCaption="Props"
     items={props}
-    columns={columnsFor(accent, names)}
+    columns={columnsFor(accent, names, compact)}
     itemId="name"
     noItemsMessage="This primitive has no props besides its type."
   />

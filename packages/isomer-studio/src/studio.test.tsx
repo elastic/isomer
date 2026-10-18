@@ -126,7 +126,7 @@ describe('IsomerStudio', () => {
       })
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: 'Docs' })
+      screen.queryByRole('button', { name: 'Reference' })
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('navigation', { name: 'Primitives' })
@@ -135,7 +135,9 @@ describe('IsomerStudio', () => {
     fireEvent.click(screen.getByRole('link', { name: /Open the workbench/ }));
     await waitFor(() => expect(window.location.hash).toBe('#/dev/callout/0'));
     expect(await findEditor()).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Docs' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Reference' })
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('link', { name: 'Isomer Studio home' }));
     expect(
@@ -190,6 +192,116 @@ describe('IsomerStudio', () => {
     );
     expect(headings()).toEqual(['Data display']);
     expect(labels()).toEqual(['Gallery', 'Stat group']);
+  });
+
+  it('shows a schema-derived prop table below the source editor without first-node editing controls', async () => {
+    await renderStudio();
+    expect(screen.queryByRole('button', { name: '+ Prop' })).toBeNull();
+    const toggle = screen.getByRole('button', { name: 'Props' });
+    const sourcePanel = screen.getByRole('region', { name: 'Source editor' });
+    expect(sourcePanel).toContainElement(
+      screen.getByRole('button', { name: 'Copy JSON' })
+    );
+    expect(sourcePanel).not.toContainElement(toggle);
+    const workbenchPanel = screen.getByRole('region', {
+      name: 'Composition workbench',
+    });
+    expect(workbenchPanel).toContainElement(
+      screen.getByRole('region', { name: 'Outputs' })
+    );
+    expect(workbenchPanel).toContainElement(toggle);
+    expect(
+      toggle.compareDocumentPosition(screen.getByText('Valid')) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(
+      screen.queryByRole('region', { name: 'Primitive prop reference' })
+    ).toBeNull();
+    fireEvent.click(toggle);
+
+    const reference = screen.getByRole('region', {
+      name: 'Primitive prop reference',
+    });
+    expect(workbenchPanel).toContainElement(reference);
+    expect(within(reference).queryByRole('heading')).not.toBeInTheDocument();
+    const propDetails = Array.from(reference.querySelectorAll('tr')).map(
+      (detail) => detail.textContent ?? ''
+    );
+    expect(
+      within(reference).getByText('body', { selector: 'code' })
+    ).toBeInTheDocument();
+    expect(propDetails.some((detail) => detail.includes('required'))).toBe(
+      true
+    );
+    expect(
+      within(reference).getByText('tone', { selector: 'code' })
+    ).toBeInTheDocument();
+    expect(reference.querySelectorAll('table')).toHaveLength(1);
+    expect(
+      screen
+        .getByRole('textbox', { name: 'Callout source' })
+        .compareDocumentPosition(reference) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    fireEvent.click(toggle);
+    expect(
+      screen.queryByRole('region', { name: 'Primitive prop reference' })
+    ).toBeNull();
+  });
+
+  it('shows child-component prop tables using their JSX member names', async () => {
+    window.location.hash = '#/dev/statGroup/0';
+    render(<IsomerStudio {...{ runtime }} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Props' }));
+    const reference = await screen.findByRole('region', {
+      name: 'Primitive prop reference',
+    });
+    expect(
+      within(reference).getByRole('tab', {
+        name: 'StatGroup',
+      })
+    ).toBeInTheDocument();
+    fireEvent.click(
+      within(reference).getByRole('tab', { name: 'StatGroup.Stat' })
+    );
+    const child = within(reference).getByRole('tabpanel', {
+      name: 'StatGroup.Stat',
+    });
+    expect(within(child).getByRole('table')).toBeInTheDocument();
+    expect(
+      within(child).getByText('label', { selector: 'code' })
+    ).toBeInTheDocument();
+    expect(
+      [...child.querySelectorAll('tbody tr td:first-child code')].map(
+        (element) => element.textContent
+      )
+    ).toEqual(expect.arrayContaining(['label', 'value']));
+  });
+
+  it('starts with collapsed navigation on narrow screens and lets readers expand it', async () => {
+    const matchMedia = window.matchMedia.bind(window);
+    window.matchMedia = (query) => ({
+      ...matchMedia(query),
+      matches: query.includes('max-width'),
+    });
+    try {
+      window.location.hash = '#/docs/callout/0';
+      render(<IsomerStudio {...{ runtime }} />);
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Callout' })
+      ).toBeInTheDocument();
+
+      const expand = screen.getByRole('button', {
+        name: 'Expand primitive navigation',
+      });
+      expect(expand).toHaveAttribute('aria-expanded', 'false');
+      fireEvent.click(expand);
+      expect(
+        screen.getByRole('button', { name: 'Collapse primitive navigation' })
+      ).toHaveAttribute('aria-expanded', 'true');
+    } finally {
+      window.matchMedia = matchMedia;
+    }
   });
 
   it('heads each pack when the runtime has more than one', async () => {
@@ -315,36 +427,45 @@ describe('IsomerStudio', () => {
   it('shows every surface by default, one when picked, and several to compare', async () => {
     await renderStudio();
     expect(
-      screen.getByText(/^All \d+ surfaces from the same props\./)
-    ).toBeInTheDocument();
+      screen.queryByText(/^All \d+ outputs from the same props\./)
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole('region', { name: 'Text preview' })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('region', { name: 'HTML preview' })
+      screen.getByRole('region', { name: 'Web preview' })
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /Surface/ }));
-    fireEvent.click(await screen.findByRole('option', { name: 'HTML' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Outputs:/ }));
+    expect(screen.queryByRole('option', { name: 'All surfaces' })).toBeNull();
+    expect(screen.queryByRole('option', { name: 'React' })).toBeNull();
+    expect(screen.queryByRole('option', { name: 'Snapshot' })).toBeNull();
+    fireEvent.click(
+      await screen.findByRole('option', { name: 'HTML', checked: true })
+    );
     await waitFor(() =>
       expect(
         screen.queryByRole('region', { name: 'Text preview' })
       ).not.toBeInTheDocument()
     );
     expect(
-      screen.getByRole('region', { name: 'HTML preview' })
+      screen.getByRole('region', { name: 'Web preview' })
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('option', { name: 'Text' }));
     expect(
       screen.getByRole('region', { name: 'Text preview' })
     ).toBeInTheDocument();
-    expect(screen.getByText(/^Comparing 2 surfaces/)).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('option', { name: 'All surfaces' }));
     expect(
-      screen.getByText(/^All \d+ surfaces from the same props\./)
+      screen.getByRole('button', { name: 'Outputs: HTML, Text' })
     ).toBeInTheDocument();
+
+    for (const option of screen.getAllByRole('option', { checked: false })) {
+      fireEvent.click(option);
+    }
+    expect(
+      screen.queryByText(/^All \d+ outputs from the same props\./)
+    ).not.toBeInTheDocument();
   });
 
   it('picks examples from rendered previews', async () => {
@@ -357,19 +478,32 @@ describe('IsomerStudio', () => {
     await waitFor(() => expect(window.location.hash).toBe('#/dev/callout/1'));
   });
 
-  it('puts the example picker ahead of the surface menu and shows the example source', async () => {
+  it('puts the example picker ahead of the surface menu and lets readers switch to example source', async () => {
     await renderStudio();
-    fireEvent.click(screen.getByRole('button', { name: 'Docs' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reference' }));
     const examples = await screen.findByRole('region', { name: 'Examples' });
     const examplePicker = within(examples).getByRole('button', {
       name: /^Example:/,
     });
-    const surface = within(examples).getByRole('button', { name: /^Surface/ });
+    const surface = within(examples).getByRole('button', { name: /^Outputs:/ });
     expect(
       examplePicker.compareDocumentPosition(surface) &
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
 
+    const viewToggle = within(examples).getByRole('group', {
+      name: 'Example view',
+    });
+    expect(
+      within(viewToggle).getByRole('button', { name: 'Example source' })
+    ).toBeInTheDocument();
+    expect(
+      within(examples).queryByText('Live React, styled by the host.')
+    ).not.toBeInTheDocument();
+    expect(within(examples).queryByRole('tabpanel')).not.toBeInTheDocument();
+    fireEvent.click(
+      within(viewToggle).getByRole('button', { name: 'Example source' })
+    );
     expect(within(examples).getByRole('tabpanel')).toHaveTextContent(
       '<Callout'
     );
@@ -379,21 +513,21 @@ describe('IsomerStudio', () => {
     );
 
     fireEvent.click(
-      within(examples).getByRole('button', { name: 'Hide source' })
+      within(viewToggle).getByRole('button', { name: 'Rendered' })
     );
     expect(within(examples).queryByRole('tabpanel')).not.toBeInTheDocument();
     fireEvent.click(
-      within(examples).getByRole('button', { name: 'View source' })
+      within(viewToggle).getByRole('button', { name: 'Example source' })
     );
     expect(
       within(examples).getByRole('tab', { name: 'JSON', selected: true })
     ).toBeInTheDocument();
   });
 
-  it('switches between Dev and Docs', async () => {
+  it('switches between Workbench and Reference without changing routes', async () => {
     expect(await renderStudio()).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Docs' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reference' }));
     expect(
       screen.getByRole('heading', { level: 1, name: 'Callout' })
     ).toBeInTheDocument();
@@ -402,8 +536,9 @@ describe('IsomerStudio', () => {
     ).toBeInTheDocument();
     expect(window.location.hash).toBe('#/docs/callout/0');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Dev' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Workbench' }));
     expect(await findEditor()).toBeInTheDocument();
+    expect(window.location.hash).toBe('#/dev/callout/0');
   });
 
   it('edits JSON when the host supplies no JSX transform, and reports invalid nodes', async () => {
@@ -503,42 +638,38 @@ describe('IsomerStudio', () => {
     expect(await findEditor()).toHaveValue(draft);
   });
 
-  it('applies a quick edit to the draft, and keeps a draft that does not parse', async () => {
+  it('references every primitive in the draft and keeps the reference when a draft does not parse', async () => {
     const editor = await renderStudio();
-    const pickTone = async (tone: string) => {
-      fireEvent.click(screen.getByRole('button', { name: '+ Prop' }));
-      fireEvent.click(await screen.findByRole('menuitem', { name: /^tone:/ }));
-      fireEvent.click(await screen.findByRole('menuitem', { name: tone }));
-    };
-
+    fireEvent.click(screen.getByRole('button', { name: 'Props' }));
+    const nodes = [{ type: 'callout', body: 'Drafted.' }, { type: 'divider' }];
     fireEvent.change(editor, {
-      target: { value: JSON.stringify({ type: 'callout', body: 'Drafted.' }) },
+      target: { value: JSON.stringify(nodes) },
     });
     await waitFor(() =>
       expect(
         screen.getByRole('region', { name: 'Text preview' })
       ).toHaveTextContent('Drafted.')
     );
-    await pickTone('danger');
-    await waitFor(() =>
-      expect(JSON.parse((editor as HTMLTextAreaElement).value)).toEqual({
-        type: 'callout',
-        body: 'Drafted.',
-        tone: 'danger',
-      })
-    );
+    const reference = screen.getByRole('region', {
+      name: 'Primitive prop reference',
+    });
+    expect(
+      within(reference).getByRole('tab', { name: 'Callout' })
+    ).toBeInTheDocument();
+    expect(
+      within(reference).getByRole('tab', { name: 'Divider' })
+    ).toBeInTheDocument();
 
     const draft = '{ "type": "callout",';
     fireEvent.change(editor, { target: { value: draft } });
     expect(await screen.findByText('JSON error')).toBeInTheDocument();
-    await pickTone('success');
-    await waitFor(() =>
-      expect(screen.getByText('JSON error')).toBeInTheDocument()
-    );
+    expect(
+      within(reference).getByRole('tab', { name: 'Divider' })
+    ).toBeInTheDocument();
     expect(editor).toHaveValue(draft);
   });
 
-  it('reports a quick edit the host composer rejects', async () => {
+  it('reports a source edit the host composer rejects', async () => {
     const compose: StudioCompose = (nodes, options) => {
       if (nodes.some((node) => 'tone' in node && node.tone === 'danger')) {
         throw new Error('The composer refused this tone.');
@@ -547,28 +678,29 @@ describe('IsomerStudio', () => {
     };
     render(<IsomerStudio {...{ runtime, compose }} />);
     const editor = await findEditor();
-    const before = (editor as HTMLTextAreaElement).value;
-
-    fireEvent.click(screen.getByRole('button', { name: '+ Prop' }));
-    fireEvent.click(await screen.findByRole('menuitem', { name: /^tone:/ }));
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'danger' }));
+    const draft = JSON.stringify({
+      type: 'callout',
+      body: 'Draft.',
+      tone: 'danger',
+    });
+    fireEvent.change(editor, { target: { value: draft } });
 
     expect(
       await screen.findByText(/The composer refused this tone\./)
     ).toBeInTheDocument();
-    expect(await findEditor()).toHaveValue(before);
+    expect(await findEditor()).toHaveValue(draft);
   });
 
-  it('keeps the Dev draft while Docs is open', async () => {
+  it('keeps the Workbench draft while Reference is open', async () => {
     const editor = await renderStudio();
     const draft = JSON.stringify({ type: 'callout', body: 'Kept.' });
     fireEvent.change(editor, { target: { value: draft } });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Docs' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reference' }));
     const nav = screen.getByRole('navigation', { name: 'Primitives' });
     fireEvent.click(within(nav).getByRole('button', { name: 'Divider' }));
     fireEvent.click(within(nav).getByRole('button', { name: 'Callout' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Dev' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Workbench' }));
 
     expect(await findEditor()).toHaveValue(draft);
   });
@@ -609,18 +741,16 @@ describe('IsomerStudio', () => {
         <IsomerStudio runtime={framedRuntime} {...{ rasterizePng }} />
       );
       await findEditor();
-      fireEvent.click(screen.getByRole('button', { name: /Surface/ }));
+      fireEvent.click(screen.getByRole('button', { name: /^Outputs:/ }));
       fireEvent.click(await screen.findByRole('option', { name: 'PNG' }));
-      expect(
-        await screen.findByText('The snapshot, rasterized by the host.')
-      ).toBeInTheDocument();
+      expect(await screen.findByAltText('PNG preview')).toBeInTheDocument();
 
       rerender(<IsomerStudio runtime={framedRuntime} />);
       expect(
-        screen.getByText(/^All \d+ surfaces from the same props\./)
+        screen.getByRole('button', { name: /^Outputs: \d+ outputs$/ })
       ).toBeInTheDocument();
       expect(
-        screen.getByRole('region', { name: 'HTML preview' })
+        screen.getByRole('region', { name: 'Web preview' })
       ).toBeInTheDocument();
     });
 
@@ -630,7 +760,7 @@ describe('IsomerStudio', () => {
       await findEditor();
 
       expect(
-        screen.getByRole('region', { name: 'HTML preview' })
+        screen.getByRole('region', { name: 'Web preview' })
       ).toBeInTheDocument();
       expect(
         screen.queryByRole('region', { name: 'Snapshot preview' })
