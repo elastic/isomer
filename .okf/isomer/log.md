@@ -2,6 +2,7 @@
 
 ## 2026-10-16
 
+- **Authored Markdown renders to React**: `@elastic/isomer-sdk/react` adds `renderMarkdownContent(content)`, which renders content built with `md`, or `md.authored` source, as unstyled React elements from the parse the Markdown and Slack surfaces read, with links and images under `md`'s URL policy. The Slack translation and the new renderer share one block expansion in `render/markdown/blocks.ts` (elastic/isomer#220).
 - **Studio Home**: a configurable DX landing page brings together primitive search, categories, featured Docs/Dev links, apps, learning links, surfaces, and loaded-runtime details; `featured` sets the primitive order (six random picks otherwise), and app `description` supplies tile copy.
 - **Home responsiveness and accessibility**: narrow columns stack Applications, Learn more, and Featured (three tiles per page), while wrapped surface cards retain connectors; logo colors stay intact with AA-contrast action backgrounds, semantic landmarks and headings, visible keyboard focus, and reduced-motion support.
 - **The authoring context is built on first use**: `createIsomerRuntime` no longer builds the authoring schema, body schema, declarations, catalog, and groups. The first `getAuthoringContext()` call builds them and later calls reuse them, so a runtime that only validates and renders never holds them in memory.
