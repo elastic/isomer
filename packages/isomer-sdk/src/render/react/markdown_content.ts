@@ -22,8 +22,8 @@ import type {
 import type { MarkdownContent } from '../../define/markdown_content';
 import {
   BLOCKED_HREF,
-  sanitizeAssetUrl,
-  sanitizeNavigationHref,
+  sanitizeParsedAssetUrl,
+  sanitizeParsedNavigationHref,
 } from '../../validate/url';
 import { resolvedMarkdownBlocks } from '../markdown/blocks';
 
@@ -70,13 +70,13 @@ const inline = (node: PhrasingContent): ReactNode => {
       return createElement(
         'a',
         {
-          href: sanitizeNavigationHref(node.url) ?? BLOCKED_HREF,
+          href: sanitizeParsedNavigationHref(node.url) ?? BLOCKED_HREF,
           ...(node.title ? { title: node.title } : {}),
         },
         ...inlines(node.children)
       );
     case 'image': {
-      const src = sanitizeAssetUrl(node.url);
+      const src = sanitizeParsedAssetUrl(node.url);
       return src === null
         ? (node.alt ?? '')
         : createElement('img', {
@@ -90,10 +90,18 @@ const inline = (node: PhrasingContent): ReactNode => {
   }
 };
 
-const items = (list: List): ReactNode[] =>
-  list.children.map((item, index) => listItem(item, index));
+const paragraphCount = (item: ListItem): number =>
+  item.children.filter(({ type }) => type === 'paragraph').length;
 
-const listItem = (item: ListItem, key: number): ReactNode => {
+// One spread item, or one with two paragraphs, makes the whole list loose.
+const items = (list: List): ReactNode[] => {
+  const tight = !list.children.some(
+    (item) => item.spread === true || paragraphCount(item) > 1
+  );
+  return list.children.map((item, index) => listItem(item, index, tight));
+};
+
+const listItem = (item: ListItem, key: number, tight: boolean): ReactNode => {
   const checkbox =
     typeof item.checked === 'boolean'
       ? [
@@ -107,9 +115,8 @@ const listItem = (item: ListItem, key: number): ReactNode => {
           ' ',
         ]
       : [];
-  // A tight item holds its paragraph's runs directly.
   const children = item.children.flatMap((child): ReactNode[] =>
-    child.type === 'paragraph' && item.spread !== true
+    child.type === 'paragraph' && tight
       ? inlines(child.children)
       : [block(child)]
   );

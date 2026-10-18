@@ -94,6 +94,38 @@ describe('renderMarkdownContent', () => {
     );
   });
 
+  it('keeps definition titles on resolved links and images', () => {
+    expect(
+      html(md.authored('[docs][d] ![alt][d]\n\n[d]: https://a.b/x.png "Help"'))
+    ).toBe(
+      '<p><a href="https://a.b/x.png" title="Help">docs</a> <img src="https://a.b/x.png" alt="alt" title="Help"/></p>'
+    );
+  });
+
+  it('keeps a destination as parsed, without decoding it again', () => {
+    expect(
+      html(
+        md.authored(
+          '[x](https://a.test/?q=&amp;lt;) ![y](https://a.test/i.png?q=&amp;lt;)'
+        )
+      )
+    ).toBe(
+      '<p><a href="https://a.test/?q=&amp;lt;">x</a> <img src="https://a.test/i.png?q=&amp;lt;" alt="y"/></p>'
+    );
+  });
+
+  it('keeps separate paragraphs in a list item apart', () => {
+    expect(
+      html([
+        md.list([[md.paragraph('first'), md.paragraph('second')]]),
+        md.authored('- first\n\n  second\n- tight'),
+      ])
+    ).toBe(
+      '<ul><li><p>first</p><p>second</p></li></ul>' +
+        '<ul><li><p>first</p><p>second</p></li><li><p>tight</p></li></ul>'
+    );
+  });
+
   it('degrades blocked links and images as `md` does', () => {
     expect(
       html([

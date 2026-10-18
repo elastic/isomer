@@ -36,12 +36,14 @@ const withReferences = (blocks: readonly RootContent[]): RootContent[] => {
         return {
           type: 'link',
           url: definitions.get(node.identifier)?.url ?? '',
+          title: definitions.get(node.identifier)?.title,
           children: node.children.map(resolve) as PhrasingContent[],
         };
       case 'imageReference':
         return {
           type: 'image',
           url: definitions.get(node.identifier)?.url ?? '',
+          title: definitions.get(node.identifier)?.title,
           alt: node.alt ?? null,
         };
       default:
