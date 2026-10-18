@@ -170,6 +170,8 @@ const Layout = ({
     grid-column: 2;
     min-height: 0;
     margin: 0 ${euiTheme.size.m} ${euiTheme.size.m} 0;
+    /* Contain absolute descendants (EUI screen-reader text) so they cannot overflow the shell. */
+    position: relative;
     overflow: auto;
     border-radius: ${euiTheme.border.radius.frame};
     background: ${euiTheme.colors.backgroundBasePlain};

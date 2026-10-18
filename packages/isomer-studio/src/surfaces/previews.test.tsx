@@ -23,6 +23,7 @@ import { HtmlSurface, ShadowHtmlSurface } from './html_surface';
 import { PngSurface } from './png_surface';
 import { ReactSurface } from './react_surface';
 import { ScaledPreview } from './scaled_preview';
+import { ShadowRootHost } from './shadow_root';
 import { SurfaceBoard } from './surface_board';
 
 class FakeResizeObserver {
@@ -93,6 +94,7 @@ const studio = (rasterizePng?: RasterizePng) =>
     runtime: {
       primitives: [],
       packs: [],
+      enhancements: [],
       surfaces: {
         html: { render: htmlRender },
         snapshot: { render: snapshotRender },
@@ -179,6 +181,68 @@ describe('HtmlSurface', () => {
     expect(host.shadowRoot?.querySelector('.isomer')).not.toHaveAttribute(
       'data-enhanced'
     );
+  });
+
+  it('opens previewed links in a new tab without navigating Studio', () => {
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    render(
+      <ShadowHtmlSurface
+        html={
+          '<a href="https://example.com/docs">Docs</a><a href="#top">Top</a><form><button>Go</button></form>'
+        }
+        title="Shadow HTML"
+      />
+    );
+    const root = screen.getByTitle('Shadow HTML').shadowRoot;
+    const [docs, top] = root?.querySelectorAll('a') ?? [];
+    const button = root?.querySelector('button');
+    if (!docs || !top || !button) {
+      throw new Error('No preview controls.');
+    }
+
+    expect(fireEvent.click(docs)).toBe(false);
+    expect(open).toHaveBeenCalledWith(
+      'https://example.com/docs',
+      '_blank',
+      'noopener,noreferrer'
+    );
+    expect(fireEvent.click(top)).toBe(false);
+    expect(fireEvent.submit(button.form!)).toBe(false);
+    expect(open).toHaveBeenCalledOnce();
+  });
+
+  it('lets a React preview handler cancel a link before the navigation guard runs', () => {
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    const seen: boolean[] = [];
+    render(
+      <ShadowRootHost title="React preview">
+        {() => (
+          <>
+            <a
+              href="https://example.com/step"
+              onClick={(event) => {
+                seen.push(event.defaultPrevented);
+                event.preventDefault();
+              }}>
+              Next step
+            </a>
+            <a href="https://example.com/docs">Docs</a>
+          </>
+        )}
+      </ShadowRootHost>
+    );
+    const [step, docs] =
+      screen.getByTitle('React preview').shadowRoot?.querySelectorAll('a') ??
+      [];
+    if (!step || !docs) {
+      throw new Error('No preview links.');
+    }
+
+    expect(fireEvent.click(step)).toBe(false);
+    expect(seen).toEqual([false]);
+    expect(open).not.toHaveBeenCalled();
+    fireEvent.click(docs);
+    expect(open).toHaveBeenCalledOnce();
   });
 
   it('surfaces enhancement errors and recovers on the next render', () => {
@@ -637,6 +701,7 @@ describe('SurfaceBoard', () => {
       ...value,
       runtime: {
         ...value.runtime,
+        enhancements: [{ id: 'copy', appliesTo: () => true }],
         packs: [{ enhancements: [{ id: 'copy', appliesTo: () => true }] }],
         surfaces: { ...value.runtime.surfaces, react: { render: reactRender } },
       } as unknown as StudioRuntime,
@@ -670,17 +735,53 @@ describe('SurfaceBoard', () => {
     ).toBeDisabled();
   });
 
+  it('treats an enhancement whose predicate throws on an invalid draft as not applicable', () => {
+    const value = studio();
+    const wrapper = withStudio({
+      ...value,
+      runtime: {
+        ...value.runtime,
+        enhancements: [
+          {
+            id: 'builds',
+            appliesTo: () => {
+              throw new TypeError('panes.flatMap is not a function');
+            },
+          },
+          { id: 'copy', appliesTo: () => true },
+        ],
+      },
+    });
+    render(
+      <SurfaceBoard
+        surfaces={['html']}
+        composition={composition('first')}
+        validation={noWarnings}
+        view="render"
+        zoom="fit"
+      />,
+      { wrapper }
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Enhancements (0/1)' }));
+    expect(screen.getByRole('checkbox', { name: 'copy' })).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'builds' })).toBeNull();
+  });
+
   it('selects multiple named enhancements independently and disables selection in Source view', () => {
     const value = studio();
     const wrapper = withStudio({
       ...value,
       runtime: {
         ...value.runtime,
+        enhancements: [
+          { id: 'copy', name: 'Copy', appliesTo: () => true },
+          { id: 'builds', name: 'Builds', appliesTo: () => true },
+        ],
         packs: [
           {
             enhancements: [
-              { id: 'copy', appliesTo: () => true },
-              { id: 'builds', appliesTo: () => true },
+              { id: 'copy', name: 'Copy', appliesTo: () => true },
+              { id: 'builds', name: 'Builds', appliesTo: () => true },
             ],
           },
         ],
@@ -695,8 +796,8 @@ describe('SurfaceBoard', () => {
     };
     const { rerender } = render(<SurfaceBoard {...props} />, { wrapper });
     fireEvent.click(screen.getByRole('button', { name: 'Enhancements (0/2)' }));
-    const copy = screen.getByRole('checkbox', { name: 'copy' });
-    const builds = screen.getByRole('checkbox', { name: 'builds' });
+    const copy = screen.getByRole('checkbox', { name: 'Copy' });
+    const builds = screen.getByRole('checkbox', { name: 'Builds' });
     expect(copy).not.toBeChecked();
     expect(builds).not.toBeChecked();
     fireEvent.click(copy);
@@ -718,9 +819,9 @@ describe('SurfaceBoard', () => {
     expect(
       screen.getByRole('button', { name: 'Enhancements (1/2)' })
     ).toBeDisabled();
-    expect(screen.getByRole('checkbox', { name: 'builds' })).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: 'Builds' })).toBeDisabled();
     rerender(<SurfaceBoard {...props} />);
-    fireEvent.click(screen.getByRole('checkbox', { name: 'builds' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Builds' }));
     expect(htmlRender).toHaveBeenLastCalledWith(expect.anything(), {
       minify: false,
     });
@@ -736,6 +837,22 @@ describe('SurfaceBoard', () => {
           {
             type: 'container',
             children: () => [{ node: { type: 'copyable' }, path: 'content' }],
+          },
+        ],
+        enhancements: [
+          {
+            id: 'copy',
+            appliesTo: (body: Composition['body'], walk: ChildNodeWalker) =>
+              someBodyNode(
+                body,
+                'react',
+                (node) =>
+                  typeof node === 'object' &&
+                  node !== null &&
+                  'type' in node &&
+                  node.type === 'copyable',
+                walk
+              ),
           },
         ],
         packs: [

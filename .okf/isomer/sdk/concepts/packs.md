@@ -27,7 +27,7 @@ A pack is a vocabulary as a value: `id`, `primitives`, optional `surfaces`, `enh
 
 `authoring.groups` is the pack's only source of index headings; a primitive's catalog names none. `definePrimitivePack` throws `UNKNOWN_PRIMITIVE_TYPE` for a group naming an unregistered type, `DUPLICATE_PRIMITIVE_TYPE` for a type in two groups, and `INVALID_PACK_GROUPS` for a title used twice or titled `UNCATEGORIZED_GROUP_TITLE` (`'Uncategorized'`), the heading the index lists ungrouped types under.[^pack]
 
-An enhancement's optional `script` is a function body with `root`, the render's `.isomer` section, in scope. It addresses markup through `data-*` attributes, never uses `document.currentScript`, and dispatches host events with `bubbles: true` and `composed: true`. An enhancement the host drives has no `script`, and one that finds nodes declares `anchors: true`. See [rendering](/sdk/concepts/rendering.md) for who runs it.[^docs][^enhancements]
+An enhancement may declare optional `name` and `description` for host UI; ids stay the keys for render options. Its optional `script` is a function body with `root`, the render's `.isomer` section, in scope. It addresses markup through `data-*` attributes, never uses `document.currentScript`, and dispatches host events with `bubbles: true` and `composed: true`. An enhancement the host drives has no `script`, and one that finds nodes declares `anchors: true`. See [rendering](/sdk/concepts/rendering.md) for who runs it.[^docs][^enhancements]
 
 `styleCollector` names the collector shape `collectStyles` hooks mutate. `definePrimitivePack` derives it from `styleAdapter.styleCollector` unless the pack sets it. The SDK ships no adapter for any CSS engine and does not depend on `@elastic/distillate`.
 

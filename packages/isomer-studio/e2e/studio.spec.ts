@@ -312,25 +312,38 @@ const exerciseApp = async (page: Page, url: string) => {
   }
 };
 
+let builtSite: Promise<string> | undefined;
+let builtSiteDir: string | undefined;
+
+/** One `build` of {@link CONFIG}, shared by every group that serves it statically. */
+const buildSite = (): Promise<string> => {
+  if (PREBUILT_SITE !== undefined) {
+    return Promise.resolve(PREBUILT_SITE);
+  }
+  builtSite ??= (async () => {
+    builtSiteDir = mkdtempSync(join(tmpdir(), 'isomer-studio-site-'));
+    const dir = join(builtSiteDir, 'site');
+    await runCli(['build', '--config', CONFIG, '--out', dir, '--base', BASE]);
+    return dir;
+  })();
+  return builtSite;
+};
+
+test.afterAll(() => {
+  if (builtSiteDir) {
+    rmSync(builtSiteDir, { recursive: true, force: true });
+  }
+});
+
 test.describe('static build', () => {
   let site: StaticServer;
-  let tempDir: string | undefined;
 
   test.beforeAll(async () => {
-    let dir = PREBUILT_SITE;
-    if (dir === undefined) {
-      tempDir = mkdtempSync(join(tmpdir(), 'isomer-studio-site-'));
-      dir = join(tempDir, 'site');
-      await runCli(['build', '--config', CONFIG, '--out', dir, '--base', BASE]);
-    }
-    site = await serveStatic(dir, BASE);
+    site = await serveStatic(await buildSite(), BASE);
   });
 
   test.afterAll(async () => {
     await site.close();
-    if (tempDir) {
-      rmSync(tempDir, { recursive: true, force: true });
-    }
   });
 
   test('serves the Studio from a sub-path with no failed requests', async ({
@@ -560,9 +573,10 @@ test.describe('static build', () => {
       if (primitive === 'slideHeading') {
         await expect(toggle).toBeDisabled();
       } else {
-        const id = primitive === 'slidePipeline' ? 'slideBuilds' : 'slideCopy';
+        const name =
+          primitive === 'slidePipeline' ? 'Slide builds' : 'Copy command';
         await panel.getByRole('button', { name: 'Enhancements (0/1)' }).click();
-        const applicable = page.getByRole('checkbox', { name: id });
+        const applicable = page.getByRole('checkbox', { name });
         await applicable.check();
         if (primitive === 'slideCommand') {
           await expect(panel.locator('[data-slide-copy]')).toHaveCount(1);
@@ -703,6 +717,95 @@ test.describe('static build', () => {
     await rendered.focus();
     await page.keyboard.press('Enter');
     await expect(rendered).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('scrolls only the content when jumping within a Reference page', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1013, height: 600 });
+    await page.goto(`${site.url}#/docs/titleSlide/0`);
+    const header = page.locator('header').first();
+    const main = page.locator('main').first();
+    await page
+      .getByRole('navigation', { name: 'On this page' })
+      .getByRole('button', { name: 'Props', exact: true })
+      .click();
+
+    await expect
+      .poll(() => main.evaluate((element) => element.scrollTop))
+      .toBeGreaterThan(0);
+    await expect
+      .poll(() =>
+        header.evaluate((element) => element.getBoundingClientRect().top)
+      )
+      .toBe(0);
+    expect(
+      await main.evaluate((element) => {
+        let shell = element.parentElement;
+        while (shell && shell.scrollHeight <= shell.clientHeight) {
+          shell = shell.parentElement;
+        }
+        return shell === document.documentElement || shell === null;
+      })
+    ).toBe(true);
+  });
+
+  test('scrolls a long validation list within the workbench footer', async ({
+    page,
+  }) => {
+    test.skip(
+      Boolean(process.env.STUDIO_CONFIG),
+      'needs the repository slides pack'
+    );
+    await page.setViewportSize({ width: 1440, height: 720 });
+    await page.goto(`${site.url}#/dev/slidePipeline/0`);
+    await expectMonacoReady(page);
+    await page
+      .getByRole('group', { name: 'Source format' })
+      .getByRole('button', { name: 'JSON' })
+      .click();
+    await editor(page).locator('.view-lines').click();
+    await expect(async () => {
+      await page.keyboard.press('Control+A');
+      await expect(editor(page).locator('.selected-text').first()).toBeVisible({
+        timeout: 1000,
+      });
+    }).toPass();
+    await page.keyboard.press('Backspace');
+    await page.keyboard.insertText(
+      JSON.stringify({ type: 'slidePipeline', steps: Array(30).fill({}) })
+    );
+    // JSON mode auto-closes the leading brace and quote after the cursor.
+    await page.keyboard.press('Control+Shift+End');
+    await page.keyboard.press('Delete');
+
+    const errors = page.getByRole('region', { name: 'Validation errors' });
+    await expect(errors.getByRole('listitem').nth(20)).toBeAttached();
+    expect(
+      await errors.evaluate(
+        (element) => element.scrollHeight > element.clientHeight
+      )
+    ).toBe(true);
+    const last = errors.getByRole('listitem').last();
+    await expect(last).not.toBeInViewport();
+    await errors.focus();
+    await page.keyboard.press('End');
+    await expect(last).toBeInViewport();
+
+    await page.getByRole('button', { name: 'Props', exact: true }).click();
+    const reference = page.getByRole('region', {
+      name: 'Primitive prop reference',
+    });
+    await expect(reference.getByRole('table')).toBeInViewport();
+    await reference
+      .getByRole('tab', { name: 'SlidePipeline.Step', exact: true })
+      .click();
+    await expect(
+      reference.getByRole('tabpanel', {
+        name: 'SlidePipeline.Step',
+        exact: true,
+      })
+    ).toContainText('title');
   });
 
   for (const width of [320, 390, 768, 900, 901, 1043, 1399, 1400, 1920]) {
@@ -935,18 +1038,13 @@ test.describe('decks', () => {
   );
 
   let site: StaticServer;
-  let tempDir: string;
 
   test.beforeAll(async () => {
-    tempDir = mkdtempSync(join(tmpdir(), 'isomer-studio-decks-'));
-    const dir = join(tempDir, 'site');
-    await runCli(['build', '--config', CONFIG, '--out', dir, '--base', BASE]);
-    site = await serveStatic(dir, BASE);
+    site = await serveStatic(await buildSite(), BASE);
   });
 
   test.afterAll(async () => {
     await site.close();
-    rmSync(tempDir, { recursive: true, force: true });
   });
 
   test('opens a deck from the nav, steps through builds and slides, and keeps the place', async ({

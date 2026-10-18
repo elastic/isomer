@@ -161,11 +161,7 @@ export const ExamplesPanel = ({
           css={css`
             align-items: flex-end;
           `}>
-          <EuiButtonEmpty
-            size="s"
-            href={devHref}
-            iconType="external"
-            iconSide="right">
+          <EuiButtonEmpty size="s" href={devHref} iconType="code">
             Open in Workbench
           </EuiButtonEmpty>
         </EuiFlexItem>

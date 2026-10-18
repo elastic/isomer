@@ -41,6 +41,10 @@ export const PREVIEW_LABELS: Readonly<Record<PreviewSurface, string>> = {
   png: 'PNG',
 };
 
+/** The picker consolidates HTML, React, and Snapshot into one Web output. */
+export const outputLabel = (surface: PreviewSurface): string =>
+  surface === 'html' ? 'Web' : PREVIEW_LABELS[surface];
+
 export const PREVIEW_ICONS: Readonly<Record<PreviewSurface, IconType>> = {
   ...SURFACE_ICONS,
   png: PngLogo,
@@ -100,8 +104,8 @@ export const surfaceSummary = (
   }
   const [only] = selected;
   return selected.length === 1 && only
-    ? PREVIEW_LABELS[only]
-    : selected.map((surface) => PREVIEW_LABELS[surface]).join(', ');
+    ? outputLabel(only)
+    : selected.map(outputLabel).join(', ');
 };
 
 export const surfaceNote = (
@@ -174,7 +178,7 @@ export const SurfaceSelect = ({
   const [isOpen, setOpen] = useState(false);
   const summary = surfaceSummary(selected, surfaces);
   const options: SurfaceOption[] = surfaces.map((surface): SurfaceOption => ({
-    label: PREVIEW_LABELS[surface],
+    label: outputLabel(surface),
     key: surface,
     surface,
     checked: selected.includes(surface) ? 'on' : undefined,

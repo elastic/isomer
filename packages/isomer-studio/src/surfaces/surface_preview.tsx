@@ -115,7 +115,7 @@ const Rendered = ({
   output: SurfaceOutput;
   zoom: PreviewZoom;
   heading: boolean | undefined;
-  enhancements: readonly string[] | undefined;
+  enhancements?: readonly string[] | undefined;
 }) => {
   const { source, slack, snapshot } = output;
   switch (surface) {

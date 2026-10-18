@@ -314,8 +314,8 @@ export interface SlackTableBlock {
   column_settings?: Array<SlackTableColumnSetting | null>;
 }
 
-/** Every block this renderer emits, and what a `slack` renderer returns. */
-export type SlackBlock =
+/** Blocks a {@link SlackContainerBlock} holds. Slack also accepts `file` and `input`, which this subset does not model. */
+export type SlackContainerChildBlock =
   | SlackHeaderBlock
   | SlackSectionBlock
   | SlackDividerBlock
@@ -325,3 +325,33 @@ export type SlackBlock =
   | SlackActionsBlock
   | SlackRichTextBlock
   | SlackTableBlock;
+
+interface SlackContainerFields {
+  type: 'container';
+  block_id?: string;
+  subtitle?: SlackTextObject;
+  icon?: SlackImageElement;
+  /** Between 1 and `SLACK_LIMITS.containerChildBlocks`; Slack rejects a nested `container`. */
+  child_blocks: SlackContainerChildBlock[];
+  width?: 'narrow' | 'standard' | 'wide' | 'full';
+  is_collapsible?: boolean;
+  /** Only honored when `is_collapsible` is set. */
+  default_collapsed?: boolean;
+  /** Only honored when the container is not collapsible. */
+  has_header_divider?: boolean;
+}
+
+/**
+ * Titled group of child blocks, optionally collapsible. Slack shows
+ * `rich_text_title` over `title` when both are set.
+ *
+ * https://docs.slack.dev/reference/block-kit/blocks/container-block
+ */
+export type SlackContainerBlock = SlackContainerFields &
+  (
+    | { title: SlackPlainTextObject; rich_text_title?: SlackRichTextBlock }
+    | { title?: SlackPlainTextObject; rich_text_title: SlackRichTextBlock }
+  );
+
+/** Every block this renderer emits, and what a `slack` renderer returns. */
+export type SlackBlock = SlackContainerChildBlock | SlackContainerBlock;

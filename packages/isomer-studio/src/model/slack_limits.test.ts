@@ -10,9 +10,9 @@ import type {
   SlackBlock,
   SlackOptionObject,
 } from '@elastic/isomer-sdk/slack';
-import { SLACK_LIMITS } from '@elastic/isomer-sdk/slack';
+import { SLACK_LIMITS, unmodeledSlackBlock } from '@elastic/isomer-sdk/slack';
 
-import { slackLimitProblems } from './slack_limits';
+import { slackLimitProblems, unmodeledSlackNotes } from './slack_limits';
 
 const plain = (text: string) => ({ type: 'plain_text' as const, text });
 const mrkdwn = (text: string) => ({ type: 'mrkdwn' as const, text });
@@ -121,12 +121,37 @@ describe('slackLimitProblems', () => {
     fields: Partial<Extract<SlackActionElement, { type: 'static_select' }>>
   ) => actions({ type: 'static_select', action_id: 'a', ...fields });
 
+  const container = (
+    fields: Partial<Extract<SlackBlock, { type: 'container' }>> = {}
+  ): SlackBlock => ({
+    type: 'container',
+    title: plain('Impact'),
+    child_blocks: [{ type: 'divider' }],
+    ...fields,
+  });
+
   // One message per limit, each breaking only that limit.
   const breaking = {
     blocksPerMessage: Array.from(
       { length: SLACK_LIMITS.blocksPerMessage + 1 },
       (): SlackBlock => ({ type: 'divider' })
     ),
+    containerTitleChars: [
+      container({ title: plain(over(SLACK_LIMITS.containerTitleChars)) }),
+    ],
+    containerSubtitleChars: [
+      container({
+        subtitle: mrkdwn(over(SLACK_LIMITS.containerSubtitleChars)),
+      }),
+    ],
+    containerChildBlocks: [
+      container({
+        child_blocks: Array.from(
+          { length: SLACK_LIMITS.containerChildBlocks + 1 },
+          () => ({ type: 'divider' as const })
+        ),
+      }),
+    ],
     sectionTextChars: [
       { type: 'section', text: mrkdwn(over(SLACK_LIMITS.sectionTextChars)) },
     ],
@@ -404,6 +429,111 @@ describe('slackLimitProblems', () => {
       })
     ).toEqual([
       `blocks[0] (actions) elements[0] text has ${SLACK_LIMITS.buttonTextChars + 1} characters; Slack allows ${SLACK_LIMITS.buttonTextChars}.`,
+    ]);
+  });
+
+  it('names a wrapped block of a type Isomer models, and leaves an unmodeled one alone', () => {
+    const type: string = 'divider';
+    expect(
+      slackLimitProblems({
+        text: 'T',
+        blocks: [
+          unmodeledSlackBlock({ type: 'carousel', elements: [] }),
+          unmodeledSlackBlock({ type }),
+        ],
+      })
+    ).toEqual([
+      'blocks[1] (divider) is wrapped in `unmodeledSlackBlock`, but Isomer models `divider` blocks: return it unwrapped so its limits are fitted.',
+    ]);
+  });
+});
+
+describe('slackLimitProblems inside a container', () => {
+  const container = (child_blocks: SlackBlock[]): SlackBlock =>
+    ({
+      type: 'container',
+      title: plain('Impact'),
+      child_blocks,
+    }) as SlackBlock;
+
+  it('checks each child, naming it under the container', () => {
+    expect(
+      slackLimitProblems({
+        text: 'T',
+        blocks: [
+          container([
+            { type: 'divider' },
+            {
+              type: 'section',
+              text: mrkdwn('s'.repeat(SLACK_LIMITS.sectionTextChars + 1)),
+            },
+          ]),
+        ],
+      })
+    ).toEqual([
+      `blocks[0] (container) child_blocks[1] (section) text has ${SLACK_LIMITS.sectionTextChars + 1} characters; Slack allows ${SLACK_LIMITS.sectionTextChars}.`,
+    ]);
+  });
+
+  it('counts a container as one block, and its tables toward the message', () => {
+    const cells = SLACK_LIMITS.tableCellCharsPerMessage / 2 + 1;
+    const table: SlackBlock = {
+      type: 'table',
+      rows: [[{ type: 'raw_text', text: 'x'.repeat(cells) }]],
+    };
+    expect(
+      slackLimitProblems({
+        text: 'T',
+        blocks: [
+          table,
+          container([table]),
+          ...Array.from(
+            { length: SLACK_LIMITS.blocksPerMessage - 2 },
+            (): SlackBlock => ({ type: 'divider' })
+          ),
+        ],
+      })
+    ).toEqual([
+      `The message's table cells have ${cells * 2} characters; Slack allows ${SLACK_LIMITS.tableCellCharsPerMessage}.`,
+    ]);
+  });
+
+  it('reports an empty container and one nested in another', () => {
+    expect(
+      slackLimitProblems({
+        text: 'T',
+        blocks: [container([]), container([container([{ type: 'divider' }])])],
+      })
+    ).toEqual([
+      'blocks[0] (container) child_blocks is empty; Slack requires at least 1.',
+      'blocks[1] (container) child_blocks[0] is a container; Slack does not accept one inside another.',
+    ]);
+  });
+
+  it('notes and checks a wrapped child', () => {
+    const type: string = 'divider';
+    const blocks = [
+      container([
+        unmodeledSlackBlock({ type: 'carousel', elements: [] }),
+        unmodeledSlackBlock({ type }),
+      ]),
+    ];
+    expect(slackLimitProblems({ text: 'T', blocks })).toEqual([
+      'blocks[0] (container) child_blocks[1] (divider) is wrapped in `unmodeledSlackBlock`, but Isomer models `divider` blocks: return it unwrapped so its limits are fitted.',
+    ]);
+    expect(unmodeledSlackNotes(blocks)).toHaveLength(1);
+  });
+});
+
+describe('unmodeledSlackNotes', () => {
+  it('notes each type Isomer does not model once, wrapped or not', () => {
+    const blocks = [
+      unmodeledSlackBlock({ type: 'carousel', elements: [] }),
+      { type: 'carousel' } as unknown as SlackBlock,
+      { type: 'divider' } satisfies SlackBlock,
+    ];
+    expect(unmodeledSlackNotes(blocks)).toEqual([
+      "Isomer doesn't model `carousel` blocks, so their Slack limits aren't checked and this preview may not draw them. Check the message in Block Kit Builder.",
     ]);
   });
 });
