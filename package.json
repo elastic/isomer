@@ -51,7 +51,7 @@
     "okf:index": "okf index .okf/isomer && pnpm okf:map",
     "okf:map": "node scripts/write_okf_map.js",
     "verify": "pnpm verify:fast && pnpm build && pnpm check:export-parity && pnpm check:exports && pnpm check:declarations && pnpm check:pack-contents && pnpm check:module-graph && pnpm check:pack-consumer && pnpm test:browser && pnpm check:studio-consumer",
-    "verify:fast": "node scripts/run_parallel.js typecheck lint 'licenses:report --check' && pnpm test",
+    "verify:fast": "pnpm build:esm && node scripts/run_parallel.js typecheck lint 'licenses:report --check' && pnpm test",
     "semantic-release": "node scripts/run_semantic_release.js",
     "prepare": "husky"
   },
