@@ -29,6 +29,7 @@ import { SurfacePreview } from './surface_preview';
 import type { PreviewSurface } from './surface_select';
 import {
   isVisualSurface,
+  outputLabel,
   PREVIEW_ICONS,
   PREVIEW_LABELS,
   SURFACE_NOTES,
@@ -344,11 +345,7 @@ export const SurfaceBoard = ({
             {activeSurface ? (
               <SurfaceCard
                 surface={activeSurface}
-                title={
-                  activeSurface === 'html'
-                    ? 'Web'
-                    : PREVIEW_LABELS[activeSurface]
-                }
+                title={outputLabel(activeSurface)}
                 note={
                   activeSurface === 'html'
                     ? 'HTML / React / Snapshot'
