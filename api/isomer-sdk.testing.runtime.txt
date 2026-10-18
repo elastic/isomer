@@ -1,0 +1,5 @@
+CONFORMANCE_FOREIGN_MARKER
+assertPackIconsValid
+assertPackRegistrationComplete
+primitiveConformanceRows
+runPrimitiveInventoryConformance

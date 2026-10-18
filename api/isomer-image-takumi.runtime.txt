@@ -1,0 +1,4 @@
+TAKUMI_FORMATS
+createTakumiImageBackend
+renderPdf
+renderPng
