@@ -211,6 +211,8 @@ export interface SurfaceMap<T extends PackTypes = DefaultPackTypes> {
   slack: {
     env: {
       collector?: T['slackCollector'];
+      /** The host's absolute `http(s)` base for relative links; pass it to `slackLinkUrl` and `link`. `scope` already carries it to children. */
+      baseUrl?: string;
       scope: RenderScope<T>;
     };
     output: T['slackBlock'] | readonly T['slackBlock'][];
@@ -324,6 +326,7 @@ export interface Renderers<
     node: TNode,
     env: {
       collector?: T['slackCollector'];
+      baseUrl?: string;
       scope: RenderScope<T>;
     }
   ): T['slackBlock'] | readonly T['slackBlock'][];

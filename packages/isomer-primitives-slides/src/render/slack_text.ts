@@ -65,12 +65,13 @@ export const richTextSection = (
 /** A literal line break, which {@link richTextRun} would fold into a space. */
 export const richTextBreak: SlackRichTextInline = { type: 'text', text: '\n' };
 
-/** `runs` linked to `href` when Slack can link it, as they are otherwise. */
+/** `runs` linked to `href` when Slack can link it, resolved against `baseUrl` when relative, as they are otherwise. */
 export const richTextLinked = (
   runs: readonly SlackRichTextText[],
-  href: string | undefined
+  href: string | undefined,
+  baseUrl?: string
 ): SlackRichTextInline[] => {
-  const url = href ? slackLinkUrl(href) : null;
+  const url = href ? slackLinkUrl(href, baseUrl) : null;
   return url === null
     ? [...runs]
     : runs.map(({ text, style }) => ({

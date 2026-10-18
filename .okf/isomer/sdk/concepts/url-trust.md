@@ -18,6 +18,8 @@ Every URL-bearing field is checked against one policy. Renderers do not invent a
 
 Authored Markdown checks GFM-parsed destinations without decoding references again, and source beyond the documented length and syntax budgets degrades to inert text. Reference definitions are resolved at each use, with the navigation policy for a link and the asset policy for an image, so a shared definition can be valid for one and blocked for the other; a data-image definition, multiline included, stays valid for an image reference.[^docs]
 
+Slack cannot resolve a relative link, so without a base it prints its label and the link is dropped silently. `baseUrl` (an absolute `http` or `https` URL) on `renderSlackEnvelope`, the runtime's `slack` surface, `markdownContentToSlackBlocks`, `slackLinkUrl`, and `link` resolves a relative navigation href with `new URL(href, baseUrl)` after the policy passes it; the result links only on the base's origin and after passing `slackLinkUrl` again. A fragment, `BLOCKED_HREF` included, never resolves, images do not resolve, and an invalid base throws `INVALID_BASE_URL`.[^docs]
+
 Related: [composition](/sdk/concepts/composition.md), [rendering](/sdk/concepts/rendering.md).
 
 [^docs]: URL trust

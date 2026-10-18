@@ -168,6 +168,64 @@ describe('markdownContentToSlackBlocks', () => {
     ]);
   });
 
+  it('resolves a relative link against baseUrl, but not an image or a blocked link', () => {
+    const baseUrl = 'https://kibana.example/s/team/';
+    expect(
+      markdownContentToSlackBlocks(
+        md.paragraph(
+          md.link(['a ', md.strong('b')], 'app/discover'),
+          md.link('blocked', 'javascript:alert(1)'),
+          md.image('alt', '/i.png')
+        ),
+        { baseUrl }
+      )
+    ).toEqual([
+      {
+        type: 'rich_text',
+        elements: [
+          {
+            type: 'rich_text_section',
+            elements: [
+              {
+                type: 'link',
+                url: 'https://kibana.example/s/team/app/discover',
+                text: 'a ',
+              },
+              {
+                type: 'link',
+                url: 'https://kibana.example/s/team/app/discover',
+                text: 'b',
+                style: { bold: true },
+              },
+              { type: 'text', text: 'blocked' },
+              { type: 'text', text: 'alt' },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('resolves authored and reference links against baseUrl', () => {
+    const blocks = markdownContentToSlackBlocks(
+      md.authored(
+        '[a](/app/a) and [b][ref] in a table\n\n| [c](../c) |\n| - |\n\n[ref]: /app/b'
+      ),
+      { baseUrl: 'https://kibana.example/s/team/app' }
+    );
+    expect(JSON.stringify(blocks).match(/"url":"[^"]+"/g)).toEqual([
+      '"url":"https://kibana.example/app/a"',
+      '"url":"https://kibana.example/app/b"',
+      '"url":"https://kibana.example/s/c"',
+    ]);
+  });
+
+  it('throws for a baseUrl that is not an absolute http URL', () => {
+    expect(() =>
+      markdownContentToSlackBlocks(md.paragraph('x'), { baseUrl: '/app' })
+    ).toThrow(expect.objectContaining({ code: 'INVALID_BASE_URL' }));
+  });
+
   it('links an absolute URL, mailto included, and a table cell only to one', () => {
     const [paragraph, table] = markdownContentToSlackBlocks([
       md.paragraph(

@@ -9,12 +9,12 @@ Three of the four are small, and each takes a narrow dispatcher interface rather
 ```ts
 renderTextEnvelope(composition, dispatcher, { heading }); // title uppercased, subtitle, nodes, blank-line joined
 renderMarkdownEnvelope(composition, dispatcher, { heading }); // # title, _subtitle_, nodes
-renderSlackEnvelope(composition, dispatcher, { heading, text, collectAssets, assetPrefix });
+renderSlackEnvelope(composition, dispatcher, { heading, text, collectAssets, assetPrefix, baseUrl });
 ```
 
 `heading: false` leaves out the title and subtitle, and nothing else; the Slack envelope also leaves them out of its default fallback `text`. It defaults to `true`.
 
-The Slack envelope does the most. It emits a `header` block for the title and a `context` block for the subtitle unless `heading` is `false`, then each node's blocks; fits each block to Slack's text, element-count, and image URL limits; enforces Slack's 50-block message budget; escapes the default fallback `text` as `mrkdwn` and clamps it to 4,000 characters; and returns only the asset requests whose placeholder block survived the budget — uploading files for elided blocks would be orphaned work.
+The Slack envelope does the most. It emits a `header` block for the title and a `context` block for the subtitle unless `heading` is `false`, then each node's blocks; fits each block to Slack's text, element-count, and image URL limits; enforces Slack's 50-block message budget; escapes the default fallback `text` as `mrkdwn` and clamps it to 4,000 characters; and returns only the asset requests whose placeholder block survived the budget — uploading files for elided blocks would be orphaned work. `baseUrl` is what relative links resolve against; without it they print their labels ([Relative links on Slack](url-trust.md#relative-links-on-slack)).
 
 `SLACK_LIMITS` publishes the numbers a renderer has to respect: 50 blocks per message, 3,000 characters in a section, 10 fields per section, 10 elements per context block, 25 buttons in an actions block, 150 characters in a header, 75 in an option label or button.
 

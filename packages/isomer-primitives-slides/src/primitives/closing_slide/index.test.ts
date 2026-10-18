@@ -18,7 +18,7 @@ import { sizeForLines, trackWidth } from '../size';
 
 import { example, fullExample, linkOnlyExample } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
-import { schema } from './schema';
+import { type ClosingSlideNode, schema } from './schema';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -162,6 +162,24 @@ describe('closingSlide', () => {
         text: '*DOCS* · The docs\n*SRC* · <https://example.com/src|Source>',
       },
     });
+  });
+
+  it('links a relative URL in Slack against the host baseUrl', () => {
+    const relative: ClosingSlideNode = {
+      ...linkOnlyExample,
+      links: [{ label: 'Docs', href: '/docs', text: 'The docs' }],
+    };
+    const { blocks } = runtime.surfaces.slack.renderNode(relative, {
+      baseUrl: 'https://kibana.example/app/',
+    });
+    expect(blocks).toContainEqual(
+      expect.objectContaining({
+        text: {
+          type: 'mrkdwn',
+          text: '*DOCS* · <https://kibana.example/docs|The docs>',
+        },
+      })
+    );
   });
 
   it('sets a link whose href is unsafe as plain text', () => {

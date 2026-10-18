@@ -15,7 +15,7 @@ runtime.surfaces.slack.render(composition, { collectAssets: true });
 | `html` | `HTMLRenderResult` | yes | `theme`, `scheme`, `fluid`, `framed`, `heading`, `css`, `scripts`, `minify`, `enhancements` (ids), `anchors`, `onValidationError` |
 | `text` | `string` | yes | `heading`, `onValidationError` |
 | `markdown` | `string` | yes | `heading`, `onValidationError` |
-| `slack` | `{ text, blocks, assets }` | yes | `heading`, `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
+| `slack` | `{ text, blocks, assets }` | yes | `heading`, `text`, `collectAssets`, `assetPrefix`, `baseUrl`, `onValidationError` |
 | `snapshot` | `SnapshotRenderResult` | yes | `frame`, `width`, `height`, `theme`, `anchors`, `onValidationError` |
 
 `HTMLRenderResult` is `{ html, css, js, body, measurement, validationErrors }`. `scheme` resolves the stylesheet's `light-dark(…)` values to one scheme; a browser resolves them itself, so an `html` host rarely sets it, and the `snapshot` surface sets it for its own render. [Embedding](embedding.md) covers getting that markup, stylesheet, and script onto a page a host already controls, including when to render with `scripts: 'host'`. The `snapshot` entry is `undefined` unless the runtime was given [frames](frame.md), and the factory's return type tracks which.
@@ -78,6 +78,8 @@ const { blocks, assets } = runtime.surfaces.slack.renderNode(chart, {
   collectAssets: true,
 });
 ```
+
+Slack cannot resolve a relative link, so without a base one prints its label. A host whose content links to its own paths passes `baseUrl`, an absolute `http` or `https` URL, on either path, and each relative link resolves against it ([Relative links on Slack](../../isomer-sdk/docs/url-trust.md#relative-links-on-slack)).
 
 ## A snapshot stops at markup and a stylesheet
 
