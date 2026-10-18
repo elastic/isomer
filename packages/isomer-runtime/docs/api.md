@@ -32,6 +32,7 @@ Everything `@elastic/isomer-runtime` exports from its entry point and its `./tes
 | --- | --- |
 | `packs` | `readonly PrimitivePack<TTheme>[]` — post-override |
 | `primitives` | `readonly AnyPrimitiveDefinition[]` |
+| `enhancements` | `readonly EnhancementDefinition[]` — every pack's enhancements, flattened |
 | `surfaces` | `RuntimeSurfaces<TRenderContext, TSnapshot>` |
 | `viewRegistry` | `ViewRegistry<THostContext, PrimitiveNode>` |
 | `getAuthoringContext()` | `RuntimeAuthoringContext` |

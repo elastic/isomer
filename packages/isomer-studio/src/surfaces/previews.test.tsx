@@ -94,6 +94,7 @@ const studio = (rasterizePng?: RasterizePng) =>
     runtime: {
       primitives: [],
       packs: [],
+      enhancements: [],
       surfaces: {
         html: { render: htmlRender },
         snapshot: { render: snapshotRender },
@@ -700,6 +701,7 @@ describe('SurfaceBoard', () => {
       ...value,
       runtime: {
         ...value.runtime,
+        enhancements: [{ id: 'copy', appliesTo: () => true }],
         packs: [{ enhancements: [{ id: 'copy', appliesTo: () => true }] }],
         surfaces: { ...value.runtime.surfaces, react: { render: reactRender } },
       } as unknown as StudioRuntime,
@@ -739,20 +741,16 @@ describe('SurfaceBoard', () => {
       ...value,
       runtime: {
         ...value.runtime,
-        packs: [
+        enhancements: [
           {
-            enhancements: [
-              {
-                id: 'builds',
-                appliesTo: () => {
-                  throw new TypeError('panes.flatMap is not a function');
-                },
-              },
-              { id: 'copy', appliesTo: () => true },
-            ],
+            id: 'builds',
+            appliesTo: () => {
+              throw new TypeError('panes.flatMap is not a function');
+            },
           },
+          { id: 'copy', appliesTo: () => true },
         ],
-      } as unknown as StudioRuntime,
+      },
     });
     render(
       <SurfaceBoard
@@ -775,11 +773,15 @@ describe('SurfaceBoard', () => {
       ...value,
       runtime: {
         ...value.runtime,
+        enhancements: [
+          { id: 'copy', name: 'Copy', appliesTo: () => true },
+          { id: 'builds', name: 'Builds', appliesTo: () => true },
+        ],
         packs: [
           {
             enhancements: [
-              { id: 'copy', appliesTo: () => true },
-              { id: 'builds', appliesTo: () => true },
+              { id: 'copy', name: 'Copy', appliesTo: () => true },
+              { id: 'builds', name: 'Builds', appliesTo: () => true },
             ],
           },
         ],
@@ -794,8 +796,8 @@ describe('SurfaceBoard', () => {
     };
     const { rerender } = render(<SurfaceBoard {...props} />, { wrapper });
     fireEvent.click(screen.getByRole('button', { name: 'Enhancements (0/2)' }));
-    const copy = screen.getByRole('checkbox', { name: 'copy' });
-    const builds = screen.getByRole('checkbox', { name: 'builds' });
+    const copy = screen.getByRole('checkbox', { name: 'Copy' });
+    const builds = screen.getByRole('checkbox', { name: 'Builds' });
     expect(copy).not.toBeChecked();
     expect(builds).not.toBeChecked();
     fireEvent.click(copy);
@@ -817,9 +819,9 @@ describe('SurfaceBoard', () => {
     expect(
       screen.getByRole('button', { name: 'Enhancements (1/2)' })
     ).toBeDisabled();
-    expect(screen.getByRole('checkbox', { name: 'builds' })).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: 'Builds' })).toBeDisabled();
     rerender(<SurfaceBoard {...props} />);
-    fireEvent.click(screen.getByRole('checkbox', { name: 'builds' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Builds' }));
     expect(htmlRender).toHaveBeenLastCalledWith(expect.anything(), {
       minify: false,
     });
@@ -835,6 +837,22 @@ describe('SurfaceBoard', () => {
           {
             type: 'container',
             children: () => [{ node: { type: 'copyable' }, path: 'content' }],
+          },
+        ],
+        enhancements: [
+          {
+            id: 'copy',
+            appliesTo: (body: Composition['body'], walk: ChildNodeWalker) =>
+              someBodyNode(
+                body,
+                'react',
+                (node) =>
+                  typeof node === 'object' &&
+                  node !== null &&
+                  'type' in node &&
+                  node.type === 'copyable',
+                walk
+              ),
           },
         ],
         packs: [

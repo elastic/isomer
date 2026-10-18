@@ -53,12 +53,16 @@ Progressive enhancements the HTML surface may apply, each an id, a content gate,
 enhancements: [
   {
     id: 'tableSort',
+    name: 'Sortable tables',
+    description: 'Adds click-to-sort headers on every table in the composition.',
     appliesTo: (body, walk) =>
       someBodyNode(body, 'react', (n) => (n as PrimitiveNode).type === 'table', walk),
     script: `root.querySelectorAll('[data-sortable]').forEach(/* … */);`,
   },
 ],
 ```
+
+`name` and `description` are optional host-facing metadata; ids stay the stable keys for `enhancements` render options and `context.enhancements`. A runtime exposes the flattened definitions on `enhancements` so hosts can label controls without maintaining their own id-to-copy maps.
 
 Ids are open strings rather than a closed union, so a second pack can register one without editing a shared type; a runtime rejects duplicate ids across packs. `appliesTo` receives the composition's child walker, so a match nested inside another pack's container is still found, and gating on content is what keeps a view with no matching node from shipping the script at all.
 

@@ -17,6 +17,7 @@ import {
   createCompositionValidator,
   createPrimitiveDispatcher,
   describeCapabilities,
+  type EnhancementDefinition,
   type Frame,
   getCompositionSchemaForDefinitions,
   type InputBudget,
@@ -173,6 +174,8 @@ export interface IsomerRuntime<
   readonly packs: readonly PrimitivePack<TTheme>[];
   /** Every pack's definitions, flattened — the dispatcher's inventory. */
   readonly primitives: readonly AnyPrimitiveDefinition[];
+  /** Every pack's enhancements, flattened — what `enhancements` render options resolve against. */
+  readonly enhancements: readonly EnhancementDefinition[];
   /** Product-owned views, requested by id; the `views` option pre-registers. */
   readonly viewRegistry: ViewRegistry<THostContext, PrimitiveNode>;
   /** One render surface per output format; `snapshot` is `undefined` without `frames`. */
@@ -323,6 +326,7 @@ export const createIsomerRuntime: CreateIsomerRuntime = (<
   return {
     packs,
     primitives: definitions,
+    enhancements,
     viewRegistry,
     surfaces,
     getAuthoringContext,

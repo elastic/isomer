@@ -73,6 +73,9 @@ const buildingNodes = (
 /** Hides the parts of an ordered primitive until the host reveals them with {@link showSlideBuild}. */
 export const slideBuildsEnhancement: EnhancementDefinition = {
   id: SLIDE_BUILDS,
+  name: 'Slide builds',
+  description:
+    'Reveals ordered slide content step by step; the host advances each build with showSlideBuild after the render commits.',
   appliesTo: (body, walk) =>
     someBodyNode(body, 'react', (node) => buildOf(node) !== undefined, walk),
   anchors: true,
