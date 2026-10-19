@@ -39,17 +39,24 @@ const write = (path: string, contents: string) => {
 const fakePackage = (
   dir: string,
   name: string,
-  files: Record<string, string> = {}
+  files: Record<string, string> = {},
+  version = '1.0.0'
 ) => {
   write(
     join(dir, 'package.json'),
-    JSON.stringify({ name, version: '1.0.0', main: 'index.js' })
+    JSON.stringify({ name, version, main: 'index.js' })
   );
   write(join(dir, 'index.js'), 'module.exports = {};\n');
   Object.entries(files).forEach(([file, contents]) =>
     write(join(dir, file), contents)
   );
 };
+
+const fakeReact = (
+  dir = 'node_modules/react',
+  files: Record<string, string> = {},
+  version = '18.3.1'
+) => fakePackage(dir, 'react', files, version);
 
 const JSX_RUNTIME = `exports.jsx = (type, props) => ({ type, props });
 exports.jsxs = exports.jsx;
@@ -84,7 +91,7 @@ describe('resolveConfigPath', () => {
 
   it('says what it looked for when there is no config', () => {
     expect(() => resolveConfigPath(root)).toThrow(
-      `No Studio config in ${root}: pass --config, or add one of isomer-studio.config.ts, isomer-studio.config.tsx, isomer-studio.config.js.`
+      `No Studio config in ${root}. Run \`npx @elastic/isomer-studio init\` to create one, or pass --config.`
     );
     expect(() => resolveConfigPath(root, 'missing.ts')).toThrow(
       `No Studio config at ${join(root, 'missing.ts')}.`
@@ -94,9 +101,7 @@ describe('resolveConfigPath', () => {
 
 describe('loadStudioConfig', () => {
   beforeEach(() => {
-    fakePackage('node_modules/react', 'react', {
-      'jsx-runtime.js': JSX_RUNTIME,
-    });
+    fakeReact('node_modules/react', { 'jsx-runtime.js': JSX_RUNTIME });
     fakePackage(
       'node_modules/@elastic/isomer-runtime',
       '@elastic/isomer-runtime'
@@ -163,7 +168,7 @@ export default config;
 
 describe('studio apps', () => {
   beforeEach(() => {
-    fakePackage('node_modules/react', 'react');
+    fakeReact();
     fakePackage(
       'node_modules/@elastic/isomer-runtime',
       '@elastic/isomer-runtime'
@@ -291,7 +296,7 @@ describe('assertSingleEui', () => {
 
 describe('assertSingleReact', () => {
   it('passes when the config and the runtime share React', () => {
-    fakePackage('node_modules/react', 'react');
+    fakeReact();
     fakePackage(
       'node_modules/@elastic/isomer-runtime',
       '@elastic/isomer-runtime'
@@ -302,15 +307,12 @@ describe('assertSingleReact', () => {
   });
 
   it('names both copies when the runtime resolves its own React', () => {
-    fakePackage('node_modules/react', 'react');
+    fakeReact();
     fakePackage(
       'node_modules/@elastic/isomer-runtime',
       '@elastic/isomer-runtime'
     );
-    fakePackage(
-      'node_modules/@elastic/isomer-runtime/node_modules/react',
-      'react'
-    );
+    fakeReact('node_modules/@elastic/isomer-runtime/node_modules/react');
     const configPath = write('isomer-studio.config.ts', '');
 
     expect(() => assertSingleReact(configPath)).toThrow(
@@ -326,7 +328,15 @@ describe('assertSingleReact', () => {
   it('fails when React is not installed beside the config', () => {
     const configPath = write('isomer-studio.config.ts', '');
     expect(() => assertSingleReact(configPath)).toThrow(
-      `React is not installed where the Studio config is: ${configPath}.`
+      `React is not installed where the Studio config is: ${configPath}. Install react@18 and react-dom@18.`
+    );
+  });
+
+  it('fails when the config resolves a React other than 18', () => {
+    fakeReact('node_modules/react', {}, '19.1.0');
+    const configPath = write('isomer-studio.config.ts', '');
+    expect(() => assertSingleReact(configPath)).toThrow(
+      `Isomer Studio needs React 18, which EUI requires; ${configPath} resolves React 19.1.0.`
     );
   });
 });

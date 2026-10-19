@@ -24,6 +24,7 @@ interface SharedArgs {
 
 export type CliArgs =
   | { command: 'help' }
+  | (SharedArgs & { command: 'init' })
   | (SharedArgs & { command: 'dev'; port: number; open: boolean })
   | (SharedArgs & { command: 'build'; out: string; base: string })
   | (SharedArgs & {
@@ -34,17 +35,21 @@ export type CliArgs =
       surfaces?: StudioSurface[] | undefined;
     });
 
-export const USAGE = `Usage: isomer-studio <command> [options]
+export const USAGE = `Usage: isomer-studio [command] [options]
 
 Commands:
-  dev     Serve the Studio with live reload.
+  dev     Serve the Studio with live reload. The default.
   build   Write the Studio as a static site.
   check   Render every example on every surface, and exit 1 on a failure.
+  init    Write a config for the packs the project exports: isomer-studio.config.ts
+          beside a tsconfig.json, isomer-studio.config.js otherwise.
 
 Options for every command:
-  --config <file>        Default: isomer-studio.config.{ts,tsx,js} in --cwd.
-  --cwd <dir>            Resolves --config, --out and --report. Default: the current directory.
+  --cwd <dir>            The project; resolves --config, --out and --report. Default: the current directory.
   --loader tsx|none      How the config is imported in Node. Default: tsx.
+
+dev, build and check:
+  --config <file>        Default: isomer-studio.config.{ts,tsx,js} in --cwd.
 
 dev:
   --port <number>        Default: ${DEFAULT_PORT}.
@@ -66,7 +71,7 @@ export class UsageError extends Error {
   override readonly name = 'UsageError';
 }
 
-const COMMANDS = ['dev', 'build', 'check'] as const;
+const COMMANDS = ['dev', 'build', 'check', 'init'] as const;
 
 const isCommand = (value: string): value is (typeof COMMANDS)[number] =>
   COMMANDS.some((command) => command === value);
@@ -142,6 +147,7 @@ const OPTIONS = {
 } as const;
 
 const ONLY: Readonly<Record<string, readonly string[]>> = {
+  config: ['dev', 'build', 'check'],
   port: ['dev'],
   open: ['dev'],
   out: ['build'],
@@ -169,8 +175,8 @@ export const parseCliArgs = (
     );
   }
   const { values, positionals } = parsed;
-  const [command, ...extra] = positionals;
-  if (values.help || command === undefined || command === 'help') {
+  const [command = 'dev', ...extra] = positionals;
+  if (values.help || command === 'help') {
     return { command: 'help' };
   }
   if (!isCommand(command)) {
@@ -194,6 +200,8 @@ export const parseCliArgs = (
     loader: oneOf('loader', values.loader, ['tsx', 'none'], 'tsx'),
   };
   switch (command) {
+    case 'init':
+      return { ...shared, command };
     case 'dev':
       return {
         ...shared,

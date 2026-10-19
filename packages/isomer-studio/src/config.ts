@@ -106,10 +106,14 @@ export interface StudioConfig {
    */
   title?: string | undefined;
   runtime: StudioRuntime;
-  /** Host styling for the React surface inside a shadow root; without it the React preview falls back to the `html` surface. */
+  /** Host styling for the React surface inside a shadow root; without it, or `stylesheet`, the React preview falls back to the `html` surface. */
   createReactContext?: ((root: ShadowRoot) => StyledRenderContext) | undefined;
-  /** Defaults to `{ type: 'view', body: nodes, theme }`. Return a node that is already a valid root as is. */
+  /** The CSS the React surface needs, adopted into its shadow root before `createReactContext` runs. Called once per config. */
+  stylesheet?: (() => string) | undefined;
+  /** Defaults to `{ type: 'view', body: nodes, theme }`. Return a node that is already a valid root as is. Wins over `previewExample`. */
   compose?: StudioCompose | undefined;
+  /** The composition one node is shown in on its own; the Studio adds the theme, and puts several nodes in a `view`. */
+  previewExample?: ((node: PrimitiveNode) => Composition) | undefined;
   /** Pages listed under the app in the nav. */
   apps?: readonly StudioApp[] | undefined;
   /**

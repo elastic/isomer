@@ -19,12 +19,14 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, sep } from 'node:path';
 
+import type { Plugin } from 'esbuild';
 import { build } from 'esbuild';
 
 import {
   appBuildOptions,
   appEntry,
   appStylesheets,
+  projectResolution,
   reactDirectories,
   reactFromConfig,
 } from './app_bundle';
@@ -142,6 +144,78 @@ describe('reactFromConfig', () => {
         )
       )
     ).toBe(true);
+  });
+});
+
+describe('projectResolution', () => {
+  /** Where each bare import of `contents` resolves through {@link projectResolution}, without bundling it. */
+  const resolvedImports = async (
+    configPath: string,
+    contents: string,
+    resolveDir: string
+  ): Promise<Record<string, string>> => {
+    const resolved: Record<string, string> = {};
+    const record: Plugin = {
+      name: 'record',
+      setup: (build) => {
+        build.onResolve(
+          { filter: /^[^./]/ },
+          async ({ path, importer, kind, resolveDir: dir, pluginData }) => {
+            if (pluginData !== undefined) {
+              return undefined;
+            }
+            const result = await build.resolve(path, {
+              importer,
+              kind,
+              resolveDir: dir,
+              pluginData: 'record',
+            });
+            resolved[path] = relative(root, result.path).split(sep).join('/');
+            return { path, external: true };
+          }
+        );
+      },
+    };
+    await build({
+      stdin: { contents, resolveDir },
+      absWorkingDir: root,
+      bundle: true,
+      format: 'esm',
+      write: false,
+      logLevel: 'silent',
+      plugins: [record, projectResolution(configPath)],
+    });
+    return resolved;
+  };
+
+  it('resolves a shared package imported from outside the project from the project', async () => {
+    write('consumer/package.json', '{}');
+    const configPath = write('consumer/isomer-studio.config.ts', '');
+    fakeReact('consumer/node_modules/zod', 'zod', []);
+    fakeReact('cache/node_modules/zod', 'zod', []);
+    const outside = write(
+      'cache/node_modules/runtime/index.js',
+      "import 'zod';\n"
+    );
+
+    expect(
+      await resolvedImports(
+        configPath,
+        `import ${JSON.stringify(outside)};`,
+        root
+      )
+    ).toEqual({ zod: 'consumer/node_modules/zod/index.js' });
+  });
+
+  it("falls back to the Studio's install for the runtime the project lacks", async () => {
+    write('consumer/package.json', '{}');
+    const configPath = write('consumer/isomer-studio.config.ts', '');
+    const { '@elastic/isomer-runtime': runtime } = await resolvedImports(
+      configPath,
+      "import '@elastic/isomer-runtime';",
+      join(root, 'consumer')
+    );
+    expect(runtime).toMatch(/isomer-runtime\/(dist|src)\/index\.(js|ts)$/);
   });
 });
 

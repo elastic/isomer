@@ -13,6 +13,7 @@ import { buildSite } from '../node/build_site';
 import { checkStudio } from '../node/check';
 import type { DevServer } from '../node/dev_server';
 import { startDevServer } from '../node/dev_server';
+import { writeInitConfig } from '../node/init_config';
 import {
   importStudioModule,
   loadRenderToString,
@@ -31,6 +32,8 @@ export interface CliIo {
   stderr: (text: string) => void;
   /** Called with the running dev server, which keeps the process alive until it closes. */
   onDevServer?: ((server: DevServer) => void) | undefined;
+  /** Called with the config before it loads; the binary passes `registerProjectResolution`. */
+  onConfig?: ((configPath: string) => void) | undefined;
 }
 
 const OPENERS: Readonly<Partial<Record<NodeJS.Platform, string>>> = {
@@ -54,8 +57,16 @@ const runCommand = async (
   io: CliIo
 ): Promise<number> => {
   const { cwd, stdout, stderr } = io;
-  const configPath = resolveConfigPath(args.cwd, args.config);
   const { loader } = args;
+  if (args.command === 'init') {
+    const written = await writeInitConfig(args.cwd, { loader });
+    stdout(
+      `Wrote ${displayPath(cwd, written)}. Run \`npx @elastic/isomer-studio\` to open the Studio.\n`
+    );
+    return 0;
+  }
+  const configPath = resolveConfigPath(args.cwd, args.config);
+  io.onConfig?.(configPath);
 
   switch (args.command) {
     case 'dev': {

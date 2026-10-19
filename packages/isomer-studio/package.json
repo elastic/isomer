@@ -68,6 +68,8 @@
     "moment": "2.31.0",
     "monaco-editor": "0.44.0",
     "prettier": "3.9.6",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "slack-blocks-to-jsx": "1.1.2",
     "tsx": "4.23.15",
     "vite": "8.3.0"
@@ -75,8 +77,6 @@
   "peerDependencies": {
     "@elastic/isomer-runtime": "workspace:^",
     "@elastic/isomer-sdk": "workspace:^",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
     "zod": "^4.5.4"
   },
   "devDependencies": {
@@ -85,8 +85,6 @@
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.2",
     "@types/react": "^18.2.14",
-    "@types/react-dom": "^18.2.6",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "@types/react-dom": "^18.2.6"
   }
 }

@@ -8,7 +8,7 @@
 // Installs the packed Studio with npm in a directory outside the workspace,
 // then checks, builds and drives it with a consumer's own config and pack.
 
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import {
   copyFileSync,
   existsSync,
@@ -21,6 +21,8 @@ import {
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+
+import { chromium } from '@playwright/test';
 
 import { requireChromium, runStudioSpec } from './studio_spec.js';
 import { repoRoot } from './workspace_packages.js';
@@ -71,6 +73,12 @@ interface ConsumerPackTypes extends DefaultPackTypes {
 
 const definePrimitive = definePrimitiveFor<ConsumerPackTypes>();
 
+/** Calls a hook, so a second copy of React fails the render. */
+const Heading = ({ text }: { text: string }) => {
+  const [size] = React.useState(24);
+  return <h1 style={{ margin: 0, fontSize: size }}>{text}</h1>;
+};
+
 const icon = (shape: string): PrimitiveIcon => ({
   svg: \`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">\${shape}</svg>\`,
 });
@@ -93,7 +101,7 @@ const banner = definePrimitive<BannerNode, typeof bannerSchema>({
   examples: [bannerExample],
   schema: bannerSchema,
   renderers: {
-    react: ({ text }) => <h1 style={{ margin: 0, fontSize: 24 }}>{text}</h1>,
+    react: ({ text }) => <Heading text={text} />,
     text: ({ text }) => text,
     markdown: ({ text }) => md.heading(1, text),
     slack: ({ text }) => ({ type: 'header', text: { type: 'plain_text', text } }),
@@ -315,6 +323,274 @@ const run = (dir, command, args, { expected = 0 } = {}) => {
   return { stdout, stderr };
 };
 
+/** Starts `isomer-studio` with no command in `dir` and resolves its URL and process. */
+const startDev = (cli, dir) =>
+  new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [cli, '--port', '0'], {
+      cwd: dir,
+      env: isolatedEnv(),
+    });
+    let output = '';
+    const onData = (chunk) => {
+      output += chunk;
+      const url = /Isomer Studio: (http\S+)/.exec(output)?.[1];
+      if (url) {
+        resolve({ child, url });
+      }
+    };
+    child.stdout.on('data', onData);
+    child.stderr.on('data', (chunk) => {
+      output += chunk;
+    });
+    child.once('exit', (code) =>
+      reject(new Error(`dev exited ${code} before serving:\n${output}`))
+    );
+  });
+
+const writeJson = (path, value) =>
+  writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
+
+const npmInstall = (dir) =>
+  run(dir, 'npm', [
+    'install',
+    '--no-audit',
+    '--no-fund',
+    '--prefer-offline',
+    '--loglevel=error',
+  ]);
+
+/** Installs the packed Studio on its own, as `npx @elastic/isomer-studio` does, and returns its binary. */
+const installStudioAlone = (tempDir, packed) => {
+  const cache = join(tempDir, 'npx-cache');
+  mkdirSync(cache);
+  writeJson(join(cache, 'package.json'), {
+    name: 'npx-cache',
+    private: true,
+    dependencies: {
+      '@elastic/isomer-studio': packed['@elastic/isomer-studio'],
+    },
+    overrides: packed,
+  });
+  npmInstall(cache);
+  return join(
+    cache,
+    'node_modules/@elastic/isomer-studio/bin/isomer-studio.js'
+  );
+};
+
+/** What a pack already has: the SDK, React and zod, and nothing of the Studio's. */
+const packDependencies = (packed) => ({
+  '@elastic/isomer-sdk': packed['@elastic/isomer-sdk'],
+  react: devDependencies.react,
+  'react-dom': devDependencies['react-dom'],
+  zod: devDependencies.zod,
+});
+
+const PACK_MODULE = `${PACK}\nexport const consumerPack = createPack('Deploy finished');\n`;
+
+const assertNoStudio = (installRoot) => {
+  for (const name of ['@elastic/isomer-runtime', '@elastic/isomer-studio']) {
+    if (existsSync(join(installRoot, 'node_modules', name))) {
+      throw new Error(`${installRoot} should not install ${name}.`);
+    }
+  }
+};
+
+/** In `dir`, which has no config: `check` points at `init`, and the config `init` writes passes `check`, `build` and a bare `isomer-studio`. */
+const checkInit = async (cli, dir, { title, config }) => {
+  const { stderr: missing } = run(dir, process.execPath, [cli, 'check'], {
+    expected: 1,
+  });
+  if (
+    !missing.includes('Run `npx @elastic/isomer-studio init` to create one')
+  ) {
+    throw new Error(
+      `check without a config did not point at init:\n${missing}`
+    );
+  }
+
+  run(dir, process.execPath, [cli, 'init']);
+  if (!existsSync(join(dir, config))) {
+    throw new Error(`init did not write ${config}.`);
+  }
+
+  const { stdout: checked } = run(dir, process.execPath, [cli, 'check']);
+  console.log(checked.trim());
+  if (!new RegExp(`^${title}: \\d+ passed, 0 failed`, 'm').test(checked)) {
+    throw new Error(`The config init wrote did not pass:\n${checked}`);
+  }
+
+  run(dir, process.execPath, [cli, 'build', '--out', 'site']);
+  if (!existsSync(join(dir, 'site/index.html'))) {
+    throw new Error('build wrote no site.');
+  }
+
+  const { child, url } = await startDev(cli, dir);
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage();
+    const errors = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    await page.goto(`${url}#/docs/banner/0`);
+    await page
+      .getByRole('heading', { name: 'Consumer Studio', level: 1 })
+      .first()
+      .waitFor();
+    if (errors.length) {
+      throw new Error(`The dev page threw:\n${errors.join('\n')}`);
+    }
+  } finally {
+    await browser.close();
+    child.kill();
+  }
+};
+
+/** A pack in its own ES module TypeScript project. */
+const checkBarePack = async (tempDir, packed, cli) => {
+  const project = join(tempDir, 'bare-pack');
+  mkdirSync(join(project, 'src'), { recursive: true });
+  writeJson(join(project, 'package.json'), {
+    name: 'bare-pack',
+    private: true,
+    type: 'module',
+    dependencies: packDependencies(packed),
+    overrides: packed,
+  });
+  writeJson(join(project, 'tsconfig.json'), TSCONFIG);
+  writeFileSync(join(project, 'src/index.tsx'), PACK_MODULE);
+  npmInstall(project);
+  assertNoStudio(project);
+  await checkInit(cli, project, {
+    title: 'bare-pack',
+    config: 'isomer-studio.config.ts',
+  });
+};
+
+const JS_PACK = `import { createElement } from 'react';
+import { definePrimitiveFor, definePrimitivePack, requiredString } from '@elastic/isomer-sdk';
+import { md } from '@elastic/isomer-sdk/markdown';
+import { z } from 'zod';
+
+const schema = z.object({ type: z.literal('banner'), text: requiredString() });
+const example = { type: 'banner', text: 'Consumer Studio' };
+
+const banner = definePrimitiveFor()({
+  type: 'banner',
+  catalog: { type: 'banner', name: 'Banner', purpose: 'Names the view.', useWhen: ['A view needs a heading.'], avoidWhen: ['The view already has one.'], example },
+  icon: { svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="2" y="5" width="12" height="6" fill="var(--isomer-icon-accent)"/></svg>' },
+  examples: [example],
+  schema,
+  renderers: {
+    react: ({ text }) => createElement('h1', null, text),
+    text: ({ text }) => text,
+    markdown: ({ text }) => md.heading(1, text),
+    slack: ({ text }) => ({ type: 'header', text: { type: 'plain_text', text } }),
+  },
+});
+
+export const jsPack = definePrimitivePack({ id: 'js', primitives: [banner] });
+`;
+
+/** A pack in plain JavaScript, with no tsconfig.json. */
+const checkJavaScriptPack = async (tempDir, packed, cli) => {
+  const project = join(tempDir, 'js-pack');
+  mkdirSync(project);
+  writeJson(join(project, 'package.json'), {
+    name: 'js-pack',
+    private: true,
+    type: 'module',
+    main: 'index.js',
+    dependencies: packDependencies(packed),
+    overrides: packed,
+  });
+  writeFileSync(join(project, 'index.js'), JS_PACK);
+  npmInstall(project);
+  assertNoStudio(project);
+  await checkInit(cli, project, {
+    title: 'js-pack',
+    config: 'isomer-studio.config.js',
+  });
+};
+
+const KIBANA_PACKAGE = 'src/platform/packages/shared/kbn-consumer-pack';
+
+/**
+ * A Kibana-shaped pack: a CommonJS package with a root `index.ts` and no `main`, inside a repository whose one
+ * `node_modules` holds every dependency. With `installed`, the repository has the Studio and the runtime too, and
+ * runs its own Studio.
+ */
+const checkKibanaPack = async (
+  tempDir,
+  packed,
+  npxCli,
+  { installed = false } = {}
+) => {
+  const repo = join(tempDir, installed ? 'kibana-installed' : 'kibana');
+  const pkg = join(repo, KIBANA_PACKAGE);
+  mkdirSync(join(pkg, 'src'), { recursive: true });
+  writeJson(join(repo, 'package.json'), {
+    name: 'kibana',
+    private: true,
+    version: '9.3.0',
+    dependencies: {
+      ...packDependencies(packed),
+      ...(installed
+        ? {
+            '@elastic/isomer-runtime': packed['@elastic/isomer-runtime'],
+            '@elastic/isomer-studio': packed['@elastic/isomer-studio'],
+          }
+        : {}),
+      '@kbn/consumer-pack': `file:${KIBANA_PACKAGE}`,
+    },
+    overrides: packed,
+  });
+  const { include: _include, ...base } = TSCONFIG;
+  writeJson(join(repo, 'tsconfig.base.json'), base);
+  writeJson(join(pkg, 'package.json'), {
+    name: '@kbn/consumer-pack',
+    private: true,
+    version: '1.0.0',
+    license: 'Elastic License 2.0',
+  });
+  writeJson(join(pkg, 'kibana.jsonc'), {
+    type: 'shared-common',
+    id: '@kbn/consumer-pack',
+    owner: '@elastic/kibana-presentation',
+  });
+  writeJson(join(pkg, 'tsconfig.json'), {
+    extends: '../../../../../tsconfig.base.json',
+    include: ['**/*.ts', '**/*.tsx'],
+  });
+  writeFileSync(
+    join(pkg, 'index.ts'),
+    "export { consumerPack } from './src/pack';\n"
+  );
+  writeFileSync(join(pkg, 'src/pack.tsx'), PACK_MODULE);
+  npmInstall(repo);
+  if (!installed) {
+    assertNoStudio(repo);
+  }
+  const cli = installed
+    ? join(repo, 'node_modules/@elastic/isomer-studio/bin/isomer-studio.js')
+    : npxCli;
+  await checkInit(cli, pkg, {
+    title: '@kbn/consumer-pack',
+    config: 'isomer-studio.config.ts',
+  });
+};
+
+/** Runs the Studio as `npx @elastic/isomer-studio` does, installed on its own, beside packs that have only the SDK, React and zod. */
+const checkColdNpx = async (tempDir, packed) => {
+  const cli = installStudioAlone(tempDir, packed);
+  await checkBarePack(tempDir, packed, cli);
+  await checkJavaScriptPack(tempDir, packed, cli);
+  await checkKibanaPack(tempDir, packed, cli);
+  await checkKibanaPack(tempDir, packed, cli, { installed: true });
+  console.log(
+    'Cold npx: init, check, build and dev passed in an ES module pack, a JavaScript pack and a Kibana-shaped package, and in a Kibana-shaped package that installs the Studio.'
+  );
+};
+
 requireChromium();
 
 const missingBuild = Object.values(PACKED).filter(
@@ -506,6 +782,7 @@ try {
     throw new Error(`The browser test failed against the consumer install.`);
   }
   console.log('Packed Studio passed check, build and the browser test.');
+  await checkColdNpx(tempDir, packed);
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   process.exitCode = 1;

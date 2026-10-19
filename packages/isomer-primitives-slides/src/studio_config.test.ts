@@ -5,19 +5,27 @@
  * 2.0.
  */
 
+import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
+import type { StudioTheme } from '@elastic/isomer-studio';
+
 import config from '../isomer-studio.config';
 
 import { example as frameExample } from './primitives/slide_frame/examples';
 import { example as headingExample } from './primitives/slide_heading/examples';
 
-const { runtime, compose } = config;
+const { runtime, previewExample } = config;
+
+/** One example as the Studio shows it: through `previewExample`, at `theme`. */
+const preview = (node: PrimitiveNode, theme: StudioTheme): Composition => {
+  if (!previewExample) {
+    throw new Error('The slides config has a previewExample.');
+  }
+  return { ...previewExample(node), theme };
+};
 
 describe('the slides Studio config', () => {
-  it('composes a slideHeading example into one valid slide that every surface renders', () => {
-    const composition = compose?.([headingExample], { theme: 'dark' });
-    if (!composition) {
-      throw new Error('The slides config has a compose.');
-    }
+  it('previews a slideHeading example as one valid slide that every surface renders', () => {
+    const composition = preview(headingExample, 'dark');
 
     expect(runtime.validate(composition).errors).toEqual([]);
     expect(composition.theme).toBe('dark');
@@ -37,9 +45,9 @@ describe('the slides Studio config', () => {
   });
 
   it('passes a slideFrame example through without a second frame', () => {
-    const composition = compose?.([frameExample], { theme: 'light' });
+    const composition = preview(frameExample, 'light');
 
-    expect(composition?.body).toEqual([frameExample]);
-    expect(composition && runtime.validate(composition).errors).toEqual([]);
+    expect(composition.body).toEqual([frameExample]);
+    expect(runtime.validate(composition).errors).toEqual([]);
   });
 });

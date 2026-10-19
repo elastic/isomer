@@ -15,7 +15,7 @@ import { formatValidationError } from '@elastic/isomer-sdk';
 import { assertPackIconsValid } from '@elastic/isomer-sdk/testing';
 
 import type { StudioConfig, StudioRuntime, StudioTheme } from '../config';
-import { composeExample } from '../model/compose_example';
+import { composeExample, composeOf } from '../model/compose_example';
 import type { StudioSurface } from '../model/describe_runtime';
 import { runtimeSurfaces } from '../model/describe_runtime';
 import { readExamples } from '../model/read_examples';
@@ -158,7 +158,8 @@ export const checkStudio = async (
     theme = 'light',
   }: CheckOptions
 ): Promise<CheckReport> => {
-  const { runtime, compose, apps = [], title = 'Isomer Studio' } = config;
+  const { runtime, apps = [], title = 'Isomer Studio' } = config;
+  const compose = composeOf(config);
   const { support } = runtime.getCapabilities();
   const available = runtimeSurfaces(runtime);
   const surfaces = only

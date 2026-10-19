@@ -12,6 +12,12 @@ import { fileURLToPath } from 'node:url';
 
 import type { BuildOptions, Metafile, Plugin } from 'esbuild';
 
+import {
+  isStudioSpecifier,
+  projectDirectory,
+  sharedResolveDir,
+} from './project_resolution';
+
 export type AppMode = 'build' | 'dev';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -93,6 +99,45 @@ export const reactFromConfig = (configPath: string): Plugin => ({
   },
 });
 
+const SKIP = Symbol.for('elastic.isomer.studio.project_resolution');
+
+/** Resolves `SHARED_PACKAGES` from the project when imported from outside it, and `STUDIO_PACKAGES` from the Studio when the project lacks them. */
+export const projectResolution = (configPath: string): Plugin => {
+  const projectDir = projectDirectory(configPath);
+  return {
+    name: 'isomer-studio-project-resolution',
+    setup: (build) => {
+      build.onResolve(
+        { filter: /^[^./]/ },
+        async ({ path, importer, kind, resolveDir, pluginData }) => {
+          if (pluginData === SKIP || REACT_SPECIFIER.test(path)) {
+            return undefined;
+          }
+          const resolveFrom = async (dir: string) =>
+            build.resolve(path, { kind, resolveDir: dir, pluginData: SKIP });
+          const shared = sharedResolveDir(path, importer, projectDir);
+          if (shared !== undefined) {
+            const result = await resolveFrom(shared);
+            if (!result.errors.length) {
+              return { path: result.path };
+            }
+          }
+          if (!isStudioSpecifier(path)) {
+            return undefined;
+          }
+          const own = await resolveFrom(resolveDir);
+          const result = own.errors.length
+            ? await resolveFrom(PACKAGE_DIR)
+            : own;
+          return result.errors.length
+            ? { errors: own.errors }
+            : { path: result.path };
+        }
+      );
+    },
+  };
+};
+
 const ENTRY = 'isomer-studio:app';
 
 const entryPlugin = (configPath: string): Plugin => ({
@@ -173,6 +218,7 @@ export const appBuildOptions = ({
   plugins: [
     entryPlugin(configPath),
     reactFromConfig(configPath),
+    projectResolution(configPath),
     monacoCssEmpty,
     ...plugins,
   ],

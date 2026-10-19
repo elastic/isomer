@@ -6,6 +6,7 @@
  */
 
 import { runCli } from './cli/run';
+import { registerProjectResolution } from './node/load_config';
 
 const shutdown: Array<() => Promise<void>> = [];
 
@@ -14,6 +15,7 @@ process.exitCode = await runCli(process.argv.slice(2), {
   stdout: (text) => process.stdout.write(text),
   stderr: (text) => process.stderr.write(text),
   onDevServer: (server) => shutdown.push(server.close),
+  onConfig: registerProjectResolution,
 });
 
 const stop = () => {
