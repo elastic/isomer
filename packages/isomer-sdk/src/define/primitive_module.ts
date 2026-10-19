@@ -235,8 +235,11 @@ export interface RenderScope<T extends PackTypes = DefaultPackTypes> {
     node: PrimitiveNode,
     extras: Omit<SurfaceMap<T>[S]['env'], 'scope'>
   ): SurfaceMap<T>[S]['output'] | undefined;
-  /** On `snapshot`, preserves snapshot visibility and the frame palette. */
-  renderReact(node: PrimitiveNode, context?: T['context']): ReactNode;
+  /** On `snapshot`, preserves snapshot visibility and the frame palette. `context` may be omitted only when `{}` is a complete context for the pack. */
+  renderReact(
+    node: PrimitiveNode,
+    ...context: ReactContextArg<T['context']>
+  ): ReactNode;
   collectStyles(
     node: PrimitiveNode,
     styles: PrimitiveStyleCollector,

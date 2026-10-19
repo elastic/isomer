@@ -18,6 +18,8 @@ The dispatcher is keyed on `type` and nothing else. A missing renderer is a stru
 
 On `snapshot`, the renderer's `scope.renderReact` preserves snapshot visibility and the frame palette for descendants, including across fresh contexts and deferred React components. `scope.renderOn` selects a surface and extras explicitly.[^docs]
 
+`renderReact`'s `context` argument, on the dispatcher and on `RenderScope`, is optional only when `{}` is a complete context for the pack. A pack with a required context field makes containers pass the child's context explicitly; it is not inherited from the parent.[^docs]
+
 Related: [primitives](/sdk/concepts/primitives.md), [rendering](/sdk/concepts/rendering.md), [composition](/sdk/concepts/composition.md).
 
 [^docs]: Dispatch

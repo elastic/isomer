@@ -196,8 +196,11 @@ export const createPrimitiveDispatcher = <
     const { theme } = extras as Omit<SurfaceMap<T>['snapshot']['env'], 'scope'>;
     return {
       ...parent,
-      renderReact: (node, context) =>
-        parent.renderOn('snapshot', node, { context: context ?? {}, theme }),
+      renderReact: (node, ...context) =>
+        parent.renderOn('snapshot', node, {
+          context: context[0] ?? {},
+          theme,
+        }),
     };
   };
 
