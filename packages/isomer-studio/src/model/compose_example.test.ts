@@ -6,13 +6,17 @@
  */
 
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
-import type { Composition, StyledRenderContext } from '@elastic/isomer-sdk';
+import type {
+  Composition,
+  PrimitiveNode,
+  StyledRenderContext,
+} from '@elastic/isomer-sdk';
 
 import type { StudioCompose } from '../config';
 import type { CalloutNode } from '../fixtures/components_pack';
 import { componentsPack } from '../fixtures/components_pack';
 
-import { composeExample } from './compose_example';
+import { composeExample, composeOf } from './compose_example';
 
 const runtime = createIsomerRuntime<unknown, StyledRenderContext>({
   packs: [componentsPack],
@@ -58,5 +62,40 @@ describe('composeExample', () => {
       title: 'Composed',
     });
     expect(compose).toHaveBeenCalledWith([callout], { theme: 'dark' });
+  });
+});
+
+describe('composeOf', () => {
+  const slide = (node: PrimitiveNode): Composition => ({
+    type: 'view',
+    title: 'Slide',
+    body: [node],
+  });
+
+  it('shows a lone node through previewExample, with the theme', () => {
+    expect(
+      composeExample(composeOf({ previewExample: slide }), [callout], 'dark')
+    ).toEqual({ type: 'view', title: 'Slide', body: [callout], theme: 'dark' });
+  });
+
+  it('puts several nodes in a view', () => {
+    expect(
+      composeExample(
+        composeOf({ previewExample: slide }),
+        [callout, callout],
+        'light'
+      )
+    ).toEqual({ type: 'view', body: [callout, callout], theme: 'light' });
+  });
+
+  it('lets compose win over previewExample', () => {
+    const compose: StudioCompose = (nodes, { theme }) => ({
+      type: 'view',
+      title: 'Composed',
+      body: [...nodes],
+      theme,
+    });
+    expect(composeOf({ compose, previewExample: slide })).toBe(compose);
+    expect(composeOf({})).toBeUndefined();
   });
 });

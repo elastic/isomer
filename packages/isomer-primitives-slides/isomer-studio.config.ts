@@ -6,23 +6,19 @@
  */
 
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
-import type { Composition } from '@elastic/isomer-sdk';
-import { adoptStylesheet, defineStudioConfig } from '@elastic/isomer-studio';
+import { defineStudioConfig } from '@elastic/isomer-studio';
 
 import { previewSlide } from './src/examples/preview_slide';
 import { slideDeckFrame, slidesPack, slideStylesheet } from './src/index';
 import { decksIcon } from './studio/decks_icon';
 
-const runtime = createIsomerRuntime({
-  packs: [slidesPack],
-  frames: { slide: slideDeckFrame },
-});
-
-// Built once. `adoptStylesheet` parses it once per document.
-let stylesheet: string | undefined;
-
 export default defineStudioConfig({
-  runtime,
+  runtime: createIsomerRuntime({
+    packs: [slidesPack],
+    frames: { slide: slideDeckFrame },
+  }),
+  stylesheet: slideStylesheet,
+  previewExample: previewSlide,
   imageFonts: './studio/image_fonts.ts',
   // One of each kind, so Home shows the pack's range at a glance.
   featured: [
@@ -43,17 +39,4 @@ export default defineStudioConfig({
       load: () => import('./studio/decks_app'),
     },
   ],
-  createReactContext: (root) => {
-    stylesheet ??= slideStylesheet();
-    adoptStylesheet(root, stylesheet);
-    return {};
-  },
-  compose: (nodes, { theme }): Composition => {
-    const [only] = nodes;
-    const preview: Composition =
-      nodes.length === 1 && only
-        ? previewSlide(only)
-        : { type: 'view', body: [...nodes] };
-    return { ...preview, theme };
-  },
 });

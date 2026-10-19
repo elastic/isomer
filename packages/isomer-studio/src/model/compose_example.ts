@@ -7,7 +7,7 @@
 
 import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 
-import type { StudioCompose, StudioTheme } from '../config';
+import type { StudioCompose, StudioConfig, StudioTheme } from '../config';
 
 /** A `view` composition with `nodes` as its body. */
 export const defaultCompose: StudioCompose = (nodes, { theme }) => ({
@@ -15,6 +15,21 @@ export const defaultCompose: StudioCompose = (nodes, { theme }) => ({
   body: [...nodes],
   theme,
 });
+
+/** The config's `compose`, else one that shows a lone node through `previewExample`. */
+export const composeOf = ({
+  compose,
+  previewExample,
+}: Pick<StudioConfig, 'compose' | 'previewExample'>):
+  StudioCompose | undefined =>
+  compose ??
+  (previewExample &&
+    ((nodes, { theme }) => {
+      const [only] = nodes;
+      return only && nodes.length === 1
+        ? { ...previewExample(only), theme }
+        : defaultCompose(nodes, { theme });
+    }));
 
 /** The one way the Studio, its static build, and `check` turn example nodes into a composition. */
 export const composeExample = (

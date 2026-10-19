@@ -18,7 +18,7 @@ import { join, relative, resolve, sep } from 'node:path';
 import { build } from 'esbuild';
 
 import type { StudioConfig, StudioTheme } from '../config';
-import { composeExample } from '../model/compose_example';
+import { composeExample, composeOf } from '../model/compose_example';
 import { compositionKey } from '../model/composition_key';
 import type { PngManifest } from '../model/png_manifest';
 import { readExamples } from '../model/read_examples';
@@ -44,10 +44,12 @@ export interface PrerenderResult {
 
 /** Rasterizes every example in both themes into `dir`, keyed by `compositionKey`, plus `manifest.json`. */
 export const prerenderPngs = async (
-  { runtime, compose }: StudioConfig,
+  config: StudioConfig,
   rasterize: NodeRasterizer,
   dir: string
 ): Promise<PrerenderResult> => {
+  const { runtime } = config;
+  const compose = composeOf(config);
   mkdirSync(dir, { recursive: true });
   const manifest: PngManifest = { version: 1, entries: {} };
   const failures: string[] = [];

@@ -40,7 +40,7 @@ export default defineStudioConfig({
 });
 ```
 
-That is enough for a pack whose primitives render inside a plain `view`. A pack with a frame that needs a particular root, or with styling the React surface must load, adds `compose` and `createReactContext`; see [The config](config.md).
+That is enough for a pack whose primitives render inside a plain `view`. A pack with a frame that needs a particular root, or with styling the React surface must load, adds `previewExample` and `stylesheet`; see [The config](config.md).
 
 ## The app
 

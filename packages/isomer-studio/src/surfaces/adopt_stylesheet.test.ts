@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { adoptStylesheet } from './adopt_stylesheet';
+import { adoptStylesheet, reactContextOf } from './adopt_stylesheet';
 
 const shadow = (): ShadowRoot => {
   const host = document.createElement('div');
@@ -65,5 +65,26 @@ describe('adoptStylesheet', () => {
     } finally {
       view.CSSStyleSheet = original;
     }
+  });
+});
+
+describe('reactContextOf', () => {
+  it('adopts the stylesheet, built once, before the config builds its context', () => {
+    const stylesheet = vi.fn(() => '.b { color: red }');
+    const createReactContext = (root: ShadowRoot) => {
+      const adopted = root.querySelector('style')?.textContent ?? '';
+      return { resolveClassName: () => adopted };
+    };
+    const create = reactContextOf({ stylesheet, createReactContext });
+    expect(create?.(shadow()).resolveClassName?.()).toBe('.b { color: red }');
+    create?.(shadow());
+    expect(stylesheet).toHaveBeenCalledTimes(1);
+  });
+
+  it('gives a stylesheet alone an empty context, and leaves a config without one as it is', () => {
+    expect(reactContextOf({ stylesheet: () => '' })?.(shadow())).toEqual({});
+    const createReactContext = () => ({});
+    expect(reactContextOf({ createReactContext })).toBe(createReactContext);
+    expect(reactContextOf({})).toBeUndefined();
   });
 });

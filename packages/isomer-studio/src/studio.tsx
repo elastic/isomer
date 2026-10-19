@@ -36,10 +36,11 @@ import { GalleryView } from './docs/gallery_view';
 import { HomeView } from './home/home_view';
 import { homeBackground } from './home/tokens';
 import { createShim } from './model/compile_jsx';
-import { composeExample } from './model/compose_example';
+import { composeExample, composeOf } from './model/compose_example';
 import { describeRuntime } from './model/describe_runtime';
 import type { StudioContextValue, StudioTheme } from './studio_context';
 import { StudioContextProvider, useStudio } from './studio_context';
+import { reactContextOf } from './surfaces/adopt_stylesheet';
 import type { IsomerStudioProps } from './types';
 
 const darkWrapper = {
@@ -278,8 +279,10 @@ const Studio = ({
   runtime,
   apps = NO_APPS,
   featured,
-  createReactContext,
-  compose: composeNodes,
+  createReactContext: configReactContext,
+  stylesheet,
+  compose: configCompose,
+  previewExample,
   transformJsx,
   rasterizePng,
   renderPdf,
@@ -301,10 +304,19 @@ const Studio = ({
   );
   const appIds = useMemo(() => apps.map(({ id }) => id), [apps]);
   const router = useStudioRoute(docs, appIds);
+  const composeNodes = useMemo(
+    () => composeOf({ compose: configCompose, previewExample }),
+    [configCompose, previewExample]
+  );
   const compose = useCallback(
     (nodes: readonly PrimitiveNode[]) =>
       composeExample(composeNodes, nodes, theme),
     [composeNodes, theme]
+  );
+  const createReactContext = useMemo(
+    () =>
+      reactContextOf({ createReactContext: configReactContext, stylesheet }),
+    [configReactContext, stylesheet]
   );
 
   const value = useMemo(

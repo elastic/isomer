@@ -9,53 +9,40 @@ A config file default-exports `defineStudioConfig({ ... })`. `defineStudioConfig
 
 ```ts
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
-import type { Composition } from '@elastic/isomer-sdk';
-import { adoptStylesheet, defineStudioConfig } from '@elastic/isomer-studio';
+import { defineStudioConfig } from '@elastic/isomer-studio';
 
 import { previewSlide } from './src/examples/preview_slide';
 import { slideDeckFrame, slidesPack, slideStylesheet } from './src/index';
-
-// Built once. `adoptStylesheet` parses it once per document.
-let stylesheet: string | undefined;
 
 export default defineStudioConfig({
   runtime: createIsomerRuntime({
     packs: [slidesPack],
     frames: { slide: slideDeckFrame },
   }),
-  createReactContext: (root) => {
-    stylesheet ??= slideStylesheet();
-    adoptStylesheet(root, stylesheet);
-    return {};
-  },
-  compose: (nodes, { theme }): Composition => {
-    const [only] = nodes;
-    const preview: Composition =
-      nodes.length === 1 && only
-        ? previewSlide(only)
-        : { type: 'view', body: [...nodes] };
-    return { ...preview, theme };
-  },
+  stylesheet: slideStylesheet,
+  previewExample: previewSlide,
 });
 ```
 
-| Field                       | Required | What it does                                                                                                                                                                                                                                   |
-| --------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `runtime`                   | Yes      | The runtime from `createIsomerRuntime`. Its packs are what the Studio lists, and its surfaces are the previews it offers.                                                                                                                      |
-| `title`                     | No       | Replaces the header, the page title, and the `check` report name. Defaults to `Isomer Studio`. Leave it unset to keep the product name; a runtime with more than one pack shows each pack in the nav.                                          |
-| `createReactContext(root)`  | No       | Styles the React preview, which renders inside a shadow root. Call `adoptStylesheet(root, css)` with the pack's stylesheet and return the render context its renderers expect. Without it, the React preview shows the `html` surface instead. |
-| `compose(nodes, { theme })` | No       | Wraps example nodes in a composition. Defaults to `{ type: 'view', body: nodes, theme }`.                                                                                                                                                      |
-| `apps`                      | No       | Pages that demonstrate the pack, listed in the nav and on Home. See [Apps](#apps).                                                                                                                                                             |
-| `imageFonts`                | No       | A module path, relative to the config, whose default export lists the takumi `FontLoader`s PNGs and PDFs draw text with. See [Image fonts](#image-fonts).                                                                                      |
-| `featured`                  | No       | Primitive types Home features, in order. Without it Home draws six at random on each load. See [Featured primitives](#featured-primitives).                                                                                                    |
+| Field                       | Required | What it does                                                                                                                                                                                                                                                                                                  |
+| --------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `runtime`                   | Yes      | The runtime from `createIsomerRuntime`. Its packs are what the Studio lists, and its surfaces are the previews it offers.                                                                                                                                                                                     |
+| `title`                     | No       | Replaces the header, the page title, and the `check` report name. Defaults to `Isomer Studio`. Leave it unset to keep the product name; a runtime with more than one pack shows each pack in the nav.                                                                                                         |
+| `stylesheet()`              | No       | The CSS the React preview needs. The Studio calls it once and adopts the result into each preview's shadow root.                                                                                                                                                                                              |
+| `createReactContext(root)`  | No       | Returns the render context the pack's renderers expect, inside the React preview's shadow root, after `stylesheet` is adopted there. Call `adoptStylesheet(root, css)` for any other CSS. Without it the context is empty, and without it or `stylesheet` the React preview shows the `html` surface instead. |
+| `previewExample(node)`      | No       | The composition one node is shown in on its own, such as a slide around it. The Studio adds the theme and puts several nodes in a `view`. See [`compose`](#compose).                                                                                                                                          |
+| `compose(nodes, { theme })` | No       | Wraps example nodes in a composition, for full control. Wins over `previewExample`. Defaults to `{ type: 'view', body: nodes, theme }`.                                                                                                                                                                       |
+| `apps`                      | No       | Pages that demonstrate the pack, listed in the nav and on Home. See [Apps](#apps).                                                                                                                                                                                                                            |
+| `imageFonts`                | No       | A module path, relative to the config, whose default export lists the takumi `FontLoader`s PNGs and PDFs draw text with. See [Image fonts](#image-fonts).                                                                                                                                                     |
+| `featured`                  | No       | Primitive types Home features, in order. Without it Home draws six at random on each load. See [Featured primitives](#featured-primitives).                                                                                                                                                                   |
 
 ## `compose`
 
 Examples are nodes, not compositions. Every place the Studio needs a composition, `compose` builds it: the gallery, the docs pages, the editor's preview, the PNGs a static build prerenders and every example `check` renders. A pack writes the envelope once and every mode agrees on it.
 
-The default fits a pack whose primitives render inside a plain `view`. A pack whose frame requires a particular root writes its own. The slides frame draws exactly one `slideFrame`, so the slides `compose` wraps a lone node in a preview slide, and passes a node that is already a `slideFrame` through unwrapped.
+The default fits a pack whose primitives render inside a plain `view`. A pack whose frame requires a particular root says how one node is shown with `previewExample`. The slides frame draws exactly one `slideFrame`, so the slides `previewExample` wraps a lone node in a preview slide, and passes a node that is already a `slideFrame` through unwrapped. `compose` replaces both when a pack needs to shape several nodes too.
 
-`compose` receives the theme the Studio is showing, `light` or `dark`, and puts it on the composition. That theme is the app's color mode, so previews always match the chrome around them. Light and dark are then different compositions, which is how a static build tells their PNGs apart.
+`compose` receives the theme the Studio is showing, `light` or `dark`, and puts it on the composition; with `previewExample`, the Studio does. That theme is the app's color mode, so previews always match the chrome around them. Light and dark are then different compositions, which is how a static build tells their PNGs apart.
 
 ## Featured primitives
 

@@ -5,6 +5,10 @@
  * 2.0.
  */
 
+import type { StyledRenderContext } from '@elastic/isomer-sdk';
+
+import type { StudioConfig } from '../config';
+
 const sheetsByDocument = new WeakMap<Document, Map<string, CSSStyleSheet>>();
 
 const sheetConstructor = (
@@ -63,4 +67,21 @@ export const adoptStylesheet = (root: ShadowRoot, css: string): void => {
   if (!root.adoptedStyleSheets.includes(sheet)) {
     root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
   }
+};
+
+/** The config's `createReactContext`, adopting `stylesheet` first; with only a stylesheet, the context is empty. */
+export const reactContextOf = ({
+  createReactContext,
+  stylesheet,
+}: Pick<StudioConfig, 'createReactContext' | 'stylesheet'>):
+  ((root: ShadowRoot) => StyledRenderContext) | undefined => {
+  if (!stylesheet) {
+    return createReactContext;
+  }
+  let css: string | undefined;
+  return (root) => {
+    css ??= stylesheet();
+    adoptStylesheet(root, css);
+    return createReactContext?.(root) ?? {};
+  };
 };

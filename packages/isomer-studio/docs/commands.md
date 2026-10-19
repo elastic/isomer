@@ -26,7 +26,7 @@ The exit code is 0 on success, 1 when a command fails or `check` finds a failure
 npx @elastic/isomer-studio init
 ```
 
-Writes a config that default-exports `defineStudioConfig({ title, runtime })`, registering by name each pack the package's entry exports: `isomer-studio.config.ts` beside a `tsconfig.json`, `isomer-studio.config.js` otherwise. Add `compose`, `createReactContext` or apps to it as the pack needs; see [The config](config.md). It stops when a config already exists or the entry exports no pack.
+Writes a config that default-exports `defineStudioConfig({ title, runtime })`, registering by name each pack the package's entry exports: `isomer-studio.config.ts` beside a `tsconfig.json`, `isomer-studio.config.js` otherwise. Add `previewExample`, `stylesheet` or apps to it as the pack needs; see [The config](config.md). It stops when a config already exists or the entry exports no pack.
 
 The entry is the first of `src/index` and `index`, as `.tsx`, `.ts`, `.jsx` or `.js`, that exists, then the `package.json` root export, `module` or `main`. Every export shaped like `definePrimitivePack`'s result is a pack, named exports and the default export alike, and the title is the `package.json` `name`.
 
