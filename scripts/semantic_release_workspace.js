@@ -178,18 +178,15 @@ export const prepare = (_pluginConfig, context) => {
   }
 };
 
-/** Publishes every workspace package that is not `private`. */
-export const publish = (_pluginConfig, context) => {
-  const { logger, nextRelease } = context;
-  const channel = nextRelease.channel ?? 'latest';
+/** The npm dist-tag for release channel `channel`; `main` releases on the default channel. */
+export const npmTag = (channel) => {
+  const name = channel ?? 'latest';
   // npm rejects maintenance branch names such as `1.x` as semver ranges.
-  const tag = /^\d+(?:\.(?:\d+|x))?\.x$/.test(channel)
-    ? `release-${channel}`
-    : channel;
-  const names = workspacePackages()
-    .filter(({ manifest }) => manifest.private !== true)
-    .map(({ manifest }) => manifest.name);
-  logger.log('Publishing %s at %s', names.join(', '), nextRelease.version);
+  return /^\d+(?:\.(?:\d+|x))?\.x$/.test(name) ? `release-${name}` : name;
+};
+
+/** Runs `pnpm publish` in the workspace at `cwd` for the packages `names` under npm dist-tag `tag`. */
+export const publishPackages = (names, tag, extraArgs = [], cwd = repoRoot) => {
   execFileSync(
     'pnpm',
     [
@@ -201,7 +198,19 @@ export const publish = (_pluginConfig, context) => {
       '--tag',
       tag,
       '--no-git-checks',
+      ...extraArgs,
     ],
-    { stdio: 'inherit', cwd: repoRoot }
+    { stdio: 'inherit', cwd }
   );
+};
+
+/** Publishes every workspace package that is not `private`. */
+export const publish = (_pluginConfig, context) => {
+  const { logger, nextRelease } = context;
+  const tag = npmTag(nextRelease.channel);
+  const names = workspacePackages()
+    .filter(({ manifest }) => manifest.private !== true)
+    .map(({ manifest }) => manifest.name);
+  logger.log('Publishing %s at %s', names.join(', '), nextRelease.version);
+  publishPackages(names, tag);
 };
