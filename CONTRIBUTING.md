@@ -56,7 +56,7 @@ pnpm okf:check                        # validate, anchors, generated map
 pnpm okf:index                        # regenerate indexes after editing concepts
 ```
 
-CI pins the CLI version in `.github/workflows/okf.yml`. Record meaningful bundle changes in `.okf/isomer/log.md`.
+CI pins the CLI version in `.github/workflows/okf.yml`. Record bundle changes in `.okf/isomer/log.md`, one entry per pull request.
 
 ## Pull requests
 
