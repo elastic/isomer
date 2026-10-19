@@ -9,7 +9,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
 import type { ConfigLoader } from './load_config';
-import { findDefaultConfig, importStudioModule } from './load_config';
+import { createStudioImporter, findDefaultConfig } from './load_config';
 
 /** Tried before the manifest's entries, so a pack runs from source without a build. */
 const SOURCE_ENTRIES = ['src/index', 'index'].flatMap((base) =>
@@ -200,7 +200,9 @@ export const writeInitConfig = async (
     throw new Error(`${existing} already exists.`);
   }
   const entry = packEntry(projectDir);
-  const imports = packImports(await importStudioModule(entry, { loader }));
+  const imports = packImports(
+    await createStudioImporter(entry, { loader })(entry)
+  );
   if (!imports.length) {
     throw new Error(
       `${specifierFrom(projectDir, entry)} exports no primitive pack.`

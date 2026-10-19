@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import * as nodeModule from 'node:module';
 import { createRequire } from 'node:module';
@@ -12,7 +13,9 @@ import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import type { ReactNode } from 'react';
-import { tsImport } from 'tsx/esm/api';
+import { register as registerCommonJs } from 'tsx/cjs/api';
+import type { ScopedImport } from 'tsx/esm/api';
+import { register as registerEsm } from 'tsx/esm/api';
 
 import type { StudioConfig } from '../config';
 import { appProblems } from '../model/app_problems';
@@ -196,20 +199,19 @@ export const nearestTsconfig = (configPath: string): string | undefined => {
   }
 };
 
-/** `tsImport` passes `tsconfig` to its ESM hook only; its CommonJS hook reads `TSX_TSCONFIG_PATH` as it registers. */
-const importWithTsx = (
-  url: string,
-  tsconfig: string | undefined
-): Promise<unknown> => {
+/** Registers `tsx`'s CommonJS and ESM hooks under one namespace, as `tsImport` does; the CommonJS hook reads `TSX_TSCONFIG_PATH` as it registers. */
+const registerTsx = (tsconfig: string | undefined): ScopedImport => {
   const previous = process.env.TSX_TSCONFIG_PATH;
   if (tsconfig !== undefined) {
     process.env.TSX_TSCONFIG_PATH = tsconfig;
   }
   try {
-    return tsImport(url, {
-      parentURL: import.meta.url,
+    const namespace = randomUUID();
+    registerCommonJs({ namespace });
+    return registerEsm({
+      namespace,
       ...(tsconfig === undefined ? {} : { tsconfig }),
-    });
+    }).import;
   } finally {
     if (previous === undefined) {
       delete process.env.TSX_TSCONFIG_PATH;
@@ -287,27 +289,39 @@ export const registerProjectResolution = (configPath: string): void => {
   patchRequire(data);
 };
 
-/** Imports a module beside the config as the config itself is imported. */
-export const importStudioModule = (
-  path: string,
+export type StudioModuleImporter = (path: string) => Promise<unknown>;
+
+/**
+ * Imports the config and the modules it names into one module graph, compiled with the config's nearest `tsconfig.json`.
+ * Each `tsx` namespace is a separate graph, so a package both import would otherwise load twice.
+ */
+export const createStudioImporter = (
+  configPath: string,
   { loader = 'tsx' }: { loader?: ConfigLoader | undefined } = {}
-): Promise<unknown> => {
-  const url = pathToFileURL(path).href;
-  return loader === 'none'
-    ? import(url)
-    : importWithTsx(url, nearestTsconfig(path));
+): StudioModuleImporter => {
+  if (loader === 'none') {
+    return (path) => import(pathToFileURL(path).href);
+  }
+  let scoped: ScopedImport | undefined;
+  return (path) => {
+    scoped ??= registerTsx(nearestTsconfig(configPath));
+    return scoped(pathToFileURL(path).href, import.meta.url);
+  };
 };
 
 /** Imports the config's default export in Node; `tsx` compiles TypeScript and leaves resolution to Node. */
 export const loadStudioConfig = async (
   configPath: string,
-  options: { loader?: ConfigLoader | undefined } = {}
+  {
+    loader,
+    importModule = createStudioImporter(configPath, { loader }),
+  }: {
+    loader?: ConfigLoader | undefined;
+    importModule?: StudioModuleImporter | undefined;
+  } = {}
 ): Promise<StudioConfig> => {
   assertSingleReact(configPath);
-  return studioConfigFrom(
-    await importStudioModule(configPath, options),
-    configPath
-  );
+  return studioConfigFrom(await importModule(configPath), configPath);
 };
 
 const isRenderToString = (
