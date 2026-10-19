@@ -71,8 +71,8 @@ flowchart LR
     slides_playbooks_author_a_primitive["Author a primitive"]:::playbook
     slides_reference_public_contract["Public contract"]:::reference
     studio_concepts_config_contract["Config contract"]:::concept
+    studio_concepts_init["Init and npx"]:::concept
     studio_concepts_static_png["Static PNGs"]:::concept
-    studio_concepts_zero_config["Running without a config"]:::concept
     studio_entry_points_root["Root and CLI"]:::entrypoint
     studio_playbooks_run_in_ci["Run the Studio in CI"]:::playbook
     studio_reference_public_contract["Public contract"]:::reference
@@ -219,14 +219,14 @@ flowchart LR
     slides_reference_public_contract --> slides_concepts_pack
     studio_concepts_config_contract --> studio_concepts_static_png
     studio_concepts_config_contract --> studio_entry_points_root
+    studio_concepts_init --> studio_concepts_config_contract
+    studio_concepts_init --> studio_entry_points_root
     studio_concepts_static_png --> studio_concepts_config_contract
-    studio_concepts_zero_config --> studio_concepts_config_contract
-    studio_concepts_zero_config --> studio_entry_points_root
     studio_entry_points_root --> studio_concepts_config_contract
-    studio_entry_points_root --> studio_concepts_zero_config
+    studio_entry_points_root --> studio_concepts_init
     studio_entry_points_root --> studio_reference_public_contract
     studio_playbooks_run_in_ci --> studio_entry_points_root
-    studio_reference_public_contract --> studio_concepts_zero_config
+    studio_reference_public_contract --> studio_concepts_init
     studio_reference_public_contract --> studio_entry_points_root
     workspace_concepts_workspace --> agent_tools_concepts_agent_tools
     workspace_concepts_workspace --> evals_concepts_scoring
@@ -308,8 +308,8 @@ flowchart LR
 - Author a primitive (Playbook): `slides/playbooks/author-a-primitive`
 - Public contract (Reference): `slides/reference/public-contract`
 - Config contract (Concept): `studio/concepts/config-contract`
+- Init and npx (Concept): `studio/concepts/init`
 - Static PNGs (Concept): `studio/concepts/static-png`
-- Running without a config (Concept): `studio/concepts/zero-config`
 - Root and CLI (Entry Point): `studio/entry-points/root`
 - Run the Studio in CI (Playbook): `studio/playbooks/run-in-ci`
 - Public contract (Reference): `studio/reference/public-contract`

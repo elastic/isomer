@@ -73,6 +73,12 @@ interface ConsumerPackTypes extends DefaultPackTypes {
 
 const definePrimitive = definePrimitiveFor<ConsumerPackTypes>();
 
+/** Calls a hook, so a second copy of React fails the render. */
+const Heading = ({ text }: { text: string }) => {
+  const [size] = React.useState(24);
+  return <h1 style={{ margin: 0, fontSize: size }}>{text}</h1>;
+};
+
 const icon = (shape: string): PrimitiveIcon => ({
   svg: \`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">\${shape}</svg>\`,
 });
@@ -95,7 +101,7 @@ const banner = definePrimitive<BannerNode, typeof bannerSchema>({
   examples: [bannerExample],
   schema: bannerSchema,
   renderers: {
-    react: ({ text }) => <h1 style={{ margin: 0, fontSize: 24 }}>{text}</h1>,
+    react: ({ text }) => <Heading text={text} />,
     text: ({ text }) => text,
     markdown: ({ text }) => md.heading(1, text),
     slack: ({ text }) => ({ type: 'header', text: { type: 'plain_text', text } }),
@@ -390,22 +396,33 @@ const assertNoStudio = (installRoot) => {
   }
 };
 
-/** Runs `check`, `build` and a bare `isomer-studio` in `dir`, which has no config. */
-const checkWithoutConfig = async (cli, dir, { title, entry }) => {
-  const passed = (output) =>
-    new RegExp(`^${title}: \\d+ passed, 0 failed`, 'm').test(output);
+/** In `dir`, which has no config: `check` points at `init`, and the config `init` writes passes `check`, `build` and a bare `isomer-studio`. */
+const checkInit = async (cli, dir, { title, config }) => {
+  const { stderr: missing } = run(dir, process.execPath, [cli, 'check'], {
+    expected: 1,
+  });
+  if (
+    !missing.includes('Run `npx @elastic/isomer-studio init` to create one')
+  ) {
+    throw new Error(
+      `check without a config did not point at init:\n${missing}`
+    );
+  }
+
+  run(dir, process.execPath, [cli, 'init']);
+  if (!existsSync(join(dir, config))) {
+    throw new Error(`init did not write ${config}.`);
+  }
+
   const { stdout: checked } = run(dir, process.execPath, [cli, 'check']);
   console.log(checked.trim());
-  if (
-    !checked.includes(`showing the packs ${entry} exports`) ||
-    !passed(checked)
-  ) {
-    throw new Error(`Zero-config check did not pass the pack:\n${checked}`);
+  if (!new RegExp(`^${title}: \\d+ passed, 0 failed`, 'm').test(checked)) {
+    throw new Error(`The config init wrote did not pass:\n${checked}`);
   }
 
   run(dir, process.execPath, [cli, 'build', '--out', 'site']);
   if (!existsSync(join(dir, 'site/index.html'))) {
-    throw new Error('Zero-config build wrote no site.');
+    throw new Error('build wrote no site.');
   }
 
   const { child, url } = await startDev(cli, dir);
@@ -420,16 +437,15 @@ const checkWithoutConfig = async (cli, dir, { title, entry }) => {
       .first()
       .waitFor();
     if (errors.length) {
-      throw new Error(`Zero-config dev page threw:\n${errors.join('\n')}`);
+      throw new Error(`The dev page threw:\n${errors.join('\n')}`);
     }
   } finally {
     await browser.close();
     child.kill();
   }
-  return passed;
 };
 
-/** A pack in its own ES module project, which `init` then gives a config. */
+/** A pack in its own ES module TypeScript project. */
 const checkBarePack = async (tempDir, packed, cli) => {
   const project = join(tempDir, 'bare-pack');
   mkdirSync(join(project, 'src'), { recursive: true });
@@ -444,17 +460,56 @@ const checkBarePack = async (tempDir, packed, cli) => {
   writeFileSync(join(project, 'src/index.tsx'), PACK_MODULE);
   npmInstall(project);
   assertNoStudio(project);
-
-  const passed = await checkWithoutConfig(cli, project, {
+  await checkInit(cli, project, {
     title: 'bare-pack',
-    entry: './src/index.tsx',
+    config: 'isomer-studio.config.ts',
   });
+};
 
-  run(project, process.execPath, [cli, 'init']);
-  const { stdout: checked } = run(project, process.execPath, [cli, 'check']);
-  if (checked.includes('No Studio config') || !passed(checked)) {
-    throw new Error(`The config init wrote did not pass:\n${checked}`);
-  }
+const JS_PACK = `import { createElement } from 'react';
+import { definePrimitiveFor, definePrimitivePack, requiredString } from '@elastic/isomer-sdk';
+import { md } from '@elastic/isomer-sdk/markdown';
+import { z } from 'zod';
+
+const schema = z.object({ type: z.literal('banner'), text: requiredString() });
+const example = { type: 'banner', text: 'Consumer Studio' };
+
+const banner = definePrimitiveFor()({
+  type: 'banner',
+  catalog: { type: 'banner', name: 'Banner', purpose: 'Names the view.', useWhen: ['A view needs a heading.'], avoidWhen: ['The view already has one.'], example },
+  icon: { svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="2" y="5" width="12" height="6" fill="var(--isomer-icon-accent)"/></svg>' },
+  examples: [example],
+  schema,
+  renderers: {
+    react: ({ text }) => createElement('h1', null, text),
+    text: ({ text }) => text,
+    markdown: ({ text }) => md.heading(1, text),
+    slack: ({ text }) => ({ type: 'header', text: { type: 'plain_text', text } }),
+  },
+});
+
+export const jsPack = definePrimitivePack({ id: 'js', primitives: [banner] });
+`;
+
+/** A pack in plain JavaScript, with no tsconfig.json. */
+const checkJavaScriptPack = async (tempDir, packed, cli) => {
+  const project = join(tempDir, 'js-pack');
+  mkdirSync(project);
+  writeJson(join(project, 'package.json'), {
+    name: 'js-pack',
+    private: true,
+    type: 'module',
+    main: 'index.js',
+    dependencies: packDependencies(packed),
+    overrides: packed,
+  });
+  writeFileSync(join(project, 'index.js'), JS_PACK);
+  npmInstall(project);
+  assertNoStudio(project);
+  await checkInit(cli, project, {
+    title: 'js-pack',
+    config: 'isomer-studio.config.js',
+  });
 };
 
 const KIBANA_PACKAGE = 'src/platform/packages/shared/kbn-consumer-pack';
@@ -498,20 +553,20 @@ const checkKibanaPack = async (tempDir, packed, cli) => {
   writeFileSync(join(pkg, 'src/pack.tsx'), PACK_MODULE);
   npmInstall(repo);
   assertNoStudio(repo);
-
-  await checkWithoutConfig(cli, pkg, {
+  await checkInit(cli, pkg, {
     title: '@kbn/consumer-pack',
-    entry: './index.ts',
+    config: 'isomer-studio.config.ts',
   });
 };
 
-/** Runs the Studio as a cold `npx @elastic/isomer-studio` does, beside packs that have only the SDK, React and zod. */
+/** Runs the Studio as `npx @elastic/isomer-studio` does, installed on its own, beside packs that have only the SDK, React and zod. */
 const checkColdNpx = async (tempDir, packed) => {
   const cli = installStudioAlone(tempDir, packed);
   await checkBarePack(tempDir, packed, cli);
+  await checkJavaScriptPack(tempDir, packed, cli);
   await checkKibanaPack(tempDir, packed, cli);
   console.log(
-    'Cold npx: check, build and dev passed without a config in an ES module pack and a Kibana-shaped package, and init wrote a config that passed.'
+    'Cold npx: init, check, build and dev passed in an ES module pack, a JavaScript pack and a Kibana-shaped package.'
   );
 };
 

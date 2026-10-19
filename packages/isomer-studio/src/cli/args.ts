@@ -41,16 +41,15 @@ Commands:
   dev     Serve the Studio with live reload. The default.
   build   Write the Studio as a static site.
   check   Render every example on every surface, and exit 1 on a failure.
-  init    Write an isomer-studio.config.ts for the packs the project exports.
-
-Without a config, dev, build and check show every pack the project's entry exports.
+  init    Write a config for the packs the project exports: isomer-studio.config.ts
+          beside a tsconfig.json, isomer-studio.config.js otherwise.
 
 Options for every command:
   --cwd <dir>            The project; resolves --config, --out and --report. Default: the current directory.
   --loader tsx|none      How the config is imported in Node. Default: tsx.
 
 dev, build and check:
-  --config <file>        Default: isomer-studio.config.{ts,tsx,mts,js} in --cwd.
+  --config <file>        Default: isomer-studio.config.{ts,tsx,js} in --cwd.
 
 dev:
   --port <number>        Default: ${DEFAULT_PORT}.

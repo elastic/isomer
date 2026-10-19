@@ -1,6 +1,6 @@
 ---
 navigation_title: Commands
-description: The flags of isomer-studio dev, build, check and init, what runs without a config, the files a build writes, and what a static site can and cannot do.
+description: The flags of isomer-studio init, dev, build and check, the config init writes, the files a build writes, and what a static site can and cannot do.
 ---
 
 # Commands
@@ -16,21 +16,9 @@ With no command, `isomer-studio` runs `dev`. Every command takes these options:
 | `--cwd <dir>`        | The current directory | The project. Resolves `--config`, `--out` and `--report`.                                       |
 | `--loader tsx\|none` | `tsx`                 | How the config is imported in Node. See [How the config loads](config.md#how-the-config-loads). |
 
-`dev`, `build` and `check` also take `--config <file>`, which defaults to `isomer-studio.config.ts`, `.tsx`, `.mts` or `.js` in `--cwd`.
+`dev`, `build` and `check` also take `--config <file>`, which defaults to `isomer-studio.config.ts`, `.tsx` or `.js` in `--cwd`. Without a config they stop and say to run `init`.
 
 The exit code is 0 on success, 1 when a command fails or `check` finds a failure, and 2 on bad usage, which also prints the usage text. `isomer-studio help` and `-h` print it too.
-
-## Without a config
-
-When `--cwd` has no config and `--config` names none, `dev`, `build` and `check` show every pack the project exports:
-
-```sh
-npx @elastic/isomer-studio
-```
-
-The entry is the first of `src/index.tsx`, `src/index.ts`, `index.tsx` and `index.ts` that exists, then the `package.json` root export, `module` or `main`. Every export shaped like `definePrimitivePack`'s result is a pack, named exports and the default export alike, and the title is the `package.json` `name`. Previews use the default `compose` and no `createReactContext`, so a pack whose examples need a frame or a stylesheet looks plain until a config adds them.
-
-The Studio writes this config to `.isomer-studio/isomer-studio.config.mts`, beside a `.gitignore` that ignores the directory. The project needs React 18, `@elastic/isomer-sdk` and `zod`, which a pack has already; the runtime and the Studio come from the Studio's own install. See [How the config loads](config.md#how-the-config-loads).
 
 ## `init`
 
@@ -38,7 +26,11 @@ The Studio writes this config to `.isomer-studio/isomer-studio.config.mts`, besi
 npx @elastic/isomer-studio init
 ```
 
-Writes `isomer-studio.config.ts`, importing by name each pack the entry exports, as the place to add `compose`, a stylesheet or apps. A project whose `package.json` is not `"type": "module"` gets `isomer-studio.config.mts`, so Node still loads it as an ES module. It stops when a config already exists or the entry exports no pack.
+Writes a config that default-exports `defineStudioConfig({ title, runtime })`, registering by name each pack the package's entry exports: `isomer-studio.config.ts` beside a `tsconfig.json`, `isomer-studio.config.js` otherwise. Add `compose`, `createReactContext` or apps to it as the pack needs; see [The config](config.md). It stops when a config already exists or the entry exports no pack.
+
+The entry is the first of `src/index` and `index`, as `.tsx`, `.ts`, `.jsx` or `.js`, that exists, then the `package.json` root export, `module` or `main`. Every export shaped like `definePrimitivePack`'s result is a pack, named exports and the default export alike, and the title is the `package.json` `name`.
+
+The project needs React 18, `@elastic/isomer-sdk` and `zod`, which a pack has already. `@elastic/isomer-runtime` and `@elastic/isomer-studio` come from the Studio's own install when the project lacks them; see [How the config loads](config.md#how-the-config-loads).
 
 ## `dev`
 

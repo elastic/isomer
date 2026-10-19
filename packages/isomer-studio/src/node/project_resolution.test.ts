@@ -26,7 +26,7 @@ import {
   projectDirectory,
   sharedResolveDir,
 } from './project_resolution';
-import { initialize, resolve } from './resolve_hooks';
+import { initialize, parentsFor, resolve, resolveSync } from './resolve_hooks';
 
 const PROJECT = '/work/pack';
 
@@ -106,60 +106,126 @@ describe('directories', () => {
   });
 });
 
-describe('resolve hook', () => {
+describe('resolve hooks', () => {
   const STUDIO = '/cache/node_modules/@elastic/isomer-studio';
+  const data = { projectDir: PROJECT, studioDir: STUDIO };
   const parent = (dir: string) => pathToFileURL(join(dir, 'package.json')).href;
-  const notFound = () =>
-    Object.assign(new Error('missing'), { code: 'ERR_MODULE_NOT_FOUND' });
+  const notFound = (code: string) =>
+    Object.assign(new Error('missing'), { code });
 
   beforeAll(() => {
-    void initialize?.({ projectDir: PROJECT, studioDir: STUDIO });
+    void initialize?.(data);
   });
 
-  /** The `parentURL` of each resolution the hook asks for. */
-  const run = async (
+  /** The `parentURL` of each resolution `hook` asks for, where `found` says which parents have the package. */
+  const asked = async (
+    hook: 'sync' | 'async',
     specifier: string,
     importer: string,
     found: (parentURL: string | undefined) => boolean
   ) => {
     const parents: (string | undefined)[] = [];
-    await resolve(
-      specifier,
-      { conditions: [], importAttributes: {}, parentURL: importer },
-      (next, context) => {
+    const next =
+      (code: string) =>
+      (_specifier: string, context?: { parentURL?: string | undefined }) => {
         parents.push(context?.parentURL);
         if (!found(context?.parentURL)) {
-          throw notFound();
+          throw notFound(code);
         }
-        return { url: `${String(context?.parentURL)}#${next}` };
-      }
-    );
-    return { parents };
+        return { url: String(context?.parentURL) };
+      };
+    const context = {
+      conditions: [],
+      importAttributes: {},
+      parentURL: importer,
+    };
+    if (hook === 'sync') {
+      resolveSync(data)(specifier, context, next('MODULE_NOT_FOUND'));
+    } else {
+      await resolve(specifier, context, next('ERR_MODULE_NOT_FOUND'));
+    }
+    return parents;
   };
 
-  it('resolves a shared package imported from the Studio as the project does', async () => {
-    const importer = pathToFileURL(`${STUDIO}/dist/node/check.js`).href;
-    const { parents } = await run('react', importer, () => true);
-    expect(parents).toEqual([parent(PROJECT)]);
+  describe.each(['sync', 'async'] as const)('%s', (hook) => {
+    it('resolves a shared package imported from the Studio as the project does', async () => {
+      const importer = pathToFileURL(`${STUDIO}/dist/node/check.js`).href;
+      expect(await asked(hook, 'react', importer, () => true)).toEqual([
+        parent(PROJECT),
+      ]);
+    });
+
+    it('falls back to the Studio for its own packages the project lacks', async () => {
+      const importer = pathToFileURL(`${PROJECT}/isomer-studio.config.ts`).href;
+      expect(
+        await asked(
+          hook,
+          '@elastic/isomer-runtime',
+          importer,
+          (url) => url !== importer
+        )
+      ).toEqual([importer, parent(STUDIO)]);
+    });
+
+    it('prefers the project for the packages the Studio provides', async () => {
+      const importer = pathToFileURL(`${PROJECT}/isomer-studio.config.ts`).href;
+      expect(
+        await asked(hook, '@elastic/isomer-runtime', importer, () => true)
+      ).toEqual([importer]);
+    });
   });
 
-  it('falls back to the Studio for its own packages the project lacks', async () => {
-    const importer = pathToFileURL(`${PROJECT}/.isomer-studio/c.mts`).href;
-    const { parents } = await run(
-      '@elastic/isomer-runtime',
-      importer,
-      (url) => url !== importer
+  it('resolves a require from the Studio itself, since require ignores parentURL', () => {
+    const root = realpathSync(
+      mkdtempSync(join(tmpdir(), 'isomer-studio-req-'))
     );
-    expect(parents).toEqual([importer, parent(STUDIO)]);
+    try {
+      const studioDir = join(root, 'cache/node_modules/@elastic/isomer-studio');
+      const runtimeDir = join(
+        root,
+        'cache/node_modules/@elastic/isomer-runtime'
+      );
+      mkdirSync(join(studioDir, 'dist'), { recursive: true });
+      mkdirSync(runtimeDir, { recursive: true });
+      writeFileSync(
+        join(studioDir, 'package.json'),
+        JSON.stringify({ exports: { '.': { import: './dist/index.js' } } })
+      );
+      writeFileSync(
+        join(runtimeDir, 'package.json'),
+        JSON.stringify({ name: '@elastic/isomer-runtime', main: 'index.js' })
+      );
+      writeFileSync(join(runtimeDir, 'index.js'), '');
+      const hook = resolveSync({ projectDir: join(root, 'pack'), studioDir });
+      const context = {
+        conditions: ['require', 'node'],
+        importAttributes: {},
+        parentURL: pathToFileURL(join(root, 'pack/isomer-studio.config.ts'))
+          .href,
+      };
+      const missing = () => {
+        throw notFound('MODULE_NOT_FOUND');
+      };
+
+      expect(hook('@elastic/isomer-runtime', context, missing)).toEqual({
+        url: pathToFileURL(join(runtimeDir, 'index.js')).href,
+        shortCircuit: true,
+      });
+      expect(hook('@elastic/isomer-studio', context, missing)).toEqual({
+        url: pathToFileURL(join(studioDir, 'dist/index.js')).href,
+        shortCircuit: true,
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
-  it('prefers the project for the packages the Studio provides', async () => {
-    const importer = pathToFileURL(`${PROJECT}/isomer-studio.config.ts`).href;
-    const { parents } = await run(
-      '@elastic/isomer-runtime',
+  it('lists the parents to try in order', () => {
+    const importer = pathToFileURL(`${STUDIO}/dist/index.js`).href;
+    expect(parentsFor('zod', importer, data)).toEqual([
+      parent(PROJECT),
       importer,
-      () => true
-    );
-    expect(parents).toEqual([importer]);
+    ]);
+    expect(parentsFor('moment', importer, data)).toEqual([importer]);
   });
 });

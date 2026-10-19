@@ -16,13 +16,13 @@ description: A gallery, per-primitive Reference, a composition Workbench and a p
 It ships as a command-line tool, not a React library. EUI, Emotion and Monaco are bundled into it, so a pack never takes them as dependencies.
 
 ```sh
-npx @elastic/isomer-studio                                                # a local server with hot updates
-npx @elastic/isomer-studio build --out dist/studio --base /studio/        # a static site
-npx @elastic/isomer-studio check --report studio-report.json              # a headless CI gate
-npx @elastic/isomer-studio init                                           # a config to edit
+npx @elastic/isomer-studio init                                     # a config for the packs the package exports
+npx @elastic/isomer-studio                                          # a local server with hot updates
+npx @elastic/isomer-studio build --out dist/studio --base /studio/  # a static site
+npx @elastic/isomer-studio check --report studio-report.json        # a headless CI gate
 ```
 
-Each command reads `isomer-studio.config.ts` (or `.tsx`, `.mts` or `.js`) from the current directory unless `--config` names another file. Without one, it shows every pack the project's entry exports; see [Without a config](commands.md#without-a-config). To pin the version and type-check a config, install `@elastic/isomer-studio` and `@elastic/isomer-runtime` as dev dependencies and run `npx isomer-studio`. In this repository, `pnpm studio:dev` runs the Studio from source against the slides pack.
+Each command reads `isomer-studio.config.ts` (or `.tsx` or `.js`) from the current directory unless `--config` names another file, and without one says to run `init`; see [`init`](commands.md#init). Nothing needs installing first: the Studio uses the pack's React, SDK and zod, and brings the runtime. To pin the version and type-check a config, install `@elastic/isomer-studio` and `@elastic/isomer-runtime` as dev dependencies and run `npx isomer-studio`. In this repository, `pnpm studio:dev` runs the Studio from source against the slides pack.
 
 In the interface, **Reference** teaches how and when to use each primitive, while **Workbench** is where you edit compositions. The existing `#/docs` and `#/dev` routes and the `isomer-studio dev` CLI command remain unchanged.
 

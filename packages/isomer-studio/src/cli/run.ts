@@ -13,8 +13,8 @@ import { buildSite } from '../node/build_site';
 import { checkStudio } from '../node/check';
 import type { DevServer } from '../node/dev_server';
 import { startDevServer } from '../node/dev_server';
+import { writeInitConfig } from '../node/init_config';
 import {
-  findDefaultConfig,
   importStudioModule,
   loadRenderToString,
   loadStudioConfig,
@@ -22,7 +22,6 @@ import {
 } from '../node/load_config';
 import { createRasterizer, imageFontsOf } from '../node/rasterize';
 import { formatReport, summarizeReport } from '../node/report';
-import { writeGeneratedConfig, writeInitConfig } from '../node/zero_config';
 
 import type { CliArgs } from './args';
 import { parseCliArgs, USAGE } from './args';
@@ -36,25 +35,6 @@ export interface CliIo {
   /** Called with the config before it loads; the binary passes `registerProjectResolution`. */
   onConfig?: ((configPath: string) => void) | undefined;
 }
-
-/** `--config`, else a default config in `--cwd`, else one generated for the packs the project exports. */
-const configPathOf = (
-  args: Exclude<CliArgs, { command: 'help' | 'init' }>,
-  { cwd, stdout }: CliIo
-): string => {
-  if (args.config !== undefined) {
-    return resolveConfigPath(args.cwd, args.config);
-  }
-  const found = findDefaultConfig(args.cwd);
-  if (found !== undefined) {
-    return found;
-  }
-  const { configPath, entry } = writeGeneratedConfig(args.cwd);
-  stdout(
-    `No Studio config in ${displayPath(cwd, args.cwd)}: showing the packs ${entry} exports. Run \`isomer-studio init\` to write a config to edit.\n`
-  );
-  return configPath;
-};
 
 const OPENERS: Readonly<Partial<Record<NodeJS.Platform, string>>> = {
   darwin: 'open',
@@ -81,11 +61,11 @@ const runCommand = async (
   if (args.command === 'init') {
     const written = await writeInitConfig(args.cwd, { loader });
     stdout(
-      `Wrote ${displayPath(cwd, written)}. Run \`isomer-studio dev\` to open it.\n`
+      `Wrote ${displayPath(cwd, written)}. Run \`npx @elastic/isomer-studio\` to open the Studio.\n`
     );
     return 0;
   }
-  const configPath = configPathOf(args, io);
+  const configPath = resolveConfigPath(args.cwd, args.config);
   io.onConfig?.(configPath);
 
   switch (args.command) {

@@ -12,17 +12,14 @@
 
 A learning and testing shell for any Isomer pack: a Home page, a component gallery, Reference pages for each primitive, a Workbench for editing compositions, and a preview of every surface the runtime has. It ships as a command-line tool with EUI, Emotion and Monaco bundled in.
 
-In a pack's package directory:
-
-```sh
-npx @elastic/isomer-studio
-```
-
-With no config, it shows every pack `src/index.ts` (or the package's entry) exports, using the pack's own React 18, SDK and zod. The runtime comes with the Studio. When the pack needs a `compose`, a stylesheet or apps, write a config to edit:
+In a pack's package directory, create a config, then open the Studio:
 
 ```sh
 npx @elastic/isomer-studio init
+npx @elastic/isomer-studio
 ```
+
+`init` writes `isomer-studio.config.ts` (`.js` without a `tsconfig.json`) that registers each pack the package's entry exports. The Studio uses the pack's own React 18, SDK and zod, and brings the runtime when the pack has none, so nothing needs installing first.
 
 ```ts
 // isomer-studio.config.ts

@@ -91,7 +91,7 @@ describe('resolveConfigPath', () => {
 
   it('says what it looked for when there is no config', () => {
     expect(() => resolveConfigPath(root)).toThrow(
-      `No Studio config in ${root}: pass --config, or add one of isomer-studio.config.ts, isomer-studio.config.tsx, isomer-studio.config.mts, isomer-studio.config.js.`
+      `No Studio config in ${root}. Run \`npx @elastic/isomer-studio init\` to create one, or pass --config.`
     );
     expect(() => resolveConfigPath(root, 'missing.ts')).toThrow(
       `No Studio config at ${join(root, 'missing.ts')}.`

@@ -6,7 +6,8 @@
  */
 
 import { existsSync, readFileSync, realpathSync } from 'node:fs';
-import { createRequire, register } from 'node:module';
+import * as nodeModule from 'node:module';
+import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -20,13 +21,13 @@ import { featuredProblems, runtimePrimitiveTypes } from '../model/featured';
 import { PACKAGE_DIR, RUNS_FROM_SOURCE } from './app_bundle';
 import { projectDirectory } from './project_resolution';
 import type { ResolveHooksData } from './resolve_hooks';
+import { resolveSync } from './resolve_hooks';
 
 export type ConfigLoader = 'none' | 'tsx';
 
 export const DEFAULT_CONFIG_NAMES = [
   'isomer-studio.config.ts',
   'isomer-studio.config.tsx',
-  'isomer-studio.config.mts',
   'isomer-studio.config.js',
 ] as const;
 
@@ -48,7 +49,7 @@ export const resolveConfigPath = (cwd: string, config?: string): string => {
   const found = findDefaultConfig(cwd);
   if (found === undefined) {
     throw new Error(
-      `No Studio config in ${cwd}: pass --config, or add one of ${DEFAULT_CONFIG_NAMES.join(', ')}.`
+      `No Studio config in ${cwd}. Run \`npx @elastic/isomer-studio init\` to create one, or pass --config.`
     );
   }
   return found;
@@ -271,7 +272,14 @@ export const registerProjectResolution = (configPath: string): void => {
   }
   registeredProject = projectDir;
   const data: ResolveHooksData = { projectDir, studioDir: PACKAGE_DIR };
-  register(
+  // Node 22.15 and later; `register` alone never sees `require`.
+  const { registerHooks }: { registerHooks?: typeof nodeModule.registerHooks } =
+    nodeModule;
+  if (registerHooks) {
+    registerHooks({ resolve: resolveSync(data) });
+    return;
+  }
+  nodeModule.register(
     `./resolve_hooks${RUNS_FROM_SOURCE ? '.ts' : '.js'}`,
     import.meta.url,
     { data }
