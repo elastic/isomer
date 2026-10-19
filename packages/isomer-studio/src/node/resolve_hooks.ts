@@ -13,7 +13,7 @@ import type {
   ResolveHookSync,
 } from 'node:module';
 import { createRequire } from 'node:module';
-import { join } from 'node:path';
+import { isAbsolute, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { isStudioSpecifier, sharedResolveDir } from './project_resolution';
@@ -89,6 +89,44 @@ export const resolveSync =
     };
     return attempt(parentsFor(specifier, context.parentURL, data));
   };
+
+/** Node's CommonJS resolver, which `module.register` hooks never see. */
+interface CommonJsLoader {
+  _resolveFilename: (
+    this: unknown,
+    request: string,
+    parent: { filename?: string | null } | undefined,
+    ...rest: unknown[]
+  ) => string;
+}
+
+/** Applies {@link resolveSync} to `require` on a Node without `registerHooks`, wrapping the resolver as `tsx` does. */
+export const patchRequire = (hooksData: ResolveHooksData): void => {
+  const loader = createRequire(import.meta.url)(
+    'node:module'
+  ) as CommonJsLoader;
+  const original = loader._resolveFilename;
+  const resolveRequire = resolveSync(hooksData);
+  loader._resolveFilename = function (request, parent, ...rest) {
+    const { url } = resolveRequire(
+      request,
+      {
+        conditions: ['require', 'node'],
+        importAttributes: {},
+        parentURL: parent?.filename
+          ? pathToFileURL(parent.filename).href
+          : undefined,
+      },
+      (specifier) => {
+        const resolved = original.call(this, specifier, parent, ...rest);
+        return {
+          url: isAbsolute(resolved) ? pathToFileURL(resolved).href : resolved,
+        };
+      }
+    );
+    return url.startsWith('file:') ? fileURLToPath(url) : url;
+  };
+};
 
 let data: ResolveHooksData | undefined;
 

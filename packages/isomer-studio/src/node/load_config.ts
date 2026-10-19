@@ -21,7 +21,7 @@ import { featuredProblems, runtimePrimitiveTypes } from '../model/featured';
 import { PACKAGE_DIR, RUNS_FROM_SOURCE } from './app_bundle';
 import { projectDirectory } from './project_resolution';
 import type { ResolveHooksData } from './resolve_hooks';
-import { resolveSync } from './resolve_hooks';
+import { patchRequire, resolveSync } from './resolve_hooks';
 
 export type ConfigLoader = 'none' | 'tsx';
 
@@ -272,7 +272,7 @@ export const registerProjectResolution = (configPath: string): void => {
   }
   registeredProject = projectDir;
   const data: ResolveHooksData = { projectDir, studioDir: PACKAGE_DIR };
-  // Node 22.15 and later; `register` alone never sees `require`.
+  // Node 22.15 and later; before it, `register` covers `import` and `patchRequire` covers `require`.
   const { registerHooks }: { registerHooks?: typeof nodeModule.registerHooks } =
     nodeModule;
   if (registerHooks) {
@@ -284,6 +284,7 @@ export const registerProjectResolution = (configPath: string): void => {
     import.meta.url,
     { data }
   );
+  patchRequire(data);
 };
 
 /** Imports a module beside the config as the config itself is imported. */
