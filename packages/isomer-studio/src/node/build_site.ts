@@ -30,7 +30,7 @@ import {
   renderIndexHtml,
 } from './app_bundle';
 import type { ConfigLoader } from './load_config';
-import { importStudioModule, loadStudioConfig } from './load_config';
+import { createStudioImporter, loadStudioConfig } from './load_config';
 import type { NodeRasterizer } from './rasterize';
 import { createRasterizer, imageFontsOf } from './rasterize';
 
@@ -125,7 +125,8 @@ export const buildSite = async ({
   base,
   loader,
 }: BuildSiteOptions): Promise<BuildSiteResult> => {
-  const config = await loadStudioConfig(configPath, { loader });
+  const importModule = createStudioImporter(configPath, { loader });
+  const config = await loadStudioConfig(configPath, { importModule });
   prepareOut(out);
   cpSync(APP_DIR, out, { recursive: true });
   const { metafile } = await build({
@@ -148,9 +149,7 @@ export const buildSite = async ({
 
   const rasterize = createRasterizer(
     config.runtime,
-    imageFontsOf(config, configPath, (path) =>
-      importStudioModule(path, { loader })
-    )
+    imageFontsOf(config, configPath, importModule)
   );
   if (!rasterize) {
     return { pngs: 0, failures: [] };

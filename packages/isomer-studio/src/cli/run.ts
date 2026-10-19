@@ -15,7 +15,7 @@ import type { DevServer } from '../node/dev_server';
 import { startDevServer } from '../node/dev_server';
 import { writeInitConfig } from '../node/init_config';
 import {
-  importStudioModule,
+  createStudioImporter,
   loadRenderToString,
   loadStudioConfig,
   resolveConfigPath,
@@ -100,13 +100,12 @@ const runCommand = async (
       return 0;
     }
     case 'check': {
-      const config = await loadStudioConfig(configPath, { loader });
+      const importModule = createStudioImporter(configPath, { loader });
+      const config = await loadStudioConfig(configPath, { importModule });
       const rasterizePng = args.png
         ? createRasterizer(
             config.runtime,
-            imageFontsOf(config, configPath, (path) =>
-              importStudioModule(path, { loader })
-            )
+            imageFontsOf(config, configPath, importModule)
           )
         : undefined;
       if (args.png && !rasterizePng) {

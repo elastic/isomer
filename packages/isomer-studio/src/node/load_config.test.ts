@@ -22,6 +22,7 @@ import { parseCliArgs } from '../cli/args';
 import {
   assertSingleEui,
   assertSingleReact,
+  createStudioImporter,
   loadStudioConfig,
   nearestTsconfig,
   resolveConfigPath,
@@ -143,6 +144,31 @@ export default config;
       expect(nearestTsconfig(configPath)).toBe(join(root, 'tsconfig.json'));
     }
   );
+
+  it('imports the config and a module it names into one module graph', async () => {
+    write('package.json', JSON.stringify({ name: 'consumer', type: 'module' }));
+    write('tsconfig.json', '{}');
+    write('src/shared.ts', 'export const shared: number = Math.random();\n');
+    const fontsPath = write(
+      'fonts.ts',
+      "export { shared as default } from './src/shared';\n"
+    );
+    const configPath = write(
+      'isomer-studio.config.ts',
+      `import { shared } from './src/shared';
+
+export default { title: 'Shared', runtime: { surfaces: {} }, shared };
+`
+    );
+    const importModule = createStudioImporter(configPath);
+
+    const config = await loadStudioConfig(configPath, { importModule });
+
+    expect(await importModule(fontsPath)).toHaveProperty(
+      'default',
+      Reflect.get(config, 'shared')
+    );
+  });
 
   it('imports a JavaScript config with no loader, unwrapping a CommonJS default', async () => {
     const configPath = write(

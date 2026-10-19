@@ -30,7 +30,7 @@ import { DEV_ENTRY_URL, devViteConfig } from './dev_bundle';
 import type { ConfigLoader } from './load_config';
 import {
   assertSingleReact,
-  importStudioModule,
+  createStudioImporter,
   loadStudioConfig,
   studioConfigFrom,
 } from './load_config';
@@ -172,13 +172,14 @@ export const startDevServer = async ({
       ? undefined
       : createServerModuleRunner(vite.environments.ssr, { hmr: false });
 
+  const importModule = createStudioImporter(configPath, { loader });
   const importConfig = async (): Promise<LoadedConfig> => {
     const config = runner
       ? studioConfigFrom(await runner.import(configPath), configPath)
-      : await loadStudioConfig(configPath, { loader });
+      : await loadStudioConfig(configPath, { importModule });
     const fonts = imageFontsOf(config, configPath, async (path) => {
       if (!runner) {
-        return importStudioModule(path, { loader });
+        return importModule(path);
       }
       const namespace: unknown = await runner.import(path);
       const node = await vite.environments.ssr.moduleGraph.getModuleByUrl(path);
