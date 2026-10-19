@@ -30,7 +30,7 @@ sources:
 3. Prefer `sources[]` entries that point at the local file proving each implementation claim.
 4. Run `pnpm okf:check`.
 5. Run `pnpm okf:index` and commit any generated index or map changes.
-6. Record meaningful updates in `.okf/isomer/log.md`.
+6. Record the change in `.okf/isomer/log.md` as one entry per pull request, under the newest date heading. If the branch already added one, rewrite it rather than adding another.
 
 # Accuracy checks
 

@@ -42,11 +42,12 @@ That is the complete local gate. `pnpm verify:fast` (typecheck, lint, license ch
 - `src/entries/*` are hand-curated on purpose: which names reach which subpath is what keeps `react-dom/server` off the root entry.
 - `zod` is a peer dependency. Do not add it to `dependencies`.
 - The sdk must not import the runtime.
-- No cross-package tsconfig `paths`. Internal resolution is `workspace:*` plus TypeScript project references. The one `paths` entry in the repo redirects an *external* package's subpath types for the CommonJS pass, whose `Node10` resolution cannot read an `exports` map; it is not a route between workspace packages.
+- No cross-package tsconfig `paths`. Internal resolution is `workspace:*` plus TypeScript project references. The one `paths` entry in the repo redirects an _external_ package's subpath types for the CommonJS pass, whose `Node10` resolution cannot read an `exports` map; it is not a route between workspace packages.
 - Do not invent a bundler for the library build. `tsc` plus `tsc-alias` is the toolchain, with a second `tsc` pass for CommonJS.
 - After adding or changing a dependency, run `pnpm licenses:report` and include the updated `THIRD_PARTY_LICENSES.md` and `NOTICE.txt`.
 - Narrative docs live in each package's `docs/`. Root `docs/` is the docs-builder assembler (landing page and OKF map); do not author package pages there. Its package folders are committed copies, because Elastic Internal Docs (Codex) clones and builds `docs/` as committed: run `pnpm docs:assemble` and commit the result whenever package docs change, and CI fails with `pnpm docs:check` when they drift. Preview with `pnpm docs:dev`.
-- When public API, docs, examples, or behavior change, update `.okf/isomer`, run `pnpm okf:check` and `pnpm okf:index`, and record meaningful changes in `.okf/isomer/log.md`.
+- When public API, docs, examples, or behavior change, update `.okf/isomer`, run `pnpm okf:check` and `pnpm okf:index`, and record the change in `.okf/isomer/log.md`.
+- A pull request gets exactly one `log.md` entry: one `- **Outcome**: …` line of two to four sentences, under the newest date heading. If your branch already added one, rewrite it in place as the work changes; never add a line per commit or per review round, and leave other PRs' entries alone.
 - `.okf/**` is excluded from markdown and Prettier formatting because `okf index` owns generated index formatting.
 - Keep comments short. Do not narrate decisions that git history already records.
 - A pack holds no rendered value of its own: every number, length, ratio, and glyph it draws has one authoring source in its theme ([Before you add a value](packages/isomer-primitives-slides/docs/primitives.md#before-you-add-a-value-one-source-per-rendered-value)).
