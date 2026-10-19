@@ -25,10 +25,27 @@ const usageError = (
 };
 
 describe('parseCliArgs', () => {
-  it('asks for help with no command, help, or -h', () => {
-    expect(parseCliArgs([], CWD)).toEqual({ command: 'help' });
+  it('asks for help with help or -h', () => {
     expect(parseCliArgs(['help'], CWD)).toEqual({ command: 'help' });
+    expect(parseCliArgs(['-h'], CWD)).toEqual({ command: 'help' });
     expect(parseCliArgs(['build', '-h'], CWD)).toEqual({ command: 'help' });
+  });
+
+  it('runs dev with no command', () => {
+    expect(parseCliArgs([], CWD)).toEqual(parseCliArgs(['dev'], CWD));
+    expect(parseCliArgs(['--port', '0'], CWD)).toMatchObject({
+      command: 'dev',
+      port: 0,
+    });
+  });
+
+  it('parses init', () => {
+    expect(parseCliArgs(['init', '--cwd', 'pack'], CWD)).toEqual({
+      command: 'init',
+      cwd: join(CWD, 'pack'),
+      config: undefined,
+      loader: 'tsx',
+    });
   });
 
   it('defaults dev to the default port, without opening a browser', () => {
@@ -110,6 +127,7 @@ describe('parseCliArgs', () => {
     [['build', 'extra'], 'Unexpected arguments: extra.'],
     [['build', '--port', '1'], '--port does not apply to build.'],
     [['dev', '--png', '--out', 'x'], '--png, --out does not apply to dev.'],
+    [['init', '--config', 'x.ts'], '--config does not apply to init.'],
     [
       ['check', '--format', 'xml'],
       '--format must be one of json, junit; got xml.',

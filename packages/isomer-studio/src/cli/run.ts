@@ -14,6 +14,7 @@ import { checkStudio } from '../node/check';
 import type { DevServer } from '../node/dev_server';
 import { startDevServer } from '../node/dev_server';
 import {
+  findDefaultConfig,
   importStudioModule,
   loadRenderToString,
   loadStudioConfig,
@@ -21,6 +22,7 @@ import {
 } from '../node/load_config';
 import { createRasterizer, imageFontsOf } from '../node/rasterize';
 import { formatReport, summarizeReport } from '../node/report';
+import { writeGeneratedConfig, writeInitConfig } from '../node/zero_config';
 
 import type { CliArgs } from './args';
 import { parseCliArgs, USAGE } from './args';
@@ -31,7 +33,28 @@ export interface CliIo {
   stderr: (text: string) => void;
   /** Called with the running dev server, which keeps the process alive until it closes. */
   onDevServer?: ((server: DevServer) => void) | undefined;
+  /** Called with the config before it loads; the binary passes `registerProjectResolution`. */
+  onConfig?: ((configPath: string) => void) | undefined;
 }
+
+/** `--config`, else a default config in `--cwd`, else one generated for the packs the project exports. */
+const configPathOf = (
+  args: Exclude<CliArgs, { command: 'help' | 'init' }>,
+  { cwd, stdout }: CliIo
+): string => {
+  if (args.config !== undefined) {
+    return resolveConfigPath(args.cwd, args.config);
+  }
+  const found = findDefaultConfig(args.cwd);
+  if (found !== undefined) {
+    return found;
+  }
+  const { configPath, entry } = writeGeneratedConfig(args.cwd);
+  stdout(
+    `No Studio config in ${displayPath(cwd, args.cwd)}: showing the packs ${entry} exports. Run \`isomer-studio init\` to write a config to edit.\n`
+  );
+  return configPath;
+};
 
 const OPENERS: Readonly<Partial<Record<NodeJS.Platform, string>>> = {
   darwin: 'open',
@@ -54,8 +77,16 @@ const runCommand = async (
   io: CliIo
 ): Promise<number> => {
   const { cwd, stdout, stderr } = io;
-  const configPath = resolveConfigPath(args.cwd, args.config);
   const { loader } = args;
+  if (args.command === 'init') {
+    const written = await writeInitConfig(args.cwd, { loader });
+    stdout(
+      `Wrote ${displayPath(cwd, written)}. Run \`isomer-studio dev\` to open it.\n`
+    );
+    return 0;
+  }
+  const configPath = configPathOf(args, io);
+  io.onConfig?.(configPath);
 
   switch (args.command) {
     case 'dev': {

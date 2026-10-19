@@ -40,6 +40,8 @@ npx isomer-studio check --config isomer-studio.config.ts --format junit --report
 npx isomer-studio build --config isomer-studio.config.ts --out dist/studio
 ```
 
+`npx @elastic/isomer-studio check` also works without installing the Studio, but an installed one keeps CI on the version the lockfile pins.
+
 `build` and `check --png` rasterize with `@elastic/isomer-image-takumi`, a native dependency the Studio installs for the platform it runs on.
 
 ## Deploying with docs

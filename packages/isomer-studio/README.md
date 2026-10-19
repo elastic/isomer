@@ -12,10 +12,16 @@
 
 A learning and testing shell for any Isomer pack: a Home page, a component gallery, Reference pages for each primitive, a Workbench for editing compositions, and a preview of every surface the runtime has. It ships as a command-line tool with EUI, Emotion and Monaco bundled in.
 
-Install it beside the pack, with the pack's runtime and React 18:
+In a pack's package directory:
 
 ```sh
-npm install --save-dev @elastic/isomer-studio @elastic/isomer-runtime @elastic/isomer-sdk react@18 react-dom@18 zod
+npx @elastic/isomer-studio
+```
+
+With no config, it shows every pack `src/index.ts` (or the package's entry) exports, using the pack's own React 18, SDK and zod. The runtime comes with the Studio. When the pack needs a `compose`, a stylesheet or apps, write a config to edit:
+
+```sh
+npx @elastic/isomer-studio init
 ```
 
 ```ts
@@ -23,7 +29,7 @@ npm install --save-dev @elastic/isomer-studio @elastic/isomer-runtime @elastic/i
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import { defineStudioConfig } from '@elastic/isomer-studio';
 
-import { myPack } from './src';
+import { myPack } from './src/index';
 
 export default defineStudioConfig({
   runtime: createIsomerRuntime({ packs: [myPack] }),
@@ -31,12 +37,12 @@ export default defineStudioConfig({
 ```
 
 ```sh
-npx isomer-studio dev                                     # a local server with hot updates
-npx isomer-studio build --out dist/studio --base /studio/ # a static site
-npx isomer-studio check --format junit --report report.xml # a headless CI gate
+npx @elastic/isomer-studio dev                                      # a local server with hot updates, the default
+npx @elastic/isomer-studio build --out dist/studio --base /studio/  # a static site
+npx @elastic/isomer-studio check --format junit --report report.xml # a headless CI gate
 ```
 
-The config imports the Studio, the runtime and React from the pack's own `node_modules`, so run the installed binary rather than `npx @elastic/isomer-studio` from outside the project. In this repository, `pnpm studio:dev` runs it from source against the slides pack.
+To pin a version and type-check the config, install it: `npm install --save-dev @elastic/isomer-studio @elastic/isomer-runtime`, then run `npx isomer-studio`. In this repository, `pnpm studio:dev` runs it from source against the slides pack.
 
 `check` validates and renders every example on every surface without a browser and exits 1 on any failure. In GitHub Actions, `elastic/isomer/.github/actions/isomer-studio` runs `check` and `build` and uploads the report and the site. Needs React 18 and Node 22.13 or later. Docs: [Isomer Studio](https://elastic.github.io/isomer/studio/). The reference pack's Studio: [elastic.github.io/isomer/studio-app/](https://elastic.github.io/isomer/studio-app/).
 

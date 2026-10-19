@@ -186,9 +186,16 @@ The config runs in two places: in Node, for `check` and for the dev server's PNG
 
 **In the browser**, `build` bundles the config with esbuild and `dev` serves it through Vite. `react`, `react-dom` and their subpaths resolve as if imported from the config, so the Studio's own components, Emotion and the pack share one React, and each package's browser build is the one loaded.
 
+**Run with `npx`**, the Studio sits in npm's cache rather than the pack's `node_modules`. Two rules make that work in Node, Vite and esbuild alike:
+
+- `react`, `react-dom`, `@elastic/isomer-sdk` and `zod`, imported from outside the project, resolve from the project, so the runtime and the pack share them.
+- `@elastic/isomer-runtime` and `@elastic/isomer-studio`, when the project does not have them, resolve from the Studio's install. A config can import both without installing either.
+
+The project is the directory of the `package.json` nearest the config.
+
 ## One React
 
-The Studio, the pack and the runtime must use one copy of React. Before loading the config, the Studio resolves `react` from the config and from the `@elastic/isomer-runtime` the config sees, and stops when they differ:
+The Studio, the pack and the runtime must use one copy of React, and it must be React 18, which EUI requires. Before loading the config, the Studio resolves `react` from the config, stops when it is not 18, then resolves `react` from the `@elastic/isomer-runtime` the config sees, and stops when they differ:
 
 ```text
 The Studio config and @elastic/isomer-runtime resolve different copies of React:

@@ -6,7 +6,7 @@
  */
 
 import { existsSync, readFileSync, realpathSync } from 'node:fs';
-import { createRequire } from 'node:module';
+import { createRequire, register } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -17,15 +17,24 @@ import type { StudioConfig } from '../config';
 import { appProblems } from '../model/app_problems';
 import { featuredProblems, runtimePrimitiveTypes } from '../model/featured';
 
-import { PACKAGE_DIR } from './app_bundle';
+import { PACKAGE_DIR, RUNS_FROM_SOURCE } from './app_bundle';
+import { projectDirectory } from './project_resolution';
+import type { ResolveHooksData } from './resolve_hooks';
 
 export type ConfigLoader = 'none' | 'tsx';
 
 export const DEFAULT_CONFIG_NAMES = [
   'isomer-studio.config.ts',
   'isomer-studio.config.tsx',
+  'isomer-studio.config.mts',
   'isomer-studio.config.js',
 ] as const;
+
+/** The first default config name that exists in `cwd`. */
+export const findDefaultConfig = (cwd: string): string | undefined =>
+  DEFAULT_CONFIG_NAMES.map((name) => resolve(cwd, name)).find((path) =>
+    existsSync(path)
+  );
 
 /** `config` against `cwd`, or the first default name that exists there. */
 export const resolveConfigPath = (cwd: string, config?: string): string => {
@@ -36,9 +45,7 @@ export const resolveConfigPath = (cwd: string, config?: string): string => {
     }
     return path;
   }
-  const found = DEFAULT_CONFIG_NAMES.map((name) => resolve(cwd, name)).find(
-    (path) => existsSync(path)
-  );
+  const found = findDefaultConfig(cwd);
   if (found === undefined) {
     throw new Error(
       `No Studio config in ${cwd}: pass --config, or add one of ${DEFAULT_CONFIG_NAMES.join(', ')}.`
@@ -80,12 +87,20 @@ const runtimeEntry = (configPath: string): string | undefined => {
   }
 };
 
-/** Throws when the config and `@elastic/isomer-runtime` would load different copies of React. */
+/** Throws unless the config resolves React 18, which EUI needs, and `@elastic/isomer-runtime` resolves the same copy. */
 export const assertSingleReact = (configPath: string): void => {
   const configReact = reactDirectory(configPath);
   if (configReact === undefined) {
     throw new Error(
-      `React is not installed where the Studio config is: ${configPath}.`
+      `React is not installed where the Studio config is: ${configPath}. Install react@18 and react-dom@18.`
+    );
+  }
+  const { version } = JSON.parse(
+    readFileSync(join(configReact, 'package.json'), 'utf8')
+  ) as { version?: unknown };
+  if (typeof version !== 'string' || !version.startsWith('18.')) {
+    throw new Error(
+      `Isomer Studio needs React 18, which EUI requires; ${configPath} resolves React ${String(version)}.`
     );
   }
   const entry = runtimeEntry(configPath);
@@ -239,6 +254,28 @@ export const studioConfigFrom = (
     assertSingleEui(configPath);
   }
   return config;
+};
+
+let registeredProject: string | undefined;
+
+/** Applies the Studio's module resolution to every later `import` in this process; a process serves one project. */
+export const registerProjectResolution = (configPath: string): void => {
+  const projectDir = projectDirectory(configPath);
+  if (registeredProject !== undefined) {
+    if (registeredProject !== projectDir) {
+      throw new Error(
+        `Module resolution is registered for ${registeredProject}, not ${projectDir}.`
+      );
+    }
+    return;
+  }
+  registeredProject = projectDir;
+  const data: ResolveHooksData = { projectDir, studioDir: PACKAGE_DIR };
+  register(
+    `./resolve_hooks${RUNS_FROM_SOURCE ? '.ts' : '.js'}`,
+    import.meta.url,
+    { data }
+  );
 };
 
 /** Imports a module beside the config as the config itself is imported. */

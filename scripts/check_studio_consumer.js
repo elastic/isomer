@@ -8,7 +8,7 @@
 // Installs the packed Studio with npm in a directory outside the workspace,
 // then checks, builds and drives it with a consumer's own config and pack.
 
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import {
   copyFileSync,
   existsSync,
@@ -21,6 +21,8 @@ import {
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+
+import { chromium } from '@playwright/test';
 
 import { requireChromium, runStudioSpec } from './studio_spec.js';
 import { repoRoot } from './workspace_packages.js';
@@ -315,6 +317,148 @@ const run = (dir, command, args, { expected = 0 } = {}) => {
   return { stdout, stderr };
 };
 
+/** Starts `isomer-studio` with no command in `dir` and resolves its URL and process. */
+const startDev = (cli, dir) =>
+  new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [cli, '--port', '0'], {
+      cwd: dir,
+      env: isolatedEnv(),
+    });
+    let output = '';
+    const onData = (chunk) => {
+      output += chunk;
+      const url = /Isomer Studio: (http\S+)/.exec(output)?.[1];
+      if (url) {
+        resolve({ child, url });
+      }
+    };
+    child.stdout.on('data', onData);
+    child.stderr.on('data', (chunk) => {
+      output += chunk;
+    });
+    child.once('exit', (code) =>
+      reject(new Error(`dev exited ${code} before serving:\n${output}`))
+    );
+  });
+
+/**
+ * Runs the Studio the way a cold `npx @elastic/isomer-studio` does: installed on its own, outside a pack that has
+ * only the SDK, React and zod, with no config.
+ */
+const checkColdNpx = async (tempDir, packed) => {
+  const overrides = packed;
+  const cache = join(tempDir, 'npx-cache');
+  mkdirSync(cache);
+  writeFileSync(
+    join(cache, 'package.json'),
+    `${JSON.stringify(
+      {
+        name: 'npx-cache',
+        private: true,
+        dependencies: {
+          '@elastic/isomer-studio': packed['@elastic/isomer-studio'],
+        },
+        overrides,
+      },
+      null,
+      2
+    )}\n`
+  );
+  const project = join(tempDir, 'bare-pack');
+  mkdirSync(join(project, 'src'), { recursive: true });
+  writeFileSync(
+    join(project, 'package.json'),
+    `${JSON.stringify(
+      {
+        name: 'bare-pack',
+        private: true,
+        type: 'module',
+        dependencies: {
+          '@elastic/isomer-sdk': packed['@elastic/isomer-sdk'],
+          react: devDependencies.react,
+          'react-dom': devDependencies['react-dom'],
+          zod: devDependencies.zod,
+        },
+        overrides,
+      },
+      null,
+      2
+    )}\n`
+  );
+  writeFileSync(
+    join(project, 'tsconfig.json'),
+    `${JSON.stringify(TSCONFIG, null, 2)}\n`
+  );
+  writeFileSync(
+    join(project, 'src/index.tsx'),
+    `${PACK}\nexport const consumerPack = createPack('Deploy finished');\n`
+  );
+  for (const dir of [cache, project]) {
+    run(dir, 'npm', [
+      'install',
+      '--no-audit',
+      '--no-fund',
+      '--prefer-offline',
+      '--loglevel=error',
+    ]);
+  }
+  for (const name of ['@elastic/isomer-runtime', '@elastic/isomer-studio']) {
+    if (existsSync(join(project, 'node_modules', name))) {
+      throw new Error(`The bare pack should not install ${name}.`);
+    }
+  }
+  const cli = join(
+    cache,
+    'node_modules/@elastic/isomer-studio/bin/isomer-studio.js'
+  );
+
+  const { stdout: checked } = run(project, process.execPath, [cli, 'check']);
+  console.log(checked.trim());
+  if (
+    !checked.includes('showing the packs ./src/index.tsx exports') ||
+    !/bare-pack: \d+ passed, 0 failed/.test(checked)
+  ) {
+    throw new Error(`Zero-config check did not pass the pack:\n${checked}`);
+  }
+
+  run(project, process.execPath, [cli, 'build', '--out', 'site']);
+  if (!existsSync(join(project, 'site/index.html'))) {
+    throw new Error('Zero-config build wrote no site.');
+  }
+
+  const { child, url } = await startDev(cli, project);
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage();
+    const errors = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    await page.goto(`${url}#/docs/banner/0`);
+    await page
+      .getByRole('heading', { name: 'Consumer Studio', level: 1 })
+      .first()
+      .waitFor();
+    if (errors.length) {
+      throw new Error(`Zero-config dev page threw:\n${errors.join('\n')}`);
+    }
+  } finally {
+    await browser.close();
+    child.kill();
+  }
+
+  run(project, process.execPath, [cli, 'init']);
+  const { stdout: initChecked } = run(project, process.execPath, [
+    cli,
+    'check',
+  ]);
+  if (
+    initChecked.includes('No Studio config') ||
+    !/bare-pack: \d+ passed, 0 failed/.test(initChecked)
+  ) {
+    throw new Error(`The config init wrote did not pass:\n${initChecked}`);
+  }
+  console.log('Cold npx: check, build, dev and init passed without a config.');
+};
+
 requireChromium();
 
 const missingBuild = Object.values(PACKED).filter(
@@ -506,6 +650,7 @@ try {
     throw new Error(`The browser test failed against the consumer install.`);
   }
   console.log('Packed Studio passed check, build and the browser test.');
+  await checkColdNpx(tempDir, packed);
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   process.exitCode = 1;

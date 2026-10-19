@@ -7,8 +7,8 @@ description: Generated map of the Isomer OKF concept graph.
 
 Generated from `.okf/isomer` by `pnpm okf:map`. Do not edit by hand.
 
-- Concepts: 66
-- Links: 158
+- Concepts: 67
+- Links: 162
 - Isolated concepts: 0
 
 ## Graph
@@ -72,6 +72,7 @@ flowchart LR
     slides_reference_public_contract["Public contract"]:::reference
     studio_concepts_config_contract["Config contract"]:::concept
     studio_concepts_static_png["Static PNGs"]:::concept
+    studio_concepts_zero_config["Running without a config"]:::concept
     studio_entry_points_root["Root and CLI"]:::entrypoint
     studio_playbooks_run_in_ci["Run the Studio in CI"]:::playbook
     studio_reference_public_contract["Public contract"]:::reference
@@ -219,9 +220,13 @@ flowchart LR
     studio_concepts_config_contract --> studio_concepts_static_png
     studio_concepts_config_contract --> studio_entry_points_root
     studio_concepts_static_png --> studio_concepts_config_contract
+    studio_concepts_zero_config --> studio_concepts_config_contract
+    studio_concepts_zero_config --> studio_entry_points_root
     studio_entry_points_root --> studio_concepts_config_contract
+    studio_entry_points_root --> studio_concepts_zero_config
     studio_entry_points_root --> studio_reference_public_contract
     studio_playbooks_run_in_ci --> studio_entry_points_root
+    studio_reference_public_contract --> studio_concepts_zero_config
     studio_reference_public_contract --> studio_entry_points_root
     workspace_concepts_workspace --> agent_tools_concepts_agent_tools
     workspace_concepts_workspace --> evals_concepts_scoring
@@ -304,6 +309,7 @@ flowchart LR
 - Public contract (Reference): `slides/reference/public-contract`
 - Config contract (Concept): `studio/concepts/config-contract`
 - Static PNGs (Concept): `studio/concepts/static-png`
+- Running without a config (Concept): `studio/concepts/zero-config`
 - Root and CLI (Entry Point): `studio/entry-points/root`
 - Run the Studio in CI (Playbook): `studio/playbooks/run-in-ci`
 - Public contract (Reference): `studio/reference/public-contract`

@@ -5,7 +5,7 @@ description: A gallery, per-primitive Reference, a composition Workbench and a p
 
 # Isomer Studio
 
-`@elastic/isomer-studio` is a learning and testing shell for any Isomer pack. Point it at a config file that exports a runtime, and it shows:
+`@elastic/isomer-studio` is a learning and testing shell for any Isomer pack. Run it in a pack's package directory, and it shows:
 
 - a Home page with search, featured primitives, the pack's apps, and what the runtime loaded;
 - a gallery of every primitive, grouped as the pack's authoring groups are, whose React previews mount as they near the viewport;
@@ -13,21 +13,16 @@ description: A gallery, per-primitive Reference, a composition Workbench and a p
 - a Workbench for editing a composition and seeing its live preview;
 - the same composition on every surface the runtime has: React, HTML, Snapshot, PNG, Slack, Markdown and text.
 
-It ships as a command-line tool, not a React library. EUI, Emotion and Monaco are bundled into it, so a pack never takes them as dependencies. Install it beside the pack:
+It ships as a command-line tool, not a React library. EUI, Emotion and Monaco are bundled into it, so a pack never takes them as dependencies.
 
 ```sh
-npm install --save-dev @elastic/isomer-studio @elastic/isomer-runtime @elastic/isomer-sdk react@18 react-dom@18 zod
+npx @elastic/isomer-studio                                                # a local server with hot updates
+npx @elastic/isomer-studio build --out dist/studio --base /studio/        # a static site
+npx @elastic/isomer-studio check --report studio-report.json              # a headless CI gate
+npx @elastic/isomer-studio init                                           # a config to edit
 ```
 
-```sh
-npx isomer-studio dev                                       # a local server with hot updates
-npx isomer-studio build --out dist/studio --base /studio/   # a static site
-npx isomer-studio check --report studio-report.json         # a headless CI gate
-```
-
-Run the installed binary. The config loads the Studio, the runtime and React from the pack's `node_modules`, so `npx @elastic/isomer-studio` from outside the project cannot resolve them. In this repository, `pnpm studio:dev` runs the Studio from source against the slides pack.
-
-Each command reads `isomer-studio.config.ts` (or `.tsx` or `.js`) from the current directory unless `--config` names another file.
+Each command reads `isomer-studio.config.ts` (or `.tsx`, `.mts` or `.js`) from the current directory unless `--config` names another file. Without one, it shows every pack the project's entry exports; see [Without a config](commands.md#without-a-config). To pin the version and type-check a config, install `@elastic/isomer-studio` and `@elastic/isomer-runtime` as dev dependencies and run `npx isomer-studio`. In this repository, `pnpm studio:dev` runs the Studio from source against the slides pack.
 
 In the interface, **Reference** teaches how and when to use each primitive, while **Workbench** is where you edit compositions. The existing `#/docs` and `#/dev` routes and the `isomer-studio dev` CLI command remain unchanged.
 
@@ -70,10 +65,10 @@ Home respects reduced-motion preferences: the surface chart keeps its focus and 
 ## Requirements
 
 - Node 22.13 or later.
-- `react` and `react-dom` 18.2 or later, below 19, because EUI's peer range stops there.
-- `@elastic/isomer-runtime`, `@elastic/isomer-sdk` and `zod`, which the pack already has.
+- `react` and `react-dom` 18.2 or later, below 19, in the pack, because EUI's peer range stops there.
+- `@elastic/isomer-sdk` and `zod`, which the pack already has. `@elastic/isomer-runtime` comes with the Studio when the pack does not have it.
 
-The config, the pack and React load from the pack's own `node_modules`. The Studio checks that the config and `@elastic/isomer-runtime` see one copy of React, and stops with both paths when they don't.
+The config, the pack and React load from the pack's own `node_modules`. The Studio stops when the pack's React is not 18, or when the config and `@elastic/isomer-runtime` see different copies of it.
 
 ## The slides Studio
 

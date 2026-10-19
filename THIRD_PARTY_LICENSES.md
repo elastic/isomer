@@ -300,7 +300,9 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `property-information` | 7.2.0 | MIT | `node_modules/.pnpm/property-information@7.2.0/node_modules/property-information` |  |
 | `querystringify` | 2.2.0 | MIT | `node_modules/.pnpm/querystringify@2.2.0/node_modules/querystringify` |  |
 | `raf-schd` | 4.0.3 | MIT | `node_modules/.pnpm/raf-schd@4.0.3/node_modules/raf-schd` |  |
+| `react` | 18.3.1 | MIT | `node_modules/.pnpm/react@18.3.1/node_modules/react` |  |
 | `react-clientside-effect` | 1.2.8 | MIT | `node_modules/.pnpm/react-clientside-effect@1.2.8_react@18.3.1/node_modules/react-clientside-effect` |  |
+| `react-dom` | 18.3.1 | MIT | `node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom` |  |
 | `react-dropzone` | 11.7.1 | MIT | `node_modules/.pnpm/react-dropzone@11.7.1_react@18.3.1/node_modules/react-dropzone` |  |
 | `react-element-to-jsx-string` | 15.0.0 | MIT | `node_modules/.pnpm/react-element-to-jsx-string@15.0.0_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/react-element-to-jsx-string` |  |
 | `react-focus-lock` | 2.13.7 | MIT | `node_modules/.pnpm/react-focus-lock@2.13.7_@types+react@18.3.31_react@18.3.1/node_modules/react-focus-lock` |  |
@@ -334,6 +336,7 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `resolve` | 1.22.13 | MIT | `node_modules/.pnpm/resolve@1.22.13/node_modules/resolve` |  |
 | `resolve-from` | 4.0.0 | MIT | `node_modules/.pnpm/resolve-from@4.0.0/node_modules/resolve-from` |  |
 | `rolldown` | 1.2.13 | MIT | `node_modules/.pnpm/rolldown@1.2.13/node_modules/rolldown` | `@rolldown/binding-android-arm-eabi`, `@rolldown/binding-android-arm64`, `@rolldown/binding-darwin-arm64`, `@rolldown/binding-darwin-x64`, `@rolldown/binding-freebsd-x64`, `@rolldown/binding-linux-arm-gnueabihf`, `@rolldown/binding-linux-arm64-gnu`, `@rolldown/binding-linux-arm64-musl`, `@rolldown/binding-linux-ppc64-gnu`, `@rolldown/binding-linux-s390x-gnu`, `@rolldown/binding-linux-x64-gnu`, `@rolldown/binding-linux-x64-musl`, `@rolldown/binding-openharmony-arm64`, `@rolldown/binding-win32-arm64-msvc`, `@rolldown/binding-win32-x64-msvc` |
+| `scheduler` | 0.23.2 | MIT | `node_modules/.pnpm/scheduler@0.23.2/node_modules/scheduler` |  |
 | `skin-tone` | 2.0.0 | MIT | `node_modules/.pnpm/skin-tone@2.0.0/node_modules/skin-tone` |  |
 | `slack-blocks-to-jsx` | 1.1.2 | MIT | `node_modules/.pnpm/slack-blocks-to-jsx@1.1.2_@types+react@18.3.31_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/slack-blocks-to-jsx` |  |
 | `source-map` | 0.5.7 | BSD-3-Clause | `node_modules/.pnpm/source-map@0.5.7/node_modules/source-map` |  |
