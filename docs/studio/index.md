@@ -13,13 +13,19 @@ description: A gallery, per-primitive Reference, a composition Workbench and a p
 - a Workbench for editing a composition and seeing its live preview;
 - the same composition on every surface the runtime has: React, HTML, Snapshot, PNG, Slack, Markdown and text.
 
-It ships as a command-line tool, not a React library. EUI, Emotion and Monaco are bundled into it, so a pack never takes them as dependencies. The package is private and not published to npm; this repository runs it.
+It ships as a command-line tool, not a React library. EUI, Emotion and Monaco are bundled into it, so a pack never takes them as dependencies. Install it beside the pack:
 
 ```sh
-pnpm studio:dev                                       # a local server with hot updates
-pnpm exec isomer-studio build --out dist/studio --base /studio/  # a static site
-pnpm exec isomer-studio check --report studio-report.json   # a headless CI gate
+npm install --save-dev @elastic/isomer-studio @elastic/isomer-runtime @elastic/isomer-sdk react@18 react-dom@18 zod
 ```
+
+```sh
+npx isomer-studio dev                                       # a local server with hot updates
+npx isomer-studio build --out dist/studio --base /studio/   # a static site
+npx isomer-studio check --report studio-report.json         # a headless CI gate
+```
+
+Run the installed binary. The config loads the Studio, the runtime and React from the pack's `node_modules`, so `npx @elastic/isomer-studio` from outside the project cannot resolve them. In this repository, `pnpm studio:dev` runs the Studio from source against the slides pack.
 
 Each command reads `isomer-studio.config.ts` (or `.tsx` or `.js`) from the current directory unless `--config` names another file.
 

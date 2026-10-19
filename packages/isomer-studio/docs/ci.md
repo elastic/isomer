@@ -9,12 +9,12 @@ description: Run isomer-studio check and build in GitHub Actions with the compos
 
 ## The GitHub Action
 
-The Isomer repository has a composite action that runs both and uploads what they write. Install the workspace's dependencies and run `pnpm build` first, since the `isomer-studio` command runs from the Studio's `dist/`. Then:
+The Isomer repository has a composite action that runs both and uploads what they write. It runs the `isomer-studio` binary installed in `working-directory`, so install the pack's dependencies, `@elastic/isomer-studio` among them, first. Then:
 
 ```yaml
-- uses: ./.github/actions/isomer-studio
+- uses: elastic/isomer/.github/actions/isomer-studio@main
   with:
-    config: packages/isomer-primitives-slides/isomer-studio.config.ts
+    config: isomer-studio.config.ts
 ```
 
 | Input | Default | What it does |
@@ -36,8 +36,8 @@ The Isomer repository runs it on the slides pack in its own CI, after `pnpm veri
 The action is two commands. On another CI system, run them yourself:
 
 ```sh
-pnpm exec isomer-studio check --config isomer-studio.config.ts --format junit --report isomer-studio-report.xml
-pnpm exec isomer-studio build --config isomer-studio.config.ts --out dist/studio
+npx isomer-studio check --config isomer-studio.config.ts --format junit --report isomer-studio-report.xml
+npx isomer-studio build --config isomer-studio.config.ts --out dist/studio
 ```
 
 `build` and `check --png` rasterize with `@elastic/isomer-image-takumi`, a native dependency the Studio installs for the platform it runs on.
@@ -47,7 +47,7 @@ pnpm exec isomer-studio build --config isomer-studio.config.ts --out dist/studio
 To serve the Studio from a docs site, build it into the site's output with the path it will be served from:
 
 ```sh
-pnpm exec isomer-studio build --config isomer-studio.config.ts --out site/studio-app --base /my-docs/studio-app/
+npx isomer-studio build --config isomer-studio.config.ts --out site/studio-app --base /my-docs/studio-app/
 ```
 
 Give the app its own directory, not the one the Studio's or the pack's docs build into, so neither overwrites the other.
