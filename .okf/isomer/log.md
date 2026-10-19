@@ -2,6 +2,7 @@
 
 ## 2026-10-18
 
+- **Studio screenshots**: the Studio's README and docs show Home, a Reference page and the Workbench, taken from the slides Studio into `packages/isomer-studio/docs/images/`. The commands and config pages name enhancements by `name`, and say where `previewExample` and `stylesheet` stand in for `compose` and `createReactContext`.
 - **Studio `stylesheet` and `previewExample`**: a config can name the CSS the React preview needs and the composition one node is shown in, instead of writing `createReactContext` and `compose`; `compose` still wins and `createReactContext` still runs, after the stylesheet is adopted. The slides config uses both.
 
 - **Studio init and npx**: `npx @elastic/isomer-studio init` writes `isomer-studio.config.ts` (`.js` without a `tsconfig.json`) registering every pack the package's entry exports, and `dev`, `build` and `check` without a config say to run it. Under `npx` the Studio resolves the runtime and itself from its own install when the pack lacks them, and React, the SDK and zod from the pack, for `import` and, from Node 22.15, `require`. A bare `isomer-studio` runs `dev`. React moved from peers to dependencies so a cold `npx` resolves; the Studio now stops unless the config resolves React 18.

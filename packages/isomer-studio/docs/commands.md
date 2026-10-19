@@ -35,7 +35,7 @@ The project needs React 18, `@elastic/isomer-sdk` and `zod`, which a pack has al
 ## `dev`
 
 ```sh
-npx isomer-studio dev --port 5179 --open
+npx @elastic/isomer-studio dev --port 5179 --open
 ```
 
 Serves the Studio on `127.0.0.1` and prints its URL.
@@ -63,8 +63,8 @@ The menu tests each registered enhancement's `appliesTo` predicate against the
 current composition, including nested primitives through the runtime's child
 walker. Only applicable enhancements appear. A dropdown showing the selected and
 applicable counts (such as **Enhancements (0/1)**) lets you enable each
-independently using its registered ID (such as `slideCopy` or `slideBuilds`);
-the pack contract does not provide separate display names or descriptions.
+independently. Each is listed by its `name` and `description`, falling back to its
+id (such as `slideCopy` or `slideBuilds`) when it has no `name`.
 Enhancements without a script are host-driven;
 selecting one enables its render-time behavior but does not supply host controls
 such as advancing a slide build. Scripted enhancements run on the HTML preview through the SDK's
@@ -73,7 +73,7 @@ remounts the unenhanced preview so script-created elements and listeners do not
 linger. Only explicitly requested pack scripts run; embedded script elements are
 not executed. The controls are disabled for Snapshot, in Source view, when no
 enhancements are registered, or for a React-only preview without
-`createReactContext`. Snapshot retains its fixed frame, theme resolution and
+`createReactContext` or `stylesheet`. Snapshot retains its fixed frame, theme resolution and
 visibility rules. Sharing a panel is not a claim of pixel equality.
 
 Studio does not install or launch a headless browser to capture previews.
@@ -110,7 +110,7 @@ background in both color modes.
 ## `build`
 
 ```sh
-npx isomer-studio build --out dist/studio --base /studio/
+npx @elastic/isomer-studio build --out dist/studio --base /studio/
 ```
 
 Writes the Studio as a static site.
@@ -140,15 +140,15 @@ Every URL in the site resolves against `--base`, so the same build works at a do
 A static site has no server, so two things work differently from `dev`:
 
 - **JSX** compiles in the browser with `esbuild-wasm`, fetched the first time the editor needs it.
-- **PNGs** are prerendered. `build` composes every example in both themes with the config's `compose`, rasterizes each one, and names the file by the SHA-256 of the composition's canonical JSON. The page computes the same key and fetches the file. An edited composition has no file, so the PNG preview says "PNG previews of edited compositions need `isomer-studio dev`." An example that fails to compose or rasterize is reported and left out; the build still succeeds.
+- **PNGs** are prerendered. `build` composes every example in both themes through the config's `compose` or `previewExample`, rasterizes each one, and names the file by the SHA-256 of the composition's canonical JSON. The page computes the same key and fetches the file. An edited composition has no file, so the PNG preview says "PNG previews of edited compositions need `isomer-studio dev`." An example that fails to compose or rasterize is reported and left out; the build still succeeds.
 
 ## `check`
 
 ```sh
-npx isomer-studio check --format junit --report studio-report.xml --png
+npx @elastic/isomer-studio check --format junit --report studio-report.xml --png
 ```
 
-Validates and renders every example of every primitive, composed with the config's `compose`, without a browser. It prints each failure and the totals, and exits 1 on any failure.
+Validates and renders every example of every primitive, composed through the config's `compose` or `previewExample`, without a browser. It prints each failure and the totals, and exits 1 on any failure.
 
 | Option                 | Default                       | What it does                                                                             |
 | ---------------------- | ----------------------------- | ---------------------------------------------------------------------------------------- |
@@ -160,7 +160,7 @@ Validates and renders every example of every primitive, composed with the config
 For each primitive and example, `check` runs:
 
 - **`icon`:** the primitive has an icon, from the pack's `icons` or its definition, and it passes `assertPackIconsValid`.
-- **`props`:** `compose` returns a composition that validates against the runtime. When it throws or the composition is invalid, every surface for that example is skipped.
+- **`props`:** the composed example validates against the runtime. When it throws or the composition is invalid, every surface for that example is skipped.
 - **One check per surface:** the surface renders without throwing. React renders through `react-dom/server` from the config's React. Slack output is also held to `SLACK_LIMITS` from `@elastic/isomer-sdk/slack`, and fails on a block wrapped in `unmodeledSlackBlock` whose type Isomer now models. A surface the primitive has no native renderer for is skipped, not failed.
 - **`png`,** with `--png`: the composition rasterizes.
 

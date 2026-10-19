@@ -12,6 +12,10 @@
 
 A learning and testing shell for any Isomer pack: a Home page, a component gallery, Reference pages for each primitive, a Workbench for editing compositions, and a preview of every surface the runtime has. It ships as a command-line tool with EUI, Emotion and Monaco bundled in.
 
+![The Workbench: a composition's JSX beside its Web, PNG, Slack, Markdown and text output](https://raw.githubusercontent.com/elastic/isomer/main/packages/isomer-studio/docs/images/workbench.png)
+
+## Get started
+
 In a pack's package directory, create a config, then open the Studio:
 
 ```sh
@@ -42,6 +46,18 @@ npx @elastic/isomer-studio check --format junit --report report.xml # a headless
 To pin a version and type-check the config, install it: `npm install --save-dev @elastic/isomer-studio @elastic/isomer-runtime`, then run `npx isomer-studio`. In this repository, `pnpm studio:dev` runs it from source against the slides pack.
 
 `check` validates and renders every example on every surface without a browser and exits 1 on any failure. In GitHub Actions, `elastic/isomer/.github/actions/isomer-studio` runs `check` and `build` and uploads the report and the site. Needs React 18 and Node 22.13 or later. Docs: [Isomer Studio](https://elastic.github.io/isomer/studio/). The reference pack's Studio: [elastic.github.io/isomer/studio-app/](https://elastic.github.io/isomer/studio-app/).
+
+## What it shows
+
+**Home** searches the pack's primitives, features a few, and lists what the config loaded: packs, views, apps and surfaces.
+
+![Home, with the primitive search, featured primitives, apps, and the packs and surfaces loaded](https://raw.githubusercontent.com/elastic/isomer/main/packages/isomer-studio/docs/images/home.png)
+
+**Reference** teaches each primitive: its purpose, live examples on every surface, when to use it, and its props.
+
+![The Reference page for the slides pack's pipeline primitive](https://raw.githubusercontent.com/elastic/isomer/main/packages/isomer-studio/docs/images/reference.png)
+
+The **Workbench**, above, edits a composition as JSX or JSON and shows it on every surface at once.
 
 ## License
 

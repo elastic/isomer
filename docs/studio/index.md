@@ -24,18 +24,23 @@ npx @elastic/isomer-studio check --report studio-report.json        # a headless
 
 Each command reads `isomer-studio.config.ts` (or `.tsx` or `.js`) from the current directory unless `--config` names another file, and without one says to run `init`; see [`init`](commands.md#init). Nothing needs installing first: the Studio uses the pack's React, SDK and zod, and brings the runtime. To pin the version and type-check a config, install `@elastic/isomer-studio` and `@elastic/isomer-runtime` as dev dependencies and run `npx isomer-studio`. In this repository, `pnpm studio:dev` runs the Studio from source against the slides pack.
 
-In the interface, **Reference** teaches how and when to use each primitive, while **Workbench** is where you edit compositions. The existing `#/docs` and `#/dev` routes and the `isomer-studio dev` CLI command remain unchanged.
+In the interface, **Reference** teaches how and when to use each primitive, while **Workbench** is where you edit compositions.
+
+![The Workbench: a composition's JSX beside its Web, PNG, Slack, Markdown and text output](images/workbench.png)
 
 ## A first config
+
+`init` writes one like this, registering each pack the package's entry exports:
 
 ```ts
 // isomer-studio.config.ts
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import { defineStudioConfig } from '@elastic/isomer-studio';
 
-import { myPack } from './src';
+import { myPack } from './src/index';
 
 export default defineStudioConfig({
+  title: 'my-pack',
   runtime: createIsomerRuntime({ packs: [myPack] }),
 });
 ```
@@ -43,6 +48,10 @@ export default defineStudioConfig({
 That is enough for a pack whose primitives render inside a plain `view`. A pack with a frame that needs a particular root, or with styling the React surface must load, adds `previewExample` and `stylesheet`; see [The config](config.md).
 
 ## The app
+
+![Home, with the primitive search, featured primitives, apps, and the packs and surfaces loaded](images/home.png)
+
+![The Reference page for the slides pack's pipeline primitive](images/reference.png)
 
 Home is a landing page for the configured developer workbench, not the introductory Isomer site. Its entry points and loaded-runtime panel reflect the packs and applications supplied by the host. The surface chart keeps its explanatory copy separate at every width, and reflows into a composition row above the surface cards when its column is narrow. Connecting lines follow the cards across wrapped rows.
 
