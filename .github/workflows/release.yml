@@ -14,7 +14,7 @@ on:
         type: boolean
         default: true
       publish_only:
-        description: Skip semantic-release and publish only this package (e.g. @elastic/isomer-studio) at the latest release tag
+        description: Skip semantic-release and publish only this package (e.g. @elastic/isomer-studio), built from the latest release tag
         required: false
         type: string
         default: ''

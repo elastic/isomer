@@ -33,8 +33,8 @@ export const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const isEsmOnly = (manifest) => manifest.isomer?.esmOnly === true;
 
 /** @returns {Array<{ dir: string; folder: string; manifest: PackageManifest }>} */
-export const workspacePackages = () => {
-  const packagesDir = join(repoRoot, 'packages');
+export const workspacePackages = (root = repoRoot) => {
+  const packagesDir = join(root, 'packages');
   if (!existsSync(packagesDir)) {
     return [];
   }
