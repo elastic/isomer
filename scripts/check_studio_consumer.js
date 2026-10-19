@@ -341,92 +341,74 @@ const startDev = (cli, dir) =>
     );
   });
 
-/**
- * Runs the Studio the way a cold `npx @elastic/isomer-studio` does: installed on its own, outside a pack that has
- * only the SDK, React and zod, with no config.
- */
-const checkColdNpx = async (tempDir, packed) => {
-  const overrides = packed;
+const writeJson = (path, value) =>
+  writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
+
+const npmInstall = (dir) =>
+  run(dir, 'npm', [
+    'install',
+    '--no-audit',
+    '--no-fund',
+    '--prefer-offline',
+    '--loglevel=error',
+  ]);
+
+/** Installs the packed Studio on its own, as `npx @elastic/isomer-studio` does, and returns its binary. */
+const installStudioAlone = (tempDir, packed) => {
   const cache = join(tempDir, 'npx-cache');
   mkdirSync(cache);
-  writeFileSync(
-    join(cache, 'package.json'),
-    `${JSON.stringify(
-      {
-        name: 'npx-cache',
-        private: true,
-        dependencies: {
-          '@elastic/isomer-studio': packed['@elastic/isomer-studio'],
-        },
-        overrides,
-      },
-      null,
-      2
-    )}\n`
-  );
-  const project = join(tempDir, 'bare-pack');
-  mkdirSync(join(project, 'src'), { recursive: true });
-  writeFileSync(
-    join(project, 'package.json'),
-    `${JSON.stringify(
-      {
-        name: 'bare-pack',
-        private: true,
-        type: 'module',
-        dependencies: {
-          '@elastic/isomer-sdk': packed['@elastic/isomer-sdk'],
-          react: devDependencies.react,
-          'react-dom': devDependencies['react-dom'],
-          zod: devDependencies.zod,
-        },
-        overrides,
-      },
-      null,
-      2
-    )}\n`
-  );
-  writeFileSync(
-    join(project, 'tsconfig.json'),
-    `${JSON.stringify(TSCONFIG, null, 2)}\n`
-  );
-  writeFileSync(
-    join(project, 'src/index.tsx'),
-    `${PACK}\nexport const consumerPack = createPack('Deploy finished');\n`
-  );
-  for (const dir of [cache, project]) {
-    run(dir, 'npm', [
-      'install',
-      '--no-audit',
-      '--no-fund',
-      '--prefer-offline',
-      '--loglevel=error',
-    ]);
-  }
-  for (const name of ['@elastic/isomer-runtime', '@elastic/isomer-studio']) {
-    if (existsSync(join(project, 'node_modules', name))) {
-      throw new Error(`The bare pack should not install ${name}.`);
-    }
-  }
-  const cli = join(
+  writeJson(join(cache, 'package.json'), {
+    name: 'npx-cache',
+    private: true,
+    dependencies: {
+      '@elastic/isomer-studio': packed['@elastic/isomer-studio'],
+    },
+    overrides: packed,
+  });
+  npmInstall(cache);
+  return join(
     cache,
     'node_modules/@elastic/isomer-studio/bin/isomer-studio.js'
   );
+};
 
-  const { stdout: checked } = run(project, process.execPath, [cli, 'check']);
+/** What a pack already has: the SDK, React and zod, and nothing of the Studio's. */
+const packDependencies = (packed) => ({
+  '@elastic/isomer-sdk': packed['@elastic/isomer-sdk'],
+  react: devDependencies.react,
+  'react-dom': devDependencies['react-dom'],
+  zod: devDependencies.zod,
+});
+
+const PACK_MODULE = `${PACK}\nexport const consumerPack = createPack('Deploy finished');\n`;
+
+const assertNoStudio = (installRoot) => {
+  for (const name of ['@elastic/isomer-runtime', '@elastic/isomer-studio']) {
+    if (existsSync(join(installRoot, 'node_modules', name))) {
+      throw new Error(`${installRoot} should not install ${name}.`);
+    }
+  }
+};
+
+/** Runs `check`, `build` and a bare `isomer-studio` in `dir`, which has no config. */
+const checkWithoutConfig = async (cli, dir, { title, entry }) => {
+  const passed = (output) =>
+    new RegExp(`^${title}: \\d+ passed, 0 failed`, 'm').test(output);
+  const { stdout: checked } = run(dir, process.execPath, [cli, 'check']);
   console.log(checked.trim());
   if (
-    !checked.includes('showing the packs ./src/index.tsx exports') ||
-    !/bare-pack: \d+ passed, 0 failed/.test(checked)
+    !checked.includes(`showing the packs ${entry} exports`) ||
+    !passed(checked)
   ) {
     throw new Error(`Zero-config check did not pass the pack:\n${checked}`);
   }
 
-  run(project, process.execPath, [cli, 'build', '--out', 'site']);
-  if (!existsSync(join(project, 'site/index.html'))) {
+  run(dir, process.execPath, [cli, 'build', '--out', 'site']);
+  if (!existsSync(join(dir, 'site/index.html'))) {
     throw new Error('Zero-config build wrote no site.');
   }
 
-  const { child, url } = await startDev(cli, project);
+  const { child, url } = await startDev(cli, dir);
   const browser = await chromium.launch();
   try {
     const page = await browser.newPage();
@@ -444,19 +426,93 @@ const checkColdNpx = async (tempDir, packed) => {
     await browser.close();
     child.kill();
   }
+  return passed;
+};
+
+/** A pack in its own ES module project, which `init` then gives a config. */
+const checkBarePack = async (tempDir, packed, cli) => {
+  const project = join(tempDir, 'bare-pack');
+  mkdirSync(join(project, 'src'), { recursive: true });
+  writeJson(join(project, 'package.json'), {
+    name: 'bare-pack',
+    private: true,
+    type: 'module',
+    dependencies: packDependencies(packed),
+    overrides: packed,
+  });
+  writeJson(join(project, 'tsconfig.json'), TSCONFIG);
+  writeFileSync(join(project, 'src/index.tsx'), PACK_MODULE);
+  npmInstall(project);
+  assertNoStudio(project);
+
+  const passed = await checkWithoutConfig(cli, project, {
+    title: 'bare-pack',
+    entry: './src/index.tsx',
+  });
 
   run(project, process.execPath, [cli, 'init']);
-  const { stdout: initChecked } = run(project, process.execPath, [
-    cli,
-    'check',
-  ]);
-  if (
-    initChecked.includes('No Studio config') ||
-    !/bare-pack: \d+ passed, 0 failed/.test(initChecked)
-  ) {
-    throw new Error(`The config init wrote did not pass:\n${initChecked}`);
+  const { stdout: checked } = run(project, process.execPath, [cli, 'check']);
+  if (checked.includes('No Studio config') || !passed(checked)) {
+    throw new Error(`The config init wrote did not pass:\n${checked}`);
   }
-  console.log('Cold npx: check, build, dev and init passed without a config.');
+};
+
+const KIBANA_PACKAGE = 'src/platform/packages/shared/kbn-consumer-pack';
+
+/** A Kibana-shaped pack: a CommonJS package with a root `index.ts` and no `main`, inside a repository whose one `node_modules` holds every dependency. */
+const checkKibanaPack = async (tempDir, packed, cli) => {
+  const repo = join(tempDir, 'kibana');
+  const pkg = join(repo, KIBANA_PACKAGE);
+  mkdirSync(join(pkg, 'src'), { recursive: true });
+  writeJson(join(repo, 'package.json'), {
+    name: 'kibana',
+    private: true,
+    version: '9.3.0',
+    dependencies: {
+      ...packDependencies(packed),
+      '@kbn/consumer-pack': `file:${KIBANA_PACKAGE}`,
+    },
+    overrides: packed,
+  });
+  const { include: _include, ...base } = TSCONFIG;
+  writeJson(join(repo, 'tsconfig.base.json'), base);
+  writeJson(join(pkg, 'package.json'), {
+    name: '@kbn/consumer-pack',
+    private: true,
+    version: '1.0.0',
+    license: 'Elastic License 2.0',
+  });
+  writeJson(join(pkg, 'kibana.jsonc'), {
+    type: 'shared-common',
+    id: '@kbn/consumer-pack',
+    owner: '@elastic/kibana-presentation',
+  });
+  writeJson(join(pkg, 'tsconfig.json'), {
+    extends: '../../../../../tsconfig.base.json',
+    include: ['**/*.ts', '**/*.tsx'],
+  });
+  writeFileSync(
+    join(pkg, 'index.ts'),
+    "export { consumerPack } from './src/pack';\n"
+  );
+  writeFileSync(join(pkg, 'src/pack.tsx'), PACK_MODULE);
+  npmInstall(repo);
+  assertNoStudio(repo);
+
+  await checkWithoutConfig(cli, pkg, {
+    title: '@kbn/consumer-pack',
+    entry: './index.ts',
+  });
+};
+
+/** Runs the Studio as a cold `npx @elastic/isomer-studio` does, beside packs that have only the SDK, React and zod. */
+const checkColdNpx = async (tempDir, packed) => {
+  const cli = installStudioAlone(tempDir, packed);
+  await checkBarePack(tempDir, packed, cli);
+  await checkKibanaPack(tempDir, packed, cli);
+  console.log(
+    'Cold npx: check, build and dev passed without a config in an ES module pack and a Kibana-shaped package, and init wrote a config that passed.'
+  );
 };
 
 requireChromium();
