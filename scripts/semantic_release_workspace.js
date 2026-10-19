@@ -178,6 +178,25 @@ export const prepare = (_pluginConfig, context) => {
   }
 };
 
+/** Runs `pnpm publish` for the workspace packages `names` under npm dist-tag `tag`. */
+export const publishPackages = (names, tag, extraArgs = []) => {
+  execFileSync(
+    'pnpm',
+    [
+      '-r',
+      ...names.flatMap((name) => ['--filter', name]),
+      'publish',
+      '--access',
+      'public',
+      '--tag',
+      tag,
+      '--no-git-checks',
+      ...extraArgs,
+    ],
+    { stdio: 'inherit', cwd: repoRoot }
+  );
+};
+
 /** Publishes every workspace package that is not `private`. */
 export const publish = (_pluginConfig, context) => {
   const { logger, nextRelease } = context;
@@ -190,18 +209,5 @@ export const publish = (_pluginConfig, context) => {
     .filter(({ manifest }) => manifest.private !== true)
     .map(({ manifest }) => manifest.name);
   logger.log('Publishing %s at %s', names.join(', '), nextRelease.version);
-  execFileSync(
-    'pnpm',
-    [
-      '-r',
-      ...names.flatMap((name) => ['--filter', name]),
-      'publish',
-      '--access',
-      'public',
-      '--tag',
-      tag,
-      '--no-git-checks',
-    ],
-    { stdio: 'inherit', cwd: repoRoot }
-  );
+  publishPackages(names, tag);
 };

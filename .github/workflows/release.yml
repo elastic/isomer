@@ -13,6 +13,11 @@ on:
         required: true
         type: boolean
         default: true
+      publish_only:
+        description: Skip semantic-release and publish only this package (e.g. @elastic/isomer-studio) at the latest release tag
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -48,11 +53,17 @@ jobs:
       # Nothing is committed back to main: git tags track the version and the notes live on the
       # GitHub Release. See CHANGELOG.md.
       - name: Release
+        if: ${{ !inputs.publish_only }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm semantic-release ${{ inputs.dry_run && '--dry-run' || '' }}
+      - name: Publish one package at the latest release
+        if: ${{ inputs.publish_only }}
+        env:
+          PACKAGE: ${{ inputs.publish_only }}
+        run: node scripts/publish_released_package.js "$PACKAGE" ${{ inputs.dry_run && '--dry-run' || '' }}
       - name: Label PRs included in the release
-        if: ${{ !inputs.dry_run }}
+        if: ${{ !inputs.dry_run && !inputs.publish_only }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PREVIOUS_TAG: ${{ steps.previous_tag.outputs.tag }}
