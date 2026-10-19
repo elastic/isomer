@@ -12,6 +12,7 @@ import type { ValidationError } from '../composition/validation_error';
 import { definePrimitive } from '../define/primitive_module';
 import { md } from '../render/markdown/builder';
 import { createSlackAssetCollector } from '../render/slack/assets';
+import { link } from '../render/slack/format';
 import { gfmToSlackBlocks } from '../render/slack/markdown_content';
 import type {
   CaptionNode,
@@ -224,6 +225,109 @@ const taggedStack = definePrimitive<TaggedStack>({
       node.items.map((item) => scope.renderText(item)).join('|'),
     markdown: () => [],
   },
+});
+
+interface LinkCard {
+  type: 'linkCard';
+  href: string;
+}
+
+interface LinkNote {
+  type: 'linkNote';
+  href: string;
+}
+
+interface ViaRenderOn {
+  type: 'viaRenderOn';
+  child: LinkCard;
+}
+
+const linkCatalog = (type: string) => ({
+  type,
+  purpose: '',
+  useWhen: [],
+  avoidWhen: [],
+  example: {},
+});
+
+const linkCard = definePrimitive<LinkCard>({
+  type: 'linkCard',
+  catalog: linkCatalog('linkCard'),
+  examples: [],
+  schema: z.object({ type: z.literal('linkCard'), href: z.string() }),
+  renderers: {
+    react: () => null,
+    text: () => '',
+    markdown: () => [],
+    slack: ({ href }, { baseUrl }) => ({
+      type: 'section',
+      text: { type: 'mrkdwn', text: link(href, 'card', baseUrl) },
+    }),
+  },
+});
+
+const linkNote = definePrimitive<LinkNote>({
+  type: 'linkNote',
+  catalog: linkCatalog('linkNote'),
+  examples: [],
+  schema: z.object({ type: z.literal('linkNote'), href: z.string() }),
+  renderers: {
+    react: () => null,
+    text: () => '',
+    markdown: ({ href }) => md.paragraph(md.link('note', href)),
+  },
+});
+
+describe('slack baseUrl', () => {
+  const baseUrl = 'https://kibana.example/';
+  const linking = () =>
+    createPrimitiveDispatcher<FixtureNode | LinkCard | LinkNote>([
+      ...fixtureDefinitions,
+      linkCard,
+      linkNote,
+    ]);
+  const card = { type: 'linkCard', href: '/app/a' } satisfies LinkCard;
+  const note = { type: 'linkNote', href: '/app/b' } satisfies LinkNote;
+  const group = {
+    type: 'group',
+    items: [card, note],
+  } as unknown as FixtureNode;
+  const urls = (blocks: readonly unknown[]): string[] =>
+    JSON.stringify(blocks).match(/https:\/\/kibana\.example\/[^"|>]*/g) ?? [];
+
+  it('reaches a renderer, the markdown fallback, and children rendered through scope', () => {
+    expect(urls(linking().renderSlack(group, undefined, { baseUrl }))).toEqual([
+      'https://kibana.example/app/a',
+      'https://kibana.example/app/b',
+    ]);
+  });
+
+  it('reaches a child rendered through scope.renderOn', () => {
+    const viaRenderOn = definePrimitive<ViaRenderOn>({
+      type: 'viaRenderOn',
+      catalog: linkCatalog('viaRenderOn'),
+      examples: [],
+      schema: z.object({ type: z.literal('viaRenderOn') }),
+      renderers: {
+        react: () => null,
+        text: () => '',
+        markdown: () => [],
+        slack: ({ child }, { scope }) =>
+          scope.renderOn('slack', child, {}) ?? [],
+      },
+    });
+    const blocks = createPrimitiveDispatcher<LinkCard | ViaRenderOn>([
+      linkCard,
+      viaRenderOn,
+    ]).renderSlack({ type: 'viaRenderOn', child: card }, undefined, {
+      baseUrl,
+    });
+    expect(urls(blocks)).toEqual(['https://kibana.example/app/a']);
+  });
+
+  it('leaves relative links unlinked without a baseUrl', () => {
+    expect(urls(linking().renderSlack(group))).toEqual([]);
+  });
 });
 
 describe('RenderScope', () => {

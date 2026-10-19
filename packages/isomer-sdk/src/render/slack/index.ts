@@ -65,6 +65,7 @@ export {
 } from './envelope';
 
 export {
+  type SlackLinkOptions,
   bold,
   clampSlackText,
   code,

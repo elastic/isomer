@@ -10,7 +10,7 @@ import '@testing-library/jest-dom/vitest';
 import { createRequire } from 'node:module';
 
 import { cleanup } from '@testing-library/react';
-import { afterEach } from 'vitest';
+import { afterAll, afterEach, vi } from 'vitest';
 
 // Monaco's theme service reads this when a test imports the editor. jsdom does not provide it.
 if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
@@ -65,4 +65,15 @@ const resetEuiEmotion = (): void => {
 afterEach(() => {
   cleanup();
   resetEuiEmotion();
+});
+
+// `EuiLiveAnnouncer` sets state from a 50ms timer it never clears. One still pending when a file
+// ends fires after jsdom has removed `window`, which Vitest reports as an unhandled error.
+const EUI_LIVE_ANNOUNCER_MOUNT_DELAY_MS = 50;
+
+afterAll(async () => {
+  vi.useRealTimers();
+  await new Promise((resolve) =>
+    setTimeout(resolve, EUI_LIVE_ANNOUNCER_MOUNT_DELAY_MS * 2)
+  );
 });

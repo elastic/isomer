@@ -123,6 +123,46 @@ const tableBlock = (cellChars: number): SlackTableBlock => ({
   rows: [[cell('H')], [cell('x'.repeat(cellChars))]],
 });
 
+describe('Slack envelope baseUrl', () => {
+  const recording = () => {
+    const seen: unknown[] = [];
+    const dispatcher: SlackEnvelopeDispatcher<{ type: string }> = {
+      renderText: (node) => node.type,
+      renderMarkdown: (node) => node.type,
+      renderSlack: (_node, _collector, options) => {
+        seen.push(options);
+        return [];
+      },
+    };
+    return { dispatcher, seen };
+  };
+  const composition = {
+    type: 'view' as const,
+    body: [{ type: 'a' }, { type: 'b' }],
+  };
+
+  it('hands baseUrl to the dispatcher for every node', () => {
+    const { dispatcher, seen } = recording();
+    renderSlackEnvelope(composition, dispatcher, {
+      baseUrl: 'https://kibana.example/',
+    });
+    expect(seen).toEqual([
+      { baseUrl: 'https://kibana.example/' },
+      { baseUrl: 'https://kibana.example/' },
+    ]);
+  });
+
+  it('throws INVALID_BASE_URL before rendering for a base that is not absolute http', () => {
+    const { dispatcher, seen } = recording();
+    expect(() =>
+      renderSlackEnvelope(composition, dispatcher, { baseUrl: '/app' })
+    ).toThrow(
+      expect.objectContaining({ name: 'IsomerError', code: 'INVALID_BASE_URL' })
+    );
+    expect(seen).toEqual([]);
+  });
+});
+
 describe('Slack envelope transforms', () => {
   it('coalesces consecutive one-field sections into a fields grid', () => {
     const { blocks } = renderSlackEnvelope(

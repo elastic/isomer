@@ -13,19 +13,19 @@ Duplicate types throw at construction, with the label in front of the message so
 
 ## What it exposes
 
-| Method                                      | Returns                                                                         |
-| ------------------------------------------- | ------------------------------------------------------------------------------- |
-| `renderOn(surface, node, extras)`           | The surface's output, or `undefined` when the node is hidden or has no renderer |
-| `renderReact(node, context?)`               | `ReactNode`                                                                     |
-| `renderSnapshot(node, context, theme, key)` | `ReactNode` — the `react` renderer, gated on `snapshot` visibility and keyed    |
-| `renderText(node)`                          | `string` — empty when nothing rendered                                          |
-| `renderMarkdown(node)`                      | `string` — `md` content serialized; empty when nothing rendered                 |
-| `renderMarkdownContent(node)`               | `MarkdownContent` — the child's content, empty when it is hidden                |
-| `renderSlack(node, collector?)`             | `readonly T['slackBlock'][]` — `SlackBlock` unless the pack binds it            |
-| `collectStyles(node, styles, context)`      | nothing; the collector is mutated                                               |
-| `estimateSnapshotHeight(node)`              | `number` — `0` when hidden or unmeasured                                        |
-| `validate(node, path, errors)`              | nothing; errors are appended                                                    |
-| `definitions`, `getDefinition(node)`        | the inventory, and one entry — `getDefinition` throws on an unknown type        |
+| Method                                        | Returns                                                                         |
+| --------------------------------------------- | ------------------------------------------------------------------------------- |
+| `renderOn(surface, node, extras)`             | The surface's output, or `undefined` when the node is hidden or has no renderer |
+| `renderReact(node, context?)`                 | `ReactNode`                                                                     |
+| `renderSnapshot(node, context, theme, key)`   | `ReactNode` — the `react` renderer, gated on `snapshot` visibility and keyed    |
+| `renderText(node)`                            | `string` — empty when nothing rendered                                          |
+| `renderMarkdown(node)`                        | `string` — `md` content serialized; empty when nothing rendered                 |
+| `renderMarkdownContent(node)`                 | `MarkdownContent` — the child's content, empty when it is hidden                |
+| `renderSlack(node, collector?, { baseUrl }?)` | `readonly T['slackBlock'][]` — `SlackBlock` unless the pack binds it            |
+| `collectStyles(node, styles, context)`        | nothing; the collector is mutated                                               |
+| `estimateSnapshotHeight(node)`                | `number` — `0` when hidden or unmeasured                                        |
+| `validate(node, path, errors)`                | nothing; errors are appended                                                    |
+| `definitions`, `getDefinition(node)`          | the inventory, and one entry — `getDefinition` throws on an unknown type        |
 
 ## What every render goes through
 
@@ -50,7 +50,7 @@ text: (node, { scope }) =>
 
 The dispatcher's own methods (`renderText(node)`, `renderSlack(node, collector?)`, …) stay positional. On both the dispatcher and the scope, `renderReact`'s `context` is typed by `ReactContextArg`: it may be omitted only when `{}` is a complete context for the pack. A pack whose context has a required field makes its containers pass one, `scope.renderReact(child, context)`; a child does not inherit its parent's context. A React container that defers children into a component passes that component `scope`, since React invokes it after the parent renderer has returned.
 
-## Slack: two behaviours the other surfaces do not have
+## Slack: three behaviours the other surfaces do not have
 
 `renderSlack` is the only method with real branching, because Slack is the surface with both a fallback and an upload path.
 
@@ -58,7 +58,9 @@ The dispatcher's own methods (`renderText(node)`, `renderSlack(node, collector?)
 
 **Markdown fallback.** With no Slack renderer, the dispatcher converts the node's mandatory markdown to Block Kit. A missing renderer degrades; it does not disappear.
 
-Content built with `md` is read from its tree by `markdownContentToSlackBlocks`: paragraphs, headings, lists, and code become `rich_text`, whose text is literal and whose bold, italic, strikethrough, and code are style flags, so nothing is escaped and nesting survives exactly; tables become `table` blocks, a formatted cell as rich text, and a thematic break a `divider`. A hard break is a line break. A quote is one level, nested quotes spread into it: its text is a `rich_text_quote`, and a list or code block it holds keeps a quote border. Inside a list item, a quote's blocks are the item's; a block a rich-text list item cannot hold, such as a table, follows the item on its own, and the list resumes after it. Links keep the URL policy, and an image becomes a link to its source. Slack cannot resolve a relative URL, so only an absolute `http`, `https`, or `mailto` URL links; any other link prints its styled label, and an image its alt text.
+**Relative links.** `renderSlack`'s `baseUrl` reaches the renderer as `env.baseUrl` and the markdown fallback as its base, and the `scope` a Slack renderer is handed carries it to every child it renders through `scope.renderSlack` or `scope.renderOn('slack', …)`, so a container forwards nothing. A leaf renderer that builds its own links passes it on: `link(href, label, baseUrl)` or `slackLinkUrl(href, baseUrl)`. [URL trust](url-trust.md#relative-links-on-slack) covers what resolves.
+
+Content built with `md` is read from its tree by `markdownContentToSlackBlocks`: paragraphs, headings, lists, and code become `rich_text`, whose text is literal and whose bold, italic, strikethrough, and code are style flags, so nothing is escaped and nesting survives exactly; tables become `table` blocks, a formatted cell as rich text, and a thematic break a `divider`. A hard break is a line break. A quote is one level, nested quotes spread into it: its text is a `rich_text_quote`, and a list or code block it holds keeps a quote border. Inside a list item, a quote's blocks are the item's; a block a rich-text list item cannot hold, such as a table, follows the item on its own, and the list resumes after it. Links keep the URL policy, and an image becomes a link to its source. Slack cannot resolve a relative URL, so only an absolute `http`, `https`, or `mailto` URL links, or a relative link when a `baseUrl` is given (`markdownContentToSlackBlocks(content, { baseUrl })`); any other link prints its styled label, and an image with a relative source its alt text.
 
 `md.authored` source is parsed where it sits, with the CommonMark and GFM parser that sanitizes it, and its tree is translated the same way. Escapes and character references resolve to the characters they stand for, a link or image reference to its first definition, a footnote prints its `[^label]`, and a task item leads with `☑` or `☐`. Raw HTML prints as text. Source past the parse budget `md.authored` applies prints as its literal paragraphs: Markdown output carries it as inert text, with its `[`, `]`, `\`, and `<` escaped, but Slack prints the authored characters.
 

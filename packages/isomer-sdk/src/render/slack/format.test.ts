@@ -155,6 +155,74 @@ describe('slackLinkUrl', () => {
   });
 });
 
+describe('slackLinkUrl with a baseUrl', () => {
+  const baseUrl = 'https://kibana.example/s/team/app/home?x=1';
+
+  it.each([
+    ['/app/discover', 'https://kibana.example/app/discover'],
+    ['../docs', 'https://kibana.example/s/team/docs'],
+    ['./a?b=1', 'https://kibana.example/s/team/app/a?b=1'],
+    ['?q=1', 'https://kibana.example/s/team/app/home?q=1'],
+    ['a|b', 'https://kibana.example/s/team/app/a|b'],
+  ])('resolves %s onto the base', (href, resolved) => {
+    expect(slackLinkUrl(href, baseUrl)).toBe(resolved);
+  });
+
+  it('links the resolved URL in mrkdwn', () => {
+    expect(link('/app/discover', 'Discover', baseUrl)).toBe(
+      '<https://kibana.example/app/discover|Discover>'
+    );
+  });
+
+  it.each([
+    '#',
+    '#top',
+    '//evil.example/a',
+    '\\\\evil.example/a',
+    '/\\evil.example/a',
+    'javascript:alert(1)',
+    'https:/a',
+    'mailto:',
+  ])('leaves %s unlinked', (href) => {
+    expect(slackLinkUrl(href, baseUrl)).toBeNull();
+    expect(link(href, 'x', baseUrl)).toBe('x');
+  });
+
+  it('keeps an absolute URL as written', () => {
+    expect(slackLinkUrl('https://a.b/c', baseUrl)).toBe('https://a.b/c');
+    expect(slackLinkUrl('mailto:a@b.c', baseUrl)).toBe('mailto:a@b.c');
+  });
+
+  it.each([
+    ['https://kibana.example:443/s/', 'app', 'https://kibana.example/s/app'],
+    ['HTTPS://Kibana.Example/s/', 'app', 'https://kibana.example/s/app'],
+    ['http://kibana.example:8080', '/app', 'http://kibana.example:8080/app'],
+    ['https://[::1]/s/', 'app', 'https://[::1]/s/app'],
+  ])(
+    'resolves against the base %s as URL parses it',
+    (base, href, resolved) => {
+      expect(slackLinkUrl(href, base)).toBe(resolved);
+    }
+  );
+
+  it.each([
+    '/relative',
+    'ftp://a.b/',
+    'mailto:a@b.c',
+    'https://',
+    'kibana',
+    'https://user:secret@kibana.example/',
+    'https://bad_host.example/',
+  ])('throws for the base %s', (base) => {
+    expect(() => slackLinkUrl('/app', base)).toThrow(
+      expect.objectContaining({
+        name: 'IsomerError',
+        code: 'INVALID_BASE_URL',
+      })
+    );
+  });
+});
+
 describe('clamping', () => {
   it('returns short text untouched and appends an ellipsis when cutting', () => {
     expect(clampSlackText('hello', 5)).toBe('hello');

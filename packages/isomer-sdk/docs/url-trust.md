@@ -37,15 +37,36 @@ Authored Markdown is parsed as GFM. Its already-decoded destinations are checked
 `sanitizeParsedNavigationHref` and `sanitizeParsedAssetUrl` apply the same policies to a destination a Markdown parser has already decoded, without decoding it again, and `exceedsParseBudget` from `@elastic/isomer-sdk/markdown` reports whether source is past the parse budget above. A pack rendering Markdown with a parser of its own uses them in place of copies:
 
 ```tsx
-import { sanitizeParsedAssetUrl, sanitizeParsedNavigationHref } from '@elastic/isomer-sdk';
+import {
+  sanitizeParsedAssetUrl,
+  sanitizeParsedNavigationHref,
+} from '@elastic/isomer-sdk';
 import { exceedsParseBudget } from '@elastic/isomer-sdk/markdown';
 
 const urlTransform = (url: string, key: string) =>
-  (key === 'src' ? sanitizeParsedAssetUrl : sanitizeParsedNavigationHref)(url) ?? '';
+  (key === 'src' ? sanitizeParsedAssetUrl : sanitizeParsedNavigationHref)(
+    url
+  ) ?? '';
 
 const render = (source: string) =>
-  exceedsParseBudget(source) ? <pre>{source}</pre> : <Markdown {...{ urlTransform }}>{source}</Markdown>;
+  exceedsParseBudget(source) ? (
+    <pre>{source}</pre>
+  ) : (
+    <Markdown {...{ urlTransform }}>{source}</Markdown>
+  );
 ```
+
+## Relative links on Slack
+
+The policy accepts a relative path, and React, HTML, and Markdown keep it as a link, but Slack has no page to resolve one against. Without a base, a relative link on Slack prints its label alone and is dropped, with no finding. A host that knows where its paths live passes `baseUrl`, an absolute `http` or `https` URL, to `renderSlackEnvelope`, the runtime's `slack.render` and `slack.renderNode`, or `markdownContentToSlackBlocks`:
+
+```ts
+runtime.surfaces.slack.render(composition, {
+  baseUrl: 'https://kibana.example/s/team/',
+});
+```
+
+Each navigation href is checked by the policy first. One that passes and is relative resolves with `new URL(href, baseUrl)`, and the result links only when it stays on the base's origin and passes the policy and Slack's absolute-URL check again. A fragment, `BLOCKED_HREF` included, never resolves, since it names a place in a document Slack does not show, and protocol-relative forms stay rejected. Images do not resolve: Slack draws none inline, and an asset reaches it as an upload. The base is read as `URL` parses it, so a default port or an uppercase host is fine; one that is not an `http` or `https` URL with a DNS or IPv6 host, or that carries credentials, throws an `IsomerError` with the code `INVALID_BASE_URL`.
 
 ## Using it in a primitive
 

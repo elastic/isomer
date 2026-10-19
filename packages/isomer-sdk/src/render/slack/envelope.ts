@@ -35,12 +35,14 @@ import {
 } from './blocks';
 import { containerWithChildren, isContainer } from './container';
 import {
+  assertSlackBaseUrl,
   clampMrkdwn,
   clampSlackText,
   cutSlackValue,
   escapeMrkdwn,
   formatHeaderText,
   italic,
+  type SlackLinkOptions,
 } from './format';
 import { isUnmodeledSlackBlock } from './unmodeled';
 
@@ -59,12 +61,13 @@ export interface SlackEnvelopeDispatcher<
   /** `collector` is absent unless the caller opted into asset collection, so a renderer must still degrade an image it cannot upload. */
   renderSlack(
     node: TNode,
-    collector?: SlackAssetCollector
+    collector?: SlackAssetCollector,
+    options?: SlackLinkOptions
   ): readonly SlackBlock[];
 }
 
 /** Options for {@link renderSlackEnvelope}. */
-export interface SlackEnvelopeOptions {
+export interface SlackEnvelopeOptions extends SlackLinkOptions {
   /** Renders the composition's title and subtitle, in the blocks and the fallback `text`. Defaults to `true`. Pass `false` when the host already shows the title, or the body opens with its own. */
   heading?: boolean;
   /** Fallback `text` summary shown in notifications and previews, as `mrkdwn`; defaults to the text render, escaped. */
@@ -113,15 +116,19 @@ export const renderSlackEnvelope = <TNode extends PrimitiveNode>(
       )
     : undefined;
 
-  const { heading = true } = options;
+  const { heading = true, baseUrl } = options;
+  assertSlackBaseUrl(baseUrl);
   if (heading && composition.title) {
     blocks.push(headerBlock(composition.title, 1));
   }
   if (heading && composition.subtitle) {
     blocks.push(contextBlock([escapeMrkdwn(composition.subtitle)]));
   }
+  const linkOptions = baseUrl === undefined ? {} : { baseUrl };
   for (const node of composition.body) {
-    blocks.push(...dispatcher.renderSlack(node, collector).flatMap(fitBlock));
+    blocks.push(
+      ...dispatcher.renderSlack(node, collector, linkOptions).flatMap(fitBlock)
+    );
   }
 
   // Split after the rhythm, so the fragments of one block read as one.
