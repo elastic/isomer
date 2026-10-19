@@ -91,17 +91,16 @@ export const markdown = ({ title, links, paths = [] }: ClosingSlideNode) => [
     : []),
 ];
 
-export const slack = ({
-  title,
-  links,
-  paths = [],
-}: ClosingSlideNode): SlackBlock[] => [
+export const slack = (
+  { title, links, paths = [] }: ClosingSlideNode,
+  { baseUrl }: { baseUrl?: string } = {}
+): SlackBlock[] => [
   slackHeading(title),
   slackSection(
     links
       .map(
         ({ label, href, text: shown }) =>
-          `${slackBold(label.toUpperCase())} ${separator.value} ${href ? link(href, oneLine(shown)) : escapeMrkdwn(oneLine(shown))}`
+          `${slackBold(label.toUpperCase())} ${separator.value} ${href ? link(href, oneLine(shown), baseUrl) : escapeMrkdwn(oneLine(shown))}`
       )
       .join('\n'),
     () =>
@@ -110,7 +109,7 @@ export const slack = ({
           richTextSection(
             richTextRun(label.toUpperCase(), { bold: true }),
             richTextRun(` ${separator.value} `),
-            ...richTextLinked([richTextRun(shown)], href),
+            ...richTextLinked([richTextRun(shown)], href, baseUrl),
             ...(index < links.length - 1 ? [richTextBreak] : [])
           )
         )

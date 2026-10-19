@@ -26,6 +26,7 @@ export {
   type SlackHeaderLevel,
   type SlackImageBlock,
   type SlackImageElement,
+  type SlackLinkOptions,
   type SlackMrkdwnTextObject,
   type SlackMultiStaticSelectElement,
   type SlackOptionGroup,

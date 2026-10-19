@@ -30,6 +30,7 @@ import { createNodeIssueFormatter } from '../validate/node_issues';
 import { serializeMarkdown } from './markdown/builder';
 import type { SlackAssetCollector } from './slack/assets';
 import type { SlackBlock, SlackImageBlock } from './slack/blocks';
+import type { SlackLinkOptions } from './slack/format';
 import { markdownContentToSlackBlocks } from './slack/markdown_content';
 
 /**
@@ -87,11 +88,13 @@ export interface PrimitiveDispatcher<
    * Empty when the node is hidden from `slack`, `sanitize` drops it, or its
    * renderer returns nothing. A node with no `slack` renderer degrades through
    * its markdown; one `isSlackAssetType` names becomes an `image` block when
-   * `collector` can allocate.
+   * `collector` can allocate. `options.baseUrl` reaches the renderer's env and
+   * every child it renders through `scope`.
    */
   renderSlack(
     node: TNode,
-    collector?: T['slackCollector']
+    collector?: T['slackCollector'],
+    options?: SlackLinkOptions
   ): readonly T['slackBlock'][];
   /** `0` when the node is hidden from `snapshot` or its primitive declares no `metrics.snapshotHeight`. */
   estimateSnapshotHeight(node: TNode): number;
@@ -190,6 +193,25 @@ export const createPrimitiveDispatcher = <
     extras: Omit<SurfaceMap<T>[S]['env'], 'scope'>
   ): RenderScope<T> => {
     const parent: RenderScope<T> = self;
+    if (surface === 'slack') {
+      const { baseUrl } = extras as Omit<
+        SurfaceMap<T>['slack']['env'],
+        'scope'
+      >;
+      return baseUrl === undefined
+        ? parent
+        : {
+            ...parent,
+            renderOn: (target, node, targetExtras) =>
+              parent.renderOn(
+                target,
+                node,
+                target === 'slack' ? { baseUrl, ...targetExtras } : targetExtras
+              ),
+            renderSlack: (node, collector) =>
+              self.renderSlack(node as TNode, collector, { baseUrl }),
+          };
+    }
     if (surface !== 'snapshot') {
       return parent;
     }
@@ -272,7 +294,7 @@ export const createPrimitiveDispatcher = <
     renderText: (node) => renderOn('text', node, {}) ?? '',
     renderMarkdown,
     renderMarkdownContent,
-    renderSlack: (node, collector) => {
+    renderSlack: (node, collector, options = {}) => {
       if (!isVisibleOnSurface(node, 'slack')) {
         return [];
       }
@@ -303,16 +325,20 @@ export const createPrimitiveDispatcher = <
         // children: a container's `slack` renderer recurses through this
         // method, and the envelope only ever sees the container's own output.
         return asSlackPayload<T['slackBlock']>(
-          markdownContentToSlackBlocks(renderMarkdownContent(node))
+          markdownContentToSlackBlocks(renderMarkdownContent(node), options)
         );
       }
       const safeNode = sanitizeNode(definition, node);
       if (safeNode === null) {
         return [];
       }
-      const rendered = slackRenderer(safeNode, {
+      const extras = {
         ...(collector === undefined ? {} : { collector }),
-        scope: self,
+        ...(options.baseUrl === undefined ? {} : { baseUrl: options.baseUrl }),
+      };
+      const rendered = slackRenderer(safeNode, {
+        ...extras,
+        scope: scopeFor('slack', extras),
       });
       return isReadonlyArray(rendered) ? rendered : [rendered];
     },

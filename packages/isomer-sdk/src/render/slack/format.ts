@@ -16,6 +16,7 @@
 //
 // See https://api.slack.com/reference/surfaces/formatting
 
+import { IsomerError } from '../../composition/error';
 import { sanitizeNavigationHref } from '../../validate/url';
 
 import { SLACK_LIMITS } from './blocks';
@@ -135,17 +136,78 @@ const isMailtoUrl = (url: string): boolean => {
   );
 };
 
+/** Where Slack output's relative links resolve. */
+export interface SlackLinkOptions {
+  /** Absolute `http(s)` URL a relative link resolves against; without it, a relative link prints its label. */
+  baseUrl?: string;
+}
+
+// Parsed rather than checked as written: a base is only resolved against, so
+// a default port or an uppercase host is fine.
+const isSlackBaseUrl = (baseUrl: string): boolean => {
+  let parsed: URL;
+  try {
+    parsed = new URL(baseUrl);
+  } catch {
+    return false;
+  }
+  return (
+    (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
+    parsed.username === '' &&
+    parsed.password === '' &&
+    (DNS_NAME_RE.test(parsed.hostname) || IPV6_HOST_RE.test(parsed.hostname))
+  );
+};
+
+/**
+ * Throws `INVALID_BASE_URL` unless `baseUrl` is absent or an `http:` or
+ * `https:` URL with a DNS or IPv6 host and no credentials.
+ */
+export const assertSlackBaseUrl = (baseUrl: string | undefined): void => {
+  if (baseUrl !== undefined && !isSlackBaseUrl(baseUrl)) {
+    throw new IsomerError(
+      'INVALID_BASE_URL',
+      `Slack baseUrl must be an absolute http or https URL without credentials, got "${baseUrl}"`
+    );
+  }
+};
+
+const HAS_SCHEME_RE = /^[a-z][a-z0-9+.-]*:/i;
+
+// A relative path resolved onto the base's origin, or `null` when it would
+// leave that origin. A fragment, `BLOCKED_HREF` included, names a place in a
+// document Slack does not show, so it never resolves.
+const resolvedOnBase = (url: string, baseUrl: string): string | null => {
+  if (url.startsWith('#') || HAS_SCHEME_RE.test(url)) {
+    return null;
+  }
+  let resolved: URL;
+  try {
+    resolved = new URL(url, baseUrl);
+  } catch {
+    return null;
+  }
+  return resolved.origin === new URL(baseUrl).origin ? resolved.href : null;
+};
+
 /**
  * `href` when {@link sanitizeNavigationHref} passes it and it is an `http:` or
  * `https:` URL with a host, or a `mailto:` of well-formed mailboxes; `null`
- * otherwise. Slack has no page to resolve a relative URL against.
+ * otherwise. Slack has no page to resolve a relative URL against, so one links
+ * only when `baseUrl` is given, resolved onto its origin; a fragment, such as
+ * `BLOCKED_HREF`, never resolves.
  */
-export const slackLinkUrl = (href: string): string | null => {
+export const slackLinkUrl = (href: string, baseUrl?: string): string | null => {
+  assertSlackBaseUrl(baseUrl);
   const url = sanitizeNavigationHref(href);
   if (url === null) {
     return null;
   }
-  return isAbsoluteHttpUrl(url) || isMailtoUrl(url) ? url : null;
+  if (isAbsoluteHttpUrl(url) || isMailtoUrl(url)) {
+    return url;
+  }
+  const resolved = baseUrl === undefined ? null : resolvedOnBase(url, baseUrl);
+  return resolved === null ? null : slackLinkUrl(resolved);
 };
 
 /**
@@ -156,8 +218,8 @@ export const slackLinkUrl = (href: string): string | null => {
  * early. A URL {@link slackLinkUrl} rejects degrades to plain escaped text
  * with no link.
  */
-export const link = (url: string, label?: string): string => {
-  const sanitized = slackLinkUrl(url);
+export const link = (url: string, label?: string, baseUrl?: string): string => {
+  const sanitized = slackLinkUrl(url, baseUrl);
   if (!sanitized) {
     return escapeMrkdwn(label ?? url);
   }

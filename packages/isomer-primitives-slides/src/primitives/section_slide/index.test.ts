@@ -18,7 +18,7 @@ import { sizeForLines, trackWidth } from '../size';
 
 import { example, linkedExample, longExample } from './examples';
 import { markdown as markdownContent, slack, text } from './index';
-import { schema } from './schema';
+import { schema, type SectionSlideNode } from './schema';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -140,6 +140,22 @@ describe('sectionSlide', () => {
     );
     expect(blocks).not.toContain('#slide-12');
     expect(blocks).toContain('"url":"https://example.com/deck/13"');
+  });
+
+  it('links a relative line against the host baseUrl, but not an in-deck anchor', () => {
+    const relative: SectionSlideNode = {
+      ...example,
+      slides: [
+        { text: 'Anchored', href: '#slide-12' },
+        { text: 'Hosted', href: 'deck/13' },
+      ],
+    };
+    const { blocks } = runtime.surfaces.slack.renderNode(relative, {
+      baseUrl: 'https://kibana.example/app/',
+    });
+    const json = JSON.stringify(blocks);
+    expect(json).not.toContain('slide-12');
+    expect(json).toContain('"url":"https://kibana.example/app/deck/13"');
   });
 
   it('sets a line whose href is unsafe as plain text', () => {

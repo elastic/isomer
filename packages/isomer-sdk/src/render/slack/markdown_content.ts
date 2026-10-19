@@ -34,7 +34,12 @@ import {
   type SlackTableBlock,
   type SlackTableCell,
 } from './blocks';
-import { clampSlackText, slackLinkUrl } from './format';
+import {
+  assertSlackBaseUrl,
+  clampSlackText,
+  type SlackLinkOptions,
+  slackLinkUrl,
+} from './format';
 
 const footnoteLabel = ({
   identifier,
@@ -405,7 +410,28 @@ const blockPieces = (node: RootContent): Piece[] => {
   }
 };
 
-const toSlackBlocks = (nodes: readonly RootContent[]): SlackBlock[] => {
+// Each relative link resolved against `baseUrl`, ahead of `linkRuns`. An
+// image's source is left alone: Slack draws none inline.
+const rebased = (node: Nodes, baseUrl: string): Nodes =>
+  ({
+    ...node,
+    ...('children' in node && {
+      children: node.children.map((child) => rebased(child, baseUrl)),
+    }),
+    ...(node.type === 'link' && {
+      url: slackLinkUrl(node.url, baseUrl) ?? node.url,
+    }),
+  }) as Nodes;
+
+const toSlackBlocks = (
+  input: readonly RootContent[],
+  { baseUrl }: SlackLinkOptions
+): SlackBlock[] => {
+  assertSlackBaseUrl(baseUrl);
+  const nodes =
+    baseUrl === undefined
+      ? input
+      : input.map((node) => rebased(node, baseUrl) as RootContent);
   const blocks: SlackBlock[] = [];
   let elements: SlackRichTextBlockElement[] = [];
   const flush = (): void => {
@@ -455,14 +481,17 @@ const toSlackBlocks = (nodes: readonly RootContent[]): SlackBlock[] => {
  * `md.authored` is parsed as GFM and translated the same way.
  */
 export const markdownContentToSlackBlocks = (
-  content: MarkdownContent
+  content: MarkdownContent,
+  options: SlackLinkOptions = {}
 ): SlackBlock[] =>
-  toSlackBlocks(resolvedMarkdownBlocks(content) as RootContent[]);
+  toSlackBlocks(resolvedMarkdownBlocks(content) as RootContent[], options);
 
 /**
  * GFM as Block Kit, parsed as CommonMark with GFM and translated as
  * {@link markdownContentToSlackBlocks} translates builder content. Source past
  * the parse budget that `md.authored` applies prints as literal paragraphs.
  */
-export const gfmToSlackBlocks = (gfm: string): SlackBlock[] =>
-  toSlackBlocks(gfmBlocks(gfm) as RootContent[]);
+export const gfmToSlackBlocks = (
+  gfm: string,
+  options: SlackLinkOptions = {}
+): SlackBlock[] => toSlackBlocks(gfmBlocks(gfm) as RootContent[], options);

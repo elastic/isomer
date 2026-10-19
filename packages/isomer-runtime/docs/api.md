@@ -51,7 +51,7 @@ Each exposes `render` and `renderNode`, plus a `validating` field stating its po
 | `html` | `HTMLRenderResult` | `HTMLRenderResult` | `true` | `HTMLRenderOptions` |
 | `text` | `string` | `string` | `true` | `TextRenderNodeOptions`: `onValidationError` |
 | `markdown` | `string` | `string` | `true` | `MarkdownRenderNodeOptions`: `onValidationError` |
-| `slack` | `SlackRenderResult` | `SlackRenderResult` | `true` | `SlackRenderNodeOptions`: `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
+| `slack` | `SlackRenderResult` | `SlackRenderResult` | `true` | `SlackRenderNodeOptions`: `text`, `collectAssets`, `assetPrefix`, `baseUrl`, `onValidationError` |
 | `snapshot` | `SnapshotRenderResult` | `SnapshotRenderResult` | `true` | `SnapshotRenderNodeOptions`: `frame`, `theme`, `anchors`, `onValidationError` |
 
 Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SnapshotSurface`; `RuntimeSurfaces` is the record of all six. `render` takes its surface's options type below. `SnapshotRenderResult` is a `SnapshotPage`, `{ element, html }`, plus `{ css, width, height, warnings }`: `html` is `element`'s static markup, rendered in the same call. `warnings` is a `SnapshotHeightWarning[]` (`{ path, message }`): nodes this render measured as 0 because they declare no `metrics.snapshotHeight`, empty when the frame never calls `estimateSnapshotHeight` or when `height` is given. The `snapshot` surface additionally exposes `renderPages(compositions, options?)`, which lays several compositions out as one document and returns `SnapshotPagesResult`, `{ pages, css, width, height, warnings }`: one `SnapshotPage` per composition against one stylesheet, every page the tallest estimate unless `height` is given, and the first composition's `theme` unless `theme` is given. Paged `warnings` prefix each path with `pages[n].`.
@@ -67,7 +67,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | `TextRenderNodeOptions` | `onValidationError` |
 | `MarkdownRenderOptions` | `heading`, `onValidationError` |
 | `MarkdownRenderNodeOptions` | `onValidationError` |
-| `SlackRenderOptions` | `heading`, `text`, `collectAssets`, `assetPrefix`, `onValidationError` |
+| `SlackRenderOptions` | `heading`, `text`, `collectAssets`, `assetPrefix`, `baseUrl`, `onValidationError` |
 | `SlackRenderNodeOptions` | `SlackRenderOptions` without `heading` |
 | `SnapshotRenderOptions` | `frame`, `width`, `height`, `theme`, `anchors: boolean` (node anchors, e.g. for `checkLayout`), `onValidationError` |
 

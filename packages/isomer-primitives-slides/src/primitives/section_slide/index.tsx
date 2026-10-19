@@ -59,15 +59,22 @@ export const markdown = (node: SectionSlideNode) => [
   contentsList(node),
 ];
 
-/** A line links in Slack only when its href is an absolute URL. */
-export const slack = (node: SectionSlideNode): SlackBlock[] => [
+/** A line links in Slack only when its href is an absolute URL, or a relative one with `baseUrl` given. */
+export const slack = (
+  node: SectionSlideNode,
+  { baseUrl }: { baseUrl?: string } = {}
+): SlackBlock[] => [
   slackHeading(heading(node)),
   slackRichText({
     type: 'rich_text_list',
     style: 'ordered',
     elements: node.slides.map((slide) =>
       richTextSection(
-        ...richTextLinked(marksRichText(slide.text), lineHref(slide.href))
+        ...richTextLinked(
+          marksRichText(slide.text),
+          lineHref(slide.href),
+          baseUrl
+        )
       )
     ),
   }),
