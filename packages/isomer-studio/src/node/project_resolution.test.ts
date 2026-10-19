@@ -211,10 +211,16 @@ describe('resolve hooks', () => {
         url: pathToFileURL(join(runtimeDir, 'index.js')).href,
         shortCircuit: true,
       });
-      expect(hook('@elastic/isomer-studio', context, missing)).toEqual({
-        url: pathToFileURL(join(studioDir, 'dist/index.js')).href,
-        shortCircuit: true,
-      });
+      const installed = vi.fn(() => ({
+        url: 'file:///pack/node_modules/x.js',
+      }));
+      for (const next of [missing, installed]) {
+        expect(hook('@elastic/isomer-studio', context, next)).toEqual({
+          url: pathToFileURL(join(studioDir, 'dist/index.js')).href,
+          shortCircuit: true,
+        });
+      }
+      expect(installed).not.toHaveBeenCalled();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

@@ -61,18 +61,20 @@ const isNotFound = (error: unknown): boolean =>
 export const resolveSync =
   (data: ResolveHooksData): ResolveHookSync =>
   (specifier, context, nextResolve) => {
-    const requireFrom = (parentURL: string): string =>
-      specifier === '@elastic/isomer-studio' &&
-      parentURL === parentIn(data.studioDir)
-        ? studioEntry(data.studioDir)
-        : pathToFileURL(createRequire(parentURL).resolve(specifier)).href;
+    const isRequire = context.conditions.includes('require');
+    // Its `exports` are `import` only, so a `require` of it, installed or not, takes the running Studio.
+    if (isRequire && specifier === '@elastic/isomer-studio') {
+      return { url: studioEntry(data.studioDir), shortCircuit: true };
+    }
     // `require` resolves from the requiring module whatever `parentURL` says, so another parent resolves here.
     const resolveFrom = (parentURL: string | undefined): ResolveFnOutput =>
-      parentURL === context.parentURL ||
-      parentURL === undefined ||
-      !context.conditions.includes('require')
+      parentURL === context.parentURL || parentURL === undefined || !isRequire
         ? nextResolve(specifier, { ...context, parentURL })
-        : { url: requireFrom(parentURL), shortCircuit: true };
+        : {
+            url: pathToFileURL(createRequire(parentURL).resolve(specifier))
+              .href,
+            shortCircuit: true,
+          };
     const attempt = ([parentURL, ...rest]: (
       string | undefined
     )[]): ResolveFnOutput => {

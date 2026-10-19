@@ -37,15 +37,30 @@ const readManifest = (projectDir: string): Manifest => {
   return isRecord(manifest) ? manifest : {};
 };
 
-const rootExport = (exports: unknown): unknown => {
-  const root = isRecord(exports) && '.' in exports ? exports['.'] : exports;
-  return isRecord(root) ? (root.import ?? root.default ?? root.module) : root;
+/** Conditions `init` follows in a manifest's `exports`, nested ones included; `types` names no runnable file. */
+const CONDITIONS = ['import', 'module', 'require', 'node', 'default'] as const;
+
+/** The file an `exports` value names for the package root. */
+const exportTarget = (target: unknown): string | undefined => {
+  if (typeof target === 'string') {
+    return target;
+  }
+  const candidates = Array.isArray(target)
+    ? target
+    : isRecord(target)
+      ? '.' in target
+        ? [target['.']]
+        : CONDITIONS.map((condition) => target[condition])
+      : [];
+  return candidates
+    .map(exportTarget)
+    .find((path): path is string => path !== undefined);
 };
 
 /** The module whose exports name the project's packs: its source index, else its manifest's root entry. */
 export const packEntry = (projectDir: string): string => {
   const { exports, module, main } = readManifest(projectDir);
-  const found = [...SOURCE_ENTRIES, rootExport(exports), module, main]
+  const found = [...SOURCE_ENTRIES, exportTarget(exports), module, main]
     .filter((path): path is string => typeof path === 'string')
     .map((path) => join(projectDir, path))
     .find((path) => existsSync(path));
@@ -75,54 +90,91 @@ const specifierFrom = (fromDir: string, path: string): string => {
   return inside.startsWith('.') ? inside : `./${inside}`;
 };
 
-/** How a config imports the packs a module exports. */
-export interface PackImports {
-  /** Named exports that are packs. */
-  named: string[];
-  /** Whether the default export is itself a pack. */
-  isDefault: boolean;
-  /** Packs on a default-exported object, as a CommonJS module exposes them. */
-  onDefault: string[];
-}
+/** A pack a module exports, and where a config reaches it. */
+export type PackImport =
+  | { from: 'named'; name: string }
+  | { from: 'default' }
+  /** A property of a default-exported object, as a CommonJS module exposes its packs. */
+  | { from: 'defaultObject'; name: string };
 
-export const packImports = (namespace: unknown): PackImports => {
+/** Each distinct pack `namespace` exports, once, so an alias or a CommonJS mirror of a named export is not registered twice. */
+export const packImports = (namespace: unknown): PackImport[] => {
   const exports = isRecord(namespace) ? namespace : {};
   const { default: fallback } = exports;
-  const packKeys = (record: Record<string, unknown>) =>
-    Object.keys(record).filter(
-      (key) => key !== 'default' && isPrimitivePack(record[key])
-    );
-  const named = packKeys(exports);
-  const isDefault = isPrimitivePack(fallback);
-  return {
-    named,
-    isDefault,
-    onDefault:
-      named.length || isDefault || !isRecord(fallback)
-        ? []
-        : packKeys(fallback),
+  const seen = new Set<unknown>();
+  const found: PackImport[] = [];
+  const take = (value: unknown, pack: PackImport) => {
+    if (isPrimitivePack(value) && !seen.has(value)) {
+      seen.add(value);
+      found.push(pack);
+    }
   };
+  Object.entries(exports).forEach(([name, value]) => {
+    if (name !== 'default') {
+      take(value, { from: 'named', name });
+    }
+  });
+  if (isPrimitivePack(fallback)) {
+    take(fallback, { from: 'default' });
+  } else if (isRecord(fallback)) {
+    Object.entries(fallback).forEach(([name, value]) =>
+      take(value, { from: 'defaultObject', name })
+    );
+  }
+  return found;
 };
 
-/** The config `init` writes: the packs `entry` exports, by name. */
+/** The names the config's own imports take. */
+const HELPERS = ['createIsomerRuntime', 'defineStudioConfig'];
+
+const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
+
+/** The config `init` writes: the packs `entry` exports, each under a local name no other import takes. */
 export const initConfigSource = ({
   entry,
-  imports: { named, isDefault, onDefault },
+  imports,
   title,
 }: {
   entry: string;
-  imports: PackImports;
+  imports: readonly PackImport[];
   title?: string | undefined;
 }): string => {
-  const defaultName = isDefault ? 'pack' : onDefault.length ? 'entry' : '';
+  const taken = new Set(HELPERS);
+  const local = (wanted: string): string => {
+    let name = wanted;
+    for (let suffix = 2; taken.has(name); suffix += 1) {
+      name = `${wanted}${suffix}`;
+    }
+    taken.add(name);
+    return name;
+  };
+  // Named packs keep their own names where they can, so they are claimed first.
+  const named = new Map(
+    imports.flatMap((pack) =>
+      pack.from === 'named' ? [[pack.name, local(pack.name)] as const] : []
+    )
+  );
+  const defaultName = local(
+    imports.some(({ from }) => from === 'default') ? 'pack' : 'entry'
+  );
+  const packs = imports.map((pack) => {
+    switch (pack.from) {
+      case 'named':
+        return named.get(pack.name);
+      case 'default':
+        return defaultName;
+      case 'defaultObject':
+        return IDENTIFIER.test(pack.name)
+          ? `${defaultName}.${pack.name}`
+          : `${defaultName}[${quote(pack.name)}]`;
+    }
+  });
+  const specifiers = [...named].map(([name, as]) =>
+    name === as ? name : `${name} as ${as}`
+  );
   const bindings = [
-    defaultName,
-    ...(named.length ? [`{ ${named.join(', ')} }`] : []),
-  ].filter(Boolean);
-  const packs = [
-    ...(isDefault ? ['pack'] : []),
-    ...named,
-    ...onDefault.map((key) => `entry.${key}`),
+    ...(imports.some(({ from }) => from !== 'named') ? [defaultName] : []),
+    ...(specifiers.length ? [`{ ${specifiers.join(', ')} }`] : []),
   ];
   return [
     "import { createIsomerRuntime } from '@elastic/isomer-runtime';",
@@ -149,11 +201,7 @@ export const writeInitConfig = async (
   }
   const entry = packEntry(projectDir);
   const imports = packImports(await importStudioModule(entry, { loader }));
-  if (
-    !imports.named.length &&
-    !imports.isDefault &&
-    !imports.onDefault.length
-  ) {
+  if (!imports.length) {
     throw new Error(
       `${specifierFrom(projectDir, entry)} exports no primitive pack.`
     );

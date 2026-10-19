@@ -104,6 +104,32 @@ describe('packEntry', () => {
     expect(packEntry(root)).toBe(rootExport);
   });
 
+  it.each([
+    [
+      'nested conditions',
+      {
+        '.': {
+          import: { types: './dist/index.d.ts', default: './dist/index.js' },
+        },
+      },
+      'dist/index.js',
+    ],
+    [
+      'a require-only root',
+      { '.': { require: './lib/pack.cjs' } },
+      'lib/pack.cjs',
+    ],
+    [
+      'conditions at the root',
+      { types: './x.d.ts', default: './lib/pack.js' },
+      'lib/pack.js',
+    ],
+  ])('follows %s in exports', (_kind, exports, file) => {
+    project({ exports });
+    const target = write(file, '');
+    expect(packEntry(root)).toBe(target);
+  });
+
   it('says what it looked for', () => {
     project();
     expect(() => packEntry(root)).toThrow(
@@ -127,22 +153,33 @@ describe('isPrimitivePack', () => {
 });
 
 describe('packImports', () => {
-  const pack = { id: 'a', primitives: [], types: new Set() };
+  const pack = (id: string) => ({ id, primitives: [], types: new Set() });
 
-  it('lists named packs and a default pack', () => {
-    expect(packImports({ a: pack, b: 1, default: pack })).toEqual({
-      named: ['a'],
-      isDefault: true,
-      onDefault: [],
-    });
+  it('lists named packs, then a default pack', () => {
+    const a = pack('a');
+    const b = pack('b');
+    expect(packImports({ a, other: 1, default: b })).toEqual([
+      { from: 'named', name: 'a' },
+      { from: 'default' },
+    ]);
   });
 
-  it('reads a default object only when nothing else is a pack', () => {
-    expect(packImports({ default: { a: pack, b: 1 } })).toEqual({
-      named: [],
-      isDefault: false,
-      onDefault: ['a'],
-    });
+  it('lists each pack once, under its first name', () => {
+    const a = pack('a');
+    expect(packImports({ a, alias: a, default: a })).toEqual([
+      { from: 'named', name: 'a' },
+    ]);
+  });
+
+  it('keeps the packs on a default object beside named ones, mirrors included once', () => {
+    const first = pack('first');
+    const second = pack('second');
+    expect(
+      packImports({ first, default: { first, second, other: 1 } })
+    ).toEqual([
+      { from: 'named', name: 'first' },
+      { from: 'defaultObject', name: 'second' },
+    ]);
   });
 });
 
@@ -151,7 +188,11 @@ describe('initConfigSource', () => {
     expect(
       initConfigSource({
         entry: './src/index',
-        imports: { named: ['a', 'b'], isDefault: true, onDefault: [] },
+        imports: [
+          { from: 'named', name: 'a' },
+          { from: 'named', name: 'b' },
+          { from: 'default' },
+        ],
         title: "Ann's pack",
       })
     ).toBe(
@@ -163,22 +204,40 @@ describe('initConfigSource', () => {
         '',
         'export default defineStudioConfig({',
         "  title: 'Ann\\'s pack',",
-        '  runtime: createIsomerRuntime({ packs: [pack, a, b] }),',
+        '  runtime: createIsomerRuntime({ packs: [a, b, pack] }),',
         '});',
         '',
       ].join('\n')
     );
   });
 
-  it('reads packs off a default object', () => {
+  it('reads packs off a default object, quoting a name that is no identifier', () => {
     expect(
       initConfigSource({
         entry: './index',
-        imports: { named: [], isDefault: false, onDefault: ['a'] },
+        imports: [
+          { from: 'defaultObject', name: 'a' },
+          { from: 'defaultObject', name: 'my-pack' },
+        ],
       })
     ).toContain(
-      "import entry from './index';\n\nexport default defineStudioConfig({\n  runtime: createIsomerRuntime({ packs: [entry.a] }),"
+      "import entry from './index';\n\nexport default defineStudioConfig({\n  runtime: createIsomerRuntime({ packs: [entry.a, entry['my-pack']] }),"
     );
+  });
+
+  it('renames a pack whose name another import takes', () => {
+    const source = initConfigSource({
+      entry: './index',
+      imports: [
+        { from: 'named', name: 'pack' },
+        { from: 'named', name: 'defineStudioConfig' },
+        { from: 'default' },
+      ],
+    });
+    expect(source).toContain(
+      "import pack2, { pack, defineStudioConfig as defineStudioConfig2 } from './index';"
+    );
+    expect(source).toContain('packs: [pack, defineStudioConfig2, pack2]');
   });
 });
 

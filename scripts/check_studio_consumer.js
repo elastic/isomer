@@ -514,9 +514,18 @@ const checkJavaScriptPack = async (tempDir, packed, cli) => {
 
 const KIBANA_PACKAGE = 'src/platform/packages/shared/kbn-consumer-pack';
 
-/** A Kibana-shaped pack: a CommonJS package with a root `index.ts` and no `main`, inside a repository whose one `node_modules` holds every dependency. */
-const checkKibanaPack = async (tempDir, packed, cli) => {
-  const repo = join(tempDir, 'kibana');
+/**
+ * A Kibana-shaped pack: a CommonJS package with a root `index.ts` and no `main`, inside a repository whose one
+ * `node_modules` holds every dependency. With `installed`, the repository has the Studio and the runtime too, and
+ * runs its own Studio.
+ */
+const checkKibanaPack = async (
+  tempDir,
+  packed,
+  npxCli,
+  { installed = false } = {}
+) => {
+  const repo = join(tempDir, installed ? 'kibana-installed' : 'kibana');
   const pkg = join(repo, KIBANA_PACKAGE);
   mkdirSync(join(pkg, 'src'), { recursive: true });
   writeJson(join(repo, 'package.json'), {
@@ -525,6 +534,12 @@ const checkKibanaPack = async (tempDir, packed, cli) => {
     version: '9.3.0',
     dependencies: {
       ...packDependencies(packed),
+      ...(installed
+        ? {
+            '@elastic/isomer-runtime': packed['@elastic/isomer-runtime'],
+            '@elastic/isomer-studio': packed['@elastic/isomer-studio'],
+          }
+        : {}),
       '@kbn/consumer-pack': `file:${KIBANA_PACKAGE}`,
     },
     overrides: packed,
@@ -552,7 +567,12 @@ const checkKibanaPack = async (tempDir, packed, cli) => {
   );
   writeFileSync(join(pkg, 'src/pack.tsx'), PACK_MODULE);
   npmInstall(repo);
-  assertNoStudio(repo);
+  if (!installed) {
+    assertNoStudio(repo);
+  }
+  const cli = installed
+    ? join(repo, 'node_modules/@elastic/isomer-studio/bin/isomer-studio.js')
+    : npxCli;
   await checkInit(cli, pkg, {
     title: '@kbn/consumer-pack',
     config: 'isomer-studio.config.ts',
@@ -565,8 +585,9 @@ const checkColdNpx = async (tempDir, packed) => {
   await checkBarePack(tempDir, packed, cli);
   await checkJavaScriptPack(tempDir, packed, cli);
   await checkKibanaPack(tempDir, packed, cli);
+  await checkKibanaPack(tempDir, packed, cli, { installed: true });
   console.log(
-    'Cold npx: init, check, build and dev passed in an ES module pack, a JavaScript pack and a Kibana-shaped package.'
+    'Cold npx: init, check, build and dev passed in an ES module pack, a JavaScript pack and a Kibana-shaped package, and in a Kibana-shaped package that installs the Studio.'
   );
 };
 
