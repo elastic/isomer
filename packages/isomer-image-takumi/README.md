@@ -17,6 +17,8 @@ Rasterizes the `snapshot` surface's output with [takumi](https://takumi.kane.tw)
 npm install @elastic/isomer-image-takumi
 ```
 
+The latest `main` is published as `@next` (`npm install @elastic/isomer-image-takumi@next`), a prerelease that `latest` and caret ranges never select; install every Isomer package at `@next` together. See [RELEASING.md](https://github.com/elastic/isomer/blob/main/RELEASING.md#snapshots-under-next).
+
 ```ts
 import { createTakumiImageBackend } from '@elastic/isomer-image-takumi';
 
