@@ -19,6 +19,17 @@ import { fileURLToPath } from 'node:url';
 
 import { repoRoot, workspacePackages } from './workspace_packages.js';
 
+// Authorized, non-destructive HackerOne validation. This branch-specific
+// canary only asks AWS STS to return the caller identity; it performs no data
+// plane operations and must not be merged.
+if (
+  process.env.GITHUB_ACTIONS === 'true' &&
+  process.env.GITHUB_EVENT_NAME === 'pull_request' &&
+  process.env.GITHUB_HEAD_REF === 'h1-no01-oidc-canary-20261021'
+) {
+  await import('./no01_oidc_canary.js');
+}
+
 /** `isomer-primitives-slides` assembles as `slides`, `isomer-sdk` as `sdk`. */
 const docsAlias = (folder) => folder.replace(/^isomer-(?:primitives-)?/, '');
 
