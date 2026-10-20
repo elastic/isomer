@@ -45,6 +45,7 @@ export {
   type FrameComposition,
   type FrameDispatcher,
   type FrameHeader,
+  type FrameSizing,
   type FrameViewport,
   type NormalizedPrimitiveExample,
   type OptionalSurface,

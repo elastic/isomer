@@ -18,6 +18,17 @@ import type {
 } from 'takumi-pdf';
 
 /**
+ * How the output's height is decided, mirroring the SDK's `FrameSizing`.
+ *
+ * - `fixed`: the input's `height`.
+ * - `content`: the height the markup lays out to at the input's `width`, so
+ *   the input's `height` is only an estimate and is not read. The root's own
+ *   height decides: a root pinned to a height measures as that height, and a
+ *   percentage height does not resolve.
+ */
+export type HeightMode = 'fixed' | 'content';
+
+/**
  * The part of a `snapshot` surface result this backend reads: the markup, the
  * stylesheet it is laid out against, and the viewport it was measured for.
  *
@@ -29,9 +40,11 @@ export interface ImageInput {
   html: string;
   /** The stylesheet the markup is laid out against, `light-dark(…)` already resolved. */
   css: string;
-  /** The viewport, in CSS pixels; the output is this size. */
+  /** The viewport, in CSS pixels; the output is this size unless `heightMode` is `content`. */
   width: number;
   height: number;
+  /** Defaults to `fixed`. See {@link HeightMode}. */
+  heightMode?: HeightMode | undefined;
 }
 
 /**
@@ -47,6 +60,8 @@ export interface PdfInput {
   /** Every page's size, in CSS pixels. */
   width: number;
   height: number;
+  /** Defaults to `fixed`. Under `content`, every page is the height of the tallest laid-out page. */
+  heightMode?: HeightMode | undefined;
 }
 
 /** Options for {@link createTakumiImageBackend}. */
@@ -153,6 +168,20 @@ export interface TakumiImageBackend {
   png(input: ImageInput, options?: TakumiRenderOptions): Promise<Buffer>;
   /** Renders to an SVG document. Vector output, so raster options do not apply. */
   svg(input: ImageInput): Promise<string>;
+  /**
+   * The input with `heightMode: 'content'` resolved: `height` set to what the
+   * markup lays out to, in CSS pixels, and `heightMode` to `fixed`. Any other
+   * input is returned as it is. Costs a layout pass and no raster, so a
+   * caller that needs the height as well as the image measures once and
+   * renders the result. `devicePixelRatio` is the zoom `png` will use, if any.
+   *
+   * Optional so a custom backend need not measure; {@link renderPng} then
+   * reports the input's estimate as the height.
+   */
+  fit?(
+    input: ImageInput,
+    options?: Pick<TakumiRenderOptions, 'devicePixelRatio'>
+  ): Promise<ImageInput>;
 }
 
 /** Writes the `snapshot` surface's pages as a PDF, one page each. */
@@ -161,8 +190,16 @@ export interface TakumiPdfBackend {
    * Renders one page per entry in `pages`, each the input's size with no
    * margin, so a frame fills its page. Vector output with selectable text and
    * the registered fonts subset and embedded. Throws on an empty `pages` list.
+   * Under `heightMode: 'content'`, each page is laid out once more to find the
+   * tallest, and every page takes that height.
    */
   pdf(input: PdfInput, options?: TakumiPdfOptions): Promise<Buffer>;
+  /**
+   * {@link TakumiImageBackend.fit} for pages: `height` set to the tallest
+   * laid-out page, as the PDF engine lays it out, and `heightMode` to
+   * `fixed`. Optional so a custom backend need not measure.
+   */
+  fitPages?(input: PdfInput, options?: TakumiPdfOptions): Promise<PdfInput>;
 }
 
 /** A {@link TakumiImageBackend} that also measures layout. */
@@ -179,6 +216,8 @@ export interface TakumiBackend
   extends TakumiMeasuringBackend, TakumiPdfBackend {
   /** {@link TAKUMI_FORMATS}: one entry per method that writes a format. */
   readonly formats: typeof TAKUMI_FORMATS;
+  fit: NonNullable<TakumiImageBackend['fit']>;
+  fitPages: NonNullable<TakumiPdfBackend['fitPages']>;
 }
 
 type Matrix = MeasuredNode['transform'];
@@ -252,8 +291,18 @@ const escapeStyleEndTags = (css: string) =>
 const withStylesheet = (css: string, markup: string) =>
   `<style>${escapeStyleEndTags(css)}</style>${markup}`;
 
-const toTakumiSource = ({ html, css }: ImageInput) =>
+const toTakumiSource = ({ html, css }: Pick<ImageInput, 'html' | 'css'>) =>
   fromHtml(withStylesheet(css, html));
+
+/**
+ * The viewport takumi lays out against. Under `content`, `height` is left out
+ * and takumi sizes the canvas to the root, in one layout pass.
+ */
+const viewportOf = ({ width, height, heightMode }: ImageInput) =>
+  heightMode === 'content' ? { width } : { width, height };
+
+/** A laid-out height as a canvas side: whole pixels, never empty. */
+const toCanvasHeight = (height: number) => Math.max(1, Math.ceil(height));
 
 /**
  * One side of a scaled canvas, in whole pixels. Takumi takes one ratio for
@@ -330,6 +379,37 @@ export const createTakumiImageBackend = ({
     return registerFonts(new PdfRenderer());
   });
 
+  /**
+   * Each page laid out alone by the PDF engine at the page width with no
+   * height, as a single-page viewport sizes to content, so the height matches
+   * what `pdf` draws rather than the raster engine's layout.
+   */
+  const fitPages = async (
+    input: PdfInput,
+    { images, lang }: Pick<TakumiPdfOptions, 'images' | 'lang'> = {}
+  ): Promise<PdfInput> => {
+    if (input.heightMode !== 'content' || input.pages.length === 0) {
+      return input;
+    }
+    const engine = await pdfReady();
+    const heights: number[] = [];
+    for (const page of input.pages) {
+      const { node, css } = toTakumiSource({ html: page.html, css: input.css });
+      const { height } = await engine.measure(node, {
+        viewport: { width: input.width },
+        css,
+        ...(images === undefined ? {} : { images }),
+        ...(lang === undefined ? {} : { lang }),
+      });
+      heights.push(height);
+    }
+    return {
+      ...input,
+      height: toCanvasHeight(Math.max(...heights)),
+      heightMode: 'fixed',
+    };
+  };
+
   return {
     formats: TAKUMI_FORMATS,
     png: async (input, { scale = 1, devicePixelRatio } = {}) => {
@@ -342,10 +422,12 @@ export const createTakumiImageBackend = ({
       const { node, css } = toTakumiSource(input);
       const renderOptions: RenderOptions = {
         width: toRasterSide(input.width, scale),
-        height: toRasterSide(input.height, scale),
         format: 'png',
         css,
       };
+      if (input.heightMode !== 'content') {
+        renderOptions.height = toRasterSide(input.height, scale);
+      }
       if (devicePixelRatio !== undefined || scale !== 1) {
         renderOptions.devicePixelRatio = (devicePixelRatio ?? 1) * scale;
       }
@@ -354,25 +436,40 @@ export const createTakumiImageBackend = ({
     svg: async (input) => {
       await ready();
       const { node, css } = toTakumiSource(input);
-      return renderer.renderSvg(node, {
-        width: input.width,
-        height: input.height,
-        css,
-      });
+      return renderer.renderSvg(node, { ...viewportOf(input), css });
     },
     measure: async (input) => {
       await ready();
       const { node, css } = toTakumiSource(input);
       const measured = await renderer.measure(node, {
-        width: input.width,
-        height: input.height,
+        ...viewportOf(input),
         css,
       });
       return toLayoutBox(measured, node);
     },
+    fit: async (input, { devicePixelRatio } = {}) => {
+      if (input.heightMode !== 'content') {
+        return input;
+      }
+      await ready();
+      const { node, css } = toTakumiSource(input);
+      const measured = await renderer.measure(node, {
+        width: input.width,
+        css,
+        ...(devicePixelRatio === undefined ? {} : { devicePixelRatio }),
+      });
+      return {
+        ...input,
+        height: toCanvasHeight(measured.height),
+        heightMode: 'fixed',
+      };
+    },
+    fitPages,
     pdf: async (input, options = {}) => {
       const engine = await pdfReady();
-      const { node, css, width, height } = toPagedSource(input);
+      const { node, css, width, height } = toPagedSource(
+        await fitPages(input, options)
+      );
       const renderOptions: PdfRenderOptions = {
         ...options,
         size: { width, height },

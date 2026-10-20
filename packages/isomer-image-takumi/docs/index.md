@@ -28,6 +28,18 @@ The `snapshot` surface returns `{ element, html, css, width, height }`: the same
 
 `createTakumiImageBackend({ fonts, cacheMaxBytes })` builds one takumi renderer. `fonts` is covered [below](#fonts); `cacheMaxBytes` caps takumi's resource cache, and `0` disables it. `png(input, { scale })` renders a denser raster of the same layout: `scale: 2` gives a PNG of `input.width * 2` by `input.height * 2` pixels, rounded, for a 2x display. Takumi takes one ratio for both axes, so the ratio stays `scale` and the canvas absorbs the rounding: a layout fixed in CSS pixels, as a frame's is, lays out exactly as at 1x, with under half a raster pixel trimmed or padded at the right and bottom edges, while content sized to the viewport sees one within half a raster pixel of the input's. Whole products, such as any `scale: 2`, are exact. `devicePixelRatio` is takumi's zoom at a fixed canvas instead: the PNG stays `input.width` by `input.height`, laid out at `input.width / devicePixelRatio` CSS pixels and magnified, so above 1 it shows less of the frame. The two multiply. `svg` and `measure` are in CSS pixels, so they take no raster options.
 
+## Sizing to content
+
+A frame declared with `sizing: 'content'` (see the runtime's [Frame](../../isomer-runtime/docs/frame.md#sizing-to-content)) makes the `snapshot` surface return `heightMode: 'content'`, with `height` only the frame's estimate. `ImageInput` and `PdfInput` take the same optional `heightMode` (`HeightMode`, `'fixed'` or `'content'`; absent is `fixed`), and every method honors it:
+
+- `png`, `svg`, and `measure` lay out at `width` with no height, and takumi sizes the canvas to the root. That is the same single layout pass a fixed render makes, so a content-sized PNG costs nothing extra. `scale` and `devicePixelRatio` apply as before; the raster's height is the content's at that ratio.
+- `fit(input, { devicePixelRatio }?)` resolves the height without drawing: it returns the input with `height` set to the laid-out height, rounded up to whole CSS pixels, and `heightMode: 'fixed'`, and returns any other input unchanged. It costs one layout pass and no raster. `renderPng` calls it first when the backend has it, so `RenderPngResult.height` is the measured height, and draws the PNG at exactly that height.
+- `pdf` lays each page out alone with the PDF engine, at the page width with no height, and sizes every page to the tallest: a PDF's pages share one size, as they do for a fixed frame. That is one extra layout pass per page. `fitPages(input)` does that measuring on its own, and `renderPdf` calls it so `RenderPdfResult.height` reports the page height.
+
+`fit` and `fitPages` are optional on `TakumiImageBackend` and `TakumiPdfBackend`, so a custom backend need not measure; `renderPng` and `renderPdf` then report the frame's estimate. `TakumiBackend` always has both.
+
+The root's own height is what is measured. A frame that pins its root to the viewport's `height` measures as the estimate, and a percentage height does not resolve without a viewport height to resolve against.
+
 `formats` on the backend is `TAKUMI_FORMATS`, `['png', 'svg', 'pdf']`: one entry per method that writes a format. Pass it to `createIsomerRuntime({ formats })` and the runtime's `getCapabilities().formats` reports what this backend adds, rather than a list typed by hand.
 
 ## Measuring a layout
@@ -36,11 +48,11 @@ The `snapshot` surface returns `{ element, html, css, width, height }`: the same
 
 `attributes` holds everything but `class`, `id`, and `style`, so a node anchor (`data-isomer-node`) comes back on the box its element laid out. Render with the `snapshot` surface's `anchors: true` and the tree can go straight to the SDK's `checkLayout`, which reports nodes past their room or on a sibling. Takumi folds inline content into its parent's text runs, so where a parent's laid-out children do not line up one to one with its elements, none of those children carry attributes rather than the wrong ones.
 
-`TakumiImageBackend`, the `{ png, svg }` contract `renderPng` takes, does not include `measure` or `pdf`, so a custom raster backend need not implement them; `TakumiMeasuringBackend` adds only `measure`, and `TakumiPdfBackend`, what `renderPdf` takes, is `{ pdf }` alone. `TakumiBackend` is all three.
+`TakumiImageBackend`, the `{ png, svg }` contract `renderPng` takes (with an optional `fit`), does not include `measure` or `pdf`, so a custom raster backend need not implement them; `TakumiMeasuringBackend` adds only `measure`, and `TakumiPdfBackend`, what `renderPdf` takes, is `{ pdf }` alone. `TakumiBackend` is all three.
 
 ## Rendering a whole runtime call in one step
 
-`renderPng(runtime, composition, backend, options?)` bundles validation, the `snapshot` surface, and rasterization, returning `{ png, width, height, validation }`. It forwards `scale` and `devicePixelRatio` to `png`; `width` and `height` are the viewport in CSS pixels, not the raster's. It exists because the `snapshot` surface discards its own validation findings and knows nothing about image backends, so a host that wants the findings next to the bytes would otherwise validate, render, and rasterize in three calls of its own.
+`renderPng(runtime, composition, backend, options?)` bundles validation, the `snapshot` surface, and rasterization, returning `{ png, width, height, validation }`. It forwards `scale` and `devicePixelRatio` to `png`; `width` and `height` are the viewport in CSS pixels, not the raster's, and under a content-sized frame `height` is the measured one. It exists because the `snapshot` surface discards its own validation findings and knows nothing about image backends, so a host that wants the findings next to the bytes would otherwise validate, render, and rasterize in three calls of its own.
 
 ```ts
 import { renderPng } from '@elastic/isomer-image-takumi';
@@ -99,8 +111,9 @@ A PDF is byte-stable on the same terms once `metadata.creationDate` is fixed; le
 
 | Type | Shape |
 | --- | --- |
-| `ImageInput`, `PdfInput` | The parts of the `snapshot` surface's `render` and `renderPages` results this package reads, declared structurally: `{ html, css, width, height }`, and `pages` of `{ html }` |
-| `TakumiImageBackend`, `TakumiMeasuringBackend`, `TakumiPdfBackend`, `TakumiBackend` | `{ png, svg }`, plus `measure`, `{ pdf }`, and all three with `formats` |
+| `ImageInput`, `PdfInput` | The parts of the `snapshot` surface's `render` and `renderPages` results this package reads, declared structurally: `{ html, css, width, height, heightMode? }`, and `pages` of `{ html }` |
+| `HeightMode` | `'fixed' \| 'content'`: whether the output is the input's `height` or the laid-out content's. See [Sizing to content](#sizing-to-content) |
+| `TakumiImageBackend`, `TakumiMeasuringBackend`, `TakumiPdfBackend`, `TakumiBackend` | `{ png, svg, fit? }`, plus `measure`, `{ pdf, fitPages? }`, and all three with `formats`, `fit`, and `fitPages` |
 | `TakumiImageBackendOptions`, `TakumiRenderOptions` | `{ fonts?, cacheMaxBytes? }` and `{ scale?, devicePixelRatio? }` |
 | `TakumiPdfOptions`, `TakumiPdfMetadata` | The document options above, and `metadata`'s fields |
 | `LayoutBox` | What `measure` returns, one per laid-out element |

@@ -1941,6 +1941,72 @@ describe('createIsomerRuntime', () => {
     ]);
   });
 
+  it('marks a content frame for measuring, and reports no missing height under it', () => {
+    // `bold` declares no `metrics.snapshotHeight`. Under a content frame the
+    // estimate is not the size drawn, so a 0 for it sizes nothing short.
+    const runtime = createIsomerRuntime({
+      packs: [snapshotPackOf(boldPrimitive)],
+      frames: {
+        card: testFrame,
+        message: { ...testFrame, sizing: 'content' },
+      },
+      defaultFrame: 'message',
+    });
+    const bold = { type: 'bold' as const, text: 'short' };
+    const spec = { type: 'view' as const, body: [bold, bold] };
+    const { snapshot } = runtime.surfaces;
+
+    expect(snapshot.render(spec)).toMatchObject({
+      width: 600,
+      height: 80,
+      heightMode: 'content',
+      warnings: [],
+    });
+    expect(snapshot.render(spec, { height: 300 })).toMatchObject({
+      height: 300,
+      heightMode: 'fixed',
+    });
+    expect(snapshot.renderNode(bold)).toMatchObject({
+      height: 40,
+      heightMode: 'content',
+      warnings: [],
+    });
+    expect(snapshot.render(spec, { frame: 'card' })).toMatchObject({
+      height: 80,
+      heightMode: 'fixed',
+      warnings: [
+        expect.objectContaining({ path: 'body[0]' }),
+        expect.anything(),
+      ],
+    });
+    expect(snapshot.renderNode(bold, { frame: 'card' }).heightMode).toBe(
+      'fixed'
+    );
+  });
+
+  it('sizes content-frame pages to the tallest estimate and leaves measuring to the backend', () => {
+    const runtime = createIsomerRuntime({
+      packs: [snapshotPackOf(boldPrimitive)],
+      frames: { message: { ...testFrame, sizing: 'content' } },
+    });
+    const bold = { type: 'bold' as const, text: 'short' };
+    const { snapshot } = runtime.surfaces;
+
+    const document = snapshot.renderPages([
+      { type: 'view', body: [bold] },
+      { type: 'view', body: [bold, bold, bold] },
+    ]);
+    expect(document).toMatchObject({
+      height: 120,
+      heightMode: 'content',
+      warnings: [],
+    });
+    expect(document.pages).toHaveLength(2);
+    expect(
+      snapshot.renderPages([{ type: 'view', body: [bold] }], { height: 500 })
+    ).toMatchObject({ height: 500, heightMode: 'fixed' });
+  });
+
   it('has no snapshot surface, and reports none, without a frame', () => {
     const runtime = createIsomerRuntime({ packs: [packOf(notePrimitive)] });
 

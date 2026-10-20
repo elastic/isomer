@@ -15,6 +15,7 @@ import {
   compositionToRender,
   createChildNodeWalker,
   type FrameDispatcher,
+  type FrameSizing,
   IsomerError,
   type PrimitiveDispatcher,
   type PrimitiveNode,
@@ -44,7 +45,7 @@ export interface SnapshotRenderOptions {
   frame?: string;
   /** Overrides the frame's `defaultWidth`. */
   width?: number;
-  /** Overrides the frame's estimated height. */
+  /** Overrides the frame's estimated height, and its `sizing`: the result's `heightMode` is `fixed`. */
   height?: number;
   /** Theme mode; falls back to the composition's own `theme`. `auto` resolves light. */
   theme?: RenderTheme;
@@ -84,10 +85,18 @@ export interface SnapshotRenderResult extends SnapshotPage {
   /** The pack's CSS, with `light-dark(…)` already resolved to this render's scheme. */
   css: string;
   width: number;
+  /** The frame's estimate, or the caller's `height`. Under `heightMode: 'content'`, a backend measures instead. */
   height: number;
   /**
+   * `content` when the frame's `sizing` is `content` and no `height` was
+   * given: `height` is an estimate, and an image backend sizes the output to
+   * the laid-out root. `fixed` otherwise.
+   */
+  heightMode: FrameSizing;
+  /**
    * Nodes this render measured as 0. Empty when `estimateHeight` never calls
-   * `estimateSnapshotHeight`, or when `height` is given.
+   * `estimateSnapshotHeight`, when `height` is given, or when the frame sizes
+   * to content.
    */
   warnings: readonly SnapshotHeightWarning[];
 }
@@ -100,11 +109,17 @@ export interface SnapshotPagesResult {
   css: string;
   /** Every page's width. */
   width: number;
-  /** Every page's height. */
+  /** Every page's height: the tallest estimate, or the caller's `height`. */
   height: number;
   /**
+   * As on {@link SnapshotRenderResult}. Under `content` a backend measures
+   * every page and sizes them all to the tallest.
+   */
+  heightMode: FrameSizing;
+  /**
    * Nodes measured as 0, paths prefixed `pages[n].`. Empty when `height` is
-   * given, or when `estimateHeight` never calls `estimateSnapshotHeight`.
+   * given, when `estimateHeight` never calls `estimateSnapshotHeight`, or when
+   * the frame sizes to content.
    */
   warnings: readonly SnapshotHeightWarning[];
 }
@@ -128,9 +143,10 @@ export interface SnapshotSurface {
   /**
    * Renders several compositions under one frame with one stylesheet, one
    * page each. Every page is the same size, the tallest estimate unless
-   * `height` is given, and the first composition's `theme` decides the palette
-   * unless `theme` is given. `warnings` names nodes that estimate measured as
-   * 0, under `pages[n].`.
+   * `height` is given (under a `content` frame, the tallest laid-out page,
+   * which the backend measures), and the first composition's `theme` decides
+   * the palette unless `theme` is given. `warnings` names nodes that estimate
+   * measured as 0, under `pages[n].`.
    *
    * Throws `EMPTY_PAGES` for an empty list, and validates each composition in
    * order as {@link SnapshotSurface.render} does.
@@ -141,8 +157,8 @@ export interface SnapshotSurface {
   ): SnapshotPagesResult;
   /**
    * Renders a single primitive node with no surround. The result's `width` is
-   * the frame's `defaultWidth` and its `height` the frame's estimate for a
-   * one-node body.
+   * the frame's `defaultWidth`, its `height` the frame's estimate for a
+   * one-node body, and its `heightMode` the frame's `sizing`.
    */
   renderNode(
     node: PrimitiveNode,
@@ -200,7 +216,11 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
     }
   };
 
-  /** Height from `estimateHeight`, and warnings when that call reads `estimateSnapshotHeight`. */
+  /**
+   * Height from `estimateHeight`, and warnings when that call reads
+   * `estimateSnapshotHeight` on a `fixed` frame. A `content` frame's estimate
+   * is not the size drawn, so a node it measures as 0 sizes nothing short.
+   */
   const measuredHeight = (
     frame: BoundFrame,
     composition: Composition,
@@ -216,17 +236,18 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
     });
     return {
       height,
-      warnings: consulted
-        ? collectSnapshotHeightWarnings(
-            dispatcher.definitions,
-            composition.body,
-            prefix
-          )
-        : [],
+      warnings:
+        consulted && frame.sizing === 'fixed'
+          ? collectSnapshotHeightWarnings(
+              dispatcher.definitions,
+              composition.body,
+              prefix
+            )
+          : [],
     };
   };
 
-  /** The tallest estimate, unless `height` is given, which leaves `warnings` empty. */
+  /** The tallest estimate, unless `height` is given, which fixes the height and leaves `warnings` empty. */
   const viewportFor = (
     frame: BoundFrame,
     compositions: readonly Composition[],
@@ -235,11 +256,17 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
   ): {
     width: number;
     height: number;
+    heightMode: FrameSizing;
     warnings: readonly SnapshotHeightWarning[];
   } => {
     const width = options.width ?? frame.defaultWidth;
     if (options.height !== undefined) {
-      return { width, height: options.height, warnings: [] };
+      return {
+        width,
+        height: options.height,
+        heightMode: 'fixed',
+        warnings: [],
+      };
     }
     const measured = compositions.map((composition, index) =>
       measuredHeight(frame, composition, pagePaths ? `pages[${index}]` : '')
@@ -247,6 +274,7 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
     return {
       width,
       height: Math.max(...measured.map(({ height }) => height)),
+      heightMode: frame.sizing,
       warnings: measured.flatMap(({ warnings }) => warnings),
     };
   };
@@ -343,7 +371,7 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
     compositions.forEach((composition, index) => {
       assertBody(named, composition, subject(index));
     });
-    const { warnings, ...size } = viewportFor(
+    const { warnings, heightMode, ...size } = viewportFor(
       named.frame,
       compositions,
       options,
@@ -364,7 +392,7 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
       [page(first), ...rest.map(page)],
       schemeFor(mode)
     );
-    return { ...size, warnings, pages, css };
+    return { ...size, heightMode, warnings, pages, css };
   };
 
   return {
@@ -424,6 +452,7 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
       return {
         width: frame.defaultWidth,
         height,
+        heightMode: frame.sizing,
         warnings,
         ...page!,
         css,
