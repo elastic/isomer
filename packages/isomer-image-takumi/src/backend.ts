@@ -314,16 +314,23 @@ const toRasterSide = (side: number, scale: number) =>
 /** Inline, so no pack class name can collide with it. */
 const PAGE_STYLE = 'overflow:hidden;break-after:page;break-inside:avoid';
 
-/** Each page in a fixed-size block that ends the page, so a frame never spills onto the next. */
+/**
+ * One page's block: `width` wide and ending the page, so a frame never spills
+ * onto the next. Without `height` it takes its content's, which is how a page
+ * is measured in the context it is drawn in.
+ */
+const pageBlock = (html: string, width: number, height?: number) =>
+  `<div style="width:${width}px;${
+    height === undefined ? '' : `height:${height}px;`
+  }${PAGE_STYLE}">${html}</div>`;
+
+/** Every page in its fixed-size block, inside the one root the PDF engine draws. */
 const toPagedSource = ({ pages, css, width, height }: PdfInput) => {
   if (pages.length === 0) {
     throw new Error('pdf: no pages; a document needs at least one');
   }
   const markup = pages
-    .map(
-      ({ html }) =>
-        `<div style="width:${width}px;height:${height}px;${PAGE_STYLE}">${html}</div>`
-    )
+    .map(({ html }) => pageBlock(html, width, height))
     .join('');
   return {
     ...fromHtml(withStylesheet(css, `<div>${markup}</div>`)),
@@ -380,9 +387,9 @@ export const createTakumiImageBackend = ({
   });
 
   /**
-   * Each page laid out alone by the PDF engine at the page width with no
-   * height, as a single-page viewport sizes to content, so the height matches
-   * what `pdf` draws rather than the raster engine's layout.
+   * Each page laid out alone by the PDF engine, in the page block `pdf` draws
+   * it in but with no height, as a single-page viewport sizes to content, so
+   * the height matches what `pdf` draws rather than the raster engine's layout.
    */
   const fitPages = async (
     input: PdfInput,
@@ -394,7 +401,12 @@ export const createTakumiImageBackend = ({
     const engine = await pdfReady();
     const heights: number[] = [];
     for (const page of input.pages) {
-      const { node, css } = toTakumiSource({ html: page.html, css: input.css });
+      const { node, css } = fromHtml(
+        withStylesheet(
+          input.css,
+          `<div>${pageBlock(page.html, input.width)}</div>`
+        )
+      );
       const { height } = await engine.measure(node, {
         viewport: { width: input.width },
         css,

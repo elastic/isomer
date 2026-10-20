@@ -717,6 +717,25 @@ describe('createTakumiImageBackend', () => {
       expect(png.equals(await backend.png(card(3, 'content')))).toBe(true);
     });
 
+    it.each([
+      ['0.5', { devicePixelRatio: 0.5 }],
+      ['2', { devicePixelRatio: 2 }],
+      ['2 at scale 2', { devicePixelRatio: 2, scale: 2 }],
+    ])(
+      'fits to the same png as a content-sized render at devicePixelRatio %s',
+      async (_label, options) => {
+        const backend = createTakumiImageBackend();
+        const direct = await backend.png(card(3, 'content'), options);
+        const fitted = await backend.png(
+          await backend.fit(card(3, 'content'), options),
+          options
+        );
+
+        expect(fitted.readUInt32BE(20)).toBe(direct.readUInt32BE(20));
+        expect(fitted.equals(direct)).toBe(true);
+      }
+    );
+
     it('sizes the svg and the measured root to content', async () => {
       const backend = createTakumiImageBackend();
       const svg = await backend.svg(card(2, 'content'));
@@ -750,6 +769,22 @@ describe('createTakumiImageBackend', () => {
       for (const box of boxes) {
         expect(box).toEqual([0, 0, 90, contentHeight(4) * 0.75]);
       }
+    });
+
+    it('measures pdf pages inside the page block they are drawn in', async () => {
+      const backend = createTakumiImageBackend();
+      // Matches a card only once it sits inside the page block.
+      const css = `${card(1).css} div > .card { padding-top: 100px }`;
+      const fitted = await backend.fitPages({
+        pages: [{ html: card(2).html }],
+        css,
+        width: 120,
+        height: 500,
+        heightMode: 'content',
+      });
+
+      // The 100px top padding replaces the card's 10px.
+      expect(fitted.height).toBe(contentHeight(2) + 90);
     });
   });
 });
