@@ -192,7 +192,7 @@ describe('ScaledPreview', () => {
         <div data-testid="content">Slide</div>
       </ScaledPreview>
     );
-    expect(outerOf()).toHaveStyle({ overflowX: 'hidden' });
+    expect(outerOf()).toHaveStyle({ overflowX: 'clip' });
 
     rerender(
       <ScaledPreview zoom={1}>

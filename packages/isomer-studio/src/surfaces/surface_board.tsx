@@ -169,8 +169,11 @@ const SurfaceCard = ({
             ? undefined
             : css`
                 ${
+                  // The ratio holds inside any padding, so a fitted slide fills
+                  // the inset area exactly.
                   isVisualSurface(surface)
                     ? css`
+                        box-sizing: content-box;
                         aspect-ratio: 16 / 9;
                       `
                     : css`
@@ -185,7 +188,6 @@ const SurfaceCard = ({
                   // from the edges; the text surfaces pad themselves.
                   view === 'render'
                     ? css`
-                        box-sizing: border-box;
                         display: flex;
                         flex-direction: column;
                         justify-content: safe center;

@@ -96,12 +96,13 @@ export const ScaledPreview = ({
 
   // At `fit` the content is scaled to the width it reports, so the only
   // overflow is the frame between a resize and the remeasure that follows it,
-  // where a scrollbar would flash in and out.
+  // where a scrollbar would flash in and out. `clip`, unlike `hidden`, does not
+  // make this a scroll container, so it never scrolls or shrinks vertically.
   return (
     <div
       ref={outer}
       css={css`
-        overflow-x: ${zoom === 'fit' ? 'hidden' : 'auto'};
+        overflow-x: ${zoom === 'fit' ? 'clip' : 'auto'};
       `}>
       <div
         css={
