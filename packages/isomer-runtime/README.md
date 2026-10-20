@@ -19,6 +19,8 @@ It renders nothing itself. Primitives, renderers, and themes come from packs; th
 npm install @elastic/isomer-runtime @elastic/isomer-sdk react react-dom zod
 ```
 
+The latest `main` is published as `@next` (`npm install @elastic/isomer-runtime@next @elastic/isomer-sdk@next`), a prerelease that `latest` and caret ranges never select; install every Isomer package at `@next` together. See [RELEASING.md](https://github.com/elastic/isomer/blob/main/RELEASING.md#snapshots-under-next).
+
 ```ts
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 
@@ -40,19 +42,19 @@ runtime.surfaces.slack.render(composition, { collectAssets: true });
 
 The full set is on the [docs site](https://elastic.github.io/isomer/runtime/).
 
-| Page | What it covers |
-| --- | --- |
-| [Overview](https://elastic.github.io/isomer/runtime/) | What the package is, and when a host needs it |
-| [Quick start](https://elastic.github.io/isomer/runtime/quick-start) | A working host — one composition, six channels |
-| [Runtime](https://elastic.github.io/isomer/runtime/runtime) | `createIsomerRuntime`, its options, and what it refuses |
-| [Packs](https://elastic.github.io/isomer/runtime/packs) | The vocabulary, and how packs compose |
-| [Frame](https://elastic.github.io/isomer/runtime/frame) | The document an image is drawn as |
-| [Surfaces](https://elastic.github.io/isomer/runtime/surfaces) | The six render targets and their validation postures |
-| [Embedding](https://elastic.github.io/isomer/runtime/embedding) | Isolating a rendered composition's CSS inside a host page |
-| [View registry](https://elastic.github.io/isomer/runtime/view-registry) | Product-owned views, requested by id |
-| [Authoring context](https://elastic.github.io/isomer/runtime/authoring-context) | What an agent is handed, and how its output comes back |
-| [Renderer overrides](https://elastic.github.io/isomer/runtime/renderer-overrides) | Replacing one renderer without forking a pack |
-| [API reference](https://elastic.github.io/isomer/runtime/api) | Every export, option, result, and error |
+| Page                                                                              | What it covers                                            |
+| --------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| [Overview](https://elastic.github.io/isomer/runtime/)                             | What the package is, and when a host needs it             |
+| [Quick start](https://elastic.github.io/isomer/runtime/quick-start)               | A working host — one composition, six channels            |
+| [Runtime](https://elastic.github.io/isomer/runtime/runtime)                       | `createIsomerRuntime`, its options, and what it refuses   |
+| [Packs](https://elastic.github.io/isomer/runtime/packs)                           | The vocabulary, and how packs compose                     |
+| [Frame](https://elastic.github.io/isomer/runtime/frame)                           | The document an image is drawn as                         |
+| [Surfaces](https://elastic.github.io/isomer/runtime/surfaces)                     | The six render targets and their validation postures      |
+| [Embedding](https://elastic.github.io/isomer/runtime/embedding)                   | Isolating a rendered composition's CSS inside a host page |
+| [View registry](https://elastic.github.io/isomer/runtime/view-registry)           | Product-owned views, requested by id                      |
+| [Authoring context](https://elastic.github.io/isomer/runtime/authoring-context)   | What an agent is handed, and how its output comes back    |
+| [Renderer overrides](https://elastic.github.io/isomer/runtime/renderer-overrides) | Replacing one renderer without forking a pack             |
+| [API reference](https://elastic.github.io/isomer/runtime/api)                     | Every export, option, result, and error                   |
 
 ## License
 

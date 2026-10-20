@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-20
+
+- **Snapshots under `next`**: each push to `main` that changes a published package or a root build input runs a Snapshot job in `release.yml`, where trusted publishing is bound, and `scripts/publish_snapshot.js` publishes the SDK, runtime, Takumi and Studio at one `<release + 1 patch>-main.<time>.g<sha>` version under the `next` dist-tag, with no tag or commit. Every `workspace:` dependency and peer resolves to that snapshot, so an `@next` set is one consistent build of `main`, and `npx @elastic/isomer-studio@next` still runs against a host's released SDK. RELEASING.md, the publish playbook, and the package READMEs and Studio docs describe it.
+
 ## 2026-10-18
 
 - **One module graph for the config and `imageFonts`**: `check` and `build` imported the config and its `imageFonts` module through separate `tsImport` calls, each a fresh `tsx` namespace, so `@elastic/distillate` loaded twice and warned. `createStudioImporter` now registers one namespace per config and both load through it, and `init` imports the pack entry the same way.
