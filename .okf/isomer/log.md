@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-20
+
+- **Snapshot frames can size to their content**: a `Frame` sets `sizing: 'content'` and its PNG, SVG and PDF are as tall as the body takumi lays out, so a card frame no longer depends on every primitive declaring `metrics.snapshotHeight`; `estimateHeight` still supplies the number synchronous callers and the browser Snapshot preview read, snapshot results report `heightMode`, missing-height warnings are dropped under a content frame, and PDF pages share the tallest measured height. Studio's visual cards stay 16:9 and center each render with an inset, and fit-zoom previews no longer flash a horizontal scrollbar while re-measuring.
+
 ## 2026-10-18
 
 - **One module graph for the config and `imageFonts`**: `check` and `build` imported the config and its `imageFonts` module through separate `tsImport` calls, each a fresh `tsx` namespace, so `@elastic/distillate` loaded twice and warned. `createStudioImporter` now registers one namespace per config and both load through it, and `init` imports the pack entry the same way.
