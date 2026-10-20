@@ -169,6 +169,8 @@ const SurfaceCard = ({
             ? undefined
             : css`
                 ${
+                  // PngSurface drops the ratio once its image loads, so a
+                  // content-sized PNG sets the card's height.
                   isVisualSurface(surface)
                     ? css`
                         aspect-ratio: 16 / 9;

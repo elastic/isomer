@@ -12,6 +12,7 @@ import type {
   ValidationResult,
 } from '@elastic/isomer-sdk';
 import { someBodyNode } from '@elastic/isomer-sdk';
+import { css } from '@emotion/react';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 
 import type { StudioRuntime } from '../config';
@@ -149,6 +150,35 @@ describe('ScaledPreview', () => {
     FakeResizeObserver.resize(contentBox);
 
     expect(layoutBox).toHaveStyle({ transform: 'scale(0.25)' });
+  });
+
+  it('never scrolls sideways at fit, and scrolls at a fixed zoom', () => {
+    getter('clientWidth', () => 800);
+    getter('scrollWidth', () => 1920);
+    getter('scrollHeight', () => 1080);
+    const outerOf = () => {
+      const outer =
+        screen.getByTestId('content').parentElement?.parentElement
+          ?.parentElement?.parentElement;
+      if (!outer) {
+        throw new Error('No outer box.');
+      }
+      return outer;
+    };
+
+    const { rerender } = render(
+      <ScaledPreview>
+        <div data-testid="content">Slide</div>
+      </ScaledPreview>
+    );
+    expect(outerOf()).toHaveStyle({ overflowX: 'hidden' });
+
+    rerender(
+      <ScaledPreview zoom={1}>
+        <div data-testid="content">Slide</div>
+      </ScaledPreview>
+    );
+    expect(outerOf()).toHaveStyle({ overflowX: 'auto' });
   });
 });
 
@@ -566,6 +596,55 @@ describe('PngSurface', () => {
 
     expect(image.style.width).toBe('1920px');
     expect(image.style.height).toBe('');
+  });
+
+  /**
+   * The last `aspect-ratio` the element's own emotion class declares. jsdom
+   * computes no `aspect-ratio`, so this reads the injected rule instead.
+   */
+  const aspectRatioOf = (element: Element) =>
+    [...document.querySelectorAll('style')]
+      .flatMap(({ sheet }) => [...(sheet?.cssRules ?? [])])
+      .filter(
+        (rule): rule is CSSStyleRule =>
+          rule instanceof CSSStyleRule &&
+          element.classList.contains(rule.selectorText.replace(/^\./, ''))
+      )
+      .flatMap(({ cssText }) => [
+        ...cssText.matchAll(/aspect-ratio:\s*([^;}]+?)\s*(?:;|})/g),
+      ])
+      .map(([, value]) => value)
+      .at(-1);
+
+  it('holds the frame at its own aspect ratio until an image has loaded, then takes the image height', async () => {
+    const { calls, rasterizePng } = setup();
+    const frameCss = css`
+      aspect-ratio: 16 / 9;
+    `;
+
+    const { container } = render(
+      <PngSurface
+        composition={composition('first')}
+        {...{ rasterizePng, frameCss }}
+      />
+    );
+    const frame = container.querySelector('[data-test-subj="surfaceFrame"]');
+    if (!frame) {
+      throw new Error('No frame.');
+    }
+    expect(aspectRatioOf(frame)).toBe('16/9');
+
+    await wait(250);
+    await settle(calls[0]);
+    expect(aspectRatioOf(frame)).toBe('16/9');
+
+    const image = screen.getByAltText('PNG preview');
+    Object.defineProperty(image, 'naturalWidth', { value: 1520 });
+    Object.defineProperty(image, 'naturalHeight', { value: 360 });
+    fireEvent.load(image);
+
+    expect(aspectRatioOf(frame)).toBe('auto');
+    expect(image.style.width).toBe('760px');
   });
 });
 

@@ -29,6 +29,15 @@ interface Rasterized {
 const describeError = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
+/**
+ * Lets a frame that holds its shape before the first image, such as a card's
+ * 16:9, take the image's height instead. A content-sized frame's PNG is as
+ * tall as its body, and a fixed slide's is 16:9 already.
+ */
+const fitsImage = css`
+  aspect-ratio: auto;
+`;
+
 /** The host's PNG of `composition`, refreshed as it changes. */
 export const PngSurface = ({
   composition,
@@ -39,7 +48,11 @@ export const PngSurface = ({
   composition: Composition;
   rasterizePng: RasterizePng;
   zoom?: PreviewZoom;
-  /** Styles a frame around the image alone; diagnostics sit outside it. */
+  /**
+   * Styles a frame around the image alone; diagnostics sit outside it. Once
+   * an image has loaded, the frame drops any aspect ratio it sets and takes
+   * the image's height.
+   */
   frameCss?: SerializedStyles | undefined;
 }) => {
   const [image, setImage] = useState<Rasterized>();
@@ -47,6 +60,7 @@ export const PngSurface = ({
   const [isUnavailable, setUnavailable] = useState(false);
   const [isLoading, setLoading] = useState(true);
   const [width, setWidth] = useState<number>();
+  const shown = width !== undefined && image !== undefined;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -112,7 +126,8 @@ export const PngSurface = ({
           text={<p>{error}</p>}
         />
       ) : (
-        <SurfaceFrame {...{ frameCss }}>
+        <SurfaceFrame
+          frameCss={frameCss && shown ? css([frameCss, fitsImage]) : frameCss}>
           {image ? (
             <div
               css={css`
