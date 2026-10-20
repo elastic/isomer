@@ -43,6 +43,8 @@ npx @elastic/isomer-studio build --out dist/studio --base /studio/  # a static s
 npx @elastic/isomer-studio check --format junit --report report.xml # a headless CI gate
 ```
 
+To try what has merged to `main` since the last release, run `npx @elastic/isomer-studio@next`, with any command and flags after it. `next` is a snapshot published on each push to `main` that changes the Studio, versioned as a prerelease (`0.4.1-main.<time>.g<sha>`), so `latest` and `^0.4.0` installs never pick it up. It runs against the pack's released SDK and runtime, and a snapshot that needs SDK or runtime changes that are not released yet will not work until they are.
+
 To pin a version and type-check the config, install it: `npm install --save-dev @elastic/isomer-studio @elastic/isomer-runtime`, then run `npx isomer-studio`. In this repository, `pnpm studio:dev` runs it from source against the slides pack.
 
 `check` validates and renders every example on every surface without a browser and exits 1 on any failure. In GitHub Actions, `elastic/isomer/.github/actions/isomer-studio` runs `check` and `build` and uploads the report and the site. Needs React 18 and Node 22.13 or later. Docs: [Isomer Studio](https://elastic.github.io/isomer/studio/). The reference pack's Studio: [elastic.github.io/isomer/studio-app/](https://elastic.github.io/isomer/studio-app/).
