@@ -24,7 +24,7 @@ npx @elastic/isomer-studio check --report studio-report.json        # a headless
 
 Each command reads `isomer-studio.config.ts` (or `.tsx` or `.js`) from the current directory unless `--config` names another file, and without one says to run `init`; see [`init`](commands.md#init). Nothing needs installing first: the Studio uses the pack's React, SDK and zod, and brings the runtime. To pin the version and type-check a config, install `@elastic/isomer-studio` and `@elastic/isomer-runtime` as dev dependencies and run `npx isomer-studio`. In this repository, `pnpm studio:dev` runs the Studio from source against the slides pack.
 
-To try what has merged to `main` since the last release, run `npx @elastic/isomer-studio@next`, with any command and flags after it. `next` is a snapshot published on each push to `main` that changes the Studio, versioned as a prerelease (`0.4.1-main.<time>.g<sha>`), so `latest` and `^0.4.0` installs never pick it up. It runs against the pack's released SDK and runtime, and a snapshot that needs SDK or runtime changes that are not released yet will not work until they are.
+To try what has merged to `main` since the last release, run `npx @elastic/isomer-studio@next`, with any command and flags after it. `next` is a snapshot of every Isomer package, published on each push to `main` that changes one, as a prerelease (`0.4.1-main.<time>.g<sha>`) that `latest` and `^0.4.0` installs never select. The Studio still loads the SDK, and the runtime when the pack has one, from the pack, so a pack on a released SDK keeps it; install the SDK and runtime at `@next` as well to try their unreleased changes.
 
 In the interface, **Reference** teaches how and when to use each primitive, while **Workbench** is where you edit compositions.
 

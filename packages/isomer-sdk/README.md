@@ -17,14 +17,25 @@ The contracts every other Isomer package is written against: what a primitive is
 npm install @elastic/isomer-sdk react zod
 ```
 
+The latest `main` is published as `@next` (`npm install @elastic/isomer-sdk@next`), a prerelease that `latest` and caret ranges never select; install every Isomer package at `@next` together. See [RELEASING.md](https://github.com/elastic/isomer/blob/main/RELEASING.md#snapshots-under-next).
+
 A primitive is its schema, the copy an agent reads, examples, and one renderer per surface. A pack is a list of primitives.
 
 ```tsx
-import { definePrimitive, definePrimitivePack, requiredString, z } from '@elastic/isomer-sdk';
+import {
+  definePrimitive,
+  definePrimitivePack,
+  requiredString,
+  z,
+} from '@elastic/isomer-sdk';
 
 const kpi = definePrimitive({
   type: 'kpi',
-  schema: z.object({ type: z.literal('kpi'), label: requiredString(), value: requiredString() }),
+  schema: z.object({
+    type: z.literal('kpi'),
+    label: requiredString(),
+    value: requiredString(),
+  }),
   catalog: {
     type: 'kpi',
     purpose: 'State one measured value.',
@@ -40,7 +51,10 @@ const kpi = definePrimitive({
   },
 });
 
-export const metricsPack = definePrimitivePack({ id: 'metrics', primitives: [kpi] });
+export const metricsPack = definePrimitivePack({
+  id: 'metrics',
+  primitives: [kpi],
+});
 ```
 
 `react`, `text`, and `markdown` are mandatory, which is what makes every composition degrade. `slack` is optional and falls back through Markdown. There is no `snapshot` renderer: the `snapshot` surface reuses `react`. Hand the pack to `createIsomerRuntime` from `@elastic/isomer-runtime` and every surface renders it.
@@ -51,16 +65,16 @@ The [SDK docs](https://elastic.github.io/isomer/sdk/) have the [quick start](htt
 
 ## Entry points
 
-| Entry | Reach for it when |
-| --- | --- |
-| `.` | Defining primitives, packs, frames; validating |
-| `./html` | Rendering HTML, writing a style adapter |
-| `./text` | Text envelopes |
-| `./markdown` | Markdown envelopes and formatting |
-| `./slack` | Block Kit types, limits, asset collection |
-| `./react` | React content helpers and dispatcher context |
-| `./author` | JSX front end, agent prompts |
-| `./testing` | Pack conformance harness |
+| Entry        | Reach for it when                              |
+| ------------ | ---------------------------------------------- |
+| `.`          | Defining primitives, packs, frames; validating |
+| `./html`     | Rendering HTML, writing a style adapter        |
+| `./text`     | Text envelopes                                 |
+| `./markdown` | Markdown envelopes and formatting              |
+| `./slack`    | Block Kit types, limits, asset collection      |
+| `./react`    | React content helpers and dispatcher context   |
+| `./author`   | JSX front end, agent prompts                   |
+| `./testing`  | Pack conformance harness                       |
 
 `zod` and `react` are required peers. `react-dom` is optional and needed only by `./html`. Full reference: [API reference](https://elastic.github.io/isomer/sdk/api#entry-points).
 

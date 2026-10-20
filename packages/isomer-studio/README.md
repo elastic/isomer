@@ -43,7 +43,7 @@ npx @elastic/isomer-studio build --out dist/studio --base /studio/  # a static s
 npx @elastic/isomer-studio check --format junit --report report.xml # a headless CI gate
 ```
 
-To try what has merged to `main` since the last release, run `npx @elastic/isomer-studio@next`, with any command and flags after it. `next` is a snapshot published on each push to `main` that changes the Studio, versioned as a prerelease (`0.4.1-main.<time>.g<sha>`), so `latest` and `^0.4.0` installs never pick it up. It runs against the pack's released SDK and runtime, and a snapshot that needs SDK or runtime changes that are not released yet will not work until they are.
+To try what has merged to `main` since the last release, run `npx @elastic/isomer-studio@next`, with any command and flags after it. `next` is a snapshot of every Isomer package, published on each push to `main` that changes one, as a prerelease (`0.4.1-main.<time>.g<sha>`) that `latest` and `^0.4.0` installs never select. The Studio still loads the SDK, and the runtime when the pack has one, from the pack, so a pack on a released SDK keeps it; install the SDK and runtime at `@next` as well to try their unreleased changes.
 
 To pin a version and type-check the config, install it: `npm install --save-dev @elastic/isomer-studio @elastic/isomer-runtime`, then run `npx isomer-studio`. In this repository, `pnpm studio:dev` runs it from source against the slides pack.
 

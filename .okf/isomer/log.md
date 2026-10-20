@@ -2,7 +2,7 @@
 
 ## 2026-10-20
 
-- **Studio snapshots under `next`**: each push to `main` that changes the Studio or Takumi runs a Snapshot job in `release.yml`, where trusted publishing is bound, and `scripts/publish_snapshot.js` publishes `@elastic/isomer-studio` and `@elastic/isomer-image-takumi` at `<release + 1 patch>-main.<time>.g<sha>` under the `next` dist-tag, with no tag or commit. The SDK and runtime peers stay at `^<latest release>`, since the Studio loads them from the host pack, so `npx @elastic/isomer-studio@next` runs the latest `main` against released packages. RELEASING.md, the publish playbook, and the Studio's README and docs describe it.
+- **Snapshots under `next`**: each push to `main` that changes a published package or a root build input runs a Snapshot job in `release.yml`, where trusted publishing is bound, and `scripts/publish_snapshot.js` publishes the SDK, runtime, Takumi and Studio at one `<release + 1 patch>-main.<time>.g<sha>` version under the `next` dist-tag, with no tag or commit. Every `workspace:` dependency and peer resolves to that snapshot, so an `@next` set is one consistent build of `main`, and `npx @elastic/isomer-studio@next` still runs against a host's released SDK. RELEASING.md, the publish playbook, and the package READMEs and Studio docs describe it.
 
 ## 2026-10-18
 

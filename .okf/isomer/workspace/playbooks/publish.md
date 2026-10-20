@@ -1,7 +1,7 @@
 ---
 type: Playbook
 title: Publish
-description: OIDC trusted publishing. semantic-release publishes every non-private package under packages/ at one version; pushes to main publish a Studio snapshot under next.
+description: OIDC trusted publishing. semantic-release publishes every non-private package under packages/ at one version; pushes to main publish a snapshot of each under next.
 tags: [isomer, workspace, release]
 status: stable
 stale_after: 2027-03-21
@@ -29,7 +29,7 @@ sources:
 
 # Snapshots
 
-A push to `main` that changes the Studio, Takumi, the lockfile, `tsconfig.base.json`, or the snapshot script or workflow runs the Snapshot job in the same workflow, since trusted publishing is bound to `release.yml`; dispatching with `snapshot` runs it by hand. After `pnpm verify`, `scripts/publish_snapshot.js @elastic/isomer-studio` publishes the Studio and its workspace `dependencies` (Takumi) at `<release + 1 patch>-main.<UTC commit time>.g<sha>` under the `next` dist-tag, with no tag, commit, or GitHub Release. Workspace peers (SDK, runtime) are written as `^<latest release>`, because the Studio loads them from the host pack. Consumers run `npx @elastic/isomer-studio@next`.[^workflow][^snapshot]
+A push to `main` that changes a published package, a root build input, the lockfile, or the snapshot script or workflow runs the Snapshot job in the same workflow, since trusted publishing is bound to `release.yml`; dispatching with `snapshot` runs it by hand. After `pnpm verify`, `scripts/publish_snapshot.js` publishes every non-private package at one version, `<release + 1 patch>-main.<UTC commit time>.g<sha>`, under the `next` dist-tag, with no tag, commit, or GitHub Release. Every `workspace:` dependency and peer resolves to that snapshot, so an `@next` set is internally consistent. Consumers run `npx @elastic/isomer-studio@next` or install packages at `@next` together.[^workflow][^snapshot]
 
 Related: [workspace](/workspace/concepts/workspace.md), [verify](/workspace/playbooks/verify.md).
 
