@@ -122,6 +122,27 @@ afterEach(() => {
   htmlRender.mockClear();
 });
 
+/**
+ * The last value of `property` the element's own emotion classes declare.
+ * jsdom computes no `aspect-ratio` and drops `safe center`, so this reads the
+ * injected rules instead.
+ */
+const declaredOf = (element: Element, property: string) =>
+  [...document.querySelectorAll('style')]
+    .flatMap(({ sheet }) => [...(sheet?.cssRules ?? [])])
+    .filter(
+      (rule): rule is CSSStyleRule =>
+        rule instanceof CSSStyleRule &&
+        element.classList.contains(rule.selectorText.replace(/^\./, ''))
+    )
+    .flatMap(({ cssText }) => [
+      ...cssText.matchAll(
+        new RegExp(`(?:^|[;{\\s])${property}:\\s*([^;}]+?)\\s*(?:;|})`, 'g')
+      ),
+    ])
+    .map(([, value]) => value)
+    .at(-1);
+
 describe('ScaledPreview', () => {
   it('rescales when edited content resizes its own box', () => {
     let contentWidth = 1920;
@@ -598,25 +619,7 @@ describe('PngSurface', () => {
     expect(image.style.height).toBe('');
   });
 
-  /**
-   * The last `aspect-ratio` the element's own emotion class declares. jsdom
-   * computes no `aspect-ratio`, so this reads the injected rule instead.
-   */
-  const aspectRatioOf = (element: Element) =>
-    [...document.querySelectorAll('style')]
-      .flatMap(({ sheet }) => [...(sheet?.cssRules ?? [])])
-      .filter(
-        (rule): rule is CSSStyleRule =>
-          rule instanceof CSSStyleRule &&
-          element.classList.contains(rule.selectorText.replace(/^\./, ''))
-      )
-      .flatMap(({ cssText }) => [
-        ...cssText.matchAll(/aspect-ratio:\s*([^;}]+?)\s*(?:;|})/g),
-      ])
-      .map(([, value]) => value)
-      .at(-1);
-
-  it('holds the frame at its own aspect ratio until an image has loaded, then takes the image height', async () => {
+  it('keeps the frame at its own aspect ratio once an image has loaded, and centers the image', async () => {
     const { calls, rasterizePng } = setup();
     const frameCss = css`
       aspect-ratio: 16 / 9;
@@ -632,19 +635,18 @@ describe('PngSurface', () => {
     if (!frame) {
       throw new Error('No frame.');
     }
-    expect(aspectRatioOf(frame)).toBe('16/9');
+    expect(declaredOf(frame, 'aspect-ratio')).toBe('16/9');
 
     await wait(250);
     await settle(calls[0]);
-    expect(aspectRatioOf(frame)).toBe('16/9');
-
     const image = screen.getByAltText('PNG preview');
     Object.defineProperty(image, 'naturalWidth', { value: 1520 });
     Object.defineProperty(image, 'naturalHeight', { value: 360 });
     fireEvent.load(image);
 
-    expect(aspectRatioOf(frame)).toBe('auto');
+    expect(declaredOf(frame, 'aspect-ratio')).toBe('16/9');
     expect(image.style.width).toBe('760px');
+    expect(image).toHaveStyle({ marginInline: 'auto' });
   });
 });
 
@@ -767,6 +769,57 @@ describe('SurfaceBoard', () => {
     expect(screen.getByTitle('HTML preview')).toBeInTheDocument();
     expect(screen.queryByTitle('Snapshot preview')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Compare pixels' })).toBeNull();
+  });
+
+  it('centers every render in its card and insets the visual ones', () => {
+    vi.useFakeTimers();
+    const props = {
+      surfaces: ['html', 'png', 'markdown'] as const,
+      composition: composition('first'),
+      validation: noWarnings,
+      view: 'render' as const,
+      zoom: 'fit' as const,
+    };
+    const frameOf = (name: string) => {
+      const frame = screen
+        .getByRole('region', { name })
+        .querySelector('[data-test-subj="surfaceFrame"]');
+      if (!frame) {
+        throw new Error(`No frame in ${name}.`);
+      }
+      return frame;
+    };
+    // Never settles, so the PNG card keeps its frame and spinner.
+    const rasterizePng: RasterizePng = () => new Promise(() => {});
+    const value = studio(rasterizePng);
+    const { rerender } = render(<SurfaceBoard {...props} />, {
+      wrapper: withStudio({
+        ...value,
+        runtime: {
+          ...value.runtime,
+          surfaces: {
+            ...value.runtime.surfaces,
+            markdown: { render: () => 'Hi' },
+          },
+        } as unknown as StudioRuntime,
+      }),
+    });
+
+    for (const name of ['Web preview', 'PNG preview']) {
+      expect(declaredOf(frameOf(name), 'aspect-ratio')).toBe('16/9');
+      expect(declaredOf(frameOf(name), 'justify-content')).toBe('safe center');
+      expect(declaredOf(frameOf(name), 'padding')).toBe('24px');
+    }
+    expect(declaredOf(frameOf('Markdown preview'), 'justify-content')).toBe(
+      'safe center'
+    );
+    expect(declaredOf(frameOf('Markdown preview'), 'padding')).toBe('0');
+
+    rerender(<SurfaceBoard {...props} view="source" />);
+    expect(
+      declaredOf(frameOf('Web preview'), 'justify-content')
+    ).toBeUndefined();
+    expect(declaredOf(frameOf('Web preview'), 'padding')).toBeUndefined();
   });
 
   it('toggles registered HTML enhancements without a React context and disables them for Snapshot', () => {

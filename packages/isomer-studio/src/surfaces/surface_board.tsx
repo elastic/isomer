@@ -169,8 +169,6 @@ const SurfaceCard = ({
             ? undefined
             : css`
                 ${
-                  // PngSurface drops the ratio once its image loads, so a
-                  // content-sized PNG sets the card's height.
                   isVisualSurface(surface)
                     ? css`
                         aspect-ratio: 16 / 9;
@@ -179,6 +177,23 @@ const SurfaceCard = ({
                         min-height: 16rem;
                         max-height: 30rem;
                       `
+                }
+                ${
+                  // A render sits in the middle of its card, whatever size its
+                  // frame or content gives it. `safe` keeps the top of a render
+                  // taller than the card in view. Visual renders are also inset
+                  // from the edges; the text surfaces pad themselves.
+                  view === 'render'
+                    ? css`
+                        box-sizing: border-box;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: safe center;
+                        padding: ${
+                          isVisualSurface(surface) ? euiTheme.size.l : 0
+                        };
+                      `
+                    : ''
                 }
                 overflow: ${clipsRender ? 'hidden' : 'auto'};
                 background: ${euiTheme.colors.backgroundBaseSubdued};
