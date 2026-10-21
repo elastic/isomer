@@ -1340,7 +1340,7 @@ describe('IsomerStudio', () => {
       ).toBeInTheDocument();
     });
 
-    it('drops an encode still in flight when the composer unmounts', async () => {
+    it('restores the saved edit and drops its encode when the composer unmounts mid-encode', async () => {
       window.location.hash = '#/compose';
       render(<IsomerStudio {...{ runtime }} />);
       await findComposer();
@@ -1374,6 +1374,11 @@ describe('IsomerStudio', () => {
         const nav = screen.getByRole('navigation', { name: 'Primitives' });
         fireEvent.click(
           within(nav).getByRole('button', { name: 'Composition' })
+        );
+        // The edit saved while its encode was still pending comes back, not the older link.
+        await waitFor(
+          async () => expect(await findComposer()).toHaveValue(stale),
+          { timeout: 5_000 }
         );
         fireEvent.change(await findComposer(), { target: { value: fresh } });
 

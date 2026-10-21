@@ -565,25 +565,33 @@ export const ComposeView = ({
       return;
     }
     let done = false;
+    let saved = false;
+    let encoding = false;
     const generation = ++generations.current;
+    // A newer draft, a link load or unmounting supersedes a write; the draft save does not.
+    const write = (next: ComposeParams) => {
+      if (generation !== generations.current) {
+        return;
+      }
+      encoding = false;
+      written.current = formatComposeQuery(next);
+      latest.current.replaceComposer(next);
+    };
     const flush = (unmounting = false) => {
       if (done) {
+        // Unmounting mid-encode: the encode is about to be dropped, so point the Layout at the
+        // draft this flush already saved.
+        if (unmounting && encoding && saved) {
+          write({});
+        }
         return;
       }
       done = true;
       clearTimeout(timer);
-      const saved = !draft.isHeld && saveDraft(draft);
+      saved = !draft.isHeld && saveDraft(draft);
       if (!draft.isHeld) {
         rememberTrusted(draft);
       }
-      // A newer draft, a link load or unmounting supersedes this write; the draft save above does not.
-      const write = (next: ComposeParams) => {
-        if (generation !== generations.current) {
-          return;
-        }
-        written.current = formatComposeQuery(next);
-        latest.current.replaceComposer(next);
-      };
       if (unmounting) {
         // No encode can outlive this composer, so point the Layout at the saved draft now.
         if (saved) {
@@ -600,9 +608,12 @@ export const ComposeView = ({
         return;
       }
       setUnsaved(false);
+      encoding = true;
       void encodeSource(draft.source).then(
         (code) => write({ code, lang: draft.format }),
-        () => undefined
+        () => {
+          encoding = false;
+        }
       );
     };
     const timer = setTimeout(flush, SYNC_DELAY);
