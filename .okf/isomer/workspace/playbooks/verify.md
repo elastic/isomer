@@ -40,7 +40,7 @@ Pack contents checks required legal and docs files, declared `files` entries, ex
 
 `pnpm test:browser` drives the Studio's `dev` server and a static build of the slides config in Chromium, and fails with the install command when Chromium is missing. The Studio consumer check packs the Studio, SDK, runtime, and takumi, installs them with npm in a temporary directory without `NODE_PATH`, typechecks a consumer's own pack and config with `skipLibCheck` off, requires `check --png` to pass and a broken example to exit 1, then runs the same browser test against that install's `build --base /sub/` and `dev`.[^studio-consumer]
 
-CI runs `pnpm verify` on Node 22.13.0, the `engines` floor of the SDK, runtime, and evals, and on the latest 22 and 24, then docs-builder in a second job.[^ci]
+CI runs `pnpm verify` on Node 22.13.0, the `engines` floor of the SDK, runtime, and evals, and on the latest 22, 24, and 26, then docs-builder in a second job. Studio's browser tests bind `localStorage` and `sessionStorage` to jsdom and restore the host globals after each test file, so verification needs no Web Storage flags on Node 26.[^ci]
 
 Related: [workspace](/workspace/concepts/workspace.md), [docs-builder](/workspace/playbooks/docs-builder.md).
 
