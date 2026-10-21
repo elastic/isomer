@@ -178,6 +178,8 @@ The config runs in two places: in Node, for `check` and for the dev server's PNG
 - `react`, `react-dom`, `@elastic/isomer-sdk` and `zod`, imported from outside the project, resolve from the project, so the runtime and the pack share them.
 - `@elastic/isomer-runtime` and `@elastic/isomer-studio`, when the project does not have them, resolve from the Studio's install. A config can import both without installing either.
 
+The Studio depends on the SDK and runtime at its own version rather than as peers, so a cached `npx @elastic/isomer-studio@next` upgrades all three together when `next` moves.
+
 The project is the directory of the `package.json` nearest the config. In Node the rules cover `import` and `require`, which a `.ts` config in a project that is not `"type": "module"` loads through.
 
 ## One React

@@ -1,7 +1,7 @@
 ---
 type: Reference
 title: Public contract
-description: Published, ESM only, a bin plus defineStudioConfig and adoptStylesheet, React 18 peers, EUI and Monaco bundled as dependencies.
+description: Published, ESM only, a bin plus defineStudioConfig and adoptStylesheet, React 18, SDK and runtime as dependencies, zod peer, EUI and Monaco bundled as dependencies.
 tags: [isomer, studio, contract]
 status: stable
 stale_after: 2027-04-07
@@ -15,7 +15,7 @@ sources:
 
 - Published to npm by the release workflow, at the same version as the other published packages. A pack installs it beside its runtime and runs the installed `isomer-studio` binary, because the config resolves the Studio, the runtime and React from the pack's `node_modules`. Source available under the Elastic License 2.0 (SPDX: `Elastic-2.0`). Node `>=22.13.0`.[^package]
 - One ESM-only entry, `.`, and the `isomer-studio` bin, a shim that imports `dist/cli.js`. The tarball carries `bin`, `dist` (including the prebuilt `dist/app/` assets), `docs`, `README.md`, `LICENSE.txt`, `NOTICE.txt` and `THIRD_PARTY_LICENSES.md`.
-- Peers: `@elastic/isomer-runtime`, `@elastic/isomer-sdk`, `zod`. React stays at 18 until EUI's peer range allows 19.
+- Dependencies include `@elastic/isomer-runtime` and `@elastic/isomer-sdk` at the Studio's own version, so a cached `npx @elastic/isomer-studio@next` upgrades all three together; the project's SDK still wins when the config resolves it. Peer: `zod`. React stays at 18 until EUI's peer range allows 19.
 - Dependencies carry what the app and CLI use: `react` and `react-dom` `^18.2.0` (so a cold `npx` installs a React 18; see [init and npx](/studio/concepts/init.md)), EUI and its Borealis theme, Emotion, `monaco-editor`, `slack-blocks-to-jsx`, `prettier`, `esbuild`, `esbuild-wasm` (pinned to match its `.wasm`), `tsx`, `vite` and `@vitejs/plugin-react` for `dev`, and `@elastic/isomer-image-takumi`.
 - Workbench combines browser renders in a Web panel with an HTML / React / Snapshot subtitle, without a per-panel surface dropdown, kind badges or redundant group headings. The Outputs menu lists displayed outputs, consolidating React and Snapshot as HTML when available, with every output initially selected and no All surfaces option. HTML renders in a shadow root with its stylesheet; previewed links open in a new tab and forms do not submit, so a preview never navigates Studio. Right-aligned opt-in enhancement controls use registered IDs, filtered by `appliesTo` over the current composition and its child walker: a dropdown checklist shows selected/applicable counts for any number of choices. Only requested pack scripts run through the SDK host helper; changing selections remounts clean output. Scriptless enhancements retain their host-driven behavior. Snapshot, Source view, unstyled React fallbacks and compositions without applicable enhancements disable the controls. PNG stays separate above text-oriented outputs, without a footer hint. Slack preview padding matches the message background. The shared workbench Props button toggles an initially collapsed full-width drawer for the selected primitive, its branded JSX children (recursively), and other primitives in the draft. Component tabs select a table with proportional columns and top-aligned cells. There is no first-node quick-edit menu. Collapsed navigation icons use full opacity. Studio does not depend on, install or launch a headless browser for preview capture; PNGs use Takumi. There are no pixel-difference percentages or inferred matching groups.
 

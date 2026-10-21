@@ -60,6 +60,8 @@
     "@elastic/eui": "123.1.0",
     "@elastic/eui-theme-borealis": "8.1.0",
     "@elastic/isomer-image-takumi": "workspace:*",
+    "@elastic/isomer-runtime": "workspace:*",
+    "@elastic/isomer-sdk": "workspace:*",
     "@emotion/css": "11.13.5",
     "@emotion/react": "11.14.0",
     "@vitejs/plugin-react": "6.1.2",
@@ -75,13 +77,9 @@
     "vite": "8.3.0"
   },
   "peerDependencies": {
-    "@elastic/isomer-runtime": "workspace:^",
-    "@elastic/isomer-sdk": "workspace:^",
     "zod": "^4.5.4"
   },
   "devDependencies": {
-    "@elastic/isomer-runtime": "workspace:*",
-    "@elastic/isomer-sdk": "workspace:*",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.2",
     "@types/react": "^18.2.14",

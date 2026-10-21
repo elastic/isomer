@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-21
+
+- **Outcome**: `@elastic/isomer-studio` depends on `@elastic/isomer-sdk` and `@elastic/isomer-runtime` at its own version instead of taking them as peers. npx caches `@elastic/isomer-studio@next` in one folder, so once `next` moved, npm kept the previous snapshot's SDK and failed with `ERESOLVE`; now all three upgrade together. The project's SDK still wins when the config resolves it.
+
 ## 2026-10-20
 
 - **Snapshot frames can size to their content**: a `Frame` sets `sizing: 'content'` and its PNG, SVG and PDF are as tall as the body takumi lays out, so a card frame no longer depends on every primitive declaring `metrics.snapshotHeight`; `estimateHeight` still supplies the number synchronous callers and the browser Snapshot preview read, snapshot results report `heightMode`, missing-height warnings are dropped under a content frame, and PDF pages share the tallest measured height. Studio's visual cards stay 16:9 and center each render with an inset, and fit-zoom previews no longer flash a horizontal scrollbar while re-measuring.

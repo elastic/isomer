@@ -321,6 +321,12 @@ importers:
       '@elastic/isomer-image-takumi':
         specifier: workspace:*
         version: link:../isomer-image-takumi
+      '@elastic/isomer-runtime':
+        specifier: workspace:*
+        version: link:../isomer-runtime
+      '@elastic/isomer-sdk':
+        specifier: workspace:*
+        version: link:../isomer-sdk
       '@emotion/css':
         specifier: 11.13.5
         version: 11.13.5
@@ -364,12 +370,6 @@ importers:
         specifier: ^4.5.4
         version: 4.6.5
     devDependencies:
-      '@elastic/isomer-runtime':
-        specifier: workspace:*
-        version: link:../isomer-runtime
-      '@elastic/isomer-sdk':
-        specifier: workspace:*
-        version: link:../isomer-sdk
       '@testing-library/jest-dom':
         specifier: 7.0.1
         version: 7.0.1(@testing-library/dom@10.4.2)(vitest@4.1.11)

@@ -121,6 +121,7 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `@types/use-sync-external-store` | 0.0.3 | MIT | `node_modules/.pnpm/@types+use-sync-external-store@0.0.3/node_modules/@types/use-sync-external-store` |  |
 | `@ungap/structured-clone` | 1.4.0 | ISC | `node_modules/.pnpm/@ungap+structured-clone@1.4.0/node_modules/@ungap/structured-clone` |  |
 | `@vitejs/plugin-react` | 6.1.2 | MIT | `node_modules/.pnpm/@vitejs+plugin-react@6.1.2_vite@8.3.0_@types+node@22.20.2_esbuild@0.28.2_jiti@2.6.1_tsx@4.23.15_yaml@2.9.1_/node_modules/@vitejs/plugin-react` |  |
+| `acorn` | 8.18.0 | MIT | `node_modules/.pnpm/acorn@8.18.0/node_modules/acorn` |  |
 | `aria-hidden` | 1.2.6 | MIT | `node_modules/.pnpm/aria-hidden@1.2.6/node_modules/aria-hidden` |  |
 | `attr-accept` | 2.2.5 | MIT | `node_modules/.pnpm/attr-accept@2.2.5/node_modules/attr-accept` |  |
 | `babel-plugin-macros` | 3.1.0 | MIT | `node_modules/.pnpm/babel-plugin-macros@3.1.0/node_modules/babel-plugin-macros` |  |
