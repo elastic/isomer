@@ -3,6 +3,7 @@
 ## 2026-10-20
 
 - **Studio composition editor**: a Composition nav item above Gallery opens `#/compose`, which edits a whole composition, root fields included, in Monaco as JSX or JSON beside every surface, and loads it from `?code=`, `?src=` or `?example=` and keeps the URL in step as you type, like the TypeScript Playground. Linked JSX waits for **Run this code** unless this tab wrote it, and the Workbench hands its draft over with **Open in the composition editor**. `printCompositionJsx` takes `{ root }` to print a composition's fields as `<Composition>` props, exported as `PrintCompositionRoot`, and no longer writes data as syntax: a non-identifier key prints as a quoted spread, and a type that can't be a tag throws `UNKNOWN_PRIMITIVE_TYPE`.
+- **Snapshots under `next`**: each push to `main` that changes a published package or a root build input runs a Snapshot job in `release.yml`, where trusted publishing is bound, and `scripts/publish_snapshot.js` publishes the SDK, runtime, Takumi and Studio at one `<release + 1 patch>-main.<time>.g<sha>` version under the `next` dist-tag, with no tag or commit. Every `workspace:` dependency and peer resolves to that snapshot, so an `@next` set is one consistent build of `main`, and `npx @elastic/isomer-studio@next` still runs against a host's released SDK. RELEASING.md, the publish playbook, and the package READMEs and Studio docs describe it.
 
 ## 2026-10-18
 

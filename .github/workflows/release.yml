@@ -5,7 +5,26 @@
 
 name: Publish a Release
 
+# Trusted publishing is bound to this file, so snapshots publish from here too.
 on:
+  push:
+    branches: [main]
+    # Every published package and root build input; scripts/publish_snapshot.test.js keeps this in step.
+    paths:
+      - packages/isomer-image-takumi/**
+      - packages/isomer-runtime/**
+      - packages/isomer-sdk/**
+      - packages/isomer-studio/**
+      - scripts/build_cjs.js
+      - scripts/rewrite_specifiers.js
+      - scripts/workspace_packages.js
+      - scripts/write_cjs_manifest.js
+      - tsconfig.base.json
+      - package.json
+      - tsconfig.workspace.json
+      - pnpm-lock.yaml
+      - scripts/publish_snapshot.js
+      - .github/workflows/release.yml
   workflow_dispatch:
     inputs:
       dry_run:
@@ -18,6 +37,11 @@ on:
         required: false
         type: string
         default: ''
+      snapshot:
+        description: Skip semantic-release and publish a snapshot of every published package from this commit under the next dist-tag
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -25,6 +49,7 @@ permissions:
 jobs:
   release:
     name: Release
+    if: ${{ github.event_name == 'workflow_dispatch' && !inputs.snapshot }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -103,3 +128,33 @@ jobs:
             echo "Labeling PR #$pr as released ($new_tag)"
             gh pr edit "$pr" --add-label released
           done <<< "$pr_numbers"
+
+  snapshot:
+    name: Snapshot
+    if: ${{ github.event_name == 'push' || inputs.snapshot }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: release-snapshot
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v6.0.6
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/playwright-chromium
+      - run: pnpm verify
+      # pnpm 10 delegates `pnpm publish` to the ambient npm CLI. Trusted publishing needs npm >= 11.5.1; Node 22 ships 10.
+      - run: npm install -g npm@^11.5.1
+      # A prerelease under `next`; no tag, commit, or GitHub Release. See RELEASING.md.
+      - name: Publish a snapshot
+        run: node scripts/publish_snapshot.js ${{ inputs.dry_run && '--dry-run' || '' }}
