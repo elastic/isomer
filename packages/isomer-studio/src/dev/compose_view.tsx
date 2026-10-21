@@ -475,7 +475,7 @@ export const ComposeView = ({
   const written = useRef<string>();
   const seeds = useRef(0);
   const load = useRef<AbortController>();
-  const sync = useRef<{ flush: () => void } | undefined>();
+  const sync = useRef<{ flush: (unmounting?: boolean) => void } | undefined>();
   /** Bumped by each draft sync and link load, so a slower encode cannot write over a newer one. */
   const generations = useRef(0);
   const [isUnsaved, setUnsaved] = useState(false);
@@ -551,7 +551,10 @@ export const ComposeView = ({
   // the sync effect so its cleanup runs first, before that one cancels the pending sync.
   useEffect(
     () => () => {
-      sync.current?.flush();
+      sync.current?.flush(true);
+      // Writes go only to a mounted composer: an encode still in flight from this one must not
+      // land on the Layout after a new composer has mounted with its own draft.
+      generations.current += 1;
     },
     []
   );
@@ -563,7 +566,7 @@ export const ComposeView = ({
     }
     let done = false;
     const generation = ++generations.current;
-    const flush = () => {
+    const flush = (unmounting = false) => {
       if (done) {
         return;
       }
@@ -573,7 +576,7 @@ export const ComposeView = ({
       if (!draft.isHeld) {
         rememberTrusted(draft);
       }
-      // A newer draft or link load supersedes this write; unmounting does not.
+      // A newer draft, a link load or unmounting supersedes this write; the draft save above does not.
       const write = (next: ComposeParams) => {
         if (generation !== generations.current) {
           return;
@@ -581,6 +584,13 @@ export const ComposeView = ({
         written.current = formatComposeQuery(next);
         latest.current.replaceComposer(next);
       };
+      if (unmounting) {
+        // No encode can outlive this composer, so point the Layout at the saved draft now.
+        if (saved) {
+          write({});
+        }
+        return;
+      }
       if (!fitsInLink(draft.source)) {
         // A bare `#/compose` reloads the saved draft, so it is safe only once the draft is saved.
         setUnsaved(!saved && !draft.isHeld);

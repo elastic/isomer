@@ -1326,6 +1326,75 @@ describe('IsomerStudio', () => {
       }
     });
 
+    it('reports a JSX body that is not an array of nodes', async () => {
+      window.location.hash = '#/compose';
+      render(<IsomerStudio {...{ runtime, transformJsx }} />);
+      await findComposer();
+      fireEvent.click(screen.getByRole('button', { name: 'JSX' }));
+      fireEvent.change(await findComposer(), {
+        target: { value: '<Composition body={{}} />' },
+      });
+      expect(await screen.findByText('JSX error')).toBeInTheDocument();
+      expect(
+        screen.getByText(/Expected `body` to be an array of nodes/)
+      ).toBeInTheDocument();
+    });
+
+    it('drops an encode still in flight when the composer unmounts', async () => {
+      window.location.hash = '#/compose';
+      render(<IsomerStudio {...{ runtime }} />);
+      await findComposer();
+      await waitFor(() => expect(window.location.hash).toMatch(/code=/), {
+        timeout: 5_000,
+      });
+
+      let release: () => void = () => undefined;
+      encodeGate.current = new Promise((resolve) => {
+        release = resolve;
+      });
+      const stale = JSON.stringify({
+        type: 'view',
+        body: [{ type: 'callout', body: 'Stale.' }],
+      });
+      const fresh = JSON.stringify({
+        type: 'view',
+        body: [{ type: 'callout', body: 'Fresh.' }],
+      });
+      try {
+        fireEvent.change(await findComposer(), { target: { value: stale } });
+        await new Promise((resolve) => setTimeout(resolve, 600));
+
+        fireEvent.click(
+          screen.getByRole('link', { name: 'Isomer Studio home' })
+        );
+        fireEvent.click(
+          await screen.findByRole('link', { name: /Open the workbench/ })
+        );
+        await findEditor();
+        const nav = screen.getByRole('navigation', { name: 'Primitives' });
+        fireEvent.click(
+          within(nav).getByRole('button', { name: 'Composition' })
+        );
+        fireEvent.change(await findComposer(), { target: { value: fresh } });
+
+        encodeGate.current = undefined;
+        release();
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        expect(await findComposer()).toHaveValue(fresh);
+        await waitFor(
+          () =>
+            expect(
+              localStorage.getItem('isomer-studio:composition-draft')
+            ).toContain('Fresh.'),
+          { timeout: 5_000 }
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        expect(await findComposer()).toHaveValue(fresh);
+      } finally {
+        encodeGate.current = undefined;
+      }
+    });
+
     it('keeps its draft while another page shows', async () => {
       window.location.hash = '#/compose';
       render(<IsomerStudio {...{ runtime }} />);

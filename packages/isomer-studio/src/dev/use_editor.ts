@@ -99,16 +99,21 @@ export const splitComposition = ({
  * A JSON `Composition` as its root fields and body. A bare node or array of nodes reads as a
  * composition with that body, so a body copied from an example pastes in.
  */
+/** `value` as a draft, once its `body` is an array of nodes, whichever format it came from. */
+const checkedComposition = (value: object): Draft => {
+  const { body } = value as { body?: unknown };
+  if (!Array.isArray(body) || !body.every(isNode)) {
+    throw new Error(
+      'Expected `body` to be an array of nodes, each with a string `type`.'
+    );
+  }
+  return splitComposition(value as unknown as Composition);
+};
+
 export const parseCompositionJson = (source: string): Draft => {
   const value: unknown = JSON.parse(source);
   if (isNode(value) && value.type === 'view') {
-    const { body } = value as { body?: unknown };
-    if (!Array.isArray(body) || !body.every(isNode)) {
-      throw new Error(
-        'Expected `body` to be an array of nodes, each with a string `type`.'
-      );
-    }
-    return splitComposition(value as unknown as Composition);
+    return checkedComposition(value);
   }
   return { root: NO_ROOT, nodes: parseBodyJson(source) };
 };
@@ -217,7 +222,7 @@ export const useEditor = (
       }
       if (scope === 'composition') {
         return as === 'jsx' && transformJsx
-          ? splitComposition(
+          ? checkedComposition(
               await compileCompositionDocumentJsx(text, shim, transformJsx)
             )
           : parseCompositionJson(text);

@@ -227,6 +227,27 @@ describe('printCompositionJsx', () => {
     expect(compileJsx(source, cafeEnv.shim)).toEqual([node]);
   });
 
+  it.each(['\n', '\r\n', '\u2028'])(
+    'treats a name ending in %j as no identifier',
+    (end) => {
+      expect(printValue({ [`café${end}`]: 1 })).toBe(
+        `{ ${JSON.stringify(`café${end}`)}: 1 }`
+      );
+      const node = { type: `callout${end}` } as unknown as PrimitiveNode;
+      expect(() => printCompositionJsx([node], env)).toThrow(
+        expect.objectContaining({ code: 'UNKNOWN_PRIMITIVE_TYPE' })
+      );
+      const keyed = {
+        type: 'callout',
+        body: 'Hi.',
+        [`tone${end}`]: 'x',
+      } as unknown as PrimitiveNode;
+      expect(
+        printCompositionJsx([keyed], { ...env, readSpec: propsOnly })
+      ).toContain(`{...{ ${JSON.stringify(`tone${end}`)}: "x" }}`);
+    }
+  );
+
   it('refuses a type that cannot be a JSX tag', () => {
     const node = { type: 'callout /><X' } as unknown as PrimitiveNode;
     expect(() => printCompositionJsx([node], env)).toThrow(
