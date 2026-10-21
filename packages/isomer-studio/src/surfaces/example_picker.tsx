@@ -93,6 +93,12 @@ export const ExamplePicker = ({
       {...{ anchorPosition }}
       panelPaddingSize="s"
       aria-label="Examples"
+      // The name varies by example, so the button truncates it rather than resizing its toolbar.
+      css={css`
+        display: block;
+        min-width: 0;
+        max-width: 100%;
+      `}
       button={
         <EuiButton
           size="s"
@@ -101,6 +107,11 @@ export const ExamplePicker = ({
           iconSide="right"
           isDisabled={!examples.length}
           onClick={() => setOpen((open) => !open)}
+          title={name}
+          css={css`
+            min-inline-size: 0;
+            max-inline-size: 100%;
+          `}
           aria-label={`Example: ${name}`}>
           {name}
         </EuiButton>

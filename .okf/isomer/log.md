@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-20
+
+- **Studio composition editor**: a Composition nav item above Gallery opens `#/compose`, which edits a whole composition, root fields included, in Monaco as JSX or JSON beside every surface, and loads it from `?code=`, `?src=` or `?example=` and keeps the URL in step as you type, like the TypeScript Playground. Linked JSX waits for **Run this code** unless this tab wrote it, and the Workbench hands its draft over with **Open in the composition editor**. `printCompositionJsx` takes `{ root }` to print a composition's fields as `<Composition>` props, exported as `PrintCompositionRoot`, and no longer writes data as syntax: a non-identifier key prints as a quoted spread, and a type that can't be a tag throws `UNKNOWN_PRIMITIVE_TYPE`.
+
 ## 2026-10-18
 
 - **One module graph for the config and `imageFonts`**: `check` and `build` imported the config and its `imageFonts` module through separate `tsImport` calls, each a fresh `tsx` namespace, so `@elastic/distillate` loaded twice and warned. `createStudioImporter` now registers one namespace per config and both load through it, and `init` imports the pack entry the same way.

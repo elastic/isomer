@@ -9,6 +9,7 @@ import type { ReactElement } from 'react';
 import { createElement, Fragment } from 'react';
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import type {
+  AuthorComposition,
   CompositionAuthorProps,
   JsxShim,
 } from '@elastic/isomer-sdk/author';
@@ -69,15 +70,16 @@ const evaluateAsModule: CompiledEvaluator = async (code, scope) => {
 };
 
 /**
- * Compiles one `<Composition>` element written as authoring JSX to its body nodes.
- * Runs the source in this page as a module by default, so only feed it what the user typed.
+ * Compiles one `<Composition>` element written as authoring JSX to the composition it
+ * describes, root props included. Runs the source in this page as a module by default, so only
+ * feed it what the user typed or chose to run.
  */
-export const compileCompositionJsx = async (
+export const compileCompositionDocumentJsx = async (
   source: string,
   shim: JsxShim,
   transformJsx: JsxTransform,
   { evaluate = evaluateAsModule }: { evaluate?: CompiledEvaluator } = {}
-): Promise<PrimitiveNode[]> => {
+): Promise<AuthorComposition> => {
   const compiled = await transformJsx(`${COMPILED_RESULT} =\n${source}`);
   const components = Object.fromEntries(
     Object.entries(shim).filter(([name]) => name !== 'toComposition')
@@ -91,5 +93,15 @@ export const compileCompositionJsx = async (
   if (!isElement(element)) {
     throw new Error('The JSX did not produce an element.');
   }
-  return shim.toComposition(element).body;
+  return shim.toComposition(element);
 };
+
+/** {@link compileCompositionDocumentJsx}'s body nodes alone. */
+export const compileCompositionJsx = async (
+  source: string,
+  shim: JsxShim,
+  transformJsx: JsxTransform,
+  options: { evaluate?: CompiledEvaluator } = {}
+): Promise<PrimitiveNode[]> =>
+  (await compileCompositionDocumentJsx(source, shim, transformJsx, options))
+    .body;

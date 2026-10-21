@@ -385,6 +385,50 @@ test.describe('static build', () => {
     expect(problems).toEqual([]);
   });
 
+  test('shares a composition by link, and holds linked JSX until it is run', async ({
+    page,
+    browser,
+  }) => {
+    const problems = watchProblems(page);
+    const composer = (on: Page) => {
+      const workbench = on.getByRole('region', {
+        name: 'Composition workbench',
+      });
+      return {
+        preview: workbench.locator('[title="HTML preview"]'),
+        valid: workbench.getByText('Valid', { exact: true }),
+      };
+    };
+    await page.goto(`${site.url}${EDIT_ROUTE}`);
+    await expectMonacoReady(page);
+    await page
+      .getByRole('button', { name: 'Open in the composition editor' })
+      .click();
+    await expect(page).toHaveURL(/#\/compose\?code=[\w-]+&lang=jsx$/);
+    await expect(
+      page.getByRole('button', { name: 'Composition', exact: true })
+    ).toHaveAttribute('aria-current', 'page');
+    await expect(composer(page).preview).toBeVisible();
+    await expect(composer(page).valid).toBeVisible();
+    const link = page.url();
+
+    await page.reload();
+    await expectMonacoReady(page);
+    await expect(composer(page).preview).toBeVisible();
+    expect(problems).toEqual([]);
+
+    const fresh = await browser.newContext();
+    const other = await fresh.newPage();
+    const otherProblems = watchProblems(other);
+    await other.goto(link);
+    await expect(other.getByText('Run the JSX from this link?')).toBeVisible();
+    await expect(composer(other).preview).toHaveCount(0);
+    await other.getByRole('button', { name: 'Run this code' }).click();
+    await expect(composer(other).preview).toBeVisible();
+    expect(otherProblems).toEqual([]);
+    await fresh.close();
+  });
+
   test('stacks the Dev editor above all previews when the window is narrow', async ({
     page,
   }) => {

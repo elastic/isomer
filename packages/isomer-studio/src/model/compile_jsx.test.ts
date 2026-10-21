@@ -17,6 +17,7 @@ import type { JsxTransform } from '../types';
 
 import type { CompiledEvaluator } from './compile_jsx';
 import {
+  compileCompositionDocumentJsx,
   compileCompositionJsx,
   COMPILED_RESULT,
   createShim,
@@ -62,6 +63,22 @@ describe('compileCompositionJsx', () => {
       { type: 'fragment', label: 'a' },
       { type: 'isomerStudioH', label: 'b' },
     ]);
+  });
+
+  it('reads the root props with the document variant', async () => {
+    const shim = createShim([primitive('label')]);
+    const source = `<Composition title="Hosts" theme="dark">
+  <Label label="a" />
+</Composition>`;
+
+    await expect(
+      compileCompositionDocumentJsx(source, shim, transformJsx, { evaluate })
+    ).resolves.toEqual({
+      type: 'view',
+      title: 'Hosts',
+      theme: 'dark',
+      body: [{ type: 'label', label: 'a' }],
+    });
   });
 
   describe('default evaluator', () => {

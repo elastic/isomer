@@ -18,12 +18,13 @@ import type { AuthoringTypes } from '../model/authoring_types';
 import { AUTHORING_MODULE } from '../model/authoring_types';
 
 import { registerComponentCompletions, registerTsx } from './tsx_language';
-import type { EditorFormat } from './use_editor';
+import type { EditorFormat, EditorScope } from './use_editor';
 
 registerTsx();
 
 export interface MonacoEditorProps {
   format: EditorFormat;
+  scope: EditorScope;
   value: string;
   onChange: (value: string) => void;
   ariaLabel: string;
@@ -38,15 +39,20 @@ const THEMES = {
 
 let modelCount = 0;
 
-const modelUri = (format: EditorFormat): Uri => {
+/** JSON models end `.<scope>.json`, which picks the schema that checks them. */
+const modelUri = (format: EditorFormat, scope: EditorScope): Uri => {
   modelCount += 1;
   return Uri.parse(
-    `${ROOT}/composition-${modelCount}.${format === 'jsx' ? 'tsx' : 'isomer.json'}`
+    `${ROOT}/composition-${modelCount}.${format === 'jsx' ? 'tsx' : `${scope}.json`}`
   );
 };
 
 /** Points the global TypeScript and JSON services at this runtime's types. */
-const configureLanguages = ({ declarations, bodySchema }: AuthoringTypes) => {
+const configureLanguages = ({
+  declarations,
+  bodySchema,
+  compositionSchema,
+}: AuthoringTypes) => {
   const { typescriptDefaults, JsxEmit, ScriptTarget } = languages.typescript;
   typescriptDefaults.setCompilerOptions({
     target: ScriptTarget.ESNext,
@@ -73,8 +79,13 @@ const configureLanguages = ({ declarations, bodySchema }: AuthoringTypes) => {
     schemas: [
       {
         uri: `${ROOT}/body.schema.json`,
-        fileMatch: ['*.isomer.json'],
+        fileMatch: ['*.body.json'],
         schema: bodySchema,
+      },
+      {
+        uri: `${ROOT}/composition.schema.json`,
+        fileMatch: ['*.composition.json'],
+        schema: compositionSchema,
       },
     ],
   });
@@ -86,6 +97,7 @@ const hex = (color: string): string | undefined =>
 /** Monaco on this runtime's types: TypeScript checks JSX, the Composition schema checks JSON. */
 export const MonacoEditor = ({
   format,
+  scope,
   value,
   onChange,
   ariaLabel,
@@ -183,7 +195,7 @@ export const MonacoEditor = ({
     const model = editor.createModel(
       current.current,
       format === 'jsx' ? 'typescript' : 'json',
-      modelUri(format)
+      modelUri(format, scope)
     );
     created.setModel(model);
     const subscription = model.onDidChangeContent(() => {
@@ -198,7 +210,7 @@ export const MonacoEditor = ({
       created.setModel(null);
       model.dispose();
     };
-  }, [format]);
+  }, [format, scope]);
 
   return (
     <div

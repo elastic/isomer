@@ -24,6 +24,7 @@ import {
   authoringComponents,
   authoringDeclarations,
   bodyJsonSchema,
+  compositionJsonSchema,
 } from './authoring_types';
 import type { StudioExample } from './read_examples';
 import { readExamples } from './read_examples';
@@ -136,6 +137,7 @@ export const describeRuntime = (runtime: StudioRuntime): RuntimeDocs => {
     authoring: {
       declarations: authoringDeclarations(context.schema, runtime.primitives),
       bodySchema: bodyJsonSchema(context),
+      compositionSchema: compositionJsonSchema(context),
       components: authoringComponents(runtime.primitives),
     },
   };

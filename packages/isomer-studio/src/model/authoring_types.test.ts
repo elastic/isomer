@@ -13,7 +13,11 @@ import ts from 'typescript';
 
 import { componentsPack } from '../fixtures/components_pack';
 
-import { AUTHORING_MODULE, bodyJsonSchema } from './authoring_types';
+import {
+  AUTHORING_MODULE,
+  bodyJsonSchema,
+  compositionJsonSchema,
+} from './authoring_types';
 import { describeRuntime } from './describe_runtime';
 
 const runtime = createIsomerRuntime<unknown, StyledRenderContext>({
@@ -150,5 +154,16 @@ describe('bodyJsonSchema', () => {
 
   it('is empty for a body schema without items', () => {
     expect(bodyJsonSchema({ bodySchema: {} })).toEqual({});
+  });
+});
+
+describe('compositionJsonSchema', () => {
+  it('is the authoring schema for a whole composition, without its dialect', () => {
+    const schema = compositionJsonSchema(runtime.getAuthoringContext());
+    expect(schema.$schema).toBeUndefined();
+    expect(schema.required).toEqual(['type', 'body']);
+    expect(Object.keys(schema.$defs ?? {})).toEqual(
+      expect.arrayContaining(['bodyNode', 'renderTheme'])
+    );
   });
 });

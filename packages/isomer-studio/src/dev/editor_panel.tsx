@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import type { ReactNode } from 'react';
 import React from 'react';
 import {
   EuiButton,
@@ -22,9 +23,7 @@ import {
 import { formatValidationError } from '@elastic/isomer-sdk';
 import { css } from '@emotion/react';
 
-import type { PrimitiveDoc } from '../model/describe_runtime';
 import { useStudio } from '../studio_context';
-import { ExamplePicker } from '../surfaces/example_picker';
 
 import { CodeEditor } from './code_editor';
 import type { EditorFormat, EditorState } from './use_editor';
@@ -33,7 +32,7 @@ const isFormat = (id: string): id is EditorFormat =>
   id === 'jsx' || id === 'json';
 
 export const WorkbenchStatus = ({
-  editor: { parseError, isParsing, validation, format },
+  editor: { parseError, isParsing, isHeld, validation, format },
   referenceOpen,
   referenceId,
   onToggleReference,
@@ -44,16 +43,21 @@ export const WorkbenchStatus = ({
   onToggleReference: () => void;
 }) => {
   const { errors } = validation;
-  const health = parseError
-    ? { color: 'danger', label: format === 'jsx' ? 'JSX error' : 'JSON error' }
-    : isParsing
-      ? { color: 'subdued', label: 'Checking…' }
-      : errors.length
-        ? {
-            color: 'danger',
-            label: `Invalid · ${errors.length} ${errors.length === 1 ? 'error' : 'errors'}`,
-          }
-        : { color: 'success', label: 'Valid' };
+  const health = isHeld
+    ? { color: 'warning', label: 'Not run' }
+    : parseError
+      ? {
+          color: 'danger',
+          label: format === 'jsx' ? 'JSX error' : 'JSON error',
+        }
+      : isParsing
+        ? { color: 'subdued', label: 'Checking…' }
+        : errors.length
+          ? {
+              color: 'danger',
+              label: `Invalid · ${errors.length} ${errors.length === 1 ? 'error' : 'errors'}`,
+            }
+          : { color: 'success', label: 'Valid' };
 
   return (
     <>
@@ -84,7 +88,7 @@ export const WorkbenchStatus = ({
           </EuiHealth>
         </EuiFlexItem>
       </EuiFlexGroup>
-      {parseError || errors.length ? (
+      {!isHeld && (parseError || errors.length) ? (
         <EuiText
           size="xs"
           color="danger"
@@ -114,23 +118,27 @@ export const WorkbenchStatus = ({
 };
 
 export interface EditorPanelProps {
-  doc: PrimitiveDoc;
-  example: number;
   editor: EditorState;
-  onExampleChange: (example: number) => void;
+  ariaLabel: string;
+  /** Toolbar controls before the format toggle, such as an example picker; they shrink first when space is tight. */
+  leading?: ReactNode;
+  /** `EuiFlexItem`s grouped with the copy button. */
+  trailing?: ReactNode;
+  /** Shown between the toolbar and the source. */
+  banner?: ReactNode;
 }
 
-/** The example picker and source editor above the shared workbench status. */
+/** A toolbar, the source editor, and a banner between them, above the shared workbench status. */
 export const EditorPanel = ({
-  doc,
-  example,
   editor,
-  onExampleChange,
+  ariaLabel,
+  leading,
+  trailing,
+  banner,
 }: EditorPanelProps) => {
   const { euiTheme } = useEuiTheme();
   const { transformJsx } = useStudio();
-  const { label, examples } = doc;
-  const { format, setFormat, source, setSource } = editor;
+  const { format, setFormat, source, setSource, scope, isHeld } = editor;
 
   const jsxButton = (
     <EuiButton id="jsx" isDisabled={!transformJsx} hasAriaDisabled>
@@ -161,20 +169,28 @@ export const EditorPanel = ({
           flex-grow: 0;
           padding: ${euiTheme.size.s} ${euiTheme.size.base};
         `}>
-        <EuiFlexItem grow={false}>
-          <ExamplePicker
-            {...{ examples, example }}
-            onChange={onExampleChange}
-          />
-        </EuiFlexItem>
-        <EuiFlexItem />
-        <EuiFlexItem grow={false}>
+        {leading ? (
+          <EuiFlexItem
+            grow={false}
+            css={css`
+              flex-shrink: 1;
+              min-width: 0;
+            `}>
+            {leading}
+          </EuiFlexItem>
+        ) : null}
+        <EuiFlexItem
+          grow={false}
+          css={css`
+            flex-shrink: 0;
+          `}>
           <EuiButtonGroup
             legend="Source format"
             buttonSize="s"
             variant="selection"
             idSelected={format}
             display="highlighted"
+            isDisabled={isHeld}
             onChange={(id) => isFormat(id) && setFormat(id)}>
             {transformJsx ? (
               jsxButton
@@ -186,27 +202,39 @@ export const EditorPanel = ({
             <EuiButton id="json">JSON</EuiButton>
           </EuiButtonGroup>
         </EuiFlexItem>
-        <EuiFlexItem grow={false}>
-          <EuiCopy textToCopy={source}>
-            {(copy) => (
-              <EuiToolTip content={format === 'jsx' ? 'Copy JSX' : 'Copy JSON'}>
-                <EuiButtonIcon
-                  size="s"
-                  color="text"
-                  iconType="copy"
-                  aria-label={format === 'jsx' ? 'Copy JSX' : 'Copy JSON'}
-                  onClick={copy}
-                />
-              </EuiToolTip>
-            )}
-          </EuiCopy>
+        <EuiFlexItem />
+        <EuiFlexItem
+          grow={false}
+          css={css`
+            flex-shrink: 0;
+          `}>
+          <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
+            <EuiFlexItem grow={false}>
+              <EuiCopy textToCopy={source}>
+                {(copy) => (
+                  <EuiToolTip
+                    content={format === 'jsx' ? 'Copy JSX' : 'Copy JSON'}>
+                    <EuiButtonIcon
+                      size="s"
+                      color="text"
+                      iconType="copy"
+                      aria-label={format === 'jsx' ? 'Copy JSX' : 'Copy JSON'}
+                      onClick={copy}
+                    />
+                  </EuiToolTip>
+                )}
+              </EuiCopy>
+            </EuiFlexItem>
+            {trailing}
+          </EuiFlexGroup>
         </EuiFlexItem>
       </EuiFlexGroup>
+      {banner}
       <CodeEditor
-        {...{ format }}
+        {...{ format, scope }}
         value={source}
         onChange={setSource}
-        ariaLabel={`${label} source`}
+        {...{ ariaLabel }}
       />
     </div>
   );

@@ -20,6 +20,8 @@ export const AUTHORING_MODULE = '@elastic/isomer-authoring';
 export interface AuthoringTypes {
   declarations: string;
   bodySchema: SchemaNode;
+  /** A JSON Schema for the composition editor: one whole `Composition`. */
+  compositionSchema: SchemaNode;
   /** The component names JSX source uses without importing. */
   components: string[];
 }
@@ -62,4 +64,12 @@ export const bodyJsonSchema = ({
     return {};
   }
   return { $defs, oneOf: [items, { type: 'array', minItems: 1, items }] };
+};
+
+/** A JSON Schema for the composition editor: the runtime's authoring schema for a whole `Composition`. */
+export const compositionJsonSchema = ({
+  schema,
+}: Pick<RuntimeAuthoringContext, 'schema'>): SchemaNode => {
+  const { $schema: _dialect, ...rest } = schema;
+  return rest;
 };

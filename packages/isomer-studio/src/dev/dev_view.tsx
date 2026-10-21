@@ -5,121 +5,112 @@
  * 2.0.
  */
 
-import React, { useId, useState } from 'react';
-import { EuiPanel, EuiResizableContainer, useEuiTheme } from '@elastic/eui';
-import { css } from '@emotion/react';
+import React, { useState } from 'react';
+import { EuiButtonEmpty, EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
 
 import { PrimitiveHeading } from '../chrome/primitive_heading';
 import type { StudioRoute } from '../chrome/route';
+import type { ComposeParams } from '../model/compose_link';
+import { encodeSource } from '../model/compose_link';
+import { rememberTrusted } from '../model/compose_storage';
 import type { PrimitiveDoc } from '../model/describe_runtime';
 import { useStudio } from '../studio_context';
+import { ExamplePicker } from '../surfaces/example_picker';
 
-import { EditorPanel, WorkbenchStatus } from './editor_panel';
-import { PreviewPanel } from './preview_panel';
-import { PropReference } from './prop_reference';
-import { useEditor } from './use_editor';
+import { EditorPanel } from './editor_panel';
+import type { EditorFormat, EditorState } from './use_editor';
+import { printDraft, splitComposition, useEditor } from './use_editor';
+import { Workbench } from './workbench';
 
-const Workbench = ({
+const OPEN_LABEL = 'Open in the composition editor';
+
+/** Carries the composed draft, minus the Studio's theme, to the composition editor. */
+const OpenInComposer = ({
+  editor,
+  openComposer,
+}: {
+  editor: EditorState;
+  openComposer: (params: ComposeParams) => void;
+}) => {
+  const { schemaFor, shim } = useStudio();
+  const open = async () => {
+    const { theme: _theme, ...authored } = editor.composition;
+    const draft = splitComposition(authored);
+    const printAs = (format: EditorFormat) => ({
+      format,
+      source: printDraft(draft, format, 'composition', { schemaFor, shim }),
+    });
+    let printed: { format: EditorFormat; source: string };
+    try {
+      printed = printAs(editor.format);
+    } catch {
+      // A type JSX can't name still carries over as JSON.
+      printed = printAs('json');
+    }
+    rememberTrusted(printed);
+    openComposer({
+      code: await encodeSource(printed.source),
+      lang: printed.format,
+    });
+  };
+
+  return (
+    <EuiButtonEmpty
+      size="s"
+      iconType="external"
+      isDisabled={Boolean(editor.parseError) || editor.isParsing}
+      onClick={() => void open()}>
+      {OPEN_LABEL}
+    </EuiButtonEmpty>
+  );
+};
+
+const ExampleWorkbench = ({
   doc,
   example,
   stacked,
   onExampleChange,
+  openComposer,
 }: {
   doc: PrimitiveDoc;
   example: number;
   stacked: boolean;
   onExampleChange: (example: number) => void;
+  openComposer: (params: ComposeParams) => void;
 }) => {
-  const { euiTheme } = useEuiTheme();
-  const editor = useEditor(doc.examples[example]?.node ?? { type: doc.type });
-  const { composition, validation } = editor;
-  const [referenceOpen, setReferenceOpen] = useState(false);
-  const referenceId = useId();
+  const [initial] = useState(() => ({
+    nodes: [doc.examples[example]?.node ?? { type: doc.type }],
+  }));
+  const editor = useEditor(initial);
+  const { label, examples } = doc;
 
   return (
-    <div
-      css={css`
-        height: 100%;
-        box-sizing: border-box;
-        display: flex;
-        flex-direction: column;
-        padding: ${euiTheme.size.l};
-      `}>
-      <div
-        css={css`
-          margin-bottom: ${euiTheme.size.base};
-        `}>
-        <PrimitiveHeading {...{ doc }} layout="inline" />
-      </div>
-      <EuiPanel
-        role="region"
-        aria-label="Composition workbench"
-        paddingSize="none"
-        css={css`
-          flex: 1;
-          min-height: 0;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-        `}>
-        <EuiResizableContainer
-          direction={stacked ? 'vertical' : 'horizontal'}
-          css={css`
-            flex: 1;
-            min-height: 0;
-          `}>
-          {(Panel, Resizer) => (
-            <>
-              <Panel
-                initialSize={40}
-                minSize="360px"
-                paddingSize="none"
-                color="transparent">
-                <EditorPanel {...{ doc, example, editor, onExampleChange }} />
-              </Panel>
-              <Resizer indicator="border" />
-              <Panel
-                initialSize={60}
-                minSize="0px"
-                paddingSize="none"
-                color="transparent">
-                <PreviewPanel
-                  {...{ composition, validation }}
-                  supported={doc.surfaces}
-                />
-              </Panel>
-            </>
-          )}
-        </EuiResizableContainer>
-        <div
-          css={css`
-            flex: 0 1 auto;
-            min-height: 0;
-            max-height: 40%;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            border-top: ${euiTheme.border.thin};
-          `}>
-          <div
-            css={css`
-              flex: 0 1 auto;
-              min-height: 0;
-              display: flex;
-              flex-direction: column;
-              padding: ${euiTheme.size.s} ${euiTheme.size.base};
-            `}>
-            <WorkbenchStatus
-              {...{ editor, referenceOpen, referenceId }}
-              onToggleReference={() => setReferenceOpen((open) => !open)}
+    <Workbench
+      heading={
+        <EuiFlexGroup alignItems="center" gutterSize="m" responsive={false}>
+          <EuiFlexItem>
+            <PrimitiveHeading {...{ doc }} layout="inline" />
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <OpenInComposer {...{ editor, openComposer }} />
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      }
+      source={
+        <EditorPanel
+          {...{ editor }}
+          ariaLabel={`${label} source`}
+          leading={
+            <ExamplePicker
+              {...{ examples, example }}
+              onChange={onExampleChange}
             />
-          </div>
-          {referenceOpen ? (
-            <PropReference {...{ doc }} nodes={editor.nodes} id={referenceId} />
-          ) : null}
-        </div>
-      </EuiPanel>
-    </div>
+          }
+        />
+      }
+      supported={doc.surfaces}
+      {...{ editor, stacked, doc }}
+    />
   );
 };
 
@@ -127,6 +118,7 @@ export interface DevViewProps {
   route: StudioRoute;
   stacked: boolean;
   navigate: (next: Partial<StudioRoute>) => void;
+  openComposer: (params: ComposeParams) => void;
 }
 
 /** The workbench: edit one example beside the previews, or above them when space is tight. */
@@ -134,6 +126,7 @@ export const DevView = ({
   route: { page, example },
   stacked,
   navigate,
+  openComposer,
 }: DevViewProps) => {
   const {
     docs: { primitives },
@@ -144,9 +137,9 @@ export const DevView = ({
   }
 
   return (
-    <Workbench
+    <ExampleWorkbench
       key={`${page}/${example}`}
-      {...{ doc, example, stacked }}
+      {...{ doc, example, stacked, openComposer }}
       onExampleChange={(next) => navigate({ example: next })}
     />
   );

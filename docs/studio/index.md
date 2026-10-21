@@ -11,6 +11,7 @@ description: A gallery, per-primitive Reference, a composition Workbench and a p
 - a gallery of every primitive, grouped as the pack's authoring groups are, whose React previews mount as they near the viewport;
 - a Reference page per primitive, with its purpose, guidance, props and live examples to teach its use;
 - a Workbench for editing a composition and seeing its live preview;
+- a composition editor that loads and shares a whole composition by URL, like the TypeScript Playground;
 - the same composition on every surface the runtime has: React, HTML, Snapshot, PNG, Slack, Markdown and text.
 
 It ships as a command-line tool, not a React library. EUI, Emotion and Monaco are bundled into it, so a pack never takes them as dependencies.
@@ -70,6 +71,23 @@ Home respects reduced-motion preferences: the surface chart keeps its focus and 
 - **Surfaces.** The Workbench preview starts with every output selected, in one column at every width. The Outputs menu checks the outputs to compare: with every output selected, choosing one shows it at full size, and choosing another adds it. Rendered or Output source applies to every card at once. The Reference example card starts on the first surface, with the example picker on the left and the same menu on the right. Its view selector switches among Rendered, Output source, and Example source; the latter shows the example as JSX or JSON.
 - **Zoom.** With one surface picked, the preview's zoom menu scales the React, HTML, Snapshot and PNG previews: Fit width shrinks a preview to the panel's width and never enlarges it, and fixed levels run from 50% to 200%.
 - **Color mode.** The header offers Light, Dark, and System. System follows the operating system, including when it changes. The choice is remembered per browser, and previews render in the resolved mode. In dark mode the Workbench preview pane takes the theme's recessed background.
+
+## Composition editor
+
+**Composition**, above Gallery in the sidebar, opens `#/compose`: the Workbench for one whole composition rather than one primitive's example. Write it as JSX, with the composition's `title`, `subtitle`, `theme` and `meta` as props of `<Composition>`, or as JSON, which the editor checks against the runtime's composition schema. Its toolbar copies the source, copies a link, downloads it as `composition.tsx` or `composition.json`, and starts a new composition from a starter or any primitive's example. The per-primitive Workbench's **Open in the composition editor** carries its draft across.
+
+![The composition editor: a slide composition's JSX beside its Web and PNG output](images/composition-editor.png)
+
+The address bar carries the draft, so copying it shares what you see, and a reload keeps it. A bare `#/compose` reopens the last draft in this browser. The query takes:
+
+| Parameter | Loads |
+| --- | --- |
+| `code` | Source the editor compressed into the link. **Copy a link** writes one. |
+| `src` | Source fetched from an `https:` URL, or one on the Studio's origin, without credentials and up to 1 MB. The server must allow cross-origin requests. Prefer it to a link longer than about 8,000 characters. |
+| `lang` | `jsx` or `json`. Without it, `src`'s extension decides (`.tsx` and `.jsx` are JSX), else whether the source opens with `{` or `[`. |
+| `example` | `<type>/<index>`, one of the pack's examples, composed through the config's `compose` or `previewExample`. |
+
+JSON from a link is only data, so it renders at once. JSX from a link is code that runs in the page, and under `dev` it can reach the Studio's server, so the preview waits behind **Run this code** until you have read it. JSX this browser tab wrote or ran runs without asking.
 
 ## Requirements
 
