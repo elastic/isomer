@@ -7,8 +7,8 @@ description: Generated map of the Isomer OKF concept graph.
 
 Generated from `.okf/isomer` by `pnpm okf:map`. Do not edit by hand.
 
-- Concepts: 67
-- Links: 162
+- Concepts: 68
+- Links: 163
 - Isolated concepts: 0
 
 ## Graph
@@ -70,6 +70,7 @@ flowchart LR
     slides_entry_points_root["Root"]:::entrypoint
     slides_playbooks_author_a_primitive["Author a primitive"]:::playbook
     slides_reference_public_contract["Public contract"]:::reference
+    studio_concepts_composition_editor["Composition editor"]:::concept
     studio_concepts_config_contract["Config contract"]:::concept
     studio_concepts_init["Init and npx"]:::concept
     studio_concepts_static_png["Static PNGs"]:::concept
@@ -217,6 +218,7 @@ flowchart LR
     slides_playbooks_author_a_primitive --> slides_concepts_one_source
     slides_reference_public_contract --> slides_concepts_distillate
     slides_reference_public_contract --> slides_concepts_pack
+    studio_concepts_composition_editor --> studio_concepts_config_contract
     studio_concepts_config_contract --> studio_concepts_static_png
     studio_concepts_config_contract --> studio_entry_points_root
     studio_concepts_init --> studio_concepts_config_contract
@@ -307,6 +309,7 @@ flowchart LR
 - Root (Entry Point): `slides/entry-points/root`
 - Author a primitive (Playbook): `slides/playbooks/author-a-primitive`
 - Public contract (Reference): `slides/reference/public-contract`
+- Composition editor (Concept): `studio/concepts/composition-editor`
 - Config contract (Concept): `studio/concepts/config-contract`
 - Init and npx (Concept): `studio/concepts/init`
 - Static PNGs (Concept): `studio/concepts/static-png`

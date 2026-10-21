@@ -8,7 +8,8 @@
 import React from 'react';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { StyledRenderContext } from '@elastic/isomer-sdk';
-import { definePrimitivePack } from '@elastic/isomer-sdk';
+import type { DefaultPackTypes } from '@elastic/isomer-sdk';
+import { definePrimitive, definePrimitivePack } from '@elastic/isomer-sdk';
 import {
   fireEvent,
   render,
@@ -18,6 +19,7 @@ import {
 } from '@testing-library/react';
 import ts from 'typescript';
 import { runInNewContext } from 'vm';
+import { z } from 'zod';
 
 import type { StudioCompose } from './config';
 import {
@@ -26,6 +28,7 @@ import {
 } from './fixtures/components_pack';
 import type { CompiledEvaluator } from './model/compile_jsx';
 import { defaultCompose } from './model/compose_example';
+import { encodeSource } from './model/compose_link';
 import { JSX_TRANSFORM_OPTIONS } from './model/jsx_transform';
 import { IsomerStudio } from './studio';
 import type { JsxTransform, RasterizePng } from './types';
@@ -46,6 +49,35 @@ vi.mock('./model/compile_jsx', async () => {
         typeof actual.compileCompositionJsx
       >
     ) => actual.compileCompositionJsx(source, shim, transformJsx, { evaluate }),
+    compileCompositionDocumentJsx: (
+      ...[source, shim, transformJsx]: Parameters<
+        typeof actual.compileCompositionDocumentJsx
+      >
+    ) =>
+      actual.compileCompositionDocumentJsx(source, shim, transformJsx, {
+        evaluate,
+      }),
+  };
+});
+
+/** While set, `encodeSource` waits on it, so a test can hold an encode in flight. */
+const encodeGate = vi.hoisted(() => ({
+  current: undefined as Promise<void> | undefined,
+}));
+
+vi.mock('./model/compose_link', async () => {
+  const actual = await vi.importActual<typeof import('./model/compose_link')>(
+    './model/compose_link'
+  );
+  return {
+    ...actual,
+    encodeSource: async (source: string) => {
+      const gate = encodeGate.current;
+      if (gate) {
+        await gate;
+      }
+      return actual.encodeSource(source);
+    },
   };
 });
 
@@ -176,6 +208,7 @@ describe('IsomerStudio', () => {
         .map(({ textContent }) => textContent);
     expect(headings()).toEqual(['Narrative and content', 'Data display']);
     expect(labels()).toEqual([
+      'Composition',
       'Gallery',
       'Callout',
       'Divider',
@@ -191,7 +224,7 @@ describe('IsomerStudio', () => {
       { target: { value: 'statGroup' } }
     );
     expect(headings()).toEqual(['Data display']);
-    expect(labels()).toEqual(['Gallery', 'Stat group']);
+    expect(labels()).toEqual(['Composition', 'Gallery', 'Stat group']);
   });
 
   it('shows a schema-derived prop table below the source editor without first-node editing controls', async () => {
@@ -778,6 +811,609 @@ describe('IsomerStudio', () => {
       expect(
         screen.queryByRole('region', { name: 'PNG preview' })
       ).not.toBeInTheDocument();
+    });
+  });
+
+  it('opens a primitive whose type JSX cannot name as JSON', async () => {
+    const schema = z.object({
+      type: z.literal('metric-card'),
+      label: z.string(),
+    });
+    const example = { type: 'metric-card' as const, label: 'Hosts' };
+    const metricCard = definePrimitive<
+      z.infer<typeof schema>,
+      DefaultPackTypes
+    >({
+      type: 'metric-card',
+      catalog: {
+        type: 'metric-card',
+        purpose: 'A metric.',
+        useWhen: [],
+        avoidWhen: [],
+        example,
+      },
+      examples: [example],
+      schema,
+      renderers: {
+        react: () => null,
+        text: () => '',
+        markdown: () => [],
+      },
+    });
+    const hyphenated = createIsomerRuntime<unknown, StyledRenderContext>({
+      packs: [definePrimitivePack({ id: 'metrics', primitives: [metricCard] })],
+    });
+    window.location.hash = '#/dev/metric-card/0';
+    render(<IsomerStudio runtime={hyphenated} {...{ transformJsx }} />);
+
+    const editor = await screen.findByRole<HTMLTextAreaElement>('textbox', {
+      name: 'Metric card source',
+    });
+    expect(JSON.parse(editor.value)).toEqual(example);
+  });
+
+  it('disables the handoff when the composed payload is too large for a link', async () => {
+    const compose: StudioCompose = (nodes, options) => ({
+      ...defaultCompose(nodes, options),
+      title: 'x'.repeat(1_000_001),
+    });
+    render(<IsomerStudio {...{ runtime, compose }} />);
+    await findEditor();
+    expect(
+      screen.getByRole('button', { name: 'Open in the composition editor' })
+    ).toBeDisabled();
+  });
+
+  describe('composition editor', () => {
+    const findComposer = () =>
+      screen.findByRole<HTMLTextAreaElement>('textbox', {
+        name: 'Composition source',
+      });
+    const textPreview = () =>
+      screen.getByRole('region', { name: 'Text preview' });
+    const workbench = () =>
+      within(screen.getByRole('region', { name: 'Composition workbench' }));
+    const openLink = async (source: string, lang: 'jsx' | 'json') => {
+      window.location.hash = `#/compose?code=${await encodeSource(source)}&lang=${lang}`;
+    };
+
+    beforeEach(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+
+    it('opens from the nav above Gallery with a starter, and keeps the URL in step', async () => {
+      await renderStudio();
+      const nav = screen.getByRole('navigation', { name: 'Primitives' });
+      fireEvent.click(within(nav).getByRole('button', { name: 'Composition' }));
+
+      const editor = await findComposer();
+      expect(
+        within(nav).getByRole('button', { name: 'Composition' })
+      ).toHaveAttribute('aria-current', 'page');
+      expect(JSON.parse(editor.value)).toMatchObject({
+        type: 'view',
+        body: [{ type: 'callout' }],
+      });
+      expect(workbench().getByText('Valid')).toBeInTheDocument();
+      await waitFor(() =>
+        expect(window.location.hash).toMatch(
+          /^#\/compose\?code=[\w-]+&lang=json$/
+        )
+      );
+    });
+
+    it('loads a JSON composition from a link and renders it at once', async () => {
+      const source = JSON.stringify({
+        type: 'view',
+        title: 'Linked',
+        body: [{ type: 'callout', body: 'From a link.' }],
+      });
+      await openLink(source, 'json');
+      render(<IsomerStudio {...{ runtime }} />);
+
+      expect(await findComposer()).toHaveValue(source);
+      await waitFor(() =>
+        expect(textPreview()).toHaveTextContent('From a link.')
+      );
+      expect(workbench().getByText('Valid')).toBeInTheDocument();
+    });
+
+    it('holds linked JSX until the reader runs it', async () => {
+      const source =
+        '<Composition title="Linked">\n  <Callout>Ran.</Callout>\n</Composition>';
+      await openLink(source, 'jsx');
+      render(<IsomerStudio {...{ runtime, transformJsx }} />);
+
+      expect(await findComposer()).toHaveValue(source);
+      expect(workbench().getByText('Not run')).toBeInTheDocument();
+      expect(
+        screen.queryByRole('region', { name: 'Text preview' })
+      ).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Run this code' }));
+      await waitFor(() => expect(textPreview()).toHaveTextContent('Ran.'));
+      expect(workbench().getByText('Valid')).toBeInTheDocument();
+    });
+
+    it('reports a link it cannot read and starts from the starter', async () => {
+      window.location.hash = '#/compose?code=!!!';
+      render(<IsomerStudio {...{ runtime }} />);
+
+      expect(
+        await screen.findByText('The link did not load')
+      ).toBeInTheDocument();
+      expect((await findComposer()).value).toContain('"callout"');
+    });
+
+    it('starts from a primitive example named in the link', async () => {
+      window.location.hash = '#/compose?example=divider/0';
+      render(<IsomerStudio {...{ runtime }} />);
+
+      await waitFor(async () =>
+        expect((await findComposer()).value).toContain('"divider"')
+      );
+    });
+
+    it('carries a Workbench draft over, and runs JSX this tab wrote', async () => {
+      render(<IsomerStudio {...{ runtime, transformJsx }} />);
+      fireEvent.change(await findEditor(), {
+        target: {
+          value: '<Composition>\n  <Callout>Carried.</Callout>\n</Composition>',
+        },
+      });
+      await waitFor(() => expect(textPreview()).toHaveTextContent('Carried.'));
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Open in the composition editor' })
+      );
+
+      expect(await findComposer()).toHaveValue(
+        '<Composition>\n  <Callout>Carried.</Callout>\n</Composition>'
+      );
+      expect(workbench().queryByText('Not run')).not.toBeInTheDocument();
+      expect(window.location.hash).toMatch(/^#\/compose\?code=/);
+    });
+
+    it('keeps the latest draft, not the opening link, across Home', async () => {
+      await openLink(
+        JSON.stringify({
+          type: 'view',
+          body: [{ type: 'callout', body: 'Old.' }],
+        }),
+        'json'
+      );
+      render(<IsomerStudio {...{ runtime }} />);
+      const draft = JSON.stringify({
+        type: 'view',
+        body: [{ type: 'callout', body: 'New.' }],
+      });
+      const editor = await findComposer();
+      const linked = window.location.hash;
+      fireEvent.change(editor, { target: { value: draft } });
+      await waitFor(() => expect(textPreview()).toHaveTextContent('New.'));
+      await waitFor(() => expect(window.location.hash).not.toBe(linked), {
+        timeout: 5_000,
+      });
+
+      fireEvent.click(screen.getByRole('link', { name: 'Isomer Studio home' }));
+      fireEvent.click(
+        await screen.findByRole('link', { name: /Open the workbench/ })
+      );
+      await findEditor();
+      const nav = screen.getByRole('navigation', { name: 'Primitives' });
+      fireEvent.click(within(nav).getByRole('button', { name: 'Composition' }));
+
+      await waitFor(
+        async () => expect(await findComposer()).toHaveValue(draft),
+        { timeout: 5_000 }
+      );
+    });
+
+    it('loads a slow src link into a composer that is already mounted', async () => {
+      window.location.hash = '#/compose';
+      render(<IsomerStudio {...{ runtime }} />);
+      await findComposer();
+      const nav = screen.getByRole('navigation', { name: 'Primitives' });
+      fireEvent.click(within(nav).getByRole('button', { name: 'Divider' }));
+
+      const linked = JSON.stringify({
+        type: 'view',
+        body: [{ type: 'callout', body: 'Slow.' }],
+      });
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(
+          () =>
+            new Promise<Response>((resolve) =>
+              setTimeout(() => resolve(new Response(linked)), 1_000)
+            )
+        )
+      );
+      try {
+        window.location.hash =
+          '#/compose?src=https%3A%2F%2Fexample.com%2Fa.json';
+        window.dispatchEvent(new HashChangeEvent('hashchange'));
+        await waitFor(
+          async () => expect(await findComposer()).toHaveValue(linked),
+          { timeout: 5_000 }
+        );
+        expect(screen.queryByText('Loading…')).not.toBeInTheDocument();
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    });
+
+    it('resumes syncing when a slow src link is cancelled', async () => {
+      window.location.hash = '#/compose';
+      render(<IsomerStudio {...{ runtime }} />);
+      await findComposer();
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(
+          (_url: unknown, { signal }: RequestInit = {}) =>
+            new Promise<Response>((_resolve, reject) =>
+              signal?.addEventListener('abort', () =>
+                reject(new DOMException('Aborted', 'AbortError'))
+              )
+            )
+        )
+      );
+      try {
+        window.location.hash =
+          '#/compose?src=https%3A%2F%2Fexample.com%2Fslow.json';
+        window.dispatchEvent(new HashChangeEvent('hashchange'));
+        expect(await screen.findByText('Loading…')).toBeInTheDocument();
+
+        window.location.hash = '#/compose';
+        window.dispatchEvent(new HashChangeEvent('hashchange'));
+        await waitFor(() =>
+          expect(screen.queryByText('Loading…')).not.toBeInTheDocument()
+        );
+
+        const draft = JSON.stringify({
+          type: 'view',
+          body: [{ type: 'callout', body: 'After cancel.' }],
+        });
+        fireEvent.change(await findComposer(), { target: { value: draft } });
+        await waitFor(
+          () =>
+            expect(
+              localStorage.getItem('isomer-studio:composition-draft')
+            ).toContain('After cancel.'),
+          { timeout: 5_000 }
+        );
+        expect(window.location.hash).toMatch(/^#\/compose\?code=/);
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    });
+
+    it('keeps an edit made just before going Home', async () => {
+      window.location.hash = '#/compose';
+      render(<IsomerStudio {...{ runtime }} />);
+      await findComposer();
+      await waitFor(() => expect(window.location.hash).toMatch(/code=/), {
+        timeout: 5_000,
+      });
+      const draft = JSON.stringify({
+        type: 'view',
+        body: [{ type: 'callout', body: 'Quick.' }],
+      });
+      fireEvent.change(await findComposer(), { target: { value: draft } });
+      fireEvent.click(screen.getByRole('link', { name: 'Isomer Studio home' }));
+
+      expect(localStorage.getItem('isomer-studio:composition-draft')).toContain(
+        'Quick.'
+      );
+      fireEvent.click(
+        await screen.findByRole('link', { name: /Open the workbench/ })
+      );
+      await findEditor();
+      const nav = screen.getByRole('navigation', { name: 'Primitives' });
+      fireEvent.click(within(nav).getByRole('button', { name: 'Composition' }));
+      await waitFor(
+        async () => expect(await findComposer()).toHaveValue(draft),
+        { timeout: 5_000 }
+      );
+    });
+
+    it('shows that a src link is loading before the editor appears', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => new Promise<Response>(() => undefined))
+      );
+      try {
+        window.location.hash =
+          '#/compose?src=https%3A%2F%2Fexample.com%2Fslow.json';
+        render(<IsomerStudio {...{ runtime }} />);
+        expect(
+          await screen.findByText('Loading the linked composition…')
+        ).toBeInTheDocument();
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    });
+
+    it('cancels a loading src link when New starts the starter', async () => {
+      window.location.hash = '#/compose';
+      render(<IsomerStudio {...{ runtime }} />);
+      await findComposer();
+      let land: (response: Response) => void = () => undefined;
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(
+          () =>
+            new Promise<Response>((resolve) => {
+              land = resolve;
+            })
+        )
+      );
+      try {
+        window.location.hash =
+          '#/compose?src=https%3A%2F%2Fexample.com%2Flate.json';
+        window.dispatchEvent(new HashChangeEvent('hashchange'));
+        expect(await screen.findByText('Loading…')).toBeInTheDocument();
+
+        fireEvent.click(
+          screen.getByRole('button', { name: 'New composition' })
+        );
+        fireEvent.click(
+          await screen.findByRole('option', { name: /^Starter/ })
+        );
+        const starter = (await findComposer()).value;
+        land(
+          new Response(
+            JSON.stringify({
+              type: 'view',
+              body: [{ type: 'callout', body: 'Late.' }],
+            })
+          )
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        expect(await findComposer()).toHaveValue(starter);
+        expect(screen.queryByText('Loading…')).not.toBeInTheDocument();
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    });
+
+    it('keeps a draft too large for a link at a bare #/compose that reloads it', async () => {
+      window.location.hash = '#/compose';
+      render(<IsomerStudio {...{ runtime }} />);
+      const draft = JSON.stringify({
+        type: 'view',
+        body: [{ type: 'callout', body: 'x'.repeat(1_000_001) }],
+      });
+      fireEvent.change(await findComposer(), { target: { value: draft } });
+      await waitFor(
+        () =>
+          expect(
+            localStorage.getItem('isomer-studio:composition-draft')
+          ).toContain('xxxx'),
+        { timeout: 5_000 }
+      );
+      await waitFor(() => expect(window.location.hash).toBe('#/compose'));
+    });
+
+    it('keeps the shared URL when the active Composition item is clicked', async () => {
+      window.location.hash = '#/compose';
+      render(<IsomerStudio {...{ runtime }} />);
+      await findComposer();
+      await waitFor(() => expect(window.location.hash).toMatch(/code=/), {
+        timeout: 5_000,
+      });
+      const shared = window.location.hash;
+
+      const nav = screen.getByRole('navigation', { name: 'Primitives' });
+      fireEvent.click(within(nav).getByRole('button', { name: 'Composition' }));
+      expect(window.location.hash).toBe(shared);
+    });
+
+    it('keeps the saved draft when a link fails to load', async () => {
+      const saved = {
+        source: JSON.stringify({
+          type: 'view',
+          body: [{ type: 'callout', body: 'Saved.' }],
+        }),
+        format: 'json',
+      };
+      localStorage.setItem(
+        'isomer-studio:composition-draft',
+        JSON.stringify(saved)
+      );
+      window.location.hash = '#/compose?code=!!!';
+      render(<IsomerStudio {...{ runtime }} />);
+
+      expect(
+        await screen.findByText('The link did not load')
+      ).toBeInTheDocument();
+      expect(await findComposer()).toHaveValue(saved.source);
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      expect(
+        JSON.parse(
+          localStorage.getItem('isomer-studio:composition-draft') ?? ''
+        )
+      ).toEqual(saved);
+    });
+
+    it('warns and keeps the link when an oversized draft cannot be saved', async () => {
+      window.location.hash = '#/compose';
+      render(<IsomerStudio {...{ runtime }} />);
+      await findComposer();
+      await waitFor(() => expect(window.location.hash).toMatch(/code=/), {
+        timeout: 5_000,
+      });
+      const linked = window.location.hash;
+      const setItem = vi
+        .spyOn(Storage.prototype, 'setItem')
+        .mockImplementation(() => {
+          throw new DOMException('Full', 'QuotaExceededError');
+        });
+      try {
+        fireEvent.change(await findComposer(), {
+          target: {
+            value: JSON.stringify({
+              type: 'view',
+              body: [{ type: 'callout', body: 'x'.repeat(1_000_001) }],
+            }),
+          },
+        });
+        expect(
+          await screen.findByText('This draft is not saved', undefined, {
+            timeout: 5_000,
+          })
+        ).toBeInTheDocument();
+        expect(window.location.hash).toBe(linked);
+      } finally {
+        setItem.mockRestore();
+      }
+    });
+
+    it('drops an encode a newer link load supersedes', async () => {
+      window.location.hash = '#/compose';
+      render(<IsomerStudio {...{ runtime }} />);
+      await findComposer();
+      await waitFor(() => expect(window.location.hash).toMatch(/code=/), {
+        timeout: 5_000,
+      });
+
+      let release: () => void = () => undefined;
+      encodeGate.current = new Promise((resolve) => {
+        release = resolve;
+      });
+      const linked = JSON.stringify({
+        type: 'view',
+        body: [{ type: 'callout', body: 'Linked.' }],
+      });
+      let land: (response: Response) => void = () => undefined;
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(
+          () =>
+            new Promise<Response>((resolve) => {
+              land = resolve;
+            })
+        )
+      );
+      try {
+        fireEvent.change(await findComposer(), {
+          target: {
+            value: JSON.stringify({
+              type: 'view',
+              body: [{ type: 'callout', body: 'Stale.' }],
+            }),
+          },
+        });
+        await new Promise((resolve) => setTimeout(resolve, 600));
+
+        window.location.hash =
+          '#/compose?src=https%3A%2F%2Fexample.com%2Flinked.json';
+        window.dispatchEvent(new HashChangeEvent('hashchange'));
+        expect(await screen.findByText('Loading…')).toBeInTheDocument();
+
+        encodeGate.current = undefined;
+        release();
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        land(new Response(linked));
+
+        await waitFor(
+          async () => expect(await findComposer()).toHaveValue(linked),
+          { timeout: 5_000 }
+        );
+      } finally {
+        encodeGate.current = undefined;
+        vi.unstubAllGlobals();
+      }
+    });
+
+    it('reports a JSX body that is not an array of nodes', async () => {
+      window.location.hash = '#/compose';
+      render(<IsomerStudio {...{ runtime, transformJsx }} />);
+      await findComposer();
+      fireEvent.click(screen.getByRole('button', { name: 'JSX' }));
+      fireEvent.change(await findComposer(), {
+        target: { value: '<Composition body={{}} />' },
+      });
+      expect(await screen.findByText('JSX error')).toBeInTheDocument();
+      expect(
+        screen.getByText(/Expected `body` to be an array of nodes/)
+      ).toBeInTheDocument();
+    });
+
+    it('restores the saved edit and drops its encode when the composer unmounts mid-encode', async () => {
+      window.location.hash = '#/compose';
+      render(<IsomerStudio {...{ runtime }} />);
+      await findComposer();
+      await waitFor(() => expect(window.location.hash).toMatch(/code=/), {
+        timeout: 5_000,
+      });
+
+      let release: () => void = () => undefined;
+      encodeGate.current = new Promise((resolve) => {
+        release = resolve;
+      });
+      const stale = JSON.stringify({
+        type: 'view',
+        body: [{ type: 'callout', body: 'Stale.' }],
+      });
+      const fresh = JSON.stringify({
+        type: 'view',
+        body: [{ type: 'callout', body: 'Fresh.' }],
+      });
+      try {
+        fireEvent.change(await findComposer(), { target: { value: stale } });
+        await new Promise((resolve) => setTimeout(resolve, 600));
+
+        fireEvent.click(
+          screen.getByRole('link', { name: 'Isomer Studio home' })
+        );
+        fireEvent.click(
+          await screen.findByRole('link', { name: /Open the workbench/ })
+        );
+        await findEditor();
+        const nav = screen.getByRole('navigation', { name: 'Primitives' });
+        fireEvent.click(
+          within(nav).getByRole('button', { name: 'Composition' })
+        );
+        // The edit saved while its encode was still pending comes back, not the older link.
+        await waitFor(
+          async () => expect(await findComposer()).toHaveValue(stale),
+          { timeout: 5_000 }
+        );
+        fireEvent.change(await findComposer(), { target: { value: fresh } });
+
+        encodeGate.current = undefined;
+        release();
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        expect(await findComposer()).toHaveValue(fresh);
+        await waitFor(
+          () =>
+            expect(
+              localStorage.getItem('isomer-studio:composition-draft')
+            ).toContain('Fresh.'),
+          { timeout: 5_000 }
+        );
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        expect(await findComposer()).toHaveValue(fresh);
+      } finally {
+        encodeGate.current = undefined;
+      }
+    });
+
+    it('keeps its draft while another page shows', async () => {
+      window.location.hash = '#/compose';
+      render(<IsomerStudio {...{ runtime }} />);
+      const draft = JSON.stringify({
+        type: 'view',
+        body: [{ type: 'callout', body: 'Kept.' }],
+      });
+      fireEvent.change(await findComposer(), { target: { value: draft } });
+
+      const nav = screen.getByRole('navigation', { name: 'Primitives' });
+      fireEvent.click(within(nav).getByRole('button', { name: 'Divider' }));
+      fireEvent.click(within(nav).getByRole('button', { name: 'Composition' }));
+
+      expect(await findComposer()).toHaveValue(draft);
     });
   });
 });

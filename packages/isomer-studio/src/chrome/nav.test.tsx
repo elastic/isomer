@@ -50,6 +50,7 @@ const value: StudioContextValue = {
 const renderNav = (props: Partial<StudioNavProps> = {}) => {
   const onSelectApp = vi.fn();
   const onToggle = vi.fn();
+  const onCompose = vi.fn();
   render(
     <EuiProvider>
       <StudioContextProvider {...{ value }}>
@@ -57,7 +58,7 @@ const renderNav = (props: Partial<StudioNavProps> = {}) => {
           mode="dev"
           page="callout"
           isOpen
-          {...{ onToggle }}
+          {...{ onToggle, onCompose }}
           onSelect={() => undefined}
           {...{ onSelectApp }}
           {...props}
@@ -65,7 +66,12 @@ const renderNav = (props: Partial<StudioNavProps> = {}) => {
       </StudioContextProvider>
     </EuiProvider>
   );
-  return { nav: screen.getByRole('navigation'), onSelectApp, onToggle };
+  return {
+    nav: screen.getByRole('navigation'),
+    onSelectApp,
+    onToggle,
+    onCompose,
+  };
 };
 
 const isBefore = (a: HTMLElement, b: HTMLElement) =>
@@ -210,6 +216,32 @@ describe('StudioNav gallery link', () => {
     expect(
       isBefore(within(nav).getByRole('button', { name: 'Decks' }), gallery)
     ).toBe(true);
+  });
+});
+
+describe('StudioNav composition link', () => {
+  it.each([true, false])(
+    'sits directly above Gallery, open %s, and opens the editor',
+    (isOpen) => {
+      const { nav, onCompose } = renderNav({ isOpen });
+      const buttons = within(nav).getAllByRole('button');
+      const compose = within(nav).getByRole('button', { name: 'Composition' });
+      expect(buttons[buttons.indexOf(compose) + 1]).toBe(
+        within(nav).getByRole('button', { name: 'Gallery' })
+      );
+      fireEvent.click(compose);
+      expect(onCompose).toHaveBeenCalledOnce();
+    }
+  );
+
+  it('is current while composing, and no primitive is', () => {
+    const { nav } = renderNav({ isComposing: true });
+    expect(
+      within(nav).getByRole('button', { name: 'Composition' })
+    ).toHaveAttribute('aria-current', 'page');
+    expect(
+      within(nav).queryAllByRole('button', { current: 'page' })
+    ).toHaveLength(1);
   });
 });
 

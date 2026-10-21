@@ -62,6 +62,36 @@ describe('parseLocation', () => {
     expect(formatLocation(HOME)).toBe('#/home');
   });
 
+  it('reads the composition editor and its query, and writes it back', () => {
+    expect(parseLocation('#/compose', docs, [])).toEqual({
+      compose: true,
+      params: {},
+    });
+    expect(parseLocation('#/compose/', docs, [])).toEqual({
+      compose: true,
+      params: {},
+    });
+    const location = parseLocation(
+      '#/compose?src=https%3A%2F%2Fexample.com%2Fa%2Fb.tsx&lang=jsx',
+      docs,
+      []
+    );
+    expect(location).toEqual({
+      compose: true,
+      params: { src: 'https://example.com/a/b.tsx', lang: 'jsx' },
+    });
+    expect(parseLocation(formatLocation(location), docs, [])).toEqual(location);
+    expect(formatLocation({ compose: true, params: {} })).toBe('#/compose');
+  });
+
+  it('leaves a query on other routes to their own parsing', () => {
+    expect(parseLocation('#/compose-x', docs, [])).toEqual(HOME);
+    expect(parseLocation('#/dev/divider/0', docs, [])).toMatchObject({
+      mode: 'dev',
+      page: 'divider',
+    });
+  });
+
   it('reads a gallery group from the hash and drops one it does not know', () => {
     const grouped = parseRoute('#/docs/gallery/Data%20display', docs);
     expect(grouped).toEqual({

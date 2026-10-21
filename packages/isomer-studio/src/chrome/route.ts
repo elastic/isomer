@@ -7,6 +7,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import type { ComposeParams } from '../model/compose_link';
+import { formatComposeQuery, parseComposeQuery } from '../model/compose_link';
 import type { RuntimeDocs } from '../model/describe_runtime';
 
 export type StudioMode = 'dev' | 'docs';
@@ -31,12 +33,19 @@ export interface HomeRoute {
   home: true;
 }
 
-export type StudioLocation = StudioRoute | AppRoute | HomeRoute;
+/** The composition editor, at `#/compose`, with what to load in its query. */
+export interface ComposeRoute {
+  compose: true;
+  params: ComposeParams;
+}
+
+export type StudioLocation = StudioRoute | AppRoute | HomeRoute | ComposeRoute;
 
 export const GALLERY = 'gallery';
 
 const APP_SEGMENT = 'app';
 const HOME_SEGMENT = 'home';
+const COMPOSE_SEGMENT = 'compose';
 
 export const HOME: HomeRoute = { home: true };
 
@@ -54,6 +63,10 @@ export const isAppRoute = (location: StudioLocation): location is AppRoute =>
 
 export const isHomeRoute = (location: StudioLocation): location is HomeRoute =>
   'home' in location;
+
+export const isComposeRoute = (
+  location: StudioLocation
+): location is ComposeRoute => 'compose' in location;
 
 export const isPrimitiveRoute = (
   location: StudioLocation
@@ -95,15 +108,27 @@ export const parseRoute = (
 };
 
 /**
- * {@link parseRoute} for `#/dev/...` and `#/docs/...`, `#/app/<id>/<path>` for an id in `appIds`, and
- * {@link HOME} for an empty hash, `#/home`, an unknown app, or any other first segment.
+ * {@link parseRoute} for `#/dev/...` and `#/docs/...`, `#/app/<id>/<path>` for an id in `appIds`,
+ * `#/compose?<query>` for the composition editor, and {@link HOME} for an empty hash, `#/home`, an
+ * unknown app, or any other first segment.
  */
 export const parseLocation = (
   hash: string,
   docs: RuntimeDocs,
   appIds: readonly string[]
 ): StudioLocation => {
-  const [segment, id, ...rest] = hash.replace(/^#\/?/, '').split('/');
+  const path = hash.replace(/^#\/?/, '');
+  const query = path.indexOf('?');
+  if (
+    (query < 0 ? path : path.slice(0, query)).replace(/\/$/, '') ===
+    COMPOSE_SEGMENT
+  ) {
+    return {
+      compose: true,
+      params: query < 0 ? {} : parseComposeQuery(path.slice(query + 1)),
+    };
+  }
+  const [segment, id, ...rest] = path.split('/');
   if (segment === APP_SEGMENT) {
     return id !== undefined && appIds.includes(id)
       ? { app: id, path: rest.map(decodeSegment).join('/') }
@@ -128,11 +153,13 @@ export const formatRoute = ({
     : `#/${mode}/${page}/${example}`;
 
 export const formatLocation = (location: StudioLocation): string =>
-  isHomeRoute(location)
-    ? `#/${HOME_SEGMENT}`
-    : isAppRoute(location)
-      ? `#/${APP_SEGMENT}/${location.app}/${location.path.split('/').map(encodeURIComponent).join('/')}`
-      : formatRoute(location);
+  isComposeRoute(location)
+    ? `#/${COMPOSE_SEGMENT}${formatComposeQuery(location.params)}`
+    : isHomeRoute(location)
+      ? `#/${HOME_SEGMENT}`
+      : isAppRoute(location)
+        ? `#/${APP_SEGMENT}/${location.app}/${location.path.split('/').map(encodeURIComponent).join('/')}`
+        : formatRoute(location);
 
 export interface StudioRouter {
   location: StudioLocation;
@@ -144,6 +171,13 @@ export interface StudioRouter {
   openApp: (id: string, path?: string) => void;
   /** Opens `#/home`. */
   goHome: () => void;
+  /** Opens the composition editor, loading what `params` names. */
+  openComposer: (params?: ComposeParams) => void;
+  /**
+   * Rewrites the composition editor's query in the URL, without a history entry, and leaves
+   * {@link StudioRouter.location} alone so the editor does not reload what it wrote.
+   */
+  replaceComposer: (params: ComposeParams) => void;
 }
 
 /** The location in the URL hash, re-checked whenever the primitives or apps change. */
@@ -235,5 +269,38 @@ export const useStudioRoute = (
 
   const goHome = useCallback(() => go(HOME), [go]);
 
-  return { location, route, navigate, openApp, goHome };
+  const openComposer = useCallback(
+    (params: ComposeParams = {}) => go({ compose: true, params }),
+    [go]
+  );
+
+  const mounted = useRef(true);
+  useEffect(
+    () => () => {
+      mounted.current = false;
+    },
+    []
+  );
+
+  const replaceComposer = useCallback((params: ComposeParams) => {
+    const hash = formatLocation({ compose: true, params });
+    // A composer flushing as the whole Studio unmounts must not rewrite another page's URL.
+    if (
+      mounted.current &&
+      isComposeRoute(shown.current) &&
+      window.location.hash !== hash
+    ) {
+      window.history.replaceState(null, '', hash);
+    }
+  }, []);
+
+  return {
+    location,
+    route,
+    navigate,
+    openApp,
+    goHome,
+    openComposer,
+    replaceComposer,
+  };
 };

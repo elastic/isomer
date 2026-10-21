@@ -190,6 +190,131 @@ describe('printNodeJsx', () => {
   });
 });
 
+describe('printCompositionJsx', () => {
+  const body: CalloutNode[] = [{ type: 'callout', body: 'Disk full.' }];
+
+  it('prints no props without a root', () => {
+    expect(printCompositionJsx(body, env)).toBe(
+      '<Composition>\n  <Callout>Disk full.</Callout>\n</Composition>'
+    );
+    expect(printCompositionJsx(body, env, { root: {} })).toBe(
+      printCompositionJsx(body, env)
+    );
+  });
+
+  it('keeps the root fields with an empty body', () => {
+    expect(printCompositionJsx([], env, { root: { title: 'Empty' } })).toBe(
+      '<Composition title="Empty" />'
+    );
+  });
+
+  it('prints a Unicode identifier type as a tag that reads back', () => {
+    const cafeSchema = z.object({
+      type: z.literal('café'),
+      label: z.string(),
+    });
+    const cafe = definition<z.infer<typeof cafeSchema>, typeof cafeSchema>(
+      'café',
+      cafeSchema
+    );
+    const cafeEnv = {
+      schemaFor: () => cafe.schema,
+      shim: buildJsxShim([cafe]),
+    };
+    const node = { type: 'café', label: 'Ouvert' };
+    const source = printCompositionJsx([node], cafeEnv);
+    expect(source).toContain('<Café label="Ouvert" />');
+    expect(compileJsx(source, cafeEnv.shim)).toEqual([node]);
+  });
+
+  it.each(['\n', '\r\n', '\u2028'])(
+    'treats a name ending in %j as no identifier',
+    (end) => {
+      expect(printValue({ [`café${end}`]: 1 })).toBe(
+        `{ ${JSON.stringify(`café${end}`)}: 1 }`
+      );
+      const node = { type: `callout${end}` } as unknown as PrimitiveNode;
+      expect(() => printCompositionJsx([node], env)).toThrow(
+        expect.objectContaining({ code: 'UNKNOWN_PRIMITIVE_TYPE' })
+      );
+      const keyed = {
+        type: 'callout',
+        body: 'Hi.',
+        [`tone${end}`]: 'x',
+      } as unknown as PrimitiveNode;
+      expect(
+        printCompositionJsx([keyed], { ...env, readSpec: propsOnly })
+      ).toContain(`{...{ ${JSON.stringify(`tone${end}`)}: "x" }}`);
+    }
+  );
+
+  it('refuses a type that cannot be a JSX tag', () => {
+    const node = { type: 'callout /><X' } as unknown as PrimitiveNode;
+    expect(() => printCompositionJsx([node], env)).toThrow(
+      expect.objectContaining({ code: 'UNKNOWN_PRIMITIVE_TYPE' })
+    );
+  });
+
+  it('prints a key that is not an attribute name as a quoted spread', () => {
+    const node = {
+      type: 'callout',
+      body: 'Hi.',
+      'p={globalThis.pwned=1} q': 'x',
+    } as unknown as PrimitiveNode;
+    const source = printCompositionJsx([node], {
+      ...env,
+      readSpec: propsOnly,
+    });
+    expect(source).toContain('{...{ "p={globalThis.pwned=1} q": "x" }}');
+
+    const { outputText } = ts.transpileModule(`result = ${source};`, {
+      compilerOptions: {
+        jsx: ts.JsxEmit.React,
+        jsxFactory: 'h',
+        jsxFragmentFactory: 'Fragment',
+        target: ts.ScriptTarget.ES2022,
+      },
+    });
+    const context: Record<string, unknown> = {
+      ...shim,
+      h: createElement,
+      Fragment,
+    };
+    runInNewContext(outputText, context);
+    expect(context.pwned).toBeUndefined();
+  });
+
+  it('prints the root fields as props that read back', () => {
+    const root = {
+      title: 'Hosts',
+      theme: 'dark' as const,
+      meta: { source: 'agent', freshness: { stale: true } },
+    };
+    const source = printCompositionJsx(body, env, { root });
+    expect(source).toMatch(
+      /^<Composition\n {2}title="Hosts"\n {2}theme="dark"/
+    );
+
+    const { outputText } = ts.transpileModule(`result = ${source};`, {
+      compilerOptions: {
+        jsx: ts.JsxEmit.React,
+        jsxFactory: 'h',
+        jsxFragmentFactory: 'Fragment',
+        target: ts.ScriptTarget.ES2022,
+      },
+    });
+    const context: Record<string, unknown> = {
+      ...shim,
+      h: createElement,
+      Fragment,
+    };
+    runInNewContext(outputText, context);
+    expect(
+      shim.toComposition(context.result as ReactElement<CompositionAuthorProps>)
+    ).toEqual({ type: 'view', body, ...root });
+  });
+});
+
 describe.each([
   ['props only', propsOnly],
   ['with the authored spec', undefined],

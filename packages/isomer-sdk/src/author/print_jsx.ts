@@ -8,6 +8,8 @@
 import { createElement, type ReactElement, type ReactNode } from 'react';
 import type { ZodType } from 'zod';
 
+import type { Composition } from '../composition/composition';
+import { IsomerError } from '../composition/error';
 import type { PrimitiveNode } from '../define/primitive_module';
 
 import type {
@@ -31,7 +33,17 @@ export interface PrintJsxEnv {
 
 const MAX_LINE = 80;
 const INDENT = '  ';
-const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
+// Unicode-aware, as JavaScript identifiers are: `Café` is a valid tag, `a b` or `a/>` is not.
+const ID_START = String.raw`[\p{ID_Start}_$]`;
+const ID_PART = String.raw`[\p{ID_Continue}$\u200C\u200D]`;
+const IDENTIFIER = new RegExp(`^${ID_START}${ID_PART}*$`, 'u');
+/** A tag the printer may write: an identifier, or a member path of them. */
+const ELEMENT_NAME = new RegExp(
+  `^${ID_START}${ID_PART}*(?:\\.${ID_START}${ID_PART}*)*$`,
+  'u'
+);
+/** An attribute name JSX reads as written; any other key prints as a spread of a quoted key. */
+const ATTRIBUTE_NAME = new RegExp(`^${ID_START}(?:${ID_PART}|-)*$`, 'u');
 const UNSAFE_TEXT = /[{}<>&]/;
 const UNSAFE_ATTRIBUTE = /["\\\n\r&]/;
 
@@ -108,6 +120,9 @@ const printAttribute = (
   value: unknown,
   indent: string
 ): string => {
+  if (!ATTRIBUTE_NAME.test(name)) {
+    return `{...${printValue({ [name]: value }, indent)}}`;
+  }
   if (typeof value === 'string' && !UNSAFE_ATTRIBUTE.test(value)) {
     return `${name}="${value}"`;
   }
@@ -159,6 +174,12 @@ const printTree = (
   { name, attributes, children }: JsxTree,
   indent: string
 ): string => {
+  if (!ELEMENT_NAME.test(name)) {
+    throw new IsomerError(
+      'UNKNOWN_PRIMITIVE_TYPE',
+      `${JSON.stringify(name)} cannot be written as a JSX tag.`
+    );
+  }
   const inner = indent + INDENT;
   const inlineAttributes = attributes.map(([key, value]) =>
     printAttribute(key, value, indent)
@@ -548,12 +569,28 @@ const createPrinter = ({
 export const printNodeJsx = (node: PrimitiveNode, env: PrintJsxEnv): string =>
   printTree(createPrinter(env).nodeTree(node), '');
 
-/** Prints a composition body as JSX children of `<Composition>`. */
+/** The composition fields {@link printCompositionJsx} can print as props of `<Composition>`. */
+export type PrintCompositionRoot = Omit<Composition, 'type' | 'body'>;
+
+/** The order root props print in, which is the order `Composition` declares them. */
+const ROOT_PROPS = ['version', 'title', 'subtitle', 'theme', 'meta'] as const;
+
+/**
+ * Prints a composition body as JSX children of `<Composition>`, with `root`'s
+ * fields, when given, as its props.
+ */
 export const printCompositionJsx = (
   body: readonly PrimitiveNode[],
-  env: PrintJsxEnv
+  env: PrintJsxEnv,
+  { root }: { root?: PrintCompositionRoot | undefined } = {}
 ): string => {
   const { nodeTree } = createPrinter(env);
+  const attributes = ROOT_PROPS.flatMap((key): Array<[string, unknown]> =>
+    root?.[key] === undefined ? [] : [[key, root[key]]]
+  );
+  if (attributes.length) {
+    return printTree(tree('Composition', attributes, body.map(nodeTree)), '');
+  }
   const nodes = body
     .map((node) => printTree(nodeTree(node), ''))
     .join('\n')

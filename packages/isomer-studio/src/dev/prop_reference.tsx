@@ -6,7 +6,7 @@
  */
 
 import React, { useMemo, useState } from 'react';
-import { EuiTab, EuiTabs, useEuiTheme } from '@elastic/eui';
+import { EuiTab, EuiTabs, EuiText, useEuiTheme } from '@elastic/eui';
 import type { PropDescriptor } from '@elastic/isomer-runtime';
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { createChildNodeWalker } from '@elastic/isomer-sdk';
@@ -115,7 +115,7 @@ export const PropReference = ({
   nodes,
   id,
 }: {
-  doc: PrimitiveDoc;
+  doc?: PrimitiveDoc | undefined;
   nodes: readonly PrimitiveNode[];
   id: string;
 }) => {
@@ -136,7 +136,7 @@ export const PropReference = ({
         return [];
       }
     };
-    const types = new Set([doc.type]);
+    const types = new Set(doc ? [doc.type] : []);
     const visited = new Set<unknown>();
     const visit = (node: unknown) => {
       if (!isSchema(node) || visited.has(node)) {
@@ -160,7 +160,7 @@ export const PropReference = ({
         ...childReferences(primitive.definition.schema, name),
       ];
     });
-  }, [doc.type, nodes, primitives, runtime.primitives]);
+  }, [doc, nodes, primitives, runtime.primitives]);
   const active =
     references.find(({ name }) => name === selected) ?? references[0];
 
@@ -199,7 +199,11 @@ export const PropReference = ({
             names={primitives.map(({ type }) => type)}
           />
         </section>
-      ) : null}
+      ) : (
+        <EuiText size="s" color="subdued">
+          <p>Add a primitive to the draft to see its props.</p>
+        </EuiText>
+      )}
     </section>
   );
 };

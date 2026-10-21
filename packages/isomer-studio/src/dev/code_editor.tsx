@@ -11,7 +11,7 @@ import { css } from '@emotion/react';
 
 import { useStudio } from '../studio_context';
 
-import type { EditorFormat } from './use_editor';
+import type { EditorFormat, EditorScope } from './use_editor';
 
 const MonacoEditor = lazy(() =>
   import('./monaco_editor').then(({ MonacoEditor: component }) => ({
@@ -21,6 +21,8 @@ const MonacoEditor = lazy(() =>
 
 export interface CodeEditorProps {
   format: EditorFormat;
+  /** Picks the JSON Schema a JSON draft is checked against. */
+  scope?: EditorScope | undefined;
   value: string;
   onChange: (value: string) => void;
   ariaLabel: string;
@@ -29,6 +31,7 @@ export interface CodeEditorProps {
 /** The source editor, type-checked against the runtime's authoring types. */
 export const CodeEditor = ({
   format,
+  scope = 'body',
   value,
   onChange,
   ariaLabel,
@@ -49,7 +52,9 @@ export const CodeEditor = ({
           <EuiLoadingSpinner size="l" />
         </EuiFlexGroup>
       }>
-      <MonacoEditor {...{ format, value, onChange, ariaLabel, authoring }} />
+      <MonacoEditor
+        {...{ format, scope, value, onChange, ariaLabel, authoring }}
+      />
     </Suspense>
   );
 };

@@ -59,7 +59,7 @@ To pin a version and type-check the config, install it: `npm install --save-dev 
 
 ![The Reference page for the slides pack's pipeline primitive](https://raw.githubusercontent.com/elastic/isomer/main/packages/isomer-studio/docs/images/reference.png)
 
-The **Workbench**, above, edits a composition as JSX or JSON and shows it on every surface at once.
+The **Workbench**, above, edits a composition as JSX or JSON and shows it on every surface at once. Its **Composition** page edits a whole composition and shares it by URL, like the TypeScript Playground.
 
 ## License
 

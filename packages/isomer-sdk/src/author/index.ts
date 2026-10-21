@@ -35,6 +35,7 @@ export {
   textFromChildren,
 } from './jsx_shim';
 export {
+  type PrintCompositionRoot,
   type PrintJsxEnv,
   printCompositionJsx,
   printNodeJsx,
