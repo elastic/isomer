@@ -144,6 +144,46 @@ const declaredOf = (element: Element, property: string) =>
     .at(-1);
 
 describe('ScaledPreview', () => {
+  it('keeps the grid and shadow unscaled across fit and fixed zoom levels', () => {
+    getter('clientWidth', () => 800);
+    getter('scrollWidth', () => 1920);
+    getter('scrollHeight', () => 1080);
+
+    const content = <div>Slide</div>;
+    const { container, rerender } = render(
+      <ScaledPreview>{content}</ScaledPreview>
+    );
+    const outer = container.firstElementChild;
+    const bounds = outer?.firstElementChild;
+    const scaled = bounds?.firstElementChild;
+    if (!outer || !bounds || !scaled) {
+      throw new Error('No preview boxes.');
+    }
+    const grid = declaredOf(outer, 'background-image');
+    const spacing = declaredOf(outer, 'background-size');
+    const shadow = declaredOf(bounds, 'box-shadow');
+    expect(grid).toContain('radial-gradient(');
+    expect(spacing).toBe('16px 16px');
+    expect(shadow).toContain('12px');
+
+    for (const zoom of ['fit', 0.5, 1, 2, 'fit'] as const) {
+      rerender(<ScaledPreview {...{ zoom }}>{content}</ScaledPreview>);
+      expect(scaled).toHaveStyle({
+        transform: `scale(${zoom === 'fit' ? 800 / 1920 : zoom})`,
+      });
+      expect(declaredOf(outer, 'background-image')).toBe(grid);
+      expect(declaredOf(outer, 'background-size')).toBe(spacing);
+      expect(declaredOf(bounds, 'box-shadow')).toBe(shadow);
+      expect(declaredOf(outer, 'transform')).toBeUndefined();
+      expect(declaredOf(bounds, 'transform')).toBeUndefined();
+      for (const element of [scaled, ...scaled.querySelectorAll('*')]) {
+        expect(declaredOf(element, 'background-image')).toBeUndefined();
+        expect(declaredOf(element, 'background-size')).toBeUndefined();
+        expect(declaredOf(element, 'box-shadow')).toBeUndefined();
+      }
+    }
+  });
+
   it('rescales when edited content resizes its own box', () => {
     let contentWidth = 1920;
     getter('clientWidth', () => 800);
