@@ -2,6 +2,8 @@
 
 ## 2026-10-21
 
+- **Outcome**: Studio visual previews show a dotted grid behind rendered content and around inset renders in both color modes, with a subtle drop shadow around the render. Grid spacing and shadow size stay fixed while zoom changes, making render boundaries and transparency easier to see. The editor keeps its subdued background, while a deeper output-pane background and plain dotted canvases distinguish the preview areas.
+
 - **Outcome**: `@elastic/isomer-studio` depends on `@elastic/isomer-sdk` and `@elastic/isomer-runtime` at its own version instead of taking them as peers. npx caches `@elastic/isomer-studio@next` in one folder, so once `next` moved, npm kept the previous snapshot's SDK and failed with `ERESOLVE`; now all three upgrade together. The project's SDK still wins when the config resolves it.
 
 ## 2026-10-20

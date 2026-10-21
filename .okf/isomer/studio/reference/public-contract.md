@@ -21,6 +21,10 @@ sources:
 
 Related: [root and CLI](/studio/entry-points/root.md).
 
+Visual previews use a theme-aware dotted background behind the render and in the surrounding card inset, with a subtle drop shadow around the rendered bounds. Grid spacing and shadow size stay fixed while content zooms; source and text-oriented previews keep their existing backgrounds.
+
+The Workbench editor keeps the theme's subdued background. The output pane blends the recessed background with the neutral border color, separating the space between cards from their plain dotted canvases.
+
 The white sidebar toggle sits to the right of its filter, with `transitionRightIn`
 for collapse and `transitionLeftIn` for expand. At 1120 pixels or narrower,
 navigation starts collapsed and expands over the content only when toggled, never

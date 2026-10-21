@@ -95,7 +95,11 @@ export const PreviewPanel = ({
           min-height: 0;
           overflow: auto;
           padding: ${euiTheme.size.base};
-          background: ${euiTheme.colors.backgroundBaseRecessed};
+          background: color-mix(
+            in srgb,
+            ${euiTheme.colors.backgroundBaseRecessed} 80%,
+            ${euiTheme.colors.borderBasePlain}
+          );
         `}>
         <SurfaceBoard
           surfaces={showing}
