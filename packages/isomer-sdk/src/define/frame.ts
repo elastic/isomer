@@ -67,6 +67,18 @@ export interface FrameHeader {
   theme?: RenderTheme | undefined;
 }
 
+/**
+ * How a frame's height is decided.
+ *
+ * - `fixed`: {@link Frame.estimateHeight} is the height. The document is that
+ *   size whatever the body lays out to, as a 1920x1080 slide is.
+ * - `content`: the image backend lays the document out at its width and sizes
+ *   the output to the root's height. {@link Frame.estimateHeight} is still
+ *   called, for synchronous callers and a browser preview, but nothing is
+ *   clipped or padded to it.
+ */
+export type FrameSizing = 'fixed' | 'content';
+
 /** {@link FrameHeader} plus the body, for the sizing and validation hooks. */
 export interface FrameComposition extends FrameHeader {
   /** Raw nodes, for measuring and checking only. {@link FrameBody} is what gets drawn. */
@@ -103,10 +115,22 @@ export interface Frame<TTheme> {
    */
   theme: ThemePair<TTheme>;
   /**
+   * Whether the height is {@link Frame.estimateHeight}'s or the laid-out
+   * content's. Defaults to `fixed`.
+   *
+   * A `content` frame should not pin its root to {@link FrameViewport.height}:
+   * the backend sizes the output to the root, so a root fixed at the estimate
+   * measures as the estimate.
+   */
+  sizing?: FrameSizing;
+  /**
    * Height for this body when the caller passes none, in the geometry this
    * document defines. Calling {@link FrameDispatcher.estimateSnapshotHeight} is
    * what makes a missing `metrics.snapshotHeight` size the frame short: that
    * method returns `0` for a node whose primitive declares none.
+   *
+   * Under `sizing: 'content'` this is only an estimate, and a floor such as
+   * the surround's own height is enough.
    */
   estimateHeight(
     composition: FrameComposition,
@@ -154,6 +178,8 @@ export interface Frame<TTheme> {
  */
 export interface BoundFrame {
   readonly defaultWidth: number;
+  /** See {@link Frame.sizing}; resolved, so `fixed` when the frame states none. */
+  readonly sizing: FrameSizing;
   /** See {@link Frame.estimateHeight}. */
   estimateHeight(
     composition: FrameComposition,
@@ -187,6 +213,7 @@ export const bindFrame = <TTheme>(frame: Frame<TTheme>): BoundFrame => {
     mode === 'dark' ? frame.theme.dark : frame.theme.light;
   return {
     defaultWidth: frame.defaultWidth,
+    sizing: frame.sizing ?? 'fixed',
     estimateHeight: (composition, dispatcher) =>
       frame.estimateHeight(composition, dispatcher),
     validateBody: (body) => frame.validateBody?.(body) ?? [],

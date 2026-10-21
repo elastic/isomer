@@ -188,4 +188,40 @@ describe('renderPng', () => {
     expect(result.png.readUInt32BE(20)).toBe(64);
     expect(result).toMatchObject({ width: 64, height: 32 });
   });
+
+  it('draws a content-sized frame at the height its body lays out to', async () => {
+    const runtime: PngRuntime = {
+      validate: (composition) => ({ valid: true, errors: [], composition }),
+      surfaces: {
+        snapshot: {
+          render: () => ({
+            html: '<div class="card"><div class="row"></div><div class="row"></div></div>',
+            css: '.card { padding: 10px } .row { height: 24px }',
+            width: 64,
+            height: 400,
+            heightMode: 'content',
+          }),
+        },
+      },
+    };
+    const takumi = createTakumiImageBackend();
+
+    const measured = await renderPng(runtime, { type: 'view' }, takumi, {
+      scale: 2,
+    });
+    expect(measured).toMatchObject({ width: 64, height: 68 });
+    expect(measured.png.readUInt32BE(20)).toBe(136);
+
+    // A backend without `fit` still draws to content, and reports the estimate.
+    const unfitted = await renderPng(
+      runtime,
+      { type: 'view' },
+      {
+        png: (input, options) => takumi.png(input, options),
+        svg: (input) => takumi.svg(input),
+      }
+    );
+    expect(unfitted).toMatchObject({ height: 400 });
+    expect(unfitted.png.readUInt32BE(20)).toBe(68);
+  });
 });

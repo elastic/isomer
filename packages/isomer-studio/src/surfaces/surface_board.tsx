@@ -169,14 +169,33 @@ const SurfaceCard = ({
             ? undefined
             : css`
                 ${
+                  // The ratio holds inside any padding, so a fitted slide fills
+                  // the inset area exactly.
                   isVisualSurface(surface)
                     ? css`
+                        box-sizing: content-box;
                         aspect-ratio: 16 / 9;
                       `
                     : css`
                         min-height: 16rem;
                         max-height: 30rem;
                       `
+                }
+                ${
+                  // A render sits in the middle of its card, whatever size its
+                  // frame or content gives it. `safe` keeps the top of a render
+                  // taller than the card in view. Visual renders are also inset
+                  // from the edges; the text surfaces pad themselves.
+                  view === 'render'
+                    ? css`
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: safe center;
+                        padding: ${
+                          isVisualSurface(surface) ? euiTheme.size.l : 0
+                        };
+                      `
+                    : ''
                 }
                 overflow: ${clipsRender ? 'hidden' : 'auto'};
                 background: ${euiTheme.colors.backgroundBaseSubdued};

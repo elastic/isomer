@@ -83,7 +83,7 @@ Slack cannot resolve a relative link, so without a base one prints its label. A 
 
 ## A snapshot stops at markup and a stylesheet
 
-The `snapshot` surface renders a composition once, inside a [frame](frame.md), at a fixed size and one color scheme, with no scripts. It returns `{ element, html, css, width, height, warnings }`, not image bytes. Rasterization is a separate capability a host opts into, and stopping at that boundary is what keeps this package isomorphic.
+The `snapshot` surface renders a composition once, inside a [frame](frame.md), at a fixed size and one color scheme, with no scripts. It returns `{ element, html, css, width, height, heightMode, warnings }`, not image bytes. `heightMode` is `content` when the frame [sizes to content](frame.md#sizing-to-content) and no `height` was given, which tells an image backend to measure rather than take `height`, the frame's estimate; it is `fixed` otherwise. Rasterization is a separate capability a host opts into, and stopping at that boundary is what keeps this package isomorphic.
 
 `element` is the same React tree the DOM gets, carrying class names, and `html` is that tree's static markup, rendered in the same call so the two cannot drift. A backend takes whichever it reads: takumi takes `html`, and one that lays out React elements takes `element`. `css` is the packs' stylesheet, which a rasterizer is handed the way a browser is handed a `<style>`. Its `light-dark(…)` values are already resolved to the render's scheme, because a snapshot is one static frame with no color scheme to resolve them against. Everything but `element` is plain data, so a host can cache `{ html, css, width, height }` or rasterize it in another process.
 
@@ -93,9 +93,9 @@ const { html, css, width, height, warnings } = runtime.surfaces.snapshot.render(
 
 `anchors: true` renders node anchors into `element` and `html`, so a measured layout of either can be handed to the SDK's `checkLayout`.
 
-`renderPages(compositions, options?)` lays several compositions out as one document, `{ pages, css, width, height, warnings }`: one `{ element, html }` page per composition against one stylesheet. A paged output such as a PDF needs that, and per-composition `render` calls cannot give it, because each collects only the CSS its own composition uses. Every page is the same size, the tallest estimate unless `height` is given, and the first composition's `theme` decides the palette unless `theme` is given. An empty list throws `EMPTY_PAGES`, and a body the frame rejects names its page, counted from 1. `warnings` on a paged result prefix each path with `pages[n].`.
+`renderPages(compositions, options?)` lays several compositions out as one document, `{ pages, css, width, height, heightMode, warnings }`: one `{ element, html }` page per composition against one stylesheet. A paged output such as a PDF needs that, and per-composition `render` calls cannot give it, because each collects only the CSS its own composition uses. Every page is the same size, the tallest estimate unless `height` is given (under a content frame, the backend measures and uses the tallest page), and the first composition's `theme` decides the palette unless `theme` is given. An empty list throws `EMPTY_PAGES`, and a body the frame rejects names its page, counted from 1. `warnings` on a paged result prefix each path with `pages[n].`.
 
-`renderNode` on this surface takes only `frame`, `theme`, `anchors`, and `onValidationError`. Geometry is absent deliberately: a node drawn with no surround has nothing for a width or height to size. The result still reports one, the frame's `defaultWidth` and its estimate for a one-node body, so a rasterizer has a viewport to lay the node out in.
+`renderNode` on this surface takes only `frame`, `theme`, `anchors`, and `onValidationError`. Geometry is absent deliberately: a node drawn with no surround has nothing for a width or height to size. The result still reports one, the frame's `defaultWidth` and its estimate for a one-node body, so a rasterizer has a viewport to lay the node out in, and `heightMode` is the frame's `sizing`.
 
 ## Warnings are per surface
 
@@ -117,7 +117,7 @@ const { warnings } = runtime.surfaces.snapshot.render(composition, { frame: 'car
 // [{ path: 'body[0]', message: 'body[0] type "kpi" declares no snapshotHeight metric and will be measured as 0, sizing the frame short' }]
 ```
 
-`warnings` is empty when that frame's `estimateHeight` never calls `estimateSnapshotHeight`, and when the caller passes `height`, which is the height the render uses. `validate` reports nothing about the metric, so a runtime that also holds a fixed frame stays quiet on that frame's renders and on every other surface.
+`warnings` is empty when that frame's `estimateHeight` never calls `estimateSnapshotHeight`, when the caller passes `height`, which is the height the render uses, and when the frame [sizes to content](frame.md#sizing-to-content), whose estimate sizes nothing. `validate` reports nothing about the metric, so a runtime that also holds a fixed frame stays quiet on that frame's renders and on every other surface.
 
 ## CSS: one adapter, or a deliberate no-op
 

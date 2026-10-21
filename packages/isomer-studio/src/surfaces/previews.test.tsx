@@ -12,6 +12,7 @@ import type {
   ValidationResult,
 } from '@elastic/isomer-sdk';
 import { someBodyNode } from '@elastic/isomer-sdk';
+import { css } from '@emotion/react';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 
 import type { StudioRuntime } from '../config';
@@ -121,6 +122,27 @@ afterEach(() => {
   htmlRender.mockClear();
 });
 
+/**
+ * The last value of `property` the element's own emotion classes declare.
+ * jsdom computes no `aspect-ratio` and drops `safe center`, so this reads the
+ * injected rules instead.
+ */
+const declaredOf = (element: Element, property: string) =>
+  [...document.querySelectorAll('style')]
+    .flatMap(({ sheet }) => [...(sheet?.cssRules ?? [])])
+    .filter(
+      (rule): rule is CSSStyleRule =>
+        rule instanceof CSSStyleRule &&
+        element.classList.contains(rule.selectorText.replace(/^\./, ''))
+    )
+    .flatMap(({ cssText }) => [
+      ...cssText.matchAll(
+        new RegExp(`(?:^|[;{\\s])${property}:\\s*([^;}]+?)\\s*(?:;|})`, 'g')
+      ),
+    ])
+    .map(([, value]) => value)
+    .at(-1);
+
 describe('ScaledPreview', () => {
   it('rescales when edited content resizes its own box', () => {
     let contentWidth = 1920;
@@ -149,6 +171,35 @@ describe('ScaledPreview', () => {
     FakeResizeObserver.resize(contentBox);
 
     expect(layoutBox).toHaveStyle({ transform: 'scale(0.25)' });
+  });
+
+  it('never scrolls sideways at fit, and scrolls at a fixed zoom', () => {
+    getter('clientWidth', () => 800);
+    getter('scrollWidth', () => 1920);
+    getter('scrollHeight', () => 1080);
+    const outerOf = () => {
+      const outer =
+        screen.getByTestId('content').parentElement?.parentElement
+          ?.parentElement?.parentElement;
+      if (!outer) {
+        throw new Error('No outer box.');
+      }
+      return outer;
+    };
+
+    const { rerender } = render(
+      <ScaledPreview>
+        <div data-testid="content">Slide</div>
+      </ScaledPreview>
+    );
+    expect(outerOf()).toHaveStyle({ overflowX: 'clip' });
+
+    rerender(
+      <ScaledPreview zoom={1}>
+        <div data-testid="content">Slide</div>
+      </ScaledPreview>
+    );
+    expect(outerOf()).toHaveStyle({ overflowX: 'auto' });
   });
 });
 
@@ -567,6 +618,36 @@ describe('PngSurface', () => {
     expect(image.style.width).toBe('1920px');
     expect(image.style.height).toBe('');
   });
+
+  it('keeps the frame at its own aspect ratio once an image has loaded, and centers the image', async () => {
+    const { calls, rasterizePng } = setup();
+    const frameCss = css`
+      aspect-ratio: 16 / 9;
+    `;
+
+    const { container } = render(
+      <PngSurface
+        composition={composition('first')}
+        {...{ rasterizePng, frameCss }}
+      />
+    );
+    const frame = container.querySelector('[data-test-subj="surfaceFrame"]');
+    if (!frame) {
+      throw new Error('No frame.');
+    }
+    expect(declaredOf(frame, 'aspect-ratio')).toBe('16/9');
+
+    await wait(250);
+    await settle(calls[0]);
+    const image = screen.getByAltText('PNG preview');
+    Object.defineProperty(image, 'naturalWidth', { value: 1520 });
+    Object.defineProperty(image, 'naturalHeight', { value: 360 });
+    fireEvent.load(image);
+
+    expect(declaredOf(frame, 'aspect-ratio')).toBe('16/9');
+    expect(image.style.width).toBe('760px');
+    expect(image).toHaveStyle({ marginInline: 'auto' });
+  });
 });
 
 describe('SurfaceBoard', () => {
@@ -688,6 +769,57 @@ describe('SurfaceBoard', () => {
     expect(screen.getByTitle('HTML preview')).toBeInTheDocument();
     expect(screen.queryByTitle('Snapshot preview')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Compare pixels' })).toBeNull();
+  });
+
+  it('centers every render in its card and insets the visual ones', () => {
+    vi.useFakeTimers();
+    const props = {
+      surfaces: ['html', 'png', 'markdown'] as const,
+      composition: composition('first'),
+      validation: noWarnings,
+      view: 'render' as const,
+      zoom: 'fit' as const,
+    };
+    const frameOf = (name: string) => {
+      const frame = screen
+        .getByRole('region', { name })
+        .querySelector('[data-test-subj="surfaceFrame"]');
+      if (!frame) {
+        throw new Error(`No frame in ${name}.`);
+      }
+      return frame;
+    };
+    // Never settles, so the PNG card keeps its frame and spinner.
+    const rasterizePng: RasterizePng = () => new Promise(() => {});
+    const value = studio(rasterizePng);
+    const { rerender } = render(<SurfaceBoard {...props} />, {
+      wrapper: withStudio({
+        ...value,
+        runtime: {
+          ...value.runtime,
+          surfaces: {
+            ...value.runtime.surfaces,
+            markdown: { render: () => 'Hi' },
+          },
+        } as unknown as StudioRuntime,
+      }),
+    });
+
+    for (const name of ['Web preview', 'PNG preview']) {
+      expect(declaredOf(frameOf(name), 'aspect-ratio')).toBe('16/9');
+      expect(declaredOf(frameOf(name), 'justify-content')).toBe('safe center');
+      expect(declaredOf(frameOf(name), 'padding')).toBe('24px');
+    }
+    expect(declaredOf(frameOf('Markdown preview'), 'justify-content')).toBe(
+      'safe center'
+    );
+    expect(declaredOf(frameOf('Markdown preview'), 'padding')).toBe('0');
+
+    rerender(<SurfaceBoard {...props} view="source" />);
+    expect(
+      declaredOf(frameOf('Web preview'), 'justify-content')
+    ).toBeUndefined();
+    expect(declaredOf(frameOf('Web preview'), 'padding')).toBeUndefined();
   });
 
   it('toggles registered HTML enhancements without a React context and disables them for Snapshot', () => {

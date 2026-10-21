@@ -2,6 +2,7 @@
 
 ## 2026-10-20
 
+- **Snapshot frames can size to their content**: a `Frame` sets `sizing: 'content'` and its PNG, SVG and PDF are as tall as the body takumi lays out, so a card frame no longer depends on every primitive declaring `metrics.snapshotHeight`; `estimateHeight` still supplies the number synchronous callers and the browser Snapshot preview read, snapshot results report `heightMode`, missing-height warnings are dropped under a content frame, and PDF pages share the tallest measured height. Studio's visual cards stay 16:9 and center each render with an inset, and fit-zoom previews no longer flash a horizontal scrollbar while re-measuring.
 - **Snapshots under `next`**: each push to `main` that changes a published package or a root build input runs a Snapshot job in `release.yml`, where trusted publishing is bound, and `scripts/publish_snapshot.js` publishes the SDK, runtime, Takumi and Studio at one `<release + 1 patch>-main.<time>.g<sha>` version under the `next` dist-tag, with no tag or commit. Every `workspace:` dependency and peer resolves to that snapshot, so an `@next` set is one consistent build of `main`, and `npx @elastic/isomer-studio@next` still runs against a host's released SDK. RELEASING.md, the publish playbook, and the package READMEs and Studio docs describe it.
 
 ## 2026-10-18

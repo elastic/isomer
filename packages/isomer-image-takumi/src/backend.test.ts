@@ -658,4 +658,133 @@ describe('createTakumiImageBackend', () => {
       expect(reads).toBe(2);
     });
   });
+
+  describe('heightMode content', () => {
+    /** A padded card of `rows` 24px rows: 20 + 24 × rows tall. */
+    const card = (
+      rows: number,
+      heightMode?: ImageInput['heightMode']
+    ): ImageInput => ({
+      html: `<div class="card">${'<div class="row"></div>'.repeat(rows)}</div>`,
+      css: '.card { padding: 10px; background: #eeeeee } .row { height: 24px; background: #cc0000 }',
+      width: 120,
+      // The estimate a content frame would give: wrong on purpose.
+      height: 500,
+      ...(heightMode === undefined ? {} : { heightMode }),
+    });
+    const contentHeight = (rows: number) => 20 + 24 * rows;
+
+    it.each([
+      ['a short body', 1],
+      ['a tall body', 40],
+    ])('sizes the png to %s', async (_label, rows) => {
+      const backend = createTakumiImageBackend();
+      const png = await backend.png(card(rows, 'content'));
+      const doubled = await backend.png(card(rows, 'content'), { scale: 2 });
+
+      expect(png.readUInt32BE(16)).toBe(120);
+      expect(png.readUInt32BE(20)).toBe(contentHeight(rows));
+      expect(doubled.readUInt32BE(16)).toBe(240);
+      expect(doubled.readUInt32BE(20)).toBe(2 * contentHeight(rows));
+      // The last row reaches the bottom padding, and nothing is drawn past it.
+      const { height, pixel } = decodePng(png);
+      expect(pixel(60, height - 11)).toEqual({ r: 0xcc, g: 0, b: 0 });
+      expect(pixel(60, height - 1)).toEqual({ r: 0xee, g: 0xee, b: 0xee });
+    });
+
+    it('leaves a fixed input at its height', async () => {
+      const backend = createTakumiImageBackend();
+      const fixed = await backend.png(card(1, 'fixed'));
+      const unstated = await backend.png(card(1));
+
+      expect(fixed.readUInt32BE(20)).toBe(500);
+      expect(unstated.equals(fixed)).toBe(true);
+      await expect(backend.fit(card(1, 'fixed'))).resolves.toEqual(
+        card(1, 'fixed')
+      );
+    });
+
+    it('fits the height without drawing, matching the png', async () => {
+      const backend = createTakumiImageBackend();
+      const fitted = await backend.fit(card(3, 'content'));
+
+      expect(fitted).toMatchObject({
+        width: 120,
+        height: contentHeight(3),
+        heightMode: 'fixed',
+      });
+      const png = await backend.png(fitted);
+      expect(png.equals(await backend.png(card(3, 'content')))).toBe(true);
+    });
+
+    it.each([
+      ['0.5', { devicePixelRatio: 0.5 }],
+      ['2', { devicePixelRatio: 2 }],
+      ['2 at scale 2', { devicePixelRatio: 2, scale: 2 }],
+    ])(
+      'fits to the same png as a content-sized render at devicePixelRatio %s',
+      async (_label, options) => {
+        const backend = createTakumiImageBackend();
+        const direct = await backend.png(card(3, 'content'), options);
+        const fitted = await backend.png(
+          await backend.fit(card(3, 'content'), options),
+          options
+        );
+
+        expect(fitted.readUInt32BE(20)).toBe(direct.readUInt32BE(20));
+        expect(fitted.equals(direct)).toBe(true);
+      }
+    );
+
+    it('sizes the svg and the measured root to content', async () => {
+      const backend = createTakumiImageBackend();
+      const svg = await backend.svg(card(2, 'content'));
+      const box = await backend.measure(card(2, 'content'));
+
+      expect(svg).toContain(`height="${contentHeight(2)}"`);
+      expect(box).toMatchObject({ width: 120, height: contentHeight(2) });
+    });
+
+    it('sizes every pdf page to the tallest page', async () => {
+      const backend = createTakumiImageBackend();
+      const deck: PdfInput = {
+        pages: [{ html: card(1).html }, { html: card(4).html }],
+        css: card(1).css,
+        width: 120,
+        height: 500,
+        heightMode: 'content',
+      };
+      const fitted = await backend.fitPages(deck);
+      const pdf = (await backend.pdf(deck)).toString('latin1');
+
+      expect(fitted).toMatchObject({
+        height: contentHeight(4),
+        heightMode: 'fixed',
+      });
+      // Points are CSS px × 0.75.
+      const boxes = [...pdf.matchAll(/MediaBox\s*\[([^\]]*)\]/g)].map(
+        ([, box = '']) => box.trim().split(/\s+/).map(Number)
+      );
+      expect(boxes.length).toBeGreaterThan(0);
+      for (const box of boxes) {
+        expect(box).toEqual([0, 0, 90, contentHeight(4) * 0.75]);
+      }
+    });
+
+    it('measures pdf pages inside the page block they are drawn in', async () => {
+      const backend = createTakumiImageBackend();
+      // Matches a card only once it sits inside the page block.
+      const css = `${card(1).css} div > .card { padding-top: 100px }`;
+      const fitted = await backend.fitPages({
+        pages: [{ html: card(2).html }],
+        css,
+        width: 120,
+        height: 500,
+        heightMode: 'content',
+      });
+
+      // The 100px top padding replaces the card's 10px.
+      expect(fitted.height).toBe(contentHeight(2) + 90);
+    });
+  });
 });

@@ -335,6 +335,43 @@ test.afterAll(() => {
   }
 });
 
+/** Where a card's render sits inside the frame's padding, and anything in the frame that could scroll. */
+const layoutOf = (page: Page, name: string) =>
+  page
+    .getByRole('region', { name })
+    .locator('[data-test-subj="surfaceFrame"]')
+    .evaluate((frame) => {
+      const box = frame.getBoundingClientRect();
+      const style = getComputedStyle(frame);
+      const inner = {
+        top: box.top + parseFloat(style.paddingTop),
+        bottom: box.bottom - parseFloat(style.paddingBottom),
+        left: box.left + parseFloat(style.paddingLeft),
+        right: box.right - parseFloat(style.paddingRight),
+      };
+      const render = frame.firstElementChild!.getBoundingClientRect();
+      const scrollable = Array.from(frame.querySelectorAll('*')).filter(
+        (element) => {
+          const { overflowX, overflowY } = getComputedStyle(element);
+          return (
+            (/auto|scroll/.test(overflowX) &&
+              element.scrollWidth > element.clientWidth) ||
+            (/auto|scroll/.test(overflowY) &&
+              element.scrollHeight > element.clientHeight)
+          );
+        }
+      ).length;
+      return {
+        ratio: (inner.right - inner.left) / (inner.bottom - inner.top),
+        inset: inner.left - box.left,
+        topGap: render.top - inner.top,
+        bottomGap: inner.bottom - render.bottom,
+        leftGap: render.left - inner.left,
+        rightGap: inner.right - render.right,
+        scrollable,
+      };
+    });
+
 test.describe('static build', () => {
   let site: StaticServer;
 
@@ -383,6 +420,24 @@ test.describe('static build', () => {
     ).toBeVisible();
 
     expect(problems).toEqual([]);
+  });
+
+  test('fits a slide inside its padded 16:9 card without scrolling', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1600, height: 1200 });
+    await page.goto(`${site.url}${EDIT_ROUTE}`);
+    await expectMonacoReady(page);
+    await expectPngLoaded(page);
+
+    for (const name of ['Web preview', 'PNG preview']) {
+      const layout = await layoutOf(page, name);
+      expect(layout.ratio, name).toBeCloseTo(16 / 9, 1);
+      expect(layout.inset, name).toBeGreaterThan(0);
+      expect(layout.topGap, name).toBeGreaterThanOrEqual(-0.5);
+      expect(layout.bottomGap, name).toBeGreaterThanOrEqual(-0.5);
+      expect(layout.scrollable, name).toBe(0);
+    }
   });
 
   test('stacks the Dev editor above all previews when the window is narrow', async ({
@@ -1304,6 +1359,150 @@ test.describe('dev server', () => {
     expect(readFileSync(path).subarray(0, 5).toString()).toBe('%PDF-');
 
     expect(problems).toEqual([]);
+  });
+});
+
+test.describe('preview layout', () => {
+  test.skip(
+    SKIP_DEV || Boolean(process.env.STUDIO_CONFIG),
+    'needs the repository fixture pack'
+  );
+
+  let dir: string;
+  let dev: { url: string; child: ChildProcess };
+
+  test.beforeAll(async () => {
+    const artifacts = join(packageDir, '.artifacts');
+    mkdirSync(artifacts, { recursive: true });
+    dir = mkdtempSync(join(artifacts, 'isomer-studio-layout-'));
+    writeFileSync(
+      join(dir, 'package.json'),
+      JSON.stringify({ type: 'commonjs' })
+    );
+    writeFileSync(
+      join(dir, 'isomer-studio.config.ts'),
+      [
+        "import { createElement } from 'react';",
+        "import { createIsomerRuntime } from '@elastic/isomer-runtime';",
+        `import { componentsPack } from ${JSON.stringify(join(packageDir, 'src/fixtures/components_pack'))};`,
+        '',
+        'const card = {',
+        '  defaultWidth: 480,',
+        "  sizing: 'content' as const,",
+        '  theme: { light: undefined, dark: undefined },',
+        '  estimateHeight: () => 100,',
+        "  wrap: (_header: unknown, body: unknown) => createElement('div', { style: { padding: 16, background: '#ffffff' } }, body),",
+        '};',
+        '',
+        'export default {',
+        "  title: 'Layout',",
+        '  runtime: createIsomerRuntime({ packs: [componentsPack], frames: { card } }),',
+        '};',
+        '',
+      ].join('\n')
+    );
+    dev = await startDev(join(dir, 'isomer-studio.config.ts'));
+  });
+
+  test.afterAll(() => {
+    dev.child.removeAllListeners('close');
+    dev.child.kill('SIGTERM');
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  /** Replaces the editor's composition with its body repeated `times` times. */
+  const repeatBody = async (page: Page, times: number) => {
+    const source = (await editor(page).locator('.view-lines').innerText())
+      .replace(/\s+/g, ' ')
+      .replace(/>\s+</g, '><');
+    const [, open = '', body = '', close = ''] =
+      /^(<Composition[^>]*>)(.*)(<\/Composition>)$/.exec(source.trim()) ?? [];
+    expect(body).not.toBe('');
+    await editor(page).locator('.view-lines').click();
+    await expect(async () => {
+      await page.keyboard.press('Control+A');
+      await expect(editor(page).locator('.selected-text').first()).toBeVisible({
+        timeout: 1000,
+      });
+    }).toPass();
+    await page.keyboard.insertText(`${open}${body.repeat(times)}${close}`);
+  };
+
+  test('centers a short render in its 16:9 card, inset from the edges', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1600, height: 1200 });
+    await page.goto(`${dev.url}#/dev/callout/0`);
+    await expectMonacoReady(page);
+    await expectPngLoaded(page);
+
+    for (const name of ['Web preview', 'PNG preview']) {
+      const layout = await layoutOf(page, name);
+      expect(layout.ratio, name).toBeCloseTo(16 / 9, 1);
+      expect(layout.inset, name).toBeGreaterThan(0);
+      expect(layout.topGap, name).toBeGreaterThan(0);
+      expect(Math.abs(layout.topGap - layout.bottomGap), name).toBeLessThan(1);
+      expect(layout.leftGap, name).toBeGreaterThanOrEqual(-0.5);
+      expect(layout.rightGap, name).toBeGreaterThanOrEqual(-0.5);
+      expect(layout.scrollable, name).toBe(0);
+    }
+    const png = await layoutOf(page, 'PNG preview');
+    expect(Math.abs(png.leftGap - png.rightGap)).toBeLessThan(1);
+  });
+
+  test('keeps the top of a render taller than its card in view, without scrolling', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1600, height: 1200 });
+    await page.goto(`${dev.url}#/dev/callout/0`);
+    await expectMonacoReady(page);
+    await repeatBody(page, 30);
+
+    await expect
+      .poll(async () => (await layoutOf(page, 'Web preview')).bottomGap)
+      .toBeLessThan(0);
+    const layout = await layoutOf(page, 'Web preview');
+    expect(layout.ratio).toBeCloseTo(16 / 9, 1);
+    expect(Math.abs(layout.topGap)).toBeLessThan(1);
+    expect(layout.scrollable).toBe(0);
+  });
+
+  test('never overflows a fit card sideways while it resizes', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1600, height: 1200 });
+    await page.goto(`${dev.url}#/dev/callout/0`);
+    await expectMonacoReady(page);
+    await page.evaluate(() => {
+      const scrolled: string[] = [];
+      (window as unknown as { scrolled: string[] }).scrolled = scrolled;
+      const sample = () => {
+        document
+          .querySelectorAll('section[aria-label$="preview"] *')
+          .forEach((element) => {
+            const { overflowX } = getComputedStyle(element);
+            if (
+              /auto|scroll/.test(overflowX) &&
+              element.scrollWidth > element.clientWidth
+            ) {
+              scrolled.push(`${element.scrollWidth}>${element.clientWidth}`);
+            }
+          });
+        requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+
+    for (let width = 1600; width >= 1300; width -= 13) {
+      await page.setViewportSize({ width, height: 1200 });
+      await delay(40);
+    }
+
+    expect(
+      await page.evaluate(
+        () => (window as unknown as { scrolled: string[] }).scrolled
+      )
+    ).toEqual([]);
   });
 });
 

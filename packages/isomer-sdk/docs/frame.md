@@ -8,6 +8,7 @@ A frame is a document: the picture-frame a `snapshot` render sits inside, the ge
 interface Frame<TTheme> {
   defaultWidth: number;
   theme: { light: TTheme; dark: TTheme };
+  sizing?: 'fixed' | 'content'; // FrameSizing, default 'fixed'
   estimateHeight(composition, dispatcher): number;
   validateBody?(body): readonly string[];
   wrap: (header, body, viewport) => ReactNode;
@@ -57,7 +58,7 @@ An image has no media queries, so it must commit to one palette; `bindFrame` res
 
 ## `bindFrame`, and the theme bound around it
 
-`bindFrame` resolves a frame's palette per render and returns a `BoundFrame` — `defaultWidth`, `estimateHeight`, `validateBody`, `render`, and `renderNode` — with no `TTheme` left in any signature. The erasure is a closure rather than a type parameter because the runtime dispatches every node through one inventory keyed by node type, and that inventory has no single theme to name.
+`bindFrame` resolves a frame's palette per render and returns a `BoundFrame` — `defaultWidth`, `sizing`, `estimateHeight`, `validateBody`, `render`, and `renderNode` — with no `TTheme` left in any signature. The erasure is a closure rather than a type parameter because the runtime dispatches every node through one inventory keyed by node type, and that inventory has no single theme to name.
 
 What makes the erasure safe is that a runtime is **homogeneous** in its theme. A pack declares what its `snapshot` renderers read through a phantom marker on `PrimitivePack<TTheme>` — so the palette is checked where the real type is still known, and only the resolved result is stored.
 
@@ -65,9 +66,13 @@ What makes the erasure safe is that a runtime is **homogeneous** in its theme. A
 
 What this document requires of a body — the slide document's exactly-one-`slideFrame` rule is the example. It returns messages rather than throwing, and note where it is *not* consulted: `runtime.validate` is frame-agnostic and has to be, because the same composition can be valid in one frame and not another. Only the `snapshot` surface checks it, on the frame a render actually names.
 
+## `sizing`
+
+`fixed`, the default, makes `estimateHeight` the document's height. `content` makes it an estimate: the `snapshot` surface marks the result `heightMode: 'content'`, and an image backend sizes the output to the root `wrap` returns, laid out at the width. A content frame therefore should not pin its root to `FrameViewport.height`. `BoundFrame.sizing` is the resolved value. See [the runtime's Frame page](../../isomer-runtime/docs/frame.md#sizing-to-content) for when to still declare `metrics.snapshotHeight`.
+
 ## A missing `snapshotHeight`
 
-`estimateSnapshotHeight` returns `0` for a node whose primitive declares no `metrics.snapshotHeight`, so a frame whose `estimateHeight` calls it sizes short for that node. A frame that returns a constant never reads the metric. `validate` reports nothing about the gap: the frame is chosen per render, and one composition can be drawn into a measuring frame and a fixed one. The runtime's `snapshot` surface reports it on the result of the render that measured the nodes.
+`estimateSnapshotHeight` returns `0` for a node whose primitive declares no `metrics.snapshotHeight`, so a fixed frame whose `estimateHeight` calls it sizes short for that node; a content frame's estimate sizes nothing, and the surface reports no gap for it. A frame that returns a constant never reads the metric. `validate` reports nothing about the gap: the frame is chosen per render, and one composition can be drawn into a measuring frame and a fixed one. The runtime's `snapshot` surface reports it on the result of the render that measured the nodes.
 
 ## Next
 

@@ -12,6 +12,7 @@ export {
   type FrameComposition,
   type FrameDispatcher,
   type FrameHeader,
+  type FrameSizing,
   type FrameViewport,
   type ThemePair,
   bindFrame,
