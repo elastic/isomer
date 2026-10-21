@@ -36,11 +36,20 @@ const read = (store: Storage | undefined, key: string): unknown => {
   }
 };
 
-const write = (store: Storage | undefined, key: string, value: unknown) => {
+/** Whether `value` was stored; storage may be full, disabled or absent. */
+const write = (
+  store: Storage | undefined,
+  key: string,
+  value: unknown
+): boolean => {
+  if (!store) {
+    return false;
+  }
   try {
-    store?.setItem(key, JSON.stringify(value));
+    store.setItem(key, JSON.stringify(value));
+    return true;
   } catch {
-    // Storage is full or disabled; the draft still lives in the URL.
+    return false;
   }
 };
 
@@ -58,9 +67,12 @@ export const loadDraft = (): StoredDraft | undefined => {
   return isStoredDraft(value) ? value : undefined;
 };
 
-/** Keeps `draft` for {@link loadDraft}. Only store source the user typed or chose to run. */
-export const saveDraft = (draft: StoredDraft): void =>
-  write(storage('localStorage'), DRAFT_KEY, draft);
+/**
+ * Keeps `draft` for {@link loadDraft} and returns whether it was stored. Only store source the user
+ * typed or chose to run.
+ */
+export const saveDraft = ({ source, format }: StoredDraft): boolean =>
+  write(storage('localStorage'), DRAFT_KEY, { source, format });
 
 const fingerprint = ({ source, format }: StoredDraft): string =>
   sha256Hex(new TextEncoder().encode(`${format}\n${source}`));

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   EuiButtonEmpty,
   EuiFlexGroup,
@@ -42,31 +42,35 @@ const OpenInComposer = ({
   openComposer: (params: ComposeParams) => void;
 }) => {
   const { schemaFor, shim } = useStudio();
-  const open = async () => {
-    const { theme: _theme, ...authored } = editor.composition;
+  const { composition, format } = editor;
+  // What the composer receives: the composed draft, reprinted, which can differ in size from the source.
+  const payload = useMemo(() => {
+    const { theme: _theme, ...authored } = composition;
     const draft = splitComposition(authored);
-    const printAs = (format: EditorFormat) => ({
-      format,
-      source: printDraft(draft, format, 'composition', { schemaFor, shim }),
+    const printAs = (as: EditorFormat) => ({
+      format: as,
+      source: printDraft(draft, as, 'composition', { schemaFor, shim }),
     });
-    let printed: { format: EditorFormat; source: string };
     try {
-      printed = printAs(editor.format);
+      return printAs(format);
     } catch {
       // A type JSX can't name still carries over as JSON.
-      printed = printAs('json');
+      return printAs('json');
     }
-    if (!fitsInLink(printed.source)) {
+  }, [composition, format, schemaFor, shim]);
+  const tooLarge = !fitsInLink(payload.source);
+
+  const open = async () => {
+    if (tooLarge) {
       return;
     }
-    rememberTrusted(printed);
+    rememberTrusted(payload);
     openComposer({
-      code: await encodeSource(printed.source),
-      lang: printed.format,
+      code: await encodeSource(payload.source),
+      lang: payload.format,
     });
   };
 
-  const tooLarge = !fitsInLink(editor.source);
   const button = (
     <EuiButtonEmpty
       size="s"
@@ -78,7 +82,7 @@ const OpenInComposer = ({
   );
   return tooLarge ? (
     <EuiToolTip
-      content={`Drafts over ${MAX_SOURCE_BYTES} bytes are too large to carry over.`}>
+      content={`This composition prints to over ${MAX_SOURCE_BYTES} bytes, too large to carry over.`}>
       {button}
     </EuiToolTip>
   ) : (

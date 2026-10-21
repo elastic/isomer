@@ -89,7 +89,7 @@ The address bar carries the draft, so copying it shares what you see, and a relo
 | `lang` | `jsx` or `json`. Without it, `src`'s extension decides (`.tsx` and `.jsx` are JSX), else whether the source opens with `{` or `[`. |
 | `example` | `<type>/<index>`, one of the pack's examples, composed through the config's `compose` or `previewExample`. |
 
-A draft over 1 MB is too large for a link: the address stays at `#/compose`, which reopens it from this browser, and **Copy a link** says to host it and use `src` instead.
+A draft over 1 MB is too large for any link, `src` included, since a fetched source has the same cap. The address stays at `#/compose`, which reopens it from this browser once it is saved there; if the browser cannot store it, a warning says a reload would lose it. To share one, download it, or split it into smaller compositions.
 
 JSON from a link is only data, so it renders at once. JSX from a link is code that runs in the page, and under `dev` it can reach the Studio's server, so the preview waits behind **Run this code** until you have read it. JSX this browser tab wrote or ran runs without asking.
 

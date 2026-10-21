@@ -60,6 +60,27 @@ vi.mock('./model/compile_jsx', async () => {
   };
 });
 
+/** While set, `encodeSource` waits on it, so a test can hold an encode in flight. */
+const encodeGate = vi.hoisted(() => ({
+  current: undefined as Promise<void> | undefined,
+}));
+
+vi.mock('./model/compose_link', async () => {
+  const actual = await vi.importActual<typeof import('./model/compose_link')>(
+    './model/compose_link'
+  );
+  return {
+    ...actual,
+    encodeSource: async (source: string) => {
+      const gate = encodeGate.current;
+      if (gate) {
+        await gate;
+      }
+      return actual.encodeSource(source);
+    },
+  };
+});
+
 vi.mock('./dev/monaco_editor', async () => {
   const { createElement } =
     await vi.importActual<typeof import('react')>('react');
@@ -831,6 +852,18 @@ describe('IsomerStudio', () => {
     expect(JSON.parse(editor.value)).toEqual(example);
   });
 
+  it('disables the handoff when the composed payload is too large for a link', async () => {
+    const compose: StudioCompose = (nodes, options) => ({
+      ...defaultCompose(nodes, options),
+      title: 'x'.repeat(1_000_001),
+    });
+    render(<IsomerStudio {...{ runtime, compose }} />);
+    await findEditor();
+    expect(
+      screen.getByRole('button', { name: 'Open in the composition editor' })
+    ).toBeDisabled();
+  });
+
   describe('composition editor', () => {
     const findComposer = () =>
       screen.findByRole<HTMLTextAreaElement>('textbox', {
@@ -1174,6 +1207,123 @@ describe('IsomerStudio', () => {
       const nav = screen.getByRole('navigation', { name: 'Primitives' });
       fireEvent.click(within(nav).getByRole('button', { name: 'Composition' }));
       expect(window.location.hash).toBe(shared);
+    });
+
+    it('keeps the saved draft when a link fails to load', async () => {
+      const saved = {
+        source: JSON.stringify({
+          type: 'view',
+          body: [{ type: 'callout', body: 'Saved.' }],
+        }),
+        format: 'json',
+      };
+      localStorage.setItem(
+        'isomer-studio:composition-draft',
+        JSON.stringify(saved)
+      );
+      window.location.hash = '#/compose?code=!!!';
+      render(<IsomerStudio {...{ runtime }} />);
+
+      expect(
+        await screen.findByText('The link did not load')
+      ).toBeInTheDocument();
+      expect(await findComposer()).toHaveValue(saved.source);
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      expect(
+        JSON.parse(
+          localStorage.getItem('isomer-studio:composition-draft') ?? ''
+        )
+      ).toEqual(saved);
+    });
+
+    it('warns and keeps the link when an oversized draft cannot be saved', async () => {
+      window.location.hash = '#/compose';
+      render(<IsomerStudio {...{ runtime }} />);
+      await findComposer();
+      await waitFor(() => expect(window.location.hash).toMatch(/code=/), {
+        timeout: 5_000,
+      });
+      const linked = window.location.hash;
+      const setItem = vi
+        .spyOn(Storage.prototype, 'setItem')
+        .mockImplementation(() => {
+          throw new DOMException('Full', 'QuotaExceededError');
+        });
+      try {
+        fireEvent.change(await findComposer(), {
+          target: {
+            value: JSON.stringify({
+              type: 'view',
+              body: [{ type: 'callout', body: 'x'.repeat(1_000_001) }],
+            }),
+          },
+        });
+        expect(
+          await screen.findByText('This draft is not saved', undefined, {
+            timeout: 5_000,
+          })
+        ).toBeInTheDocument();
+        expect(window.location.hash).toBe(linked);
+      } finally {
+        setItem.mockRestore();
+      }
+    });
+
+    it('drops an encode a newer link load supersedes', async () => {
+      window.location.hash = '#/compose';
+      render(<IsomerStudio {...{ runtime }} />);
+      await findComposer();
+      await waitFor(() => expect(window.location.hash).toMatch(/code=/), {
+        timeout: 5_000,
+      });
+
+      let release: () => void = () => undefined;
+      encodeGate.current = new Promise((resolve) => {
+        release = resolve;
+      });
+      const linked = JSON.stringify({
+        type: 'view',
+        body: [{ type: 'callout', body: 'Linked.' }],
+      });
+      let land: (response: Response) => void = () => undefined;
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(
+          () =>
+            new Promise<Response>((resolve) => {
+              land = resolve;
+            })
+        )
+      );
+      try {
+        fireEvent.change(await findComposer(), {
+          target: {
+            value: JSON.stringify({
+              type: 'view',
+              body: [{ type: 'callout', body: 'Stale.' }],
+            }),
+          },
+        });
+        await new Promise((resolve) => setTimeout(resolve, 600));
+
+        window.location.hash =
+          '#/compose?src=https%3A%2F%2Fexample.com%2Flinked.json';
+        window.dispatchEvent(new HashChangeEvent('hashchange'));
+        expect(await screen.findByText('Loading…')).toBeInTheDocument();
+
+        encodeGate.current = undefined;
+        release();
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        land(new Response(linked));
+
+        await waitFor(
+          async () => expect(await findComposer()).toHaveValue(linked),
+          { timeout: 5_000 }
+        );
+      } finally {
+        encodeGate.current = undefined;
+        vi.unstubAllGlobals();
+      }
     });
 
     it('keeps its draft while another page shows', async () => {

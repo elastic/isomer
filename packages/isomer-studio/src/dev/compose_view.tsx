@@ -229,7 +229,7 @@ const ShareButton = ({ editor }: { editor: EditorState }) => {
     if (!fitsInLink(editor.source)) {
       setStatus({
         isLong: true,
-        text: `This draft is over ${MAX_SOURCE_BYTES} bytes, too large for a link. Host the source and share #/compose?src=<url> instead.`,
+        text: `This draft is over ${MAX_SOURCE_BYTES} bytes, which no link can carry. Download it to share it, or split it into smaller compositions.`,
       });
       return;
     }
@@ -316,6 +316,7 @@ const ComposeWorkbench = ({
   stacked,
   loadError,
   isLoading,
+  isUnsaved,
   onDismissError,
   onNew,
   onDraft,
@@ -324,6 +325,8 @@ const ComposeWorkbench = ({
   stacked: boolean;
   loadError?: string | undefined;
   isLoading: boolean;
+  /** True when a draft too large for a link could not be saved either, so a reload would lose it. */
+  isUnsaved: boolean;
   onDismissError: () => void;
   onNew: (choice: NewChoice) => void;
   onDraft: (draft: DraftReport) => void;
@@ -375,7 +378,7 @@ const ComposeWorkbench = ({
             </>
           }
           banner={
-            loadError || isLoading ? (
+            loadError || isLoading || isUnsaved ? (
               <div
                 css={css`
                   padding: 0 ${euiTheme.size.base} ${euiTheme.size.s};
@@ -389,10 +392,22 @@ const ComposeWorkbench = ({
                     onDismiss={onDismissError}>
                     <p>{loadError}</p>
                   </EuiCallOut>
-                ) : (
+                ) : isLoading ? (
                   <EuiText size="xs" color="subdued">
                     <p>Loading…</p>
                   </EuiText>
+                ) : (
+                  <EuiCallOut
+                    size="s"
+                    color="warning"
+                    iconType="warning"
+                    title="This draft is not saved">
+                    <p>
+                      It is over {MAX_SOURCE_BYTES} bytes, too large for a link,
+                      and this browser could not store it, so a reload would
+                      lose it. Download it to keep it.
+                    </p>
+                  </EuiCallOut>
                 )}
               </div>
             ) : null
@@ -461,6 +476,9 @@ export const ComposeView = ({
   const seeds = useRef(0);
   const load = useRef<AbortController>();
   const sync = useRef<{ flush: () => void } | undefined>();
+  /** Bumped by each draft sync and link load, so a slower encode cannot write over a newer one. */
+  const generations = useRef(0);
+  const [isUnsaved, setUnsaved] = useState(false);
   const latest = useRef({ replaceComposer });
   latest.current = { replaceComposer };
 
@@ -497,6 +515,7 @@ export const ComposeView = ({
     }
     const controller = new AbortController();
     load.current = controller;
+    generations.current += 1;
     setLoading(true);
     setLoadError(undefined);
     loadParams(params, { docs, compose, signal: controller.signal }).then(
@@ -543,28 +562,37 @@ export const ComposeView = ({
       return;
     }
     let done = false;
+    const generation = ++generations.current;
     const flush = () => {
       if (done) {
         return;
       }
       done = true;
       clearTimeout(timer);
+      const saved = !draft.isHeld && saveDraft(draft);
       if (!draft.isHeld) {
-        saveDraft(draft);
         rememberTrusted(draft);
       }
-      // A draft too large for a link reloads from the saved draft at a bare `#/compose`.
+      // A newer draft or link load supersedes this write; unmounting does not.
       const write = (next: ComposeParams) => {
+        if (generation !== generations.current) {
+          return;
+        }
         written.current = formatComposeQuery(next);
         latest.current.replaceComposer(next);
       };
       if (!fitsInLink(draft.source)) {
-        write({});
+        // A bare `#/compose` reloads the saved draft, so it is safe only once the draft is saved.
+        setUnsaved(!saved && !draft.isHeld);
+        if (saved) {
+          write({});
+        }
         return;
       }
+      setUnsaved(false);
       void encodeSource(draft.source).then(
         (code) => write({ code, lang: draft.format }),
-        () => write({})
+        () => undefined
       );
     };
     const timer = setTimeout(flush, SYNC_DELAY);
@@ -584,7 +612,7 @@ export const ComposeView = ({
     <ComposeWorkbench
       key={seed.id}
       initial={seed.initial}
-      {...{ stacked, loadError, isLoading }}
+      {...{ stacked, loadError, isLoading, isUnsaved }}
       onDismissError={() => setLoadError(undefined)}
       onNew={(choice) => {
         setLoadError(undefined);
