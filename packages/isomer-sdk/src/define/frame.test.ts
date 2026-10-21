@@ -68,3 +68,18 @@ describe('bindFrame theme resolution', () => {
     });
   });
 });
+
+describe('bindFrame sizing', () => {
+  it('resolves a frame that states none to fixed, and carries content through', () => {
+    expect(frame.sizing).toBe('fixed');
+    expect(
+      bindFrame<Theme>({
+        defaultWidth: 640,
+        theme: { light: { ink: 'black' }, dark: { ink: 'white' } },
+        sizing: 'content',
+        estimateHeight: () => 100,
+        wrap: () => null,
+      }).sizing
+    ).toBe('content');
+  });
+});

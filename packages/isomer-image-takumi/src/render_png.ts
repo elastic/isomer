@@ -60,7 +60,7 @@ export interface SnapshotOptions {
   frame?: string;
   /** Overrides the frame's `defaultWidth`. */
   width?: number;
-  /** Overrides the frame's estimated height. */
+  /** Overrides the frame's estimated height, and its content sizing. */
   height?: number;
   /** Theme mode; falls back to the composition's own `theme`. `auto` resolves light. */
   theme?: 'light' | 'dark' | 'auto';
@@ -93,7 +93,11 @@ export interface RenderPngOptions extends TakumiRenderOptions {
 /** What {@link renderPng} resolves to: the bytes, their size, and the findings on the composition drawn. */
 export interface RenderPngResult {
   png: Buffer;
-  /** The viewport, in CSS pixels; the raster is this times `scale`, rounded. */
+  /**
+   * The viewport, in CSS pixels; the raster is this times `scale`, rounded.
+   * Under a frame that sizes to content, `height` is the laid-out height
+   * when the backend has `fit`, and the frame's estimate when it has not.
+   */
   width: number;
   height: number;
   validation: PngValidationResult;
@@ -106,7 +110,8 @@ export interface RenderPngResult {
  * finds out, rather than a thrown error. What is drawn is the copy validation
  * checked, and input refused before parsing, which has none, throws
  * `CompositionValidationError`. Validation runs twice, once here and once inside `render`, which
- * discards its own result.
+ * discards its own result. Under a frame that sizes to content, the backend's
+ * `fit` measures first and the PNG is drawn at the height it reports.
  */
 export const renderPng = async (
   runtime: PngRuntime,
@@ -118,10 +123,13 @@ export const renderPng = async (
     'renderPng',
     runtime.validate(composition)
   );
-  const rendered = runtime.surfaces.snapshot.render(checked, {
+  const estimated = runtime.surfaces.snapshot.render(checked, {
     ...snapshot,
     onValidationError: 'collect',
   });
+  const rendered = backend.fit
+    ? await backend.fit(estimated, options)
+    : estimated;
   const png = await backend.png(rendered, options);
   return { png, width: rendered.width, height: rendered.height, validation };
 };

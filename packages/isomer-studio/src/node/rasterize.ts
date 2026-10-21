@@ -73,7 +73,7 @@ export const imageFontsOf = (
 
 /**
  * Draws with takumi, loaded on first use because it is native; `undefined` without a snapshot surface.
- * Images take the frame's own geometry, as the Snapshot preview does. Without `fonts`, a PNG falls back to takumi's built-in face and a PDF can't draw text.
+ * Images take the frame's own geometry, as the Snapshot preview does; under a frame that sizes to content, takumi measures the height rather than taking the estimate. Without `fonts`, a PNG falls back to takumi's built-in face and a PDF can't draw text.
  */
 export const createRenderers = (
   runtime: StudioRuntime,

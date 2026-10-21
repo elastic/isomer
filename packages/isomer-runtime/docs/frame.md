@@ -35,14 +35,15 @@ An empty `frames` map throws `EMPTY_FRAMES` rather than building a runtime typed
 | Responsibility | Effect |
 | --- | --- |
 | `defaultWidth` | The width a render uses unless the caller passes one |
-| `estimateHeight` | The height a render uses unless the caller passes one. Calling `estimateSnapshotHeight` is what reads `metrics.snapshotHeight` |
+| `sizing` | `fixed` (the default) or `content`: whether the height is `estimateHeight`'s or the laid-out body's. See [Sizing to content](#sizing-to-content) |
+| `estimateHeight` | The height a render uses unless the caller passes one; under `sizing: 'content'`, only an estimate. Calling `estimateSnapshotHeight` is what reads `metrics.snapshotHeight` |
 | `theme` | A palette per mode; an image has no media queries, so it commits to one |
 | `validateBody` | What this document requires of a body — the slide rule of exactly one `slideFrame` |
 | `wrap` | The surround drawn around the dispatched body |
 
 The body itself is dispatched generically, and the frame is handed the composition's title, subtitle, and theme with the body nodes withheld — a frame that could read the nodes could branch on a pack's node types, which is exactly the knowledge this split keeps out of it.
 
-A missing `metrics.snapshotHeight` is reported by the `snapshot` surface, on the render whose `estimateHeight` calls `estimateSnapshotHeight`. A frame that returns a constant leaves that list empty. `validate` covers duplicate ids and empty surfaces, so a runtime holding a measuring frame and a fixed one warns only for the render that measured. See [Surfaces](surfaces.md#a-missing-snapshotheight).
+A missing `metrics.snapshotHeight` is reported by the `snapshot` surface, on the render whose `estimateHeight` calls `estimateSnapshotHeight` under a `fixed` frame. A frame that returns a constant, or one that sizes to content, leaves that list empty. `validate` covers duplicate ids and empty surfaces, so a runtime holding a measuring frame and a fixed one warns only for the render that measured. See [Surfaces](surfaces.md#a-missing-snapshotheight).
 
 ## Rendering with one
 
@@ -53,6 +54,33 @@ const { element, html, css, width, height } = runtime.surfaces.snapshot.render(c
 The result carries the viewport the page was laid out for, so a rasterizing host reads `width` and `height` from it. An unknown frame name throws.
 
 `render` validates, resolves the frame, checks the frame's own body rule, resolves geometry, then hands the frame and the dispatcher to `BoundFrame.render`. The body-rule check throws rather than returning a result: `render` already validated, so this is the backstop for a composition that arrived another way, or one validated under a different frame than it is now drawn in.
+
+## Sizing to content
+
+A fixed frame's height is whatever `estimateHeight` returns, and for a card that means summing each node's `metrics.snapshotHeight` — a pixel height per primitive that a pack has to keep in step with its styles, and that is 0 for any primitive declaring none. A frame for message-style content, such as tables, fields, and markdown of any length, can instead declare `sizing: 'content'`:
+
+```tsx
+const messageFrame: Frame<CardTheme> = {
+  defaultWidth: 760,
+  theme,
+  sizing: 'content',
+  // A floor, not a promise: the image backend measures the real height.
+  estimateHeight: () => 120,
+  wrap: (header, body, { width, theme }) => (
+    <div style={{ width, background: theme.background }}>{body}</div>
+  ),
+};
+```
+
+A render under it returns `heightMode: 'content'` alongside `height`, and an image backend that honors it lays the markup out at `width` and sizes the output to the root: `@elastic/isomer-image-takumi` does so for PNG, SVG, and PDF, in its own layout pass (see [Sizing to content](../../isomer-image-takumi/docs/index.md#sizing-to-content)). `height` is still the frame's estimate, so a synchronous caller, a browser preview, or a backend that ignores `heightMode` still has a viewport. Passing `height` to a render overrides both: the result is `heightMode: 'fixed'` at that height.
+
+What is measured is the root `wrap` returns, so a content frame should not pin its root to `viewport.height` — a root fixed at the estimate measures as the estimate — and should not size it by percentage, which has no viewport height to resolve against. `renderPages` under a content frame still gives every page one size: the backend measures each page and uses the tallest.
+
+`metrics.snapshotHeight` stays supported, and under a content frame it becomes optional. Missing-height warnings are not reported there, since the estimate sizes nothing. Declare it still when:
+
+- a fixed frame sums node heights, since it is the only height that frame has;
+- a content frame's `estimateHeight` wants a closer estimate for a synchronous caller, such as a browser preview sized before any backend runs, or a host that reserves space for the image;
+- the image goes through a backend that does not measure, which draws at the estimate.
 
 ## A runtime is homogeneous in its theme
 

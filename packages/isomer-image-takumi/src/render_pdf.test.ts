@@ -169,4 +169,34 @@ describe('renderPdf', () => {
     expect(seenInput).toMatchObject({ width: 64, height: 32 });
     expect(seenInput?.pages).toHaveLength(1);
   });
+
+  it('reports the tallest page as the height under a content-sized frame', async () => {
+    const runtime: PdfRuntime = {
+      validate: (composition) => ({ valid: true, errors: [], composition }),
+      surfaces: {
+        snapshot: {
+          renderPages: (compositions) => ({
+            pages: compositions.map((_composition, index) => ({
+              html: `<div class="card">${'<div class="row"></div>'.repeat(index + 1)}</div>`,
+            })),
+            css: '.card { padding: 10px } .row { height: 24px }',
+            width: 64,
+            height: 400,
+            heightMode: 'content',
+          }),
+        },
+      },
+    };
+
+    const result = await renderPdf(
+      runtime,
+      [{ type: 'view' }, { type: 'view' }, { type: 'view' }],
+      createTakumiImageBackend()
+    );
+
+    expect(result).toMatchObject({ pageCount: 3, width: 64, height: 92 });
+    expect(result.pdf.toString('latin1')).toMatch(
+      /MediaBox\s*\[\s*0\s+0\s+48(?:\.0+)?\s+69(?:\.0+)?\s*\]/
+    );
+  });
 });

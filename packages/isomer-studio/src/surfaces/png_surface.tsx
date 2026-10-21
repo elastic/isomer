@@ -128,13 +128,20 @@ export const PngSurface = ({
                   }
                   css={css`
                     display: block;
+                    margin-inline: auto;
                     visibility: ${width ? 'visible' : 'hidden'};
                   `}
                 />
               </ScaledPreview>
             </div>
           ) : (
-            <EuiLoadingSpinner size="m" aria-label="Rendering PNG" />
+            <EuiLoadingSpinner
+              size="m"
+              aria-label="Rendering PNG"
+              css={css`
+                align-self: center;
+              `}
+            />
           )}
         </SurfaceFrame>
       )}

@@ -53,7 +53,8 @@ export interface RenderPdfResult {
  * caller finds out, rather than a thrown error. What is drawn is the copy
  * validation checked. Validation runs twice, once here and once inside
  * `renderPages`, which discards its own result. An empty deck throws the
- * runtime's `EMPTY_PAGES`.
+ * runtime's `EMPTY_PAGES`. Under a frame that sizes to content, the backend's
+ * `fitPages` sizes every page to the tallest, and `height` reports it.
  */
 export const renderPdf = async (
   runtime: PdfRuntime,
@@ -65,13 +66,16 @@ export const renderPdf = async (
     checkedForDrawing('renderPdf', runtime.validate(composition))
   );
   const validations = pages.map(({ validation }) => validation);
-  const rendered = runtime.surfaces.snapshot.renderPages(
+  const estimated = runtime.surfaces.snapshot.renderPages(
     pages.map(({ checked }) => checked),
     {
       ...snapshot,
       onValidationError: 'collect',
     }
   );
+  const rendered = backend.fitPages
+    ? await backend.fitPages(estimated, options)
+    : estimated;
   const pdf = await backend.pdf(rendered, options);
   return {
     pdf,

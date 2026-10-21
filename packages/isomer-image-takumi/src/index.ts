@@ -6,6 +6,7 @@
  */
 
 export {
+  type HeightMode,
   type ImageInput,
   type LayoutBox,
   type PdfInput,
