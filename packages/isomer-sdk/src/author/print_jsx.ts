@@ -33,11 +33,17 @@ export interface PrintJsxEnv {
 
 const MAX_LINE = 80;
 const INDENT = '  ';
-const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
+// Unicode-aware, as JavaScript identifiers are: `Café` is a valid tag, `a b` or `a/>` is not.
+const ID_START = String.raw`[\p{ID_Start}_$]`;
+const ID_PART = String.raw`[\p{ID_Continue}$\u200C\u200D]`;
+const IDENTIFIER = new RegExp(`^${ID_START}${ID_PART}*$`, 'u');
 /** A tag the printer may write: an identifier, or a member path of them. */
-const ELEMENT_NAME = /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*$/;
+const ELEMENT_NAME = new RegExp(
+  `^${ID_START}${ID_PART}*(?:\\.${ID_START}${ID_PART}*)*$`,
+  'u'
+);
 /** An attribute name JSX reads as written; any other key prints as a spread of a quoted key. */
-const ATTRIBUTE_NAME = /^[A-Za-z_$][\w$-]*$/;
+const ATTRIBUTE_NAME = new RegExp(`^${ID_START}(?:${ID_PART}|-)*$`, 'u');
 const UNSAFE_TEXT = /[{}<>&]/;
 const UNSAFE_ATTRIBUTE = /["\\\n\r&]/;
 

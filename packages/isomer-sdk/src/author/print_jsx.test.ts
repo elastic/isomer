@@ -208,6 +208,25 @@ describe('printCompositionJsx', () => {
     );
   });
 
+  it('prints a Unicode identifier type as a tag that reads back', () => {
+    const cafeSchema = z.object({
+      type: z.literal('café'),
+      label: z.string(),
+    });
+    const cafe = definition<z.infer<typeof cafeSchema>, typeof cafeSchema>(
+      'café',
+      cafeSchema
+    );
+    const cafeEnv = {
+      schemaFor: () => cafe.schema,
+      shim: buildJsxShim([cafe]),
+    };
+    const node = { type: 'café', label: 'Ouvert' };
+    const source = printCompositionJsx([node], cafeEnv);
+    expect(source).toContain('<Café label="Ouvert" />');
+    expect(compileJsx(source, cafeEnv.shim)).toEqual([node]);
+  });
+
   it('refuses a type that cannot be a JSX tag', () => {
     const node = { type: 'callout /><X' } as unknown as PrimitiveNode;
     expect(() => printCompositionJsx([node], env)).toThrow(

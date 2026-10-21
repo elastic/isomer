@@ -274,9 +274,22 @@ export const useStudioRoute = (
     [go]
   );
 
+  const mounted = useRef(true);
+  useEffect(
+    () => () => {
+      mounted.current = false;
+    },
+    []
+  );
+
   const replaceComposer = useCallback((params: ComposeParams) => {
     const hash = formatLocation({ compose: true, params });
-    if (isComposeRoute(shown.current) && window.location.hash !== hash) {
+    // A composer flushing as the whole Studio unmounts must not rewrite another page's URL.
+    if (
+      mounted.current &&
+      isComposeRoute(shown.current) &&
+      window.location.hash !== hash
+    ) {
       window.history.replaceState(null, '', hash);
     }
   }, []);

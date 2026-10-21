@@ -40,6 +40,7 @@ import { homeBackground } from './home/tokens';
 import { createShim } from './model/compile_jsx';
 import { composeExample, composeOf } from './model/compose_example';
 import type { ComposeParams } from './model/compose_link';
+import { formatComposeQuery } from './model/compose_link';
 import { describeRuntime } from './model/describe_runtime';
 import type { StudioContextValue, StudioTheme } from './studio_context';
 import { StudioContextProvider, useStudio } from './studio_context';
@@ -150,7 +151,14 @@ const Layout = ({
   const [composeParams, setComposeParams] = useState(routeParams);
   if (routeParams && routeParams !== seenParams) {
     setSeenParams(routeParams);
-    setComposeParams(routeParams);
+    // The same query again, as from re-clicking Composition, keeps the composer's params, so an
+    // in-flight load is not restarted.
+    if (
+      !composeParams ||
+      formatComposeQuery(routeParams) !== formatComposeQuery(composeParams)
+    ) {
+      setComposeParams(routeParams);
+    }
   }
   const replaceComposerParams = useCallback(
     (params: ComposeParams) => {
@@ -245,7 +253,8 @@ const Layout = ({
               mode={mode ?? route.mode}
               app={app?.id}
               isComposing={composing}
-              onCompose={() => openComposer()}
+              // Reopens the draft the composer last wrote, so the URL keeps sharing it.
+              onCompose={() => openComposer(composeParams)}
               appPath={isAppRoute(location) ? location.path : undefined}
               isOpen={isNavOpen}
               isCompact={isCompactNav}

@@ -94,7 +94,8 @@ export const formatComposeQuery = ({
   return query ? `?${query}` : '';
 };
 
-class SourceTooLargeError extends Error {
+/** Thrown, identified by `name`, for source past {@link MAX_SOURCE_BYTES}. */
+export class SourceTooLargeError extends Error {
   constructor(limit: number) {
     super(`The source is larger than ${limit} bytes.`);
     this.name = 'SourceTooLargeError';
@@ -164,14 +165,23 @@ const fromBase64Url = (text: string): Uint8Array => {
   return Uint8Array.from(binary, (char) => char.charCodeAt(0));
 };
 
-/** Source as a URL-safe `code` payload: UTF-8, raw deflate, then base64url. */
-export const encodeSource = async (source: string): Promise<string> =>
-  toBase64Url(
-    await through(
-      new TextEncoder().encode(source),
-      new CompressionStream('deflate-raw')
-    )
+/** Whether `source` is within {@link MAX_SOURCE_BYTES} as UTF-8, so a link to it can load. */
+export const fitsInLink = (source: string): boolean =>
+  new TextEncoder().encode(source).byteLength <= MAX_SOURCE_BYTES;
+
+/**
+ * Source as a URL-safe `code` payload: UTF-8, raw deflate, then base64url. Rejects with
+ * {@link SourceTooLargeError} past what {@link decodeSource} reads back.
+ */
+export const encodeSource = async (source: string): Promise<string> => {
+  const bytes = new TextEncoder().encode(source);
+  if (bytes.byteLength > MAX_SOURCE_BYTES) {
+    throw new SourceTooLargeError(MAX_SOURCE_BYTES);
+  }
+  return toBase64Url(
+    await through(bytes, new CompressionStream('deflate-raw'))
   );
+};
 
 /**
  * Reverses {@link encodeSource}, with one message for any payload it can't read. Stops

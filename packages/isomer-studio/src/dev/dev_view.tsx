@@ -6,12 +6,21 @@
  */
 
 import React, { useState } from 'react';
-import { EuiButtonEmpty, EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
+import {
+  EuiButtonEmpty,
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiToolTip,
+} from '@elastic/eui';
 
 import { PrimitiveHeading } from '../chrome/primitive_heading';
 import type { StudioRoute } from '../chrome/route';
 import type { ComposeParams } from '../model/compose_link';
-import { encodeSource } from '../model/compose_link';
+import {
+  encodeSource,
+  fitsInLink,
+  MAX_SOURCE_BYTES,
+} from '../model/compose_link';
 import { rememberTrusted } from '../model/compose_storage';
 import type { PrimitiveDoc } from '../model/describe_runtime';
 import { useStudio } from '../studio_context';
@@ -47,6 +56,9 @@ const OpenInComposer = ({
       // A type JSX can't name still carries over as JSON.
       printed = printAs('json');
     }
+    if (!fitsInLink(printed.source)) {
+      return;
+    }
     rememberTrusted(printed);
     openComposer({
       code: await encodeSource(printed.source),
@@ -54,14 +66,23 @@ const OpenInComposer = ({
     });
   };
 
-  return (
+  const tooLarge = !fitsInLink(editor.source);
+  const button = (
     <EuiButtonEmpty
       size="s"
       iconType="external"
-      isDisabled={Boolean(editor.parseError) || editor.isParsing}
+      isDisabled={Boolean(editor.parseError) || editor.isParsing || tooLarge}
       onClick={() => void open()}>
       {OPEN_LABEL}
     </EuiButtonEmpty>
+  );
+  return tooLarge ? (
+    <EuiToolTip
+      content={`Drafts over ${MAX_SOURCE_BYTES} bytes are too large to carry over.`}>
+      {button}
+    </EuiToolTip>
+  ) : (
+    button
   );
 };
 

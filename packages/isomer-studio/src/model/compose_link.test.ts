@@ -11,6 +11,7 @@ import {
   decodeSource,
   encodeSource,
   fetchSource,
+  fitsInLink,
   formatComposeQuery,
   MAX_SOURCE_BYTES,
   parseComposeQuery,
@@ -67,9 +68,29 @@ describe('source codec', () => {
   });
 
   it('stops inflating a payload past the source cap', async () => {
-    const payload = await encodeSource('a'.repeat(MAX_SOURCE_BYTES + 1));
+    const bytes = new TextEncoder().encode('a'.repeat(MAX_SOURCE_BYTES + 1));
+    const deflated = new Uint8Array(
+      await new Response(
+        new Blob([bytes])
+          .stream()
+          .pipeThrough(new CompressionStream('deflate-raw'))
+      ).arrayBuffer()
+    );
+    const payload = Buffer.from(deflated).toString('base64url');
     expect(payload.length).toBeLessThan(5_000);
     await expect(decodeSource(payload)).rejects.toThrow('larger than');
+  });
+
+  it('refuses to encode what it could not decode', async () => {
+    const atCap = 'a'.repeat(MAX_SOURCE_BYTES);
+    expect(fitsInLink(atCap)).toBe(true);
+    await expect(decodeSource(await encodeSource(atCap))).resolves.toBe(atCap);
+
+    const over = `${atCap}é`;
+    expect(fitsInLink(over)).toBe(false);
+    await expect(encodeSource(over)).rejects.toMatchObject({
+      name: 'SourceTooLargeError',
+    });
   });
 
   it.each([

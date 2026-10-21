@@ -18,6 +18,7 @@ import {
   EuiButtonIcon,
   EuiCallOut,
   EuiFlexItem,
+  EuiLoadingSpinner,
   EuiPopover,
   EuiSelectable,
   EuiText,
@@ -33,8 +34,10 @@ import {
   decodeSource,
   encodeSource,
   fetchSource,
+  fitsInLink,
   formatComposeQuery,
   LONG_LINK,
+  MAX_SOURCE_BYTES,
 } from '../model/compose_link';
 import {
   isTrusted,
@@ -199,7 +202,7 @@ const NewMenu = ({ onSelect }: { onSelect: (choice: NewChoice) => void }) => {
             onSelect(choice);
           }
         }}
-        listProps={{ bordered: false }}
+        listProps={{ bordered: false, isVirtualized: false }}
         css={css`
           width: 320px;
         `}>
@@ -223,6 +226,13 @@ const ShareButton = ({ editor }: { editor: EditorState }) => {
   const [status, setStatus] = useState<{ text: string; isLong: boolean }>();
 
   const share = async () => {
+    if (!fitsInLink(editor.source)) {
+      setStatus({
+        isLong: true,
+        text: `This draft is over ${MAX_SOURCE_BYTES} bytes, too large for a link. Host the source and share #/compose?src=<url> instead.`,
+      });
+      return;
+    }
     const code = await encodeSource(editor.source);
     const url = new URL(
       `#/compose${formatComposeQuery({ code, lang: editor.format })}`,
@@ -401,9 +411,29 @@ const ComposeWorkbench = ({
   );
 };
 
+const LoadingSeed = () => {
+  const { euiTheme } = useEuiTheme();
+  return (
+    <div
+      role="status"
+      css={css`
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: ${euiTheme.size.s};
+      `}>
+      <EuiLoadingSpinner size="l" />
+      <EuiText size="s" color="subdued">
+        <p>Loading the linked composition…</p>
+      </EuiText>
+    </div>
+  );
+};
+
 export interface ComposeViewProps {
   params: ComposeParams;
-  /** False while another page shows; the editor keeps its draft but leaves the URL alone. */
+  /** False while another page shows; the editor keeps its draft, and the router leaves the URL alone. */
   isVisible: boolean;
   stacked: boolean;
   openComposer: (params?: ComposeParams) => void;
@@ -429,6 +459,10 @@ export const ComposeView = ({
   const [draft, setDraft] = useState<DraftReport>();
   const written = useRef<string>();
   const seeds = useRef(0);
+  const load = useRef<AbortController>();
+  const sync = useRef<{ flush: () => void } | undefined>();
+  const latest = useRef({ replaceComposer });
+  latest.current = { replaceComposer };
 
   const plant = useCallback((initial: EditorInitial) => {
     seeds.current += 1;
@@ -440,6 +474,12 @@ export const ComposeView = ({
     [docs, featured, compose]
   );
 
+  /** The saved draft, else the starter, so a link that fails to load never autosaves over a draft. */
+  const fallback = useCallback((): EditorInitial => {
+    const stored = loadDraft();
+    return stored ? { ...stored, trusted: true } : starter();
+  }, [starter]);
+
   useEffect(() => {
     const query = formatComposeQuery(params);
     if (query && query === written.current) {
@@ -450,16 +490,13 @@ export const ComposeView = ({
         if (current) {
           return current;
         }
-        const stored = loadDraft();
         seeds.current += 1;
-        return {
-          id: seeds.current,
-          initial: stored ? { ...stored, trusted: true } : starter(),
-        };
+        return { id: seeds.current, initial: fallback() };
       });
       return;
     }
     const controller = new AbortController();
+    load.current = controller;
     setLoading(true);
     setLoadError(undefined);
     loadParams(params, { docs, compose, signal: controller.signal }).then(
@@ -478,7 +515,7 @@ export const ComposeView = ({
               return current;
             }
             seeds.current += 1;
-            return { id: seeds.current, initial: starter() };
+            return { id: seeds.current, initial: fallback() };
           });
         }
       }
@@ -491,36 +528,56 @@ export const ComposeView = ({
     // Loads only when the route asks for something new, not when the runtime reloads.
   }, [params]);
 
+  // Going Home unmounts the editor; keep the edit still waiting on the debounce. Declared before
+  // the sync effect so its cleanup runs first, before that one cancels the pending sync.
+  useEffect(
+    () => () => {
+      sync.current?.flush();
+    },
+    []
+  );
+
   useEffect(() => {
     // A sync while a link loads would rewrite the params it is loading from and abort it.
     if (!draft || isLoading) {
       return;
     }
-    let cancelled = false;
-    const timer = setTimeout(() => {
+    let done = false;
+    const flush = () => {
+      if (done) {
+        return;
+      }
+      done = true;
+      clearTimeout(timer);
       if (!draft.isHeld) {
         saveDraft(draft);
         rememberTrusted(draft);
       }
-      void encodeSource(draft.source).then((code) => {
-        if (cancelled) {
-          return;
-        }
-        const next = { code, lang: draft.format };
+      // A draft too large for a link reloads from the saved draft at a bare `#/compose`.
+      const write = (next: ComposeParams) => {
         written.current = formatComposeQuery(next);
-        if (isVisible) {
-          replaceComposer(next);
-        }
-      });
-    }, SYNC_DELAY);
+        latest.current.replaceComposer(next);
+      };
+      if (!fitsInLink(draft.source)) {
+        write({});
+        return;
+      }
+      void encodeSource(draft.source).then(
+        (code) => write({ code, lang: draft.format }),
+        () => write({})
+      );
+    };
+    const timer = setTimeout(flush, SYNC_DELAY);
+    sync.current = { flush };
     return () => {
-      cancelled = true;
+      // Superseded by a newer draft: drop this one. Unmounting is flushed below.
+      done = true;
       clearTimeout(timer);
     };
-  }, [draft, isLoading, isVisible, replaceComposer]);
+  }, [draft, isLoading, isVisible]);
 
   if (!seed) {
-    return null;
+    return isLoading ? <LoadingSeed /> : null;
   }
 
   return (
@@ -536,6 +593,9 @@ export const ComposeView = ({
             example: { type: choice.type, index: choice.index },
           });
         } else {
+          // A link still loading would replace the starter when it lands.
+          load.current?.abort();
+          setLoading(false);
           plant(starter());
         }
       }}
