@@ -12,6 +12,26 @@ import { createRequire } from 'node:module';
 import { cleanup } from '@testing-library/react';
 import { afterAll, afterEach, vi } from 'vitest';
 
+declare global {
+  const jsdom: { window: Pick<Window, 'localStorage' | 'sessionStorage'> };
+}
+
+// Browser tests use jsdom storage even when Node exposes its own globals.
+for (const kind of ['localStorage', 'sessionStorage'] as const) {
+  const original = Object.getOwnPropertyDescriptor(globalThis, kind);
+  Object.defineProperty(globalThis, kind, {
+    configurable: true,
+    get: () => jsdom.window[kind],
+  });
+  afterAll(() => {
+    if (original) {
+      Object.defineProperty(globalThis, kind, original);
+    } else {
+      Reflect.deleteProperty(globalThis, kind);
+    }
+  });
+}
+
 // Monaco's theme service reads this when a test imports the editor. jsdom does not provide it.
 if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
   window.matchMedia = (query) => ({

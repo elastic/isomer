@@ -9,6 +9,8 @@ import type { ReactNode } from 'react';
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { css } from '@emotion/react';
 
+import { usePreviewBackground } from './preview_background';
+
 /** `fit` scales content down to its container, never up; a number is a fixed scale. */
 export type PreviewZoom = 'fit' | number;
 
@@ -58,6 +60,7 @@ export const ScaledPreview = ({
   maxHeight,
   children,
 }: ScaledPreviewProps) => {
+  const background = usePreviewBackground();
   const outer = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
   const contentBox = useRef<HTMLDivElement>(null);
@@ -102,7 +105,10 @@ export const ScaledPreview = ({
     <div
       ref={outer}
       css={css`
+        ${background};
         overflow-x: ${zoom === 'fit' ? 'clip' : 'auto'};
+        overflow-y: ${zoom === 'fit' ? 'clip' : 'auto'};
+        overflow-clip-margin: 16px;
       `}>
       <div
         css={
@@ -113,6 +119,7 @@ export const ScaledPreview = ({
                 margin-inline: auto;
                 width: ${width * scale}px;
                 height: ${content.height * scale}px;
+                box-shadow: 0 0 12px rgb(0 0 0 / 9%);
               `
             : undefined
         }>

@@ -18,6 +18,7 @@ import { useStudio } from '../studio_context';
 import { applicableEnhancements } from './applicable_enhancements';
 import { EnhancementSelect } from './enhancement_select';
 import { PngSurface } from './png_surface';
+import { usePreviewBackground } from './preview_background';
 import type { PreviewZoom } from './scaled_preview';
 import type { SurfaceView } from './surface_preview';
 import { SurfacePreview } from './surface_preview';
@@ -97,6 +98,7 @@ const SurfaceCard = ({
   const { euiTheme } = useEuiTheme();
   const label = title ?? PREVIEW_LABELS[surface];
   const clipsRender = view === 'render' && isVisualSurface(surface);
+  const background = usePreviewBackground();
 
   return (
     <section
@@ -108,6 +110,7 @@ const SurfaceCard = ({
         border: ${euiTheme.border.thin};
         border-radius: ${euiTheme.border.radius.medium};
         overflow: hidden;
+        ${clipsRender ? background : ''};
       `}>
       <div
         css={css`
@@ -199,6 +202,7 @@ const SurfaceCard = ({
                 }
                 overflow: ${clipsRender ? 'hidden' : 'auto'};
                 background: ${euiTheme.colors.backgroundBaseSubdued};
+                ${clipsRender ? background : ''};
               `
         }
       />
