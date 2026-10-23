@@ -657,6 +657,117 @@ describe('createTakumiImageBackend', () => {
       expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
       expect(reads).toBe(2);
     });
+
+    describe('pdfThread', () => {
+      /** Event loop turns taken while `render` is pending, after a warm-up render. */
+      const turnsDuring = async (
+        backend: ReturnType<typeof createTakumiImageBackend>
+      ) => {
+        const deck = pages(Array.from({ length: 40 }, (_, i) => `page ${i}`));
+        await backend.pdf(deck);
+        let turns = 0;
+        let done = false;
+        const spin = () => {
+          if (!done) {
+            turns += 1;
+            setImmediate(spin);
+          }
+        };
+        setImmediate(spin);
+        await backend.pdf(deck);
+        done = true;
+        await backend.close();
+        return turns;
+      };
+
+      it('renders in a worker by default, leaving the event loop free', async () => {
+        expect(await turnsDuring(createTakumiImageBackend())).toBeGreaterThan(
+          0
+        );
+      });
+
+      it('blocks the calling thread when inline', async () => {
+        expect(
+          await turnsDuring(createTakumiImageBackend({ pdfThread: 'inline' }))
+        ).toBe(0);
+      });
+
+      it('writes the same bytes in a worker as inline', async () => {
+        const file =
+          require.resolve('@fontsource/inter/files/inter-latin-400-normal.woff2');
+        const fonts = [
+          { name: 'Inter', weight: 400, data: () => readFile(file) },
+        ];
+        const deck = pages(['Ag', 'b'], '.box { font-family: Inter; }');
+        const worker = createTakumiImageBackend({ fonts });
+        const inline = createTakumiImageBackend({ fonts, pdfThread: 'inline' });
+        const [fromWorker, fromInline] = await Promise.all([
+          worker.pdf(deck, stable),
+          inline.pdf(deck, stable),
+        ]);
+        await Promise.all([worker.close(), inline.close()]);
+
+        expect(fromWorker.equals(fromInline)).toBe(true);
+      });
+
+      it('reads lazy image bytes before posting them', async () => {
+        const src = 'https://example.invalid/logo.png';
+        const withImage: PdfInput = {
+          ...pages(['']),
+          pages: [{ html: `<img src="${src}" width="16" height="16"/>` }],
+        };
+        const backend = createTakumiImageBackend();
+        const eager = await backend.pdf(withImage, {
+          ...stable,
+          images: [{ src, data: PIXEL }],
+        });
+        const lazy = await backend.pdf(withImage, {
+          ...stable,
+          images: { sources: [{ src, data: () => Promise.resolve(PIXEL) }] },
+        });
+        await backend.close();
+
+        expect(lazy.equals(eager)).toBe(true);
+      });
+
+      it('restarts after a font the worker cannot register', async () => {
+        let reads = 0;
+        const file =
+          require.resolve('@fontsource/inter/files/inter-latin-400-normal.woff2');
+        const backend = createTakumiImageBackend({
+          fonts: [
+            {
+              name: 'Inter',
+              weight: 400,
+              data: async () => {
+                reads += 1;
+                return reads === 1 ? Buffer.from('not a font') : readFile(file);
+              },
+            },
+          ],
+        });
+
+        await expect(backend.pdf(pages(['a']))).rejects.toThrow();
+        const pdf = await backend.pdf(pages(['a']));
+        await backend.close();
+
+        expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+      });
+
+      it('rejects a render in flight on close, and starts afresh after', async () => {
+        const backend = createTakumiImageBackend();
+        await backend.pdf(pages(['a']));
+        const inFlight = expect(backend.pdf(pages(['a']))).rejects.toThrow(
+          /closed/
+        );
+        await backend.close();
+
+        await inFlight;
+        const pdf = await backend.pdf(pages(['a']));
+        await backend.close();
+        expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+      });
+    });
   });
 
   describe('heightMode content', () => {
