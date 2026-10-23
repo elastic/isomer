@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-23
+
+- **Outcome**: `createTakumiImageBackend` runs takumi's synchronous WebAssembly PDF engine in a `worker_threads` Worker by default, so `pdf` and `fitPages` no longer block the caller's event loop for the whole render ([#268](https://github.com/elastic/isomer/issues/268)). `pdfThread: 'inline'` keeps the engine on the calling thread, and `TakumiBackend.close()` stops the worker; the worker holds the process open only while a call is in flight and is restarted if it dies.
+
 ## 2026-10-21
 
 - **Outcome**: Studio visual previews show a dotted grid behind rendered content and around inset renders in both color modes, with a subtle drop shadow around the render. Grid spacing and shadow size stay fixed while zoom changes, making render boundaries and transparency easier to see. The editor keeps its subdued background, while a deeper output-pane background and plain dotted canvases distinguish the preview areas. Regression coverage keeps decorations unscaled across zoom levels; Studio tests bind storage to jsdom, and CI adds Node 26 so verification needs no Web Storage flags.
