@@ -2404,7 +2404,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ---
 
-This product depends on @takumi-rs/core@2.14.0, licensed under (MIT OR Apache-2.0).
+This product depends on @takumi-rs/core@2.18.1, licensed under (MIT OR Apache-2.0).
 
 MIT License
 
@@ -2430,7 +2430,7 @@ SOFTWARE.
 
 ---
 
-This product depends on @takumi-rs/core-darwin-arm64@2.14.0, licensed under (MIT OR Apache-2.0).
+This product depends on @takumi-rs/core-darwin-arm64@2.18.1, licensed under (MIT OR Apache-2.0).
 
 MIT License
 
@@ -2456,7 +2456,7 @@ SOFTWARE.
 
 ---
 
-This product depends on @takumi-rs/core-darwin-x64@2.14.0, licensed under (MIT OR Apache-2.0).
+This product depends on @takumi-rs/core-darwin-x64@2.18.1, licensed under (MIT OR Apache-2.0).
 
 MIT License
 
@@ -2482,7 +2482,7 @@ SOFTWARE.
 
 ---
 
-This product depends on @takumi-rs/core-linux-arm64-gnu@2.14.0, licensed under (MIT OR Apache-2.0).
+This product depends on @takumi-rs/core-linux-arm64-gnu@2.18.1, licensed under (MIT OR Apache-2.0).
 
 MIT License
 
@@ -2508,7 +2508,7 @@ SOFTWARE.
 
 ---
 
-This product depends on @takumi-rs/core-linux-arm64-musl@2.14.0, licensed under (MIT OR Apache-2.0).
+This product depends on @takumi-rs/core-linux-arm64-musl@2.18.1, licensed under (MIT OR Apache-2.0).
 
 MIT License
 
@@ -2534,7 +2534,7 @@ SOFTWARE.
 
 ---
 
-This product depends on @takumi-rs/core-linux-x64-gnu@2.14.0, licensed under (MIT OR Apache-2.0).
+This product depends on @takumi-rs/core-linux-x64-gnu@2.18.1, licensed under (MIT OR Apache-2.0).
 
 MIT License
 
@@ -2560,7 +2560,7 @@ SOFTWARE.
 
 ---
 
-This product depends on @takumi-rs/core-linux-x64-musl@2.14.0, licensed under (MIT OR Apache-2.0).
+This product depends on @takumi-rs/core-linux-x64-musl@2.18.1, licensed under (MIT OR Apache-2.0).
 
 MIT License
 
@@ -2586,7 +2586,7 @@ SOFTWARE.
 
 ---
 
-This product depends on @takumi-rs/core-win32-arm64-msvc@2.14.0, licensed under (MIT OR Apache-2.0).
+This product depends on @takumi-rs/core-win32-arm64-msvc@2.18.1, licensed under (MIT OR Apache-2.0).
 
 MIT License
 
@@ -2612,7 +2612,7 @@ SOFTWARE.
 
 ---
 
-This product depends on @takumi-rs/core-win32-x64-msvc@2.14.0, licensed under (MIT OR Apache-2.0).
+This product depends on @takumi-rs/core-win32-x64-msvc@2.18.1, licensed under (MIT OR Apache-2.0).
 
 MIT License
 
@@ -2638,7 +2638,7 @@ SOFTWARE.
 
 ---
 
-This product depends on @takumi-rs/helpers@2.14.0, licensed under (MIT OR Apache-2.0).
+This product depends on @takumi-rs/helpers@2.18.1, licensed under (MIT OR Apache-2.0).
 
 MIT License
 
@@ -13850,7 +13850,7 @@ SOFTWARE.
 
 ---
 
-This product depends on takumi-pdf@0.15.0, licensed under (MIT OR Apache-2.0).
+This product depends on takumi-pdf@0.18.3, licensed under (MIT OR Apache-2.0).
 
 MIT License
 

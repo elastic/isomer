@@ -44,31 +44,45 @@ const paeth = (left: number, up: number, upLeft: number) => {
   return toUp <= toUpLeft ? up : upLeft;
 };
 
-/** Decodes the PNGs takumi writes: 8-bit, non-interlaced, RGB or RGBA. */
+const PNG_CHANNELS: Record<number, number> = { 2: 3, 3: 1, 6: 4 };
+
+/** Decodes the PNGs takumi writes: 8-bit, non-interlaced, RGB, RGBA, or indexed. */
 const decodePng = (png: Buffer) => {
   const width = png.readUInt32BE(16);
   const height = png.readUInt32BE(20);
-  const channels = png.readUInt8(25) === 6 ? 4 : 3;
+  const bitDepth = png.readUInt8(24);
+  const colorType = png.readUInt8(25);
+  const channels = PNG_CHANNELS[colorType];
+  if (bitDepth !== 8 || channels === undefined) {
+    throw new Error(
+      `unsupported PNG: bit depth ${bitDepth}, color type ${colorType}`
+    );
+  }
   const data: Buffer[] = [];
+  let palette: Buffer = Buffer.alloc(0);
   for (let offset = 8; offset < png.length;) {
     const length = png.readUInt32BE(offset);
-    if (png.toString('latin1', offset + 4, offset + 8) === 'IDAT') {
-      data.push(png.subarray(offset + 8, offset + 8 + length));
+    const type = png.toString('latin1', offset + 4, offset + 8);
+    const chunk = png.subarray(offset + 8, offset + 8 + length);
+    if (type === 'IDAT') {
+      data.push(chunk);
+    } else if (type === 'PLTE') {
+      palette = chunk;
     }
     offset += length + 12;
   }
   const filtered = inflateSync(Buffer.concat(data));
   const stride = width * channels;
-  const pixels = Buffer.alloc(height * stride);
+  const samples = Buffer.alloc(height * stride);
   for (let y = 0; y < height; y++) {
     const filter = filtered.readUInt8(y * (stride + 1));
     for (let x = 0; x < stride; x++) {
       const left =
-        x >= channels ? pixels.readUInt8(y * stride + x - channels) : 0;
-      const up = y > 0 ? pixels.readUInt8((y - 1) * stride + x) : 0;
+        x >= channels ? samples.readUInt8(y * stride + x - channels) : 0;
+      const up = y > 0 ? samples.readUInt8((y - 1) * stride + x) : 0;
       const upLeft =
         x >= channels && y > 0
-          ? pixels.readUInt8((y - 1) * stride + x - channels)
+          ? samples.readUInt8((y - 1) * stride + x - channels)
           : 0;
       const predicted = [
         0,
@@ -77,15 +91,25 @@ const decodePng = (png: Buffer) => {
         (left + up) >> 1,
         paeth(left, up, upLeft),
       ][filter];
-      pixels.writeUInt8(
+      samples.writeUInt8(
         (filtered.readUInt8(y * (stride + 1) + 1 + x) + (predicted ?? 0)) &
           0xff,
         y * stride + x
       );
     }
   }
+  /** Indexed samples resolve to RGB, so equal images compare equal whatever their palette order. */
+  const pixels =
+    colorType === 3
+      ? Buffer.concat(
+          [...samples].map((index) =>
+            palette.subarray(index * 3, index * 3 + 3)
+          )
+        )
+      : samples;
+  const pixelChannels = colorType === 3 ? 3 : channels;
   const pixel = (x: number, y: number) => {
-    const at = (y * width + x) * channels;
+    const at = (y * width + x) * pixelChannels;
     return {
       r: pixels.readUInt8(at),
       g: pixels.readUInt8(at + 1),
