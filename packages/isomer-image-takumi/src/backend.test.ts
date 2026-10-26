@@ -60,6 +60,7 @@ const decodePng = (png: Buffer) => {
   }
   const data: Buffer[] = [];
   let palette: Buffer = Buffer.alloc(0);
+  let transparency: Buffer = Buffer.alloc(0);
   for (let offset = 8; offset < png.length;) {
     const length = png.readUInt32BE(offset);
     const type = png.toString('latin1', offset + 4, offset + 8);
@@ -68,8 +69,13 @@ const decodePng = (png: Buffer) => {
       data.push(chunk);
     } else if (type === 'PLTE') {
       palette = chunk;
+    } else if (type === 'tRNS') {
+      transparency = chunk;
     }
     offset += length + 12;
+  }
+  if (colorType === 2 && transparency.length > 0) {
+    throw new Error('unsupported PNG: an RGB image with a transparent color');
   }
   const filtered = inflateSync(Buffer.concat(data));
   const stride = width * channels;
@@ -98,22 +104,35 @@ const decodePng = (png: Buffer) => {
       );
     }
   }
-  /** Indexed samples resolve to RGB, so equal images compare equal whatever their palette order. */
-  const pixels =
-    colorType === 3
-      ? Buffer.concat(
-          [...samples].map((index) =>
-            palette.subarray(index * 3, index * 3 + 3)
-          )
-        )
-      : samples;
-  const pixelChannels = colorType === 3 ? 3 : channels;
+  /** Every pixel as RGBA, so two images compare equal exactly when they draw the same, whatever their color type or palette order. */
+  const toRgba = (): Buffer => {
+    if (colorType === 6) {
+      return samples;
+    }
+    const rgba = Buffer.alloc(width * height * 4);
+    for (let index = 0; index < width * height; index++) {
+      if (colorType === 3) {
+        const entry = samples.readUInt8(index);
+        palette.copy(rgba, index * 4, entry * 3, entry * 3 + 3);
+        rgba.writeUInt8(
+          entry < transparency.length ? transparency.readUInt8(entry) : 0xff,
+          index * 4 + 3
+        );
+      } else {
+        samples.copy(rgba, index * 4, index * 3, index * 3 + 3);
+        rgba.writeUInt8(0xff, index * 4 + 3);
+      }
+    }
+    return rgba;
+  };
+  const pixels = toRgba();
   const pixel = (x: number, y: number) => {
-    const at = (y * width + x) * pixelChannels;
+    const at = (y * width + x) * 4;
     return {
       r: pixels.readUInt8(at),
       g: pixels.readUInt8(at + 1),
       b: pixels.readUInt8(at + 2),
+      a: pixels.readUInt8(at + 3),
     };
   };
   return { width, height, pixels, pixel };
@@ -150,6 +169,29 @@ describe('createTakumiImageBackend', () => {
     const blue = await backend.png(input('.box { background: #0000ff; }'));
 
     expect(red.equals(blue)).toBe(false);
+  });
+
+  it('decodes an indexed PNG’s transparency, so images differing only in alpha differ', async () => {
+    const backend = createTakumiImageBackend();
+    const halfRed = (shade: string): ImageInput => ({
+      html: '<div class="shade"><div class="box"></div></div>',
+      css: `.shade { width: 100%; height: 100%; background: ${shade} } .box { width: 50%; height: 100%; background: #ff0000 }`,
+      width: 64,
+      height: 32,
+    });
+    const [clear, shaded] = await Promise.all([
+      backend.png(halfRed('transparent')),
+      backend.png(halfRed('rgba(0, 0, 0, 0.5)')),
+    ]);
+
+    // Color type 3: both are indexed, with their alpha in `tRNS`.
+    expect([clear.readUInt8(25), shaded.readUInt8(25)]).toEqual([3, 3]);
+    const [clearPng, shadedPng] = [decodePng(clear), decodePng(shaded)];
+    expect(clearPng.pixel(0, 0)).toEqual({ r: 0xff, g: 0, b: 0, a: 0xff });
+    expect(clearPng.pixel(63, 0).a).toBe(0);
+    expect(shadedPng.pixel(63, 0).a).toBeGreaterThan(0);
+    expect(shadedPng.pixel(63, 0).a).toBeLessThan(0xff);
+    expect(clearPng.pixels).not.toEqual(shadedPng.pixels);
   });
 
   it('preserves style end tags inside CSS', async () => {
@@ -712,8 +754,13 @@ describe('createTakumiImageBackend', () => {
       expect(doubled.readUInt32BE(20)).toBe(2 * contentHeight(rows));
       // The last row reaches the bottom padding, and nothing is drawn past it.
       const { height, pixel } = decodePng(png);
-      expect(pixel(60, height - 11)).toEqual({ r: 0xcc, g: 0, b: 0 });
-      expect(pixel(60, height - 1)).toEqual({ r: 0xee, g: 0xee, b: 0xee });
+      expect(pixel(60, height - 11)).toEqual({ r: 0xcc, g: 0, b: 0, a: 0xff });
+      expect(pixel(60, height - 1)).toEqual({
+        r: 0xee,
+        g: 0xee,
+        b: 0xee,
+        a: 0xff,
+      });
     });
 
     it('leaves a fixed input at its height', async () => {
