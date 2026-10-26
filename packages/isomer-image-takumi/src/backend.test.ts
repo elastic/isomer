@@ -5,8 +5,13 @@
  * 2.0.
  */
 
-import { readFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 import { inflateSync } from 'node:zlib';
 
 import { createElement, type ReactElement } from 'react';
@@ -23,6 +28,7 @@ import {
 } from './backend';
 
 const require = createRequire(import.meta.url);
+const execFileAsync = promisify(execFile);
 
 const input = (css: string): ImageInput => ({
   html: '<div class="box">Ag</div>',
@@ -722,6 +728,290 @@ describe('createTakumiImageBackend', () => {
 
       expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
       expect(reads).toBe(2);
+    });
+
+    describe('pdfThread', () => {
+      /** Event loop turns taken while `render` is pending, after a warm-up render. */
+      const turnsDuring = async (
+        backend: ReturnType<typeof createTakumiImageBackend>
+      ) => {
+        const deck = pages(Array.from({ length: 40 }, (_, i) => `page ${i}`));
+        await backend.pdf(deck);
+        let turns = 0;
+        let done = false;
+        const spin = () => {
+          if (!done) {
+            turns += 1;
+            setImmediate(spin);
+          }
+        };
+        setImmediate(spin);
+        await backend.pdf(deck);
+        done = true;
+        await backend.close();
+        return turns;
+      };
+
+      it('renders in a worker by default, leaving the event loop free', async () => {
+        expect(await turnsDuring(createTakumiImageBackend())).toBeGreaterThan(
+          0
+        );
+      });
+
+      it('blocks the calling thread when inline', async () => {
+        expect(
+          await turnsDuring(createTakumiImageBackend({ pdfThread: 'inline' }))
+        ).toBe(0);
+      });
+
+      it('writes the same bytes in a worker as inline', async () => {
+        const file =
+          require.resolve('@fontsource/inter/files/inter-latin-400-normal.woff2');
+        const fonts = [
+          { name: 'Inter', weight: 400, data: () => readFile(file) },
+        ];
+        const deck = pages(['Ag', 'b'], '.box { font-family: Inter; }');
+        const worker = createTakumiImageBackend({ fonts });
+        const inline = createTakumiImageBackend({ fonts, pdfThread: 'inline' });
+        const [fromWorker, fromInline] = await Promise.all([
+          worker.pdf(deck, stable),
+          inline.pdf(deck, stable),
+        ]);
+        await Promise.all([worker.close(), inline.close()]);
+
+        expect(fromWorker.equals(fromInline)).toBe(true);
+      });
+
+      it('reads lazy image bytes before posting them', async () => {
+        const src = 'https://example.invalid/logo.png';
+        const withImage: PdfInput = {
+          ...pages(['']),
+          pages: [{ html: `<img src="${src}" width="16" height="16"/>` }],
+        };
+        const backend = createTakumiImageBackend();
+        const eager = await backend.pdf(withImage, {
+          ...stable,
+          images: [{ src, data: PIXEL }],
+        });
+        const lazy = await backend.pdf(withImage, {
+          ...stable,
+          images: { sources: [{ src, data: () => Promise.resolve(PIXEL) }] },
+        });
+        await backend.close();
+
+        expect(lazy.equals(eager)).toBe(true);
+      });
+
+      it('restarts after a font the worker cannot register', async () => {
+        let reads = 0;
+        const file =
+          require.resolve('@fontsource/inter/files/inter-latin-400-normal.woff2');
+        const backend = createTakumiImageBackend({
+          fonts: [
+            {
+              name: 'Inter',
+              weight: 400,
+              data: async () => {
+                reads += 1;
+                return reads === 1 ? Buffer.from('not a font') : readFile(file);
+              },
+            },
+          ],
+        });
+
+        await expect(backend.pdf(pages(['a']))).rejects.toThrow();
+        const pdf = await backend.pdf(pages(['a']));
+        await backend.close();
+
+        expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+      });
+
+      it('rejects a render in flight on close, and starts afresh after', async () => {
+        const backend = createTakumiImageBackend();
+        await backend.pdf(pages(['a']));
+        const inFlight = expect(backend.pdf(pages(['a']))).rejects.toThrow(
+          /closed/
+        );
+        await backend.close();
+
+        await inFlight;
+        const pdf = await backend.pdf(pages(['a']));
+        await backend.close();
+        expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+      });
+
+      it('starts no second worker when closed during a content-height render', async () => {
+        let reads = 0;
+        const file =
+          require.resolve('@fontsource/inter/files/inter-latin-400-normal.woff2');
+        const backend = createTakumiImageBackend({
+          fonts: [
+            {
+              name: 'Inter',
+              weight: 400,
+              data: () => {
+                reads += 1;
+                return readFile(file);
+              },
+            },
+          ],
+        });
+        await backend.pdf(pages(['a']));
+        const inFlight = backend.pdf({
+          ...pages(['a']),
+          heightMode: 'content',
+        });
+        const rejected = expect(inFlight).rejects.toThrow(/closed/);
+        await backend.close();
+
+        await rejected;
+        expect(reads).toBe(1);
+      });
+
+      it('closes without waiting on a font that never loads', async () => {
+        const backend = createTakumiImageBackend({
+          fonts: [{ name: 'Inter', data: () => new Promise<never>(() => {}) }],
+        });
+        const inFlight = backend.pdf(pages(['a']));
+        const rejected = expect(inFlight).rejects.toThrow(/closed/);
+        await new Promise((resolve) => setImmediate(resolve));
+
+        await backend.close();
+        await rejected;
+      });
+
+      it('handles a font load that rejects after closing the backend', async () => {
+        const unhandled: unknown[] = [];
+        const onUnhandled = (reason: unknown) => unhandled.push(reason);
+        process.on('unhandledRejection', onUnhandled);
+        try {
+          const backend = createTakumiImageBackend({
+            fonts: [
+              {
+                name: 'Inter',
+                data: () => {
+                  void backend.close();
+                  return Promise.reject(new Error('load failed'));
+                },
+              },
+            ],
+          });
+
+          await expect(backend.pdf(pages(['a']))).rejects.toThrow(/closed/);
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          expect(unhandled).toEqual([]);
+        } finally {
+          process.off('unhandledRejection', onUnhandled);
+        }
+      });
+
+      it('rejects an inline call loading an image on close, and frees the renderer after it', async () => {
+        const unhandled: unknown[] = [];
+        const onUnhandled = (reason: unknown) => unhandled.push(reason);
+        process.on('unhandledRejection', onUnhandled);
+        try {
+          const backend = createTakumiImageBackend({ pdfThread: 'inline' });
+          await backend.pdf(pages(['a']));
+          let load = (_bytes: Buffer) => {};
+          const src = 'https://example.invalid/a.png';
+          const inFlight = backend.pdf(
+            {
+              ...pages(['']),
+              pages: [{ html: `<img src="${src}" width="16" height="16"/>` }],
+            },
+            {
+              images: {
+                sources: [
+                  {
+                    src,
+                    data: () =>
+                      new Promise<Buffer>((resolve) => {
+                        load = resolve;
+                      }),
+                  },
+                ],
+              },
+            }
+          );
+          const rejected = expect(inFlight).rejects.toThrow(/closed/);
+          await new Promise((resolve) => setImmediate(resolve));
+
+          await backend.close();
+          await rejected;
+          load(PIXEL);
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          expect(unhandled).toEqual([]);
+          const pdf = await backend.pdf(pages(['a']));
+          await backend.close();
+          expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+        } finally {
+          process.off('unhandledRejection', onUnhandled);
+        }
+      });
+
+      it('closes without waiting on an image that never loads', async () => {
+        const backend = createTakumiImageBackend();
+        await backend.pdf(pages(['a']));
+        const inFlight = backend.pdf(pages(['a']), {
+          images: {
+            sources: [
+              {
+                src: 'https://example.invalid/a.png',
+                data: () => new Promise<never>(() => {}),
+              },
+            ],
+          },
+        });
+        const rejected = expect(inFlight).rejects.toThrow(/closed/);
+        await new Promise((resolve) => setImmediate(resolve));
+
+        await backend.close();
+        await rejected;
+      });
+
+      it('rejects options it cannot post to the worker, and keeps rendering', async () => {
+        const backend = createTakumiImageBackend();
+        const metadata = {
+          ...stable.metadata,
+          toJSON: () => stable.metadata,
+        } as TakumiPdfMetadata;
+
+        await expect(backend.pdf(pages(['a']), { metadata })).rejects.toThrow(
+          /clone/i
+        );
+        const pdf = await backend.pdf(pages(['a']), stable);
+        await backend.close();
+        expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+      });
+
+      it('keeps a standalone process alive until the PDF is written, then lets it exit', async () => {
+        const dir = await mkdtemp(join(tmpdir(), 'isomer-takumi-'));
+        const script = join(dir, 'render.mts');
+        await writeFile(
+          script,
+          `import { createTakumiImageBackend } from ${JSON.stringify(
+            fileURLToPath(new URL('./backend.ts', import.meta.url))
+          )};
+const pdf = await createTakumiImageBackend().pdf(${JSON.stringify(
+            pages(['a'])
+          )});
+process.stdout.write(pdf.subarray(0, 5).toString('latin1'));
+`
+        );
+        try {
+          const { stdout } = await execFileAsync(
+            process.execPath,
+            ['--import', 'tsx', script],
+            {
+              cwd: fileURLToPath(new URL('..', import.meta.url)),
+              timeout: 20_000,
+            }
+          );
+          expect(stdout).toBe('%PDF-');
+        } finally {
+          await rm(dir, { recursive: true, force: true });
+        }
+      }, 30_000);
     });
   });
 

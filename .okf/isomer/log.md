@@ -1,5 +1,8 @@
 # Directory Update Log
 
+## 2026-10-23
+
+- **Outcome**: `createTakumiImageBackend` runs takumi's synchronous WebAssembly PDF engine in a `worker_threads` Worker by default, so `pdf` and `fitPages` no longer block the caller's event loop for the whole render ([#268](https://github.com/elastic/isomer/issues/268)). `pdfThread: 'inline'` keeps the engine on the calling thread, and `TakumiBackend.close()` stops the worker and rejects calls in flight without waiting on their font or image loaders; the worker holds the process open only while a call is in flight and is restarted if it dies.
 ## 2026-10-26
 
 - **Outcome**: `@elastic/isomer-image-takumi` takes `@takumi-rs/core` and `@takumi-rs/helpers` 2.18.1 and `takumi-pdf` 0.18.3, up from 2.14.0 and 0.15.0, picking up upstream's memory reductions in layout, raster, and paged PDF rendering; the license texts, reports, and Rust audit follow. Takumi now lays out as Chromium does, with fractional line boxes, whole-pixel borders, and code chips wrapping under `overflow-wrap: anywhere`, so the slides pack's estimates drop their whole-pixel rounding, the table estimate stops charging a divider under its last row, and `stroke.panel` is a whole 1px. The window body and render grid take `flex: 1 1 auto`, since takumi collapses a `flex: 1; min-height: 0` item in a column whose height is its content.

@@ -17,6 +17,12 @@ import type {
   RenderOptions as PdfRenderOptions,
 } from 'takumi-pdf';
 
+import {
+  createInlinePdfEngine,
+  createWorkerPdfEngine,
+  type PdfEngine,
+} from './pdf_engine';
+
 /**
  * How the output's height is decided, mirroring the SDK's `FrameSizing`.
  *
@@ -79,6 +85,17 @@ export interface TakumiImageBackendOptions {
   fonts?: readonly FontLoader[];
   /** Byte budget for takumi's resource cache. `0` disables it. */
   cacheMaxBytes?: number;
+  /**
+   * Where the PDF engine runs. Takumi's PDF engine is WebAssembly and lays
+   * out and writes synchronously, so on the calling thread a PDF blocks its
+   * event loop for the whole render. `'worker'`, the default, runs it in a
+   * `worker_threads` Worker, started on the first `pdf` or `fitPages` and
+   * holding the process open only while a call is in flight; `'inline'`
+   * keeps it on the calling thread, e.g. when the host already calls from a
+   * worker of its own. The raster engine is native and always renders off
+   * the calling thread.
+   */
+  pdfThread?: 'worker' | 'inline';
 }
 
 /** Per-render overrides. Geometry comes from the input, not from here. */
@@ -218,6 +235,11 @@ export interface TakumiBackend
   readonly formats: typeof TAKUMI_FORMATS;
   fit: NonNullable<TakumiImageBackend['fit']>;
   fitPages: NonNullable<TakumiPdfBackend['fitPages']>;
+  /**
+   * Releases the PDF engine and stops its worker, if either was started. A
+   * later `pdf` or `fitPages` starts a fresh one; calls in flight reject.
+   */
+  close(): Promise<void>;
 }
 
 type Matrix = MeasuredNode['transform'];
@@ -339,26 +361,53 @@ const toPagedSource = ({ pages, css, width, height }: PdfInput) => {
   };
 };
 
-/** Runs `create` once for every caller. A rejection is forgotten, so the next call retries instead of inheriting it. */
-const once = <T>(create: () => Promise<T>): (() => Promise<T>) => {
-  let pending: Promise<T> | undefined;
-  return () => {
-    pending ??= create().catch((error: unknown) => {
-      pending = undefined;
+/**
+ * Runs `create` once for every caller. A rejection is forgotten, so the next
+ * call retries instead of inheriting it, and so is a value `reset` drops.
+ */
+const once = <T>(
+  create: (reset: () => void, signal: AbortSignal) => Promise<T>
+): {
+  get: () => Promise<T>;
+  /** Forgets the value and aborts its creation, returning what it was, if anything. */
+  take: () => Promise<T> | undefined;
+} => {
+  let pending: { value: Promise<T>; controller: AbortController } | undefined;
+  const take = () => {
+    const taken = pending;
+    pending = undefined;
+    taken?.controller.abort();
+    return taken?.value;
+  };
+  const get = () => {
+    const controller = new AbortController();
+    const forget = () => {
+      if (pending?.controller === controller) {
+        pending = undefined;
+      }
+    };
+    const value = create(forget, controller.signal).catch((error: unknown) => {
+      forget();
       throw error;
     });
-    return pending;
+    return { value, controller };
+  };
+  return {
+    get: () => (pending ??= get()).value,
+    take,
   };
 };
 
 /**
  * Builds a {@link TakumiBackend} over one takumi renderer. `fonts` are
  * registered once, in order, before the first render; the PDF engine is
- * imported and created on the first `pdf`, and registers them again.
+ * imported and created on the first `pdf`, in a worker unless `pdfThread` is
+ * `'inline'`, and registers them again.
  */
 export const createTakumiImageBackend = ({
   fonts = [],
   cacheMaxBytes,
+  pdfThread = 'worker',
 }: TakumiImageBackendOptions = {}): TakumiBackend => {
   const renderer = new Renderer(
     cacheMaxBytes === undefined ? undefined : { cacheMaxBytes }
@@ -379,26 +428,30 @@ export const createTakumiImageBackend = ({
     }
     return engine;
   };
-  const ready = once(() => registerFonts(renderer));
-  /** A second engine, imported and created on the first PDF, so a raster-only host never loads its wasm. */
-  const pdfReady = once(async () => {
-    const { PdfRenderer } = await import('takumi-pdf');
-    return registerFonts(new PdfRenderer());
-  });
+  const ready = once(() => registerFonts(renderer)).get;
+  /** A second engine, created on the first PDF, so a raster-only host never loads its wasm. */
+  const pdfEngine = once<PdfEngine>((reset, signal) =>
+    pdfThread === 'inline'
+      ? createInlinePdfEngine(fonts, signal)
+      : createWorkerPdfEngine(fonts, reset, signal)
+  );
+  const pdfReady = pdfEngine.get;
 
   /**
    * Each page laid out alone by the PDF engine, in the page block `pdf` draws
    * it in but with no height, as a single-page viewport sizes to content, so
    * the height matches what `pdf` draws rather than the raster engine's layout.
+   * `engine` is only acquired when a page needs measuring.
    */
-  const fitPages = async (
+  const fitPagesOn = async (
+    getEngine: () => Promise<PdfEngine>,
     input: PdfInput,
     { images, lang }: Pick<TakumiPdfOptions, 'images' | 'lang'> = {}
   ): Promise<PdfInput> => {
     if (input.heightMode !== 'content' || input.pages.length === 0) {
       return input;
     }
-    const engine = await pdfReady();
+    const engine = await getEngine();
     const heights: number[] = [];
     for (const page of input.pages) {
       const { node, css } = fromHtml(
@@ -476,11 +529,12 @@ export const createTakumiImageBackend = ({
         heightMode: 'fixed',
       };
     },
-    fitPages,
+    fitPages: (input, options) => fitPagesOn(pdfReady, input, options),
     pdf: async (input, options = {}) => {
+      // Measured and drawn on one engine, so `close` cannot start another.
       const engine = await pdfReady();
       const { node, css, width, height } = toPagedSource(
-        await fitPages(input, options)
+        await fitPagesOn(() => Promise.resolve(engine), input, options)
       );
       const renderOptions: PdfRenderOptions = {
         ...options,
@@ -488,8 +542,12 @@ export const createTakumiImageBackend = ({
         margin: 0,
         css,
       };
-      // Copied out of wasm memory, which a later render can move.
-      return Buffer.from(await engine.render(node, renderOptions));
+      const bytes = await engine.render(node, renderOptions);
+      return Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    },
+    close: async () => {
+      const engine = await pdfEngine.take()?.catch(() => undefined);
+      await engine?.close();
     },
   };
 };

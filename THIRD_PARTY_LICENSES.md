@@ -462,6 +462,32 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@emotion/use-insertion-effect-with-fallbacks` | 1.2.0 | MIT | `node_modules/.pnpm/@emotion+use-insertion-effect-with-fallbacks@1.2.0_react@18.3.1/node_modules/@emotion/use-insertion-effect-with-fallbacks` |  |
 | `@emotion/utils` | 1.4.2 | MIT | `node_modules/.pnpm/@emotion+utils@1.4.2/node_modules/@emotion/utils` |  |
 | `@emotion/weak-memoize` | 0.4.0 | MIT | `node_modules/.pnpm/@emotion+weak-memoize@0.4.0/node_modules/@emotion/weak-memoize` |  |
+| `@esbuild/aix-ppc64` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/android-arm` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/android-arm64` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/android-x64` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/darwin-arm64` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/darwin-x64` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/freebsd-arm64` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/freebsd-x64` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/linux-arm` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/linux-arm64` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/linux-ia32` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/linux-loong64` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/linux-mips64el` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/linux-ppc64` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/linux-riscv64` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/linux-s390x` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/linux-x64` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/netbsd-arm64` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/netbsd-x64` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/openbsd-arm64` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/openbsd-x64` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/openharmony-arm64` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/sunos-x64` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/win32-arm64` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/win32-ia32` | 0.28.2 | MIT | `declared optional dependency` |  |
+| `@esbuild/win32-x64` | 0.28.2 | MIT | `declared optional dependency` |  |
 | `@eslint-community/eslint-utils` | 4.10.1 | MIT | `node_modules/.pnpm/@eslint-community+eslint-utils@4.10.1_eslint@9.39.5_jiti@2.6.1_/node_modules/@eslint-community/eslint-utils` |  |
 | `@eslint-community/regexpp` | 4.12.2 | MIT | `node_modules/.pnpm/@eslint-community+regexpp@4.12.2/node_modules/@eslint-community/regexpp` |  |
 | `@eslint/config-array` | 0.21.2 | Apache-2.0 | `node_modules/.pnpm/@eslint+config-array@0.21.2/node_modules/@eslint/config-array` |  |
@@ -764,6 +790,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `es-module-lexer` | 2.3.2 | MIT | `node_modules/.pnpm/es-module-lexer@2.3.2/node_modules/es-module-lexer` |  |
 | `es-object-atoms` | 1.1.2 | MIT | `node_modules/.pnpm/es-object-atoms@1.1.2/node_modules/es-object-atoms` |  |
 | `es-set-tostringtag` | 2.1.0 | MIT | `node_modules/.pnpm/es-set-tostringtag@2.1.0/node_modules/es-set-tostringtag` |  |
+| `esbuild` | 0.28.2 | MIT | `node_modules/.pnpm/esbuild@0.28.2/node_modules/esbuild` | `@esbuild/aix-ppc64`, `@esbuild/android-arm`, `@esbuild/android-arm64`, `@esbuild/android-x64`, `@esbuild/darwin-arm64`, `@esbuild/darwin-x64`, `@esbuild/freebsd-arm64`, `@esbuild/freebsd-x64`, `@esbuild/linux-arm`, `@esbuild/linux-arm64`, `@esbuild/linux-ia32`, `@esbuild/linux-loong64`, `@esbuild/linux-mips64el`, `@esbuild/linux-ppc64`, `@esbuild/linux-riscv64`, `@esbuild/linux-s390x`, `@esbuild/linux-x64`, `@esbuild/netbsd-arm64`, `@esbuild/netbsd-x64`, `@esbuild/openbsd-arm64`, `@esbuild/openbsd-x64`, `@esbuild/openharmony-arm64`, `@esbuild/sunos-x64`, `@esbuild/win32-arm64`, `@esbuild/win32-ia32`, `@esbuild/win32-x64` |
 | `escalade` | 3.2.0 | MIT | `node_modules/.pnpm/escalade@3.2.0/node_modules/escalade` |  |
 | `escape-string-regexp` | 1.0.5 | MIT | `node_modules/.pnpm/escape-string-regexp@1.0.5/node_modules/escape-string-regexp` |  |
 | `escape-string-regexp` | 4.0.0 | MIT | `node_modules/.pnpm/escape-string-regexp@4.0.0/node_modules/escape-string-regexp` |  |
@@ -1358,6 +1385,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `tsc-alias` | 1.9.5 | MIT | `node_modules/.pnpm/tsc-alias@1.9.5/node_modules/tsc-alias` |  |
 | `tslib` | 1.14.1 | 0BSD | `node_modules/.pnpm/tslib@1.14.1/node_modules/tslib` |  |
 | `tslib` | 2.8.1 | 0BSD | `node_modules/.pnpm/tslib@2.8.1/node_modules/tslib` |  |
+| `tsx` | 4.23.15 | MIT | `node_modules/.pnpm/tsx@4.23.15/node_modules/tsx` | `fsevents` |
 | `tuf-js` | 4.1.0 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/tuf-js` |  |
 | `tunnel` | 0.0.6 | MIT | `node_modules/.pnpm/tunnel@0.0.6/node_modules/tunnel` |  |
 | `type-check` | 0.4.0 | MIT | `node_modules/.pnpm/type-check@0.4.0/node_modules/type-check` |  |

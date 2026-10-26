@@ -17,7 +17,7 @@ sources:
 # Steps
 
 1. Render the deck with `runtime.surfaces.snapshot.renderPages(compositions, { frame })`, so every page shares one stylesheet, one size, and one theme.
-2. Construct `createTakumiImageBackend({ fonts })` with faces covering every glyph the pack's theme draws, including CSS `content:` markers; a PDF rejects an uncovered glyph.
+2. Construct `createTakumiImageBackend({ fonts })` with faces covering every glyph the pack's theme draws, including CSS `content:` markers; a PDF rejects an uncovered glyph. The PDF engine runs in a worker thread by default, so a server's event loop stays free; pass `pdfThread: 'inline'` only when already calling from a worker, and call `close()` on shutdown to stop the worker.
 3. Call `.pdf(pages, { metadata: { title, creationDate } })`; fix `creationDate` for byte-stable output, and pass `images` for any remote `img` source.
 4. Or call `renderPdf(runtime, deck, backend, { snapshot: { frame } })` for the bytes with one validation per composition.[^docs][^backend]
 
