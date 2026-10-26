@@ -70,7 +70,7 @@ describe('slideRenderGrid caption placement', () => {
 
   it('sets it on its own line with a pixel less', () => {
     expect(headHeight([tile], edge - 1)).toBe(
-      lineBox(renderGrid.name) + Math.ceil(lineBox(renderGrid.caption))
+      lineBox(renderGrid.name) + lineBox(renderGrid.caption)
     );
   });
 });

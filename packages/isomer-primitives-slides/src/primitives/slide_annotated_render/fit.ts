@@ -27,9 +27,6 @@ const column = (width: number, index: 0 | 1) =>
 
 const { legend, pin } = annotatedRender;
 
-// takumi draws a text block at its line boxes' height rounded up to a whole pixel.
-const drawn = Math.ceil;
-
 const innerWidth = (width: number) =>
   column(width, 0) - 2 * scalePx(pin.overhang);
 
@@ -38,8 +35,7 @@ export const panelOffset = (
   render: SlideRenderNode,
   { width }: Pick<SlideLayout, 'width'>
 ): number =>
-  drawn(captionHeight(headline(render), innerWidth(width))) +
-  scalePx(pin.overhang);
+  captionHeight(headline(render), innerWidth(width)) + scalePx(pin.overhang);
 
 /** The scale `render` draws its slide at in the first column of `layout`, inset on every side by a pin's overhang. */
 export const annotatedScale = (
@@ -65,16 +61,14 @@ export const legendHeight = (
   const title = { ...legend.title, size: sizes.title };
   const body = { ...legend.body, size: sizes.body };
   const lines = (text: string, role: TypeRole & { lineHeight: ScaleToken }) =>
-    drawn(
-      Math.max(1, measureText(text, role, textWidth).lines) * lineBox(role)
-    );
+    Math.max(1, measureText(text, role, textWidth).lines) * lineBox(role);
   return pins.reduce(
     (height, { title: name, body: text }) =>
       height +
       2 * scalePx(padding) +
       lines(name, title) +
       scalePx(legend.textGap) +
-      drawn(marksHeight(text, body, textWidth)) +
+      marksHeight(text, body, textWidth) +
       scalePx(legend.rule),
     scalePx(legend.rule)
   );

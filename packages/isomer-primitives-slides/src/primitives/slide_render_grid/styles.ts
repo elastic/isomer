@@ -18,7 +18,7 @@ export const renderGridModule = createStyleModule('renderGrid', ({ css }) => ({
   root: css`
     align-content: center;
     display: grid;
-    flex: 1;
+    flex: 1 1 auto;
     gap: ${renderGrid.gap};
     min-height: 0;
   `,

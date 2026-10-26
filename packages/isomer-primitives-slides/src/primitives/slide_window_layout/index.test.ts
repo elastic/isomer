@@ -121,9 +121,9 @@ describe('slideWindowLayout layout', () => {
       chrome: SlideWindowLayoutNode['chrome'],
       title = 'shop.example'
     ) => windowBodyLayout(room, { ...example, chrome, title });
-    expect(of('browser')).toEqual({ width: 949, height: 505.9 });
+    expect(of('browser')).toEqual({ width: 950, height: 507.4 });
     expect(of('terminal')).toEqual(of('chat'));
-    expect(of('slack')).toEqual({ width: 941, height: 471.1 });
+    expect(of('slack')).toEqual({ width: 942, height: 472.6 });
     expect(
       windowBodyLayout(
         { width: 40, height: 40 },

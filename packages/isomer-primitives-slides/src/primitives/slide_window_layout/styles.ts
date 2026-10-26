@@ -41,7 +41,7 @@ export const windowModule = createStyleModule('window', ({ css }) => ({
   `,
   body: css`
     display: flex;
-    flex: 1;
+    flex: 1 1 auto;
     flex-direction: column;
     gap: ${window.bodyGap};
     min-height: 0;

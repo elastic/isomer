@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-26
+
+- **Outcome**: `@elastic/isomer-image-takumi` takes `@takumi-rs/core` and `@takumi-rs/helpers` 2.18.1 and `takumi-pdf` 0.18.3, up from 2.14.0 and 0.15.0, picking up upstream's memory reductions in layout, raster, and paged PDF rendering; the license texts, reports, and Rust audit follow. Takumi now lays out as Chromium does, with fractional line boxes, whole-pixel borders, and code chips wrapping under `overflow-wrap: anywhere`, so the slides pack's estimates drop their whole-pixel rounding, the table estimate stops charging a divider under its last row, and `stroke.panel` is a whole 1px. The window body and render grid take `flex: 1 1 auto`, since takumi collapses a `flex: 1; min-height: 0` item in a column whose height is its content.
+
 ## 2026-10-21
 
 - **Outcome**: Studio visual previews show a dotted grid behind rendered content and around inset renders in both color modes, with a subtle drop shadow around the render. Grid spacing and shadow size stay fixed while zoom changes, making render boundaries and transparency easier to see. The editor keeps its subdued background, while a deeper output-pane background and plain dotted canvases distinguish the preview areas. Regression coverage keeps decorations unscaled across zoom levels; Studio tests bind storage to jsdom, and CI adds Node 26 so verification needs no Web Storage flags.

@@ -26,7 +26,7 @@ export const longExample: SlideCommandNode = {
   type: 'slideCommand',
   label: 'Export last month’s refunds',
   command:
-    'pg_dump --table=refunds --data-only --column-inserts --file=refunds.sql "$LEDGER_DB"',
+    'pg_dump --table=refunds --data-only --column-inserts --file=refunds.sql "$LEDGER_URL"',
 };
 
 /** Conformance examples for {@link SlideCommandNode}. */

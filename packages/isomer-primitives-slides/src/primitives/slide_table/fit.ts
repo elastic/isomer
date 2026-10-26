@@ -47,9 +47,12 @@ export const tableHeight = (
       )
     ) *
       lineBox(cell) +
-    2 * px(table.cellPaddingsY[step]) +
-    px(table.divider);
-  const body = tableGroups(node).reduce(
+    2 * px(table.cellPaddingsY[step]);
+  const groups = tableGroups(node);
+  const rowCount = groups.reduce((count, { rows }) => count + rows.length, 0);
+  // Every row but the table's last draws a divider below it.
+  const dividers = Math.max(0, rowCount - 1) * px(table.divider);
+  const body = groups.reduce(
     (total, { label: group, rows }, index) =>
       total +
       (group
@@ -74,6 +77,7 @@ export const tableHeight = (
     2 * px(table.headPaddingsY[step]) +
     px(table.divider) +
     body +
+    dividers +
     2 * border
   );
 };
