@@ -240,7 +240,7 @@ describe('layers steps fit what they allow', () => {
     { step: 'm', node: stack(...repeat(4, twoLines)) },
     { step: 'm', node: example },
     { step: 's', node: allChips(6) },
-    { step: 's', node: fullExample },
+    { step: 'm', node: fullExample },
   ] as { step: SlideSize; node: SlideLayersNode }[])(
     '$node.layers.length layers take $step under the tallest heading',
     async ({ step, node }) => {

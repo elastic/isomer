@@ -528,7 +528,6 @@ describe('slideTable', () => {
       );
     });
 
-    // Takumi snaps each row to whole pixels, so the two differ by a pixel or so.
     it.each(['l', 'm', 's'] as const)(
       'is as tall at %s as estimated, with a wrapped caption and group labels',
       async (size) => {

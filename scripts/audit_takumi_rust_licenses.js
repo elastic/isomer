@@ -14,7 +14,7 @@
 import { setTimeout as delay } from 'node:timers/promises';
 
 const REPO = 'kane50613/takumi';
-const DEFAULT_REF = 'fd4ee323cb167c4041515549b48ced33891d8ce0'; // matches @takumi-rs/core@2.14.0
+const DEFAULT_REF = 'fb133cb935852004959b353777eda569e151bcd5'; // matches @takumi-rs/core@2.18.1
 
 // Crates whose expression cannot resolve to one of these (after splitting on
 // AND/OR) are flagged, not silently skipped.
@@ -38,6 +38,10 @@ const KNOWN_GIT_SOURCES = {
   'https://github.com/kane50613/fontations': {
     verifiedLicense: 'MIT OR Apache-2.0',
     note: "Matches upstream googlefonts/fontations; confirmed via the fork's workspace.package.license at the pinned rev.",
+  },
+  'https://github.com/kane50613/harfrust': {
+    verifiedLicense: 'MIT',
+    note: "Matches upstream harfbuzz/harfrust; confirmed via the fork's package.license and LICENSE at the pinned rev.",
   },
 };
 
