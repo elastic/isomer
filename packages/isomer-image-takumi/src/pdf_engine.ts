@@ -36,6 +36,7 @@ const closedError = () => new Error('pdf: the backend was closed');
 const unlessAborted = <T>(promise: Promise<T>, signal: AbortSignal) =>
   new Promise<T>((resolve, reject) => {
     if (signal.aborted) {
+      promise.catch(() => undefined);
       reject(closedError());
       return;
     }

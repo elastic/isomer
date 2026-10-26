@@ -814,6 +814,31 @@ describe('createTakumiImageBackend', () => {
         await rejected;
       });
 
+      it('handles a font load that rejects after closing the backend', async () => {
+        const unhandled: unknown[] = [];
+        const onUnhandled = (reason: unknown) => unhandled.push(reason);
+        process.on('unhandledRejection', onUnhandled);
+        try {
+          const backend = createTakumiImageBackend({
+            fonts: [
+              {
+                name: 'Inter',
+                data: () => {
+                  void backend.close();
+                  return Promise.reject(new Error('load failed'));
+                },
+              },
+            ],
+          });
+
+          await expect(backend.pdf(pages(['a']))).rejects.toThrow(/closed/);
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          expect(unhandled).toEqual([]);
+        } finally {
+          process.off('unhandledRejection', onUnhandled);
+        }
+      });
+
       it('closes without waiting on an image that never loads', async () => {
         const backend = createTakumiImageBackend();
         await backend.pdf(pages(['a']));
