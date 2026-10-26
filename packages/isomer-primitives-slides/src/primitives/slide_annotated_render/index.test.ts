@@ -221,10 +221,10 @@ describe('slideAnnotatedRender', () => {
   it('steps the legend down as its layout shortens', () => {
     const at = (height: number) =>
       legendStep(placeholderExample.pins, { ...openBody, height });
-    expect([769.5, 770].map(at)).toEqual(['m', 'l']);
-    expect([625.5, 626].map(at)).toEqual(['s', 'm']);
-    expect(legendStep(node.pins, { ...openBody, height: 258 })).toBe('l');
-    expect(legendStep(node.pins, { ...openBody, height: 257.5 })).toBe('m');
+    expect([759.5, 760].map(at)).toEqual(['m', 'l']);
+    expect([615.5, 616].map(at)).toEqual(['s', 'm']);
+    expect(legendStep(node.pins, { ...openBody, height: 255 })).toBe('l');
+    expect(legendStep(node.pins, { ...openBody, height: 254.5 })).toBe('m');
   });
 
   it('charges each legend line holding a code chip its padding and border', () => {

@@ -36,7 +36,7 @@ export const SLIDE_THEME = {
   inverse: { bg: lightDark(…), text: lightDark(…), rule: lightDark(…), connector: lightDark(…), … },
   space: { px4: px(4), …, px128: px(128) },
   radius: { chipSmall: px(8), chip: px(10), panel: px(12) },
-  stroke: { panel: px(1.5), chip: px(2), hairline: px(2), rail: px(3), bar: px(4) },
+  stroke: { panel: px(1), chip: px(2), hairline: px(2), rail: px(3), bar: px(4) },
   font: { family: { sans, mono }, size: { px24: px(24), …, px280: px(280) }, weight, tracking, lineHeight },
   type: { display, heading, lede, body, label, mono, chrome, … },
   // Shared groups (`components/shared.ts`, `components/marks.ts`).

@@ -44,31 +44,51 @@ const paeth = (left: number, up: number, upLeft: number) => {
   return toUp <= toUpLeft ? up : upLeft;
 };
 
-/** Decodes the PNGs takumi writes: 8-bit, non-interlaced, RGB or RGBA. */
+const PNG_CHANNELS: Record<number, number> = { 2: 3, 3: 1, 6: 4 };
+
+/** Decodes the PNGs takumi writes: 8-bit, non-interlaced, RGB, RGBA, or indexed. */
 const decodePng = (png: Buffer) => {
   const width = png.readUInt32BE(16);
   const height = png.readUInt32BE(20);
-  const channels = png.readUInt8(25) === 6 ? 4 : 3;
+  const bitDepth = png.readUInt8(24);
+  const colorType = png.readUInt8(25);
+  const channels = PNG_CHANNELS[colorType];
+  if (bitDepth !== 8 || channels === undefined) {
+    throw new Error(
+      `unsupported PNG: bit depth ${bitDepth}, color type ${colorType}`
+    );
+  }
   const data: Buffer[] = [];
+  let palette: Buffer = Buffer.alloc(0);
+  let transparency: Buffer = Buffer.alloc(0);
   for (let offset = 8; offset < png.length;) {
     const length = png.readUInt32BE(offset);
-    if (png.toString('latin1', offset + 4, offset + 8) === 'IDAT') {
-      data.push(png.subarray(offset + 8, offset + 8 + length));
+    const type = png.toString('latin1', offset + 4, offset + 8);
+    const chunk = png.subarray(offset + 8, offset + 8 + length);
+    if (type === 'IDAT') {
+      data.push(chunk);
+    } else if (type === 'PLTE') {
+      palette = chunk;
+    } else if (type === 'tRNS') {
+      transparency = chunk;
     }
     offset += length + 12;
   }
+  if (colorType === 2 && transparency.length > 0) {
+    throw new Error('unsupported PNG: an RGB image with a transparent color');
+  }
   const filtered = inflateSync(Buffer.concat(data));
   const stride = width * channels;
-  const pixels = Buffer.alloc(height * stride);
+  const samples = Buffer.alloc(height * stride);
   for (let y = 0; y < height; y++) {
     const filter = filtered.readUInt8(y * (stride + 1));
     for (let x = 0; x < stride; x++) {
       const left =
-        x >= channels ? pixels.readUInt8(y * stride + x - channels) : 0;
-      const up = y > 0 ? pixels.readUInt8((y - 1) * stride + x) : 0;
+        x >= channels ? samples.readUInt8(y * stride + x - channels) : 0;
+      const up = y > 0 ? samples.readUInt8((y - 1) * stride + x) : 0;
       const upLeft =
         x >= channels && y > 0
-          ? pixels.readUInt8((y - 1) * stride + x - channels)
+          ? samples.readUInt8((y - 1) * stride + x - channels)
           : 0;
       const predicted = [
         0,
@@ -77,19 +97,42 @@ const decodePng = (png: Buffer) => {
         (left + up) >> 1,
         paeth(left, up, upLeft),
       ][filter];
-      pixels.writeUInt8(
+      samples.writeUInt8(
         (filtered.readUInt8(y * (stride + 1) + 1 + x) + (predicted ?? 0)) &
           0xff,
         y * stride + x
       );
     }
   }
+  /** Every pixel as RGBA, so two images compare equal exactly when they draw the same, whatever their color type or palette order. */
+  const toRgba = (): Buffer => {
+    if (colorType === 6) {
+      return samples;
+    }
+    const rgba = Buffer.alloc(width * height * 4);
+    for (let index = 0; index < width * height; index++) {
+      if (colorType === 3) {
+        const entry = samples.readUInt8(index);
+        palette.copy(rgba, index * 4, entry * 3, entry * 3 + 3);
+        rgba.writeUInt8(
+          entry < transparency.length ? transparency.readUInt8(entry) : 0xff,
+          index * 4 + 3
+        );
+      } else {
+        samples.copy(rgba, index * 4, index * 3, index * 3 + 3);
+        rgba.writeUInt8(0xff, index * 4 + 3);
+      }
+    }
+    return rgba;
+  };
+  const pixels = toRgba();
   const pixel = (x: number, y: number) => {
-    const at = (y * width + x) * channels;
+    const at = (y * width + x) * 4;
     return {
       r: pixels.readUInt8(at),
       g: pixels.readUInt8(at + 1),
       b: pixels.readUInt8(at + 2),
+      a: pixels.readUInt8(at + 3),
     };
   };
   return { width, height, pixels, pixel };
@@ -126,6 +169,29 @@ describe('createTakumiImageBackend', () => {
     const blue = await backend.png(input('.box { background: #0000ff; }'));
 
     expect(red.equals(blue)).toBe(false);
+  });
+
+  it('decodes an indexed PNG’s transparency, so images differing only in alpha differ', async () => {
+    const backend = createTakumiImageBackend();
+    const halfRed = (shade: string): ImageInput => ({
+      html: '<div class="shade"><div class="box"></div></div>',
+      css: `.shade { width: 100%; height: 100%; background: ${shade} } .box { width: 50%; height: 100%; background: #ff0000 }`,
+      width: 64,
+      height: 32,
+    });
+    const [clear, shaded] = await Promise.all([
+      backend.png(halfRed('transparent')),
+      backend.png(halfRed('rgba(0, 0, 0, 0.5)')),
+    ]);
+
+    // Color type 3: both are indexed, with their alpha in `tRNS`.
+    expect([clear.readUInt8(25), shaded.readUInt8(25)]).toEqual([3, 3]);
+    const [clearPng, shadedPng] = [decodePng(clear), decodePng(shaded)];
+    expect(clearPng.pixel(0, 0)).toEqual({ r: 0xff, g: 0, b: 0, a: 0xff });
+    expect(clearPng.pixel(63, 0).a).toBe(0);
+    expect(shadedPng.pixel(63, 0).a).toBeGreaterThan(0);
+    expect(shadedPng.pixel(63, 0).a).toBeLessThan(0xff);
+    expect(clearPng.pixels).not.toEqual(shadedPng.pixels);
   });
 
   it('preserves style end tags inside CSS', async () => {
@@ -688,8 +754,13 @@ describe('createTakumiImageBackend', () => {
       expect(doubled.readUInt32BE(20)).toBe(2 * contentHeight(rows));
       // The last row reaches the bottom padding, and nothing is drawn past it.
       const { height, pixel } = decodePng(png);
-      expect(pixel(60, height - 11)).toEqual({ r: 0xcc, g: 0, b: 0 });
-      expect(pixel(60, height - 1)).toEqual({ r: 0xee, g: 0xee, b: 0xee });
+      expect(pixel(60, height - 11)).toEqual({ r: 0xcc, g: 0, b: 0, a: 0xff });
+      expect(pixel(60, height - 1)).toEqual({
+        r: 0xee,
+        g: 0xee,
+        b: 0xee,
+        a: 0xff,
+      });
     });
 
     it('leaves a fixed input at its height', async () => {

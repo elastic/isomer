@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   findings,
+  lineCount,
   measured,
   nodeBox,
   slideOf,
@@ -57,19 +58,16 @@ describe('roadmapStep with code marks', () => {
     expect(await findings(slideOf(coded))).toEqual([]);
   });
 
-  it('draws the chip on one line inside its column at m, and past it at l', async () => {
-    const [atM, plainAtM, atL] = await Promise.all([
+  it('draws the chip on one line inside its column at m, where at l it breaks across lines', async () => {
+    const [atM, atL] = await Promise.all([
       drawnBody(coded, 'm'),
-      drawnBody(plain, 'm'),
       drawnBody(coded, 'l'),
     ]);
-    expect(atM.box.height).toBe(plainAtM.box.height);
+    expect(lineCount(atM.box)).toBe(1);
     expect(atM.run.x + atM.run.width + inset).toBeLessThanOrEqual(
       atM.box.x + atM.box.width
     );
-    expect(atL.run.x + atL.run.width + inset).toBeGreaterThan(
-      atL.box.x + atL.box.width
-    );
+    expect(lineCount(atL.box)).toBeGreaterThan(1);
   });
 
   it('measures a code word in an item title in mono, with no chip', () => {

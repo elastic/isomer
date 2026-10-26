@@ -93,7 +93,7 @@ export const radius = {
 } as const;
 
 export const stroke = {
-  panel: px(1.5),
+  panel: px(1),
   chip: px(2),
   hairline: px(2),
   rail: px(3),
