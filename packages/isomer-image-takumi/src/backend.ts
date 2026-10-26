@@ -366,33 +366,34 @@ const toPagedSource = ({ pages, css, width, height }: PdfInput) => {
  * call retries instead of inheriting it, and so is a value `reset` drops.
  */
 const once = <T>(
-  create: (reset: () => void) => Promise<T>
+  create: (reset: () => void, signal: AbortSignal) => Promise<T>
 ): {
   get: () => Promise<T>;
-  /** Forgets the value, returning what it was, if anything. */
+  /** Forgets the value and aborts its creation, returning what it was, if anything. */
   take: () => Promise<T> | undefined;
 } => {
-  let pending: Promise<T> | undefined;
+  let pending: { value: Promise<T>; controller: AbortController } | undefined;
   const take = () => {
     const taken = pending;
     pending = undefined;
-    return taken;
+    taken?.controller.abort();
+    return taken?.value;
   };
   const get = () => {
-    const current: Promise<T> = create(() => {
-      if (pending === current) {
+    const controller = new AbortController();
+    const forget = () => {
+      if (pending?.controller === controller) {
         pending = undefined;
       }
-    }).catch((error: unknown) => {
-      if (pending === current) {
-        pending = undefined;
-      }
+    };
+    const value = create(forget, controller.signal).catch((error: unknown) => {
+      forget();
       throw error;
     });
-    return current;
+    return { value, controller };
   };
   return {
-    get: () => (pending ??= get()),
+    get: () => (pending ??= get()).value,
     take,
   };
 };
@@ -429,10 +430,10 @@ export const createTakumiImageBackend = ({
   };
   const ready = once(() => registerFonts(renderer)).get;
   /** A second engine, created on the first PDF, so a raster-only host never loads its wasm. */
-  const pdfEngine = once<PdfEngine>((reset) =>
+  const pdfEngine = once<PdfEngine>((reset, signal) =>
     pdfThread === 'inline'
-      ? createInlinePdfEngine(fonts)
-      : createWorkerPdfEngine(fonts, reset)
+      ? createInlinePdfEngine(fonts, signal)
+      : createWorkerPdfEngine(fonts, reset, signal)
   );
   const pdfReady = pdfEngine.get;
 
@@ -440,15 +441,17 @@ export const createTakumiImageBackend = ({
    * Each page laid out alone by the PDF engine, in the page block `pdf` draws
    * it in but with no height, as a single-page viewport sizes to content, so
    * the height matches what `pdf` draws rather than the raster engine's layout.
+   * `engine` is only acquired when a page needs measuring.
    */
-  const fitPages = async (
+  const fitPagesOn = async (
+    getEngine: () => Promise<PdfEngine>,
     input: PdfInput,
     { images, lang }: Pick<TakumiPdfOptions, 'images' | 'lang'> = {}
   ): Promise<PdfInput> => {
     if (input.heightMode !== 'content' || input.pages.length === 0) {
       return input;
     }
-    const engine = await pdfReady();
+    const engine = await getEngine();
     const heights: number[] = [];
     for (const page of input.pages) {
       const { node, css } = fromHtml(
@@ -526,11 +529,12 @@ export const createTakumiImageBackend = ({
         heightMode: 'fixed',
       };
     },
-    fitPages,
+    fitPages: (input, options) => fitPagesOn(pdfReady, input, options),
     pdf: async (input, options = {}) => {
+      // Measured and drawn on one engine, so `close` cannot start another.
       const engine = await pdfReady();
       const { node, css, width, height } = toPagedSource(
-        await fitPages(input, options)
+        await fitPagesOn(() => Promise.resolve(engine), input, options)
       );
       const renderOptions: PdfRenderOptions = {
         ...options,

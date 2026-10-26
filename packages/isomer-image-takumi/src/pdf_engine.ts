@@ -30,6 +30,22 @@ export interface PdfEngine {
 const toError = (error: unknown): Error =>
   error instanceof Error ? error : new Error(String(error));
 
+const closedError = () => new Error('pdf: the backend was closed');
+
+/** Settles as `promise` does, or rejects as soon as `signal` aborts. */
+const unlessAborted = <T>(promise: Promise<T>, signal: AbortSignal) =>
+  new Promise<T>((resolve, reject) => {
+    if (signal.aborted) {
+      reject(closedError());
+      return;
+    }
+    const onAbort = () => reject(closedError());
+    signal.addEventListener('abort', onAbort, { once: true });
+    void promise
+      .then(resolve, reject)
+      .finally(() => signal.removeEventListener('abort', onAbort));
+  });
+
 /** Registers `fonts` in order: the registration order is the fallback order. */
 const registerFonts = async (
   engine: { registerFont(font: FontLoader): Promise<unknown> },
@@ -40,13 +56,23 @@ const registerFonts = async (
   }
 };
 
-/** A `PdfRenderer` on the calling thread. Its wasm calls block that thread. */
+/**
+ * A `PdfRenderer` on the calling thread. Its wasm calls block that thread.
+ * Aborting `signal` rejects creation without waiting on a font loader.
+ */
 export const createInlinePdfEngine = async (
-  fonts: readonly FontLoader[]
+  fonts: readonly FontLoader[],
+  signal: AbortSignal
 ): Promise<PdfEngine> => {
-  const { PdfRenderer } = await import('takumi-pdf');
+  const { PdfRenderer } = await unlessAborted(import('takumi-pdf'), signal);
   const renderer = new PdfRenderer();
-  await registerFonts(renderer, fonts);
+  const registered = registerFonts(renderer, fonts);
+  try {
+    await unlessAborted(registered, signal);
+  } catch (error) {
+    void registered.catch(() => undefined).then(() => renderer.free());
+    throw error;
+  }
   return {
     measure: (node, options) => renderer.measure(node, options),
     // Copied out of wasm memory, which a later render can move.
@@ -153,42 +179,75 @@ type WorkerReply =
  * A `PdfRenderer` in a `worker_threads` Worker, so its wasm layout and PDF
  * writing never hold the calling thread. Fonts are registered there once.
  * The worker holds the process open only while a call is in flight;
- * `onExit` runs if it stops for any reason other than `close`.
+ * `onExit` runs if it stops for any reason other than `close`. Aborting
+ * `signal` stops the worker and rejects creation and every call, without
+ * waiting on a font or image loader.
  */
 export const createWorkerPdfEngine = async (
   fonts: readonly FontLoader[],
-  onExit: () => void
+  onExit: () => void,
+  signal: AbortSignal
 ): Promise<PdfEngine> => {
   // A runtime specifier, so neither build needs types for the subpath.
   const wasmUrlModule: string = 'takumi-pdf/wasm-url';
-  const { default: wasmUrl } = (await import(wasmUrlModule)) as {
-    default: URL;
-  };
+  const { default: wasmUrl } = (await unlessAborted(
+    import(wasmUrlModule),
+    signal
+  )) as { default: URL };
+  const postedFonts = await unlessAborted(
+    Promise.all(fonts.map(toPostedFont)),
+    signal
+  );
   const worker = new Worker(WORKER_SOURCE, {
     eval: true,
     workerData: {
       entry: fileURLToPath(new URL('../bundlers/node.cjs', wasmUrl)),
-      fonts: await Promise.all(fonts.map(toPostedFont)),
+      fonts: postedFonts,
     },
   });
 
-  const pending = new Map<
-    number,
-    { resolve: (value: unknown) => void; reject: (error: Error) => void }
-  >();
+  /** A call, from before its images load until its reply. */
+  interface Call {
+    resolve: (value: unknown) => void;
+    reject: (error: Error) => void;
+    posted: boolean;
+  }
+  const pending = new Map<number, Call>();
   let nextId = 0;
+  let posted = 0;
   let closing = false;
   let failure: Error | undefined;
+  let rejectReady: ((error: Error) => void) | undefined;
 
   const failAll = (error: Error) => {
     failure ??= error;
+    rejectReady?.(error);
     for (const { reject } of pending.values()) {
       reject(error);
     }
     pending.clear();
+    posted = 0;
   };
 
+  /** Forgets call `id`, letting the process exit once none is posted. */
+  const settle = (id: number) => {
+    const call = pending.get(id);
+    pending.delete(id);
+    if (call?.posted && --posted === 0) {
+      worker.unref();
+    }
+    return call;
+  };
+
+  const shutdown = async () => {
+    closing = true;
+    failAll(closedError());
+    await worker.terminate();
+  };
+  signal.addEventListener('abort', () => void shutdown(), { once: true });
+
   await new Promise<void>((resolve, reject) => {
+    rejectReady = reject;
     worker.on('message', (reply: WorkerReply) => {
       if ('ready' in reply) {
         if (reply.ready) {
@@ -199,13 +258,9 @@ export const createWorkerPdfEngine = async (
         }
         return;
       }
-      const call = pending.get(reply.id);
+      const call = settle(reply.id);
       if (!call) {
         return;
-      }
-      pending.delete(reply.id);
-      if (pending.size === 0) {
-        worker.unref();
       }
       if ('result' in reply) {
         call.resolve(reply.result);
@@ -241,33 +296,48 @@ export const createWorkerPdfEngine = async (
         reject(failure);
         return;
       }
-      void toPostedImages(options.images).then((images) => {
-        if (failure !== undefined) {
-          reject(failure);
-          return;
+      const id = nextId++;
+      const entry: Call = {
+        resolve: resolve as (value: unknown) => void,
+        reject,
+        posted: false,
+      };
+      // Tracked while its images load, so closing rejects it without waiting.
+      pending.set(id, entry);
+      void toPostedImages(options.images).then(
+        (images) => {
+          if (pending.get(id) !== entry) {
+            return;
+          }
+          try {
+            worker.postMessage({
+              id,
+              op,
+              node,
+              options: images === undefined ? options : { ...options, images },
+            });
+          } catch (error) {
+            settle(id);
+            reject(toError(error));
+            return;
+          }
+          entry.posted = true;
+          if (posted++ === 0) {
+            worker.ref();
+          }
+        },
+        (error: unknown) => {
+          if (pending.get(id) === entry) {
+            settle(id);
+            reject(toError(error));
+          }
         }
-        const id = nextId++;
-        pending.set(id, {
-          resolve: resolve as (value: unknown) => void,
-          reject,
-        });
-        worker.ref();
-        worker.postMessage({
-          id,
-          op,
-          node,
-          options: images === undefined ? options : { ...options, images },
-        });
-      }, reject);
+      );
     });
 
   return {
     measure: (node, options) => call('measure', node, options),
     render: (node, options) => call('render', node, options),
-    close: async () => {
-      closing = true;
-      failAll(new Error('pdf: the backend was closed'));
-      await worker.terminate();
-    },
+    close: shutdown,
   };
 };

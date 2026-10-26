@@ -5,8 +5,13 @@
  * 2.0.
  */
 
-import { readFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 import { inflateSync } from 'node:zlib';
 
 import { createElement, type ReactElement } from 'react';
@@ -23,6 +28,7 @@ import {
 } from './backend';
 
 const require = createRequire(import.meta.url);
+const execFileAsync = promisify(execFile);
 
 const input = (css: string): ImageInput => ({
   html: '<div class="box">Ag</div>',
@@ -767,6 +773,110 @@ describe('createTakumiImageBackend', () => {
         await backend.close();
         expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
       });
+
+      it('starts no second worker when closed during a content-height render', async () => {
+        let reads = 0;
+        const file =
+          require.resolve('@fontsource/inter/files/inter-latin-400-normal.woff2');
+        const backend = createTakumiImageBackend({
+          fonts: [
+            {
+              name: 'Inter',
+              weight: 400,
+              data: () => {
+                reads += 1;
+                return readFile(file);
+              },
+            },
+          ],
+        });
+        await backend.pdf(pages(['a']));
+        const inFlight = backend.pdf({
+          ...pages(['a']),
+          heightMode: 'content',
+        });
+        const rejected = expect(inFlight).rejects.toThrow(/closed/);
+        await backend.close();
+
+        await rejected;
+        expect(reads).toBe(1);
+      });
+
+      it('closes without waiting on a font that never loads', async () => {
+        const backend = createTakumiImageBackend({
+          fonts: [{ name: 'Inter', data: () => new Promise<never>(() => {}) }],
+        });
+        const inFlight = backend.pdf(pages(['a']));
+        const rejected = expect(inFlight).rejects.toThrow(/closed/);
+        await new Promise((resolve) => setImmediate(resolve));
+
+        await backend.close();
+        await rejected;
+      });
+
+      it('closes without waiting on an image that never loads', async () => {
+        const backend = createTakumiImageBackend();
+        await backend.pdf(pages(['a']));
+        const inFlight = backend.pdf(pages(['a']), {
+          images: {
+            sources: [
+              {
+                src: 'https://example.invalid/a.png',
+                data: () => new Promise<never>(() => {}),
+              },
+            ],
+          },
+        });
+        const rejected = expect(inFlight).rejects.toThrow(/closed/);
+        await new Promise((resolve) => setImmediate(resolve));
+
+        await backend.close();
+        await rejected;
+      });
+
+      it('rejects options it cannot post to the worker, and keeps rendering', async () => {
+        const backend = createTakumiImageBackend();
+        const metadata = {
+          ...stable.metadata,
+          toJSON: () => stable.metadata,
+        } as TakumiPdfMetadata;
+
+        await expect(backend.pdf(pages(['a']), { metadata })).rejects.toThrow(
+          /clone/i
+        );
+        const pdf = await backend.pdf(pages(['a']), stable);
+        await backend.close();
+        expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+      });
+
+      it('keeps a standalone process alive until the PDF is written, then lets it exit', async () => {
+        const dir = await mkdtemp(join(tmpdir(), 'isomer-takumi-'));
+        const script = join(dir, 'render.mts');
+        await writeFile(
+          script,
+          `import { createTakumiImageBackend } from ${JSON.stringify(
+            fileURLToPath(new URL('./backend.ts', import.meta.url))
+          )};
+const pdf = await createTakumiImageBackend().pdf(${JSON.stringify(
+            pages(['a'])
+          )});
+process.stdout.write(pdf.subarray(0, 5).toString('latin1'));
+`
+        );
+        try {
+          const { stdout } = await execFileAsync(
+            process.execPath,
+            ['--import', 'tsx', script],
+            {
+              cwd: fileURLToPath(new URL('..', import.meta.url)),
+              timeout: 20_000,
+            }
+          );
+          expect(stdout).toBe('%PDF-');
+        } finally {
+          await rm(dir, { recursive: true, force: true });
+        }
+      }, 30_000);
     });
   });
 

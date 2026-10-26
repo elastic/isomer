@@ -2,7 +2,7 @@
 
 ## 2026-10-23
 
-- **Outcome**: `createTakumiImageBackend` runs takumi's synchronous WebAssembly PDF engine in a `worker_threads` Worker by default, so `pdf` and `fitPages` no longer block the caller's event loop for the whole render ([#268](https://github.com/elastic/isomer/issues/268)). `pdfThread: 'inline'` keeps the engine on the calling thread, and `TakumiBackend.close()` stops the worker; the worker holds the process open only while a call is in flight and is restarted if it dies.
+- **Outcome**: `createTakumiImageBackend` runs takumi's synchronous WebAssembly PDF engine in a `worker_threads` Worker by default, so `pdf` and `fitPages` no longer block the caller's event loop for the whole render ([#268](https://github.com/elastic/isomer/issues/268)). `pdfThread: 'inline'` keeps the engine on the calling thread, and `TakumiBackend.close()` stops the worker and rejects calls in flight without waiting on their font or image loaders; the worker holds the process open only while a call is in flight and is restarted if it dies.
 
 ## 2026-10-21
 
