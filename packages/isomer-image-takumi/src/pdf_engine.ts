@@ -59,7 +59,8 @@ const registerFonts = async (
 
 /**
  * A `PdfRenderer` on the calling thread. Its wasm calls block that thread.
- * Aborting `signal` rejects creation without waiting on a font loader.
+ * Aborting `signal` rejects creation without waiting on a font loader, and
+ * `close` rejects calls in flight, freeing the renderer once they settle.
  */
 export const createInlinePdfEngine = async (
   fonts: readonly FontLoader[],
@@ -74,13 +75,30 @@ export const createInlinePdfEngine = async (
     void registered.catch(() => undefined).then(() => renderer.free());
     throw error;
   }
+  /** Calls still able to reach the renderer, so `close` frees it after them. */
+  const inFlight = new Set<Promise<unknown>>();
+  const closing = new AbortController();
+  const track = <T>(run: () => Promise<T>): Promise<T> => {
+    if (closing.signal.aborted) {
+      return Promise.reject(closedError());
+    }
+    const op = run();
+    inFlight.add(op);
+    const settled = () => inFlight.delete(op);
+    op.then(settled, settled);
+    return unlessAborted(op, closing.signal);
+  };
   return {
-    measure: (node, options) => renderer.measure(node, options),
+    measure: (node, options) => track(() => renderer.measure(node, options)),
     // Copied out of wasm memory, which a later render can move.
-    render: async (node, options) =>
-      new Uint8Array(await renderer.render(node, options)),
+    render: (node, options) =>
+      track(async () => new Uint8Array(await renderer.render(node, options))),
     close: () => {
-      renderer.free();
+      if (!closing.signal.aborted) {
+        closing.abort();
+        // Not awaited: a call still loading an image would hold `close` open.
+        void Promise.allSettled(inFlight).then(() => renderer.free());
+      }
       return Promise.resolve();
     },
   };

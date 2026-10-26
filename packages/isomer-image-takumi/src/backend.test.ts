@@ -905,6 +905,50 @@ describe('createTakumiImageBackend', () => {
         }
       });
 
+      it('rejects an inline call loading an image on close, and frees the renderer after it', async () => {
+        const unhandled: unknown[] = [];
+        const onUnhandled = (reason: unknown) => unhandled.push(reason);
+        process.on('unhandledRejection', onUnhandled);
+        try {
+          const backend = createTakumiImageBackend({ pdfThread: 'inline' });
+          await backend.pdf(pages(['a']));
+          let load = (_bytes: Buffer) => {};
+          const src = 'https://example.invalid/a.png';
+          const inFlight = backend.pdf(
+            {
+              ...pages(['']),
+              pages: [{ html: `<img src="${src}" width="16" height="16"/>` }],
+            },
+            {
+              images: {
+                sources: [
+                  {
+                    src,
+                    data: () =>
+                      new Promise<Buffer>((resolve) => {
+                        load = resolve;
+                      }),
+                  },
+                ],
+              },
+            }
+          );
+          const rejected = expect(inFlight).rejects.toThrow(/closed/);
+          await new Promise((resolve) => setImmediate(resolve));
+
+          await backend.close();
+          await rejected;
+          load(PIXEL);
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          expect(unhandled).toEqual([]);
+          const pdf = await backend.pdf(pages(['a']));
+          await backend.close();
+          expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+        } finally {
+          process.off('unhandledRejection', onUnhandled);
+        }
+      });
+
       it('closes without waiting on an image that never loads', async () => {
         const backend = createTakumiImageBackend();
         await backend.pdf(pages(['a']));
