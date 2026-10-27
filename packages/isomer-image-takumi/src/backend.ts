@@ -334,17 +334,22 @@ const toRasterSide = (side: number, scale: number) =>
   scale === 1 ? side : Math.max(1, Math.round(side * scale));
 
 /** Inline, so no pack class name can collide with it. */
-const PAGE_STYLE = 'overflow:hidden;break-after:page;break-inside:avoid';
+const PAGE_STYLE =
+  'position:relative;overflow:hidden;break-after:page;break-inside:avoid';
+
+/** Out of flow, so the PDF engine cannot fragment clipped content onto pages of its own. */
+const PAGE_CONTENT_STYLE = 'position:absolute;inset:0';
 
 /**
  * One page's block: `width` wide and ending the page, so a frame never spills
- * onto the next. Without `height` it takes its content's, which is how a page
- * is measured in the context it is drawn in.
+ * onto the next. Without `height` the content stays in flow and the block
+ * takes its height, which is how a page is measured in the context it is
+ * drawn in.
  */
 const pageBlock = (html: string, width: number, height?: number) =>
-  `<div style="width:${width}px;${
-    height === undefined ? '' : `height:${height}px;`
-  }${PAGE_STYLE}">${html}</div>`;
+  height === undefined
+    ? `<div style="width:${width}px;${PAGE_STYLE}"><div>${html}</div></div>`
+    : `<div style="width:${width}px;height:${height}px;${PAGE_STYLE}"><div style="${PAGE_CONTENT_STYLE}">${html}</div></div>`;
 
 /** Every page in its fixed-size block, inside the one root the PDF engine draws. */
 const toPagedSource = ({ pages, css, width, height }: PdfInput) => {

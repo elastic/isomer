@@ -598,6 +598,38 @@ describe('createTakumiImageBackend', () => {
       );
     });
 
+    it('adds no page for content clipped inside a page', async () => {
+      const rows = Array.from(
+        { length: 200 },
+        (_, row) => `<tr><td>row ${row}</td></tr>`
+      ).join('');
+      const backend = createTakumiImageBackend();
+
+      for (const clip of [
+        'height:1px;overflow:hidden',
+        // A visually hidden table, as screen-reader-only styles hide it.
+        'position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden',
+      ]) {
+        const html = `<div>Visible<div style="${clip}"><table>${rows}</table></div></div>`;
+        for (const count of [1, 3]) {
+          const deck: PdfInput = {
+            pages: Array.from({ length: count }, () => ({ html })),
+            css: '',
+            width: 400,
+            height: 300,
+          };
+          const fixed = await backend.pdf(deck);
+          const content = await backend.pdf({
+            ...deck,
+            heightMode: 'content',
+          });
+
+          expect(pageCount(fixed)).toBe(count);
+          expect(pageCount(content)).toBe(count);
+        }
+      }
+    });
+
     it('renders the same pages twice to identical bytes at a fixed creation date', async () => {
       const backend = createTakumiImageBackend();
       const first = await backend.pdf(pages(['a']), stable);
