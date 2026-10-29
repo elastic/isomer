@@ -42,7 +42,7 @@ export const Glyph = ({
             muted: colors.textSubdued,
           })
         : undefined,
-    [svg]
+    [svg, colors.textSubdued]
   );
 
   return (

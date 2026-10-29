@@ -497,8 +497,12 @@ export const ComposeView = ({
     const stored = loadDraft();
     return stored ? { ...stored, trusted: true } : starter();
   }, [starter]);
+  // Loads only when the route asks for something new, not when the runtime reloads.
+  const loadInputs = useRef({ docs, compose, fallback });
+  loadInputs.current = { docs, compose, fallback };
 
   useEffect(() => {
+    const { docs, compose, fallback } = loadInputs.current;
     const query = formatComposeQuery(params);
     if (query && query === written.current) {
       return;
@@ -544,8 +548,7 @@ export const ComposeView = ({
       // A cancelled load must not leave sync paused; a following load sets it again.
       setLoading(false);
     };
-    // Loads only when the route asks for something new, not when the runtime reloads.
-  }, [params]);
+  }, [params, plant]);
 
   // Going Home unmounts the editor; keep the edit still waiting on the debounce. Declared before
   // the sync effect so its cleanup runs first, before that one cancels the pending sync.

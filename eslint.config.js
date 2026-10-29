@@ -9,6 +9,7 @@ import js from '@eslint/js';
 import licenseHeader from 'eslint-plugin-license-header';
 import perfectionist from 'eslint-plugin-perfectionist';
 import prettierRecommended from 'eslint-plugin-prettier/recommended';
+import reactHooks from 'eslint-plugin-react-hooks';
 import simpleImportSortPlugin from 'eslint-plugin-simple-import-sort';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -289,9 +290,18 @@ export default tseslint.config(
     },
   },
   {
+    files: ['packages/**/*.{ts,tsx}'],
+    plugins: {
+      'react-hooks': reactHooks,
+    },
+    rules: {
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'error',
+    },
+  },
+  {
     files: [
       'packages/**/*.{ts,tsx}',
-      'examples/**/*.{ts,tsx}',
       'scripts/**/*.{js,cjs}',
       'eslint.config.js',
       'vitest.config.ts',
