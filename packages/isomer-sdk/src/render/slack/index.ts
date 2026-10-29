@@ -78,6 +78,8 @@ export {
   strike,
 } from './format';
 
+export { slackLimitProblems, unmodeledSlackBlockTypes } from './limit_problems';
+
 export { markdownContentToSlackBlocks } from './markdown_content';
 
 export {
