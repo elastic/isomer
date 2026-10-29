@@ -266,6 +266,88 @@ export interface HTMLDispatcherRenderOptions<
   enhancementDefinitions?: readonly EnhancementDefinition[];
 }
 
+/** What {@link collectHTMLStyles} runs a style adapter's hooks over. */
+export interface HTMLStyleCollectionOptions<
+  TNode extends PrimitiveNode,
+  TCollector extends PrimitiveStyleCollector = PrimitiveStyleCollector,
+  TContext = StyledRenderContext,
+> {
+  dispatcher: HTMLRenderDispatcher<TNode, TCollector, TContext>;
+  /** Without one, nothing is collected: the context is `{}` and the CSS `''`. */
+  styleAdapter?: HTMLStyleAdapter<TNode, TCollector, TContext> | undefined;
+  /** Already settled by {@link HTMLStyleAdapter.resolveOptions}. */
+  options: HTMLRenderOptions;
+  /** Every composition the one stylesheet serves, such as a deck's pages. */
+  compositions: readonly Composition<TNode>[];
+  /**
+   * Handed to {@link HTMLStyleAdapter.collectViewStyles}. Its `definitions`
+   * are the enhancements an adapter may collect styles for; `[]` for none.
+   */
+  scope: HTMLEnhancementScope;
+  /** Draws the collection pass from the context it is given. Its markup is discarded. */
+  render: (context: TContext) => ReactNode;
+  /** Renders the collection pass with node anchors on. Defaults to `false`. */
+  anchors?: boolean;
+}
+
+/** A collected stylesheet and the render context that resolves against it. */
+export interface HTMLStyleCollection<TContext = StyledRenderContext> {
+  context: TContext;
+  css: string;
+}
+
+/**
+ * Runs a style adapter's collection pass: wrapper and view styles, a discarded
+ * render, then {@link HTMLStyleAdapter.collectAfterRender}. Class names are
+ * collected as a side effect of rendering, so `render` must be free of side
+ * effects, and the final render must draw what it drew.
+ */
+export const collectHTMLStyles = <
+  TNode extends PrimitiveNode,
+  TCollector extends PrimitiveStyleCollector = PrimitiveStyleCollector,
+  TContext = StyledRenderContext,
+>({
+  dispatcher,
+  styleAdapter,
+  options,
+  compositions,
+  scope,
+  render,
+  anchors = false,
+}: HTMLStyleCollectionOptions<
+  TNode,
+  TCollector,
+  TContext
+>): HTMLStyleCollection<TContext> => {
+  if (!styleAdapter) {
+    // No adapter means no class names and no css vars to resolve.
+    return { context: {} as TContext, css: '' };
+  }
+  const collector = styleAdapter.createCollector(options);
+  styleAdapter.collectWrapperStyles?.(collector, options);
+  for (const composition of compositions) {
+    styleAdapter.collectViewStyles?.(
+      composition,
+      dispatcher,
+      collector,
+      { fluid: Boolean(options.fluid) },
+      options,
+      scope
+    );
+  }
+  const collecting = styleAdapter.createRenderContext(collector, options);
+  withAnchors(anchors, () =>
+    renderToStaticMarkup(createElement(() => render(collecting)))
+  );
+  for (const composition of compositions) {
+    styleAdapter.collectAfterRender?.(composition, collector, options);
+  }
+  return {
+    context: styleAdapter.createRenderContext(collector, options),
+    css: styleAdapter.renderStyles(collector, options),
+  };
+};
+
 /**
  * Renders a composition to standalone HTML: the wrapper element, the pack's
  * markup, and its CSS either inlined or returned separately.
@@ -302,7 +384,6 @@ export const renderHTMLWithDispatcher = <
   const theme = options.theme ?? composition.theme ?? 'auto';
   const cssMode = options.css ?? 'inline';
   const scriptsMode = options.scripts ?? 'embedded';
-  const styleState = styleAdapter?.createCollector(options);
   const enhancementScope: HTMLEnhancementScope = {
     walk: createChildNodeWalker(dispatcher.definitions),
     definitions: enhancementDefinitions,
@@ -321,41 +402,19 @@ export const renderHTMLWithDispatcher = <
   const enhanced = (context: TContext): TContext =>
     contextWith(context, 'enhancements', enhancements);
 
-  if (styleState) {
-    styleAdapter?.collectWrapperStyles?.(styleState, options);
-    styleAdapter?.collectViewStyles?.(
-      composition,
-      dispatcher,
-      styleState,
-      { fluid: Boolean(options.fluid) },
-      options,
-      enhancementScope
-    );
-    const collectionContext = enhanced(
-      styleAdapter?.createRenderContext(styleState, options) as TContext
-    );
-    withAnchors(anchors, () =>
-      renderToStaticMarkup(
-        createElement(() =>
-          renderCompositionContent(composition, dispatcher, collectionContext, {
-            heading,
-          })
-        )
-      )
-    );
-    styleAdapter?.collectAfterRender?.(composition, styleState, options);
-  }
-
-  const renderContext = enhanced(
-    styleState && styleAdapter
-      ? styleAdapter.createRenderContext(styleState, options)
-      : // No adapter means no class names and no css vars to resolve.
-        ({} as TContext)
-  );
-  const cssText =
-    styleState && styleAdapter
-      ? styleAdapter.renderStyles(styleState, options)
-      : '';
+  const draw = (context: TContext): ReactNode =>
+    renderCompositionContent(composition, dispatcher, enhanced(context), {
+      heading,
+    });
+  const { context: collected, css: cssText } = collectHTMLStyles({
+    dispatcher,
+    styleAdapter,
+    options,
+    compositions: [composition],
+    scope: enhancementScope,
+    render: draw,
+    anchors,
+  });
   const adapterScriptText =
     styleAdapter?.getScriptText?.(composition, options, enhancementScope) ?? '';
   const js = [
@@ -367,13 +426,7 @@ export const renderHTMLWithDispatcher = <
   const embeddedScript =
     js && scriptsMode === 'embedded' ? embedScript(js) : '';
   const body = withAnchors(anchors, () =>
-    renderToStaticMarkup(
-      createElement(() =>
-        renderCompositionContent(composition, dispatcher, renderContext, {
-          heading,
-        })
-      )
-    )
+    renderToStaticMarkup(createElement(() => draw(collected)))
   );
   const inlineCss = cssMode === 'inline' ? embedCss(cssText) : '';
   const inlineJs = embeddedScript ? embedJs(embeddedScript) : '';

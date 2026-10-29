@@ -25,6 +25,7 @@ import {
   withNodeAnchors,
 } from '@elastic/isomer-sdk';
 import {
+  collectHTMLStyles,
   type HTMLRenderOptions,
   type HTMLStyleAdapter,
 } from '@elastic/isomer-sdk/html';
@@ -293,62 +294,47 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
   };
 
   /**
-   * Runs the pack twice, in the same hook order as the SDK's HTML envelope:
-   * class names are collected as a side effect of rendering, so the stylesheet
-   * only exists once a pass has resolved them. `react` renderers must therefore
-   * be side-effect free. One collector spans every page, so a document gets
-   * one stylesheet; the adapter settles its options against the first page.
+   * One collector spans every page, so a document gets one stylesheet; the
+   * adapter settles its options against the first page. An image runs no
+   * script, so no enhancement reaches the style pass.
    */
   const withStyles = (
     [first, ...rest]: readonly [StyledPage, ...StyledPage[]],
     scheme: 'light' | 'dark'
   ): { pages: SnapshotPage[]; css: string } => {
     const pages = [first, ...rest];
-    const drawn = (context: TRenderContext): SnapshotPage[] =>
-      pages.map(({ build }) => {
-        const element = build(context);
-        return { element, html: renderToStaticMarkup(element) };
-      });
-    if (!styleAdapter) {
-      return { pages: drawn({} as TRenderContext), css: '' };
-    }
     const requested: HTMLRenderOptions = {
       theme: scheme,
       scheme,
     };
-    const options =
-      styleAdapter.resolveOptions?.(first.composition, requested) ?? requested;
-    const collector = styleAdapter.createCollector(options);
-    styleAdapter.collectWrapperStyles?.(collector, options);
-    const scope = {
-      walk: createChildNodeWalker(dispatcher.definitions),
-      definitions: [],
-    };
-    for (const { composition } of pages) {
-      styleAdapter.collectViewStyles?.(
-        composition,
-        dispatcher,
-        collector,
-        { fluid: Boolean(options.fluid) },
-        options,
-        scope
-      );
-    }
-    const collecting = styleAdapter.createRenderContext(collector, options);
-    renderToStaticMarkup(
-      createElement(
-        Fragment,
-        null,
-        ...pages.map(({ build }) => build(collecting))
-      )
-    );
-    for (const { composition } of pages) {
-      styleAdapter.collectAfterRender?.(composition, collector, options);
-    }
-    const context = styleAdapter.createRenderContext(collector, options);
+    const { context, css } = collectHTMLStyles<
+      PrimitiveNode,
+      PrimitiveStyleCollector,
+      TRenderContext
+    >({
+      dispatcher,
+      styleAdapter,
+      options:
+        styleAdapter?.resolveOptions?.(first.composition, requested) ??
+        requested,
+      compositions: pages.map(({ composition }) => composition),
+      scope: {
+        walk: createChildNodeWalker(dispatcher.definitions),
+        definitions: [],
+      },
+      render: (collecting) =>
+        createElement(
+          Fragment,
+          null,
+          ...pages.map(({ build }) => build(collecting))
+        ),
+    });
     return {
-      pages: drawn(context),
-      css: styleAdapter.renderStyles(collector, options),
+      pages: pages.map(({ build }) => {
+        const element = build(context);
+        return { element, html: renderToStaticMarkup(element) };
+      }),
+      css,
     };
   };
 
