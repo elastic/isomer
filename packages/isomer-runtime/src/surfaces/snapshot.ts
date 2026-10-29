@@ -229,7 +229,7 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
   ): { height: number; warnings: readonly SnapshotHeightWarning[] } => {
     let consulted = false;
     const height = frame.estimateHeight(composition, {
-      renderSnapshot: () => null,
+      renderSnapshotNode: () => null,
       estimateSnapshotHeight: (node) => {
         consulted = true;
         return dispatcher.estimateSnapshotHeight(node);
@@ -287,7 +287,7 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
   ): FrameDispatcher => {
     const drawn = anchors === true ? withNodeAnchors(context) : context;
     return {
-      renderSnapshot: (node, key) =>
+      renderSnapshotNode: (node, key) =>
         dispatcher.renderSnapshot(node, drawn, theme, key),
       estimateSnapshotHeight: (node) => dispatcher.estimateSnapshotHeight(node),
     };

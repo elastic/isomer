@@ -66,7 +66,7 @@ const bound = bindFrame(frame);
 
 /** Binds the render context the `snapshot` surface would otherwise supply. */
 const frameDispatcher: FrameDispatcher = {
-  renderSnapshot: (node, key) =>
+  renderSnapshotNode: (node, key) =>
     dispatcher.renderSnapshot(node, {}, undefined, key),
   estimateSnapshotHeight: (node) => dispatcher.estimateSnapshotHeight(node),
 };

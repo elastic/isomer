@@ -110,7 +110,7 @@ describe('slide frame', () => {
     slideDeckPrimitives.find((definition) => definition.type === 'slideFrame')!
   )[0]! as PrimitiveNode;
   const dispatcher = {
-    renderSnapshot: (node: PrimitiveNode) => `<${node.type}>`,
+    renderSnapshotNode: (node: PrimitiveNode) => `<${node.type}>`,
     estimateSnapshotHeight: () => 0,
   };
   const bound = bindFrame(slideDeckFrame);
