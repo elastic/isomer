@@ -189,19 +189,21 @@ export const createPrimitiveDispatcher = <
     };
   };
 
+  // `definition` skips the lookup when the caller already holds it.
   const renderOn = <S extends SurfaceName>(
     surface: S,
     node: TNode,
-    extras: Omit<SurfaceMap<T>[S]['env'], 'scope'>
+    extras: Omit<SurfaceMap<T>[S]['env'], 'scope'>,
+    definition?: AnyPrimitiveDefinition
   ): SurfaceMap<T>[S]['output'] | undefined => {
     if (!isVisibleOnSurface(node, surface)) {
       return undefined;
     }
-    const definition = getDefinition(node);
-    const safeNode = sanitizeNode(definition, node);
+    const resolved = definition ?? getDefinition(node);
+    const safeNode = sanitizeNode(resolved, node);
     return safeNode === null
       ? undefined
-      : renderSanitized(surface, definition, safeNode, extras);
+      : renderSanitized(surface, resolved, safeNode, extras);
   };
 
   // `renderOn` for a node its sanitizer has already run on.
@@ -222,13 +224,35 @@ export const createPrimitiveDispatcher = <
   const renderMarkdownContent = (node: TNode): MarkdownContent =>
     renderOn('markdown', node, {}) ?? [];
 
+  const renderSlackAsset = (
+    definition: AnyPrimitiveDefinition,
+    node: TNode,
+    assets: SlackAssetCollector
+  ): readonly T['slackBlock'][] => {
+    const safeNode = sanitizeNode(definition, node);
+    if (safeNode === null) {
+      return [];
+    }
+    const altText =
+      (isVisibleOnSurface(safeNode, 'text') &&
+        renderSanitized('text', definition, safeNode, {})) ||
+      node.type;
+    const ref = assets.allocate(safeNode, altText);
+    const block = {
+      type: 'image',
+      alt_text: altText,
+      slack_file: { ref },
+    } satisfies SlackImageBlock;
+    return asSlackPayload<T['slackBlock']>([block]);
+  };
+
   const renderMarkdown = (node: TNode): string =>
     serializeMarkdown(renderMarkdownContent(node));
 
   self = {
     definitions,
     getDefinition,
-    renderOn,
+    renderOn: (surface, node, extras) => renderOn(surface, node, extras),
     // `{}` only ever runs when the argument was optional, which
     // `ReactContextArg` allows exactly when `{}` is a complete context.
     renderReact: (node, ...context) =>
@@ -264,48 +288,29 @@ export const createPrimitiveDispatcher = <
       if (!isVisibleOnSurface(node, 'slack')) {
         return [];
       }
-      const assets = isSlackAssetCollector(collector) ? collector : undefined;
-      if (assets && isSlackAssetType?.(node.type)) {
-        const definition = getDefinition(node);
-        const safeNode = sanitizeNode(definition, node);
-        if (safeNode === null) {
-          return [];
-        }
-        const altText =
-          (isVisibleOnSurface(safeNode, 'text') &&
-            renderSanitized('text', definition, safeNode, {})) ||
-          node.type;
-        const ref = assets.allocate(safeNode, altText);
-        const block = {
-          type: 'image',
-          alt_text: altText,
-          slack_file: { ref },
-        } satisfies SlackImageBlock;
-        return asSlackPayload<T['slackBlock']>([block]);
-      }
       const definition = getDefinition(node);
-      const slackRenderer = definition.renderers.slack as
-        Renderer<TNode, 'slack', T> | undefined;
-      if (!slackRenderer) {
+      if (isSlackAssetCollector(collector) && isSlackAssetType?.(node.type)) {
+        return renderSlackAsset(definition, node, collector);
+      }
+      if (!definition.renderers.slack) {
         // Degrading here rather than in the envelope is what reaches nested
         // children: a container's `slack` renderer recurses through this
         // method, and the envelope only ever sees the container's own output.
         return asSlackPayload<T['slackBlock']>(
-          markdownContentToSlackBlocks(renderMarkdownContent(node), options)
+          markdownContentToSlackBlocks(
+            renderOn('markdown', node, {}, definition) ?? [],
+            options
+          )
         );
-      }
-      const safeNode = sanitizeNode(definition, node);
-      if (safeNode === null) {
-        return [];
       }
       const extras = {
         ...(collector === undefined ? {} : { collector }),
         ...(options.baseUrl === undefined ? {} : { baseUrl: options.baseUrl }),
       };
-      const rendered = slackRenderer(safeNode, {
-        ...extras,
-        scope: scopeFor('slack', extras),
-      });
+      const rendered = renderOn('slack', node, extras, definition);
+      if (rendered === undefined) {
+        return [];
+      }
       return isReadonlyArray(rendered) ? rendered : [rendered];
     },
     estimateSnapshotHeight: (node) => {
