@@ -158,17 +158,12 @@ export const runAgentEvals = async ({
     if (!attempt.parsed) {
       return { ...base, parsed: false, valid: false, errors: [attempt.error] };
     }
-    const check = checkComposition(runtime, attempt.value);
-    const frameErrors =
-      check.composition === undefined
-        ? []
-        : (frame?.validateBody?.(check.composition.body) ?? []);
-    const errors = [...check.errors, ...frameErrors];
+    const check = checkComposition(runtime, attempt.value, frame);
     return {
       ...base,
       parsed: true,
-      valid: errors.length === 0,
-      errors,
+      valid: check.valid,
+      errors: check.errors,
       ...(evalCase.expected === undefined
         ? {}
         : {

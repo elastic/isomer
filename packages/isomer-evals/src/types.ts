@@ -95,7 +95,7 @@ export interface PrimitiveSelectionScore {
 export interface PayloadScore {
   /** UTF-8 bytes of the model output as sent, before any code fence is stripped. */
   rawBytes: number;
-  /** Bytes after parsing, which drops unknown properties; `0` when the first attempt did not parse. */
+  /** Bytes of the copy `validate` checked; `0` when the first attempt did not validate. */
   sanitizedBytes: number;
   /** Sanitized size relative to the golden's; absent without a golden. */
   sizeVsGolden?: number | undefined;
@@ -171,14 +171,11 @@ export interface EvalRuntime {
     primitives: readonly PrimitiveCatalogEntry[];
     views?: readonly AuthoringViewSummary[] | undefined;
   };
+  /** `composition` is the copy the result describes, and `undefined` only when the input budget refused it. */
   validate(composition: Composition): {
     valid: boolean;
     errors: ValidationError[];
-  };
-  parse(value: unknown): {
-    valid: boolean;
-    errors: ValidationError[];
-    composition?: Composition | undefined;
+    composition: Composition | undefined;
   };
   surfaces: {
     text: { render(composition: Composition): string };

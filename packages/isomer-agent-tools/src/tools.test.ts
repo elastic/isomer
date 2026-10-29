@@ -240,16 +240,18 @@ describe('createIsomerTools', () => {
       body: [{ type: 'slideStackLayout', children: nested(depth - 3) }],
     });
 
-    it('parses a composition at the depth limit', async () => {
-      const parse = vi.fn((value: unknown) => runtime.parse(value));
+    it('validates a composition at the depth limit once', async () => {
+      const validate = vi.fn((composition: Composition) =>
+        runtime.validate(composition)
+      );
       const { errors } = jsonOf(
         await call(
-          createIsomerTools({ runtime: { ...runtime, parse } }),
+          createIsomerTools({ runtime: { ...runtime, validate } }),
           ISOMER_TOOL_NAMES.validate,
           { composition: stackOfDepth(MAX_INPUT_DEPTH) }
         )
       );
-      expect(parse).toHaveBeenCalledOnce();
+      expect(validate).toHaveBeenCalledOnce();
       expect(errors).not.toContain(TOO_DEEP);
     });
 
@@ -795,10 +797,10 @@ describe('a throwing runtime', () => {
       'getAuthoringContext',
       { types: ['slideFrame'] },
     ],
-    [ISOMER_TOOL_NAMES.validate, 'parse', { composition: oneSlide }],
+    [ISOMER_TOOL_NAMES.validate, 'validate', { composition: oneSlide }],
     [
       ISOMER_TOOL_NAMES.render,
-      'parse',
+      'validate',
       { composition: oneSlide, format: 'text' },
     ],
   ] as const)('%s resolves to a failed call', async (name, method, args) => {
@@ -817,7 +819,7 @@ describe('a throwing runtime', () => {
     ['undefined', undefined],
   ])('reports a thrown %s without throwing again', async (_label, thrown) => {
     const tools = createIsomerTools({
-      runtime: { ...runtime, parse: throwing(thrown) },
+      runtime: { ...runtime, validate: throwing(thrown) },
     });
     const result = call(tools, ISOMER_TOOL_NAMES.validate, {
       composition: oneSlide,

@@ -11,6 +11,7 @@ import {
   type ValidationError,
   type ValidationWarning,
 } from '@elastic/isomer-sdk';
+import { checkComposition as check } from '@elastic/isomer-sdk/author';
 
 import type { IsomerToolsFrame, IsomerToolsRuntime } from './types';
 
@@ -22,7 +23,7 @@ export interface IsomerCompositionCheck {
   /** A frame rule's finding has an empty path. */
   findings: ValidationError[];
   warnings: string[];
-  /** The copy `validate` checked, present whenever the value matched the schema. */
+  /** The copy `validate` checked, absent when `validate` found errors. */
   composition?: Composition | undefined;
 }
 
@@ -30,40 +31,17 @@ export interface IsomerCompositionCheck {
 const formatWarning = ({ surface, path = '', message }: ValidationWarning) =>
   `${surface}: ${message.startsWith(path) ? message : formatValidationError({ path, message })}`;
 
-const refused = (findings: ValidationError[]): IsomerCompositionCheck => ({
-  valid: false,
-  errors: findings.map(formatValidationError),
-  findings,
-  warnings: [],
-});
-
-/** Parses `value`, then runs the runtime's semantic validation and the frame's body rule on the copy `validate` checked. The runtime's input budget refuses through `parse`. */
+/** The SDK's `checkComposition`, with its findings and warnings formatted for a model. */
 export const checkComposition = (
-  runtime: Pick<IsomerToolsRuntime, 'parse' | 'validate'>,
+  runtime: Pick<IsomerToolsRuntime, 'validate'>,
   frame: IsomerToolsFrame | undefined,
   value: unknown
 ): IsomerCompositionCheck => {
-  const parsed = runtime.parse(value);
-  if (!parsed.valid || parsed.composition === undefined) {
-    return refused([...parsed.errors]);
-  }
-  const { errors, warnings, composition } = runtime.validate(
-    parsed.composition
-  );
-  if (composition === undefined) {
-    return refused([...errors]);
-  }
-  const findings: ValidationError[] = [
-    ...errors,
-    ...(frame?.validateBody?.(composition.body) ?? []).map((message) => ({
-      path: '',
-      message,
-    })),
-  ];
+  const { valid, errors, warnings, composition } = check(runtime, value, frame);
   return {
-    valid: findings.length === 0,
-    errors: findings.map(formatValidationError),
-    findings,
+    valid,
+    errors: errors.map(formatValidationError),
+    findings: [...errors],
     warnings: warnings.map(formatWarning),
     composition,
   };
