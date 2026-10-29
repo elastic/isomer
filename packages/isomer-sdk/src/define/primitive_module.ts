@@ -157,11 +157,8 @@ export interface DefaultPackTypes extends PackTypes {
 
 /**
  * Each surface's renderer signature: the env bag it receives beyond the node,
- * and what it returns.
- *
- * Written out per surface rather than derived through an indexed access. A bag
- * is additive: a new extra on a surface is not an arity break. {@link Renderer}
- * indexes this table for the dispatcher cast; {@link Renderers} does not.
+ * and what it returns. A bag is additive: a new extra on a surface is not an
+ * arity break.
  */
 export interface SurfaceMap<T extends PackTypes = DefaultPackTypes> {
   react: {
@@ -182,15 +179,7 @@ export interface SurfaceMap<T extends PackTypes = DefaultPackTypes> {
    * authored for it. The surface stays separate so a node can be hidden from
    * snapshots alone, and so a {@link Frame} has something to draw inside.
    */
-  snapshot: {
-    env: {
-      context: T['context'];
-      scope: RenderScope<T>;
-      /** The frame's resolved palette for this render's mode; see `react.env.theme`. */
-      theme?: T['theme'];
-    };
-    output: ReactNode;
-  };
+  snapshot: SurfaceMap<T>['react'];
   text: {
     env: {
       scope: RenderScope<T>;
@@ -221,54 +210,65 @@ export interface SurfaceMap<T extends PackTypes = DefaultPackTypes> {
 
 /**
  * The dispatcher a renderer is given so a container can recurse into a child
- * owned by another pack. Erased to {@link PrimitiveNode}: a heterogeneous
- * inventory has no single node type to name.
- *
- * Passed as `scope` on every renderer's env bag. The dispatcher's own named
- * methods stay positional.
+ * owned by another pack, passed as `scope` on every renderer's env bag.
+ * Erased to {@link PrimitiveNode} by default: a heterogeneous inventory has no
+ * single node type to name.
  */
-export interface RenderScope<T extends PackTypes = DefaultPackTypes> {
+export interface RenderScope<
+  T extends PackTypes = DefaultPackTypes,
+  TNode extends PrimitiveNode = PrimitiveNode,
+> {
+  /** Every primitive this dispatcher can reach, across all composed packs. */
   readonly definitions: readonly AnyPrimitiveDefinition[];
   /** Throws for an unknown node type; a missing primitive is a bug, not a degradation. */
-  getDefinition(node: PrimitiveNode): AnyPrimitiveDefinition;
+  getDefinition(node: TNode): AnyPrimitiveDefinition;
   /** `undefined` when the node is hidden from `surface`, `sanitize` drops it, or its primitive declares no renderer for `surface`. */
   renderOn<S extends SurfaceName>(
     surface: S,
-    node: PrimitiveNode,
+    node: TNode,
     extras: Omit<SurfaceMap<T>[S]['env'], 'scope'>
   ): SurfaceMap<T>[S]['output'] | undefined;
-  /** On `snapshot`, preserves snapshot visibility and the frame palette. `context` may be omitted only when `{}` is a complete context for the pack. */
+  /**
+   * The node's `react` renderer, or `undefined` when it is hidden or has none.
+   * Inside a `snapshot` render, keeps snapshot visibility and the frame
+   * palette. `context` may be omitted only when `{}` is a complete context for
+   * the pack.
+   */
   renderReact(
-    node: PrimitiveNode,
+    node: TNode,
     ...context: ReactContextArg<T['context']>
   ): ReactNode;
+  /** Mutates `styles` with this node's contribution. */
   collectStyles(
-    node: PrimitiveNode,
-    styles: PrimitiveStyleCollector,
+    node: TNode,
+    styles: T['collector'],
     context: PrimitiveStyleCollectionContext
   ): void;
-  renderText(node: PrimitiveNode): string;
-  renderMarkdown(node: PrimitiveNode): string;
-  /** A child as content, for a container building with `md`. */
-  renderMarkdownContent(node: PrimitiveNode): MarkdownContent;
-  /** Empty when the node is hidden from `slack`, `sanitize` drops it, or its renderer returns nothing; a node with no `slack` renderer degrades through its markdown. */
+  /** `''` when the node is hidden from `text` or its primitive declares no `text` renderer. */
+  renderText(node: TNode): string;
+  /** The node's content serialized as GFM. */
+  renderMarkdown(node: TNode): string;
+  /** A child as content, for a container building with `md`; empty when the node is hidden from `markdown`. */
+  renderMarkdownContent(node: TNode): MarkdownContent;
+  /**
+   * Empty when the node is hidden from `slack`, `sanitize` drops it, or its
+   * renderer returns nothing. A node with no `slack` renderer degrades through
+   * its markdown.
+   */
   renderSlack(
-    node: PrimitiveNode,
+    node: TNode,
     collector?: T['slackCollector']
   ): readonly T['slackBlock'][];
   /** `0` when the node is hidden from `snapshot` or its primitive declares no `metrics.snapshotHeight`. */
-  estimateSnapshotHeight(node: PrimitiveNode): number;
-  /** Appends schema failures under `path` to `errors`, each naming `node`'s type. */
-  validate(node: PrimitiveNode, path: string, errors: ValidationError[]): void;
+  estimateSnapshotHeight(node: TNode): number;
+  /**
+   * Appends schema failures under `path` to `errors`, each naming `node`'s
+   * type, and an unknown key on `node` listing the fields it declares.
+   */
+  validate(node: TNode, path: string, errors: ValidationError[]): void;
 }
 
-/**
- * One surface's renderer for one node type, per {@link SurfaceMap}.
- *
- * Indexes the env bag. Do not use this to type the renderers map: the
- * written-out signatures on {@link Renderers} are what keep the bags checked
- * per surface.
- */
+/** One surface's renderer for one node type, per {@link SurfaceMap}. */
 export type Renderer<
   TNode extends PrimitiveNode,
   S extends SurfaceName,
@@ -290,50 +290,33 @@ export const OPTIONAL_SURFACES = [
 /** One of the {@link OPTIONAL_SURFACES}. */
 export type OptionalSurface = (typeof OPTIONAL_SURFACES)[number];
 
+// A method signature, so the node parameter is checked bivariantly: that is
+// what lets a pack narrow the collector's node type.
+type MethodRenderer<
+  TNode extends PrimitiveNode,
+  S extends SurfaceName,
+  T extends PackTypes,
+> = {
+  render(node: TNode, env: SurfaceMap<T>[S]['env']): SurfaceMap<T>[S]['output'];
+}['render'];
+
 /**
  * One renderer per surface a primitive implements.
  *
  * `react`, `text`, and `markdown` are always required: those three are what
  * make "every composition degrades" true. `react` serves the `snapshot` surface
  * too, so targeting images costs a primitive nothing.
- *
- * `slack` is declared method-style deliberately: method parameters are checked
- * bivariantly, which is what lets a pack narrow the collector's node type.
  */
-export interface Renderers<
+export type Renderers<
   TNode extends PrimitiveNode,
   T extends PackTypes = DefaultPackTypes,
-> {
-  react(
-    node: TNode,
-    env: {
-      context: T['context'];
-      scope: RenderScope<T>;
-      /** See {@link SurfaceMap.react}'s `env.theme`. */
-      theme?: T['theme'];
-    }
-  ): ReactNode;
-  text(
-    node: TNode,
-    env: {
-      scope: RenderScope<T>;
-    }
-  ): string;
-  markdown(
-    node: TNode,
-    env: {
-      scope: RenderScope<T>;
-    }
-  ): MarkdownContent;
-  slack?(
-    node: TNode,
-    env: {
-      collector?: T['slackCollector'];
-      baseUrl?: string;
-      scope: RenderScope<T>;
-    }
-  ): T['slackBlock'] | readonly T['slackBlock'][];
-}
+> = {
+  [S in Exclude<SurfaceName, OptionalSurface | 'snapshot'>]: MethodRenderer<
+    TNode,
+    S,
+    T
+  >;
+} & { [S in OptionalSurface]?: MethodRenderer<TNode, S, T> };
 
 /**
  * Measurements a frame can ask of a node before drawing it.
@@ -446,24 +429,15 @@ export interface PrimitiveDefinition<
  * {@link PrimitiveDefinition} with every type parameter erased, and the form an
  * inventory is stored in.
  *
- * A heterogeneous pack has no single `TNode` to be generic over, so the
- * renderers degrade to `unknown` here.
- *
- * Each field carries the same contract as its {@link PrimitiveDefinition}
- * counterpart; only the types are erased.
+ * A heterogeneous pack has no single `TNode` to be generic over, so every
+ * function over the node degrades to `unknown` here.
  */
-export interface AnyPrimitiveDefinition {
-  type: string;
-  catalog: PrimitiveCatalogEntry;
-  icon?: PrimitiveIcon;
-  examples: readonly (PrimitiveNode | PrimitiveExample)[];
-  schema: PrimitiveSchema;
-  schemaFor?: (bodyNodeSchema: ZodType<unknown>) => PrimitiveSchema;
-  renderers: Record<'react' | 'text' | 'markdown', unknown> &
-    Partial<Record<'slack', unknown>>;
-  metrics?: {
-    snapshotHeight?: unknown;
-  };
+export interface AnyPrimitiveDefinition extends Pick<
+  PrimitiveDefinition<PrimitiveNode>,
+  'type' | 'catalog' | 'icon' | 'examples' | 'schema' | 'schemaFor'
+> {
+  renderers: { [S in keyof Renderers<PrimitiveNode>]: unknown };
+  metrics?: { [K in keyof PrimitiveMetrics<PrimitiveNode>]: unknown };
   sanitize?: unknown;
   children?: unknown;
   hasOwnContent?: unknown;

@@ -12,7 +12,6 @@ import {
   type SurfaceName,
 } from '../composition/body_node_base';
 import { IsomerError } from '../composition/error';
-import type { ValidationError } from '../composition/validation_error';
 import type { MarkdownContent } from '../define/markdown_content';
 import {
   type AnyPrimitiveDefinition,
@@ -20,7 +19,6 @@ import {
   type PackTypes,
   type PrimitiveNode,
   type PrimitiveStyleCollectionContext,
-  type ReactContextArg,
   type Renderer,
   type RenderScope,
   type SurfaceMap,
@@ -44,28 +42,7 @@ import { markdownContentToSlackBlocks } from './slack/markdown_content';
 export interface PrimitiveDispatcher<
   TNode extends PrimitiveNode,
   T extends PackTypes = DefaultPackTypes,
-> {
-  /** Every primitive this dispatcher can reach, across all composed packs. */
-  readonly definitions: readonly AnyPrimitiveDefinition[];
-  /** Throws for an unknown node type; a missing primitive is a bug, not a degradation. */
-  getDefinition(node: TNode): AnyPrimitiveDefinition;
-  /** `undefined` when the node is hidden from `surface`, `sanitize` drops it, or the primitive declares no renderer for `surface`. */
-  renderOn<S extends SurfaceName>(
-    surface: S,
-    node: TNode,
-    extras: Omit<SurfaceMap<T>[S]['env'], 'scope'>
-  ): SurfaceMap<T>[S]['output'] | undefined;
-  /** The node's `react` renderer, or `undefined` when it is hidden or has none. `context` may be omitted only when `{}` is a complete context for the pack. */
-  renderReact(
-    node: TNode,
-    ...context: ReactContextArg<T['context']>
-  ): ReactNode;
-  /** Mutates `styles` with this node's contribution. */
-  collectStyles(
-    node: TNode,
-    styles: T['collector'],
-    context: PrimitiveStyleCollectionContext
-  ): void;
+> extends RenderScope<T, TNode> {
   /**
    * The node's `react` renderer, gated on `snapshot` visibility and keyed for a
    * frame's sibling list. `key` must be unique among those siblings.
@@ -78,31 +55,17 @@ export interface PrimitiveDispatcher<
     theme: T['theme'] | undefined,
     key: string
   ): ReactNode;
-  /** `''` when the node is hidden from `text` or its primitive declares no `text` renderer. */
-  renderText(node: TNode): string;
-  /** The node's content serialized as GFM. */
-  renderMarkdown(node: TNode): string;
-  /** Empty when the node is hidden from `markdown`. */
-  renderMarkdownContent(node: TNode): MarkdownContent;
   /**
-   * Empty when the node is hidden from `slack`, `sanitize` drops it, or its
-   * renderer returns nothing. A node with no `slack` renderer degrades through
-   * its markdown; one `isSlackAssetType` names becomes an `image` block when
-   * `collector` can allocate. `options.baseUrl` reaches the renderer's env and
-   * every child it renders through `scope`.
+   * {@link RenderScope.renderSlack}, plus: a node `isSlackAssetType` names
+   * becomes an `image` block when `collector` can allocate, and
+   * `options.baseUrl` reaches the renderer's env and every child it renders
+   * through `scope`.
    */
   renderSlack(
     node: TNode,
     collector?: T['slackCollector'],
     options?: SlackLinkOptions
   ): readonly T['slackBlock'][];
-  /** `0` when the node is hidden from `snapshot` or its primitive declares no `metrics.snapshotHeight`. */
-  estimateSnapshotHeight(node: TNode): number;
-  /**
-   * Appends schema failures under `path` to `errors`, each naming `node`'s
-   * type, and an unknown key on `node` listing the fields it declares.
-   */
-  validate(node: TNode, path: string, errors: ValidationError[]): void;
 }
 
 /**
