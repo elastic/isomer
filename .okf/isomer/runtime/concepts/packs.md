@@ -17,12 +17,8 @@ sources:
 
 # Definition
 
-Two packs in one runtime union their types. Duplicate `type` or enhancement id throws. CSS composes too: each adapter gets a collector, each style handle routes to the adapter that `ownsHandle`, and `collectStyles` fires only on the pack that declared the adapter.[^docs][^adapter]
-
-A type no adapter-declaring pack owns still reaches every adapter. Combining adapters where one cannot answer `ownsHandle` throws. A CSS-bearing pack with no adapter throws, naming the pack and the primitive.
+Packs are additive: a runtime unions their types and combines their style adapters, routing each pack's `collectStyles` only to the adapter it declared. See the package doc on packs.[^docs]
 
 Related: [SDK packs](/sdk/concepts/packs.md), [style adapters](/runtime/concepts/style-adapters.md).
 
 [^docs]: Runtime packs
-
-[^adapter]: composeStyleAdapters

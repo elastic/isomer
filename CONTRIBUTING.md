@@ -46,9 +46,9 @@ A release never commits to `main`, publishes through npm trusted publishing only
 
 ## Agent knowledge bundle (OKF)
 
-`.okf/isomer` is an [Open Knowledge Format](https://github.com/okfcli/okf) bundle: plain markdown with frontmatter that describes the packages for coding agents, separate from the human docs in `packages/*/docs`. CI validates it, fails on concepts past their `stale_after` date, and checks that every cited repo path still exists.
+`.okf/isomer` is an [Open Knowledge Format](https://github.com/okfcli/okf) bundle: plain markdown with frontmatter that holds agent-facing detail the human docs in `packages/*/docs` don't cover, and points to those docs for the rest. CI validates it, warns on concepts past their `stale_after` date, and checks that every cited repo path still exists.
 
-You only need the `okf` CLI when you change public API, docs, examples, or behavior and update the bundle to match:
+You only need the `okf` CLI when a change alters detail a concept keeps and you update the bundle to match:
 
 ```sh
 brew install --cask okfcli/okf/okf   # or: go install github.com/okfcli/okf/cmd/okf@latest
@@ -56,7 +56,7 @@ pnpm okf:check                        # validate, anchors, generated map
 pnpm okf:index                        # regenerate indexes after editing concepts
 ```
 
-CI pins the CLI version in `.github/workflows/okf.yml`. Record bundle changes in `.okf/isomer/log.md`, one entry per pull request.
+CI pins the CLI version in `.github/workflows/okf.yml`.
 
 ## Pull requests
 

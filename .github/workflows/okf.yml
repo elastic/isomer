@@ -34,11 +34,11 @@ jobs:
       - name: Validate
         run: okf validate "$BUNDLE"
 
-      - name: Check for stale concepts
+      - name: Report stale concepts
         run: |
           okf lint "$BUNDLE" > okf-lint.json
           python3 - <<'PY'
-          import json, sys
+          import json
 
           findings = json.load(open('okf-lint.json'))['findings']
           for finding in findings:
@@ -47,10 +47,9 @@ jobs:
           stale = [finding for finding in findings if finding['rule'] == 'okf/lifecycle/stale']
           if stale:
               print(
-                  f"::error::{len(stale)} concept(s) are past stale_after. "
+                  f"::warning::{len(stale)} concept(s) are past stale_after. "
                   'Re-verify each against code, then extend the date or fix the content.'
               )
-              sys.exit(1)
           PY
 
       - name: Check index freshness

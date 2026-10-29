@@ -16,12 +16,10 @@ sources:
 
 # Steps
 
-1. Install the pack's dependencies, `@elastic/isomer-studio` among them, and add the pack's `isomer-studio.config.ts`. In this repository, run `pnpm build` first so the Studio's `dist/` exists.
-2. In GitHub Actions, use `elastic/isomer/.github/actions/isomer-studio@main` (`./.github/actions/isomer-studio` in this repository) with `config`. It runs `check --format junit --report <report>` and `build --out <out> --base <base>` from `working-directory`, uploads the report as `<artifact-name>-report` and the site as `<artifact-name>`, and builds even when the check fails.[^action]
-3. Elsewhere, run `npx isomer-studio check --format junit --report report.xml` and `npx isomer-studio build --out dist/studio`.
-4. To deploy beside docs, build into its own directory with the served path as `--base`, as this repository does at `/isomer/studio-app/`.[^docs]
+Check a pack and upload its Studio with the composite action, or with `isomer-studio check` and `isomer-studio build` on another CI system, as the package's CI docs describe.[^docs]
+
+In this repository, run `pnpm build` first so the Studio's `dist/` exists.
 
 Related: [root and CLI](/studio/entry-points/root.md).
 
-[^action]: Composite action
 [^docs]: Package docs

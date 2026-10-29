@@ -25,15 +25,14 @@ sources:
 
 # Steps
 
-1. Update `.okf/isomer` when public API, docs, examples, package exports, runtime behavior, verification scripts, or release posture change.
-2. Treat code, tests, examples, and `package.json` as source of truth. Use docs as supporting evidence.
-3. Prefer `sources[]` entries that point at the local file proving each implementation claim.
-4. Run `pnpm okf:check`.
-5. Run `pnpm okf:index` and commit any generated index or map changes.
-6. Record the change in `.okf/isomer/log.md` as one entry per pull request, under the newest date heading. If the branch already added one, rewrite it rather than adding another.
+The bundle keeps agent-facing detail the package docs don't cover; where a doc covers a concept, the concept points there instead of restating it. Update a concept when the detail it keeps changes, and run `pnpm okf:check`, as [CONTRIBUTING.md](https://github.com/elastic/isomer/blob/main/CONTRIBUTING.md) and [AGENTS.md](https://github.com/elastic/isomer/blob/main/AGENTS.md) describe.
+
+1. Treat code, tests, examples, and `package.json` as source of truth. Use docs as supporting evidence.
+2. Prefer `sources[]` entries that point at the local file proving each implementation claim.
+3. Run `pnpm okf:index` and commit any generated index or map changes.
 
 # Accuracy checks
 
-CI installs a pinned OKF CLI, runs `okf validate`, gates concepts that are past `stale_after`, checks generated index freshness, checks `docs/reference/okf-map.md`, and verifies cited repo paths still exist.
+CI installs a pinned OKF CLI, runs `okf validate`, warns on concepts that are past `stale_after`, checks generated index freshness, checks `docs/reference/okf-map.md`, and verifies cited repo paths still exist.
 
 Related: [conventions](/workspace/reference/conventions.md) and [workspace](/workspace/concepts/workspace.md).

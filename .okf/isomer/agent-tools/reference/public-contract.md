@@ -13,7 +13,9 @@ sources:
 
 # Definition
 
-- `private: true`, so it does not publish. License Elastic-2.0. Depends on `@elastic/isomer-sdk` (`workspace:*`); `react` and `zod` are peers. `@elastic/isomer-runtime` and `@elastic/isomer-primitives-slides` are dev dependencies: only the tests under `src/` import them, and `packages/isomer-agent-tools/src/tools.test.ts` proves an `IsomerRuntime` satisfies `IsomerToolsRuntime` and an SDK `Frame` satisfies `IsomerToolsFrame`. One entry, `.`. Dual ESM/CJS.[^package]
+Private until its API settles, and dependent on the SDK alone. See the [package doc](https://github.com/elastic/isomer/blob/main/packages/isomer-agent-tools/docs/index.md).
+
+- License Elastic-2.0. Depends on `@elastic/isomer-sdk` (`workspace:*`); `react` and `zod` are peers. `@elastic/isomer-runtime` and `@elastic/isomer-primitives-slides` are dev dependencies: only the tests under `src/` import them, and `packages/isomer-agent-tools/src/tools.test.ts` proves an `IsomerRuntime` satisfies `IsomerToolsRuntime` and an SDK `Frame` satisfies `IsomerToolsFrame`. One entry, `.`. Dual ESM/CJS.[^package]
 
 Related: [agent tools](/agent-tools/concepts/agent-tools.md), [root](/agent-tools/entry-points/root.md).
 

@@ -16,11 +16,12 @@ sources:
 
 # Definition
 
+The package metadata and export contract of `@elastic/isomer-sdk`. See [Package facts](https://github.com/elastic/isomer/blob/main/packages/isomer-sdk/docs/index.md#package-facts) in the package doc.
+
 - Source available under the Elastic License 2.0 (SPDX: `Elastic-2.0`). Publishes as `@elastic/isomer-sdk` with public access, at the workspace's one version. Peers: `react` `>=18 <20` and `zod` `^4.5.4` are required. `react-dom` `>=18 <20` is optional and needed by `./html`.[^package]
-- Dependencies: `acorn`, which `./html` uses to embed scripts, and the GFM parser and serializer (`mdast-util-from-markdown`, `micromark-extension-gfm`, `mdast-util-to-markdown`, `mdast-util-gfm`), which the root, `./markdown`, and `./slack` reach. `./text` reaches nothing; `./testing` is the only entry that reaches Node built-ins.
-- Entries: `.` · `./html` · `./text` · `./markdown` · `./slack` · `./react` · `./author` · `./testing`, each with `import` and `require` conditions and a `typesVersions` mapping for `Node10` resolvers. The tarball carries `dist`, `LICENSE.txt`, `NOTICE.txt`, and `THIRD_PARTY_LICENSES.md`.
-- Dual ESM/CJS. `engines.node` `>=22.13.0`. `zod` stays a peer; do not add it to `dependencies`.
-- Brands use `Symbol.for`. Identify `IsomerError` by `name` and `code`; identify `CompositionValidationError` by `name`, `code`, and `errors`.
+- The tarball carries `dist`, `LICENSE.txt`, `NOTICE.txt`, and `THIRD_PARTY_LICENSES.md`.
+- `zod` stays a peer; do not add it to `dependencies`.
+- Brands use `Symbol.for`.
 - The sdk must not import the runtime.[^agents]
 
 Related: [pipeline](/sdk/concepts/pipeline.md), [root](/sdk/entry-points/root.md).
