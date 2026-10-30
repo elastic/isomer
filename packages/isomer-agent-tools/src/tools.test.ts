@@ -240,18 +240,16 @@ describe('createIsomerTools', () => {
       body: [{ type: 'slideStackLayout', children: nested(depth - 3) }],
     });
 
-    it('validates a composition at the depth limit once', async () => {
-      const validate = vi.fn((composition: Composition) =>
-        runtime.validate(composition)
-      );
+    it('parses a composition at the depth limit once', async () => {
+      const parse = vi.fn((value: unknown) => runtime.parse(value));
       const { errors } = jsonOf(
         await call(
-          createIsomerTools({ runtime: { ...runtime, validate } }),
+          createIsomerTools({ runtime: { ...runtime, parse } }),
           ISOMER_TOOL_NAMES.validate,
           { composition: stackOfDepth(MAX_INPUT_DEPTH) }
         )
       );
-      expect(validate).toHaveBeenCalledOnce();
+      expect(parse).toHaveBeenCalledOnce();
       expect(errors).not.toContain(TOO_DEEP);
     });
 

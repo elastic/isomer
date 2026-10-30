@@ -59,6 +59,11 @@ const stubRuntime: EvalRuntime = {
       },
     ],
   }),
+  parse: (value) => ({
+    valid: true,
+    errors: [],
+    composition: value as Composition,
+  }),
   validate: (value) => {
     const { body } = value as { body?: Array<{ type: string }> };
     if (!Array.isArray(body)) {

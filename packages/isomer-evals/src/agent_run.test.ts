@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import type { Composition } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
@@ -55,6 +56,11 @@ const stubRuntime: EvalRuntime = {
       avoidWhen: [],
       example: { type },
     })),
+  }),
+  parse: (value) => ({
+    valid: true,
+    errors: [],
+    composition: value as Composition,
   }),
   validate: (value) => {
     const { body } = (value ?? {}) as { body?: unknown };

@@ -171,6 +171,12 @@ export interface EvalRuntime {
     primitives: readonly PrimitiveCatalogEntry[];
     views?: readonly AuthoringViewSummary[] | undefined;
   };
+  /** `composition` is the schema's output, present only when `valid`. */
+  parse(value: unknown): {
+    valid: boolean;
+    errors: ValidationError[];
+    composition?: Composition | undefined;
+  };
   /** `composition` is the copy the result describes, and `undefined` only when the input budget refused it. */
   validate(composition: Composition): {
     valid: boolean;

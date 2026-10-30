@@ -11,7 +11,10 @@ import { z } from 'zod';
 import type { Composition } from '../composition/composition';
 import { ISOMER_ERROR_CODES } from '../composition/error';
 import { definePrimitive } from '../define/primitive_module';
-import { createCompositionValidator } from '../validate/validation';
+import {
+  createCompositionParser,
+  createCompositionValidator,
+} from '../validate/validation';
 
 import {
   checkComposition,
@@ -32,10 +35,28 @@ const kpi = definePrimitive({
   renderers: { react: () => null, text: () => '', markdown: () => [] },
 });
 
-const validator = createCompositionValidator([kpi], {
-  inputBudget: { depth: 4 },
+const status = definePrimitive({
+  type: 'status',
+  catalog: {
+    type: 'status',
+    purpose: '',
+    useWhen: [],
+    avoidWhen: [],
+    example: { type: 'status' },
+  },
+  examples: [{ type: 'status' }],
+  schema: z.object({
+    type: z.literal('status'),
+    label: z.string().default('Ready'),
+  }),
+  renderers: { react: () => null, text: () => '', markdown: () => [] },
 });
-const runtime = { validate: validator };
+
+const definitions = [kpi, status];
+const inputBudget = { depth: 4 };
+const validator = createCompositionValidator(definitions, { inputBudget });
+const parser = createCompositionParser(definitions, { inputBudget });
+const runtime = { parse: parser, validate: validator };
 
 const oneKpi = { type: 'view', body: [{ type: 'kpi', label: 'a' }] };
 const twoKpis = {
@@ -59,7 +80,11 @@ describe('checkComposition', () => {
       checked.push(result.composition);
       return result;
     };
-    const check = checkComposition({ validate }, oneKpi, onlyOne);
+    const check = checkComposition(
+      { parse: parser, validate },
+      oneKpi,
+      onlyOne
+    );
     expect(checked).toHaveLength(1);
     expect(check).toMatchObject({ valid: true, errors: [] });
     expect(check.composition).toBe(checked[0]);
@@ -80,6 +105,17 @@ describe('checkComposition', () => {
     ]);
     expect(check.composition).toBeUndefined();
     expect(validateBody).not.toHaveBeenCalled();
+  });
+
+  it('checks the parsed copy, so schema defaults reach the composition', () => {
+    const check = checkComposition(runtime, {
+      type: 'view',
+      body: [{ type: 'status' }],
+    });
+    expect(check.valid).toBe(true);
+    expect(check.composition?.body).toEqual([
+      { type: 'status', label: 'Ready' },
+    ]);
   });
 
   it('reports a frame rule with an empty path and keeps the copy', () => {
@@ -111,6 +147,7 @@ describe('checkComposition', () => {
     const warnings = [{ surface: 'text', message: 'is empty' }] as const;
     const check = checkComposition(
       {
+        parse: parser,
         validate: (composition: Composition) => ({
           valid: true,
           errors: [],

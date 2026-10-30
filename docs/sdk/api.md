@@ -118,7 +118,7 @@ JSX: `fromChildren`, `fromTextChildren`, `fromNodeChildren`, `AuthoredChildBrand
 
 Editor declarations: `buildAuthoringDeclarations` (`AuthoringDeclarationsOptions`), an ambient `.d.ts` module for an authoring schema's primitives and, with `jsx`, their JSX components; `authoringBodySchema`, an authoring schema's `body` as a schema of its own, carrying the `$defs` it reaches.
 
-Model output: `checkComposition` (`runtime, value, frame?`) validates a value of unknown shape once through a `CompositionCheckRuntime`'s `validate`, then applies a `CompositionCheckFrame`'s body rule, as a `CompositionCheck`: `{ valid: true, composition }` with the copy `validate` checked, or `{ valid: false, errors }`, where a frame rule's error has an empty path and `composition` is kept when only the frame's rule failed. Both carry `warnings`.
+Model output: `checkComposition` (`runtime, value, frame?`) parses a value of unknown shape through a `CompositionCheckRuntime`'s `parse`, so schema defaults and transforms apply, validates the parsed copy once through its `validate`, then applies a `CompositionCheckFrame`'s body rule, as a `CompositionCheck`: `{ valid: true, composition }` with the copy `validate` checked, or `{ valid: false, errors }`, where a frame rule's error has an empty path and `composition` is kept when only the frame's rule failed. Both carry `warnings`.
 
 Agent prompts: `buildAuthoringPrompt` (`AuthoringPromptContext`), `formatPrimitiveEntry` (one full catalog bullet), `AUTHORING_PROFILE_IDS` (`AuthoringProfileId`), `AuthoringViewSummary`. `WithNodeFields` is on the root entry, next to `definePrimitive`.
 

@@ -135,7 +135,7 @@ import { scorePrimitiveSelection } from '@elastic/isomer-evals';
 expect(scorePrimitiveSelection(generated, golden).missing).toEqual([]);
 ```
 
-`checkAttempt(runtime, parseGenerated(raw))` validates the attempt's value once, through the SDK's `checkComposition` — `runEvals` reads that one check for the retry decision, `scoreValidity`, and `scorePayload`. A value that matches the schema but fails a semantic rule (duplicate ids, for instance) therefore never reads as a good composition. `scorePayload` reads the first attempt only, so a retry changes `validity` and not `payload`.
+`checkAttempt(runtime, parseGenerated(raw))` checks the attempt's value once, through the SDK's `checkComposition` — `runEvals` reads that one check for the retry decision, `scoreValidity`, and `scorePayload`. A value that matches the schema but fails a semantic rule (duplicate ids, for instance) therefore never reads as a good composition. `scorePayload` reads the first attempt only, so a retry changes `validity` and not `payload`.
 
 ## Agent runs
 
@@ -185,7 +185,7 @@ An `AgentEvalCase` may list `expected` node types; `scoreExpectedPrimitives` cou
 | `scorePayload` | `(runtime, attempt: CheckedAttempt, knownTypes, golden?) => PayloadScore` |
 | `scoreAnswerability` | `(runtime, judge, evalCase, composition) => Promise<AnswerabilityScore>` |
 | `parseGenerated`, `stripCodeFence` | Model output to a `ParsedAttempt`: the JSON parsed once, after any code fence is removed |
-| `checkAttempt` | `(runtime, attempt: ParsedAttempt) => CheckedAttempt`; a `CheckedAttempt` that parsed carries `check`, the SDK's `CompositionCheck` from validating its value once with `checkComposition`, whose `errors` `formatValidationError` prints |
+| `checkAttempt` | `(runtime, attempt: ParsedAttempt) => CheckedAttempt`; a `CheckedAttempt` that parsed carries `check`, the SDK's `CompositionCheck` from checking its value once with `checkComposition`, whose `errors` `formatValidationError` prints |
 
 Types: `EvalCase`, `EvalCaseResult`, `EvalReport`, `EvalRuntime`, `RunEvalsOptions`, `Generate`, `GenerateRequest`, `Judge`, `JudgeRequest`, `AnswerabilityVerdict`, and the four score shapes `ValidityScore`, `PrimitiveSelectionScore`, `PayloadScore`, `AnswerabilityScore`. Agent runs add `AgentEvalCase`, `AgentEvalCaseResult`, `AgentEvalCall`, `AgentEvalFrame`, `AgentEvalReport`, `AgentEvalTool`, `AgentMessage`, `AgentStep`, `AgentStepRequest`, `AgentStepResult`, `AgentToolCall`, `AgentToolResult`, `AgentToolSpec`, `AgentUsage`, and `RunAgentEvalsOptions`. `src/api_reference.test.ts` fails when a name exported from `src/index.ts` is missing from this page.
 

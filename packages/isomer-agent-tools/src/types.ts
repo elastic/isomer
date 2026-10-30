@@ -7,6 +7,7 @@
 
 import type {
   Composition,
+  ParsedComposition,
   PrimitiveCatalogEntry,
   PrimitiveGroup,
   PrimitiveNode,
@@ -77,6 +78,7 @@ export interface IsomerToolsRuntime<THostContext = unknown> {
       schema: Record<string, unknown>;
     };
   };
+  parse(value: unknown): ParsedComposition;
   /** `composition` is the copy the result describes, and `undefined` only when the input budget refused it. */
   validate(
     composition: Composition

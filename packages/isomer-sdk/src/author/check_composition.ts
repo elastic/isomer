@@ -12,6 +12,12 @@ import type { ValidationWarning } from '../validate/validation';
 
 /** The part of a runtime {@link checkComposition} calls. An `IsomerRuntime` satisfies it. */
 export interface CompositionCheckRuntime {
+  /** `composition` is the schema's output, with defaults and transforms applied; present only when `valid`. */
+  parse(value: unknown): {
+    valid: boolean;
+    errors: readonly ValidationError[];
+    composition?: Composition | undefined;
+  };
   /** `composition` is the copy the result describes, and `undefined` only when the input budget refused it. */
   validate(composition: Composition): {
     valid: boolean;
@@ -43,13 +49,17 @@ export type CompositionCheck =
       composition?: Composition | undefined;
     };
 
-/** Validates a value of unknown shape once, then applies the frame's body rule to the copy the runtime checked. */
+/** Parses a value of unknown shape, validates the parsed copy, then applies the frame's body rule to the copy the runtime checked. */
 export const checkComposition = (
   runtime: CompositionCheckRuntime,
   value: unknown,
   frame?: CompositionCheckFrame
 ): CompositionCheck => {
-  const result = runtime.validate(value as Composition);
+  const parsed = runtime.parse(value);
+  if (!parsed.valid || parsed.composition === undefined) {
+    return { valid: false, errors: parsed.errors, warnings: [] };
+  }
+  const result = runtime.validate(parsed.composition);
   const warnings = result.warnings ?? [];
   const { composition } = result;
   if (!result.valid || composition === undefined) {
