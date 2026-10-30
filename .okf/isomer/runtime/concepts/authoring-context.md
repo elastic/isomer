@@ -20,13 +20,11 @@ sources:
 
 # Definition
 
-`getAuthoringContext()` returns `{ schema, bodySchema, declarations, primitives, groups, views, schemaFor, describePrimitives }`. `schema` is [`buildAuthoringJsonSchema`](/sdk/concepts/composition.md): named shared defs, inlined scalars, no `id` or `surfaces`. `primitives` is one catalog entry per primitive, including its `example`. `views` is read on every call, because a host may register views after boot; each summary is projected once at `register`, so the read is cheap. Extra compositions belong on the prompt; catalog examples live on `primitives`. Schema and catalog are built on the first `getAuthoringContext()` call, not in `createIsomerRuntime`, and cached for the runtime's lifetime, so a runtime that only validates and renders never builds them. `groups` is every pack's primitive groups in pack order, for an index catalog. `describePrimitives(types)` returns those types' catalog entries and the `$defs` of `schema` they reach, so an agent reads an index and looks up only what it picks, plus `props`, one `PropDescriptor` list per type (`name`, display `type`, `kind`, `values` for an enum, `required`, `description`) flattened from that schema for a host's props table; like `schemaFor`, it throws `UNKNOWN_PRIMITIVE_TYPE` for an unregistered type.[^authoring][^docs][^authoring-schema]
+`getAuthoringContext()` returns the authoring schema, catalog, live view summaries, and the per-type lookups a host hands an agent. See the package doc on the authoring context.[^docs]
 
-`bodySchema` is the `body` of `schema` with the `$defs` it reaches. `declarations` is an ambient `.d.ts` module for an editor, with a `<Type>Node` interface per primitive, its catalog text as JSDoc, a `BodyNode` union, and a type per other named def. `authoring: { jsx: true }` adds the JSX props types and components `buildJsxShim` builds, since the runtime cannot see whether a host builds a shim. Both are cached with `schema`.
+`authoring: { jsx: true }` adds the JSX props types and components `buildJsxShim` builds, since the runtime cannot see whether a host builds a shim.[^authoring]
 
-Pass `authoring` on `createIsomerRuntime` to name pack-owned `$defs`, attach refine descriptions, or hide a legacy alias. Every composed pack's own `authoring` (`describe`, `omitProperties`) is merged in first, so the runtime option wins on conflict. `parse` still validates with `buildCompositionJsonSchema`. Pack prose comes from the SDK [authoring](/sdk/concepts/authoring.md) helpers.
-
-Editor declarations use a host-selected `moduleName` and share the shim's authoring model. Custom `toItem` children can supply `propsSchema` for input-prop checking; shared child names reject incompatible input schemas without executing default or fallback callbacks. Automatic JSX supports production and development runtime declarations. JSX catchalls constrain extra keys; raw node index signatures remain a structural approximation, and body validation uses the JSON Schema.
+`parse` still validates with `buildCompositionJsonSchema`.[^authoring-schema]
 
 Related: [SDK authoring](/sdk/concepts/authoring.md), [view registry](/runtime/concepts/view-registry.md), [scoring](/evals/concepts/scoring.md).
 

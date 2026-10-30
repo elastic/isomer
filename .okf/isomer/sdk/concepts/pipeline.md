@@ -23,7 +23,9 @@ sources:
 
 # Definition
 
-Stage barrels are hand-maintained. Imports flow `composition/` → `define/` → `pack/` → `validate/` → `render/`. `author/` and `testing/` may import any stage; stages must not import fronts. ESLint enforces the boundary and forbids the sdk importing the runtime.[^agents][^eslint]
+The sdk's stages import in one direction, `composition/` → `define/` → `pack/` → `validate/` → `render/`, with `author/` and `testing/` above them. See [Where the code is](https://github.com/elastic/isomer/blob/main/packages/isomer-sdk/docs/api.md#where-the-code-is) in the API reference.
+
+ESLint enforces the boundary and forbids the sdk importing the runtime.[^agents][^eslint]
 
 `src/entries/*` choose which names reach which subpath. `pnpm check:module-graph` walks the built ESM graph from each declared entry and fails when a forbidden specifier is reachable. `react-dom` and `react-dom/server` must stay unreachable from `.`, `./text`, `./markdown`, `./slack`, and `./author`. Bare `react` is reachable through `render/primitive_dispatch`.[^entries][^module-graph]
 

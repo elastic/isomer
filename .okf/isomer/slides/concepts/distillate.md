@@ -17,7 +17,9 @@ sources:
 
 # Definition
 
-Distillate is `^0.2.0` from the registry, not a path. The pack authors CSS modules against it, and `src/theme/style_adapter.ts` turns its distillery into the HTML style adapter, tagged `DISTILLATE_STYLE_COLLECTOR`, with readable class names. The SDK does not depend on Distillate.[^package][^styling]
+The pack authors its CSS with Distillate and ships its own HTML style adapter. See the package doc on styling.[^styling]
+
+Distillate is `^0.2.0` from the registry, not a path. The SDK does not depend on Distillate.[^package]
 
 Related: [pack](/slides/concepts/pack.md), [style adapters](/runtime/concepts/style-adapters.md).
 

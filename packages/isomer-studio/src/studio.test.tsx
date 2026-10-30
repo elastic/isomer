@@ -1082,7 +1082,10 @@ describe('IsomerStudio', () => {
             ).toContain('After cancel.'),
           { timeout: 5_000 }
         );
-        expect(window.location.hash).toMatch(/^#\/compose\?code=/);
+        await waitFor(
+          () => expect(window.location.hash).toMatch(/^#\/compose\?code=/),
+          { timeout: 5_000 }
+        );
       } finally {
         vi.unstubAllGlobals();
       }

@@ -16,10 +16,10 @@ sources:
 
 # Steps
 
-1. Declare the primitive in its zod schema and export `z.infer` as the node type. Hand-write the type only when the primitive declares `schemaFor`.
-2. Write a catalog entry (`purpose`, `useWhen`, `avoidWhen`, `example`) and at least one example.
-3. Implement `react`, `text`, and `markdown` renderers. Return `markdown` as content built with `md` from `./markdown`, the only type it accepts, with authored Markdown source through `md.authored`, and nest a child through `scope.renderMarkdownContent`. Add Slack only when Block Kit needs more than the markdown fallback.
-4. Call `definePrimitive`. Put theme literals in the pack theme, not in the primitive.[^docs][^define]
+Declare the schema, write a catalog entry and examples, implement the `react`, `text`, and `markdown` renderers, and call `definePrimitive`. See the package doc on the primitive contract.[^docs]
+
+- Add Slack only when Block Kit needs more than the markdown fallback.
+- Put theme literals in the pack theme, not in the primitive.[^define]
 
 Related: [primitives](/sdk/concepts/primitives.md), [define a pack](/sdk/playbooks/define-a-pack.md).
 

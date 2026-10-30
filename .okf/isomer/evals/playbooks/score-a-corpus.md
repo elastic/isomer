@@ -16,13 +16,8 @@ sources:
 
 # Steps
 
-1. Install `@elastic/isomer-evals` as a development dependency; its peers, `react` and `zod`, the runtime already brings. Assemble the pack's runtime and build an `EvalCase` list. A `golden` is optional and required only for primitive selection.
-2. Call `runEvals({ runtime, corpus, generate })`. `generate` sends the shared `prompt`, the case request (`evalCase.prompt`), and any `previousErrors` to the model; a replay function makes the run deterministic.
-3. Omit `judge` to skip answerability. Pass `judge` when the `text` surface's rendering should be checked against the prompt.
-4. Print with `formatReport`, or call one `score*` function when the corpus is unnecessary.[^docs][^run]
+Pass a runtime, a corpus, and a `generate` function to `runEvals`, then print with `formatReport`. See the package doc.[^docs]
 
 Related: [scoring](/evals/concepts/scoring.md), [authoring context](/runtime/concepts/authoring-context.md).
 
 [^docs]: Package docs
-
-[^run]: runEvals

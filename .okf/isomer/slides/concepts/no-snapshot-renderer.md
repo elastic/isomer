@@ -17,9 +17,7 @@ sources:
 
 # Definition
 
-There is no per-primitive `snapshot` renderer. The `snapshot` surface dispatches to `react` and is handed the pack's stylesheet. Do not reintroduce a second tree authored for image layout.
-
-The pack stylesheet does not reach inside an inline `<svg>`. Anything drawn there needs a literal `fill` / `stroke` alongside its class.[^agents][^docs]
+There is no per-primitive `snapshot` renderer: the `snapshot` surface dispatches to `react`, and a shape inside an inline `<svg>` carries literal paint. See the package doc on authoring a primitive and the agent instructions.[^docs][^agents]
 
 Related: [surfaces](/runtime/concepts/surfaces.md), [raster](/image-takumi/concepts/raster.md).
 
