@@ -18,6 +18,7 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideCommandNode } from './schema';
+import { commandModule } from './styles';
 
 export { SLIDE_COPY, slideCopyEnhancement } from './copy';
 export type { SlideCommandNode } from './schema';
@@ -45,6 +46,7 @@ export const slideCommandPrimitive = definePrimitive({
   icon,
   examples,
   schema,
+  styles: [commandModule],
   renderers: {
     react,
     text,

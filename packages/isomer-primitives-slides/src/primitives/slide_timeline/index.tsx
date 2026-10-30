@@ -31,6 +31,7 @@ import {
   type SlideTimelineItem,
   type SlideTimelineNode,
 } from './schema';
+import { timelineModule } from './styles';
 
 export type { SlideTimelineItem, SlideTimelineNode } from './schema';
 
@@ -95,6 +96,7 @@ export const slideTimelinePrimitive = withBuild(
     icon,
     examples,
     schema,
+    styles: [timelineModule],
     renderers: {
       react,
       text,

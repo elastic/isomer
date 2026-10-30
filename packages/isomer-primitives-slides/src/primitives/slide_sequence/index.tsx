@@ -21,6 +21,7 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideSequenceNode } from './schema';
+import { sequenceModule } from './styles';
 
 export type {
   SlideSequenceActor,
@@ -85,6 +86,7 @@ export const slideSequencePrimitive = withBuild(
     icon,
     examples,
     schema,
+    styles: [sequenceModule],
     renderers: {
       react,
       text,

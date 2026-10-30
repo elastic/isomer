@@ -18,6 +18,7 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { type AgendaSection, type AgendaSlideNode, schema } from './schema';
+import { agendaModule } from './styles';
 
 export type { AgendaSection, AgendaSlideNode } from './schema';
 
@@ -72,6 +73,7 @@ export const agendaSlidePrimitive = definePrimitive({
   icon,
   examples,
   schema,
+  styles: [agendaModule],
   renderers: {
     react,
     text,

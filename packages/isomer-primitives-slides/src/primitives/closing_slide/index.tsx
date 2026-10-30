@@ -33,6 +33,7 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { type ClosingLink, type ClosingSlideNode, schema } from './schema';
+import { closingModule } from './styles';
 
 export type { ClosingLink, ClosingPath, ClosingSlideNode } from './schema';
 
@@ -146,6 +147,7 @@ export const closingSlidePrimitive = definePrimitive({
   icon,
   examples,
   schema,
+  styles: [closingModule],
   renderers: {
     react,
     text,

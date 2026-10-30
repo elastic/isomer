@@ -26,6 +26,7 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { buildSchema, panesField, schema } from './schema';
+import { splitModule } from './styles';
 import type { SlideSplitLayoutNode } from './types';
 
 export type { SlideSplitLayoutNode, SplitPane } from './types';
@@ -44,6 +45,7 @@ export const slideSplitLayoutPrimitive = definePrimitive<
   schema,
   schemaFor: (bodyNodeSchema: ZodType<unknown>) =>
     buildSchema(panesField(contentNode(bodyNodeSchema))),
+  styles: [splitModule],
   renderers: {
     react,
     text: ({ divider, footnote, panes }, { scope }) =>

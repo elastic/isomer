@@ -27,6 +27,7 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideDeltaNode } from './schema';
+import { deltaModule } from './styles';
 
 export type { SlideDeltaNode, SlideDeltaPoint } from './schema';
 
@@ -106,6 +107,7 @@ export const slideDeltaPrimitive = definePrimitive({
   icon,
   examples,
   schema,
+  styles: [deltaModule],
   renderers: {
     react,
     text,

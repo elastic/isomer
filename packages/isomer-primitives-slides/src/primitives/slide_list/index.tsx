@@ -26,6 +26,7 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideListNode } from './schema';
+import { listModule } from './styles';
 
 export type { SlideListItem, SlideListNode } from './schema';
 
@@ -94,6 +95,7 @@ export const slideListPrimitive = withBuild(
     icon,
     examples,
     schema,
+    styles: [listModule],
     renderers: {
       react,
       text,

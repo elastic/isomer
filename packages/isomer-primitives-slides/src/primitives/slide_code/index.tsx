@@ -15,6 +15,7 @@ import { icon } from './icon';
 import { panelsMarkdown, panelsSlack, panelsText } from './panels';
 import { react } from './react';
 import { schema, type SlideCodeNode } from './schema';
+import { codeModule } from './styles';
 
 export type { SlideCodeNode, SlideCodePanel } from './schema';
 
@@ -30,6 +31,7 @@ export const slideCodePrimitive = definePrimitive({
   icon,
   examples,
   schema,
+  styles: [codeModule],
   renderers: {
     react,
     text,

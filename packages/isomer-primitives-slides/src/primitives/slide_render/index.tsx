@@ -22,6 +22,7 @@ import {
 } from './output';
 import { react } from './react';
 import { buildSchema, schema } from './schema';
+import { renderModule } from './styles';
 import type { SlideRenderNode } from './types';
 
 export type { SlideRenderNode } from './types';
@@ -37,6 +38,7 @@ export const slideRenderPrimitive = definePrimitive<
   examples,
   schema,
   schemaFor: (bodyNodeSchema: ZodType<unknown>) => buildSchema(bodyNodeSchema),
+  styles: [renderModule],
   renderers: {
     react,
     text: (node, { scope }) =>

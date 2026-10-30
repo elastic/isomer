@@ -7,11 +7,18 @@
 
 import { slideDeckPrimitives } from './registry';
 import { slideDistillery } from './theme/distillery';
+import { sharedModules } from './theme/modules';
 
-/** Hosts include this beside React markup: every module in `slideDistillery`, the shared ones and each registered primitive's. */
+/** Hosts include this beside React markup: the shared style modules and each registered primitive's. */
 export const slideStylesheet = (): string => {
-  // Each primitive's renderer creates its style module. The package declares no side effects, so
-  // a bundler keeps the registry only for a value read from it, never for a bare import.
-  void slideDeckPrimitives;
-  return slideDistillery.renderStyles(slideDistillery.stylesheetCollector());
+  const collector = slideDistillery.stylesheetCollector();
+  // The package declares no side effects, so a bundler keeps a module only when
+  // a value reaches it, not because creating it joined the registry.
+  for (const module of [
+    ...sharedModules,
+    ...slideDeckPrimitives.flatMap(({ styles }) => styles),
+  ]) {
+    collector.useAllEntries(module);
+  }
+  return slideDistillery.renderStyles(collector);
 };

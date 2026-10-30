@@ -22,6 +22,7 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { schema, type StatementSlideNode } from './schema';
+import { statementModule } from './styles';
 
 export type { StatementSlideNode } from './schema';
 
@@ -45,6 +46,7 @@ export const statementSlidePrimitive = definePrimitive({
   icon,
   examples,
   schema,
+  styles: [statementModule],
   renderers: {
     react,
     text,

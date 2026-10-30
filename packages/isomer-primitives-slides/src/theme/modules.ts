@@ -210,3 +210,14 @@ export const placeholderModule = createStyleModule(
     `,
   })
 );
+
+/** Every module above, which `slideStylesheet` collects beside each primitive's. */
+export const sharedModules = [
+  connectorModule,
+  deckRootModule,
+  labelModule,
+  layoutModule,
+  marksModule,
+  placeholderModule,
+  tonesModule,
+] as const;

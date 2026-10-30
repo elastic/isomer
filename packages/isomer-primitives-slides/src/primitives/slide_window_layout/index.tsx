@@ -21,6 +21,7 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { buildSchema, schema } from './schema';
+import { windowModule } from './styles';
 import { windowTitle } from './title';
 import type { SlideWindowLayoutNode } from './types';
 
@@ -38,6 +39,7 @@ export const slideWindowLayoutPrimitive = definePrimitive<
   schema,
   schemaFor: (bodyNodeSchema: ZodType<unknown>) =>
     buildSchema(contentNode(bodyNodeSchema)),
+  styles: [windowModule],
   renderers: {
     react,
     text: (node, { scope }) =>

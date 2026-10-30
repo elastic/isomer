@@ -33,6 +33,7 @@ import {
   type SlideTranscriptNode,
   type SlideTranscriptTurn,
 } from './schema';
+import { transcriptModule } from './styles';
 
 export type { SlideTranscriptNode, SlideTranscriptTurn } from './schema';
 
@@ -94,6 +95,7 @@ export const slideTranscriptPrimitive = withBuild(
     icon,
     examples,
     schema,
+    styles: [transcriptModule],
     renderers: {
       react,
       text,

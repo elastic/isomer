@@ -32,6 +32,7 @@ import {
   type SlidePipelineSpan,
   type SlidePipelineStep,
 } from './schema';
+import { pipelineModule } from './styles';
 
 export type {
   SlidePipelineNode,
@@ -151,6 +152,7 @@ export const slidePipelinePrimitive = withBuild(
     icon,
     examples,
     schema,
+    styles: [pipelineModule],
     renderers: {
       react,
       text,

@@ -24,6 +24,7 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideLayersNode } from './schema';
+import { layersModule } from './styles';
 
 export type { SlideLayer, SlideLayersNode } from './schema';
 
@@ -94,6 +95,7 @@ export const slideLayersPrimitive = definePrimitive({
   icon,
   examples,
   schema,
+  styles: [layersModule],
   renderers: {
     react,
     text,

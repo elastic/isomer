@@ -25,6 +25,7 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { schema } from './schema';
+import { frameModule } from './styles';
 import type { SlideFrameNode } from './types';
 import { displayFrameUrl, sanitizeFrameUrl } from './url';
 
@@ -80,6 +81,7 @@ export const slideFramePrimitive = definePrimitive<
   schema,
   schemaFor: (bodyNodeSchema: ZodType<unknown>) =>
     schema.extend({ body: bodyNodes(bodyNodeSchema, schema.shape.body) }),
+  styles: [frameModule],
   renderers: {
     react,
     text: (node, { scope }) =>

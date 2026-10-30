@@ -26,6 +26,7 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideBarsNode } from './schema';
+import { barsModule } from './styles';
 import { barValue } from './value';
 
 export type { SlideBarsItem, SlideBarsNode } from './schema';
@@ -94,6 +95,7 @@ export const slideBarsPrimitive = definePrimitive({
   icon,
   examples,
   schema,
+  styles: [barsModule],
   renderers: {
     react,
     text,

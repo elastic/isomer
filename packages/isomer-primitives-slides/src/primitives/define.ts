@@ -8,10 +8,12 @@
 // Pack-bound `definePrimitive`: this pack's theme and render context, so each
 // primitive names only `TNode`.
 
+import type { StylesModule } from '@elastic/distillate';
 import {
   definePrimitiveFor,
   type PrimitiveDefinition as CorePrimitiveDefinition,
   type PrimitiveNode,
+  type PrimitiveSchema,
   z,
 } from '@elastic/isomer-sdk';
 import type { ZodObject, ZodType } from 'zod';
@@ -29,6 +31,11 @@ export type PrimitiveDefinition<
   TSchema extends ZodObject = ZodObject,
 > = CorePrimitiveDefinition<TNode, SlidePackTypes, TSchema>;
 
+/** The style modules a primitive's `styles.ts` creates, which `slideStylesheet` collects. */
+export interface SlidePrimitiveStyles {
+  readonly styles: readonly StylesModule[];
+}
+
 /**
  * Defines a primitive in this pack.
  *
@@ -36,8 +43,16 @@ export type PrimitiveDefinition<
  * with it, so field brands and prop types survive. `TSchema` otherwise
  * defaults to a wide `ZodObject`.
  */
-export const definePrimitive: typeof defineSlidePrimitive = (definition) => {
-  const primitive = defineSlidePrimitive(definition);
+export const definePrimitive = <
+  TNode extends PrimitiveNode,
+  TSchema extends PrimitiveSchema = PrimitiveSchema,
+>(
+  definition: CorePrimitiveDefinition<TNode, SlidePackTypes, TSchema> &
+    SlidePrimitiveStyles
+): ReturnType<typeof defineSlidePrimitive<TNode, TSchema>> &
+  SlidePrimitiveStyles => {
+  const { styles } = definition;
+  const primitive = { ...defineSlidePrimitive(definition), styles };
   recordDefinition(primitive);
   return primitive;
 };

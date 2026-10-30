@@ -19,6 +19,7 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { schema } from './schema';
+import { stackModule } from './styles';
 import type { SlideStackLayoutNode } from './types';
 
 export type { SlideStackLayoutNode } from './types';
@@ -35,6 +36,7 @@ export const slideStackLayoutPrimitive = definePrimitive<
   schema,
   schemaFor: (bodyNodeSchema: ZodType<unknown>) =>
     schema.extend({ items: bodyNodes(bodyNodeSchema, schema.shape.items) }),
+  styles: [stackModule],
   renderers: {
     react,
     text: (node, { scope }) => renderTextChildren(node.items, scope),
