@@ -296,15 +296,26 @@ try {
 const pdf = await backend.pdf({ pages: [{ html: '<div style="width:64px;height:64px;background:red"></div>' }], css: '', width: 64, height: 64 });
 await backend.close();
 if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered no PDF');`;
+    // The ESM build is for bundlers, so its PDF renders through a bundle of it.
+    const takumi = packages.get(takumiName);
+    const bundle = join(takumi.dir, '.esm-check', 'pdf.node.mjs');
+    await bundleEsm(
+      takumiName,
+      takumiConsumerDir,
+      takumi.manifest,
+      'node',
+      bundle
+    );
     execFileSync(
       process.execPath,
       [
         '--input-type=module',
         '--eval',
-        `${failOnWarning} const { createTakumiImageBackend } = await import('${takumiName}');\n${renderPdf}`,
+        `${failOnWarning} const { createTakumiImageBackend } = await import(${JSON.stringify(pathToFileURL(bundle).href)});\n${renderPdf}`,
       ],
       { cwd: takumiConsumerDir, stdio: 'inherit' }
     );
+    rmSync(dirname(bundle), { force: true, recursive: true });
     execFileSync(
       process.execPath,
       [
@@ -314,7 +325,7 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
       { cwd: takumiConsumerDir, stdio: 'inherit' }
     );
     console.log(
-      `${takumiName}: packed import and require each rendered a PDF on the packed worker.`
+      `${takumiName}: an ESM bundle of the packed entry and its require each rendered a PDF on the packed worker.`
     );
   }
 
