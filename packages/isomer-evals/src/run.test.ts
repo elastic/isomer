@@ -147,6 +147,7 @@ describe('runEvals', () => {
       valid: false,
       errors: ['one node, got 2'],
     });
+    expect(report.results[0]?.payload.sanitizedBytes).toBe(0);
   });
 
   it('counts expected-primitive hits over validated answers, an invalid one a miss', async () => {
