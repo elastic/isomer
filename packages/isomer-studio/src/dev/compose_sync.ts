@@ -129,6 +129,10 @@ export class ComposeSync {
   readonly dispose = () => {
     const pending = this.#pending;
     const encoding = this.#encoding;
+    // A link still loading never opened, so opening it again, as a remount does, loads it.
+    if (this.#load) {
+      this.#query = undefined;
+    }
     this.#abortLoad();
     this.#cancel();
     if (pending) {

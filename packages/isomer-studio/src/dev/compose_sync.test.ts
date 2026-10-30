@@ -211,6 +211,26 @@ describe('ComposeSync', () => {
       sync.dispose();
       expect(signal?.aborted).toBe(true);
     });
+
+    it('loads the same link again when it reopens, as a Fast Refresh does', async () => {
+      const { sync } = setup();
+      sync.open(
+        { src: 'a.json' },
+        () => new Promise(() => undefined),
+        fallback
+      );
+      sync.dispose();
+      sync.open(
+        { src: 'a.json' },
+        () => Promise.resolve(initial('loaded')),
+        fallback
+      );
+      await flush();
+      expect(sync.getState()).toMatchObject({
+        isLoading: false,
+        seed: { initial: initial('loaded') },
+      });
+    });
   });
 
   describe('open', () => {
