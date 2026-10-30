@@ -42,6 +42,7 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@elastic/isomer-primitives-slides": "workspace:*",
     "@elastic/isomer-runtime": "workspace:*"
   }
 }

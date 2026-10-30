@@ -12,7 +12,7 @@ import { frameContentWidth } from '../../theme/components/frame';
 import { marks } from '../../theme/components/marks';
 import { scalePx } from '../../theme/scale';
 import { type SlideSize, slideSizes } from '../../theme/variants';
-import { openBody, withLayout } from '../layout';
+import { openBody, slideLayout, withLayout } from '../layout';
 import { renderedStep } from '../size.fixtures';
 import { tallestExample } from '../slide_heading/examples';
 import { headingRoom } from '../slide_heading/fit';
@@ -187,11 +187,14 @@ describe('layersStep', () => {
     'takes %s at the height it needs there, and the next step one pixel short',
     (step) => {
       const height = layersHeight(fullExample, step, openBody.width);
-      expect(layersStep(fullExample, inLayout(openBody.width, height))).toBe(
-        step
-      );
       expect(
-        layersStep(fullExample, inLayout(openBody.width, height - 1))
+        layersStep(fullExample, slideLayout(inLayout(openBody.width, height)))
+      ).toBe(step);
+      expect(
+        layersStep(
+          fullExample,
+          slideLayout(inLayout(openBody.width, height - 1))
+        )
       ).toBe(slideSizes[slideSizes.indexOf(step) + 1]);
     }
   );
@@ -203,24 +206,34 @@ describe('layersStep', () => {
     expect(layersHeight(coded, 'l', openBody.width)).toBe(
       height + 4 * codeRise
     );
-    expect(layersStep(plain, inLayout(openBody.width, height))).toBe('l');
-    expect(layersStep(coded, inLayout(openBody.width, height))).toBe('m');
+    expect(
+      layersStep(plain, slideLayout(inLayout(openBody.width, height)))
+    ).toBe('l');
+    expect(
+      layersStep(coded, slideLayout(inLayout(openBody.width, height)))
+    ).toBe('m');
     expect(await findings(slideOf(tallestExample, coded))).toEqual([]);
   });
 
   it('takes s, the smallest step, where nothing fits', () => {
-    expect(layersStep(fullExample, inLayout(openBody.width, 1))).toBe('s');
+    expect(
+      layersStep(fullExample, slideLayout(inLayout(openBody.width, 1)))
+    ).toBe('s');
     expect(
       layersStep(
         chipped('elasticsearch-serverless', 'web'),
-        inLayout(half, openBody.height)
+        slideLayout(inLayout(half, openBody.height))
       )
     ).toBe('s');
   });
 
   it('keeps an authored size', () => {
-    expect(layersStep({ ...fullExample, size: 'l' }, inLayout(1, 1))).toBe('l');
-    expect(layersStep({ ...shortExample, size: 's' }, undefined)).toBe('s');
+    expect(
+      layersStep({ ...fullExample, size: 'l' }, slideLayout(inLayout(1, 1)))
+    ).toBe('l');
+    expect(
+      layersStep({ ...shortExample, size: 's' }, slideLayout(undefined))
+    ).toBe('s');
   });
 
   it('takes the whole body on a slide without a heading', () => {
@@ -244,7 +257,7 @@ describe('layers steps fit what they allow', () => {
   ] as { step: SlideSize; node: SlideLayersNode }[])(
     '$node.layers.length layers take $step under the tallest heading',
     async ({ step, node }) => {
-      expect(layersStep(node, underTallest)).toBe(step);
+      expect(layersStep(node, slideLayout(underTallest))).toBe(step);
       expect(await findings(slideOf(tallestExample, node))).toEqual([]);
     }
   );
@@ -263,9 +276,9 @@ describe('layers steps fit what they allow', () => {
 
   it('in half a split', async () => {
     const node = stack(...repeat(4, 'Cache'));
-    expect(layersStep(node, inLayout(half, headingRoom(tallestExample)))).toBe(
-      'l'
-    );
+    expect(
+      layersStep(node, slideLayout(inLayout(half, headingRoom(tallestExample))))
+    ).toBe('l');
     expect(await findings(slideOf(tallestExample, inSplit(node)))).toEqual([]);
   });
 });

@@ -11,13 +11,8 @@ import { z } from 'zod';
 
 import { formatAgentReport } from './agent_report';
 import { runAgentEvals } from './agent_run';
-import type {
-  AgentEvalCase,
-  AgentEvalTool,
-  AgentStep,
-  AgentStepResult,
-} from './agent_types';
-import type { EvalRuntime } from './types';
+import type { AgentEvalTool, AgentStep, AgentStepResult } from './agent_types';
+import type { EvalCase, EvalRuntime } from './types';
 
 const KNOWN = new Set(['frame', 'stat', 'callout']);
 
@@ -129,7 +124,7 @@ const scripted = (turns: readonly AgentStepResult[]): AgentStep => {
   return () => Promise.resolve(turns[Math.min(index++, turns.length - 1)]!);
 };
 
-const corpus: AgentEvalCase[] = [
+const corpus: EvalCase[] = [
   { id: 'one', prompt: 'How many?', expected: ['stat'] },
 ];
 

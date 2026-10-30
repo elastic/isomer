@@ -8,6 +8,7 @@
 import { md } from '@elastic/isomer-sdk/markdown';
 import { escapeMrkdwn, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
+import { withBuild } from '../../builds/types';
 import {
   richTextSection,
   slackBold,
@@ -21,6 +22,7 @@ import { oneLine } from '../../render/one_line';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
+import { transcriptBuild } from './build';
 import { catalog } from './catalog';
 import { examples } from './examples';
 import { icon } from './icon';
@@ -85,16 +87,19 @@ export const slack = ({ label, turns }: SlideTranscriptNode): SlackBlock[] => [
 ];
 
 /** Catalog, schema, and renderers for {@link SlideTranscriptNode}. */
-export const slideTranscriptPrimitive = definePrimitive({
-  type: 'slideTranscript',
-  catalog,
-  icon,
-  examples,
-  schema,
-  renderers: {
-    react,
-    text,
-    markdown,
-    slack,
-  },
-});
+export const slideTranscriptPrimitive = withBuild(
+  definePrimitive({
+    type: 'slideTranscript',
+    catalog,
+    icon,
+    examples,
+    schema,
+    renderers: {
+      react,
+      text,
+      markdown,
+      slack,
+    },
+  }),
+  transcriptBuild
+);

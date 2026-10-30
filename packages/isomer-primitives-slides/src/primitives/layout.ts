@@ -16,8 +16,12 @@ import {
 } from '../theme/components/frame';
 import { scalePx } from '../theme/scale';
 
-import { headingHeight, referenceRoom } from './slide_heading/fit';
+import { headingHeight, headingLinesHeight } from './slide_heading/fit';
 import type { SlideHeadingNode } from './slide_heading/schema';
+
+/** Room below a two-line title and lede at `l`; load budgets are set against it. */
+export const referenceRoom =
+  frameBodyHeight - headingLinesHeight(2, 2, 'l') - scalePx(frame.bodyGap);
 
 /** A frame's body with nothing above it. */
 export const openBody: SlideLayout = {
@@ -25,13 +29,16 @@ export const openBody: SlideLayout = {
   height: frameBodyHeight,
 };
 
+/** The room a primitive picks its step in: its layout and that layout's `crowding`. */
+export type StepLayout = SlideLayout & { readonly crowding: number };
+
 /**
  * The layout `context` gives a node, and its `crowding`: {@link referenceRoom} over its height.
  * A load times its crowding is compared with a budget, so budgets hold at 1, below a two-line title and lede.
  */
 export const slideLayout = (
   context: SlideRenderContext | undefined
-): SlideLayout & { crowding: number } => {
+): StepLayout => {
   const { width, height } = context?.layout ?? openBody;
   return { width, height, crowding: referenceRoom / Math.max(1, height) };
 };

@@ -6,29 +6,15 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { EuiButtonIcon, useEuiTheme } from '@elastic/eui';
+import { EuiButtonIcon, transparentize } from '@elastic/eui';
 import { css } from '@emotion/react';
 
 import { PrimitiveGlyph } from '../chrome/primitive_glyph';
 import { formatRoute, GALLERY } from '../chrome/route';
 import type { PrimitiveDoc } from '../model/describe_runtime';
 
-import {
-  actionCard,
-  helpTile,
-  HOME,
-  HOME_NARROW,
-  sectionHeading,
-  sectionLabel,
-  tile,
-  TILE_COLUMNS,
-  tileActions,
-  tileDescription,
-  tileName,
-  tileTop,
-} from './tokens';
+import { HOME_NARROW, TILE_COLUMNS, useHome } from './tokens';
 
-const GAP = 12;
 const STACKED_PAGE_SIZE = 3;
 
 export interface FeaturedStripProps {
@@ -38,31 +24,33 @@ export interface FeaturedStripProps {
 }
 
 const PrimitiveTile = ({ doc }: { doc: PrimitiveDoc }) => {
+  const home = useHome();
   const {
     euiTheme: { font },
-  } = useEuiTheme();
+    color,
+    fontSize,
+  } = home;
   const { type, label, group, purpose } = doc;
   return (
     <div
       css={[
-        tile(4),
-        actionCard,
+        home.tile(4),
+        home.actionCard,
         css`
           scroll-snap-align: start;
           &:hover,
           &:focus-within {
-            border-color: rgba(240, 78, 152, 0.75);
+            border-color: ${color.accentBorder};
           }
           cursor: default;
         `,
       ]}
       data-testid="featured-primitive">
-      <span css={tileTop}>
-        <span css={tileName}>{label}</span>
+      <span css={home.tileTop}>
+        <span css={home.tileName}>{label}</span>
         <span
           css={css`
-            color: ${HOME.accent};
-            margin-top: 1px;
+            color: ${color.accent};
           `}>
           <PrimitiveGlyph {...{ type }} size={18} />
         </span>
@@ -70,17 +58,17 @@ const PrimitiveTile = ({ doc }: { doc: PrimitiveDoc }) => {
       <span
         css={css`
           font-family: ${font.familyCode};
-          font-size: 11px;
-          color: ${HOME.fg};
+          font-size: ${fontSize('xxs')};
+          color: ${color.heading};
         `}>
         {group}
       </span>
-      <span css={tileDescription}>{purpose}</span>
-      <span css={tileActions}>
+      <span css={home.tileDescription}>{purpose}</span>
+      <span css={home.tileActions}>
         <a
           href={formatRoute({ mode: 'docs', page: type, example: 0 })}
           css={css`
-            color: ${HOME.docs};
+            color: ${color.docs};
             cursor: pointer;
           `}>
           Reference →
@@ -88,7 +76,7 @@ const PrimitiveTile = ({ doc }: { doc: PrimitiveDoc }) => {
         <a
           href={formatRoute({ mode: 'dev', page: type, example: 0 })}
           css={css`
-            color: ${HOME.dev};
+            color: ${color.dev};
           `}>
           Workbench →
         </a>
@@ -102,6 +90,13 @@ const PrimitiveTile = ({ doc }: { doc: PrimitiveDoc }) => {
  * a tile that opens the gallery.
  */
 export const FeaturedStrip = ({ featured, total }: FeaturedStripProps) => {
+  const home = useHome();
+  const {
+    euiTheme: { size, border, colors, font },
+    color,
+    fontSize,
+  } = home;
+  const gap = parseFloat(size.m);
   const strip = useRef<HTMLDivElement>(null);
   const [edges, setEdges] = useState({ start: true, end: true });
   const [stacked, setStacked] = useState(false);
@@ -151,8 +146,8 @@ export const FeaturedStrip = ({ featured, total }: FeaturedStripProps) => {
     if (!element || !first) {
       return;
     }
-    const step = first.getBoundingClientRect().width + GAP;
-    const perPage = Math.max(1, Math.round((element.clientWidth + GAP) / step));
+    const step = first.getBoundingClientRect().width + gap;
+    const perPage = Math.max(1, Math.round((element.clientWidth + gap) / step));
     element.scrollBy({
       left: direction * step * perPage,
       behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -164,41 +159,29 @@ export const FeaturedStrip = ({ featured, total }: FeaturedStripProps) => {
   const well = css`
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 14px 16px 16px;
-    margin-inline: -16px;
-    border-radius: 12px;
+    gap: ${size.s};
+    padding: ${size.m} ${size.base} ${size.base};
+    margin-inline: -${size.base};
+    border-radius: ${border.radius.panel};
     box-sizing: border-box;
-    background: rgba(0, 0, 0, 0.18);
-    box-shadow:
-      inset 0 1px 0 rgba(0, 0, 0, 0.25),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.06);
-  `;
-  const pager = css`
-    background-color: ${HOME.surface3};
-    border-color: ${HOME.line3};
-    color: ${HOME.fg};
-    &:disabled {
-      background-color: ${HOME.surface1};
-      border-color: ${HOME.line1};
-      color: ${HOME.fg3};
-    }
+    background: ${transparentize(colors.plainDark, 0.18)};
+    box-shadow: inset 0 0 0 ${border.width.thin} ${color.surface};
   `;
   const tiles = css`
     display: grid;
     grid-template-rows: repeat(4, auto);
     grid-auto-flow: column;
     grid-auto-columns: calc(
-      (100% - ${GAP}px * (var(${TILE_COLUMNS}, 3) - 1)) /
+      (100% - ${size.m} * (var(${TILE_COLUMNS}, 3) - 1)) /
         var(${TILE_COLUMNS}, 3)
     );
-    gap: ${GAP}px;
+    gap: ${size.m};
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     scrollbar-width: none;
-    padding: 3px;
-    margin: -3px;
-    scroll-padding: 3px;
+    padding: ${size.xs};
+    margin: -${size.xs};
+    scroll-padding: ${size.xs};
     &::-webkit-scrollbar {
       display: none;
     }
@@ -218,21 +201,20 @@ export const FeaturedStrip = ({ featured, total }: FeaturedStripProps) => {
 
   return (
     <section css={well} aria-labelledby="isomer-studio-featured">
-      <div css={sectionLabel}>
-        <h2 id="isomer-studio-featured" css={sectionHeading}>
+      <div css={home.sectionLabel}>
+        <h2 id="isomer-studio-featured" css={home.sectionHeading}>
           Featured primitives
         </h2>
         <span
           css={css`
             display: flex;
-            gap: 6px;
+            gap: ${size.xs};
           `}>
           <EuiButtonIcon
             iconType="chevronSingleLeft"
             size="xs"
             color="text"
             display="base"
-            css={pager}
             aria-label="Previous primitives"
             isDisabled={stacked ? currentStackedPage === 0 : edges.start}
             onClick={() => page(-1)}
@@ -242,7 +224,6 @@ export const FeaturedStrip = ({ featured, total }: FeaturedStripProps) => {
             size="xs"
             color="text"
             display="base"
-            css={pager}
             aria-label="Next primitives"
             isDisabled={
               stacked ? currentStackedPage === lastStackedPage : edges.end
@@ -258,30 +239,30 @@ export const FeaturedStrip = ({ featured, total }: FeaturedStripProps) => {
         <a
           href={formatRoute({ mode: 'docs', page: GALLERY, example: 0 })}
           css={[
-            helpTile(4, HOME.docs),
-            actionCard,
+            home.helpTile(4, color.docs),
+            home.actionCard,
             css`
               scroll-snap-align: start;
             `,
           ]}>
           <span
             css={css`
-              font-size: 28px;
-              font-weight: 600;
+              font-size: ${fontSize('xxl')};
+              font-weight: ${font.weight.bold};
               line-height: 1;
-              color: ${HOME.fg};
+              color: ${color.heading};
               font-variant-numeric: tabular-nums;
             `}>
             {total}
           </span>
-          <span css={tileDescription}>
+          <span css={home.tileDescription}>
             {total === 1 ? 'primitive' : 'primitives'} in this Studio
           </span>
           <span
             css={css`
-              font-size: 12px;
-              font-weight: 600;
-              color: ${HOME.docs};
+              font-size: ${fontSize('xs')};
+              font-weight: ${font.weight.bold};
+              color: ${color.docs};
             `}>
             Open the gallery →
           </span>

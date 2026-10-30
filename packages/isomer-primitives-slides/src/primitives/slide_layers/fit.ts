@@ -5,18 +5,18 @@
  * 2.0.
  */
 
-import type { SlideRenderContext } from '../../render/context';
 import { layers as theme } from '../../theme/components/layers';
 import { label, tone as toneCue } from '../../theme/components/shared';
 import { scalePx } from '../../theme/scale';
-import { type SlideSize, slideSizes } from '../../theme/variants';
-import { slideLayout } from '../layout';
+import type { SlideSize } from '../../theme/variants';
+import type { StepLayout } from '../layout';
 import {
   lineBox,
   lineFill,
   marksHeight,
   measureText,
   packedLines,
+  stepWhere,
   wrappedLines,
 } from '../size';
 
@@ -88,12 +88,6 @@ export const layersHeight = (
 /** The node's own `size`, else the largest step at which the stack fits its layout's height; `s` when none does. */
 export const layersStep = (
   node: SlideLayersNode,
-  context: SlideRenderContext | undefined
-): SlideSize => {
-  const { width, height } = slideLayout(context);
-  return (
-    node.size ??
-    slideSizes.find((step) => layersHeight(node, step, width) <= height) ??
-    's'
-  );
-};
+  { width, height }: Pick<StepLayout, 'width' | 'height'>
+): SlideSize =>
+  node.size ?? stepWhere((step) => layersHeight(node, step, width) <= height);

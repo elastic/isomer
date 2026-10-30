@@ -82,13 +82,19 @@ describe('sizeForWidthLoad', () => {
   });
 
   it('weighs the load by how much narrower the layout is, less its gutters', () => {
-    expect(sizeForWidthLoad(undefined, 50, budget, at(half), 64)).toBe('l');
-    expect(sizeForWidthLoad(undefined, 51, budget, at(half), 64)).toBe('m');
+    expect(
+      sizeForWidthLoad(undefined, 50, budget, at(half), { gutters: 64 })
+    ).toBe('l');
+    expect(
+      sizeForWidthLoad(undefined, 51, budget, at(half), { gutters: 64 })
+    ).toBe('m');
     expect(sizeForWidthLoad(undefined, 51, budget, at(half))).toBe('l');
   });
 
   it('takes `s` when the gutters leave no width, and keeps an explicit size', () => {
-    expect(sizeForWidthLoad(undefined, 1, budget, at(64), 64)).toBe('s');
+    expect(
+      sizeForWidthLoad(undefined, 1, budget, at(64), { gutters: 64 })
+    ).toBe('s');
     expect(sizeForWidthLoad(undefined, 1, budget, at(0))).toBe('s');
     expect(sizeForWidthLoad('l', 1000, budget, at(0, 3))).toBe('l');
   });

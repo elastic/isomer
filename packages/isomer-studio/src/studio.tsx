@@ -30,17 +30,16 @@ import {
   isHomeRoute,
   useStudioRoute,
 } from './chrome/route';
+import type { ShellLook } from './chrome/shell_background';
+import { ShellBackdrop } from './chrome/shell_background';
 import type { StudioApp } from './config';
 import { ComposeView } from './dev/compose_view';
 import { DevView } from './dev/dev_view';
 import { DocsView } from './docs/docs_view';
 import { GalleryView } from './docs/gallery_view';
 import { HomeView } from './home/home_view';
-import { homeBackground } from './home/tokens';
 import { createShim } from './model/compile_jsx';
 import { composeExample, composeOf } from './model/compose_example';
-import type { ComposeParams } from './model/compose_link';
-import { formatComposeQuery } from './model/compose_link';
 import { describeRuntime } from './model/describe_runtime';
 import type { StudioContextValue, StudioTheme } from './studio_context';
 import { StudioContextProvider, useStudio } from './studio_context';
@@ -61,41 +60,10 @@ const fill = css`
   height: 100%;
 `;
 
-const docsBackground = css`
-  background-color: #0b2347;
-  background-image:
-    radial-gradient(circle at 0% 0%, rgba(27, 169, 245, 0.3), transparent 24%),
-    radial-gradient(
-      circle at 4% 100%,
-      rgba(240, 78, 152, 0.2),
-      transparent 22%
-    ),
-    radial-gradient(circle at 40% 0%, rgba(0, 191, 179, 0.14), transparent 18%);
-`;
-const devBackground = css`
-  background-color: #0b3a2c;
-  background-image:
-    radial-gradient(circle at 0% 0%, rgba(0, 191, 179, 0.3), transparent 24%),
-    radial-gradient(
-      circle at 4% 100%,
-      rgba(254, 197, 20, 0.2),
-      transparent 22%
-    ),
-    radial-gradient(circle at 40% 0%, rgba(27, 169, 245, 0.14), transparent 18%);
-`;
-
-type Look = 'dev' | 'docs' | 'home';
-
 const compactNavQuery = () =>
   typeof window === 'undefined'
     ? undefined
     : window.matchMedia(`(max-width: ${NAV_WIDTH.compactAt}px)`);
-
-const BACKGROUNDS = {
-  dev: devBackground,
-  docs: docsBackground,
-  home: homeBackground,
-} as const;
 
 const Layout = ({
   title = 'Isomer Studio',
@@ -113,6 +81,8 @@ const Layout = ({
   const {
     location,
     route,
+    devRoute,
+    composeParams,
     navigate,
     openApp,
     goHome,
@@ -132,41 +102,12 @@ const Layout = ({
   const { page } = route;
   const composing = isComposeRoute(location);
   const mode = app || home ? undefined : composing ? 'dev' : route.mode;
-  const look: Look = home ? 'home' : (mode ?? 'docs');
+  const look: ShellLook = home ? 'home' : (mode ?? 'docs');
   const accent = useAccent(look === 'home' ? 'docs' : look);
   const [isCompactNav, setCompactNav] = useState(
     () => compactNavQuery()?.matches ?? false
   );
   const [isNavOpen, setNavOpen] = useState(() => !isCompactNav);
-  const [devRoute, setDevRoute] = useState(
-    mode === 'dev' && !composing ? route : undefined
-  );
-  if (mode === 'dev' && !composing && devRoute !== route) {
-    setDevRoute(route);
-  }
-  // The composer's params follow the route when it changes, then what the composer last wrote,
-  // so a composer remounted after Home reloads the latest draft rather than the link it opened.
-  const routeParams = composing ? location.params : undefined;
-  const [seenParams, setSeenParams] = useState(routeParams);
-  const [composeParams, setComposeParams] = useState(routeParams);
-  if (routeParams && routeParams !== seenParams) {
-    setSeenParams(routeParams);
-    // The same query again, as from re-clicking Composition, keeps the composer's params, so an
-    // in-flight load is not restarted.
-    if (
-      !composeParams ||
-      formatComposeQuery(routeParams) !== formatComposeQuery(composeParams)
-    ) {
-      setComposeParams(routeParams);
-    }
-  }
-  const replaceComposerParams = useCallback(
-    (params: ComposeParams) => {
-      setComposeParams(params);
-      replaceComposer(params);
-    },
-    [replaceComposer]
-  );
 
   useEffect(() => {
     const query = compactNavQuery();
@@ -187,8 +128,9 @@ const Layout = ({
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    position: relative;
+    isolation: isolate;
     color: ${euiTheme.colors.textParagraph};
-    ${BACKGROUNDS[look]};
   `;
   const body = css`
     flex: 1;
@@ -223,6 +165,7 @@ const Layout = ({
 
   return (
     <div css={shell}>
+      <ShellBackdrop {...{ look }} />
       <EuiThemeProvider colorMode="dark" wrapperProps={darkWrapper}>
         <StudioHeader
           {...{
@@ -250,7 +193,6 @@ const Layout = ({
           <EuiThemeProvider colorMode="dark" wrapperProps={darkWrapper}>
             <StudioNav
               {...{ page }}
-              mode={mode ?? route.mode}
               app={app?.id}
               isComposing={composing}
               // Reopens the draft the composer last wrote, so the URL keeps sharing it.
@@ -296,10 +238,8 @@ const Layout = ({
                   <div hidden={!composing} css={fill}>
                     <ComposeView
                       params={composeParams}
-                      isVisible={composing}
                       stacked={isCompactNav}
-                      {...{ openComposer }}
-                      replaceComposer={replaceComposerParams}
+                      {...{ openComposer, replaceComposer }}
                     />
                   </div>
                 ) : null}

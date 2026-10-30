@@ -1,0 +1,31 @@
+```json
+{
+  "type": "view",
+  "title": "Index a document",
+  "body": [
+    {
+      "type": "slideFrame",
+      "tone": "page",
+      "logo": false,
+      "footer": {
+        "section": "JavaScript client",
+        "sectionNumber": "01"
+      },
+      "body": [
+        {
+          "type": "slideHeading",
+          "title": "One `client.index` call stores a document",
+          "lede": "Name the index and pass the document; the client handles the request."
+        },
+        {
+          "type": "slideCode",
+          "file": "index-book.js",
+          "language": "js",
+          "text": "await client.index({\n  index: 'books',\n  document: { title: 'Dune' },\n});",
+          "lineNumbers": { "highlight": "1" }
+        }
+      ]
+    }
+  ]
+}
+```

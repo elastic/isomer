@@ -19,7 +19,7 @@ export interface SlideFrameTheme {
 ```ts
 export const slideThemes: ThemePair<SlideFrameTheme> = {
   light: { text: slidePaletteForMode('light').text },
-  dark:  { text: slidePaletteForMode('dark').text },
+  dark: { text: slidePaletteForMode('dark').text },
 };
 ```
 
@@ -48,11 +48,11 @@ export const SLIDE_THEME = {
 
 Leaf kind is the decision, not the group name:
 
-| Leaf | Emission | Used for |
-| --- | --- | --- |
-| `lightDark(light, dark)` | `--slide-<group>-*` holding `light-dark(…)` | Everything under `color` and `inverse`, the only groups that vary by scheme. |
-| `ScaleToken` (`px`, `literal`, `paddingXy`) | Inlined literal, no custom property | `space`, `radius`, `stroke`, `font`, `type`, `glyph`, and every component group. |
-| Plain string | Custom property with identical light/dark values | Unused here; reach for it when a host should override a non-color value. |
+| Leaf                                        | Emission                                         | Used for                                                                         |
+| ------------------------------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------- |
+| `lightDark(light, dark)`                    | `--slide-<group>-*` holding `light-dark(…)`      | Everything under `color` and `inverse`, the only groups that vary by scheme.     |
+| `ScaleToken` (`px`, `literal`, `paddingXy`) | Inlined literal, no custom property              | `space`, `radius`, `stroke`, `font`, `type`, `glyph`, and every component group. |
+| Plain string                                | Custom property with identical light/dark values | Unused here; reach for it when a host should override a non-color value.         |
 
 `space` and `font.size` are keyed by pixel value (`space.px48`, `font.size.px28`) because the canvas is a fixed 1920×1080 and the design is specified in pixels. `type` holds the design's type roles — size, weight, tracking, and leading together — and a module emits one with `typeRole(tokens.type.heading)`. A value that is off both ramps still lives in its component group, with a comment saying why.
 
@@ -67,6 +67,8 @@ Slides are read embedded at roughly half scale, so no rule sets a `font-size` un
 ## Size steps
 
 Length-sensitive primitives take an optional `size`: `l`, `m`, or `s`, each a set of theme tokens (`heading.titleSizes`, `title.displaySizes`), none below 24px. Left out, the renderer picks the step from the node's own text, so every surface draws the same size; the `snapshot` surface cannot measure, and does not support container units, `min()`, or `clamp()`. An explicit `size` always wins.
+
+Every primitive that picks a step does it in one function: its `fit.ts` exports `<name>Step(node, layout)` (`headingStep`, `tableStep`, `annotatedRenderStep`), which returns the node's own `size` or the step its content takes in `layout`, the `StepLayout` that `slideLayout(context)` returns, and its renderer calls it and sizes nothing itself. Each criterion is a predicate on a step, and `stepWhere(fits)` in `src/primitives/size.ts` is the largest step at which it holds, `s` when none does. The criteria below are named helpers built on it: `sizeForLoad` against a `LoadBudget`, scaled by `crowding`; `sizeForWidthLoad` for a load set across a layout narrower than its measure, and `sizeForProse` for one marked passage; `sizeForWidth`, `sizeForWords`, `sizeForMarkedWords`, and `sizeForLines` across a width; and a height estimate compared with the layout's height in a `stepWhere` of its own. `smallerStep` takes the smaller of two criteria.
 
 - **Load:** `slideHeading`, `statementSlide`, and `quoteSlide` compare their text's character count with `headingFit`, `statementFit`, and `quoteFit`, a wide East Asian glyph or an emoji counting as two (`src/render/mono.ts`). `slideDefinitions` compares `rowLoad`, its longest column's characters times the column count, with `definitionsFit`, and its longer column's rows with `definitionsRowFit`, and takes the smaller step; past `definitionsSingleColumnMax` terms it splits into two columns. `slideBars` counts two per label line, wrapped at its label column, and one per detail line, wrapped across its track, against `barsFit`, and takes no larger step than the one at which each value fits beside its bar across the layout's width. Its label column is `labelWidth`, or `labelMaxShare` of a layout too narrow for it; where a value still would not fit beside its bar at `barMaxShare`, every bar scales down together, and a positive bar draws at least `barMinWidth`. `slidePipeline` compares `rowLoad`, its longest step's characters times the step count, with `pipelineFit`, scaled by how many times over its step columns, after any `start` and `end` chips, fall short of the frame body, and skips a step at which a title's widest word outgrows its column. In a narrower layout than their measure, such as a `slideSplitLayout` pane, statement, quote, and definitions scale their load by how many times over it falls short (`narrowing`). `slideTimeline` and `slideRoadmap` compare `rowLoad` over their items or columns, a channel or status counted uppercase as it prints (`styledText`), with `timelineFit` and `roadmapFit`, and `slideGraph` its node rows times the longest node, plus the caption, with `graphFit`; `sizeForWidthLoad` scales each by how many times its layout's width falls short of the frame's content width, less the gutters between its columns.
 - **Count:** `agendaSlide` counts its title lines, one a section and more where a title wraps across its layout's width, against `agendaFit`. `slideSequence` counts its messages, plus the message rows its actor chips and labels add where they wrap at each step's size across their spans, against `sequenceFit`; each run of a label is measured in the face it renders in, a `code` run between its chip's sides, and each line holding a chip adds its padding and border (`marksHeight`). `slideMatrix` steps by its row count against `matrixFit`, and `slideQuadrant` by its fullest top cell's items plus its fullest bottom cell's against `quadrantFit`, scaled by `narrowing` in a layout narrower than a frame body.

@@ -9,9 +9,7 @@ export { formatAgentReport } from './agent_report';
 export { runAgentEvals } from './agent_run';
 export type {
   AgentEvalCall,
-  AgentEvalCase,
   AgentEvalCaseResult,
-  AgentEvalFrame,
   AgentEvalReport,
   AgentEvalTool,
   AgentMessage,
@@ -42,8 +40,10 @@ export type {
   AnswerabilityVerdict,
   EvalCase,
   EvalCaseResult,
+  EvalFrame,
   EvalReport,
   EvalRuntime,
+  ExpectedPrimitivesScore,
   Generate,
   GenerateRequest,
   Judge,

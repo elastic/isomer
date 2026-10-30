@@ -13,6 +13,7 @@ import type { SlideReactEnv } from '../../render/context';
 import { marksReact } from '../../render/marks';
 import { ToneCue } from '../../render/tone_cue';
 import { labelModule, layoutModule, tonesModule } from '../../theme/modules';
+import { slideLayout } from '../layout';
 
 import { layersStep } from './fit';
 import type { SlideLayersNode } from './schema';
@@ -27,7 +28,7 @@ export const react = (
   const { handles: style } = layersModule;
   const { handles: label } = labelModule;
   const { handles: tones } = tonesModule;
-  const step = layersStep(node, context);
+  const step = layersStep(node, slideLayout(context));
   return (
     <div
       {...nodeAnchor(context, { type })}

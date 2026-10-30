@@ -80,7 +80,7 @@ Two differences from `png` matter. A glyph no registered font covers rejects the
 
 ### Off the calling thread
 
-Takumi's PDF engine is WebAssembly, and its layout, font shaping, and PDF writing run synchronously, so on the calling thread a PDF holds that thread's event loop for the whole render. The backend therefore runs it in a `worker_threads` Worker by default (`pdfThread: 'worker'`), started on the first `pdf` or `fitPages`, with the fonts registered there once. The worker holds the process open only while a call is in flight, a lazy font `data()` or image `data()` is read on the calling thread and its bytes posted, and if the worker dies the next call starts another. `close()` stops it and rejects every call in flight, including one still loading a font or image, without waiting on the loader; a later call starts a fresh one. `pdfThread: 'inline'` keeps the engine on the calling thread, for a host that already calls from a worker of its own. `png`, `svg`, and `measure` need neither: `@takumi-rs/core` is native and renders on the libuv thread pool.
+Takumi's PDF engine is WebAssembly, and its layout, font shaping, and PDF writing run synchronously, so on the calling thread a PDF holds that thread's event loop for the whole render. The backend therefore always runs it in a `worker_threads` Worker, started on the first `pdf` or `fitPages`, with the fonts registered there once. The worker holds the process open only while a call is in flight, a lazy font `data()` or image `data()` is read on the calling thread and its bytes posted, and if the worker dies the next call starts another. `close()` stops it and rejects every call in flight, including one still loading a font or image, without waiting on the loader, with an error whose `name` is `'IsomerError'` and `code` is `'PDF_ENGINE_CLOSED'`; a later call starts a fresh one. `png`, `svg`, and `measure` need neither: `@takumi-rs/core` is native and renders on the libuv thread pool.
 
 `renderPdf(runtime, deck, backend, options?)` is `renderPng`'s counterpart: it validates every composition, calls `renderPages` on the copies validation checked with `onValidationError: 'collect'`, and returns `{ pdf, pageCount, width, height, validations }`, one validation per composition. As with `renderPng`, input refused before parsing throws. An empty deck throws the runtime's `EMPTY_PAGES` before the backend sees it; `pdf` itself throws on an empty `pages` list.
 
@@ -108,7 +108,7 @@ A PDF is byte-stable on the same terms once `metadata.creationDate` is fixed; le
 
 | Export | What it is |
 | --- | --- |
-| `createTakumiImageBackend` | `(options?: TakumiImageBackendOptions) => TakumiBackend`; `fonts`, `cacheMaxBytes`, and `pdfThread` |
+| `createTakumiImageBackend` | `(options?: TakumiImageBackendOptions) => TakumiBackend`; `fonts` and `cacheMaxBytes` |
 | `TAKUMI_FORMATS` | `['png', 'svg', 'pdf']`, as const: what a `TakumiBackend` writes, and its `formats` |
 | `renderPng` | `(runtime, composition, backend, options?) => Promise<RenderPngResult>`, `{ png, width, height, validation }` |
 | `renderPdf` | `(runtime, deck, backend, options?) => Promise<RenderPdfResult>`, `{ pdf, pageCount, width, height, validations }` |
@@ -118,7 +118,7 @@ A PDF is byte-stable on the same terms once `metadata.creationDate` is fixed; le
 | `ImageInput`, `PdfInput` | The parts of the `snapshot` surface's `render` and `renderPages` results this package reads, declared structurally: `{ html, css, width, height, heightMode? }`, and `pages` of `{ html }` |
 | `HeightMode` | `'fixed' \| 'content'`: whether the output is the input's `height` or the laid-out content's. See [Sizing to content](#sizing-to-content) |
 | `TakumiImageBackend`, `TakumiMeasuringBackend`, `TakumiPdfBackend`, `TakumiBackend` | `{ png, svg, fit? }`, plus `measure`, `{ pdf, fitPages? }`, and all three with `formats`, `fit`, `fitPages`, and `close` |
-| `TakumiImageBackendOptions`, `TakumiRenderOptions` | `{ fonts?, cacheMaxBytes?, pdfThread? }` and `{ scale?, devicePixelRatio? }` |
+| `TakumiImageBackendOptions`, `TakumiRenderOptions` | `{ fonts?, cacheMaxBytes? }` and `{ scale?, devicePixelRatio? }` |
 | `TakumiPdfOptions`, `TakumiPdfMetadata` | The document options above, and `metadata`'s fields |
 | `LayoutBox` | What `measure` returns, one per laid-out element |
 | `PngRuntime`, `PdfRuntime` | The slice of a runtime `renderPng` and `renderPdf` need: `validate` and the `snapshot` surface |
@@ -130,4 +130,4 @@ A PDF is byte-stable on the same terms once `metadata.creationDate` is fixed; le
 
 ## Status
 
-Published with the other workspace packages at one version, as ESM and CommonJS from one entry point. It is a host-side rasterizer: the runtime stays free of native dependencies, and a host that draws images adds this package. `@takumi-rs/core` is a native binary, loaded when the package is imported, with a prebuilt binary per platform as its own optional dependencies; `takumi-pdf` is WebAssembly, imported on the first PDF, in a worker thread by default, so a host that never asks for one never loads it.
+Published with the other workspace packages at one version, as ESM and CommonJS from one entry point. It is a host-side rasterizer: the runtime stays free of native dependencies, and a host that draws images adds this package. `@takumi-rs/core` is a native binary, loaded when the package is imported, with a prebuilt binary per platform as its own optional dependencies; `takumi-pdf` is WebAssembly, loaded on a worker thread on the first PDF, so a host that never asks for one never loads it.

@@ -16,34 +16,22 @@ import {
 } from '@elastic/isomer-sdk';
 import { findNodeElementPairs } from '@elastic/isomer-sdk/react';
 
-import type { SlideContentNode } from '../body_node';
-import { bulletListBuild } from '../primitives/slide_bullet_list/build';
-import { listBuild } from '../primitives/slide_list/build';
-import { pipelineBuild } from '../primitives/slide_pipeline/build';
-import { sequenceBuild } from '../primitives/slide_sequence/build';
-import { timelineBuild } from '../primitives/slide_timeline/build';
-import { transcriptBuild } from '../primitives/slide_transcript/build';
 import { slideDeckPrimitives } from '../registry';
 
 import type { SlideBuild } from './types';
 
 export const SLIDE_BUILDS = 'slideBuilds';
 
-/** The primitives that build. Every other node shows whole from the first click. */
-const buildsByType = {
-  slideBulletList: bulletListBuild,
-  slideList: listBuild,
-  slidePipeline: pipelineBuild,
-  slideSequence: sequenceBuild,
-  slideTimeline: timelineBuild,
-  slideTranscript: transcriptBuild,
-} satisfies Partial<Record<SlideContentNode['type'], SlideBuild<never>>>;
+/** The registered primitives that build, by type: those defined `withBuild`. Every other node shows whole from the first click. */
+const buildsByType: ReadonlyMap<string, SlideBuild<never>> = new Map(
+  slideDeckPrimitives.flatMap((definition) =>
+    'build' in definition ? [[definition.type, definition.build] as const] : []
+  )
+);
 
 const buildOf = (node: unknown): SlideBuild<never> | undefined => {
   const { type } = node as { type?: unknown };
-  return typeof type === 'string' && Object.hasOwn(buildsByType, type)
-    ? buildsByType[type as keyof typeof buildsByType]
-    : undefined;
+  return typeof type === 'string' ? buildsByType.get(type) : undefined;
 };
 
 /** The nodes of `body` that build, pre-order. */

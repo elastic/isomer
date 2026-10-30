@@ -15,6 +15,7 @@ import { ToneCue } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { layoutModule, tonesModule } from '../../theme/modules';
 import { countKey, type SlideSize } from '../../theme/variants';
+import { slideLayout } from '../layout';
 
 import { pipelineStep } from './fit';
 import type {
@@ -187,7 +188,7 @@ export const react = (
         <SpansMode {...{ steps, spans, context }} />
       ) : (
         <StepsMode
-          step={pipelineStep(node, context)}
+          step={pipelineStep(node, slideLayout(context))}
           {...{ start, end, steps, context }}
         />
       )}

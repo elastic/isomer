@@ -1,0 +1,41 @@
+```json
+{
+  "type": "view",
+  "title": "Performance",
+  "body": [
+    {
+      "type": "slideFrame",
+      "tone": "page",
+      "logo": false,
+      "footer": {
+        "section": "Performance",
+        "sectionNumber": "01"
+      },
+      "body": [
+        {
+          "type": "slideHeading",
+          "title": "Performance is measured in three numbers",
+          "lede": "Latency, throughput, and errors, each taken over the same window."
+        },
+        {
+          "type": "slideStats",
+          "items": [
+            {
+              "label": "p95 latency",
+              "body": "How long the slowest 5% of requests take."
+            },
+            {
+              "label": "Throughput",
+              "body": "Requests served per second at peak."
+            },
+            {
+              "label": "Error rate",
+              "body": "Share of requests that fail."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```

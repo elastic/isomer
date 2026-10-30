@@ -11,7 +11,7 @@ import { label as labelRole } from '../../theme/components/shared';
 import { timeline, timelineFit } from '../../theme/components/timeline';
 import { scalePx } from '../../theme/scale';
 import { countKeys, type SlideSize } from '../../theme/variants';
-import { slideLayout } from '../layout';
+import { slideLayout, type StepLayout } from '../layout';
 import {
   lineFill,
   measureMarks,
@@ -71,23 +71,15 @@ export const timelineWordStep = (
 
 export const timelineStep = (
   node: SlideTimelineNode,
-  context: SlideRenderContext | undefined
-): SlideSize => {
-  const layout = slideLayout(context);
-  return (
-    node.size ??
-    smallerStep(
-      sizeForWidthLoad(
-        undefined,
-        timelineLoad(node),
-        timelineFit,
-        layout,
-        scalePx(timeline.gap) * (node.items.length - 1)
-      ),
-      timelineWordStep(node, layout.width)
-    )
+  layout: Pick<StepLayout, 'width' | 'crowding'>
+): SlideSize =>
+  node.size ??
+  smallerStep(
+    sizeForWidthLoad(undefined, timelineLoad(node), timelineFit, layout, {
+      gutters: scalePx(timeline.gap) * (node.items.length - 1),
+    }),
+    timelineWordStep(node, layout.width)
   );
-};
 
 /** Heading heights the row can match; a taller heading runs past the others. */
 export const timelineHeadingLines = countKeys(1, 6);

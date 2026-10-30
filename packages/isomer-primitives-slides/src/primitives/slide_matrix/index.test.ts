@@ -30,8 +30,8 @@ import { paneLayouts } from '../slide_split_layout/pane_layout';
 import type { SlideSplitLayoutNode } from '../slide_split_layout/types';
 
 import { example, fullExample, pairExample } from './examples';
+import { matrixStep } from './fit';
 import { markdown as markdownContent, text } from './index';
-import { matrixSize } from './react';
 
 const runtime = createIsomerRuntime({
   packs: [slidesPack],
@@ -341,12 +341,16 @@ describe('slideMatrix', () => {
     ] as const)(
       '%i rows under crowding %d take %s',
       (count, crowding, step) => {
-        expect(matrixSize({ rows: rows(count) }, crowding)).toBe(step);
+        expect(matrixStep({ rows: rows(count) }, { crowding: crowding })).toBe(
+          step
+        );
       }
     );
 
     it('keeps an authored size', () => {
-      expect(matrixSize({ rows: rows(8), size: 'l' }, 1)).toBe('l');
+      expect(matrixStep({ rows: rows(8), size: 'l' }, { crowding: 1 })).toBe(
+        'l'
+      );
     });
 
     it.each([
@@ -361,17 +365,16 @@ describe('slideMatrix', () => {
       'draws the step it counts %s',
       (_name, count, heading, crowding) => {
         const node = { ...pairExample, rows: rows(count) };
-        const step = matrixSize(node, crowding);
-        expect(step).not.toBe(matrixSize(node, 1));
+        const step = matrixStep(node, { crowding: crowding });
+        expect(step).not.toBe(matrixStep(node, { crowding: 1 }));
         expect(renderedStep('matrix-cellPadding', node, heading)).toBe(step);
       }
     );
 
     it('draws the step it counts as a title aside', () => {
       const node = { ...pairExample, rows: rows(6) };
-      const step = matrixSize(
-        node,
-        slideLayout({
+      const step = matrixStep(node, {
+        crowding: slideLayout({
           layout: {
             width: trackWidth(
               frameContentWidth,
@@ -381,9 +384,9 @@ describe('slideMatrix', () => {
             ),
             height: frameBodyHeight,
           },
-        }).crowding
-      );
-      expect(step).not.toBe(matrixSize(node, 1));
+        }).crowding,
+      });
+      expect(step).not.toBe(matrixStep(node, { crowding: 1 }));
       expect(
         renderedStep('matrix-cellPadding', {
           type: 'titleSlide',
@@ -406,8 +409,10 @@ describe('slideMatrix', () => {
         { width: frameContentWidth, height: headingRoom(referenceHeading) },
         split
       );
-      const step = matrixSize(node, slideLayout({ layout: pane }).crowding);
-      expect(step).not.toBe(matrixSize(node, 1));
+      const step = matrixStep(node, {
+        crowding: slideLayout({ layout: pane }).crowding,
+      });
+      expect(step).not.toBe(matrixStep(node, { crowding: 1 }));
       expect(renderedStep('matrix-cellPadding', split, referenceHeading)).toBe(
         step
       );
@@ -416,7 +421,7 @@ describe('slideMatrix', () => {
     it('draws the full example, six columns and eight rows, at the smallest step', () => {
       expect(fullExample.columns).toHaveLength(6);
       expect(fullExample.rows).toHaveLength(8);
-      expect(matrixSize(fullExample, 1)).toBe('s');
+      expect(matrixStep(fullExample, { crowding: 1 })).toBe('s');
     });
   });
 });

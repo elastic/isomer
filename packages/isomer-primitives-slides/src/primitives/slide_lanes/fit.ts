@@ -5,17 +5,17 @@
  * 2.0.
  */
 
-import type { SlideRenderContext } from '../../render/context';
 import { lanes as theme } from '../../theme/components/lanes';
 import { tone as toneCue } from '../../theme/components/shared';
 import { scalePx } from '../../theme/scale';
-import { type SlideSize, slideSizes } from '../../theme/variants';
-import { slideLayout } from '../layout';
+import type { SlideSize } from '../../theme/variants';
+import type { StepLayout } from '../layout';
 import {
   lineBox,
   lineFill,
   marksHeight,
   measureText,
+  stepWhere,
   trackWidth,
   wrappedLines,
 } from '../size';
@@ -116,16 +116,11 @@ export const lanesHeight = (
 /** The node's own `size`, else the largest step at which it fits its layout across and down; `s` when none does. */
 export const lanesStep = (
   node: SlideLanesNode,
-  context: SlideRenderContext | undefined
-): SlideSize => {
-  const { width, height } = slideLayout(context);
-  return (
-    node.size ??
-    slideSizes.find(
-      (step) =>
-        lanesWidth(node, step) <= width &&
-        lanesHeight(node, step, width) <= height
-    ) ??
-    's'
+  { width, height }: Pick<StepLayout, 'width' | 'height'>
+): SlideSize =>
+  node.size ??
+  stepWhere(
+    (step) =>
+      lanesWidth(node, step) <= width &&
+      lanesHeight(node, step, width) <= height
   );
-};

@@ -221,6 +221,36 @@ try {
     );
   }
 
+  // Unit tests start the PDF worker from TypeScript source; a consumer gets the packed worker.
+  const takumiName = '@elastic/isomer-image-takumi';
+  if (packages.has(takumiName)) {
+    const takumiConsumerDir = join(tempDir, 'consumers', takumiName);
+    const renderPdf = `const backend = createTakumiImageBackend();
+const pdf = await backend.pdf({ pages: [{ html: '<div style="width:64px;height:64px;background:red"></div>' }], css: '', width: 64, height: 64 });
+await backend.close();
+if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered no PDF');`;
+    execFileSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '--eval',
+        `${failOnWarning} const { createTakumiImageBackend } = await import('${takumiName}');\n${renderPdf}`,
+      ],
+      { cwd: takumiConsumerDir, stdio: 'inherit' }
+    );
+    execFileSync(
+      process.execPath,
+      [
+        '--eval',
+        `${failOnWarning} const { createTakumiImageBackend } = require('${takumiName}');\n(async () => {\n${renderPdf}\n})().catch((error) => { console.error(error); process.exit(1); });`,
+      ],
+      { cwd: takumiConsumerDir, stdio: 'inherit' }
+    );
+    console.log(
+      `${takumiName}: packed import and require each rendered a PDF on the packed worker.`
+    );
+  }
+
   // A consumer compiles every published declaration with `skipLibCheck` off,
   // against whichever `@types/react` this install has.
   for (const types of ['node', 'react', 'react-dom']) {

@@ -19,7 +19,7 @@ import { marks } from '../../theme/components/marks';
 import { timeline } from '../../theme/components/timeline';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
-import { openBody, withLayout } from '../layout';
+import { openBody, slideLayout, withLayout } from '../layout';
 import { lineFill, measureMarks, measureText } from '../size';
 import { layoutContext } from '../size.fixtures';
 
@@ -63,8 +63,8 @@ const quoted = (heading: string) =>
 
 describe('timelineStep with code marks', () => {
   it('takes m where a code chip is wider than its column at l, and a plain word keeps l', async () => {
-    expect(timelineStep(plain, inBody)).toBe('l');
-    expect(timelineStep(coded, inBody)).toBe('m');
+    expect(timelineStep(plain, slideLayout(inBody))).toBe('l');
+    expect(timelineStep(coded, slideLayout(inBody))).toBe('m');
     expect(await findings(slideOf(coded))).toEqual([]);
   });
 

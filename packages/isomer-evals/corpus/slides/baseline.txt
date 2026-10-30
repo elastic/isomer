@@ -1,0 +1,10 @@
+cases              13
+parsed             13 (100%)
+valid              12 (92%)
+valid after retry  13 (100%)
+mean selection F1  0.95
+expected primitive 11 of 11 (100%)
+answerability      yes 9 / partial 2 / no 2
+
+invalid:
+  comparison: body[0].body[1].columns[0] (in slideTable) must not be empty

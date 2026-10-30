@@ -38,7 +38,10 @@ export const scorePayload = (
     .sort();
 
   const rawBytes = Buffer.byteLength(attempt.raw, 'utf8');
-  const composition = attempt.parsed ? attempt.check.composition : undefined;
+  const composition =
+    attempt.parsed && attempt.check.valid
+      ? attempt.check.composition
+      : undefined;
   const sanitizedBytes = composition ? bytes(composition) : 0;
   const goldenBytes = golden ? bytes(golden) : undefined;
 

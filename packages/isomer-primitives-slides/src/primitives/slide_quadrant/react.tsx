@@ -11,13 +11,10 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { ToneCue } from '../../render/tone_cue';
-import { frameContentWidth } from '../../theme/components/frame';
-import { quadrantFit } from '../../theme/components/quadrant';
 import { labelModule } from '../../theme/modules';
-import type { SlideSize } from '../../theme/variants';
 import { slideLayout } from '../layout';
-import { narrowing, sizeForLoad } from '../size';
 
+import { quadrantStep } from './fit';
 import { quadrantPlaces, type SlideQuadrantNode } from './schema';
 import { quadrantModule } from './styles';
 
@@ -39,24 +36,6 @@ const itemCorners = [
   [quadrant.itemsRight, quadrant.itemsBottom],
 ] as const;
 
-/** By the fullest top cell's items plus the fullest bottom cell's, scaled by how much narrower than a frame body its layout is. */
-export const quadrantSize = (
-  { quadrants, size }: SlideQuadrantNode,
-  {
-    width,
-    crowding,
-  }: Pick<ReturnType<typeof slideLayout>, 'width' | 'crowding'>
-): SlideSize => {
-  const [tl, tr, bl, br] = quadrants.map(({ items = [] }) => items.length);
-  return sizeForLoad(
-    size,
-    (Math.max(tl ?? 0, tr ?? 0) + Math.max(bl ?? 0, br ?? 0)) *
-      narrowing(frameContentWidth, width),
-    quadrantFit,
-    crowding
-  );
-};
-
 /** React renderer for {@link SlideQuadrantNode}. */
 export const react = (
   node: SlideQuadrantNode,
@@ -64,7 +43,7 @@ export const react = (
 ): ReactNode => {
   const { type, x, y, quadrants, highlight } = node;
   const { label } = labelModule.handles;
-  const step = quadrantSize(node, slideLayout(context));
+  const step = quadrantStep(node, slideLayout(context));
   const places = quadrantPlaces(node);
   // Each cell names its axis ends, so the axis labels are left to sight.
   return (

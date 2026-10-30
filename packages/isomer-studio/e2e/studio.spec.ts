@@ -986,7 +986,10 @@ test.describe('static build', () => {
       expect(layout.wrappedEndpointsMatch).toBe(true);
       expect(layout.overflows).toBe(false);
       expect(layout.labelSizes.length).toBeGreaterThan(0);
-      expect(layout.labelSizes.every((size) => size >= 11)).toBe(true);
+      // EUI's rem sizes over the 14px root land a hair under whole pixels, e.g. 10.9998px for 11px.
+      expect(layout.labelSizes.every((size) => Math.round(size) >= 11)).toBe(
+        true
+      );
       const tiles = await page
         .getByRole('region', { name: 'Featured primitives', exact: true })
         .evaluate((featured) => {
@@ -1024,7 +1027,8 @@ test.describe('static build', () => {
       await page.keyboard.press('Tab');
       const workbench = firstTile.getByRole('link', { name: 'Workbench →' });
       await expect(workbench).toBeFocused();
-      await expect(workbench).toHaveCSS('outline-color', 'rgb(255, 255, 255)');
+      // Home's focus ring is the dark theme's heading color, Borealis #E3E8F2.
+      await expect(workbench).toHaveCSS('outline-color', 'rgb(227, 232, 242)');
       await expect(workbench).toHaveCSS('outline-style', 'solid');
       await expect(workbench.locator('..')).toHaveCSS('opacity', '1');
     });
@@ -1075,7 +1079,8 @@ test.describe('static build', () => {
     }
     await items.nth(1).focus();
     await items.nth(1).hover();
-    await expect(items.nth(1)).toHaveCSS('transition-duration', '0.12s');
+    // The card's transition is euiTheme.animation.fast.
+    await expect(items.nth(1)).toHaveCSS('transition-duration', '0.15s');
     await expect(items.nth(1)).not.toHaveCSS('transform', 'none');
   });
 

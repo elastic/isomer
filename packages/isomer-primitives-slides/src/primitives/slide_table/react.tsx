@@ -14,7 +14,7 @@ import { labelModule, layoutModule } from '../../theme/modules';
 import { countKey } from '../../theme/variants';
 import { slideLayout } from '../layout';
 
-import { tableSize } from './fit';
+import { tableStep } from './fit';
 import { type SlideTableNode, tableGroups } from './schema';
 import { tableModule } from './styles';
 
@@ -25,7 +25,7 @@ export const react = (
 ): ReactNode => {
   const { handles: table } = tableModule;
   const { columns, label, rowHeaders, type } = node;
-  const step = tableSize(node, slideLayout(context));
+  const step = tableStep(node, slideLayout(context));
   const groups = tableGroups(node);
   const tracks = table.columns[countKey(columns.length)];
   // Explicit roles, since some browsers drop table semantics once `display` changes.

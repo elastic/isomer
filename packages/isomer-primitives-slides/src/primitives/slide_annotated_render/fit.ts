@@ -14,13 +14,20 @@ import {
 } from '../../theme/components/annotated_render';
 import { scalePx } from '../../theme/scale';
 import type { TypeRole } from '../../theme/type_role';
-import { type SlideSize, slideSizes } from '../../theme/variants';
-import { lineBox, marksHeight, measureText, trackWidth } from '../size';
+import type { SlideSize } from '../../theme/variants';
+import {
+  lineBox,
+  marksHeight,
+  measureText,
+  stepWhere,
+  trackWidth,
+} from '../size';
 import { captionHeight, embeddedScale } from '../slide_render/fit';
 import { headline } from '../slide_render/output';
 import type { SlideRenderNode } from '../slide_render/types';
 
 import type { SlideAnnotatedRenderPin } from './schema';
+import type { SlideAnnotatedRenderNode } from './types';
 
 const column = (width: number, index: 0 | 1) =>
   trackWidth(width, annotatedRenderShares, annotatedRender.gap, index);
@@ -74,12 +81,11 @@ export const legendHeight = (
   );
 };
 
-/** The largest legend step whose {@link legendHeight} fits the height of `layout`. */
-export const legendStep = (
-  pins: readonly SlideAnnotatedRenderPin[],
+/** The largest step whose legend, by {@link legendHeight}, fits the height of `layout`. */
+export const annotatedRenderStep = (
+  { pins }: Pick<SlideAnnotatedRenderNode, 'pins'>,
   { width, height }: SlideLayout
-): SlideSize =>
-  slideSizes.find((step) => legendHeight(pins, step, width) <= height) ?? 's';
+): SlideSize => stepWhere((step) => legendHeight(pins, step, width) <= height);
 
 /** How far the legend drops to meet the panel's top edge, as far as the room below it allows. */
 export const legendOffset = (

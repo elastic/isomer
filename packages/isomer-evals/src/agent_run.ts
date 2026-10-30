@@ -11,7 +11,6 @@ import { toJSONSchema } from 'zod';
 
 import type {
   AgentEvalCall,
-  AgentEvalCase,
   AgentEvalCaseResult,
   AgentEvalReport,
   AgentEvalTool,
@@ -24,6 +23,7 @@ import type {
 import { mapWithConcurrency, mean } from './concurrency';
 import { scoreExpectedPrimitives } from './score/expected_primitives';
 import { parseGenerated } from './score/validity';
+import type { EvalCase } from './types';
 
 const DEFAULT_SYSTEM =
   'Answer each request with one composition. Use the tools to learn the primitives and check your work. When you are done, reply with only the composition JSON and nothing else.';
@@ -88,7 +88,7 @@ export const runAgentEvals = async ({
   const specs = tools.map(toolSpec);
 
   const runCase = async (
-    evalCase: AgentEvalCase,
+    evalCase: EvalCase,
     run: number
   ): Promise<AgentEvalCaseResult> => {
     const messages: AgentMessage[] = [{ role: 'user', text: evalCase.prompt }];
