@@ -39,7 +39,7 @@ console.log(formatReport(report));
 
 `generate` is the only way a model is ever reached. Pass one that replays recorded output and the run is deterministic — which is how this belongs in CI.
 
-`runtime` is an `EvalRuntime`, the slice of a runtime the harness reads (`primitives`, `getAuthoringContext`, `validate`, and the `text` surface), declared structurally so a pack can pass a stub; a runtime from `createIsomerRuntime` satisfies it, which `run.test.ts` proves against the runtime's own type.
+`runtime` is an `EvalRuntime`, the slice of a runtime the harness reads (`primitives`, `getAuthoringContext`, `parse`, `validate`, and the `text` surface), declared structurally so a pack can pass a stub; a runtime from `createIsomerRuntime` satisfies it, which `run.test.ts` proves against the runtime's own type.
 
 ### Options
 
