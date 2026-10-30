@@ -28,7 +28,6 @@ export { formatReport } from './report';
 export { runEvals } from './run';
 export {
   checkAttempt,
-  checkComposition,
   parseGenerated,
   scoreAnswerability,
   scoreExpectedPrimitives,
@@ -37,11 +36,7 @@ export {
   scoreValidity,
   stripCodeFence,
 } from './score';
-export type {
-  CheckedAttempt,
-  CheckedComposition,
-  ParsedAttempt,
-} from './score/validity';
+export type { CheckedAttempt, ParsedAttempt } from './score/validity';
 export type {
   AnswerabilityScore,
   AnswerabilityVerdict,

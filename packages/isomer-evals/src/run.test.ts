@@ -59,12 +59,18 @@ const stubRuntime: EvalRuntime = {
       },
     ],
   }),
+  parse: (value) => ({
+    valid: true,
+    errors: [],
+    composition: value as Composition,
+  }),
   validate: (value) => {
     const { body } = value as { body?: Array<{ type: string }> };
     if (!Array.isArray(body)) {
       return {
         valid: false,
         errors: [{ path: 'body', message: 'is required' }],
+        composition: value,
       };
     }
     const bad = body.filter(({ type }) => !KNOWN.has(type));
@@ -74,13 +80,8 @@ const stubRuntime: EvalRuntime = {
         path: 'body',
         message: `unknown node type "${type}"`,
       })),
+      composition: value,
     };
-  },
-  parse(value) {
-    const result = this.validate(value as Composition);
-    return result.valid
-      ? { valid: true, errors: [], composition: value as Composition }
-      : { valid: false, errors: result.errors };
   },
   surfaces: {
     text: {
@@ -335,12 +336,12 @@ describe('scorePayload', () => {
     checkAttempt(runtime, parseGenerated(JSON.stringify(value)));
 
   it('scores sanitized size against the golden, not raw size', () => {
-    // The stub's `parse` drops unknown properties, the way a real schema
-    // parse would, so raw and sanitized sizes genuinely differ here.
+    // The stub's `validate` returns a copy without unknown properties, so raw
+    // and sanitized sizes genuinely differ here.
     const golden = composition(['stat']);
     const sanitizingRuntime: EvalRuntime = {
       ...stubRuntime,
-      parse: (value) => ({
+      validate: (value) => ({
         valid: true,
         errors: [],
         composition: {

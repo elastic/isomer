@@ -22,6 +22,12 @@ export {
   readAuthoredSpec,
 } from './authored_fields';
 export {
+  type CompositionCheck,
+  type CompositionCheckFrame,
+  type CompositionCheckRuntime,
+  checkComposition,
+} from './check_composition';
+export {
   type AuthoringDeclarationsOptions,
   buildAuthoringDeclarations,
 } from './declarations';

@@ -57,25 +57,29 @@ const stubRuntime: EvalRuntime = {
       example: { type },
     })),
   }),
+  parse: (value) => ({
+    valid: true,
+    errors: [],
+    composition: value as Composition,
+  }),
   validate: (value) => {
-    const bad = typesIn(value.body).filter((type) => !KNOWN.has(type));
+    const { body } = (value ?? {}) as { body?: unknown };
+    if (!Array.isArray(body)) {
+      return {
+        valid: false,
+        errors: [{ path: 'body', message: 'is required' }],
+        composition: value,
+      };
+    }
+    const bad = typesIn(body).filter((type) => !KNOWN.has(type));
     return {
       valid: bad.length === 0,
       errors: bad.map((type) => ({
         path: 'body',
         message: `unknown "${type}"`,
       })),
+      composition: value,
     };
-  },
-  parse(value) {
-    const { body } = (value ?? {}) as { body?: unknown };
-    if (!Array.isArray(body)) {
-      return {
-        valid: false,
-        errors: [{ path: 'body', message: 'is required' }],
-      };
-    }
-    return { valid: true, errors: [], composition: value as Composition };
   },
   surfaces: { text: { render: () => '' } },
 };
@@ -434,10 +438,10 @@ describe('runAgentEvals', () => {
     const report = await runAgentEvals({
       runtime: {
         ...stubRuntime,
-        validate: () => ({ valid: true, errors: [] }),
-        parse: () => ({
+        validate: () => ({
           valid: false,
           errors: [{ path: '', message: 'too deep' }],
+          composition: undefined,
         }),
       },
       tools,

@@ -66,7 +66,7 @@ const bound = bindFrame(frame);
 
 /** Binds the render context the `snapshot` surface would otherwise supply. */
 const frameDispatcher: FrameDispatcher = {
-  renderSnapshot: (node, key) =>
+  renderSnapshotNode: (node, key) =>
     dispatcher.renderSnapshot(node, {}, undefined, key),
   estimateSnapshotHeight: (node) => dispatcher.estimateSnapshotHeight(node),
 };
@@ -93,7 +93,7 @@ const harness: PrimitiveConformanceHarness = {
   renderText: (node) => dispatcher.renderText(node),
   renderMarkdown: (node) => dispatcher.renderMarkdown(node),
   renderSlack: (node) => dispatcher.renderSlack(node),
-  renderSnapshot: (node, key) =>
+  renderSnapshotNode: (node, key) =>
     dispatcher.renderSnapshot(node, {}, undefined, key),
   estimateSnapshotHeight: (node) => dispatcher.estimateSnapshotHeight(node),
   nestForeignChild: (container) =>

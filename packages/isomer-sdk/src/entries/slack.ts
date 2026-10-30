@@ -70,7 +70,9 @@ export {
   markdownContentToSlackBlocks,
   renderSlackEnvelope,
   slackContainer,
+  slackLimitProblems,
   slackLinkUrl,
   strike,
   unmodeledSlackBlock,
+  unmodeledSlackBlockTypes,
 } from '../render/slack';

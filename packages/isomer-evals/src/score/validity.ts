@@ -5,7 +5,11 @@
  * 2.0.
  */
 
-import { type Composition, formatValidationError } from '@elastic/isomer-sdk';
+import { formatValidationError } from '@elastic/isomer-sdk';
+import {
+  checkComposition,
+  type CompositionCheck,
+} from '@elastic/isomer-sdk/author';
 
 import type { EvalRuntime, ValidityScore } from '../types';
 
@@ -33,43 +37,12 @@ export const parseGenerated = (raw: string): ParsedAttempt => {
   }
 };
 
-/** What {@link checkComposition} returns: the parse-then-validate verdict, and the parsed composition when there was one. */
-export interface CheckedComposition {
-  valid: boolean;
-  /** Formatted parse errors, or validation errors; empty when valid. */
-  errors: readonly string[];
-  /** Present whenever the value parsed, even when validation then failed. */
-  composition?: Composition | undefined;
-}
-
-/**
- * Parses `value` against the runtime's schema, then validates the result —
- * the one place both happen together, so a value that parses but fails
- * validation (duplicate ids, for instance) is never mistaken for a good
- * composition by only half of this check.
- */
-export const checkComposition = (
-  runtime: EvalRuntime,
-  value: unknown
-): CheckedComposition => {
-  const parsed = runtime.parse(value);
-  if (!parsed.valid || !parsed.composition) {
-    return { valid: false, errors: parsed.errors.map(formatValidationError) };
-  }
-  const result = runtime.validate(parsed.composition);
-  return {
-    valid: result.valid,
-    errors: result.valid ? [] : result.errors.map(formatValidationError),
-    composition: parsed.composition,
-  };
-};
-
 /** A {@link ParsedAttempt} with its value checked exactly once; output that did not parse has nothing to check. */
 export type CheckedAttempt =
-  | { parsed: true; raw: string; value: unknown; check: CheckedComposition }
+  | { parsed: true; raw: string; value: unknown; check: CompositionCheck }
   | { parsed: false; raw: string; error: string };
 
-/** Runs {@link checkComposition} over an attempt's value, once. */
+/** Runs the SDK's `checkComposition` over an attempt's value, once. */
 export const checkAttempt = (
   runtime: EvalRuntime,
   attempt: ParsedAttempt
@@ -113,7 +86,7 @@ export const scoreValidity = (
     parsed: true,
     valid: false,
     validAfterRetry: retried?.valid ?? false,
-    errors: first.errors,
+    errors: first.errors.map(formatValidationError),
     composition: retried?.valid ? retried.composition : undefined,
   };
 };

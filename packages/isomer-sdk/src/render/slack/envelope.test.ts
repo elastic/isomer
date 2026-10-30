@@ -34,7 +34,8 @@ import type {
   SlackVideoBlock,
 } from './blocks';
 import { SLACK_LIMITS } from './blocks';
-import { renderSlackEnvelope, type SlackEnvelopeDispatcher } from './envelope';
+import type { SlackEnvelopeDispatcher } from './envelope';
+import { renderPostable } from './postable.fixtures';
 
 interface SlackPackTypes extends DefaultPackTypes {
   slackBlock: SlackBlock;
@@ -143,7 +144,7 @@ describe('Slack envelope baseUrl', () => {
 
   it('hands baseUrl to the dispatcher for every node', () => {
     const { dispatcher, seen } = recording();
-    renderSlackEnvelope(composition, dispatcher, {
+    renderPostable(composition, dispatcher, {
       baseUrl: 'https://kibana.example/',
     });
     expect(seen).toEqual([
@@ -155,7 +156,7 @@ describe('Slack envelope baseUrl', () => {
   it('throws INVALID_BASE_URL before rendering for a base that is not absolute http', () => {
     const { dispatcher, seen } = recording();
     expect(() =>
-      renderSlackEnvelope(composition, dispatcher, { baseUrl: '/app' })
+      renderPostable(composition, dispatcher, { baseUrl: '/app' })
     ).toThrow(
       expect.objectContaining({ name: 'IsomerError', code: 'INVALID_BASE_URL' })
     );
@@ -165,7 +166,7 @@ describe('Slack envelope baseUrl', () => {
 
 describe('Slack envelope transforms', () => {
   it('coalesces consecutive one-field sections into a fields grid', () => {
-    const { blocks } = renderSlackEnvelope(
+    const { blocks } = renderPostable(
       { type: 'view', body: [{ type: 'a' }, { type: 'b' }] },
       dispatcherFor([[fieldSection('A')], [fieldSection('B')]])
     );
@@ -182,7 +183,7 @@ describe('Slack envelope transforms', () => {
   });
 
   it('opens with the body in the blocks and the fallback text when heading is false', () => {
-    const { text, blocks } = renderSlackEnvelope(
+    const { text, blocks } = renderPostable(
       {
         type: 'view',
         title: 'Checkout',
@@ -197,7 +198,7 @@ describe('Slack envelope transforms', () => {
   });
 
   it('inserts spacers between consecutive content sections', () => {
-    const { blocks } = renderSlackEnvelope(
+    const { blocks } = renderPostable(
       { type: 'view', body: [{ type: 'a' }, { type: 'b' }] },
       dispatcherFor([[section('A')], [section('B')]])
     );
@@ -249,7 +250,7 @@ describe('Slack envelope transforms', () => {
     const lead = (heading: string) => [strong(heading), text(': ')];
 
     const render = (tables: SlackTableBlock[]) =>
-      renderSlackEnvelope(
+      renderPostable(
         { type: 'view', body: tables.map(() => ({ type: 'table' })) },
         dispatcherFor(tables.map((table) => [table]))
       ).blocks.filter((block) => block.type !== 'section');
@@ -588,7 +589,7 @@ describe('Slack envelope transforms', () => {
   });
 
   it('produces a valid header for a title over the header limit', () => {
-    const { blocks } = renderSlackEnvelope(
+    const { blocks } = renderPostable(
       {
         type: 'view',
         title: 'T'.repeat(SLACK_LIMITS.headerTextChars + 1),
@@ -729,7 +730,7 @@ describe('Slack envelope transforms', () => {
         }),
     ],
   ])('clamps a pack-emitted %s to its limit', (_, limit, build) => {
-    const { blocks } = renderSlackEnvelope(
+    const { blocks } = renderPostable(
       { type: 'view', body: [{ type: 'a' }] },
       dispatcherFor([[build('x'.repeat(limit + 1))]])
     );
@@ -776,7 +777,7 @@ describe('Slack envelope transforms', () => {
       },
     ],
   ])('keeps a clamped %s initial option equal to its option', (_, element) => {
-    const { blocks } = renderSlackEnvelope(
+    const { blocks } = renderPostable(
       { type: 'view', body: [{ type: 'a' }] },
       dispatcherFor([[actions(element)]])
     );
@@ -795,7 +796,7 @@ describe('Slack envelope transforms', () => {
 
   it('elides overflow past the block budget and appends a notice', () => {
     const count = SLACK_LIMITS.blocksPerMessage + 5;
-    const { blocks } = renderSlackEnvelope(
+    const { blocks } = renderPostable(
       {
         type: 'view',
         body: Array.from({ length: count }, (_, index) => ({
@@ -813,7 +814,7 @@ describe('Slack envelope transforms', () => {
 
   it('drops asset uploads whose placeholder blocks were budgeted out', () => {
     const filler = SLACK_LIMITS.blocksPerMessage + 2;
-    const { blocks, assets } = renderSlackEnvelope(
+    const { blocks, assets } = renderPostable(
       {
         type: 'view',
         body: [
@@ -836,7 +837,7 @@ describe('Slack envelope transforms', () => {
   });
 
   it('degrades a primitive with no slack renderer, preserving its content', () => {
-    const { blocks } = renderSlackEnvelope(
+    const { blocks } = renderPostable(
       {
         type: 'view',
         body: [{ type: 'caption', body: 'Aside' } satisfies CaptionNode],
@@ -850,7 +851,7 @@ describe('Slack envelope transforms', () => {
     // The container's own `slack` renderer returns a non-empty array for the
     // note, so nothing above it can notice the caption was dropped. Degrading
     // has to happen inside the recursion.
-    const { blocks } = renderSlackEnvelope(
+    const { blocks } = renderPostable(
       {
         type: 'view',
         body: [
@@ -871,7 +872,7 @@ describe('Slack envelope transforms', () => {
   });
 
   it('keeps a node hidden from slack out of the output, including via the fallback', () => {
-    const { blocks } = renderSlackEnvelope(
+    const { blocks } = renderPostable(
       {
         type: 'view',
         body: [
@@ -891,7 +892,7 @@ describe('Slack envelope transforms', () => {
     // `group` has a slack renderer; its only child is hidden from slack, so it
     // returns []. That is "rendered, empty", not "cannot render", and must not
     // be back-filled from markdown — which would leak the hidden child.
-    const { blocks } = renderSlackEnvelope(
+    const { blocks } = renderPostable(
       {
         type: 'view',
         body: [
@@ -909,7 +910,7 @@ describe('Slack envelope transforms', () => {
   });
 
   it('degrades a node with no slack renderer through its markdown', () => {
-    const { blocks } = renderSlackEnvelope(
+    const { blocks } = renderPostable(
       {
         type: 'view',
         body: [{ type: 'caption', body: 'Aside' } satisfies CaptionNode],
@@ -921,7 +922,7 @@ describe('Slack envelope transforms', () => {
 
   it('clamps the alt text it records for an upload, not just the block', () => {
     const label = 'L'.repeat(SLACK_LIMITS.imageAltTextChars + 50);
-    const { assets } = renderSlackEnvelope(
+    const { assets } = renderPostable(
       { type: 'view', body: [{ type: 'chart', label }] },
       degradingDispatcher({ collectAssets: true }),
       { collectAssets: true }
@@ -933,7 +934,7 @@ describe('Slack envelope transforms', () => {
   });
 
   it('namespaces allocated asset refs when a prefix is given', () => {
-    const { blocks, assets } = renderSlackEnvelope(
+    const { blocks, assets } = renderPostable(
       { type: 'view', body: [{ type: 'chart', label: 'Series' }] },
       degradingDispatcher({ collectAssets: true }),
       { collectAssets: true, assetPrefix: 'charts' }
@@ -950,7 +951,7 @@ describe('Slack envelope transforms', () => {
 describe('Slack envelope count limits', () => {
   const mrkdwn = (text: string) => ({ type: 'mrkdwn' as const, text });
   const render = (blocks: SlackBlock[]) =>
-    renderSlackEnvelope(
+    renderPostable(
       { type: 'view', body: [{ type: 'n' }] },
       dispatcherFor([blocks])
     ).blocks;
@@ -1238,7 +1239,7 @@ describe('Slack envelope count limits', () => {
 
 describe('Slack envelope mrkdwn clamping', () => {
   const clamped = (text: string): string => {
-    const [block] = renderSlackEnvelope(
+    const [block] = renderPostable(
       { type: 'view', body: [{ type: 'n' }] },
       dispatcherFor([[section(text)]])
     ).blocks;
@@ -1270,7 +1271,7 @@ describe('Slack envelope mrkdwn clamping', () => {
 
 describe('Slack envelope fallback text', () => {
   it('escapes the default text render as mrkdwn', () => {
-    const { text } = renderSlackEnvelope(
+    const { text } = renderPostable(
       { type: 'view', title: 'A <b> & c', body: [] },
       dispatcherFor([])
     );
@@ -1278,7 +1279,7 @@ describe('Slack envelope fallback text', () => {
   });
 
   it('passes a host-supplied text through as mrkdwn', () => {
-    const { text } = renderSlackEnvelope(
+    const { text } = renderPostable(
       { type: 'view', body: [] },
       dispatcherFor([]),
       {
@@ -1302,7 +1303,7 @@ describe('pack-authored rich text', () => {
           .map((inline) => ('text' in inline ? (inline.text ?? '') : ''))
           .join('');
   const fitted = (element: SlackRichTextBlockElement): SlackBlock[] =>
-    renderSlackEnvelope(
+    renderPostable(
       { type: 'view', body: [{ type: 'a' }] },
       dispatcherFor([[{ type: 'rich_text', elements: [element] }]])
     ).blocks;

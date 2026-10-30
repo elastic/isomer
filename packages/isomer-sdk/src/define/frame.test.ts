@@ -18,7 +18,7 @@ interface Theme {
 }
 
 const dispatcher: FrameDispatcher = {
-  renderSnapshot: (node, key) =>
+  renderSnapshotNode: (node, key) =>
     ({ node: node.type, key }) as unknown as ReactNode,
   estimateSnapshotHeight: () => 10,
 };

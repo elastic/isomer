@@ -150,6 +150,37 @@ describe('createPrimitiveDispatcher', () => {
     ]);
   });
 
+  it('renders nothing, not its markdown, when sanitize drops a node with a slack renderer', () => {
+    const droppedNote = definePrimitive<TaggedNote>({
+      type: 'note',
+      catalog: {
+        type: 'note',
+        purpose: '',
+        useWhen: [],
+        avoidWhen: [],
+        example: {},
+      },
+      examples: [],
+      schema: z.object({ type: z.literal('note'), body: z.string() }),
+      sanitize: () => null,
+      renderers: {
+        react: (node) => node.body,
+        text: (node) => node.body,
+        markdown: (node) => md.paragraph(node.body),
+        slack: (node) => ({
+          type: 'section',
+          text: { type: 'mrkdwn', text: node.body },
+        }),
+      },
+    });
+    expect(
+      createPrimitiveDispatcher<TaggedNote>([droppedNote]).renderSlack({
+        type: 'note',
+        body: 'Hidden',
+      })
+    ).toEqual([]);
+  });
+
   // The envelope only ever sees a container's own output, so a child that
   // degraded to nothing here could not be recovered downstream.
   it('degrades a child with no slack renderer nested inside a container', () => {

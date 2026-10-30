@@ -39,7 +39,7 @@ console.log(formatReport(report));
 
 `generate` is the only way a model is ever reached. Pass one that replays recorded output and the run is deterministic — which is how this belongs in CI.
 
-`runtime` is an `EvalRuntime`, the slice of a runtime the harness reads (`primitives`, `getAuthoringContext`, `validate`, `parse`, and the `text` surface), declared structurally so a pack can pass a stub; a runtime from `createIsomerRuntime` satisfies it, which `run.test.ts` proves against the runtime's own type.
+`runtime` is an `EvalRuntime`, the slice of a runtime the harness reads (`primitives`, `getAuthoringContext`, `parse`, `validate`, and the `text` surface), declared structurally so a pack can pass a stub; a runtime from `createIsomerRuntime` satisfies it, which `run.test.ts` proves against the runtime's own type.
 
 ### Options
 
@@ -87,7 +87,7 @@ Answering a three-stat question with one `statGroup` should score differently fr
 | `sizeVsGolden` | Per case: sanitized bytes over the golden's bytes, so `1` is the golden's size. | Closer to `1`; well above is verbosity, well below is a thinner answer than the golden |
 | `answerability` | Judge verdicts over the `text` rendering, counted as `yes` / `partial` / `no`. Present when a `judge` scored at least one validated case. | More `yes`, fewer `no` |
 
-Per case, `payload.rawBytes` is the model's output as sent and `payload.sanitizedBytes` is what survived parsing; the gap is invented properties the schema dropped. `payload.unknownTypes` lists node types the catalog does not have — any entry is either a catalog gap or the model reaching past it. Payload scores describe the first attempt, including when a retry succeeds. If a malformed container makes its child hook throw, its descendants cannot be inspected; scoring continues with the other branches, so an empty `unknownTypes` list does not prove the payload is valid.
+Per case, `payload.rawBytes` is the model's output as sent and `payload.sanitizedBytes` is the copy `validate` checked, `0` when the first attempt did not validate. `payload.unknownTypes` lists node types the catalog does not have — any entry is either a catalog gap or the model reaching past it. Payload scores describe the first attempt, including when a retry succeeds. If a malformed container makes its child hook throw, its descendants cannot be inspected; scoring continues with the other branches, so an empty `unknownTypes` list does not prove the payload is valid.
 
 ### Thresholds
 
@@ -135,7 +135,7 @@ import { scorePrimitiveSelection } from '@elastic/isomer-evals';
 expect(scorePrimitiveSelection(generated, golden).missing).toEqual([]);
 ```
 
-`checkAttempt(runtime, parseGenerated(raw))` parses the attempt's value against the runtime's schema and then validates the result, once per attempt — `runEvals` reads that one check for the retry decision, `scoreValidity`, and `scorePayload`. A value that parses but fails a semantic rule (duplicate ids, for instance) therefore never reads as a good composition. `scorePayload` reads the first attempt only, so a retry changes `validity` and not `payload`.
+`checkAttempt(runtime, parseGenerated(raw))` checks the attempt's value once, through the SDK's `checkComposition` — `runEvals` reads that one check for the retry decision, `scoreValidity`, and `scorePayload`. A value that matches the schema but fails a semantic rule (duplicate ids, for instance) therefore never reads as a good composition. `scorePayload` reads the first attempt only, so a retry changes `validity` and not `payload`.
 
 ## Agent runs
 
@@ -185,7 +185,7 @@ An `AgentEvalCase` may list `expected` node types; `scoreExpectedPrimitives` cou
 | `scorePayload` | `(runtime, attempt: CheckedAttempt, knownTypes, golden?) => PayloadScore` |
 | `scoreAnswerability` | `(runtime, judge, evalCase, composition) => Promise<AnswerabilityScore>` |
 | `parseGenerated`, `stripCodeFence` | Model output to a `ParsedAttempt`: the JSON parsed once, after any code fence is removed |
-| `checkComposition`, `checkAttempt` | A value, or a `ParsedAttempt`, parsed and validated once, as a `CheckedComposition` or `CheckedAttempt` |
+| `checkAttempt` | `(runtime, attempt: ParsedAttempt) => CheckedAttempt`; a `CheckedAttempt` that parsed carries `check`, the SDK's `CompositionCheck` from checking its value once with `checkComposition`, whose `errors` `formatValidationError` prints |
 
 Types: `EvalCase`, `EvalCaseResult`, `EvalReport`, `EvalRuntime`, `RunEvalsOptions`, `Generate`, `GenerateRequest`, `Judge`, `JudgeRequest`, `AnswerabilityVerdict`, and the four score shapes `ValidityScore`, `PrimitiveSelectionScore`, `PayloadScore`, `AnswerabilityScore`. Agent runs add `AgentEvalCase`, `AgentEvalCaseResult`, `AgentEvalCall`, `AgentEvalFrame`, `AgentEvalReport`, `AgentEvalTool`, `AgentMessage`, `AgentStep`, `AgentStepRequest`, `AgentStepResult`, `AgentToolCall`, `AgentToolResult`, `AgentToolSpec`, `AgentUsage`, and `RunAgentEvalsOptions`. `src/api_reference.test.ts` fails when a name exported from `src/index.ts` is missing from this page.
 

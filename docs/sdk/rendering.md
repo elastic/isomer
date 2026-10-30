@@ -167,6 +167,10 @@ A `container` goes through every step with its children:
 
 A container nested in another is unwrapped into its parent, since Slack rejects one. A container any step leaves with no children, or more than `containerChildBlocks`, is unwrapped too: its title becomes a `header` (or its `rich_text_title` a `rich_text` block), its subtitle a `context` block, followed by its children.
 
+### Checking a Slack payload
+
+`slackLimitProblems({ text, blocks })` lists where a payload breaks `SLACK_LIMITS`, one message per problem naming the block path, and is empty when Slack would accept it. It also reports a block wrapped in `unmodeledSlackBlock` whose type Isomer models. It cannot check a block of a type Isomer does not model; `unmodeledSlackBlockTypes(blocks)` names those types, a container's children included. The SDK's envelope tests hold every payload they render to it, and `isomer-studio check` runs it on each example's Slack output.
+
 ## Titled sections on Slack
 
 A primitive that groups its body under a title, such as an "Impact" or "Hypotheses" section, renders on Slack through `slackContainer`, which builds a Block Kit `container`:
@@ -232,7 +236,7 @@ Every `unmodeledSlackBlock` call has an issue asking Isomer to model its block, 
 ### Modeling a block in Isomer
 
 1. Add the block's interface to `define/slack_blocks.ts` and to the `SlackBlock` union. The type list in `render/slack/unmodeled.ts` does not compile until the type is added there too.
-2. Add a `SLACK_LIMITS` entry for each limit Slack documents, fit it in the envelope, and check it in Studio's `slackLimitProblems`.
+2. Add a `SLACK_LIMITS` entry for each limit Slack documents, fit it in the envelope, and check it in `slackLimitProblems` (`render/slack/limit_problems.ts`).
 3. Export the new types from the `./slack` barrels, and say in the release notes that packs wrapping the type drop the wrapper.
 
 ## Formatting helpers

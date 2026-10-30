@@ -14,12 +14,9 @@ import type {
   SlackRichTextInline,
   SlackSectionAccessory,
   SlackTableCell,
-} from '@elastic/isomer-sdk/slack';
-import {
-  isModeledSlackBlockType,
-  isUnmodeledSlackBlock,
-  SLACK_LIMITS,
-} from '@elastic/isomer-sdk/slack';
+} from './blocks';
+import { SLACK_LIMITS } from './blocks';
+import { isModeledSlackBlockType, isUnmodeledSlackBlock } from './unmodeled';
 
 const list = <T>(value: readonly T[] | undefined): readonly T[] => value ?? [];
 
@@ -413,20 +410,18 @@ const staleWrapperProblems = ({ where, block }: LocatedBlock): string[] => {
     : [];
 };
 
-/** One note per block type Isomer does not model: the envelope passed those blocks through unfitted, and {@link slackLimitProblems} cannot check them. */
-export const unmodeledSlackNotes = (blocks: readonly SlackBlock[]): string[] =>
-  [
-    ...new Set(
-      located(blocks)
-        .map(({ block: { type } }): string => type)
-        .filter((type) => !isModeledSlackBlockType(type))
-    ),
-  ].map(
-    (type) =>
-      `Isomer doesn't model \`${type}\` blocks, so their Slack limits aren't checked and this preview may not draw them. Check the message in Block Kit Builder.`
-  );
+/** Each block type in `blocks`, a container's children included, that Isomer does not model, once: {@link slackLimitProblems} cannot check those blocks. */
+export const unmodeledSlackBlockTypes = (
+  blocks: readonly SlackBlock[]
+): string[] => [
+  ...new Set(
+    located(blocks)
+      .map(({ block: { type } }): string => type)
+      .filter((type) => !isModeledSlackBlockType(type))
+  ),
+];
 
-/** Where a rendered Slack message breaks `SLACK_LIMITS`; empty when Slack would accept it. */
+/** Where a Slack message breaks `SLACK_LIMITS`, one message per problem; empty when Slack would accept it. */
 export const slackLimitProblems = ({
   text,
   blocks,
