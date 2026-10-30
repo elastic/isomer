@@ -23,10 +23,10 @@ import {
   MAX_INPUT_CHARACTERS,
   MAX_INPUT_DEPTH,
 } from '@elastic/isomer-sdk';
+import { checkComposition } from '@elastic/isomer-sdk/author';
 import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { z } from 'zod';
 
-import { checkComposition } from './check';
 import { ISOMER_TOOL_NAMES } from './names';
 import { createIsomerTools } from './tools';
 import type {
@@ -828,46 +828,54 @@ describe('a throwing runtime', () => {
   });
 });
 
-describe('checkComposition', () => {
-  it('keeps each error structured beside its string', () => {
-    const { valid, errors, findings } = checkComposition(
-      runtime,
-      slideDeckFrame,
-      { type: 'view', body: [{ ...slide, nope: 1 }] }
-    );
-    expect(valid).toBe(false);
-    expect(findings).toEqual([
+describe('the SDK composition check the tools report', () => {
+  it('keeps each error structured, and the tools print it', async () => {
+    const value = { type: 'view', body: [{ ...slide, nope: 1 }] };
+    const check = checkComposition(runtime, value, slideDeckFrame);
+    expect(check.valid).toBe(false);
+    expect(check.errors).toEqual([
       expect.objectContaining({ path: 'body[0]', nodeType: 'slideFrame' }),
     ]);
-    expect(errors).toEqual(findings.map(formatValidationError));
+    const { errors } = jsonOf(
+      await call(
+        createIsomerTools({ runtime, frame: slideDeckFrame }),
+        ISOMER_TOOL_NAMES.validate,
+        { composition: value }
+      )
+    );
+    expect(errors).toEqual(check.errors.map(formatValidationError));
   });
 
-  it('prints each warning with its surface and path once', () => {
-    const { warnings } = checkComposition(
-      {
-        ...runtime,
-        validate: (composition) => ({
-          composition,
-          valid: true,
-          errors: [],
-          warnings: [
-            {
-              surface: 'snapshot',
-              path: 'body[0]',
-              message:
-                'body[0] type "slideFrame" declares no snapshotHeight metric',
-            },
-            {
-              surface: 'slack',
-              path: 'body[0].body[1]',
-              message: 'draws nothing',
-            },
-            { surface: 'text', message: 'is empty' },
-          ],
+  it('prints each warning with its surface and path once', async () => {
+    const { warnings } = jsonOf(
+      await call(
+        createIsomerTools({
+          runtime: {
+            ...runtime,
+            validate: (composition) => ({
+              composition,
+              valid: true,
+              errors: [],
+              warnings: [
+                {
+                  surface: 'snapshot',
+                  path: 'body[0]',
+                  message:
+                    'body[0] type "slideFrame" declares no snapshotHeight metric',
+                },
+                {
+                  surface: 'slack',
+                  path: 'body[0].body[1]',
+                  message: 'draws nothing',
+                },
+                { surface: 'text', message: 'is empty' },
+              ],
+            }),
+          },
         }),
-      },
-      undefined,
-      oneSlide
+        ISOMER_TOOL_NAMES.validate,
+        { composition: oneSlide }
+      )
     );
     expect(warnings).toEqual([
       'snapshot: body[0] type "slideFrame" declares no snapshotHeight metric',
@@ -890,14 +898,12 @@ describe('checkComposition', () => {
   ])(
     'keeps the code of the runtime’s refusal of a value %s',
     (_label, value, code) => {
-      const { valid, findings, composition } = checkComposition(
-        runtime,
-        slideDeckFrame,
-        value
-      );
-      expect(valid).toBe(false);
-      expect(findings).toEqual([expect.objectContaining({ path: '', code })]);
-      expect(composition).toBeUndefined();
+      const check = checkComposition(runtime, value, slideDeckFrame);
+      expect(check.valid).toBe(false);
+      expect(check.errors).toEqual([
+        expect.objectContaining({ path: '', code }),
+      ]);
+      expect(check.composition).toBeUndefined();
     }
   );
 
@@ -905,8 +911,8 @@ describe('checkComposition', () => {
     const { validate, validated } = recordValidate();
     const { composition } = checkComposition(
       { ...runtime, validate },
-      slideDeckFrame,
-      oneSlide
+      oneSlide,
+      slideDeckFrame
     );
     expect(validated).toHaveLength(1);
     expect(composition).toBe(validated[0]);
@@ -914,12 +920,13 @@ describe('checkComposition', () => {
   });
 
   it('reports a frame rule as a finding with an empty path', () => {
-    const { findings } = checkComposition(runtime, slideDeckFrame, {
-      type: 'view',
-      body: [slide, slide],
-    });
-    expect(findings.map(({ path }) => path)).toEqual(['']);
-    expect(findings[0]?.message).toMatch(FRAME_RULE);
+    const { errors } = checkComposition(
+      runtime,
+      { type: 'view', body: [slide, slide] },
+      slideDeckFrame
+    );
+    expect(errors.map(({ path }) => path)).toEqual(['']);
+    expect(errors[0]?.message).toMatch(FRAME_RULE);
   });
 });
 

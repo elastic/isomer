@@ -5,10 +5,12 @@
  * 2.0.
  */
 
-import { type Composition, formatValidationError } from '@elastic/isomer-sdk';
-import { checkComposition as check } from '@elastic/isomer-sdk/author';
+import { formatValidationError } from '@elastic/isomer-sdk';
+import {
+  checkComposition,
+  type CompositionCheck,
+} from '@elastic/isomer-sdk/author';
 
-import type { AgentEvalFrame } from '../agent_types';
 import type { EvalRuntime, ValidityScore } from '../types';
 
 /** Model output with the code fence some models wrap JSON in removed. */
@@ -35,31 +37,12 @@ export const parseGenerated = (raw: string): ParsedAttempt => {
   }
 };
 
-/** What {@link checkComposition} returns: the verdict, and the validated composition when there was one. */
-export interface CheckedComposition {
-  valid: boolean;
-  /** Formatted validation errors, and any frame rule's; empty when valid. */
-  errors: readonly string[];
-  /** The copy `validate` checked, absent when `validate` found errors. */
-  composition?: Composition | undefined;
-}
-
-/** The SDK's `checkComposition`, with its errors formatted. */
-export const checkComposition = (
-  runtime: EvalRuntime,
-  value: unknown,
-  frame?: AgentEvalFrame
-): CheckedComposition => {
-  const { valid, errors, composition } = check(runtime, value, frame);
-  return { valid, errors: errors.map(formatValidationError), composition };
-};
-
 /** A {@link ParsedAttempt} with its value checked exactly once; output that did not parse has nothing to check. */
 export type CheckedAttempt =
-  | { parsed: true; raw: string; value: unknown; check: CheckedComposition }
+  | { parsed: true; raw: string; value: unknown; check: CompositionCheck }
   | { parsed: false; raw: string; error: string };
 
-/** Runs {@link checkComposition} over an attempt's value, once. */
+/** Runs the SDK's `checkComposition` over an attempt's value, once. */
 export const checkAttempt = (
   runtime: EvalRuntime,
   attempt: ParsedAttempt
@@ -103,7 +86,7 @@ export const scoreValidity = (
     parsed: true,
     valid: false,
     validAfterRetry: retried?.valid ?? false,
-    errors: first.errors,
+    errors: first.errors.map(formatValidationError),
     composition: retried?.valid ? retried.composition : undefined,
   };
 };

@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-export { type IsomerCompositionCheck, checkComposition } from './check';
 export { buildIsomerAuthoringGuide, buildPrimitiveDescriptions } from './guide';
 export {
   ISOMER_AUTHORING_GUIDE_URI,

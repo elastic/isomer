@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { formatValidationError } from '@elastic/isomer-sdk';
 import { buildAuthoringPrompt } from '@elastic/isomer-sdk/author';
 
 import { mapWithConcurrency, mean } from './concurrency';
@@ -80,7 +81,9 @@ export const runEvals = async ({
         evalCase,
         prompt,
         attempt: 1,
-        previousErrors: attempt.parsed ? attempt.check.errors : [attempt.error],
+        previousErrors: attempt.parsed
+          ? attempt.check.errors.map(formatValidationError)
+          : [attempt.error],
       });
       retryAttempt = checkAttempt(runtime, parseGenerated(retryRaw));
     }

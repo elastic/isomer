@@ -185,7 +185,7 @@ An `AgentEvalCase` may list `expected` node types; `scoreExpectedPrimitives` cou
 | `scorePayload` | `(runtime, attempt: CheckedAttempt, knownTypes, golden?) => PayloadScore` |
 | `scoreAnswerability` | `(runtime, judge, evalCase, composition) => Promise<AnswerabilityScore>` |
 | `parseGenerated`, `stripCodeFence` | Model output to a `ParsedAttempt`: the JSON parsed once, after any code fence is removed |
-| `checkComposition`, `checkAttempt` | A value, or a `ParsedAttempt`, validated once, as a `CheckedComposition` or `CheckedAttempt`; `checkComposition` takes an optional frame, whose body rule it applies to a valid value |
+| `checkAttempt` | `(runtime, attempt: ParsedAttempt) => CheckedAttempt`; a `CheckedAttempt` that parsed carries `check`, the SDK's `CompositionCheck` from validating its value once with `checkComposition`, whose `errors` `formatValidationError` prints |
 
 Types: `EvalCase`, `EvalCaseResult`, `EvalReport`, `EvalRuntime`, `RunEvalsOptions`, `Generate`, `GenerateRequest`, `Judge`, `JudgeRequest`, `AnswerabilityVerdict`, and the four score shapes `ValidityScore`, `PrimitiveSelectionScore`, `PayloadScore`, `AnswerabilityScore`. Agent runs add `AgentEvalCase`, `AgentEvalCaseResult`, `AgentEvalCall`, `AgentEvalFrame`, `AgentEvalReport`, `AgentEvalTool`, `AgentMessage`, `AgentStep`, `AgentStepRequest`, `AgentStepResult`, `AgentToolCall`, `AgentToolResult`, `AgentToolSpec`, `AgentUsage`, and `RunAgentEvalsOptions`. `src/api_reference.test.ts` fails when a name exported from `src/index.ts` is missing from this page.
 

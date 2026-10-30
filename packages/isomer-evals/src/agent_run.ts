@@ -5,6 +5,8 @@
  * 2.0.
  */
 
+import { formatValidationError } from '@elastic/isomer-sdk';
+import { checkComposition } from '@elastic/isomer-sdk/author';
 import { toJSONSchema } from 'zod';
 
 import type {
@@ -21,7 +23,7 @@ import type {
 } from './agent_types';
 import { mapWithConcurrency, mean } from './concurrency';
 import { scoreExpectedPrimitives } from './score/expected_primitives';
-import { checkComposition, parseGenerated } from './score/validity';
+import { parseGenerated } from './score/validity';
 
 const DEFAULT_SYSTEM =
   'Answer each request with one composition. Use the tools to learn the primitives and check your work. When you are done, reply with only the composition JSON and nothing else.';
@@ -163,7 +165,7 @@ export const runAgentEvals = async ({
       ...base,
       parsed: true,
       valid: check.valid,
-      errors: check.errors,
+      errors: check.errors.map(formatValidationError),
       ...(evalCase.expected === undefined
         ? {}
         : {
