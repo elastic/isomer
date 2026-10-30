@@ -92,12 +92,14 @@ export class ComposeSync {
     load(controller.signal).then(
       (initial) => {
         if (!controller.signal.aborted) {
+          this.#load = undefined;
           this.#plant(initial);
           this.#loaded();
         }
       },
       (error: unknown) => {
         if (!controller.signal.aborted) {
+          this.#load = undefined;
           this.#set({
             loadError: error instanceof Error ? error.message : String(error),
           });
@@ -129,7 +131,7 @@ export class ComposeSync {
   readonly dispose = () => {
     const pending = this.#pending;
     const encoding = this.#encoding;
-    // A link still loading never opened, so opening it again, as a remount does, loads it.
+    // A link still loading never opened, so opening it again, as a remount does, loads it; `#load` is set only while one is.
     if (this.#load) {
       this.#query = undefined;
     }

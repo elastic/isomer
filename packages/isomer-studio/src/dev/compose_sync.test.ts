@@ -231,6 +231,25 @@ describe('ComposeSync', () => {
         seed: { initial: initial('loaded') },
       });
     });
+
+    it.each([
+      ['loaded', () => Promise.resolve(initial('loaded'))],
+      ['failed', () => Promise.reject(new Error('gone'))],
+    ])(
+      'keeps a link that already %s when it reopens, so its editor stays mounted',
+      async (_settled, load) => {
+        const { sync } = setup();
+        sync.open({ src: 'a.json' }, load, fallback);
+        await flush();
+        const { seed } = sync.getState();
+        sync.dispose();
+        const reload = vi.fn(() => Promise.resolve(initial('reloaded')));
+        sync.open({ src: 'a.json' }, reload, fallback);
+        await flush();
+        expect(reload).not.toHaveBeenCalled();
+        expect(sync.getState().seed).toBe(seed);
+      }
+    );
   });
 
   describe('open', () => {
