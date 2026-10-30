@@ -77,7 +77,7 @@ Answering a three-stat question with one `statGroup` should score differently fr
 
 ### Why selection reads the whole tree
 
-Selection counts every node, reached through each primitive's child hook the same way `scoreExpectedPrimitives` and `payload.unknownTypes` reach them, so a data field named `type` is not a node. A pack whose frame wraps every answer in one container, as the slides pack wraps each in a `slide`, puts the choice that matters below the top level; counting only `body[].type` would score whether the model used a slide. The wrapper still counts once on each side, so two answers that share only it score above zero.
+Selection counts every node, reached through each primitive's child hook the same way `scoreExpectedPrimitives` and `payload.unknownTypes` reach them, so a data field named `type` is not a node. A pack whose frame wraps every answer in one container, as the slides pack wraps each in a `slideFrame`, puts the choice that matters below the top level; counting only `body[].type` would score whether the model used a frame. The wrapper still counts once on each side, so two answers that share only it score above zero.
 
 ## Reading the numbers
 
