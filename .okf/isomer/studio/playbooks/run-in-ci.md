@@ -18,7 +18,7 @@ sources:
 
 Check a pack and upload its Studio with the composite action, or with `isomer-studio check` and `isomer-studio build` on another CI system, as the package's CI docs describe.[^docs]
 
-In this repository, run `pnpm build` first so the Studio's `dist/` exists.
+In this repository, run `pnpm build` first so the Studio's `lib/` exists.
 
 Related: [root and CLI](/studio/entry-points/root.md).
 

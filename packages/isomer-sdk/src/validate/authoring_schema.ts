@@ -9,6 +9,7 @@ import type { ZodType } from 'zod';
 
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
 
+import { DEF_PREFIX, isJsonObject, ownDef, parseDefRef } from './json_helpers';
 import {
   buildCompositionJsonSchema,
   type CompositionJsonSchemaOptions,
@@ -22,7 +23,6 @@ import {
 
 type JsonSchema = Record<string, unknown>;
 
-const DEF_PREFIX = '#/$defs/';
 const BODY_NODE_ID = 'bodyNode';
 const SAFE_INTEGER_MAX = Number.MAX_SAFE_INTEGER;
 const SCALAR_TYPES = new Set(['string', 'number', 'integer', 'boolean']);
@@ -38,24 +38,9 @@ const DEFAULT_EXTRA_DEFS: readonly { schema: ZodType; id: string }[] = [
 export interface AuthoringJsonSchemaOptions extends CompositionJsonSchemaOptions {
   /** `$def` id to `description`. Survives `z.toJSONSchema` dropping `.refine` text. */
   describe?: Readonly<Record<string, string>>;
-  /** `$defId.property` paths to drop, e.g. `'kpi.delta'`. */
-  omitProperties?: readonly string[];
 }
 
-const isJsonObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
-
 const cloneJson = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
-
-const ownDef = (defs: Record<string, unknown>, id: string): unknown =>
-  Object.hasOwn(defs, id) ? defs[id] : undefined;
-
-const parseDefRef = (ref: unknown): string | undefined => {
-  if (typeof ref !== 'string' || !ref.startsWith(DEF_PREFIX)) {
-    return undefined;
-  }
-  return ref.slice(DEF_PREFIX.length);
-};
 
 const walkJson = (
   node: unknown,
@@ -169,29 +154,6 @@ const dropNodeIdAndSurfaces = (schema: JsonSchema): void => {
       def.required = def.required.filter(
         (key) => key !== 'id' && key !== 'surfaces'
       );
-    }
-  }
-};
-
-const omitListedProperties = (
-  schema: JsonSchema,
-  paths: readonly string[]
-): void => {
-  const defs = defsOf(schema);
-  for (const path of paths) {
-    const dot = path.indexOf('.');
-    if (dot <= 0) {
-      continue;
-    }
-    const defId = path.slice(0, dot);
-    const property = path.slice(dot + 1);
-    const def = ownDef(defs, defId);
-    if (!isJsonObject(def) || !isJsonObject(def.properties)) {
-      continue;
-    }
-    delete def.properties[property];
-    if (Array.isArray(def.required)) {
-      def.required = def.required.filter((key) => key !== property);
     }
   }
 };
@@ -312,38 +274,34 @@ const mergeExtraDefs = (
 
 const slimAuthoringSchema = (
   schema: JsonSchema,
-  options: AuthoringJsonSchemaOptions
+  describe: Readonly<Record<string, string>>
 ): JsonSchema => {
   const next = cloneJson(schema);
   dropSafeIntegerMaxima(next);
   dropNodeIdAndSurfaces(next);
-  omitListedProperties(next, options.omitProperties ?? []);
   const flattened = flattenRefOnlyDefs(next);
   const inlined = inlineScalarDefs(flattened);
   const pruned = pruneUnreferencedDefs(inlined);
-  applyDescriptions(pruned, options.describe ?? {});
+  applyDescriptions(pruned, describe);
   return pruned;
 };
 
 /**
  * Projects a composition to the JSON Schema an agent reads.
  *
- * {@link buildCompositionJsonSchema} stays the validator projection. This walk
+ * `buildCompositionJsonSchema` stays the validator projection. This walk
  * names shared SDK defs, inlines scalar leaves, and drops host-only fields.
  */
 export const buildAuthoringJsonSchema = (
   definitions: readonly AnyPrimitiveDefinition[],
   options: AuthoringJsonSchemaOptions = {}
 ): JsonSchema => {
-  const { describe, omitProperties, extraDefs, ...rest } = options;
+  const { describe, extraDefs, ...rest } = options;
   const projected = buildCompositionJsonSchema(definitions, {
     ...rest,
     extraDefs: mergeExtraDefs(extraDefs),
   });
-  return slimAuthoringSchema(projected, {
-    ...(describe === undefined ? {} : { describe }),
-    ...(omitProperties === undefined ? {} : { omitProperties }),
-  });
+  return slimAuthoringSchema(projected, describe ?? {});
 };
 
 const BODY_NODE_STUB = {

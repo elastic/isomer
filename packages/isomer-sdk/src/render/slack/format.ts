@@ -41,8 +41,6 @@ export const escapeMrkdwn = (value: string): string =>
 export const bold = (text: string): string => `*${escapeMrkdwn(text)}*`;
 /** `text` escaped and wrapped in mrkdwn italic markers. */
 export const italic = (text: string): string => `_${escapeMrkdwn(text)}_`;
-/** `text` escaped and wrapped in mrkdwn strikethrough markers. */
-export const strike = (text: string): string => `~${escapeMrkdwn(text)}~`;
 
 /**
  * Inline code span. Contents are not mrkdwn-escaped, since `<` and friends are

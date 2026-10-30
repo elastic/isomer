@@ -10,16 +10,18 @@ import { registerProjectResolution } from './node/load_config';
 
 const shutdown: Array<() => Promise<void>> = [];
 
-process.exitCode = await runCli(process.argv.slice(2), {
+const stop = () => {
+  void Promise.all(shutdown.map((close) => close())).then(() => process.exit());
+};
+
+void runCli(process.argv.slice(2), {
   cwd: process.cwd(),
   stdout: (text) => process.stdout.write(text),
   stderr: (text) => process.stderr.write(text),
   onDevServer: (server) => shutdown.push(server.close),
   onConfig: registerProjectResolution,
+}).then((code) => {
+  process.exitCode = code;
+  process.once('SIGINT', stop);
+  process.once('SIGTERM', stop);
 });
-
-const stop = () => {
-  void Promise.all(shutdown.map((close) => close())).then(() => process.exit());
-};
-process.once('SIGINT', stop);
-process.once('SIGTERM', stop);

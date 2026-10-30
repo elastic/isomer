@@ -1,7 +1,7 @@
 ---
 type: Concept
 title: Pack
-description: Forty slide-deck primitives, six surfaces, one Distillate HTML adapter, and the builds and Copy enhancements.
+description: Forty-one slide-deck primitives, six surfaces, one Distillate HTML adapter, and the builds and Copy enhancements.
 resource: https://github.com/elastic/isomer/blob/main/packages/isomer-primitives-slides/src/pack.ts
 tags: [isomer, slides]
 status: stable

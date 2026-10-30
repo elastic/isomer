@@ -12,7 +12,7 @@ The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, a
 
 `packages/isomer-evals` scores whether a model produces valid, well-chosen compositions from a pack's authoring context. It depends on the SDK's public API alone and runs with no credentials.
 
-`packages/isomer-studio` is the `isomer-studio` CLI: `dev`, `build` and `check` over a consumer's `isomer-studio.config.ts`. It is ESM only, ships its browser app prebuilt in `dist/app`, and keeps React at 18 until EUI allows 19. `dev` runs on Vite and hot-updates a changed config in place; `build` stays on esbuild. `pnpm studio:dev` runs the CLI from source against the slides pack. `pnpm test:browser` and `scripts/check_studio_consumer.js` drive it in Chromium.
+`packages/isomer-studio` is the `isomer-studio` CLI: `dev`, `build` and `check` over a consumer's `isomer-studio.config.ts`. Its `bin` runs the CommonJS build, which loads Vite with `import()`; it ships its browser app prebuilt in `lib/app` and keeps React at 18 until EUI allows 19. `dev` runs on Vite and hot-updates a changed config in place; `build` stays on esbuild. `pnpm studio:dev` runs the CLI from source against the slides pack. `pnpm test:browser` and `scripts/check_studio_consumer.js` drive it in Chromium.
 
 `packages/isomer-agent-tools` turns any runtime into transport-neutral agent tools, resources, and a `compose` prompt. It declares the runtime structurally and depends on the SDK alone; hosts bring the transport, and it must never reach `@modelcontextprotocol/sdk`, which `scripts/check_module_graph.js` enforces.
 
@@ -30,7 +30,7 @@ This repository is the source of truth for Isomer. Earlier prototypes and host-s
 pnpm verify
 ```
 
-That is the complete local gate. `pnpm verify:fast` (typecheck, lint, license check, tests) is the inner loop; it is not a substitute before a PR. If a check fails in a way that looks unrelated to your change, say so rather than papering over it.
+That is the complete local gate. `pnpm verify:fast` (build, typecheck, lint, license check, tests) is the inner loop; it is not a substitute before a PR. If a check fails in a way that looks unrelated to your change, say so rather than papering over it.
 
 ## Conventions
 
@@ -42,8 +42,8 @@ That is the complete local gate. `pnpm verify:fast` (typecheck, lint, license ch
 - `src/entries/*` are hand-curated on purpose: which names reach which subpath is what keeps `react-dom/server` off the root entry.
 - `zod` is a peer dependency. Do not add it to `dependencies`.
 - The sdk must not import the runtime.
-- No cross-package tsconfig `paths`. Internal resolution is `workspace:*` plus TypeScript project references. The one `paths` entry in the repo redirects an _external_ package's subpath types for the CommonJS pass, whose `Node10` resolution cannot read an `exports` map; it is not a route between workspace packages.
-- Do not invent a bundler for the library build. `tsc` plus `tsc-alias` is the toolchain, with a second `tsc` pass for CommonJS.
+- No tsconfig `paths`. Internal resolution is `workspace:*`: a package compiles against its dependencies' built declarations, so `pnpm -r` builds in dependency order.
+- Each package builds as `elastic/eui`'s packages do: `tsc` emits ESM for bundlers to `lib/esm`, Babel emits CommonJS to `lib/cjs`, and `tsc` emits declarations beside it; Node consumers `require` the CommonJS build.
 - After adding or changing a dependency, run `pnpm licenses:report` and include the updated `THIRD_PARTY_LICENSES.md` and `NOTICE.txt`.
 - Narrative docs live in each package's `docs/`. Root `docs/` is the docs-builder assembler (landing page and OKF map); do not author package pages there. Its package folders are committed copies, because Elastic Internal Docs (Codex) clones and builds `docs/` as committed: run `pnpm docs:assemble` and commit the result whenever package docs change, and CI fails with `pnpm docs:check` when they drift. Preview with `pnpm docs:dev`.
 - `.okf/isomer` keeps agent-facing detail the package docs don't cover; a concept the docs cover points to them instead of restating them. Put what a human reader needs in the package docs. When a change alters detail a concept keeps, update that concept and run `pnpm okf:check` and `pnpm okf:index`.

@@ -10,23 +10,29 @@
     "url": "git+https://github.com/elastic/isomer.git",
     "directory": "packages/isomer-primitives-slides"
   },
-  "type": "module",
   "sideEffects": false,
-  "main": "./dist/cjs/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "lib/cjs/index.js",
+  "module": "lib/esm/index.js",
+  "types": "lib/cjs/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/cjs/index.js"
+      "types": "./lib/cjs/index.d.ts",
+      "import": "./lib/esm/index.js",
+      "require": "./lib/cjs/index.js",
+      "default": "./lib/cjs/index.js"
     }
   },
   "files": [
-    "dist",
+    "lib",
+    "!**/*.tsbuildinfo",
     "LICENSE.txt"
   ],
   "scripts": {
+    "build": "pnpm build:clean && pnpm build:compile && pnpm build:compile:esm && pnpm build:types",
+    "build:clean": "rimraf lib/",
+    "build:compile": "NODE_ENV=production babel src --out-dir=lib/cjs --extensions .js,.ts,.tsx --ignore \"**/*.test.ts,**/*.fixtures.ts,src/examples/**\"",
+    "build:compile:esm": "tsc --project ./tsconfig.esm.json",
+    "build:types": "NODE_ENV=production tsc --project tsconfig.types.json",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

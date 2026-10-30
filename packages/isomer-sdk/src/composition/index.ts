@@ -7,11 +7,9 @@
 
 export { type ActionEventRef } from './action_event';
 export {
-  type BodyNodeBase,
   type ChildNodeRef,
   type ChildNodeWalker,
   type SurfaceName,
-  BODY_NODE_SURFACES,
   SURFACE_NAMES,
   createChildNodeWalker,
   isVisibleOnSurface,
@@ -20,19 +18,13 @@ export {
 export { type Composition, type CompositionMeta } from './composition';
 export { type IsomerErrorCode, ISOMER_ERROR_CODES, IsomerError } from './error';
 export { mapCompositionNodes } from './map_nodes';
-export {
-  type NamedColor,
-  type NamedColorPalette,
-  type RenderTheme,
-  ALL_NAMED_COLORS,
-} from './named_color';
+export { type NamedColor, type RenderTheme } from './named_color';
 export { type PrimitiveNode } from './node';
 export { nameText, oneLine, quoteText } from './one_line';
 export {
   type DisplayValue,
   type StructuredValue,
   type StructuredValueFormat,
-  STRUCTURED_VALUE_FORMATS,
 } from './structured_value';
 export {
   type ValidationError,

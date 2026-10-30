@@ -15,9 +15,9 @@ pnpm verify
 
 The Playwright install is a one-time step that downloads the Chromium `verify` drives; on Linux, add `--with-deps`.
 
-`pnpm verify` is the full local gate: typecheck, lint (ESLint with Prettier as a rule, markdownlint, and license headers), tests, the dual ESM/CJS build, and the `check:*` scripts (export parity, package exports, emitted declarations, pack contents, module graph, packed consumer), the Studio's browser tests, and `pnpm licenses:report --check`. CI runs the same command.
+`pnpm verify` is the full local gate: typecheck, lint (ESLint with Prettier as a rule, markdownlint, and license headers), tests, the ESM and CommonJS build, and the `check:*` scripts (export parity, package exports, emitted declarations, pack contents, module graph, packed consumer), the Studio's browser tests, and `pnpm licenses:report --check`. CI runs the same command.
 
-`pnpm verify:fast` is the inner loop: typecheck, lint, and the license check side by side, then the tests. It skips the build, the packed checks, and the browser tests, so run `pnpm verify` before opening a PR. ESLint caches results in `node_modules/.cache/eslint/` and rechecks only files whose content changed, so a type-aware rule can miss an error that a change in another file causes; delete the cache, or let CI's fresh run catch it.
+`pnpm verify:fast` is the inner loop: the build, then typecheck, lint, and the license check side by side, then the tests, which resolve packages through their built `lib`. It skips the packed checks and the browser tests, so run `pnpm verify` before opening a PR. ESLint caches results in `node_modules/.cache/eslint/` and rechecks only files whose content changed, so a type-aware rule can miss an error that a change in another file causes; delete the cache, or let CI's fresh run catch it.
 
 CI also runs the typecheck, the node tests, and the packed consumer check at three peer targets: `floor` (the lowest versions the published peer ranges admit), `kibana` (what elastic/kibana pins on `main`), and `latest` (the highest versions they admit). To reproduce one, run `node scripts/apply_peer_target.js <target>` and `pnpm install --no-frozen-lockfile`, then restore `package.json` and `pnpm-lock.yaml`.
 
@@ -28,17 +28,19 @@ Useful individual scripts:
 - `pnpm studio:dev` — the Studio for the slides pack, run from the Studio's TypeScript source so edits to the Studio and to the pack both hot-update without a reload. Extra flags pass through, for example `pnpm studio:dev --port 5180`. Run `pnpm build` once first; edits to the SDK or runtime need it again.
 - `pnpm test:browser` — the Studio's Playwright test of `dev` and a static build
 - `pnpm check:studio-consumer` — installs the packed Studio with npm outside the workspace, then runs `check`, `build`, and the browser test against a consumer's own config
-- `pnpm build` — the ESM build, specifier rewriting, and the CommonJS pass (see below)
+- `pnpm build` — every package's ESM, CommonJS and declaration builds (see below)
 - `pnpm licenses:report` — regenerate `THIRD_PARTY_LICENSES.md` and `NOTICE.txt` for the workspace, and each published package's own, scoped to what a consumer installs with it for the workspace, and for each published package scoped to what a consumer installs with it
 - `pnpm docs:dev` — copy package docs into the assembler and serve with live reload (`docs-builder serve`, <http://localhost:3000>). Requires the [docs-builder](https://github.com/elastic/docs-builder) binary (`curl -sL https://ela.st/docs-builder-install | sh`)
 
 ## The build
 
-`pnpm build` is `tsc --build` for ESM, then two steps that exist because there is no bundler. Sources import relative modules without extensions, and Node's ESM loader requires them, so `scripts/rewrite_specifiers.js` runs `tsc-alias` to append `.js` to every relative specifier in `dist`. A second `tsc` pass then emits CommonJS under `dist/cjs` for `require` consumers, whose Node10 resolution cannot read an `exports` map; `scripts/write_cjs_manifest.js` marks that directory `"type": "commonjs"`. `check:export-parity` proves the two builds expose the same names.
+`pnpm build` runs each package's `build` in dependency order, the way `elastic/eui`'s packages build. `build:clean` empties `lib/`; `build:compile` runs Babel over `src` for CommonJS in `lib/cjs`; `build:compile:esm` runs `tsc -p tsconfig.esm.json` for ESM in `lib/esm`; `build:types` runs `tsc -p tsconfig.types.json` for declarations in `lib/cjs`. A package with a hand-written `.cjs` module copies it into `lib/cjs` with `copy-files`, and the Studio writes its prebuilt app to `lib/app` with `build:assets`.
+
+The ESM keeps extensionless relative imports, so it is for bundlers: Node consumers `require` the CommonJS build, and every export maps `types`, `import`, `require` and `default` (the CommonJS build). `check:export-parity` holds every manifest to that shape, `check:exports` requires each export, and `check:pack-consumer` requires each packed export, bundles its ESM with esbuild for Node and the browser, and compiles its declarations under `node10`, `nodenext` and `bundler` resolution.
 
 ## Adding a package
 
-Create `packages/<name>` with a `package.json` that declares a `typecheck` script, plus `tsconfig.json`, `tsconfig.build.json`, and `tsconfig.build.cjs.json` modeled on a sibling. Then, by hand: add a reference to `tsconfig.workspace.json`, a `toc` entry to `docs/docset.yml`, a `workspace:*` devDependency to the root `package.json`, and a paragraph to `AGENTS.md`. Everything else (typecheck, tests and their source aliases, docs assembly, the license report, and the `check:*` scripts) derives from `packages/*`.
+Create `packages/<name>` with a `package.json` that declares the `build`, `build:*` and `typecheck` scripts, plus `tsconfig.json`, `tsconfig.esm.json`, `tsconfig.types.json`, and `babel.config.js` modeled on a sibling. Then, by hand: add a `toc` entry to `docs/docset.yml`, a `workspace:*` devDependency to the root `package.json`, and a paragraph to `AGENTS.md`. Everything else (typecheck, tests and their source aliases, docs assembly, the license report, and the `check:*` scripts) derives from `packages/*`.
 
 ## Releasing
 

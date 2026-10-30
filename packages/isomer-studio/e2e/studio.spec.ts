@@ -15,9 +15,8 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
-import { fileURLToPath } from 'node:url';
 
 import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
@@ -25,7 +24,8 @@ import { expect, test } from '@playwright/test';
 import type { StaticServer } from './serve_static';
 import { serveStatic } from './serve_static';
 
-const packageDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+// Playwright loads this spec as CommonJS: the package has no `"type": "module"`.
+const packageDir = resolve(__dirname, '..');
 const repoRoot = resolve(packageDir, '../..');
 
 /** Overridable so the packed-consumer check can drive its own install and config. */

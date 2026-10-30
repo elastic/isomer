@@ -5,13 +5,15 @@
  * 2.0.
  */
 
-// Walks the built ESM graph from each declared entry and fails when a forbidden
-// specifier is reachable. An ES module evaluates its whole top-level import list
+// Bundles the built ESM graph of each declared entry with esbuild, every package
+// external, and fails when a forbidden specifier is reachable. An ES module evaluates its whole top-level import list
 // when any one of its exports is imported, so reachability, not direct import,
 // is what matters.
 
 import { readdirSync, readFileSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { join, relative } from 'node:path';
+
+import { build } from 'esbuild';
 
 import { specifiersIn as specifiersInSource } from './specifiers.js';
 import { repoRoot, workspacePackages } from './workspace_packages.js';
@@ -43,33 +45,22 @@ const matchesForbidden = (specifier, forbidden) =>
 
 const specifiersIn = (file) => specifiersInSource(readFileSync(file, 'utf-8'));
 
-const isRelative = (specifier) => specifier.startsWith('.');
-
-/** Every bare specifier reachable from `entryFile`, following relative imports only. */
-const reachableBareSpecifiers = (entryFile) => {
-  const seen = new Set();
-  const bare = new Set();
-  const queue = [resolve(entryFile)];
-
-  while (queue.length > 0) {
-    const file = queue.pop();
-    if (seen.has(file)) {
-      continue;
-    }
-    seen.add(file);
-
-    for (const specifier of specifiersIn(file)) {
-      if (!isRelative(specifier)) {
-        bare.add(specifier);
-        continue;
-      }
-      // The build rewrites relative specifiers to full paths with extensions,
-      // so this resolves without probing for index files.
-      queue.push(resolve(join(dirname(file), specifier)));
-    }
-  }
-
-  return bare;
+/** Every bare specifier reachable from `entryFile` through its relative imports. */
+const reachableBareSpecifiers = async (entryFile) => {
+  const { metafile } = await build({
+    entryPoints: [entryFile],
+    bundle: true,
+    write: false,
+    metafile: true,
+    packages: 'external',
+    platform: 'neutral',
+    logLevel: 'silent',
+  });
+  return new Set(
+    Object.values(metafile.inputs).flatMap(({ imports }) =>
+      imports.filter(({ external }) => external).map(({ path }) => path)
+    )
+  );
 };
 
 const manifests = new Map(
@@ -92,7 +83,7 @@ for (const [packageName, entryRules] of Object.entries(RULES)) {
     }
 
     const entryFile = join(pkg.dir, target);
-    const reachable = reachableBareSpecifiers(entryFile);
+    const reachable = await reachableBareSpecifiers(entryFile);
     checked += 1;
 
     for (const specifier of reachable) {

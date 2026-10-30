@@ -11,6 +11,7 @@ import type { ZodType } from 'zod';
 import type { Composition } from '../composition/composition';
 import { IsomerError } from '../composition/error';
 import type { PrimitiveNode } from '../define/primitive_module';
+import { isJsonObject } from '../validate/json_helpers';
 
 import type {
   AuthorChildContext,
@@ -63,11 +64,8 @@ interface JsxTree {
   children: ReadonlyArray<JsxTree | TextChild>;
 }
 
-const isRecord = (item: unknown): item is Record<string, unknown> =>
-  typeof item === 'object' && item !== null && !Array.isArray(item);
-
 const isTree = (value: unknown): value is JsxTree =>
-  isRecord(value) && (value as Partial<JsxTree>)[TREE] === true;
+  isJsonObject(value) && (value as Partial<JsxTree>)[TREE] === true;
 
 const tree = (
   name: string,
@@ -221,7 +219,7 @@ const sameValue = (a: unknown, b: unknown): boolean => {
       a.every((item, index) => sameValue(item, b[index]))
     );
   }
-  if (isRecord(a) && isRecord(b)) {
+  if (isJsonObject(a) && isJsonObject(b)) {
     const keys = (record: Record<string, unknown>) =>
       Object.keys(record).filter((key) => record[key] !== undefined);
     const [aKeys, bKeys] = [keys(a), keys(b)];
@@ -274,7 +272,7 @@ const createPrinter = ({
   const trees = new WeakMap<object, JsxTree>();
 
   const isNode = (value: unknown): value is PrimitiveNode =>
-    isRecord(value) &&
+    isJsonObject(value) &&
     typeof value.type === 'string' &&
     schemaFor(value.type) !== undefined;
 
@@ -290,12 +288,12 @@ const createPrinter = ({
       .split('.')
       .reduce<unknown>(
         (scope, part) =>
-          typeof scope === 'function' || isRecord(scope)
+          typeof scope === 'function' || isJsonObject(scope)
             ? (scope as Record<string, unknown>)[part]
             : undefined,
         components
       );
-    if (typeof component !== 'function' && !isRecord(component)) {
+    if (typeof component !== 'function' && !isJsonObject(component)) {
       throw new Error(`No authoring component <${name}>.`);
     }
     return createElement(
@@ -388,7 +386,7 @@ const createPrinter = ({
       }
     };
 
-    if (isRecord(item) && !isNode(item)) {
+    if (isJsonObject(item) && !isNode(item)) {
       const keys = [
         ...new Set([...(textField ? [textField] : []), ...Object.keys(item)]),
       ];
@@ -431,7 +429,7 @@ const createPrinter = ({
     if (toItem) {
       return customItemTree(item, { ...field, toItem }, name);
     }
-    if (!isRecord(item)) {
+    if (!isJsonObject(item)) {
       return undefined;
     }
     const spec = readSpec(field.itemSchema);

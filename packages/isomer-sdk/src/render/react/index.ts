@@ -7,8 +7,6 @@
 
 export {
   type CompositionWrapperOptions,
-  type ReactContentDispatcher,
-  type ReactContentOptions,
   renderCompositionContent,
   wrapCompositionContent,
 } from './content';

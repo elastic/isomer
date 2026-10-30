@@ -22,6 +22,3 @@ export const ALL_NAMED_COLORS: readonly NamedColor[] = [
 
 /** Light/dark preference. `auto` resolves light wherever media queries are unavailable. */
 export type RenderTheme = 'auto' | 'light' | 'dark';
-
-/** A pack's colors by name. Partial: an unmapped name falls back to the renderer's default. */
-export type NamedColorPalette = Partial<Record<NamedColor, string>>;

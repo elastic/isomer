@@ -17,7 +17,7 @@ sources:
 
 # Definition
 
-Packs are additive: a runtime unions their types and combines their style adapters, routing each pack's `collectStyles` only to the adapter it declared. See the package doc on packs.[^docs]
+Packs are additive in their types; a runtime runs one style adapter, so at most one composed pack declares one unless the host passes its own. See the package doc on packs.[^docs]
 
 Related: [SDK packs](/sdk/concepts/packs.md), [style adapters](/runtime/concepts/style-adapters.md).
 

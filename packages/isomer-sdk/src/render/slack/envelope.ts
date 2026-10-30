@@ -74,8 +74,6 @@ export interface SlackEnvelopeOptions extends SlackLinkOptions {
   text?: string;
   /** Whether to collect image upload requests alongside the blocks. */
   collectAssets?: boolean;
-  /** Prefix for allocated asset refs; defaults to `asset`. Distinct prefixes keep merged inventories unique. */
-  assetPrefix?: string;
 }
 
 /** What {@link renderSlackEnvelope} returns: one `chat.postMessage` payload. */
@@ -111,9 +109,7 @@ export const renderSlackEnvelope = <TNode extends PrimitiveNode>(
   // degradation and non-reachable images degrade to a link/text section, so
   // default output is safe for callers that cannot upload files.
   const collector = options.collectAssets
-    ? createSlackAssetCollector(
-        options.assetPrefix === undefined ? {} : { prefix: options.assetPrefix }
-      )
+    ? createSlackAssetCollector()
     : undefined;
 
   const { heading = true, baseUrl } = options;

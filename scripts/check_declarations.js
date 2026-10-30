@@ -23,12 +23,12 @@ const packageNameOf = (specifier) => {
 const violations = [];
 
 for (const pkg of workspacePackages()) {
-  const distDir = resolve(pkg.dir, 'dist');
-  if (!existsSync(distDir)) {
+  const libDir = resolve(pkg.dir, 'lib');
+  if (!existsSync(libDir)) {
     violations.push({
       file: pkg.manifest.name,
-      specifier: 'dist/',
-      reason: 'dist/ is missing. Run `pnpm build` before this check.',
+      specifier: 'lib/',
+      reason: 'lib/ is missing. Run `pnpm build` before this check.',
     });
     continue;
   }
@@ -40,33 +40,26 @@ for (const pkg of workspacePackages()) {
     ...Object.keys(pkg.manifest.optionalDependencies ?? {}),
   ]);
 
-  // `packedFiles` are self-contained bundles, not `tsc` output.
-  const emitted = globSync('**/*.{js,d.ts}', { cwd: distDir }).filter(
+  // `packedFiles` are self-contained bundles, not compiler output.
+  const emitted = globSync('**/*.{js,cjs,d.ts,d.cts}', { cwd: libDir }).filter(
     (file) =>
       !isPackedFile(
-        `dist/${file.split(sep).join('/')}`,
+        `lib/${file.split(sep).join('/')}`,
         pkg.manifest.isomer?.packedFiles
       )
   );
   for (const file of emitted) {
-    const absolute = resolve(distDir, file);
+    const absolute = resolve(libDir, file);
     for (const specifier of specifiersIn(readFileSync(absolute, 'utf-8'))) {
       if (specifier.startsWith('.')) {
         const target = resolve(dirname(absolute), specifier);
-        if (target !== distDir && !target.startsWith(`${distDir}${sep}`)) {
+        // Each build stays within its own directory: `lib/esm` or `lib/cjs`.
+        const buildDir = resolve(libDir, file.split(sep)[0]);
+        if (target !== buildDir && !target.startsWith(`${buildDir}${sep}`)) {
           violations.push({
             file: `${pkg.folder}/${file}`,
             specifier,
-            reason: `relative import escapes dist/ (resolves to ${relative(pkg.dir, target)})`,
-          });
-        }
-        const isCjs = file.startsWith(`cjs${sep}`);
-        if (!isCjs && !/\.[a-zA-Z0-9]+$/.test(specifier)) {
-          violations.push({
-            file: `${pkg.folder}/${file}`,
-            specifier,
-            reason:
-              'relative import is missing a file extension (build:specifiers should have rewritten it)',
+            reason: `relative import escapes its build (resolves to ${relative(pkg.dir, target)})`,
           });
         }
         continue;
@@ -91,15 +84,15 @@ for (const pkg of workspacePackages()) {
 if (violations.length > 0) {
   console.error('');
   for (const { file, specifier, reason } of violations) {
-    console.error(`  dist/${file}\n    "${specifier}" — ${reason}`);
+    console.error(`  lib/${file}\n    "${specifier}" — ${reason}`);
   }
   console.error(
     `\n${violations.length} declaration check failure(s).\n` +
-      'Emitted files must not point outside this package, and relative specifiers must include a file extension.'
+      'Emitted files must not point outside their build, and bare specifiers must be declared dependencies.'
   );
   process.exit(1);
 }
 
 console.log(
-  'Package declaration check passed: no unresolvable references in dist/.'
+  'Package declaration check passed: no unresolvable references in lib/.'
 );

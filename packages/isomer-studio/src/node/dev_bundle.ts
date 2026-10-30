@@ -8,9 +8,7 @@
 import type { Server } from 'node:http';
 import { dirname, join } from 'node:path';
 
-import react from '@vitejs/plugin-react';
 import type { EnvironmentModuleNode, InlineConfig, Plugin } from 'vite';
-import { normalizePath, searchForWorkspaceRoot } from 'vite';
 
 import {
   appEntry,
@@ -22,8 +20,11 @@ import {
   installDirectory,
   isStudioSpecifier,
   projectDirectory,
+  SHARED_PACKAGES,
   sharedResolveDir,
+  STUDIO_PACKAGES,
 } from './project_resolution';
+import type { ViteModules } from './vite';
 
 const ENTRY = 'virtual:isomer-studio/app';
 const RESOLVED_ENTRY = `\0${ENTRY}`;
@@ -54,9 +55,10 @@ export type ConfigChangeHandler = (
 const studioEntry = (
   configPath: string,
   onConfigChange: ConfigChangeHandler,
-  reloadsWith: () => Iterable<string>
+  reloadsWith: () => Iterable<string>,
+  { vite }: ViteModules
 ): Plugin => {
-  const configFile = normalizePath(configPath);
+  const configFile = vite.normalizePath(configPath);
   return {
     name: 'isomer-studio-entry',
     resolveId: (id) => (id === ENTRY ? RESOLVED_ENTRY : undefined),
@@ -118,12 +120,14 @@ export const devViteConfig = ({
   server,
   onConfigChange,
   reloadsWith = () => [],
+  modules,
 }: {
   configPath: string;
   server: Server;
   onConfigChange: ConfigChangeHandler;
   /** Server-side entries other than the config, such as its `imageFonts` module, whose changes also re-run it. */
   reloadsWith?: (() => Iterable<string>) | undefined;
+  modules: ViteModules;
 }): InlineConfig => {
   const root = dirname(configPath);
   return {
@@ -137,13 +141,19 @@ export const devViteConfig = ({
       hmr: { server },
       fs: {
         allow: [
-          searchForWorkspaceRoot(root),
+          modules.vite.searchForWorkspaceRoot(root),
           PACKAGE_DIR,
           installDirectory(PACKAGE_DIR),
         ],
       },
     },
     resolve: { dedupe: ['react', 'react-dom'] },
+    // Their ESM builds are for bundlers, which Node cannot import, so Vite compiles them for the config.
+    ssr: {
+      noExternal: [...SHARED_PACKAGES, ...STUDIO_PACKAGES].filter((name) =>
+        name.startsWith('@elastic/isomer-')
+      ),
+    },
     define: { global: 'globalThis' },
     // The dependency scanner crawls these when `optimizeDeps.entries` is unset; the virtual entry itself is not on disk.
     build: {
@@ -159,8 +169,8 @@ export const devViteConfig = ({
     },
     plugins: [
       projectResolutionPlugin(configPath),
-      studioEntry(configPath, onConfigChange, reloadsWith),
-      react(),
+      studioEntry(configPath, onConfigChange, reloadsWith, modules),
+      modules.react(),
     ],
   };
 };

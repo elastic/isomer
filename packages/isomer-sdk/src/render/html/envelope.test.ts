@@ -222,15 +222,15 @@ describe('renderHTMLWithDispatcher', () => {
     });
   });
 
-  it('embeds one script that binds root to the section, scoping each part', () => {
+  it('embeds one script that binds root to the section, scoping the adapter’s', () => {
     const { html, js } = render(
       view('<p>x</p>'),
       {},
-      { styleAdapter: adapter, scriptText: 'host()' }
+      { styleAdapter: adapter }
     );
     expect(html.match(/<script/g)).toHaveLength(1);
     expect(html).toMatch(/<\/div><script data-isomer-script="">/);
-    expect(js).toBe('(() => {\nhost()\n})();\n(() => {\nadapter()\n})();');
+    expect(js).toBe('(() => {\nadapter()\n})();');
 
     const script = embeddedScriptOf(html);
     expect(script.match(/document\.currentScript/g)).toHaveLength(2);
@@ -243,7 +243,7 @@ describe('renderHTMLWithDispatcher', () => {
     const { html } = render(
       view('<p>x</p>'),
       {},
-      { scriptText: 'root.ran = true;' }
+      { styleAdapter: { ...adapter, getScriptText: () => 'root.ran = true;' } }
     );
     // eslint-disable-next-line @typescript-eslint/no-implied-eval -- runs the emitted script as a browser would.
     const run = new Function('document', embeddedScriptOf(html)) as (

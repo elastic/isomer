@@ -13,10 +13,6 @@ import { extname, join, normalize } from 'node:path';
 
 import type { Composition } from '@elastic/isomer-sdk';
 import { transform } from 'esbuild';
-import {
-  createServer as createViteServer,
-  createServerModuleRunner,
-} from 'vite';
 
 import type { StudioConfig } from '../config';
 import {
@@ -36,6 +32,7 @@ import {
 } from './load_config';
 import type { NodeRenderers } from './rasterize';
 import { createRenderers, imageFontsOf } from './rasterize';
+import { loadVite } from './vite';
 
 const HOST = '127.0.0.1';
 const MAX_BODY_BYTES = 256 * 1024;
@@ -159,18 +156,22 @@ export const startDevServer = async ({
 
   const server: Server = createServer();
   const fontFiles = new Set<string>();
-  const vite = await createViteServer(
+  const modules = await loadVite();
+  const vite = await modules.vite.createServer(
     devViteConfig({
       configPath,
       server,
       onConfigChange: (stale) => reloadConfig(stale),
       reloadsWith: () => fontFiles,
+      modules,
     })
   );
   const runner =
     loader === 'none'
       ? undefined
-      : createServerModuleRunner(vite.environments.ssr, { hmr: false });
+      : modules.vite.createServerModuleRunner(vite.environments.ssr, {
+          hmr: false,
+        });
 
   const importModule = createStudioImporter(configPath, { loader });
   const importConfig = async (): Promise<LoadedConfig> => {

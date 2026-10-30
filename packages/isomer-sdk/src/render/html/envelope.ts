@@ -26,7 +26,6 @@ import type {
   PrimitiveStyleCollectionContext,
   PrimitiveStyleCollector,
   StyledRenderContext,
-  StyleHandle,
 } from '../../define/primitive_module';
 import {
   EMBEDDED_SCRIPT_ATTRIBUTE,
@@ -216,17 +215,7 @@ export interface HTMLStyleAdapter<
   /** The collected CSS as text, with no `<style>` wrapper; the sdk adds one when `css` is `'inline'`. */
   renderStyles(collector: TCollector, options: HTMLRenderOptions): string;
   /**
-   * Whether `handle` belongs to this adapter's stylesheet.
-   *
-   * Unused on a lone adapter. A runtime composing several packs' adapters
-   * routes each handle to its owner, so CSS is neither duplicated nor
-   * rendered against the wrong theme. An adapter that cannot answer this
-   * cannot be combined with another.
-   */
-  ownsHandle?(handle: StyleHandle): boolean;
-  /**
-   * Appended after {@link HTMLDispatcherRenderOptions.scriptText} into the
-   * render's one script. A function body with `root` in scope, under the same
+   * Added to the render's one script, ahead of the enhancements'. A function body with `root` in scope, under the same
    * rules as {@link EnhancementDefinition.script}.
    */
   getScriptText?(
@@ -251,12 +240,6 @@ export interface HTMLDispatcherRenderOptions<
   /** Used only when the composition has neither `meta.ariaLabel` nor a `title`. Defaults to `'View'`. */
   defaultAriaLabel?: string;
   styleAdapter?: HTMLStyleAdapter<TNode, TCollector, TContext>;
-  /**
-   * Emitted unescaped ahead of {@link HTMLStyleAdapter.getScriptText}. A
-   * function body with `root` in scope, under the same rules as
-   * {@link EnhancementDefinition.script}.
-   */
-  scriptText?: string;
   /**
    * Progressive enhancements declared by the packs this render was composed
    * from. The render resolves {@link HTMLRenderOptions.enhancements} against
@@ -368,7 +351,6 @@ export const renderHTMLWithDispatcher = <
     options: rawOptions = {},
     defaultAriaLabel = 'View',
     styleAdapter,
-    scriptText = '',
     enhancementDefinitions = [],
   }: HTMLDispatcherRenderOptions<TNode, TCollector, TContext>
 ): HTMLRenderResult => {
@@ -418,7 +400,7 @@ export const renderHTMLWithDispatcher = <
   const adapterScriptText =
     styleAdapter?.getScriptText?.(composition, options, enhancementScope) ?? '';
   const js = [
-    ...[scriptText, adapterScriptText].filter(Boolean).map(scopeScript),
+    adapterScriptText && scopeScript(adapterScriptText),
     enhancementScript(applied),
   ]
     .filter(Boolean)
