@@ -9,38 +9,40 @@
     "url": "git+https://github.com/elastic/isomer.git",
     "directory": "packages/isomer-studio"
   },
-  "type": "module",
   "sideEffects": false,
   "engines": {
     "node": ">=22.13.0"
   },
   "isomer": {
-    "esmOnly": true,
     "packedFiles": [
-      "dist/app/index.html",
-      "dist/app/assets/studio.css",
-      "dist/app/assets/codicon-*.ttf",
-      "dist/app/assets/editor.worker.js",
-      "dist/app/assets/ts.worker.js",
-      "dist/app/assets/json.worker.js",
-      "dist/app/assets/slack.css",
-      "dist/app/assets/esbuild.wasm"
+      "lib/app/index.html",
+      "lib/app/assets/studio.css",
+      "lib/app/assets/codicon-*.ttf",
+      "lib/app/assets/editor.worker.js",
+      "lib/app/assets/ts.worker.js",
+      "lib/app/assets/json.worker.js",
+      "lib/app/assets/slack.css",
+      "lib/app/assets/esbuild.wasm"
     ]
   },
   "bin": {
     "isomer-studio": "./bin/isomer-studio.js"
   },
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "lib/cjs/index.js",
+  "module": "lib/esm/index.js",
+  "types": "lib/cjs/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./lib/cjs/index.d.ts",
+      "import": "./lib/esm/index.js",
+      "require": "./lib/cjs/index.js",
+      "default": "./lib/cjs/index.js"
     }
   },
   "files": [
     "bin",
-    "dist",
+    "lib",
+    "!**/*.tsbuildinfo",
     "docs",
     "README.md",
     "LICENSE.txt",
@@ -51,7 +53,13 @@
     "access": "public"
   },
   "scripts": {
-    "build:assets": "node build/build_app_assets.js",
+    "build": "pnpm build:clean && pnpm build:compile && pnpm build:compile:esm && pnpm build:types && pnpm copy-files && pnpm build:assets",
+    "build:clean": "rimraf lib/",
+    "build:compile": "NODE_ENV=production babel src --out-dir=lib/cjs --extensions .js,.ts,.tsx --ignore \"**/*.test.ts,**/*.test.tsx,src/fixtures/**,src/test_setup.ts\"",
+    "build:compile:esm": "tsc --project ./tsconfig.esm.json",
+    "build:types": "NODE_ENV=production tsc --project tsconfig.types.json",
+    "copy-files": "cp src/node/node_module.cjs lib/cjs/node/node_module.cjs",
+    "build:assets": "node build/build_app_assets.mjs",
     "dev": "node --import tsx src/cli.ts dev --config ../isomer-primitives-slides/isomer-studio.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

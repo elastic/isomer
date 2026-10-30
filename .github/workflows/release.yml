@@ -7,24 +7,9 @@ name: Publish a Release
 
 # Trusted publishing is bound to this file, so snapshots publish from here too.
 on:
+  # The Changes job gates snapshots with the same rule that decides which commits cut a release.
   push:
     branches: [main]
-    # Every published package and root build input; scripts/publish_snapshot.test.js keeps this in step.
-    paths:
-      - packages/isomer-image-takumi/**
-      - packages/isomer-runtime/**
-      - packages/isomer-sdk/**
-      - packages/isomer-studio/**
-      - scripts/build_cjs.js
-      - scripts/rewrite_specifiers.js
-      - scripts/workspace_packages.js
-      - scripts/write_cjs_manifest.js
-      - tsconfig.base.json
-      - package.json
-      - tsconfig.workspace.json
-      - pnpm-lock.yaml
-      - scripts/publish_snapshot.js
-      - .github/workflows/release.yml
   workflow_dispatch:
     inputs:
       dry_run:
@@ -32,11 +17,6 @@ on:
         required: true
         type: boolean
         default: true
-      publish_only:
-        description: Skip semantic-release and publish only this package (e.g. @elastic/isomer-studio), built from the latest release tag
-        required: false
-        type: string
-        default: ''
       snapshot:
         description: Skip semantic-release and publish a snapshot of every published package from this commit under the next dist-tag
         required: false
@@ -72,66 +52,37 @@ jobs:
       - run: pnpm verify
       # pnpm 10 delegates `pnpm publish` to the ambient npm CLI. Trusted publishing needs npm >= 11.5.1; Node 22 ships 10.
       - run: npm install -g npm@^11.5.1
-      - name: Capture previous release tag
-        id: previous_tag
-        run: echo "tag=$(git describe --tags --abbrev=0 --match 'v[0-9]*' HEAD 2>/dev/null || true)" >> "$GITHUB_OUTPUT"
       # Nothing is committed back to main: git tags track the version and the notes live on the
       # GitHub Release. See CHANGELOG.md.
       - name: Release
-        if: ${{ !inputs.publish_only }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm semantic-release ${{ inputs.dry_run && '--dry-run' || '' }}
-      - name: Publish one package at the latest release
-        if: ${{ inputs.publish_only }}
+
+  changes:
+    name: Changes
+    if: ${{ github.event_name == 'push' || inputs.snapshot }}
+    runs-on: ubuntu-latest
+    outputs:
+      ships: ${{ steps.ships.outputs.ships }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+      # A dispatch has no `before`, so it always ships.
+      - id: ships
         env:
-          PACKAGE: ${{ inputs.publish_only }}
-        run: node scripts/publish_released_package.js "$PACKAGE" ${{ inputs.dry_run && '--dry-run' || '' }}
-      - name: Label PRs included in the release
-        if: ${{ !inputs.dry_run && !inputs.publish_only }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PREVIOUS_TAG: ${{ steps.previous_tag.outputs.tag }}
-        run: |
-          set -euo pipefail
-
-          # semantic-release creates the tag through the GitHub API, so fetch it into this checkout.
-          gh auth setup-git
-          git fetch origin --tags --force
-          new_tag="$(git describe --tags --abbrev=0 --match 'v[0-9]*' HEAD 2>/dev/null || true)"
-
-          if [ -z "$new_tag" ]; then
-            echo "No release tag found; skipping PR labeling."
-            exit 0
-          fi
-
-          gh label create released --color 6f42c1 \
-            --description "Included in a published release" --force
-
-          if [ "$new_tag" = "$PREVIOUS_TAG" ]; then
-            previous_tag="$(git describe --tags --abbrev=0 --match 'v[0-9]*' "$new_tag^" 2>/dev/null || true)"
-          else
-            previous_tag="$PREVIOUS_TAG"
-          fi
-          if [ -n "$previous_tag" ]; then
-            range="$previous_tag..$new_tag"
-          else
-            range="$new_tag"
-          fi
-          pr_numbers="$(git log "$range" --pretty=%s | grep -oE '\(#[0-9]+\)$' | grep -oE '[0-9]+' | sort -u || true)"
-          if [ -z "$pr_numbers" ]; then
-            echo "No merged PR numbers found in $range."
-            exit 0
-          fi
-
-          while IFS= read -r pr; do
-            echo "Labeling PR #$pr as released ($new_tag)"
-            gh pr edit "$pr" --add-label released
-          done <<< "$pr_numbers"
+          BEFORE: ${{ github.event.before }}
+        run: node scripts/publish_snapshot.js --since "$BEFORE" >> "$GITHUB_OUTPUT"
 
   snapshot:
     name: Snapshot
-    if: ${{ github.event_name == 'push' || inputs.snapshot }}
+    needs: changes
+    if: ${{ needs.changes.outputs.ships == 'true' }}
     runs-on: ubuntu-latest
     concurrency:
       group: release-snapshot

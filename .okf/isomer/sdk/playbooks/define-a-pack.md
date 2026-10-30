@@ -21,7 +21,7 @@ sources:
 
 Collect primitives with `definePrimitive`, wrap them with `definePrimitivePack`, declare a style adapter and palette bound where needed, and check registration in tests. See the package doc on the pack contract.[^docs]
 
-- If the pack's react renderers read a frame's palette, name it: `definePrimitivePack<T>(input)`. Never publish a bare `PrimitivePack`.[^pack]
+- If the pack's renderers read a frame's palette, name it: `definePrimitivePack<T>(input)`, and do not annotate the export as a bare `PrimitivePack`, which means `PrimitivePack<unknown>` and drops the bound. A pack that reads no palette is correctly `PrimitivePack<unknown>`: it requires nothing and fits any runtime.[^pack]
 
 Related: [packs](/sdk/concepts/packs.md), [runtime packs](/runtime/concepts/packs.md).
 

@@ -24,20 +24,17 @@ export const isSlackReachableImageUrl = (src: string): boolean =>
   /^https:/i.test(src) && isAbsoluteHttpUrl(src);
 
 /**
- * A fresh {@link SlackAssetCollector} handing out `{prefix}-0`, `{prefix}-1`,
- * … in allocation order. `prefix` defaults to `asset`.
+ * A fresh {@link SlackAssetCollector} handing out `asset-0`, `asset-1`, … in
+ * allocation order.
  */
 export const createSlackAssetCollector = <
   TNode extends PrimitiveNode = PrimitiveNode,
->(
-  options: { prefix?: string } = {}
-): SlackAssetCollector<TNode> => {
-  const prefix = options.prefix ?? 'asset';
+>(): SlackAssetCollector<TNode> => {
   const requests: SlackAssetRequest<TNode>[] = [];
   let counter = 0;
   return {
     allocate: (node, altText) => {
-      const ref = `${prefix}-${counter}`;
+      const ref = `asset-${counter}`;
       counter += 1;
       // Clamped at allocation so a host reading `requests` for an upload title
       // sees the same string as the block it accompanies.

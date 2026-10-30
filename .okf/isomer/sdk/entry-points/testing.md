@@ -20,7 +20,7 @@ sources:
 
 # Definition
 
-Node-only test helpers for packs and renderers: the conformance harness, `runPrimitiveInventoryConformance`, `assertPackRegistrationComplete`, and `assertPackIconsValid`. See [`./testing`](https://github.com/elastic/isomer/blob/main/packages/isomer-sdk/docs/api.md#testing) in the API reference.
+Node-only test helpers for packs and renderers: the conformance harness, `runPrimitiveInventoryConformance`, `assertPackRegistrationComplete`, `assertPackIconsValid`, and `customChecksOf`, which finds the custom checks the authoring schema drops so a pack test can hold each to a stated rule. See [`./testing`](https://github.com/elastic/isomer/blob/main/packages/isomer-sdk/docs/api.md#testing) in the API reference.
 
 `assertPackIconsValid` checks every entry of a pack's `icons`, or its definitions' icons when the map is absent, with a dependency-free tokenizer that must consume the whole string and separates only on HTML whitespace, and throws one error listing each `<type> icon:` problem; it imports nothing from Node.[^icon]
 

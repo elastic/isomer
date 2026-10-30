@@ -34,19 +34,6 @@ describe('createDistillateStyleAdapter', () => {
     expect(css).toContain(`.${className}{`);
   });
 
-  it('owns only the handles authored in its own distillery', () => {
-    const adapter = createDistillateStyleAdapter(slideDistillery);
-
-    expect(adapter.ownsHandle?.(fill)).toBe(true);
-    expect(
-      adapter.ownsHandle?.({
-        key: 'chart.root',
-        readableName: 'chart-root',
-        moduleName: 'chart',
-      } as StyleHandle)
-    ).toBe(false);
-  });
-
   // The `snapshot` surface asks for one scheme: an image backend evaluates no `light-dark(...)`.
   it('resolves theme values to the requested scheme', () => {
     const { dark } = slideDistillery.environment.themeVars['color/text']!;

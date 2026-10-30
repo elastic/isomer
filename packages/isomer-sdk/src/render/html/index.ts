@@ -7,14 +7,10 @@
 
 export { type EnhancementDefinition } from './enhancements';
 export {
-  type HTMLDispatcherRenderOptions,
-  type HTMLEnhancementScope,
   type HTMLRenderDispatcher,
   type HTMLRenderOptions,
   type HTMLRenderResult,
   type HTMLStyleAdapter,
-  type HTMLStyleCollection,
-  type HTMLStyleCollectionOptions,
   collectHTMLStyles,
   renderHTMLWithDispatcher,
 } from './envelope';

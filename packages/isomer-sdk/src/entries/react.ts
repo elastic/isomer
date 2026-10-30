@@ -10,8 +10,6 @@ export { findNodeElementPairs } from '../render/anchors';
 export { measureDom } from '../render/measure_dom';
 export {
   type CompositionWrapperOptions,
-  type ReactContentDispatcher,
-  type ReactContentOptions,
   applyEnhancements,
   renderCompositionContent,
   renderMarkdownContent,

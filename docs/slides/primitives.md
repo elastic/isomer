@@ -19,7 +19,7 @@ Each primitive lives in its own directory under `src/primitives/<type>/`. Folder
 
 A primitive holds no values of its own. Everything it renders lives in its group under `SLIDE_THEME` (`src/theme/components/<group>.ts`, assembled by `src/theme/theme.ts`), which its `styles.ts` reads.
 
-Each primitive's `catalog.ts` and `examples.ts` ship in `dist` beside its renderers, because the authoring prompt and the conformance harness read them from the built package. What `tsconfig.build.json` excludes is `src/examples/**`: the worked deck and its snapshot output, which are type-checked but never published.
+Each primitive's `catalog.ts` and `examples.ts` ship in `lib` beside its renderers, because the authoring prompt and the conformance harness read them from the built package. What the build excludes is `src/examples/**`: the worked deck and its snapshot output, which are type-checked but never published.
 
 ## Before you add a value: one source per rendered value
 

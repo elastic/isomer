@@ -9,7 +9,7 @@ Three of the four are small, and each takes a narrow dispatcher interface rather
 ```ts
 renderTextEnvelope(composition, dispatcher, { heading }); // title uppercased, subtitle, nodes, blank-line joined
 renderMarkdownEnvelope(composition, dispatcher, { heading }); // # title, _subtitle_, nodes
-renderSlackEnvelope(composition, dispatcher, { heading, text, collectAssets, assetPrefix, baseUrl });
+renderSlackEnvelope(composition, dispatcher, { heading, text, collectAssets, baseUrl });
 ```
 
 `heading: false` leaves out the title and subtitle, and nothing else; the Slack envelope also leaves them out of its default fallback `text`. It defaults to `true`.
@@ -28,7 +28,7 @@ interface HTMLRenderResult {
   css: string;
   js: string;
   body: string;
-  measurement: PayloadMeasurement;
+  measurement: { html: number; css: number; js: number; total: number };
   validationErrors: ValidationError[];
 }
 ```
@@ -59,8 +59,6 @@ CSS is not the SDK's. A pack supplies an `HTMLStyleAdapter`, and the SDK calls i
 `createRenderContext` must return a complete context, because `TContext` is the pack's own type. The HTML surface never writes to it and hands renderers a view of it rather than a copy, so a frozen or class-instance context keeps its methods and private state. Whether renderers emit [node anchors](#node-anchors) during an HTML render is the surface's decision, whatever the context's `anchors` says. The HTML adapter's default `TContext` is `StyledRenderContext` (`resolveClassName`, `cssVarRef`). `PrimitiveRenderContext` itself is `enhancements`, `anchors`, and `onEvent`.
 
 A pack puts its adapter on `definePrimitivePack({ styleAdapter })` so a host gets it without asking. The SDK ships no adapter for any CSS engine; the slides pack's `src/theme/style_adapter.ts` is a [Distillate](https://elastic.github.io/distillate/) one to copy.
-
-`ownsHandle` is what lets a runtime combine several packs' adapters instead of making the host choose one: each handle goes to the adapter that owns it, so no pack's CSS is emitted twice or rendered against another pack's theme. Declare it on any adapter meant to coexist with others.
 
 A primitive contributes CSS through `collectStyles(node, { styles, context })`. The adapter's `collectViewStyles` still walks the body via the dispatcher's positional `collectStyles(node, styles, context)`.
 
@@ -100,7 +98,7 @@ The baseline — empty or absent — has to answer the question on its own. An e
 
 ### Who runs the script
 
-Every script, whether an enhancement's, the adapter's `getScriptText`, or the caller's `scriptText`, is a function body with `root`, the render's `.isomer` section, in scope. The `scripts` option decides who binds `root` and runs it:
+Every script, whether an enhancement's or the adapter's `getScriptText`, is a function body with `root`, the render's `.isomer` section, in scope. The `scripts` option decides who binds `root` and runs it:
 
 | `scripts`              | `html` carries                                                               | The host                                                                |
 | ---------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------- |

@@ -17,7 +17,7 @@ Packs are built by `definePrimitivePack` in the SDK, not here — see [the pack 
 | `surfaces` | Which optional surfaces every primitive implements (only `slack`) |
 | `enhancements` | Progressive enhancements the HTML surface may apply, by id |
 | `slackAssetTypes` | Which node types are pictures, so Slack uploads them instead of approximating them |
-| `styleAdapter` | Optional. Its HTML CSS, combined with every other pack's |
+| `styleAdapter` | Optional. Its HTML CSS; at most one composed pack declares one |
 | `styleCollector` | Optional. The collector shape its `collectStyles` hooks expect |
 | `TTheme` | The palette its `snapshot` renderers require, as `definePrimitivePack<T>`'s type argument |
 
@@ -38,17 +38,15 @@ Vocabulary and document are independent. Splitting them makes a pack purely addi
 
 What replaced frame ownership is a type-level bound rather than a runtime check — a pack states the palette it needs, and the compiler pairs it with a frame that supplies one.
 
-## CSS composes too
+## One styling pack
 
-A pack ships its own `styleAdapter`, and the runtime combines them: every adapter gets a collector, each style handle is routed to the adapter that owns it, and the emitted `<style>` is their concatenation. So styled packs are as additive as their vocabularies, and a host loading two of them supplies nothing.
+A pack ships its own `styleAdapter`, and a runtime styles with one: the one composed pack's adapter serves every pack, so a pack without one is styled by it. Two packs declaring one throw `AMBIGUOUS_STYLE_ADAPTER`, naming both, and the host chooses by passing `styleAdapter` on the runtime.
 
-The same routing applies to `collectStyles`: an adapter's walk fires the hooks of the pack that declared it and no other, so one pack's rules never land in another's stylesheet. A type no adapter-declaring pack owns still reaches every adapter, since nothing says where it belongs.
-
-Routing needs `ownsHandle` on each adapter. Combining two where one cannot answer throws, naming the pack that should declare it. A pack is also CSS-bearing when any of its primitives declare `collectStyles`; construction throws if such a pack has no adapter at all, naming both the pack and the primitive.
+A pack is also CSS-bearing when any of its primitives declare `collectStyles`; construction throws if such a pack has no adapter at all, naming both the pack and the primitive.
 
 A CSS-bearing pack should also declare `styleCollector`, naming the collector shape its hooks mutate — the slides pack's Distillate adapter publishes `'distillate'`. Adapters publish the same tag, and construction throws when they disagree. Without it the mismatch surfaces as a corrupted collector at render instead.
 
-A host that wants a CSS-bearing pack on text or Slack only supplies a no-op adapter, which replaces every pack's; see [Surfaces](surfaces.md).
+A host that wants a CSS-bearing pack on text or Slack only supplies a no-op adapter, which replaces the pack's; see [Surfaces](surfaces.md).
 
 ## Next
 

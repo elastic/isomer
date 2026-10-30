@@ -6,18 +6,17 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join, relative } from 'node:path';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   BUILD_INPUTS,
-  BUILD_SLICES,
-  partitionCommits,
   publish,
   publishedFolders,
   shipsChange,
+  shipsSince,
 } from './semantic_release_workspace.js';
 import { repoRoot, workspacePackages } from './workspace_packages.js';
 
@@ -26,38 +25,31 @@ vi.mock('node:child_process', () => ({ execFileSync: vi.fn() }));
 afterEach(() => vi.clearAllMocks());
 
 describe('publish', () => {
-  it.each([
-    [undefined, 'latest'],
-    [null, 'latest'],
-    ['alpha', 'alpha'],
-    ['beta', 'beta'],
-    ['1.x', 'release-1.x'],
-    ['1.2.x', 'release-1.2.x'],
-    ['1.x.x', 'release-1.x.x'],
-  ])('publishes channel %s with npm tag %s', (channel, tag) => {
-    publish(
-      {},
-      {
-        logger: { log() {} },
-        nextRelease: { version: '0.1.0', channel },
-      }
-    );
+  it('publishes the workspace under latest', () => {
+    publish();
     expect(execFileSync).toHaveBeenCalledExactlyOnceWith(
       'pnpm',
       [
         '-r',
-        ...workspacePackages()
-          .filter(({ manifest }) => manifest.private !== true)
-          .flatMap(({ manifest }) => ['--filter', manifest.name]),
         'publish',
         '--access',
         'public',
         '--tag',
-        tag,
+        'latest',
         '--no-git-checks',
       ],
       { stdio: 'inherit', cwd: repoRoot }
     );
+  });
+});
+
+describe('shipsSince', () => {
+  it('ships when the revision is empty or unknown', () => {
+    vi.mocked(execFileSync).mockImplementation(() => {
+      throw new Error('missing');
+    });
+    expect(shipsSince('')).toBe(true);
+    expect(shipsSince('0000000000000000000000000000000000000000')).toBe(true);
   });
 });
 
@@ -67,11 +59,6 @@ const pkg = (folder, isPrivate) => ({
   folder,
   manifest: isPrivate ? { private: true } : {},
 });
-
-const reference = (path) => ({ path });
-
-const workspace = (...paths) =>
-  JSON.stringify({ files: [], references: paths.map(reference) });
 
 const ships = (files, roots = {}) =>
   shipsChange(files, FOLDERS, (file, side) => roots[file]?.[side]);
@@ -120,35 +107,6 @@ describe('shipsChange', () => {
     expect(ships(files)).toBe(false);
   });
 
-  describe('tsconfig.workspace.json', () => {
-    const sdk = 'packages/isomer-sdk/tsconfig.build.json';
-    const slides = 'packages/isomer-primitives-slides/tsconfig.build.json';
-    const runtime = 'packages/isomer-runtime/tsconfig.build.json';
-    const change = (before, after) =>
-      ships(['tsconfig.workspace.json'], {
-        'tsconfig.workspace.json': { after, before },
-      });
-
-    it('counts a repointed, removed, or first published reference', () => {
-      expect(
-        change(
-          workspace(sdk),
-          workspace('packages/isomer-sdk/tsconfig.other.json')
-        )
-      ).toBe(true);
-      expect(change(workspace(sdk, runtime), workspace(sdk))).toBe(true);
-      expect(change(undefined, workspace(sdk))).toBe(true);
-    });
-
-    it('ignores a private reference or a reorder', () => {
-      expect(change(workspace(sdk), workspace(sdk, slides))).toBe(false);
-      expect(
-        change(workspace(sdk, runtime), workspace(runtime, `./${sdk}`))
-      ).toBe(false);
-      expect(change(undefined, workspace(slides))).toBe(false);
-    });
-  });
-
   describe('package.json', () => {
     const manifest = (scripts, devDependencies = {}) =>
       JSON.stringify({ devDependencies, scripts });
@@ -172,16 +130,6 @@ describe('shipsChange', () => {
           manifest({ ...build, test: 'vitest' }, { zod: '^4' })
         )
       ).toBe(false);
-    });
-  });
-});
-
-describe('partitionCommits', () => {
-  it('splits commits by the predicate', () => {
-    const commits = ['a', 'b', 'c'].map((hash) => ({ hash }));
-    expect(partitionCommits(commits, ({ hash }) => hash !== 'b')).toEqual({
-      dropped: [{ hash: 'b' }],
-      kept: [{ hash: 'a' }, { hash: 'c' }],
     });
   });
 });
@@ -233,21 +181,19 @@ describe('build inputs', () => {
       [...seen].filter((script) => !BUILD_INPUTS.includes(script))
     ).toEqual([]);
   });
-  it('covers every root JSON file the build names', () => {
-    const { scripts } = JSON.parse(
-      readFileSync(join(repoRoot, 'package.json'), 'utf-8')
+  it('covers every root file a package tsconfig extends', () => {
+    const extended = workspacePackages(repoRoot).flatMap(({ dir }) =>
+      readdirSync(dir)
+        .filter((file) => /^tsconfig.*\.json$/.test(file))
+        .flatMap((file) => {
+          const config = readFileSync(join(dir, file), 'utf-8');
+          const { extends: base } = JSON.parse(config);
+          const path =
+            typeof base === 'string' ? relative(repoRoot, join(dir, base)) : '';
+          return path && !path.startsWith('packages/') ? [path] : [];
+        })
     );
-    const named = Object.entries(scripts)
-      .filter(([name]) => name.startsWith('build:'))
-      .flatMap(
-        ([, command]) => command.match(/(?<=^|\s)[\w.]+\.json\b/g) ?? []
-      );
-    expect(named).not.toEqual([]);
-    expect(
-      named.filter(
-        (file) =>
-          !BUILD_INPUTS.includes(file) && !Object.hasOwn(BUILD_SLICES, file)
-      )
-    ).toEqual([]);
+    expect(extended).not.toEqual([]);
+    expect(extended.filter((file) => !BUILD_INPUTS.includes(file))).toEqual([]);
   });
 });

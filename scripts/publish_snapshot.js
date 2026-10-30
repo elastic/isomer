@@ -7,20 +7,23 @@
 
 /**
  * Publishes a prerelease of every non-private workspace package from the built checkout under the `next` dist-tag,
- * with no git tag or commit. Every package shares one snapshot version, and `pnpm publish` turns each `workspace:`
- * dependency and peer into that version, so an `@next` set installs as one consistent build of `main`.
+ * with no git tag or commit. Every package shares one snapshot version, so `pnpm publish` turns each `workspace:`
+ * dependency and peer into that version and an `@next` set installs as one consistent build of `main`.
  *
  * Usage: `node scripts/publish_snapshot.js [--dry-run]`, after `pnpm build`.
+ * `node scripts/publish_snapshot.js --since <rev>` prints `ships=true` or `ships=false` for `$GITHUB_OUTPUT`.
  */
 
 import { execFileSync } from 'node:child_process';
-import { writeFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 
-import { publishPackages } from './semantic_release_workspace.js';
-import { repoRoot, workspacePackages } from './workspace_packages.js';
+import {
+  publishPackages,
+  setVersion,
+  shipsSince,
+} from './semantic_release_workspace.js';
+import { repoRoot } from './workspace_packages.js';
 
 export const SNAPSHOT_TAG = 'next';
 
@@ -40,72 +43,35 @@ export const snapshotVersion = ({ releaseTag, sha, time }) => {
   return `${major}.${minor}.${Number(patch) + 1}-main.${stamp}.g${sha.slice(0, 7)}`;
 };
 
-/** Names of the workspace packages that publish. */
-export const publishedNames = (packages) =>
-  packages
-    .filter(({ manifest }) => manifest.private !== true)
-    .map(({ manifest }) => manifest.name);
-
-const run = (args) =>
+const git = (...args) =>
   execFileSync('git', args, {
     cwd: repoRoot,
     encoding: 'utf-8',
     stdio: ['ignore', 'pipe', 'inherit'],
   }).trim();
 
-const isPublished = (name, version) => {
-  try {
-    return (
-      execFileSync('npm', ['view', `${name}@${version}`, 'version'], {
-        encoding: 'utf-8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-      }).trim() !== ''
-    );
-  } catch {
-    return false;
-  }
-};
-
-/** Writes the snapshot version into every workspace manifest, then publishes the public ones under `next`. The manifests are left rewritten; this runs in a throwaway CI checkout. */
+/** Versions every workspace manifest as the snapshot and publishes. The manifests stay rewritten; CI checkouts are throwaway. */
 export const publishSnapshot = ({ dryRun }) => {
-  const packages = workspacePackages();
-  const names = publishedNames(packages);
-  const snapshot = snapshotVersion({
-    releaseTag: run([
-      'describe',
-      '--tags',
-      '--abbrev=0',
-      '--match',
-      'v[0-9]*',
-      'HEAD',
-    ]),
-    sha: run(['rev-parse', 'HEAD']),
-    time: run(['show', '-s', '--format=%cI', 'HEAD']),
+  const version = snapshotVersion({
+    releaseTag: git('describe', '--tags', '--abbrev=0', '--match', 'v[0-9]*'),
+    sha: git('rev-parse', 'HEAD'),
+    time: git('show', '-s', '--format=%cI', 'HEAD'),
   });
-  if (names.every((name) => isPublished(name, snapshot))) {
-    console.log('%s is already published; nothing to do', snapshot);
-    return;
-  }
-  for (const { dir, manifest } of packages) {
-    writeFileSync(
-      join(dir, 'package.json'),
-      `${JSON.stringify({ ...manifest, version: snapshot }, null, 2)}\n`
-    );
-  }
-  console.log(
-    'Publishing %s at %s under %s',
-    names.join(', '),
-    snapshot,
-    SNAPSHOT_TAG
-  );
-  publishPackages(names, SNAPSHOT_TAG, dryRun ? ['--dry-run'] : []);
+  setVersion(version);
+  console.log('Publishing %s under %s', version, SNAPSHOT_TAG);
+  publishPackages(SNAPSHOT_TAG, dryRun);
 };
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const {
-    values: { 'dry-run': dryRun },
-  } = parseArgs({
-    options: { 'dry-run': { default: false, type: 'boolean' } },
+  const { values } = parseArgs({
+    options: {
+      'dry-run': { default: false, type: 'boolean' },
+      since: { type: 'string' },
+    },
   });
-  publishSnapshot({ dryRun });
+  if (values.since === undefined) {
+    publishSnapshot({ dryRun: values['dry-run'] });
+  } else {
+    console.log(`ships=${shipsSince(values.since)}`);
+  }
 }

@@ -52,9 +52,4 @@ export const createDistillateStyleAdapter = (
       themeValueOverrides,
     });
   },
-  // Each distillery owns a private registry, and a handle names the module it was authored in.
-  ownsHandle: (handle) => {
-    const { moduleName } = handle as Partial<StyleHandle>;
-    return distillery.registry.module(moduleName ?? '') !== undefined;
-  },
 });

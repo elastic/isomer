@@ -19,9 +19,9 @@ sources:
 
 Slack Block Kit rendering and payload types, with the envelope that fits blocks to Slack's limits. See the package doc on how Slack output is fitted.[^docs]
 
-Reach Slack types through this entry, not `define/slack_*`. `SlackRichTextList` takes `offset` for an ordered list that starts past 1.[^barrel]
+Reach Slack types through this entry, not `define/slack_*`. It exports `SlackBlock` and the rich-text and table pieces a renderer names; narrow `SlackBlock` by `type` for any other block.[^barrel]
 
-`SlackContainerBlock` is Block Kit's titled, optionally collapsible group of up to 10 `SlackContainerChildBlock`s; `slackContainer(title, children, options)` builds one from a section's rendered body, unwrapping a nested container and falling back to a `header` and the blocks when the body has none or too many.[^docs]
+Block Kit's `container` is a titled, optionally collapsible group of up to 10 child blocks; `slackContainer(title, children, options)` builds one from a section's rendered body, unwrapping a nested container and falling back to a `header` and the blocks when the body has none or too many.[^docs]
 
 Related: [rendering](/sdk/concepts/rendering.md), [packs](/sdk/concepts/packs.md).
 

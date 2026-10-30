@@ -18,14 +18,12 @@ import {
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
+import { build } from 'esbuild';
 import semver from 'semver';
 
-import {
-  isEsmOnly,
-  repoRoot,
-  workspacePackages,
-} from './workspace_packages.js';
+import { repoRoot, workspacePackages } from './workspace_packages.js';
 
 const workspace = workspacePackages();
 const privateNames = new Set(
@@ -130,6 +128,46 @@ const exportSpecifiers = ({ name, exports: exportMap = {} }) =>
 
 const tsc = createRequire(import.meta.url).resolve('typescript/bin/tsc');
 
+/** Entries that only Node loads, so they bundle for Node alone. */
+const NODE_ONLY_ENTRIES = new Set([
+  '@elastic/isomer-image-takumi',
+  '@elastic/isomer-runtime/testing',
+  '@elastic/isomer-sdk/testing',
+]);
+
+/**
+ * Bundles one packed entry's ESM build with esbuild, as a consumer's bundler would.
+ * Isomer packages are bundled from their packed `lib/esm`; the package's own
+ * dependencies and peers stay external, as installed beside it.
+ */
+const bundleEsm = (specifier, resolveDir, manifest, platform, outfile) =>
+  build({
+    stdin: {
+      contents: `export * from '${specifier}';\n`,
+      resolveDir,
+      loader: 'js',
+    },
+    outfile,
+    bundle: true,
+    format: 'esm',
+    platform,
+    target: 'es2022',
+    conditions: platform === 'node' ? ['node'] : [],
+    external: [
+      ...Object.keys(manifest.dependencies ?? {}),
+      ...Object.keys(manifest.peerDependencies ?? {}),
+    ].filter((name) => !name.startsWith('@elastic/isomer-')),
+    // A Node bundle that keeps a CommonJS dependency's `require` calls needs one.
+    banner:
+      platform === 'node'
+        ? {
+            js: "import { createRequire as __createRequire } from 'node:module'; const require = __createRequire(import.meta.url);",
+          }
+        : {},
+    logLevel: 'warning',
+    write: platform === 'node',
+  });
+
 try {
   const packages = new Map();
   for (const packageName of packageNames) {
@@ -198,26 +236,55 @@ try {
     const requiredPeers = requiredPeersOf.get(packageName);
     const consumerDir = join(tempDir, 'consumers', packageName);
     linkDirectory(pkg.dir, join(consumerDir, 'node_modules', packageName));
+    const specifiers = exportSpecifiers(pkg.manifest);
+
+    // Node loads the CommonJS build.
     execFileSync(
       process.execPath,
       [
-        '--input-type=module',
         '--eval',
-        `${failOnWarning} await import('${packageName}')`,
+        `${failOnWarning} ${specifiers.map((specifier) => `require('${specifier}');`).join(' ')}`,
       ],
       { cwd: consumerDir, stdio: 'inherit' }
     );
-    const esmOnly = isEsmOnly(pkg.manifest);
-    if (!esmOnly) {
-      execFileSync(
-        process.execPath,
-        ['--eval', `${failOnWarning} require('${packageName}')`],
-        { cwd: consumerDir, stdio: 'inherit' }
-      );
-    }
 
+    // The ESM build is for bundlers: each entry must bundle, and the Node bundle must import.
+    const bundleDir = join(pkg.dir, '.esm-check');
+    for (const [index, specifier] of specifiers.entries()) {
+      const platforms = NODE_ONLY_ENTRIES.has(specifier)
+        ? ['node']
+        : ['node', 'browser'];
+      for (const platform of platforms) {
+        const outfile = join(bundleDir, `${index}.${platform}.mjs`);
+        await bundleEsm(
+          specifier,
+          consumerDir,
+          pkg.manifest,
+          platform,
+          outfile
+        );
+        if (platform === 'node') {
+          execFileSync(
+            process.execPath,
+            [
+              '--input-type=module',
+              '--eval',
+              `${failOnWarning} await import(${JSON.stringify(pathToFileURL(outfile).href)})`,
+            ],
+            { cwd: consumerDir, stdio: 'inherit' }
+          );
+        }
+      }
+    }
+    rmSync(bundleDir, { force: true, recursive: true });
+
+    const platforms = specifiers.some(
+      (specifier) => !NODE_ONLY_ENTRIES.has(specifier)
+    )
+      ? 'node and browser'
+      : 'node';
     console.log(
-      `${packageName}: packed root ${esmOnly ? 'import' : 'imports'} passed with required peers (${requiredPeers.join(', ')}).`
+      `${packageName}: ${specifiers.length} packed entry point(s) require, and bundle as ESM for ${platforms}, with required peers (${requiredPeers.join(', ')}).`
     );
   }
 
@@ -265,14 +332,22 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
     return exportSpecifiers(pkg.manifest);
   });
   mkdirSync(typesConsumerDir, { recursive: true });
-  writeFileSync(
-    join(typesConsumerDir, 'index.ts'),
-    `${specifiers.map((specifier, index) => `import type * as entry${index} from '${specifier}';`).join('\n')}\nexport type { ${specifiers.map((_, index) => `entry${index}`).join(', ')} };\n`
-  );
-  for (const [module, moduleResolution] of [
+  // takumi's own dependencies publish their subpath types through `exports` alone, which `node10` cannot read.
+  const node10Unresolvable = new Set(['@elastic/isomer-image-takumi']);
+  const resolutions = [
+    ['commonjs', 'node10'],
     ['nodenext', 'nodenext'],
     ['esnext', 'bundler'],
-  ]) {
+  ];
+  for (const [module, moduleResolution] of resolutions) {
+    const checked = specifiers.filter(
+      (specifier) =>
+        moduleResolution !== 'node10' || !node10Unresolvable.has(specifier)
+    );
+    writeFileSync(
+      join(typesConsumerDir, 'index.ts'),
+      `${checked.map((specifier, index) => `import type * as entry${index} from '${specifier}';`).join('\n')}\nexport type { ${checked.map((_, index) => `entry${index}`).join(', ')} };\n`
+    );
     writeFileSync(
       join(typesConsumerDir, 'tsconfig.json'),
       JSON.stringify({
@@ -283,6 +358,7 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
           lib: ['es2023', 'dom'],
           strict: true,
           skipLibCheck: false,
+          esModuleInterop: true,
           noEmit: true,
           types: ['node'],
         },
@@ -292,10 +368,10 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
     execFileSync(process.execPath, [tsc, '-p', typesConsumerDir], {
       stdio: 'inherit',
     });
+    console.log(
+      `Packed declarations of ${checked.length} entry points compile under ${moduleResolution} resolution.`
+    );
   }
-  console.log(
-    `Packed declarations of ${specifiers.length} entry points compile under nodenext and bundler resolution.`
-  );
 
   // `assertPackRegistrationComplete` loads files by itself, so each module
   // system's build must load a primitive directory.
@@ -312,13 +388,25 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
   const stripTypes = process.features.typescript
     ? []
     : ['--experimental-strip-types'];
+  const testingBundle = join(
+    packages.get(sdkName).dir,
+    '.esm-check',
+    'testing.node.mjs'
+  );
+  await bundleEsm(
+    `${sdkName}/testing`,
+    sdkConsumerDir,
+    packages.get(sdkName).manifest,
+    'node',
+    testingBundle
+  );
   execFileSync(
     process.execPath,
     [
       ...stripTypes,
       '--input-type=module',
       '--eval',
-      `const { assertPackRegistrationComplete } = await import('${sdkName}/testing'); await ${registrationCall};`,
+      `const { assertPackRegistrationComplete } = await import(${JSON.stringify(pathToFileURL(testingBundle).href)}); await ${registrationCall};`,
     ],
     { cwd: sdkConsumerDir, stdio: 'inherit' }
   );
@@ -332,7 +420,7 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
     { cwd: sdkConsumerDir, stdio: 'inherit' }
   );
   console.log(
-    `${sdkName}: packed assertPackRegistrationComplete loaded primitives through import and require.`
+    `${sdkName}: packed assertPackRegistrationComplete loaded primitives through an ESM bundle and require.`
   );
 } finally {
   rmSync(tempDir, { force: true, recursive: true });

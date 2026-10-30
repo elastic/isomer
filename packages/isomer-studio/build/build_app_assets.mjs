@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-// Writes the pack-independent half of the asset contract to `dist/app/`. The CLI adds `assets/app.js`, which bundles the Studio with a config, and the config's own CSS as `assets/app.css`.
+// Writes the pack-independent half of the asset contract to `lib/app/`. The CLI adds `assets/app.js`, which bundles the Studio with a config, and the config's own CSS as `assets/app.css`.
 
 import { copyFileSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -16,7 +16,7 @@ import { build } from 'esbuild';
 
 const require = createRequire(import.meta.url);
 const packageDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const appDir = join(packageDir, 'dist', 'app');
+const appDir = join(packageDir, 'lib', 'app');
 const assetsDir = join(appDir, 'assets');
 
 const INDEX_HTML = `<!doctype html>

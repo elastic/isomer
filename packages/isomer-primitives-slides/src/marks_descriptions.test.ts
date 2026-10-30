@@ -7,12 +7,12 @@
 
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import {
+  buildAuthoringJsonSchema,
   type Composition,
   exampleNodes,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
-import type { ZodType } from 'zod';
 
 import { slideDeckFrame, slidesPack } from './pack';
 import { slideDeckPrimitives } from './registry';
@@ -60,48 +60,48 @@ const withAppended = (
   return { ...record, [head]: withAppended(record[head], rest, mark) };
 };
 
-interface ZodDef {
-  type: string;
-  shape?: Record<string, ZodType>;
-  element?: ZodType;
-  innerType?: ZodType;
-  options?: ZodType[];
+interface JsonSchema {
+  $ref?: string;
+  description?: string;
+  properties?: Record<string, JsonSchema>;
+  items?: JsonSchema;
+  anyOf?: JsonSchema[];
+  oneOf?: JsonSchema[];
 }
 
-const defOf = (schema: ZodType): ZodDef =>
-  (schema as unknown as { def: ZodDef }).def;
-
-/** Descriptions on `schema` and the wrappers around what it holds. */
-const descriptionsOf = (schema: ZodType): string[] => {
-  const { description } = schema;
-  const { innerType } = defOf(schema);
-  return [
-    ...(description ? [description] : []),
-    ...(innerType ? descriptionsOf(innerType) : []),
-  ];
+/** The agent-facing schema, whose descriptions are what an author reads. */
+const { $defs: defs } = buildAuthoringJsonSchema(slideDeckPrimitives) as {
+  $defs: Record<string, JsonSchema>;
 };
 
-/** The field schema at `path`, collecting descriptions on the way down to it. */
-const fieldAt = (schema: ZodType, path: Path): string[] => {
-  const def = defOf(schema);
+/** `schema` and each def its `$ref`s lead to. */
+const layersOf = (schema: JsonSchema): JsonSchema[] => {
+  const target = schema.$ref?.replace('#/$defs/', '');
+  const next = target === undefined ? undefined : defs[target];
+  return [schema, ...(next ? layersOf(next) : [])];
+};
+
+/** The descriptions on the field at `path`, its alternatives, and the arrays on the way down to it. */
+const fieldAt = (schema: JsonSchema, path: Path): string[] => {
+  const layers = layersOf(schema);
+  const own = layers.flatMap(({ description }) =>
+    description ? [description] : []
+  );
   const [head, ...rest] = path;
-  if (head === undefined) {
-    return descriptionsOf(schema);
-  }
-  if (def.innerType) {
-    return fieldAt(def.innerType, path);
-  }
-  if (def.type === 'array' && def.element && typeof head === 'number') {
-    return [...fieldAt(def.element, rest), ...descriptionsOf(schema)];
-  }
-  if (def.type === 'object' && def.shape && typeof head === 'string') {
-    const field = def.shape[head];
-    return field ? fieldAt(field, rest) : [];
-  }
-  if (def.type === 'union' && def.options) {
-    return def.options.flatMap((option) => fieldAt(option, path));
-  }
-  return [];
+  return [
+    ...(head === undefined ? own : []),
+    ...layers.flatMap((layer) => [
+      ...[...(layer.anyOf ?? []), ...(layer.oneOf ?? [])].flatMap((option) =>
+        fieldAt(option, path)
+      ),
+      ...(typeof head === 'number' && layer.items
+        ? [...fieldAt(layer.items, rest), ...own]
+        : []),
+      ...(typeof head === 'string' && layer.properties?.[head]
+        ? fieldAt(layer.properties[head], rest)
+        : []),
+    ]),
+  ];
 };
 
 const onSlide = (node: unknown): Composition => {
@@ -151,22 +151,25 @@ const drawnMarks = (example: unknown, paths: readonly Path[]): Drawn[] => {
 };
 
 describe('inline marks in field descriptions', () => {
-  const says = (schema: unknown, path: Path) =>
-    fieldAt(schema as ZodType, path).some((text) =>
-      /marks are allowed/i.test(text)
-    );
+  const says = (type: string, path: Path) => {
+    const def = defs[type];
+    if (!def) {
+      throw new Error(`${type} has no $def in the authoring schema`);
+    }
+    return fieldAt(def, path).some((text) => /marks are allowed/i.test(text));
+  };
   const fieldName = (path: Path) =>
     path.filter((step) => typeof step === 'string').join('.');
 
   it.each(slideDeckPrimitives)(
     '$type says so on every field that draws marks',
-    ({ schema, examples }) => {
+    ({ type, examples }) => {
       const missing = new Set<string>();
       for (const example of exampleNodes({ examples })) {
         const paths = stringsIn(example);
         drawnMarks(example, paths).forEach(({ html }, index) => {
           const path = paths[index]!;
-          if (html && !says(schema, path)) {
+          if (html && !says(type, path)) {
             missing.add(fieldName(path));
           }
         });
@@ -177,10 +180,10 @@ describe('inline marks in field descriptions', () => {
 
   it.each(slideDeckPrimitives)(
     '$type draws marks on every field that says it does',
-    ({ schema, examples }) => {
+    ({ type, examples }) => {
       const unrendered = new Set<string>();
       for (const example of exampleNodes({ examples })) {
-        const paths = stringsIn(example).filter((path) => says(schema, path));
+        const paths = stringsIn(example).filter((path) => says(type, path));
         drawnMarks(example, paths).forEach(({ html, markdown }, index) => {
           const field = fieldName(paths[index]!);
           if (html === undefined) {
