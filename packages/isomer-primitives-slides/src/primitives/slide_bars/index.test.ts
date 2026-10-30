@@ -28,8 +28,8 @@ import { measureMarks, measureText } from '../size';
 import { renderedStep } from '../size.fixtures';
 
 import { denseExample, example, scaledExample } from './examples';
+import { barsStep } from './fit';
 import { markdown as markdownContent, text } from './index';
-import { barsSize } from './react';
 import type { SlideBarsNode } from './schema';
 import { barValue } from './value';
 
@@ -402,7 +402,7 @@ describe('slideBars', () => {
       '%i bars with %i details under crowding %d take %s',
       (count, details, crowding, step) => {
         expect(
-          barsSize(bars(count, details), { width: openBody.width, crowding })
+          barsStep(bars(count, details), { width: openBody.width, crowding })
         ).toBe(step);
       }
     );
@@ -418,11 +418,11 @@ describe('slideBars', () => {
           { label: 'B', value: 1 },
         ],
       });
-      expect(barsSize(pair(123456), full)).toBe('l');
-      expect(barsSize(pair(1234567), full)).toBe('m');
-      expect(barsSize(pair(12345678), full)).toBe('s');
-      expect(barsSize(pair(12345678, 100000000), full)).toBe('l');
-      expect(barsSize(pair(123456), { ...full, width: 1200 })).toBe('s');
+      expect(barsStep(pair(123456), full)).toBe('l');
+      expect(barsStep(pair(1234567), full)).toBe('m');
+      expect(barsStep(pair(12345678), full)).toBe('s');
+      expect(barsStep(pair(12345678, 100000000), full)).toBe('l');
+      expect(barsStep(pair(123456), { ...full, width: 1200 })).toBe('s');
     });
 
     it('takes a smaller step as a title aside', () => {
@@ -437,7 +437,7 @@ describe('slideBars', () => {
     });
 
     it('keeps an authored size', () => {
-      expect(barsSize({ ...bars(6, 6), size: 'l' }, full)).toBe('l');
+      expect(barsStep({ ...bars(6, 6), size: 'l' }, full)).toBe('l');
     });
 
     it('counts a wrapped label line as another bar tall', () => {
@@ -445,9 +445,9 @@ describe('slideBars', () => {
         ...bars(5, 0),
         items: bars(5, 0).items.map((item) => ({ ...item, label })),
       });
-      expect(barsSize(labelled('Leeds'), full)).toBe('l');
+      expect(barsStep(labelled('Leeds'), full)).toBe('l');
       expect(
-        barsSize(labelled('Customer support tickets opened'), full)
+        barsStep(labelled('Customer support tickets opened'), full)
       ).not.toBe('l');
     });
 
@@ -474,8 +474,8 @@ describe('slideBars', () => {
       };
 
       it('counts the lines an unbroken label breaks across its column', async () => {
-        expect(barsSize(pair('x'.repeat(10)), full)).toBe('l');
-        expect(barsSize(pair('x'.repeat(60)), full)).toBe('m');
+        expect(barsStep(pair('x'.repeat(10)), full)).toBe('l');
+        expect(barsStep(pair('x'.repeat(60)), full)).toBe('m');
         const { lines } = measureText(
           'x'.repeat(60),
           { ...barsTheme.label, size: barsTheme.labelSizes.m },
@@ -488,8 +488,8 @@ describe('slideBars', () => {
       });
 
       it('counts the lines an unbroken detail breaks across its track', async () => {
-        expect(barsSize(pair('A', 'y'.repeat(90)), full)).toBe('l');
-        expect(barsSize(pair('A', 'y'.repeat(400)), full)).toBe('m');
+        expect(barsStep(pair('A', 'y'.repeat(90)), full)).toBe('l');
+        expect(barsStep(pair('A', 'y'.repeat(400)), full)).toBe('m');
         const { lines } = measureText(
           'y'.repeat(400),
           barsTheme.detail,
@@ -503,8 +503,8 @@ describe('slideBars', () => {
         const code = `\`${'i'.repeat(60)}\``;
 
         it('measures a code label in mono, as it is drawn', async () => {
-          expect(barsSize(pair('i'.repeat(60)), full)).toBe('l');
-          const step = barsSize(pair(code), full);
+          expect(barsStep(pair('i'.repeat(60)), full)).toBe('l');
+          const step = barsStep(pair(code), full);
           expect(step).not.toBe('l');
           const { lines } = measureMarks(
             code,
@@ -518,7 +518,7 @@ describe('slideBars', () => {
 
         it('measures the spaces of a multiword code label in mono', async () => {
           const words = `\`${Array.from({ length: 9 }, () => 'iii').join(' ')}\``;
-          const step = barsSize(pair(words), full);
+          const step = barsStep(pair(words), full);
           const { lines } = measureMarks(
             words,
             { ...barsTheme.label, size: barsTheme.labelSizes[step] },
@@ -543,7 +543,7 @@ describe('slideBars', () => {
     it('draws the dense example, six bars each with a detail, at the smallest step under crowding 1', () => {
       expect(denseExample.items).toHaveLength(6);
       expect(denseExample.items.every(({ detail }) => detail)).toBe(true);
-      expect(barsSize(denseExample, full)).toBe('s');
+      expect(barsStep(denseExample, full)).toBe('s');
     });
   });
   it.each([

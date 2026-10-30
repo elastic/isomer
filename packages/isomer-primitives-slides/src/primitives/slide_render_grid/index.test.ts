@@ -10,8 +10,7 @@ import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { slideDeckFrame, slidesPack } from '../../pack';
-import { openBody } from '../layout';
-import { referenceRoom } from '../slide_heading/fit';
+import { openBody, referenceRoom } from '../layout';
 
 import { example, pairExample } from './examples';
 import { fillsCell, shapeFor, tileScale } from './fit';

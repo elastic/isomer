@@ -9,8 +9,8 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
+  useSyncExternalStore,
 } from 'react';
 import type { EuiSelectableOption } from '@elastic/eui';
 import {
@@ -49,6 +49,8 @@ import type { RuntimeDocs, StudioSurface } from '../model/describe_runtime';
 import type { StudioContextValue } from '../studio_context';
 import { useStudio } from '../studio_context';
 
+import type { DraftReport } from './compose_sync';
+import { ComposeSync } from './compose_sync';
 import { EditorPanel } from './editor_panel';
 import { PreviewPanel } from './preview_panel';
 import type { EditorInitial, EditorState } from './use_editor';
@@ -64,9 +66,6 @@ const HEADING = {
   purpose:
     'A whole composition, root fields and all, in JSX or JSON. The address bar carries the draft, so a copy of it shares what you see.',
 };
-
-const errorMessage = (error: unknown): string =>
-  error instanceof Error ? error.message : String(error);
 
 /** JSON when the source opens like a JSON object or array, JSX otherwise. */
 export const guessFormat = (source: string): ComposeFormat =>
@@ -304,13 +303,6 @@ const HeldPreview = ({ onRun }: { onRun: () => void }) => {
   );
 };
 
-/** What the editor reports for syncing: the source as typed, and whether it is still held. */
-interface DraftReport {
-  source: string;
-  format: ComposeFormat;
-  isHeld: boolean;
-}
-
 const ComposeWorkbench = ({
   initial,
   stacked,
@@ -448,10 +440,9 @@ const LoadingSeed = () => {
 
 export interface ComposeViewProps {
   params: ComposeParams;
-  /** False while another page shows; the editor keeps its draft, and the router leaves the URL alone. */
-  isVisible: boolean;
   stacked: boolean;
   openComposer: (params?: ComposeParams) => void;
+  /** Read once, when the composer mounts. */
   replaceComposer: (params: ComposeParams) => void;
 }
 
@@ -461,172 +452,49 @@ export interface ComposeViewProps {
  */
 export const ComposeView = ({
   params,
-  isVisible,
   stacked,
   openComposer,
   replaceComposer,
 }: ComposeViewProps) => {
-  const studio = useStudio();
-  const { docs, compose, featured } = studio;
-  const [seed, setSeed] = useState<{ id: number; initial: EditorInitial }>();
-  const [loadError, setLoadError] = useState<string>();
-  const [isLoading, setLoading] = useState(false);
-  const [draft, setDraft] = useState<DraftReport>();
-  const written = useRef<string>();
-  const seeds = useRef(0);
-  const load = useRef<AbortController>();
-  const sync = useRef<{ flush: (unmounting?: boolean) => void } | undefined>();
-  /** Bumped by each draft sync and link load, so a slower encode cannot write over a newer one. */
-  const generations = useRef(0);
-  const [isUnsaved, setUnsaved] = useState(false);
-  const latest = useRef({ replaceComposer });
-  latest.current = { replaceComposer };
-
-  const plant = useCallback((initial: EditorInitial) => {
-    seeds.current += 1;
-    setSeed({ id: seeds.current, initial });
-  }, []);
+  const { docs, compose, featured } = useStudio();
+  const [sync] = useState(
+    () =>
+      new ComposeSync({
+        save: saveDraft,
+        trust: rememberTrusted,
+        fits: fitsInLink,
+        encode: encodeSource,
+        write: replaceComposer,
+        delay: SYNC_DELAY,
+      })
+  );
+  const { seed, loadError, isLoading, isUnsaved } = useSyncExternalStore(
+    sync.subscribe,
+    sync.getState
+  );
 
   const starter = useCallback(
     () => starterDraft({ docs, featured, compose }),
     [docs, featured, compose]
   );
 
-  /** The saved draft, else the starter, so a link that fails to load never autosaves over a draft. */
-  const fallback = useCallback((): EditorInitial => {
-    const stored = loadDraft();
-    return stored ? { ...stored, trusted: true } : starter();
-  }, [starter]);
-  // Loads only when the route asks for something new, not when the runtime reloads.
-  const loadInputs = useRef({ docs, compose, fallback });
-  loadInputs.current = { docs, compose, fallback };
-
-  useEffect(() => {
-    const { docs, compose, fallback } = loadInputs.current;
-    const query = formatComposeQuery(params);
-    if (query && query === written.current) {
-      return;
-    }
-    if (!query) {
-      setSeed((current) => {
-        if (current) {
-          return current;
-        }
-        seeds.current += 1;
-        return { id: seeds.current, initial: fallback() };
-      });
-      return;
-    }
-    const controller = new AbortController();
-    load.current = controller;
-    generations.current += 1;
-    setLoading(true);
-    setLoadError(undefined);
-    loadParams(params, { docs, compose, signal: controller.signal }).then(
-      (initial) => {
-        if (!controller.signal.aborted) {
-          plant(initial);
-          setLoading(false);
-        }
-      },
-      (error: unknown) => {
-        if (!controller.signal.aborted) {
-          setLoadError(errorMessage(error));
-          setLoading(false);
-          setSeed((current) => {
-            if (current) {
-              return current;
-            }
-            seeds.current += 1;
-            return { id: seeds.current, initial: fallback() };
-          });
-        }
-      }
-    );
-    return () => {
-      controller.abort();
-      // A cancelled load must not leave sync paused; a following load sets it again.
-      setLoading(false);
-    };
-  }, [params, plant]);
-
-  // Going Home unmounts the editor; keep the edit still waiting on the debounce. Declared before
-  // the sync effect so its cleanup runs first, before that one cancels the pending sync.
+  // A runtime reload re-runs this with the same params, which the composer already opened.
   useEffect(
-    () => () => {
-      sync.current?.flush(true);
-      // Writes go only to a mounted composer: an encode still in flight from this one must not
-      // land on the Layout after a new composer has mounted with its own draft.
-      generations.current += 1;
-    },
-    []
+    () =>
+      sync.open(
+        params,
+        (signal) => loadParams(params, { docs, compose, signal }),
+        // The saved draft, else the starter, so a link that fails to load never autosaves over a draft.
+        () => {
+          const stored = loadDraft();
+          return stored ? { ...stored, trusted: true } : starter();
+        }
+      ),
+    [compose, docs, params, starter, sync]
   );
 
-  useEffect(() => {
-    // A sync while a link loads would rewrite the params it is loading from and abort it.
-    if (!draft || isLoading) {
-      return;
-    }
-    let done = false;
-    let saved = false;
-    let encoding = false;
-    const generation = ++generations.current;
-    // A newer draft, a link load or unmounting supersedes a write; the draft save does not.
-    const write = (next: ComposeParams) => {
-      if (generation !== generations.current) {
-        return;
-      }
-      encoding = false;
-      written.current = formatComposeQuery(next);
-      latest.current.replaceComposer(next);
-    };
-    const flush = (unmounting = false) => {
-      if (done) {
-        // Unmounting mid-encode: the encode is about to be dropped, so point the Layout at the
-        // draft this flush already saved.
-        if (unmounting && encoding && saved) {
-          write({});
-        }
-        return;
-      }
-      done = true;
-      clearTimeout(timer);
-      saved = !draft.isHeld && saveDraft(draft);
-      if (!draft.isHeld) {
-        rememberTrusted(draft);
-      }
-      if (unmounting) {
-        // No encode can outlive this composer, so point the Layout at the saved draft now.
-        if (saved) {
-          write({});
-        }
-        return;
-      }
-      if (!fitsInLink(draft.source)) {
-        // A bare `#/compose` reloads the saved draft, so it is safe only once the draft is saved.
-        setUnsaved(!saved && !draft.isHeld);
-        if (saved) {
-          write({});
-        }
-        return;
-      }
-      setUnsaved(false);
-      encoding = true;
-      void encodeSource(draft.source).then(
-        (code) => write({ code, lang: draft.format }),
-        () => {
-          encoding = false;
-        }
-      );
-    };
-    const timer = setTimeout(flush, SYNC_DELAY);
-    sync.current = { flush };
-    return () => {
-      // Superseded by a newer draft: drop this one. Unmounting is flushed below.
-      done = true;
-      clearTimeout(timer);
-    };
-  }, [draft, isLoading, isVisible]);
+  // Going Home unmounts the editor; keep the edit still waiting on the pause.
+  useEffect(() => sync.dispose, [sync]);
 
   if (!seed) {
     return isLoading ? <LoadingSeed /> : null;
@@ -637,21 +505,18 @@ export const ComposeView = ({
       key={seed.id}
       initial={seed.initial}
       {...{ stacked, loadError, isLoading, isUnsaved }}
-      onDismissError={() => setLoadError(undefined)}
+      onDismissError={sync.dismissError}
       onNew={(choice) => {
-        setLoadError(undefined);
+        sync.dismissError();
         if (choice.kind === 'example') {
           openComposer({
             example: { type: choice.type, index: choice.index },
           });
         } else {
-          // A link still loading would replace the starter when it lands.
-          load.current?.abort();
-          setLoading(false);
-          plant(starter());
+          sync.startOver(starter());
         }
       }}
-      onDraft={setDraft}
+      onDraft={sync.update}
     />
   );
 };

@@ -1,0 +1,35 @@
+```json
+{
+  "type": "view",
+  "title": "Checkout latency, live",
+  "body": [
+    {
+      "type": "slideFrame",
+      "tone": "page",
+      "logo": false,
+      "footer": {
+        "section": "Checkout",
+        "sectionNumber": "01"
+      },
+      "body": [
+        {
+          "type": "slideHeading",
+          "title": "Checkout latency, live from Grafana",
+          "lede": "A slide cannot run a live dashboard, so switch to the Grafana tab at this point in the talk."
+        },
+        {
+          "type": "slideWindowLayout",
+          "chrome": "browser",
+          "title": "Grafana · Checkout latency",
+          "body": [
+            {
+              "type": "slideStat",
+              "body": "Current p95 checkout latency, read off the live dashboard."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```

@@ -8,11 +8,11 @@
 import type { SlideLayout } from '../../render/context';
 import { label as labelTheme } from '../../theme/components/shared';
 import { table } from '../../theme/components/table';
-import { scalePx as px } from '../../theme/scale';
+import { scalePx } from '../../theme/scale';
 import type { TypeRole } from '../../theme/type_role';
-import { type SlideSize, slideSizes } from '../../theme/variants';
+import type { SlideSize } from '../../theme/variants';
 import { openBody } from '../layout';
-import { lineBox, lineFill, measureText } from '../size';
+import { lineBox, lineFill, measureText, stepWhere } from '../size';
 
 import { type SlideTableNode, tableGroups } from './schema';
 
@@ -26,8 +26,8 @@ export const tableHeight = (
   width: number
 ): number => {
   const { columns, label, rowHeaders } = node;
-  const border = px(table.border);
-  const padding = 2 * px(table.paddingsX[step]);
+  const border = scalePx(table.border);
+  const padding = 2 * scalePx(table.paddingsX[step]);
   const inner = width - 2 * border;
   const cellWidth = inner / columns.length - padding;
   const cell = { ...table.cell, size: table.cellSizes[step] };
@@ -47,19 +47,21 @@ export const tableHeight = (
       )
     ) *
       lineBox(cell) +
-    2 * px(table.cellPaddingsY[step]);
+    2 * scalePx(table.cellPaddingsY[step]);
   const groups = tableGroups(node);
   const rowCount = groups.reduce((count, { rows }) => count + rows.length, 0);
   // Every row but the table's last draws a divider below it.
-  const dividers = Math.max(0, rowCount - 1) * px(table.divider);
+  const dividers = Math.max(0, rowCount - 1) * scalePx(table.divider);
   const body = groups.reduce(
     (total, { label: group, rows }, index) =>
       total +
       (group
-        ? px((index > 0 ? table.groupGaps : table.groupPaddingsTop)[step]) +
+        ? scalePx(
+            (index > 0 ? table.groupGaps : table.groupPaddingsTop)[step]
+          ) +
           lines(group, table.group, inner - padding) * lineBox(table.group) +
-          px(table.groupPaddingsBottom[step]) +
-          px(table.groupRule)
+          scalePx(table.groupPaddingsBottom[step]) +
+          scalePx(table.groupRule)
         : 0) +
       rows.reduce((sum, row) => sum + rowHeight(row), 0),
     0
@@ -71,11 +73,11 @@ export const tableHeight = (
             size: labelTheme.size,
             lineHeight: table.labelLineHeight,
           }) +
-        px(table.labelGap)
+        scalePx(table.labelGap)
       : 0) +
     headLines * lineBox(table.head) +
-    2 * px(table.headPaddingsY[step]) +
-    px(table.divider) +
+    2 * scalePx(table.headPaddingsY[step]) +
+    scalePx(table.divider) +
     body +
     dividers +
     2 * border
@@ -83,10 +85,8 @@ export const tableHeight = (
 };
 
 /** The node's own `size`, else the largest step whose estimated height fits `layout`. */
-export const tableSize = (
+export const tableStep = (
   node: SlideTableNode,
   { width, height }: SlideLayout = openBody
 ): SlideSize =>
-  node.size ??
-  slideSizes.find((step) => tableHeight(node, step, width) <= height) ??
-  's';
+  node.size ?? stepWhere((step) => tableHeight(node, step, width) <= height);

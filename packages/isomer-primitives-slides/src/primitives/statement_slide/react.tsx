@@ -10,32 +10,22 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
-import { marksReact, stripMarks } from '../../render/marks';
-import {
-  statement as theme,
-  statementFit,
-} from '../../theme/components/statement';
+import { marksReact } from '../../render/marks';
 import { layoutModule } from '../../theme/modules';
-import { scalePx } from '../../theme/scale';
 import { slideLayout } from '../layout';
-import { narrowing, sizeForLoad, textColumns } from '../size';
 
+import { statementStep } from './fit';
 import type { StatementSlideNode } from './schema';
 import { statementModule } from './styles';
 
 /** React renderer for {@link StatementSlideNode}. */
 export const react = (
-  { type, text, size }: StatementSlideNode,
+  node: StatementSlideNode,
   { context }: SlideReactEnv
 ): ReactNode => {
   const { handles: statement } = statementModule;
-  const { width, crowding } = slideLayout(context);
-  const step = sizeForLoad(
-    size,
-    textColumns(stripMarks(text)) * narrowing(scalePx(theme.maxWidth), width),
-    statementFit,
-    crowding
-  );
+  const { type, text } = node;
+  const step = statementStep(node, slideLayout(context));
   return (
     <div
       {...nodeAnchor(context, { type })}

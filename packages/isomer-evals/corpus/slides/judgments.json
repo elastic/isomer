@@ -1,0 +1,62 @@
+{
+  "provenance": {
+    "author": "Claude (model id claude-opus-5-5) through Claude Code, 2026-10-29",
+    "what": "Answerability verdicts, one per case, each given from the case request and the `rendered` text beside it and nothing else. Not a production judge; for replay only.",
+    "rubric": "yes: the text alone gives the reader everything the request asked for. partial: it gives some of it, or something the request asked for shows only on a richer surface. no: it does not give what the request asked for.",
+    "stale": "The replay judge returns the recorded verdict, and lists the case under staleJudgments in baseline.json when the text rendering no longer matches `rendered`; re-judge those cases."
+  },
+  "verdicts": {
+    "comparison": {
+      "verdict": "yes",
+      "rendered": "SELF-MANAGED VS. SERVERLESS\n\nSERVERLESS HANDS UPGRADES AND SCALING TO ELASTIC\nSelf-managed keeps every knob in your hands; Serverless trades that control for less to operate and a bill that follows usage.\n\nCONCERN     SELF-MANAGED ELASTICSEARCH                     ELASTIC CLOUD SERVERLESS\n----------  ---------------------------------------------  -----------------------------------------------\nUpgrades    Your team plans, tests, and rolls them         Elastic applies them continuously\nScaling     You size nodes and add capacity ahead of load  Scales automatically with ingest and query load\nCost model  Pay for the infrastructure you provision       Pay for what you ingest, store, and query\n\nPlatform team · 01 Where to run search"
+    },
+    "timeline": {
+      "verdict": "yes",
+      "rendered": "MARCH 4 INCIDENT TIMELINE\n\nAN EXPIRED CERTIFICATE TOOK 66 MINUTES TO CLEAR\nFrom the first alert at 02:14 to all clear at 03:20 on March 4.\n\n02:14 · ALERT. “Alert fired” Monitoring raised the first alert.\n02:16 · PAGE. “On-call paged” The on-call engineer was paged two minutes later.\n02:51 · DIAGNOSIS. “Root cause found” An expired TLS certificate.\n03:05 · FIX. “Fix deployed” The certificate fix went out.\n● 03:20 · RESOLVED. “All clear” Service confirmed healthy.\n\n01 Incident review"
+    },
+    "metrics": {
+      "verdict": "yes",
+      "rendered": "QUARTER AT A GLANCE\n\nSEARCH GOT TWICE AS FAST WHILE STAYING UP\nThe quarter’s headline numbers.\n\n99.95 % Uptime: Availability across the quarter.\n180 ms p95 search latency: Down from 420 ms last quarter.\n1.2M Daily active users: People searching every day.\n\n01 Quarterly review"
+    },
+    "process": {
+      "verdict": "yes",
+      "rendered": "OUR RELEASE PROCESS\n\nEVERY CHANGE REACHES 5% OF USERS BEFORE IT REACHES EVERYONE\nA pull request passes CI and two reviews, ships in the nightly build, and rolls out in stages.\n\nPull request → CI → Two approvals → Merge to main → Nightly build → 5% rollout → All users\n1. CI — Tests and checks run on the pull request.\n2. Two approvals — Two reviewers approve before it can merge.\n3. Merge to main — The change lands on main.\n4. Nightly build — That night’s build picks it up.\n5. 5% rollout — A staged rollout to 5% of users first.\n\n01 Releases"
+    },
+    "quote": {
+      "verdict": "yes",
+      "rendered": "NORTHWIND ON TRIAGE TIME\n\n“We cut our triage time in half the first week.”\n— Priya Raman, SRE lead, Northwind\n\n01 Customers"
+    },
+    "table": {
+      "verdict": "yes",
+      "rendered": "SUPPORT PLANS\n\nPICK THE RESPONSE TIME YOUR TEAM NEEDS\nThree plans, from email support at no cost to a one-hour phone response around the clock.\n\nPLAN        CHANNELS        RESPONSE TIME    PRICE\n----------  --------------  ---------------  --------------------\nBasic       Email           2 business days  Free\nPro         Email and chat  8 hours          $49 per user / month\nEnterprise  24/7 phone      1 hour           Custom pricing\n\n01 Support"
+    },
+    "roadmap": {
+      "verdict": "yes",
+      "rendered": "SEARCH ROADMAP\n\nTHIS YEAR SEARCH GETS SMARTER, THEN CHEAPER TO RUN\nRelevance work lands in the first three quarters; autoscaling on cost closes the year.\n\n● Q1 · GA\n- Semantic reranking: Generally available to every customer\n\nQ2 · NEXT\n- Multilingual models: Relevance beyond English\n\nQ3 · BETA\n- Query rewriting: Rewrites queries before they run\n\nQ4 · LATER\n- Cost-based autoscaling: Scales on cost as well as load\n\nSearch team · 01 Roadmap"
+    },
+    "code": {
+      "verdict": "partial",
+      "rendered": "INDEX A DOCUMENT\n\nONE CLIENT.INDEX CALL STORES A DOCUMENT\nName the index and pass the document; the client handles the request.\n\nindex-book.js\n1  await client.index({\n2    index: 'books',\n3    document: { title: 'Dune' },\n4  });\n\n01 JavaScript client"
+    },
+    "ambiguous": {
+      "verdict": "partial",
+      "rendered": "PERFORMANCE\n\nPERFORMANCE IS MEASURED IN THREE NUMBERS\nLatency, throughput, and errors, each taken over the same window.\n\n[value pending] p95 latency: How long the slowest 5% of requests take.\n[value pending] Throughput: Requests served per second at peak.\n[value pending] Error rate: Share of requests that fail.\n\n01 Performance"
+    },
+    "no-data": {
+      "verdict": "no",
+      "rendered": "REVENUE BY REGION\n\nREVENUE BY REGION, LAST QUARTER\nFigures to be filled in from finance’s quarter-close report.\n\n[value pending] Americas: Revenue for the quarter.\n[value pending] EMEA: Revenue for the quarter.\n[value pending] APAC: Revenue for the quarter.\n\n01 Quarterly review"
+    },
+    "unsupported": {
+      "verdict": "no",
+      "rendered": "CHECKOUT LATENCY, LIVE\n\nCHECKOUT LATENCY, LIVE FROM GRAFANA\nA slide cannot run a live dashboard, so switch to the Grafana tab at this point in the talk.\n\nGrafana · Checkout latency\n\n[value pending] — Current p95 checkout latency, read off the live dashboard.\n\n01 Checkout"
+    },
+    "title": {
+      "verdict": "yes",
+      "rendered": "ISOMER\n\nELASTICON 2026 · CLINT HALL\nIsomer\nOne composition, every surface.\n\nComposition →\n  react: Interactive views in the app\n  snapshot: PNG and PDF images\n  slack: Block Kit messages\n  markdown: Docs and chat replies\n  text: Terminals and SMS\n\nIsomer · www.elastic.co/elasticon"
+    },
+    "argument": {
+      "verdict": "yes",
+      "rendered": "DEPRECATE THE V1 API\n\nIT’S TIME TO DEPRECATE THE V1 API\nIt serves almost no one, carries risk, and doubles our work.\n\nTraffic: v1 carries only 2% of API traffic.\nSecurity: It has unpatched security debt.\nMaintenance: Keeping it alive duplicates work on v2.\n\n01 API strategy"
+    }
+  }
+}

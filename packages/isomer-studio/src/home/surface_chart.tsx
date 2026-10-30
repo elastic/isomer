@@ -6,7 +6,7 @@
  */
 
 import React, { useLayoutEffect, useRef, useState } from 'react';
-import { EuiIcon, useEuiTheme } from '@elastic/eui';
+import { EuiIcon, transparentize, useEuiShadow } from '@elastic/eui';
 import { css } from '@emotion/react';
 
 import { IsomerMark } from '../chrome/isomer_mark';
@@ -17,7 +17,7 @@ import {
   SURFACE_NOTES,
 } from '../surfaces/surface_select';
 
-import { CONTENT_WIDTH, HOME, quietLabel, WIDE } from './tokens';
+import { CONTENT_WIDTH, useHome, WIDE } from './tokens';
 
 const COMPOSITION_NOTE =
   'composition: one typed Composition, validated once, rendered to every surface the runtime has.';
@@ -43,9 +43,16 @@ export const SurfaceChart = ({
 }: {
   surfaces: readonly PreviewSurface[];
 }) => {
+  const home = useHome();
   const {
-    euiTheme: { font },
-  } = useEuiTheme();
+    euiTheme: { font, size, border, colors, focus, animation },
+    color,
+    fontSize,
+  } = home;
+  const cardShadow = useEuiShadow('s', { border: 'none' });
+  const pillShadow = useEuiShadow('m', { border: 'none' });
+  const pillHoverShadow = useEuiShadow('l', { border: 'none' });
+  const ring = (alpha: number) => transparentize(color.accentBorder, alpha);
   const [note, setNote] = useState('');
   const stageRef = useRef<HTMLDivElement>(null);
   const [connections, setConnections] = useState<readonly string[]>([]);
@@ -97,8 +104,8 @@ export const SurfaceChart = ({
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(${CARD_WIDTH}px, 1fr));
       justify-items: center;
-      gap: 28px 10px;
-      padding: 8px 0 8px 16px;
+      gap: ${size.xl} ${size.s};
+      padding: ${size.s} 0 ${size.s} ${size.base};
       box-sizing: border-box;
     }
   `;
@@ -107,7 +114,7 @@ export const SurfaceChart = ({
     inset: 0;
     width: 100%;
     height: 100%;
-    color: ${HOME.accent};
+    color: ${color.accent};
     pointer-events: none;
     @container (max-width: ${CONTENT_WIDTH - 1}px) {
       display: none;
@@ -129,32 +136,31 @@ export const SurfaceChart = ({
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: ${size.s};
     width: clamp(150px, 30%, 190px);
     height: 50px;
-    border-radius: 999px;
-    background: ${HOME.surface3};
-    border: 1px solid ${HOME.accentBorder};
-    box-shadow:
-      0 0 0 4px rgba(240, 78, 152, 0.18),
-      0 4px 14px rgba(0, 0, 0, 0.4);
+    border-radius: 50px;
+    background: ${color.surfaceHover};
+    border: ${border.width.thin} solid ${color.accentBorder};
+    outline: ${size.xs} solid ${ring(0.18)};
+    ${pillShadow};
     font-family: ${font.familyCode};
-    font-size: 13px;
-    font-weight: 500;
+    font-size: ${fontSize('s')};
+    font-weight: ${font.weight.medium};
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: ${HOME.accent};
+    color: ${color.accent};
     cursor: default;
     transition:
-      scale 0.12s,
-      box-shadow 0.12s,
-      background 0.12s;
+      scale ${animation.fast},
+      box-shadow ${animation.fast},
+      outline ${animation.fast},
+      background ${animation.fast};
     &:hover,
     &:focus-visible {
-      background: rgba(255, 255, 255, 0.16);
-      box-shadow:
-        0 0 0 6px rgba(240, 78, 152, 0.28),
-        0 6px 18px rgba(0, 0, 0, 0.45);
+      background: ${color.line};
+      outline: ${size.s} solid ${ring(0.28)};
+      ${pillHoverShadow};
       scale: 1.04;
     }
     @media (prefers-reduced-motion: reduce) {
@@ -180,33 +186,31 @@ export const SurfaceChart = ({
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: ${size.xs};
     width: ${CARD_WIDTH}px;
     height: ${CARD_HEIGHT}px;
-    border-radius: 8px;
-    background: #ffffff;
-    color: ${HOME.shell};
-    box-shadow:
-      0 2px 6px rgba(0, 0, 0, 0.35),
-      0 0 0 1px rgba(0, 0, 0, 0.08);
+    border-radius: ${border.radius.control};
+    background: ${colors.plainLight};
+    color: ${colors.textInk};
+    ${cardShadow};
     font-family: ${font.familyCode};
-    font-size: 11px;
+    font-size: ${fontSize('xxs')};
     letter-spacing: 0.02em;
     text-transform: uppercase;
     cursor: default;
-    transition: transform 0.12s;
+    transition: transform ${animation.fast};
     &:hover,
     &:focus-visible {
       z-index: 1;
-      transform: translateY(-6px);
+      transform: translateY(-${size.s});
     }
     @media (prefers-reduced-motion: reduce) {
       transition: none;
       &:hover,
       &:focus-visible {
         transform: none;
-        outline: 2px solid ${HOME.accent};
-        outline-offset: 2px;
+        outline: ${focus.width} solid ${color.accent};
+        outline-offset: ${focus.width};
       }
     }
     @container (max-width: ${CONTENT_WIDTH - 1}px) {
@@ -221,11 +225,11 @@ export const SurfaceChart = ({
     grid-template-areas:
       'blurb'
       'chart';
-    gap: 20px;
+    gap: ${size.l};
     ${WIDE} {
       grid-template-columns: ${CONTENT_WIDTH}px minmax(0, 1fr);
       grid-template-areas: 'chart blurb';
-      gap: 32px;
+      gap: ${size.xl};
       align-items: center;
     }
   `;
@@ -233,22 +237,22 @@ export const SurfaceChart = ({
     grid-area: blurb;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: ${size.s};
     max-width: 52ch;
   `;
   const blurbTitle = css`
     margin: 0;
-    font-size: 18px;
-    font-weight: 600;
+    font-size: ${fontSize('l')};
+    font-weight: ${font.weight.bold};
     letter-spacing: -0.01em;
     line-height: 1.25;
     text-wrap: balance;
-    color: ${HOME.fg};
+    color: ${color.heading};
   `;
   const blurbText = css`
     margin: 0;
-    font-size: 14px;
-    color: ${HOME.fg2};
+    font-size: ${fontSize('s')};
+    color: ${color.paragraph};
     text-wrap: pretty;
   `;
   const chart = css`
@@ -256,7 +260,7 @@ export const SurfaceChart = ({
     container-type: inline-size;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: ${size.s};
     min-width: 0;
   `;
 
@@ -266,9 +270,9 @@ export const SurfaceChart = ({
       css={css`
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: ${size.s};
       `}>
-      <div css={quietLabel}>
+      <div css={home.quietLabel}>
         <span id="isomer-studio-surfaces">One composition, every surface</span>
       </div>
       <div css={body}>
@@ -362,10 +366,10 @@ export const SurfaceChart = ({
           <div
             aria-live="polite"
             css={css`
-              min-height: 20px;
+              min-height: ${size.l};
               text-align: center;
-              font-size: 12.5px;
-              color: ${HOME.fg2};
+              font-size: ${fontSize('xs')};
+              color: ${color.paragraph};
               text-wrap: pretty;
             `}>
             {note}

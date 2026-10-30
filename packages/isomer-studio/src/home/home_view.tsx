@@ -6,7 +6,7 @@
  */
 
 import React, { useMemo } from 'react';
-import { EuiCallOut, EuiIcon, useEuiTheme } from '@elastic/eui';
+import { EuiCallOut, euiFontSize, EuiIcon, useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
 
 import { PrimitiveGlyph } from '../chrome/primitive_glyph';
@@ -23,15 +23,12 @@ import { DOCS_URL, LICENSE_URL, REPO_URL } from './links';
 import { LoadedPanel } from './loaded_panel';
 import { SurfaceChart } from './surface_chart';
 import {
-  actionCard,
   CONTENT_WIDTH,
   GUTTER,
-  HOME,
   HOME_NARROW,
   PANEL_WIDTH,
-  sectionHeading,
-  sectionLabel,
   TILE_COLUMNS,
+  useHome,
   WIDE,
   WIDE_CONTENT_WIDTH,
 } from './tokens';
@@ -60,86 +57,67 @@ const Door = ({
   title: string;
   children: string;
   action: string;
-}) => (
-  <a
-    href={href}
-    {...(external ? { target: '_blank', rel: 'noopener' } : {})}
-    css={css`
-      ${actionCard};
-      display: grid;
-      grid-template-rows: subgrid;
-      grid-row: span 3;
-      row-gap: 5px;
-      padding: 14px 16px;
-      border-radius: 10px;
-      box-sizing: border-box;
-      min-height: 96px;
-      border: 1px solid ${HOME.line2};
-      color: ${HOME.fg2};
-      text-decoration: none;
-      transition:
-        background 0.12s,
-        border-color 0.12s;
-      &:hover,
-      &:focus-visible {
-        border-color: ${color};
-        text-decoration: none;
-      }
-      &:hover .isomer-studio-door-action {
-        text-decoration: underline;
-      }
-    `}>
-    <span
+}) => {
+  const home = useHome();
+  const {
+    euiTheme: { size, border, font },
+    fontSize,
+  } = home;
+  return (
+    <a
+      href={href}
+      {...(external ? { target: '_blank', rel: 'noopener' } : {})}
       css={css`
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 8px;
+        ${home.tile(3)};
+        ${home.actionCard};
+        min-height: 96px;
+        &:hover,
+        &:focus-visible {
+          border-color: ${color};
+        }
+        &:hover .isomer-studio-door-action {
+          text-decoration: underline;
+        }
       `}>
-      <b
-        css={css`
-          font-size: 15px;
-          font-weight: 600;
-          color: ${HOME.fg};
-        `}>
-        {title}
-      </b>
-      <span
-        css={css`
-          margin-top: 3px;
-          font-size: 11px;
-          font-weight: 500;
-          letter-spacing: 0.04em;
-          text-transform: uppercase;
-          padding: 2px 7px;
-          border-radius: 999px;
-          border: 1px solid ${color};
-          color: ${color};
-          white-space: nowrap;
-        `}>
-        {tag}
+      <span css={home.tileTop}>
+        <b
+          css={css`
+            font-size: ${fontSize('m')};
+            font-weight: ${font.weight.bold};
+            color: ${home.color.heading};
+          `}>
+          {title}
+        </b>
+        <span
+          css={css`
+            margin-top: ${size.xxs};
+            font-size: ${fontSize('xxs')};
+            font-weight: ${font.weight.medium};
+            text-transform: uppercase;
+            padding: ${size.xxs} ${size.s};
+            border-radius: ${size.l};
+            border: ${border.width.thin} solid ${color};
+            color: ${color};
+            white-space: nowrap;
+          `}>
+          {tag}
+        </span>
       </span>
-    </span>
-    <span
-      css={css`
-        font-size: 12.5px;
-        text-wrap: pretty;
-      `}>
-      {children}
-    </span>
-    <span
-      className="isomer-studio-door-action"
-      css={css`
-        margin-top: auto;
-        padding-top: 4px;
-        font-size: 12px;
-        font-weight: 500;
-        color: ${color};
-      `}>
-      {action}
-    </span>
-  </a>
-);
+      <span css={home.tileDescription}>{children}</span>
+      <span
+        className="isomer-studio-door-action"
+        css={css`
+          margin-top: auto;
+          padding-top: ${size.xs};
+          font-size: ${fontSize('xs')};
+          font-weight: ${font.weight.medium};
+          color: ${color};
+        `}>
+        {action}
+      </span>
+    </a>
+  );
+};
 
 /** The landing page: search, featured primitives, apps, where to go next, and what the runtime loaded. */
 export const HomeView = ({
@@ -148,9 +126,13 @@ export const HomeView = ({
   featured: featuredTypes,
   configProblems = [],
 }: HomeViewProps) => {
+  const theme = useEuiTheme();
+  const home = useHome();
   const {
-    euiTheme: { font },
-  } = useEuiTheme();
+    euiTheme: { font, size, border, focus },
+    color,
+    fontSize,
+  } = home;
   const {
     docs: { primitives, groups, surfaces: supported },
     rasterizePng,
@@ -170,13 +152,13 @@ export const HomeView = ({
     overflow: auto;
     display: flex;
     flex-direction: column;
-    color: ${HOME.fg2};
-    font-size: 14px;
-    line-height: 1.5;
+    color: ${color.paragraph};
+    font-size: ${fontSize('s')};
+    line-height: ${font.lineHeightMultiplier};
     a:focus-visible,
     button:focus-visible {
-      outline: 2px solid ${HOME.fg};
-      outline-offset: 2px;
+      outline: ${focus.width} solid ${color.heading};
+      outline-offset: ${focus.width};
     }
   `;
   const columns = css`
@@ -192,16 +174,16 @@ export const HomeView = ({
   `;
   const main = css`
     min-width: 0;
-    padding: 20px ${GUTTER}px 48px;
+    padding: ${size.l} ${GUTTER}px ${size.xxxl};
     @media (max-width: 900px) {
-      padding-inline: 16px;
+      padding-inline: ${size.base};
     }
   `;
   const content = css`
     container: isomer-home / inline-size;
     display: flex;
     flex-direction: column;
-    gap: 32px;
+    gap: ${size.xl};
     max-width: ${CONTENT_WIDTH}px;
     margin-inline: auto;
     ${WIDE} {
@@ -212,46 +194,46 @@ export const HomeView = ({
   const aside = css`
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    border-left: 1px solid ${HOME.line1};
+    gap: ${size.l};
+    border-left: ${border.width.thin} solid ${color.line};
     border-image: linear-gradient(
         to bottom,
         transparent,
-        ${HOME.line1} 70px,
-        ${HOME.line1} calc(100% - 70px),
+        ${color.line} ${size.xxxxl},
+        ${color.line} calc(100% - ${size.xxxxl}),
         transparent
       )
       1;
-    padding: 44px ${GUTTER}px 32px 32px;
+    padding: ${size.xxl} ${GUTTER}px ${size.xl} ${size.xl};
     @media (max-width: 900px) {
       border-image: none;
       border-left: 0;
-      border-top: 1px solid ${HOME.line1};
-      padding-inline: 16px;
+      border-top: ${border.width.thin} solid ${color.line};
+      padding-inline: ${size.base};
     }
   `;
   const chips = css`
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-top: -8px;
+    gap: ${size.s};
+    margin-top: -${size.s};
   `;
   const chip = css`
     display: inline-flex;
     align-items: center;
-    gap: 7px;
-    padding: 6px 12px 6px 10px;
-    border-radius: 999px;
-    border: 1px solid ${HOME.line2};
-    background: ${HOME.surface1};
-    font-size: 13px;
-    font-weight: 500;
-    color: ${HOME.fg};
+    gap: ${size.s};
+    padding: ${size.xs} ${size.m} ${size.xs} ${size.s};
+    border-radius: ${size.xl};
+    border: ${border.width.thin} solid ${color.line};
+    background: ${color.surface};
+    font-size: ${fontSize('xs')};
+    font-weight: ${font.weight.medium};
+    color: ${color.heading};
     text-decoration: none;
     &:hover,
     &:focus-visible {
-      background: ${HOME.surface3};
-      border-color: ${HOME.docs};
+      background: ${color.surfaceHover};
+      border-color: ${color.docs};
       text-decoration: none;
     }
   `;
@@ -261,20 +243,20 @@ export const HomeView = ({
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 8px 24px;
-    font-size: 12px;
-    color: ${HOME.fg3};
-    padding: 14px ${GUTTER}px;
+    gap: ${size.s} ${size.l};
+    font-size: ${fontSize('xs')};
+    color: ${color.subdued};
+    padding: ${size.m} ${GUTTER}px;
     a {
-      color: ${HOME.fg2};
+      color: ${color.paragraph};
       text-decoration: none;
     }
     a:hover {
-      color: ${HOME.fg};
+      color: ${color.heading};
       text-decoration: underline;
     }
     @media (max-width: 900px) {
-      padding-inline: 16px;
+      padding-inline: ${size.base};
     }
   `;
 
@@ -300,18 +282,18 @@ export const HomeView = ({
               css={css`
                 display: flex;
                 flex-direction: column;
-                gap: 12px;
+                gap: ${size.m};
               `}>
               <div
                 css={css`
                   font-family: ${font.familyCode};
-                  font-size: 12px;
-                  color: ${HOME.accent};
+                  font-size: ${fontSize('xs')};
+                  color: ${color.accent};
                 `}>
                 isomer{' '}
                 <span
                   css={css`
-                    color: ${HOME.fg3};
+                    color: ${color.subdued};
                   `}>
                   n.
                 </span>{' '}
@@ -320,14 +302,16 @@ export const HomeView = ({
               <h1
                 css={css`
                   margin: 0;
-                  font-size: 44px;
-                  font-weight: 600;
+                  font-size: ${
+                    euiFontSize(theme, 'xxl', { customScale: 'xl' }).fontSize
+                  };
+                  font-weight: ${font.weight.bold};
                   letter-spacing: -0.025em;
                   line-height: 1.05;
-                  color: ${HOME.fg};
+                  color: ${color.heading};
                   text-wrap: balance;
                   @media (max-width: 900px) {
-                    font-size: 32px;
+                    font-size: ${fontSize('xxl')};
                   }
                 `}>
                 What are we rendering today?
@@ -335,7 +319,7 @@ export const HomeView = ({
               <p
                 css={css`
                   margin: 0;
-                  font-size: 16px;
+                  font-size: ${fontSize('m')};
                   text-wrap: pretty;
                 `}>
                 Isomer Studio is a workbench for primitives, primitive packs,
@@ -366,7 +350,7 @@ export const HomeView = ({
                     {types[0] ? (
                       <span
                         css={css`
-                          color: ${HOME.fg2};
+                          color: ${color.paragraph};
                         `}>
                         <PrimitiveGlyph type={types[0]} size={16} />
                       </span>
@@ -375,8 +359,8 @@ export const HomeView = ({
                     <span
                       css={css`
                         font-family: ${font.familyCode};
-                        font-size: 11px;
-                        color: ${HOME.fg3};
+                        font-size: ${fontSize('xxs')};
+                        color: ${color.subdued};
                       `}>
                       {types.length}
                     </span>
@@ -394,10 +378,10 @@ export const HomeView = ({
               css={css`
                 display: flex;
                 flex-direction: column;
-                gap: 10px;
+                gap: ${size.s};
               `}>
-              <div css={sectionLabel}>
-                <h2 id="isomer-studio-learn" css={sectionHeading}>
+              <div css={home.sectionLabel}>
+                <h2 id="isomer-studio-learn" css={home.sectionHeading}>
                   Learn more about Isomer
                 </h2>
               </div>
@@ -405,7 +389,7 @@ export const HomeView = ({
                 css={css`
                   display: grid;
                   grid-template-columns: repeat(3, minmax(0, 1fr));
-                  gap: 12px;
+                  gap: ${size.m};
                   ${HOME_NARROW} {
                     grid-template-columns: minmax(0, 1fr);
                   }
@@ -416,7 +400,7 @@ export const HomeView = ({
                     page: GALLERY,
                     example: 0,
                   })}
-                  color={HOME.docs}
+                  color={color.docs}
                   tag="Reference"
                   title="Understand primitives"
                   action="Browse reference →">
@@ -425,7 +409,7 @@ export const HomeView = ({
                 </Door>
                 <Door
                   href={formatRoute({ mode: 'dev', page: first, example: 0 })}
-                  color={HOME.dev}
+                  color={color.dev}
                   tag="Workbench"
                   title="Experiment and edit"
                   action="Open the workbench →">
@@ -435,7 +419,7 @@ export const HomeView = ({
                 <Door
                   href={DOCS_URL}
                   external
-                  color={HOME.accent}
+                  color={color.accent}
                   tag="Guide"
                   title="Learn how Isomer works"
                   action="Read the docs ↗">
@@ -458,9 +442,9 @@ export const HomeView = ({
           css={css`
             display: flex;
             align-items: center;
-            gap: 8px;
-            color: ${HOME.fg};
-            font-weight: 500;
+            gap: ${size.s};
+            color: ${color.heading};
+            font-weight: ${font.weight.medium};
           `}>
           <EuiIcon type="logoElastic" color="ghost" size="m" />
           Built by Elastic
@@ -469,7 +453,7 @@ export const HomeView = ({
           css={css`
             display: flex;
             flex-wrap: wrap;
-            gap: 4px 18px;
+            gap: ${size.xs} ${size.l};
           `}>
           <a href={REPO_URL} target="_blank" rel="noopener">
             github.com/elastic/isomer ↗

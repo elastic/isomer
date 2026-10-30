@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { EvalRuntime } from '../types';
+import type { EvalRuntime, ExpectedPrimitivesScore } from '../types';
 
 import { collectNodeTypes } from './node_types';
 
@@ -18,7 +18,7 @@ export const scoreExpectedPrimitives = (
   runtime: Pick<EvalRuntime, 'primitives'>,
   value: unknown,
   expected: readonly string[]
-): { hit: boolean; used: string[] } => {
+): ExpectedPrimitivesScore => {
   const known = new Set(runtime.primitives.map(({ type }) => type));
   const used = [...collectNodeTypes(runtime, value)]
     .filter((type) => known.has(type))

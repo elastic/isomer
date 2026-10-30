@@ -6,12 +6,7 @@
  */
 
 import type { AgentEvalReport } from './agent_types';
-
-const percent = (part: number, whole: number): string =>
-  whole === 0 ? '—' : `${Math.round((part / whole) * 100)}%`;
-
-const rounded = (value: number | undefined, digits = 0): string =>
-  value === undefined ? '—' : value.toFixed(digits);
+import { alignRows, percent, rounded } from './format';
 
 /** The agent report as text, returned rather than printed. */
 export const formatAgentReport = ({
@@ -40,8 +35,7 @@ export const formatAgentReport = ({
         .join(', ') || '—',
     ],
   ];
-  const width = Math.max(...rows.map(([label]) => label.length)) + 1;
-  const lines = rows.map(([label, value]) => `${label.padEnd(width)}${value}`);
+  const lines = alignRows(rows);
 
   const misses = results.filter(({ expected }) => expected?.hit === false);
   if (misses.length > 0) {

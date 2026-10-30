@@ -162,6 +162,9 @@ importers:
         specifier: ^4.5.4
         version: 4.6.5
     devDependencies:
+      '@elastic/isomer-primitives-slides':
+        specifier: workspace:*
+        version: link:../isomer-primitives-slides
       '@elastic/isomer-runtime':
         specifier: workspace:*
         version: link:../isomer-runtime

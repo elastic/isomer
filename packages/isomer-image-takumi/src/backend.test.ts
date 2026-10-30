@@ -762,7 +762,7 @@ describe('createTakumiImageBackend', () => {
       expect(reads).toBe(2);
     });
 
-    describe('pdfThread', () => {
+    describe('worker', () => {
       /** Event loop turns taken while `render` is pending, after a warm-up render. */
       const turnsDuring = async (
         backend: ReturnType<typeof createTakumiImageBackend>
@@ -784,34 +784,30 @@ describe('createTakumiImageBackend', () => {
         return turns;
       };
 
-      it('renders in a worker by default, leaving the event loop free', async () => {
+      it('renders off the calling thread, leaving the event loop free', async () => {
         expect(await turnsDuring(createTakumiImageBackend())).toBeGreaterThan(
           0
         );
       });
 
-      it('blocks the calling thread when inline', async () => {
-        expect(
-          await turnsDuring(createTakumiImageBackend({ pdfThread: 'inline' }))
-        ).toBe(0);
-      });
-
-      it('writes the same bytes in a worker as inline', async () => {
+      it('writes the same bytes whether a font is lazy or eager', async () => {
         const file =
           require.resolve('@fontsource/inter/files/inter-latin-400-normal.woff2');
-        const fonts = [
-          { name: 'Inter', weight: 400, data: () => readFile(file) },
-        ];
+        const bytes = await readFile(file);
         const deck = pages(['Ag', 'b'], '.box { font-family: Inter; }');
-        const worker = createTakumiImageBackend({ fonts });
-        const inline = createTakumiImageBackend({ fonts, pdfThread: 'inline' });
-        const [fromWorker, fromInline] = await Promise.all([
-          worker.pdf(deck, stable),
-          inline.pdf(deck, stable),
+        const lazy = createTakumiImageBackend({
+          fonts: [{ name: 'Inter', weight: 400, data: () => readFile(file) }],
+        });
+        const eager = createTakumiImageBackend({
+          fonts: [{ name: 'Inter', weight: 400, data: bytes }],
+        });
+        const [fromLazy, fromEager] = await Promise.all([
+          lazy.pdf(deck, stable),
+          eager.pdf(deck, stable),
         ]);
-        await Promise.all([worker.close(), inline.close()]);
+        await Promise.all([lazy.close(), eager.close()]);
 
-        expect(fromWorker.equals(fromInline)).toBe(true);
+        expect(fromLazy.equals(fromEager)).toBe(true);
       });
 
       it('reads lazy image bytes before posting them', async () => {
@@ -858,12 +854,16 @@ describe('createTakumiImageBackend', () => {
         expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
       });
 
-      it('rejects a render in flight on close, and starts afresh after', async () => {
+      it('rejects a render in flight on close with a coded IsomerError, and starts afresh after', async () => {
         const backend = createTakumiImageBackend();
         await backend.pdf(pages(['a']));
-        const inFlight = expect(backend.pdf(pages(['a']))).rejects.toThrow(
-          /closed/
-        );
+        const inFlight = expect(
+          backend.pdf(pages(['a']))
+        ).rejects.toMatchObject({
+          name: 'IsomerError',
+          code: 'PDF_ENGINE_CLOSED',
+          message: 'pdf: the backend was closed',
+        });
         await backend.close();
 
         await inFlight;
@@ -937,12 +937,12 @@ describe('createTakumiImageBackend', () => {
         }
       });
 
-      it('rejects an inline call loading an image on close, and frees the renderer after it', async () => {
+      it('rejects a call loading an image on close, and ignores the image when it loads', async () => {
         const unhandled: unknown[] = [];
         const onUnhandled = (reason: unknown) => unhandled.push(reason);
         process.on('unhandledRejection', onUnhandled);
         try {
-          const backend = createTakumiImageBackend({ pdfThread: 'inline' });
+          const backend = createTakumiImageBackend();
           await backend.pdf(pages(['a']));
           let load = (_bytes: Buffer) => {};
           const src = 'https://example.invalid/a.png';

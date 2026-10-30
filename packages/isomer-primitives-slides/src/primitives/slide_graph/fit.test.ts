@@ -19,7 +19,7 @@ import { graph } from '../../theme/components/graph';
 import { marks } from '../../theme/components/marks';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
-import { openBody, withLayout } from '../layout';
+import { openBody, slideLayout, withLayout } from '../layout';
 import { measureMarks, measureText } from '../size';
 
 import { graphCaptionWidth, graphStep, graphWordStep } from './fit';
@@ -62,8 +62,8 @@ const drawnBody = async (node: SlideGraphNode, size: SlideSize) => {
 
 describe('graphStep with code marks', () => {
   it('takes m where a code chip is wider than its node at l, and a plain word keeps l', async () => {
-    expect(graphStep(plain, inBody)).toBe('l');
-    expect(graphStep(coded, inBody)).toBe('m');
+    expect(graphStep(plain, slideLayout(inBody))).toBe('l');
+    expect(graphStep(coded, slideLayout(inBody))).toBe('m');
     expect(await findings(slideOf(coded))).toEqual([]);
   });
 

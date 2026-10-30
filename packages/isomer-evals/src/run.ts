@@ -11,6 +11,7 @@ import { buildAuthoringPrompt } from '@elastic/isomer-sdk/author';
 import { mapWithConcurrency, mean } from './concurrency';
 import {
   scoreAnswerability,
+  scoreExpectedPrimitives,
   scorePayload,
   scorePrimitiveSelection,
   scoreValidity,
@@ -51,6 +52,7 @@ export const runEvals = async ({
   retryOnInvalid = true,
   guide = DEFAULT_GUIDE,
   rules,
+  frame,
   concurrency = 1,
 }: RunEvalsOptions): Promise<EvalReport> => {
   const context = runtime.getAuthoringContext();
@@ -73,7 +75,7 @@ export const runEvals = async ({
 
   const runCase = async (evalCase: EvalCase): Promise<EvalCaseResult> => {
     const raw = await generate({ evalCase, prompt, attempt: 0 });
-    const attempt = checkAttempt(runtime, parseGenerated(raw));
+    const attempt = checkAttempt(runtime, parseGenerated(raw), frame);
 
     let retryAttempt: CheckedAttempt | undefined;
     if (retryOnInvalid && !(attempt.parsed && attempt.check.valid)) {
@@ -85,7 +87,7 @@ export const runEvals = async ({
           ? attempt.check.errors.map(formatValidationError)
           : [attempt.error],
       });
-      retryAttempt = checkAttempt(runtime, parseGenerated(retryRaw));
+      retryAttempt = checkAttempt(runtime, parseGenerated(retryRaw), frame);
     }
 
     const validity = scoreValidity(attempt, retryAttempt);
@@ -95,8 +97,15 @@ export const runEvals = async ({
 
     const selection =
       composition && evalCase.golden
-        ? scorePrimitiveSelection(composition, evalCase.golden)
+        ? scorePrimitiveSelection(runtime, composition, evalCase.golden)
         : undefined;
+
+    const expected =
+      evalCase.expected === undefined
+        ? undefined
+        : composition
+          ? scoreExpectedPrimitives(runtime, composition, evalCase.expected)
+          : { hit: false, used: [] };
 
     const answerability =
       judge && composition
@@ -108,6 +117,7 @@ export const runEvals = async ({
       validity,
       selection,
       payload,
+      expected,
       answerability,
     };
   };
@@ -134,6 +144,9 @@ export const runEvals = async ({
           .map(({ selection }) => selection?.f1)
           .filter((f1): f1 is number => f1 !== undefined)
       ),
+      expectedHits: results.filter(({ expected }) => expected?.hit).length,
+      expectedCases: results.filter(({ expected }) => expected !== undefined)
+        .length,
       answerability:
         verdicts.length === 0
           ? undefined

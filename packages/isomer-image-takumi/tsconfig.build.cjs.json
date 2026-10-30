@@ -20,6 +20,7 @@
   },
   "exclude": [
     "**/*.test.ts",
-    "**/*.fixtures.ts"
+    "**/*.fixtures.ts",
+    "src/pdf_worker_source.cjs"
   ]
 }

@@ -8,7 +8,7 @@
     "tsBuildInfoFile": "tsconfig.build.tsbuildinfo",
     "inlineSources": true
   },
-  "exclude": ["**/*.test.ts", "**/*.fixtures.ts"],
+  "exclude": ["**/*.test.ts", "**/*.fixtures.ts", "src/pdf_worker_source.cjs"],
   "tsc-alias": {
     "resolveFullPaths": true,
     "resolveFullExtension": ".js"

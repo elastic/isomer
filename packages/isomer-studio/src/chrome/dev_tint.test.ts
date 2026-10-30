@@ -26,6 +26,11 @@ describe('DEV_TINT', () => {
     expect(dark).not.toHaveProperty('textSuccess');
   });
 
+  it('leaves the selection as Borealis defines it', () => {
+    expect(dark).not.toHaveProperty('backgroundBaseInteractiveSelect');
+    expect(dark).not.toHaveProperty('backgroundBaseInteractiveSelectHover');
+  });
+
   it('leaves text colors as Borealis defines them', () => {
     expect(dark).not.toHaveProperty('textParagraph');
     expect(dark).not.toHaveProperty('textHeading');

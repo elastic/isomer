@@ -19,7 +19,7 @@ import { marks } from '../../theme/components/marks';
 import { roadmap } from '../../theme/components/roadmap';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
-import { openBody, withLayout } from '../layout';
+import { openBody, slideLayout, withLayout } from '../layout';
 import { measureMarks, measureText } from '../size';
 
 import { fullExample } from './examples';
@@ -53,8 +53,8 @@ const drawnBody = async (node: SlideRoadmapNode, size: SlideSize) => {
 
 describe('roadmapStep with code marks', () => {
   it('takes m where a code chip is wider than its column at l, and a plain word keeps l', async () => {
-    expect(roadmapStep(plain, inBody)).toBe('l');
-    expect(roadmapStep(coded, inBody)).toBe('m');
+    expect(roadmapStep(plain, slideLayout(inBody))).toBe('l');
+    expect(roadmapStep(coded, slideLayout(inBody))).toBe('m');
     expect(await findings(slideOf(coded))).toEqual([]);
   });
 

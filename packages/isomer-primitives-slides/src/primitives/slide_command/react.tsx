@@ -14,7 +14,7 @@ import { slideDistillery } from '../../theme/distillery';
 import { labelModule } from '../../theme/modules';
 import { slideLayout } from '../layout';
 
-import { commandSize } from './fit';
+import { commandStep } from './fit';
 import type { SlideCommandNode } from './schema';
 import { commandModule } from './styles';
 
@@ -42,7 +42,7 @@ export const react = (
         className={cls(
           context,
           styles.panel,
-          styles.textSize[commandSize(command, slideLayout(context).width)]
+          styles.textSize[commandStep({ command }, slideLayout(context))]
         )}>
         <span aria-hidden className={cls(context, styles.prompt)}>
           {prompt.value}

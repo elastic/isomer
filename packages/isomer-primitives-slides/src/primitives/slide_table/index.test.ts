@@ -25,19 +25,19 @@ import { label as labelTheme } from '../../theme/components/shared';
 import { table } from '../../theme/components/table';
 import { title, titleShares } from '../../theme/components/title';
 import { scalePx } from '../../theme/scale';
-import { openBody } from '../layout';
+import { openBody, referenceRoom } from '../layout';
 import { trackWidth } from '../size';
 import {
   crowdingHeading,
   referenceHeading,
   renderedStep,
 } from '../size.fixtures';
-import { headingRoom, referenceRoom } from '../slide_heading/fit';
+import { headingRoom } from '../slide_heading/fit';
 import { paneLayouts } from '../slide_split_layout/pane_layout';
 import type { SlideSplitLayoutNode } from '../slide_split_layout/types';
 
 import { example, fullExample, groupsExample, plainExample } from './examples';
-import { tableHeight, tableSize } from './fit';
+import { tableHeight, tableStep } from './fit';
 import { markdown as markdownContent, text } from './index';
 import type { SlideTableNode } from './schema';
 
@@ -557,7 +557,7 @@ describe('slideTable', () => {
     ] as const)(
       '%i rows in the %s layout take %s',
       (count, _name, layout, step) => {
-        expect(tableSize(rows(count), layout)).toBe(step);
+        expect(tableStep(rows(count), layout)).toBe(step);
       }
     );
 
@@ -568,16 +568,16 @@ describe('slideTable', () => {
         '380 ms',
         '0.1%',
       ];
-      expect(tableSize(rows(4), reference)).toBe('l');
-      expect(tableSize(rows(4, long), reference)).toBe('s');
+      expect(tableStep(rows(4), reference)).toBe('l');
+      expect(tableStep(rows(4, long), reference)).toBe('s');
     });
 
     it('measures its cells across the layout width', () => {
-      expect(tableSize(rows(4), reference)).toBe('l');
+      expect(tableStep(rows(4), reference)).toBe('l');
       expect(
-        tableSize(rows(4), { ...reference, width: frameContentWidth / 2 })
+        tableStep(rows(4), { ...reference, width: frameContentWidth / 2 })
       ).toBe('s');
-      expect(tableSize(rows(1), { ...openBody, width: 0 })).toBe('s');
+      expect(tableStep(rows(1), { ...openBody, width: 0 })).toBe('s');
     });
 
     it('counts the lines a group label wraps to across the table', () => {
@@ -592,9 +592,9 @@ describe('slideTable', () => {
       );
       const width = frameContentWidth / 2;
       const layout = { width, height: tableHeight(short, 'l', width) };
-      expect(tableSize(short, layout)).toBe('l');
+      expect(tableStep(short, layout)).toBe('l');
       expect(tableHeight(long, 'l', width)).toBeGreaterThan(layout.height);
-      expect(tableSize(long, layout)).not.toBe('l');
+      expect(tableStep(long, layout)).not.toBe('l');
     });
 
     it('counts the lines a heading wraps to in its column', () => {
@@ -606,11 +606,11 @@ describe('slideTable', () => {
       const long = withHeading('Region shipped');
       const width = frameContentWidth / 2;
       const layout = { width, height: tableHeight(short, 'l', width) };
-      expect(tableSize(short, layout)).toBe('l');
+      expect(tableStep(short, layout)).toBe('l');
       expect(tableHeight(long, 'l', width) - layout.height).toBeCloseTo(
         scalePx(table.head.size) * parseFloat(table.head.lineHeight.value)
       );
-      expect(tableSize(long, layout)).not.toBe('l');
+      expect(tableStep(long, layout)).not.toBe('l');
     });
 
     it('counts the lines a caption wraps to across the table', () => {
@@ -622,11 +622,11 @@ describe('slideTable', () => {
       };
       const width = frameContentWidth / 2;
       const layout = { width, height: tableHeight(short, 'l', width) };
-      expect(tableSize(short, layout)).toBe('l');
+      expect(tableStep(short, layout)).toBe('l');
       expect(tableHeight(long, 'l', width) - layout.height).toBeCloseTo(
         scalePx(labelTheme.size) * parseFloat(table.labelLineHeight.value)
       );
-      expect(tableSize(long, layout)).not.toBe('l');
+      expect(tableStep(long, layout)).not.toBe('l');
     });
 
     it.each([
@@ -676,12 +676,12 @@ describe('slideTable', () => {
     });
 
     it('keeps an authored size', () => {
-      expect(tableSize({ ...rows(12), size: 'l' }, reference)).toBe('l');
+      expect(tableStep({ ...rows(12), size: 'l' }, reference)).toBe('l');
     });
 
     it('draws the full example, twelve rows, at the smallest step under a heading', () => {
       expect(fullExample.rows).toHaveLength(12);
-      expect(tableSize(fullExample, reference)).toBe('s');
+      expect(tableStep(fullExample, reference)).toBe('s');
     });
 
     it.each([
@@ -696,18 +696,18 @@ describe('slideTable', () => {
       'draws the step it measures %s',
       (_name, node, heading, layout) => {
         expect(renderedStep('table-headStep', node, heading)).toBe(
-          tableSize(node, layout)
+          tableStep(node, layout)
         );
       }
     );
 
     it('draws the step it measures as a title aside', () => {
       const node = rows(9);
-      const step = tableSize(node, {
+      const step = tableStep(node, {
         width: trackWidth(frameContentWidth, titleShares, title.columnGap, 1),
         height: frameBodyHeight,
       });
-      expect(step).not.toBe(tableSize(node, openBody));
+      expect(step).not.toBe(tableStep(node, openBody));
       expect(
         renderedStep('table-headStep', {
           type: 'titleSlide',
@@ -730,8 +730,8 @@ describe('slideTable', () => {
         { width: frameContentWidth, height: headingRoom(referenceHeading) },
         split
       );
-      const step = tableSize(node, pane);
-      expect(step).not.toBe(tableSize(node, reference));
+      const step = tableStep(node, pane);
+      expect(step).not.toBe(tableStep(node, reference));
       expect(renderedStep('table-headStep', split, referenceHeading)).toBe(
         step
       );

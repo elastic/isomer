@@ -32,7 +32,7 @@ import { captionHeight } from '../slide_render/fit';
 import { headline } from '../slide_render/output';
 
 import { example, placeholderExample } from './examples';
-import { annotatedScale, legendHeight, legendStep } from './fit';
+import { annotatedRenderStep, annotatedScale, legendHeight } from './fit';
 import { slideAnnotatedRenderPrimitive } from './index';
 
 const runtime = createIsomerRuntime({
@@ -212,19 +212,29 @@ describe('slideAnnotatedRender', () => {
   it('budgets a pin title that wraps across the legend', () => {
     const titled = (title: string) =>
       placeholderExample.pins.map((pin) => ({ ...pin, title }));
-    expect(legendStep(titled('Search'), openBody)).toBe('l');
+    expect(annotatedRenderStep({ pins: titled('Search') }, openBody)).toBe('l');
     expect(
-      legendStep(titled('Search filters the rows by store and date'), openBody)
+      annotatedRenderStep(
+        { pins: titled('Search filters the rows by store and date') },
+        openBody
+      )
     ).not.toBe('l');
   });
 
   it('steps the legend down as its layout shortens', () => {
     const at = (height: number) =>
-      legendStep(placeholderExample.pins, { ...openBody, height });
+      annotatedRenderStep(
+        { pins: placeholderExample.pins },
+        { ...openBody, height }
+      );
     expect([759.5, 760].map(at)).toEqual(['m', 'l']);
     expect([615.5, 616].map(at)).toEqual(['s', 'm']);
-    expect(legendStep(node.pins, { ...openBody, height: 255 })).toBe('l');
-    expect(legendStep(node.pins, { ...openBody, height: 254.5 })).toBe('m');
+    expect(
+      annotatedRenderStep({ pins: node.pins }, { ...openBody, height: 255 })
+    ).toBe('l');
+    expect(
+      annotatedRenderStep({ pins: node.pins }, { ...openBody, height: 254.5 })
+    ).toBe('m');
   });
 
   it('charges each legend line holding a code chip its padding and border', () => {
@@ -238,8 +248,8 @@ describe('slideAnnotatedRender', () => {
     }));
     const codeRise =
       2 * (scalePx(marks.codePaddingY) + scalePx(marks.codeBorder));
-    const step = legendStep(coded, openBody);
-    expect(legendStep(plain, openBody)).toBe(step);
+    const step = annotatedRenderStep({ pins: coded }, openBody);
+    expect(annotatedRenderStep({ pins: plain }, openBody)).toBe(step);
     expect(
       legendHeight(coded, step, openBody.width) -
         legendHeight(plain, step, openBody.width)

@@ -5,11 +5,19 @@
  * 2.0.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 
 import type { ComposeParams } from '../model/compose_link';
 import { formatComposeQuery, parseComposeQuery } from '../model/compose_link';
 import type { RuntimeDocs } from '../model/describe_runtime';
+import { createStore } from '../model/store';
 
 export type StudioMode = 'dev' | 'docs';
 
@@ -161,11 +169,43 @@ export const formatLocation = (location: StudioLocation): string =>
         ? `#/${APP_SEGMENT}/${location.app}/${location.path.split('/').map(encodeURIComponent).join('/')}`
         : formatRoute(location);
 
-export interface StudioRouter {
+/** What the Studio shows, and what each page it keeps mounted last showed. */
+export interface Navigation {
   location: StudioLocation;
-  /** The current primitive route, or the last one before an app or Home opened. */
+  /** The current primitive route, or the last one before an app, Home or the composer opened. */
   route: StudioRoute;
-  /** Moves to a primitive route, merging `next` into {@link StudioRouter.route}. */
+  /** The last primitive route shown in dev mode, which the Workbench keeps while other pages show. */
+  devRoute?: StudioRoute | undefined;
+  /**
+   * What the composer shows: the link it last opened, or the draft it last wrote. Opening the
+   * same query again keeps these, so an in-flight load is not restarted. Unset until it opens.
+   */
+  composeParams?: ComposeParams | undefined;
+}
+
+/** `state` once it shows `location`. */
+export const showLocation = (
+  state: Navigation,
+  location: StudioLocation
+): Navigation => {
+  const { composeParams } = state;
+  const primitive = isPrimitiveRoute(location) ? location : undefined;
+  return {
+    location,
+    route: primitive ?? state.route,
+    devRoute: primitive?.mode === 'dev' ? primitive : state.devRoute,
+    composeParams:
+      isComposeRoute(location) &&
+      (!composeParams ||
+        formatComposeQuery(location.params) !==
+          formatComposeQuery(composeParams))
+        ? location.params
+        : composeParams,
+  };
+};
+
+export interface StudioRouter extends Navigation {
+  /** Moves to a primitive route, merging `next` into {@link Navigation.route}. */
   navigate: (next: Partial<StudioRoute>) => void;
   /** `path` is percent-encoded in the hash, segment by segment, and decoded when read back. */
   openApp: (id: string, path?: string) => void;
@@ -174,8 +214,8 @@ export interface StudioRouter {
   /** Opens the composition editor, loading what `params` names. */
   openComposer: (params?: ComposeParams) => void;
   /**
-   * Rewrites the composition editor's query in the URL, without a history entry, and leaves
-   * {@link StudioRouter.location} alone so the editor does not reload what it wrote.
+   * Records what the composer wrote as {@link Navigation.composeParams}, and rewrites the URL's
+   * query to it, without a history entry, while the composer shows.
    */
   replaceComposer: (params: ComposeParams) => void;
 }
@@ -185,122 +225,85 @@ export const useStudioRoute = (
   docs: RuntimeDocs,
   appIds: readonly string[]
 ): StudioRouter => {
-  const appKey = appIds.join('/');
-  const ids = useRef(appIds);
-  ids.current = appIds;
-
-  const [location, setLocation] = useState(() =>
-    parseLocation(window.location.hash, docs, appIds)
-  );
-  const [route, setRoute] = useState(() =>
-    isPrimitiveRoute(location) ? location : parseRoute('', docs)
-  );
-  const current = useRef(route);
-  current.current = route;
-  const shown = useRef(location);
-  shown.current = location;
-
-  const show = useCallback((next: StudioLocation) => {
-    setLocation(next);
-    if (isPrimitiveRoute(next)) {
-      setRoute(next);
-    }
-  }, []);
+  const [store] = useState(() => {
+    const location = parseLocation(window.location.hash, docs, appIds);
+    const route = isPrimitiveRoute(location) ? location : parseRoute('', docs);
+    return createStore(showLocation({ location, route }, location));
+  });
+  const navigation = useSyncExternalStore(store.subscribe, store.get);
 
   useEffect(() => {
+    const show = (location: StudioLocation) =>
+      store.set(showLocation(store.get(), location));
+    const { location, route } = store.get();
+    const remembered = parseRoute(formatRoute(route), docs);
+    if (formatRoute(remembered) !== formatRoute(route)) {
+      store.set({ ...store.get(), route: remembered });
+    }
+    const next = parseLocation(window.location.hash, docs, appIds);
+    if (formatLocation(next) !== formatLocation(location)) {
+      window.history.replaceState(null, '', formatLocation(next));
+      show(next);
+    }
     const onHashChange = () =>
-      show(parseLocation(window.location.hash, docs, ids.current));
+      show(parseLocation(window.location.hash, docs, appIds));
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
-  }, [docs, show]);
+  }, [docs, appIds, store]);
 
-  const checked = useRef({ docs, appKey });
-  useEffect(() => {
-    if (checked.current.docs === docs && checked.current.appKey === appKey) {
-      return;
-    }
-    checked.current = { docs, appKey };
-    const remembered = parseRoute(formatRoute(current.current), docs);
-    if (formatRoute(remembered) !== formatRoute(current.current)) {
-      setRoute(remembered);
-    }
-    const next = parseLocation(window.location.hash, docs, ids.current);
-    const hash = formatLocation(next);
-    if (hash === formatLocation(shown.current)) {
-      return;
-    }
-    window.history.replaceState(null, '', hash);
-    show(next);
-  }, [docs, appKey, show]);
-
-  const go = useCallback(
-    (next: StudioLocation) => {
+  const actions = useMemo(() => {
+    const go = (next: StudioLocation) => {
       const hash = formatLocation(next);
       if (window.location.hash !== hash) {
         window.history.pushState(null, '', hash);
       }
-      show(next);
-    },
-    [show]
-  );
+      store.set(showLocation(store.get(), next));
+    };
+    return {
+      navigate: (next: Partial<StudioRoute>) => {
+        const { mode, page, example } = store.get().route;
+        const merged = { mode, page, example, ...next };
+        go(
+          parseRoute(
+            formatRoute(
+              merged.mode === 'dev' && merged.page === GALLERY
+                ? { ...merged, page: '' }
+                : merged
+            ),
+            docs
+          )
+        );
+      },
+      openApp: (id: string, path = '') => go({ app: id, path }),
+      goHome: () => go(HOME),
+      openComposer: (params: ComposeParams = {}) =>
+        go({ compose: true, params }),
+    };
+  }, [docs, store]);
 
-  const navigate = useCallback(
-    (next: Partial<StudioRoute>) => {
-      const { mode, page, example } = current.current;
-      const merged = { mode, page, example, ...next };
-      go(
-        parseRoute(
-          formatRoute(
-            merged.mode === 'dev' && merged.page === GALLERY
-              ? { ...merged, page: '' }
-              : merged
-          ),
-          docs
-        )
-      );
-    },
-    [docs, go]
-  );
-
-  const openApp = useCallback(
-    (id: string, path = '') => go({ app: id, path }),
-    [go]
-  );
-
-  const goHome = useCallback(() => go(HOME), [go]);
-
-  const openComposer = useCallback(
-    (params: ComposeParams = {}) => go({ compose: true, params }),
-    [go]
-  );
-
-  const mounted = useRef(true);
+  // A composer flushing as the whole Studio unmounts must not rewrite another page's URL. The
+  // Studio's effects clean up before its composer's.
+  const unmounted = useRef(false);
   useEffect(
     () => () => {
-      mounted.current = false;
+      unmounted.current = true;
     },
     []
   );
+  const replaceComposer = useCallback(
+    (params: ComposeParams) => {
+      if (unmounted.current) {
+        return;
+      }
+      const state = store.get();
+      store.set({ ...state, composeParams: params });
+      const hash = formatLocation({ compose: true, params });
+      if (isComposeRoute(state.location) && window.location.hash !== hash) {
+        window.history.replaceState(null, '', hash);
+      }
+    },
+    [store]
+  );
 
-  const replaceComposer = useCallback((params: ComposeParams) => {
-    const hash = formatLocation({ compose: true, params });
-    // A composer flushing as the whole Studio unmounts must not rewrite another page's URL.
-    if (
-      mounted.current &&
-      isComposeRoute(shown.current) &&
-      window.location.hash !== hash
-    ) {
-      window.history.replaceState(null, '', hash);
-    }
-  }, []);
-
-  return {
-    location,
-    route,
-    navigate,
-    openApp,
-    goHome,
-    openComposer,
-    replaceComposer,
-  };
+  return { ...navigation, ...actions, replaceComposer };
 };

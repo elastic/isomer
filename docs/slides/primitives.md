@@ -11,11 +11,11 @@ Each primitive lives in its own directory under `src/primitives/<type>/`. Folder
 | `catalog.ts`    | Agent-facing copy: `purpose`, `useWhen`, `avoidWhen`, one `example`; and the host-facing `name`, which the prompt does not print.                                              |
 | `icon.ts`       | The host-facing glyph, exported as `icon` and built with `slideIcon` ([Icons](#icons)).                                                                                        |
 | `examples.ts`   | `example` plus `examples`, used by the conformance harness and the authoring prompt.                                                                                           |
-| `styles.ts`     | The primitive's Distillate module, reading only `slideDistillery.tokens`. `src/stylesheet.ts` collects every module.                                                           |
+| `styles.ts`     | The primitive's Distillate module, reading only `slideDistillery.tokens`. Its renderer imports it, so registering the primitive puts it in `slideStylesheet()`.                |
 | `react.tsx`     | The React renderer, exported as `react`. It serves the `snapshot` surface too.                                                                                                 |
 | `index.tsx`     | `definePrimitive`, renderer wiring, and the `text`, `markdown`, and `slack` renderers.                                                                                         |
 | `index.test.ts` | Schema rejections and every surface's output for the primitive.                                                                                                                |
-| `fit.ts`        | Only for a length-sensitive primitive: the estimate that picks its size step ([Size steps](theme.md#size-steps)).                                                              |
+| `fit.ts`        | Only for a primitive that picks a size step: its one step function, `<name>Step(node, layout)`, and the estimates it reads ([Size steps](theme.md#size-steps)).                |
 
 A primitive holds no values of its own. Everything it renders lives in its group under `SLIDE_THEME` (`src/theme/components/<group>.ts`, assembled by `src/theme/theme.ts`), which its `styles.ts` reads.
 
@@ -115,7 +115,7 @@ Slack clamps `header`, `section`, field, and `context` text well below `authored
 
 Spread `nodeAnchor(context, { type })` from `@elastic/isomer-sdk` on the renderer's root element. It renders nothing unless a host asks for anchors, and it is what `checkLayout` pairs measured boxes to nodes by. `slideFrame` also spreads `layoutRoom(context)` on its body, and `slideSplitLayout` on each pane's column, which its grid shrinks to the height the footnote leaves, so `checkLayout` measures the nodes inside against that room rather than the whole canvas.
 
-A primitive that picks its own size reads the room it has with `slideLayout(context)` from `src/primitives/layout.ts`: `width` and `height` in pixels, and `crowding`. A container gives its children theirs with `withLayout(context, { width, height })`, after taking out what it draws around them; [Size steps](theme.md#size-steps) lists who sets and reads it.
+A primitive that picks its own size reads the room it has with `slideLayout(context)` from `src/primitives/layout.ts`, a `StepLayout`: `width` and `height` in pixels, and `crowding`. Its renderer hands that to the step function in its `fit.ts` and does no sizing of its own. A container gives its children theirs with `withLayout(context, { width, height })`, after taking out what it draws around them; [Size steps](theme.md#size-steps) lists who sets and reads it.
 
 ## Measuring text as it is styled
 
@@ -222,14 +222,15 @@ The tests that rasterize need `@elastic/isomer-image-takumi` and `@fontsource/*`
 
 ## Registering the primitive
 
-A new primitive has six stops, all hand-maintained:
+Beside its own folder, a new primitive has four hand-maintained stops:
 
-1. Its folder, `src/primitives/<type>/`. On the catalog, set `description` when a cross-field rule needs restating; it is the authoring `$def` description.
+1. Its folder, `src/primitives/<type>/`. On the catalog, set `description` when a cross-field rule needs restating; it is the authoring `$def` description. A primitive that sizes itself exports its step from `fit.ts` ([Size steps](theme.md#size-steps)), and one that builds wraps its definition in `withBuild` ([Builds](builds.md#making-a-primitive-build)).
 2. `src/registry.ts`: the import and its place in `slideDeckPrimitives`, alphabetically.
 3. `src/body_node.ts`: its node type in the `BodyNode` union, in the same order.
 4. `src/pack_authoring.ts`: its group in `slidePrimitiveGroups`.
-5. `src/stylesheet.ts`: its Distillate module in `slideModules`.
-6. `src/theme/theme.ts`: its theme group from `src/theme/components/<group>.ts` in `SLIDE_THEME`.
+5. `src/theme/components/<group>.ts`, its theme group, and its place in `SLIDE_THEME` in `src/theme/theme.ts`.
+
+The stylesheet and the builds follow from the registry: each primitive's renderer creates its Distillate module when the registry loads it, and `slideBuilds` reads `build` from each registered definition. The theme cannot: `SLIDE_THEME` is what creates `slideDistillery`, which every `styles.ts` reads, so a theme taken from the registry would need the modules it creates.
 
 ```ts
 import { myNewPrimitive } from './primitives/my_new_type';
@@ -255,7 +256,11 @@ const composition = toComposition(
   <Composition title="Refunds settle in two days">
     <SlideFrame>
       <SlideHeading>Refunds settle in two days, not five</SlideHeading>
-      <SlideFrame.Footer brand="Ledger" sectionNumber="02" section="Settlement" />
+      <SlideFrame.Footer
+        brand="Ledger"
+        sectionNumber="02"
+        section="Settlement"
+      />
     </SlideFrame>
   </Composition>
 );

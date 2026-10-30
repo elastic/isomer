@@ -1,0 +1,36 @@
+```json
+{
+  "type": "view",
+  "title": "Our release process",
+  "body": [
+    {
+      "type": "slideFrame",
+      "tone": "page",
+      "logo": false,
+      "footer": {
+        "section": "Releases",
+        "sectionNumber": "01"
+      },
+      "body": [
+        {
+          "type": "slideHeading",
+          "title": "Every change reaches 5% of users before it reaches everyone",
+          "lede": "A pull request passes CI and two reviews, ships in the nightly build, and rolls out in stages."
+        },
+        {
+          "type": "slidePipeline",
+          "start": "Pull request",
+          "end": "All users",
+          "steps": [
+            { "title": "CI", "body": "Tests and checks run on the pull request." },
+            { "title": "Two approvals", "body": "Two reviewers approve before it can merge." },
+            { "title": "Merge to main", "body": "The change lands on `main`." },
+            { "title": "Nightly build", "body": "That night’s build picks it up." },
+            { "title": "5% rollout", "body": "A staged rollout to **5% of users** first." }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```

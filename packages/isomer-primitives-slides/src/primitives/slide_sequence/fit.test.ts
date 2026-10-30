@@ -12,6 +12,7 @@ import { frameContentWidth } from '../../theme/components/frame';
 import { marks } from '../../theme/components/marks';
 import { sequence, sequenceFit } from '../../theme/components/sequence';
 import { scalePx } from '../../theme/scale';
+import { slideLayout } from '../layout';
 import { layoutContext, renderedStep } from '../size.fixtures';
 import { tallestExample } from '../slide_heading/examples';
 import { paneWidths } from '../slide_split_layout/pane_layout';
@@ -47,24 +48,30 @@ const inSplit = (node: SlideSequenceNode) => ({
 
 describe('sequenceStep', () => {
   it('steps down at each budget, on both sides of it', () => {
-    expect(sequenceStep(firstMessages(sequenceFit.l), layoutContext())).toBe(
-      'l'
-    );
     expect(
-      sequenceStep(firstMessages(sequenceFit.l + 1), layoutContext())
+      sequenceStep(firstMessages(sequenceFit.l), slideLayout(layoutContext()))
+    ).toBe('l');
+    expect(
+      sequenceStep(
+        firstMessages(sequenceFit.l + 1),
+        slideLayout(layoutContext())
+      )
     ).toBe('m');
-    expect(sequenceStep(firstMessages(sequenceFit.m), layoutContext())).toBe(
-      'm'
-    );
     expect(
-      sequenceStep(firstMessages(sequenceFit.m + 1), layoutContext())
+      sequenceStep(firstMessages(sequenceFit.m), slideLayout(layoutContext()))
+    ).toBe('m');
+    expect(
+      sequenceStep(
+        firstMessages(sequenceFit.m + 1),
+        slideLayout(layoutContext())
+      )
     ).toBe('s');
   });
 
   it('keeps an authored size', () => {
-    expect(sequenceStep({ ...fullExample, size: 'l' }, layoutContext())).toBe(
-      'l'
-    );
+    expect(
+      sequenceStep({ ...fullExample, size: 'l' }, slideLayout(layoutContext()))
+    ).toBe('l');
   });
 
   it('takes the whole body on a slide without a heading', () => {
@@ -77,13 +84,13 @@ describe('sequenceStep', () => {
     expect(
       sequenceStep(
         firstMessages(sequenceFit.l),
-        layoutContext({ crowding: 1.1 })
+        slideLayout(layoutContext({ crowding: 1.1 }))
       )
     ).toBe('m');
     expect(
       sequenceStep(
         firstMessages(sequenceFit.l + 1),
-        layoutContext({ crowding: 0.8 })
+        slideLayout(layoutContext({ crowding: 0.8 }))
       )
     ).toBe('l');
   });
@@ -97,7 +104,7 @@ describe('sequence budgets fit what they allow', () => {
     { step: 's', count: sequenceMaxMessages },
   ] as const)('$count messages at $step', async ({ step, count }) => {
     const node = firstMessages(count);
-    expect(sequenceStep(node, layoutContext())).toBe(step);
+    expect(sequenceStep(node, slideLayout(layoutContext()))).toBe(step);
     expect(
       await findings(slideOf(tallestExample, { ...node, size: step }))
     ).toEqual([]);
@@ -119,8 +126,8 @@ describe('labels set as code', () => {
     expect(wrapHeight(coded, 'l', frameContentWidth)).toBe(
       coded.messages.length * codeRise
     );
-    expect(sequenceStep(plain, layoutContext())).toBe('l');
-    expect(sequenceStep(coded, layoutContext())).toBe('m');
+    expect(sequenceStep(plain, slideLayout(layoutContext()))).toBe('l');
+    expect(sequenceStep(coded, slideLayout(layoutContext()))).toBe('m');
     expect(await findings(slideOf(tallestExample, coded))).toEqual([]);
   });
 });

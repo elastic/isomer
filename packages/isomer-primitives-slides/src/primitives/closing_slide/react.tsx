@@ -11,33 +11,21 @@ import { nodeAnchor, sanitizeNavigationHref } from '@elastic/isomer-sdk';
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { marksReact } from '../../render/marks';
-import {
-  closing as theme,
-  closingShares,
-} from '../../theme/components/closing';
 import { labelModule } from '../../theme/modules';
 import { slideLayout } from '../layout';
-import { sizeForLines, trackWidth } from '../size';
 
+import { closingStep } from './fit';
 import type { ClosingSlideNode } from './schema';
 import { closingModule } from './styles';
 
 /** React renderer for {@link ClosingSlideNode}. */
 export const react = (
-  { type, title, links, paths = [], size }: ClosingSlideNode,
+  node: ClosingSlideNode,
   { context }: SlideReactEnv
 ): ReactNode => {
   const { handles: closing } = closingModule;
-  const { width } = slideLayout(context);
-  const step = sizeForLines(
-    size,
-    title,
-    theme.title.tracking,
-    paths.length > 0
-      ? trackWidth(width, closingShares, theme.columnGap)
-      : width,
-    theme.titleSizes
-  );
+  const { type, title, links, paths = [] } = node;
+  const step = closingStep(node, slideLayout(context));
   return (
     <div
       {...nodeAnchor(context, { type })}

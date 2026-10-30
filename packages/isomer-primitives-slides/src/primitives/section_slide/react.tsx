@@ -11,13 +11,9 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { marksReact } from '../../render/marks';
-import {
-  section as theme,
-  sectionShares,
-} from '../../theme/components/section';
 import { slideLayout } from '../layout';
-import { sizeForLines, trackWidth } from '../size';
 
+import { sectionStep } from './fit';
 import { lineHref } from './href';
 import { ordinal } from './ordinal';
 import type { SectionSlideNode } from './schema';
@@ -25,17 +21,12 @@ import { sectionModule } from './styles';
 
 /** React renderer for {@link SectionSlideNode}. */
 export const react = (
-  { type, number, title, slides, size }: SectionSlideNode,
+  node: SectionSlideNode,
   { context }: SlideReactEnv
 ): ReactNode => {
   const { handles: section } = sectionModule;
-  const step = sizeForLines(
-    size,
-    title,
-    theme.title.tracking,
-    trackWidth(slideLayout(context).width, sectionShares, theme.columnGap),
-    theme.titleSizes
-  );
+  const { type, number, title, slides } = node;
+  const step = sectionStep(node, slideLayout(context));
   return (
     <div
       {...nodeAnchor(context, { type })}

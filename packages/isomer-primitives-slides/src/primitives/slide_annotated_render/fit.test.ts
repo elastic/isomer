@@ -18,7 +18,12 @@ import { headingRoom } from '../slide_heading/fit';
 import type { SlideHeadingNode } from '../slide_heading/schema';
 
 import { example, placeholderExample } from './examples';
-import { legendHeight, legendOffset, legendStep, panelOffset } from './fit';
+import {
+  annotatedRenderStep,
+  legendHeight,
+  legendOffset,
+  panelOffset,
+} from './fit';
 import type { SlideAnnotatedRenderPin } from './schema';
 import type { SlideAnnotatedRenderNode } from './types';
 
@@ -69,7 +74,7 @@ describe('legendHeight', () => {
   ])(
     'matches what takumi draws at %s, with %s',
     async (step, _, pins, { place, layout }) => {
-      expect(legendStep(pins, layout)).toBe(step);
+      expect(annotatedRenderStep({ pins: pins }, layout)).toBe(step);
       const node = { ...placeholderExample, pins };
       const [grid] = nodeBox(
         await measured(place(node)),
@@ -93,7 +98,13 @@ describe('legendOffset', () => {
   const offset = (
     pins: readonly SlideAnnotatedRenderPin[],
     { layout }: typeof alone
-  ) => legendOffset(example.render, pins, legendStep(pins, layout), layout);
+  ) =>
+    legendOffset(
+      example.render,
+      pins,
+      annotatedRenderStep({ pins: pins }, layout),
+      layout
+    );
 
   const drawn = async (
     node: SlideAnnotatedRenderNode,
@@ -121,7 +132,11 @@ describe('legendOffset', () => {
     const { layout } = belowHeading;
     const room =
       layout.height -
-      legendHeight(dense, legendStep(dense, layout), layout.width);
+      legendHeight(
+        dense,
+        annotatedRenderStep({ pins: dense }, layout),
+        layout.width
+      );
     expect(room).toBeGreaterThan(0);
     expect(room).toBeLessThan(panelOffset(example.render, layout));
     expect(offset(dense, belowHeading)).toBe(room);
@@ -134,7 +149,11 @@ describe('legendOffset', () => {
     const pins = [...twoLine, ...twoLine];
     const { layout } = belowTallest;
     expect(
-      legendHeight(pins, legendStep(pins, layout), layout.width)
+      legendHeight(
+        pins,
+        annotatedRenderStep({ pins: pins }, layout),
+        layout.width
+      )
     ).toBeGreaterThan(layout.height);
     expect(offset(pins, belowTallest)).toBe(0);
   });

@@ -27,6 +27,14 @@
     "THIRD_PARTY_LICENSES.md",
     "LICENSE.txt"
   ],
+  "isomer": {
+    "packedFiles": [
+      "dist/pdf_worker.js",
+      "dist/pdf_worker_file.cjs",
+      "dist/cjs/pdf_worker.js",
+      "dist/cjs/pdf_worker_file.cjs"
+    ]
+  },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

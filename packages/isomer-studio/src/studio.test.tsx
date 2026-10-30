@@ -421,8 +421,8 @@ describe('IsomerStudio', () => {
         .getAuthoringContext()
         .primitives.find(({ type }) => type === 'divider') ?? {};
 
-    fireEvent.mouseEnter(divider);
     expect(screen.queryByText(purpose)).not.toBeInTheDocument();
+    fireEvent.mouseEnter(divider);
     expect(await screen.findByText(purpose)).toBeInTheDocument();
 
     fireEvent.mouseLeave(divider);

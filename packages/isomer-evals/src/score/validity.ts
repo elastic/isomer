@@ -11,7 +11,7 @@ import {
   type CompositionCheck,
 } from '@elastic/isomer-sdk/author';
 
-import type { EvalRuntime, ValidityScore } from '../types';
+import type { EvalFrame, EvalRuntime, ValidityScore } from '../types';
 
 /** Model output with the code fence some models wrap JSON in removed. */
 export const stripCodeFence = (raw: string): string => {
@@ -45,10 +45,11 @@ export type CheckedAttempt =
 /** Runs the SDK's `checkComposition` over an attempt's value, once. */
 export const checkAttempt = (
   runtime: EvalRuntime,
-  attempt: ParsedAttempt
+  attempt: ParsedAttempt,
+  frame?: EvalFrame
 ): CheckedAttempt =>
   attempt.parsed
-    ? { ...attempt, check: checkComposition(runtime, attempt.value) }
+    ? { ...attempt, check: checkComposition(runtime, attempt.value, frame) }
     : attempt;
 
 /**

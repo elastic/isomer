@@ -12,7 +12,7 @@ import { frameContentWidth } from '../../theme/components/frame';
 import { marks } from '../../theme/components/marks';
 import { scalePx } from '../../theme/scale';
 import { type SlideSize, slideSizes } from '../../theme/variants';
-import { openBody, withLayout } from '../layout';
+import { openBody, slideLayout, withLayout } from '../layout';
 import { renderedStep } from '../size.fixtures';
 import { tallestExample } from '../slide_heading/examples';
 import { headingRoom } from '../slide_heading/fit';
@@ -78,8 +78,9 @@ const heaviest = (
 ): number => {
   let length = 1;
   while (
-    slideSizes.indexOf(lanesStep(make(length + 1), underTallest)) <=
-      slideSizes.indexOf(step) &&
+    slideSizes.indexOf(
+      lanesStep(make(length + 1), slideLayout(underTallest))
+    ) <= slideSizes.indexOf(step) &&
     length < 2000
   ) {
     length += 1;
@@ -199,10 +200,16 @@ describe('lanesStep', () => {
     (step) => {
       const height = lanesHeight(fourNotesExample, step, openBody.width);
       expect(
-        lanesStep(fourNotesExample, inLayout(openBody.width, height))
+        lanesStep(
+          fourNotesExample,
+          slideLayout(inLayout(openBody.width, height))
+        )
       ).toBe(step);
       expect(
-        lanesStep(fourNotesExample, inLayout(openBody.width, height - 1))
+        lanesStep(
+          fourNotesExample,
+          slideLayout(inLayout(openBody.width, height - 1))
+        )
       ).toBe(slideSizes[slideSizes.indexOf(step) + 1]);
     }
   );
@@ -212,10 +219,16 @@ describe('lanesStep', () => {
     (step) => {
       const width = lanesWidth(unevenLanesExample, step);
       expect(
-        lanesStep(unevenLanesExample, inLayout(width, openBody.height))
+        lanesStep(
+          unevenLanesExample,
+          slideLayout(inLayout(width, openBody.height))
+        )
       ).toBe(step);
       expect(
-        lanesStep(unevenLanesExample, inLayout(width - 1, openBody.height))
+        lanesStep(
+          unevenLanesExample,
+          slideLayout(inLayout(width - 1, openBody.height))
+        )
       ).toBe(slideSizes[slideSizes.indexOf(step) + 1]);
     }
   );
@@ -225,8 +238,12 @@ describe('lanesStep', () => {
     expect(lanesHeight(codedNotes, 'l', openBody.width)).toBe(
       height + 2 * codeRise
     );
-    expect(lanesStep(plainNotes, inLayout(openBody.width, height))).toBe('l');
-    expect(lanesStep(codedNotes, inLayout(openBody.width, height))).toBe('m');
+    expect(
+      lanesStep(plainNotes, slideLayout(inLayout(openBody.width, height)))
+    ).toBe('l');
+    expect(
+      lanesStep(codedNotes, slideLayout(inLayout(openBody.width, height)))
+    ).toBe('m');
     expect(await findings(slideOf(tallestExample, codedNotes))).toEqual([]);
   });
 
@@ -246,16 +263,18 @@ describe('lanesStep', () => {
   );
 
   it('takes s, the smallest step, where nothing fits', () => {
-    expect(lanesStep(fullest, inLayout(lanesWidth(fullest, 's') - 1, 1))).toBe(
-      's'
-    );
+    expect(
+      lanesStep(fullest, slideLayout(inLayout(lanesWidth(fullest, 's') - 1, 1)))
+    ).toBe('s');
   });
 
   it('keeps an authored size', () => {
-    expect(lanesStep({ ...fullest, size: 'l' }, inLayout(1, 1))).toBe('l');
-    expect(lanesStep({ ...unevenLanesExample, size: 's' }, undefined)).toBe(
-      's'
-    );
+    expect(
+      lanesStep({ ...fullest, size: 'l' }, slideLayout(inLayout(1, 1)))
+    ).toBe('l');
+    expect(
+      lanesStep({ ...unevenLanesExample, size: 's' }, slideLayout(undefined))
+    ).toBe('s');
   });
 });
 
@@ -279,7 +298,7 @@ describe('lanes steps fit what they allow', () => {
     async ({ text, count, step }) => {
       const make = noted(text, count);
       const node = make(heaviest(make, step));
-      expect(lanesStep(node, underTallest)).toBe(step);
+      expect(lanesStep(node, slideLayout(underTallest))).toBe(step);
       expect(await findings(slideOf(tallestExample, node))).toEqual([]);
     }
   );
@@ -296,9 +315,12 @@ describe('lanes steps fit what they allow', () => {
   );
 
   it('fourNotesExample takes s in half a split, where m runs past the pane', async () => {
-    expect(lanesStep(fourNotesExample, inLayout(pane.width, pane.height))).toBe(
-      's'
-    );
+    expect(
+      lanesStep(
+        fourNotesExample,
+        slideLayout(inLayout(pane.width, pane.height))
+      )
+    ).toBe('s');
     expect(
       await findings(slideOf(tallestExample, split(fourNotesExample)))
     ).toEqual([]);

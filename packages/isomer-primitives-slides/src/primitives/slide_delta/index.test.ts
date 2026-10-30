@@ -24,8 +24,8 @@ import { renderedStep } from '../size.fixtures';
 import { paneWidths } from '../slide_split_layout/pane_layout';
 
 import { example, pendingExample, wideExample } from './examples';
+import { deltaStep } from './fit';
 import { markdown as markdownContent, text } from './index';
-import { deltaValueSize } from './react';
 import type { SlideDeltaNode } from './schema';
 
 const runtime = createIsomerRuntime({
@@ -186,61 +186,63 @@ describe('slideDelta', () => {
       ['00000', 'm'],
       ['00000000', 's'],
     ] as const)('%s beside one digit takes %s', (value, step) => {
-      expect(deltaValueSize(pair(value), openBody.width)).toBe(step);
+      expect(deltaStep(pair(value), { width: openBody.width })).toBe(step);
     });
 
     it('sizes the row by both sides together, not by the wider alone', () => {
-      expect(deltaValueSize(pair('0000', '0'), openBody.width)).toBe('l');
-      expect(deltaValueSize(pair('0', '0000'), openBody.width)).toBe('l');
-      expect(deltaValueSize(pair('000', '000'), openBody.width)).toBe('m');
+      expect(deltaStep(pair('0000', '0'), { width: openBody.width })).toBe('l');
+      expect(deltaStep(pair('0', '0000'), { width: openBody.width })).toBe('l');
+      expect(deltaStep(pair('000', '000'), { width: openBody.width })).toBe(
+        'm'
+      );
     });
 
     it('keeps an authored size', () => {
       expect(
-        deltaValueSize({ ...pair('00000'), size: 'l' }, openBody.width)
+        deltaStep({ ...pair('00000'), size: 'l' }, { width: openBody.width })
       ).toBe('l');
     });
 
     it('draws the wide example at the smallest step', () => {
-      expect(deltaValueSize(wideExample, openBody.width)).toBe('s');
+      expect(deltaStep(wideExample, { width: openBody.width })).toBe('s');
     });
 
     it('holds the note’s measure, padding, and rule beside the pair, to the pixel', () => {
       const row = pairWidth('000', '00') + noteFloor;
-      expect(deltaValueSize(pair('000', '00'), row + 0.5)).toBe('l');
-      expect(deltaValueSize(pair('000', '00'), row - 0.5)).toBe('m');
+      expect(deltaStep(pair('000', '00'), { width: row + 0.5 })).toBe('l');
+      expect(deltaStep(pair('000', '00'), { width: row - 0.5 })).toBe('m');
     });
 
     it('wraps the note under the pair when no step holds it beside them', () => {
       const alone = pairWidth('000', '00');
-      expect(deltaValueSize(pair('000', '00'), alone + 0.5)).toBe('l');
-      expect(deltaValueSize(pair('000', '00'), alone - 0.5)).toBe('m');
+      expect(deltaStep(pair('000', '00'), { width: alone + 0.5 })).toBe('l');
+      expect(deltaStep(pair('000', '00'), { width: alone - 0.5 })).toBe('m');
     });
 
     it('measures a label wider than its value, and a placeholder for a missing value', () => {
       const long = 'Before the warehouse moved';
       expect(
-        deltaValueSize(
+        deltaStep(
           { ...pair('0'), before: { label: long, value: '0' } },
-          openBody.width
+          { width: openBody.width }
         )
-      ).toBe(deltaValueSize(pair('0'), openBody.width));
+      ).toBe(deltaStep(pair('0'), { width: openBody.width }));
       expect(
-        deltaValueSize(
+        deltaStep(
           { ...pair('0'), before: { label: long.repeat(4), value: '0' } },
-          openBody.width
+          { width: openBody.width }
         )
       ).toBe('s');
       expect(
-        deltaValueSize({ ...pair('0'), before: { label: 'Before' } }, 400)
+        deltaStep({ ...pair('0'), before: { label: 'Before' } }, { width: 400 })
       ).toBe('s');
     });
 
     it('measures a code label in mono, as it is drawn', () => {
       const labelled = (label: string) =>
-        deltaValueSize(
+        deltaStep(
           { ...pair('0'), before: { label, value: '0' } },
-          openBody.width
+          { width: openBody.width }
         );
       const letters = 'i'.repeat(80);
       expect(labelled(letters)).toBe('l');
@@ -252,13 +254,13 @@ describe('slideDelta', () => {
       const [pane] = paneWidths(openBody.width, 'even', 'gap');
       const bullets = { type: 'slideBulletList', items: ['One'] };
       expect(renderedStep('delta-valueSize', node)).toBe('l');
-      expect(deltaValueSize(node, pane)).not.toBe('l');
+      expect(deltaStep(node, { width: pane })).not.toBe('l');
       expect(
         renderedStep('delta-valueSize', {
           type: 'slideSplitLayout',
           panes: [{ items: [node] }, { items: [bullets] }],
         })
-      ).toBe(deltaValueSize(node, pane));
+      ).toBe(deltaStep(node, { width: pane }));
       expect(
         renderedStep('delta-valueSize', {
           type: 'titleSlide',
@@ -288,7 +290,7 @@ describe('slideDelta', () => {
         ['a four-digit value beside one digit, at l', pair('0000', '0'), 'l'],
         ['four digits and three, at m', pair('0000', '000'), 'm'],
       ] as const)('keeps the note beside %s', async (_name, node, step) => {
-        expect(deltaValueSize(node, openBody.width)).toBe(step);
+        expect(deltaStep(node, { width: openBody.width })).toBe(step);
         const { value, body } = await drawn(node);
         expect(body.x).toBeGreaterThan(value.x + value.width);
         expect(body.y).toBeLessThan(value.y + value.height);
