@@ -33,7 +33,6 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { asideDescription, schema } from './schema';
-import { titleModule } from './styles';
 import type { TitleSlideNode } from './types';
 
 export type { TitleDefinition, TitleSlideNode } from './types';
@@ -84,7 +83,6 @@ export const titleSlidePrimitive = definePrimitive<
     schema.extend({
       aside: contentNode(bodyNodeSchema).describe(asideDescription).optional(),
     }),
-  styles: [titleModule],
   renderers: {
     react,
     text: (node, { scope }) =>

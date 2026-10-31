@@ -32,7 +32,6 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideColumnsNode } from './schema';
-import { columnsModule } from './styles';
 
 export type { SlideColumn, SlideColumnsNode } from './schema';
 
@@ -162,7 +161,6 @@ export const slideColumnsPrimitive = definePrimitive({
   icon,
   examples,
   schema,
-  styles: [columnsModule],
   renderers: {
     react,
     text,

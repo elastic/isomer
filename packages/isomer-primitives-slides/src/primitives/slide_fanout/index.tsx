@@ -20,7 +20,6 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideFanoutNode } from './schema';
-import { fanoutModule } from './styles';
 
 export type { SlideFanoutNode, SlideFanoutTarget } from './schema';
 
@@ -78,7 +77,6 @@ export const slideFanoutPrimitive = definePrimitive({
   icon,
   examples,
   schema,
-  styles: [fanoutModule],
   renderers: {
     react,
     text,

@@ -25,7 +25,6 @@ import { icon } from './icon';
 import { prefix } from './prefix';
 import { react } from './react';
 import { schema, type SlideSourceNode } from './schema';
-import { sourceModule } from './styles';
 
 export type { SlideSourceNode } from './schema';
 
@@ -54,7 +53,6 @@ export const slideSourcePrimitive = definePrimitive({
   icon,
   examples,
   schema,
-  styles: [sourceModule],
   renderers: {
     react,
     text,

@@ -30,7 +30,6 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { buildSchema, schema } from './schema';
-import { renderGridModule } from './styles';
 import type { SlideRenderGridNode } from './types';
 
 export type { SlideRenderGridNode, SlideRenderGridTile } from './types';
@@ -48,7 +47,6 @@ export const slideRenderGridPrimitive = definePrimitive<
   examples,
   schema,
   schemaFor: (bodyNodeSchema: ZodType<unknown>) => buildSchema(bodyNodeSchema),
-  styles: [renderGridModule],
   renderers: {
     react,
     text: ({ body, tiles }, { scope }) =>

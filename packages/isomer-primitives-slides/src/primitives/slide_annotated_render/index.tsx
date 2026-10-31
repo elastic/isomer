@@ -32,7 +32,6 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { buildSchema, schema, type SlideAnnotatedRenderPin } from './schema';
-import { annotatedRenderModule } from './styles';
 import type { SlideAnnotatedRenderNode } from './types';
 
 export type { SlideAnnotatedRenderPin } from './schema';
@@ -65,7 +64,6 @@ export const slideAnnotatedRenderPrimitive = definePrimitive<
   schema,
   schemaFor: (bodyNodeSchema: ZodType<unknown>) =>
     buildSchema(slideRenderPrimitive.schemaFor!(bodyNodeSchema)),
-  styles: [annotatedRenderModule],
   renderers: {
     react,
     text: ({ render, pins }, { scope }) =>

@@ -25,7 +25,6 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { type QuoteSlideNode, schema } from './schema';
-import { quoteModule } from './styles';
 
 export type { QuoteSlideNode } from './schema';
 
@@ -75,7 +74,6 @@ export const quoteSlidePrimitive = definePrimitive({
   icon,
   examples,
   schema,
-  styles: [quoteModule],
   renderers: {
     react,
     text,

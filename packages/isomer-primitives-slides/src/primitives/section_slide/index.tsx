@@ -27,7 +27,6 @@ import { icon } from './icon';
 import { ordinal } from './ordinal';
 import { react } from './react';
 import { schema, type SectionSlideNode } from './schema';
-import { sectionModule } from './styles';
 
 export type { SectionItem, SectionSlideNode } from './schema';
 
@@ -88,7 +87,6 @@ export const sectionSlidePrimitive = definePrimitive({
   icon,
   examples,
   schema,
-  styles: [sectionModule],
   renderers: {
     react,
     text,

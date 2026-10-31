@@ -33,7 +33,6 @@ export const slideCodeTracePrimitive = definePrimitive({
   icon,
   examples,
   schema,
-  styles: [],
   renderers: {
     react,
     text,

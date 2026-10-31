@@ -33,7 +33,6 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideLanesNode, type SlideLanesNote } from './schema';
-import { lanesModule } from './styles';
 
 export type { SlideLanesLane, SlideLanesNode, SlideLanesNote } from './schema';
 
@@ -138,7 +137,6 @@ export const slideLanesPrimitive = definePrimitive({
   icon,
   examples,
   schema,
-  styles: [lanesModule],
   renderers: {
     react,
     text,

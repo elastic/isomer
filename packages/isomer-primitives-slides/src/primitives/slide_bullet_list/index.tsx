@@ -22,7 +22,6 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideBulletListNode } from './schema';
-import { bulletsModule } from './styles';
 
 export type { SlideBulletListNode } from './schema';
 
@@ -98,7 +97,6 @@ export const slideBulletListPrimitive = withBuild(
     icon,
     examples,
     schema,
-    styles: [bulletsModule],
     renderers: {
       react,
       text,

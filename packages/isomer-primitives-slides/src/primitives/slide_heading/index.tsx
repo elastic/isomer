@@ -22,7 +22,6 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideHeadingNode } from './schema';
-import { headingModule } from './styles';
 
 export type { SlideHeadingNode } from './schema';
 
@@ -48,7 +47,6 @@ export const slideHeadingPrimitive = definePrimitive({
   icon,
   examples,
   schema,
-  styles: [headingModule],
   renderers: {
     react,
     text,

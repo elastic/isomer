@@ -30,7 +30,6 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideTerritoryGroupNode } from './schema';
-import { territoryModule } from './styles';
 
 export type { SlideTerritory, SlideTerritoryGroupNode } from './schema';
 
@@ -77,7 +76,6 @@ export const slideTerritoryGroupPrimitive = definePrimitive({
   icon,
   examples,
   schema,
-  styles: [territoryModule],
   renderers: {
     react,
     text,

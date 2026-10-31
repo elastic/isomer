@@ -11,9 +11,9 @@ Each primitive lives in its own directory under `src/primitives/<type>/`. Folder
 | `catalog.ts`    | Agent-facing copy: `purpose`, `useWhen`, `avoidWhen`, one `example`; and the host-facing `name`, which the prompt does not print.                                              |
 | `icon.ts`       | The host-facing glyph, exported as `icon` and built with `slideIcon` ([Icons](#icons)).                                                                                        |
 | `examples.ts`   | `example` plus `examples`, used by the conformance harness and the authoring prompt.                                                                                           |
-| `styles.ts`     | The primitive's Distillate module, reading only `slideDistillery.tokens`. The definition lists it in `styles`, which is how it reaches `slideStylesheet()`.                    |
+| `styles.ts`     | The primitive's Distillate module, reading only `slideDistillery.tokens`. A direct import in `src/stylesheet.ts` loads its registration for `slideStylesheet()`.               |
 | `react.tsx`     | The React renderer, exported as `react`. It serves the `snapshot` surface too.                                                                                                 |
-| `index.tsx`     | `definePrimitive` with the `styles.ts` modules in `styles`, renderer wiring, and the `text`, `markdown`, and `slack` renderers.                                                |
+| `index.tsx`     | `definePrimitive`, renderer wiring, and the `text`, `markdown`, and `slack` renderers.                                                                                         |
 | `index.test.ts` | Schema rejections and every surface's output for the primitive.                                                                                                                |
 | `fit.ts`        | Only for a primitive that picks a size step: its one step function, `<name>Step(node, layout)`, and the estimates it reads ([Size steps](theme.md#size-steps)).                |
 
@@ -230,7 +230,11 @@ Beside its own folder, a new primitive has four hand-maintained stops:
 4. `src/pack_authoring.ts`: its group in `slidePrimitiveGroups`.
 5. `src/theme/components/<group>.ts`, its theme group, and its place in `SLIDE_THEME` in `src/theme/theme.ts`.
 
-The stylesheet and the builds follow from the registry: `slideStylesheet` collects the `styles` of each registered definition, beside the shared modules in `src/theme/modules.ts`, and `slideBuilds` reads `build`. The stylesheet takes each module as a value rather than from the Distillate registry it joins when created: the package declares no side effects, so a bundler such as rolldown drops a module that nothing reads. The theme cannot: `SLIDE_THEME` is what creates `slideDistillery`, which every `styles.ts` reads, so a theme taken from the registry would need the modules it creates.
+The builds follow from the registry: `slideBuilds` reads `build`. The stylesheet has its own library-owned inventory: add a direct import of each new `styles.ts` to `src/stylesheet.ts`, which also imports the shared registration file `src/theme/modules.ts`. `slideStylesheet` calls Distillate's registry-based `stylesheetCollector()` after those files load; neither primitive definitions nor hosts maintain a list of style modules.
+
+Style registration is a real side effect owned by this package. Its `package.json` marks `lib/*/primitives/*/styles.js` and `lib/*/theme/modules.js` as side-effectful for both the ESM and CommonJS builds, plus the matching source files for source-based Studio and tests. The builds emit individual files, so those patterns match the actual packed registrations. Distillate's metadata cannot override this package's metadata. Keep these exemptions when copying the pack; if a build instead bundles registration into one output file, mark that output and retain the registrations during the library build too. Direct imports need no inventory-barrel exemption; if replaced by a side-effect-only barrel, mark both the barrel and the registration files. Retaining registration JavaScript does not disable artifact CSS pruning.
+
+The theme cannot follow from the registry: `SLIDE_THEME` is what creates `slideDistillery`, which every `styles.ts` reads, so a theme taken from the registry would need the modules it creates.
 
 ```ts
 import { myNewPrimitive } from './primitives/my_new_type';
@@ -241,7 +245,7 @@ export const slideDeckPrimitives = [
 ] as const;
 ```
 
-The registry and the union cannot be collapsed into one — the container `types.ts` files import `SlideContentNode`, so deriving the union from the registry closes that cycle at the value level (`TS7022`). `src/registry.test.ts` guards the first four stops: a type-level assertion that the two lists agree in both directions, `assertPackRegistrationComplete`, which reads `src/primitives/` and fails when a directory is in neither list, a check that every registered type is in exactly one group, and a check that every primitive has a `slack` renderer. Forgetting one fails the build with the lines to add. The same file fails when a module the pack creates is in no `styles` list, and `src/stylesheet.test.ts` bundles `slideStylesheet` alone with rolldown and fails when a `styles.ts` is dropped.
+The registry and the union cannot be collapsed into one — the container `types.ts` files import `SlideContentNode`, so deriving the union from the registry closes that cycle at the value level (`TS7022`). `src/registry.test.ts` guards the first four stops: a type-level assertion that the two lists agree in both directions, `assertPackRegistrationComplete`, which reads `src/primitives/` and fails when a directory is in neither list, a check that every registered type is in exactly one group, and a check that every primitive has a `slack` renderer. Forgetting one fails the build with the lines to add. `src/stylesheet.test.ts` checks the direct-import inventory against the registration files, bundles the source stylesheet and both packed public entries with rolldown, and checks retained files and exact CSS output. It also guards artifact CSS pruning. Run `pnpm build` before tests that exercise the packed files.
 
 ## Authoring with JSX
 

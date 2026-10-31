@@ -19,7 +19,6 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { diffGutter, diffLines, schema, type SlideDiffNode } from './schema';
-import { diffModule } from './styles';
 
 export type { SlideDiffLine, SlideDiffNode } from './schema';
 
@@ -54,7 +53,6 @@ export const slideDiffPrimitive = definePrimitive({
   icon,
   examples,
   schema,
-  styles: [diffModule],
   renderers: {
     react,
     text,

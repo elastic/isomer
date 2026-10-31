@@ -31,7 +31,6 @@ import {
   type SlideRoadmapColumn,
   type SlideRoadmapNode,
 } from './schema';
-import { roadmapModule } from './styles';
 
 export type {
   SlideRoadmapColumn,
@@ -105,7 +104,6 @@ export const slideRoadmapPrimitive = definePrimitive({
   icon,
   examples,
   schema,
-  styles: [roadmapModule],
   renderers: {
     react,
     text,

@@ -31,7 +31,6 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideStatsItem, type SlideStatsNode } from './schema';
-import { statsModule } from './styles';
 
 export type { SlideStatsItem, SlideStatsNode } from './schema';
 
@@ -98,7 +97,6 @@ export const slideStatsPrimitive = definePrimitive({
   icon,
   examples,
   schema,
-  styles: [statsModule],
   renderers: {
     react,
     text,

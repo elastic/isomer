@@ -26,7 +26,6 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideMatrixNode } from './schema';
-import { matrixModule } from './styles';
 
 export type { SlideMatrixNode, SlideMatrixRow } from './schema';
 
@@ -85,7 +84,6 @@ export const slideMatrixPrimitive = definePrimitive({
   icon,
   examples,
   schema,
-  styles: [matrixModule],
   renderers: {
     react,
     text,

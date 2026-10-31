@@ -18,7 +18,6 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideTreeNode } from './schema';
-import { treeModule } from './styles';
 
 export type { SlideTreeEntry, SlideTreeNode } from './schema';
 
@@ -63,7 +62,6 @@ export const slideTreePrimitive = definePrimitive({
   icon,
   examples,
   schema,
-  styles: [treeModule],
   renderers: {
     react,
     text,

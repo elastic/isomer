@@ -31,7 +31,6 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideDefinitionsNode } from './schema';
-import { definitionsModule } from './styles';
 
 export type { SlideDefinition, SlideDefinitionsNode } from './schema';
 
@@ -78,7 +77,6 @@ export const slideDefinitionsPrimitive = definePrimitive({
   icon,
   examples,
   schema,
-  styles: [definitionsModule],
   renderers: {
     react,
     text,

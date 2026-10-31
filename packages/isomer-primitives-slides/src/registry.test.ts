@@ -16,8 +16,6 @@ import { describe, expect, it } from 'vitest';
 import type { BodyNode } from './body_node';
 import { slidePrimitiveGroups } from './pack_authoring';
 import { slideDeckPrimitives, slidePrimitiveTypes } from './registry';
-import { slideDistillery } from './theme/distillery';
-import { sharedModules } from './theme/modules';
 
 /** Every node type reachable from the registry, via each definition's `examples`. */
 type Registered = ExampleNode<
@@ -62,18 +60,5 @@ describe('registry', () => {
 
   it('stays alphabetically sorted', () => {
     expect(slidePrimitiveTypes).toEqual([...slidePrimitiveTypes].sort());
-  });
-
-  // `slideStylesheet` collects these lists, so a module missing from them is
-  // dropped from the stylesheet by a bundler that tree-shakes the pack.
-  it('lists every style module the pack creates', () => {
-    const listed = [
-      ...sharedModules,
-      ...slideDeckPrimitives.flatMap(({ styles }) => styles),
-    ].map(({ name }) => name);
-    expect([...listed].sort()).toEqual(
-      slideDistillery.registry.modules.map(({ name }) => name).sort()
-    );
-    expect(new Set(listed).size).toBe(listed.length);
   });
 });

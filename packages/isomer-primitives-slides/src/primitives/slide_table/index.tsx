@@ -19,7 +19,6 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { schema, type SlideTableNode, tableGroups } from './schema';
-import { tableModule } from './styles';
 
 export type { SlideTableGroup, SlideTableNode } from './schema';
 
@@ -84,7 +83,6 @@ export const slideTablePrimitive = definePrimitive({
   icon,
   examples,
   schema,
-  styles: [tableModule],
   renderers: {
     react,
     text,

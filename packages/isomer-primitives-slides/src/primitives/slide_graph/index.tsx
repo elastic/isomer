@@ -30,7 +30,6 @@ import {
   type SlideGraphNode,
   type SlideGraphTerm,
 } from './schema';
-import { graphModule } from './styles';
 
 export type {
   SlideGraphNode,
@@ -121,7 +120,6 @@ export const slideGraphPrimitive = definePrimitive({
   icon,
   examples,
   schema,
-  styles: [graphModule],
   renderers: {
     react,
     text,

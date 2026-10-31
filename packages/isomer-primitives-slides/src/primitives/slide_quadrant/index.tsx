@@ -27,7 +27,6 @@ import { examples } from './examples';
 import { icon } from './icon';
 import { react } from './react';
 import { quadrantPlaces, schema, type SlideQuadrantNode } from './schema';
-import { quadrantModule } from './styles';
 
 export type { SlideQuadrant, SlideQuadrantNode } from './schema';
 
@@ -113,7 +112,6 @@ export const slideQuadrantPrimitive = definePrimitive({
   icon,
   examples,
   schema,
-  styles: [quadrantModule],
   renderers: {
     react,
     text,
