@@ -10,7 +10,12 @@
     "url": "git+https://github.com/elastic/isomer.git",
     "directory": "packages/isomer-primitives-slides"
   },
-  "sideEffects": false,
+  "sideEffects": [
+    "./lib/*/primitives/*/styles.js",
+    "./lib/*/theme/modules.js",
+    "./src/primitives/*/styles.ts",
+    "./src/theme/modules.ts"
+  ],
   "main": "lib/cjs/index.js",
   "module": "lib/esm/index.js",
   "types": "lib/cjs/index.d.ts",
@@ -62,6 +67,7 @@
     "micromark-extension-gfm": "^3.0.0",
     "moment": "2.31.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "rolldown": "1.2.13"
   }
 }
