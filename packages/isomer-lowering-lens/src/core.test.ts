@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { plan, readResponse } from './index';
+import { nativeEsqlInput } from './native_esql.fixtures';
 import type { LensQueryPlan } from './schema';
 import { isBoundedJson } from './schema';
 
@@ -52,6 +53,100 @@ const query = (): LensQueryPlan => ({
 });
 
 describe('plan', () => {
+  it('plans the persisted native ES|QL shape with a matching global query', () => {
+    const result = plan(nativeEsqlInput);
+    expect(result.status).toBe('planned');
+    if (result.status !== 'planned') {
+      throw new Error('Expected native ES|QL plan');
+    }
+    expect(result.plan.source).toEqual(nativeEsqlInput.savedObject);
+    expect(result.plan.queries[0]?.query.esql).toBe(
+      nativeEsqlInput.savedObject.attributes.state.query.esql
+    );
+    expect(
+      readResponse(result.plan.queries[0], {
+        columns: [
+          { name: 'requests', type: 'long' },
+          { name: 'service.name', type: 'keyword' },
+        ],
+        values: [[42, 'checkout']],
+      })
+    ).toMatchObject({ status: 'ready', table: { rows: [['checkout', 42]] } });
+  });
+
+  it.each([
+    { esql: 'FROM other-*' },
+    { esql: `${nativeEsqlInput.savedObject.attributes.state.query.esql} ` },
+    { esql: '' },
+    {
+      esql: nativeEsqlInput.savedObject.attributes.state.query.esql,
+      extra: true,
+    },
+    {
+      esql: nativeEsqlInput.savedObject.attributes.state.query.esql,
+      query: '',
+      language: 'kuery',
+    },
+  ])(
+    'refuses mismatched, empty or extended ES|QL global context %j',
+    (query) => {
+      const source = structuredClone(nativeEsqlInput);
+      const result = plan({
+        savedObject: {
+          ...source.savedObject,
+          attributes: {
+            ...source.savedObject.attributes,
+            state: { ...source.savedObject.attributes.state, query },
+          },
+        },
+      });
+      expect(result).toMatchObject({
+        status: 'unsupported',
+        diagnostics: [{ code: 'lens.unsupported-saved-context' }],
+      });
+      expect(result).not.toHaveProperty('plan');
+    }
+  );
+
+  it('requires an ES|QL global query to mirror every layer and still refuses saved filters', () => {
+    const source = structuredClone(nativeEsqlInput);
+    const state = source.savedObject.attributes.state;
+    const withLayers = (secondQuery: string) => ({
+      savedObject: {
+        ...source.savedObject,
+        attributes: {
+          ...source.savedObject.attributes,
+          state: {
+            ...state,
+            datasourceStates: {
+              textBased: {
+                layers: {
+                  ...state.datasourceStates.textBased.layers,
+                  second: {
+                    ...state.datasourceStates.textBased.layers.layer1,
+                    query: { esql: secondQuery },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(plan(withLayers(state.query.esql)).status).toBe('planned');
+    expect(plan(withLayers('FROM other-*')).status).toBe('unsupported');
+    expect(
+      plan({
+        savedObject: {
+          ...source.savedObject,
+          attributes: {
+            ...source.savedObject.attributes,
+            state: { ...state, filters: [{ term: { service: 'checkout' } }] },
+          },
+        },
+      }).status
+    ).toBe('unsupported');
+  });
   it('preserves exact bytes, all layers, explicit context and opaque source without aliasing', () => {
     const source = input();
     const layers = {

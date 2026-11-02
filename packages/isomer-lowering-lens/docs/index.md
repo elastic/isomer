@@ -57,7 +57,16 @@ semantics return `{ status: 'unsupported', diagnostics }`. Each diagnostic has
 `code`, `message` and an input `path`. Neither outcome exposes a partial plan.
 Unsupported cases include form-based/mixed/legacy datasources, inline tables,
 unknown datasource/layer extensions, partial-bucket transforms, saved filters and
-nonempty global queries. Empty `kuery`/`lucene` saved queries are accepted.
+global queries requiring additional execution semantics. Empty `kuery`/`lucene`
+saved queries are accepted. Native Lens's global `state.query: { esql }` is
+accepted only when it contains no other keys and matches every layer query
+byte-for-byte. The global copy is preserved, not executed again or used to
+overwrite differing layers. Mismatches (including whitespace differences) and
+mixed/extended query objects return `lens.unsupported-saved-context`.
+This covers dual-written saved objects as well as newer layer-only envelopes.
+Layer queries remain authoritative; a stale global copy is refused rather than
+guessed. Kibana's [query-state fixtures](https://github.com/elastic/kibana/blob/main/src/platform/packages/shared/kbn-lens-common/esql/lens_attributes_queries.test.ts)
+distinguish layer-only documents from legacy dual-written ones.
 Whitespace-only ES|QL is invalid. No ES|QL parsing, rewriting or injection occurs.
 
 Hosts retrieve saved objects and metadata, authorize access and execute all
@@ -102,7 +111,13 @@ The reusable `LensInspector` accepts optional `initialInput` and
 `initialResponse` JSON strings. Paste `{ savedObject, dataViews? }`, select
 **Inspect envelope**, choose a planned layer, paste its ES|QL response and select
 **Inspect response**. All plan/source/context and response projection metadata
-are inspectable as JSON. Syntax errors and invalid/unsupported diagnostics
+are inspectable as JSON within a 100,000-character display budget per result.
+Serialization stops before expanded output can exceed that budget, including
+duplicate field projections and repeated metadata references. Oversized results
+produce a visible diagnostic rather than truncated JSON or a render failure;
+editable inputs and planned layer selection remain available for recovery.
+The portable planning/response results themselves are not truncated.
+Syntax errors and invalid/unsupported diagnostics
 remain visible. Editing inputs or switching layers clears stale results.
 Text input is capped at 2,000,000 characters before parsing, separately from
 the core's structural limits.

@@ -144,15 +144,24 @@ export const plan = (input: unknown): LensLoweringResult => {
       ],
     };
   }
+  const savedQuery = state.query;
+  const emptyGlobalQuery =
+    savedQuery &&
+    savedQuery.query === '' &&
+    (savedQuery.language === 'kuery' || savedQuery.language === 'lucene') &&
+    Object.keys(savedQuery).every(
+      (key) => key === 'query' || key === 'language'
+    );
+  const mirroredEsqlQuery =
+    savedQuery &&
+    typeof savedQuery.esql === 'string' &&
+    Object.keys(savedQuery).length === 1 &&
+    Object.values(datasource.data.layers).every(
+      (layer) => layer.query?.esql === savedQuery.esql
+    );
   if (
     (state.filters?.length ?? 0) > 0 ||
-    (state.query &&
-      (state.query.query !== '' ||
-        (state.query.language !== 'kuery' &&
-          state.query.language !== 'lucene') ||
-        Object.keys(state.query).some(
-          (key) => key !== 'query' && key !== 'language'
-        )))
+    (savedQuery && !emptyGlobalQuery && !mirroredEsqlQuery)
   ) {
     return {
       status: 'unsupported',
@@ -160,7 +169,7 @@ export const plan = (input: unknown): LensLoweringResult => {
         {
           code: 'lens.unsupported-saved-context',
           message:
-            'Saved filters and nonempty global queries require Lens execution-context support',
+            'Saved filters or global queries other than empty kuery/lucene or an exact ES|QL mirror of every layer require Lens execution-context support',
           path: ['savedObject', 'attributes', 'state'],
         },
       ],

@@ -210,6 +210,99 @@ for (const mode of ['dev', 'static']) {
         .getByRole('button', { name: 'Inspect envelope', exact: true })
         .click();
       await expect(result).toContainText('"status": "planned"');
+      const expanded = {
+        savedObject: {
+          ...multilayer.savedObject,
+          attributes: {
+            ...multilayer.savedObject.attributes,
+            state: {
+              ...multilayer.savedObject.attributes.state,
+              query: { esql: 'FROM logs-*' },
+              datasourceStates: {
+                textBased: {
+                  layers: {
+                    repeated: {
+                      query: { esql: 'FROM logs-*' },
+                      columns: Array.from({ length: 512 }, (_, index) => ({
+                        columnId: `column-${index}`,
+                        fieldName: 'message',
+                      })),
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      };
+      const expandedInput = JSON.stringify(expanded);
+      await input.fill(expandedInput);
+      await page
+        .getByRole('button', { name: 'Inspect envelope', exact: true })
+        .click();
+      await expect(page.getByLabel('Response layer')).toHaveValue('repeated');
+      const largeResponse = JSON.stringify({
+        columns: [{ name: 'message', type: 'keyword' }],
+        values: Array.from({ length: 19 }, () => ['x'.repeat(100_000)]),
+      });
+      await page.getByLabel('ES|QL response JSON').fill(largeResponse);
+      await page
+        .getByRole('button', { name: 'Inspect response', exact: true })
+        .click();
+      await expect(page.getByRole('alert').last()).toContainText(
+        '100,000-character display budget'
+      );
+      await expect(projected).toHaveCount(0);
+      await expect(input).toHaveValue(expandedInput);
+      await expect(page.getByLabel('ES|QL response JSON')).toHaveValue(
+        largeResponse
+      );
+      await page.getByLabel('ES|QL response JSON').fill(
+        JSON.stringify({
+          columns: [{ name: 'message', type: 'keyword' }],
+          values: [['small']],
+        })
+      );
+      await page
+        .getByRole('button', { name: 'Inspect response', exact: true })
+        .click();
+      await expect(projected).toContainText('"status": "ready"');
+      await expect(projected).toContainText('"small"');
+
+      const metadataInput = JSON.stringify({
+        ...expanded,
+        savedObject: {
+          ...expanded.savedObject,
+          references: Array.from({ length: 512 }, (_, index) => ({
+            id: 'view',
+            type: 'index-pattern',
+            name: `ref-${index}`,
+          })),
+        },
+        dataViews: [
+          {
+            id: 'view',
+            title: 'logs-*',
+            fieldFormats: { message: { pattern: 'x'.repeat(100_000) } },
+          },
+        ],
+      });
+      await input.fill(metadataInput);
+      await page
+        .getByRole('button', { name: 'Inspect envelope', exact: true })
+        .click();
+      await expect(page.getByRole('alert')).toContainText(
+        '100,000-character display budget'
+      );
+      await expect(result).toHaveCount(0);
+      await expect(input).toHaveValue(metadataInput);
+      await expect(page.getByLabel('Response layer')).toHaveValue('repeated');
+      await input.fill(JSON.stringify(original));
+      await page
+        .getByRole('button', { name: 'Inspect envelope', exact: true })
+        .click();
+      await expect(result).toContainText('"status": "planned"');
+      await expect(page.getByRole('alert')).toHaveCount(0);
       expect(executionRequests).toEqual([]);
       expect(errors).toEqual([]);
     } finally {

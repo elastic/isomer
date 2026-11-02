@@ -7,9 +7,10 @@
 
 import { type CSSProperties, useId, useState } from 'react';
 
+import { inspectorOutput } from './inspector_output';
 import { plan } from './plan';
 import { readResponse } from './read_response';
-import type { LensLoweringResult, LensResponseResult } from './types';
+import type { LensLoweringResult } from './types';
 
 export interface LensInspectorProps {
   /** Initial JSON for { savedObject, dataViews? }. No retrieval or execution occurs. */
@@ -68,7 +69,8 @@ export const LensInspector = ({
   const [input, setInput] = useState(initialInput);
   const [response, setResponse] = useState(initialResponse);
   const [result, setResult] = useState<LensLoweringResult>();
-  const [projection, setProjection] = useState<LensResponseResult>();
+  const [resultText, setResultText] = useState<string>();
+  const [projection, setProjection] = useState<string>();
   const [inputError, setInputError] = useState<string>();
   const [responseError, setResponseError] = useState<string>();
   const [layerId, setLayerId] = useState('');
@@ -84,10 +86,13 @@ export const LensInspector = ({
     if ('error' in parsed) {
       setInputError(parsed.error);
       setResult(undefined);
+      setResultText(undefined);
       return;
     }
     const next = plan(parsed.value);
-    setInputError(undefined);
+    const output = inspectorOutput(next);
+    setInputError('error' in output ? output.error : undefined);
+    setResultText('text' in output ? output.text : undefined);
     setResult(next);
     setLayerId(
       next.status === 'planned' ? (next.plan.queries[0]?.layerId ?? '') : ''
@@ -103,8 +108,9 @@ export const LensInspector = ({
       setProjection(undefined);
       return;
     }
-    setResponseError(undefined);
-    setProjection(readResponse(query, parsed.value));
+    const output = inspectorOutput(readResponse(query, parsed.value));
+    setResponseError('error' in output ? output.error : undefined);
+    setProjection('text' in output ? output.text : undefined);
   };
   return (
     <section
@@ -131,6 +137,7 @@ export const LensInspector = ({
         onChange={(event) => {
           setInput(event.target.value);
           setResult(undefined);
+          setResultText(undefined);
           setProjection(undefined);
           setInputError(undefined);
           setResponseError(undefined);
@@ -140,9 +147,9 @@ export const LensInspector = ({
         Inspect envelope
       </button>
       {inputError ? <p role="alert">{inputError}</p> : null}
-      {result ? (
+      {resultText ? (
         <pre aria-label="Planning result" style={resultStyle}>
-          {JSON.stringify(result, null, 2)}
+          {resultText}
         </pre>
       ) : null}
       {result?.status === 'planned' ? (
@@ -181,7 +188,7 @@ export const LensInspector = ({
           {responseError ? <p role="alert">{responseError}</p> : null}
           {projection ? (
             <pre aria-label="Response result" style={resultStyle}>
-              {JSON.stringify(projection, null, 2)}
+              {projection}
             </pre>
           ) : null}
         </div>

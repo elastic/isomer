@@ -16,6 +16,7 @@ const input = JSON.stringify(
         title: 'Synthetic response replay',
         visualizationType: 'lnsXY',
         state: {
+          query: { esql: 'ROW service = "checkout", requests = 42' },
           datasourceStates: {
             textBased: {
               layers: {

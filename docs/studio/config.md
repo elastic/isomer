@@ -200,6 +200,11 @@ The config runs in two places: in Node, for `check` and for the dev server's PNG
 
 **In the browser**, `build` bundles the config with esbuild and `dev` serves it through Vite. `react`, `react-dom` and their subpaths resolve as if imported from the config, so the Studio's own components, Emotion and the pack share one React, and each package's browser build is the one loaded.
 
+Dev preoptimizes the Emotion development JSX runtime even when running the
+installed CommonJS CLI. Lazy consumer TSX apps can introduce that runtime only
+after the initial dependency scan; including it up front avoids replacing the
+optimized React graph while an app mounts.
+
 **Run with `npx`**, the Studio sits in npm's cache rather than the pack's `node_modules`. Two rules make that work in Node, Vite and esbuild alike:
 
 - `react`, `react-dom`, `@elastic/isomer-sdk` and `zod`, imported from outside the project, resolve from the project, so the runtime and the pack share them.

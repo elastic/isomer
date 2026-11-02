@@ -1398,8 +1398,25 @@ test.describe('dev server', () => {
 
   test('serves a deep-linked app and its CSS', async ({ page }) => {
     const problems = watchProblems(page);
+    const optimizedVersions = new Map<string, Set<string>>();
+    page.on('request', (request) => {
+      const url = new URL(request.url());
+      const version = url.searchParams.get('v');
+      if (url.pathname.includes('/node_modules/.vite/deps/') && version) {
+        const versions =
+          optimizedVersions.get(url.pathname) ?? new Set<string>();
+        versions.add(version);
+        optimizedVersions.set(url.pathname, versions);
+      }
+    });
     await exerciseApp(page, dev.url);
     expect(problems).toEqual([]);
+    expect(
+      [...optimizedVersions.entries()].filter(
+        ([, versions]) => versions.size > 1
+      ),
+      'Opening a lazy app must not replace an already loaded optimized module'
+    ).toEqual([]);
   });
 
   test('downloads a deck as one PDF', async ({ page }) => {

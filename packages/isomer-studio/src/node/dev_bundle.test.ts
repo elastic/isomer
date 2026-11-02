@@ -7,9 +7,30 @@
 
 // @vitest-environment node
 
+import { createServer } from 'node:http';
+import { createRequire } from 'node:module';
+import { resolve } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
-import { withImporters } from './dev_bundle';
+import { type devViteConfig, withImporters } from './dev_bundle';
+import { loadVite } from './vite';
+
+it('preoptimizes lazy consumer Emotion JSX in the installed CommonJS CLI', async () => {
+  const require = createRequire(import.meta.url);
+  const built = require(
+    resolve(__dirname, '../../lib/cjs/node/dev_bundle.js')
+  ) as { devViteConfig: typeof devViteConfig };
+  const config = built.devViteConfig({
+    configPath: resolve(__dirname, '../../../../isomer-studio.config.ts'),
+    server: createServer(),
+    onConfigChange: () => Promise.resolve(),
+    modules: await loadVite(),
+  });
+  expect(config.optimizeDeps?.include).toContain(
+    '@elastic/isomer-studio > @emotion/react/jsx-dev-runtime'
+  );
+});
 
 interface FakeModule {
   file: string;
