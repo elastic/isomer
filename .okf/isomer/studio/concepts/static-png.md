@@ -20,7 +20,7 @@ sources:
 
 # Definition
 
-`isomer-studio build` prerenders example PNGs for static sites, as [Static sites](https://github.com/elastic/isomer/blob/main/packages/isomer-studio/docs/commands.md#static-sites) describes.
+By default, `isomer-studio build` prerenders example PNGs for static sites, as [Static sites](https://github.com/elastic/isomer/blob/main/packages/isomer-studio/docs/commands.md#static-sites) describes. [`images: false`](https://github.com/elastic/isomer/blob/main/packages/isomer-studio/docs/config.md#browser-only-mode) opts out of host images without removing snapshot markup; no manifest is written or fetched.
 
 `compositionKey(composition)` is the hex SHA-256, through `crypto.subtle`, of JSON with sorted keys, no whitespace and `undefined` properties dropped, so Node and the browser agree and key order does not matter.[^key]
 

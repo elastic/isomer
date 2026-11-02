@@ -158,6 +158,11 @@ export const checkStudio = async (
     theme = 'light',
   }: CheckOptions
 ): Promise<CheckReport> => {
+  if (config.images === false && rasterizePng) {
+    throw new Error(
+      'PNG checks conflict with images: false in the Studio config.'
+    );
+  }
   const { runtime, apps = [], title = 'Isomer Studio' } = config;
   const compose = composeOf(config);
   const { support } = runtime.getCapabilities();

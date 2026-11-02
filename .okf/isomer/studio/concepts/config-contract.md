@@ -1,7 +1,7 @@
 ---
 type: Concept
 title: Config contract
-description: A Studio config supplies a runtime, and optionally a title, stylesheet, createReactContext, previewExample, compose, apps, featured and imageFonts; the CLI supplies JSX compilation and PNGs per mode.
+description: A Studio config supplies a runtime, styling, composition hooks and apps; images opts out of host PNG/PDF generation while preserving snapshot markup.
 resource: https://github.com/elastic/isomer/blob/main/packages/isomer-studio/src/config.ts
 tags: [isomer, studio]
 status: stable
@@ -31,6 +31,8 @@ sources:
 
 A Studio config default-exports `defineStudioConfig` with a `runtime` and optional fields for styling, composing examples, apps, featured primitives and image fonts; each field, and how the config loads in Node and the browser, is documented in [The config](https://github.com/elastic/isomer/blob/main/packages/isomer-studio/docs/config.md).
 
+`images: false` is the explicit browser-only opt-out described in [Browser-only mode](https://github.com/elastic/isomer/blob/main/packages/isomer-studio/docs/config.md#browser-only-mode). The root repository config uses it; the slides example retains the image-enabled default. Config validation rejects non-booleans; browser updates report invalid values and disable images.
+
 `stylesheet()` is called once per config and its CSS adopted into each React preview's shadow root before `createReactContext(root)`, which returns the render context (empty without it); with neither, the React preview shows the `html` surface. `reactContextOf` combines the two. `adoptStylesheet(root, css)` parses CSS once per document and adopts the sheet onto each preview's shadow root, appending a `style` element where constructable stylesheets are missing.[^stylesheet] `compose(nodes, { theme })` wraps example nodes in a composition and defaults to `{ type: 'view', body: nodes, theme }`. Without it, `previewExample(node)` shows a lone node, the Studio adding the theme and putting several nodes in a `view`; `composeOf` resolves the two, `compose` winning.
 
 Groups stay in pack order, each sorted by label, with ungrouped primitives last under Uncategorized (`UNCATEGORIZED_GROUP_TITLE`). Groups collapse, closed ones are remembered in `localStorage` (keyed by pack and group when there is more than one pack), and a filter forces every matching group open.
@@ -45,7 +47,7 @@ In `dev`, the page loads a virtual entry that mounts the Studio and accepts hot 
 
 `appProblems` validates `apps` (`description`, when given, must be a non-empty string), and each page's `path`, `title` and `section` by app and page index, when the config loads and again on each browser hot update, which keeps the last valid apps. Apps render under the Studio's `EuiProvider` without a shadow root, so `assertSingleEui` stops a config with apps that resolves a different `@elastic/eui` or `@emotion/react` from the Studio; it runs in `studioConfigFrom`, after `apps` validates. A static build bundles every stylesheet the config reaches, lazy apps included, into `assets/app.css`: `.module.css` is a CSS Module, plain `.css` stays global, and Monaco's CSS imports are emptied because `assets/studio.css` carries them.[^apps]
 
-The dev server answers `POST /pdf` with `{ title?, compositions }`, up to 8 MiB, by `renderPdf` from `@elastic/isomer-image-takumi`.[^apps]
+With images enabled, the dev server answers `POST /pdf` with `{ title?, compositions }`, up to 8 MiB, by `renderPdf` from `@elastic/isomer-image-takumi`.[^apps]
 
 Related: [static PNGs](/studio/concepts/static-png.md), [root and CLI](/studio/entry-points/root.md).
 

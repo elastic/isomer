@@ -34,6 +34,9 @@ inputs:
   artifact-name:
     description: The name of the uploaded site artifact; the report uploads as <name>-report.
     default: isomer-studio
+  upload-site:
+    description: Upload the built site; disable when the caller adds provenance before uploading.
+    default: 'true'
 
 runs:
   using: composite
@@ -57,6 +60,7 @@ runs:
         if-no-files-found: ignore
 
     - name: Build the Studio
+      id: build
       if: ${{ !cancelled() && inputs.build == 'true' }}
       shell: bash
       working-directory: ${{ inputs.working-directory }}
@@ -67,8 +71,9 @@ runs:
       run: npx --no isomer-studio build --config "$CONFIG" --out "$OUT" --base "$BASE"
 
     - name: Upload the Studio
-      if: ${{ !cancelled() && inputs.build == 'true' }}
+      if: ${{ !cancelled() && inputs.build == 'true' && inputs.upload-site == 'true' && steps.build.outcome == 'success' }}
       uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.artifact-name }}
         path: ${{ inputs.working-directory }}/${{ inputs.out }}
+        if-no-files-found: error

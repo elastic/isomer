@@ -132,7 +132,7 @@ Every URL in the site resolves against `--base`, so the same build works at a do
 <out>/assets/editor.worker.js, ts.worker.js, json.worker.js
 <out>/assets/slack.css                  # the Slack preview's stylesheet
 <out>/assets/esbuild.wasm               # compiles JSX in the browser
-<out>/png/manifest.json, png/<key>.png  # when the runtime has a snapshot surface
+<out>/png/manifest.json, png/<key>.png  # when images are enabled and the runtime has a snapshot surface
 ```
 
 ### Static sites
@@ -154,7 +154,7 @@ Validates and renders every example of every primitive, composed through the con
 | ---------------------- | ----------------------------- | ---------------------------------------------------------------------------------------- |
 | `--report <file>`      | None                          | Also writes the report to a file.                                                        |
 | `--format json\|junit` | `json`                        | The report's format. JUnit has a test suite per primitive and a test case per check.     |
-| `--png`                | Off                           | Also rasterizes every example. Needs a snapshot surface.                                 |
+| `--png`                | Off                           | Also rasterizes every example. Needs a snapshot surface; conflicts with `images: false`. |
 | `--surfaces <list>`    | Every surface the runtime has | A comma-separated subset of `react`, `html`, `snapshot`, `slack`, `markdown` and `text`. |
 
 For each primitive and example, `check` runs:

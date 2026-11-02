@@ -67,7 +67,10 @@ const manifestRasterizer = (): RasterizePng => {
 };
 
 /** `isomer-studio build`: JSX compiles in the browser, and PNGs come from the build's manifest. */
-export const staticHost = ({ runtime }: StudioConfig): StudioHost => ({
+export const staticHost = ({ runtime, images }: StudioConfig): StudioHost => ({
   transformJsx,
-  rasterizePng: runtime.surfaces.snapshot ? manifestRasterizer() : undefined,
+  rasterizePng:
+    images !== false && runtime.surfaces.snapshot
+      ? manifestRasterizer()
+      : undefined,
 });

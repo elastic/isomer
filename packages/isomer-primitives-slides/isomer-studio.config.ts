@@ -12,7 +12,7 @@ import { previewSlide } from './src/examples/preview_slide';
 import { slideDeckFrame, slidesPack, slideStylesheet } from './src/index';
 import { decksIcon } from './studio/decks_icon';
 
-export default defineStudioConfig({
+export const slidesStudioConfig = defineStudioConfig({
   runtime: createIsomerRuntime({
     packs: [slidesPack],
     frames: { slide: slideDeckFrame },
@@ -40,3 +40,5 @@ export default defineStudioConfig({
     },
   ],
 });
+
+export default slidesStudioConfig;

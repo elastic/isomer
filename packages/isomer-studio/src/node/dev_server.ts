@@ -148,12 +148,6 @@ export const startDevServer = async ({
     );
   }
   assertSingleReact(configPath);
-  if (loader === 'none') {
-    log(
-      'PNGs render with the config as loaded now: Node caches a plain import(), so restart dev to pick up config or pack changes.'
-    );
-  }
-
   const server: Server = createServer();
   const fontFiles = new Set<string>();
   const modules = await loadVite();
@@ -178,6 +172,10 @@ export const startDevServer = async ({
     const config = runner
       ? studioConfigFrom(await runner.import(configPath), configPath)
       : await loadStudioConfig(configPath, { importModule });
+    fontFiles.clear();
+    if (config.images === false) {
+      return { config, renderers: undefined };
+    }
     const fonts = imageFontsOf(config, configPath, async (path) => {
       if (!runner) {
         return importModule(path);
@@ -220,16 +218,27 @@ export const startDevServer = async ({
   };
 
   try {
-    await loaded;
+    const { renderers } = await loaded;
+    if (loader === 'none' && renderers) {
+      log(
+        'PNGs render with the config as loaded now: Node caches a plain import(), so restart dev to pick up config or pack changes.'
+      );
+    }
   } catch (error) {
     await close();
     throw error;
   }
 
   const png = async (request: IncomingMessage, response: ServerResponse) => {
-    const { renderers } = await loaded;
+    const { config, renderers } = await loaded;
     if (!renderers) {
-      sendText(response, 404, 'The runtime has no snapshot surface.');
+      sendText(
+        response,
+        404,
+        config.images === false
+          ? 'Image generation is disabled by images: false.'
+          : 'The runtime has no snapshot surface.'
+      );
       return;
     }
     try {
@@ -250,9 +259,15 @@ export const startDevServer = async ({
   };
 
   const pdf = async (request: IncomingMessage, response: ServerResponse) => {
-    const { renderers } = await loaded;
+    const { config, renderers } = await loaded;
     if (!renderers) {
-      sendText(response, 404, 'The runtime has no snapshot surface.');
+      sendText(
+        response,
+        404,
+        config.images === false
+          ? 'Image generation is disabled by images: false.'
+          : 'The runtime has no snapshot surface.'
+      );
       return;
     }
     try {

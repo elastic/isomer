@@ -3,5 +3,13 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "include": ["*.config.ts", "eslint.config.js", "scripts", "lint-staged.config.js"]
+  "include": [
+    "*.config.ts",
+    "eslint.config.js",
+    "scripts",
+    "lint-staged.config.js",
+    "packages/isomer-primitives-slides/src",
+    "packages/isomer-primitives-slides/studio",
+    "packages/isomer-primitives-slides/decks"
+  ]
 }

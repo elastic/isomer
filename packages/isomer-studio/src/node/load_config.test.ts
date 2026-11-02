@@ -26,6 +26,7 @@ import {
   loadStudioConfig,
   nearestTsconfig,
   resolveConfigPath,
+  studioConfigFrom,
 } from './load_config';
 
 let root: string;
@@ -107,6 +108,24 @@ describe('loadStudioConfig', () => {
       'node_modules/@elastic/isomer-runtime',
       '@elastic/isomer-runtime'
     );
+  });
+
+  it.each(['false', null, 0, {}])('rejects invalid images: %j', (images) => {
+    expect(() =>
+      studioConfigFrom(
+        { default: { runtime: { surfaces: {} }, images } },
+        'consumer.config.ts'
+      )
+    ).toThrow('consumer.config.ts: images must be a boolean.');
+  });
+
+  it.each([undefined, false, true])('accepts images: %j', (images) => {
+    expect(
+      studioConfigFrom(
+        { default: { runtime: { surfaces: {} }, images } },
+        'consumer.config.ts'
+      ).images
+    ).toBe(images);
   });
 
   it.each([
