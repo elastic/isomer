@@ -83,6 +83,11 @@ describe('assertPackIconsValid', () => {
     ).not.toThrow();
   });
 
+  it('handles a long transform list without regex backtracking', () => {
+    const transforms = 'scale()\t'.repeat(10_000);
+    expect(check(wrap(`<g transform="${transforms}"/>`))).not.toThrow();
+  });
+
   it('reads icons from definitions when the pack has no icons map', () => {
     const primitive = definePrimitive({
       type: 'probe',

@@ -10,6 +10,7 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
+import { renderedHtmlText } from '../../content_parity.fixtures';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { frameContentWidth } from '../../theme/components/frame';
 import { timeline, timelineFit } from '../../theme/components/timeline';
@@ -103,9 +104,7 @@ describe('slideTimeline', () => {
   it('keeps a space between a label and its channel in the HTML text', () => {
     const { html } = runtime.surfaces.html.render(compose(example));
     const [item] = example.items;
-    expect(html.replace(/<[^>]+>/g, '')).toContain(
-      `${item?.label} ${item?.channel}`
-    );
+    expect(renderedHtmlText(html)).toContain(`${item?.label} ${item?.channel}`);
   });
 
   it('marks the current item for assistive technology and with a cue', () => {
