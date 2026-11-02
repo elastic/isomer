@@ -76,6 +76,10 @@ default image-enabled behavior for consumer coverage. The root TypeScript
 config includes the slides sources, apps and decks so the Node config loader
 applies the same JSX settings across that shared config's imports.
 
+Apps should hide image actions when the corresponding host capability is
+absent. Decks hides its PDF action without `renderPdf`, including static builds,
+rather than showing an unavailable download.
+
 ## Featured primitives
 
 Home opens with a strip of featured primitives, each with a link to its Reference page and to the Workbench. `featured` names them by type, in the order they appear:

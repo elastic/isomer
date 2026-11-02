@@ -1336,7 +1336,7 @@ test.describe('decks', () => {
 
     await expect(
       page.getByRole('button', { name: 'Download PDF', exact: true })
-    ).toBeDisabled();
+    ).toHaveCount(0);
 
     expect(problems).toEqual([]);
   });
