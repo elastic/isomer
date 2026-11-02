@@ -17,7 +17,7 @@ The Playwright install is a one-time step that downloads the Chromium `verify` d
 
 `pnpm verify` is the full local gate: typecheck, lint (ESLint with Prettier as a rule, markdownlint, and license headers), tests, the ESM and CommonJS build, and the `check:*` scripts (export parity, package exports, emitted declarations, pack contents, module graph, packed consumer), the Studio's browser tests, and `pnpm licenses:report --check`. CI runs the same command.
 
-`pnpm verify:fast` is the inner loop: the build, then typecheck, lint, and the license check side by side, then the tests, which resolve packages through their built `lib`. It skips the packed checks and the browser tests, so run `pnpm verify` before opening a PR. ESLint caches results in `node_modules/.cache/eslint/` and rechecks only files whose content changed, so a type-aware rule can miss an error that a change in another file causes; delete the cache, or let CI's fresh run catch it.
+`pnpm verify:fast` is the inner loop: the build, then typecheck, lint, and the license check side by side, then the tests, which resolve packages through their built `lib`. It skips the packed checks and the browser tests, so run `pnpm verify` before opening a PR, except for [prose-only changes](#prose-only-changes). ESLint caches results in `node_modules/.cache/eslint/` and rechecks only files whose content changed, so a type-aware rule can miss an error that a change in another file causes; delete the cache, or let CI's fresh run catch it.
 
 CI also runs the typecheck, the node tests, and the packed consumer check at three peer targets: `floor` (the lowest versions the published peer ranges admit), `kibana` (what elastic/kibana pins on `main`), and `latest` (the highest versions they admit). To reproduce one, run `node scripts/apply_peer_target.js <target>` and `pnpm install --no-frozen-lockfile`, then restore `package.json` and `pnpm-lock.yaml`.
 
@@ -31,6 +31,14 @@ Useful individual scripts:
 - `pnpm build` — every package's ESM, CommonJS and declaration builds (see below)
 - `pnpm licenses:report` — regenerate `THIRD_PARTY_LICENSES.md` and `NOTICE.txt` for the workspace, and each published package's own, scoped to what a consumer installs with it for the workspace, and for each published package scoped to what a consumer installs with it
 - `pnpm docs:dev` — copy package docs into the assembler and serve with live reload (`docs-builder serve`, <http://localhost:3000>). Requires the [docs-builder](https://github.com/elastic/docs-builder) binary (`curl -sL https://ela.st/docs-builder-install | sh`)
+
+### Prose-only changes
+
+Documentation and instruction prose alone do not require the full local gate, including before a PR. Run `pnpm lint:md` and `git diff --check`, and check changed local links and section anchors. The Markdown configuration excludes `.github/**` and `.okf/**`; validate changed instructions there explicitly.
+
+Run `pnpm review-instructions --check` when implementation instructions change. For `.libra/` edits, first regenerate with `pnpm review-instructions`. For package docs, run `pnpm docs:assemble`, include the assembled copies, then run `pnpm docs:check`. That check currently rewrites assembled docs before detecting drift: preserve existing `docs/` edits before invoking it. Follow the [OKF workflow](#agent-knowledge-bundle-okf) when changing that bundle.
+
+Executable examples, config, generators, and build behavior are not prose-only. Report commands/results and omitted checks; CI still runs the full gate.
 
 ## The build
 
@@ -63,8 +71,8 @@ CI pins the CLI version in `.github/workflows/okf.yml`.
 ## Pull requests
 
 - Use [conventional commits](https://www.conventionalcommits.org/). `feat:` and `fix:` drive the next release version when they change a published package.
-- Add tests for behavioral changes.
-- Run `pnpm verify` before opening a PR.
+- Cover behavioral changes, reusing sufficient existing tests where appropriate.
+- Run `pnpm verify` before opening a PR, except for [prose-only changes](#prose-only-changes).
 
 ## License headers
 
