@@ -193,5 +193,5 @@ function validateMetricNode(
 }
 
 /** Public schema: structural declarations plus cross-reading and cross-tile invariants. */
-export const metricTrendSchema =
+export const metricTrendSchema: typeof metricNodeSchema =
   metricNodeSchema.superRefine(validateMetricNode);

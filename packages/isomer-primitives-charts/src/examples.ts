@@ -8,6 +8,10 @@
 import type { MetricTrendModel } from './model';
 
 const start = Date.UTC(2026, 9, 14, 8);
+/**
+ * Synthetic authoring/Studio fixtures covering comparisons, missing readings,
+ * progress, aligned trends and collapse. These are not captured Lens results.
+ */
 export const metricExamples: MetricTrendModel[] = [
   {
     type: 'metricTrend',

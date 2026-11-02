@@ -50,26 +50,46 @@ function TooltipLabel({
 }
 
 interface SecondaryMetricFields {
+  /** Formatted secondary/comparison text; empty for icon-only display. */
   value: string;
+  /** Reading name, omitted when authored hidden. */
   label?: string;
+  /** Engine placement for the secondary name, default before. */
   labelPosition: 'before' | 'after' | 'tooltip';
+  /** Plain-text tooltip wrapper for tooltip-positioned labels. */
   labelTooltip: typeof TooltipLabel;
+  /** Explicit secondary paint or resolved comparison/status paint. */
   badgeColor?: string;
+  /** Raw comparison direction/change/desirability account. */
   ariaDescription?: string;
+  /** Portable direction glyph; absent for value-only comparison display. */
   icon?: string;
+  /** Delegate badge border contrast to the engine. */
   badgeBorderColor?: { mode: 'auto' };
 }
 
 interface MetricTextFields {
+  /** Tile title, falling back to the primary reading label. */
   title: string;
+  /** Tile fill; host surface when applying authored paint to value only. */
   color: string;
+  /** Optional supporting plain text. */
   subtitle?: string;
+  /** Explicit headline paint for value-only mode; otherwise engine chooses contrast. */
   valueColor?: string;
+  /** Text-glyph element, not a component registry lookup. */
   icon?: () => React.ReactElement;
+  /** Optional independently formatted secondary reading/comparison. */
   extra?: SecondaryMetricFields;
 }
 
-/** Pure adapter; numeric readings stay numeric so progress never becomes a gauge or formatted string. */
+/**
+ * Convert a validated tile to engine metric data without mounting a chart.
+ * Numeric readings stay numeric for progress; formatted text is used by the
+ * value formatter, not as the arithmetic input. Missing/text/array readings
+ * become display strings. Only explicit value-paint mode forces value color;
+ * otherwise contrast remains the engine's responsibility.
+ */
 export function metricDatum(
   node: MetricTrendNode,
   tile: MetricTile,
@@ -106,7 +126,9 @@ export function metricDatum(
   }
   const numeric = {
     ...base,
+    /** Raw finite reading retained for engine progress calculations. */
     value: tile.primary.value,
+    /** Headline honors host text; other values use the reading's numeric format. */
     valueFormatter: (value: number) => {
       if (value === tile.primary.value) {
         return format(tile.primary);
@@ -119,11 +141,17 @@ export function metricDatum(
   }
   return {
     ...numeric,
+    /** Authored lower bound, default zero. */
     domainMin: tile.progress.min ?? 0,
+    /** Authored upper bound; input validation guarantees an increasing finite span. */
     domainMax: tile.progress.max,
+    /** Authored progress orientation, default horizontal. */
     progressBarDirection: tile.progress.direction ?? 'horizontal',
+    /** Accessible names for current reading and progress target. */
     progressValueLabels: {
+      /** Primary reading label. */
       value: tile.primary.label,
+      /** Authored target label, default Target. */
       target: tile.progress.label ?? 'Target',
     },
   } satisfies MetricDatum;
@@ -296,15 +324,31 @@ function MetricTileChart(props: TileChartProps) {
   );
 }
 
+/**
+ * Render a validated metric/trend node with Elastic Charts after client mount.
+ * Server/initial output uses the shared baseline React/SVG tree; summaries,
+ * timestamp tables and explicit host action buttons survive the transition.
+ * No Lens mapping, fetching, validation or backend execution is performed.
+ * @param props - `node` must pass metricTrendSchema. Optional `theme` supplies
+ * portable presentation and scheme (otherwise light); `baseTheme` supplies the
+ * matching resolved engine theme (otherwise the engine's default for that
+ * scheme). Without `theme`, its portable projection uses standalone tone colors.
+ * Supply both for custom/dark hosts: baseTheme alone does not infer a dark mode.
+ * Optional `context` supplies host events/anchors and defaults to empty.
+ */
 export function MetricTrendChart({
   node,
   theme: suppliedTheme,
   baseTheme,
   context = {},
 }: {
+  /** Already validated resolved metric/trend node. */
   node: MetricTrendNode;
+  /** Portable presentation and scheme; defaults to a light engine projection. */
   theme?: ChartsTheme | undefined;
+  /** Matching resolved engine theme; supplying this alone does not select dark mode. */
   baseTheme?: ElasticChartsThemeSource | undefined;
+  /** Optional host event/anchor context; defaults empty. */
   context?: ChartsRenderContext | undefined;
 }) {
   const mode = suppliedTheme?.mode ?? 'light';
@@ -341,9 +385,17 @@ export function MetricTrendChart({
   );
 }
 
-/** Replace React only; collection, parsing and nonvisual adaptations stay with the primitive. */
+/**
+ * Bind React-only runtime overrides to a host-resolved light/dark engine pair.
+ * The dispatched portable theme (or context.chartTheme) selects the scheme;
+ * absent either, light is used. Pair this with the matching portable themes in
+ * the frame/style adapter. Collection, parsing and nonvisual adaptations remain
+ * with the primitive; supplied engine themes are not mutated.
+ */
 export function createElasticChartsRendererOverrides(baseThemes: {
+  /** Host light engine theme matching its portable light projection. */
   light: ElasticChartsThemeSource;
+  /** Host dark engine theme matching its portable dark projection. */
   dark: ElasticChartsThemeSource;
 }) {
   return {
@@ -366,6 +418,10 @@ export function createElasticChartsRendererOverrides(baseThemes: {
   };
 }
 
+/**
+ * React overrides bound to installed Elastic Charts light/dark defaults.
+ * Host applications with custom engine themes should use the factory instead.
+ */
 export const elasticChartsRendererOverrides =
   createElasticChartsRendererOverrides({
     light: LIGHT_THEME,

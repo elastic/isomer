@@ -27,15 +27,28 @@ import {
 } from './theme';
 import { METRIC_GLYPHS } from './tokens';
 
+/**
+ * Portable model with SDK primitive metadata (such as anchors).
+ * A type annotation is not validation; parse external input with metricTrendSchema.
+ */
 export type MetricTrendNode = MetricTrendModel & PrimitiveNode;
 
+/**
+ * Accessible timestamp-union table for a validated tile; renders nothing without
+ * a trend. Missing samples remain gaps regardless of the drawing policy.
+ * @param props - Tile, fallback Intl locale (en-US) and optional portable theme
+ * (standalone light by default). Reading-specific locales take precedence.
+ */
 export function MetricDataTable({
   tile,
   locale,
   theme = chartsThemes.light,
 }: {
+  /** Validated tile; secondary trend samples require a secondary reading. */
   tile: MetricTile;
+  /** Fallback Intl locale for readings/time labels; defaults en-US. */
   locale?: string | undefined;
+  /** Resolved portable presentation; defaults to standalone light. */
   theme?: ChartsTheme;
 }) {
   if (!tile.trend) {
@@ -226,15 +239,28 @@ function Trend({ tile, theme }: { tile: MetricTile; theme: ChartsTheme }) {
   );
 }
 
+/** Inputs shared by baseline and mounted-engine rendering. */
 export interface MetricViewProps {
+  /** Model already validated by metricTrendSchema; this view does not parse it. */
   node: MetricTrendNode;
+  /** Resolved presentation; defaults to standalone portable light, not context. */
   theme?: ChartsTheme | undefined;
+  /** Host events and anchors; defaults empty. The view does not execute actions. */
   context?: ChartsRenderContext | undefined;
+  /**
+   * Optional visual-content replacement per resolved (possibly collapsed) tile.
+   * Receives the selected theme. Shared summaries, tables and action buttons
+   * remain outside this replacement; omitted uses baseline metric/SVG content.
+   */
   renderTile?:
     ((tile: MetricTile, theme: ChartsTheme) => ReactNode) | undefined;
 }
 
-/** Shared React tree for baseline HTML, snapshots and the mounted browser renderer. */
+/**
+ * Shared figure, tiles and accessibility tree for HTML, snapshot and browser.
+ * Does not validate the node or implicitly read a host theme. Engine adapters
+ * replace visual tile content only, retaining the nonvisual/action structure.
+ */
 export function MetricView({
   node,
   theme = chartsThemes.light,

@@ -16,19 +16,35 @@ import { type ChartTokens, defaultChartTokens } from './tokens';
 
 /** Resolved host presentation. Metric accent/tone paints must be opaque six-digit hex. */
 export interface ChartsTheme {
+  /** Selects the matching browser base theme; must agree with the host's scheme. */
   mode: 'light' | 'dark';
+  /** Resolved typography and geometry; lengths are CSS pixels unless noted. */
   tokens: ChartTokens;
+  /** CSS surface color behind tiles and trends. */
   background: string;
+  /** CSS foreground for labels and non-filled content. */
   text: string;
+  /** CSS foreground for supporting descriptions. */
   muted: string;
+  /** CSS tile and metric border color. */
   border: string;
+  /** Default primary paint, as opaque six-digit hex for baseline contrast. */
   accent: string;
+  /** Secondary trend paint, as opaque six-digit hex. */
   secondary: string;
+  /** CSS color behind unfilled progress. */
   track: string;
+  /** Host-owned semantic paints, all opaque six-digit hex; not palette order. */
   tone: Record<'neutral' | 'good' | 'bad' | 'warning', string>;
 }
 
-export type ChartsThemes = { light: ChartsTheme; dark: ChartsTheme };
+/** One resolved host theme per scheme, shared by the style adapter and frame. */
+export type ChartsThemes = {
+  /** Light presentation; its dimensions establish frame defaults. */
+  light: ChartsTheme;
+  /** Dark presentation, with `mode: 'dark'`. */
+  dark: ChartsTheme;
+};
 
 /** Standalone fallback palettes, not Kibana/EUI themes or Elastic Charts defaults. */
 export const chartsThemes: ChartsThemes = {
@@ -68,12 +84,17 @@ export const chartsThemes: ChartsThemes = {
   },
 };
 
+/** Host interaction/anchor context plus an optional resolved chart theme. */
 export interface ChartsRenderContext extends PrimitiveRenderContext {
+  /** Used by primitive dispatch when no explicit frame theme is supplied. */
   chartTheme?: ChartsTheme;
 }
+/** Per-render style requirements; never share a collector across renders. */
 export interface ChartStyleCollector {
+  /** Deduplicated structural rule groups requested by visited primitives. */
   rules: Set<'metric'>;
 }
+/** Compatibility identifier linking the chart primitive to its style collector. */
 export const CHART_STYLE_COLLECTOR = 'isomer-metric-v1';
 
 const isNode = (value: unknown): value is PrimitiveNode =>
@@ -84,7 +105,11 @@ const isNode = (value: unknown): value is PrimitiveNode =>
     typeof value.type === 'string'
   );
 
-/** Use the same host-resolved themes for HTML and the snapshot frame. */
+/**
+ * Bind HTML collection to the same resolved pair used by the snapshot frame.
+ * Each render receives a fresh collector. An explicit scheme wins over the
+ * theme name; otherwise only the name `dark` selects dark presentation.
+ */
 export function createChartsStyleAdapter(
   themes: ChartsThemes
 ): HTMLStyleAdapter<PrimitiveNode, ChartStyleCollector, ChartsRenderContext> {
@@ -126,9 +151,14 @@ export function createChartsStyleAdapter(
   };
 }
 
+/** HTML style adapter using standalone fallback themes, not the host's theme. */
 export const chartsStyleAdapter = createChartsStyleAdapter(chartsThemes);
 
-/** Hosts may reframe charts, but must supply the same ChartsTheme to every frame. */
+/**
+ * Create a content-sized frame using resolved host themes.
+ * Default width and estimated height use light-theme tokens; wrapping uses the
+ * selected theme. All frames in the runtime must accept the same theme type.
+ */
 export function createChartFrame(themes: ChartsThemes): Frame<ChartsTheme> {
   return {
     defaultWidth: themes.light.tokens.frame.width,
@@ -152,9 +182,15 @@ export function createChartFrame(themes: ChartsThemes): Frame<ChartsTheme> {
   };
 }
 
+/** Content-sized frame using standalone fallback tokens and colors. */
 export const chartFrame = createChartFrame(chartsThemes);
 
-/** Black or white text chosen from the authored opaque tile color. */
+/**
+ * Choose black or white by the greater WCAG relative-luminance contrast ratio.
+ * @param color - Opaque six-digit hex (`#rrggbb`); CSS names and alpha are rejected.
+ * @returns `#000000` or `#ffffff`; ties choose black.
+ * @throws {TypeError} If the color is not opaque six-digit hex.
+ */
 export function metricContrast(color: string): string {
   if (!/^#[\da-f]{6}$/i.test(color)) {
     throw new TypeError(

@@ -9,13 +9,21 @@ import { metricTiles } from './collapse';
 import type { MetricTile, MetricTrendModel } from './declarations';
 import { compareMetric, formatReading, formatSample } from './readings';
 
+/** One instant in the sorted union of primary and secondary trend timestamps. */
 export interface AlignedMetricPoint {
+  /** UTC epoch milliseconds, independent of display timezone. */
   time: number;
+  /** Primary sample; null means explicitly missing or absent at this instant. */
   primary: number | null;
+  /** Secondary sample; null also covers a series that was not supplied. */
   secondary: number | null;
 }
 
-/** Join actual instants, not array positions. An absent sample remains a gap. */
+/**
+ * Join validated series by UTC instant, not array position, in ascending order.
+ * Missing samples remain null even when the drawing policy is zero or connect.
+ * The input is not mutated.
+ */
 export function alignMetricTrends(
   trend: NonNullable<MetricTile['trend']>
 ): AlignedMetricPoint[] {
@@ -34,13 +42,21 @@ export function alignMetricTrends(
     }));
 }
 
-/** Tile paint wins over its palette band, then the chart fallback. Tone is independent. */
+/**
+ * Resolve paint from tile, matching palette band, then chart color, in that order.
+ * Bands have inclusive lower bounds; percent palettes use the validated domain.
+ * Tone resolves independently from tile then band. Absent color leaves the host
+ * renderer to choose its semantic tone/default accent.
+ */
 export function metricTileColor(
   node: MetricTrendModel,
   tile: MetricTile
 ): {
+  /** Resolved authored paint; absent means the renderer chooses host defaults. */
   color?: string | undefined;
+  /** Resolved semantic status, independent of explicit paint. */
   tone?: MetricTile['tone'];
+  /** Optional qualifier from the matching band, retained even with tile paint. */
   label?: string;
 } {
   const palette = node.palette;
@@ -72,7 +88,13 @@ export function metricTileColor(
   return result;
 }
 
-/** Include the UTC offset so repeated local times at DST transitions stay distinguishable. */
+/**
+ * Format a UTC epoch-millisecond instant with date, time and UTC offset so
+ * repeated local times at DST transitions remain distinguishable.
+ * @param zone - Intl timezone identifier; defaults to UTC.
+ * @param locale - Intl locale; defaults to en-US.
+ * @throws {RangeError} If Intl rejects the instant, timezone or locale.
+ */
 export function metricTimeLabel(
   time: number,
   zone = 'UTC',

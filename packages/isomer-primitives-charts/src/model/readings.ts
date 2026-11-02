@@ -39,7 +39,13 @@ function numberText(
   );
 }
 
-/** Null is unavailable; host strings remain text and are never interpreted as markup. */
+/**
+ * Format a reading as plain text; null becomes N/A and arrays are comma-separated.
+ * Strings pass through without numeric formatting or prefix/suffix decoration.
+ * Numbers default to en-US with zero to two fractional digits; percent consumes
+ * a ratio, bytes use powers of 1024, and duration labels do not convert units.
+ * @throws {RangeError} If an unvalidated format contains invalid Intl options.
+ */
 export function formatMetricValue(
   value: MetricReading['value'],
   format: MetricFormat = {}
@@ -103,13 +109,21 @@ export function formatSample(
   });
 }
 
+/** Resolved numeric comparison with direction separate from desirability. */
 export interface MetricComparison {
+  /** Signed current-minus-baseline delta; null when either reading is missing. */
   absolute: number | null;
+  /** Delta / absolute baseline magnitude; null for missing, zero or capped ratios. */
   relative: number | null;
+  /** Raw delta sign, even if formatted text rounds to zero. */
   direction: 'up' | 'down' | 'unchanged' | 'unavailable';
+  /** Desirability from authored increase policy; unchanged/missing is neutral. */
   tone: 'good' | 'bad' | 'neutral';
+  /** Requested value/delta display, or N/A for a missing comparison side. */
   formatted: string;
+  /** Nonvisual direction, absolute/relative change and desirability account. */
   description: string;
+  /** Optional authored down/unchanged/up palette paint, independent of tone. */
   color?: string;
 }
 
@@ -176,6 +190,11 @@ function comparisonText(
 /**
  * 'primary' means primary minus secondary; a numeric baseline means secondary
  * minus the constant. Direction uses the raw delta, independently of desirability.
+ * Expects a validated tile. Relative change uses absolute baseline magnitude and
+ * is unavailable for zero, nonfinite or magnitude-at-least-1000 ratios; relative
+ * display then falls back to absolute. Percent deltas use percentage points.
+ * @returns Undefined without comparison settings; an unavailable/neutral result
+ * for a missing side. Reading format locale overrides the caller's locale.
  */
 export function compareMetric(
   tile: MetricTile,

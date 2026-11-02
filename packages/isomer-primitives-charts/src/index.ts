@@ -31,6 +31,11 @@ interface ChartsPackTypes extends DefaultPackTypes {
 const definePrimitive = definePrimitiveFor<ChartsPackTypes>();
 const examples: MetricTrendNode[] = metricExamples;
 
+/**
+ * Validated metric/trend primitive with baseline React/SVG, text and Markdown
+ * adaptations. Browser overrides replace React rendering, not style collection
+ * or nonvisual behavior; snapshots continue to use the baseline tree.
+ */
 export const metricTrendPrimitive = definePrimitive({
   type: 'metricTrend',
   schema: metricTrendSchema,
@@ -65,7 +70,12 @@ export const metricTrendPrimitive = definePrimitive({
   },
 });
 
+/** Ordered chart inventory; currently contains only the metric/trend primitive. */
 export const chartPrimitives = [metricTrendPrimitive] as const;
+/**
+ * Portable chart pack with standalone style defaults and authoring examples.
+ * Bind a host style adapter/frame separately when using application themes.
+ */
 export const chartsPack = definePrimitivePack<ChartsTheme>({
   id: 'charts',
   primitives: chartPrimitives,

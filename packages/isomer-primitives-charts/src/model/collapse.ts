@@ -73,7 +73,15 @@ function collapseSeries(
   }));
 }
 
-/** Collapse is presentation aggregation of validated homogeneous sources, not query planning. */
+/**
+ * Resolve display tiles from a model validated by `metricTrendSchema`.
+ * Without collapse, returns the original tile array. Otherwise returns one new
+ * tile, aggregating homogeneous numeric sources and trends by UTC instant.
+ * Missing contributors are ignored; all-missing groups remain null. Static
+ * maxima are retained, otherwise maxima use the selected operation.
+ * Source objects are not mutated. This is presentation aggregation, not planning.
+ * @throws {RangeError} If aggregate arithmetic overflows.
+ */
 export function metricTiles(node: MetricTrendModel): MetricTile[] {
   if (!node.collapse) {
     return node.tiles;
